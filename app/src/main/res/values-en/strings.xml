@@ -98,18 +98,8 @@
     <string name="idioma">Language</string>
     <string name="idioma_sistema">Follow system</string>
     <string name="mapa">Map</string>
-    <string name="mapa_como">How do you want to see the map?</string>
-    <string name="mapa_como_ayuda">Change it anytime in Settings → Map.</string>
-    <string name="mapa_dividido">Map + LiteDash</string>
-    <string name="mapa_dividido_detalle">Your car and your music next to the map. Tap the map to see it full screen; the home button takes you back to your dashboard.</string>
-    <string name="mapa_completo">Map only</string>
-    <string name="mapa_completo_detalle">Opens %1$s full screen, as usual.</string>
-    <string name="recomendado">Recommended</string>
-    <string name="mapa_permiso">To put LiteDash next to the map, Android asks you to allow "Display over other apps".</string>
-    <string name="permitir">Allow</string>
-    <string name="mapa_izquierda">Map on the left</string>
-    <string name="mapa_derecha">Map on the right</string>
-    <string name="mapa_grande">Large map (2/3)</string>
-    <string name="mapa_mitad">Half and half</string>
-    <string name="mapa_ayuda">With the large map, your car\'s arrow stays in view. While navigating, the Navigate tile shows the next turn (it uses the same notification access as music).</string>
+    <string name="mapa_ayuda">The app the Map and Navigate tiles open. While navigating, both show the next turn (it uses the same notification access as music).</string>
+    <string name="mapa_sin_apps">Install Waze or Google Maps to navigate from LiteDash.</string>
+    <string name="pieza_mapa">Map</string>
+    <string name="mapa_detalle_modulo">Your map inside LiteDash, centered on your car</string>
 </resources>

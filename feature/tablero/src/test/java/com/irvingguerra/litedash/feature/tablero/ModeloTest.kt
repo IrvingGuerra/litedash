@@ -65,16 +65,4 @@ class ModeloTest {
         assertEquals(3 to 1, Medidas(3, 1, 6, 2).acotar(1, 0))
         assertEquals(6 to 2, Medidas(3, 1, 6, 2).acotar(9, 9))
     }
-
-    @Test
-    fun columnaJuntoAlMapaLlevaAutoYMusica() {
-        // Un tercio y la mitad de las pantallas de la matriz, sin barra de botones.
-        for (c in listOf(Cuadricula.para(341f, 480f), Cuadricula.para(512f, 480f), Cuadricula.para(444f, 700f), Cuadricula.para(640f, 600f))) {
-            val piezas = Plantilla.LADO.piezas(c)
-            assertTrue(c.clave, piezas.any { it.tipo == Tipos.AUTO })
-            assertTrue(c.clave, piezas.any { it.tipo == Tipos.MUSICA && it.alto == 2 })
-            assertTrue(c.clave, piezas.none { it.tipo == Tipos.NAVEGAR })
-            for (pieza in piezas) assertTrue("${c.clave}: $pieza", piezas.cabe(pieza, c))
-        }
-    }
 }

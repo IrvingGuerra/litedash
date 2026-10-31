@@ -6,6 +6,24 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
+## [1.3.0] - 2026-10-31
+
+### Nuevo
+- **Pieza Mapa**: un mapa propio dentro de LiteDash, oscuro o claro según tu
+  tema, centrado en tu auto y girando hacia donde vas. Tócalo para abrir Waze o
+  Google Maps; mientras navegas, encima muestra la siguiente vuelta. Se agrega
+  en Ajustes → Módulos o con "Agregar" al acomodar; pide tu ubicación solo al
+  tocar "Activar". Mapas de OpenStreetMap, gratis y sin cuentas.
+- Tu auto por defecto es un sedán nuevo, de líneas más redondas, con cajuela.
+
+### Cambiado
+- Ajustes → Mapa ahora solo elige qué app de navegación abren las piezas Mapa
+  y Navegar.
+
+### Quitado
+- La vista dividida de la 1.2.0 (LiteDash encima del mapa) y su permiso
+  "Mostrar sobre otras apps": el mapa ahora vive dentro de LiteDash.
+
 ## [1.2.0] - 2026-10-31
 
 ### Nuevo

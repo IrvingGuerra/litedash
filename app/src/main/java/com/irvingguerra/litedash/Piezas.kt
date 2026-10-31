@@ -24,6 +24,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalConfiguration
@@ -43,6 +44,8 @@ import com.irvingguerra.litedash.feature.apps.App
 import com.irvingguerra.litedash.feature.apps.IconoApp
 import com.irvingguerra.litedash.feature.apps.RepositorioApps
 import com.irvingguerra.litedash.feature.musica.ServicioMusica
+import com.irvingguerra.litedash.feature.mapa.PiezaMapa
+import com.irvingguerra.litedash.feature.navegacion.Indicacion
 import com.irvingguerra.litedash.feature.navegacion.RepositorioNavegacion
 import com.irvingguerra.litedash.feature.tablero.Medidas
 import com.irvingguerra.litedash.feature.tablero.Tipos
@@ -57,6 +60,7 @@ val DefPiezas = listOf(
     DefPieza(Tipos.AUTO, R.string.pieza_auto, Medidas(3, 2), 5 to 3),
     DefPieza(Tipos.MUSICA, R.string.pieza_musica, Medidas(3, 1, maxAlto = 3), 4 to 1),
     DefPieza(Tipos.NAVEGAR, R.string.pieza_navegar, Medidas(2, 1), 3 to 1),
+    DefPieza(Tipos.MAPA, R.string.pieza_mapa, Medidas(2, 2), 4 to 3),
     DefPieza(Tipos.RELOJ, R.string.pieza_reloj, Medidas(2, 1), 3 to 1),
     DefPieza(Tipos.TELEFONO, R.string.pieza_telefono, Medidas(1, 1), 2 to 1),
     DefPieza(Tipos.APP, R.string.pieza_app, Medidas(1, 1, 3, 3), 1 to 1),
@@ -180,25 +184,56 @@ fun PiezaNavegacion(repo: RepositorioNavegacion, app: App?, alTocar: () -> Unit)
     }
     val ind = repo.indicacion
     if (ind == null) return PiezaAcceso(Iconos.navegar, stringResource(R.string.pieza_navegar), app?.nombre, alTocar)
-    val c = LocalColores.current
     Tarjeta(Modifier.fillMaxSize(), alTocar = alTocar) {
         BoxWithConstraints(Modifier.fillMaxSize().padding(14.dp), contentAlignment = Alignment.CenterStart) {
-            val grande = maxHeight > 120.dp
-            val lado = if (grande) 72.dp else 48.dp
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(Modifier.size(lado).clip(RoundedCornerShape(16.dp)).background(c.acento), contentAlignment = Alignment.Center) {
-                    val flecha = ind.flecha
-                    if (flecha != null) {
-                        Image(flecha.asImageBitmap(), null, Modifier.size(lado * 0.7f), colorFilter = ColorFilter.tint(c.fondo))
-                    } else {
-                        Icono(Iconos.navegar, c.fondo, lado * 0.5f)
-                    }
-                }
-                Column(Modifier.padding(start = 14.dp)) {
-                    if (ind.titulo.isNotBlank()) Etiqueta(ind.titulo, if (grande) Texto.titulo.copy(fontSize = 28.sp) else Texto.titulo, maxLineas = 1)
-                    if (ind.texto.isNotBlank()) Etiqueta(ind.texto, Texto.normal, maxLineas = if (grande) 2 else 1)
-                    if (grande && ind.detalle.isNotBlank()) Etiqueta(ind.detalle, Texto.chico, c.textoSuave, maxLineas = 1)
-                }
+            Vuelta(ind, grande = maxHeight > 120.dp)
+        }
+    }
+}
+
+/** Flecha ámbar, distancia y calle de la siguiente vuelta. */
+@Composable
+private fun Vuelta(ind: Indicacion, grande: Boolean) {
+    val c = LocalColores.current
+    val lado = if (grande) 72.dp else 48.dp
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Box(Modifier.size(lado).clip(RoundedCornerShape(16.dp)).background(c.acento), contentAlignment = Alignment.Center) {
+            val flecha = ind.flecha
+            if (flecha != null) {
+                Image(flecha.asImageBitmap(), null, Modifier.size(lado * 0.7f), colorFilter = ColorFilter.tint(c.fondo))
+            } else {
+                Icono(Iconos.navegar, c.fondo, lado * 0.5f)
+            }
+        }
+        Column(Modifier.padding(start = 14.dp)) {
+            if (ind.titulo.isNotBlank()) Etiqueta(ind.titulo, if (grande) Texto.titulo.copy(fontSize = 28.sp) else Texto.titulo, maxLineas = 1)
+            if (ind.texto.isNotBlank()) Etiqueta(ind.texto, Texto.normal, maxLineas = if (grande) 2 else 1)
+            if (grande && ind.detalle.isNotBlank()) Etiqueta(ind.detalle, Texto.chico, c.textoSuave, maxLineas = 1)
+        }
+    }
+}
+
+/**
+ * Mapa propio dentro del tablero. Tocarlo abre la app de navegación; encima
+ * lleva el nombre de esa app o, navegando, la siguiente vuelta.
+ */
+@Composable
+fun PiezaMapaTablero(repo: RepositorioNavegacion, app: App?, alTocar: () -> Unit) {
+    DisposableEffect(repo) {
+        repo.usar(ServicioMusica::activas)
+        onDispose { repo.soltar() }
+    }
+    val c = LocalColores.current
+    val ind = repo.indicacion
+    PiezaMapa(alTocar) {
+        val forma = RoundedCornerShape(16.dp)
+        val caja = Modifier.padding(10.dp).shadow(6.dp, forma).clip(forma).background(c.superficie.copy(alpha = 0.94f))
+        if (ind != null) {
+            Box(caja.padding(10.dp)) { Vuelta(ind, grande = false) }
+        } else if (app != null) {
+            Row(caja.padding(horizontal = 14.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+                Icono(Iconos.navegar, c.acento, 18.dp)
+                Etiqueta(app.nombre, Texto.chico.copy(fontWeight = FontWeight.SemiBold), maxLineas = 1, modifier = Modifier.padding(start = 8.dp))
             }
         }
     }

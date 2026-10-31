@@ -10,11 +10,10 @@ import com.irvingguerra.litedash.feature.musica.ServicioMusica
 import com.irvingguerra.litedash.feature.navegacion.RepositorioNavegacion
 import com.irvingguerra.litedash.feature.tablero.AlmacenTablero
 import com.irvingguerra.litedash.feature.tablero.EstadoTablero
-import com.irvingguerra.litedash.feature.tablero.Plantilla
 
 /**
- * Las dependencias viven aquí (no en la actividad) porque la vista dividida
- * pinta fuera de ella, sobre el mapa, con el mismo estado. Todo es perezoso.
+ * Las dependencias viven aquí (no en la actividad) porque el servicio de avisos
+ * también las usa, aun sin la pantalla abierta. Todo es perezoso.
  */
 class LiteDashApp : Application() {
     val dependencias: Dependencias by lazy {
@@ -26,10 +25,8 @@ class LiteDashApp : Application() {
             navegacion = RepositorioNavegacion(this, paquetesMapa),
             prefs = Preferencias(this),
             tablero = EstadoTablero(AlmacenTablero(this)),
-            tableroLado = EstadoTablero(AlmacenTablero(this, prefijo = "lado_")) { Plantilla.LADO },
             autos = RepositorioAutos(this, BuildConfig.URL_CATALOGO),
             actualizador = Actualizador(this, BuildConfig.URL_ACTUALIZACIONES, BuildConfig.VERSION_CODE.toLong()),
-            dividida = VistaDividida(this) { dependencias },
         )
     }
 

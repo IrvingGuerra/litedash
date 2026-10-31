@@ -57,7 +57,5 @@ class MainActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         revision.intValue++
-        // De vuelta en el inicio: nada encima del tablero (la vista dividida se quita).
-        dependencias.dividida.mostrar(ModoVista.OCULTA)
     }
 }

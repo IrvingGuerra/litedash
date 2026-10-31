@@ -5,10 +5,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 
 /** El acomodo actual y sus cambios; cada cambio se guarda para esta cuadrícula. */
-class EstadoTablero(
-    private val almacen: AlmacenTablero,
-    private val porDefecto: (Cuadricula) -> Plantilla = { it.plantillaSugerida() },
-) {
+class EstadoTablero(private val almacen: AlmacenTablero) {
     var cuadricula by mutableStateOf<Cuadricula?>(null)
         private set
     var piezas by mutableStateOf(emptyList<Pieza>())
@@ -18,7 +15,7 @@ class EstadoTablero(
     fun usar(c: Cuadricula): List<Pieza> {
         if (c != cuadricula) {
             cuadricula = c
-            piezas = almacen.leer(c) ?: porDefecto(c).piezas(c)
+            piezas = almacen.leer(c) ?: c.plantillaSugerida().piezas(c)
         }
         return piezas
     }

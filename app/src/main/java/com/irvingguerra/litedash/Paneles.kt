@@ -192,7 +192,8 @@ fun PanelCajon(d: Dependencias, apps: List<App>, cerrar: () -> Unit) {
 }
 
 @Composable
-fun PanelElegirApp(d: Dependencias, apps: List<App>, idPieza: String?, cerrar: () -> Unit, tablero: EstadoTablero = d.tablero) {
+fun PanelElegirApp(d: Dependencias, apps: List<App>, idPieza: String?, cerrar: () -> Unit) {
+    val tablero = d.tablero
     var busqueda by remember { mutableStateOf("") }
     PanelBase(stringResource(R.string.elegir_app), cerrar) {
         CampoTexto(busqueda, { busqueda = it }, stringResource(R.string.buscar_app), Modifier.fillMaxWidth().widthIn(max = 640.dp), icono = true)
@@ -486,6 +487,7 @@ private fun iconoDe(tipo: String) = when (tipo) {
     Tipos.AUTO -> Iconos.auto
     Tipos.MUSICA -> Iconos.musica
     Tipos.NAVEGAR -> Iconos.navegar
+    Tipos.MAPA -> Iconos.mapa
     Tipos.RELOJ -> Iconos.reloj
     Tipos.TELEFONO -> Iconos.telefono
     else -> Iconos.apps
@@ -505,6 +507,18 @@ private fun Modulos(d: Dependencias) {
             } else {
                 Boton(stringResource(R.string.agregar), {
                     val def = DefPiezas.first { it.tipo == Tipos.MUSICA }
+                    d.tablero.agregar(def.tipo, def.inicial, def.medidas)
+                })
+            }
+        }
+        // El mapa es un módulo aparte: no carga nada (ni el GPS) hasta que su pieza está en tu inicio.
+        val mapaEnInicio = d.tablero.piezas.any { it.tipo == Tipos.MAPA }
+        FilaModulo(Iconos.mapa, stringResource(R.string.pieza_mapa), stringResource(R.string.mapa_detalle_modulo)) {
+            if (mapaEnInicio) {
+                Etiqueta(stringResource(R.string.en_tu_inicio), Texto.chico, c.acento)
+            } else {
+                Boton(stringResource(R.string.agregar), {
+                    val def = DefPiezas.first { it.tipo == Tipos.MAPA }
                     d.tablero.agregar(def.tipo, def.inicial, def.medidas)
                 })
             }

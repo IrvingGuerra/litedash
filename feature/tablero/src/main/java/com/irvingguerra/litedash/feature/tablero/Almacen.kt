@@ -7,11 +7,11 @@ import android.content.Context
  * otra escala) no rompe el acomodo de la primera. Formato de texto simple, sin
  * librerías: una pieza por línea, campos separados por tabulador.
  */
-class AlmacenTablero(contexto: Context, private val prefijo: String = "acomodo_") {
+class AlmacenTablero(contexto: Context) {
     private val prefs = contexto.getSharedPreferences("tablero", Context.MODE_PRIVATE)
 
     fun leer(c: Cuadricula): List<Pieza>? {
-        val texto = prefs.getString("$prefijo${c.clave}", null) ?: return null
+        val texto = prefs.getString("acomodo_${c.clave}", null) ?: return null
         return texto.lineSequence().filter { it.isNotBlank() }.mapNotNull { linea ->
             val f = linea.split('\t')
             if (f.size < 6) return@mapNotNull null
@@ -24,6 +24,6 @@ class AlmacenTablero(contexto: Context, private val prefijo: String = "acomodo_"
             listOf(it.id, it.tipo, it.col, it.fila, it.ancho, it.alto, it.dato.replace('\t', ' ').replace('\n', ' '))
                 .joinToString("\t")
         }
-        prefs.edit().putString("$prefijo${c.clave}", texto).apply()
+        prefs.edit().putString("acomodo_${c.clave}", texto).apply()
     }
 }

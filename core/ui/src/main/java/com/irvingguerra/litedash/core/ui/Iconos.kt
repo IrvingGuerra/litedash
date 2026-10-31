@@ -38,11 +38,9 @@ object Iconos {
     val tablero = icono("M4 4h7v9h-7z M13 4h7v5h-7z M13 11h7v9h-7z M4 15h7v5h-7z")
     val llanta = icono("M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0 M8 12a4 4 0 1 0 8 0a4 4 0 1 0 -8 0 M12 3v5 M12 16v5 M3 12h5 M16 12h5")
     val camara = icono("M4 8h3l2 -3h6l2 3h3v11h-16z M9 13a3 3 0 1 0 6 0a3 3 0 1 0 -6 0")
-    // Vista dividida: mapa a un lado y LiteDash al otro.
-    val dividir = icono("M4 5h16v14h-16z M13 5v14")
-    val ampliar = icono("M4 9v-5h5 M20 9v-5h-5 M4 15v5h5 M20 15v5h-5")
-    val casa = icono("M4 11l8 -7l8 7 M6 9.5v10.5h12v-10.5 M10 20v-5h4v5")
     val abrirFuera = icono("M14 4h6v6 M20 4l-9 9 M18 14v6h-14v-14h6")
+    val mapa = icono("M3 6.5l6 -2.5l6 2.5l6 -2.5v13.5l-6 2.5l-6 -2.5l-6 2.5z M9 4v13.5 M15 6.5v13.5")
+    val ubicacion = icono("M12 21s-7 -6.2 -7 -11.5a7 7 0 0 1 14 0c0 5.3 -7 11.5 -7 11.5z M9.5 9.5a2.5 2.5 0 1 0 5 0a2.5 2.5 0 1 0 -5 0")
     val reloj = icono("M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0 M12 7v5l3 3")
     val play = icono(rellenos = listOf("M7 4.5v15a1 1 0 0 0 1.5 .9l12 -7.5a1 1 0 0 0 0 -1.8l-12 -7.5a1 1 0 0 0 -1.5 .9z"))
     val pausa = icono(rellenos = listOf("M6 4h4v16h-4z M14 4h4v16h-4z"))

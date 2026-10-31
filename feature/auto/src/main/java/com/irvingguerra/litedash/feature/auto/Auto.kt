@@ -46,16 +46,17 @@ private const val ANCHO = 820f
 private const val ALTO = 300f
 
 private object Trazos {
-    val cuerpo = ruta("M70 228 L60 212 C56 196 58 182 68 172 C92 160 160 150 236 143 L330 131 C370 104 410 84 452 73 C502 62 570 62 612 70 C652 80 690 104 714 122 C732 124 748 126 757 130 C765 146 767 176 761 200 L752 226 L682 228 A62 62 0 0 0 558 228 L252 228 A62 62 0 0 0 128 228 Z")
-    val vidrio = ruta("M356 131 C388 108 420 91 454 82 C502 72 566 72 602 79 C634 88 664 105 684 121 C600 124 480 128 356 131 Z")
-    val pilar = ruta("M520 75 L534 75 L540 127 L522 128 Z")
-    val lineas = ruta("M444 136 L440 222 M566 132 L570 220 M96 170 C260 158 520 148 748 146")
-    val brillo = ruta("M96 168 C260 156 520 146 748 144")
-    val manijas = ruta("M466 156 L488 155 M588 152 L610 151")
-    val espejo = ruta("M372 128 C380 120 392 118 398 122 L396 134 L374 136 Z")
-    val faro = ruta("M70 174 C92 165 124 160 150 158 L142 171 C116 176 92 179 72 181 Z")
-    val calavera = ruta("M742 134 C750 135 756 137 759 140 L760 156 C752 154 744 152 738 150 Z")
-    val parrilla = ruta("M62 192 L108 194 L112 216 L66 214 Z")
+    // Sedán moderno de líneas redondas: cofre corto, techo en arco y cajuela.
+    val cuerpo = ruta("M70 220 C56 212 52 192 56 176 C60 160 78 150 110 145 C170 136 250 130 312 124 C340 121 356 116 372 106 C410 82 450 66 500 60 C560 53 620 58 660 76 C684 87 700 100 716 110 C730 116 752 117 766 121 C778 126 784 140 784 156 C784 180 778 200 768 214 L762 226 L688 228 A68 68 0 0 0 552 228 L258 228 A68 68 0 0 0 122 228 L82 227 Z")
+    val vidrio = ruta("M386 118 C420 92 456 74 502 68 C560 62 616 66 652 84 C668 92 682 102 694 112 C600 115 480 117 386 118 Z")
+    val pilar = ruta("M532 64 L546 64 L550 115 L534 116 Z")
+    val lineas = ruta("M456 124 L454 222 M584 120 L588 220 M100 170 C300 158 560 148 778 148")
+    val brillo = ruta("M100 168 C300 156 560 146 778 146")
+    val manijas = ruta("M478 146 L500 145 M606 142 L628 141")
+    val espejo = ruta("M392 114 C398 106 410 104 416 108 L414 120 L394 122 Z")
+    val faro = ruta("M60 170 C80 158 108 151 140 148 L134 159 C108 163 84 168 62 176 Z")
+    val calavera = ruta("M762 122 C772 125 779 131 782 140 L781 146 C772 143 762 140 752 138 Z")
+    val parrilla = ruta("M58 196 C70 198 96 199 116 198 L112 212 C92 213 72 212 62 210 Z")
     val ruedas = listOf(190f, 620f)
     val rayos = ruedas.map { cx ->
         Path().apply {
@@ -79,7 +80,7 @@ private fun Color.por(f: Float) = Color(red * f, green * f, blue * f, alpha)
 @Composable
 fun DibujoAuto(color: Color, modifier: Modifier = Modifier) {
     val carroceria = remember(color) {
-        Brush.verticalGradient(listOf(color, color.por(0.86f), color.por(0.58f)), startY = 62f, endY = 228f)
+        Brush.verticalGradient(listOf(color, color.por(0.86f), color.por(0.58f)), startY = 53f, endY = 228f)
     }
     Canvas(modifier.aspectRatio(ANCHO / ALTO)) {
         val s = size.width / ANCHO
@@ -98,7 +99,7 @@ fun DibujoAuto(color: Color, modifier: Modifier = Modifier) {
             drawPath(Trazos.cuerpo, Color.White.copy(alpha = 0.14f), style = Stroke(2f))
             drawPath(
                 Trazos.vidrio,
-                Brush.linearGradient(listOf(Color(0xFF3B4450), Color(0xFF0D1014)), Offset(356f, 70f), Offset(684f, 131f)),
+                Brush.linearGradient(listOf(Color(0xFF3B4450), Color(0xFF0D1014)), Offset(386f, 60f), Offset(694f, 118f)),
             )
             drawPath(Trazos.pilar, color.por(0.75f))
             drawPath(Trazos.parrilla, Color(0xFF15181C))

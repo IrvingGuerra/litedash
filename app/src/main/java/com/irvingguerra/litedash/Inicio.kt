@@ -72,8 +72,6 @@ sealed interface Panel {
     data object Plantillas : Panel
     /** Elegir app para una pieza existente ([idPieza]) o para una nueva (null). */
     data class ElegirApp(val idPieza: String?) : Panel
-    /** La primera vez que se toca "Navegar": ¿mapa + LiteDash o solo el mapa? */
-    data class Mapa(val app: App?) : Panel
 }
 
 class Dependencias(
@@ -82,21 +80,18 @@ class Dependencias(
     val navegacion: RepositorioNavegacion,
     val prefs: Preferencias,
     val tablero: EstadoTablero,
-    /** Acomodo de la columna junto al mapa (vista dividida); se guarda aparte del inicio. */
-    val tableroLado: EstadoTablero,
     val autos: RepositorioAutos,
     val actualizador: Actualizador,
-    val dividida: VistaDividida,
 )
 
-/** Qué hace cada pieza al tocarla: el inicio y la columna junto al mapa responden distinto. */
+/** Qué hace cada pieza al tocarla (abrir un panel, el mapa o la música en grande). */
 class AccionesPieza(
     val alPanel: (Panel) -> Unit,
     val alNavegar: (App?) -> Unit,
     val alMusica: () -> Unit,
 )
 
-/** Cada tipo de pieza dibujado; lo usan el inicio y la columna de la vista dividida. */
+/** Cada tipo de pieza dibujado según su tipo. */
 @Composable
 fun ContenidoPieza(d: Dependencias, p: Pieza, apps: List<App>, revision: Int, acciones: AccionesPieza) {
     val contexto = LocalContext.current
@@ -116,6 +111,10 @@ fun ContenidoPieza(d: Dependencias, p: Pieza, apps: List<App>, revision: Int, ac
         Tipos.NAVEGAR -> {
             val app = appMapa(d, apps, p.dato)
             PiezaNavegacion(d.navegacion, app) { acciones.alNavegar(app) }
+        }
+        Tipos.MAPA -> {
+            val app = appMapa(d, apps)
+            PiezaMapaTablero(d.navegacion, app) { acciones.alNavegar(app) }
         }
         Tipos.TELEFONO -> PiezaAcceso(Iconos.telefono, stringResource(R.string.pieza_telefono), null) {
             abrirTelefono(contexto)
@@ -163,13 +162,7 @@ fun Inicio(d: Dependencias, revision: Int, inicioTocado: Int) {
 
     val acciones = AccionesPieza(
         alPanel = { panel = it },
-        alNavegar = { app ->
-            when (d.prefs.modoMapa) {
-                ModoMapa.COMPLETO -> abrirNavegacion(contexto, d.apps, app)
-                ModoMapa.DIVIDIDO -> if (d.dividida.permitido()) d.dividida.abrir(app) else panel = Panel.Mapa(app)
-                ModoMapa.PREGUNTAR -> panel = Panel.Mapa(app)
-            }
-        },
+        alNavegar = { app -> abrirNavegacion(contexto, d.apps, app) },
         alMusica = { musica = true },
     )
 
@@ -217,7 +210,6 @@ fun Inicio(d: Dependencias, revision: Int, inicioTocado: Int) {
             Panel.Plantillas -> PanelPlantillas(d.tablero, cerrar = { panel = null })
             Panel.Agregar -> PanelAgregar(d.tablero, cerrar = { panel = null }, alElegirApp = { panel = Panel.ElegirApp(null) })
             is Panel.ElegirApp -> PanelElegirApp(d, apps, p.idPieza, cerrar = { panel = null })
-            is Panel.Mapa -> PanelMapa(d, p.app, revision, cerrar = { panel = null })
         }
 
         if (!d.prefs.bienvenidaVista) {

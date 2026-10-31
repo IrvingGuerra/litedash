@@ -10,15 +10,12 @@ import androidx.core.content.edit
 
 enum class ModoTema { OSCURO, CLARO, SISTEMA }
 
-/** Qué pasa al tocar "Navegar": preguntar la primera vez, mapa + LiteDash, o solo el mapa. */
-enum class ModoMapa { PREGUNTAR, DIVIDIDO, COMPLETO }
-
 /** Idioma de la app: "" = el del sistema. Se lee antes de crear la pantalla. */
 object Idioma {
     fun leer(contexto: Context) = contexto.getSharedPreferences("ajustes", Context.MODE_PRIVATE).getString("idioma", "") ?: ""
 }
 
-/** [base] con el idioma elegido en Ajustes (la actividad y las ventanas sobre el mapa). */
+/** [base] con el idioma elegido en Ajustes. */
 fun contextoConIdioma(base: Context): Context {
     val idioma = Idioma.leer(base)
     if (idioma.isBlank()) return base
@@ -91,23 +88,6 @@ class Preferencias(contexto: Context) {
     var dock: List<String>?
         get() = _dock
         set(v) { _dock = v; p.edit { putString("dock", v?.joinToString("\n")) } }
-
-    private var _modoMapa by mutableStateOf(runCatching { ModoMapa.valueOf(p.getString("modo_mapa", null)!!) }.getOrDefault(ModoMapa.PREGUNTAR))
-    var modoMapa: ModoMapa
-        get() = _modoMapa
-        set(v) { _modoMapa = v; p.edit { putString("modo_mapa", v.name) } }
-
-    private var _mapaIzquierda by mutableStateOf(p.getBoolean("mapa_izquierda", true))
-    /** En la vista dividida, el mapa va a la izquierda (lado del conductor) o a la derecha. */
-    var mapaIzquierda: Boolean
-        get() = _mapaIzquierda
-        set(v) { _mapaIzquierda = v; p.edit { putBoolean("mapa_izquierda", v) } }
-
-    private var _mapaGrande by mutableStateOf(p.getBoolean("mapa_grande", true))
-    /** true = el mapa ocupa dos tercios (su flecha queda a la vista); false = la mitad. */
-    var mapaGrande: Boolean
-        get() = _mapaGrande
-        set(v) { _mapaGrande = v; p.edit { putBoolean("mapa_grande", v) } }
 
     private var _appMapa by mutableStateOf(p.getString("app_mapa", null))
     /** App de navegación elegida ([com.irvingguerra.litedash.feature.apps.App.clave]); null = la primera instalada. */
