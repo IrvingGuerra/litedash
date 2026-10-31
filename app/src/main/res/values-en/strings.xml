@@ -40,7 +40,7 @@
     <string name="modelo_generico">Sedan (drawing)</string>
     <string name="descargar_mb">Download · %.1f MB</string>
     <string name="catalogo_error">Couldn\'t download. Check your connection and try again.</string>
-    <string name="credito_modelo">3D model: %1$s · %2$s · non-commercial use</string>
+    <string name="credito_modelo">3D model: %1$s · %2$s</string>
     <string name="gira_tu_auto">Swipe to spin it</string>
     <string name="ver_ocultas">Show hidden (%d)</string>
     <string name="esconder_ocultas">Hide hidden (%d)</string>

@@ -41,7 +41,7 @@
     <string name="modelo_generico">Sedán (dibujo)</string>
     <string name="descargar_mb">Bajar · %.1f MB</string>
     <string name="catalogo_error">No se pudo bajar. Revisa tu conexión e inténtalo otra vez.</string>
-    <string name="credito_modelo">Modelo 3D: %1$s · %2$s · uso no comercial</string>
+    <string name="credito_modelo">Modelo 3D: %1$s · %2$s</string>
     <string name="gira_tu_auto">Desliza para girarlo</string>
     <string name="ver_ocultas">Ver ocultas (%d)</string>
     <string name="esconder_ocultas">Esconder ocultas (%d)</string>
