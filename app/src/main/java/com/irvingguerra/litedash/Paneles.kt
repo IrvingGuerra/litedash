@@ -1,6 +1,7 @@
 package com.irvingguerra.litedash
 
 import android.content.Intent
+import android.provider.Settings
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.rememberCoroutineScope
@@ -97,7 +98,7 @@ private fun PanelBase(
 }
 
 @Composable
-private fun CampoTexto(valor: String, alCambiar: (String) -> Unit, pista: String, modifier: Modifier = Modifier, icono: Boolean = false) {
+fun CampoTexto(valor: String, alCambiar: (String) -> Unit, pista: String, modifier: Modifier = Modifier, icono: Boolean = false) {
     val c = LocalColores.current
     Row(
         modifier.height(56.dp).clip(RoundedCornerShape(28.dp)).background(c.superficie).border(1.dp, c.linea, RoundedCornerShape(28.dp)).padding(horizontal = 20.dp),
@@ -124,21 +125,65 @@ private fun CampoTexto(valor: String, alCambiar: (String) -> Unit, pista: String
 
 @Composable
 fun PanelCajon(d: Dependencias, apps: List<App>, cerrar: () -> Unit) {
+    val c = LocalColores.current
     val contexto = LocalContext.current
     var busqueda by remember { mutableStateOf("") }
+    var elegida by remember { mutableStateOf<App?>(null) }
+    var verOcultas by remember { mutableStateOf(false) }
     val dock = d.prefs.dock ?: emptyList()
+    val ocultas = d.prefs.ocultas
+    val visibles = remember(apps, ocultas, verOcultas) { if (verOcultas) apps else apps.filter { it.clave !in ocultas } }
     PanelBase(stringResource(R.string.apps), cerrar) {
         CampoTexto(busqueda, { busqueda = it }, stringResource(R.string.buscar_app), Modifier.fillMaxWidth().widthIn(max = 640.dp), icono = true)
-        Etiqueta(stringResource(R.string.cajon_ayuda), Texto.chico, LocalColores.current.textoSuave, modifier = Modifier.padding(top = 10.dp, start = 8.dp))
+        val app = elegida
+        if (app == null) {
+            Row(Modifier.fillMaxWidth().padding(top = 10.dp, start = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                Etiqueta(stringResource(R.string.cajon_ayuda), Texto.chico, c.textoSuave, modifier = Modifier.weight(1f))
+                if (ocultas.isNotEmpty()) {
+                    Etiqueta(
+                        stringResource(if (verOcultas) R.string.esconder_ocultas else R.string.ver_ocultas, ocultas.size),
+                        Texto.chico, c.acento,
+                        modifier = Modifier.clickable { verOcultas = !verOcultas }.padding(8.dp),
+                    )
+                }
+            }
+        } else {
+            // Acciones de la app que se dejó presionada.
+            FlowRow(
+                Modifier.fillMaxWidth().padding(top = 12.dp),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                Etiqueta(app.nombre, Texto.subtitulo, maxLineas = 1, modifier = Modifier.padding(top = 12.dp, end = 8.dp))
+                val enDock = app.clave in dock
+                Boton(stringResource(if (enDock) R.string.quitar_del_dock else R.string.fijar_en_dock), {
+                    d.prefs.dock = if (enDock) dock - app.clave else dock + app.clave
+                    elegida = null
+                })
+                Boton(stringResource(R.string.poner_en_inicio), {
+                    val def = DefPiezas.first { it.tipo == Tipos.APP }
+                    d.tablero.agregar(def.tipo, def.inicial, def.medidas, app.clave)
+                    elegida = null
+                })
+                val oculta = app.clave in ocultas
+                Boton(stringResource(if (oculta) R.string.mostrar_app else R.string.ocultar_app), {
+                    d.prefs.ocultas = if (oculta) ocultas - app.clave else ocultas + app.clave
+                    elegida = null
+                })
+                Boton(stringResource(R.string.info_app), {
+                    val intento = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, "package:${app.paquete}".toUri())
+                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    runCatching { contexto.startActivity(intento) }
+                    elegida = null
+                })
+                BotonIcono(Iconos.cerrar, { elegida = null }, tam = 48.dp, fondo = c.superficieAlta)
+            }
+        }
         CuadriculaApps(
-            d.apps, apps, busqueda,
+            d.apps, visibles, busqueda,
             alTocar = { d.apps.abrir(contexto, it); cerrar() },
-            alPresionar = { app ->
-                // Dejar presionado fija o quita la app del dock.
-                val actual = d.prefs.dock ?: emptyList()
-                d.prefs.dock = if (app.clave in actual) actual - app.clave else actual + app.clave
-            },
-            marcadas = dock.toSet(),
+            alPresionar = { elegida = it },
+            marcadas = setOfNotNull(elegida?.clave),
             modifier = Modifier.weight(1f).padding(top = 8.dp),
         )
     }
@@ -299,6 +344,7 @@ private fun OpcionModelo(titulo: String, detalle: String?, elegido: Boolean, alT
 @Composable
 fun PanelAjustes(d: Dependencias, cerrar: () -> Unit, alEditar: () -> Unit) {
     val c = LocalColores.current
+    val contexto = LocalContext.current
     val prefs = d.prefs
     PanelBase(stringResource(R.string.ajustes), cerrar) {
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).widthIn(max = 720.dp), verticalArrangement = Arrangement.spacedBy(28.dp)) {
@@ -323,8 +369,18 @@ fun PanelAjustes(d: Dependencias, cerrar: () -> Unit, alEditar: () -> Unit) {
                 }
                 Etiqueta(stringResource(R.string.acomodar_ayuda), Texto.chico, c.textoSuave)
             }
+            Seccion(stringResource(R.string.modulos)) {
+                Etiqueta(stringResource(R.string.modulos_ayuda), Texto.chico, c.textoSuave)
+                Modulos(d)
+            }
             Seccion(stringResource(R.string.acerca_de)) {
                 Etiqueta("LiteDash ${BuildConfig.VERSION_NAME} · ${BuildConfig.CANAL}", Texto.normal, c.textoSuave)
+                var copiado by remember { mutableStateOf(false) }
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Boton(stringResource(R.string.copiar_info), { copiarInfo(contexto); copiado = true })
+                    if (copiado) Etiqueta(stringResource(R.string.copiado), Texto.chico, c.acento)
+                }
+                Etiqueta(stringResource(R.string.copiar_info_ayuda), Texto.chico, c.textoSuave)
             }
             Spacer(Modifier.height(24.dp))
         }
@@ -413,4 +469,72 @@ private fun iconoDe(tipo: String) = when (tipo) {
     Tipos.RELOJ -> Iconos.reloj
     Tipos.TELEFONO -> Iconos.telefono
     else -> Iconos.apps
+}
+
+
+/** Cada módulo: qué hace y si está en tu inicio. Los que vienen después se anuncian, apagados. */
+@Composable
+private fun Modulos(d: Dependencias) {
+    val c = LocalColores.current
+    val enInicio = d.tablero.piezas.any { it.tipo == Tipos.MUSICA }
+    val permiso = remember(enInicio) { d.musica.tienePermiso() }
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        FilaModulo(Iconos.musica, stringResource(R.string.pieza_musica), stringResource(if (permiso) R.string.musica_con_permiso else R.string.musica_sin_permiso)) {
+            if (enInicio) {
+                Etiqueta(stringResource(R.string.en_tu_inicio), Texto.chico, c.acento)
+            } else {
+                Boton(stringResource(R.string.agregar), {
+                    val def = DefPiezas.first { it.tipo == Tipos.MUSICA }
+                    d.tablero.agregar(def.tipo, def.inicial, def.medidas)
+                })
+            }
+        }
+        for ((icono, nombre, detalle) in listOf(
+            Triple(Iconos.auto, R.string.modulo_obd, R.string.modulo_obd_detalle),
+            Triple(Iconos.llanta, R.string.modulo_llantas, R.string.modulo_llantas_detalle),
+            Triple(Iconos.navegar, R.string.modulo_viaje, R.string.modulo_viaje_detalle),
+            Triple(Iconos.camara, R.string.modulo_camaras, R.string.modulo_camaras_detalle),
+        )) {
+            FilaModulo(icono, stringResource(nombre), stringResource(detalle)) {
+                Etiqueta(stringResource(R.string.pronto), Texto.etiqueta, c.textoSuave)
+            }
+        }
+    }
+}
+
+@Composable
+private fun FilaModulo(icono: androidx.compose.ui.graphics.vector.ImageVector, titulo: String, detalle: String, accion: @Composable () -> Unit) {
+    val c = LocalColores.current
+    val forma = RoundedCornerShape(16.dp)
+    Row(
+        Modifier.fillMaxWidth().clip(forma).background(c.superficie).border(1.dp, c.linea, forma).padding(16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        Icono(icono, c.acento, 26.dp)
+        Column(Modifier.weight(1f)) {
+            Etiqueta(titulo, Texto.subtitulo, maxLineas = 1)
+            Etiqueta(detalle, Texto.chico, c.textoSuave, maxLineas = 2)
+        }
+        accion()
+    }
+}
+
+/** Datos de la pantalla para reportar problemas (marca, modelo, Android, resolución, memoria). */
+private fun copiarInfo(contexto: android.content.Context) {
+    val m = contexto.resources.displayMetrics
+    val memoria = android.app.ActivityManager.MemoryInfo().also {
+        contexto.getSystemService(android.app.ActivityManager::class.java).getMemoryInfo(it)
+    }
+    val texto = buildString {
+        appendLine("LiteDash ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE}) · ${BuildConfig.CANAL}")
+        appendLine("Equipo: ${android.os.Build.MANUFACTURER} ${android.os.Build.MODEL} (${android.os.Build.DEVICE})")
+        appendLine("Plataforma: ${android.os.Build.HARDWARE} · ${android.os.Build.BOARD}")
+        appendLine("Android ${android.os.Build.VERSION.RELEASE} (API ${android.os.Build.VERSION.SDK_INT})")
+        appendLine("Pantalla: ${m.widthPixels}×${m.heightPixels} px · ${m.densityDpi} dpi")
+        appendLine("Memoria: ${memoria.totalMem / (1024 * 1024)} MB")
+        append("CPU: ${android.os.Build.SUPPORTED_ABIS.joinToString()}")
+    }
+    contexto.getSystemService(android.content.ClipboardManager::class.java)
+        .setPrimaryClip(android.content.ClipData.newPlainText("LiteDash", texto))
 }

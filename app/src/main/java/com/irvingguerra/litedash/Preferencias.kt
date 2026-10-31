@@ -41,6 +41,23 @@ class Preferencias(contexto: Context) {
         get() = _modeloAuto
         set(v) { _modeloAuto = v; p.edit { putString("modelo_auto", v) } }
 
+    private var _bienvenida by mutableStateOf(p.getBoolean("bienvenida_vista", false))
+    var bienvenidaVista: Boolean
+        get() = _bienvenida
+        set(v) { _bienvenida = v; p.edit { putBoolean("bienvenida_vista", v) } }
+
+    private var _pasoBienvenida by mutableIntStateOf(p.getInt("paso_bienvenida", 0))
+    /** Se guarda porque Android reinicia la app al volverla pantalla de inicio. */
+    var pasoBienvenida: Int
+        get() = _pasoBienvenida
+        set(v) { _pasoBienvenida = v; p.edit { putInt("paso_bienvenida", v) } }
+
+    private var _ocultas by mutableStateOf(p.getStringSet("ocultas", emptySet())!!.toSet())
+    /** Apps que no salen en el cajón ([com.irvingguerra.litedash.feature.apps.App.clave]). */
+    var ocultas: Set<String>
+        get() = _ocultas
+        set(v) { _ocultas = v; p.edit { putStringSet("ocultas", v) } }
+
     private var _dock by mutableStateOf(p.getString("dock", null)?.split('\n')?.filter { it.isNotBlank() })
     /** Apps fijas en el dock ([com.irvingguerra.litedash.feature.apps.App.clave]); null = las sugeridas. */
     var dock: List<String>?

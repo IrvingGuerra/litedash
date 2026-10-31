@@ -86,7 +86,7 @@ fun Inicio(d: Dependencias, revision: Int) {
     var panel by remember { mutableStateOf<Panel?>(null) }
     var editando by remember { mutableStateOf(false) }
 
-    BackHandler(enabled = panel != null || editando) {
+    BackHandler(enabled = (panel != null || editando) && d.prefs.bienvenidaVista) {
         if (panel != null) panel = null else editando = false
     }
 
@@ -159,6 +159,10 @@ fun Inicio(d: Dependencias, revision: Int) {
             Panel.Plantillas -> PanelPlantillas(d.tablero, cerrar = { panel = null })
             Panel.Agregar -> PanelAgregar(d.tablero, cerrar = { panel = null }, alElegirApp = { panel = Panel.ElegirApp(null) })
             is Panel.ElegirApp -> PanelElegirApp(d, apps, p.idPieza, cerrar = { panel = null })
+        }
+
+        if (!d.prefs.bienvenidaVista) {
+            Bienvenida(d.prefs, d.tablero, revision, alTerminar = { d.prefs.bienvenidaVista = true })
         }
     }
 }

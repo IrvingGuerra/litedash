@@ -23,6 +23,11 @@ Versión de prueba, solo en GitHub.
   y control de volumen.
 - Búsqueda en el cajón de apps (sin importar acentos).
 - Tema claro, oscuro o como el sistema, y tamaño de la interfaz de 80 % a 150 %.
+- Bienvenida de 3 pasos: tu auto, cómo lo quieres y hacerlo tu pantalla de inicio.
+- En el cajón, deja presionada una app para fijarla en el dock, ponerla en el
+  inicio, ocultarla o ver su información.
+- Ajustes → Módulos: qué hay y qué viene (todo apagado hasta que lo uses).
+- "Copiar info de mi pantalla" para reportar problemas.
 
 ## [1.0.0] - 2026-10-31
 

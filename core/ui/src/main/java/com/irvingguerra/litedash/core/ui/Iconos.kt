@@ -36,6 +36,8 @@ object Iconos {
     val buscar = icono("M4 10a6 6 0 1 0 12 0a6 6 0 1 0 -12 0 M20 20l-5.5 -5.5")
     val esquina = icono("M19 11v8h-8 M19 19l-7 -7")
     val tablero = icono("M4 4h7v9h-7z M13 4h7v5h-7z M13 11h7v9h-7z M4 15h7v5h-7z")
+    val llanta = icono("M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0 M8 12a4 4 0 1 0 8 0a4 4 0 1 0 -8 0 M12 3v5 M12 16v5 M3 12h5 M16 12h5")
+    val camara = icono("M4 8h3l2 -3h6l2 3h3v11h-16z M9 13a3 3 0 1 0 6 0a3 3 0 1 0 -6 0")
     val reloj = icono("M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0 M12 7v5l3 3")
     val play = icono(rellenos = listOf("M7 4.5v15a1 1 0 0 0 1.5 .9l12 -7.5a1 1 0 0 0 0 -1.8l-12 -7.5a1 1 0 0 0 -1.5 .9z"))
     val pausa = icono(rellenos = listOf("M6 4h4v16h-4z M14 4h4v16h-4z"))
