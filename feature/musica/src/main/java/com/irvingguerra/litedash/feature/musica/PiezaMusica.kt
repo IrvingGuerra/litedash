@@ -2,7 +2,6 @@ package com.irvingguerra.litedash.feature.musica
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -42,17 +41,18 @@ import kotlinx.coroutines.delay
 
 /**
  * Tarjeta de música. Se acomoda a su tamaño: chica es una fila con controles;
- * con más alto suma la carátula grande. [revision] cambia al volver a la app,
- * para notar si el usuario acaba de dar el permiso.
+ * con más alto suma la carátula grande. Tocarla (fuera de los botones) la amplía
+ * con [alAmpliar]. [revision] cambia al volver a la app, para notar si el
+ * usuario acaba de dar el permiso.
  */
 @Composable
-fun PiezaMusica(repo: RepositorioMusica, revision: Int, modifier: Modifier = Modifier) {
+fun PiezaMusica(repo: RepositorioMusica, revision: Int, alAmpliar: () -> Unit, modifier: Modifier = Modifier) {
     DisposableEffect(repo) {
         repo.usar()
         onDispose { repo.soltar() }
     }
     val permiso = remember(revision) { repo.tienePermiso().also { if (it) repo.revisar() } }
-    Tarjeta(modifier.fillMaxSize()) {
+    Tarjeta(modifier.fillMaxSize(), alTocar = if (permiso) alAmpliar else null) {
         if (!permiso) SinPermiso(repo) else Reproductor(repo)
     }
 }
@@ -80,10 +80,12 @@ private fun Reproductor(repo: RepositorioMusica) {
     val cancion = repo.cancion
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val alta = maxHeight > 150.dp
+        // La carátula (cuadrada, del alto de la tarjeta) solo si deja lugar al título y los botones.
+        val conCaratula = maxWidth - maxHeight >= 240.dp
         Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
             // Carátula pegada a la orilla, del alto de la tarjeta.
-            Box(
-                Modifier.fillMaxHeight().aspectRatio(1f).background(c.superficieAlta).clickable { repo.abrirApp() },
+            if (conCaratula) Box(
+                Modifier.fillMaxHeight().aspectRatio(1f).background(c.superficieAlta),
                 contentAlignment = Alignment.Center,
             ) {
                 val bmp = cancion?.caratula

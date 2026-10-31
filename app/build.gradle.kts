@@ -127,6 +127,7 @@ dependencies {
     implementation(project(":feature:musica"))
     implementation(project(":feature:auto"))
     implementation(project(":feature:actualizar"))
+    implementation(project(":feature:navegacion"))
 
     implementation(platform(libs.compose.bom))
     implementation(libs.compose.foundation)

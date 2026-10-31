@@ -26,6 +26,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -52,7 +53,10 @@ import com.irvingguerra.litedash.feature.auto.ColoresAuto
 import com.irvingguerra.litedash.feature.auto.ImagenAuto
 import com.irvingguerra.litedash.feature.auto.RepositorioAutos
 import com.irvingguerra.litedash.feature.auto.PiezaAuto
+import com.irvingguerra.litedash.feature.musica.MusicaAmpliada
 import com.irvingguerra.litedash.feature.musica.PiezaMusica
+import com.irvingguerra.litedash.feature.navegacion.RepositorioNavegacion
+import com.irvingguerra.litedash.feature.tablero.Pieza
 import com.irvingguerra.litedash.feature.musica.RepositorioMusica
 import com.irvingguerra.litedash.feature.tablero.Cuadricula
 import com.irvingguerra.litedash.feature.tablero.EstadoTablero
@@ -68,29 +72,106 @@ sealed interface Panel {
     data object Plantillas : Panel
     /** Elegir app para una pieza existente ([idPieza]) o para una nueva (null). */
     data class ElegirApp(val idPieza: String?) : Panel
+    /** La primera vez que se toca "Navegar": ¿mapa + LiteDash o solo el mapa? */
+    data class Mapa(val app: App?) : Panel
 }
 
 class Dependencias(
     val apps: RepositorioApps,
     val musica: RepositorioMusica,
+    val navegacion: RepositorioNavegacion,
     val prefs: Preferencias,
     val tablero: EstadoTablero,
+    /** Acomodo de la columna junto al mapa (vista dividida); se guarda aparte del inicio. */
+    val tableroLado: EstadoTablero,
     val autos: RepositorioAutos,
     val actualizador: Actualizador,
+    val dividida: VistaDividida,
 )
+
+/** Qué hace cada pieza al tocarla: el inicio y la columna junto al mapa responden distinto. */
+class AccionesPieza(
+    val alPanel: (Panel) -> Unit,
+    val alNavegar: (App?) -> Unit,
+    val alMusica: () -> Unit,
+)
+
+/** Cada tipo de pieza dibujado; lo usan el inicio y la columna de la vista dividida. */
+@Composable
+fun ContenidoPieza(d: Dependencias, p: Pieza, apps: List<App>, revision: Int, acciones: AccionesPieza) {
+    val contexto = LocalContext.current
+    when (p.tipo) {
+        Tipos.AUTO -> {
+            val color = ColoresAuto[d.prefs.colorAuto.coerceIn(ColoresAuto.indices)]
+            val paquete = remember(d.prefs.modeloAuto, d.autos.cambios) { d.autos.paquete(d.prefs.modeloAuto) }
+            PiezaAuto(
+                nombre = d.prefs.nombreAuto ?: paquete?.nombre ?: stringResource(R.string.mi_auto),
+                color = color,
+                alTocar = { acciones.alPanel(Panel.Auto) },
+                dibujo = paquete?.let { pq -> { m -> ImagenAuto(d.autos, pq, "tres_cuartos", color, m) } },
+            )
+        }
+        Tipos.MUSICA -> PiezaMusica(d.musica, revision, alAmpliar = acciones.alMusica)
+        Tipos.RELOJ -> PiezaReloj()
+        Tipos.NAVEGAR -> {
+            val app = appMapa(d, apps, p.dato)
+            PiezaNavegacion(d.navegacion, app) { acciones.alNavegar(app) }
+        }
+        Tipos.TELEFONO -> PiezaAcceso(Iconos.telefono, stringResource(R.string.pieza_telefono), null) {
+            abrirTelefono(contexto)
+        }
+        Tipos.APP -> {
+            val app = d.apps.buscar(apps, p.dato)
+            PiezaApp(d.apps, app) {
+                if (app != null) d.apps.abrir(contexto, app) else acciones.alPanel(Panel.ElegirApp(p.id))
+            }
+        }
+    }
+}
+
+/** La de la pieza, si eligió una; si no, la de Ajustes; si no, la primera instalada. */
+fun appMapa(d: Dependencias, apps: List<App>, dato: String = ""): App? =
+    d.apps.buscar(apps, dato)
+        ?: d.prefs.appMapa?.let { d.apps.buscar(apps, it) }
+        ?: d.apps.primeraDe(apps, *PAQUETES_NAVEGACION)
 
 /** Inicio: barra de estado, tablero personalizable y dock. */
 @Composable
-fun Inicio(d: Dependencias, revision: Int) {
+fun Inicio(d: Dependencias, revision: Int, inicioTocado: Int) {
     val c = LocalColores.current
     val contexto = LocalContext.current
     val apps = rememberApps(d.apps).orEmpty()
     var panel by remember { mutableStateOf<Panel?>(null) }
     var editando by remember { mutableStateOf(false) }
+    var musica by remember { mutableStateOf(false) }
 
-    BackHandler(enabled = (panel != null || editando) && d.prefs.bienvenidaVista) {
-        if (panel != null) panel = null else editando = false
+    BackHandler(enabled = (panel != null || editando || musica) && d.prefs.bienvenidaVista) {
+        when {
+            panel != null -> panel = null
+            musica -> musica = false
+            else -> editando = false
+        }
     }
+    // Botón de inicio estando ya aquí: de vuelta al tablero tal como lo acomodaste.
+    LaunchedEffect(inicioTocado) {
+        if (d.prefs.bienvenidaVista) {
+            panel = null
+            musica = false
+            editando = false
+        }
+    }
+
+    val acciones = AccionesPieza(
+        alPanel = { panel = it },
+        alNavegar = { app ->
+            when (d.prefs.modoMapa) {
+                ModoMapa.COMPLETO -> abrirNavegacion(contexto, d.apps, app)
+                ModoMapa.DIVIDIDO -> if (d.dividida.permitido()) d.dividida.abrir(app) else panel = Panel.Mapa(app)
+                ModoMapa.PREGUNTAR -> panel = Panel.Mapa(app)
+            }
+        },
+        alMusica = { musica = true },
+    )
 
     Box(Modifier.fillMaxSize().background(c.fondo)) {
         Column(Modifier.fillMaxSize().safeDrawingPadding()) {
@@ -106,43 +187,17 @@ fun Inicio(d: Dependencias, revision: Int) {
             BoxWithConstraints(Modifier.weight(1f).fillMaxWidth().padding(horizontal = 10.dp)) {
                 val cuadricula = remember(maxWidth, maxHeight) { Cuadricula.para(maxWidth.value, maxHeight.value) }
                 remember(cuadricula) { d.tablero.usar(cuadricula) }
-                Tablero(
-                    cuadricula = cuadricula,
-                    piezas = d.tablero.piezas,
-                    editando = editando,
-                    medidas = ::medidasDe,
-                    alCambiar = d.tablero::cambiar,
-                    alEditar = { editando = true },
-                ) { p ->
-                    when (p.tipo) {
-                        Tipos.AUTO -> {
-                            val color = ColoresAuto[d.prefs.colorAuto.coerceIn(ColoresAuto.indices)]
-                            val paquete = remember(d.prefs.modeloAuto, d.autos.cambios) { d.autos.paquete(d.prefs.modeloAuto) }
-                            PiezaAuto(
-                                nombre = d.prefs.nombreAuto ?: paquete?.nombre ?: stringResource(R.string.mi_auto),
-                                color = color,
-                                alTocar = { panel = Panel.Auto },
-                                dibujo = paquete?.let { pq -> { m -> ImagenAuto(d.autos, pq, "tres_cuartos", color, m) } },
-                            )
-                        }
-                        Tipos.MUSICA -> PiezaMusica(d.musica, revision)
-                        Tipos.RELOJ -> PiezaReloj()
-                        Tipos.NAVEGAR -> {
-                            val app = d.apps.buscar(apps, p.dato) ?: d.apps.primeraDe(apps, *PAQUETES_NAVEGACION)
-                            PiezaAcceso(Iconos.navegar, stringResource(R.string.pieza_navegar), app?.nombre) {
-                                abrirNavegacion(contexto, d.apps, app)
-                            }
-                        }
-                        Tipos.TELEFONO -> PiezaAcceso(Iconos.telefono, stringResource(R.string.pieza_telefono), null) {
-                            abrirTelefono(contexto)
-                        }
-                        Tipos.APP -> {
-                            val app = d.apps.buscar(apps, p.dato)
-                            PiezaApp(d.apps, app) {
-                                if (app != null) d.apps.abrir(contexto, app) else panel = Panel.ElegirApp(p.id)
-                            }
-                        }
-                    }
+                if (musica) {
+                    MusicaAmpliada(d.musica, cerrar = { musica = false }, alAbrirMusica = { abrirMusica(contexto, d.apps, apps) }, Modifier.padding(6.dp))
+                } else {
+                    Tablero(
+                        cuadricula = cuadricula,
+                        piezas = d.tablero.piezas,
+                        editando = editando,
+                        medidas = ::medidasDe,
+                        alCambiar = d.tablero::cambiar,
+                        alEditar = { editando = true },
+                    ) { p -> ContenidoPieza(d, p, apps, revision, acciones) }
                 }
             }
             Dock(
@@ -162,6 +217,7 @@ fun Inicio(d: Dependencias, revision: Int) {
             Panel.Plantillas -> PanelPlantillas(d.tablero, cerrar = { panel = null })
             Panel.Agregar -> PanelAgregar(d.tablero, cerrar = { panel = null }, alElegirApp = { panel = Panel.ElegirApp(null) })
             is Panel.ElegirApp -> PanelElegirApp(d, apps, p.idPieza, cerrar = { panel = null })
+            is Panel.Mapa -> PanelMapa(d, p.app, revision, cerrar = { panel = null })
         }
 
         if (!d.prefs.bienvenidaVista) {
@@ -175,7 +231,7 @@ private fun favoritasDelDock(d: Dependencias, apps: List<App>): List<App> {
     d.prefs.dock?.let { claves -> return claves.mapNotNull { d.apps.buscar(apps, it) } }
     return listOfNotNull(
         d.apps.primeraDe(apps, *PAQUETES_NAVEGACION),
-        d.apps.primeraDe(apps, "com.spotify.music", "com.google.android.apps.youtube.music", "deezer.android.app"),
+        d.apps.primeraDe(apps, *PAQUETES_MUSICA),
         d.apps.primeraDe(apps, "com.google.android.youtube"),
         d.apps.primeraDe(apps, "com.whatsapp", "org.telegram.messenger"),
         d.apps.primeraDe(apps, "com.android.chrome"),

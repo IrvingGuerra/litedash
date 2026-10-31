@@ -1,9 +1,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <application>
         <!--
-            Solo existe para que el usuario pueda dar "acceso a notificaciones":
-            con ese permiso Android deja leer qué suena en otras apps. No lee ni
-            guarda notificaciones.
+            Existe para que el usuario pueda dar "acceso a notificaciones": con
+            ese permiso Android deja leer qué suena en otras apps. De los avisos
+            solo se mira el de la app de navegación (la siguiente vuelta); no se
+            guarda nada.
         -->
         <service
             android:name=".ServicioMusica"

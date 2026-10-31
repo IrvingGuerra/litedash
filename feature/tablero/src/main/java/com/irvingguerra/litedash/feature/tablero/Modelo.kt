@@ -71,7 +71,8 @@ object Tipos {
     const val APP = "app"
 }
 
-enum class Plantilla { CENTRO, LATERAL, VERTICAL }
+/** [LADO] es para la columna de LiteDash junto al mapa (vista dividida). */
+enum class Plantilla { CENTRO, LATERAL, VERTICAL, LADO }
 
 /**
  * Acomodos de inicio. Se calculan para cualquier cuadrícula: lo que no quepa se
@@ -121,6 +122,17 @@ fun Plantilla.piezas(c: Cuadricula): List<Pieza> {
             val mitad = cols / 2
             agrega(Tipos.NAVEGAR, 0, fila, mitad, 2)
             agrega(Tipos.TELEFONO, mitad, fila, cols - mitad, 2)
+        }
+        // Junto al mapa: la hora arriba, el auto en medio y la música abajo (sin "navegar": el mapa ya está al lado).
+        Plantilla.LADO -> {
+            // La música en dos filas cabe completa en una columna angosta; la hora, solo si sobra lugar.
+            val altoMusica = if (filas >= 4) 2 else 1
+            val conReloj = filas - altoMusica >= 3
+            val fila = if (conReloj) 1 else 0
+            if (conReloj) agrega(Tipos.RELOJ, 0, 0, cols, 1)
+            val altoAuto = filas - fila - altoMusica
+            agrega(Tipos.AUTO, 0, fila, cols, altoAuto)
+            agrega(Tipos.MUSICA, 0, fila + altoAuto, cols, altoMusica)
         }
     }
     return lista

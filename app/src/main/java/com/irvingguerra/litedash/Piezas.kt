@@ -2,6 +2,7 @@ package com.irvingguerra.litedash
 
 import android.content.Context
 import android.content.Intent
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -14,13 +15,17 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -37,6 +42,8 @@ import com.irvingguerra.litedash.core.ui.Texto
 import com.irvingguerra.litedash.feature.apps.App
 import com.irvingguerra.litedash.feature.apps.IconoApp
 import com.irvingguerra.litedash.feature.apps.RepositorioApps
+import com.irvingguerra.litedash.feature.musica.ServicioMusica
+import com.irvingguerra.litedash.feature.navegacion.RepositorioNavegacion
 import com.irvingguerra.litedash.feature.tablero.Medidas
 import com.irvingguerra.litedash.feature.tablero.Tipos
 import kotlinx.coroutines.delay
@@ -60,6 +67,12 @@ fun medidasDe(tipo: String) = DefPiezas.firstOrNull { it.tipo == tipo }?.medidas
 // Apps de navegación en orden de preferencia (Waze, Google Maps, Maps.me, OsmAnd, HERE).
 val PAQUETES_NAVEGACION = arrayOf(
     "com.waze", "com.google.android.apps.maps", "com.mapswithme.maps.pro", "net.osmand", "com.here.app.maps",
+)
+
+// Apps de música para el dock y para "Abrir app de música" (Spotify primero).
+val PAQUETES_MUSICA = arrayOf(
+    "com.spotify.music", "com.google.android.apps.youtube.music", "deezer.android.app",
+    "com.apple.android.music", "com.amazon.mp3",
 )
 
 /** Hora y fecha que respetan el formato del usuario (12/24 h); un repintado por minuto. */
@@ -153,6 +166,47 @@ fun PiezaApp(repo: RepositorioApps, app: App?, alTocar: () -> Unit) {
             }
         }
     }
+}
+
+/**
+ * Navegar. Sin ruta: acceso a la app de mapas. Navegando: la siguiente vuelta
+ * que dice el aviso de Waze o Maps (flecha, distancia y calle), sin abrir el mapa.
+ */
+@Composable
+fun PiezaNavegacion(repo: RepositorioNavegacion, app: App?, alTocar: () -> Unit) {
+    DisposableEffect(repo) {
+        repo.usar(ServicioMusica::activas)
+        onDispose { repo.soltar() }
+    }
+    val ind = repo.indicacion
+    if (ind == null) return PiezaAcceso(Iconos.navegar, stringResource(R.string.pieza_navegar), app?.nombre, alTocar)
+    val c = LocalColores.current
+    Tarjeta(Modifier.fillMaxSize(), alTocar = alTocar) {
+        BoxWithConstraints(Modifier.fillMaxSize().padding(14.dp), contentAlignment = Alignment.CenterStart) {
+            val grande = maxHeight > 120.dp
+            val lado = if (grande) 72.dp else 48.dp
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(Modifier.size(lado).clip(RoundedCornerShape(16.dp)).background(c.acento), contentAlignment = Alignment.Center) {
+                    val flecha = ind.flecha
+                    if (flecha != null) {
+                        Image(flecha.asImageBitmap(), null, Modifier.size(lado * 0.7f), colorFilter = ColorFilter.tint(c.fondo))
+                    } else {
+                        Icono(Iconos.navegar, c.fondo, lado * 0.5f)
+                    }
+                }
+                Column(Modifier.padding(start = 14.dp)) {
+                    if (ind.titulo.isNotBlank()) Etiqueta(ind.titulo, if (grande) Texto.titulo.copy(fontSize = 28.sp) else Texto.titulo, maxLineas = 1)
+                    if (ind.texto.isNotBlank()) Etiqueta(ind.texto, Texto.normal, maxLineas = if (grande) 2 else 1)
+                    if (grande && ind.detalle.isNotBlank()) Etiqueta(ind.detalle, Texto.chico, c.textoSuave, maxLineas = 1)
+                }
+            }
+        }
+    }
+}
+
+/** La app de música preferida (la primera instalada de [PAQUETES_MUSICA]). */
+fun abrirMusica(contexto: Context, repo: RepositorioApps, apps: List<App>) {
+    repo.primeraDe(apps, *PAQUETES_MUSICA)?.let { repo.abrir(contexto, it) }
 }
 
 fun abrirTelefono(contexto: Context) {

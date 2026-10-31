@@ -101,4 +101,19 @@
     <!-- Cada idioma se muestra en su propio idioma. -->
     <string name="idioma_es" translatable="false">Español</string>
     <string name="idioma_en" translatable="false">English</string>
+    <string name="mapa">Mapa</string>
+    <string name="mapa_como">¿Cómo quieres ver el mapa?</string>
+    <string name="mapa_como_ayuda">Lo cambias cuando quieras en Ajustes → Mapa.</string>
+    <string name="mapa_dividido">Mapa + LiteDash</string>
+    <string name="mapa_dividido_detalle">Tu auto y tu música junto al mapa. Toca el mapa para verlo completo; el botón de inicio te regresa a tu tablero.</string>
+    <string name="mapa_completo">Solo el mapa</string>
+    <string name="mapa_completo_detalle">Abre %1$s a pantalla completa, como siempre.</string>
+    <string name="recomendado">Recomendado</string>
+    <string name="mapa_permiso">Para poner LiteDash junto al mapa, Android pide permitir "Mostrar sobre otras apps".</string>
+    <string name="permitir">Permitir</string>
+    <string name="mapa_izquierda">Mapa a la izquierda</string>
+    <string name="mapa_derecha">Mapa a la derecha</string>
+    <string name="mapa_grande">Mapa grande (2/3)</string>
+    <string name="mapa_mitad">Mitad y mitad</string>
+    <string name="mapa_ayuda">Con el mapa grande, la flecha de tu auto queda a la vista. Mientras navegas, la pieza Navegar muestra la siguiente vuelta (usa el mismo acceso a notificaciones que la música).</string>
 </resources>

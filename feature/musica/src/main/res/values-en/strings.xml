@@ -4,4 +4,7 @@
     <string name="activar">Turn on</string>
     <string name="nada_sonando">Nothing playing</string>
     <string name="abre_una_app">Play music in your favorite app</string>
+    <string name="reanudar">Resume</string>
+    <string name="reanudar_explica">Resume what you last listened to without leaving LiteDash.</string>
+    <string name="abrir_app_musica">Open music app</string>
 </resources>

@@ -74,7 +74,7 @@ import com.irvingguerra.litedash.feature.tablero.piezas
 
 /** Panel a pantalla completa sobre el inicio, con título y botón para cerrar. */
 @Composable
-private fun PanelBase(
+internal fun PanelBase(
     titulo: String,
     cerrar: () -> Unit,
     acciones: @Composable () -> Unit = {},
@@ -192,7 +192,7 @@ fun PanelCajon(d: Dependencias, apps: List<App>, cerrar: () -> Unit) {
 }
 
 @Composable
-fun PanelElegirApp(d: Dependencias, apps: List<App>, idPieza: String?, cerrar: () -> Unit) {
+fun PanelElegirApp(d: Dependencias, apps: List<App>, idPieza: String?, cerrar: () -> Unit, tablero: EstadoTablero = d.tablero) {
     var busqueda by remember { mutableStateOf("") }
     PanelBase(stringResource(R.string.elegir_app), cerrar) {
         CampoTexto(busqueda, { busqueda = it }, stringResource(R.string.buscar_app), Modifier.fillMaxWidth().widthIn(max = 640.dp), icono = true)
@@ -200,10 +200,10 @@ fun PanelElegirApp(d: Dependencias, apps: List<App>, idPieza: String?, cerrar: (
             d.apps, apps, busqueda,
             alTocar = { app ->
                 if (idPieza != null) {
-                    d.tablero.ponerDato(idPieza, app.clave)
+                    tablero.ponerDato(idPieza, app.clave)
                 } else {
                     val def = DefPiezas.first { it.tipo == Tipos.APP }
-                    d.tablero.agregar(def.tipo, def.inicial, def.medidas, app.clave)
+                    tablero.agregar(def.tipo, def.inicial, def.medidas, app.clave)
                 }
                 cerrar()
             },
@@ -387,6 +387,7 @@ fun PanelAjustes(d: Dependencias, cerrar: () -> Unit, alEditar: () -> Unit) {
                 }
                 Etiqueta(stringResource(R.string.acomodar_ayuda), Texto.chico, c.textoSuave)
             }
+            Seccion(stringResource(R.string.mapa)) { AjustesMapa(d) }
             Seccion(stringResource(R.string.modulos)) {
                 Etiqueta(stringResource(R.string.modulos_ayuda), Texto.chico, c.textoSuave)
                 Modulos(d)
@@ -409,7 +410,7 @@ fun PanelAjustes(d: Dependencias, cerrar: () -> Unit, alEditar: () -> Unit) {
 private fun Float.redondear() = kotlin.math.round(this * 10) / 10f
 
 @Composable
-private fun Seccion(titulo: String, contenido: @Composable ColumnScope.() -> Unit) {
+internal fun Seccion(titulo: String, contenido: @Composable ColumnScope.() -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Etiqueta(titulo.uppercase(), Texto.etiqueta, LocalColores.current.textoSuave)
         contenido()

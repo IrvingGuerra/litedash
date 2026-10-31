@@ -6,6 +6,26 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
+## [1.2.0] - 2026-10-31
+
+### Nuevo
+- **Mapa + LiteDash (vista dividida)**: toca Navegar y Waze o Google Maps se
+  abre junto a una columna de LiteDash con tu auto y tu música. Toca el mapa
+  para verlo completo; una pestañita en la orilla lo vuelve a dividir o te
+  lleva al inicio. El botón de inicio siempre regresa a tu tablero. La primera
+  vez te pregunta si lo quieres así o solo el mapa (pide "Mostrar sobre otras
+  apps" solo si eliges la vista dividida).
+- La columna junto al mapa tiene su propio acomodo: deja presionado para mover,
+  cambiar de tamaño, quitar o agregar piezas.
+- **Siguiente vuelta en el tablero**: mientras navegas, la pieza Navegar muestra
+  la flecha, la distancia y la calle que indica Waze o Maps.
+- Ajustes → Mapa: qué app de navegación usar, vista dividida o solo el mapa,
+  mapa a la izquierda o a la derecha, y mapa grande (2/3) o mitad y mitad.
+- **Música en grande**: toca la pieza de música para ampliarla sin salir de
+  LiteDash: carátula, barra para adelantar, los botones propios de la app (en
+  Spotify: me gusta, aleatorio, repetir), elegir qué app controlar si suenan
+  varias, y "Reanudar" lo último que escuchaste sin abrir la app.
+
 ## [1.1.0] - 2026-10-31
 
 ### Nuevo

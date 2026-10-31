@@ -5,6 +5,7 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
+import android.media.AudioManager
 import android.media.MediaMetadata
 import android.media.session.MediaController
 import android.media.session.MediaSessionManager
@@ -15,13 +16,60 @@ import android.os.Looper
 import android.os.SystemClock
 import android.provider.Settings
 import android.service.notification.NotificationListenerService
+import android.service.notification.StatusBarNotification
+import android.view.KeyEvent
+import java.lang.ref.WeakReference
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 
-/** Vacío a propósito: solo sirve para que el usuario dé "acceso a notificaciones". */
-class ServicioMusica : NotificationListenerService()
+/**
+ * Con "acceso a notificaciones" Android deja leer qué suena en otras apps. Además
+ * pasa los avisos al [oyente] (la app solo mira los de navegación, para la
+ * siguiente vuelta); sin oyente no hace nada. El nombre se queda: cambiarlo
+ * le quitaría el permiso a quien ya lo dio.
+ */
+class ServicioMusica : NotificationListenerService() {
+    interface Oyente {
+        fun alPublicar(aviso: StatusBarNotification)
+        fun alQuitar(aviso: StatusBarNotification)
+    }
+
+    override fun onListenerConnected() {
+        conectado = WeakReference(this)
+        activas().forEach { oyente?.alPublicar(it) }
+    }
+
+    override fun onListenerDisconnected() {
+        conectado = null
+    }
+
+    override fun onNotificationPosted(sbn: StatusBarNotification?) {
+        if (sbn != null) oyente?.alPublicar(sbn)
+    }
+
+    override fun onNotificationRemoved(sbn: StatusBarNotification?) {
+        if (sbn != null) oyente?.alQuitar(sbn)
+    }
+
+    companion object {
+        @Volatile var oyente: Oyente? = null
+        @Volatile private var conectado: WeakReference<ServicioMusica>? = null
+
+        /** Avisos que hay ahora mismo (vacío si el servicio no está conectado). */
+        fun activas(): List<StatusBarNotification> =
+            runCatching { conectado?.get()?.activeNotifications?.toList() }.getOrNull().orEmpty()
+    }
+}
+
+/** Botón propio de la app que suena (Spotify: me gusta, aleatorio, repetir…). */
+@Immutable
+data class AccionMedios(val id: String, val nombre: String, val icono: Bitmap?)
+
+/** Una app con sesión de medios abierta. */
+@Immutable
+data class Fuente(val paquete: String, val nombre: String)
 
 @Immutable
 data class Cancion(
@@ -35,6 +83,10 @@ data class Cancion(
     /** Momento (reloj de arranque) en que se leyó [posicionMs], para calcular el avance sin preguntar. */
     val leidaEn: Long,
     val velocidad: Float,
+    val paquete: String,
+    /** Si la app deja adelantar o regresar arrastrando la barra. */
+    val adelantable: Boolean,
+    val acciones: List<AccionMedios>,
 ) {
     fun posicionAhora(): Long {
         if (!sonando) return posicionMs
@@ -57,6 +109,14 @@ class RepositorioMusica(private val contexto: Context) {
 
     var cancion by mutableStateOf<Cancion?>(null)
         private set
+
+    /** Apps con sesión abierta, para cambiar cuál se controla. */
+    var fuentes by mutableStateOf(emptyList<Fuente>())
+        private set
+
+    // App que el usuario eligió controlar; manda mientras siga teniendo sesión.
+    private var fijada: String? = null
+    private val iconos = HashMap<String, Bitmap?>()
 
     fun tienePermiso(): Boolean =
         if (Build.VERSION.SDK_INT >= 27) {
@@ -114,9 +174,12 @@ class RepositorioMusica(private val contexto: Context) {
     private fun sesiones(): List<MediaController> =
         runCatching { gestor.getActiveSessions(componente) }.getOrDefault(emptyList())
 
-    // La que está sonando; si ninguna, la más reciente (Android las da en ese orden).
+    // La elegida por el usuario; si no, la que está sonando; si ninguna, la más reciente (Android las da en ese orden).
     private fun elegir(lista: List<MediaController>) {
-        val nuevo = lista.firstOrNull { it.playbackState?.state == PlaybackState.STATE_PLAYING } ?: lista.firstOrNull()
+        fuentes = lista.distinctBy { it.packageName }.map { Fuente(it.packageName, etiqueta(it.packageName)) }
+        val nuevo = lista.firstOrNull { it.packageName == fijada }
+            ?: lista.firstOrNull { it.playbackState?.state == PlaybackState.STATE_PLAYING }
+            ?: lista.firstOrNull()
         if (nuevo?.sessionToken != controlador?.sessionToken) {
             controlador?.unregisterCallback(alCambiarControlador)
             controlador = nuevo
@@ -139,10 +202,7 @@ class RepositorioMusica(private val contexto: Context) {
             return
         }
         val estado = c.playbackState
-        val app = runCatching {
-            val pm = contexto.packageManager
-            pm.getApplicationLabel(pm.getApplicationInfo(c.packageName, 0)).toString()
-        }.getOrDefault("")
+        val app = etiqueta(c.packageName)
         cancion = Cancion(
             titulo = titulo,
             artista = m.getString(MediaMetadata.METADATA_KEY_ARTIST) ?: m.getString(MediaMetadata.METADATA_KEY_ALBUM_ARTIST).orEmpty(),
@@ -155,7 +215,29 @@ class RepositorioMusica(private val contexto: Context) {
             posicionMs = estado?.position ?: 0,
             leidaEn = estado?.lastPositionUpdateTime?.takeIf { it > 0 } ?: SystemClock.elapsedRealtime(),
             velocidad = estado?.playbackSpeed ?: 1f,
+            paquete = c.packageName,
+            adelantable = (estado?.actions ?: 0L) and PlaybackState.ACTION_SEEK_TO != 0L,
+            acciones = estado?.customActions.orEmpty().map {
+                AccionMedios(it.action, it.name.toString(), icono(c.packageName, it.icon))
+            },
         )
+    }
+
+    private fun etiqueta(paquete: String) = runCatching {
+        val pm = contexto.packageManager
+        pm.getApplicationLabel(pm.getApplicationInfo(paquete, 0)).toString()
+    }.getOrDefault("")
+
+    // Los íconos de las acciones viven en los recursos de la otra app; se leen una vez.
+    private fun icono(paquete: String, id: Int): Bitmap? = iconos.getOrPut("$paquete:$id") {
+        runCatching {
+            val d = contexto.packageManager.getResourcesForApplication(paquete).getDrawable(id, null)
+            val lado = (32 * contexto.resources.displayMetrics.density).toInt()
+            Bitmap.createBitmap(lado, lado, Bitmap.Config.ARGB_8888).also { bmp ->
+                d.setBounds(0, 0, lado, lado)
+                d.draw(android.graphics.Canvas(bmp))
+            }
+        }.getOrNull()
     }
 
     fun alternar() {
@@ -165,6 +247,25 @@ class RepositorioMusica(private val contexto: Context) {
 
     fun siguiente() = controlador?.transportControls?.skipToNext()
     fun anterior() = controlador?.transportControls?.skipToPrevious()
+    fun adelantar(ms: Long) = controlador?.transportControls?.seekTo(ms)
+    fun accion(a: AccionMedios) = controlador?.transportControls?.sendCustomAction(a.id, null)
+
+    /** Controlar otra app de las que tienen sesión abierta. */
+    fun elegirFuente(paquete: String) {
+        fijada = paquete
+        elegir(sesiones())
+    }
+
+    /**
+     * Sin nada sonando: le pide a Android que reanude lo último que sonó (como el
+     * botón de play del volante), sin abrir la app. Spotify sigue en segundo plano.
+     */
+    fun reanudar() {
+        val audio = contexto.getSystemService(AudioManager::class.java)
+        for (accion in intArrayOf(KeyEvent.ACTION_DOWN, KeyEvent.ACTION_UP)) {
+            runCatching { audio.dispatchMediaKeyEvent(KeyEvent(accion, KeyEvent.KEYCODE_MEDIA_PLAY)) }
+        }
+    }
 
     /** Abre la app que está sonando. */
     fun abrirApp() {

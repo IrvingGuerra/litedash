@@ -1,9 +1,8 @@
 package com.irvingguerra.litedash
 
 import android.content.Context
-import android.content.res.Configuration
+import android.content.Intent
 import android.os.Bundle
-import java.util.Locale
 import androidx.activity.ComponentActivity
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.SystemBarStyle
@@ -13,27 +12,14 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableIntStateOf
 import com.irvingguerra.litedash.core.ui.LiteDashTema
-import com.irvingguerra.litedash.feature.actualizar.Actualizador
-import com.irvingguerra.litedash.feature.apps.RepositorioApps
-import com.irvingguerra.litedash.feature.auto.RepositorioAutos
-import com.irvingguerra.litedash.feature.musica.RepositorioMusica
-import com.irvingguerra.litedash.feature.tablero.AlmacenTablero
-import com.irvingguerra.litedash.feature.tablero.EstadoTablero
 
 class MainActivity : ComponentActivity() {
-    private val dependencias by lazy {
-        Dependencias(
-            apps = RepositorioApps(applicationContext),
-            musica = RepositorioMusica(applicationContext),
-            prefs = Preferencias(applicationContext),
-            tablero = EstadoTablero(AlmacenTablero(applicationContext)),
-            autos = RepositorioAutos(applicationContext, BuildConfig.URL_CATALOGO),
-            actualizador = Actualizador(applicationContext, BuildConfig.URL_ACTUALIZACIONES, BuildConfig.VERSION_CODE.toLong()),
-        )
-    }
+    private val dependencias get() = (application as LiteDashApp).dependencias
 
     // Sube cada vez que se vuelve a la app (p. ej. después de dar un permiso en Ajustes).
     private val revision = mutableIntStateOf(0)
+    // Sube al tocar el botón de inicio estando ya en LiteDash: cierra lo que esté abierto.
+    private val inicioTocado = mutableIntStateOf(0)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -55,21 +41,23 @@ class MainActivity : ComponentActivity() {
                 enableEdgeToEdge(estilo, estilo)
             }
             LiteDashTema(oscuro = oscuro, escala = d.prefs.escala) {
-                Inicio(d, revision.intValue)
+                Inicio(d, revision.intValue, inicioTocado.intValue)
             }
         }
     }
 
     // Idioma elegido en Ajustes (o el del sistema si no eligió).
-    override fun attachBaseContext(base: Context) {
-        val idioma = Idioma.leer(base)
-        if (idioma.isBlank()) return super.attachBaseContext(base)
-        val config = Configuration(base.resources.configuration).apply { setLocale(Locale.forLanguageTag(idioma)) }
-        super.attachBaseContext(base.createConfigurationContext(config))
+    override fun attachBaseContext(base: Context) = super.attachBaseContext(contextoConIdioma(base))
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        if (intent.hasCategory(Intent.CATEGORY_HOME)) inicioTocado.intValue++
     }
 
     override fun onResume() {
         super.onResume()
         revision.intValue++
+        // De vuelta en el inicio: nada encima del tablero (la vista dividida se quita).
+        dependencias.dividida.mostrar(ModoVista.OCULTA)
     }
 }

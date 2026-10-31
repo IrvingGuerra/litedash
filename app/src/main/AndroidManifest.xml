@@ -10,7 +10,11 @@
         </intent>
     </queries>
 
+    <!-- Vista dividida: la columna de LiteDash junto al mapa. Se pide solo si el usuario la elige. -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+
     <application
+        android:name=".LiteDashApp"
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher"
