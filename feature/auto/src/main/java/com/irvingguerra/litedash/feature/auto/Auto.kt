@@ -131,6 +131,8 @@ fun PiezaAuto(
     alTocar: () -> Unit,
     modifier: Modifier = Modifier,
     dibujo: (@Composable (Modifier) -> Unit)? = null,
+    /** El dibujo trae piso: sin nombre debajo (ahí caen la sombra y el reflejo). */
+    conPiso: Boolean = false,
 ) {
     val c = LocalColores.current
     BoxWithConstraints(
@@ -140,7 +142,7 @@ fun PiezaAuto(
         contentAlignment = Alignment.Center,
     ) {
         val alto = maxHeight
-        val conNombre = alto > 140.dp
+        val conNombre = alto > 140.dp && !conPiso
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,

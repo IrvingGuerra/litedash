@@ -1,12 +1,15 @@
 package com.irvingguerra.litedash.feature.auto
 
 import android.content.Context
+import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.asImageBitmap
 import android.util.LruCache
 import kotlinx.coroutines.Dispatchers
@@ -17,6 +20,11 @@ import java.net.HttpURLConnection
 import java.net.URL
 import java.security.MessageDigest
 import java.util.zip.ZipInputStream
+import kotlin.math.exp
+import kotlin.math.roundToInt
+
+/** Desde aquí los brillos de la pintura teñida se acercan a blanco sin cortarse. */
+private const val CODO = 0.78f
 
 /** Un auto del catálogo, antes de bajarlo. */
 @Immutable
@@ -47,8 +55,14 @@ data class PaqueteAuto(
     val gris: Float,
     val vistas: List<String>,
     val giro: Int,
+    /** Vistas con piso (sombra y reflejo): caja de esas capas en anchos del auto. */
+    val piso: Map<String, CajaPiso>,
     val carpeta: File,
 )
+
+/** Dónde va la capa del piso respecto al auto, en anchos del auto. */
+@Immutable
+data class CajaPiso(val x: Float, val y: Float, val ancho: Float, val alto: Float)
 
 /**
  * Autos con imágenes (ADR 0008): el catálogo se lee de [urlCatalogo] y cada
@@ -144,16 +158,34 @@ class RepositorioAutos(contexto: Context, val urlCatalogo: String) {
         val clave = "${p.id}/$nombre@$anchoPx"
         imagenes.get(clave)?.let { return it }
         return withContext(Dispatchers.IO) {
-            val archivo = File(p.carpeta, "$nombre.webp")
-            if (!archivo.exists()) return@withContext null
-            val medidas = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-            BitmapFactory.decodeFile(archivo.path, medidas)
-            var reduccion = 1
-            while (medidas.outWidth / (reduccion * 2) >= anchoPx) reduccion *= 2
-            BitmapFactory.decodeFile(archivo.path, BitmapFactory.Options().apply { inSampleSize = reduccion })
-                ?.asImageBitmap()
-                ?.also { imagenes.put(clave, it) }
+            decodificar(p, nombre, anchoPx)?.asImageBitmap()?.also { imagenes.put(clave, it) }
         }
+    }
+
+    /**
+     * La imagen [nombre] ya pintada del [color] (con su máscara "-pintura"). Se
+     * tiñe una vez aquí y queda en caché: los brillos que se pasarían de blanco se
+     * suavizan en vez de cortarse, así un auto blanco conserva su volumen.
+     */
+    suspend fun pintada(p: PaqueteAuto, nombre: String, color: Color, anchoPx: Int): ImageBitmap? {
+        val clave = "${p.id}/$nombre#${color.toArgb()}@$anchoPx"
+        imagenes.get(clave)?.let { return it }
+        return withContext(Dispatchers.IO) {
+            val base = decodificar(p, nombre, anchoPx) ?: return@withContext null
+            val mascara = decodificar(p, "$nombre-pintura", anchoPx)
+            if (mascara != null && mascara.width == base.width && mascara.height == base.height) pintar(base, mascara, color, p.gris)
+            base.asImageBitmap().also { imagenes.put(clave, it) }
+        }
+    }
+
+    private fun decodificar(p: PaqueteAuto, nombre: String, anchoPx: Int): Bitmap? {
+        val archivo = File(p.carpeta, "$nombre.webp")
+        if (!archivo.exists()) return null
+        val medidas = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        BitmapFactory.decodeFile(archivo.path, medidas)
+        var reduccion = 1
+        while (medidas.outWidth / (reduccion * 2) >= anchoPx) reduccion *= 2
+        return BitmapFactory.decodeFile(archivo.path, BitmapFactory.Options().apply { inSampleSize = reduccion; inMutable = true })
     }
 
     private fun leerPaquete(carpeta: File): PaqueteAuto? {
@@ -161,6 +193,7 @@ class RepositorioAutos(contexto: Context, val urlCatalogo: String) {
         return runCatching {
             val a = JSONObject(json.readText())
             val vistas = a.optJSONArray("vistas")
+            val piso = a.optJSONObject("piso")
             PaqueteAuto(
                 id = a.getString("id"),
                 nombre = a.getString("nombre"),
@@ -172,9 +205,43 @@ class RepositorioAutos(contexto: Context, val urlCatalogo: String) {
                 gris = a.optDouble("gris", 0.45).toFloat(),
                 vistas = (0 until (vistas?.length() ?: 0)).map { vistas!!.getString(it) },
                 giro = a.optInt("giro"),
+                piso = piso?.keys()?.asSequence()?.associateWith { v ->
+                    val c = piso.getJSONArray(v)
+                    CajaPiso(c.getDouble(0).toFloat(), c.getDouble(1).toFloat(), c.getDouble(2).toFloat(), c.getDouble(3).toFloat())
+                }.orEmpty(),
                 carpeta = carpeta,
             )
         }.getOrNull()
+    }
+
+    /** color = imagen × color / gris, con brillos suaves arriba de [CODO]; solo donde hay pintura. */
+    private fun pintar(base: Bitmap, mascara: Bitmap, color: Color, gris: Float) {
+        val tablas = floatArrayOf(color.red, color.green, color.blue).map { canal ->
+            IntArray(256) { i ->
+                val v = i / 255f * canal / gris
+                val r = if (v <= CODO) v else CODO + (1 - CODO) * (1 - exp(-(v - CODO) / (1 - CODO)))
+                (r * 255).roundToInt().coerceIn(0, 255)
+            }
+        }
+        val w = base.width
+        val h = base.height
+        val px = IntArray(w * h)
+        val mp = IntArray(w * h)
+        base.getPixels(px, 0, w, 0, 0, w, h)
+        mascara.getPixels(mp, 0, w, 0, 0, w, h)
+        for (i in px.indices) {
+            val m = mp[i] ushr 24
+            if (m == 0) continue
+            val c = px[i]
+            val r = (c shr 16) and 0xFF
+            val g = (c shr 8) and 0xFF
+            val b = c and 0xFF
+            val rr = r + (tablas[0][r] - r) * m / 255
+            val gg = g + (tablas[1][g] - g) * m / 255
+            val bb = b + (tablas[2][b] - b) * m / 255
+            px[i] = (c and 0xFF000000.toInt()) or (rr shl 16) or (gg shl 8) or bb
+        }
+        base.setPixels(px, 0, w, 0, 0, w, h)
     }
 
     private fun carpetaDe(id: String) = id.replace(Regex("[^a-z0-9-]"), "-")

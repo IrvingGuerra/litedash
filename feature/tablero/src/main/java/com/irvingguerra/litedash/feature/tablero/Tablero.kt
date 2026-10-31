@@ -101,7 +101,9 @@ fun Tablero(
             )
         }
 
-        for (p in piezas) {
+        // El auto va primero: su sombra y reflejo pueden salirse de su pieza y deben
+        // quedar debajo de las demás.
+        for (p in piezas.sortedBy { if (it.tipo == Tipos.AUTO) 0 else 1 }) {
             val a = arrastre?.takeIf { it.id == p.id }
             val anchoDp: Dp
             val altoDp: Dp

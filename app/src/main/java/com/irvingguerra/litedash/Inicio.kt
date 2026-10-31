@@ -35,6 +35,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -51,6 +54,7 @@ import com.irvingguerra.litedash.feature.apps.RepositorioApps
 import com.irvingguerra.litedash.feature.apps.rememberApps
 import com.irvingguerra.litedash.feature.auto.ColoresAuto
 import com.irvingguerra.litedash.feature.auto.ImagenAuto
+import com.irvingguerra.litedash.feature.auto.PaqueteAuto
 import com.irvingguerra.litedash.feature.auto.RepositorioAutos
 import com.irvingguerra.litedash.feature.auto.PiezaAuto
 import com.irvingguerra.litedash.feature.musica.MusicaAmpliada
@@ -103,7 +107,8 @@ fun ContenidoPieza(d: Dependencias, p: Pieza, apps: List<App>, revision: Int, ac
                 nombre = d.prefs.nombreAuto ?: paquete?.nombre ?: stringResource(R.string.mi_auto),
                 color = color,
                 alTocar = { acciones.alPanel(Panel.Auto) },
-                dibujo = paquete?.let { pq -> { m -> ImagenAuto(d.autos, pq, "tres_cuartos", color, m) } },
+                dibujo = paquete?.let { pq -> { m -> ImagenAuto(d.autos, pq, vistaTablero(pq), color, m) } },
+                conPiso = paquete?.let { vistaTablero(it) in it.piso } == true,
             )
         }
         Tipos.MUSICA -> PiezaMusica(d.musica, revision, alAmpliar = acciones.alMusica)
@@ -123,6 +128,9 @@ fun ContenidoPieza(d: Dependencias, p: Pieza, apps: List<App>, revision: Int, ac
         }
     }
 }
+
+/** La vista del auto en el tablero: la de escena (con piso) si el paquete la trae. */
+fun vistaTablero(p: PaqueteAuto) = if ("escena" in p.vistas) "escena" else "tres_cuartos"
 
 /** La de la pieza, si eligió una; si no, la de Ajustes; si no, la primera instalada. */
 fun appMapa(d: Dependencias, apps: List<App>, dato: String = ""): App? =
@@ -162,7 +170,14 @@ fun Inicio(d: Dependencias, revision: Int, inicioTocado: Int) {
         alMusica = { musica = true },
     )
 
-    Box(Modifier.fillMaxSize().background(c.fondo)) {
+    // Con un auto que trae piso, el fondo baja un poco de tono hacia abajo: es el
+    // piso donde se para el auto (como en Tesla), y su sombra y reflejo caen ahí.
+    val conPiso = d.tablero.piezas.any { it.tipo == Tipos.AUTO } &&
+        remember(d.prefs.modeloAuto, d.autos.cambios) { d.autos.paquete(d.prefs.modeloAuto) }?.let { vistaTablero(it) in it.piso } == true
+    val fondo = if (conPiso) {
+        Modifier.background(Brush.verticalGradient(0.3f to c.fondo, 1f to lerp(c.fondo, Color.Black, if (c.oscuro) 0.35f else 0.08f)))
+    } else Modifier.background(c.fondo)
+    Box(Modifier.fillMaxSize().then(fondo)) {
         Column(Modifier.fillMaxSize().safeDrawingPadding()) {
             BarraSuperior(
                 editando = editando,
