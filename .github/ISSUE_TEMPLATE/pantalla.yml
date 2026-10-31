@@ -1,0 +1,28 @@
+name: Pantalla nueva
+description: Reporta cómo funciona LiteDash en tu pantalla / Report a head unit
+labels: ["tipo:pantalla"]
+body:
+  - type: input
+    id: marca
+    attributes:
+      label: Marca y modelo de la pantalla
+    validations:
+      required: true
+  - type: textarea
+    id: info
+    attributes:
+      label: Info de la pantalla
+      description: Plataforma/SoC, Android real, RAM, resolución y dpi (o pega "Copiar info de mi pantalla").
+  - type: checkboxes
+    id: funciona
+    attributes:
+      label: ¿Qué funciona?
+      options:
+        - label: Se puede poner como launcher
+        - label: Bluetooth LE (sensores de llantas)
+        - label: OBD por Bluetooth
+        - label: Tiene caja CAN
+  - type: textarea
+    id: notas
+    attributes:
+      label: Cómo se pone LiteDash como launcher en esta pantalla y otras notas

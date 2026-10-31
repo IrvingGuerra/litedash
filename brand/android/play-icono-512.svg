@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <title>LiteDash</title>
+  <rect width="512" height="512" fill="#101317"/>
+  <g transform="translate(32.74 34.49) scale(1.7442)">
+    <path fill="#F4F6F8" d="M 60 109 H 100 A 18 18 0 0 1 118 127 V 127 A 18 18 0 0 1 100 145 H 60 A 18 18 0 0 1 42 127 V 127 A 18 18 0 0 1 60 109 Z M 132 127 A 17 17 0 1 1 166 127 A 17 17 0 1 1 132 127 Z"/>
+    <path fill="#FFB224" d="M 180 127 A 17 17 0 1 1 214 127 A 17 17 0 1 1 180 127 Z"/>
+  </g>
+</svg>

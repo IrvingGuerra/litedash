@@ -1,0 +1,14 @@
+name: Idea
+description: Propón un módulo o mejora / Suggest a module or improvement
+labels: ["tipo:idea"]
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: ¿Qué te gustaría?
+    validations:
+      required: true
+  - type: textarea
+    id: hardware
+    attributes:
+      label: ¿Necesita algún hardware? (sensor, cámara, adaptador…)

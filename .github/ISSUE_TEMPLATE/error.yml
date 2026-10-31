@@ -1,0 +1,26 @@
+name: Error
+description: Algo no funciona / Something is broken
+labels: ["tipo:bug"]
+body:
+  - type: textarea
+    id: que
+    attributes:
+      label: ¿Qué pasó? / What happened?
+      description: Qué esperabas y qué pasó en su lugar.
+    validations:
+      required: true
+  - type: textarea
+    id: pasos
+    attributes:
+      label: Pasos para que vuelva a pasar / Steps to reproduce
+  - type: textarea
+    id: equipo
+    attributes:
+      label: Tu pantalla / Your device
+      description: Pega aquí "Ajustes → Ayuda → Copiar info de mi pantalla" (o marca, modelo, Android y resolución).
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Versión de LiteDash y canal (Play o GitHub)

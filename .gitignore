@@ -1,0 +1,15 @@
+.gradle/
+build/
+.idea/
+.kotlin/
+local.properties
+*.keystore
+*.jks
+key.properties
+google-services.json
+.DS_Store
+captures/
+*.iml
+mediciones/
+CLAUDE.md
+.claude/

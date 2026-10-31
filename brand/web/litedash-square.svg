@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256"><title>LiteDash</title><g transform="translate(-4.35 -4.35) scale(1.034)">
+  
+  <path fill="#101317" d="M 72 24 H 184 A 48 48 0 0 1 232 72 V 184 A 48 48 0 0 1 184 232 H 72 A 48 48 0 0 1 24 184 V 72 A 48 48 0 0 1 72 24 Z"/>
+  <path fill="#F4F6F8" d="M 60 109 H 100 A 18 18 0 0 1 118 127 V 127 A 18 18 0 0 1 100 145 H 60 A 18 18 0 0 1 42 127 V 127 A 18 18 0 0 1 60 109 Z M 132 127 A 17 17 0 1 1 166 127 A 17 17 0 1 1 132 127 Z"/>
+  <path fill="#FFB224" d="M 180 127 A 17 17 0 1 1 214 127 A 17 17 0 1 1 180 127 Z"/>
+</g></svg>
