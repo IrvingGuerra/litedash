@@ -6,6 +6,10 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
+## [1.1.0-beta.1] - 2026-10-31
+
+Versión de prueba, solo en GitHub.
+
 ### Nuevo
 - **Inicio que tú acomodas**: deja presionado cualquier lugar para mover,
   agrandar, achicar, quitar o agregar piezas. Entre más grande la pantalla, más

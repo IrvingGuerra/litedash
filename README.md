@@ -19,17 +19,19 @@ ponen en el auto, y también para tablets y teléfonos (de 6" a 11" o más).
 **Todo es opcional y viene apagado**, para que vuele hasta en una pantalla de
 1 GB de RAM: lo que está apagado no gasta memoria, batería ni permisos.
 
-La versión 1.0 trae lo esencial: reloj, fecha y el cajón con todas tus apps, en
-modo oscuro. No pide ningún permiso, ni siquiera internet. Los módulos (escáner
-OBD, presión de llantas, tu auto en 3D, música, cámaras…) llegarán dentro de la
-misma app.
+**Tú acomodas tu inicio**: deja presionado para mover, agrandar o quitar piezas
+(tu auto, música, navegar, reloj, apps). Entre más grande la pantalla, más
+lugares. Sin anuncios, sin cuentas, sin rastreo: cada permiso se pide solo si
+activas la función que lo usa. Los módulos (escáner OBD, presión de llantas,
+cámaras…) llegarán dentro de la misma app.
 
 ## What it is (English)
 
 LiteDash is a clean home screen for Android car head units, tablets and phones
 (6"–11"+). **Everything is optional and off by default**, so it stays fast on
-low-end units. Version 1.0 ships the essentials (clock, date and app drawer in
-dark mode) and requests no permissions at all, not even internet.
+low-end units. **You arrange your home**: long-press to move, resize or remove
+pieces (your car, music, navigation, clock, apps). No ads, no accounts, no
+tracking.
 
 ## Instalar / Install
 

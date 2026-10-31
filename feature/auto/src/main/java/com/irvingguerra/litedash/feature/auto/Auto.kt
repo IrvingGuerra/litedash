@@ -119,9 +119,18 @@ fun DibujoAuto(color: Color, modifier: Modifier = Modifier) {
     }
 }
 
-/** Pieza del tablero: el auto y su nombre. Tocarla abre "Tu auto". */
+/**
+ * Pieza del tablero: el auto y su nombre. Tocarla abre "Tu auto". [dibujo]
+ * reemplaza al sedán genérico cuando hay un auto del catálogo instalado.
+ */
 @Composable
-fun PiezaAuto(nombre: String, color: Color, alTocar: () -> Unit, modifier: Modifier = Modifier) {
+fun PiezaAuto(
+    nombre: String,
+    color: Color,
+    alTocar: () -> Unit,
+    modifier: Modifier = Modifier,
+    dibujo: (@Composable (Modifier) -> Unit)? = null,
+) {
     val c = LocalColores.current
     BoxWithConstraints(
         modifier
@@ -135,7 +144,12 @@ fun PiezaAuto(nombre: String, color: Color, alTocar: () -> Unit, modifier: Modif
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
         ) {
-            DibujoAuto(color, Modifier.widthIn(max = alto * 2.4f).fillMaxWidth().padding(horizontal = 8.dp))
+            if (dibujo != null) {
+                // Los renders traen más aire arriba y abajo que el dibujo: un poco más alto.
+                dibujo(Modifier.widthIn(max = alto * 2f).fillMaxWidth().aspectRatio(1.9f).padding(horizontal = 8.dp))
+            } else {
+                DibujoAuto(color, Modifier.widthIn(max = alto * 2.4f).fillMaxWidth().padding(horizontal = 8.dp))
+            }
             if (conNombre) Etiqueta(nombre, Texto.subtitulo, c.textoSuave, maxLineas = 1, modifier = Modifier.padding(top = 8.dp))
         }
     }

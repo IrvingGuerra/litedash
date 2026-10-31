@@ -60,10 +60,13 @@ android {
         create("play") {
             dimension = "canal"
             buildConfigField("String", "CANAL", "\"play\"")
+            buildConfigField("String", "URL_CATALOGO", "\"\"")
         }
         create("github") {
             dimension = "canal"
             buildConfigField("String", "CANAL", "\"github\"")
+            // Catálogo de autos en pausa hasta tener modelos con licencia comercial.
+            buildConfigField("String", "URL_CATALOGO", "\"\"")
         }
     }
 

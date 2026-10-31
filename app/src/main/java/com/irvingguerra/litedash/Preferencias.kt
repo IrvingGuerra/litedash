@@ -35,6 +35,12 @@ class Preferencias(contexto: Context) {
         get() = _colorAuto
         set(v) { _colorAuto = v; p.edit { putInt("color_auto", v) } }
 
+    private var _modeloAuto by mutableStateOf(p.getString("modelo_auto", null))
+    /** Id del auto del catálogo que se muestra; null = el sedán genérico. */
+    var modeloAuto: String?
+        get() = _modeloAuto
+        set(v) { _modeloAuto = v; p.edit { putString("modelo_auto", v) } }
+
     private var _dock by mutableStateOf(p.getString("dock", null)?.split('\n')?.filter { it.isNotBlank() })
     /** Apps fijas en el dock ([com.irvingguerra.litedash.feature.apps.App.clave]); null = las sugeridas. */
     var dock: List<String>?

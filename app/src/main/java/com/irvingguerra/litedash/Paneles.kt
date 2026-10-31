@@ -1,5 +1,15 @@
 package com.irvingguerra.litedash
 
+import android.content.Intent
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.core.net.toUri
+import com.irvingguerra.litedash.feature.auto.EntradaCatalogo
+import com.irvingguerra.litedash.feature.auto.GiroAuto
+import com.irvingguerra.litedash.feature.auto.PaqueteAuto
+import com.irvingguerra.litedash.feature.auto.RepositorioAutos
+import kotlinx.coroutines.launch
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -156,17 +166,27 @@ fun PanelElegirApp(d: Dependencias, apps: List<App>, idPieza: String?, cerrar: (
 }
 
 @Composable
-fun PanelAuto(prefs: Preferencias, cerrar: () -> Unit) {
+fun PanelAuto(prefs: Preferencias, autos: RepositorioAutos, cerrar: () -> Unit) {
     val c = LocalColores.current
     val color = ColoresAuto[prefs.colorAuto.coerceIn(ColoresAuto.indices)]
+    val paquete = remember(prefs.modeloAuto, autos.cambios) { autos.paquete(prefs.modeloAuto) }
     PanelBase(stringResource(R.string.tu_auto), cerrar) {
         BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
             val horizontal = maxWidth > maxHeight
-            val dibujo = @Composable { m: Modifier -> DibujoAuto(color, m) }
+            val vista = @Composable { m: Modifier ->
+                Column(m, horizontalAlignment = Alignment.CenterHorizontally) {
+                    if (paquete != null) {
+                        GiroAuto(autos, paquete, color, Modifier.fillMaxWidth().aspectRatio(1.9f))
+                        Etiqueta(stringResource(R.string.gira_tu_auto), Texto.chico, c.textoSuave)
+                    } else {
+                        DibujoAuto(color, Modifier.fillMaxWidth())
+                    }
+                }
+            }
             val opciones = @Composable { m: Modifier ->
-                Column(m, verticalArrangement = Arrangement.spacedBy(20.dp)) {
+                Column(m, verticalArrangement = Arrangement.spacedBy(18.dp)) {
                     Etiqueta(stringResource(R.string.nombre), Texto.etiqueta, c.textoSuave)
-                    CampoTexto(prefs.nombreAuto ?: "", { prefs.nombreAuto = it.take(24).ifBlank { null } }, stringResource(R.string.mi_auto), Modifier.fillMaxWidth())
+                    CampoTexto(prefs.nombreAuto ?: "", { prefs.nombreAuto = it.take(24).ifBlank { null } }, paquete?.nombre ?: stringResource(R.string.mi_auto), Modifier.fillMaxWidth())
                     Etiqueta(stringResource(R.string.color), Texto.etiqueta, c.textoSuave)
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(14.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
                         ColoresAuto.forEachIndexed { i, col ->
@@ -183,21 +203,96 @@ fun PanelAuto(prefs: Preferencias, cerrar: () -> Unit) {
                             )
                         }
                     }
-                    Etiqueta(stringResource(R.string.auto_pronto), Texto.chico, c.textoSuave)
+                    // Mientras no haya catálogo ni autos instalados, solo existe el genérico.
+                    if (autos.hayCatalogo || autos.instalados().isNotEmpty()) {
+                        Etiqueta(stringResource(R.string.modelo), Texto.etiqueta, c.textoSuave)
+                        Modelos(prefs, autos, paquete)
+                    } else {
+                        Etiqueta(stringResource(R.string.auto_pronto), Texto.chico, c.textoSuave)
+                    }
                 }
             }
             if (horizontal) {
                 Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(32.dp)) {
-                    dibujo(Modifier.weight(1.3f))
-                    opciones(Modifier.weight(1f).verticalScroll(rememberScrollState()))
+                    vista(Modifier.weight(1.3f))
+                    opciones(Modifier.weight(1f).fillMaxHeight().verticalScroll(rememberScrollState()).padding(vertical = 16.dp))
                 }
             } else {
                 Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(24.dp)) {
-                    dibujo(Modifier.fillMaxWidth())
+                    vista(Modifier.fillMaxWidth())
                     opciones(Modifier.fillMaxWidth())
                 }
             }
         }
+    }
+}
+
+/** Genérico, los autos ya instalados y (en la versión de GitHub) los del catálogo. */
+@Composable
+private fun Modelos(prefs: Preferencias, autos: RepositorioAutos, actual: PaqueteAuto?) {
+    val c = LocalColores.current
+    val contexto = LocalContext.current
+    val alcance = rememberCoroutineScope()
+    val instalados = remember(autos.cambios) { autos.instalados() }
+    var catalogo by remember { mutableStateOf<List<EntradaCatalogo>?>(null) }
+    var error by remember { mutableStateOf(false) }
+    var bajando by remember { mutableStateOf<Pair<String, Float>?>(null) }
+    LaunchedEffect(autos.hayCatalogo) {
+        if (autos.hayCatalogo) runCatching { autos.catalogo() }.onSuccess { catalogo = it }.onFailure { error = true }
+    }
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        OpcionModelo(stringResource(R.string.modelo_generico), null, elegido = actual == null) { prefs.modeloAuto = null }
+        for (p in instalados) {
+            OpcionModelo("${p.marca} ${p.nombre} ${p.anio}", null, elegido = actual?.id == p.id) { prefs.modeloAuto = p.id }
+        }
+        for (e in catalogo.orEmpty().filter { e -> instalados.none { it.id == e.id } }) {
+            val progreso = bajando?.takeIf { it.first == e.id }?.second
+            val detalle = if (progreso != null) "${(progreso * 100).toInt()} %" else stringResource(R.string.descargar_mb, e.bytes / 1e6f)
+            OpcionModelo("${e.marca} ${e.nombre} ${e.anio}", detalle, elegido = false) {
+                if (bajando != null) return@OpcionModelo
+                bajando = e.id to 0f
+                alcance.launch {
+                    runCatching { autos.instalar(e) { f -> bajando = e.id to f } }
+                        .onSuccess { prefs.modeloAuto = e.id }
+                        .onFailure { error = true }
+                    bajando = null
+                }
+            }
+        }
+        if (error) Etiqueta(stringResource(R.string.catalogo_error), Texto.chico, c.peligro)
+        // Crédito del modelo 3D (lo pide su licencia).
+        if (actual != null && actual.autor.isNotBlank()) {
+            Etiqueta(
+                stringResource(R.string.credito_modelo, actual.autor, actual.licencia),
+                Texto.chico,
+                c.textoSuave,
+                modifier = Modifier.clickable {
+                    runCatching {
+                        contexto.startActivity(Intent(Intent.ACTION_VIEW, actual.fuente.toUri()).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                    }
+                },
+            )
+        }
+    }
+}
+
+@Composable
+private fun OpcionModelo(titulo: String, detalle: String?, elegido: Boolean, alTocar: () -> Unit) {
+    val c = LocalColores.current
+    val forma = RoundedCornerShape(16.dp)
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .clip(forma)
+            .background(c.superficie)
+            .border(if (elegido) 2.dp else 1.dp, if (elegido) c.acento else c.linea, forma)
+            .clickable(onClick = alTocar)
+            .padding(horizontal = 18.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Etiqueta(titulo, Texto.normal, maxLineas = 1, modifier = Modifier.weight(1f))
+        if (detalle != null) Etiqueta(detalle, Texto.chico, c.acento, maxLineas = 1)
+        if (elegido) Icono(Iconos.listo, c.acento, 22.dp)
     }
 }
 

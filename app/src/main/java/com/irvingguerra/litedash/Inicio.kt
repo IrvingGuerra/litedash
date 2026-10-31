@@ -48,6 +48,8 @@ import com.irvingguerra.litedash.feature.apps.IconoApp
 import com.irvingguerra.litedash.feature.apps.RepositorioApps
 import com.irvingguerra.litedash.feature.apps.rememberApps
 import com.irvingguerra.litedash.feature.auto.ColoresAuto
+import com.irvingguerra.litedash.feature.auto.ImagenAuto
+import com.irvingguerra.litedash.feature.auto.RepositorioAutos
 import com.irvingguerra.litedash.feature.auto.PiezaAuto
 import com.irvingguerra.litedash.feature.musica.PiezaMusica
 import com.irvingguerra.litedash.feature.musica.RepositorioMusica
@@ -72,6 +74,7 @@ class Dependencias(
     val musica: RepositorioMusica,
     val prefs: Preferencias,
     val tablero: EstadoTablero,
+    val autos: RepositorioAutos,
 )
 
 /** Inicio: barra de estado, tablero personalizable y dock. */
@@ -109,11 +112,16 @@ fun Inicio(d: Dependencias, revision: Int) {
                     alEditar = { editando = true },
                 ) { p ->
                     when (p.tipo) {
-                        Tipos.AUTO -> PiezaAuto(
-                            nombre = d.prefs.nombreAuto ?: stringResource(R.string.mi_auto),
-                            color = ColoresAuto[d.prefs.colorAuto.coerceIn(ColoresAuto.indices)],
-                            alTocar = { panel = Panel.Auto },
-                        )
+                        Tipos.AUTO -> {
+                            val color = ColoresAuto[d.prefs.colorAuto.coerceIn(ColoresAuto.indices)]
+                            val paquete = remember(d.prefs.modeloAuto, d.autos.cambios) { d.autos.paquete(d.prefs.modeloAuto) }
+                            PiezaAuto(
+                                nombre = d.prefs.nombreAuto ?: paquete?.nombre ?: stringResource(R.string.mi_auto),
+                                color = color,
+                                alTocar = { panel = Panel.Auto },
+                                dibujo = paquete?.let { pq -> { m -> ImagenAuto(d.autos, pq, "tres_cuartos", color, m) } },
+                            )
+                        }
                         Tipos.MUSICA -> PiezaMusica(d.musica, revision)
                         Tipos.RELOJ -> PiezaReloj()
                         Tipos.NAVEGAR -> {
@@ -147,7 +155,7 @@ fun Inicio(d: Dependencias, revision: Int) {
             null -> Unit
             Panel.Cajon -> PanelCajon(d, apps, cerrar = { panel = null })
             Panel.Ajustes -> PanelAjustes(d, cerrar = { panel = null }, alEditar = { panel = null; editando = true })
-            Panel.Auto -> PanelAuto(d.prefs, cerrar = { panel = null })
+            Panel.Auto -> PanelAuto(d.prefs, d.autos, cerrar = { panel = null })
             Panel.Plantillas -> PanelPlantillas(d.tablero, cerrar = { panel = null })
             Panel.Agregar -> PanelAgregar(d.tablero, cerrar = { panel = null }, alElegirApp = { panel = Panel.ElegirApp(null) })
             is Panel.ElegirApp -> PanelElegirApp(d, apps, p.idPieza, cerrar = { panel = null })

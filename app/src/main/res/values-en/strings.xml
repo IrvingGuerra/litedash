@@ -36,4 +36,10 @@
     <string name="acomodar">Arrange home</string>
     <string name="acomodar_ayuda">You can also long-press anywhere on the home screen.</string>
     <string name="acerca_de">About</string>
+    <string name="modelo">Model</string>
+    <string name="modelo_generico">Sedan (drawing)</string>
+    <string name="descargar_mb">Download · %.1f MB</string>
+    <string name="catalogo_error">Couldn\'t download. Check your connection and try again.</string>
+    <string name="credito_modelo">3D model: %1$s · %2$s · non-commercial use</string>
+    <string name="gira_tu_auto">Swipe to spin it</string>
 </resources>

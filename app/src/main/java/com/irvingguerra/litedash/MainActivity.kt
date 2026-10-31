@@ -11,6 +11,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableIntStateOf
 import com.irvingguerra.litedash.core.ui.LiteDashTema
 import com.irvingguerra.litedash.feature.apps.RepositorioApps
+import com.irvingguerra.litedash.feature.auto.RepositorioAutos
 import com.irvingguerra.litedash.feature.musica.RepositorioMusica
 import com.irvingguerra.litedash.feature.tablero.AlmacenTablero
 import com.irvingguerra.litedash.feature.tablero.EstadoTablero
@@ -22,6 +23,7 @@ class MainActivity : ComponentActivity() {
             musica = RepositorioMusica(applicationContext),
             prefs = Preferencias(applicationContext),
             tablero = EstadoTablero(AlmacenTablero(applicationContext)),
+            autos = RepositorioAutos(applicationContext, BuildConfig.URL_CATALOGO),
         )
     }
 
