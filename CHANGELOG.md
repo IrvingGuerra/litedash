@@ -12,6 +12,9 @@ Todos los cambios que nota quien usa LiteDash. Formato
 - **Buscar actualizaciones** (versión de GitHub): en Ajustes → Acerca de,
   LiteDash revisa si hay una versión nueva, la baja, verifica que llegó completa
   y la instala con tu confirmación. La versión de Play se actualiza desde Play.
+- **Idioma** en Ajustes: como el sistema, español o inglés.
+- Si LiteDash no es tu pantalla de inicio, un aviso arriba te ofrece elegirla
+  (o no volver a preguntar). También está en Ajustes → Inicio.
 - **Inicio que tú acomodas**: deja presionado cualquier lugar para mover,
   agrandar, achicar, quitar o agregar piezas. Entre más grande la pantalla, más
   lugares hay. Cada tamaño de pantalla guarda su propio acomodo.
