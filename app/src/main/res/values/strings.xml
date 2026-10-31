@@ -118,4 +118,5 @@
     <string name="recomendado">Recomendado</string>
     <string name="apariencia">Apariencia</string>
     <string name="volver_inicio">Volver al inicio</string>
+    <string name="buscar_auto">Buscar tu auto (marca, modelo o año)</string>
 </resources>

@@ -67,6 +67,7 @@ import com.irvingguerra.litedash.feature.actualizar.Actualizador
 import com.irvingguerra.litedash.feature.actualizar.Version
 import com.irvingguerra.litedash.feature.apps.App
 import com.irvingguerra.litedash.feature.apps.CuadriculaApps
+import com.irvingguerra.litedash.feature.apps.normalizar
 import com.irvingguerra.litedash.feature.auto.ColoresAuto
 import com.irvingguerra.litedash.feature.auto.DibujoAuto
 import com.irvingguerra.litedash.feature.tablero.Cuadricula
@@ -281,7 +282,7 @@ fun PanelAuto(prefs: Preferencias, autos: RepositorioAutos, cerrar: () -> Unit) 
     }
 }
 
-/** Genérico, los autos ya instalados y (en la versión de GitHub) los del catálogo. */
+/** Genérico, los autos ya instalados y los del catálogo, con buscador. */
 @Composable
 private fun Modelos(prefs: Preferencias, autos: RepositorioAutos, actual: PaqueteAuto?) {
     val c = LocalColores.current
@@ -291,15 +292,20 @@ private fun Modelos(prefs: Preferencias, autos: RepositorioAutos, actual: Paquet
     var catalogo by remember { mutableStateOf<List<EntradaCatalogo>?>(null) }
     var error by remember { mutableStateOf(false) }
     var bajando by remember { mutableStateOf<Pair<String, Float>?>(null) }
+    var busqueda by remember { mutableStateOf("") }
     LaunchedEffect(autos.hayCatalogo) {
         if (autos.hayCatalogo) runCatching { autos.catalogo() }.onSuccess { catalogo = it }.onFailure { error = true }
     }
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        // Busca por marca, modelo o año, sin importar acentos ni mayúsculas.
+        CampoTexto(busqueda, { busqueda = it }, stringResource(R.string.buscar_auto), Modifier.fillMaxWidth(), icono = true)
+        val q = normalizar(busqueda.trim())
+        fun coincide(texto: String) = q.isEmpty() || q.split(' ').all { it in normalizar(texto) }
         OpcionModelo(stringResource(R.string.modelo_generico), null, elegido = actual == null) { prefs.modeloAuto = null }
-        for (p in instalados) {
+        for (p in instalados.filter { coincide("${it.marca} ${it.nombre} ${it.anio}") }) {
             OpcionModelo("${p.marca} ${p.nombre} ${p.anio}", null, elegido = actual?.id == p.id) { prefs.modeloAuto = p.id }
         }
-        for (e in catalogo.orEmpty().filter { e -> instalados.none { it.id == e.id } }) {
+        for (e in catalogo.orEmpty().filter { e -> instalados.none { it.id == e.id } && coincide("${e.marca} ${e.nombre} ${e.anio}") }) {
             val progreso = bajando?.takeIf { it.first == e.id }?.second
             val detalle = if (progreso != null) "${(progreso * 100).toInt()} %" else stringResource(R.string.descargar_mb, e.bytes / 1e6f)
             OpcionModelo("${e.marca} ${e.nombre} ${e.anio}", detalle, elegido = false) {

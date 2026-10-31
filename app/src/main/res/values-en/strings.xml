@@ -114,4 +114,5 @@
     <string name="recomendado">Recommended</string>
     <string name="apariencia">Appearance</string>
     <string name="volver_inicio">Back to home</string>
+    <string name="buscar_auto">Find your car (make, model or year)</string>
 </resources>

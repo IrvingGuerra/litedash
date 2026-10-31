@@ -53,8 +53,8 @@ data class PaqueteAuto(
 /**
  * Autos con imágenes (ADR 0008): el catálogo se lee de [urlCatalogo] y cada
  * paquete se baja, se revisa con SHA-256 y se descomprime en la memoria de la
- * app. Son solo imágenes, nunca código. Con [urlCatalogo] vacío (versión de
- * Play) no hay catálogo: solo el auto genérico y lo ya instalado.
+ * app. Son solo imágenes, nunca código (por eso va igual en Play y en GitHub).
+ * Con [urlCatalogo] vacío no hay catálogo: solo el auto genérico y lo instalado.
  */
 class RepositorioAutos(contexto: Context, val urlCatalogo: String) {
     private val raiz = File(contexto.filesDir, "autos")

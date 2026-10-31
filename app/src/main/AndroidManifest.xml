@@ -10,6 +10,9 @@
         </intent>
     </queries>
 
+    <!-- Solo para bajar el catálogo de autos (imágenes) cuando el usuario lo abre. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
     <application
         android:name=".LiteDashApp"
         android:allowBackup="true"

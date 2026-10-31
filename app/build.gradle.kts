@@ -29,6 +29,10 @@ val firma = Properties().apply {
     if (f.exists()) f.inputStream().use { load(it) }
 }
 fun datoFirma(clave: String, env: String): String? = firma.getProperty(clave) ?: System.getenv(env)
+// Catálogo de autos (solo imágenes y datos; ver feature/auto): igual en Play y en GitHub.
+// Para probar un catálogo local en el emulador: ./gradlew ... -Pcatalogo=http://10.0.2.2:8765/catalogo.json
+val URL_CATALOGO = (findProperty("catalogo") as String?)
+    ?: "https://github.com/IrvingGuerra/litedash/releases/download/catalogo/catalogo.json"
 val hayFirma = datoFirma("storeFile", "LITEDASH_STORE_FILE") != null
 
 android {
@@ -60,15 +64,14 @@ android {
         create("play") {
             dimension = "canal"
             buildConfigField("String", "CANAL", "\"play\"")
-            buildConfigField("String", "URL_CATALOGO", "\"\"")
+            buildConfigField("String", "URL_CATALOGO", "\"$URL_CATALOGO\"")
             // Play prohíbe actualizarse por fuera de la tienda: sin actualizador.
             buildConfigField("String", "URL_ACTUALIZACIONES", "\"\"")
         }
         create("github") {
             dimension = "canal"
             buildConfigField("String", "CANAL", "\"github\"")
-            // Catálogo de autos en pausa hasta tener modelos con licencia comercial.
-            buildConfigField("String", "URL_CATALOGO", "\"\"")
+            buildConfigField("String", "URL_CATALOGO", "\"$URL_CATALOGO\"")
             buildConfigField("String", "URL_ACTUALIZACIONES", "\"https://api.github.com/repos/IrvingGuerra/litedash/releases?per_page=20\"")
         }
     }
