@@ -6,11 +6,12 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
-## [1.1.0-beta.1] - 2026-10-31
-
-Versión de prueba, solo en GitHub.
+## [1.1.0] - 2026-10-31
 
 ### Nuevo
+- **Buscar actualizaciones** (versión de GitHub): en Ajustes → Acerca de,
+  LiteDash revisa si hay una versión nueva, la baja, verifica que llegó completa
+  y la instala con tu confirmación. La versión de Play se actualiza desde Play.
 - **Inicio que tú acomodas**: deja presionado cualquier lugar para mover,
   agrandar, achicar, quitar o agregar piezas. Entre más grande la pantalla, más
   lugares hay. Cada tamaño de pantalla guarda su propio acomodo.
@@ -28,6 +29,10 @@ Versión de prueba, solo en GitHub.
   inicio, ocultarla o ver su información.
 - Ajustes → Módulos: qué hay y qué viene (todo apagado hasta que lo uses).
 - "Copiar info de mi pantalla" para reportar problemas.
+
+## [1.1.0-beta.1] - 2026-10-31
+
+Versión de prueba con lo mismo que 1.1.0, menos el botón de actualizaciones.
 
 ## [1.0.0] - 2026-10-31
 

@@ -83,4 +83,22 @@
     <string name="hacer_inicio">Elegir LiteDash</string>
     <string name="bienvenida_inicio_ayuda">Si tu pantalla de auto no lo pregunta, búscalo en Ajustes → Aplicaciones → Aplicaciones predeterminadas → Pantalla de inicio, o en el menú del fabricante para elegir el launcher.</string>
     <string name="bienvenida_ya_es_inicio">LiteDash ya es tu pantalla de inicio</string>
+    <string name="buscar_actualizaciones">Buscar actualizaciones</string>
+    <string name="buscando">Buscando…</string>
+    <string name="al_dia">Tienes la versión más nueva.</string>
+    <string name="actualizar_error">No se pudo revisar. Revisa tu conexión e inténtalo otra vez.</string>
+    <string name="nueva_version">LiteDash %1$s está lista</string>
+    <string name="descargar_instalar">Descargar e instalar · %.1f MB</string>
+    <string name="bajando">Bajando… %d %%</string>
+    <string name="instalando">Abriendo el instalador de Android…</string>
+    <string name="permiso_instalar">Android pide que permitas a LiteDash instalar apps (solo se usa para sus propias actualizaciones). Actívalo en la pantalla que se abrió y regresa.</string>
+    <string name="ya_lo_permiti">Ya lo permití, instalar</string>
+    <string name="instalar_error">Android no pudo instalarla: %1$s</string>
+    <string name="aviso_no_es_inicio">LiteDash todavía no es tu pantalla de inicio.</string>
+    <string name="no_preguntar">No preguntar</string>
+    <string name="idioma">Idioma</string>
+    <string name="idioma_sistema">Como el sistema</string>
+    <!-- Cada idioma se muestra en su propio idioma. -->
+    <string name="idioma_es" translatable="false">Español</string>
+    <string name="idioma_en" translatable="false">English</string>
 </resources>

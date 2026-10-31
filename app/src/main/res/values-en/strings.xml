@@ -82,4 +82,19 @@
     <string name="hacer_inicio">Choose LiteDash</string>
     <string name="bienvenida_inicio_ayuda">If your head unit doesn\'t ask, look in Settings → Apps → Default apps → Home app, or in the manufacturer\'s launcher menu.</string>
     <string name="bienvenida_ya_es_inicio">LiteDash is already your home screen</string>
+    <string name="buscar_actualizaciones">Check for updates</string>
+    <string name="buscando">Checking…</string>
+    <string name="al_dia">You have the latest version.</string>
+    <string name="actualizar_error">Couldn\'t check. Check your connection and try again.</string>
+    <string name="nueva_version">LiteDash %1$s is ready</string>
+    <string name="descargar_instalar">Download and install · %.1f MB</string>
+    <string name="bajando">Downloading… %d %%</string>
+    <string name="instalando">Opening the Android installer…</string>
+    <string name="permiso_instalar">Android asks you to allow LiteDash to install apps (used only for its own updates). Turn it on in the screen that opened and come back.</string>
+    <string name="ya_lo_permiti">Done, install</string>
+    <string name="instalar_error">Android couldn\'t install it: %1$s</string>
+    <string name="aviso_no_es_inicio">LiteDash isn\'t your home screen yet.</string>
+    <string name="no_preguntar">Don\'t ask</string>
+    <string name="idioma">Language</string>
+    <string name="idioma_sistema">Follow system</string>
 </resources>

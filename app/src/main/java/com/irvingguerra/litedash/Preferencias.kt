@@ -10,6 +10,11 @@ import androidx.core.content.edit
 
 enum class ModoTema { OSCURO, CLARO, SISTEMA }
 
+/** Idioma de la app: "" = el del sistema. Se lee antes de crear la pantalla. */
+object Idioma {
+    fun leer(contexto: Context) = contexto.getSharedPreferences("ajustes", Context.MODE_PRIVATE).getString("idioma", "") ?: ""
+}
+
 /** Ajustes del usuario: cada cambio se guarda al momento y redibuja lo que lo usa. */
 class Preferencias(contexto: Context) {
     private val p = contexto.getSharedPreferences("ajustes", Context.MODE_PRIVATE)
@@ -51,6 +56,18 @@ class Preferencias(contexto: Context) {
     var pasoBienvenida: Int
         get() = _pasoBienvenida
         set(v) { _pasoBienvenida = v; p.edit { putInt("paso_bienvenida", v) } }
+
+    private var _noPedirInicio by mutableStateOf(p.getBoolean("no_pedir_inicio", false))
+    /** El usuario pidió no volver a ver el aviso de "hazlo tu pantalla de inicio". */
+    var noPedirInicio: Boolean
+        get() = _noPedirInicio
+        set(v) { _noPedirInicio = v; p.edit { putBoolean("no_pedir_inicio", v) } }
+
+    private var _idioma by mutableStateOf(p.getString("idioma", "") ?: "")
+    /** "" (sistema), "es" o "en". Cambiarlo recrea la actividad. */
+    var idioma: String
+        get() = _idioma
+        set(v) { _idioma = v; p.edit(commit = true) { putString("idioma", v) } }
 
     private var _ocultas by mutableStateOf(p.getStringSet("ocultas", emptySet())!!.toSet())
     /** Apps que no salen en el cajón ([com.irvingguerra.litedash.feature.apps.App.clave]). */

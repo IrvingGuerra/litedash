@@ -36,7 +36,8 @@ tracking.
 ## Instalar / Install
 
 1. Descarga el APK de [Releases](https://github.com/IrvingGuerra/litedash/releases/latest)
-   (pronto también en Google Play).
+   (pronto también en Google Play). Después se actualiza solo desde
+   Ajustes → Acerca de → Buscar actualizaciones.
 2. Instálalo y elige **LiteDash** como pantalla de inicio. En muchas pantallas de
    auto esto está en Ajustes → Aplicaciones → Pantalla de inicio, o en un menú
    del fabricante para elegir el launcher.
@@ -54,7 +55,9 @@ tools/avd.sh                       # emuladores de pantallas de auto (1024×600 
 tools/medir.sh                     # medir arranque, memoria y fluidez en un equipo conectado
 ```
 
-Hay dos variantes del mismo código: `play` (Google Play) y `github` (APK).
+Hay dos variantes del mismo código: `play` (Google Play, sin permiso de
+internet) y `github` (APK; usa internet solo cuando tocas "Buscar
+actualizaciones" en Ajustes, para bajar e instalar la versión nueva).
 
 ## Contribuir / Contributing
 

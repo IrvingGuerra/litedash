@@ -43,6 +43,7 @@ import com.irvingguerra.litedash.core.ui.Etiqueta
 import com.irvingguerra.litedash.core.ui.Iconos
 import com.irvingguerra.litedash.core.ui.LocalColores
 import com.irvingguerra.litedash.core.ui.Texto
+import com.irvingguerra.litedash.feature.actualizar.Actualizador
 import com.irvingguerra.litedash.feature.apps.App
 import com.irvingguerra.litedash.feature.apps.IconoApp
 import com.irvingguerra.litedash.feature.apps.RepositorioApps
@@ -75,6 +76,7 @@ class Dependencias(
     val prefs: Preferencias,
     val tablero: EstadoTablero,
     val autos: RepositorioAutos,
+    val actualizador: Actualizador,
 )
 
 /** Inicio: barra de estado, tablero personalizable y dock. */
@@ -100,6 +102,7 @@ fun Inicio(d: Dependencias, revision: Int) {
                 alPlantillas = { panel = Panel.Plantillas },
                 alTerminar = { editando = false },
             )
+            if (d.prefs.bienvenidaVista && !d.prefs.noPedirInicio && !editando) AvisoInicio(d.prefs, revision)
             BoxWithConstraints(Modifier.weight(1f).fillMaxWidth().padding(horizontal = 10.dp)) {
                 val cuadricula = remember(maxWidth, maxHeight) { Cuadricula.para(maxWidth.value, maxHeight.value) }
                 remember(cuadricula) { d.tablero.usar(cuadricula) }
@@ -271,5 +274,30 @@ private fun Volumen() {
         }
         BotonIcono(Iconos.mas, { ajustar(AudioManager.ADJUST_RAISE) })
         Spacer(Modifier.width(4.dp))
+    }
+}
+
+
+/** Aviso cuando LiteDash no es la pantalla de inicio: un toque para arreglarlo, o no volver a preguntar. */
+@Composable
+private fun AvisoInicio(prefs: Preferencias, revision: Int) {
+    val c = LocalColores.current
+    val contexto = LocalContext.current
+    val (pedir, vueltas) = rememberPedirInicio()
+    val esLaDeInicio = remember(revision, vueltas) { esInicio(contexto) }
+    if (esLaDeInicio) return
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 4.dp)
+            .clip(RoundedCornerShape(18.dp))
+            .background(c.superficie)
+            .padding(start = 20.dp, end = 8.dp, top = 8.dp, bottom = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        Etiqueta(stringResource(R.string.aviso_no_es_inicio), Texto.normal, maxLineas = 2, modifier = Modifier.weight(1f))
+        Boton(stringResource(R.string.hacer_inicio), pedir, principal = true)
+        Boton(stringResource(R.string.no_preguntar), { prefs.noPedirInicio = true })
     }
 }

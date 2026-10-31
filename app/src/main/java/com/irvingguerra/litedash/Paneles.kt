@@ -60,6 +60,8 @@ import com.irvingguerra.litedash.core.ui.Iconos
 import com.irvingguerra.litedash.core.ui.LocalColores
 import com.irvingguerra.litedash.core.ui.Tarjeta
 import com.irvingguerra.litedash.core.ui.Texto
+import com.irvingguerra.litedash.feature.actualizar.Actualizador
+import com.irvingguerra.litedash.feature.actualizar.Version
 import com.irvingguerra.litedash.feature.apps.App
 import com.irvingguerra.litedash.feature.apps.CuadriculaApps
 import com.irvingguerra.litedash.feature.auto.ColoresAuto
@@ -355,6 +357,19 @@ fun PanelAjustes(d: Dependencias, cerrar: () -> Unit, alEditar: () -> Unit) {
                     }
                 }
             }
+            Seccion(stringResource(R.string.idioma)) {
+                val actividad = contexto as? android.app.Activity
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    for ((codigo, texto) in listOf("" to R.string.idioma_sistema, "es" to R.string.idioma_es, "en" to R.string.idioma_en)) {
+                        Boton(stringResource(texto), {
+                            if (prefs.idioma != codigo) {
+                                prefs.idioma = codigo
+                                actividad?.recreate()
+                            }
+                        }, principal = prefs.idioma == codigo)
+                    }
+                }
+            }
             Seccion(stringResource(R.string.escala)) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     BotonIcono(Iconos.menos, { prefs.escala = (prefs.escala - 0.1f).coerceAtLeast(0.8f).redondear() }, fondo = c.superficieAlta)
@@ -364,8 +379,11 @@ fun PanelAjustes(d: Dependencias, cerrar: () -> Unit, alEditar: () -> Unit) {
                 Etiqueta(stringResource(R.string.escala_ayuda), Texto.chico, c.textoSuave)
             }
             Seccion(stringResource(R.string.inicio)) {
+                val (pedirInicio, vueltas) = rememberPedirInicio()
+                val esLaDeInicio = remember(vueltas) { esInicio(contexto) }
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     Boton(stringResource(R.string.acomodar), alEditar, principal = true)
+                    if (!esLaDeInicio) Boton(stringResource(R.string.hacer_inicio), { prefs.noPedirInicio = false; pedirInicio() })
                 }
                 Etiqueta(stringResource(R.string.acomodar_ayuda), Texto.chico, c.textoSuave)
             }
@@ -375,6 +393,7 @@ fun PanelAjustes(d: Dependencias, cerrar: () -> Unit, alEditar: () -> Unit) {
             }
             Seccion(stringResource(R.string.acerca_de)) {
                 Etiqueta("LiteDash ${BuildConfig.VERSION_NAME} · ${BuildConfig.CANAL}", Texto.normal, c.textoSuave)
+                if (d.actualizador.disponible) Actualizaciones(d.actualizador)
                 var copiado by remember { mutableStateOf(false) }
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     Boton(stringResource(R.string.copiar_info), { copiarInfo(contexto); copiado = true })
@@ -537,4 +556,89 @@ private fun copiarInfo(contexto: android.content.Context) {
     }
     contexto.getSystemService(android.content.ClipboardManager::class.java)
         .setPrimaryClip(android.content.ClipData.newPlainText("LiteDash", texto))
+}
+
+
+/** Estados del botón de actualizaciones (solo versión de GitHub). */
+private sealed interface Busqueda {
+    data object Nada : Busqueda
+    data object Buscando : Busqueda
+    data object AlDia : Busqueda
+    data class Nueva(val v: Version) : Busqueda
+    data class Bajando(val v: Version, val avance: Float) : Busqueda
+    data class Permiso(val v: Version) : Busqueda
+    data object Instalando : Busqueda
+    data object Error : Busqueda
+}
+
+@Composable
+private fun Actualizaciones(a: Actualizador) {
+    val c = LocalColores.current
+    val alcance = rememberCoroutineScope()
+    var estado by remember { mutableStateOf<Busqueda>(Busqueda.Nada) }
+
+    fun instalar(v: Version) {
+        if (!a.puedeInstalar()) {
+            estado = Busqueda.Permiso(v)
+            a.pedirPermisoInstalar()
+            return
+        }
+        estado = Busqueda.Bajando(v, 0f)
+        alcance.launch {
+            runCatching {
+                val apk = a.descargar(v) { f -> estado = Busqueda.Bajando(v, f) }
+                estado = Busqueda.Instalando
+                a.instalar(apk)
+            }.onFailure { estado = Busqueda.Error }
+        }
+    }
+
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        when (val e = estado) {
+            Busqueda.Nada, Busqueda.AlDia, Busqueda.Error -> {
+                Boton(stringResource(R.string.buscar_actualizaciones), {
+                    estado = Busqueda.Buscando
+                    alcance.launch {
+                        estado = runCatching { a.buscar() }
+                            .fold({ v -> if (v == null) Busqueda.AlDia else Busqueda.Nueva(v) }, { Busqueda.Error })
+                    }
+                })
+                if (e == Busqueda.AlDia) Etiqueta(stringResource(R.string.al_dia), Texto.chico, c.acento)
+                if (e == Busqueda.Error) Etiqueta(stringResource(R.string.actualizar_error), Texto.chico, c.peligro)
+            }
+            Busqueda.Buscando -> Etiqueta(stringResource(R.string.buscando), Texto.normal, c.textoSuave)
+            is Busqueda.Nueva -> NuevaVersion(e.v) { instalar(e.v) }
+            is Busqueda.Bajando -> Etiqueta(stringResource(R.string.bajando, (e.avance * 100).toInt()), Texto.normal, c.acento)
+            is Busqueda.Permiso -> {
+                Etiqueta(stringResource(R.string.permiso_instalar), Texto.chico, c.textoSuave)
+                Boton(stringResource(R.string.ya_lo_permiti), { instalar(e.v) }, principal = true)
+            }
+            Busqueda.Instalando -> Etiqueta(stringResource(R.string.instalando), Texto.normal, c.acento)
+        }
+        Actualizador.errorInstalacion?.let { Etiqueta(stringResource(R.string.instalar_error, it), Texto.chico, c.peligro) }
+    }
+}
+
+@Composable
+private fun NuevaVersion(v: Version, alInstalar: () -> Unit) {
+    val c = LocalColores.current
+    val forma = RoundedCornerShape(16.dp)
+    Column(
+        Modifier.fillMaxWidth().clip(forma).background(c.superficie).border(1.dp, c.acento, forma).padding(18.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        Etiqueta(stringResource(R.string.nueva_version, v.nombre), Texto.subtitulo)
+        // Las notas del Release como lista corta: une los renglones partidos del
+        // CHANGELOG y quita el formato de Markdown.
+        val notas = buildList {
+            for (r in v.notas.lines().map { it.trim() }) when {
+                r.isBlank() || r.startsWith("#") -> Unit
+                r.startsWith("- ") -> add("• " + r.removePrefix("- "))
+                isNotEmpty() -> this[lastIndex] = this[lastIndex] + " " + r
+                else -> add(r)
+            }
+        }.take(6).joinToString("\n").replace("**", "")
+        if (notas.isNotBlank()) Etiqueta(notas, Texto.chico, c.textoSuave, maxLineas = 8)
+        Boton(stringResource(R.string.descargar_instalar, v.bytes / 1e6f), alInstalar, principal = true)
+    }
 }

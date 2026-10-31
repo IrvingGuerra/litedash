@@ -197,14 +197,41 @@ private fun PasoEstilo(prefs: Preferencias, tablero: EstadoTablero) {
     Etiqueta(stringResource(R.string.bienvenida_cambiar_despues), Texto.chico, c.textoSuave)
 }
 
+/**
+ * Pide ser la pantalla de inicio: el diálogo del sistema (Android 10+) y, si la
+ * pantalla no lo tiene, sus ajustes de inicio o de apps predeterminadas.
+ * Devuelve la acción y un contador que sube al volver del diálogo.
+ */
+@Composable
+fun rememberPedirInicio(): Pair<() -> Unit, Int> {
+    val contexto = LocalContext.current
+    var vueltas by remember { mutableIntStateOf(0) }
+    val pedirRol = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { vueltas++ }
+    val pedir = {
+        val pidio = Build.VERSION.SDK_INT >= 29 && runCatching {
+            val rol = contexto.getSystemService(RoleManager::class.java)
+            if (!rol.isRoleAvailable(RoleManager.ROLE_HOME)) return@runCatching false
+            pedirRol.launch(rol.createRequestRoleIntent(RoleManager.ROLE_HOME))
+            true
+        }.getOrDefault(false)
+        if (!pidio) {
+            listOf(Settings.ACTION_HOME_SETTINGS, Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS, Settings.ACTION_SETTINGS)
+                .firstOrNull { accion ->
+                    runCatching { contexto.startActivity(Intent(accion).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }.isSuccess
+                }
+        }
+        Unit
+    }
+    return pedir to vueltas
+}
+
 @Composable
 private fun PasoInicio(revision: Int) {
     val c = LocalColores.current
     val contexto = LocalContext.current
+    val (pedir, vueltas) = rememberPedirInicio()
     // Se vuelve a revisar al regresar de Ajustes (revision cambia en onResume).
-    var intentos by remember { mutableIntStateOf(0) }
-    val pedirRol = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { intentos++ }
-    val yaEs = remember(revision, intentos) { esInicio(contexto) }
+    val yaEs = remember(revision, vueltas) { esInicio(contexto) }
     Titulos(stringResource(R.string.bienvenida_inicio_titulo), stringResource(R.string.bienvenida_inicio))
     if (yaEs) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -215,18 +242,7 @@ private fun PasoInicio(revision: Int) {
             Etiqueta(stringResource(R.string.bienvenida_ya_es_inicio), Texto.subtitulo)
         }
     } else {
-        Boton(stringResource(R.string.hacer_inicio), {
-            // Android 10+: el diálogo del sistema para elegir el inicio. Antes, sus ajustes.
-            val pidio = Build.VERSION.SDK_INT >= 29 && runCatching {
-                val rol = contexto.getSystemService(RoleManager::class.java)
-                if (!rol.isRoleAvailable(RoleManager.ROLE_HOME)) return@runCatching false
-                pedirRol.launch(rol.createRequestRoleIntent(RoleManager.ROLE_HOME))
-                true
-            }.getOrDefault(false)
-            if (!pidio) {
-                runCatching { contexto.startActivity(Intent(Settings.ACTION_HOME_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
-            }
-        }, principal = true)
+        Boton(stringResource(R.string.hacer_inicio), pedir, principal = true)
         Spacer(Modifier.height(16.dp))
         Etiqueta(stringResource(R.string.bienvenida_inicio_ayuda), Texto.chico, c.textoSuave, modifier = Modifier.widthIn(max = 640.dp))
     }

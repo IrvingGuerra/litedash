@@ -1,6 +1,9 @@
 package com.irvingguerra.litedash
 
+import android.content.Context
+import android.content.res.Configuration
 import android.os.Bundle
+import java.util.Locale
 import androidx.activity.ComponentActivity
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.SystemBarStyle
@@ -10,6 +13,7 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableIntStateOf
 import com.irvingguerra.litedash.core.ui.LiteDashTema
+import com.irvingguerra.litedash.feature.actualizar.Actualizador
 import com.irvingguerra.litedash.feature.apps.RepositorioApps
 import com.irvingguerra.litedash.feature.auto.RepositorioAutos
 import com.irvingguerra.litedash.feature.musica.RepositorioMusica
@@ -24,6 +28,7 @@ class MainActivity : ComponentActivity() {
             prefs = Preferencias(applicationContext),
             tablero = EstadoTablero(AlmacenTablero(applicationContext)),
             autos = RepositorioAutos(applicationContext, BuildConfig.URL_CATALOGO),
+            actualizador = Actualizador(applicationContext, BuildConfig.URL_ACTUALIZACIONES, BuildConfig.VERSION_CODE.toLong()),
         )
     }
 
@@ -53,6 +58,14 @@ class MainActivity : ComponentActivity() {
                 Inicio(d, revision.intValue)
             }
         }
+    }
+
+    // Idioma elegido en Ajustes (o el del sistema si no eligió).
+    override fun attachBaseContext(base: Context) {
+        val idioma = Idioma.leer(base)
+        if (idioma.isBlank()) return super.attachBaseContext(base)
+        val config = Configuration(base.resources.configuration).apply { setLocale(Locale.forLanguageTag(idioma)) }
+        super.attachBaseContext(base.createConfigurationContext(config))
     }
 
     override fun onResume() {

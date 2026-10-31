@@ -61,12 +61,15 @@ android {
             dimension = "canal"
             buildConfigField("String", "CANAL", "\"play\"")
             buildConfigField("String", "URL_CATALOGO", "\"\"")
+            // Play prohíbe actualizarse por fuera de la tienda: sin actualizador.
+            buildConfigField("String", "URL_ACTUALIZACIONES", "\"\"")
         }
         create("github") {
             dimension = "canal"
             buildConfigField("String", "CANAL", "\"github\"")
             // Catálogo de autos en pausa hasta tener modelos con licencia comercial.
             buildConfigField("String", "URL_CATALOGO", "\"\"")
+            buildConfigField("String", "URL_ACTUALIZACIONES", "\"https://api.github.com/repos/IrvingGuerra/litedash/releases?per_page=20\"")
         }
     }
 
@@ -103,6 +106,11 @@ android {
         warningsAsErrors = false
     }
 
+    // El idioma se elige dentro de la app: Play debe traer español e inglés siempre.
+    bundle {
+        language { enableSplit = false }
+    }
+
     packaging {
         resources.excludes += setOf("/META-INF/{AL2.0,LGPL2.1}", "DebugProbesKt.bin")
     }
@@ -118,6 +126,7 @@ dependencies {
     implementation(project(":feature:tablero"))
     implementation(project(":feature:musica"))
     implementation(project(":feature:auto"))
+    implementation(project(":feature:actualizar"))
 
     implementation(platform(libs.compose.bom))
     implementation(libs.compose.foundation)
