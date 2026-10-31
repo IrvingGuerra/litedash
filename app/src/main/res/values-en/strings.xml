@@ -1,4 +1,39 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="tu_auto">Your car</string>
+    <string name="mi_auto">My car</string>
+    <string name="nombre">Name</string>
+    <string name="color">Color</string>
+    <string name="auto_pronto">Coming soon: your exact model, with its color and wheels.</string>
+    <string name="pieza_auto">Car</string>
+    <string name="pieza_musica">Music</string>
+    <string name="pieza_navegar">Navigate</string>
+    <string name="pieza_reloj">Clock</string>
+    <string name="pieza_telefono">Phone</string>
+    <string name="pieza_app">App</string>
+    <string name="elegir_app">Choose app</string>
+    <string name="apps">Apps</string>
+    <string name="buscar_app">Search apps</string>
+    <string name="cajon_ayuda">Long-press an app to pin it to the dock or remove it.</string>
+    <string name="acomoda_tu_inicio">Arrange your home</string>
+    <string name="plantillas">Layouts</string>
+    <string name="plantillas_ayuda">Pick a starting point. Then move and resize anything you like.</string>
+    <string name="plantilla_centro">Car in the middle</string>
+    <string name="plantilla_lateral">Car on the side</string>
+    <string name="plantilla_vertical">Portrait</string>
+    <string name="agregar">Add</string>
+    <string name="agregar_pieza">Add to home</string>
+    <string name="sin_lugar">No room left: remove or shrink something.</string>
+    <string name="listo">Done</string>
+    <string name="ajustes">Settings</string>
+    <string name="tema">Theme</string>
+    <string name="tema_oscuro">Dark</string>
+    <string name="tema_claro">Light</string>
+    <string name="tema_sistema">Follow system</string>
+    <string name="escala">Interface size</string>
+    <string name="escala_ayuda">If everything looks too small or too big on your screen. Each size keeps its own layout.</string>
+    <string name="inicio">Home</string>
+    <string name="acomodar">Arrange home</string>
+    <string name="acomodar_ayuda">You can also long-press anywhere on the home screen.</string>
+    <string name="acerca_de">About</string>
 </resources>

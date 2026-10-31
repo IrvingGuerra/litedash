@@ -19,4 +19,7 @@ rootProject.name = "litedash"
 include(":app")
 include(":core:ui")
 include(":feature:apps")
+include(":feature:tablero")
+include(":feature:musica")
+include(":feature:auto")
 include(":benchmark")

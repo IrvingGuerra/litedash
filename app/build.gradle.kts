@@ -38,7 +38,7 @@ android {
     defaultConfig {
         applicationId = "com.irvingguerra.litedash"
         minSdk = 26
-        targetSdk = 36
+        targetSdk = 37
         versionCode = versionCodeFrom(nombreVersion)
         versionName = nombreVersion
     }
@@ -112,6 +112,9 @@ kotlin {
 dependencies {
     implementation(project(":core:ui"))
     implementation(project(":feature:apps"))
+    implementation(project(":feature:tablero"))
+    implementation(project(":feature:musica"))
+    implementation(project(":feature:auto"))
 
     implementation(platform(libs.compose.bom))
     implementation(libs.compose.foundation)

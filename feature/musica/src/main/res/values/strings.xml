@@ -1,0 +1,7 @@
+<resources>
+    <string name="musica">Música</string>
+    <string name="musica_explica">Ve y controla lo que suena en cualquier app. Necesita acceso a notificaciones.</string>
+    <string name="activar">Activar</string>
+    <string name="nada_sonando">Nada sonando</string>
+    <string name="abre_una_app">Pon música en tu app favorita</string>
+</resources>

@@ -6,6 +6,20 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
+### Nuevo
+- **Inicio que tú acomodas**: deja presionado cualquier lugar para mover,
+  agrandar, achicar, quitar o agregar piezas. Entre más grande la pantalla, más
+  lugares hay. Cada tamaño de pantalla guarda su propio acomodo.
+- Tres plantillas para empezar: auto al centro, auto a un lado y vertical.
+- Tu auto en pantalla, con nombre y seis colores.
+- Música: ve y controla lo que suena en cualquier app (pide acceso a
+  notificaciones solo si pones la pieza y tocas "Activar").
+- Piezas de Navegar, Teléfono, Reloj grande y accesos a cualquier app.
+- Dock con tus apps favoritas (deja presionada una app en el cajón para fijarla)
+  y control de volumen.
+- Búsqueda en el cajón de apps (sin importar acentos).
+- Tema claro, oscuro o como el sistema, y tamaño de la interfaz de 80 % a 150 %.
+
 ## [1.0.0] - 2026-10-31
 
 ### Nuevo

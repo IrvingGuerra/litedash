@@ -2,4 +2,39 @@
 <resources>
     <string name="app_name" translatable="false">LiteDash</string>
     <string name="tu_auto">Tu auto</string>
+    <string name="mi_auto">Mi auto</string>
+    <string name="nombre">Nombre</string>
+    <string name="color">Color</string>
+    <string name="auto_pronto">Pronto: tu modelo exacto, con su color y sus llantas.</string>
+    <string name="pieza_auto">Auto</string>
+    <string name="pieza_musica">Música</string>
+    <string name="pieza_navegar">Navegar</string>
+    <string name="pieza_reloj">Reloj</string>
+    <string name="pieza_telefono">Teléfono</string>
+    <string name="pieza_app">App</string>
+    <string name="elegir_app">Elegir app</string>
+    <string name="apps">Apps</string>
+    <string name="buscar_app">Buscar app</string>
+    <string name="cajon_ayuda">Deja presionada una app para fijarla en el dock o quitarla.</string>
+    <string name="acomoda_tu_inicio">Acomoda tu inicio</string>
+    <string name="plantillas">Plantillas</string>
+    <string name="plantillas_ayuda">Elige un punto de partida. Después mueve y cambia el tamaño de lo que quieras.</string>
+    <string name="plantilla_centro">Auto al centro</string>
+    <string name="plantilla_lateral">Auto a un lado</string>
+    <string name="plantilla_vertical">Vertical</string>
+    <string name="agregar">Agregar</string>
+    <string name="agregar_pieza">Agregar al inicio</string>
+    <string name="sin_lugar">Ya no hay lugar: quita o achica alguna pieza.</string>
+    <string name="listo">Listo</string>
+    <string name="ajustes">Ajustes</string>
+    <string name="tema">Tema</string>
+    <string name="tema_oscuro">Oscuro</string>
+    <string name="tema_claro">Claro</string>
+    <string name="tema_sistema">Como el sistema</string>
+    <string name="escala">Tamaño de la interfaz</string>
+    <string name="escala_ayuda">Si todo se ve muy chico o muy grande en tu pantalla. Cada tamaño guarda su propio acomodo.</string>
+    <string name="inicio">Inicio</string>
+    <string name="acomodar">Acomodar inicio</string>
+    <string name="acomodar_ayuda">También puedes dejar presionado cualquier lugar del inicio.</string>
+    <string name="acerca_de">Acerca de</string>
 </resources>

@@ -20,7 +20,7 @@ kotlin {
 }
 
 dependencies {
-    implementation(platform(libs.compose.bom))
-    implementation(libs.compose.foundation)
-    implementation(libs.compose.ui)
+    api(platform(libs.compose.bom))
+    api(libs.compose.foundation)
+    api(libs.compose.ui)
 }

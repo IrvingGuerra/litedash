@@ -14,6 +14,8 @@ import kotlinx.coroutines.withContext
 
 data class App(val nombre: String, val paquete: String, val actividad: String) {
     val componente get() = ComponentName(paquete, actividad)
+    /** Cómo se guarda una app en el tablero o el dock. */
+    val clave get() = "$paquete/$actividad"
 }
 
 /** Lista de apps abribles e íconos, siempre fuera del hilo principal. */
@@ -42,6 +44,13 @@ class RepositorioApps(contexto: Context) {
                 ?.also { iconos.put(clave, it) }
         }
     }
+
+    /** Busca una app por su [App.clave] en la lista ya cargada. */
+    fun buscar(apps: List<App>, clave: String) = apps.firstOrNull { it.clave == clave }
+
+    /** Primera app instalada de [paquetes], en ese orden de preferencia. */
+    fun primeraDe(apps: List<App>, vararg paquetes: String) =
+        paquetes.firstNotNullOfOrNull { p -> apps.firstOrNull { it.paquete == p } }
 
     fun abrir(contexto: Context, app: App) {
         val intento = Intent(Intent.ACTION_MAIN)
