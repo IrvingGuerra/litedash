@@ -29,8 +29,8 @@ jobs:
           apk=app/build/outputs/apk/github/release/app-github-release.apk
           tam=$(stat -c%s "$apk")
           echo "APK github release: $((tam / 1024)) KB" >> "$GITHUB_STEP_SUMMARY"
-          if [ "$tam" -gt $((8 * 1024 * 1024)) ]; then
-            echo "::error::El APK pesa $((tam / 1024)) KB y el presupuesto es 8 MB"
+          if [ "$tam" -gt $((12 * 1024 * 1024)) ]; then
+            echo "::error::El APK pesa $((tam / 1024)) KB y el presupuesto es 12 MB (con el mapa)"
             exit 1
           fi
 
