@@ -6,6 +6,8 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
+## [1.3.1] - 2026-10-31
+
 ### Nuevo
 - **Acomodos por tamaño de pantalla**: chicas (7"), medianas (9–10"), grandes
   (11" o más) y verticales, con el recomendado para tu pantalla. Nuevos:
