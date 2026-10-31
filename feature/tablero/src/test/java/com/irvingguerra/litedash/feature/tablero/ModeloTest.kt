@@ -65,4 +65,12 @@ class ModeloTest {
         assertEquals(3 to 1, Medidas(3, 1, 6, 2).acotar(1, 0))
         assertEquals(6 to 2, Medidas(3, 1, 6, 2).acotar(9, 9))
     }
+
+    @Test
+    fun cadaPantallaTieneSugeridaParaSuTamano() {
+        assertEquals(TamanoPantalla.CHICA, pantallas[0].tamano)
+        assertEquals(TamanoPantalla.GRANDE, pantallas[2].tamano)
+        assertEquals(TamanoPantalla.VERTICAL, pantallas[4].tamano)
+        for (c in pantallas) assertTrue(c.clave, c.tamano in c.plantillaSugerida().para)
+    }
 }

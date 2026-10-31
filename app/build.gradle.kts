@@ -41,8 +41,6 @@ android {
         targetSdk = 37
         versionCode = versionCodeFrom(nombreVersion)
         versionName = nombreVersion
-        // Las pantallas de auto son ARM; sin x86 el mapa (código nativo) pesa la mitad.
-        ndk { abiFilters += listOf("arm64-v8a", "armeabi-v7a") }
     }
 
     signingConfigs {
@@ -105,8 +103,6 @@ android {
         disable += setOf("GradleDependency", "NewerVersionAvailable", "AndroidGradlePluginVersion")
         // aapt exige -v26 para adaptive-icon aunque minSdk ya sea 26.
         disable += "ObsoleteSdkInt"
-        // Pantallas de auto, no Chromebooks: solo ARM (ver abiFilters).
-        disable += "ChromeOsAbiSupport"
         warningsAsErrors = false
     }
 
@@ -117,8 +113,6 @@ android {
 
     packaging {
         resources.excludes += setOf("/META-INF/{AL2.0,LGPL2.1}", "DebugProbesKt.bin")
-        // El mapa trae código nativo: comprimido, la descarga pesa menos de la mitad.
-        jniLibs.useLegacyPackaging = true
     }
 }
 
@@ -134,7 +128,6 @@ dependencies {
     implementation(project(":feature:auto"))
     implementation(project(":feature:actualizar"))
     implementation(project(":feature:navegacion"))
-    implementation(project(":feature:mapa"))
 
     implementation(platform(libs.compose.bom))
     implementation(libs.compose.foundation)

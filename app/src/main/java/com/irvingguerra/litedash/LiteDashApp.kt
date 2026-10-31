@@ -19,11 +19,12 @@ class LiteDashApp : Application() {
     val dependencias: Dependencias by lazy {
         val paquetesMapa = PAQUETES_NAVEGACION.toSet() +
             if (BuildConfig.DEBUG) setOf(RepositorioNavegacion.PAQUETE_PRUEBAS) else emptySet()
+        val prefs = Preferencias(this)
         Dependencias(
             apps = RepositorioApps(this),
-            musica = RepositorioMusica(this),
+            musica = RepositorioMusica(this).apply { preferida = prefs.appMusica },
             navegacion = RepositorioNavegacion(this, paquetesMapa),
-            prefs = Preferencias(this),
+            prefs = prefs,
             tablero = EstadoTablero(AlmacenTablero(this)),
             autos = RepositorioAutos(this, BuildConfig.URL_CATALOGO),
             actualizador = Actualizador(this, BuildConfig.URL_ACTUALIZACIONES, BuildConfig.VERSION_CODE.toLong()),

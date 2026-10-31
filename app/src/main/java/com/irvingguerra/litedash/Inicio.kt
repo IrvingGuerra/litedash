@@ -112,10 +112,6 @@ fun ContenidoPieza(d: Dependencias, p: Pieza, apps: List<App>, revision: Int, ac
             val app = appMapa(d, apps, p.dato)
             PiezaNavegacion(d.navegacion, app) { acciones.alNavegar(app) }
         }
-        Tipos.MAPA -> {
-            val app = appMapa(d, apps)
-            PiezaMapaTablero(d.navegacion, app) { acciones.alNavegar(app) }
-        }
         Tipos.TELEFONO -> PiezaAcceso(Iconos.telefono, stringResource(R.string.pieza_telefono), null) {
             abrirTelefono(contexto)
         }
@@ -181,7 +177,7 @@ fun Inicio(d: Dependencias, revision: Int, inicioTocado: Int) {
                 val cuadricula = remember(maxWidth, maxHeight) { Cuadricula.para(maxWidth.value, maxHeight.value) }
                 remember(cuadricula) { d.tablero.usar(cuadricula) }
                 if (musica) {
-                    MusicaAmpliada(d.musica, cerrar = { musica = false }, alAbrirMusica = { abrirMusica(contexto, d.apps, apps) }, Modifier.padding(6.dp))
+                    MusicaAmpliada(d.musica, cerrar = { musica = false }, Modifier.padding(6.dp))
                 } else {
                     Tablero(
                         cuadricula = cuadricula,
@@ -205,7 +201,7 @@ fun Inicio(d: Dependencias, revision: Int, inicioTocado: Int) {
         when (val p = panel) {
             null -> Unit
             Panel.Cajon -> PanelCajon(d, apps, cerrar = { panel = null })
-            Panel.Ajustes -> PanelAjustes(d, cerrar = { panel = null }, alEditar = { panel = null; editando = true })
+            Panel.Ajustes -> PanelAjustes(d, cerrar = { panel = null }, alEditar = { panel = null; editando = true }, alPlantillas = { panel = Panel.Plantillas })
             Panel.Auto -> PanelAuto(d.prefs, d.autos, cerrar = { panel = null })
             Panel.Plantillas -> PanelPlantillas(d.tablero, cerrar = { panel = null })
             Panel.Agregar -> PanelAgregar(d.tablero, cerrar = { panel = null }, alElegirApp = { panel = Panel.ElegirApp(null) })
@@ -223,7 +219,8 @@ private fun favoritasDelDock(d: Dependencias, apps: List<App>): List<App> {
     d.prefs.dock?.let { claves -> return claves.mapNotNull { d.apps.buscar(apps, it) } }
     return listOfNotNull(
         d.apps.primeraDe(apps, *PAQUETES_NAVEGACION),
-        d.apps.primeraDe(apps, *PAQUETES_MUSICA),
+        // La app de música elegida en Ajustes, o la primera conocida que haya.
+        d.prefs.appMusica?.let { d.apps.primeraDe(apps, it) } ?: d.apps.primeraDe(apps, *PAQUETES_MUSICA),
         d.apps.primeraDe(apps, "com.google.android.youtube"),
         d.apps.primeraDe(apps, "com.whatsapp", "org.telegram.messenger"),
         d.apps.primeraDe(apps, "com.android.chrome"),
@@ -233,6 +230,8 @@ private fun favoritasDelDock(d: Dependencias, apps: List<App>): List<App> {
 @Composable
 private fun BarraSuperior(editando: Boolean, conHora: Boolean, alAgregar: () -> Unit, alPlantillas: () -> Unit, alTerminar: () -> Unit) {
     val c = LocalColores.current
+    // Sin nada que mostrar (la hora ya está en una pieza), la barra no aparta espacio: el tablero sube.
+    if (!editando && !conHora) return Spacer(Modifier.height(12.dp))
     Row(
         Modifier.fillMaxWidth().height(64.dp).padding(horizontal = 24.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -261,38 +260,43 @@ private fun Dock(
 ) {
     val c = LocalColores.current
     val contexto = LocalContext.current
+    // En pantallas chicas (7") todo se ve lejos: íconos más grandes, más fáciles de atinar manejando.
+    val chica = pantallaChica()
+    val lado = if (chica) 56.dp else 44.dp
+    val caja = if (chica) 68.dp else 56.dp
     Row(
         Modifier
             .fillMaxWidth()
-            .height(84.dp)
+            .height(if (chica) 96.dp else 84.dp)
             .padding(horizontal = 16.dp, vertical = 8.dp)
             .clip(RoundedCornerShape(24.dp))
             .background(c.superficie)
             .padding(horizontal = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        BotonIcono(Iconos.auto, alAuto)
-        BotonIcono(Iconos.apps, alApps)
+        val boton = if (chica) 64.dp else 56.dp
+        BotonIcono(Iconos.auto, alAuto, tam = boton)
+        BotonIcono(Iconos.apps, alApps, tam = boton)
         Box(Modifier.padding(horizontal = 8.dp).width(1.dp).height(32.dp).background(c.linea))
         BoxWithConstraints(Modifier.weight(1f)) {
             // Caben las que quepan: en pantallas chicas el dock no se encima.
-            val caben = (maxWidth / 64.dp).toInt()
+            val caben = (maxWidth / (caja + 8.dp)).toInt()
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                 for (app in favoritas.take(caben)) {
-                    Box(Modifier.size(56.dp).clip(RoundedCornerShape(16.dp)).clickable { repo.abrir(contexto, app) }, contentAlignment = Alignment.Center) {
-                        IconoApp(repo, app, 44.dp)
+                    Box(Modifier.size(caja).clip(RoundedCornerShape(16.dp)).clickable { repo.abrir(contexto, app) }, contentAlignment = Alignment.Center) {
+                        IconoApp(repo, app, lado)
                     }
                 }
             }
         }
-        Volumen()
-        BotonIcono(Iconos.ajustes, alAjustes)
+        Volumen(boton)
+        BotonIcono(Iconos.ajustes, alAjustes, tam = boton)
     }
 }
 
 /** Volumen de la música: botones − / + y el nivel; escucha los cambios solo mientras se ve. */
 @Composable
-private fun Volumen() {
+private fun Volumen(boton: androidx.compose.ui.unit.Dp) {
     val contexto = LocalContext.current
     val audio = remember { contexto.getSystemService(AudioManager::class.java) }
     var nivel by remember { mutableIntStateOf(audio.getStreamVolume(AudioManager.STREAM_MUSIC)) }
@@ -316,11 +320,11 @@ private fun Volumen() {
         nivel = audio.getStreamVolume(AudioManager.STREAM_MUSIC)
     }
     Row(verticalAlignment = Alignment.CenterVertically) {
-        BotonIcono(Iconos.menos, { ajustar(AudioManager.ADJUST_LOWER) })
+        BotonIcono(Iconos.menos, { ajustar(AudioManager.ADJUST_LOWER) }, tam = boton)
         Row(Modifier.widthIn(min = 52.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
             Etiqueta(nivel.toString(), Texto.subtitulo, maxLineas = 1)
         }
-        BotonIcono(Iconos.mas, { ajustar(AudioManager.ADJUST_RAISE) })
+        BotonIcono(Iconos.mas, { ajustar(AudioManager.ADJUST_RAISE) }, tam = boton)
         Spacer(Modifier.width(4.dp))
     }
 }

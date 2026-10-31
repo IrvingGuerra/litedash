@@ -33,6 +33,7 @@ import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -40,6 +41,8 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.unit.sp
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -69,6 +72,9 @@ import com.irvingguerra.litedash.feature.auto.DibujoAuto
 import com.irvingguerra.litedash.feature.tablero.Cuadricula
 import com.irvingguerra.litedash.feature.tablero.EstadoTablero
 import com.irvingguerra.litedash.feature.tablero.Plantilla
+import com.irvingguerra.litedash.feature.tablero.TamanoPantalla
+import com.irvingguerra.litedash.feature.tablero.plantillaSugerida
+import com.irvingguerra.litedash.feature.tablero.tamano
 import com.irvingguerra.litedash.feature.tablero.Tipos
 import com.irvingguerra.litedash.feature.tablero.piezas
 
@@ -344,96 +350,225 @@ private fun OpcionModelo(titulo: String, detalle: String?, elegido: Boolean, alT
     }
 }
 
+/** Secciones de Ajustes, en el menú de la izquierda. */
+private enum class SeccionAjustes(val nombre: Int) { APARIENCIA(R.string.apariencia), INICIO(R.string.inicio), MUSICA(R.string.musica), MAPA(R.string.mapa), MODULOS(R.string.modulos), ACERCA(R.string.acerca_de) }
+
+private fun SeccionAjustes.icono() = when (this) {
+    SeccionAjustes.APARIENCIA -> Iconos.tema
+    SeccionAjustes.INICIO -> Iconos.tablero
+    SeccionAjustes.MUSICA -> Iconos.musica
+    SeccionAjustes.MAPA -> Iconos.navegar
+    SeccionAjustes.MODULOS -> Iconos.apps
+    SeccionAjustes.ACERCA -> Iconos.info
+}
+
+/**
+ * Ajustes como en las pantallas de auto: menú de secciones a la izquierda y
+ * tarjetas a la derecha. En pantallas angostas el menú queda solo con íconos.
+ */
 @Composable
-fun PanelAjustes(d: Dependencias, cerrar: () -> Unit, alEditar: () -> Unit) {
+fun PanelAjustes(d: Dependencias, cerrar: () -> Unit, alEditar: () -> Unit, alPlantillas: () -> Unit) {
+    val c = LocalColores.current
+    var seccion by rememberSaveable { mutableStateOf(SeccionAjustes.APARIENCIA) }
+    BoxWithConstraints(
+        Modifier
+            .fillMaxSize()
+            .background(c.fondo)
+            // Atrapa los toques para que no lleguen al inicio de abajo.
+            .clickable(remember { MutableInteractionSource() }, indication = null) {}
+            .safeDrawingPadding(),
+    ) {
+        val angosta = maxWidth < 720.dp
+        Row(Modifier.fillMaxSize()) {
+            Column(
+                Modifier.width(if (angosta) 88.dp else 270.dp).fillMaxHeight().verticalScroll(rememberScrollState()).padding(12.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                EntradaMenu(Iconos.atras, stringResource(R.string.volver_inicio), elegida = false, angosta, cerrar)
+                Spacer(Modifier.height(10.dp))
+                for (s in SeccionAjustes.entries) EntradaMenu(s.icono(), stringResource(s.nombre), s == seccion, angosta) { seccion = s }
+            }
+            Column(
+                Modifier.weight(1f).fillMaxHeight().verticalScroll(rememberScrollState()).padding(start = 8.dp, end = 24.dp, top = 20.dp, bottom = 24.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                Etiqueta(stringResource(seccion.nombre), Texto.titulo.copy(fontSize = 30.sp), maxLineas = 1)
+                when (seccion) {
+                    SeccionAjustes.APARIENCIA -> Apariencia(d.prefs)
+                    SeccionAjustes.INICIO -> AjustesInicio(d.prefs, alEditar, alPlantillas)
+                    SeccionAjustes.MUSICA -> TarjetaAjuste(Iconos.musica) { AjustesMusica(d) }
+                    SeccionAjustes.MAPA -> TarjetaAjuste(Iconos.navegar) { AjustesMapa(d) }
+                    SeccionAjustes.MODULOS -> {
+                        Etiqueta(stringResource(R.string.modulos_ayuda), Texto.normal, c.textoSuave)
+                        Modulos(d, alEditar)
+                    }
+                    SeccionAjustes.ACERCA -> AcercaDe(d)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun EntradaMenu(icono: androidx.compose.ui.graphics.vector.ImageVector, texto: String, elegida: Boolean, angosta: Boolean, alTocar: () -> Unit) {
+    val c = LocalColores.current
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .height(64.dp)
+            .clip(RoundedCornerShape(18.dp))
+            .background(if (elegida) c.superficieAlta else androidx.compose.ui.graphics.Color.Transparent)
+            .clickable(onClick = alTocar)
+            .padding(horizontal = 18.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = if (angosta) Arrangement.Center else Arrangement.Start,
+    ) {
+        Icono(icono, if (elegida) c.acento else c.textoSuave, 26.dp)
+        if (!angosta) Etiqueta(texto, Texto.subtitulo, if (elegida) c.texto else c.textoSuave, maxLineas = 1, modifier = Modifier.padding(start = 16.dp))
+    }
+}
+
+/** Tarjeta de Ajustes: título, controles y el ícono de la sección grande y tenue a la derecha. */
+@Composable
+private fun TarjetaAjuste(
+    icono: androidx.compose.ui.graphics.vector.ImageVector,
+    titulo: String? = null,
+    ayuda: String? = null,
+    contenido: @Composable ColumnScope.() -> Unit,
+) {
+    val c = LocalColores.current
+    Tarjeta(Modifier.fillMaxWidth().widthIn(max = 860.dp)) {
+        Icono(icono, c.acento.copy(alpha = 0.14f), 72.dp, Modifier.align(Alignment.TopEnd).padding(18.dp))
+        Column(Modifier.padding(22.dp).padding(end = 64.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+            if (titulo != null) Etiqueta(titulo, Texto.subtitulo, maxLineas = 1)
+            contenido()
+            if (ayuda != null) Etiqueta(ayuda, Texto.chico, c.textoSuave)
+        }
+    }
+}
+
+@Composable
+private fun Apariencia(prefs: Preferencias) {
     val c = LocalColores.current
     val contexto = LocalContext.current
-    val prefs = d.prefs
-    PanelBase(stringResource(R.string.ajustes), cerrar) {
-        Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).widthIn(max = 720.dp), verticalArrangement = Arrangement.spacedBy(28.dp)) {
-            Seccion(stringResource(R.string.tema)) {
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    for ((modo, texto) in listOf(ModoTema.OSCURO to R.string.tema_oscuro, ModoTema.CLARO to R.string.tema_claro, ModoTema.SISTEMA to R.string.tema_sistema)) {
-                        Boton(stringResource(texto), { prefs.tema = modo }, principal = prefs.tema == modo)
+    TarjetaAjuste(Iconos.tema, stringResource(R.string.tema)) {
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            for ((modo, texto) in listOf(ModoTema.OSCURO to R.string.tema_oscuro, ModoTema.CLARO to R.string.tema_claro, ModoTema.SISTEMA to R.string.tema_sistema)) {
+                Boton(stringResource(texto), { prefs.tema = modo }, principal = prefs.tema == modo)
+            }
+        }
+    }
+    TarjetaAjuste(Iconos.idioma, stringResource(R.string.idioma)) {
+        val actividad = contexto as? android.app.Activity
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            for ((codigo, texto) in listOf("" to R.string.idioma_sistema, "es" to R.string.idioma_es, "en" to R.string.idioma_en)) {
+                Boton(stringResource(texto), {
+                    if (prefs.idioma != codigo) {
+                        prefs.idioma = codigo
+                        actividad?.recreate()
                     }
-                }
+                }, principal = prefs.idioma == codigo)
             }
-            Seccion(stringResource(R.string.idioma)) {
-                val actividad = contexto as? android.app.Activity
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    for ((codigo, texto) in listOf("" to R.string.idioma_sistema, "es" to R.string.idioma_es, "en" to R.string.idioma_en)) {
-                        Boton(stringResource(texto), {
-                            if (prefs.idioma != codigo) {
-                                prefs.idioma = codigo
-                                actividad?.recreate()
-                            }
-                        }, principal = prefs.idioma == codigo)
-                    }
-                }
-            }
-            Seccion(stringResource(R.string.escala)) {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    BotonIcono(Iconos.menos, { prefs.escala = (prefs.escala - 0.1f).coerceAtLeast(0.8f).redondear() }, fondo = c.superficieAlta)
-                    Etiqueta("${(prefs.escala * 100).toInt()} %", Texto.titulo, modifier = Modifier.widthIn(min = 90.dp))
-                    BotonIcono(Iconos.mas, { prefs.escala = (prefs.escala + 0.1f).coerceAtMost(1.5f).redondear() }, fondo = c.superficieAlta)
-                }
-                Etiqueta(stringResource(R.string.escala_ayuda), Texto.chico, c.textoSuave)
-            }
-            Seccion(stringResource(R.string.inicio)) {
-                val (pedirInicio, vueltas) = rememberPedirInicio()
-                val esLaDeInicio = remember(vueltas) { esInicio(contexto) }
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Boton(stringResource(R.string.acomodar), alEditar, principal = true)
-                    if (!esLaDeInicio) Boton(stringResource(R.string.hacer_inicio), { prefs.noPedirInicio = false; pedirInicio() })
-                }
-                Etiqueta(stringResource(R.string.acomodar_ayuda), Texto.chico, c.textoSuave)
-            }
-            Seccion(stringResource(R.string.mapa)) { AjustesMapa(d) }
-            Seccion(stringResource(R.string.modulos)) {
-                Etiqueta(stringResource(R.string.modulos_ayuda), Texto.chico, c.textoSuave)
-                Modulos(d)
-            }
-            Seccion(stringResource(R.string.acerca_de)) {
-                Etiqueta("LiteDash ${BuildConfig.VERSION_NAME} · ${BuildConfig.CANAL}", Texto.normal, c.textoSuave)
-                if (d.actualizador.disponible) Actualizaciones(d.actualizador)
-                var copiado by remember { mutableStateOf(false) }
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Boton(stringResource(R.string.copiar_info), { copiarInfo(contexto); copiado = true })
-                    if (copiado) Etiqueta(stringResource(R.string.copiado), Texto.chico, c.acento)
-                }
-                Etiqueta(stringResource(R.string.copiar_info_ayuda), Texto.chico, c.textoSuave)
-            }
-            Spacer(Modifier.height(24.dp))
+        }
+    }
+    TarjetaAjuste(Iconos.ampliar, stringResource(R.string.escala), stringResource(R.string.escala_ayuda)) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            BotonIcono(Iconos.menos, { prefs.escala = (prefs.escala - 0.1f).coerceAtLeast(0.8f).redondear() }, fondo = c.superficieAlta)
+            Etiqueta("${(prefs.escala * 100).toInt()} %", Texto.titulo, modifier = Modifier.widthIn(min = 90.dp))
+            BotonIcono(Iconos.mas, { prefs.escala = (prefs.escala + 0.1f).coerceAtMost(1.5f).redondear() }, fondo = c.superficieAlta)
+        }
+    }
+}
+
+@Composable
+private fun AjustesInicio(prefs: Preferencias, alEditar: () -> Unit, alPlantillas: () -> Unit) {
+    val contexto = LocalContext.current
+    TarjetaAjuste(Iconos.tablero, stringResource(R.string.acomodo), stringResource(R.string.acomodar_ayuda)) {
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Boton(stringResource(R.string.acomodar), alEditar, principal = true)
+            Boton(stringResource(R.string.plantillas), alPlantillas)
+        }
+    }
+    val (pedirInicio, vueltas) = rememberPedirInicio()
+    val esLaDeInicio = remember(vueltas) { esInicio(contexto) }
+    TarjetaAjuste(Iconos.casa, stringResource(R.string.bienvenida_inicio_titulo)) {
+        if (esLaDeInicio) {
+            Etiqueta(stringResource(R.string.bienvenida_ya_es_inicio), Texto.normal, LocalColores.current.acento)
+        } else {
+            Boton(stringResource(R.string.hacer_inicio), { prefs.noPedirInicio = false; pedirInicio() }, principal = true)
+        }
+    }
+}
+
+@Composable
+private fun AcercaDe(d: Dependencias) {
+    val c = LocalColores.current
+    val contexto = LocalContext.current
+    TarjetaAjuste(Iconos.info, "LiteDash ${BuildConfig.VERSION_NAME}") {
+        Etiqueta(BuildConfig.CANAL, Texto.chico, c.textoSuave)
+        if (d.actualizador.disponible) Actualizaciones(d.actualizador)
+    }
+    TarjetaAjuste(Iconos.apps, stringResource(R.string.copiar_info), stringResource(R.string.copiar_info_ayuda)) {
+        var copiado by remember { mutableStateOf(false) }
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Boton(stringResource(R.string.copiar_info), { copiarInfo(contexto); copiado = true })
+            if (copiado) Etiqueta(stringResource(R.string.copiado), Texto.chico, c.acento)
         }
     }
 }
 
 private fun Float.redondear() = kotlin.math.round(this * 10) / 10f
 
-@Composable
-internal fun Seccion(titulo: String, contenido: @Composable ColumnScope.() -> Unit) {
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Etiqueta(titulo.uppercase(), Texto.etiqueta, LocalColores.current.textoSuave)
-        contenido()
-    }
+fun nombreDe(p: Plantilla) = when (p) {
+    Plantilla.CENTRO -> R.string.plantilla_centro
+    Plantilla.TARJETAS -> R.string.plantilla_tarjetas
+    Plantilla.LATERAL -> R.string.plantilla_lateral
+    Plantilla.COLUMNAS -> R.string.plantilla_columnas
+    Plantilla.PANEL -> R.string.plantilla_panel
+    Plantilla.VERTICAL -> R.string.plantilla_vertical
 }
 
+private fun nombreDe(t: TamanoPantalla) = when (t) {
+    TamanoPantalla.CHICA -> R.string.pantallas_chicas
+    TamanoPantalla.MEDIANA -> R.string.pantallas_medianas
+    TamanoPantalla.GRANDE -> R.string.pantallas_grandes
+    TamanoPantalla.VERTICAL -> R.string.pantallas_verticales
+}
+
+/** Acomodos agrupados por tamaño de pantalla; primero el de la tuya, con el recomendado marcado. */
 @Composable
 fun PanelPlantillas(tablero: EstadoTablero, cerrar: () -> Unit) {
     val cuadricula = tablero.cuadricula ?: return
+    val c = LocalColores.current
+    val tuya = cuadricula.tamano
+    val sugerida = cuadricula.plantillaSugerida()
     PanelBase(stringResource(R.string.plantillas), cerrar) {
-        Etiqueta(stringResource(R.string.plantillas_ayuda), Texto.normal, LocalColores.current.textoSuave)
-        Spacer(Modifier.height(20.dp))
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-            for ((p, nombre) in listOf(Plantilla.CENTRO to R.string.plantilla_centro, Plantilla.LATERAL to R.string.plantilla_lateral, Plantilla.VERTICAL to R.string.plantilla_vertical)) {
-                Tarjeta(Modifier.weight(1f), alTocar = { tablero.plantilla(p); cerrar() }) {
-                    Column(Modifier.padding(16.dp)) {
-                        Miniatura(p, cuadricula)
-                        Spacer(Modifier.height(12.dp))
-                        Etiqueta(stringResource(nombre), Texto.subtitulo, maxLineas = 1)
+        Column(Modifier.weight(1f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(24.dp)) {
+            Etiqueta(stringResource(R.string.plantillas_ayuda), Texto.normal, c.textoSuave)
+            for (grupo in listOf(tuya) + TamanoPantalla.entries.filter { it != tuya }) {
+                val plantillas = Plantilla.entries.filter { grupo in it.para }
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Etiqueta(stringResource(nombreDe(grupo)).uppercase(), Texto.etiqueta, c.textoSuave)
+                        if (grupo == tuya) Etiqueta(stringResource(R.string.tu_pantalla).uppercase(), Texto.etiqueta, c.acento)
+                    }
+                    Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                        for (p in plantillas) {
+                            Tarjeta(Modifier.width(260.dp), alTocar = { tablero.plantilla(p); cerrar() }) {
+                                Column(Modifier.padding(16.dp)) {
+                                    Miniatura(p, cuadricula)
+                                    Spacer(Modifier.height(12.dp))
+                                    Etiqueta(stringResource(nombreDe(p)), Texto.subtitulo, maxLineas = 1)
+                                    if (grupo == tuya && p == sugerida) {
+                                        Etiqueta(stringResource(R.string.recomendado).uppercase(), Texto.etiqueta, c.acento, maxLineas = 1)
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }
+            Spacer(Modifier.height(12.dp))
         }
     }
 }
@@ -487,7 +622,6 @@ private fun iconoDe(tipo: String) = when (tipo) {
     Tipos.AUTO -> Iconos.auto
     Tipos.MUSICA -> Iconos.musica
     Tipos.NAVEGAR -> Iconos.navegar
-    Tipos.MAPA -> Iconos.mapa
     Tipos.RELOJ -> Iconos.reloj
     Tipos.TELEFONO -> Iconos.telefono
     else -> Iconos.apps
@@ -496,33 +630,30 @@ private fun iconoDe(tipo: String) = when (tipo) {
 
 /** Cada módulo: qué hace y si está en tu inicio. Los que vienen después se anuncian, apagados. */
 @Composable
-private fun Modulos(d: Dependencias) {
+private fun Modulos(d: Dependencias, alEditar: () -> Unit) {
     val c = LocalColores.current
-    val enInicio = d.tablero.piezas.any { it.tipo == Tipos.MUSICA }
-    val permiso = remember(enInicio) { d.musica.tienePermiso() }
+    val permiso = remember(d.tablero.piezas.any { it.tipo == Tipos.MUSICA }) { d.musica.tienePermiso() }
+    // Tipo que no cupo al agregarlo: se avisa y se ofrece acomodar el inicio.
+    var sinLugar by remember { mutableStateOf<String?>(null) }
+
+    @Composable
+    fun Fila(tipo: String, icono: androidx.compose.ui.graphics.vector.ImageVector, nombre: String, detalle: String) {
+        val enInicio = d.tablero.piezas.any { it.tipo == tipo }
+        val noCupo = sinLugar == tipo && !enInicio
+        FilaModulo(icono, nombre, if (noCupo) stringResource(R.string.sin_lugar) else detalle, if (noCupo) c.peligro else c.textoSuave) {
+            when {
+                enInicio -> Etiqueta(stringResource(R.string.en_tu_inicio), Texto.chico, c.acento)
+                noCupo -> Boton(stringResource(R.string.acomodar), alEditar, principal = true)
+                else -> Boton(stringResource(R.string.agregar), {
+                    val def = DefPiezas.first { it.tipo == tipo }
+                    sinLugar = if (d.tablero.agregar(def.tipo, def.inicial, def.medidas)) null else tipo
+                })
+            }
+        }
+    }
+
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        FilaModulo(Iconos.musica, stringResource(R.string.pieza_musica), stringResource(if (permiso) R.string.musica_con_permiso else R.string.musica_sin_permiso)) {
-            if (enInicio) {
-                Etiqueta(stringResource(R.string.en_tu_inicio), Texto.chico, c.acento)
-            } else {
-                Boton(stringResource(R.string.agregar), {
-                    val def = DefPiezas.first { it.tipo == Tipos.MUSICA }
-                    d.tablero.agregar(def.tipo, def.inicial, def.medidas)
-                })
-            }
-        }
-        // El mapa es un módulo aparte: no carga nada (ni el GPS) hasta que su pieza está en tu inicio.
-        val mapaEnInicio = d.tablero.piezas.any { it.tipo == Tipos.MAPA }
-        FilaModulo(Iconos.mapa, stringResource(R.string.pieza_mapa), stringResource(R.string.mapa_detalle_modulo)) {
-            if (mapaEnInicio) {
-                Etiqueta(stringResource(R.string.en_tu_inicio), Texto.chico, c.acento)
-            } else {
-                Boton(stringResource(R.string.agregar), {
-                    val def = DefPiezas.first { it.tipo == Tipos.MAPA }
-                    d.tablero.agregar(def.tipo, def.inicial, def.medidas)
-                })
-            }
-        }
+        Fila(Tipos.MUSICA, Iconos.musica, stringResource(R.string.pieza_musica), stringResource(if (permiso) R.string.musica_con_permiso else R.string.musica_sin_permiso))
         for ((icono, nombre, detalle) in listOf(
             Triple(Iconos.auto, R.string.modulo_obd, R.string.modulo_obd_detalle),
             Triple(Iconos.llanta, R.string.modulo_llantas, R.string.modulo_llantas_detalle),
@@ -537,7 +668,13 @@ private fun Modulos(d: Dependencias) {
 }
 
 @Composable
-private fun FilaModulo(icono: androidx.compose.ui.graphics.vector.ImageVector, titulo: String, detalle: String, accion: @Composable () -> Unit) {
+private fun FilaModulo(
+    icono: androidx.compose.ui.graphics.vector.ImageVector,
+    titulo: String,
+    detalle: String,
+    colorDetalle: androidx.compose.ui.graphics.Color = LocalColores.current.textoSuave,
+    accion: @Composable () -> Unit,
+) {
     val c = LocalColores.current
     val forma = RoundedCornerShape(16.dp)
     Row(
@@ -548,7 +685,7 @@ private fun FilaModulo(icono: androidx.compose.ui.graphics.vector.ImageVector, t
         Icono(icono, c.acento, 26.dp)
         Column(Modifier.weight(1f)) {
             Etiqueta(titulo, Texto.subtitulo, maxLineas = 1)
-            Etiqueta(detalle, Texto.chico, c.textoSuave, maxLineas = 2)
+            Etiqueta(detalle, Texto.chico, colorDetalle, maxLineas = 2)
         }
         accion()
     }

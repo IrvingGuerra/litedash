@@ -5,7 +5,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -21,7 +20,6 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
@@ -55,11 +53,11 @@ import kotlinx.coroutines.delay
 
 /**
  * La música en grande, sin salir de LiteDash: carátula, barra para adelantar,
- * los botones propios de la app (en Spotify: me gusta, aleatorio, repetir) y
- * con qué app se controla. Ancha pone la carátula a un lado; angosta, arriba.
+ * y los botones propios de la app (en Spotify: me gusta, aleatorio, repetir).
+ * La app se elige en Ajustes. Ancha pone la carátula a un lado; angosta, arriba.
  */
 @Composable
-fun MusicaAmpliada(repo: RepositorioMusica, cerrar: () -> Unit, alAbrirMusica: () -> Unit, modifier: Modifier = Modifier) {
+fun MusicaAmpliada(repo: RepositorioMusica, cerrar: () -> Unit, modifier: Modifier = Modifier) {
     DisposableEffect(repo) {
         repo.usar()
         onDispose { repo.soltar() }
@@ -71,20 +69,14 @@ fun MusicaAmpliada(repo: RepositorioMusica, cerrar: () -> Unit, alAbrirMusica: (
             val ancha = maxWidth > 520.dp && maxWidth > maxHeight
             Column(Modifier.fillMaxSize()) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Row(Modifier.weight(1f).horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        // Con más de una app sonando (Spotify y la radio), se elige cuál controlar.
-                        if (repo.fuentes.size > 1) for (f in repo.fuentes) {
-                            Chip(f.nombre, f.paquete == cancion?.paquete) { repo.elegirFuente(f.paquete) }
-                        } else if (cancion != null) {
-                            Etiqueta(cancion.app, Texto.etiqueta, c.textoSuave, maxLineas = 1, modifier = Modifier.padding(start = 4.dp))
-                        }
-                    }
-                    if (cancion != null) BotonIcono(Iconos.abrirFuera, { repo.abrirApp() }, tam = 48.dp, fondo = c.superficieAlta)
+                    val app = cancion?.app ?: repo.nombrePreferida()
+                    Etiqueta(app.uppercase(), Texto.etiqueta, c.textoSuave, maxLineas = 1, modifier = Modifier.weight(1f).padding(start = 4.dp))
+                    if (cancion != null || repo.preferida != null) BotonIcono(Iconos.abrirFuera, { repo.abrirApp() }, tam = 48.dp, fondo = c.superficieAlta)
                     BotonIcono(Iconos.cerrar, cerrar, tam = 48.dp, fondo = c.superficieAlta)
                 }
                 Spacer(Modifier.height(16.dp))
                 when {
-                    cancion == null -> Vacio(repo, alAbrirMusica, Modifier.weight(1f).fillMaxWidth())
+                    cancion == null -> Vacio(repo, Modifier.weight(1f).fillMaxWidth())
                     ancha -> Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
                         Caratula(cancion, Modifier.fillMaxHeight().aspectRatio(1f))
                         Spacer(Modifier.width(32.dp))
@@ -99,18 +91,6 @@ fun MusicaAmpliada(repo: RepositorioMusica, cerrar: () -> Unit, alAbrirMusica: (
             }
         }
     }
-}
-
-@Composable
-private fun Chip(texto: String, elegido: Boolean, alTocar: () -> Unit) {
-    val c = LocalColores.current
-    Box(
-        Modifier
-            .clip(RoundedCornerShape(50))
-            .background(if (elegido) c.texto else c.superficieAlta)
-            .clickable(onClick = alTocar)
-            .padding(horizontal = 16.dp, vertical = 10.dp),
-    ) { Etiqueta(texto, Texto.chico.copy(fontWeight = FontWeight.SemiBold), if (elegido) c.fondo else c.texto, 1) }
 }
 
 @Composable
@@ -229,7 +209,7 @@ private fun tiempo(ms: Long): String {
 }
 
 @Composable
-private fun Vacio(repo: RepositorioMusica, alAbrirMusica: () -> Unit, modifier: Modifier) {
+private fun Vacio(repo: RepositorioMusica, modifier: Modifier) {
     val c = LocalColores.current
     Column(modifier, horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
         Icono(Iconos.musica, c.acento, 56.dp)
@@ -240,7 +220,9 @@ private fun Vacio(repo: RepositorioMusica, alAbrirMusica: () -> Unit, modifier: 
         Spacer(Modifier.height(20.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             Boton(stringResource(R.string.reanudar), { repo.reanudar() }, principal = true)
-            Boton(stringResource(R.string.abrir_app_musica), alAbrirMusica)
+            // Solo con una app elegida: en "Sistema" no hay una app que abrir.
+            val app = repo.nombrePreferida()
+            if (app.isNotBlank()) Boton(stringResource(R.string.abrir_app, app), { repo.abrirApp() })
         }
     }
 }

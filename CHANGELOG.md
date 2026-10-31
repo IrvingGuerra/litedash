@@ -6,6 +6,26 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
+### Nuevo
+- **Acomodos por tamaño de pantalla**: chicas (7"), medianas (9–10"), grandes
+  (11" o más) y verticales, con el recomendado para tu pantalla. Nuevos:
+  Tarjetas abajo, Tres columnas y Panel completo.
+- **Ajustes rediseñados**: menú de secciones a la izquierda (Apariencia, Inicio,
+  Música, Mapa, Módulos, Acerca de) y tarjetas a la derecha.
+- Ajustes → Música: elige tu app de música de las que tienes instaladas, o
+  "Sistema" para seguir lo que suene (radio, USB, Bluetooth o cualquier app).
+- En pantallas chicas, los íconos del dock y de las tarjetas son más grandes.
+
+### Cambiado
+- La música ya no muestra botones para cambiar de app: controla y abre la que
+  elegiste en Ajustes.
+- Si la hora ya está en una pieza, la barra de arriba no deja espacio vacío.
+- Si una pieza no cabe al agregarla desde Módulos, avisa y ofrece acomodar.
+
+### Quitado
+- La pieza Mapa de la 1.3.0 (pesaba 10 MB): Navegar abre Waze o Google Maps.
+  La app vuelve a pesar 1.3 MB.
+
 ## [1.3.0] - 2026-10-31
 
 ### Nuevo

@@ -98,8 +98,20 @@
     <string name="idioma">Language</string>
     <string name="idioma_sistema">Follow system</string>
     <string name="mapa">Map</string>
-    <string name="mapa_ayuda">The app the Map and Navigate tiles open. While navigating, both show the next turn (it uses the same notification access as music).</string>
+    <string name="mapa_ayuda">The app the Navigate tile opens. While navigating, it shows the next turn (it uses the same notification access as music).</string>
     <string name="mapa_sin_apps">Install Waze or Google Maps to navigate from LiteDash.</string>
-    <string name="pieza_mapa">Map</string>
-    <string name="mapa_detalle_modulo">Your map inside LiteDash, centered on your car</string>
+    <string name="musica">Music</string>
+    <string name="musica_sistema">System</string>
+    <string name="musica_ayuda">The app the music tile controls and opens. System follows whatever plays on your screen: radio, USB, Bluetooth or any app.</string>
+    <string name="plantilla_tarjetas">Cards below</string>
+    <string name="plantilla_columnas">Three columns</string>
+    <string name="plantilla_panel">Full panel</string>
+    <string name="pantallas_chicas">Small screens (7\")</string>
+    <string name="pantallas_medianas">Medium screens (9–10\")</string>
+    <string name="pantallas_grandes">Large screens (11\" or more)</string>
+    <string name="pantallas_verticales">Vertical screens</string>
+    <string name="tu_pantalla">· Your screen</string>
+    <string name="recomendado">Recommended</string>
+    <string name="apariencia">Appearance</string>
+    <string name="volver_inicio">Back to home</string>
 </resources>

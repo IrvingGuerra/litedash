@@ -1,6 +1,0 @@
-<resources>
-    <string name="mapa_activar">Your map, always in view</string>
-    <string name="mapa_activar_detalle">To center it on your car, LiteDash needs your location.</string>
-    <string name="activar_ubicacion">Turn on</string>
-    <string name="buscando_ubicacion">Finding your location…</string>
-</resources>

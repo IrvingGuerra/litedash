@@ -6,5 +6,5 @@
     <string name="abre_una_app">Pon música en tu app favorita</string>
     <string name="reanudar">Reanudar</string>
     <string name="reanudar_explica">Reanuda lo último que escuchaste sin salir de LiteDash.</string>
-    <string name="abrir_app_musica">Abrir app de música</string>
+    <string name="abrir_app">Abrir %1$s</string>
 </resources>

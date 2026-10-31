@@ -54,6 +54,8 @@ import com.irvingguerra.litedash.feature.auto.ColoresAuto
 import com.irvingguerra.litedash.feature.auto.DibujoAuto
 import com.irvingguerra.litedash.feature.tablero.EstadoTablero
 import com.irvingguerra.litedash.feature.tablero.Plantilla
+import com.irvingguerra.litedash.feature.tablero.plantillaSugerida
+import com.irvingguerra.litedash.feature.tablero.tamano
 
 /** ¿LiteDash ya es la pantalla de inicio? */
 fun esInicio(contexto: Context): Boolean {
@@ -180,9 +182,12 @@ private fun PasoEstilo(prefs: Preferencias, tablero: EstadoTablero) {
     Etiqueta(stringResource(R.string.acomodo), Texto.etiqueta, c.textoSuave)
     Spacer(Modifier.height(12.dp))
     var elegida by rememberSaveable { mutableIntStateOf(-1) }
-    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        for ((i, par) in listOf(Plantilla.CENTRO to R.string.plantilla_centro, Plantilla.LATERAL to R.string.plantilla_lateral).withIndex()) {
-            Boton(stringResource(par.second), { elegida = i; tablero.plantilla(par.first) }, principal = elegida == i)
+    // Los acomodos que lucen en esta pantalla, el recomendado primero.
+    val opciones = tablero.cuadricula?.let { c -> listOf(c.plantillaSugerida()) + Plantilla.entries.filter { c.tamano in it.para } }
+        ?.distinct().orEmpty()
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        for ((i, p) in opciones.withIndex()) {
+            Boton(stringResource(nombreDe(p)), { elegida = i; tablero.plantilla(p) }, principal = elegida == i)
         }
     }
     Spacer(Modifier.height(28.dp))

@@ -98,7 +98,7 @@ private fun Reproductor(repo: RepositorioMusica) {
             Column(Modifier.weight(1f).padding(horizontal = 16.dp), verticalArrangement = Arrangement.Center) {
                 if (cancion == null) {
                     Etiqueta(stringResource(R.string.nada_sonando), Texto.subtitulo, maxLineas = 1)
-                    Etiqueta(stringResource(R.string.abre_una_app), Texto.chico, c.textoSuave, maxLineas = 1)
+                    Etiqueta(repo.nombrePreferida().ifBlank { stringResource(R.string.abre_una_app) }, Texto.chico, c.textoSuave, maxLineas = 1)
                 } else {
                     Etiqueta(cancion.titulo, if (alta) Texto.titulo else Texto.subtitulo, maxLineas = 1)
                     Etiqueta(

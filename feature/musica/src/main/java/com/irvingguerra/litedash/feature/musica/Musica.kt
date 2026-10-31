@@ -63,13 +63,15 @@ class ServicioMusica : NotificationListenerService() {
     }
 }
 
+// Ofrecen su audio a Android pero no son apps de música (el asistente, video).
+private val NO_SON_DE_MUSICA = setOf(
+    "com.google.android.googlequicksearchbox", "com.google.android.youtube", "com.google.android.gms",
+)
+
 /** Botón propio de la app que suena (Spotify: me gusta, aleatorio, repetir…). */
 @Immutable
 data class AccionMedios(val id: String, val nombre: String, val icono: Bitmap?)
 
-/** Una app con sesión de medios abierta. */
-@Immutable
-data class Fuente(val paquete: String, val nombre: String)
 
 @Immutable
 data class Cancion(
@@ -110,12 +112,16 @@ class RepositorioMusica(private val contexto: Context) {
     var cancion by mutableStateOf<Cancion?>(null)
         private set
 
-    /** Apps con sesión abierta, para cambiar cuál se controla. */
-    var fuentes by mutableStateOf(emptyList<Fuente>())
-        private set
+    /**
+     * App de música elegida en Ajustes (paquete). null = "Sistema": lo que suene
+     * en la pantalla, venga de donde venga (radio, USB, Bluetooth o una app).
+     */
+    var preferida: String? = null
+        set(v) {
+            field = v
+            if (usuarios > 0) elegir(sesiones())
+        }
 
-    // App que el usuario eligió controlar; manda mientras siga teniendo sesión.
-    private var fijada: String? = null
     private val iconos = HashMap<String, Bitmap?>()
 
     fun tienePermiso(): Boolean =
@@ -174,12 +180,19 @@ class RepositorioMusica(private val contexto: Context) {
     private fun sesiones(): List<MediaController> =
         runCatching { gestor.getActiveSessions(componente) }.getOrDefault(emptyList())
 
-    // La elegida por el usuario; si no, la que está sonando; si ninguna, la más reciente (Android las da en ese orden).
+    // Con app elegida, solo esa. En "Sistema": la que suena; si ninguna, la más reciente
+    // con canción (Android las da en ese orden), para no quedarse con sesiones vacías.
     private fun elegir(lista: List<MediaController>) {
-        fuentes = lista.distinctBy { it.packageName }.map { Fuente(it.packageName, etiqueta(it.packageName)) }
-        val nuevo = lista.firstOrNull { it.packageName == fijada }
-            ?: lista.firstOrNull { it.playbackState?.state == PlaybackState.STATE_PLAYING }
-            ?: lista.firstOrNull()
+        val p = preferida
+        val conTitulo = lista.filter { !it.metadata?.getString(MediaMetadata.METADATA_KEY_TITLE).isNullOrBlank() }
+        val nuevo = if (p != null) {
+            lista.firstOrNull { it.packageName == p }
+        } else {
+            conTitulo.firstOrNull { it.playbackState?.state == PlaybackState.STATE_PLAYING }
+                ?: lista.firstOrNull { it.playbackState?.state == PlaybackState.STATE_PLAYING }
+                ?: conTitulo.firstOrNull()
+                ?: lista.firstOrNull()
+        }
         if (nuevo?.sessionToken != controlador?.sessionToken) {
             controlador?.unregisterCallback(alCambiarControlador)
             controlador = nuevo
@@ -250,26 +263,47 @@ class RepositorioMusica(private val contexto: Context) {
     fun adelantar(ms: Long) = controlador?.transportControls?.seekTo(ms)
     fun accion(a: AccionMedios) = controlador?.transportControls?.sendCustomAction(a.id, null)
 
-    /** Controlar otra app de las que tienen sesión abierta. */
-    fun elegirFuente(paquete: String) {
-        fijada = paquete
-        elegir(sesiones())
-    }
+    /** Nombre de la app elegida en Ajustes ("" en "Sistema"). */
+    fun nombrePreferida(): String = preferida?.let(::etiqueta).orEmpty()
 
     /**
-     * Sin nada sonando: le pide a Android que reanude lo último que sonó (como el
-     * botón de play del volante), sin abrir la app. Spotify sigue en segundo plano.
+     * Sin nada sonando, reanuda sin abrir la app: la elegida (por su sesión o con
+     * el botón de play dirigido a ella) o, en "Sistema", lo último que sonó (como
+     * el botón de play del volante).
      */
     fun reanudar() {
-        val audio = contexto.getSystemService(AudioManager::class.java)
-        for (accion in intArrayOf(KeyEvent.ACTION_DOWN, KeyEvent.ACTION_UP)) {
-            runCatching { audio.dispatchMediaKeyEvent(KeyEvent(accion, KeyEvent.KEYCODE_MEDIA_PLAY)) }
+        val p = preferida
+        val sesion = controlador?.takeIf { it.packageName == p }
+        when {
+            sesion != null -> sesion.transportControls.play()
+            p != null -> for (accion in intArrayOf(KeyEvent.ACTION_DOWN, KeyEvent.ACTION_UP)) {
+                val intento = Intent(Intent.ACTION_MEDIA_BUTTON).setPackage(p)
+                    .putExtra(Intent.EXTRA_KEY_EVENT, KeyEvent(accion, KeyEvent.KEYCODE_MEDIA_PLAY))
+                runCatching { contexto.sendBroadcast(intento) }
+            }
+            else -> {
+                val audio = contexto.getSystemService(AudioManager::class.java)
+                for (accion in intArrayOf(KeyEvent.ACTION_DOWN, KeyEvent.ACTION_UP)) {
+                    runCatching { audio.dispatchMediaKeyEvent(KeyEvent(accion, KeyEvent.KEYCODE_MEDIA_PLAY)) }
+                }
+            }
         }
     }
 
-    /** Abre la app que está sonando. */
+    /**
+     * Apps de música instaladas: las que ofrecen su biblioteca a Android
+     * (Spotify, Amazon Music, YouTube Music, Deezer, el reproductor de la pantalla…).
+     */
+    fun appsDeMusica(): Set<String> = runCatching {
+        contexto.packageManager.queryIntentServices(Intent("android.media.browse.MediaBrowserService"), 0)
+            .map { it.serviceInfo.packageName }
+            .filter { it != contexto.packageName && it !in NO_SON_DE_MUSICA }
+            .toSet()
+    }.getOrDefault(emptySet())
+
+    /** Abre la app que está sonando o, si no hay, la elegida en Ajustes. */
     fun abrirApp() {
-        val paquete = controlador?.packageName ?: return
+        val paquete = controlador?.packageName ?: preferida ?: return
         contexto.packageManager.getLaunchIntentForPackage(paquete)
             ?.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             ?.let { runCatching { contexto.startActivity(it) } }

@@ -1,4 +1,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Para saber qué apps de música hay instaladas (las que ofrecen su biblioteca). -->
+    <queries>
+        <intent>
+            <action android:name="android.media.browse.MediaBrowserService" />
+        </intent>
+    </queries>
     <application>
         <!--
             Existe para que el usuario pueda dar "acceso a notificaciones": con

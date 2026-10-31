@@ -94,4 +94,10 @@ class Preferencias(contexto: Context) {
     var appMapa: String?
         get() = _appMapa
         set(v) { _appMapa = v; p.edit { putString("app_mapa", v) } }
+
+    private var _appMusica by mutableStateOf(p.getString("app_musica", null))
+    /** Paquete de la app de música elegida; null = "Sistema" (lo que suene: radio, USB, Bluetooth…). */
+    var appMusica: String?
+        get() = _appMusica
+        set(v) { _appMusica = v; p.edit { putString("app_musica", v) } }
 }

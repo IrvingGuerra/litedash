@@ -15,7 +15,7 @@ class AlmacenTablero(contexto: Context) {
         return texto.lineSequence().filter { it.isNotBlank() }.mapNotNull { linea ->
             val f = linea.split('\t')
             if (f.size < 6) return@mapNotNull null
-            Pieza(f[0], f[1], f[2].toInt(), f[3].toInt(), f[4].toInt(), f[5].toInt(), f.getOrElse(6) { "" })
+            Pieza(f[0], TIPOS_VIEJOS[f[1]] ?: f[1], f[2].toInt(), f[3].toInt(), f[4].toInt(), f[5].toInt(), f.getOrElse(6) { "" })
         }.filter { p -> p.col >= 0 && p.fila >= 0 }.toList()
     }
 
@@ -27,3 +27,6 @@ class AlmacenTablero(contexto: Context) {
         prefs.edit().putString("acomodo_${c.clave}", texto).apply()
     }
 }
+
+// Piezas que ya no existen y en qué se convierten (la del mapa de la 1.3.0 es ahora Navegar).
+private val TIPOS_VIEJOS = mapOf("mapa" to Tipos.NAVEGAR)

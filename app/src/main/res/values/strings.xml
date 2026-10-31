@@ -102,8 +102,20 @@
     <string name="idioma_es" translatable="false">Español</string>
     <string name="idioma_en" translatable="false">English</string>
     <string name="mapa">Mapa</string>
-    <string name="mapa_ayuda">La app que abren las piezas Mapa y Navegar. Mientras navegas, ambas muestran la siguiente vuelta (usa el mismo acceso a notificaciones que la música).</string>
+    <string name="mapa_ayuda">La app que abre la pieza Navegar. Mientras navegas, la pieza muestra la siguiente vuelta (usa el mismo acceso a notificaciones que la música).</string>
     <string name="mapa_sin_apps">Instala Waze o Google Maps para navegar desde LiteDash.</string>
-    <string name="pieza_mapa">Mapa</string>
-    <string name="mapa_detalle_modulo">Tu mapa dentro de LiteDash, centrado en tu auto</string>
+    <string name="musica">Música</string>
+    <string name="musica_sistema">Sistema</string>
+    <string name="musica_ayuda">La app que controla y abre la pieza de música. Sistema sigue lo que suene en tu pantalla: radio, USB, Bluetooth o cualquier app.</string>
+    <string name="plantilla_tarjetas">Tarjetas abajo</string>
+    <string name="plantilla_columnas">Tres columnas</string>
+    <string name="plantilla_panel">Panel completo</string>
+    <string name="pantallas_chicas">Pantallas chicas (7\")</string>
+    <string name="pantallas_medianas">Pantallas medianas (9–10\")</string>
+    <string name="pantallas_grandes">Pantallas grandes (11\" o más)</string>
+    <string name="pantallas_verticales">Pantallas verticales</string>
+    <string name="tu_pantalla">· Tu pantalla</string>
+    <string name="recomendado">Recomendado</string>
+    <string name="apariencia">Apariencia</string>
+    <string name="volver_inicio">Volver al inicio</string>
 </resources>

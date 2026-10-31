@@ -24,7 +24,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalConfiguration
@@ -44,7 +43,6 @@ import com.irvingguerra.litedash.feature.apps.App
 import com.irvingguerra.litedash.feature.apps.IconoApp
 import com.irvingguerra.litedash.feature.apps.RepositorioApps
 import com.irvingguerra.litedash.feature.musica.ServicioMusica
-import com.irvingguerra.litedash.feature.mapa.PiezaMapa
 import com.irvingguerra.litedash.feature.navegacion.Indicacion
 import com.irvingguerra.litedash.feature.navegacion.RepositorioNavegacion
 import com.irvingguerra.litedash.feature.tablero.Medidas
@@ -60,7 +58,6 @@ val DefPiezas = listOf(
     DefPieza(Tipos.AUTO, R.string.pieza_auto, Medidas(3, 2), 5 to 3),
     DefPieza(Tipos.MUSICA, R.string.pieza_musica, Medidas(3, 1, maxAlto = 3), 4 to 1),
     DefPieza(Tipos.NAVEGAR, R.string.pieza_navegar, Medidas(2, 1), 3 to 1),
-    DefPieza(Tipos.MAPA, R.string.pieza_mapa, Medidas(2, 2), 4 to 3),
     DefPieza(Tipos.RELOJ, R.string.pieza_reloj, Medidas(2, 1), 3 to 1),
     DefPieza(Tipos.TELEFONO, R.string.pieza_telefono, Medidas(1, 1), 2 to 1),
     DefPieza(Tipos.APP, R.string.pieza_app, Medidas(1, 1, 3, 3), 1 to 1),
@@ -73,11 +70,15 @@ val PAQUETES_NAVEGACION = arrayOf(
     "com.waze", "com.google.android.apps.maps", "com.mapswithme.maps.pro", "net.osmand", "com.here.app.maps",
 )
 
-// Apps de música para el dock y para "Abrir app de música" (Spotify primero).
+// Apps de música que se sugieren en el dock si no eligió una (Spotify primero).
 val PAQUETES_MUSICA = arrayOf(
     "com.spotify.music", "com.google.android.apps.youtube.music", "deezer.android.app",
     "com.apple.android.music", "com.amazon.mp3",
 )
+
+/** Pantalla chica (7" o menos de alto útil): ahí los íconos crecen para atinarles manejando. */
+@Composable
+fun pantallaChica(): Boolean = LocalConfiguration.current.screenHeightDp < 640
 
 /** Hora y fecha que respetan el formato del usuario (12/24 h); un repintado por minuto. */
 @Composable
@@ -118,10 +119,11 @@ fun PiezaAcceso(icono: androidx.compose.ui.graphics.vector.ImageVector, titulo: 
     Tarjeta(Modifier.fillMaxSize(), alTocar = alTocar) {
         BoxWithConstraints(Modifier.fillMaxSize().padding(16.dp)) {
             val grande = maxHeight > 120.dp
+            val chica = pantallaChica()
             val ancho = maxWidth
             val contenido = @Composable {
-                Box(Modifier.size(if (grande) 64.dp else 44.dp).clip(CircleShape).background(c.superficieAlta), contentAlignment = Alignment.Center) {
-                    Icono(icono, c.acento, if (grande) 30.dp else 22.dp)
+                Box(Modifier.size(if (grande) 64.dp else if (chica) 52.dp else 44.dp).clip(CircleShape).background(c.superficieAlta), contentAlignment = Alignment.Center) {
+                    Icono(icono, c.acento, if (grande) 30.dp else if (chica) 26.dp else 22.dp)
                 }
             }
             if (grande) {
@@ -211,37 +213,6 @@ private fun Vuelta(ind: Indicacion, grande: Boolean) {
             if (grande && ind.detalle.isNotBlank()) Etiqueta(ind.detalle, Texto.chico, c.textoSuave, maxLineas = 1)
         }
     }
-}
-
-/**
- * Mapa propio dentro del tablero. Tocarlo abre la app de navegación; encima
- * lleva el nombre de esa app o, navegando, la siguiente vuelta.
- */
-@Composable
-fun PiezaMapaTablero(repo: RepositorioNavegacion, app: App?, alTocar: () -> Unit) {
-    DisposableEffect(repo) {
-        repo.usar(ServicioMusica::activas)
-        onDispose { repo.soltar() }
-    }
-    val c = LocalColores.current
-    val ind = repo.indicacion
-    PiezaMapa(alTocar) {
-        val forma = RoundedCornerShape(16.dp)
-        val caja = Modifier.padding(10.dp).shadow(6.dp, forma).clip(forma).background(c.superficie.copy(alpha = 0.94f))
-        if (ind != null) {
-            Box(caja.padding(10.dp)) { Vuelta(ind, grande = false) }
-        } else if (app != null) {
-            Row(caja.padding(horizontal = 14.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
-                Icono(Iconos.navegar, c.acento, 18.dp)
-                Etiqueta(app.nombre, Texto.chico.copy(fontWeight = FontWeight.SemiBold), maxLineas = 1, modifier = Modifier.padding(start = 8.dp))
-            }
-        }
-    }
-}
-
-/** La app de música preferida (la primera instalada de [PAQUETES_MUSICA]). */
-fun abrirMusica(contexto: Context, repo: RepositorioApps, apps: List<App>) {
-    repo.primeraDe(apps, *PAQUETES_MUSICA)?.let { repo.abrir(contexto, it) }
 }
 
 fun abrirTelefono(contexto: Context) {

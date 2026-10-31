@@ -69,10 +69,35 @@ object Tipos {
     const val RELOJ = "reloj"
     const val TELEFONO = "telefono"
     const val APP = "app"
-    const val MAPA = "mapa"
 }
 
-enum class Plantilla { CENTRO, LATERAL, VERTICAL }
+/** Tamaños de pantalla, para agrupar los acomodos y sugerir el mejor. */
+enum class TamanoPantalla { CHICA, MEDIANA, GRANDE, VERTICAL }
+
+/** Qué tamaño es esta cuadrícula: de 7" (10×4) a 11" o más (13×6 y arriba). */
+val Cuadricula.tamano: TamanoPantalla
+    get() = when {
+        vertical -> TamanoPantalla.VERTICAL
+        columnas * filas >= 75 -> TamanoPantalla.GRANDE
+        columnas * filas >= 55 -> TamanoPantalla.MEDIANA
+        else -> TamanoPantalla.CHICA
+    }
+
+/** Los acomodos de inicio y para qué pantallas lucen mejor ([para]). */
+enum class Plantilla(val para: Set<TamanoPantalla>) {
+    /** Como el Model 3: el auto grande al centro y dos tarjetas abajo. */
+    CENTRO(setOf(TamanoPantalla.CHICA, TamanoPantalla.MEDIANA)),
+    /** Como DuduAuto: el auto a todo lo ancho y una fila de tarjetas abajo. */
+    TARJETAS(setOf(TamanoPantalla.CHICA, TamanoPantalla.MEDIANA, TamanoPantalla.GRANDE)),
+    /** El auto a la izquierda y las tarjetas a la derecha. */
+    LATERAL(setOf(TamanoPantalla.MEDIANA, TamanoPantalla.GRANDE)),
+    /** Tres columnas altas: navegar, música y el auto. */
+    COLUMNAS(setOf(TamanoPantalla.MEDIANA, TamanoPantalla.GRANDE)),
+    /** Tablero completo: tarjetas a los dos lados y el auto en medio. */
+    PANEL(setOf(TamanoPantalla.GRANDE)),
+    /** Pantallas paradas: auto arriba, tarjetas abajo. */
+    VERTICAL(setOf(TamanoPantalla.VERTICAL)),
+}
 
 /**
  * Acomodos de inicio. Se calculan para cualquier cuadrícula: lo que no quepa se
@@ -87,7 +112,6 @@ fun Plantilla.piezas(c: Cuadricula): List<Pieza> {
         if (ancho >= 1 && alto >= 1 && lista.cabe(p, c)) lista += p
     }
     when (this) {
-        // Como el Model 3: el auto grande al centro y las tarjetas abajo.
         Plantilla.CENTRO -> {
             val abajo = if (filas >= 6) 2 else 1
             val anchoAuto = (cols * 0.6).toInt().coerceAtLeast(3)
@@ -99,7 +123,27 @@ fun Plantilla.piezas(c: Cuadricula): List<Pieza> {
             agrega(Tipos.MUSICA, inicio, filas - abajo, anchoMusica, abajo)
             agrega(Tipos.NAVEGAR, inicio + anchoMusica, filas - abajo, anchoNav, abajo)
         }
-        // Como DuduAuto: el auto a la izquierda y las tarjetas a la derecha.
+        Plantilla.TARJETAS -> {
+            val abajo = if (filas >= 6) 2 else 1
+            agrega(Tipos.AUTO, 0, 0, cols, filas - abajo)
+            // Navegar, música (la más ancha) y lo que quepa: reloj y teléfono.
+            val musica = maxOf(3, cols * 4 / 10)
+            val resto = cols - musica
+            val otras = when {
+                resto >= 7 -> listOf(Tipos.RELOJ, Tipos.TELEFONO)
+                resto >= 4 -> listOf(Tipos.RELOJ)
+                else -> emptyList()
+            }
+            val anchoNav = if (otras.isEmpty()) resto else (resto / (otras.size + 1)).coerceAtLeast(2)
+            agrega(Tipos.NAVEGAR, 0, filas - abajo, anchoNav, abajo)
+            agrega(Tipos.MUSICA, anchoNav, filas - abajo, musica, abajo)
+            var col = anchoNav + musica
+            otras.forEachIndexed { i, tipo ->
+                val ancho = if (i == otras.lastIndex) cols - col else (cols - col) / (otras.size - i)
+                agrega(tipo, col, filas - abajo, ancho, abajo)
+                col += ancho
+            }
+        }
         Plantilla.LATERAL -> {
             val anchoAuto = (cols * 0.4).toInt().coerceAtLeast(3)
             agrega(Tipos.AUTO, 0, 0, anchoAuto, filas)
@@ -113,7 +157,37 @@ fun Plantilla.piezas(c: Cuadricula): List<Pieza> {
             agrega(Tipos.NAVEGAR, anchoAuto, fila, mitad, filas - fila)
             agrega(Tipos.TELEFONO, anchoAuto + mitad, fila, resto - mitad, filas - fila)
         }
-        // Pantallas paradas: auto arriba, tarjetas abajo.
+        Plantilla.COLUMNAS -> {
+            if (cols < 9) {
+                // No caben tres columnas: el auto arriba y música abajo.
+                agrega(Tipos.AUTO, 0, 0, cols, filas - 1)
+                agrega(Tipos.MUSICA, 0, filas - 1, cols, 1)
+            } else {
+                val anchoNav = cols / 4
+                val anchoMusica = maxOf(3, cols / 3)
+                val inicioAuto = anchoNav + anchoMusica
+                agrega(Tipos.AUTO, inicioAuto, 0, cols - inicioAuto, filas)
+                agrega(Tipos.NAVEGAR, 0, 0, anchoNav, filas)
+                val altoMusica = minOf(filas, 3)
+                agrega(Tipos.MUSICA, anchoNav, 0, anchoMusica, altoMusica)
+                if (filas > altoMusica) agrega(Tipos.RELOJ, anchoNav, altoMusica, anchoMusica, filas - altoMusica)
+            }
+        }
+        Plantilla.PANEL -> {
+            val lado = cols / 4
+            if (lado < 3 || cols - 2 * lado < 3) {
+                // Pantalla chica: el auto con la música abajo.
+                agrega(Tipos.AUTO, 0, 0, cols, filas - 1)
+                agrega(Tipos.MUSICA, 0, filas - 1, cols, 1)
+            } else {
+                agrega(Tipos.AUTO, lado, 0, cols - 2 * lado, filas)
+                val mitad = (filas + 1) / 2
+                agrega(Tipos.MUSICA, 0, 0, lado, minOf(mitad, 3))
+                agrega(Tipos.NAVEGAR, 0, minOf(mitad, 3), lado, filas - minOf(mitad, 3))
+                agrega(Tipos.RELOJ, cols - lado, 0, lado, mitad)
+                agrega(Tipos.TELEFONO, cols - lado, mitad, lado, filas - mitad)
+            }
+        }
         Plantilla.VERTICAL -> {
             val altoAuto = (filas * 0.45).toInt().coerceAtLeast(3)
             agrega(Tipos.AUTO, 0, 0, cols, altoAuto)
@@ -127,4 +201,10 @@ fun Plantilla.piezas(c: Cuadricula): List<Pieza> {
     return lista
 }
 
-fun Cuadricula.plantillaSugerida() = if (vertical) Plantilla.VERTICAL else Plantilla.CENTRO
+/** El acomodo que mejor luce en esta pantalla. */
+fun Cuadricula.plantillaSugerida() = when (tamano) {
+    TamanoPantalla.CHICA -> Plantilla.CENTRO
+    TamanoPantalla.MEDIANA -> Plantilla.TARJETAS
+    TamanoPantalla.GRANDE -> Plantilla.PANEL
+    TamanoPantalla.VERTICAL -> Plantilla.VERTICAL
+}
