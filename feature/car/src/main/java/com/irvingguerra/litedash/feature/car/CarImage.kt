@@ -167,7 +167,12 @@ fun CarTurntable(
     val n = frames.size
     // Sin ángulo guardado: tres cuartos con el frente a la izquierda (como la vista con piso).
     val saved = angle?.let { (it * n).roundToInt().mod(n) } ?: (n * 3 / 8)
-    var frame by remember(p, saved) { mutableIntStateOf(saved) }
+    // Un solo estado por auto: el gesto lo sigue moviendo aunque cambie el ángulo guardado
+    // (si se recreara al guardar, el dedo movería uno viejo que ya no se dibuja).
+    var frame by remember(p) { mutableIntStateOf(saved) }
+    var dragging by remember(p) { mutableStateOf(false) }
+    // Si lo giraron en otro lado (la vista en grande), se pone igual sin brincar a media vuelta.
+    LaunchedEffect(saved) { if (!dragging) frame = saved }
     var ground by remember(p.id) { mutableStateOf<Float?>(null) }
     var widthPx by remember { mutableIntStateOf(0) }
     var direction by remember { mutableIntStateOf(1) }
@@ -185,8 +190,9 @@ fun CarTurntable(
             val step = size.width / (n * 1.2f)
             var accumulated = 0f
             detectHorizontalDragGestures(
-                onDragStart = { accumulated = 0f },
-                onDragEnd = { onAngle?.invoke(frame.toFloat() / n) },
+                onDragStart = { accumulated = 0f; dragging = true },
+                onDragEnd = { dragging = false; onAngle?.invoke(frame.toFloat() / n) },
+                onDragCancel = { dragging = false; onAngle?.invoke(frame.toFloat() / n) },
             ) { change, dx ->
                 change.consume()
                 accumulated += dx
