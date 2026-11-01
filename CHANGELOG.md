@@ -6,6 +6,8 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
+## [1.4.3] - 2026-11-01
+
 ### Nuevo
 - **Mandos al volante** (Ajustes → Mandos al volante): presiona "Aprender
   botón" y luego el botón del volante; LiteDash lo reconoce y eliges qué hace
@@ -21,10 +23,10 @@ Todos los cambios que nota quien usa LiteDash. Formato
   agranda con una animación hasta verlo solo, a pantalla completa; otro toque
   lo regresa. Su nombre, color y modelo ahora están en Ajustes → Tu auto
   (también con el botón del auto en el dock).
-
 - **El piso real en cada ángulo**: al girar el auto (en el inicio y en Ajustes →
   Tu auto) cada vuelta trae su sombra y su reflejo hechos en el estudio, igual
-  que la vista de siempre. Cada auto se baja con su piso (el Lancer: 1.32 MB).
+  que la vista de siempre. Por ahora el Lancer Evolution (1.32 MB); los demás
+  autos del catálogo lo reciben en la siguiente versión.
 
 ### Mejorado
 - Código limpio de punta a punta (auditoría): menos trabajo al tocar el inicio,
