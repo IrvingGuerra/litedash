@@ -229,5 +229,5 @@
     <string name="spin_quality">Spin quality</string>
     <string name="spin_quality_low">Low</string>
     <string name="spin_quality_high">High</string>
-    <string name="spin_quality_help">High = more frames when spinning, smoother. Only the missing ones are downloaded.</string>
+    <string name="spin_quality_help">High = twice the frames, blended as it spins: smooth, no steps. Only the missing ones are downloaded.</string>
 </resources>

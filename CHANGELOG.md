@@ -6,6 +6,14 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
+## [1.4.15] - 2026-11-01
+
+### Mejorado
+- **Giro en calidad Alta sin escalones:** entre un cuadro y el siguiente el auto
+  se funde según el dedo y al soltar se asienta en el más cercano. En el emulador
+  de 7" pasa de ~34 a ~63 cuadros por segundo al girar rápido (y de ~32 a ~58 en
+  grande). La calidad Baja gira igual que antes.
+
 ## [1.4.14] - 2026-11-01
 
 ### Cambiado
