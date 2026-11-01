@@ -11,6 +11,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
@@ -24,6 +25,7 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.conflate
 import kotlin.math.roundToInt
 
 /** El giro completo: 96 posiciones, una cada 3.75°. El paquete trae una de cada 4. */
@@ -116,15 +118,21 @@ private fun CarLayersImage(
     var shownColor by remember(p.id) { mutableStateOf(color) }
     var notified by remember(p.id) { mutableStateOf(false) }
     val ready by rememberUpdatedState(onReady)
-    LaunchedEffect(p, name, color, widthPx) {
-        if (widthPx <= 0) return@LaunchedEffect
-        // Solo al cambiar de color: al girar, cada cuadro debe verse al momento.
-        if (layers != null && color != shownColor) delay(COLOR_SETTLE_MS)
-        layers = repo.layers(p, name, color, widthPx) ?: return@LaunchedEffect
-        shownColor = color
-        if (!notified) {
-            notified = true
-            ready?.invoke()
+    val wanted by rememberUpdatedState(Wanted(name, color, widthPx))
+    LaunchedEffect(p) {
+        // La imagen que se está cargando siempre termina y luego se pasa a la más reciente
+        // (las de en medio se saltan). Si cada cuadro nuevo cancelara al anterior, al girar
+        // más rápido de lo que tarda uno en cargar, ninguno terminaría y el auto se quedaría quieto.
+        snapshotFlow { wanted }.conflate().collect { w ->
+            if (w.widthPx <= 0) return@collect
+            // Solo al cambiar de color: al girar, cada cuadro debe verse al momento.
+            if (layers != null && w.color != shownColor) delay(COLOR_SETTLE_MS)
+            layers = repo.layers(p, w.name, w.color, w.widthPx) ?: return@collect
+            shownColor = w.color
+            if (!notified) {
+                notified = true
+                ready?.invoke()
+            }
         }
     }
     Canvas(modifier.fillMaxSize()) {
@@ -141,6 +149,9 @@ private fun CarLayersImage(
         drawLayer(c.car, Rect(origin, Size(w, h)))
     }
 }
+
+/** Qué imagen debe verse: cuadro, color y ancho. */
+private data class Wanted(val name: String, val color: Color, val widthPx: Int)
 
 private fun DrawScope.drawLayer(img: ImageBitmap, box: Rect) = drawImage(
     img,

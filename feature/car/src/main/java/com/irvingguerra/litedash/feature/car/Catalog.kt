@@ -191,8 +191,8 @@ class CarRepository(context: Context, val catalogUrl: String) {
     }
 
     /**
-     * Revisa el catálogo a lo más cada [CHECK_EVERY_MS] (junto con la revisión de la
-     * app al abrir) y avisa en [outdated] si el auto [id] tiene imágenes nuevas.
+     * Revisa el catálogo al abrir, a lo más cada [CHECK_EVERY_MS] (es un archivo de
+     * unos KB), y avisa en [outdated] si el auto [id] tiene un modelo 3D nuevo.
      */
     suspend fun checkQuietly(id: String?) {
         val p = pkg(id) ?: return
@@ -480,7 +480,7 @@ class CarRepository(context: Context, val catalogUrl: String) {
     private fun readText(url: String) = open(url).inputStream.bufferedReader().use { it.readText() }
 
     private companion object {
-        const val CHECK_EVERY_MS = 12 * 60 * 60 * 1000L
+        const val CHECK_EVERY_MS = 60 * 60 * 1000L
         const val KEY_LAST_CHECK = "ultima_revision"
     }
 }

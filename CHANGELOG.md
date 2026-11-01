@@ -6,6 +6,15 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
+## [1.4.7] - 2026-11-01
+
+### Arreglado
+- **El giro ya no se traba con fluidez Máxima**: si giras más rápido de lo que
+  carga cada vuelta, el auto sigue al dedo saltándose las de en medio en vez de
+  quedarse quieto.
+- El aviso de "modelo 3D nuevo" de tu auto ya llega en menos de una hora (antes
+  podía tardar hasta 12 horas).
+
 ## [1.4.6] - 2026-11-01
 
 ### Arreglado
