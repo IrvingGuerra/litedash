@@ -215,6 +215,5 @@
     <string name="brightness_only_litedash">Solo en LiteDash</string>
     <string name="brightness_all_apps">En todas las apps</string>
     <string name="brightness_permission">Falta el permiso: activa \"Modificar ajustes del sistema\" para LiteDash.</string>
-    <string name="car_place_help">En el inicio arrastra el auto para moverlo y pellízcalo para hacerlo más grande o más chico. Un toque lo muestra solo, a pantalla completa; otro toque regresa.</string>
-    <string name="car_center">Centrar en el inicio</string>
+    <string name="car_home_help">En el inicio gira el auto con el dedo. Un toque lo muestra en grande; otro toque regresa.</string>
 </resources>

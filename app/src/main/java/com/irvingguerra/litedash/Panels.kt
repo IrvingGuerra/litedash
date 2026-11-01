@@ -13,7 +13,6 @@ import com.irvingguerra.litedash.feature.car.CatalogEntry
 import com.irvingguerra.litedash.feature.car.Smoothness
 import com.irvingguerra.litedash.feature.car.CarSpin
 import com.irvingguerra.litedash.feature.car.CarPackage
-import com.irvingguerra.litedash.feature.car.CarPlacement
 import com.irvingguerra.litedash.feature.car.CarRepository
 import kotlinx.coroutines.launch
 import androidx.compose.foundation.background
@@ -258,9 +257,7 @@ private fun CarSettings(d: Dependencies) {
             }
         }
         CarOptions(prefs, d.cars, pkg, Modifier.fillMaxWidth())
-        // En el inicio el auto se acomoda arrastrándolo y pellizcándolo; aquí se regresa al centro.
-        Label(stringResource(R.string.car_place_help), Typography.small, LocalColors.current.textMuted)
-        if (!prefs.carPlacement.centered) Button(stringResource(R.string.car_center), { prefs.carPlacement = CarPlacement() })
+        Label(stringResource(R.string.car_home_help), Typography.small, LocalColors.current.textMuted)
     }
     SettingsCard(Icons.bell, stringResource(R.string.reminders), stringResource(R.string.reminders_help)) {
         ReminderSettings(d.reminders)

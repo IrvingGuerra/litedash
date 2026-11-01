@@ -1,6 +1,19 @@
 package com.irvingguerra.litedash.feature.car
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Paint
+import androidx.compose.ui.graphics.drawscope.withTransform
+import androidx.compose.ui.graphics.graphicsLayer
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -37,7 +50,21 @@ private class Layers(val car: ImageBitmap, val shadow: ImageBitmap?, val reflect
  * estar parado en el fondo de la pantalla, no dentro de una tarjeta.
  */
 @Composable
-fun CarImage(repo: CarRepository, p: CarPackage, name: String, color: Color, modifier: Modifier = Modifier) {
+fun CarImage(
+    repo: CarRepository,
+    p: CarPackage,
+    name: String,
+    color: Color,
+    modifier: Modifier = Modifier,
+    /**
+     * Para los cuadros sin piso (el giro en el inicio): el mismo auto volteado y
+     * desvanecido bajo las llantas, como el reflejo tenue de la vista con piso.
+     * [ground] es la línea de las llantas en fracción del alto de la imagen.
+     */
+    ground: Float? = null,
+    /** Se llama cuando ya está pintada (para animar sin que se vea vacía). */
+    onReady: (() -> Unit)? = null,
+) {
     BoxWithConstraints(modifier) {
         val widthPx = with(LocalDensity.current) { maxWidth.roundToPx() }
         val floor = p.floor[name]
@@ -56,6 +83,7 @@ fun CarImage(repo: CarRepository, p: CarPackage, name: String, color: Color, mod
                 val floorWidth = (widthPx * floor.width / 2).roundToInt()
                 Layers(car, repo.image(p, name + CarViews.SHADOW_SUFFIX, floorWidth), repo.painted(p, name + CarViews.REFLECTION_SUFFIX, color, floorWidth))
             }
+            onReady?.invoke()
         }
         layers?.let { c ->
             Canvas(Modifier.fillMaxSize()) {
@@ -68,18 +96,121 @@ fun CarImage(repo: CarRepository, p: CarPackage, name: String, color: Color, mod
                     c.shadow?.let { drawLayer(it, box) }
                     c.reflection?.let { drawLayer(it, box) }
                 }
+                if (floor == null && ground != null) {
+                    val line = origin.y + ground * h
+                    // Como el reflejo horneado de la vista con piso: fuerte junto a las llantas y
+                    // se apaga hacia abajo (casi exponencial) en poco más de medio auto.
+                    drawContext.canvas.saveLayer(Rect(0f, line, size.width, line + h * 0.6f), Paint())
+                    withTransform({ scale(1f, -1f, Offset(0f, line)) }) {
+                        drawLayer(c.car, Rect(origin, Size(w, h)), alpha = REFLECTION_ALPHA)
+                    }
+                    drawRect(
+                        Brush.verticalGradient(
+                            0f to Color.Black,
+                            0.35f to Color.Black.copy(alpha = 0.45f),
+                            1f to Color.Transparent,
+                            startY = line,
+                            endY = line + h * 0.6f,
+                        ),
+                        blendMode = BlendMode.DstIn,
+                    )
+                    drawContext.canvas.restore()
+                }
                 drawLayer(c.car, Rect(origin, Size(w, h)))
             }
         }
     }
 }
 
-private fun DrawScope.drawLayer(img: ImageBitmap, box: Rect) = drawImage(
+private const val REFLECTION_ALPHA = 0.36f
+
+private fun DrawScope.drawLayer(img: ImageBitmap, box: Rect, alpha: Float = 1f) = drawImage(
     img,
     dstOffset = IntOffset(box.left.roundToInt(), box.top.roundToInt()),
     dstSize = IntSize(box.width.roundToInt(), box.height.roundToInt()),
+    alpha = alpha,
     filterQuality = FilterQuality.Medium,
 )
+
+/**
+ * Dónde tocan el piso las llantas en un cuadro del giro (fracción del alto): la
+ * última fila con auto. Se mide una vez por auto (la cámara del giro no cambia).
+ */
+private suspend fun groundLine(img: ImageBitmap): Float = withContext(Dispatchers.Default) {
+    val w = img.width
+    val h = img.height
+    val row = IntArray(w)
+    for (y in h - 1 downTo 0) {
+        img.readPixels(row, startY = y, width = w, height = 1)
+        if (row.any { (it ushr 24) > 40 }) return@withContext (y + 1f) / h
+    }
+    1f
+}
+
+/**
+ * El auto del inicio: quieto se ve la vista con piso ([rest]); al arrastrar a los
+ * lados gira como en Ajustes (con su reflejo) y al soltar regresa girando a su
+ * lugar y vuelve el piso. Los cuadros del giro ya vienen en el paquete del auto.
+ */
+@Composable
+fun CarTurntable(
+    repo: CarRepository,
+    p: CarPackage,
+    rest: String,
+    color: Color,
+    modifier: Modifier = Modifier,
+    onReady: (() -> Unit)? = null,
+) {
+    if (p.spin <= 0) {
+        CarImage(repo, p, rest, color, modifier, onReady = onReady)
+        return
+    }
+    val frames = remember(p) { spinFrames(p) }
+    val n = frames.size
+    // El cuadro de tres cuartos, el mismo con el que empieza el giro de Ajustes.
+    val home = n / 8
+    var frame by remember(p) { mutableIntStateOf(home) }
+    var spinning by remember(p) { mutableStateOf(false) }
+    var ground by remember(p.id) { mutableStateOf<Float?>(null) }
+    var widthPx by remember { mutableIntStateOf(0) }
+    val scope = rememberCoroutineScope()
+    var back by remember { mutableStateOf<Job?>(null) }
+    LaunchedEffect(p, widthPx) {
+        if (widthPx <= 0 || ground != null) return@LaunchedEffect
+        repo.painted(p, frames[home], color, widthPx)?.let { ground = groundLine(it) }
+    }
+    val restAlpha by animateFloatAsState(if (spinning) 0f else 1f, tween(220), label = "piso")
+    Box(
+        modifier.onSizeChanged { widthPx = it.width }.pointerInput(p) {
+            val step = size.width / (n * 1.2f)
+            var accumulated = 0f
+            detectHorizontalDragGestures(
+                onDragStart = { back?.cancel(); spinning = true; accumulated = 0f },
+                onDragEnd = {
+                    // De regreso por el lado corto, cuadro por cuadro (~0.3 s la media vuelta).
+                    back = scope.launch {
+                        val wait = (600L / n).coerceAtLeast(8L)
+                        while (frame != home) {
+                            val ahead = (home - frame + n) % n
+                            frame = if (ahead <= n / 2) (frame + 1) % n else (frame - 1 + n) % n
+                            delay(wait)
+                        }
+                        spinning = false
+                    }
+                },
+                onDragCancel = { frame = home; spinning = false },
+            ) { change, dx ->
+                change.consume()
+                accumulated += dx
+                while (accumulated > step) { accumulated -= step; frame = (frame - 1 + n) % n }
+                while (accumulated < -step) { accumulated += step; frame = (frame + 1) % n }
+            }
+        },
+    ) {
+        if (restAlpha < 1f) CarImage(repo, p, frames[frame], color, Modifier.fillMaxSize().graphicsLayer { alpha = 1f - restAlpha }, ground)
+        if (restAlpha > 0f) CarImage(repo, p, rest, color, Modifier.fillMaxSize().graphicsLayer { alpha = restAlpha }, onReady = onReady)
+    }
+}
 
 /**
  * Los cuadros del giro en orden de ángulo, según la [Smoothness] instalada. El

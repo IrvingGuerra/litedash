@@ -4,6 +4,9 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.layout.onSizeChanged
 import com.irvingguerra.litedash.core.ui.LiteDashTheme
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withTimeoutOrNull
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.PointerEventPass
@@ -67,7 +70,12 @@ import com.irvingguerra.litedash.feature.car.CarImage
 import com.irvingguerra.litedash.feature.car.CarPackage
 import com.irvingguerra.litedash.feature.car.CarRepository
 import com.irvingguerra.litedash.feature.car.CarTile
-import com.irvingguerra.litedash.feature.car.CarPlacement
+import com.irvingguerra.litedash.feature.car.CarTurntable
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.safeDrawing
 import com.irvingguerra.litedash.feature.car.CarViews
 import com.irvingguerra.litedash.feature.music.MusicExpanded
 import com.irvingguerra.litedash.feature.music.MusicTile
@@ -113,40 +121,74 @@ class TileActions(
     val onNavigate: (App?) -> Unit,
     val onMusic: () -> Unit,
     val onCarOnly: () -> Unit,
+    /** Dónde está la pieza del auto en la pantalla: de ahí crece al verlo solo. */
+    val onCarBounds: (androidx.compose.ui.geometry.Rect) -> Unit,
+    /** Se lee al dibujar (no recompone el tablero en cada cuadro de la animación). */
+    val carHidden: () -> Boolean,
 )
 
-/**
- * El auto del inicio. [movable]: se arrastra y se pellizca para acomodarlo y se
- * guarda dónde quedó (la configuración del auto vive en Ajustes → Tu auto).
- */
+/** El auto del inicio: gira con el dedo y un toque hace [onClick] (la configuración vive en Ajustes → Tu auto). */
 @Composable
-fun HomeCar(d: Dependencies, onClick: () -> Unit, movable: Boolean, modifier: Modifier = Modifier) {
+fun HomeCar(d: Dependencies, onClick: () -> Unit, modifier: Modifier = Modifier, onReady: (() -> Unit)? = null) {
     val color = d.prefs.carColor
     val pkg = remember(d.prefs.carModel, d.cars.changes) { d.cars.pkg(d.prefs.carModel) }
+    // El sedán dibujado no carga nada: listo de una vez.
+    if (pkg == null && onReady != null) LaunchedEffect(Unit) { onReady() }
     CarTile(
         name = d.prefs.carName ?: pkg?.name ?: stringResource(R.string.my_car),
         color = color,
         onClick = onClick,
         modifier = modifier,
-        drawing = pkg?.let { carPkg -> { m -> CarImage(d.cars, carPkg, dashboardView(carPkg), color, m) } },
+        drawing = pkg?.let { carPkg -> { m -> CarTurntable(d.cars, carPkg, dashboardView(carPkg), color, m, onReady) } },
         hasFloor = pkg?.let { dashboardView(it) in it.floor } == true,
-        placement = if (movable) d.prefs.carPlacement else CarPlacement(),
-        onPlace = if (movable) { p -> d.prefs.carPlacement = p } else null,
     )
 }
 
-/** Solo el auto, a pantalla completa sobre su piso; un toque regresa al inicio como estaba. */
+/**
+ * Solo el auto: crece desde su pieza ([from], en coordenadas de la pantalla)
+ * hasta casi toda la pantalla mientras el fondo tapa el inicio; [progress] va de
+ * 0 (en su pieza) a 1 (completo). El auto se dibuja una vez al tamaño final y se
+ * escala con la GPU, así la animación no vuelve a pintar la imagen cuadro a cuadro.
+ */
 @Composable
-private fun CarOnly(d: Dependencies, backdrop: Modifier, onExit: () -> Unit) {
-    Box(
-        Modifier
-            .fillMaxSize()
-            .then(backdrop)
-            .clickable(remember { androidx.compose.foundation.interaction.MutableInteractionSource() }, indication = null, onClick = onExit)
-            .safeDrawingPadding()
-            .padding(24.dp),
-    ) {
-        HomeCar(d, onClick = onExit, movable = false)
+private fun CarOnly(d: Dependencies, from: androidx.compose.ui.geometry.Rect, progress: Float, backdrop: Modifier, onTap: () -> Unit, onReady: () -> Unit) {
+    val density = LocalDensity.current
+    val insets = androidx.compose.foundation.layout.WindowInsets.safeDrawing
+    val direction = androidx.compose.ui.platform.LocalLayoutDirection.current
+    BoxWithConstraints(Modifier.fillMaxSize()) {
+        val pad = with(density) { 24.dp.toPx() }
+        val to = with(density) {
+            androidx.compose.ui.geometry.Rect(
+                insets.getLeft(this, direction) + pad,
+                insets.getTop(this) + pad,
+                maxWidth.toPx() - insets.getRight(this, direction) - pad,
+                maxHeight.toPx() - insets.getBottom(this) - pad,
+            )
+        }
+        val start = if (from.isEmpty) 0.6f else minOf(from.width / to.width, from.height / to.height)
+        Box(
+            Modifier
+                .fillMaxSize()
+                .graphicsLayer { alpha = progress }
+                .then(backdrop)
+                .clickable(remember { androidx.compose.foundation.interaction.MutableInteractionSource() }, indication = null, onClick = onTap),
+        )
+        Box(
+            Modifier
+                .offset { androidx.compose.ui.unit.IntOffset(to.left.toInt(), to.top.toInt()) }
+                .size(with(density) { to.width.toDp() }, with(density) { to.height.toDp() })
+                .graphicsLayer {
+                    val scale = start + (1f - start) * progress
+                    scaleX = scale
+                    scaleY = scale
+                    if (!from.isEmpty) {
+                        translationX = (from.center.x - to.center.x) * (1f - progress)
+                        translationY = (from.center.y - to.center.y) * (1f - progress)
+                    }
+                },
+        ) {
+            HomeCar(d, onClick = onTap, onReady = onReady)
+        }
     }
 }
 
@@ -155,7 +197,14 @@ private fun CarOnly(d: Dependencies, backdrop: Modifier, onExit: () -> Unit) {
 fun TileContent(d: Dependencies, p: Tile, apps: List<App>, revision: Int, actions: TileActions) {
     val context = LocalContext.current
     when (p.type) {
-        TileTypes.CAR -> HomeCar(d, onClick = actions.onCarOnly, movable = true)
+        TileTypes.CAR -> HomeCar(
+            d,
+            onClick = actions.onCarOnly,
+            modifier = Modifier
+                .onGloballyPositioned { actions.onCarBounds(it.boundsInRoot()) }
+                // Mientras crece o se ve solo, el de la pieza se esconde (si no, se ve doble).
+                .graphicsLayer { alpha = if (actions.carHidden()) 0f else 1f },
+        )
         TileTypes.MUSIC -> MusicTile(d.music, revision, onExpand = actions.onMusic)
         TileTypes.CLOCK -> ClockTile(d.prefs.driverName, d.weather)
         TileTypes.WEATHER -> WeatherTile(d.weather)
@@ -201,8 +250,27 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
     var panel by remember { mutableStateOf<Panel?>(null) }
     var editing by remember { mutableStateOf(false) }
     var musicExpanded by remember { mutableStateOf(false) }
-    // Solo el auto a pantalla completa (un toque al auto entra y otro sale).
+    // Solo el auto a pantalla completa (un toque al auto entra y otro sale), con animación:
+    // [carOnly] es a dónde va y [carShown] si la capa sigue en pantalla (también al regresar).
     var carOnly by remember { mutableStateOf(false) }
+    var carShown by remember { mutableStateOf(false) }
+    var carReady by remember { mutableStateOf(false) }
+    var carBounds by remember { mutableStateOf(androidx.compose.ui.geometry.Rect.Zero) }
+    val carProgress = remember { androidx.compose.animation.core.Animatable(0f) }
+    LaunchedEffect(carOnly) {
+        val easing = androidx.compose.animation.core.FastOutSlowInEasing
+        if (carOnly) {
+            carReady = false
+            carShown = true
+            // Crece hasta que la imagen grande ya está pintada (en su pieza se ve igual que la
+            // chica); si tarda, crece de todos modos.
+            withTimeoutOrNull(600) { snapshotFlow { carReady }.first { it } }
+            carProgress.animateTo(1f, androidx.compose.animation.core.tween(480, easing = easing))
+        } else if (carShown) {
+            carProgress.animateTo(0f, androidx.compose.animation.core.tween(400, easing = easing))
+            carShown = false
+        }
+    }
     var promptsHeight by remember { mutableIntStateOf(0) }
     // Cuándo se tocó el inicio por última vez: tras un rato quieto, el modo estacionado.
     var touched by remember { mutableIntStateOf(0) }
@@ -241,6 +309,8 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
         onNavigate = { app -> openNavigation(context, d.apps, app) },
         onMusic = { musicExpanded = true },
         onCarOnly = { carOnly = true },
+        onCarBounds = { carBounds = it },
+        carHidden = { carShown && carProgress.value > 0f },
     )
 
     // Mandos al volante: cualquier botón quita el modo estacionado; las acciones que
@@ -345,7 +415,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
             is Panel.PickApp -> PickAppPanel(d, apps, p.tileId, close = { panel = null })
         }
 
-        if (carOnly && panel == null) CarOnly(d, backdrop, onExit = { carOnly = false; touched++ })
+        if (carShown && panel == null) CarOnly(d, carBounds, carProgress.value, backdrop, onTap = { carOnly = false; touched++ }, onReady = { carReady = true })
 
         if (parked) Parked(d, onWake = { parked = false; touched++ })
 

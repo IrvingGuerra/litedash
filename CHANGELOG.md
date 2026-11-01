@@ -16,11 +16,11 @@ Todos los cambios que nota quien usa LiteDash. Formato
 - **Brillo de día y de noche** (Ajustes → Apariencia → Brillo): según la hora
   del sol, sin sensores. Solo en LiteDash, o en todas las apps con el permiso de
   "Modificar ajustes del sistema".
-- **Acomoda tu auto en el inicio**: arrástralo para moverlo y pellízcalo para
-  hacerlo más grande o más chico; se queda donde lo dejes. **Un toque** lo
-  muestra solo, a pantalla completa; otro toque regresa. Su nombre, color y
-  modelo ahora están en Ajustes → Tu auto (también con el botón del auto en el
-  dock), con "Centrar en el inicio".
+- **Gira tu auto en el inicio**: arrástralo a los lados y gira como en Ajustes,
+  con su reflejo en el piso; al soltarlo regresa a su lugar. **Un toque** lo
+  agranda con una animación hasta verlo solo, a pantalla completa; otro toque
+  lo regresa. Su nombre, color y modelo ahora están en Ajustes → Tu auto
+  (también con el botón del auto en el dock).
 
 ### Arreglado
 - Arrastrar sobre una pieza ya no abre "Acomoda tu inicio" por error.

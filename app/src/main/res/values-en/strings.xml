@@ -211,6 +211,5 @@
     <string name="brightness_only_litedash">Only in LiteDash</string>
     <string name="brightness_all_apps">In all apps</string>
     <string name="brightness_permission">Permission missing: allow \"Modify system settings\" for LiteDash.</string>
-    <string name="car_place_help">On the home screen, drag the car to move it and pinch to make it bigger or smaller. A tap shows only the car, full screen; another tap goes back.</string>
-    <string name="car_center">Center on home</string>
+    <string name="car_home_help">On the home screen, spin the car with your finger. A tap shows it big; another tap goes back.</string>
 </resources>
