@@ -19,9 +19,8 @@ Todos los cambios que nota quien usa LiteDash. Formato
 - **Modo estacionado**: reloj grande tras 5 minutos sin tocar el inicio.
 - **Recordatorios del auto**: servicio, verificación, tenencia, seguro y
   placas, con aviso 7 días antes; al marcarlos como hechos se reprograman.
-- **Favoritos**: tus contactos con estrella, a un toque.
-- **Avisos de mensajes**: WhatsApp, SMS y Telegram en una tarjeta arriba; en
-  movimiento sin el texto.
+- **Android Auto / CarPlay**: tu app de proyección (Zlink, AutoKit…) primero en
+  el dock y como pieza, a un toque.
 - **Botón de voz** en el dock e **íconos de Wi-Fi, Bluetooth y ubicación** en la barra.
 
 ## [1.3.5] - 2026-10-31
