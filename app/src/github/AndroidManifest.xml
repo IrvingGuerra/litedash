@@ -8,7 +8,7 @@
 
     <application>
         <receiver
-            android:name="com.irvingguerra.litedash.feature.actualizar.ReceptorInstalacion"
+            android:name="com.irvingguerra.litedash.feature.updater.InstallReceiver"
             android:exported="false" />
     </application>
 </manifest>

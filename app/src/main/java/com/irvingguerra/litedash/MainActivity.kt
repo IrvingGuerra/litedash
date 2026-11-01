@@ -11,15 +11,15 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableIntStateOf
-import com.irvingguerra.litedash.core.ui.LiteDashTema
+import com.irvingguerra.litedash.core.ui.LiteDashTheme
 
 class MainActivity : ComponentActivity() {
-    private val dependencias get() = (application as LiteDashApp).dependencias
+    private val dependencies get() = (application as LiteDashApp).dependencies
 
     // Sube cada vez que se vuelve a la app (p. ej. después de dar un permiso en Ajustes).
     private val revision = mutableIntStateOf(0)
     // Sube al tocar el botón de inicio estando ya en LiteDash: cierra lo que esté abierto.
-    private val inicioTocado = mutableIntStateOf(0)
+    private val homePressed = mutableIntStateOf(0)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -28,30 +28,30 @@ class MainActivity : ComponentActivity() {
             override fun handleOnBackPressed() = Unit
         })
         setContent {
-            val d = dependencias
-            val oscuro = when (d.prefs.tema) {
-                ModoTema.OSCURO -> true
-                ModoTema.CLARO -> false
-                ModoTema.SISTEMA -> isSystemInDarkTheme()
+            val d = dependencies
+            val dark = when (d.prefs.theme) {
+                ThemeMode.DARK -> true
+                ThemeMode.LIGHT -> false
+                ThemeMode.SYSTEM -> isSystemInDarkTheme()
             }
             // Íconos de la barra del sistema claros u oscuros según el tema.
-            LaunchedEffect(oscuro) {
-                val transparente = android.graphics.Color.TRANSPARENT
-                val estilo = if (oscuro) SystemBarStyle.dark(transparente) else SystemBarStyle.light(transparente, transparente)
-                enableEdgeToEdge(estilo, estilo)
+            LaunchedEffect(dark) {
+                val transparent = android.graphics.Color.TRANSPARENT
+                val style = if (dark) SystemBarStyle.dark(transparent) else SystemBarStyle.light(transparent, transparent)
+                enableEdgeToEdge(style, style)
             }
-            LiteDashTema(oscuro = oscuro, escala = d.prefs.escala) {
-                Inicio(d, revision.intValue, inicioTocado.intValue)
+            LiteDashTheme(dark = dark, scale = d.prefs.scale) {
+                Home(d, revision.intValue, homePressed.intValue)
             }
         }
     }
 
     // Idioma elegido en Ajustes (o el del sistema si no eligió).
-    override fun attachBaseContext(base: Context) = super.attachBaseContext(contextoConIdioma(base))
+    override fun attachBaseContext(base: Context) = super.attachBaseContext(contextWithLanguage(base))
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        if (intent.hasCategory(Intent.CATEGORY_HOME)) inicioTocado.intValue++
+        if (intent.hasCategory(Intent.CATEGORY_HOME)) homePressed.intValue++
     }
 
     override fun onResume() {

@@ -6,7 +6,7 @@ plugins {
 }
 
 // Versión: solo en version.properties; el versionCode se calcula.
-val nombreVersion: String = Properties().run {
+val appVersionName: String = Properties().run {
     rootProject.file("version.properties").inputStream().use { load(it) }
     getProperty("VERSION_NAME")
 }
@@ -14,27 +14,27 @@ val nombreVersion: String = Properties().run {
 fun versionCodeFrom(name: String): Int {
     val m = Regex("""^(\d+)\.(\d+)\.(\d+)(?:-(beta|rc)\.(\d+))?$""").matchEntire(name)
         ?: error("VERSION_NAME inválido: $name (formato X.Y.Z, X.Y.Z-beta.N o X.Y.Z-rc.N)")
-    val (mayor, menor, parche, tipo, n) = m.destructured
-    val sufijo = when (tipo) {
+    val (major, minor, patch, type, n) = m.destructured
+    val suffix = when (type) {
         "beta" -> n.toInt().also { require(it in 1..49) { "beta.N va de 1 a 49" } }
         "rc" -> 49 + n.toInt().also { require(it in 1..49) { "rc.N va de 1 a 49" } }
         else -> 99
     }
-    return mayor.toInt() * 1_000_000 + menor.toInt() * 10_000 + parche.toInt() * 100 + sufijo
+    return major.toInt() * 1_000_000 + minor.toInt() * 10_000 + patch.toInt() * 100 + suffix
 }
 
 // Firma: key.properties fuera del repo (local) o variables de entorno (CI). Sin ellas, firma de depuración.
-val firma = Properties().apply {
+val signing = Properties().apply {
     val f = rootProject.file("key.properties")
     if (f.exists()) f.inputStream().use { load(it) }
 }
-fun datoFirma(clave: String, env: String): String? = firma.getProperty(clave) ?: System.getenv(env)
+fun signingValue(key: String, env: String): String? = signing.getProperty(key) ?: System.getenv(env)
 // Catálogo de autos (solo imágenes y datos; ver feature/auto): igual en Play y en GitHub.
 // Publicado en el release "catalogo" (prerelease). Para probar uno local en el
-// emulador: ./gradlew ... -Pcatalogo=http://10.0.2.2:8765/catalogo.json
-val URL_CATALOGO = (findProperty("catalogo") as String?)
+// emulador: ./gradlew ... -Pcatalog=http://10.0.2.2:8765/catalogo.json
+val CATALOG_URL = (findProperty("catalog") as String?)
     ?: "https://github.com/IrvingGuerra/litedash/releases/download/catalogo/catalogo.json"
-val hayFirma = datoFirma("storeFile", "LITEDASH_STORE_FILE") != null
+val hasSigning = signingValue("storeFile", "LITEDASH_STORE_FILE") != null
 
 android {
     namespace = "com.irvingguerra.litedash"
@@ -44,36 +44,36 @@ android {
         applicationId = "com.irvingguerra.litedash"
         minSdk = 26
         targetSdk = 37
-        versionCode = versionCodeFrom(nombreVersion)
-        versionName = nombreVersion
+        versionCode = versionCodeFrom(appVersionName)
+        versionName = appVersionName
     }
 
     signingConfigs {
-        if (hayFirma) {
+        if (hasSigning) {
             create("release") {
-                storeFile = file(datoFirma("storeFile", "LITEDASH_STORE_FILE")!!)
-                storePassword = datoFirma("storePassword", "LITEDASH_STORE_PASSWORD")
-                keyAlias = datoFirma("keyAlias", "LITEDASH_KEY_ALIAS")
-                keyPassword = datoFirma("keyPassword", "LITEDASH_KEY_PASSWORD")
+                storeFile = file(signingValue("storeFile", "LITEDASH_STORE_FILE")!!)
+                storePassword = signingValue("storePassword", "LITEDASH_STORE_PASSWORD")
+                keyAlias = signingValue("keyAlias", "LITEDASH_KEY_ALIAS")
+                keyPassword = signingValue("keyPassword", "LITEDASH_KEY_PASSWORD")
             }
         }
     }
 
     // Mismo código, dos canales. Mismo applicationId y versionCode.
-    flavorDimensions += "canal"
+    flavorDimensions += "channel"
     productFlavors {
         create("play") {
-            dimension = "canal"
-            buildConfigField("String", "CANAL", "\"play\"")
-            buildConfigField("String", "URL_CATALOGO", "\"$URL_CATALOGO\"")
+            dimension = "channel"
+            buildConfigField("String", "CHANNEL", "\"play\"")
+            buildConfigField("String", "CATALOG_URL", "\"$CATALOG_URL\"")
             // Play prohíbe actualizarse por fuera de la tienda: sin actualizador.
-            buildConfigField("String", "URL_ACTUALIZACIONES", "\"\"")
+            buildConfigField("String", "UPDATES_URL", "\"\"")
         }
         create("github") {
-            dimension = "canal"
-            buildConfigField("String", "CANAL", "\"github\"")
-            buildConfigField("String", "URL_CATALOGO", "\"$URL_CATALOGO\"")
-            buildConfigField("String", "URL_ACTUALIZACIONES", "\"https://api.github.com/repos/IrvingGuerra/litedash/releases?per_page=20\"")
+            dimension = "channel"
+            buildConfigField("String", "CHANNEL", "\"github\"")
+            buildConfigField("String", "CATALOG_URL", "\"$CATALOG_URL\"")
+            buildConfigField("String", "UPDATES_URL", "\"https://api.github.com/repos/IrvingGuerra/litedash/releases?per_page=20\"")
         }
     }
 
@@ -82,7 +82,7 @@ android {
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-            signingConfig = if (hayFirma) signingConfigs.getByName("release") else signingConfigs.getByName("debug")
+            signingConfig = if (hasSigning) signingConfigs.getByName("release") else signingConfigs.getByName("debug")
         }
         // Igual que release pero firmable en local: es lo que mide el módulo :benchmark.
         create("benchmark") {
@@ -127,11 +127,11 @@ kotlin {
 dependencies {
     implementation(project(":core:ui"))
     implementation(project(":feature:apps"))
-    implementation(project(":feature:tablero"))
-    implementation(project(":feature:musica"))
-    implementation(project(":feature:auto"))
-    implementation(project(":feature:actualizar"))
-    implementation(project(":feature:navegacion"))
+    implementation(project(":feature:dashboard"))
+    implementation(project(":feature:music"))
+    implementation(project(":feature:car"))
+    implementation(project(":feature:updater"))
+    implementation(project(":feature:navigation"))
 
     implementation(platform(libs.compose.bom))
     implementation(libs.compose.foundation)

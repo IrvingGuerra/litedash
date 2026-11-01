@@ -18,6 +18,12 @@
 3. Antes del PR: `./gradlew assemblePlayDebug lint`. Si tocaste algo visible,
    capturas en horizontal y vertical, y en 1024×600.
 4. Si el usuario lo nota, agrégalo a `CHANGELOG.md` bajo "Sin publicar".
+5. Código, archivos y carpetas en inglés (`feature/music`, `CarRepository`,
+   `R.string.your_car`); la interfaz, en español e inglés, y los comentarios
+   pueden ir en español. Lo que ya está guardado en los equipos o publicado
+   (claves de preferencias, `catalogo.json`, `auto.json`, carpetas de autos)
+   conserva su nombre en español: se usa a través de constantes en inglés
+   (`PrefKeys`, `CarJson`, `CarFiles`) y no se traduce.
 
 **Reglas que no se negocian:**
 

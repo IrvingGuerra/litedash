@@ -10,7 +10,7 @@ android {
         minSdk = 28
         targetSdk = 36
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        missingDimensionStrategy("canal", "play")
+        missingDimensionStrategy("channel", "play")
     }
     buildTypes {
         create("benchmark") {

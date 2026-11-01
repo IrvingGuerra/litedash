@@ -12,60 +12,60 @@ import android.util.LruCache
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-data class App(val nombre: String, val paquete: String, val actividad: String) {
-    val componente get() = ComponentName(paquete, actividad)
+data class App(val name: String, val pkg: String, val activity: String) {
+    val component get() = ComponentName(pkg, activity)
     /** Cómo se guarda una app en el tablero o el dock. */
-    val clave get() = "$paquete/$actividad"
+    val key get() = "$pkg/$activity"
 }
 
 /** Lista de apps abribles e íconos, siempre fuera del hilo principal. */
-class RepositorioApps(contexto: Context) {
-    private val pm: PackageManager = contexto.packageManager
-    private val propio = contexto.packageName
+class AppRepository(context: Context) {
+    private val pm: PackageManager = context.packageManager
+    private val ownPackage = context.packageName
     // Íconos ya convertidos a bitmap del tamaño que se pinta; caché por memoria (~4 MB).
-    private val iconos = object : LruCache<String, Bitmap>(4 * 1024 * 1024) {
+    private val icons = object : LruCache<String, Bitmap>(4 * 1024 * 1024) {
         override fun sizeOf(key: String, value: Bitmap) = value.byteCount
     }
 
-    suspend fun cargar(): List<App> = withContext(Dispatchers.IO) {
-        val intento = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
-        pm.queryIntentActivities(intento, 0)
-            .filter { it.activityInfo.packageName != propio }
+    suspend fun load(): List<App> = withContext(Dispatchers.IO) {
+        val intent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
+        pm.queryIntentActivities(intent, 0)
+            .filter { it.activityInfo.packageName != ownPackage }
             .map { App(it.loadLabel(pm).toString(), it.activityInfo.packageName, it.activityInfo.name) }
-            .sortedBy { it.nombre.lowercase() }
+            .sortedBy { it.name.lowercase() }
     }
 
-    suspend fun icono(app: App, ladoPx: Int): Bitmap? {
-        val clave = "${app.paquete}/${app.actividad}@$ladoPx"
-        iconos.get(clave)?.let { return it }
+    suspend fun icon(app: App, sidePx: Int): Bitmap? {
+        val key = "${app.pkg}/${app.activity}@$sidePx"
+        icons.get(key)?.let { return it }
         return withContext(Dispatchers.IO) {
-            runCatching { pm.getActivityIcon(app.componente) }.getOrNull()
-                ?.aBitmap(ladoPx)
-                ?.also { iconos.put(clave, it) }
+            runCatching { pm.getActivityIcon(app.component) }.getOrNull()
+                ?.toBitmap(sidePx)
+                ?.also { icons.put(key, it) }
         }
     }
 
-    /** Busca una app por su [App.clave] en la lista ya cargada. */
-    fun buscar(apps: List<App>, clave: String) = apps.firstOrNull { it.clave == clave }
+    /** Busca una app por su [App.key] en la lista ya cargada. */
+    fun find(apps: List<App>, key: String) = apps.firstOrNull { it.key == key }
 
-    /** Primera app instalada de [paquetes], en ese orden de preferencia. */
-    fun primeraDe(apps: List<App>, vararg paquetes: String) =
-        paquetes.firstNotNullOfOrNull { p -> apps.firstOrNull { it.paquete == p } }
+    /** Primera app instalada de [packages], en ese orden de preferencia. */
+    fun firstOf(apps: List<App>, vararg packages: String) =
+        packages.firstNotNullOfOrNull { p -> apps.firstOrNull { it.pkg == p } }
 
-    fun abrir(contexto: Context, app: App) {
-        val intento = Intent(Intent.ACTION_MAIN)
+    fun open(context: Context, app: App) {
+        val intent = Intent(Intent.ACTION_MAIN)
             .addCategory(Intent.CATEGORY_LAUNCHER)
-            .setComponent(app.componente)
+            .setComponent(app.component)
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED)
-        runCatching { contexto.startActivity(intento) }
+        runCatching { context.startActivity(intent) }
     }
 }
 
-private fun Drawable.aBitmap(lado: Int): Bitmap {
-    if (this is BitmapDrawable && bitmap.width == lado && bitmap.height == lado) return bitmap
-    val bmp = Bitmap.createBitmap(lado, lado, Bitmap.Config.ARGB_8888)
-    val lienzo = Canvas(bmp)
-    setBounds(0, 0, lado, lado)
-    draw(lienzo)
+private fun Drawable.toBitmap(side: Int): Bitmap {
+    if (this is BitmapDrawable && bitmap.width == side && bitmap.height == side) return bitmap
+    val bmp = Bitmap.createBitmap(side, side, Bitmap.Config.ARGB_8888)
+    val canvas = Canvas(bmp)
+    setBounds(0, 0, side, side)
+    draw(canvas)
     return bmp
 }

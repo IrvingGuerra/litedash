@@ -1,0 +1,10 @@
+<resources>
+    <string name="music">Music</string>
+    <string name="music_explain">See and control what\'s playing in any app. Needs notification access.</string>
+    <string name="enable">Turn on</string>
+    <string name="nothing_playing">Nothing playing</string>
+    <string name="open_an_app">Play music in your favorite app</string>
+    <string name="resume">Resume</string>
+    <string name="resume_explain">Resume what you last listened to without leaving LiteDash.</string>
+    <string name="open_app">Open %1$s</string>
+</resources>

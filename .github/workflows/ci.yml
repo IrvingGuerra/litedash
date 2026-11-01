@@ -10,6 +10,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # El id "compilar" es el check que exige la protección de main: no renombrarlo.
   compilar:
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -27,10 +28,10 @@ jobs:
       - name: Presupuesto de tamaño
         run: |
           apk=app/build/outputs/apk/github/release/app-github-release.apk
-          tam=$(stat -c%s "$apk")
-          echo "APK github release: $((tam / 1024)) KB" >> "$GITHUB_STEP_SUMMARY"
-          if [ "$tam" -gt $((8 * 1024 * 1024)) ]; then
-            echo "::error::El APK pesa $((tam / 1024)) KB y el presupuesto es 8 MB"
+          size=$(stat -c%s "$apk")
+          echo "APK github release: $((size / 1024)) KB" >> "$GITHUB_STEP_SUMMARY"
+          if [ "$size" -gt $((8 * 1024 * 1024)) ]; then
+            echo "::error::El APK pesa $((size / 1024)) KB y el presupuesto es 8 MB"
             exit 1
           fi
 

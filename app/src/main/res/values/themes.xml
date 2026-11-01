@@ -2,9 +2,9 @@
 <resources>
     <!-- Sin AppCompat ni Material: tema del sistema, fondo grafito desde el primer cuadro. -->
     <style name="Theme.LiteDash" parent="android:Theme.Material.NoActionBar">
-        <item name="android:windowBackground">@color/grafito</item>
-        <item name="android:statusBarColor">@color/grafito</item>
-        <item name="android:navigationBarColor">@color/grafito</item>
+        <item name="android:windowBackground">@color/graphite</item>
+        <item name="android:statusBarColor">@color/graphite</item>
+        <item name="android:navigationBarColor">@color/graphite</item>
         <item name="android:windowShowWallpaper">false</item>
     </style>
 </resources>
