@@ -6,6 +6,13 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
+## [1.4.11] - 2026-11-01
+
+### Mejorado
+- **La música en grande ocupa media pantalla**: al tocar la pieza de música, la
+  música queda a la derecha y tus piezas se acomodan solas en la mitad izquierda
+  (sin cambiar tu acomodo); con la ✕ todo regresa como estaba.
+
 ## [1.4.10] - 2026-11-01
 
 ### Mejorado

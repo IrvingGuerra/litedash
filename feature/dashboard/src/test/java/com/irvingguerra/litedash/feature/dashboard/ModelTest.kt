@@ -73,4 +73,17 @@ class ModelTest {
         assertEquals(ScreenSize.VERTICAL, screens[4].size)
         for (c in screens) assertTrue(c.key, c.size in c.suggestedTemplate().sizes)
     }
+
+    @Test
+    fun packedFitsHalfScreenWithoutOverlap() {
+        val any = { _: String -> SizeLimits(2, 1) }
+        for (c in screens) for (p in Template.entries) {
+            val half = Grid((c.columns / 2).coerceAtLeast(2), c.rows)
+            val packed = p.tiles(c).packed(half, any)
+            assertTrue("$p en ${half.key} quedó vacía", packed.isNotEmpty())
+            for (tile in packed) assertTrue("$p en ${half.key}: $tile", packed.fits(tile, half))
+            // Las primeras (de arriba abajo) son las que se quedan.
+            assertEquals(p.tiles(c).minWith(compareBy({ it.row }, { it.col })).id, packed.first().id)
+        }
+    }
 }

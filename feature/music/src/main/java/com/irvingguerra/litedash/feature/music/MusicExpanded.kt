@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
@@ -36,16 +37,15 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.irvingguerra.litedash.core.ui.Button
-import com.irvingguerra.litedash.core.ui.IconButton
-import com.irvingguerra.litedash.core.ui.Label
-import com.irvingguerra.litedash.core.ui.Icon
-import com.irvingguerra.litedash.core.ui.Icons
-import com.irvingguerra.litedash.core.ui.LocalColors
 import com.irvingguerra.litedash.core.ui.Card
+import com.irvingguerra.litedash.core.ui.Icon
+import com.irvingguerra.litedash.core.ui.IconButton
+import com.irvingguerra.litedash.core.ui.Icons
+import com.irvingguerra.litedash.core.ui.Label
+import com.irvingguerra.litedash.core.ui.LocalColors
 import com.irvingguerra.litedash.core.ui.Typography
 
 /**
@@ -64,6 +64,9 @@ fun MusicExpanded(repo: MusicRepository, close: () -> Unit, modifier: Modifier =
     Card(modifier.fillMaxSize()) {
         BoxWithConstraints(Modifier.fillMaxSize().padding(20.dp)) {
             val wide = maxWidth > 520.dp && maxWidth > maxHeight
+            // La portada cuadrada, pero sin pasar del 40 % del ancho: a media pantalla (con
+            // las piezas al lado) el título y los botones siguen cabiendo.
+            val artworkMax = maxWidth * 0.4f
             Column(Modifier.fillMaxSize()) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     val app = song?.app ?: repo.preferredName()
@@ -75,8 +78,8 @@ fun MusicExpanded(repo: MusicRepository, close: () -> Unit, modifier: Modifier =
                 when {
                     song == null -> Empty(repo, Modifier.weight(1f).fillMaxWidth())
                     wide -> Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
-                        Artwork(song, Modifier.fillMaxHeight().aspectRatio(1f))
-                        Spacer(Modifier.width(32.dp))
+                        Artwork(song, Modifier.widthIn(max = artworkMax).fillMaxHeight().aspectRatio(1f, matchHeightConstraintsFirst = false))
+                        Spacer(Modifier.width(24.dp))
                         Details(repo, song, Modifier.weight(1f))
                     }
                     else -> Column(Modifier.weight(1f).fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {

@@ -72,6 +72,7 @@ import com.irvingguerra.litedash.feature.dashboard.DashboardState
 import com.irvingguerra.litedash.feature.dashboard.Grid
 import com.irvingguerra.litedash.feature.dashboard.Tile
 import com.irvingguerra.litedash.feature.dashboard.TileTypes
+import com.irvingguerra.litedash.feature.dashboard.packed
 import com.irvingguerra.litedash.feature.music.MusicExpanded
 import com.irvingguerra.litedash.feature.music.MusicRepository
 import com.irvingguerra.litedash.feature.music.MusicTile
@@ -323,7 +324,23 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                 // Carga el acomodo de esta cuadrícula antes de dibujar (solo hace algo si cambió).
                 d.dashboard.use(grid)
                 if (musicExpanded) {
-                    MusicExpanded(d.music, close = { musicExpanded = false }, Modifier.padding(6.dp))
+                    // La música a la derecha y tus piezas acomodadas en la mitad izquierda (sin
+                    // tocar el acomodo guardado): no tapa todo y es claro cómo volver.
+                    val half = remember(grid) { Grid((grid.columns / 2).coerceAtLeast(2), grid.rows) }
+                    val tiles = d.dashboard.tiles
+                    val packed = remember(tiles, half) { tiles.filter { it.type != TileTypes.MUSIC }.packed(half, ::limitsOf) }
+                    Row(Modifier.fillMaxSize()) {
+                        Dashboard(
+                            grid = half,
+                            tiles = packed,
+                            editing = false,
+                            limits = ::limitsOf,
+                            onChange = {},
+                            onEdit = { musicExpanded = false; editing = true },
+                            modifier = Modifier.weight(1f),
+                        ) { p -> TileContent(d, p, apps, car, revision, actions) }
+                        MusicExpanded(d.music, close = { musicExpanded = false }, Modifier.weight(1f).padding(6.dp))
+                    }
                 } else {
                     Dashboard(
                         grid = grid,
