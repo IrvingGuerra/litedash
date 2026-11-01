@@ -256,6 +256,13 @@ class CarRepository(context: Context, val catalogUrl: String) {
         changed()
     }
 
+    /** Quita todos los autos descargados (sus imágenes); se pueden volver a bajar del catálogo. */
+    suspend fun deleteAll() {
+        val all = installed()
+        withContext(Dispatchers.IO) { all.forEach { it.folder.deleteRecursively() } }
+        changed()
+    }
+
     /** Lo que ocupa un auto descargado, en bytes. */
     suspend fun sizeOnDisk(p: CarPackage): Long = withContext(Dispatchers.IO) {
         p.folder.walkTopDown().filter { it.isFile }.sumOf { it.length() }

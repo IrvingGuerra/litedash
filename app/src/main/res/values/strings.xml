@@ -37,7 +37,6 @@
     <string name="arrange">Acomodar inicio</string>
     <string name="arrange_help">También puedes dejar presionado cualquier lugar del inicio.</string>
     <string name="about">Acerca de</string>
-    <string name="model">Modelo</string>
     <string name="model_generic">Sedán (dibujo)</string>
     <string name="download_mb">Bajar · %.1f MB</string>
     <string name="catalog_error">No se pudo bajar. Revisa tu conexión e inténtalo otra vez.</string>
@@ -115,7 +114,6 @@
     <string name="smoothness_max">Máxima</string>
     <string name="smoothness_help">Más fluidez = más cuadros al girar. Solo se bajan los que faltan.</string>
     <string name="delete_car">Eliminar descargado · %.1f MB</string>
-    <string name="delete_confirm">Sí, eliminar</string>
     <string name="cancel">Cancelar</string>
     <string name="greeting_morning">Buenos días, %1$s</string>
     <string name="greeting_afternoon">Buenas tardes, %1$s</string>
@@ -216,4 +214,23 @@
     <string name="car_home_help">En el inicio gira el auto con el dedo. Un toque lo muestra en grande; otro toque regresa.</string>
     <string name="car_update">Actualizar · %1$.1f MB</string>
     <string name="car_update_notice">Hay un modelo 3D nuevo de tu %1$s</string>
+    <string name="your_models">Tus modelos</string>
+    <string name="catalog">Catálogo</string>
+    <string name="no_models">Todavía no bajas ningún auto: búscalo en el catálogo.</string>
+    <string name="update_all">Actualizar todos (%1$d) · %2$.1f MB</string>
+    <string name="delete_all">Eliminar todos los descargados</string>
+    <string name="delete_car_question">¿Eliminar este auto descargado?</string>
+    <string name="catalog_hint">Escribe una marca, modelo o año para buscar.</string>
+    <string name="catalog_show_all">Ver todos (%1$d)</string>
+    <string name="catalog_none">No hay autos con ese nombre.</string>
+    <string name="catalog_all_downloaded">Ya tienes todos los autos del catálogo.</string>
+    <string name="yes">Sí</string>
+    <plurals name="delete_all_confirm">
+        <item quantity="one">¿Eliminar el auto descargado?</item>
+        <item quantity="other">¿Eliminar los %1$d autos descargados?</item>
+    </plurals>
+    <plurals name="update_all_confirm">
+        <item quantity="one">¿Bajar el modelo 3D nuevo de tu auto?</item>
+        <item quantity="other">¿Bajar el modelo 3D nuevo de %1$d autos?</item>
+    </plurals>
 </resources>

@@ -6,6 +6,19 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
+## [1.4.9] - 2026-11-01
+
+### Mejorado
+- **Ajustes → Tu auto, en tarjetas**: tu auto (nombre y color), y justo debajo
+  las opciones del modelo elegido (modelo 3D nuevo, fluidez, eliminar), sin bajar
+  toda la lista.
+- **Tus modelos a la vista**: los autos que bajaste aparecen como tarjetas con su
+  imagen (en tu color); un toque lo elige.
+- **Catálogo con buscador**: los autos aparecen al escribir una marca, modelo o
+  año, o con "Ver todos".
+- **Actualizar todos** (los que tienen modelo 3D nuevo) y **Eliminar todos los
+  descargados**, los dos con confirmación.
+
 ## [1.4.8] - 2026-11-01
 
 ### Mejorado

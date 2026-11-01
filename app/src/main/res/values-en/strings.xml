@@ -36,7 +36,6 @@
     <string name="arrange">Arrange home</string>
     <string name="arrange_help">You can also long-press anywhere on the home screen.</string>
     <string name="about">About</string>
-    <string name="model">Model</string>
     <string name="model_generic">Sedan (drawing)</string>
     <string name="download_mb">Download · %.1f MB</string>
     <string name="catalog_error">Couldn\'t download. Check your connection and try again.</string>
@@ -111,7 +110,6 @@
     <string name="smoothness_max">Maximum</string>
     <string name="smoothness_help">Smoother = more frames when spinning. Only the missing ones are downloaded.</string>
     <string name="delete_car">Delete download · %.1f MB</string>
-    <string name="delete_confirm">Yes, delete</string>
     <string name="cancel">Cancel</string>
     <string name="greeting_morning">Good morning, %1$s</string>
     <string name="greeting_afternoon">Good afternoon, %1$s</string>
@@ -212,4 +210,23 @@
     <string name="car_home_help">On the home screen, spin the car with your finger. A tap shows it big; another tap goes back.</string>
     <string name="car_update">Update · %1$.1f MB</string>
     <string name="car_update_notice">There\'s a new 3D model of your %1$s</string>
+    <string name="your_models">Your models</string>
+    <string name="catalog">Catalog</string>
+    <string name="no_models">You haven\'t downloaded any car yet: find one in the catalog.</string>
+    <string name="update_all">Update all (%1$d) · %2$.1f MB</string>
+    <string name="delete_all">Delete all downloaded</string>
+    <string name="delete_car_question">Delete this downloaded car?</string>
+    <string name="catalog_hint">Type a make, model or year to search.</string>
+    <string name="catalog_show_all">Show all (%1$d)</string>
+    <string name="catalog_none">No cars with that name.</string>
+    <string name="catalog_all_downloaded">You already have every car in the catalog.</string>
+    <string name="yes">Yes</string>
+    <plurals name="delete_all_confirm">
+        <item quantity="one">Delete the downloaded car?</item>
+        <item quantity="other">Delete the %1$d downloaded cars?</item>
+    </plurals>
+    <plurals name="update_all_confirm">
+        <item quantity="one">Download the new 3D model of your car?</item>
+        <item quantity="other">Download the new 3D model of %1$d cars?</item>
+    </plurals>
 </resources>

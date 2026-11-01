@@ -98,6 +98,15 @@ fun CarTurntable(
     CarLayersImage(repo, p, frames[frame], color, drawWidth, modifier.onSizeChanged { widthPx = it.width }.then(turn), onReady)
 }
 
+/** El auto quieto en tres cuartos, pintado del [color]: para las tarjetas de la lista de modelos. */
+@Composable
+fun CarStill(repo: CarRepository, p: CarPackage, color: Color, modifier: Modifier = Modifier) {
+    val frames = remember(p) { spinFrames(p) }
+    val name = frames.getOrNull(frames.size * 3 / 8) ?: p.views.firstOrNull() ?: return
+    var widthPx by remember { mutableIntStateOf(0) }
+    CarLayersImage(repo, p, name, color, widthPx, modifier.onSizeChanged { widthPx = it.width }, onReady = null)
+}
+
 /**
  * Dibuja la imagen [name] con sus capas: si trae piso, la sombra y el reflejo
  * van debajo y se salen de la caja hacia abajo y a los lados, así el auto parece

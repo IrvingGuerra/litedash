@@ -56,6 +56,7 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
@@ -75,6 +76,7 @@ import com.irvingguerra.litedash.feature.apps.normalize
 import com.irvingguerra.litedash.feature.car.CarDrawing
 import com.irvingguerra.litedash.feature.car.CarPackage
 import com.irvingguerra.litedash.feature.car.CarRepository
+import com.irvingguerra.litedash.feature.car.CarStill
 import com.irvingguerra.litedash.feature.car.CarTurntable
 import com.irvingguerra.litedash.feature.car.CatalogEntry
 import com.irvingguerra.litedash.feature.car.Smoothness
@@ -231,200 +233,253 @@ fun PickAppPanel(d: Dependencies, apps: List<App>, tileId: String?, close: () ->
     }
 }
 
-/** Nombre, color y modelo del auto (Ajustes → Tu auto). */
-@Composable
-private fun CarOptions(prefs: Preferences, cars: CarRepository, pkg: CarPackage?, modifier: Modifier = Modifier) {
-    val c = LocalColors.current
-    Column(modifier, verticalArrangement = Arrangement.spacedBy(18.dp)) {
-        Label(stringResource(R.string.name), Typography.label, c.textMuted)
-        TextInput(prefs.carName ?: "", { prefs.carName = it.take(24).ifBlank { null } }, pkg?.name ?: stringResource(R.string.my_car), Modifier.fillMaxWidth())
-        Label(stringResource(R.string.color), Typography.label, c.textMuted)
-        ColorPicker(prefs.carColor, prefs::previewCarColor) { prefs.carColor = it }
-        // Mientras no haya catálogo ni autos instalados, solo existe el genérico.
-        if (cars.hasCatalog || remember(cars.changes) { cars.installed().isNotEmpty() }) {
-            Label(stringResource(R.string.model), Typography.label, c.textMuted)
-            CarModels(prefs, cars, pkg)
-        } else {
-            Label(stringResource(R.string.car_coming_soon), Typography.small, c.textMuted)
-        }
-    }
-}
-
-/** Ajustes → Tu auto: el auto como se ve en el inicio y sus opciones. */
+/**
+ * Ajustes → Tu auto, en tarjetas: el auto (nombre y color), las opciones del modelo
+ * elegido justo debajo (sin bajar toda la lista), los modelos descargados a la vista
+ * y el catálogo con buscador (no todos de golpe).
+ */
 @Composable
 private fun CarSettings(d: Dependencies) {
     val prefs = d.prefs
-    val pkg = remember(prefs.carModel, d.cars.changes) { d.cars.pkg(prefs.carModel) }
+    val cars = d.cars
+    val c = LocalColors.current
+    val scope = rememberCoroutineScope()
+    val pkg = remember(prefs.carModel, cars.changes) { cars.pkg(prefs.carModel) }
+    val installed = remember(cars.changes) { cars.installed() }
+    var catalog by remember { mutableStateOf<List<CatalogEntry>?>(null) }
+    var error by remember { mutableStateOf(false) }
+    // Una descarga a la vez: qué se baja (id del auto, "fluidez" o "todos") y cuánto va.
+    var downloading by remember { mutableStateOf<Pair<String, Float>?>(null) }
+    LaunchedEffect(cars.hasCatalog) {
+        if (cars.hasCatalog) runCatching { cars.catalog() }.onSuccess { catalog = it }.onFailure { error = true }
+    }
+    fun run(what: String, work: suspend ((Float) -> Unit) -> Unit) {
+        if (downloading != null) return
+        downloading = what to 0f
+        scope.launch {
+            runCatching { work { f -> downloading = what to f } }.onFailure { error = true }
+            downloading = null
+        }
+    }
+
     SettingsCard {
         Box(Modifier.fillMaxWidth().widthIn(max = 520.dp).aspectRatio(1.8f)) {
             if (pkg != null) {
                 // Arriba el auto; abajo queda lugar para su sombra y su reflejo en el piso.
-                CarTurntable(d.cars, pkg, prefs.carColor, Modifier.fillMaxWidth().fillMaxHeight(0.72f), prefs.carAngle, { prefs.carAngle = it })
+                CarTurntable(cars, pkg, prefs.carColor, Modifier.fillMaxWidth().fillMaxHeight(0.72f), prefs.carAngle, { prefs.carAngle = it })
             } else {
                 CarDrawing(prefs.carColor, Modifier.fillMaxWidth().align(Alignment.Center))
             }
         }
-        CarOptions(prefs, d.cars, pkg, Modifier.fillMaxWidth())
-        Label(stringResource(R.string.car_home_help), Typography.small, LocalColors.current.textMuted)
+        Label(stringResource(R.string.car_home_help), Typography.small, c.textMuted)
+        Label(stringResource(R.string.name), Typography.label, c.textMuted)
+        TextInput(prefs.carName ?: "", { prefs.carName = it.take(24).ifBlank { null } }, pkg?.name ?: stringResource(R.string.my_car), Modifier.fillMaxWidth())
+        Label(stringResource(R.string.color), Typography.label, c.textMuted)
+        ColorPicker(prefs.carColor, prefs::previewCarColor) { prefs.carColor = it }
+    }
+    if (pkg != null) {
+        SettingsCard("${pkg.make} ${pkg.name} ${pkg.year}") {
+            ModelOptions(cars, pkg, catalog?.firstOrNull { it.id == pkg.id }, downloading, ::run, onDeleted = { prefs.carModel = null })
+        }
+    }
+    if (cars.hasCatalog || installed.isNotEmpty()) {
+        SettingsCard(stringResource(R.string.your_models)) {
+            DownloadedModels(prefs, cars, installed, catalog, downloading, ::run)
+        }
+    }
+    if (cars.hasCatalog) {
+        SettingsCard(stringResource(R.string.catalog)) {
+            CatalogSearch(prefs, cars, catalog?.filter { e -> installed.none { it.id == e.id } }, downloading, ::run)
+            if (error) Label(stringResource(R.string.catalog_error), Typography.small, c.danger)
+        }
+    } else if (installed.isEmpty()) {
+        SettingsCard { Label(stringResource(R.string.car_coming_soon), Typography.small, c.textMuted) }
     }
     SettingsCard(stringResource(R.string.reminders), stringResource(R.string.reminders_help)) {
         ReminderSettings(d.reminders)
     }
 }
 
-/** Genérico, los autos ya instalados y los del catálogo, con buscador. */
+private typealias Run = (String, suspend ((Float) -> Unit) -> Unit) -> Unit
+
+/** El modelo elegido: modelo 3D nuevo, fluidez del giro, eliminarlo y su crédito. */
 @Composable
-private fun CarModels(prefs: Preferences, cars: CarRepository, current: CarPackage?) {
+private fun ModelOptions(cars: CarRepository, current: CarPackage, entry: CatalogEntry?, downloading: Pair<String, Float>?, run: Run, onDeleted: () -> Unit) {
     val c = LocalColors.current
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    val installed = remember(cars.changes) { cars.installed() }
-    var catalog by remember { mutableStateOf<List<CatalogEntry>?>(null) }
-    var error by remember { mutableStateOf(false) }
-    var downloading by remember { mutableStateOf<Pair<String, Float>?>(null) }
-    var query by remember { mutableStateOf("") }
-    var previewing by remember { mutableStateOf<String?>(null) }
-    LaunchedEffect(cars.hasCatalog) {
-        if (cars.hasCatalog) runCatching { cars.catalog() }.onSuccess { catalog = it }.onFailure { error = true }
+    val progress = downloading?.second?.takeIf { downloading.first == current.id || downloading.first == FLUIDEZ }
+    if (entry != null && cars.isOutdated(current, entry)) {
+        Notice(stringResource(R.string.car_update_notice, current.name), Icons.car) {
+            Button(stringResource(R.string.car_update, updateSize(current, entry) / 1e6f), {
+                run(current.id) { f -> cars.update(current, entry, f) }
+            }, primary = true)
+        }
     }
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        // Busca por marca, modelo o año, sin importar acentos ni mayúsculas.
-        TextInput(query, { query = it }, stringResource(R.string.search_car), Modifier.fillMaxWidth(), icon = true)
-        val q = normalize(query.trim())
-        fun matches(text: String) = q.isEmpty() || q.split(' ').all { it in normalize(text) }
-        ModelOption(stringResource(R.string.model_generic), null, selected = current == null) { prefs.carModel = null }
-        for (p in installed.filter { matches("${it.make} ${it.name} ${it.year}") }) {
-            val fromCatalog = catalog?.firstOrNull { it.id == p.id }
-            ModelOption("${p.make} ${p.name} ${p.year}", null, selected = current?.id == p.id, thumbnail = fromCatalog?.let { e -> { cars.thumbnail(e) } }) { prefs.carModel = p.id }
-            // Imágenes nuevas en el catálogo (mejores renders, piso): se actualiza con un toque.
-            if (fromCatalog != null && cars.isOutdated(p, fromCatalog)) {
-                val progress = downloading?.takeIf { it.first == p.id }?.second
-                if (progress != null) {
-                    Label(stringResource(R.string.downloading, (progress * 100).toInt()), Typography.small, c.accent)
-                } else {
-                    Button(stringResource(R.string.car_update, updateSize(p, fromCatalog) / 1e6f), {
-                        if (downloading == null) {
-                            downloading = p.id to 0f
-                            scope.launch {
-                                runCatching { cars.update(p, fromCatalog) { f -> downloading = p.id to f } }.onFailure { error = true }
-                                downloading = null
-                            }
-                        }
-                    }, primary = true)
+    // Fluidez del giro: cada nivel baja solo los cuadros que faltan.
+    if (current.spin == 24 && entry != null && entry.extras.isNotEmpty()) {
+        Label(stringResource(R.string.smoothness), Typography.label, c.textMuted)
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            for ((level, text) in listOf(Smoothness.LIGHT to R.string.smoothness_light, Smoothness.MEDIUM to R.string.smoothness_medium, Smoothness.MAX to R.string.smoothness_max)) {
+                // Subir dice cuánto se baja; bajar, cuánto espacio se libera.
+                val gain = entry.extras.filter { it.level in (current.smoothness + 1)..level }.sumOf { it.bytes }
+                val freed = entry.extras.filter { it.level in (level + 1)..current.smoothness }.sumOf { it.bytes }
+                val label = when {
+                    gain > 0 -> "${stringResource(text)} · +${"%.1f".format(gain / 1e6f)} MB"
+                    freed > 0 -> "${stringResource(text)} · −${"%.1f".format(freed / 1e6f)} MB"
+                    else -> stringResource(text)
                 }
-            }
-        }
-        for (e in catalog.orEmpty().filter { e -> installed.none { it.id == e.id } && matches("${e.make} ${e.name} ${e.year}") }) {
-            val progress = downloading?.takeIf { it.first == e.id }?.second
-            val fetch = {
-                if (downloading == null) {
-                    downloading = e.id to 0f
-                    scope.launch {
-                        runCatching { cars.install(e) { f -> downloading = e.id to f } }
-                            .onSuccess { prefs.carModel = e.id; previewing = null }
-                            .onFailure { error = true }
-                        downloading = null
+                Button(label, {
+                    when {
+                        downloading != null || level == current.smoothness -> Unit
+                        level < current.smoothness -> scope.launch { cars.lowerSmoothness(current, level) }
+                        else -> run(FLUIDEZ) { f -> cars.raiseSmoothness(current, entry, level, f) }
                     }
-                }
-            }
-            // Tocar un auto solo lo muestra; se baja con el botón (ver no cuesta datos).
-            if (previewing == e.id || progress != null) {
-                CarPreview(e, cars, progress, onDownload = fetch, onClose = { previewing = null })
-            } else {
-                ModelOption("${e.make} ${e.name} ${e.year}", "%.1f MB".format(e.bytes / 1e6f), selected = false, thumbnail = { cars.thumbnail(e) }) { previewing = e.id }
+                }, primary = level == current.smoothness)
             }
         }
-        if (error) Label(stringResource(R.string.catalog_error), Typography.small, c.danger)
-        // Fluidez del giro: cada nivel baja solo los cuadros que faltan.
-        val entry = current?.let { a -> catalog?.firstOrNull { it.id == a.id } }
-        if (current != null && current.spin == 24 && entry != null && entry.extras.isNotEmpty()) {
-            Label(stringResource(R.string.smoothness), Typography.label, c.textMuted, modifier = Modifier.padding(top = 8.dp))
-            val progress = downloading?.takeIf { it.first == "fluidez" }?.second
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                for ((level, text) in listOf(Smoothness.LIGHT to R.string.smoothness_light, Smoothness.MEDIUM to R.string.smoothness_medium, Smoothness.MAX to R.string.smoothness_max)) {
-                    // Subir dice cuánto se baja; bajar, cuánto espacio se libera.
-                    val gain = entry.extras.filter { it.level in (current.smoothness + 1)..level }.sumOf { it.bytes }
-                    val freed = entry.extras.filter { it.level in (level + 1)..current.smoothness }.sumOf { it.bytes }
-                    val label = when {
-                        gain > 0 -> "${stringResource(text)} · +${"%.1f".format(gain / 1e6f)} MB"
-                        freed > 0 -> "${stringResource(text)} · −${"%.1f".format(freed / 1e6f)} MB"
-                        else -> stringResource(text)
-                    }
-                    Button(label, {
-                        if (downloading != null || level == current.smoothness) return@Button
-                        if (level < current.smoothness) {
-                            scope.launch { cars.lowerSmoothness(current, level) }
-                            return@Button
-                        }
-                        downloading = "fluidez" to 0f
-                        scope.launch {
-                            runCatching { cars.raiseSmoothness(current, entry, level) { f -> downloading = "fluidez" to f } }
-                                .onFailure { error = true }
-                            downloading = null
-                        }
-                    }, primary = level == current.smoothness)
-                }
-            }
-            if (progress != null) Label("${(progress * 100).toInt()} %", Typography.small, c.accent)
-            else Label(stringResource(R.string.smoothness_help), Typography.small, c.textMuted)
+    }
+    if (progress != null) Label(stringResource(R.string.downloading, (progress * 100).toInt()), Typography.small, c.accent)
+    else if (current.spin == 24 && entry != null && entry.extras.isNotEmpty()) Label(stringResource(R.string.smoothness_help), Typography.small, c.textMuted)
+    // Eliminar lo descargado: pide confirmar con un segundo toque.
+    val mb by produceState(0f, current, cars.changes) { value = cars.sizeOnDisk(current) / 1e6f }
+    Confirmed(stringResource(R.string.delete_car, mb), stringResource(R.string.delete_car_question)) {
+        onDeleted()
+        scope.launch { cars.delete(current) }
+    }
+    // Crédito del modelo 3D (lo pide su licencia).
+    if (current.author.isNotBlank()) {
+        Label(
+            stringResource(R.string.model_credit, current.author, current.license),
+            Typography.small,
+            c.textMuted,
+            modifier = Modifier.clickable {
+                runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, current.source.toUri()).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
+            },
+        )
+    }
+}
+
+private const val FLUIDEZ = "fluidez"
+private const val ALL = "todos"
+
+/** Los descargados a la vista (en tu color), el sedán dibujado, y actualizar o eliminar todos. */
+@Composable
+private fun DownloadedModels(prefs: Preferences, cars: CarRepository, installed: List<CarPackage>, catalog: List<CatalogEntry>?, downloading: Pair<String, Float>?, run: Run) {
+    val c = LocalColors.current
+    val scope = rememberCoroutineScope()
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        ModelCard(stringResource(R.string.model_generic), selected = prefs.carModel == null, onClick = { prefs.carModel = null }) { m ->
+            CarDrawing(prefs.carColor, m)
         }
-        // Eliminar lo descargado: pide confirmar con un segundo toque.
-        if (current != null) {
-            var confirm by remember(current.id) { mutableStateOf(false) }
-            val mb by produceState(0f, current, cars.changes) { value = cars.sizeOnDisk(current) / 1e6f }
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 8.dp)) {
-                if (!confirm) {
-                    Button(stringResource(R.string.delete_car, mb), { confirm = true })
-                } else {
-                    Button(stringResource(R.string.delete_confirm), {
-                        prefs.carModel = null
-                        scope.launch { cars.delete(current) }
-                    }, primary = true)
-                    Button(stringResource(R.string.cancel), { confirm = false })
-                }
+        for (p in installed) {
+            ModelCard("${p.make} ${p.name}", selected = prefs.carModel == p.id, onClick = { prefs.carModel = p.id }) { m ->
+                CarStill(cars, p, prefs.carColor, m)
             }
         }
-        // Crédito del modelo 3D (lo pide su licencia).
-        if (current != null && current.author.isNotBlank()) {
-            Label(
-                stringResource(R.string.model_credit, current.author, current.license),
-                Typography.small,
-                c.textMuted,
-                modifier = Modifier.clickable {
-                    runCatching {
-                        context.startActivity(Intent(Intent.ACTION_VIEW, current.source.toUri()).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-                    }
-                },
-            )
+    }
+    if (installed.isEmpty()) {
+        Label(stringResource(R.string.no_models), Typography.small, c.textMuted)
+        return
+    }
+    // Todos a la vez: los que tienen modelo 3D nuevo, o quitar todo lo descargado.
+    val outdated = catalog.orEmpty().mapNotNull { e -> installed.firstOrNull { cars.isOutdated(it, e) }?.let { it to e } }
+    val progress = downloading?.second?.takeIf { downloading.first == ALL }
+    if (progress != null) {
+        Label(stringResource(R.string.downloading, (progress * 100).toInt()), Typography.small, c.accent)
+    } else if (outdated.isNotEmpty()) {
+        Confirmed(
+            stringResource(R.string.update_all, outdated.size, outdated.sumOf { (p, e) -> updateSize(p, e) } / 1e6f),
+            pluralStringResource(R.plurals.update_all_confirm, outdated.size, outdated.size),
+            primary = true,
+        ) {
+            run(ALL) { f ->
+                outdated.forEachIndexed { i, (p, e) -> cars.update(p, e) { x -> f((i + x) / outdated.size) } }
+            }
+        }
+    }
+    Confirmed(stringResource(R.string.delete_all), pluralStringResource(R.plurals.delete_all_confirm, installed.size, installed.size)) {
+        prefs.carModel = null
+        scope.launch { cars.deleteAll() }
+    }
+}
+
+/** El catálogo con buscador: aparecen al escribir (o con "Ver todos"), no toda la lista de golpe. */
+@Composable
+private fun CatalogSearch(prefs: Preferences, cars: CarRepository, available: List<CatalogEntry>?, downloading: Pair<String, Float>?, run: Run) {
+    val c = LocalColors.current
+    var query by remember { mutableStateOf("") }
+    var showAll by remember { mutableStateOf(false) }
+    var previewing by remember { mutableStateOf<String?>(null) }
+    // Busca por marca, modelo o año, sin importar acentos ni mayúsculas.
+    TextInput(query, { query = it }, stringResource(R.string.search_car), Modifier.fillMaxWidth(), icon = true)
+    val list = available ?: return Label(stringResource(R.string.checking), Typography.small, c.textMuted)
+    val q = normalize(query.trim())
+    val found = if (q.isEmpty() && !showAll) emptyList() else list.filter { e -> q.split(' ').all { it in normalize("${e.make} ${e.name} ${e.year}") } }
+    when {
+        list.isEmpty() -> Label(stringResource(R.string.catalog_all_downloaded), Typography.small, c.textMuted)
+        q.isEmpty() && !showAll -> Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Label(stringResource(R.string.catalog_hint), Typography.small, c.textMuted, modifier = Modifier.weight(1f))
+            Button(stringResource(R.string.catalog_show_all, list.size), { showAll = true })
+        }
+        found.isEmpty() -> Label(stringResource(R.string.catalog_none), Typography.small, c.textMuted)
+    }
+    val open = found.firstOrNull { it.id == previewing }
+    if (open != null) {
+        val progress = downloading?.second?.takeIf { downloading.first == open.id }
+        CarPreview(open, cars, progress, onDownload = {
+            run(open.id) { f ->
+                cars.install(open, f)
+                prefs.carModel = open.id
+                previewing = null
+            }
+        }, onClose = { previewing = null })
+    }
+    // Tocar un auto solo lo muestra en grande; se baja con el botón (ver no cuesta datos).
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        for (e in found.filter { it.id != previewing }) {
+            ModelCard("${e.make} ${e.name}", detail = "${e.year} · %.1f MB".format(e.bytes / 1e6f), selected = false, onClick = { previewing = e.id }) { m ->
+                var img by remember(e.id) { mutableStateOf<ImageBitmap?>(null) }
+                LaunchedEffect(e.id) { img = cars.thumbnail(e) }
+                img?.let { Image(it, null, m, contentScale = ContentScale.Fit) }
+            }
         }
     }
 }
 
+/** Un auto como tarjeta: su imagen arriba y el nombre abajo; marcada si es el elegido. */
 @Composable
-private fun ModelOption(title: String, detail: String?, selected: Boolean, thumbnail: (suspend () -> ImageBitmap?)? = null, onClick: () -> Unit) {
+private fun ModelCard(title: String, selected: Boolean, onClick: () -> Unit, detail: String? = null, picture: @Composable (Modifier) -> Unit) {
     val c = LocalColors.current
     val shape = RoundedCornerShape(16.dp)
-    Row(
+    Column(
         Modifier
-            .fillMaxWidth()
+            .width(176.dp)
             .clip(shape)
             .background(c.surface)
             .border(if (selected) 2.dp else 1.dp, if (selected) c.accent else c.line, shape)
             .clickable(onClick = onClick)
-            .padding(horizontal = 18.dp, vertical = 14.dp),
-        verticalAlignment = Alignment.CenterVertically,
+            .padding(12.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        if (thumbnail != null) {
-            // Vista previa: el auto antes de bajarlo (la imagen viene del catálogo).
-            var img by remember(title) { mutableStateOf<ImageBitmap?>(null) }
-            LaunchedEffect(title) { img = thumbnail() }
-            Box(Modifier.padding(end = 14.dp).size(width = 92.dp, height = 52.dp), contentAlignment = Alignment.Center) {
-                img?.let { Image(it, null, Modifier.fillMaxSize(), contentScale = ContentScale.Fit) }
-            }
+        Box(Modifier.fillMaxWidth().aspectRatio(1.9f), contentAlignment = Alignment.Center) { picture(Modifier.fillMaxSize()) }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Label(title, Typography.small, maxLines = 1, modifier = Modifier.weight(1f))
+            if (selected) Icon(Icons.done, c.accent, 18.dp)
         }
-        Label(title, Typography.body, maxLines = 1, modifier = Modifier.weight(1f))
         if (detail != null) Label(detail, Typography.small, c.accent, maxLines = 1)
-        if (selected) Icon(Icons.done, c.accent, 22.dp)
+    }
+}
+
+/** Un botón que pide confirmar con un segundo toque antes de hacer algo que no se deshace solo. */
+@Composable
+private fun Confirmed(label: String, question: String, primary: Boolean = false, action: () -> Unit) {
+    var asking by remember(label) { mutableStateOf(false) }
+    if (!asking) return Button(label, { asking = true }, primary = primary)
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        Label(question, Typography.small, LocalColors.current.textMuted, modifier = Modifier.weight(1f, fill = false))
+        Button(stringResource(R.string.yes), { asking = false; action() }, primary = true)
+        Button(stringResource(R.string.cancel), { asking = false })
     }
 }
 
