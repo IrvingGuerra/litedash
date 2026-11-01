@@ -1,5 +1,8 @@
 package com.irvingguerra.litedash
 
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.foundation.Image
 import android.content.Intent
 import android.provider.Settings
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -312,12 +315,13 @@ private fun Modelos(prefs: Preferencias, autos: RepositorioAutos, actual: Paquet
         fun coincide(texto: String) = q.isEmpty() || q.split(' ').all { it in normalizar(texto) }
         OpcionModelo(stringResource(R.string.modelo_generico), null, elegido = actual == null) { prefs.modeloAuto = null }
         for (p in instalados.filter { coincide("${it.marca} ${it.nombre} ${it.anio}") }) {
-            OpcionModelo("${p.marca} ${p.nombre} ${p.anio}", null, elegido = actual?.id == p.id) { prefs.modeloAuto = p.id }
+            val deCatalogo = catalogo?.firstOrNull { it.id == p.id }
+            OpcionModelo("${p.marca} ${p.nombre} ${p.anio}", null, elegido = actual?.id == p.id, miniatura = deCatalogo?.let { e -> { autos.miniatura(e) } }) { prefs.modeloAuto = p.id }
         }
         for (e in catalogo.orEmpty().filter { e -> instalados.none { it.id == e.id } && coincide("${e.marca} ${e.nombre} ${e.anio}") }) {
             val progreso = bajando?.takeIf { it.first == e.id }?.second
             val detalle = if (progreso != null) "${(progreso * 100).toInt()} %" else stringResource(R.string.descargar_mb, e.bytes / 1e6f)
-            OpcionModelo("${e.marca} ${e.nombre} ${e.anio}", detalle, elegido = false) {
+            OpcionModelo("${e.marca} ${e.nombre} ${e.anio}", detalle, elegido = false, miniatura = { autos.miniatura(e) }) {
                 if (bajando != null) return@OpcionModelo
                 bajando = e.id to 0f
                 alcance.launch {
@@ -395,7 +399,7 @@ private fun Modelos(prefs: Preferencias, autos: RepositorioAutos, actual: Paquet
 }
 
 @Composable
-private fun OpcionModelo(titulo: String, detalle: String?, elegido: Boolean, alTocar: () -> Unit) {
+private fun OpcionModelo(titulo: String, detalle: String?, elegido: Boolean, miniatura: (suspend () -> ImageBitmap?)? = null, alTocar: () -> Unit) {
     val c = LocalColores.current
     val forma = RoundedCornerShape(16.dp)
     Row(
@@ -408,6 +412,14 @@ private fun OpcionModelo(titulo: String, detalle: String?, elegido: Boolean, alT
             .padding(horizontal = 18.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        if (miniatura != null) {
+            // Vista previa: el auto antes de bajarlo (la imagen viene del catálogo).
+            var img by remember(titulo) { mutableStateOf<ImageBitmap?>(null) }
+            LaunchedEffect(titulo) { img = miniatura() }
+            Box(Modifier.padding(end = 14.dp).size(width = 92.dp, height = 52.dp), contentAlignment = Alignment.Center) {
+                img?.let { Image(it, null, Modifier.fillMaxSize(), contentScale = ContentScale.Fit) }
+            }
+        }
         Etiqueta(titulo, Texto.normal, maxLineas = 1, modifier = Modifier.weight(1f))
         if (detalle != null) Etiqueta(detalle, Texto.chico, c.acento, maxLineas = 1)
         if (elegido) Icono(Iconos.listo, c.acento, 22.dp)

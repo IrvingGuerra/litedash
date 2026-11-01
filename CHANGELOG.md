@@ -6,6 +6,17 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
+## [1.3.3] - 2026-10-31
+
+### Nuevo
+- **Ajustes → Tu auto**: elige y personaliza tu auto también desde Ajustes.
+- **Fluidez del giro**: Ligera (24 cuadros), Media (48, +0.9 MB) o Máxima
+  (96, +2.8 MB). Subir de nivel baja solo los cuadros que faltan; bajar de
+  nivel los borra y libera espacio.
+- **Vista previa** de cada auto en la lista antes de bajarlo (se baja del
+  catálogo, unos KB; la app no crece).
+- **Eliminar lo descargado**: quita un auto con un toque y confirmación.
+
 ## [1.3.2] - 2026-10-31
 
 ### Nuevo

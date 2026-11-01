@@ -42,6 +42,8 @@ data class EntradaCatalogo(
     val url: String,
     val bytes: Long,
     val sha256: String,
+    /** Imagen chica (~15 KB) para ver el auto antes de bajarlo; vive en el catálogo, no en la app. */
+    val miniatura: String = "",
     /** Cuadros extra del giro, para que gire más fluido: [Fluidez.MEDIA] y [Fluidez.MAXIMA]. */
     val extras: List<ExtraGiro> = emptyList(),
 )
@@ -119,6 +121,7 @@ class RepositorioAutos(contexto: Context, val urlCatalogo: String) {
                 url = a.getString("url"),
                 bytes = a.optLong("bytes"),
                 sha256 = a.getString("sha256"),
+                miniatura = a.optString("miniatura"),
                 extras = a.optJSONArray("extras")?.let { x ->
                     (0 until x.length()).map { j ->
                         val e = x.getJSONObject(j)
@@ -162,6 +165,27 @@ class RepositorioAutos(contexto: Context, val urlCatalogo: String) {
             hecho += x.bytes
         }
         withContext(Dispatchers.Main) { cambios++ }
+    }
+
+    /**
+     * Miniatura de un auto del catálogo: se baja la primera vez que se ve la
+     * lista y se guarda (unos KB por auto), así la app no carga con ninguna.
+     */
+    suspend fun miniatura(e: EntradaCatalogo): ImageBitmap? {
+        if (e.miniatura.isBlank()) return null
+        val clave = "mini/${e.id}"
+        imagenes.get(clave)?.let { return it }
+        return withContext(Dispatchers.IO) {
+            runCatching {
+                val archivo = File(File(raiz, ".miniaturas").apply { mkdirs() }, carpetaDe(e.id) + ".webp")
+                if (!archivo.exists()) {
+                    val temporal = File(archivo.path + ".parcial")
+                    abrir(e.miniatura).inputStream.use { entrada -> temporal.outputStream().use { entrada.copyTo(it) } }
+                    temporal.renameTo(archivo)
+                }
+                BitmapFactory.decodeFile(archivo.path)?.asImageBitmap()?.also { imagenes.put(clave, it) }
+            }.getOrNull()
+        }
     }
 
     /** Baja el giro de [p] a [nivel] borrando los cuadros de más (libera espacio). */
