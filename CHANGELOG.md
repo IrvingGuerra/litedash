@@ -6,6 +6,18 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
+## [1.4.5] - 2026-11-01
+
+### Mejorado
+- **Autos en alta calidad**: Lancer Evolution, Lancer Cedia, Altima, March y City
+  tienen un modelo 3D nuevo, más nítido (se nota al verlo en grande, sobre todo
+  en pantallas grandes), con su sombra y su reflejo en cada vuelta. LiteDash
+  avisa para bajarlo con un toque.
+- La sombra y el reflejo se dibujan a más resolución.
+
+### Arreglado
+- En modo claro, la sombra del auto ya no se ve con círculos.
+
 ## [1.4.4] - 2026-11-01
 
 ### Nuevo

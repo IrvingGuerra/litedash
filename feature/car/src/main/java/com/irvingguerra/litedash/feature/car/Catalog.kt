@@ -320,9 +320,9 @@ class CarRepository(context: Context, val catalogUrl: String) {
     suspend fun layers(p: CarPackage, name: String, color: Color, widthPx: Int): CarLayers? {
         val car = painted(p, name, color, widthPx) ?: return null
         val floor = p.floor[name] ?: return CarLayers(car, null, null, null)
-        // La sombra y el reflejo son manchas suaves: a la cuarta parte del ancho no se nota
-        // y cada cuadro del giro ocupa la mitad de memoria (caben más en la caché).
-        val floorWidth = (widthPx * floor.width / 4).roundToInt()
+        // La sombra y el reflejo son suaves: a la mitad del ancho se ven igual y ocupan
+        // la cuarta parte de memoria.
+        val floorWidth = (widthPx * floor.width / 2).roundToInt()
         return CarLayers(
             car,
             image(p, name + CarViews.SHADOW_SUFFIX, floorWidth),
