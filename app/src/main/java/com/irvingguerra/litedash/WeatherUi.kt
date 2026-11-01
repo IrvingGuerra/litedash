@@ -1,0 +1,112 @@
+package com.irvingguerra.litedash
+
+import android.Manifest
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.irvingguerra.litedash.core.ui.Card
+import com.irvingguerra.litedash.core.ui.Icon
+import com.irvingguerra.litedash.core.ui.Icons
+import com.irvingguerra.litedash.core.ui.Label
+import com.irvingguerra.litedash.core.ui.LocalColors
+import com.irvingguerra.litedash.core.ui.Typography
+import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Locale
+
+fun iconOf(sky: Sky, day: Boolean) = when (sky) {
+    Sky.CLEAR -> if (day) Icons.sun else Icons.moon
+    Sky.PARTLY -> Icons.partlyCloudy
+    Sky.CLOUDY -> Icons.cloud
+    Sky.FOG -> Icons.fog
+    Sky.RAIN -> Icons.rain
+    Sky.STORM -> Icons.storm
+    Sky.SNOW -> Icons.snow
+}
+
+fun textOf(sky: Sky) = when (sky) {
+    Sky.CLEAR -> R.string.weather_clear
+    Sky.PARTLY -> R.string.weather_partly
+    Sky.CLOUDY -> R.string.weather_cloudy
+    Sky.FOG -> R.string.weather_fog
+    Sky.RAIN -> R.string.weather_rain
+    Sky.STORM -> R.string.weather_storm
+    Sky.SNOW -> R.string.weather_snow
+}
+
+/** Pide la ubicación aproximada y, si la dan, trae el clima al momento. */
+@Composable
+fun rememberEnableWeather(repo: WeatherRepository): () -> Unit {
+    val scope = rememberCoroutineScope()
+    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { ok ->
+        if (ok) scope.launch { repo.refreshIfStale(force = true) }
+    }
+    return { launcher.launch(Manifest.permission.ACCESS_COARSE_LOCATION) }
+}
+
+/** Ícono y temperatura, para la barra de arriba y el reloj. */
+@Composable
+fun WeatherChip(repo: WeatherRepository) {
+    val w = repo.weather ?: return
+    if (!repo.hasPermission()) return
+    val c = LocalColors.current
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Icon(iconOf(skyOf(w.code), w.day), c.accent, 22.dp)
+        Label("${w.temperature}°", Typography.subtitle, maxLines = 1, modifier = Modifier.padding(start = 6.dp))
+    }
+}
+
+/**
+ * Pieza Clima: hoy en grande y, si cabe, los próximos días. Sin permiso es un
+ * botón para activarlo (lo pide solo entonces).
+ */
+@Composable
+fun WeatherTile(repo: WeatherRepository) {
+    val c = LocalColors.current
+    val enable = rememberEnableWeather(repo)
+    val w = repo.weather
+    if (!repo.hasPermission() || w == null) {
+        return ShortcutTile(Icons.sun, stringResource(R.string.tile_weather), stringResource(if (repo.hasPermission()) R.string.weather_loading else R.string.weather_enable), enable)
+    }
+    Card(Modifier.fillMaxSize()) {
+        BoxWithConstraints(Modifier.fillMaxSize().padding(16.dp), contentAlignment = Alignment.CenterStart) {
+            val big = maxHeight > 120.dp
+            val showDays = maxWidth > 340.dp && w.days.size > 1
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                Icon(iconOf(skyOf(w.code), w.day), c.accent, if (big) 56.dp else 36.dp)
+                Column(Modifier.weight(1f)) {
+                    Label("${w.temperature}°", Typography.title.copy(fontSize = if (big) 40.sp else 26.sp), maxLines = 1)
+                    val today = w.days.firstOrNull()
+                    val detail = stringResource(textOf(skyOf(w.code))) + (today?.let { " · ${it.max}° / ${it.min}°" } ?: "")
+                    Label(detail, Typography.small, c.textMuted, maxLines = 1)
+                }
+                if (showDays) {
+                    val parse = SimpleDateFormat("yyyy-MM-dd", Locale.US)
+                    val weekday = SimpleDateFormat("EEE", LocalConfiguration.current.locales[0])
+                    for (d in w.days.drop(1).take(3)) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            val name = runCatching { weekday.format(parse.parse(d.date)!!) }.getOrDefault("")
+                            Label(name.replaceFirstChar { it.uppercase() }, Typography.small, c.textMuted, maxLines = 1)
+                            Icon(iconOf(skyOf(d.code), true), c.text, 24.dp)
+                            Label("${d.max}°", Typography.small, maxLines = 1)
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

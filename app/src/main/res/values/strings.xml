@@ -132,4 +132,15 @@
     <string name="places">Casa y Trabajo</string>
     <string name="places_help">Aparecen en Navegar: un toque y el mapa te lleva.</string>
     <string name="place_hint">Calle, número, colonia y ciudad</string>
+    <string name="tile_weather">Clima</string>
+    <string name="weather_enable">Toca para activarlo</string>
+    <string name="weather_loading">Buscando el clima…</string>
+    <string name="weather_module">Hoy y los próximos días · pide tu ubicación aproximada al activarlo</string>
+    <string name="weather_clear">Despejado</string>
+    <string name="weather_partly">Parcialmente nublado</string>
+    <string name="weather_cloudy">Nublado</string>
+    <string name="weather_fog">Niebla</string>
+    <string name="weather_rain">Lluvia</string>
+    <string name="weather_storm">Tormenta</string>
+    <string name="weather_snow">Nieve</string>
 </resources>

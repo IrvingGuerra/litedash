@@ -63,6 +63,7 @@ val TileSpecs = listOf(
     TileSpec(TileTypes.NAVIGATE, R.string.tile_navigate, SizeLimits(2, 1), 3 to 1),
     TileSpec(TileTypes.CLOCK, R.string.tile_clock, SizeLimits(2, 1), 3 to 1),
     TileSpec(TileTypes.PHONE, R.string.tile_phone, SizeLimits(1, 1), 2 to 1),
+    TileSpec(TileTypes.WEATHER, R.string.tile_weather, SizeLimits(2, 1), 3 to 1),
     TileSpec(TileTypes.APP, R.string.tile_app, SizeLimits(1, 1, 3, 3), 1 to 1),
 )
 
@@ -109,13 +110,15 @@ fun rememberClock(): Pair<String, String> {
 }
 
 @Composable
-fun ClockTile(driverName: String? = null) {
+fun ClockTile(driverName: String? = null, weather: WeatherRepository? = null) {
     val c = LocalColors.current
     val (time, date) = rememberClock()
     val hello = greeting(driverName, java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY))
     BoxWithConstraints(Modifier.fillMaxSize().padding(8.dp), contentAlignment = Alignment.CenterStart) {
         // El reloj crece con la pieza: en 1 fila es discreto, en 2 o más es protagonista.
         val size = (maxHeight.value * 0.5f).coerceIn(28f, 96f)
+        // Con la barra oculta (hay reloj), el clima va aquí junto a la hora.
+        if (weather != null) Box(Modifier.align(Alignment.TopEnd)) { WeatherChip(weather) }
         Column {
             Label(time, Typography.clock.copy(fontSize = size.sp), maxLines = 1)
             Label(if (hello != null) "$hello · $date" else date, Typography.body, c.textMuted, maxLines = 1)

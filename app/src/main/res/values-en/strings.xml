@@ -128,4 +128,15 @@
     <string name="places">Home and Work</string>
     <string name="places_help">They show up in Navigate: one tap and the map takes you there.</string>
     <string name="place_hint">Street, number, area and city</string>
+    <string name="tile_weather">Weather</string>
+    <string name="weather_enable">Tap to turn it on</string>
+    <string name="weather_loading">Getting the weather…</string>
+    <string name="weather_module">Today and the next days · asks for your approximate location when turned on</string>
+    <string name="weather_clear">Clear</string>
+    <string name="weather_partly">Partly cloudy</string>
+    <string name="weather_cloudy">Cloudy</string>
+    <string name="weather_fog">Fog</string>
+    <string name="weather_rain">Rain</string>
+    <string name="weather_storm">Storm</string>
+    <string name="weather_snow">Snow</string>
 </resources>

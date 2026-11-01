@@ -69,6 +69,7 @@ object TileTypes {
     const val NAVIGATE = "navegar"
     const val CLOCK = "reloj"
     const val PHONE = "telefono"
+    const val WEATHER = "clima"
     const val APP = "app"
 }
 

@@ -747,6 +747,7 @@ private fun iconOf(type: String) = when (type) {
     TileTypes.NAVIGATE -> Icons.navigate
     TileTypes.CLOCK -> Icons.clock
     TileTypes.PHONE -> Icons.phone
+    TileTypes.WEATHER -> Icons.sun
     else -> Icons.apps
 }
 
@@ -777,6 +778,7 @@ private fun Modules(d: Dependencies, onEdit: () -> Unit) {
 
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         ModuleItem(TileTypes.MUSIC, Icons.music, stringResource(R.string.tile_music), stringResource(if (permission) R.string.music_with_permission else R.string.music_without_permission))
+        ModuleItem(TileTypes.WEATHER, Icons.sun, stringResource(R.string.tile_weather), stringResource(R.string.weather_module))
     }
 }
 

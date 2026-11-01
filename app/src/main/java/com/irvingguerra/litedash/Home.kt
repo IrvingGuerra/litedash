@@ -88,6 +88,7 @@ class Dependencies(
     val dashboard: DashboardState,
     val cars: CarRepository,
     val updater: Updater,
+    val weather: WeatherRepository,
 )
 
 /** Qué hace cada pieza al tocarla (abrir un panel, el mapa o la música en grande). */
@@ -114,7 +115,8 @@ fun TileContent(d: Dependencies, p: Tile, apps: List<App>, revision: Int, action
             )
         }
         TileTypes.MUSIC -> MusicTile(d.music, revision, onExpand = actions.onMusic)
-        TileTypes.CLOCK -> ClockTile(d.prefs.driverName)
+        TileTypes.CLOCK -> ClockTile(d.prefs.driverName, d.weather)
+        TileTypes.WEATHER -> WeatherTile(d.weather)
         TileTypes.NAVIGATE -> {
             val app = mapApp(d, apps, p.data)
             NavigationTile(
@@ -164,6 +166,8 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
         }
     }
     // Botón de inicio estando ya aquí: de vuelta al tablero tal como lo acomodaste.
+    // Clima al volver al inicio (si pasó media hora y está activado); nunca en segundo plano.
+    LaunchedEffect(revision) { d.weather.refreshIfStale() }
     LaunchedEffect(homePressed) {
         if (d.prefs.welcomeSeen) {
             panel = null
@@ -194,6 +198,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                 editing = editing,
                 showTime = showTime,
                 driverName = d.prefs.driverName,
+                weather = d.weather,
                 onAdd = { panel = Panel.AddTile },
                 onTemplates = { panel = Panel.Templates },
                 onFinish = { editing = false },
@@ -263,7 +268,7 @@ private fun topBarHeight() = if (isShortScreen()) 44.dp else 64.dp
 private val TOP_BAR_HIDDEN = 12.dp
 
 @Composable
-private fun TopBar(editing: Boolean, showTime: Boolean, driverName: String?, onAdd: () -> Unit, onTemplates: () -> Unit, onFinish: () -> Unit) {
+private fun TopBar(editing: Boolean, showTime: Boolean, driverName: String?, weather: WeatherRepository, onAdd: () -> Unit, onTemplates: () -> Unit, onFinish: () -> Unit) {
     val c = LocalColors.current
     // Sin nada que mostrar (la hora ya está en una pieza), la barra no aparta espacio: el tablero sube.
     if (!editing && !showTime) return Spacer(Modifier.height(TOP_BAR_HIDDEN))
@@ -285,6 +290,7 @@ private fun TopBar(editing: Boolean, showTime: Boolean, driverName: String?, onA
                 if (hello != null) Label(hello, Typography.subtitle, maxLines = 1)
                 Label(date, Typography.body, c.textMuted, maxLines = 1)
             }
+            WeatherChip(weather)
             StatusIcons()
             Label(time, Typography.subtitle, maxLines = 1)
         }
