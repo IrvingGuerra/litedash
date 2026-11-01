@@ -8,6 +8,7 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.media.AudioManager
 import android.media.MediaMetadata
+import android.media.browse.MediaBrowser
 import android.media.session.MediaController
 import android.media.session.MediaSessionManager
 import android.media.session.PlaybackState
@@ -16,6 +17,7 @@ import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
 import android.provider.Settings
+import android.service.media.MediaBrowserService
 import android.service.notification.StatusBarNotification
 import android.view.KeyEvent
 import androidx.compose.runtime.Composable
@@ -36,6 +38,12 @@ interface NotificationListener {
 
 /** Nombre en inglés del servicio de avisos, que por compatibilidad conserva su nombre original. */
 typealias NotificationService = ServicioMusica
+
+private const val STORE = "musica"
+private const val KEY_LAST_APP = "ultima_app"
+
+/** Cuánto se espera a que la app despertada empiece a sonar antes de abrirla. */
+private const val WAKE_TIMEOUT_MS = 4_000L
 
 // Ofrecen su audio a Android pero no son apps de música (el asistente, video).
 private val NOT_MUSIC_APPS = setOf(
@@ -85,6 +93,13 @@ class MusicRepository(private val context: Context) {
 
     var song by mutableStateOf<Song?>(null)
         private set
+
+    /** La app que se está despertando para que suene ("Abriendo Spotify…"); null = nada. */
+    var starting by mutableStateOf<String?>(null)
+        private set
+
+    // La última app que sonó: en "Sistema", play la despierta aunque ya no esté abierta.
+    private val store = context.getSharedPreferences(STORE, Context.MODE_PRIVATE)
 
     /**
      * App de música elegida en Ajustes (paquete). null = "Sistema": lo que suene
@@ -197,6 +212,8 @@ class MusicRepository(private val context: Context) {
             return
         }
         val title = named.ifBlank { app }
+        starting = null
+        if (playing) store.edit().putString(KEY_LAST_APP, c.packageName).apply()
         song = Song(
             title = title,
             artist = m.text(MediaMetadata.METADATA_KEY_ARTIST, MediaMetadata.METADATA_KEY_ALBUM_ARTIST),
@@ -236,9 +253,14 @@ class MusicRepository(private val context: Context) {
         }.getOrNull()
     }
 
+    /** Play o pausa; sin nada sonando, despierta la app de música ([resume]). */
     fun toggle() {
-        val t = controller?.transportControls ?: return
-        if (song?.playing == true) t.pause() else t.play()
+        val t = controller?.transportControls
+        when {
+            t == null || song == null -> resume()
+            song?.playing == true -> t.pause()
+            else -> t.play()
+        }
     }
 
     fun next() = controller?.transportControls?.skipToNext()
@@ -250,26 +272,50 @@ class MusicRepository(private val context: Context) {
     fun preferredName(): String = preferred?.let(::appLabel).orEmpty()
 
     /**
-     * Sin nada sonando, reanuda sin abrir la app: la elegida (por su sesión o con
-     * el botón de play dirigido a ella) o, en "Sistema", lo último que sonó (como
-     * el botón de play del volante).
+     * Que suene: la elegida o, en "Sistema", la última que sonó. Con una canción
+     * cargada (en pausa), play directo. Si no, en este orden: (1) conectarse a su
+     * servicio de música, como Android Auto (algunas apps solo lo aceptan de Android
+     * Auto); (2) el botón de play por el sistema de audio, como el del volante: así
+     * Android le deja arrancar la música en segundo plano (mandárselo directo o a una
+     * sesión vieja lo bloquea desde Android 12); (3) si en [WAKE_TIMEOUT_MS] no suena,
+     * se abre la app, que es lo que habría que hacer a mano. Mientras, [starting] dice
+     * cuál se está abriendo.
      */
     fun resume() {
-        val p = preferred
-        val session = controller?.takeIf { it.packageName == p }
-        when {
-            session != null -> session.transportControls.play()
-            p != null -> for (action in intArrayOf(KeyEvent.ACTION_DOWN, KeyEvent.ACTION_UP)) {
-                val intent = Intent(Intent.ACTION_MEDIA_BUTTON).setPackage(p)
-                    .putExtra(Intent.EXTRA_KEY_EVENT, KeyEvent(action, KeyEvent.KEYCODE_MEDIA_PLAY))
-                runCatching { context.sendBroadcast(intent) }
+        val pkg = preferred ?: controller?.packageName ?: store.getString(KEY_LAST_APP, null)
+        val session = controller?.takeIf { song != null && (pkg == null || it.packageName == pkg) }
+        if (session != null) return session.transportControls.play()
+        if (pkg == null) return systemPlay()
+        starting = appLabel(pkg)
+        if (!connectAndPlay(pkg)) systemPlay()
+        mainHandler.postDelayed({
+            if (song == null && starting != null) open(pkg)
+            starting = null
+        }, WAKE_TIMEOUT_MS)
+    }
+
+    /** Se conecta al servicio de música de [pkg] y le pide play; si no lo acepta, el botón del sistema. */
+    private fun connectAndPlay(pkg: String): Boolean {
+        val service = context.packageManager
+            .queryIntentServices(Intent(MediaBrowserService.SERVICE_INTERFACE).setPackage(pkg), 0)
+            .firstOrNull()?.serviceInfo ?: return false
+        lateinit var browser: MediaBrowser
+        browser = MediaBrowser(context, ComponentName(service.packageName, service.name), object : MediaBrowser.ConnectionCallback() {
+            override fun onConnected() {
+                runCatching { MediaController(context, browser.sessionToken).transportControls.play() }
+                browser.disconnect()
             }
-            else -> {
-                val audio = context.getSystemService(AudioManager::class.java)
-                for (action in intArrayOf(KeyEvent.ACTION_DOWN, KeyEvent.ACTION_UP)) {
-                    runCatching { audio.dispatchMediaKeyEvent(KeyEvent(action, KeyEvent.KEYCODE_MEDIA_PLAY)) }
-                }
-            }
+
+            override fun onConnectionFailed() = systemPlay()
+        }, null)
+        return runCatching { browser.connect() }.isSuccess
+    }
+
+    /** El botón de play como el del volante: Android lo lleva a la última app de música. */
+    private fun systemPlay() {
+        val audio = context.getSystemService(AudioManager::class.java)
+        for (action in intArrayOf(KeyEvent.ACTION_DOWN, KeyEvent.ACTION_UP)) {
+            runCatching { audio.dispatchMediaKeyEvent(KeyEvent(action, KeyEvent.KEYCODE_MEDIA_PLAY)) }
         }
     }
 
@@ -278,15 +324,35 @@ class MusicRepository(private val context: Context) {
      * (Spotify, Amazon Music, YouTube Music, Deezer, el reproductor de la pantalla…).
      */
     fun musicApps(): Set<String> = runCatching {
-        context.packageManager.queryIntentServices(Intent("android.media.browse.MediaBrowserService"), 0)
+        context.packageManager.queryIntentServices(Intent(MediaBrowserService.SERVICE_INTERFACE), 0)
             .map { it.serviceInfo.packageName }
             .filter { it != context.packageName && it !in NOT_MUSIC_APPS }
             .toSet()
     }.getOrDefault(emptySet())
 
+    /**
+     * Lo que LiteDash ve de la música en esta pantalla, para "Copiar info": las apps
+     * con servicio de música, las que aceptan el botón de play (ahí suelen estar los
+     * reproductores de USB y Bluetooth) y las sesiones abiertas con su estado.
+     */
+    fun describe(): String = buildString {
+        val pm = context.packageManager
+        val buttons = runCatching {
+            pm.queryBroadcastReceivers(Intent(Intent.ACTION_MEDIA_BUTTON), 0).map { it.activityInfo.packageName }.distinct()
+        }.getOrDefault(emptyList())
+        val sessions = if (!hasPermission()) null else sessions().map { "${it.packageName} (${it.playbackState?.state ?: "-"})" }
+        appendLine("Música elegida: ${preferred ?: "Sistema"}")
+        appendLine("Apps de música: ${musicApps().joinToString().ifBlank { "ninguna" }}")
+        appendLine("Botón de play: ${buttons.joinToString().ifBlank { "ninguna" }}")
+        append("Sesiones: ${sessions?.joinToString()?.ifBlank { "ninguna" } ?: "sin acceso a notificaciones"}")
+    }
+
     /** Abre la app que está sonando o, si no hay, la elegida en Ajustes. */
     fun openApp() {
-        val pkg = controller?.packageName ?: preferred ?: return
+        open(controller?.packageName ?: preferred ?: return)
+    }
+
+    private fun open(pkg: String) {
         context.packageManager.getLaunchIntentForPackage(pkg)
             ?.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             ?.let { runCatching { context.startActivity(it) } }

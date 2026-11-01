@@ -10,5 +10,15 @@
         <receiver
             android:name="com.irvingguerra.litedash.feature.updater.InstallReceiver"
             android:exported="false" />
+        <!-- Respaldo: abrir el APK descargado con el instalador de siempre. -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.actualizaciones"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/actualizaciones" />
+        </provider>
     </application>
 </manifest>

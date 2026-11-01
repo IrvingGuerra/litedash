@@ -207,9 +207,10 @@ private fun Empty(repo: MusicRepository, modifier: Modifier) {
     Column(modifier, horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
         Icon(Icons.music, c.accent, 56.dp)
         Spacer(Modifier.height(16.dp))
-        Label(stringResource(R.string.nothing_playing), Typography.title, maxLines = 1)
+        val opening = repo.starting
+        Label(if (opening != null) stringResource(R.string.opening_app, opening) else stringResource(R.string.nothing_playing), Typography.title, maxLines = 1)
         Spacer(Modifier.height(6.dp))
-        Label(stringResource(R.string.resume_explain), Typography.body, c.textMuted, maxLines = 2)
+        Label(stringResource(if (opening != null) R.string.opening_wait else R.string.resume_explain), Typography.body, c.textMuted, maxLines = 2)
         Spacer(Modifier.height(20.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             Button(stringResource(R.string.resume), { repo.resume() }, primary = true)

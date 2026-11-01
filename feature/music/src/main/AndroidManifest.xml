@@ -4,6 +4,10 @@
         <intent>
             <action android:name="android.media.browse.MediaBrowserService" />
         </intent>
+        <!-- Reproductores que aceptan el botón de play (los de USB y Bluetooth de la pantalla). -->
+        <intent>
+            <action android:name="android.intent.action.MEDIA_BUTTON" />
+        </intent>
     </queries>
     <application>
         <!--

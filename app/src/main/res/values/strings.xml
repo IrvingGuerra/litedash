@@ -233,4 +233,6 @@
         <item quantity="one">¿Bajar el modelo 3D nuevo de tu auto?</item>
         <item quantity="other">¿Bajar el modelo 3D nuevo de %1$d autos?</item>
     </plurals>
+    <string name="music_other_app">Otra app…</string>
+    <string name="open_installer">Abrir con el instalador de Android</string>
 </resources>

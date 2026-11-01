@@ -88,9 +88,12 @@ import com.irvingguerra.litedash.feature.dashboard.TileTypes
 import com.irvingguerra.litedash.feature.dashboard.size
 import com.irvingguerra.litedash.feature.dashboard.suggestedTemplate
 import com.irvingguerra.litedash.feature.dashboard.tiles
+import com.irvingguerra.litedash.feature.music.MusicRepository
 import com.irvingguerra.litedash.feature.updater.Updater
 import com.irvingguerra.litedash.feature.updater.Version
+import java.io.File
 import kotlin.math.round
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 /** Panel a pantalla completa sobre el inicio, con título y botón para cerrar. */
@@ -703,7 +706,7 @@ private fun About(d: Dependencies) {
     SettingsCard(stringResource(R.string.copy_info), stringResource(R.string.copy_info_help)) {
         var copied by remember { mutableStateOf(false) }
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            Button(stringResource(R.string.copy_info), { copySystemInfo(context); copied = true })
+            Button(stringResource(R.string.copy_info), { copySystemInfo(context, d.music); copied = true })
             if (copied) Label(stringResource(R.string.copied), Typography.small, c.accent)
         }
     }
@@ -879,7 +882,7 @@ private fun ModuleRow(
 }
 
 /** Datos de la pantalla para reportar problemas (marca, modelo, Android, resolución, memoria). */
-private fun copySystemInfo(context: Context) {
+private fun copySystemInfo(context: Context, music: MusicRepository) {
     val m = context.resources.displayMetrics
     val memory = ActivityManager.MemoryInfo().also {
         context.getSystemService(ActivityManager::class.java).getMemoryInfo(it)
@@ -891,12 +894,16 @@ private fun copySystemInfo(context: Context) {
         appendLine("Android ${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT})")
         appendLine("Pantalla: ${m.widthPixels}×${m.heightPixels} px · ${m.densityDpi} dpi")
         appendLine("Memoria: ${memory.totalMem / (1024 * 1024)} MB")
-        append("CPU: ${Build.SUPPORTED_ABIS.joinToString()}")
+        appendLine("CPU: ${Build.SUPPORTED_ABIS.joinToString()}")
+        append(music.describe())
     }
     context.getSystemService(ClipboardManager::class.java)
         .setPrimaryClip(ClipData.newPlainText("LiteDash", text))
 }
 
+
+/** Cuánto se espera la confirmación de Android antes de ofrecer el instalador de siempre. */
+private const val INSTALLER_WAIT_MS = 8_000L
 
 /** Estados del botón de actualizaciones (solo versión de GitHub). */
 private sealed interface UpdateState {
@@ -906,14 +913,22 @@ private sealed interface UpdateState {
     data class Available(val v: Version) : UpdateState
     data class Downloading(val v: Version, val progress: Float) : UpdateState
     data class NeedsPermission(val v: Version) : UpdateState
-    data object Installing : UpdateState
+    data class Installing(val apk: File) : UpdateState
     data object Error : UpdateState
 }
 
 @Composable
 private fun Updates(a: Updater) {
     val c = LocalColors.current
+    val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    // La confirmación de Android ("¿Instalar?") la abre esta pantalla, que está al frente.
+    val confirm = Updater.confirm
+    LaunchedEffect(confirm) {
+        if (confirm == null) return@LaunchedEffect
+        Updater.confirm = null
+        runCatching { context.startActivity(confirm) }
+    }
     // Si al abrir ya se encontró una versión nueva, se muestra de una vez.
     var state by remember { mutableStateOf(a.found?.let { UpdateState.Available(it) } ?: UpdateState.Idle) }
 
@@ -927,7 +942,7 @@ private fun Updates(a: Updater) {
         scope.launch {
             runCatching {
                 val apk = a.download(v) { f -> state = UpdateState.Downloading(v, f) }
-                state = UpdateState.Installing
+                state = UpdateState.Installing(apk)
                 a.install(apk)
             }.onFailure { state = UpdateState.Error }
         }
@@ -953,7 +968,18 @@ private fun Updates(a: Updater) {
                 Label(stringResource(R.string.install_permission), Typography.small, c.textMuted)
                 Button(stringResource(R.string.already_allowed), { install(e.v) }, primary = true)
             }
-            UpdateState.Installing -> Label(stringResource(R.string.installing), Typography.body, c.accent)
+            is UpdateState.Installing -> {
+                Label(stringResource(R.string.installing), Typography.body, c.accent)
+                // Si la confirmación de Android no aparece en unos segundos (o falla), el respaldo.
+                var stuck by remember(e) { mutableStateOf(false) }
+                LaunchedEffect(e) {
+                    delay(INSTALLER_WAIT_MS)
+                    stuck = true
+                }
+                if (stuck || Updater.installError != null) {
+                    Button(stringResource(R.string.open_installer), { a.openWithInstaller(e.apk) }, primary = true)
+                }
+            }
         }
         Updater.installError?.let { Label(stringResource(R.string.install_error, it), Typography.small, c.danger) }
     }

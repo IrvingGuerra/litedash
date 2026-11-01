@@ -229,4 +229,6 @@
         <item quantity="one">Download the new 3D model of your car?</item>
         <item quantity="other">Download the new 3D model of %1$d cars?</item>
     </plurals>
+    <string name="music_other_app">Another app…</string>
+    <string name="open_installer">Open with the Android installer</string>
 </resources>

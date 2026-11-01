@@ -8,4 +8,6 @@
     <string name="resume_explain">Resume what you last listened to without leaving LiteDash.</string>
     <string name="open_app">Open %1$s</string>
     <string name="no_song_info">No song info</string>
+    <string name="opening_app">Opening %1$s…</string>
+    <string name="opening_wait">Almost there: your music starts in a moment.</string>
 </resources>

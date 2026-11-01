@@ -92,7 +92,11 @@ private fun Player(repo: MusicRepository) {
                 }
             }
             Column(Modifier.weight(1f).padding(horizontal = 16.dp), verticalArrangement = Arrangement.Center) {
-                if (song == null) {
+                val opening = repo.starting
+                if (song == null && opening != null) {
+                    Label(stringResource(R.string.opening_app, opening), Typography.subtitle, c.accent, maxLines = 1)
+                    Label(stringResource(R.string.opening_wait), Typography.small, c.textMuted, maxLines = 1)
+                } else if (song == null) {
                     Label(stringResource(R.string.nothing_playing), Typography.subtitle, maxLines = 1)
                     Label(repo.preferredName().ifBlank { stringResource(R.string.open_an_app) }, Typography.small, c.textMuted, maxLines = 1)
                 } else {

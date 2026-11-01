@@ -17,6 +17,8 @@ import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
+import androidx.core.content.FileProvider
+import androidx.core.content.IntentCompat
 import java.net.HttpURLConnection
 import java.net.URL
 import java.security.MessageDigest
@@ -204,22 +206,38 @@ class Updater(
 
         /** Lo último que dijo el instalador de Android (para mostrarlo si falló). */
         var installError by mutableStateOf<String?>(null)
+
+        /**
+         * La confirmación de Android ("¿Instalar?"), para que la abra la pantalla que
+         * está al frente: abierta desde aquí (en segundo plano) algunas pantallas la
+         * bloquean sin decir nada y se quedaba en "Abriendo instalador".
+         */
+        var confirm by mutableStateOf<Intent?>(null)
+    }
+
+    /**
+     * Respaldo: abre el APK descargado con el instalador de siempre (el de "abrir
+     * archivo"), por si el instalador por sesiones no responde en esta pantalla.
+     */
+    fun openWithInstaller(apk: File) {
+        val uri = FileProvider.getUriForFile(context, context.packageName + FILE_AUTHORITY_SUFFIX, apk)
+        val intent = Intent(Intent.ACTION_VIEW)
+            .setDataAndType(uri, APK_TYPE)
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        runCatching { context.startActivity(intent) }
     }
 }
 
-/** Respuestas del instalador de Android: abre su confirmación o guarda el error. */
+/** Debe coincidir con el `provider` del manifiesto de la versión de GitHub. */
+private const val FILE_AUTHORITY_SUFFIX = ".actualizaciones"
+private const val APK_TYPE = "application/vnd.android.package-archive"
+
+/** Respuestas del instalador de Android: deja su confirmación lista para la pantalla o guarda el error. */
 class InstallReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         when (intent.getIntExtra(PackageInstaller.EXTRA_STATUS, PackageInstaller.STATUS_FAILURE)) {
-            PackageInstaller.STATUS_PENDING_USER_ACTION -> {
-                @Suppress("DEPRECATION")
-                val confirm = if (Build.VERSION.SDK_INT >= 33) {
-                    intent.getParcelableExtra(Intent.EXTRA_INTENT, Intent::class.java)
-                } else {
-                    intent.getParcelableExtra(Intent.EXTRA_INTENT)
-                }
-                confirm?.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)?.let { runCatching { context.startActivity(it) } }
-            }
+            PackageInstaller.STATUS_PENDING_USER_ACTION ->
+                Updater.confirm = IntentCompat.getParcelableExtra(intent, Intent.EXTRA_INTENT, Intent::class.java)
             PackageInstaller.STATUS_SUCCESS -> Updater.installError = null
             else -> Updater.installError = intent.getStringExtra(PackageInstaller.EXTRA_STATUS_MESSAGE) ?: "?"
         }

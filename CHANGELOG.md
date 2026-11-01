@@ -6,6 +6,23 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
+## [1.4.12] - 2026-11-01
+
+### Arreglado
+- **Play con la música cerrada**: el botón de play ya no se queda sin hacer nada.
+  LiteDash despierta tu app de música como lo hace Android Auto o el botón del
+  volante (desde Android 12, mandarle play directo lo bloquea el sistema), avisa
+  "Abriendo Spotify…" mientras tanto y, si no logra que suene, abre la app.
+- **Se quedaba en "Abriendo instalador"**: la confirmación de Android ahora la
+  abre la pantalla de Ajustes; si no aparece o falla, el botón "Abrir con el
+  instalador de Android" instala el archivo descargado de la forma de siempre.
+
+### Mejorado
+- **Música → Otra app**: puedes elegir cualquier app como tu música (por
+  ejemplo, el reproductor de USB o de Bluetooth de tu pantalla).
+- **Copiar info de mi pantalla** incluye qué apps de música y qué sesiones ve
+  LiteDash, para ayudarnos a revisar problemas de música.
+
 ## [1.4.11] - 2026-11-01
 
 ### Mejorado

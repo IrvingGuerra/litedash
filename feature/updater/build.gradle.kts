@@ -24,5 +24,7 @@ dependencies {
     implementation(platform(libs.compose.bom))
     implementation(libs.compose.foundation)
     implementation(libs.compose.ui)
+    // FileProvider e IntentCompat (la app ya lo trae con Activity: no suma peso).
+    implementation(libs.core)
     testImplementation(libs.junit)
 }
