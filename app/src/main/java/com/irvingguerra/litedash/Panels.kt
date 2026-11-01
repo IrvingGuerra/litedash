@@ -13,6 +13,7 @@ import com.irvingguerra.litedash.feature.car.CatalogEntry
 import com.irvingguerra.litedash.feature.car.Smoothness
 import com.irvingguerra.litedash.feature.car.CarSpin
 import com.irvingguerra.litedash.feature.car.CarPackage
+import com.irvingguerra.litedash.feature.car.CarPlacement
 import com.irvingguerra.litedash.feature.car.CarRepository
 import kotlinx.coroutines.launch
 import androidx.compose.foundation.background
@@ -224,41 +225,7 @@ fun PickAppPanel(d: Dependencies, apps: List<App>, tileId: String?, close: () ->
     }
 }
 
-@Composable
-fun CarPanel(prefs: Preferences, cars: CarRepository, close: () -> Unit) {
-    val c = LocalColors.current
-    val color = prefs.carColor
-    val pkg = remember(prefs.carModel, cars.changes) { cars.pkg(prefs.carModel) }
-    PanelScaffold(stringResource(R.string.your_car), close) {
-        BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
-            val horizontal = maxWidth > maxHeight
-            val view = @Composable { m: Modifier ->
-                Column(m, horizontalAlignment = Alignment.CenterHorizontally) {
-                    if (pkg != null) {
-                        CarSpin(cars, pkg, color, Modifier.fillMaxWidth().aspectRatio(1.9f))
-                        Label(stringResource(R.string.spin_your_car), Typography.small, c.textMuted)
-                    } else {
-                        CarDrawing(color, Modifier.fillMaxWidth())
-                    }
-                }
-            }
-            val options = @Composable { m: Modifier -> CarOptions(prefs, cars, pkg, m) }
-            if (horizontal) {
-                Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(32.dp)) {
-                    view(Modifier.weight(1.3f))
-                    options(Modifier.weight(1f).fillMaxHeight().verticalScroll(rememberScrollState()).padding(vertical = 16.dp))
-                }
-            } else {
-                Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(24.dp)) {
-                    view(Modifier.fillMaxWidth())
-                    options(Modifier.fillMaxWidth())
-                }
-            }
-        }
-    }
-}
-
-/** Nombre, color y modelo del auto: en "Tu auto" y en Ajustes → Tu auto. */
+/** Nombre, color y modelo del auto (Ajustes → Tu auto). */
 @Composable
 private fun CarOptions(prefs: Preferences, cars: CarRepository, pkg: CarPackage?, modifier: Modifier = Modifier) {
     val c = LocalColors.current
@@ -291,6 +258,9 @@ private fun CarSettings(d: Dependencies) {
             }
         }
         CarOptions(prefs, d.cars, pkg, Modifier.fillMaxWidth())
+        // En el inicio el auto se acomoda arrastrándolo y pellizcándolo; aquí se regresa al centro.
+        Label(stringResource(R.string.car_place_help), Typography.small, LocalColors.current.textMuted)
+        if (!prefs.carPlacement.centered) Button(stringResource(R.string.car_center), { prefs.carPlacement = CarPlacement() })
     }
     SettingsCard(Icons.bell, stringResource(R.string.reminders), stringResource(R.string.reminders_help)) {
         ReminderSettings(d.reminders)

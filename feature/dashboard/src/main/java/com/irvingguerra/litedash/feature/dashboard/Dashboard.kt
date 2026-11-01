@@ -6,7 +6,6 @@ import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
@@ -226,9 +225,19 @@ private fun drop(
 private fun Modifier.longPress(onLongPress: () -> Unit) = pointerInput(Unit) {
     val timeout = viewConfiguration.longPressTimeoutMillis
     awaitEachGesture {
-        awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
-        val up = withTimeoutOrNull(timeout) { waitForUpOrCancellation(PointerEventPass.Initial) }
-        if (up == null) {
+        val down = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
+        // Termina antes del tiempo si se suelta, si se arrastra o si entra otro dedo:
+        // así una pieza puede usar el arrastre (el auto se mueve, no entra a edición).
+        val ended = withTimeoutOrNull(timeout) {
+            while (true) {
+                val ev = awaitPointerEvent(PointerEventPass.Initial)
+                val change = ev.changes.firstOrNull { it.id == down.id }
+                if (change == null || !change.pressed || ev.changes.size > 1) break
+                if ((change.position - down.position).getDistance() > viewConfiguration.touchSlop) break
+            }
+            true
+        }
+        if (ended == null) {
             onLongPress()
             // Se tragan los eventos hasta que se levante el dedo.
             while (true) {

@@ -10,6 +10,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.core.content.edit
 import com.irvingguerra.litedash.feature.car.CarColors
+import com.irvingguerra.litedash.feature.car.CarPlacement
 
 /**
  * Claves y valores ya guardados en el dispositivo: van en español porque así los
@@ -37,6 +38,7 @@ private object PrefKeys {
     const val WORK_ADDRESS = "direccion_trabajo"
     const val PARKED_MODE = "modo_estacionado"
     const val WHEEL_KEYS = "mandos_volante"
+    const val CAR_PLACEMENT = "posicion_auto"
     const val BRIGHTNESS_BY_SUN = "brillo_por_sol"
     const val DAY_BRIGHTNESS = "brillo_dia"
     const val NIGHT_BRIGHTNESS = "brillo_noche"
@@ -174,6 +176,12 @@ class Preferences(context: Context) {
     var parkedMode: Boolean
         get() = _parkedMode
         set(v) { _parkedMode = v; p.edit { putBoolean(PrefKeys.PARKED_MODE, v) } }
+
+    private var _carPlacement by mutableStateOf(CarPlacement.fromStored(p.getString(PrefKeys.CAR_PLACEMENT, null)))
+    /** Dónde acomodó el usuario el auto en el inicio (arrastrando y pellizcando). */
+    var carPlacement: CarPlacement
+        get() = _carPlacement
+        set(v) { _carPlacement = v; p.edit { putString(PrefKeys.CAR_PLACEMENT, v.stored()) } }
 
     private var _wheelKeys by mutableStateOf(
         p.getString(PrefKeys.WHEEL_KEYS, "")!!.lines().mapNotNull { line ->

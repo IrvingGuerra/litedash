@@ -12,6 +12,15 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.runtime.Composable
+import androidx.compose.foundation.gestures.detectTransformGestures
+import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
+import kotlinx.coroutines.delay
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -121,8 +130,9 @@ fun CarDrawing(color: Color, modifier: Modifier = Modifier) {
 }
 
 /**
- * Pieza del tablero: el auto y su nombre. Tocarla abre "Tu auto". [drawing]
- * reemplaza al sedán genérico cuando hay un auto del catálogo instalado.
+ * Pieza del tablero: el auto y su nombre. Se arrastra y se pellizca para
+ * acomodarlo ([onPlace]); tocarla hace [onClick]. [drawing] reemplaza al sedán
+ * genérico cuando hay un auto del catálogo instalado.
  */
 @Composable
 fun CarTile(
@@ -133,17 +143,45 @@ fun CarTile(
     drawing: (@Composable (Modifier) -> Unit)? = null,
     /** El dibujo trae piso: sin nombre debajo (ahí caen la sombra y el reflejo). */
     hasFloor: Boolean = false,
+    /** Dónde quedó el auto (lo acomodó el usuario arrastrando y pellizcando). */
+    placement: CarPlacement = CarPlacement(),
+    /** Con esto el auto se arrastra y se pellizca; se llama al soltarlo para guardarlo. */
+    onPlace: ((CarPlacement) -> Unit)? = null,
 ) {
     val c = LocalColors.current
+    // Mientras se mueve va aquí (cuadro a cuadro); se guarda al quedarse quieto.
+    var place by remember(placement) { mutableStateOf(placement) }
+    LaunchedEffect(place) {
+        if (place != placement) {
+            delay(400)
+            onPlace?.invoke(place)
+        }
+    }
     BoxWithConstraints(
         modifier
             .fillMaxSize()
+            .pointerInput(onPlace != null) {
+                if (onPlace == null) return@pointerInput
+                detectTransformGestures { _, pan, zoom, _ ->
+                    place = CarPlacement(
+                        x = (place.x + pan.x / size.width).coerceIn(-0.5f, 0.5f),
+                        y = (place.y + pan.y / size.height).coerceIn(-0.5f, 0.5f),
+                        zoom = (place.zoom * zoom).coerceIn(CarPlacement.MIN_ZOOM, CarPlacement.MAX_ZOOM),
+                    )
+                }
+            }
             .clickable(remember { MutableInteractionSource() }, indication = null, onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
         val height = maxHeight
         val showName = height > 140.dp && !hasFloor
         Column(
+            Modifier.graphicsLayer {
+                translationX = place.x * size.width
+                translationY = place.y * size.height
+                scaleX = place.zoom
+                scaleY = place.zoom
+            },
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
         ) {
@@ -154,6 +192,28 @@ fun CarTile(
                 CarDrawing(color, Modifier.widthIn(max = height * 2.4f).fillMaxWidth().padding(horizontal = 8.dp))
             }
             if (showName) Label(name, Typography.subtitle, c.textMuted, maxLines = 1, modifier = Modifier.padding(top = 8.dp))
+        }
+    }
+}
+
+/**
+ * Lugar del auto en su pieza: [x] y [y] en fracción del tamaño de la pieza (0 =
+ * centrado) y [zoom] (1 = como cabe). En fracciones para que se vea igual al
+ * cambiar de acomodo o de pantalla.
+ */
+@Immutable
+data class CarPlacement(val x: Float = 0f, val y: Float = 0f, val zoom: Float = 1f) {
+    val centered get() = this == CarPlacement()
+
+    fun stored() = "$x,$y,$zoom"
+
+    companion object {
+        const val MIN_ZOOM = 0.5f
+        const val MAX_ZOOM = 2.5f
+
+        fun fromStored(value: String?): CarPlacement {
+            val parts = value?.split(',')?.mapNotNull { it.toFloatOrNull() }
+            return if (parts?.size == 3) CarPlacement(parts[0], parts[1], parts[2]) else CarPlacement()
         }
     }
 }

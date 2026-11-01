@@ -67,6 +67,7 @@ import com.irvingguerra.litedash.feature.car.CarImage
 import com.irvingguerra.litedash.feature.car.CarPackage
 import com.irvingguerra.litedash.feature.car.CarRepository
 import com.irvingguerra.litedash.feature.car.CarTile
+import com.irvingguerra.litedash.feature.car.CarPlacement
 import com.irvingguerra.litedash.feature.car.CarViews
 import com.irvingguerra.litedash.feature.music.MusicExpanded
 import com.irvingguerra.litedash.feature.music.MusicTile
@@ -84,7 +85,8 @@ sealed interface Panel {
     data object Settings : Panel
     /** Ajustes abiertos en "Acerca de" (desde el aviso de versión nueva). */
     data object About : Panel
-    data object Car : Panel
+    /** Ajustes abiertos en "Tu auto" (botón del auto en el dock). */
+    data object CarSettings : Panel
     data object AddTile : Panel
     data object Templates : Panel
     /** Elegir app para una pieza existente ([tileId]) o para una nueva (null). */
@@ -110,24 +112,50 @@ class TileActions(
     val onPanel: (Panel) -> Unit,
     val onNavigate: (App?) -> Unit,
     val onMusic: () -> Unit,
+    val onCarOnly: () -> Unit,
 )
+
+/**
+ * El auto del inicio. [movable]: se arrastra y se pellizca para acomodarlo y se
+ * guarda dónde quedó (la configuración del auto vive en Ajustes → Tu auto).
+ */
+@Composable
+fun HomeCar(d: Dependencies, onClick: () -> Unit, movable: Boolean, modifier: Modifier = Modifier) {
+    val color = d.prefs.carColor
+    val pkg = remember(d.prefs.carModel, d.cars.changes) { d.cars.pkg(d.prefs.carModel) }
+    CarTile(
+        name = d.prefs.carName ?: pkg?.name ?: stringResource(R.string.my_car),
+        color = color,
+        onClick = onClick,
+        modifier = modifier,
+        drawing = pkg?.let { carPkg -> { m -> CarImage(d.cars, carPkg, dashboardView(carPkg), color, m) } },
+        hasFloor = pkg?.let { dashboardView(it) in it.floor } == true,
+        placement = if (movable) d.prefs.carPlacement else CarPlacement(),
+        onPlace = if (movable) { p -> d.prefs.carPlacement = p } else null,
+    )
+}
+
+/** Solo el auto, a pantalla completa sobre su piso; un toque regresa al inicio como estaba. */
+@Composable
+private fun CarOnly(d: Dependencies, backdrop: Modifier, onExit: () -> Unit) {
+    Box(
+        Modifier
+            .fillMaxSize()
+            .then(backdrop)
+            .clickable(remember { androidx.compose.foundation.interaction.MutableInteractionSource() }, indication = null, onClick = onExit)
+            .safeDrawingPadding()
+            .padding(24.dp),
+    ) {
+        HomeCar(d, onClick = onExit, movable = false)
+    }
+}
 
 /** Cada tipo de pieza dibujado según su tipo. */
 @Composable
 fun TileContent(d: Dependencies, p: Tile, apps: List<App>, revision: Int, actions: TileActions) {
     val context = LocalContext.current
     when (p.type) {
-        TileTypes.CAR -> {
-            val color = d.prefs.carColor
-            val pkg = remember(d.prefs.carModel, d.cars.changes) { d.cars.pkg(d.prefs.carModel) }
-            CarTile(
-                name = d.prefs.carName ?: pkg?.name ?: stringResource(R.string.my_car),
-                color = color,
-                onClick = { actions.onPanel(Panel.Car) },
-                drawing = pkg?.let { carPkg -> { m -> CarImage(d.cars, carPkg, dashboardView(carPkg), color, m) } },
-                hasFloor = pkg?.let { dashboardView(it) in it.floor } == true,
-            )
-        }
+        TileTypes.CAR -> HomeCar(d, onClick = actions.onCarOnly, movable = true)
         TileTypes.MUSIC -> MusicTile(d.music, revision, onExpand = actions.onMusic)
         TileTypes.CLOCK -> ClockTile(d.prefs.driverName, d.weather)
         TileTypes.WEATHER -> WeatherTile(d.weather)
@@ -173,22 +201,25 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
     var panel by remember { mutableStateOf<Panel?>(null) }
     var editing by remember { mutableStateOf(false) }
     var musicExpanded by remember { mutableStateOf(false) }
+    // Solo el auto a pantalla completa (un toque al auto entra y otro sale).
+    var carOnly by remember { mutableStateOf(false) }
     var promptsHeight by remember { mutableIntStateOf(0) }
     // Cuándo se tocó el inicio por última vez: tras un rato quieto, el modo estacionado.
     var touched by remember { mutableIntStateOf(0) }
     var parked by remember { mutableStateOf(false) }
-    LaunchedEffect(touched, panel, editing, musicExpanded, d.prefs.parkedMode) {
+    LaunchedEffect(touched, panel, editing, musicExpanded, carOnly, d.prefs.parkedMode) {
         parked = false
-        if (!d.prefs.parkedMode || panel != null || editing || musicExpanded) return@LaunchedEffect
+        if (!d.prefs.parkedMode || panel != null || editing || musicExpanded || carOnly) return@LaunchedEffect
         delay(PARK_AFTER_MS)
         // Manejando no: espera a que el auto se detenga.
         while (d.trip.moving) delay(30_000)
         parked = true
     }
 
-    BackHandler(enabled = (panel != null || editing || musicExpanded) && d.prefs.welcomeSeen) {
+    BackHandler(enabled = (panel != null || editing || musicExpanded || carOnly) && d.prefs.welcomeSeen) {
         when {
             panel != null -> panel = null
+            carOnly -> carOnly = false
             musicExpanded -> musicExpanded = false
             else -> editing = false
         }
@@ -199,6 +230,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
     LaunchedEffect(homePressed) {
         if (d.prefs.welcomeSeen) {
             panel = null
+            carOnly = false
             musicExpanded = false
             editing = false
         }
@@ -208,6 +240,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
         onPanel = { panel = it },
         onNavigate = { app -> openNavigation(context, d.apps, app) },
         onMusic = { musicExpanded = true },
+        onCarOnly = { carOnly = true },
     )
 
     // Mandos al volante: cualquier botón quita el modo estacionado; las acciones que
@@ -216,9 +249,9 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
     LaunchedEffect(d.wheel.request) {
         when (d.wheel.request?.second) {
             WheelAction.NAVIGATE -> actions.onNavigate(mapApp(d, apps))
-            WheelAction.MUSIC -> { panel = null; musicExpanded = true }
+            WheelAction.MUSIC -> { panel = null; carOnly = false; musicExpanded = true }
             WheelAction.VOICE -> voiceIntent(context)?.let { runCatching { context.startActivity(it) } }
-            WheelAction.HOME -> { panel = null; musicExpanded = false; editing = false }
+            WheelAction.HOME -> { panel = null; carOnly = false; musicExpanded = false; editing = false }
             else -> Unit
         }
     }
@@ -286,7 +319,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
             Dock(
                 repo = d.apps,
                 favorites = dockFavorites(d, apps),
-                onCar = { panel = Panel.Car },
+                onCar = { panel = Panel.CarSettings },
                 onApps = { panel = Panel.Drawer },
                 onSettings = { panel = Panel.Settings },
             )
@@ -295,19 +328,24 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
         when (val p = panel) {
             null -> Unit
             Panel.Drawer -> DrawerPanel(d, apps, close = { panel = null })
-            Panel.Settings, Panel.About -> SettingsPanel(
+            Panel.Settings, Panel.About, Panel.CarSettings -> SettingsPanel(
                 d,
                 revision = revision,
                 close = { panel = null },
                 onEdit = { panel = null; editing = true },
                 onTemplates = { panel = Panel.Templates },
-                start = if (p == Panel.About) SettingsSection.ABOUT else SettingsSection.APPEARANCE,
+                start = when (p) {
+                    Panel.About -> SettingsSection.ABOUT
+                    Panel.CarSettings -> SettingsSection.CAR
+                    else -> SettingsSection.APPEARANCE
+                },
             )
-            Panel.Car -> CarPanel(d.prefs, d.cars, close = { panel = null })
             Panel.Templates -> TemplatesPanel(d.dashboard, close = { panel = null })
             Panel.AddTile -> AddTilePanel(d.dashboard, close = { panel = null }, onPickApp = { panel = Panel.PickApp(null) })
             is Panel.PickApp -> PickAppPanel(d, apps, p.tileId, close = { panel = null })
         }
+
+        if (carOnly && panel == null) CarOnly(d, backdrop, onExit = { carOnly = false; touched++ })
 
         if (parked) Parked(d, onWake = { parked = false; touched++ })
 
