@@ -6,6 +6,17 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
+### Nuevo
+- **Mandos al volante** (Ajustes → Mandos al volante): presiona "Aprender
+  botón" y luego el botón del volante; LiteDash lo reconoce y eliges qué hace
+  (play/pausa, siguiente, anterior, volumen, silencio, abrir el mapa, música en
+  grande, voz, volver al inicio o nada). Usa las teclas estándar de Android, así
+  que funciona en la mayoría de las pantallas sin configurar nada; los botones
+  sin cambiar hacen lo de siempre. Cualquier botón quita el modo estacionado.
+- **Brillo de día y de noche** (Ajustes → Apariencia → Brillo): según la hora
+  del sol, sin sensores. Solo en LiteDash, o en todas las apps con el permiso de
+  "Modificar ajustes del sistema".
+
 ## [1.4.2] - 2026-10-31
 
 ### Arreglado

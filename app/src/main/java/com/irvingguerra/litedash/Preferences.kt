@@ -36,6 +36,11 @@ private object PrefKeys {
     const val HOME_ADDRESS = "direccion_casa"
     const val WORK_ADDRESS = "direccion_trabajo"
     const val PARKED_MODE = "modo_estacionado"
+    const val WHEEL_KEYS = "mandos_volante"
+    const val BRIGHTNESS_BY_SUN = "brillo_por_sol"
+    const val DAY_BRIGHTNESS = "brillo_dia"
+    const val NIGHT_BRIGHTNESS = "brillo_noche"
+    const val BRIGHTNESS_ALL_APPS = "brillo_todas_apps"
 }
 
 /** [stored] es como se guarda cada tema (los nombres que tenía en la 1.3.4). */
@@ -169,5 +174,40 @@ class Preferences(context: Context) {
     var parkedMode: Boolean
         get() = _parkedMode
         set(v) { _parkedMode = v; p.edit { putBoolean(PrefKeys.PARKED_MODE, v) } }
+
+    private var _wheelKeys by mutableStateOf(
+        p.getString(PrefKeys.WHEEL_KEYS, "")!!.lines().mapNotNull { line ->
+            val (code, action) = line.split('=', limit = 2).takeIf { it.size == 2 } ?: return@mapNotNull null
+            code.toIntOrNull()?.let { it to action }
+        }.toMap(),
+    )
+    /** Botón del volante (código de tecla de Android) → acción guardada ([WheelAction.stored]). */
+    var wheelKeys: Map<Int, String>
+        get() = _wheelKeys
+        set(v) { _wheelKeys = v; p.edit { putString(PrefKeys.WHEEL_KEYS, v.entries.joinToString("\n") { "${it.key}=${it.value}" }) } }
+
+    private var _brightnessBySun by mutableStateOf(p.getBoolean(PrefKeys.BRIGHTNESS_BY_SUN, false))
+    /** Brillo de día y de noche según el sol (apagado = el brillo del sistema, sin tocarlo). */
+    var brightnessBySun: Boolean
+        get() = _brightnessBySun
+        set(v) { _brightnessBySun = v; p.edit { putBoolean(PrefKeys.BRIGHTNESS_BY_SUN, v) } }
+
+    private var _dayBrightness by mutableIntStateOf(p.getInt(PrefKeys.DAY_BRIGHTNESS, 100))
+    /** Por ciento, de 10 a 100. */
+    var dayBrightness: Int
+        get() = _dayBrightness
+        set(v) { _dayBrightness = v; p.edit { putInt(PrefKeys.DAY_BRIGHTNESS, v) } }
+
+    private var _nightBrightness by mutableIntStateOf(p.getInt(PrefKeys.NIGHT_BRIGHTNESS, 40))
+    /** Por ciento, de 10 a 100. */
+    var nightBrightness: Int
+        get() = _nightBrightness
+        set(v) { _nightBrightness = v; p.edit { putInt(PrefKeys.NIGHT_BRIGHTNESS, v) } }
+
+    private var _brightnessAllApps by mutableStateOf(p.getBoolean(PrefKeys.BRIGHTNESS_ALL_APPS, false))
+    /** También en las demás apps (cambia el brillo del sistema; pide "modificar ajustes del sistema"). */
+    var brightnessAllApps: Boolean
+        get() = _brightnessAllApps
+        set(v) { _brightnessAllApps = v; p.edit { putBoolean(PrefKeys.BRIGHTNESS_ALL_APPS, v) } }
 
 }

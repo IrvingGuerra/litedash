@@ -102,6 +102,7 @@ class Dependencies(
     val weather: WeatherRepository,
     val trip: TripRepository,
     val reminders: ReminderRepository,
+    val wheel: WheelKeys,
 )
 
 /** Qué hace cada pieza al tocarla (abrir un panel, el mapa o la música en grande). */
@@ -209,6 +210,19 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
         onMusic = { musicExpanded = true },
     )
 
+    // Mandos al volante: cualquier botón quita el modo estacionado; las acciones que
+    // abren algo (mapa, música, voz, inicio) se hacen aquí.
+    LaunchedEffect(d.wheel.presses) { if (d.wheel.presses > 0) touched++ }
+    LaunchedEffect(d.wheel.request) {
+        when (d.wheel.request?.second) {
+            WheelAction.NAVIGATE -> actions.onNavigate(mapApp(d, apps))
+            WheelAction.MUSIC -> { panel = null; musicExpanded = true }
+            WheelAction.VOICE -> voiceIntent(context)?.let { runCatching { context.startActivity(it) } }
+            WheelAction.HOME -> { panel = null; musicExpanded = false; editing = false }
+            else -> Unit
+        }
+    }
+
     // Con un auto que trae piso, el fondo baja un poco de tono hacia abajo: es el
     // piso donde se para el auto (como en Tesla), y su sombra y reflejo caen ahí.
     val hasFloor = d.dashboard.tiles.any { it.type == TileTypes.CAR } &&
@@ -283,6 +297,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
             Panel.Drawer -> DrawerPanel(d, apps, close = { panel = null })
             Panel.Settings, Panel.About -> SettingsPanel(
                 d,
+                revision = revision,
                 close = { panel = null },
                 onEdit = { panel = null; editing = true },
                 onTemplates = { panel = Panel.Templates },

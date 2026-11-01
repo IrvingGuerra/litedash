@@ -3,6 +3,7 @@ package com.irvingguerra.litedash
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.view.KeyEvent
 import androidx.activity.ComponentActivity
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.SystemBarStyle
@@ -41,6 +42,7 @@ class MainActivity : ComponentActivity() {
                 val style = if (dark) SystemBarStyle.dark(transparent) else SystemBarStyle.light(transparent, transparent)
                 enableEdgeToEdge(style, style)
             }
+            ApplyBrightness(d.prefs, revision.intValue)
             LiteDashTheme(dark = dark, scale = d.prefs.scale) {
                 Home(d, revision.intValue, homePressed.intValue)
             }
@@ -54,6 +56,13 @@ class MainActivity : ComponentActivity() {
         super.onNewIntent(intent)
         if (intent.hasCategory(Intent.CATEGORY_HOME)) homePressed.intValue++
     }
+
+    // Mandos al volante: llegan como teclas normales de Android mientras LiteDash está al frente.
+    override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean =
+        dependencies.wheel.onKey(event, dependencies.music) || super.onKeyDown(keyCode, event)
+
+    override fun onKeyUp(keyCode: Int, event: KeyEvent): Boolean =
+        dependencies.wheel.onKey(event, dependencies.music) || super.onKeyUp(keyCode, event)
 
     override fun onResume() {
         super.onResume()

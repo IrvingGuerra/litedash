@@ -32,6 +32,7 @@ class LiteDashApp : Application() {
             weather = WeatherRepository(this),
             trip = TripRepository(this),
             reminders = ReminderRepository(this),
+            wheel = WheelKeys(this, prefs),
         )
     }
 

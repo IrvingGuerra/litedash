@@ -26,6 +26,8 @@
     <!-- Viaje (velocímetro): GPS, solo si agregas la pieza y mientras se ve. -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-feature android:name="android.hardware.location.gps" android:required="false" />
+    <!-- Brillo de día y noche en todas las apps: solo si lo activas (Android lo pide aparte). -->
+    <uses-permission android:name="android.permission.WRITE_SETTINGS" tools:ignore="ProtectedPermissions" />
 
     <application
         android:name=".LiteDashApp"

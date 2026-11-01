@@ -464,7 +464,7 @@ private fun CarPreview(e: CatalogEntry, cars: CarRepository, progress: Float?, o
 }
 
 /** Secciones de Ajustes, en el menú de la izquierda. */
-enum class SettingsSection(val title: Int) { APPEARANCE(R.string.appearance), CAR(R.string.your_car), HOME(R.string.home), MUSIC(R.string.music), MAP(R.string.map), MODULES(R.string.modules), ABOUT(R.string.about) }
+enum class SettingsSection(val title: Int) { APPEARANCE(R.string.appearance), CAR(R.string.your_car), HOME(R.string.home), MUSIC(R.string.music), MAP(R.string.map), WHEEL(R.string.wheel), MODULES(R.string.modules), ABOUT(R.string.about) }
 
 private fun SettingsSection.icon() = when (this) {
     SettingsSection.APPEARANCE -> Icons.theme
@@ -472,6 +472,7 @@ private fun SettingsSection.icon() = when (this) {
     SettingsSection.HOME -> Icons.dashboard
     SettingsSection.MUSIC -> Icons.music
     SettingsSection.MAP -> Icons.navigate
+    SettingsSection.WHEEL -> Icons.wheel
     SettingsSection.MODULES -> Icons.apps
     SettingsSection.ABOUT -> Icons.info
 }
@@ -483,6 +484,7 @@ private fun SettingsSection.icon() = when (this) {
 @Composable
 fun SettingsPanel(
     d: Dependencies,
+    revision: Int,
     close: () -> Unit,
     onEdit: () -> Unit,
     onTemplates: () -> Unit,
@@ -514,7 +516,7 @@ fun SettingsPanel(
             ) {
                 Label(stringResource(section.title), Typography.title.copy(fontSize = 30.sp), maxLines = 1)
                 when (section) {
-                    SettingsSection.APPEARANCE -> Appearance(d.prefs)
+                    SettingsSection.APPEARANCE -> Appearance(d.prefs, revision)
                     SettingsSection.CAR -> CarSettings(d)
                     SettingsSection.HOME -> HomeSettings(d.prefs, onEdit, onTemplates)
                     SettingsSection.MUSIC -> SettingsCard(Icons.music) { MusicSettings(d) }
@@ -526,6 +528,10 @@ fun SettingsPanel(
                             Label(stringResource(R.string.place_work), Typography.label, c.textMuted)
                             TextInput(d.prefs.workAddress ?: "", { d.prefs.workAddress = it.take(160).ifBlank { null } }, stringResource(R.string.place_hint), Modifier.fillMaxWidth())
                         }
+                    }
+                    SettingsSection.WHEEL -> {
+                        SettingsCard(Icons.wheel, help = stringResource(R.string.wheel_help)) { WheelSettings(d.wheel, d.prefs) }
+                        SettingsCard(Icons.settings, stringResource(R.string.wheel_assigned)) { WheelAssigned(d.prefs) }
                     }
                     SettingsSection.MODULES -> {
                         Label(stringResource(R.string.modules_help), Typography.body, c.textMuted)
@@ -577,7 +583,7 @@ private fun SettingsCard(
 }
 
 @Composable
-private fun Appearance(prefs: Preferences) {
+private fun Appearance(prefs: Preferences, revision: Int) {
     val c = LocalColors.current
     val context = LocalContext.current
     SettingsCard(Icons.car, stringResource(R.string.your_name), stringResource(R.string.your_name_help)) {
@@ -589,6 +595,9 @@ private fun Appearance(prefs: Preferences) {
                 Button(stringResource(text), { prefs.theme = mode }, primary = prefs.theme == mode)
             }
         }
+    }
+    SettingsCard(Icons.sun, stringResource(R.string.brightness), stringResource(R.string.brightness_help)) {
+        BrightnessSettings(prefs, revision)
     }
     SettingsCard(Icons.language, stringResource(R.string.language)) {
         val activity = context as? android.app.Activity

@@ -60,6 +60,8 @@ object Icons {
     val home = icon("M4 11l8 -7l8 7 M6 9.5v10.5h12v-10.5 M10 20v-5h4v5")
     val expand = icon("M4 9v-5h5 M20 9v-5h-5 M4 15v5h5 M20 15v5h-5")
     val language = icon("M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0 M3.6 9h16.8 M3.6 15h16.8 M12 3a14 14 0 0 1 0 18 M12 3a14 14 0 0 0 0 18")
+    /** Volante: aro, centro y tres rayos. */
+    val wheel = icon("M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0 M10 12a2 2 0 1 0 4 0a2 2 0 1 0 -4 0 M3.5 10.5l6.5 1 M14 11.5l6.5 -1 M12 14v7")
     val clock = icon("M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0 M12 7v5l3 3")
     val play = icon(fills = listOf("M7 4.5v15a1 1 0 0 0 1.5 .9l12 -7.5a1 1 0 0 0 0 -1.8l-12 -7.5a1 1 0 0 0 -1.5 .9z"))
     val pause = icon(fills = listOf("M6 4h4v16h-4z M14 4h4v16h-4z"))
