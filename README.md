@@ -6,8 +6,8 @@
 </p>
 
 <p align="center">
-  <b>Launcher para pantallas Android de auto: ligero, rápido y elegante.</b><br>
-  <i>A light, fast and clean launcher for Android car head units.</i><br><br>
+  <b>Launcher para pantallas Android de autos y motos: ligero, rápido y elegante.</b><br>
+  <i>A light, fast and clean launcher for Android car and motorcycle screens.</i><br><br>
   <a href="https://irvingguerra.github.io/litedash/">Sitio</a> ·
   <a href="https://github.com/IrvingGuerra/litedash/releases/latest">Descargar APK</a> ·
   <a href="https://irvingguerra.github.io/litedash/en/">English</a>
@@ -18,7 +18,7 @@
 ## Qué es
 
 LiteDash es una pantalla de inicio limpia para las pantallas Android que se
-ponen en el auto, y también para tablets y teléfonos (de 6" a 11" o más).
+ponen en autos y motos, y también para tablets y teléfonos (de 6" a 11" o más).
 **Todo es opcional y viene apagado**, para que vuele hasta en una pantalla de
 1 GB de RAM: lo que está apagado no gasta memoria, batería ni permisos.
 
@@ -30,7 +30,7 @@ app, con actualizaciones frecuentes.
 
 ## What it is (English)
 
-LiteDash is a clean home screen for Android car head units, tablets and phones
+LiteDash is a clean home screen for Android car and motorcycle screens, tablets and phones
 (6"–11"+). **Everything is optional and off by default**, so it stays fast on
 low-end units. **You arrange your home**: long-press to move, resize or remove
 pieces (your car, music, navigation, clock, apps). No ads, no accounts, no

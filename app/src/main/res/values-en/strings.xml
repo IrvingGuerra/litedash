@@ -72,7 +72,7 @@
     <string name="welcome_home_title">Make it your home screen</string>
     <string name="welcome_home">So LiteDash shows up when the screen turns on and when you tap the home button.</string>
     <string name="make_home">Choose LiteDash</string>
-    <string name="welcome_home_help">If your head unit doesn\'t ask, look in Settings → Apps → Default apps → Home app, or in the manufacturer\'s launcher menu.</string>
+    <string name="welcome_home_help">If your screen doesn\'t ask, look in Settings → Apps → Default apps → Home app, or in the manufacturer\'s launcher menu.</string>
     <string name="welcome_already_home">LiteDash is already your home screen</string>
     <string name="check_updates">Check for updates</string>
     <string name="checking">Checking…</string>

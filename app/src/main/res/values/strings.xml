@@ -73,7 +73,7 @@
     <string name="welcome_home_title">Hazlo tu pantalla de inicio</string>
     <string name="welcome_home">Así LiteDash aparece al encender la pantalla y al tocar el botón de inicio.</string>
     <string name="make_home">Elegir LiteDash</string>
-    <string name="welcome_home_help">Si tu pantalla de auto no lo pregunta, búscalo en Ajustes → Aplicaciones → Aplicaciones predeterminadas → Pantalla de inicio, o en el menú del fabricante para elegir el launcher.</string>
+    <string name="welcome_home_help">Si tu pantalla no lo pregunta, búscalo en Ajustes → Aplicaciones → Aplicaciones predeterminadas → Pantalla de inicio, o en el menú del fabricante para elegir el launcher.</string>
     <string name="welcome_already_home">LiteDash ya es tu pantalla de inicio</string>
     <string name="check_updates">Buscar actualizaciones</string>
     <string name="checking">Buscando…</string>
