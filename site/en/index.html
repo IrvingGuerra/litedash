@@ -3,16 +3,16 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>LiteDash — a launcher for your car</title>
-  <meta name="description" content="A light, fast and clean launcher for Android car head units. Everything optional and off by default. Free, no ads, open source.">
+  <title>LiteDash — launcher for your car</title>
+  <meta name="description" content="The launcher for Android car screens that weighs 1.3 MB, opens in under a second and uses nothing when idle. Modular, with one-tap updates. Free, ad-free and open source.">
   <meta name="theme-color" content="#101317">
   <link rel="icon" href="../favicon.ico" sizes="48x48">
   <link rel="icon" href="../favicon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="../apple-touch-icon.png">
   <link rel="alternate" hreflang="es" href="../">
-  <meta property="og:title" content="LiteDash — a launcher for your car">
-  <meta property="og:description" content="Light, fast and clean. Everything optional and off by default.">
-  <meta property="og:image" content="https://irvingguerra.github.io/litedash/img/og-en.png">
+  <meta property="og:title" content="LiteDash — launcher for your car">
+  <meta property="og:description" content="1.3 MB, opens in under a second and 0% CPU when idle. Your car as the background, modules your way and one-tap updates.">
+  <meta property="og:image" content="https://irvingguerra.github.io/litedash/img/og-en.jpg">
   <meta property="og:type" content="website">
   <meta name="twitter:card" content="summary_large_image">
   <link rel="stylesheet" href="../styles.css">
@@ -22,7 +22,8 @@
     <div class="contenedor">
       <a class="logo" href="./" aria-label="LiteDash"><img src="../img/litedash-horizontal-sobre-oscuro.svg" alt="LiteDash" width="132" height="30"></a>
       <nav>
-        <a href="#why">Why</a>
+        <a href="#fast">Speed</a>
+        <a href="#car">Your car</a>
         <a href="#modules">Modules</a>
         <a href="#download">Download</a>
         <a href="https://github.com/IrvingGuerra/litedash">GitHub</a>
@@ -34,44 +35,117 @@
   <main>
     <div class="heroe contenedor">
       <img class="marca" src="../img/litedash-marca-sobre-oscuro.svg" alt="" width="120" height="31">
-      <h1>Your car, <em>uncluttered.</em></h1>
-      <p class="lead">The launcher for Android car head units: light, fast and clean. From 6" to 11" and up, on the slowest screen or the newest one.</p>
+      <h1>Your car, <em>clean.</em></h1>
+      <p class="lead">The launcher for Android car screens that weighs 1.3 MB, opens in under a second and uses nothing when you're not touching it.</p>
       <div class="botones">
-        <a class="boton principal" href="https://github.com/IrvingGuerra/litedash/releases/latest">Download APK <small>free</small></a>
+        <a class="boton principal" href="https://github.com/IrvingGuerra/litedash/releases/latest">Download APK <small>free · 1.3 MB</small></a>
         <span class="boton secundario" aria-disabled="true">Google Play <small>coming soon</small></span>
       </div>
       <p class="nota">No ads, no accounts, no tracking. Open source.</p>
 
       <figure class="pantalla">
-        <img src="../img/captura-inicio-en.webp" alt="LiteDash on an 11-inch screen: clock, date and the app drawer in dark mode" width="2000" height="1200">
-        <figcaption>LiteDash 1.0 on an 11" screen (2000 × 1200).</figcaption>
+        <img src="../img/inicio-oscuro-en.webp" alt="LiteDash home in dark mode: a white sedan on the floor with its reflection, music and Navigate below, and the app dock" width="1600" height="822">
+        <figcaption>LiteDash 1.3.3 on a car screen. The car is yours: model, color and name.</figcaption>
       </figure>
     </div>
 
-    <section id="why">
+    <section id="fast">
       <div class="contenedor">
-        <h2>Everything starts off.</h2>
-        <p class="bajada">Freshly installed, LiteDash is the bare minimum: your clock and your apps. Every extra turns on when you want it, and whatever is off costs nothing: no memory, no battery, no permissions.</p>
+        <h2>Actually fast.</h2>
+        <p class="bajada">Car screens usually have little memory and slow processors. LiteDash is built for them: it starts instantly and, when you're not using it, it does nothing.</p>
         <div class="rejilla cifras">
-          <div class="tarjeta"><div class="cifra">0.9<span> MB</span></div><h3>Tiny download</h3><p>Installs in seconds, even on units with little storage.</p></div>
-          <div class="tarjeta"><div class="cifra">~20<span> MB</span></div><h3>Of memory</h3><p>Built for 1 and 2 GB head units, without stutter.</p></div>
-          <div class="tarjeta"><div class="cifra">0<span> %</span></div><h3>CPU at rest</h3><p>Nothing runs in the background or checks things every second.</p></div>
-          <div class="tarjeta"><div class="cifra">0<span> tracking</span></div><h3>Your stuff is yours</h3><p>No ads, no analytics. Each permission is requested only if you turn on the feature that needs it.</p></div>
+          <div class="tarjeta"><div class="cifra">1.3<span> MB</span></div><h3>Download size</h3><p>Downloads in seconds, even on mobile data.</p></div>
+          <div class="tarjeta"><div class="cifra">0.6<span> s</span></div><h3>To open</h3><p>From scratch to your home, ready. Back to home: 81 ms.</p></div>
+          <div class="tarjeta"><div class="cifra">27<span> MB</span></div><h3>Of memory</h3><p>Plenty of room on 1 and 2 GB RAM screens.</p></div>
+          <div class="tarjeta"><div class="cifra">0<span> %</span></div><h3>CPU when idle</h3><p>Nothing runs in the background or polls every second.</p></div>
         </div>
+        <p class="fuente">Measured with LiteDash 1.3.3 on a 7" car screen emulator with 2 GB of RAM (median of 10 starts).</p>
+      </div>
+    </section>
+
+    <section class="alterna">
+      <div class="contenedor">
+        <h2>Up to 20 times lighter.</h2>
+        <p class="bajada">Less space, less memory, less waiting. Here's how it compares with other well-known car launchers:</p>
+        <div class="comparar" role="list">
+          <div class="barra-peso nuestra" role="listitem"><span>LiteDash</span><span class="pista"><span class="lleno" style="width:4.5%"></span></span><span class="mb">1.3 MB</span></div>
+          <div class="barra-peso" role="listitem"><span>AGAMA Car Launcher</span><span class="pista"><span class="lleno" style="width:39%"></span></span><span class="mb">~11 MB</span></div>
+          <div class="barra-peso" role="listitem"><span>CarWebGuru</span><span class="pista"><span class="lleno" style="width:100%"></span></span><span class="mb">~29 MB</span></div>
+        </div>
+        <p class="fuente">Download sizes listed on RuStore, October 2026. They may vary by version.</p>
+      </div>
+    </section>
+
+    <section id="car">
+      <div class="contenedor fila">
+        <div class="texto-fila">
+          <h2>Your car is the background.</h2>
+          <p class="bajada">Your car stands on the floor, with its shadow and a subtle reflection running under the cards. Like in luxury cars, but on your screen.</p>
+          <ul class="lista-puntos">
+            <li>Pick your model from the catalog and download it only if you want it.</li>
+            <li>Any color: hue, saturation and brightness, live.</li>
+            <li>Spin it 360° with your finger. You choose how smooth: Light, Medium or Maximum.</li>
+            <li>Light and dark mode.</li>
+          </ul>
+        </div>
+        <div class="captura"><img src="../img/inicio-claro-en.webp" alt="LiteDash home in light mode with a yellow sedan on the floor" width="1600" height="822" loading="lazy"></div>
+      </div>
+    </section>
+
+    <section class="alterna">
+      <div class="contenedor fila invertida">
+        <div class="texto-fila">
+          <h2>Paint it like yours.</h2>
+          <p class="bajada">Six quick colors and a free picker for any shade. The app doesn't carry the cars: they download from the catalog (from 1.2 MB) and you remove them with one tap whenever you like.</p>
+          <ul class="lista-puntos">
+            <li>A preview of every car before you download it.</li>
+            <li>More smoothness only downloads the missing frames, nothing twice.</li>
+            <li>You can always go back to the drawn sedan, which weighs nothing.</li>
+          </ul>
+        </div>
+        <div class="captura"><img src="../img/color-en.webp" alt="Your car screen with the free color picker and the car painted yellow" width="1600" height="822" loading="lazy"></div>
       </div>
     </section>
 
     <section id="modules" class="modulos">
       <div class="contenedor">
-        <h2>Grows with your car.</h2>
-        <p class="bajada">Works just as well in a 2005 car as in a new one. Modules turn on inside the same app, nothing else to install.</p>
+        <h2>Modular: everything starts off.</h2>
+        <p class="bajada">Freshly installed, LiteDash is the bare minimum. Each feature turns on when you want it, and what's off costs nothing: no memory, no battery, no permissions. All inside the same app, nothing else to install.</p>
         <div class="rejilla">
-          <div class="tarjeta"><span class="etiqueta lista">Available</span><h3>Your home, your way</h3><p>Move, resize or remove pieces: your car, music, navigation, clock and apps. Light or dark theme.</p></div>
+          <div class="tarjeta"><span class="etiqueta lista">Available</span><h3>Your home, your way</h3><p>Move, resize or remove pieces. Layouts made for 7", 10" and 11"+ screens, landscape or portrait.</p></div>
+          <div class="tarjeta"><span class="etiqueta lista">Available</span><h3>Music</h3><p>Control whatever is playing in any app (Spotify, YouTube Music, radio, USB or Bluetooth) without leaving home.</p></div>
+          <div class="tarjeta"><span class="etiqueta lista">Available</span><h3>Navigate</h3><p>Waze or Google Maps one tap away, with the next turn on a card.</p></div>
           <div class="tarjeta"><span class="etiqueta">Coming soon</span><h3>OBD scanner</h3><p>With an ELM327 adapter: live engine data, read and clear trouble codes.</p></div>
-          <div class="tarjeta"><span class="etiqueta">Coming soon</span><h3>Tire pressure</h3><p>Reads your Bluetooth sensors directly, no vendor app, and shows PSI on your car.</p></div>
-          <div class="tarjeta"><span class="etiqueta">Coming soon</span><h3>Your car in 3D</h3><p>Your model and color: 2D for slow screens, 3D for fast ones.</p></div>
-          <div class="tarjeta"><span class="etiqueta">Coming soon</span><h3>Music and navigation</h3><p>Now playing and your next turn as cards, right on the home screen.</p></div>
-          <div class="tarjeta"><span class="etiqueta">Coming soon</span><h3>Cameras and sensors</h3><p>360° camera and parking sensors for the most common kits.</p></div>
+          <div class="tarjeta"><span class="etiqueta">Coming soon</span><h3>Tire pressure</h3><p>Reads your Bluetooth sensors directly, without the maker's app, and shows PSI over your car.</p></div>
+          <div class="tarjeta"><span class="etiqueta">Coming soon</span><h3>Cameras and sensors</h3><p>360 camera and parking radar, for the most common kits.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="alterna">
+      <div class="contenedor fila">
+        <div class="texto-fila">
+          <h2>One-tap updates.</h2>
+          <p class="bajada">No more hunting for the new APK online or copying it to the screen over USB. In Settings → About, tap "Check for updates" and you're done.</p>
+          <div class="pasos compacta">
+            <div class="tarjeta"><h3>Check</h3><p>LiteDash looks for a new version on GitHub.</p></div>
+            <div class="tarjeta"><h3>Verify</h3><p>It downloads it and checks it arrived complete and unchanged (SHA-256).</p></div>
+            <div class="tarjeta"><h3>Install</h3><p>Android asks you to confirm, and your layout stays exactly as it was.</p></div>
+          </div>
+        </div>
+        <div class="captura"><img src="../img/actualizar-en.webp" alt="LiteDash Settings, About section, with the Check for updates button" width="1600" height="822" loading="lazy"></div>
+      </div>
+    </section>
+
+    <section>
+      <div class="contenedor">
+        <h2>What makes us different.</h2>
+        <p class="bajada">LiteDash was born in a real car, with a real screen, and it's built with the driver in mind.</p>
+        <div class="rejilla">
+          <div class="tarjeta"><h3>Light by rule</h3><p>Every version is measured before release. If something weighs too much, it's out: that's why the built-in map was removed.</p></div>
+          <div class="tarjeta"><h3>Made for driving</h3><p>Big buttons, no pop-ups in the way and home always one tap away.</p></div>
+          <div class="tarjeta"><h3>Truly yours</h3><p>No ads, no accounts, no analytics. It only uses the internet when you download a car or check for updates.</p></div>
+          <div class="tarjeta"><h3>Open source</h3><p>GPL-3.0 licensed. Review the code, report problems or suggest improvements on GitHub.</p></div>
         </div>
       </div>
     </section>
@@ -80,12 +154,12 @@
       <div class="contenedor">
         <div class="morse" style="justify-content:center" aria-hidden="true"><i></i><i></i><i></i></div>
         <h2>Try it today.</h2>
-        <p class="bajada">Download the APK, install it on your head unit and choose LiteDash as your home screen. Google Play is coming soon.</p>
+        <p class="bajada">Download the APK, install it on your screen and choose LiteDash as your home screen. Coming soon to Google Play.</p>
         <div class="botones">
-          <a class="boton principal" href="https://github.com/IrvingGuerra/litedash/releases/latest">Download APK</a>
+          <a class="boton principal" href="https://github.com/IrvingGuerra/litedash/releases/latest">Download APK <small>1.3 MB</small></a>
           <a class="boton secundario" href="https://github.com/IrvingGuerra/litedash">View the code</a>
         </div>
-        <p class="requisitos">Android 8.0 or newer · head units, tablets and phones · <code>—··</code> is the D of Dash in Morse code</p>
+        <p class="requisitos">Android 8.0 or newer · car screens from 6" to 11"+, tablets and phones · <code>—··</code> is the D in Dash in Morse code</p>
       </div>
     </section>
   </main>
