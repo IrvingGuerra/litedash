@@ -1,7 +1,6 @@
 package com.irvingguerra.litedash
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -18,7 +17,7 @@ import com.irvingguerra.litedash.feature.apps.rememberApps
  * las instaladas; "Sistema" sigue lo que suene (radio, USB, Bluetooth o una app).
  */
 @Composable
-fun ColumnScope.MusicSettings(d: Dependencies) {
+fun MusicSettings(d: Dependencies) {
     val apps = rememberApps(d.apps).orEmpty()
     val installedApps = remember(apps) {
         val musicPackages = d.music.musicApps() + MUSIC_PACKAGES
@@ -37,7 +36,7 @@ fun ColumnScope.MusicSettings(d: Dependencies) {
 
 /** Sección "Mapa" de Ajustes: qué app de navegación abre la pieza Navegar. */
 @Composable
-fun ColumnScope.MapSettings(d: Dependencies) {
+fun MapSettings(d: Dependencies) {
     val apps = rememberApps(d.apps).orEmpty()
     val mapApps = remember(apps) { NAVIGATION_PACKAGES.mapNotNull { pkg -> apps.firstOrNull { it.pkg == pkg } } }
     val selected = mapApp(d, apps)

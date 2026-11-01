@@ -12,12 +12,11 @@ class DashboardState(private val store: DashboardStore) {
         private set
 
     /** La pantalla (o la escala) cambió: carga el acomodo de ese tamaño o una plantilla. */
-    fun use(c: Grid): List<Tile> {
+    fun use(c: Grid) {
         if (c != grid) {
             grid = c
             tiles = store.read(c) ?: c.suggestedTemplate().tiles(c)
         }
-        return tiles
     }
 
     fun change(newTiles: List<Tile>) {

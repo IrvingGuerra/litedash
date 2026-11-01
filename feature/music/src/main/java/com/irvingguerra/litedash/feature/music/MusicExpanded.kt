@@ -24,9 +24,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -49,7 +47,6 @@ import com.irvingguerra.litedash.core.ui.Icons
 import com.irvingguerra.litedash.core.ui.LocalColors
 import com.irvingguerra.litedash.core.ui.Card
 import com.irvingguerra.litedash.core.ui.Typography
-import kotlinx.coroutines.delay
 
 /**
  * La música en grande, sin salir de LiteDash: carátula, barra para adelantar,
@@ -151,15 +148,8 @@ private fun ActionButton(a: MediaAction, onClick: () -> Unit) {
 @Composable
 private fun TimeBar(repo: MusicRepository, song: Song) {
     val c = LocalColors.current
-    var pos by remember { mutableLongStateOf(song.currentPosition()) }
+    val pos by rememberPosition(song)
     var dragFraction by remember { mutableStateOf<Float?>(null) }
-    LaunchedEffect(song) {
-        pos = song.currentPosition()
-        while (song.playing) {
-            delay(1000)
-            pos = song.currentPosition()
-        }
-    }
     val duration = song.durationMs
     val fraction = dragFraction ?: (pos.toFloat() / duration).coerceIn(0f, 1f)
     BoxWithConstraints(

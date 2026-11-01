@@ -30,11 +30,13 @@ class MainActivity : ComponentActivity() {
         })
         setContent {
             val d = dependencies
+            // Una sola cuenta del sol para el tema y el brillo.
+            val night = rememberIsNight()
             val dark = when (d.prefs.theme) {
                 ThemeMode.DARK -> true
                 ThemeMode.LIGHT -> false
                 ThemeMode.SYSTEM -> isSystemInDarkTheme()
-                ThemeMode.SUN -> rememberIsNight()
+                ThemeMode.SUN -> night
             }
             // Íconos de la barra del sistema claros u oscuros según el tema.
             LaunchedEffect(dark) {
@@ -42,7 +44,7 @@ class MainActivity : ComponentActivity() {
                 val style = if (dark) SystemBarStyle.dark(transparent) else SystemBarStyle.light(transparent, transparent)
                 enableEdgeToEdge(style, style)
             }
-            ApplyBrightness(d.prefs, revision.intValue)
+            ApplyBrightness(d.prefs, night, revision.intValue)
             LiteDashTheme(dark = dark, scale = d.prefs.scale) {
                 Home(d, revision.intValue, homePressed.intValue)
             }

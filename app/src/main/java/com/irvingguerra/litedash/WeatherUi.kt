@@ -53,7 +53,10 @@ fun textOf(sky: Sky) = when (sky) {
 fun rememberEnableWeather(repo: WeatherRepository): () -> Unit {
     val scope = rememberCoroutineScope()
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { ok ->
-        if (ok) scope.launch { repo.refreshIfStale(force = true) }
+        if (ok) {
+            repo.enable()
+            scope.launch { repo.refreshIfStale(force = true) }
+        }
     }
     return { launcher.launch(Manifest.permission.ACCESS_COARSE_LOCATION) }
 }
@@ -62,7 +65,7 @@ fun rememberEnableWeather(repo: WeatherRepository): () -> Unit {
 @Composable
 fun WeatherChip(repo: WeatherRepository) {
     val w = repo.weather ?: return
-    if (!repo.hasPermission()) return
+    if (!repo.active) return
     val c = LocalColors.current
     Row(verticalAlignment = Alignment.CenterVertically) {
         Icon(iconOf(skyOf(w.code), w.day), c.accent, 22.dp)
@@ -79,8 +82,8 @@ fun WeatherTile(repo: WeatherRepository) {
     val c = LocalColors.current
     val enable = rememberEnableWeather(repo)
     val w = repo.weather
-    if (!repo.hasPermission() || w == null) {
-        return ShortcutTile(Icons.sun, stringResource(R.string.tile_weather), stringResource(if (repo.hasPermission()) R.string.weather_loading else R.string.weather_enable), enable)
+    if (!repo.active || w == null) {
+        return ShortcutTile(Icons.sun, stringResource(R.string.tile_weather), stringResource(if (repo.active) R.string.weather_loading else R.string.tap_to_enable), enable)
     }
     Card(Modifier.fillMaxSize()) {
         BoxWithConstraints(Modifier.fillMaxSize().padding(16.dp), contentAlignment = Alignment.CenterStart) {

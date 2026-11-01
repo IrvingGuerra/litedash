@@ -25,7 +25,6 @@ object Icons {
     )
     val apps = icon("M4 4h6v6h-6z M14 4h6v6h-6z M4 14h6v6h-6z M14 14h6v6h-6z")
     val settings = icon("M4 6h8 M16 6h4 M14 4v4 M4 12h2 M10 12h10 M8 10v4 M4 18h11 M19 18h1 M17 16v4")
-    val volume = icon("M4 9.5h3.5l4.5-4v13l-4.5-4h-3.5z M16 9a4 4 0 0 1 0 6 M18.5 6.5a7.5 7.5 0 0 1 0 11")
     val minus = icon("M6 12h12")
     val plus = icon("M12 6v12 M6 12h12")
     val close = icon("M7 7l10 10 M17 7l-10 10")
@@ -54,7 +53,8 @@ object Icons {
     val corner = icon("M19 11v8h-8 M19 19l-7 -7")
     val dashboard = icon("M4 4h7v9h-7z M13 4h7v5h-7z M13 11h7v9h-7z M4 15h7v5h-7z")
     val openExternal = icon("M14 4h6v6 M20 4l-9 9 M18 14v6h-14v-14h6")
-    val theme = icon("M20 14.5a8 8 0 1 1 -10.5 -10.5a6.5 6.5 0 0 0 10.5 10.5z")
+    /** El tema (oscuro o claro): la misma luna. */
+    val theme = moon
     val info = icon("M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0 M12 11v5 M12 7.5v.5")
     val back = icon("M9 14l-5 -5l5 -5 M4 9h11a5 5 0 0 1 0 10h-3")
     val home = icon("M4 11l8 -7l8 7 M6 9.5v10.5h12v-10.5 M10 20v-5h4v5")

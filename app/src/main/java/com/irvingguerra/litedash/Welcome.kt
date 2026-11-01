@@ -9,8 +9,8 @@ import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -44,18 +44,17 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.irvingguerra.litedash.core.ui.Button
-import com.irvingguerra.litedash.core.ui.Label
 import com.irvingguerra.litedash.core.ui.Icon
 import com.irvingguerra.litedash.core.ui.Icons
+import com.irvingguerra.litedash.core.ui.Label
 import com.irvingguerra.litedash.core.ui.LocalColors
 import com.irvingguerra.litedash.core.ui.MorseMark
 import com.irvingguerra.litedash.core.ui.Typography
-import com.irvingguerra.litedash.feature.car.CarColors
 import com.irvingguerra.litedash.feature.car.CarDrawing
 import com.irvingguerra.litedash.feature.dashboard.DashboardState
 import com.irvingguerra.litedash.feature.dashboard.Template
-import com.irvingguerra.litedash.feature.dashboard.suggestedTemplate
 import com.irvingguerra.litedash.feature.dashboard.size
+import com.irvingguerra.litedash.feature.dashboard.suggestedTemplate
 
 /** ¿LiteDash ya es la pantalla de inicio? */
 fun isHomeApp(context: Context): Boolean {
@@ -85,7 +84,7 @@ fun Welcome(prefs: Preferences, dashboard: DashboardState, revision: Int, onFini
         Modifier
             .fillMaxSize()
             .background(c.background)
-            .clickable(enabled = false) {}
+            .clickable(remember { MutableInteractionSource() }, indication = null) {}
             .safeDrawingPadding()
             .padding(horizontal = 32.dp, vertical = 20.dp),
     ) {
@@ -147,7 +146,7 @@ private fun ColumnScope.CarStep(prefs: Preferences) {
                 Label(stringResource(R.string.car_name), Typography.label, c.textMuted)
                 TextInput(prefs.carName ?: "", { prefs.carName = it.take(24).ifBlank { null } }, stringResource(R.string.my_car), Modifier.fillMaxWidth())
                 Label(stringResource(R.string.color), Typography.label, c.textMuted)
-                ColorPicker(prefs.carColor) { prefs.carColor = it }
+                ColorPicker(prefs.carColor, prefs::previewCarColor) { prefs.carColor = it }
             }
         }
         if (horizontal) {

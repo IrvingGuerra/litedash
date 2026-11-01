@@ -1,26 +1,16 @@
 package com.irvingguerra.litedash
 
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.layout.onSizeChanged
-import com.irvingguerra.litedash.core.ui.LiteDashTheme
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.withTimeoutOrNull
-import androidx.compose.runtime.snapshotFlow
-import androidx.compose.ui.unit.sp
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.input.pointer.PointerEventPass
-import androidx.compose.foundation.gestures.awaitFirstDown
-import androidx.compose.foundation.gestures.awaitEachGesture
-import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
-import android.media.AudioManager
-import android.os.Build
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -34,58 +24,63 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.lerp
-import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.irvingguerra.litedash.core.ui.Button
-import com.irvingguerra.litedash.core.ui.Icon
 import com.irvingguerra.litedash.core.ui.IconButton
-import com.irvingguerra.litedash.core.ui.Label
 import com.irvingguerra.litedash.core.ui.Icons
+import com.irvingguerra.litedash.core.ui.Label
+import com.irvingguerra.litedash.core.ui.LiteDashTheme
 import com.irvingguerra.litedash.core.ui.LocalColors
 import com.irvingguerra.litedash.core.ui.Typography
-import com.irvingguerra.litedash.feature.updater.Updater
 import com.irvingguerra.litedash.feature.apps.App
 import com.irvingguerra.litedash.feature.apps.AppIcon
 import com.irvingguerra.litedash.feature.apps.AppRepository
 import com.irvingguerra.litedash.feature.apps.rememberApps
-import com.irvingguerra.litedash.feature.car.CarImage
 import com.irvingguerra.litedash.feature.car.CarPackage
 import com.irvingguerra.litedash.feature.car.CarRepository
-import com.irvingguerra.litedash.feature.car.CarTile
-import com.irvingguerra.litedash.feature.car.CarTurntable
-import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.layout.boundsInRoot
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.safeDrawing
-import com.irvingguerra.litedash.feature.car.CarViews
+import com.irvingguerra.litedash.feature.dashboard.Dashboard
+import com.irvingguerra.litedash.feature.dashboard.DashboardState
+import com.irvingguerra.litedash.feature.dashboard.Grid
+import com.irvingguerra.litedash.feature.dashboard.Tile
+import com.irvingguerra.litedash.feature.dashboard.TileTypes
 import com.irvingguerra.litedash.feature.music.MusicExpanded
+import com.irvingguerra.litedash.feature.music.MusicRepository
 import com.irvingguerra.litedash.feature.music.MusicTile
 import com.irvingguerra.litedash.feature.navigation.NavigationRepository
-import com.irvingguerra.litedash.feature.dashboard.Tile
-import com.irvingguerra.litedash.feature.music.MusicRepository
-import com.irvingguerra.litedash.feature.dashboard.Grid
-import com.irvingguerra.litedash.feature.dashboard.DashboardState
-import com.irvingguerra.litedash.feature.dashboard.Dashboard
-import com.irvingguerra.litedash.feature.dashboard.TileTypes
+import com.irvingguerra.litedash.feature.updater.Updater
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withTimeoutOrNull
 
 /** Qué panel está abierto encima del inicio (uno a la vez). */
 sealed interface Panel {
@@ -115,94 +110,29 @@ class Dependencies(
     val wheel: WheelKeys,
 )
 
-/** Qué hace cada pieza al tocarla (abrir un panel, el mapa o la música en grande). */
+/**
+ * Qué hace cada pieza al tocarla (abrir un panel, el mapa, la música o el auto en
+ * grande). Se crea una vez: sus funciones leen el estado del inicio al llamarse.
+ */
 class TileActions(
     val onPanel: (Panel) -> Unit,
     val onNavigate: (App?) -> Unit,
     val onMusic: () -> Unit,
     val onCarOnly: () -> Unit,
     /** Dónde está la pieza del auto en la pantalla: de ahí crece al verlo solo. */
-    val onCarBounds: (androidx.compose.ui.geometry.Rect) -> Unit,
+    val onCarBounds: (Rect) -> Unit,
     /** Se lee al dibujar (no recompone el tablero en cada cuadro de la animación). */
     val carHidden: () -> Boolean,
 )
 
-/** El auto del inicio: gira con el dedo y un toque hace [onClick] (la configuración vive en Ajustes → Tu auto). */
-@Composable
-fun HomeCar(d: Dependencies, onClick: () -> Unit, modifier: Modifier = Modifier, onReady: (() -> Unit)? = null) {
-    val color = d.prefs.carColor
-    val pkg = remember(d.prefs.carModel, d.cars.changes) { d.cars.pkg(d.prefs.carModel) }
-    // El sedán dibujado no carga nada: listo de una vez.
-    if (pkg == null && onReady != null) LaunchedEffect(Unit) { onReady() }
-    CarTile(
-        name = d.prefs.carName ?: pkg?.name ?: stringResource(R.string.my_car),
-        color = color,
-        onClick = onClick,
-        modifier = modifier,
-        drawing = pkg?.let { carPkg ->
-            { m -> CarTurntable(d.cars, carPkg, dashboardView(carPkg), color, m, d.prefs.carAngle, { d.prefs.carAngle = it }, onReady) }
-        },
-        hasFloor = pkg?.let(::showsFloor) == true,
-    )
-}
-
-/**
- * Solo el auto: crece desde su pieza ([from], en coordenadas de la pantalla)
- * hasta casi toda la pantalla mientras el fondo tapa el inicio; [progress] va de
- * 0 (en su pieza) a 1 (completo) y se lee solo al dibujar. El auto se dibuja una vez al tamaño final y se
- * escala con la GPU, así la animación no vuelve a pintar la imagen cuadro a cuadro.
- */
-@Composable
-private fun CarOnly(d: Dependencies, from: androidx.compose.ui.geometry.Rect, progress: () -> Float, backdrop: Modifier, onTap: () -> Unit, onReady: () -> Unit) {
-    val density = LocalDensity.current
-    val insets = androidx.compose.foundation.layout.WindowInsets.safeDrawing
-    val direction = androidx.compose.ui.platform.LocalLayoutDirection.current
-    BoxWithConstraints(Modifier.fillMaxSize()) {
-        val pad = with(density) { 24.dp.toPx() }
-        val to = with(density) {
-            androidx.compose.ui.geometry.Rect(
-                insets.getLeft(this, direction) + pad,
-                insets.getTop(this) + pad,
-                maxWidth.toPx() - insets.getRight(this, direction) - pad,
-                maxHeight.toPx() - insets.getBottom(this) - pad,
-            )
-        }
-        val start = if (from.isEmpty) 0.6f else minOf(from.width / to.width, from.height / to.height)
-        Box(
-            Modifier
-                .fillMaxSize()
-                .graphicsLayer { alpha = progress() }
-                .then(backdrop)
-                .clickable(remember { androidx.compose.foundation.interaction.MutableInteractionSource() }, indication = null, onClick = onTap),
-        )
-        Box(
-            Modifier
-                .offset { androidx.compose.ui.unit.IntOffset(to.left.toInt(), to.top.toInt()) }
-                .size(with(density) { to.width.toDp() }, with(density) { to.height.toDp() })
-                // Todo se lee aquí, al dibujar: la animación no vuelve a armar nada, solo mueve la capa.
-                .graphicsLayer {
-                    val t = progress()
-                    val scale = start + (1f - start) * t
-                    scaleX = scale
-                    scaleY = scale
-                    if (!from.isEmpty) {
-                        translationX = (from.center.x - to.center.x) * (1f - t)
-                        translationY = (from.center.y - to.center.y) * (1f - t)
-                    }
-                },
-        ) {
-            HomeCar(d, onClick = onTap, onReady = onReady)
-        }
-    }
-}
-
 /** Cada tipo de pieza dibujado según su tipo. */
 @Composable
-fun TileContent(d: Dependencies, p: Tile, apps: List<App>, revision: Int, actions: TileActions) {
+fun TileContent(d: Dependencies, p: Tile, apps: List<App>, car: CarPackage?, revision: Int, actions: TileActions) {
     val context = LocalContext.current
     when (p.type) {
         TileTypes.CAR -> HomeCar(
             d,
+            car,
             onClick = actions.onCarOnly,
             modifier = Modifier
                 .onGloballyPositioned { actions.onCarBounds(it.boundsInRoot()) }
@@ -212,7 +142,7 @@ fun TileContent(d: Dependencies, p: Tile, apps: List<App>, revision: Int, action
         TileTypes.MUSIC -> MusicTile(d.music, revision, onExpand = actions.onMusic)
         TileTypes.CLOCK -> ClockTile(d.prefs.driverName, d.weather)
         TileTypes.WEATHER -> WeatherTile(d.weather)
-        TileTypes.TRIP -> TripTile(d.trip)
+        TileTypes.TRIP -> TripTile(d.trip, d.prefs.language)
         TileTypes.PROJECTION -> ProjectionTile(d, apps) { actions.onPanel(Panel.Drawer) }
         TileTypes.NAVIGATE -> {
             val app = mapApp(d, apps, p.data)
@@ -236,12 +166,6 @@ fun TileContent(d: Dependencies, p: Tile, apps: List<App>, revision: Int, action
     }
 }
 
-/** La vista del auto en el tablero: la de escena (con piso) si el paquete la trae. */
-/** En el inicio el auto se para en un piso: el del giro (reflejo dibujado) o el horneado en la vista. */
-fun showsFloor(p: CarPackage) = p.spin > 0 || dashboardView(p) in p.floor
-
-fun dashboardView(p: CarPackage) = if (CarViews.SCENE in p.views) CarViews.SCENE else CarViews.THREE_QUARTER
-
 /** La de la pieza, si eligió una; si no, la de Ajustes; si no, la primera instalada. */
 fun mapApp(d: Dependencies, apps: List<App>, data: String = ""): App? =
     d.apps.find(apps, data)
@@ -254,41 +178,53 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
     val c = LocalColors.current
     val context = LocalContext.current
     val apps = rememberApps(d.apps).orEmpty()
+    val currentApps by rememberUpdatedState(apps)
+    val car = remember(d.prefs.carModel, d.cars.changes) { d.cars.pkg(d.prefs.carModel) }
     var panel by remember { mutableStateOf<Panel?>(null) }
     var editing by remember { mutableStateOf(false) }
     var musicExpanded by remember { mutableStateOf(false) }
     // Solo el auto a pantalla completa (un toque al auto entra y otro sale), con animación:
     // [carOnly] es a dónde va y [carShown] si la capa sigue en pantalla (también al regresar).
     var carOnly by remember { mutableStateOf(false) }
+    fun backToDashboard() {
+        panel = null
+        carOnly = false
+        musicExpanded = false
+        editing = false
+    }
+
     var carShown by remember { mutableStateOf(false) }
     var carReady by remember { mutableStateOf(false) }
-    var carBounds by remember { mutableStateOf(androidx.compose.ui.geometry.Rect.Zero) }
-    val carProgress = remember { androidx.compose.animation.core.Animatable(0f) }
+    var carBounds by remember { mutableStateOf(Rect.Zero) }
+    val carProgress = remember { Animatable(0f) }
     LaunchedEffect(carOnly) {
-        val easing = androidx.compose.animation.core.FastOutSlowInEasing
         if (carOnly) {
-            carReady = false
             carShown = true
-            // Crece hasta que la imagen grande ya está pintada (en su pieza se ve igual que la
+            // Crece cuando la imagen grande ya está pintada (en su pieza se ve igual que la
             // chica); si tarda, crece de todos modos.
             withTimeoutOrNull(600) { snapshotFlow { carReady }.first { it } }
-            carProgress.animateTo(1f, androidx.compose.animation.core.tween(480, easing = easing))
+            carProgress.animateTo(1f, tween(480, easing = FastOutSlowInEasing))
         } else if (carShown) {
-            carProgress.animateTo(0f, androidx.compose.animation.core.tween(400, easing = easing))
+            carProgress.animateTo(0f, tween(400, easing = FastOutSlowInEasing))
             carShown = false
+            carReady = false
         }
     }
-    var promptsHeight by remember { mutableIntStateOf(0) }
-    // Cuándo se tocó el inicio por última vez: tras un rato quieto, el modo estacionado.
+
+    // Cada toque y cada botón del volante reinician la cuenta del modo estacionado. Se
+    // leen dentro del efecto (no al armar la pantalla): tocar no vuelve a armar el inicio.
     var touched by remember { mutableIntStateOf(0) }
     var parked by remember { mutableStateOf(false) }
-    LaunchedEffect(touched, panel, editing, musicExpanded, carOnly, d.prefs.parkedMode) {
-        parked = false
-        if (!d.prefs.parkedMode || panel != null || editing || musicExpanded || carOnly) return@LaunchedEffect
-        delay(PARK_AFTER_MS)
-        // Manejando no: espera a que el auto se detenga.
-        while (d.trip.moving) delay(30_000)
-        parked = true
+    LaunchedEffect(Unit) {
+        snapshotFlow { listOf(touched, d.wheel.presses, panel, editing, musicExpanded, carOnly, d.prefs.parkedMode) }
+            .collectLatest {
+                parked = false
+                if (!d.prefs.parkedMode || panel != null || editing || musicExpanded || carOnly) return@collectLatest
+                delay(PARK_AFTER_MS)
+                // Manejando no: espera a que se detenga (solo se sabe con la pieza Viaje).
+                snapshotFlow { d.trip.moving }.first { !it }
+                parked = true
+            }
     }
 
     BackHandler(enabled = (panel != null || editing || musicExpanded || carOnly) && d.prefs.welcomeSeen) {
@@ -300,50 +236,49 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
         }
     }
     // Botón de inicio estando ya aquí: de vuelta al tablero tal como lo acomodaste.
+    LaunchedEffect(homePressed) { if (d.prefs.welcomeSeen) backToDashboard() }
     // Clima al volver al inicio (si pasó media hora y está activado); nunca en segundo plano.
     LaunchedEffect(revision) { d.weather.refreshIfStale() }
-    LaunchedEffect(homePressed) {
-        if (d.prefs.welcomeSeen) {
-            panel = null
-            carOnly = false
-            musicExpanded = false
-            editing = false
-        }
+    // Versión nueva: una revisión al abrir (a lo más cada 12 h).
+    LaunchedEffect(Unit) { d.updater.checkQuietly() }
+
+    val actions = remember {
+        TileActions(
+            onPanel = { panel = it },
+            onNavigate = { app -> openNavigation(context, d.apps, app) },
+            onMusic = { musicExpanded = true },
+            onCarOnly = { carOnly = true },
+            onCarBounds = { carBounds = it },
+            carHidden = { carShown && carProgress.value > 0f },
+        )
     }
 
-    val actions = TileActions(
-        onPanel = { panel = it },
-        onNavigate = { app -> openNavigation(context, d.apps, app) },
-        onMusic = { musicExpanded = true },
-        onCarOnly = { carOnly = true },
-        onCarBounds = { carBounds = it },
-        carHidden = { carShown && carProgress.value > 0f },
-    )
-
-    // Mandos al volante: cualquier botón quita el modo estacionado; las acciones que
-    // abren algo (mapa, música, voz, inicio) se hacen aquí.
-    LaunchedEffect(d.wheel.presses) { if (d.wheel.presses > 0) touched++ }
-    LaunchedEffect(d.wheel.request) {
-        when (d.wheel.request?.second) {
-            WheelAction.NAVIGATE -> actions.onNavigate(mapApp(d, apps))
-            WheelAction.MUSIC -> { panel = null; carOnly = false; musicExpanded = true }
-            WheelAction.VOICE -> voiceIntent(context)?.let { runCatching { context.startActivity(it) } }
-            WheelAction.HOME -> { panel = null; carOnly = false; musicExpanded = false; editing = false }
-            else -> Unit
+    // Mandos al volante: las acciones que abren algo (mapa, música, voz, inicio) se hacen
+    // aquí, una sola vez cada una.
+    LaunchedEffect(Unit) {
+        snapshotFlow { d.wheel.request }.filterNotNull().collect { action ->
+            d.wheel.consume()
+            when (action) {
+                WheelAction.NAVIGATE -> actions.onNavigate(mapApp(d, currentApps))
+                WheelAction.MUSIC -> { backToDashboard(); musicExpanded = true }
+                WheelAction.VOICE -> voiceIntent(context)?.let { runCatching { context.startActivity(it) } }
+                WheelAction.HOME -> backToDashboard()
+                else -> Unit
+            }
         }
     }
 
     // Con un auto que trae piso, el fondo baja un poco de tono hacia abajo: es el
     // piso donde se para el auto (como en Tesla), y su sombra y reflejo caen ahí.
-    val hasFloor = d.dashboard.tiles.any { it.type == TileTypes.CAR } &&
-        remember(d.prefs.carModel, d.cars.changes) { d.cars.pkg(d.prefs.carModel) }?.let(::showsFloor) == true
+    val hasFloor = car?.floor?.isNotEmpty() == true && d.dashboard.tiles.any { it.type == TileTypes.CAR }
     val backdrop = if (hasFloor) {
-        Modifier.background(Brush.verticalGradient(0.3f to c.background, 1f to lerp(c.background, Color.Black, if (c.dark) 0.35f else 0.08f)))
-    } else Modifier.background(c.background)
+        Brush.verticalGradient(0.3f to c.background, 1f to lerp(c.background, Color.Black, if (c.dark) 0.35f else 0.08f))
+    } else SolidColor(c.background)
+    var promptsHeight by remember { mutableIntStateOf(0) }
     Box(
         Modifier
             .fillMaxSize()
-            .then(backdrop)
+            .background(backdrop)
             // Cualquier toque reinicia la cuenta del modo estacionado (sin quitarle el toque a nadie).
             .pointerInput(Unit) {
                 awaitEachGesture {
@@ -365,12 +300,14 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                 onTemplates = { panel = Panel.Templates },
                 onFinish = { editing = false },
             )
-            // Los avisos (inicio, recordatorios) tampoco cuentan para la cuadrícula: aparecen y se
-            // van, y no deben hacer que se cargue otro acomodo.
+            // Los avisos tampoco cuentan para la cuadrícula: aparecen y se van, y no deben
+            // hacer que se cargue otro acomodo.
             Column(Modifier.onSizeChanged { promptsHeight = it.height }) {
-                if (d.prefs.welcomeSeen && !d.prefs.dontAskHome && !editing && !isShortScreen()) HomePrompt(d.prefs, revision)
-                if (d.prefs.welcomeSeen && !editing && !isShortScreen()) ReminderBanner(d.reminders)
-                if (d.prefs.welcomeSeen && !editing) UpdateBanner(d.updater, onOpen = { panel = Panel.About })
+                if (d.prefs.welcomeSeen && !editing) {
+                    if (!d.prefs.dontAskHome && !isShortScreen()) HomePrompt(d.prefs, revision)
+                    if (!isShortScreen()) ReminderBanner(d.reminders)
+                    UpdateBanner(d.updater, onOpen = { panel = Panel.About })
+                }
             }
             BoxWithConstraints(Modifier.weight(1f).fillMaxWidth().padding(horizontal = 10.dp)) {
                 // La cuadrícula se calcula siempre como si la barra estuviera: si dependiera
@@ -379,7 +316,8 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                 val prompts = with(LocalDensity.current) { promptsHeight.toDp() }
                 val gridHeight = (if (barHidden) maxHeight - (topBarHeight() - TOP_BAR_HIDDEN) else maxHeight) + prompts
                 val grid = remember(maxWidth, gridHeight) { Grid.forSize(maxWidth.value, gridHeight.value) }
-                remember(grid) { d.dashboard.use(grid) }
+                // Carga el acomodo de esta cuadrícula antes de dibujar (solo hace algo si cambió).
+                d.dashboard.use(grid)
                 if (musicExpanded) {
                     MusicExpanded(d.music, close = { musicExpanded = false }, Modifier.padding(6.dp))
                 } else {
@@ -390,12 +328,12 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                         limits = ::limitsOf,
                         onChange = d.dashboard::change,
                         onEdit = { editing = true },
-                    ) { p -> TileContent(d, p, apps, revision, actions) }
+                    ) { p -> TileContent(d, p, apps, car, revision, actions) }
                 }
             }
             Dock(
                 repo = d.apps,
-                favorites = dockFavorites(d, apps),
+                favorites = remember(apps, d.prefs.dock, d.prefs.musicApp) { dockFavorites(d, apps) },
                 onCar = { panel = Panel.CarSettings },
                 onApps = { panel = Panel.Drawer },
                 onSettings = { panel = Panel.Settings },
@@ -422,7 +360,9 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
             is Panel.PickApp -> PickAppPanel(d, apps, p.tileId, close = { panel = null })
         }
 
-        if (carShown && panel == null) CarOnly(d, carBounds, { carProgress.value }, backdrop, onTap = { carOnly = false; touched++ }, onReady = { carReady = true })
+        if (carShown && panel == null) {
+            CarOnly(d, car, carBounds, { carProgress.value }, backdrop, onTap = { carOnly = false }, onReady = { carReady = true })
+        }
 
         if (parked) Parked(d, onWake = { parked = false; touched++ })
 
@@ -439,12 +379,12 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
 @Composable
 private fun Parked(d: Dependencies, onWake: () -> Unit) {
     val (time, date) = rememberClock()
-    val hello = greeting(d.prefs.driverName, java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY))
+    val hello = greeting(d.prefs.driverName)
     Box(
         Modifier
             .fillMaxSize()
-            .background(androidx.compose.ui.graphics.Color.Black)
-            .clickable(remember { androidx.compose.foundation.interaction.MutableInteractionSource() }, indication = null, onClick = onWake),
+            .background(Color.Black)
+            .clickable(remember { MutableInteractionSource() }, indication = null, onClick = onWake),
         contentAlignment = Alignment.Center,
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -461,7 +401,7 @@ private fun Parked(d: Dependencies, onWake: () -> Unit) {
 private const val PARK_AFTER_MS = 5 * 60_000L
 
 /** Las del usuario, o unas sugeridas con lo que tenga instalado (navegación, música, mensajes). */
-private fun dockFavorites(d: Dependencies, apps: List<App>): List<App> {
+fun dockFavorites(d: Dependencies, apps: List<App>): List<App> {
     d.prefs.dock?.let { keys -> return keys.mapNotNull { d.apps.find(apps, it) } }
     return listOfNotNull(
         // Android Auto / CarPlay primero: mucha gente usa la pantalla con su celular.
@@ -495,10 +435,10 @@ private fun TopBar(editing: Boolean, showTime: Boolean, driverName: String?, wea
             Button(stringResource(R.string.templates), onTemplates)
             Button(stringResource(R.string.add), onAdd)
             Button(stringResource(R.string.done), onFinish, primary = true)
-        } else if (showTime) {
+        } else {
             val (time, date) = rememberClock()
             // Con nombre: el saludo primero y la fecha después, más tenue.
-            val hello = greeting(driverName, java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY))
+            val hello = greeting(driverName)
             Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
                 if (hello != null) Label(hello, Typography.subtitle, maxLines = 1)
                 Label(date, Typography.body, c.textMuted, maxLines = 1)
@@ -559,107 +499,26 @@ private fun Dock(
     }
 }
 
-/** Volumen de la música: botones − / + y el nivel; escucha los cambios solo mientras se ve. */
-@Composable
-private fun Volume(buttonSize: androidx.compose.ui.unit.Dp) {
-    val context = LocalContext.current
-    val audio = remember { context.getSystemService(AudioManager::class.java) }
-    var level by remember { mutableIntStateOf(audio.getStreamVolume(AudioManager.STREAM_MUSIC)) }
-    DisposableEffect(audio) {
-        val receiver = object : BroadcastReceiver() {
-            override fun onReceive(c: Context?, i: Intent?) {
-                level = audio.getStreamVolume(AudioManager.STREAM_MUSIC)
-            }
-        }
-        val filter = IntentFilter("android.media.VOLUME_CHANGED_ACTION")
-        if (Build.VERSION.SDK_INT >= 33) {
-            context.registerReceiver(receiver, filter, Context.RECEIVER_EXPORTED)
-        } else {
-            @Suppress("UnspecifiedRegisterReceiverFlag")
-            context.registerReceiver(receiver, filter)
-        }
-        onDispose { context.unregisterReceiver(receiver) }
-    }
-    fun adjust(direction: Int) {
-        audio.adjustStreamVolume(AudioManager.STREAM_MUSIC, direction, 0)
-        level = audio.getStreamVolume(AudioManager.STREAM_MUSIC)
-    }
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        IconButton(Icons.minus, { adjust(AudioManager.ADJUST_LOWER) }, size = buttonSize)
-        Row(Modifier.widthIn(min = 52.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
-            Label(level.toString(), Typography.subtitle, maxLines = 1)
-        }
-        IconButton(Icons.plus, { adjust(AudioManager.ADJUST_RAISE) }, size = buttonSize)
-        Spacer(Modifier.width(4.dp))
-    }
-}
-
-
 /** Versión nueva encontrada al abrir LiteDash: verla en Ajustes o dejarla para después. */
 @Composable
 private fun UpdateBanner(updater: Updater, onOpen: () -> Unit) {
-    LaunchedEffect(updater) { updater.checkQuietly() }
     val v = updater.notice ?: return
-    val c = LocalColors.current
-    val box = Modifier
-        .fillMaxWidth()
-        .padding(horizontal = 16.dp, vertical = 4.dp)
-        .clip(RoundedCornerShape(18.dp))
-        .background(c.surface)
-        .padding(start = 20.dp, end = 8.dp, top = 8.dp, bottom = 8.dp)
-    val text = @Composable { m: Modifier ->
-        Row(m, verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            Icon(Icons.info, c.accent, 22.dp)
-            Label(stringResource(R.string.new_version, v.name), Typography.body, maxLines = 2)
-        }
-    }
-    val buttons = @Composable {
+    Notice(stringResource(R.string.new_version, v.name), Icons.info) {
         Button(stringResource(R.string.update_see), onOpen, primary = true)
         Button(stringResource(R.string.update_later), updater::dismiss)
-    }
-    // Igual que el aviso de inicio: en angosto el texto va arriba de los botones.
-    if (LocalConfiguration.current.screenWidthDp < 560) {
-        Column(box, verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            text(Modifier)
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) { buttons() }
-        }
-    } else {
-        Row(box, verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            text(Modifier.weight(1f))
-            buttons()
-        }
     }
 }
 
 /** Aviso cuando LiteDash no es la pantalla de inicio: un toque para arreglarlo, o no volver a preguntar. */
 @Composable
 private fun HomePrompt(prefs: Preferences, revision: Int) {
-    val c = LocalColors.current
     val context = LocalContext.current
     val (request, returns) = rememberRequestHome()
     val isHome = remember(revision, returns) { isHomeApp(context) }
     if (isHome) return
-    val box = Modifier
-        .fillMaxWidth()
-        .padding(horizontal = 16.dp, vertical = 4.dp)
-        .clip(RoundedCornerShape(18.dp))
-        .background(c.surface)
-        .padding(start = 20.dp, end = 8.dp, top = 8.dp, bottom = 8.dp)
-    val buttons = @Composable {
+    Notice(stringResource(R.string.not_home_notice)) {
         Button(stringResource(R.string.make_home), request, primary = true)
         Button(stringResource(R.string.dont_ask), { prefs.dontAskHome = true })
-    }
-    // En angosto (teléfono parado) el texto no cabe junto a los botones: va arriba.
-    if (LocalConfiguration.current.screenWidthDp < 560) {
-        Column(box, verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Label(stringResource(R.string.not_home_notice), Typography.body, maxLines = 2)
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) { buttons() }
-        }
-    } else {
-        Row(box, verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            Label(stringResource(R.string.not_home_notice), Typography.body, maxLines = 2, modifier = Modifier.weight(1f))
-            buttons()
-        }
     }
 }
 
@@ -668,73 +527,3 @@ private fun voiceIntent(context: Context): Intent? =
     listOf(Intent.ACTION_VOICE_COMMAND, Intent.ACTION_ASSIST)
         .map { Intent(it).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) }
         .firstOrNull { it.resolveActivity(context.packageManager) != null }
-
-/**
- * Wi-Fi o datos, audio Bluetooth conectado y ubicación encendida, en la barra.
- * Escucha al sistema solo mientras se ve (nada de revisar cada rato) y sin
- * permisos: el Bluetooth se nota por el audio conectado (tu celular, el estéreo).
- */
-@Composable
-private fun StatusIcons() {
-    val c = LocalColors.current
-    val context = LocalContext.current
-    var network by remember { mutableStateOf<Boolean?>(null) } // true Wi-Fi, false datos, null nada
-    var bluetooth by remember { mutableStateOf(false) }
-    var location by remember { mutableStateOf(false) }
-    DisposableEffect(Unit) {
-        val connectivity = context.getSystemService(android.net.ConnectivityManager::class.java)
-        val netCallback = object : android.net.ConnectivityManager.NetworkCallback() {
-            override fun onCapabilitiesChanged(n: android.net.Network, caps: android.net.NetworkCapabilities) {
-                network = when {
-                    caps.hasTransport(android.net.NetworkCapabilities.TRANSPORT_WIFI) -> true
-                    caps.hasTransport(android.net.NetworkCapabilities.TRANSPORT_CELLULAR) -> false
-                    else -> null
-                }
-            }
-            override fun onLost(n: android.net.Network) { network = null }
-        }
-        runCatching { connectivity.registerDefaultNetworkCallback(netCallback) }
-
-        val audio = context.getSystemService(android.media.AudioManager::class.java)
-        fun checkAudio() {
-            bluetooth = audio.getDevices(android.media.AudioManager.GET_DEVICES_OUTPUTS).any {
-                it.type == android.media.AudioDeviceInfo.TYPE_BLUETOOTH_A2DP || it.type == android.media.AudioDeviceInfo.TYPE_BLUETOOTH_SCO
-            }
-        }
-        val audioCallback = object : android.media.AudioDeviceCallback() {
-            override fun onAudioDevicesAdded(added: Array<out android.media.AudioDeviceInfo>) = checkAudio()
-            override fun onAudioDevicesRemoved(removed: Array<out android.media.AudioDeviceInfo>) = checkAudio()
-        }
-        audio.registerAudioDeviceCallback(audioCallback, null)
-        checkAudio()
-
-        val locations = context.getSystemService(android.location.LocationManager::class.java)
-        fun checkLocation() {
-            location = if (Build.VERSION.SDK_INT >= 28) locations.isLocationEnabled
-            else locations.isProviderEnabled(android.location.LocationManager.GPS_PROVIDER)
-        }
-        val locationReceiver = object : BroadcastReceiver() {
-            override fun onReceive(c: Context, i: Intent) = checkLocation()
-        }
-        val locationFilter = IntentFilter(android.location.LocationManager.PROVIDERS_CHANGED_ACTION)
-        // Aviso del sistema: no hace falta exportar el receptor.
-        if (Build.VERSION.SDK_INT >= 33) context.registerReceiver(locationReceiver, locationFilter, Context.RECEIVER_NOT_EXPORTED)
-        else @Suppress("UnspecifiedRegisterReceiverFlag") context.registerReceiver(locationReceiver, locationFilter)
-        checkLocation()
-
-        onDispose {
-            runCatching { connectivity.unregisterNetworkCallback(netCallback) }
-            audio.unregisterAudioDeviceCallback(audioCallback)
-            context.unregisterReceiver(locationReceiver)
-        }
-    }
-    Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
-        if (bluetooth) Icon(Icons.bluetooth, c.textMuted, 20.dp)
-        if (location) Icon(Icons.location, c.textMuted, 20.dp)
-        when (network) {
-            true -> Icon(Icons.wifi, c.textMuted, 20.dp)
-            false -> Icon(Icons.signal, c.textMuted, 20.dp)
-            null -> Unit
-        }
-    }
-}

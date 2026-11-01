@@ -29,7 +29,7 @@ val signing = Properties().apply {
     if (f.exists()) f.inputStream().use { load(it) }
 }
 fun signingValue(key: String, env: String): String? = signing.getProperty(key) ?: System.getenv(env)
-// Catálogo de autos (solo imágenes y datos; ver feature/auto): igual en Play y en GitHub.
+// Catálogo de autos (solo imágenes y datos; ver feature/car): igual en Play y en GitHub.
 // Publicado en el release "catalogo" (prerelease). Para probar uno local en el
 // emulador: ./gradlew ... -Pcatalog=http://10.0.2.2:8765/catalogo.json
 val CATALOG_URL = (findProperty("catalog") as String?)

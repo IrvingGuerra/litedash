@@ -15,7 +15,9 @@ class DashboardStore(context: Context) {
         return text.lineSequence().filter { it.isNotBlank() }.mapNotNull { line ->
             val f = line.split('\t')
             if (f.size < 6) return@mapNotNull null
-            Tile(f[0], LEGACY_TYPES[f[1]] ?: f[1], f[2].toInt(), f[3].toInt(), f[4].toInt(), f[5].toInt(), f.getOrElse(6) { "" })
+            // Una línea dañada (escritura cortada) se salta; no tumba el inicio.
+            val (col, row, width, height) = (2..5).map { f[it].toIntOrNull() ?: return@mapNotNull null }
+            Tile(f[0], LEGACY_TYPES[f[1]] ?: f[1], col, row, width, height, f.getOrElse(6) { "" })
         }.filter { p -> p.col >= 0 && p.row >= 0 }.toList()
     }
 

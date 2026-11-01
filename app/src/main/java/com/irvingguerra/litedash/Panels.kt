@@ -1,23 +1,18 @@
 package com.irvingguerra.litedash
 
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.foundation.Image
+import android.app.Activity
+import android.app.ActivityManager
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
 import android.content.Intent
+import android.os.Build
 import android.provider.Settings
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.core.net.toUri
-import com.irvingguerra.litedash.feature.car.CatalogEntry
-import com.irvingguerra.litedash.feature.car.Smoothness
-import com.irvingguerra.litedash.feature.car.CarSpin
-import com.irvingguerra.litedash.feature.car.CarPackage
-import com.irvingguerra.litedash.feature.car.CarRepository
-import kotlinx.coroutines.launch
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -28,6 +23,7 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -37,51 +33,63 @@ import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.unit.sp
-import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.core.net.toUri
 import com.irvingguerra.litedash.core.ui.Button
-import com.irvingguerra.litedash.core.ui.IconButton
-import com.irvingguerra.litedash.core.ui.Label
-import com.irvingguerra.litedash.core.ui.Icon
-import com.irvingguerra.litedash.core.ui.Icons
-import com.irvingguerra.litedash.core.ui.LocalColors
 import com.irvingguerra.litedash.core.ui.Card
+import com.irvingguerra.litedash.core.ui.Icon
+import com.irvingguerra.litedash.core.ui.IconButton
+import com.irvingguerra.litedash.core.ui.Icons
+import com.irvingguerra.litedash.core.ui.Label
+import com.irvingguerra.litedash.core.ui.LocalColors
 import com.irvingguerra.litedash.core.ui.Typography
-import com.irvingguerra.litedash.feature.updater.Updater
-import com.irvingguerra.litedash.feature.updater.Version
 import com.irvingguerra.litedash.feature.apps.App
 import com.irvingguerra.litedash.feature.apps.AppGrid
 import com.irvingguerra.litedash.feature.apps.normalize
-import com.irvingguerra.litedash.feature.car.CarColors
 import com.irvingguerra.litedash.feature.car.CarDrawing
-import com.irvingguerra.litedash.feature.dashboard.Grid
+import com.irvingguerra.litedash.feature.car.CarPackage
+import com.irvingguerra.litedash.feature.car.CarRepository
+import com.irvingguerra.litedash.feature.car.CarTurntable
+import com.irvingguerra.litedash.feature.car.CatalogEntry
+import com.irvingguerra.litedash.feature.car.Smoothness
 import com.irvingguerra.litedash.feature.dashboard.DashboardState
-import com.irvingguerra.litedash.feature.dashboard.Template
+import com.irvingguerra.litedash.feature.dashboard.Grid
 import com.irvingguerra.litedash.feature.dashboard.ScreenSize
-import com.irvingguerra.litedash.feature.dashboard.suggestedTemplate
-import com.irvingguerra.litedash.feature.dashboard.size
+import com.irvingguerra.litedash.feature.dashboard.Template
 import com.irvingguerra.litedash.feature.dashboard.TileTypes
+import com.irvingguerra.litedash.feature.dashboard.size
+import com.irvingguerra.litedash.feature.dashboard.suggestedTemplate
 import com.irvingguerra.litedash.feature.dashboard.tiles
+import com.irvingguerra.litedash.feature.updater.Updater
+import com.irvingguerra.litedash.feature.updater.Version
+import kotlin.math.round
+import kotlinx.coroutines.launch
 
 /** Panel a pantalla completa sobre el inicio, con título y botón para cerrar. */
 @Composable
@@ -143,7 +151,8 @@ fun DrawerPanel(d: Dependencies, apps: List<App>, close: () -> Unit) {
     var query by remember { mutableStateOf("") }
     var selected by remember { mutableStateOf<App?>(null) }
     var showHidden by remember { mutableStateOf(false) }
-    val dock = d.prefs.dock ?: emptyList()
+    // Sin dock propio se ven las sugeridas: fijar parte de ellas (no de cero).
+    val dock = d.prefs.dock ?: remember(apps) { dockFavorites(d, apps).map { it.key } }
     val hidden = d.prefs.hidden
     val visible = remember(apps, hidden, showHidden) { if (showHidden) apps else apps.filter { it.key !in hidden } }
     PanelScaffold(stringResource(R.string.apps), close) {
@@ -174,8 +183,7 @@ fun DrawerPanel(d: Dependencies, apps: List<App>, close: () -> Unit) {
                     selected = null
                 })
                 Button(stringResource(R.string.add_to_home), {
-                    val spec = TileSpecs.first { it.type == TileTypes.APP }
-                    d.dashboard.add(spec.type, spec.initialSize, spec.limits, app.key)
+                    d.dashboard.addTile(TileTypes.APP, app.key)
                     selected = null
                 })
                 val isHidden = app.key in hidden
@@ -214,8 +222,7 @@ fun PickAppPanel(d: Dependencies, apps: List<App>, tileId: String?, close: () ->
                 if (tileId != null) {
                     dashboard.setData(tileId, app.key)
                 } else {
-                    val spec = TileSpecs.first { it.type == TileTypes.APP }
-                    dashboard.add(spec.type, spec.initialSize, spec.limits, app.key)
+                    dashboard.addTile(TileTypes.APP, app.key)
                 }
                 close()
             },
@@ -232,9 +239,9 @@ private fun CarOptions(prefs: Preferences, cars: CarRepository, pkg: CarPackage?
         Label(stringResource(R.string.name), Typography.label, c.textMuted)
         TextInput(prefs.carName ?: "", { prefs.carName = it.take(24).ifBlank { null } }, pkg?.name ?: stringResource(R.string.my_car), Modifier.fillMaxWidth())
         Label(stringResource(R.string.color), Typography.label, c.textMuted)
-        ColorPicker(prefs.carColor) { prefs.carColor = it }
+        ColorPicker(prefs.carColor, prefs::previewCarColor) { prefs.carColor = it }
         // Mientras no haya catálogo ni autos instalados, solo existe el genérico.
-        if (cars.hasCatalog || cars.installed().isNotEmpty()) {
+        if (cars.hasCatalog || remember(cars.changes) { cars.installed().isNotEmpty() }) {
             Label(stringResource(R.string.model), Typography.label, c.textMuted)
             CarModels(prefs, cars, pkg)
         } else {
@@ -249,9 +256,10 @@ private fun CarSettings(d: Dependencies) {
     val prefs = d.prefs
     val pkg = remember(prefs.carModel, d.cars.changes) { d.cars.pkg(prefs.carModel) }
     SettingsCard(Icons.car) {
-        Box(Modifier.fillMaxWidth().widthIn(max = 520.dp).aspectRatio(2.4f)) {
+        Box(Modifier.fillMaxWidth().widthIn(max = 520.dp).aspectRatio(1.8f)) {
             if (pkg != null) {
-                CarSpin(d.cars, pkg, prefs.carColor, Modifier.fillMaxSize())
+                // Arriba el auto; abajo queda lugar para su sombra y su reflejo en el piso.
+                CarTurntable(d.cars, pkg, prefs.carColor, Modifier.fillMaxWidth().fillMaxHeight(0.72f), prefs.carAngle, { prefs.carAngle = it })
             } else {
                 CarDrawing(prefs.carColor, Modifier.fillMaxWidth().align(Alignment.Center))
             }
@@ -346,7 +354,7 @@ private fun CarModels(prefs: Preferences, cars: CarRepository, current: CarPacka
         // Eliminar lo descargado: pide confirmar con un segundo toque.
         if (current != null) {
             var confirm by remember(current.id) { mutableStateOf(false) }
-            val mb = remember(current, cars.changes) { cars.sizeOnDisk(current) / 1e6f }
+            val mb by produceState(0f, current, cars.changes) { value = cars.sizeOnDisk(current) / 1e6f }
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 8.dp)) {
                 if (!confirm) {
                     Button(stringResource(R.string.delete_car, mb), { confirm = true })
@@ -512,14 +520,14 @@ fun SettingsPanel(
 }
 
 @Composable
-private fun MenuEntry(icon: androidx.compose.ui.graphics.vector.ImageVector, text: String, selected: Boolean, narrow: Boolean, onClick: () -> Unit) {
+private fun MenuEntry(icon: ImageVector, text: String, selected: Boolean, narrow: Boolean, onClick: () -> Unit) {
     val c = LocalColors.current
     Row(
         Modifier
             .fillMaxWidth()
             .height(64.dp)
             .clip(RoundedCornerShape(18.dp))
-            .background(if (selected) c.surfaceHigh else androidx.compose.ui.graphics.Color.Transparent)
+            .background(if (selected) c.surfaceHigh else Color.Transparent)
             .clickable(onClick = onClick)
             .padding(horizontal = 18.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -533,7 +541,7 @@ private fun MenuEntry(icon: androidx.compose.ui.graphics.vector.ImageVector, tex
 /** Tarjeta de Ajustes: título, controles y el ícono de la sección grande y tenue a la derecha. */
 @Composable
 private fun SettingsCard(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    icon: ImageVector,
     title: String? = null,
     help: String? = null,
     content: @Composable ColumnScope.() -> Unit,
@@ -567,7 +575,7 @@ private fun Appearance(prefs: Preferences, revision: Int) {
         BrightnessSettings(prefs, revision)
     }
     SettingsCard(Icons.language, stringResource(R.string.language)) {
-        val activity = context as? android.app.Activity
+        val activity = context as? Activity
         FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             for ((code, text) in listOf("" to R.string.language_system, "es" to R.string.language_es, "en" to R.string.language_en)) {
                 Button(stringResource(text), {
@@ -631,7 +639,7 @@ private fun About(d: Dependencies) {
     }
 }
 
-private fun Float.roundToTenth() = kotlin.math.round(this * 10) / 10f
+private fun Float.roundToTenth() = round(this * 10) / 10f
 
 fun nameOf(p: Template) = when (p) {
     Template.CENTER -> R.string.template_center
@@ -745,7 +753,7 @@ private fun iconOf(type: String) = when (type) {
 }
 
 
-/** Cada módulo: qué hace y si está en tu inicio. Los que vienen después se anuncian, apagados. */
+/** Cada módulo: qué hace y si está en tu inicio. */
 @Composable
 private fun Modules(d: Dependencies, onEdit: () -> Unit) {
     val c = LocalColors.current
@@ -754,7 +762,7 @@ private fun Modules(d: Dependencies, onEdit: () -> Unit) {
     var noRoom by remember { mutableStateOf<String?>(null) }
 
     @Composable
-    fun ModuleItem(type: String, icon: androidx.compose.ui.graphics.vector.ImageVector, name: String, detail: String) {
+    fun ModuleItem(type: String, icon: ImageVector, name: String, detail: String) {
         val onHome = d.dashboard.tiles.any { it.type == type }
         val didNotFit = noRoom == type && !onHome
         ModuleRow(icon, name, if (didNotFit) stringResource(R.string.no_room) else detail, if (didNotFit) c.danger else c.textMuted) {
@@ -762,8 +770,7 @@ private fun Modules(d: Dependencies, onEdit: () -> Unit) {
                 onHome -> Label(stringResource(R.string.on_your_home), Typography.small, c.accent)
                 didNotFit -> Button(stringResource(R.string.arrange), onEdit, primary = true)
                 else -> Button(stringResource(R.string.add), {
-                    val spec = TileSpecs.first { it.type == type }
-                    noRoom = if (d.dashboard.add(spec.type, spec.initialSize, spec.limits)) null else type
+                    noRoom = if (d.dashboard.addTile(type)) null else type
                 })
             }
         }
@@ -779,10 +786,10 @@ private fun Modules(d: Dependencies, onEdit: () -> Unit) {
 
 @Composable
 private fun ModuleRow(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    icon: ImageVector,
     title: String,
     detail: String,
-    detailColor: androidx.compose.ui.graphics.Color = LocalColors.current.textMuted,
+    detailColor: Color = LocalColors.current.textMuted,
     action: @Composable () -> Unit,
 ) {
     val c = LocalColors.current
@@ -802,22 +809,22 @@ private fun ModuleRow(
 }
 
 /** Datos de la pantalla para reportar problemas (marca, modelo, Android, resolución, memoria). */
-private fun copySystemInfo(context: android.content.Context) {
+private fun copySystemInfo(context: Context) {
     val m = context.resources.displayMetrics
-    val memory = android.app.ActivityManager.MemoryInfo().also {
-        context.getSystemService(android.app.ActivityManager::class.java).getMemoryInfo(it)
+    val memory = ActivityManager.MemoryInfo().also {
+        context.getSystemService(ActivityManager::class.java).getMemoryInfo(it)
     }
     val text = buildString {
         appendLine("LiteDash ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE}) · ${BuildConfig.CHANNEL}")
-        appendLine("Equipo: ${android.os.Build.MANUFACTURER} ${android.os.Build.MODEL} (${android.os.Build.DEVICE})")
-        appendLine("Plataforma: ${android.os.Build.HARDWARE} · ${android.os.Build.BOARD}")
-        appendLine("Android ${android.os.Build.VERSION.RELEASE} (API ${android.os.Build.VERSION.SDK_INT})")
+        appendLine("Equipo: ${Build.MANUFACTURER} ${Build.MODEL} (${Build.DEVICE})")
+        appendLine("Plataforma: ${Build.HARDWARE} · ${Build.BOARD}")
+        appendLine("Android ${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT})")
         appendLine("Pantalla: ${m.widthPixels}×${m.heightPixels} px · ${m.densityDpi} dpi")
         appendLine("Memoria: ${memory.totalMem / (1024 * 1024)} MB")
-        append("CPU: ${android.os.Build.SUPPORTED_ABIS.joinToString()}")
+        append("CPU: ${Build.SUPPORTED_ABIS.joinToString()}")
     }
-    context.getSystemService(android.content.ClipboardManager::class.java)
-        .setPrimaryClip(android.content.ClipData.newPlainText("LiteDash", text))
+    context.getSystemService(ClipboardManager::class.java)
+        .setPrimaryClip(ClipData.newPlainText("LiteDash", text))
 }
 
 

@@ -29,7 +29,7 @@ class LiteDashApp : Application() {
             dashboard = DashboardState(DashboardStore(this)),
             cars = CarRepository(this, BuildConfig.CATALOG_URL),
             updater = Updater(this, BuildConfig.UPDATES_URL, BuildConfig.VERSION_CODE.toLong()),
-            weather = WeatherRepository(this),
+            weather = WeatherRepository(this, prefs),
             trip = TripRepository(this),
             reminders = ReminderRepository(this),
             wheel = WheelKeys(this, prefs),

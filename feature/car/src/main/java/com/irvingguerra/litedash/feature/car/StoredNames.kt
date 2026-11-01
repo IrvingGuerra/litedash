@@ -35,11 +35,9 @@ internal object CarJson {
     const val FLOOR = "piso"
 }
 
-/** Imágenes del paquete: vistas y capas que acompañan a cada una. */
-object CarViews {
-    const val SCENE = "escena"
-    const val THREE_QUARTER = "tres_cuartos"
-    internal const val PAINT_MASK_SUFFIX = "-pintura"
-    internal const val SHADOW_SUFFIX = "-sombra"
-    internal const val REFLECTION_SUFFIX = "-reflejo"
+/** Capas que acompañan a cada imagen del paquete (vista o cuadro del giro). */
+internal object CarViews {
+    const val PAINT_MASK_SUFFIX = "-pintura"
+    const val SHADOW_SUFFIX = "-sombra"
+    const val REFLECTION_SUFFIX = "-reflejo"
 }

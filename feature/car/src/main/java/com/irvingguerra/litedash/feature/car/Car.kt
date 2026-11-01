@@ -121,8 +121,9 @@ fun CarDrawing(color: Color, modifier: Modifier = Modifier) {
 }
 
 /**
- * Pieza del tablero: el auto y su nombre. Tocarla abre "Tu auto". [drawing]
- * reemplaza al sedán genérico cuando hay un auto del catálogo instalado.
+ * Pieza del tablero: el auto y su nombre. Tocarla hace [onClick] (en el inicio,
+ * verlo en grande). [drawing] reemplaza al sedán genérico cuando hay un auto del
+ * catálogo instalado.
  */
 @Composable
 fun CarTile(

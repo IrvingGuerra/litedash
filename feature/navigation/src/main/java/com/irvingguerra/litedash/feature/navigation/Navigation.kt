@@ -58,12 +58,17 @@ class NavigationRepository(private val context: Context, private val packages: S
         val title = e.getCharSequence(Notification.EXTRA_TITLE)?.toString().orEmpty()
         val text = (e.getCharSequence(Notification.EXTRA_BIG_TEXT) ?: e.getCharSequence(Notification.EXTRA_TEXT))?.toString().orEmpty()
         if (title.isBlank() && text.isBlank()) return
+        val detail = e.getCharSequence(Notification.EXTRA_SUB_TEXT)?.toString().orEmpty()
+        // Waze y Maps repiten el aviso a cada rato con lo mismo: si no cambió, ni se carga
+        // la flecha (es un bitmap) ni se avisa a la pantalla.
+        val current = instruction
+        if (current != null && current.key == notification.key && current.title == title && current.text == text && current.detail == detail) return
         instruction = TurnInstruction(
             key = notification.key,
             pkg = notification.packageName,
             title = title,
             text = text,
-            detail = e.getCharSequence(Notification.EXTRA_SUB_TEXT)?.toString().orEmpty(),
+            detail = detail,
             arrow = arrow(n),
         )
     }

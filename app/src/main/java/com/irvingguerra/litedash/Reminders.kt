@@ -4,21 +4,15 @@ import android.app.DatePickerDialog
 import android.content.Context
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.background
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
@@ -31,12 +25,13 @@ import com.irvingguerra.litedash.core.ui.Icons
 import com.irvingguerra.litedash.core.ui.Label
 import com.irvingguerra.litedash.core.ui.LocalColors
 import com.irvingguerra.litedash.core.ui.Typography
-import org.json.JSONArray
-import org.json.JSONObject
 import java.text.DateFormat
 import java.time.LocalDate
 import java.time.ZoneId
+import java.time.temporal.ChronoUnit
 import java.util.Date
+import org.json.JSONArray
+import org.json.JSONObject
 
 /** Trámites y cuidados del auto; [months] es cada cuánto se repite al marcarlo como hecho (0 = no se repite). */
 enum class ReminderType(val stored: String, val title: Int, val months: Long) {
@@ -65,7 +60,9 @@ class ReminderRepository(context: Context) {
     fun remove(r: Reminder) = save(all - r)
 
     /** Hecho: si se repite, pasa a la siguiente fecha; si no, se quita. */
-    fun done(r: Reminder) = save(all.map { if (it == r && r.type.months > 0) r.copy(date = r.date.plusMonths(r.type.months)) else it }.filter { it != r || r.type.months > 0 })
+    fun done(r: Reminder) = save(
+        if (r.type.months > 0) all.map { if (it == r) r.copy(date = r.date.plusMonths(r.type.months)) else it } else all - r,
+    )
 
     private fun save(list: List<Reminder>) {
         all = list.sortedBy { it.date }
@@ -99,7 +96,7 @@ private fun formatDate(date: LocalDate): String {
 /** "en 3 días", "hoy", "venció hace 2 días". */
 @Composable
 private fun whenText(date: LocalDate): String {
-    val days = LocalDate.now().until(date).let { java.time.temporal.ChronoUnit.DAYS.between(LocalDate.now(), date).toInt() }
+    val days = ChronoUnit.DAYS.between(LocalDate.now(), date).toInt()
     return when {
         days == 0 -> stringResource(R.string.reminder_today)
         days > 0 -> pluralStringResource(R.plurals.reminder_in_days, days, days)
@@ -111,30 +108,16 @@ private fun whenText(date: LocalDate): String {
 @Composable
 fun ReminderBanner(repo: ReminderRepository) {
     val r = repo.due().firstOrNull() ?: return
-    val c = LocalColors.current
-    Row(
-        Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 4.dp)
-            .clip(RoundedCornerShape(18.dp))
-            .background(c.surface)
-            .padding(start = 20.dp, end = 8.dp, top = 8.dp, bottom = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        Icon(Icons.bell, c.accent, 22.dp)
-        Label("${stringResource(r.type.title)} · ${whenText(r.date)}", Typography.body, maxLines = 1, modifier = Modifier.weight(1f))
+    Notice("${stringResource(r.type.title)} · ${whenText(r.date)}", Icons.bell) {
         Button(stringResource(R.string.reminder_done), { repo.done(r) }, primary = true)
     }
 }
 
 /** Ajustes → Tu auto: la lista y cómo agregar uno (tipo y fecha). */
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun ReminderSettings(repo: ReminderRepository) {
     val c = LocalColors.current
     val context = LocalContext.current
-    var type by remember { mutableStateOf<ReminderType?>(null) }
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         for (r in repo.all) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -149,11 +132,10 @@ fun ReminderSettings(repo: ReminderRepository) {
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             for (t in ReminderType.entries) {
                 Button(stringResource(t.title), {
-                    type = t
                     // Selector de fecha del sistema (no agrega librerías).
                     val today = LocalDate.now()
-                    DatePickerDialog(context, { _, y, m, d -> repo.add(t, LocalDate.of(y, m + 1, d)); type = null }, today.year, today.monthValue - 1, today.dayOfMonth).show()
-                }, primary = type == t)
+                    DatePickerDialog(context, { _, y, m, d -> repo.add(t, LocalDate.of(y, m + 1, d)) }, today.year, today.monthValue - 1, today.dayOfMonth).show()
+                })
             }
         }
     }

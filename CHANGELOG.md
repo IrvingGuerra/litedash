@@ -22,8 +22,24 @@ Todos los cambios que nota quien usa LiteDash. Formato
   lo regresa. Su nombre, color y modelo ahora están en Ajustes → Tu auto
   (también con el botón del auto en el dock).
 
+- **El piso real en cada ángulo**: al girar el auto (en el inicio y en Ajustes →
+  Tu auto) cada vuelta trae su sombra y su reflejo hechos en el estudio, igual
+  que la vista de siempre. Cada auto se baja con su piso (el Lancer: 1.32 MB).
+
+### Mejorado
+- Código limpio de punta a punta (auditoría): menos trabajo al tocar el inicio,
+  nada escuchando con otra app al frente, el giro precarga cada vuelta con su
+  piso y no repite imágenes en memoria, y el color se guarda al soltar el dedo.
+- El clima ya no se enciende solo al activar Viaje: solo si lo activas.
+
 ### Arreglado
 - Arrastrar sobre una pieza ya no abre "Acomoda tu inicio" por error.
+- El brillo "en todas las apps" regresa tu brillo original (también el
+  automático) al apagarlo.
+- Un botón del volante ya no repite su acción al cambiar de idioma.
+- Fijar una app en el dock ya no borra las sugeridas.
+- Viaje: el tiempo avanza aunque no haya señal y cuenta desde que arrancas.
+- Un acomodo dañado ya no impide abrir el inicio.
 
 ## [1.4.2] - 2026-10-31
 

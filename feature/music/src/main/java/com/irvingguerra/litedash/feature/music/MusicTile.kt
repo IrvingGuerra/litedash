@@ -17,11 +17,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -37,7 +34,6 @@ import com.irvingguerra.litedash.core.ui.Icons
 import com.irvingguerra.litedash.core.ui.LocalColors
 import com.irvingguerra.litedash.core.ui.Card
 import com.irvingguerra.litedash.core.ui.Typography
-import kotlinx.coroutines.delay
 
 /**
  * Tarjeta de música. Se acomoda a su tamaño: chica es una fila con controles;
@@ -136,14 +132,7 @@ private fun Controls(repo: MusicRepository, playing: Boolean, modifier: Modifier
 @Composable
 private fun Progress(song: Song) {
     val c = LocalColors.current
-    var pos by remember { mutableLongStateOf(song.currentPosition()) }
-    LaunchedEffect(song) {
-        pos = song.currentPosition()
-        while (song.playing) {
-            delay(1000)
-            pos = song.currentPosition()
-        }
-    }
+    val pos by rememberPosition(song)
     val fraction = (pos.toFloat() / song.durationMs).coerceIn(0f, 1f)
     Box(Modifier.fillMaxWidth().height(4.dp).clip(RoundedCornerShape(2.dp)).background(c.line)) {
         Box(Modifier.fillMaxHeight().fillMaxWidth(fraction).clip(RoundedCornerShape(2.dp)).background(c.text))

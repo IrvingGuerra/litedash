@@ -9,7 +9,6 @@ import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -18,6 +17,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -33,9 +33,9 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.pointer.PointerInputChange
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.irvingguerra.litedash.core.ui.LocalColors
 import com.irvingguerra.litedash.feature.car.CarColors
@@ -45,11 +45,11 @@ private val RAINBOW = listOf(Color.Red, Color.Yellow, Color.Green, Color.Cyan, C
 
 /**
  * Los colores rápidos y uno libre: el círculo de arcoíris abre un selector de
- * tono (barra) y de intensidad y brillo (cuadro). El auto cambia en vivo.
+ * tono (barra) y de intensidad y brillo (cuadro). Mientras se arrastra, el auto
+ * cambia en vivo con [onPreview]; al soltar (o al tocar un color) llega [onChange].
  */
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun ColorPicker(color: Color, onChange: (Color) -> Unit) {
+fun ColorPicker(color: Color, onPreview: (Color) -> Unit, onChange: (Color) -> Unit) {
     val custom = CarColors.none { it.toArgb() == color.toArgb() }
     var open by remember { mutableStateOf(custom) }
     Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
@@ -62,7 +62,7 @@ fun ColorPicker(color: Color, onChange: (Color) -> Unit) {
                 open = !open
             }
         }
-        if (open) ColorPlane(color, onChange)
+        if (open) ColorPlane(color, onPreview, onChange)
     }
 }
 
@@ -83,14 +83,18 @@ private fun Swatch(selected: Boolean, fill: Brush, modifier: Modifier = Modifier
 
 /** Cuadro de intensidad (→) y brillo (↑) para el tono elegido, y la barra de tonos. */
 @Composable
-private fun ColorPlane(color: Color, onChange: (Color) -> Unit) {
+private fun ColorPlane(color: Color, onPreview: (Color) -> Unit, onChange: (Color) -> Unit) {
     val c = LocalColors.current
-    // El tono se guarda aparte: en grises o negro el color ya no lo recuerda.
     val hsv = remember(color) { FloatArray(3).also { android.graphics.Color.colorToHSV(color.toArgb(), it) } }
+    // El tono se guarda aparte: en grises o negro el color ya no lo recuerda.
     var hue by remember { mutableFloatStateOf(hsv[0]) }
-    if (hsv[1] > 0.02f && hsv[2] > 0.02f) hue = hsv[0]
+    LaunchedEffect(hsv) { if (hsv[1] > 0.02f && hsv[2] > 0.02f) hue = hsv[0] }
     val current by rememberUpdatedState(hsv)
+    val preview by rememberUpdatedState(onPreview)
     val change by rememberUpdatedState(onChange)
+    // El último color del arrastre: es el que se guarda al soltar.
+    var dragged by remember { mutableStateOf<Color?>(null) }
+    val drop = { dragged?.let(change); dragged = null }
     val shape = RoundedCornerShape(14.dp)
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Canvas(
@@ -99,10 +103,10 @@ private fun ColorPlane(color: Color, onChange: (Color) -> Unit) {
                 .height(140.dp)
                 .clip(shape)
                 .border(1.dp, c.line, shape)
-                .dragInput { p, width, height ->
+                .dragInput(drop) { p, width, height ->
                     val s = (p.x / width).coerceIn(0f, 1f)
                     val v = 1f - (p.y / height).coerceIn(0f, 1f)
-                    change(Color.hsv(hue, s, v))
+                    dragged = Color.hsv(hue, s, v).also(preview)
                 },
         ) {
             drawRect(Brush.horizontalGradient(listOf(Color.White, Color.hsv(hue, 1f, 1f))))
@@ -116,12 +120,12 @@ private fun ColorPlane(color: Color, onChange: (Color) -> Unit) {
                 .fillMaxWidth()
                 .height(32.dp)
                 .clip(CircleShape)
-                .dragInput { p, width, _ ->
+                .dragInput(drop) { p, width, _ ->
                     hue = (p.x / width).coerceIn(0f, 1f) * 360f
                     // Si estaba en gris, al elegir tono se le da color.
                     val s = current[1].coerceAtLeast(0.6f)
                     val v = current[2].coerceAtLeast(0.35f)
-                    change(Color.hsv(hue.coerceAtMost(359.9f), s, v))
+                    dragged = Color.hsv(hue.coerceAtMost(359.9f), s, v).also(preview)
                 },
         ) {
             drawRect(Brush.horizontalGradient(RAINBOW))
@@ -131,8 +135,8 @@ private fun ColorPlane(color: Color, onChange: (Color) -> Unit) {
     }
 }
 
-/** Tocar o arrastrar dentro: avisa la posición del dedo y el tamaño del área. */
-private fun Modifier.dragInput(onMove: (Offset, Float, Float) -> Unit) = pointerInput(Unit) {
+/** Tocar o arrastrar dentro: avisa la posición del dedo y el tamaño del área, y [onEnd] al soltar. */
+private fun Modifier.dragInput(onEnd: () -> Unit, onMove: (Offset, Float, Float) -> Unit) = pointerInput(Unit) {
     awaitEachGesture {
         val down = awaitFirstDown()
         down.consume()
@@ -144,5 +148,6 @@ private fun Modifier.dragInput(onMove: (Offset, Float, Float) -> Unit) = pointer
             finger.consume()
             onMove(finger.position, size.width.toFloat(), size.height.toFloat())
         }
+        onEnd()
     }
 }

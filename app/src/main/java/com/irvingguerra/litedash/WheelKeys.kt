@@ -5,7 +5,6 @@ import android.media.AudioManager
 import android.view.KeyEvent
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -45,9 +44,6 @@ enum class WheelAction(val stored: String, val title: Int) {
     HOME("inicio", R.string.wheel_home),
     NOTHING("nada", R.string.wheel_nothing);
 
-    /** Las que necesitan la pantalla de inicio (abrir algo); las demás se hacen al momento. */
-    val needsHome get() = this == NAVIGATE || this == MUSIC || this == VOICE || this == HOME
-
     companion object {
         fun fromStored(value: String?) = entries.firstOrNull { it.stored == value }
     }
@@ -67,11 +63,14 @@ class WheelKeys(private val context: Context, private val prefs: Preferences) {
     var presses by mutableIntStateOf(0)
         private set
 
-    /** La acción que el inicio debe hacer (abrir el mapa, la música…), con su número de vez. */
-    var request by mutableStateOf<Pair<Int, WheelAction>?>(null)
+    /** La acción que el inicio debe hacer (abrir el mapa, la música…); el inicio la [consume]. */
+    var request by mutableStateOf<WheelAction?>(null)
         private set
 
-    private var sequence = 0
+    /** Ya hecha: así no se repite si la pantalla se vuelve a crear (al cambiar de idioma). */
+    fun consume() {
+        request = null
+    }
 
     /** true si LiteDash se quedó con la tecla (no se le pasa a Android). */
     fun onKey(event: KeyEvent, music: MusicRepository): Boolean {
@@ -107,7 +106,7 @@ class WheelKeys(private val context: Context, private val prefs: Preferences) {
             WheelAction.VOLUME_DOWN -> adjust(AudioManager.ADJUST_LOWER)
             WheelAction.MUTE -> adjust(AudioManager.ADJUST_TOGGLE_MUTE)
             WheelAction.NORMAL, WheelAction.NOTHING -> Unit
-            else -> request = ++sequence to action
+            else -> request = action
         }
     }
 
@@ -146,7 +145,6 @@ private fun keyName(code: Int): String =
         ?: KeyEvent.keyCodeToString(code).removePrefix("KEYCODE_").replace('_', ' ').lowercase().replaceFirstChar { it.uppercase() }
 
 /** Ajustes → Mandos al volante: aprender un botón y elegir qué hace. */
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun WheelSettings(keys: WheelKeys, prefs: Preferences) {
     val c = LocalColors.current

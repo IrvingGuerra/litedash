@@ -1,13 +1,16 @@
 package com.irvingguerra.litedash
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.PackageManager
 import android.location.LocationManager
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
+import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import kotlinx.coroutines.delay
 import java.util.Calendar
 import java.util.TimeZone
@@ -41,7 +44,7 @@ object Daylight {
         return sunrise to sunset
     }
 
-    @android.annotation.SuppressLint("MissingPermission") // se revisa el permiso justo antes
+    @SuppressLint("MissingPermission") // se revisa el permiso justo antes
     fun place(context: Context): Pair<Double, Double> {
         val granted = context.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
         if (granted) {
@@ -73,7 +76,9 @@ object Daylight {
 @Composable
 fun rememberIsNight(): Boolean {
     val context = LocalContext.current
-    val night by produceState(Daylight.state(context).first) {
+    // El valor inicial se calcula una vez (lee la última ubicación), no en cada recomposición.
+    val initial = remember { Daylight.state(context).first }
+    val night by produceState(initial) {
         while (true) {
             val (now, wait) = Daylight.state(context)
             value = now
@@ -83,14 +88,14 @@ fun rememberIsNight(): Boolean {
     return night
 }
 
-/** "Buenos días/tardes/noches, [nombre]" según la hora; null sin nombre. */
+/** "Buenos días/tardes/noches, [name]" según la hora; null sin nombre. */
 @Composable
-fun greeting(name: String?, hour: Int): String? {
+fun greeting(name: String?): String? {
     if (name.isNullOrBlank()) return null
-    val id = when (hour) {
+    val id = when (Calendar.getInstance().get(Calendar.HOUR_OF_DAY)) {
         in 5..11 -> R.string.greeting_morning
         in 12..18 -> R.string.greeting_afternoon
         else -> R.string.greeting_evening
     }
-    return androidx.compose.ui.res.stringResource(id, name)
+    return stringResource(id, name)
 }

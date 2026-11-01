@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -27,8 +28,9 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import com.irvingguerra.litedash.core.ui.IconButton
 import com.irvingguerra.litedash.core.ui.Icon
@@ -39,8 +41,8 @@ import kotlin.math.roundToInt
 
 private val GAP = 6.dp
 
-/** Arrastre en curso: mover la pieza o cambiarle el tamaño. */
-private data class Drag(val id: String, val resizing: Boolean, val dx: Float = 0f, val dy: Float = 0f)
+/** Arrastre en curso: mover la pieza o cambiarle el tamaño (cuánto, va aparte en un estado propio). */
+private data class Drag(val id: String, val resizing: Boolean)
 
 /**
  * El tablero del inicio. Fuera del modo edición solo pinta las piezas (nada se
@@ -67,6 +69,9 @@ fun Dashboard(
         val cwPx = with(density) { cellWidth.toPx() }
         val chPx = with(density) { cellHeight.toPx() }
         var drag by remember { mutableStateOf<Drag?>(null) }
+        // Cuánto se ha movido el dedo: se lee al acomodar o dibujar la pieza, no al
+        // componer, así arrastrar no vuelve a armar todo el tablero en cada evento.
+        var dragOffset by remember { mutableStateOf(Offset.Zero) }
 
         // Fondo: dejar presionado entra al modo edición; editando, se ven las celdas.
         Box(
@@ -85,14 +90,16 @@ fun Dashboard(
                 ),
         )
 
-        // Vista previa de dónde caerá la pieza que se está arrastrando.
-        val preview = drag?.let { a -> tiles.firstOrNull { it.id == a.id }?.let { target(it, a, cwPx, chPx, limits) } }
-        if (preview != null) {
-            val ok = tiles.fits(preview, grid)
+        // Vista previa de dónde caerá la pieza que se está arrastrando: cambia solo al pasar a otra celda.
+        val preview by remember(tiles, cwPx, chPx) {
+            derivedStateOf { drag?.let { a -> tiles.firstOrNull { it.id == a.id }?.let { target(it, a, dragOffset, cwPx, chPx, limits) } } }
+        }
+        preview?.let { shown ->
+            val ok = tiles.fits(shown, grid)
             Box(
                 Modifier
-                    .offset(cellWidth * preview.col, cellHeight * preview.row)
-                    .size(cellWidth * preview.width, cellHeight * preview.height)
+                    .offset(cellWidth * shown.col, cellHeight * shown.row)
+                    .size(cellWidth * shown.width, cellHeight * shown.height)
                     .padding(GAP)
                     .clip(RoundedCornerShape(20.dp))
                     .background((if (ok) c.accent else c.danger).copy(alpha = 0.18f))
@@ -104,25 +111,27 @@ fun Dashboard(
         // quedar debajo de las demás.
         for (p in tiles.sortedBy { if (it.type == TileTypes.CAR) 0 else 1 }) {
             val a = drag?.takeIf { it.id == p.id }
-            val widthDp: Dp
-            val heightDp: Dp
-            if (a != null && a.resizing) {
-                // Mientras cambia de tamaño, la pieza sigue al dedo (acotada a su mínimo).
-                val m = limits(p.type)
-                widthDp = with(density) { (p.width * cwPx + a.dx).coerceAtLeast(m.minWidth * cwPx).toDp() }
-                heightDp = with(density) { (p.height * chPx + a.dy).coerceAtLeast(m.minHeight * chPx).toDp() }
-            } else {
-                widthDp = cellWidth * p.width
-                heightDp = cellHeight * p.height
-            }
             Box(
                 Modifier
                     .offset(cellWidth * p.col, cellHeight * p.row)
-                    .size(widthDp, heightDp)
+                    .then(
+                        if (a?.resizing == true) {
+                            // Mientras cambia de tamaño, la pieza sigue al dedo (acotada a su mínimo).
+                            Modifier.layout { measurable, _ ->
+                                val m = limits(p.type)
+                                val w = (p.width * cwPx + dragOffset.x).coerceAtLeast(m.minWidth * cwPx).roundToInt()
+                                val h = (p.height * chPx + dragOffset.y).coerceAtLeast(m.minHeight * chPx).roundToInt()
+                                val placeable = measurable.measure(Constraints.fixed(w, h))
+                                layout(w, h) { placeable.place(0, 0) }
+                            }
+                        } else {
+                            Modifier.size(cellWidth * p.width, cellHeight * p.height)
+                        },
+                    )
                     .graphicsLayer {
                         if (a != null && !a.resizing) {
-                            translationX = a.dx
-                            translationY = a.dy
+                            translationX = dragOffset.x
+                            translationY = dragOffset.y
                         }
                     }
                     .padding(GAP),
@@ -140,15 +149,15 @@ fun Dashboard(
                             .fillMaxSize()
                             .clip(RoundedCornerShape(20.dp))
                             .border(2.dp, c.accent.copy(alpha = 0.7f), RoundedCornerShape(20.dp))
-                            .pointerInput(p.id, tiles, grid) {
+                            .pointerInput(p.id, tiles, grid, cwPx, chPx) {
                                 detectDragGestures(
-                                    onDragStart = { drag = Drag(p.id, resizing = false) },
+                                    onDragStart = { drag = Drag(p.id, resizing = false); dragOffset = Offset.Zero },
                                     onDrag = { change, d ->
                                         change.consume()
-                                        drag = drag?.let { it.copy(dx = it.dx + d.x, dy = it.dy + d.y) }
+                                        dragOffset += d
                                     },
                                     onDragEnd = {
-                                        drag?.let { end -> drop(p, end, cwPx, chPx, limits, tiles, grid, onChange) }
+                                        drag?.let { end -> drop(p, end, dragOffset, cwPx, chPx, limits, tiles, grid, onChange) }
                                         drag = null
                                     },
                                     onDragCancel = { drag = null },
@@ -166,15 +175,15 @@ fun Dashboard(
                         Modifier
                             .align(Alignment.BottomEnd)
                             .padding(6.dp)
-                            .pointerInput(p.id, tiles, grid) {
+                            .pointerInput(p.id, tiles, grid, cwPx, chPx) {
                                 detectDragGestures(
-                                    onDragStart = { drag = Drag(p.id, resizing = true) },
+                                    onDragStart = { drag = Drag(p.id, resizing = true); dragOffset = Offset.Zero },
                                     onDrag = { change, d ->
                                         change.consume()
-                                        drag = drag?.let { it.copy(dx = it.dx + d.x, dy = it.dy + d.y) }
+                                        dragOffset += d
                                     },
                                     onDragEnd = {
-                                        drag?.let { end -> drop(p, end, cwPx, chPx, limits, tiles, grid, onChange) }
+                                        drag?.let { end -> drop(p, end, dragOffset, cwPx, chPx, limits, tiles, grid, onChange) }
                                         drag = null
                                     },
                                     onDragCancel = { drag = null },
@@ -192,20 +201,21 @@ fun Dashboard(
     }
 }
 
-private fun target(p: Tile, a: Drag, cwPx: Float, chPx: Float, limits: (String) -> SizeLimits): Tile =
+private fun target(p: Tile, a: Drag, d: Offset, cwPx: Float, chPx: Float, limits: (String) -> SizeLimits): Tile =
     if (a.resizing) {
         val (width, height) = limits(p.type).clamp(
-            ((p.width * cwPx + a.dx) / cwPx).roundToInt(),
-            ((p.height * chPx + a.dy) / chPx).roundToInt(),
+            ((p.width * cwPx + d.x) / cwPx).roundToInt(),
+            ((p.height * chPx + d.y) / chPx).roundToInt(),
         )
         p.copy(width = width, height = height)
     } else {
-        p.copy(col = p.col + (a.dx / cwPx).roundToInt(), row = p.row + (a.dy / chPx).roundToInt())
+        p.copy(col = p.col + (d.x / cwPx).roundToInt(), row = p.row + (d.y / chPx).roundToInt())
     }
 
 private fun drop(
     p: Tile,
     a: Drag,
+    d: Offset,
     cwPx: Float,
     chPx: Float,
     limits: (String) -> SizeLimits,
@@ -213,7 +223,7 @@ private fun drop(
     c: Grid,
     onChange: (List<Tile>) -> Unit,
 ) {
-    val moved = target(p, a, cwPx, chPx, limits)
+    val moved = target(p, a, d, cwPx, chPx, limits)
     if (moved != p && tiles.fits(moved, c)) onChange(tiles.replace(moved))
 }
 
@@ -227,7 +237,7 @@ private fun Modifier.longPress(onLongPress: () -> Unit) = pointerInput(Unit) {
     awaitEachGesture {
         val down = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
         // Termina antes del tiempo si se suelta, si se arrastra o si entra otro dedo:
-        // así una pieza puede usar el arrastre (el auto se mueve, no entra a edición).
+        // así una pieza puede usar el arrastre (el auto gira con el dedo sin entrar a edición).
         val ended = withTimeoutOrNull(timeout) {
             while (true) {
                 val ev = awaitPointerEvent(PointerEventPass.Initial)

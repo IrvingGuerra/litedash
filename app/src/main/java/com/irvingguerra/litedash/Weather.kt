@@ -7,6 +7,7 @@ import android.content.pm.PackageManager
 import android.location.Location
 import android.location.LocationManager
 import android.os.Build
+import android.os.CancellationSignal
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -15,6 +16,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
+import org.json.JSONArray
 import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
@@ -30,7 +32,7 @@ data class WeatherDay(val date: String, val code: Int, val max: Int, val min: In
  * °F, mph y millas solo donde se usan (Estados Unidos y pocos más). Con la app en
  * español siempre métrico, aunque el sistema esté en inglés de EE. UU.
  */
-fun imperialUnits(context: Context) = Language.read(context) != "es" &&
+fun imperialUnits(language: String) = language != "es" &&
     Locale.getDefault().country in setOf("US", "LR", "MM")
 
 /** Qué cielo es cada código WMO, para el ícono y el texto. */
@@ -52,19 +54,29 @@ fun skyOf(code: Int) = when (code) {
  * aproximada. Nada corre en segundo plano: se pide al volver al inicio si el
  * último tiene más de [STALE_MS], y se guarda para verlo al instante (y sin red).
  */
-class WeatherRepository(private val context: Context) {
+class WeatherRepository(private val context: Context, private val prefs: Preferences) {
     private val store = context.getSharedPreferences(STORE, Context.MODE_PRIVATE)
 
     var weather by mutableStateOf(read())
         private set
 
-    /** En °F solo donde se usan (Estados Unidos y pocos más). */
-    val fahrenheit get() = imperialUnits(context)
+    // Solo si el usuario lo activó: el permiso de ubicación también llega al activar
+    // Viaje, y eso no debe encender el clima. Quien ya tenía clima guardado lo conserva.
+    private var enabled by mutableStateOf(store.getBoolean(KEY_ON, store.contains(KEY)))
 
-    fun hasPermission() = context.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
+    /** En °F solo donde se usan (Estados Unidos y pocos más). */
+    val fahrenheit get() = imperialUnits(prefs.language)
+
+    /** Activado y con permiso de ubicación aproximada. */
+    val active get() = enabled && context.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
+
+    fun enable() {
+        enabled = true
+        store.edit { putBoolean(KEY_ON, true) }
+    }
 
     suspend fun refreshIfStale(force: Boolean = false) {
-        if (!hasPermission()) return
+        if (!active) return
         val last = weather
         if (!force && last != null && last.fahrenheit == fahrenheit && System.currentTimeMillis() - last.fetchedAt < STALE_MS) return
         val place = location() ?: return
@@ -73,18 +85,20 @@ class WeatherRepository(private val context: Context) {
         store.edit { putString(KEY, fresh.toJson().toString()) }
     }
 
-    @SuppressLint("MissingPermission") // hasPermission() se revisa antes
+    @SuppressLint("MissingPermission") // [active] revisa el permiso antes
     private suspend fun location(): Location? = withContext(Dispatchers.Main) {
         val manager = context.getSystemService(LocationManager::class.java)
         val last = manager.getProviders(true)
             .mapNotNull { runCatching { manager.getLastKnownLocation(it) }.getOrNull() }
             .maxByOrNull { it.time }
         if (last != null || Build.VERSION.SDK_INT < 30) return@withContext last
-        val provider = listOf(LocationManager.NETWORK_PROVIDER, LocationManager.FUSED_PROVIDER, LocationManager.GPS_PROVIDER)
+        // "fused" existe desde Android 12.
+        val fused = if (Build.VERSION.SDK_INT >= 31) listOf(LocationManager.FUSED_PROVIDER) else emptyList()
+        val provider = (listOf(LocationManager.NETWORK_PROVIDER) + fused + LocationManager.GPS_PROVIDER)
             .firstOrNull { manager.isProviderEnabled(it) } ?: return@withContext null
         withTimeoutOrNull(15_000) {
             suspendCancellableCoroutine { cont ->
-                val cancel = android.os.CancellationSignal()
+                val cancel = CancellationSignal()
                 cont.invokeOnCancellation { cancel.cancel() }
                 manager.getCurrentLocation(provider, cancel, context.mainExecutor) { cont.resume(it) }
             }
@@ -140,11 +154,12 @@ class WeatherRepository(private val context: Context) {
 
     private fun Weather.toJson() = JSONObject()
         .put("t", temperature).put("c", code).put("d", day).put("at", fetchedAt).put("f", fahrenheit)
-        .put("days", org.json.JSONArray(days.map { JSONObject().put("date", it.date).put("c", it.code).put("max", it.max).put("min", it.min) }))
+        .put("days", JSONArray(days.map { JSONObject().put("date", it.date).put("c", it.code).put("max", it.max).put("min", it.min) }))
 
     private companion object {
         const val STORE = "clima"
         const val KEY = "ultimo"
+        const val KEY_ON = "activado"
         const val STALE_MS = 30 * 60_000L
     }
 }

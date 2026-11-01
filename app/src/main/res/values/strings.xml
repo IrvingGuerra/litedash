@@ -27,7 +27,6 @@
     <string name="add_tile">Agregar al inicio</string>
     <string name="no_room">Ya no hay lugar: quita o achica alguna pieza.</string>
     <string name="done">Listo</string>
-    <string name="settings">Ajustes</string>
     <string name="theme">Tema</string>
     <string name="theme_dark">Oscuro</string>
     <string name="theme_light">Claro</string>
@@ -43,7 +42,6 @@
     <string name="download_mb">Bajar · %.1f MB</string>
     <string name="catalog_error">No se pudo bajar. Revisa tu conexión e inténtalo otra vez.</string>
     <string name="model_credit">Modelo 3D: %1$s · %2$s</string>
-    <string name="spin_your_car">Desliza para girarlo</string>
     <string name="show_hidden">Ver ocultas (%d)</string>
     <string name="hide_hidden">Esconder ocultas (%d)</string>
     <string name="pin_to_dock">Fijar en el dock</string>
@@ -133,7 +131,7 @@
     <string name="places_help">Aparecen en Navegar: un toque y el mapa te lleva.</string>
     <string name="place_hint">Calle, número, colonia y ciudad</string>
     <string name="tile_weather">Clima</string>
-    <string name="weather_enable">Toca para activarlo</string>
+    <string name="tap_to_enable">Toca para activarlo</string>
     <string name="weather_loading">Buscando el clima…</string>
     <string name="weather_module">Hoy y los próximos días · pide tu ubicación aproximada al activarlo</string>
     <string name="weather_clear">Despejado</string>

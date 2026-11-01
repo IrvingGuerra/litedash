@@ -26,12 +26,10 @@ import java.security.MessageDigest
 data class Version(
     val name: String,
     val code: Long,
-    val prerelease: Boolean,
     val notes: String,
     val apk: String,
     val checksums: String?,
     val bytes: Long,
-    val page: String,
 )
 
 /**
@@ -73,20 +71,28 @@ class Updater(
     suspend fun checkQuietly() {
         if (!available) return
         dismissed = store.getString(KEY_DISMISSED, null)
-        val now = System.currentTimeMillis()
-        if (now - store.getLong(KEY_LAST, 0L) < QUIET_EVERY_MS) {
+        if (System.currentTimeMillis() - store.getLong(KEY_LAST, 0L) < QUIET_EVERY_MS) {
             // Sin pedir a GitHub otra vez: lo encontrado antes, si sigue siendo más nuevo.
             found = store.getString(KEY_FOUND, null)?.let { runCatching { fromJson(it) }.getOrNull() }
                 ?.takeIf { it.code > currentCode }
             return
         }
-        runCatching { checkForUpdate() }.onSuccess { v ->
-            store.edit().putLong(KEY_LAST, now).putString(KEY_FOUND, v?.let(::toJson)).apply()
-        }
+        runCatching { checkForUpdate() }
     }
 
-    /** La versión publicada más nueva que la instalada, o null si ya tienes la última. */
-    suspend fun checkForUpdate(): Version? = withContext(Dispatchers.IO) {
+    /**
+     * La versión publicada más nueva que la instalada, o null si ya tienes la última.
+     * Se guarda lo encontrado (también al buscar a mano): el aviso del inicio no
+     * vuelve a mostrar una versión vieja.
+     */
+    suspend fun checkForUpdate(): Version? {
+        val v = newest()
+        found = v
+        store.edit().putLong(KEY_LAST, System.currentTimeMillis()).putString(KEY_FOUND, v?.let(::toJson)).apply()
+        return v
+    }
+
+    private suspend fun newest(): Version? = withContext(Dispatchers.IO) {
         val releases = JSONArray(open(apiUrl).inputStream.bufferedReader().use { it.readText() })
         (0 until releases.length()).mapNotNull { i ->
             val r = releases.getJSONObject(i)
@@ -94,23 +100,19 @@ class Updater(
             val tag = r.getString("tag_name")
             val code = versionCode(tag) ?: return@mapNotNull null
             // Solo versiones normales: nunca se ofrecen versiones de prueba.
-            val prerelease = r.optBoolean("prerelease") || isPrerelease(tag)
-            if (prerelease) return@mapNotNull null
+            if (r.optBoolean("prerelease") || isPrerelease(tag)) return@mapNotNull null
             val assetList = r.optJSONArray("assets") ?: JSONArray()
             val assets = (0 until assetList.length()).map { assetList.getJSONObject(it) }
             val apk = assets.firstOrNull { it.getString("name").endsWith(".apk") } ?: return@mapNotNull null
             Version(
                 name = tag.removePrefix("v"),
                 code = code,
-                prerelease = prerelease,
                 notes = r.optString("body").trim(),
                 apk = apk.getString("browser_download_url"),
                 checksums = assets.firstOrNull { it.getString("name") == "SHA256SUMS.txt" }?.getString("browser_download_url"),
                 bytes = apk.optLong("size"),
-                page = r.optString("html_url"),
             )
         }.filter { it.code > currentCode }.maxByOrNull { it.code }
-            .also { found = it }
     }
 
     /** Baja el APK a la caché y lo verifica contra SHA256SUMS.txt. [progress] va de 0 a 1. */
@@ -187,11 +189,10 @@ class Updater(
 
     private fun toJson(v: Version) = JSONObject()
         .put("name", v.name).put("code", v.code).put("notes", v.notes).put("apk", v.apk)
-        .put("checksums", v.checksums).put("bytes", v.bytes).put("page", v.page).toString()
+        .put("checksums", v.checksums).put("bytes", v.bytes).toString()
 
     private fun fromJson(text: String) = JSONObject(text).run {
-        Version(getString("name"), getLong("code"), false, optString("notes"), getString("apk"),
-            optString("checksums").ifBlank { null }, optLong("bytes"), optString("page"))
+        Version(getString("name"), getLong("code"), optString("notes"), getString("apk"), optString("checksums").ifBlank { null }, optLong("bytes"))
     }
 
     companion object {

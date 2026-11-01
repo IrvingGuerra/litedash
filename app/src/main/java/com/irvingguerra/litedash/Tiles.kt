@@ -1,10 +1,9 @@
 package com.irvingguerra.litedash
 
-import androidx.compose.foundation.layout.fillMaxWidth
-import com.irvingguerra.litedash.core.ui.Button
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.text.format.DateFormat
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -14,6 +13,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -29,6 +29,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -36,23 +37,25 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.net.toUri
-import com.irvingguerra.litedash.core.ui.Label
+import com.irvingguerra.litedash.core.ui.Button
+import com.irvingguerra.litedash.core.ui.Card
 import com.irvingguerra.litedash.core.ui.Icon
 import com.irvingguerra.litedash.core.ui.Icons
+import com.irvingguerra.litedash.core.ui.Label
 import com.irvingguerra.litedash.core.ui.LocalColors
-import com.irvingguerra.litedash.core.ui.Card
 import com.irvingguerra.litedash.core.ui.Typography
 import com.irvingguerra.litedash.feature.apps.App
 import com.irvingguerra.litedash.feature.apps.AppIcon
 import com.irvingguerra.litedash.feature.apps.AppRepository
-import com.irvingguerra.litedash.feature.music.NotificationService
-import com.irvingguerra.litedash.feature.navigation.TurnInstruction
-import com.irvingguerra.litedash.feature.navigation.NavigationRepository
+import com.irvingguerra.litedash.feature.dashboard.DashboardState
 import com.irvingguerra.litedash.feature.dashboard.SizeLimits
 import com.irvingguerra.litedash.feature.dashboard.TileTypes
-import kotlinx.coroutines.delay
+import com.irvingguerra.litedash.feature.music.NotificationService
+import com.irvingguerra.litedash.feature.navigation.NavigationRepository
+import com.irvingguerra.litedash.feature.navigation.TurnInstruction
 import java.text.SimpleDateFormat
 import java.util.Date
+import kotlinx.coroutines.delay
 
 /** Lo que la app sabe de cada tipo de pieza: nombre, tamaños y con qué tamaño se agrega. */
 data class TileSpec(val type: String, val name: Int, val limits: SizeLimits, val initialSize: Pair<Int, Int>)
@@ -98,9 +101,9 @@ fun isShortScreen(): Boolean = LocalConfiguration.current.screenHeightDp < 480
 fun rememberClock(): Pair<String, String> {
     val language = LocalConfiguration.current.locales[0]
     val context = LocalContext.current
-    val time = remember(language) { android.text.format.DateFormat.getTimeFormat(context) }
+    val time = remember(language) { DateFormat.getTimeFormat(context) }
     val date = remember(language) {
-        SimpleDateFormat(android.text.format.DateFormat.getBestDateTimePattern(language, "EEEEdMMMM"), language)
+        SimpleDateFormat(DateFormat.getBestDateTimePattern(language, "EEEEdMMMM"), language)
     }
     val now by produceState(Date()) {
         while (true) {
@@ -115,7 +118,7 @@ fun rememberClock(): Pair<String, String> {
 fun ClockTile(driverName: String? = null, weather: WeatherRepository? = null) {
     val c = LocalColors.current
     val (time, date) = rememberClock()
-    val hello = greeting(driverName, java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY))
+    val hello = greeting(driverName)
     BoxWithConstraints(Modifier.fillMaxSize().padding(8.dp), contentAlignment = Alignment.CenterStart) {
         // El reloj crece con la pieza: en 1 fila es discreto, en 2 o más es protagonista.
         val size = (maxHeight.value * 0.5f).coerceIn(28f, 96f)
@@ -130,7 +133,7 @@ fun ClockTile(driverName: String? = null, weather: WeatherRepository? = null) {
 
 /** Tarjeta de acceso grande (Navegar, Teléfono): ícono en círculo, título y detalle. */
 @Composable
-fun ShortcutTile(icon: androidx.compose.ui.graphics.vector.ImageVector, title: String, detail: String?, onClick: () -> Unit) {
+fun ShortcutTile(icon: ImageVector, title: String, detail: String?, onClick: () -> Unit) {
     val c = LocalColors.current
     Card(Modifier.fillMaxSize(), onClick = onClick) {
         BoxWithConstraints(Modifier.fillMaxSize().padding(16.dp)) {
@@ -303,4 +306,10 @@ fun openNavigation(context: Context, repo: AppRepository, app: App?) {
     if (app != null) return repo.open(context, app)
     val intent = Intent(Intent.ACTION_VIEW, "geo:0,0?q=".toUri()).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
     runCatching { context.startActivity(intent) }
+}
+
+/** Agrega una pieza de [type] con su tamaño inicial en el primer hueco; false si ya no cabe. */
+fun DashboardState.addTile(type: String, data: String = ""): Boolean {
+    val spec = TileSpecs.first { it.type == type }
+    return add(spec.type, spec.initialSize, spec.limits, data)
 }

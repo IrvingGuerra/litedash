@@ -7,7 +7,6 @@ import android.provider.Settings
 import android.view.WindowManager
 import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.widthIn
@@ -16,11 +15,13 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import com.irvingguerra.litedash.core.ui.Button
+import com.irvingguerra.litedash.core.ui.Icon
 import com.irvingguerra.litedash.core.ui.IconButton
 import com.irvingguerra.litedash.core.ui.Icons
 import com.irvingguerra.litedash.core.ui.Label
@@ -28,34 +29,48 @@ import com.irvingguerra.litedash.core.ui.LocalColors
 import com.irvingguerra.litedash.core.ui.Typography
 
 /**
- * Brillo de día y de noche con la hora del sol (el mismo cálculo del tema): sin
- * sensor ni señal del auto, así funciona en cualquier pantalla. Solo cambia algo
- * al amanecer y al atardecer (no revisa cada rato). Sin el permiso de ajustes del
- * sistema, el brillo aplica solo mientras se ve LiteDash.
+ * Brillo de día y de noche con la hora del sol ([night], el mismo cálculo del
+ * tema): sin sensor ni señal del vehículo, así funciona en cualquier pantalla.
+ * Solo cambia algo al amanecer y al atardecer (no revisa cada rato). Sin el
+ * permiso de ajustes del sistema, el brillo aplica solo mientras se ve LiteDash;
+ * con él cambia el del sistema y, al apagarlo, regresa el que tenía el usuario.
  */
 @Composable
-fun ApplyBrightness(prefs: Preferences, revision: Int) {
+fun ApplyBrightness(prefs: Preferences, night: Boolean, revision: Int) {
     val activity = LocalActivity.current ?: return
-    if (!prefs.brightnessBySun) {
-        LaunchedEffect(Unit) { windowBrightness(activity, null) }
-        return
-    }
-    val night = rememberIsNight()
     val level = if (night) prefs.nightBrightness else prefs.dayBrightness
     // [revision] sube al volver a LiteDash: así aplica justo después de dar el permiso.
-    LaunchedEffect(level, prefs.brightnessAllApps, revision) {
-        if (prefs.brightnessAllApps && Settings.System.canWrite(activity)) {
-            // El del sistema ya cubre a LiteDash: la ventana sigue al sistema.
-            windowBrightness(activity, null)
-            runCatching {
-                val r = activity.contentResolver
-                Settings.System.putInt(r, Settings.System.SCREEN_BRIGHTNESS_MODE, Settings.System.SCREEN_BRIGHTNESS_MODE_MANUAL)
-                Settings.System.putInt(r, Settings.System.SCREEN_BRIGHTNESS, (level * 255 / 100).coerceIn(1, 255))
-            }
-        } else {
-            windowBrightness(activity, level)
-        }
+    LaunchedEffect(prefs.brightnessBySun, level, prefs.brightnessAllApps, revision) {
+        val system = prefs.brightnessBySun && prefs.brightnessAllApps && Settings.System.canWrite(activity)
+        if (!system) restoreSystemBrightness(activity, prefs)
+        windowBrightness(activity, level.takeIf { prefs.brightnessBySun && !system })
+        if (system) setSystemBrightness(activity, prefs, level)
     }
+}
+
+/** Cambia el brillo del sistema; la primera vez guarda el que tenía el usuario. */
+private fun setSystemBrightness(context: Context, prefs: Preferences, percent: Int) {
+    val r = context.contentResolver
+    runCatching {
+        if (prefs.brightnessOriginal == null) {
+            prefs.brightnessOriginal = Settings.System.getInt(r, Settings.System.SCREEN_BRIGHTNESS_MODE) to
+                Settings.System.getInt(r, Settings.System.SCREEN_BRIGHTNESS)
+        }
+        Settings.System.putInt(r, Settings.System.SCREEN_BRIGHTNESS_MODE, Settings.System.SCREEN_BRIGHTNESS_MODE_MANUAL)
+        Settings.System.putInt(r, Settings.System.SCREEN_BRIGHTNESS, (percent * 255 / 100).coerceIn(1, 255))
+    }
+}
+
+/** Regresa el brillo del sistema como estaba antes de LiteDash (automático incluido). */
+private fun restoreSystemBrightness(context: Context, prefs: Preferences) {
+    val (mode, level) = prefs.brightnessOriginal ?: return
+    if (!Settings.System.canWrite(context)) return
+    runCatching {
+        val r = context.contentResolver
+        Settings.System.putInt(r, Settings.System.SCREEN_BRIGHTNESS, level)
+        Settings.System.putInt(r, Settings.System.SCREEN_BRIGHTNESS_MODE, mode)
+    }
+    prefs.brightnessOriginal = null
 }
 
 private fun windowBrightness(activity: Activity, percent: Int?) {
@@ -72,7 +87,6 @@ private fun requestWriteSettings(context: Context) {
 }
 
 /** Ajustes → Apariencia → Brillo: encender, cuánto de día y de noche, y en todas las apps. */
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun BrightnessSettings(prefs: Preferences, revision: Int) {
     val c = LocalColors.current
@@ -100,10 +114,10 @@ fun BrightnessSettings(prefs: Preferences, revision: Int) {
 }
 
 @Composable
-private fun Level(icon: androidx.compose.ui.graphics.vector.ImageVector, title: String, value: Int, set: (Int) -> Unit) {
+private fun Level(icon: ImageVector, title: String, value: Int, set: (Int) -> Unit) {
     val c = LocalColors.current
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        com.irvingguerra.litedash.core.ui.Icon(icon, c.accent, 22.dp)
+        Icon(icon, c.accent, 22.dp)
         Label(title, Typography.body, modifier = Modifier.widthIn(min = 70.dp))
         IconButton(Icons.minus, { set((value - 10).coerceAtLeast(10)) }, background = c.surfaceHigh)
         Label("$value %", Typography.title, modifier = Modifier.widthIn(min = 90.dp))

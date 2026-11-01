@@ -1,6 +1,7 @@
 package com.irvingguerra.litedash
 
 import android.content.Context
+import android.content.res.Configuration
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
@@ -10,6 +11,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.core.content.edit
 import com.irvingguerra.litedash.feature.car.CarColors
+import java.util.Locale
 
 /**
  * Claves y valores ya guardados en el dispositivo: van en español porque así los
@@ -42,6 +44,7 @@ private object PrefKeys {
     const val DAY_BRIGHTNESS = "brillo_dia"
     const val NIGHT_BRIGHTNESS = "brillo_noche"
     const val BRIGHTNESS_ALL_APPS = "brillo_todas_apps"
+    const val BRIGHTNESS_ORIGINAL = "brillo_original"
 }
 
 /** [stored] es como se guarda cada tema (los nombres que tenía en la 1.3.4). */
@@ -66,7 +69,7 @@ object Language {
 fun contextWithLanguage(base: Context): Context {
     val language = Language.read(base)
     if (language.isBlank()) return base
-    val config = android.content.res.Configuration(base.resources.configuration).apply { setLocale(java.util.Locale.forLanguageTag(language)) }
+    val config = Configuration(base.resources.configuration).apply { setLocale(Locale.forLanguageTag(language)) }
     return base.createConfigurationContext(config)
 }
 
@@ -98,6 +101,11 @@ class Preferences(context: Context) {
     var carColor: Color
         get() = Color(_carColor)
         set(v) { _carColor = v.toArgb(); p.edit { putInt(PrefKeys.CAR_COLOR, _carColor) } }
+
+    /** Mientras se arrastra el selector: el auto cambia en vivo y se guarda al soltar ([carColor]). */
+    fun previewCarColor(v: Color) {
+        _carColor = v.toArgb()
+    }
 
     private var _carModel by mutableStateOf(p.getString(PrefKeys.CAR_MODEL, null))
     /** Id del auto del catálogo que se muestra; null = el sedán genérico. */
@@ -216,5 +224,14 @@ class Preferences(context: Context) {
     var brightnessAllApps: Boolean
         get() = _brightnessAllApps
         set(v) { _brightnessAllApps = v; p.edit { putBoolean(PrefKeys.BRIGHTNESS_ALL_APPS, v) } }
+
+    /**
+     * El brillo del sistema como estaba antes de que LiteDash lo cambiara ("modo,nivel"):
+     * se regresa al apagar el brillo en todas las apps. null = LiteDash no lo ha tocado.
+     */
+    var brightnessOriginal: Pair<Int, Int>?
+        get() = p.getString(PrefKeys.BRIGHTNESS_ORIGINAL, null)?.split(',')?.mapNotNull { it.toIntOrNull() }
+            ?.takeIf { it.size == 2 }?.let { it[0] to it[1] }
+        set(v) = p.edit { putString(PrefKeys.BRIGHTNESS_ORIGINAL, v?.let { "${it.first},${it.second}" }) }
 
 }
