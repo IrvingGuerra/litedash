@@ -1,5 +1,14 @@
 package com.irvingguerra.litedash
 
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.layout.onSizeChanged
+import com.irvingguerra.litedash.core.ui.LiteDashTheme
+import kotlinx.coroutines.delay
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.awaitEachGesture
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -90,6 +99,8 @@ class Dependencies(
     val updater: Updater,
     val weather: WeatherRepository,
     val trip: TripRepository,
+    val reminders: ReminderRepository,
+    val messages: MessageRepository,
 )
 
 /** Qué hace cada pieza al tocarla (abrir un panel, el mapa o la música en grande). */
@@ -119,6 +130,7 @@ fun TileContent(d: Dependencies, p: Tile, apps: List<App>, revision: Int, action
         TileTypes.CLOCK -> ClockTile(d.prefs.driverName, d.weather)
         TileTypes.WEATHER -> WeatherTile(d.weather)
         TileTypes.TRIP -> TripTile(d.trip)
+        TileTypes.FAVORITES -> FavoritesTile()
         TileTypes.NAVIGATE -> {
             val app = mapApp(d, apps, p.data)
             NavigationTile(
@@ -159,6 +171,18 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
     var panel by remember { mutableStateOf<Panel?>(null) }
     var editing by remember { mutableStateOf(false) }
     var musicExpanded by remember { mutableStateOf(false) }
+    var promptsHeight by remember { mutableIntStateOf(0) }
+    // Cuándo se tocó el inicio por última vez: tras un rato quieto, el modo estacionado.
+    var touched by remember { mutableIntStateOf(0) }
+    var parked by remember { mutableStateOf(false) }
+    LaunchedEffect(touched, panel, editing, musicExpanded, d.prefs.parkedMode) {
+        parked = false
+        if (!d.prefs.parkedMode || panel != null || editing || musicExpanded) return@LaunchedEffect
+        delay(PARK_AFTER_MS)
+        // Manejando no: espera a que el auto se detenga.
+        while (d.trip.moving) delay(30_000)
+        parked = true
+    }
 
     BackHandler(enabled = (panel != null || editing || musicExpanded) && d.prefs.welcomeSeen) {
         when {
@@ -191,7 +215,18 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
     val backdrop = if (hasFloor) {
         Modifier.background(Brush.verticalGradient(0.3f to c.background, 1f to lerp(c.background, Color.Black, if (c.dark) 0.35f else 0.08f)))
     } else Modifier.background(c.background)
-    Box(Modifier.fillMaxSize().then(backdrop)) {
+    Box(
+        Modifier
+            .fillMaxSize()
+            .then(backdrop)
+            // Cualquier toque reinicia la cuenta del modo estacionado (sin quitarle el toque a nadie).
+            .pointerInput(Unit) {
+                awaitEachGesture {
+                    awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
+                    touched++
+                }
+            },
+    ) {
         Column(Modifier.fillMaxSize().safeDrawingPadding()) {
             // Si ya hay un reloj en el tablero, la barra no repite la hora.
             val showTime = d.dashboard.tiles.none { it.type == TileTypes.CLOCK }
@@ -205,12 +240,18 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                 onTemplates = { panel = Panel.Templates },
                 onFinish = { editing = false },
             )
-            if (d.prefs.welcomeSeen && !d.prefs.dontAskHome && !editing && !isShortScreen()) HomePrompt(d.prefs, revision)
+            // Los avisos (inicio, recordatorios) tampoco cuentan para la cuadrícula: aparecen y se
+            // van, y no deben hacer que se cargue otro acomodo.
+            Column(Modifier.onSizeChanged { promptsHeight = it.height }) {
+                if (d.prefs.welcomeSeen && !d.prefs.dontAskHome && !editing && !isShortScreen()) HomePrompt(d.prefs, revision)
+                if (d.prefs.welcomeSeen && !editing && !isShortScreen()) ReminderBanner(d.reminders)
+            }
             BoxWithConstraints(Modifier.weight(1f).fillMaxWidth().padding(horizontal = 10.dp)) {
                 // La cuadrícula se calcula siempre como si la barra estuviera: si dependiera
                 // de ella, un reloj en el acomodo la oculta, la cuadrícula crece, se carga
                 // otro acomodo sin reloj, vuelve la barra... y el inicio parpadea sin parar.
-                val gridHeight = if (barHidden) maxHeight - (topBarHeight() - TOP_BAR_HIDDEN) else maxHeight
+                val prompts = with(LocalDensity.current) { promptsHeight.toDp() }
+                val gridHeight = (if (barHidden) maxHeight - (topBarHeight() - TOP_BAR_HIDDEN) else maxHeight) + prompts
                 val grid = remember(maxWidth, gridHeight) { Grid.forSize(maxWidth.value, gridHeight.value) }
                 remember(grid) { d.dashboard.use(grid) }
                 if (musicExpanded) {
@@ -245,11 +286,43 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
             is Panel.PickApp -> PickAppPanel(d, apps, p.tileId, close = { panel = null })
         }
 
+        MessageAlert(d.messages, moving = d.trip.moving, enabled = d.prefs.messageAlerts && panel == null)
+
+        if (parked) Parked(d, onWake = { parked = false; touched++ })
+
         if (!d.prefs.welcomeSeen) {
             Welcome(d.prefs, d.dashboard, revision, onFinish = { d.prefs.welcomeSeen = true })
         }
     }
 }
+
+/**
+ * Estacionado: reloj grande, saludo y clima sobre fondo oscuro. Sale tras
+ * [PARK_AFTER_MS] sin tocar el inicio (y sin ir en movimiento); un toque lo quita.
+ */
+@Composable
+private fun Parked(d: Dependencies, onWake: () -> Unit) {
+    val (time, date) = rememberClock()
+    val hello = greeting(d.prefs.driverName, java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY))
+    Box(
+        Modifier
+            .fillMaxSize()
+            .background(androidx.compose.ui.graphics.Color.Black)
+            .clickable(remember { androidx.compose.foundation.interaction.MutableInteractionSource() }, indication = null, onClick = onWake),
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            // Siempre en colores oscuros: de noche no deslumbra.
+            LiteDashTheme(dark = true, scale = 1f) {
+                Label(time, Typography.clock.copy(fontSize = 120.sp), maxLines = 1)
+                Label(hello?.let { "$it · $date" } ?: date, Typography.subtitle, LocalColors.current.textMuted, maxLines = 1)
+                Box(Modifier.padding(top = 12.dp)) { WeatherChip(d.weather) }
+            }
+        }
+    }
+}
+
+private const val PARK_AFTER_MS = 5 * 60_000L
 
 /** Las del usuario, o unas sugeridas con lo que tenga instalado (navegación, música, mensajes). */
 private fun dockFavorites(d: Dependencies, apps: List<App>): List<App> {

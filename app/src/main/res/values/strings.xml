@@ -148,4 +148,34 @@
     <string name="trip_reset">Reiniciar</string>
     <string name="unit_kmh">km/h</string>
     <string name="unit_mph">mph</string>
+    <string name="parked_mode">Modo estacionado</string>
+    <string name="parked_mode_help">Tras 5 minutos sin tocar el inicio (y sin ir en movimiento) se ve un reloj grande. Un toque lo quita.</string>
+    <string name="on">Encendido</string>
+    <string name="off">Apagado</string>
+    <string name="reminder_service">Servicio</string>
+    <string name="reminder_verification">Verificación</string>
+    <string name="reminder_tax">Tenencia o refrendo</string>
+    <string name="reminder_insurance">Seguro</string>
+    <string name="reminder_plates">Placas</string>
+    <string name="reminder_other">Otro</string>
+    <string name="reminder_today">hoy</string>
+    <string name="reminder_done">Hecho</string>
+    <string name="reminder_add">Agregar recordatorio</string>
+    <string name="reminders">Recordatorios</string>
+    <string name="reminders_help">Te avisa en el inicio 7 días antes. Al marcarlo como hecho, el servicio y la verificación pasan a dentro de 6 meses, y la tenencia y el seguro a dentro de un año.</string>
+    <string name="remove">Quitar</string>
+    <string name="tile_favorites">Favoritos</string>
+    <string name="favorites_module">Tus contactos con estrella, a un toque · pide tus contactos al agregarla</string>
+    <string name="favorites_empty">Marca contactos con estrella</string>
+    <string name="message_alerts">Avisos de mensajes</string>
+    <string name="message_alerts_help">WhatsApp, SMS y Telegram en una tarjeta arriba; en movimiento sin el texto</string>
+    <string name="message_new">Mensaje nuevo</string>
+    <plurals name="reminder_in_days">
+        <item quantity="one">en %d día</item>
+        <item quantity="other">en %d días</item>
+    </plurals>
+    <plurals name="reminder_overdue">
+        <item quantity="one">venció hace %d día</item>
+        <item quantity="other">venció hace %d días</item>
+    </plurals>
 </resources>

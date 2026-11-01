@@ -144,4 +144,34 @@
     <string name="trip_reset">Reset</string>
     <string name="unit_kmh">km/h</string>
     <string name="unit_mph">mph</string>
+    <string name="parked_mode">Parked mode</string>
+    <string name="parked_mode_help">After 5 minutes without touching home (and not moving), a big clock shows up. One tap hides it.</string>
+    <string name="on">On</string>
+    <string name="off">Off</string>
+    <string name="reminder_service">Service</string>
+    <string name="reminder_verification">Emissions check</string>
+    <string name="reminder_tax">Registration</string>
+    <string name="reminder_insurance">Insurance</string>
+    <string name="reminder_plates">Plates</string>
+    <string name="reminder_other">Other</string>
+    <string name="reminder_today">today</string>
+    <string name="reminder_done">Done</string>
+    <string name="reminder_add">Add reminder</string>
+    <string name="reminders">Reminders</string>
+    <string name="reminders_help">You get a heads-up on home 7 days before. Marked as done, service and emissions move 6 months ahead, and registration and insurance a year.</string>
+    <string name="remove">Remove</string>
+    <string name="tile_favorites">Favorites</string>
+    <string name="favorites_module">Your starred contacts, one tap away · asks for your contacts when added</string>
+    <string name="favorites_empty">Star some contacts</string>
+    <string name="message_alerts">Message alerts</string>
+    <string name="message_alerts_help">WhatsApp, SMS and Telegram on a card at the top; no text while moving</string>
+    <string name="message_new">New message</string>
+    <plurals name="reminder_in_days">
+        <item quantity="one">in %d day</item>
+        <item quantity="other">in %d days</item>
+    </plurals>
+    <plurals name="reminder_overdue">
+        <item quantity="one">overdue by %d day</item>
+        <item quantity="other">overdue by %d days</item>
+    </plurals>
 </resources>

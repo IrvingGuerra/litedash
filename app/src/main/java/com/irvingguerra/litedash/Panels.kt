@@ -292,6 +292,9 @@ private fun CarSettings(d: Dependencies) {
         }
         CarOptions(prefs, d.cars, pkg, Modifier.fillMaxWidth())
     }
+    SettingsCard(Icons.bell, stringResource(R.string.reminders), stringResource(R.string.reminders_help)) {
+        ReminderSettings(d.reminders)
+    }
 }
 
 /** Genérico, los autos ya instalados y los del catálogo, con buscador. */
@@ -612,6 +615,12 @@ private fun HomeSettings(prefs: Preferences, onEdit: () -> Unit, onTemplates: ()
             Button(stringResource(R.string.templates), onTemplates)
         }
     }
+    SettingsCard(Icons.clock, stringResource(R.string.parked_mode), stringResource(R.string.parked_mode_help)) {
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Button(stringResource(R.string.on), { prefs.parkedMode = true }, primary = prefs.parkedMode)
+            Button(stringResource(R.string.off), { prefs.parkedMode = false }, primary = !prefs.parkedMode)
+        }
+    }
     val (requestHome, returns) = rememberRequestHome()
     val isHome = remember(returns) { isHomeApp(context) }
     SettingsCard(Icons.home, stringResource(R.string.welcome_home_title)) {
@@ -749,6 +758,7 @@ private fun iconOf(type: String) = when (type) {
     TileTypes.PHONE -> Icons.phone
     TileTypes.WEATHER -> Icons.sun
     TileTypes.TRIP -> Icons.speed
+    TileTypes.FAVORITES -> Icons.phone
     else -> Icons.apps
 }
 
@@ -781,6 +791,10 @@ private fun Modules(d: Dependencies, onEdit: () -> Unit) {
         ModuleItem(TileTypes.MUSIC, Icons.music, stringResource(R.string.tile_music), stringResource(if (permission) R.string.music_with_permission else R.string.music_without_permission))
         ModuleItem(TileTypes.WEATHER, Icons.sun, stringResource(R.string.tile_weather), stringResource(R.string.weather_module))
         ModuleItem(TileTypes.TRIP, Icons.speed, stringResource(R.string.tile_trip), stringResource(R.string.trip_module))
+        ModuleItem(TileTypes.FAVORITES, Icons.phone, stringResource(R.string.tile_favorites), stringResource(R.string.favorites_module))
+        ModuleRow(Icons.message, stringResource(R.string.message_alerts), stringResource(if (permission) R.string.message_alerts_help else R.string.music_without_permission)) {
+            Button(stringResource(if (d.prefs.messageAlerts) R.string.on else R.string.off), { d.prefs.messageAlerts = !d.prefs.messageAlerts }, primary = d.prefs.messageAlerts)
+        }
     }
 }
 
