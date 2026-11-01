@@ -6,6 +6,17 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
+## [1.4.4] - 2026-11-01
+
+### Nuevo
+- **Modelo 3D nuevo de tu auto**: si el catálogo trae una versión mejor del auto
+  que ya bajaste (como el piso con sombra y reflejo), LiteDash avisa en el inicio
+  y en Ajustes → Tu auto; un toque la baja con la fluidez que tenías.
+
+### Arreglado
+- Al tocar el auto, la animación empieza y termina del tamaño exacto del auto en
+  su pieza (ya no se ve chiquito al inicio ni al regresar).
+
 ## [1.4.3] - 2026-11-01
 
 ### Nuevo

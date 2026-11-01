@@ -31,6 +31,9 @@ import com.irvingguerra.litedash.core.ui.Typography
 import kotlin.math.cos
 import kotlin.math.sin
 
+/** Proporción (ancho / alto) de la caja donde se dibuja el auto en su pieza. */
+const val CAR_ASPECT = 1.9f
+
 /** Colores de pintura que se ofrecen; el usuario elige uno para su auto. */
 val CarColors = listOf(
     Color(0xFFC9CED4), // plata
@@ -150,7 +153,7 @@ fun CarTile(
         ) {
             if (drawing != null) {
                 // Los renders traen más aire arriba y abajo que el dibujo: un poco más alto.
-                drawing(Modifier.widthIn(max = height * 2f).fillMaxWidth().aspectRatio(1.9f).padding(horizontal = 8.dp))
+                drawing(Modifier.widthIn(max = height * 2f).fillMaxWidth().aspectRatio(CAR_ASPECT).padding(horizontal = 8.dp))
             } else {
                 CarDrawing(color, Modifier.widthIn(max = height * 2.4f).fillMaxWidth().padding(horizontal = 8.dp))
             }

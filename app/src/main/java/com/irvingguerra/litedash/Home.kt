@@ -31,6 +31,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
@@ -80,6 +81,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 
 /** Qué panel está abierto encima del inicio (uno a la vez). */
@@ -239,8 +241,9 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
     LaunchedEffect(homePressed) { if (d.prefs.welcomeSeen) backToDashboard() }
     // Clima al volver al inicio (si pasó media hora y está activado); nunca en segundo plano.
     LaunchedEffect(revision) { d.weather.refreshIfStale() }
-    // Versión nueva: una revisión al abrir (a lo más cada 12 h).
+    // Versión nueva de la app y del auto: una revisión al abrir (a lo más cada 12 h).
     LaunchedEffect(Unit) { d.updater.checkQuietly() }
+    LaunchedEffect(d.prefs.carModel) { d.cars.checkQuietly(d.prefs.carModel) }
 
     val actions = remember {
         TileActions(
@@ -307,6 +310,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                     if (!d.prefs.dontAskHome && !isShortScreen()) HomePrompt(d.prefs, revision)
                     if (!isShortScreen()) ReminderBanner(d.reminders)
                     UpdateBanner(d.updater, onOpen = { panel = Panel.About })
+                    if (car != null) CarUpdateBanner(d.cars, car)
                 }
             }
             BoxWithConstraints(Modifier.weight(1f).fillMaxWidth().padding(horizontal = 10.dp)) {
@@ -506,6 +510,28 @@ private fun UpdateBanner(updater: Updater, onOpen: () -> Unit) {
     Notice(stringResource(R.string.new_version, v.name), Icons.info) {
         Button(stringResource(R.string.update_see), onOpen, primary = true)
         Button(stringResource(R.string.update_later), updater::dismiss)
+    }
+}
+
+/** El auto tiene imágenes nuevas en el catálogo: un toque las baja (con la fluidez que tenía). */
+@Composable
+private fun CarUpdateBanner(cars: CarRepository, car: CarPackage) {
+    val entry = cars.outdated?.takeIf { it.id == car.id } ?: return
+    val scope = rememberCoroutineScope()
+    var progress by remember(car.id) { mutableStateOf<Float?>(null) }
+    Notice(stringResource(R.string.car_update_notice, car.name), Icons.car) {
+        val p = progress
+        if (p != null) {
+            Label(stringResource(R.string.downloading, (p * 100).toInt()), Typography.body, LocalColors.current.accent)
+        } else {
+            Button(stringResource(R.string.car_update, updateSize(car, entry) / 1e6f), {
+                progress = 0f
+                scope.launch {
+                    runCatching { cars.update(car, entry) { f -> progress = f } }
+                    progress = null
+                }
+            }, primary = true)
+        }
     }
 }
 

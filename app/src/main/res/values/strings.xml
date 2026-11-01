@@ -214,4 +214,6 @@
     <string name="brightness_all_apps">En todas las apps</string>
     <string name="brightness_permission">Falta el permiso: activa \"Modificar ajustes del sistema\" para LiteDash.</string>
     <string name="car_home_help">En el inicio gira el auto con el dedo. Un toque lo muestra en grande; otro toque regresa.</string>
+    <string name="car_update">Actualizar · %1$.1f MB</string>
+    <string name="car_update_notice">Hay un modelo 3D nuevo de tu %1$s</string>
 </resources>

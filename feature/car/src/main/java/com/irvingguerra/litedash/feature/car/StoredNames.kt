@@ -11,6 +11,8 @@ internal object CarFiles {
     const val ROOT = "autos"
     const val THUMBNAILS = ".miniaturas"
     const val PACKAGE_INFO = "auto.json"
+    /** SHA-256 del paquete instalado: si el catálogo trae otro, hay imágenes nuevas. */
+    const val PACKAGE_HASH = ".paquete.sha256"
     const val SPIN = "giro"
     const val DOWNLOAD = ".bajando.zip"
     const val STAGING_SUFFIX = ".nueva"

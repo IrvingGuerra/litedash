@@ -210,4 +210,6 @@
     <string name="brightness_all_apps">In all apps</string>
     <string name="brightness_permission">Permission missing: allow \"Modify system settings\" for LiteDash.</string>
     <string name="car_home_help">On the home screen, spin the car with your finger. A tap shows it big; another tap goes back.</string>
+    <string name="car_update">Update · %1$.1f MB</string>
+    <string name="car_update_notice">There\'s a new 3D model of your %1$s</string>
 </resources>

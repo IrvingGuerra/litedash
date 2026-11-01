@@ -82,6 +82,8 @@ data class CarPackage(
     /** Vistas con piso (sombra y reflejo): caja de esas capas en anchos del auto. */
     val floor: Map<String, FloorBox>,
     val folder: File,
+    /** SHA-256 del paquete con que se instaló ("" si se bajó antes de guardarlo). */
+    val sha256: String,
 )
 
 /** Dónde va la capa del piso respecto al auto, en anchos del auto. */
@@ -112,6 +114,12 @@ class CarRepository(context: Context, val catalogUrl: String) {
     private var packages: List<CarPackage>? = null
 
     val hasCatalog get() = catalogUrl.isNotBlank()
+
+    private val checks = context.getSharedPreferences(CarFiles.ROOT, Context.MODE_PRIVATE)
+
+    /** El auto elegido tiene imágenes nuevas en el catálogo (lo llena [checkQuietly]). */
+    var outdated by mutableStateOf<CatalogEntry?>(null)
+        private set
 
     /** Sube cada vez que se instala algo, para que la UI vuelva a leer. */
     var changes by mutableStateOf(0)
@@ -159,10 +167,41 @@ class CarRepository(context: Context, val catalogUrl: String) {
         val staging = File(root, folderOf(e.id) + CarFiles.STAGING_SUFFIX)
         staging.deleteRecursively()
         unzip(temp, staging)
+        File(staging, CarFiles.PACKAGE_HASH).writeText(e.sha256)
         temp.delete()
         target.deleteRecursively()
         staging.renameTo(target)
         changed()
+    }
+
+    /** El catálogo trae otras imágenes para [p] (mejores renders, piso nuevo…). */
+    fun isOutdated(p: CarPackage, e: CatalogEntry) = p.id == e.id && p.sha256 != e.sha256
+
+    /**
+     * Baja las imágenes nuevas de [p] y vuelve a poner la fluidez que tenía (los
+     * cuadros extra también cambian). [progress] va de 0 a 1 en todo el proceso.
+     */
+    suspend fun update(p: CarPackage, e: CatalogEntry, progress: (Float) -> Unit) {
+        val level = p.smoothness
+        val extra = e.extras.filter { it.level <= level }.sumOf { it.bytes }
+        val total = (e.bytes + extra).coerceAtLeast(1).toFloat()
+        install(e) { f -> progress(f * e.bytes / total) }
+        val fresh = pkg(e.id) ?: return
+        if (level > Smoothness.LIGHT) raiseSmoothness(fresh, e, level) { f -> progress((e.bytes + f * extra) / total) }
+    }
+
+    /**
+     * Revisa el catálogo a lo más cada [CHECK_EVERY_MS] (junto con la revisión de la
+     * app al abrir) y avisa en [outdated] si el auto [id] tiene imágenes nuevas.
+     */
+    suspend fun checkQuietly(id: String?) {
+        val p = pkg(id) ?: return
+        if (!hasCatalog) return
+        val now = System.currentTimeMillis()
+        if (now - checks.getLong(KEY_LAST_CHECK, 0L) < CHECK_EVERY_MS && p.sha256.isNotEmpty()) return
+        val entry = runCatching { catalog() }.getOrNull()?.firstOrNull { it.id == p.id } ?: return
+        checks.edit().putLong(KEY_LAST_CHECK, now).apply()
+        outdated = entry.takeIf { isOutdated(p, it) }
     }
 
     /** Sube el giro de [p] hasta [level], bajando solo los cuadros que le faltan. */
@@ -228,6 +267,7 @@ class CarRepository(context: Context, val catalogUrl: String) {
         sourceWidths.clear()
         withContext(Dispatchers.Main) {
             packages = null
+            outdated = outdated?.takeIf { e -> pkg(e.id)?.let { isOutdated(it, e) } == true }
             changes++
         }
     }
@@ -382,6 +422,7 @@ class CarRepository(context: Context, val catalogUrl: String) {
                     FloorBox(c.getDouble(0).toFloat(), c.getDouble(1).toFloat(), c.getDouble(2).toFloat(), c.getDouble(3).toFloat())
                 }.orEmpty(),
                 folder = folder,
+                sha256 = File(folder, CarFiles.PACKAGE_HASH).takeIf { it.exists() }?.readText()?.trim().orEmpty(),
             )
         }.getOrNull()
     }
@@ -430,4 +471,9 @@ class CarRepository(context: Context, val catalogUrl: String) {
         }
 
     private fun readText(url: String) = open(url).inputStream.bufferedReader().use { it.readText() }
+
+    private companion object {
+        const val CHECK_EVERY_MS = 12 * 60 * 60 * 1000L
+        const val KEY_LAST_CHECK = "ultima_revision"
+    }
 }

@@ -22,8 +22,10 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import com.irvingguerra.litedash.feature.car.CAR_ASPECT
 import com.irvingguerra.litedash.feature.car.CarPackage
 import com.irvingguerra.litedash.feature.car.CarTile
 import com.irvingguerra.litedash.feature.car.CarTurntable
@@ -82,7 +84,9 @@ fun CarOnly(
                 maxHeight.toPx() - insets.getBottom(this) - pad,
             )
         }
-        val start = if (from.isEmpty) 0.6f else minOf(from.width / to.width, from.height / to.height)
+        // La escala va del auto dibujado en su pieza al auto dibujado en grande (no de caja a
+        // caja): así crece desde el tamaño que se ve y al regresar termina justo en su lugar.
+        val start = if (from.isEmpty) 0.6f else carWidth(from, density) / carWidth(to, density)
         Box(
             Modifier
                 .fillMaxSize()
@@ -109,3 +113,10 @@ fun CarOnly(
         }
     }
 }
+
+/**
+ * Ancho con que [CarTile] dibuja el auto en una caja: lo limita el alto (proporción
+ * 1.9) y lleva 8 dp a cada lado. Para que la animación empiece y termine en el auto real.
+ */
+private fun carWidth(box: Rect, density: Density) =
+    minOf(box.width, box.height * CAR_ASPECT) - with(density) { 16.dp.toPx() }

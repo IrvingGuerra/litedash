@@ -296,6 +296,23 @@ private fun CarModels(prefs: Preferences, cars: CarRepository, current: CarPacka
         for (p in installed.filter { matches("${it.make} ${it.name} ${it.year}") }) {
             val fromCatalog = catalog?.firstOrNull { it.id == p.id }
             ModelOption("${p.make} ${p.name} ${p.year}", null, selected = current?.id == p.id, thumbnail = fromCatalog?.let { e -> { cars.thumbnail(e) } }) { prefs.carModel = p.id }
+            // Imágenes nuevas en el catálogo (mejores renders, piso): se actualiza con un toque.
+            if (fromCatalog != null && cars.isOutdated(p, fromCatalog)) {
+                val progress = downloading?.takeIf { it.first == p.id }?.second
+                if (progress != null) {
+                    Label(stringResource(R.string.downloading, (progress * 100).toInt()), Typography.small, c.accent)
+                } else {
+                    Button(stringResource(R.string.car_update, updateSize(p, fromCatalog) / 1e6f), {
+                        if (downloading == null) {
+                            downloading = p.id to 0f
+                            scope.launch {
+                                runCatching { cars.update(p, fromCatalog) { f -> downloading = p.id to f } }.onFailure { error = true }
+                                downloading = null
+                            }
+                        }
+                    }, primary = true)
+                }
+            }
         }
         for (e in catalog.orEmpty().filter { e -> installed.none { it.id == e.id } && matches("${e.make} ${e.name} ${e.year}") }) {
             val progress = downloading?.takeIf { it.first == e.id }?.second
@@ -912,3 +929,6 @@ private fun NewVersion(v: Version, onInstall: () -> Unit) {
         Button(stringResource(R.string.download_install, v.bytes / 1e6f), onInstall, primary = true)
     }
 }
+
+/** Lo que se baja al actualizar un auto: el paquete y la fluidez que ya tenía. */
+fun updateSize(p: CarPackage, e: CatalogEntry) = e.bytes + e.extras.filter { it.level <= p.smoothness }.sumOf { it.bytes }
