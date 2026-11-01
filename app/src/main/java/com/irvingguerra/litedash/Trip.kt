@@ -150,6 +150,7 @@ fun TripTile(trip: TripRepository) {
     Card(Modifier.fillMaxSize()) {
         BoxWithConstraints(Modifier.fillMaxSize().padding(16.dp), contentAlignment = Alignment.CenterStart) {
             val big = maxHeight > 120.dp
+            val wide = maxWidth > 340.dp
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(18.dp)) {
                 Column {
                     Label(speed?.let { String.format(locale, "%.0f", it) } ?: "—", Typography.clock.copy(fontSize = if (big) 56.sp else 34.sp), maxLines = 1)
@@ -159,7 +160,7 @@ fun TripTile(trip: TripRepository) {
                     Label(heading ?: "", Typography.title, c.accent, maxLines = 1)
                     Label(String.format(locale, "%.1f %s · %d:%02d", distance, if (imperial) "mi" else "km", minutes / 60, minutes % 60), Typography.body, maxLines = 1)
                 }
-                if (big && maxWidth > 340.dp) Button(stringResource(R.string.trip_reset), { trip.reset() })
+                if (big && wide) Button(stringResource(R.string.trip_reset), { trip.reset() })
             }
         }
     }
