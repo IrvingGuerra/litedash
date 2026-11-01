@@ -6,6 +6,18 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
+## [1.4.13] - 2026-11-01
+
+### Cambiado
+- **Fluidez del giro: Ligera y Media.** La Máxima (96 vueltas) no cabía en
+  memoria en pantallas grandes y el giro se iba trabando con el tiempo; si la
+  tenías, LiteDash libera ese espacio solo.
+- **El auto se ve nítido mientras lo giras** (ya no baja de calidad al moverlo).
+- Más memoria para el giro en equipos que la tienen, para que no se trabe.
+
+### Catálogo
+- Por ahora solo el Lancer Evolution; los demás regresan uno por uno, revisados.
+
 ## [1.4.12] - 2026-11-01
 
 ### Arreglado

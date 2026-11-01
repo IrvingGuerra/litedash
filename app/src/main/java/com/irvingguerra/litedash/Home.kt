@@ -245,6 +245,8 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
     // Versión nueva de la app y del auto: una revisión al abrir (a lo más cada 12 h).
     LaunchedEffect(Unit) { d.updater.checkQuietly() }
     LaunchedEffect(d.prefs.carModel) { d.cars.checkQuietly(d.prefs.carModel) }
+    // Una vez: libera los cuadros de la fluidez máxima, que ya no se usa.
+    LaunchedEffect(Unit) { d.cars.dropRetiredFrames() }
 
     val actions = remember {
         TileActions(

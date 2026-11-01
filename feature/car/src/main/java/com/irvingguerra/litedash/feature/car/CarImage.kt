@@ -27,7 +27,7 @@ import androidx.compose.ui.unit.IntSize
 import kotlinx.coroutines.flow.conflate
 import kotlin.math.roundToInt
 
-/** El giro completo: 96 posiciones, una cada 3.75°. El paquete trae una de cada 4. */
+/** El giro completo del estudio: 96 posiciones, una cada 3.75°. El paquete trae una de cada 4. */
 private const val FULL_SPIN = 96
 
 /** Anchos de la pieza que hay que arrastrar para dar una vuelta completa. */
@@ -35,14 +35,6 @@ private const val WIDTHS_PER_TURN = 0.83f
 
 /** Cuadros que se preparan adelante, hacia donde va el dedo. */
 private const val PREFETCH = 3
-
-/**
- * Mientras se arrastra, los cuadros se dibujan a esta fracción del ancho: tienen la
- * cuarta parte de píxeles, salen al instante y en movimiento no se nota. Al soltar,
- * el cuadro donde se queda se carga completo. Medido con tools/spin.sh: sin esto el
- * giro en grande baja de ~27 a ~17 cuadros por segundo.
- */
-private const val DRAG_RESOLUTION = 0.5f
 
 /** El cuadro de tres cuartos con el frente a la izquierda: donde empieza el auto. */
 private fun restFrame(frames: List<String>) = frames.size * 3 / 8
@@ -81,11 +73,10 @@ fun CarTurntable(
     var dragging by remember(p) { mutableStateOf(false) }
     // Si lo giraron en otra pantalla (Ajustes o la vista en grande), aquí se pone igual.
     LaunchedEffect(saved) { if (!dragging) frame = saved }
-    val drawWidth = if (dragging) (widthPx * DRAG_RESOLUTION).roundToInt() else widthPx
     // Se preparan los cuadros que siguen (con sus capas), para que aparezcan al instante.
-    LaunchedEffect(p, frame, color, drawWidth) {
-        if (drawWidth <= 0) return@LaunchedEffect
-        for (k in 1..PREFETCH) repo.layers(p, frames[(frame + direction * k + n) % n], color, drawWidth)
+    LaunchedEffect(p, frame, color, widthPx) {
+        if (widthPx <= 0) return@LaunchedEffect
+        for (k in 1..PREFETCH) repo.layers(p, frames[(frame + direction * k + n) % n], color, widthPx)
     }
     val turn = Modifier.pointerInput(p) {
         // La misma vuelta por arrastre, tenga los cuadros que tenga (más fluidez = pasos más chicos).
@@ -106,7 +97,7 @@ fun CarTurntable(
             while (accumulated < -step) { accumulated += step; frame = (frame + 1) % n; direction = 1 }
         }
     }
-    CarLayersImage(repo, p, frames[frame], color, drawWidth, modifier.onSizeChanged { widthPx = it.width }.then(turn), onReady)
+    CarLayersImage(repo, p, frames[frame], color, widthPx, modifier.onSizeChanged { widthPx = it.width }.then(turn), onReady)
 }
 
 /** El auto quieto en tres cuartos, pintado del [color]: para las tarjetas de la lista de modelos. */
@@ -178,18 +169,18 @@ private fun DrawScope.drawLayer(img: ImageBitmap, box: Rect) = drawImage(
 )
 
 /**
- * Los cuadros del giro en orden de ángulo, según la [Smoothness] instalada: las
- * del paquete son una de cada 4 ("NN"), la fluidez media agrega las de en medio
- * ("mNN") y la máxima las que quedan ("xNN"). Paquetes con otro número de
- * cuadros, tal cual vienen.
+ * Los cuadros del giro en orden de ángulo, según la [Smoothness] instalada: los
+ * del paquete van cada 15° ("NN") y la fluidez media agrega los de en medio
+ * ("mNN"). Paquetes con otro número de cuadros, tal cual vienen.
  */
 fun spinFrames(p: CarPackage): List<String> {
     if (p.spin * 4 != FULL_SPIN) return (0 until p.spin).map { "${CarFiles.SPIN}/%02d".format(it) }
-    return (0 until FULL_SPIN).mapNotNull { i ->
+    val medium = p.smoothness >= Smoothness.MEDIUM
+    return (0 until FULL_SPIN step 2).mapNotNull { i ->
         when {
             i % 4 == 0 -> "${CarFiles.SPIN}/%02d".format(i / 4)
-            i % 4 == 2 -> if (p.smoothness >= Smoothness.MEDIUM) "${CarFiles.SPIN}/m%02d".format(i / 4) else null
-            else -> if (p.smoothness >= Smoothness.MAX) "${CarFiles.SPIN}/x%02d".format(i / 2) else null
+            medium -> "${CarFiles.SPIN}/m%02d".format(i / 4)
+            else -> null
         }
     }
 }

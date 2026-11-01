@@ -45,7 +45,7 @@ data class CatalogEntry(
     val sha256: String,
     /** Imagen chica (~15 KB) para ver el auto antes de bajarlo; vive en el catálogo, no en la app. */
     val thumbnail: String = "",
-    /** Cuadros extra del giro, para que gire más fluido: [Smoothness.MEDIUM] y [Smoothness.MAX]. */
+    /** Cuadros extra del giro, para que gire más fluido: [Smoothness.MEDIUM]. */
     val extras: List<SpinExtra> = emptyList(),
 )
 
@@ -54,13 +54,13 @@ data class CatalogEntry(
 data class SpinExtra(val level: Int, val url: String, val bytes: Long, val sha256: String)
 
 /**
- * Qué tan fluido gira el auto: cuántos cuadros de los 96 del giro completo
- * tiene. Cada nivel se baja sobre el anterior, sin volver a bajar lo que ya hay.
+ * Qué tan fluido gira el auto: cuántos cuadros del giro tiene. La media se baja
+ * sobre la ligera, sin volver a bajar lo que ya hay. (Hubo una máxima de 96: en
+ * pantallas grandes no cabía en memoria y el giro se iba trabando; se quitó.)
  */
 object Smoothness {
     const val LIGHT = 0 // 24 cuadros, cada 15°: viene en el paquete
     const val MEDIUM = 1 // 48, cada 7.5°: los "mNN"
-    const val MAX = 2 // 96, cada 3.75°: los "xNN"
 }
 
 /** Un auto ya instalado: sus imágenes viven en [folder]. */
@@ -101,10 +101,12 @@ class CarLayers(val car: ImageBitmap, val shadow: ImageBitmap?, val reflection: 
  */
 class CarRepository(context: Context, val catalogUrl: String) {
     private val root = File(context.filesDir, CarFiles.ROOT)
-    // Caché de imágenes ya teñidas, con un octavo de la memoria de la app (de 24 a
-    // 64 MB): caben los cuadros alrededor del que se ve; los lejanos se vuelven a pintar.
+    // Caché de imágenes ya teñidas: la cuarta parte de la memoria de la app (de 32 a
+    // 160 MB), para que quepa el giro completo de fluidez media a tamaño real en
+    // pantallas grandes. Si no cupiera, al girar en círculo siempre se borraría justo
+    // el cuadro que sigue y el giro se iría trabando.
     private val images = object : LruCache<String, ImageBitmap>(
-        (Runtime.getRuntime().maxMemory() / 8).coerceIn(24L shl 20, 64L shl 20).toInt(),
+        (Runtime.getRuntime().maxMemory() / 4).coerceIn(32L shl 20, 160L shl 20).toInt(),
     ) {
         override fun sizeOf(key: String, value: ImageBitmap) = value.width * value.height * 4
     }
@@ -146,7 +148,7 @@ class CarRepository(context: Context, val catalogUrl: String) {
                     (0 until x.length()).map { j ->
                         val e = x.getJSONObject(j)
                         SpinExtra(e.getInt(CarJson.LEVEL), e.getString("url"), e.optLong("bytes"), e.getString("sha256"))
-                    }
+                    }.filter { it.level <= Smoothness.MEDIUM }
                 }.orEmpty(),
             )
         }
@@ -243,7 +245,7 @@ class CarRepository(context: Context, val catalogUrl: String) {
     /** Baja el giro de [p] a [level] borrando los cuadros de más (libera espacio). */
     suspend fun lowerSmoothness(p: CarPackage, level: Int) = withContext(Dispatchers.IO) {
         val letters = buildList {
-            if (level < Smoothness.MAX) add("x")
+            add(RETIRED_FRAMES)
             if (level < Smoothness.MEDIUM) add("m")
         }
         File(p.folder, CarFiles.SPIN).listFiles()?.filter { f -> letters.any { f.name.startsWith(it) } }?.forEach { it.delete() }
@@ -254,6 +256,14 @@ class CarRepository(context: Context, val catalogUrl: String) {
     suspend fun delete(p: CarPackage) = withContext(Dispatchers.IO) {
         p.folder.deleteRecursively()
         changed()
+    }
+
+    /** Borra los cuadros de la fluidez máxima que ya no se usa (solo libera espacio). */
+    suspend fun dropRetiredFrames() {
+        val folders = installed().map { File(it.folder, CarFiles.SPIN) }
+        withContext(Dispatchers.IO) {
+            folders.forEach { dir -> dir.listFiles()?.filter { it.name.startsWith(RETIRED_FRAMES) }?.forEach { it.delete() } }
+        }
     }
 
     /** Quita todos los autos descargados (sus imágenes); se pueden volver a bajar del catálogo. */
@@ -427,7 +437,6 @@ class CarRepository(context: Context, val catalogUrl: String) {
                 views = (0 until (views?.length() ?: 0)).map { views!!.getString(it) },
                 spin = a.optInt(CarJson.SPIN),
                 smoothness = when {
-                    File(folder, "${CarFiles.SPIN}/x00.webp").exists() -> Smoothness.MAX
                     File(folder, "${CarFiles.SPIN}/m00.webp").exists() -> Smoothness.MEDIUM
                     else -> Smoothness.LIGHT
                 },
@@ -487,6 +496,8 @@ class CarRepository(context: Context, val catalogUrl: String) {
     private fun readText(url: String) = open(url).inputStream.bufferedReader().use { it.readText() }
 
     private companion object {
+        /** Cuadros de la fluidez máxima ("xNN"), que se quitó. */
+        const val RETIRED_FRAMES = "x"
         const val CHECK_EVERY_MS = 60 * 60 * 1000L
         const val KEY_LAST_CHECK = "ultima_revision"
     }

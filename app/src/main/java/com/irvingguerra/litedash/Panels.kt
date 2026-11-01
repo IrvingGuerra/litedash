@@ -323,7 +323,7 @@ private fun ModelOptions(cars: CarRepository, current: CarPackage, entry: Catalo
     if (current.spin == 24 && entry != null && entry.extras.isNotEmpty()) {
         Label(stringResource(R.string.smoothness), Typography.label, c.textMuted)
         FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            for ((level, text) in listOf(Smoothness.LIGHT to R.string.smoothness_light, Smoothness.MEDIUM to R.string.smoothness_medium, Smoothness.MAX to R.string.smoothness_max)) {
+            for ((level, text) in listOf(Smoothness.LIGHT to R.string.smoothness_light, Smoothness.MEDIUM to R.string.smoothness_medium)) {
                 // Subir dice cuánto se baja; bajar, cuánto espacio se libera.
                 val gain = entry.extras.filter { it.level in (current.smoothness + 1)..level }.sumOf { it.bytes }
                 val freed = entry.extras.filter { it.level in (level + 1)..current.smoothness }.sumOf { it.bytes }

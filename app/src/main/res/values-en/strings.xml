@@ -107,7 +107,6 @@
     <string name="smoothness">Spin smoothness</string>
     <string name="smoothness_light">Light</string>
     <string name="smoothness_medium">Medium</string>
-    <string name="smoothness_max">Maximum</string>
     <string name="smoothness_help">Smoother = more frames when spinning. Only the missing ones are downloaded.</string>
     <string name="delete_car">Delete download · %.1f MB</string>
     <string name="cancel">Cancel</string>

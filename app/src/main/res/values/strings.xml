@@ -111,7 +111,6 @@
     <string name="smoothness">Fluidez del giro</string>
     <string name="smoothness_light">Ligera</string>
     <string name="smoothness_medium">Media</string>
-    <string name="smoothness_max">Máxima</string>
     <string name="smoothness_help">Más fluidez = más cuadros al girar. Solo se bajan los que faltan.</string>
     <string name="delete_car">Eliminar descargado · %.1f MB</string>
     <string name="cancel">Cancelar</string>
