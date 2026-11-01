@@ -6,6 +6,11 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
+## [1.4.8] - 2026-11-01
+
+### Mejorado
+- Ajustes más limpio: las tarjetas ya no llevan el ícono grande de fondo.
+
 ## [1.4.7] - 2026-11-01
 
 ### Arreglado

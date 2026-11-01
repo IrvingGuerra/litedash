@@ -255,7 +255,7 @@ private fun CarOptions(prefs: Preferences, cars: CarRepository, pkg: CarPackage?
 private fun CarSettings(d: Dependencies) {
     val prefs = d.prefs
     val pkg = remember(prefs.carModel, d.cars.changes) { d.cars.pkg(prefs.carModel) }
-    SettingsCard(Icons.car) {
+    SettingsCard {
         Box(Modifier.fillMaxWidth().widthIn(max = 520.dp).aspectRatio(1.8f)) {
             if (pkg != null) {
                 // Arriba el auto; abajo queda lugar para su sombra y su reflejo en el piso.
@@ -267,7 +267,7 @@ private fun CarSettings(d: Dependencies) {
         CarOptions(prefs, d.cars, pkg, Modifier.fillMaxWidth())
         Label(stringResource(R.string.car_home_help), Typography.small, LocalColors.current.textMuted)
     }
-    SettingsCard(Icons.bell, stringResource(R.string.reminders), stringResource(R.string.reminders_help)) {
+    SettingsCard(stringResource(R.string.reminders), stringResource(R.string.reminders_help)) {
         ReminderSettings(d.reminders)
     }
 }
@@ -511,10 +511,10 @@ fun SettingsPanel(
                     SettingsSection.APPEARANCE -> Appearance(d.prefs, revision)
                     SettingsSection.CAR -> CarSettings(d)
                     SettingsSection.HOME -> HomeSettings(d.prefs, onEdit, onTemplates)
-                    SettingsSection.MUSIC -> SettingsCard(Icons.music) { MusicSettings(d) }
+                    SettingsSection.MUSIC -> SettingsCard { MusicSettings(d) }
                     SettingsSection.MAP -> {
-                        SettingsCard(Icons.navigate) { MapSettings(d) }
-                        SettingsCard(Icons.home, stringResource(R.string.places), stringResource(R.string.places_help)) {
+                        SettingsCard { MapSettings(d) }
+                        SettingsCard(stringResource(R.string.places), stringResource(R.string.places_help)) {
                             Label(stringResource(R.string.place_home), Typography.label, c.textMuted)
                             TextInput(d.prefs.homeAddress ?: "", { d.prefs.homeAddress = it.take(160).ifBlank { null } }, stringResource(R.string.place_hint), Modifier.fillMaxWidth())
                             Label(stringResource(R.string.place_work), Typography.label, c.textMuted)
@@ -522,8 +522,8 @@ fun SettingsPanel(
                         }
                     }
                     SettingsSection.WHEEL -> {
-                        SettingsCard(Icons.wheel, help = stringResource(R.string.wheel_help)) { WheelSettings(d.wheel, d.prefs) }
-                        SettingsCard(Icons.settings, stringResource(R.string.wheel_assigned)) { WheelAssigned(d.prefs) }
+                        SettingsCard(help = stringResource(R.string.wheel_help)) { WheelSettings(d.wheel, d.prefs) }
+                        SettingsCard(stringResource(R.string.wheel_assigned)) { WheelAssigned(d.prefs) }
                     }
                     SettingsSection.MODULES -> {
                         Label(stringResource(R.string.modules_help), Typography.body, c.textMuted)
@@ -558,15 +558,13 @@ private fun MenuEntry(icon: ImageVector, text: String, selected: Boolean, narrow
 /** Tarjeta de Ajustes: título, controles y el ícono de la sección grande y tenue a la derecha. */
 @Composable
 private fun SettingsCard(
-    icon: ImageVector,
     title: String? = null,
     help: String? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val c = LocalColors.current
     Card(Modifier.fillMaxWidth().widthIn(max = 860.dp)) {
-        Icon(icon, c.accent.copy(alpha = 0.14f), 72.dp, Modifier.align(Alignment.TopEnd).padding(18.dp))
-        Column(Modifier.padding(22.dp).padding(end = 64.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+        Column(Modifier.padding(22.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
             if (title != null) Label(title, Typography.subtitle, maxLines = 1)
             content()
             if (help != null) Label(help, Typography.small, c.textMuted)
@@ -578,20 +576,20 @@ private fun SettingsCard(
 private fun Appearance(prefs: Preferences, revision: Int) {
     val c = LocalColors.current
     val context = LocalContext.current
-    SettingsCard(Icons.car, stringResource(R.string.your_name), stringResource(R.string.your_name_help)) {
+    SettingsCard(stringResource(R.string.your_name), stringResource(R.string.your_name_help)) {
         TextInput(prefs.driverName ?: "", { prefs.driverName = it.take(24).ifBlank { null } }, stringResource(R.string.your_name_hint), Modifier.fillMaxWidth())
     }
-    SettingsCard(Icons.theme, stringResource(R.string.theme)) {
+    SettingsCard(stringResource(R.string.theme)) {
         FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             for ((mode, text) in listOf(ThemeMode.DARK to R.string.theme_dark, ThemeMode.LIGHT to R.string.theme_light, ThemeMode.SUN to R.string.theme_sun, ThemeMode.SYSTEM to R.string.theme_system)) {
                 Button(stringResource(text), { prefs.theme = mode }, primary = prefs.theme == mode)
             }
         }
     }
-    SettingsCard(Icons.sun, stringResource(R.string.brightness), stringResource(R.string.brightness_help)) {
+    SettingsCard(stringResource(R.string.brightness), stringResource(R.string.brightness_help)) {
         BrightnessSettings(prefs, revision)
     }
-    SettingsCard(Icons.language, stringResource(R.string.language)) {
+    SettingsCard(stringResource(R.string.language)) {
         val activity = context as? Activity
         FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             for ((code, text) in listOf("" to R.string.language_system, "es" to R.string.language_es, "en" to R.string.language_en)) {
@@ -604,7 +602,7 @@ private fun Appearance(prefs: Preferences, revision: Int) {
             }
         }
     }
-    SettingsCard(Icons.expand, stringResource(R.string.scale), stringResource(R.string.scale_help)) {
+    SettingsCard(stringResource(R.string.scale), stringResource(R.string.scale_help)) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             IconButton(Icons.minus, { prefs.scale = (prefs.scale - 0.1f).coerceAtLeast(0.8f).roundToTenth() }, background = c.surfaceHigh)
             Label("${(prefs.scale * 100).toInt()} %", Typography.title, modifier = Modifier.widthIn(min = 90.dp))
@@ -616,13 +614,13 @@ private fun Appearance(prefs: Preferences, revision: Int) {
 @Composable
 private fun HomeSettings(prefs: Preferences, onEdit: () -> Unit, onTemplates: () -> Unit) {
     val context = LocalContext.current
-    SettingsCard(Icons.dashboard, stringResource(R.string.layout), stringResource(R.string.arrange_help)) {
+    SettingsCard(stringResource(R.string.layout), stringResource(R.string.arrange_help)) {
         FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Button(stringResource(R.string.arrange), onEdit, primary = true)
             Button(stringResource(R.string.templates), onTemplates)
         }
     }
-    SettingsCard(Icons.clock, stringResource(R.string.parked_mode), stringResource(R.string.parked_mode_help)) {
+    SettingsCard(stringResource(R.string.parked_mode), stringResource(R.string.parked_mode_help)) {
         FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             Button(stringResource(R.string.on), { prefs.parkedMode = true }, primary = prefs.parkedMode)
             Button(stringResource(R.string.off), { prefs.parkedMode = false }, primary = !prefs.parkedMode)
@@ -630,7 +628,7 @@ private fun HomeSettings(prefs: Preferences, onEdit: () -> Unit, onTemplates: ()
     }
     val (requestHome, returns) = rememberRequestHome()
     val isHome = remember(returns) { isHomeApp(context) }
-    SettingsCard(Icons.home, stringResource(R.string.welcome_home_title)) {
+    SettingsCard(stringResource(R.string.welcome_home_title)) {
         if (isHome) {
             Label(stringResource(R.string.welcome_already_home), Typography.body, LocalColors.current.accent)
         } else {
@@ -643,11 +641,11 @@ private fun HomeSettings(prefs: Preferences, onEdit: () -> Unit, onTemplates: ()
 private fun About(d: Dependencies) {
     val c = LocalColors.current
     val context = LocalContext.current
-    SettingsCard(Icons.info, "LiteDash ${BuildConfig.VERSION_NAME}") {
+    SettingsCard("LiteDash ${BuildConfig.VERSION_NAME}") {
         Label(BuildConfig.CHANNEL, Typography.small, c.textMuted)
         if (d.updater.available) Updates(d.updater)
     }
-    SettingsCard(Icons.apps, stringResource(R.string.copy_info), stringResource(R.string.copy_info_help)) {
+    SettingsCard(stringResource(R.string.copy_info), stringResource(R.string.copy_info_help)) {
         var copied by remember { mutableStateOf(false) }
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             Button(stringResource(R.string.copy_info), { copySystemInfo(context); copied = true })
