@@ -139,19 +139,21 @@ fun HomeCar(d: Dependencies, onClick: () -> Unit, modifier: Modifier = Modifier,
         color = color,
         onClick = onClick,
         modifier = modifier,
-        drawing = pkg?.let { carPkg -> { m -> CarTurntable(d.cars, carPkg, dashboardView(carPkg), color, m, onReady) } },
-        hasFloor = pkg?.let { dashboardView(it) in it.floor } == true,
+        drawing = pkg?.let { carPkg ->
+            { m -> CarTurntable(d.cars, carPkg, dashboardView(carPkg), color, m, d.prefs.carAngle, { d.prefs.carAngle = it }, onReady) }
+        },
+        hasFloor = pkg?.let(::showsFloor) == true,
     )
 }
 
 /**
  * Solo el auto: crece desde su pieza ([from], en coordenadas de la pantalla)
  * hasta casi toda la pantalla mientras el fondo tapa el inicio; [progress] va de
- * 0 (en su pieza) a 1 (completo). El auto se dibuja una vez al tamaño final y se
+ * 0 (en su pieza) a 1 (completo) y se lee solo al dibujar. El auto se dibuja una vez al tamaño final y se
  * escala con la GPU, así la animación no vuelve a pintar la imagen cuadro a cuadro.
  */
 @Composable
-private fun CarOnly(d: Dependencies, from: androidx.compose.ui.geometry.Rect, progress: Float, backdrop: Modifier, onTap: () -> Unit, onReady: () -> Unit) {
+private fun CarOnly(d: Dependencies, from: androidx.compose.ui.geometry.Rect, progress: () -> Float, backdrop: Modifier, onTap: () -> Unit, onReady: () -> Unit) {
     val density = LocalDensity.current
     val insets = androidx.compose.foundation.layout.WindowInsets.safeDrawing
     val direction = androidx.compose.ui.platform.LocalLayoutDirection.current
@@ -169,7 +171,7 @@ private fun CarOnly(d: Dependencies, from: androidx.compose.ui.geometry.Rect, pr
         Box(
             Modifier
                 .fillMaxSize()
-                .graphicsLayer { alpha = progress }
+                .graphicsLayer { alpha = progress() }
                 .then(backdrop)
                 .clickable(remember { androidx.compose.foundation.interaction.MutableInteractionSource() }, indication = null, onClick = onTap),
         )
@@ -177,13 +179,15 @@ private fun CarOnly(d: Dependencies, from: androidx.compose.ui.geometry.Rect, pr
             Modifier
                 .offset { androidx.compose.ui.unit.IntOffset(to.left.toInt(), to.top.toInt()) }
                 .size(with(density) { to.width.toDp() }, with(density) { to.height.toDp() })
+                // Todo se lee aquí, al dibujar: la animación no vuelve a armar nada, solo mueve la capa.
                 .graphicsLayer {
-                    val scale = start + (1f - start) * progress
+                    val t = progress()
+                    val scale = start + (1f - start) * t
                     scaleX = scale
                     scaleY = scale
                     if (!from.isEmpty) {
-                        translationX = (from.center.x - to.center.x) * (1f - progress)
-                        translationY = (from.center.y - to.center.y) * (1f - progress)
+                        translationX = (from.center.x - to.center.x) * (1f - t)
+                        translationY = (from.center.y - to.center.y) * (1f - t)
                     }
                 },
         ) {
@@ -233,6 +237,9 @@ fun TileContent(d: Dependencies, p: Tile, apps: List<App>, revision: Int, action
 }
 
 /** La vista del auto en el tablero: la de escena (con piso) si el paquete la trae. */
+/** En el inicio el auto se para en un piso: el del giro (reflejo dibujado) o el horneado en la vista. */
+fun showsFloor(p: CarPackage) = p.spin > 0 || dashboardView(p) in p.floor
+
 fun dashboardView(p: CarPackage) = if (CarViews.SCENE in p.views) CarViews.SCENE else CarViews.THREE_QUARTER
 
 /** La de la pieza, si eligió una; si no, la de Ajustes; si no, la primera instalada. */
@@ -329,7 +336,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
     // Con un auto que trae piso, el fondo baja un poco de tono hacia abajo: es el
     // piso donde se para el auto (como en Tesla), y su sombra y reflejo caen ahí.
     val hasFloor = d.dashboard.tiles.any { it.type == TileTypes.CAR } &&
-        remember(d.prefs.carModel, d.cars.changes) { d.cars.pkg(d.prefs.carModel) }?.let { dashboardView(it) in it.floor } == true
+        remember(d.prefs.carModel, d.cars.changes) { d.cars.pkg(d.prefs.carModel) }?.let(::showsFloor) == true
     val backdrop = if (hasFloor) {
         Modifier.background(Brush.verticalGradient(0.3f to c.background, 1f to lerp(c.background, Color.Black, if (c.dark) 0.35f else 0.08f)))
     } else Modifier.background(c.background)
@@ -415,7 +422,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
             is Panel.PickApp -> PickAppPanel(d, apps, p.tileId, close = { panel = null })
         }
 
-        if (carShown && panel == null) CarOnly(d, carBounds, carProgress.value, backdrop, onTap = { carOnly = false; touched++ }, onReady = { carReady = true })
+        if (carShown && panel == null) CarOnly(d, carBounds, { carProgress.value }, backdrop, onTap = { carOnly = false; touched++ }, onReady = { carReady = true })
 
         if (parked) Parked(d, onWake = { parked = false; touched++ })
 

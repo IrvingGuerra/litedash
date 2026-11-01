@@ -37,6 +37,7 @@ private object PrefKeys {
     const val WORK_ADDRESS = "direccion_trabajo"
     const val PARKED_MODE = "modo_estacionado"
     const val WHEEL_KEYS = "mandos_volante"
+    const val CAR_ANGLE = "angulo_auto"
     const val BRIGHTNESS_BY_SUN = "brillo_por_sol"
     const val DAY_BRIGHTNESS = "brillo_dia"
     const val NIGHT_BRIGHTNESS = "brillo_noche"
@@ -174,6 +175,12 @@ class Preferences(context: Context) {
     var parkedMode: Boolean
         get() = _parkedMode
         set(v) { _parkedMode = v; p.edit { putBoolean(PrefKeys.PARKED_MODE, v) } }
+
+    private var _carAngle by mutableStateOf(p.getFloat(PrefKeys.CAR_ANGLE, -1f).takeIf { it >= 0f })
+    /** Hacia dónde dejó girado el auto en el inicio (fracción de vuelta); null = tres cuartos. */
+    var carAngle: Float?
+        get() = _carAngle
+        set(v) { _carAngle = v; p.edit { putFloat(PrefKeys.CAR_ANGLE, v ?: -1f) } }
 
     private var _wheelKeys by mutableStateOf(
         p.getString(PrefKeys.WHEEL_KEYS, "")!!.lines().mapNotNull { line ->

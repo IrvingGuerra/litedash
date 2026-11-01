@@ -1,18 +1,12 @@
 package com.irvingguerra.litedash.feature.car
 
 import androidx.compose.foundation.Canvas
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Paint
 import androidx.compose.ui.graphics.drawscope.withTransform
-import androidx.compose.ui.graphics.graphicsLayer
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Box
@@ -148,9 +142,11 @@ private suspend fun groundLine(img: ImageBitmap): Float = withContext(Dispatcher
 }
 
 /**
- * El auto del inicio: quieto se ve la vista con piso ([rest]); al arrastrar a los
- * lados gira como en Ajustes (con su reflejo) y al soltar regresa girando a su
- * lugar y vuelve el piso. Los cuadros del giro ya vienen en el paquete del auto.
+ * El auto del inicio: gira con el dedo como en Ajustes y se queda donde lo
+ * dejas. Usa siempre los cuadros del giro (con su reflejo dibujado) para que no
+ * cambie de tamaño al empezar a girar. [angle] es la vuelta en fracción (0..1;
+ * null = tres cuartos) y [onAngle] se llama al soltar para guardarla. Los
+ * cuadros ya vienen en el paquete del auto.
  */
 @Composable
 fun CarTurntable(
@@ -159,6 +155,8 @@ fun CarTurntable(
     rest: String,
     color: Color,
     modifier: Modifier = Modifier,
+    angle: Float? = null,
+    onAngle: ((Float) -> Unit)? = null,
     onReady: (() -> Unit)? = null,
 ) {
     if (p.spin <= 0) {
@@ -167,48 +165,37 @@ fun CarTurntable(
     }
     val frames = remember(p) { spinFrames(p) }
     val n = frames.size
-    // El cuadro de tres cuartos, el mismo con el que empieza el giro de Ajustes.
-    val home = n / 8
-    var frame by remember(p) { mutableIntStateOf(home) }
-    var spinning by remember(p) { mutableStateOf(false) }
+    // Sin ángulo guardado: tres cuartos con el frente a la izquierda (como la vista con piso).
+    val saved = angle?.let { (it * n).roundToInt().mod(n) } ?: (n * 3 / 8)
+    var frame by remember(p, saved) { mutableIntStateOf(saved) }
     var ground by remember(p.id) { mutableStateOf<Float?>(null) }
     var widthPx by remember { mutableIntStateOf(0) }
-    val scope = rememberCoroutineScope()
-    var back by remember { mutableStateOf<Job?>(null) }
+    var direction by remember { mutableIntStateOf(1) }
     LaunchedEffect(p, widthPx) {
         if (widthPx <= 0 || ground != null) return@LaunchedEffect
-        repo.painted(p, frames[home], color, widthPx)?.let { ground = groundLine(it) }
+        repo.painted(p, frames[n / 8], color, widthPx)?.let { ground = groundLine(it) }
     }
-    val restAlpha by animateFloatAsState(if (spinning) 0f else 1f, tween(220), label = "piso")
+    // Mientras giras se preparan los cuadros que siguen, para que aparezcan al instante.
+    LaunchedEffect(p, frame, color, widthPx) {
+        if (widthPx <= 0) return@LaunchedEffect
+        for (k in 1..3) repo.painted(p, frames[(frame + direction * k + n) % n], color, widthPx)
+    }
     Box(
         modifier.onSizeChanged { widthPx = it.width }.pointerInput(p) {
             val step = size.width / (n * 1.2f)
             var accumulated = 0f
             detectHorizontalDragGestures(
-                onDragStart = { back?.cancel(); spinning = true; accumulated = 0f },
-                onDragEnd = {
-                    // De regreso por el lado corto, cuadro por cuadro (~0.3 s la media vuelta).
-                    back = scope.launch {
-                        val wait = (600L / n).coerceAtLeast(8L)
-                        while (frame != home) {
-                            val ahead = (home - frame + n) % n
-                            frame = if (ahead <= n / 2) (frame + 1) % n else (frame - 1 + n) % n
-                            delay(wait)
-                        }
-                        spinning = false
-                    }
-                },
-                onDragCancel = { frame = home; spinning = false },
+                onDragStart = { accumulated = 0f },
+                onDragEnd = { onAngle?.invoke(frame.toFloat() / n) },
             ) { change, dx ->
                 change.consume()
                 accumulated += dx
-                while (accumulated > step) { accumulated -= step; frame = (frame - 1 + n) % n }
-                while (accumulated < -step) { accumulated += step; frame = (frame + 1) % n }
+                while (accumulated > step) { accumulated -= step; frame = (frame - 1 + n) % n; direction = -1 }
+                while (accumulated < -step) { accumulated += step; frame = (frame + 1) % n; direction = 1 }
             }
         },
     ) {
-        if (restAlpha < 1f) CarImage(repo, p, frames[frame], color, Modifier.fillMaxSize().graphicsLayer { alpha = 1f - restAlpha }, ground)
-        if (restAlpha > 0f) CarImage(repo, p, rest, color, Modifier.fillMaxSize().graphicsLayer { alpha = restAlpha }, onReady = onReady)
+        CarImage(repo, p, frames[frame], color, Modifier.fillMaxSize(), ground, onReady)
     }
 }
 

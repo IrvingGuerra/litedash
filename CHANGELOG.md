@@ -17,7 +17,7 @@ Todos los cambios que nota quien usa LiteDash. Formato
   del sol, sin sensores. Solo en LiteDash, o en todas las apps con el permiso de
   "Modificar ajustes del sistema".
 - **Gira tu auto en el inicio**: arrástralo a los lados y gira como en Ajustes,
-  con su reflejo en el piso; al soltarlo regresa a su lugar. **Un toque** lo
+  con su reflejo en el piso, y se queda hacia donde lo dejes. **Un toque** lo
   agranda con una animación hasta verlo solo, a pantalla completa; otro toque
   lo regresa. Su nombre, color y modelo ahora están en Ajustes → Tu auto
   (también con el botón del auto en el dock).
