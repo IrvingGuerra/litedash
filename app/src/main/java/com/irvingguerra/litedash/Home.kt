@@ -43,6 +43,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.irvingguerra.litedash.core.ui.Button
+import com.irvingguerra.litedash.core.ui.Icon
 import com.irvingguerra.litedash.core.ui.IconButton
 import com.irvingguerra.litedash.core.ui.Label
 import com.irvingguerra.litedash.core.ui.Icons
@@ -113,10 +114,16 @@ fun TileContent(d: Dependencies, p: Tile, apps: List<App>, revision: Int, action
             )
         }
         TileTypes.MUSIC -> MusicTile(d.music, revision, onExpand = actions.onMusic)
-        TileTypes.CLOCK -> ClockTile()
+        TileTypes.CLOCK -> ClockTile(d.prefs.driverName)
         TileTypes.NAVIGATE -> {
             val app = mapApp(d, apps, p.data)
-            NavigationTile(d.navigation, app) { actions.onNavigate(app) }
+            NavigationTile(
+                d.navigation,
+                app,
+                home = d.prefs.homeAddress,
+                work = d.prefs.workAddress,
+                onPlace = { navigateTo(context, app, it) },
+            ) { actions.onNavigate(app) }
         }
         TileTypes.PHONE -> ShortcutTile(Icons.phone, stringResource(R.string.tile_phone), null) {
             openDialer(context)
@@ -186,6 +193,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
             TopBar(
                 editing = editing,
                 showTime = showTime,
+                driverName = d.prefs.driverName,
                 onAdd = { panel = Panel.AddTile },
                 onTemplates = { panel = Panel.Templates },
                 onFinish = { editing = false },
@@ -255,7 +263,7 @@ private fun topBarHeight() = if (isShortScreen()) 44.dp else 64.dp
 private val TOP_BAR_HIDDEN = 12.dp
 
 @Composable
-private fun TopBar(editing: Boolean, showTime: Boolean, onAdd: () -> Unit, onTemplates: () -> Unit, onFinish: () -> Unit) {
+private fun TopBar(editing: Boolean, showTime: Boolean, driverName: String?, onAdd: () -> Unit, onTemplates: () -> Unit, onFinish: () -> Unit) {
     val c = LocalColors.current
     // Sin nada que mostrar (la hora ya está en una pieza), la barra no aparta espacio: el tablero sube.
     if (!editing && !showTime) return Spacer(Modifier.height(TOP_BAR_HIDDEN))
@@ -271,7 +279,13 @@ private fun TopBar(editing: Boolean, showTime: Boolean, onAdd: () -> Unit, onTem
             Button(stringResource(R.string.done), onFinish, primary = true)
         } else if (showTime) {
             val (time, date) = rememberClock()
-            Label(date, Typography.body, c.textMuted, maxLines = 1, modifier = Modifier.weight(1f))
+            // Con nombre: el saludo primero y la fecha después, más tenue.
+            val hello = greeting(driverName, java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY))
+            Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                if (hello != null) Label(hello, Typography.subtitle, maxLines = 1)
+                Label(date, Typography.body, c.textMuted, maxLines = 1)
+            }
+            StatusIcons()
             Label(time, Typography.subtitle, maxLines = 1)
         }
     }
@@ -319,6 +333,9 @@ private fun Dock(
             }
         }
         Volume(buttonSize)
+        // Voz: abre el asistente que tenga la pantalla; si no hay ninguno, no aparece.
+        val voice = remember { voiceIntent(context) }
+        if (voice != null) IconButton(Icons.mic, { runCatching { context.startActivity(voice) } }, size = buttonSize)
         IconButton(Icons.settings, onSettings, size = buttonSize)
     }
 }
@@ -387,6 +404,82 @@ private fun HomePrompt(prefs: Preferences, revision: Int) {
         Row(box, verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             Label(stringResource(R.string.not_home_notice), Typography.body, maxLines = 2, modifier = Modifier.weight(1f))
             buttons()
+        }
+    }
+}
+
+/** El asistente de voz del sistema (manos libres primero); null si la pantalla no trae ninguno. */
+private fun voiceIntent(context: Context): Intent? =
+    listOf(Intent.ACTION_VOICE_COMMAND, Intent.ACTION_ASSIST)
+        .map { Intent(it).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) }
+        .firstOrNull { it.resolveActivity(context.packageManager) != null }
+
+/**
+ * Wi-Fi o datos, audio Bluetooth conectado y ubicación encendida, en la barra.
+ * Escucha al sistema solo mientras se ve (nada de revisar cada rato) y sin
+ * permisos: el Bluetooth se nota por el audio conectado (tu celular, el estéreo).
+ */
+@Composable
+private fun StatusIcons() {
+    val c = LocalColors.current
+    val context = LocalContext.current
+    var network by remember { mutableStateOf<Boolean?>(null) } // true Wi-Fi, false datos, null nada
+    var bluetooth by remember { mutableStateOf(false) }
+    var location by remember { mutableStateOf(false) }
+    DisposableEffect(Unit) {
+        val connectivity = context.getSystemService(android.net.ConnectivityManager::class.java)
+        val netCallback = object : android.net.ConnectivityManager.NetworkCallback() {
+            override fun onCapabilitiesChanged(n: android.net.Network, caps: android.net.NetworkCapabilities) {
+                network = when {
+                    caps.hasTransport(android.net.NetworkCapabilities.TRANSPORT_WIFI) -> true
+                    caps.hasTransport(android.net.NetworkCapabilities.TRANSPORT_CELLULAR) -> false
+                    else -> null
+                }
+            }
+            override fun onLost(n: android.net.Network) { network = null }
+        }
+        runCatching { connectivity.registerDefaultNetworkCallback(netCallback) }
+
+        val audio = context.getSystemService(android.media.AudioManager::class.java)
+        fun checkAudio() {
+            bluetooth = audio.getDevices(android.media.AudioManager.GET_DEVICES_OUTPUTS).any {
+                it.type == android.media.AudioDeviceInfo.TYPE_BLUETOOTH_A2DP || it.type == android.media.AudioDeviceInfo.TYPE_BLUETOOTH_SCO
+            }
+        }
+        val audioCallback = object : android.media.AudioDeviceCallback() {
+            override fun onAudioDevicesAdded(added: Array<out android.media.AudioDeviceInfo>) = checkAudio()
+            override fun onAudioDevicesRemoved(removed: Array<out android.media.AudioDeviceInfo>) = checkAudio()
+        }
+        audio.registerAudioDeviceCallback(audioCallback, null)
+        checkAudio()
+
+        val locations = context.getSystemService(android.location.LocationManager::class.java)
+        fun checkLocation() {
+            location = if (Build.VERSION.SDK_INT >= 28) locations.isLocationEnabled
+            else locations.isProviderEnabled(android.location.LocationManager.GPS_PROVIDER)
+        }
+        val locationReceiver = object : BroadcastReceiver() {
+            override fun onReceive(c: Context, i: Intent) = checkLocation()
+        }
+        val locationFilter = IntentFilter(android.location.LocationManager.PROVIDERS_CHANGED_ACTION)
+        // Aviso del sistema: no hace falta exportar el receptor.
+        if (Build.VERSION.SDK_INT >= 33) context.registerReceiver(locationReceiver, locationFilter, Context.RECEIVER_NOT_EXPORTED)
+        else @Suppress("UnspecifiedRegisterReceiverFlag") context.registerReceiver(locationReceiver, locationFilter)
+        checkLocation()
+
+        onDispose {
+            runCatching { connectivity.unregisterNetworkCallback(netCallback) }
+            audio.unregisterAudioDeviceCallback(audioCallback)
+            context.unregisterReceiver(locationReceiver)
+        }
+    }
+    Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+        if (bluetooth) Icon(Icons.bluetooth, c.textMuted, 20.dp)
+        if (location) Icon(Icons.location, c.textMuted, 20.dp)
+        when (network) {
+            true -> Icon(Icons.wifi, c.textMuted, 20.dp)
+            false -> Icon(Icons.signal, c.textMuted, 20.dp)
+            null -> Unit
         }
     }
 }

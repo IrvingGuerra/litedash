@@ -119,4 +119,17 @@
     <string name="delete_car">Eliminar descargado · %.1f MB</string>
     <string name="delete_confirm">Sí, eliminar</string>
     <string name="cancel">Cancelar</string>
+    <string name="greeting_morning">Buenos días, %1$s</string>
+    <string name="greeting_afternoon">Buenas tardes, %1$s</string>
+    <string name="greeting_evening">Buenas noches, %1$s</string>
+    <string name="theme_sun">Por el sol</string>
+    <string name="your_name">Tu nombre</string>
+    <string name="your_name_help">Para saludarte en el inicio.</string>
+    <string name="your_name_hint">¿Cómo te llamas?</string>
+    <string name="car_name">Nombre del auto</string>
+    <string name="place_home">Casa</string>
+    <string name="place_work">Trabajo</string>
+    <string name="places">Casa y Trabajo</string>
+    <string name="places_help">Aparecen en Navegar: un toque y el mapa te lleva.</string>
+    <string name="place_hint">Calle, número, colonia y ciudad</string>
 </resources>

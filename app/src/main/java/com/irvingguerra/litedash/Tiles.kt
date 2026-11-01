@@ -1,7 +1,10 @@
 package com.irvingguerra.litedash
 
+import androidx.compose.foundation.layout.fillMaxWidth
+import com.irvingguerra.litedash.core.ui.Button
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -106,15 +109,16 @@ fun rememberClock(): Pair<String, String> {
 }
 
 @Composable
-fun ClockTile() {
+fun ClockTile(driverName: String? = null) {
     val c = LocalColors.current
     val (time, date) = rememberClock()
+    val hello = greeting(driverName, java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY))
     BoxWithConstraints(Modifier.fillMaxSize().padding(8.dp), contentAlignment = Alignment.CenterStart) {
         // El reloj crece con la pieza: en 1 fila es discreto, en 2 o más es protagonista.
         val size = (maxHeight.value * 0.5f).coerceIn(28f, 96f)
         Column {
             Label(time, Typography.clock.copy(fontSize = size.sp), maxLines = 1)
-            Label(date, Typography.body, c.textMuted, maxLines = 1)
+            Label(if (hello != null) "$hello · $date" else date, Typography.body, c.textMuted, maxLines = 1)
         }
     }
 }
@@ -186,16 +190,64 @@ fun AppTile(repo: AppRepository, app: App?, onClick: () -> Unit) {
  * que dice el aviso de Waze o Maps (flecha, distancia y calle), sin abrir el mapa.
  */
 @Composable
-fun NavigationTile(repo: NavigationRepository, app: App?, onClick: () -> Unit) {
+fun NavigationTile(
+    repo: NavigationRepository,
+    app: App?,
+    home: String? = null,
+    work: String? = null,
+    onPlace: (String) -> Unit = {},
+    onClick: () -> Unit,
+) {
     DisposableEffect(repo) {
         repo.use { NotificationService.active() }
         onDispose { repo.release() }
     }
     val instruction = repo.instruction
+    if (instruction == null && (home != null || work != null)) return PlacesTile(app, home, work, onPlace, onClick)
     if (instruction == null) return ShortcutTile(Icons.navigate, stringResource(R.string.tile_navigate), app?.name, onClick)
     Card(Modifier.fillMaxSize(), onClick = onClick) {
         BoxWithConstraints(Modifier.fillMaxSize().padding(14.dp), contentAlignment = Alignment.CenterStart) {
             Turn(instruction, large = maxHeight > 120.dp)
+        }
+    }
+}
+
+/** Navegar con los atajos a Casa y Trabajo: un toque y el mapa ya va para allá. */
+@Composable
+private fun PlacesTile(app: App?, home: String?, work: String?, onPlace: (String) -> Unit, onClick: () -> Unit) {
+    val c = LocalColors.current
+    Card(Modifier.fillMaxSize(), onClick = onClick) {
+        BoxWithConstraints(Modifier.fillMaxSize().padding(14.dp), contentAlignment = Alignment.CenterStart) {
+            // Abajo si la pieza es alta; si no, a la derecha (en angosto sin el nombre de la app).
+            val stacked = maxHeight > 150.dp
+            val narrow = maxWidth < 360.dp
+            val places = @Composable {
+                if (home != null) Button(stringResource(R.string.place_home), { onPlace(home) })
+                if (work != null) Button(stringResource(R.string.place_work), { onPlace(work) })
+            }
+            val title = @Composable {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(Modifier.size(44.dp).clip(CircleShape).background(c.surfaceHigh), contentAlignment = Alignment.Center) {
+                        Icon(Icons.navigate, c.accent, 22.dp)
+                    }
+                    // En angosto basta el ícono: los botones dicen a dónde.
+                    if (stacked || !narrow) Column(Modifier.padding(start = 12.dp)) {
+                        Label(stringResource(R.string.tile_navigate), Typography.subtitle, maxLines = 1)
+                        if (app != null) Label(app.name, Typography.small, c.textMuted, maxLines = 1)
+                    }
+                }
+            }
+            if (stacked) {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    title()
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) { places() }
+                }
+            } else {
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Box(Modifier.weight(1f)) { title() }
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) { places() }
+                }
+            }
         }
     }
 }
@@ -225,6 +277,20 @@ private fun Turn(instruction: TurnInstruction, large: Boolean) {
 fun openDialer(context: Context) {
     val intent = Intent(Intent.ACTION_DIAL).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
     runCatching { context.startActivity(intent) }
+}
+
+/** Navegación directa a [address]: Waze o Maps si son la app elegida; si no, la que atienda "geo:". */
+fun navigateTo(context: Context, app: App?, address: String) {
+    val q = Uri.encode(address)
+    val intent = when (app?.pkg) {
+        "com.waze" -> Intent(Intent.ACTION_VIEW, "https://waze.com/ul?q=$q&navigate=yes".toUri()).setPackage("com.waze")
+        "com.google.android.apps.maps" -> Intent(Intent.ACTION_VIEW, "google.navigation:q=$q".toUri()).setPackage(app.pkg)
+        else -> Intent(Intent.ACTION_VIEW, "geo:0,0?q=$q".toUri()).apply { app?.let { setPackage(it.pkg) } }
+    }.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    runCatching { context.startActivity(intent) }.onFailure {
+        // La app elegida no entendió la dirección: que la abra cualquiera que sepa de mapas.
+        runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, "geo:0,0?q=$q".toUri()).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
+    }
 }
 
 /** Abre la navegación: la app elegida, o la que haya instalada, o lo que atienda "geo:". */

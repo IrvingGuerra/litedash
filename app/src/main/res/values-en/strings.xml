@@ -115,4 +115,17 @@
     <string name="delete_car">Delete download · %.1f MB</string>
     <string name="delete_confirm">Yes, delete</string>
     <string name="cancel">Cancel</string>
+    <string name="greeting_morning">Good morning, %1$s</string>
+    <string name="greeting_afternoon">Good afternoon, %1$s</string>
+    <string name="greeting_evening">Good evening, %1$s</string>
+    <string name="theme_sun">By the sun</string>
+    <string name="your_name">Your name</string>
+    <string name="your_name_help">To greet you on the home screen.</string>
+    <string name="your_name_hint">What\'s your name?</string>
+    <string name="car_name">Car name</string>
+    <string name="place_home">Home</string>
+    <string name="place_work">Work</string>
+    <string name="places">Home and Work</string>
+    <string name="places_help">They show up in Navigate: one tap and the map takes you there.</string>
+    <string name="place_hint">Street, number, area and city</string>
 </resources>

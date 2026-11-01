@@ -509,7 +509,15 @@ fun SettingsPanel(d: Dependencies, close: () -> Unit, onEdit: () -> Unit, onTemp
                     SettingsSection.CAR -> CarSettings(d)
                     SettingsSection.HOME -> HomeSettings(d.prefs, onEdit, onTemplates)
                     SettingsSection.MUSIC -> SettingsCard(Icons.music) { MusicSettings(d) }
-                    SettingsSection.MAP -> SettingsCard(Icons.navigate) { MapSettings(d) }
+                    SettingsSection.MAP -> {
+                        SettingsCard(Icons.navigate) { MapSettings(d) }
+                        SettingsCard(Icons.home, stringResource(R.string.places), stringResource(R.string.places_help)) {
+                            Label(stringResource(R.string.place_home), Typography.label, c.textMuted)
+                            TextInput(d.prefs.homeAddress ?: "", { d.prefs.homeAddress = it.take(160).ifBlank { null } }, stringResource(R.string.place_hint), Modifier.fillMaxWidth())
+                            Label(stringResource(R.string.place_work), Typography.label, c.textMuted)
+                            TextInput(d.prefs.workAddress ?: "", { d.prefs.workAddress = it.take(160).ifBlank { null } }, stringResource(R.string.place_hint), Modifier.fillMaxWidth())
+                        }
+                    }
                     SettingsSection.MODULES -> {
                         Label(stringResource(R.string.modules_help), Typography.body, c.textMuted)
                         Modules(d, onEdit)
@@ -563,9 +571,12 @@ private fun SettingsCard(
 private fun Appearance(prefs: Preferences) {
     val c = LocalColors.current
     val context = LocalContext.current
+    SettingsCard(Icons.car, stringResource(R.string.your_name), stringResource(R.string.your_name_help)) {
+        TextInput(prefs.driverName ?: "", { prefs.driverName = it.take(24).ifBlank { null } }, stringResource(R.string.your_name_hint), Modifier.fillMaxWidth())
+    }
     SettingsCard(Icons.theme, stringResource(R.string.theme)) {
         FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            for ((mode, text) in listOf(ThemeMode.DARK to R.string.theme_dark, ThemeMode.LIGHT to R.string.theme_light, ThemeMode.SYSTEM to R.string.theme_system)) {
+            for ((mode, text) in listOf(ThemeMode.DARK to R.string.theme_dark, ThemeMode.LIGHT to R.string.theme_light, ThemeMode.SUN to R.string.theme_sun, ThemeMode.SYSTEM to R.string.theme_system)) {
                 Button(stringResource(text), { prefs.theme = mode }, primary = prefs.theme == mode)
             }
         }

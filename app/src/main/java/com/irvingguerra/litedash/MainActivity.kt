@@ -33,6 +33,7 @@ class MainActivity : ComponentActivity() {
                 ThemeMode.DARK -> true
                 ThemeMode.LIGHT -> false
                 ThemeMode.SYSTEM -> isSystemInDarkTheme()
+                ThemeMode.SUN -> rememberIsNight()
             }
             // Íconos de la barra del sistema claros u oscuros según el tema.
             LaunchedEffect(dark) {

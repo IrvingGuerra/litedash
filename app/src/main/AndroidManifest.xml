@@ -8,10 +8,19 @@
             <action android:name="android.intent.action.MAIN" />
             <category android:name="android.intent.category.LAUNCHER" />
         </intent>
+        <!-- Botón de voz: el asistente que tenga la pantalla. -->
+        <intent>
+            <action android:name="android.intent.action.VOICE_COMMAND" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.ASSIST" />
+        </intent>
     </queries>
 
     <!-- Solo para bajar el catálogo de autos (imágenes) cuando el usuario lo abre. -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Ícono de Wi-Fi o datos en la barra (permiso normal, sin pregunta). -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
     <application
         android:name=".LiteDashApp"

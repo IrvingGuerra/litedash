@@ -142,7 +142,9 @@ private fun ColumnScope.CarStep(prefs: Preferences) {
         }
         val options = @Composable { m: Modifier ->
             Column(m, verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                Label(stringResource(R.string.name), Typography.label, c.textMuted)
+                Label(stringResource(R.string.your_name), Typography.label, c.textMuted)
+                TextInput(prefs.driverName ?: "", { prefs.driverName = it.take(24).ifBlank { null } }, stringResource(R.string.your_name_hint), Modifier.fillMaxWidth())
+                Label(stringResource(R.string.car_name), Typography.label, c.textMuted)
                 TextInput(prefs.carName ?: "", { prefs.carName = it.take(24).ifBlank { null } }, stringResource(R.string.my_car), Modifier.fillMaxWidth())
                 Label(stringResource(R.string.color), Typography.label, c.textMuted)
                 ColorPicker(prefs.carColor) { prefs.carColor = it }

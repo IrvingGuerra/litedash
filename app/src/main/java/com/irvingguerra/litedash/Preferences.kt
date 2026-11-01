@@ -32,13 +32,18 @@ private object PrefKeys {
     const val DOCK = "dock"
     const val MAP_APP = "app_mapa"
     const val MUSIC_APP = "app_musica"
+    const val DRIVER_NAME = "nombre_conductor"
+    const val HOME_ADDRESS = "direccion_casa"
+    const val WORK_ADDRESS = "direccion_trabajo"
 }
 
 /** [stored] es como se guarda cada tema (los nombres que tenía en la 1.3.4). */
 enum class ThemeMode(val stored: String) {
     DARK("OSCURO"),
     LIGHT("CLARO"),
-    SYSTEM("SISTEMA");
+    SYSTEM("SISTEMA"),
+    /** Claro de día y oscuro de noche, por la hora del sol. */
+    SUN("SOL");
 
     companion object {
         fun fromStored(value: String?) = entries.firstOrNull { it.stored == value }
@@ -139,4 +144,22 @@ class Preferences(context: Context) {
     var musicApp: String?
         get() = _musicApp
         set(v) { _musicApp = v; p.edit { putString(PrefKeys.MUSIC_APP, v) } }
+
+    private var _driverName by mutableStateOf(p.getString(PrefKeys.DRIVER_NAME, null))
+    /** Nombre de quien maneja, para saludarlo; null = sin saludo. */
+    var driverName: String?
+        get() = _driverName
+        set(v) { _driverName = v; p.edit { putString(PrefKeys.DRIVER_NAME, v) } }
+
+    private var _homeAddress by mutableStateOf(p.getString(PrefKeys.HOME_ADDRESS, null))
+    /** Dirección de Casa para el atajo de Navegar; null = sin guardar. */
+    var homeAddress: String?
+        get() = _homeAddress
+        set(v) { _homeAddress = v; p.edit { putString(PrefKeys.HOME_ADDRESS, v) } }
+
+    private var _workAddress by mutableStateOf(p.getString(PrefKeys.WORK_ADDRESS, null))
+    /** Dirección de Trabajo para el atajo de Navegar; null = sin guardar. */
+    var workAddress: String?
+        get() = _workAddress
+        set(v) { _workAddress = v; p.edit { putString(PrefKeys.WORK_ADDRESS, v) } }
 }
