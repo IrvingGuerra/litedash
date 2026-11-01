@@ -26,6 +26,9 @@ import kotlin.math.roundToInt
 /** Desde aquí los brillos de la pintura teñida se acercan a blanco sin cortarse. */
 private const val CODO = 0.78f
 
+/** Brillo mínimo de la pintura (el selector libre permite negro puro). */
+private const val PISO_PINTURA = 0.07f
+
 /** Un auto del catálogo, antes de bajarlo. */
 @Immutable
 data class EntradaCatalogo(
@@ -217,8 +220,10 @@ class RepositorioAutos(contexto: Context, val urlCatalogo: String) {
     /** color = imagen × color / gris, con brillos suaves arriba de [CODO]; solo donde hay pintura. */
     private fun pintar(base: Bitmap, mascara: Bitmap, color: Color, gris: Float) {
         val tablas = floatArrayOf(color.red, color.green, color.blue).map { canal ->
+            // Nunca negro puro: el auto perdería todo su volumen y quedaría como silueta.
+            val base = PISO_PINTURA + canal * (1 - PISO_PINTURA)
             IntArray(256) { i ->
-                val v = i / 255f * canal / gris
+                val v = i / 255f * base / gris
                 val r = if (v <= CODO) v else CODO + (1 - CODO) * (1 - exp(-(v - CODO) / (1 - CODO)))
                 (r * 255).roundToInt().coerceIn(0, 255)
             }

@@ -4,6 +4,7 @@
     <string name="mi_auto">My car</string>
     <string name="nombre">Name</string>
     <string name="color">Color</string>
+    <string name="otro_color">Other color</string>
     <string name="auto_pronto">Coming soon: your exact model, with its color and wheels.</string>
     <string name="pieza_auto">Car</string>
     <string name="pieza_musica">Music</string>

@@ -38,6 +38,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -52,7 +53,6 @@ import com.irvingguerra.litedash.feature.apps.App
 import com.irvingguerra.litedash.feature.apps.IconoApp
 import com.irvingguerra.litedash.feature.apps.RepositorioApps
 import com.irvingguerra.litedash.feature.apps.rememberApps
-import com.irvingguerra.litedash.feature.auto.ColoresAuto
 import com.irvingguerra.litedash.feature.auto.ImagenAuto
 import com.irvingguerra.litedash.feature.auto.PaqueteAuto
 import com.irvingguerra.litedash.feature.auto.RepositorioAutos
@@ -101,7 +101,7 @@ fun ContenidoPieza(d: Dependencias, p: Pieza, apps: List<App>, revision: Int, ac
     val contexto = LocalContext.current
     when (p.tipo) {
         Tipos.AUTO -> {
-            val color = ColoresAuto[d.prefs.colorAuto.coerceIn(ColoresAuto.indices)]
+            val color = d.prefs.colorAuto
             val paquete = remember(d.prefs.modeloAuto, d.autos.cambios) { d.autos.paquete(d.prefs.modeloAuto) }
             PiezaAuto(
                 nombre = d.prefs.nombreAuto ?: paquete?.nombre ?: stringResource(R.string.mi_auto),
@@ -187,7 +187,7 @@ fun Inicio(d: Dependencias, revision: Int, inicioTocado: Int) {
                 alPlantillas = { panel = Panel.Plantillas },
                 alTerminar = { editando = false },
             )
-            if (d.prefs.bienvenidaVista && !d.prefs.noPedirInicio && !editando) AvisoInicio(d.prefs, revision)
+            if (d.prefs.bienvenidaVista && !d.prefs.noPedirInicio && !editando && !pantallaBaja()) AvisoInicio(d.prefs, revision)
             BoxWithConstraints(Modifier.weight(1f).fillMaxWidth().padding(horizontal = 10.dp)) {
                 val cuadricula = remember(maxWidth, maxHeight) { Cuadricula.para(maxWidth.value, maxHeight.value) }
                 remember(cuadricula) { d.tablero.usar(cuadricula) }
@@ -248,7 +248,7 @@ private fun BarraSuperior(editando: Boolean, conHora: Boolean, alAgregar: () -> 
     // Sin nada que mostrar (la hora ya está en una pieza), la barra no aparta espacio: el tablero sube.
     if (!editando && !conHora) return Spacer(Modifier.height(12.dp))
     Row(
-        Modifier.fillMaxWidth().height(64.dp).padding(horizontal = 24.dp),
+        Modifier.fillMaxWidth().height(if (pantallaBaja()) 44.dp else 64.dp).padding(horizontal = 24.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
@@ -276,20 +276,22 @@ private fun Dock(
     val c = LocalColores.current
     val contexto = LocalContext.current
     // En pantallas chicas (7") todo se ve lejos: íconos más grandes, más fáciles de atinar manejando.
-    val chica = pantallaChica()
-    val lado = if (chica) 56.dp else 44.dp
-    val caja = if (chica) 68.dp else 56.dp
+    // Pero si casi no hay altura (teléfono acostado), compacto: el tablero va primero.
+    val baja = pantallaBaja()
+    val chica = pantallaChica() && !baja
+    val lado = if (chica) 56.dp else if (baja) 36.dp else 44.dp
+    val caja = if (chica) 68.dp else if (baja) 46.dp else 56.dp
     Row(
         Modifier
             .fillMaxWidth()
-            .height(if (chica) 96.dp else 84.dp)
+            .height(if (chica) 96.dp else if (baja) 64.dp else 84.dp)
             .padding(horizontal = 16.dp, vertical = 8.dp)
             .clip(RoundedCornerShape(24.dp))
             .background(c.superficie)
             .padding(horizontal = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        val boton = if (chica) 64.dp else 56.dp
+        val boton = if (chica) 64.dp else if (baja) 46.dp else 56.dp
         BotonIcono(Iconos.auto, alAuto, tam = boton)
         BotonIcono(Iconos.apps, alApps, tam = boton)
         Box(Modifier.padding(horizontal = 8.dp).width(1.dp).height(32.dp).background(c.linea))
@@ -353,18 +355,26 @@ private fun AvisoInicio(prefs: Preferencias, revision: Int) {
     val (pedir, vueltas) = rememberPedirInicio()
     val esLaDeInicio = remember(revision, vueltas) { esInicio(contexto) }
     if (esLaDeInicio) return
-    Row(
-        Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 4.dp)
-            .clip(RoundedCornerShape(18.dp))
-            .background(c.superficie)
-            .padding(start = 20.dp, end = 8.dp, top = 8.dp, bottom = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
-    ) {
-        Etiqueta(stringResource(R.string.aviso_no_es_inicio), Texto.normal, maxLineas = 2, modifier = Modifier.weight(1f))
+    val caja = Modifier
+        .fillMaxWidth()
+        .padding(horizontal = 16.dp, vertical = 4.dp)
+        .clip(RoundedCornerShape(18.dp))
+        .background(c.superficie)
+        .padding(start = 20.dp, end = 8.dp, top = 8.dp, bottom = 8.dp)
+    val botones = @Composable {
         Boton(stringResource(R.string.hacer_inicio), pedir, principal = true)
         Boton(stringResource(R.string.no_preguntar), { prefs.noPedirInicio = true })
+    }
+    // En angosto (teléfono parado) el texto no cabe junto a los botones: va arriba.
+    if (LocalConfiguration.current.screenWidthDp < 560) {
+        Column(caja, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Etiqueta(stringResource(R.string.aviso_no_es_inicio), Texto.normal, maxLineas = 2)
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) { botones() }
+        }
+    } else {
+        Row(caja, verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Etiqueta(stringResource(R.string.aviso_no_es_inicio), Texto.normal, maxLineas = 2, modifier = Modifier.weight(1f))
+            botones()
+        }
     }
 }

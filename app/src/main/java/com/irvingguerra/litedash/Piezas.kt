@@ -80,6 +80,13 @@ val PAQUETES_MUSICA = arrayOf(
 @Composable
 fun pantallaChica(): Boolean = LocalConfiguration.current.screenHeightDp < 640
 
+/**
+ * Muy poca altura (un teléfono acostado): barras y dock compactos y sin aviso,
+ * para que al tablero le quede espacio (si no, las piezas salen vacías).
+ */
+@Composable
+fun pantallaBaja(): Boolean = LocalConfiguration.current.screenHeightDp < 480
+
 /** Hora y fecha que respetan el formato del usuario (12/24 h); un repintado por minuto. */
 @Composable
 fun rememberHora(): Pair<String, String> {

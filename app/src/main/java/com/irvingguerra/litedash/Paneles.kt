@@ -223,7 +223,7 @@ fun PanelElegirApp(d: Dependencias, apps: List<App>, idPieza: String?, cerrar: (
 @Composable
 fun PanelAuto(prefs: Preferencias, autos: RepositorioAutos, cerrar: () -> Unit) {
     val c = LocalColores.current
-    val color = ColoresAuto[prefs.colorAuto.coerceIn(ColoresAuto.indices)]
+    val color = prefs.colorAuto
     val paquete = remember(prefs.modeloAuto, autos.cambios) { autos.paquete(prefs.modeloAuto) }
     PanelBase(stringResource(R.string.tu_auto), cerrar) {
         BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
@@ -243,21 +243,7 @@ fun PanelAuto(prefs: Preferencias, autos: RepositorioAutos, cerrar: () -> Unit) 
                     Etiqueta(stringResource(R.string.nombre), Texto.etiqueta, c.textoSuave)
                     CampoTexto(prefs.nombreAuto ?: "", { prefs.nombreAuto = it.take(24).ifBlank { null } }, paquete?.nombre ?: stringResource(R.string.mi_auto), Modifier.fillMaxWidth())
                     Etiqueta(stringResource(R.string.color), Texto.etiqueta, c.textoSuave)
-                    FlowRow(horizontalArrangement = Arrangement.spacedBy(14.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                        ColoresAuto.forEachIndexed { i, col ->
-                            val elegido = i == prefs.colorAuto
-                            Box(
-                                Modifier
-                                    .size(56.dp)
-                                    .clip(CircleShape)
-                                    .border(3.dp, if (elegido) c.acento else c.linea, CircleShape)
-                                    .padding(6.dp)
-                                    .clip(CircleShape)
-                                    .background(col)
-                                    .clickable { prefs.colorAuto = i },
-                            )
-                        }
-                    }
+                    SelectorColor(prefs.colorAuto) { prefs.colorAuto = it }
                     // Mientras no haya catálogo ni autos instalados, solo existe el genérico.
                     if (autos.hayCatalogo || autos.instalados().isNotEmpty()) {
                         Etiqueta(stringResource(R.string.modelo), Texto.etiqueta, c.textoSuave)

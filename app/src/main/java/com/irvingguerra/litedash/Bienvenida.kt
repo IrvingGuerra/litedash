@@ -138,27 +138,14 @@ private fun ColumnScope.PasoAuto(prefs: Preferencias) {
     BoxWithConstraints(Modifier.fillMaxWidth()) {
         val horizontal = maxWidth > 700.dp
         val dibujo = @Composable { m: Modifier ->
-            DibujoAuto(ColoresAuto[prefs.colorAuto.coerceIn(ColoresAuto.indices)], m)
+            DibujoAuto(prefs.colorAuto, m)
         }
         val opciones = @Composable { m: Modifier ->
             Column(m, verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 Etiqueta(stringResource(R.string.nombre), Texto.etiqueta, c.textoSuave)
                 CampoTexto(prefs.nombreAuto ?: "", { prefs.nombreAuto = it.take(24).ifBlank { null } }, stringResource(R.string.mi_auto), Modifier.fillMaxWidth())
                 Etiqueta(stringResource(R.string.color), Texto.etiqueta, c.textoSuave)
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(14.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                    ColoresAuto.forEachIndexed { i, col ->
-                        Box(
-                            Modifier
-                                .size(56.dp)
-                                .clip(CircleShape)
-                                .border(3.dp, if (i == prefs.colorAuto) c.acento else c.linea, CircleShape)
-                                .padding(6.dp)
-                                .clip(CircleShape)
-                                .background(col)
-                                .clickable { prefs.colorAuto = i },
-                        )
-                    }
-                }
+                SelectorColor(prefs.colorAuto) { prefs.colorAuto = it }
             }
         }
         if (horizontal) {

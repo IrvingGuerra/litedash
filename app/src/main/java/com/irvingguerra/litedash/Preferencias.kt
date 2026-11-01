@@ -6,7 +6,10 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.core.content.edit
+import com.irvingguerra.litedash.feature.auto.ColoresAuto
 
 enum class ModoTema { OSCURO, CLARO, SISTEMA }
 
@@ -43,10 +46,14 @@ class Preferencias(contexto: Context) {
         get() = _nombreAuto
         set(v) { _nombreAuto = v; p.edit { putString("nombre_auto", v) } }
 
-    private var _colorAuto by mutableIntStateOf(p.getInt("color_auto", 0))
-    var colorAuto: Int
-        get() = _colorAuto
-        set(v) { _colorAuto = v; p.edit { putInt("color_auto", v) } }
+    // Antes se guardaba el número de un color fijo ("color_auto"); ahora el color libre.
+    private var _colorAuto by mutableIntStateOf(
+        if (p.contains("color_auto_argb")) p.getInt("color_auto_argb", 0)
+        else ColoresAuto[p.getInt("color_auto", 0).coerceIn(ColoresAuto.indices)].toArgb(),
+    )
+    var colorAuto: Color
+        get() = Color(_colorAuto)
+        set(v) { _colorAuto = v.toArgb(); p.edit { putInt("color_auto_argb", _colorAuto) } }
 
     private var _modeloAuto by mutableStateOf(p.getString("modelo_auto", null))
     /** Id del auto del catálogo que se muestra; null = el sedán genérico. */

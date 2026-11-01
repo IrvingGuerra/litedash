@@ -24,6 +24,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
+import kotlinx.coroutines.delay
 import kotlin.math.roundToInt
 
 private class Capas(val auto: ImageBitmap, val sombra: ImageBitmap?, val reflejo: ImageBitmap?)
@@ -42,6 +43,9 @@ fun ImagenAuto(repo: RepositorioAutos, p: PaqueteAuto, nombre: String, color: Co
         // Se queda la imagen anterior mientras carga la nueva (el giro no parpadea).
         var capas by remember(p.id) { mutableStateOf<Capas?>(null) }
         LaunchedEffect(p, nombre, color, anchoPx) {
+            // Al arrastrar el selector de color llegan muchos colores seguidos: solo
+            // se tiñe el último (si cambia antes, este se cancela aquí sin trabajar).
+            if (capas != null) delay(60)
             val auto = repo.pintada(p, nombre, color, anchoPx) ?: return@LaunchedEffect
             capas = if (piso == null) Capas(auto, null, null) else {
                 // Las capas del piso son suaves: van a la mitad de resolución.
