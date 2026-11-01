@@ -112,7 +112,7 @@ private fun Details(repo: MusicRepository, song: Song, modifier: Modifier) {
     Column(modifier) {
         Label(song.title, Typography.title.copy(fontSize = 26.sp), maxLines = 2)
         Spacer(Modifier.height(4.dp))
-        Label(song.artist, Typography.subtitle, c.textMuted, maxLines = 1)
+        Label(song.artist.ifBlank { stringResource(R.string.no_song_info) }, Typography.subtitle, c.textMuted, maxLines = 1)
         if (song.durationMs > 0) {
             Spacer(Modifier.height(20.dp))
             TimeBar(repo, song)

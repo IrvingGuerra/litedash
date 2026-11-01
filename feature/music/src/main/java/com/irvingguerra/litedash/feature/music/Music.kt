@@ -172,27 +172,32 @@ class MusicRepository(private val context: Context) {
     private fun read() {
         val c = controller
         val m = c?.metadata
-        if (c == null || m == null) {
-            song = null
-            return
-        }
-        val title = m.getString(MediaMetadata.METADATA_KEY_TITLE) ?: m.getString(MediaMetadata.METADATA_KEY_DISPLAY_TITLE).orEmpty()
-        // Sesiones sin título (apps que solo dejan la sesión abierta) cuentan como "nada sonando".
-        if (title.isBlank()) {
+        if (c == null) {
             song = null
             return
         }
         val state = c.playbackState
+        val playing = state?.state == PlaybackState.STATE_PLAYING
         val app = appLabel(c.packageName)
+        val named = m?.getString(MediaMetadata.METADATA_KEY_TITLE) ?: m?.getString(MediaMetadata.METADATA_KEY_DISPLAY_TITLE).orEmpty()
+        // Sin título y en pausa = apps que solo dejan la sesión abierta: "nada sonando".
+        // Sin título pero sonando = la música por Bluetooth de muchas pantallas (el
+        // celular no manda la canción): se muestra con el nombre de la app y sus controles,
+        // y sigue en pantalla al pausarla para poder darle play otra vez.
+        if (named.isBlank() && !playing && song?.pkg != c.packageName) {
+            song = null
+            return
+        }
+        val title = named.ifBlank { app }
         song = Song(
             title = title,
-            artist = m.getString(MediaMetadata.METADATA_KEY_ARTIST) ?: m.getString(MediaMetadata.METADATA_KEY_ALBUM_ARTIST).orEmpty(),
+            artist = m?.getString(MediaMetadata.METADATA_KEY_ARTIST) ?: m?.getString(MediaMetadata.METADATA_KEY_ALBUM_ARTIST).orEmpty(),
             app = app,
-            artwork = m.getBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART)
-                ?: m.getBitmap(MediaMetadata.METADATA_KEY_ART)
-                ?: m.getBitmap(MediaMetadata.METADATA_KEY_DISPLAY_ICON),
-            playing = state?.state == PlaybackState.STATE_PLAYING,
-            durationMs = m.getLong(MediaMetadata.METADATA_KEY_DURATION),
+            artwork = m?.getBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART)
+                ?: m?.getBitmap(MediaMetadata.METADATA_KEY_ART)
+                ?: m?.getBitmap(MediaMetadata.METADATA_KEY_DISPLAY_ICON),
+            playing = playing,
+            durationMs = m?.getLong(MediaMetadata.METADATA_KEY_DURATION) ?: 0,
             positionMs = state?.position ?: 0,
             readAt = state?.lastPositionUpdateTime?.takeIf { it > 0 } ?: SystemClock.elapsedRealtime(),
             speed = state?.playbackSpeed ?: 1f,

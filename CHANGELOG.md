@@ -6,6 +6,14 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
+## [1.4.2] - 2026-10-31
+
+### Arreglado
+- **Música por Bluetooth**: en muchas pantallas el celular no manda el nombre
+  de la canción y la pieza Música decía "Nada sonando" aunque sí sonaba. Ahora
+  muestra la app (por ejemplo "Bluetooth") con play, pausa, siguiente y
+  anterior, y se queda al pausarla para poder reanudarla.
+
 ## [1.4.1] - 2026-10-31
 
 ### Nuevo

@@ -102,7 +102,9 @@ private fun Player(repo: MusicRepository) {
                 } else {
                     Label(song.title, if (tall) Typography.title else Typography.subtitle, maxLines = 1)
                     Label(
-                        listOf(song.artist, song.app).filter { it.isNotBlank() }.joinToString(" · "),
+                        // Sin canción (Bluetooth sin datos) el título ya es la app: no repetirla.
+                        listOf(song.artist, song.app).filter { it.isNotBlank() && it != song.title }.joinToString(" · ")
+                            .ifBlank { stringResource(R.string.no_song_info) },
                         Typography.small, c.textMuted, maxLines = 1,
                     )
                     if (song.durationMs > 0) {

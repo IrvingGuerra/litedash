@@ -7,4 +7,5 @@
     <string name="resume">Reanudar</string>
     <string name="resume_explain">Reanuda lo último que escuchaste sin salir de LiteDash.</string>
     <string name="open_app">Abrir %1$s</string>
+    <string name="no_song_info">Sin datos de la canción</string>
 </resources>
