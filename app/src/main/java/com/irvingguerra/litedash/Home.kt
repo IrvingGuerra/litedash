@@ -82,6 +82,8 @@ import com.irvingguerra.litedash.feature.dashboard.TileTypes
 sealed interface Panel {
     data object Drawer : Panel
     data object Settings : Panel
+    /** Ajustes abiertos en "Acerca de" (desde el aviso de versión nueva). */
+    data object About : Panel
     data object Car : Panel
     data object AddTile : Panel
     data object Templates : Panel
@@ -244,6 +246,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
             Column(Modifier.onSizeChanged { promptsHeight = it.height }) {
                 if (d.prefs.welcomeSeen && !d.prefs.dontAskHome && !editing && !isShortScreen()) HomePrompt(d.prefs, revision)
                 if (d.prefs.welcomeSeen && !editing && !isShortScreen()) ReminderBanner(d.reminders)
+                if (d.prefs.welcomeSeen && !editing) UpdateBanner(d.updater, onOpen = { panel = Panel.About })
             }
             BoxWithConstraints(Modifier.weight(1f).fillMaxWidth().padding(horizontal = 10.dp)) {
                 // La cuadrícula se calcula siempre como si la barra estuviera: si dependiera
@@ -278,7 +281,13 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
         when (val p = panel) {
             null -> Unit
             Panel.Drawer -> DrawerPanel(d, apps, close = { panel = null })
-            Panel.Settings -> SettingsPanel(d, close = { panel = null }, onEdit = { panel = null; editing = true }, onTemplates = { panel = Panel.Templates })
+            Panel.Settings, Panel.About -> SettingsPanel(
+                d,
+                close = { panel = null },
+                onEdit = { panel = null; editing = true },
+                onTemplates = { panel = Panel.Templates },
+                start = if (p == Panel.About) SettingsSection.ABOUT else SettingsSection.APPEARANCE,
+            )
             Panel.Car -> CarPanel(d.prefs, d.cars, close = { panel = null })
             Panel.Templates -> TemplatesPanel(d.dashboard, close = { panel = null })
             Panel.AddTile -> AddTilePanel(d.dashboard, close = { panel = null }, onPickApp = { panel = Panel.PickApp(null) })
@@ -455,6 +464,42 @@ private fun Volume(buttonSize: androidx.compose.ui.unit.Dp) {
     }
 }
 
+
+/** Versión nueva encontrada al abrir LiteDash: verla en Ajustes o dejarla para después. */
+@Composable
+private fun UpdateBanner(updater: Updater, onOpen: () -> Unit) {
+    LaunchedEffect(updater) { updater.checkQuietly() }
+    val v = updater.notice ?: return
+    val c = LocalColors.current
+    val box = Modifier
+        .fillMaxWidth()
+        .padding(horizontal = 16.dp, vertical = 4.dp)
+        .clip(RoundedCornerShape(18.dp))
+        .background(c.surface)
+        .padding(start = 20.dp, end = 8.dp, top = 8.dp, bottom = 8.dp)
+    val text = @Composable { m: Modifier ->
+        Row(m, verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Icon(Icons.info, c.accent, 22.dp)
+            Label(stringResource(R.string.new_version, v.name), Typography.body, maxLines = 2)
+        }
+    }
+    val buttons = @Composable {
+        Button(stringResource(R.string.update_see), onOpen, primary = true)
+        Button(stringResource(R.string.update_later), updater::dismiss)
+    }
+    // Igual que el aviso de inicio: en angosto el texto va arriba de los botones.
+    if (LocalConfiguration.current.screenWidthDp < 560) {
+        Column(box, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            text(Modifier)
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) { buttons() }
+        }
+    } else {
+        Row(box, verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            text(Modifier.weight(1f))
+            buttons()
+        }
+    }
+}
 
 /** Aviso cuando LiteDash no es la pantalla de inicio: un toque para arreglarlo, o no volver a preguntar. */
 @Composable

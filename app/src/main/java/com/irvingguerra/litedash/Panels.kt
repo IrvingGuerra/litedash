@@ -464,7 +464,7 @@ private fun CarPreview(e: CatalogEntry, cars: CarRepository, progress: Float?, o
 }
 
 /** Secciones de Ajustes, en el menú de la izquierda. */
-private enum class SettingsSection(val title: Int) { APPEARANCE(R.string.appearance), CAR(R.string.your_car), HOME(R.string.home), MUSIC(R.string.music), MAP(R.string.map), MODULES(R.string.modules), ABOUT(R.string.about) }
+enum class SettingsSection(val title: Int) { APPEARANCE(R.string.appearance), CAR(R.string.your_car), HOME(R.string.home), MUSIC(R.string.music), MAP(R.string.map), MODULES(R.string.modules), ABOUT(R.string.about) }
 
 private fun SettingsSection.icon() = when (this) {
     SettingsSection.APPEARANCE -> Icons.theme
@@ -481,9 +481,15 @@ private fun SettingsSection.icon() = when (this) {
  * tarjetas a la derecha. En pantallas angostas el menú queda solo con íconos.
  */
 @Composable
-fun SettingsPanel(d: Dependencies, close: () -> Unit, onEdit: () -> Unit, onTemplates: () -> Unit) {
+fun SettingsPanel(
+    d: Dependencies,
+    close: () -> Unit,
+    onEdit: () -> Unit,
+    onTemplates: () -> Unit,
+    start: SettingsSection = SettingsSection.APPEARANCE,
+) {
     val c = LocalColors.current
-    var section by rememberSaveable { mutableStateOf(SettingsSection.APPEARANCE) }
+    var section by rememberSaveable { mutableStateOf(start) }
     BoxWithConstraints(
         Modifier
             .fillMaxSize()
@@ -855,7 +861,8 @@ private sealed interface UpdateState {
 private fun Updates(a: Updater) {
     val c = LocalColors.current
     val scope = rememberCoroutineScope()
-    var state by remember { mutableStateOf<UpdateState>(UpdateState.Idle) }
+    // Si al abrir ya se encontró una versión nueva, se muestra de una vez.
+    var state by remember { mutableStateOf(a.found?.let { UpdateState.Available(it) } ?: UpdateState.Idle) }
 
     fun install(v: Version) {
         if (!a.canInstall()) {

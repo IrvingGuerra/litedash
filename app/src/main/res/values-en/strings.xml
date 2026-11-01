@@ -171,4 +171,6 @@
     <string name="tile_projection">Android Auto / CarPlay</string>
     <string name="projection_module">Opens your Android Auto or CarPlay app (Zlink, AutoKit…) with one tap</string>
     <string name="projection_missing">App not found</string>
+    <string name="update_see">View</string>
+    <string name="update_later">Later</string>
 </resources>

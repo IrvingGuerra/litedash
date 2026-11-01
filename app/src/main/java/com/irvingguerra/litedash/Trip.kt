@@ -151,14 +151,24 @@ fun TripTile(trip: TripRepository) {
         BoxWithConstraints(Modifier.fillMaxSize().padding(16.dp), contentAlignment = Alignment.CenterStart) {
             val big = maxHeight > 120.dp
             val wide = maxWidth > 340.dp
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(18.dp)) {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(if (wide) 18.dp else 10.dp)) {
                 Column {
                     Label(speed?.let { String.format(locale, "%.0f", it) } ?: "—", Typography.clock.copy(fontSize = if (big) 56.sp else 34.sp), maxLines = 1)
                     Label(stringResource(if (imperial) R.string.unit_mph else R.string.unit_kmh), Typography.small, c.textMuted, maxLines = 1)
                 }
+                // Angosta y bajita: el rumbo deja su renglón para que quepan distancia y tiempo.
+                val compact = !wide && !big
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    Label(heading ?: "", Typography.title, c.accent, maxLines = 1)
-                    Label(String.format(locale, "%.1f %s · %d:%02d", distance, if (imperial) "mi" else "km", minutes / 60, minutes % 60), Typography.body, maxLines = 1)
+                    if (!compact) Label(heading ?: "", Typography.title, c.accent, maxLines = 1)
+                    val km = String.format(locale, "%.1f %s", distance, if (imperial) "mi" else "km")
+                    val time = String.format(locale, "%d:%02d", minutes / 60, minutes % 60)
+                    // En angosto no caben juntos en un renglón: la distancia se cortaba.
+                    if (wide) {
+                        Label("$km · $time", Typography.body, maxLines = 1)
+                    } else {
+                        Label(km, Typography.body, maxLines = 1)
+                        Label(if (compact && heading != null) "$time · $heading" else time, Typography.small, c.textMuted, maxLines = 1)
+                    }
                 }
                 if (big && wide) Button(stringResource(R.string.trip_reset), { trip.reset() })
             }

@@ -15,6 +15,7 @@ import androidx.compose.runtime.setValue
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
+import org.json.JSONObject
 import java.io.File
 import java.net.HttpURLConnection
 import java.net.URL
@@ -36,8 +37,8 @@ data class Version(
 /**
  * Busca, baja e instala versiones nuevas desde GitHub Releases. Solo existe en la
  * variante `github` (Play prohíbe que una app se actualice por fuera de la tienda):
- * con [apiUrl] vacío está apagado. No revisa solo: únicamente cuando el usuario toca
- * "Buscar actualizaciones".
+ * con [apiUrl] vacío está apagado. Revisa solo al abrir LiteDash (a lo más cada
+ * [QUIET_EVERY_MS], sin polling) y cuando el usuario toca "Buscar actualizaciones".
  */
 class Updater(
     private val context: Context,
@@ -45,6 +46,44 @@ class Updater(
     private val currentCode: Long,
 ) {
     val available get() = apiUrl.isNotBlank()
+
+    private val store by lazy { context.getSharedPreferences("actualizaciones", Context.MODE_PRIVATE) }
+
+    /** La versión nueva que se encontró (en silencio o a mano); null = nada que instalar. */
+    var found by mutableStateOf<Version?>(null)
+        private set
+
+    /** La versión que el usuario dejó para después: no se vuelve a avisar en el inicio. */
+    var dismissed by mutableStateOf<String?>(null)
+        private set
+
+    /** ¿Avisar en el inicio? Solo si hay versión nueva que no dejó para después. */
+    val notice get() = found?.takeIf { it.name != dismissed }
+
+    fun dismiss() {
+        val v = found ?: return
+        dismissed = v.name
+        store.edit().putString(KEY_DISMISSED, v.name).apply()
+    }
+
+    /**
+     * Una sola revisión al abrir la app, si pasaron [QUIET_EVERY_MS] desde la última.
+     * Sin red o con error no pasa nada: se intenta la próxima vez.
+     */
+    suspend fun checkQuietly() {
+        if (!available) return
+        dismissed = store.getString(KEY_DISMISSED, null)
+        val now = System.currentTimeMillis()
+        if (now - store.getLong(KEY_LAST, 0L) < QUIET_EVERY_MS) {
+            // Sin pedir a GitHub otra vez: lo encontrado antes, si sigue siendo más nuevo.
+            found = store.getString(KEY_FOUND, null)?.let { runCatching { fromJson(it) }.getOrNull() }
+                ?.takeIf { it.code > currentCode }
+            return
+        }
+        runCatching { checkForUpdate() }.onSuccess { v ->
+            store.edit().putLong(KEY_LAST, now).putString(KEY_FOUND, v?.let(::toJson)).apply()
+        }
+    }
 
     /** La versión publicada más nueva que la instalada, o null si ya tienes la última. */
     suspend fun checkForUpdate(): Version? = withContext(Dispatchers.IO) {
@@ -71,6 +110,7 @@ class Updater(
                 page = r.optString("html_url"),
             )
         }.filter { it.code > currentCode }.maxByOrNull { it.code }
+            .also { found = it }
     }
 
     /** Baja el APK a la caché y lo verifica contra SHA256SUMS.txt. [progress] va de 0 a 1. */
@@ -145,7 +185,22 @@ class Updater(
             if (responseCode !in 200..299) error("HTTP $responseCode")
         }
 
+    private fun toJson(v: Version) = JSONObject()
+        .put("name", v.name).put("code", v.code).put("notes", v.notes).put("apk", v.apk)
+        .put("checksums", v.checksums).put("bytes", v.bytes).put("page", v.page).toString()
+
+    private fun fromJson(text: String) = JSONObject(text).run {
+        Version(getString("name"), getLong("code"), false, optString("notes"), getString("apk"),
+            optString("checksums").ifBlank { null }, optLong("bytes"), optString("page"))
+    }
+
     companion object {
+        /** Medio día entre revisiones en silencio: basta para enterarse el mismo día. */
+        const val QUIET_EVERY_MS = 12 * 60 * 60 * 1000L
+        private const val KEY_LAST = "ultima_revision"
+        private const val KEY_FOUND = "encontrada"
+        private const val KEY_DISMISSED = "omitida"
+
         /** Lo último que dijo el instalador de Android (para mostrarlo si falló). */
         var installError by mutableStateOf<String?>(null)
     }

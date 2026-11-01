@@ -6,6 +6,18 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
+## [1.4.1] - 2026-10-31
+
+### Nuevo
+- **Aviso de versión nueva** (descarga de GitHub): al abrir LiteDash revisa
+  sola si hay una versión nueva (a lo más dos veces al día, sin quedarse
+  revisando) y la avisa arriba del inicio. "Ver" la abre lista para instalar;
+  "Después" no vuelve a avisar de esa versión.
+
+### Arreglado
+- La pieza Viaje angosta ya no corta la distancia: distancia y tiempo van en
+  renglones separados.
+
 ## [1.4.0] - 2026-10-31
 
 ### Nuevo
