@@ -766,16 +766,6 @@ private fun Modules(d: Dependencies, onEdit: () -> Unit) {
 
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         ModuleItem(TileTypes.MUSIC, Icons.music, stringResource(R.string.tile_music), stringResource(if (permission) R.string.music_with_permission else R.string.music_without_permission))
-        for ((icon, name, detail) in listOf(
-            Triple(Icons.car, R.string.module_obd, R.string.module_obd_detail),
-            Triple(Icons.tire, R.string.module_tires, R.string.module_tires_detail),
-            Triple(Icons.navigate, R.string.module_trip, R.string.module_trip_detail),
-            Triple(Icons.camera, R.string.module_cameras, R.string.module_cameras_detail),
-        )) {
-            ModuleRow(icon, stringResource(name), stringResource(detail)) {
-                Label(stringResource(R.string.coming_soon), Typography.label, c.textMuted)
-            }
-        }
     }
 }
 

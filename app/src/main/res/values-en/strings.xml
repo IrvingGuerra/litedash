@@ -56,15 +56,6 @@
     <string name="music_with_permission">What\'s playing in any app · notification access on</string>
     <string name="music_without_permission">What\'s playing in any app · asks for notification access when turned on</string>
     <string name="on_your_home">On your home</string>
-    <string name="coming_soon">SOON</string>
-    <string name="module_obd">OBD scanner</string>
-    <string name="module_obd_detail">Live engine data and trouble codes with an ELM327 adapter</string>
-    <string name="module_tires">Tire pressure</string>
-    <string name="module_tires_detail">Your Bluetooth sensors, no vendor app</string>
-    <string name="module_trip">Trip and speed</string>
-    <string name="module_trip_detail">Speedometer, distance and time by GPS</string>
-    <string name="module_cameras">Cameras and sensors</string>
-    <string name="module_cameras_detail">360° camera and parking sensors</string>
     <string name="copy_info">Copy my screen info</string>
     <string name="copied">Copied</string>
     <string name="copy_info_help">Brand, model, Android and resolution, to paste when reporting a problem on GitHub.</string>

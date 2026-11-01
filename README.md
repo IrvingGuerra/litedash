@@ -25,8 +25,8 @@ ponen en el auto, y también para tablets y teléfonos (de 6" a 11" o más).
 **Tú acomodas tu inicio**: deja presionado para mover, agrandar o quitar piezas
 (tu auto, música, navegar, reloj, apps). Entre más grande la pantalla, más
 lugares. Sin anuncios, sin cuentas, sin rastreo: cada permiso se pide solo si
-activas la función que lo usa. Los módulos (escáner OBD, presión de llantas,
-cámaras…) llegarán dentro de la misma app.
+activas la función que lo usa. Las funciones nuevas llegan dentro de la misma
+app, con actualizaciones frecuentes.
 
 ## What it is (English)
 

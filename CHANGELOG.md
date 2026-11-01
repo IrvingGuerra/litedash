@@ -6,6 +6,15 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
+## [1.3.5] - 2026-10-31
+
+### Arreglado
+- El inicio podía quedarse parpadeando entre dos acomodos (con un reloj en el
+  inicio, o al girar la pantalla). Ahora se queda quieto.
+
+### Cambiado
+- Ajustes → Módulos muestra solo lo que ya puedes usar.
+
 ## [1.3.4] - 2026-10-31
 
 ### Arreglado

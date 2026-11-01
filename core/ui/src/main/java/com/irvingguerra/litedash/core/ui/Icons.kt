@@ -36,8 +36,6 @@ object Icons {
     val search = icon("M4 10a6 6 0 1 0 12 0a6 6 0 1 0 -12 0 M20 20l-5.5 -5.5")
     val corner = icon("M19 11v8h-8 M19 19l-7 -7")
     val dashboard = icon("M4 4h7v9h-7z M13 4h7v5h-7z M13 11h7v9h-7z M4 15h7v5h-7z")
-    val tire = icon("M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0 M8 12a4 4 0 1 0 8 0a4 4 0 1 0 -8 0 M12 3v5 M12 16v5 M3 12h5 M16 12h5")
-    val camera = icon("M4 8h3l2 -3h6l2 3h3v11h-16z M9 13a3 3 0 1 0 6 0a3 3 0 1 0 -6 0")
     val openExternal = icon("M14 4h6v6 M20 4l-9 9 M18 14v6h-14v-14h6")
     val theme = icon("M20 14.5a8 8 0 1 1 -10.5 -10.5a6.5 6.5 0 0 0 10.5 10.5z")
     val info = icon("M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0 M12 11v5 M12 7.5v.5")

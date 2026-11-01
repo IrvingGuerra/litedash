@@ -57,15 +57,6 @@
     <string name="music_with_permission">Lo que suena en cualquier app · acceso a notificaciones activado</string>
     <string name="music_without_permission">Lo que suena en cualquier app · pide acceso a notificaciones al activarla</string>
     <string name="on_your_home">En tu inicio</string>
-    <string name="coming_soon">PRONTO</string>
-    <string name="module_obd">Escáner OBD</string>
-    <string name="module_obd_detail">Datos del motor en vivo y códigos de falla con un adaptador ELM327</string>
-    <string name="module_tires">Presión de llantas</string>
-    <string name="module_tires_detail">Tus sensores Bluetooth, sin la app del fabricante</string>
-    <string name="module_trip">Viaje y velocidad</string>
-    <string name="module_trip_detail">Velocímetro, distancia y tiempo por GPS</string>
-    <string name="module_cameras">Cámaras y sensores</string>
-    <string name="module_cameras_detail">Cámara 360 y sensores de reversa</string>
     <string name="copy_info">Copiar info de mi pantalla</string>
     <string name="copied">Copiado</string>
     <string name="copy_info_help">Marca, modelo, Android y resolución, para pegarlos al reportar un problema en GitHub.</string>

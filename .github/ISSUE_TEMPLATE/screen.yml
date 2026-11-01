@@ -19,9 +19,8 @@ body:
       label: ¿Qué funciona?
       options:
         - label: Se puede poner como launcher
-        - label: Bluetooth LE (sensores de llantas)
-        - label: OBD por Bluetooth
-        - label: Tiene caja CAN
+        - label: Bluetooth
+        - label: GPS
   - type: textarea
     id: notas
     attributes:

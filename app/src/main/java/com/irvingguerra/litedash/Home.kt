@@ -180,17 +180,23 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
     } else Modifier.background(c.background)
     Box(Modifier.fillMaxSize().then(backdrop)) {
         Column(Modifier.fillMaxSize().safeDrawingPadding()) {
+            // Si ya hay un reloj en el tablero, la barra no repite la hora.
+            val showTime = d.dashboard.tiles.none { it.type == TileTypes.CLOCK }
+            val barHidden = !editing && !showTime
             TopBar(
                 editing = editing,
-                // Si ya hay un reloj en el tablero, la barra no repite la hora.
-                showTime = d.dashboard.tiles.none { it.type == TileTypes.CLOCK },
+                showTime = showTime,
                 onAdd = { panel = Panel.AddTile },
                 onTemplates = { panel = Panel.Templates },
                 onFinish = { editing = false },
             )
             if (d.prefs.welcomeSeen && !d.prefs.dontAskHome && !editing && !isShortScreen()) HomePrompt(d.prefs, revision)
             BoxWithConstraints(Modifier.weight(1f).fillMaxWidth().padding(horizontal = 10.dp)) {
-                val grid = remember(maxWidth, maxHeight) { Grid.forSize(maxWidth.value, maxHeight.value) }
+                // La cuadrícula se calcula siempre como si la barra estuviera: si dependiera
+                // de ella, un reloj en el acomodo la oculta, la cuadrícula crece, se carga
+                // otro acomodo sin reloj, vuelve la barra... y el inicio parpadea sin parar.
+                val gridHeight = if (barHidden) maxHeight - (topBarHeight() - TOP_BAR_HIDDEN) else maxHeight
+                val grid = remember(maxWidth, gridHeight) { Grid.forSize(maxWidth.value, gridHeight.value) }
                 remember(grid) { d.dashboard.use(grid) }
                 if (musicExpanded) {
                     MusicExpanded(d.music, close = { musicExpanded = false }, Modifier.padding(6.dp))
@@ -243,13 +249,18 @@ private fun dockFavorites(d: Dependencies, apps: List<App>): List<App> {
     )
 }
 
+/** Alto de la barra de arriba, y el espacio que deja cuando no muestra nada. */
+@Composable
+private fun topBarHeight() = if (isShortScreen()) 44.dp else 64.dp
+private val TOP_BAR_HIDDEN = 12.dp
+
 @Composable
 private fun TopBar(editing: Boolean, showTime: Boolean, onAdd: () -> Unit, onTemplates: () -> Unit, onFinish: () -> Unit) {
     val c = LocalColors.current
     // Sin nada que mostrar (la hora ya está en una pieza), la barra no aparta espacio: el tablero sube.
-    if (!editing && !showTime) return Spacer(Modifier.height(12.dp))
+    if (!editing && !showTime) return Spacer(Modifier.height(TOP_BAR_HIDDEN))
     Row(
-        Modifier.fillMaxWidth().height(if (isShortScreen()) 44.dp else 64.dp).padding(horizontal = 24.dp),
+        Modifier.fillMaxWidth().height(topBarHeight()).padding(horizontal = 24.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
