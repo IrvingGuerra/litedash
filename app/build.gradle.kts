@@ -30,10 +30,10 @@ val firma = Properties().apply {
 }
 fun datoFirma(clave: String, env: String): String? = firma.getProperty(clave) ?: System.getenv(env)
 // Catálogo de autos (solo imágenes y datos; ver feature/auto): igual en Play y en GitHub.
-// Catálogo de autos: apagado hasta tener un modelo con la calidad buscada. Para
-// probar uno local en el emulador: ./gradlew ... -Pcatalogo=http://10.0.2.2:8765/catalogo.json
-// Publicado irá en https://github.com/IrvingGuerra/litedash/releases/download/catalogo/catalogo.json
-val URL_CATALOGO = (findProperty("catalogo") as String?) ?: ""
+// Publicado en el release "catalogo" (prerelease). Para probar uno local en el
+// emulador: ./gradlew ... -Pcatalogo=http://10.0.2.2:8765/catalogo.json
+val URL_CATALOGO = (findProperty("catalogo") as String?)
+    ?: "https://github.com/IrvingGuerra/litedash/releases/download/catalogo/catalogo.json"
 val hayFirma = datoFirma("storeFile", "LITEDASH_STORE_FILE") != null
 
 android {

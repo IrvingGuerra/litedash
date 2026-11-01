@@ -6,6 +6,22 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
+## [1.3.2] - 2026-10-31
+
+### Nuevo
+- **Catálogo de autos**: en "Tu auto" puedes bajar un auto en imágenes (el
+  primero: Lancer Evolution 2010, 1.2 MB) y girarlo 360°.
+- **El auto es el fondo del inicio**: parado sobre el piso, con su sombra y un
+  reflejo tenue que pasan por debajo de las tarjetas.
+- **Color libre**: además de los 6 colores rápidos, elige cualquier tono,
+  intensidad y brillo; el auto cambia en vivo.
+
+### Arreglado
+- Teléfono acostado: las piezas salían vacías porque la barra, el aviso y el
+  dock ocupaban casi toda la altura. Ahora se compactan.
+- Teléfono parado: el aviso "hazlo tu pantalla de inicio" salía cortado.
+- La sombra ovalada bajo el auto ya no se dibuja (se veía mal de ¾).
+
 ## [1.3.1] - 2026-10-31
 
 ### Nuevo
