@@ -69,7 +69,7 @@ fun CarTurntable(
     // Mientras giras se preparan los cuadros que siguen (con sus capas), para que aparezcan al instante.
     LaunchedEffect(p, frame, color, widthPx) {
         if (widthPx <= 0) return@LaunchedEffect
-        for (k in 1..3) repo.layers(p, frames[(frame + direction * k + n) % n], color, widthPx)
+        for (k in 1..2) repo.layers(p, frames[(frame + direction * k + n) % n], color, widthPx)
     }
     val turn = Modifier.pointerInput(p) {
         // Una vuelta completa por cada 1.2 anchos de la pieza, tenga los cuadros que tenga.

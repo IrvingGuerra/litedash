@@ -12,12 +12,7 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.toArgb
 import android.util.LruCache
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.CoroutineStart
-import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.async
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import java.io.File
@@ -111,10 +106,6 @@ class CarRepository(context: Context, val catalogUrl: String) {
     ) {
         override fun sizeOf(key: String, value: ImageBitmap) = value.width * value.height * 4
     }
-    // Cargas en curso: si la vista y la precarga piden lo mismo a la vez, se pinta una vez.
-    // Viven en el repositorio (no en quien las pidió) para que otra pantalla las aproveche.
-    private val loading = ConcurrentHashMap<String, Deferred<ImageBitmap?>>()
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     // Ancho original de cada imagen (no cambia): decide cuánto se reduce al decodificarla.
     private val sourceWidths = ConcurrentHashMap<String, Int>()
     // Lo instalado se lee del disco una vez por cada cambio, no en cada recomposición.
@@ -289,7 +280,9 @@ class CarRepository(context: Context, val catalogUrl: String) {
     suspend fun layers(p: CarPackage, name: String, color: Color, widthPx: Int): CarLayers? {
         val car = painted(p, name, color, widthPx) ?: return null
         val floor = p.floor[name] ?: return CarLayers(car, null, null, null)
-        val floorWidth = (widthPx * floor.width / 2).roundToInt()
+        // La sombra y el reflejo son manchas suaves: a la cuarta parte del ancho no se nota
+        // y cada cuadro del giro ocupa la mitad de memoria (caben más en la caché).
+        val floorWidth = (widthPx * floor.width / 4).roundToInt()
         return CarLayers(
             car,
             image(p, name + CarViews.SHADOW_SUFFIX, floorWidth),
@@ -299,8 +292,8 @@ class CarRepository(context: Context, val catalogUrl: String) {
     }
 
     private suspend fun image(p: CarPackage, name: String, widthPx: Int): ImageBitmap? {
-        val sample = sampleSize(p, name, widthPx) ?: return null
-        return cached("${p.id}/$name/$sample") { decode(p, name, sample) }
+        val width = decodeWidth(p, name, widthPx) ?: return null
+        return cached("${p.id}/$name@$width") { decode(p, name, width) }
     }
 
     /**
@@ -309,49 +302,57 @@ class CarRepository(context: Context, val catalogUrl: String) {
      * suavizan en vez de cortarse, así un auto blanco conserva su volumen.
      */
     private suspend fun painted(p: CarPackage, name: String, color: Color, widthPx: Int): ImageBitmap? {
-        val sample = sampleSize(p, name, widthPx) ?: return null
-        return cached("${p.id}/$name#${color.toArgb()}/$sample") {
-            decode(p, name, sample)?.also { base ->
-                val mask = decode(p, name + CarViews.PAINT_MASK_SUFFIX, sample)
+        val width = decodeWidth(p, name, widthPx) ?: return null
+        return cached("${p.id}/$name#${color.toArgb()}@$width") {
+            decode(p, name, width)?.also { base ->
+                val mask = decode(p, name + CarViews.PAINT_MASK_SUFFIX, width)
                 if (mask != null && mask.width == base.width && mask.height == base.height) tint(base, mask, color, p.gray)
             }
         }
     }
 
-    /** De la caché, de una carga que ya va en camino, o se carga (en IO) una sola vez. */
+    /**
+     * De la caché o se carga en IO. La carga se cancela con quien la pidió: al girar
+     * rápido, los cuadros que ya pasaron no se siguen pintando ni le quitan tiempo al que se ve.
+     */
     private suspend fun cached(key: String, load: () -> Bitmap?): ImageBitmap? {
         images.get(key)?.let { return it }
-        val job = loading.computeIfAbsent(key) {
-            // Perezosa: arranca ya guardada en [loading], así nunca se borra antes de entrar.
-            scope.async(start = CoroutineStart.LAZY) { load()?.asImageBitmap()?.also { images.put(key, it) } }
-                .also { d -> d.invokeOnCompletion { loading.remove(key) } }
+        return withContext(Dispatchers.IO) {
+            load()?.asImageBitmap()?.also { images.put(key, it) }
         }
-        job.start()
-        return job.await()
     }
 
     /**
-     * Cuánto se reduce la imagen al decodificarla (potencias de 2, lo que permite
-     * Android): la llave de la caché va con esto y no con el ancho pedido, así dos
-     * tamaños parecidos comparten el mismo bitmap. null si la imagen no existe.
+     * El ancho al que se decodifica: el que se dibuja (redondeado hacia arriba a 32 px,
+     * así tamaños casi iguales comparten el mismo bitmap en la caché), nunca más que el
+     * original. Menos píxeles = se tiñe más rápido y caben más cuadros. null si no existe.
      */
-    private suspend fun sampleSize(p: CarPackage, name: String, widthPx: Int): Int? {
-        val file = File(p.folder, "$name.webp")
-        val source = sourceWidths[file.path] ?: withContext(Dispatchers.IO) {
-            if (!file.exists()) return@withContext null
-            val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-            BitmapFactory.decodeFile(file.path, bounds)
-            bounds.outWidth.also { sourceWidths[file.path] = it }
+    private suspend fun decodeWidth(p: CarPackage, name: String, widthPx: Int): Int? {
+        val source = sourceWidth(File(p.folder, "$name.webp")) ?: withContext(Dispatchers.IO) {
+            sourceWidth(File(p.folder, "$name.webp"), read = true)
         } ?: return null
-        var sample = 1
-        while (source / (sample * 2) >= widthPx) sample *= 2
-        return sample
+        return ((widthPx + 31) / 32 * 32).coerceIn(32, source)
     }
 
-    private fun decode(p: CarPackage, name: String, sample: Int): Bitmap? {
+    /** Ancho original de la imagen; con [read] lo lee del archivo (solo en IO) si aún no se sabe. */
+    private fun sourceWidth(file: File, read: Boolean = false): Int? {
+        sourceWidths[file.path]?.let { return it }
+        if (!read || !file.exists()) return null
+        val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        BitmapFactory.decodeFile(file.path, bounds)
+        return bounds.outWidth.also { sourceWidths[file.path] = it }
+    }
+
+    /** Decodifica ya escalada a [width] (Android la reduce al leerla, sin un bitmap grande de paso). Solo en IO. */
+    private fun decode(p: CarPackage, name: String, width: Int): Bitmap? {
         val file = File(p.folder, "$name.webp")
-        if (!file.exists()) return null
-        return BitmapFactory.decodeFile(file.path, BitmapFactory.Options().apply { inSampleSize = sample; inMutable = true })
+        val source = sourceWidth(file, read = true) ?: return null
+        return BitmapFactory.decodeFile(file.path, BitmapFactory.Options().apply {
+            inScaled = true
+            inDensity = source
+            inTargetDensity = width
+            inMutable = true
+        })
     }
 
     private fun readPackage(folder: File): CarPackage? {
