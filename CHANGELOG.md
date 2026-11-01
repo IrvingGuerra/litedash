@@ -6,6 +6,16 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
+## [1.3.4] - 2026-10-31
+
+### Arreglado
+- El giro del auto no se movía hasta soltar el dedo; ahora sigue al dedo y
+  prepara los cuadros siguientes para que se vea fluido.
+
+### Cambiado
+- Tocar un auto del catálogo ya no lo baja: abre su vista previa en grande con
+  el botón para bajarlo.
+
 ## [1.3.3] - 2026-10-31
 
 ### Nuevo

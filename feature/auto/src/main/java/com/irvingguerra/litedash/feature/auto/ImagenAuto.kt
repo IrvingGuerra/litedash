@@ -21,6 +21,7 @@ import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
@@ -42,10 +43,13 @@ fun ImagenAuto(repo: RepositorioAutos, p: PaqueteAuto, nombre: String, color: Co
         val piso = p.piso[nombre]
         // Se queda la imagen anterior mientras carga la nueva (el giro no parpadea).
         var capas by remember(p.id) { mutableStateOf<Capas?>(null) }
+        var colorPintado by remember(p.id) { mutableStateOf<Color?>(null) }
         LaunchedEffect(p, nombre, color, anchoPx) {
             // Al arrastrar el selector de color llegan muchos colores seguidos: solo
             // se tiñe el último (si cambia antes, este se cancela aquí sin trabajar).
-            if (capas != null) delay(60)
+            // Solo al cambiar de color: al girar, cada cuadro debe verse al momento.
+            if (capas != null && colorPintado != null && colorPintado != color) delay(60)
+            colorPintado = color
             val auto = repo.pintada(p, nombre, color, anchoPx) ?: return@LaunchedEffect
             capas = if (piso == null) Capas(auto, null, null) else {
                 // Las capas del piso son suaves: van a la mitad de resolución.
@@ -110,14 +114,22 @@ fun GiroAuto(repo: RepositorioAutos, p: PaqueteAuto, color: Color, modifier: Mod
     // Se empieza en tres cuartos (-90 + 45 grados), sin importar la fluidez.
     var cuadro by remember(p) { mutableStateOf(n / 8) }
     var acumulado by remember { mutableFloatStateOf(0f) }
+    // Mientras giras, se preparan los cuadros que siguen (bajados y teñidos) para
+    // que cada uno aparezca al instante.
+    var anchoPx by remember { mutableStateOf(0) }
+    var sentido by remember { mutableStateOf(1) }
+    LaunchedEffect(p, cuadro, color, anchoPx) {
+        if (anchoPx <= 0) return@LaunchedEffect
+        for (k in 1..3) repo.pintada(p, cuadros[(cuadro + sentido * k + n) % n], color, anchoPx)
+    }
     Box(
-        modifier.pointerInput(p) {
+        modifier.onSizeChanged { anchoPx = it.width }.pointerInput(p) {
             val paso = size.width / (n * 1.2f)
             detectHorizontalDragGestures { cambio, dx ->
                 cambio.consume()
                 acumulado += dx
-                while (acumulado > paso) { acumulado -= paso; cuadro = (cuadro - 1 + n) % n }
-                while (acumulado < -paso) { acumulado += paso; cuadro = (cuadro + 1) % n }
+                while (acumulado > paso) { acumulado -= paso; cuadro = (cuadro - 1 + n) % n; sentido = -1 }
+                while (acumulado < -paso) { acumulado += paso; cuadro = (cuadro + 1) % n; sentido = 1 }
             }
         },
     ) {

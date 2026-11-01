@@ -95,7 +95,11 @@ data class CajaPiso(val x: Float, val y: Float, val ancho: Float, val alto: Floa
  */
 class RepositorioAutos(contexto: Context, val urlCatalogo: String) {
     private val raiz = File(contexto.filesDir, "autos")
-    private val imagenes = object : LruCache<String, ImageBitmap>(24 * 1024 * 1024) {
+    // Caché de imágenes ya teñidas: con un octavo de la memoria de la app (de 24 a
+    // 64 MB) cabe el giro completo en pantallas normales y no se repinta al girar.
+    private val imagenes = object : LruCache<String, ImageBitmap>(
+        (Runtime.getRuntime().maxMemory() / 8).coerceIn(24L shl 20, 64L shl 20).toInt(),
+    ) {
         override fun sizeOf(key: String, value: ImageBitmap) = value.width * value.height * 4
     }
 

@@ -305,6 +305,7 @@ private fun Modelos(prefs: Preferencias, autos: RepositorioAutos, actual: Paquet
     var error by remember { mutableStateOf(false) }
     var bajando by remember { mutableStateOf<Pair<String, Float>?>(null) }
     var busqueda by remember { mutableStateOf("") }
+    var viendo by remember { mutableStateOf<String?>(null) }
     LaunchedEffect(autos.hayCatalogo) {
         if (autos.hayCatalogo) runCatching { autos.catalogo() }.onSuccess { catalogo = it }.onFailure { error = true }
     }
@@ -320,16 +321,22 @@ private fun Modelos(prefs: Preferencias, autos: RepositorioAutos, actual: Paquet
         }
         for (e in catalogo.orEmpty().filter { e -> instalados.none { it.id == e.id } && coincide("${e.marca} ${e.nombre} ${e.anio}") }) {
             val progreso = bajando?.takeIf { it.first == e.id }?.second
-            val detalle = if (progreso != null) "${(progreso * 100).toInt()} %" else stringResource(R.string.descargar_mb, e.bytes / 1e6f)
-            OpcionModelo("${e.marca} ${e.nombre} ${e.anio}", detalle, elegido = false, miniatura = { autos.miniatura(e) }) {
-                if (bajando != null) return@OpcionModelo
-                bajando = e.id to 0f
-                alcance.launch {
-                    runCatching { autos.instalar(e) { f -> bajando = e.id to f } }
-                        .onSuccess { prefs.modeloAuto = e.id }
-                        .onFailure { error = true }
-                    bajando = null
+            val bajar = {
+                if (bajando == null) {
+                    bajando = e.id to 0f
+                    alcance.launch {
+                        runCatching { autos.instalar(e) { f -> bajando = e.id to f } }
+                            .onSuccess { prefs.modeloAuto = e.id; viendo = null }
+                            .onFailure { error = true }
+                        bajando = null
+                    }
                 }
+            }
+            // Tocar un auto solo lo muestra; se baja con el botón (ver no cuesta datos).
+            if (viendo == e.id || progreso != null) {
+                VistaPrevia(e, autos, progreso, alBajar = bajar, alCerrar = { viendo = null })
+            } else {
+                OpcionModelo("${e.marca} ${e.nombre} ${e.anio}", "%.1f MB".format(e.bytes / 1e6f), elegido = false, miniatura = { autos.miniatura(e) }) { viendo = e.id }
             }
         }
         if (error) Etiqueta(stringResource(R.string.catalogo_error), Texto.chico, c.peligro)
@@ -423,6 +430,33 @@ private fun OpcionModelo(titulo: String, detalle: String?, elegido: Boolean, min
         Etiqueta(titulo, Texto.normal, maxLineas = 1, modifier = Modifier.weight(1f))
         if (detalle != null) Etiqueta(detalle, Texto.chico, c.acento, maxLineas = 1)
         if (elegido) Icono(Iconos.listo, c.acento, 22.dp)
+    }
+}
+
+/** Un auto del catálogo abierto en la lista: su vista previa en grande, de quién es y el botón para bajarlo. */
+@Composable
+private fun VistaPrevia(e: EntradaCatalogo, autos: RepositorioAutos, progreso: Float?, alBajar: () -> Unit, alCerrar: () -> Unit) {
+    val c = LocalColores.current
+    val forma = RoundedCornerShape(16.dp)
+    var img by remember(e.id) { mutableStateOf<ImageBitmap?>(null) }
+    LaunchedEffect(e.id) { img = autos.miniatura(e) }
+    Column(
+        Modifier.fillMaxWidth().clip(forma).background(c.superficie).border(2.dp, c.acento, forma).padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Box(Modifier.fillMaxWidth().aspectRatio(2.2f), contentAlignment = Alignment.Center) {
+            img?.let { Image(it, null, Modifier.fillMaxSize(), contentScale = ContentScale.Fit) }
+        }
+        Etiqueta("${e.marca} ${e.nombre} ${e.anio}", Texto.subtitulo, maxLineas = 1)
+        if (e.autor.isNotBlank()) Etiqueta(stringResource(R.string.credito_modelo, e.autor, e.licencia), Texto.chico, c.textoSuave)
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            if (progreso != null) {
+                Boton("${(progreso * 100).toInt()} %", {}, principal = true)
+            } else {
+                Boton(stringResource(R.string.descargar_mb, e.bytes / 1e6f), alBajar, principal = true)
+                Boton(stringResource(R.string.cancelar), alCerrar)
+            }
+        }
     }
 }
 
