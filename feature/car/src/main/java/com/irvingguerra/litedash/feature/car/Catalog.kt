@@ -383,13 +383,20 @@ class CarRepository(context: Context, val catalogUrl: String) {
         return bounds.outWidth.also { sourceWidths[file.path] = it }
     }
 
-    /** Decodifica ya escalada a [width] (Android la reduce al leerla, sin un bitmap grande de paso). Solo en IO. */
+    /**
+     * Decodifica ya escalada a [width]. Primero se salta píxeles al leer (potencias de 2,
+     * que el decodificador hace sin leer la imagen completa) y luego ajusta lo que falta:
+     * así un cuadro de 1400 px que se dibuja a 400 no se decodifica entero. Solo en IO.
+     */
     private fun decode(p: CarPackage, name: String, width: Int): Bitmap? {
         val file = File(p.folder, "$name.webp")
         val source = sourceWidth(file, read = true) ?: return null
+        var sample = 1
+        while (source / (sample * 2) >= width) sample *= 2
         return BitmapFactory.decodeFile(file.path, BitmapFactory.Options().apply {
+            inSampleSize = sample
             inScaled = true
-            inDensity = source
+            inDensity = source / sample
             inTargetDensity = width
             inMutable = true
         })

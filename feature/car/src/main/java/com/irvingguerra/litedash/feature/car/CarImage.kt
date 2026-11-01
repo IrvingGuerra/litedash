@@ -66,10 +66,13 @@ fun CarTurntable(
     var dragging by remember(p) { mutableStateOf(false) }
     // Si lo giraron en otra pantalla (Ajustes o la vista en grande), aquí se pone igual.
     LaunchedEffect(saved) { if (!dragging) frame = saved }
-    // Mientras giras se preparan los cuadros que siguen (con sus capas), para que aparezcan al instante.
-    LaunchedEffect(p, frame, color, widthPx) {
-        if (widthPx <= 0) return@LaunchedEffect
-        for (k in 1..2) repo.layers(p, frames[(frame + direction * k + n) % n], color, widthPx)
+    // Mientras giras, los cuadros van a media resolución (salen al instante y en movimiento
+    // no se nota); al soltar, el cuadro donde se queda se carga completo.
+    val drawWidth = if (dragging) widthPx / 2 else widthPx
+    // Se preparan los cuadros que siguen (con sus capas), para que aparezcan al instante.
+    LaunchedEffect(p, frame, color, drawWidth) {
+        if (drawWidth <= 0) return@LaunchedEffect
+        for (k in 1..3) repo.layers(p, frames[(frame + direction * k + n) % n], color, drawWidth)
     }
     val turn = Modifier.pointerInput(p) {
         // Una vuelta completa por cada 1.2 anchos de la pieza, tenga los cuadros que tenga.
@@ -90,7 +93,7 @@ fun CarTurntable(
             while (accumulated < -step) { accumulated += step; frame = (frame + 1) % n; direction = 1 }
         }
     }
-    CarLayersImage(repo, p, frames[frame], color, widthPx, modifier.onSizeChanged { widthPx = it.width }.then(turn), onReady)
+    CarLayersImage(repo, p, frames[frame], color, drawWidth, modifier.onSizeChanged { widthPx = it.width }.then(turn), onReady)
 }
 
 /**

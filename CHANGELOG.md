@@ -6,6 +6,14 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
+## [1.4.6] - 2026-11-01
+
+### Arreglado
+- **El giro del auto vuelve a ser fluido** con los modelos en alta calidad:
+  mientras lo giras se usan cuadros a media resolución (salen al instante) y al
+  soltarlo se carga el cuadro en alta calidad. Las imágenes grandes ya no se
+  decodifican completas para dibujarlas más chicas.
+
 ## [1.4.5] - 2026-11-01
 
 ### Mejorado
