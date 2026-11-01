@@ -70,6 +70,7 @@ object TileTypes {
     const val CLOCK = "reloj"
     const val PHONE = "telefono"
     const val WEATHER = "clima"
+    const val TRIP = "viaje"
     const val APP = "app"
 }
 

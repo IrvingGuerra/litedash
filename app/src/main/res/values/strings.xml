@@ -143,4 +143,9 @@
     <string name="weather_rain">Lluvia</string>
     <string name="weather_storm">Tormenta</string>
     <string name="weather_snow">Nieve</string>
+    <string name="tile_trip">Viaje</string>
+    <string name="trip_module">Velocidad, rumbo y distancia por GPS · usa el GPS solo mientras se ve</string>
+    <string name="trip_reset">Reiniciar</string>
+    <string name="unit_kmh">km/h</string>
+    <string name="unit_mph">mph</string>
 </resources>

@@ -89,6 +89,7 @@ class Dependencies(
     val cars: CarRepository,
     val updater: Updater,
     val weather: WeatherRepository,
+    val trip: TripRepository,
 )
 
 /** Qué hace cada pieza al tocarla (abrir un panel, el mapa o la música en grande). */
@@ -117,6 +118,7 @@ fun TileContent(d: Dependencies, p: Tile, apps: List<App>, revision: Int, action
         TileTypes.MUSIC -> MusicTile(d.music, revision, onExpand = actions.onMusic)
         TileTypes.CLOCK -> ClockTile(d.prefs.driverName, d.weather)
         TileTypes.WEATHER -> WeatherTile(d.weather)
+        TileTypes.TRIP -> TripTile(d.trip)
         TileTypes.NAVIGATE -> {
             val app = mapApp(d, apps, p.data)
             NavigationTile(

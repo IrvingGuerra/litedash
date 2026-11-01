@@ -26,6 +26,13 @@ data class Weather(val temperature: Int, val code: Int, val day: Boolean, val da
 
 data class WeatherDay(val date: String, val code: Int, val max: Int, val min: Int)
 
+/**
+ * °F, mph y millas solo donde se usan (Estados Unidos y pocos más). Con la app en
+ * español siempre métrico, aunque el sistema esté en inglés de EE. UU.
+ */
+fun imperialUnits(context: Context) = Language.read(context) != "es" &&
+    Locale.getDefault().country in setOf("US", "LR", "MM")
+
 /** Qué cielo es cada código WMO, para el ícono y el texto. */
 enum class Sky { CLEAR, PARTLY, CLOUDY, FOG, RAIN, STORM, SNOW }
 
@@ -52,9 +59,7 @@ class WeatherRepository(private val context: Context) {
         private set
 
     /** En °F solo donde se usan (Estados Unidos y pocos más). */
-    /** Con la app en español siempre °C, aunque el sistema esté en inglés de EE. UU. */
-    val fahrenheit get() = Language.read(context) != "es" &&
-        Locale.getDefault().country in setOf("US", "LR", "MM", "BS", "BZ", "KY", "PW")
+    val fahrenheit get() = imperialUnits(context)
 
     fun hasPermission() = context.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
 

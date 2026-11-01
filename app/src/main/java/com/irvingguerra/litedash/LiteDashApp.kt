@@ -30,6 +30,7 @@ class LiteDashApp : Application() {
             cars = CarRepository(this, BuildConfig.CATALOG_URL),
             updater = Updater(this, BuildConfig.UPDATES_URL, BuildConfig.VERSION_CODE.toLong()),
             weather = WeatherRepository(this),
+            trip = TripRepository(this),
         )
     }
 

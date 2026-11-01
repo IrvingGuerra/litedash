@@ -23,6 +23,9 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <!-- Clima y tema por el sol: solo la ubicación aproximada, y solo si lo activas. -->
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <!-- Viaje (velocímetro): GPS, solo si agregas la pieza y mientras se ve. -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-feature android:name="android.hardware.location.gps" android:required="false" />
 
     <application
         android:name=".LiteDashApp"

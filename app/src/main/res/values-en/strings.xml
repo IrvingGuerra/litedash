@@ -139,4 +139,9 @@
     <string name="weather_rain">Rain</string>
     <string name="weather_storm">Storm</string>
     <string name="weather_snow">Snow</string>
+    <string name="tile_trip">Trip</string>
+    <string name="trip_module">Speed, heading and distance by GPS · only uses GPS while on screen</string>
+    <string name="trip_reset">Reset</string>
+    <string name="unit_kmh">km/h</string>
+    <string name="unit_mph">mph</string>
 </resources>
