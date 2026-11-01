@@ -1,5 +1,8 @@
 <p align="center">
-  <img src="brand/png/litedash-horizontal-sobre-claro.png" alt="LiteDash" width="420">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="brand/png/litedash-horizontal-sobre-oscuro.png">
+    <img src="brand/png/litedash-horizontal-sobre-claro.png" alt="LiteDash" width="420">
+  </picture>
 </p>
 
 <p align="center">
