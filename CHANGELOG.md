@@ -6,6 +6,12 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
+## [1.4.10] - 2026-11-01
+
+### Mejorado
+- El giro del auto usa menos memoria y el código quedó más simple (sin la pausa
+  al cambiar de color: el auto se pinta al ritmo en que arrastras el selector).
+
 ## [1.4.9] - 2026-11-01
 
 ### Mejorado

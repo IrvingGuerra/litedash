@@ -55,6 +55,7 @@ JDK 17 y el SDK de Android con la plataforma 37.
 ./gradlew assemblePlayDebug        # versión para Google Play, depuración
 ./gradlew assembleGithubRelease    # APK para GitHub
 tools/avd.sh                       # emuladores de pantallas de auto (1024×600 a 2000×1200)
+tools/spin.sh                      # qué tan fluido gira el auto (cuadros por segundo)
 tools/measure.sh                   # medir arranque, memoria y fluidez en un equipo conectado
 ```
 

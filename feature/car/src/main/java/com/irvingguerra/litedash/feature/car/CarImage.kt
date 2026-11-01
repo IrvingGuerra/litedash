@@ -24,15 +24,28 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.conflate
 import kotlin.math.roundToInt
 
 /** El giro completo: 96 posiciones, una cada 3.75°. El paquete trae una de cada 4. */
 private const val FULL_SPIN = 96
 
-/** Pausa antes de repintar con otro color: al arrastrar el selector solo se tiñe el último. */
-private const val COLOR_SETTLE_MS = 60L
+/** Anchos de la pieza que hay que arrastrar para dar una vuelta completa. */
+private const val WIDTHS_PER_TURN = 0.83f
+
+/** Cuadros que se preparan adelante, hacia donde va el dedo. */
+private const val PREFETCH = 3
+
+/**
+ * Mientras se arrastra, los cuadros se dibujan a esta fracción del ancho: tienen la
+ * cuarta parte de píxeles, salen al instante y en movimiento no se nota. Al soltar,
+ * el cuadro donde se queda se carga completo. Medido con tools/spin.sh: sin esto el
+ * giro en grande baja de ~27 a ~17 cuadros por segundo.
+ */
+private const val DRAG_RESOLUTION = 0.5f
+
+/** El cuadro de tres cuartos con el frente a la izquierda: donde empieza el auto. */
+private fun restFrame(frames: List<String>) = frames.size * 3 / 8
 
 /**
  * El auto del paquete, pintado del [color]: gira con el dedo a los lados (como
@@ -60,7 +73,7 @@ fun CarTurntable(
         CarLayersImage(repo, p, view, color, widthPx, modifier.onSizeChanged { widthPx = it.width }, onReady)
         return
     }
-    val saved = angle?.let { (it * n).roundToInt().mod(n) } ?: (n * 3 / 8)
+    val saved = angle?.let { (it * n).roundToInt().mod(n) } ?: restFrame(frames)
     // Un solo estado por auto: el gesto sigue moviendo este mismo aunque cambie el
     // ángulo guardado (si se recreara al guardar, el dedo movería uno que ya no se dibuja).
     var frame by remember(p) { mutableIntStateOf(saved) }
@@ -68,17 +81,15 @@ fun CarTurntable(
     var dragging by remember(p) { mutableStateOf(false) }
     // Si lo giraron en otra pantalla (Ajustes o la vista en grande), aquí se pone igual.
     LaunchedEffect(saved) { if (!dragging) frame = saved }
-    // Mientras giras, los cuadros van a media resolución (salen al instante y en movimiento
-    // no se nota); al soltar, el cuadro donde se queda se carga completo.
-    val drawWidth = if (dragging) widthPx / 2 else widthPx
+    val drawWidth = if (dragging) (widthPx * DRAG_RESOLUTION).roundToInt() else widthPx
     // Se preparan los cuadros que siguen (con sus capas), para que aparezcan al instante.
     LaunchedEffect(p, frame, color, drawWidth) {
         if (drawWidth <= 0) return@LaunchedEffect
-        for (k in 1..3) repo.layers(p, frames[(frame + direction * k + n) % n], color, drawWidth)
+        for (k in 1..PREFETCH) repo.layers(p, frames[(frame + direction * k + n) % n], color, drawWidth)
     }
     val turn = Modifier.pointerInput(p) {
-        // Una vuelta completa por cada 1.2 anchos de la pieza, tenga los cuadros que tenga.
-        val step = size.width / (n * 1.2f)
+        // La misma vuelta por arrastre, tenga los cuadros que tenga (más fluidez = pasos más chicos).
+        val step = size.width * WIDTHS_PER_TURN / n
         var accumulated = 0f
         fun release() {
             dragging = false
@@ -102,7 +113,7 @@ fun CarTurntable(
 @Composable
 fun CarStill(repo: CarRepository, p: CarPackage, color: Color, modifier: Modifier = Modifier) {
     val frames = remember(p) { spinFrames(p) }
-    val name = frames.getOrNull(frames.size * 3 / 8) ?: p.views.firstOrNull() ?: return
+    val name = frames.getOrNull(restFrame(frames)) ?: p.views.firstOrNull() ?: return
     var widthPx by remember { mutableIntStateOf(0) }
     CarLayersImage(repo, p, name, color, widthPx, modifier.onSizeChanged { widthPx = it.width }, onReady = null)
 }
@@ -124,20 +135,17 @@ private fun CarLayersImage(
     onReady: (() -> Unit)?,
 ) {
     var layers by remember(p.id) { mutableStateOf<CarLayers?>(null) }
-    var shownColor by remember(p.id) { mutableStateOf(color) }
     var notified by remember(p.id) { mutableStateOf(false) }
     val ready by rememberUpdatedState(onReady)
     val wanted by rememberUpdatedState(Wanted(name, color, widthPx))
     LaunchedEffect(p) {
         // La imagen que se está cargando siempre termina y luego se pasa a la más reciente
-        // (las de en medio se saltan). Si cada cuadro nuevo cancelara al anterior, al girar
-        // más rápido de lo que tarda uno en cargar, ninguno terminaría y el auto se quedaría quieto.
+        // (las de en medio se saltan): al girar rápido o al arrastrar el selector de color,
+        // el auto avanza al ritmo en que se pintan, sin apilar trabajo. Si cada cambio
+        // cancelara al anterior, ninguno terminaría y el auto se quedaría quieto.
         snapshotFlow { wanted }.conflate().collect { w ->
             if (w.widthPx <= 0) return@collect
-            // Solo al cambiar de color: al girar, cada cuadro debe verse al momento.
-            if (layers != null && w.color != shownColor) delay(COLOR_SETTLE_MS)
             layers = repo.layers(p, w.name, w.color, w.widthPx) ?: return@collect
-            shownColor = w.color
             if (!notified) {
                 notified = true
                 ready?.invoke()
