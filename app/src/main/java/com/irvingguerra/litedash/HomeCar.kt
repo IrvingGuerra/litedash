@@ -25,10 +25,17 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import com.irvingguerra.litedash.core.ui.Button
+import com.irvingguerra.litedash.core.ui.Icons
+import com.irvingguerra.litedash.core.ui.Label
+import com.irvingguerra.litedash.core.ui.LocalColors
+import com.irvingguerra.litedash.core.ui.Typography
 import com.irvingguerra.litedash.feature.car.CAR_ASPECT
 import com.irvingguerra.litedash.feature.car.CarPackage
+import com.irvingguerra.litedash.feature.car.CarRepository
 import com.irvingguerra.litedash.feature.car.CarTile
 import com.irvingguerra.litedash.feature.car.CarTurntable
+import com.irvingguerra.litedash.feature.car.CatalogEntry
 
 /**
  * El auto del inicio ([pkg] del catálogo, o el sedán dibujado si es null): gira
@@ -51,7 +58,7 @@ fun HomeCar(d: Dependencies, pkg: CarPackage?, onClick: () -> Unit, modifier: Mo
         drawing = pkg?.let { p ->
             { m -> CarTurntable(d.cars, p, color, m, d.prefs.carAngle, { d.prefs.carAngle = it }, onReady) }
         },
-        hasFloor = pkg?.floor?.isNotEmpty() == true,
+        hasFloor = pkg?.hasFloor == true,
     )
 }
 
@@ -120,3 +127,20 @@ fun CarOnly(
  */
 private fun carWidth(box: Rect, density: Density) =
     minOf(box.width, box.height * CAR_ASPECT) - with(density) { 16.dp.toPx() }
+
+/**
+ * El auto tiene un modelo 3D nuevo en el catálogo: un toque lo baja con la calidad
+ * que tenía. El mismo aviso en el inicio y en Ajustes, con la descarga del repositorio.
+ */
+@Composable
+fun CarUpdateNotice(cars: CarRepository, car: CarPackage, entry: CatalogEntry) {
+    if (!cars.isOutdated(car, entry)) return
+    Notice(stringResource(R.string.car_update_notice, car.name), Icons.car) {
+        val progress = cars.downloading?.takeIf { it.first == car.id || it.first == CarRepository.ALL }?.second
+        if (progress != null) {
+            Label(stringResource(R.string.downloading, (progress * 100).toInt()), Typography.body, LocalColors.current.accent)
+        } else {
+            Button(stringResource(R.string.car_update, cars.updateSize(car, entry) / 1e6f), { cars.update(car, entry) }, primary = true)
+        }
+    }
+}

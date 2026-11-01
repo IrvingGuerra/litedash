@@ -5,7 +5,7 @@
 #
 # Uso: tools/spin.sh [-s SERIAL] [X Y]
 #   X Y = centro del auto en el inicio, en píxeles (por defecto, el centro de la pantalla).
-# Antes: LiteDash instalado como inicio, con un auto del catálogo y fluidez Máxima.
+# Antes: LiteDash instalado como inicio, con un auto del catálogo en calidad Alta.
 # En el emulador no debe haber nada usando el GPU de la Mac (Blender renderizando lo
 # traba y la medición no sirve): pausarlo con `kill -STOP $(pgrep -if blender)` y luego `kill -CONT`.
 set -euo pipefail

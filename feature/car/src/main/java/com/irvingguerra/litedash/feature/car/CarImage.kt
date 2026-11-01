@@ -27,17 +27,14 @@ import androidx.compose.ui.unit.IntSize
 import kotlinx.coroutines.flow.conflate
 import kotlin.math.roundToInt
 
-/** El giro completo del estudio: 96 posiciones, una cada 3.75°. El paquete trae una de cada 4. */
-private const val FULL_SPIN = 96
-
 /** Anchos de la pieza que hay que arrastrar para dar una vuelta completa. */
 private const val WIDTHS_PER_TURN = 0.83f
 
 /** Cuadros que se preparan adelante, hacia donde va el dedo. */
 private const val PREFETCH = 3
 
-/** El cuadro de tres cuartos con el frente a la izquierda: donde empieza el auto. */
-private fun restFrame(frames: List<String>) = frames.size * 3 / 8
+/** El cuadro de tres cuartos con el frente a la izquierda (3/8 de vuelta): donde empieza el auto. */
+private fun restFrame(count: Int) = count * 3 / 8
 
 /**
  * El auto del paquete, pintado del [color]: gira con el dedo a los lados (como
@@ -45,7 +42,6 @@ private fun restFrame(frames: List<String>) = frames.size * 3 / 8
  * dejas. [angle] es la vuelta en fracción (0..1; null = tres cuartos con el
  * frente a la izquierda) y [onAngle] la recibe al soltar para guardarla.
  * [onReady] se llama una vez, cuando ya se ve (para animar sin que se vea vacío).
- * Un paquete sin giro muestra su primera vista fija.
  */
 @Composable
 fun CarTurntable(
@@ -60,12 +56,7 @@ fun CarTurntable(
     val frames = remember(p) { spinFrames(p) }
     val n = frames.size
     var widthPx by remember { mutableIntStateOf(0) }
-    if (n == 0) {
-        val view = p.views.firstOrNull() ?: return
-        CarLayersImage(repo, p, view, color, widthPx, modifier.onSizeChanged { widthPx = it.width }, onReady)
-        return
-    }
-    val saved = angle?.let { (it * n).roundToInt().mod(n) } ?: restFrame(frames)
+    val saved = angle?.let { (it * n).roundToInt().mod(n) } ?: restFrame(n)
     // Un solo estado por auto: el gesto sigue moviendo este mismo aunque cambie el
     // ángulo guardado (si se recreara al guardar, el dedo movería uno que ya no se dibuja).
     var frame by remember(p) { mutableIntStateOf(saved) }
@@ -74,9 +65,11 @@ fun CarTurntable(
     // Si lo giraron en otra pantalla (Ajustes o la vista en grande), aquí se pone igual.
     LaunchedEffect(saved) { if (!dragging) frame = saved }
     // Se preparan los cuadros que siguen (con sus capas), para que aparezcan al instante.
-    LaunchedEffect(p, frame, color, widthPx) {
+    // Solo al cambiar de cuadro: al arrastrar el selector de color no se precargan colores de paso.
+    val currentColor by rememberUpdatedState(color)
+    LaunchedEffect(p, frame, widthPx) {
         if (widthPx <= 0) return@LaunchedEffect
-        for (k in 1..PREFETCH) repo.layers(p, frames[(frame + direction * k + n) % n], color, widthPx)
+        for (k in 1..PREFETCH) repo.layers(p, frames[(frame + direction * k + n) % n], currentColor, widthPx)
     }
     val turn = Modifier.pointerInput(p) {
         // La misma vuelta por arrastre, tenga los cuadros que tenga (más fluidez = pasos más chicos).
@@ -103,10 +96,8 @@ fun CarTurntable(
 /** El auto quieto en tres cuartos, pintado del [color]: para las tarjetas de la lista de modelos. */
 @Composable
 fun CarStill(repo: CarRepository, p: CarPackage, color: Color, modifier: Modifier = Modifier) {
-    val frames = remember(p) { spinFrames(p) }
-    val name = frames.getOrNull(restFrame(frames)) ?: p.views.firstOrNull() ?: return
     var widthPx by remember { mutableIntStateOf(0) }
-    CarLayersImage(repo, p, name, color, widthPx, modifier.onSizeChanged { widthPx = it.width }, onReady = null)
+    CarLayersImage(repo, p, baseFrame(restFrame(p.spin)), color, widthPx, modifier.onSizeChanged { widthPx = it.width }, onReady = null)
 }
 
 /**
@@ -168,19 +159,9 @@ private fun DrawScope.drawLayer(img: ImageBitmap, box: Rect) = drawImage(
     filterQuality = FilterQuality.Medium,
 )
 
-/**
- * Los cuadros del giro en orden de ángulo, según la [Smoothness] instalada: los
- * del paquete van cada 15° ("NN") y la fluidez media agrega los de en medio
- * ("mNN"). Paquetes con otro número de cuadros, tal cual vienen.
- */
-fun spinFrames(p: CarPackage): List<String> {
-    if (p.spin * 4 != FULL_SPIN) return (0 until p.spin).map { "${CarFiles.SPIN}/%02d".format(it) }
-    val medium = p.smoothness >= Smoothness.MEDIUM
-    return (0 until FULL_SPIN step 2).mapNotNull { i ->
-        when {
-            i % 4 == 0 -> "${CarFiles.SPIN}/%02d".format(i / 4)
-            medium -> "${CarFiles.SPIN}/m%02d".format(i / 4)
-            else -> null
-        }
-    }
+/** Los cuadros del giro en orden: los del paquete ("NN") y, en calidad alta, el de en medio de cada par ("mNN"). */
+private fun spinFrames(p: CarPackage): List<String> = (0 until p.spin).flatMap { i ->
+    if (p.high) listOf(baseFrame(i), "${CarFiles.SPIN}/m%02d".format(i)) else listOf(baseFrame(i))
 }
+
+private fun baseFrame(i: Int) = "${CarFiles.SPIN}/%02d".format(i)

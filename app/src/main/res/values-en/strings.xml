@@ -104,10 +104,6 @@
     <string name="appearance">Appearance</string>
     <string name="back_home">Back to home</string>
     <string name="search_car">Find your car (make, model or year)</string>
-    <string name="smoothness">Spin smoothness</string>
-    <string name="smoothness_light">Light</string>
-    <string name="smoothness_medium">Medium</string>
-    <string name="smoothness_help">Smoother = more frames when spinning. Only the missing ones are downloaded.</string>
     <string name="delete_car">Delete download · %.1f MB</string>
     <string name="cancel">Cancel</string>
     <string name="greeting_morning">Good morning, %1$s</string>
@@ -230,4 +226,8 @@
     </plurals>
     <string name="music_other_app">Another app…</string>
     <string name="open_installer">Open with the Android installer</string>
+    <string name="spin_quality">Spin quality</string>
+    <string name="spin_quality_low">Low</string>
+    <string name="spin_quality_high">High</string>
+    <string name="spin_quality_help">High = more frames when spinning, smoother. Only the missing ones are downloaded.</string>
 </resources>

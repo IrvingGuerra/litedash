@@ -6,6 +6,23 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
+## [1.4.14] - 2026-11-01
+
+### Cambiado
+- **Calidad del giro: Baja y Alta** (antes Ligera y Media). Bajar a Baja libera
+  espacio aunque no haya internet.
+
+### Arreglado
+- Las descargas de autos siguen aunque cierres Ajustes, y el auto bajado queda
+  elegido. Ya no chocan dos descargas a la vez (el aviso del inicio y Ajustes).
+- Si se corta la descarga de la calidad Alta, el auto sigue completo en Baja.
+- El aviso de "modelo 3D nuevo" revisa cada auto por separado.
+
+### Mejorado
+- Auditoría del auto 3D: el giro en grande es más fluido (cada cuadro se
+  decodifica una sola vez), el auto no se repinta detrás de Ajustes, al mover el
+  color no se precargan colores de paso y lo instalado se lee una sola vez.
+
 ## [1.4.13] - 2026-11-01
 
 ### Cambiado

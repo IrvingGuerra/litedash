@@ -182,7 +182,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
     val context = LocalContext.current
     val apps = rememberApps(d.apps).orEmpty()
     val currentApps by rememberUpdatedState(apps)
-    val car = remember(d.prefs.carModel, d.cars.changes) { d.cars.pkg(d.prefs.carModel) }
+    val car = d.cars.pkg(d.prefs.carModel)
     var panel by remember { mutableStateOf<Panel?>(null) }
     var editing by remember { mutableStateOf(false) }
     var musicExpanded by remember { mutableStateOf(false) }
@@ -242,11 +242,9 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
     LaunchedEffect(homePressed) { if (d.prefs.welcomeSeen) backToDashboard() }
     // Clima al volver al inicio (si pasó media hora y está activado); nunca en segundo plano.
     LaunchedEffect(revision) { d.weather.refreshIfStale() }
-    // Versión nueva de la app y del auto: una revisión al abrir (a lo más cada 12 h).
+    // Versión nueva de la app (a lo más cada 12 h) y modelo 3D nuevo del auto (cada hora).
     LaunchedEffect(Unit) { d.updater.checkQuietly() }
     LaunchedEffect(d.prefs.carModel) { d.cars.checkQuietly(d.prefs.carModel) }
-    // Una vez: libera los cuadros de la fluidez máxima, que ya no se usa.
-    LaunchedEffect(Unit) { d.cars.dropRetiredFrames() }
 
     val actions = remember {
         TileActions(
@@ -276,7 +274,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
 
     // Con un auto que trae piso, el fondo baja un poco de tono hacia abajo: es el
     // piso donde se para el auto (como en Tesla), y su sombra y reflejo caen ahí.
-    val hasFloor = car?.floor?.isNotEmpty() == true && d.dashboard.tiles.any { it.type == TileTypes.CAR }
+    val hasFloor = car?.hasFloor == true && d.dashboard.tiles.any { it.type == TileTypes.CAR }
     val backdrop = if (hasFloor) {
         Brush.verticalGradient(0.3f to c.background, 1f to lerp(c.background, Color.Black, if (c.dark) 0.35f else 0.08f))
     } else SolidColor(c.background)
@@ -293,74 +291,79 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                 }
             },
     ) {
-        Column(Modifier.fillMaxSize().safeDrawingPadding()) {
-            // Si ya hay un reloj en el tablero, la barra no repite la hora.
-            val showTime = d.dashboard.tiles.none { it.type == TileTypes.CLOCK }
-            val barHidden = !editing && !showTime
-            TopBar(
-                editing = editing,
-                showTime = showTime,
-                driverName = d.prefs.driverName,
-                weather = d.weather,
-                onAdd = { panel = Panel.AddTile },
-                onTemplates = { panel = Panel.Templates },
-                onFinish = { editing = false },
-            )
-            // Los avisos tampoco cuentan para la cuadrícula: aparecen y se van, y no deben
-            // hacer que se cargue otro acomodo.
-            Column(Modifier.onSizeChanged { promptsHeight = it.height }) {
-                if (d.prefs.welcomeSeen && !editing) {
-                    if (!d.prefs.dontAskHome && !isShortScreen()) HomePrompt(d.prefs, revision)
-                    if (!isShortScreen()) ReminderBanner(d.reminders)
-                    UpdateBanner(d.updater, onOpen = { panel = Panel.About })
-                    if (car != null) CarUpdateBanner(d.cars, car)
-                }
-            }
-            BoxWithConstraints(Modifier.weight(1f).fillMaxWidth().padding(horizontal = 10.dp)) {
-                // La cuadrícula se calcula siempre como si la barra estuviera: si dependiera
-                // de ella, un reloj en el acomodo la oculta, la cuadrícula crece, se carga
-                // otro acomodo sin reloj, vuelve la barra... y el inicio parpadea sin parar.
-                val prompts = with(LocalDensity.current) { promptsHeight.toDp() }
-                val gridHeight = (if (barHidden) maxHeight - (topBarHeight() - TOP_BAR_HIDDEN) else maxHeight) + prompts
-                val grid = remember(maxWidth, gridHeight) { Grid.forSize(maxWidth.value, gridHeight.value) }
-                // Carga el acomodo de esta cuadrícula antes de dibujar (solo hace algo si cambió).
-                d.dashboard.use(grid)
-                if (musicExpanded) {
-                    // La música a la derecha y tus piezas acomodadas en la mitad izquierda (sin
-                    // tocar el acomodo guardado): no tapa todo y es claro cómo volver.
-                    val half = remember(grid) { Grid((grid.columns / 2).coerceAtLeast(2), grid.rows) }
-                    val tiles = d.dashboard.tiles
-                    val packed = remember(tiles, half) { tiles.filter { it.type != TileTypes.MUSIC }.packed(half, ::limitsOf) }
-                    Row(Modifier.fillMaxSize()) {
-                        Dashboard(
-                            grid = half,
-                            tiles = packed,
-                            editing = false,
-                            limits = ::limitsOf,
-                            onChange = {},
-                            onEdit = { musicExpanded = false; editing = true },
-                            modifier = Modifier.weight(1f),
-                        ) { p -> TileContent(d, p, apps, car, revision, actions) }
-                        MusicExpanded(d.music, close = { musicExpanded = false }, Modifier.weight(1f).padding(6.dp))
+        // Los paneles tapan todo el inicio: mientras hay uno abierto no se dibuja ni se
+        // pinta nada debajo (el auto del tablero no se tiñe dos veces al cambiar el color).
+        if (panel == null) {
+            Column(Modifier.fillMaxSize().safeDrawingPadding()) {
+                // Si ya hay un reloj en el tablero, la barra no repite la hora.
+                val showTime = d.dashboard.tiles.none { it.type == TileTypes.CLOCK }
+                val barHidden = !editing && !showTime
+                TopBar(
+                    editing = editing,
+                    showTime = showTime,
+                    driverName = d.prefs.driverName,
+                    weather = d.weather,
+                    onAdd = { panel = Panel.AddTile },
+                    onTemplates = { panel = Panel.Templates },
+                    onFinish = { editing = false },
+                )
+                // Los avisos tampoco cuentan para la cuadrícula: aparecen y se van, y no deben
+                // hacer que se cargue otro acomodo.
+                Column(Modifier.onSizeChanged { promptsHeight = it.height }) {
+                    if (d.prefs.welcomeSeen && !editing) {
+                        if (!d.prefs.dontAskHome && !isShortScreen()) HomePrompt(d.prefs, revision)
+                        if (!isShortScreen()) ReminderBanner(d.reminders)
+                        UpdateBanner(d.updater, onOpen = { panel = Panel.About })
+                        val newModel = d.cars.outdated?.takeIf { it.id == car?.id }
+                        if (car != null && newModel != null) CarUpdateNotice(d.cars, car, newModel)
                     }
-                } else {
-                    Dashboard(
-                        grid = grid,
-                        tiles = d.dashboard.tiles,
-                        editing = editing,
-                        limits = ::limitsOf,
-                        onChange = d.dashboard::change,
-                        onEdit = { editing = true },
-                    ) { p -> TileContent(d, p, apps, car, revision, actions) }
                 }
+                BoxWithConstraints(Modifier.weight(1f).fillMaxWidth().padding(horizontal = 10.dp)) {
+                    // La cuadrícula se calcula siempre como si la barra estuviera: si dependiera
+                    // de ella, un reloj en el acomodo la oculta, la cuadrícula crece, se carga
+                    // otro acomodo sin reloj, vuelve la barra... y el inicio parpadea sin parar.
+                    val prompts = with(LocalDensity.current) { promptsHeight.toDp() }
+                    val gridHeight = (if (barHidden) maxHeight - (topBarHeight() - TOP_BAR_HIDDEN) else maxHeight) + prompts
+                    val grid = remember(maxWidth, gridHeight) { Grid.forSize(maxWidth.value, gridHeight.value) }
+                    // Carga el acomodo de esta cuadrícula antes de dibujar (solo hace algo si cambió).
+                    d.dashboard.use(grid)
+                    if (musicExpanded) {
+                        // La música a la derecha y tus piezas acomodadas en la mitad izquierda (sin
+                        // tocar el acomodo guardado): no tapa todo y es claro cómo volver.
+                        val half = remember(grid) { Grid((grid.columns / 2).coerceAtLeast(2), grid.rows) }
+                        val tiles = d.dashboard.tiles
+                        val packed = remember(tiles, half) { tiles.filter { it.type != TileTypes.MUSIC }.packed(half, ::limitsOf) }
+                        Row(Modifier.fillMaxSize()) {
+                            Dashboard(
+                                grid = half,
+                                tiles = packed,
+                                editing = false,
+                                limits = ::limitsOf,
+                                onChange = {},
+                                onEdit = { musicExpanded = false; editing = true },
+                                modifier = Modifier.weight(1f),
+                            ) { p -> TileContent(d, p, apps, car, revision, actions) }
+                            MusicExpanded(d.music, close = { musicExpanded = false }, Modifier.weight(1f).padding(6.dp))
+                        }
+                    } else {
+                        Dashboard(
+                            grid = grid,
+                            tiles = d.dashboard.tiles,
+                            editing = editing,
+                            limits = ::limitsOf,
+                            onChange = d.dashboard::change,
+                            onEdit = { editing = true },
+                        ) { p -> TileContent(d, p, apps, car, revision, actions) }
+                    }
+                }
+                Dock(
+                    repo = d.apps,
+                    favorites = remember(apps, d.prefs.dock, d.prefs.musicApp) { dockFavorites(d, apps) },
+                    onCar = { panel = Panel.CarSettings },
+                    onApps = { panel = Panel.Drawer },
+                    onSettings = { panel = Panel.Settings },
+                )
             }
-            Dock(
-                repo = d.apps,
-                favorites = remember(apps, d.prefs.dock, d.prefs.musicApp) { dockFavorites(d, apps) },
-                onCar = { panel = Panel.CarSettings },
-                onApps = { panel = Panel.Drawer },
-                onSettings = { panel = Panel.Settings },
-            )
         }
 
         when (val p = panel) {
@@ -529,28 +532,6 @@ private fun UpdateBanner(updater: Updater, onOpen: () -> Unit) {
     Notice(stringResource(R.string.new_version, v.name), Icons.info) {
         Button(stringResource(R.string.update_see), onOpen, primary = true)
         Button(stringResource(R.string.update_later), updater::dismiss)
-    }
-}
-
-/** El auto tiene imágenes nuevas en el catálogo: un toque las baja (con la fluidez que tenía). */
-@Composable
-private fun CarUpdateBanner(cars: CarRepository, car: CarPackage) {
-    val entry = cars.outdated?.takeIf { it.id == car.id } ?: return
-    val scope = rememberCoroutineScope()
-    var progress by remember(car.id) { mutableStateOf<Float?>(null) }
-    Notice(stringResource(R.string.car_update_notice, car.name), Icons.car) {
-        val p = progress
-        if (p != null) {
-            Label(stringResource(R.string.downloading, (p * 100).toInt()), Typography.body, LocalColors.current.accent)
-        } else {
-            Button(stringResource(R.string.car_update, updateSize(car, entry) / 1e6f), {
-                progress = 0f
-                scope.launch {
-                    runCatching { cars.update(car, entry) { f -> progress = f } }
-                    progress = null
-                }
-            }, primary = true)
-        }
     }
 }
 

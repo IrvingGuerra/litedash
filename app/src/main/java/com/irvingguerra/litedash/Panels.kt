@@ -73,13 +73,13 @@ import com.irvingguerra.litedash.core.ui.Typography
 import com.irvingguerra.litedash.feature.apps.App
 import com.irvingguerra.litedash.feature.apps.AppGrid
 import com.irvingguerra.litedash.feature.apps.normalize
+import com.irvingguerra.litedash.feature.car.CAR_ASPECT
 import com.irvingguerra.litedash.feature.car.CarDrawing
 import com.irvingguerra.litedash.feature.car.CarPackage
 import com.irvingguerra.litedash.feature.car.CarRepository
 import com.irvingguerra.litedash.feature.car.CarStill
 import com.irvingguerra.litedash.feature.car.CarTurntable
 import com.irvingguerra.litedash.feature.car.CatalogEntry
-import com.irvingguerra.litedash.feature.car.Smoothness
 import com.irvingguerra.litedash.feature.dashboard.DashboardState
 import com.irvingguerra.litedash.feature.dashboard.Grid
 import com.irvingguerra.litedash.feature.dashboard.ScreenSize
@@ -239,30 +239,20 @@ fun PickAppPanel(d: Dependencies, apps: List<App>, tileId: String?, close: () ->
 /**
  * Ajustes → Tu auto, en tarjetas: el auto (nombre y color), las opciones del modelo
  * elegido justo debajo (sin bajar toda la lista), los modelos descargados a la vista
- * y el catálogo con buscador (no todos de golpe).
+ * y el catálogo con buscador (no todos de golpe). Las descargas viven en el
+ * repositorio: siguen aunque se cierre Ajustes.
  */
 @Composable
 private fun CarSettings(d: Dependencies) {
     val prefs = d.prefs
     val cars = d.cars
     val c = LocalColors.current
-    val scope = rememberCoroutineScope()
-    val pkg = remember(prefs.carModel, cars.changes) { cars.pkg(prefs.carModel) }
-    val installed = remember(cars.changes) { cars.installed() }
+    val pkg = cars.pkg(prefs.carModel)
+    val installed = cars.installed
     var catalog by remember { mutableStateOf<List<CatalogEntry>?>(null) }
-    var error by remember { mutableStateOf(false) }
-    // Una descarga a la vez: qué se baja (id del auto, "fluidez" o "todos") y cuánto va.
-    var downloading by remember { mutableStateOf<Pair<String, Float>?>(null) }
+    var unreachable by remember { mutableStateOf(false) }
     LaunchedEffect(cars.hasCatalog) {
-        if (cars.hasCatalog) runCatching { cars.catalog() }.onSuccess { catalog = it }.onFailure { error = true }
-    }
-    fun run(what: String, work: suspend ((Float) -> Unit) -> Unit) {
-        if (downloading != null) return
-        downloading = what to 0f
-        scope.launch {
-            runCatching { work { f -> downloading = what to f } }.onFailure { error = true }
-            downloading = null
-        }
+        if (cars.hasCatalog) runCatching { cars.catalog() }.onSuccess { catalog = it }.onFailure { unreachable = true }
     }
 
     SettingsCard {
@@ -282,18 +272,16 @@ private fun CarSettings(d: Dependencies) {
     }
     if (pkg != null) {
         SettingsCard("${pkg.make} ${pkg.name} ${pkg.year}") {
-            ModelOptions(cars, pkg, catalog?.firstOrNull { it.id == pkg.id }, downloading, ::run, onDeleted = { prefs.carModel = null })
+            ModelOptions(cars, pkg, catalog?.firstOrNull { it.id == pkg.id }, onDelete = { prefs.carModel = null; cars.delete(pkg) })
         }
     }
     if (cars.hasCatalog || installed.isNotEmpty()) {
-        SettingsCard(stringResource(R.string.your_models)) {
-            DownloadedModels(prefs, cars, installed, catalog, downloading, ::run)
-        }
+        SettingsCard(stringResource(R.string.your_models)) { DownloadedModels(prefs, cars, catalog) }
     }
     if (cars.hasCatalog) {
         SettingsCard(stringResource(R.string.catalog)) {
-            CatalogSearch(prefs, cars, catalog?.filter { e -> installed.none { it.id == e.id } }, downloading, ::run)
-            if (error) Label(stringResource(R.string.catalog_error), Typography.small, c.danger)
+            CatalogSearch(prefs, cars, catalog?.filter { e -> installed.none { it.id == e.id } })
+            if (unreachable || cars.failed) Label(stringResource(R.string.catalog_error), Typography.small, c.danger)
         }
     } else if (installed.isEmpty()) {
         SettingsCard { Label(stringResource(R.string.car_coming_soon), Typography.small, c.textMuted) }
@@ -303,53 +291,32 @@ private fun CarSettings(d: Dependencies) {
     }
 }
 
-private typealias Run = (String, suspend ((Float) -> Unit) -> Unit) -> Unit
-
-/** El modelo elegido: modelo 3D nuevo, fluidez del giro, eliminarlo y su crédito. */
+/** El modelo elegido: modelo 3D nuevo, calidad del giro, eliminarlo y su crédito. */
 @Composable
-private fun ModelOptions(cars: CarRepository, current: CarPackage, entry: CatalogEntry?, downloading: Pair<String, Float>?, run: Run, onDeleted: () -> Unit) {
+private fun ModelOptions(cars: CarRepository, current: CarPackage, entry: CatalogEntry?, onDelete: () -> Unit) {
     val c = LocalColors.current
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-    val progress = downloading?.second?.takeIf { downloading.first == current.id || downloading.first == FLUIDEZ }
-    if (entry != null && cars.isOutdated(current, entry)) {
-        Notice(stringResource(R.string.car_update_notice, current.name), Icons.car) {
-            Button(stringResource(R.string.car_update, updateSize(current, entry) / 1e6f), {
-                run(current.id) { f -> cars.update(current, entry, f) }
-            }, primary = true)
-        }
-    }
-    // Fluidez del giro: cada nivel baja solo los cuadros que faltan.
-    if (current.spin == 24 && entry != null && entry.extras.isNotEmpty()) {
-        Label(stringResource(R.string.smoothness), Typography.label, c.textMuted)
+    if (entry != null) CarUpdateNotice(cars, current, entry)
+    // Calidad del giro: subir necesita el catálogo; bajar (liberar espacio) no.
+    val high = entry?.high
+    if (high != null || current.high) {
+        Label(stringResource(R.string.spin_quality), Typography.label, c.textMuted)
         FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            for ((level, text) in listOf(Smoothness.LIGHT to R.string.smoothness_light, Smoothness.MEDIUM to R.string.smoothness_medium)) {
-                // Subir dice cuánto se baja; bajar, cuánto espacio se libera.
-                val gain = entry.extras.filter { it.level in (current.smoothness + 1)..level }.sumOf { it.bytes }
-                val freed = entry.extras.filter { it.level in (level + 1)..current.smoothness }.sumOf { it.bytes }
-                val label = when {
-                    gain > 0 -> "${stringResource(text)} · +${"%.1f".format(gain / 1e6f)} MB"
-                    freed > 0 -> "${stringResource(text)} · −${"%.1f".format(freed / 1e6f)} MB"
-                    else -> stringResource(text)
-                }
-                Button(label, {
-                    when {
-                        downloading != null || level == current.smoothness -> Unit
-                        level < current.smoothness -> scope.launch { cars.lowerSmoothness(current, level) }
-                        else -> run(FLUIDEZ) { f -> cars.raiseSmoothness(current, entry, level, f) }
-                    }
-                }, primary = level == current.smoothness)
+            val mb = high?.let { "%.1f MB".format(it.bytes / 1e6f) }
+            val low = stringResource(R.string.spin_quality_low)
+            val hi = stringResource(R.string.spin_quality_high)
+            Button(if (current.high && mb != null) "$low · −$mb" else low, { if (current.high) cars.lowerQuality(current) }, primary = !current.high)
+            if (entry != null && high != null) {
+                Button(if (!current.high) "$hi · +$mb" else hi, { if (!current.high) cars.raiseQuality(current, entry) }, primary = current.high)
             }
         }
+        val progress = cars.downloading?.takeIf { it.first == CarRepository.HIGH }?.second
+        if (progress != null) Label(stringResource(R.string.downloading, (progress * 100).toInt()), Typography.small, c.accent)
+        else Label(stringResource(R.string.spin_quality_help), Typography.small, c.textMuted)
     }
-    if (progress != null) Label(stringResource(R.string.downloading, (progress * 100).toInt()), Typography.small, c.accent)
-    else if (current.spin == 24 && entry != null && entry.extras.isNotEmpty()) Label(stringResource(R.string.smoothness_help), Typography.small, c.textMuted)
     // Eliminar lo descargado: pide confirmar con un segundo toque.
-    val mb by produceState(0f, current, cars.changes) { value = cars.sizeOnDisk(current) / 1e6f }
-    Confirmed(stringResource(R.string.delete_car, mb), stringResource(R.string.delete_car_question)) {
-        onDeleted()
-        scope.launch { cars.delete(current) }
-    }
+    val mb by produceState(0f, current) { value = cars.sizeOnDisk(current) / 1e6f }
+    Confirmed(stringResource(R.string.delete_car, mb), stringResource(R.string.delete_car_question), action = onDelete)
     // Crédito del modelo 3D (lo pide su licencia).
     if (current.author.isNotBlank()) {
         Label(
@@ -363,14 +330,11 @@ private fun ModelOptions(cars: CarRepository, current: CarPackage, entry: Catalo
     }
 }
 
-private const val FLUIDEZ = "fluidez"
-private const val ALL = "todos"
-
 /** Los descargados a la vista (en tu color), el sedán dibujado, y actualizar o eliminar todos. */
 @Composable
-private fun DownloadedModels(prefs: Preferences, cars: CarRepository, installed: List<CarPackage>, catalog: List<CatalogEntry>?, downloading: Pair<String, Float>?, run: Run) {
+private fun DownloadedModels(prefs: Preferences, cars: CarRepository, catalog: List<CatalogEntry>?) {
     val c = LocalColors.current
-    val scope = rememberCoroutineScope()
+    val installed = cars.installed
     FlowRow(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         ModelCard(stringResource(R.string.model_generic), selected = prefs.carModel == null, onClick = { prefs.carModel = null }) { m ->
             CarDrawing(prefs.carColor, m)
@@ -387,29 +351,25 @@ private fun DownloadedModels(prefs: Preferences, cars: CarRepository, installed:
     }
     // Todos a la vez: los que tienen modelo 3D nuevo, o quitar todo lo descargado.
     val outdated = catalog.orEmpty().mapNotNull { e -> installed.firstOrNull { cars.isOutdated(it, e) }?.let { it to e } }
-    val progress = downloading?.second?.takeIf { downloading.first == ALL }
+    val progress = cars.downloading?.takeIf { it.first == CarRepository.ALL }?.second
     if (progress != null) {
         Label(stringResource(R.string.downloading, (progress * 100).toInt()), Typography.small, c.accent)
     } else if (outdated.isNotEmpty()) {
         Confirmed(
-            stringResource(R.string.update_all, outdated.size, outdated.sumOf { (p, e) -> updateSize(p, e) } / 1e6f),
+            stringResource(R.string.update_all, outdated.size, outdated.sumOf { (p, e) -> cars.updateSize(p, e) } / 1e6f),
             pluralStringResource(R.plurals.update_all_confirm, outdated.size, outdated.size),
             primary = true,
-        ) {
-            run(ALL) { f ->
-                outdated.forEachIndexed { i, (p, e) -> cars.update(p, e) { x -> f((i + x) / outdated.size) } }
-            }
-        }
+        ) { cars.updateAll(outdated) }
     }
     Confirmed(stringResource(R.string.delete_all), pluralStringResource(R.plurals.delete_all_confirm, installed.size, installed.size)) {
         prefs.carModel = null
-        scope.launch { cars.deleteAll() }
+        cars.deleteAll()
     }
 }
 
 /** El catálogo con buscador: aparecen al escribir (o con "Ver todos"), no toda la lista de golpe. */
 @Composable
-private fun CatalogSearch(prefs: Preferences, cars: CarRepository, available: List<CatalogEntry>?, downloading: Pair<String, Float>?, run: Run) {
+private fun CatalogSearch(prefs: Preferences, cars: CarRepository, available: List<CatalogEntry>?) {
     val c = LocalColors.current
     var query by remember { mutableStateOf("") }
     var showAll by remember { mutableStateOf(false) }
@@ -429,14 +389,9 @@ private fun CatalogSearch(prefs: Preferences, cars: CarRepository, available: Li
     }
     val open = found.firstOrNull { it.id == previewing }
     if (open != null) {
-        val progress = downloading?.second?.takeIf { downloading.first == open.id }
-        CarPreview(open, cars, progress, onDownload = {
-            run(open.id) { f ->
-                cars.install(open, f)
-                prefs.carModel = open.id
-                previewing = null
-            }
-        }, onClose = { previewing = null })
+        val progress = cars.downloading?.takeIf { it.first == open.id }?.second
+        // Al terminar se elige, aunque ya se haya cerrado Ajustes.
+        CarPreview(open, cars, progress, onDownload = { cars.install(open) { prefs.carModel = open.id } }, onClose = { previewing = null })
     }
     // Tocar un auto solo lo muestra en grande; se baja con el botón (ver no cuesta datos).
     FlowRow(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -465,7 +420,7 @@ private fun ModelCard(title: String, selected: Boolean, onClick: () -> Unit, det
             .padding(12.dp),
         verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        Box(Modifier.fillMaxWidth().aspectRatio(1.9f), contentAlignment = Alignment.Center) { picture(Modifier.fillMaxSize()) }
+        Box(Modifier.fillMaxWidth().aspectRatio(CAR_ASPECT), contentAlignment = Alignment.Center) { picture(Modifier.fillMaxSize()) }
         Row(verticalAlignment = Alignment.CenterVertically) {
             Label(title, Typography.small, maxLines = 1, modifier = Modifier.weight(1f))
             if (selected) Icon(Icons.done, c.accent, 18.dp)
@@ -1008,6 +963,3 @@ private fun NewVersion(v: Version, onInstall: () -> Unit) {
         Button(stringResource(R.string.download_install, v.bytes / 1e6f), onInstall, primary = true)
     }
 }
-
-/** Lo que se baja al actualizar un auto: el paquete y la fluidez que ya tenía. */
-fun updateSize(p: CarPackage, e: CatalogEntry) = e.bytes + e.extras.filter { it.level <= p.smoothness }.sumOf { it.bytes }

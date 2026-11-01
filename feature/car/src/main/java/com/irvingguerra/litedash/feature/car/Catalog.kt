@@ -3,6 +3,7 @@ package com.irvingguerra.litedash.feature.car
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.util.LruCache
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -11,8 +12,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.toArgb
-import android.util.LruCache
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import java.io.File
@@ -39,29 +45,18 @@ data class CatalogEntry(
     val year: Int,
     val author: String,
     val license: String,
-    val source: String,
     val url: String,
     val bytes: Long,
     val sha256: String,
     /** Imagen chica (~15 KB) para ver el auto antes de bajarlo; vive en el catálogo, no en la app. */
     val thumbnail: String = "",
-    /** Cuadros extra del giro, para que gire más fluido: [Smoothness.MEDIUM]. */
-    val extras: List<SpinExtra> = emptyList(),
+    /** Cuadros de en medio del giro (calidad alta); se bajan encima del paquete. */
+    val high: SpinExtra? = null,
 )
 
 /** Un paquete de cuadros extra del giro; se baja encima del auto ya instalado. */
 @Immutable
-data class SpinExtra(val level: Int, val url: String, val bytes: Long, val sha256: String)
-
-/**
- * Qué tan fluido gira el auto: cuántos cuadros del giro tiene. La media se baja
- * sobre la ligera, sin volver a bajar lo que ya hay. (Hubo una máxima de 96: en
- * pantallas grandes no cabía en memoria y el giro se iba trabando; se quitó.)
- */
-object Smoothness {
-    const val LIGHT = 0 // 24 cuadros, cada 15°: viene en el paquete
-    const val MEDIUM = 1 // 48, cada 7.5°: los "mNN"
-}
+data class SpinExtra(val url: String, val bytes: Long, val sha256: String)
 
 /** Un auto ya instalado: sus imágenes viven en [folder]. */
 @Immutable
@@ -75,16 +70,18 @@ data class CarPackage(
     val source: String,
     /** Brillo medio de la pintura gris del render (0–1): color final = imagen × color / gris. */
     val gray: Float,
-    val views: List<String>,
+    /** Cuadros del giro en el paquete (cada uno con su "-pintura"). */
     val spin: Int,
-    /** Hasta qué [Smoothness] tiene los cuadros del giro. */
-    val smoothness: Int,
-    /** Vistas con piso (sombra y reflejo): caja de esas capas en anchos del auto. */
+    /** Calidad alta del giro: tiene también los cuadros de en medio ("mNN"). */
+    val high: Boolean,
+    /** Imágenes con piso (sombra y reflejo): caja de esas capas en anchos del auto. */
     val floor: Map<String, FloorBox>,
     val folder: File,
     /** SHA-256 del paquete con que se instaló ("" si se bajó antes de guardarlo). */
     val sha256: String,
-)
+) {
+    val hasFloor get() = floor.isNotEmpty()
+}
 
 /** Dónde va la capa del piso respecto al auto, en anchos del auto. */
 @Immutable
@@ -101,8 +98,12 @@ class CarLayers(val car: ImageBitmap, val shadow: ImageBitmap?, val reflection: 
  */
 class CarRepository(context: Context, val catalogUrl: String) {
     private val root = File(context.filesDir, CarFiles.ROOT)
+    private val checks = context.getSharedPreferences(CarFiles.ROOT, Context.MODE_PRIVATE)
+    // Lo que se baja o se arregla vive aquí y no en la pantalla que lo pidió: si se cierra
+    // Ajustes a media descarga, termina igual.
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     // Caché de imágenes ya teñidas: la cuarta parte de la memoria de la app (de 32 a
-    // 160 MB), para que quepa el giro completo de fluidez media a tamaño real en
+    // 160 MB), para que quepa el giro completo en calidad alta a tamaño real en
     // pantallas grandes. Si no cupiera, al girar en círculo siempre se borraría justo
     // el cuadro que sigue y el giro se iría trabando.
     private val images = object : LruCache<String, ImageBitmap>(
@@ -110,28 +111,41 @@ class CarRepository(context: Context, val catalogUrl: String) {
     ) {
         override fun sizeOf(key: String, value: ImageBitmap) = value.width * value.height * 4
     }
+    // Imágenes que ya se están cargando: si la vista y la precarga piden la misma, se
+    // decodifica una vez. La carga no se interrumpe aunque quien la pidió ya no la quiera.
+    private val loading = ConcurrentHashMap<String, Deferred<ImageBitmap?>>()
     // Ancho original de cada imagen (no cambia): decide cuánto se reduce al decodificarla.
     private val sourceWidths = ConcurrentHashMap<String, Int>()
-    // Lo instalado se lee del disco una vez por cada cambio, no en cada recomposición.
-    private var packages: List<CarPackage>? = null
 
     val hasCatalog get() = catalogUrl.isNotBlank()
 
-    private val checks = context.getSharedPreferences(CarFiles.ROOT, Context.MODE_PRIVATE)
+    /** Los autos bajados (se leen del disco al empezar y tras cada cambio, en IO). */
+    var installed by mutableStateOf(scan())
+        private set
 
-    /** El auto elegido tiene imágenes nuevas en el catálogo (lo llena [checkQuietly]). */
+    /** El auto elegido tiene un modelo 3D nuevo en el catálogo (lo llena [checkQuietly]). */
     var outdated by mutableStateOf<CatalogEntry?>(null)
         private set
 
-    /** Sube cada vez que se instala algo, para que la UI vuelva a leer. */
-    var changes by mutableStateOf(0)
+    /** Lo que se está bajando ([ALL], el id de un auto o [HIGH]) y cuánto va (0–1); null = nada. */
+    var downloading by mutableStateOf<Pair<String, Float>?>(null)
         private set
 
+    /** La última descarga falló (sin internet, archivo dañado…). */
+    var failed by mutableStateOf(false)
+        private set
+
+    init {
+        scope.launch { dropRetiredFrames() }
+    }
+
+    fun pkg(id: String?): CarPackage? = id?.let { wanted -> installed.firstOrNull { it.folder.name == folderOf(wanted) } }
+
     suspend fun catalog(): List<CatalogEntry> = withContext(Dispatchers.IO) {
-        val json = JSONObject(readText(catalogUrl))
-        val cars = json.getJSONArray(CarJson.CARS)
+        val cars = JSONObject(readText(catalogUrl)).getJSONArray(CarJson.CARS)
         (0 until cars.length()).map { i ->
             val a = cars.getJSONObject(i)
+            val extras = a.optJSONArray(CarJson.EXTRAS)
             CatalogEntry(
                 id = a.getString("id"),
                 name = a.getString(CarJson.NAME),
@@ -139,86 +153,75 @@ class CarRepository(context: Context, val catalogUrl: String) {
                 year = a.optInt(CarJson.YEAR),
                 author = a.optString(CarJson.AUTHOR),
                 license = a.optString(CarJson.LICENSE),
-                source = a.optString(CarJson.SOURCE),
                 url = a.getString("url"),
                 bytes = a.optLong("bytes"),
                 sha256 = a.getString("sha256"),
                 thumbnail = a.optString(CarJson.THUMBNAIL),
-                extras = a.optJSONArray(CarJson.EXTRAS)?.let { x ->
-                    (0 until x.length()).map { j ->
-                        val e = x.getJSONObject(j)
-                        SpinExtra(e.getInt(CarJson.LEVEL), e.getString("url"), e.optLong("bytes"), e.getString("sha256"))
-                    }.filter { it.level <= Smoothness.MEDIUM }
-                }.orEmpty(),
+                high = (0 until (extras?.length() ?: 0)).map { extras!!.getJSONObject(it) }
+                    .firstOrNull { it.optInt(CarJson.LEVEL) == HIGH_LEVEL }
+                    ?.let { SpinExtra(it.getString("url"), it.optLong("bytes"), it.getString("sha256")) },
             )
         }
     }
 
-    /** Los autos bajados: solo sus carpetas (no la de miniaturas ni una a medio instalar, que llevan punto). */
-    fun installed(): List<CarPackage> = packages
-        ?: root.listFiles().orEmpty().filter { it.isDirectory && '.' !in it.name }
-            .mapNotNull { readPackage(it) }.sortedBy { it.name }.also { packages = it }
+    /** El catálogo trae otro modelo 3D para [p] (mejores renders, piso nuevo…). */
+    fun isOutdated(p: CarPackage, e: CatalogEntry) = p.id == e.id && p.sha256 != e.sha256
 
-    fun pkg(id: String?): CarPackage? = id?.let { wanted -> installed().firstOrNull { it.folder.name == folderOf(wanted) } }
+    /** Lo que se baja al actualizar [p]: el paquete y, si la tenía, la calidad alta. */
+    fun updateSize(p: CarPackage, e: CatalogEntry) = e.bytes + (if (p.high) e.high?.bytes ?: 0 else 0)
 
-    /** Baja, verifica y descomprime. [progress] va de 0 a 1. */
-    suspend fun install(e: CatalogEntry, progress: (Float) -> Unit) = withContext(Dispatchers.IO) {
-        root.mkdirs()
-        val temp = fetch(e.url, e.bytes, e.sha256, progress)
-        val target = File(root, folderOf(e.id))
-        val staging = File(root, folderOf(e.id) + CarFiles.STAGING_SUFFIX)
-        staging.deleteRecursively()
-        unzip(temp, staging)
-        File(staging, CarFiles.PACKAGE_HASH).writeText(e.sha256)
-        temp.delete()
-        target.deleteRecursively()
-        staging.renameTo(target)
+    /** Baja e instala [e]; al terminar, [then] (por ejemplo, elegirlo). */
+    fun install(e: CatalogEntry, then: () -> Unit = {}) = download(e.id) { progress ->
+        installPackage(e, progress)
+        then()
+    }
+
+    /** Baja el modelo 3D nuevo de [p] y vuelve a poner su calidad. */
+    fun update(p: CarPackage, e: CatalogEntry) = download(p.id) { progress -> updatePackage(p, e, progress) }
+
+    /** Actualiza todos los de [list] (auto instalado y su entrada nueva), uno tras otro. */
+    fun updateAll(list: List<Pair<CarPackage, CatalogEntry>>) = download(ALL) { progress ->
+        list.forEachIndexed { i, (p, e) -> updatePackage(p, e) { f -> progress((i + f) / list.size) } }
+    }
+
+    /** Baja los cuadros de en medio de [p] (calidad alta). */
+    fun raiseQuality(p: CarPackage, e: CatalogEntry) {
+        val extra = e.high ?: return
+        download(HIGH) { progress -> addHigh(p, extra, progress) }
+    }
+
+    /** Calidad baja: borra los cuadros de en medio (libera espacio; no necesita internet). */
+    fun lowerQuality(p: CarPackage) = scope.launch {
+        withContext(Dispatchers.IO) { spinFiles(p.folder) { it.startsWith(HIGH_PREFIX) }.forEach { it.delete() } }
         changed()
     }
 
-    /** El catálogo trae otras imágenes para [p] (mejores renders, piso nuevo…). */
-    fun isOutdated(p: CarPackage, e: CatalogEntry) = p.id == e.id && p.sha256 != e.sha256
+    /** Quita un auto descargado (sus imágenes); se puede volver a bajar del catálogo. */
+    fun delete(p: CarPackage) = scope.launch {
+        withContext(Dispatchers.IO) { p.folder.deleteRecursively() }
+        changed()
+    }
 
-    /**
-     * Baja las imágenes nuevas de [p] y vuelve a poner la fluidez que tenía (los
-     * cuadros extra también cambian). [progress] va de 0 a 1 en todo el proceso.
-     */
-    suspend fun update(p: CarPackage, e: CatalogEntry, progress: (Float) -> Unit) {
-        val level = p.smoothness
-        val extra = e.extras.filter { it.level <= level }.sumOf { it.bytes }
-        val total = (e.bytes + extra).coerceAtLeast(1).toFloat()
-        install(e) { f -> progress(f * e.bytes / total) }
-        val fresh = pkg(e.id) ?: return
-        if (level > Smoothness.LIGHT) raiseSmoothness(fresh, e, level) { f -> progress((e.bytes + f * extra) / total) }
+    /** Quita todos los autos descargados (sus imágenes); se pueden volver a bajar del catálogo. */
+    fun deleteAll() = scope.launch {
+        val all = installed
+        withContext(Dispatchers.IO) { all.forEach { it.folder.deleteRecursively() } }
+        changed()
     }
 
     /**
-     * Revisa el catálogo al abrir, a lo más cada [CHECK_EVERY_MS] (es un archivo de
-     * unos KB), y avisa en [outdated] si el auto [id] tiene un modelo 3D nuevo.
+     * Revisa el catálogo al abrir, a lo más cada [CHECK_EVERY_MS] por auto (es un
+     * archivo de unos KB), y avisa en [outdated] si el auto [id] tiene un modelo 3D nuevo.
      */
     suspend fun checkQuietly(id: String?) {
         val p = pkg(id) ?: return
         if (!hasCatalog) return
+        val key = KEY_LAST_CHECK + p.id
         val now = System.currentTimeMillis()
-        if (now - checks.getLong(KEY_LAST_CHECK, 0L) < CHECK_EVERY_MS && p.sha256.isNotEmpty()) return
+        if (now - checks.getLong(key, 0L) < CHECK_EVERY_MS && p.sha256.isNotEmpty()) return
         val entry = runCatching { catalog() }.getOrNull()?.firstOrNull { it.id == p.id } ?: return
-        checks.edit().putLong(KEY_LAST_CHECK, now).apply()
+        checks.edit().putLong(key, now).apply()
         outdated = entry.takeIf { isOutdated(p, it) }
-    }
-
-    /** Sube el giro de [p] hasta [level], bajando solo los cuadros que le faltan. */
-    suspend fun raiseSmoothness(p: CarPackage, e: CatalogEntry, level: Int, progress: (Float) -> Unit) = withContext(Dispatchers.IO) {
-        val missing = e.extras.filter { it.level in (p.smoothness + 1)..level }.sortedBy { it.level }
-        val total = missing.sumOf { it.bytes }.coerceAtLeast(1)
-        var done = 0L
-        for (x in missing) {
-            val temp = fetch(x.url, x.bytes, x.sha256) { f -> progress(((done + f * x.bytes) / total).coerceAtMost(1f)) }
-            // Encima de lo instalado: solo agrega cuadros, no toca los que ya están.
-            unzip(temp, p.folder)
-            temp.delete()
-            done += x.bytes
-        }
-        changed()
     }
 
     /**
@@ -242,55 +245,95 @@ class CarRepository(context: Context, val catalogUrl: String) {
         }
     }
 
-    /** Baja el giro de [p] a [level] borrando los cuadros de más (libera espacio). */
-    suspend fun lowerSmoothness(p: CarPackage, level: Int) = withContext(Dispatchers.IO) {
-        val letters = buildList {
-            add(RETIRED_FRAMES)
-            if (level < Smoothness.MEDIUM) add("m")
-        }
-        File(p.folder, CarFiles.SPIN).listFiles()?.filter { f -> letters.any { f.name.startsWith(it) } }?.forEach { it.delete() }
-        changed()
-    }
-
-    /** Quita un auto descargado (sus imágenes); se puede volver a bajar del catálogo. */
-    suspend fun delete(p: CarPackage) = withContext(Dispatchers.IO) {
-        p.folder.deleteRecursively()
-        changed()
-    }
-
-    /** Borra los cuadros de la fluidez máxima que ya no se usa (solo libera espacio). */
-    suspend fun dropRetiredFrames() {
-        val folders = installed().map { File(it.folder, CarFiles.SPIN) }
-        withContext(Dispatchers.IO) {
-            folders.forEach { dir -> dir.listFiles()?.filter { it.name.startsWith(RETIRED_FRAMES) }?.forEach { it.delete() } }
-        }
-    }
-
-    /** Quita todos los autos descargados (sus imágenes); se pueden volver a bajar del catálogo. */
-    suspend fun deleteAll() {
-        val all = installed()
-        withContext(Dispatchers.IO) { all.forEach { it.folder.deleteRecursively() } }
-        changed()
-    }
-
     /** Lo que ocupa un auto descargado, en bytes. */
     suspend fun sizeOnDisk(p: CarPackage): Long = withContext(Dispatchers.IO) {
         p.folder.walkTopDown().filter { it.isFile }.sumOf { it.length() }
     }
 
-    /** Después de instalar, quitar o cambiar un auto: lo de memoria ya no sirve. */
-    private suspend fun changed() {
-        images.evictAll()
-        sourceWidths.clear()
-        withContext(Dispatchers.Main) {
-            packages = null
-            outdated = outdated?.takeIf { e -> pkg(e.id)?.let { isOutdated(it, e) } == true }
-            changes++
+    /** Una descarga a la vez, en el ámbito del repositorio, con su avance en [downloading]. */
+    private fun download(what: String, work: suspend ((Float) -> Unit) -> Unit) {
+        if (downloading != null) return
+        downloading = what to 0f
+        failed = false
+        scope.launch {
+            runCatching { work { f -> downloading = what to f } }.onFailure { failed = true }
+            downloading = null
         }
     }
 
+    private suspend fun installPackage(e: CatalogEntry, progress: (Float) -> Unit) {
+        withContext(Dispatchers.IO) {
+            root.mkdirs()
+            val temp = fetch(e.url, e.bytes, e.sha256, progress)
+            val target = File(root, folderOf(e.id))
+            val staging = File(root, folderOf(e.id) + CarFiles.STAGING_SUFFIX)
+            staging.deleteRecursively()
+            unzip(temp, staging)
+            File(staging, CarFiles.PACKAGE_HASH).writeText(e.sha256)
+            temp.delete()
+            target.deleteRecursively()
+            staging.renameTo(target)
+        }
+        changed()
+    }
+
+    private suspend fun updatePackage(p: CarPackage, e: CatalogEntry, progress: (Float) -> Unit) {
+        val extra = e.high?.takeIf { p.high }
+        val total = (e.bytes + (extra?.bytes ?: 0)).coerceAtLeast(1).toFloat()
+        installPackage(e) { f -> progress(f * e.bytes / total) }
+        val fresh = pkg(e.id) ?: return
+        if (extra != null) addHigh(fresh, extra) { f -> progress((e.bytes + f * extra.bytes) / total) }
+    }
+
+    /**
+     * Los cuadros de en medio, encima de lo instalado. Se descomprimen aparte y se
+     * mueven al final, el primero ("m00", el que dice que hay calidad alta) al último:
+     * si algo se corta a la mitad, el auto sigue completo en calidad baja.
+     */
+    private suspend fun addHigh(p: CarPackage, extra: SpinExtra, progress: (Float) -> Unit) {
+        withContext(Dispatchers.IO) {
+            val temp = fetch(extra.url, extra.bytes, extra.sha256, progress)
+            val staging = File(p.folder, CarFiles.SPIN + CarFiles.STAGING_SUFFIX)
+            staging.deleteRecursively()
+            unzip(temp, staging)
+            temp.delete()
+            val spin = File(p.folder, CarFiles.SPIN)
+            val files = File(staging, CarFiles.SPIN).listFiles().orEmpty().sortedBy { it.name.startsWith(HIGH_MARK) }
+            files.forEach { it.renameTo(File(spin, it.name)) }
+            staging.deleteRecursively()
+        }
+        changed()
+    }
+
+    /** Una vez: borra los cuadros de la calidad máxima que se quitó (solo libera espacio). */
+    private suspend fun dropRetiredFrames() {
+        if (checks.getBoolean(KEY_RETIRED_DROPPED, false)) return
+        val folders = installed.map { it.folder }
+        withContext(Dispatchers.IO) {
+            folders.forEach { f -> spinFiles(f) { it.startsWith(RETIRED_PREFIX) }.forEach { it.delete() } }
+        }
+        checks.edit().putBoolean(KEY_RETIRED_DROPPED, true).apply()
+    }
+
+    private fun spinFiles(folder: File, accept: (String) -> Boolean) =
+        File(folder, CarFiles.SPIN).listFiles().orEmpty().filter { accept(it.name) }
+
+    /** Después de instalar, quitar o cambiar un auto: lo de memoria ya no sirve y se vuelve a leer. */
+    private suspend fun changed() {
+        images.evictAll()
+        sourceWidths.clear()
+        val fresh = withContext(Dispatchers.IO) { scan() }
+        installed = fresh
+        outdated = outdated?.takeIf { e -> pkg(e.id)?.let { isOutdated(it, e) } == true }
+    }
+
+    /** Los autos en el disco: solo sus carpetas (no la de miniaturas ni una a medio instalar, que llevan punto). */
+    private fun scan(): List<CarPackage> =
+        root.listFiles().orEmpty().filter { it.isDirectory && '.' !in it.name }.mapNotNull(::readPackage).sortedBy { it.name }
+
     private fun fetch(url: String, bytes: Long, sha256: String, progress: (Float) -> Unit): File {
-        val temp = File(root, CarFiles.DOWNLOAD)
+        // Cada paquete con su archivo: dos descargas nunca escriben en el mismo.
+        val temp = File(root, CarFiles.DOWNLOAD_PREFIX + sha256.take(12) + ".zip")
         val sha = MessageDigest.getInstance("SHA-256")
         open(url).inputStream.use { input ->
             temp.outputStream().use { output ->
@@ -368,15 +411,21 @@ class CarRepository(context: Context, val catalogUrl: String) {
         }
     }
 
-    /**
-     * De la caché o se carga en IO. La carga se cancela con quien la pidió: al girar
-     * rápido, los cuadros que ya pasaron no se siguen pintando ni le quitan tiempo al que se ve.
-     */
+    /** De la caché, de la carga que ya va en camino, o se carga una sola vez en IO. */
     private suspend fun cached(key: String, load: () -> Bitmap?): ImageBitmap? {
         images.get(key)?.let { return it }
-        return withContext(Dispatchers.IO) {
-            load()?.asImageBitmap()?.also { images.put(key, it) }
+        val job = loading.computeIfAbsent(key) {
+            // Perezosa: arranca ya guardada en [loading], así nunca se quita antes de entrar.
+            scope.async(Dispatchers.IO, start = CoroutineStart.LAZY) {
+                try {
+                    load()?.asImageBitmap()?.also { images.put(key, it) }
+                } finally {
+                    loading.remove(key)
+                }
+            }
         }
+        job.start()
+        return job.await()
     }
 
     /**
@@ -423,7 +472,6 @@ class CarRepository(context: Context, val catalogUrl: String) {
         val json = File(folder, CarFiles.PACKAGE_INFO).takeIf { it.exists() } ?: return null
         return runCatching {
             val a = JSONObject(json.readText())
-            val views = a.optJSONArray(CarJson.VIEWS)
             val floor = a.optJSONObject(CarJson.FLOOR)
             CarPackage(
                 id = a.getString("id"),
@@ -434,12 +482,9 @@ class CarRepository(context: Context, val catalogUrl: String) {
                 license = a.optString(CarJson.LICENSE),
                 source = a.optString(CarJson.SOURCE),
                 gray = a.optDouble(CarJson.GRAY, 0.45).toFloat(),
-                views = (0 until (views?.length() ?: 0)).map { views!!.getString(it) },
-                spin = a.optInt(CarJson.SPIN),
-                smoothness = when {
-                    File(folder, "${CarFiles.SPIN}/m00.webp").exists() -> Smoothness.MEDIUM
-                    else -> Smoothness.LIGHT
-                },
+                // Todos los paquetes traen giro; uno sin giro no sirve en esta versión.
+                spin = a.optInt(CarJson.SPIN).takeIf { it > 0 } ?: return null,
+                high = File(folder, "${CarFiles.SPIN}/$HIGH_MARK.webp").exists(),
                 floor = floor?.keys()?.asSequence()?.associateWith { v ->
                     val c = floor.getJSONArray(v)
                     FloorBox(c.getDouble(0).toFloat(), c.getDouble(1).toFloat(), c.getDouble(2).toFloat(), c.getDouble(3).toFloat())
@@ -495,10 +540,20 @@ class CarRepository(context: Context, val catalogUrl: String) {
 
     private fun readText(url: String) = open(url).inputStream.bufferedReader().use { it.readText() }
 
-    private companion object {
-        /** Cuadros de la fluidez máxima ("xNN"), que se quitó. */
-        const val RETIRED_FRAMES = "x"
-        const val CHECK_EVERY_MS = 60 * 60 * 1000L
-        const val KEY_LAST_CHECK = "ultima_revision"
+    companion object {
+        /** [downloading] mientras se actualizan todos. */
+        const val ALL = "todos"
+        /** [downloading] mientras se baja la calidad alta. */
+        const val HIGH = "calidad"
+        /** Nivel de la calidad alta en "extras" del catálogo. */
+        private const val HIGH_LEVEL = 1
+        /** Cuadros de en medio ("mNN"); el primero dice que el auto tiene calidad alta. */
+        private const val HIGH_PREFIX = "m"
+        private const val HIGH_MARK = "m00"
+        /** Cuadros de la calidad máxima ("xNN"), que se quitó en la 1.4.13. */
+        private const val RETIRED_PREFIX = "x"
+        private const val CHECK_EVERY_MS = 60 * 60 * 1000L
+        private const val KEY_LAST_CHECK = "ultima_revision:"
+        private const val KEY_RETIRED_DROPPED = "maxima_borrada"
     }
 }

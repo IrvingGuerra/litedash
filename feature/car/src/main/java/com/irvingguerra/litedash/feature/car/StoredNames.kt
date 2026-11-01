@@ -14,7 +14,7 @@ internal object CarFiles {
     /** SHA-256 del paquete instalado: si el catálogo trae otro, hay imágenes nuevas. */
     const val PACKAGE_HASH = ".paquete.sha256"
     const val SPIN = "giro"
-    const val DOWNLOAD = ".bajando.zip"
+    const val DOWNLOAD_PREFIX = ".bajando-"
     const val STAGING_SUFFIX = ".nueva"
     const val PARTIAL_SUFFIX = ".parcial"
 }
@@ -32,7 +32,6 @@ internal object CarJson {
     const val EXTRAS = "extras"
     const val LEVEL = "nivel"
     const val GRAY = "gris"
-    const val VIEWS = "vistas"
     const val SPIN = "giro"
     const val FLOOR = "piso"
 }
