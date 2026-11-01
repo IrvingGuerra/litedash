@@ -116,4 +116,12 @@
     <string name="apariencia">Appearance</string>
     <string name="volver_inicio">Back to home</string>
     <string name="buscar_auto">Find your car (make, model or year)</string>
+    <string name="fluidez">Spin smoothness</string>
+    <string name="fluidez_ligera">Light</string>
+    <string name="fluidez_media">Medium</string>
+    <string name="fluidez_maxima">Maximum</string>
+    <string name="fluidez_ayuda">Smoother = more frames when spinning. Only the missing ones are downloaded.</string>
+    <string name="eliminar_auto">Delete download · %.1f MB</string>
+    <string name="eliminar_si">Yes, delete</string>
+    <string name="cancelar">Cancel</string>
 </resources>

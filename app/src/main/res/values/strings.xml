@@ -120,4 +120,12 @@
     <string name="apariencia">Apariencia</string>
     <string name="volver_inicio">Volver al inicio</string>
     <string name="buscar_auto">Buscar tu auto (marca, modelo o año)</string>
+    <string name="fluidez">Fluidez del giro</string>
+    <string name="fluidez_ligera">Ligera</string>
+    <string name="fluidez_media">Media</string>
+    <string name="fluidez_maxima">Máxima</string>
+    <string name="fluidez_ayuda">Más fluidez = más cuadros al girar. Solo se bajan los que faltan.</string>
+    <string name="eliminar_auto">Eliminar descargado · %.1f MB</string>
+    <string name="eliminar_si">Sí, eliminar</string>
+    <string name="cancelar">Cancelar</string>
 </resources>

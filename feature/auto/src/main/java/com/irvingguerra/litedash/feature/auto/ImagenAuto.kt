@@ -78,8 +78,26 @@ private fun DrawScope.dibujar(img: ImageBitmap, caja: Rect) = drawImage(
 )
 
 /**
- * Giro falso 3D: arrastrar a los lados cambia de cuadro. Solo carga el cuadro
- * que se ve (con caché), así que una pantalla de 1 GB lo aguanta.
+ * Los cuadros del giro en orden de ángulo, según la [Fluidez] instalada. El
+ * giro completo tiene 96 posiciones (cada 3.75°): las del paquete son una de
+ * cada 4 ("NN"), la fluidez media agrega las de en medio ("mNN") y la máxima
+ * las que quedan ("xNN").
+ */
+fun cuadrosGiro(p: PaqueteAuto): List<String> {
+    if (p.giro != 24) return (0 until p.giro).map { "giro/%02d".format(it) }
+    return (0 until 96).mapNotNull { i ->
+        when {
+            i % 4 == 0 -> "giro/%02d".format(i / 4)
+            i % 4 == 2 -> if (p.fluidez >= Fluidez.MEDIA) "giro/m%02d".format(i / 4) else null
+            else -> if (p.fluidez >= Fluidez.MAXIMA) "giro/x%02d".format(i / 2) else null
+        }
+    }
+}
+
+/**
+ * Giro falso 3D: arrastrar a los lados cambia de cuadro (una vuelta completa
+ * por cada 0.8 anchos, tenga los cuadros que tenga). Solo carga el cuadro que se
+ * ve (con caché), así que una pantalla de 1 GB lo aguanta.
  */
 @Composable
 fun GiroAuto(repo: RepositorioAutos, p: PaqueteAuto, color: Color, modifier: Modifier = Modifier) {
@@ -87,20 +105,22 @@ fun GiroAuto(repo: RepositorioAutos, p: PaqueteAuto, color: Color, modifier: Mod
         ImagenAuto(repo, p, p.vistas.firstOrNull() ?: "tres_cuartos", color, modifier)
         return
     }
-    // El cuadro de tres cuartos (-90 + 55 grados) es el que se ve primero.
-    var cuadro by remember(p.id) { mutableStateOf((p.giro * 55 / 360) % p.giro) }
+    val cuadros = remember(p) { cuadrosGiro(p) }
+    val n = cuadros.size
+    // Se empieza en tres cuartos (-90 + 45 grados), sin importar la fluidez.
+    var cuadro by remember(p) { mutableStateOf(n / 8) }
     var acumulado by remember { mutableFloatStateOf(0f) }
     Box(
-        modifier.pointerInput(p.id) {
-            val paso = size.width / (p.giro * 1.2f)
+        modifier.pointerInput(p) {
+            val paso = size.width / (n * 1.2f)
             detectHorizontalDragGestures { cambio, dx ->
                 cambio.consume()
                 acumulado += dx
-                while (acumulado > paso) { acumulado -= paso; cuadro = (cuadro - 1 + p.giro) % p.giro }
-                while (acumulado < -paso) { acumulado += paso; cuadro = (cuadro + 1) % p.giro }
+                while (acumulado > paso) { acumulado -= paso; cuadro = (cuadro - 1 + n) % n }
+                while (acumulado < -paso) { acumulado += paso; cuadro = (cuadro + 1) % n }
             }
         },
     ) {
-        ImagenAuto(repo, p, "giro/%02d".format(cuadro), color, Modifier.fillMaxSize())
+        ImagenAuto(repo, p, cuadros[cuadro.coerceIn(0, n - 1)], color, Modifier.fillMaxSize())
     }
 }

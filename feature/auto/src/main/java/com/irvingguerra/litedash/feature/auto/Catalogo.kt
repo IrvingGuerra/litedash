@@ -42,7 +42,23 @@ data class EntradaCatalogo(
     val url: String,
     val bytes: Long,
     val sha256: String,
+    /** Cuadros extra del giro, para que gire más fluido: [Fluidez.MEDIA] y [Fluidez.MAXIMA]. */
+    val extras: List<ExtraGiro> = emptyList(),
 )
+
+/** Un paquete de cuadros extra del giro; se baja encima del auto ya instalado. */
+@Immutable
+data class ExtraGiro(val nivel: Int, val url: String, val bytes: Long, val sha256: String)
+
+/**
+ * Qué tan fluido gira el auto: cuántos cuadros de los 96 del giro completo
+ * tiene. Cada nivel se baja sobre el anterior, sin volver a bajar lo que ya hay.
+ */
+object Fluidez {
+    const val LIGERA = 0 // 24 cuadros, cada 15°: viene en el paquete
+    const val MEDIA = 1 // 48, cada 7.5°: los "mNN"
+    const val MAXIMA = 2 // 96, cada 3.75°: los "xNN"
+}
 
 /** Un auto ya instalado: sus imágenes viven en [carpeta]. */
 @Immutable
@@ -58,6 +74,8 @@ data class PaqueteAuto(
     val gris: Float,
     val vistas: List<String>,
     val giro: Int,
+    /** Hasta qué [Fluidez] tiene los cuadros del giro. */
+    val fluidez: Int,
     /** Vistas con piso (sombra y reflejo): caja de esas capas en anchos del auto. */
     val piso: Map<String, CajaPiso>,
     val carpeta: File,
@@ -101,6 +119,12 @@ class RepositorioAutos(contexto: Context, val urlCatalogo: String) {
                 url = a.getString("url"),
                 bytes = a.optLong("bytes"),
                 sha256 = a.getString("sha256"),
+                extras = a.optJSONArray("extras")?.let { x ->
+                    (0 until x.length()).map { j ->
+                        val e = x.getJSONObject(j)
+                        ExtraGiro(e.getInt("nivel"), e.getString("url"), e.optLong("bytes"), e.getString("sha256"))
+                    }
+                }.orEmpty(),
             )
         }
     }
@@ -113,9 +137,58 @@ class RepositorioAutos(contexto: Context, val urlCatalogo: String) {
     /** Baja, verifica y descomprime. [progreso] va de 0 a 1. */
     suspend fun instalar(e: EntradaCatalogo, progreso: (Float) -> Unit) = withContext(Dispatchers.IO) {
         raiz.mkdirs()
+        val temporal = bajar(e.url, e.bytes, e.sha256, progreso)
+        val destino = File(raiz, carpetaDe(e.id))
+        val nueva = File(raiz, carpetaDe(e.id) + ".nueva")
+        nueva.deleteRecursively()
+        descomprimir(temporal, nueva)
+        temporal.delete()
+        destino.deleteRecursively()
+        nueva.renameTo(destino)
+        imagenes.evictAll()
+        withContext(Dispatchers.Main) { cambios++ }
+    }
+
+    /** Sube el giro de [p] hasta [nivel], bajando solo los cuadros que le faltan. */
+    suspend fun subirFluidez(p: PaqueteAuto, e: EntradaCatalogo, nivel: Int, progreso: (Float) -> Unit) = withContext(Dispatchers.IO) {
+        val faltan = e.extras.filter { it.nivel in (p.fluidez + 1)..nivel }.sortedBy { it.nivel }
+        val total = faltan.sumOf { it.bytes }.coerceAtLeast(1)
+        var hecho = 0L
+        for (x in faltan) {
+            val temporal = bajar(x.url, x.bytes, x.sha256) { f -> progreso(((hecho + f * x.bytes) / total).coerceAtMost(1f)) }
+            // Encima de lo instalado: solo agrega cuadros, no toca los que ya están.
+            descomprimir(temporal, p.carpeta)
+            temporal.delete()
+            hecho += x.bytes
+        }
+        withContext(Dispatchers.Main) { cambios++ }
+    }
+
+    /** Baja el giro de [p] a [nivel] borrando los cuadros de más (libera espacio). */
+    suspend fun bajarFluidez(p: PaqueteAuto, nivel: Int) = withContext(Dispatchers.IO) {
+        val letras = buildList {
+            if (nivel < Fluidez.MAXIMA) add("x")
+            if (nivel < Fluidez.MEDIA) add("m")
+        }
+        File(p.carpeta, "giro").listFiles()?.filter { f -> letras.any { f.name.startsWith(it) } }?.forEach { it.delete() }
+        imagenes.evictAll()
+        withContext(Dispatchers.Main) { cambios++ }
+    }
+
+    /** Quita un auto descargado (sus imágenes); se puede volver a bajar del catálogo. */
+    suspend fun eliminar(p: PaqueteAuto) = withContext(Dispatchers.IO) {
+        p.carpeta.deleteRecursively()
+        imagenes.evictAll()
+        withContext(Dispatchers.Main) { cambios++ }
+    }
+
+    /** Lo que ocupa un auto descargado, en bytes. */
+    fun ocupa(p: PaqueteAuto): Long = p.carpeta.walkTopDown().filter { it.isFile }.sumOf { it.length() }
+
+    private fun bajar(url: String, bytes: Long, sha256: String, progreso: (Float) -> Unit): File {
         val temporal = File(raiz, ".bajando.zip")
         val sha = MessageDigest.getInstance("SHA-256")
-        abrir(e.url).inputStream.use { entrada ->
+        abrir(url).inputStream.use { entrada ->
             temporal.outputStream().use { salida ->
                 val buf = ByteArray(64 * 1024)
                 var total = 0L
@@ -125,35 +198,31 @@ class RepositorioAutos(contexto: Context, val urlCatalogo: String) {
                     salida.write(buf, 0, n)
                     sha.update(buf, 0, n)
                     total += n
-                    if (e.bytes > 0) progreso((total.toFloat() / e.bytes).coerceAtMost(1f))
+                    if (bytes > 0) progreso((total.toFloat() / bytes).coerceAtMost(1f))
                 }
             }
         }
         val calculado = sha.digest().joinToString("") { "%02x".format(it) }
-        if (!calculado.equals(e.sha256, ignoreCase = true)) {
+        if (!calculado.equals(sha256, ignoreCase = true)) {
             temporal.delete()
             error("El archivo llegó dañado")
         }
-        val destino = File(raiz, carpetaDe(e.id))
-        val nueva = File(raiz, carpetaDe(e.id) + ".nueva")
-        nueva.deleteRecursively()
-        ZipInputStream(temporal.inputStream().buffered()).use { zip ->
+        return temporal
+    }
+
+    private fun descomprimir(zip: File, destino: File) {
+        ZipInputStream(zip.inputStream().buffered()).use { entrada ->
             while (true) {
-                val item = zip.nextEntry ?: break
-                val archivo = File(nueva, item.name)
+                val item = entrada.nextEntry ?: break
+                val archivo = File(destino, item.name)
                 // Nada fuera de la carpeta del auto (zip con rutas "../").
-                if (!archivo.canonicalPath.startsWith(nueva.canonicalPath + File.separator)) continue
+                if (!archivo.canonicalPath.startsWith(destino.canonicalPath + File.separator)) continue
                 if (item.isDirectory) archivo.mkdirs() else {
                     archivo.parentFile?.mkdirs()
-                    archivo.outputStream().use { zip.copyTo(it) }
+                    archivo.outputStream().use { entrada.copyTo(it) }
                 }
             }
         }
-        temporal.delete()
-        destino.deleteRecursively()
-        nueva.renameTo(destino)
-        imagenes.evictAll()
-        withContext(Dispatchers.Main) { cambios++ }
     }
 
     /** Imagen del paquete reducida al ancho que se pinta (ahorra memoria en pantallas chicas). */
@@ -208,6 +277,11 @@ class RepositorioAutos(contexto: Context, val urlCatalogo: String) {
                 gris = a.optDouble("gris", 0.45).toFloat(),
                 vistas = (0 until (vistas?.length() ?: 0)).map { vistas!!.getString(it) },
                 giro = a.optInt("giro"),
+                fluidez = when {
+                    File(carpeta, "giro/x00.webp").exists() -> Fluidez.MAXIMA
+                    File(carpeta, "giro/m00.webp").exists() -> Fluidez.MEDIA
+                    else -> Fluidez.LIGERA
+                },
                 piso = piso?.keys()?.asSequence()?.associateWith { v ->
                     val c = piso.getJSONArray(v)
                     CajaPiso(c.getDouble(0).toFloat(), c.getDouble(1).toFloat(), c.getDouble(2).toFloat(), c.getDouble(3).toFloat())

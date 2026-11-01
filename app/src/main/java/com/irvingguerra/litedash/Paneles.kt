@@ -7,6 +7,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.core.net.toUri
 import com.irvingguerra.litedash.feature.auto.EntradaCatalogo
+import com.irvingguerra.litedash.feature.auto.Fluidez
 import com.irvingguerra.litedash.feature.auto.GiroAuto
 import com.irvingguerra.litedash.feature.auto.PaqueteAuto
 import com.irvingguerra.litedash.feature.auto.RepositorioAutos
@@ -238,21 +239,7 @@ fun PanelAuto(prefs: Preferencias, autos: RepositorioAutos, cerrar: () -> Unit) 
                     }
                 }
             }
-            val opciones = @Composable { m: Modifier ->
-                Column(m, verticalArrangement = Arrangement.spacedBy(18.dp)) {
-                    Etiqueta(stringResource(R.string.nombre), Texto.etiqueta, c.textoSuave)
-                    CampoTexto(prefs.nombreAuto ?: "", { prefs.nombreAuto = it.take(24).ifBlank { null } }, paquete?.nombre ?: stringResource(R.string.mi_auto), Modifier.fillMaxWidth())
-                    Etiqueta(stringResource(R.string.color), Texto.etiqueta, c.textoSuave)
-                    SelectorColor(prefs.colorAuto) { prefs.colorAuto = it }
-                    // Mientras no haya catálogo ni autos instalados, solo existe el genérico.
-                    if (autos.hayCatalogo || autos.instalados().isNotEmpty()) {
-                        Etiqueta(stringResource(R.string.modelo), Texto.etiqueta, c.textoSuave)
-                        Modelos(prefs, autos, paquete)
-                    } else {
-                        Etiqueta(stringResource(R.string.auto_pronto), Texto.chico, c.textoSuave)
-                    }
-                }
-            }
+            val opciones = @Composable { m: Modifier -> OpcionesAuto(prefs, autos, paquete, m) }
             if (horizontal) {
                 Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(32.dp)) {
                     vista(Modifier.weight(1.3f))
@@ -265,6 +252,42 @@ fun PanelAuto(prefs: Preferencias, autos: RepositorioAutos, cerrar: () -> Unit) 
                 }
             }
         }
+    }
+}
+
+/** Nombre, color y modelo del auto: en "Tu auto" y en Ajustes → Tu auto. */
+@Composable
+private fun OpcionesAuto(prefs: Preferencias, autos: RepositorioAutos, paquete: PaqueteAuto?, modifier: Modifier = Modifier) {
+    val c = LocalColores.current
+    Column(modifier, verticalArrangement = Arrangement.spacedBy(18.dp)) {
+        Etiqueta(stringResource(R.string.nombre), Texto.etiqueta, c.textoSuave)
+        CampoTexto(prefs.nombreAuto ?: "", { prefs.nombreAuto = it.take(24).ifBlank { null } }, paquete?.nombre ?: stringResource(R.string.mi_auto), Modifier.fillMaxWidth())
+        Etiqueta(stringResource(R.string.color), Texto.etiqueta, c.textoSuave)
+        SelectorColor(prefs.colorAuto) { prefs.colorAuto = it }
+        // Mientras no haya catálogo ni autos instalados, solo existe el genérico.
+        if (autos.hayCatalogo || autos.instalados().isNotEmpty()) {
+            Etiqueta(stringResource(R.string.modelo), Texto.etiqueta, c.textoSuave)
+            Modelos(prefs, autos, paquete)
+        } else {
+            Etiqueta(stringResource(R.string.auto_pronto), Texto.chico, c.textoSuave)
+        }
+    }
+}
+
+/** Ajustes → Tu auto: el auto como se ve en el inicio y sus opciones. */
+@Composable
+private fun AjustesAuto(d: Dependencias) {
+    val prefs = d.prefs
+    val paquete = remember(prefs.modeloAuto, d.autos.cambios) { d.autos.paquete(prefs.modeloAuto) }
+    TarjetaAjuste(Iconos.auto) {
+        Box(Modifier.fillMaxWidth().widthIn(max = 520.dp).aspectRatio(2.4f)) {
+            if (paquete != null) {
+                GiroAuto(d.autos, paquete, prefs.colorAuto, Modifier.fillMaxSize())
+            } else {
+                DibujoAuto(prefs.colorAuto, Modifier.fillMaxWidth().align(Alignment.Center))
+            }
+        }
+        OpcionesAuto(prefs, d.autos, paquete, Modifier.fillMaxWidth())
     }
 }
 
@@ -306,6 +329,55 @@ private fun Modelos(prefs: Preferencias, autos: RepositorioAutos, actual: Paquet
             }
         }
         if (error) Etiqueta(stringResource(R.string.catalogo_error), Texto.chico, c.peligro)
+        // Fluidez del giro: cada nivel baja solo los cuadros que faltan.
+        val entrada = actual?.let { a -> catalogo?.firstOrNull { it.id == a.id } }
+        if (actual != null && actual.giro == 24 && entrada != null && entrada.extras.isNotEmpty()) {
+            Etiqueta(stringResource(R.string.fluidez), Texto.etiqueta, c.textoSuave, modifier = Modifier.padding(top = 8.dp))
+            val progreso = bajando?.takeIf { it.first == "fluidez" }?.second
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                for ((nivel, texto) in listOf(Fluidez.LIGERA to R.string.fluidez_ligera, Fluidez.MEDIA to R.string.fluidez_media, Fluidez.MAXIMA to R.string.fluidez_maxima)) {
+                    // Subir dice cuánto se baja; bajar, cuánto espacio se libera.
+                    val sube = entrada.extras.filter { it.nivel in (actual.fluidez + 1)..nivel }.sumOf { it.bytes }
+                    val libera = entrada.extras.filter { it.nivel in (nivel + 1)..actual.fluidez }.sumOf { it.bytes }
+                    val etiqueta = when {
+                        sube > 0 -> "${stringResource(texto)} · +${"%.1f".format(sube / 1e6f)} MB"
+                        libera > 0 -> "${stringResource(texto)} · −${"%.1f".format(libera / 1e6f)} MB"
+                        else -> stringResource(texto)
+                    }
+                    Boton(etiqueta, {
+                        if (bajando != null || nivel == actual.fluidez) return@Boton
+                        if (nivel < actual.fluidez) {
+                            alcance.launch { autos.bajarFluidez(actual, nivel) }
+                            return@Boton
+                        }
+                        bajando = "fluidez" to 0f
+                        alcance.launch {
+                            runCatching { autos.subirFluidez(actual, entrada, nivel) { f -> bajando = "fluidez" to f } }
+                                .onFailure { error = true }
+                            bajando = null
+                        }
+                    }, principal = nivel == actual.fluidez)
+                }
+            }
+            if (progreso != null) Etiqueta("${(progreso * 100).toInt()} %", Texto.chico, c.acento)
+            else Etiqueta(stringResource(R.string.fluidez_ayuda), Texto.chico, c.textoSuave)
+        }
+        // Eliminar lo descargado: pide confirmar con un segundo toque.
+        if (actual != null) {
+            var confirmar by remember(actual.id) { mutableStateOf(false) }
+            val mb = remember(actual, autos.cambios) { autos.ocupa(actual) / 1e6f }
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 8.dp)) {
+                if (!confirmar) {
+                    Boton(stringResource(R.string.eliminar_auto, mb), { confirmar = true })
+                } else {
+                    Boton(stringResource(R.string.eliminar_si), {
+                        prefs.modeloAuto = null
+                        alcance.launch { autos.eliminar(actual) }
+                    }, principal = true)
+                    Boton(stringResource(R.string.cancelar), { confirmar = false })
+                }
+            }
+        }
         // Crédito del modelo 3D (lo pide su licencia).
         if (actual != null && actual.autor.isNotBlank()) {
             Etiqueta(
@@ -343,10 +415,11 @@ private fun OpcionModelo(titulo: String, detalle: String?, elegido: Boolean, alT
 }
 
 /** Secciones de Ajustes, en el menú de la izquierda. */
-private enum class SeccionAjustes(val nombre: Int) { APARIENCIA(R.string.apariencia), INICIO(R.string.inicio), MUSICA(R.string.musica), MAPA(R.string.mapa), MODULOS(R.string.modulos), ACERCA(R.string.acerca_de) }
+private enum class SeccionAjustes(val nombre: Int) { APARIENCIA(R.string.apariencia), AUTO(R.string.tu_auto), INICIO(R.string.inicio), MUSICA(R.string.musica), MAPA(R.string.mapa), MODULOS(R.string.modulos), ACERCA(R.string.acerca_de) }
 
 private fun SeccionAjustes.icono() = when (this) {
     SeccionAjustes.APARIENCIA -> Iconos.tema
+    SeccionAjustes.AUTO -> Iconos.auto
     SeccionAjustes.INICIO -> Iconos.tablero
     SeccionAjustes.MUSICA -> Iconos.musica
     SeccionAjustes.MAPA -> Iconos.navegar
@@ -387,6 +460,7 @@ fun PanelAjustes(d: Dependencias, cerrar: () -> Unit, alEditar: () -> Unit, alPl
                 Etiqueta(stringResource(seccion.nombre), Texto.titulo.copy(fontSize = 30.sp), maxLineas = 1)
                 when (seccion) {
                     SeccionAjustes.APARIENCIA -> Apariencia(d.prefs)
+                    SeccionAjustes.AUTO -> AjustesAuto(d)
                     SeccionAjustes.INICIO -> AjustesInicio(d.prefs, alEditar, alPlantillas)
                     SeccionAjustes.MUSICA -> TarjetaAjuste(Iconos.musica) { AjustesMusica(d) }
                     SeccionAjustes.MAPA -> TarjetaAjuste(Iconos.navegar) { AjustesMapa(d) }
