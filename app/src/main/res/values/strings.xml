@@ -164,12 +164,6 @@
     <string name="reminders">Recordatorios</string>
     <string name="reminders_help">Te avisa en el inicio 7 días antes. Al marcarlo como hecho, el servicio y la verificación pasan a dentro de 6 meses, y la tenencia y el seguro a dentro de un año.</string>
     <string name="remove">Quitar</string>
-    <string name="tile_favorites">Favoritos</string>
-    <string name="favorites_module">Tus contactos con estrella, a un toque · pide tus contactos al agregarla</string>
-    <string name="favorites_empty">Marca contactos con estrella</string>
-    <string name="message_alerts">Avisos de mensajes</string>
-    <string name="message_alerts_help">WhatsApp, SMS y Telegram en una tarjeta arriba; en movimiento sin el texto</string>
-    <string name="message_new">Mensaje nuevo</string>
     <plurals name="reminder_in_days">
         <item quantity="one">en %d día</item>
         <item quantity="other">en %d días</item>
@@ -178,4 +172,7 @@
         <item quantity="one">venció hace %d día</item>
         <item quantity="other">venció hace %d días</item>
     </plurals>
+    <string name="tile_projection">Android Auto / CarPlay</string>
+    <string name="projection_module">Abre tu app de Android Auto o CarPlay (Zlink, AutoKit…) de un toque</string>
+    <string name="projection_missing">No encontré la app</string>
 </resources>

@@ -36,7 +36,6 @@ private object PrefKeys {
     const val HOME_ADDRESS = "direccion_casa"
     const val WORK_ADDRESS = "direccion_trabajo"
     const val PARKED_MODE = "modo_estacionado"
-    const val MESSAGE_ALERTS = "avisos_mensajes"
 }
 
 /** [stored] es como se guarda cada tema (los nombres que tenía en la 1.3.4). */
@@ -171,9 +170,4 @@ class Preferences(context: Context) {
         get() = _parkedMode
         set(v) { _parkedMode = v; p.edit { putBoolean(PrefKeys.PARKED_MODE, v) } }
 
-    private var _messageAlerts by mutableStateOf(p.getBoolean(PrefKeys.MESSAGE_ALERTS, true))
-    /** Tarjeta arriba cuando llega un mensaje (WhatsApp, SMS, Telegram…). */
-    var messageAlerts: Boolean
-        get() = _messageAlerts
-        set(v) { _messageAlerts = v; p.edit { putBoolean(PrefKeys.MESSAGE_ALERTS, v) } }
 }

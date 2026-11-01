@@ -758,7 +758,7 @@ private fun iconOf(type: String) = when (type) {
     TileTypes.PHONE -> Icons.phone
     TileTypes.WEATHER -> Icons.sun
     TileTypes.TRIP -> Icons.speed
-    TileTypes.FAVORITES -> Icons.phone
+    TileTypes.PROJECTION -> Icons.phoneCar
     else -> Icons.apps
 }
 
@@ -791,10 +791,7 @@ private fun Modules(d: Dependencies, onEdit: () -> Unit) {
         ModuleItem(TileTypes.MUSIC, Icons.music, stringResource(R.string.tile_music), stringResource(if (permission) R.string.music_with_permission else R.string.music_without_permission))
         ModuleItem(TileTypes.WEATHER, Icons.sun, stringResource(R.string.tile_weather), stringResource(R.string.weather_module))
         ModuleItem(TileTypes.TRIP, Icons.speed, stringResource(R.string.tile_trip), stringResource(R.string.trip_module))
-        ModuleItem(TileTypes.FAVORITES, Icons.phone, stringResource(R.string.tile_favorites), stringResource(R.string.favorites_module))
-        ModuleRow(Icons.message, stringResource(R.string.message_alerts), stringResource(if (permission) R.string.message_alerts_help else R.string.music_without_permission)) {
-            Button(stringResource(if (d.prefs.messageAlerts) R.string.on else R.string.off), { d.prefs.messageAlerts = !d.prefs.messageAlerts }, primary = d.prefs.messageAlerts)
-        }
+        ModuleItem(TileTypes.PROJECTION, Icons.phoneCar, stringResource(R.string.tile_projection), stringResource(R.string.projection_module))
     }
 }
 

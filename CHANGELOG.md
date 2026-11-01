@@ -6,6 +6,24 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
+## [1.4.0] - 2026-10-31
+
+### Nuevo
+- **Saludo con tu nombre** ("Buenas noches, Irving") en la barra y en el reloj.
+- **Clima**: temperatura en la barra y pieza Clima con hoy y 3 días
+  (Open-Meteo, gratis y sin anuncios). Pide tu ubicación aproximada solo al
+  activarlo y se actualiza al volver al inicio, no en segundo plano.
+- **Tema por el sol**: claro de día y oscuro de noche, solo.
+- **Casa y Trabajo** en Navegar: un toque y Waze o Maps te lleva.
+- **Viaje**: velocidad, rumbo, distancia y tiempo por GPS (solo mientras se ve).
+- **Modo estacionado**: reloj grande tras 5 minutos sin tocar el inicio.
+- **Recordatorios del auto**: servicio, verificación, tenencia, seguro y
+  placas, con aviso 7 días antes; al marcarlos como hechos se reprograman.
+- **Favoritos**: tus contactos con estrella, a un toque.
+- **Avisos de mensajes**: WhatsApp, SMS y Telegram en una tarjeta arriba; en
+  movimiento sin el texto.
+- **Botón de voz** en el dock e **íconos de Wi-Fi, Bluetooth y ubicación** en la barra.
+
 ## [1.3.5] - 2026-10-31
 
 ### Arreglado

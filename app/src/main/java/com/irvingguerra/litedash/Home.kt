@@ -100,7 +100,6 @@ class Dependencies(
     val weather: WeatherRepository,
     val trip: TripRepository,
     val reminders: ReminderRepository,
-    val messages: MessageRepository,
 )
 
 /** Qué hace cada pieza al tocarla (abrir un panel, el mapa o la música en grande). */
@@ -130,7 +129,7 @@ fun TileContent(d: Dependencies, p: Tile, apps: List<App>, revision: Int, action
         TileTypes.CLOCK -> ClockTile(d.prefs.driverName, d.weather)
         TileTypes.WEATHER -> WeatherTile(d.weather)
         TileTypes.TRIP -> TripTile(d.trip)
-        TileTypes.FAVORITES -> FavoritesTile()
+        TileTypes.PROJECTION -> ProjectionTile(d, apps) { actions.onPanel(Panel.Drawer) }
         TileTypes.NAVIGATE -> {
             val app = mapApp(d, apps, p.data)
             NavigationTile(
@@ -286,8 +285,6 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
             is Panel.PickApp -> PickAppPanel(d, apps, p.tileId, close = { panel = null })
         }
 
-        MessageAlert(d.messages, moving = d.trip.moving, enabled = d.prefs.messageAlerts && panel == null)
-
         if (parked) Parked(d, onWake = { parked = false; touched++ })
 
         if (!d.prefs.welcomeSeen) {
@@ -328,6 +325,8 @@ private const val PARK_AFTER_MS = 5 * 60_000L
 private fun dockFavorites(d: Dependencies, apps: List<App>): List<App> {
     d.prefs.dock?.let { keys -> return keys.mapNotNull { d.apps.find(apps, it) } }
     return listOfNotNull(
+        // Android Auto / CarPlay primero: mucha gente usa la pantalla con su celular.
+        projectionApp(apps),
         d.apps.firstOf(apps, *NAVIGATION_PACKAGES),
         // La app de música elegida en Ajustes, o la primera conocida que haya.
         d.prefs.musicApp?.let { d.apps.firstOf(apps, it) } ?: d.apps.firstOf(apps, *MUSIC_PACKAGES),

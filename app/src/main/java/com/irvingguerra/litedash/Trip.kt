@@ -159,7 +159,7 @@ fun TripTile(trip: TripRepository) {
                     Label(heading ?: "", Typography.title, c.accent, maxLines = 1)
                     Label(String.format(locale, "%.1f %s · %d:%02d", distance, if (imperial) "mi" else "km", minutes / 60, minutes % 60), Typography.body, maxLines = 1)
                 }
-                if (big) Button(stringResource(R.string.trip_reset), { trip.reset() })
+                if (big && maxWidth > 340.dp) Button(stringResource(R.string.trip_reset), { trip.reset() })
             }
         }
     }

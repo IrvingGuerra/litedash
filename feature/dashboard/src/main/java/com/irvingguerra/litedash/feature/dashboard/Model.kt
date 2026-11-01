@@ -71,7 +71,7 @@ object TileTypes {
     const val PHONE = "telefono"
     const val WEATHER = "clima"
     const val TRIP = "viaje"
-    const val FAVORITES = "favoritos"
+    const val PROJECTION = "proyeccion"
     const val APP = "app"
 }
 

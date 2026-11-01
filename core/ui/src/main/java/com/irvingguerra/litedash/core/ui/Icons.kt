@@ -45,7 +45,7 @@ object Icons {
     val snow = icon("M7 15h10a4 4 0 0 0 0 -8a6 6 0 0 0 -11.5 1.5a3.3 3.3 0 0 0 1.5 6.5z M8 19h.01 M12 20h.01 M16 19h.01 M10 22h.01 M14 22h.01")
     val fog = icon("M4 9h16 M3 13h18 M5 17h14 M8 21h8")
     val bell = icon("M6 16v-5a6 6 0 0 1 12 0v5l2 2h-16z M10 21h4")
-    val message = icon("M4 5h16v11h-9l-5 4v-4h-2z")
+    val phoneCar = icon("M8 3h8a1 1 0 0 1 1 1v9a1 1 0 0 1 -1 1h-8a1 1 0 0 1 -1 -1v-9a1 1 0 0 1 1 -1z M11 11h2 M4 21l1.5 -4h13l1.5 4 M6 21h.01 M18 21h.01")
     val speed = icon("M4.5 17a8.5 8.5 0 1 1 15 0 M12 14l3.5 -4.5 M12 14h.01")
     val navigate = icon("M12 3l7.5 17.5l-7.5 -4l-7.5 4z")
     val phone = icon("M5 4h4l2 5l-2.5 1.5a11 11 0 0 0 5 5l1.5 -2.5l5 2v4a2 2 0 0 1 -2 2a16 16 0 0 1 -15 -15a2 2 0 0 1 2 -2")

@@ -32,8 +32,6 @@ class LiteDashApp : Application() {
             weather = WeatherRepository(this),
             trip = TripRepository(this),
             reminders = ReminderRepository(this),
-            // En depuración también los avisos de la consola (adb), para probar sin WhatsApp.
-            messages = MessageRepository(if (BuildConfig.DEBUG) setOf("com.android.shell") else emptySet()),
         )
     }
 
@@ -41,14 +39,8 @@ class LiteDashApp : Application() {
         super.onCreate()
         // Los avisos llegan aquí solo si el usuario dio acceso a notificaciones (el mismo de la música).
         NotificationService.listener = object : NotificationListener {
-            override fun onPosted(notification: StatusBarNotification) {
-                dependencies.navigation.posted(notification)
-                dependencies.messages.posted(notification)
-            }
-            override fun onRemoved(notification: StatusBarNotification) {
-                dependencies.navigation.removed(notification)
-                dependencies.messages.removed(notification)
-            }
+            override fun onPosted(notification: StatusBarNotification) = dependencies.navigation.posted(notification)
+            override fun onRemoved(notification: StatusBarNotification) = dependencies.navigation.removed(notification)
         }
     }
 }
