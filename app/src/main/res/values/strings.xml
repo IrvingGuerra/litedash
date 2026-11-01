@@ -233,5 +233,5 @@
     <string name="spin_quality">Calidad del giro</string>
     <string name="spin_quality_low">Baja</string>
     <string name="spin_quality_high">Alta</string>
-    <string name="spin_quality_help">Alta = el doble de cuadros y se funden entre sí al girar: se ve continuo, sin escalones. Solo se bajan los que faltan.</string>
+    <string name="spin_quality_help">Alta = más cuadros al girar, más suave. Solo se bajan los que faltan.</string>
 </resources>

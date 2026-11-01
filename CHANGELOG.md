@@ -6,6 +6,13 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
+## [1.4.16] - 2026-11-01
+
+### Cambiado
+- **Giro en calidad Alta sin fundido:** el fundido entre cuadros de la 1.4.15 dejaba
+  ver el auto doble (fantasma) al girar. Alta vuelve a ser 48 cuadros, nítidos, sin
+  tirones.
+
 ## [1.4.15] - 2026-11-01
 
 ### Mejorado
