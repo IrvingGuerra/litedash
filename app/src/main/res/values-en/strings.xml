@@ -396,7 +396,7 @@
     <string name="night_sun">Sunset time</string>
     <string name="night_sensor">Light sensor</string>
     <string name="night_no_sensor">This head unit has no light sensor.</string>
-    <string name="obd_ble_bluetooth_off">Bluetooth is off. Turn it on in Android Settings.</string>
+    <string name="obd_ble_bluetooth_off">Bluetooth is off: turn it on above.</string>
     <string name="obd_ble_location_off">On this Android version, searching Bluetooth LE needs location turned on.</string>
     <string name="obd_ble_failed">Android didn\'t allow searching right now. Wait a few seconds and try again.</string>
     <string name="night_lights">Car headlights</string>
@@ -412,4 +412,19 @@
     <string name="lights_now_on">Headlights on now · %1$s</string>
     <string name="lights_now_off">Headlights off now · %1$s</string>
     <string name="obd_usb_found">USB cable</string>
+    <string name="bluetooth_off">The head unit\'s Bluetooth is off.</string>
+    <string name="bluetooth_turn_on">Turn on Bluetooth</string>
+    <string name="bluetooth_turn_off">Turn off Bluetooth</string>
+    <string name="android_settings">Android settings</string>
+    <string name="android_settings_help">Your head unit\'s system settings, which sometimes hide behind the maker\'s launcher.</string>
+    <string name="android_settings_none">This head unit doesn\'t let other apps open its settings.</string>
+    <string name="sys_all">All settings</string>
+    <string name="sys_bluetooth">Bluetooth</string>
+    <string name="sys_wifi">Wi-Fi</string>
+    <string name="sys_display">Display</string>
+    <string name="sys_sound">Sound</string>
+    <string name="sys_apps">Apps</string>
+    <string name="sys_date">Date and time</string>
+    <string name="sys_language">System language</string>
+    <string name="sys_home">Home screen</string>
 </resources>

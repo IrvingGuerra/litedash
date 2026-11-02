@@ -6,6 +6,19 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
+## [1.4.35] - 2026-11-02
+
+### Nuevo
+- **Bluetooth desde el Taller:** si la pantalla lo tiene apagado, un botón lo enciende (y otro
+  lo apaga) sin buscar dónde lo esconde el launcher de la marca.
+- **Ajustes → Ajustes de Android:** atajos a los ajustes del sistema (todos, Bluetooth, Wi-Fi,
+  pantalla, sonido, apps, fecha y hora, idioma, pantalla de inicio), que algunas pantallas
+  esconden detrás de su launcher.
+
+### Arreglado
+- Con la barra de apps al costado, las piezas de abajo quedaban pegadas al borde en pantallas sin
+  barra de gestos; ahora llevan su margen.
+
 ## [1.4.34] - 2026-11-02
 
 ### Nuevo

@@ -413,7 +413,7 @@
     <string name="night_sun">Hora del sol</string>
     <string name="night_sensor">Sensor de luz</string>
     <string name="night_no_sensor">Esta pantalla no tiene sensor de luz.</string>
-    <string name="obd_ble_bluetooth_off">El Bluetooth está apagado. Enciéndelo en Ajustes de Android.</string>
+    <string name="obd_ble_bluetooth_off">El Bluetooth está apagado: enciéndelo aquí arriba.</string>
     <string name="obd_ble_location_off">En esta versión de Android, buscar Bluetooth LE necesita la ubicación encendida.</string>
     <string name="obd_ble_failed">Android no dejó buscar ahorita. Espera unos segundos y vuelve a intentar.</string>
     <!-- Luces del auto como señal de noche (se aprenden de la pantalla). -->
@@ -430,4 +430,20 @@
     <string name="lights_now_on">Luces prendidas ahora · %1$s</string>
     <string name="lights_now_off">Luces apagadas ahora · %1$s</string>
     <string name="obd_usb_found">Cable USB</string>
+    <!-- Bluetooth desde el Taller y atajos a los ajustes del sistema. -->
+    <string name="bluetooth_off">El Bluetooth de la pantalla está apagado.</string>
+    <string name="bluetooth_turn_on">Encender Bluetooth</string>
+    <string name="bluetooth_turn_off">Apagar Bluetooth</string>
+    <string name="android_settings">Ajustes de Android</string>
+    <string name="android_settings_help">Los ajustes del sistema de tu pantalla, que a veces quedan escondidos detrás del launcher de la marca.</string>
+    <string name="android_settings_none">Esta pantalla no deja abrir sus ajustes desde otra app.</string>
+    <string name="sys_all">Todos los ajustes</string>
+    <string name="sys_bluetooth">Bluetooth</string>
+    <string name="sys_wifi">Wi-Fi</string>
+    <string name="sys_display">Pantalla</string>
+    <string name="sys_sound">Sonido</string>
+    <string name="sys_apps">Apps</string>
+    <string name="sys_date">Fecha y hora</string>
+    <string name="sys_language">Idioma del sistema</string>
+    <string name="sys_home">Pantalla de inicio</string>
 </resources>

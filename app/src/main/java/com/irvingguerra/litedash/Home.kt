@@ -367,12 +367,16 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                         if (car != null && newModel != null) CarUpdateNotice(d.cars, car, newModel)
                     }
                 }
-                BoxWithConstraints(Modifier.weight(1f).fillMaxWidth().padding(horizontal = 10.dp)) {
+                // Con la barra al costado no hay dock abajo: el tablero lleva su propio aire inferior
+                // (en pantallas sin barra de gestos las piezas quedaban pegadas al borde).
+                BoxWithConstraints(Modifier.weight(1f).fillMaxWidth().padding(start = 10.dp, end = 10.dp, bottom = if (rail) 10.dp else 0.dp)) {
                     // La cuadrícula se calcula siempre como si la barra estuviera: si dependiera
                     // de ella, un reloj en el acomodo la oculta, la cuadrícula crece, se carga
                     // otro acomodo sin reloj, vuelve la barra... y el inicio parpadea sin parar.
                     val prompts = with(LocalDensity.current) { promptsHeight.toDp() }
-                    val gridHeight = (if (barHidden) maxHeight - (topBarHeight() - TOP_BAR_HIDDEN) else maxHeight) + prompts
+                    // El aire inferior de la barra lateral tampoco cuenta: la cuadrícula (y el acomodo
+                    // guardado) debe ser la misma con o sin él.
+                    val gridHeight = (if (barHidden) maxHeight - (topBarHeight() - TOP_BAR_HIDDEN) else maxHeight) + prompts + (if (rail) 10.dp else 0.dp)
                     val grid = remember(maxWidth, gridHeight) { Grid.forSize(maxWidth.value, gridHeight.value) }
                     // Carga el acomodo de esta cuadrícula antes de dibujar (solo hace algo si cambió).
                     d.dashboard.use(grid)

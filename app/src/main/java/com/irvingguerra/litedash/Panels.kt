@@ -544,7 +544,8 @@ private fun CarPreview(e: CatalogEntry, cars: CarRepository, progress: Float?, o
 /** Secciones de Ajustes en el orden del menú: cada cosa vive en un solo lugar. */
 enum class SettingsSection(val title: Int) {
     CAR(R.string.your_car), HOME(R.string.home), APPS(R.string.apps_section), WORKSHOP(R.string.workshop),
-    WHEEL(R.string.wheel), APPEARANCE(R.string.appearance), MODULES(R.string.modules), ABOUT(R.string.about),
+    WHEEL(R.string.wheel), APPEARANCE(R.string.appearance), MODULES(R.string.modules), SYSTEM(R.string.android_settings),
+    ABOUT(R.string.about),
 }
 
 private fun SettingsSection.icon() = when (this) {
@@ -555,6 +556,7 @@ private fun SettingsSection.icon() = when (this) {
     SettingsSection.WHEEL -> Icons.wheel
     SettingsSection.WORKSHOP -> Icons.engine
     SettingsSection.MODULES -> Icons.settings
+    SettingsSection.SYSTEM -> Icons.openExternal
     SettingsSection.ABOUT -> Icons.info
 }
 
@@ -610,6 +612,7 @@ fun SettingsPanel(
                         Label(stringResource(R.string.modules_help), Typography.body, c.textMuted)
                         Modules(d)
                     }
+                    SettingsSection.SYSTEM -> AndroidSettings()
                     SettingsSection.ABOUT -> About(d)
                 }
             }
@@ -994,6 +997,38 @@ private fun Modules(d: Dependencies) {
                 Label(stringResource(R.string.module_soon), Typography.small, c.textMuted)
             }
         }
+    }
+}
+
+/**
+ * Atajos a los ajustes del sistema: muchas pantallas de auto esconden sus ajustes detrás
+ * del launcher de la marca, y al poner LiteDash de inicio ya no se encuentran.
+ */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun AndroidSettings() {
+    val c = LocalColors.current
+    val context = LocalContext.current
+    val shortcuts = remember {
+        listOf(
+            R.string.sys_all to Settings.ACTION_SETTINGS,
+            R.string.sys_bluetooth to Settings.ACTION_BLUETOOTH_SETTINGS,
+            R.string.sys_wifi to Settings.ACTION_WIFI_SETTINGS,
+            R.string.sys_display to Settings.ACTION_DISPLAY_SETTINGS,
+            R.string.sys_sound to Settings.ACTION_SOUND_SETTINGS,
+            R.string.sys_apps to Settings.ACTION_APPLICATION_SETTINGS,
+            R.string.sys_date to Settings.ACTION_DATE_SETTINGS,
+            R.string.sys_language to Settings.ACTION_LOCALE_SETTINGS,
+            R.string.sys_home to Settings.ACTION_HOME_SETTINGS,
+        ).filter { (_, action) -> Intent(action).resolveActivity(context.packageManager) != null }
+    }
+    SettingsCard(stringResource(R.string.android_settings), stringResource(R.string.android_settings_help)) {
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            for ((name, action) in shortcuts) {
+                Button(stringResource(name), { runCatching { context.startActivity(Intent(action).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) } }, primary = action == Settings.ACTION_SETTINGS)
+            }
+        }
+        if (shortcuts.isEmpty()) Label(stringResource(R.string.android_settings_none), Typography.small, c.textMuted)
     }
 }
 

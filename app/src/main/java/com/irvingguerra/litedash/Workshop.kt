@@ -1,7 +1,18 @@
 package com.irvingguerra.litedash
 
 import android.Manifest
+import android.annotation.SuppressLint
+import android.bluetooth.BluetoothAdapter
+import android.bluetooth.BluetoothManager
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.os.Build
+import android.provider.Settings
+import androidx.compose.ui.platform.LocalContext
+import androidx.core.content.ContextCompat
+import androidx.lifecycle.compose.LifecycleStartEffect
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
@@ -142,6 +153,10 @@ private fun Connection(obd: ObdRepository) {
     val askScan = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { if (it) obd.scanBle() }
     var wifi by remember { mutableStateOf(false) }
     var address by remember { mutableStateOf("192.168.0.10:35000") }
+    // Muchas pantallas esconden dónde prender el Bluetooth: aquí se prende y se apaga.
+    val context = LocalContext.current
+    val bluetooth = rememberBluetoothOn()
+    val askEnable = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {}
     // Al abrir el Taller se reconecta solo al último adaptador que funcionó.
     LaunchedEffect(Unit) { if (obd.state == ObdState.OFF) obd.connect() }
     SettingsCard(stringResource(R.string.obd_adapter), stringResource(R.string.obd_adapter_help)) {
@@ -172,8 +187,15 @@ private fun Connection(obd: ObdRepository) {
                 }, primary = true)
                 Button(stringResource(R.string.obd_wifi), { wifi = true })
             }
+            bluetooth == false -> {
+                Label(stringResource(R.string.bluetooth_off), Typography.body, c.danger)
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Button(stringResource(R.string.bluetooth_turn_on), { runCatching { askEnable.launch(Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)) } }, primary = true)
+                    Button(stringResource(R.string.obd_wifi), { wifi = true })
+                }
+            }
             else -> {
-                val devices = remember(permitted, obd.state) { obd.pairedDevices() }
+                val devices = remember(permitted, obd.state, bluetooth) { obd.pairedDevices() }
                 if (devices.isEmpty()) Label(stringResource(R.string.obd_no_paired), Typography.small, c.textMuted)
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     for (dev in devices) Button(dev.name, { obd.connect(dev) }, primary = dev == obd.target)
@@ -181,6 +203,7 @@ private fun Connection(obd: ObdRepository) {
                     Button(stringResource(if (obd.scanning) R.string.obd_ble_searching else R.string.obd_ble_search), {
                         if (obd.canScan()) obd.scanBle() else askScan.launch(obd.scanPermission())
                     })
+                    if (bluetooth == true) Button(stringResource(R.string.bluetooth_turn_off), { turnOffBluetooth(context) })
                 }
                 // Cables USB conectados: el permiso lo pide Android al tocar uno.
                 val usb = remember(obd.state) { obd.usbDevices() }
@@ -211,6 +234,38 @@ private fun Connection(obd: ObdRepository) {
             }
         }
     }
+}
+
+/** Si el Bluetooth de la pantalla está encendido (null = no tiene); se actualiza al cambiar. */
+@Composable
+private fun rememberBluetoothOn(): Boolean? {
+    val context = LocalContext.current
+    val adapter = remember { context.getSystemService(BluetoothManager::class.java)?.adapter } ?: return null
+    var on by remember { mutableStateOf(adapter.isEnabled) }
+    LifecycleStartEffect(adapter) {
+        on = adapter.isEnabled
+        val receiver = object : BroadcastReceiver() {
+            override fun onReceive(c: Context, i: Intent) {
+                on = adapter.isEnabled
+            }
+        }
+        // Es un aviso del sistema: el receptor debe aceptar avisos de fuera de la app.
+        ContextCompat.registerReceiver(context, receiver, IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED), ContextCompat.RECEIVER_EXPORTED)
+        onStopOrDispose { runCatching { context.unregisterReceiver(receiver) } }
+    }
+    return on
+}
+
+/**
+ * Apagar el Bluetooth: hasta Android 12 la app puede hacerlo directo; desde Android 13 solo
+ * el sistema, así que se abren sus ajustes de Bluetooth.
+ */
+@SuppressLint("MissingPermission")
+private fun turnOffBluetooth(context: Context) {
+    val adapter = context.getSystemService(BluetoothManager::class.java)?.adapter
+    @Suppress("DEPRECATION")
+    val done = Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU && adapter != null && runCatching { adapter.disable() }.getOrDefault(false)
+    if (!done) runCatching { context.startActivity(Intent(Settings.ACTION_BLUETOOTH_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
 }
 
 @Composable
