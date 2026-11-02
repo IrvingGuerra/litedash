@@ -12,8 +12,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -29,6 +27,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.irvingguerra.litedash.core.ui.Button
+import com.irvingguerra.litedash.core.ui.Icons
 import com.irvingguerra.litedash.core.ui.Label
 import com.irvingguerra.litedash.core.ui.LocalColors
 import com.irvingguerra.litedash.core.ui.Typography
@@ -46,23 +45,27 @@ import kotlinx.coroutines.launch
 private val Good = Color(0xFF3FB27F)
 
 /**
- * El Taller: conexión con el adaptador OBD, estado del motor, códigos de falla (leer y
- * borrar), si pasarías la verificación y los sensores en vivo. Pantalla completa aparte
- * del inicio; mientras está abierta, el OBD solo lee lo que se ve aquí.
+ * El Taller (sección de Ajustes): conexión con el adaptador OBD, estado del motor,
+ * códigos de falla (leer y borrar), si pasarías la verificación y los sensores en vivo.
+ * Mientras se ve, el OBD solo lee lo que hay aquí.
  */
 @Composable
-fun WorkshopPanel(d: Dependencies, close: () -> Unit) {
+fun Workshop(d: Dependencies) {
     val obd = d.obd
-    PanelScaffold(stringResource(R.string.workshop), close) {
-        Column(
-            Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(bottom = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp),
-        ) {
-            Connection(obd)
-            if (obd.state == ObdState.ON) Engine(obd)
-            if (obd.state == ObdState.ON) LiveSensors(d)
-        }
+    Connection(obd)
+    if (obd.state == ObdState.ON) Engine(obd)
+    if (obd.state == ObdState.ON) LiveSensors(d)
+}
+
+/** Acceso directo al Taller en el inicio; dice si el adaptador está conectado. */
+@Composable
+fun WorkshopTile(d: Dependencies, onClick: () -> Unit) {
+    val detail = when (d.obdIfCreated()?.state) {
+        ObdState.ON -> stringResource(R.string.obd_connected_short)
+        ObdState.CONNECTING -> stringResource(R.string.obd_connecting_short)
+        else -> null
     }
+    ShortcutTile(Icons.engine, stringResource(R.string.workshop), detail, onClick)
 }
 
 @OptIn(ExperimentalLayoutApi::class)

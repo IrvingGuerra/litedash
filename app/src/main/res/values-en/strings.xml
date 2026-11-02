@@ -234,8 +234,7 @@
     <string name="tile_speedometer">Speedometer</string>
     <string name="speedometer_module">Speed on an arc gauge · from OBD when connected, otherwise from GPS</string>
     <string name="workshop">Workshop</string>
-    <string name="workshop_module">OBD scanner: trouble codes, emissions readiness and sensors (needs an ELM327 adapter)</string>
-    <string name="open">Open</string>
+    <string name="workshop_module">Home shortcut to the Workshop (OBD scanner: trouble codes, inspection readiness and sensors)</string>
     <string name="obd_adapter">OBD adapter</string>
     <string name="obd_adapter_help">Plug an ELM327 adapter into the OBD port (under the steering wheel) and pair it in Android Settings → Bluetooth. Then pick it here.</string>
     <string name="obd_off">Not connected</string>
@@ -295,4 +294,6 @@
     <string name="monitor_o2">Oxygen sensor</string>
     <string name="monitor_o2_heater">Oxygen sensor heater</string>
     <string name="monitor_egr">Exhaust gas recirculation (EGR)</string>
+    <string name="obd_connected_short">Connected</string>
+    <string name="obd_connecting_short">Connecting…</string>
 </resources>

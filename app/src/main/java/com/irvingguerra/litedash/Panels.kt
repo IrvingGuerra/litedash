@@ -469,7 +469,7 @@ private fun CarPreview(e: CatalogEntry, cars: CarRepository, progress: Float?, o
 }
 
 /** Secciones de Ajustes, en el menú de la izquierda. */
-enum class SettingsSection(val title: Int) { APPEARANCE(R.string.appearance), CAR(R.string.your_car), HOME(R.string.home), MUSIC(R.string.music), MAP(R.string.map), WHEEL(R.string.wheel), MODULES(R.string.modules), ABOUT(R.string.about) }
+enum class SettingsSection(val title: Int) { APPEARANCE(R.string.appearance), CAR(R.string.your_car), HOME(R.string.home), MUSIC(R.string.music), MAP(R.string.map), WHEEL(R.string.wheel), WORKSHOP(R.string.workshop), MODULES(R.string.modules), ABOUT(R.string.about) }
 
 private fun SettingsSection.icon() = when (this) {
     SettingsSection.APPEARANCE -> Icons.theme
@@ -478,6 +478,7 @@ private fun SettingsSection.icon() = when (this) {
     SettingsSection.MUSIC -> Icons.music
     SettingsSection.MAP -> Icons.navigate
     SettingsSection.WHEEL -> Icons.wheel
+    SettingsSection.WORKSHOP -> Icons.engine
     SettingsSection.MODULES -> Icons.apps
     SettingsSection.ABOUT -> Icons.info
 }
@@ -493,7 +494,6 @@ fun SettingsPanel(
     close: () -> Unit,
     onEdit: () -> Unit,
     onTemplates: () -> Unit,
-    onWorkshop: () -> Unit,
     start: SettingsSection = SettingsSection.APPEARANCE,
 ) {
     val c = LocalColors.current
@@ -539,9 +539,10 @@ fun SettingsPanel(
                         SettingsCard(help = stringResource(R.string.wheel_help)) { WheelSettings(d.wheel, d.prefs) }
                         SettingsCard(stringResource(R.string.wheel_assigned)) { WheelAssigned(d.prefs) }
                     }
+                    SettingsSection.WORKSHOP -> Workshop(d)
                     SettingsSection.MODULES -> {
                         Label(stringResource(R.string.modules_help), Typography.body, c.textMuted)
-                        Modules(d, onEdit, onWorkshop)
+                        Modules(d, onEdit)
                     }
                     SettingsSection.ABOUT -> About(d)
                 }
@@ -778,6 +779,7 @@ private fun iconOf(type: String) = when (type) {
     TileTypes.WEATHER -> Icons.sun
     TileTypes.TRIP -> Icons.speed
     TileTypes.SPEEDOMETER -> Icons.speed
+    TileTypes.WORKSHOP -> Icons.engine
     TileTypes.PROJECTION -> Icons.phoneCar
     else -> Icons.apps
 }
@@ -785,7 +787,7 @@ private fun iconOf(type: String) = when (type) {
 
 /** Cada módulo: qué hace y si está en tu inicio. */
 @Composable
-private fun Modules(d: Dependencies, onEdit: () -> Unit, onWorkshop: () -> Unit) {
+private fun Modules(d: Dependencies, onEdit: () -> Unit) {
     val c = LocalColors.current
     val permission = remember(d.dashboard.tiles.any { it.type == TileTypes.MUSIC }) { d.music.hasPermission() }
     // Tipo que no cupo al agregarlo: se avisa y se ofrece acomodar el inicio.
@@ -812,9 +814,7 @@ private fun Modules(d: Dependencies, onEdit: () -> Unit, onWorkshop: () -> Unit)
         ModuleItem(TileTypes.TRIP, Icons.speed, stringResource(R.string.tile_trip), stringResource(R.string.trip_module))
         ModuleItem(TileTypes.PROJECTION, Icons.phoneCar, stringResource(R.string.tile_projection), stringResource(R.string.projection_module))
         ModuleItem(TileTypes.SPEEDOMETER, Icons.speed, stringResource(R.string.tile_speedometer), stringResource(R.string.speedometer_module))
-        ModuleRow(Icons.engine, stringResource(R.string.workshop), stringResource(R.string.workshop_module)) {
-            Button(stringResource(R.string.open), onWorkshop, primary = true)
-        }
+        ModuleItem(TileTypes.WORKSHOP, Icons.engine, stringResource(R.string.workshop), stringResource(R.string.workshop_module))
     }
 }
 

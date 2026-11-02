@@ -95,6 +95,7 @@ object TileTypes {
     const val WEATHER = "clima"
     const val TRIP = "viaje"
     const val SPEEDOMETER = "velocimetro"
+    const val WORKSHOP = "taller"
     const val PROJECTION = "proyeccion"
     const val APP = "app"
 }

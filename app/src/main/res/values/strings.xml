@@ -238,8 +238,7 @@
     <string name="tile_speedometer">Velocímetro</string>
     <string name="speedometer_module">Velocidad en un medidor de arco · del OBD si está conectado; si no, del GPS</string>
     <string name="workshop">Taller</string>
-    <string name="workshop_module">Escáner OBD: códigos de falla, verificación y sensores (necesita un adaptador ELM327)</string>
-    <string name="open">Abrir</string>
+    <string name="workshop_module">Acceso directo en tu inicio al Taller (escáner OBD: códigos de falla, verificación y sensores)</string>
     <string name="obd_adapter">Adaptador OBD</string>
     <string name="obd_adapter_help">Conecta un adaptador ELM327 al puerto OBD (abajo del volante) y empárejalo en Ajustes de Android → Bluetooth. Luego elígelo aquí.</string>
     <string name="obd_off">Sin conectar</string>
@@ -299,4 +298,6 @@
     <string name="monitor_o2">Sensor de oxígeno</string>
     <string name="monitor_o2_heater">Calentador del sensor de oxígeno</string>
     <string name="monitor_egr">Recirculación de gases (EGR)</string>
+    <string name="obd_connected_short">Conectado</string>
+    <string name="obd_connecting_short">Conectando…</string>
 </resources>

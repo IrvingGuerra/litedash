@@ -99,7 +99,7 @@ sealed interface Panel {
     data object Templates : Panel
     /** Elegir app para una pieza existente ([tileId]) o para una nueva (null). */
     data class PickApp(val tileId: String?) : Panel
-    /** El Taller del escáner OBD (códigos, verificación, sensores). */
+    /** Ajustes abiertos en el Taller (pieza de acceso directo). */
     data object Workshop : Panel
 }
 
@@ -160,6 +160,7 @@ fun TileContent(d: Dependencies, p: Tile, apps: List<App>, car: CarPackage?, rev
         TileTypes.WEATHER -> WeatherTile(d.weather)
         TileTypes.TRIP -> TripTile(d.trip, d.prefs.language)
         TileTypes.SPEEDOMETER -> SpeedometerTile(d, d.prefs.language)
+        TileTypes.WORKSHOP -> WorkshopTile(d) { actions.onPanel(Panel.Workshop) }
         TileTypes.PROJECTION -> ProjectionTile(d, apps) { actions.onPanel(Panel.Drawer) }
         TileTypes.NAVIGATE -> {
             val app = mapApp(d, apps, p.data)
@@ -383,23 +384,22 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
         when (val p = panel) {
             null -> Unit
             Panel.Drawer -> DrawerPanel(d, apps, close = { panel = null })
-            Panel.Settings, Panel.About, Panel.CarSettings -> SettingsPanel(
+            Panel.Settings, Panel.About, Panel.CarSettings, Panel.Workshop -> SettingsPanel(
                 d,
                 revision = revision,
                 close = { panel = null },
                 onEdit = { panel = null; editing = true },
                 onTemplates = { panel = Panel.Templates },
-                onWorkshop = { panel = Panel.Workshop },
                 start = when (p) {
                     Panel.About -> SettingsSection.ABOUT
                     Panel.CarSettings -> SettingsSection.CAR
+                    Panel.Workshop -> SettingsSection.WORKSHOP
                     else -> SettingsSection.APPEARANCE
                 },
             )
             Panel.Templates -> TemplatesPanel(d.dashboard, close = { panel = null })
             Panel.AddTile -> AddTilePanel(d.dashboard, close = { panel = null }, onPickApp = { panel = Panel.PickApp(null) })
             is Panel.PickApp -> PickAppPanel(d, apps, p.tileId, close = { panel = null })
-            Panel.Workshop -> WorkshopPanel(d, close = { panel = null })
         }
 
         if (carShown && panel == null) {

@@ -6,6 +6,13 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
+## [1.4.18] - 2026-11-01
+
+### Cambiado
+- **El Taller es una sección propia de Ajustes** (antes se abría desde Módulos). En
+  Módulos ahora solo se agrega su **acceso directo al inicio**, que dice si el adaptador
+  OBD está conectado y abre el Taller con un toque.
+
 ## [1.4.17] - 2026-11-01
 
 ### Agregado
