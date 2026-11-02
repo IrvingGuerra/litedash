@@ -128,6 +128,8 @@ private fun Connection(obd: ObdRepository) {
     val c = LocalColors.current
     var permitted by remember { mutableStateOf(obd.hasPermission()) }
     val ask = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { permitted = it }
+    // Buscar Bluetooth LE tiene su propio permiso; al darlo, busca de una vez.
+    val askScan = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { if (it) obd.scanBle() }
     var wifi by remember { mutableStateOf(false) }
     var address by remember { mutableStateOf("192.168.0.10:35000") }
     // Al abrir el Taller se reconecta solo al último adaptador que funcionó.
@@ -166,6 +168,18 @@ private fun Connection(obd: ObdRepository) {
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     for (dev in devices) Button(dev.name, { obd.connect(dev) }, primary = dev == obd.target)
                     Button(stringResource(R.string.obd_wifi), { wifi = true })
+                    Button(stringResource(if (obd.scanning) R.string.obd_ble_searching else R.string.obd_ble_search), {
+                        if (obd.canScan()) obd.scanBle() else askScan.launch(obd.scanPermission())
+                    })
+                }
+                // Los adaptadores Bluetooth LE no se emparejan: aparecen al buscar.
+                if (obd.found.isNotEmpty()) {
+                    Label(stringResource(R.string.obd_ble_found), Typography.label, c.textMuted)
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        for (dev in obd.found) Button(dev.name, { obd.connect(dev) }, primary = dev == obd.target)
+                    }
+                } else if (!obd.scanning && obd.searched) {
+                    Label(stringResource(R.string.obd_ble_none), Typography.small, c.textMuted)
                 }
             }
         }

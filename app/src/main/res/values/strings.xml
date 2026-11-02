@@ -239,7 +239,7 @@
     <string name="workshop">Taller</string>
     <string name="workshop_module">Acceso directo en tu inicio al Taller (escáner OBD: códigos de falla, verificación y sensores)</string>
     <string name="obd_adapter">Adaptador OBD</string>
-    <string name="obd_adapter_help">Conecta un adaptador ELM327 al puerto OBD (abajo del volante) y empárejalo en Ajustes de Android → Bluetooth. Luego elígelo aquí.</string>
+    <string name="obd_adapter_help">Conecta un adaptador ELM327 al puerto OBD (abajo del volante). Bluetooth clásico: empárejalo en Ajustes de Android → Bluetooth y elígelo aquí. Bluetooth LE: toca Buscar. Wi-Fi: conéctate a su red y escribe su dirección.</string>
     <string name="obd_off">Sin conectar</string>
     <string name="obd_connecting">Conectando con %1$s…</string>
     <string name="obd_on">Conectado a %1$s</string>
@@ -387,4 +387,8 @@
     <string name="alert_overcharging">Voltaje muy alto (%1$s). Revisa el alternador: puede dañar la batería.</string>
     <string name="alert_low_battery">Batería baja (%1$s). Puede costar arrancar.</string>
     <string name="alert_ok">Entendido</string>
+    <string name="obd_ble_search">Buscar Bluetooth LE</string>
+    <string name="obd_ble_searching">Buscando…</string>
+    <string name="obd_ble_found">BLUETOOTH LE CERCA</string>
+    <string name="obd_ble_none">No se encontró ningún adaptador Bluetooth LE. Revisa que esté conectado al auto con el motor o la llave encendida.</string>
 </resources>

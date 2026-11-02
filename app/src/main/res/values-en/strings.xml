@@ -231,7 +231,7 @@
     <string name="workshop">Workshop</string>
     <string name="workshop_module">Home shortcut to the Workshop (OBD scanner: trouble codes, inspection readiness and sensors)</string>
     <string name="obd_adapter">OBD adapter</string>
-    <string name="obd_adapter_help">Plug an ELM327 adapter into the OBD port (under the steering wheel) and pair it in Android Settings → Bluetooth. Then pick it here.</string>
+    <string name="obd_adapter_help">Plug an ELM327 adapter into the OBD port (under the steering wheel). Classic Bluetooth: pair it in Android Settings → Bluetooth and pick it here. Bluetooth LE: tap Search. Wi-Fi: join its network and type its address.</string>
     <string name="obd_off">Not connected</string>
     <string name="obd_connecting">Connecting to %1$s…</string>
     <string name="obd_on">Connected to %1$s</string>
@@ -372,4 +372,8 @@
     <string name="alert_overcharging">Voltage too high (%1$s). Check the alternator: it can damage the battery.</string>
     <string name="alert_low_battery">Low battery (%1$s). It may be hard to start.</string>
     <string name="alert_ok">Got it</string>
+    <string name="obd_ble_search">Search Bluetooth LE</string>
+    <string name="obd_ble_searching">Searching…</string>
+    <string name="obd_ble_found">BLUETOOTH LE NEARBY</string>
+    <string name="obd_ble_none">No Bluetooth LE adapter found. Make sure it\'s plugged into the car with the engine or ignition on.</string>
 </resources>

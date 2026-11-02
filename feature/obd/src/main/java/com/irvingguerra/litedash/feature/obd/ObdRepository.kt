@@ -2,7 +2,11 @@ package com.irvingguerra.litedash.feature.obd
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothManager
+import android.bluetooth.le.ScanCallback
+import android.bluetooth.le.ScanResult
+import android.bluetooth.le.ScanSettings
 import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
@@ -16,9 +20,9 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
-import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -29,6 +33,8 @@ import kotlinx.coroutines.withContext
 sealed interface ObdTarget {
     val name: String
     data class Bluetooth(val address: String, override val name: String) : ObdTarget
+    /** Bluetooth LE: no se empareja, se encuentra buscando ([ObdRepository.scanBle]). */
+    data class Ble(val address: String, override val name: String) : ObdTarget
     data class Wifi(val host: String, val port: Int) : ObdTarget {
         override val name get() = "$host:$port"
     }
@@ -75,6 +81,7 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
     var target: ObdTarget?
         get() = when (prefs.getString("tipo", null)) {
             "bt" -> ObdTarget.Bluetooth(prefs.getString("direccion", "")!!, prefs.getString("nombre", "")!!)
+            "ble" -> ObdTarget.Ble(prefs.getString("direccion", "")!!, prefs.getString("nombre", "")!!)
             "wifi" -> ObdTarget.Wifi(prefs.getString("direccion", "")!!, prefs.getInt("puerto", 35000))
             else -> null
         }
@@ -82,6 +89,7 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
             prefs.edit().apply {
                 when (t) {
                     is ObdTarget.Bluetooth -> putString("tipo", "bt").putString("direccion", t.address).putString("nombre", t.name)
+                    is ObdTarget.Ble -> putString("tipo", "ble").putString("direccion", t.address).putString("nombre", t.name)
                     is ObdTarget.Wifi -> putString("tipo", "wifi").putString("direccion", t.host).putInt("puerto", t.port)
                     null -> clear()
                 }
@@ -99,6 +107,51 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
         return runCatching { adapter.bondedDevices.orEmpty() }.getOrDefault(emptySet())
             .map { ObdTarget.Bluetooth(it.address, it.name ?: it.address) }
             .sortedByDescending { looksLikeObd(it.name) }
+    }
+
+    /** Adaptadores BLE que se encontraron en la última búsqueda (los que parecen OBD primero). */
+    var found by mutableStateOf<List<ObdTarget.Ble>>(emptyList())
+        private set
+    var scanning by mutableStateOf(false)
+        private set
+    /** Ya se buscó al menos una vez (para decir "no se encontró ninguno"). */
+    var searched by mutableStateOf(false)
+        private set
+
+    /**
+     * Buscar requiere su propio permiso: "dispositivos cercanos" desde Android 12 (sin
+     * ubicación) y, antes, la ubicación (así lo pide Android para Bluetooth LE).
+     */
+    fun scanPermission(): String =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) Manifest.permission.BLUETOOTH_SCAN else Manifest.permission.ACCESS_FINE_LOCATION
+
+    fun canScan() = context.checkSelfPermission(scanPermission()) == PackageManager.PERMISSION_GRANTED
+
+    /** Busca adaptadores Bluetooth LE unos segundos; solo cuando el usuario lo pide. */
+    @SuppressLint("MissingPermission")
+    fun scanBle() {
+        if (scanning || !canScan()) return
+        val scanner = context.getSystemService(BluetoothManager::class.java)?.adapter?.bluetoothLeScanner ?: return
+        val seen = linkedMapOf<String, ObdTarget.Ble>()
+        val callback = object : ScanCallback() {
+            override fun onScanResult(callbackType: Int, result: ScanResult) {
+                // Sin nombre no hay cómo reconocerlo en la lista.
+                val name = result.scanRecord?.deviceName ?: return
+                if (seen.put(result.device.address, ObdTarget.Ble(result.device.address, name)) == null) {
+                    found = seen.values.sortedByDescending { looksLikeObd(it.name) }
+                }
+            }
+        }
+        found = emptyList()
+        scanning = true
+        scope.launch(Dispatchers.Main) {
+            runCatching { scanner.startScan(null, ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY).build(), callback) }
+                .onFailure { scanning = false; return@launch }
+            delay(SCAN_MS)
+            runCatching { scanner.stopScan(callback) }
+            scanning = false
+            searched = true
+        }
     }
 
     /** Se conecta a [t] (o al último que funcionó) y empieza a leer. */
@@ -220,11 +273,13 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
     @SuppressLint("MissingPermission")
     private fun open(t: ObdTarget): ElmLink = when (t) {
         is ObdTarget.Wifi -> WifiLink(t.host, t.port)
-        is ObdTarget.Bluetooth -> {
-            if (!hasPermission()) throw SecurityException("Sin permiso de Bluetooth")
-            val device = context.getSystemService(BluetoothManager::class.java).adapter.getRemoteDevice(t.address)
-            BluetoothLink(device)
-        }
+        is ObdTarget.Bluetooth -> BluetoothLink(device(t.address))
+        is ObdTarget.Ble -> BleLink(context, device(t.address))
+    }
+
+    private fun device(address: String): BluetoothDevice {
+        if (!hasPermission()) throw SecurityException("Sin permiso de Bluetooth")
+        return context.getSystemService(BluetoothManager::class.java).adapter.getRemoteDevice(address)
     }
 
     private fun closeLink() {
@@ -238,6 +293,8 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
 
     companion object {
         private const val PREFS = "obd"
+        /** Cuánto dura una búsqueda de adaptadores Bluetooth LE. */
+        private const val SCAN_MS = 10_000L
         /** Voltaje del módulo de control (el de la batería con el motor andando). */
         private const val VOLTAGE_PID = 0x42
 
