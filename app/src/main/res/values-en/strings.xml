@@ -26,6 +26,16 @@
     <string name="template_car_speed">Car and speedometer</string>
     <string name="template_sport">Sport</string>
     <string name="template_minimal">Minimal</string>
+    <string name="template_speed_widgets">Speedometer with widgets</string>
+    <string name="template_wall_cards">Background with cards</string>
+    <string name="template_wall_side">Background with column</string>
+    <string name="templates_tab_car">Car</string>
+    <string name="templates_tab_road">Road</string>
+    <string name="templates_tab_speed">Speedometer</string>
+    <string name="templates_tab_wallpaper">Background</string>
+    <string name="templates_road_help">Your car on the road with your speed and trip distance (OBD or GPS).</string>
+    <string name="templates_speed_help">No car on the home screen. Speed comes from GPS; no OBD needed.</string>
+    <string name="templates_wallpaper_help">Your background photo with a few cards on top and the time floating. Pick the background here or in Appearance.</string>
     <string name="add">Add</string>
     <string name="add_tile">Add to home</string>
     <string name="no_room">No room left: remove or shrink something.</string>
@@ -306,12 +316,12 @@
     <string name="obd_no_readiness">Your car doesn\'t report the inspection monitors.</string>
     <!-- Logo en vez del auto -->
     <string name="logo_title">What the car tile shows</string>
-    <string name="logo_help">The 3D car, your brand\'s logo (pick the image from your gallery: LiteDash doesn\'t include brand logos), a photo of yours or your car on the road with your speed and trip distance. The intro animation shows your logo for a few seconds when it opens.</string>
+    <string name="logo_help">The 3D car, an image of yours (like your brand\'s logo: pick it from your gallery, LiteDash doesn\'t include brand logos) or your car on the road with your speed and trip distance. The intro animation shows your image for a few seconds when it opens.</string>
     <string name="show_car">3D car</string>
-    <string name="show_logo">Logo</string>
-    <string name="show_wallpaper">Image</string>
+    <string name="show_logo">Image</string>
     <string name="show_road">Road</string>
-    <string name="wallpaper_missing">Pick your image in Settings → Your car.</string>
+    <string name="wallpaper_title">Home background</string>
+    <string name="wallpaper_help">A photo of yours behind the whole home screen. Without one, the theme background.</string>
     <string name="road_help">Speed comes from OBD or GPS, and the trip distance from GPS (reset it in the Trip tile).</string>
     <string name="road_trip">trip</string>
     <string name="logo_pick">Pick image</string>

@@ -17,6 +17,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.staticCompositionLocalOf
@@ -127,6 +128,9 @@ fun Label(
     BasicText(text, modifier, style = style.copy(color = color), maxLines = maxLines, overflow = TextOverflow.Ellipsis)
 }
 
+/** La pieza del tablero va sin fondo de tarjeta: [Card] queda transparente (lo de adentro se ve igual). */
+val LocalPlainCard = compositionLocalOf { false }
+
 /** Tarjeta base del tablero: superficie lisa, sin borde, con esquinas [Radius.card]. */
 @Composable
 fun Card(
@@ -136,7 +140,7 @@ fun Card(
 ) {
     val c = LocalColors.current
     val shape = RoundedCornerShape(Radius.card)
-    var m = modifier.clip(shape).background(c.surface)
+    var m = modifier.clip(shape).background(if (LocalPlainCard.current) Color.Transparent else c.surface)
     if (onClick != null) m = m.clickable(onClick = onClick)
     Box(m, content = content)
 }

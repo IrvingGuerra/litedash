@@ -49,12 +49,11 @@ fun HomeCar(d: Dependencies, pkg: CarPackage?, onClick: () -> Unit, modifier: Mo
     when (d.prefs.carView) {
         CarView.CAR -> Unit
         CarView.ROAD -> return RoadView(d, pkg, onClick, modifier, onReady)
-        CarView.LOGO, CarView.WALLPAPER -> {
+        CarView.LOGO -> {
             // Sin auto que cargar: listo de una vez.
             val ready by rememberUpdatedState(onReady)
             LaunchedEffect(Unit) { ready?.invoke() }
-            return if (d.prefs.carView == CarView.LOGO) BrandLogo(d, brandName(d, pkg), onClick, modifier)
-            else WallpaperView(d, onClick, modifier)
+            return BrandLogo(d, brandName(d, pkg), onClick, modifier)
         }
     }
     // El sedán dibujado no carga nada: listo de una vez.

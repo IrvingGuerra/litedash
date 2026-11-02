@@ -306,7 +306,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
 
     // Con un auto que trae piso, el fondo baja un poco de tono hacia abajo: es el
     // piso donde se para el auto (como en Tesla), y su sombra y reflejo caen ahí.
-    val hasFloor = car?.hasFloor == true && d.prefs.carView in setOf(CarView.CAR, CarView.LOGO) &&
+    val hasFloor = car?.hasFloor == true && d.prefs.carView == CarView.CAR &&
         d.dashboard.tiles.any { it.type == TileTypes.CAR }
     val backdrop = if (hasFloor) {
         Brush.verticalGradient(0.3f to c.background, 1f to lerp(c.background, Color.Black, if (c.dark) 0.35f else 0.08f))
@@ -324,6 +324,8 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                 }
             },
     ) {
+        // Tu imagen de fondo (Apariencia → Fondo del inicio), detrás de todo.
+        if (panel == null) HomeWallpaper(d.prefs)
         // Los paneles tapan todo el inicio: mientras hay uno abierto no se dibuja ni se
         // pinta nada debajo (el auto del tablero no se tiñe dos veces al cambiar el color).
         if (panel == null) BoxWithConstraints(Modifier.fillMaxSize().safeDrawingPadding()) {
@@ -437,7 +439,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                     else -> SettingsSection.CAR
                 },
             )
-            Panel.Templates -> TemplatesPanel(d.dashboard, close = { panel = null })
+            Panel.Templates -> TemplatesPanel(d.dashboard, d.prefs, close = { panel = null })
             Panel.AddTile -> AddTilePanel(
                 d.dashboard,
                 close = { panel = null },

@@ -170,7 +170,8 @@ fun ClockTile(driverName: String? = null, weather: WeatherRepository? = null) {
     val hello = greeting(driverName)
     BoxWithConstraints(Modifier.fillMaxSize().padding(8.dp), contentAlignment = Alignment.CenterStart) {
         // El reloj crece con la pieza: en 1 fila es discreto, en 2 o más es protagonista.
-        val size = (maxHeight.value * 0.5f).coerceIn(28f, 96f)
+        // En una columna angosta lo limita el ancho (si no, la hora se corta).
+        val size = minOf(maxHeight.value * 0.5f, maxWidth.value * 0.26f).coerceIn(28f, 96f)
         // Con la barra oculta (hay reloj), el clima va aquí junto a la hora.
         if (weather != null) Box(Modifier.align(Alignment.TopEnd)) { WeatherChip(weather) }
         Column {

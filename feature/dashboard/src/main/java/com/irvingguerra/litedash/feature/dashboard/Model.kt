@@ -32,6 +32,8 @@ data class Tile(
     val width: Int,
     val height: Int,
     val data: String = "",
+    /** Sin fondo de tarjeta: lo de adentro flota sobre el fondo del inicio. */
+    val plain: Boolean = false,
 ) {
     fun overlaps(other: Tile) =
         col < other.col + other.width && other.col < col + width &&
@@ -136,7 +138,16 @@ enum class Template(val sizes: Set<ScreenSize>) {
     SPORT(setOf(ScreenSize.SMALL, ScreenSize.MEDIUM, ScreenSize.LARGE)),
     /** Mínima: la hora en grande y la música, sin auto. */
     MINIMAL(ScreenSize.entries.toSet()),
+    /** El velocímetro al centro con la hora y la fecha a un lado, y el clima y el viaje al otro. */
+    SPEED_WIDGETS(ScreenSize.entries.toSet()),
+    /** Para lucir tu fondo (como BYD): la hora flotando arriba y una fila de tarjetas abajo. */
+    WALL_CARDS(ScreenSize.entries.toSet()),
+    /** Tu fondo a la izquierda y una columna de tarjetas a la derecha, con la hora flotando. */
+    WALL_SIDE(setOf(ScreenSize.SMALL, ScreenSize.MEDIUM, ScreenSize.LARGE)),
 }
+
+/** Las que no llevan auto (para quien no lo quiere ver en el inicio). */
+val Template.hasCar get() = this !in setOf(Template.SPEED, Template.MINIMAL, Template.SPEED_WIDGETS, Template.WALL_CARDS, Template.WALL_SIDE)
 
 /**
  * Acomodos de inicio. Se calculan para cualquier cuadrícula: lo que no quepa se
@@ -146,8 +157,8 @@ fun Template.tiles(c: Grid): List<Tile> {
     val cols = c.columns
     val rows = c.rows
     val list = mutableListOf<Tile>()
-    fun place(type: String, col: Int, row: Int, width: Int, height: Int, data: String = "") {
-        val p = Tile("$type-${list.size}", type, col, row, width, height, data)
+    fun place(type: String, col: Int, row: Int, width: Int, height: Int, data: String = "", plain: Boolean = false) {
+        val p = Tile("$type-${list.size}", type, col, row, width, height, data, plain)
         if (width >= 1 && height >= 1 && list.fits(p, c)) list += p
     }
     when (this) {
@@ -267,6 +278,47 @@ fun Template.tiles(c: Grid): List<Tile> {
             val start = (cols - width) / 2
             place(TileTypes.CLOCK, start, 0, width, rows - bottom)
             place(TileTypes.MUSIC, start, rows - bottom, width, bottom)
+        }
+        Template.SPEED_WIDGETS -> {
+            val side = cols / 4
+            if (c.vertical || side < 2 || cols - 2 * side < 3) {
+                // No caben las tres columnas: el velocímetro arriba y abajo la hora y el clima.
+                val bottom = if (rows >= 6) 2 else 1
+                val half = cols / 2
+                place(TileTypes.SPEEDOMETER, 0, 0, cols, rows - bottom)
+                place(TileTypes.CLOCK, 0, rows - bottom, half, bottom)
+                place(TileTypes.WEATHER, half, rows - bottom, cols - half, bottom)
+            } else {
+                val top = (rows + 1) / 2
+                place(TileTypes.CLOCK, 0, 0, side, rows, plain = true)
+                place(TileTypes.SPEEDOMETER, side, 0, cols - 2 * side, rows)
+                place(TileTypes.WEATHER, cols - side, 0, side, top)
+                place(TileTypes.TRIP, cols - side, top, side, rows - top)
+            }
+        }
+        Template.WALL_CARDS -> {
+            // Arriba queda libre para el fondo; la hora flota sin tarjeta.
+            val bottom = if (rows >= 6) 2 else 1
+            place(TileTypes.CLOCK, 0, 0, maxOf(2, cols / 2), if (rows >= 5) 2 else 1, plain = true)
+            val music = maxOf(3, cols * 4 / 10).coerceAtMost(cols)
+            val rest = cols - music
+            val nav = rest / 2
+            place(TileTypes.NAVIGATE, 0, rows - bottom, nav, bottom)
+            place(TileTypes.MUSIC, nav, rows - bottom, music, bottom)
+            place(TileTypes.WEATHER, nav + music, rows - bottom, rest - nav, bottom)
+        }
+        Template.WALL_SIDE -> {
+            val width = maxOf(3, cols / 3)
+            val start = cols - width
+            val clock = if (rows >= 5) 2 else 1
+            place(TileTypes.CLOCK, start, 0, width, clock, plain = true)
+            val rest = rows - clock
+            val weather = if (rest >= 3) 1 else 0
+            if (weather > 0) place(TileTypes.WEATHER, start, clock, width, 1)
+            val music = minOf(2, rest - weather - 1).coerceAtLeast(1)
+            place(TileTypes.MUSIC, start, clock + weather, width, music)
+            val row = clock + weather + music
+            if (row < rows) place(TileTypes.NAVIGATE, start, row, width, rows - row)
         }
     }
     return list

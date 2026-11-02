@@ -71,10 +71,8 @@ enum class BarPosition(val stored: String) {
 enum class CarView(val stored: String) {
     /** El auto 3D que gira con el dedo. */
     CAR("auto"),
-    /** El logo de tu marca (tu imagen o el nombre). */
+    /** Una imagen tuya (como el logo de tu marca) o, sin imagen, el nombre. Se guarda como "logo" desde la 1.4.15. */
     LOGO("logo"),
-    /** Una imagen tuya a todo lo que mide la pieza. */
-    WALLPAPER("fondo"),
     /** El auto de espaldas en una carretera que avanza con la velocidad, con los km del viaje (como DuduAuto). */
     ROAD("carretera");
 
@@ -233,7 +231,7 @@ class Preferences(context: Context) {
     /** Cambia cada vez que se elige o quita la imagen del logo (para volver a leerla); solo en memoria. */
     var logoRevision by mutableIntStateOf(0)
 
-    /** Lo mismo para la imagen de fondo de la pieza del auto. */
+    /** Lo mismo para la imagen de fondo del inicio. */
     var wallpaperRevision by mutableIntStateOf(0)
 
     /** Hacia dónde dejó girado el auto en el inicio (fracción de vuelta); null = tres cuartos. */

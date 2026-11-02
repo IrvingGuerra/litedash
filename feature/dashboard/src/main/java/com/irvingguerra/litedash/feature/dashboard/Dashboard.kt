@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -37,6 +38,7 @@ import com.irvingguerra.litedash.core.ui.IconButton
 import com.irvingguerra.litedash.core.ui.Icon
 import com.irvingguerra.litedash.core.ui.Icons
 import com.irvingguerra.litedash.core.ui.LocalColors
+import com.irvingguerra.litedash.core.ui.LocalPlainCard
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.math.roundToInt
 
@@ -142,7 +144,7 @@ fun Dashboard(
                     Modifier
                         .fillMaxSize()
                         .then(if (editing) Modifier else Modifier.longPress { currentOnEdit() }),
-                ) { content(p) }
+                ) { CompositionLocalProvider(LocalPlainCard provides p.plain) { content(p) } }
 
                 if (editing) {
                     // Capa que atrapa los gestos: editando, la pieza no se usa, se acomoda.
@@ -172,6 +174,16 @@ fun Dashboard(
                         modifier = Modifier.align(Alignment.TopStart).padding(6.dp),
                         size = 40.dp,
                         background = c.surfaceHigh,
+                    )
+                    // Con o sin fondo de tarjeta (el auto no lleva tarjeta). Junto a la ✕: en las
+                    // piezas de una fila, la esquina de la derecha ya la ocupa la del tamaño.
+                    if (p.type != TileTypes.CAR) IconButton(
+                        Icons.noCard,
+                        onClick = { onChange(tiles.replace(p.copy(plain = !p.plain))) },
+                        modifier = Modifier.align(Alignment.TopStart).padding(start = 52.dp, top = 6.dp),
+                        size = 40.dp,
+                        background = if (p.plain) c.accent else c.surfaceHigh,
+                        color = if (p.plain) c.background else c.text,
                     )
                     Box(
                         Modifier

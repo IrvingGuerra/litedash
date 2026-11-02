@@ -97,6 +97,7 @@ import com.irvingguerra.litedash.feature.dashboard.DashboardState
 import com.irvingguerra.litedash.feature.dashboard.Grid
 import com.irvingguerra.litedash.feature.dashboard.ScreenSize
 import com.irvingguerra.litedash.feature.dashboard.Template
+import com.irvingguerra.litedash.feature.dashboard.hasCar
 import com.irvingguerra.litedash.feature.dashboard.TileTypes
 import com.irvingguerra.litedash.feature.dashboard.size
 import com.irvingguerra.litedash.feature.dashboard.suggestedTemplate
@@ -693,6 +694,9 @@ private fun Appearance(prefs: Preferences, revision: Int) {
             LightsSettings(prefs)
         }
     }
+    if (tab == 1) SettingsCard(stringResource(R.string.wallpaper_title), stringResource(R.string.wallpaper_help)) {
+        WallpaperSettings(prefs)
+    }
     if (tab == 1) SettingsCard(stringResource(R.string.theme)) {
         Segmented(
             listOf(ThemeMode.DARK to R.string.theme_dark, ThemeMode.LIGHT to R.string.theme_light, ThemeMode.SUN to R.string.theme_sun, ThemeMode.SYSTEM to R.string.theme_system)
@@ -846,6 +850,9 @@ fun nameOf(p: Template) = when (p) {
     Template.CAR_SPEED -> R.string.template_car_speed
     Template.SPORT -> R.string.template_sport
     Template.MINIMAL -> R.string.template_minimal
+    Template.SPEED_WIDGETS -> R.string.template_speed_widgets
+    Template.WALL_CARDS -> R.string.template_wall_cards
+    Template.WALL_SIDE -> R.string.template_wall_side
 }
 
 private fun nameOf(t: ScreenSize) = when (t) {
@@ -855,9 +862,24 @@ private fun nameOf(t: ScreenSize) = when (t) {
     ScreenSize.VERTICAL -> R.string.screens_vertical
 }
 
-/** Acomodos agrupados por tamaño de pantalla; primero el de la tuya, con el recomendado marcado. */
+/**
+ * Estilos de plantilla (una pestaña cada uno): con el auto, con la carretera, solo
+ * velocímetro (sin OBD: usa el GPS) o para lucir tu fondo, como BYD. [view] es lo que
+ * muestra la pieza del auto al aplicar una (null = no se toca).
+ */
+private enum class TemplateTab(val title: Int, val templates: List<Template>) {
+    CAR(R.string.templates_tab_car, Template.entries.filter { it.hasCar }),
+    ROAD(R.string.templates_tab_road, listOf(Template.CARDS, Template.CENTER, Template.CAR_SPEED, Template.SPORT, Template.VERTICAL)),
+    SPEED(R.string.templates_tab_speed, listOf(Template.SPEED, Template.SPEED_WIDGETS, Template.MINIMAL)),
+    WALLPAPER(R.string.templates_tab_wallpaper, listOf(Template.WALL_CARDS, Template.WALL_SIDE, Template.MINIMAL)),
+}
+
+/**
+ * Plantillas en pestañas por estilo y, en cada una, agrupadas por tamaño de pantalla;
+ * primero el de la tuya, con el recomendado marcado.
+ */
 @Composable
-fun TemplatesPanel(dashboard: DashboardState, close: () -> Unit) {
+fun TemplatesPanel(dashboard: DashboardState, prefs: Preferences, close: () -> Unit) {
     val grid = dashboard.grid ?: return
     val c = LocalColors.current
     val yours = grid.size
@@ -865,8 +887,26 @@ fun TemplatesPanel(dashboard: DashboardState, close: () -> Unit) {
     PanelScaffold(stringResource(R.string.templates), close) {
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(24.dp)) {
             Label(stringResource(R.string.templates_help), Typography.body, c.textMuted)
+            val tab = TemplateTab.entries[tabs(TemplateTab.entries.map { it.title }, "plantillas")]
+            fun apply(p: Template) {
+                dashboard.template(p)
+                // La carretera la pone su pestaña; la del auto la quita (el logo o tu imagen se quedan).
+                if (tab == TemplateTab.ROAD) prefs.carView = CarView.ROAD
+                else if (tab == TemplateTab.CAR && prefs.carView == CarView.ROAD) prefs.carView = CarView.CAR
+                close()
+            }
+            when (tab) {
+                TemplateTab.ROAD -> Label(stringResource(R.string.templates_road_help), Typography.small, c.textMuted)
+                TemplateTab.SPEED -> Label(stringResource(R.string.templates_speed_help), Typography.small, c.textMuted)
+                TemplateTab.WALLPAPER -> {
+                    Label(stringResource(R.string.templates_wallpaper_help), Typography.small, c.textMuted)
+                    WallpaperSettings(prefs)
+                }
+                TemplateTab.CAR -> Unit
+            }
             for (group in listOf(yours) + ScreenSize.entries.filter { it != yours }) {
-                val templates = Template.entries.filter { group in it.sizes }
+                val templates = tab.templates.filter { group in it.sizes }
+                if (templates.isEmpty()) continue
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         Label(stringResource(nameOf(group)).uppercase(), Typography.label, c.textMuted)
@@ -874,12 +914,12 @@ fun TemplatesPanel(dashboard: DashboardState, close: () -> Unit) {
                     }
                     Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                         for (p in templates) {
-                            Card(Modifier.width(260.dp), onClick = { dashboard.template(p); close() }) {
+                            Card(Modifier.width(260.dp), onClick = { apply(p) }) {
                                 Column(Modifier.padding(16.dp)) {
                                     TemplateThumbnail(p, grid)
                                     Spacer(Modifier.height(12.dp))
                                     Label(stringResource(nameOf(p)), Typography.subtitle, maxLines = 1)
-                                    if (group == yours && p == suggested) {
+                                    if (tab == TemplateTab.CAR && group == yours && p == suggested) {
                                         Label(stringResource(R.string.recommended).uppercase(), Typography.label, c.accent, maxLines = 1)
                                     }
                                 }
@@ -901,8 +941,8 @@ private fun TemplateThumbnail(p: Template, grid: Grid) {
         val cw = maxWidth / grid.columns
         val ch = maxHeight / grid.rows
         val tiles = p.tiles(grid)
-        // La protagonista en ámbar: el auto o, en las que no lo llevan, la primera pieza.
-        val hero = (tiles.firstOrNull { it.type == TileTypes.CAR } ?: tiles.firstOrNull())?.id
+        // La protagonista en ámbar: el auto o, en las que no lo llevan, el velocímetro o la primera pieza.
+        val hero = (tiles.firstOrNull { it.type == TileTypes.CAR } ?: tiles.firstOrNull { it.type == TileTypes.SPEEDOMETER } ?: tiles.firstOrNull())?.id
         for (tile in tiles) {
             Box(
                 Modifier

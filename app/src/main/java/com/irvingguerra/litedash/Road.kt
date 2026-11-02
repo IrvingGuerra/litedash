@@ -35,7 +35,11 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.lerp
+import kotlin.math.cos
+import kotlin.math.sin
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -68,6 +72,12 @@ private const val FAR_M = 160f
 /** Altura del horizonte (fracción del alto de la pieza). */
 private const val HORIZON = 0.34f
 
+/** A esta velocidad el efecto ya va completo (líneas de velocidad y orillas encendidas). */
+private const val FULL_EFFECT_KMH = 110f
+
+/** Líneas de velocidad que pasan a los lados. */
+private const val STREAKS = 18
+
 /**
  * Tu auto de espaldas en una carretera, como DuduAuto: las rayas de los carriles
  * avanzan con la velocidad (OBD o GPS) y arriba van la velocidad y los km del viaje.
@@ -85,16 +95,25 @@ fun RoadView(d: Dependencies, pkg: CarPackage?, onClick: () -> Unit, modifier: M
     if (gps) KeepTripRunning(d.trip)
     val kmh = d.bus.watch(Signal.SPEED)
 
-    // Avance de las rayas en periodos (0..1): se lee solo al dibujar, así la pieza no se
-    // recompone en cada cuadro. Solo corre en movimiento.
+    // Avance de las rayas en periodos (0..1) y de las líneas de velocidad: se leen solo al
+    // dibujar, así la pieza no se recompone en cada cuadro. Solo corren en movimiento.
     var phase by remember { mutableFloatStateOf(0f) }
+    var rush by remember { mutableFloatStateOf(0f) }
+    // Qué tanto efecto lleva (0 parado, 1 a FULL_EFFECT_KMH); sube y baja suave.
+    var effect by remember { mutableFloatStateOf(0f) }
     val speed by rememberUpdatedState(kmh ?: 0f)
     val moving = (kmh ?: 0f) > 1f
     LaunchedEffect(moving) {
         if (!moving) return@LaunchedEffect
         var last = 0L
         while (true) withFrameNanos { t ->
-            if (last != 0L) phase = (phase + speed / 3.6f * (t - last) / 1e9f / DASH_PERIOD_M) % 1f
+            if (last != 0L) {
+                val dt = (t - last) / 1e9f
+                phase = (phase + speed / 3.6f * dt / DASH_PERIOD_M) % 1f
+                val goal = (speed / FULL_EFFECT_KMH).coerceIn(0f, 1f)
+                effect += (goal - effect) * (dt * 2f).coerceAtMost(1f)
+                rush = (rush + dt * (0.4f + 1.6f * effect)) % 1f
+            }
             last = t
         }
     }
@@ -106,7 +125,7 @@ fun RoadView(d: Dependencies, pkg: CarPackage?, onClick: () -> Unit, modifier: M
             .clickable(remember { MutableInteractionSource() }, indication = null, onClick = onClick),
     ) {
         val height = maxHeight
-        Canvas(Modifier.fillMaxSize()) { drawRoad(c.surfaceHigh, c.textMuted, phase) }
+        Canvas(Modifier.fillMaxSize()) { drawRoad(c.surfaceHigh, c.textMuted, c.accent, phase, if (moving) effect else 0f, rush) }
 
         // El auto de espaldas en el carril de en medio, con la defensa cerca del borde de abajo.
         val box = height * 0.55f
@@ -164,8 +183,10 @@ private fun RoadNumbers(d: Dependencies, kmh: Float?, heightDp: Float, modifier:
  * La carretera en perspectiva: el asfalto que se desvanece hacia el horizonte, las
  * orillas y las rayas de tres carriles. Un punto a [z] metros de la cámara cae en
  * y = horizonte + (abajo − horizonte) · NEAR_M / z, y el ancho se reduce igual.
+ * Con [effect] (0–1, sube con la velocidad) el horizonte y las orillas se encienden
+ * del [glow] y pasan líneas de velocidad a los lados ([rush] las mueve).
  */
-private fun DrawScope.drawRoad(asphalt: Color, lines: Color, phase: Float) {
+private fun DrawScope.drawRoad(asphalt: Color, lines: Color, glow: Color, phase: Float, effect: Float, rush: Float) {
     val w = size.width
     val h = size.height
     val horizon = h * HORIZON
@@ -182,10 +203,19 @@ private fun DrawScope.drawRoad(asphalt: Color, lines: Color, phase: Float) {
         lineTo(center - 1f, horizon)
         close()
     }
+    // El brillo del horizonte, hacia donde vas.
+    if (effect > 0.01f) {
+        drawCircle(
+            Brush.radialGradient(listOf(glow.copy(alpha = 0.28f * effect), Color.Transparent), Offset(center, horizon), w * 0.45f),
+            w * 0.45f,
+            Offset(center, horizon),
+        )
+    }
     drawPath(road, Brush.verticalGradient(0f to asphalt.copy(alpha = 0f), 1f to asphalt, startY = horizon, endY = h))
 
     // Orillas: líneas continuas que se pierden en el horizonte.
-    val edge = Brush.verticalGradient(0f to lines.copy(alpha = 0f), 1f to lines.copy(alpha = 0.55f), startY = horizon, endY = h)
+    val edgeColor = lerp(lines.copy(alpha = 0.55f), glow.copy(alpha = 0.9f), effect)
+    val edge = Brush.verticalGradient(0f to edgeColor.copy(alpha = 0f), 1f to edgeColor, startY = horizon, endY = h)
     val edgeWidth = w * 0.006f
     for (side in listOf(-1f, 1f)) {
         val strip = Path().apply {
@@ -222,6 +252,27 @@ private fun DrawScope.drawRoad(asphalt: Color, lines: Color, phase: Float) {
             }
         }
         z += DASH_PERIOD_M
+    }
+
+    // Líneas de velocidad: salen del horizonte hacia las orillas de la pieza, fuera del
+    // asfalto, y se alargan conforme se acercan.
+    if (effect > 0.02f) {
+        val vanish = Offset(center, horizon)
+        for (i in 0 until STREAKS) {
+            // Ángulo y desfase fijos por línea (parecen al azar, no parpadean).
+            val side = if (i % 2 == 0) -1f else 1f
+            val spread = ((i * 0.618f) % 1f)
+            // Entre 22° arriba y 18° abajo del horizonte: a los lados, sin cruzar el asfalto.
+            val angle = Math.toRadians((-22f + spread * 40f).toDouble())
+            val t = (rush + i * 0.37f) % 1f
+            val reach = w * 0.75f
+            val start = reach * t * t
+            val length = reach * (0.05f + 0.22f * t) * effect
+            val dir = Offset(side * cos(angle).toFloat(), sin(angle).toFloat())
+            val a = vanish + dir * start
+            val b = vanish + dir * (start + length)
+            drawLine(lines.copy(alpha = 0.45f * effect * t), a, b, strokeWidth = (1f + 2.5f * t) * density, cap = StrokeCap.Round)
+        }
     }
 }
 

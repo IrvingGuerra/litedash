@@ -17,13 +17,14 @@ class DashboardStore(context: Context) {
             if (f.size < 6) return@mapNotNull null
             // Una línea dañada (escritura cortada) se salta; no tumba el inicio.
             val (col, row, width, height) = (2..5).map { f[it].toIntOrNull() ?: return@mapNotNull null }
-            Tile(f[0], LEGACY_TYPES[f[1]] ?: f[1], col, row, width, height, f.getOrElse(6) { "" })
+            Tile(f[0], LEGACY_TYPES[f[1]] ?: f[1], col, row, width, height, f.getOrElse(6) { "" }, plain = f.getOrElse(7) { "" } == "1")
         }.filter { p -> p.col >= 0 && p.row >= 0 }.toList()
     }
 
     fun save(c: Grid, tiles: List<Tile>) {
         val text = tiles.joinToString("\n") {
-            listOf(it.id, it.type, it.col, it.row, it.width, it.height, it.data.replace('\t', ' ').replace('\n', ' '))
+            // El campo nuevo va al final: las versiones de antes lo ignoran.
+            listOf(it.id, it.type, it.col, it.row, it.width, it.height, it.data.replace('\t', ' ').replace('\n', ' '), if (it.plain) "1" else "")
                 .joinToString("\t")
         }
         prefs.edit().putString(LAYOUT_KEY_PREFIX + c.key, text).apply()

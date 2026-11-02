@@ -6,6 +6,27 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
+## [1.4.37] - 2026-11-02
+
+### Nuevo
+- **Fondo del inicio** (Ajustes → Apariencia → Pantalla, o en Plantillas → Fondo): una foto tuya
+  detrás de todo el inicio, con un velo del tema para que se lea la hora.
+- **Piezas sin tarjeta:** al acomodar el inicio, el botón junto a la ✕ quita o pone el fondo de
+  tarjeta de cada pieza (el velocímetro, el tacómetro o la hora flotan sobre tu fondo).
+- **La carretera se emociona con la velocidad:** entre más rápido vas, más se encienden el
+  horizonte y las orillas, y pasan líneas de velocidad a los lados. Parado, tranquila.
+- **Plantillas en pestañas:** Auto, Carretera (ya con la vista de carretera), Velocímetro (sin
+  auto ni OBD: **Velocímetro con widgets** con la hora y la fecha a un lado, y el clima y el
+  viaje al otro) y Fondo, estilo BYD (**Fondo con tarjetas** y **Fondo con columna**, con la
+  hora flotando).
+
+### Cambiado
+- En "Qué muestra la pieza del auto" queda una sola opción de imagen (tu logo o la foto que
+  elijas); la foto a todo lo ancho ahora es el fondo del inicio.
+
+### Arreglado
+- La hora en una columna angosta ya no se corta.
+
 ## [1.4.36] - 2026-11-02
 
 ### Nuevo

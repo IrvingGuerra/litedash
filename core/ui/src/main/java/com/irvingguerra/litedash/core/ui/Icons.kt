@@ -27,6 +27,8 @@ object Icons {
     val apps = icon("M4 4h6v6h-6z M14 4h6v6h-6z M4 14h6v6h-6z M14 14h6v6h-6z")
     val settings = icon("M4 6h8 M16 6h4 M14 4v4 M4 12h2 M10 12h10 M8 10v4 M4 18h11 M19 18h1 M17 16v4")
     val minus = icon("M6 12h12")
+    /** Tarjeta tachada: quitar o poner el fondo de una pieza. */
+    val noCard = icon("M6 4h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2z M4 20l16 -16")
     val plus = icon("M12 6v12 M6 12h12")
     val close = icon("M7 7l10 10 M17 7l-10 10")
     val done = icon("M5 12.5l4.5 4.5l9.5 -10")
