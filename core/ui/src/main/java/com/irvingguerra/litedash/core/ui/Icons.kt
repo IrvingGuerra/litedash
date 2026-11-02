@@ -1,5 +1,6 @@
 package com.irvingguerra.litedash.core.ui
 
+import android.annotation.SuppressLint
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
@@ -81,6 +82,8 @@ object Icons {
     }
 }
 
+// El color y el tamaño van primero a propósito: así se escriben en toda la app (Icon(x, c.accent, 22.dp)).
+@SuppressLint("ModifierParameter")
 @Composable
 fun Icon(icon: ImageVector, color: Color = LocalColors.current.text, size: Dp = 24.dp, modifier: Modifier = Modifier) {
     Image(icon, contentDescription = null, modifier.size(size), colorFilter = ColorFilter.tint(color))

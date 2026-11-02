@@ -26,7 +26,6 @@ private object PrefKeys {
     const val SCALE = "escala"
     const val CAR_NAME = "nombre_auto"
     const val CAR_COLOR = "color_auto_argb"
-    const val LEGACY_CAR_COLOR = "color_auto"
     const val CAR_MODEL = "modelo_auto"
     const val WELCOME_SEEN = "bienvenida_vista"
     const val WELCOME_STEP = "paso_bienvenida"
@@ -118,11 +117,7 @@ class Preferences(context: Context) {
     /** null = todavía no lo nombra (se muestra "Mi auto"). */
     var carName by string(PrefKeys.CAR_NAME)
 
-    // Antes se guardaba el número de un color fijo (PrefKeys.LEGACY_CAR_COLOR); ahora el color libre.
-    private var _carColor by mutableIntStateOf(
-        if (p.contains(PrefKeys.CAR_COLOR)) p.getInt(PrefKeys.CAR_COLOR, 0)
-        else CarColors[p.getInt(PrefKeys.LEGACY_CAR_COLOR, 0).coerceIn(CarColors.indices)].toArgb(),
-    )
+    private var _carColor by mutableIntStateOf(p.getInt(PrefKeys.CAR_COLOR, CarColors[0].toArgb()))
     var carColor: Color
         get() = Color(_carColor)
         set(v) { _carColor = v.toArgb(); p.edit { putInt(PrefKeys.CAR_COLOR, _carColor) } }

@@ -1,5 +1,6 @@
 package com.irvingguerra.litedash.core.ui
 
+import android.annotation.SuppressLint
 import androidx.compose.foundation.background
 import androidx.compose.runtime.getValue
 import androidx.compose.animation.core.animateDpAsState
@@ -113,6 +114,8 @@ object Typography {
     val label = TextStyle(fontSize = 12.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 1.sp)
 }
 
+// El color va tercero a propósito: así se escribe en toda la app (Label(t, estilo, c.textMuted)).
+@SuppressLint("ModifierParameter")
 @Composable
 fun Label(
     text: String,

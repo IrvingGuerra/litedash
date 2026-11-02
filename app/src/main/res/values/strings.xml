@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools" tools:locale="es">
     <string name="app_name" translatable="false">LiteDash</string>
     <string name="your_car">Tu auto</string>
     <string name="my_car">Mi auto</string>
@@ -153,10 +153,12 @@
     <plurals name="reminder_in_days">
         <item quantity="one">en %d día</item>
         <item quantity="other">en %d días</item>
+        <item quantity="many">en %d días</item>
     </plurals>
     <plurals name="reminder_overdue">
         <item quantity="one">venció hace %d día</item>
         <item quantity="other">venció hace %d días</item>
+        <item quantity="many">venció hace %d días</item>
     </plurals>
     <string name="tile_projection">Android Auto / CarPlay</string>
     <string name="projection_module">Abre tu app de Android Auto o CarPlay (Zlink, AutoKit…) de un toque</string>
@@ -218,10 +220,12 @@
     <plurals name="delete_all_confirm">
         <item quantity="one">¿Eliminar el auto descargado?</item>
         <item quantity="other">¿Eliminar los %1$d autos descargados?</item>
+        <item quantity="many">¿Eliminar los %1$d autos descargados?</item>
     </plurals>
     <plurals name="update_all_confirm">
         <item quantity="one">¿Bajar el modelo 3D nuevo de tu auto?</item>
         <item quantity="other">¿Bajar el modelo 3D nuevo de %1$d autos?</item>
+        <item quantity="many">¿Bajar el modelo 3D nuevo de %1$d autos?</item>
     </plurals>
     <string name="music_other_app">Otra app…</string>
     <string name="open_installer">Abrir con el instalador de Android</string>

@@ -1,4 +1,4 @@
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools" tools:locale="es">
     <string name="music">Música</string>
     <string name="music_explain">Ve y controla lo que suena en cualquier app. Necesita acceso a notificaciones.</string>
     <string name="enable">Activar</string>

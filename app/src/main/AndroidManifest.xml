@@ -2,12 +2,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- Para listar apps sin el permiso restringido QUERY_ALL_PACKAGES. -->
+    <!-- Apps a la vista sin el permiso restringido QUERY_ALL_PACKAGES (el cajón declara las suyas). -->
     <queries>
-        <intent>
-            <action android:name="android.intent.action.MAIN" />
-            <category android:name="android.intent.category.LAUNCHER" />
-        </intent>
         <!-- Botón de voz: el asistente que tenga la pantalla. -->
         <intent>
             <action android:name="android.intent.action.VOICE_COMMAND" />

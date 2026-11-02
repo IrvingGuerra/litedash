@@ -1,5 +1,6 @@
 package com.irvingguerra.litedash.feature.navigation
 
+import android.annotation.SuppressLint
 import android.app.Notification
 import android.content.Context
 import android.graphics.Bitmap
@@ -52,6 +53,8 @@ class NavigationRepository(private val context: Context, private val packages: S
         if (users == 0 || notification.packageName !in packages) return
         val n = notification.notification
         // Waze y Maps navegan con un aviso fijo (o de categoría navegación); los demás avisos no cuentan.
+        // CATEGORY_NAVIGATION (API 28) es solo un texto: en Android viejo la categoría llega vacía.
+        @SuppressLint("InlinedApi")
         val ongoing = n.flags and Notification.FLAG_ONGOING_EVENT != 0 || n.category == Notification.CATEGORY_NAVIGATION
         if (!ongoing && notification.packageName != TEST_PACKAGE) return
         val e = n.extras
