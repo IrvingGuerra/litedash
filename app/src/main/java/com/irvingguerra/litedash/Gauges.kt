@@ -116,7 +116,8 @@ fun GaugeCard(number: String, unit: String, tag: String, fraction: Float, ticks:
 private fun ArcGauge(number: String, unit: String, tag: String, fraction: () -> Float, ticks: Int, color: Color, side: Dp) {
     val c = LocalColors.current
     Canvas(Modifier.fillMaxSize()) {
-        val stroke = (size.minDimension * 0.07f).coerceIn(3.dp.toPx(), 12.dp.toPx())
+        // El arco engrosa con el medidor: en grande, 12 dp se veía como un hilo.
+        val stroke = (size.minDimension * 0.075f).coerceIn(3.dp.toPx(), 34.dp.toPx())
         val radius = minOf(size.width, size.height * 1.15f) / 2 - stroke
         val center = Offset(size.width / 2, size.height / 2 + radius * 0.12f)
         val topLeft = Offset(center.x - radius, center.y - radius)

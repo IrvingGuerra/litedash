@@ -6,6 +6,13 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
+## [1.4.38] - 2026-11-02
+
+### Cambiado
+- Las plantillas de velocímetro (Solo velocímetro y Velocímetro con widgets) lo ponen sin tarjeta,
+  flotando sobre el fondo.
+- El arco de los medidores engrosa con su tamaño: en grande ya no se ve como un hilo.
+
 ## [1.4.37] - 2026-11-02
 
 ### Nuevo

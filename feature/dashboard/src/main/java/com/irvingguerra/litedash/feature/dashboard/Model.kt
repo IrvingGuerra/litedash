@@ -251,7 +251,7 @@ fun Template.tiles(c: Grid): List<Tile> {
             // Un poco más ancho que alto (el arco es así); en pantallas paradas, cuadrado al centro.
             val height = if (c.vertical) minOf(rows, cols) else rows
             val width = minOf(cols, maxOf(2, (height * 1.4f + 0.5f).toInt()))
-            place(TileTypes.SPEEDOMETER, (cols - width) / 2, (rows - height) / 2, width, height)
+            place(TileTypes.SPEEDOMETER, (cols - width) / 2, (rows - height) / 2, width, height, plain = true)
         }
         Template.CAR_SPEED -> {
             val bottom = if (rows >= 6) 2 else 1
@@ -285,13 +285,13 @@ fun Template.tiles(c: Grid): List<Tile> {
                 // No caben las tres columnas: el velocímetro arriba y abajo la hora y el clima.
                 val bottom = if (rows >= 6) 2 else 1
                 val half = cols / 2
-                place(TileTypes.SPEEDOMETER, 0, 0, cols, rows - bottom)
+                place(TileTypes.SPEEDOMETER, 0, 0, cols, rows - bottom, plain = true)
                 place(TileTypes.CLOCK, 0, rows - bottom, half, bottom)
                 place(TileTypes.WEATHER, half, rows - bottom, cols - half, bottom)
             } else {
                 val top = (rows + 1) / 2
                 place(TileTypes.CLOCK, 0, 0, side, rows, plain = true)
-                place(TileTypes.SPEEDOMETER, side, 0, cols - 2 * side, rows)
+                place(TileTypes.SPEEDOMETER, side, 0, cols - 2 * side, rows, plain = true)
                 place(TileTypes.WEATHER, cols - side, 0, side, top)
                 place(TileTypes.TRIP, cols - side, top, side, rows - top)
             }
