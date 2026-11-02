@@ -41,6 +41,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
@@ -254,8 +255,9 @@ private fun CarSettings(d: Dependencies) {
     LaunchedEffect(cars.hasCatalog) {
         if (cars.hasCatalog) runCatching { cars.catalog() }.onSuccess { catalog = it }.onFailure { unreachable = true }
     }
+    val tab = tabs(listOf(R.string.tab_my_car, R.string.tab_models, R.string.reminders), "auto")
 
-    SettingsCard {
+    if (tab == 0) SettingsCard {
         Box(Modifier.fillMaxWidth().widthIn(max = 520.dp).aspectRatio(1.8f)) {
             if (pkg != null) {
                 // Arriba el auto; abajo queda lugar para su sombra y su reflejo en el piso.
@@ -270,23 +272,25 @@ private fun CarSettings(d: Dependencies) {
         Label(stringResource(R.string.color), Typography.label, c.textMuted)
         ColorPicker(prefs.carColor, prefs::previewCarColor) { prefs.carColor = it }
     }
-    if (pkg != null) {
+    if (tab == 0 && pkg != null) {
         SettingsCard("${pkg.make} ${pkg.name} ${pkg.year}") {
             ModelOptions(cars, pkg, catalog?.firstOrNull { it.id == pkg.id }, onDelete = { prefs.carModel = null; cars.delete(pkg) })
         }
     }
-    if (cars.hasCatalog || installed.isNotEmpty()) {
+    if (tab == 1 && (cars.hasCatalog || installed.isNotEmpty())) {
         SettingsCard(stringResource(R.string.your_models)) { DownloadedModels(prefs, cars, catalog) }
     }
-    if (cars.hasCatalog) {
-        SettingsCard(stringResource(R.string.catalog)) {
-            CatalogSearch(prefs, cars, catalog?.filter { e -> installed.none { it.id == e.id } })
-            if (unreachable || cars.failed) Label(stringResource(R.string.catalog_error), Typography.small, c.danger)
+    if (tab == 1) {
+        if (cars.hasCatalog) {
+            SettingsCard(stringResource(R.string.catalog)) {
+                CatalogSearch(prefs, cars, catalog?.filter { e -> installed.none { it.id == e.id } })
+                if (unreachable || cars.failed) Label(stringResource(R.string.catalog_error), Typography.small, c.danger)
+            }
+        } else if (installed.isEmpty()) {
+            SettingsCard { Label(stringResource(R.string.car_coming_soon), Typography.small, c.textMuted) }
         }
-    } else if (installed.isEmpty()) {
-        SettingsCard { Label(stringResource(R.string.car_coming_soon), Typography.small, c.textMuted) }
     }
-    SettingsCard(stringResource(R.string.reminders), stringResource(R.string.reminders_help)) {
+    if (tab == 2) SettingsCard(stringResource(R.string.reminders), stringResource(R.string.reminders_help)) {
         ReminderSettings(d.reminders)
     }
 }
@@ -551,6 +555,19 @@ fun SettingsPanel(
     }
 }
 
+/**
+ * Pestañas de una sección con muchas partes (para no hacer tanto scroll). Devuelve la
+ * elegida; se recuerda por sección ([key]) mientras Ajustes esté abierto.
+ */
+@Composable
+internal fun tabs(titles: List<Int>, key: String): Int {
+    var selected by rememberSaveable(key) { mutableIntStateOf(0) }
+    Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        titles.forEachIndexed { i, t -> Button(stringResource(t), { selected = i }, primary = i == selected) }
+    }
+    return selected
+}
+
 @Composable
 private fun MenuEntry(icon: ImageVector, text: String, selected: Boolean, narrow: Boolean, onClick: () -> Unit) {
     val c = LocalColors.current
@@ -591,20 +608,21 @@ internal fun SettingsCard(
 private fun Appearance(prefs: Preferences, revision: Int) {
     val c = LocalColors.current
     val context = LocalContext.current
-    SettingsCard(stringResource(R.string.your_name), stringResource(R.string.your_name_help)) {
+    val tab = tabs(listOf(R.string.tab_general, R.string.tab_screen), "apariencia")
+    if (tab == 0) SettingsCard(stringResource(R.string.your_name), stringResource(R.string.your_name_help)) {
         TextInput(prefs.driverName ?: "", { prefs.driverName = it.take(24).ifBlank { null } }, stringResource(R.string.your_name_hint), Modifier.fillMaxWidth())
     }
-    SettingsCard(stringResource(R.string.theme)) {
+    if (tab == 1) SettingsCard(stringResource(R.string.theme)) {
         FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             for ((mode, text) in listOf(ThemeMode.DARK to R.string.theme_dark, ThemeMode.LIGHT to R.string.theme_light, ThemeMode.SUN to R.string.theme_sun, ThemeMode.SYSTEM to R.string.theme_system)) {
                 Button(stringResource(text), { prefs.theme = mode }, primary = prefs.theme == mode)
             }
         }
     }
-    SettingsCard(stringResource(R.string.brightness), stringResource(R.string.brightness_help)) {
+    if (tab == 1) SettingsCard(stringResource(R.string.brightness), stringResource(R.string.brightness_help)) {
         BrightnessSettings(prefs, revision)
     }
-    SettingsCard(stringResource(R.string.language)) {
+    if (tab == 0) SettingsCard(stringResource(R.string.language)) {
         val activity = context as? Activity
         FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             for ((code, text) in listOf("" to R.string.language_system, "es" to R.string.language_es, "en" to R.string.language_en)) {
@@ -617,7 +635,7 @@ private fun Appearance(prefs: Preferences, revision: Int) {
             }
         }
     }
-    SettingsCard(stringResource(R.string.scale), stringResource(R.string.scale_help)) {
+    if (tab == 1) SettingsCard(stringResource(R.string.scale), stringResource(R.string.scale_help)) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             IconButton(Icons.minus, { prefs.scale = (prefs.scale - 0.1f).coerceAtLeast(0.8f).roundToTenth() }, background = c.surfaceHigh)
             Label("${(prefs.scale * 100).toInt()} %", Typography.title, modifier = Modifier.widthIn(min = 90.dp))

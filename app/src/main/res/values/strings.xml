@@ -300,4 +300,13 @@
     <string name="monitor_egr">Recirculación de gases (EGR)</string>
     <string name="obd_connected_short">Conectado</string>
     <string name="obd_connecting_short">Conectando…</string>
+    <!-- Pestañas de Ajustes -->
+    <string name="tab_general">General</string>
+    <string name="tab_screen">Pantalla</string>
+    <string name="tab_my_car">Mi auto</string>
+    <string name="tab_models">Modelos</string>
+    <string name="tab_connection">Conexión</string>
+    <string name="tab_inspection">Verificación</string>
+    <string name="tab_sensors">Sensores</string>
+    <string name="obd_no_readiness">Tu auto no reporta los monitores de la verificación.</string>
 </resources>

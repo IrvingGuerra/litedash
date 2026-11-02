@@ -52,9 +52,13 @@ private val Good = Color(0xFF3FB27F)
 @Composable
 fun Workshop(d: Dependencies) {
     val obd = d.obd
-    Connection(obd)
-    if (obd.state == ObdState.ON) Engine(obd)
-    if (obd.state == ObdState.ON) LiveSensors(d)
+    // Sin adaptador solo hay que conectarlo; ya conectado, cada parte en su pestaña.
+    if (obd.state != ObdState.ON) return Connection(obd)
+    val tab = tabs(listOf(R.string.tab_connection, R.string.obd_codes, R.string.tab_inspection, R.string.tab_sensors), "taller")
+    if (tab == 0) Connection(obd)
+    // El reporte se lee una vez y se comparte entre las pestañas de motor, códigos y verificación.
+    Engine(obd, tab)
+    if (tab == 3) LiveSensors(d)
 }
 
 /** Acceso directo al Taller en el inicio; dice si el adaptador está conectado. */
@@ -119,7 +123,7 @@ private fun Connection(obd: ObdRepository) {
 }
 
 @Composable
-private fun Engine(obd: ObdRepository) {
+private fun Engine(obd: ObdRepository, tab: Int) {
     val c = LocalColors.current
     val scope = rememberCoroutineScope()
     var report by remember { mutableStateOf<EngineReport?>(null) }
@@ -136,7 +140,7 @@ private fun Engine(obd: ObdRepository) {
     val r = report
     val readiness = r?.readiness
 
-    SettingsCard(stringResource(R.string.obd_engine)) {
+    if (tab == 0) SettingsCard(stringResource(R.string.obd_engine)) {
         if (reading && r == null) return@SettingsCard Label(stringResource(R.string.obd_reading), Typography.body, c.textMuted)
         val mil = readiness?.mil == true
         Label(
@@ -152,7 +156,7 @@ private fun Engine(obd: ObdRepository) {
         Button(stringResource(R.string.obd_read_again), { read() })
     }
 
-    SettingsCard(stringResource(R.string.obd_codes), stringResource(R.string.obd_codes_help)) {
+    if (tab == 1) SettingsCard(stringResource(R.string.obd_codes), stringResource(R.string.obd_codes_help)) {
         val groups = listOf(
             R.string.obd_codes_stored to r?.stored.orEmpty(),
             R.string.obd_codes_pending to r?.pending.orEmpty(),
@@ -192,7 +196,10 @@ private fun Engine(obd: ObdRepository) {
         }
     }
 
-    if (readiness != null) SettingsCard(stringResource(R.string.obd_inspection), stringResource(R.string.obd_inspection_help)) {
+    if (tab == 2 && readiness == null && !reading) SettingsCard {
+        Label(stringResource(R.string.obd_no_readiness), Typography.body, c.textMuted)
+    }
+    if (tab == 2 && readiness != null) SettingsCard(stringResource(R.string.obd_inspection), stringResource(R.string.obd_inspection_help)) {
         // Con luz de falla no pasa; con más de un monitor pendiente tampoco (la regla común).
         val pass = !readiness.mil && readiness.incomplete.size <= 1
         Label(

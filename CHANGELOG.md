@@ -6,6 +6,13 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
+## [1.4.19] - 2026-11-01
+
+### Cambiado
+- **Pestañas en Ajustes** para no hacer tanto scroll: Apariencia (General · Pantalla),
+  Tu auto (Mi auto · Modelos · Recordatorios) y Taller (Conexión · Códigos de falla ·
+  Verificación · Sensores).
+
 ## [1.4.18] - 2026-11-01
 
 ### Cambiado
