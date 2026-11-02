@@ -128,6 +128,14 @@ enum class Template(val sizes: Set<ScreenSize>) {
     PANEL(setOf(ScreenSize.LARGE)),
     /** Pantallas paradas: auto arriba, tarjetas abajo. */
     VERTICAL(setOf(ScreenSize.VERTICAL)),
+    /** Solo el velocímetro, grande al centro: nada más que ver. */
+    SPEED(ScreenSize.entries.toSet()),
+    /** El auto con el velocímetro al lado; música y navegar abajo. */
+    CAR_SPEED(setOf(ScreenSize.SMALL, ScreenSize.MEDIUM, ScreenSize.LARGE)),
+    /** Deportiva: el auto arriba y abajo revoluciones, velocidad y temperatura del motor. */
+    SPORT(setOf(ScreenSize.SMALL, ScreenSize.MEDIUM, ScreenSize.LARGE)),
+    /** Mínima: la hora en grande y la música, sin auto. */
+    MINIMAL(ScreenSize.entries.toSet()),
 }
 
 /**
@@ -138,8 +146,8 @@ fun Template.tiles(c: Grid): List<Tile> {
     val cols = c.columns
     val rows = c.rows
     val list = mutableListOf<Tile>()
-    fun place(type: String, col: Int, row: Int, width: Int, height: Int) {
-        val p = Tile("$type-${list.size}", type, col, row, width, height)
+    fun place(type: String, col: Int, row: Int, width: Int, height: Int, data: String = "") {
+        val p = Tile("$type-${list.size}", type, col, row, width, height, data)
         if (width >= 1 && height >= 1 && list.fits(p, c)) list += p
     }
     when (this) {
@@ -227,6 +235,38 @@ fun Template.tiles(c: Grid): List<Tile> {
             val half = cols / 2
             place(TileTypes.NAVIGATE, 0, row, half, 2)
             place(TileTypes.PHONE, half, row, cols - half, 2)
+        }
+        Template.SPEED -> {
+            // Un poco más ancho que alto (el arco es así); en pantallas paradas, cuadrado al centro.
+            val height = if (c.vertical) minOf(rows, cols) else rows
+            val width = minOf(cols, maxOf(2, (height * 1.4f + 0.5f).toInt()))
+            place(TileTypes.SPEEDOMETER, (cols - width) / 2, (rows - height) / 2, width, height)
+        }
+        Template.CAR_SPEED -> {
+            val bottom = if (rows >= 6) 2 else 1
+            val speedWidth = maxOf(2, (cols * 0.35f).toInt())
+            place(TileTypes.CAR, 0, 0, cols - speedWidth, rows - bottom)
+            place(TileTypes.SPEEDOMETER, cols - speedWidth, 0, speedWidth, rows - bottom)
+            val music = maxOf(3, cols * 6 / 10).coerceAtMost(cols)
+            place(TileTypes.MUSIC, 0, rows - bottom, music, bottom)
+            place(TileTypes.NAVIGATE, music, rows - bottom, cols - music, bottom)
+        }
+        Template.SPORT -> {
+            // Con 5 filas o más los medidores llevan arco; con menos, número y barra.
+            val bottom = if (rows >= 5) 2 else 1
+            place(TileTypes.CAR, 0, 0, cols, rows - bottom)
+            val third = cols / 3
+            // Señales del bus (core/vehicle): revoluciones y temperatura del motor.
+            place(TileTypes.GAUGE, 0, rows - bottom, third, bottom, data = "rpm")
+            place(TileTypes.SPEEDOMETER, third, rows - bottom, cols - 2 * third, bottom)
+            place(TileTypes.GAUGE, cols - third, rows - bottom, third, bottom, data = "motor_temp")
+        }
+        Template.MINIMAL -> {
+            val bottom = if (rows >= 6) 2 else 1
+            val width = minOf(cols, maxOf(4, cols * 6 / 10))
+            val start = (cols - width) / 2
+            place(TileTypes.CLOCK, start, 0, width, rows - bottom)
+            place(TileTypes.MUSIC, start, rows - bottom, width, bottom)
         }
     }
     return list

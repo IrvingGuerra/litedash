@@ -38,18 +38,24 @@ import com.irvingguerra.litedash.feature.car.CarTurntable
 import com.irvingguerra.litedash.feature.car.CatalogEntry
 
 /**
- * El auto del inicio ([pkg] del catálogo, o el sedán dibujado si es null): gira
- * con el dedo y se queda donde lo dejas; un toque hace [onClick]. Su nombre,
- * color y modelo se cambian en Ajustes → Tu auto.
+ * La pieza del auto, según lo que elegiste que muestre ([CarView]). El auto 3D
+ * ([pkg] del catálogo, o el sedán dibujado si es null) gira con el dedo y se queda
+ * donde lo dejas; un toque hace [onClick]. Su nombre, color, modelo y vista se
+ * cambian en Ajustes → Tu auto.
  */
 @Composable
 fun HomeCar(d: Dependencies, pkg: CarPackage?, onClick: () -> Unit, modifier: Modifier = Modifier, onReady: (() -> Unit)? = null) {
     val color = d.prefs.carColor
-    if (d.prefs.showLogo) {
-        // Sin auto que cargar: listo de una vez.
-        val ready by rememberUpdatedState(onReady)
-        LaunchedEffect(Unit) { ready?.invoke() }
-        return BrandLogo(d, brandName(d, pkg), onClick, modifier)
+    when (d.prefs.carView) {
+        CarView.CAR -> Unit
+        CarView.ROAD -> return RoadView(d, pkg, onClick, modifier, onReady)
+        CarView.LOGO, CarView.WALLPAPER -> {
+            // Sin auto que cargar: listo de una vez.
+            val ready by rememberUpdatedState(onReady)
+            LaunchedEffect(Unit) { ready?.invoke() }
+            return if (d.prefs.carView == CarView.LOGO) BrandLogo(d, brandName(d, pkg), onClick, modifier)
+            else WallpaperView(d, onClick, modifier)
+        }
     }
     // El sedán dibujado no carga nada: listo de una vez.
     if (pkg == null && onReady != null) {

@@ -93,11 +93,18 @@ fun CarTurntable(
     CarLayersImage(repo, p, frames[frame], color, widthPx, modifier.onSizeChanged { widthPx = it.width }.then(turn), onReady)
 }
 
-/** El auto quieto en tres cuartos, pintado del [color]: para las tarjetas de la lista de modelos. */
+/** La vuelta en que el auto se ve de espaldas (en 0.25 se ve de frente; en 3/8, de tres cuartos). */
+const val REAR_TURN = 0.75f
+
+/**
+ * El auto quieto, pintado del [color]: en tres cuartos para las tarjetas de la lista
+ * de modelos, o en la vuelta [turn] (como [REAR_TURN], de espaldas en la carretera).
+ */
 @Composable
-fun CarStill(repo: CarRepository, p: CarPackage, color: Color, modifier: Modifier = Modifier) {
+fun CarStill(repo: CarRepository, p: CarPackage, color: Color, modifier: Modifier = Modifier, turn: Float? = null, onReady: (() -> Unit)? = null) {
     var widthPx by remember { mutableIntStateOf(0) }
-    CarLayersImage(repo, p, baseFrame(restFrame(p.spin)), color, widthPx, modifier.onSizeChanged { widthPx = it.width }, onReady = null)
+    val frame = turn?.let { (it * p.spin).roundToInt().mod(p.spin) } ?: restFrame(p.spin)
+    CarLayersImage(repo, p, baseFrame(frame), color, widthPx, modifier.onSizeChanged { widthPx = it.width }, onReady)
 }
 
 /**

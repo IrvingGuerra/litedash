@@ -23,6 +23,10 @@
     <string name="template_center">Auto al centro</string>
     <string name="template_side">Auto a un lado</string>
     <string name="template_vertical">Vertical</string>
+    <string name="template_speed">Solo velocímetro</string>
+    <string name="template_car_speed">Auto y velocímetro</string>
+    <string name="template_sport">Deportiva</string>
+    <string name="template_minimal">Mínima</string>
     <string name="add">Agregar</string>
     <string name="add_tile">Agregar al inicio</string>
     <string name="no_room">Ya no hay lugar: quita o achica alguna pieza.</string>
@@ -309,10 +313,15 @@
     <string name="tab_sensors">Sensores</string>
     <string name="obd_no_readiness">Tu auto no reporta los monitores de la verificación.</string>
     <!-- Logo en vez del auto -->
-    <string name="logo_title">Auto o logo</string>
-    <string name="logo_help">Si prefieres no ver un auto, pon el logo de tu marca: elige la imagen de tu galería (LiteDash no trae logos de marcas). La animación de entrada lo muestra unos segundos al abrir.</string>
-    <string name="show_car">Auto</string>
+    <string name="logo_title">Qué muestra la pieza del auto</string>
+    <string name="logo_help">El auto 3D, el logo de tu marca (elige la imagen de tu galería: LiteDash no trae logos de marcas), una foto tuya o tu auto en carretera con la velocidad y los km del viaje. La animación de entrada muestra tu logo unos segundos al abrir.</string>
+    <string name="show_car">Auto 3D</string>
     <string name="show_logo">Logo</string>
+    <string name="show_wallpaper">Imagen</string>
+    <string name="show_road">Carretera</string>
+    <string name="wallpaper_missing">Elige tu imagen en Ajustes → Tu auto.</string>
+    <string name="road_help">La velocidad sale del OBD o del GPS, y los km del viaje del GPS (se reinician en la pieza Viaje).</string>
+    <string name="road_trip">viaje</string>
     <string name="logo_pick">Elegir imagen</string>
     <string name="logo_change">Cambiar imagen</string>
     <string name="logo_remove">Quitar imagen</string>

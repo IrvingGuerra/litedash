@@ -37,6 +37,10 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.shape.RoundedCornerShape
+import com.irvingguerra.litedash.core.ui.Radius
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
@@ -57,65 +61,72 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /**
- * El logo de tu marca, que eliges de tu galería: LiteDash no trae logos de marcas (son
- * suyos). Se guarda una copia reducida en la app; sin imagen se muestra el nombre.
+ * Una imagen que eliges de tu galería: el logo de tu marca (LiteDash no trae logos
+ * de marcas, son suyos) o el fondo de la pieza del auto. Se guarda una copia
+ * reducida en la app y se decodifica una sola vez por revisión (la usan la pieza,
+ * la intro y Ajustes).
  */
-private const val LOGO_FILE = "logo.png"
-private const val LOGO_MAX_PX = 1024
+private class SavedImage(val file: String, val maxPx: Int, val png: Boolean) {
+    var revision = -1
+    var image: ImageBitmap? = null
 
-private fun logoFile(context: Context) = File(context.filesDir, LOGO_FILE)
+    fun file(context: Context) = File(context.filesDir, file)
+}
 
-/** Copia la imagen elegida, reducida a [LOGO_MAX_PX] (un logo no necesita más). */
-private suspend fun saveLogo(context: Context, uri: Uri): Boolean = withContext(Dispatchers.IO) {
+/** El logo: con transparencia, y no necesita más de 1024 px. */
+private val LOGO = SavedImage("logo.png", 1024, png = true)
+
+/** El fondo: una foto, que llena la pieza (y la pantalla en grande). */
+private val WALLPAPER = SavedImage("fondo.jpg", 1920, png = false)
+
+/** Copia la imagen elegida, reducida a [SavedImage.maxPx]. */
+private suspend fun save(context: Context, uri: Uri, target: SavedImage): Boolean = withContext(Dispatchers.IO) {
     runCatching {
         val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
         context.contentResolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it, null, bounds) }
         var sample = 1
-        while (maxOf(bounds.outWidth, bounds.outHeight) / (sample * 2) >= LOGO_MAX_PX) sample *= 2
+        while (maxOf(bounds.outWidth, bounds.outHeight) / (sample * 2) >= target.maxPx) sample *= 2
         val decoded = context.contentResolver.openInputStream(uri)?.use {
             BitmapFactory.decodeStream(it, null, BitmapFactory.Options().apply { inSampleSize = sample })
         } ?: return@runCatching false
-        // El muestreo es en potencias de 2: se termina de ajustar a LOGO_MAX_PX exactos.
-        val k = LOGO_MAX_PX.toFloat() / maxOf(decoded.width, decoded.height)
+        // El muestreo es en potencias de 2: se termina de ajustar a maxPx exactos.
+        val k = target.maxPx.toFloat() / maxOf(decoded.width, decoded.height)
         val bitmap = if (k < 1f) decoded.scale((decoded.width * k).toInt(), (decoded.height * k).toInt()) else decoded
-        // Primero a un temporal: si algo falla a la mitad, el logo de antes queda intacto.
-        val temp = File(context.filesDir, "$LOGO_FILE.tmp")
-        temp.outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
-        temp.renameTo(logoFile(context))
-        LogoCache.revision = -1
+        // Primero a un temporal: si algo falla a la mitad, la imagen de antes queda intacta.
+        val temp = File(context.filesDir, "${target.file}.tmp")
+        temp.outputStream().use {
+            if (target.png) bitmap.compress(Bitmap.CompressFormat.PNG, 100, it)
+            else bitmap.compress(Bitmap.CompressFormat.JPEG, 90, it)
+        }
+        temp.renameTo(target.file(context))
+        target.revision = -1
         true
     }.getOrDefault(false)
 }
 
-/** La imagen del logo; [loaded] = ya se sabe si hay o no (para no mostrar el nombre de paso). */
-private class LoadedLogo(val image: ImageBitmap?, val loaded: Boolean)
-
-/** La imagen decodificada una sola vez por revisión (la usan la pieza, la intro y Ajustes). */
-private object LogoCache {
-    var revision = -1
-    var image: ImageBitmap? = null
-}
+/** La imagen; [loaded] = ya se sabe si hay o no (para no mostrar el nombre de paso). */
+private class LoadedImage(val image: ImageBitmap?, val loaded: Boolean)
 
 @Composable
-private fun rememberLogo(revision: Int): LoadedLogo {
+private fun rememberImage(target: SavedImage, revision: Int): LoadedImage {
     val context = LocalContext.current
-    val cached = LogoCache.revision == revision
-    val logo by produceState(if (cached) LoadedLogo(LogoCache.image, true) else LoadedLogo(null, false), revision) {
-        if (LogoCache.revision != revision) {
-            LogoCache.image = withContext(Dispatchers.IO) {
-                logoFile(context).takeIf { it.exists() }?.let { BitmapFactory.decodeFile(it.path)?.asImageBitmap() }
+    val cached = target.revision == revision
+    val loaded by produceState(if (cached) LoadedImage(target.image, true) else LoadedImage(null, false), target, revision) {
+        if (target.revision != revision) {
+            target.image = withContext(Dispatchers.IO) {
+                target.file(context).takeIf { it.exists() }?.let { BitmapFactory.decodeFile(it.path)?.asImageBitmap() }
             }
-            LogoCache.revision = revision
+            target.revision = revision
         }
-        value = LoadedLogo(LogoCache.image, loaded = true)
+        value = LoadedImage(target.image, loaded = true)
     }
-    return logo
+    return loaded
 }
 
 /** El logo (o el nombre de la marca) centrado en su pieza; un toque hace [onClick]. */
 @Composable
 fun BrandLogo(d: Dependencies, brand: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
-    val loaded = rememberLogo(d.prefs.logoRevision)
+    val loaded = rememberImage(LOGO, d.prefs.logoRevision)
     val logo = loaded.image
     BoxWithConstraints(
         modifier.fillMaxSize().clickable(remember { MutableInteractionSource() }, indication = null, onClick = onClick),
@@ -167,7 +178,7 @@ fun LogoIntro(d: Dependencies, brand: String, onDone: () -> Unit) {
             .clickable(remember { MutableInteractionSource() }, indication = null, onClick = onDone),
         contentAlignment = Alignment.Center,
     ) {
-        val logo = rememberLogo(d.prefs.logoRevision)
+        val logo = rememberImage(LOGO, d.prefs.logoRevision)
         Box(
             Modifier.fillMaxSize(0.55f).graphicsLayer { scaleX = scale.value; scaleY = scale.value; this.alpha = alpha.value },
             contentAlignment = Alignment.Center,
@@ -181,37 +192,85 @@ fun LogoIntro(d: Dependencies, brand: String, onDone: () -> Unit) {
     }
 }
 
-/** Ajustes del logo: auto o logo en el inicio, la imagen y la animación de entrada. */
+/**
+ * La imagen de fondo a todo lo que mide la pieza, con sus esquinas; un toque hace
+ * [onClick]. Sin imagen todavía, dice dónde elegirla.
+ */
+@Composable
+fun WallpaperView(d: Dependencies, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    val c = LocalColors.current
+    val loaded = rememberImage(WALLPAPER, d.prefs.wallpaperRevision)
+    val image = loaded.image
+    Box(
+        modifier
+            .fillMaxSize()
+            .clip(RoundedCornerShape(Radius.card))
+            .clickable(remember { MutableInteractionSource() }, indication = null, onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        if (image != null) {
+            Image(image, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+        } else if (loaded.loaded) {
+            Box(Modifier.fillMaxSize().background(c.surface), contentAlignment = Alignment.Center) {
+                Label(stringResource(R.string.wallpaper_missing), Typography.body, c.textMuted, modifier = Modifier.padding(16.dp))
+            }
+        }
+    }
+}
+
+/**
+ * Ajustes de la pieza del auto: qué muestra (auto 3D, logo, imagen o carretera),
+ * las imágenes que necesita y la animación de entrada.
+ */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun LogoSettings(d: Dependencies, brand: String) {
+fun CarViewSettings(d: Dependencies, brand: String) {
     val c = LocalColors.current
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val prefs = d.prefs
-    val pick = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
-        if (uri != null) scope.launch {
-            if (saveLogo(context, uri)) {
-                prefs.logoRevision++
-                prefs.showLogo = true
-            }
-        }
+    fun picker(target: SavedImage, onSaved: () -> Unit) = { uri: Uri? ->
+        if (uri != null) scope.launch { if (save(context, uri, target)) onSaved() }
+        Unit
     }
-    val hasImage = rememberLogo(prefs.logoRevision).image != null
-    // Una u otra cosa en el inicio: selector. La imagen solo importa si es el logo.
-    Segmented(listOf(false to stringResource(R.string.show_car), true to stringResource(R.string.show_logo)), prefs.showLogo, { prefs.showLogo = it })
-    if (prefs.showLogo) {
+    val pickLogo = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia(), picker(LOGO) {
+        prefs.logoRevision++
+        prefs.carView = CarView.LOGO
+    })
+    val pickWallpaper = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia(), picker(WALLPAPER) {
+        prefs.wallpaperRevision++
+        prefs.carView = CarView.WALLPAPER
+    })
+    val views = listOf(
+        CarView.CAR to stringResource(R.string.show_car),
+        CarView.LOGO to stringResource(R.string.show_logo),
+        CarView.WALLPAPER to stringResource(R.string.show_wallpaper),
+        CarView.ROAD to stringResource(R.string.show_road),
+    )
+    Segmented(views, prefs.carView, { prefs.carView = it })
+    val view = prefs.carView
+    // Los botones de la imagen que usa esta vista (el logo o el fondo).
+    val target = when (view) {
+        CarView.LOGO -> LOGO
+        CarView.WALLPAPER -> WALLPAPER
+        else -> null
+    }
+    if (target != null) {
+        val revision = if (target === LOGO) prefs.logoRevision else prefs.wallpaperRevision
+        val hasImage = rememberImage(target, revision).image != null
         FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Button(stringResource(if (hasImage) R.string.logo_change else R.string.logo_pick), {
-                pick.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                val request = PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                if (target === LOGO) pickLogo.launch(request) else pickWallpaper.launch(request)
             })
             if (hasImage) Button(stringResource(R.string.logo_remove), {
-                logoFile(context).delete()
-                prefs.logoRevision++
+                target.file(context).delete()
+                if (target === LOGO) prefs.logoRevision++ else prefs.wallpaperRevision++
             })
         }
-        if (!hasImage) Label(stringResource(R.string.logo_no_image, brand.uppercase()), Typography.small, c.textMuted)
+        if (!hasImage && target === LOGO) Label(stringResource(R.string.logo_no_image, brand.uppercase()), Typography.small, c.textMuted)
     }
+    if (view == CarView.ROAD) Label(stringResource(R.string.road_help), Typography.small, c.textMuted)
     // Encender o apagar: interruptor en su propio renglón.
     SwitchRow(stringResource(R.string.logo_intro), prefs.logoIntro, { prefs.logoIntro = it }, stringResource(R.string.logo_intro_help))
 }

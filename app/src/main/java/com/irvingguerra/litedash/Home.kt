@@ -306,7 +306,8 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
 
     // Con un auto que trae piso, el fondo baja un poco de tono hacia abajo: es el
     // piso donde se para el auto (como en Tesla), y su sombra y reflejo caen ahí.
-    val hasFloor = car?.hasFloor == true && d.dashboard.tiles.any { it.type == TileTypes.CAR }
+    val hasFloor = car?.hasFloor == true && d.prefs.carView in setOf(CarView.CAR, CarView.LOGO) &&
+        d.dashboard.tiles.any { it.type == TileTypes.CAR }
     val backdrop = if (hasFloor) {
         Brush.verticalGradient(0.3f to c.background, 1f to lerp(c.background, Color.Black, if (c.dark) 0.35f else 0.08f))
     } else SolidColor(c.background)

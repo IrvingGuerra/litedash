@@ -6,6 +6,18 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
+## [1.4.36] - 2026-11-02
+
+### Nuevo
+- **La pieza del auto muestra lo que tú quieras** (Ajustes → Tu auto → Qué muestra la pieza del
+  auto): el **auto 3D**, el **logo** de tu marca, una **imagen** tuya de la galería o la
+  **carretera**: tu auto de espaldas en una carretera cuyas rayas avanzan con tu velocidad (OBD o
+  GPS), con la velocidad y los km del viaje arriba. Parado no se anima nada.
+- **Cuatro plantillas nuevas:** **Solo velocímetro** (grande al centro, nada más), **Auto y
+  velocímetro** (el velocímetro al lado del auto), **Deportiva** (el auto con revoluciones,
+  velocidad y temperatura del motor abajo) y **Mínima** (la hora en grande y la música, sin auto).
+- En las miniaturas de las plantillas, la pieza principal va resaltada aunque no sea el auto.
+
 ## [1.4.35] - 2026-11-02
 
 ### Nuevo

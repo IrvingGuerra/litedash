@@ -22,6 +22,10 @@
     <string name="template_center">Car in the middle</string>
     <string name="template_side">Car on the side</string>
     <string name="template_vertical">Portrait</string>
+    <string name="template_speed">Speedometer only</string>
+    <string name="template_car_speed">Car and speedometer</string>
+    <string name="template_sport">Sport</string>
+    <string name="template_minimal">Minimal</string>
     <string name="add">Add</string>
     <string name="add_tile">Add to home</string>
     <string name="no_room">No room left: remove or shrink something.</string>
@@ -301,10 +305,15 @@
     <string name="tab_sensors">Sensors</string>
     <string name="obd_no_readiness">Your car doesn\'t report the inspection monitors.</string>
     <!-- Logo en vez del auto -->
-    <string name="logo_title">Car or logo</string>
-    <string name="logo_help">If you\'d rather not see a car, show your brand\'s logo: pick the image from your gallery (LiteDash doesn\'t include brand logos). The intro animation shows it for a few seconds when it opens.</string>
-    <string name="show_car">Car</string>
+    <string name="logo_title">What the car tile shows</string>
+    <string name="logo_help">The 3D car, your brand\'s logo (pick the image from your gallery: LiteDash doesn\'t include brand logos), a photo of yours or your car on the road with your speed and trip distance. The intro animation shows your logo for a few seconds when it opens.</string>
+    <string name="show_car">3D car</string>
     <string name="show_logo">Logo</string>
+    <string name="show_wallpaper">Image</string>
+    <string name="show_road">Road</string>
+    <string name="wallpaper_missing">Pick your image in Settings → Your car.</string>
+    <string name="road_help">Speed comes from OBD or GPS, and the trip distance from GPS (reset it in the Trip tile).</string>
+    <string name="road_trip">trip</string>
     <string name="logo_pick">Pick image</string>
     <string name="logo_change">Change image</string>
     <string name="logo_remove">Remove image</string>

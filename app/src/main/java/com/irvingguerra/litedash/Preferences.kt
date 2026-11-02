@@ -48,7 +48,9 @@ private object PrefKeys {
     const val NIGHT_BRIGHTNESS = "brillo_noche"
     const val BRIGHTNESS_ALL_APPS = "brillo_todas_apps"
     const val BRIGHTNESS_ORIGINAL = "brillo_original"
+    /** Hasta la 1.4.35 la pieza era auto o logo (sí/no); se lee una vez para no perderlo. */
     const val SHOW_LOGO = "mostrar_logo"
+    const val CAR_VIEW = "vista_auto"
     const val ENGINE_ALERTS = "alertas_motor"
     const val BAR_POSITION = "barra"
     const val LOGO_INTRO = "logo_entrada"
@@ -62,6 +64,22 @@ enum class BarPosition(val stored: String) {
 
     companion object {
         fun fromStored(value: String?) = entries.firstOrNull { it.stored == value } ?: AUTO
+    }
+}
+
+/** Qué muestra la pieza del auto (y su vista en grande). */
+enum class CarView(val stored: String) {
+    /** El auto 3D que gira con el dedo. */
+    CAR("auto"),
+    /** El logo de tu marca (tu imagen o el nombre). */
+    LOGO("logo"),
+    /** Una imagen tuya a todo lo que mide la pieza. */
+    WALLPAPER("fondo"),
+    /** El auto de espaldas en una carretera que avanza con la velocidad, con los km del viaje (como DuduAuto). */
+    ROAD("carretera");
+
+    companion object {
+        fun fromStored(value: String?) = entries.firstOrNull { it.stored == value }
     }
 }
 
@@ -193,8 +211,12 @@ class Preferences(context: Context) {
     /** Dónde van la hora y tus apps: a un lado, abajo o según la pantalla. */
     var barPosition by mapped(PrefKeys.BAR_POSITION, BarPosition::fromStored) { it.stored }
 
-    /** En el inicio, el logo de tu marca (imagen tuya o el nombre) en lugar del auto. */
-    var showLogo by bool(PrefKeys.SHOW_LOGO, false)
+    /** Qué muestra la pieza del auto; quien tenía el logo prendido lo conserva. */
+    var carView by mapped(
+        PrefKeys.CAR_VIEW,
+        { CarView.fromStored(it) ?: if (p.getBoolean(PrefKeys.SHOW_LOGO, false)) CarView.LOGO else CarView.CAR },
+        { it.stored },
+    )
 
     /** Con el OBD conectado: avisar de motor caliente o batería que no carga. */
     var engineAlerts by bool(PrefKeys.ENGINE_ALERTS, true)
@@ -210,6 +232,9 @@ class Preferences(context: Context) {
 
     /** Cambia cada vez que se elige o quita la imagen del logo (para volver a leerla); solo en memoria. */
     var logoRevision by mutableIntStateOf(0)
+
+    /** Lo mismo para la imagen de fondo de la pieza del auto. */
+    var wallpaperRevision by mutableIntStateOf(0)
 
     /** Hacia dónde dejó girado el auto en el inicio (fracción de vuelta); null = tres cuartos. */
     var carAngle by Stored(p.getFloat(PrefKeys.CAR_ANGLE, -1f).takeIf { it >= 0f }) { p.edit { putFloat(PrefKeys.CAR_ANGLE, it ?: -1f) } }

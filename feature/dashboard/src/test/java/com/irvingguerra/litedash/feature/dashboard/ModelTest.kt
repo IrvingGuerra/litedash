@@ -36,7 +36,8 @@ class ModelTest {
 
     @Test
     fun everyTemplateHasCar() {
-        for (c in screens) for (p in Template.entries) {
+        // Menos las que son a propósito sin auto.
+        for (c in screens) for (p in Template.entries - setOf(Template.SPEED, Template.MINIMAL)) {
             assertTrue("$p en ${c.key}", p.tiles(c).any { it.type == TileTypes.CAR })
         }
     }

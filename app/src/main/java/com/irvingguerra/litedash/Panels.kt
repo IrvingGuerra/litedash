@@ -339,7 +339,7 @@ private fun CarSettings(d: Dependencies) {
         ColorPicker(prefs.carColor, prefs::previewCarColor) { prefs.carColor = it }
     }
     if (tab == 0) SettingsCard(stringResource(R.string.logo_title), stringResource(R.string.logo_help)) {
-        LogoSettings(d, brandName(d, pkg))
+        CarViewSettings(d, brandName(d, pkg))
     }
     if (tab == 0 && pkg != null) {
         SettingsCard("${pkg.make} ${pkg.name} ${pkg.year}") {
@@ -842,6 +842,10 @@ fun nameOf(p: Template) = when (p) {
     Template.COLUMNS -> R.string.template_columns
     Template.PANEL -> R.string.template_panel
     Template.VERTICAL -> R.string.template_vertical
+    Template.SPEED -> R.string.template_speed
+    Template.CAR_SPEED -> R.string.template_car_speed
+    Template.SPORT -> R.string.template_sport
+    Template.MINIMAL -> R.string.template_minimal
 }
 
 private fun nameOf(t: ScreenSize) = when (t) {
@@ -896,14 +900,17 @@ private fun TemplateThumbnail(p: Template, grid: Grid) {
     BoxWithConstraints(Modifier.fillMaxWidth().aspectRatio(grid.columns.toFloat() / grid.rows).clip(RoundedCornerShape(Radius.inner)).background(c.background)) {
         val cw = maxWidth / grid.columns
         val ch = maxHeight / grid.rows
-        for (tile in p.tiles(grid)) {
+        val tiles = p.tiles(grid)
+        // La protagonista en ámbar: el auto o, en las que no lo llevan, la primera pieza.
+        val hero = (tiles.firstOrNull { it.type == TileTypes.CAR } ?: tiles.firstOrNull())?.id
+        for (tile in tiles) {
             Box(
                 Modifier
                     .offset(cw * tile.col, ch * tile.row)
                     .size(cw * tile.width, ch * tile.height)
                     .padding(2.dp)
                     .clip(RoundedCornerShape(Radius.small))
-                    .background(if (tile.type == TileTypes.CAR) c.accent.copy(alpha = 0.55f) else c.surfaceHigh),
+                    .background(if (tile.id == hero) c.accent.copy(alpha = 0.55f) else c.surfaceHigh),
             )
         }
     }
