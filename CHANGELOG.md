@@ -6,6 +6,12 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
+## [1.4.31] - 2026-11-02
+
+### Mejorado
+- **Música en grande sin nada sonando:** ya no es un aviso vacío; se ve como el
+  reproductor, con sus controles, y el play reanuda lo último que escuchaste.
+
 ## [1.4.30] - 2026-11-02
 
 ### Nuevo

@@ -40,7 +40,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.irvingguerra.litedash.core.ui.Button
 import com.irvingguerra.litedash.core.ui.Card
 import com.irvingguerra.litedash.core.ui.Icon
 import com.irvingguerra.litedash.core.ui.IconButton
@@ -76,8 +75,8 @@ fun MusicExpanded(repo: MusicRepository, close: () -> Unit, modifier: Modifier =
                     IconButton(Icons.close, close, size = 48.dp, background = c.surfaceHigh)
                 }
                 Spacer(Modifier.height(16.dp))
+                // Sin nada sonando se ve igual, con los controles: play reanuda lo último.
                 when {
-                    song == null -> Empty(repo, Modifier.weight(1f).fillMaxWidth())
                     wide -> Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
                         Artwork(song, Modifier.widthIn(max = artworkMax).fillMaxHeight().aspectRatio(1f, matchHeightConstraintsFirst = false))
                         Spacer(Modifier.width(24.dp))
@@ -95,10 +94,10 @@ fun MusicExpanded(repo: MusicRepository, close: () -> Unit, modifier: Modifier =
 }
 
 @Composable
-private fun Artwork(song: Song, modifier: Modifier) {
+private fun Artwork(song: Song?, modifier: Modifier) {
     val c = LocalColors.current
     Box(modifier.clip(RoundedCornerShape(Radius.card)).background(c.surfaceHigh), contentAlignment = Alignment.Center) {
-        val bmp = song.artwork
+        val bmp = song?.artwork
         if (bmp != null) {
             Image(bmp.asImageBitmap(), null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
         } else {
@@ -108,13 +107,24 @@ private fun Artwork(song: Song, modifier: Modifier) {
 }
 
 @Composable
-private fun Details(repo: MusicRepository, song: Song, modifier: Modifier) {
+private fun Details(repo: MusicRepository, song: Song?, modifier: Modifier) {
     val c = LocalColors.current
+    val opening = repo.starting
     Column(modifier) {
-        Label(song.title, Typography.title.copy(fontSize = 26.sp), maxLines = 2)
+        val title = when {
+            song != null -> song.title
+            opening != null -> stringResource(R.string.opening_app, opening)
+            else -> stringResource(R.string.nothing_playing)
+        }
+        Label(title, Typography.title.copy(fontSize = 26.sp), maxLines = 2)
         Spacer(Modifier.height(4.dp))
-        Label(song.artist.ifBlank { stringResource(R.string.no_song_info) }, Typography.subtitle, c.textMuted, maxLines = 1)
-        if (song.durationMs > 0) {
+        val subtitle = when {
+            song != null -> song.artist.ifBlank { stringResource(R.string.no_song_info) }
+            opening != null -> stringResource(R.string.opening_wait)
+            else -> stringResource(R.string.resume_explain)
+        }
+        Label(subtitle, Typography.subtitle, c.textMuted, maxLines = 2)
+        if (song != null && song.durationMs > 0) {
             Spacer(Modifier.height(20.dp))
             TimeBar(repo, song)
         }
@@ -122,11 +132,11 @@ private fun Details(repo: MusicRepository, song: Song, modifier: Modifier) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
             IconButton(Icons.previous, { repo.previous() }, size = 64.dp)
             Spacer(Modifier.width(12.dp))
-            IconButton(if (song.playing) Icons.pause else Icons.play, { repo.toggle() }, size = 76.dp, background = c.text, color = c.background)
+            IconButton(if (song?.playing == true) Icons.pause else Icons.play, { repo.toggle() }, size = 76.dp, background = c.text, color = c.background)
             Spacer(Modifier.width(12.dp))
             IconButton(Icons.next, { repo.next() }, size = 64.dp)
         }
-        if (song.actions.isNotEmpty()) {
+        if (song != null && song.actions.isNotEmpty()) {
             Spacer(Modifier.height(8.dp))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
                 for (a in song.actions.take(5)) ActionButton(a) { repo.action(a) }
@@ -200,24 +210,4 @@ private fun TimeBar(repo: MusicRepository, song: Song) {
 private fun formatTime(ms: Long): String {
     val s = (ms / 1000).coerceAtLeast(0)
     return if (s >= 3600) "%d:%02d:%02d".format(s / 3600, s / 60 % 60, s % 60) else "%d:%02d".format(s / 60, s % 60)
-}
-
-@Composable
-private fun Empty(repo: MusicRepository, modifier: Modifier) {
-    val c = LocalColors.current
-    Column(modifier, horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-        Icon(Icons.music, c.accent, 56.dp)
-        Spacer(Modifier.height(16.dp))
-        val opening = repo.starting
-        Label(if (opening != null) stringResource(R.string.opening_app, opening) else stringResource(R.string.nothing_playing), Typography.title, maxLines = 1)
-        Spacer(Modifier.height(6.dp))
-        Label(stringResource(if (opening != null) R.string.opening_wait else R.string.resume_explain), Typography.body, c.textMuted, maxLines = 2)
-        Spacer(Modifier.height(20.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            Button(stringResource(R.string.resume), { repo.resume() }, primary = true)
-            // Solo con una app elegida: en "Sistema" no hay una app que abrir.
-            val app = repo.preferredName()
-            if (app.isNotBlank()) Button(stringResource(R.string.open_app, app), { repo.openApp() })
-        }
-    }
 }

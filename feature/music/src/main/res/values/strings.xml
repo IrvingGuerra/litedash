@@ -4,9 +4,7 @@
     <string name="enable">Activar</string>
     <string name="nothing_playing">Nada sonando</string>
     <string name="open_an_app">Pon música en tu app favorita</string>
-    <string name="resume">Reanudar</string>
-    <string name="resume_explain">Reanuda lo último que escuchaste sin salir de LiteDash.</string>
-    <string name="open_app">Abrir %1$s</string>
+    <string name="resume_explain">Dale play para seguir con lo último que escuchaste.</string>
     <string name="no_song_info">Sin datos de la canción</string>
     <string name="opening_app">Abriendo %1$s…</string>
     <string name="opening_wait">Ya casi: tu música empieza en un momento.</string>
