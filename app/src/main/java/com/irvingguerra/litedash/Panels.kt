@@ -678,14 +678,16 @@ private fun Appearance(prefs: Preferences, revision: Int) {
     }
     if (tab == 1) SettingsCard(stringResource(R.string.night_source), stringResource(R.string.night_source_help)) {
         val hasSensor = remember { context.getSystemService(SensorManager::class.java)?.getDefaultSensor(Sensor.TYPE_LIGHT) != null }
-        if (hasSensor) {
-            Segmented(
-                listOf(NightSource.SUN to R.string.night_sun, NightSource.SENSOR to R.string.night_sensor).map { (s, text) -> s to stringResource(text) },
-                prefs.nightSource,
-                { prefs.nightSource = it },
-            )
-        } else {
-            Label(stringResource(R.string.night_no_sensor), Typography.small, c.textMuted)
+        val options = listOfNotNull(
+            NightSource.SUN to R.string.night_sun,
+            (NightSource.SENSOR to R.string.night_sensor).takeIf { hasSensor },
+            NightSource.LIGHTS to R.string.night_lights,
+        )
+        Segmented(options.map { (s, text) -> s to stringResource(text) }, prefs.nightSource, { prefs.nightSource = it })
+        if (!hasSensor) Label(stringResource(R.string.night_no_sensor), Typography.small, c.textMuted)
+        if (prefs.nightSource == NightSource.LIGHTS) {
+            Label(stringResource(R.string.lights_help), Typography.small, c.textMuted)
+            LightsSettings(prefs)
         }
     }
     if (tab == 1) SettingsCard(stringResource(R.string.theme)) {

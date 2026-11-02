@@ -223,6 +223,22 @@ val GaugeSpecs = listOf(
         shown = { v, _ -> v * 0.145f }, unit = { R.string.unit_psi }, decimals = 1,
         fraction = range(-100f, 170f),
     ),
+    GaugeSpec(
+        Signal.THROTTLE, R.string.gauge_throttle, R.string.gauge_throttle_tag, Icons.pedal, ticks = 5,
+        shown = { v, _ -> v }, unit = { R.string.unit_percent }, decimals = 0,
+        fraction = range(0f, 100f),
+    ),
+    GaugeSpec(
+        Signal.OIL, R.string.gauge_oil, R.string.gauge_oil_tag, Icons.oil, ticks = 9,
+        shown = ::fahrenheit, unit = { if (it) R.string.unit_f else R.string.unit_c }, decimals = 0,
+        fraction = range(40f, 150f), warning = { it >= 130f },
+    ),
+    GaugeSpec(
+        Signal.FUEL_RATE, R.string.gauge_fuel_rate, R.string.gauge_fuel_rate_tag, Icons.fuel, ticks = 6,
+        // Litros por hora a galones (EE. UU.) por hora.
+        shown = { v, imperial -> if (imperial) v * 0.2642f else v }, unit = { if (it) R.string.unit_galh else R.string.unit_lh }, decimals = 1,
+        fraction = range(0f, 30f),
+    ),
 )
 
 fun gaugeOf(signal: String) = GaugeSpecs.firstOrNull { it.signal == signal }

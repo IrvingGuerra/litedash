@@ -135,10 +135,6 @@ class CarRepository(context: Context, val catalogUrl: String) {
     var failed by mutableStateOf(false)
         private set
 
-    init {
-        scope.launch { dropRetiredFrames() }
-    }
-
     fun pkg(id: String?): CarPackage? {
         val folder = folderOf(id ?: return null)
         return installed.firstOrNull { it.folder.name == folder }
@@ -306,16 +302,6 @@ class CarRepository(context: Context, val catalogUrl: String) {
             staging.deleteRecursively()
         }
         changed()
-    }
-
-    /** Una vez: borra los cuadros de la calidad máxima que se quitó (solo libera espacio). */
-    private suspend fun dropRetiredFrames() {
-        if (checks.getBoolean(KEY_RETIRED_DROPPED, false)) return
-        val folders = installed.map { it.folder }
-        withContext(Dispatchers.IO) {
-            folders.forEach { f -> spinFiles(f) { it.startsWith(RETIRED_PREFIX) }.forEach { it.delete() } }
-        }
-        checks.edit().putBoolean(KEY_RETIRED_DROPPED, true).apply()
     }
 
     private fun spinFiles(folder: File, accept: (String) -> Boolean) =
@@ -569,11 +555,8 @@ class CarRepository(context: Context, val catalogUrl: String) {
         /** Cuadros de en medio ("mNN"); el primero dice que el auto tiene calidad alta. */
         private const val HIGH_PREFIX = "m"
         private const val HIGH_MARK = "m00"
-        /** Cuadros de la calidad máxima ("xNN"), que se quitó en la 1.4.13. */
-        private const val RETIRED_PREFIX = "x"
         private const val CHECK_EVERY_MS = 60 * 60 * 1000L
         private const val KEY_LAST_CHECK = "ultima_revision:"
-        private const val KEY_RETIRED_DROPPED = "maxima_borrada"
         /** Lo que no va en el nombre de la carpeta de un auto. */
         private val FOLDER_CHARS = Regex("[^a-z0-9-]")
     }

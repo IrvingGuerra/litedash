@@ -182,6 +182,14 @@ private fun Connection(obd: ObdRepository) {
                         if (obd.canScan()) obd.scanBle() else askScan.launch(obd.scanPermission())
                     })
                 }
+                // Cables USB conectados: el permiso lo pide Android al tocar uno.
+                val usb = remember(obd.state) { obd.usbDevices() }
+                if (usb.isNotEmpty()) {
+                    Label(stringResource(R.string.obd_usb_found), Typography.label, c.textMuted)
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        for (dev in usb) Button(dev.name, { obd.connectUsb(dev) }, primary = dev == obd.target)
+                    }
+                }
                 // Los adaptadores Bluetooth LE no se emparejan: aparecen al buscar.
                 if (obd.found.isNotEmpty()) {
                     Label(stringResource(R.string.obd_ble_found), Typography.label, c.textMuted)
@@ -333,6 +341,15 @@ private fun sensorName(signal: String) = when (signal) {
     Signal.BARO -> R.string.sensor_baro
     Signal.CONSUMPTION -> R.string.sensor_consumption
     Signal.BOOST -> R.string.sensor_boost
+    Signal.FUEL_TRIM_SHORT -> R.string.sensor_fuel_trim_short
+    Signal.FUEL_TRIM_LONG -> R.string.sensor_fuel_trim_long
+    Signal.FUEL_PRESSURE -> R.string.sensor_fuel_pressure
+    Signal.TIMING -> R.string.sensor_timing
+    Signal.THROTTLE -> R.string.sensor_throttle
+    Signal.RUN_TIME -> R.string.sensor_run_time
+    Signal.DISTANCE_MIL -> R.string.sensor_distance_mil
+    Signal.OIL -> R.string.sensor_oil
+    Signal.FUEL_RATE -> R.string.sensor_fuel_rate
     else -> R.string.sensor_ambient
 }
 
@@ -348,6 +365,12 @@ fun sensorText(signal: String, v: Float, imperial: Boolean, locale: java.util.Lo
         Signal.LOAD -> String.format(locale, "%.0f %%", v)
         Signal.MAP, Signal.BARO -> String.format(locale, "%.0f kPa", v)
         Signal.MAF -> String.format(locale, "%.1f g/s", v)
+        Signal.FUEL_TRIM_SHORT, Signal.FUEL_TRIM_LONG -> String.format(locale, "%+.1f %%", v)
+        Signal.FUEL_PRESSURE -> String.format(locale, "%.0f kPa", v)
+        Signal.TIMING -> String.format(locale, "%.1f°", v)
+        // Horas y minutos (h:mm).
+        Signal.RUN_TIME -> (v / 60).toInt().let { m -> String.format(locale, "%d:%02d", m / 60, m % 60) }
+        Signal.DISTANCE_MIL -> if (imperial) String.format(locale, "%.0f mi", v / 1.609f) else String.format(locale, "%.0f km", v)
         // Admisión y ambiente.
         else -> if (imperial) String.format(locale, "%.0f °F", v * 9 / 5 + 32) else String.format(locale, "%.0f °C", v)
     }

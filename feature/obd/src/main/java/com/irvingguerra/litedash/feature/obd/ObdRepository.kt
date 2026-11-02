@@ -7,8 +7,15 @@ import android.bluetooth.BluetoothManager
 import android.bluetooth.le.ScanCallback
 import android.bluetooth.le.ScanResult
 import android.bluetooth.le.ScanSettings
+import android.app.PendingIntent
+import android.content.BroadcastReceiver
 import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.PackageManager
+import android.hardware.usb.UsbDevice
+import android.hardware.usb.UsbManager
+import androidx.core.content.ContextCompat
 import android.location.LocationManager
 import android.os.Build
 import androidx.compose.runtime.getValue
@@ -40,6 +47,8 @@ sealed interface ObdTarget {
     data class Wifi(val host: String, val port: Int) : ObdTarget {
         override val name get() = "$host:$port"
     }
+    /** Cable USB (la pantalla es el host); se reconoce por fabricante y producto. */
+    data class Usb(val vendorId: Int, val productId: Int, override val name: String) : ObdTarget
 }
 
 enum class ObdState { OFF, CONNECTING, ON, ERROR }
@@ -95,6 +104,7 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
                     is ObdTarget.Bluetooth -> putString("tipo", "bt").putString("direccion", t.address).putString("nombre", t.name)
                     is ObdTarget.Ble -> putString("tipo", "ble").putString("direccion", t.address).putString("nombre", t.name)
                     is ObdTarget.Wifi -> putString("tipo", "wifi").putString("direccion", t.host).putInt("puerto", t.port)
+                    is ObdTarget.Usb -> putString("tipo", "usb").putInt("fabricante", t.vendorId).putInt("producto", t.productId).putString("nombre", t.name)
                     null -> clear()
                 }
             }.apply()
@@ -104,6 +114,7 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
         "bt" -> ObdTarget.Bluetooth(prefs.getString("direccion", "")!!, prefs.getString("nombre", "")!!)
         "ble" -> ObdTarget.Ble(prefs.getString("direccion", "")!!, prefs.getString("nombre", "")!!)
         "wifi" -> ObdTarget.Wifi(prefs.getString("direccion", "")!!, prefs.getInt("puerto", 35000))
+        "usb" -> ObdTarget.Usb(prefs.getInt("fabricante", 0), prefs.getInt("producto", 0), prefs.getString("nombre", "")!!)
         else -> null
     }
 
@@ -186,6 +197,57 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
         }
     }
 
+    /** Cables USB conectados a la pantalla (cualquier puerto serie; el que parezca OBD primero). */
+    fun usbDevices(): List<ObdTarget.Usb> {
+        val manager = context.getSystemService(UsbManager::class.java) ?: return emptyList()
+        return manager.deviceList.values
+            .map { ObdTarget.Usb(it.vendorId, it.productId, usbName(it)) }
+            .sortedByDescending { looksLikeObd(it.name) }
+    }
+
+    private fun usbName(d: UsbDevice): String =
+        d.productName?.takeIf { it.isNotBlank() } ?: "USB %04X:%04X".format(d.vendorId, d.productId)
+
+    private fun usbDevice(t: ObdTarget.Usb): UsbDevice? =
+        context.getSystemService(UsbManager::class.java)?.deviceList?.values
+            ?.firstOrNull { it.vendorId == t.vendorId && it.productId == t.productId }
+
+    /**
+     * Conecta a un cable USB: Android pide permiso la primera vez (su propio diálogo); al
+     * darlo, se conecta solo. Mientras, [state] queda en CONNECTING.
+     */
+    fun connectUsb(t: ObdTarget.Usb) {
+        val manager = context.getSystemService(UsbManager::class.java)
+        val device = usbDevice(t)
+        if (manager == null || device == null) {
+            error = "No está conectado el cable USB"
+            state = ObdState.ERROR
+            return
+        }
+        if (manager.hasPermission(device)) return connect(t)
+        if (state == ObdState.CONNECTING) return
+        disconnect()
+        state = ObdState.CONNECTING
+        error = null
+        val receiver = object : BroadcastReceiver() {
+            override fun onReceive(c: Context, i: Intent) {
+                runCatching { context.unregisterReceiver(this) }
+                val granted = i.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)
+                if (granted) {
+                    state = ObdState.OFF
+                    connect(t)
+                } else if (state == ObdState.CONNECTING) {
+                    error = "Sin permiso para el cable USB"
+                    state = ObdState.ERROR
+                }
+            }
+        }
+        ContextCompat.registerReceiver(context, receiver, IntentFilter(ACTION_USB_PERMISSION), ContextCompat.RECEIVER_NOT_EXPORTED)
+        val intent = Intent(ACTION_USB_PERMISSION).setPackage(context.packageName)
+        val flags = PendingIntent.FLAG_UPDATE_CURRENT or if (Build.VERSION.SDK_INT >= 31) PendingIntent.FLAG_MUTABLE else 0
+        manager.requestPermission(device, PendingIntent.getBroadcast(context, 0, intent, flags))
+    }
+
     /** Ubicación del sistema encendida (por proveedor: funciona desde Android 8). */
     private fun locationOn(): Boolean {
         val m = context.getSystemService(LocationManager::class.java) ?: return true
@@ -207,9 +269,8 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
             // el actual), y los campos compartidos solo se tocan mientras este job siga vivo.
             var l: ElmLink? = null
             try {
-                l = open(t)
-                val e = Elm327(l)
-                val version = lock.withLock { e.init() }
+                val (opened, e, version) = openAndInit(t)
+                l = opened
                 val pids = lock.withLock { e.supportedPids() }
                 ensureActive()
                 withContext(Dispatchers.Main) {
@@ -285,7 +346,9 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
      */
     fun canRead(signal: String): Boolean {
         if (signal == Signal.VOLTAGE) return true
-        DerivedSignals.firstOrNull { it.signal == signal }?.let { d -> return d.needs.all(::canRead) }
+        DerivedSignals.firstOrNull { it.signal == signal }?.let { d ->
+            return d.needs.all(::canRead) && (d.anyOf.isEmpty() || d.anyOf.any(::canRead))
+        }
         return Pids.any { it.signal == signal && it.code in supported }
     }
 
@@ -306,7 +369,7 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
         while (true) {
             val shown = bus.wanted
             val derived = DerivedSignals.filter { it.signal in shown }
-            val wanted = shown + derived.flatMap { it.needs + it.extras }
+            val wanted = shown + derived.flatMap { it.needs + it.anyOf + it.extras }
             val pids = Pids.filter { it.signal in wanted && it.code in supported }
             // Sin el PID 42 el voltaje lo mide el adaptador (ATRV), con lo lento.
             val adapterVoltage = Signal.VOLTAGE in wanted && VOLTAGE_PID !in supported
@@ -335,11 +398,39 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
         }
     }
 
+    /**
+     * Abre el enlace y prepara el adaptador. Por USB no se sabe a qué velocidad habla el
+     * cable: se prueban las comunes ([USB_BAUDS]) hasta que el ELM327 conteste.
+     */
+    private suspend fun openAndInit(t: ObdTarget): Triple<ElmLink, Elm327, String> {
+        if (t !is ObdTarget.Usb) {
+            val l = open(t)
+            val e = Elm327(l)
+            val version = try { lock.withLock { e.init() } } catch (x: Exception) { runCatching { l.close() }; throw x }
+            return Triple(l, e, version)
+        }
+        val manager = context.getSystemService(UsbManager::class.java) ?: throw IOException("Esta pantalla no tiene USB")
+        val device = usbDevice(t) ?: throw IOException("No está conectado el cable USB")
+        var last: Exception? = null
+        for (baud in USB_BAUDS) {
+            val l = try { UsbLink(manager, device, baud) } catch (x: IOException) { last = x; continue }
+            val e = Elm327(l)
+            try {
+                return Triple(l, e, lock.withLock { e.init() })
+            } catch (x: IOException) {
+                last = x
+                runCatching { l.close() }
+            }
+        }
+        throw last ?: IOException("El cable USB no respondió")
+    }
+
     @SuppressLint("MissingPermission")
     private fun open(t: ObdTarget): ElmLink = when (t) {
         is ObdTarget.Wifi -> WifiLink(t.host, t.port)
         is ObdTarget.Bluetooth -> BluetoothLink(device(t.address))
         is ObdTarget.Ble -> BleLink(context, device(t.address))
+        is ObdTarget.Usb -> error("USB se abre en openAndInit")
     }
 
     private fun device(address: String): BluetoothDevice {
@@ -358,6 +449,7 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
 
     companion object {
         private const val PREFS = "obd"
+        private const val ACTION_USB_PERMISSION = "com.irvingguerra.litedash.USB_PERMISSION"
         /** Cuánto dura una búsqueda de adaptadores Bluetooth LE. */
         private const val SCAN_MS = 10_000L
         /** Voltaje del módulo de control (el de la batería con el motor andando). */

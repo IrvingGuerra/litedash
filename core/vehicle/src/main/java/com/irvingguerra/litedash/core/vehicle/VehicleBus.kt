@@ -20,6 +20,15 @@ object Signal {
     const val BARO = "presion_aire"     // kPa
     const val AMBIENT = "aire_temp"     // °C
     const val MAF = "maf"               // g/s
+    const val FUEL_TRIM_SHORT = "ajuste_corto"    // % (negativo = le quita gasolina)
+    const val FUEL_TRIM_LONG = "ajuste_largo"     // %
+    const val FUEL_PRESSURE = "presion_gasolina"  // kPa
+    const val TIMING = "avance_encendido"         // ° antes del PMS
+    const val THROTTLE = "acelerador"             // %
+    const val RUN_TIME = "tiempo_motor"           // s
+    const val DISTANCE_MIL = "km_con_falla"       // km
+    const val OIL = "aceite_temp"                 // °C
+    const val FUEL_RATE = "gasolina_lh"           // L/h
     // Calculadas de las de arriba (no las da el auto tal cual).
     const val CONSUMPTION = "consumo"   // km/l
     const val BOOST = "turbo"           // kPa sobre la presión del aire (negativo = vacío)

@@ -360,8 +360,10 @@
     <string name="unit_kml">km/l</string>
     <string name="unit_mpg" translatable="false">mpg</string>
     <string name="unit_psi" translatable="false">psi</string>
+    <string name="unit_lh" translatable="false">L/h</string>
+    <string name="unit_galh" translatable="false">gal/h</string>
     <string name="tile_gauge">Medidor</string>
-    <string name="gauge_module">Un dato del auto por OBD: revoluciones, temperatura, gasolina, batería, consumo o turbo</string>
+    <string name="gauge_module">Un dato del auto por OBD: revoluciones, temperatura, gasolina, batería, consumo, turbo, acelerador o aceite</string>
     <string name="gauge_pick">Toca para elegir qué mostrar</string>
     <string name="gauge_connect">Conecta tu adaptador OBD en el Taller</string>
     <string name="gauge_unsupported">Tu auto no da este dato</string>
@@ -380,6 +382,21 @@
     <string name="gauge_boost_tag">TURBO</string>
     <string name="sensor_consumption">Consumo instantáneo</string>
     <string name="sensor_boost">Presión del turbo</string>
+    <string name="gauge_throttle">Acelerador</string>
+    <string name="gauge_throttle_tag">PEDAL</string>
+    <string name="gauge_oil">Temp. del aceite</string>
+    <string name="gauge_oil_tag">ACEITE</string>
+    <string name="gauge_fuel_rate">Gasto de gasolina</string>
+    <string name="gauge_fuel_rate_tag">AHORA</string>
+    <string name="sensor_fuel_trim_short">Ajuste de mezcla (corto)</string>
+    <string name="sensor_fuel_trim_long">Ajuste de mezcla (largo)</string>
+    <string name="sensor_fuel_pressure">Presión de gasolina</string>
+    <string name="sensor_timing">Avance del encendido</string>
+    <string name="sensor_throttle">Acelerador</string>
+    <string name="sensor_run_time">Tiempo con el motor encendido</string>
+    <string name="sensor_distance_mil">Distancia con la luz de falla</string>
+    <string name="sensor_oil">Temperatura del aceite</string>
+    <string name="sensor_fuel_rate">Gasto de gasolina</string>
     <string name="engine_alerts">Alertas del motor</string>
     <string name="engine_alerts_help">Avisa en el inicio si el motor se calienta de más o la batería no carga. Mientras esté activo, el adaptador revisa temperatura, voltaje y revoluciones.</string>
     <string name="alert_hot">Motor muy caliente (%1$s). Oríllate con cuidado y apágalo.</string>
@@ -392,11 +409,25 @@
     <string name="obd_ble_found">BLUETOOTH LE CERCA</string>
     <string name="obd_ble_none">No se encontró ningún adaptador Bluetooth LE. Revisa que esté conectado al auto con el motor o la llave encendida.</string>
     <string name="night_source">¿Cuándo es de noche?</string>
-    <string name="night_source_help">Decide el tema Día y noche y el brillo de noche. Las pantallas de auto no avisan a las apps cuando prendes los faros; el sensor de luz es lo más parecido (túneles, estacionamientos).</string>
+    <string name="night_source_help">Decide el tema Día y noche y el brillo de noche. Por la hora del sol funciona en cualquier pantalla; el sensor de luz nota túneles y estacionamientos; las luces del auto se aprenden de tu pantalla.</string>
     <string name="night_sun">Hora del sol</string>
     <string name="night_sensor">Sensor de luz</string>
-    <string name="night_no_sensor">Por la hora del sol: esta pantalla no tiene sensor de luz.</string>
+    <string name="night_no_sensor">Esta pantalla no tiene sensor de luz.</string>
     <string name="obd_ble_bluetooth_off">El Bluetooth está apagado. Enciéndelo en Ajustes de Android.</string>
     <string name="obd_ble_location_off">En esta versión de Android, buscar Bluetooth LE necesita la ubicación encendida.</string>
     <string name="obd_ble_failed">Android no dejó buscar ahorita. Espera unos segundos y vuelve a intentar.</string>
+    <!-- Luces del auto como señal de noche (se aprenden de la pantalla). -->
+    <string name="night_lights">Luces del auto</string>
+    <string name="lights_help">Cada pantalla avisa de los faros a su manera: LiteDash lo aprende comparando sus ajustes con las luces apagadas y prendidas. Sin señal, usa la hora del sol.</string>
+    <string name="lights_not_learned">Todavía no se aprende la señal de las luces.</string>
+    <string name="lights_learn">Aprender luces</string>
+    <string name="lights_forget">Olvidar</string>
+    <string name="lights_step_on">Con los faros apagados ya tomé nota. Ahora préndelos y toca Listo.</string>
+    <string name="lights_done">Listo, ya prendí las luces</string>
+    <string name="lights_choose">Cambiaron varios ajustes; elige el de las luces (prueba uno; si no funciona, aprende otra vez):</string>
+    <string name="lights_nothing">Ningún ajuste cambió: esta pantalla no avisa de los faros (o tardó en escribirlo). Intenta otra vez esperando unos segundos con las luces prendidas.</string>
+    <string name="lights_retry">Intentar otra vez</string>
+    <string name="lights_now_on">Luces prendidas ahora · %1$s</string>
+    <string name="lights_now_off">Luces apagadas ahora · %1$s</string>
+    <string name="obd_usb_found">Cable USB</string>
 </resources>

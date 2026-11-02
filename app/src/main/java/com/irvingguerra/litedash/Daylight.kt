@@ -87,10 +87,14 @@ object Daylight {
  * sol. El sensor solo se escucha si algo usa la noche ([needed]: tema Día y noche o brillo).
  */
 @Composable
-fun rememberIsNight(source: NightSource, needed: Boolean): Boolean {
+fun rememberIsNight(prefs: Preferences, needed: Boolean): Boolean {
     val sun = rememberSunNight()
-    if (source != NightSource.SENSOR || !needed) return sun
-    return rememberSensorNight(sun) ?: sun
+    if (!needed) return sun
+    return when (prefs.nightSource) {
+        NightSource.SUN -> sun
+        NightSource.SENSOR -> rememberSensorNight(sun) ?: sun
+        NightSource.LIGHTS -> rememberLightsNight(prefs) ?: sun
+    }
 }
 
 /** Si en este tiempo el sensor no dio ni un valor distinto, está de adorno (pasa en varias pantallas). */

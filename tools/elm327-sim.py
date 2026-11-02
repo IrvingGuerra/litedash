@@ -19,7 +19,9 @@ HOT = "--caliente" in sys.argv
 NOT_CHARGING = "--sin-carga" in sys.argv
 
 # PIDs del modo 01 que "tiene" este auto.
-PIDS = {0x01, 0x04, 0x05, 0x0B, 0x0C, 0x0D, 0x0F, 0x10, 0x2F, 0x33, 0x42, 0x46}
+PIDS = {0x01, 0x04, 0x05, 0x06, 0x07, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10, 0x11, 0x1F, 0x21, 0x2F, 0x33, 0x42, 0x46, 0x5C, 0x5E}
+# Cuándo "arrancó el motor" (para el PID 1F, tiempo con el motor encendido).
+START = time.time()
 codes = {"03": ["P0420", "P0133"], "07": ["P0171"], "0A": []}
 mil = True
 
@@ -42,9 +44,21 @@ def live(pid):
     t = time.time()
     speed = 60 + 40 * math.sin(t / 6)
     rpm = 900 + speed * 32
+    coolant = 112 if HOT else 90
+    timing = 12 + speed / 10
+    liters_hour = 1.0 + speed / 12
     values = {
         0x04: "%02X" % int(30 + speed / 2),
-        0x05: "%02X" % ((112 if HOT else 90) + 40),
+        0x05: "%02X" % (coolant + 40),
+        # Ajuste de mezcla: corto ±3 % que va y viene, largo +2 % fijo (128 = 0 %).
+        0x06: "%02X" % (128 + int(3 * math.sin(t / 4))),
+        0x07: "%02X" % (128 + round(2 * 128 / 100)),
+        # Presión de gasolina 351 kPa (A × 3).
+        0x0A: "%02X" % 117,
+        0x0E: "%02X" % int((timing + 64) * 2),
+        0x11: "%02X" % int((15 + speed / 2) * 255 / 100),
+        0x1F: "%04X" % int(t - START),
+        0x21: "%04X" % 42,
         # Admisión de 60 a 160 kPa: con el aire a 78 kPa (CDMX) el turbo llega a ~12 psi.
         0x0B: "%02X" % int(60 + speed),
         0x0C: "%04X" % int(rpm * 4),
@@ -55,6 +69,8 @@ def live(pid):
         0x33: "%02X" % 78,
         0x42: "%04X" % (12200 if NOT_CHARGING else 14100),
         0x46: "%02X" % (26 + 40),
+        0x5C: "%02X" % (coolant + 5 + 40),
+        0x5E: "%04X" % int(liters_hour * 20),
     }
     return values.get(pid)
 

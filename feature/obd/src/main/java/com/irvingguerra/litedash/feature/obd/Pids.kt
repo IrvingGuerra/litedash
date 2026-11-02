@@ -21,6 +21,16 @@ val Pids = listOf(
     Pid(0x42, Signal.VOLTAGE, fast = false) { it.ab()?.div(1000f) },
     Pid(0x33, Signal.BARO, fast = false) { it.a()?.toFloat() },
     Pid(0x46, Signal.AMBIENT, fast = false) { it.a()?.minus(40f) },
+    Pid(0x11, Signal.THROTTLE, fast = true) { it.a()?.times(100f / 255) },
+    Pid(0x5E, Signal.FUEL_RATE, fast = true) { it.ab()?.div(20f) },
+    // Ajuste de mezcla: 128 = 0 %; abajo le quita gasolina, arriba le pone.
+    Pid(0x06, Signal.FUEL_TRIM_SHORT, fast = false) { it.a()?.let { a -> (a - 128) * 100f / 128 } },
+    Pid(0x07, Signal.FUEL_TRIM_LONG, fast = false) { it.a()?.let { a -> (a - 128) * 100f / 128 } },
+    Pid(0x0A, Signal.FUEL_PRESSURE, fast = false) { it.a()?.times(3f) },
+    Pid(0x0E, Signal.TIMING, fast = false) { it.a()?.let { a -> a / 2f - 64 } },
+    Pid(0x1F, Signal.RUN_TIME, fast = false) { it.ab()?.toFloat() },
+    Pid(0x21, Signal.DISTANCE_MIL, fast = false) { it.ab()?.toFloat() },
+    Pid(0x5C, Signal.OIL, fast = false) { it.a()?.minus(40f) },
 )
 
 /** Un monitor de preparación (lo que revisan en la verificación). */

@@ -6,6 +6,25 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
+## [1.4.34] - 2026-11-02
+
+### Nuevo
+- **Luces del auto como señal de noche** (Apariencia → Pantalla → ¿Cuándo es de noche?):
+  LiteDash aprende el ajuste con el que tu pantalla avisa de los faros (una foto de los
+  ajustes con las luces apagadas y otra con las luces prendidas) y desde entonces el tema
+  Día y noche y el brillo siguen a los faros. Si tu pantalla no avisa, lo dice.
+- **Escáner OBD por cable USB**: cables con chip CH340, CP210x, FTDI, PL2303 o puerto serie
+  estándar; aparecen en el Taller al conectarlos, Android pide permiso una vez y LiteDash
+  prueba las velocidades comunes. (Por probar con un cable real.)
+- **Nueve datos más del motor** en el Taller: acelerador, gasto de gasolina (L/h), ajustes
+  de mezcla corto y largo, presión de gasolina, avance del encendido, tiempo con el motor
+  encendido, distancia con la luz de falla y temperatura del aceite. **Tres medidores
+  nuevos** para el inicio: acelerador, temperatura del aceite y gasto de gasolina.
+
+### Mejorado
+- El consumo en km/l usa el gasto de gasolina del auto cuando lo reporta (más exacto que
+  calcularlo con el flujo de aire).
+
 ## [1.4.33] - 2026-11-02
 
 ### Mejorado

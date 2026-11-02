@@ -10,6 +10,8 @@ import com.irvingguerra.litedash.core.vehicle.Signal
 class Derived(
     val signal: String,
     val needs: List<String>,
+    /** De estos hace falta al menos uno (el auto da uno u otro). */
+    val anyOf: List<String> = emptyList(),
     val extras: List<String> = emptyList(),
     val smoothing: Float = 1f,
     val compute: (Map<String, Float>) -> Float?,
@@ -29,8 +31,14 @@ fun consumption(mafGramsPerSecond: Float, speedKmh: Float): Float? {
 }
 
 val DerivedSignals = listOf(
-    Derived(Signal.CONSUMPTION, needs = listOf(Signal.MAF, Signal.SPEED), smoothing = 0.2f) { v ->
-        consumption(v[Signal.MAF] ?: return@Derived null, v[Signal.SPEED] ?: return@Derived null)
+    // Consumo: con el gasto de gasolina (PID 5E) si el auto lo da, que es más exacto; si no, con el MAF.
+    Derived(Signal.CONSUMPTION, needs = listOf(Signal.SPEED), anyOf = listOf(Signal.MAF, Signal.FUEL_RATE), smoothing = 0.2f) { v ->
+        val speed = v[Signal.SPEED] ?: return@Derived null
+        val litersPerHour = v[Signal.FUEL_RATE]
+        when {
+            litersPerHour != null && litersPerHour > 0f -> if (speed >= 5f) speed / litersPerHour else null
+            else -> consumption(v[Signal.MAF] ?: return@Derived null, speed)
+        }
     },
     // Turbo: presión de admisión menos la del aire (con la de la altura si el auto la da).
     Derived(Signal.BOOST, needs = listOf(Signal.MAP), extras = listOf(Signal.BARO)) { v ->

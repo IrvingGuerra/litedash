@@ -54,6 +54,10 @@ object Icons {
     val fuel = icon("M4 20v-14a2 2 0 0 1 2 -2h6a2 2 0 0 1 2 2v14 M3 20h12 M4 11h10 M14 9h2a2 2 0 0 1 2 2v5a1.5 1.5 0 0 0 3 0v-8l-3 -3")
     val battery = icon("M4 8h16v11h-16z M7 8v-2h3v2 M14 8v-2h3v2 M7 13h3 M14 13h3 M15.5 11.5v3")
     val drop = icon("M12 3.5s6 6.5 6 11a6 6 0 0 1 -12 0c0 -4.5 6 -11 6 -11z")
+    /** Pedal del acelerador: la placa inclinada y su base. */
+    val pedal = icon("M10 3.5l4 1l-3 13.5l-4 -1z M9.8 8l2.8 .7 M5 20.5h14 M9 17.5l1 3")
+    /** Aceite: la gota sobre una línea. */
+    val oil = icon("M12 3s5 5.5 5 9a5 5 0 0 1 -10 0c0 -3.5 5 -9 5 -9z M4 21h16")
     val turbo = icon("M4 12a8 8 0 1 0 16 0a8 8 0 1 0 -16 0 M12 12q0 -4 3.5 -5.5 M12 12q4 0 5.5 3.5 M12 12q0 4 -3.5 5.5 M12 12q-4 0 -5.5 -3.5")
     val warning = icon("M12 4l9 16h-18z M12 10v4 M12 17h.01")
     val navigate = icon("M12 3l7.5 17.5l-7.5 -4l-7.5 4z")

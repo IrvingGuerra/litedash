@@ -22,6 +22,23 @@ class DerivedTest {
     }
 
     @Test
+    fun consumoPrefiereElGastoDeGasolina() {
+        val consumo = DerivedSignals.first { it.signal == Signal.CONSUMPTION }
+        // 100 km/h gastando 5 L/h = 20 km/l, aunque el MAF diga otra cosa.
+        assertEquals(20f, consumo.compute(mapOf(Signal.SPEED to 100f, Signal.FUEL_RATE to 5f, Signal.MAF to 5f))!!, 0.01f)
+        // Sin gasto de gasolina, la cuenta con el MAF.
+        assertEquals(60.2f, consumo.compute(mapOf(Signal.SPEED to 100f, Signal.MAF to 5f))!!, 0.5f)
+        // Parado no hay km/l.
+        assertNull(consumo.compute(mapOf(Signal.SPEED to 0f, Signal.FUEL_RATE to 1f)))
+    }
+
+    @Test
+    fun consumoSinMafNiGastoNoSeCalcula() {
+        val consumo = DerivedSignals.first { it.signal == Signal.CONSUMPTION }
+        assertNull(consumo.compute(mapOf(Signal.SPEED to 100f)))
+    }
+
+    @Test
     fun turboUsaLaPresionDelAireSiLaHay() {
         val boost = DerivedSignals.first { it.signal == Signal.BOOST }
         assertEquals(60f, boost.compute(mapOf(Signal.MAP to 138f, Signal.BARO to 78f))!!, 0.01f)

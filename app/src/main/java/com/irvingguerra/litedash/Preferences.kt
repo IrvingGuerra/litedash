@@ -52,6 +52,8 @@ private object PrefKeys {
     const val ENGINE_ALERTS = "alertas_motor"
     const val BAR_POSITION = "barra"
     const val LOGO_INTRO = "logo_entrada"
+    const val LIGHTS_KEY = "luces_clave"
+    const val LIGHTS_ON = "luces_encendido"
 }
 
 /** Dónde va la barra con la hora y tus apps. AUTO = a un lado si la pantalla está acostada. */
@@ -81,7 +83,9 @@ enum class NightSource(val stored: String) {
     /** Hora del sol: funciona en cualquier pantalla. */
     SUN("SOL"),
     /** Sensor de luz de la pantalla (si tiene): túneles, estacionamientos, nublado. */
-    SENSOR("SENSOR");
+    SENSOR("SENSOR"),
+    /** Los faros del auto, por el ajuste de la pantalla que LiteDash aprende ([LightsKey]). */
+    LIGHTS("LUCES");
 
     companion object {
         fun fromStored(value: String?) = entries.firstOrNull { it.stored == value }
@@ -197,6 +201,12 @@ class Preferences(context: Context) {
 
     /** Al abrir LiteDash, el logo aparece unos instantes a pantalla completa. */
     var logoIntro by bool(PrefKeys.LOGO_INTRO, false)
+
+    /** Ajuste de la pantalla que dice si los faros están prendidos ("tabla/nombre"); null = sin aprender. */
+    var lightsKey by string(PrefKeys.LIGHTS_KEY)
+
+    /** El valor de ese ajuste con los faros prendidos. */
+    var lightsOnValue by string(PrefKeys.LIGHTS_ON)
 
     /** Cambia cada vez que se elige o quita la imagen del logo (para volver a leerla); solo en memoria. */
     var logoRevision by mutableIntStateOf(0)
