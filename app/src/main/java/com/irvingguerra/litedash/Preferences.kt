@@ -23,6 +23,7 @@ import kotlin.reflect.KProperty
 private object PrefKeys {
     const val FILE = "ajustes"
     const val THEME = "tema"
+    const val NIGHT_SOURCE = "fuente_noche"
     const val SCALE = "escala"
     const val CAR_NAME = "nombre_auto"
     const val CAR_COLOR = "color_auto_argb"
@@ -66,8 +67,20 @@ enum class ThemeMode(val stored: String) {
     DARK("OSCURO"),
     LIGHT("CLARO"),
     SYSTEM("SISTEMA"),
-    /** Claro de día y oscuro de noche, por la hora del sol. */
+    /** Claro de día y oscuro de noche (por el sol o el sensor de luz: [NightSource]). */
     SUN("SOL");
+
+    companion object {
+        fun fromStored(value: String?) = entries.firstOrNull { it.stored == value }
+    }
+}
+
+/** Cómo se sabe si es de noche (para el tema "Día y noche" y el brillo). */
+enum class NightSource(val stored: String) {
+    /** Hora del sol: funciona en cualquier pantalla. */
+    SUN("SOL"),
+    /** Sensor de luz de la pantalla (si tiene): túneles, estacionamientos, nublado. */
+    SENSOR("SENSOR");
 
     companion object {
         fun fromStored(value: String?) = entries.firstOrNull { it.stored == value }
@@ -112,6 +125,8 @@ class Preferences(context: Context) {
         Stored(read(p.getString(key, null))) { p.edit { putString(key, write(it)) } }
 
     var theme by mapped(PrefKeys.THEME, { ThemeMode.fromStored(it) ?: ThemeMode.DARK }, { it.stored })
+
+    var nightSource by mapped(PrefKeys.NIGHT_SOURCE, { NightSource.fromStored(it) ?: NightSource.SUN }, { it.stored })
 
     var scale by float(PrefKeys.SCALE, 1f)
 

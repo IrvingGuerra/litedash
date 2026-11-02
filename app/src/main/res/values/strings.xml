@@ -110,7 +110,7 @@
     <string name="greeting_morning">Buenos días, %1$s</string>
     <string name="greeting_afternoon">Buenas tardes, %1$s</string>
     <string name="greeting_evening">Buenas noches, %1$s</string>
-    <string name="theme_sun">Por el sol</string>
+    <string name="theme_sun">Día y noche</string>
     <string name="your_name">Tu nombre</string>
     <string name="your_name_help">Para saludarte en el inicio.</string>
     <string name="your_name_hint">¿Cómo te llamas?</string>
@@ -194,7 +194,7 @@
     <string name="key_rewind">Regresar</string>
     <string name="key_stop">Detener</string>
     <string name="brightness">Brillo</string>
-    <string name="brightness_help">De día y de noche según la hora del sol, sin sensores: funciona en cualquier pantalla.</string>
+    <string name="brightness_help">Un brillo de día y otro de noche (la noche la decide “¿Cuándo es de noche?”).</string>
     <string name="brightness_system">El del sistema</string>
     <string name="brightness_sun">Día y noche</string>
     <string name="brightness_day">Día</string>
@@ -391,4 +391,9 @@
     <string name="obd_ble_searching">Buscando…</string>
     <string name="obd_ble_found">BLUETOOTH LE CERCA</string>
     <string name="obd_ble_none">No se encontró ningún adaptador Bluetooth LE. Revisa que esté conectado al auto con el motor o la llave encendida.</string>
+    <string name="night_source">¿Cuándo es de noche?</string>
+    <string name="night_source_help">Decide el tema Día y noche y el brillo de noche. Las pantallas de auto no avisan a las apps cuando prendes los faros; el sensor de luz es lo más parecido (túneles, estacionamientos).</string>
+    <string name="night_sun">Hora del sol</string>
+    <string name="night_sensor">Sensor de luz</string>
+    <string name="night_no_sensor">Por la hora del sol: esta pantalla no tiene sensor de luz.</string>
 </resources>

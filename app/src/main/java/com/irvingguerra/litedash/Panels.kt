@@ -13,6 +13,8 @@ import android.app.ActivityManager
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import android.hardware.SensorManager
+import android.hardware.Sensor
 import android.content.Intent
 import android.os.Build
 import android.provider.Settings
@@ -649,6 +651,18 @@ private fun Appearance(prefs: Preferences, revision: Int) {
     if (tab == 0) SettingsCard(stringResource(R.string.your_name), stringResource(R.string.your_name_help)) {
         TextInput(prefs.driverName ?: "", { prefs.driverName = it.take(24).ifBlank { null } }, stringResource(R.string.your_name_hint), Modifier.fillMaxWidth())
     }
+    if (tab == 1) SettingsCard(stringResource(R.string.night_source), stringResource(R.string.night_source_help)) {
+        val hasSensor = remember { context.getSystemService(SensorManager::class.java)?.getDefaultSensor(Sensor.TYPE_LIGHT) != null }
+        if (hasSensor) {
+            Segmented(
+                listOf(NightSource.SUN to R.string.night_sun, NightSource.SENSOR to R.string.night_sensor).map { (s, text) -> s to stringResource(text) },
+                prefs.nightSource,
+                { prefs.nightSource = it },
+            )
+        } else {
+            Label(stringResource(R.string.night_no_sensor), Typography.small, c.textMuted)
+        }
+    }
     if (tab == 1) SettingsCard(stringResource(R.string.theme)) {
         Segmented(
             listOf(ThemeMode.DARK to R.string.theme_dark, ThemeMode.LIGHT to R.string.theme_light, ThemeMode.SUN to R.string.theme_sun, ThemeMode.SYSTEM to R.string.theme_system)
@@ -1028,12 +1042,34 @@ private fun copySystemInfo(context: Context, music: MusicRepository) {
         appendLine("Pantalla: ${m.widthPixels}×${m.heightPixels} px · ${m.densityDpi} dpi")
         appendLine("Memoria: ${memory.totalMem / (1024 * 1024)} MB")
         appendLine("CPU: ${Build.SUPPORTED_ABIS.joinToString()}")
+        appendLine(lightsInfo(context))
         append(music.describe())
     }
     context.getSystemService(ClipboardManager::class.java)
         .setPrimaryClip(ClipData.newPlainText("LiteDash", text))
 }
 
+
+/**
+ * Para conectar los faros: si hay sensor de luz y qué ajustes de la pantalla hablan de
+ * luces o iluminación (cada marca los nombra distinto; solo se leen los que Android deja).
+ */
+private fun lightsInfo(context: Context): String {
+    val sensor = context.getSystemService(SensorManager::class.java)?.getDefaultSensor(Sensor.TYPE_LIGHT)
+    val names = Regex("illum|headl|lamp|light|dimm|night|backlight|ill_", RegexOption.IGNORE_CASE)
+    val found = listOf(
+        "system" to android.provider.Settings.System.CONTENT_URI,
+        "global" to android.provider.Settings.Global.CONTENT_URI,
+        "secure" to android.provider.Settings.Secure.CONTENT_URI,
+    ).flatMap { (table, uri) ->
+        runCatching {
+            context.contentResolver.query(uri, arrayOf("name", "value"), null, null, null)?.use { c ->
+                buildList { while (c.moveToNext()) c.getString(0)?.takeIf(names::containsMatchIn)?.let { add("$table/$it=${c.getString(1)}") } }
+            }.orEmpty()
+        }.getOrDefault(emptyList())
+    }
+    return "Sensor de luz: ${sensor?.name ?: "no"}\nLuces: ${found.joinToString().ifEmpty { "—" }}"
+}
 
 /** Cuánto se espera la confirmación de Android antes de ofrecer el instalador de siempre. */
 private const val INSTALLER_WAIT_MS = 8_000L

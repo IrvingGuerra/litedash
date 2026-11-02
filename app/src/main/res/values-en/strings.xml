@@ -106,7 +106,7 @@
     <string name="greeting_morning">Good morning, %1$s</string>
     <string name="greeting_afternoon">Good afternoon, %1$s</string>
     <string name="greeting_evening">Good evening, %1$s</string>
-    <string name="theme_sun">By the sun</string>
+    <string name="theme_sun">Day and night</string>
     <string name="your_name">Your name</string>
     <string name="your_name_help">To greet you on the home screen.</string>
     <string name="your_name_hint">What\'s your name?</string>
@@ -188,7 +188,7 @@
     <string name="key_rewind">Rewind</string>
     <string name="key_stop">Stop</string>
     <string name="brightness">Brightness</string>
-    <string name="brightness_help">Day and night by the sun, no sensors: works on any screen.</string>
+    <string name="brightness_help">One brightness for day and one for night (night is set in “When is it night?”).</string>
     <string name="brightness_system">System\'s</string>
     <string name="brightness_sun">Day and night</string>
     <string name="brightness_day">Day</string>
@@ -376,4 +376,9 @@
     <string name="obd_ble_searching">Searching…</string>
     <string name="obd_ble_found">BLUETOOTH LE NEARBY</string>
     <string name="obd_ble_none">No Bluetooth LE adapter found. Make sure it\'s plugged into the car with the engine or ignition on.</string>
+    <string name="night_source">When is it night?</string>
+    <string name="night_source_help">Drives the Day and night theme and the night brightness. Car screens don\'t tell apps when you turn the headlights on; the light sensor is the closest thing (tunnels, parking garages).</string>
+    <string name="night_sun">Sunset time</string>
+    <string name="night_sensor">Light sensor</string>
+    <string name="night_no_sensor">By the sun: this screen has no light sensor.</string>
 </resources>

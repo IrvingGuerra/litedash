@@ -4,20 +4,30 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.PackageManager
+import android.hardware.Sensor
+import android.hardware.SensorEvent
+import android.hardware.SensorEventListener
+import android.hardware.SensorManager
 import android.location.LocationManager
+import android.os.Handler
+import android.os.Looper
+import android.os.SystemClock
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import kotlinx.coroutines.delay
 import java.util.Calendar
 import java.util.TimeZone
 import kotlin.math.acos
 import kotlin.math.cos
 import kotlin.math.sin
 import kotlin.math.tan
+import kotlinx.coroutines.delay
 
 /**
  * Amanecer y atardecer de hoy con la ecuación de la NOAA (sin internet). Con la
@@ -72,9 +82,92 @@ object Daylight {
     }
 }
 
+/** Si es de noche según [source]; sin sensor de luz, por la hora del sol. */
+@Composable
+fun rememberIsNight(source: NightSource): Boolean {
+    val sun = rememberSunNight()
+    if (source != NightSource.SENSOR) return sun
+    return rememberSensorNight(sun) ?: sun
+}
+
+/**
+ * Noche por el sensor de luz: cambia solo si la luz se mantiene un rato (al pasar bajo
+ * un puente no). Arranca con [initial] (la hora del sol). null = la pantalla no tiene sensor.
+ */
+@Composable
+private fun rememberSensorNight(initial: Boolean): Boolean? {
+    val context = LocalContext.current
+    val manager = remember { context.getSystemService(SensorManager::class.java) }
+    val sensor = remember { manager?.getDefaultSensor(Sensor.TYPE_LIGHT) } ?: return null
+    var night by remember { mutableStateOf(initial) }
+    DisposableEffect(sensor) {
+        val light = LightHysteresis(night)
+        val handler = Handler(Looper.getMainLooper())
+        var lux = 0f
+        // El sensor solo avisa cuando la luz cambia: si se queda igual, esta revisión
+        // (una sola, al cumplirse el tiempo) confirma el cambio.
+        val confirm = object : Runnable {
+            override fun run() {
+                night = light.update(lux, SystemClock.elapsedRealtime())
+                light.waitMs(SystemClock.elapsedRealtime())?.let { handler.postDelayed(this, it) }
+            }
+        }
+        val listener = object : SensorEventListener {
+            override fun onSensorChanged(e: SensorEvent) {
+                lux = e.values[0]
+                handler.removeCallbacks(confirm)
+                confirm.run()
+            }
+            override fun onAccuracyChanged(s: Sensor, accuracy: Int) = Unit
+        }
+        manager.registerListener(listener, sensor, SensorManager.SENSOR_DELAY_NORMAL)
+        onDispose {
+            manager.unregisterListener(listener)
+            handler.removeCallbacks(confirm)
+        }
+    }
+    return night
+}
+
+/**
+ * Día o noche con la luz que mide el sensor: oscuro abajo de [DARK_LUX], claro arriba
+ * de [BRIGHT_LUX] (entre los dos no cambia), y solo si dura [HOLD_MS].
+ */
+class LightHysteresis(private var night: Boolean) {
+    private var since = 0L
+    private var pending: Boolean? = null
+
+    fun update(lux: Float, nowMs: Long): Boolean {
+        val wants = when {
+            lux < DARK_LUX -> true
+            lux > BRIGHT_LUX -> false
+            else -> night
+        }
+        if (wants == night) {
+            pending = null
+        } else if (pending != wants) {
+            pending = wants
+            since = nowMs
+        } else if (nowMs - since >= HOLD_MS) {
+            night = wants
+            pending = null
+        }
+        return night
+    }
+
+    /** Cuánto falta para confirmar un cambio pendiente (null = no hay ninguno). */
+    fun waitMs(nowMs: Long): Long? = pending?.let { (HOLD_MS - (nowMs - since)).coerceAtLeast(1) }
+
+    companion object {
+        const val DARK_LUX = 15f
+        const val BRIGHT_LUX = 60f
+        const val HOLD_MS = 15_000L
+    }
+}
+
 /** Si es de noche; se vuelve a calcular justo al amanecer o al atardecer (no revisa cada rato). */
 @Composable
-fun rememberIsNight(): Boolean {
+private fun rememberSunNight(): Boolean {
     val context = LocalContext.current
     // El valor inicial se calcula una vez (lee la última ubicación), no en cada recomposición.
     val initial = remember { Daylight.state(context).first }
