@@ -43,28 +43,28 @@ val CarColors = listOf(
     Color(0xFF2457A6), // azul
 )
 
-// Sedán concepto de perfil (sin marca), en una caja de 820 × 300.
+// Sedán eléctrico de perfil (sin marca), en una caja de 820 × 300.
 private const val WIDTH = 820f
 private const val HEIGHT = 300f
-private const val WHEEL_Y = 224f
+private const val WHEEL_Y = 228f
 
 private object CarPaths {
-    // Sedán eléctrico de líneas limpias: nariz baja, techo de cristal en arco y cola corta.
-    val body = path("M52 212 C44 198 44 182 54 172 C70 160 120 150 200 143 C260 138 320 132 362 125 C420 92 470 74 540 70 C620 68 692 86 752 116 C766 122 778 125 787 129 C792 142 790 170 782 192 C776 206 768 214 756 218 L690 220 A65 65 0 0 0 560 220 L255 220 A65 65 0 0 0 125 220 L72 220 C62 219 55 216 52 212 Z")
-    val wells = path("M125 220 A65 65 0 0 1 255 220 Z M560 220 A65 65 0 0 1 690 220 Z")
-    val glass = path("M374 124 C430 93 480 78 540 75 C620 74 686 90 738 117 C690 118 600 121 520 122 C460 123 412 124 374 124 Z")
-    val glassShine = path("M430 100 C480 82 530 78 570 78")
-    val shoulder = path("M120 158 C300 148 560 138 762 132")
-    val creases = path("M262 200 C380 192 500 192 556 198 M470 126 L468 210 M330 132 L330 206")
-    val handles = path("M392 150 L414 149 M500 146 L522 145")
-    val sill = path("M255 210 L560 210 L560 220 L255 220 Z")
-    val mirror = path("M386 124 C390 116 400 113 408 116 L406 127 L390 128 Z")
-    val headlight = path("M56 168 C80 160 112 155 152 152")
-    val taillight = path("M763 124 C778 128 786 132 789 139")
-    val intake = path("M58 202 C72 205 92 206 110 205")
-    val wheels = listOf(190f, 625f)
+    // Sedán eléctrico: frente corto, parabrisas muy adelante, cabina larga con techo de cristal y cola corta.
+    val body = path("M60 222 C48 214 44 196 50 182 C56 170 74 164 104 160 C160 152 210 146 262 136 C300 112 350 84 420 70 C470 62 530 62 575 68 C640 80 690 100 728 118 C744 122 760 124 772 126 C786 132 792 148 790 168 C788 190 780 206 766 216 L704 224 A64 64 0 0 0 576 224 L249 224 A64 64 0 0 0 121 224 L72 224 C66 224 62 223 60 222 Z")
+    val wells = path("M121 224 A64 64 0 0 1 249 224 Z M576 224 A64 64 0 0 1 704 224 Z")
+    val glass = path("M270 135 C306 111 354 86 420 73 C470 65 530 65 574 71 C638 83 686 102 722 119 C640 123 420 130 270 135 Z")
+    val glassShine = path("M330 104 C380 84 440 74 500 70")
+    val shoulder = path("M104 163 C300 151 560 140 772 129")
+    val creases = path("M260 204 C380 198 500 198 572 204 M468 130 L464 216 M294 136 C290 170 292 200 296 214")
+    val handles = path("M396 152 L420 151 M536 148 L560 147")
+    val sill = path("M249 214 L576 214 L576 224 L249 224 Z")
+    val mirror = path("M292 132 C296 124 306 121 314 124 L312 134 L296 136 Z")
+    val headlight = path("M58 178 C72 170 92 166 120 164")
+    val taillight = path("M760 124 C774 127 782 132 785 140")
+    val intake = path("M58 206 C70 210 88 212 108 211")
+    val wheels = listOf(185f, 640f)
     // Una ranura del rin aerodinámico, relativa al centro de la rueda; se repite cinco veces.
-    val slot = path("M0 -30 C12 -28 20 -20 22 -12")
+    val slot = path("M0 -28 C11 -26 19 -19 21 -11")
 
     private fun path(d: String) = PathParser().parsePathString(d).toPath()
 }
@@ -82,10 +82,10 @@ private val bodyShade = Brush.verticalGradient(
 )
 private val glassPaint = Brush.linearGradient(
     listOf(Color(0xFF4A5562), Color(0xFF1A1F26), Color(0xFF0B0E12)),
-    Offset(374f, 70f),
-    Offset(738f, 124f),
+    Offset(270f, 70f),
+    Offset(722f, 130f),
 )
-private val rimPaint = Brush.verticalGradient(listOf(Color(0xFFD5DAE0), Color(0xFF5E6670)), 180f, 268f)
+private val rimPaint = Brush.verticalGradient(listOf(Color(0xFFD5DAE0), Color(0xFF5E6670)), 186f, 270f)
 private val tire = Color(0xFF0B0D10)
 private val dark = Color(0xFF2A2F36)
 
@@ -98,7 +98,7 @@ fun CarDrawing(color: Color, modifier: Modifier = Modifier) {
     Canvas(modifier.aspectRatio(WIDTH / HEIGHT)) {
         val s = size.width / WIDTH
         // Sombra en el piso: un círculo con degradado aplastado a elipse.
-        val center = Offset(410 * s, 274 * s)
+        val center = Offset(412 * s, 282 * s)
         withTransform({ scale(1f, 16f / 380f, pivot = center) }) {
             drawCircle(
                 Brush.radialGradient(listOf(Color.Black.copy(alpha = 0.55f), Color.Transparent), center, 380 * s),
@@ -125,8 +125,8 @@ fun CarDrawing(color: Color, modifier: Modifier = Modifier) {
             drawPath(CarPaths.intake, Color(0xFF0E1114), style = Stroke(5f, cap = StrokeCap.Round))
             for (cx in CarPaths.wheels) {
                 val c = Offset(cx, WHEEL_Y)
-                drawCircle(tire, 58f, c)
-                drawCircle(rimPaint, 45f, c)
+                drawCircle(tire, 54f, c)
+                drawCircle(rimPaint, 42f, c)
                 translate(cx, WHEEL_Y) {
                     repeat(5) { i ->
                         rotate(i * 72f, pivot = Offset.Zero) {
@@ -134,7 +134,7 @@ fun CarDrawing(color: Color, modifier: Modifier = Modifier) {
                         }
                     }
                 }
-                drawCircle(tire.copy(alpha = 0.4f), 45f, c, style = Stroke(2f))
+                drawCircle(tire.copy(alpha = 0.4f), 42f, c, style = Stroke(2f))
                 drawCircle(dark, 8f, c)
             }
         }

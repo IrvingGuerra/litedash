@@ -6,6 +6,12 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
+## [1.4.27] - 2026-11-02
+
+### Cambiado
+- **Auto por defecto con forma de sedán eléctrico:** frente corto, cabina larga con techo de
+  cristal y cola corta (el de la 1.4.26 parecía coupé de frente largo).
+
 ## [1.4.26] - 2026-11-01
 
 ### Cambiado
