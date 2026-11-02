@@ -44,9 +44,12 @@ fun rememberApps(repo: AppRepository): List<App>? {
     return apps
 }
 
+// Acentos y demás marcas: compilada una sola vez, no en cada llamada.
+private val MARKS = Regex("\\p{Mn}+")
+
 /** Sin acentos ni mayúsculas: "musica" encuentra "Música". */
 fun normalize(text: String) =
-    Normalizer.normalize(text, Normalizer.Form.NFD).replace(Regex("\\p{Mn}+"), "").lowercase()
+    Normalizer.normalize(text, Normalizer.Form.NFD).replace(MARKS, "").lowercase()
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -60,7 +63,9 @@ fun AppGrid(
     marked: Set<String> = emptySet(),
 ) {
     val filter = remember(query) { normalize(query.trim()) }
-    val list = remember(apps, filter) { if (filter.isEmpty()) apps else apps.filter { filter in normalize(it.name) } }
+    // Los nombres se normalizan una vez por lista, no en cada tecla.
+    val names = remember(apps) { apps.map { normalize(it.name) } }
+    val list = remember(apps, names, filter) { if (filter.isEmpty()) apps else apps.filterIndexed { i, _ -> filter in names[i] } }
     val c = LocalColors.current
     LazyVerticalGrid(
         columns = GridCells.Adaptive(112.dp),

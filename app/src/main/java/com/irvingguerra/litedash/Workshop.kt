@@ -336,17 +336,21 @@ private fun sensorName(signal: String) = when (signal) {
     else -> R.string.sensor_ambient
 }
 
-/** El valor con su unidad; en millas y °F donde se usan (como el velocímetro). */
-fun sensorText(signal: String, v: Float, imperial: Boolean, locale: java.util.Locale) = when (signal) {
-    Signal.SPEED -> if (imperial) String.format(locale, "%.0f mph", v / 1.609f) else String.format(locale, "%.0f km/h", v)
-    Signal.RPM -> String.format(locale, "%.0f rpm", v)
-    Signal.LOAD, Signal.FUEL -> String.format(locale, "%.0f %%", v)
-    Signal.MAP, Signal.BARO -> String.format(locale, "%.0f kPa", v)
-    Signal.MAF -> String.format(locale, "%.1f g/s", v)
-    Signal.VOLTAGE -> String.format(locale, "%.1f V", v)
-    Signal.CONSUMPTION -> if (imperial) String.format(locale, "%.1f mpg", v * 2.352f) else String.format(locale, "%.1f km/l", v)
-    Signal.BOOST -> String.format(locale, "%.1f psi", v * 0.145f)
-    else -> if (imperial) String.format(locale, "%.0f °F", v * 9 / 5 + 32) else String.format(locale, "%.0f °C", v)
+/**
+ * El valor con su unidad; en millas y °F donde se usan (como el velocímetro). Lo que ya
+ * es medidor se escribe igual que en su tarjeta ([GaugeSpecs]); aquí solo va lo demás.
+ */
+@Composable
+fun sensorText(signal: String, v: Float, imperial: Boolean, locale: java.util.Locale): String {
+    gaugeOf(signal)?.let { spec -> return gaugeText(spec, v, imperial, locale) + " " + stringResource(spec.unit(imperial)) }
+    return when (signal) {
+        Signal.SPEED -> if (imperial) String.format(locale, "%.0f mph", v / 1.609f) else String.format(locale, "%.0f km/h", v)
+        Signal.LOAD -> String.format(locale, "%.0f %%", v)
+        Signal.MAP, Signal.BARO -> String.format(locale, "%.0f kPa", v)
+        Signal.MAF -> String.format(locale, "%.1f g/s", v)
+        // Admisión y ambiente.
+        else -> if (imperial) String.format(locale, "%.0f °F", v * 9 / 5 + 32) else String.format(locale, "%.0f °C", v)
+    }
 }
 
 private fun monitorName(m: MonitorName) = when (m) {

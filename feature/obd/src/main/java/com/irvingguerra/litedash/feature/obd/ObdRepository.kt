@@ -29,6 +29,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import java.io.IOException
 
 /** A qué adaptador conectarse. Se guarda para reconectar solo la próxima vez. */
 sealed interface ObdTarget {
@@ -82,14 +83,13 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
     private var elm: Elm327? = null
     private var job: Job? = null
 
+    // Se lee del disco una vez; como estado de Compose, el Taller se entera al cambiarlo.
+    private var savedTarget by mutableStateOf(readTarget())
+
     var target: ObdTarget?
-        get() = when (prefs.getString("tipo", null)) {
-            "bt" -> ObdTarget.Bluetooth(prefs.getString("direccion", "")!!, prefs.getString("nombre", "")!!)
-            "ble" -> ObdTarget.Ble(prefs.getString("direccion", "")!!, prefs.getString("nombre", "")!!)
-            "wifi" -> ObdTarget.Wifi(prefs.getString("direccion", "")!!, prefs.getInt("puerto", 35000))
-            else -> null
-        }
+        get() = savedTarget
         private set(t) {
+            savedTarget = t
             prefs.edit().apply {
                 when (t) {
                     is ObdTarget.Bluetooth -> putString("tipo", "bt").putString("direccion", t.address).putString("nombre", t.name)
@@ -99,6 +99,16 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
                 }
             }.apply()
         }
+
+    private fun readTarget(): ObdTarget? = when (prefs.getString("tipo", null)) {
+        "bt" -> ObdTarget.Bluetooth(prefs.getString("direccion", "")!!, prefs.getString("nombre", "")!!)
+        "ble" -> ObdTarget.Ble(prefs.getString("direccion", "")!!, prefs.getString("nombre", "")!!)
+        "wifi" -> ObdTarget.Wifi(prefs.getString("direccion", "")!!, prefs.getInt("puerto", 35000))
+        else -> null
+    }
+
+    /** Reconexiones seguidas sin lograr leer (se reinicia al conectar bien). */
+    private var reconnects = 0
 
     fun hasPermission() = Build.VERSION.SDK_INT < Build.VERSION_CODES.S ||
         context.checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED
@@ -209,16 +219,28 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
                     adapter = version
                     target = t
                     state = ObdState.ON
+                    reconnects = 0
                 }
                 poll(e)
             } catch (x: Exception) {
                 runCatching { l?.close() }
                 if (isActive) withContext(Dispatchers.Main + NonCancellable) {
+                    // Se cayó estando conectado (el adaptador se reinició, el auto se apagó un
+                    // momento): se vuelve a intentar solo unas veces, sin que el usuario abra el
+                    // Taller. Si nunca conectó, el error se queda a la vista.
+                    val dropped = state == ObdState.ON
                     error = x.message ?: x.javaClass.simpleName
                     state = ObdState.ERROR
                     link = null
                     elm = null
                     bus.clear(Source.OBD)
+                    if (dropped && reconnects < MAX_RECONNECTS) {
+                        reconnects++
+                        scope.launch(Dispatchers.Main) {
+                            delay(RECONNECT_MS)
+                            if (state == ObdState.ERROR && target == t) connect(t)
+                        }
+                    }
                 }
             }
         }
@@ -269,6 +291,15 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
 
     private suspend fun poll(e: Elm327) {
         var lastSlow = 0L
+        // Consultas seguidas que no contestó: una suelta pasa (adaptador lento, el auto
+        // ocupado); varias seguidas sí es que se perdió la conexión.
+        var failures = 0
+        fun <T> ask(read: () -> T?): T? = try {
+            read().also { failures = 0 }
+        } catch (x: IOException) {
+            if (++failures >= MAX_FAILURES) throw x
+            null
+        }
         // Lo último que se leyó de cada señal (para calcular las que dependen de varias).
         val last = mutableMapOf<String, Float>()
         val smoothed = mutableMapOf<String, Float>()
@@ -287,8 +318,8 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
             if (slow) lastSlow = System.currentTimeMillis()
             // Se leen todos y se publican juntos: un solo salto al hilo principal por vuelta.
             val values = mutableListOf<Pair<String, Float?>>()
-            for (p in pids) if (p.fast || slow) values += p.signal to lock.withLock { e.pid(p.code) }?.let(p.decode)
-            if (adapterVoltage && slow) values += Signal.VOLTAGE to runCatching { lock.withLock { e.voltage() } }.getOrNull()
+            for (p in pids) if (p.fast || slow) values += p.signal to lock.withLock { ask { e.pid(p.code) } }?.let(p.decode)
+            if (adapterVoltage && slow) values += Signal.VOLTAGE to lock.withLock { ask { runCatching { e.voltage() }.getOrNull() } }
             for ((signal, value) in values) if (value == null) last.remove(signal) else last[signal] = value
             // Lo que dejó de mostrarse no suaviza con un valor viejo al volver.
             smoothed.keys.retainAll(derived.map { it.signal }.toSet())
@@ -331,6 +362,11 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
         private const val SCAN_MS = 10_000L
         /** Voltaje del módulo de control (el de la batería con el motor andando). */
         private const val VOLTAGE_PID = 0x42
+        /** Consultas seguidas sin respuesta que se toman como conexión perdida. */
+        private const val MAX_FAILURES = 3
+        /** Reintentos seguidos tras caerse ya conectado, y cuánto esperar entre ellos. */
+        private const val MAX_RECONNECTS = 5
+        private const val RECONNECT_MS = 8_000L
 
         /** Hay un adaptador guardado (sin crear el escáner ni tocar Bluetooth). */
         fun hasSavedTarget(context: Context) =

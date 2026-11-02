@@ -6,6 +6,21 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
+## [1.4.32] - 2026-11-02
+
+### Mejorado
+- **Escáner OBD más aguantador:** una consulta que el adaptador no contesta ya no tira la
+  conexión (hacen falta tres seguidas), y si se cae estando conectado (el auto se apagó
+  un momento, el adaptador se reinició) se vuelve a conectar solo unas veces, sin abrir
+  el Taller.
+- **Giro del auto con menos tirones:** el auto se tiñe de tu color renglón por renglón,
+  sin armar dos copias enteras de cada cuadro en memoria.
+- **Sin cerrarse por falta de memoria** al cargar los cuadros del auto en pantallas
+  chicas: si uno no cabe, se queda el anterior y se libera lo guardado.
+- Buscar apps o autos ya no repite el mismo trabajo en cada tecla, y la música deja de
+  escribir en el disco con cada aviso de Spotify.
+- Sensores en vivo del Taller con las mismas unidades que los medidores del inicio.
+
 ## [1.4.31] - 2026-11-02
 
 ### Mejorado

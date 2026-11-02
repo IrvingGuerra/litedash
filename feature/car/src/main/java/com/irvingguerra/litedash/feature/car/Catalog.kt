@@ -139,7 +139,10 @@ class CarRepository(context: Context, val catalogUrl: String) {
         scope.launch { dropRetiredFrames() }
     }
 
-    fun pkg(id: String?): CarPackage? = id?.let { wanted -> installed.firstOrNull { it.folder.name == folderOf(wanted) } }
+    fun pkg(id: String?): CarPackage? {
+        val folder = folderOf(id ?: return null)
+        return installed.firstOrNull { it.folder.name == folder }
+    }
 
     suspend fun catalog(): List<CatalogEntry> = withContext(Dispatchers.IO) {
         val cars = JSONObject(readText(catalogUrl)).getJSONArray(CarJson.CARS)
@@ -411,7 +414,12 @@ class CarRepository(context: Context, val catalogUrl: String) {
         }
     }
 
-    /** De la caché, de la carga que ya va en camino, o se carga una sola vez en IO. */
+    /**
+     * De la caché, de la carga que ya va en camino, o se carga una sola vez en IO. Si
+     * decodificar falla (sin memoria en una pantalla chica, archivo dañado) devuelve
+     * null y vacía la caché para que quepa el siguiente: el auto se queda con el cuadro
+     * anterior en vez de tumbar la app (la excepción llegaría a la composición).
+     */
     private suspend fun cached(key: String, load: () -> Bitmap?): ImageBitmap? {
         images.get(key)?.let { return it }
         val job = loading.computeIfAbsent(key) {
@@ -419,6 +427,11 @@ class CarRepository(context: Context, val catalogUrl: String) {
             scope.async(Dispatchers.IO, start = CoroutineStart.LAZY) {
                 try {
                     load()?.asImageBitmap()?.also { images.put(key, it) }
+                } catch (e: OutOfMemoryError) {
+                    images.evictAll()
+                    null
+                } catch (e: Exception) {
+                    null
                 } finally {
                     loading.remove(key)
                 }
@@ -508,26 +521,32 @@ class CarRepository(context: Context, val catalogUrl: String) {
         }
         val w = base.width
         val h = base.height
-        val px = IntArray(w * h)
-        val mp = IntArray(w * h)
-        base.getPixels(px, 0, w, 0, 0, w, h)
-        mask.getPixels(mp, 0, w, 0, 0, w, h)
-        for (i in px.indices) {
-            val m = mp[i] ushr 24
-            if (m == 0) continue
-            val c = px[i]
-            val r = (c shr 16) and 0xFF
-            val g = (c shr 8) and 0xFF
-            val b = c and 0xFF
-            val rr = r + (tables[0][r] - r) * m / 255
-            val gg = g + (tables[1][g] - g) * m / 255
-            val bb = b + (tables[2][b] - b) * m / 255
-            px[i] = (c and 0xFF000000.toInt()) or (rr shl 16) or (gg shl 8) or bb
+        // Renglón por renglón: dos copias enteras de la imagen eran ~8 MB de basura por
+        // cuadro (48 cuadros por color) y el recolector trababa el giro.
+        val px = IntArray(w)
+        val mp = IntArray(w)
+        for (y in 0 until h) {
+            base.getPixels(px, 0, w, 0, y, w, 1)
+            mask.getPixels(mp, 0, w, 0, y, w, 1)
+            var touched = false
+            for (i in 0 until w) {
+                val m = mp[i] ushr 24
+                if (m == 0) continue
+                touched = true
+                val c = px[i]
+                val r = (c shr 16) and 0xFF
+                val g = (c shr 8) and 0xFF
+                val b = c and 0xFF
+                val rr = r + (tables[0][r] - r) * m / 255
+                val gg = g + (tables[1][g] - g) * m / 255
+                val bb = b + (tables[2][b] - b) * m / 255
+                px[i] = (c and 0xFF000000.toInt()) or (rr shl 16) or (gg shl 8) or bb
+            }
+            if (touched) base.setPixels(px, 0, w, 0, y, w, 1)
         }
-        base.setPixels(px, 0, w, 0, 0, w, h)
     }
 
-    private fun folderOf(id: String) = id.replace(Regex("[^a-z0-9-]"), "-")
+    private fun folderOf(id: String) = id.replace(FOLDER_CHARS, "-")
 
     private fun open(url: String): HttpURLConnection =
         (URL(url).openConnection() as HttpURLConnection).apply {
@@ -555,5 +574,7 @@ class CarRepository(context: Context, val catalogUrl: String) {
         private const val CHECK_EVERY_MS = 60 * 60 * 1000L
         private const val KEY_LAST_CHECK = "ultima_revision:"
         private const val KEY_RETIRED_DROPPED = "maxima_borrada"
+        /** Lo que no va en el nombre de la carpeta de un auto. */
+        private val FOLDER_CHARS = Regex("[^a-z0-9-]")
     }
 }

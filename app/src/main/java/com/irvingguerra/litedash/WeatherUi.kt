@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -98,8 +99,10 @@ fun WeatherTile(repo: WeatherRepository) {
                     Label(detail, Typography.small, c.textMuted, maxLines = 1)
                 }
                 if (showDays) {
-                    val parse = SimpleDateFormat("yyyy-MM-dd", Locale.US)
-                    val weekday = SimpleDateFormat("EEE", LocalConfiguration.current.locales[0])
+                    val locale = LocalConfiguration.current.locales[0]
+                    // Los formatos se crean una vez por idioma, no en cada recomposición.
+                    val parse = remember(locale) { SimpleDateFormat("yyyy-MM-dd", Locale.US) }
+                    val weekday = remember(locale) { SimpleDateFormat("EEE", locale) }
                     for (d in w.days.drop(1).take(3)) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
                             val name = runCatching { weekday.format(parse.parse(d.date)!!) }.getOrDefault("")

@@ -71,6 +71,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.net.toUri
@@ -252,7 +253,6 @@ fun PickAppPanel(d: Dependencies, apps: List<App>, tileId: String?, close: () ->
  * Qué dato del auto muestra un medidor: los que lee el OBD, con su ícono. Los que
  * este auto no da (ya conectado) se ven apagados y avisan.
  */
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun PickGaugePanel(d: Dependencies, tileId: String?, close: () -> Unit) {
     val c = LocalColors.current
@@ -261,26 +261,42 @@ fun PickGaugePanel(d: Dependencies, tileId: String?, close: () -> Unit) {
     PanelScaffold(stringResource(R.string.pick_gauge), close) {
         Label(stringResource(R.string.pick_gauge_help), Typography.body, c.textMuted, modifier = Modifier.padding(bottom = 14.dp))
         if (noRoom) Label(stringResource(R.string.no_room), Typography.body, c.danger, modifier = Modifier.padding(bottom = 12.dp))
-        BoxWithConstraints(Modifier.fillMaxWidth().weight(1f).verticalScroll(rememberScrollState()).padding(bottom = 16.dp)) {
-            val gap = 14.dp
-            val columns = ((maxWidth + gap) / (200.dp + gap)).toInt().coerceAtLeast(2)
-            val width = (maxWidth - gap * (columns - 1)) / columns
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(gap), verticalArrangement = Arrangement.spacedBy(gap)) {
-                for (spec in GaugeSpecs) {
-                    val readable = obd?.canRead(spec.signal) ?: true
-                    Card(Modifier.width(width).height(110.dp), onClick = {
-                        if (tileId != null) {
-                            d.dashboard.setData(tileId, spec.signal)
-                            close()
-                        } else if (d.dashboard.addTile(TileTypes.GAUGE, spec.signal)) close()
-                        else noRoom = true
-                    }) {
-                        Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Icon(spec.icon, if (readable) c.accent else c.textMuted, 28.dp)
-                            Label(stringResource(spec.name), Typography.subtitle, if (readable) c.text else c.textMuted, maxLines = 1)
-                            if (!readable) Label(stringResource(R.string.gauge_unsupported), Typography.small, c.textMuted, maxLines = 1)
-                        }
-                    }
+        CardGrid(GaugeSpecs, minWidth = 200.dp, height = 120.dp, onClick = { spec ->
+            if (tileId != null) {
+                d.dashboard.setData(tileId, spec.signal)
+                close()
+            } else if (d.dashboard.addTile(TileTypes.GAUGE, spec.signal)) close()
+            else noRoom = true
+        }) { spec ->
+            val readable = obd?.canRead(spec.signal) ?: true
+            Icon(spec.icon, if (readable) c.accent else c.textMuted, 28.dp)
+            Label(stringResource(spec.name), Typography.subtitle, if (readable) c.text else c.textMuted, maxLines = 1)
+            if (!readable) Label(stringResource(R.string.gauge_unsupported), Typography.small, c.textMuted, maxLines = 1)
+        }
+    }
+}
+
+/**
+ * Tarjetas en cuadrícula, todas a la vista: tantas columnas como quepan (de [minWidth]
+ * o más, mínimo dos) y, si aun así no alcanza el alto (pantallas muy chicas), se desplaza.
+ */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun <T> ColumnScope.CardGrid(
+    items: List<T>,
+    minWidth: Dp,
+    height: Dp,
+    onClick: (T) -> Unit,
+    content: @Composable ColumnScope.(T) -> Unit,
+) {
+    BoxWithConstraints(Modifier.fillMaxWidth().weight(1f).verticalScroll(rememberScrollState()).padding(bottom = 16.dp)) {
+        val gap = 14.dp
+        val columns = ((maxWidth + gap) / (minWidth + gap)).toInt().coerceAtLeast(2)
+        val width = (maxWidth - gap * (columns - 1)) / columns
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(gap), verticalArrangement = Arrangement.spacedBy(gap)) {
+            for (item in items) {
+                Card(Modifier.width(width).height(height), onClick = { onClick(item) }) {
+                    Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) { content(item) }
                 }
             }
         }
@@ -525,7 +541,6 @@ private fun CarPreview(e: CatalogEntry, cars: CarRepository, progress: Float?, o
     }
 }
 
-/** Secciones de Ajustes, en el menú de la izquierda. */
 /** Secciones de Ajustes en el orden del menú: cada cosa vive en un solo lugar. */
 enum class SettingsSection(val title: Int) {
     CAR(R.string.your_car), HOME(R.string.home), APPS(R.string.apps_section), WORKSHOP(R.string.workshop),
@@ -897,28 +912,15 @@ fun AddTilePanel(dashboard: DashboardState, close: () -> Unit, onPickApp: () -> 
         if (noRoom) {
             Label(stringResource(R.string.no_room), Typography.body, c.danger, modifier = Modifier.padding(bottom = 12.dp))
         }
-        // Todas a la vista: tantas columnas como quepan (de 180 dp o más) y, si aun así
-        // no alcanza el alto (pantallas muy chicas), se desplaza.
-        BoxWithConstraints(Modifier.fillMaxWidth().weight(1f).verticalScroll(rememberScrollState()).padding(bottom = 16.dp)) {
-            val gap = 14.dp
-            val columns = ((maxWidth + gap) / (180.dp + gap)).toInt().coerceAtLeast(2)
-            val width = (maxWidth - gap * (columns - 1)) / columns
-            val height = if (isSmallScreen()) 100.dp else 120.dp
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(gap), verticalArrangement = Arrangement.spacedBy(gap)) {
-                for (spec in TileSpecs) {
-                    Card(Modifier.width(width).height(height), onClick = {
-                        if (spec.type == TileTypes.APP) onPickApp()
-                        else if (spec.type == TileTypes.GAUGE) onPickGauge()
-                        else if (dashboard.add(spec.type, spec.initialSize, spec.limits)) close()
-                        else noRoom = true
-                    }) {
-                        Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                            Icon(iconOf(spec.type), c.accent, 28.dp)
-                            Label(stringResource(spec.name), Typography.subtitle, maxLines = 1)
-                        }
-                    }
-                }
-            }
+        // Todas a la vista: tantas columnas como quepan (de 180 dp o más).
+        CardGrid(TileSpecs, minWidth = 180.dp, height = if (isSmallScreen()) 100.dp else 120.dp, onClick = { spec ->
+            if (spec.type == TileTypes.APP) onPickApp()
+            else if (spec.type == TileTypes.GAUGE) onPickGauge()
+            else if (dashboard.add(spec.type, spec.initialSize, spec.limits)) close()
+            else noRoom = true
+        }) { spec ->
+            Icon(iconOf(spec.type), c.accent, 28.dp)
+            Label(stringResource(spec.name), Typography.subtitle, maxLines = 1)
         }
     }
 }
@@ -995,7 +997,7 @@ private fun Modules(d: Dependencies) {
 
 /** Los permisos de LiteDash en Ajustes de Android (para dar o quitar ubicación). */
 private fun openAppSettings(context: Context) {
-    val intent = Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", context.packageName, null))
+    val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", context.packageName, null))
     runCatching { context.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
 }
 
@@ -1068,9 +1070,9 @@ private fun lightsInfo(context: Context): String {
     val sensor = context.getSystemService(SensorManager::class.java)?.getDefaultSensor(Sensor.TYPE_LIGHT)
     val names = Regex("illum|headl|lamp|light|dimm|night|backlight|ill_", RegexOption.IGNORE_CASE)
     val found = listOf(
-        "system" to android.provider.Settings.System.CONTENT_URI,
-        "global" to android.provider.Settings.Global.CONTENT_URI,
-        "secure" to android.provider.Settings.Secure.CONTENT_URI,
+        "system" to Settings.System.CONTENT_URI,
+        "global" to Settings.Global.CONTENT_URI,
+        "secure" to Settings.Secure.CONTENT_URI,
     ).flatMap { (table, uri) ->
         runCatching {
             context.contentResolver.query(uri, arrayOf("name", "value"), null, null, null)?.use { c ->

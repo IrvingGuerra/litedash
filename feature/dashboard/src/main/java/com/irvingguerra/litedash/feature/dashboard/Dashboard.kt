@@ -110,7 +110,8 @@ fun Dashboard(
 
         // El auto va primero: su sombra y reflejo pueden salirse de su pieza y deben
         // quedar debajo de las demás.
-        for (p in tiles.sortedBy { if (it.type == TileTypes.CAR) 0 else 1 }) {
+        val ordered = remember(tiles) { tiles.sortedBy { if (it.type == TileTypes.CAR) 0 else 1 } }
+        for (p in ordered) {
             val a = drag?.takeIf { it.id == p.id }
             Box(
                 Modifier

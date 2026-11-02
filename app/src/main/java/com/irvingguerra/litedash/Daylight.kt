@@ -183,12 +183,15 @@ class LightHysteresis(private var night: Boolean) {
 private fun rememberSunNight(): Boolean {
     val context = LocalContext.current
     // El valor inicial se calcula una vez (lee la última ubicación), no en cada recomposición.
-    val initial = remember { Daylight.state(context).first }
-    val night by produceState(initial) {
+    val first = remember { Daylight.state(context) }
+    val night by produceState(first.first) {
+        var (now, wait) = first
         while (true) {
-            val (now, wait) = Daylight.state(context)
             value = now
             delay(wait + 30_000)
+            val s = Daylight.state(context)
+            now = s.first
+            wait = s.second
         }
     }
     return night

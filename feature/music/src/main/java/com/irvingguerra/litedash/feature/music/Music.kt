@@ -100,6 +100,8 @@ class MusicRepository(private val context: Context) {
 
     // La última app que sonó: en "Sistema", play la despierta aunque ya no esté abierta.
     private val store = context.getSharedPreferences(STORE, Context.MODE_PRIVATE)
+    // Spotify avisa a cada rato: solo se escribe al disco cuando cambia la app.
+    private var lastSavedApp: String? = store.getString(KEY_LAST_APP, null)
 
     /**
      * App de música elegida en Ajustes (paquete). null = "Sistema": lo que suene
@@ -213,7 +215,10 @@ class MusicRepository(private val context: Context) {
         }
         val title = named.ifBlank { app }
         starting = null
-        if (playing) store.edit().putString(KEY_LAST_APP, c.packageName).apply()
+        if (playing && c.packageName != lastSavedApp) {
+            lastSavedApp = c.packageName
+            store.edit().putString(KEY_LAST_APP, c.packageName).apply()
+        }
         song = Song(
             title = title,
             artist = m.text(MediaMetadata.METADATA_KEY_ARTIST, MediaMetadata.METADATA_KEY_ALBUM_ARTIST),
