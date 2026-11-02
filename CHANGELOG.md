@@ -6,6 +6,35 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
+### Nuevo
+- **Pieza Medidor:** un dato del auto por OBD en tu inicio: tacómetro, temperatura del
+  motor, gasolina, batería, **consumo en km/l** (calculado con el flujo de aire y la
+  velocidad) o **turbo en psi**. En una fila es un número grande con su barra; más alta,
+  un arco de tablero. Se pinta de rojo lo que preocupa (motor caliente, poca gasolina).
+- **Alertas del motor:** aviso en el inicio si el motor se calienta de más, si la batería
+  no carga con el motor encendido (alternador o banda), si el voltaje sube de más o si la
+  batería está baja. Solo avisa si dura unos segundos. Se apagan en el Taller.
+- **Adaptadores Bluetooth LE** (Vgate, Veepeak, OBDLink y similares): en el Taller,
+  "Buscar Bluetooth LE"; no hace falta emparejarlos.
+- **¿Cuándo es de noche?** (Apariencia → Pantalla): por la hora del sol o por el **sensor
+  de luz** de la pantalla, si tiene; cambia el tema Día y noche y el brillo en túneles y
+  estacionamientos, sin parpadear bajo un puente.
+
+### Mejorado
+- **Tarjetas del inicio** estilo DuduAuto: Navegar con un mapa dibujado (como la carátula
+  de la música), música con carátula dentro de la tarjeta y, en tarjetas angostas, solo
+  play para que se lea la canción; en tarjetas altas, carátula grande arriba.
+- **Velocímetro de una fila** para la fila de abajo, y el acomodo "Tarjetas abajo" ahora
+  trae mapa, música y velocidad.
+- **Sensores en vivo** del Taller con consumo y turbo; el voltaje lo mide el adaptador si
+  el auto no lo reporta.
+- **Copiar info de mi pantalla** incluye el sensor de luz y los ajustes de luces de la
+  pantalla (para conectar los faros en cada marca).
+
+### Corregido
+- "Agregar al inicio" no dejaba ver todas las piezas en pantallas chicas o con la interfaz
+  agrandada.
+
 ## [1.4.29] - 2026-11-02
 
 ### Mejorado

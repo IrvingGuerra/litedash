@@ -2,6 +2,7 @@ package com.irvingguerra.litedash
 
 import android.content.Context
 import android.content.res.Configuration
+import android.content.res.Resources
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
@@ -96,7 +97,11 @@ object Language {
 fun contextWithLanguage(base: Context): Context {
     val language = Language.read(base)
     if (language.isBlank()) return base
-    val config = Configuration(base.resources.configuration).apply { setLocale(Locale.forLanguageTag(language)) }
+    // Con la región del sistema si habla ese idioma (es-MX: "12.6 V"); si no, México, que
+    // escribe los decimales con punto (el español genérico usa coma).
+    val system = Resources.getSystem().configuration.locales[0]
+    val locale = if (system.language == language) system else Locale.forLanguageTag(if (language == "es") "es-MX" else language)
+    val config = Configuration(base.resources.configuration).apply { setLocale(locale) }
     return base.createConfigurationContext(config)
 }
 

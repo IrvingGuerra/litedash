@@ -43,6 +43,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -114,12 +115,25 @@ private fun windowHeightDp(): Float = with(LocalDensity.current) { LocalWindowIn
 @Composable
 fun isShortScreen(): Boolean = windowHeightDp() < 480
 
+/**
+ * La hora en números ("3:36"), la marca de 12 h aparte ("p.m.", null en 24 h) para
+ * pintarla en chico junto a un reloj grande, y la fecha.
+ */
+data class Clock(val time: String, val marker: String?, val date: String) {
+    val full get() = if (marker == null) time else "$time $marker"
+}
+
 /** Hora y fecha que respetan el formato del usuario (12/24 h); un repintado por minuto. */
 @Composable
-fun rememberClock(): Pair<String, String> {
+fun rememberClock(): Clock {
     val language = LocalConfiguration.current.locales[0]
     val context = LocalContext.current
-    val time = remember(language) { DateFormat.getTimeFormat(context) }
+    val h24 = DateFormat.is24HourFormat(context)
+    val time = remember(language, h24) {
+        // El patrón del idioma sin la marca "a" (va aparte).
+        SimpleDateFormat(DateFormat.getBestDateTimePattern(language, if (h24) "Hm" else "hm").replace("a", "").trim(), language)
+    }
+    val marker = remember(language, h24) { if (h24) null else SimpleDateFormat("a", language) }
     val date = remember(language) {
         SimpleDateFormat(DateFormat.getBestDateTimePattern(language, "EEEEdMMMM"), language)
     }
@@ -129,13 +143,31 @@ fun rememberClock(): Pair<String, String> {
             value = Date()
         }
     }
-    return time.format(now) to date.format(now).replaceFirstChar { it.uppercase() }
+    return Clock(time.format(now), marker?.format(now), date.format(now).replaceFirstChar { it.uppercase() })
+}
+
+/** La hora en grande con la marca de 12 h en chico a un lado (si la hay). */
+@Composable
+fun BigTime(clock: Clock, style: TextStyle) {
+    val c = LocalColors.current
+    Row(verticalAlignment = Alignment.Bottom) {
+        Label(clock.time, style, maxLines = 1)
+        if (clock.marker != null) {
+            Label(
+                clock.marker,
+                Typography.subtitle.copy(fontSize = (style.fontSize.value * 0.32f).coerceAtLeast(14f).sp),
+                c.textMuted,
+                maxLines = 1,
+                modifier = Modifier.padding(start = 6.dp, bottom = (style.fontSize.value * 0.16f).dp),
+            )
+        }
+    }
 }
 
 @Composable
 fun ClockTile(driverName: String? = null, weather: WeatherRepository? = null) {
     val c = LocalColors.current
-    val (time, date) = rememberClock()
+    val clock = rememberClock()
     val hello = greeting(driverName)
     BoxWithConstraints(Modifier.fillMaxSize().padding(8.dp), contentAlignment = Alignment.CenterStart) {
         // El reloj crece con la pieza: en 1 fila es discreto, en 2 o más es protagonista.
@@ -143,8 +175,8 @@ fun ClockTile(driverName: String? = null, weather: WeatherRepository? = null) {
         // Con la barra oculta (hay reloj), el clima va aquí junto a la hora.
         if (weather != null) Box(Modifier.align(Alignment.TopEnd)) { WeatherChip(weather) }
         Column {
-            Label(time, Typography.clock.copy(fontSize = size.sp), maxLines = 1)
-            Label(if (hello != null) "$hello · $date" else date, Typography.body, c.textMuted, maxLines = 1)
+            BigTime(clock, Typography.clock.copy(fontSize = size.sp))
+            Label(if (hello != null) "$hello · ${clock.date}" else clock.date, Typography.body, c.textMuted, maxLines = 1)
         }
     }
 }

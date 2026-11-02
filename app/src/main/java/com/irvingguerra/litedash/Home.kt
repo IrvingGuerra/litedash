@@ -461,7 +461,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
  */
 @Composable
 private fun Parked(d: Dependencies, onWake: () -> Unit) {
-    val (time, date) = rememberClock()
+    val clock = rememberClock()
     val hello = greeting(d.prefs.driverName)
     Box(
         Modifier
@@ -473,8 +473,8 @@ private fun Parked(d: Dependencies, onWake: () -> Unit) {
         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
             // Siempre en colores oscuros: de noche no deslumbra.
             LiteDashTheme(dark = true, scale = 1f) {
-                Label(time, Typography.clock.copy(fontSize = 120.sp), maxLines = 1)
-                Label(hello?.let { "$it · $date" } ?: date, Typography.subtitle, LocalColors.current.textMuted, maxLines = 1)
+                BigTime(clock, Typography.clock.copy(fontSize = 120.sp))
+                Label(hello?.let { "$it · ${clock.date}" } ?: clock.date, Typography.subtitle, LocalColors.current.textMuted, maxLines = 1)
                 Box(Modifier.padding(top = 12.dp)) { WeatherChip(d.weather) }
             }
         }
@@ -519,16 +519,16 @@ private fun TopBar(editing: Boolean, showTime: Boolean, driverName: String?, wea
             Button(stringResource(R.string.add), onAdd)
             Button(stringResource(R.string.done), onFinish, primary = true)
         } else {
-            val (time, date) = rememberClock()
+            val clock = rememberClock()
             // Con nombre: el saludo primero y la fecha después, más tenue.
             val hello = greeting(driverName)
             Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
                 if (hello != null) Label(hello, Typography.subtitle, maxLines = 1)
-                Label(date, Typography.body, c.textMuted, maxLines = 1)
+                Label(clock.date, Typography.body, c.textMuted, maxLines = 1)
             }
             WeatherChip(weather)
             StatusIcons()
-            Label(time, Typography.subtitle, maxLines = 1)
+            Label(clock.full, Typography.subtitle, maxLines = 1)
         }
     }
 }
@@ -604,13 +604,15 @@ private fun Rail(
     val small = isSmallScreen()
     val button = if (small) 52.dp else 56.dp
     val icon = if (small) 40.dp else 44.dp
-    val (time, _) = rememberClock()
+    val clock = rememberClock()
     Column(
         Modifier.fillMaxHeight().width(if (small) 76.dp else 88.dp).padding(vertical = 10.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
-        Label(time, Typography.subtitle, maxLines = 1)
+        // Angosta: la hora y, abajo y en chico, a.m./p.m.
+        Label(clock.time, Typography.subtitle, maxLines = 1)
+        if (clock.marker != null) Label(clock.marker, Typography.small, c.textMuted, maxLines = 1)
         Box(Modifier.padding(bottom = 6.dp)) { StatusIcons() }
         IconButton(Icons.car, onCar, size = button)
         IconButton(Icons.apps, onApps, size = button)
