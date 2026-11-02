@@ -18,10 +18,12 @@ rootProject.name = "litedash"
 
 include(":app")
 include(":core:ui")
+include(":core:vehicle")
 include(":feature:apps")
 include(":feature:dashboard")
 include(":feature:music")
 include(":feature:car")
 include(":feature:updater")
 include(":feature:navigation")
+include(":feature:obd")
 include(":benchmark")

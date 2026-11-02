@@ -68,6 +68,7 @@ val TileSpecs = listOf(
     TileSpec(TileTypes.PHONE, R.string.tile_phone, SizeLimits(1, 1), 2 to 1),
     TileSpec(TileTypes.WEATHER, R.string.tile_weather, SizeLimits(2, 1), 3 to 1),
     TileSpec(TileTypes.TRIP, R.string.tile_trip, SizeLimits(2, 1), 3 to 1),
+    TileSpec(TileTypes.SPEEDOMETER, R.string.tile_speedometer, SizeLimits(2, 2), 3 to 2),
     TileSpec(TileTypes.PROJECTION, R.string.tile_projection, SizeLimits(2, 1), 3 to 1),
     TileSpec(TileTypes.APP, R.string.tile_app, SizeLimits(1, 1, 3, 3), 1 to 1),
 )

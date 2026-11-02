@@ -45,6 +45,8 @@ object Icons {
     val fog = icon("M4 9h16 M3 13h18 M5 17h14 M8 21h8")
     val bell = icon("M6 16v-5a6 6 0 0 1 12 0v5l2 2h-16z M10 21h4")
     val phoneCar = icon("M8 3h8a1 1 0 0 1 1 1v9a1 1 0 0 1 -1 1h-8a1 1 0 0 1 -1 -1v-9a1 1 0 0 1 1 -1z M11 11h2 M4 21l1.5 -4h13l1.5 4 M6 21h.01 M18 21h.01")
+    // Motor (como la luz de "check engine"): el Taller del escáner OBD.
+    val engine = icon("M3 10v6 M3 13h2 M5 9h2l1 -2h5l1 2h3l2 2h2v6h-2l-2 2h-8l-2 -3h-2z M9 4h4 M11 4v3")
     val speed = icon("M4.5 17a8.5 8.5 0 1 1 15 0 M12 14l3.5 -4.5 M12 14h.01")
     val navigate = icon("M12 3l7.5 17.5l-7.5 -4l-7.5 4z")
     val phone = icon("M5 4h4l2 5l-2.5 1.5a11 11 0 0 0 5 5l1.5 -2.5l5 2v4a2 2 0 0 1 -2 2a16 16 0 0 1 -15 -15a2 2 0 0 1 2 -2")

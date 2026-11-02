@@ -82,6 +82,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
+import com.irvingguerra.litedash.core.vehicle.VehicleBus
+import com.irvingguerra.litedash.feature.obd.ObdRepository
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 
@@ -97,6 +99,8 @@ sealed interface Panel {
     data object Templates : Panel
     /** Elegir app para una pieza existente ([tileId]) o para una nueva (null). */
     data class PickApp(val tileId: String?) : Panel
+    /** El Taller del escáner OBD (códigos, verificación, sensores). */
+    data object Workshop : Panel
 }
 
 class Dependencies(
@@ -111,7 +115,16 @@ class Dependencies(
     val trip: TripRepository,
     val reminders: ReminderRepository,
     val wheel: WheelKeys,
-)
+    /** Señales del auto (OBD, GPS…): el tablero solo lee de aquí. */
+    val bus: VehicleBus,
+    private val obdLazy: Lazy<ObdRepository>,
+) {
+    /** El escáner OBD: se crea la primera vez que algo lo pide (el Taller o una pieza). */
+    val obd by obdLazy
+
+    /** El escáner si ya existe, sin crearlo (una pieza solo quiere saber si está conectado). */
+    fun obdIfCreated(): ObdRepository? = if (obdLazy.isInitialized()) obd else null
+}
 
 /**
  * Qué hace cada pieza al tocarla (abrir un panel, el mapa, la música o el auto en
@@ -146,6 +159,7 @@ fun TileContent(d: Dependencies, p: Tile, apps: List<App>, car: CarPackage?, rev
         TileTypes.CLOCK -> ClockTile(d.prefs.driverName, d.weather)
         TileTypes.WEATHER -> WeatherTile(d.weather)
         TileTypes.TRIP -> TripTile(d.trip, d.prefs.language)
+        TileTypes.SPEEDOMETER -> SpeedometerTile(d, d.prefs.language)
         TileTypes.PROJECTION -> ProjectionTile(d, apps) { actions.onPanel(Panel.Drawer) }
         TileTypes.NAVIGATE -> {
             val app = mapApp(d, apps, p.data)
@@ -375,6 +389,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                 close = { panel = null },
                 onEdit = { panel = null; editing = true },
                 onTemplates = { panel = Panel.Templates },
+                onWorkshop = { panel = Panel.Workshop },
                 start = when (p) {
                     Panel.About -> SettingsSection.ABOUT
                     Panel.CarSettings -> SettingsSection.CAR
@@ -384,6 +399,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
             Panel.Templates -> TemplatesPanel(d.dashboard, close = { panel = null })
             Panel.AddTile -> AddTilePanel(d.dashboard, close = { panel = null }, onPickApp = { panel = Panel.PickApp(null) })
             is Panel.PickApp -> PickAppPanel(d, apps, p.tileId, close = { panel = null })
+            Panel.Workshop -> WorkshopPanel(d, close = { panel = null })
         }
 
         if (carShown && panel == null) {

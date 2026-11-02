@@ -38,6 +38,9 @@ import com.irvingguerra.litedash.core.ui.Icons
 import com.irvingguerra.litedash.core.ui.Label
 import com.irvingguerra.litedash.core.ui.LocalColors
 import com.irvingguerra.litedash.core.ui.Typography
+import com.irvingguerra.litedash.core.vehicle.Signal
+import com.irvingguerra.litedash.core.vehicle.Source
+import com.irvingguerra.litedash.core.vehicle.VehicleBus
 import kotlinx.coroutines.delay
 
 /**
@@ -45,7 +48,7 @@ import kotlinx.coroutines.delay
  * lo pide ([acquire]/[release]) y la app está al frente: así no gasta batería
  * con la pantalla en otra app ni en segundo plano.
  */
-class TripRepository(private val context: Context) {
+class TripRepository(private val context: Context, private val bus: VehicleBus) {
     /** km/h; null = sin señal todavía. */
     var speedKmh by mutableStateOf<Float?>(null)
         private set
@@ -80,6 +83,7 @@ class TripRepository(private val context: Context) {
         if (users == 0) {
             runCatching { manager.removeUpdates(listener) }
             speedKmh = null
+            bus.publish(Signal.SPEED, null, Source.GPS)
         }
     }
 
@@ -91,6 +95,7 @@ class TripRepository(private val context: Context) {
 
     private fun update(l: Location) {
         speedKmh = if (l.hasSpeed()) l.speed * 3.6f else null
+        bus.publish(Signal.SPEED, speedKmh, Source.GPS)
         if (l.hasBearing() && (speedKmh ?: 0f) > 3f) bearing = l.bearing
         val previous = last
         // Solo puntos buenos y en movimiento: parado, el GPS "camina" solo unos metros.

@@ -493,6 +493,7 @@ fun SettingsPanel(
     close: () -> Unit,
     onEdit: () -> Unit,
     onTemplates: () -> Unit,
+    onWorkshop: () -> Unit,
     start: SettingsSection = SettingsSection.APPEARANCE,
 ) {
     val c = LocalColors.current
@@ -540,7 +541,7 @@ fun SettingsPanel(
                     }
                     SettingsSection.MODULES -> {
                         Label(stringResource(R.string.modules_help), Typography.body, c.textMuted)
-                        Modules(d, onEdit)
+                        Modules(d, onEdit, onWorkshop)
                     }
                     SettingsSection.ABOUT -> About(d)
                 }
@@ -570,7 +571,7 @@ private fun MenuEntry(icon: ImageVector, text: String, selected: Boolean, narrow
 
 /** Tarjeta de Ajustes: título, controles y el ícono de la sección grande y tenue a la derecha. */
 @Composable
-private fun SettingsCard(
+internal fun SettingsCard(
     title: String? = null,
     help: String? = null,
     content: @Composable ColumnScope.() -> Unit,
@@ -776,6 +777,7 @@ private fun iconOf(type: String) = when (type) {
     TileTypes.PHONE -> Icons.phone
     TileTypes.WEATHER -> Icons.sun
     TileTypes.TRIP -> Icons.speed
+    TileTypes.SPEEDOMETER -> Icons.speed
     TileTypes.PROJECTION -> Icons.phoneCar
     else -> Icons.apps
 }
@@ -783,7 +785,7 @@ private fun iconOf(type: String) = when (type) {
 
 /** Cada módulo: qué hace y si está en tu inicio. */
 @Composable
-private fun Modules(d: Dependencies, onEdit: () -> Unit) {
+private fun Modules(d: Dependencies, onEdit: () -> Unit, onWorkshop: () -> Unit) {
     val c = LocalColors.current
     val permission = remember(d.dashboard.tiles.any { it.type == TileTypes.MUSIC }) { d.music.hasPermission() }
     // Tipo que no cupo al agregarlo: se avisa y se ofrece acomodar el inicio.
@@ -809,6 +811,10 @@ private fun Modules(d: Dependencies, onEdit: () -> Unit) {
         ModuleItem(TileTypes.WEATHER, Icons.sun, stringResource(R.string.tile_weather), stringResource(R.string.weather_module))
         ModuleItem(TileTypes.TRIP, Icons.speed, stringResource(R.string.tile_trip), stringResource(R.string.trip_module))
         ModuleItem(TileTypes.PROJECTION, Icons.phoneCar, stringResource(R.string.tile_projection), stringResource(R.string.projection_module))
+        ModuleItem(TileTypes.SPEEDOMETER, Icons.speed, stringResource(R.string.tile_speedometer), stringResource(R.string.speedometer_module))
+        ModuleRow(Icons.engine, stringResource(R.string.workshop), stringResource(R.string.workshop_module)) {
+            Button(stringResource(R.string.open), onWorkshop, primary = true)
+        }
     }
 }
 

@@ -3,6 +3,8 @@ package com.irvingguerra.litedash
 import android.app.Application
 import android.service.notification.StatusBarNotification
 import com.irvingguerra.litedash.feature.updater.Updater
+import com.irvingguerra.litedash.core.vehicle.VehicleBus
+import com.irvingguerra.litedash.feature.obd.ObdRepository
 import com.irvingguerra.litedash.feature.apps.AppRepository
 import com.irvingguerra.litedash.feature.car.CarRepository
 import com.irvingguerra.litedash.feature.music.MusicRepository
@@ -21,6 +23,7 @@ class LiteDashApp : Application() {
         val mapPackages = NAVIGATION_PACKAGES.toSet() +
             if (BuildConfig.DEBUG) setOf(NavigationRepository.TEST_PACKAGE) else emptySet()
         val prefs = Preferences(this)
+        val bus = VehicleBus()
         Dependencies(
             apps = AppRepository(this),
             music = MusicRepository(this).apply { preferred = prefs.musicApp },
@@ -30,9 +33,11 @@ class LiteDashApp : Application() {
             cars = CarRepository(this, BuildConfig.CATALOG_URL),
             updater = Updater(this, BuildConfig.UPDATES_URL, BuildConfig.VERSION_CODE.toLong()),
             weather = WeatherRepository(this, prefs),
-            trip = TripRepository(this),
+            trip = TripRepository(this, bus),
             reminders = ReminderRepository(this),
             wheel = WheelKeys(this, prefs),
+            bus = bus,
+            obdLazy = lazy { ObdRepository(this, bus) },
         )
     }
 

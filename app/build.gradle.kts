@@ -132,6 +132,8 @@ dependencies {
     implementation(project(":feature:car"))
     implementation(project(":feature:updater"))
     implementation(project(":feature:navigation"))
+    implementation(project(":core:vehicle"))
+    implementation(project(":feature:obd"))
 
     implementation(platform(libs.compose.bom))
     implementation(libs.compose.foundation)

@@ -6,6 +6,18 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
+## [1.4.17] - 2026-11-01
+
+### Agregado
+- **Taller (escáner OBD):** en Ajustes → Módulos. Con un adaptador ELM327 (Bluetooth
+  emparejado o Wi-Fi) lee la luz de falla, el voltaje de la batería y el VIN; los
+  códigos de falla guardados, pendientes y permanentes con su explicación en español;
+  borra códigos con doble confirmación; dice si pasarías la verificación (luz de falla y
+  monitores) y muestra los sensores en vivo que da tu auto. Se reconecta solo al último
+  adaptador y solo lee lo que se está viendo.
+- **Pieza Velocímetro:** medidor de arco con la velocidad del OBD si está conectado y,
+  si no, del GPS.
+
 ## [1.4.16] - 2026-11-01
 
 ### Cambiado
