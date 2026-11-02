@@ -13,6 +13,7 @@ import android.net.Network
 import android.net.NetworkCapabilities
 import android.os.Build
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.width
@@ -43,7 +44,7 @@ private fun Context.listen(receiver: BroadcastReceiver, action: String) =
 
 /** Volumen de la música en el dock: botones − / + y el nivel. */
 @Composable
-fun Volume(buttonSize: Dp) {
+fun Volume(buttonSize: Dp, vertical: Boolean = false) {
     val context = LocalContext.current
     val audio = remember { context.getSystemService(AudioManager::class.java) }
     var level by remember { mutableIntStateOf(audio.getStreamVolume(AudioManager.STREAM_MUSIC)) }
@@ -60,6 +61,12 @@ fun Volume(buttonSize: Dp) {
     fun adjust(direction: Int) {
         audio.adjustStreamVolume(AudioManager.STREAM_MUSIC, direction, 0)
         level = audio.getStreamVolume(AudioManager.STREAM_MUSIC)
+    }
+    // En la barra lateral: + arriba, el nivel y − abajo.
+    if (vertical) return Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        IconButton(Icons.plus, { adjust(AudioManager.ADJUST_RAISE) }, size = buttonSize)
+        Label(level.toString(), Typography.subtitle, maxLines = 1)
+        IconButton(Icons.minus, { adjust(AudioManager.ADJUST_LOWER) }, size = buttonSize)
     }
     Row(verticalAlignment = Alignment.CenterVertically) {
         IconButton(Icons.minus, { adjust(AudioManager.ADJUST_LOWER) }, size = buttonSize)

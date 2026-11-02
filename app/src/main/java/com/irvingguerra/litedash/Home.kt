@@ -1,5 +1,6 @@
 package com.irvingguerra.litedash
 
+import com.irvingguerra.litedash.core.ui.Radius
 import android.content.Context
 import android.content.Intent
 import androidx.activity.compose.BackHandler
@@ -13,6 +14,7 @@ import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -309,10 +311,21 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
     ) {
         // Los paneles tapan todo el inicio: mientras hay uno abierto no se dibuja ni se
         // pinta nada debajo (el auto del tablero no se tiñe dos veces al cambiar el color).
-        if (panel == null) {
-            Column(Modifier.fillMaxSize().safeDrawingPadding()) {
-                // Si ya hay un reloj en el tablero, la barra no repite la hora.
-                val showTime = d.dashboard.tiles.none { it.type == TileTypes.CLOCK }
+        if (panel == null) BoxWithConstraints(Modifier.fillMaxSize().safeDrawingPadding()) {
+          // Pantalla acostada: barra lateral a la izquierda (como DuduAuto), con la hora y tus
+          // apps; el tablero se queda con toda la altura. Parada: el dock abajo, como siempre.
+          val rail = maxWidth > maxHeight
+          Row(Modifier.fillMaxSize()) {
+            if (rail) Rail(
+                repo = d.apps,
+                favorites = remember(apps, d.prefs.dock, d.prefs.musicApp) { dockFavorites(d, apps) },
+                onCar = { panel = Panel.CarSettings },
+                onApps = { panel = Panel.Drawer },
+                onSettings = { panel = Panel.Settings },
+            )
+            Column(Modifier.weight(1f).fillMaxHeight()) {
+                // Si ya hay un reloj en el tablero (o en la barra lateral), la barra no repite la hora.
+                val showTime = !rail && d.dashboard.tiles.none { it.type == TileTypes.CLOCK }
                 val barHidden = !editing && !showTime
                 TopBar(
                     editing = editing,
@@ -372,7 +385,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                         ) { p -> TileContent(d, p, apps, car, revision, actions) }
                     }
                 }
-                Dock(
+                if (!rail) Dock(
                     repo = d.apps,
                     favorites = remember(apps, d.prefs.dock, d.prefs.musicApp) { dockFavorites(d, apps) },
                     onCar = { panel = Panel.CarSettings },
@@ -380,6 +393,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                     onSettings = { panel = Panel.Settings },
                 )
             }
+          }
         }
 
         when (val p = panel) {
@@ -518,7 +532,7 @@ private fun Dock(
             .fillMaxWidth()
             .height(if (small) 96.dp else if (short) 64.dp else 84.dp)
             .padding(horizontal = 16.dp, vertical = 8.dp)
-            .clip(RoundedCornerShape(24.dp))
+            .clip(RoundedCornerShape(Radius.card))
             .background(c.surface)
             .padding(horizontal = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -532,7 +546,7 @@ private fun Dock(
             val fitCount = (maxWidth / (box + 8.dp)).toInt()
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                 for (app in favorites.take(fitCount)) {
-                    Box(Modifier.size(box).clip(RoundedCornerShape(16.dp)).clickable { repo.open(context, app) }, contentAlignment = Alignment.Center) {
+                    Box(Modifier.size(box).clip(RoundedCornerShape(Radius.card)).clickable { repo.open(context, app) }, contentAlignment = Alignment.Center) {
                         AppIcon(repo, app, side)
                     }
                 }
@@ -543,6 +557,52 @@ private fun Dock(
         val voice = remember { voiceIntent(context) }
         if (voice != null) IconButton(Icons.mic, { runCatching { context.startActivity(voice) } }, size = buttonSize)
         IconButton(Icons.settings, onSettings, size = buttonSize)
+    }
+}
+
+/**
+ * Barra lateral (pantallas acostadas): hora, clima y estado arriba; el auto, todas las
+ * apps y tus favoritas (las que quepan); abajo volumen, voz y Ajustes.
+ */
+@Composable
+private fun Rail(
+    repo: AppRepository,
+    favorites: List<App>,
+    onCar: () -> Unit,
+    onApps: () -> Unit,
+    onSettings: () -> Unit,
+) {
+    val c = LocalColors.current
+    val context = LocalContext.current
+    val small = isSmallScreen()
+    val button = if (small) 52.dp else 56.dp
+    val icon = if (small) 40.dp else 44.dp
+    val (time, _) = rememberClock()
+    Column(
+        Modifier.fillMaxHeight().width(if (small) 76.dp else 88.dp).padding(vertical = 10.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        Label(time, Typography.subtitle, maxLines = 1)
+        Box(Modifier.padding(bottom = 6.dp)) { StatusIcons() }
+        IconButton(Icons.car, onCar, size = button)
+        IconButton(Icons.apps, onApps, size = button)
+        Box(Modifier.padding(vertical = 4.dp).width(28.dp).height(1.dp).background(c.line))
+        val voice = remember { voiceIntent(context) }
+        BoxWithConstraints(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
+            // Las favoritas que quepan entre los accesos de arriba y los controles de abajo.
+            val fit = (maxHeight / (button + 4.dp)).toInt()
+            Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                for (app in favorites.take(fit)) {
+                    Box(Modifier.size(button).clip(RoundedCornerShape(Radius.inner)).clickable { repo.open(context, app) }, contentAlignment = Alignment.Center) {
+                        AppIcon(repo, app, icon)
+                    }
+                }
+            }
+        }
+        Volume(if (small) 40.dp else 44.dp, vertical = true)
+        if (voice != null) IconButton(Icons.mic, { runCatching { context.startActivity(voice) } }, size = button)
+        IconButton(Icons.settings, onSettings, size = button)
     }
 }
 

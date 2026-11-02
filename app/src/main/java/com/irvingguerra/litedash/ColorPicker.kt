@@ -1,5 +1,6 @@
 package com.irvingguerra.litedash
 
+import com.irvingguerra.litedash.core.ui.Radius
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -95,7 +96,7 @@ private fun ColorPlane(color: Color, onPreview: (Color) -> Unit, onChange: (Colo
     // El último color del arrastre: es el que se guarda al soltar.
     var dragged by remember { mutableStateOf<Color?>(null) }
     val drop = { dragged?.let(change); dragged = null }
-    val shape = RoundedCornerShape(14.dp)
+    val shape = RoundedCornerShape(Radius.inner)
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Canvas(
             Modifier

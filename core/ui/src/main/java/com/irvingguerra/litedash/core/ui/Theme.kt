@@ -1,7 +1,6 @@
 package com.irvingguerra.litedash.core.ui
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -49,31 +48,43 @@ data class Colors(
     val danger: Color,
 )
 
+// Estilo limpio (Irving, 2026-11-01: "más estilo Apple o DuduAuto"): tarjetas lisas sin
+// borde sobre un fondo apenas distinto, texto secundario gris y el ámbar solo en lo importante.
 val DarkColors = Colors(
     dark = true,
-    background = Brand.Graphite,
-    surface = Color(0xFF171B21),
-    surfaceHigh = Brand.GraphiteLight,
-    line = Color(0xFF2A313B),
+    background = Color(0xFF0E1013),
+    surface = Color(0xFF1A1D22),
+    surfaceHigh = Color(0xFF262A31),
+    line = Color(0xFF2A2F37),
     text = Brand.LightWhite,
-    textMuted = Color(0xFF9AA3AE),
+    textMuted = Color(0xFF8B939E),
     accent = Brand.Amber,
     danger = Color(0xFFFF6B5E),
 )
 
 val LightColors = Colors(
     dark = false,
-    background = Color(0xFFF2F3F5),
+    background = Color(0xFFE9ECF0),
     surface = Color.White,
-    surfaceHigh = Color(0xFFE6E9ED),
-    line = Color(0xFFDADEE3),
-    text = Brand.Graphite,
-    textMuted = Color(0xFF5B6470),
+    surfaceHigh = Color(0xFFF0F2F5),
+    line = Color(0xFFE3E6EA),
+    text = Color(0xFF16181C),
+    textMuted = Color(0xFF7D8590),
     accent = Color(0xFFE59500),
     danger = Color(0xFFD93A2B),
 )
 
 val LocalColors = staticCompositionLocalOf { DarkColors }
+
+/** Esquinas: moderadas (Irving pidió menos redondeado que la propuesta). */
+object Radius {
+    /** Tarjetas del tablero y de Ajustes. */
+    val card = 14.dp
+    /** Cosas dentro de una tarjeta: portadas, botones, campos, filas. */
+    val inner = 10.dp
+    /** Detalles chicos (barras, indicadores). */
+    val small = 6.dp
+}
 
 /**
  * Sin Material: la app usa solo foundation para mantenerse ligera.
@@ -109,7 +120,7 @@ fun Label(
     BasicText(text, modifier, style = style.copy(color = color), maxLines = maxLines, overflow = TextOverflow.Ellipsis)
 }
 
-/** Tarjeta base del tablero: superficie con borde fino y esquinas de 20. */
+/** Tarjeta base del tablero: superficie lisa, sin borde, con esquinas [Radius.card]. */
 @Composable
 fun Card(
     modifier: Modifier = Modifier,
@@ -117,8 +128,8 @@ fun Card(
     content: @Composable BoxScope.() -> Unit,
 ) {
     val c = LocalColors.current
-    val shape = RoundedCornerShape(20.dp)
-    var m = modifier.clip(shape).background(c.surface).border(1.dp, c.line, shape)
+    val shape = RoundedCornerShape(Radius.card)
+    var m = modifier.clip(shape).background(c.surface)
     if (onClick != null) m = m.clickable(onClick = onClick)
     Box(m, content = content)
 }
@@ -139,11 +150,11 @@ fun IconButton(
     ) { Icon(icon, color, size * 0.45f) }
 }
 
-/** Botón de texto en forma de píldora. */
+/** Botón de texto con esquinas [Radius.inner]. */
 @Composable
 fun Button(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, primary: Boolean = false) {
     val c = LocalColors.current
-    val shape = RoundedCornerShape(50)
+    val shape = RoundedCornerShape(Radius.inner)
     Box(
         modifier
             .clip(shape)

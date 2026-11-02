@@ -1,5 +1,6 @@
 package com.irvingguerra.litedash
 
+import com.irvingguerra.litedash.core.ui.Radius
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -29,7 +30,7 @@ fun Notice(text: String, icon: ImageVector? = null, buttons: @Composable () -> U
     val box = Modifier
         .fillMaxWidth()
         .padding(horizontal = 16.dp, vertical = 4.dp)
-        .clip(RoundedCornerShape(18.dp))
+        .clip(RoundedCornerShape(Radius.card))
         .background(c.surface)
         .padding(start = 20.dp, end = 8.dp, top = 8.dp, bottom = 8.dp)
     val label = @Composable { m: Modifier ->

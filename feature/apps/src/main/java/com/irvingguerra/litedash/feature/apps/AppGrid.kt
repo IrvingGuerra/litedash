@@ -1,5 +1,6 @@
 package com.irvingguerra.litedash.feature.apps
 
+import com.irvingguerra.litedash.core.ui.Radius
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -70,7 +71,7 @@ fun AppGrid(
         items(list, key = { it.key }) { app ->
             Column(
                 Modifier
-                    .clip(RoundedCornerShape(16.dp))
+                    .clip(RoundedCornerShape(Radius.card))
                     .background(if (app.key in marked) c.surfaceHigh else c.background.copy(alpha = 0f))
                     .combinedClickable(onClick = { onClick(app) }, onLongClick = onLongPress?.let { { it(app) } })
                     .padding(8.dp),

@@ -1,5 +1,6 @@
 package com.irvingguerra.litedash
 
+import com.irvingguerra.litedash.core.ui.Radius
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -268,7 +269,7 @@ private fun Turn(instruction: TurnInstruction, large: Boolean) {
     val c = LocalColors.current
     val side = if (large) 72.dp else 48.dp
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Box(Modifier.size(side).clip(RoundedCornerShape(16.dp)).background(c.accent), contentAlignment = Alignment.Center) {
+        Box(Modifier.size(side).clip(RoundedCornerShape(Radius.card)).background(c.accent), contentAlignment = Alignment.Center) {
             val arrow = instruction.arrow
             if (arrow != null) {
                 Image(arrow.asImageBitmap(), null, Modifier.size(side * 0.7f), colorFilter = ColorFilter.tint(c.background))

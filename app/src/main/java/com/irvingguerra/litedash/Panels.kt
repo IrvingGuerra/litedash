@@ -1,5 +1,6 @@
 package com.irvingguerra.litedash
 
+import com.irvingguerra.litedash.core.ui.Radius
 import android.app.Activity
 import android.app.ActivityManager
 import android.content.ClipData
@@ -128,7 +129,7 @@ internal fun PanelScaffold(
 fun TextInput(value: String, onChange: (String) -> Unit, hint: String, modifier: Modifier = Modifier, icon: Boolean = false) {
     val c = LocalColors.current
     Row(
-        modifier.height(56.dp).clip(RoundedCornerShape(28.dp)).background(c.surface).border(1.dp, c.line, RoundedCornerShape(28.dp)).padding(horizontal = 20.dp),
+        modifier.height(56.dp).clip(RoundedCornerShape(Radius.card)).background(c.surface).border(1.dp, c.line, RoundedCornerShape(Radius.card)).padding(horizontal = 20.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         if (icon) {
@@ -416,7 +417,7 @@ private fun CatalogSearch(prefs: Preferences, cars: CarRepository, available: Li
 @Composable
 private fun ModelCard(title: String, selected: Boolean, onClick: () -> Unit, detail: String? = null, picture: @Composable (Modifier) -> Unit) {
     val c = LocalColors.current
-    val shape = RoundedCornerShape(16.dp)
+    val shape = RoundedCornerShape(Radius.card)
     Column(
         Modifier
             .width(176.dp)
@@ -452,7 +453,7 @@ private fun Confirmed(label: String, question: String, primary: Boolean = false,
 @Composable
 private fun CarPreview(e: CatalogEntry, cars: CarRepository, progress: Float?, onDownload: () -> Unit, onClose: () -> Unit) {
     val c = LocalColors.current
-    val shape = RoundedCornerShape(16.dp)
+    val shape = RoundedCornerShape(Radius.card)
     var img by remember(e.id) { mutableStateOf<ImageBitmap?>(null) }
     LaunchedEffect(e.id) { img = cars.thumbnail(e) }
     Column(
@@ -578,7 +579,7 @@ private fun MenuEntry(icon: ImageVector, text: String, selected: Boolean, narrow
         Modifier
             .fillMaxWidth()
             .height(64.dp)
-            .clip(RoundedCornerShape(18.dp))
+            .clip(RoundedCornerShape(Radius.card))
             .background(if (selected) c.surfaceHigh else Color.Transparent)
             .clickable(onClick = onClick)
             .padding(horizontal = 18.dp),
@@ -750,7 +751,7 @@ fun TemplatesPanel(dashboard: DashboardState, close: () -> Unit) {
 @Composable
 private fun TemplateThumbnail(p: Template, grid: Grid) {
     val c = LocalColors.current
-    BoxWithConstraints(Modifier.fillMaxWidth().aspectRatio(grid.columns.toFloat() / grid.rows).clip(RoundedCornerShape(12.dp)).background(c.background)) {
+    BoxWithConstraints(Modifier.fillMaxWidth().aspectRatio(grid.columns.toFloat() / grid.rows).clip(RoundedCornerShape(Radius.inner)).background(c.background)) {
         val cw = maxWidth / grid.columns
         val ch = maxHeight / grid.rows
         for (tile in p.tiles(grid)) {
@@ -848,7 +849,7 @@ private fun ModuleRow(
     action: @Composable () -> Unit,
 ) {
     val c = LocalColors.current
-    val shape = RoundedCornerShape(16.dp)
+    val shape = RoundedCornerShape(Radius.card)
     Row(
         Modifier.fillMaxWidth().clip(shape).background(c.surface).border(1.dp, c.line, shape).padding(16.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -970,7 +971,7 @@ private fun Updates(a: Updater) {
 @Composable
 private fun NewVersion(v: Version, onInstall: () -> Unit) {
     val c = LocalColors.current
-    val shape = RoundedCornerShape(16.dp)
+    val shape = RoundedCornerShape(Radius.card)
     Column(
         Modifier.fillMaxWidth().clip(shape).background(c.surface).border(1.dp, c.accent, shape).padding(18.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),

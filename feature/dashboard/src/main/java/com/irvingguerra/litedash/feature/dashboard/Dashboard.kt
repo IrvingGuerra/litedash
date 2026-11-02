@@ -1,5 +1,6 @@
 package com.irvingguerra.litedash.feature.dashboard
 
+import com.irvingguerra.litedash.core.ui.Radius
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.awaitEachGesture
@@ -101,9 +102,9 @@ fun Dashboard(
                     .offset(cellWidth * shown.col, cellHeight * shown.row)
                     .size(cellWidth * shown.width, cellHeight * shown.height)
                     .padding(GAP)
-                    .clip(RoundedCornerShape(20.dp))
+                    .clip(RoundedCornerShape(Radius.card))
                     .background((if (ok) c.accent else c.danger).copy(alpha = 0.18f))
-                    .border(2.dp, if (ok) c.accent else c.danger, RoundedCornerShape(20.dp)),
+                    .border(2.dp, if (ok) c.accent else c.danger, RoundedCornerShape(Radius.card)),
             )
         }
 
@@ -147,8 +148,8 @@ fun Dashboard(
                     Box(
                         Modifier
                             .fillMaxSize()
-                            .clip(RoundedCornerShape(20.dp))
-                            .border(2.dp, c.accent.copy(alpha = 0.7f), RoundedCornerShape(20.dp))
+                            .clip(RoundedCornerShape(Radius.card))
+                            .border(2.dp, c.accent.copy(alpha = 0.7f), RoundedCornerShape(Radius.card))
                             .pointerInput(p.id, tiles, grid, cwPx, chPx) {
                                 detectDragGestures(
                                     onDragStart = { drag = Drag(p.id, resizing = false); dragOffset = Offset.Zero },

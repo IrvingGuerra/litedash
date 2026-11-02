@@ -1,5 +1,6 @@
 package com.irvingguerra.litedash.feature.music
 
+import com.irvingguerra.litedash.core.ui.Radius
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -96,7 +97,7 @@ fun MusicExpanded(repo: MusicRepository, close: () -> Unit, modifier: Modifier =
 @Composable
 private fun Artwork(song: Song, modifier: Modifier) {
     val c = LocalColors.current
-    Box(modifier.clip(RoundedCornerShape(20.dp)).background(c.surfaceHigh), contentAlignment = Alignment.Center) {
+    Box(modifier.clip(RoundedCornerShape(Radius.card)).background(c.surfaceHigh), contentAlignment = Alignment.Center) {
         val bmp = song.artwork
         if (bmp != null) {
             Image(bmp.asImageBitmap(), null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)

@@ -6,6 +6,16 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
+## [1.4.21] - 2026-11-01
+
+### Cambiado
+- **Diseño más limpio** (primer paso del rediseño estilo Apple/DuduAuto): tarjetas lisas
+  sin borde y con esquinas más moderadas, colores más suaves en claro y oscuro, y botones
+  con esquinas en lugar de píldoras.
+- **Barra lateral** en pantallas acostadas: la hora, el estado, el auto, tus apps,
+  volumen, voz y Ajustes van a la izquierda y el tablero usa toda la altura. En pantallas
+  paradas el dock sigue abajo.
+
 ## [1.4.20] - 2026-11-01
 
 ### Agregado
