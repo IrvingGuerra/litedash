@@ -65,6 +65,11 @@ android {
     }
 
     // Mismo código, dos canales. Mismo applicationId y versionCode.
+    // Solo los idiomas de LiteDash: sin esto vienen los ~80 idiomas de las librerías de AndroidX.
+    androidResources {
+        localeFilters += listOf("es", "en")
+    }
+
     defaultConfig {
         buildConfigField("String", "RELEASE_NOTES", "\"" + releaseNotes.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n") + "\"")
     }

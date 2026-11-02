@@ -6,6 +6,12 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
+## [1.4.25] - 2026-11-01
+
+### Mejorado
+- **Más ligera:** la app ya no carga textos de ~80 idiomas que traían las librerías de
+  Android y que LiteDash no usa (solo español e inglés): de 1.52 a 1.36 MB.
+
 ## [1.4.24] - 2026-11-01
 
 ### Cambiado
