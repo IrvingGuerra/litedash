@@ -45,6 +45,12 @@ import com.irvingguerra.litedash.feature.car.CatalogEntry
 @Composable
 fun HomeCar(d: Dependencies, pkg: CarPackage?, onClick: () -> Unit, modifier: Modifier = Modifier, onReady: (() -> Unit)? = null) {
     val color = d.prefs.carColor
+    if (d.prefs.showLogo) {
+        // Sin auto que cargar: listo de una vez.
+        val ready by rememberUpdatedState(onReady)
+        LaunchedEffect(Unit) { ready?.invoke() }
+        return BrandLogo(d, brandName(d, pkg), onClick, modifier)
+    }
     // El sedán dibujado no carga nada: listo de una vez.
     if (pkg == null && onReady != null) {
         val ready by rememberUpdatedState(onReady)
@@ -61,6 +67,10 @@ fun HomeCar(d: Dependencies, pkg: CarPackage?, onClick: () -> Unit, modifier: Mo
         hasFloor = pkg?.hasFloor == true,
     )
 }
+
+/** La marca para el logo de texto: la del modelo elegido o, si no, el nombre del auto. */
+@Composable
+fun brandName(d: Dependencies, pkg: CarPackage?) = pkg?.make ?: d.prefs.carName ?: stringResource(R.string.my_car)
 
 /**
  * Solo el auto: crece desde su pieza ([from], en coordenadas de la pantalla)

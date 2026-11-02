@@ -31,6 +31,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
@@ -407,6 +408,10 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
         }
 
         if (parked) Parked(d, onWake = { parked = false; touched++ })
+
+        // Animación de entrada con tu logo, una vez por cada vez que se abre LiteDash.
+        var intro by rememberSaveable { mutableStateOf(d.prefs.logoIntro && d.prefs.welcomeSeen) }
+        if (intro) LogoIntro(d, brandName(d, car)) { intro = false }
 
         if (!d.prefs.welcomeSeen) {
             Welcome(d.prefs, d.dashboard, revision, onFinish = { d.prefs.welcomeSeen = true })

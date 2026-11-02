@@ -45,6 +45,9 @@ private object PrefKeys {
     const val NIGHT_BRIGHTNESS = "brillo_noche"
     const val BRIGHTNESS_ALL_APPS = "brillo_todas_apps"
     const val BRIGHTNESS_ORIGINAL = "brillo_original"
+    const val SHOW_LOGO = "mostrar_logo"
+    const val LOGO_INTRO = "logo_entrada"
+    const val LOGO_REVISION = "logo_revision"
 }
 
 /** [stored] es como se guarda cada tema (los nombres que tenía en la 1.3.4). */
@@ -183,6 +186,24 @@ class Preferences(context: Context) {
     var parkedMode: Boolean
         get() = _parkedMode
         set(v) { _parkedMode = v; p.edit { putBoolean(PrefKeys.PARKED_MODE, v) } }
+
+    private var _showLogo by mutableStateOf(p.getBoolean(PrefKeys.SHOW_LOGO, false))
+    /** En el inicio, el logo de tu marca (imagen tuya o el nombre) en lugar del auto. */
+    var showLogo: Boolean
+        get() = _showLogo
+        set(v) { _showLogo = v; p.edit { putBoolean(PrefKeys.SHOW_LOGO, v) } }
+
+    private var _logoIntro by mutableStateOf(p.getBoolean(PrefKeys.LOGO_INTRO, false))
+    /** Al abrir LiteDash, el logo aparece unos instantes a pantalla completa. */
+    var logoIntro: Boolean
+        get() = _logoIntro
+        set(v) { _logoIntro = v; p.edit { putBoolean(PrefKeys.LOGO_INTRO, v) } }
+
+    private var _logoRevision by mutableIntStateOf(p.getInt(PrefKeys.LOGO_REVISION, 0))
+    /** Cambia cada vez que se elige o quita la imagen del logo (para volver a leerla). */
+    var logoRevision: Int
+        get() = _logoRevision
+        set(v) { _logoRevision = v; p.edit { putInt(PrefKeys.LOGO_REVISION, v) } }
 
     private var _carAngle by mutableStateOf(p.getFloat(PrefKeys.CAR_ANGLE, -1f).takeIf { it >= 0f })
     /** Hacia dónde dejó girado el auto en el inicio (fracción de vuelta); null = tres cuartos. */

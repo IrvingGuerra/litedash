@@ -305,4 +305,14 @@
     <string name="tab_inspection">Inspection</string>
     <string name="tab_sensors">Sensors</string>
     <string name="obd_no_readiness">Your car doesn\'t report the inspection monitors.</string>
+    <!-- Logo en vez del auto -->
+    <string name="logo_title">Car or logo</string>
+    <string name="logo_help">If you\'d rather not see a car, show your brand\'s logo: pick the image from your gallery (LiteDash doesn\'t include brand logos). The intro animation shows it for a few seconds when it opens.</string>
+    <string name="show_car">Car</string>
+    <string name="show_logo">Logo</string>
+    <string name="logo_pick">Pick image</string>
+    <string name="logo_change">Change image</string>
+    <string name="logo_remove">Remove image</string>
+    <string name="logo_intro">Intro animation</string>
+    <string name="logo_no_image">Without an image the name is shown: %1$s.</string>
 </resources>

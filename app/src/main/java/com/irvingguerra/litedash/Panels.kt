@@ -272,6 +272,9 @@ private fun CarSettings(d: Dependencies) {
         Label(stringResource(R.string.color), Typography.label, c.textMuted)
         ColorPicker(prefs.carColor, prefs::previewCarColor) { prefs.carColor = it }
     }
+    if (tab == 0) SettingsCard(stringResource(R.string.logo_title), stringResource(R.string.logo_help)) {
+        LogoSettings(d, brandName(d, pkg))
+    }
     if (tab == 0 && pkg != null) {
         SettingsCard("${pkg.make} ${pkg.name} ${pkg.year}") {
             ModelOptions(cars, pkg, catalog?.firstOrNull { it.id == pkg.id }, onDelete = { prefs.carModel = null; cars.delete(pkg) })

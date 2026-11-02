@@ -6,6 +6,15 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
+## [1.4.20] - 2026-11-01
+
+### Agregado
+- **Logo en vez del auto** (Ajustes → Tu auto → Auto o logo): para quien prefiere no ver
+  un auto, el inicio muestra el logo de tu marca. La imagen la eliges de tu galería
+  (LiteDash no trae logos de marcas); sin imagen se muestra el nombre de la marca.
+- **Animación de entrada:** al abrir LiteDash el logo aparece unos segundos y pasa al
+  inicio. Un toque la salta.
+
 ## [1.4.19] - 2026-11-01
 
 ### Cambiado

@@ -309,4 +309,14 @@
     <string name="tab_inspection">Verificación</string>
     <string name="tab_sensors">Sensores</string>
     <string name="obd_no_readiness">Tu auto no reporta los monitores de la verificación.</string>
+    <!-- Logo en vez del auto -->
+    <string name="logo_title">Auto o logo</string>
+    <string name="logo_help">Si prefieres no ver un auto, pon el logo de tu marca: elige la imagen de tu galería (LiteDash no trae logos de marcas). La animación de entrada lo muestra unos segundos al abrir.</string>
+    <string name="show_car">Auto</string>
+    <string name="show_logo">Logo</string>
+    <string name="logo_pick">Elegir imagen</string>
+    <string name="logo_change">Cambiar imagen</string>
+    <string name="logo_remove">Quitar imagen</string>
+    <string name="logo_intro">Animación de entrada</string>
+    <string name="logo_no_image">Sin imagen se muestra el nombre: %1$s.</string>
 </resources>
