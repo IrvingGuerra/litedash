@@ -4,15 +4,18 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>LiteDash — launcher para tu auto o moto</title>
-  <meta name="description" content="El launcher para pantallas Android de autos y motos que pesa 1.4 MB, abre en menos de un segundo y no gasta nada cuando no lo usas. Modular, con actualizaciones de un toque. Gratis, sin anuncios y de código abierto.">
+  <meta name="description" content="El launcher para pantallas Android de autos y motos que pesa 1.4 MB, abre en menos de un segundo y no gasta nada cuando no lo usas. Tu auto en 3D, escáner OBD, mandos al volante y módulos a tu gusto. Gratis, sin anuncios y de código abierto.">
   <meta name="theme-color" content="#101317">
+  <link rel="canonical" href="https://litedash.web.app/">
   <link rel="icon" href="favicon.ico" sizes="48x48">
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
-  <link rel="alternate" hreflang="en" href="en/">
+  <link rel="alternate" hreflang="es" href="https://litedash.web.app/">
+  <link rel="alternate" hreflang="en" href="https://litedash.web.app/en/">
   <meta property="og:title" content="LiteDash — launcher para tu auto o moto">
-  <meta property="og:description" content="1.4 MB, abre en menos de un segundo y 0 % de CPU en reposo. Tu auto como fondo, módulos a tu gusto y actualizaciones de un toque.">
-  <meta property="og:image" content="https://irvingguerra.github.io/litedash/img/og.jpg">
+  <meta property="og:description" content="1.4 MB, abre en menos de un segundo y 0 % de CPU en reposo. Tu auto en 3D como fondo, escáner OBD, mandos al volante y módulos a tu gusto.">
+  <meta property="og:image" content="https://litedash.web.app/img/og.jpg">
+  <meta property="og:url" content="https://litedash.web.app/">
   <meta property="og:type" content="website">
   <meta name="twitter:card" content="summary_large_image">
   <link rel="stylesheet" href="styles.css">
@@ -24,6 +27,7 @@
       <nav>
         <a href="#rapido">Rapidez</a>
         <a href="#auto">Tu auto</a>
+        <a href="#taller">Taller</a>
         <a href="#modulos">Módulos</a>
         <a href="#descargar">Descargar</a>
         <a href="https://github.com/IrvingGuerra/litedash">GitHub</a>
@@ -38,14 +42,14 @@
       <h1>Tu auto, <em>en limpio.</em></h1>
       <p class="lead">El launcher para pantallas Android de autos y motos que pesa 1.4 MB, abre en menos de un segundo y no gasta nada cuando no lo usas.</p>
       <div class="botones">
-        <a class="boton principal" href="https://github.com/IrvingGuerra/litedash/releases/latest">Descargar APK <small>gratis · 1.4 MB</small></a>
+        <a class="boton principal" href="https://github.com/IrvingGuerra/litedash/releases/latest/download/litedash.apk" download>Descargar APK <small class="version">gratis · 1.4 MB</small></a>
         <span class="boton secundario" aria-disabled="true">Google Play <small>muy pronto</small></span>
       </div>
       <p class="nota">Sin anuncios, sin cuentas y sin rastreo. Código abierto.</p>
 
       <figure class="pantalla">
-        <img src="img/inicio-oscuro.webp" alt="Inicio de LiteDash en modo oscuro: un sedán blanco sobre el piso con su reflejo, la música y Navegar debajo, y el dock de apps" width="1600" height="822">
-        <figcaption>LiteDash 1.3.3 en una pantalla de auto. El auto es tuyo: modelo, color y nombre.</figcaption>
+        <img src="img/inicio-oscuro.webp" alt="Inicio de LiteDash en modo oscuro: un Lancer Evolution blanco sobre el piso con su reflejo, y las tarjetas Navegar, Música y la hora debajo" width="1024" height="600">
+        <figcaption>LiteDash 1.4 en una pantalla de 7". El auto es tuyo: modelo, color y nombre.</figcaption>
       </figure>
     </div>
 
@@ -55,11 +59,11 @@
         <p class="bajada">Las pantallas de autos y motos suelen tener poca memoria y procesadores lentos. LiteDash está hecho para ellas: arranca al instante y, cuando no lo tocas, no hace nada.</p>
         <div class="rejilla cifras">
           <div class="tarjeta"><div class="cifra">1.4<span> MB</span></div><h3>Lo que pesa</h3><p>Se baja en segundos, hasta con los datos del celular.</p></div>
-          <div class="tarjeta"><div class="cifra">0.6<span> s</span></div><h3>En abrir</h3><p>Desde cero hasta tu inicio listo. Volver al inicio: 81 ms.</p></div>
+          <div class="tarjeta"><div class="cifra">0.6<span> s</span></div><h3>En abrir</h3><p>Desde cero hasta tu inicio listo, y ya viene precompilado para pantallas lentas.</p></div>
           <div class="tarjeta"><div class="cifra">27<span> MB</span></div><h3>De memoria</h3><p>Cabe sobrado en pantallas de 1 y 2 GB de RAM.</p></div>
           <div class="tarjeta"><div class="cifra">0<span> %</span></div><h3>De CPU en reposo</h3><p>Nada corre en segundo plano ni revisa cosas cada segundo.</p></div>
         </div>
-        <p class="fuente">Medido con LiteDash 1.3.3 en un emulador de pantalla de 7" con 2 GB de RAM (mediana de 10 arranques).</p>
+        <p class="fuente">Medido con LiteDash 1.3.3 en un emulador de pantalla de 7" con 2 GB de RAM (mediana de 10 arranques). Cada versión se vuelve a medir antes de salir.</p>
       </div>
     </section>
 
@@ -82,13 +86,13 @@
           <h2>Tu auto es el fondo.</h2>
           <p class="bajada">Tu auto aparece parado sobre el piso, con su sombra y un reflejo tenue que pasan por debajo de las tarjetas. Como en los autos de lujo, pero en tu pantalla.</p>
           <ul class="lista-puntos">
-            <li>Elige tu modelo del catálogo y bájalo solo si lo quieres.</li>
+            <li>Diez modelos en el catálogo (autos y una moto), con sus emblemas. Bájalo solo si lo quieres.</li>
             <li>Cualquier color: tono, intensidad y brillo, en vivo.</li>
-            <li>Gíralo 360° con el dedo. Tú decides qué tan fluido: Ligera, Media o Máxima.</li>
-            <li>Modo claro y oscuro.</li>
+            <li>Gíralo 360° con el dedo; se queda donde lo dejas. Un toque lo ve en grande.</li>
+            <li>¿Prefieres tu logo? Pon la imagen de tu marca en lugar del auto, con animación al abrir.</li>
           </ul>
         </div>
-        <div class="captura"><img src="img/inicio-claro.webp" alt="Inicio de LiteDash en modo claro con un sedán rojo sobre el piso" width="1600" height="822" loading="lazy"></div>
+        <div class="captura"><img src="img/inicio-claro.webp" alt="Inicio de LiteDash en modo claro con un Lancer Evolution rojo sobre el piso" width="1024" height="600" loading="lazy"></div>
       </div>
     </section>
 
@@ -96,35 +100,53 @@
       <div class="contenedor fila invertida">
         <div class="texto-fila">
           <h2>Pinta tu auto como el tuyo.</h2>
-          <p class="bajada">Seis colores rápidos y un selector libre para cualquier tono. La app no carga con los autos: se bajan del catálogo (desde 1.2 MB) y los quitas con un toque cuando quieras.</p>
+          <p class="bajada">Seis colores rápidos y un selector libre para cualquier tono. La app no carga con los autos: se bajan del catálogo (unos 2 MB cada uno) y los quitas con un toque cuando quieras.</p>
           <ul class="lista-puntos">
             <li>Vista previa de cada auto antes de bajarlo.</li>
-            <li>Más fluidez baja solo los cuadros que faltan, sin repetir nada.</li>
+            <li>Calidad del giro Baja o Alta: más fluidez baja solo los cuadros que faltan.</li>
             <li>Siempre puedes volver al sedán dibujado, que no pesa nada.</li>
           </ul>
         </div>
-        <div class="captura"><img src="img/color.webp" alt="Pantalla Tu auto con el selector de color libre y el auto pintado de amarillo" width="1600" height="822" loading="lazy"></div>
+        <div class="captura"><img src="img/color.webp" alt="Ajustes → Tu auto: el Lancer pintado de rojo y el selector de color" width="1024" height="600" loading="lazy"></div>
       </div>
     </section>
 
-    <section id="modulos" class="modulos">
+    <section id="taller">
+      <div class="contenedor fila">
+        <div class="texto-fila">
+          <h2>El Taller: tu escáner OBD.</h2>
+          <p class="bajada">Conecta un adaptador ELM327 al puerto OBD (abajo del volante) y LiteDash habla con el motor. Por Bluetooth, Bluetooth LE, Wi-Fi o cable USB, sin instalar otra app.</p>
+          <ul class="lista-puntos">
+            <li><strong>Códigos de falla</strong> explicados en palabras de todos los días, y borrarlos con doble confirmación.</li>
+            <li><strong>¿Pasas la verificación?</strong> La luz de falla y los monitores que revisan en el centro.</li>
+            <li><strong>Medidores en tu inicio:</strong> tacómetro, temperatura del motor y del aceite, gasolina, batería, consumo en km/l, turbo, acelerador y gasto de gasolina.</li>
+            <li><strong>Alertas</strong> si el motor se calienta de más o la batería no carga, y velocímetro por OBD o GPS.</li>
+          </ul>
+        </div>
+        <div class="captura"><img src="img/taller.webp" alt="El Taller de LiteDash con los códigos de falla P0420, P0133 y P0171 explicados" width="1024" height="600" loading="lazy"></div>
+      </div>
+    </section>
+
+    <section id="modulos" class="modulos alterna">
       <div class="contenedor">
         <h2>Modular: todo viene apagado.</h2>
         <p class="bajada">Recién instalado, LiteDash es lo mínimo. Cada función se enciende cuando tú quieres, y lo apagado no gasta nada: ni memoria, ni batería, ni permisos. Todo dentro de la misma app, sin instalar nada más.</p>
         <div class="rejilla">
-          <div class="tarjeta"><span class="etiqueta lista">Ya está</span><h3>Tu inicio, a tu manera</h3><p>Mueve, agranda o quita piezas. Acomodos pensados para pantallas de 7", 10" y 11" o más, horizontales o verticales.</p></div>
-          <div class="tarjeta"><span class="etiqueta lista">Ya está</span><h3>Música</h3><p>Controla lo que suene en cualquier app (Spotify, YouTube Music, radio, USB o Bluetooth) sin salir del inicio.</p></div>
-          <div class="tarjeta"><span class="etiqueta lista">Ya está</span><h3>Navegar</h3><p>Waze o Google Maps a un toque, con la siguiente vuelta en una tarjeta.</p></div>
-          <div class="tarjeta"><span class="etiqueta lista">Ya está</span><h3>Clima</h3><p>La temperatura en la barra y hoy con 3 días en una pieza. Sin anuncios y sin cuenta.</p></div>
-          <div class="tarjeta"><span class="etiqueta lista">Ya está</span><h3>Viaje</h3><p>Velocidad, rumbo, distancia y tiempo por GPS, solo mientras lo ves.</p></div>
+          <div class="tarjeta"><span class="etiqueta lista">Ya está</span><h3>Tu inicio, a tu manera</h3><p>Mueve, agranda o quita piezas. Acomodos para pantallas de 7", 10" y 11" o más, horizontales o verticales, con la barra de apps a un lado o abajo.</p></div>
+          <div class="tarjeta"><span class="etiqueta lista">Ya está</span><h3>Música</h3><p>Controla lo que suene en cualquier app (Spotify, YouTube Music, radio, USB o Bluetooth) sin salir del inicio. Play la despierta aunque esté cerrada.</p></div>
+          <div class="tarjeta"><span class="etiqueta lista">Ya está</span><h3>Navegar</h3><p>Waze o Google Maps a un toque, Casa y Trabajo en la tarjeta y la siguiente vuelta sin abrir el mapa.</p></div>
+          <div class="tarjeta"><span class="etiqueta lista">Ya está</span><h3>Mandos al volante</h3><p>Aprende cada botón de tu volante y elige qué hace: música, volumen, mapa, voz o inicio.</p></div>
+          <div class="tarjeta"><span class="etiqueta lista">Ya está</span><h3>Día y noche</h3><p>Tema y brillo según la hora del sol, el sensor de luz o los faros del auto, que LiteDash aprende de tu pantalla.</p></div>
+          <div class="tarjeta"><span class="etiqueta lista">Ya está</span><h3>Clima y Viaje</h3><p>La temperatura y 3 días de pronóstico; velocidad, rumbo, distancia y tiempo por GPS, solo mientras lo ves.</p></div>
           <div class="tarjeta"><span class="etiqueta lista">Ya está</span><h3>Recordatorios del auto</h3><p>Servicio, verificación, tenencia, seguro y placas, con aviso días antes.</p></div>
-          <div class="tarjeta"><span class="etiqueta lista">Ya está</span><h3>Android Auto y CarPlay</h3><p>Tu app de proyección (Zlink, AutoKit…) a un toque desde el dock o una pieza, para usar tu celular en la pantalla.</p></div>
-          <div class="tarjeta"><span class="etiqueta lista">Ya está</span><h3>Pensado para ti</h3><p>Te saluda por tu nombre, cambia a oscuro cuando se mete el sol y tiene Casa y Trabajo a un toque.</p></div>
+          <div class="tarjeta"><span class="etiqueta lista">Ya está</span><h3>Android Auto y CarPlay</h3><p>Tu app de proyección (Zlink, AutoKit…) a un toque desde el dock o una pieza.</p></div>
+          <div class="tarjeta"><span class="etiqueta lista">Ya está</span><h3>Estacionado</h3><p>Tras unos minutos sin tocar la pantalla, un reloj grande y discreto que no deslumbra de noche.</p></div>
+          <div class="tarjeta"><span class="etiqueta"> Pronto</span><h3>Llantas (TPMS)</h3><p>Presión y temperatura de cada llanta sobre tu auto, leídas directo de los sensores.</p></div>
         </div>
       </div>
     </section>
 
-    <section class="alterna">
+    <section>
       <div class="contenedor fila">
         <div class="texto-fila">
           <h2>Actualizaciones con un toque.</h2>
@@ -135,18 +157,18 @@
             <div class="tarjeta"><h3>Instala</h3><p>Android te pide confirmar, y tu acomodo se queda tal cual.</p></div>
           </div>
         </div>
-        <div class="captura"><img src="img/actualizar.webp" alt="Ajustes de LiteDash, sección Acerca de, con el botón Buscar actualizaciones" width="1600" height="822" loading="lazy"></div>
+        <div class="captura"><img src="img/actualizar.webp" alt="Ajustes de LiteDash, sección Acerca de, con las novedades de la versión y el botón Buscar actualizaciones" width="1024" height="600" loading="lazy"></div>
       </div>
     </section>
 
-    <section>
+    <section class="alterna">
       <div class="contenedor">
         <h2>Lo que nos hace diferentes.</h2>
         <p class="bajada">LiteDash nació en un auto real, con una pantalla real, y se hace pensando en quien maneja.</p>
         <div class="rejilla">
           <div class="tarjeta"><h3>Ligero por regla</h3><p>Cada versión se mide antes de salir. Si algo pesa de más, no entra: por eso el mapa interno se quitó.</p></div>
           <div class="tarjeta"><h3>Hecho para manejar</h3><p>Botones grandes, sin ventanitas que estorben y con el inicio siempre a un toque.</p></div>
-          <div class="tarjeta"><h3>Tuyo de verdad</h3><p>Sin anuncios, sin cuentas y sin analíticas. Solo usa internet cuando bajas un auto o buscas actualizaciones.</p></div>
+          <div class="tarjeta"><h3>Tuyo de verdad</h3><p>Sin anuncios, sin cuentas y sin analíticas. Solo usa internet cuando bajas un auto, ves el clima o buscas actualizaciones.</p></div>
           <div class="tarjeta"><h3>Código abierto</h3><p>Licencia GPL-3.0. Puedes revisar el código, reportar problemas o proponer mejoras en GitHub.</p></div>
         </div>
       </div>
@@ -158,8 +180,8 @@
         <h2>Pruébalo hoy.</h2>
         <p class="bajada">Descarga el APK, instálalo en tu pantalla y elige LiteDash como pantalla de inicio. Pronto también en Google Play.</p>
         <div class="botones">
-          <a class="boton principal" href="https://github.com/IrvingGuerra/litedash/releases/latest">Descargar APK <small>1.4 MB</small></a>
-          <a class="boton secundario" href="https://github.com/IrvingGuerra/litedash">Ver el código</a>
+          <a class="boton principal" href="https://github.com/IrvingGuerra/litedash/releases/latest/download/litedash.apk" download>Descargar APK <small class="version">1.4 MB</small></a>
+          <a class="boton secundario" href="https://github.com/IrvingGuerra/litedash/releases/latest">Ver en GitHub</a>
         </div>
         <p class="requisitos">Android 8.0 o más nuevo · pantallas de autos y motos de 6" a 11" o más, tablets y teléfonos · <code>—··</code> es la D de Dash en código Morse</p>
       </div>
@@ -177,5 +199,18 @@
       </nav>
     </div>
   </footer>
+
+  <script>
+    // La versión y el peso reales del último APK publicado (si GitHub contesta; si no, queda el texto fijo).
+    fetch('https://api.github.com/repos/IrvingGuerra/litedash/releases/latest')
+      .then(r => r.ok ? r.json() : null)
+      .then(r => {
+        const apk = r && r.assets && r.assets.find(a => a.name === 'litedash.apk');
+        if (!apk) return;
+        const texto = r.tag_name.replace(/^v/, '') + ' · ' + (apk.size / 1e6).toFixed(1) + ' MB';
+        document.querySelectorAll('.version').forEach(e => { e.textContent = texto; });
+      })
+      .catch(() => {});
+  </script>
 </body>
 </html>

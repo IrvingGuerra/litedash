@@ -1,10 +1,10 @@
-# Publica la landing (site/) en GitHub Pages.
+# GitHub Pages solo redirige al sitio de verdad (litedash.web.app, Firebase Hosting; ver firebase.json).
 name: Pages
 
 on:
   push:
     branches: [main]
-    paths: ["site/**", ".github/workflows/pages.yml"]
+    paths: ["redireccion/**", ".github/workflows/pages.yml"]
   workflow_dispatch:
 
 permissions:
@@ -27,6 +27,6 @@ jobs:
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: site
+          path: redireccion
       - id: deployment
         uses: actions/deploy-pages@v4

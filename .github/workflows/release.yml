@@ -52,6 +52,8 @@ jobs:
           mkdir -p out
           cp app/build/outputs/apk/github/release/app-github-release.apk "out/litedash-$VERSION.apk"
           (cd out && sha256sum *.apk > SHA256SUMS.txt)
+          # El mismo APK con nombre fijo: el enlace directo de la web (releases/latest/download/litedash.apk).
+          cp "out/litedash-$VERSION.apk" out/litedash.apk
           # Notas = la sección de esta versión en CHANGELOG.md
           awk -v v="$VERSION" '
             $0 ~ "^## \\[" v "\\]" {on=1; next}

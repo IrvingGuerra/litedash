@@ -8,9 +8,9 @@
 <p align="center">
   <b>Launcher para pantallas Android de autos y motos: ligero, rápido y elegante.</b><br>
   <i>A light, fast and clean launcher for Android car and motorcycle screens.</i><br><br>
-  <a href="https://irvingguerra.github.io/litedash/">Sitio</a> ·
+  <a href="https://litedash.web.app/">Sitio</a> ·
   <a href="https://github.com/IrvingGuerra/litedash/releases/latest">Descargar APK</a> ·
-  <a href="https://irvingguerra.github.io/litedash/en/">English</a>
+  <a href="https://litedash.web.app/en/">English</a>
 </p>
 
 ---
