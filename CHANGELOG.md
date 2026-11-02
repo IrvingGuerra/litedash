@@ -6,12 +6,11 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
-## [1.4.28] - 2026-11-02
+## [1.4.29] - 2026-11-02
 
-### Cambiado
-- **Auto por defecto estilo maqueta:** una sola forma limpia con volumen (luces y sombras),
-  nariz redonda, cabina en burbuja y rines lisos; sin manijas, líneas ni faros. Sigue siendo
-  un dibujo de la app (no pesa) y se pinta del color que elijas.
+### Mejorado
+- **Auto por defecto:** el contorno de las salpicaderas abraza la llanta parejo y la línea
+  del hombro sigue la curva del auto y se desvanece en las puntas.
 
 ## [1.4.28] - 2026-11-02
 
