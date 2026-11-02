@@ -25,7 +25,7 @@ import com.irvingguerra.litedash.core.ui.Typography
  * botones. En angosto (teléfono parado) el texto no cabe junto a los botones y va arriba.
  */
 @Composable
-fun Notice(text: String, icon: ImageVector? = null, buttons: @Composable () -> Unit) {
+fun Notice(text: String, icon: ImageVector? = null, danger: Boolean = false, buttons: @Composable () -> Unit) {
     val c = LocalColors.current
     val box = Modifier
         .fillMaxWidth()
@@ -35,7 +35,7 @@ fun Notice(text: String, icon: ImageVector? = null, buttons: @Composable () -> U
         .padding(start = 20.dp, end = 8.dp, top = 8.dp, bottom = 8.dp)
     val label = @Composable { m: Modifier ->
         Row(m, verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            if (icon != null) Icon(icon, c.accent, 22.dp)
+            if (icon != null) Icon(icon, if (danger) c.danger else c.accent, 22.dp)
             Label(text, Typography.body, maxLines = 2)
         }
     }

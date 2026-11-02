@@ -20,6 +20,9 @@ object Signal {
     const val BARO = "presion_aire"     // kPa
     const val AMBIENT = "aire_temp"     // °C
     const val MAF = "maf"               // g/s
+    // Calculadas de las de arriba (no las da el auto tal cual).
+    const val CONSUMPTION = "consumo"   // km/l
+    const val BOOST = "turbo"           // kPa sobre la presión del aire (negativo = vacío)
 }
 
 /** De dónde viene un dato; con varias fuentes para la misma señal gana la mayor. */

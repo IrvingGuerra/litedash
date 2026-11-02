@@ -352,4 +352,39 @@
     <string name="tile_clock_help">Hora, fecha y clima</string>
     <string name="tile_phone_help">Abre el marcador</string>
     <string name="logo_intro_help">Al abrir LiteDash, tu logo (o el de LiteDash) aparece unos segundos.</string>
+    <string name="unit_rpm" translatable="false">rpm</string>
+    <string name="unit_c" translatable="false">°C</string>
+    <string name="unit_f" translatable="false">°F</string>
+    <string name="unit_percent" formatted="false" translatable="false">%</string>
+    <string name="unit_volts" translatable="false">V</string>
+    <string name="unit_kml">km/l</string>
+    <string name="unit_mpg" translatable="false">mpg</string>
+    <string name="unit_psi" translatable="false">psi</string>
+    <string name="tile_gauge">Medidor</string>
+    <string name="gauge_module">Un dato del auto por OBD: revoluciones, temperatura, gasolina, batería, consumo o turbo</string>
+    <string name="gauge_pick">Toca para elegir qué mostrar</string>
+    <string name="gauge_connect">Conecta tu adaptador OBD en el Taller</string>
+    <string name="gauge_unsupported">Tu auto no da este dato</string>
+    <string name="pick_gauge">¿Qué quieres ver?</string>
+    <string name="pick_gauge_help">Lo lee el adaptador OBD (se conecta en el Taller). Para cambiarlo después, toca el medidor.</string>
+    <string name="gauge_rpm">Tacómetro</string>
+    <string name="gauge_coolant">Temp. del motor</string>
+    <string name="gauge_coolant_tag">MOTOR</string>
+    <string name="gauge_fuel">Gasolina</string>
+    <string name="gauge_fuel_tag">TANQUE</string>
+    <string name="gauge_voltage">Batería</string>
+    <string name="gauge_voltage_tag">BATERÍA</string>
+    <string name="gauge_consumption">Consumo</string>
+    <string name="gauge_consumption_tag">AHORA</string>
+    <string name="gauge_boost">Turbo</string>
+    <string name="gauge_boost_tag">TURBO</string>
+    <string name="sensor_consumption">Consumo instantáneo</string>
+    <string name="sensor_boost">Presión del turbo</string>
+    <string name="engine_alerts">Alertas del motor</string>
+    <string name="engine_alerts_help">Avisa en el inicio si el motor se calienta de más o la batería no carga. Mientras esté activo, el adaptador revisa temperatura, voltaje y revoluciones.</string>
+    <string name="alert_hot">Motor muy caliente (%1$s). Oríllate con cuidado y apágalo.</string>
+    <string name="alert_not_charging">La batería no está cargando (%1$s con el motor encendido). Revisa el alternador o la banda.</string>
+    <string name="alert_overcharging">Voltaje muy alto (%1$s). Revisa el alternador: puede dañar la batería.</string>
+    <string name="alert_low_battery">Batería baja (%1$s). Puede costar arrancar.</string>
+    <string name="alert_ok">Entendido</string>
 </resources>

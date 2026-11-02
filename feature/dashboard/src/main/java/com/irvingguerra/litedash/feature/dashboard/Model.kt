@@ -95,6 +95,8 @@ object TileTypes {
     const val WEATHER = "clima"
     const val TRIP = "viaje"
     const val SPEEDOMETER = "velocimetro"
+    /** Un dato del auto por OBD; [Tile.data] dice cuál (una señal del bus). */
+    const val GAUGE = "medidor"
     const val WORKSHOP = "taller"
     const val PROJECTION = "proyeccion"
     const val APP = "app"

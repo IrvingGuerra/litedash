@@ -47,6 +47,7 @@ private object PrefKeys {
     const val BRIGHTNESS_ALL_APPS = "brillo_todas_apps"
     const val BRIGHTNESS_ORIGINAL = "brillo_original"
     const val SHOW_LOGO = "mostrar_logo"
+    const val ENGINE_ALERTS = "alertas_motor"
     const val BAR_POSITION = "barra"
     const val LOGO_INTRO = "logo_entrada"
 }
@@ -170,6 +171,9 @@ class Preferences(context: Context) {
 
     /** En el inicio, el logo de tu marca (imagen tuya o el nombre) en lugar del auto. */
     var showLogo by bool(PrefKeys.SHOW_LOGO, false)
+
+    /** Con el OBD conectado: avisar de motor caliente o batería que no carga. */
+    var engineAlerts by bool(PrefKeys.ENGINE_ALERTS, true)
 
     /** Al abrir LiteDash, el logo aparece unos instantes a pantalla completa. */
     var logoIntro by bool(PrefKeys.LOGO_INTRO, false)

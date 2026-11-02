@@ -29,9 +29,12 @@ import com.irvingguerra.litedash.core.ui.Button
 import com.irvingguerra.litedash.core.ui.Icons
 import com.irvingguerra.litedash.core.ui.Label
 import com.irvingguerra.litedash.core.ui.LocalColors
+import com.irvingguerra.litedash.core.ui.SwitchRow
 import com.irvingguerra.litedash.core.ui.Typography
 import com.irvingguerra.litedash.core.vehicle.Signal
 import com.irvingguerra.litedash.core.vehicle.watch
+import com.irvingguerra.litedash.feature.obd.DerivedSignals
+import com.irvingguerra.litedash.feature.obd.EngineAlert
 import com.irvingguerra.litedash.feature.obd.EngineReport
 import com.irvingguerra.litedash.feature.obd.MonitorName
 import com.irvingguerra.litedash.feature.obd.ObdRepository
@@ -39,6 +42,8 @@ import com.irvingguerra.litedash.feature.obd.ObdState
 import com.irvingguerra.litedash.feature.obd.ObdTarget
 import com.irvingguerra.litedash.feature.obd.Pids
 import com.irvingguerra.litedash.feature.obd.describe
+import com.irvingguerra.litedash.feature.obd.engineAlert
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 private val Good = Color(0xFF3FB27F)
@@ -54,10 +59,56 @@ fun Workshop(d: Dependencies) {
     // Sin adaptador solo hay que conectarlo; ya conectado, cada parte en su pestaña.
     if (obd.state != ObdState.ON) return Connection(obd)
     val tab = tabs(listOf(R.string.tab_connection, R.string.obd_codes, R.string.tab_inspection, R.string.tab_sensors), "taller")
-    if (tab == 0) Connection(obd)
+    if (tab == 0) {
+        Connection(obd)
+        SettingsCard {
+            SwitchRow(stringResource(R.string.engine_alerts), d.prefs.engineAlerts, { d.prefs.engineAlerts = it }, stringResource(R.string.engine_alerts_help))
+        }
+    }
     // El reporte se lee una vez y se comparte entre las pestañas de motor, códigos y verificación.
     Engine(obd, tab)
     if (tab == 3) LiveSensors(d)
+}
+
+/** Una falla tiene que durar esto antes de avisar: un pico de un segundo no es falla. */
+private const val ALERT_AFTER_MS = 8_000L
+
+/**
+ * Aviso en el inicio si el motor se calienta de más o la batería no carga. Con un
+ * adaptador guardado y las alertas activas, conecta el OBD aunque no haya medidores.
+ */
+@Composable
+fun EngineAlertBanner(d: Dependencies) {
+    val on = d.prefs.engineAlerts && d.hasObdAdapter
+    LaunchedEffect(on) { if (on) d.obd.connect() }
+    if (!on || d.obdIfCreated()?.state != ObdState.ON) return
+    val coolant = d.bus.watch(Signal.COOLANT)
+    val voltage = d.bus.watch(Signal.VOLTAGE)
+    val alert = engineAlert(coolant, voltage, d.bus.watch(Signal.RPM))
+    var shown by remember { mutableStateOf<EngineAlert?>(null) }
+    var dismissed by remember { mutableStateOf<EngineAlert?>(null) }
+    LaunchedEffect(alert) {
+        if (alert == null) {
+            shown = null
+            dismissed = null
+        } else {
+            delay(ALERT_AFTER_MS)
+            shown = alert
+        }
+    }
+    val a = shown?.takeIf { it != dismissed } ?: return
+    val locale = LocalConfiguration.current.locales[0]
+    val imperial = imperialUnits(d.prefs.language)
+    val volts = voltage?.let { String.format(locale, "%.1f V", it) } ?: "—"
+    val text = when (a) {
+        EngineAlert.HOT -> stringResource(R.string.alert_hot, coolant?.let { sensorText(Signal.COOLANT, it, imperial, locale) } ?: "—")
+        EngineAlert.NOT_CHARGING -> stringResource(R.string.alert_not_charging, volts)
+        EngineAlert.OVERCHARGING -> stringResource(R.string.alert_overcharging, volts)
+        EngineAlert.LOW_BATTERY -> stringResource(R.string.alert_low_battery, volts)
+    }
+    Notice(text, Icons.warning, danger = true) {
+        Button(stringResource(R.string.alert_ok), { dismissed = a }, primary = true)
+    }
 }
 
 /** Acceso directo al Taller en el inicio; dice si el adaptador está conectado. */
@@ -220,7 +271,9 @@ private fun LiveSensors(d: Dependencies) {
     val locale = LocalConfiguration.current.locales[0]
     val imperial = imperialUnits(d.prefs.language)
     SettingsCard(stringResource(R.string.obd_live)) {
-        for (p in Pids.filter { it.code in d.obd.supported }) SensorRow(d, p.signal, imperial, locale)
+        // Los que da el auto, los calculados (consumo, turbo) y el voltaje (lo mide el adaptador si el auto no).
+        val signals = remember(d.obd.supported) { (Pids.map { it.signal } + DerivedSignals.map { it.signal }).distinct().filter(d.obd::canRead) }
+        for (signal in signals) SensorRow(d, signal, imperial, locale)
     }
 }
 
@@ -245,17 +298,21 @@ private fun sensorName(signal: String) = when (signal) {
     Signal.FUEL -> R.string.sensor_fuel
     Signal.VOLTAGE -> R.string.sensor_voltage
     Signal.BARO -> R.string.sensor_baro
+    Signal.CONSUMPTION -> R.string.sensor_consumption
+    Signal.BOOST -> R.string.sensor_boost
     else -> R.string.sensor_ambient
 }
 
 /** El valor con su unidad; en millas y °F donde se usan (como el velocímetro). */
-private fun sensorText(signal: String, v: Float, imperial: Boolean, locale: java.util.Locale) = when (signal) {
+fun sensorText(signal: String, v: Float, imperial: Boolean, locale: java.util.Locale) = when (signal) {
     Signal.SPEED -> if (imperial) String.format(locale, "%.0f mph", v / 1.609f) else String.format(locale, "%.0f km/h", v)
     Signal.RPM -> String.format(locale, "%.0f rpm", v)
     Signal.LOAD, Signal.FUEL -> String.format(locale, "%.0f %%", v)
     Signal.MAP, Signal.BARO -> String.format(locale, "%.0f kPa", v)
     Signal.MAF -> String.format(locale, "%.1f g/s", v)
     Signal.VOLTAGE -> String.format(locale, "%.1f V", v)
+    Signal.CONSUMPTION -> if (imperial) String.format(locale, "%.1f mpg", v * 2.352f) else String.format(locale, "%.1f km/l", v)
+    Signal.BOOST -> String.format(locale, "%.1f psi", v * 0.145f)
     else -> if (imperial) String.format(locale, "%.0f °F", v * 9 / 5 + 32) else String.format(locale, "%.0f °C", v)
 }
 

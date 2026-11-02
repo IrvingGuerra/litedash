@@ -49,6 +49,13 @@ object Icons {
     // Motor (como la luz de "check engine"): el Taller del escáner OBD.
     val engine = icon("M3 10v6 M3 13h2 M5 9h2l1 -2h5l1 2h3l2 2h2v6h-2l-2 2h-8l-2 -3h-2z M9 4h4 M11 4v3")
     val speed = icon("M4.5 17a8.5 8.5 0 1 1 15 0 M12 14l3.5 -4.5 M12 14h.01")
+    val tachometer = icon("M4.5 17a8.5 8.5 0 1 1 15 0 M12 14l-3 -4.5 M12 14h.01 M16 10.5l1 -1")
+    val thermometer = icon("M10 13.5v-8.5a2 2 0 0 1 4 0v8.5a4 4 0 1 1 -4 0z M12 9v7")
+    val fuel = icon("M4 20v-14a2 2 0 0 1 2 -2h6a2 2 0 0 1 2 2v14 M3 20h12 M4 11h10 M14 9h2a2 2 0 0 1 2 2v5a1.5 1.5 0 0 0 3 0v-8l-3 -3")
+    val battery = icon("M4 8h16v11h-16z M7 8v-2h3v2 M14 8v-2h3v2 M7 13h3 M14 13h3 M15.5 11.5v3")
+    val drop = icon("M12 3.5s6 6.5 6 11a6 6 0 0 1 -12 0c0 -4.5 6 -11 6 -11z")
+    val turbo = icon("M4 12a8 8 0 1 0 16 0a8 8 0 1 0 -16 0 M12 12q0 -4 3.5 -5.5 M12 12q4 0 5.5 3.5 M12 12q0 4 -3.5 5.5 M12 12q-4 0 -5.5 -3.5")
+    val warning = icon("M12 4l9 16h-18z M12 10v4 M12 17h.01")
     val navigate = icon("M12 3l7.5 17.5l-7.5 -4l-7.5 4z")
     val phone = icon("M5 4h4l2 5l-2.5 1.5a11 11 0 0 0 5 5l1.5 -2.5l5 2v4a2 2 0 0 1 -2 2a16 16 0 0 1 -15 -15a2 2 0 0 1 2 -2")
     val music = icon("M9 17v-12l10 -2v12 M3 17a3 3 0 1 0 6 0a3 3 0 1 0 -6 0 M13 15a3 3 0 1 0 6 0a3 3 0 1 0 -6 0")

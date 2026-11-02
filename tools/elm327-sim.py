@@ -2,16 +2,21 @@
 """
 Simulador de un ELM327 por Wi-Fi (TCP) para probar el Taller sin el auto.
 
-    python3 tools/elm327-sim.py [puerto]      # 35000 por defecto
+    python3 tools/elm327-sim.py [puerto] [--caliente] [--sin-carga]   # 35000 por defecto
 
 En el emulador de Android: Taller → Wi-Fi → 10.0.2.2:35000. Simula un auto con luz de
 falla, dos códigos guardados (P0420, P0133), uno pendiente (P0171), el monitor EVAP
-pendiente y datos en vivo que cambian (velocidad, rpm, temperatura, gasolina…).
+pendiente y datos en vivo que cambian (velocidad, rpm, temperatura, gasolina, turbo…).
+Para probar las alertas: --caliente (motor a 112 °C) y --sin-carga (alternador sin cargar,
+12.2 V con el motor andando).
 """
 import math
 import socketserver
 import sys
 import time
+
+HOT = "--caliente" in sys.argv
+NOT_CHARGING = "--sin-carga" in sys.argv
 
 # PIDs del modo 01 que "tiene" este auto.
 PIDS = {0x01, 0x04, 0x05, 0x0B, 0x0C, 0x0D, 0x0F, 0x10, 0x2F, 0x33, 0x42, 0x46}
@@ -39,15 +44,16 @@ def live(pid):
     rpm = 900 + speed * 32
     values = {
         0x04: "%02X" % int(30 + speed / 2),
-        0x05: "%02X" % (90 + 40),
-        0x0B: "%02X" % int(40 + speed / 2),
+        0x05: "%02X" % ((112 if HOT else 90) + 40),
+        # Admisión de 60 a 160 kPa: con el aire a 78 kPa (CDMX) el turbo llega a ~12 psi.
+        0x0B: "%02X" % int(60 + speed),
         0x0C: "%04X" % int(rpm * 4),
         0x0D: "%02X" % int(speed),
         0x0F: "%02X" % (32 + 40),
         0x10: "%04X" % int((3 + speed / 10) * 100),
         0x2F: "%02X" % int(0.62 * 255),
         0x33: "%02X" % 78,
-        0x42: "%04X" % 14100,
+        0x42: "%04X" % (12200 if NOT_CHARGING else 14100),
         0x46: "%02X" % (26 + 40),
     }
     return values.get(pid)
@@ -108,7 +114,8 @@ class Handler(socketserver.BaseRequestHandler):
 
 
 if __name__ == "__main__":
-    port = int(sys.argv[1]) if len(sys.argv) > 1 else 35000
+    args = [a for a in sys.argv[1:] if not a.startswith("--")]
+    port = int(args[0]) if args else 35000
     socketserver.ThreadingTCPServer.allow_reuse_address = True
     with socketserver.ThreadingTCPServer(("0.0.0.0", port), Handler) as server:
         print("ELM327 simulado en el puerto", port)

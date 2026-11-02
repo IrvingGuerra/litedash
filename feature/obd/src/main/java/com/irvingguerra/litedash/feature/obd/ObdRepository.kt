@@ -9,6 +9,7 @@ import android.os.Build
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import com.irvingguerra.litedash.core.vehicle.Signal
 import com.irvingguerra.litedash.core.vehicle.Source
 import com.irvingguerra.litedash.core.vehicle.VehicleBus
 import kotlinx.coroutines.CoroutineScope
@@ -171,19 +172,46 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
         return withContext(Dispatchers.IO) { runCatching { lock.withLock { block(e) } }.getOrNull() }
     }
 
+    /**
+     * ¿Se puede mostrar [signal] con este auto? Las calculadas, si da lo que necesitan;
+     * el voltaje siempre (si no lo da el auto, lo mide el adaptador).
+     */
+    fun canRead(signal: String): Boolean {
+        if (signal == Signal.VOLTAGE) return true
+        DerivedSignals.firstOrNull { it.signal == signal }?.let { d -> return d.needs.all(::canRead) }
+        return Pids.any { it.signal == signal && it.code in supported }
+    }
+
     private suspend fun poll(e: Elm327) {
         var lastSlow = 0L
+        // Lo último que se leyó de cada señal (para calcular las que dependen de varias).
+        val last = mutableMapOf<String, Float>()
+        val smoothed = mutableMapOf<String, Float>()
         while (true) {
-            val wanted = bus.wanted
+            val shown = bus.wanted
+            val derived = DerivedSignals.filter { it.signal in shown }
+            val wanted = shown + derived.flatMap { it.needs + it.extras }
             val pids = Pids.filter { it.signal in wanted && it.code in supported }
-            if (pids.isEmpty()) {
+            // Sin el PID 42 el voltaje lo mide el adaptador (ATRV), con lo lento.
+            val adapterVoltage = Signal.VOLTAGE in wanted && VOLTAGE_PID !in supported
+            if (pids.isEmpty() && !adapterVoltage) {
                 delay(250)
                 continue
             }
             val slow = System.currentTimeMillis() - lastSlow > 2_000
             if (slow) lastSlow = System.currentTimeMillis()
             // Se leen todos y se publican juntos: un solo salto al hilo principal por vuelta.
-            val values = pids.filter { it.fast || slow }.map { p -> p.signal to lock.withLock { e.pid(p.code) }?.let(p.decode) }
+            val values = mutableListOf<Pair<String, Float?>>()
+            for (p in pids) if (p.fast || slow) values += p.signal to lock.withLock { e.pid(p.code) }?.let(p.decode)
+            if (adapterVoltage && slow) values += Signal.VOLTAGE to runCatching { lock.withLock { e.voltage() } }.getOrNull()
+            for ((signal, value) in values) if (value == null) last.remove(signal) else last[signal] = value
+            for (d in derived) {
+                val raw = d.compute(last)
+                val prev = smoothed[d.signal]
+                val value = if (raw == null || prev == null) raw else prev + (raw - prev) * d.smoothing
+                if (value == null) smoothed.remove(d.signal) else smoothed[d.signal] = value
+                values += d.signal to value
+            }
             withContext(Dispatchers.Main) { for ((signal, value) in values) bus.publish(signal, value, Source.OBD) }
             delay(60)
         }
@@ -210,6 +238,8 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
 
     companion object {
         private const val PREFS = "obd"
+        /** Voltaje del módulo de control (el de la batería con el motor andando). */
+        private const val VOLTAGE_PID = 0x42
 
         /** Hay un adaptador guardado (sin crear el escáner ni tocar Bluetooth). */
         fun hasSavedTarget(context: Context) =

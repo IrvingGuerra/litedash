@@ -103,6 +103,8 @@ sealed interface Panel {
     data class PickApp(val tileId: String?) : Panel
     /** Ajustes abiertos en el Taller (pieza de acceso directo). */
     data object Workshop : Panel
+    /** Elegir qué dato muestra un medidor existente ([tileId]) o uno nuevo (null). */
+    data class PickGauge(val tileId: String?) : Panel
 }
 
 class Dependencies(
@@ -166,6 +168,11 @@ fun TileContent(d: Dependencies, p: Tile, apps: List<App>, car: CarPackage?, rev
         TileTypes.WEATHER -> WeatherTile(d.weather)
         TileTypes.TRIP -> TripTile(d.trip, d.prefs.language)
         TileTypes.SPEEDOMETER -> SpeedometerTile(d, d.prefs.language)
+        TileTypes.GAUGE -> GaugeTile(
+            d, p.data, d.prefs.language,
+            onPick = { actions.onPanel(Panel.PickGauge(p.id)) },
+            onWorkshop = { actions.onPanel(Panel.Workshop) },
+        )
         TileTypes.WORKSHOP -> WorkshopTile(d) { actions.onPanel(Panel.Workshop) }
         TileTypes.PROJECTION -> ProjectionTile(d, apps) { actions.onPanel(Panel.Drawer) }
         TileTypes.NAVIGATE -> {
@@ -349,6 +356,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                 Column(Modifier.onSizeChanged { promptsHeight = it.height }) {
                     if (d.prefs.welcomeSeen && !editing) {
                         if (!d.prefs.dontAskHome && !isShortScreen()) HomePrompt(d.prefs, revision)
+                        EngineAlertBanner(d)
                         if (!isShortScreen()) ReminderBanner(d.reminders)
                         UpdateBanner(d.updater, onOpen = { panel = Panel.About })
                         val newModel = d.cars.outdated?.takeIf { it.id == car?.id }
@@ -421,8 +429,14 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                 },
             )
             Panel.Templates -> TemplatesPanel(d.dashboard, close = { panel = null })
-            Panel.AddTile -> AddTilePanel(d.dashboard, close = { panel = null }, onPickApp = { panel = Panel.PickApp(null) })
+            Panel.AddTile -> AddTilePanel(
+                d.dashboard,
+                close = { panel = null },
+                onPickApp = { panel = Panel.PickApp(null) },
+                onPickGauge = { panel = Panel.PickGauge(null) },
+            )
             is Panel.PickApp -> PickAppPanel(d, apps, p.tileId, close = { panel = null })
+            is Panel.PickGauge -> PickGaugePanel(d, p.tileId, close = { panel = null })
         }
 
         if (carShown && panel == null) {

@@ -247,6 +247,35 @@ fun PickAppPanel(d: Dependencies, apps: List<App>, tileId: String?, close: () ->
 }
 
 /**
+ * Qué dato del auto muestra un medidor: los que lee el OBD, con su ícono. Los que
+ * este auto no da (ya conectado) se ven apagados y avisan.
+ */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+fun PickGaugePanel(d: Dependencies, tileId: String?, close: () -> Unit) {
+    val c = LocalColors.current
+    val obd = d.obdIfCreated()?.takeIf { it.state == ObdState.ON }
+    PanelScaffold(stringResource(R.string.pick_gauge), close) {
+        Label(stringResource(R.string.pick_gauge_help), Typography.body, c.textMuted, modifier = Modifier.padding(bottom = 14.dp))
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(14.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+            for (spec in GaugeSpecs) {
+                val readable = obd?.canRead(spec.signal) ?: true
+                Card(Modifier.width(220.dp).height(110.dp), onClick = {
+                    if (tileId != null) d.dashboard.setData(tileId, spec.signal) else d.dashboard.addTile(TileTypes.GAUGE, spec.signal)
+                    close()
+                }) {
+                    Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Icon(spec.icon, if (readable) c.accent else c.textMuted, 28.dp)
+                        Label(stringResource(spec.name), Typography.subtitle, if (readable) c.text else c.textMuted, maxLines = 1)
+                        if (!readable) Label(stringResource(R.string.gauge_unsupported), Typography.small, c.textMuted, maxLines = 1)
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
  * Ajustes → Tu auto, en tarjetas: el auto (nombre y color), las opciones del modelo
  * elegido justo debajo (sin bajar toda la lista), los modelos descargados a la vista
  * y el catálogo con buscador (no todos de golpe). Las descargas viven en el
@@ -837,7 +866,7 @@ private fun TemplateThumbnail(p: Template, grid: Grid) {
 }
 
 @Composable
-fun AddTilePanel(dashboard: DashboardState, close: () -> Unit, onPickApp: () -> Unit) {
+fun AddTilePanel(dashboard: DashboardState, close: () -> Unit, onPickApp: () -> Unit, onPickGauge: () -> Unit) {
     val c = LocalColors.current
     var noRoom by remember { mutableStateOf(false) }
     PanelScaffold(stringResource(R.string.add_tile), close) {
@@ -855,6 +884,7 @@ fun AddTilePanel(dashboard: DashboardState, close: () -> Unit, onPickApp: () -> 
                 for (spec in TileSpecs) {
                     Card(Modifier.width(width).height(height), onClick = {
                         if (spec.type == TileTypes.APP) onPickApp()
+                        else if (spec.type == TileTypes.GAUGE) onPickGauge()
                         else if (dashboard.add(spec.type, spec.initialSize, spec.limits)) close()
                         else noRoom = true
                     }) {
@@ -878,6 +908,7 @@ private fun iconOf(type: String) = when (type) {
     TileTypes.WEATHER -> Icons.sun
     TileTypes.TRIP -> Icons.speed
     TileTypes.SPEEDOMETER -> Icons.speed
+    TileTypes.GAUGE -> Icons.tachometer
     TileTypes.WORKSHOP -> Icons.engine
     TileTypes.PROJECTION -> Icons.phoneCar
     else -> Icons.apps
