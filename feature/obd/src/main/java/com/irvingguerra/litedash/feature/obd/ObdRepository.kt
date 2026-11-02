@@ -14,6 +14,8 @@ import com.irvingguerra.litedash.core.vehicle.VehicleBus
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -43,9 +45,12 @@ data class EngineReport(
     val voltage: Float?,
 )
 
+/** Nombres comunes de adaptadores ELM327 (para ponerlos primero en la lista). */
+private val OBD_NAMES = Regex("obd|elm|vlink|vgate|icar|obdlink|konnwei|v-link", RegexOption.IGNORE_CASE)
+
 /**
- * El escáner OBD. No existe hasta que algo lo pide (el Taller o una pieza con datos
- * del motor) y solo pregunta al auto lo que se está mostrando ([VehicleBus.wanted]):
+ * El escáner OBD. No existe hasta que algo lo pide (el Taller, o el velocímetro si ya
+ * hay un adaptador guardado) y solo pregunta al auto lo que se está mostrando ([VehicleBus.wanted]):
  * lo rápido (velocidad, rpm) unas 10 veces por segundo y lo lento cada 2 s.
  */
 class ObdRepository(private val context: Context, private val bus: VehicleBus) {
@@ -59,7 +64,7 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
     var supported by mutableStateOf<Set<Int>>(emptySet())
         private set
 
-    private val prefs = context.getSharedPreferences("obd", Context.MODE_PRIVATE)
+    private val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val lock = Mutex()
     private var link: ElmLink? = null
@@ -102,24 +107,33 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
         state = ObdState.CONNECTING
         error = null
         job = scope.launch {
+            // El enlace de este intento: se cierra aquí si algo falla (aunque todavía no sea
+            // el actual), y los campos compartidos solo se tocan mientras este job siga vivo.
+            var l: ElmLink? = null
             try {
-                val l = open(t)
+                l = open(t)
                 val e = Elm327(l)
                 val version = lock.withLock { e.init() }
                 val pids = lock.withLock { e.supportedPids() }
-                link = l
-                elm = e
-                supported = pids
-                adapter = version
-                target = t
-                state = ObdState.ON
+                ensureActive()
+                withContext(Dispatchers.Main) {
+                    link = l
+                    elm = e
+                    supported = pids
+                    adapter = version
+                    target = t
+                    state = ObdState.ON
+                }
                 poll(e)
             } catch (x: Exception) {
-                if (isActive) {
+                runCatching { l?.close() }
+                if (isActive) withContext(Dispatchers.Main + NonCancellable) {
                     error = x.message ?: x.javaClass.simpleName
                     state = ObdState.ERROR
+                    link = null
+                    elm = null
+                    bus.clear(Source.OBD)
                 }
-                closeLink()
             }
         }
     }
@@ -159,7 +173,7 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
 
     private suspend fun poll(e: Elm327) {
         var lastSlow = 0L
-        while (currentCoroutineContextActive()) {
+        while (true) {
             val wanted = bus.wanted
             val pids = Pids.filter { it.signal in wanted && it.code in supported }
             if (pids.isEmpty()) {
@@ -168,16 +182,12 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
             }
             val slow = System.currentTimeMillis() - lastSlow > 2_000
             if (slow) lastSlow = System.currentTimeMillis()
-            for (p in pids) {
-                if (!p.fast && !slow) continue
-                val value = lock.withLock { e.pid(p.code) }?.let(p.decode)
-                withContext(Dispatchers.Main) { bus.publish(p.signal, value, Source.OBD) }
-            }
+            // Se leen todos y se publican juntos: un solo salto al hilo principal por vuelta.
+            val values = pids.filter { it.fast || slow }.map { p -> p.signal to lock.withLock { e.pid(p.code) }?.let(p.decode) }
+            withContext(Dispatchers.Main) { for ((signal, value) in values) bus.publish(signal, value, Source.OBD) }
             delay(60)
         }
     }
-
-    private suspend fun currentCoroutineContextActive() = kotlinx.coroutines.currentCoroutineContext().isActive
 
     @SuppressLint("MissingPermission")
     private fun open(t: ObdTarget): ElmLink = when (t) {
@@ -196,5 +206,13 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
         scope.launch(Dispatchers.Main) { bus.clear(Source.OBD) }
     }
 
-    private fun looksLikeObd(name: String) = Regex("obd|elm|vlink|vgate|icar|obdlink|konnwei|v-link", RegexOption.IGNORE_CASE).containsMatchIn(name)
+    private fun looksLikeObd(name: String) = OBD_NAMES.containsMatchIn(name)
+
+    companion object {
+        private const val PREFS = "obd"
+
+        /** Hay un adaptador guardado (sin crear el escáner ni tocar Bluetooth). */
+        fun hasSavedTarget(context: Context) =
+            context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).contains("tipo")
+    }
 }

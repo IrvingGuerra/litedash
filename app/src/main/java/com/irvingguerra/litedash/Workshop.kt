@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -218,16 +217,20 @@ private fun Engine(obd: ObdRepository, tab: Int) {
 /** Los sensores que da este auto, en vivo (solo se leen mientras se ven). */
 @Composable
 private fun LiveSensors(d: Dependencies) {
-    val c = LocalColors.current
     val locale = LocalConfiguration.current.locales[0]
+    val imperial = imperialUnits(d.prefs.language)
     SettingsCard(stringResource(R.string.obd_live)) {
-        for (p in Pids.filter { it.code in d.obd.supported }) {
-            val value = d.bus.watch(p.signal)
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Label(stringResource(sensorName(p.signal)), Typography.body, maxLines = 1, modifier = Modifier.weight(1f))
-                Label(value?.let { String.format(locale, sensorFormat(p.signal), it) } ?: "—", Typography.subtitle, c.accent, maxLines = 1)
-            }
-        }
+        for (p in Pids.filter { it.code in d.obd.supported }) SensorRow(d, p.signal, imperial, locale)
+    }
+}
+
+/** Una fila por sensor: cada dato nuevo solo vuelve a dibujar su fila. */
+@Composable
+private fun SensorRow(d: Dependencies, signal: String, imperial: Boolean, locale: java.util.Locale) {
+    val value = d.bus.watch(signal)
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        Label(stringResource(sensorName(signal)), Typography.body, maxLines = 1, modifier = Modifier.weight(1f))
+        Label(value?.let { sensorText(signal, it, imperial, locale) } ?: "—", Typography.subtitle, LocalColors.current.accent, maxLines = 1)
     }
 }
 
@@ -245,14 +248,15 @@ private fun sensorName(signal: String) = when (signal) {
     else -> R.string.sensor_ambient
 }
 
-private fun sensorFormat(signal: String) = when (signal) {
-    Signal.SPEED -> "%.0f km/h"
-    Signal.RPM -> "%.0f rpm"
-    Signal.LOAD, Signal.FUEL -> "%.0f %%"
-    Signal.MAP, Signal.BARO -> "%.0f kPa"
-    Signal.MAF -> "%.1f g/s"
-    Signal.VOLTAGE -> "%.1f V"
-    else -> "%.0f °C"
+/** El valor con su unidad; en millas y °F donde se usan (como el velocímetro). */
+private fun sensorText(signal: String, v: Float, imperial: Boolean, locale: java.util.Locale) = when (signal) {
+    Signal.SPEED -> if (imperial) String.format(locale, "%.0f mph", v / 1.609f) else String.format(locale, "%.0f km/h", v)
+    Signal.RPM -> String.format(locale, "%.0f rpm", v)
+    Signal.LOAD, Signal.FUEL -> String.format(locale, "%.0f %%", v)
+    Signal.MAP, Signal.BARO -> String.format(locale, "%.0f kPa", v)
+    Signal.MAF -> String.format(locale, "%.1f g/s", v)
+    Signal.VOLTAGE -> String.format(locale, "%.1f V", v)
+    else -> if (imperial) String.format(locale, "%.0f °F", v * 9 / 5 + 32) else String.format(locale, "%.0f °C", v)
 }
 
 private fun monitorName(m: MonitorName) = when (m) {

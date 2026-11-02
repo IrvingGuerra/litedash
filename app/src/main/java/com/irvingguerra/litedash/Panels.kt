@@ -1,6 +1,5 @@
 package com.irvingguerra.litedash
 
-import androidx.compose.ui.graphics.graphicsLayer
 import com.irvingguerra.litedash.core.ui.Radius
 import android.app.Activity
 import android.app.ActivityManager
@@ -44,6 +43,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
@@ -566,12 +566,15 @@ fun SettingsPanel(
  */
 @Composable
 internal fun tabs(titles: List<Int>, key: String): Int {
-    var selected by rememberSaveable(key) { mutableIntStateOf(0) }
+    val selected = TabMemory[key] ?: 0
     Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        titles.forEachIndexed { i, t -> Button(stringResource(t), { selected = i }, primary = i == selected) }
+        titles.forEachIndexed { i, t -> Button(stringResource(t), { TabMemory[key] = i }, primary = i == selected) }
     }
     return selected
 }
+
+/** La pestaña elegida en cada sección (al cambiar de sección y regresar sigue ahí). */
+private val TabMemory = mutableStateMapOf<String, Int>()
 
 @Composable
 private fun MenuEntry(icon: ImageVector, text: String, selected: Boolean, narrow: Boolean, onClick: () -> Unit) {
@@ -786,7 +789,7 @@ private fun TemplateThumbnail(p: Template, grid: Grid) {
                     .offset(cw * tile.col, ch * tile.row)
                     .size(cw * tile.width, ch * tile.height)
                     .padding(2.dp)
-                    .clip(RoundedCornerShape(6.dp))
+                    .clip(RoundedCornerShape(Radius.small))
                     .background(if (tile.type == TileTypes.CAR) c.accent.copy(alpha = 0.55f) else c.surfaceHigh),
             )
         }
@@ -857,12 +860,12 @@ private fun Modules(d: Dependencies, onEdit: () -> Unit) {
     }
 
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        ModuleItem(TileTypes.MUSIC, Icons.music, stringResource(R.string.tile_music), stringResource(if (permission) R.string.music_with_permission else R.string.music_without_permission))
-        ModuleItem(TileTypes.WEATHER, Icons.sun, stringResource(R.string.tile_weather), stringResource(R.string.weather_module))
-        ModuleItem(TileTypes.TRIP, Icons.speed, stringResource(R.string.tile_trip), stringResource(R.string.trip_module))
-        ModuleItem(TileTypes.PROJECTION, Icons.phoneCar, stringResource(R.string.tile_projection), stringResource(R.string.projection_module))
-        ModuleItem(TileTypes.SPEEDOMETER, Icons.speed, stringResource(R.string.tile_speedometer), stringResource(R.string.speedometer_module))
-        ModuleItem(TileTypes.WORKSHOP, Icons.engine, stringResource(R.string.workshop), stringResource(R.string.workshop_module))
+        ModuleItem(TileTypes.MUSIC, iconOf(TileTypes.MUSIC), stringResource(R.string.tile_music), stringResource(if (permission) R.string.music_with_permission else R.string.music_without_permission))
+        ModuleItem(TileTypes.WEATHER, iconOf(TileTypes.WEATHER), stringResource(R.string.tile_weather), stringResource(R.string.weather_module))
+        ModuleItem(TileTypes.TRIP, iconOf(TileTypes.TRIP), stringResource(R.string.tile_trip), stringResource(R.string.trip_module))
+        ModuleItem(TileTypes.PROJECTION, iconOf(TileTypes.PROJECTION), stringResource(R.string.tile_projection), stringResource(R.string.projection_module))
+        ModuleItem(TileTypes.SPEEDOMETER, iconOf(TileTypes.SPEEDOMETER), stringResource(R.string.tile_speedometer), stringResource(R.string.speedometer_module))
+        ModuleItem(TileTypes.WORKSHOP, iconOf(TileTypes.WORKSHOP), stringResource(R.string.workshop), stringResource(R.string.workshop_module))
     }
 }
 
@@ -890,10 +893,10 @@ private fun ModuleRow(
     }
 }
 
-/** Las novedades del CHANGELOG en renglones: títulos ("### Agregado") y viñetas sin el formato. */
-private fun releaseNotes(): List<String> {
+/** Notas de una versión (sección del CHANGELOG) en renglones: títulos ("### Agregado") y viñetas sin formato. */
+private fun releaseNotes(notes: String = BuildConfig.RELEASE_NOTES): List<String> {
     val items = mutableListOf<String>()
-    for (raw in BuildConfig.RELEASE_NOTES.lines()) {
+    for (raw in notes.lines()) {
         val line = raw.trim()
         when {
             line.isEmpty() -> Unit
@@ -1018,16 +1021,8 @@ private fun NewVersion(v: Version, onInstall: () -> Unit) {
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         Label(stringResource(R.string.new_version, v.name), Typography.subtitle)
-        // Las notas del Release como lista corta: une los renglones partidos del
-        // CHANGELOG y quita el formato de Markdown.
-        val notes = buildList {
-            for (r in v.notes.lines().map { it.trim() }) when {
-                r.isBlank() || r.startsWith("#") -> Unit
-                r.startsWith("- ") -> add("• " + r.removePrefix("- "))
-                isNotEmpty() -> this[lastIndex] = this[lastIndex] + " " + r
-                else -> add(r)
-            }
-        }.take(6).joinToString("\n").replace("**", "")
+        // Las notas del Release como lista corta (sin los títulos de sección).
+        val notes = releaseNotes(v.notes).filterNot { it.startsWith("###") }.take(6).joinToString("\n") { "• $it" }
         if (notes.isNotBlank()) Label(notes, Typography.small, c.textMuted, maxLines = 8)
         Button(stringResource(R.string.download_install, v.bytes / 1e6f), onInstall, primary = true)
     }

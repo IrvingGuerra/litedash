@@ -33,6 +33,8 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -90,14 +92,18 @@ val MUSIC_PACKAGES = arrayOf(
 
 /** Pantalla chica (7" o menos de alto útil): ahí los íconos crecen para atinarles manejando. */
 @Composable
-fun isSmallScreen(): Boolean = LocalConfiguration.current.screenHeightDp < 640
+fun isSmallScreen(): Boolean = windowHeightDp() < 640
+
+/** Alto de la ventana en dp (el que de verdad tiene la app, también en pantalla dividida). */
+@Composable
+private fun windowHeightDp(): Float = with(LocalDensity.current) { LocalWindowInfo.current.containerSize.height.toDp().value }
 
 /**
  * Muy poca altura (un teléfono acostado): barras y dock compactos y sin aviso,
  * para que al tablero le quede espacio (si no, las piezas salen vacías).
  */
 @Composable
-fun isShortScreen(): Boolean = LocalConfiguration.current.screenHeightDp < 480
+fun isShortScreen(): Boolean = windowHeightDp() < 480
 
 /** Hora y fecha que respetan el formato del usuario (12/24 h); un repintado por minuto. */
 @Composable
@@ -272,7 +278,7 @@ private fun Turn(instruction: TurnInstruction, large: Boolean) {
         Box(Modifier.size(side).clip(RoundedCornerShape(Radius.card)).background(c.accent), contentAlignment = Alignment.Center) {
             val arrow = instruction.arrow
             if (arrow != null) {
-                Image(arrow.asImageBitmap(), null, Modifier.size(side * 0.7f), colorFilter = ColorFilter.tint(c.background))
+                Image(remember(arrow) { arrow.asImageBitmap() }, null, Modifier.size(side * 0.7f), colorFilter = ColorFilter.tint(c.background))
             } else {
                 Icon(Icons.navigate, c.background, side * 0.5f)
             }

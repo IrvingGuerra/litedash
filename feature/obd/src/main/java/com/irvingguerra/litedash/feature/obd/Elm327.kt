@@ -20,6 +20,9 @@ class Elm327(private val link: ElmLink, private val now: () -> Long = System::cu
 
     /** Respuesta del adaptador ya en mayúsculas y sin espacios, renglón por renglón. */
     fun command(cmd: String, timeoutMs: Long = 3_000): List<String> {
+        // Lo que haya quedado de un comando que expiró (su ">" tardío) se tira: si no, el
+        // siguiente leería esa respuesta y todas quedarían desfasadas.
+        while (link.input.available() > 0) link.input.read()
         link.output.write("$cmd\r".toByteArray())
         link.output.flush()
         val text = StringBuilder()

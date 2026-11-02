@@ -6,6 +6,21 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
+## [1.4.23] - 2026-11-01
+
+### Arreglado
+- El **velocímetro** se conecta solo al adaptador OBD guardado (antes usaba el GPS hasta
+  abrir el Taller).
+- **OBD:** al cambiar de adaptador o fallar la conexión ya no queda abierta la conexión
+  vieja, y una respuesta tardía ya no desfasa las siguientes.
+- En pantallas muy bajas la barra automática va abajo (la lateral no cabía).
+- Las pestañas de Ajustes recuerdan la elegida al cambiar de sección.
+
+### Mejorado
+- Auditoría: el velocímetro y los sensores del Taller ya no redibujan de más, el logo se
+  lee una sola vez y se guarda con tamaño exacto, sensores en °F y mph donde se usan,
+  menos código repetido (ajustes, dock y barra lateral, notas de versión) y sin restos.
+
 ## [1.4.22] - 2026-11-01
 
 ### Agregado

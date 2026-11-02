@@ -38,6 +38,7 @@ class LiteDashApp : Application() {
             wheel = WheelKeys(this, prefs),
             bus = bus,
             obdLazy = lazy { ObdRepository(this, bus) },
+            obdSaved = { ObdRepository.hasSavedTarget(this) },
         )
     }
 

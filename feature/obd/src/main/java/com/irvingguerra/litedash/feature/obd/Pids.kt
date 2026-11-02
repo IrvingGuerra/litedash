@@ -30,7 +30,7 @@ enum class MonitorName { MISFIRE, FUEL, COMPONENTS, CATALYST, HEATED_CATALYST, E
 
 /** Estado del motor del PID 01: luz de falla, cuántos códigos y los monitores. */
 data class Readiness(val mil: Boolean, val codes: Int, val monitors: List<Monitor>) {
-    /** Los incompletos (sin contar el de chispa/catalizador, que se acepta uno en muchos lugares). */
+    /** Los monitores que todavía no terminan (en la verificación se acepta uno pendiente). */
     val incomplete get() = monitors.filter { !it.complete }
 }
 

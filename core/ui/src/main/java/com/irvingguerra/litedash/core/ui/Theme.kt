@@ -29,8 +29,6 @@ import androidx.compose.ui.unit.sp
 
 // Colores de la marca (los mismos de brand/logo).
 object Brand {
-    val Graphite = Color(0xFF101317)
-    val GraphiteLight = Color(0xFF1F252D)
     val LightWhite = Color(0xFFF4F6F8)
     val Amber = Color(0xFFFFB224)
 }

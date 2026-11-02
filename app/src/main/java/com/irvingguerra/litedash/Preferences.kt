@@ -12,6 +12,8 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.core.content.edit
 import com.irvingguerra.litedash.feature.car.CarColors
 import java.util.Locale
+import kotlin.properties.ReadWriteProperty
+import kotlin.reflect.KProperty
 
 /**
  * Claves y valores ya guardados en el dispositivo: van en español porque así los
@@ -48,7 +50,6 @@ private object PrefKeys {
     const val SHOW_LOGO = "mostrar_logo"
     const val BAR_POSITION = "barra"
     const val LOGO_INTRO = "logo_entrada"
-    const val LOGO_REVISION = "logo_revision"
 }
 
 /** Dónde va la barra con la hora y tus apps. AUTO = a un lado si la pantalla está acostada. */
@@ -86,25 +87,36 @@ fun contextWithLanguage(base: Context): Context {
     return base.createConfigurationContext(config)
 }
 
+/**
+ * Un ajuste guardado: se lee una vez al abrir, es estado de Compose (redibuja lo que lo
+ * usa) y cada cambio se escribe al momento.
+ */
+private class Stored<T>(initial: T, private val save: (T) -> Unit) : ReadWriteProperty<Any?, T> {
+    private var value by mutableStateOf(initial)
+    override fun getValue(thisRef: Any?, property: KProperty<*>) = value
+    override fun setValue(thisRef: Any?, property: KProperty<*>, value: T) {
+        this.value = value
+        save(value)
+    }
+}
+
 /** Ajustes del usuario: cada cambio se guarda al momento y redibuja lo que lo usa. */
 class Preferences(context: Context) {
     private val p = context.getSharedPreferences(PrefKeys.FILE, Context.MODE_PRIVATE)
 
-    private var _theme by mutableStateOf(ThemeMode.fromStored(p.getString(PrefKeys.THEME, null)) ?: ThemeMode.DARK)
-    var theme: ThemeMode
-        get() = _theme
-        set(v) { _theme = v; p.edit { putString(PrefKeys.THEME, v.stored) } }
+    private fun bool(key: String, default: Boolean) = Stored(p.getBoolean(key, default)) { p.edit { putBoolean(key, it) } }
+    private fun int(key: String, default: Int) = Stored(p.getInt(key, default)) { p.edit { putInt(key, it) } }
+    private fun float(key: String, default: Float) = Stored(p.getFloat(key, default)) { p.edit { putFloat(key, it) } }
+    private fun string(key: String) = Stored(p.getString(key, null)) { p.edit { putString(key, it) } }
+    private fun <T> mapped(key: String, read: (String?) -> T, write: (T) -> String?) =
+        Stored(read(p.getString(key, null))) { p.edit { putString(key, write(it)) } }
 
-    private var _scale by mutableFloatStateOf(p.getFloat(PrefKeys.SCALE, 1f))
-    var scale: Float
-        get() = _scale
-        set(v) { _scale = v; p.edit { putFloat(PrefKeys.SCALE, v) } }
+    var theme by mapped(PrefKeys.THEME, { ThemeMode.fromStored(it) ?: ThemeMode.DARK }, { it.stored })
 
-    private var _carName by mutableStateOf(p.getString(PrefKeys.CAR_NAME, null))
+    var scale by float(PrefKeys.SCALE, 1f)
+
     /** null = todavía no lo nombra (se muestra "Mi auto"). */
-    var carName: String?
-        get() = _carName
-        set(v) { _carName = v; p.edit { putString(PrefKeys.CAR_NAME, v) } }
+    var carName by string(PrefKeys.CAR_NAME)
 
     // Antes se guardaba el número de un color fijo (PrefKeys.LEGACY_CAR_COLOR); ahora el color libre.
     private var _carColor by mutableIntStateOf(
@@ -120,147 +132,82 @@ class Preferences(context: Context) {
         _carColor = v.toArgb()
     }
 
-    private var _carModel by mutableStateOf(p.getString(PrefKeys.CAR_MODEL, null))
     /** Id del auto del catálogo que se muestra; null = el sedán genérico. */
-    var carModel: String?
-        get() = _carModel
-        set(v) { _carModel = v; p.edit { putString(PrefKeys.CAR_MODEL, v) } }
+    var carModel by string(PrefKeys.CAR_MODEL)
 
-    private var _welcomeSeen by mutableStateOf(p.getBoolean(PrefKeys.WELCOME_SEEN, false))
-    var welcomeSeen: Boolean
-        get() = _welcomeSeen
-        set(v) { _welcomeSeen = v; p.edit { putBoolean(PrefKeys.WELCOME_SEEN, v) } }
+    var welcomeSeen by bool(PrefKeys.WELCOME_SEEN, false)
 
-    private var _welcomeStep by mutableIntStateOf(p.getInt(PrefKeys.WELCOME_STEP, 0))
     /** Se guarda porque Android reinicia la app al volverla pantalla de inicio. */
-    var welcomeStep: Int
-        get() = _welcomeStep
-        set(v) { _welcomeStep = v; p.edit { putInt(PrefKeys.WELCOME_STEP, v) } }
+    var welcomeStep by int(PrefKeys.WELCOME_STEP, 0)
 
-    private var _dontAskHome by mutableStateOf(p.getBoolean(PrefKeys.DONT_ASK_HOME, false))
     /** El usuario pidió no volver a ver el aviso de "hazlo tu pantalla de inicio". */
-    var dontAskHome: Boolean
-        get() = _dontAskHome
-        set(v) { _dontAskHome = v; p.edit { putBoolean(PrefKeys.DONT_ASK_HOME, v) } }
+    var dontAskHome by bool(PrefKeys.DONT_ASK_HOME, false)
 
-    private var _language by mutableStateOf(p.getString(PrefKeys.LANGUAGE, "") ?: "")
-    /** "" (sistema), "es" o "en". Cambiarlo recrea la actividad. */
-    var language: String
-        get() = _language
-        set(v) { _language = v; p.edit(commit = true) { putString(PrefKeys.LANGUAGE, v) } }
+    /** "" (sistema), "es" o "en". Cambiarlo recrea la actividad: se escribe al instante (commit). */
+    var language by Stored(p.getString(PrefKeys.LANGUAGE, "") ?: "") { p.edit(commit = true) { putString(PrefKeys.LANGUAGE, it) } }
 
-    private var _hidden by mutableStateOf(p.getStringSet(PrefKeys.HIDDEN, emptySet())!!.toSet())
     /** Apps que no salen en el cajón ([com.irvingguerra.litedash.feature.apps.App.key]). */
-    var hidden: Set<String>
-        get() = _hidden
-        set(v) { _hidden = v; p.edit { putStringSet(PrefKeys.HIDDEN, v) } }
+    var hidden by Stored(p.getStringSet(PrefKeys.HIDDEN, emptySet())!!.toSet()) { p.edit { putStringSet(PrefKeys.HIDDEN, it) } }
 
-    private var _dock by mutableStateOf(p.getString(PrefKeys.DOCK, null)?.split('\n')?.filter { it.isNotBlank() })
     /** Apps fijas en el dock ([com.irvingguerra.litedash.feature.apps.App.key]); null = las sugeridas. */
-    var dock: List<String>?
-        get() = _dock
-        set(v) { _dock = v; p.edit { putString(PrefKeys.DOCK, v?.joinToString("\n")) } }
+    var dock by mapped(PrefKeys.DOCK, { v -> v?.split('\n')?.filter { it.isNotBlank() } }, { it?.joinToString("\n") })
 
-    private var _mapApp by mutableStateOf(p.getString(PrefKeys.MAP_APP, null))
     /** App de navegación elegida ([com.irvingguerra.litedash.feature.apps.App.key]); null = la primera instalada. */
-    var mapApp: String?
-        get() = _mapApp
-        set(v) { _mapApp = v; p.edit { putString(PrefKeys.MAP_APP, v) } }
+    var mapApp by string(PrefKeys.MAP_APP)
 
-    private var _musicApp by mutableStateOf(p.getString(PrefKeys.MUSIC_APP, null))
     /** Paquete de la app de música elegida; null = "Sistema" (lo que suene: radio, USB, Bluetooth…). */
-    var musicApp: String?
-        get() = _musicApp
-        set(v) { _musicApp = v; p.edit { putString(PrefKeys.MUSIC_APP, v) } }
+    var musicApp by string(PrefKeys.MUSIC_APP)
 
-    private var _driverName by mutableStateOf(p.getString(PrefKeys.DRIVER_NAME, null))
     /** Nombre de quien maneja, para saludarlo; null = sin saludo. */
-    var driverName: String?
-        get() = _driverName
-        set(v) { _driverName = v; p.edit { putString(PrefKeys.DRIVER_NAME, v) } }
+    var driverName by string(PrefKeys.DRIVER_NAME)
 
-    private var _homeAddress by mutableStateOf(p.getString(PrefKeys.HOME_ADDRESS, null))
     /** Dirección de Casa para el atajo de Navegar; null = sin guardar. */
-    var homeAddress: String?
-        get() = _homeAddress
-        set(v) { _homeAddress = v; p.edit { putString(PrefKeys.HOME_ADDRESS, v) } }
+    var homeAddress by string(PrefKeys.HOME_ADDRESS)
 
-    private var _workAddress by mutableStateOf(p.getString(PrefKeys.WORK_ADDRESS, null))
     /** Dirección de Trabajo para el atajo de Navegar; null = sin guardar. */
-    var workAddress: String?
-        get() = _workAddress
-        set(v) { _workAddress = v; p.edit { putString(PrefKeys.WORK_ADDRESS, v) } }
+    var workAddress by string(PrefKeys.WORK_ADDRESS)
 
-    private var _parkedMode by mutableStateOf(p.getBoolean(PrefKeys.PARKED_MODE, true))
     /** Reloj grande tras unos minutos sin tocar el inicio. */
-    var parkedMode: Boolean
-        get() = _parkedMode
-        set(v) { _parkedMode = v; p.edit { putBoolean(PrefKeys.PARKED_MODE, v) } }
+    var parkedMode by bool(PrefKeys.PARKED_MODE, true)
 
-    private var _barPosition by mutableStateOf(BarPosition.fromStored(p.getString(PrefKeys.BAR_POSITION, null)))
     /** Dónde van la hora y tus apps: a un lado, abajo o según la pantalla. */
-    var barPosition: BarPosition
-        get() = _barPosition
-        set(v) { _barPosition = v; p.edit { putString(PrefKeys.BAR_POSITION, v.stored) } }
+    var barPosition by mapped(PrefKeys.BAR_POSITION, BarPosition::fromStored) { it.stored }
 
-    private var _showLogo by mutableStateOf(p.getBoolean(PrefKeys.SHOW_LOGO, false))
     /** En el inicio, el logo de tu marca (imagen tuya o el nombre) en lugar del auto. */
-    var showLogo: Boolean
-        get() = _showLogo
-        set(v) { _showLogo = v; p.edit { putBoolean(PrefKeys.SHOW_LOGO, v) } }
+    var showLogo by bool(PrefKeys.SHOW_LOGO, false)
 
-    private var _logoIntro by mutableStateOf(p.getBoolean(PrefKeys.LOGO_INTRO, false))
     /** Al abrir LiteDash, el logo aparece unos instantes a pantalla completa. */
-    var logoIntro: Boolean
-        get() = _logoIntro
-        set(v) { _logoIntro = v; p.edit { putBoolean(PrefKeys.LOGO_INTRO, v) } }
+    var logoIntro by bool(PrefKeys.LOGO_INTRO, false)
 
-    private var _logoRevision by mutableIntStateOf(p.getInt(PrefKeys.LOGO_REVISION, 0))
-    /** Cambia cada vez que se elige o quita la imagen del logo (para volver a leerla). */
-    var logoRevision: Int
-        get() = _logoRevision
-        set(v) { _logoRevision = v; p.edit { putInt(PrefKeys.LOGO_REVISION, v) } }
+    /** Cambia cada vez que se elige o quita la imagen del logo (para volver a leerla); solo en memoria. */
+    var logoRevision by mutableIntStateOf(0)
 
-    private var _carAngle by mutableStateOf(p.getFloat(PrefKeys.CAR_ANGLE, -1f).takeIf { it >= 0f })
     /** Hacia dónde dejó girado el auto en el inicio (fracción de vuelta); null = tres cuartos. */
-    var carAngle: Float?
-        get() = _carAngle
-        set(v) { _carAngle = v; p.edit { putFloat(PrefKeys.CAR_ANGLE, v ?: -1f) } }
+    var carAngle by Stored(p.getFloat(PrefKeys.CAR_ANGLE, -1f).takeIf { it >= 0f }) { p.edit { putFloat(PrefKeys.CAR_ANGLE, it ?: -1f) } }
 
-    private var _wheelKeys by mutableStateOf(
-        p.getString(PrefKeys.WHEEL_KEYS, "")!!.lines().mapNotNull { line ->
-            val (code, action) = line.split('=', limit = 2).takeIf { it.size == 2 } ?: return@mapNotNull null
-            code.toIntOrNull()?.let { it to action }
-        }.toMap(),
-    )
     /** Botón del volante (código de tecla de Android) → acción guardada ([WheelAction.stored]). */
-    var wheelKeys: Map<Int, String>
-        get() = _wheelKeys
-        set(v) { _wheelKeys = v; p.edit { putString(PrefKeys.WHEEL_KEYS, v.entries.joinToString("\n") { "${it.key}=${it.value}" }) } }
+    var wheelKeys by mapped(
+        PrefKeys.WHEEL_KEYS,
+        { v ->
+            (v ?: "").lines().mapNotNull { line ->
+                val (code, action) = line.split('=', limit = 2).takeIf { it.size == 2 } ?: return@mapNotNull null
+                code.toIntOrNull()?.let { it to action }
+            }.toMap()
+        },
+        { m -> m.entries.joinToString("\n") { "${it.key}=${it.value}" } },
+    )
 
-    private var _brightnessBySun by mutableStateOf(p.getBoolean(PrefKeys.BRIGHTNESS_BY_SUN, false))
     /** Brillo de día y de noche según el sol (apagado = el brillo del sistema, sin tocarlo). */
-    var brightnessBySun: Boolean
-        get() = _brightnessBySun
-        set(v) { _brightnessBySun = v; p.edit { putBoolean(PrefKeys.BRIGHTNESS_BY_SUN, v) } }
+    var brightnessBySun by bool(PrefKeys.BRIGHTNESS_BY_SUN, false)
 
-    private var _dayBrightness by mutableIntStateOf(p.getInt(PrefKeys.DAY_BRIGHTNESS, 100))
     /** Por ciento, de 10 a 100. */
-    var dayBrightness: Int
-        get() = _dayBrightness
-        set(v) { _dayBrightness = v; p.edit { putInt(PrefKeys.DAY_BRIGHTNESS, v) } }
+    var dayBrightness by int(PrefKeys.DAY_BRIGHTNESS, 100)
 
-    private var _nightBrightness by mutableIntStateOf(p.getInt(PrefKeys.NIGHT_BRIGHTNESS, 40))
     /** Por ciento, de 10 a 100. */
-    var nightBrightness: Int
-        get() = _nightBrightness
-        set(v) { _nightBrightness = v; p.edit { putInt(PrefKeys.NIGHT_BRIGHTNESS, v) } }
+    var nightBrightness by int(PrefKeys.NIGHT_BRIGHTNESS, 40)
 
-    private var _brightnessAllApps by mutableStateOf(p.getBoolean(PrefKeys.BRIGHTNESS_ALL_APPS, false))
     /** También en las demás apps (cambia el brillo del sistema; pide "modificar ajustes del sistema"). */
-    var brightnessAllApps: Boolean
-        get() = _brightnessAllApps
-        set(v) { _brightnessAllApps = v; p.edit { putBoolean(PrefKeys.BRIGHTNESS_ALL_APPS, v) } }
+    var brightnessAllApps by bool(PrefKeys.BRIGHTNESS_ALL_APPS, false)
 
     /**
      * El brillo del sistema como estaba antes de que LiteDash lo cambiara ("modo,nivel"):
@@ -270,5 +217,4 @@ class Preferences(context: Context) {
         get() = p.getString(PrefKeys.BRIGHTNESS_ORIGINAL, null)?.split(',')?.mapNotNull { it.toIntOrNull() }
             ?.takeIf { it.size == 2 }?.let { it[0] to it[1] }
         set(v) = p.edit { putString(PrefKeys.BRIGHTNESS_ORIGINAL, v?.let { "${it.first},${it.second}" }) }
-
 }

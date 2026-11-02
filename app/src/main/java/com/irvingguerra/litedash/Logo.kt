@@ -29,6 +29,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
@@ -46,6 +47,7 @@ import com.irvingguerra.litedash.core.ui.Label
 import com.irvingguerra.litedash.core.ui.LocalColors
 import com.irvingguerra.litedash.core.ui.MorseMark
 import com.irvingguerra.litedash.core.ui.Typography
+import androidx.core.graphics.scale
 import java.io.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -68,10 +70,17 @@ private suspend fun saveLogo(context: Context, uri: Uri): Boolean = withContext(
         context.contentResolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it, null, bounds) }
         var sample = 1
         while (maxOf(bounds.outWidth, bounds.outHeight) / (sample * 2) >= LOGO_MAX_PX) sample *= 2
-        val bitmap = context.contentResolver.openInputStream(uri)?.use {
+        val decoded = context.contentResolver.openInputStream(uri)?.use {
             BitmapFactory.decodeStream(it, null, BitmapFactory.Options().apply { inSampleSize = sample })
         } ?: return@runCatching false
-        logoFile(context).outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
+        // El muestreo es en potencias de 2: se termina de ajustar a LOGO_MAX_PX exactos.
+        val k = LOGO_MAX_PX.toFloat() / maxOf(decoded.width, decoded.height)
+        val bitmap = if (k < 1f) decoded.scale((decoded.width * k).toInt(), (decoded.height * k).toInt()) else decoded
+        // Primero a un temporal: si algo falla a la mitad, el logo de antes queda intacto.
+        val temp = File(context.filesDir, "$LOGO_FILE.tmp")
+        temp.outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
+        temp.renameTo(logoFile(context))
+        LogoCache.revision = -1
         true
     }.getOrDefault(false)
 }
@@ -79,16 +88,24 @@ private suspend fun saveLogo(context: Context, uri: Uri): Boolean = withContext(
 /** La imagen del logo; [loaded] = ya se sabe si hay o no (para no mostrar el nombre de paso). */
 private class LoadedLogo(val image: ImageBitmap?, val loaded: Boolean)
 
+/** La imagen decodificada una sola vez por revisión (la usan la pieza, la intro y Ajustes). */
+private object LogoCache {
+    var revision = -1
+    var image: ImageBitmap? = null
+}
+
 @Composable
 private fun rememberLogo(revision: Int): LoadedLogo {
     val context = LocalContext.current
-    val logo by produceState(LoadedLogo(null, false), revision) {
-        value = LoadedLogo(
-            withContext(Dispatchers.IO) {
+    val cached = LogoCache.revision == revision
+    val logo by produceState(if (cached) LoadedLogo(LogoCache.image, true) else LoadedLogo(null, false), revision) {
+        if (LogoCache.revision != revision) {
+            LogoCache.image = withContext(Dispatchers.IO) {
                 logoFile(context).takeIf { it.exists() }?.let { BitmapFactory.decodeFile(it.path)?.asImageBitmap() }
-            },
-            loaded = true,
-        )
+            }
+            LogoCache.revision = revision
+        }
+        value = LoadedLogo(LogoCache.image, loaded = true)
     }
     return logo
 }
@@ -123,6 +140,7 @@ fun BrandLogo(d: Dependencies, brand: String, onClick: () -> Unit, modifier: Mod
 @Composable
 fun LogoIntro(d: Dependencies, brand: String, onDone: () -> Unit) {
     val c = LocalColors.current
+    val done by rememberUpdatedState(onDone)
     // El fondo tapa el inicio desde el primer cuadro; el logo aparece encima y al final
     // todo se desvanece hacia el inicio.
     val curtain = remember { Animatable(1f) }
@@ -137,7 +155,7 @@ fun LogoIntro(d: Dependencies, brand: String, onDone: () -> Unit) {
         alpha.animateTo(1f, tween(600))
         delay(1100)
         curtain.animateTo(0f, tween(500))
-        onDone()
+        done()
     }
     Box(
         Modifier

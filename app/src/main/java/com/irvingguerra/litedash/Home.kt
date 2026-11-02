@@ -34,7 +34,6 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
@@ -55,6 +54,7 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.irvingguerra.litedash.core.ui.Button
@@ -87,7 +87,6 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import com.irvingguerra.litedash.core.vehicle.VehicleBus
 import com.irvingguerra.litedash.feature.obd.ObdRepository
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 
 /** Qué panel está abierto encima del inicio (uno a la vez). */
@@ -121,9 +120,13 @@ class Dependencies(
     /** Señales del auto (OBD, GPS…): el tablero solo lee de aquí. */
     val bus: VehicleBus,
     private val obdLazy: Lazy<ObdRepository>,
+    private val obdSaved: () -> Boolean,
 ) {
     /** El escáner OBD: se crea la primera vez que algo lo pide (el Taller o una pieza). */
     val obd by obdLazy
+
+    /** Ya se usó un adaptador OBD alguna vez (sin crear el escáner para saberlo). */
+    val hasObdAdapter get() = obdSaved()
 
     /** El escáner si ya existe, sin crearlo (una pieza solo quiere saber si está conectado). */
     fun obdIfCreated(): ObdRepository? = if (obdLazy.isInitialized()) obd else null
@@ -317,12 +320,13 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
           val rail = when (d.prefs.barPosition) {
               BarPosition.SIDE -> true
               BarPosition.BOTTOM -> false
-              BarPosition.AUTO -> maxWidth > maxHeight
+              BarPosition.AUTO -> maxWidth > maxHeight && !isShortScreen()
           }
+          val favorites = remember(apps, d.prefs.dock, d.prefs.musicApp) { dockFavorites(d, apps) }
           Row(Modifier.fillMaxSize()) {
             if (rail) Rail(
                 repo = d.apps,
-                favorites = remember(apps, d.prefs.dock, d.prefs.musicApp) { dockFavorites(d, apps) },
+                favorites = favorites,
                 onCar = { panel = Panel.CarSettings },
                 onApps = { panel = Panel.Drawer },
                 onSettings = { panel = Panel.Settings },
@@ -391,7 +395,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                 }
                 if (!rail) Dock(
                     repo = d.apps,
-                    favorites = remember(apps, d.prefs.dock, d.prefs.musicApp) { dockFavorites(d, apps) },
+                    favorites = favorites,
                     onCar = { panel = Panel.CarSettings },
                     onApps = { panel = Panel.Drawer },
                     onSettings = { panel = Panel.Settings },
@@ -549,11 +553,7 @@ private fun Dock(
             // Caben las que quepan: en pantallas chicas el dock no se encima.
             val fitCount = (maxWidth / (box + 8.dp)).toInt()
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                for (app in favorites.take(fitCount)) {
-                    Box(Modifier.size(box).clip(RoundedCornerShape(Radius.card)).clickable { repo.open(context, app) }, contentAlignment = Alignment.Center) {
-                        AppIcon(repo, app, side)
-                    }
-                }
+                for (app in favorites.take(fitCount)) AppShortcut(repo, app, box, side)
             }
         }
         Volume(buttonSize)
@@ -561,6 +561,15 @@ private fun Dock(
         val voice = remember { voiceIntent(context) }
         if (voice != null) IconButton(Icons.mic, { runCatching { context.startActivity(voice) } }, size = buttonSize)
         IconButton(Icons.settings, onSettings, size = buttonSize)
+    }
+}
+
+/** Una app favorita del dock o de la barra lateral: su ícono, un toque la abre. */
+@Composable
+private fun AppShortcut(repo: AppRepository, app: App, box: Dp, icon: Dp) {
+    val context = LocalContext.current
+    Box(Modifier.size(box).clip(RoundedCornerShape(Radius.inner)).clickable { repo.open(context, app) }, contentAlignment = Alignment.Center) {
+        AppIcon(repo, app, icon)
     }
 }
 
@@ -597,11 +606,7 @@ private fun Rail(
             // Las favoritas que quepan entre los accesos de arriba y los controles de abajo.
             val fit = (maxHeight / (button + 4.dp)).toInt()
             Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                for (app in favorites.take(fit)) {
-                    Box(Modifier.size(button).clip(RoundedCornerShape(Radius.inner)).clickable { repo.open(context, app) }, contentAlignment = Alignment.Center) {
-                        AppIcon(repo, app, icon)
-                    }
-                }
+                for (app in favorites.take(fit)) AppShortcut(repo, app, button, icon)
             }
         }
         Volume(if (small) 40.dp else 44.dp, vertical = true)

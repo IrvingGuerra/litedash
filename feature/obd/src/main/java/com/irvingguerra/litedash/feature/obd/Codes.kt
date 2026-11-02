@@ -6,7 +6,7 @@ package com.irvingguerra.litedash.feature.obd
  */
 fun describe(code: String, spanish: Boolean): String {
     COMMON[code]?.let { return if (spanish) it.first else it.second }
-    val misfire = Regex("P030([1-8])").matchEntire(code)
+    val misfire = MISFIRE.matchEntire(code)
     if (misfire != null) {
         val n = misfire.groupValues[1]
         return if (spanish) "Falla de encendido en el cilindro $n" else "Cylinder $n misfire"
@@ -33,6 +33,8 @@ private fun system(code: String, spanish: Boolean): String {
     }
     return if (maker) "$text · " + (if (spanish) "código de la marca" else "manufacturer code") else text
 }
+
+private val MISFIRE = Regex("P030([1-8])")
 
 private val COMMON = mapOf(
     "P0011" to ("Tiempo del árbol de levas adelantado (banco 1)" to "Camshaft timing over-advanced (bank 1)"),

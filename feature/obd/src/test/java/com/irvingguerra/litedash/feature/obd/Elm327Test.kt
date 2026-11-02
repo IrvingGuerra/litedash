@@ -1,16 +1,24 @@
 package com.irvingguerra.litedash.feature.obd
 
 import java.io.ByteArrayInputStream
-import java.io.ByteArrayOutputStream
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class Elm327Test {
+    /** Adaptador falso: como uno real, contesta [reply] solo después de recibir un comando. */
     private fun elm(reply: String) = Elm327(object : ElmLink {
-        override val input = ByteArrayInputStream(reply.toByteArray())
-        override val output = ByteArrayOutputStream()
+        private var answer = ByteArrayInputStream(ByteArray(0))
+        override val input = object : java.io.InputStream() {
+            override fun read() = answer.read()
+            override fun available() = answer.available()
+        }
+        override val output = object : java.io.OutputStream() {
+            override fun write(b: Int) {
+                if (b == '\r'.code) answer = ByteArrayInputStream(reply.toByteArray())
+            }
+        }
         override fun close() {}
     })
 
