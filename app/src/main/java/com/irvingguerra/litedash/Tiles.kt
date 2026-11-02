@@ -11,7 +11,6 @@ import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -289,7 +288,7 @@ private fun Places(app: App?, home: String?, work: String?, onPlace: (String) ->
         }
     }
     val hasPlaces = home != null || work != null
-    if (tall) {
+    if (tall && height >= 240.dp) {
         // Alta: el mapa arriba a lo ancho y abajo el título con los atajos.
         Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             MapArt(Modifier.fillMaxWidth().weight(1f).clip(RoundedCornerShape(Radius.inner)))
@@ -308,9 +307,11 @@ private fun Places(app: App?, home: String?, work: String?, onPlace: (String) ->
     }
     val thumb = minOf(height, 180.dp)
     // Angosta con atajos: el mapa y los botones (ellos dicen a dónde); el título, si cabe.
+    // Muy angosta: sin mapa, para que "Casa" y "Trabajo" no se corten.
+    val withMap = !hasPlaces || width - thumb >= 180.dp
     val withTitle = !hasPlaces || width - thumb >= 360.dp
     Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
-        MapArt(Modifier.size(thumb).clip(RoundedCornerShape(Radius.inner)))
+        if (withMap) MapArt(Modifier.size(thumb).clip(RoundedCornerShape(Radius.inner)))
         if (withTitle) Box(Modifier.weight(1f).padding(horizontal = 12.dp)) { title() }
         else Spacer(Modifier.weight(1f))
         Row(Modifier.padding(start = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) { places() }

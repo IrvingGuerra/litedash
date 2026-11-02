@@ -381,4 +381,7 @@
     <string name="night_sun">Sunset time</string>
     <string name="night_sensor">Light sensor</string>
     <string name="night_no_sensor">By the sun: this screen has no light sensor.</string>
+    <string name="obd_ble_bluetooth_off">Bluetooth is off. Turn it on in Android Settings.</string>
+    <string name="obd_ble_location_off">On this Android version, searching Bluetooth LE needs location turned on.</string>
+    <string name="obd_ble_failed">Android didn\'t allow searching right now. Wait a few seconds and try again.</string>
 </resources>

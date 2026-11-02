@@ -257,19 +257,29 @@ fun PickAppPanel(d: Dependencies, apps: List<App>, tileId: String?, close: () ->
 fun PickGaugePanel(d: Dependencies, tileId: String?, close: () -> Unit) {
     val c = LocalColors.current
     val obd = d.obdIfCreated()?.takeIf { it.state == ObdState.ON }
+    var noRoom by remember { mutableStateOf(false) }
     PanelScaffold(stringResource(R.string.pick_gauge), close) {
         Label(stringResource(R.string.pick_gauge_help), Typography.body, c.textMuted, modifier = Modifier.padding(bottom = 14.dp))
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(14.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            for (spec in GaugeSpecs) {
-                val readable = obd?.canRead(spec.signal) ?: true
-                Card(Modifier.width(220.dp).height(110.dp), onClick = {
-                    if (tileId != null) d.dashboard.setData(tileId, spec.signal) else d.dashboard.addTile(TileTypes.GAUGE, spec.signal)
-                    close()
-                }) {
-                    Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Icon(spec.icon, if (readable) c.accent else c.textMuted, 28.dp)
-                        Label(stringResource(spec.name), Typography.subtitle, if (readable) c.text else c.textMuted, maxLines = 1)
-                        if (!readable) Label(stringResource(R.string.gauge_unsupported), Typography.small, c.textMuted, maxLines = 1)
+        if (noRoom) Label(stringResource(R.string.no_room), Typography.body, c.danger, modifier = Modifier.padding(bottom = 12.dp))
+        BoxWithConstraints(Modifier.fillMaxWidth().weight(1f).verticalScroll(rememberScrollState()).padding(bottom = 16.dp)) {
+            val gap = 14.dp
+            val columns = ((maxWidth + gap) / (200.dp + gap)).toInt().coerceAtLeast(2)
+            val width = (maxWidth - gap * (columns - 1)) / columns
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(gap), verticalArrangement = Arrangement.spacedBy(gap)) {
+                for (spec in GaugeSpecs) {
+                    val readable = obd?.canRead(spec.signal) ?: true
+                    Card(Modifier.width(width).height(110.dp), onClick = {
+                        if (tileId != null) {
+                            d.dashboard.setData(tileId, spec.signal)
+                            close()
+                        } else if (d.dashboard.addTile(TileTypes.GAUGE, spec.signal)) close()
+                        else noRoom = true
+                    }) {
+                        Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Icon(spec.icon, if (readable) c.accent else c.textMuted, 28.dp)
+                            Label(stringResource(spec.name), Typography.subtitle, if (readable) c.text else c.textMuted, maxLines = 1)
+                            if (!readable) Label(stringResource(R.string.gauge_unsupported), Typography.small, c.textMuted, maxLines = 1)
+                        }
                     }
                 }
             }

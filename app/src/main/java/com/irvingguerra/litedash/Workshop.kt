@@ -41,6 +41,7 @@ import com.irvingguerra.litedash.feature.obd.ObdRepository
 import com.irvingguerra.litedash.feature.obd.ObdState
 import com.irvingguerra.litedash.feature.obd.ObdTarget
 import com.irvingguerra.litedash.feature.obd.Pids
+import com.irvingguerra.litedash.feature.obd.ScanProblem
 import com.irvingguerra.litedash.feature.obd.describe
 import com.irvingguerra.litedash.feature.obd.engineAlert
 import kotlinx.coroutines.delay
@@ -57,21 +58,27 @@ private val Good = Color(0xFF3FB27F)
 fun Workshop(d: Dependencies) {
     val obd = d.obd
     // Sin adaptador solo hay que conectarlo; ya conectado, cada parte en su pestaña.
-    if (obd.state != ObdState.ON) return Connection(obd)
-    val tab = tabs(listOf(R.string.tab_connection, R.string.obd_codes, R.string.tab_inspection, R.string.tab_sensors), "taller")
-    if (tab == 0) {
-        Connection(obd)
+    val alerts = @Composable {
         SettingsCard {
             SwitchRow(stringResource(R.string.engine_alerts), d.prefs.engineAlerts, { d.prefs.engineAlerts = it }, stringResource(R.string.engine_alerts_help))
         }
+    }
+    if (obd.state != ObdState.ON) {
+        Connection(obd)
+        return alerts()
+    }
+    val tab = tabs(listOf(R.string.tab_connection, R.string.obd_codes, R.string.tab_inspection, R.string.tab_sensors), "taller")
+    if (tab == 0) {
+        Connection(obd)
+        alerts()
     }
     // El reporte se lee una vez y se comparte entre las pestañas de motor, códigos y verificación.
     Engine(obd, tab)
     if (tab == 3) LiveSensors(d)
 }
 
-/** Una falla tiene que durar esto antes de avisar: un pico de un segundo no es falla. */
-private const val ALERT_AFTER_MS = 8_000L
+/** Una alerta ya resuelta se olvida tras esto (un dato perdido no la "resuelve"). */
+private const val ALERT_CLEAR_MS = 30_000L
 
 /**
  * Aviso en el inicio si el motor se calienta de más o la batería no carga. Con un
@@ -87,12 +94,15 @@ fun EngineAlertBanner(d: Dependencies) {
     val alert = engineAlert(coolant, voltage, d.bus.watch(Signal.RPM))
     var shown by remember { mutableStateOf<EngineAlert?>(null) }
     var dismissed by remember { mutableStateOf<EngineAlert?>(null) }
+    // Una falla tiene que durar ([EngineAlert.holdMs]) antes de avisar; y para volver a
+    // avisar tras "Entendido", tiene que haberse resuelto un rato, no solo perder un dato.
     LaunchedEffect(alert) {
         if (alert == null) {
+            delay(ALERT_CLEAR_MS)
             shown = null
             dismissed = null
         } else {
-            delay(ALERT_AFTER_MS)
+            delay(alert.holdMs)
             shown = alert
         }
     }
@@ -178,7 +188,16 @@ private fun Connection(obd: ObdRepository) {
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         for (dev in obd.found) Button(dev.name, { obd.connect(dev) }, primary = dev == obd.target)
                     }
-                } else if (!obd.scanning && obd.searched) {
+                }
+                val problem = obd.scanProblem
+                if (problem != null) {
+                    val text = when (problem) {
+                        ScanProblem.BLUETOOTH_OFF -> R.string.obd_ble_bluetooth_off
+                        ScanProblem.LOCATION_OFF -> R.string.obd_ble_location_off
+                        ScanProblem.FAILED -> R.string.obd_ble_failed
+                    }
+                    Label(stringResource(text), Typography.small, c.danger)
+                } else if (obd.found.isEmpty() && !obd.scanning && obd.searched) {
                     Label(stringResource(R.string.obd_ble_none), Typography.small, c.textMuted)
                 }
             }

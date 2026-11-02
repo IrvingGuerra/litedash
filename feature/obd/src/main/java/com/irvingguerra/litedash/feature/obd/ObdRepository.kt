@@ -9,6 +9,7 @@ import android.bluetooth.le.ScanResult
 import android.bluetooth.le.ScanSettings
 import android.content.Context
 import android.content.pm.PackageManager
+import android.location.LocationManager
 import android.os.Build
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -41,6 +42,9 @@ sealed interface ObdTarget {
 }
 
 enum class ObdState { OFF, CONNECTING, ON, ERROR }
+
+/** Por qué una búsqueda de Bluetooth LE no pudo buscar (para decirlo claro). */
+enum class ScanProblem { BLUETOOTH_OFF, LOCATION_OFF, FAILED }
 
 /** Lo que dice el auto del motor: luz de falla, códigos y monitores; VIN y batería. */
 data class EngineReport(
@@ -117,6 +121,9 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
     /** Ya se buscó al menos una vez (para decir "no se encontró ninguno"). */
     var searched by mutableStateOf(false)
         private set
+    var scanProblem by mutableStateOf<ScanProblem?>(null)
+        private set
+    private var stopScan: (() -> Unit)? = null
 
     /**
      * Buscar requiere su propio permiso: "dispositivos cercanos" desde Android 12 (sin
@@ -131,32 +138,57 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
     @SuppressLint("MissingPermission")
     fun scanBle() {
         if (scanning || !canScan()) return
-        val scanner = context.getSystemService(BluetoothManager::class.java)?.adapter?.bluetoothLeScanner ?: return
+        scanProblem = null
+        val adapter = context.getSystemService(BluetoothManager::class.java)?.adapter
+        val scanner = adapter?.takeIf { it.isEnabled }?.bluetoothLeScanner
+            ?: return run { scanProblem = ScanProblem.BLUETOOTH_OFF }
+        // Antes de Android 12 la búsqueda no regresa nada con la ubicación apagada.
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S && !locationOn()) return run { scanProblem = ScanProblem.LOCATION_OFF }
         val seen = linkedMapOf<String, ObdTarget.Ble>()
         val callback = object : ScanCallback() {
             override fun onScanResult(callbackType: Int, result: ScanResult) {
                 // Sin nombre no hay cómo reconocerlo en la lista.
-                val name = result.scanRecord?.deviceName ?: return
+                val name = result.scanRecord?.deviceName ?: result.device.name ?: return
                 if (seen.put(result.device.address, ObdTarget.Ble(result.device.address, name)) == null) {
                     found = seen.values.sortedByDescending { looksLikeObd(it.name) }
                 }
             }
+
+            override fun onScanFailed(errorCode: Int) {
+                scanProblem = ScanProblem.FAILED
+                stopScan?.invoke()
+            }
         }
         found = emptyList()
         scanning = true
-        scope.launch(Dispatchers.Main) {
+        val job = scope.launch(Dispatchers.Main) {
             runCatching { scanner.startScan(null, ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY).build(), callback) }
-                .onFailure { scanning = false; return@launch }
+                .onFailure { scanProblem = ScanProblem.FAILED; stopScan?.invoke(); return@launch }
             delay(SCAN_MS)
+            stopScan?.invoke()
+        }
+        stopScan = {
             runCatching { scanner.stopScan(callback) }
+            job.cancel()
             scanning = false
             searched = true
+            stopScan = null
         }
+    }
+
+    /** Ubicación del sistema encendida (por proveedor: funciona desde Android 8). */
+    private fun locationOn(): Boolean {
+        val m = context.getSystemService(LocationManager::class.java) ?: return true
+        return runCatching {
+            m.isProviderEnabled(LocationManager.GPS_PROVIDER) || m.isProviderEnabled(LocationManager.NETWORK_PROVIDER)
+        }.getOrDefault(true)
     }
 
     /** Se conecta a [t] (o al último que funcionó) y empieza a leer. */
     fun connect(t: ObdTarget? = target) {
         if (t == null || state == ObdState.CONNECTING || state == ObdState.ON && target == t) return
+        // Buscar y conectar a la vez hace fallar la conexión BLE en varios Android.
+        stopScan?.invoke()
         disconnect()
         state = ObdState.CONNECTING
         error = null
@@ -258,6 +290,8 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
             for (p in pids) if (p.fast || slow) values += p.signal to lock.withLock { e.pid(p.code) }?.let(p.decode)
             if (adapterVoltage && slow) values += Signal.VOLTAGE to runCatching { lock.withLock { e.voltage() } }.getOrNull()
             for ((signal, value) in values) if (value == null) last.remove(signal) else last[signal] = value
+            // Lo que dejó de mostrarse no suaviza con un valor viejo al volver.
+            smoothed.keys.retainAll(derived.map { it.signal }.toSet())
             for (d in derived) {
                 val raw = d.compute(last)
                 val prev = smoothed[d.signal]

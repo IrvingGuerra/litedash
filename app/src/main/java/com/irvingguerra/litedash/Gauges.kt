@@ -43,8 +43,10 @@ import com.irvingguerra.litedash.core.ui.Typography
 import com.irvingguerra.litedash.core.vehicle.Signal
 import com.irvingguerra.litedash.core.vehicle.Source
 import com.irvingguerra.litedash.core.vehicle.watch
+import com.irvingguerra.litedash.feature.obd.CHARGING_MAX_V
 import com.irvingguerra.litedash.feature.obd.HOT_COOLANT_C
 import com.irvingguerra.litedash.feature.obd.ObdState
+import com.irvingguerra.litedash.feature.obd.RESTING_MIN_V
 import java.util.Locale
 import kotlin.math.cos
 import kotlin.math.sin
@@ -114,7 +116,7 @@ fun GaugeCard(number: String, unit: String, tag: String, fraction: Float, ticks:
 private fun ArcGauge(number: String, unit: String, tag: String, fraction: () -> Float, ticks: Int, color: Color, side: Dp) {
     val c = LocalColors.current
     Canvas(Modifier.fillMaxSize()) {
-        val stroke = (size.minDimension * 0.07f).coerceIn(6f, 22f)
+        val stroke = (size.minDimension * 0.07f).coerceIn(3.dp.toPx(), 12.dp.toPx())
         val radius = minOf(size.width, size.height * 1.15f) / 2 - stroke
         val center = Offset(size.width / 2, size.height / 2 + radius * 0.12f)
         val topLeft = Offset(center.x - radius, center.y - radius)
@@ -207,7 +209,7 @@ val GaugeSpecs = listOf(
     GaugeSpec(
         Signal.VOLTAGE, R.string.gauge_voltage, R.string.gauge_voltage_tag, Icons.battery, ticks = 6,
         shown = { v, _ -> v }, unit = { R.string.unit_volts }, decimals = 1,
-        fraction = range(10f, 16f), warning = { it < 11.8f || it > 15.3f },
+        fraction = range(10f, 16f), warning = { it < RESTING_MIN_V || it > CHARGING_MAX_V },
     ),
     GaugeSpec(
         Signal.CONSUMPTION, R.string.gauge_consumption, R.string.gauge_consumption_tag, Icons.drop, ticks = 6,

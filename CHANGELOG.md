@@ -6,6 +6,8 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
+## [1.4.30] - 2026-11-02
+
 ### Nuevo
 - **Pieza Medidor:** un dato del auto por OBD en tu inicio: tacómetro, temperatura del
   motor, gasolina, batería, **consumo en km/l** (calculado con el flujo de aire y la
@@ -13,7 +15,9 @@ Todos los cambios que nota quien usa LiteDash. Formato
   un arco de tablero. Se pinta de rojo lo que preocupa (motor caliente, poca gasolina).
 - **Alertas del motor:** aviso en el inicio si el motor se calienta de más, si la batería
   no carga con el motor encendido (alternador o banda), si el voltaje sube de más o si la
-  batería está baja. Solo avisa si dura unos segundos. Se apagan en el Taller.
+  batería está baja. El calor avisa a los 8 segundos; la batería, si dura un minuto (los
+  alternadores inteligentes bajan el voltaje a propósito). "Entendido" lo calla hasta que
+  se resuelva. Se apagan en el Taller.
 - **Adaptadores Bluetooth LE** (Vgate, Veepeak, OBDLink y similares): en el Taller,
   "Buscar Bluetooth LE"; no hace falta emparejarlos.
 - **¿Cuándo es de noche?** (Apariencia → Pantalla): por la hora del sol o por el **sensor
@@ -34,6 +38,8 @@ Todos los cambios que nota quien usa LiteDash. Formato
 ### Corregido
 - "Agregar al inicio" no dejaba ver todas las piezas en pantallas chicas o con la interfaz
   agrandada.
+- En español los decimales salen con punto, como en México ("12.6 V", no "12,6 V").
+- Con reloj de 12 horas, "a.m./p.m." va en chico junto a la hora grande (antes se cortaba).
 
 ## [1.4.29] - 2026-11-02
 

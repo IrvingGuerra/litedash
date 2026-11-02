@@ -124,14 +124,18 @@ class Dependencies(
     private val obdLazy: Lazy<ObdRepository>,
     private val obdSaved: () -> Boolean,
 ) {
+    /** Estado de Compose: las piezas que preguntaron antes de que existiera se vuelven a dibujar. */
+    private val obdCreated = mutableStateOf(false)
+
     /** El escáner OBD: se crea la primera vez que algo lo pide (el Taller o una pieza). */
-    val obd by obdLazy
+    val obd: ObdRepository
+        get() = obdLazy.value.also { if (!obdCreated.value) obdCreated.value = true }
 
     /** Ya se usó un adaptador OBD alguna vez (sin crear el escáner para saberlo). */
     val hasObdAdapter get() = obdSaved()
 
     /** El escáner si ya existe, sin crearlo (una pieza solo quiere saber si está conectado). */
-    fun obdIfCreated(): ObdRepository? = if (obdLazy.isInitialized()) obd else null
+    fun obdIfCreated(): ObdRepository? = if (obdCreated.value) obdLazy.value else null
 }
 
 /**
@@ -610,9 +614,11 @@ private fun Rail(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
-        // Angosta: la hora y, abajo y en chico, a.m./p.m.
-        Label(clock.time, Typography.subtitle, maxLines = 1)
-        if (clock.marker != null) Label(clock.marker, Typography.small, c.textMuted, maxLines = 1)
+        // Angosta: a.m./p.m. en chico junto a la hora (en otra línea le quitaría lugar a las apps).
+        Row(verticalAlignment = Alignment.Bottom) {
+            Label(clock.time, Typography.subtitle, maxLines = 1)
+            if (clock.marker != null) Label(clock.marker, Typography.small.copy(fontSize = 11.sp), c.textMuted, maxLines = 1, modifier = Modifier.padding(start = 2.dp, bottom = 2.dp))
+        }
         Box(Modifier.padding(bottom = 6.dp)) { StatusIcons() }
         IconButton(Icons.car, onCar, size = button)
         IconButton(Icons.apps, onApps, size = button)

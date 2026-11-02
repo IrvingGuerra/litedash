@@ -1,9 +1,9 @@
 package com.irvingguerra.litedash.feature.obd
 
-/** Algo del motor que el conductor debe saber ya. */
-enum class EngineAlert {
-    /** Motor sobrecalentado: orillarse y apagarlo. */
-    HOT,
+/** Algo del motor que el conductor debe saber ya; [holdMs] = cuánto debe durar para avisar. */
+enum class EngineAlert(val holdMs: Long = 60_000) {
+    /** Motor sobrecalentado: orillarse y apagarlo (avisa pronto). */
+    HOT(8_000),
     /** Con el motor andando la batería no carga (alternador o banda). */
     NOT_CHARGING,
     /** Voltaje de más: el regulador del alternador puede estar dañando la batería. */
@@ -16,11 +16,14 @@ enum class EngineAlert {
 const val HOT_COOLANT_C = 110f
 /** Motor andando: arriba de esto gira (en ralentí anda en 600–900 rpm). */
 private const val RUNNING_RPM = 400f
-/** El alternador da 13.5–14.7 V; abajo de esto no está cargando. */
-private const val CHARGING_MIN_V = 12.8f
-private const val CHARGING_MAX_V = 15.3f
+/**
+ * El alternador da 13.5–14.7 V. Los "inteligentes" (Mazda, VW, Ford, Toyota…) bajan a
+ * 12.4–12.7 V a propósito en crucero: abajo de 12.3 V ya no carga de verdad.
+ */
+private const val CHARGING_MIN_V = 12.3f
+const val CHARGING_MAX_V = 15.3f
 /** Batería en reposo: 12.6 V es llena; abajo de 11.9 V ya cuesta arrancar. */
-private const val RESTING_MIN_V = 11.9f
+const val RESTING_MIN_V = 11.9f
 
 /**
  * La alerta más importante con lo que se sabe (null = todo bien o no hay datos).

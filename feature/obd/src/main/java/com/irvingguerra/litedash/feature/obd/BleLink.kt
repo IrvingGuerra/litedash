@@ -65,6 +65,10 @@ class BleLink(context: Context, device: BluetoothDevice) : ElmLink {
         }
 
         override fun onServicesDiscovered(g: BluetoothGatt, status: Int) {
+            if (status != BluetoothGatt.GATT_SUCCESS) {
+                failure = "No se pudo leer el adaptador ($status)"
+                return ready.countDown()
+            }
             val pair = serialPair(g)
             if (pair == null) {
                 failure = "No parece un adaptador OBD"
@@ -73,7 +77,11 @@ class BleLink(context: Context, device: BluetoothDevice) : ElmLink {
             val (notify, write) = pair
             writer = write
             g.setCharacteristicNotification(notify, true)
-            val cccd = notify.getDescriptor(CCCD) ?: return ready.countDown()
+            val cccd = notify.getDescriptor(CCCD)
+            if (cccd == null) {
+                failure = "El adaptador no deja recibir sus respuestas"
+                return ready.countDown()
+            }
             val value = if (notify.properties and BluetoothGattCharacteristic.PROPERTY_NOTIFY != 0) {
                 BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
             } else {
@@ -83,6 +91,7 @@ class BleLink(context: Context, device: BluetoothDevice) : ElmLink {
         }
 
         override fun onDescriptorWrite(g: BluetoothGatt, descriptor: BluetoothGattDescriptor, status: Int) {
+            if (status != BluetoothGatt.GATT_SUCCESS) failure = "El adaptador no aceptó mandar respuestas ($status)"
             ready.countDown()
         }
 
@@ -101,7 +110,9 @@ class BleLink(context: Context, device: BluetoothDevice) : ElmLink {
         }
     }
 
+    // null si el Bluetooth está apagado.
     private val gatt: BluetoothGatt = device.connectGatt(context, false, callback, BluetoothDevice.TRANSPORT_LE)
+        ?: throw IOException("El Bluetooth está apagado")
 
     init {
         val ok = ready.await(15, TimeUnit.SECONDS)
@@ -112,7 +123,11 @@ class BleLink(context: Context, device: BluetoothDevice) : ElmLink {
     }
 
     override val input: InputStream = object : InputStream() {
-        override fun available() = incoming.size
+        // Caído y sin nada pendiente: que se note ya, no tras esperar la respuesta.
+        override fun available(): Int {
+            if (closed && incoming.isEmpty()) throw IOException("Se desconectó el adaptador")
+            return incoming.size
+        }
         override fun read(): Int {
             if (closed && incoming.isEmpty()) return -1
             return (incoming.poll(3, TimeUnit.SECONDS) ?: return -1).toInt() and 0xFF
@@ -133,6 +148,8 @@ class BleLink(context: Context, device: BluetoothDevice) : ElmLink {
     private fun send(chunk: ByteArray) {
         if (closed) throw IOException("Se cerró la conexión")
         val ch = writer ?: throw IOException("Sin canal de escritura")
+        // Confirmaciones tardías de un envío anterior que ya se dio por perdido.
+        written.drainPermits()
         val type = if (ch.properties and BluetoothGattCharacteristic.PROPERTY_WRITE != 0) {
             BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT
         } else {

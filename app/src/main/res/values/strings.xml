@@ -396,4 +396,7 @@
     <string name="night_sun">Hora del sol</string>
     <string name="night_sensor">Sensor de luz</string>
     <string name="night_no_sensor">Por la hora del sol: esta pantalla no tiene sensor de luz.</string>
+    <string name="obd_ble_bluetooth_off">El Bluetooth está apagado. Enciéndelo en Ajustes de Android.</string>
+    <string name="obd_ble_location_off">En esta versión de Android, buscar Bluetooth LE necesita la ubicación encendida.</string>
+    <string name="obd_ble_failed">Android no dejó buscar ahorita. Espera unos segundos y vuelve a intentar.</string>
 </resources>

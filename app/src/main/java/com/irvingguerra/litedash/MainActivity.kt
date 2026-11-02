@@ -31,7 +31,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             val d = dependencies
             // Una sola cuenta de la noche (sol o sensor de luz) para el tema y el brillo.
-            val night = rememberIsNight(d.prefs.nightSource)
+            val night = rememberIsNight(d.prefs.nightSource, needed = d.prefs.theme == ThemeMode.SUN || d.prefs.brightnessBySun)
             val dark = when (d.prefs.theme) {
                 ThemeMode.DARK -> true
                 ThemeMode.LIGHT -> false
