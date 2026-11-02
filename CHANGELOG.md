@@ -6,6 +6,13 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
+## [1.4.26] - 2026-11-01
+
+### Cambiado
+- **Auto por defecto nuevo:** un sedán concepto de líneas limpias (techo de cristal, barras
+  de luz y rines aerodinámicos) en lugar del dibujo anterior. Sigue siendo un dibujo de la
+  app: no pesa nada y se pinta del color que elijas.
+
 ## [1.4.25] - 2026-11-01
 
 ### Mejorado
