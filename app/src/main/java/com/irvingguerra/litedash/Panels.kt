@@ -844,16 +844,24 @@ fun AddTilePanel(dashboard: DashboardState, close: () -> Unit, onPickApp: () -> 
         if (noRoom) {
             Label(stringResource(R.string.no_room), Typography.body, c.danger, modifier = Modifier.padding(bottom = 12.dp))
         }
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(14.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            for (spec in TileSpecs) {
-                Card(Modifier.width(200.dp).height(120.dp), onClick = {
-                    if (spec.type == TileTypes.APP) onPickApp()
-                    else if (dashboard.add(spec.type, spec.initialSize, spec.limits)) close()
-                    else noRoom = true
-                }) {
-                    Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Icon(iconOf(spec.type), c.accent, 28.dp)
-                        Label(stringResource(spec.name), Typography.subtitle, maxLines = 1)
+        // Todas a la vista: tantas columnas como quepan (de 180 dp o más) y, si aun así
+        // no alcanza el alto (pantallas muy chicas), se desplaza.
+        BoxWithConstraints(Modifier.fillMaxWidth().weight(1f).verticalScroll(rememberScrollState()).padding(bottom = 16.dp)) {
+            val gap = 14.dp
+            val columns = ((maxWidth + gap) / (180.dp + gap)).toInt().coerceAtLeast(2)
+            val width = (maxWidth - gap * (columns - 1)) / columns
+            val height = if (isSmallScreen()) 100.dp else 120.dp
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(gap), verticalArrangement = Arrangement.spacedBy(gap)) {
+                for (spec in TileSpecs) {
+                    Card(Modifier.width(width).height(height), onClick = {
+                        if (spec.type == TileTypes.APP) onPickApp()
+                        else if (dashboard.add(spec.type, spec.initialSize, spec.limits)) close()
+                        else noRoom = true
+                    }) {
+                        Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                            Icon(iconOf(spec.type), c.accent, 28.dp)
+                            Label(stringResource(spec.name), Typography.subtitle, maxLines = 1)
+                        }
                     }
                 }
             }

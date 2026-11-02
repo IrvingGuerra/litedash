@@ -8,12 +8,12 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -33,11 +33,12 @@ import com.irvingguerra.litedash.core.ui.Icon
 import com.irvingguerra.litedash.core.ui.Icons
 import com.irvingguerra.litedash.core.ui.LocalColors
 import com.irvingguerra.litedash.core.ui.Card
+import com.irvingguerra.litedash.core.ui.Radius
 import com.irvingguerra.litedash.core.ui.Typography
 
 /**
- * Tarjeta de música. Se acomoda a su tamaño: chica es una fila con controles;
- * con más alto suma la carátula grande. Tocarla (fuera de los botones) la amplía
+ * Tarjeta de música. Se acomoda a su tamaño: chica es una fila con carátula y
+ * play (o los tres botones si cabe); con más alto, todo más grande. Tocarla (fuera de los botones) la amplía
  * con [onExpand]. [revision] cambia al volver a la app, para notar si el
  * usuario acaba de dar el permiso.
  */
@@ -72,63 +73,85 @@ private fun NoPermission(repo: MusicRepository) {
 
 @Composable
 private fun Player(repo: MusicRepository) {
-    val c = LocalColors.current
     val song = repo.song
-    BoxWithConstraints(Modifier.fillMaxSize()) {
+    BoxWithConstraints(Modifier.fillMaxSize().padding(10.dp)) {
         val tall = maxHeight > 150.dp
-        // La carátula (cuadrada, del alto de la tarjeta) solo si deja lugar al título y los botones.
-        val withArtwork = maxWidth - maxHeight >= 240.dp
+        if (tall && maxWidth < maxHeight * 1.5f) return@BoxWithConstraints Stacked(repo, song)
+        // Angosta (la fila de abajo en 7"): solo play/pausa, para que el título se lea.
+        val compact = !tall && maxWidth < 400.dp
+        // Carátula cuadrada con esquinas, dentro de la tarjeta, si deja lugar al título.
+        val art = minOf(maxHeight, 240.dp)
+        val withArtwork = maxWidth - art >= if (compact) 150.dp else 220.dp
         Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
-            // Carátula pegada a la orilla, del alto de la tarjeta.
-            if (withArtwork) Box(
-                Modifier.fillMaxHeight().aspectRatio(1f).background(c.surfaceHigh),
-                contentAlignment = Alignment.Center,
-            ) {
-                val bmp = song?.artwork
-                if (bmp != null) {
-                    Image(bmp.asImageBitmap(), null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
-                } else {
-                    Icon(Icons.music, c.textMuted, 28.dp)
-                }
-            }
-            Column(Modifier.weight(1f).padding(horizontal = 16.dp), verticalArrangement = Arrangement.Center) {
-                val opening = repo.starting
-                if (song == null && opening != null) {
-                    Label(stringResource(R.string.opening_app, opening), Typography.subtitle, c.accent, maxLines = 1)
-                    Label(stringResource(R.string.opening_wait), Typography.small, c.textMuted, maxLines = 1)
-                } else if (song == null) {
-                    Label(stringResource(R.string.nothing_playing), Typography.subtitle, maxLines = 1)
-                    Label(repo.preferredName().ifBlank { stringResource(R.string.open_an_app) }, Typography.small, c.textMuted, maxLines = 1)
-                } else {
-                    Label(song.title, if (tall) Typography.title else Typography.subtitle, maxLines = 1)
-                    Label(
-                        // Sin canción (Bluetooth sin datos) el título ya es la app: no repetirla.
-                        listOf(song.artist, song.app).filter { it.isNotBlank() && it != song.title }.joinToString(" · ")
-                            .ifBlank { stringResource(R.string.no_song_info) },
-                        Typography.small, c.textMuted, maxLines = 1,
-                    )
-                    if (song.durationMs > 0) {
-                        Spacer(Modifier.height(10.dp))
-                        Progress(song)
-                    }
-                }
+            if (withArtwork) Artwork(song, Modifier.size(art))
+            Column(Modifier.weight(1f).padding(horizontal = 12.dp), verticalArrangement = Arrangement.Center) {
+                SongText(repo, song, tall)
                 if (tall) {
                     Spacer(Modifier.height(12.dp))
                     Controls(repo, song?.playing == true)
                 }
             }
-            if (!tall) Controls(repo, song?.playing == true, Modifier.padding(end = 8.dp))
+            if (!tall) Controls(repo, song?.playing == true, compact = compact)
+        }
+    }
+}
+
+/** Alta y no tan ancha (una columna del tablero): carátula arriba, el resto abajo y centrado. */
+@Composable
+private fun Stacked(repo: MusicRepository, song: Song?) {
+    Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
+        Artwork(song, Modifier.fillMaxWidth().weight(1f))
+        Column(Modifier.fillMaxWidth().padding(start = 6.dp, end = 6.dp, top = 14.dp)) { SongText(repo, song, tall = true) }
+        Controls(repo, song?.playing == true, Modifier.padding(top = 8.dp))
+    }
+}
+
+@Composable
+private fun Artwork(song: Song?, modifier: Modifier) {
+    val c = LocalColors.current
+    BoxWithConstraints(modifier.clip(RoundedCornerShape(Radius.inner)).background(c.surfaceHigh), contentAlignment = Alignment.Center) {
+        val bmp = song?.artwork
+        if (bmp != null) {
+            Image(bmp.asImageBitmap(), null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+        } else {
+            Icon(Icons.music, c.textMuted, (minOf(maxWidth, maxHeight) * 0.4f).coerceAtMost(56.dp))
+        }
+    }
+}
+
+/** Título, artista (o lo que esté pasando) y la barra de avance. */
+@Composable
+private fun SongText(repo: MusicRepository, song: Song?, tall: Boolean) {
+    val c = LocalColors.current
+    val opening = repo.starting
+    if (song == null && opening != null) {
+        Label(stringResource(R.string.opening_app, opening), Typography.subtitle, c.accent, maxLines = 1)
+        Label(stringResource(R.string.opening_wait), Typography.small, c.textMuted, maxLines = 1)
+    } else if (song == null) {
+        Label(stringResource(R.string.nothing_playing), if (tall) Typography.title else Typography.subtitle, maxLines = 1)
+        Label(repo.preferredName().ifBlank { stringResource(R.string.open_an_app) }, Typography.small, c.textMuted, maxLines = 1)
+    } else {
+        Label(song.title, if (tall) Typography.title else Typography.subtitle, maxLines = 1)
+        Label(
+            // Sin canción (Bluetooth sin datos) el título ya es la app: no repetirla.
+            listOf(song.artist, song.app).filter { it.isNotBlank() && it != song.title }.joinToString(" · ")
+                .ifBlank { stringResource(R.string.no_song_info) },
+            Typography.small, c.textMuted, maxLines = 1,
+        )
+        if (song.durationMs > 0) {
+            Spacer(Modifier.height(10.dp))
+            Progress(song)
         }
     }
 }
 
 @Composable
-private fun Controls(repo: MusicRepository, playing: Boolean, modifier: Modifier = Modifier) {
+private fun Controls(repo: MusicRepository, playing: Boolean, modifier: Modifier = Modifier, compact: Boolean = false) {
     val c = LocalColors.current
     Row(modifier, verticalAlignment = Alignment.CenterVertically) {
-        IconButton(Icons.previous, { repo.previous() })
+        if (!compact) IconButton(Icons.previous, { repo.previous() })
         IconButton(if (playing) Icons.pause else Icons.play, { repo.toggle() }, background = c.text, color = c.background)
-        IconButton(Icons.next, { repo.next() })
+        if (!compact) IconButton(Icons.next, { repo.next() })
     }
 }
 

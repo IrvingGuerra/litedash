@@ -116,7 +116,7 @@ val Grid.size: ScreenSize
 enum class Template(val sizes: Set<ScreenSize>) {
     /** Como el Model 3: el auto grande al centro y dos tarjetas abajo. */
     CENTER(setOf(ScreenSize.SMALL, ScreenSize.MEDIUM)),
-    /** Como DuduAuto: el auto a todo lo ancho y una fila de tarjetas abajo. */
+    /** Como DuduAuto: el auto a todo lo ancho y una fila de tarjetas abajo (mapa, música, velocidad). */
     CARDS(setOf(ScreenSize.SMALL, ScreenSize.MEDIUM, ScreenSize.LARGE)),
     /** El auto a la izquierda y las tarjetas a la derecha. */
     SIDE(setOf(ScreenSize.MEDIUM, ScreenSize.LARGE)),
@@ -155,11 +155,11 @@ fun Template.tiles(c: Grid): List<Tile> {
         Template.CARDS -> {
             val bottom = if (rows >= 6) 2 else 1
             place(TileTypes.CAR, 0, 0, cols, rows - bottom)
-            // Navegar, música (la más ancha) y lo que quepa: reloj y teléfono.
+            // Navegar, música (la más ancha) y lo que quepa: velocidad y reloj.
             val music = maxOf(3, cols * 4 / 10)
             val rest = cols - music
             val others = when {
-                rest >= 7 -> listOf(TileTypes.CLOCK, TileTypes.PHONE)
+                rest >= 7 -> listOf(TileTypes.SPEEDOMETER, TileTypes.CLOCK)
                 rest >= 4 -> listOf(TileTypes.CLOCK)
                 else -> emptyList()
             }

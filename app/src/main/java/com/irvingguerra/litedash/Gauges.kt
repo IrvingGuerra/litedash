@@ -6,6 +6,13 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -70,8 +77,18 @@ fun SpeedometerTile(d: Dependencies, language: String) {
     val shown = remember { Animatable(0f) }
     LaunchedEffect(speed, max) { shown.animateTo((speed ?: 0f).coerceIn(0f, max) / max, tween(250)) }
     val locale = LocalConfiguration.current.locales[0]
+    val number = speed?.let { String.format(locale, "%.0f", it) } ?: "—"
+    val unit = stringResource(if (imperial) R.string.unit_mph else R.string.unit_kmh)
+    val source = when (d.bus.source(Signal.SPEED)) {
+        Source.OBD -> "OBD"
+        Source.GPS -> "GPS"
+        Source.CAN -> "CAN"
+        null -> ""
+    }
     Card(Modifier.fillMaxSize()) {
         BoxWithConstraints(Modifier.fillMaxSize().padding(12.dp), contentAlignment = Alignment.Center) {
+            // En una fila (la de abajo en 7"): número grande y una barra que se llena.
+            if (maxHeight < 130.dp) return@BoxWithConstraints CompactGauge(number, unit, source, { shown.value }, maxHeight)
             val side = minOf(maxWidth, maxHeight * 1.15f)
             val big = side > 200.dp
             Canvas(Modifier.fillMaxSize()) {
@@ -98,22 +115,32 @@ fun SpeedometerTile(d: Dependencies, language: String) {
                 }
             }
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Label(
-                    speed?.let { String.format(locale, "%.0f", it) } ?: "—",
-                    Typography.clock.copy(fontSize = (side.value * 0.3f).coerceIn(28f, 110f).sp),
-                    maxLines = 1,
-                )
-                Label(stringResource(if (imperial) R.string.unit_mph else R.string.unit_kmh), Typography.small, c.textMuted, maxLines = 1)
-                if (big) {
-                    val source = when (d.bus.source(Signal.SPEED)) {
-                        Source.OBD -> "OBD"
-                        Source.GPS -> "GPS"
-                        Source.CAN -> "CAN"
-                        null -> ""
-                    }
-                    Box(Modifier.padding(top = 6.dp)) { Label(source, Typography.label, c.accent, maxLines = 1) }
-                }
+                Label(number, Typography.clock.copy(fontSize = (side.value * 0.3f).coerceIn(28f, 110f).sp), maxLines = 1)
+                Label(unit, Typography.small, c.textMuted, maxLines = 1)
+                if (big) Box(Modifier.padding(top = 6.dp)) { Label(source, Typography.label, c.accent, maxLines = 1) }
             }
+        }
+    }
+}
+
+/**
+ * Medidor de una fila: el número grande con su unidad y, abajo, una barra que se
+ * llena ([fraction] se lee al dibujar). Lo usan la velocidad y las piezas del OBD.
+ */
+@Composable
+fun CompactGauge(number: String, unit: String, tag: String, fraction: () -> Float, height: Dp, color: Color = LocalColors.current.accent) {
+    val c = LocalColors.current
+    Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.SpaceBetween) {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom) {
+            Label(number, Typography.clock.copy(fontSize = (height.value * 0.55f).coerceIn(28f, 56f).sp), maxLines = 1)
+            Label(unit, Typography.small, c.textMuted, maxLines = 1, modifier = Modifier.padding(start = 6.dp, bottom = 6.dp).weight(1f))
+            if (tag.isNotEmpty()) Label(tag, Typography.label, color, maxLines = 1, modifier = Modifier.padding(bottom = 6.dp))
+        }
+        Canvas(Modifier.fillMaxWidth().height(6.dp)) {
+            val r = CornerRadius(size.height / 2)
+            drawRoundRect(c.surfaceHigh, cornerRadius = r)
+            val f = fraction().coerceIn(0f, 1f)
+            if (f > 0.002f) drawRoundRect(color, size = Size(size.width * f, size.height), cornerRadius = r)
         }
     }
 }

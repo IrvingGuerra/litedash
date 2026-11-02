@@ -6,6 +6,13 @@ import android.content.Intent
 import android.net.Uri
 import android.text.format.DateFormat
 import androidx.compose.foundation.Image
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -37,6 +44,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.net.toUri
@@ -71,7 +79,7 @@ val TileSpecs = listOf(
     TileSpec(TileTypes.PHONE, R.string.tile_phone, SizeLimits(1, 1), 2 to 1, R.string.tile_phone_help),
     TileSpec(TileTypes.WEATHER, R.string.tile_weather, SizeLimits(2, 1), 3 to 1, R.string.weather_module),
     TileSpec(TileTypes.TRIP, R.string.tile_trip, SizeLimits(2, 1), 3 to 1, R.string.trip_module),
-    TileSpec(TileTypes.SPEEDOMETER, R.string.tile_speedometer, SizeLimits(2, 2), 3 to 2, R.string.speedometer_module),
+    TileSpec(TileTypes.SPEEDOMETER, R.string.tile_speedometer, SizeLimits(2, 1), 3 to 2, R.string.speedometer_module),
     TileSpec(TileTypes.WORKSHOP, R.string.workshop, SizeLimits(1, 1), 2 to 1, R.string.workshop_module),
     TileSpec(TileTypes.PROJECTION, R.string.tile_projection, SizeLimits(2, 1), 3 to 1, R.string.projection_module),
     TileSpec(TileTypes.APP, R.string.tile_app, SizeLimits(1, 1, 3, 3), 1 to 1),
@@ -203,8 +211,9 @@ fun AppTile(repo: AppRepository, app: App?, onClick: () -> Unit) {
 }
 
 /**
- * Navegar. Sin ruta: acceso a la app de mapas. Navegando: la siguiente vuelta
- * que dice el aviso de Waze o Maps (flecha, distancia y calle), sin abrir el mapa.
+ * Navegar. Sin ruta: acceso a la app de mapas (y a Casa y Trabajo) sobre un mapa
+ * dibujado. Navegando: la siguiente vuelta que dice el aviso de Waze o Maps
+ * (flecha, distancia y calle), sin abrir el mapa.
  */
 @Composable
 fun NavigationTile(
@@ -220,52 +229,92 @@ fun NavigationTile(
         onDispose { repo.release() }
     }
     val instruction = repo.instruction
-    if (instruction == null && (home != null || work != null)) return PlacesTile(app, home, work, onPlace, onClick)
-    if (instruction == null) return ShortcutTile(Icons.navigate, stringResource(R.string.tile_navigate), app?.name, onClick)
     Card(Modifier.fillMaxSize(), onClick = onClick) {
-        BoxWithConstraints(Modifier.fillMaxSize().padding(14.dp), contentAlignment = Alignment.CenterStart) {
-            Turn(instruction, large = maxHeight > 120.dp)
+        BoxWithConstraints(Modifier.fillMaxSize().padding(10.dp), contentAlignment = Alignment.CenterStart) {
+            val large = maxHeight > 120.dp
+            if (instruction != null) Box(Modifier.padding(4.dp)) { Turn(instruction, large) }
+            else Places(app, home, work, onPlace, tall = maxHeight > 150.dp, width = maxWidth, height = maxHeight)
         }
     }
 }
 
-/** Navegar con los atajos a Casa y Trabajo: un toque y el mapa ya va para allá. */
+/**
+ * Sin ruta: el mapa en miniatura (como la carátula de la música), el título y los
+ * atajos a Casa y Trabajo (un toque y el mapa ya va para allá).
+ */
 @Composable
-private fun PlacesTile(app: App?, home: String?, work: String?, onPlace: (String) -> Unit, onClick: () -> Unit) {
+private fun Places(app: App?, home: String?, work: String?, onPlace: (String) -> Unit, tall: Boolean, width: Dp, height: Dp) {
     val c = LocalColors.current
-    Card(Modifier.fillMaxSize(), onClick = onClick) {
-        BoxWithConstraints(Modifier.fillMaxSize().padding(14.dp), contentAlignment = Alignment.CenterStart) {
-            // Abajo si la pieza es alta; si no, a la derecha (en angosto sin el nombre de la app).
-            val stacked = maxHeight > 150.dp
-            val narrow = maxWidth < 360.dp
-            val places = @Composable {
-                if (home != null) Button(stringResource(R.string.place_home), { onPlace(home) })
-                if (work != null) Button(stringResource(R.string.place_work), { onPlace(work) })
-            }
-            val title = @Composable {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(Modifier.size(44.dp).clip(CircleShape).background(c.surfaceHigh), contentAlignment = Alignment.Center) {
-                        Icon(Icons.navigate, c.accent, 22.dp)
-                    }
-                    // En angosto basta el ícono: los botones dicen a dónde.
-                    if (stacked || !narrow) Column(Modifier.padding(start = 12.dp)) {
-                        Label(stringResource(R.string.tile_navigate), Typography.subtitle, maxLines = 1)
-                        if (app != null) Label(app.name, Typography.small, c.textMuted, maxLines = 1)
-                    }
-                }
-            }
-            if (stacked) {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    title()
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) { places() }
-                }
+    val places = @Composable {
+        if (home != null) Button(stringResource(R.string.place_home), { onPlace(home) })
+        if (work != null) Button(stringResource(R.string.place_work), { onPlace(work) })
+    }
+    val title = @Composable {
+        Column {
+            Label(stringResource(R.string.tile_navigate), if (tall) Typography.title else Typography.subtitle, maxLines = 1)
+            if (app != null) Label(app.name, Typography.small, c.textMuted, maxLines = 1)
+        }
+    }
+    val hasPlaces = home != null || work != null
+    if (tall) {
+        // Alta: el mapa arriba a lo ancho y abajo el título con los atajos.
+        Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            MapArt(Modifier.fillMaxWidth().weight(1f).clip(RoundedCornerShape(Radius.inner)))
+            if (hasPlaces && width < 480.dp) {
+                // Angosta: el título y, debajo, los atajos.
+                Box(Modifier.padding(start = 4.dp)) { title() }
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) { places() }
             } else {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    Box(Modifier.weight(1f)) { title() }
+                    Box(Modifier.weight(1f).padding(start = 4.dp)) { title() }
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) { places() }
                 }
             }
         }
+        return
+    }
+    val thumb = minOf(height, 180.dp)
+    // Angosta con atajos: el mapa y los botones (ellos dicen a dónde); el título, si cabe.
+    val withTitle = !hasPlaces || width - thumb >= 360.dp
+    Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
+        MapArt(Modifier.size(thumb).clip(RoundedCornerShape(Radius.inner)))
+        if (withTitle) Box(Modifier.weight(1f).padding(horizontal = 12.dp)) { title() }
+        else Spacer(Modifier.weight(1f))
+        Row(Modifier.padding(start = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) { places() }
+    }
+}
+
+/**
+ * Un mapa sugerido: calles y una ruta ámbar que llega a su pin. Dibujado, así que
+ * no pesa nada ni necesita internet; se ve igual en claro y en oscuro.
+ */
+@Composable
+private fun MapArt(modifier: Modifier) {
+    val c = LocalColors.current
+    Canvas(modifier.background(c.surfaceHigh)) {
+        val w = size.width
+        val h = size.height
+        val road = (minOf(w, h) * 0.08f).coerceIn(4f, 14f)
+        val main = c.textMuted.copy(alpha = 0.22f)
+        val minor = c.textMuted.copy(alpha = 0.12f)
+        drawLine(minor, Offset(0f, h * 0.30f), Offset(w, h * 0.22f), road * 0.6f)
+        drawLine(main, Offset(0f, h * 0.70f), Offset(w, h * 0.64f), road)
+        drawLine(main, Offset(w * 0.30f, 0f), Offset(w * 0.34f, h), road)
+        drawLine(minor, Offset(w * 0.74f, 0f), Offset(w * 0.70f, h), road * 0.6f)
+        // La ruta: sube por una calle, da vuelta y llega al pin.
+        val corner = Offset(w * 0.335f, h * 0.67f)
+        val pin = Offset(w * 0.71f, h * 0.36f)
+        val route = Path().apply {
+            moveTo(w * 0.34f, h)
+            lineTo(corner.x, corner.y + road)
+            quadraticTo(corner.x, corner.y, corner.x + road * 1.5f, corner.y - road * 0.1f)
+            lineTo(w * 0.70f - road, h * 0.645f)
+            quadraticTo(w * 0.705f, h * 0.645f, w * 0.705f, h * 0.645f - road)
+            lineTo(pin.x, pin.y)
+        }
+        drawPath(route, c.accent, style = Stroke(road * 0.8f, cap = StrokeCap.Round, join = StrokeJoin.Round))
+        drawCircle(c.accent, road * 1.6f, pin)
+        drawCircle(c.surfaceHigh, road * 0.65f, pin)
     }
 }
 
