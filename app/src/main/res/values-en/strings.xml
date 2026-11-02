@@ -315,4 +315,10 @@
     <string name="logo_remove">Remove image</string>
     <string name="logo_intro">Intro animation</string>
     <string name="logo_no_image">Without an image the name is shown: %1$s.</string>
+    <string name="bar_position">Apps bar</string>
+    <string name="bar_position_help">Where the time and your apps go. Automatic: on the side when the screen is landscape, at the bottom when it\'s portrait.</string>
+    <string name="bar_auto">Automatic</string>
+    <string name="bar_side">On the side</string>
+    <string name="bar_bottom">Bottom</string>
+    <string name="release_notes">WHAT\'S NEW IN THIS VERSION</string>
 </resources>

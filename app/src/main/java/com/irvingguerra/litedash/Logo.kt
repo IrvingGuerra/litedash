@@ -19,7 +19,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
@@ -27,6 +29,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -41,6 +44,7 @@ import androidx.compose.ui.unit.sp
 import com.irvingguerra.litedash.core.ui.Button
 import com.irvingguerra.litedash.core.ui.Label
 import com.irvingguerra.litedash.core.ui.LocalColors
+import com.irvingguerra.litedash.core.ui.MorseMark
 import com.irvingguerra.litedash.core.ui.Typography
 import java.io.File
 import kotlinx.coroutines.Dispatchers
@@ -125,9 +129,13 @@ fun LogoIntro(d: Dependencies, brand: String, onDone: () -> Unit) {
     val alpha = remember { Animatable(0f) }
     val scale = remember { Animatable(0.82f) }
     LaunchedEffect(Unit) {
+        // Empieza cuando la app ya se dibuja: mientras Android muestra su pantalla de
+        // arranque (y el inicio carga el auto) la animación se iba sin que se viera.
+        repeat(3) { withFrameNanos { } }
+        delay(250)
         launch { scale.animateTo(1f, tween(1400, easing = FastOutSlowInEasing)) }
         alpha.animateTo(1f, tween(600))
-        delay(900)
+        delay(1100)
         curtain.animateTo(0f, tween(500))
         onDone()
     }
@@ -139,8 +147,16 @@ fun LogoIntro(d: Dependencies, brand: String, onDone: () -> Unit) {
             .clickable(remember { MutableInteractionSource() }, indication = null, onClick = onDone),
         contentAlignment = Alignment.Center,
     ) {
-        Box(Modifier.fillMaxSize(0.55f).graphicsLayer { scaleX = scale.value; scaleY = scale.value; this.alpha = alpha.value }) {
-            BrandLogo(d, brand, onClick = onDone)
+        val logo = rememberLogo(d.prefs.logoRevision)
+        Box(
+            Modifier.fillMaxSize(0.55f).graphicsLayer { scaleX = scale.value; scaleY = scale.value; this.alpha = alpha.value },
+            contentAlignment = Alignment.Center,
+        ) {
+            // Con tu imagen, tu logo; sin ella, el de LiteDash (no el nombre de la marca).
+            when {
+                logo.image != null -> BrandLogo(d, brand, onClick = onDone)
+                logo.loaded -> MorseMark(Modifier.fillMaxWidth(0.6f).aspectRatio(184f / 36f))
+            }
         }
     }
 }

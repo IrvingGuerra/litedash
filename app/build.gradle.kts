@@ -11,6 +11,11 @@ val appVersionName: String = Properties().run {
     getProperty("VERSION_NAME")
 }
 
+// Novedades de esta versión (su sección del CHANGELOG), para mostrarlas en Acerca de.
+val releaseNotes: String = rootProject.file("CHANGELOG.md").readText()
+    .substringAfter("## [$appVersionName]", "")
+    .substringAfter("\n").substringBefore("\n## [").trim()
+
 fun versionCodeFrom(name: String): Int {
     val m = Regex("""^(\d+)\.(\d+)\.(\d+)(?:-(beta|rc)\.(\d+))?$""").matchEntire(name)
         ?: error("VERSION_NAME inválido: $name (formato X.Y.Z, X.Y.Z-beta.N o X.Y.Z-rc.N)")
@@ -60,6 +65,10 @@ android {
     }
 
     // Mismo código, dos canales. Mismo applicationId y versionCode.
+    defaultConfig {
+        buildConfigField("String", "RELEASE_NOTES", "\"" + releaseNotes.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n") + "\"")
+    }
+
     flavorDimensions += "channel"
     productFlavors {
         create("play") {

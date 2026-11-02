@@ -46,8 +46,18 @@ private object PrefKeys {
     const val BRIGHTNESS_ALL_APPS = "brillo_todas_apps"
     const val BRIGHTNESS_ORIGINAL = "brillo_original"
     const val SHOW_LOGO = "mostrar_logo"
+    const val BAR_POSITION = "barra"
     const val LOGO_INTRO = "logo_entrada"
     const val LOGO_REVISION = "logo_revision"
+}
+
+/** Dónde va la barra con la hora y tus apps. AUTO = a un lado si la pantalla está acostada. */
+enum class BarPosition(val stored: String) {
+    AUTO("auto"), SIDE("lateral"), BOTTOM("abajo");
+
+    companion object {
+        fun fromStored(value: String?) = entries.firstOrNull { it.stored == value } ?: AUTO
+    }
 }
 
 /** [stored] es como se guarda cada tema (los nombres que tenía en la 1.3.4). */
@@ -186,6 +196,12 @@ class Preferences(context: Context) {
     var parkedMode: Boolean
         get() = _parkedMode
         set(v) { _parkedMode = v; p.edit { putBoolean(PrefKeys.PARKED_MODE, v) } }
+
+    private var _barPosition by mutableStateOf(BarPosition.fromStored(p.getString(PrefKeys.BAR_POSITION, null)))
+    /** Dónde van la hora y tus apps: a un lado, abajo o según la pantalla. */
+    var barPosition: BarPosition
+        get() = _barPosition
+        set(v) { _barPosition = v; p.edit { putString(PrefKeys.BAR_POSITION, v.stored) } }
 
     private var _showLogo by mutableStateOf(p.getBoolean(PrefKeys.SHOW_LOGO, false))
     /** En el inicio, el logo de tu marca (imagen tuya o el nombre) en lugar del auto. */

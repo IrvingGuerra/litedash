@@ -319,4 +319,10 @@
     <string name="logo_remove">Quitar imagen</string>
     <string name="logo_intro">Animación de entrada</string>
     <string name="logo_no_image">Sin imagen se muestra el nombre: %1$s.</string>
+    <string name="bar_position">Barra de apps</string>
+    <string name="bar_position_help">Dónde van la hora y tus apps. Automática: a un lado si la pantalla está acostada, abajo si está parada.</string>
+    <string name="bar_auto">Automática</string>
+    <string name="bar_side">A un lado</string>
+    <string name="bar_bottom">Abajo</string>
+    <string name="release_notes">NOVEDADES DE ESTA VERSIÓN</string>
 </resources>

@@ -6,6 +6,15 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
+## [1.4.22] - 2026-11-01
+
+### Agregado
+- **Barra de apps a tu gusto** (Ajustes → Inicio): automática, a un lado o abajo.
+- **Acerca de renovado:** la versión en grande, todas sus novedades y tu auto de fondo.
+
+### Cambiado
+- La **animación de entrada** sin imagen propia muestra el logo de LiteDash.
+
 ## [1.4.21] - 2026-11-01
 
 ### Cambiado

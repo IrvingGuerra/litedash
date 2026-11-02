@@ -1,5 +1,6 @@
 package com.irvingguerra.litedash
 
+import androidx.compose.ui.graphics.graphicsLayer
 import com.irvingguerra.litedash.core.ui.Radius
 import android.app.Activity
 import android.app.ActivityManager
@@ -657,6 +658,13 @@ private fun HomeSettings(prefs: Preferences, onEdit: () -> Unit, onTemplates: ()
             Button(stringResource(R.string.templates), onTemplates)
         }
     }
+    SettingsCard(stringResource(R.string.bar_position), stringResource(R.string.bar_position_help)) {
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            for ((pos, text) in listOf(BarPosition.AUTO to R.string.bar_auto, BarPosition.SIDE to R.string.bar_side, BarPosition.BOTTOM to R.string.bar_bottom)) {
+                Button(stringResource(text), { prefs.barPosition = pos }, primary = prefs.barPosition == pos)
+            }
+        }
+    }
     SettingsCard(stringResource(R.string.parked_mode), stringResource(R.string.parked_mode_help)) {
         FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             Button(stringResource(R.string.on), { prefs.parkedMode = true }, primary = prefs.parkedMode)
@@ -678,9 +686,27 @@ private fun HomeSettings(prefs: Preferences, onEdit: () -> Unit, onTemplates: ()
 private fun About(d: Dependencies) {
     val c = LocalColors.current
     val context = LocalContext.current
-    SettingsCard("LiteDash ${BuildConfig.VERSION_NAME}") {
-        Label(BuildConfig.CHANNEL, Typography.small, c.textMuted)
-        if (d.updater.available) Updates(d.updater)
+    // Como DuduAuto: la versión en grande, sus novedades y tu auto a la derecha.
+    Card(Modifier.fillMaxWidth().widthIn(max = 860.dp)) {
+        BoxWithConstraints(Modifier.fillMaxWidth()) {
+            val wide = maxWidth > 560.dp
+            val pkg = d.cars.pkg(d.prefs.carModel)
+            if (pkg != null && wide) Box(Modifier.matchParentSize(), contentAlignment = Alignment.CenterEnd) {
+                CarStill(d.cars, pkg, d.prefs.carColor, Modifier.fillMaxWidth(0.46f).aspectRatio(CAR_ASPECT))
+            }
+            Column(Modifier.padding(22.dp).fillMaxWidth(if (pkg != null && wide) 0.56f else 1f), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Label("LiteDash ${BuildConfig.VERSION_NAME}", Typography.title.copy(fontSize = 30.sp), maxLines = 1)
+                Label(BuildConfig.CHANNEL, Typography.small, c.textMuted)
+                if (BuildConfig.RELEASE_NOTES.isNotBlank()) {
+                    Label(stringResource(R.string.release_notes), Typography.label, c.textMuted)
+                    for (line in releaseNotes()) {
+                        if (line.startsWith("###")) Label(line.removePrefix("###").trim(), Typography.subtitle, maxLines = 1)
+                        else Label("• $line", Typography.small)
+                    }
+                }
+                if (d.updater.available) Updates(d.updater)
+            }
+        }
     }
     SettingsCard(stringResource(R.string.copy_info), stringResource(R.string.copy_info_help)) {
         var copied by remember { mutableStateOf(false) }
@@ -862,6 +888,21 @@ private fun ModuleRow(
         }
         action()
     }
+}
+
+/** Las novedades del CHANGELOG en renglones: títulos ("### Agregado") y viñetas sin el formato. */
+private fun releaseNotes(): List<String> {
+    val items = mutableListOf<String>()
+    for (raw in BuildConfig.RELEASE_NOTES.lines()) {
+        val line = raw.trim()
+        when {
+            line.isEmpty() -> Unit
+            line.startsWith("###") -> items += line
+            line.startsWith("- ") -> items += line.removePrefix("- ")
+            items.isNotEmpty() && !items.last().startsWith("###") -> items[items.lastIndex] = items.last() + " " + line
+        }
+    }
+    return items.map { it.replace("**", "") }
 }
 
 /** Datos de la pantalla para reportar problemas (marca, modelo, Android, resolución, memoria). */

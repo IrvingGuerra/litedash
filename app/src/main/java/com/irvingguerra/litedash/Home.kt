@@ -314,7 +314,11 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
         if (panel == null) BoxWithConstraints(Modifier.fillMaxSize().safeDrawingPadding()) {
           // Pantalla acostada: barra lateral a la izquierda (como DuduAuto), con la hora y tus
           // apps; el tablero se queda con toda la altura. Parada: el dock abajo, como siempre.
-          val rail = maxWidth > maxHeight
+          val rail = when (d.prefs.barPosition) {
+              BarPosition.SIDE -> true
+              BarPosition.BOTTOM -> false
+              BarPosition.AUTO -> maxWidth > maxHeight
+          }
           Row(Modifier.fillMaxSize()) {
             if (rail) Rail(
                 repo = d.apps,
