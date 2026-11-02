@@ -1,5 +1,12 @@
 package com.irvingguerra.litedash
 
+import com.irvingguerra.litedash.feature.apps.AppIcon
+import com.irvingguerra.litedash.feature.apps.rememberApps
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import android.net.Uri
+import com.irvingguerra.litedash.feature.obd.ObdState
+import com.irvingguerra.litedash.core.ui.SwitchRow
+import com.irvingguerra.litedash.core.ui.Segmented
 import com.irvingguerra.litedash.core.ui.Radius
 import android.app.Activity
 import android.app.ActivityManager
@@ -478,17 +485,20 @@ private fun CarPreview(e: CatalogEntry, cars: CarRepository, progress: Float?, o
 }
 
 /** Secciones de Ajustes, en el menú de la izquierda. */
-enum class SettingsSection(val title: Int) { APPEARANCE(R.string.appearance), CAR(R.string.your_car), HOME(R.string.home), MUSIC(R.string.music), MAP(R.string.map), WHEEL(R.string.wheel), WORKSHOP(R.string.workshop), MODULES(R.string.modules), ABOUT(R.string.about) }
+/** Secciones de Ajustes en el orden del menú: cada cosa vive en un solo lugar. */
+enum class SettingsSection(val title: Int) {
+    CAR(R.string.your_car), HOME(R.string.home), APPS(R.string.apps_section), WORKSHOP(R.string.workshop),
+    WHEEL(R.string.wheel), APPEARANCE(R.string.appearance), MODULES(R.string.modules), ABOUT(R.string.about),
+}
 
 private fun SettingsSection.icon() = when (this) {
     SettingsSection.APPEARANCE -> Icons.theme
     SettingsSection.CAR -> Icons.car
     SettingsSection.HOME -> Icons.dashboard
-    SettingsSection.MUSIC -> Icons.music
-    SettingsSection.MAP -> Icons.navigate
+    SettingsSection.APPS -> Icons.apps
     SettingsSection.WHEEL -> Icons.wheel
     SettingsSection.WORKSHOP -> Icons.engine
-    SettingsSection.MODULES -> Icons.apps
+    SettingsSection.MODULES -> Icons.settings
     SettingsSection.ABOUT -> Icons.info
 }
 
@@ -503,7 +513,7 @@ fun SettingsPanel(
     close: () -> Unit,
     onEdit: () -> Unit,
     onTemplates: () -> Unit,
-    start: SettingsSection = SettingsSection.APPEARANCE,
+    start: SettingsSection = SettingsSection.CAR,
 ) {
     val c = LocalColors.current
     var section by rememberSaveable { mutableStateOf(start) }
@@ -533,17 +543,8 @@ fun SettingsPanel(
                 when (section) {
                     SettingsSection.APPEARANCE -> Appearance(d.prefs, revision)
                     SettingsSection.CAR -> CarSettings(d)
-                    SettingsSection.HOME -> HomeSettings(d.prefs, onEdit, onTemplates)
-                    SettingsSection.MUSIC -> SettingsCard { MusicSettings(d) }
-                    SettingsSection.MAP -> {
-                        SettingsCard { MapSettings(d) }
-                        SettingsCard(stringResource(R.string.places), stringResource(R.string.places_help)) {
-                            Label(stringResource(R.string.place_home), Typography.label, c.textMuted)
-                            TextInput(d.prefs.homeAddress ?: "", { d.prefs.homeAddress = it.take(160).ifBlank { null } }, stringResource(R.string.place_hint), Modifier.fillMaxWidth())
-                            Label(stringResource(R.string.place_work), Typography.label, c.textMuted)
-                            TextInput(d.prefs.workAddress ?: "", { d.prefs.workAddress = it.take(160).ifBlank { null } }, stringResource(R.string.place_hint), Modifier.fillMaxWidth())
-                        }
-                    }
+                    SettingsSection.HOME -> HomeSettings(d, onEdit, onTemplates)
+                    SettingsSection.APPS -> AppsSettings(d)
                     SettingsSection.WHEEL -> {
                         SettingsCard(help = stringResource(R.string.wheel_help)) { WheelSettings(d.wheel, d.prefs) }
                         SettingsCard(stringResource(R.string.wheel_assigned)) { WheelAssigned(d.prefs) }
@@ -551,7 +552,7 @@ fun SettingsPanel(
                     SettingsSection.WORKSHOP -> Workshop(d)
                     SettingsSection.MODULES -> {
                         Label(stringResource(R.string.modules_help), Typography.body, c.textMuted)
-                        Modules(d, onEdit)
+                        Modules(d)
                     }
                     SettingsSection.ABOUT -> About(d)
                 }
@@ -567,9 +568,8 @@ fun SettingsPanel(
 @Composable
 internal fun tabs(titles: List<Int>, key: String): Int {
     val selected = TabMemory[key] ?: 0
-    Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        titles.forEachIndexed { i, t -> Button(stringResource(t), { TabMemory[key] = i }, primary = i == selected) }
-    }
+    // Mismo control que las opciones (estilo iOS): una pestaña a la vez.
+    Segmented(titles.mapIndexed { i, t -> i to stringResource(t) }, selected, { TabMemory[key] = it }, Modifier.horizontalScroll(rememberScrollState()))
     return selected
 }
 
@@ -621,27 +621,28 @@ private fun Appearance(prefs: Preferences, revision: Int) {
         TextInput(prefs.driverName ?: "", { prefs.driverName = it.take(24).ifBlank { null } }, stringResource(R.string.your_name_hint), Modifier.fillMaxWidth())
     }
     if (tab == 1) SettingsCard(stringResource(R.string.theme)) {
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            for ((mode, text) in listOf(ThemeMode.DARK to R.string.theme_dark, ThemeMode.LIGHT to R.string.theme_light, ThemeMode.SUN to R.string.theme_sun, ThemeMode.SYSTEM to R.string.theme_system)) {
-                Button(stringResource(text), { prefs.theme = mode }, primary = prefs.theme == mode)
-            }
-        }
+        Segmented(
+            listOf(ThemeMode.DARK to R.string.theme_dark, ThemeMode.LIGHT to R.string.theme_light, ThemeMode.SUN to R.string.theme_sun, ThemeMode.SYSTEM to R.string.theme_system)
+                .map { (mode, text) -> mode to stringResource(text) },
+            prefs.theme,
+            { prefs.theme = it },
+        )
     }
     if (tab == 1) SettingsCard(stringResource(R.string.brightness), stringResource(R.string.brightness_help)) {
         BrightnessSettings(prefs, revision)
     }
     if (tab == 0) SettingsCard(stringResource(R.string.language)) {
         val activity = context as? Activity
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            for ((code, text) in listOf("" to R.string.language_system, "es" to R.string.language_es, "en" to R.string.language_en)) {
-                Button(stringResource(text), {
-                    if (prefs.language != code) {
-                        prefs.language = code
-                        activity?.recreate()
-                    }
-                }, primary = prefs.language == code)
-            }
-        }
+        Segmented(
+            listOf("" to R.string.language_system, "es" to R.string.language_es, "en" to R.string.language_en).map { (code, text) -> code to stringResource(text) },
+            prefs.language,
+            { code ->
+                if (prefs.language != code) {
+                    prefs.language = code
+                    activity?.recreate()
+                }
+            },
+        )
     }
     if (tab == 1) SettingsCard(stringResource(R.string.scale), stringResource(R.string.scale_help)) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -653,8 +654,11 @@ private fun Appearance(prefs: Preferences, revision: Int) {
 }
 
 @Composable
-private fun HomeSettings(prefs: Preferences, onEdit: () -> Unit, onTemplates: () -> Unit) {
+private fun HomeSettings(d: Dependencies, onEdit: () -> Unit, onTemplates: () -> Unit) {
+    val prefs = d.prefs
     val context = LocalContext.current
+    val tab = tabs(listOf(R.string.tab_layout, R.string.tab_tiles), "inicio")
+    if (tab == 1) return Tiles(d, onEdit)
     SettingsCard(stringResource(R.string.layout), stringResource(R.string.arrange_help)) {
         FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Button(stringResource(R.string.arrange), onEdit, primary = true)
@@ -662,17 +666,14 @@ private fun HomeSettings(prefs: Preferences, onEdit: () -> Unit, onTemplates: ()
         }
     }
     SettingsCard(stringResource(R.string.bar_position), stringResource(R.string.bar_position_help)) {
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            for ((pos, text) in listOf(BarPosition.AUTO to R.string.bar_auto, BarPosition.SIDE to R.string.bar_side, BarPosition.BOTTOM to R.string.bar_bottom)) {
-                Button(stringResource(text), { prefs.barPosition = pos }, primary = prefs.barPosition == pos)
-            }
-        }
+        Segmented(
+            listOf(BarPosition.AUTO to stringResource(R.string.bar_auto), BarPosition.SIDE to stringResource(R.string.bar_side), BarPosition.BOTTOM to stringResource(R.string.bar_bottom)),
+            prefs.barPosition,
+            { prefs.barPosition = it },
+        )
     }
-    SettingsCard(stringResource(R.string.parked_mode), stringResource(R.string.parked_mode_help)) {
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            Button(stringResource(R.string.on), { prefs.parkedMode = true }, primary = prefs.parkedMode)
-            Button(stringResource(R.string.off), { prefs.parkedMode = false }, primary = !prefs.parkedMode)
-        }
+    SettingsCard {
+        SwitchRow(stringResource(R.string.parked_mode), prefs.parkedMode, { prefs.parkedMode = it }, stringResource(R.string.parked_mode_help))
     }
     val (requestHome, returns) = rememberRequestHome()
     val isHome = remember(returns) { isHomeApp(context) }
@@ -681,6 +682,45 @@ private fun HomeSettings(prefs: Preferences, onEdit: () -> Unit, onTemplates: ()
             Label(stringResource(R.string.welcome_already_home), Typography.body, LocalColors.current.accent)
         } else {
             Button(stringResource(R.string.make_home), { prefs.dontAskHome = false; requestHome() }, primary = true)
+        }
+    }
+}
+
+/** Sección Apps: la de música, la de navegación (con Casa y Trabajo) y las favoritas de la barra. */
+@Composable
+private fun AppsSettings(d: Dependencies) {
+    val c = LocalColors.current
+    when (tabs(listOf(R.string.music, R.string.tab_navigation, R.string.tab_favorites), "apps")) {
+        0 -> SettingsCard { MusicSettings(d) }
+        1 -> {
+            SettingsCard { MapSettings(d) }
+            SettingsCard(stringResource(R.string.places), stringResource(R.string.places_help)) {
+                Label(stringResource(R.string.place_home), Typography.label, c.textMuted)
+                TextInput(d.prefs.homeAddress ?: "", { d.prefs.homeAddress = it.take(160).ifBlank { null } }, stringResource(R.string.place_hint), Modifier.fillMaxWidth())
+                Label(stringResource(R.string.place_work), Typography.label, c.textMuted)
+                TextInput(d.prefs.workAddress ?: "", { d.prefs.workAddress = it.take(160).ifBlank { null } }, stringResource(R.string.place_hint), Modifier.fillMaxWidth())
+            }
+        }
+        else -> SettingsCard(stringResource(R.string.tab_favorites), stringResource(R.string.favorites_help)) { Favorites(d) }
+    }
+}
+
+/** Las favoritas de la barra, en su orden: un toque en la x la quita. */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun Favorites(d: Dependencies) {
+    val apps = rememberApps(d.apps).orEmpty()
+    val favorites = remember(apps, d.prefs.dock, d.prefs.musicApp) { dockFavorites(d, apps) }
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        for (app in favorites) {
+            Row(
+                Modifier.clip(RoundedCornerShape(Radius.inner)).background(LocalColors.current.surfaceHigh).padding(start = 10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                AppIcon(d.apps, app, 32.dp)
+                Label(app.name, Typography.body, maxLines = 1, modifier = Modifier.padding(horizontal = 10.dp).widthIn(max = 160.dp))
+                IconButton(Icons.close, { d.prefs.dock = favorites.map { it.key } - app.key }, size = 44.dp)
+            }
         }
     }
 }
@@ -836,37 +876,64 @@ private fun iconOf(type: String) = when (type) {
 }
 
 
-/** Cada módulo: qué hace y si está en tu inicio. */
+/** Inicio → Piezas: todo lo que puedes poner en tu inicio y si ya está. */
 @Composable
-private fun Modules(d: Dependencies, onEdit: () -> Unit) {
+private fun Tiles(d: Dependencies, onEdit: () -> Unit) {
     val c = LocalColors.current
-    val permission = remember(d.dashboard.tiles.any { it.type == TileTypes.MUSIC }) { d.music.hasPermission() }
     // Tipo que no cupo al agregarlo: se avisa y se ofrece acomodar el inicio.
     var noRoom by remember { mutableStateOf<String?>(null) }
-
-    @Composable
-    fun ModuleItem(type: String, icon: ImageVector, name: String, detail: String) {
-        val onHome = d.dashboard.tiles.any { it.type == type }
-        val didNotFit = noRoom == type && !onHome
-        ModuleRow(icon, name, if (didNotFit) stringResource(R.string.no_room) else detail, if (didNotFit) c.danger else c.textMuted) {
-            when {
-                onHome -> Label(stringResource(R.string.on_your_home), Typography.small, c.accent)
-                didNotFit -> Button(stringResource(R.string.arrange), onEdit, primary = true)
-                else -> Button(stringResource(R.string.add), {
-                    noRoom = if (d.dashboard.addTile(type)) null else type
-                })
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        for (spec in TileSpecs.filter { it.type != TileTypes.APP && it.type != TileTypes.CAR }) {
+            val onHome = d.dashboard.tiles.any { it.type == spec.type }
+            val didNotFit = noRoom == spec.type && !onHome
+            val detail = if (didNotFit) stringResource(R.string.no_room) else spec.detail?.let { stringResource(it) } ?: ""
+            ModuleRow(iconOf(spec.type), stringResource(spec.name), detail, if (didNotFit) c.danger else c.textMuted) {
+                when {
+                    onHome -> Label(stringResource(R.string.on_your_home), Typography.small, c.accent)
+                    didNotFit -> Button(stringResource(R.string.arrange), onEdit, primary = true)
+                    else -> Button(stringResource(R.string.add), { noRoom = if (d.dashboard.addTile(spec.type)) null else spec.type })
+                }
             }
         }
     }
+}
 
+/**
+ * Módulos: lo que LiteDash enciende aparte, con su permiso. Apagado no corre ni pide nada;
+ * las piezas que lo usan lo piden al agregarlas.
+ */
+@Composable
+private fun Modules(d: Dependencies) {
+    val c = LocalColors.current
+    val context = LocalContext.current
+    val (_, returns) = rememberRequestHome()
+    val notifications = remember(returns) { d.music.hasPermission() }
+    val location = remember(returns) { d.trip.hasPermission() }
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        ModuleItem(TileTypes.MUSIC, iconOf(TileTypes.MUSIC), stringResource(R.string.tile_music), stringResource(if (permission) R.string.music_with_permission else R.string.music_without_permission))
-        ModuleItem(TileTypes.WEATHER, iconOf(TileTypes.WEATHER), stringResource(R.string.tile_weather), stringResource(R.string.weather_module))
-        ModuleItem(TileTypes.TRIP, iconOf(TileTypes.TRIP), stringResource(R.string.tile_trip), stringResource(R.string.trip_module))
-        ModuleItem(TileTypes.PROJECTION, iconOf(TileTypes.PROJECTION), stringResource(R.string.tile_projection), stringResource(R.string.projection_module))
-        ModuleItem(TileTypes.SPEEDOMETER, iconOf(TileTypes.SPEEDOMETER), stringResource(R.string.tile_speedometer), stringResource(R.string.speedometer_module))
-        ModuleItem(TileTypes.WORKSHOP, iconOf(TileTypes.WORKSHOP), stringResource(R.string.workshop), stringResource(R.string.workshop_module))
+        val obd = d.obdIfCreated()?.state == ObdState.ON
+        ModuleRow(Icons.engine, stringResource(R.string.module_obd), stringResource(if (obd) R.string.module_obd_on else if (d.hasObdAdapter) R.string.module_obd_saved else R.string.module_obd_off)) {
+            Label(stringResource(if (obd) R.string.module_on else R.string.module_off), Typography.small, if (obd) c.accent else c.textMuted)
+        }
+        ModuleRow(Icons.bell, stringResource(R.string.module_notifications), stringResource(R.string.module_notifications_help)) {
+            if (notifications) Label(stringResource(R.string.module_on), Typography.small, c.accent)
+            else Button(stringResource(R.string.module_turn_on), { d.music.requestPermission() })
+        }
+        ModuleRow(Icons.location, stringResource(R.string.module_location), stringResource(R.string.module_location_help)) {
+            if (location) Label(stringResource(R.string.module_on), Typography.small, c.accent)
+            else Button(stringResource(R.string.module_settings), { openAppSettings(context) })
+        }
+        for ((name, help) in listOf(R.string.module_tpms to R.string.module_tpms_help, R.string.module_cameras to R.string.module_cameras_help)) {
+            ModuleRow(Icons.car, stringResource(name), stringResource(help)) {
+                Label(stringResource(R.string.module_soon), Typography.small, c.textMuted)
+            }
+        }
     }
+}
+
+/** Los permisos de LiteDash en Ajustes de Android (para dar o quitar ubicación). */
+private fun openAppSettings(context: Context) {
+    val intent = Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", context.packageName, null))
+    runCatching { context.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
 }
 
 @Composable

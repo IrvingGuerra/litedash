@@ -1,5 +1,6 @@
 package com.irvingguerra.litedash
 
+import com.irvingguerra.litedash.core.ui.Segmented
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
@@ -91,23 +92,25 @@ private fun requestWriteSettings(context: Context) {
 fun BrightnessSettings(prefs: Preferences, revision: Int) {
     val c = LocalColors.current
     val context = LocalContext.current
-    FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Button(stringResource(R.string.brightness_system), { prefs.brightnessBySun = false }, primary = !prefs.brightnessBySun)
-        Button(stringResource(R.string.brightness_sun), { prefs.brightnessBySun = true }, primary = prefs.brightnessBySun)
-    }
+    Segmented(
+        listOf(false to stringResource(R.string.brightness_system), true to stringResource(R.string.brightness_sun)),
+        prefs.brightnessBySun,
+        { prefs.brightnessBySun = it },
+    )
     if (!prefs.brightnessBySun) return
     Level(Icons.sun, stringResource(R.string.brightness_day), prefs.dayBrightness) { prefs.dayBrightness = it }
     Level(Icons.moon, stringResource(R.string.brightness_night), prefs.nightBrightness) { prefs.nightBrightness = it }
     // Se vuelve a revisar al regresar de la pantalla del permiso.
     val canWrite = remember(revision, prefs.brightnessAllApps) { Settings.System.canWrite(context) }
     Label(stringResource(R.string.brightness_all_apps_help), Typography.small, c.textMuted)
-    FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Button(stringResource(R.string.brightness_only_litedash), { prefs.brightnessAllApps = false }, primary = !prefs.brightnessAllApps)
-        Button(stringResource(R.string.brightness_all_apps), {
-            prefs.brightnessAllApps = true
-            if (!Settings.System.canWrite(context)) requestWriteSettings(context)
-        }, primary = prefs.brightnessAllApps)
-    }
+    Segmented(
+        listOf(false to stringResource(R.string.brightness_only_litedash), true to stringResource(R.string.brightness_all_apps)),
+        prefs.brightnessAllApps,
+        { all ->
+            prefs.brightnessAllApps = all
+            if (all && !Settings.System.canWrite(context)) requestWriteSettings(context)
+        },
+    )
     if (prefs.brightnessAllApps && !canWrite) {
         Label(stringResource(R.string.brightness_permission), Typography.small, c.danger)
     }

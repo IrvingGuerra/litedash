@@ -417,7 +417,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                     Panel.About -> SettingsSection.ABOUT
                     Panel.CarSettings -> SettingsSection.CAR
                     Panel.Workshop -> SettingsSection.WORKSHOP
-                    else -> SettingsSection.APPEARANCE
+                    else -> SettingsSection.CAR
                 },
             )
             Panel.Templates -> TemplatesPanel(d.dashboard, close = { panel = null })

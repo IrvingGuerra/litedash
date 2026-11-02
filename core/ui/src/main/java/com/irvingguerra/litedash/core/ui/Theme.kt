@@ -1,6 +1,12 @@
 package com.irvingguerra.litedash.core.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.runtime.getValue
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -161,4 +167,59 @@ fun Button(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, pri
             .padding(horizontal = 22.dp, vertical = 14.dp),
         contentAlignment = Alignment.Center,
     ) { Label(text, Typography.body.copy(fontWeight = FontWeight.SemiBold), if (primary) c.background else c.text, 1) }
+}
+
+/**
+ * Opciones excluyentes (una u otra), estilo iOS: un bloque con la elegida resaltada.
+ * Para encender o apagar algo se usa [SwitchRow].
+ */
+@Composable
+fun <T> Segmented(options: List<Pair<T, String>>, selected: T, onSelect: (T) -> Unit, modifier: Modifier = Modifier) {
+    val c = LocalColors.current
+    Row(
+        modifier.clip(RoundedCornerShape(Radius.inner)).background(c.surfaceHigh).padding(4.dp),
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        for ((value, text) in options) {
+            val on = value == selected
+            Box(
+                Modifier
+                    .clip(RoundedCornerShape(Radius.inner - 2.dp))
+                    .background(if (on) c.surface else Color.Transparent)
+                    .clickable { onSelect(value) }
+                    .padding(horizontal = 18.dp, vertical = 11.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Label(text, Typography.body.copy(fontWeight = if (on) FontWeight.SemiBold else FontWeight.Normal), if (on) c.text else c.textMuted, 1)
+            }
+        }
+    }
+}
+
+/** Un renglón con su interruptor: el texto (y una ayuda opcional) a la izquierda. */
+@Composable
+fun SwitchRow(title: String, checked: Boolean, onChange: (Boolean) -> Unit, help: String? = null) {
+    val c = LocalColors.current
+    Row(
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.inner)).clickable { onChange(!checked) }.padding(vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(Modifier.weight(1f).padding(end = 16.dp)) {
+            Label(title, Typography.body)
+            if (help != null) Label(help, Typography.small, c.textMuted)
+        }
+        Switch(checked)
+    }
+}
+
+/** El interruptor en sí (el toque lo maneja su renglón). */
+@Composable
+private fun Switch(checked: Boolean) {
+    val c = LocalColors.current
+    val knob by animateDpAsState(if (checked) 22.dp else 2.dp, label = "interruptor")
+    Box(
+        Modifier.size(width = 52.dp, height = 32.dp).clip(CircleShape).background(if (checked) c.accent else c.line),
+    ) {
+        Box(Modifier.padding(start = knob, top = 2.dp).size(28.dp).clip(CircleShape).background(Color.White))
+    }
 }

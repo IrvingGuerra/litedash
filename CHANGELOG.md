@@ -6,6 +6,17 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
+## [1.4.24] - 2026-11-01
+
+### Cambiado
+- **Ajustes reorganizados**, cada cosa en un solo lugar: Tu auto abre primero; **Inicio**
+  tiene Acomodo y **Piezas** (todas las piezas del tablero, con su explicación); **Apps**
+  junta Música, Navegación (con Casa y Trabajo) y tus **Favoritas**.
+- **Módulos** ahora son las capacidades extra: escáner OBD, avisos de otras apps, ubicación,
+  y pronto llantas (TPMS) y cámaras, cada una con su estado.
+- Lo que se elige va en **selectores** (auto o logo, tema, idioma, barra, brillo) y lo que
+  se prende o apaga en **interruptores** (animación de entrada, modo estacionado).
+
 ## [1.4.23] - 2026-11-01
 
 ### Arreglado

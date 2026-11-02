@@ -1,5 +1,7 @@
 package com.irvingguerra.litedash
 
+import com.irvingguerra.litedash.core.ui.SwitchRow
+import com.irvingguerra.litedash.core.ui.Segmented
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -196,19 +198,20 @@ fun LogoSettings(d: Dependencies, brand: String) {
         }
     }
     val hasImage = rememberLogo(prefs.logoRevision).image != null
-    FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Button(stringResource(R.string.show_car), { prefs.showLogo = false }, primary = !prefs.showLogo)
-        Button(stringResource(R.string.show_logo), { prefs.showLogo = true }, primary = prefs.showLogo)
+    // Una u otra cosa en el inicio: selector. La imagen solo importa si es el logo.
+    Segmented(listOf(false to stringResource(R.string.show_car), true to stringResource(R.string.show_logo)), prefs.showLogo, { prefs.showLogo = it })
+    if (prefs.showLogo) {
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Button(stringResource(if (hasImage) R.string.logo_change else R.string.logo_pick), {
+                pick.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+            })
+            if (hasImage) Button(stringResource(R.string.logo_remove), {
+                logoFile(context).delete()
+                prefs.logoRevision++
+            })
+        }
+        if (!hasImage) Label(stringResource(R.string.logo_no_image, brand.uppercase()), Typography.small, c.textMuted)
     }
-    FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Button(stringResource(if (hasImage) R.string.logo_change else R.string.logo_pick), {
-            pick.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
-        })
-        if (hasImage) Button(stringResource(R.string.logo_remove), {
-            logoFile(context).delete()
-            prefs.logoRevision++
-        })
-        Button(stringResource(R.string.logo_intro), { prefs.logoIntro = !prefs.logoIntro }, primary = prefs.logoIntro)
-    }
-    if (!hasImage) Label(stringResource(R.string.logo_no_image, brand.uppercase()), Typography.small, c.textMuted)
+    // Encender o apagar: interruptor en su propio renglón.
+    SwitchRow(stringResource(R.string.logo_intro), prefs.logoIntro, { prefs.logoIntro = it }, stringResource(R.string.logo_intro_help))
 }

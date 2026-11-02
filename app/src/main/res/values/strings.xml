@@ -50,9 +50,7 @@
     <string name="show_app">Mostrar</string>
     <string name="app_info">Info de la app</string>
     <string name="modules">Módulos</string>
-    <string name="modules_help">Todo viene apagado: lo que no usas no gasta memoria, batería ni permisos.</string>
-    <string name="music_with_permission">Lo que suena en cualquier app · acceso a notificaciones activado</string>
-    <string name="music_without_permission">Lo que suena en cualquier app · pide acceso a notificaciones al activarla</string>
+    <string name="modules_help">Lo que LiteDash enciende aparte, con su permiso. Lo que no usas no corre, no gasta batería ni pide nada.</string>
     <string name="on_your_home">En tu inicio</string>
     <string name="copy_info">Copiar info de mi pantalla</string>
     <string name="copied">Copiado</string>
@@ -90,7 +88,6 @@
     <!-- Cada idioma se muestra en su propio idioma. -->
     <string name="language_es" translatable="false">Español</string>
     <string name="language_en" translatable="false">English</string>
-    <string name="map">Mapa</string>
     <string name="map_help">La app que abre la pieza Navegar. Mientras navegas, la pieza muestra la siguiente vuelta (usa el mismo acceso a notificaciones que la música).</string>
     <string name="map_no_apps">Instala Waze o Google Maps para navegar desde LiteDash.</string>
     <string name="music">Música</string>
@@ -141,8 +138,6 @@
     <string name="unit_mph">mph</string>
     <string name="parked_mode">Modo estacionado</string>
     <string name="parked_mode_help">Tras 5 minutos sin tocar el inicio (y sin ir en movimiento) se ve un reloj grande. Un toque lo quita.</string>
-    <string name="on">Encendido</string>
-    <string name="off">Apagado</string>
     <string name="reminder_service">Servicio</string>
     <string name="reminder_verification">Verificación</string>
     <string name="reminder_tax">Tenencia o refrendo</string>
@@ -325,4 +320,32 @@
     <string name="bar_side">A un lado</string>
     <string name="bar_bottom">Abajo</string>
     <string name="release_notes">NOVEDADES DE ESTA VERSIÓN</string>
+    <string name="apps_section">Apps</string>
+    <string name="tab_layout">Acomodo</string>
+    <string name="tab_tiles">Piezas</string>
+    <string name="tab_navigation">Navegación</string>
+    <string name="tab_favorites">Favoritas</string>
+    <string name="favorites_help">Las apps de la barra, en su orden. Agrégalas desde el cajón de apps (deja presionada una).</string>
+    <string name="module_obd">Escáner OBD</string>
+    <string name="module_obd_on">Conectado al adaptador · se usa en el Taller y el velocímetro</string>
+    <string name="module_obd_saved">Adaptador guardado · se conecta al usar el velocímetro o el Taller</string>
+    <string name="module_obd_off">Sin adaptador · se configura en el Taller</string>
+    <string name="module_notifications">Avisos de otras apps</string>
+    <string name="module_notifications_help">Lo que suena en tu app de música y la siguiente vuelta de Waze o Maps</string>
+    <string name="module_location">Ubicación</string>
+    <string name="module_location_help">Clima, Viaje, velocímetro por GPS y brillo por el sol</string>
+    <string name="module_tpms">Llantas (TPMS)</string>
+    <string name="module_tpms_help">Presión y temperatura de cada llanta en la vista aérea del auto</string>
+    <string name="module_cameras">Cámaras</string>
+    <string name="module_cameras_help">Reversa y cámaras de la pantalla</string>
+    <string name="module_on">Activado</string>
+    <string name="module_off">Apagado</string>
+    <string name="module_turn_on">Activar</string>
+    <string name="module_settings">Permisos</string>
+    <string name="module_soon">Próximamente</string>
+    <string name="tile_music_help">Lo que suena, con controles; un toque la abre en grande</string>
+    <string name="tile_navigate_help">Tu app de mapas, Casa y Trabajo, y la siguiente vuelta</string>
+    <string name="tile_clock_help">Hora, fecha y clima</string>
+    <string name="tile_phone_help">Abre el marcador</string>
+    <string name="logo_intro_help">Al abrir LiteDash, tu logo (o el de LiteDash) aparece unos segundos.</string>
 </resources>
