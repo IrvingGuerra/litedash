@@ -51,13 +51,14 @@ private const val HEIGHT = 180f
 private const val WHEEL_Y = 154f
 
 private object CarPaths {
-    val body = path("M14 150 C8 140 10 124 22 114 C40 104 90 92 150 74 C180 58 225 44 265 43 C310 43 360 52 398 63 C425 70 448 74 458 80 C470 90 472 120 468 142 C466 158 460 166 446 170 L442 170 A47 47 0 0 0 348 170 L152 174 A47 47 0 0 0 58 170 L34 168 C24 164 17 158 14 150 Z")
-    val wells = path("M58 170 A47 47 0 0 1 152 174 Z M348 170 A47 47 0 0 1 442 170 Z")
+    val body = path("M14 150 C8 140 10 124 22 114 C40 104 90 92 150 74 C180 58 225 44 265 43 C310 43 360 52 398 63 C425 70 448 74 458 80 C470 90 472 120 468 142 C466 158 460 166 446 170 L439.2 170 A47 47 0 1 0 350.8 170 L149.2 170 A47 47 0 1 0 60.8 170 L34 168 C24 164 17 158 14 150 Z")
+    // Arcos con el mismo centro que la llanta: el hueco la abraza parejo.
+    val wells = path("M60.8 170 A47 47 0 1 1 149.2 170 Z M350.8 170 A47 47 0 1 1 439.2 170 Z")
     // El costado (plano vertical, más oscuro) y la cabina hundida.
     val side = path("M10 128 C120 114 300 100 474 96 L476 180 L8 180 Z")
     val canopy = path("M160 88 C200 64 240 54 280 53 C330 53 380 64 418 82 C360 88 250 92 160 88 Z")
     val roof = path("M150 74 C180 58 225 44 265 43 C310 43 360 52 398 63")
-    val crease = path("M30 120 C150 106 320 96 462 90")
+    val crease = path("M40 116 C120 100 200 96 260 95 C340 94 410 88 456 84")
     val wheels = listOf(105f, 395f)
 
     private fun path(d: String) = PathParser().parsePathString(d).toPath()
@@ -90,6 +91,15 @@ private val canopyShade = Brush.linearGradient(
     start = Offset(160f, 53f),
     end = Offset(418f, 90f),
 )
+// La línea del hombro, que se desvanece en las puntas.
+private val creaseShine = Brush.horizontalGradient(
+    0f to Color.Transparent,
+    0.3f to Color.White.copy(alpha = 0.3f),
+    0.75f to Color.White.copy(alpha = 0.3f),
+    1f to Color.Transparent,
+    startX = 40f,
+    endX = 456f,
+)
 private val tire = Color(0xFF2A2E34)
 
 /**
@@ -119,7 +129,7 @@ fun CarDrawing(color: Color, modifier: Modifier = Modifier) {
             }
             drawPath(CarPaths.canopy, canopyShade)
             drawPath(CarPaths.roof, Color.White.copy(alpha = 0.35f), style = Stroke(1.5f))
-            drawPath(CarPaths.crease, Color.White.copy(alpha = 0.25f), style = Stroke(1f))
+            drawPath(CarPaths.crease, creaseShine, style = Stroke(1.2f))
             // Contorno apenas visible: un auto oscuro no se pierde en el tema oscuro.
             drawPath(CarPaths.body, Color.White.copy(alpha = 0.12f), style = Stroke(1f))
             for (cx in CarPaths.wheels) {
