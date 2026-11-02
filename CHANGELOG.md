@@ -6,6 +6,13 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
+## [1.4.33] - 2026-11-02
+
+### Mejorado
+- **Arranque más rápido en pantallas lentas:** LiteDash trae su Baseline Profile (lo que
+  se usa al abrir y en el inicio ya viene compilado al instalar, en vez de interpretarse
+  las primeras veces). Pesa 32 bytes más.
+
 ## [1.4.32] - 2026-11-02
 
 ### Mejorado

@@ -11,7 +11,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
-private const val PACKAGE = "com.irvingguerra.litedash"
+internal const val PACKAGE = "com.irvingguerra.litedash"
 
 /** Arranque y fluidez. Correr: ./gradlew :benchmark:connectedBenchmarkAndroidTest */
 @RunWith(AndroidJUnit4::class)

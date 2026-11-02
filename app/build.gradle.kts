@@ -103,6 +103,8 @@ android {
             initWith(getByName("release"))
             signingConfig = signingConfigs.getByName("debug")
             matchingFallbacks += "release"
+            // Sin ofuscar: el Baseline Profile se genera con esta variante y debe traer los nombres reales.
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro", "benchmark-rules.pro")
         }
     }
 
