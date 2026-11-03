@@ -23,6 +23,7 @@ class LiteDashApp : Application() {
         val mapPackages = NAVIGATION_PACKAGES.toSet() +
             if (BuildConfig.DEBUG) setOf(NavigationRepository.TEST_PACKAGE) else emptySet()
         val prefs = Preferences(this)
+        migrateIntroImage(this, prefs)
         val bus = VehicleBus()
         Dependencies(
             apps = AppRepository(this),

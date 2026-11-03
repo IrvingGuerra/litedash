@@ -347,7 +347,7 @@
     <string name="obd_no_readiness">Tu auto no reporta los monitores de la verificación.</string>
     <!-- Logo en vez del auto -->
     <string name="logo_title">Qué muestra la pieza del auto</string>
-    <string name="logo_help">El auto 3D, una imagen tuya (como el logo de tu marca: elígela de tu galería, LiteDash no trae logos de marcas) o tu auto en carretera con la velocidad y los km del viaje. La animación de entrada muestra tu imagen unos segundos al abrir.</string>
+    <string name="logo_help">El auto 3D, una imagen tuya (como el logo de tu marca: elígela de tu galería, LiteDash no trae logos de marcas) o tu auto en carretera con la velocidad y los km del viaje.</string>
     <string name="show_car">Auto 3D</string>
     <string name="show_logo">Imagen</string>
     <string name="show_road">Carretera</string>
@@ -393,7 +393,8 @@
     <string name="tile_navigate_help">Tu app de mapas, Casa y Trabajo, y la siguiente vuelta</string>
     <string name="tile_clock_help">Hora, fecha y clima</string>
     <string name="tile_phone_help">Abre el marcador</string>
-    <string name="logo_intro_help">Al abrir LiteDash, tu logo (o el de LiteDash) aparece unos segundos.</string>
+    <string name="logo_intro_help">Al abrir LiteDash, tu imagen (como el logo de tu marca) aparece unos segundos. Es aparte de la imagen de la pieza del auto.</string>
+    <string name="intro_no_image">Sin imagen se muestra el logo de LiteDash.</string>
     <string name="unit_rpm" translatable="false">rpm</string>
     <string name="unit_c" translatable="false">°C</string>
     <string name="unit_f" translatable="false">°F</string>

@@ -54,6 +54,7 @@ private object PrefKeys {
     const val ENGINE_ALERTS = "alertas_motor"
     const val BAR_POSITION = "barra"
     const val LOGO_INTRO = "logo_entrada"
+    const val INTRO_MIGRATED = "entrada_imagen_propia"
     const val LIGHTS_KEY = "luces_clave"
     const val LIGHTS_ON = "luces_encendido"
 }
@@ -219,8 +220,11 @@ class Preferences(context: Context) {
     /** Con el OBD conectado: avisar de motor caliente o batería que no carga. */
     var engineAlerts by bool(PrefKeys.ENGINE_ALERTS, true)
 
-    /** Al abrir LiteDash, el logo aparece unos instantes a pantalla completa. */
+    /** Al abrir LiteDash, tu imagen (o el logo de LiteDash) aparece unos instantes a pantalla completa. */
     var logoIntro by bool(PrefKeys.LOGO_INTRO, false)
+
+    /** Ya se le dio su propia imagen a la animación de entrada ([migrateIntroImage]). */
+    var introImageMigrated by bool(PrefKeys.INTRO_MIGRATED, false)
 
     /** Ajuste de la pantalla que dice si los faros están prendidos ("tabla/nombre"); null = sin aprender. */
     var lightsKey by string(PrefKeys.LIGHTS_KEY)
@@ -230,6 +234,9 @@ class Preferences(context: Context) {
 
     /** Cambia cada vez que se elige o quita la imagen del logo (para volver a leerla); solo en memoria. */
     var logoRevision by mutableIntStateOf(0)
+
+    /** Lo mismo para la imagen de la animación de entrada. */
+    var introRevision by mutableIntStateOf(0)
 
     /** Lo mismo para la imagen de fondo del inicio. */
     var wallpaperRevision by mutableIntStateOf(0)

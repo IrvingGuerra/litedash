@@ -6,6 +6,14 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
+## [1.4.40] - 2026-11-02
+
+### Cambiado
+- La **animación de entrada** pasó a **Apariencia → Pantalla** y tiene **su propia imagen**, aparte
+  de la de la pieza del auto. Sin imagen sale el logo de LiteDash. Si ya la tenías prendida, se
+  queda con la imagen que usabas.
+- El velocímetro marca **0** en vez de un guion mientras todavía no hay velocidad.
+
 ## [1.4.39] - 2026-11-02
 
 ### Nuevo

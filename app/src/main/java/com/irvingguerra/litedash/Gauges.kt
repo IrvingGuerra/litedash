@@ -80,7 +80,7 @@ fun SpeedometerTile(d: Dependencies, language: String, look: GaugeLook = GaugeLo
         null -> ""
     }
     GaugeCard(
-        number = speed?.let { String.format(LocalConfiguration.current.locales[0], "%.0f", it) } ?: "—",
+        number = String.format(LocalConfiguration.current.locales[0], "%.0f", speed ?: 0f),
         unit = stringResource(if (imperial) R.string.unit_mph else R.string.unit_kmh),
         tag = source,
         fraction = (speed ?: 0f) / max,

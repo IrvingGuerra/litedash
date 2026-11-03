@@ -178,7 +178,7 @@ private fun RoadNumbers(d: Dependencies, kmh: Float?, heightDp: Float, modifier:
     val big = (heightDp * 0.16f).coerceIn(30f, 96f)
     Row(modifier) {
         Column(Modifier.weight(1f)) {
-            Label(speed?.let { String.format(locale, "%.0f", it) } ?: "—", Typography.clock.copy(fontSize = big.sp), maxLines = 1)
+            Label(String.format(locale, "%.0f", speed ?: 0f), Typography.clock.copy(fontSize = big.sp), maxLines = 1)
             Label(stringResource(if (imperial) R.string.unit_mph else R.string.unit_kmh), Typography.small, c.textMuted, maxLines = 1)
         }
         Column(horizontalAlignment = Alignment.End) {

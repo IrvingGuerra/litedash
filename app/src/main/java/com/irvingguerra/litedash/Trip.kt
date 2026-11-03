@@ -150,7 +150,7 @@ fun TripTile(trip: TripRepository, language: String) {
             val wide = maxWidth > 340.dp
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(if (wide) 18.dp else 10.dp)) {
                 Column {
-                    Label(speed?.let { String.format(locale, "%.0f", it) } ?: "—", Typography.clock.copy(fontSize = if (big) 56.sp else 34.sp), maxLines = 1)
+                    Label(String.format(locale, "%.0f", speed ?: 0f), Typography.clock.copy(fontSize = if (big) 56.sp else 34.sp), maxLines = 1)
                     Label(stringResource(if (imperial) R.string.unit_mph else R.string.unit_kmh), Typography.small, c.textMuted, maxLines = 1)
                 }
                 // Angosta y bajita: el rumbo deja su renglón para que quepan distancia y tiempo.

@@ -699,6 +699,10 @@ private fun Appearance(prefs: Preferences, revision: Int) {
     if (tab == 1) SettingsCard(stringResource(R.string.wallpaper_title), stringResource(R.string.wallpaper_help)) {
         WallpaperSettings(prefs)
     }
+    // Sin título: el interruptor ya dice qué es.
+    if (tab == 1) SettingsCard {
+        IntroSettings(prefs)
+    }
     if (tab == 1) SettingsCard(stringResource(R.string.theme)) {
         Segmented(
             listOf(ThemeMode.DARK to R.string.theme_dark, ThemeMode.LIGHT to R.string.theme_light, ThemeMode.SUN to R.string.theme_sun, ThemeMode.SYSTEM to R.string.theme_system)

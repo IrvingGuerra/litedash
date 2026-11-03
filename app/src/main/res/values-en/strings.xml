@@ -339,7 +339,7 @@
     <string name="obd_no_readiness">Your car doesn\'t report the inspection monitors.</string>
     <!-- Logo en vez del auto -->
     <string name="logo_title">What the car tile shows</string>
-    <string name="logo_help">The 3D car, an image of yours (like your brand\'s logo: pick it from your gallery, LiteDash doesn\'t include brand logos) or your car on the road with your speed and trip distance. The intro animation shows your image for a few seconds when it opens.</string>
+    <string name="logo_help">The 3D car, an image of yours (like your brand\'s logo: pick it from your gallery, LiteDash doesn\'t include brand logos) or your car on the road with your speed and trip distance.</string>
     <string name="show_car">3D car</string>
     <string name="show_logo">Image</string>
     <string name="show_road">Road</string>
@@ -385,7 +385,8 @@
     <string name="tile_navigate_help">Your maps app, Home and Work, and the next turn</string>
     <string name="tile_clock_help">Time, date and weather</string>
     <string name="tile_phone_help">Opens the dialer</string>
-    <string name="logo_intro_help">When LiteDash opens, your logo (or LiteDash\'s) shows for a few seconds.</string>
+    <string name="logo_intro_help">When LiteDash opens, your image (like your brand\'s logo) shows for a few seconds. It\'s separate from the car tile\'s image.</string>
+    <string name="intro_no_image">Without an image, the LiteDash logo shows.</string>
     <string name="unit_kml">km/L</string>
     <string name="tile_gauge">Gauge</string>
     <string name="gauge_module">A car reading over OBD: rpm, engine temperature, fuel, battery, economy, boost, throttle or oil</string>

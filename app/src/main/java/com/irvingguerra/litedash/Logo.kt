@@ -73,6 +73,9 @@ private class SavedImage(val file: String, val maxPx: Int, val png: Boolean) {
 /** El logo: con transparencia, y no necesita más de 1024 px. */
 private val LOGO = SavedImage("logo.png", 1024, png = true)
 
+/** La imagen de la animación de entrada: aparte de la de la pieza del auto. */
+private val INTRO = SavedImage("entrada.png", 1024, png = true)
+
 /** El fondo del inicio: una foto que llena toda la pantalla. */
 private val WALLPAPER = SavedImage("fondo.jpg", 1920, png = false)
 
@@ -148,7 +151,7 @@ fun BrandLogo(d: Dependencies, brand: String, onClick: () -> Unit, modifier: Mod
  * poco y se desvanece hacia el inicio. Un toque la salta.
  */
 @Composable
-fun LogoIntro(d: Dependencies, brand: String, onDone: () -> Unit) {
+fun LogoIntro(prefs: Preferences, onDone: () -> Unit) {
     val c = LocalColors.current
     val done by rememberUpdatedState(onDone)
     // El fondo tapa el inicio desde el primer cuadro; el logo aparece encima y al final
@@ -175,14 +178,15 @@ fun LogoIntro(d: Dependencies, brand: String, onDone: () -> Unit) {
             .clickable(remember { MutableInteractionSource() }, indication = null, onClick = onDone),
         contentAlignment = Alignment.Center,
     ) {
-        val logo = rememberImage(LOGO, d.prefs.logoRevision)
+        val logo = rememberImage(INTRO, prefs.introRevision)
         Box(
             Modifier.fillMaxSize(0.55f).graphicsLayer { scaleX = scale.value; scaleY = scale.value; this.alpha = alpha.value },
             contentAlignment = Alignment.Center,
         ) {
-            // Con tu imagen, tu logo; sin ella, el de LiteDash (no el nombre de la marca).
+            // Con tu imagen, la tuya; sin ella, el logo de LiteDash.
+            val image = logo.image
             when {
-                logo.image != null -> BrandLogo(d, brand, onClick = onDone)
+                image != null -> Image(image, null, Modifier.fillMaxSize(0.7f))
                 logo.loaded -> MorseMark(Modifier.fillMaxWidth(0.6f).aspectRatio(184f / 36f))
             }
         }
@@ -203,46 +207,61 @@ fun HomeWallpaper(prefs: Preferences) {
     }
 }
 
-/** Apariencia → Fondo del inicio: elegir, cambiar o quitar la imagen. */
+/** Elegir, cambiar o quitar una imagen guardada; [onPicked] avisa tras guardar una nueva. */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun WallpaperSettings(prefs: Preferences) {
+private fun ImageButtons(target: SavedImage, revision: Int, bump: () -> Unit, onPicked: () -> Unit = {}): Boolean {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val pick = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
-        if (uri != null) scope.launch { if (save(context, uri, WALLPAPER)) prefs.wallpaperRevision++ }
+        if (uri != null) scope.launch { if (save(context, uri, target)) { bump(); onPicked() } }
     }
-    val hasImage = rememberImage(WALLPAPER, prefs.wallpaperRevision).image != null
+    val hasImage = rememberImage(target, revision).image != null
     FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Button(stringResource(if (hasImage) R.string.logo_change else R.string.logo_pick), {
             pick.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
         })
         if (hasImage) Button(stringResource(R.string.logo_remove), {
-            WALLPAPER.file(context).delete()
-            prefs.wallpaperRevision++
+            target.file(context).delete()
+            bump()
         })
+    }
+    return hasImage
+}
+
+/** Apariencia → Fondo del inicio: elegir, cambiar o quitar la imagen. */
+@Composable
+fun WallpaperSettings(prefs: Preferences) {
+    ImageButtons(WALLPAPER, prefs.wallpaperRevision, { prefs.wallpaperRevision++ })
+}
+
+/** Apariencia → Animación de entrada: encenderla y su propia imagen. */
+@Composable
+fun IntroSettings(prefs: Preferences) {
+    val c = LocalColors.current
+    SwitchRow(stringResource(R.string.logo_intro), prefs.logoIntro, { prefs.logoIntro = it }, stringResource(R.string.logo_intro_help))
+    if (prefs.logoIntro && !ImageButtons(INTRO, prefs.introRevision, { prefs.introRevision++ })) {
+        Label(stringResource(R.string.intro_no_image), Typography.small, c.textMuted)
     }
 }
 
 /**
- * Ajustes de la pieza del auto: qué muestra (auto 3D, tu imagen o la carretera),
- * la imagen y la animación de entrada.
+ * Hasta la 1.4.39 la animación de entrada usaba la imagen de la pieza del auto: quien
+ * la tenía prendida se queda con esa imagen como la de la entrada (una sola vez).
  */
-@OptIn(ExperimentalLayoutApi::class)
+fun migrateIntroImage(context: Context, prefs: Preferences) {
+    if (prefs.introImageMigrated) return
+    prefs.introImageMigrated = true
+    val logo = LOGO.file(context)
+    val intro = INTRO.file(context)
+    if (prefs.logoIntro && logo.exists() && !intro.exists()) runCatching { logo.copyTo(intro) }
+}
+
+/** Ajustes de la pieza del auto: qué muestra (auto 3D, tu imagen o la carretera) y la imagen. */
 @Composable
 fun CarViewSettings(d: Dependencies, brand: String) {
     val c = LocalColors.current
-    val context = LocalContext.current
-    val scope = rememberCoroutineScope()
     val prefs = d.prefs
-    val pick = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
-        if (uri != null) scope.launch {
-            if (save(context, uri, LOGO)) {
-                prefs.logoRevision++
-                prefs.carView = CarView.LOGO
-            }
-        }
-    }
     val views = listOf(
         CarView.CAR to stringResource(R.string.show_car),
         CarView.LOGO to stringResource(R.string.show_logo),
@@ -252,20 +271,9 @@ fun CarViewSettings(d: Dependencies, brand: String) {
     when (prefs.carView) {
         CarView.CAR -> Unit
         CarView.LOGO -> {
-            val hasImage = rememberImage(LOGO, prefs.logoRevision).image != null
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Button(stringResource(if (hasImage) R.string.logo_change else R.string.logo_pick), {
-                    pick.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
-                })
-                if (hasImage) Button(stringResource(R.string.logo_remove), {
-                    LOGO.file(context).delete()
-                    prefs.logoRevision++
-                })
-            }
+            val hasImage = ImageButtons(LOGO, prefs.logoRevision, { prefs.logoRevision++ }, onPicked = { prefs.carView = CarView.LOGO })
             if (!hasImage) Label(stringResource(R.string.logo_no_image, brand.uppercase()), Typography.small, c.textMuted)
         }
         CarView.ROAD -> Label(stringResource(R.string.road_help), Typography.small, c.textMuted)
     }
-    // Encender o apagar: interruptor en su propio renglón.
-    SwitchRow(stringResource(R.string.logo_intro), prefs.logoIntro, { prefs.logoIntro = it }, stringResource(R.string.logo_intro_help))
 }

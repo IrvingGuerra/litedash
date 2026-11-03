@@ -461,9 +461,9 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
 
         if (parked) Parked(d, onWake = { parked = false; touched++ })
 
-        // Animación de entrada con tu logo, una vez por cada vez que se abre LiteDash.
+        // Animación de entrada con tu imagen, una vez por cada vez que se abre LiteDash.
         var intro by rememberSaveable { mutableStateOf(d.prefs.logoIntro && d.prefs.welcomeSeen) }
-        if (intro) LogoIntro(d, brandName(d, car)) { intro = false }
+        if (intro) LogoIntro(d.prefs) { intro = false }
 
         if (!d.prefs.welcomeSeen) {
             Welcome(d.prefs, d.dashboard, revision, onFinish = { d.prefs.welcomeSeen = true })
