@@ -6,6 +6,12 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
+## [1.4.45] - 2026-11-02
+
+### Arreglado
+- Estadísticas anónimas: el número al azar de tu pantalla ya no viaja en el respaldo de Android,
+  así una pantalla nueva restaurada desde otra se cuenta aparte, sin juntarse con la vieja.
+
 ## [1.4.44] - 2026-11-02
 
 ### Nuevo

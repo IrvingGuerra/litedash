@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android 11 o menos. El número de las estadísticas anónimas (Stats.kt) es de esta
+     instalación: si viajara en el respaldo, dos pantallas contarían como una. -->
+<full-backup-content>
+    <exclude domain="sharedpref" path="estadisticas.xml" />
+</full-backup-content>

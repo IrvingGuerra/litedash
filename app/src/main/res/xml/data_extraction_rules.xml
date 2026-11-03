@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android 12 o más: igual que backup_rules.xml, en el respaldo de la nube y al pasar a otro equipo. -->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="sharedpref" path="estadisticas.xml" />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="sharedpref" path="estadisticas.xml" />
+    </device-transfer>
+</data-extraction-rules>
