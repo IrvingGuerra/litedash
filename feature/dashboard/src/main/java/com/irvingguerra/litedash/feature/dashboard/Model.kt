@@ -96,6 +96,8 @@ object TileTypes {
     /** Una foto tuya; [Tile.data] es el nombre de su archivo (vacío = sin foto todavía). */
     const val IMAGE = "image"
     const val MUSIC = "music"
+    /** La radio de la pantalla (FM) o la de LiteDash por internet. */
+    const val RADIO = "radio"
     const val NAVIGATE = "navigate"
     const val CLOCK = "clock"
     const val PHONE = "phone"

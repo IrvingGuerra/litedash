@@ -99,9 +99,22 @@ class WheelKeys(private val context: Context, private val prefs: Preferences) {
             audio.dispatchMediaKeyEvent(KeyEvent(KeyEvent.ACTION_UP, code))
         }
         when (action) {
-            WheelAction.PLAY_PAUSE -> if (music.song != null) music.toggle() else music.resume()
-            WheelAction.NEXT -> if (music.song != null) music.next() else media(KeyEvent.KEYCODE_MEDIA_NEXT)
-            WheelAction.PREVIOUS -> if (music.song != null) music.previous() else media(KeyEvent.KEYCODE_MEDIA_PREVIOUS)
+            // Si lo que suena es la radio, el volante la controla a ella.
+            WheelAction.PLAY_PAUSE -> when {
+                music.song != null -> music.toggle()
+                music.radio.song != null -> music.radio.toggle()
+                else -> music.resume()
+            }
+            WheelAction.NEXT -> when {
+                music.song != null -> music.next()
+                music.radio.song != null -> music.radio.next()
+                else -> media(KeyEvent.KEYCODE_MEDIA_NEXT)
+            }
+            WheelAction.PREVIOUS -> when {
+                music.song != null -> music.previous()
+                music.radio.song != null -> music.radio.previous()
+                else -> media(KeyEvent.KEYCODE_MEDIA_PREVIOUS)
+            }
             WheelAction.VOLUME_UP -> adjust(AudioManager.ADJUST_RAISE)
             WheelAction.VOLUME_DOWN -> adjust(AudioManager.ADJUST_LOWER)
             WheelAction.MUTE -> adjust(AudioManager.ADJUST_TOGGLE_MUTE)

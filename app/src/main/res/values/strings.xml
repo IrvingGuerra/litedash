@@ -173,7 +173,7 @@
     <string name="map_no_apps">Instala Waze o Google Maps para navegar desde LiteDash.</string>
     <string name="music">Música</string>
     <string name="music_system">Sistema</string>
-    <string name="music_help">La app que controla y abre la pieza de música. Sistema sigue lo que suene en tu pantalla: radio, USB, Bluetooth o cualquier app.</string>
+    <string name="music_help">La app que controla y abre la pieza de música. Sistema sigue lo que suene en tu pantalla: USB, Bluetooth o cualquier app (la radio tiene su propia pieza).</string>
     <string name="template_cards">Tarjetas abajo</string>
     <string name="template_columns">Tres columnas</string>
     <string name="template_panel">Panel completo</string>
@@ -427,7 +427,6 @@
     <string name="module_usb_player_help">LiteDash toca la música de tu memoria USB: carpetas, artistas y álbumes, con carátulas</string>
     <string name="module_radio">Radio por internet</string>
     <string name="module_radio_help">Estaciones de tu zona (según el GPS) y de todo el mundo, con favoritas; necesita internet</string>
-    <string name="module_player_where">Están en la música en grande (que necesita el acceso a notificaciones de la pieza Música): toca USB o Radio y, con el botón de lista, su biblioteca.</string>
     <string name="module_turn_off">Desactivar</string>
     <string name="module_tpms">Llantas (TPMS)</string>
     <string name="module_tpms_help">Presión y temperatura de cada llanta en la vista aérea del auto</string>
@@ -544,4 +543,10 @@
     <string name="sys_date">Fecha y hora</string>
     <string name="sys_language">Idioma del sistema</string>
     <string name="sys_home">Pantalla de inicio</string>
+    <string name="tab_radio">Radio</string>
+    <string name="tile_radio">Radio</string>
+    <string name="tile_radio_help">La radio de tu pantalla (FM) y, si la activas, por internet; un toque la abre en grande</string>
+    <string name="radio_fm_app">Radio de tu pantalla</string>
+    <string name="radio_fm_app_help">La app de radio FM que trae tu pantalla: LiteDash la controla desde la pieza Radio (play, siguiente, anterior y abrirla).</string>
+    <string name="radio_internet_help">Estaciones de tu zona por GPS y de todo el mundo, con favoritas. Necesita internet; si no tienes, usa la radio de tu pantalla.</string>
 </resources>

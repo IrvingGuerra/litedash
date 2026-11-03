@@ -169,7 +169,7 @@
     <string name="map_no_apps">Install Waze or Google Maps to navigate from LiteDash.</string>
     <string name="music">Music</string>
     <string name="music_system">System</string>
-    <string name="music_help">The app the music tile controls and opens. System follows whatever plays on your screen: radio, USB, Bluetooth or any app.</string>
+    <string name="music_help">The app the music tile controls and opens. System follows whatever plays on your screen: USB, Bluetooth or any app (the radio has its own tile).</string>
     <string name="template_cards">Cards below</string>
     <string name="template_columns">Three columns</string>
     <string name="template_panel">Full panel</string>
@@ -419,7 +419,6 @@
     <string name="module_usb_player_help">LiteDash plays the music on your USB drive: folders, artists and albums, with artwork</string>
     <string name="module_radio">Internet radio</string>
     <string name="module_radio_help">Stations near you (by GPS) and worldwide, with favorites; needs internet</string>
-    <string name="module_player_where">They live in the big music view (which needs the Music tile\'s notification access): tap USB or Radio and, with the list button, its library.</string>
     <string name="module_turn_off">Turn off</string>
     <string name="module_tpms">Tires (TPMS)</string>
     <string name="module_tpms_help">Pressure and temperature of each tire on the car\'s top view</string>
@@ -525,4 +524,10 @@
     <string name="sys_date">Date and time</string>
     <string name="sys_language">System language</string>
     <string name="sys_home">Home screen</string>
+    <string name="tab_radio">Radio</string>
+    <string name="tile_radio">Radio</string>
+    <string name="tile_radio_help">Your screen\'s radio (FM) and, if you turn it on, internet radio; tap to open it big</string>
+    <string name="radio_fm_app">Your screen\'s radio</string>
+    <string name="radio_fm_app_help">The FM radio app that comes with your screen: LiteDash controls it from the Radio tile (play, next, previous and opening it).</string>
+    <string name="radio_internet_help">Stations near you by GPS and worldwide, with favorites. Needs internet; without it, use your screen\'s radio.</string>
 </resources>

@@ -6,6 +6,19 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
+## [1.4.52] - 2026-11-03
+
+### Cambiado
+- **La radio ya es una pieza aparte.** La pieza Música queda para tus apps (Spotify…), la memoria
+  USB y el Bluetooth; la nueva pieza **Radio** controla la radio FM de tu pantalla (play,
+  siguiente, anterior y abrirla) y, solo si la activas, la radio por internet. Si tienes las dos,
+  en la radio en grande eliges cuál.
+- **Ajustes → Apps** tiene ahora pestaña **Radio** (la app de radio de tu pantalla y el interruptor
+  de internet) y en **Música** está el interruptor del reproductor USB: ya no hay que ir a Módulos.
+- Los mandos al volante controlan la radio cuando es lo que suena.
+- Radio por internet: si los servidores de estaciones no contestan a la primera se reintenta, y la
+  última lista de "Cerca de ti" se guarda para mostrarla mientras tanto.
+
 ## [1.4.51] - 2026-11-03
 
 ### Nuevo

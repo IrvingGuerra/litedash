@@ -8,6 +8,9 @@ private const val STORE = "player"
 private const val KEY_LAST_USB = "last_usb"
 private const val KEY_LAST_RADIO = "last_radio"
 private const val KEY_FAVORITES = "radio_favorites"
+private const val KEY_NEARBY = "radio_nearby"
+/** Cuántas estaciones de "Cerca de ti" se guardan para cuando no hay servidor. */
+private const val NEARBY_KEEP = 60
 
 /** Lo que el reproductor recuerda: lo último que sonó de cada fuente y las estaciones favoritas. */
 class PlayerStore(context: Context) {
@@ -21,6 +24,14 @@ class PlayerStore(context: Context) {
     fun lastStation(): Station? = p.getString(KEY_LAST_RADIO_STATION, null)?.let { runCatching { Station.fromJson(org.json.JSONObject(it)) }.getOrNull() }
 
     fun rememberStation(station: Station) = p.edit { putString(KEY_LAST_RADIO_STATION, station.toJson().toString()) }
+
+    /** La última lista de "Cerca de ti" que llegó: se muestra si los servidores no contestan. */
+    fun nearbyCache(): List<Station> = runCatching {
+        val array = JSONArray(p.getString(KEY_NEARBY, "[]"))
+        (0 until array.length()).mapNotNull { Station.fromJson(array.getJSONObject(it)) }
+    }.getOrDefault(emptyList())
+
+    fun setNearbyCache(list: List<Station>) = p.edit { putString(KEY_NEARBY, JSONArray(list.take(NEARBY_KEEP).map { it.toJson() }).toString()) }
 
     fun favorites(): List<Station> = runCatching {
         val array = JSONArray(p.getString(KEY_FAVORITES, "[]"))

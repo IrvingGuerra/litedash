@@ -78,6 +78,7 @@ object Radio {
     private val SERVERS = listOf("https://de1.api.radio-browser.info", "https://nl1.api.radio-browser.info", "https://at1.api.radio-browser.info", "https://fi1.api.radio-browser.info")
     private const val USER_AGENT = "LiteDash/1.4 (+https://litedash.web.app)"
     private const val LIMIT = 150
+    private const val ROUNDS = 2
 
     /** Hasta dónde cuenta como "de aquí" (metros): el alcance típico de una FM potente. */
     const val NEARBY_METERS = 120_000
@@ -134,15 +135,18 @@ object Radio {
         }
     }.getOrNull()
 
+    /** Los servidores fallan a ratos: se prueban todos y, si ninguno contestó, una segunda vuelta. */
     private fun search(context: Context, query: String): List<Station> {
-        for (server in SERVERS) {
-            val text = runCatching {
-                open(context, "$server/json/stations/search?$query&hidebroken=true&limit=$LIMIT").use { c ->
-                    if (c.responseCode != 200) return@runCatching null
-                    c.inputStream.bufferedReader().readText()
-                }
-            }.getOrNull() ?: continue
-            return parse(text)
+        repeat(ROUNDS) {
+            for (server in SERVERS) {
+                val text = runCatching {
+                    open(context, "$server/json/stations/search?$query&hidebroken=true&limit=$LIMIT").use { c ->
+                        if (c.responseCode != 200) return@runCatching null
+                        c.inputStream.bufferedReader().readText()
+                    }
+                }.getOrNull() ?: continue
+                return parse(text)
+            }
         }
         return emptyList()
     }

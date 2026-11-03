@@ -24,6 +24,7 @@ object OwnPlayer {
         music.ownSources = sources(prefs)
         music.ownSourceNow = { Player.state.source?.toKind() }
         music.ownPlay = { kind -> play(context, kind) }
+        music.ownStop = { Player.stop() }
     }
 
     /** Al prender o apagar un módulo: la pieza se entera, y si sonaba esa fuente se para. */

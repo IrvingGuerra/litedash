@@ -207,8 +207,12 @@ private fun RadioBrowser(onPicked: () -> Unit, modifier: Modifier) {
     var favorites by remember { mutableStateOf(store.favorites()) }
     val here = remember { Radio.here(context) }
     // null = buscando; la lista (y si salió por ubicación o por país).
+    // Si los servidores no contestan, la última lista que sí llegó (guardada).
     val nearby by produceState<List<Station>?>(null) {
-        value = withContext(Dispatchers.IO) { if (here != null) Radio.nearby(context, here) else Radio.country(context) }
+        value = withContext(Dispatchers.IO) {
+            val fresh = if (here != null) Radio.nearby(context, here) else Radio.country(context)
+            if (fresh.isNotEmpty()) { store.setNearbyCache(fresh); fresh } else store.nearbyCache()
+        }
     }
     val found by produceState<List<Station>?>(null, query) {
         value = null

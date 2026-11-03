@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import com.irvingguerra.litedash.core.ui.Button
 import com.irvingguerra.litedash.core.ui.Label
 import com.irvingguerra.litedash.core.ui.LocalColors
+import com.irvingguerra.litedash.core.ui.SwitchRow
 import com.irvingguerra.litedash.core.ui.TextInput
 import com.irvingguerra.litedash.core.ui.Typography
 import com.irvingguerra.litedash.feature.apps.App
@@ -32,6 +33,7 @@ import com.irvingguerra.litedash.feature.apps.normalize
 import com.irvingguerra.litedash.feature.apps.rememberApps
 import com.irvingguerra.litedash.feature.music.SourceKind
 import com.irvingguerra.litedash.feature.music.label
+import com.irvingguerra.litedash.feature.player.Library
 
 /**
  * Sección "Música" de Ajustes: la app de música que se controla y se abre, de
@@ -58,30 +60,99 @@ fun MusicSettings(d: Dependencies) {
 }
 
 /**
- * "Fuentes de tu pantalla": qué app reproduce la USB, el Bluetooth y la radio. Cada
- * renglón dice la app enlazada (o "Sin enlazar"), con Elegir (buscador) y Quitar.
+ * "Fuentes de tu pantalla": qué app reproduce la USB y el Bluetooth. Cada renglón dice
+ * la app enlazada (o "Sin enlazar"), con Elegir (buscador) y Quitar. La radio va aparte,
+ * en su pestaña ([RadioSettings]).
  */
 @Composable
 fun MusicSourcesSettings(d: Dependencies) {
-    val c = LocalColors.current
     val apps = rememberApps(d.apps).orEmpty()
     var choosing by remember { mutableStateOf<SourceKind?>(null) }
-    for (kind in SourceKind.entries) {
-        val pkg = d.music.sourceApps[kind]
-        Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            Label(kind.label(), Typography.body, modifier = Modifier.weight(1f))
-            Label(pkg?.let { p -> apps.firstOrNull { it.pkg == p }?.name ?: d.music.appName(p) } ?: stringResource(R.string.source_unlinked), Typography.small, c.textMuted, 1)
-            Button(stringResource(R.string.source_choose), { choosing = if (choosing == kind) null else kind }, primary = choosing == kind)
-            if (pkg != null) Button(stringResource(R.string.source_remove), { d.music.setSource(kind, null) })
-        }
-        if (choosing == kind) {
-            Label(stringResource(R.string.source_choose_for, kind.label()), Typography.small, c.textMuted)
-            AppSearch(apps, pkg) { d.music.setSource(kind, it); choosing = null }
-            Spacer(Modifier.height(6.dp))
-        }
+    for (kind in listOf(SourceKind.USB, SourceKind.BLUETOOTH)) {
+        SourceRow(d, kind, apps, choosing == kind) { choosing = if (it) kind else null }
         if (kind == SourceKind.BLUETOOTH) BluetoothNamePermission()
     }
 }
+
+/**
+ * Pestaña "Radio" de Ajustes → Apps: la app de radio FM de la pantalla (lo principal; muchas
+ * veces no hay internet en el auto) y, opcional, la radio por internet de LiteDash.
+ */
+@Composable
+fun RadioSettings(d: Dependencies) {
+    val apps = rememberApps(d.apps).orEmpty()
+    var choosing by remember { mutableStateOf(false) }
+    SettingsCard(stringResource(R.string.radio_fm_app), stringResource(R.string.radio_fm_app_help)) {
+        SourceRow(d, SourceKind.RADIO, apps, choosing) { choosing = it }
+    }
+    SettingsCard { InternetRadioSwitch(d) }
+}
+
+/**
+ * Renglón de una fuente de la pantalla: su nombre, la app enlazada (o "Sin enlazar"),
+ * Elegir (abre el buscador debajo) y Quitar. [choosing] dice si el buscador está abierto.
+ */
+@Composable
+private fun SourceRow(d: Dependencies, kind: SourceKind, apps: List<App>, choosing: Boolean, onChoosing: (Boolean) -> Unit) {
+    val c = LocalColors.current
+    val pkg = d.music.sourceApps[kind]
+    Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        Label(kind.label(), Typography.body, modifier = Modifier.weight(1f))
+        Label(pkg?.let { p -> apps.firstOrNull { it.pkg == p }?.name ?: d.music.appName(p) } ?: stringResource(R.string.source_unlinked), Typography.small, c.textMuted, 1)
+        Button(stringResource(R.string.source_choose), { onChoosing(!choosing) }, primary = choosing)
+        if (pkg != null) Button(stringResource(R.string.source_remove), { d.music.setSource(kind, null) })
+    }
+    if (choosing) {
+        Label(stringResource(R.string.source_choose_for, kind.label()), Typography.small, c.textMuted)
+        AppSearch(apps, pkg) { d.music.setSource(kind, it); onChoosing(false) }
+        Spacer(Modifier.height(6.dp))
+    }
+}
+
+/** Interruptor del reproductor USB propio (Ajustes → Apps → Música). */
+@Composable
+fun UsbPlayerSwitch(d: Dependencies) {
+    val set = rememberUsbPlayerToggle(d)
+    SwitchRow(stringResource(R.string.module_usb_player), d.prefs.usbPlayer, set, stringResource(R.string.module_usb_player_help))
+}
+
+/** Interruptor de la radio por internet (Ajustes → Apps → Radio). */
+@Composable
+fun InternetRadioSwitch(d: Dependencies) {
+    val set = rememberInternetRadioToggle(d)
+    SwitchRow(stringResource(R.string.module_radio), d.prefs.internetRadio, set, stringResource(R.string.radio_internet_help))
+}
+
+/**
+ * Prender o apagar el reproductor USB: al prender pide el permiso de leer la música (y desde
+ * Android 13 el de avisos, para el del reproductor); al apagar, si sonaba, se para. Lo usan
+ * Ajustes → Apps y Módulos.
+ */
+@Composable
+fun rememberUsbPlayerToggle(d: Dependencies): (Boolean) -> Unit {
+    val ask = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {}
+    return { on ->
+        d.prefs.usbPlayer = on
+        OwnPlayer.refresh(d.music, d.prefs)
+        if (on) ask.launch((listOf(Library.permission) + notificationPermission()).toTypedArray())
+    }
+}
+
+/** Prender o apagar la radio por internet: al prender, desde Android 13 pide el permiso de avisos. */
+@Composable
+fun rememberInternetRadioToggle(d: Dependencies): (Boolean) -> Unit {
+    val ask = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {}
+    return { on ->
+        d.prefs.internetRadio = on
+        OwnPlayer.refresh(d.music, d.prefs)
+        val notifications = notificationPermission()
+        if (on && notifications.isNotEmpty()) ask.launch(notifications.toTypedArray())
+    }
+}
+
+/** El permiso de avisos del reproductor, que solo existe desde Android 13. */
+private fun notificationPermission() =
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) listOf(Manifest.permission.POST_NOTIFICATIONS) else emptyList()
 
 /**
  * Desde Android 12 ver el nombre del celular conectado pide BLUETOOTH_CONNECT (el mismo

@@ -20,6 +20,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
@@ -35,23 +36,24 @@ import com.irvingguerra.litedash.core.ui.Typography
 
 // Partes que comparten la pieza de música y la música en grande.
 
-/** Carátula cuadrada con esquinas [radius]; sin carátula, el ícono de música. */
+/** Carátula cuadrada con esquinas [radius]; sin carátula, [icon] (la música o la radio). */
 @Composable
-internal fun Artwork(song: Song?, modifier: Modifier, radius: Dp) {
+internal fun Artwork(song: Song?, modifier: Modifier, radius: Dp, icon: ImageVector = Icons.music) {
     val c = LocalColors.current
     BoxWithConstraints(modifier.clip(RoundedCornerShape(radius)).background(c.surfaceHigh), contentAlignment = Alignment.Center) {
         val bmp = song?.artwork
         if (bmp != null) {
             Image(bmp.asImageBitmap(), null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
         } else {
-            Icon(Icons.music, c.textMuted, (minOf(maxWidth, maxHeight) * 0.4f).coerceAtMost(56.dp))
+            Icon(icon, c.textMuted, (minOf(maxWidth, maxHeight) * 0.4f).coerceAtMost(56.dp))
         }
     }
 }
 
 /**
  * Anterior, play/pausa y siguiente; [compact] deja solo play/pausa. Con [loading]
- * (conectando) se ve pausa, porque tocarlo cancela la carga.
+ * (conectando) se ve pausa, porque tocarlo cancela la carga. [lens] es la vista que
+ * controla: la música (por omisión) o la radio.
  */
 @Composable
 internal fun Controls(
@@ -63,14 +65,15 @@ internal fun Controls(
     size: Dp = 56.dp,
     playSize: Dp = 56.dp,
     gap: Dp = 0.dp,
+    lens: MusicRepository.Lens = repo.music,
 ) {
     val c = LocalColors.current
     Row(modifier, verticalAlignment = Alignment.CenterVertically) {
-        if (!compact) IconButton(Icons.previous, { repo.previous() }, size = size)
+        if (!compact) IconButton(Icons.previous, { lens.previous() }, size = size)
         if (!compact) Spacer(Modifier.width(gap))
-        IconButton(if (playing || loading) Icons.pause else Icons.play, { repo.toggle() }, size = playSize, background = c.text, color = c.background)
+        IconButton(if (playing || loading) Icons.pause else Icons.play, { lens.toggle() }, size = playSize, background = c.text, color = c.background)
         if (!compact) Spacer(Modifier.width(gap))
-        if (!compact) IconButton(Icons.next, { repo.next() }, size = size)
+        if (!compact) IconButton(Icons.next, { lens.next() }, size = size)
     }
 }
 
@@ -123,7 +126,8 @@ internal fun SourceRow(
 ) {
     val c = LocalColors.current
     val current = song?.pkg ?: repo.preferred
-    val linked = SourceKind.entries.mapNotNull { k -> repo.appFor(k)?.let { k to it } }
+    // La radio tiene su propia pieza: aquí solo USB y Bluetooth.
+    val linked = SourceKind.entries.filter { it != SourceKind.RADIO }.mapNotNull { k -> repo.appFor(k)?.let { k to it } }
     val apps = listOfNotNull(repo.preferred, song?.pkg).distinct().filter { pkg -> !repo.isOwn(pkg) && linked.none { it.second == pkg } }
     val usbHint = repo.usbDrive != null && repo.appFor(SourceKind.USB) == null
     if (linked.isEmpty() && apps.isEmpty() && !usbHint) return

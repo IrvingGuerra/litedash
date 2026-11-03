@@ -7,7 +7,7 @@
     <string name="resume_explain">Dale play para seguir con lo último que escuchaste.</string>
     <string name="no_song_info">Sin datos de la canción</string>
     <string name="opening_app">Abriendo %1$s…</string>
-    <string name="opening_wait">Ya casi: tu música empieza en un momento.</string>
+    <string name="opening_wait">Ya casi: empieza en un momento.</string>
     <string name="source_system">Sistema</string>
     <string name="source_usb">USB</string>
     <string name="source_bluetooth">Bluetooth</string>
@@ -16,4 +16,10 @@
     <string name="usb_drive">Memoria USB</string>
     <string name="usb_drive_in">Memoria USB puesta: %1$s</string>
     <string name="player_connecting">Conectando…</string>
+    <string name="radio">Radio</string>
+    <string name="radio_explain">Controla la radio de tu pantalla (y por internet si la activas). Necesita acceso a notificaciones.</string>
+    <string name="radio_internet">Por internet</string>
+    <string name="radio_fm">FM de la pantalla</string>
+    <string name="radio_unlinked">Enlaza la radio de tu pantalla en Ajustes o activa la radio por internet</string>
+    <string name="radio_settings">Ajustes</string>
 </resources>

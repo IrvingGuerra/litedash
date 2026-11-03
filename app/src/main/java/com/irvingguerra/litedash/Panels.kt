@@ -13,15 +13,12 @@ import android.app.ActivityManager
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
-import android.Manifest
 import android.hardware.SensorManager
 import android.hardware.Sensor
 import android.content.Intent
 import android.os.Build
 import android.provider.Settings
 import androidx.compose.foundation.Image
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -107,7 +104,6 @@ import com.irvingguerra.litedash.feature.dashboard.size
 import com.irvingguerra.litedash.feature.dashboard.suggestedTemplate
 import com.irvingguerra.litedash.feature.dashboard.tiles
 import com.irvingguerra.litedash.feature.music.MusicRepository
-import com.irvingguerra.litedash.feature.player.Library
 import com.irvingguerra.litedash.feature.updater.Updater
 import com.irvingguerra.litedash.feature.updater.Version
 import java.io.File
@@ -748,16 +744,18 @@ private fun HomeSettings(d: Dependencies, onEdit: () -> Unit, onTemplates: () ->
     }
 }
 
-/** Sección Apps: la de música, la de navegación (con Casa y Trabajo) y las favoritas de la barra. */
+/** Sección Apps: la de música (con el reproductor USB), la radio, la de navegación (con Casa y Trabajo) y las favoritas de la barra. */
 @Composable
 private fun AppsSettings(d: Dependencies) {
     val c = LocalColors.current
-    when (tabs(listOf(R.string.music, R.string.tab_navigation, R.string.tab_favorites, R.string.tab_split), "apps")) {
+    when (tabs(listOf(R.string.music, R.string.tab_radio, R.string.tab_navigation, R.string.tab_favorites, R.string.tab_split), "apps")) {
         0 -> {
             SettingsCard { MusicSettings(d) }
             SettingsCard(stringResource(R.string.music_sources), stringResource(R.string.music_sources_help)) { MusicSourcesSettings(d) }
+            SettingsCard { UsbPlayerSwitch(d) }
         }
-        1 -> {
+        1 -> RadioSettings(d)
+        2 -> {
             SettingsCard { MapSettings(d) }
             SettingsCard(stringResource(R.string.places), stringResource(R.string.places_help)) {
                 Label(stringResource(R.string.place_home), Typography.label, c.textMuted)
@@ -766,7 +764,7 @@ private fun AppsSettings(d: Dependencies) {
                 TextInput(d.prefs.workAddress ?: "", { d.prefs.workAddress = it.take(160).ifBlank { null } }, stringResource(R.string.place_hint), Modifier.fillMaxWidth())
             }
         }
-        2 -> SettingsCard(stringResource(R.string.tab_favorites), stringResource(R.string.favorites_help)) { Favorites(d) }
+        3 -> SettingsCard(stringResource(R.string.tab_favorites), stringResource(R.string.favorites_help)) { Favorites(d) }
         else -> SettingsCard { SplitSettings(d) }
     }
 }
@@ -970,6 +968,7 @@ private fun iconOf(type: String) = when (type) {
     TileTypes.ROAD -> Icons.road
     TileTypes.IMAGE -> Icons.image
     TileTypes.MUSIC -> Icons.music
+    TileTypes.RADIO -> Icons.radio
     TileTypes.NAVIGATE -> Icons.navigate
     TileTypes.CLOCK -> Icons.clock
     TileTypes.PHONE -> Icons.phone
@@ -1040,30 +1039,20 @@ private fun Modules(d: Dependencies, revision: Int) {
 }
 
 /**
- * Reproductor USB y radio por internet: los módulos del reproductor propio. Al prender el
- * USB se pide el permiso de leer la música (y desde Android 13 el de avisos, para el del
- * reproductor); al apagar uno, si sonaba, se para.
+ * Reproductor USB y radio por internet: los módulos del reproductor propio (también están en
+ * Ajustes → Apps). Prender y apagar, con sus permisos, va por los mismos helpers de
+ * MusicMapSettings.kt.
  */
 @Composable
 private fun OwnPlayerModules(d: Dependencies) {
-    val c = LocalColors.current
-    val askPermissions = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {}
-    val notifications = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) listOf(Manifest.permission.POST_NOTIFICATIONS) else emptyList()
+    val setUsb = rememberUsbPlayerToggle(d)
+    val setRadio = rememberInternetRadioToggle(d)
     ModuleRow(Icons.usb, stringResource(R.string.module_usb_player), stringResource(R.string.module_usb_player_help)) {
-        ModuleToggle(d.prefs.usbPlayer) { on ->
-            d.prefs.usbPlayer = on
-            OwnPlayer.refresh(d.music, d.prefs)
-            if (on) askPermissions.launch((listOf(Library.permission) + notifications).toTypedArray())
-        }
+        ModuleToggle(d.prefs.usbPlayer, setUsb)
     }
     ModuleRow(Icons.radio, stringResource(R.string.module_radio), stringResource(R.string.module_radio_help)) {
-        ModuleToggle(d.prefs.internetRadio) { on ->
-            d.prefs.internetRadio = on
-            OwnPlayer.refresh(d.music, d.prefs)
-            if (on && notifications.isNotEmpty()) askPermissions.launch(notifications.toTypedArray())
-        }
+        ModuleToggle(d.prefs.internetRadio, setRadio)
     }
-    if (d.prefs.usbPlayer || d.prefs.internetRadio) Label(stringResource(R.string.module_player_where), Typography.small, c.textMuted)
 }
 
 @Composable
