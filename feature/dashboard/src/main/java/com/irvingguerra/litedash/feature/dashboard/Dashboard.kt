@@ -61,6 +61,9 @@ fun Dashboard(
     onChange: (List<Tile>) -> Unit,
     onEdit: () -> Unit,
     modifier: Modifier = Modifier,
+    /** Editando, las piezas que se personalizan ([hasSettings]) llevan un botón que hace esto. */
+    onSettings: ((Tile) -> Unit)? = null,
+    hasSettings: (Tile) -> Boolean = { false },
     content: @Composable (Tile) -> Unit,
 ) {
     val c = LocalColors.current
@@ -184,6 +187,13 @@ fun Dashboard(
                         size = 40.dp,
                         background = if (p.plain) c.accent else c.surfaceHigh,
                         color = if (p.plain) c.background else c.text,
+                    )
+                    if (onSettings != null && hasSettings(p)) IconButton(
+                        Icons.settings,
+                        onClick = { onSettings(p) },
+                        modifier = Modifier.align(Alignment.TopStart).padding(start = 98.dp, top = 6.dp),
+                        size = 40.dp,
+                        background = c.surfaceHigh,
                     )
                     Box(
                         Modifier

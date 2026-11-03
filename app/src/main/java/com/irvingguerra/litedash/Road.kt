@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -28,11 +27,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
@@ -47,7 +49,6 @@ import androidx.compose.ui.unit.sp
 import com.irvingguerra.litedash.core.ui.Button
 import com.irvingguerra.litedash.core.ui.Label
 import com.irvingguerra.litedash.core.ui.LocalColors
-import com.irvingguerra.litedash.core.ui.Radius
 import com.irvingguerra.litedash.core.ui.Typography
 import com.irvingguerra.litedash.core.vehicle.Signal
 import com.irvingguerra.litedash.core.vehicle.watch
@@ -121,11 +122,23 @@ fun RoadView(d: Dependencies, pkg: CarPackage?, onClick: () -> Unit, modifier: M
     BoxWithConstraints(
         modifier
             .fillMaxSize()
-            .clip(RoundedCornerShape(Radius.card))
             .clickable(remember { MutableInteractionSource() }, indication = null, onClick = onClick),
     ) {
         val height = maxHeight
-        Canvas(Modifier.fillMaxSize()) { drawRoad(c.surfaceHigh, c.textMuted, c.accent, phase, if (moving) effect else 0f, rush) }
+        // Sin tarjeta: la carretera se desvanece hacia las cuatro orillas y se funde con el fondo.
+        Canvas(
+            Modifier
+                .fillMaxSize()
+                .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
+                .drawWithContent {
+                    drawContent()
+                    drawRect(
+                        Brush.horizontalGradient(0f to Color.Transparent, 0.12f to Color.Black, 0.88f to Color.Black, 1f to Color.Transparent),
+                        blendMode = BlendMode.DstIn,
+                    )
+                    drawRect(Brush.verticalGradient(0f to Color.Transparent, 0.2f to Color.Black, 0.8f to Color.Black, 1f to Color.Transparent), blendMode = BlendMode.DstIn)
+                },
+        ) { drawRoad(c.surfaceHigh, c.textMuted, c.text, phase, if (moving) effect else 0f, rush) }
 
         // El auto de espaldas en el carril de en medio, con la defensa cerca del borde de abajo.
         val box = height * 0.55f
@@ -183,8 +196,8 @@ private fun RoadNumbers(d: Dependencies, kmh: Float?, heightDp: Float, modifier:
  * La carretera en perspectiva: el asfalto que se desvanece hacia el horizonte, las
  * orillas y las rayas de tres carriles. Un punto a [z] metros de la cámara cae en
  * y = horizonte + (abajo − horizonte) · NEAR_M / z, y el ancho se reduce igual.
- * Con [effect] (0–1, sube con la velocidad) el horizonte y las orillas se encienden
- * del [glow] y pasan líneas de velocidad a los lados ([rush] las mueve).
+ * Con [effect] (0–1, sube con la velocidad) el horizonte y las orillas brillan (del
+ * [glow], neutro: sin el ámbar) y pasan líneas de velocidad a los lados ([rush] las mueve).
  */
 private fun DrawScope.drawRoad(asphalt: Color, lines: Color, glow: Color, phase: Float, effect: Float, rush: Float) {
     val w = size.width
@@ -206,7 +219,7 @@ private fun DrawScope.drawRoad(asphalt: Color, lines: Color, glow: Color, phase:
     // El brillo del horizonte, hacia donde vas.
     if (effect > 0.01f) {
         drawCircle(
-            Brush.radialGradient(listOf(glow.copy(alpha = 0.28f * effect), Color.Transparent), Offset(center, horizon), w * 0.45f),
+            Brush.radialGradient(listOf(glow.copy(alpha = 0.16f * effect), Color.Transparent), Offset(center, horizon), w * 0.45f),
             w * 0.45f,
             Offset(center, horizon),
         )
@@ -214,7 +227,7 @@ private fun DrawScope.drawRoad(asphalt: Color, lines: Color, glow: Color, phase:
     drawPath(road, Brush.verticalGradient(0f to asphalt.copy(alpha = 0f), 1f to asphalt, startY = horizon, endY = h))
 
     // Orillas: líneas continuas que se pierden en el horizonte.
-    val edgeColor = lerp(lines.copy(alpha = 0.55f), glow.copy(alpha = 0.9f), effect)
+    val edgeColor = lerp(lines.copy(alpha = 0.55f), glow.copy(alpha = 0.85f), effect)
     val edge = Brush.verticalGradient(0f to edgeColor.copy(alpha = 0f), 1f to edgeColor, startY = horizon, endY = h)
     val edgeWidth = w * 0.006f
     for (side in listOf(-1f, 1f)) {

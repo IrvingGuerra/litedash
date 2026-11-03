@@ -51,16 +51,12 @@ import java.util.Locale
 import kotlin.math.cos
 import kotlin.math.sin
 
-/** Del arco del medidor: empieza abajo a la izquierda y da 240° (como un tablero real). */
-private const val START_ANGLE = 150f
-private const val SWEEP = 240f
-
 /**
  * Velocímetro de arco: número grande y el arco que se llena. Lee la velocidad del
  * auto (OBD) si hay adaptador conectado; si no, del GPS (pide permiso la primera vez).
  */
 @Composable
-fun SpeedometerTile(d: Dependencies, language: String) {
+fun SpeedometerTile(d: Dependencies, language: String, look: GaugeLook = GaugeLook()) {
     // Con un adaptador ya guardado, se reconecta solo (sin abrir el Taller).
     LaunchedEffect(Unit) { if (d.hasObdAdapter) d.obd.connect() }
     val obdOn = d.obdIfCreated()?.state == ObdState.ON
@@ -76,7 +72,7 @@ fun SpeedometerTile(d: Dependencies, language: String) {
     val kmh = d.bus.watch(Signal.SPEED)
     val imperial = imperialUnits(language)
     val speed = kmh?.let { if (imperial) it / 1.609f else it }
-    val max = if (imperial) 120f else 200f
+    val max = (look.max ?: speedMaxOptions(imperial).first()).toFloat()
     val source = when (d.bus.source(Signal.SPEED)) {
         Source.OBD -> "OBD"
         Source.GPS -> "GPS"
@@ -88,84 +84,18 @@ fun SpeedometerTile(d: Dependencies, language: String) {
         unit = stringResource(if (imperial) R.string.unit_mph else R.string.unit_kmh),
         tag = source,
         fraction = (speed ?: 0f) / max,
-        // Marcas cada 20 km/h (10 mph).
-        ticks = (max / if (imperial) 10f else 20f).toInt(),
+        // Marcas cada 20 km/h (10 mph); con 240 o más, cada 40 (20 mph) para que no se amontonen.
+        ticks = ticksFor(max, imperial),
+        look = look,
+        carColor = d.prefs.carColor,
+        labels = { i -> (max * i / ticksFor(max, imperial)).toInt().toString() },
     )
 }
 
-/**
- * Tarjeta de medidor: en una fila (la de abajo en 7") el número con una barra; con
- * más alto, el arco de tablero. [fraction] (0–1) se anima y se lee solo al dibujar:
- * la pieza no se recompone en cada cuadro. [warning] pinta de rojo lo que preocupa.
- */
-@Composable
-fun GaugeCard(number: String, unit: String, tag: String, fraction: Float, ticks: Int, warning: Boolean = false, onClick: (() -> Unit)? = null) {
-    val c = LocalColors.current
-    val color = if (warning) c.danger else c.accent
-    val shown = remember { Animatable(0f) }
-    LaunchedEffect(fraction) { shown.animateTo(fraction.coerceIn(0f, 1f), tween(250)) }
-    Card(Modifier.fillMaxSize(), onClick = onClick) {
-        BoxWithConstraints(Modifier.fillMaxSize().padding(12.dp), contentAlignment = Alignment.Center) {
-            if (maxHeight < 130.dp) CompactGauge(number, unit, tag, { shown.value }, maxHeight, color)
-            else ArcGauge(number, unit, tag, { shown.value }, ticks, color, side = minOf(maxWidth, maxHeight * 1.15f))
-        }
-    }
-}
-
-@Composable
-private fun ArcGauge(number: String, unit: String, tag: String, fraction: () -> Float, ticks: Int, color: Color, side: Dp) {
-    val c = LocalColors.current
-    Canvas(Modifier.fillMaxSize()) {
-        // El arco engrosa con el medidor: en grande, 12 dp se veía como un hilo.
-        val stroke = (size.minDimension * 0.075f).coerceIn(3.dp.toPx(), 34.dp.toPx())
-        val radius = minOf(size.width, size.height * 1.15f) / 2 - stroke
-        val center = Offset(size.width / 2, size.height / 2 + radius * 0.12f)
-        val topLeft = Offset(center.x - radius, center.y - radius)
-        val arc = Size(radius * 2, radius * 2)
-        drawArc(c.surfaceHigh, START_ANGLE, SWEEP, false, topLeft, arc, style = Stroke(stroke, cap = StrokeCap.Round))
-        val f = fraction()
-        if (f > 0.002f) drawArc(color, START_ANGLE, SWEEP * f, false, topLeft, arc, style = Stroke(stroke, cap = StrokeCap.Round))
-        // Marcas discretas por dentro del arco (una larga y una corta).
-        for (i in 0..ticks) {
-            val a = Math.toRadians((START_ANGLE + SWEEP * i / ticks).toDouble())
-            val outer = radius - stroke * 1.2f
-            val inner = outer - stroke * (if (i % 2 == 0) 0.9f else 0.5f)
-            drawLine(
-                c.textMuted.copy(alpha = 0.6f),
-                Offset(center.x + outer * cos(a).toFloat(), center.y + outer * sin(a).toFloat()),
-                Offset(center.x + inner * cos(a).toFloat(), center.y + inner * sin(a).toFloat()),
-                strokeWidth = stroke * 0.18f,
-                cap = StrokeCap.Round,
-            )
-        }
-    }
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Label(number, Typography.clock.copy(fontSize = (side.value * 0.3f).coerceIn(28f, 110f).sp), maxLines = 1)
-        Label(unit, Typography.small, c.textMuted, maxLines = 1)
-        if (side > 200.dp && tag.isNotEmpty()) Box(Modifier.padding(top = 6.dp)) { Label(tag, Typography.label, color, maxLines = 1) }
-    }
-}
-
-/**
- * Medidor de una fila: el número grande con su unidad y, abajo, una barra que se
- * llena ([fraction] se lee al dibujar).
- */
-@Composable
-private fun CompactGauge(number: String, unit: String, tag: String, fraction: () -> Float, height: Dp, color: Color) {
-    val c = LocalColors.current
-    Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.SpaceBetween) {
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom) {
-            Label(number, Typography.clock.copy(fontSize = (height.value * 0.55f).coerceIn(28f, 56f).sp), maxLines = 1)
-            Label(unit, Typography.small, c.textMuted, maxLines = 1, modifier = Modifier.padding(start = 6.dp, bottom = 6.dp).weight(1f))
-            if (tag.isNotEmpty()) Label(tag, Typography.label, color, maxLines = 1, modifier = Modifier.padding(bottom = 6.dp))
-        }
-        Canvas(Modifier.fillMaxWidth().height(6.dp)) {
-            val r = CornerRadius(size.height / 2)
-            drawRoundRect(c.surfaceHigh, cornerRadius = r)
-            val f = fraction().coerceIn(0f, 1f)
-            if (f > 0.002f) drawRoundRect(color, size = Size(size.width * f, size.height), cornerRadius = r)
-        }
-    }
+/** Cuántas marcas lleva un velocímetro que llega a [max]. */
+fun ticksFor(max: Float, imperial: Boolean): Int {
+    val step = if (imperial) (if (max > 160f) 20f else 10f) else (if (max >= 240f) 40f else 20f)
+    return (max / step).toInt().coerceAtLeast(1)
 }
 
 /**
@@ -183,62 +113,76 @@ class GaugeSpec(
     val shown: (value: Float, imperial: Boolean) -> Float,
     val unit: (imperial: Boolean) -> Int,
     val decimals: Int,
-    /** Qué tanto del arco se llena, con el valor del bus. */
-    val fraction: (Float) -> Float,
+    /** El rango del arco, en la unidad del bus. */
+    val min: Float,
+    val max: Float,
     val warning: (Float) -> Boolean = { false },
-)
+    /** Desde dónde va la zona roja (unidad del bus); null = el último 20 %. */
+    val red: Float? = null,
+) {
+    /** Qué tanto del arco se llena, con el valor del bus. */
+    fun fraction(v: Float) = (v - min) / (max - min)
 
-private fun range(min: Float, max: Float) = { v: Float -> (v - min) / (max - min) }
+    /** Dónde empieza la zona roja (0–1). */
+    val redFrom get() = red?.let(::fraction) ?: 0.8f
+
+    /** El número de la marca [i] de [ticks], en la unidad que se ve (las rpm en miles). */
+    fun label(i: Int, imperial: Boolean): String {
+        val v = shown(min + (max - min) * i / ticks, imperial)
+        return if (shown(max, imperial) >= 1000f) "%.0f".format(v / 1000f) else "%.0f".format(v)
+    }
+}
+
 private fun fahrenheit(c: Float, imperial: Boolean) = if (imperial) c * 9 / 5 + 32 else c
 
 val GaugeSpecs = listOf(
     GaugeSpec(
         Signal.RPM, R.string.gauge_rpm, null, Icons.tachometer, ticks = 8,
         shown = { v, _ -> v }, unit = { R.string.unit_rpm }, decimals = 0,
-        fraction = range(0f, 8000f), warning = { it >= 6500f },
+        min = 0f, max = 8000f, warning = { it >= 6500f }, red = 6500f,
     ),
     GaugeSpec(
         Signal.COOLANT, R.string.gauge_coolant, R.string.gauge_coolant_tag, Icons.thermometer, ticks = 9,
         shown = ::fahrenheit, unit = { if (it) R.string.unit_f else R.string.unit_c }, decimals = 0,
-        fraction = range(40f, 130f), warning = { it >= HOT_COOLANT_C },
+        min = 40f, max = 130f, warning = { it >= HOT_COOLANT_C }, red = HOT_COOLANT_C,
     ),
     GaugeSpec(
         Signal.FUEL, R.string.gauge_fuel, R.string.gauge_fuel_tag, Icons.fuel, ticks = 4,
         shown = { v, _ -> v }, unit = { R.string.unit_percent }, decimals = 0,
-        fraction = range(0f, 100f), warning = { it <= 12f },
+        min = 0f, max = 100f, warning = { it <= 12f },
     ),
     GaugeSpec(
         Signal.VOLTAGE, R.string.gauge_voltage, R.string.gauge_voltage_tag, Icons.battery, ticks = 6,
         shown = { v, _ -> v }, unit = { R.string.unit_volts }, decimals = 1,
-        fraction = range(10f, 16f), warning = { it < RESTING_MIN_V || it > CHARGING_MAX_V },
+        min = 10f, max = 16f, warning = { it < RESTING_MIN_V || it > CHARGING_MAX_V },
     ),
     GaugeSpec(
         Signal.CONSUMPTION, R.string.gauge_consumption, R.string.gauge_consumption_tag, Icons.drop, ticks = 6,
         // km/l a millas por galón (EE. UU.).
         shown = { v, imperial -> if (imperial) v * 2.352f else v }, unit = { if (it) R.string.unit_mpg else R.string.unit_kml }, decimals = 1,
-        fraction = range(0f, 30f),
+        min = 0f, max = 30f,
     ),
     GaugeSpec(
         Signal.BOOST, R.string.gauge_boost, R.string.gauge_boost_tag, Icons.turbo, ticks = 8,
         // El turbo se habla en psi (también en México).
         shown = { v, _ -> v * 0.145f }, unit = { R.string.unit_psi }, decimals = 1,
-        fraction = range(-100f, 170f),
+        min = -100f, max = 170f,
     ),
     GaugeSpec(
         Signal.THROTTLE, R.string.gauge_throttle, R.string.gauge_throttle_tag, Icons.pedal, ticks = 5,
         shown = { v, _ -> v }, unit = { R.string.unit_percent }, decimals = 0,
-        fraction = range(0f, 100f),
+        min = 0f, max = 100f,
     ),
     GaugeSpec(
         Signal.OIL, R.string.gauge_oil, R.string.gauge_oil_tag, Icons.oil, ticks = 9,
         shown = ::fahrenheit, unit = { if (it) R.string.unit_f else R.string.unit_c }, decimals = 0,
-        fraction = range(40f, 150f), warning = { it >= 130f },
+        min = 40f, max = 150f, warning = { it >= 130f }, red = 130f,
     ),
     GaugeSpec(
         Signal.FUEL_RATE, R.string.gauge_fuel_rate, R.string.gauge_fuel_rate_tag, Icons.fuel, ticks = 6,
         // Litros por hora a galones (EE. UU.) por hora.
         shown = { v, imperial -> if (imperial) v * 0.2642f else v }, unit = { if (it) R.string.unit_galh else R.string.unit_lh }, decimals = 1,
-        fraction = range(0f, 30f),
+        min = 0f, max = 30f,
     ),
 )
 
@@ -249,7 +193,7 @@ fun gaugeOf(signal: String) = GaugeSpecs.firstOrNull { it.signal == signal }
  * elegir; sin adaptador lleva al Taller; si el auto no da ese dato, lo dice.
  */
 @Composable
-fun GaugeTile(d: Dependencies, signal: String, language: String, onPick: () -> Unit, onWorkshop: () -> Unit) {
+fun GaugeTile(d: Dependencies, signal: String, language: String, onPick: () -> Unit, onWorkshop: () -> Unit, look: GaugeLook = GaugeLook()) {
     val spec = gaugeOf(signal)
         ?: return ShortcutTile(Icons.plus, stringResource(R.string.tile_gauge), stringResource(R.string.gauge_pick), onPick)
     // Con un adaptador ya guardado, se reconecta solo (sin abrir el Taller).
@@ -267,8 +211,12 @@ fun GaugeTile(d: Dependencies, signal: String, language: String, onPick: () -> U
         number = value?.let { gaugeText(spec, it, imperial, LocalConfiguration.current.locales[0]) } ?: "—",
         unit = stringResource(spec.unit(imperial)),
         tag = spec.tag?.let { stringResource(it) } ?: "",
-        fraction = value?.let(spec.fraction) ?: 0f,
+        fraction = value?.let(spec::fraction) ?: 0f,
         ticks = spec.ticks,
+        look = look,
+        carColor = d.prefs.carColor,
+        labels = { spec.label(it, imperial) },
+        redFrom = spec.redFrom,
         warning = value != null && spec.warning(value),
         // Un toque cambia qué dato muestra.
         onClick = onPick,

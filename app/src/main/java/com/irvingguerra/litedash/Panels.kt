@@ -264,7 +264,9 @@ fun PickGaugePanel(d: Dependencies, tileId: String?, close: () -> Unit) {
         if (noRoom) Label(stringResource(R.string.no_room), Typography.body, c.danger, modifier = Modifier.padding(bottom = 12.dp))
         CardGrid(GaugeSpecs, minWidth = 200.dp, height = 120.dp, onClick = { spec ->
             if (tileId != null) {
-                d.dashboard.setData(tileId, spec.signal)
+                // Cambia el dato y se queda con su estilo.
+                val old = d.dashboard.tiles.firstOrNull { it.id == tileId }?.data ?: ""
+                d.dashboard.setData(tileId, GaugeLook.parse(old).encode(spec.signal))
                 close()
             } else if (d.dashboard.addTile(TileTypes.GAUGE, spec.signal)) close()
             else noRoom = true

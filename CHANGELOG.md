@@ -6,6 +6,23 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
+## [1.4.39] - 2026-11-02
+
+### Nuevo
+- **Velocímetros y medidores a tu gusto:** al acomodar el inicio, el botón de ajustes de cada
+  velocímetro o medidor abre **Personalizar medidor**, con vista previa que se mueve:
+  - **5 estilos:** Arco, **Aguja** clásica con números, **Digital** con barra de segmentos,
+    **Anillo** completo y **Barra** deportiva tipo luces de cambio.
+  - **Color:** ámbar, el de tu auto, **dinámico** (verde, ámbar y rojo según el valor), verde,
+    azul, rojo o blanco. Lo que preocupa sigue saliendo en rojo.
+  - **Hasta** dónde llega el velocímetro (160, 200, 240 o 320 km/h), **marcas**, **números** y
+    **zona roja** (en el tacómetro desde 6 500 rpm).
+  - **Aplicar a todos los medidores** de un toque.
+
+### Cambiado
+- La carretera ya no usa el ámbar: con velocidad brilla en blanco, y se funde con el fondo sin
+  que se note la pieza.
+
 ## [1.4.38] - 2026-11-02
 
 ### Cambiado

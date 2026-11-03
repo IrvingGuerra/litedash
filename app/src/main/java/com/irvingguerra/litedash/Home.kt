@@ -105,6 +105,8 @@ sealed interface Panel {
     data object Workshop : Panel
     /** Elegir qué dato muestra un medidor existente ([tileId]) o uno nuevo (null). */
     data class PickGauge(val tileId: String?) : Panel
+    /** Estilo, color y demás de un velocímetro o medidor ([tileId]). */
+    data class CustomizeGauge(val tileId: String) : Panel
 }
 
 class Dependencies(
@@ -171,9 +173,9 @@ fun TileContent(d: Dependencies, p: Tile, apps: List<App>, car: CarPackage?, rev
         TileTypes.CLOCK -> ClockTile(d.prefs.driverName, d.weather)
         TileTypes.WEATHER -> WeatherTile(d.weather)
         TileTypes.TRIP -> TripTile(d.trip, d.prefs.language)
-        TileTypes.SPEEDOMETER -> SpeedometerTile(d, d.prefs.language)
+        TileTypes.SPEEDOMETER -> SpeedometerTile(d, d.prefs.language, GaugeLook.parse(p.data))
         TileTypes.GAUGE -> GaugeTile(
-            d, p.data, d.prefs.language,
+            d, signalOf(p.data), d.prefs.language, look = GaugeLook.parse(p.data),
             onPick = { actions.onPanel(Panel.PickGauge(p.id)) },
             onWorkshop = { actions.onPanel(Panel.Workshop) },
         )
@@ -409,6 +411,8 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                             limits = ::limitsOf,
                             onChange = d.dashboard::change,
                             onEdit = { editing = true },
+                            onSettings = { panel = Panel.CustomizeGauge(it.id) },
+                            hasSettings = { it.type == TileTypes.SPEEDOMETER || it.type == TileTypes.GAUGE },
                         ) { p -> TileContent(d, p, apps, car, revision, actions) }
                     }
                 }
@@ -448,6 +452,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
             )
             is Panel.PickApp -> PickAppPanel(d, apps, p.tileId, close = { panel = null })
             is Panel.PickGauge -> PickGaugePanel(d, p.tileId, close = { panel = null })
+            is Panel.CustomizeGauge -> CustomizeGaugePanel(d, p.tileId, close = { panel = null }, onPickSignal = { panel = Panel.PickGauge(p.tileId) })
         }
 
         if (carShown && panel == null) {
