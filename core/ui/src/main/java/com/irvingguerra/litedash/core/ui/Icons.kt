@@ -72,6 +72,16 @@ object Icons {
     val phone = icon("M5 4h4l2 5l-2.5 1.5a11 11 0 0 0 5 5l1.5 -2.5l5 2v4a2 2 0 0 1 -2 2a16 16 0 0 1 -15 -15a2 2 0 0 1 2 -2")
     val music = icon("M9 17v-12l10 -2v12 M3 17a3 3 0 1 0 6 0a3 3 0 1 0 -6 0 M13 15a3 3 0 1 0 6 0a3 3 0 1 0 -6 0")
     val search = icon("M4 10a6 6 0 1 0 12 0a6 6 0 1 0 -12 0 M20 20l-5.5 -5.5")
+    /** Lista (biblioteca de música): tres renglones con su punto. */
+    val list = icon("M9 6h11 M9 12h11 M9 18h11 M4 6h.01 M4 12h.01 M4 18h.01")
+    /** Carpeta de la memoria. */
+    val folder = icon("M3 7a2 2 0 0 1 2 -2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2z")
+    /** Memoria USB: el conector y el cuerpo. */
+    val usb = icon("M9 3h6v5h-6z M11 5h.5 M13 5h-.5 M7 8h10v12a1 1 0 0 1 -1 1h-8a1 1 0 0 1 -1 -1z")
+    /** Radio: la caja, la antena y la bocina. */
+    val radio = icon("M4 9h16a1 1 0 0 1 1 1v9a1 1 0 0 1 -1 1h-16a1 1 0 0 1 -1 -1v-9a1 1 0 0 1 1 -1z M6 9l10 -5 M7 14.5a2.5 2.5 0 1 0 5 0a2.5 2.5 0 1 0 -5 0 M15 13h3 M15 16h3")
+    val star = icon("M12 3.5l2.6 5.4l5.9 .8l-4.3 4.1l1.1 5.9l-5.3 -2.8l-5.3 2.8l1.1 -5.9l-4.3 -4.1l5.9 -.8z")
+    val starFilled = icon(fills = listOf("M12 3.5l2.6 5.4l5.9 .8l-4.3 4.1l1.1 5.9l-5.3 -2.8l-5.3 2.8l1.1 -5.9l-4.3 -4.1l5.9 -.8z"))
     val corner = icon("M19 11v8h-8 M19 19l-7 -7")
     val dashboard = icon("M4 4h7v9h-7z M13 4h7v5h-7z M13 11h7v9h-7z M4 15h7v5h-7z")
     val openExternal = icon("M14 4h6v6 M20 4l-9 9 M18 14v6h-14v-14h6")

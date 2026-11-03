@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -50,15 +51,26 @@ import com.irvingguerra.litedash.core.ui.Typography
  * radio, apps), carátula, barra para adelantar, y los botones propios de la app (en
  * Spotify: me gusta, aleatorio, repetir). Ancha pone la carátula a un lado; angosta, arriba.
  * [onLinkUsb] abre los ajustes de música (para enlazar la app de USB de la pantalla).
+ * [browser] es la biblioteca del reproductor propio de LiteDash (USB o radio), si está
+ * prendido: se abre con el botón de lista o al tocar una fuente propia sin nada que sonar.
  */
 @Composable
-fun MusicExpanded(repo: MusicRepository, close: () -> Unit, onLinkUsb: () -> Unit, modifier: Modifier = Modifier) {
+fun MusicExpanded(
+    repo: MusicRepository,
+    close: () -> Unit,
+    onLinkUsb: () -> Unit,
+    modifier: Modifier = Modifier,
+    browser: (@Composable (kind: SourceKind, onPicked: () -> Unit) -> Unit)? = null,
+) {
     DisposableEffect(repo) {
         repo.use()
         onDispose { repo.release() }
     }
     val c = LocalColors.current
     val song = repo.song
+    // La biblioteca abierta (de qué fuente); null = lo que suena.
+    var browsing by remember { mutableStateOf<SourceKind?>(null) }
+    val ownKind = if (song != null && repo.isOwn(song.pkg)) song.source else null
     Card(modifier.fillMaxSize()) {
         BoxWithConstraints(Modifier.fillMaxSize().padding(20.dp)) {
             val wide = maxWidth > 520.dp && maxWidth > maxHeight
@@ -67,14 +79,25 @@ fun MusicExpanded(repo: MusicRepository, close: () -> Unit, onLinkUsb: () -> Uni
             val artworkMax = maxWidth * 0.4f
             Column(Modifier.fillMaxSize()) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    val app = song?.app ?: repo.preferredName()
+                    // Si suena el reproductor propio, la fuente ("USB", "RADIO") y no "LITEDASH".
+                    val app = ownKind?.label() ?: song?.app ?: repo.preferredName()
                     Label(app.uppercase(), Typography.label, c.textMuted, maxLines = 1, modifier = Modifier.weight(1f).padding(start = 4.dp))
-                    if (song != null || repo.preferred != null) IconButton(Icons.openExternal, { repo.openApp() }, size = 48.dp, background = c.surfaceHigh)
+                    if (browser != null && (ownKind != null || browsing != null)) {
+                        IconButton(if (browsing != null) Icons.music else Icons.list, { browsing = if (browsing != null) null else ownKind }, size = 48.dp, background = c.surfaceHigh)
+                    }
+                    if (song != null && !repo.isOwn(song.pkg) || song == null && repo.preferred?.let { !repo.isOwn(it) } == true) {
+                        IconButton(Icons.openExternal, { repo.openApp() }, size = 48.dp, background = c.surfaceHigh)
+                    }
                     IconButton(Icons.close, close, size = 48.dp, background = c.surfaceHigh)
                 }
                 Spacer(Modifier.height(12.dp))
-                SourceRow(repo, song, onLinkUsb)
+                SourceRow(repo, song, onLinkUsb, onBrowse = { if (browser != null) browsing = it }, browsing = browsing)
                 Spacer(Modifier.height(12.dp))
+                val open = browsing
+                if (browser != null && open != null) {
+                    browser(open) { browsing = null }
+                    return@Column
+                }
                 // Sin nada sonando se ve igual, con los controles: play reanuda lo último.
                 when {
                     wide -> Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
@@ -103,22 +126,31 @@ private fun Details(repo: MusicRepository, song: Song?, modifier: Modifier) {
             opening != null -> stringResource(R.string.opening_app, opening)
             else -> stringResource(R.string.nothing_playing)
         }
-        Label(title, Typography.title.copy(fontSize = 26.sp), maxLines = 2)
+        // Alto de dos líneas reservado: con un nombre largo los botones no bajan.
+        Box(Modifier.heightIn(min = 68.dp), contentAlignment = Alignment.BottomStart) {
+            Label(title, Typography.title.copy(fontSize = 26.sp), maxLines = 2)
+        }
         Spacer(Modifier.height(4.dp))
+        val error = song?.error
         val subtitle = when {
+            error != null -> error
+            song?.buffering == true -> stringResource(R.string.player_connecting)
             song != null -> subtitleFor(repo, song)
             opening != null -> stringResource(R.string.opening_wait)
             repo.usbDrive != null -> stringResource(R.string.usb_drive_in, repo.usbDrive.orEmpty())
             else -> stringResource(R.string.resume_explain)
         }
-        Label(subtitle, Typography.subtitle, c.textMuted, maxLines = 2)
+        // También dos líneas reservadas para el subtítulo: los botones no se mueven al cambiar de estación.
+        Box(Modifier.heightIn(min = 48.dp)) {
+            Label(subtitle, Typography.subtitle, if (error != null) c.danger else c.textMuted, maxLines = 2)
+        }
         if (song != null && song.durationMs > 0) {
             Spacer(Modifier.height(20.dp))
             TimeBar(repo, song)
         }
         Spacer(Modifier.height(16.dp))
         Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-            Controls(repo, song?.playing == true, size = 64.dp, playSize = 76.dp, gap = 12.dp)
+            Controls(repo, song?.playing == true, loading = song?.buffering == true, size = 64.dp, playSize = 76.dp, gap = 12.dp)
         }
         if (song != null && song.actions.isNotEmpty()) {
             Spacer(Modifier.height(8.dp))

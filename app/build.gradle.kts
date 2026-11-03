@@ -143,6 +143,7 @@ dependencies {
     implementation(project(":feature:apps"))
     implementation(project(":feature:dashboard"))
     implementation(project(":feature:music"))
+    implementation(project(":feature:player"))
     implementation(project(":feature:car"))
     implementation(project(":feature:updater"))
     implementation(project(":feature:navigation"))

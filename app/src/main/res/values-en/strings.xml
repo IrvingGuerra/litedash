@@ -415,6 +415,12 @@
     <string name="module_notifications_help">What plays in your music app and the next turn from Waze or Maps</string>
     <string name="module_location">Location</string>
     <string name="module_location_help">Weather, Trip, GPS speedometer and brightness by the sun</string>
+    <string name="module_usb_player">USB player</string>
+    <string name="module_usb_player_help">LiteDash plays the music on your USB drive: folders, artists and albums, with artwork</string>
+    <string name="module_radio">Internet radio</string>
+    <string name="module_radio_help">Stations near you (by GPS) and worldwide, with favorites; needs internet</string>
+    <string name="module_player_where">They live in the big music view (which needs the Music tile\'s notification access): tap USB or Radio and, with the list button, its library.</string>
+    <string name="module_turn_off">Turn off</string>
     <string name="module_tpms">Tires (TPMS)</string>
     <string name="module_tpms_help">Pressure and temperature of each tire on the car\'s top view</string>
     <string name="module_cameras">Cameras</string>

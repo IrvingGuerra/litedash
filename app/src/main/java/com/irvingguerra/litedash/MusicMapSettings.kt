@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import com.irvingguerra.litedash.core.ui.Button
 import com.irvingguerra.litedash.core.ui.Label
 import com.irvingguerra.litedash.core.ui.LocalColors
+import com.irvingguerra.litedash.core.ui.TextInput
 import com.irvingguerra.litedash.core.ui.Typography
 import com.irvingguerra.litedash.feature.apps.App
 import com.irvingguerra.litedash.feature.apps.normalize

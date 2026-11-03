@@ -1,0 +1,38 @@
+<resources>
+    <string name="player_name">Reproductor de LiteDash</string>
+    <string name="player_channel">Música</string>
+    <string name="player_play">Reproducir</string>
+    <string name="player_pause">Pausa</string>
+    <string name="player_next">Siguiente</string>
+    <string name="player_previous">Anterior</string>
+    <string name="player_cannot_play">No se pudo reproducir. Prueba otra estación o revisa la conexión.</string>
+    <string name="player_timeout">La estación no responde. Prueba otra.</string>
+    <string name="library_no_drive">Conecta una memoria USB con música</string>
+    <string name="library_no_permission">LiteDash necesita permiso para leer la música de la memoria</string>
+    <string name="library_grant">Dar permiso</string>
+    <string name="library_empty">La memoria no tiene música que Android reconozca</string>
+    <string name="library_loading">Leyendo la memoria…</string>
+    <string name="library_folders">Carpetas</string>
+    <string name="library_artists">Artistas</string>
+    <string name="library_albums">Álbumes</string>
+    <string name="library_all">Todas</string>
+    <string name="library_play_all">Tocar todo</string>
+    <plurals name="library_songs">
+        <item quantity="one">%1$d canción</item>
+        <item quantity="other">%1$d canciones</item>
+    </plurals>
+    <string name="library_shuffle">Aleatorio</string>
+    <string name="library_unknown">Sin nombre</string>
+    <string name="library_root">Raíz de la memoria</string>
+    <string name="radio_nearby">Cerca de ti</string>
+    <string name="radio_favorites">Favoritas</string>
+    <string name="radio_search_tab">Buscar</string>
+    <string name="radio_search_hint">Nombre de la estación</string>
+    <string name="radio_search_help">Escribe el nombre de una estación</string>
+    <string name="radio_loading">Buscando estaciones…</string>
+    <string name="radio_none">No se encontraron estaciones. Revisa la conexión a internet.</string>
+    <string name="radio_no_location">Sin ubicación: estas son las más escuchadas de tu país. Activa la ubicación en Módulos para ver las de tu zona.</string>
+    <string name="radio_no_favorites">Toca la estrella de una estación para tenerla aquí.</string>
+    <string name="radio_km">%1$d km</string>
+    <string name="radio_source">Radio por internet</string>
+</resources>

@@ -24,9 +24,11 @@ class LiteDashApp : Application() {
             if (BuildConfig.DEBUG) setOf(NavigationRepository.TEST_PACKAGE) else emptySet()
         val prefs = Preferences(this)
         val bus = VehicleBus()
+        val music = MusicRepository(this).apply { preferred = prefs.musicApp; onPreferredChanged = { prefs.musicApp = it }; opener = SplitScreen::open }
+        OwnPlayer.wire(this, music, prefs)
         Dependencies(
             apps = AppRepository(this).apply { opener = SplitScreen::open },
-            music = MusicRepository(this).apply { preferred = prefs.musicApp; onPreferredChanged = { prefs.musicApp = it }; opener = SplitScreen::open },
+            music = music,
             navigation = NavigationRepository(this, mapPackages),
             prefs = prefs,
             dashboard = DashboardState(DashboardStore(this)),

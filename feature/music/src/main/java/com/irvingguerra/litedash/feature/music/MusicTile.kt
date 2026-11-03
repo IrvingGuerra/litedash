@@ -66,9 +66,11 @@ private fun NoPermission(repo: MusicRepository) {
 private fun Player(repo: MusicRepository) {
     val song = repo.song
     val playing = song?.playing == true
+    // Cargando se pinta como pausa: tocarlo cancela la carga.
+    val loading = song?.buffering == true
     BoxWithConstraints(Modifier.fillMaxSize().padding(10.dp)) {
         val tall = maxHeight > 150.dp
-        if (tall && maxWidth < maxHeight * 1.5f) return@BoxWithConstraints Stacked(repo, song, playing)
+        if (tall && maxWidth < maxHeight * 1.5f) return@BoxWithConstraints Stacked(repo, song, playing, loading)
         // Angosta (la fila de abajo en 7"): solo play/pausa, para que el título se lea.
         val compact = !tall && maxWidth < 400.dp
         // Carátula cuadrada con esquinas, dentro de la tarjeta, si deja lugar al título.
@@ -80,21 +82,21 @@ private fun Player(repo: MusicRepository) {
                 SongText(repo, song, tall)
                 if (tall) {
                     Spacer(Modifier.height(12.dp))
-                    Controls(repo, playing)
+                    Controls(repo, playing, loading = loading)
                 }
             }
-            if (!tall) Controls(repo, playing, compact = compact)
+            if (!tall) Controls(repo, playing, loading = loading, compact = compact)
         }
     }
 }
 
 /** Alta y no tan ancha (una columna del tablero): carátula arriba, el resto abajo y centrado. */
 @Composable
-private fun Stacked(repo: MusicRepository, song: Song?, playing: Boolean) {
+private fun Stacked(repo: MusicRepository, song: Song?, playing: Boolean, loading: Boolean) {
     Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
         Artwork(song, Modifier.fillMaxWidth().weight(1f), Radius.inner)
         Column(Modifier.fillMaxWidth().padding(start = 6.dp, end = 6.dp, top = 14.dp)) { SongText(repo, song, tall = true) }
-        Controls(repo, playing, Modifier.padding(top = 8.dp))
+        Controls(repo, playing, Modifier.padding(top = 8.dp), loading = loading)
     }
 }
 
@@ -111,11 +113,18 @@ private fun SongText(repo: MusicRepository, song: Song?, tall: Boolean) {
         Label(idleHint(repo), Typography.small, c.textMuted, maxLines = 1)
     } else {
         Label(song.title, if (tall) Typography.title else Typography.subtitle, maxLines = 1)
-        Label(
-            // Sin canción (Bluetooth sin datos) el título ya es la app: no repetirla.
-            listOf(subtitleFor(repo, song), song.app).filter { it.isNotBlank() && it != song.title }.distinct().joinToString(" · "),
-            Typography.small, c.textMuted, maxLines = 1,
-        )
+        val error = song.error
+        when {
+            error != null -> Label(error, Typography.small, c.danger, maxLines = 1)
+            song.buffering -> Label(stringResource(R.string.player_connecting), Typography.small, c.textMuted, maxLines = 1)
+            else -> Label(
+                // Sin canción (Bluetooth sin datos) el título ya es la app: no repetirla. El
+                // reproductor propio no agrega "LiteDash".
+                listOf(subtitleFor(repo, song), if (repo.isOwn(song.pkg)) "" else song.app)
+                    .filter { it.isNotBlank() && it != song.title }.distinct().joinToString(" · "),
+                Typography.small, c.textMuted, maxLines = 1,
+            )
+        }
         if (song.durationMs > 0) {
             Spacer(Modifier.height(10.dp))
             Progress(song)

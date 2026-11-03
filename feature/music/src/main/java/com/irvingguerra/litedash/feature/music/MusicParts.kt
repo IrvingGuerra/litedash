@@ -49,12 +49,16 @@ internal fun Artwork(song: Song?, modifier: Modifier, radius: Dp) {
     }
 }
 
-/** Anterior, play/pausa y siguiente; [compact] deja solo play/pausa. */
+/**
+ * Anterior, play/pausa y siguiente; [compact] deja solo play/pausa. Con [loading]
+ * (conectando) se ve pausa, porque tocarlo cancela la carga.
+ */
 @Composable
 internal fun Controls(
     repo: MusicRepository,
     playing: Boolean,
     modifier: Modifier = Modifier,
+    loading: Boolean = false,
     compact: Boolean = false,
     size: Dp = 56.dp,
     playSize: Dp = 56.dp,
@@ -64,7 +68,7 @@ internal fun Controls(
     Row(modifier, verticalAlignment = Alignment.CenterVertically) {
         if (!compact) IconButton(Icons.previous, { repo.previous() }, size = size)
         if (!compact) Spacer(Modifier.width(gap))
-        IconButton(if (playing) Icons.pause else Icons.play, { repo.toggle() }, size = playSize, background = c.text, color = c.background)
+        IconButton(if (playing || loading) Icons.pause else Icons.play, { repo.toggle() }, size = playSize, background = c.text, color = c.background)
         if (!compact) Spacer(Modifier.width(gap))
         if (!compact) IconButton(Icons.next, { repo.next() }, size = size)
     }
@@ -102,23 +106,39 @@ fun SourceKind.label(): String = stringResource(
 
 /**
  * Fila de fuentes como en un estéreo: Sistema, las fuentes enlazadas (USB, Bluetooth,
- * radio), la app elegida y la que suena. Tocar una la pone a sonar. Vacía si no hay nada
- * que elegir (sin fuentes ni app). [onLinkUsb] abre Ajustes cuando hay una memoria puesta
- * pero ninguna app enlazada a USB.
+ * radio; las que toca LiteDash mismo incluidas), la app elegida y la que suena. Tocar una
+ * la pone a sonar; si es propia y no hay nada que tocar, [onBrowse] abre su biblioteca.
+ * Vacía si no hay nada que elegir. [onLinkUsb] abre Ajustes cuando hay una memoria puesta
+ * pero nada que la reproduzca. Con la biblioteca abierta, [browsing] es la fuente que se
+ * marca (y nada más).
  */
 @Composable
-internal fun SourceRow(repo: MusicRepository, song: Song?, onLinkUsb: () -> Unit, modifier: Modifier = Modifier) {
+internal fun SourceRow(
+    repo: MusicRepository,
+    song: Song?,
+    onLinkUsb: () -> Unit,
+    onBrowse: (SourceKind) -> Unit,
+    modifier: Modifier = Modifier,
+    browsing: SourceKind? = null,
+) {
     val c = LocalColors.current
     val current = song?.pkg ?: repo.preferred
-    val linked = SourceKind.entries.mapNotNull { k -> repo.sourceApps[k]?.let { k to it } }
-    val apps = listOfNotNull(repo.preferred, song?.pkg).distinct().filter { pkg -> linked.none { it.second == pkg } }
-    val usbHint = repo.usbDrive != null && SourceKind.USB !in repo.sourceApps
+    val linked = SourceKind.entries.mapNotNull { k -> repo.appFor(k)?.let { k to it } }
+    val apps = listOfNotNull(repo.preferred, song?.pkg).distinct().filter { pkg -> !repo.isOwn(pkg) && linked.none { it.second == pkg } }
+    val usbHint = repo.usbDrive != null && repo.appFor(SourceKind.USB) == null
     if (linked.isEmpty() && apps.isEmpty() && !usbHint) return
+    val ownNow = if (song != null && repo.isOwn(song.pkg)) song.source else null
+    val selected = if (browsing != null) setOf(browsing) else linked.filter { (kind, pkg) -> if (repo.isOwn(pkg)) ownNow == kind else current == pkg }.map { it.first }.toSet()
     Row(modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-        Chip(stringResource(R.string.source_system), repo.preferred == null, c) { repo.choose(null) }
-        for ((kind, pkg) in linked) Chip(kind.label(), current == pkg, c) { repo.switchTo(pkg) }
+        // "Sistema" se marca solo cuando ninguna fuente ni app está marcada (si no, se ven dos).
+        Chip(stringResource(R.string.source_system), browsing == null && repo.preferred == null && selected.isEmpty() && apps.none { current == it }, c) { repo.choose(null) }
+        for ((kind, pkg) in linked) {
+            Chip(kind.label(), kind in selected, c) {
+                if (repo.isOwn(pkg)) { if (!repo.playOwn(kind)) onBrowse(kind) } else repo.switchTo(pkg)
+            }
+        }
         if (usbHint) Chip(stringResource(R.string.source_usb), false, c, onClick = onLinkUsb)
-        for (pkg in apps) Chip(repo.appName(pkg), current == pkg, c) { repo.switchTo(pkg) }
+        for (pkg in apps) Chip(repo.appName(pkg), browsing == null && current == pkg, c) { repo.switchTo(pkg) }
     }
 }
 

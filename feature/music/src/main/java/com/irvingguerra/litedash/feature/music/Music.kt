@@ -24,8 +24,11 @@ import android.media.session.MediaSessionManager
 import android.media.session.PlaybackState
 import android.os.Build
 import android.os.Handler
+import android.os.Environment
 import android.os.Looper
 import android.os.SystemClock
+import android.os.storage.StorageManager
+import android.provider.MediaStore
 import android.provider.Settings
 import android.service.media.MediaBrowserService
 import android.service.notification.StatusBarNotification
@@ -41,6 +44,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.content.IntentCompat
 import com.irvingguerra.litedash.feature.musica.ServicioMusica
 import kotlinx.coroutines.delay
+import java.io.File
 
 /** Recibe los avisos que pasa el [NotificationService] (la app solo mira los de navegación). */
 interface NotificationListener {
@@ -103,6 +107,10 @@ data class Song(
     val actions: List<MediaAction>,
     /** Fuente de la pantalla a la que pertenece la app ([pkg]); null = una app normal. */
     val source: SourceKind?,
+    /** Conectando o cargando (la radio tarda unos segundos). */
+    val buffering: Boolean,
+    /** Lo que la app dice que falló; null si nada. */
+    val error: String?,
 ) {
     fun currentPosition(): Long {
         if (!playing) return positionMs
@@ -171,6 +179,32 @@ class MusicRepository(private val context: Context) {
     }
 
     private val SourceKind.key get() = "source_" + name.lowercase()
+
+    /** Fuentes que toca el reproductor propio de LiteDash (USB, radio): las pone el app según sus módulos. */
+    var ownSources by mutableStateOf(emptySet<SourceKind>())
+
+    /** Pide al reproductor propio que suene esa fuente; false = no hay nada que tocar aún (se abre la biblioteca). */
+    var ownPlay: ((SourceKind) -> Boolean)? = null
+
+    /** Qué fuente propia está sonando ahora; null si el reproductor propio no suena. */
+    var ownSourceNow: (() -> SourceKind?)? = null
+
+    /** El paquete de LiteDash: el "app" de las fuentes que toca el reproductor propio. */
+    val ownPackage: String get() = context.packageName
+
+    fun isOwn(pkg: String) = pkg == ownPackage
+
+    /** La app que reproduce [kind]: LiteDash mismo si el módulo está prendido, si no la enlazada. */
+    fun appFor(kind: SourceKind): String? = if (kind in ownSources) ownPackage else sourceApps[kind]
+
+    /**
+     * Que suene el reproductor propio con [kind]; false = abrir la biblioteca para escoger.
+     * Pone "Sistema": así la pieza sigue la sesión de LiteDash (y las demás) sin fijar una app.
+     */
+    fun playOwn(kind: SourceKind): Boolean {
+        choose(null)
+        return ownPlay?.invoke(kind) == true
+    }
 
     private val icons = HashMap<String, Bitmap?>()
     // Nombres de las apps: se piden una vez a Android (es una llamada entre procesos).
@@ -305,11 +339,14 @@ class MusicRepository(private val context: Context) {
                 MediaAction(it.action, it.name.toString(), icon(c.packageName, it.icon))
             },
             source = sourceOf(c.packageName),
+            buffering = state?.state == PlaybackState.STATE_BUFFERING || state?.state == PlaybackState.STATE_CONNECTING,
+            error = state?.takeIf { it.state == PlaybackState.STATE_ERROR }?.errorMessage?.toString(),
         )
     }
 
-    /** La fuente a la que está enlazada [pkg]; null = una app normal. */
-    fun sourceOf(pkg: String): SourceKind? = sourceApps.entries.firstOrNull { it.value == pkg }?.key
+    /** La fuente a la que está enlazada [pkg] (o la que toca LiteDash); null = una app normal. */
+    fun sourceOf(pkg: String): SourceKind? =
+        if (isOwn(pkg)) ownSourceNow?.invoke() else sourceApps.entries.firstOrNull { it.value == pkg }?.key
 
     private fun appLabel(pkg: String) = labels.getOrPut(pkg) {
         runCatching {
@@ -382,6 +419,10 @@ class MusicRepository(private val context: Context) {
         val session = controller?.takeIf { song != null && (pkg == null || it.packageName == pkg) }
         if (session != null) return session.transportControls.play()
         if (pkg == null) return systemPlay()
+        if (isOwn(pkg)) {
+            ownPlay?.invoke(ownSourceNow?.invoke() ?: ownSources.firstOrNull() ?: return)
+            return
+        }
         starting = appLabel(pkg)
         if (!connectAndPlay(pkg) && !buttonPlay(pkg)) systemPlay()
         mainHandler.postDelayed({
@@ -492,7 +533,7 @@ class MusicRepository(private val context: Context) {
         val buttons = mediaButtonReceivers().map { it.packageName }.distinct()
         val sessions = if (!hasPermission()) null else sessions().map { "${it.packageName} (${it.playbackState?.state ?: "-"})" }
         appendLine("Música elegida: ${preferred ?: "Sistema"}")
-        appendLine("Fuentes: ${SourceKind.entries.joinToString { "${it.name.lowercase()}=${sourceApps[it] ?: "-"}" }}")
+        appendLine("Fuentes: ${SourceKind.entries.joinToString { "${it.name.lowercase()}=${appFor(it) ?: "-"}" }}")
         appendLine("Bluetooth: ${bluetoothDevice ?: "-"}; USB: ${usbDrive ?: "-"}")
         appendLine("Apps de música: ${musicApps().joinToString().ifBlank { "ninguna" }}")
         appendLine("Botón de play: ${buttons.joinToString().ifBlank { "ninguna" }}")
@@ -593,21 +634,45 @@ private class DeviceWatcher(
     }
 }
 
-/** Memorias USB (y tarjetas) conectadas a la pantalla. */
+/** Una memoria USB (o tarjeta) conectada a la pantalla. */
+class Drive(
+    /** Nombre que muestra Android ("Memoria USB SanDisk"); genérico en Android 6. */
+    val name: String,
+    /** Nombre del volumen en MediaStore (API 29+) o null. */
+    val volume: String?,
+    /** Carpeta raíz de la memoria (para filtrar por ruta antes de la API 29); null si no se sabe. */
+    val path: String?,
+    /** Identificador estable de la memoria (para recordar lo último que sonó). */
+    val id: String,
+)
+
+/** Memorias USB (y tarjetas) conectadas a la pantalla: las usan la pieza y el reproductor propio. */
 object Drives {
-    /** Nombre de la primera memoria conectada; null si no hay. */
-    fun mounted(context: Context): String? = runCatching {
+    /** Memorias montadas ahora (sin la del propio equipo). */
+    fun list(context: Context): List<Drive> = runCatching {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            context.getSystemService(android.os.storage.StorageManager::class.java).storageVolumes
-                .firstOrNull { it.isRemovable && it.state == android.os.Environment.MEDIA_MOUNTED }
-                ?.getDescription(context)
+            val volumes = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) MediaStore.getExternalVolumeNames(context) else emptySet()
+            context.getSystemService(StorageManager::class.java).storageVolumes
+                .filter { it.isRemovable && it.state == Environment.MEDIA_MOUNTED }
+                .map { v ->
+                    val uuid = v.uuid
+                    Drive(
+                        name = v.getDescription(context),
+                        volume = uuid?.lowercase()?.takeIf { it in volumes },
+                        path = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) v.directory?.path else uuid?.let { "/storage/$it" },
+                        id = uuid ?: v.getDescription(context),
+                    )
+                }
         } else {
             // Android 6 no lista los volúmenes: las memorias se montan como carpetas de /storage.
-            java.io.File("/storage").listFiles()
-                ?.firstOrNull { it.name != "emulated" && it.name != "self" && android.os.Environment.getExternalStorageState(it) == android.os.Environment.MEDIA_MOUNTED }
-                ?.name
+            File("/storage").listFiles().orEmpty()
+                .filter { it.name != "emulated" && it.name != "self" && Environment.getExternalStorageState(it) == Environment.MEDIA_MOUNTED }
+                .map { Drive(name = context.getString(R.string.usb_drive), volume = null, path = it.path, id = it.name) }
         }
-    }.getOrNull()
+    }.getOrDefault(emptyList())
+
+    /** Nombre de la primera memoria conectada; null si no hay. */
+    fun mounted(context: Context): String? = list(context).firstOrNull()?.name
 }
 
 /** El primer texto no vacío de [keys] (algunas apps mandan el título vacío y el bueno en otro campo). */

@@ -1,34 +1,42 @@
 package com.irvingguerra.litedash.core.ui
 
 import android.annotation.SuppressLint
-import androidx.compose.foundation.background
-import androidx.compose.runtime.getValue
 import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicText
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
@@ -228,5 +236,32 @@ private fun Switch(checked: Boolean) {
         Modifier.size(width = 52.dp, height = 32.dp).clip(CircleShape).background(if (checked) c.accent else c.line),
     ) {
         Box(Modifier.padding(start = knob, top = 2.dp).size(28.dp).clip(CircleShape).background(Color.White))
+    }
+}
+
+/** Campo de texto de una línea con [hint]; [icon] pone la lupa (buscadores). */
+@Composable
+fun TextInput(value: String, onChange: (String) -> Unit, hint: String, modifier: Modifier = Modifier, icon: Boolean = false) {
+    val c = LocalColors.current
+    Row(
+        modifier.height(56.dp).clip(RoundedCornerShape(Radius.card)).background(c.surface).border(1.dp, c.line, RoundedCornerShape(Radius.card)).padding(horizontal = 20.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        if (icon) {
+            Icon(Icons.search, c.textMuted, 22.dp)
+            Spacer(Modifier.width(12.dp))
+        }
+        Box(Modifier.weight(1f)) {
+            if (value.isEmpty()) Label(hint, Typography.body, c.textMuted, maxLines = 1)
+            BasicTextField(
+                value,
+                onChange,
+                Modifier.fillMaxWidth(),
+                textStyle = Typography.body.copy(color = c.text),
+                singleLine = true,
+                cursorBrush = SolidColor(c.accent),
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+            )
+        }
     }
 }

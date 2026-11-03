@@ -1,0 +1,38 @@
+<resources>
+    <string name="player_name">LiteDash player</string>
+    <string name="player_channel">Music</string>
+    <string name="player_play">Play</string>
+    <string name="player_pause">Pause</string>
+    <string name="player_next">Next</string>
+    <string name="player_previous">Previous</string>
+    <string name="player_cannot_play">Couldn\'t play it. Try another station or check the connection.</string>
+    <string name="player_timeout">The station isn\'t responding. Try another.</string>
+    <string name="library_no_drive">Plug in a USB drive with music</string>
+    <string name="library_no_permission">LiteDash needs permission to read the music on the drive</string>
+    <string name="library_grant">Grant permission</string>
+    <string name="library_empty">The drive has no music Android recognizes</string>
+    <string name="library_loading">Reading the drive…</string>
+    <string name="library_folders">Folders</string>
+    <string name="library_artists">Artists</string>
+    <string name="library_albums">Albums</string>
+    <string name="library_all">All</string>
+    <string name="library_play_all">Play all</string>
+    <plurals name="library_songs">
+        <item quantity="one">%1$d song</item>
+        <item quantity="other">%1$d songs</item>
+    </plurals>
+    <string name="library_shuffle">Shuffle</string>
+    <string name="library_unknown">Unknown</string>
+    <string name="library_root">Drive root</string>
+    <string name="radio_nearby">Near you</string>
+    <string name="radio_favorites">Favorites</string>
+    <string name="radio_search_tab">Search</string>
+    <string name="radio_search_hint">Station name</string>
+    <string name="radio_search_help">Type a station\'s name</string>
+    <string name="radio_loading">Looking for stations…</string>
+    <string name="radio_none">No stations found. Check your internet connection.</string>
+    <string name="radio_no_location">No location: these are your country\'s most played. Turn on location in Modules to see your area\'s.</string>
+    <string name="radio_no_favorites">Tap a station\'s star to keep it here.</string>
+    <string name="radio_km">%1$d km</string>
+    <string name="radio_source">Internet radio</string>
+</resources>

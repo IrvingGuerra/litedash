@@ -13,12 +13,15 @@ import android.app.ActivityManager
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import android.Manifest
 import android.hardware.SensorManager
 import android.hardware.Sensor
 import android.content.Intent
 import android.os.Build
 import android.provider.Settings
 import androidx.compose.foundation.Image
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -82,6 +85,7 @@ import com.irvingguerra.litedash.core.ui.IconButton
 import com.irvingguerra.litedash.core.ui.Icons
 import com.irvingguerra.litedash.core.ui.Label
 import com.irvingguerra.litedash.core.ui.LocalColors
+import com.irvingguerra.litedash.core.ui.TextInput
 import com.irvingguerra.litedash.core.ui.Typography
 import com.irvingguerra.litedash.feature.apps.App
 import com.irvingguerra.litedash.feature.apps.AppGrid
@@ -103,6 +107,7 @@ import com.irvingguerra.litedash.feature.dashboard.size
 import com.irvingguerra.litedash.feature.dashboard.suggestedTemplate
 import com.irvingguerra.litedash.feature.dashboard.tiles
 import com.irvingguerra.litedash.feature.music.MusicRepository
+import com.irvingguerra.litedash.feature.player.Library
 import com.irvingguerra.litedash.feature.updater.Updater
 import com.irvingguerra.litedash.feature.updater.Version
 import java.io.File
@@ -134,32 +139,6 @@ internal fun PanelScaffold(
             IconButton(Icons.close, close, background = c.surfaceHigh)
         }
         content()
-    }
-}
-
-@Composable
-fun TextInput(value: String, onChange: (String) -> Unit, hint: String, modifier: Modifier = Modifier, icon: Boolean = false) {
-    val c = LocalColors.current
-    Row(
-        modifier.height(56.dp).clip(RoundedCornerShape(Radius.card)).background(c.surface).border(1.dp, c.line, RoundedCornerShape(Radius.card)).padding(horizontal = 20.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        if (icon) {
-            Icon(Icons.search, c.textMuted, 22.dp)
-            Spacer(Modifier.width(12.dp))
-        }
-        Box(Modifier.weight(1f)) {
-            if (value.isEmpty()) Label(hint, Typography.body, c.textMuted, maxLines = 1)
-            BasicTextField(
-                value,
-                onChange,
-                Modifier.fillMaxWidth(),
-                textStyle = Typography.body.copy(color = c.text),
-                singleLine = true,
-                cursorBrush = SolidColor(c.accent),
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-            )
-        }
     }
 }
 
@@ -610,7 +589,7 @@ fun SettingsPanel(
                     SettingsSection.WORKSHOP -> Workshop(d)
                     SettingsSection.MODULES -> {
                         Label(stringResource(R.string.modules_help), Typography.body, c.textMuted)
-                        Modules(d)
+                        Modules(d, revision)
                     }
                     SettingsSection.SYSTEM -> AndroidSettings()
                     SettingsSection.ABOUT -> About(d)
@@ -1031,12 +1010,13 @@ private fun Tiles(d: Dependencies, onEdit: () -> Unit) {
  * las piezas que lo usan lo piden al agregarlas.
  */
 @Composable
-private fun Modules(d: Dependencies) {
+private fun Modules(d: Dependencies, revision: Int) {
     val c = LocalColors.current
     val context = LocalContext.current
     val (_, returns) = rememberRequestHome()
-    val notifications = remember(returns) { d.music.hasPermission() }
-    val location = remember(returns) { d.trip.hasPermission() }
+    // [revision] cambia al volver a la app: los permisos que se dan en Ajustes de Android se notan al regresar.
+    val notifications = remember(returns, revision) { d.music.hasPermission() }
+    val location = remember(returns, revision) { d.trip.hasPermission() }
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         val obd = d.obdIfCreated()?.state == ObdState.ON
         ModuleRow(Icons.engine, stringResource(R.string.module_obd), stringResource(if (obd) R.string.module_obd_on else if (d.hasObdAdapter) R.string.module_obd_saved else R.string.module_obd_off)) {
@@ -1050,12 +1030,45 @@ private fun Modules(d: Dependencies) {
             if (location) Label(stringResource(R.string.module_on), Typography.small, c.accent)
             else Button(stringResource(R.string.module_settings), { openAppSettings(context) })
         }
+        OwnPlayerModules(d)
         for ((name, help) in listOf(R.string.module_tpms to R.string.module_tpms_help, R.string.module_cameras to R.string.module_cameras_help)) {
             ModuleRow(Icons.car, stringResource(name), stringResource(help)) {
                 Label(stringResource(R.string.module_soon), Typography.small, c.textMuted)
             }
         }
     }
+}
+
+/**
+ * Reproductor USB y radio por internet: los módulos del reproductor propio. Al prender el
+ * USB se pide el permiso de leer la música (y desde Android 13 el de avisos, para el del
+ * reproductor); al apagar uno, si sonaba, se para.
+ */
+@Composable
+private fun OwnPlayerModules(d: Dependencies) {
+    val c = LocalColors.current
+    val askPermissions = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {}
+    val notifications = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) listOf(Manifest.permission.POST_NOTIFICATIONS) else emptyList()
+    ModuleRow(Icons.usb, stringResource(R.string.module_usb_player), stringResource(R.string.module_usb_player_help)) {
+        ModuleToggle(d.prefs.usbPlayer) { on ->
+            d.prefs.usbPlayer = on
+            OwnPlayer.refresh(d.music, d.prefs)
+            if (on) askPermissions.launch((listOf(Library.permission) + notifications).toTypedArray())
+        }
+    }
+    ModuleRow(Icons.radio, stringResource(R.string.module_radio), stringResource(R.string.module_radio_help)) {
+        ModuleToggle(d.prefs.internetRadio) { on ->
+            d.prefs.internetRadio = on
+            OwnPlayer.refresh(d.music, d.prefs)
+            if (on && notifications.isNotEmpty()) askPermissions.launch(notifications.toTypedArray())
+        }
+    }
+    if (d.prefs.usbPlayer || d.prefs.internetRadio) Label(stringResource(R.string.module_player_where), Typography.small, c.textMuted)
+}
+
+@Composable
+private fun ModuleToggle(on: Boolean, onChange: (Boolean) -> Unit) {
+    Button(stringResource(if (on) R.string.module_turn_off else R.string.module_turn_on), { onChange(!on) }, primary = !on)
 }
 
 /**

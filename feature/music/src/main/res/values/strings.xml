@@ -13,5 +13,7 @@
     <string name="source_bluetooth">Bluetooth</string>
     <string name="source_radio">Radio</string>
     <string name="bluetooth_connect_phone">Conecta tu celular por Bluetooth</string>
+    <string name="usb_drive">Memoria USB</string>
     <string name="usb_drive_in">Memoria USB puesta: %1$s</string>
+    <string name="player_connecting">Conectando…</string>
 </resources>

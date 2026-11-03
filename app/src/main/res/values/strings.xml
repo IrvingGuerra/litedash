@@ -423,6 +423,12 @@
     <string name="module_notifications_help">Lo que suena en tu app de música y la siguiente vuelta de Waze o Maps</string>
     <string name="module_location">Ubicación</string>
     <string name="module_location_help">Clima, Viaje, velocímetro por GPS y brillo por el sol</string>
+    <string name="module_usb_player">Reproductor USB</string>
+    <string name="module_usb_player_help">LiteDash toca la música de tu memoria USB: carpetas, artistas y álbumes, con carátulas</string>
+    <string name="module_radio">Radio por internet</string>
+    <string name="module_radio_help">Estaciones de tu zona (según el GPS) y de todo el mundo, con favoritas; necesita internet</string>
+    <string name="module_player_where">Están en la música en grande (que necesita el acceso a notificaciones de la pieza Música): toca USB o Radio y, con el botón de lista, su biblioteca.</string>
+    <string name="module_turn_off">Desactivar</string>
     <string name="module_tpms">Llantas (TPMS)</string>
     <string name="module_tpms_help">Presión y temperatura de cada llanta en la vista aérea del auto</string>
     <string name="module_cameras">Cámaras</string>

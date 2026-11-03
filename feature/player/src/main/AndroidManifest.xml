@@ -1,0 +1,16 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Reproductor propio (USB y radio por internet): opcional, se prende en Módulos. -->
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
+    <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
+    <!-- Sigue sonando con otra app encima: servicio en primer plano con su aviso. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <application>
+        <service
+            android:name=".PlaybackService"
+            android:exported="false"
+            android:foregroundServiceType="mediaPlayback" />
+    </application>
+</manifest>

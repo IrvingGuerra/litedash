@@ -49,6 +49,7 @@ import com.irvingguerra.litedash.core.ui.Icons
 import com.irvingguerra.litedash.core.ui.Label
 import com.irvingguerra.litedash.core.ui.LocalColors
 import com.irvingguerra.litedash.core.ui.MorseMark
+import com.irvingguerra.litedash.core.ui.TextInput
 import com.irvingguerra.litedash.core.ui.Typography
 import com.irvingguerra.litedash.feature.car.CarDrawing
 import com.irvingguerra.litedash.feature.dashboard.DashboardState

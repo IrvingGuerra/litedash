@@ -85,6 +85,7 @@ import com.irvingguerra.litedash.feature.dashboard.packed
 import com.irvingguerra.litedash.feature.music.MusicExpanded
 import com.irvingguerra.litedash.feature.music.MusicRepository
 import com.irvingguerra.litedash.feature.music.MusicTile
+import com.irvingguerra.litedash.feature.player.PlayerBrowser
 import com.irvingguerra.litedash.feature.navigation.NavigationRepository
 import com.irvingguerra.litedash.feature.obd.ObdRepository
 import com.irvingguerra.litedash.feature.updater.Updater
@@ -422,7 +423,10 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                                 onEdit = { musicExpanded = false; editing = true },
                                 modifier = Modifier.weight(1f),
                             ) { p -> TileContent(d, p, apps, car, revision, actions) }
-                            MusicExpanded(d.music, close = { musicExpanded = false }, onLinkUsb = { panel = Panel.MusicSettings }, Modifier.weight(1f).padding(6.dp))
+                            MusicExpanded(
+                                d.music, close = { musicExpanded = false }, onLinkUsb = { panel = Panel.MusicSettings }, Modifier.weight(1f).padding(6.dp),
+                                browser = if (d.prefs.usbPlayer || d.prefs.internetRadio) { kind, picked -> kind.toPlayer()?.let { PlayerBrowser(it, picked, Modifier.fillMaxSize()) } } else null,
+                            )
                         }
                     } else {
                         Dashboard(

@@ -13,5 +13,7 @@
     <string name="source_bluetooth">Bluetooth</string>
     <string name="source_radio">Radio</string>
     <string name="bluetooth_connect_phone">Connect your phone over Bluetooth</string>
+    <string name="usb_drive">USB drive</string>
     <string name="usb_drive_in">USB drive plugged in: %1$s</string>
+    <string name="player_connecting">Connecting…</string>
 </resources>

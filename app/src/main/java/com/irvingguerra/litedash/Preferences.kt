@@ -61,6 +61,8 @@ internal object PrefKeys {
     const val BEST_ACCEL = "best_0_100"
     const val STATS = "anonymous_stats"
     const val HIDE_STATUS_BAR = "hide_status_bar"
+    const val USB_PLAYER = "usb_player"
+    const val INTERNET_RADIO = "internet_radio"
     /** Int: versión del almacenamiento ([StorageMigration]: 1 = nombres en inglés, 2 = tres piezas del auto). */
     const val STORAGE_VERSION = "storage_version"
 }
@@ -210,6 +212,12 @@ class Preferences(context: Context) {
 
     /** En pantalla dividida, al lado del mapa va la carretera (si no, el auto 3D). */
     var splitRoad by bool(PrefKeys.SPLIT_ROAD, false)
+
+    /** Reproductor propio de LiteDash para la memoria USB (apagado de fábrica). */
+    var usbPlayer by bool(PrefKeys.USB_PLAYER, false)
+
+    /** Radio por internet con las estaciones de cerca (apagada de fábrica). */
+    var internetRadio by bool(PrefKeys.INTERNET_RADIO, false)
 
     /** Guardar un resumen de cada viaje con el OBD conectado (apagado de fábrica). */
     var tripLog by bool(PrefKeys.TRIP_LOG, false)

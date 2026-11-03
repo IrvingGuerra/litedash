@@ -6,6 +6,23 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
+## [1.4.51] - 2026-11-03
+
+### Nuevo
+- **Reproductor USB propio** (Ajustes → Módulos, apagado de fábrica): LiteDash toca la música de
+  tu memoria USB por carpetas, artistas y álbumes, con carátulas, y sigue sonando con Waze encima.
+  Se abre desde la música en grande: toca "USB" y, con el botón de lista, su biblioteca. Recuerda
+  dónde ibas y para solo si sacas la memoria.
+- **Radio por internet** (Módulos, apagada de fábrica): las estaciones de tu zona según el GPS
+  (base abierta Radio Browser, sin cuentas), las más escuchadas de tu país si no hay ubicación,
+  buscador por nombre y favoritas. Toca "Radio" en la música en grande.
+- Los dos usan los mismos controles de siempre (pieza Música, música en grande, volante y el
+  aviso de Android) y pesan 39 KB en total. La radio trae su propio decodificador de AAC en vivo
+  (el formato de casi todas las estaciones de México), que Android no sabe arrancar por sí solo.
+  Por ahora solo se listan estaciones seguras (https).
+- En la música en grande, mientras una estación conecta dice "Conectando…", y si falla lo dice
+  en palabras; los botones ya no se mueven con nombres largos.
+
 ## [1.4.50] - 2026-11-03
 
 ### Nuevo
