@@ -1,6 +1,5 @@
 package com.irvingguerra.litedash.feature.dashboard
 
-import com.irvingguerra.litedash.core.ui.Radius
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.awaitEachGesture
@@ -34,15 +33,25 @@ import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
-import com.irvingguerra.litedash.core.ui.IconButton
 import com.irvingguerra.litedash.core.ui.Icon
+import com.irvingguerra.litedash.core.ui.IconButton
 import com.irvingguerra.litedash.core.ui.Icons
 import com.irvingguerra.litedash.core.ui.LocalColors
 import com.irvingguerra.litedash.core.ui.LocalPlainCard
-import kotlinx.coroutines.withTimeoutOrNull
+import com.irvingguerra.litedash.core.ui.Radius
 import kotlin.math.roundToInt
+import kotlinx.coroutines.withTimeoutOrNull
 
 private val GAP = 6.dp
+
+/** Los botones redondos de arriba de cada pieza en el modo edición (✕, sin tarjeta, ajustes). */
+private val EDIT_BUTTON = 40.dp
+
+/** Aire entre esos botones y la orilla de la pieza, y entre uno y otro. */
+private val EDIT_MARGIN = 6.dp
+
+/** Dónde empieza el botón [i] de esa fila (0 = la ✕, pegada a la orilla). */
+private fun editButtonStart(i: Int) = EDIT_MARGIN + (EDIT_BUTTON + EDIT_MARGIN) * i
 
 /** Arrastre en curso: mover la pieza o cambiarle el tamaño (cuánto, va aparte en un estado propio). */
 private data class Drag(val id: String, val resizing: Boolean)
@@ -174,8 +183,8 @@ fun Dashboard(
                     IconButton(
                         Icons.close,
                         onClick = { onChange(tiles.filterNot { it.id == p.id }) },
-                        modifier = Modifier.align(Alignment.TopStart).padding(6.dp),
-                        size = 40.dp,
+                        modifier = Modifier.align(Alignment.TopStart).padding(EDIT_MARGIN),
+                        size = EDIT_BUTTON,
                         background = c.surfaceHigh,
                     )
                     // Con o sin fondo de tarjeta (el auto, la carretera y la imagen no llevan). Junto
@@ -183,16 +192,16 @@ fun Dashboard(
                     if (!p.cardless) IconButton(
                         Icons.noCard,
                         onClick = { onChange(tiles.replace(p.copy(plain = !p.plain))) },
-                        modifier = Modifier.align(Alignment.TopStart).padding(start = 52.dp, top = 6.dp),
-                        size = 40.dp,
+                        modifier = Modifier.align(Alignment.TopStart).padding(start = editButtonStart(1), top = EDIT_MARGIN),
+                        size = EDIT_BUTTON,
                         background = if (p.plain) c.accent else c.surfaceHigh,
                         color = if (p.plain) c.background else c.text,
                     )
                     if (onSettings != null && hasSettings(p)) IconButton(
                         Icons.settings,
                         onClick = { onSettings(p) },
-                        modifier = Modifier.align(Alignment.TopStart).padding(start = 98.dp, top = 6.dp),
-                        size = 40.dp,
+                        modifier = Modifier.align(Alignment.TopStart).padding(start = editButtonStart(2), top = EDIT_MARGIN),
+                        size = EDIT_BUTTON,
                         background = c.surfaceHigh,
                     )
                     Box(

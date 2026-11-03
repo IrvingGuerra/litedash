@@ -1,5 +1,6 @@
 package com.irvingguerra.litedash
 
+import android.os.SystemClock
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Canvas
@@ -17,7 +18,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -46,13 +49,18 @@ import com.irvingguerra.litedash.feature.obd.Pids
 import com.irvingguerra.litedash.feature.obd.TripRecorder
 import com.irvingguerra.litedash.feature.obd.TripStore
 import com.irvingguerra.litedash.feature.obd.TripSummary
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.text.DateFormat
 import java.util.Date
 
 /** Cuántos segundos se ven en la gráfica y cada cuánto se toma un punto. */
 private const val CHART_SECONDS = 90
 private const val CHART_STEP_MS = 500L
+private const val CHART_POINTS = CHART_SECONDS * 1000 / CHART_STEP_MS.toInt()
 
 /** Hasta dos señales en la misma gráfica (la segunda en azul, con su propia escala). */
 private const val MAX_CHART_SIGNALS = 2
@@ -60,7 +68,7 @@ private val Second = Color(0xFF4CA6FF)
 
 /** Las señales que da este auto (las calculadas y el voltaje incluidos). */
 @Composable
-private fun readableSignals(d: Dependencies): List<String> =
+internal fun readableSignals(d: Dependencies): List<String> =
     remember(d.obd.supported) { (Pids.map { it.signal } + DerivedSignals.map { it.signal }).distinct().filter(d.obd::canRead) }
 
 /** Gráficas en vivo: una o dos señales de los últimos [CHART_SECONDS] segundos. */
@@ -98,7 +106,7 @@ fun LiveCharts(d: Dependencies) {
                 val y = size.height * k / 4
                 drawLine(grid, Offset(0f, y), Offset(size.width, y), strokeWidth = 1.dp.toPx())
             }
-            val capacity = CHART_SECONDS * 1000 / CHART_STEP_MS.toInt()
+            val capacity = CHART_POINTS
             for ((i, pair) in series.withIndex()) {
                 val points = pair.second
                 if (points.size < 2) continue
@@ -133,7 +141,7 @@ private fun rememberSeries(d: Dependencies, signal: String): List<Float> {
     val points = remember(signal) { mutableStateListOf<Float>() }
     d.bus.watch(signal)
     LaunchedEffect(signal) {
-        val capacity = CHART_SECONDS * 1000 / CHART_STEP_MS.toInt()
+        val capacity = CHART_POINTS
         while (true) {
             d.bus.value(signal)?.let { v ->
                 points += v
@@ -150,14 +158,14 @@ private fun rememberSeries(d: Dependencies, signal: String): List<Float> {
 fun AccelTimerCard(d: Dependencies) {
     val c = LocalColors.current
     val imperial = imperialUnits(d.prefs.language)
-    val target = if (imperial) 60f * 1.609f else 100f
+    val target = if (imperial) 60f * KM_PER_MILE else 100f
     val timer = remember(target) { AccelTimer(target) }
     var state by remember { mutableStateOf(timer.state) }
     var now by remember { mutableIntStateOf(0) }
     val speed = d.bus.watch(Signal.SPEED)
     LaunchedEffect(speed) {
         if (speed == null) return@LaunchedEffect
-        timer.update(System.currentTimeMillis(), speed)
+        timer.update(SystemClock.elapsedRealtime(), speed)
         state = timer.state
         (state as? AccelState.Done)?.let { done ->
             if (d.prefs.bestAccel <= 0f || done.seconds < d.prefs.bestAccel) d.prefs.bestAccel = done.seconds
@@ -168,7 +176,7 @@ fun AccelTimerCard(d: Dependencies) {
     val locale = currentLocale()
     SettingsCard(stringResource(if (imperial) R.string.accel_title_mph else R.string.accel_title), stringResource(R.string.accel_help)) {
         val shown = when (val s = state) {
-            is AccelState.Running -> { now; (System.currentTimeMillis() - s.startMs) / 1000f }
+            is AccelState.Running -> { now; (SystemClock.elapsedRealtime() - s.startMs) / 1000f }
             is AccelState.Done -> s.seconds
             else -> 0f
         }
@@ -201,15 +209,21 @@ fun TripsCard(d: Dependencies) {
     val c = LocalColors.current
     val context = LocalContext.current
     val store = remember { TripStore(context) }
-    val trips = remember(d.prefs.tripLog, tripsRevision.intValue) { store.all() }
+    // null mientras se lee el archivo (para no mostrar "sin viajes" un instante).
+    val loaded by produceState<List<TripSummary>?>(null, d.prefs.tripLog, tripsRevision.intValue) { value = store.all() }
+    val scope = rememberCoroutineScope()
     val export = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("text/csv")) { uri ->
         uri ?: return@rememberLauncherForActivityResult
-        runCatching { context.contentResolver.openOutputStream(uri)?.use { it.write(store.csv().toByteArray()) } }
+        scope.launch(Dispatchers.IO) {
+            val text = store.csv()
+            runCatching { context.contentResolver.openOutputStream(uri)?.use { it.write(text.toByteArray()) } }
+        }
     }
     val locale = currentLocale()
     val imperial = imperialUnits(d.prefs.language)
     SettingsCard(stringResource(R.string.trips_title)) {
         SwitchRow(stringResource(R.string.trips_record), d.prefs.tripLog, { d.prefs.tripLog = it }, stringResource(R.string.trips_help))
+        val trips = loaded ?: return@SettingsCard
         if (trips.isEmpty()) {
             Label(stringResource(R.string.trips_none), Typography.small, c.textMuted)
             return@SettingsCard
@@ -223,7 +237,7 @@ fun TripsCard(d: Dependencies) {
 @Composable
 private fun TripRow(t: TripSummary, dates: DateFormat, imperial: Boolean, locale: java.util.Locale) {
     val c = LocalColors.current
-    val km = if (imperial) String.format(locale, "%.1f mi", t.km / 1.609f) else String.format(locale, "%.1f km", t.km)
+    val km = if (imperial) String.format(locale, "%.1f mi", t.km.toMiles(true)) else String.format(locale, "%.1f km", t.km)
     val minutes = t.seconds / 60
     val time = String.format(locale, "%d:%02d h", minutes / 60, minutes % 60)
     val extras = buildList {
@@ -245,8 +259,18 @@ private fun TripRow(t: TripSummary, dates: DateFormat, imperial: Boolean, locale
 /** Sube cuando se guarda un viaje, para que la lista se vuelva a leer. */
 private val tripsRevision = mutableIntStateOf(0)
 
-/** Lo que se lee para el registro de viajes (y solo mientras se está grabando). */
-private val TripSignals = listOf(Signal.SPEED, Signal.RPM, Signal.COOLANT, Signal.MAF, Signal.FUEL_RATE)
+/**
+ * Lo que se lee para el registro de viajes (y solo mientras se está grabando). De consumo,
+ * un solo PID: el gasto (5E) si el auto lo da; si no, el aire (MAF) para calcularlo.
+ */
+private fun tripSignals(d: Dependencies): List<String> =
+    listOf(Signal.SPEED, Signal.RPM, Signal.COOLANT, if (d.obd.canRead(Signal.FUEL_RATE)) Signal.FUEL_RATE else Signal.MAF)
+
+/**
+ * Para guardar el viaje al terminar: vive con el proceso, no con la pantalla (el guardado
+ * pasa justo cuando el composable sale, y su propio scope ya estaría cancelado).
+ */
+private val tripSaveScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
 /**
  * Graba el viaje mientras el OBD esté conectado y "Registrar viajes" prendido: una lectura
@@ -260,8 +284,9 @@ fun TripRecorderEffect(d: Dependencies) {
     if (!on || d.obdIfCreated()?.state != ObdState.ON) return
     val context = LocalContext.current
     DisposableEffect(Unit) {
-        for (s in TripSignals) d.bus.want(s)
-        onDispose { for (s in TripSignals) d.bus.unwant(s) }
+        val signals = tripSignals(d)
+        for (s in signals) d.bus.want(s)
+        onDispose { for (s in signals) d.bus.unwant(s) }
     }
     val recorder = remember { TripRecorder(System.currentTimeMillis()) }
     LaunchedEffect(recorder) {
@@ -277,9 +302,12 @@ fun TripRecorderEffect(d: Dependencies) {
     // Al desconectarse (o salir de LiteDash del todo) se guarda lo que se juntó.
     DisposableEffect(recorder) {
         onDispose {
-            recorder.summary()?.let {
-                TripStore(context).add(it)
-                tripsRevision.intValue++
+            recorder.summary()?.let { trip ->
+                val store = TripStore(context.applicationContext)
+                tripSaveScope.launch {
+                    store.add(trip)
+                    tripsRevision.intValue++
+                }
             }
         }
     }

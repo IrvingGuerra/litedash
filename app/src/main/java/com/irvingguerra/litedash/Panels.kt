@@ -774,7 +774,10 @@ private fun HomeSettings(d: Dependencies, onEdit: () -> Unit, onTemplates: () ->
 private fun AppsSettings(d: Dependencies) {
     val c = LocalColors.current
     when (tabs(listOf(R.string.music, R.string.tab_navigation, R.string.tab_favorites, R.string.tab_split), "apps")) {
-        0 -> SettingsCard { MusicSettings(d) }
+        0 -> {
+            SettingsCard { MusicSettings(d) }
+            SettingsCard(stringResource(R.string.music_sources), stringResource(R.string.music_sources_help)) { MusicSourcesSettings(d) }
+        }
         1 -> {
             SettingsCard { MapSettings(d) }
             SettingsCard(stringResource(R.string.places), stringResource(R.string.places_help)) {

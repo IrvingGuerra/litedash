@@ -17,6 +17,8 @@ import javax.net.ssl.TrustManagerFactory
  * antes, y sin network_security_config (es de Android 7), se confía en las raíces del sistema
  * MÁS esas dos, que vienen en `res/raw/isrg_roots.pem` (sacadas de las raíces de macOS; huellas
  * SHA-256 96:BC:EC…:08:C6 y 69:72:9B…:14:70). De la API 26 en adelante no cambia nada.
+ *
+ * Vive en core/ui porque es el único módulo que comparten app, feature/car y feature/updater.
  */
 object Https {
     @Volatile private var legacy: SSLSocketFactory? = null

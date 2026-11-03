@@ -9,6 +9,12 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 
 /**
+ * Proporción (ancho / alto) de lo que se ve de [MorseMark]: 184 unidades de ancho por
+ * las 36 de alto de la raya y los puntos. Para darle a su caja la medida justa.
+ */
+const val MORSE_ASPECT = 184f / 36f
+
+/**
  * La marca suelta —·· (brand/logo/litedash-marca-*.svg), dibujada sin imágenes.
  * Mismas proporciones que el SVG: lienzo de 184 × 48 unidades.
  */

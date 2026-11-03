@@ -32,6 +32,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.irvingguerra.litedash.core.ui.Button
@@ -56,13 +57,17 @@ private val DEMO = listOf(0.18f, 0.52f, 0.86f, 0.34f, 0.97f, 0.62f)
 @Composable
 fun CustomizeGaugePanel(d: Dependencies, tileId: String, close: () -> Unit, onPickSignal: () -> Unit) {
     val c = LocalColors.current
-    val tile = d.dashboard.tiles.firstOrNull { it.id == tileId } ?: return close()
+    val tile = d.dashboard.tiles.firstOrNull { it.id == tileId }
+    if (tile == null) {
+        // Cerrar escribe estado: fuera de la composición.
+        LaunchedEffect(Unit) { close() }
+        return
+    }
     val speedometer = tile.type == TileTypes.SPEEDOMETER
     val signal = signalOf(tile.data)
     val spec = gaugeOf(signal)
     val look = GaugeLook.parse(tile.data)
     val imperial = imperialUnits(d.prefs.language)
-    val locale = currentLocale()
     var applied by remember { mutableStateOf(false) }
     fun set(new: GaugeLook) {
         applied = false
@@ -87,31 +92,9 @@ fun CustomizeGaugePanel(d: Dependencies, tileId: String, close: () -> Unit, onPi
                     CompositionLocalProvider(LocalPlainCard provides tile.plain) {
                         if (speedometer) {
                             val max = (look.max ?: speedMaxOptions(imperial).first()).toFloat()
-                            val ticks = ticksFor(max, imperial)
-                            GaugeCard(
-                                number = (demo * max).toInt().toString(),
-                                unit = stringResource(if (imperial) R.string.unit_mph else R.string.unit_kmh),
-                                tag = "GPS",
-                                fraction = demo,
-                                ticks = ticks,
-                                look = look,
-                                carColor = d.prefs.carColor,
-                                labels = { i -> (max * i / ticks).toInt().toString() },
-                            )
+                            SpeedGaugeCard(demo * max, imperial, "GPS", look, d.prefs.carColor)
                         } else if (spec != null) {
-                            val value = spec.min + (spec.max - spec.min) * demo
-                            GaugeCard(
-                                number = gaugeText(spec, value, imperial, locale),
-                                unit = stringResource(spec.unit(imperial)),
-                                tag = spec.tag?.let { stringResource(it) } ?: "",
-                                fraction = demo,
-                                ticks = spec.ticks,
-                                look = look,
-                                carColor = d.prefs.carColor,
-                                labels = { spec.label(it, imperial) },
-                                redFrom = spec.redFrom,
-                                warning = spec.warning(value),
-                            )
+                            SpecGaugeCard(spec, spec.min + (spec.max - spec.min) * demo, imperial, look, d.prefs.carColor)
                         }
                     }
                 }
@@ -158,11 +141,12 @@ fun CustomizeGaugePanel(d: Dependencies, tileId: String, close: () -> Unit, onPi
                         if (!speedometer) Button(stringResource(R.string.gauge_change_signal), onPickSignal)
                         Button(stringResource(R.string.gauge_apply_all), {
                             // Mismo estilo en todos; cada uno conserva su dato y, los velocímetros, hasta dónde llegan.
-                            for (t in d.dashboard.tiles) {
-                                if (t.type != TileTypes.SPEEDOMETER && t.type != TileTypes.GAUGE) continue
-                                val own = GaugeLook.parse(t.data)
-                                d.dashboard.setData(t.id, look.copy(max = own.max).encode(signalOf(t.data)))
-                            }
+                            // Una sola escritura del acomodo para todos.
+                            d.dashboard.changeData(
+                                d.dashboard.tiles
+                                    .filter { it.type == TileTypes.SPEEDOMETER || it.type == TileTypes.GAUGE }
+                                    .associate { it.id to look.copy(max = GaugeLook.parse(it.data).max).encode(signalOf(it.data)) },
+                            )
                             applied = true
                         })
                     }
@@ -193,7 +177,7 @@ private fun Swatch(color: GaugeColor, car: Color, selected: Boolean, onClick: ()
     val ramp = c.ramp(color, car)
     val brush = when {
         color == GaugeColor.DYNAMIC -> Brush.sweepGradient(ramp + ramp.first())
-        ramp.size == 1 -> Brush.linearGradient(listOf(ramp[0], ramp[0]))
+        ramp.size == 1 -> SolidColor(ramp[0])
         else -> Brush.linearGradient(ramp)
     }
     Box(

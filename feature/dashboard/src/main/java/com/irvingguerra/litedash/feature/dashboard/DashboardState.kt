@@ -29,7 +29,7 @@ class DashboardState(private val store: DashboardStore) {
      * también va en las plantillas de fábrica de otras cuadrículas (otra escala u otra pantalla).
      */
     fun template(p: Template, hero: String = TileTypes.CAR) {
-        store.saveHero(hero, "")
+        store.saveHero(hero)
         grid?.let { change(p.tiles(it, hero)) }
     }
 
@@ -56,5 +56,11 @@ class DashboardState(private val store: DashboardStore) {
 
     fun setData(id: String, data: String) {
         tiles.firstOrNull { it.id == id }?.let { change(tiles.replace(it.copy(data = data))) }
+    }
+
+    /** Cambia los datos de varias piezas ([updates]: id → datos) con una sola escritura. */
+    fun changeData(updates: Map<String, String>) {
+        if (updates.isEmpty()) return
+        change(tiles.map { t -> updates[t.id]?.let { t.copy(data = it) } ?: t })
     }
 }

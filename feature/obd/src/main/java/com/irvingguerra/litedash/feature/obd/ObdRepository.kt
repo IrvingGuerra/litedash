@@ -15,12 +15,13 @@ import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.hardware.usb.UsbDevice
 import android.hardware.usb.UsbManager
-import androidx.core.content.ContextCompat
 import android.location.LocationManager
 import android.os.Build
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.core.content.ContextCompat
+import androidx.core.content.IntentCompat
 import com.irvingguerra.litedash.core.vehicle.Signal
 import com.irvingguerra.litedash.core.vehicle.Source
 import com.irvingguerra.litedash.core.vehicle.VehicleBus
@@ -91,6 +92,8 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
     private var link: ElmLink? = null
     private var elm: Elm327? = null
     private var job: Job? = null
+    /** Avisa al instante si se desenchufa el cable USB mientras está conectado. */
+    private var detachReceiver: BroadcastReceiver? = null
 
     // Se lee del disco una vez; como estado de Compose, el Taller se entera al cambiarlo.
     private var savedTarget by mutableStateOf(readTarget())
@@ -244,7 +247,7 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
         }
         ContextCompat.registerReceiver(context, receiver, IntentFilter(ACTION_USB_PERMISSION), ContextCompat.RECEIVER_NOT_EXPORTED)
         val intent = Intent(ACTION_USB_PERMISSION).setPackage(context.packageName)
-        val flags = PendingIntent.FLAG_UPDATE_CURRENT or if (Build.VERSION.SDK_INT >= 31) PendingIntent.FLAG_MUTABLE else 0
+        val flags = PendingIntent.FLAG_UPDATE_CURRENT or if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) PendingIntent.FLAG_MUTABLE else 0
         manager.requestPermission(device, PendingIntent.getBroadcast(context, 0, intent, flags))
     }
 
@@ -259,6 +262,14 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
     /** Se conecta a [t] (o al último que funcionó) y empieza a leer. */
     fun connect(t: ObdTarget? = target) {
         if (t == null || state == ObdState.CONNECTING || state == ObdState.ON && target == t) return
+        // Android olvida el permiso del cable al desenchufarlo: si ya no lo hay, se vuelve a
+        // pedir (con su diálogo) y al darlo [connectUsb] regresa aquí. Sin cable, sigue y
+        // dice que no está conectado.
+        if (t is ObdTarget.Usb) {
+            val device = usbDevice(t)
+            val manager = context.getSystemService(UsbManager::class.java)
+            if (device != null && manager != null && !manager.hasPermission(device)) return connectUsb(t)
+        }
         // Buscar y conectar a la vez hace fallar la conexión BLE en varios Android.
         stopScan?.invoke()
         disconnect()
@@ -281,6 +292,7 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
                     target = t
                     state = ObdState.ON
                     reconnects = 0
+                    if (t is ObdTarget.Usb) watchUsbDetach(t)
                 }
                 poll(e)
             } catch (x: Exception) {
@@ -294,6 +306,7 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
                     state = ObdState.ERROR
                     link = null
                     elm = null
+                    unwatchUsbDetach()
                     bus.clear(Source.OBD)
                     if (dropped && reconnects < MAX_RECONNECTS) {
                         reconnects++
@@ -305,6 +318,35 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
                 }
             }
         }
+    }
+
+    /**
+     * Mientras se lee por cable, si Android avisa que se desenchufó ese cable se corta ya
+     * (sin esperar a que dejen de llegar respuestas) y sin reintentos: sin cable no hay a qué.
+     */
+    private fun watchUsbDetach(t: ObdTarget.Usb) {
+        unwatchUsbDetach()
+        val receiver = object : BroadcastReceiver() {
+            override fun onReceive(c: Context, i: Intent) {
+                val d = IntentCompat.getParcelableExtra(i, UsbManager.EXTRA_DEVICE, UsbDevice::class.java) ?: return
+                if (d.vendorId != t.vendorId || d.productId != t.productId || target != t) return
+                // Cancelar el job antes de cerrar: así su catch no programa reconexiones.
+                job?.cancel()
+                job = null
+                closeLink()
+                bus.clear(Source.OBD)
+                error = "Se desconectó el cable USB"
+                state = ObdState.ERROR
+            }
+        }
+        // Es un aviso del sistema: tiene que poder llegar de fuera de la app.
+        ContextCompat.registerReceiver(context, receiver, IntentFilter(UsbManager.ACTION_USB_DEVICE_DETACHED), ContextCompat.RECEIVER_EXPORTED)
+        detachReceiver = receiver
+    }
+
+    private fun unwatchUsbDetach() {
+        detachReceiver?.let { runCatching { context.unregisterReceiver(it) } }
+        detachReceiver = null
     }
 
     fun disconnect() {
@@ -369,7 +411,8 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
         while (true) {
             val shown = bus.wanted
             val derived = DerivedSignals.filter { it.signal in shown }
-            val wanted = shown + derived.flatMap { it.needs + it.anyOf + it.extras }
+            // De anyOf solo el primero que dé el auto: compute ignora los demás si está ese.
+            val wanted = shown + derived.flatMap { d -> d.needs + listOfNotNull(d.anyOf.firstOrNull(::canRead)) + d.extras }
             val pids = Pids.filter { it.signal in wanted && it.code in supported }
             // Sin el PID 42 el voltaje lo mide el adaptador (ATRV), con lo lento.
             val adapterVoltage = Signal.VOLTAGE in wanted && VOLTAGE_PID !in supported
@@ -398,17 +441,25 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
         }
     }
 
-    /**
-     * Abre el enlace y prepara el adaptador. Por USB no se sabe a qué velocidad habla el
-     * cable: se prueban las comunes ([USB_BAUDS]) hasta que el ELM327 conteste.
-     */
+    /** Abre el enlace y prepara el adaptador. */
+    @SuppressLint("MissingPermission") // device() revisa BLUETOOTH_CONNECT
     private suspend fun openAndInit(t: ObdTarget): Triple<ElmLink, Elm327, String> {
-        if (t !is ObdTarget.Usb) {
-            val l = open(t)
-            val e = Elm327(l)
-            val version = try { lock.withLock { e.init() } } catch (x: Exception) { runCatching { l.close() }; throw x }
-            return Triple(l, e, version)
+        val l = when (t) {
+            is ObdTarget.Wifi -> WifiLink(t.host, t.port)
+            is ObdTarget.Bluetooth -> BluetoothLink(device(t.address))
+            is ObdTarget.Ble -> BleLink(context, device(t.address))
+            is ObdTarget.Usb -> return openUsb(t)
         }
+        val e = Elm327(l)
+        val version = try { lock.withLock { e.init() } } catch (x: Exception) { runCatching { l.close() }; throw x }
+        return Triple(l, e, version)
+    }
+
+    /**
+     * Por USB no se sabe a qué velocidad habla el cable: se prueban las comunes
+     * ([USB_BAUDS]) hasta que el ELM327 conteste.
+     */
+    private suspend fun openUsb(t: ObdTarget.Usb): Triple<ElmLink, Elm327, String> {
         val manager = context.getSystemService(UsbManager::class.java) ?: throw IOException("Esta pantalla no tiene USB")
         val device = usbDevice(t) ?: throw IOException("No está conectado el cable USB")
         var last: Exception? = null
@@ -425,20 +476,13 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
         throw last ?: IOException("El cable USB no respondió")
     }
 
-    @SuppressLint("MissingPermission")
-    private fun open(t: ObdTarget): ElmLink = when (t) {
-        is ObdTarget.Wifi -> WifiLink(t.host, t.port)
-        is ObdTarget.Bluetooth -> BluetoothLink(device(t.address))
-        is ObdTarget.Ble -> BleLink(context, device(t.address))
-        is ObdTarget.Usb -> error("USB se abre en openAndInit")
-    }
-
     private fun device(address: String): BluetoothDevice {
         if (!hasPermission()) throw SecurityException("Sin permiso de Bluetooth")
         return context.getSystemService(BluetoothManager::class.java).adapter.getRemoteDevice(address)
     }
 
     private fun closeLink() {
+        unwatchUsbDetach()
         runCatching { link?.close() }
         link = null
         elm = null

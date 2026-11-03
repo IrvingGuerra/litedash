@@ -1,44 +1,10 @@
 package com.irvingguerra.litedash
 
-import android.Manifest
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.CornerRadius
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.irvingguerra.litedash.core.ui.Card
 import com.irvingguerra.litedash.core.ui.Icons
-import com.irvingguerra.litedash.core.ui.Label
-import com.irvingguerra.litedash.core.ui.LocalColors
-import com.irvingguerra.litedash.core.ui.Typography
 import com.irvingguerra.litedash.core.vehicle.Signal
 import com.irvingguerra.litedash.core.vehicle.Source
 import com.irvingguerra.litedash.core.vehicle.watch
@@ -47,47 +13,51 @@ import com.irvingguerra.litedash.feature.obd.HOT_COOLANT_C
 import com.irvingguerra.litedash.feature.obd.ObdState
 import com.irvingguerra.litedash.feature.obd.RESTING_MIN_V
 import java.util.Locale
-import kotlin.math.cos
-import kotlin.math.sin
 
 /**
  * Velocímetro de arco: número grande y el arco que se llena. Lee la velocidad del
  * auto (OBD) si hay adaptador conectado; si no, del GPS (pide permiso la primera vez).
  */
 @Composable
-fun SpeedometerTile(d: Dependencies, language: String, look: GaugeLook = GaugeLook()) {
+fun SpeedometerTile(d: Dependencies, look: GaugeLook) {
     // Con un adaptador ya guardado, se reconecta solo (sin abrir el Taller).
-    LaunchedEffect(Unit) { if (d.hasObdAdapter) d.obd.connect() }
+    AutoConnectObd(d)
     val obdOn = d.obdIfCreated()?.state == ObdState.ON
-    var gps by remember { mutableStateOf(d.trip.hasPermission()) }
-    val ask = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { gps = it }
+    val (gps, ask) = rememberGpsPermission(d)
     if (!obdOn && !gps) {
-        return ShortcutTile(Icons.speed, stringResource(R.string.tile_speedometer), stringResource(R.string.tap_to_enable)) {
-            ask.launch(Manifest.permission.ACCESS_FINE_LOCATION)
-        }
+        return ShortcutTile(Icons.speed, stringResource(R.string.tile_speedometer), stringResource(R.string.tap_to_enable), ask)
     }
     // Sin OBD, el GPS publica la velocidad en el bus mientras la pieza se ve.
     if (!obdOn) KeepTripRunning(d.trip)
     val kmh = d.bus.watch(Signal.SPEED)
-    val imperial = imperialUnits(language)
-    val speed = kmh?.let { if (imperial) it / 1.609f else it }
-    val max = (look.max ?: speedMaxOptions(imperial).first()).toFloat()
+    val imperial = imperialUnits(d.prefs.language)
     val source = when (d.bus.source(Signal.SPEED)) {
         Source.OBD -> "OBD"
         Source.GPS -> "GPS"
         Source.CAN -> "CAN"
         null -> ""
     }
+    SpeedGaugeCard((kmh ?: 0f).toMiles(imperial), imperial, source, look, d.prefs.carColor)
+}
+
+/**
+ * La tarjeta del velocímetro con [speed] ya en la unidad que se ve (km/h o mph): la
+ * usan la pieza y la vista previa de Personalizar medidor.
+ */
+@Composable
+fun SpeedGaugeCard(speed: Float, imperial: Boolean, tag: String, look: GaugeLook, carColor: Color) {
+    val max = (look.max ?: speedMaxOptions(imperial).first()).toFloat()
+    // Marcas cada 20 km/h (10 mph); con 240 o más, cada 40 (20 mph) para que no se amontonen.
+    val ticks = ticksFor(max, imperial)
     GaugeCard(
-        number = String.format(currentLocale(), "%.0f", speed ?: 0f),
+        number = String.format(currentLocale(), "%.0f", speed),
         unit = stringResource(if (imperial) R.string.unit_mph else R.string.unit_kmh),
-        tag = source,
-        fraction = (speed ?: 0f) / max,
-        // Marcas cada 20 km/h (10 mph); con 240 o más, cada 40 (20 mph) para que no se amontonen.
-        ticks = ticksFor(max, imperial),
+        tag = tag,
+        fraction = speed / max,
+        ticks = ticks,
         look = look,
-        carColor = d.prefs.carColor,
-        labels = { i -> (max * i / ticksFor(max, imperial)).toInt().toString() },
+        carColor = carColor,
+        labels = { i -> (max * i / ticks).toInt().toString() },
     )
 }
 
@@ -126,13 +96,11 @@ class GaugeSpec(
     val redFrom get() = red?.let(::fraction) ?: 0.8f
 
     /** El número de la marca [i] de [ticks], en la unidad que se ve (las rpm en miles). */
-    fun label(i: Int, imperial: Boolean): String {
+    fun label(i: Int, imperial: Boolean, locale: Locale): String {
         val v = shown(min + (max - min) * i / ticks, imperial)
-        return if (shown(max, imperial) >= 1000f) "%.0f".format(v / 1000f) else "%.0f".format(v)
+        return String.format(locale, "%.0f", if (shown(max, imperial) >= 1000f) v / 1000f else v)
     }
 }
-
-private fun fahrenheit(c: Float, imperial: Boolean) = if (imperial) c * 9 / 5 + 32 else c
 
 val GaugeSpecs = listOf(
     GaugeSpec(
@@ -142,7 +110,7 @@ val GaugeSpecs = listOf(
     ),
     GaugeSpec(
         Signal.COOLANT, R.string.gauge_coolant, R.string.gauge_coolant_tag, Icons.thermometer, ticks = 9,
-        shown = ::fahrenheit, unit = { if (it) R.string.unit_f else R.string.unit_c }, decimals = 0,
+        shown = { v, imperial -> v.toFahrenheit(imperial) }, unit = { if (it) R.string.unit_f else R.string.unit_c }, decimals = 0,
         min = 40f, max = 130f, warning = { it >= HOT_COOLANT_C }, red = HOT_COOLANT_C,
     ),
     GaugeSpec(
@@ -174,7 +142,7 @@ val GaugeSpecs = listOf(
     ),
     GaugeSpec(
         Signal.OIL, R.string.gauge_oil, R.string.gauge_oil_tag, Icons.oil, ticks = 9,
-        shown = ::fahrenheit, unit = { if (it) R.string.unit_f else R.string.unit_c }, decimals = 0,
+        shown = { v, imperial -> v.toFahrenheit(imperial) }, unit = { if (it) R.string.unit_f else R.string.unit_c }, decimals = 0,
         min = 40f, max = 150f, warning = { it >= 130f }, red = 130f,
     ),
     GaugeSpec(
@@ -192,11 +160,11 @@ fun gaugeOf(signal: String) = GaugeSpecs.firstOrNull { it.signal == signal }
  * elegir; sin adaptador lleva al Taller; si el auto no da ese dato, lo dice.
  */
 @Composable
-fun GaugeTile(d: Dependencies, signal: String, language: String, onPick: () -> Unit, onWorkshop: () -> Unit, look: GaugeLook = GaugeLook()) {
+fun GaugeTile(d: Dependencies, signal: String, look: GaugeLook, onPick: () -> Unit, onWorkshop: () -> Unit) {
     val spec = gaugeOf(signal)
         ?: return ShortcutTile(Icons.plus, stringResource(R.string.tile_gauge), stringResource(R.string.gauge_pick), onPick)
     // Con un adaptador ya guardado, se reconecta solo (sin abrir el Taller).
-    LaunchedEffect(Unit) { if (d.hasObdAdapter) d.obd.connect() }
+    AutoConnectObd(d)
     val obd = d.obdIfCreated()
     val name = stringResource(spec.name)
     if (obd?.state != ObdState.ON) {
@@ -205,20 +173,29 @@ fun GaugeTile(d: Dependencies, signal: String, language: String, onPick: () -> U
     }
     if (!obd.canRead(spec.signal)) return ShortcutTile(spec.icon, name, stringResource(R.string.gauge_unsupported), onPick)
     val value = d.bus.watch(spec.signal)
-    val imperial = imperialUnits(language)
+    // Un toque cambia qué dato muestra.
+    SpecGaugeCard(spec, value, imperialUnits(d.prefs.language), look, d.prefs.carColor, onClick = onPick)
+}
+
+/**
+ * La tarjeta de un medidor de [spec] con [value] en la unidad del bus (null = sin
+ * lectura: "—"); la usan la pieza y la vista previa de Personalizar medidor.
+ */
+@Composable
+fun SpecGaugeCard(spec: GaugeSpec, value: Float?, imperial: Boolean, look: GaugeLook, carColor: Color, onClick: (() -> Unit)? = null) {
+    val locale = currentLocale()
     GaugeCard(
-        number = value?.let { gaugeText(spec, it, imperial, currentLocale()) } ?: "—",
+        number = value?.let { gaugeText(spec, it, imperial, locale) } ?: "—",
         unit = stringResource(spec.unit(imperial)),
         tag = spec.tag?.let { stringResource(it) } ?: "",
         fraction = value?.let(spec::fraction) ?: 0f,
         ticks = spec.ticks,
         look = look,
-        carColor = d.prefs.carColor,
-        labels = { spec.label(it, imperial) },
+        carColor = carColor,
+        labels = { spec.label(it, imperial, locale) },
         redFrom = spec.redFrom,
         warning = value != null && spec.warning(value),
-        // Un toque cambia qué dato muestra.
-        onClick = onPick,
+        onClick = onClick,
     )
 }
 

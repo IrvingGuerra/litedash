@@ -11,10 +11,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Brush
@@ -48,10 +45,7 @@ import com.irvingguerra.litedash.feature.dashboard.TileTypes
 fun HomeCar(d: Dependencies, pkg: CarPackage?, onClick: () -> Unit, modifier: Modifier = Modifier, onReady: (() -> Unit)? = null) {
     val color = d.prefs.carColor
     // El sedán dibujado no carga nada: listo de una vez.
-    if (pkg == null && onReady != null) {
-        val ready by rememberUpdatedState(onReady)
-        LaunchedEffect(Unit) { ready() }
-    }
+    if (pkg == null) ReadyNow(onReady)
     CarTile(
         name = d.prefs.carName ?: pkg?.name ?: stringResource(R.string.my_car),
         color = color,
@@ -71,8 +65,7 @@ fun HeroTile(d: Dependencies, tile: Tile, pkg: CarPackage?, onClick: () -> Unit,
         TileTypes.ROAD -> RoadView(d, pkg, onClick, modifier, onReady)
         TileTypes.IMAGE -> {
             // Sin auto que cargar: lista de una vez.
-            val ready by rememberUpdatedState(onReady)
-            LaunchedEffect(Unit) { ready?.invoke() }
+            ReadyNow(onReady)
             ImageTile(d, tile.data, onClick, modifier)
         }
         else -> HomeCar(d, pkg, onClick, modifier, onReady)
@@ -111,7 +104,13 @@ fun CarOnly(
         }
         // La escala va del auto dibujado en su pieza al auto dibujado en grande (no de caja a
         // caja): así crece desde el tamaño que se ve y al regresar termina justo en su lugar.
-        val start = if (from.isEmpty) 0.6f else carWidth(from, density) / carWidth(to, density)
+        // La carretera y la imagen llenan su caja a lo alto (el auto de la carretera es una
+        // fracción del alto): para ellas cuenta el alto.
+        val start = when {
+            from.isEmpty -> 0.6f
+            tile.type == TileTypes.ROAD || tile.type == TileTypes.IMAGE -> from.height / to.height
+            else -> carWidth(from, density) / carWidth(to, density)
+        }
         Box(
             Modifier
                 .fillMaxSize()

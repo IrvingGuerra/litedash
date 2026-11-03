@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.util.Log
 import androidx.core.content.edit
+import com.irvingguerra.litedash.feature.car.CarFiles
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
@@ -12,24 +13,25 @@ import java.io.File
  * 1.4.47: todo lo que LiteDash guarda pasó de nombres en español a inglés. Corre una sola vez, al
  * arrancar la app y antes de leer cualquier ajuste: COPIA lo viejo a lo nuevo y deja lo viejo donde
  * estaba (salvo los autos, que se mueven porque pesan y se pueden volver a bajar). Una versión
- * futura borrará lo viejo: [OLD_PREFS] y [OLD_FILES].
+ * futura borrará lo viejo (la lista de abajo).
  *
  * Los nombres viejos están escritos aquí a propósito: son historia y no deben seguir a las
  * constantes de hoy. Cada paso va por su lado: si uno falla, los demás se copian igual.
+ *
+ * Para borrar en la versión de diciembre de 2026:
+ * - Archivos de ajustes de antes de la 1.4.47: `ajustes`, `estadisticas`, `clima`, `recordatorios`,
+ *   `musica`, `autos`, `actualizaciones`, `tablero`.
+ * - Archivos de antes de la 1.4.47 dentro de files/: `entrada.png`, `fondo.jpg`, `viajes.csv` y
+ *   `logo.png` (la imagen de la pieza del auto hasta la 1.4.48; al borrarlo, quitar también
+ *   [introImage], que lo lee).
+ * - Claves viejas del archivo `obd` (se quedó con su nombre): `tipo`, `direccion`, `nombre`,
+ *   `puerto`, `fabricante`, `producto`.
+ * - En `settings`: `car_view` (lo lee [carTiles]) e `intro_image_migrated` (la bandera de [introImage]).
  */
 internal object StorageMigration {
     private const val TAG = "LiteDash"
     private const val ATTEMPTS = "storage_attempts"
     private const val MAX_ATTEMPTS = 3
-
-    /** Archivos de ajustes de antes de la 1.4.47 (`obd` se quedó con su nombre: sus claves viejas siguen ahí). */
-    val OLD_PREFS = listOf("ajustes", "estadisticas", "clima", "recordatorios", "musica", "autos", "actualizaciones", "tablero")
-
-    /**
-     * Archivos de antes de la 1.4.47 dentro de files/ (logo.png: la imagen de la pieza del auto hasta la 1.4.48;
-     * al borrarlo, quitar también `migrateIntroImage`, que lo lee).
-     */
-    val OLD_FILES = listOf("entrada.png", "fondo.jpg", "viajes.csv", "logo.png")
 
     fun run(context: Context) {
         val settings = prefs(context, PrefKeys.FILE)
@@ -46,6 +48,21 @@ internal object StorageMigration {
             )
         }
         if (settings.getInt(PrefKeys.STORAGE_VERSION, 0) == 1) migrate(context, settings, 2, listOf("car tiles" to ::carTiles))
+        // Aparte de las versiones (es de antes): después de copiar los ajustes, que traen su bandera.
+        introImage(context, settings)
+    }
+
+    /**
+     * La animación de entrada usaba la imagen de la pieza del auto (files/logo.png); desde que tiene
+     * la suya (files/intro.png), quien la tenía prendida se queda con la misma foto. Una sola vez:
+     * la bandera se marca antes de copiar (como siempre), así un error no se repite en cada arranque.
+     */
+    private fun introImage(context: Context, settings: SharedPreferences) {
+        if (settings.getBoolean(PrefKeys.INTRO_MIGRATED, false)) return
+        settings.edit(commit = true) { putBoolean(PrefKeys.INTRO_MIGRATED, true) }
+        val logo = File(context.filesDir, "logo.png")
+        val intro = File(context.filesDir, "intro.png")
+        if (settings.getBoolean(PrefKeys.LOGO_INTRO, false) && logo.exists() && !intro.exists()) runCatching { logo.copyTo(intro) }
     }
 
     private fun migrate(context: Context, settings: SharedPreferences, version: Int, steps: List<Pair<String, (Context) -> Unit>>) {
@@ -112,9 +129,8 @@ internal object StorageMigration {
 
     private fun weather(context: Context) {
         val old = prefs(context, "clima").all
+        // Sin "activado" guardado, el clima está prendido si ya hay uno guardado: eso lo resuelve Weather al leer.
         copy(context, old, "weather", mapOf("ultimo" to "last", "activado" to "enabled")::get)
-        // Antes, sin "activado" guardado, el clima estaba prendido si ya había uno guardado.
-        if ("activado" !in old && "ultimo" in old) prefs(context, "weather").edit(commit = true) { putBoolean("enabled", true) }
     }
 
     private fun reminders(context: Context) =
@@ -169,10 +185,10 @@ internal object StorageMigration {
     /** Los autos se mueven (pueden pesar varios MB y se vuelven a bajar si algo falla). */
     private fun cars(context: Context) {
         File(context.cacheDir, "actualizacion.apk").delete()
-        copy(context, prefs(context, "autos").all, "cars", { key -> key.takeIf { it.startsWith("ultima_revision:") }?.let { "last_check:" + it.removePrefix("ultima_revision:") } })
+        copy(context, prefs(context, "autos").all, CarFiles.ROOT, { key -> key.takeIf { it.startsWith("ultima_revision:") }?.let { "last_check:" + it.removePrefix("ultima_revision:") } })
         val old = File(context.filesDir, "autos")
         if (!old.isDirectory) return
-        val root = File(context.filesDir, "cars")
+        val root = File(context.filesDir, CarFiles.ROOT)
         if (!root.exists() && !old.renameTo(root)) root.mkdirs()
         // Si no se pudo mover de golpe (o ya había algo), auto por auto.
         old.listFiles()?.forEach { child ->
@@ -180,18 +196,18 @@ internal object StorageMigration {
             if (!target.exists()) child.renameTo(target)
         }
         if (old.exists() && old.list().isNullOrEmpty()) old.delete()
-        File(root, ".miniaturas").let { thumbs -> if (thumbs.isDirectory && !File(root, ".thumbnails").exists()) thumbs.renameTo(File(root, ".thumbnails")) }
+        File(root, ".miniaturas").let { thumbs -> if (thumbs.isDirectory && !File(root, CarFiles.THUMBNAILS).exists()) thumbs.renameTo(File(root, CarFiles.THUMBNAILS)) }
         root.listFiles()?.forEach { child ->
             when {
                 // Temporales de una descarga a medias: se vuelven a bajar.
                 child.name.startsWith(".bajando-") || child.name.endsWith(".nueva") -> child.deleteRecursively()
                 child.isDirectory && !child.name.startsWith(".") -> {
-                    File(child, ".paquete.sha256").let { if (it.isFile) it.renameTo(File(child, ".package.sha256")) }
+                    File(child, ".paquete.sha256").let { if (it.isFile) it.renameTo(File(child, CarFiles.PACKAGE_HASH)) }
                     File(child, "giro.nueva").deleteRecursively()
                 }
             }
         }
-        File(root, ".thumbnails").listFiles { f -> f.name.endsWith(".parcial") }?.forEach { it.delete() }
+        File(root, CarFiles.THUMBNAILS).listFiles { f -> f.name.endsWith(".parcial") }?.forEach { it.delete() }
     }
 
     private fun prefs(context: Context, name: String) = context.getSharedPreferences(name, Context.MODE_PRIVATE)

@@ -61,7 +61,7 @@ internal object PrefKeys {
     const val BEST_ACCEL = "best_0_100"
     const val STATS = "anonymous_stats"
     const val HIDE_STATUS_BAR = "hide_status_bar"
-    /** Int: 1 = los datos viejos ya se copiaron a los nombres nuevos ([StorageMigration]). */
+    /** Int: versión del almacenamiento ([StorageMigration]: 1 = nombres en inglés, 2 = tres piezas del auto). */
     const val STORAGE_VERSION = "storage_version"
 }
 
@@ -228,9 +228,6 @@ class Preferences(context: Context) {
 
     /** Al abrir LiteDash, tu imagen (o el logo de LiteDash) aparece unos instantes a pantalla completa. */
     var logoIntro by bool(PrefKeys.LOGO_INTRO, false)
-
-    /** Ya se le dio su propia imagen a la animación de entrada ([migrateIntroImage]). */
-    var introImageMigrated by bool(PrefKeys.INTRO_MIGRATED, false)
 
     /** Ajuste de la pantalla que dice si los faros están prendidos ("tabla/nombre"); null = sin aprender. */
     var lightsKey by string(PrefKeys.LIGHTS_KEY)

@@ -43,14 +43,12 @@ import com.irvingguerra.litedash.core.ui.SwitchRow
 import com.irvingguerra.litedash.core.ui.Typography
 import com.irvingguerra.litedash.core.vehicle.Signal
 import com.irvingguerra.litedash.core.vehicle.watch
-import com.irvingguerra.litedash.feature.obd.DerivedSignals
 import com.irvingguerra.litedash.feature.obd.EngineAlert
 import com.irvingguerra.litedash.feature.obd.EngineReport
 import com.irvingguerra.litedash.feature.obd.MonitorName
 import com.irvingguerra.litedash.feature.obd.ObdRepository
 import com.irvingguerra.litedash.feature.obd.ObdState
 import com.irvingguerra.litedash.feature.obd.ObdTarget
-import com.irvingguerra.litedash.feature.obd.Pids
 import com.irvingguerra.litedash.feature.obd.ScanProblem
 import com.irvingguerra.litedash.feature.obd.describe
 import com.irvingguerra.litedash.feature.obd.engineAlert
@@ -377,7 +375,7 @@ private fun LiveSensors(d: Dependencies) {
     val imperial = imperialUnits(d.prefs.language)
     SettingsCard(stringResource(R.string.obd_live)) {
         // Los que da el auto, los calculados (consumo, turbo) y el voltaje (lo mide el adaptador si el auto no).
-        val signals = remember(d.obd.supported) { (Pids.map { it.signal } + DerivedSignals.map { it.signal }).distinct().filter(d.obd::canRead) }
+        val signals = readableSignals(d)
         for (signal in signals) SensorRow(d, signal, imperial, locale)
     }
 }
@@ -425,7 +423,7 @@ internal fun sensorName(signal: String) = when (signal) {
 fun sensorText(signal: String, v: Float, imperial: Boolean, locale: java.util.Locale): String {
     gaugeOf(signal)?.let { spec -> return gaugeText(spec, v, imperial, locale) + " " + stringResource(spec.unit(imperial)) }
     return when (signal) {
-        Signal.SPEED -> if (imperial) String.format(locale, "%.0f mph", v / 1.609f) else String.format(locale, "%.0f km/h", v)
+        Signal.SPEED -> if (imperial) String.format(locale, "%.0f mph", v.toMiles(true)) else String.format(locale, "%.0f km/h", v)
         Signal.LOAD -> String.format(locale, "%.0f %%", v)
         Signal.MAP, Signal.BARO -> String.format(locale, "%.0f kPa", v)
         Signal.MAF -> String.format(locale, "%.1f g/s", v)
@@ -434,9 +432,9 @@ fun sensorText(signal: String, v: Float, imperial: Boolean, locale: java.util.Lo
         Signal.TIMING -> String.format(locale, "%.1f°", v)
         // Horas y minutos (h:mm).
         Signal.RUN_TIME -> (v / 60).toInt().let { m -> String.format(locale, "%d:%02d", m / 60, m % 60) }
-        Signal.DISTANCE_MIL -> if (imperial) String.format(locale, "%.0f mi", v / 1.609f) else String.format(locale, "%.0f km", v)
+        Signal.DISTANCE_MIL -> if (imperial) String.format(locale, "%.0f mi", v.toMiles(true)) else String.format(locale, "%.0f km", v)
         // Admisión y ambiente.
-        else -> if (imperial) String.format(locale, "%.0f °F", v * 9 / 5 + 32) else String.format(locale, "%.0f °C", v)
+        else -> if (imperial) String.format(locale, "%.0f °F", v.toFahrenheit(true)) else String.format(locale, "%.0f °C", v)
     }
 }
 

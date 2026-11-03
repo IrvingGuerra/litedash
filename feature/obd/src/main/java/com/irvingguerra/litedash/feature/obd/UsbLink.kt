@@ -7,29 +7,25 @@ import android.hardware.usb.UsbEndpoint
 import android.hardware.usb.UsbInterface
 import android.hardware.usb.UsbManager
 import java.io.IOException
-import java.io.InputStream
-import java.io.OutputStream
-import java.util.concurrent.LinkedBlockingQueue
-import java.util.concurrent.TimeUnit
 
 /** Velocidades que usan los cables ELM327 por USB, de la más común a la menos. */
-val USB_BAUDS = listOf(38_400, 115_200, 9_600)
+internal val USB_BAUDS = listOf(38_400, 115_200, 9_600)
 
 /**
  * ELM327 por cable USB (la pantalla es el host). El cable trae un chip puente USB‑serie;
  * cada marca se prepara distinto (CH34x, CP210x, FTDI, PL2303 o el estándar CDC‑ACM) y
  * después todos son dos endpoints bulk: uno para leer y otro para escribir. Un hilo lee
- * sin parar a una cola, para que [Elm327] lo vea como un flujo igual que los demás.
+ * sin parar a la cola de [QueuedLink], para que [Elm327] lo vea como un flujo igual que los demás.
  */
-class UsbLink(manager: UsbManager, private val device: UsbDevice, baud: Int) : ElmLink {
+class UsbLink(manager: UsbManager, private val device: UsbDevice, baud: Int) : QueuedLink("Se desconectó el cable USB") {
     private val connection: UsbDeviceConnection = manager.openDevice(device) ?: throw IOException("Sin permiso para el cable USB")
     private val claimed = mutableListOf<UsbInterface>()
     private val reader: UsbEndpoint
     private val writer: UsbEndpoint
     /** FTDI manda 2 bytes de estado al principio de cada paquete leído: se tiran. */
     private val statusBytes: Int
-    private val incoming = LinkedBlockingQueue<Byte>()
-    @Volatile private var closed = false
+    /** Lo que cabe en un paquete del endpoint de escritura. */
+    override val chunkSize get() = writer.maxPacketSize
 
     init {
         val chip = Chip.of(device)
@@ -76,31 +72,13 @@ class UsbLink(manager: UsbManager, private val device: UsbDevice, baud: Int) : E
         }
     }
 
-    override val input: InputStream = object : InputStream() {
-        override fun available(): Int {
-            if (closed) throw IOException("Se desconectó el cable USB")
-            return incoming.size
-        }
-        override fun read(): Int {
-            if (closed && incoming.isEmpty()) return -1
-            return (incoming.poll(3, TimeUnit.SECONDS) ?: return -1).toInt() and 0xFF
-        }
-    }
-
-    override val output: OutputStream = object : OutputStream() {
-        private val pending = java.io.ByteArrayOutputStream()
-        override fun write(b: Int) = pending.write(b)
-        override fun flush() {
-            val bytes = pending.toByteArray()
-            pending.reset()
-            if (closed) throw IOException("Se cerró la conexión")
-            var sent = 0
-            while (sent < bytes.size) {
-                val chunk = bytes.copyOfRange(sent, minOf(sent + writer.maxPacketSize, bytes.size))
-                val n = connection.bulkTransfer(writer, chunk, chunk.size, 1_000)
-                if (n < 0) throw IOException("No se pudo mandar al cable USB")
-                sent += n
-            }
+    /** Escribe directo del arreglo, sin copiar; el chip puede aceptar menos de lo pedido. */
+    override fun send(bytes: ByteArray, offset: Int, length: Int) {
+        var sent = 0
+        while (sent < length) {
+            val n = connection.bulkTransfer(writer, bytes, offset + sent, length - sent, 1_000)
+            if (n < 0) throw IOException("No se pudo mandar al cable USB")
+            sent += n
         }
     }
 

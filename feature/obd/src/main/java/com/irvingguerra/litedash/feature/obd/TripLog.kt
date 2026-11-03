@@ -2,6 +2,8 @@ package com.irvingguerra.litedash.feature.obd
 
 import android.content.Context
 import java.io.File
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.util.Locale
 import kotlin.math.max
 
@@ -19,7 +21,7 @@ data class TripSummary(
     /** Gasolina que se fue (del gasto 5E o del MAF); null si el auto no da ninguno. */
     val liters: Float?,
 ) {
-    val kmPerLiter: Float? get() = liters?.takeIf { it > 0.05f }?.let { km / it }
+    val kmPerLiter: Float? get() = liters?.takeIf { it > MIN_LITERS }?.let { km / it }
 
     fun toCsv(): String = listOf(
         start, seconds, "%.2f".format(Locale.US, km), "%.0f".format(Locale.US, maxKmh), "%.0f".format(Locale.US, avgKmh),
@@ -48,6 +50,12 @@ private const val MAX_GAP_MS = 5_000L
 private const val MIN_SECONDS = 60
 private const val MIN_KM = 0.2f
 
+/** Menos gasolina que esto no alcanza para sacar km/L (sale un número sin sentido). */
+private const val MIN_LITERS = 0.05f
+
+/** Desde esta velocidad cuenta como "en movimiento" para el promedio. */
+private const val MOVING_KMH = 3f
+
 /**
  * Junta las lecturas de un viaje (una por segundo, más o menos) y saca el resumen. La
  * distancia y la gasolina se integran con el tiempo entre lecturas.
@@ -71,7 +79,7 @@ class TripRecorder(private val start: Long) {
         seconds += dt / 1000f
         if (speedKmh != null) {
             km += speedKmh * h
-            if (speedKmh >= 3f) movingSeconds += dt / 1000f
+            if (speedKmh >= MOVING_KMH) movingSeconds += dt / 1000f
             maxKmh = max(maxKmh, speedKmh)
         }
         rpm?.let { maxRpm = max(maxRpm, it) }
@@ -100,23 +108,28 @@ class TripRecorder(private val start: Long) {
     }
 }
 
-/** Los viajes guardados, en un CSV chico dentro de la app (los últimos [KEEP]). */
+/**
+ * Los viajes guardados, en un CSV chico dentro de la app (los últimos [KEEP]). Todo pasa
+ * en [Dispatchers.IO]: leer y escribir el archivo no debe trabar la pantalla.
+ */
 class TripStore(context: Context) {
     private val file = File(context.filesDir, "trips.csv")
 
     /** Del más nuevo al más viejo. */
-    fun all(): List<TripSummary> =
-        runCatching { file.readLines() }.getOrDefault(emptyList()).drop(1).mapNotNull(TripSummary::fromCsv).reversed()
+    suspend fun all(): List<TripSummary> = withContext(Dispatchers.IO) { readAll() }
 
-    fun add(trip: TripSummary) {
-        val kept = (all().reversed() + trip).takeLast(KEEP)
+    suspend fun add(trip: TripSummary) = withContext(Dispatchers.IO) {
+        val kept = (readAll().reversed() + trip).takeLast(KEEP)
         file.writeText((listOf(HEADER) + kept.map { it.toCsv() }).joinToString("\n", postfix = "\n"))
     }
 
     /** El archivo para exportar, tal cual (con encabezados en inglés). */
-    fun csv(): String = runCatching { file.readText() }.getOrDefault(HEADER + "\n")
+    suspend fun csv(): String = withContext(Dispatchers.IO) { runCatching { file.readText() }.getOrDefault(HEADER + "\n") }
 
-    companion object {
+    private fun readAll(): List<TripSummary> =
+        runCatching { file.readLines() }.getOrDefault(emptyList()).drop(1).mapNotNull(TripSummary::fromCsv).reversed()
+
+    private companion object {
         const val KEEP = 200
         const val HEADER = "start_ms,seconds,km,max_kmh,avg_kmh,max_rpm,max_coolant_c,liters"
     }

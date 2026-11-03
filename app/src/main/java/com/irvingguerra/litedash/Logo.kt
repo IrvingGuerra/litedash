@@ -1,6 +1,5 @@
 package com.irvingguerra.litedash
 
-import com.irvingguerra.litedash.core.ui.SwitchRow
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -26,30 +25,34 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.withFrameNanos
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.core.graphics.scale
 import com.irvingguerra.litedash.core.ui.Button
 import com.irvingguerra.litedash.core.ui.Label
 import com.irvingguerra.litedash.core.ui.LocalColors
+import com.irvingguerra.litedash.core.ui.MORSE_ASPECT
 import com.irvingguerra.litedash.core.ui.MorseMark
+import com.irvingguerra.litedash.core.ui.SwitchRow
 import com.irvingguerra.litedash.core.ui.Typography
-import androidx.core.graphics.scale
+import com.irvingguerra.litedash.feature.dashboard.Tile
+import com.irvingguerra.litedash.feature.dashboard.TileTypes
 import java.io.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -67,6 +70,12 @@ private class SavedImage(val file: String, val maxPx: Int, val png: Boolean) {
     var image: ImageBitmap? = null
 
     fun file(context: Context) = File(context.filesDir, file)
+
+    /** Suelta la imagen de memoria (el archivo se queda): la siguiente lectura la vuelve a decodificar. */
+    fun release() {
+        image = null
+        revision = -1
+    }
 }
 
 /**
@@ -75,10 +84,25 @@ private class SavedImage(val file: String, val maxPx: Int, val png: Boolean) {
  */
 private val tileImages = HashMap<String, SavedImage>()
 
-private fun tileImage(name: String) = tileImages.getOrPut(name) { SavedImage("images/$name.png", 1024, png = true) }
+private fun newTileImage(name: String) = SavedImage("images/$name.png", 1024, png = true)
 
-/** La imagen de la pieza del auto hasta la 1.4.48 (la migración la copió a images/logo.png). */
-private const val OLD_LOGO = "logo.png"
+private fun tileImage(name: String) = tileImages.getOrPut(name) { newTileImage(name) }
+
+/**
+ * Suelta de memoria las fotos de las piezas de imagen que ya no están en [tiles] (se
+ * quitaron o cambiaron de foto). Solo la memoria: los PNG se quedan en files/images/.
+ */
+fun releaseTileImages(tiles: List<Tile>) {
+    val used = tiles.mapNotNullTo(HashSet()) { t -> t.data.takeIf { t.type == TileTypes.IMAGE } }
+    val iterator = tileImages.entries.iterator()
+    while (iterator.hasNext()) {
+        val entry = iterator.next()
+        if (entry.key !in used) {
+            entry.value.release()
+            iterator.remove()
+        }
+    }
+}
 
 /** La imagen de la animación de entrada: aparte de la de la pieza del auto. */
 private val INTRO = SavedImage("intro.png", 1024, png = true)
@@ -141,7 +165,7 @@ fun ImageTile(d: Dependencies, name: String, onClick: () -> Unit, modifier: Modi
     ) {
         when {
             image != null -> Image(image, null, Modifier.fillMaxSize(0.8f))
-            loaded.loaded -> MorseMark(Modifier.fillMaxWidth(0.5f).aspectRatio(184f / 36f))
+            loaded.loaded -> MorseMark(Modifier.fillMaxWidth(0.5f).aspectRatio(MORSE_ASPECT))
         }
     }
 }
@@ -159,6 +183,8 @@ fun LogoIntro(prefs: Preferences, onDone: () -> Unit) {
     val curtain = remember { Animatable(1f) }
     val alpha = remember { Animatable(0f) }
     val scale = remember { Animatable(0.82f) }
+    // Solo se ve al abrir: al terminar (o saltarla) su imagen sale de memoria.
+    DisposableEffect(Unit) { onDispose { INTRO.release() } }
     LaunchedEffect(Unit) {
         // Empieza cuando la app ya se dibuja: mientras Android muestra su pantalla de
         // arranque (y el inicio carga el auto) la animación se iba sin que se viera.
@@ -187,7 +213,7 @@ fun LogoIntro(prefs: Preferences, onDone: () -> Unit) {
             val image = logo.image
             when {
                 image != null -> Image(image, null, Modifier.fillMaxSize(0.7f))
-                logo.loaded -> MorseMark(Modifier.fillMaxWidth(0.6f).aspectRatio(184f / 36f))
+                logo.loaded -> MorseMark(Modifier.fillMaxWidth(0.6f).aspectRatio(MORSE_ASPECT))
             }
         }
     }
@@ -216,7 +242,8 @@ private fun ImageButtons(target: SavedImage, revision: Int, bump: () -> Unit, on
     val pick = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
         if (uri != null) scope.launch { if (save(context, uri, target)) { bump(); onPicked() } }
     }
-    val hasImage = rememberImage(target, revision).image != null
+    // Basta saber si el archivo existe: decodificar la imagen completa para esto sobraba.
+    val hasImage = remember(target, revision) { target.file(context).exists() }
     FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Button(stringResource(if (hasImage) R.string.logo_change else R.string.logo_pick), {
             pick.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
@@ -245,18 +272,6 @@ fun IntroSettings(prefs: Preferences) {
     }
 }
 
-/**
- * Hasta la 1.4.39 la animación de entrada usaba la imagen de la pieza del auto: quien
- * la tenía prendida se queda con esa imagen como la de la entrada (una sola vez).
- */
-fun migrateIntroImage(context: Context, prefs: Preferences) {
-    if (prefs.introImageMigrated) return
-    prefs.introImageMigrated = true
-    val logo = File(context.filesDir, OLD_LOGO)
-    val intro = INTRO.file(context)
-    if (prefs.logoIntro && logo.exists() && !intro.exists()) runCatching { logo.copyTo(intro) }
-}
-
 /** Elegir, cambiar o quitar la foto de una pieza de imagen ([tileId]). */
 @Composable
 fun CustomizeImagePanel(d: Dependencies, tileId: String, close: () -> Unit) {
@@ -269,13 +284,16 @@ fun CustomizeImagePanel(d: Dependencies, tileId: String, close: () -> Unit) {
     // Sin foto todavía: se le da un nombre nuevo y se guarda en la pieza al elegirla.
     val fresh = remember(tileId) { System.currentTimeMillis().toString(36) }
     val name = tile.data.ifEmpty { fresh }
+    // La del nombre nuevo va aparte (no en tileImages): abrir el panel y cerrarlo sin elegir no deja nada.
+    val freshImage = remember(tileId) { newTileImage(fresh) }
+    val target = if (tile.data.isEmpty()) freshImage else tileImage(name)
     PanelScaffold(stringResource(R.string.image_title), close) {
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(16.dp)) {
             Label(stringResource(R.string.image_help), Typography.body, c.textMuted)
             Box(Modifier.widthIn(max = 360.dp).fillMaxWidth().aspectRatio(2f)) {
                 ImageTile(d, tile.data, onClick = {})
             }
-            val hasImage = ImageButtons(tileImage(name), d.prefs.imageRevision, { d.prefs.imageRevision++ }, onPicked = {
+            val hasImage = ImageButtons(target, d.prefs.imageRevision, { d.prefs.imageRevision++ }, onPicked = {
                 if (tile.data.isEmpty()) d.dashboard.setData(tileId, name)
             })
             if (!hasImage) Label(stringResource(R.string.image_empty), Typography.small, c.textMuted)

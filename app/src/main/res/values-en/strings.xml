@@ -301,6 +301,13 @@
         <item quantity="other">Download the new 3D model of %1$d cars?</item>
     </plurals>
     <string name="music_other_app">Another app…</string>
+    <string name="music_sources">Your screen\'s sources</string>
+    <string name="music_sources_help">The app on your screen that plays each source, like a car stereo. LiteDash guesses them by name; if it got one wrong, pick it yourself. They show up as buttons in the big music view.</string>
+    <string name="source_unlinked">Not linked</string>
+    <string name="source_choose">Choose</string>
+    <string name="source_remove">Remove</string>
+    <string name="source_choose_for">Which app on your screen plays %1$s?</string>
+    <string name="bluetooth_name_permission">Show the phone\'s name</string>
     <string name="open_installer">Open with the Android installer</string>
     <string name="spin_quality">Spin quality</string>
     <string name="spin_quality_low">Low</string>

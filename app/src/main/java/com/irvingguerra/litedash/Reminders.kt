@@ -30,7 +30,7 @@ import org.json.JSONObject
 /** Trámites y cuidados del auto; [months] es cada cuánto se repite al marcarlo como hecho (0 = no se repite). */
 enum class ReminderType(val stored: String, val title: Int, val months: Long) {
     SERVICE("service", R.string.reminder_service, 6),
-    VERIFICATION("inspection", R.string.reminder_verification, 6),
+    INSPECTION("inspection", R.string.reminder_verification, 6),
     TAX("tax", R.string.reminder_tax, 12),
     INSURANCE("insurance", R.string.reminder_insurance, 12),
     PLATES("plates", R.string.reminder_plates, 0),

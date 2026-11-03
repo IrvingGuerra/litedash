@@ -13,6 +13,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.toArgb
+import com.irvingguerra.litedash.core.ui.Https
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Deferred
@@ -29,7 +30,6 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.zip.ZipInputStream
 import kotlin.math.exp
 import kotlin.math.roundToInt
-import com.irvingguerra.litedash.core.ui.Https
 
 /** Desde aquí los brillos de la pintura teñida se acercan a blanco sin cortarse. */
 private const val KNEE = 0.78f
@@ -111,8 +111,8 @@ class CarRepository(private val context: Context, val catalogUrl: String) {
     // mínimo (con 1/4 el giro bajaba a 5 cuadros/s en el emulador de Android 6; con 1/2 no
     // quedaba aire para la pantalla).
     private val images = object : LruCache<String, ImageBitmap>(
-        (Runtime.getRuntime().maxMemory() / 4).let {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) it.coerceIn(32L shl 20, 160L shl 20) else it * 3 / 2
+        Runtime.getRuntime().maxMemory().let {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) (it / 4).coerceIn(32L shl 20, 160L shl 20) else it * 3 / 8
         }.toInt(),
     ) {
         override fun sizeOf(key: String, value: ImageBitmap) = value.width * value.height * 4

@@ -10,13 +10,9 @@ import android.bluetooth.BluetoothProfile
 import android.bluetooth.BluetoothStatusCodes
 import android.content.Context
 import android.os.Build
-import java.io.ByteArrayOutputStream
 import java.io.IOException
-import java.io.InputStream
-import java.io.OutputStream
 import java.util.UUID
 import java.util.concurrent.CountDownLatch
-import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.Semaphore
 import java.util.concurrent.TimeUnit
 
@@ -44,12 +40,11 @@ private const val CHUNK = 20
  * El constructor espera a que todo esté listo (llamarlo desde un hilo de fondo).
  */
 @SuppressLint("MissingPermission") // el repositorio revisa BLUETOOTH_CONNECT antes
-class BleLink(context: Context, device: BluetoothDevice) : ElmLink {
-    private val incoming = LinkedBlockingQueue<Byte>()
+class BleLink(context: Context, device: BluetoothDevice) : QueuedLink() {
+    override val chunkSize = CHUNK
     private val ready = CountDownLatch(1)
     private val written = Semaphore(0)
     @Volatile private var failure: String? = null
-    @Volatile private var closed = false
     private var writer: BluetoothGattCharacteristic? = null
 
     private val callback = object : BluetoothGattCallback() {
@@ -122,31 +117,12 @@ class BleLink(context: Context, device: BluetoothDevice) : ElmLink {
         }
     }
 
-    override val input: InputStream = object : InputStream() {
-        // Caído y sin nada pendiente: que se note ya, no tras esperar la respuesta.
-        override fun available(): Int {
-            if (closed && incoming.isEmpty()) throw IOException("Se desconectó el adaptador")
-            return incoming.size
-        }
-        override fun read(): Int {
-            if (closed && incoming.isEmpty()) return -1
-            return (incoming.poll(3, TimeUnit.SECONDS) ?: return -1).toInt() and 0xFF
-        }
-    }
-
-    override val output: OutputStream = object : OutputStream() {
-        private val pending = ByteArrayOutputStream()
-        override fun write(b: Int) = pending.write(b)
-        override fun flush() {
-            val bytes = pending.toByteArray()
-            pending.reset()
-            for (start in bytes.indices step CHUNK) send(bytes.copyOfRange(start, minOf(start + CHUNK, bytes.size)))
-        }
-    }
-
-    /** Manda un pedazo y espera a que el adaptador lo reciba (de uno en uno, si no se pierden). */
-    private fun send(chunk: ByteArray) {
-        if (closed) throw IOException("Se cerró la conexión")
+    /**
+     * Manda un pedazo y espera a que el adaptador lo reciba (de uno en uno, si no se
+     * pierden). GATT pide el arreglo exacto, así que aquí sí se copia el trozo.
+     */
+    override fun send(bytes: ByteArray, offset: Int, length: Int) {
+        val chunk = bytes.copyOfRange(offset, offset + length)
         val ch = writer ?: throw IOException("Sin canal de escritura")
         // Confirmaciones tardías de un envío anterior que ya se dio por perdido.
         written.drainPermits()

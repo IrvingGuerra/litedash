@@ -9,6 +9,9 @@
             <action android:name="android.intent.action.MEDIA_BUTTON" />
         </intent>
     </queries>
+    <!-- El nombre del celular conectado por Bluetooth (la pieza lo muestra cuando la app no manda la canción). -->
+    <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
     <application>
         <!--
             Existe para que el usuario pueda dar "acceso a notificaciones": con

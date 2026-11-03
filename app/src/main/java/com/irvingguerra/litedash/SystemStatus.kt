@@ -115,7 +115,7 @@ fun StatusIcons() {
         }
         runCatching {
             // Android 6 no tiene "la red de ahora": se escucha cualquier red con internet.
-            if (Build.VERSION.SDK_INT >= 24) connectivity.registerDefaultNetworkCallback(netCallback)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) connectivity.registerDefaultNetworkCallback(netCallback)
             else connectivity.registerNetworkCallback(NetworkRequest.Builder().addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET).build(), netCallback)
         }
         check()
@@ -135,7 +135,7 @@ fun StatusIcons() {
 
         val locations = context.getSystemService(LocationManager::class.java)
         fun checkLocation() {
-            location = if (Build.VERSION.SDK_INT >= 28) locations.isLocationEnabled
+            location = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) locations.isLocationEnabled
             else locations.isProviderEnabled(LocationManager.GPS_PROVIDER)
         }
         val locationReceiver = object : BroadcastReceiver() {

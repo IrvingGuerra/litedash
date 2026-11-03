@@ -153,6 +153,7 @@ dependencies {
     implementation(libs.compose.foundation)
     implementation(libs.compose.ui)
     implementation(libs.activity.compose)
+    implementation(libs.core)
     implementation(libs.profileinstaller)
     debugImplementation(libs.compose.ui.tooling)
     testImplementation(libs.junit)

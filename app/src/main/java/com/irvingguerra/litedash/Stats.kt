@@ -4,12 +4,12 @@ import android.content.Context
 import android.content.res.Configuration
 import android.os.Build
 import androidx.core.content.edit
+import com.irvingguerra.litedash.core.ui.Https
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
 import java.security.SecureRandom
-import com.irvingguerra.litedash.core.ui.Https
 
 /**
  * Cuántas pantallas usan LiteDash, sin cuentas ni SDK de Firebase: a lo más una vez al día,

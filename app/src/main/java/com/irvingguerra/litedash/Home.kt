@@ -108,6 +108,8 @@ sealed interface Panel {
     data class PickApp(val tileId: String?) : Panel
     /** Ajustes abiertos en el Taller (pieza de acceso directo). */
     data object Workshop : Panel
+    /** Ajustes abiertos en Apps → Música (para enlazar las fuentes desde la música en grande). */
+    data object MusicSettings : Panel
     /** Elegir qué dato muestra un medidor existente ([tileId]) o uno nuevo (null). */
     data class PickGauge(val tileId: String?) : Panel
     /** Estilo, color y demás de un velocímetro o medidor ([tileId]). */
@@ -184,9 +186,9 @@ fun TileContent(d: Dependencies, p: Tile, apps: List<App>, car: CarPackage?, rev
         TileTypes.CLOCK -> ClockTile(d.prefs.driverName, d.weather)
         TileTypes.WEATHER -> WeatherTile(d.weather)
         TileTypes.TRIP -> TripTile(d.trip, d.prefs.language)
-        TileTypes.SPEEDOMETER -> SpeedometerTile(d, d.prefs.language, GaugeLook.parse(p.data))
+        TileTypes.SPEEDOMETER -> SpeedometerTile(d, remember(p.data) { GaugeLook.parse(p.data) })
         TileTypes.GAUGE -> GaugeTile(
-            d, signalOf(p.data), d.prefs.language, look = GaugeLook.parse(p.data),
+            d, signalOf(p.data), remember(p.data) { GaugeLook.parse(p.data) },
             onPick = { actions.onPanel(Panel.PickGauge(p.id)) },
             onWorkshop = { actions.onPanel(Panel.Workshop) },
         )
@@ -324,6 +326,8 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
     // Con un auto que trae piso, el fondo baja un poco de tono hacia abajo: es el
     // piso donde se para el auto (como en Tesla), y su sombra y reflejo caen ahí.
     val hasFloor = car?.hasFloor == true && d.dashboard.tiles.any { it.type == TileTypes.CAR }
+    // Las fotos de piezas de imagen que se quitaron (o cambiaron) salen de memoria.
+    LaunchedEffect(d.dashboard.tiles) { releaseTileImages(d.dashboard.tiles) }
     val backdrop = if (hasFloor) {
         Brush.verticalGradient(0.3f to c.background, 1f to lerp(c.background, Color.Black, if (c.dark) 0.35f else 0.08f))
     } else SolidColor(c.background)
@@ -418,7 +422,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                                 onEdit = { musicExpanded = false; editing = true },
                                 modifier = Modifier.weight(1f),
                             ) { p -> TileContent(d, p, apps, car, revision, actions) }
-                            MusicExpanded(d.music, close = { musicExpanded = false }, Modifier.weight(1f).padding(6.dp))
+                            MusicExpanded(d.music, close = { musicExpanded = false }, onLinkUsb = { panel = Panel.MusicSettings }, Modifier.weight(1f).padding(6.dp))
                         }
                     } else {
                         Dashboard(
@@ -447,7 +451,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
         when (val p = panel) {
             null -> Unit
             Panel.Drawer -> DrawerPanel(d, apps, close = { panel = null })
-            Panel.Settings, Panel.About, Panel.CarSettings, Panel.Workshop -> SettingsPanel(
+            Panel.Settings, Panel.About, Panel.CarSettings, Panel.Workshop, Panel.MusicSettings -> SettingsPanel(
                 d,
                 revision = revision,
                 close = { panel = null },
@@ -457,6 +461,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                     Panel.About -> SettingsSection.ABOUT
                     Panel.CarSettings -> SettingsSection.CAR
                     Panel.Workshop -> SettingsSection.WORKSHOP
+                    Panel.MusicSettings -> SettingsSection.APPS
                     else -> SettingsSection.CAR
                 },
             )

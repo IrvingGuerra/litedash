@@ -60,7 +60,7 @@ import com.irvingguerra.litedash.feature.dashboard.suggestedTemplate
 fun isHomeApp(context: Context): Boolean {
     // Android 10+: el rol del sistema. Sin esto, desde Android 11 las otras apps de
     // inicio no se ven y LiteDash creería que es la única.
-    if (Build.VERSION.SDK_INT >= 29) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
         runCatching { return context.getSystemService(RoleManager::class.java).isRoleHeld(RoleManager.ROLE_HOME) }
     }
     val intent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME)
@@ -201,7 +201,7 @@ fun rememberRequestHome(): Pair<() -> Unit, Int> {
     var returns by remember { mutableIntStateOf(0) }
     val requestRole = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { returns++ }
     val request = {
-        val requested = Build.VERSION.SDK_INT >= 29 && runCatching {
+        val requested = Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && runCatching {
             val roleManager = context.getSystemService(RoleManager::class.java)
             if (!roleManager.isRoleAvailable(RoleManager.ROLE_HOME)) return@runCatching false
             requestRole.launch(roleManager.createRequestRoleIntent(RoleManager.ROLE_HOME))
@@ -209,7 +209,7 @@ fun rememberRequestHome(): Pair<() -> Unit, Int> {
         }.getOrDefault(false)
         if (!requested) {
             // "Apps predeterminadas" existe desde Android 7.
-            val defaults = if (Build.VERSION.SDK_INT >= 24) Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS else null
+            val defaults = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS else null
             listOfNotNull(Settings.ACTION_HOME_SETTINGS, defaults, Settings.ACTION_SETTINGS)
                 .firstOrNull { action ->
                     runCatching { context.startActivity(Intent(action).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }.isSuccess

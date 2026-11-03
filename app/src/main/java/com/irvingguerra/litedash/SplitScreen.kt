@@ -8,6 +8,7 @@ import android.content.res.Configuration
 import android.content.res.Resources
 import android.os.Build
 import android.os.Bundle
+import android.os.SystemClock
 import androidx.activity.ComponentActivity
 import androidx.annotation.RequiresApi
 import androidx.activity.compose.setContent
@@ -54,7 +55,7 @@ object SplitScreen {
     // El ajuste del sistema no tiene constante pública: se busca por nombre (una vez por consulta).
     @SuppressLint("DiscouragedApi")
     fun supported(): Boolean {
-        if (Build.VERSION.SDK_INT < 32) return false
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S_V2) return false
         val r = Resources.getSystem()
         val id = r.getIdentifier("config_supportsMultiWindow", "bool", "android")
         return id == 0 || r.getBoolean(id)
@@ -113,10 +114,10 @@ object SplitScreen {
         intent.removeExtra(EXTRA_OPEN)
         val left = intent.getBooleanExtra(EXTRA_LEFT, true)
         val view = activity.window.decorView
-        val since = System.currentTimeMillis()
+        val since = SystemClock.elapsedRealtime()
         fun tryOpen() {
             if (activity.isFinishing) return
-            if (!activity.onSide(left) && System.currentTimeMillis() - since < GIVE_UP_MS) {
+            if (!activity.onSide(left) && SystemClock.elapsedRealtime() - since < GIVE_UP_MS) {
                 view.postDelayed(::tryOpen, CHECK_MS)
                 return
             }

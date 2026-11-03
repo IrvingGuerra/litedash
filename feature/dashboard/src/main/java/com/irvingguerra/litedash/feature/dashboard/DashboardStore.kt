@@ -34,8 +34,9 @@ class DashboardStore(context: Context) {
     fun hero(): Pair<String, String> =
         (prefs.getString(HERO_TYPE, null) ?: TileTypes.CAR) to (prefs.getString(HERO_DATA, null) ?: "")
 
-    fun saveHero(type: String, data: String) {
-        prefs.edit().putString(HERO_TYPE, type).putString(HERO_DATA, data).apply()
+    /** Elige la pieza grande de las plantillas; sus datos quedan vacíos (los de fábrica). */
+    fun saveHero(type: String) {
+        prefs.edit().putString(HERO_TYPE, type).putString(HERO_DATA, "").apply()
     }
 }
 

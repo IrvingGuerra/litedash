@@ -23,11 +23,10 @@ class LiteDashApp : Application() {
         val mapPackages = NAVIGATION_PACKAGES.toSet() +
             if (BuildConfig.DEBUG) setOf(NavigationRepository.TEST_PACKAGE) else emptySet()
         val prefs = Preferences(this)
-        migrateIntroImage(this, prefs)
         val bus = VehicleBus()
         Dependencies(
             apps = AppRepository(this).apply { opener = SplitScreen::open },
-            music = MusicRepository(this).apply { preferred = prefs.musicApp; opener = SplitScreen::open },
+            music = MusicRepository(this).apply { preferred = prefs.musicApp; onPreferredChanged = { prefs.musicApp = it }; opener = SplitScreen::open },
             navigation = NavigationRepository(this, mapPackages),
             prefs = prefs,
             dashboard = DashboardState(DashboardStore(this)),

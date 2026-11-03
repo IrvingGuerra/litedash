@@ -6,6 +6,33 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
+## [1.4.50] - 2026-11-03
+
+### Nuevo
+- **Fuentes de música como en un estéreo**: USB, Bluetooth y Radio. LiteDash enlaza cada fuente
+  con la app de tu pantalla que la reproduce (la adivina por su nombre; en Ajustes → Apps →
+  Música la cambias) y en la música en grande aparecen como botones: un toque y suena esa fuente.
+- **Bluetooth con nombre**: cuando el celular no manda la canción, la pieza muestra qué celular
+  está conectado (desde Android 12, con el mismo permiso de Bluetooth del Taller).
+- **Memoria USB**: al ponerla, la pieza avisa que está puesta y su nombre.
+- Play también despierta a los reproductores de la pantalla que no ofrecen su biblioteca
+  (les manda el botón de play directo, como el del volante).
+
+### Arreglado
+- En Android 6 a 10, la pieza Viaje y la carretera tiraban la app al perder el GPS o apagar la
+  ubicación.
+- Un cable OBD por USB ya guardado vuelve a pedir permiso al reconectarlo (antes quedaba en
+  error hasta tocarlo en el Taller) y, si lo desconectas, el Taller lo nota al instante.
+- El consumo ya no pide dos datos al auto cuando con uno basta: los medidores refrescan más rápido.
+- La carretera: el efecto de velocidad ya no da un salto al arrancar y se apaga suave al parar.
+- El registro de viajes ya no escribe el archivo en el hilo de la pantalla.
+
+### Cambiado
+- Auditoría de todo lo nuevo desde la 1.4.32: sin código repetido (enlaces OBD, medidores,
+  música), el color "Dinámico" es el mismo en todos los estilos de velocímetro (ámbar al 60 %),
+  menos memoria (las fotos de piezas que quitas y la animación de entrada se sueltan) y menos
+  trabajo por cuadro en la carretera.
+
 ## [1.4.49] - 2026-11-03
 
 ### Nuevo

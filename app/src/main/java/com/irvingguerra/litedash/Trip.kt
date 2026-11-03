@@ -5,7 +5,6 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.PackageManager
 import android.location.Location
-import android.location.LocationListener
 import android.location.LocationManager
 import android.os.Looper
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -30,6 +29,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.location.LocationListenerCompat
 import androidx.lifecycle.compose.LifecycleStartEffect
 import com.irvingguerra.litedash.core.ui.Button
 import com.irvingguerra.litedash.core.ui.Card
@@ -65,7 +65,9 @@ class TripRepository(private val context: Context, private val bus: VehicleBus) 
     private var users = 0
     private var last: Location? = null
     private val manager by lazy { context.getSystemService(LocationManager::class.java) }
-    private val listener = LocationListener { update(it) }
+    // Compat: en Android 6–10 LocationListener tiene más métodos abstractos que el lambda no
+    // implementa (AbstractMethodError al perder el GPS o apagar la ubicación).
+    private val listener = LocationListenerCompat { update(it) }
 
     fun hasPermission() = context.checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
 
@@ -131,8 +133,8 @@ fun TripTile(trip: TripRepository, language: String) {
     }
     KeepTripRunning(trip)
     val imperial = imperialUnits(language)
-    val speed = trip.speedKmh?.let { if (imperial) it / 1.609f else it }
-    val distance = if (imperial) trip.meters / 1609.34 else trip.meters / 1000.0
+    val speed = trip.speedKmh?.toMiles(imperial)
+    val distance = trip.meters.metersToDistance(imperial)
     // El tiempo avanza solo, aunque el GPS no mande nada (una vez por minuto).
     val minutes by produceState(0, trip.startedAt) {
         while (true) {

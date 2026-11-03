@@ -309,6 +309,13 @@
         <item quantity="many">¿Bajar el modelo 3D nuevo de %1$d autos?</item>
     </plurals>
     <string name="music_other_app">Otra app…</string>
+    <string name="music_sources">Fuentes de tu pantalla</string>
+    <string name="music_sources_help">La app de tu pantalla que reproduce cada fuente, como en un estéreo. LiteDash las adivina por su nombre; si se equivocó, elígela tú. Aparecen como botones en la música en grande.</string>
+    <string name="source_unlinked">Sin enlazar</string>
+    <string name="source_choose">Elegir</string>
+    <string name="source_remove">Quitar</string>
+    <string name="source_choose_for">¿Qué app de tu pantalla reproduce %1$s?</string>
+    <string name="bluetooth_name_permission">Ver el nombre del celular</string>
     <string name="open_installer">Abrir con el instalador de Android</string>
     <string name="spin_quality">Calidad del giro</string>
     <string name="spin_quality_low">Baja</string>

@@ -90,9 +90,9 @@ class WeatherRepository(private val context: Context, private val prefs: Prefere
         val last = manager.getProviders(true)
             .mapNotNull { runCatching { manager.getLastKnownLocation(it) }.getOrNull() }
             .maxByOrNull { it.time }
-        if (last != null || Build.VERSION.SDK_INT < 30) return@withContext last
+        if (last != null || Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return@withContext last
         // "fused" existe desde Android 12.
-        val fused = if (Build.VERSION.SDK_INT >= 31) listOf(LocationManager.FUSED_PROVIDER) else emptyList()
+        val fused = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) listOf(LocationManager.FUSED_PROVIDER) else emptyList()
         val provider = (listOf(LocationManager.NETWORK_PROVIDER) + fused + LocationManager.GPS_PROVIDER)
             .firstOrNull { manager.isProviderEnabled(it) } ?: return@withContext null
         withTimeoutOrNull(15_000) {

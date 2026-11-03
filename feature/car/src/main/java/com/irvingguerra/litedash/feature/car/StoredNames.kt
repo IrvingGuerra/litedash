@@ -6,8 +6,11 @@ package com.irvingguerra.litedash.feature.car
 // crea por su cuenta en el dispositivo (carpetas, temporales, preferencias) va en
 // inglés desde la 1.4.47; la migración movió lo viejo.
 
-/** Carpetas y archivos dentro de files/ en el dispositivo (y el archivo de preferencias). */
-internal object CarFiles {
+/**
+ * Carpetas y archivos dentro de files/ en el dispositivo (y el archivo de preferencias).
+ * Público para la migración del app (`StorageMigration`), que mueve lo viejo a estos nombres.
+ */
+object CarFiles {
     const val ROOT = "cars"
     const val THUMBNAILS = ".thumbnails"
     const val PACKAGE_INFO = "auto.json"

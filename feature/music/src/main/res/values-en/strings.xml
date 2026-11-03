@@ -8,4 +8,10 @@
     <string name="no_song_info">No song info</string>
     <string name="opening_app">Opening %1$s…</string>
     <string name="opening_wait">Almost there: your music starts in a moment.</string>
+    <string name="source_system">System</string>
+    <string name="source_usb">USB</string>
+    <string name="source_bluetooth">Bluetooth</string>
+    <string name="source_radio">Radio</string>
+    <string name="bluetooth_connect_phone">Connect your phone over Bluetooth</string>
+    <string name="usb_drive_in">USB drive plugged in: %1$s</string>
 </resources>

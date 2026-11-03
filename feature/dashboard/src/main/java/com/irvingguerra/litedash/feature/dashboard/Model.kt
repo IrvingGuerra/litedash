@@ -40,7 +40,7 @@ data class Tile(
             row < other.row + other.height && other.row < row + height
 }
 
-/** Lo que la app sabe de cada tipo de pieza: nombre y tamaños permitidos (en celdas). */
+/** Los tamaños permitidos de un tipo de pieza (en celdas): mínimo y máximo de ancho y alto. */
 data class SizeLimits(val minWidth: Int, val minHeight: Int, val maxWidth: Int = 99, val maxHeight: Int = 99) {
     fun clamp(width: Int, height: Int) =
         width.coerceIn(minWidth, maxWidth) to height.coerceIn(minHeight, maxHeight)

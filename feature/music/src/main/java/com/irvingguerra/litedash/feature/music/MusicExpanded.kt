@@ -1,6 +1,5 @@
 package com.irvingguerra.litedash.feature.music
 
-import com.irvingguerra.litedash.core.ui.Radius
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -23,7 +22,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
@@ -36,25 +34,25 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.irvingguerra.litedash.core.ui.Card
-import com.irvingguerra.litedash.core.ui.Icon
 import com.irvingguerra.litedash.core.ui.IconButton
 import com.irvingguerra.litedash.core.ui.Icons
 import com.irvingguerra.litedash.core.ui.Label
 import com.irvingguerra.litedash.core.ui.LocalColors
+import com.irvingguerra.litedash.core.ui.Radius
 import com.irvingguerra.litedash.core.ui.Typography
 
 /**
- * La música en grande, sin salir de LiteDash: carátula, barra para adelantar,
- * y los botones propios de la app (en Spotify: me gusta, aleatorio, repetir).
- * La app se elige en Ajustes. Ancha pone la carátula a un lado; angosta, arriba.
+ * La música en grande, sin salir de LiteDash: fuentes como en un estéreo (USB, Bluetooth,
+ * radio, apps), carátula, barra para adelantar, y los botones propios de la app (en
+ * Spotify: me gusta, aleatorio, repetir). Ancha pone la carátula a un lado; angosta, arriba.
+ * [onLinkUsb] abre los ajustes de música (para enlazar la app de USB de la pantalla).
  */
 @Composable
-fun MusicExpanded(repo: MusicRepository, close: () -> Unit, modifier: Modifier = Modifier) {
+fun MusicExpanded(repo: MusicRepository, close: () -> Unit, onLinkUsb: () -> Unit, modifier: Modifier = Modifier) {
     DisposableEffect(repo) {
         repo.use()
         onDispose { repo.release() }
@@ -74,34 +72,23 @@ fun MusicExpanded(repo: MusicRepository, close: () -> Unit, modifier: Modifier =
                     if (song != null || repo.preferred != null) IconButton(Icons.openExternal, { repo.openApp() }, size = 48.dp, background = c.surfaceHigh)
                     IconButton(Icons.close, close, size = 48.dp, background = c.surfaceHigh)
                 }
-                Spacer(Modifier.height(16.dp))
+                Spacer(Modifier.height(12.dp))
+                SourceRow(repo, song, onLinkUsb)
+                Spacer(Modifier.height(12.dp))
                 // Sin nada sonando se ve igual, con los controles: play reanuda lo último.
                 when {
                     wide -> Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
-                        Artwork(song, Modifier.widthIn(max = artworkMax).fillMaxHeight().aspectRatio(1f, matchHeightConstraintsFirst = false))
+                        Artwork(song, Modifier.widthIn(max = artworkMax).fillMaxHeight().aspectRatio(1f, matchHeightConstraintsFirst = false), Radius.card)
                         Spacer(Modifier.width(24.dp))
                         Details(repo, song, Modifier.weight(1f))
                     }
                     else -> Column(Modifier.weight(1f).fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-                        Artwork(song, Modifier.weight(1f, fill = false).aspectRatio(1f, matchHeightConstraintsFirst = true))
+                        Artwork(song, Modifier.weight(1f, fill = false).aspectRatio(1f, matchHeightConstraintsFirst = true), Radius.card)
                         Spacer(Modifier.height(16.dp))
                         Details(repo, song, Modifier.fillMaxWidth())
                     }
                 }
             }
-        }
-    }
-}
-
-@Composable
-private fun Artwork(song: Song?, modifier: Modifier) {
-    val c = LocalColors.current
-    Box(modifier.clip(RoundedCornerShape(Radius.card)).background(c.surfaceHigh), contentAlignment = Alignment.Center) {
-        val bmp = song?.artwork
-        if (bmp != null) {
-            Image(bmp.asImageBitmap(), null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
-        } else {
-            Icon(Icons.music, c.textMuted, 56.dp)
         }
     }
 }
@@ -119,8 +106,9 @@ private fun Details(repo: MusicRepository, song: Song?, modifier: Modifier) {
         Label(title, Typography.title.copy(fontSize = 26.sp), maxLines = 2)
         Spacer(Modifier.height(4.dp))
         val subtitle = when {
-            song != null -> song.artist.ifBlank { stringResource(R.string.no_song_info) }
+            song != null -> subtitleFor(repo, song)
             opening != null -> stringResource(R.string.opening_wait)
+            repo.usbDrive != null -> stringResource(R.string.usb_drive_in, repo.usbDrive.orEmpty())
             else -> stringResource(R.string.resume_explain)
         }
         Label(subtitle, Typography.subtitle, c.textMuted, maxLines = 2)
@@ -129,12 +117,8 @@ private fun Details(repo: MusicRepository, song: Song?, modifier: Modifier) {
             TimeBar(repo, song)
         }
         Spacer(Modifier.height(16.dp))
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
-            IconButton(Icons.previous, { repo.previous() }, size = 64.dp)
-            Spacer(Modifier.width(12.dp))
-            IconButton(if (song?.playing == true) Icons.pause else Icons.play, { repo.toggle() }, size = 76.dp, background = c.text, color = c.background)
-            Spacer(Modifier.width(12.dp))
-            IconButton(Icons.next, { repo.next() }, size = 64.dp)
+        Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+            Controls(repo, song?.playing == true, size = 64.dp, playSize = 76.dp, gap = 12.dp)
         }
         if (song != null && song.actions.isNotEmpty()) {
             Spacer(Modifier.height(8.dp))
@@ -193,9 +177,7 @@ private fun TimeBar(repo: MusicRepository, song: Song) {
             ),
         contentAlignment = Alignment.CenterStart,
     ) {
-        Box(Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp)).background(c.line)) {
-            Box(Modifier.fillMaxHeight().fillMaxWidth(fraction).background(c.text))
-        }
+        ProgressTrack(fraction, 6.dp)
         if (song.seekable) {
             Box(Modifier.offset(maxWidth * fraction - 8.dp).size(16.dp).clip(CircleShape).background(c.text))
         }
