@@ -40,12 +40,14 @@ jobs:
           echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/litedash.jks"
           echo "LITEDASH_STORE_FILE=$RUNNER_TEMP/litedash.jks" >> "$GITHUB_ENV"
 
-      - name: Compilar AAB y APK
+      # Solo el APK de GitHub (Irving, 2026-11-03): el .aab para las tiendas se genera a mano
+      # el día que él lo pida (`./gradlew bundlePlayRelease` con la llave real).
+      - name: Compilar APK
         env:
           LITEDASH_STORE_PASSWORD: ${{ secrets.LITEDASH_STORE_PASSWORD }}
           LITEDASH_KEY_ALIAS: ${{ secrets.LITEDASH_KEY_ALIAS }}
           LITEDASH_KEY_PASSWORD: ${{ secrets.LITEDASH_KEY_PASSWORD }}
-        run: ./gradlew assembleGithubRelease bundlePlayRelease --console=plain
+        run: ./gradlew assembleGithubRelease --console=plain
 
       - name: Armar archivos y notas
         run: |
@@ -69,9 +71,3 @@ jobs:
           extra=""
           case "$VERSION" in *-beta.*|*-rc.*) extra="--prerelease" ;; esac
           gh release create "$GITHUB_REF_NAME" out/* --title "LiteDash $VERSION" --notes-file notes.md $extra
-
-      - name: AAB para Google Play (Irving lo sube)
-        uses: actions/upload-artifact@v4
-        with:
-          name: litedash-${{ env.VERSION }}-play-aab
-          path: app/build/outputs/bundle/playRelease/app-play-release.aab
