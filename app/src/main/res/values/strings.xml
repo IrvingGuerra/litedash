@@ -56,7 +56,7 @@
     <string name="split_side">Lado del auto</string>
     <string name="split_left">Izquierda</string>
     <string name="split_right">Derecha</string>
-    <string name="split_swap_help">También lo cambias ahí mismo con el botón de las flechas, arriba del auto.</string>
+    <string name="split_swap_help">También lo cambias ahí mismo con el botón de las flechas, en la esquina de abajo.</string>
     <string name="split_unsupported">Esta pantalla tiene Android %1$s: abrir dos apps lado a lado necesita Android 12L o más nuevo.</string>
     <string name="gauge_style_arc">Arco</string>
     <string name="gauge_style_needle">Aguja</string>

@@ -8,8 +8,6 @@ import android.content.res.Configuration
 import android.content.res.Resources
 import android.os.Build
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
@@ -44,14 +42,12 @@ import com.irvingguerra.litedash.core.ui.Typography
 object SplitScreen {
     private const val EXTRA_APP = "app"
     private const val EXTRA_OPEN = "abrir"
+    /** Del lado que debe quedar el auto antes de abrir la app (true = izquierda). */
+    private const val EXTRA_LEFT = "izquierda"
 
-    /** Tras abrir la app a pantalla completa, cuánto esperar para poner el auto a su lado. */
-    internal const val ADJACENT_DELAY_MS = 600L
-
-    /** Al cambiar de lado, cuánto esperar a que se quite la división de antes. */
-    private const val SWAP_DELAY_MS = 1000L
-
-    private val handler = Handler(Looper.getMainLooper())
+    /** Cada cuánto el auto revisa si ya quedó en su lado, y hasta cuándo esperar. */
+    private const val CHECK_MS = 100L
+    private const val GIVE_UP_MS = 3_000L
 
     /** Si esta pantalla deja abrir dos apps lado a lado desde una app (Android 12L+). */
     // El ajuste del sistema no tiene constante pública: se busca por nombre (una vez por consulta).
@@ -77,62 +73,90 @@ object SplitScreen {
         if (!d.prefs.splitScreen || !supported()) return false
         if (context.resources.configuration.orientation != Configuration.ORIENTATION_LANDSCAPE) return false
         if (!isMapOrMusic(context, d, pkg)) return false
-        start(context.applicationContext, intent, d.prefs.splitCarLeft)
+        start(context, intent, d.prefs.splitCarLeft)
         return true
     }
 
     /**
-     * Android solo arma la división desde la ventana que está al frente, y lo que abre "al
-     * lado" queda del otro lado. Auto a la izquierda: el auto, al frente, abre la app a su lado.
-     * Auto a la derecha: una ventana invisible ([SplitStartActivity]) abre el auto a su lado y
-     * el auto abre la app en el lado de la invisible, que se va sola (noHistory).
+     * Android solo arma la división desde la ventana que está al frente, y lo que se abre
+     * "al lado" queda del otro lado de quien lo abre. Por eso todo sale de ventanas visibles:
+     * - Auto a la izquierda desde el inicio: el auto (completo) abre la app a su lado.
+     * - Auto a la derecha: una ventana de paso ([SplitStartActivity]) abre el auto a su lado
+     *   (a la derecha) y el auto, ya en su lugar, abre la app a su lado: donde estaba la de paso.
      */
     internal fun start(context: Context, app: Intent, carLeft: Boolean) {
         val target = if (carLeft) SplitActivity::class.java else SplitStartActivity::class.java
         val intent = Intent(context, target)
             .putExtra(EXTRA_APP, app)
-            .putExtra(EXTRA_OPEN, carLeft)
+            .putExtra(EXTRA_OPEN, true)
+            .putExtra(EXTRA_LEFT, carLeft)
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         runCatching { context.startActivity(intent) }
     }
 
     internal fun appOf(intent: Intent): Intent? = IntentCompat.getParcelableExtra(intent, EXTRA_APP, Intent::class.java)
 
-    /** El auto ya al frente abre la app del otro lado (una sola vez). */
+    /**
+     * El auto abre la app a su lado, pero hasta que ya quedó del lado que le toca (en un
+     * celular o pantalla lenta la división tarda en acomodarse). Si no llega en [GIVE_UP_MS],
+     * la abre igual: mejor del otro lado que no abrirla.
+     */
     internal fun openBeside(activity: SplitActivity, intent: Intent) {
         val app = appOf(intent) ?: return
         if (!intent.getBooleanExtra(EXTRA_OPEN, false)) return
         // Ya se armó: que no se vuelva a abrir al girar la pantalla o regresar.
         intent.removeExtra(EXTRA_OPEN)
-        runCatching { activity.startActivity(Intent(app).addFlags(Intent.FLAG_ACTIVITY_LAUNCH_ADJACENT or Intent.FLAG_ACTIVITY_NEW_TASK)) }
+        val left = intent.getBooleanExtra(EXTRA_LEFT, true)
+        val view = activity.window.decorView
+        val since = System.currentTimeMillis()
+        fun tryOpen() {
+            if (activity.isFinishing) return
+            if (!activity.onSide(left) && System.currentTimeMillis() - since < GIVE_UP_MS) {
+                view.postDelayed(::tryOpen, CHECK_MS)
+                return
+            }
+            runCatching { activity.startActivity(Intent(app).addFlags(Intent.FLAG_ACTIVITY_LAUNCH_ADJACENT or Intent.FLAG_ACTIVITY_NEW_TASK)) }
+        }
+        view.post(::tryOpen)
     }
 
-    /**
-     * Auto a la derecha: el auto se abre al lado de esta ventana (a la derecha) y desde ahí
-     * abre la app "a su lado", que ya es la izquierda. Abrirla de golpe sin "al lado" traía
-     * su tarea completa al frente y deshacía la división si ya estaba abierta.
-     */
-    internal fun joinRight(activity: ComponentActivity, intent: Intent) {
+    /** La ventana de paso abre el auto a su lado, que debe quedar a la [EXTRA_LEFT]. */
+    internal fun moveCar(activity: ComponentActivity, intent: Intent) {
         val app = appOf(intent) ?: return activity.finish()
         val board = Intent(activity, SplitActivity::class.java)
             .putExtra(EXTRA_APP, app)
             .putExtra(EXTRA_OPEN, true)
+            .putExtra(EXTRA_LEFT, intent.getBooleanExtra(EXTRA_LEFT, false))
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_LAUNCH_ADJACENT)
         runCatching { activity.startActivity(board) }
     }
 
     /**
-     * Cambia el auto de lado: se cierra el auto (la app queda completa) y se vuelve a armar
-     * al revés. Armar encima de una división abierta no mueve las ventanas.
+     * Cambia el auto de lado sin cerrar nada (cerrar y volver a abrir desde atrás lo bloquea
+     * Android en los equipos de verdad): el auto abre la ventana de paso en su mismo lugar, esa
+     * ventana manda el auto al otro lado y el auto abre la app donde quedó la de paso.
      */
     internal fun swap(activity: SplitActivity, app: Intent?) {
+        app ?: return
         val prefs = (activity.application as LiteDashApp).dependencies.prefs
         prefs.splitCarLeft = !prefs.splitCarLeft
-        val context = activity.applicationContext
-        activity.finishAndRemoveTask()
-        // Que Android termine de quitar la división antes de armarla otra vez.
-        if (app != null) handler.postDelayed({ start(context, app, prefs.splitCarLeft) }, SWAP_DELAY_MS)
+        val step = Intent(activity, SplitStartActivity::class.java)
+            .putExtra(EXTRA_APP, app)
+            .putExtra(EXTRA_LEFT, prefs.splitCarLeft)
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_MULTIPLE_TASK)
+        runCatching { activity.startActivity(step) }
     }
+}
+
+/** ¿La ventana ya está del lado [left] de la pantalla? (Completa cuenta como izquierda.) */
+private fun ComponentActivity.onSide(left: Boolean): Boolean {
+    val at = IntArray(2)
+    window.decorView.getLocationOnScreen(at)
+    val screen = resources.displayMetrics.widthPixels.coerceAtLeast(1)
+    val onLeft = at[0] < screen / 4
+    if (!left) return !onLeft
+    // A la izquierda: completa (recién abierto desde el inicio) o ya en la mitad izquierda.
+    return onLeft && (!isInMultiWindowMode || window.decorView.width < screen * 3 / 4)
 }
 
 /** El auto solo, para la mitad de la pantalla dividida, con cambiar de lado y salir. */
@@ -159,21 +183,20 @@ class SplitActivity : ComponentActivity() {
         revision.intValue++
     }
 
-    // Ya con el auto al frente, se arma la división desde su ventana.
-    private fun openAppIfNeeded() {
-        val current = intent
-        // Con un respiro: si el auto acaba de entrar a la división, Android todavía la está armando.
-        window.decorView.postDelayed({ SplitScreen.openBeside(this, current) }, SplitScreen.ADJACENT_DELAY_MS)
-    }
+    // Ya con el auto al frente (y en su lado), se arma la división desde su ventana.
+    private fun openAppIfNeeded() = SplitScreen.openBeside(this, intent)
 
     override fun attachBaseContext(base: Context) = super.attachBaseContext(contextWithLanguage(base))
 }
 
-/** Ventana oscura de un instante (opaca: desde una transparente Android a veces no divide) para dejar el auto a la derecha (ver [SplitScreen.start]). */
+/**
+ * Ventana de paso, oscura y de un instante (opaca: desde una transparente Android a veces no
+ * divide): manda el auto a su lado. Es noHistory: se va sola cuando la app la tapa.
+ */
 class SplitStartActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        if (savedInstanceState == null) window.decorView.post { SplitScreen.joinRight(this, intent) }
+        if (savedInstanceState == null) window.decorView.post { SplitScreen.moveCar(this, intent) }
     }
 }
 
@@ -183,7 +206,7 @@ private fun SplitBoard(d: Dependencies, onSwap: () -> Unit, onExit: () -> Unit) 
     val car = remember(d.prefs.carModel) { d.cars.pkg(d.prefs.carModel) }
     Box(Modifier.fillMaxSize().background(c.background).safeDrawingPadding()) {
         HomeCar(d, car, onClick = {}, modifier = Modifier.fillMaxSize().padding(16.dp))
-        Row(Modifier.align(Alignment.TopEnd).padding(12.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        Row(Modifier.align(Alignment.BottomEnd).padding(12.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             IconButton(Icons.swap, onSwap, background = c.surfaceHigh)
             IconButton(Icons.expand, onExit, background = c.surfaceHigh)
         }

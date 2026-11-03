@@ -55,7 +55,7 @@
     <string name="split_side">Car side</string>
     <string name="split_left">Left</string>
     <string name="split_right">Right</string>
-    <string name="split_swap_help">You can also switch it right there with the arrows button above the car.</string>
+    <string name="split_swap_help">You can also switch it right there with the arrows button in the bottom corner.</string>
     <string name="split_unsupported">This head unit runs Android %1$s: two apps side by side needs Android 12L or newer.</string>
     <string name="gauge_style_arc">Arc</string>
     <string name="gauge_style_needle">Needle</string>
