@@ -56,43 +56,62 @@ import com.irvingguerra.litedash.feature.obd.engineAlert
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
-private val Good = Color(0xFF3FB27F)
+/** El verde de "todo bien"; lo comparte la pantalla Salud. */
+internal val Good = Color(0xFF3FB27F)
 
 /**
- * El Taller (sección de Ajustes): conexión con el adaptador OBD, estado del motor,
- * códigos de falla (leer y borrar), si pasarías la verificación y los sensores en vivo.
- * Mientras se ve, el OBD solo lee lo que hay aquí.
+ * El Taller (sección de Ajustes), ahora "Salud del auto": arriba el estado del auto por
+ * sistema; luego códigos de falla (leer y borrar) con la verificación, sensores en vivo,
+ * gráficas y lo demás (conexión, alertas, 0–100 y viajes). Mientras se ve, el OBD solo lee
+ * lo que hay aquí.
  */
 @Composable
 fun Workshop(d: Dependencies) {
     val obd = d.obd
-    // Sin adaptador solo hay que conectarlo; ya conectado, cada parte en su pestaña.
     val alerts = @Composable {
         SettingsCard {
             SwitchRow(stringResource(R.string.engine_alerts), d.prefs.engineAlerts, { d.prefs.engineAlerts = it }, stringResource(R.string.engine_alerts_help))
         }
     }
-    if (obd.state != ObdState.ON) {
+    val connected = obd.state == ObdState.ON
+    // El reporte se lee una vez aquí y lo comparten Salud y Códigos; el último leído
+    // se muestra de inmediato para que al volver a entrar no parpadee.
+    val scope = rememberCoroutineScope()
+    var report by remember { mutableStateOf(obd.lastReport) }
+    var reading by remember { mutableStateOf(true) }
+    fun read() = scope.launch {
+        reading = true
+        report = obd.report()
+        reading = false
+    }
+    LaunchedEffect(connected) { if (connected) read() }
+
+    // Sin adaptador: el estado (con lo último que se leyó) y cómo conectarlo.
+    if (!connected) {
+        HealthView(d, obd.lastReport, reading = false, onRead = {}, connected = false)
         Connection(obd)
         alerts()
         // Los viajes guardados se ven aunque no haya adaptador conectado.
         return TripsCard(d)
     }
     val tab = tabs(
-        listOf(R.string.tab_connection, R.string.obd_codes, R.string.tab_inspection, R.string.tab_sensors, R.string.tab_charts, R.string.tab_accel, R.string.tab_trips),
+        listOf(R.string.tab_health, R.string.obd_codes, R.string.tab_sensors, R.string.tab_charts, R.string.tab_more),
         "taller",
     )
-    if (tab == 0) {
-        Connection(obd)
-        alerts()
-    }
-    // El reporte se lee una vez y se comparte entre las pestañas de motor, códigos y verificación.
-    Engine(obd, tab)
     when (tab) {
-        3 -> LiveSensors(d)
-        4 -> LiveCharts(d)
-        5 -> AccelTimerCard(d)
-        6 -> TripsCard(d)
+        0 -> HealthView(d, report, reading, { read() }, connected = true)
+        1 -> {
+            CodesCard(obd, report, reading, { read() }, onCleared = { report = it })
+            InspectionCard(report, reading)
+        }
+        2 -> LiveSensors(d)
+        3 -> LiveCharts(d)
+        else -> {
+            Connection(obd)
+            alerts()
+            AccelTimerCard(d)
+            TripsCard(d)
+        }
     }
 }
 
@@ -140,16 +159,9 @@ fun EngineAlertBanner(d: Dependencies) {
     }
 }
 
-/** Acceso directo al Taller en el inicio; dice si el adaptador está conectado. */
+/** La pieza del Taller en el inicio; se queda con este nombre para no tocar el inicio. */
 @Composable
-fun WorkshopTile(d: Dependencies, onClick: () -> Unit) {
-    val detail = when (d.obdIfCreated()?.state) {
-        ObdState.ON -> stringResource(R.string.obd_connected_short)
-        ObdState.CONNECTING -> stringResource(R.string.obd_connecting_short)
-        else -> null
-    }
-    ShortcutTile(Icons.engine, stringResource(R.string.workshop), detail, onClick)
-}
+fun WorkshopTile(d: Dependencies, onClick: () -> Unit) = HealthTile(d, onClick)
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -276,41 +288,20 @@ private fun turnOffBluetooth(context: Context) {
     if (!done) runCatching { context.startActivity(Intent(Settings.ACTION_BLUETOOTH_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
 }
 
+/**
+ * Los códigos de falla por grupo y borrarlos (con doble confirmación). [onCleared] recibe
+ * el reporte nuevo que se lee tras borrar.
+ */
 @Composable
-private fun Engine(obd: ObdRepository, tab: Int) {
+private fun CodesCard(obd: ObdRepository, report: EngineReport?, reading: Boolean, onRead: () -> Unit, onCleared: (EngineReport?) -> Unit) {
     val c = LocalColors.current
     val scope = rememberCoroutineScope()
-    var report by remember { mutableStateOf<EngineReport?>(null) }
-    var reading by remember { mutableStateOf(true) }
     var confirm by remember { mutableIntStateOf(0) }
     var cleared by remember { mutableStateOf<Boolean?>(null) }
     val spanish = currentLocale().language == "es"
-    fun read() = scope.launch {
-        reading = true
-        report = obd.report()
-        reading = false
-    }
-    LaunchedEffect(Unit) { read() }
     val r = report
-    val readiness = r?.readiness
-
-    if (tab == 0) SettingsCard(stringResource(R.string.obd_engine)) {
+    SettingsCard(stringResource(R.string.obd_codes), stringResource(R.string.obd_codes_help)) {
         if (reading && r == null) return@SettingsCard Label(stringResource(R.string.obd_reading), Typography.body, c.textMuted)
-        val mil = readiness?.mil == true
-        Label(
-            stringResource(if (mil) R.string.obd_mil_on else R.string.obd_mil_off),
-            Typography.subtitle,
-            if (mil) c.danger else Good,
-        )
-        val facts = listOfNotNull(
-            r?.voltage?.let { stringResource(R.string.obd_battery, it) },
-            r?.vin?.let { "VIN $it" },
-        )
-        if (facts.isNotEmpty()) Label(facts.joinToString(" · "), Typography.small, c.textMuted)
-        Button(stringResource(R.string.obd_read_again), { read() })
-    }
-
-    if (tab == 1) SettingsCard(stringResource(R.string.obd_codes), stringResource(R.string.obd_codes_help)) {
         val groups = listOf(
             R.string.obd_codes_stored to r?.stored.orEmpty(),
             R.string.obd_codes_pending to r?.pending.orEmpty(),
@@ -325,10 +316,13 @@ private fun Engine(obd: ObdRepository, tab: Int) {
             }
         }
         cleared?.let { Label(stringResource(if (it) R.string.obd_cleared else R.string.obd_not_cleared), Typography.small, if (it) Good else c.danger) }
-        if (r != null && (r.stored.isNotEmpty() || r.pending.isNotEmpty() || readiness?.mil == true)) {
+        if (r != null && (r.stored.isNotEmpty() || r.pending.isNotEmpty() || r.readiness?.mil == true)) {
             // Doble confirmación: borrar también reinicia los monitores de la verificación.
             when (confirm) {
-                0 -> Button(stringResource(R.string.obd_clear), { confirm = 1 })
+                0 -> Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Button(stringResource(R.string.obd_clear), { confirm = 1 })
+                    Button(stringResource(R.string.obd_read_again), onRead)
+                }
                 1 -> Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Label(stringResource(R.string.obd_clear_warning), Typography.small, c.danger)
                     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -341,19 +335,28 @@ private fun Engine(obd: ObdRepository, tab: Int) {
                         confirm = 0
                         scope.launch {
                             cleared = obd.clearCodes()
-                            report = obd.report()
+                            onCleared(obd.report())
                         }
                     }, primary = true)
                     Button(stringResource(R.string.cancel), { confirm = 0 })
                 }
             }
+        } else {
+            Button(stringResource(R.string.obd_read_again), onRead)
         }
     }
+}
 
-    if (tab == 2 && readiness == null && !reading) SettingsCard {
-        Label(stringResource(R.string.obd_no_readiness), Typography.body, c.textMuted)
+/** Si pasaría la verificación: luz de falla y el estado de cada monitor. */
+@Composable
+private fun InspectionCard(report: EngineReport?, reading: Boolean) {
+    val c = LocalColors.current
+    val readiness = report?.readiness
+    if (readiness == null) {
+        if (!reading) SettingsCard { Label(stringResource(R.string.obd_no_readiness), Typography.body, c.textMuted) }
+        return
     }
-    if (tab == 2 && readiness != null) SettingsCard(stringResource(R.string.obd_inspection), stringResource(R.string.obd_inspection_help)) {
+    SettingsCard(stringResource(R.string.obd_inspection), stringResource(R.string.obd_inspection_help)) {
         // Con luz de falla no pasa; con más de un monitor pendiente tampoco (la regla común).
         val pass = !readiness.mil && readiness.incomplete.size <= 1
         Label(
