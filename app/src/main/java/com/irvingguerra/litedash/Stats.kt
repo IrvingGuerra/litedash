@@ -15,7 +15,7 @@ import java.time.LocalDate
 
 /**
  * Cuántas pantallas usan LiteDash, sin cuentas ni SDK de Firebase: a lo más una vez al día,
- * al abrir el inicio, escribe `pantallas/{id}` en Firestore por REST. El id es un número al
+ * al abrir el inicio, escribe `screens/{id}` en Firestore por REST (nombres de la nube en inglés). El id es un número al
  * azar de esta instalación; se manda solo la versión, el canal, Android, el idioma de LiteDash y el tamaño
  * de pantalla (nada de ubicación ni del usuario). Las reglas de Firestore solo dejan escribir
  * esos campos y nadie puede leerlos desde la app. Se apaga en Ajustes → Acerca de.
@@ -37,14 +37,14 @@ class Stats(private val context: Context, private val enabled: () -> Boolean) {
         val config = context.resources.configuration
         val fields = JSONObject()
             .put("version", int(BuildConfig.VERSION_CODE.toLong()))
-            .put("canal", text(BuildConfig.CHANNEL))
+            .put("channel", text(BuildConfig.CHANNEL))
             .put("android", int(Build.VERSION.SDK_INT.toLong()))
-            .put("idioma", text(Language.read(context).ifBlank { config.locales[0].language }.take(8)))
-            .put("pantalla", text(screen(config)))
-            .put("alta", text(since))
+            .put("language", text(Language.read(context).ifBlank { config.locales[0].language }.take(8)))
+            .put("screen", text(screen(config)))
+            .put("since", text(since))
         val write = JSONObject()
-            .put("update", JSONObject().put("name", "$DOCUMENTS/pantallas/$id").put("fields", fields))
-            .put("updateTransforms", JSONArray().put(JSONObject().put("fieldPath", "visto").put("setToServerValue", "REQUEST_TIME")))
+            .put("update", JSONObject().put("name", "$DOCUMENTS/screens/$id").put("fields", fields))
+            .put("updateTransforms", JSONArray().put(JSONObject().put("fieldPath", "seen").put("setToServerValue", "REQUEST_TIME")))
         val body = JSONObject().put("writes", JSONArray().put(write)).toString().toByteArray()
         val connection = (URL(COMMIT_URL).openConnection() as HttpURLConnection).apply {
             requestMethod = "POST"

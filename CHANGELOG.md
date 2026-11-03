@@ -6,6 +6,12 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
+## [1.4.46] - 2026-11-02
+
+### Cambiado
+- Estadísticas anónimas: los datos en la nube ahora usan nombres en inglés. Lo que se manda es
+  lo mismo y tu pantalla conserva su número.
+
 ## [1.4.45] - 2026-11-02
 
 ### Arreglado

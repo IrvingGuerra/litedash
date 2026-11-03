@@ -4,6 +4,18 @@ rules_version = '2';
 // documento, con estos campos y la hora del servidor. Nadie puede leer desde la app.
 service cloud.firestore {
   match /databases/{database}/documents {
+    match /screens/{id} {
+      allow create, update: if id.matches('^[0-9a-f]{32}$')
+        && request.resource.data.keys().hasOnly(['version', 'channel', 'android', 'language', 'screen', 'since', 'seen'])
+        && request.resource.data.version is int && request.resource.data.version < 1000000000
+        && request.resource.data.channel in ['play', 'github']
+        && request.resource.data.android is int && request.resource.data.android < 1000
+        && request.resource.data.language is string && request.resource.data.language.size() <= 8
+        && request.resource.data.screen is string && request.resource.data.screen.size() <= 16
+        && request.resource.data.since is string && request.resource.data.since.size() == 10
+        && request.resource.data.seen == request.time;
+    }
+    // Solo para la 1.4.44 y la 1.4.45, que usaban nombres en español.
     match /pantallas/{id} {
       allow create, update: if id.matches('^[0-9a-f]{32}$')
         && request.resource.data.keys().hasOnly(['version', 'canal', 'android', 'idioma', 'pantalla', 'alta', 'visto'])
