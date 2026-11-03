@@ -34,6 +34,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -111,6 +112,8 @@ sealed interface Panel {
     data class PickGauge(val tileId: String?) : Panel
     /** Estilo, color y demás de un velocímetro o medidor ([tileId]). */
     data class CustomizeGauge(val tileId: String) : Panel
+    /** La foto de una pieza de imagen ([tileId]). */
+    data class CustomizeImage(val tileId: String) : Panel
 }
 
 class Dependencies(
@@ -153,11 +156,12 @@ class TileActions(
     val onPanel: (Panel) -> Unit,
     val onNavigate: (App?) -> Unit,
     val onMusic: () -> Unit,
-    val onCarOnly: () -> Unit,
-    /** Dónde está la pieza del auto en la pantalla: de ahí crece al verlo solo. */
-    val onCarBounds: (Rect) -> Unit,
-    /** Se lee al dibujar (no recompone el tablero en cada cuadro de la animación). */
-    val carHidden: () -> Boolean,
+    /** Ver en grande el auto, la carretera o la imagen de esta pieza. */
+    val onCarOnly: (Tile) -> Unit,
+    /** Dónde está cada pieza que crece (por id): de ahí crece al verla sola. */
+    val onCarBounds: (String, Rect) -> Unit,
+    /** Si la pieza (por id) se esconde porque se ve en grande; se lee al dibujar (no recompone el tablero en cada cuadro de la animación). */
+    val carHidden: (String) -> Boolean,
 )
 
 /** Cada tipo de pieza dibujado según su tipo. */
@@ -165,14 +169,16 @@ class TileActions(
 fun TileContent(d: Dependencies, p: Tile, apps: List<App>, car: CarPackage?, revision: Int, actions: TileActions) {
     val context = LocalContext.current
     when (p.type) {
-        TileTypes.CAR -> HomeCar(
+        TileTypes.CAR, TileTypes.ROAD, TileTypes.IMAGE -> HeroTile(
             d,
+            p,
             car,
-            onClick = actions.onCarOnly,
+            // Una imagen sin foto abre su panel para elegirla; lo demás crece.
+            onClick = { if (p.type == TileTypes.IMAGE && p.data.isEmpty()) actions.onPanel(Panel.CustomizeImage(p.id)) else actions.onCarOnly(p) },
             modifier = Modifier
-                .onGloballyPositioned { actions.onCarBounds(it.boundsInRoot()) }
-                // Mientras crece o se ve solo, el de la pieza se esconde (si no, se ve doble).
-                .graphicsLayer { alpha = if (actions.carHidden()) 0f else 1f },
+                .onGloballyPositioned { actions.onCarBounds(p.id, it.boundsInRoot()) }
+                // Mientras crece o se ve sola, la de la pieza se esconde (si no, se ve doble).
+                .graphicsLayer { alpha = if (actions.carHidden(p.id)) 0f else 1f },
         )
         TileTypes.MUSIC -> MusicTile(d.music, revision, onExpand = actions.onMusic)
         TileTypes.CLOCK -> ClockTile(d.prefs.driverName, d.weather)
@@ -228,6 +234,9 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
     // Solo el auto a pantalla completa (un toque al auto entra y otro sale), con animación:
     // [carOnly] es a dónde va y [carShown] si la capa sigue en pantalla (también al regresar).
     var carOnly by remember { mutableStateOf(false) }
+    // La pieza que se ve en grande (auto, carretera o imagen) y dónde está cada una.
+    var bigTile by remember { mutableStateOf<Tile?>(null) }
+    val tileBounds = remember { mutableStateMapOf<String, Rect>() }
     fun backToDashboard() {
         panel = null
         carOnly = false
@@ -237,7 +246,6 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
 
     var carShown by remember { mutableStateOf(false) }
     var carReady by remember { mutableStateOf(false) }
-    var carBounds by remember { mutableStateOf(Rect.Zero) }
     val carProgress = remember { Animatable(0f) }
     LaunchedEffect(carOnly) {
         if (carOnly) {
@@ -292,9 +300,9 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
             onPanel = { panel = it },
             onNavigate = { app -> openNavigation(context, d.apps, app) },
             onMusic = { musicExpanded = true },
-            onCarOnly = { carOnly = true },
-            onCarBounds = { carBounds = it },
-            carHidden = { carShown && carProgress.value > 0f },
+            onCarOnly = { bigTile = it; carOnly = true },
+            onCarBounds = { id, rect -> if (tileBounds[id] != rect) tileBounds[id] = rect },
+            carHidden = { id -> carShown && bigTile?.id == id && carProgress.value > 0f },
         )
     }
 
@@ -315,8 +323,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
 
     // Con un auto que trae piso, el fondo baja un poco de tono hacia abajo: es el
     // piso donde se para el auto (como en Tesla), y su sombra y reflejo caen ahí.
-    val hasFloor = car?.hasFloor == true && d.prefs.carView == CarView.CAR &&
-        d.dashboard.tiles.any { it.type == TileTypes.CAR }
+    val hasFloor = car?.hasFloor == true && d.dashboard.tiles.any { it.type == TileTypes.CAR }
     val backdrop = if (hasFloor) {
         Brush.verticalGradient(0.3f to c.background, 1f to lerp(c.background, Color.Black, if (c.dark) 0.35f else 0.08f))
     } else SolidColor(c.background)
@@ -421,8 +428,8 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                             limits = ::limitsOf,
                             onChange = d.dashboard::change,
                             onEdit = { editing = true },
-                            onSettings = { panel = Panel.CustomizeGauge(it.id) },
-                            hasSettings = { it.type == TileTypes.SPEEDOMETER || it.type == TileTypes.GAUGE },
+                            onSettings = { panel = if (it.type == TileTypes.IMAGE) Panel.CustomizeImage(it.id) else Panel.CustomizeGauge(it.id) },
+                            hasSettings = { it.type == TileTypes.SPEEDOMETER || it.type == TileTypes.GAUGE || it.type == TileTypes.IMAGE },
                         ) { p -> TileContent(d, p, apps, car, revision, actions) }
                     }
                 }
@@ -463,10 +470,12 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
             is Panel.PickApp -> PickAppPanel(d, apps, p.tileId, close = { panel = null })
             is Panel.PickGauge -> PickGaugePanel(d, p.tileId, close = { panel = null })
             is Panel.CustomizeGauge -> CustomizeGaugePanel(d, p.tileId, close = { panel = null }, onPickSignal = { panel = Panel.PickGauge(p.tileId) })
+            is Panel.CustomizeImage -> CustomizeImagePanel(d, p.tileId, close = { panel = null })
         }
 
-        if (carShown && panel == null) {
-            CarOnly(d, car, carBounds, { carProgress.value }, backdrop, onTap = { carOnly = false }, onReady = { carReady = true })
+        val big = bigTile
+        if (carShown && panel == null && big != null) {
+            CarOnly(d, car, big, tileBounds[big.id] ?: Rect.Zero, { carProgress.value }, backdrop, onTap = { carOnly = false }, onReady = { carReady = true })
         }
 
         if (parked) Parked(d, onWake = { parked = false; touched++ })

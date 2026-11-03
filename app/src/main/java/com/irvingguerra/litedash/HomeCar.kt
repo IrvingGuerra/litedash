@@ -36,26 +36,17 @@ import com.irvingguerra.litedash.feature.car.CarRepository
 import com.irvingguerra.litedash.feature.car.CarTile
 import com.irvingguerra.litedash.feature.car.CarTurntable
 import com.irvingguerra.litedash.feature.car.CatalogEntry
+import com.irvingguerra.litedash.feature.dashboard.Tile
+import com.irvingguerra.litedash.feature.dashboard.TileTypes
 
 /**
- * La pieza del auto, según lo que elegiste que muestre ([CarView]). El auto 3D
- * ([pkg] del catálogo, o el sedán dibujado si es null) gira con el dedo y se queda
- * donde lo dejas; un toque hace [onClick]. Su nombre, color, modelo y vista se
+ * El auto 3D ([pkg] del catálogo, o el sedán dibujado si es null): gira con el dedo y
+ * se queda donde lo dejas; un toque hace [onClick]. Su nombre, color y modelo se
  * cambian en Ajustes → Tu auto.
  */
 @Composable
 fun HomeCar(d: Dependencies, pkg: CarPackage?, onClick: () -> Unit, modifier: Modifier = Modifier, onReady: (() -> Unit)? = null) {
     val color = d.prefs.carColor
-    when (d.prefs.carView) {
-        CarView.CAR -> Unit
-        CarView.ROAD -> return RoadView(d, pkg, onClick, modifier, onReady)
-        CarView.LOGO -> {
-            // Sin auto que cargar: listo de una vez.
-            val ready by rememberUpdatedState(onReady)
-            LaunchedEffect(Unit) { ready?.invoke() }
-            return BrandLogo(d, brandName(d, pkg), onClick, modifier)
-        }
-    }
     // El sedán dibujado no carga nada: listo de una vez.
     if (pkg == null && onReady != null) {
         val ready by rememberUpdatedState(onReady)
@@ -73,12 +64,23 @@ fun HomeCar(d: Dependencies, pkg: CarPackage?, onClick: () -> Unit, modifier: Mo
     )
 }
 
-/** La marca para el logo de texto: la del modelo elegido o, si no, el nombre del auto. */
+/** Las piezas que crecen a pantalla completa con un toque: auto 3D, carretera o imagen, según [tile]. */
 @Composable
-fun brandName(d: Dependencies, pkg: CarPackage?) = pkg?.make ?: d.prefs.carName ?: stringResource(R.string.my_car)
+fun HeroTile(d: Dependencies, tile: Tile, pkg: CarPackage?, onClick: () -> Unit, modifier: Modifier = Modifier, onReady: (() -> Unit)? = null) {
+    when (tile.type) {
+        TileTypes.ROAD -> RoadView(d, pkg, onClick, modifier, onReady)
+        TileTypes.IMAGE -> {
+            // Sin auto que cargar: lista de una vez.
+            val ready by rememberUpdatedState(onReady)
+            LaunchedEffect(Unit) { ready?.invoke() }
+            ImageTile(d, tile.data, onClick, modifier)
+        }
+        else -> HomeCar(d, pkg, onClick, modifier, onReady)
+    }
+}
 
 /**
- * Solo el auto: crece desde su pieza ([from], en coordenadas de la pantalla)
+ * Solo el auto (o la carretera o la imagen de [tile]): crece desde su pieza ([from], en coordenadas de la pantalla)
  * hasta casi toda la pantalla mientras el fondo tapa el inicio. [progress] va de
  * 0 (en su pieza) a 1 (completo) y se lee solo al dibujar: la animación no
  * vuelve a armar nada. El auto se pinta una vez al tamaño final y la GPU lo escala.
@@ -87,6 +89,7 @@ fun brandName(d: Dependencies, pkg: CarPackage?) = pkg?.make ?: d.prefs.carName 
 fun CarOnly(
     d: Dependencies,
     pkg: CarPackage?,
+    tile: Tile,
     from: Rect,
     progress: () -> Float,
     backdrop: Brush,
@@ -131,7 +134,7 @@ fun CarOnly(
                     }
                 },
         ) {
-            HomeCar(d, pkg, onClick = onTap, onReady = onReady)
+            HeroTile(d, tile, pkg, onClick = onTap, onReady = onReady)
         }
     }
 }

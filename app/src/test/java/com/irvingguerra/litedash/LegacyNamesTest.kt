@@ -70,4 +70,30 @@ class LegacyNamesTest {
         // Mismo número de campos que antes en cada renglón.
         assertEquals(old.lines().map { it.split('\t').size }, new.map { it.size })
     }
+
+    @Test
+    fun carTiles() {
+        val layout = listOf(
+            "car-0\tcar\t0\t0\t6\t4\t\t",
+            "music-1\tmusic\t6\t0\t4\t1\t\t",
+            "car-x\tcar\t0\t4\t3\t2",
+            "road-x\tclock\t3\t4\t3\t2\t\t",
+        ).joinToString("\n")
+        // Con el auto 3D no cambia nada.
+        assertEquals(layout, LegacyNames.carTiles(layout, "car"))
+
+        val road = LegacyNames.carTiles(layout, "road").lines().map { it.split('\t') }
+        assertEquals(listOf("road-0", "road"), road[0].take(2))
+        assertEquals(listOf("music-1", "music"), road[1].take(2))
+        // Choca con road-x: se queda el id viejo, pero el tipo sí cambia.
+        assertEquals(listOf("car-x", "road"), road[2].take(2))
+        assertEquals(layout.lines().map { it.split('\t').size }, road.map { it.size })
+
+        val image = LegacyNames.carTiles(layout, "logo").lines().map { it.split('\t') }
+        assertEquals(listOf("image-0", "image"), image[0].take(2))
+        assertEquals(LegacyNames.LOGO_IMAGE, image[0][6])
+        assertEquals("", image[0][7])
+        // El renglón de 6 campos gana el de datos.
+        assertEquals(listOf("image-x", "image", "0", "4", "3", "2", LegacyNames.LOGO_IMAGE), image[2])
+    }
 }

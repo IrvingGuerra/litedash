@@ -48,7 +48,6 @@ internal object PrefKeys {
     const val NIGHT_BRIGHTNESS = "night_brightness"
     const val BRIGHTNESS_ALL_APPS = "brightness_all_apps"
     const val BRIGHTNESS_ORIGINAL = "brightness_original"
-    const val CAR_VIEW = "car_view"
     const val ENGINE_ALERTS = "engine_alerts"
     const val BAR_POSITION = "bar_position"
     const val LOGO_INTRO = "logo_intro"
@@ -57,6 +56,7 @@ internal object PrefKeys {
     const val LIGHTS_ON = "lights_on_value"
     const val SPLIT_SCREEN = "split_screen"
     const val SPLIT_CAR_LEFT = "split_car_left"
+    const val SPLIT_ROAD = "split_road"
     const val TRIP_LOG = "trip_log"
     const val BEST_ACCEL = "best_0_100"
     const val STATS = "anonymous_stats"
@@ -71,20 +71,6 @@ enum class BarPosition(val stored: String) {
 
     companion object {
         fun fromStored(value: String?) = entries.firstOrNull { it.stored == value } ?: AUTO
-    }
-}
-
-/** Qué muestra la pieza del auto (y su vista en grande). */
-enum class CarView(val stored: String) {
-    /** El auto 3D que gira con el dedo. */
-    CAR("car"),
-    /** Una imagen tuya (como el logo de tu marca) o, sin imagen, el nombre. */
-    LOGO("logo"),
-    /** El auto de espaldas en una carretera que avanza con la velocidad, con los km del viaje (como DuduAuto). */
-    ROAD("road");
-
-    companion object {
-        fun fromStored(value: String?) = entries.firstOrNull { it.stored == value }
     }
 }
 
@@ -216,14 +202,14 @@ class Preferences(context: Context) {
     /** Dónde van la hora y tus apps: a un lado, abajo o según la pantalla. */
     var barPosition by mapped(PrefKeys.BAR_POSITION, BarPosition::fromStored) { it.stored }
 
-    /** Qué muestra la pieza del auto. */
-    var carView by mapped(PrefKeys.CAR_VIEW, { CarView.fromStored(it) ?: CarView.CAR }, { it.stored })
-
     /** Abrir las apps de mapa y música en pantalla dividida, con el auto al lado (solo acostada). */
     var splitScreen by bool(PrefKeys.SPLIT_SCREEN, false)
 
     /** En pantalla dividida, el auto va a la izquierda (si no, a la derecha). */
     var splitCarLeft by bool(PrefKeys.SPLIT_CAR_LEFT, true)
+
+    /** En pantalla dividida, al lado del mapa va la carretera (si no, el auto 3D). */
+    var splitRoad by bool(PrefKeys.SPLIT_ROAD, false)
 
     /** Guardar un resumen de cada viaje con el OBD conectado (apagado de fábrica). */
     var tripLog by bool(PrefKeys.TRIP_LOG, false)
@@ -252,8 +238,8 @@ class Preferences(context: Context) {
     /** El valor de ese ajuste con los faros prendidos. */
     var lightsOnValue by string(PrefKeys.LIGHTS_ON)
 
-    /** Cambia cada vez que se elige o quita la imagen del logo (para volver a leerla); solo en memoria. */
-    var logoRevision by mutableIntStateOf(0)
+    /** Cambia cada vez que se elige o quita la imagen de una pieza (para volver a leerla); solo en memoria. */
+    var imageRevision by mutableIntStateOf(0)
 
     /** Lo mismo para la imagen de la animación de entrada. */
     var introRevision by mutableIntStateOf(0)

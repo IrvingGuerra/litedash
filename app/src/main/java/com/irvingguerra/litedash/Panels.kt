@@ -341,9 +341,6 @@ private fun CarSettings(d: Dependencies) {
         Label(stringResource(R.string.color), Typography.label, c.textMuted)
         ColorPicker(prefs.carColor, prefs::previewCarColor) { prefs.carColor = it }
     }
-    if (tab == 0) SettingsCard(stringResource(R.string.logo_title), stringResource(R.string.logo_help)) {
-        CarViewSettings(d, brandName(d, pkg))
-    }
     if (tab == 0 && pkg != null) {
         SettingsCard("${pkg.make} ${pkg.name} ${pkg.year}") {
             ModelOptions(cars, pkg, catalog?.firstOrNull { it.id == pkg.id }, onDelete = { prefs.carModel = null; cars.delete(pkg) })
@@ -876,13 +873,12 @@ private fun nameOf(t: ScreenSize) = when (t) {
 }
 
 /**
- * Estilos de plantilla (una pestaña cada uno): con el auto, con la carretera, solo
- * velocímetro (sin OBD: usa el GPS) o para lucir tu fondo, como BYD. [view] es lo que
- * muestra la pieza del auto al aplicar una (null = no se toca).
+ * Estilos de plantilla (una pestaña cada uno): con el auto 3D, con la carretera en su
+ * lugar ([hero]), solo velocímetro (sin OBD: usa el GPS) o para lucir tu fondo, como BYD.
  */
-private enum class TemplateTab(val title: Int, val templates: List<Template>) {
+private enum class TemplateTab(val title: Int, val templates: List<Template>, val hero: String = TileTypes.CAR) {
     CAR(R.string.templates_tab_car, Template.entries.filter { it.hasCar }),
-    ROAD(R.string.templates_tab_road, listOf(Template.CARDS, Template.CENTER, Template.CAR_SPEED, Template.SPORT, Template.VERTICAL)),
+    ROAD(R.string.templates_tab_road, listOf(Template.CARDS, Template.CENTER, Template.CAR_SPEED, Template.SPORT, Template.VERTICAL), TileTypes.ROAD),
     SPEED(R.string.templates_tab_speed, listOf(Template.SPEED, Template.SPEED_WIDGETS, Template.MINIMAL)),
     WALLPAPER(R.string.templates_tab_wallpaper, listOf(Template.WALL_CARDS, Template.WALL_SIDE, Template.MINIMAL)),
 }
@@ -902,10 +898,7 @@ fun TemplatesPanel(dashboard: DashboardState, prefs: Preferences, close: () -> U
             Label(stringResource(R.string.templates_help), Typography.body, c.textMuted)
             val tab = TemplateTab.entries[tabs(TemplateTab.entries.map { it.title }, "plantillas")]
             fun apply(p: Template) {
-                dashboard.template(p)
-                // La carretera la pone su pestaña; la del auto la quita (el logo o tu imagen se quedan).
-                if (tab == TemplateTab.ROAD) prefs.carView = CarView.ROAD
-                else if (tab == TemplateTab.CAR && prefs.carView == CarView.ROAD) prefs.carView = CarView.CAR
+                dashboard.template(p, tab.hero)
                 close()
             }
             when (tab) {
@@ -929,7 +922,7 @@ fun TemplatesPanel(dashboard: DashboardState, prefs: Preferences, close: () -> U
                         for (p in templates) {
                             Card(Modifier.width(260.dp), onClick = { apply(p) }) {
                                 Column(Modifier.padding(16.dp)) {
-                                    TemplateThumbnail(p, grid)
+                                    TemplateThumbnail(p, grid, tab.hero)
                                     Spacer(Modifier.height(12.dp))
                                     Label(stringResource(nameOf(p)), Typography.subtitle, maxLines = 1)
                                     if (tab == TemplateTab.CAR && group == yours && p == suggested) {
@@ -948,14 +941,14 @@ fun TemplatesPanel(dashboard: DashboardState, prefs: Preferences, close: () -> U
 
 /** Dibujo de la plantilla en chiquito, con las proporciones de esta pantalla. */
 @Composable
-private fun TemplateThumbnail(p: Template, grid: Grid) {
+private fun TemplateThumbnail(p: Template, grid: Grid, hero: String) {
     val c = LocalColors.current
     BoxWithConstraints(Modifier.fillMaxWidth().aspectRatio(grid.columns.toFloat() / grid.rows).clip(RoundedCornerShape(Radius.inner)).background(c.background)) {
         val cw = maxWidth / grid.columns
         val ch = maxHeight / grid.rows
-        val tiles = p.tiles(grid)
-        // La protagonista en ámbar: el auto o, en las que no lo llevan, el velocímetro o la primera pieza.
-        val hero = (tiles.firstOrNull { it.type == TileTypes.CAR } ?: tiles.firstOrNull { it.type == TileTypes.SPEEDOMETER } ?: tiles.firstOrNull())?.id
+        val tiles = p.tiles(grid, hero)
+        // La protagonista en ámbar: el auto (o la carretera) o, en las que no lo llevan, el velocímetro o la primera pieza.
+        val main = (tiles.firstOrNull { it.type == hero } ?: tiles.firstOrNull { it.type == TileTypes.SPEEDOMETER } ?: tiles.firstOrNull())?.id
         for (tile in tiles) {
             Box(
                 Modifier
@@ -963,7 +956,7 @@ private fun TemplateThumbnail(p: Template, grid: Grid) {
                     .size(cw * tile.width, ch * tile.height)
                     .padding(2.dp)
                     .clip(RoundedCornerShape(Radius.small))
-                    .background(if (tile.id == hero) c.accent.copy(alpha = 0.55f) else c.surfaceHigh),
+                    .background(if (tile.id == main) c.accent.copy(alpha = 0.55f) else c.surfaceHigh),
             )
         }
     }
@@ -992,6 +985,8 @@ fun AddTilePanel(dashboard: DashboardState, close: () -> Unit, onPickApp: () -> 
 
 private fun iconOf(type: String) = when (type) {
     TileTypes.CAR -> Icons.car
+    TileTypes.ROAD -> Icons.road
+    TileTypes.IMAGE -> Icons.image
     TileTypes.MUSIC -> Icons.music
     TileTypes.NAVIGATE -> Icons.navigate
     TileTypes.CLOCK -> Icons.clock
@@ -1013,7 +1008,7 @@ private fun Tiles(d: Dependencies, onEdit: () -> Unit) {
     // Tipo que no cupo al agregarlo: se avisa y se ofrece acomodar el inicio.
     var noRoom by remember { mutableStateOf<String?>(null) }
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        for (spec in TileSpecs.filter { it.type != TileTypes.APP && it.type != TileTypes.CAR }) {
+        for (spec in TileSpecs.filter { it.type != TileTypes.APP }) {
             val onHome = d.dashboard.tiles.any { it.type == spec.type }
             val didNotFit = noRoom == spec.type && !onHome
             val detail = if (didNotFit) stringResource(R.string.no_room) else spec.detail?.let { stringResource(it) } ?: ""

@@ -29,8 +29,19 @@ class DashboardStore(context: Context) {
         }
         prefs.edit().putString(LAYOUT_KEY_PREFIX + c.key, text).apply()
     }
+
+    /** La pieza grande de las plantillas (tipo y datos): el auto 3D si nunca se eligió otra. */
+    fun hero(): Pair<String, String> =
+        (prefs.getString(HERO_TYPE, null) ?: TileTypes.CAR) to (prefs.getString(HERO_DATA, null) ?: "")
+
+    fun saveHero(type: String, data: String) {
+        prefs.edit().putString(HERO_TYPE, type).putString(HERO_DATA, data).apply()
+    }
 }
 
 // Nombres guardados en el dispositivo (en inglés desde la 1.4.47; la migración copió los viejos).
 private const val PREFS_FILE = "dashboard"
 private const val LAYOUT_KEY_PREFIX = "layout_"
+// La migración de la 1.4.49 (pieza del auto en tres) también los escribe: mismos nombres allá.
+private const val HERO_TYPE = "hero_type"
+private const val HERO_DATA = "hero_data"

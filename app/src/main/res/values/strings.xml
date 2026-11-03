@@ -7,7 +7,9 @@
     <string name="color">Color</string>
     <string name="other_color">Otro color</string>
     <string name="car_coming_soon">Pronto: tu modelo exacto, con su color y sus llantas.</string>
-    <string name="tile_car">Auto</string>
+    <string name="tile_car">Auto 3D</string>
+    <string name="tile_road">Carretera</string>
+    <string name="tile_image">Imagen</string>
     <string name="tile_music">Música</string>
     <string name="tile_navigate">Navegar</string>
     <string name="tile_clock">Reloj</string>
@@ -53,6 +55,7 @@
     <string name="tab_split">Pantalla dividida</string>
     <string name="split_title">Abrir mapa y música en pantalla dividida</string>
     <string name="split_help">Al abrir Waze, Maps, Spotify u otra app de mapa o de música desde LiteDash, se abre en una mitad y tu auto (3D o en carretera) en la otra, sin las demás piezas. Solo con la pantalla acostada. Tu inicio no cambia: al regresar está como lo dejaste.</string>
+    <string name="split_view">Al lado del mapa</string>
     <string name="split_side">Lado del auto</string>
     <string name="split_left">Izquierda</string>
     <string name="split_right">Derecha</string>
@@ -386,21 +389,13 @@
     <string name="tab_inspection">Verificación</string>
     <string name="tab_sensors">Sensores</string>
     <string name="obd_no_readiness">Tu auto no reporta los monitores de la verificación.</string>
-    <!-- Logo en vez del auto -->
-    <string name="logo_title">Qué muestra la pieza del auto</string>
-    <string name="logo_help">El auto 3D, una imagen tuya (como el logo de tu marca: elígela de tu galería, LiteDash no trae logos de marcas) o tu auto en carretera con la velocidad y los km del viaje.</string>
-    <string name="show_car">Auto 3D</string>
-    <string name="show_logo">Imagen</string>
-    <string name="show_road">Carretera</string>
     <string name="wallpaper_title">Fondo del inicio</string>
     <string name="wallpaper_help">Una foto tuya detrás de todo el inicio. Sin imagen, el fondo del tema.</string>
-    <string name="road_help">La velocidad sale del OBD o del GPS, y los km del viaje del GPS (se reinician en la pieza Viaje).</string>
     <string name="road_trip">viaje</string>
     <string name="logo_pick">Elegir imagen</string>
     <string name="logo_change">Cambiar imagen</string>
     <string name="logo_remove">Quitar imagen</string>
     <string name="logo_intro">Animación de entrada</string>
-    <string name="logo_no_image">Sin imagen se muestra el nombre: %1$s.</string>
     <string name="bar_position">Barra de apps</string>
     <string name="bar_position_help">Dónde van la hora y tus apps. Automática: a un lado si la pantalla está acostada, abajo si está parada.</string>
     <string name="bar_auto">Automática</string>
@@ -430,11 +425,17 @@
     <string name="module_turn_on">Activar</string>
     <string name="module_settings">Permisos</string>
     <string name="module_soon">Próximamente</string>
+    <string name="tile_car_help">Tu auto en 3D; gíralo con el dedo y un toque lo agranda</string>
+    <string name="tile_road_help">Tu auto en carretera con la velocidad (OBD o GPS) y los km del viaje</string>
+    <string name="tile_image_help">Una foto tuya, como el logo de tu marca; sin foto, el logo de LiteDash</string>
+    <string name="image_title">Imagen de la pieza</string>
+    <string name="image_help">Elígela de tu galería: cada pieza de imagen tiene la suya. LiteDash no trae logos de marcas.</string>
+    <string name="image_empty">Sin foto se muestra el logo de LiteDash.</string>
     <string name="tile_music_help">Lo que suena, con controles; un toque la abre en grande</string>
     <string name="tile_navigate_help">Tu app de mapas, Casa y Trabajo, y la siguiente vuelta</string>
     <string name="tile_clock_help">Hora, fecha y clima</string>
     <string name="tile_phone_help">Abre el marcador</string>
-    <string name="logo_intro_help">Al abrir LiteDash, tu imagen (como el logo de tu marca) aparece unos segundos. Es aparte de la imagen de la pieza del auto.</string>
+    <string name="logo_intro_help">Al abrir LiteDash, tu imagen (como el logo de tu marca) aparece unos segundos. Es aparte de las piezas de imagen.</string>
     <string name="intro_no_image">Sin imagen se muestra el logo de LiteDash.</string>
     <string name="unit_rpm" translatable="false">rpm</string>
     <string name="unit_c" translatable="false">°C</string>

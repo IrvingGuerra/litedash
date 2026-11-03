@@ -89,7 +89,12 @@ fun List<Tile>.replace(p: Tile) = map { if (it.id == p.id) p else it }
 // Tipos de pieza que conocen las plantillas. La app registra cómo se dibuja cada uno.
 // Los valores se guardan en cada acomodo: van en inglés y no se traducen.
 object TileTypes {
+    /** El auto 3D que gira con el dedo. */
     const val CAR = "car"
+    /** Tu auto de espaldas en una carretera que avanza con la velocidad. */
+    const val ROAD = "road"
+    /** Una foto tuya; [Tile.data] es el nombre de su archivo (vacío = sin foto todavía). */
+    const val IMAGE = "image"
     const val MUSIC = "music"
     const val NAVIGATE = "navigate"
     const val CLOCK = "clock"
@@ -103,6 +108,9 @@ object TileTypes {
     const val PROJECTION = "projection"
     const val APP = "app"
 }
+
+/** Sin fondo de tarjeta siempre: el auto, la carretera y la imagen flotan sobre el inicio. */
+val Tile.cardless get() = type == TileTypes.CAR || type == TileTypes.ROAD || type == TileTypes.IMAGE
 
 /** Tamaños de pantalla, para agrupar los acomodos y sugerir el mejor. */
 enum class ScreenSize { SMALL, MEDIUM, LARGE, VERTICAL }
@@ -151,13 +159,15 @@ val Template.hasCar get() = this !in setOf(Template.SPEED, Template.MINIMAL, Tem
 
 /**
  * Acomodos de inicio. Se calculan para cualquier cuadrícula: lo que no quepa se
- * omite, y nunca se enciman (lo revisan las pruebas).
+ * omite, y nunca se enciman (lo revisan las pruebas). La pieza grande es el auto 3D
+ * o, con [hero] = [TileTypes.ROAD], la carretera en su lugar.
  */
-fun Template.tiles(c: Grid): List<Tile> {
+fun Template.tiles(c: Grid, hero: String = TileTypes.CAR): List<Tile> {
     val cols = c.columns
     val rows = c.rows
     val list = mutableListOf<Tile>()
-    fun place(type: String, col: Int, row: Int, width: Int, height: Int, data: String = "", plain: Boolean = false) {
+    fun place(kind: String, col: Int, row: Int, width: Int, height: Int, data: String = "", plain: Boolean = false) {
+        val type = if (kind == TileTypes.CAR) hero else kind
         val p = Tile("$type-${list.size}", type, col, row, width, height, data, plain)
         if (width >= 1 && height >= 1 && list.fits(p, c)) list += p
     }

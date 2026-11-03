@@ -178,9 +178,9 @@ fun Dashboard(
                         size = 40.dp,
                         background = c.surfaceHigh,
                     )
-                    // Con o sin fondo de tarjeta (el auto no lleva tarjeta). Junto a la ✕: en las
-                    // piezas de una fila, la esquina de la derecha ya la ocupa la del tamaño.
-                    if (p.type != TileTypes.CAR) IconButton(
+                    // Con o sin fondo de tarjeta (el auto, la carretera y la imagen no llevan). Junto
+                    // a la ✕: en las piezas de una fila, la esquina de la derecha ya la ocupa la del tamaño.
+                    if (!p.cardless) IconButton(
                         Icons.noCard,
                         onClick = { onChange(tiles.replace(p.copy(plain = !p.plain))) },
                         modifier = Modifier.align(Alignment.TopStart).padding(start = 52.dp, top = 6.dp),

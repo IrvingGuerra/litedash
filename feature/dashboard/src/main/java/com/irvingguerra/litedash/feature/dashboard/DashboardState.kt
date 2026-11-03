@@ -15,7 +15,7 @@ class DashboardState(private val store: DashboardStore) {
     fun use(c: Grid) {
         if (c != grid) {
             grid = c
-            tiles = store.read(c) ?: c.suggestedTemplate().tiles(c)
+            tiles = store.read(c) ?: suggested(c)
         }
     }
 
@@ -24,8 +24,19 @@ class DashboardState(private val store: DashboardStore) {
         grid?.let { store.save(it, newTiles) }
     }
 
-    fun template(p: Template) {
-        grid?.let { change(p.tiles(it)) }
+    /**
+     * Pone la plantilla [p] con el auto 3D o la carretera ([hero]) como pieza grande. Esa pieza
+     * también va en las plantillas de fábrica de otras cuadrículas (otra escala u otra pantalla).
+     */
+    fun template(p: Template, hero: String = TileTypes.CAR) {
+        store.saveHero(hero, "")
+        grid?.let { change(p.tiles(it, hero)) }
+    }
+
+    /** La plantilla recomendada para [c], con la pieza grande que se eligió la última vez. */
+    private fun suggested(c: Grid): List<Tile> {
+        val (hero, data) = store.hero()
+        return c.suggestedTemplate().tiles(c, hero).map { if (it.type == hero && data.isNotEmpty()) it.copy(data = data) else it }
     }
 
     /**

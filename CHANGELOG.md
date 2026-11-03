@@ -6,6 +6,21 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
+## [1.4.49] - 2026-11-03
+
+### Nuevo
+- **Tres piezas en vez de una**: Auto 3D, Carretera e Imagen ya son piezas separadas y puedes
+  poner las que quieras juntas (por ejemplo, el auto 3D y la carretera lado a lado). Cada una
+  crece a pantalla completa con un toque.
+- **Pieza Imagen** con su propia foto: cada pieza de imagen tiene la suya (se elige con el botón
+  de ajustes al acomodar, o tocándola si aún no tiene). Sin foto muestra el logo de LiteDash.
+- **Pantalla dividida**: nuevo ajuste "Al lado del mapa" para elegir el auto 3D o la carretera.
+
+### Cambiado
+- Se quitó "Qué muestra la pieza del auto" de Tu auto: tu pieza se convierte sola en la que
+  tenías (carretera o imagen, con tu foto) y la pantalla dividida sigue mostrando lo mismo.
+- La pieza de imagen sin foto ya no muestra el nombre de la marca.
+
 ## [1.4.48] - 2026-11-03
 
 ### Nuevo

@@ -24,6 +24,10 @@ object Icons {
         "M3 16v-3.5l2.4-4.8a1.5 1.5 0 0 1 1.3-.7h8.6a1.5 1.5 0 0 1 1.2.6l3.5 4.4h1a1 1 0 0 1 1 1v3 M9 16h6 M3 16h1.5 M19.5 16h1.5 M5 12h15",
         "M5 16a2 2 0 1 0 4 0a2 2 0 1 0 -4 0 M15 16a2 2 0 1 0 4 0a2 2 0 1 0 -4 0",
     )
+    /** Carretera en perspectiva con su raya al centro. */
+    val road = icon("M8 3l-4 18 M16 3l4 18 M12 4v3 M12 10.5v3 M12 17v3")
+    /** Foto: marco con una montaña y el sol. */
+    val image = icon("M5 5h14a1 1 0 0 1 1 1v12a1 1 0 0 1 -1 1h-14a1 1 0 0 1 -1 -1v-12a1 1 0 0 1 1 -1z M4 16l5 -5l4 4l2 -2l5 5 M14.5 9a1.5 1.5 0 1 0 3 0a1.5 1.5 0 1 0 -3 0")
     val apps = icon("M4 4h6v6h-6z M14 4h6v6h-6z M4 14h6v6h-6z M14 14h6v6h-6z")
     val settings = icon("M4 6h8 M16 6h4 M14 4v4 M4 12h2 M10 12h10 M8 10v4 M4 18h11 M19 18h1 M17 16v4")
     val minus = icon("M6 12h12")

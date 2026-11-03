@@ -43,6 +43,18 @@ class ModelTest {
     }
 
     @Test
+    fun roadTakesTheCarPlace() {
+        for (c in screens) for (p in Template.entries.filter { it.hasCar }) {
+            val car = p.tiles(c)
+            val road = p.tiles(c, hero = TileTypes.ROAD)
+            assertTrue("$p en ${c.key}", road.none { it.type == TileTypes.CAR })
+            // Mismo acomodo: solo cambia el tipo de la pieza grande.
+            assertEquals(car.map { listOf(it.col, it.row, it.width, it.height) }, road.map { listOf(it.col, it.row, it.width, it.height) })
+            assertEquals(car.count { it.type == TileTypes.CAR }, road.count { it.type == TileTypes.ROAD })
+        }
+    }
+
+    @Test
     fun doesNotFitWhenOverlapping() {
         val c = Grid(10, 4)
         val a = Tile("a", TileTypes.CAR, 0, 0, 4, 4)

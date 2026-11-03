@@ -215,7 +215,8 @@ private fun SplitBoard(d: Dependencies, onSwap: () -> Unit, onExit: () -> Unit) 
     val c = LocalColors.current
     val car = remember(d.prefs.carModel) { d.cars.pkg(d.prefs.carModel) }
     Box(Modifier.fillMaxSize().background(c.background).safeDrawingPadding()) {
-        HomeCar(d, car, onClick = {}, modifier = Modifier.fillMaxSize().padding(16.dp))
+        val modifier = Modifier.fillMaxSize().padding(16.dp)
+        if (d.prefs.splitRoad) RoadView(d, car, onClick = {}, modifier = modifier) else HomeCar(d, car, onClick = {}, modifier = modifier)
         Row(Modifier.align(Alignment.BottomEnd).padding(12.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             IconButton(Icons.swap, onSwap, background = c.surfaceHigh)
             IconButton(Icons.expand, onExit, background = c.surfaceHigh)
@@ -236,6 +237,12 @@ fun SplitSettings(d: Dependencies) {
     }
     SwitchRow(stringResource(R.string.split_title), d.prefs.splitScreen, { d.prefs.splitScreen = it }, stringResource(R.string.split_help))
     if (d.prefs.splitScreen) {
+        Label(stringResource(R.string.split_view), Typography.label, c.textMuted)
+        Segmented(
+            listOf(false to stringResource(R.string.tile_car), true to stringResource(R.string.tile_road)),
+            d.prefs.splitRoad,
+            { d.prefs.splitRoad = it },
+        )
         Label(stringResource(R.string.split_side), Typography.label, c.textMuted)
         Segmented(
             listOf(true to stringResource(R.string.split_left), false to stringResource(R.string.split_right)),

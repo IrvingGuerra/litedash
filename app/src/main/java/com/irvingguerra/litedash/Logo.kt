@@ -1,7 +1,6 @@
 package com.irvingguerra.litedash
 
 import com.irvingguerra.litedash.core.ui.SwitchRow
-import com.irvingguerra.litedash.core.ui.Segmented
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -18,13 +17,15 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -42,9 +43,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.irvingguerra.litedash.core.ui.Button
 import com.irvingguerra.litedash.core.ui.Label
 import com.irvingguerra.litedash.core.ui.LocalColors
@@ -70,8 +69,16 @@ private class SavedImage(val file: String, val maxPx: Int, val png: Boolean) {
     fun file(context: Context) = File(context.filesDir, file)
 }
 
-/** El logo: con transparencia, y no necesita más de 1024 px. */
-private val LOGO = SavedImage("logo.png", 1024, png = true)
+/**
+ * Las fotos de las piezas de imagen, una por nombre ([Tile.data]): files/images/NOMBRE.png, con
+ * transparencia y a lo más 1024 px. Cada pieza tiene la suya.
+ */
+private val tileImages = HashMap<String, SavedImage>()
+
+private fun tileImage(name: String) = tileImages.getOrPut(name) { SavedImage("images/$name.png", 1024, png = true) }
+
+/** La imagen de la pieza del auto hasta la 1.4.48 (la migración la copió a images/logo.png). */
+private const val OLD_LOGO = "logo.png"
 
 /** La imagen de la animación de entrada: aparte de la de la pieza del auto. */
 private val INTRO = SavedImage("intro.png", 1024, png = true)
@@ -93,7 +100,7 @@ private suspend fun save(context: Context, uri: Uri, target: SavedImage): Boolea
         val k = target.maxPx.toFloat() / maxOf(decoded.width, decoded.height)
         val bitmap = if (k < 1f) decoded.scale((decoded.width * k).toInt(), (decoded.height * k).toInt()) else decoded
         // Primero a un temporal: si algo falla a la mitad, la imagen de antes queda intacta.
-        val temp = File(context.filesDir, "${target.file}.tmp")
+        val temp = File(context.filesDir, "${target.file}.tmp").apply { parentFile?.mkdirs() }
         temp.outputStream().use {
             if (target.png) bitmap.compress(Bitmap.CompressFormat.PNG, 100, it)
             else bitmap.compress(Bitmap.CompressFormat.JPEG, 90, it)
@@ -123,25 +130,18 @@ private fun rememberImage(target: SavedImage, revision: Int): LoadedImage {
     return loaded
 }
 
-/** El logo (o el nombre de la marca) centrado en su pieza; un toque hace [onClick]. */
+/** Pieza Imagen: tu foto [name] centrada o, sin foto, el logo de LiteDash; un toque hace [onClick]. */
 @Composable
-fun BrandLogo(d: Dependencies, brand: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
-    val loaded = rememberImage(LOGO, d.prefs.logoRevision)
-    val logo = loaded.image
-    BoxWithConstraints(
+fun ImageTile(d: Dependencies, name: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    val loaded = if (name.isEmpty()) LoadedImage(null, true) else rememberImage(tileImage(name), d.prefs.imageRevision)
+    val image = loaded.image
+    Box(
         modifier.fillMaxSize().clickable(remember { MutableInteractionSource() }, indication = null, onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
-        val side = minOf(maxWidth, maxHeight) * 0.7f
-        if (logo != null) {
-            Image(logo, null, Modifier.size(side))
-        } else if (loaded.loaded) {
-            Label(
-                brand.uppercase(),
-                Typography.clock.copy(fontSize = (side.value * 0.22f).coerceIn(28f, 110f).sp, letterSpacing = 6.sp, textAlign = TextAlign.Center),
-                maxLines = 2,
-                modifier = Modifier.padding(16.dp),
-            )
+        when {
+            image != null -> Image(image, null, Modifier.fillMaxSize(0.8f))
+            loaded.loaded -> MorseMark(Modifier.fillMaxWidth(0.5f).aspectRatio(184f / 36f))
         }
     }
 }
@@ -252,28 +252,33 @@ fun IntroSettings(prefs: Preferences) {
 fun migrateIntroImage(context: Context, prefs: Preferences) {
     if (prefs.introImageMigrated) return
     prefs.introImageMigrated = true
-    val logo = LOGO.file(context)
+    val logo = File(context.filesDir, OLD_LOGO)
     val intro = INTRO.file(context)
     if (prefs.logoIntro && logo.exists() && !intro.exists()) runCatching { logo.copyTo(intro) }
 }
 
-/** Ajustes de la pieza del auto: qué muestra (auto 3D, tu imagen o la carretera) y la imagen. */
+/** Elegir, cambiar o quitar la foto de una pieza de imagen ([tileId]). */
 @Composable
-fun CarViewSettings(d: Dependencies, brand: String) {
+fun CustomizeImagePanel(d: Dependencies, tileId: String, close: () -> Unit) {
     val c = LocalColors.current
-    val prefs = d.prefs
-    val views = listOf(
-        CarView.CAR to stringResource(R.string.show_car),
-        CarView.LOGO to stringResource(R.string.show_logo),
-        CarView.ROAD to stringResource(R.string.show_road),
-    )
-    Segmented(views, prefs.carView, { prefs.carView = it })
-    when (prefs.carView) {
-        CarView.CAR -> Unit
-        CarView.LOGO -> {
-            val hasImage = ImageButtons(LOGO, prefs.logoRevision, { prefs.logoRevision++ }, onPicked = { prefs.carView = CarView.LOGO })
-            if (!hasImage) Label(stringResource(R.string.logo_no_image, brand.uppercase()), Typography.small, c.textMuted)
+    val tile = d.dashboard.tiles.firstOrNull { it.id == tileId }
+    if (tile == null) {
+        LaunchedEffect(Unit) { close() }
+        return
+    }
+    // Sin foto todavía: se le da un nombre nuevo y se guarda en la pieza al elegirla.
+    val fresh = remember(tileId) { System.currentTimeMillis().toString(36) }
+    val name = tile.data.ifEmpty { fresh }
+    PanelScaffold(stringResource(R.string.image_title), close) {
+        Column(Modifier.weight(1f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            Label(stringResource(R.string.image_help), Typography.body, c.textMuted)
+            Box(Modifier.widthIn(max = 360.dp).fillMaxWidth().aspectRatio(2f)) {
+                ImageTile(d, tile.data, onClick = {})
+            }
+            val hasImage = ImageButtons(tileImage(name), d.prefs.imageRevision, { d.prefs.imageRevision++ }, onPicked = {
+                if (tile.data.isEmpty()) d.dashboard.setData(tileId, name)
+            })
+            if (!hasImage) Label(stringResource(R.string.image_empty), Typography.small, c.textMuted)
         }
-        CarView.ROAD -> Label(stringResource(R.string.road_help), Typography.small, c.textMuted)
     }
 }

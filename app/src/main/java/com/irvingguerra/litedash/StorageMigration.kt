@@ -18,7 +18,6 @@ import java.io.File
  * constantes de hoy. Cada paso va por su lado: si uno falla, los demás se copian igual.
  */
 internal object StorageMigration {
-    private const val VERSION = 1
     private const val TAG = "LiteDash"
     private const val ATTEMPTS = "storage_attempts"
     private const val MAX_ATTEMPTS = 3
@@ -26,23 +25,67 @@ internal object StorageMigration {
     /** Archivos de ajustes de antes de la 1.4.47 (`obd` se quedó con su nombre: sus claves viejas siguen ahí). */
     val OLD_PREFS = listOf("ajustes", "estadisticas", "clima", "recordatorios", "musica", "autos", "actualizaciones", "tablero")
 
-    /** Archivos de antes de la 1.4.47 dentro de files/. */
-    val OLD_FILES = listOf("entrada.png", "fondo.jpg", "viajes.csv")
+    /**
+     * Archivos de antes de la 1.4.47 dentro de files/ (logo.png: la imagen de la pieza del auto hasta la 1.4.48;
+     * al borrarlo, quitar también `migrateIntroImage`, que lo lee).
+     */
+    val OLD_FILES = listOf("entrada.png", "fondo.jpg", "viajes.csv", "logo.png")
 
     fun run(context: Context) {
         val settings = prefs(context, PrefKeys.FILE)
-        if (settings.getInt(PrefKeys.STORAGE_VERSION, 0) >= VERSION) return
-        val steps = listOf(
-            "settings" to ::settings, "stats" to ::stats, "weather" to ::weather, "reminders" to ::reminders,
-            "music" to ::music, "obd" to ::obd, "updates" to ::updates, "dashboard" to ::dashboard,
-            "images" to ::images, "trips" to ::trips, "cars" to ::cars,
-        )
+        // Versión 1 (1.4.47): nombres en inglés. Versión 2 (1.4.49): la pieza del auto en tres piezas.
+        // Cada una espera a que la anterior termine.
+        if (settings.getInt(PrefKeys.STORAGE_VERSION, 0) < 1) {
+            migrate(
+                context, settings, 1,
+                listOf(
+                    "settings" to ::settings, "stats" to ::stats, "weather" to ::weather, "reminders" to ::reminders,
+                    "music" to ::music, "obd" to ::obd, "updates" to ::updates, "dashboard" to ::dashboard,
+                    "images" to ::images, "trips" to ::trips, "cars" to ::cars,
+                ),
+            )
+        }
+        if (settings.getInt(PrefKeys.STORAGE_VERSION, 0) == 1) migrate(context, settings, 2, listOf("car tiles" to ::carTiles))
+    }
+
+    private fun migrate(context: Context, settings: SharedPreferences, version: Int, steps: List<Pair<String, (Context) -> Unit>>) {
         val failed = steps.count { (name, step) -> runCatching { step(context) }.onFailure { Log.w(TAG, "No se pudo migrar $name", it) }.isFailure }
         // Si algo falló se reintenta al siguiente arranque (los pasos no pisan lo ya copiado), a lo más 3 veces.
         val attempts = settings.getInt(ATTEMPTS, 0) + 1
         settings.edit(commit = true) {
-            if (failed == 0 || attempts >= MAX_ATTEMPTS) putInt(PrefKeys.STORAGE_VERSION, VERSION).remove(ATTEMPTS) else putInt(ATTEMPTS, attempts)
+            if (failed == 0 || attempts >= MAX_ATTEMPTS) putInt(PrefKeys.STORAGE_VERSION, version).remove(ATTEMPTS) else putInt(ATTEMPTS, attempts)
         }
+    }
+
+    /**
+     * 1.4.49: la pieza del auto mostraba el auto 3D, la carretera o una imagen según "car_view"; ahora
+     * son tres piezas. Cada acomodo cambia su pieza del auto por la de lo que mostraba, la imagen pasa
+     * a images/logo.png (la de antes se queda), las plantillas de fábrica usan esa pieza y, con la
+     * carretera, la pantalla dividida la sigue mostrando. "car_view" se queda guardado: se borra con lo demás viejo.
+     */
+    private fun carTiles(context: Context) {
+        val settings = prefs(context, PrefKeys.FILE)
+        val view = settings.getString("car_view", null) ?: return
+        val dashboard = prefs(context, "dashboard")
+        val layouts = dashboard.all.filter { (key, value) -> key.startsWith("layout_") && value is String }
+        dashboard.edit(commit = true) {
+            for ((key, value) in layouts) putString(key, LegacyNames.carTiles(value as String, view))
+            // Las cuadrículas sin acomodo guardado salen de la plantilla: con la misma pieza grande.
+            when (view) {
+                "road" -> putString("hero_type", "road").putString("hero_data", "")
+                "logo" -> putString("hero_type", "image").putString("hero_data", LegacyNames.LOGO_IMAGE)
+            }
+        }
+        if (view == "road" && !settings.contains(PrefKeys.SPLIT_ROAD)) settings.edit(commit = true) { putBoolean(PrefKeys.SPLIT_ROAD, true) }
+        // La foto al final y por su lado: si no se puede copiar, la pieza ya es de imagen y muestra el logo de LiteDash.
+        if (view == "logo") runCatching {
+            val source = File(context.filesDir, "logo.png")
+            val target = File(context.filesDir, "images/${LegacyNames.LOGO_IMAGE}.png")
+            if (source.isFile && !target.exists()) {
+                target.parentFile?.mkdirs()
+                writeSafely(target) { source.copyTo(it, overwrite = true) }
+            }
+        }.onFailure { Log.w(TAG, "No se pudo copiar la imagen de la pieza", it) }
     }
 
     private fun settings(context: Context) {
@@ -199,6 +242,8 @@ internal object StorageMigration {
 
 /** Traducción de los valores guardados antes de la 1.4.47 (funciones puras, con pruebas). */
 internal object LegacyNames {
+    /** Nombre de la foto de la pieza de imagen que sale de la imagen de la pieza del auto. */
+    const val LOGO_IMAGE = "logo"
     const val TRIPS_HEADER = "start_ms,seconds,km,max_kmh,avg_kmh,max_rpm,max_coolant_c,liters"
 
     private val THEME = mapOf("OSCURO" to "dark", "CLARO" to "light", "SISTEMA" to "system", "SOL" to "sun")
@@ -284,6 +329,33 @@ internal object LegacyNames {
             if (id !in ids) f[0] = id
             ids += f[0]
             if (f.size > 6 && (type == "gauge" || type == "speedometer")) f[6] = gauge(f[6])
+            f.joinToString("\t")
+        }
+    }
+
+    /**
+     * 1.4.49: la pieza del auto ("car") pasa a la de lo que mostraba ([view]: "road" → carretera,
+     * "logo" → imagen con la foto [LOGO_IMAGE]); con el auto 3D no cambia nada. Ids como en [layout].
+     */
+    fun carTiles(text: String, view: String): String {
+        val type = when (view) {
+            "road" -> "road"
+            "logo" -> "image"
+            else -> return text
+        }
+        val ids = text.lines().mapTo(mutableSetOf()) { it.substringBefore('\t') }
+        return text.lines().joinToString("\n") { line ->
+            val f = line.split('\t').toMutableList()
+            if (f.size < 6 || f[1] != "car") return@joinToString line
+            f[1] = type
+            if (f[0].startsWith("car-")) {
+                val id = type + f[0].removePrefix("car")
+                if (id !in ids) { ids -= f[0]; ids += id; f[0] = id }
+            }
+            if (type == "image") {
+                if (f.size < 7) f += ""
+                f[6] = LOGO_IMAGE
+            }
             f.joinToString("\t")
         }
     }
