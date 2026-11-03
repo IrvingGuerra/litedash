@@ -6,6 +6,19 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
+## [1.4.53] - 2026-11-03
+
+### Nuevo
+- **Salud del auto** en el Taller: tu auto visto desde arriba con un punto sobre la parte que
+  pide atención (ámbar) o tiene falla (rojo), y al lado una tarjeta por sistema (motor,
+  combustible y aire, enfriamiento, batería y carga, transmisión, emisiones) con su estado y su
+  dato. Sin adaptador se ve la misma pantalla apagada, nunca una vacía.
+- La pieza **Taller** del inicio muestra el mini auto con sus puntos y cuántos avisos hay.
+
+### Cambiado
+- Taller reorganizado en Salud · Códigos · Sensores · Gráficas · Más (la verificación va con los
+  códigos; conexión, alertas, 0–100 y viajes en Más).
+
 ## [1.4.52] - 2026-11-03
 
 ### Cambiado

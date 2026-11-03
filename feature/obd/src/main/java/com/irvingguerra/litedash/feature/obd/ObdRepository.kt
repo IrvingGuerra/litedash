@@ -362,8 +362,14 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
         target = null
     }
 
+    /** El último reporte del motor que se leyó (la pieza Taller y Salud lo muestran sin volver a leer). */
+    var lastReport by mutableStateOf<EngineReport?>(null)
+        private set
+
     /** Lee todo lo del motor de una vez para el Taller. */
-    suspend fun report(): EngineReport? = withElm { e ->
+    suspend fun report(): EngineReport? = readReport().also { if (it != null) lastReport = it }
+
+    private suspend fun readReport(): EngineReport? = withElm { e ->
         EngineReport(
             readiness = e.pid(0x01)?.let(::parseReadiness),
             stored = e.troubleCodes("03"),

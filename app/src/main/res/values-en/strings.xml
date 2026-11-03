@@ -29,8 +29,6 @@
     <string name="template_sport">Sport</string>
     <string name="template_minimal">Minimal</string>
     <string name="tab_charts">Charts</string>
-    <string name="tab_accel">0–60</string>
-    <string name="tab_trips">Trips</string>
     <string name="obd_charts">Live charts</string>
     <string name="obd_charts_help">Pick up to two readings to see them together over the last 90 seconds, each with its own scale.</string>
     <string name="obd_chart_range">%1$s – %2$s</string>
@@ -331,11 +329,7 @@
     <string name="obd_wifi">Wi-Fi</string>
     <string name="obd_allow_bluetooth">Allow Bluetooth</string>
     <string name="obd_no_paired">No paired adapters. Pair yours in Android Settings → Bluetooth (the PIN is usually 1234 or 0000).</string>
-    <string name="obd_engine">Engine</string>
     <string name="obd_reading">Reading the car…</string>
-    <string name="obd_mil_on">Check engine light on</string>
-    <string name="obd_mil_off">No check engine light</string>
-    <string name="obd_battery">Battery %1$.1f V</string>
     <string name="obd_read_again">Read again</string>
     <string name="obd_codes">Trouble codes</string>
     <string name="obd_codes_help">Stored: they turned the light on. Pending: seen once and being watched. Permanent: they clear themselves once the car confirms the fix.</string>
@@ -384,8 +378,6 @@
     <string name="tab_screen">Screen</string>
     <string name="tab_my_car">My car</string>
     <string name="tab_models">Models</string>
-    <string name="tab_connection">Connection</string>
-    <string name="tab_inspection">Inspection</string>
     <string name="tab_sensors">Sensors</string>
     <string name="obd_no_readiness">Your car doesn\'t report the inspection monitors.</string>
     <string name="wallpaper_title">Home background</string>
@@ -530,4 +522,32 @@
     <string name="radio_fm_app">Your screen\'s radio</string>
     <string name="radio_fm_app_help">The FM radio app that comes with your screen: LiteDash controls it from the Radio tile (play, next, previous and opening it).</string>
     <string name="radio_internet_help">Stations near you by GPS and worldwide, with favorites. Needs internet; without it, use your screen\'s radio.</string>
+    <string name="tab_health">Health</string>
+    <string name="tab_more">More</string>
+    <string name="health_title">Car health</string>
+    <string name="health_connect">Connect your OBD adapter to see your car\'s health</string>
+    <string name="health_all_good">All good</string>
+    <string name="health_good">Good</string>
+    <string name="health_warn">Attention</string>
+    <string name="health_fault">Fault</string>
+    <string name="health_unknown">No data</string>
+    <string name="health_pending">pending</string>
+    <plurals name="health_codes">
+        <item quantity="one">%1$d code</item>
+        <item quantity="other">%1$d codes</item>
+    </plurals>
+    <plurals name="health_issues">
+        <item quantity="one">%1$d alert</item>
+        <item quantity="other">%1$d alerts</item>
+    </plurals>
+    <string name="zone_engine">Engine</string>
+    <string name="zone_intake">Fuel and air</string>
+    <string name="zone_cooling">Cooling</string>
+    <string name="zone_battery">Battery and charging</string>
+    <string name="zone_transmission">Transmission</string>
+    <string name="zone_exhaust">Emissions</string>
+    <string name="zone_wheels">Wheels and brakes</string>
+    <string name="zone_body">Body and network</string>
+    <string name="health_monitors">%1$d of %2$d monitors ready</string>
+    <string name="health_mil">Check engine light is on</string>
 </resources>

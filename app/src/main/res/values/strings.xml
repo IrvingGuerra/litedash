@@ -30,8 +30,6 @@
     <string name="template_sport">Deportiva</string>
     <string name="template_minimal">Mínima</string>
     <string name="tab_charts">Gráficas</string>
-    <string name="tab_accel">0–100</string>
-    <string name="tab_trips">Viajes</string>
     <string name="obd_charts">Gráficas en vivo</string>
     <string name="obd_charts_help">Elige hasta dos datos para verlos juntos en los últimos 90 segundos. Cada uno con su propia escala.</string>
     <string name="obd_chart_range">%1$s – %2$s</string>
@@ -339,11 +337,7 @@
     <string name="obd_wifi">Wi-Fi</string>
     <string name="obd_allow_bluetooth">Permitir Bluetooth</string>
     <string name="obd_no_paired">No hay adaptadores emparejados. Empareja el tuyo en Ajustes de Android → Bluetooth (la clave suele ser 1234 o 0000).</string>
-    <string name="obd_engine">Motor</string>
     <string name="obd_reading">Leyendo el auto…</string>
-    <string name="obd_mil_on">Luz de falla encendida</string>
-    <string name="obd_mil_off">Sin luz de falla</string>
-    <string name="obd_battery">Batería %1$.1f V</string>
     <string name="obd_read_again">Leer de nuevo</string>
     <string name="obd_codes">Códigos de falla</string>
     <string name="obd_codes_help">Guardados: encendieron la luz. Pendientes: el auto los vio una vez y los vigila. Permanentes: solo se borran solos cuando el auto confirma que ya se arregló.</string>
@@ -392,8 +386,6 @@
     <string name="tab_screen">Pantalla</string>
     <string name="tab_my_car">Mi auto</string>
     <string name="tab_models">Modelos</string>
-    <string name="tab_connection">Conexión</string>
-    <string name="tab_inspection">Verificación</string>
     <string name="tab_sensors">Sensores</string>
     <string name="obd_no_readiness">Tu auto no reporta los monitores de la verificación.</string>
     <string name="wallpaper_title">Fondo del inicio</string>
@@ -549,4 +541,32 @@
     <string name="radio_fm_app">Radio de tu pantalla</string>
     <string name="radio_fm_app_help">La app de radio FM que trae tu pantalla: LiteDash la controla desde la pieza Radio (play, siguiente, anterior y abrirla).</string>
     <string name="radio_internet_help">Estaciones de tu zona por GPS y de todo el mundo, con favoritas. Necesita internet; si no tienes, usa la radio de tu pantalla.</string>
+    <string name="tab_health">Salud</string>
+    <string name="tab_more">Más</string>
+    <string name="health_title">Salud del auto</string>
+    <string name="health_connect">Conecta tu adaptador OBD para ver la salud de tu auto</string>
+    <string name="health_all_good">Todo bien</string>
+    <string name="health_good">Bien</string>
+    <string name="health_warn">Atención</string>
+    <string name="health_fault">Falla</string>
+    <string name="health_unknown">Sin datos</string>
+    <string name="health_pending">pendiente</string>
+    <plurals name="health_codes">
+        <item quantity="one">%1$d código</item>
+        <item quantity="other">%1$d códigos</item>
+    </plurals>
+    <plurals name="health_issues">
+        <item quantity="one">%1$d aviso</item>
+        <item quantity="other">%1$d avisos</item>
+    </plurals>
+    <string name="zone_engine">Motor</string>
+    <string name="zone_intake">Combustible y aire</string>
+    <string name="zone_cooling">Enfriamiento</string>
+    <string name="zone_battery">Batería y carga</string>
+    <string name="zone_transmission">Transmisión</string>
+    <string name="zone_exhaust">Emisiones</string>
+    <string name="zone_wheels">Ruedas y frenos</string>
+    <string name="zone_body">Carrocería y red</string>
+    <string name="health_monitors">%1$d de %2$d monitores listos</string>
+    <string name="health_mil">Luz de falla encendida</string>
 </resources>
