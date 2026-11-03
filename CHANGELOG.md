@@ -6,6 +6,19 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
+## [1.4.41] - 2026-11-02
+
+### Nuevo
+- **3 velocímetros elegantes sin aguja** en Personalizar medidor:
+  - **Degradado:** un arco de rayitas que se encienden en degradado, con un filo claro por fuera.
+  - **Neón:** un arco liso que brilla como luz de neón.
+  - **Cuadros:** cuadritos a lo largo del arco que se van llenando.
+- **2 colores en degradado:** **morado a azul** y **cian neón**. Al elegir uno de los estilos nuevos
+  se ponen solos si seguías con el ámbar.
+
+### Arreglado
+- En el velocímetro de **aguja**, los números van por fuera del arco: la aguja ya no los tapa.
+
 ## [1.4.40] - 2026-11-02
 
 ### Cambiado

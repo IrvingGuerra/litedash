@@ -38,6 +38,11 @@
     <string name="gauge_color_blue">Blue</string>
     <string name="gauge_color_red">Red</string>
     <string name="gauge_color_white">White</string>
+    <string name="gauge_style_gradient">Gradient</string>
+    <string name="gauge_style_neon">Neon</string>
+    <string name="gauge_style_blocks">Blocks</string>
+    <string name="gauge_color_purple">Purple to blue</string>
+    <string name="gauge_color_cyan">Neon cyan</string>
     <string name="gauge_customize">Customize gauge</string>
     <string name="gauge_customize_help">Changes show right away. What needs attention (hot engine, high revs) is always red.</string>
     <string name="gauge_style">Style</string>

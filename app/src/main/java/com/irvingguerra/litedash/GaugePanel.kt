@@ -125,7 +125,14 @@ fun CustomizeGaugePanel(d: Dependencies, tileId: String, close: () -> Unit, onPi
                         GaugeStyle.entries.map { it to stringResource(it.title) },
                         look.style,
                         // La aguja se lee con números: se prenden solos la primera vez.
-                        { set(look.copy(style = it, numbers = look.numbers || it == GaugeStyle.NEEDLE)) },
+                        {
+                            set(look.copy(
+                                style = it,
+                                numbers = look.numbers || it == GaugeStyle.NEEDLE,
+                                // Los estilos con degradado lucen con el suyo si seguía el ámbar de fábrica.
+                                color = it.suggestedColor()?.takeIf { look.color == GaugeColor.ACCENT } ?: look.color,
+                            ))
+                        },
                         Modifier.horizontalScroll(rememberScrollState()),
                     )
                     Label(stringResource(R.string.gauge_color), Typography.label, c.textMuted)
@@ -184,14 +191,11 @@ fun CustomizeGaugePanel(d: Dependencies, tileId: String, close: () -> Unit, onPi
 @Composable
 private fun Swatch(color: GaugeColor, car: Color, selected: Boolean, onClick: () -> Unit) {
     val c = LocalColors.current
-    val brush = when (color) {
-        GaugeColor.DYNAMIC -> Brush.sweepGradient(listOf(Color(0xFF3DD68C), c.accent, c.danger, Color(0xFF3DD68C)))
-        GaugeColor.ACCENT -> Brush.linearGradient(listOf(c.accent, c.accent))
-        GaugeColor.CAR -> Brush.linearGradient(listOf(car, car))
-        GaugeColor.GREEN -> Brush.linearGradient(listOf(Color(0xFF3DD68C), Color(0xFF3DD68C)))
-        GaugeColor.BLUE -> Brush.linearGradient(listOf(Color(0xFF4CA6FF), Color(0xFF4CA6FF)))
-        GaugeColor.RED -> Brush.linearGradient(listOf(c.danger, c.danger))
-        GaugeColor.WHITE -> Brush.linearGradient(listOf(c.text, c.text))
+    val ramp = c.ramp(color, car)
+    val brush = when {
+        color == GaugeColor.DYNAMIC -> Brush.sweepGradient(ramp + ramp.first())
+        ramp.size == 1 -> Brush.linearGradient(listOf(ramp[0], ramp[0]))
+        else -> Brush.linearGradient(ramp)
     }
     Box(
         Modifier

@@ -22,10 +22,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.text.TextMeasurer
 import androidx.compose.ui.text.TextStyle
@@ -47,6 +49,9 @@ import kotlin.math.sin
 private const val START_ANGLE = 150f
 private const val SWEEP = 240f
 
+/** Grados libres antes del arco de neón, para que su punta redonda no tome el color del final. */
+private const val NEON_PAD = 30f
+
 /** Cómo se dibuja un medidor. [stored] es como se guarda en el acomodo (no se traduce). */
 enum class GaugeStyle(val stored: String, val title: Int) {
     /** Arco grueso que se llena (el de siempre). */
@@ -59,6 +64,12 @@ enum class GaugeStyle(val stored: String, val title: Int) {
     RING("anillo", R.string.gauge_style_ring),
     /** Luces de cambio deportivas: segmentos que crecen hacia la derecha. */
     BAR("barra", R.string.gauge_style_bar),
+    /** Arco de rayitas que se encienden en degradado, sin aguja (elegante). */
+    GRADIENT("degradado", R.string.gauge_style_gradient),
+    /** Arco liso que brilla como luz de neón. */
+    NEON("neon", R.string.gauge_style_neon),
+    /** Cuadritos a lo largo del arco que se van llenando. */
+    BLOCKS("cuadros", R.string.gauge_style_blocks),
 }
 
 /** De qué color va lo que se llena. DYNAMIC va de verde a ámbar a rojo con el valor. */
@@ -70,10 +81,21 @@ enum class GaugeColor(val stored: String, val title: Int) {
     BLUE("azul", R.string.gauge_color_blue),
     RED("rojo", R.string.gauge_color_red),
     WHITE("blanco", R.string.gauge_color_white),
+    PURPLE("morado", R.string.gauge_color_purple),
+    CYAN("cian", R.string.gauge_color_cyan),
 }
 
 private val Green = Color(0xFF3DD68C)
 private val Blue = Color(0xFF4CA6FF)
+private val Purple = listOf(Color(0xFFC05CFF), Color(0xFF7B5CFF), Color(0xFF2F7BFF))
+private val Cyan = listOf(Color(0xFF35F0FF), Color(0xFF2F8BFF))
+
+/** Al elegir uno de estos estilos con el ámbar de fábrica, se ve mejor con su degradado. */
+fun GaugeStyle.suggestedColor(): GaugeColor? = when (this) {
+    GaugeStyle.GRADIENT, GaugeStyle.BLOCKS -> GaugeColor.PURPLE
+    GaugeStyle.NEON -> GaugeColor.CYAN
+    else -> null
+}
 
 /**
  * Cómo se ve un medidor; cada pieza guarda el suyo en su [com.irvingguerra.litedash.feature.dashboard.Tile.data]
@@ -123,18 +145,41 @@ fun signalOf(data: String) = data.substringBefore(';').takeIf { '=' !in it } ?: 
 /** Máximos del velocímetro para elegir, en km/h o mph; el primero es el de fábrica. */
 fun speedMaxOptions(imperial: Boolean) = if (imperial) listOf(120, 100, 160, 200) else listOf(200, 160, 240, 320)
 
+/**
+ * Los colores de lo que se llena, de principio a fin del medidor. Uno solo = color fijo;
+ * los estilos con degradado oscurecen un poco el inicio para que se note el avance.
+ */
+fun Colors.ramp(color: GaugeColor, car: Color): List<Color> = when (color) {
+    GaugeColor.ACCENT -> listOf(accent)
+    GaugeColor.CAR -> listOf(if (car.isSpecified()) car else accent)
+    GaugeColor.GREEN -> listOf(Green)
+    GaugeColor.BLUE -> listOf(Blue)
+    GaugeColor.RED -> listOf(danger)
+    GaugeColor.WHITE -> listOf(text)
+    GaugeColor.DYNAMIC -> listOf(Green, accent, danger)
+    GaugeColor.PURPLE -> Purple
+    GaugeColor.CYAN -> Cyan
+}
+
+/** El color de [ramp] en [f] (0–1). */
+private fun colorAt(ramp: List<Color>, f: Float): Color {
+    if (ramp.size == 1) return ramp[0]
+    val x = f.coerceIn(0f, 1f) * (ramp.size - 1)
+    val i = x.toInt().coerceAtMost(ramp.size - 2)
+    return lerp(ramp[i], ramp[i + 1], x - i)
+}
+
+/** El degradado de un medidor: con un solo color, del color apagado al color. */
+private fun Colors.shades(p: GaugeParts): List<Color> = when {
+    p.warning -> listOf(danger, danger)
+    else -> ramp(p.look.color, p.car).let { if (it.size == 1) listOf(lerp(it[0], background, 0.45f), it[0]) else it }
+}
+
 /** El color de lo que se llena para el valor [f] (0–1); lo que preocupa, siempre rojo. */
 private fun Colors.gauge(color: GaugeColor, car: Color, f: Float, warning: Boolean): Color = when {
     warning -> danger
-    else -> when (color) {
-        GaugeColor.ACCENT -> accent
-        GaugeColor.CAR -> if (car.isSpecified()) car else accent
-        GaugeColor.GREEN -> Green
-        GaugeColor.BLUE -> Blue
-        GaugeColor.RED -> danger
-        GaugeColor.WHITE -> text
-        GaugeColor.DYNAMIC -> if (f < 0.6f) lerp(Green, accent, f / 0.6f) else lerp(accent, danger, ((f - 0.6f) / 0.4f).coerceIn(0f, 1f))
-    }
+    color == GaugeColor.DYNAMIC -> if (f < 0.6f) lerp(Green, accent, f / 0.6f) else lerp(accent, danger, ((f - 0.6f) / 0.4f).coerceIn(0f, 1f))
+    else -> colorAt(ramp(color, car), f)
 }
 
 private fun Color.isSpecified() = this != Color.Unspecified
@@ -183,14 +228,17 @@ fun GaugeCard(
                 GaugeStyle.DIGITAL -> DigitalGauge(number, unit, tag, parts, maxWidth, maxHeight)
                 GaugeStyle.RING -> RingGauge(number, unit, tag, parts, side = minOf(maxWidth, maxHeight))
                 GaugeStyle.BAR -> BarGauge(number, unit, tag, parts, maxWidth, maxHeight)
+                GaugeStyle.GRADIENT -> GradientGauge(number, unit, tag, parts, side = minOf(maxWidth, maxHeight * 1.15f))
+                GaugeStyle.NEON -> NeonGauge(number, unit, tag, parts, side = minOf(maxWidth, maxHeight * 1.15f))
+                GaugeStyle.BLOCKS -> BlocksGauge(number, unit, tag, parts, side = minOf(maxWidth, maxHeight * 1.15f))
             }
         }
     }
 }
 
 /** El círculo del arco (de la aguja también): centrado un poco abajo, del tamaño que quepa. */
-private class Dial(size: Size, stroke: Float) {
-    val radius = minOf(size.width, size.height * 1.15f) / 2 - stroke
+private class Dial(size: Size, stroke: Float, margin: Float = 0f) {
+    val radius = minOf(size.width, size.height * 1.15f) / 2 - stroke - margin
     val center = Offset(size.width / 2, size.height / 2 + radius * 0.12f)
     val topLeft = Offset(center.x - radius, center.y - radius)
     val box = Size(radius * 2, radius * 2)
@@ -262,7 +310,9 @@ private fun NeedleGauge(number: String, unit: String, tag: String, p: GaugeParts
     val tickStyle = tickText(side, c.text.copy(alpha = 0.85f))
     Canvas(Modifier.fillMaxSize()) {
         val stroke = (size.minDimension * 0.05f).coerceIn(3.dp.toPx(), 22.dp.toPx())
-        val d = Dial(size, stroke)
+        // Los números van por fuera del arco: así la aguja nunca pasa encima de ellos.
+        val margin = if (p.look.numbers) tickStyle.fontSize.toPx() * 1.7f else 0f
+        val d = Dial(size, stroke, margin)
         val thin = Stroke(stroke * 0.45f, cap = StrokeCap.Round)
         drawArc(c.surfaceHigh, START_ANGLE, SWEEP, false, d.topLeft, d.box, style = thin)
         if (p.look.redline) {
@@ -285,7 +335,7 @@ private fun NeedleGauge(number: String, unit: String, tag: String, p: GaugeParts
                     strokeWidth = stroke * (if (major) 0.22f else 0.14f), cap = StrokeCap.Round,
                 )
             }
-            if (p.look.numbers && major && (i / 2) % 2 == 0) label(measurer, p.labels(i / 2), d.at(angle, outer - stroke * 2.6f), tickStyle)
+            if (p.look.numbers && major && (i / 2) % 2 == 0) label(measurer, p.labels(i / 2), d.at(angle, d.radius + stroke * 0.4f + margin * 0.55f), tickStyle)
         }
         // La aguja con su cola y el centro.
         val angle = START_ANGLE + SWEEP * f
@@ -356,6 +406,136 @@ private fun BarGauge(number: String, unit: String, tag: String, p: GaugeParts, w
     }
 }
 
+/** El número y su unidad al centro del arco, para los estilos sin aguja. */
+@Composable
+private fun CenterReadout(number: String, unit: String, tag: String, p: GaugeParts, side: Dp) {
+    val c = LocalColors.current
+    Readout(number, unit, tag, (side.value * 0.26f).coerceIn(28f, 120f), colorAt(c.shades(p), 0.6f), side > 220.dp, Modifier.offset(y = side * 0.04f))
+}
+
+/** Los números del principio y del final, abajo de las puntas del arco. */
+private fun DrawScope.ends(measurer: TextMeasurer, p: GaugeParts, d: Dial, r: Float, style: TextStyle) {
+    if (!p.look.numbers) return
+    val dy = style.fontSize.toPx() * 1.2f
+    label(measurer, p.labels(0), d.at(START_ANGLE, r) + Offset(0f, dy), style)
+    label(measurer, p.labels(p.ticks), d.at(START_ANGLE + SWEEP, r) + Offset(0f, dy), style)
+}
+
+@Composable
+private fun GradientGauge(number: String, unit: String, tag: String, p: GaugeParts, side: Dp) {
+    val c = LocalColors.current
+    val measurer = rememberTextMeasurer()
+    val endStyle = tickText(side, c.text.copy(alpha = 0.85f))
+    Canvas(Modifier.fillMaxSize()) {
+        val band = (size.minDimension * 0.14f).coerceIn(10.dp.toPx(), 64.dp.toPx())
+        val d = Dial(size, band * 0.25f, if (p.look.numbers) endStyle.fontSize.toPx() * 1.4f else 0f)
+        val shades = c.shades(p)
+        val f = p.fraction()
+        val count = 44
+        val outer = d.radius
+        val inner = outer - band
+        // Resplandor suave detrás de lo encendido.
+        if (f > 0.002f) drawArc(colorAt(shades, f).copy(alpha = 0.10f), START_ANGLE, SWEEP * f, false,
+            Offset(d.center.x - outer + band / 2, d.center.y - outer + band / 2), Size((outer - band / 2) * 2, (outer - band / 2) * 2),
+            style = Stroke(band * 1.6f))
+        for (k in 0..count) {
+            val pos = k.toFloat() / count
+            val angle = START_ANGLE + SWEEP * pos
+            val lit = pos <= f && f > 0.002f
+            val red = p.look.redline && pos >= p.redFrom
+            val color = when {
+                lit && red -> c.danger
+                lit -> colorAt(shades, pos)
+                red -> c.danger.copy(alpha = 0.25f)
+                else -> colorAt(shades, pos).copy(alpha = 0.13f)
+            }
+            val long = p.look.ticks && k % 4 == 0
+            drawLine(color, d.at(angle, outer), d.at(angle, inner - if (long) band * 0.18f else 0f), strokeWidth = band * 0.11f, cap = StrokeCap.Round)
+        }
+        // Un filo claro por fuera, como en los tableros nuevos.
+        val rim = Stroke((band * 0.06f).coerceAtLeast(1.5f), cap = StrokeCap.Round)
+        val rimBox = Size((outer + band * 0.16f) * 2, (outer + band * 0.16f) * 2)
+        val rimAt = Offset(d.center.x - outer - band * 0.16f, d.center.y - outer - band * 0.16f)
+        drawArc(c.text.copy(alpha = 0.12f), START_ANGLE, SWEEP, false, rimAt, rimBox, style = rim)
+        if (f > 0.002f) drawArc(c.text.copy(alpha = 0.85f), START_ANGLE, SWEEP * f, false, rimAt, rimBox, style = rim)
+        ends(measurer, p, d, inner + band / 2, endStyle)
+    }
+    CenterReadout(number, unit, tag, p, side)
+}
+
+@Composable
+private fun NeonGauge(number: String, unit: String, tag: String, p: GaugeParts, side: Dp) {
+    val c = LocalColors.current
+    val measurer = rememberTextMeasurer()
+    val endStyle = tickText(side, c.textMuted)
+    Canvas(Modifier.fillMaxSize()) {
+        val stroke = (size.minDimension * 0.05f).coerceIn(4.dp.toPx(), 24.dp.toPx())
+        val d = Dial(size, stroke * 2.2f, if (p.look.numbers) endStyle.fontSize.toPx() * 1.4f else 0f)
+        val shades = c.shades(p)
+        val f = p.fraction()
+        drawArc(c.surfaceHigh, START_ANGLE, SWEEP, false, d.topLeft, d.box, style = Stroke(stroke, cap = StrokeCap.Round))
+        if (p.look.redline) drawArc(c.danger.copy(alpha = 0.3f), START_ANGLE + SWEEP * p.redFrom, SWEEP * (1 - p.redFrom), false, d.topLeft, d.box, style = Stroke(stroke))
+        if (p.look.ticks) for (i in 0..p.ticks) {
+            val angle = START_ANGLE + SWEEP * i / p.ticks
+            drawCircle(c.textMuted.copy(alpha = 0.5f), stroke * 0.14f, d.at(angle, d.radius - stroke * 1.6f))
+        }
+        if (f > 0.002f) {
+            // El degradado sigue al arco: se gira el lienzo para que empiece en NEON_PAD°, y lo que
+            // queda antes (la punta redonda del inicio) toma el primer color en vez del último.
+            val brush = Brush.sweepGradient(
+                *(shades.mapIndexed { i, col -> (NEON_PAD + SWEEP * i / (shades.size - 1).coerceAtLeast(1)) / 360f to col } +
+                    (1f to shades.first())).toTypedArray(),
+                center = d.center,
+            )
+            rotate(START_ANGLE - NEON_PAD, d.center) {
+                // Capas anchas y tenues debajo = el brillo del neón (sin desenfoque, que es caro).
+                for (w in listOf(3.6f, 3.1f, 2.6f, 2.2f, 1.8f, 1.45f)) {
+                    drawArc(brush, NEON_PAD, SWEEP * f, false, d.topLeft, d.box, alpha = 0.055f, style = Stroke(stroke * w, cap = StrokeCap.Round))
+                }
+                drawArc(brush, NEON_PAD, SWEEP * f, false, d.topLeft, d.box, style = Stroke(stroke, cap = StrokeCap.Round))
+                drawArc(Color.White.copy(alpha = 0.55f), NEON_PAD, SWEEP * f, false, d.topLeft, d.box, style = Stroke(stroke * 0.25f, cap = StrokeCap.Round))
+            }
+        }
+        ends(measurer, p, d, d.radius, endStyle)
+    }
+    CenterReadout(number, unit, tag, p, side)
+}
+
+@Composable
+private fun BlocksGauge(number: String, unit: String, tag: String, p: GaugeParts, side: Dp) {
+    val c = LocalColors.current
+    val measurer = rememberTextMeasurer()
+    val endStyle = tickText(side, c.textMuted)
+    Canvas(Modifier.fillMaxSize()) {
+        val cell = (size.minDimension * 0.085f).coerceIn(6.dp.toPx(), 40.dp.toPx())
+        val d = Dial(size, cell * 0.6f, if (p.look.numbers) endStyle.fontSize.toPx() * 1.4f else 0f)
+        val shades = c.shades(p)
+        val f = p.fraction()
+        val r = d.radius - cell / 2
+        // Cuántos cuadros caben a lo largo del arco dejando un hueco entre cada uno.
+        val count = ((Math.toRadians(SWEEP.toDouble()) * r) / (cell * 1.3f)).toInt().coerceIn(8, 28)
+        for (k in 0 until count) {
+            val pos = (k + 0.5f) / count
+            val angle = START_ANGLE + SWEEP * pos
+            val lit = pos <= f && f > 0.002f
+            val red = p.look.redline && pos >= p.redFrom
+            val color = when {
+                lit && red -> c.danger
+                lit -> colorAt(shades, pos)
+                red -> c.danger.copy(alpha = 0.22f)
+                else -> c.surfaceHigh
+            }
+            val at = d.at(angle, r)
+            rotate(angle + 90f, at) {
+                if (lit) drawRoundRect(color.copy(alpha = 0.18f), at - Offset(cell * 0.75f, cell * 0.75f), Size(cell * 1.5f, cell * 1.5f), CornerRadius(cell * 0.4f))
+                drawRoundRect(color, at - Offset(cell / 2, cell / 2), Size(cell, cell), CornerRadius(cell * 0.24f))
+            }
+        }
+        ends(measurer, p, d, r, endStyle)
+    }
+    CenterReadout(number, unit, tag, p, side)
+}
+
 /**
  * Barra de [count] segmentos que se encienden con el valor. [wedge] = crecen de alto
  * hacia la derecha (luces de cambio). Con "Dinámico" cada segmento toma el color de
@@ -397,7 +577,7 @@ private fun CompactGauge(number: String, unit: String, tag: String, p: GaugePart
             Label(unit, Typography.small, c.textMuted, maxLines = 1, modifier = Modifier.padding(start = 6.dp, bottom = 6.dp).weight(1f))
             if (tag.isNotEmpty()) Label(tag, Typography.label, c.gauge(p.look.color, p.car, 0.5f, p.warning), maxLines = 1, modifier = Modifier.padding(bottom = 6.dp))
         }
-        if (p.look.style == GaugeStyle.DIGITAL || p.look.style == GaugeStyle.BAR) {
+        if (p.look.style in setOf(GaugeStyle.DIGITAL, GaugeStyle.BAR, GaugeStyle.GRADIENT, GaugeStyle.BLOCKS)) {
             Segments(p, Modifier.fillMaxWidth().height(8.dp), count = 20, wedge = false)
         } else Canvas(Modifier.fillMaxWidth().height(6.dp)) {
             val r = CornerRadius(size.height / 2)

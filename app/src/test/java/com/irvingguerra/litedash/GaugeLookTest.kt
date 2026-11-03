@@ -32,6 +32,19 @@ class GaugeLookTest {
     }
 
     @Test
+    fun estilosElegantes() {
+        // 1.4.41: degradado, neón y cuadros, con sus colores en degradado.
+        for (style in listOf(GaugeStyle.GRADIENT, GaugeStyle.NEON, GaugeStyle.BLOCKS)) {
+            for (color in listOf(GaugeColor.PURPLE, GaugeColor.CYAN)) {
+                val look = GaugeLook(style, color, max = 240)
+                assertEquals(look, GaugeLook.parse(look.encode()))
+            }
+        }
+        assertEquals("estilo=degradado;color=morado", GaugeLook(GaugeStyle.GRADIENT, GaugeColor.PURPLE).encode())
+        assertEquals(GaugeColor.CYAN, GaugeStyle.NEON.suggestedColor())
+    }
+
+    @Test
     fun marcasDelVelocimetro() {
         assertEquals(10, ticksFor(200f, imperial = false))
         assertEquals(8, ticksFor(320f, imperial = false))

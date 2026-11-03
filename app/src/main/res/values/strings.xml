@@ -39,6 +39,11 @@
     <string name="gauge_color_blue">Azul</string>
     <string name="gauge_color_red">Rojo</string>
     <string name="gauge_color_white">Blanco</string>
+    <string name="gauge_style_gradient">Degradado</string>
+    <string name="gauge_style_neon">Neón</string>
+    <string name="gauge_style_blocks">Cuadros</string>
+    <string name="gauge_color_purple">Morado a azul</string>
+    <string name="gauge_color_cyan">Cian neón</string>
     <string name="gauge_customize">Personalizar medidor</string>
     <string name="gauge_customize_help">Los cambios se ven al momento. Lo que preocupa (motor caliente, revoluciones altas) siempre se pinta de rojo.</string>
     <string name="gauge_style">Estilo</string>
