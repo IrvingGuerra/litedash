@@ -1,11 +1,15 @@
 {
+  "firestore": {
+    "rules": "firestore.rules"
+  },
   "hosting": {
     "public": "site",
     "cleanUrls": true,
     "trailingSlash": true,
     "ignore": [
       "firebase.json",
-      "**/.*"
+      "**/.*",
+      "firestore.rules"
     ],
     "headers": [
       {

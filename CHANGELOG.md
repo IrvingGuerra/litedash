@@ -6,6 +6,21 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
+## [1.4.44] - 2026-11-02
+
+### Nuevo
+- **Ocultar la barra de Android** de arriba (Ajustes → Apariencia → Pantalla, apagado de
+  fábrica): LiteDash ya trae su hora y señal. Para verla un momento, desliza desde arriba.
+- **Estadísticas anónimas** (Ajustes → Acerca de): una vez al día LiteDash cuenta tu pantalla
+  con un número al azar, la versión, Android, el idioma y el tamaño de pantalla, para saber cuánta
+  gente la usa. Nada de ubicación, cuentas ni datos tuyos, sin librerías extra (+1 KB). Se apaga
+  con un toque. Detalle en litedash.web.app/privacidad.
+
+### Arreglado
+- **Pantalla dividida con el auto a la derecha y al cambiar de lado (⇄):** en algunos equipos no
+  se armaba o se trababa. Ahora el auto espera a quedar en su lado antes de abrir la app, y cambiar
+  de lado ya no cierra nada. Los botones del auto bajaron a la esquina para no tapar el viaje.
+
 ## [1.4.43] - 2026-11-02
 
 ### Nuevo

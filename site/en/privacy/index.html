@@ -18,13 +18,13 @@
   </header>
   <main class="contenedor texto">
     <h1>Privacy policy</h1>
-    <p>Last updated: October 31, 2026 · Applies to LiteDash for Android (Google Play and GitHub).</p>
+    <p>Last updated: November 2, 2026 · Applies to LiteDash for Android (Google Play and GitHub).</p>
 
     <h2>Cars</h2>
     <p>In "Your car", LiteDash fetches the list of available cars (with their previews) and, if you pick one, downloads its images from github.com (only images and data, never code), checks they arrived intact and stores them in the app. None of your data is sent; GitHub may log the download like any visit.</p>
 
     <h2>In short</h2>
-    <p><strong>LiteDash does not collect, store or send any personal data.</strong> It has no ads and no accounts. It only uses the internet when you ask it to: when you download a car in "Your car" and, in the GitHub version, when you tap "Check for updates".</p>
+    <p><strong>LiteDash does not collect, store or send any personal data.</strong> It has no ads and no accounts. It uses the internet to download cars in "Your car", for the weather (if you turn it on), to check for updates in the GitHub version and for an anonymous count of how many screens use LiteDash, which you can turn off.</p>
 
     <h2>What the app uses on your device</h2>
     <ul>
@@ -40,11 +40,17 @@
     <h2>Updates (GitHub version only)</h2>
     <p>If you tap "Check for updates" in Settings, LiteDash looks up the list of versions on GitHub (api.github.com) and, if you choose to install, downloads the new version from github.com, checks that it arrived intact and hands it to the Android installer, which asks you to confirm. For that, Android will ask you to allow LiteDash to install apps; it is used only for its own updates. None of your data is sent; GitHub may log the request like any visit. The Google Play version is updated through Play.</p>
 
+    <h2>Weather (optional)</h2>
+    <p>If you turn on the weather, LiteDash asks Android for your approximate location, rounds it to about 1 km and sends it to Open-Meteo (api.open-meteo.com) to get the forecast. It does not store your location or send it anywhere else.</p>
+
+    <h2>Anonymous statistics</h2>
+    <p>To know how many people use LiteDash, once a day the app sends to Google Firebase (Cloud Firestore, in LiteDash's project) a random number created when you install it, the LiteDash version, whether it is from Play or GitHub, the Android version, the app language and the screen size. Nothing else: no location, name, accounts or device identifiers. That number cannot tell who you are. Turn it off in Settings → About → "Count this screen".</p>
+
     <h2>Optional modules</h2>
     <p>New features that get added will be off by default. Each one will ask for its permission only when you turn it on, explain why, and this policy will be updated before it ships.</p>
 
     <h2>Third parties</h2>
-    <p>LiteDash includes no analytics, advertising or tracking tools. If you install it from Google Play, Google may collect store data under its own policy. This page is hosted on GitHub Pages, which may log technical visit data.</p>
+    <p>LiteDash includes no analytics, advertising or tracking SDKs; only the anonymous count above, a single request per day. If you install it from Google Play, Google may collect store data under its own policy. This page is hosted on Firebase Hosting, which may log technical visit data.</p>
 
     <h2>Children</h2>
     <p>LiteDash is not directed at children under 13 and collects no data from anyone.</p>

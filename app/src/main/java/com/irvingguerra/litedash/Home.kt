@@ -1,6 +1,5 @@
 package com.irvingguerra.litedash
 
-import com.irvingguerra.litedash.core.ui.Radius
 import android.content.Context
 import android.content.Intent
 import androidx.activity.compose.BackHandler
@@ -14,17 +13,21 @@ import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.statusBarsIgnoringVisibility
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
@@ -33,8 +36,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
@@ -63,7 +66,9 @@ import com.irvingguerra.litedash.core.ui.Icons
 import com.irvingguerra.litedash.core.ui.Label
 import com.irvingguerra.litedash.core.ui.LiteDashTheme
 import com.irvingguerra.litedash.core.ui.LocalColors
+import com.irvingguerra.litedash.core.ui.Radius
 import com.irvingguerra.litedash.core.ui.Typography
+import com.irvingguerra.litedash.core.vehicle.VehicleBus
 import com.irvingguerra.litedash.feature.apps.App
 import com.irvingguerra.litedash.feature.apps.AppIcon
 import com.irvingguerra.litedash.feature.apps.AppRepository
@@ -80,13 +85,12 @@ import com.irvingguerra.litedash.feature.music.MusicExpanded
 import com.irvingguerra.litedash.feature.music.MusicRepository
 import com.irvingguerra.litedash.feature.music.MusicTile
 import com.irvingguerra.litedash.feature.navigation.NavigationRepository
+import com.irvingguerra.litedash.feature.obd.ObdRepository
 import com.irvingguerra.litedash.feature.updater.Updater
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
-import com.irvingguerra.litedash.core.vehicle.VehicleBus
-import com.irvingguerra.litedash.feature.obd.ObdRepository
 import kotlinx.coroutines.withTimeoutOrNull
 
 /** Qué panel está abierto encima del inicio (uno a la vez). */
@@ -121,6 +125,7 @@ class Dependencies(
     val trip: TripRepository,
     val reminders: ReminderRepository,
     val wheel: WheelKeys,
+    val stats: Stats,
     /** Señales del auto (OBD, GPS…): el tablero solo lee de aquí. */
     val bus: VehicleBus,
     private val obdLazy: Lazy<ObdRepository>,
@@ -279,6 +284,8 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
     // Versión nueva de la app (a lo más cada 12 h) y modelo 3D nuevo del auto (cada hora).
     LaunchedEffect(Unit) { d.updater.checkQuietly() }
     LaunchedEffect(d.prefs.carModel) { d.cars.checkQuietly(d.prefs.carModel) }
+    // Cuántas pantallas usan LiteDash: a lo más una vez al día.
+    LaunchedEffect(Unit) { d.stats.pingDaily() }
 
     val actions = remember {
         TileActions(
@@ -382,7 +389,9 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                     val prompts = with(LocalDensity.current) { promptsHeight.toDp() }
                     // El aire inferior de la barra lateral tampoco cuenta: la cuadrícula (y el acomodo
                     // guardado) debe ser la misma con o sin él.
-                    val gridHeight = (if (barHidden) maxHeight - (topBarHeight() - TOP_BAR_HIDDEN) else maxHeight) + prompts + (if (rail) 10.dp else 0.dp)
+                    // Con la barra de Android oculta hay más alto, pero la cuadrícula tampoco cambia.
+                    val statusHidden = statusBarHiddenHeight()
+                    val gridHeight = (if (barHidden) maxHeight - (topBarHeight() - TOP_BAR_HIDDEN) else maxHeight) + prompts + (if (rail) 10.dp else 0.dp) - statusHidden
                     val grid = remember(maxWidth, gridHeight) { Grid.forSize(maxWidth.value, gridHeight.value) }
                     // Carga el acomodo de esta cuadrícula antes de dibujar (solo hace algo si cambió).
                     d.dashboard.use(grid)
@@ -678,3 +687,13 @@ private fun voiceIntent(context: Context): Intent? =
     listOf(Intent.ACTION_VOICE_COMMAND, Intent.ACTION_ASSIST)
         .map { Intent(it).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) }
         .firstOrNull { it.resolveActivity(context.packageManager) != null }
+
+/** Lo que mide la barra de Android de arriba mientras está oculta (0 si se ve). */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun statusBarHiddenHeight(): Dp {
+    val density = LocalDensity.current
+    val always = WindowInsets.statusBarsIgnoringVisibility.getTop(density)
+    val now = WindowInsets.statusBars.getTop(density)
+    return with(density) { (always - now).coerceAtLeast(0).toDp() }
+}

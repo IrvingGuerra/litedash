@@ -1,0 +1,22 @@
+rules_version = '2';
+
+// Estadísticas anónimas de LiteDash (app/Stats.kt): cada pantalla escribe solo su
+// documento, con estos campos y la hora del servidor. Nadie puede leer desde la app.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /pantallas/{id} {
+      allow create, update: if id.matches('^[0-9a-f]{32}$')
+        && request.resource.data.keys().hasOnly(['version', 'canal', 'android', 'idioma', 'pantalla', 'alta', 'visto'])
+        && request.resource.data.version is int && request.resource.data.version < 1000000000
+        && request.resource.data.canal in ['play', 'github']
+        && request.resource.data.android is int && request.resource.data.android < 1000
+        && request.resource.data.idioma is string && request.resource.data.idioma.size() <= 8
+        && request.resource.data.pantalla is string && request.resource.data.pantalla.size() <= 16
+        && request.resource.data.alta is string && request.resource.data.alta.size() == 10
+        && request.resource.data.visto == request.time;
+    }
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

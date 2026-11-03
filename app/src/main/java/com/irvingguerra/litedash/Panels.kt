@@ -703,6 +703,9 @@ private fun Appearance(prefs: Preferences, revision: Int) {
     if (tab == 1) SettingsCard {
         IntroSettings(prefs)
     }
+    if (tab == 1) SettingsCard {
+        SwitchRow(stringResource(R.string.hide_status_bar), prefs.hideStatusBar, { prefs.hideStatusBar = it }, stringResource(R.string.hide_status_bar_help))
+    }
     if (tab == 1) SettingsCard(stringResource(R.string.theme)) {
         Segmented(
             listOf(ThemeMode.DARK to R.string.theme_dark, ThemeMode.LIGHT to R.string.theme_light, ThemeMode.SUN to R.string.theme_sun, ThemeMode.SYSTEM to R.string.theme_system)
@@ -834,6 +837,9 @@ private fun About(d: Dependencies) {
                 if (d.updater.available) Updates(d.updater)
             }
         }
+    }
+    SettingsCard(stringResource(R.string.stats_title)) {
+        SwitchRow(stringResource(R.string.stats_switch), d.prefs.stats, { d.prefs.stats = it }, stringResource(R.string.stats_help))
     }
     SettingsCard(stringResource(R.string.copy_info), stringResource(R.string.copy_info_help)) {
         var copied by remember { mutableStateOf(false) }

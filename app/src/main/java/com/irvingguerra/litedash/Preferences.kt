@@ -61,6 +61,8 @@ private object PrefKeys {
     const val SPLIT_CAR_LEFT = "dividida_auto_izquierda"
     const val TRIP_LOG = "registrar_viajes"
     const val BEST_ACCEL = "mejor_0_100"
+    const val STATS = "estadisticas_anonimas"
+    const val HIDE_STATUS_BAR = "ocultar_barra_android"
 }
 
 /** Dónde va la barra con la hora y tus apps. AUTO = a un lado si la pantalla está acostada. */
@@ -229,6 +231,12 @@ class Preferences(context: Context) {
 
     /** Guardar un resumen de cada viaje con el OBD conectado (apagado de fábrica). */
     var tripLog by bool(PrefKeys.TRIP_LOG, false)
+
+    /** Ocultar la barra de Android de arriba (se asoma deslizando desde arriba); apagado de fábrica. */
+    var hideStatusBar by bool(PrefKeys.HIDE_STATUS_BAR, false)
+
+    /** Contar esta pantalla en las estadísticas anónimas (ver [Stats]); prendido de fábrica. */
+    var stats by bool(PrefKeys.STATS, true)
 
     /** El mejor 0 a 100 (segundos); 0 = todavía no hay. */
     var bestAccel by float(PrefKeys.BEST_ACCEL, 0f)

@@ -127,6 +127,11 @@
     <string name="on_your_home">En tu inicio</string>
     <string name="copy_info">Copiar info de mi pantalla</string>
     <string name="copied">Copiado</string>
+    <string name="hide_status_bar">Ocultar la barra de Android</string>
+    <string name="hide_status_bar_help">La barra de arriba con la hora y los avisos. LiteDash ya trae su hora y señal; para abrirla, desliza desde arriba.</string>
+    <string name="stats_title">Estadísticas</string>
+    <string name="stats_switch">Contar esta pantalla (anónimo)</string>
+    <string name="stats_help">Una vez al día manda un número al azar, la versión, Android, el idioma y el tamaño de la pantalla, para saber cuánta gente usa LiteDash. Nada de ubicación, cuentas ni datos tuyos.</string>
     <string name="copy_info_help">Marca, modelo, Android y resolución, para pegarlos al reportar un problema en GitHub.</string>
     <string name="back">Atrás</string>
     <string name="next">Siguiente</string>

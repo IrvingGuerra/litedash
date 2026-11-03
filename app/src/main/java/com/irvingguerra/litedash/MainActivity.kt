@@ -13,6 +13,9 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import com.irvingguerra.litedash.core.ui.LiteDashTheme
 
 class MainActivity : ComponentActivity() {
@@ -71,6 +74,13 @@ internal fun ComponentActivity.LiteDashContent(d: Dependencies, revision: Int, c
         val transparent = android.graphics.Color.TRANSPARENT
         val style = if (dark) SystemBarStyle.dark(transparent) else SystemBarStyle.light(transparent, transparent)
         enableEdgeToEdge(style, style)
+    }
+    // La barra de Android de arriba, oculta si se pidió: deslizando desde arriba se asoma un momento.
+    val hideStatusBar = d.prefs.hideStatusBar
+    LaunchedEffect(hideStatusBar) {
+        val bars = WindowCompat.getInsetsController(window, window.decorView)
+        bars.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+        if (hideStatusBar) bars.hide(WindowInsetsCompat.Type.statusBars()) else bars.show(WindowInsetsCompat.Type.statusBars())
     }
     ApplyBrightness(d.prefs, night, revision)
     LiteDashTheme(dark = dark, scale = d.prefs.scale, content = content)
