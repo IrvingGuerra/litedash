@@ -85,6 +85,11 @@ section .bajada { color: var(--suave); margin: 0 0 36px; max-width: 640px; }
 .descarga { text-align: center; }
 .descarga .bajada { margin-inline: auto; }
 .requisitos { margin-top: 20px; color: var(--suave); font-size: 14px; }
+/* Apoyo (Ko-fi) */
+.apoyo { margin: 40px auto 0; max-width: 560px; padding-top: 28px; border-top: 1px solid var(--linea); display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 12px 18px; }
+.apoyo p { margin: 0; color: var(--suave); font-size: 15px; }
+.apoyo .boton { padding: 10px 20px; font-size: 15px; }
+.apoyo .boton:hover { border-color: var(--ambar); color: var(--ambar); }
 .requisitos code { background: var(--grafito-claro); padding: 2px 6px; border-radius: 6px; }
 
 /* Pie */
