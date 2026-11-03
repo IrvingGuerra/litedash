@@ -5,7 +5,7 @@
         <receiver android:name=".TestMediaSession" android:exported="true" tools:ignore="ExportedReceiver"
             xmlns:tools="http://schemas.android.com/tools">
             <intent-filter>
-                <action android:name="com.irvingguerra.litedash.SESION_PRUEBA" />
+                <action android:name="com.irvingguerra.litedash.TEST_SESSION" />
             </intent-filter>
         </receiver>
     </application>

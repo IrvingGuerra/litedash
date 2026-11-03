@@ -47,7 +47,7 @@ class Updater(
 ) {
     val available get() = apiUrl.isNotBlank()
 
-    private val store by lazy { context.getSharedPreferences("actualizaciones", Context.MODE_PRIVATE) }
+    private val store by lazy { context.getSharedPreferences("updates", Context.MODE_PRIVATE) }
 
     /** La versión nueva que se encontró (en silencio o a mano); null = nada que instalar. */
     var found by mutableStateOf<Version?>(null)
@@ -119,7 +119,7 @@ class Updater(
 
     /** Baja el APK a la caché y lo verifica contra SHA256SUMS.txt. [progress] va de 0 a 1. */
     suspend fun download(v: Version, progress: (Float) -> Unit): File = withContext(Dispatchers.IO) {
-        val target = File(context.cacheDir, "actualizacion.apk")
+        val target = File(context.cacheDir, "update.apk")
         val sha = MessageDigest.getInstance("SHA-256")
         open(v.apk).inputStream.use { input ->
             target.outputStream().use { output ->
@@ -200,9 +200,9 @@ class Updater(
     companion object {
         /** Medio día entre revisiones en silencio: basta para enterarse el mismo día. */
         const val QUIET_EVERY_MS = 12 * 60 * 60 * 1000L
-        private const val KEY_LAST = "ultima_revision"
-        private const val KEY_FOUND = "encontrada"
-        private const val KEY_DISMISSED = "omitida"
+        private const val KEY_LAST = "last_check"
+        private const val KEY_FOUND = "found"
+        private const val KEY_DISMISSED = "dismissed"
 
         /** Lo último que dijo el instalador de Android (para mostrarlo si falló). */
         var installError by mutableStateOf<String?>(null)
@@ -229,7 +229,7 @@ class Updater(
 }
 
 /** Debe coincidir con el `provider` del manifiesto de la versión de GitHub. */
-private const val FILE_AUTHORITY_SUFFIX = ".actualizaciones"
+private const val FILE_AUTHORITY_SUFFIX = ".updates"
 private const val APK_TYPE = "application/vnd.android.package-archive"
 
 /** Respuestas del instalador de Android: deja su confirmación lista para la pantalla o guarda el error. */

@@ -17,7 +17,7 @@ class DashboardStore(context: Context) {
             if (f.size < 6) return@mapNotNull null
             // Una línea dañada (escritura cortada) se salta; no tumba el inicio.
             val (col, row, width, height) = (2..5).map { f[it].toIntOrNull() ?: return@mapNotNull null }
-            Tile(f[0], LEGACY_TYPES[f[1]] ?: f[1], col, row, width, height, f.getOrElse(6) { "" }, plain = f.getOrElse(7) { "" } == "1")
+            Tile(f[0], f[1], col, row, width, height, f.getOrElse(6) { "" }, plain = f.getOrElse(7) { "" } == "1")
         }.filter { p -> p.col >= 0 && p.row >= 0 }.toList()
     }
 
@@ -31,9 +31,6 @@ class DashboardStore(context: Context) {
     }
 }
 
-// Piezas que ya no existen y en qué se convierten (la del mapa de la 1.3.0 es ahora Navegar).
-private val LEGACY_TYPES = mapOf("mapa" to TileTypes.NAVIGATE)
-
-// Nombres ya guardados en el dispositivo (no se traducen: se perderían los acomodos).
-private const val PREFS_FILE = "tablero"
-private const val LAYOUT_KEY_PREFIX = "acomodo_"
+// Nombres guardados en el dispositivo (en inglés desde la 1.4.47; la migración copió los viejos).
+private const val PREFS_FILE = "dashboard"
+private const val LAYOUT_KEY_PREFIX = "layout_"

@@ -34,12 +34,12 @@ import org.json.JSONObject
 
 /** Trámites y cuidados del auto; [months] es cada cuánto se repite al marcarlo como hecho (0 = no se repite). */
 enum class ReminderType(val stored: String, val title: Int, val months: Long) {
-    SERVICE("servicio", R.string.reminder_service, 6),
-    VERIFICATION("verificacion", R.string.reminder_verification, 6),
-    TAX("tenencia", R.string.reminder_tax, 12),
-    INSURANCE("seguro", R.string.reminder_insurance, 12),
-    PLATES("placas", R.string.reminder_plates, 0),
-    OTHER("otro", R.string.reminder_other, 0),
+    SERVICE("service", R.string.reminder_service, 6),
+    VERIFICATION("inspection", R.string.reminder_verification, 6),
+    TAX("tax", R.string.reminder_tax, 12),
+    INSURANCE("insurance", R.string.reminder_insurance, 12),
+    PLATES("plates", R.string.reminder_plates, 0),
+    OTHER("other", R.string.reminder_other, 0),
 }
 
 data class Reminder(val id: Long, val type: ReminderType, val date: LocalDate)
@@ -66,7 +66,7 @@ class ReminderRepository(context: Context) {
     private fun save(list: List<Reminder>) {
         all = list.sortedBy { it.date }
         store.edit {
-            putString(KEY, JSONArray(all.map { JSONObject().put("id", it.id).put("tipo", it.type.stored).put("fecha", it.date.toString()) }).toString())
+            putString(KEY, JSONArray(all.map { JSONObject().put("id", it.id).put("type", it.type.stored).put("date", it.date.toString()) }).toString())
         }
     }
 
@@ -74,14 +74,14 @@ class ReminderRepository(context: Context) {
         val a = JSONArray(store.getString(KEY, "[]"))
         (0 until a.length()).mapNotNull { i ->
             val o = a.getJSONObject(i)
-            val type = ReminderType.entries.firstOrNull { it.stored == o.getString("tipo") } ?: return@mapNotNull null
-            Reminder(o.getLong("id"), type, LocalDate.parse(o.getString("fecha")))
+            val type = ReminderType.entries.firstOrNull { it.stored == o.getString("type") } ?: return@mapNotNull null
+            Reminder(o.getLong("id"), type, LocalDate.parse(o.getString("date")))
         }.sortedBy { it.date }
     }.getOrDefault(emptyList())
 
     private companion object {
-        const val STORE = "recordatorios"
-        const val KEY = "lista"
+        const val STORE = "reminders"
+        const val KEY = "list"
         const val DAYS_BEFORE = 7L
     }
 }

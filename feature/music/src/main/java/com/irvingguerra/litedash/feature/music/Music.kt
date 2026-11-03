@@ -39,8 +39,8 @@ interface NotificationListener {
 /** Nombre en inglés del servicio de avisos, que por compatibilidad conserva su nombre original. */
 typealias NotificationService = ServicioMusica
 
-private const val STORE = "musica"
-private const val KEY_LAST_APP = "ultima_app"
+private const val STORE = "music"
+private const val KEY_LAST_APP = "last_app"
 
 /** Cuánto se espera a que la app despertada empiece a sonar antes de abrirla. */
 private const val WAKE_TIMEOUT_MS = 4_000L

@@ -102,7 +102,7 @@ class TripRecorder(private val start: Long) {
 
 /** Los viajes guardados, en un CSV chico dentro de la app (los últimos [KEEP]). */
 class TripStore(context: Context) {
-    private val file = File(context.filesDir, "viajes.csv")
+    private val file = File(context.filesDir, "trips.csv")
 
     /** Del más nuevo al más viejo. */
     fun all(): List<TripSummary> =
@@ -113,12 +113,12 @@ class TripStore(context: Context) {
         file.writeText((listOf(HEADER) + kept.map { it.toCsv() }).joinToString("\n", postfix = "\n"))
     }
 
-    /** El archivo para exportar, tal cual (con encabezados en español). */
+    /** El archivo para exportar, tal cual (con encabezados en inglés). */
     fun csv(): String = runCatching { file.readText() }.getOrDefault(HEADER + "\n")
 
     companion object {
         const val KEEP = 200
-        const val HEADER = "inicio_ms,segundos,km,vel_max_kmh,vel_prom_kmh,rpm_max,motor_temp_max_c,litros"
+        const val HEADER = "start_ms,seconds,km,max_kmh,avg_kmh,max_rpm,max_coolant_c,liters"
     }
 }
 

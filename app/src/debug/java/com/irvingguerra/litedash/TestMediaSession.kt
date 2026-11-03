@@ -10,7 +10,7 @@ import android.media.session.PlaybackState
  * Solo en debug: una sesión de música como la del Bluetooth de muchas pantallas
  * (sonando, sin título ni artista), para probar la pieza Música sin el auto.
  *
- * adb shell am broadcast -n com.irvingguerra.litedash/.TestMediaSession -a com.irvingguerra.litedash.SESION_PRUEBA
+ * adb shell am broadcast -n com.irvingguerra.litedash/.TestMediaSession -a com.irvingguerra.litedash.TEST_SESSION
  * (con --ez detener true la quita)
  */
 class TestMediaSession : BroadcastReceiver() {

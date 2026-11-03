@@ -33,16 +33,16 @@ import com.irvingguerra.litedash.feature.music.MusicRepository
 enum class WheelAction(val stored: String, val title: Int) {
     NORMAL("normal", R.string.wheel_normal),
     PLAY_PAUSE("play", R.string.wheel_play_pause),
-    NEXT("siguiente", R.string.wheel_next),
-    PREVIOUS("anterior", R.string.wheel_previous),
-    VOLUME_UP("subir_volumen", R.string.wheel_volume_up),
-    VOLUME_DOWN("bajar_volumen", R.string.wheel_volume_down),
-    MUTE("silencio", R.string.wheel_mute),
-    NAVIGATE("navegar", R.string.wheel_navigate),
-    MUSIC("musica", R.string.wheel_music),
-    VOICE("voz", R.string.wheel_voice),
-    HOME("inicio", R.string.wheel_home),
-    NOTHING("nada", R.string.wheel_nothing);
+    NEXT("next", R.string.wheel_next),
+    PREVIOUS("previous", R.string.wheel_previous),
+    VOLUME_UP("volume_up", R.string.wheel_volume_up),
+    VOLUME_DOWN("volume_down", R.string.wheel_volume_down),
+    MUTE("mute", R.string.wheel_mute),
+    NAVIGATE("navigate", R.string.wheel_navigate),
+    MUSIC("music", R.string.wheel_music),
+    VOICE("voice", R.string.wheel_voice),
+    HOME("home", R.string.wheel_home),
+    NOTHING("nothing", R.string.wheel_nothing);
 
     companion object {
         fun fromStored(value: String?) = entries.firstOrNull { it.stored == value }

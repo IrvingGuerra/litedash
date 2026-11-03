@@ -547,16 +547,16 @@ class CarRepository(context: Context, val catalogUrl: String) {
 
     companion object {
         /** [downloading] mientras se actualizan todos. */
-        const val ALL = "todos"
+        const val ALL = "all"
         /** [downloading] mientras se baja la calidad alta. */
-        const val HIGH = "calidad"
+        const val HIGH = "high"
         /** Nivel de la calidad alta en "extras" del catálogo. */
         private const val HIGH_LEVEL = 1
         /** Cuadros de en medio ("mNN"); el primero dice que el auto tiene calidad alta. */
         private const val HIGH_PREFIX = "m"
         private const val HIGH_MARK = "m00"
         private const val CHECK_EVERY_MS = 60 * 60 * 1000L
-        private const val KEY_LAST_CHECK = "ultima_revision:"
+        private const val KEY_LAST_CHECK = "last_check:"
         /** Lo que no va en el nombre de la carpeta de un auto. */
         private val FOLDER_CHARS = Regex("[^a-z0-9-]")
     }

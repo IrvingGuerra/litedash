@@ -87,20 +87,20 @@ fun List<Tile>.packed(into: Grid, limits: (String) -> SizeLimits): List<Tile> {
 fun List<Tile>.replace(p: Tile) = map { if (it.id == p.id) p else it }
 
 // Tipos de pieza que conocen las plantillas. La app registra cómo se dibuja cada uno.
-// Los valores se guardan en cada acomodo: van en español y no se traducen.
+// Los valores se guardan en cada acomodo: van en inglés y no se traducen.
 object TileTypes {
-    const val CAR = "auto"
-    const val MUSIC = "musica"
-    const val NAVIGATE = "navegar"
-    const val CLOCK = "reloj"
-    const val PHONE = "telefono"
-    const val WEATHER = "clima"
-    const val TRIP = "viaje"
-    const val SPEEDOMETER = "velocimetro"
+    const val CAR = "car"
+    const val MUSIC = "music"
+    const val NAVIGATE = "navigate"
+    const val CLOCK = "clock"
+    const val PHONE = "phone"
+    const val WEATHER = "weather"
+    const val TRIP = "trip"
+    const val SPEEDOMETER = "speedometer"
     /** Un dato del auto por OBD; [Tile.data] dice cuál (una señal del bus). */
-    const val GAUGE = "medidor"
-    const val WORKSHOP = "taller"
-    const val PROJECTION = "proyeccion"
+    const val GAUGE = "gauge"
+    const val WORKSHOP = "workshop"
+    const val PROJECTION = "projection"
     const val APP = "app"
 }
 
@@ -270,7 +270,7 @@ fun Template.tiles(c: Grid): List<Tile> {
             // Señales del bus (core/vehicle): revoluciones y temperatura del motor.
             place(TileTypes.GAUGE, 0, rows - bottom, third, bottom, data = "rpm")
             place(TileTypes.SPEEDOMETER, third, rows - bottom, cols - 2 * third, bottom)
-            place(TileTypes.GAUGE, cols - third, rows - bottom, third, bottom, data = "motor_temp")
+            place(TileTypes.GAUGE, cols - third, rows - bottom, third, bottom, data = "coolant_temp")
         }
         Template.MINIMAL -> {
             val bottom = if (rows >= 6) 2 else 1

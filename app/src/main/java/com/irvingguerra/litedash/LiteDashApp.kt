@@ -46,6 +46,8 @@ class LiteDashApp : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        // Antes de leer cualquier ajuste (también el idioma de attachBaseContext): nombres en inglés desde la 1.4.47.
+        StorageMigration.run(this)
         // Los avisos llegan aquí solo si el usuario dio acceso a notificaciones (el mismo de la música).
         NotificationService.listener = object : NotificationListener {
             override fun onPosted(notification: StatusBarNotification) = dependencies.navigation.posted(notification)

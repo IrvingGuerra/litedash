@@ -48,13 +48,13 @@
             android:name=".SplitActivity"
             android:exported="false"
             android:launchMode="singleTask"
-            android:taskAffinity="${applicationId}.dividida"
+            android:taskAffinity="${applicationId}.split"
             android:resizeableActivity="true"
             android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|density|uiMode" />
         <activity
             android:name=".SplitStartActivity"
             android:exported="false"
-            android:taskAffinity="${applicationId}.dividir"
+            android:taskAffinity="${applicationId}.split_start"
             android:excludeFromRecents="true"
             android:noHistory="true"
             android:resizeableActivity="true"

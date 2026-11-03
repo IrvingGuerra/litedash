@@ -157,9 +157,9 @@ class WeatherRepository(private val context: Context, private val prefs: Prefere
         .put("days", JSONArray(days.map { JSONObject().put("date", it.date).put("c", it.code).put("max", it.max).put("min", it.min) }))
 
     private companion object {
-        const val STORE = "clima"
-        const val KEY = "ultimo"
-        const val KEY_ON = "activado"
+        const val STORE = "weather"
+        const val KEY = "last"
+        const val KEY_ON = "enabled"
         const val STALE_MS = 30 * 60_000L
     }
 }

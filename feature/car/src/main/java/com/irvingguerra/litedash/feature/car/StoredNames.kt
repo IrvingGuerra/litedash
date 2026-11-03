@@ -1,22 +1,23 @@
 package com.irvingguerra.litedash.feature.car
 
-// Nombres que vienen del catálogo publicado (catalogo.json), de los paquetes de
-// autos (auto.json y sus imágenes) y de las carpetas que la app ya creó en el
-// dispositivo. Van en español porque así están publicados y guardados:
-// traducirlos rompería el catálogo y los autos ya descargados. Los nombres en
-// inglés son solo para el código.
+// Nombres que vienen del catálogo publicado (catalogo.json) y de los paquetes de
+// autos (auto.json, giro/ y sus capas) van en español porque así están publicados:
+// las versiones viejas los leen, traducirlos rompería el catálogo. Lo que la app
+// crea por su cuenta en el dispositivo (carpetas, temporales, preferencias) va en
+// inglés desde la 1.4.47; la migración movió lo viejo.
 
-/** Carpetas y archivos dentro de files/ en el dispositivo. */
+/** Carpetas y archivos dentro de files/ en el dispositivo (y el archivo de preferencias). */
 internal object CarFiles {
-    const val ROOT = "autos"
-    const val THUMBNAILS = ".miniaturas"
+    const val ROOT = "cars"
+    const val THUMBNAILS = ".thumbnails"
     const val PACKAGE_INFO = "auto.json"
     /** SHA-256 del paquete instalado: si el catálogo trae otro, hay imágenes nuevas. */
-    const val PACKAGE_HASH = ".paquete.sha256"
+    const val PACKAGE_HASH = ".package.sha256"
+    /** Carpeta del giro: viene así dentro del paquete (formato remoto, no se traduce). */
     const val SPIN = "giro"
-    const val DOWNLOAD_PREFIX = ".bajando-"
-    const val STAGING_SUFFIX = ".nueva"
-    const val PARTIAL_SUFFIX = ".parcial"
+    const val DOWNLOAD_PREFIX = ".downloading-"
+    const val STAGING_SUFFIX = ".staging"
+    const val PARTIAL_SUFFIX = ".partial"
 }
 
 /** Campos de catalogo.json y de auto.json. */

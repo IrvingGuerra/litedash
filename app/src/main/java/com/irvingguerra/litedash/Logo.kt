@@ -74,10 +74,10 @@ private class SavedImage(val file: String, val maxPx: Int, val png: Boolean) {
 private val LOGO = SavedImage("logo.png", 1024, png = true)
 
 /** La imagen de la animación de entrada: aparte de la de la pieza del auto. */
-private val INTRO = SavedImage("entrada.png", 1024, png = true)
+private val INTRO = SavedImage("intro.png", 1024, png = true)
 
 /** El fondo del inicio: una foto que llena toda la pantalla. */
-private val WALLPAPER = SavedImage("fondo.jpg", 1920, png = false)
+private val WALLPAPER = SavedImage("wallpaper.jpg", 1920, png = false)
 
 /** Copia la imagen elegida, reducida a [SavedImage.maxPx]. */
 private suspend fun save(context: Context, uri: Uri, target: SavedImage): Boolean = withContext(Dispatchers.IO) {

@@ -6,32 +6,32 @@ import androidx.compose.runtime.mutableStateMapOf
 
 /**
  * Señales del auto con nombre fijo (como VSS, en corto). Se guardan en acomodos y
- * preferencias: van en español y no se traducen.
+ * preferencias: van en inglés y no se traducen.
  */
 object Signal {
-    const val SPEED = "velocidad"       // km/h
+    const val SPEED = "speed"       // km/h
     const val RPM = "rpm"               // rpm
-    const val COOLANT = "motor_temp"    // °C
-    const val FUEL = "gasolina"         // %
-    const val VOLTAGE = "voltaje"       // V
-    const val INTAKE = "admision_temp"  // °C
-    const val LOAD = "carga"            // %
-    const val MAP = "presion_admision"  // kPa
-    const val BARO = "presion_aire"     // kPa
-    const val AMBIENT = "aire_temp"     // °C
+    const val COOLANT = "coolant_temp"    // °C
+    const val FUEL = "fuel"         // %
+    const val VOLTAGE = "voltage"       // V
+    const val INTAKE = "intake_temp"  // °C
+    const val LOAD = "load"            // %
+    const val MAP = "intake_pressure"  // kPa
+    const val BARO = "barometric_pressure"     // kPa
+    const val AMBIENT = "ambient_temp"     // °C
     const val MAF = "maf"               // g/s
-    const val FUEL_TRIM_SHORT = "ajuste_corto"    // % (negativo = le quita gasolina)
-    const val FUEL_TRIM_LONG = "ajuste_largo"     // %
-    const val FUEL_PRESSURE = "presion_gasolina"  // kPa
-    const val TIMING = "avance_encendido"         // ° antes del PMS
-    const val THROTTLE = "acelerador"             // %
-    const val RUN_TIME = "tiempo_motor"           // s
-    const val DISTANCE_MIL = "km_con_falla"       // km
-    const val OIL = "aceite_temp"                 // °C
-    const val FUEL_RATE = "gasolina_lh"           // L/h
+    const val FUEL_TRIM_SHORT = "fuel_trim_short"    // % (negativo = le quita gasolina)
+    const val FUEL_TRIM_LONG = "fuel_trim_long"     // %
+    const val FUEL_PRESSURE = "fuel_pressure"  // kPa
+    const val TIMING = "timing_advance"         // ° antes del PMS
+    const val THROTTLE = "throttle"             // %
+    const val RUN_TIME = "run_time"           // s
+    const val DISTANCE_MIL = "distance_mil"       // km
+    const val OIL = "oil_temp"                 // °C
+    const val FUEL_RATE = "fuel_rate"           // L/h
     // Calculadas de las de arriba (no las da el auto tal cual).
-    const val CONSUMPTION = "consumo"   // km/l
-    const val BOOST = "turbo"           // kPa sobre la presión del aire (negativo = vacío)
+    const val CONSUMPTION = "consumption"   // km/l
+    const val BOOST = "boost"           // kPa sobre la presión del aire (negativo = vacío)
 }
 
 /** De dónde viene un dato; con varias fuentes para la misma señal gana la mayor. */

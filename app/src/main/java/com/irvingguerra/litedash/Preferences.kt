@@ -17,57 +17,57 @@ import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty
 
 /**
- * Claves y valores ya guardados en el dispositivo: van en español porque así los
- * escribieron las versiones publicadas. Cambiarlos borraría los ajustes de quien
- * ya tiene LiteDash; los nombres en inglés son solo para el código.
+ * Claves y valores guardados en el dispositivo, en inglés desde la 1.4.47. Lo que
+ * guardaron las versiones anteriores (en español) lo copia una sola vez
+ * [StorageMigration]; cambiar estos nombres borraría los ajustes de quien ya tiene LiteDash.
  */
-private object PrefKeys {
-    const val FILE = "ajustes"
-    const val THEME = "tema"
-    const val NIGHT_SOURCE = "fuente_noche"
-    const val SCALE = "escala"
-    const val CAR_NAME = "nombre_auto"
-    const val CAR_COLOR = "color_auto_argb"
-    const val CAR_MODEL = "modelo_auto"
-    const val WELCOME_SEEN = "bienvenida_vista"
-    const val WELCOME_STEP = "paso_bienvenida"
-    const val DONT_ASK_HOME = "no_pedir_inicio"
-    const val LANGUAGE = "idioma"
-    const val HIDDEN = "ocultas"
+internal object PrefKeys {
+    const val FILE = "settings"
+    const val THEME = "theme"
+    const val NIGHT_SOURCE = "night_source"
+    const val SCALE = "scale"
+    const val CAR_NAME = "car_name"
+    const val CAR_COLOR = "car_color_argb"
+    const val CAR_MODEL = "car_model"
+    const val WELCOME_SEEN = "welcome_seen"
+    const val WELCOME_STEP = "welcome_step"
+    const val DONT_ASK_HOME = "dont_ask_home"
+    const val LANGUAGE = "language"
+    const val HIDDEN = "hidden_apps"
     const val DOCK = "dock"
-    const val MAP_APP = "app_mapa"
-    const val MUSIC_APP = "app_musica"
-    const val DRIVER_NAME = "nombre_conductor"
-    const val HOME_ADDRESS = "direccion_casa"
-    const val WORK_ADDRESS = "direccion_trabajo"
-    const val PARKED_MODE = "modo_estacionado"
-    const val WHEEL_KEYS = "mandos_volante"
-    const val CAR_ANGLE = "angulo_auto"
-    const val BRIGHTNESS_BY_SUN = "brillo_por_sol"
-    const val DAY_BRIGHTNESS = "brillo_dia"
-    const val NIGHT_BRIGHTNESS = "brillo_noche"
-    const val BRIGHTNESS_ALL_APPS = "brillo_todas_apps"
-    const val BRIGHTNESS_ORIGINAL = "brillo_original"
-    /** Hasta la 1.4.35 la pieza era auto o logo (sí/no); se lee una vez para no perderlo. */
-    const val SHOW_LOGO = "mostrar_logo"
-    const val CAR_VIEW = "vista_auto"
-    const val ENGINE_ALERTS = "alertas_motor"
-    const val BAR_POSITION = "barra"
-    const val LOGO_INTRO = "logo_entrada"
-    const val INTRO_MIGRATED = "entrada_imagen_propia"
-    const val LIGHTS_KEY = "luces_clave"
-    const val LIGHTS_ON = "luces_encendido"
-    const val SPLIT_SCREEN = "pantalla_dividida"
-    const val SPLIT_CAR_LEFT = "dividida_auto_izquierda"
-    const val TRIP_LOG = "registrar_viajes"
-    const val BEST_ACCEL = "mejor_0_100"
-    const val STATS = "estadisticas_anonimas"
-    const val HIDE_STATUS_BAR = "ocultar_barra_android"
+    const val MAP_APP = "map_app"
+    const val MUSIC_APP = "music_app"
+    const val DRIVER_NAME = "driver_name"
+    const val HOME_ADDRESS = "home_address"
+    const val WORK_ADDRESS = "work_address"
+    const val PARKED_MODE = "parked_mode"
+    const val WHEEL_KEYS = "wheel_keys"
+    const val CAR_ANGLE = "car_angle"
+    const val BRIGHTNESS_BY_SUN = "brightness_by_sun"
+    const val DAY_BRIGHTNESS = "day_brightness"
+    const val NIGHT_BRIGHTNESS = "night_brightness"
+    const val BRIGHTNESS_ALL_APPS = "brightness_all_apps"
+    const val BRIGHTNESS_ORIGINAL = "brightness_original"
+    const val CAR_VIEW = "car_view"
+    const val ENGINE_ALERTS = "engine_alerts"
+    const val BAR_POSITION = "bar_position"
+    const val LOGO_INTRO = "logo_intro"
+    const val INTRO_MIGRATED = "intro_image_migrated"
+    const val LIGHTS_KEY = "lights_key"
+    const val LIGHTS_ON = "lights_on_value"
+    const val SPLIT_SCREEN = "split_screen"
+    const val SPLIT_CAR_LEFT = "split_car_left"
+    const val TRIP_LOG = "trip_log"
+    const val BEST_ACCEL = "best_0_100"
+    const val STATS = "anonymous_stats"
+    const val HIDE_STATUS_BAR = "hide_status_bar"
+    /** Int: 1 = los datos viejos ya se copiaron a los nombres nuevos ([StorageMigration]). */
+    const val STORAGE_VERSION = "storage_version"
 }
 
 /** Dónde va la barra con la hora y tus apps. AUTO = a un lado si la pantalla está acostada. */
 enum class BarPosition(val stored: String) {
-    AUTO("auto"), SIDE("lateral"), BOTTOM("abajo");
+    AUTO("auto"), SIDE("side"), BOTTOM("bottom");
 
     companion object {
         fun fromStored(value: String?) = entries.firstOrNull { it.stored == value } ?: AUTO
@@ -77,24 +77,24 @@ enum class BarPosition(val stored: String) {
 /** Qué muestra la pieza del auto (y su vista en grande). */
 enum class CarView(val stored: String) {
     /** El auto 3D que gira con el dedo. */
-    CAR("auto"),
-    /** Una imagen tuya (como el logo de tu marca) o, sin imagen, el nombre. Se guarda como "logo" desde la 1.4.15. */
+    CAR("car"),
+    /** Una imagen tuya (como el logo de tu marca) o, sin imagen, el nombre. */
     LOGO("logo"),
     /** El auto de espaldas en una carretera que avanza con la velocidad, con los km del viaje (como DuduAuto). */
-    ROAD("carretera");
+    ROAD("road");
 
     companion object {
         fun fromStored(value: String?) = entries.firstOrNull { it.stored == value }
     }
 }
 
-/** [stored] es como se guarda cada tema (los nombres que tenía en la 1.3.4). */
+/** [stored] es como se guarda cada tema. */
 enum class ThemeMode(val stored: String) {
-    DARK("OSCURO"),
-    LIGHT("CLARO"),
-    SYSTEM("SISTEMA"),
+    DARK("dark"),
+    LIGHT("light"),
+    SYSTEM("system"),
     /** Claro de día y oscuro de noche (por el sol o el sensor de luz: [NightSource]). */
-    SUN("SOL");
+    SUN("sun");
 
     companion object {
         fun fromStored(value: String?) = entries.firstOrNull { it.stored == value }
@@ -104,11 +104,11 @@ enum class ThemeMode(val stored: String) {
 /** Cómo se sabe si es de noche (para el tema "Día y noche" y el brillo). */
 enum class NightSource(val stored: String) {
     /** Hora del sol: funciona en cualquier pantalla. */
-    SUN("SOL"),
+    SUN("sun"),
     /** Sensor de luz de la pantalla (si tiene): túneles, estacionamientos, nublado. */
-    SENSOR("SENSOR"),
+    SENSOR("sensor"),
     /** Los faros del auto, por el ajuste de la pantalla que LiteDash aprende ([LightsKey]). */
-    LIGHTS("LUCES");
+    LIGHTS("lights");
 
     companion object {
         fun fromStored(value: String?) = entries.firstOrNull { it.stored == value }
@@ -216,12 +216,8 @@ class Preferences(context: Context) {
     /** Dónde van la hora y tus apps: a un lado, abajo o según la pantalla. */
     var barPosition by mapped(PrefKeys.BAR_POSITION, BarPosition::fromStored) { it.stored }
 
-    /** Qué muestra la pieza del auto; quien tenía el logo prendido lo conserva. */
-    var carView by mapped(
-        PrefKeys.CAR_VIEW,
-        { CarView.fromStored(it) ?: if (p.getBoolean(PrefKeys.SHOW_LOGO, false)) CarView.LOGO else CarView.CAR },
-        { it.stored },
-    )
+    /** Qué muestra la pieza del auto. */
+    var carView by mapped(PrefKeys.CAR_VIEW, { CarView.fromStored(it) ?: CarView.CAR }, { it.stored })
 
     /** Abrir las apps de mapa y música en pantalla dividida, con el auto al lado (solo acostada). */
     var splitScreen by bool(PrefKeys.SPLIT_SCREEN, false)

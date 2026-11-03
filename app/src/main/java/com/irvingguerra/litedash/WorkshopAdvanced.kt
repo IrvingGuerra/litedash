@@ -215,7 +215,7 @@ fun TripsCard(d: Dependencies) {
             Label(stringResource(R.string.trips_none), Typography.small, c.textMuted)
             return@SettingsCard
         }
-        Button(stringResource(R.string.trips_export), { export.launch("litedash-viajes.csv") }, primary = true)
+        Button(stringResource(R.string.trips_export), { export.launch("litedash-trips.csv") }, primary = true)
         val dates = remember(locale) { DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT, locale) }
         for (t in trips.take(30)) TripRow(t, dates, imperial, locale)
     }

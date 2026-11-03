@@ -55,34 +55,34 @@ private const val NEON_PAD = 30f
 /** Cómo se dibuja un medidor. [stored] es como se guarda en el acomodo (no se traduce). */
 enum class GaugeStyle(val stored: String, val title: Int) {
     /** Arco grueso que se llena (el de siempre). */
-    ARC("arco", R.string.gauge_style_arc),
+    ARC("arc", R.string.gauge_style_arc),
     /** Aguja clásica con marcas y números, como un tablero de verdad. */
-    NEEDLE("aguja", R.string.gauge_style_needle),
+    NEEDLE("needle", R.string.gauge_style_needle),
     /** El número enorme y una barra de segmentos abajo (como un HUD). */
     DIGITAL("digital", R.string.gauge_style_digital),
     /** Anillo completo alrededor del número. */
-    RING("anillo", R.string.gauge_style_ring),
+    RING("ring", R.string.gauge_style_ring),
     /** Luces de cambio deportivas: segmentos que crecen hacia la derecha. */
-    BAR("barra", R.string.gauge_style_bar),
+    BAR("bar", R.string.gauge_style_bar),
     /** Arco de rayitas que se encienden en degradado, sin aguja (elegante). */
-    GRADIENT("degradado", R.string.gauge_style_gradient),
+    GRADIENT("gradient", R.string.gauge_style_gradient),
     /** Arco liso que brilla como luz de neón. */
     NEON("neon", R.string.gauge_style_neon),
     /** Cuadritos a lo largo del arco que se van llenando. */
-    BLOCKS("cuadros", R.string.gauge_style_blocks),
+    BLOCKS("blocks", R.string.gauge_style_blocks),
 }
 
 /** De qué color va lo que se llena. DYNAMIC va de verde a ámbar a rojo con el valor. */
 enum class GaugeColor(val stored: String, val title: Int) {
-    ACCENT("ambar", R.string.gauge_color_accent),
-    CAR("auto", R.string.gauge_color_car),
-    DYNAMIC("dinamico", R.string.gauge_color_dynamic),
-    GREEN("verde", R.string.gauge_color_green),
-    BLUE("azul", R.string.gauge_color_blue),
-    RED("rojo", R.string.gauge_color_red),
-    WHITE("blanco", R.string.gauge_color_white),
-    PURPLE("morado", R.string.gauge_color_purple),
-    CYAN("cian", R.string.gauge_color_cyan),
+    ACCENT("amber", R.string.gauge_color_accent),
+    CAR("car", R.string.gauge_color_car),
+    DYNAMIC("dynamic", R.string.gauge_color_dynamic),
+    GREEN("green", R.string.gauge_color_green),
+    BLUE("blue", R.string.gauge_color_blue),
+    RED("red", R.string.gauge_color_red),
+    WHITE("white", R.string.gauge_color_white),
+    PURPLE("purple", R.string.gauge_color_purple),
+    CYAN("cyan", R.string.gauge_color_cyan),
 }
 
 private val Green = Color(0xFF3DD68C)
@@ -99,7 +99,7 @@ fun GaugeStyle.suggestedColor(): GaugeColor? = when (this) {
 
 /**
  * Cómo se ve un medidor; cada pieza guarda el suyo en su [com.irvingguerra.litedash.feature.dashboard.Tile.data]
- * ("rpm;estilo=aguja;color=dinamico"). Lo que queda como de fábrica no se escribe, así los
+ * ("rpm;style=needle;color=dynamic"). Lo que queda como de fábrica no se escribe, así los
  * acomodos de antes (solo la señal) se leen igual.
  */
 @Immutable
@@ -114,12 +114,12 @@ data class GaugeLook(
 ) {
     fun encode(signal: String = ""): String = buildList {
         if (signal.isNotEmpty()) add(signal)
-        if (style != GaugeStyle.ARC) add("estilo=${style.stored}")
+        if (style != GaugeStyle.ARC) add("style=${style.stored}")
         if (color != GaugeColor.ACCENT) add("color=${color.stored}")
         max?.let { add("max=$it") }
-        if (!ticks) add("marcas=0")
-        if (numbers) add("numeros=1")
-        if (redline) add("roja=1")
+        if (!ticks) add("ticks=0")
+        if (numbers) add("numbers=1")
+        if (redline) add("redline=1")
     }.joinToString(";")
 
     companion object {
@@ -128,12 +128,12 @@ data class GaugeLook(
                 part.split('=', limit = 2).takeIf { it.size == 2 }?.let { it[0] to it[1] }
             }.toMap()
             return GaugeLook(
-                style = GaugeStyle.entries.firstOrNull { it.stored == f["estilo"] } ?: GaugeStyle.ARC,
+                style = GaugeStyle.entries.firstOrNull { it.stored == f["style"] } ?: GaugeStyle.ARC,
                 color = GaugeColor.entries.firstOrNull { it.stored == f["color"] } ?: GaugeColor.ACCENT,
                 max = f["max"]?.toIntOrNull(),
-                ticks = f["marcas"] != "0",
-                numbers = f["numeros"] == "1",
-                redline = f["roja"] == "1",
+                ticks = f["ticks"] != "0",
+                numbers = f["numbers"] == "1",
+                redline = f["redline"] == "1",
             )
         }
     }

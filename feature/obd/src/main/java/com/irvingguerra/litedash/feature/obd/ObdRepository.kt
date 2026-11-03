@@ -101,20 +101,20 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
             savedTarget = t
             prefs.edit().apply {
                 when (t) {
-                    is ObdTarget.Bluetooth -> putString("tipo", "bt").putString("direccion", t.address).putString("nombre", t.name)
-                    is ObdTarget.Ble -> putString("tipo", "ble").putString("direccion", t.address).putString("nombre", t.name)
-                    is ObdTarget.Wifi -> putString("tipo", "wifi").putString("direccion", t.host).putInt("puerto", t.port)
-                    is ObdTarget.Usb -> putString("tipo", "usb").putInt("fabricante", t.vendorId).putInt("producto", t.productId).putString("nombre", t.name)
+                    is ObdTarget.Bluetooth -> putString("type", "bt").putString("address", t.address).putString("name", t.name)
+                    is ObdTarget.Ble -> putString("type", "ble").putString("address", t.address).putString("name", t.name)
+                    is ObdTarget.Wifi -> putString("type", "wifi").putString("address", t.host).putInt("port", t.port)
+                    is ObdTarget.Usb -> putString("type", "usb").putInt("vendor_id", t.vendorId).putInt("product_id", t.productId).putString("name", t.name)
                     null -> clear()
                 }
             }.apply()
         }
 
-    private fun readTarget(): ObdTarget? = when (prefs.getString("tipo", null)) {
-        "bt" -> ObdTarget.Bluetooth(prefs.getString("direccion", "")!!, prefs.getString("nombre", "")!!)
-        "ble" -> ObdTarget.Ble(prefs.getString("direccion", "")!!, prefs.getString("nombre", "")!!)
-        "wifi" -> ObdTarget.Wifi(prefs.getString("direccion", "")!!, prefs.getInt("puerto", 35000))
-        "usb" -> ObdTarget.Usb(prefs.getInt("fabricante", 0), prefs.getInt("producto", 0), prefs.getString("nombre", "")!!)
+    private fun readTarget(): ObdTarget? = when (prefs.getString("type", null)) {
+        "bt" -> ObdTarget.Bluetooth(prefs.getString("address", "")!!, prefs.getString("name", "")!!)
+        "ble" -> ObdTarget.Ble(prefs.getString("address", "")!!, prefs.getString("name", "")!!)
+        "wifi" -> ObdTarget.Wifi(prefs.getString("address", "")!!, prefs.getInt("port", 35000))
+        "usb" -> ObdTarget.Usb(prefs.getInt("vendor_id", 0), prefs.getInt("product_id", 0), prefs.getString("name", "")!!)
         else -> null
     }
 
@@ -462,6 +462,6 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
 
         /** Hay un adaptador guardado (sin crear el escáner ni tocar Bluetooth). */
         fun hasSavedTarget(context: Context) =
-            context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).contains("tipo")
+            context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).contains("type")
     }
 }

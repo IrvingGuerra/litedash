@@ -41,9 +41,9 @@ import com.irvingguerra.litedash.core.ui.Typography
  */
 object SplitScreen {
     private const val EXTRA_APP = "app"
-    private const val EXTRA_OPEN = "abrir"
+    private const val EXTRA_OPEN = "open"
     /** Del lado que debe quedar el auto antes de abrir la app (true = izquierda). */
-    private const val EXTRA_LEFT = "izquierda"
+    private const val EXTRA_LEFT = "left"
 
     /** Cada cuánto el auto revisa si ya quedó en su lado, y hasta cuándo esperar. */
     private const val CHECK_MS = 100L

@@ -21,7 +21,7 @@ import java.time.LocalDate
  * esos campos y nadie puede leerlos desde la app. Se apaga en Ajustes → Acerca de.
  */
 class Stats(private val context: Context, private val enabled: () -> Boolean) {
-    private val store by lazy { context.getSharedPreferences("estadisticas", Context.MODE_PRIVATE) }
+    private val store by lazy { context.getSharedPreferences("stats", Context.MODE_PRIVATE) }
 
     suspend fun pingDaily() {
         if (BuildConfig.DEBUG || !enabled()) return
@@ -67,8 +67,8 @@ class Stats(private val context: Context, private val enabled: () -> Boolean) {
         const val DOCUMENTS = "projects/$PROJECT/databases/(default)/documents"
         const val COMMIT_URL = "https://firestore.googleapis.com/v1/projects/$PROJECT/databases/(default)/documents:commit"
         const val KEY_ID = "id"
-        const val KEY_SINCE = "alta"
-        const val KEY_LAST = "ultimo"
+        const val KEY_SINCE = "since"
+        const val KEY_LAST = "last_ping"
 
         fun newId() = ByteArray(16).also { SecureRandom().nextBytes(it) }.joinToString("") { "%02x".format(it) }
         fun int(value: Long) = JSONObject().put("integerValue", value.toString())

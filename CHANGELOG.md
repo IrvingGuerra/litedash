@@ -6,6 +6,13 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
+## [1.4.47] - 2026-11-03
+
+### Cambiado
+- Por dentro, todo lo que LiteDash guarda en tu pantalla (ajustes, acomodos, recordatorios,
+  viajes, autos) ahora usa nombres en inglés. Al actualizar se copia solo: no pierdes nada ni
+  tienes que volver a acomodar. El CSV de viajes que exportas trae los encabezados en inglés.
+
 ## [1.4.46] - 2026-11-02
 
 ### Cambiado

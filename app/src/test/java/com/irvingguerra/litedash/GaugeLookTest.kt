@@ -22,8 +22,8 @@ class GaugeLookTest {
     @Test
     fun idaYVuelta() {
         val look = GaugeLook(GaugeStyle.NEEDLE, GaugeColor.DYNAMIC, max = 240, ticks = false, numbers = true, redline = true)
-        val data = look.encode("motor_temp")
-        assertEquals("motor_temp", signalOf(data))
+        val data = look.encode("coolant_temp")
+        assertEquals("coolant_temp", signalOf(data))
         assertEquals(look, GaugeLook.parse(data))
         // El velocímetro no tiene señal: lo primero ya es una opción.
         val speed = GaugeLook(GaugeStyle.RING, max = 320).encode()
@@ -40,7 +40,7 @@ class GaugeLookTest {
                 assertEquals(look, GaugeLook.parse(look.encode()))
             }
         }
-        assertEquals("estilo=degradado;color=morado", GaugeLook(GaugeStyle.GRADIENT, GaugeColor.PURPLE).encode())
+        assertEquals("style=gradient;color=purple", GaugeLook(GaugeStyle.GRADIENT, GaugeColor.PURPLE).encode())
         assertEquals(GaugeColor.CYAN, GaugeStyle.NEON.suggestedColor())
     }
 
