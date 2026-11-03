@@ -6,6 +6,19 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
+## [1.4.48] - 2026-11-03
+
+### Nuevo
+- **Funciona desde Android 6.0** (antes pedía Android 8): pantallas viejas y con poca memoria
+  ya pueden usar LiteDash completo. Lo que ese Android no tiene, como la pantalla dividida
+  (Android 12L o más nuevo), aparece como no disponible.
+  - En Android 6 y 7.0 las descargas (autos, actualizaciones) y el clima funcionan aunque el
+    equipo no traiga los certificados más nuevos.
+  - Ícono propio para Android 6 y 7.
+
+### Arreglado
+- El ícono de Wi-Fi o datos de la barra ahora sale desde que abres LiteDash en todos los equipos.
+
 ## [1.4.47] - 2026-11-03
 
 ### Cambiado

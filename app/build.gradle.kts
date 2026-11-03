@@ -47,7 +47,7 @@ android {
 
     defaultConfig {
         applicationId = "com.irvingguerra.litedash"
-        minSdk = 26
+        minSdk = 23
         targetSdk = 37
         versionCode = versionCodeFrom(appVersionName)
         versionName = appVersionName
@@ -121,8 +121,6 @@ android {
     lint {
         // Las versiones se fijan a mano; no son errores.
         disable += setOf("GradleDependency", "NewerVersionAvailable", "AndroidGradlePluginVersion")
-        // aapt exige -v26 para adaptive-icon aunque minSdk ya sea 26.
-        disable += "ObsoleteSdkInt"
         warningsAsErrors = false
     }
 

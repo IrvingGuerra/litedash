@@ -18,10 +18,9 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import org.json.JSONArray
 import org.json.JSONObject
-import java.net.HttpURLConnection
-import java.net.URL
 import java.util.Locale
 import kotlin.coroutines.resume
+import com.irvingguerra.litedash.core.ui.Https
 
 /** Clima de ahora y de los próximos días (códigos WMO de Open-Meteo). */
 data class Weather(val temperature: Int, val code: Int, val day: Boolean, val days: List<WeatherDay>, val fetchedAt: Long, val fahrenheit: Boolean = false)
@@ -110,7 +109,7 @@ class WeatherRepository(private val context: Context, private val prefs: Prefere
         val url = "https://api.open-meteo.com/v1/forecast?latitude=%.2f&longitude=%.2f".format(Locale.US, lat, lon) +
             "&current=temperature_2m,weather_code,is_day&daily=weather_code,temperature_2m_max,temperature_2m_min" +
             "&timezone=auto&forecast_days=4$unit"
-        val connection = (URL(url).openConnection() as HttpURLConnection).apply {
+        val connection = Https.open(context, url).apply {
             connectTimeout = 10_000
             readTimeout = 15_000
             setRequestProperty("User-Agent", "LiteDash")

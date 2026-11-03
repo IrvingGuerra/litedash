@@ -126,7 +126,7 @@ fun contextWithLanguage(base: Context): Context {
     if (language.isBlank()) return base
     // Con la región del sistema si habla ese idioma (es-MX: "12.6 V"); si no, México, que
     // escribe los decimales con punto (el español genérico usa coma).
-    val system = Resources.getSystem().configuration.locales[0]
+    val system = primaryLocale(Resources.getSystem().configuration)
     val locale = if (system.language == language) system else Locale.forLanguageTag(if (language == "es") "es-MX" else language)
     val config = Configuration(base.resources.configuration).apply { setLocale(locale) }
     return base.createConfigurationContext(config)

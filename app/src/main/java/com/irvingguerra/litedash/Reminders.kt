@@ -13,7 +13,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -25,10 +24,6 @@ import com.irvingguerra.litedash.core.ui.Label
 import com.irvingguerra.litedash.core.ui.LocalColors
 import com.irvingguerra.litedash.core.ui.Typography
 import java.text.DateFormat
-import java.time.LocalDate
-import java.time.ZoneId
-import java.time.temporal.ChronoUnit
-import java.util.Date
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -42,7 +37,7 @@ enum class ReminderType(val stored: String, val title: Int, val months: Long) {
     OTHER("other", R.string.reminder_other, 0),
 }
 
-data class Reminder(val id: Long, val type: ReminderType, val date: LocalDate)
+data class Reminder(val id: Long, val type: ReminderType, val date: Day)
 
 /** Recordatorios guardados en el dispositivo; nada corre en segundo plano: se revisan al ver el inicio. */
 class ReminderRepository(context: Context) {
@@ -52,9 +47,9 @@ class ReminderRepository(context: Context) {
         private set
 
     /** Los que vencen en los próximos [DAYS_BEFORE] días o ya vencieron, el más próximo primero. */
-    fun due(today: LocalDate = LocalDate.now()) = all.filter { !it.date.isAfter(today.plusDays(DAYS_BEFORE)) }.sortedBy { it.date }
+    fun due(today: Day = Day.today()) = all.filter { !it.date.isAfter(today.plusDays(DAYS_BEFORE)) }.sortedBy { it.date }
 
-    fun add(type: ReminderType, date: LocalDate) = save(all + Reminder(System.currentTimeMillis(), type, date))
+    fun add(type: ReminderType, date: Day) = save(all + Reminder(System.currentTimeMillis(), type, date))
 
     fun remove(r: Reminder) = save(all - r)
 
@@ -75,7 +70,7 @@ class ReminderRepository(context: Context) {
         (0 until a.length()).mapNotNull { i ->
             val o = a.getJSONObject(i)
             val type = ReminderType.entries.firstOrNull { it.stored == o.getString("type") } ?: return@mapNotNull null
-            Reminder(o.getLong("id"), type, LocalDate.parse(o.getString("date")))
+            Reminder(o.getLong("id"), type, Day.parse(o.getString("date")))
         }.sortedBy { it.date }
     }.getOrDefault(emptyList())
 
@@ -87,15 +82,15 @@ class ReminderRepository(context: Context) {
 }
 
 @Composable
-private fun formatDate(date: LocalDate): String {
-    val locale = LocalConfiguration.current.locales[0]
-    return DateFormat.getDateInstance(DateFormat.LONG, locale).format(Date.from(date.atStartOfDay(ZoneId.systemDefault()).toInstant()))
+private fun formatDate(date: Day): String {
+    val locale = currentLocale()
+    return DateFormat.getDateInstance(DateFormat.LONG, locale).format(date.toDate())
 }
 
 /** "en 3 días", "hoy", "venció hace 2 días". */
 @Composable
-private fun whenText(date: LocalDate): String {
-    val days = ChronoUnit.DAYS.between(LocalDate.now(), date).toInt()
+private fun whenText(date: Day): String {
+    val days = Day.today().daysUntil(date).toInt()
     return when {
         days == 0 -> stringResource(R.string.reminder_today)
         days > 0 -> pluralStringResource(R.plurals.reminder_in_days, days, days)
@@ -132,8 +127,8 @@ fun ReminderSettings(repo: ReminderRepository) {
             for (t in ReminderType.entries) {
                 Button(stringResource(t.title), {
                     // Selector de fecha del sistema (no agrega librerías).
-                    val today = LocalDate.now()
-                    DatePickerDialog(context, { _, y, m, d -> repo.add(t, LocalDate.of(y, m + 1, d)) }, today.year, today.monthValue - 1, today.dayOfMonth).show()
+                    val today = Day.today()
+                    DatePickerDialog(context, { _, y, m, d -> repo.add(t, Day(y, m + 1, d)) }, today.year, today.month - 1, today.day).show()
                 })
             }
         }

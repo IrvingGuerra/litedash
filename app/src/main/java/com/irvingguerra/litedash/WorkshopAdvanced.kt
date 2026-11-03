@@ -27,7 +27,6 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -73,7 +72,7 @@ fun LiveCharts(d: Dependencies) {
     val chosen = remember { mutableStateListOf<String>() }
     LaunchedEffect(signals) { if (chosen.isEmpty()) chosen += listOf(Signal.RPM, Signal.SPEED).filter { it in signals } }
     SettingsCard(stringResource(R.string.obd_charts), stringResource(R.string.obd_charts_help)) {
-        val locale = LocalConfiguration.current.locales[0]
+        val locale = currentLocale()
         val imperial = imperialUnits(d.prefs.language)
         val series = chosen.map { signal -> signal to rememberSeries(d, signal) }
         for ((i, pair) in series.withIndex()) {
@@ -166,7 +165,7 @@ fun AccelTimerCard(d: Dependencies) {
     }
     // Mientras corre, el reloj avanza aunque la velocidad tarde en llegar.
     LaunchedEffect(state) { while (state is AccelState.Running) { now++; delay(50) } }
-    val locale = LocalConfiguration.current.locales[0]
+    val locale = currentLocale()
     SettingsCard(stringResource(if (imperial) R.string.accel_title_mph else R.string.accel_title), stringResource(R.string.accel_help)) {
         val shown = when (val s = state) {
             is AccelState.Running -> { now; (System.currentTimeMillis() - s.startMs) / 1000f }
@@ -207,7 +206,7 @@ fun TripsCard(d: Dependencies) {
         uri ?: return@rememberLauncherForActivityResult
         runCatching { context.contentResolver.openOutputStream(uri)?.use { it.write(store.csv().toByteArray()) } }
     }
-    val locale = LocalConfiguration.current.locales[0]
+    val locale = currentLocale()
     val imperial = imperialUnits(d.prefs.language)
     SettingsCard(stringResource(R.string.trips_title)) {
         SwitchRow(stringResource(R.string.trips_record), d.prefs.tripLog, { d.prefs.tripLog = it }, stringResource(R.string.trips_help))

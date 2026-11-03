@@ -32,7 +32,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.irvingguerra.litedash.core.ui.Button
@@ -63,7 +62,7 @@ fun CustomizeGaugePanel(d: Dependencies, tileId: String, close: () -> Unit, onPi
     val spec = gaugeOf(signal)
     val look = GaugeLook.parse(tile.data)
     val imperial = imperialUnits(d.prefs.language)
-    val locale = LocalConfiguration.current.locales[0]
+    val locale = currentLocale()
     var applied by remember { mutableStateOf(false) }
     fun set(new: GaugeLook) {
         applied = false

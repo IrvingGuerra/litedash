@@ -27,7 +27,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -141,7 +140,7 @@ fun TripTile(trip: TripRepository, language: String) {
             delay(60_000 - System.currentTimeMillis() % 60_000)
         }
     }
-    val locale = LocalConfiguration.current.locales[0]
+    val locale = currentLocale()
     val spanish = locale.language == "es"
     val heading = trip.bearing?.let { (if (spanish) COMPASS else COMPASS_EN)[((it + 22.5f) / 45f).toInt() % 8] }
     Card(Modifier.fillMaxSize()) {

@@ -42,7 +42,6 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.lerp
 import kotlin.math.cos
 import kotlin.math.sin
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -172,7 +171,7 @@ fun RoadView(d: Dependencies, pkg: CarPackage?, onClick: () -> Unit, modifier: M
 private fun RoadNumbers(d: Dependencies, kmh: Float?, heightDp: Float, modifier: Modifier) {
     val c = LocalColors.current
     val imperial = imperialUnits(d.prefs.language)
-    val locale = LocalConfiguration.current.locales[0]
+    val locale = currentLocale()
     val speed = kmh?.let { if (imperial) it / 1.609f else it }
     val distance = if (imperial) d.trip.meters / 1609.34 else d.trip.meters / 1000.0
     val big = (heightDp * 0.16f).coerceIn(30f, 96f)

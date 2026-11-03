@@ -24,7 +24,8 @@ REACH=$((W / 4))
 
 adb shell am force-stop $PKG
 adb shell am start -n $PKG/.MainActivity >/dev/null
-sleep 6
+# Pantallas lentas (Android 6) tardan más en pasar la animación de entrada.
+sleep 10
 
 # Arrastra de lado a lado [veces] y reporta cuadros por segundo de arrastre.
 measure() {

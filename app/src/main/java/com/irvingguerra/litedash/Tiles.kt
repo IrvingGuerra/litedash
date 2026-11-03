@@ -37,7 +37,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
@@ -125,7 +124,7 @@ data class Clock(val time: String, val marker: String?, val date: String) {
 /** Hora y fecha que respetan el formato del usuario (12/24 h); un repintado por minuto. */
 @Composable
 fun rememberClock(): Clock {
-    val language = LocalConfiguration.current.locales[0]
+    val language = currentLocale()
     val context = LocalContext.current
     val h24 = DateFormat.is24HourFormat(context)
     val time = remember(language, h24) {

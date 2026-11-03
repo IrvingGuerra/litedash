@@ -208,7 +208,9 @@ fun rememberRequestHome(): Pair<() -> Unit, Int> {
             true
         }.getOrDefault(false)
         if (!requested) {
-            listOf(Settings.ACTION_HOME_SETTINGS, Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS, Settings.ACTION_SETTINGS)
+            // "Apps predeterminadas" existe desde Android 7.
+            val defaults = if (Build.VERSION.SDK_INT >= 24) Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS else null
+            listOfNotNull(Settings.ACTION_HOME_SETTINGS, defaults, Settings.ACTION_SETTINGS)
                 .firstOrNull { action ->
                     runCatching { context.startActivity(Intent(action).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }.isSuccess
                 }

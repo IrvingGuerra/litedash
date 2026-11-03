@@ -30,7 +30,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -80,7 +79,7 @@ fun SpeedometerTile(d: Dependencies, language: String, look: GaugeLook = GaugeLo
         null -> ""
     }
     GaugeCard(
-        number = String.format(LocalConfiguration.current.locales[0], "%.0f", speed ?: 0f),
+        number = String.format(currentLocale(), "%.0f", speed ?: 0f),
         unit = stringResource(if (imperial) R.string.unit_mph else R.string.unit_kmh),
         tag = source,
         fraction = (speed ?: 0f) / max,
@@ -208,7 +207,7 @@ fun GaugeTile(d: Dependencies, signal: String, language: String, onPick: () -> U
     val value = d.bus.watch(spec.signal)
     val imperial = imperialUnits(language)
     GaugeCard(
-        number = value?.let { gaugeText(spec, it, imperial, LocalConfiguration.current.locales[0]) } ?: "—",
+        number = value?.let { gaugeText(spec, it, imperial, currentLocale()) } ?: "—",
         unit = stringResource(spec.unit(imperial)),
         tag = spec.tag?.let { stringResource(it) } ?: "",
         fraction = value?.let(spec::fraction) ?: 0f,

@@ -8,10 +8,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
-import java.net.HttpURLConnection
-import java.net.URL
 import java.security.SecureRandom
-import java.time.LocalDate
+import com.irvingguerra.litedash.core.ui.Https
 
 /**
  * Cuántas pantallas usan LiteDash, sin cuentas ni SDK de Firebase: a lo más una vez al día,
@@ -25,7 +23,7 @@ class Stats(private val context: Context, private val enabled: () -> Boolean) {
 
     suspend fun pingDaily() {
         if (BuildConfig.DEBUG || !enabled()) return
-        val today = LocalDate.now().toString()
+        val today = Day.today().toString()
         if (store.getString(KEY_LAST, null) == today) return
         val id = store.getString(KEY_ID, null) ?: newId().also { store.edit { putString(KEY_ID, it) } }
         val since = store.getString(KEY_SINCE, null) ?: today.also { store.edit { putString(KEY_SINCE, it) } }
@@ -39,14 +37,14 @@ class Stats(private val context: Context, private val enabled: () -> Boolean) {
             .put("version", int(BuildConfig.VERSION_CODE.toLong()))
             .put("channel", text(BuildConfig.CHANNEL))
             .put("android", int(Build.VERSION.SDK_INT.toLong()))
-            .put("language", text(Language.read(context).ifBlank { config.locales[0].language }.take(8)))
+            .put("language", text(Language.read(context).ifBlank { primaryLocale(config).language }.take(8)))
             .put("screen", text(screen(config)))
             .put("since", text(since))
         val write = JSONObject()
             .put("update", JSONObject().put("name", "$DOCUMENTS/screens/$id").put("fields", fields))
             .put("updateTransforms", JSONArray().put(JSONObject().put("fieldPath", "seen").put("setToServerValue", "REQUEST_TIME")))
         val body = JSONObject().put("writes", JSONArray().put(write)).toString().toByteArray()
-        val connection = (URL(COMMIT_URL).openConnection() as HttpURLConnection).apply {
+        val connection = Https.open(context, COMMIT_URL).apply {
             requestMethod = "POST"
             connectTimeout = 10_000
             readTimeout = 15_000

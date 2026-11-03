@@ -3,6 +3,7 @@ package com.irvingguerra.litedash.feature.car
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.os.Build
 import android.util.LruCache
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.getValue
@@ -23,12 +24,12 @@ import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import java.io.File
 import java.net.HttpURLConnection
-import java.net.URL
 import java.security.MessageDigest
 import java.util.concurrent.ConcurrentHashMap
 import java.util.zip.ZipInputStream
 import kotlin.math.exp
 import kotlin.math.roundToInt
+import com.irvingguerra.litedash.core.ui.Https
 
 /** Desde aquí los brillos de la pintura teñida se acercan a blanco sin cortarse. */
 private const val KNEE = 0.78f
@@ -96,7 +97,7 @@ class CarLayers(val car: ImageBitmap, val shadow: ImageBitmap?, val reflection: 
  * app. Son solo imágenes, nunca código (por eso va igual en Play y en GitHub).
  * Con [catalogUrl] vacío no hay catálogo: solo el auto genérico y lo instalado.
  */
-class CarRepository(context: Context, val catalogUrl: String) {
+class CarRepository(private val context: Context, val catalogUrl: String) {
     private val root = File(context.filesDir, CarFiles.ROOT)
     private val checks = context.getSharedPreferences(CarFiles.ROOT, Context.MODE_PRIVATE)
     // Lo que se baja o se arregla vive aquí y no en la pantalla que lo pidió: si se cierra
@@ -105,9 +106,14 @@ class CarRepository(context: Context, val catalogUrl: String) {
     // Caché de imágenes ya teñidas: la cuarta parte de la memoria de la app (de 32 a
     // 160 MB), para que quepa el giro completo en calidad alta a tamaño real en
     // pantallas grandes. Si no cupiera, al girar en círculo siempre se borraría justo
-    // el cuadro que sigue y el giro se iría trabando.
+    // el cuadro que sigue y el giro se iría trabando. En Android 6 y 7 las imágenes viven en
+    // esa misma memoria (desde la 8 van aparte) y suele ser poca (48 MB): ahí 3/8, sin el
+    // mínimo (con 1/4 el giro bajaba a 5 cuadros/s en el emulador de Android 6; con 1/2 no
+    // quedaba aire para la pantalla).
     private val images = object : LruCache<String, ImageBitmap>(
-        (Runtime.getRuntime().maxMemory() / 4).coerceIn(32L shl 20, 160L shl 20).toInt(),
+        (Runtime.getRuntime().maxMemory() / 4).let {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) it.coerceIn(32L shl 20, 160L shl 20) else it * 3 / 2
+        }.toInt(),
     ) {
         override fun sizeOf(key: String, value: ImageBitmap) = value.width * value.height * 4
     }
@@ -408,9 +414,9 @@ class CarRepository(context: Context, val catalogUrl: String) {
      */
     private suspend fun cached(key: String, load: () -> Bitmap?): ImageBitmap? {
         images.get(key)?.let { return it }
-        val job = loading.computeIfAbsent(key) {
+        val job = loading[key] ?: run {
             // Perezosa: arranca ya guardada en [loading], así nunca se quita antes de entrar.
-            scope.async(Dispatchers.IO, start = CoroutineStart.LAZY) {
+            val fresh = scope.async(Dispatchers.IO, start = CoroutineStart.LAZY) {
                 try {
                     load()?.asImageBitmap()?.also { images.put(key, it) }
                 } catch (e: OutOfMemoryError) {
@@ -422,6 +428,9 @@ class CarRepository(context: Context, val catalogUrl: String) {
                     loading.remove(key)
                 }
             }
+            // putIfAbsent (desde Android 1; computeIfAbsent es de Android 7): si otra carga ganó, esta
+            // se cancela sin haber arrancado (su finally no corre y no quita la ganadora).
+            loading.putIfAbsent(key, fresh)?.also { fresh.cancel() } ?: fresh
         }
         job.start()
         return job.await()
@@ -535,7 +544,7 @@ class CarRepository(context: Context, val catalogUrl: String) {
     private fun folderOf(id: String) = id.replace(FOLDER_CHARS, "-")
 
     private fun open(url: String): HttpURLConnection =
-        (URL(url).openConnection() as HttpURLConnection).apply {
+        Https.open(context, url).apply {
             connectTimeout = 15_000
             readTimeout = 30_000
             instanceFollowRedirects = true

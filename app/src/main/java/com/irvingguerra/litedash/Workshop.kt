@@ -33,7 +33,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.irvingguerra.litedash.core.ui.Button
@@ -128,7 +127,7 @@ fun EngineAlertBanner(d: Dependencies) {
         }
     }
     val a = shown?.takeIf { it != dismissed } ?: return
-    val locale = LocalConfiguration.current.locales[0]
+    val locale = currentLocale()
     val imperial = imperialUnits(d.prefs.language)
     val volts = voltage?.let { String.format(locale, "%.1f V", it) } ?: "—"
     val text = when (a) {
@@ -286,7 +285,7 @@ private fun Engine(obd: ObdRepository, tab: Int) {
     var reading by remember { mutableStateOf(true) }
     var confirm by remember { mutableIntStateOf(0) }
     var cleared by remember { mutableStateOf<Boolean?>(null) }
-    val spanish = LocalConfiguration.current.locales[0].language == "es"
+    val spanish = currentLocale().language == "es"
     fun read() = scope.launch {
         reading = true
         report = obd.report()
@@ -374,7 +373,7 @@ private fun Engine(obd: ObdRepository, tab: Int) {
 /** Los sensores que da este auto, en vivo (solo se leen mientras se ven). */
 @Composable
 private fun LiveSensors(d: Dependencies) {
-    val locale = LocalConfiguration.current.locales[0]
+    val locale = currentLocale()
     val imperial = imperialUnits(d.prefs.language)
     SettingsCard(stringResource(R.string.obd_live)) {
         // Los que da el auto, los calculados (consumo, turbo) y el voltaje (lo mide el adaptador si el auto no).

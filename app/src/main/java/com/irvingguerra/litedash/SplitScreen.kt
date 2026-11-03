@@ -9,6 +9,7 @@ import android.content.res.Resources
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.annotation.RequiresApi
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -60,6 +61,7 @@ object SplitScreen {
     }
 
     /** Las apps que se abren divididas: las de mapa y de música (las conocidas, la elegida o por su categoría). */
+    @RequiresApi(Build.VERSION_CODES.S_V2)
     private fun isMapOrMusic(context: Context, d: Dependencies, pkg: String): Boolean {
         if (pkg in NAVIGATION_PACKAGES || pkg in MUSIC_PACKAGES || pkg == d.prefs.musicApp) return true
         if (d.prefs.mapApp?.substringBefore('/') == pkg) return true
@@ -70,7 +72,8 @@ object SplitScreen {
     /** Abre [intent] dividida si toca; false = que se abra normal. */
     fun open(context: Context, intent: Intent, pkg: String): Boolean {
         val d = (context.applicationContext as LiteDashApp).dependencies
-        if (!d.prefs.splitScreen || !supported()) return false
+        // Android solo divide la pantalla así desde la 12L: antes, la app se abre normal.
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S_V2 || !d.prefs.splitScreen || !supported()) return false
         if (context.resources.configuration.orientation != Configuration.ORIENTATION_LANDSCAPE) return false
         if (!isMapOrMusic(context, d, pkg)) return false
         start(context, intent, d.prefs.splitCarLeft)
@@ -84,6 +87,7 @@ object SplitScreen {
      * - Auto a la derecha: una ventana de paso ([SplitStartActivity]) abre el auto a su lado
      *   (a la derecha) y el auto, ya en su lugar, abre la app a su lado: donde estaba la de paso.
      */
+    @RequiresApi(Build.VERSION_CODES.S_V2)
     internal fun start(context: Context, app: Intent, carLeft: Boolean) {
         val target = if (carLeft) SplitActivity::class.java else SplitStartActivity::class.java
         val intent = Intent(context, target)
@@ -101,6 +105,7 @@ object SplitScreen {
      * celular o pantalla lenta la división tarda en acomodarse). Si no llega en [GIVE_UP_MS],
      * la abre igual: mejor del otro lado que no abrirla.
      */
+    @RequiresApi(Build.VERSION_CODES.S_V2)
     internal fun openBeside(activity: SplitActivity, intent: Intent) {
         val app = appOf(intent) ?: return
         if (!intent.getBooleanExtra(EXTRA_OPEN, false)) return
@@ -121,6 +126,7 @@ object SplitScreen {
     }
 
     /** La ventana de paso abre el auto a su lado, que debe quedar a la [EXTRA_LEFT]. */
+    @RequiresApi(Build.VERSION_CODES.S_V2)
     internal fun moveCar(activity: ComponentActivity, intent: Intent) {
         val app = appOf(intent) ?: return activity.finish()
         val board = Intent(activity, SplitActivity::class.java)
@@ -136,6 +142,7 @@ object SplitScreen {
      * Android en los equipos de verdad): el auto abre la ventana de paso en su mismo lugar, esa
      * ventana manda el auto al otro lado y el auto abre la app donde quedó la de paso.
      */
+    @RequiresApi(Build.VERSION_CODES.S_V2)
     internal fun swap(activity: SplitActivity, app: Intent?) {
         app ?: return
         val prefs = (activity.application as LiteDashApp).dependencies.prefs
@@ -149,6 +156,7 @@ object SplitScreen {
 }
 
 /** ¿La ventana ya está del lado [left] de la pantalla? (Completa cuenta como izquierda.) */
+@RequiresApi(Build.VERSION_CODES.S_V2)
 private fun ComponentActivity.onSide(left: Boolean): Boolean {
     val at = IntArray(2)
     window.decorView.getLocationOnScreen(at)
@@ -160,6 +168,7 @@ private fun ComponentActivity.onSide(left: Boolean): Boolean {
 }
 
 /** El auto solo, para la mitad de la pantalla dividida, con cambiar de lado y salir. */
+@RequiresApi(Build.VERSION_CODES.S_V2)
 class SplitActivity : ComponentActivity() {
     private val dependencies get() = (application as LiteDashApp).dependencies
     private val revision = mutableIntStateOf(0)
@@ -193,6 +202,7 @@ class SplitActivity : ComponentActivity() {
  * Ventana de paso, oscura y de un instante (opaca: desde una transparente Android a veces no
  * divide): manda el auto a su lado. Es noHistory: se va sola cuando la app la tapa.
  */
+@RequiresApi(Build.VERSION_CODES.S_V2)
 class SplitStartActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -218,6 +228,12 @@ private fun SplitBoard(d: Dependencies, onSwap: () -> Unit, onExit: () -> Unit) 
 fun SplitSettings(d: Dependencies) {
     val c = LocalColors.current
     val supported = remember { SplitScreen.supported() }
+    // Sin pantalla dividida en este Android: solo se dice por qué no está disponible.
+    if (!supported) {
+        Label(stringResource(R.string.split_title), Typography.subtitle)
+        Label(stringResource(R.string.split_unsupported, Build.VERSION.RELEASE), Typography.small, c.textMuted)
+        return
+    }
     SwitchRow(stringResource(R.string.split_title), d.prefs.splitScreen, { d.prefs.splitScreen = it }, stringResource(R.string.split_help))
     if (d.prefs.splitScreen) {
         Label(stringResource(R.string.split_side), Typography.label, c.textMuted)
@@ -228,5 +244,4 @@ fun SplitSettings(d: Dependencies) {
         )
         Label(stringResource(R.string.split_swap_help), Typography.small, c.textMuted)
     }
-    if (!supported) Label(stringResource(R.string.split_unsupported, Build.VERSION.RELEASE), Typography.small, c.danger)
 }

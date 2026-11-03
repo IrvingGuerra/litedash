@@ -20,8 +20,8 @@ import java.io.File
 import androidx.core.content.FileProvider
 import androidx.core.content.IntentCompat
 import java.net.HttpURLConnection
-import java.net.URL
 import java.security.MessageDigest
+import com.irvingguerra.litedash.core.ui.Https
 
 /** Una versión publicada en GitHub Releases, más nueva que la instalada. */
 @Immutable
@@ -147,13 +147,19 @@ class Updater(
         target
     }
 
-    /** ¿El usuario ya permitió que LiteDash instale apps? (Android 8+ lo pide una vez). */
-    fun canInstall() = context.packageManager.canRequestPackageInstalls()
+    /**
+     * ¿El usuario ya permitió que LiteDash instale apps? Android 8+ lo pide por app; en
+     * Android 6 y 7 es un solo interruptor para todo el equipo ("Orígenes desconocidos").
+     */
+    @Suppress("DEPRECATION")
+    fun canInstall() =
+        if (Build.VERSION.SDK_INT >= 26) context.packageManager.canRequestPackageInstalls()
+        else Settings.Secure.getInt(context.contentResolver, Settings.Secure.INSTALL_NON_MARKET_APPS, 0) == 1
 
     fun requestInstallPermission() {
-        val intent = Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:${context.packageName}"))
-            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        runCatching { context.startActivity(intent) }
+        val intent = if (Build.VERSION.SDK_INT >= 26) Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:${context.packageName}"))
+        else Intent(Settings.ACTION_SECURITY_SETTINGS)
+        runCatching { context.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
     }
 
     /**
@@ -180,7 +186,7 @@ class Updater(
     }
 
     private fun open(url: String): HttpURLConnection =
-        (URL(url).openConnection() as HttpURLConnection).apply {
+        Https.open(context, url).apply {
             connectTimeout = 15_000
             readTimeout = 30_000
             instanceFollowRedirects = true
@@ -220,7 +226,15 @@ class Updater(
      * archivo"), por si el instalador por sesiones no responde en esta pantalla.
      */
     fun openWithInstaller(apk: File) {
-        val uri = FileProvider.getUriForFile(context, context.packageName + FILE_AUTHORITY_SUFFIX, apk)
+        // El instalador de Android 6 solo abre archivos (content:// llegó en Android 7): se le pasa
+        // una copia en la carpeta externa de la app, que puede leer sin permisos.
+        val uri = if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
+            val copy = File(context.externalCacheDir ?: return, apk.name)
+            runCatching { apk.copyTo(copy, overwrite = true) }.getOrElse { return }
+            Uri.fromFile(copy)
+        } else {
+            FileProvider.getUriForFile(context, context.packageName + FILE_AUTHORITY_SUFFIX, apk)
+        }
         val intent = Intent(Intent.ACTION_VIEW)
             .setDataAndType(uri, APK_TYPE)
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION)

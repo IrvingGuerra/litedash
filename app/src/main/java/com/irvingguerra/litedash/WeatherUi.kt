@@ -15,7 +15,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -99,7 +98,7 @@ fun WeatherTile(repo: WeatherRepository) {
                     Label(detail, Typography.small, c.textMuted, maxLines = 1)
                 }
                 if (showDays) {
-                    val locale = LocalConfiguration.current.locales[0]
+                    val locale = currentLocale()
                     // Los formatos se crean una vez por idioma, no en cada recomposición.
                     val parse = remember(locale) { SimpleDateFormat("yyyy-MM-dd", Locale.US) }
                     val weekday = remember(locale) { SimpleDateFormat("EEE", locale) }

@@ -11,6 +11,7 @@ import android.media.AudioManager
 import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
+import android.net.NetworkRequest
 import android.os.Build
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -95,17 +96,29 @@ fun StatusIcons() {
     var location by remember { mutableStateOf(false) }
     LifecycleStartEffect(Unit) {
         val connectivity = context.getSystemService(ConnectivityManager::class.java)
-        val netCallback = object : ConnectivityManager.NetworkCallback() {
-            override fun onCapabilitiesChanged(n: Network, caps: NetworkCapabilities) {
-                network = when {
-                    caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> true
-                    caps.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> false
-                    else -> null
-                }
+        // Siempre se lee la red activa: Android 6 y 7 no avisan cómo está al registrarse (solo
+        // cambios) y, escuchando cualquier red, perder una no quiere decir quedarse sin internet.
+        fun check(lost: Network? = null) {
+            // Al perder una red, Android 6 puede seguir dándola como activa un instante.
+            val caps = runCatching { connectivity.activeNetwork?.takeIf { it != lost }?.let(connectivity::getNetworkCapabilities) }.getOrNull()
+            network = when {
+                caps == null -> null
+                caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> true
+                caps.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> false
+                else -> null
             }
-            override fun onLost(n: Network) { network = null }
         }
-        runCatching { connectivity.registerDefaultNetworkCallback(netCallback) }
+        val netCallback = object : ConnectivityManager.NetworkCallback() {
+            override fun onAvailable(n: Network) = check()
+            override fun onCapabilitiesChanged(n: Network, caps: NetworkCapabilities) = check()
+            override fun onLost(n: Network) = check(lost = n)
+        }
+        runCatching {
+            // Android 6 no tiene "la red de ahora": se escucha cualquier red con internet.
+            if (Build.VERSION.SDK_INT >= 24) connectivity.registerDefaultNetworkCallback(netCallback)
+            else connectivity.registerNetworkCallback(NetworkRequest.Builder().addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET).build(), netCallback)
+        }
+        check()
 
         val audio = context.getSystemService(AudioManager::class.java)
         fun checkAudio() {
