@@ -13,6 +13,10 @@
   <a href="https://litedash.web.app/en/">English</a>
 </p>
 
+<p align="center">
+  <a href="https://ko-fi.com/irvingguerradev"><img src="https://ko-fi.com/img/githubbutton_sm.svg" alt="Apóyame en Ko-fi"></a>
+</p>
+
 ---
 
 ## Qué es
