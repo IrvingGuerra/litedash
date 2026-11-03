@@ -60,29 +60,6 @@ fun List<Tile>.freeSpot(width: Int, height: Int, c: Grid): Pair<Int, Int>? {
     return null
 }
 
-/**
- * Las mismas piezas acomodadas en otra cuadrícula (más chica, como la mitad de la
- * pantalla con la música al lado), sin tocar el acomodo guardado: en su orden (de
- * arriba abajo), cada una con su tamaño recortado a lo que quepa o, si no, a su
- * mínimo. Las que ya no caben se quedan fuera mientras dure.
- */
-fun List<Tile>.packed(into: Grid, limits: (String) -> SizeLimits): List<Tile> {
-    val placed = mutableListOf<Tile>()
-    for (t in sortedWith(compareBy({ it.row }, { it.col }))) {
-        val l = limits(t.type)
-        val sizes = listOf(
-            l.clamp(t.width.coerceAtMost(into.columns), t.height.coerceAtMost(into.rows)),
-            l.minWidth to l.minHeight,
-        )
-        for ((width, height) in sizes) {
-            val spot = placed.freeSpot(width, height, into) ?: continue
-            placed += t.copy(col = spot.first, row = spot.second, width = width, height = height)
-            break
-        }
-    }
-    return placed
-}
-
 /** Reemplaza la pieza con el mismo id. */
 fun List<Tile>.replace(p: Tile) = map { if (it.id == p.id) p else it }
 

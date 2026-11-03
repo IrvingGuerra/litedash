@@ -74,8 +74,8 @@ fun MusicExpanded(
     Card(modifier.fillMaxSize()) {
         BoxWithConstraints(Modifier.fillMaxSize().padding(20.dp)) {
             val wide = maxWidth > 520.dp && maxWidth > maxHeight
-            // La portada cuadrada, pero sin pasar del 40 % del ancho: a media pantalla (con
-            // las piezas al lado) el título y los botones siguen cabiendo.
+            // La portada cuadrada, pero sin pasar del 40 % del ancho: el título y los botones
+            // siguen cabiendo a su lado.
             val artworkMax = maxWidth * 0.4f
             Column(Modifier.fillMaxSize()) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {

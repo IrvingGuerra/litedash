@@ -146,7 +146,7 @@ internal fun SourceRow(
     }
 }
 
-/** Botón de fuente, redondo y chico (la fila cabe a media pantalla). */
+/** Botón de fuente, redondo y chico (la fila cabe en pantallas chicas). */
 @Composable
 private fun Chip(text: String, selected: Boolean, c: Colors, onClick: () -> Unit) {
     Box(

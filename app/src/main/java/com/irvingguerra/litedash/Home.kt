@@ -81,7 +81,6 @@ import com.irvingguerra.litedash.feature.dashboard.DashboardState
 import com.irvingguerra.litedash.feature.dashboard.Grid
 import com.irvingguerra.litedash.feature.dashboard.Tile
 import com.irvingguerra.litedash.feature.dashboard.TileTypes
-import com.irvingguerra.litedash.feature.dashboard.packed
 import com.irvingguerra.litedash.feature.music.MusicExpanded
 import com.irvingguerra.litedash.feature.music.MusicRepository
 import com.irvingguerra.litedash.feature.music.MusicTile
@@ -98,10 +97,10 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withTimeoutOrNull
 
-/** Qué panel está abierto encima del inicio (uno a la vez). */
-/** Qué se ve en grande a media pantalla. */
+/** Qué se ve en grande en lugar del tablero. */
 enum class Expanded { MUSIC, RADIO }
 
+/** Qué panel está abierto encima del inicio (uno a la vez). */
 sealed interface Panel {
     data object Drawer : Panel
     data object Settings : Panel
@@ -241,7 +240,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
     val car = d.cars.pkg(d.prefs.carModel)
     var panel by remember { mutableStateOf<Panel?>(null) }
     var editing by remember { mutableStateOf(false) }
-    // La música o la radio en grande (a media pantalla); null = el tablero normal.
+    // La música o la radio en grande (en lugar del tablero); null = el tablero normal.
     var expanded by remember { mutableStateOf<Expanded?>(null) }
     // Solo el auto a pantalla completa (un toque al auto entra y otro sale), con animación:
     // [carOnly] es a dónde va y [carShown] si la capa sigue en pantalla (también al regresar).
@@ -417,34 +416,18 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                     val grid = remember(maxWidth, gridHeight) { Grid.forSize(maxWidth.value, gridHeight.value) }
                     // Carga el acomodo de esta cuadrícula antes de dibujar (solo hace algo si cambió).
                     d.dashboard.use(grid)
-                    val big = expanded
-                    if (big != null) {
-                        // La música (o la radio) a la derecha y tus piezas acomodadas en la mitad
-                        // izquierda (sin tocar el acomodo guardado): no tapa todo y es claro cómo volver.
-                        val half = remember(grid) { Grid((grid.columns / 2).coerceAtLeast(2), grid.rows) }
-                        val tiles = d.dashboard.tiles
-                        val hidden = if (big == Expanded.MUSIC) TileTypes.MUSIC else TileTypes.RADIO
-                        val packed = remember(tiles, half, hidden) { tiles.filter { it.type != hidden }.packed(half, ::limitsOf) }
-                        Row(Modifier.fillMaxSize()) {
-                            Dashboard(
-                                grid = half,
-                                tiles = packed,
-                                editing = false,
-                                limits = ::limitsOf,
-                                onChange = {},
-                                onEdit = { expanded = null; editing = true },
-                                modifier = Modifier.weight(1f),
-                            ) { p -> TileContent(d, p, apps, car, revision, actions) }
-                            if (big == Expanded.MUSIC) MusicExpanded(
-                                d.music, close = { expanded = null }, onLinkUsb = { panel = Panel.MusicSettings }, Modifier.weight(1f).padding(6.dp),
-                                browser = if (d.prefs.usbPlayer) { _, picked -> PlayerBrowser(PlayerSource.USB, picked, Modifier.fillMaxSize()) } else null,
-                            ) else RadioExpanded(
-                                d.music, close = { expanded = null }, onSettings = { panel = Panel.MusicSettings }, Modifier.weight(1f).padding(6.dp),
-                                browser = if (d.prefs.internetRadio) { picked -> PlayerBrowser(PlayerSource.RADIO, picked, Modifier.fillMaxSize()) } else null,
-                            )
-                        }
-                    } else {
-                        Dashboard(
+                    // La música (o la radio) en grande ocupa todo el tablero; para verla junto al
+                    // auto está la pantalla dividida (abrir la app desde aquí la arma).
+                    when (expanded) {
+                        Expanded.MUSIC -> MusicExpanded(
+                            d.music, close = { expanded = null }, onLinkUsb = { panel = Panel.MusicSettings }, Modifier.padding(6.dp),
+                            browser = if (d.prefs.usbPlayer) { _, picked -> PlayerBrowser(PlayerSource.USB, picked, Modifier.fillMaxSize()) } else null,
+                        )
+                        Expanded.RADIO -> RadioExpanded(
+                            d.music, close = { expanded = null }, onSettings = { panel = Panel.MusicSettings }, Modifier.padding(6.dp),
+                            browser = if (d.prefs.internetRadio) { picked -> PlayerBrowser(PlayerSource.RADIO, picked, Modifier.fillMaxSize()) } else null,
+                        )
+                        null -> Dashboard(
                             grid = grid,
                             tiles = d.dashboard.tiles,
                             editing = editing,
