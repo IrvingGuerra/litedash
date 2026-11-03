@@ -26,6 +26,14 @@
     <string name="template_car_speed">Car and speedometer</string>
     <string name="template_sport">Sport</string>
     <string name="template_minimal">Minimal</string>
+    <string name="tab_split">Split screen</string>
+    <string name="split_title">Open maps and music in split screen</string>
+    <string name="split_help">When you open Waze, Maps, Spotify or another maps or music app from LiteDash, it opens in one half and your car (3D or on the road) in the other, without the other tiles. Landscape only. Your home screen doesn\'t change: it\'s as you left it when you return.</string>
+    <string name="split_side">Car side</string>
+    <string name="split_left">Left</string>
+    <string name="split_right">Right</string>
+    <string name="split_swap_help">You can also switch it right there with the arrows button above the car.</string>
+    <string name="split_unsupported">This head unit runs Android %1$s: two apps side by side needs Android 12L or newer.</string>
     <string name="gauge_style_arc">Arc</string>
     <string name="gauge_style_needle">Needle</string>
     <string name="gauge_style_digital">Digital</string>

@@ -57,6 +57,8 @@ private object PrefKeys {
     const val INTRO_MIGRATED = "entrada_imagen_propia"
     const val LIGHTS_KEY = "luces_clave"
     const val LIGHTS_ON = "luces_encendido"
+    const val SPLIT_SCREEN = "pantalla_dividida"
+    const val SPLIT_CAR_LEFT = "dividida_auto_izquierda"
 }
 
 /** Dónde va la barra con la hora y tus apps. AUTO = a un lado si la pantalla está acostada. */
@@ -216,6 +218,12 @@ class Preferences(context: Context) {
         { CarView.fromStored(it) ?: if (p.getBoolean(PrefKeys.SHOW_LOGO, false)) CarView.LOGO else CarView.CAR },
         { it.stored },
     )
+
+    /** Abrir las apps de mapa y música en pantalla dividida, con el auto al lado (solo acostada). */
+    var splitScreen by bool(PrefKeys.SPLIT_SCREEN, false)
+
+    /** En pantalla dividida, el auto va a la izquierda (si no, a la derecha). */
+    var splitCarLeft by bool(PrefKeys.SPLIT_CAR_LEFT, true)
 
     /** Con el OBD conectado: avisar de motor caliente o batería que no carga. */
     var engineAlerts by bool(PrefKeys.ENGINE_ALERTS, true)

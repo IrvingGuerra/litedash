@@ -357,10 +357,13 @@ class MusicRepository(private val context: Context) {
         open(controller?.packageName ?: preferred ?: return)
     }
 
+    /** Si devuelve true, ya abrió la app a su manera (p. ej. en pantalla dividida). */
+    var opener: ((Context, Intent, String) -> Boolean)? = null
+
     private fun open(pkg: String) {
-        context.packageManager.getLaunchIntentForPackage(pkg)
-            ?.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            ?.let { runCatching { context.startActivity(it) } }
+        val intent = context.packageManager.getLaunchIntentForPackage(pkg)?.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) ?: return
+        if (opener?.invoke(context, intent, pkg) == true) return
+        runCatching { context.startActivity(intent) }
     }
 }
 

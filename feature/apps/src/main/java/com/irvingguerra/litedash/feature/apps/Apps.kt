@@ -52,11 +52,15 @@ class AppRepository(context: Context) {
     fun firstOf(apps: List<App>, vararg packages: String) =
         packages.firstNotNullOfOrNull { p -> apps.firstOrNull { it.pkg == p } }
 
+    /** Si devuelve true, ya abrió la app a su manera (p. ej. en pantalla dividida). */
+    var opener: ((Context, Intent, String) -> Boolean)? = null
+
     fun open(context: Context, app: App) {
         val intent = Intent(Intent.ACTION_MAIN)
             .addCategory(Intent.CATEGORY_LAUNCHER)
             .setComponent(app.component)
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED)
+        if (opener?.invoke(context, intent, app.pkg) == true) return
         runCatching { context.startActivity(intent) }
     }
 }

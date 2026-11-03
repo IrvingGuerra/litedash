@@ -10,6 +10,7 @@ import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableIntStateOf
 import com.irvingguerra.litedash.core.ui.LiteDashTheme
@@ -29,25 +30,7 @@ class MainActivity : ComponentActivity() {
             override fun handleOnBackPressed() = Unit
         })
         setContent {
-            val d = dependencies
-            // Una sola cuenta de la noche (sol o sensor de luz) para el tema y el brillo.
-            val night = rememberIsNight(d.prefs, needed = d.prefs.theme == ThemeMode.SUN || d.prefs.brightnessBySun)
-            val dark = when (d.prefs.theme) {
-                ThemeMode.DARK -> true
-                ThemeMode.LIGHT -> false
-                ThemeMode.SYSTEM -> isSystemInDarkTheme()
-                ThemeMode.SUN -> night
-            }
-            // Íconos de la barra del sistema claros u oscuros según el tema.
-            LaunchedEffect(dark) {
-                val transparent = android.graphics.Color.TRANSPARENT
-                val style = if (dark) SystemBarStyle.dark(transparent) else SystemBarStyle.light(transparent, transparent)
-                enableEdgeToEdge(style, style)
-            }
-            ApplyBrightness(d.prefs, night, revision.intValue)
-            LiteDashTheme(dark = dark, scale = d.prefs.scale) {
-                Home(d, revision.intValue, homePressed.intValue)
-            }
+            LiteDashContent(dependencies, revision.intValue) { Home(dependencies, revision.intValue, homePressed.intValue) }
         }
     }
 
@@ -70,4 +53,25 @@ class MainActivity : ComponentActivity() {
         super.onResume()
         revision.intValue++
     }
+}
+
+/** El tema (claro, oscuro o por la noche), el brillo y la escala de LiteDash alrededor de [content]. */
+@Composable
+internal fun ComponentActivity.LiteDashContent(d: Dependencies, revision: Int, content: @Composable () -> Unit) {
+    // Una sola cuenta de la noche (sol o sensor de luz) para el tema y el brillo.
+    val night = rememberIsNight(d.prefs, needed = d.prefs.theme == ThemeMode.SUN || d.prefs.brightnessBySun)
+    val dark = when (d.prefs.theme) {
+        ThemeMode.DARK -> true
+        ThemeMode.LIGHT -> false
+        ThemeMode.SYSTEM -> isSystemInDarkTheme()
+        ThemeMode.SUN -> night
+    }
+    // Íconos de la barra del sistema claros u oscuros según el tema.
+    LaunchedEffect(dark) {
+        val transparent = android.graphics.Color.TRANSPARENT
+        val style = if (dark) SystemBarStyle.dark(transparent) else SystemBarStyle.light(transparent, transparent)
+        enableEdgeToEdge(style, style)
+    }
+    ApplyBrightness(d.prefs, night, revision)
+    LiteDashTheme(dark = dark, scale = d.prefs.scale, content = content)
 }

@@ -31,6 +31,8 @@ object Icons {
     val noCard = icon("M6 4h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2z M4 20l16 -16")
     val plus = icon("M12 6v12 M6 12h12")
     val close = icon("M7 7l10 10 M17 7l-10 10")
+    val swap = icon("M5 8h13 M15 5l3 3l-3 3 M19 16h-13 M9 13l-3 3l3 3")
+    val expand = icon("M4 9v-5h5 M20 9v-5h-5 M4 15v5h5 M20 15v5h-5")
     val done = icon("M5 12.5l4.5 4.5l9.5 -10")
     val mic = icon("M9 5a3 3 0 0 1 6 0v6a3 3 0 0 1 -6 0z M5 11a7 7 0 0 0 14 0 M12 18v3")
     val bluetooth = icon("M7 7l10 10l-5 4v-18l5 4l-10 10")

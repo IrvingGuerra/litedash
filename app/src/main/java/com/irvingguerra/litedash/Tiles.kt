@@ -388,6 +388,7 @@ fun navigateTo(context: Context, app: App?, address: String) {
         "com.google.android.apps.maps" -> Intent(Intent.ACTION_VIEW, "google.navigation:q=$q".toUri()).setPackage(app.pkg)
         else -> Intent(Intent.ACTION_VIEW, "geo:0,0?q=$q".toUri()).apply { app?.let { setPackage(it.pkg) } }
     }.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    if (app != null && SplitScreen.open(context, intent, app.pkg)) return
     runCatching { context.startActivity(intent) }.onFailure {
         // La app elegida no entendió la dirección: que la abra cualquiera que sepa de mapas.
         runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, "geo:0,0?q=$q".toUri()).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }

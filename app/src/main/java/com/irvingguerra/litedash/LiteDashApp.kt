@@ -26,8 +26,8 @@ class LiteDashApp : Application() {
         migrateIntroImage(this, prefs)
         val bus = VehicleBus()
         Dependencies(
-            apps = AppRepository(this),
-            music = MusicRepository(this).apply { preferred = prefs.musicApp },
+            apps = AppRepository(this).apply { opener = SplitScreen::open },
+            music = MusicRepository(this).apply { preferred = prefs.musicApp; opener = SplitScreen::open },
             navigation = NavigationRepository(this, mapPackages),
             prefs = prefs,
             dashboard = DashboardState(DashboardStore(this)),

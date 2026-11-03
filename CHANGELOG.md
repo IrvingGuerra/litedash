@@ -6,6 +6,17 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
+## [1.4.42] - 2026-11-02
+
+### Nuevo
+- **Pantalla dividida para mapa y música** (Ajustes → Apps → Pantalla dividida, apagada de
+  fábrica): al abrir Waze, Maps, Spotify u otra app de mapa o de música desde LiteDash, se abre en
+  una mitad y **tu auto** (3D o en carretera) en la otra, sin las demás piezas. Solo con la pantalla
+  acostada y en Android 12L o más nuevo. Tu inicio no cambia: al regresar está como lo dejaste.
+  - Eliges si el auto va a la **izquierda o a la derecha**, en Ajustes o ahí mismo con el botón de
+    las flechas, arriba del auto. El otro botón deja la app en pantalla completa.
+- "Copiar info de mi pantalla" dice si tu pantalla permite la pantalla dividida.
+
 ## [1.4.41] - 2026-11-02
 
 ### Nuevo

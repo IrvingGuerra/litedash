@@ -773,7 +773,7 @@ private fun HomeSettings(d: Dependencies, onEdit: () -> Unit, onTemplates: () ->
 @Composable
 private fun AppsSettings(d: Dependencies) {
     val c = LocalColors.current
-    when (tabs(listOf(R.string.music, R.string.tab_navigation, R.string.tab_favorites), "apps")) {
+    when (tabs(listOf(R.string.music, R.string.tab_navigation, R.string.tab_favorites, R.string.tab_split), "apps")) {
         0 -> SettingsCard { MusicSettings(d) }
         1 -> {
             SettingsCard { MapSettings(d) }
@@ -784,7 +784,8 @@ private fun AppsSettings(d: Dependencies) {
                 TextInput(d.prefs.workAddress ?: "", { d.prefs.workAddress = it.take(160).ifBlank { null } }, stringResource(R.string.place_hint), Modifier.fillMaxWidth())
             }
         }
-        else -> SettingsCard(stringResource(R.string.tab_favorites), stringResource(R.string.favorites_help)) { Favorites(d) }
+        2 -> SettingsCard(stringResource(R.string.tab_favorites), stringResource(R.string.favorites_help)) { Favorites(d) }
+        else -> SettingsCard { SplitSettings(d) }
     }
 }
 
@@ -1144,6 +1145,7 @@ private fun copySystemInfo(context: Context, music: MusicRepository) {
         appendLine("Pantalla: ${m.widthPixels}×${m.heightPixels} px · ${m.densityDpi} dpi")
         appendLine("Memoria: ${memory.totalMem / (1024 * 1024)} MB")
         appendLine("CPU: ${Build.SUPPORTED_ABIS.joinToString()}")
+        appendLine("Pantalla dividida: ${if (SplitScreen.supported()) "sí" else "no"}")
         appendLine(lightsInfo(context))
         append(music.describe())
     }

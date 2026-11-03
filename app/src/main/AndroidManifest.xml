@@ -41,6 +41,23 @@
         <!-- Para medir con Macrobenchmark y adb en compilaciones release/benchmark. -->
         <profileable android:shell="true" tools:targetApi="29" />
 
+        <!-- El auto solo, para la mitad de la pantalla dividida (en su propia tarea: el inicio no puede ser una mitad). -->
+        <activity
+            android:name=".SplitActivity"
+            android:exported="false"
+            android:launchMode="singleTask"
+            android:taskAffinity="${applicationId}.dividida"
+            android:resizeableActivity="true"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|density|uiMode" />
+        <activity
+            android:name=".SplitStartActivity"
+            android:exported="false"
+            android:taskAffinity="${applicationId}.dividir"
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:resizeableActivity="true"
+            android:theme="@android:style/Theme.Material.NoActionBar" />
+
         <activity
             android:name=".MainActivity"
             android:exported="true"

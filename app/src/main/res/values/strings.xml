@@ -27,6 +27,14 @@
     <string name="template_car_speed">Auto y velocímetro</string>
     <string name="template_sport">Deportiva</string>
     <string name="template_minimal">Mínima</string>
+    <string name="tab_split">Pantalla dividida</string>
+    <string name="split_title">Abrir mapa y música en pantalla dividida</string>
+    <string name="split_help">Al abrir Waze, Maps, Spotify u otra app de mapa o de música desde LiteDash, se abre en una mitad y tu auto (3D o en carretera) en la otra, sin las demás piezas. Solo con la pantalla acostada. Tu inicio no cambia: al regresar está como lo dejaste.</string>
+    <string name="split_side">Lado del auto</string>
+    <string name="split_left">Izquierda</string>
+    <string name="split_right">Derecha</string>
+    <string name="split_swap_help">También lo cambias ahí mismo con el botón de las flechas, arriba del auto.</string>
+    <string name="split_unsupported">Esta pantalla tiene Android %1$s: abrir dos apps lado a lado necesita Android 12L o más nuevo.</string>
     <string name="gauge_style_arc">Arco</string>
     <string name="gauge_style_needle">Aguja</string>
     <string name="gauge_style_digital">Digital</string>
