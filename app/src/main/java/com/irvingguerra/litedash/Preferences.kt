@@ -59,6 +59,8 @@ private object PrefKeys {
     const val LIGHTS_ON = "luces_encendido"
     const val SPLIT_SCREEN = "pantalla_dividida"
     const val SPLIT_CAR_LEFT = "dividida_auto_izquierda"
+    const val TRIP_LOG = "registrar_viajes"
+    const val BEST_ACCEL = "mejor_0_100"
 }
 
 /** Dónde va la barra con la hora y tus apps. AUTO = a un lado si la pantalla está acostada. */
@@ -224,6 +226,12 @@ class Preferences(context: Context) {
 
     /** En pantalla dividida, el auto va a la izquierda (si no, a la derecha). */
     var splitCarLeft by bool(PrefKeys.SPLIT_CAR_LEFT, true)
+
+    /** Guardar un resumen de cada viaje con el OBD conectado (apagado de fábrica). */
+    var tripLog by bool(PrefKeys.TRIP_LOG, false)
+
+    /** El mejor 0 a 100 (segundos); 0 = todavía no hay. */
+    var bestAccel by float(PrefKeys.BEST_ACCEL, 0f)
 
     /** Con el OBD conectado: avisar de motor caliente o batería que no carga. */
     var engineAlerts by bool(PrefKeys.ENGINE_ALERTS, true)

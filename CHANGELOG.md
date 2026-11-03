@@ -6,6 +6,18 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
+## [1.4.43] - 2026-11-02
+
+### Nuevo
+- **OBD avanzado**, en el Taller, con 3 pestañas nuevas:
+  - **Gráficas en vivo:** hasta dos datos juntos (revoluciones, velocidad, temperatura, turbo…)
+    de los últimos 90 segundos, cada uno con su escala, su mínimo y su máximo.
+  - **0–100:** cronómetro de aceleración (0–60 mph en millas). Te paras, aceleras y mide solo;
+    guarda tu mejor tiempo.
+  - **Viajes:** con **Registrar viajes** (apagado de fábrica) guarda un resumen de cada viaje
+    con el OBD conectado: distancia, tiempo, velocidad promedio y máxima, revoluciones,
+    temperatura del motor y rendimiento (km/l). Los exportas a **CSV**. Nada sale de tu pantalla.
+
 ## [1.4.42] - 2026-11-02
 
 ### Nuevo

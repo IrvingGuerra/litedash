@@ -76,16 +76,26 @@ fun Workshop(d: Dependencies) {
     }
     if (obd.state != ObdState.ON) {
         Connection(obd)
-        return alerts()
+        alerts()
+        // Los viajes guardados se ven aunque no haya adaptador conectado.
+        return TripsCard(d)
     }
-    val tab = tabs(listOf(R.string.tab_connection, R.string.obd_codes, R.string.tab_inspection, R.string.tab_sensors), "taller")
+    val tab = tabs(
+        listOf(R.string.tab_connection, R.string.obd_codes, R.string.tab_inspection, R.string.tab_sensors, R.string.tab_charts, R.string.tab_accel, R.string.tab_trips),
+        "taller",
+    )
     if (tab == 0) {
         Connection(obd)
         alerts()
     }
     // El reporte se lee una vez y se comparte entre las pestañas de motor, códigos y verificación.
     Engine(obd, tab)
-    if (tab == 3) LiveSensors(d)
+    when (tab) {
+        3 -> LiveSensors(d)
+        4 -> LiveCharts(d)
+        5 -> AccelTimerCard(d)
+        6 -> TripsCard(d)
+    }
 }
 
 /** Una alerta ya resuelta se olvida tras esto (un dato perdido no la "resuelve"). */
@@ -383,7 +393,7 @@ private fun SensorRow(d: Dependencies, signal: String, imperial: Boolean, locale
     }
 }
 
-private fun sensorName(signal: String) = when (signal) {
+internal fun sensorName(signal: String) = when (signal) {
     Signal.SPEED -> R.string.sensor_speed
     Signal.RPM -> R.string.sensor_rpm
     Signal.LOAD -> R.string.sensor_load

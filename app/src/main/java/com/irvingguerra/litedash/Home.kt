@@ -366,6 +366,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                     if (d.prefs.welcomeSeen && !editing) {
                         if (!d.prefs.dontAskHome && !isShortScreen()) HomePrompt(d.prefs, revision)
                         EngineAlertBanner(d)
+                        TripRecorderEffect(d)
                         if (!isShortScreen()) ReminderBanner(d.reminders)
                         UpdateBanner(d.updater, onOpen = { panel = Panel.About })
                         val newModel = d.cars.outdated?.takeIf { it.id == car?.id }
