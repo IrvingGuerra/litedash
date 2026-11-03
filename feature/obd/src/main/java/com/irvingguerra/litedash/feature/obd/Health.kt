@@ -3,23 +3,25 @@ package com.irvingguerra.litedash.feature.obd
 /**
  * Las partes del auto que se señalan en la vista aérea del Taller. [x] y [y] son dónde va
  * el punto, como fracción del ancho y del alto de la caja del auto visto desde arriba
- * (el frente arriba); valen igual para la silueta dibujada y para un render.
+ * (el frente arriba); valen igual para la silueta dibujada y para el render "planta" de
+ * los paquetes (el estudio usa la misma caja). Van sobre el cofre, la cabina y la cola tal
+ * como quedan en un auto real visto desde arriba.
  */
 enum class Zone(val x: Float, val y: Float) {
     /** Encendido, cilindros, computadora. */
-    ENGINE(0.5f, 0.24f),
+    ENGINE(0.5f, 0.17f),
     /** Admisión, mezcla, inyección (lado derecho del motor). */
-    INTAKE(0.7f, 0.19f),
+    INTAKE(0.69f, 0.14f),
     /** Radiador, termostato (al frente). */
-    COOLING(0.5f, 0.1f),
+    COOLING(0.5f, 0.065f),
     /** Batería y alternador (lado izquierdo del motor). */
-    BATTERY(0.3f, 0.19f),
+    BATTERY(0.31f, 0.14f),
     /** Caja y embrague (centro). */
-    TRANSMISSION(0.5f, 0.42f),
+    TRANSMISSION(0.5f, 0.33f),
     /** Escape, catalizador, sensores de oxígeno, EVAP (atrás). */
     EXHAUST(0.5f, 0.9f),
     /** Frenos, ABS, suspensión (el punto va en la rueda de adelante a la izquierda). */
-    WHEELS(0.14f, 0.3f),
+    WHEELS(0.12f, 0.24f),
     /** Carrocería y comunicación entre computadoras (sin lugar fijo). */
     BODY(0.5f, 0.62f),
 }
@@ -41,25 +43,37 @@ class SystemHealth(
     val value: Float?,
 )
 
-/** La parte del auto que señala un código de falla (por la letra y el tercer carácter). */
-fun zoneOf(code: String): Zone = when (code.firstOrNull()) {
-    'C' -> Zone.WHEELS
-    'B', 'U' -> Zone.BODY
+/**
+ * La parte del auto que señala un código de falla: por la letra y el tercer carácter, salvo
+ * los que se sabe que son del enfriamiento, la batería o los sensores de oxígeno (escape).
+ */
+fun zoneOf(code: String): Zone = when {
+    code in COOLING_CODES -> Zone.COOLING
+    code in BATTERY_CODES -> Zone.BATTERY
+    isOxygenSensor(code) -> Zone.EXHAUST
+    isTurbo(code) -> Zone.INTAKE
+    code.startsWith('C') -> Zone.WHEELS
+    code.startsWith('B') || code.startsWith('U') -> Zone.BODY
     else -> when (code.getOrNull(2)) {
         '1', '2' -> Zone.INTAKE
-        '3', '6' -> Zone.ENGINE
         '4' -> Zone.EXHAUST
         '7', '8', '9' -> Zone.TRANSMISSION
-        else -> if (code in COOLING_CODES) Zone.COOLING else Zone.ENGINE
-    }
-}.let { zone ->
-    // Unos cuantos de la familia 0xx/1xx son del enfriamiento o la batería aunque caigan en "aire".
-    when {
-        code in COOLING_CODES -> Zone.COOLING
-        code in BATTERY_CODES -> Zone.BATTERY
-        else -> zone
+        else -> Zone.ENGINE
     }
 }
+
+/** Sensores de oxígeno y sus calentadores (están en el escape); entre ellos van los del turbo. */
+private fun isOxygenSensor(code: String): Boolean = genericNumber(code)?.let { n ->
+    n in 0x030..0x032 || n in 0x036..0x038 || n in 0x040..0x044 || n in 0x050..0x064 || n in 0x130..0x167
+} == true
+
+/** Válvula de alivio, posición y presión del turbo (P0033–P0035, P0039–P003F, P0045–P004F): son del aire. */
+private fun isTurbo(code: String): Boolean = genericNumber(code)?.let { n ->
+    n in 0x033..0x035 || n in 0x039..0x03F || n in 0x045..0x04F
+} == true
+
+/** Los tres últimos caracteres de un código genérico del motor (P0xxx) como número; null si no es uno. */
+private fun genericNumber(code: String): Int? = if (code.startsWith("P0")) code.drop(2).toIntOrNull(16) else null
 
 /** Sensor y termostato del refrigerante. */
 private val COOLING_CODES = setOf("P0115", "P0116", "P0117", "P0118", "P0119", "P0125", "P0126", "P0128", "P0217")

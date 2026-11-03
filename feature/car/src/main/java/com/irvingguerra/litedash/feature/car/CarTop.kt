@@ -1,13 +1,17 @@
 package com.irvingguerra.litedash.feature.car
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.drawscope.scale
@@ -73,21 +77,47 @@ private val glassShine = Brush.linearGradient(
 )
 private val tire = Color(0xFF2A2E34)
 
+/** Color del auto sin adaptador conectado (apagado). */
+private val MutedPaint = Color(0xFF5A6068)
+
+/**
+ * El auto desde arriba para el Taller: el render del paquete de [p] si lo trae (lo baja
+ * aparte [CarRepository.fetchTopView]) o, si no, la silueta dibujada. Los dos en la misma
+ * caja ([CAR_TOP_ASPECT]), así las zonas del Taller caen en el mismo lugar.
+ */
+@Composable
+fun CarTop(repo: CarRepository, p: CarPackage?, color: Color, modifier: Modifier = Modifier, muted: Boolean = false) {
+    // Con la llave del paquete: si se actualiza (llega sin vista desde arriba), se vuelve a pedir.
+    LaunchedEffect(p) { repo.fetchTopView(p) }
+    if (p?.topView != true) return CarTopDrawing(color, modifier, muted)
+    Box(modifier.aspectRatio(CAR_TOP_ASPECT)) {
+        Canvas(Modifier.fillMaxSize()) {
+            val s = size.width / TOP_WIDTH
+            withTransform({ scale(s, s, pivot = Offset.Zero) }) { floorShadow() }
+        }
+        CarTopImage(repo, p, if (muted) MutedPaint else color, Modifier.fillMaxSize())
+    }
+}
+
+/** Sombra suave en el piso, apenas más grande que el auto (en las medidas de la caja). */
+private fun DrawScope.floorShadow() {
+    val floor = Offset(TOP_WIDTH / 2, TOP_HEIGHT / 2 + 6f)
+    withTransform({ scale(1f, TOP_HEIGHT / TOP_WIDTH, pivot = floor) }) {
+        drawCircle(Brush.radialGradient(listOf(Color.Black.copy(alpha = 0.45f), Color.Transparent), floor, 118f), 118f, floor)
+    }
+}
+
 /**
  * El auto desde arriba pintado del [color] elegido (gris apagado si [muted], cuando no hay
  * adaptador). Dibujo estático: se pinta una vez y no cuesta nada hasta que cambie.
  */
 @Composable
-fun CarTopDrawing(color: Color, modifier: Modifier = Modifier, muted: Boolean = false) {
+private fun CarTopDrawing(color: Color, modifier: Modifier = Modifier, muted: Boolean = false) {
     Canvas(modifier.aspectRatio(CAR_TOP_ASPECT)) {
         val s = size.width / TOP_WIDTH
-        val paint = if (muted) Color(0xFF5A6068) else color
+        val paint = if (muted) MutedPaint else color
         withTransform({ scale(s, s, pivot = Offset.Zero) }) {
-            // Sombra en el piso, apenas más grande que el auto.
-            val floor = Offset(TOP_WIDTH / 2, TOP_HEIGHT / 2 + 6f)
-            withTransform({ scale(1f, TOP_HEIGHT / TOP_WIDTH, pivot = floor) }) {
-                drawCircle(Brush.radialGradient(listOf(Color.Black.copy(alpha = 0.45f), Color.Transparent), floor, 118f), 118f, floor)
-            }
+            floorShadow()
             for (w in TopPaths.wheels) drawRoundRect(tire, Offset(w.x - 9f, w.y - 32f), Size(18f, 64f), androidx.compose.ui.geometry.CornerRadius(6f))
             drawPath(TopPaths.mirrors, paint)
             drawPath(TopPaths.body, paint)

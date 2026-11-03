@@ -610,6 +610,11 @@ internal fun tabs(titles: List<Int>, key: String): Int {
 /** La pestaña elegida en cada sección (al cambiar de sección y regresar sigue ahí). */
 private val TabMemory = mutableStateMapOf<String, Int>()
 
+/** Cambia a otra pestaña de la sección [key] desde su contenido (p. ej. de Salud a Códigos). */
+internal fun selectTab(key: String, index: Int) {
+    TabMemory[key] = index
+}
+
 @Composable
 private fun MenuEntry(icon: ImageVector, text: String, selected: Boolean, narrow: Boolean, onClick: () -> Unit) {
     val c = LocalColors.current

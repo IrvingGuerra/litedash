@@ -20,6 +20,20 @@ class HealthTest {
         assertEquals(Zone.WHEELS, zoneOf("C0035"))
         assertEquals(Zone.BODY, zoneOf("U0100"))
         assertEquals(Zone.BODY, zoneOf("B1234"))
+        // Sensores de oxígeno: aunque sean de la familia 01xx/00xx, están en el escape.
+        assertEquals(Zone.EXHAUST, zoneOf("P0133"))
+        assertEquals(Zone.EXHAUST, zoneOf("P0036"))
+        assertEquals(Zone.INTAKE, zoneOf("P0101"))
+        assertEquals(Zone.ENGINE, zoneOf("P0011"))
+        assertEquals(Zone.EXHAUST, zoneOf("P0041"))
+        assertEquals(Zone.EXHAUST, zoneOf("P0060"))
+        // Turbo: del aire, aunque caigan entre los de oxígeno.
+        assertEquals(Zone.INTAKE, zoneOf("P0034"))
+        assertEquals(Zone.INTAKE, zoneOf("P003A"))
+        assertEquals(Zone.INTAKE, zoneOf("P0047"))
+        // Los conocidos del enfriamiento y la batería mandan sobre la familia.
+        assertEquals(Zone.COOLING, zoneOf("P0117"))
+        assertEquals(Zone.BATTERY, zoneOf("P0562"))
     }
 
     @Test

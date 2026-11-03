@@ -341,9 +341,9 @@
     <string name="obd_read_again">Leer de nuevo</string>
     <string name="obd_codes">Códigos de falla</string>
     <string name="obd_codes_help">Guardados: encendieron la luz. Pendientes: el auto los vio una vez y los vigila. Permanentes: solo se borran solos cuando el auto confirma que ya se arregló.</string>
-    <string name="obd_codes_stored">GUARDADOS</string>
-    <string name="obd_codes_pending">PENDIENTES</string>
-    <string name="obd_codes_permanent">PERMANENTES</string>
+    <string name="code_stored">Guardado</string>
+    <string name="code_pending">Pendiente</string>
+    <string name="code_permanent">Permanente</string>
     <string name="obd_no_codes">Sin códigos de falla</string>
     <string name="obd_clear">Borrar códigos</string>
     <string name="obd_clear_warning">Borrar apaga la luz de falla pero no arregla nada, y reinicia los monitores: la verificación no pasará hasta que manejes unos días.</string>
@@ -551,10 +551,6 @@
     <string name="health_fault">Falla</string>
     <string name="health_unknown">Sin datos</string>
     <string name="health_pending">pendiente</string>
-    <plurals name="health_codes">
-        <item quantity="one">%1$d código</item>
-        <item quantity="other">%1$d códigos</item>
-    </plurals>
     <plurals name="health_issues">
         <item quantity="one">%1$d aviso</item>
         <item quantity="other">%1$d avisos</item>

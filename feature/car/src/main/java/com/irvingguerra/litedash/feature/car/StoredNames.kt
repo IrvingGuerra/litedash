@@ -38,6 +38,8 @@ internal object CarJson {
     const val GRAY = "gris"
     const val SPIN = "giro"
     const val FLOOR = "piso"
+    /** La vista desde arriba en el catálogo (url, bytes y sha256 de su zip). */
+    const val TOP_VIEW = "planta"
 }
 
 /** Capas que acompañan a cada imagen del paquete (vista o cuadro del giro). */
@@ -45,4 +47,6 @@ internal object CarViews {
     const val PAINT_MASK_SUFFIX = "-pintura"
     const val SHADOW_SUFFIX = "-sombra"
     const val REFLECTION_SUFFIX = "-reflejo"
+    /** El auto desde arriba, con el frente hacia arriba, en la caja de [CAR_TOP_ASPECT]. */
+    const val TOP_VIEW = "planta"
 }

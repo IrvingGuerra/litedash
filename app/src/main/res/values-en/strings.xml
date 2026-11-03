@@ -333,9 +333,9 @@
     <string name="obd_read_again">Read again</string>
     <string name="obd_codes">Trouble codes</string>
     <string name="obd_codes_help">Stored: they turned the light on. Pending: seen once and being watched. Permanent: they clear themselves once the car confirms the fix.</string>
-    <string name="obd_codes_stored">STORED</string>
-    <string name="obd_codes_pending">PENDING</string>
-    <string name="obd_codes_permanent">PERMANENT</string>
+    <string name="code_stored">Stored</string>
+    <string name="code_pending">Pending</string>
+    <string name="code_permanent">Permanent</string>
     <string name="obd_no_codes">No trouble codes</string>
     <string name="obd_clear">Clear codes</string>
     <string name="obd_clear_warning">Clearing turns the light off but fixes nothing, and resets the monitors: you won\'t pass an inspection until you drive for a few days.</string>
@@ -532,10 +532,6 @@
     <string name="health_fault">Fault</string>
     <string name="health_unknown">No data</string>
     <string name="health_pending">pending</string>
-    <plurals name="health_codes">
-        <item quantity="one">%1$d code</item>
-        <item quantity="other">%1$d codes</item>
-    </plurals>
     <plurals name="health_issues">
         <item quantity="one">%1$d alert</item>
         <item quantity="other">%1$d alerts</item>

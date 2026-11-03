@@ -10,14 +10,28 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ### Nuevo
 - **Salud del auto** en el Taller: tu auto visto desde arriba con un punto sobre la parte que
-  pide atención (ámbar) o tiene falla (rojo), y al lado una tarjeta por sistema (motor,
-  combustible y aire, enfriamiento, batería y carga, transmisión, emisiones) con su estado y su
-  dato. Sin adaptador se ve la misma pantalla apagada, nunca una vacía.
+  pide atención (ámbar) o tiene falla (rojo, late despacio), y al lado una tarjeta por sistema
+  (motor, combustible y aire, enfriamiento, batería y carga, transmisión, emisiones) con su
+  estado, su dato en vivo y una línea de los últimos 90 segundos. Toca una parte con códigos y
+  te lleva a ellos. Sin adaptador se ve la misma pantalla apagada, nunca una vacía.
+- **Tu auto real desde arriba**: los autos del catálogo traen una vista aérea pintada de tu
+  color (un archivo chico aparte que se baja solo la primera vez que abres el Taller; no hay
+  que volver a bajar el auto). Sin ella, una silueta.
 - La pieza **Taller** del inicio muestra el mini auto con sus puntos y cuántos avisos hay.
 
 ### Cambiado
 - Taller reorganizado en Salud · Códigos · Sensores · Gráficas · Más (la verificación va con los
   códigos; conexión, alertas, 0–100 y viajes en Más).
+- **Códigos** en tarjetas: el código grande en su color, qué significa, qué parte del auto
+  señala y si está guardado, pendiente o permanente. Los sensores de oxígeno cuentan como
+  emisiones.
+- **Sensores** en tarjetas con número grande y su línea de 90 s; los importantes primero.
+- **Gráficas** con líneas más finas: toca o arrastra para ver el valor de ese momento.
+- **La música y la radio en grande ocupan todo el tablero** en vez de la mitad con las piezas
+  apretadas al lado; para verlas junto al auto está la pantalla dividida.
+
+### Arreglado
+- La fila de Wi-Fi del adaptador OBD ya no se sale de la tarjeta en pantallas angostas.
 
 ## [1.4.52] - 2026-11-03
 

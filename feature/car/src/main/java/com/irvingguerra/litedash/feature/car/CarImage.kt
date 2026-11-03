@@ -107,6 +107,13 @@ fun CarStill(repo: CarRepository, p: CarPackage, color: Color, modifier: Modifie
     CarLayersImage(repo, p, baseFrame(frame), color, widthPx, modifier.onSizeChanged { widthPx = it.width }, onReady)
 }
 
+/** El auto desde arriba ([CarViews.TOP_VIEW] del paquete) pintado del [color]; solo si [CarPackage.topView]. */
+@Composable
+internal fun CarTopImage(repo: CarRepository, p: CarPackage, color: Color, modifier: Modifier = Modifier) {
+    var widthPx by remember { mutableIntStateOf(0) }
+    CarLayersImage(repo, p, CarViews.TOP_VIEW, color, widthPx, modifier.onSizeChanged { widthPx = it.width }, null)
+}
+
 /**
  * Dibuja la imagen [name] con sus capas: si trae piso, la sombra y el reflejo
  * van debajo y se salen de la caja hacia abajo y a los lados, así el auto parece

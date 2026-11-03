@@ -15,13 +15,19 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.LifecycleStartEffect
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -32,6 +38,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -39,6 +46,7 @@ import com.irvingguerra.litedash.core.ui.Button
 import com.irvingguerra.litedash.core.ui.Icons
 import com.irvingguerra.litedash.core.ui.Label
 import com.irvingguerra.litedash.core.ui.LocalColors
+import com.irvingguerra.litedash.core.ui.Radius
 import com.irvingguerra.litedash.core.ui.SwitchRow
 import com.irvingguerra.litedash.core.ui.TextInput
 import com.irvingguerra.litedash.core.ui.Typography
@@ -53,11 +61,16 @@ import com.irvingguerra.litedash.feature.obd.ObdTarget
 import com.irvingguerra.litedash.feature.obd.ScanProblem
 import com.irvingguerra.litedash.feature.obd.describe
 import com.irvingguerra.litedash.feature.obd.engineAlert
+import com.irvingguerra.litedash.feature.obd.zoneOf
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 /** El verde de "todo bien"; lo comparte la pantalla Salud. */
 internal val Good = Color(0xFF3FB27F)
+
+/** Las pestañas del Taller (para recordar la elegida) y cuál es la de códigos. */
+private const val WORKSHOP_TABS = "taller"
+private const val CODES_TAB = 1
 
 /**
  * El Taller (sección de Ajustes), ahora "Salud del auto": arriba el estado del auto por
@@ -81,7 +94,8 @@ fun Workshop(d: Dependencies) {
     var reading by remember { mutableStateOf(true) }
     fun read() = scope.launch {
         reading = true
-        report = obd.report()
+        // Si esta lectura falla, se queda lo último que se leyó.
+        report = obd.report() ?: report
         reading = false
     }
     LaunchedEffect(connected) { if (connected) read() }
@@ -96,11 +110,11 @@ fun Workshop(d: Dependencies) {
     }
     val tab = tabs(
         listOf(R.string.tab_health, R.string.obd_codes, R.string.tab_sensors, R.string.tab_charts, R.string.tab_more),
-        "taller",
+        WORKSHOP_TABS,
     )
     when (tab) {
-        0 -> HealthView(d, report, reading, { read() }, connected = true)
-        1 -> {
+        0 -> HealthView(d, report, reading, { read() }, connected = true, onCodes = { selectTab(WORKSHOP_TABS, CODES_TAB) })
+        CODES_TAB -> {
             CodesCard(obd, report, reading, { read() }, onCleared = { report = it })
             InspectionCard(report, reading)
         }
@@ -193,7 +207,7 @@ private fun Connection(obd: ObdRepository) {
                 Button(stringResource(R.string.obd_other), { obd.forget() })
             }
             wifi -> Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
-                TextInput(address, { address = it.trim() }, "192.168.0.10:35000", Modifier.width(260.dp))
+                TextInput(address, { address = it.trim() }, "192.168.0.10:35000", Modifier.weight(1f, fill = false).widthIn(max = 260.dp))
                 Button(stringResource(R.string.obd_connect), {
                     val host = address.substringBefore(':')
                     val port = address.substringAfter(':', "35000").toIntOrNull() ?: 35000
@@ -288,9 +302,16 @@ private fun turnOffBluetooth(context: Context) {
     if (!done) runCatching { context.startActivity(Intent(Settings.ACTION_BLUETOOTH_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
 }
 
+/** Cómo está guardado un código: encendió la luz, el auto lo vigila o ya no se borra a mano. */
+private enum class CodeKind(val label: Int) {
+    STORED(R.string.code_stored),
+    PENDING(R.string.code_pending),
+    PERMANENT(R.string.code_permanent),
+}
+
 /**
- * Los códigos de falla por grupo y borrarlos (con doble confirmación). [onCleared] recibe
- * el reporte nuevo que se lee tras borrar.
+ * Los códigos de falla, una tarjeta por código (qué significa y qué parte del auto señala),
+ * y borrarlos con doble confirmación. [onCleared] recibe el reporte nuevo que se lee tras borrar.
  */
 @Composable
 private fun CodesCard(obd: ObdRepository, report: EngineReport?, reading: Boolean, onRead: () -> Unit, onCleared: (EngineReport?) -> Unit) {
@@ -302,18 +323,17 @@ private fun CodesCard(obd: ObdRepository, report: EngineReport?, reading: Boolea
     val r = report
     SettingsCard(stringResource(R.string.obd_codes), stringResource(R.string.obd_codes_help)) {
         if (reading && r == null) return@SettingsCard Label(stringResource(R.string.obd_reading), Typography.body, c.textMuted)
-        val groups = listOf(
-            R.string.obd_codes_stored to r?.stored.orEmpty(),
-            R.string.obd_codes_pending to r?.pending.orEmpty(),
-            R.string.obd_codes_permanent to r?.permanent.orEmpty(),
-        ).filter { it.second.isNotEmpty() }
-        if (groups.isEmpty()) Label(stringResource(R.string.obd_no_codes), Typography.body, Good)
-        for ((title, codes) in groups) {
-            Label(stringResource(title), Typography.label, c.textMuted)
-            for (code in codes) Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Label(code, Typography.subtitle, c.accent, maxLines = 1)
-                Label(describe(code, spanish), Typography.body, modifier = Modifier.weight(1f))
-            }
+        // Un código guardado suele ser también permanente: una sola tarjeta con los dos.
+        val codes = r?.let {
+            (it.stored.map { code -> code to CodeKind.STORED } +
+                it.permanent.map { code -> code to CodeKind.PERMANENT } +
+                it.pending.map { code -> code to CodeKind.PENDING })
+                .groupBy({ it.first }, { it.second }).toList()
+        }.orEmpty()
+        if (codes.isEmpty()) {
+            StatTile(stringResource(R.string.obd_codes), stringResource(R.string.obd_no_codes), Modifier.fillMaxWidth(), valueColor = Good, dot = Good)
+        } else {
+            TileGrid(codes, minWidth = 280.dp, maxColumns = 2) { (code, kinds), modifier -> CodeTile(code, kinds, spanish, modifier) }
         }
         cleared?.let { Label(stringResource(if (it) R.string.obd_cleared else R.string.obd_not_cleared), Typography.small, if (it) Good else c.danger) }
         if (r != null && (r.stored.isNotEmpty() || r.pending.isNotEmpty() || r.readiness?.mil == true)) {
@@ -347,6 +367,24 @@ private fun CodesCard(obd: ObdRepository, report: EngineReport?, reading: Boolea
     }
 }
 
+/** Un código: grande en su color (rojo si encendió la luz, ámbar si está pendiente), qué es y dónde. */
+@Composable
+private fun CodeTile(code: String, kinds: List<CodeKind>, spanish: Boolean, modifier: Modifier) {
+    val c = LocalColors.current
+    val color = if (kinds.all { it == CodeKind.PENDING }) c.accent else c.danger
+    Column(
+        modifier.clip(RoundedCornerShape(Radius.inner)).background(c.surfaceHigh).padding(horizontal = 16.dp, vertical = 14.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Label(code, Typography.title, color, maxLines = 1, modifier = Modifier.weight(1f))
+            Label(kinds.map { stringResource(it.label) }.joinToString(" · "), Typography.small, color, maxLines = 1)
+        }
+        Label(describe(code, spanish), Typography.body, maxLines = 2)
+        Label(stringResource(zoneName(zoneOf(code))), Typography.small, c.textMuted, maxLines = 1)
+    }
+}
+
 /** Si pasaría la verificación: luz de falla y el estado de cada monitor. */
 @Composable
 private fun InspectionCard(report: EngineReport?, reading: Boolean) {
@@ -364,34 +402,45 @@ private fun InspectionCard(report: EngineReport?, reading: Boolean) {
             Typography.subtitle,
             if (pass) Good else c.danger,
         )
-        for (m in readiness.monitors) Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            Label(if (m.complete) "✓" else "…", Typography.body, if (m.complete) Good else c.accent, maxLines = 1)
-            Label(stringResource(monitorName(m.name)), Typography.body, maxLines = 1, modifier = Modifier.weight(1f))
-            Label(stringResource(if (m.complete) R.string.obd_ready else R.string.obd_not_ready), Typography.small, c.textMuted, maxLines = 1)
+        TileGrid(readiness.monitors, minWidth = 240.dp, maxColumns = 2, gap = 6.dp) { m, modifier ->
+            // Aire a la derecha: "Listo" no se pega al punto de la otra columna.
+            Row(modifier.padding(end = 18.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Box(Modifier.size(8.dp).clip(CircleShape).background(if (m.complete) Good else c.accent))
+                Label(stringResource(monitorName(m.name)), Typography.body, maxLines = 1, modifier = Modifier.weight(1f))
+                Label(stringResource(if (m.complete) R.string.obd_ready else R.string.obd_not_ready), Typography.small, c.textMuted, maxLines = 1)
+            }
         }
     }
 }
 
-/** Los sensores que da este auto, en vivo (solo se leen mientras se ven). */
+/** Los sensores que más dicen del auto van primero; los demás, en el orden de siempre. */
+private val SENSOR_ORDER = listOf(Signal.RPM, Signal.COOLANT, Signal.VOLTAGE, Signal.CONSUMPTION, Signal.SPEED, Signal.LOAD, Signal.OIL, Signal.BOOST)
+
+/** Los sensores que da este auto, en vivo, en tarjetas con su línea de 90 s (solo se leen mientras se ven). */
 @Composable
 private fun LiveSensors(d: Dependencies) {
     val locale = currentLocale()
     val imperial = imperialUnits(d.prefs.language)
+    // Los que da el auto, los calculados (consumo, turbo) y el voltaje (lo mide el adaptador si el auto no).
+    val readable = readableSignals(d)
+    val signals = remember(readable) { readable.sortedBy { SENSOR_ORDER.indexOf(it).let { i -> if (i < 0) SENSOR_ORDER.size else i } } }
     SettingsCard(stringResource(R.string.obd_live)) {
-        // Los que da el auto, los calculados (consumo, turbo) y el voltaje (lo mide el adaptador si el auto no).
-        val signals = readableSignals(d)
-        for (signal in signals) SensorRow(d, signal, imperial, locale)
+        TileGrid(signals, minWidth = 170.dp, maxColumns = 4) { signal, modifier -> SensorTile(d, signal, imperial, locale, modifier) }
     }
 }
 
-/** Una fila por sensor: cada dato nuevo solo vuelve a dibujar su fila. */
+/** Una tarjeta por sensor: cada dato nuevo solo vuelve a dibujar la suya. */
 @Composable
-private fun SensorRow(d: Dependencies, signal: String, imperial: Boolean, locale: java.util.Locale) {
+private fun SensorTile(d: Dependencies, signal: String, imperial: Boolean, locale: java.util.Locale, modifier: Modifier) {
     val value = d.bus.watch(signal)
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        Label(stringResource(sensorName(signal)), Typography.body, maxLines = 1, modifier = Modifier.weight(1f))
-        Label(value?.let { sensorText(signal, it, imperial, locale) } ?: "—", Typography.subtitle, LocalColors.current.accent, maxLines = 1)
-    }
+    val series = rememberSeries(d, signal)
+    StatTile(
+        name = stringResource(sensorName(signal)),
+        value = value?.let { sensorText(signal, it, imperial, locale) } ?: "—",
+        modifier = modifier,
+        series = series,
+        seriesColor = LocalColors.current.accent,
+    )
 }
 
 internal fun sensorName(signal: String) = when (signal) {

@@ -4,17 +4,24 @@ import android.os.SystemClock
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -24,12 +31,14 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -56,11 +65,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.text.DateFormat
 import java.util.Date
-
-/** Cuántos segundos se ven en la gráfica y cada cuánto se toma un punto. */
-private const val CHART_SECONDS = 90
-private const val CHART_STEP_MS = 500L
-private const val CHART_POINTS = CHART_SECONDS * 1000 / CHART_STEP_MS.toInt()
+import kotlin.math.roundToInt
 
 /** Hasta dos señales en la misma gráfica (la segunda en azul, con su propia escala). */
 private const val MAX_CHART_SIGNALS = 2
@@ -71,7 +76,10 @@ private val Second = Color(0xFF4CA6FF)
 internal fun readableSignals(d: Dependencies): List<String> =
     remember(d.obd.supported) { (Pids.map { it.signal } + DerivedSignals.map { it.signal }).distinct().filter(d.obd::canRead) }
 
-/** Gráficas en vivo: una o dos señales de los últimos [CHART_SECONDS] segundos. */
+/**
+ * Gráficas en vivo: una o dos señales de los últimos [SERIES_SECONDS] segundos. Al tocar
+ * (o arrastrar) la gráfica se ve el valor de ese momento; al soltar, otra vez el de ahora.
+ */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun LiveCharts(d: Dependencies) {
@@ -79,48 +87,74 @@ fun LiveCharts(d: Dependencies) {
     val signals = readableSignals(d)
     val chosen = remember { mutableStateListOf<String>() }
     LaunchedEffect(signals) { if (chosen.isEmpty()) chosen += listOf(Signal.RPM, Signal.SPEED).filter { it in signals } }
+    // Dónde se está tocando la gráfica (0–1 del ancho); null = sin tocar.
+    var touch by remember { mutableStateOf<Float?>(null) }
     SettingsCard(stringResource(R.string.obd_charts), stringResource(R.string.obd_charts_help)) {
         val locale = currentLocale()
         val imperial = imperialUnits(d.prefs.language)
-        val series = chosen.map { signal -> signal to rememberSeries(d, signal) }
+        // Con llave: al quitar la primera, la otra conserva su historial.
+        val series = chosen.map { signal -> signal to key(signal) { rememberSeries(d, signal) } }
+        val colors = listOf(c.accent, Second)
         for ((i, pair) in series.withIndex()) {
             val (signal, points) = pair
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Label("●", Typography.body, if (i == 0) c.accent else Second)
+                Box(Modifier.size(8.dp).clip(CircleShape).background(colors[i]))
                 Label(stringResource(sensorName(signal)), Typography.body, maxLines = 1, modifier = Modifier.weight(1f))
-                val now = points.lastOrNull()
+                // Tocando: el valor de ese momento ("—" donde aún no hay datos); si no, el de ahora.
+                val at = touch
+                val shown = if (at != null) pointAt(points, at) else points.lastOrNull()
                 val min = points.minOrNull()
                 val max = points.maxOrNull()
-                if (now != null && min != null && max != null) {
+                if (min != null && max != null) {
                     Label(
                         stringResource(R.string.obd_chart_range, sensorText(signal, min, imperial, locale), sensorText(signal, max, imperial, locale)),
                         Typography.small, c.textMuted, maxLines = 1,
                     )
-                    Label(sensorText(signal, now, imperial, locale), Typography.subtitle, if (i == 0) c.accent else Second, maxLines = 1)
+                    Label(shown?.let { sensorText(signal, it, imperial, locale) } ?: "—", Typography.subtitle, colors[i], maxLines = 1)
                 }
             }
         }
         val grid = c.line
-        Canvas(Modifier.fillMaxWidth().height(220.dp)) {
+        val cursor = c.textMuted
+        Canvas(
+            Modifier
+                .fillMaxWidth()
+                .height(220.dp)
+                .pointerInput(Unit) {
+                    awaitEachGesture {
+                        val down = awaitFirstDown()
+                        touch = (down.position.x / size.width).coerceIn(0f, 1f)
+                        while (true) {
+                            val change = awaitPointerEvent().changes.firstOrNull() ?: break
+                            if (!change.pressed) break
+                            touch = (change.position.x / size.width).coerceIn(0f, 1f)
+                        }
+                        touch = null
+                    }
+                },
+        ) {
             for (k in 0..4) {
                 val y = size.height * k / 4
                 drawLine(grid, Offset(0f, y), Offset(size.width, y), strokeWidth = 1.dp.toPx())
             }
-            val capacity = CHART_POINTS
+            val at = touch
             for ((i, pair) in series.withIndex()) {
                 val points = pair.second
                 if (points.size < 2) continue
                 // Cada señal con su propia escala (rpm y km/h no caben en la misma).
                 val lo = points.min()
                 val hi = points.max().let { if (it - lo < 1e-3f) lo + 1f else it }
+                fun yOf(v: Float) = size.height * (1 - (v - lo) / (hi - lo)) * 0.9f + size.height * 0.05f
                 val path = Path()
                 points.forEachIndexed { k, v ->
-                    val x = size.width * (capacity - points.size + k) / (capacity - 1)
-                    val y = size.height * (1 - (v - lo) / (hi - lo)) * 0.9f + size.height * 0.05f
-                    if (k == 0) path.moveTo(x, y) else path.lineTo(x, y)
+                    val x = size.width * (SERIES_POINTS - points.size + k) / (SERIES_POINTS - 1)
+                    if (k == 0) path.moveTo(x, yOf(v)) else path.lineTo(x, yOf(v))
                 }
-                drawPath(path, if (i == 0) c.accent else Second, style = Stroke(3.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round))
+                drawPath(path, colors[i], style = Stroke(2.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round))
+                val v = at?.let { pointAt(points, it) } ?: continue
+                drawCircle(colors[i], 5.dp.toPx(), Offset(size.width * at, yOf(v)))
             }
+            if (at != null) drawLine(cursor, Offset(size.width * at, 0f), Offset(size.width * at, size.height), strokeWidth = 1.dp.toPx())
         }
         // Primero la gráfica (que se vea sin bajar) y luego qué datos mostrar.
         FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -135,22 +169,10 @@ fun LiveCharts(d: Dependencies) {
     }
 }
 
-/** Los últimos valores de [signal], uno cada [CHART_STEP_MS] (sin dato, no se agrega punto). */
-@Composable
-private fun rememberSeries(d: Dependencies, signal: String): List<Float> {
-    val points = remember(signal) { mutableStateListOf<Float>() }
-    d.bus.watch(signal)
-    LaunchedEffect(signal) {
-        val capacity = CHART_POINTS
-        while (true) {
-            d.bus.value(signal)?.let { v ->
-                points += v
-                if (points.size > capacity) points.removeRange(0, points.size - capacity)
-            }
-            delay(CHART_STEP_MS)
-        }
-    }
-    return points
+/** El valor que había en [fraction] del ancho de la gráfica (null si ahí todavía no hay datos). */
+private fun pointAt(points: List<Float>, fraction: Float): Float? {
+    val k = (fraction * (SERIES_POINTS - 1)).roundToInt() - (SERIES_POINTS - points.size)
+    return points.getOrNull(k)
 }
 
 /** Cronómetro de 0 a 100 km/h (o 0 a 60 mph) con la velocidad del OBD o del GPS. */

@@ -18,9 +18,12 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import java.io.File
@@ -52,12 +55,14 @@ data class CatalogEntry(
     /** Imagen chica (~15 KB) para ver el auto antes de bajarlo; vive en el catálogo, no en la app. */
     val thumbnail: String = "",
     /** Cuadros de en medio del giro (calidad alta); se bajan encima del paquete. */
-    val high: SpinExtra? = null,
+    val high: PackageExtra? = null,
+    /** El auto desde arriba para el Taller (unos KB); se baja aparte, la primera vez que se necesita. */
+    val topView: PackageExtra? = null,
 )
 
-/** Un paquete de cuadros extra del giro; se baja encima del auto ya instalado. */
+/** Un archivo extra (cuadros del giro, vista desde arriba) que se baja encima del auto ya instalado. */
 @Immutable
-data class SpinExtra(val url: String, val bytes: Long, val sha256: String)
+data class PackageExtra(val url: String, val bytes: Long, val sha256: String)
 
 /** Un auto ya instalado: sus imágenes viven en [folder]. */
 @Immutable
@@ -77,6 +82,8 @@ data class CarPackage(
     val high: Boolean,
     /** Imágenes con piso (sombra y reflejo): caja de esas capas en anchos del auto. */
     val floor: Map<String, FloorBox>,
+    /** Trae la vista desde arriba ([CarViews.TOP_VIEW]) para el Taller. */
+    val topView: Boolean,
     val folder: File,
     /** SHA-256 del paquete con que se instaló ("" si se bajó antes de guardarlo). */
     val sha256: String,
@@ -120,6 +127,9 @@ class CarRepository(private val context: Context, val catalogUrl: String) {
     // Imágenes que ya se están cargando: si la vista y la precarga piden la misma, se
     // decodifica una vez. La carga no se interrumpe aunque quien la pidió ya no la quiera.
     private val loading = ConcurrentHashMap<String, Deferred<ImageBitmap?>>()
+    // Instalar, actualizar, borrar y la vista desde arriba tocan las mismas carpetas: uno a la vez.
+    private val disk = Mutex()
+    private var topViewJob: Job? = null
     // Ancho original de cada imagen (no cambia): decide cuánto se reduce al decodificarla.
     private val sourceWidths = ConcurrentHashMap<String, Int>()
 
@@ -164,10 +174,13 @@ class CarRepository(private val context: Context, val catalogUrl: String) {
                 thumbnail = a.optString(CarJson.THUMBNAIL),
                 high = (0 until (extras?.length() ?: 0)).map { extras!!.getJSONObject(it) }
                     .firstOrNull { it.optInt(CarJson.LEVEL) == HIGH_LEVEL }
-                    ?.let { SpinExtra(it.getString("url"), it.optLong("bytes"), it.getString("sha256")) },
+                    ?.let(::extraOf),
+                topView = a.optJSONObject(CarJson.TOP_VIEW)?.let(::extraOf),
             )
         }
     }
+
+    private fun extraOf(o: JSONObject) = PackageExtra(o.getString("url"), o.optLong("bytes"), o.getString("sha256"))
 
     /** El catálogo trae otro modelo 3D para [p] (mejores renders, piso nuevo…). */
     fun isOutdated(p: CarPackage, e: CatalogEntry) = p.id == e.id && p.sha256 != e.sha256
@@ -197,21 +210,27 @@ class CarRepository(private val context: Context, val catalogUrl: String) {
 
     /** Calidad baja: borra los cuadros de en medio (libera espacio; no necesita internet). */
     fun lowerQuality(p: CarPackage) = scope.launch {
-        withContext(Dispatchers.IO) { spinFiles(p.folder) { it.startsWith(HIGH_PREFIX) }.forEach { it.delete() } }
-        changed()
+        disk.withLock {
+            withContext(Dispatchers.IO) { spinFiles(p.folder) { it.startsWith(HIGH_PREFIX) }.forEach { it.delete() } }
+            changed()
+        }
     }
 
     /** Quita un auto descargado (sus imágenes); se puede volver a bajar del catálogo. */
     fun delete(p: CarPackage) = scope.launch {
-        withContext(Dispatchers.IO) { p.folder.deleteRecursively() }
-        changed()
+        disk.withLock {
+            withContext(Dispatchers.IO) { p.folder.deleteRecursively() }
+            changed()
+        }
     }
 
     /** Quita todos los autos descargados (sus imágenes); se pueden volver a bajar del catálogo. */
     fun deleteAll() = scope.launch {
-        val all = installed
-        withContext(Dispatchers.IO) { all.forEach { it.folder.deleteRecursively() } }
-        changed()
+        disk.withLock {
+            val all = installed
+            withContext(Dispatchers.IO) { all.forEach { it.folder.deleteRecursively() } }
+            changed()
+        }
     }
 
     /**
@@ -227,6 +246,47 @@ class CarRepository(private val context: Context, val catalogUrl: String) {
         val entry = runCatching { catalog() }.getOrNull()?.firstOrNull { it.id == p.id } ?: return
         checks.edit().putLong(key, now).apply()
         outdated = entry.takeIf { isOutdated(p, it) }
+    }
+
+    /**
+     * La vista desde arriba del auto [p] para el Taller: un archivo chico aparte del paquete
+     * (así nadie vuelve a bajar su auto por ella). Corre en el ámbito del repositorio (si se
+     * sale del Taller a media descarga, termina igual), una a la vez y con el mismo candado
+     * que instalar o borrar autos. Se pregunta al catálogo a lo más cada [CHECK_EVERY_MS]
+     * (solo cuenta si contestó); mientras no la haya, el Taller dibuja la silueta.
+     */
+    fun fetchTopView(p: CarPackage?) {
+        if (p == null || p.topView || !hasCatalog || topViewJob?.isActive == true) return
+        val key = KEY_TOP_VIEW_CHECK + p.id
+        if (System.currentTimeMillis() - checks.getLong(key, 0L) < CHECK_EVERY_MS) return
+        topViewJob = scope.launch {
+            val catalog = runCatching { catalog() }.getOrNull() ?: return@launch
+            checks.edit().putLong(key, System.currentTimeMillis()).apply()
+            val extra = catalog.firstOrNull { it.id == p.id }?.topView ?: return@launch
+            disk.withLock {
+                // Pudo cambiar mientras tanto (actualizado, borrado o ya con su vista).
+                val now = pkg(p.id)?.takeIf { it.sha256 == p.sha256 && !it.topView } ?: return@withLock
+                val done = withContext(Dispatchers.IO) {
+                    runCatching { installTopView(now, extra) }.getOrDefault(false)
+                }
+                if (done) changed()
+            }
+        }
+    }
+
+    /** Baja y acomoda la vista desde arriba en la carpeta de [p]; la imagen al último (dice que ya está completa). */
+    private fun installTopView(p: CarPackage, extra: PackageExtra): Boolean {
+        val temp = fetch(extra.url, extra.bytes, extra.sha256) {}
+        val staging = File(root, folderOf(p.id) + "-" + CarViews.TOP_VIEW + CarFiles.STAGING_SUFFIX)
+        try {
+            staging.deleteRecursively()
+            unzip(temp, staging)
+            val image = CarViews.TOP_VIEW + ".webp"
+            return staging.listFiles().orEmpty().sortedBy { it.name == image }.all { it.renameTo(File(p.folder, it.name)) }
+        } finally {
+            temp.delete()
+            staging.deleteRecursively()
+        }
     }
 
     /**
@@ -261,7 +321,7 @@ class CarRepository(private val context: Context, val catalogUrl: String) {
         downloading = what to 0f
         failed = false
         scope.launch {
-            runCatching { work { f -> downloading = what to f } }.onFailure { failed = true }
+            disk.withLock { runCatching { work { f -> downloading = what to f } }.onFailure { failed = true } }
             downloading = null
         }
     }
@@ -279,6 +339,8 @@ class CarRepository(private val context: Context, val catalogUrl: String) {
             target.deleteRecursively()
             staging.renameTo(target)
         }
+        // El paquete nuevo llega sin la vista desde arriba: que el Taller la pida de una vez.
+        checks.edit().remove(KEY_TOP_VIEW_CHECK + e.id).apply()
         changed()
     }
 
@@ -295,7 +357,7 @@ class CarRepository(private val context: Context, val catalogUrl: String) {
      * mueven al final, el primero ("m00", el que dice que hay calidad alta) al último:
      * si algo se corta a la mitad, el auto sigue completo en calidad baja.
      */
-    private suspend fun addHigh(p: CarPackage, extra: SpinExtra, progress: (Float) -> Unit) {
+    private suspend fun addHigh(p: CarPackage, extra: PackageExtra, progress: (Float) -> Unit) {
         withContext(Dispatchers.IO) {
             val temp = fetch(extra.url, extra.bytes, extra.sha256, progress)
             val staging = File(p.folder, CarFiles.SPIN + CarFiles.STAGING_SUFFIX)
@@ -497,6 +559,7 @@ class CarRepository(private val context: Context, val catalogUrl: String) {
                     val c = floor.getJSONArray(v)
                     FloorBox(c.getDouble(0).toFloat(), c.getDouble(1).toFloat(), c.getDouble(2).toFloat(), c.getDouble(3).toFloat())
                 }.orEmpty(),
+                topView = File(folder, CarViews.TOP_VIEW + ".webp").exists(),
                 folder = folder,
                 sha256 = File(folder, CarFiles.PACKAGE_HASH).takeIf { it.exists() }?.readText()?.trim().orEmpty(),
             )
@@ -566,6 +629,7 @@ class CarRepository(private val context: Context, val catalogUrl: String) {
         private const val HIGH_MARK = "m00"
         private const val CHECK_EVERY_MS = 60 * 60 * 1000L
         private const val KEY_LAST_CHECK = "last_check:"
+        private const val KEY_TOP_VIEW_CHECK = "top_view_check:"
         /** Lo que no va en el nombre de la carpeta de un auto. */
         private val FOLDER_CHARS = Regex("[^a-z0-9-]")
     }
