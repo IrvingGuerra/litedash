@@ -25,7 +25,7 @@ for row in "${MATRIX[@]}"; do
   if [ -d "$AVD_HOME/$name.avd" ] && [ "${1:-}" != "--redo" ]; then echo "ya existe $name"; continue; fi
   echo no | "$AVDM" create avd -n "$name" -k "${image:-$IMG}" -d "tv_1080p" --force >/dev/null
   cfg="$AVD_HOME/$name.avd/config.ini"
-  for k in hw.lcd.width hw.lcd.height hw.lcd.density hw.ramSize hw.cpu.ncore hw.keyboard hw.mainKeys skin.dynamic showDeviceFrame skin.name skin.path hw.device.name; do
+  for k in hw.lcd.width hw.lcd.height hw.lcd.density hw.ramSize hw.cpu.ncore hw.keyboard hw.mainKeys skin.dynamic showDeviceFrame skin.name skin.path hw.device.name hw.gpu.enabled hw.gpu.mode fastboot.forceColdBoot fastboot.forceFastBoot; do
     sed -i '' "/^$k=/d" "$cfg"
   done
   # Pantalla de auto: sin teclado físico ni botones de hardware, orientación horizontal.
@@ -33,6 +33,10 @@ for row in "${MATRIX[@]}"; do
     echo "hw.lcd.width=$width"; echo "hw.lcd.height=$height"; echo "hw.lcd.density=$dpi"
     echo "hw.ramSize=$ram"; echo "hw.cpu.ncore=$cores"; echo "hw.keyboard=yes"
     echo "hw.mainKeys=no"; echo "skin.dynamic=yes"; echo "showDeviceFrame=no"
+    # GPU de la Mac (avdmanager lo deja apagado y usa SwiftShader: lento y se cuelga)
+    # y arranque rápido desde el snapshot guardado al cerrar.
+    echo "hw.gpu.enabled=yes"; echo "hw.gpu.mode=host"
+    echo "fastboot.forceColdBoot=no"; echo "fastboot.forceFastBoot=yes"
   } >> "$cfg"
   echo "creado $name (${width}x${height} @${dpi}dpi, ${ram} MB, ${cores} núcleos)"
 done
