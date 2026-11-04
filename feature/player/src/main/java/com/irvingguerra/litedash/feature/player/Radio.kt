@@ -92,7 +92,8 @@ object Radio {
         val manager = context.getSystemService(LocationManager::class.java) ?: return null
         return runCatching {
             manager.allProviders.mapNotNull { manager.getLastKnownLocation(it) }.maxByOrNull { it.time }
-        }.getOrNull()?.let { Here(it.latitude, it.longitude) }
+        // Redondeada a 0.1° (~10 km): para estaciones a 120 km sobra, y no se manda la ubicación exacta.
+        }.getOrNull()?.let { Here(kotlin.math.round(it.latitude * 10) / 10, kotlin.math.round(it.longitude * 10) / 10) }
     }
 
     /** Estaciones a menos de [NEARBY_METERS] de [here], las más cercanas primero. */

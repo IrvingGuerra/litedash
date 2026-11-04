@@ -13,7 +13,7 @@
   <link rel="alternate" hreflang="es" href="https://litedash.web.app/">
   <link rel="alternate" hreflang="en" href="https://litedash.web.app/en/">
   <meta property="og:title" content="LiteDash — launcher para tu auto o moto">
-  <meta property="og:description" content="1.7 MB, abre en menos de un segundo y 0 % de CPU en reposo. Tu auto en 3D como fondo, escáner OBD, mandos al volante y módulos a tu gusto.">
+  <meta property="og:description" content="1.7 MB, abre en menos de un segundo y 0 % de CPU en reposo. Tu auto en 3D como fondo, escáner OBD, presión de llantas, mandos al volante y módulos a tu gusto.">
   <meta property="og:image" content="https://litedash.web.app/img/og.jpg">
   <meta property="og:url" content="https://litedash.web.app/">
   <meta property="og:type" content="website">
@@ -28,6 +28,7 @@
         <a href="#rapido">Rapidez</a>
         <a href="#auto">Tu auto</a>
         <a href="#taller">Taller</a>
+        <a href="#llantas">Llantas</a>
         <a href="#modulos">Módulos</a>
         <a href="#descargar">Descargar</a>
         <a href="https://github.com/IrvingGuerra/litedash">GitHub</a>
@@ -58,7 +59,7 @@
         <h2>Rápido de verdad.</h2>
         <p class="bajada">Las pantallas de autos y motos suelen tener poca memoria y procesadores lentos. LiteDash está hecho para ellas: arranca al instante y, cuando no lo tocas, no hace nada.</p>
         <div class="rejilla cifras">
-          <div class="tarjeta"><div class="cifra">1.6<span> MB</span></div><h3>Lo que pesa</h3><p>Se baja en segundos, hasta con los datos del celular.</p></div>
+          <div class="tarjeta"><div class="cifra">1.7<span> MB</span></div><h3>Lo que pesa</h3><p>Se baja en segundos, hasta con los datos del celular.</p></div>
           <div class="tarjeta"><div class="cifra">0.6<span> s</span></div><h3>En abrir</h3><p>Desde cero hasta tu inicio listo, y ya viene precompilado para pantallas lentas.</p></div>
           <div class="tarjeta"><div class="cifra">27<span> MB</span></div><h3>De memoria</h3><p>Cabe sobrado en pantallas de 1 y 2 GB de RAM.</p></div>
           <div class="tarjeta"><div class="cifra">0<span> %</span></div><h3>De CPU en reposo</h3><p>Nada corre en segundo plano ni revisa cosas cada segundo.</p></div>
@@ -69,11 +70,11 @@
 
     <section class="alterna">
       <div class="contenedor">
-        <h2>Hasta 20 veces más ligero.</h2>
+        <h2>Hasta 17 veces más ligero.</h2>
         <p class="bajada">Menos espacio, menos memoria y menos espera. Así se compara con otros launchers de auto conocidos:</p>
         <div class="comparar" role="list">
-          <div class="barra-peso nuestra" role="listitem"><span>LiteDash</span><span class="pista"><span class="lleno" style="width:5.8%"></span></span><span class="mb">1.7 MB</span></div>
-          <div class="barra-peso" role="listitem"><span>AGAMA Car Launcher</span><span class="pista"><span class="lleno" style="width:39%"></span></span><span class="mb">~11 MB</span></div>
+          <div class="barra-peso nuestra" role="listitem"><span>LiteDash</span><span class="pista"><span class="lleno" style="width:5.9%"></span></span><span class="mb">1.7 MB</span></div>
+          <div class="barra-peso" role="listitem"><span>AGAMA Car Launcher</span><span class="pista"><span class="lleno" style="width:38%"></span></span><span class="mb">~11 MB</span></div>
           <div class="barra-peso" role="listitem"><span>CarWebGuru</span><span class="pista"><span class="lleno" style="width:100%"></span></span><span class="mb">~29 MB</span></div>
         </div>
         <p class="fuente">Tamaños de descarga publicados en RuStore, octubre de 2026. Pueden variar por versión.</p>
@@ -86,7 +87,7 @@
           <h2>Tu auto es el fondo.</h2>
           <p class="bajada">Tu auto aparece parado sobre el piso, con su sombra y un reflejo tenue que pasan por debajo de las tarjetas. Como en los autos de lujo, pero en tu pantalla.</p>
           <ul class="lista-puntos">
-            <li>Diez modelos en el catálogo (autos y una moto), con sus emblemas. Bájalo solo si lo quieres.</li>
+            <li>Once modelos en el catálogo (autos y una moto), con sus emblemas. Bájalo solo si lo quieres.</li>
             <li>Cualquier color: tono, intensidad y brillo, en vivo.</li>
             <li>Gíralo 360° con el dedo; se queda donde lo dejas. Un toque lo ve en grande.</li>
             <li>Tres piezas que puedes juntar: el auto 3D, <strong>tu auto en carretera</strong> con la velocidad y los km del viaje, y una imagen tuya (como tu logo).</li>
@@ -118,59 +119,81 @@
           <h2>El Taller: tu escáner OBD.</h2>
           <p class="bajada">Conecta un adaptador ELM327 al puerto OBD (abajo del volante) y LiteDash habla con el motor. Por Bluetooth, Bluetooth LE, Wi-Fi o cable USB, sin instalar otra app.</p>
           <ul class="lista-puntos">
-            <li><strong>Códigos de falla</strong> explicados en palabras de todos los días, y borrarlos con doble confirmación.</li>
+            <li><strong>Salud del auto:</strong> tu auto visto desde arriba con un punto en la parte que pide atención, y una tarjeta por sistema: motor, combustible y aire, enfriamiento, batería, transmisión y emisiones.</li>
+            <li><strong>Códigos de falla</strong> en tarjetas, explicados en palabras de todos los días, y borrarlos con doble confirmación.</li>
             <li><strong>¿Pasas la verificación?</strong> La luz de falla y los monitores que revisan en el centro.</li>
+            <li><strong>Sensores y gráficas en vivo</strong>, cronómetro de 0 a 100 y registro de viajes.</li>
             <li><strong>Medidores en tu inicio:</strong> tacómetro, temperatura del motor y del aceite, gasolina, batería, consumo en km/l, turbo, acelerador y gasto de gasolina.</li>
             <li><strong>Alertas</strong> si el motor se calienta de más o la batería no carga, y velocímetro por OBD o GPS.</li>
           </ul>
         </div>
-        <div class="captura"><img src="img/taller.webp" alt="El Taller de LiteDash con los códigos de falla P0420, P0133 y P0171 explicados" width="1024" height="600" loading="lazy"></div>
+        <div class="captura"><img src="img/taller.webp" alt="El Taller de LiteDash en Salud del auto: el auto visto desde arriba con un punto ámbar en el motor y uno rojo atrás, y tarjetas de motor, combustible y aire, enfriamiento, batería, transmisión y emisiones" width="1024" height="600" loading="lazy"></div>
       </div>
     </section>
 
-    <section id="modulos" class="modulos alterna">
+    <section id="llantas" class="alterna">
+      <div class="contenedor fila invertida">
+        <div class="texto-fila">
+          <h2>Tus llantas, a la vista.</h2>
+          <p class="bajada">LiteDash lee la presión y la temperatura de tus llantas sin la app del fabricante. Funciona con los kits con receptor USB que se venden para pantallas Android (los genéricos de 433 MHz) y con las familias más comunes de sensores Bluetooth.</p>
+          <ul class="lista-puntos">
+            <li>Toca tu auto 3D: gira, la cámara sube y lo ves desde arriba con sus cuatro llantas.</li>
+            <li>Presión, temperatura y estado de cada una; toca una y ves sus últimas 24 horas.</li>
+            <li>Empareja, identifica o intercambia sensores, y rota las llantas con un toque.</li>
+            <li>Avisos de presión baja, fuga, temperatura alta, pila del sensor y sensor sin señal.</li>
+            <li>La presión en las esquinas de tu auto en el inicio, o el widget Llantas en tres tamaños.</li>
+          </ul>
+        </div>
+        <div class="captura"><img src="img/llantas.webp" alt="Llantas en LiteDash: un auto blanco visto desde arriba con la presión y la temperatura de sus cuatro llantas, en modo Demo" width="1024" height="600" loading="lazy"></div>
+      </div>
+    </section>
+
+    <section id="modulos" class="modulos">
       <div class="contenedor">
         <h2>Modular: todo viene apagado.</h2>
-        <p class="bajada">Recién instalado, LiteDash es lo mínimo. Cada función se enciende cuando tú quieres, y lo apagado no gasta nada: ni memoria, ni batería, ni permisos. Todo dentro de la misma app, sin instalar nada más.</p>
+        <p class="bajada">Recién instalado, LiteDash es lo mínimo. Cada módulo tiene su interruptor y se enciende cuando tú quieres; lo apagado desaparece y no gasta nada: ni memoria, ni batería, ni permisos. Todo dentro de la misma app, sin instalar nada más.</p>
         <div class="rejilla">
-          <div class="tarjeta"><span class="etiqueta lista">Ya está</span><h3>Tu inicio, a tu manera</h3><p>Mueve, agranda o quita piezas, con o sin tarjeta, sobre tu propia foto de fondo. Plantillas con auto, carretera, velocímetro o fondo, para pantallas de 7", 10" y 11" o más.</p></div>
+          <div class="tarjeta"><span class="etiqueta lista">Ya está</span><h3>Tu inicio, a tu manera</h3><p>Mueve, agranda o quita widgets, con o sin tarjeta, sobre tu propia foto de fondo. Plantillas con auto, carretera, velocímetro o fondo, para pantallas de 7", 10" y 11" o más.</p></div>
           <div class="tarjeta"><span class="etiqueta lista">Ya está</span><h3>Velocímetros a tu gusto</h3><p>Arco, aguja, digital, anillo o barra deportiva; del color que quieras (o dinámico de verde a rojo), hasta 320 km/h, con números y zona roja.</p></div>
-          <div class="tarjeta"><span class="etiqueta lista">Ya está</span><h3>Música</h3><p>Como en un estéreo: USB, Bluetooth, radio o tus apps (Spotify, YouTube Music…) con un toque, sin salir del inicio. Play la despierta aunque esté cerrada.</p></div>
+          <div class="tarjeta"><span class="etiqueta lista">Ya está</span><h3>Música</h3><p>Como en un estéreo: su propio reproductor para tu memoria USB (carpetas, artistas y álbumes), los controles de la música por Bluetooth y tu app de música (Spotify, YouTube Music…) como botón, sin salir del inicio.</p></div>
+          <div class="tarjeta"><span class="etiqueta lista">Ya está</span><h3>Radio</h3><p>Un widget aparte para la radio FM de tu pantalla y, si la activas, radio por internet con las estaciones cerca de ti.</p></div>
           <div class="tarjeta"><span class="etiqueta lista">Ya está</span><h3>Navegar</h3><p>Waze o Google Maps a un toque, Casa y Trabajo en la tarjeta y la siguiente vuelta sin abrir el mapa.</p></div>
           <div class="tarjeta"><span class="etiqueta lista">Ya está</span><h3>Mandos al volante</h3><p>Aprende cada botón de tu volante y elige qué hace: música, volumen, mapa, voz o inicio.</p></div>
           <div class="tarjeta"><span class="etiqueta lista">Ya está</span><h3>Día y noche</h3><p>Tema y brillo según la hora del sol, el sensor de luz o los faros del auto, que LiteDash aprende de tu pantalla.</p></div>
           <div class="tarjeta"><span class="etiqueta lista">Ya está</span><h3>Clima y Viaje</h3><p>La temperatura y 3 días de pronóstico; velocidad, rumbo, distancia y tiempo por GPS, solo mientras lo ves.</p></div>
           <div class="tarjeta"><span class="etiqueta lista">Ya está</span><h3>Recordatorios del auto</h3><p>Servicio, verificación, tenencia, seguro y placas, con aviso días antes.</p></div>
           <div class="tarjeta"><span class="etiqueta lista">Ya está</span><h3>Android Auto y CarPlay</h3><p>Tu app de proyección (Zlink, AutoKit…) a un toque desde el dock o una pieza.</p></div>
-          <div class="tarjeta"><span class="etiqueta lista">Ya está</span><h3>Estacionado</h3><p>Tras unos minutos sin tocar la pantalla, un reloj grande y discreto que no deslumbra de noche.</p></div>
-          <div class="tarjeta"><span class="etiqueta"> Pronto</span><h3>Llantas (TPMS)</h3><p>Presión y temperatura de cada llanta sobre tu auto, leídas directo de los sensores.</p></div>
+          <div class="tarjeta"><span class="etiqueta lista">Ya está</span><h3>Estacionado</h3><p>Tras unos minutos sin tocar la pantalla, un reloj grande y discreto que no deslumbra de noche, o tu propia imagen.</p></div>
+          <div class="tarjeta"><span class="etiqueta lista">Ya está</span><h3>Pantalla dividida</h3><p>Abre el mapa o la música en una mitad y tu auto en la otra (Android 12L o más nuevo).</p></div>
+          <div class="tarjeta"><span class="etiqueta lista">Ya está</span><h3>Unidades a tu gusto</h3><p>km/h o mph, °C o °F, y psi, bar o kPa.</p></div>
+          <div class="tarjeta"><span class="etiqueta lista">Ya está</span><h3>Llantas (TPMS)</h3><p>Presión y temperatura de cada llanta sobre tu auto, leídas de sensores USB o Bluetooth, con avisos.</p></div>
         </div>
       </div>
     </section>
 
-    <section>
+    <section class="alterna">
       <div class="contenedor fila">
         <div class="texto-fila">
           <h2>Actualizaciones con un toque.</h2>
-          <p class="bajada">Nada de buscar el APK nuevo en internet ni pasarlo por USB a la pantalla. En Ajustes → Acerca de, toca "Buscar actualizaciones" y listo.</p>
+          <p class="bajada">Nada de buscar el APK nuevo en internet ni pasarlo por USB a la pantalla. En Ajustes → Sistema → Actualizaciones, toca "Buscar actualizaciones" y listo.</p>
           <div class="pasos compacta">
             <div class="tarjeta"><h3>Busca</h3><p>LiteDash revisa si hay una versión nueva en GitHub.</p></div>
             <div class="tarjeta"><h3>Verifica</h3><p>La baja y revisa que llegó completa y sin cambios (SHA-256).</p></div>
             <div class="tarjeta"><h3>Instala</h3><p>Android te pide confirmar, y tu acomodo se queda tal cual.</p></div>
           </div>
         </div>
-        <div class="captura"><img src="img/actualizar.webp" alt="Ajustes de LiteDash, sección Acerca de, con las novedades de la versión y el botón Buscar actualizaciones" width="1024" height="600" loading="lazy"></div>
+        <div class="captura"><img src="img/actualizar.webp" alt="Ajustes de LiteDash, sección Sistema → Actualizaciones, con las novedades de la versión y el botón Buscar actualizaciones" width="1024" height="600" loading="lazy"></div>
       </div>
     </section>
 
-    <section class="alterna">
+    <section>
       <div class="contenedor">
         <h2>Lo que nos hace diferentes.</h2>
         <p class="bajada">LiteDash nació en un auto real, con una pantalla real, y se hace pensando en quien maneja.</p>
         <div class="rejilla">
           <div class="tarjeta"><h3>Ligero por regla</h3><p>Cada versión se mide antes de salir. Si algo pesa de más, no entra: por eso el mapa interno se quitó.</p></div>
           <div class="tarjeta"><h3>Hecho para manejar</h3><p>Botones grandes, sin ventanitas que estorben y con el inicio siempre a un toque.</p></div>
-          <div class="tarjeta"><h3>Tuyo de verdad</h3><p>Sin anuncios, sin cuentas y sin analíticas. Solo usa internet cuando bajas un auto, ves el clima o buscas actualizaciones.</p></div>
+          <div class="tarjeta"><h3>Tuyo de verdad</h3><p>Sin anuncios, sin cuentas y sin rastreo. Solo usa internet para lo que tú pides (bajar un auto, el clima, la radio o buscar actualizaciones) y un conteo anónimo al día que apagas con un toque.</p></div>
           <div class="tarjeta"><h3>Código abierto</h3><p>Licencia GPL-3.0. Puedes revisar el código, reportar problemas o proponer mejoras en GitHub.</p></div>
         </div>
       </div>

@@ -37,6 +37,9 @@ img { display: block; max-width: 100%; height: auto; }
 .barra nav a { text-decoration: none; color: var(--suave); }
 .barra nav a:hover { color: var(--blanco); }
 .barra .idioma { border: 1px solid var(--linea); border-radius: 999px; padding: 4px 12px; }
+.barra .logo { flex-shrink: 0; }
+/* Sin espacio para todo el menú: queda solo el cambio de idioma. */
+@media (max-width: 780px) { .barra nav a:not(.idioma) { display: none; } }
 
 /* Héroe */
 .heroe { padding: 88px 0 56px; text-align: center; }
@@ -104,7 +107,6 @@ footer nav { display: flex; flex-wrap: wrap; gap: 20px; }
 .texto p, .texto li { color: #c9d0d8; }
 
 @media (max-width: 640px) {
-  .barra nav a:not(.idioma) { display: none; }
   .heroe { padding-top: 56px; }
   section { padding: 56px 0; }
   .pantalla { padding: 8px; border-radius: 20px; }

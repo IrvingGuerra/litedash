@@ -6,6 +6,12 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
+## [1.4.61] - 2026-11-04
+
+### Cambiado
+- **Privacidad**: la radio por internet manda tu ubicación redondeada a unos 10 km para buscar estaciones
+  cercanas (antes iba exacta). Política de privacidad al día.
+
 ## [1.4.60] - 2026-11-04
 
 ### Arreglado
