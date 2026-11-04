@@ -78,6 +78,17 @@ object Library {
         return Drive(name = name, volume = null, path = null, id = FOLDER + uri)
     }
 
+    /** El nombre de la carpeta elegida (para Ajustes); null = ninguna, se busca sola en las memorias. */
+    fun folderName(context: Context): String? = folderDrive(context)?.name
+
+    /** Olvida la carpeta elegida (vuelve a buscar sola en las memorias) y suelta su permiso. */
+    fun clearFolder(context: Context) {
+        val store = PlayerStore(context)
+        store.musicFolder?.toUri()?.let { uri -> runCatching { context.contentResolver.releasePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION) } }
+        store.musicFolder = null
+        lastFound = null
+    }
+
     /**
      * Guarda la carpeta que eligió el usuario con el selector de Android (ACTION_OPEN_DOCUMENT_TREE):
      * se lee por el sistema de documentos, así sirve aunque Android no tenga indexada la memoria.
@@ -85,6 +96,7 @@ object Library {
     fun setFolder(context: Context, uri: Uri) {
         runCatching { context.contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION) }
         PlayerStore(context).musicFolder = uri.toString()
+        lastFound = null
     }
 
     /** Todas las canciones de [drive], ordenadas por carpeta y archivo (como se ven en la memoria). */

@@ -173,8 +173,8 @@
     <string name="map_help">The app the Navigate tile opens. While navigating, it shows the next turn (it uses the same notification access as music).</string>
     <string name="map_no_apps">Install Waze or Google Maps to navigate from LiteDash.</string>
     <string name="music">Music</string>
-    <string name="music_system">System</string>
-    <string name="music_help">The app the music tile controls and opens. System follows whatever plays on your screen: USB, Bluetooth or any app (the radio has its own tile).</string>
+    <string name="music_system">Apps</string>
+    <string name="music_help">The app shown as a button in the big music view, which play wakes up. "Apps" follows whatever any app is playing (radio has its own tile).</string>
     <string name="template_cards">Cards below</string>
     <string name="template_columns">Three columns</string>
     <string name="template_panel">Full panel</string>
@@ -306,8 +306,8 @@
         <item quantity="other">Download the new 3D model of %1$d cars?</item>
     </plurals>
     <string name="music_other_app">Another app…</string>
-    <string name="music_sources">Your screen\'s sources</string>
-    <string name="music_sources_help">The app on your screen that plays each source, like a car stereo. LiteDash guesses them by name; if it got one wrong, pick it yourself. They show up as buttons in the big music view.</string>
+    <string name="music_sources">Bluetooth music</string>
+    <string name="music_sources_help">Your screen\'s app that plays music from your phone. It shows up as the Bluetooth button in the big music view; LiteDash guesses it by name and you can change it here.</string>
     <string name="source_unlinked">Not linked</string>
     <string name="source_choose">Choose</string>
     <string name="source_remove">Remove</string>
@@ -658,5 +658,7 @@
     <string name="tires_ble_location_off">Turn on location: Android requires it to scan for Bluetooth</string>
     <string name="tires_ble_unsupported">This screen has no Bluetooth LE</string>
     <string name="tires_ble_failed">Android didn\'t allow scanning for Bluetooth sensors</string>
-    <string name="source_usb_own_player">You use LiteDash\'s USB player (Modules), so this app isn\'t used.</string>
+    <string name="usb_folder">Music folder</string>
+    <string name="usb_folder_auto">Automatic: looks in all your USB drives. Choose one if your screen doesn\'t let apps read the drive.</string>
+    <string name="music_app_title">Your music app</string>
 </resources>

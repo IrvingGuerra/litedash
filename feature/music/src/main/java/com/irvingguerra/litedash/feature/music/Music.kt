@@ -64,7 +64,6 @@ private const val KEY_RADIO_INTERNET = "radio_internet"
 
 /** Palabras con las que se reconoce la app de cada fuente (en el paquete o en el nombre). */
 private val SOURCE_WORDS = mapOf(
-    SourceKind.USB to listOf("usb"),
     SourceKind.BLUETOOTH to listOf("bluetooth", "bt", "a2dp"),
     SourceKind.RADIO to listOf("radio", "fm"),
 )
@@ -169,12 +168,26 @@ class MusicRepository(private val context: Context) {
     /** Guarda la elección de [choose] (la pone el app: va a sus preferencias). */
     var onPreferredChanged: ((String?) -> Unit)? = null
 
-    /** Apps de la pantalla enlazadas a cada fuente (Ajustes → Música); se guardan en [store]. */
-    var sourceApps by mutableStateOf(SourceKind.entries.mapNotNull { k -> store.getString(k.key, null)?.let { k to it } }.toMap())
+    /**
+     * Apps de la pantalla enlazadas a Bluetooth y radio (Ajustes → Música); se guardan en [store].
+     * USB ya no se enlaza: desde la 1.4.57 es siempre el reproductor de LiteDash ([migrateUsbApp]).
+     */
+    var sourceApps by mutableStateOf(SourceKind.entries.filter { it != SourceKind.USB }.mapNotNull { k -> store.getString(k.key, null)?.let { k to it } }.toMap())
         private set
 
-    /** Enlaza (o con null desenlaza) la app de una fuente. */
+    /**
+     * Quien tenía una "app de USB" enlazada (antes de la 1.4.57) la conserva como su app de música:
+     * sale como botón con su nombre. Una sola vez; después la clave vieja ya no existe.
+     */
+    fun migrateUsbApp() {
+        val old = store.getString(SourceKind.USB.key, null) ?: return
+        store.edit().remove(SourceKind.USB.key).apply()
+        if (preferred == null) choose(old)
+    }
+
+    /** Enlaza (o con null desenlaza) la app de Bluetooth o radio (USB es siempre el reproductor propio). */
     fun setSource(kind: SourceKind, pkg: String?) {
+        if (kind == SourceKind.USB) return
         sourceApps = if (pkg == null) sourceApps - kind else sourceApps + (kind to pkg)
         store.edit().putString(kind.key, pkg).apply()
         // Enlazar o quitar la radio cambia qué pieza se queda con cada sesión.

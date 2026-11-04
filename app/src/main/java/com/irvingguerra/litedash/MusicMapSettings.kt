@@ -63,22 +63,41 @@ fun MusicSettings(d: Dependencies) {
 }
 
 /**
- * "Fuentes de tu pantalla": qué app reproduce la USB y el Bluetooth. Cada renglón dice
- * la app enlazada (o "Sin enlazar"), con Elegir (buscador) y Quitar. La radio va aparte,
- * en su pestaña ([RadioSettings]).
+ * La app de tu pantalla que toca la música del celular por Bluetooth (sale como botón Bluetooth
+ * en la música en grande). USB ya no se enlaza aquí: es el reproductor de LiteDash ([UsbPlayerCard]).
  */
 @Composable
 fun MusicSourcesSettings(d: Dependencies) {
     val apps = rememberApps(d.apps).orEmpty()
-    var choosing by remember { mutableStateOf<SourceKind?>(null) }
-    for (kind in listOf(SourceKind.USB, SourceKind.BLUETOOTH)) {
-        // Con el reproductor USB de LiteDash prendido, la app de USB no se usa: se ve gris y lo dice.
-        val ownUsb = kind == SourceKind.USB && d.prefs.usbPlayer
-        Box(Modifier.alpha(if (ownUsb) 0.45f else 1f)) {
-            Column { SourceRow(d, kind, apps, choosing == kind && !ownUsb, enabled = !ownUsb) { choosing = if (it) kind else null } }
+    var choosing by remember { mutableStateOf(false) }
+    SourceRow(d, SourceKind.BLUETOOTH, apps, choosing) { choosing = it }
+    BluetoothNamePermission()
+}
+
+/**
+ * El reproductor USB de LiteDash: prenderlo y, si la pantalla no deja leer la memoria, elegir la
+ * carpeta de la música (selector de Android; sin carpeta, busca sola en todas las memorias).
+ */
+@Composable
+fun UsbPlayerCard(d: Dependencies) {
+    val context = LocalContext.current
+    val c = LocalColors.current
+    UsbPlayerSwitch(d)
+    if (!d.prefs.usbPlayer) return
+    var folder by remember { mutableStateOf(Library.folderName(context)) }
+    val pick = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
+        if (uri != null) {
+            Library.setFolder(context, uri)
+            folder = Library.folderName(context)
         }
-        if (ownUsb) Label(stringResource(R.string.source_usb_own_player), Typography.small, LocalColors.current.textMuted)
-        if (kind == SourceKind.BLUETOOTH) BluetoothNamePermission()
+    }
+    Row(Modifier.fillMaxWidth().padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        Column(Modifier.weight(1f)) {
+            Label(stringResource(R.string.usb_folder), Typography.body)
+            Label(folder ?: stringResource(R.string.usb_folder_auto), Typography.small, c.textMuted, 2)
+        }
+        Button(stringResource(R.string.source_choose), { runCatching { pick.launch(null) } })
+        if (folder != null) Button(stringResource(R.string.source_remove), { Library.clearFolder(context); folder = null })
     }
 }
 

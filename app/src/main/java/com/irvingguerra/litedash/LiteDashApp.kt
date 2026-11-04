@@ -27,6 +27,7 @@ class LiteDashApp : Application() {
         val bus = VehicleBus()
         val music = MusicRepository(this).apply { preferred = prefs.musicApp; onPreferredChanged = { prefs.musicApp = it }; opener = SplitScreen::open }
         OwnPlayer.wire(this, music, prefs)
+        music.migrateUsbApp()
         Dependencies(
             apps = AppRepository(this).apply { opener = SplitScreen::open },
             music = music,

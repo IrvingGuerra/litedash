@@ -6,6 +6,16 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
+## [1.4.57] - 2026-11-03
+
+### Cambiado
+- **Música más simple**: en la música en grande, **USB** es siempre el reproductor de LiteDash (lee tu
+  memoria), **Bluetooth** la música de tu celular y **Apps** lo que suene en cualquier app; tu app de
+  música sale como botón con su nombre. Ya no se "enlaza una app de USB": si tenías una, se queda
+  como tu app de música y no pierdes nada.
+- **Ajustes → Apps → Música** en tres partes: Reproductor USB (con su **carpeta de música**: automática
+  o la que elijas), Tu app de música y Música por Bluetooth.
+
 ## [1.4.56] - 2026-11-03
 
 ### Arreglado

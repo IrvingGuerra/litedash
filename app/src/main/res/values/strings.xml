@@ -177,8 +177,8 @@
     <string name="map_help">La app que abre la pieza Navegar. Mientras navegas, la pieza muestra la siguiente vuelta (usa el mismo acceso a notificaciones que la música).</string>
     <string name="map_no_apps">Instala Waze o Google Maps para navegar desde LiteDash.</string>
     <string name="music">Música</string>
-    <string name="music_system">Sistema</string>
-    <string name="music_help">La app que controla y abre la pieza de música. Sistema sigue lo que suene en tu pantalla: USB, Bluetooth o cualquier app (la radio tiene su propia pieza).</string>
+    <string name="music_system">Apps</string>
+    <string name="music_help">La app que sale como botón en la música en grande y que despierta play. "Apps" sigue lo que suene en cualquier app (la radio tiene su propia pieza).</string>
     <string name="template_cards">Tarjetas abajo</string>
     <string name="template_columns">Tres columnas</string>
     <string name="template_panel">Panel completo</string>
@@ -314,8 +314,8 @@
         <item quantity="many">¿Bajar el modelo 3D nuevo de %1$d autos?</item>
     </plurals>
     <string name="music_other_app">Otra app…</string>
-    <string name="music_sources">Fuentes de tu pantalla</string>
-    <string name="music_sources_help">La app de tu pantalla que reproduce cada fuente, como en un estéreo. LiteDash las adivina por su nombre; si se equivocó, elígela tú. Aparecen como botones en la música en grande.</string>
+    <string name="music_sources">Música por Bluetooth</string>
+    <string name="music_sources_help">La app de tu pantalla que toca la música de tu celular. Sale como botón Bluetooth en la música en grande; LiteDash la adivina por su nombre y aquí la cambias.</string>
     <string name="source_unlinked">Sin enlazar</string>
     <string name="source_choose">Elegir</string>
     <string name="source_remove">Quitar</string>
@@ -678,5 +678,7 @@
     <string name="tires_ble_location_off">Prende la ubicación: Android la pide para buscar Bluetooth</string>
     <string name="tires_ble_unsupported">Esta pantalla no tiene Bluetooth LE</string>
     <string name="tires_ble_failed">Android no dejó buscar sensores Bluetooth</string>
-    <string name="source_usb_own_player">Usas el reproductor USB de LiteDash (Módulos), así que esta app no se usa.</string>
+    <string name="usb_folder">Carpeta de música</string>
+    <string name="usb_folder_auto">Automática: busca en todas tus memorias USB. Elige una si tu pantalla no deja leer la memoria.</string>
+    <string name="music_app_title">Tu app de música</string>
 </resources>
