@@ -6,6 +6,22 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
+## [1.4.65] - 2026-11-04
+
+### Agregado
+- **Widget Mapa**: las calles de OpenStreetMap con tu posición y rumbo, zoom según la velocidad (un toque
+  lo cambia), modo oscuro y las calles guardadas para verlas sin señal. Pesa unos 16 KB, sin librerías.
+- **Quitar el fondo de tu foto** en el widget Imagen: separa el auto de un fondo liso (pared, cielo,
+  estudio), con 4 intensidades y vista previa.
+- **Qué suena en el Bluetooth de fábrica**: en pantallas cuya app de música Bluetooth no lo comparte,
+  LiteDash lo lee de los avisos que mandan (Autochips, Microntek, Syu, Clinkway y otras).
+
+### Cambiado
+- Tocar el auto con Llantas activo abre las llantas directo con un fundido suave (la animación de la
+  cámara se rehace más adelante). LiteDash usa la mitad de memoria con Llantas activo.
+
+Ideas tomadas del launcher abierto StradaOS (GPL-3.0).
+
 ## [1.4.64] - 2026-11-04
 
 ### Arreglado

@@ -23,6 +23,7 @@ import android.media.session.MediaController
 import android.media.session.MediaSessionManager
 import android.media.session.PlaybackState
 import android.os.Build
+import android.os.Bundle
 import android.os.Handler
 import android.os.Environment
 import android.os.Looper
@@ -77,6 +78,8 @@ private val SOURCE_WORDS = mapOf(
 private const val WAKE_TIMEOUT_MS = 4_000L
 /** Tras despertar una app sin sesión, play/pausa es tecla de volante durante este rato. */
 private const val KEYS_WINDOW_MS = 30 * 60_000L
+/** Un aviso (broadcast) de qué suena vale como respaldo durante este rato. */
+private const val BROADCAST_FRESH_MS = 10 * 60_000L
 
 /** Perfil Bluetooth "A2DP sink" (la pantalla recibe la música del celular); no es público en el SDK. */
 private const val A2DP_SINK = 11
@@ -321,13 +324,32 @@ class MusicRepository(private val context: Context) {
     // Ya escucha las sesiones de medios (con el permiso de avisos).
     private var listening = false
 
+    /**
+     * Respaldo de "qué suena" para apps sin sesión de medios (la música Bluetooth de muchas
+     * pantallas chinas): sus avisos (broadcasts). La radio enlazada va a su pieza; lo demás, a Música.
+     */
+    private val broadcasts = object : BroadcastReceiver() {
+        override fun onReceive(c: Context, i: Intent) {
+            val meta = BroadcastMeta.parse(i.action ?: return, i.extras.toMap()) ?: return
+            (if (meta.pkg != null && meta.pkg == sourceApps[SourceKind.RADIO]) radio else music).heard(meta)
+        }
+    }
+
     private fun start() {
         devices.start()
+        // Son avisos de otras apps: el receptor debe aceptar avisos de fuera.
+        val filter = IntentFilter().apply { BroadcastMeta.ACTIONS.forEach(::addAction) }
+        ContextCompat.registerReceiver(context, broadcasts, filter, ContextCompat.RECEIVER_EXPORTED)
         if (!store.getBoolean(KEY_SOURCES_GUESSED, false)) {
             store.edit().putBoolean(KEY_SOURCES_GUESSED, true).apply()
             Thread(::guessSources, "music-sources").start()
         }
         listen()
+        // Sin permiso de avisos no hay sesiones: se muestra lo último avisado por broadcast.
+        if (!listening) {
+            music.read()
+            radio.read()
+        }
     }
 
     private fun listen() {
@@ -341,6 +363,7 @@ class MusicRepository(private val context: Context) {
 
     private fun stop() {
         devices.stop()
+        runCatching { context.unregisterReceiver(broadcasts) }
         if (listening) runCatching { sessionManager.removeOnActiveSessionsChangedListener(onSessionsChanged) }
         listening = false
         music.detach()
@@ -412,6 +435,22 @@ class MusicRepository(private val context: Context) {
         /** La app que se despertó por última vez en esta pieza. */
         internal var wokePkg: String? = null
 
+        /** Lo último que avisó una app por broadcast ([BroadcastMeta]) y cuándo; respaldo sin sesión. */
+        private var heard: BroadcastMeta? = null
+        private var heardAt = 0L
+        private val expire = Runnable { if (users > 0 && controller == null) read() }
+
+        internal fun heard(meta: BroadcastMeta) {
+            heard = meta.over(heard)
+            heardAt = SystemClock.elapsedRealtime()
+            // Pasado el rato, deja de mostrarse aunque no llegue otro aviso.
+            mainHandler.removeCallbacks(expire)
+            mainHandler.postDelayed(expire, BROADCAST_FRESH_MS)
+            if (controller != null) return
+            read()
+            if (song != null) starting = null
+        }
+
         private val callback = object : MediaController.Callback() {
             override fun onMetadataChanged(metadata: MediaMetadata?) = read()
             override fun onPlaybackStateChanged(state: PlaybackState?) = read()
@@ -454,7 +493,7 @@ class MusicRepository(private val context: Context) {
             val c = controller
             val m = c?.metadata
             if (c == null) {
-                song = null
+                song = fromBroadcast()
                 return
             }
             // La sesión de LiteDash cambia de USB a radio (o al revés): que la tome la otra pieza.
@@ -501,6 +540,37 @@ class MusicRepository(private val context: Context) {
         }
 
         /**
+         * Sin sesión, lo último avisado por broadcast si es reciente: título, artista y estado
+         * (sin carátula ni avance). Sin título, el nombre de la app (o "Bluetooth"), como la sesión.
+         */
+        private fun fromBroadcast(): Song? {
+            val h = heard?.takeIf { SystemClock.elapsedRealtime() - heardAt < BROADCAST_FRESH_MS } ?: return null
+            val pkg = h.pkg ?: sourceApps[SourceKind.BLUETOOTH]?.takeIf { h.bluetooth }
+            val app = pkg?.let(::appLabel).orEmpty()
+            // Llegó la canción sin estado: suena.
+            val playing = h.playing ?: true
+            if (h.title == null && !playing) return null
+            val title = h.title ?: app.ifBlank { if (h.bluetooth) context.getString(R.string.source_bluetooth) else return null }
+            return Song(
+                title = title,
+                artist = h.artist.orEmpty(),
+                app = app,
+                artwork = null,
+                playing = playing,
+                durationMs = 0,
+                positionMs = 0,
+                readAt = SystemClock.elapsedRealtime(),
+                speed = 1f,
+                pkg = pkg.orEmpty(),
+                seekable = false,
+                actions = emptyList(),
+                source = pkg?.let(::sourceOf) ?: SourceKind.BLUETOOTH.takeIf { h.bluetooth },
+                buffering = false,
+                error = null,
+            )
+        }
+
+        /**
          * Play o pausa; sin nada sonando, se despierta lo que toque ([onWake]). Si ya se despertó
          * hace poco y su app no comparte sesión (la música Bluetooth y la radio FM de muchas
          * pantallas), es play/pausa como el botón del volante: si no, cada toque volvía a
@@ -511,6 +581,8 @@ class MusicRepository(private val context: Context) {
             val woke = wokePkg
             when {
                 controller != null && t == null -> key(this, KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE)
+                // Lo que suena se supo por broadcast: play/pausa como el volante.
+                controller == null && song != null && canKey(this) -> key(this, KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE)
                 t == null && woke != null && woke == target(this) && SystemClock.elapsedRealtime() - wokeAt < KEYS_WINDOW_MS && canKey(this) ->
                     key(this, KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE)
                 t == null || song == null -> onWake()
@@ -609,7 +681,7 @@ class MusicRepository(private val context: Context) {
 
     /** La app a la que va el play (o una tecla) de [lens] cuando no hay sesión que lo reciba. */
     private fun target(lens: Lens): String? =
-        if (lens === radio) appFor(SourceKind.RADIO) else active ?: preferred ?: store.getString(KEY_LAST_APP, null)
+        lens.song?.pkg?.takeIf { lens.controller == null && it.isNotEmpty() } ?: if (lens === radio) appFor(SourceKind.RADIO) else active ?: preferred ?: store.getString(KEY_LAST_APP, null)
 
     /**
      * Que suene lo tocado, la app elegida o, sin ninguna, la última que sonó. Con una canción
@@ -799,7 +871,7 @@ class MusicRepository(private val context: Context) {
 
     /** Abre la app que está sonando o, si no hay, la tocada o la elegida en Ajustes. */
     fun openApp() {
-        open(music.controller?.packageName ?: active ?: preferred ?: return)
+        open(music.controller?.packageName ?: song?.pkg?.ifEmpty { null } ?: active ?: preferred ?: return)
     }
 
     /** Si devuelve true, ya abrió la app a su manera (p. ej. en pantalla dividida). */
@@ -1012,6 +1084,13 @@ fun sendMediaKey(context: Context, code: Int, receiver: ComponentName? = null) {
             else audio.dispatchMediaKeyEvent(event)
         }
     }
+}
+
+/** Los extras de un aviso como mapa (un extra que no se puede leer deja el mapa vacío). */
+@Suppress("DEPRECATION") // Bundle.get: los avisos traen tipos variados
+private fun Bundle?.toMap(): Map<String, Any?> {
+    val b = this ?: return emptyMap()
+    return runCatching { b.keySet().associateWith { b.get(it) } }.getOrDefault(emptyMap())
 }
 
 /** El primer texto no vacío de [keys] (algunas apps mandan el título vacío y el bueno en otro campo). */

@@ -30,6 +30,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -125,28 +126,53 @@ private val WALLPAPER = SavedImage("wallpaper.jpg", 1920, png = false)
 /** La imagen del modo estacionado (en vez del reloj), con transparencia por si es un logo. */
 private val PARKED = SavedImage("parked.png", 1920, png = true)
 
-/** Copia la imagen elegida, reducida a [SavedImage.maxPx]. */
-private suspend fun save(context: Context, uri: Uri, target: SavedImage): Boolean = withContext(Dispatchers.IO) {
+/** Lee la imagen [uri] reducida a [maxPx] por lado; null si no se puede leer. Llamar fuera del hilo principal. */
+private fun decodeScaled(context: Context, uri: Uri, maxPx: Int): Bitmap? = runCatching {
+    val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+    context.contentResolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it, null, bounds) }
+    var sample = 1
+    while (maxOf(bounds.outWidth, bounds.outHeight) / (sample * 2) >= maxPx) sample *= 2
+    val decoded = context.contentResolver.openInputStream(uri)?.use {
+        BitmapFactory.decodeStream(it, null, BitmapFactory.Options().apply { inSampleSize = sample })
+    } ?: return@runCatching null
+    // El muestreo es en potencias de 2: se termina de ajustar a maxPx exactos.
+    val k = maxPx.toFloat() / maxOf(decoded.width, decoded.height)
+    if (k < 1f) decoded.scale((decoded.width * k).toInt(), (decoded.height * k).toInt()) else decoded
+}.getOrNull()
+
+/** Guarda [bitmap] en [target]: primero a un temporal, así si algo falla la imagen de antes queda intacta. */
+private suspend fun write(context: Context, bitmap: Bitmap, target: SavedImage): Boolean = withContext(Dispatchers.IO) {
     runCatching {
-        val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-        context.contentResolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it, null, bounds) }
-        var sample = 1
-        while (maxOf(bounds.outWidth, bounds.outHeight) / (sample * 2) >= target.maxPx) sample *= 2
-        val decoded = context.contentResolver.openInputStream(uri)?.use {
-            BitmapFactory.decodeStream(it, null, BitmapFactory.Options().apply { inSampleSize = sample })
-        } ?: return@runCatching false
-        // El muestreo es en potencias de 2: se termina de ajustar a maxPx exactos.
-        val k = target.maxPx.toFloat() / maxOf(decoded.width, decoded.height)
-        val bitmap = if (k < 1f) decoded.scale((decoded.width * k).toInt(), (decoded.height * k).toInt()) else decoded
-        // Primero a un temporal: si algo falla a la mitad, la imagen de antes queda intacta.
         val temp = File(context.filesDir, "${target.file}.tmp").apply { parentFile?.mkdirs() }
         temp.outputStream().use {
             if (target.png) bitmap.compress(Bitmap.CompressFormat.PNG, 100, it)
             else bitmap.compress(Bitmap.CompressFormat.JPEG, 90, it)
         }
         temp.renameTo(target.file(context))
-        true
     }.getOrDefault(false)
+}
+
+/** Copia la imagen elegida, reducida a [SavedImage.maxPx]. */
+private suspend fun save(context: Context, uri: Uri, target: SavedImage): Boolean {
+    val bitmap = withContext(Dispatchers.IO) { decodeScaled(context, uri, target.maxPx) } ?: return false
+    return write(context, bitmap, target)
+}
+
+/** Lado máximo de la foto al quitarle el fondo: memoria y CPU de pantallas viejas. */
+private const val CUT_MAX_PX = 900
+
+/** Vista previa del fondo quitado con la intensidad [level]; [image] null = no se pudo separar. */
+private class CutPreview(val source: Bitmap, val level: Int, val bitmap: Bitmap?) {
+    val image = bitmap?.asImageBitmap()
+}
+
+/** Quita el fondo de [source] (fuera del hilo principal). */
+private suspend fun cutPreview(source: Bitmap, level: Int): CutPreview = withContext(Dispatchers.Default) {
+    val w = source.width
+    val h = source.height
+    val pixels = IntArray(w * h).also { source.getPixels(it, 0, w, 0, 0, w, h) }
+    val cut = removeBackground(pixels, w, h, level)
+    CutPreview(source, level, cut?.let { Bitmap.createBitmap(it.pixels, it.width, it.height, Bitmap.Config.ARGB_8888) })
 }
 
 /** La imagen; [loaded] = ya se sabe si hay o no (para no mostrar el nombre de paso). */
@@ -280,11 +306,11 @@ fun ParkedSettings(prefs: Preferences) {
 /** Elegir, cambiar o quitar una imagen guardada; [onPicked] avisa tras guardar una nueva. */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun imageButtons(target: SavedImage, onPicked: () -> Unit = {}): Boolean {
+private fun imageButtons(target: SavedImage, onPicked: (Uri) -> Unit = {}): Boolean {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val pick = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
-        if (uri != null) scope.launch { if (save(context, uri, target)) { target.bump(); onPicked() } }
+        if (uri != null) scope.launch { if (save(context, uri, target)) { target.bump(); onPicked(uri) } }
     }
     // Basta saber si el archivo existe: decodificar la imagen completa para esto sobraba.
     val hasImage = remember(target, target.version) { target.file(context).exists() }
@@ -333,16 +359,77 @@ fun CustomizeImagePanel(d: Dependencies, tileId: String, close: () -> Unit) {
     // La del nombre nuevo va aparte (no en tileImages): abrir el panel y cerrarlo sin elegir no deja nada.
     val freshImage = remember(tileId) { newTileImage(fresh) }
     val target = if (tile.data.isEmpty()) freshImage else tileImage(name)
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    // La foto elegida en este panel: mientras siga abierto se puede volver a la original.
+    var picked by remember(tileId) { mutableStateOf<Uri?>(null) }
+    val source by produceState<Bitmap?>(null, picked) {
+        value = picked?.let { withContext(Dispatchers.IO) { decodeScaled(context, it, CUT_MAX_PX) } }
+    }
+    var removing by remember(tileId) { mutableStateOf(false) }
+    var level by remember(tileId) { mutableIntStateOf(1) }
+    // Lo que hay guardado: -1 = la original; si no, la intensidad con que se quitó el fondo.
+    var saved by remember(tileId) { mutableIntStateOf(-1) }
+    val chosen = if (removing) level else -1
+    // Se queda la vista previa anterior mientras se calcula la nueva (sin parpadeo).
+    val preview by produceState<CutPreview?>(null, source, removing, level) {
+        val photo = source
+        if (removing && photo != null && (value?.source !== photo || value?.level != level)) value = cutPreview(photo, level)
+    }
+    val ready = preview?.takeIf { removing && it.source === source && it.level == level }
+    val sourceImage = remember(source) { source?.asImageBitmap() }
     PanelScaffold(stringResource(R.string.image_title), close) {
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(16.dp)) {
             Label(stringResource(R.string.image_help), Typography.body, c.textMuted)
-            Box(Modifier.widthIn(max = 360.dp).fillMaxWidth().aspectRatio(2f)) {
-                ImageTile(d, tile.data, onClick = {})
+            Box(Modifier.widthIn(max = 360.dp).fillMaxWidth().aspectRatio(2f), contentAlignment = Alignment.Center) {
+                val shown = (if (removing) preview?.takeIf { it.source === source }?.image else null) ?: sourceImage
+                if (shown != null) Image(shown, null, Modifier.fillMaxSize(0.8f)) else ImageTile(d, tile.data, onClick = {})
             }
-            val hasImage = imageButtons(target, onPicked = {
+            val hasImage = imageButtons(target, onPicked = { uri ->
                 if (tile.data.isEmpty()) d.dashboard.setData(tileId, name)
+                picked = uri
+                removing = false
+                saved = -1
             })
+            // Al quitar la imagen se olvida la foto elegida.
+            LaunchedEffect(hasImage) { if (!hasImage) picked = null }
             if (!hasImage) Label(stringResource(R.string.image_empty), Typography.small, c.textMuted)
+            if (hasImage && source != null) {
+                Label(stringResource(R.string.image_background), Typography.label, c.textMuted)
+                Segmented(
+                    listOf(false to stringResource(R.string.image_background_original), true to stringResource(R.string.image_background_remove)),
+                    removing,
+                    { removing = it },
+                )
+                if (removing) {
+                    Label(stringResource(R.string.image_background_help), Typography.small, c.textMuted)
+                    Label(stringResource(R.string.image_strength), Typography.label, c.textMuted)
+                    Segmented(
+                        listOf(
+                            0 to stringResource(R.string.image_strength_low),
+                            1 to stringResource(R.string.image_strength_medium),
+                            2 to stringResource(R.string.image_strength_high),
+                            3 to stringResource(R.string.image_strength_max),
+                        ),
+                        level,
+                        { level = it },
+                    )
+                    if (ready != null && ready.bitmap == null) Label(stringResource(R.string.image_cut_failed), Typography.small, c.danger)
+                }
+                val cut = ready?.bitmap
+                if (chosen != saved && (chosen < 0 || cut != null)) {
+                    Button(stringResource(R.string.image_apply), {
+                        val uri = picked ?: return@Button
+                        scope.launch {
+                            val ok = if (cut == null) save(context, uri, target) else write(context, cut, target)
+                            if (ok) {
+                                target.bump()
+                                saved = chosen
+                            }
+                        }
+                    }, primary = true)
+                }
+            }
         }
     }
 }

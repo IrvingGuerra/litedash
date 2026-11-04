@@ -1099,6 +1099,7 @@ internal fun iconOf(type: String) = when (type) {
     TileTypes.MUSIC -> Icons.music
     TileTypes.RADIO -> Icons.radio
     TileTypes.NAVIGATE -> Icons.navigate
+    TileTypes.MAP -> Icons.map
     TileTypes.CLOCK -> Icons.clock
     TileTypes.PHONE -> Icons.phone
     TileTypes.WEATHER -> Icons.sun

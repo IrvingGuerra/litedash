@@ -77,6 +77,7 @@ val TileSpecs = listOf(
     TileSpec(TileTypes.MUSIC, R.string.tile_music, SizeLimits(3, 1, maxHeight = 3), 4 to 1, R.string.tile_music_help),
     TileSpec(TileTypes.RADIO, R.string.tile_radio, SizeLimits(3, 1, maxHeight = 3), 4 to 1, R.string.tile_radio_help),
     TileSpec(TileTypes.NAVIGATE, R.string.tile_navigate, SizeLimits(2, 1), 3 to 1, R.string.tile_navigate_help),
+    TileSpec(TileTypes.MAP, R.string.tile_map, SizeLimits(2, 2), 3 to 2, R.string.tile_map_help),
     TileSpec(TileTypes.CLOCK, R.string.tile_clock, SizeLimits(2, 1), 3 to 1, R.string.tile_clock_help),
     TileSpec(TileTypes.PHONE, R.string.tile_phone, SizeLimits(1, 1), 2 to 1, R.string.tile_phone_help),
     TileSpec(TileTypes.WEATHER, R.string.tile_weather, SizeLimits(2, 1), 3 to 1, R.string.tile_weather_help),

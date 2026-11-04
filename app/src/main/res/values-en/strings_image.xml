@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Image widget → remove the photo background (since 1.4.65). -->
+<resources>
+    <string name="image_background">Background</string>
+    <string name="image_background_original">Original</string>
+    <string name="image_background_remove">Remove</string>
+    <string name="image_background_help">Works best with a plain background: a wall, the sky or a studio.</string>
+    <string name="image_strength">Strength</string>
+    <string name="image_strength_low">Soft</string>
+    <string name="image_strength_medium">Medium</string>
+    <string name="image_strength_high">High</string>
+    <string name="image_strength_max">Max</string>
+    <string name="image_cut_failed">Couldn\'t separate the car from the background: try a photo with a plain background.</string>
+    <string name="image_apply">Apply</string>
+</resources>

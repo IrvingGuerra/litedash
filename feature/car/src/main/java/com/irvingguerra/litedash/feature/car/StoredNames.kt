@@ -40,13 +40,6 @@ internal object CarJson {
     const val FLOOR = "piso"
     /** La vista desde arriba en el catálogo (url, bytes y sha256 de su zip). */
     const val TOP_VIEW = "planta"
-    /** La subida de la cámara en el catálogo (url, bytes y sha256 de su zip). */
-    const val RISE = "subida"
-    /** En subida.json: cuántos cuadros (y el gris de la pintura, [GRAY]). */
-    const val RISE_FRAMES = "cuadros"
-    /** En subida.json: ancho y alto de cada cuadro. */
-    const val RISE_WIDTH = "ancho"
-    const val RISE_HEIGHT = "alto"
 }
 
 /** Capas que acompañan a cada imagen del paquete (vista o cuadro del giro). */
@@ -56,8 +49,4 @@ internal object CarViews {
     const val REFLECTION_SUFFIX = "-reflejo"
     /** El auto desde arriba, con el frente hacia arriba, en la caja de [CAR_TOP_ASPECT]. */
     const val TOP_VIEW = "planta"
-    /** Carpeta de la subida (la cámara sube por detrás hasta quedar arriba): NN.webp y NN-pintura.webp. */
-    const val RISE = "subida"
-    /** Datos de la subida; se acomoda al último (dice que ya está completa). */
-    const val RISE_INFO = "subida.json"
 }

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="tile_map">Mapa</string>
+    <string name="tile_map_help">OpenStreetMap con tu posición · usa el GPS solo mientras se ve</string>
+    <string name="map_waiting">Buscando tu ubicación…</string>
+</resources>

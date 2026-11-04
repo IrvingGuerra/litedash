@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Widget Imagen → quitar el fondo de la foto (desde la 1.4.65). -->
+<resources>
+    <string name="image_background">Fondo</string>
+    <string name="image_background_original">Original</string>
+    <string name="image_background_remove">Quitar</string>
+    <string name="image_background_help">Funciona mejor con un fondo liso: una pared, el cielo o un estudio.</string>
+    <string name="image_strength">Intensidad</string>
+    <string name="image_strength_low">Suave</string>
+    <string name="image_strength_medium">Media</string>
+    <string name="image_strength_high">Alta</string>
+    <string name="image_strength_max">Máxima</string>
+    <string name="image_cut_failed">No se pudo separar el auto del fondo: prueba con una foto de fondo liso.</string>
+    <string name="image_apply">Aplicar</string>
+</resources>

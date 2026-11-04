@@ -4,9 +4,7 @@ import android.content.Context
 import android.content.Intent
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.EaseInOut
 import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -79,9 +77,6 @@ import com.irvingguerra.litedash.feature.apps.AppRepository
 import com.irvingguerra.litedash.feature.apps.rememberApps
 import com.irvingguerra.litedash.feature.car.CarPackage
 import com.irvingguerra.litedash.feature.car.CarRepository
-import com.irvingguerra.litedash.feature.car.CarRise
-import com.irvingguerra.litedash.feature.car.REAR_TURN
-import com.irvingguerra.litedash.feature.car.spinPath
 import com.irvingguerra.litedash.feature.dashboard.Dashboard
 import com.irvingguerra.litedash.feature.dashboard.DashboardState
 import com.irvingguerra.litedash.feature.dashboard.Grid
@@ -98,12 +93,10 @@ import com.irvingguerra.litedash.feature.player.PlayerBrowser
 import com.irvingguerra.litedash.feature.player.PlayerSource
 import com.irvingguerra.litedash.feature.tpms.TpmsRepository
 import com.irvingguerra.litedash.feature.updater.Updater
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 
 /** Qué se ve en grande en lugar del tablero. */
@@ -266,9 +259,7 @@ fun TileContent(d: Dependencies, p: Tile, apps: List<App>, car: CarPackage?, rev
         )
         TileTypes.WORKSHOP -> HealthTile(d, car) { actions.onPanel(Panel.Workshop) }
         TileTypes.PROJECTION -> ProjectionTile(d, apps) { actions.onPanel(Panel.Drawer) }
-        TileTypes.TIRES -> Box(Modifier.fillMaxSize().onGloballyPositioned { actions.onCarBounds(p.id, it.boundsInRoot()) }) {
-            TiresTile(d, onOpen = actions.onTires, onSettings = { actions.onPanel(Panel.TiresSettings) })
-        }
+        TileTypes.TIRES -> TiresTile(d, onOpen = actions.onTires, onSettings = { actions.onPanel(Panel.TiresSettings) })
         TileTypes.NAVIGATE -> {
             val app = mapApp(d, apps, p.data)
             NavigationTile(
@@ -279,6 +270,7 @@ fun TileContent(d: Dependencies, p: Tile, apps: List<App>, car: CarPackage?, rev
                 onPlace = { navigateTo(context, app, it) },
             ) { actions.onNavigate(app) }
         }
+        TileTypes.MAP -> MapTile(d) { actions.onNavigate(mapApp(d, apps)) }
         TileTypes.PHONE -> ShortcutTile(Icons.phone, stringResource(R.string.tile_phone), null) {
             openDialer(context)
         }
@@ -330,29 +322,13 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
     var tiresOpen by remember { mutableStateOf(false) }
     var tiresShown by remember { mutableStateOf(false) }
     val tiresProgress = remember { Animatable(0f) }
-    // Tocar el auto 3D con Llantas activo: crece, gira de espaldas, la cámara sube y termina en
-    // las llantas ([carTires] = este viaje; [rise] lo dibuja el auto en grande).
-    var carTires by remember { mutableStateOf(false) }
-    val riseSpin = remember { Animatable(0f) }
-    val riseProgress = remember { Animatable(0f) }
-    val rise = remember {
-        CarRise().apply {
-            spin = { riseSpin.value }
-            progress = { riseProgress.value }
-            morph = { tiresProgress.value }
-        }
-    }
     LaunchedEffect(tiresOpen) {
-        // Desde el auto, un fundido más largo (la subida se encima con la vista de arriba).
-        val ms = if (carTires) 250 else 180
         if (tiresOpen) {
             tiresShown = true
-            tiresProgress.animateTo(1f, tween(ms))
+            tiresProgress.animateTo(1f, tween(TIRES_FADE_MS, easing = FastOutSlowInEasing))
         } else if (tiresShown) {
-            tiresProgress.animateTo(0f, tween(ms))
+            tiresProgress.animateTo(0f, tween(TIRES_FADE_MS, easing = FastOutSlowInEasing))
             tiresShown = false
-            // De regreso: la cámara baja y el auto vuelve a su pieza.
-            if (carTires) carOnly = false
         }
     }
     fun openTires() {
@@ -372,53 +348,15 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
     LaunchedEffect(carOnly) {
         if (carOnly) {
             carShown = true
-            val toTires = carTires
-            if (toTires) rise.active = true
             // Crece cuando la imagen grande ya está pintada (en su pieza se ve igual que la
             // chica); si tarda, crece de todos modos.
             withTimeoutOrNull(600) { snapshotFlow { carReady }.first { it } }
-            if (toTires) {
-                // Ya viene preparado desde el inicio; si no alcanzó (recién encendido), se espera un poco.
-                withTimeoutOrNull(1_500) { snapshotFlow { rise.ready }.first { it } }
-                // Crece y, casi en grande, gira hasta quedar de espaldas (cuadros ya pintados: solo se
-                // dibujan). El giro entra en la cola del crecimiento (esperarlo se veía como pausa) y
-                // a ritmo parejo: con frenado, el último paso duraba más y se notaba el brinco.
-                coroutineScope {
-                    launch { carProgress.animateTo(1f, tween(GROW_TO_TIRES_MS, easing = FastOutSlowInEasing)) }
-                    delay(GROW_TO_TIRES_MS * 3L / 4)
-                    if (rise.turnSteps > 0) riseSpin.animateTo(1f, tween(spinMs(rise.turnSteps), easing = LinearEasing))
-                }
-                if (rise.hasFrames) riseProgress.animateTo(1f, tween(900, easing = EaseInOut))
-                openTires()
-                return@LaunchedEffect
-            }
             carProgress.animateTo(1f, tween(480, easing = FastOutSlowInEasing))
         } else if (carShown) {
-            if (riseProgress.value > 0f) riseProgress.animateTo(0f, tween((900 * riseProgress.value).toInt(), easing = EaseInOut))
-            // De regreso, al revés: gira a donde lo dejó y luego se encoge.
-            if (riseSpin.value > 0f) riseSpin.animateTo(0f, tween(spinMs(rise.turnSteps), easing = LinearEasing))
-            carProgress.animateTo(0f, tween(GROW_TO_TIRES_MS, easing = FastOutSlowInEasing))
+            carProgress.animateTo(0f, tween(520, easing = FastOutSlowInEasing))
             carShown = false
             carReady = false
-            carTires = false
-            rise.finish()
         }
-    }
-    // La subida del auto se baja aparte (una vez; unos cientos de KB), solo si se va a usar: con
-    // Llantas activo, tocar el auto lleva a las llantas y hay una pieza del auto 3D.
-    val wantsRise = d.hasTpmsSource && d.prefs.carTap == CarTap.TIRES && d.dashboard.tiles.any { it.type == TileTypes.CAR }
-    LaunchedEffect(car, wantsRise) { if (wantsRise) d.cars.fetchRise(car) }
-    // Y se prepara (giro de espaldas + subida, para el lienzo del auto en grande y del color del
-    // auto) con calma mientras se ve el inicio, para que tocar el auto sea solo dibujar. Con el
-    // inicio fuera de la vista o con poca memoria se suelta; al volver se prepara otra vez.
-    val bigWidth = bigCarWidthPx()
-    val starts = rememberStarts(onStop = rise::clear)
-    TrimMemoryEffect(rise::clear)
-    LaunchedEffect(car, car?.rise, wantsRise, d.prefs.carColor, d.prefs.carAngle, bigWidth, starts) {
-        val p = car
-        if (!wantsRise || p == null) return@LaunchedEffect rise.clear()
-        delay(1_500)
-        rise.preload(d.cars, p, spinPath(p, d.prefs.carAngle, REAR_TURN), d.prefs.carColor, bigWidth)
     }
 
     // Cada toque y cada botón del volante reinician la cuenta del modo estacionado. Se
@@ -467,9 +405,12 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
             onMusic = { expanded = Expanded.MUSIC },
             onRadio = { expanded = Expanded.RADIO },
             onCarOnly = {
-                bigTile = it
-                carTires = it.type == TileTypes.CAR && d.hasTpmsSource && d.prefs.carTap == CarTap.TIRES
-                carOnly = true
+                // Con Llantas activo, tocar el auto 3D abre las llantas; si no, lo agranda.
+                if (it.type == TileTypes.CAR && d.hasTpmsSource && d.prefs.carTap == CarTap.TIRES) openTires()
+                else {
+                    bigTile = it
+                    carOnly = true
+                }
             },
             onCarBounds = { id, rect -> if (tileBounds[id] != rect) tileBounds[id] = rect },
             carHidden = { id -> carShown && bigTile?.id == id && carProgress.value > 0f },
@@ -652,7 +593,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
         if (carShown && panel == null && big != null) {
             CarOnly(
                 d, car, big, tileBounds[big.id] ?: Rect.Zero, { carProgress.value }, backdrop,
-                onTap = { carOnly = false }, onReady = { carReady = true }, rise = if (carTires) rise else null,
+                onTap = { carOnly = false }, onReady = { carReady = true },
             )
         }
 
@@ -661,7 +602,6 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                 d, { tiresProgress.value },
                 onClose = { tiresOpen = false },
                 onSettings = { tiresOpen = false; panel = Panel.TiresSettings },
-                onCarBounds = if (carTires) { b -> rise.target = b } else null,
             )
         }
 
@@ -899,11 +839,5 @@ private fun statusBarHiddenHeight(): Dp {
 private val PILLS_MIN_WIDTH = 220.dp
 private val PILLS_MIN_HEIGHT = 160.dp
 
-/** Lo que dura cada cuadro del giro a la vista de espaldas (cada 15°). */
-private const val SPIN_STEP_MS = 75
-
-/** Lo que tarda el auto en crecer camino a las llantas. */
-private const val GROW_TO_TIRES_MS = 520
-
-/** Lo que dura el giro a la vista de espaldas: cada paso igual (uno solo no se alarga: se veía la pausa y luego el brinco), nunca eterno. */
-private fun spinMs(steps: Int) = (steps * SPIN_STEP_MS).coerceAtMost(1_000)
+/** Lo que tardan las llantas a pantalla completa en aparecer (y en irse). */
+private const val TIRES_FADE_MS = 260

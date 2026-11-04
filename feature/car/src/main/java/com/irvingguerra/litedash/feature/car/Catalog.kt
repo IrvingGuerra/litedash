@@ -38,9 +38,6 @@ import kotlin.math.roundToInt
 /** Desde aquí los brillos de la pintura teñida se acercan a blanco sin cortarse. */
 private const val KNEE = 0.78f
 
-/** Lo que se desvanece en las orillas de cada cuadro de la subida (fracción del lado corto). */
-private const val FEATHER = 0.14f
-
 /** Brillo mínimo de la pintura (el selector libre permite negro puro). */
 private const val PAINT_FLOOR = 0.07f
 
@@ -62,8 +59,6 @@ data class CatalogEntry(
     val high: PackageExtra? = null,
     /** El auto desde arriba para el Taller (unos KB); se baja aparte, la primera vez que se necesita. */
     val topView: PackageExtra? = null,
-    /** La subida de la cámara (cuadros aparte); se baja solo con Llantas activo. */
-    val rise: PackageExtra? = null,
 )
 
 /** Un archivo extra (cuadros del giro, vista desde arriba) que se baja encima del auto ya instalado. */
@@ -90,18 +85,12 @@ data class CarPackage(
     val floor: Map<String, FloorBox>,
     /** Trae la vista desde arriba ([CarViews.TOP_VIEW]) para el Taller. */
     val topView: Boolean,
-    /** Trae la subida de la cámara ([CarViews.RISE]); null si no. */
-    val rise: RiseInfo?,
     val folder: File,
     /** SHA-256 del paquete con que se instaló ("" si se bajó antes de guardarlo). */
     val sha256: String,
 ) {
     val hasFloor get() = floor.isNotEmpty()
 }
-
-/** La subida: [frames] cuadros con pintura de brillo [gray]; [aspect] = ancho / alto de cada cuadro. */
-@Immutable
-data class RiseInfo(val frames: Int, val gray: Float, val aspect: Float = 2f)
 
 /** Dónde va la capa del piso respecto al auto, en anchos del auto. */
 @Immutable
@@ -199,7 +188,6 @@ class CarRepository(private val context: Context, val catalogUrl: String) {
                     .firstOrNull { it.optInt(CarJson.LEVEL) == HIGH_LEVEL }
                     ?.let(::extraOf),
                 topView = a.optJSONObject(CarJson.TOP_VIEW)?.let(::extraOf),
-                rise = a.optJSONObject(CarJson.RISE)?.let(::extraOf),
             )
         }
     }
@@ -278,9 +266,6 @@ class CarRepository(private val context: Context, val catalogUrl: String) {
      */
     fun fetchTopView(p: CarPackage?) = fetchExtra(p, Extra.TOP_VIEW)
 
-    /** La subida de la cámara de [p] (unos cientos de KB, aparte del paquete): solo con Llantas activo. */
-    fun fetchRise(p: CarPackage?) = fetchExtra(p, Extra.RISE)
-
     /**
      * Baja un [Extra] de [p] si el catálogo lo trae y el auto aún no. Corre en el ámbito del
      * repositorio (si se sale de la pantalla a media descarga, termina igual), uno a la vez por
@@ -309,8 +294,8 @@ class CarRepository(private val context: Context, val catalogUrl: String) {
     }
 
     /**
-     * El catálogo para los extras: uno bajado hace menos de [CHECK_EVERY_MS] sirve para los dos
-     * (vista desde arriba y subida), así se baja una sola vez por hora. null sin internet.
+     * El catálogo para los extras: uno bajado hace menos de [CHECK_EVERY_MS] sirve de nuevo,
+     * así se baja a lo más una vez por hora. null sin internet.
      */
     private suspend fun recentCatalog(): List<CatalogEntry>? {
         val now = System.currentTimeMillis()
@@ -337,46 +322,6 @@ class CarRepository(private val context: Context, val catalogUrl: String) {
         } finally {
             temp.delete()
             staging.deleteRecursively()
-        }
-    }
-
-    /**
-     * El cuadro [i] de la subida de [p] pintado del [color] a [widthPx], fuera de la caché del
-     * giro (la vista los guarda solo mientras se usan). null si no está o no cupo en memoria.
-     */
-    suspend fun riseFrame(p: CarPackage, i: Int, color: Color, widthPx: Int): ImageBitmap? {
-        val info = p.rise ?: return null
-        val name = "${CarViews.RISE}/%02d".format(i)
-        val width = decodeWidth(p, name, widthPx) ?: return null
-        return withContext(Dispatchers.IO) {
-            runCatching {
-                // La sombra horneada llena todo el cuadro: sin desvanecer las orillas se ve su rectángulo.
-                paint(p, name, width, color, info.gray)?.also(::featherEdges)?.asImageBitmap()
-            }.getOrNull()
-        }
-    }
-
-    /**
-     * El cuadro [name] del giro con sus capas (como [layers]) a [widthPx], fuera de la caché del
-     * giro: quien lo pide lo guarda (el giro en grande camino a las llantas) y así no desplaza los
-     * cuadros con que se gira con el dedo. null si falta algo o no cupo en memoria (sin capas a medias).
-     */
-    suspend fun turnFrame(p: CarPackage, name: String, color: Color, widthPx: Int): CarLayers? {
-        val width = decodeWidth(p, name, widthPx) ?: return null
-        val floor = p.floor[name]
-        val floorWidth = floor?.let { (widthPx * it.width / 2).roundToInt() }
-        val shadowWidth = floorWidth?.let { decodeWidth(p, name + CarViews.SHADOW_SUFFIX, it) }
-        val reflectionWidth = floorWidth?.let { decodeWidth(p, name + CarViews.REFLECTION_SUFFIX, it) }
-        return withContext(Dispatchers.IO) {
-            runCatching {
-                val car = paint(p, name, width, color, p.gray) ?: return@runCatching null
-                CarLayers(
-                    car.asImageBitmap(),
-                    shadowWidth?.let { decode(p, name + CarViews.SHADOW_SUFFIX, it)?.asImageBitmap() },
-                    reflectionWidth?.let { paint(p, name + CarViews.REFLECTION_SUFFIX, it, color, p.gray)?.asImageBitmap() },
-                    floor,
-                )
-            }.getOrNull()
         }
     }
 
@@ -553,14 +498,14 @@ class CarRepository(private val context: Context, val catalogUrl: String) {
      */
     private suspend fun painted(p: CarPackage, name: String, color: Color, widthPx: Int): ImageBitmap? {
         val width = decodeWidth(p, name, widthPx) ?: return null
-        return cached("${p.id}/$name#${color.toArgb()}@$width") { paint(p, name, width, color, p.gray) }
+        return cached("${p.id}/$name#${color.toArgb()}@$width") { paint(p, name, width, color) }
     }
 
     /** Decodifica [name] a [width] y la tiñe del [color] con su máscara "-pintura" (si la trae). Solo en IO. */
-    private fun paint(p: CarPackage, name: String, width: Int, color: Color, gray: Float): Bitmap? =
+    private fun paint(p: CarPackage, name: String, width: Int, color: Color): Bitmap? =
         decode(p, name, width)?.also { base ->
             val mask = decode(p, name + CarViews.PAINT_MASK_SUFFIX, width)
-            if (mask != null && mask.width == base.width && mask.height == base.height) tint(base, mask, color, gray)
+            if (mask != null && mask.width == base.width && mask.height == base.height) tint(base, mask, color, p.gray)
         }
 
     /**
@@ -655,49 +600,10 @@ class CarRepository(private val context: Context, val catalogUrl: String) {
                     FloorBox(c.getDouble(0).toFloat(), c.getDouble(1).toFloat(), c.getDouble(2).toFloat(), c.getDouble(3).toFloat())
                 }.orEmpty(),
                 topView = File(folder, CarViews.TOP_VIEW + ".webp").exists(),
-                rise = readRise(folder),
                 folder = folder,
                 sha256 = File(folder, CarFiles.PACKAGE_HASH).takeIf { it.exists() }?.readText()?.trim().orEmpty(),
             )
         }.getOrNull()
-    }
-
-    /** subida.json de la carpeta (solo si sus cuadros están completos). */
-    private fun readRise(folder: File): RiseInfo? {
-        val file = File(folder, CarViews.RISE_INFO).takeIf { it.exists() } ?: return null
-        return runCatching {
-            val a = JSONObject(file.readText())
-            val width = a.optInt(CarJson.RISE_WIDTH)
-            val height = a.optInt(CarJson.RISE_HEIGHT)
-            RiseInfo(
-                frames = a.getInt(CarJson.RISE_FRAMES),
-                gray = a.optDouble(CarJson.GRAY, 0.5).toFloat(),
-                aspect = if (width > 0 && height > 0) width.toFloat() / height else 2f,
-            ).takeIf { r -> r.frames >= 2 && (0 until r.frames).all { File(folder, "${CarViews.RISE}/%02d.webp".format(it)).exists() } }
-        }.getOrNull()
-    }
-
-    /**
-     * Lleva a 0 la sombra en las orillas ([FEATHER] del lado más corto), renglón por renglón. Lo
-     * opaco (el auto, que desde arriba casi toca el cuadro) no se toca.
-     */
-    private fun featherEdges(b: Bitmap) {
-        val w = b.width
-        val h = b.height
-        val margin = (minOf(w, h) * FEATHER).coerceAtLeast(1f)
-        val row = IntArray(w)
-        for (y in 0 until h) {
-            val fy = (minOf(y, h - 1 - y) / margin).coerceAtMost(1f)
-            b.getPixels(row, 0, w, 0, y, w, 1)
-            for (x in 0 until w) {
-                val f = minOf(fy, (minOf(x, w - 1 - x) / margin).coerceAtMost(1f))
-                if (f >= 1f) continue
-                val c = row[x]
-                val a = c ushr 24
-                if (a < 250) row[x] = ((a * f).toInt() shl 24) or (c and 0xFFFFFF)
-            }
-            b.setPixels(row, 0, w, 0, y, w, 1)
-        }
     }
 
     /** color = imagen × color / gris, con brillos suaves arriba de [KNEE]; solo donde hay pintura. */
@@ -783,5 +689,4 @@ private enum class Extra(
     val pick: (CatalogEntry) -> PackageExtra?,
 ) {
     TOP_VIEW(CarViews.TOP_VIEW, CarViews.TOP_VIEW + ".webp", "top_view_check:", { it.topView }, { it.topView }),
-    RISE(CarViews.RISE, CarViews.RISE_INFO, "rise_check:", { it.rise != null }, { it.rise }),
 }

@@ -16,24 +16,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.geometry.lerp
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.graphics.drawscope.scale
-import androidx.compose.ui.graphics.drawscope.translate
-import androidx.compose.ui.graphics.drawscope.withTransform
-import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
-import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import kotlinx.coroutines.flow.conflate
-import kotlin.math.abs
-import kotlin.math.ceil
-import kotlin.math.floor
 import kotlin.math.roundToInt
 
 /** Anchos de la pieza que hay que arrastrar para dar una vuelta completa. */
@@ -61,8 +52,6 @@ fun CarTurntable(
     angle: Float? = null,
     onAngle: ((Float) -> Unit)? = null,
     onReady: (() -> Unit)? = null,
-    /** Camino a las llantas: gira solo y sube la cámara (solo el auto en grande). */
-    rise: CarRise? = null,
 ) {
     val frames = remember(p) { spinFrames(p) }
     val n = frames.size
@@ -74,7 +63,7 @@ fun CarTurntable(
     var direction by remember(p) { mutableIntStateOf(1) }
     var dragging by remember(p) { mutableStateOf(false) }
     // Si lo giraron en otra pantalla (Ajustes o la vista en grande), aquí se pone igual.
-    LaunchedEffect(saved) { if (!dragging && rise?.active != true) frame = saved }
+    LaunchedEffect(saved) { if (!dragging) frame = saved }
     // Se preparan los cuadros que siguen (con sus capas), para que aparezcan al instante.
     // Solo al cambiar de cuadro: al arrastrar el selector de color no se precargan colores de paso.
     val currentColor by rememberUpdatedState(color)
@@ -88,8 +77,7 @@ fun CarTurntable(
         var accumulated = 0f
         fun release() {
             dragging = false
-            // Camino a las llantas no se guarda nada.
-            if (rise?.active != true) onAngle?.invoke(frame.toFloat() / n)
+            onAngle?.invoke(frame.toFloat() / n)
         }
         detectHorizontalDragGestures(
             onDragStart = { accumulated = 0f; dragging = true },
@@ -97,13 +85,12 @@ fun CarTurntable(
             onDragCancel = ::release,
         ) { change, dx ->
             change.consume()
-            if (rise?.active == true) return@detectHorizontalDragGestures
             accumulated += dx
             while (accumulated > step) { accumulated -= step; frame = (frame - 1 + n) % n; direction = -1 }
             while (accumulated < -step) { accumulated += step; frame = (frame + 1) % n; direction = 1 }
         }
     }
-    CarLayersImage(repo, p, frames[frame], color, widthPx, modifier.onSizeChanged { widthPx = it.width }.then(turn), onReady, rise)
+    CarLayersImage(repo, p, frames[frame], color, widthPx, modifier.onSizeChanged { widthPx = it.width }.then(turn), onReady)
 }
 
 /** La vuelta en que el auto se ve de espaldas (en 0.25 se ve de frente; en 3/8, de tres cuartos). */
@@ -150,7 +137,6 @@ private fun CarLayersImage(
     widthPx: Int,
     modifier: Modifier,
     onReady: (() -> Unit)?,
-    rise: CarRise? = null,
     reflection: Boolean = true,
 ) {
     var layers by remember(p.id) { mutableStateOf<CarLayers?>(null) }
@@ -171,158 +157,34 @@ private fun CarLayersImage(
             }
         }
     }
-    val place = if (rise == null) Modifier else Modifier.onGloballyPositioned { rise.canvasOrigin = it.positionInRoot() }
-    Canvas(modifier.fillMaxSize().then(place)) {
-        if (rise != null && rise.active && drawRise(rise, layers)) return@Canvas
+    Canvas(modifier.fillMaxSize()) {
         drawCarLayers(layers ?: return@Canvas, reflection)
     }
 }
 
-/**
- * Camino a las llantas: el auto gira en grande hasta quedar de espaldas ([CarRise.spin]), luego el cuadro
- * de la subida que toca según [CarRise.progress] y, con [CarRise.morph], el auto viajando a la
- * vista de las llantas (sin subida, solo se encoge un poco). Devuelve si ya dibujó.
- */
-private fun DrawScope.drawRise(r: CarRise, layers: CarLayers?): Boolean {
-    val g = r.spin()
-    val t = r.progress()
-    val m = r.morph()
-    val turn = r.turnFrames
-    if (t <= 0f || !r.hasFrames) {
-        val s = 1f - 0.12f * m
-        // El cuadro del giro que toca (ya pintado en grande: solo se dibuja); al empezar, el del usuario.
-        // Al final de cada paso (cada 15°) el siguiente se funde un instante, como desenfoque de
-        // movimiento: más tiempo dejaba ver dos autos; nada, el auto brincaba de cuadro en cuadro.
-        val x = g * turn.size
-        val step = x.toInt().coerceAtMost(turn.size)
-        val now = if (step == 0) layers else turn[step - 1]
-        val next = turn.getOrNull(step)
-        val blend = ((x - step - (1f - TURN_BLEND)) / TURN_BLEND).coerceIn(0f, 1f)
-        withTransform({ scale(s, s, pivot = center) }) {
-            now?.let { drawCarLayers(it) }
-            if (next != null && blend > 0f) drawCarLayers(next, alpha = blend)
-        }
-        return true
-    }
-    // La subida igual: el cuadro de la cámara que toca y el siguiente fundido encima.
-    val x = t * (r.count - 1)
-    val i = x.toInt().coerceIn(0, r.count - 1)
-    val img = r.frames[i] ?: return false
-    val after = r.frames.getOrNull(i + 1)?.takeIf { x - i > 0.02f }
-    val fade = x - i
-    val scale = minOf(size.width / img.width, size.height / img.height)
-    val w = img.width * scale
-    val h = img.height * scale
-    val box = Rect(Offset((size.width - w) / 2, (size.height - h) / 2), Size(w, h))
-    val top = r.topBox
-    val goal = r.target
-    if (m > 0f && top != null && !goal.isEmpty) {
-        // El auto del último cuadro (en este lienzo) va hacia el de la vista de las llantas.
-        val from = Rect(box.left + top.left * w, box.top + top.top * h, box.left + top.right * w, box.top + top.bottom * h)
-        val to = goal.translate(-r.canvasOrigin)
-        val s = 1f + (to.height / from.height - 1f) * m
-        withTransform({
-            translate((to.center.x - from.center.x) * m, (to.center.y - from.center.y) * m)
-            scale(s, s, pivot = from.center)
-        }) { drawRiseStep(r, i, img, after, fade, box, start = null) }
-    } else drawRiseStep(r, i, img, after, fade, box, start = if (i == 0) turnEndRect(r) else null)
-    return true
-}
-
-/** Parte del paso del giro en que el siguiente cuadro se funde (el final). */
-private const val TURN_BLEND = 0.25f
-
-/**
- * Dónde se ve el auto (lo sólido) al terminar el giro, en este lienzo: la subida arranca de ahí
- * para no brincar de grande a chico (sus cuadros encuadran más lejos).
- */
-private fun DrawScope.turnEndRect(r: CarRise): Rect? {
-    val c = r.turnFrames.lastOrNull() ?: return null
-    val f = r.turnEnd ?: return null
-    val scale = minOf(size.width / c.car.width, size.height / c.car.height)
-    val w = c.car.width * scale
-    val h = c.car.height * scale
-    val o = Offset((size.width - w) / 2, (size.height - h) / 2)
-    return Rect(o.x + f.left * w, o.y + f.top * h, o.x + f.right * w, o.y + f.bottom * h)
-}
-
-/**
- * El cuadro [i] de la subida y, encima, el siguiente ([after]) a [fade]. Entre dos cuadros la
- * cámara se aleja bastante: fundirlos tal cual dejaba ver dos autos. Así que los dos se llevan a
- * la caja de en medio (por el ancho del auto, que se ve igual de espaldas que desde arriba) y el
- * auto crece o se encoge seguido, sin brincos.
- */
-private fun DrawScope.drawRiseStep(r: CarRise, i: Int, img: ImageBitmap, after: ImageBitmap?, fade: Float, box: Rect, start: Rect?) {
-    val a = r.boxes.getOrNull(i)
-    if (a == null) {
-        drawLayer(img, box)
-        after?.let { drawLayer(it, box, fade) }
-        return
-    }
-    fun inBox(f: Rect) = Rect(box.left + f.left * box.width, box.top + f.top * box.height, box.left + f.right * box.width, box.top + f.bottom * box.height)
-    val own = inBox(a)
-    // Sin siguiente (al empezar o al final), el auto se queda en su lugar.
-    val b = r.boxes.getOrNull(i + 1)?.takeIf { after != null }
-    val to = if (b != null) inBox(b) else own
-    // El primer paso sale de donde quedó el auto del giro ([start]); los demás, de su propio cuadro.
-    val from = start ?: own
-    val now = Rect(lerp(from.topLeft, to.topLeft, fade), lerp(from.bottomRight, to.bottomRight, fade))
-    // Lleva el auto de [car] (su caja) a [now]: escala por el ancho y centra.
-    fun DrawScope.toNow(car: Rect, frame: ImageBitmap, alpha: Float) {
-        val s = now.width / car.width
-        withTransform({
-            translate(now.center.x - car.center.x, now.center.y - car.center.y)
-            scale(s, s, pivot = car.center)
-        }) { drawLayer(frame, box, alpha) }
-    }
-    toNow(own, img, 1f)
-    if (after != null && b != null) toNow(to, after, fade)
-}
-
 /** El auto con su sombra y (si [reflection]) su reflejo, centrado en el lienzo. */
-private fun DrawScope.drawCarLayers(c: CarLayers, reflection: Boolean = true, alpha: Float = 1f) {
+private fun DrawScope.drawCarLayers(c: CarLayers, reflection: Boolean = true) {
     val scale = minOf(size.width / c.car.width, size.height / c.car.height)
     val w = c.car.width * scale
     val h = c.car.height * scale
     val origin = Offset((size.width - w) / 2, (size.height - h) / 2)
     c.floor?.let { f ->
         val box = Rect(Offset(origin.x + f.x * w, origin.y + f.y * w), Size(f.width * w, f.height * w))
-        c.shadow?.let { drawLayer(it, box, alpha) }
-        if (reflection) c.reflection?.let { drawLayer(it, box, alpha) }
+        c.shadow?.let { drawLayer(it, box) }
+        if (reflection) c.reflection?.let { drawLayer(it, box) }
     }
-    drawLayer(c.car, Rect(origin, Size(w, h)), alpha)
+    drawLayer(c.car, Rect(origin, Size(w, h)))
 }
 
 /** Qué imagen debe verse: cuadro, color y ancho. */
 private data class Wanted(val name: String, val color: Color, val widthPx: Int)
 
-private fun DrawScope.drawLayer(img: ImageBitmap, box: Rect, alpha: Float = 1f) = drawImage(
+private fun DrawScope.drawLayer(img: ImageBitmap, box: Rect) = drawImage(
     img,
     dstOffset = IntOffset(box.left.roundToInt(), box.top.roundToInt()),
     dstSize = IntSize(box.width.roundToInt(), box.height.roundToInt()),
-    alpha = alpha,
     filterQuality = FilterQuality.Medium,
 )
-
-/**
- * Los cuadros del giro, por el lado corto, de la vuelta [from] (donde lo dejó el usuario) a [to]
- * (sin el de salida; con el de llegada). Solo los del paquete (cada 15°): girar en grande no
- * necesita los de en medio y así son pocos que preparar. Si el usuario lo dejó en un cuadro de en
- * medio (calidad alta), se sale del de al lado hacia el destino: sin brincar medio cuadro de más.
- */
-fun spinPath(p: CarPackage, from: Float?, to: Float): List<String> {
-    val n = p.spin
-    // La vuelta en cuadros del paquete; casi entera cuenta como entera (redondeo del guardado).
-    val at = from?.let { (it * n).mod(n.toFloat()).let { x -> if (abs(x - x.roundToInt()) < 0.01f) x.roundToInt().toFloat() else x } }
-        ?: restFrame(n).toFloat()
-    val goal = (to * n).roundToInt().mod(n)
-    // Hacia dónde queda el destino por el lado corto (en cuadros, con fracción).
-    val ahead = (goal - at).mod(n.toFloat()).let { if (it > n / 2f) it - n else it }
-    val start = (if (ahead >= 0) floor(at) else ceil(at)).toInt()
-    val diff = (goal - start).mod(n).let { if (it > n / 2) it - n else it }
-    val step = if (diff >= 0) 1 else -1
-    return (1..abs(diff)).map { baseFrame((start + step * it).mod(n)) }
-}
 
 /** Los cuadros del giro en orden: los del paquete ("NN") y, en calidad alta, el de en medio de cada par ("mNN"). */
 private fun spinFrames(p: CarPackage): List<String> = (0 until p.spin).flatMap { i ->

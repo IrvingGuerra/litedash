@@ -69,6 +69,8 @@ object Icons {
     val turbo = icon("M4 12a8 8 0 1 0 16 0a8 8 0 1 0 -16 0 M12 12q0 -4 3.5 -5.5 M12 12q4 0 5.5 3.5 M12 12q0 4 -3.5 5.5 M12 12q-4 0 -5.5 -3.5")
     val warning = icon("M12 4l9 16h-18z M12 10v4 M12 17h.01")
     val navigate = icon("M12 3l7.5 17.5l-7.5 -4l-7.5 4z")
+    /** Mapa doblado en tres. */
+    val map = icon("M3 6.5l6 -2.5l6 2.5l6 -2.5v13.5l-6 2.5l-6 -2.5l-6 2.5z M9 4v13.5 M15 6.5v13.5")
     val phone = icon("M5 4h4l2 5l-2.5 1.5a11 11 0 0 0 5 5l1.5 -2.5l5 2v4a2 2 0 0 1 -2 2a16 16 0 0 1 -15 -15a2 2 0 0 1 2 -2")
     val music = icon("M9 17v-12l10 -2v12 M3 17a3 3 0 1 0 6 0a3 3 0 1 0 -6 0 M13 15a3 3 0 1 0 6 0a3 3 0 1 0 -6 0")
     val search = icon("M4 10a6 6 0 1 0 12 0a6 6 0 1 0 -12 0 M20 20l-5.5 -5.5")

@@ -18,7 +18,6 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
-import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Density
@@ -31,7 +30,6 @@ import com.irvingguerra.litedash.core.ui.LocalColors
 import com.irvingguerra.litedash.core.ui.Typography
 import com.irvingguerra.litedash.feature.car.CAR_ASPECT
 import com.irvingguerra.litedash.feature.car.CarPackage
-import com.irvingguerra.litedash.feature.car.CarRise
 import com.irvingguerra.litedash.feature.car.CarRepository
 import com.irvingguerra.litedash.feature.car.CarTile
 import com.irvingguerra.litedash.feature.car.CarTurntable
@@ -45,7 +43,7 @@ import com.irvingguerra.litedash.feature.dashboard.TileTypes
  * cambian en Ajustes → Tu auto.
  */
 @Composable
-fun HomeCar(d: Dependencies, pkg: CarPackage?, onClick: () -> Unit, modifier: Modifier = Modifier, onReady: (() -> Unit)? = null, rise: CarRise? = null) {
+fun HomeCar(d: Dependencies, pkg: CarPackage?, onClick: () -> Unit, modifier: Modifier = Modifier, onReady: (() -> Unit)? = null) {
     val color = d.prefs.carColor
     // El sedán dibujado no carga nada: listo de una vez.
     if (pkg == null) ReadyNow(onReady)
@@ -55,7 +53,7 @@ fun HomeCar(d: Dependencies, pkg: CarPackage?, onClick: () -> Unit, modifier: Mo
         onClick = onClick,
         modifier = modifier,
         drawing = pkg?.let { p ->
-            { m -> CarTurntable(d.cars, p, color, m, d.prefs.carAngle, { d.prefs.carAngle = it }, onReady, rise) }
+            { m -> CarTurntable(d.cars, p, color, m, d.prefs.carAngle, { d.prefs.carAngle = it }, onReady) }
         },
         hasFloor = pkg?.hasFloor == true,
     )
@@ -73,7 +71,6 @@ fun HeroTile(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     onReady: (() -> Unit)? = null,
-    rise: CarRise? = null,
     onTires: (() -> Unit)? = null,
 ) {
     when (tile.type) {
@@ -83,7 +80,7 @@ fun HeroTile(
             ReadyNow(onReady)
             ImageTile(d, tile.data, onClick, modifier)
         }
-        else -> HomeCar(d, pkg, onClick, modifier, onReady, rise)
+        else -> HomeCar(d, pkg, onClick, modifier, onReady)
     }
 }
 
@@ -92,7 +89,6 @@ fun HeroTile(
  * hasta casi toda la pantalla mientras el fondo tapa el inicio. [progress] va de
  * 0 (en su pieza) a 1 (completo) y se lee solo al dibujar: la animación no
  * vuelve a armar nada. El auto se pinta una vez al tamaño final y la GPU lo escala.
- * Con [rise] (tocar el auto con Llantas activo) además gira hasta quedar de espaldas y sube la cámara.
  */
 @Composable
 fun CarOnly(
@@ -104,7 +100,6 @@ fun CarOnly(
     backdrop: Brush,
     onTap: () -> Unit,
     onReady: () -> Unit,
-    rise: CarRise? = null,
 ) {
     val density = LocalDensity.current
     val direction = LocalLayoutDirection.current
@@ -142,7 +137,7 @@ fun CarOnly(
                     }
                 },
         ) {
-            HeroTile(d, tile, pkg, onClick = onTap, onReady = onReady, rise = rise)
+            HeroTile(d, tile, pkg, onClick = onTap, onReady = onReady)
         }
     }
 }
@@ -163,15 +158,6 @@ private fun Density.bigBox(width: Float, height: Float, insets: WindowInsets, di
         width - insets.getRight(this, direction) - pad,
         height - insets.getBottom(this) - pad,
     )
-}
-
-/** El ancho (px) del lienzo del auto en grande ([CarOnly]): a ese ancho se prepara el camino a las llantas. */
-@Composable
-fun bigCarWidthPx(): Int {
-    val density = LocalDensity.current
-    val size = LocalWindowInfo.current.containerSize
-    val box = density.bigBox(size.width.toFloat(), size.height.toFloat(), WindowInsets.safeDrawing, LocalLayoutDirection.current)
-    return carWidth(box, density).toInt().coerceAtLeast(0)
 }
 
 /**

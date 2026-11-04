@@ -41,7 +41,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
@@ -53,8 +52,6 @@ import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.Layout
-import androidx.compose.ui.layout.boundsInRoot
-import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -206,15 +203,11 @@ class TireMotion {
 /** Largo mínimo de la línea entre la tarjeta y el auto (dp). */
 private const val LEADER_DP = 64f
 
-/** Dónde está el auto dentro de la caja de [CarTop] (planta y dibujo), en fracciones: para encimar la subida. */
-private val TopCarInset = Rect(0.067f, 0.02f, 0.933f, 0.98f)
-
 /**
  * Tus llantas desde arriba: el auto al centro y una tarjeta por llanta en su esquina, unida a
  * su rueda con una línea fina (como las de Salud). Una llanta con problema tiene un halo en su
  * rueda que late despacio; todo bien, nada se mueve. Sin fuente, el auto apagado y un mensaje
- * (con [onSettings], un botón para configurarlas). [onCarBounds] recibe dónde queda el auto (en
- * la raíz), para que la subida termine justo ahí.
+ * (con [onSettings], un botón para configurarlas).
  */
 @Composable
 fun TiresView(
@@ -225,7 +218,6 @@ fun TiresView(
     selected: Wheel? = null,
     motion: TireMotion? = null,
     onSettings: (() -> Unit)? = null,
-    onCarBounds: ((Rect) -> Unit)? = null,
 ) {
     val c = LocalColors.current
     val repo = d.tpms
@@ -279,11 +271,7 @@ fun TiresView(
                     drawCircle(line, 2.5.dp.toPx(), to * px)
                 }
             }
-            val place = if (onCarBounds == null) Modifier else Modifier.onGloballyPositioned {
-                val b = it.boundsInRoot()
-                onCarBounds(Rect(b.left + b.width * TopCarInset.left, b.top + b.height * TopCarInset.top, b.left + b.width * TopCarInset.right, b.top + b.height * TopCarInset.bottom))
-            }
-            Box(Modifier.offset(carX.dp, carY.dp).size(carW.dp, carH.dp).then(place)) {
+            Box(Modifier.offset(carX.dp, carY.dp).size(carW.dp, carH.dp)) {
                 CarTop(d.cars, d.cars.pkg(d.prefs.carModel), d.prefs.carColor, Modifier.fillMaxSize())
                 TireMarks(statuses, Modifier.fillMaxSize())
             }
@@ -440,13 +428,16 @@ internal fun tiresStatusText(repo: TpmsRepository): String = when (repo.status) 
 
 // ---- Pantalla completa ----
 
+/** Tamaño con que entra lo de las llantas a pantalla completa (crece a 1 mientras aparece). */
+private const val TIRES_START_SCALE = 0.96f
+
 /**
  * Las llantas a pantalla completa, sobre el inicio: aparecen con [progress] (0 a 1, se lee solo
- * al dibujar). Tocar una tarjeta muestra su gráfica de 24 h al lado; tocar fuera cierra.
- * [onCarBounds]: dónde queda el auto (para que la subida del auto 3D termine ahí).
+ * al dibujar): el fondo se funde y lo de adentro crece un poco desde [TIRES_START_SCALE]. Tocar una
+ * tarjeta muestra su gráfica de 24 h al lado; tocar fuera cierra.
  */
 @Composable
-fun TiresFull(d: Dependencies, progress: () -> Float, onClose: () -> Unit, onSettings: () -> Unit, onCarBounds: ((Rect) -> Unit)? = null) {
+fun TiresFull(d: Dependencies, progress: () -> Float, onClose: () -> Unit, onSettings: () -> Unit) {
     val c = LocalColors.current
     var chart by remember { mutableStateOf<Wheel?>(null) }
     // La transparencia a cada cosa al dibujarla (sin capa aparte de toda la pantalla en cada cuadro del fundido).
@@ -462,6 +453,11 @@ fun TiresFull(d: Dependencies, progress: () -> Float, onClose: () -> Unit, onSet
                 .windowInsetsPadding(WindowInsets.safeDrawing)
                 .padding(16.dp)
                 .fillMaxSize()
+                .graphicsLayer {
+                    val s = TIRES_START_SCALE + (1f - TIRES_START_SCALE) * progress()
+                    scaleX = s
+                    scaleY = s
+                }
                 // Lo de adentro no cierra: solo el fondo.
                 .clickable(remember { MutableInteractionSource() }, indication = null) {},
             verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -481,7 +477,7 @@ fun TiresFull(d: Dependencies, progress: () -> Float, onClose: () -> Unit, onSet
                     Card(m) {
                         TiresView(
                             d, compact = false, onWheel = { chart = if (chart == it) null else it }, Modifier.fillMaxSize().padding(18.dp),
-                            selected = chart, onSettings = onSettings, onCarBounds = onCarBounds,
+                            selected = chart, onSettings = onSettings,
                         )
                     }
                 }

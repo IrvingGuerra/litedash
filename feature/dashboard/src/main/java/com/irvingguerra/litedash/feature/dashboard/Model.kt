@@ -76,6 +76,8 @@ object TileTypes {
     /** La radio de la pantalla (FM) o la de LiteDash por internet. */
     const val RADIO = "radio"
     const val NAVIGATE = "navigate"
+    /** Mapa de OpenStreetMap con tu posición (feature/map). */
+    const val MAP = "map"
     const val CLOCK = "clock"
     const val PHONE = "phone"
     const val WEATHER = "weather"

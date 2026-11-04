@@ -51,6 +51,9 @@ class TripRepository(private val context: Context, private val bus: VehicleBus) 
     private var speedKmh: Float? = null
     var bearing by mutableStateOf<Float?>(null)
         private set
+    /** La última posición (la lee el mapa); se queda aunque el GPS se apague. */
+    var position by mutableStateOf<Location?>(null)
+        private set
     var meters by mutableDoubleStateOf(0.0)
         private set
     /** Desde el primer punto en movimiento (0 = todavía no arranca): no cuenta lo que estuvo parado. */
@@ -76,6 +79,8 @@ class TripRepository(private val context: Context, private val bus: VehicleBus) 
             // El GPS pide la precisa; con la aproximada, la red.
             val provider = if (granted(Manifest.permission.ACCESS_FINE_LOCATION)) LocationManager.GPS_PROVIDER else LocationManager.NETWORK_PROVIDER
             runCatching { manager.requestLocationUpdates(provider, 1_000L, 0f, listener, Looper.getMainLooper()) }
+            // Mientras llega el primer punto, la última conocida (el mapa no espera en blanco).
+            if (position == null) position = runCatching { manager.getLastKnownLocation(provider) }.getOrNull()
         }
     }
 
@@ -95,6 +100,7 @@ class TripRepository(private val context: Context, private val bus: VehicleBus) 
     }
 
     private fun update(l: Location) {
+        position = l
         speedKmh = if (l.hasSpeed()) l.speed * 3.6f else null
         bus.publish(Signal.SPEED, speedKmh, Source.GPS)
         if (l.hasBearing() && (speedKmh ?: 0f) > 3f) bearing = l.bearing
