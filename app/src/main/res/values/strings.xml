@@ -97,7 +97,7 @@
     <string name="templates_tab_wallpaper">Fondo</string>
     <string name="templates_road_help">Tu auto en carretera con la velocidad y los km del viaje (OBD o GPS).</string>
     <string name="templates_speed_help">Sin auto en el inicio. La velocidad sale del GPS; no necesitas OBD.</string>
-    <string name="templates_wallpaper_help">Tu foto de fondo con unas cuantas tarjetas encima y la hora flotando. Elige el fondo aquí o en Apariencia.</string>
+    <string name="templates_wallpaper_help">Tu foto de fondo con unas cuantas tarjetas encima y la hora flotando. Elige el fondo aquí o en Inicio y apariencia.</string>
     <string name="add">Agregar</string>
     <string name="add_tile">Agregar al inicio</string>
     <string name="no_room">Ya no hay lugar: quita o achica algún widget.</string>
@@ -187,7 +187,7 @@
     <string name="screens_vertical">Pantallas verticales</string>
     <string name="your_screen">· Tu pantalla</string>
     <string name="recommended">Recomendado</string>
-    <string name="appearance">Apariencia</string>
+    <string name="appearance">Inicio y apariencia</string>
     <string name="back_home">Volver al inicio</string>
     <string name="search_car">Buscar tu auto (marca, modelo o año)</string>
     <string name="delete_car">Eliminar descargado · %.1f MB</string>
@@ -647,7 +647,7 @@
     <string name="tires_alerts">Avisos</string>
     <string name="tires_alerts_help">Las llantas se leen aunque no estén en pantalla, para avisarte a tiempo</string>
     <string name="tires_on_home">En el inicio</string>
-    <string name="tires_tile_hint">El widget Llantas también se agrega en Ajustes → Inicio o al acomodar tu inicio</string>
+    <string name="tires_tile_hint">El widget Llantas también se agrega en Ajustes → Inicio y apariencia o al acomodar tu inicio</string>
     <string name="tires_car_tap">Al tocar el auto</string>
     <string name="tires_car_tap_big">Verlo en grande</string>
     <string name="tires_car_tap_tires">Ver sus llantas</string>

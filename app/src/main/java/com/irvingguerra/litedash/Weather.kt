@@ -64,7 +64,7 @@ fun skyOf(code: Int) = when (code) {
  * Clima con Open-Meteo: gratis, sin clave ni anuncios, y solo con la ubicación
  * aproximada. Nada corre en segundo plano: mientras se ve el inicio se pide si el
  * último tiene más de [STALE_MS] ([WeatherRefresh]), y se guarda para verlo al
- * instante (y sin red). Apagado (Ajustes → Apariencia) no pide ubicación ni va a la red.
+ * instante (y sin red). Apagado (Ajustes → Inicio y apariencia) no pide ubicación ni va a la red.
  */
 class WeatherRepository(private val context: Context, private val prefs: Preferences) {
     private val store = context.getSharedPreferences(STORE, Context.MODE_PRIVATE)

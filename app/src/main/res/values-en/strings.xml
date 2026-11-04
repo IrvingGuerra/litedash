@@ -96,7 +96,7 @@
     <string name="templates_tab_wallpaper">Background</string>
     <string name="templates_road_help">Your car on the road with your speed and trip distance (OBD or GPS).</string>
     <string name="templates_speed_help">No car on the home screen. Speed comes from GPS; no OBD needed.</string>
-    <string name="templates_wallpaper_help">Your background photo with a few cards on top and the time floating. Pick the background here or in Appearance.</string>
+    <string name="templates_wallpaper_help">Your background photo with a few cards on top and the time floating. Pick the background here or in Home &amp; look.</string>
     <string name="add">Add</string>
     <string name="add_tile">Add to home</string>
     <string name="no_room">No room left: remove or shrink something.</string>
@@ -183,7 +183,7 @@
     <string name="screens_vertical">Vertical screens</string>
     <string name="your_screen">· Your screen</string>
     <string name="recommended">Recommended</string>
-    <string name="appearance">Appearance</string>
+    <string name="appearance">Home &amp; look</string>
     <string name="back_home">Back to home</string>
     <string name="search_car">Find your car (make, model or year)</string>
     <string name="delete_car">Delete download · %.1f MB</string>
@@ -628,7 +628,7 @@
     <string name="tires_alerts">Alerts</string>
     <string name="tires_alerts_help">Tires are read even when not on screen, so you are warned in time</string>
     <string name="tires_on_home">On the home screen</string>
-    <string name="tires_tile_hint">The Tires widget can also be added in Settings → Home or while arranging your home</string>
+    <string name="tires_tile_hint">The Tires widget can also be added in Settings → Home &amp; look or while arranging your home</string>
     <string name="tires_car_tap">Tapping the car</string>
     <string name="tires_car_tap_big">Show it big</string>
     <string name="tires_car_tap_tires">Show its tires</string>

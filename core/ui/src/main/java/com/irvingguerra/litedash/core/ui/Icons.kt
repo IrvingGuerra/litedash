@@ -87,8 +87,6 @@ object Icons {
     val corner = icon("M19 11v8h-8 M19 19l-7 -7")
     val dashboard = icon("M4 4h7v9h-7z M13 4h7v5h-7z M13 11h7v9h-7z M4 15h7v5h-7z")
     val openExternal = icon("M14 4h6v6 M20 4l-9 9 M18 14v6h-14v-14h6")
-    /** El tema (oscuro o claro): la misma luna. */
-    val theme = moon
     val info = icon("M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0 M12 11v5 M12 7.5v.5")
     /** Flecha para entrar (›). */
     val chevron = icon("M9 6l6 6l-6 6")

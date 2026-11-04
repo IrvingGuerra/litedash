@@ -6,6 +6,12 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
+## [1.4.66] - 2026-11-04
+
+### Cambiado
+- **Ajustes: Inicio y Apariencia en una sola sección**, "Inicio y apariencia", justo después de Tu auto,
+  con pestañas Acomodo · Widgets · General · Día y noche · Imágenes · Unidades.
+
 ## [1.4.65] - 2026-11-04
 
 ### Agregado

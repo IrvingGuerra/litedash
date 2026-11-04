@@ -86,7 +86,7 @@ fun WeatherRefresh(repo: WeatherRepository, revision: Int) {
     }
 }
 
-/** Ajustes → Apariencia: prender o apagar el clima (al prenderlo pide la ubicación aproximada). */
+/** Ajustes → Inicio y apariencia: prender o apagar el clima (al prenderlo pide la ubicación aproximada). */
 @Composable
 fun WeatherSwitch(repo: WeatherRepository) {
     val enable = rememberEnableWeather(repo)

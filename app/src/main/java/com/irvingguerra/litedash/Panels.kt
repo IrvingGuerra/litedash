@@ -527,8 +527,8 @@ private fun CarPreview(e: CatalogEntry, cars: CarRepository, progress: Float?, o
 
 /** Secciones de Ajustes en el orden del menú: cada cosa vive en un solo lugar. */
 enum class SettingsSection(val title: Int) {
-    CAR(R.string.your_car), HOME(R.string.home), APPS(R.string.apps_section), WORKSHOP(R.string.workshop), TIRES(R.string.tires),
-    WHEEL(R.string.wheel), APPEARANCE(R.string.appearance), MODULES(R.string.modules), SYSTEM(R.string.system),
+    CAR(R.string.your_car), APPEARANCE(R.string.appearance), APPS(R.string.apps_section), WORKSHOP(R.string.workshop),
+    TIRES(R.string.tires), WHEEL(R.string.wheel), MODULES(R.string.modules), SYSTEM(R.string.system),
 }
 
 /**
@@ -542,9 +542,8 @@ private fun SettingsSection.shown(d: Dependencies, current: SettingsSection) = t
 }
 
 private fun SettingsSection.icon() = when (this) {
-    SettingsSection.APPEARANCE -> Icons.theme
+    SettingsSection.APPEARANCE -> Icons.dashboard
     SettingsSection.CAR -> Icons.car
-    SettingsSection.HOME -> Icons.dashboard
     SettingsSection.APPS -> Icons.apps
     SettingsSection.WHEEL -> Icons.wheel
     SettingsSection.WORKSHOP -> Icons.engine
@@ -594,9 +593,8 @@ fun SettingsPanel(
             ) {
                 Label(stringResource(section.title), Typography.title.copy(fontSize = 30.sp), maxLines = 1)
                 when (section) {
-                    SettingsSection.APPEARANCE -> Appearance(d, revision)
+                    SettingsSection.APPEARANCE -> Appearance(d, revision, onEdit, onTemplates)
                     SettingsSection.CAR -> CarSettings(d)
-                    SettingsSection.HOME -> HomeSettings(d, onEdit, onTemplates)
                     SettingsSection.APPS -> AppsSettings(d)
                     SettingsSection.WHEEL -> {
                         SettingsCard(help = stringResource(R.string.wheel_help)) { WheelSettings(d.wheel, d.prefs) }
@@ -690,16 +688,19 @@ internal val ThemeOptions = listOf(
 )
 
 /** Pestañas de Apariencia: lo general, día y noche (tema, cuándo es de noche, brillo), tus imágenes y unidades. */
+/** Inicio y apariencia: primero lo del inicio (acomodo y widgets), luego cómo se ve todo. */
 private enum class AppearanceTab(val title: Int) {
-    GENERAL(R.string.tab_general), DAY_NIGHT(R.string.tab_day_night), IMAGES(R.string.tab_images), UNITS(R.string.units_title),
+    LAYOUT(R.string.tab_layout), WIDGETS(R.string.tab_tiles), GENERAL(R.string.tab_general), DAY_NIGHT(R.string.tab_day_night), IMAGES(R.string.tab_images), UNITS(R.string.units_title),
 }
 
 @Composable
-private fun Appearance(d: Dependencies, revision: Int) {
+private fun Appearance(d: Dependencies, revision: Int, onEdit: () -> Unit, onTemplates: () -> Unit) {
     val prefs = d.prefs
     val c = LocalColors.current
     val context = LocalContext.current
     when (AppearanceTab.entries[tabs(AppearanceTab.entries.map { it.title }, "appearance")]) {
+        AppearanceTab.LAYOUT -> HomeLayout(d, onEdit, onTemplates)
+        AppearanceTab.WIDGETS -> Tiles(d, onEdit)
         AppearanceTab.GENERAL -> {
             SettingsCard(stringResource(R.string.your_name), stringResource(R.string.your_name_help)) {
                 TextInput(prefs.driverName ?: "", { prefs.driverName = it.take(24).ifBlank { null } }, stringResource(R.string.your_name_hint), Modifier.fillMaxWidth())
@@ -811,11 +812,9 @@ private fun UnitsSettings(d: Dependencies) {
 }
 
 @Composable
-private fun HomeSettings(d: Dependencies, onEdit: () -> Unit, onTemplates: () -> Unit) {
+private fun HomeLayout(d: Dependencies, onEdit: () -> Unit, onTemplates: () -> Unit) {
     val prefs = d.prefs
     val context = LocalContext.current
-    val tab = tabs(listOf(R.string.tab_layout, R.string.tab_tiles), "home")
-    if (tab == 1) return Tiles(d, onEdit)
     SettingsCard(stringResource(R.string.layout), stringResource(R.string.arrange_help)) {
         FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Button(stringResource(R.string.arrange), onEdit, primary = true)

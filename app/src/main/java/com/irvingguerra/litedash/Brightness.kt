@@ -88,7 +88,7 @@ private fun requestWriteSettings(context: Context) {
     runCatching { context.startActivity(intent) }
 }
 
-/** Ajustes → Apariencia → Brillo: encender, cuánto de día y de noche, y en todas las apps. */
+/** Ajustes → Inicio y apariencia → Brillo: encender, cuánto de día y de noche, y en todas las apps. */
 @Composable
 fun BrightnessSettings(prefs: Preferences, revision: Int) {
     val c = LocalColors.current

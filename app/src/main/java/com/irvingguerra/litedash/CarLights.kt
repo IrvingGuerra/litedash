@@ -105,7 +105,7 @@ private sealed interface LearnStep {
     data object Nothing : LearnStep
 }
 
-/** Ajustes → Apariencia → ¿Cuándo es de noche? → Luces del auto: aprender y ver el estado. */
+/** Ajustes → Inicio y apariencia → ¿Cuándo es de noche? → Luces del auto: aprender y ver el estado. */
 @Composable
 fun LightsSettings(prefs: Preferences) {
     val c = LocalColors.current
