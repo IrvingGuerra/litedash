@@ -88,6 +88,8 @@ object Icons {
     /** El tema (oscuro o claro): la misma luna. */
     val theme = moon
     val info = icon("M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0 M12 11v5 M12 7.5v.5")
+    /** Flecha para entrar (›). */
+    val chevron = icon("M9 6l6 6l-6 6")
     val back = icon("M9 14l-5 -5l5 -5 M4 9h11a5 5 0 0 1 0 10h-3")
     /** Volante: aro, centro y tres rayos. */
     val wheel = icon("M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0 M10 12a2 2 0 1 0 4 0a2 2 0 1 0 -4 0 M3.5 10.5l6.5 1 M14 11.5l6.5 -1 M12 14v7")

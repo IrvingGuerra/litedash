@@ -126,10 +126,9 @@ internal fun SourceRow(
 ) {
     val c = LocalColors.current
     val current = song?.pkg ?: repo.preferred
-    // La radio tiene su propia pieza: aquí solo USB y Bluetooth.
-    val linked = SourceKind.entries.filter { it != SourceKind.RADIO }.mapNotNull { k -> repo.appFor(k)?.let { k to it } }
-    val apps = listOfNotNull(repo.preferred, song?.pkg).distinct().filter { pkg -> !repo.isOwn(pkg) && linked.none { it.second == pkg } }
-    val usbHint = repo.usbDrive != null && repo.appFor(SourceKind.USB) == null
+    val linked = linkedSources(repo)
+    val apps = otherApps(repo, song, linked)
+    val usbHint = usbHint(repo)
     if (linked.isEmpty() && apps.isEmpty() && !usbHint) return
     val ownNow = if (song != null && repo.isOwn(song.pkg)) song.source else null
     val selected = if (browsing != null) setOf(browsing) else linked.filter { (kind, pkg) -> if (repo.isOwn(pkg)) ownNow == kind else current == pkg }.map { it.first }.toSet()
@@ -145,6 +144,21 @@ internal fun SourceRow(
         for (pkg in apps) Chip(repo.appName(pkg), browsing == null && current == pkg, c) { repo.switchTo(pkg) }
     }
 }
+
+/** ¿[SourceRow] tiene algo que mostrar? (si no, el encabezado pone el nombre de la app). */
+internal fun hasSourceRow(repo: MusicRepository, song: Song?): Boolean {
+    val linked = linkedSources(repo)
+    return linked.isNotEmpty() || otherApps(repo, song, linked).isNotEmpty() || usbHint(repo)
+}
+
+// La radio tiene su propia pieza: aquí solo USB y Bluetooth.
+private fun linkedSources(repo: MusicRepository) =
+    SourceKind.entries.filter { it != SourceKind.RADIO }.mapNotNull { k -> repo.appFor(k)?.let { k to it } }
+
+private fun otherApps(repo: MusicRepository, song: Song?, linked: List<Pair<SourceKind, String>>) =
+    listOfNotNull(repo.preferred, song?.pkg).distinct().filter { pkg -> !repo.isOwn(pkg) && linked.none { it.second == pkg } }
+
+private fun usbHint(repo: MusicRepository) = repo.usbDrive != null && repo.appFor(SourceKind.USB) == null
 
 /** Botón de fuente, redondo y chico (la fila cabe en pantallas chicas). */
 @Composable

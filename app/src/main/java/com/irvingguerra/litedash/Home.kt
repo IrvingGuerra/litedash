@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.EaseInOut
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -75,6 +76,8 @@ import com.irvingguerra.litedash.feature.apps.AppIcon
 import com.irvingguerra.litedash.feature.apps.AppRepository
 import com.irvingguerra.litedash.feature.apps.rememberApps
 import com.irvingguerra.litedash.feature.car.CarPackage
+import com.irvingguerra.litedash.feature.car.CarRise
+import com.irvingguerra.litedash.feature.car.REAR_TURN
 import com.irvingguerra.litedash.feature.car.CarRepository
 import com.irvingguerra.litedash.feature.dashboard.Dashboard
 import com.irvingguerra.litedash.feature.dashboard.DashboardState
@@ -157,6 +160,20 @@ class Dependencies(
     /** Ya se usó un adaptador OBD alguna vez (sin crear el escáner para saberlo). */
     val hasObdAdapter get() = obdSaved()
 
+    /**
+     * El módulo OBD prendido (de fábrica, si ya hay adaptador). Apagado nada se conecta solo;
+     * apagarlo desconecta.
+     */
+    var obdModule: Boolean
+        get() = prefs.obdModule ?: hasObdAdapter
+        set(on) {
+            prefs.obdModule = on
+            if (!on) obdIfCreated()?.disconnect()
+        }
+
+    /** Hay adaptador y el módulo está prendido: las piezas pueden conectarse solas. */
+    val obdAuto get() = hasObdAdapter && obdModule
+
     /** El escáner si ya existe, sin crearlo (una pieza solo quiere saber si está conectado). */
     fun obdIfCreated(): ObdRepository? = if (obdCreated.value) obdLazy.value else null
 
@@ -192,8 +209,8 @@ class TileActions(
     val onCarBounds: (String, Rect) -> Unit,
     /** Si la pieza (por id) se esconde porque se ve en grande; se lee al dibujar (no recompone el tablero en cada cuadro de la animación). */
     val carHidden: (String) -> Boolean,
-    /** Las llantas a pantalla completa, creciendo desde la pieza [String] (null = desde el centro). */
-    val onTires: (String?) -> Unit,
+    /** Las llantas a pantalla completa. */
+    val onTires: () -> Unit,
     /** Acomodando el inicio (las pastillas de llantas se esconden: estorban a los botones). */
     val editing: () -> Boolean,
 )
@@ -203,7 +220,7 @@ class TileActions(
 fun TileContent(d: Dependencies, p: Tile, apps: List<App>, car: CarPackage?, revision: Int, actions: TileActions) {
     val context = LocalContext.current
     when (p.type) {
-        TileTypes.CAR, TileTypes.ROAD, TileTypes.IMAGE -> Box(
+        TileTypes.CAR, TileTypes.ROAD, TileTypes.IMAGE -> BoxWithConstraints(
             Modifier
                 .fillMaxSize()
                 .onGloballyPositioned { actions.onCarBounds(p.id, it.boundsInRoot()) }
@@ -218,8 +235,10 @@ fun TileContent(d: Dependencies, p: Tile, apps: List<App>, car: CarPackage?, rev
                 onClick = { if (p.type == TileTypes.IMAGE && p.data.isEmpty()) actions.onPanel(Panel.CustomizeImage(p.id)) else actions.onCarOnly(p) },
                 modifier = Modifier.fillMaxSize(),
             )
-            // Las llantas en las esquinas del auto o de tu imagen (la carretera ya va llena).
-            if (p.type != TileTypes.ROAD && !actions.editing()) TirePills(d) { actions.onTires(p.id) }
+            // Las llantas en las esquinas del auto o de tu imagen (la carretera ya va llena). En una
+            // pieza chica las cuatro pastillas taparían todo: ahí solo la pieza Llantas o el aviso.
+            val roomy = maxWidth >= PILLS_MIN_WIDTH && maxHeight >= PILLS_MIN_HEIGHT
+            if (p.type != TileTypes.ROAD && roomy && !actions.editing()) TirePills(d, actions.onTires)
         }
         TileTypes.MUSIC -> MusicTile(d.music, revision, onExpand = actions.onMusic)
         TileTypes.RADIO -> RadioTile(d.music, revision, onExpand = actions.onRadio)
@@ -235,7 +254,7 @@ fun TileContent(d: Dependencies, p: Tile, apps: List<App>, car: CarPackage?, rev
         TileTypes.WORKSHOP -> WorkshopTile(d) { actions.onPanel(Panel.Workshop) }
         TileTypes.PROJECTION -> ProjectionTile(d, apps) { actions.onPanel(Panel.Drawer) }
         TileTypes.TIRES -> Box(Modifier.fillMaxSize().onGloballyPositioned { actions.onCarBounds(p.id, it.boundsInRoot()) }) {
-            TiresTile(d, onOpen = { actions.onTires(p.id) }, onSettings = { actions.onPanel(Panel.TiresSettings) })
+            TiresTile(d, onOpen = actions.onTires, onSettings = { actions.onPanel(Panel.TiresSettings) })
         }
         TileTypes.NAVIGATE -> {
             val app = mapApp(d, apps, p.data)
@@ -285,20 +304,32 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
     val tileBounds = remember { mutableStateMapOf<String, Rect>() }
     // Las llantas a pantalla completa: [tiresOpen] es a dónde va, [tiresShown] si sigue en pantalla.
     var tiresOpen by remember { mutableStateOf(false) }
-    var tiresFrom by remember { mutableStateOf(Rect.Zero) }
     var tiresShown by remember { mutableStateOf(false) }
     val tiresProgress = remember { Animatable(0f) }
-    LaunchedEffect(tiresOpen) {
-        if (tiresOpen) {
-            tiresShown = true
-            tiresProgress.animateTo(1f, tween(420, easing = FastOutSlowInEasing))
-        } else if (tiresShown) {
-            tiresProgress.animateTo(0f, tween(320, easing = FastOutSlowInEasing))
-            tiresShown = false
+    // Tocar el auto 3D con Llantas activo: crece, gira de espaldas, la cámara sube y termina en
+    // las llantas ([carTires] = este viaje; [rise] lo dibuja el auto en grande).
+    var carTires by remember { mutableStateOf(false) }
+    val riseProgress = remember { Animatable(0f) }
+    val rise = remember {
+        CarRise().apply {
+            progress = { riseProgress.value }
+            morph = { tiresProgress.value }
         }
     }
-    fun openTires(from: Rect) {
-        tiresFrom = from
+    LaunchedEffect(tiresOpen) {
+        // Desde el auto, un fundido más largo (la subida se encima con la vista de arriba).
+        val ms = if (carTires) 250 else 180
+        if (tiresOpen) {
+            tiresShown = true
+            tiresProgress.animateTo(1f, tween(ms))
+        } else if (tiresShown) {
+            tiresProgress.animateTo(0f, tween(ms))
+            tiresShown = false
+            // De regreso: la cámara baja y el auto vuelve a su pieza.
+            if (carTires) carOnly = false
+        }
+    }
+    fun openTires() {
         tiresOpen = true
     }
     fun backToDashboard() {
@@ -315,16 +346,37 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
     LaunchedEffect(carOnly) {
         if (carOnly) {
             carShown = true
+            val toTires = carTires
+            if (toTires) {
+                // Gira de espaldas mientras crece y ya va cargando la subida.
+                rise.turn = REAR_TURN
+                rise.wanted = car?.rise != null
+            }
             // Crece cuando la imagen grande ya está pintada (en su pieza se ve igual que la
             // chica); si tarda, crece de todos modos.
             withTimeoutOrNull(600) { snapshotFlow { carReady }.first { it } }
             carProgress.animateTo(1f, tween(480, easing = FastOutSlowInEasing))
+            if (!toTires) return@LaunchedEffect
+            if (car?.rise != null) {
+                // Si no están todos los cuadros en 300 ms, sube con los que haya.
+                withTimeoutOrNull(300) { snapshotFlow { rise.complete }.first { it } }
+                if (rise.canPlay()) riseProgress.animateTo(1f, tween(900, easing = EaseInOut))
+            }
+            openTires()
         } else if (carShown) {
+            if (riseProgress.value > 0f) riseProgress.animateTo(0f, tween((900 * riseProgress.value).toInt(), easing = EaseInOut))
+            // Regresa a la vuelta donde lo dejó mientras se encoge.
+            rise.turn = null
             carProgress.animateTo(0f, tween(400, easing = FastOutSlowInEasing))
             carShown = false
             carReady = false
+            carTires = false
+            rise.release()
         }
     }
+    // Con Llantas activo, la subida del auto se baja aparte (una vez; unos cientos de KB).
+    val tiresOn = d.hasTpmsSource
+    LaunchedEffect(car, tiresOn) { if (tiresOn) d.cars.fetchRise(car) }
 
     // Cada toque y cada botón del volante reinician la cuenta del modo estacionado. Se
     // leen dentro del efecto (no al armar la pantalla): tocar no vuelve a armar el inicio.
@@ -367,10 +419,14 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
             onNavigate = { app -> openNavigation(context, d.apps, app) },
             onMusic = { expanded = Expanded.MUSIC },
             onRadio = { expanded = Expanded.RADIO },
-            onCarOnly = { bigTile = it; carOnly = true },
+            onCarOnly = {
+                bigTile = it
+                carTires = it.type == TileTypes.CAR && d.hasTpmsSource && d.prefs.carTap == CarTap.TIRES
+                carOnly = true
+            },
             onCarBounds = { id, rect -> if (tileBounds[id] != rect) tileBounds[id] = rect },
             carHidden = { id -> carShown && bigTile?.id == id && carProgress.value > 0f },
-            onTires = { id -> openTires(id?.let { tileBounds[it] } ?: Rect.Zero) },
+            onTires = { openTires() },
             editing = { editing },
         )
     }
@@ -425,7 +481,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
           }
           val favorites = remember(apps, d.prefs.dock, d.prefs.musicApp) { dockFavorites(d, apps) }
           Row(Modifier.fillMaxSize()) {
-            val tiresWarning = @Composable { size: Dp -> TiresRailIndicator(d, size) { actions.onTires(null) } }
+            val tiresWarning = @Composable { size: Dp -> TiresRailIndicator(d, size, actions.onTires) }
             if (rail) Rail(
                 repo = d.apps,
                 favorites = favorites,
@@ -454,7 +510,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                     if (d.prefs.welcomeSeen && !editing) {
                         if (!d.prefs.dontAskHome && !isShortScreen()) HomePrompt(d.prefs, revision)
                         EngineAlertBanner(d)
-                        TiresAlertBanner(d) { actions.onTires(null) }
+                        TiresAlertBanner(d, actions.onTires)
                         TripRecorderEffect(d)
                         if (!isShortScreen()) ReminderBanner(d.reminders)
                         UpdateBanner(d.updater, onOpen = { panel = Panel.About })
@@ -528,7 +584,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                     Panel.TiresSettings -> SettingsSection.TIRES
                     else -> SettingsSection.CAR
                 },
-                onTires = { panel = null; openTires(Rect.Zero) },
+                onTires = { panel = null; openTires() },
             )
             Panel.Templates -> TemplatesPanel(d.dashboard, d.prefs, close = { panel = null })
             Panel.AddTile -> AddTilePanel(
@@ -545,14 +601,18 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
 
         val big = bigTile
         if (carShown && panel == null && big != null) {
-            CarOnly(d, car, big, tileBounds[big.id] ?: Rect.Zero, { carProgress.value }, backdrop, onTap = { carOnly = false }, onReady = { carReady = true })
+            CarOnly(
+                d, car, big, tileBounds[big.id] ?: Rect.Zero, { carProgress.value }, backdrop,
+                onTap = { carOnly = false }, onReady = { carReady = true }, rise = if (carTires) rise else null,
+            )
         }
 
         if (tiresShown && panel == null) {
             TiresFull(
-                d, tiresFrom, { tiresProgress.value },
+                d, { tiresProgress.value },
                 onClose = { tiresOpen = false },
                 onSettings = { tiresOpen = false; panel = Panel.TiresSettings },
+                onCarBounds = if (carTires) { b -> rise.target = b } else null,
             )
         }
 
@@ -788,3 +848,7 @@ private fun statusBarHiddenHeight(): Dp {
     val now = WindowInsets.statusBars.getTop(density)
     return with(density) { (always - now).coerceAtLeast(0).toDp() }
 }
+
+/** Tamaño mínimo de la pieza del auto o imagen para ponerle las pastillas de llantas en sus esquinas. */
+private val PILLS_MIN_WIDTH = 220.dp
+private val PILLS_MIN_HEIGHT = 160.dp

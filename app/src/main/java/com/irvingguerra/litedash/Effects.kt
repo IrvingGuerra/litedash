@@ -24,11 +24,11 @@ fun ReadyNow(onReady: (() -> Unit)?) {
 
 /**
  * Con un adaptador OBD ya guardado, se reconecta solo al entrar la pieza (sin abrir el
- * Taller). Sin adaptador no hace nada: el escáner ni se crea.
+ * Taller). Sin adaptador o con el módulo apagado no hace nada: el escáner ni se crea.
  */
 @Composable
 fun AutoConnectObd(d: Dependencies) {
-    LaunchedEffect(Unit) { if (d.hasObdAdapter) d.obd.connect() }
+    LaunchedEffect(Unit) { if (d.obdAuto) d.obd.connect() }
 }
 
 /**

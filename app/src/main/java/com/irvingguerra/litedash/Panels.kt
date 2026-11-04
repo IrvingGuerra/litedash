@@ -5,7 +5,10 @@ import com.irvingguerra.litedash.feature.apps.rememberApps
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import android.net.Uri
 import com.irvingguerra.litedash.feature.obd.ObdState
+import com.irvingguerra.litedash.core.ui.Switch
 import com.irvingguerra.litedash.core.ui.SwitchRow
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.text.font.FontWeight
 import com.irvingguerra.litedash.core.ui.Segmented
 import com.irvingguerra.litedash.core.ui.Radius
 import android.app.Activity
@@ -588,10 +591,7 @@ fun SettingsPanel(
                     }
                     SettingsSection.WORKSHOP -> Workshop(d, onTires)
                     SettingsSection.TIRES -> TiresSettings(d)
-                    SettingsSection.MODULES -> {
-                        Label(stringResource(R.string.modules_help), Typography.body, c.textMuted)
-                        Modules(d, revision, onTires = { section = SettingsSection.TIRES })
-                    }
+                    SettingsSection.MODULES -> Modules(d, revision, open = { section = it })
                     SettingsSection.SYSTEM -> AndroidSettings()
                     SettingsSection.ABOUT -> About(d)
                 }
@@ -611,6 +611,9 @@ internal fun tabs(titles: List<Int>, key: String): Int {
     Segmented(titles.mapIndexed { i, t -> i to stringResource(t) }, selected, { TabMemory[key] = it }, Modifier.horizontalScroll(rememberScrollState()))
     return selected
 }
+
+/** Las pestañas de Ajustes → Apps (Música 0, Radio 1…). */
+private const val APPS_TABS = "apps"
 
 /** La pestaña elegida en cada sección (al cambiar de sección y regresar sigue ahí). */
 private val TabMemory = mutableStateMapOf<String, Int>()
@@ -803,7 +806,7 @@ private fun HomeSettings(d: Dependencies, onEdit: () -> Unit, onTemplates: () ->
 @Composable
 private fun AppsSettings(d: Dependencies) {
     val c = LocalColors.current
-    when (tabs(listOf(R.string.music, R.string.tab_radio, R.string.tab_navigation, R.string.tab_favorites, R.string.tab_split), "apps")) {
+    when (tabs(listOf(R.string.music, R.string.tab_radio, R.string.tab_navigation, R.string.tab_favorites, R.string.tab_split), APPS_TABS)) {
         0 -> {
             SettingsCard { MusicSettings(d) }
             SettingsCard(stringResource(R.string.music_sources), stringResource(R.string.music_sources_help)) { MusicSourcesSettings(d) }
@@ -1049,7 +1052,7 @@ private fun Tiles(d: Dependencies, onEdit: () -> Unit) {
             val onHome = d.dashboard.tiles.any { it.type == spec.type }
             val didNotFit = noRoom == spec.type && !onHome
             val detail = if (didNotFit) stringResource(R.string.no_room) else spec.detail?.let { stringResource(it) } ?: ""
-            ModuleRow(iconOf(spec.type), stringResource(spec.name), detail, if (didNotFit) c.danger else c.textMuted) {
+            TileRow(iconOf(spec.type), stringResource(spec.name), detail, if (didNotFit) c.danger else c.textMuted) {
                 when {
                     onHome -> Label(stringResource(R.string.on_your_home), Typography.small, c.accent)
                     didNotFit -> Button(stringResource(R.string.arrange), onEdit, primary = true)
@@ -1061,63 +1064,42 @@ private fun Tiles(d: Dependencies, onEdit: () -> Unit) {
 }
 
 /**
- * Módulos: lo que LiteDash enciende aparte, con su permiso. Apagado no corre ni pide nada;
- * las piezas que lo usan lo piden al agregarlas.
+ * Módulos: cada uno con su interruptor y, prendido, una flecha a sus ajustes. Apagado todo en
+ * gris. Apagado no corre ni pide nada; los permisos (avisos y ubicación) se dan con Android.
  */
 @Composable
-private fun Modules(d: Dependencies, revision: Int, onTires: () -> Unit) {
-    val c = LocalColors.current
+private fun Modules(d: Dependencies, revision: Int, open: (SettingsSection) -> Unit) {
     val context = LocalContext.current
     val (_, returns) = rememberRequestHome()
     // [revision] cambia al volver a la app: los permisos que se dan en Ajustes de Android se notan al regresar.
     val notifications = remember(returns, revision) { d.music.hasPermission() }
-    val location = remember(returns, revision) { d.trip.hasPermission() }
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        val obd = d.obdIfCreated()?.state == ObdState.ON
-        ModuleRow(Icons.engine, stringResource(R.string.module_obd), stringResource(if (obd) R.string.module_obd_on else if (d.hasObdAdapter) R.string.module_obd_saved else R.string.module_obd_off)) {
-            Label(stringResource(if (obd) R.string.module_on else R.string.module_off), Typography.small, if (obd) c.accent else c.textMuted)
-        }
-        ModuleRow(Icons.bell, stringResource(R.string.module_notifications), stringResource(R.string.module_notifications_help)) {
-            if (notifications) Label(stringResource(R.string.module_on), Typography.small, c.accent)
-            else Button(stringResource(R.string.module_turn_on), { d.music.requestPermission() })
-        }
-        ModuleRow(Icons.location, stringResource(R.string.module_location), stringResource(R.string.module_location_help)) {
-            if (location) Label(stringResource(R.string.module_on), Typography.small, c.accent)
-            else Button(stringResource(R.string.module_settings), { openAppSettings(context) })
-        }
-        OwnPlayerModules(d)
-        // Llantas: encendido = hay una fuente elegida (sin crear el módulo para saberlo).
-        val tires = d.hasTpmsSource
-        ModuleRow(Icons.tire, stringResource(R.string.module_tpms), stringResource(R.string.module_tpms_help)) {
-            Label(stringResource(if (tires) R.string.module_on else R.string.module_off), Typography.small, if (tires) c.accent else c.textMuted)
-            Button(stringResource(R.string.tires_open_settings), onTires, primary = !tires)
-        }
-        ModuleRow(Icons.car, stringResource(R.string.module_cameras), stringResource(R.string.module_cameras_help)) {
-            Label(stringResource(R.string.module_soon), Typography.small, c.textMuted)
-        }
-    }
-}
-
-/**
- * Reproductor USB y radio por internet: los módulos del reproductor propio (también están en
- * Ajustes → Apps). Prender y apagar, con sus permisos, va por los mismos helpers de
- * MusicMapSettings.kt.
- */
-@Composable
-private fun OwnPlayerModules(d: Dependencies) {
+    val (location, askLocation) = rememberGpsPermission(d)
     val setUsb = rememberUsbPlayerToggle(d)
     val setRadio = rememberInternetRadioToggle(d)
-    ModuleRow(Icons.usb, stringResource(R.string.module_usb_player), stringResource(R.string.module_usb_player_help)) {
-        ModuleToggle(d.prefs.usbPlayer, setUsb)
+    fun apps(tab: Int) {
+        selectTab(APPS_TABS, tab)
+        open(SettingsSection.APPS)
     }
-    ModuleRow(Icons.radio, stringResource(R.string.module_radio), stringResource(R.string.module_radio_help)) {
-        ModuleToggle(d.prefs.internetRadio, setRadio)
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        ModuleRow(Icons.engine, stringResource(R.string.module_obd), d.obdModule, { d.obdModule = it }) { open(SettingsSection.WORKSHOP) }
+        // Llantas: prendido = hay una fuente (sin crear el módulo para saberlo). Al prender vuelve
+        // la última que se usó; si nunca hubo, a elegirla en Ajustes → Llantas.
+        ModuleRow(Icons.tire, stringResource(R.string.module_tpms), d.hasTpmsSource, { on ->
+            val tpms = d.tpms
+            if (!on) tpms.source = null
+            else tpms.lastSource?.let { tpms.source = it } ?: open(SettingsSection.TIRES)
+        }) { open(SettingsSection.TIRES) }
+        ModuleRow(Icons.usb, stringResource(R.string.module_usb_player), d.prefs.usbPlayer, setUsb) { apps(0) }
+        ModuleRow(Icons.radio, stringResource(R.string.module_radio), d.prefs.internetRadio, setRadio) { apps(1) }
+        // Permisos: prender los pide; apagar solo se puede en Ajustes de Android.
+        ModuleRow(Icons.bell, stringResource(R.string.module_notifications), notifications, { on ->
+            if (on) d.music.requestPermission() else openAppSettings(context)
+        })
+        ModuleRow(Icons.location, stringResource(R.string.module_location), location, { on ->
+            if (on) askLocation() else openAppSettings(context)
+        })
+        ModuleRow(Icons.car, stringResource(R.string.module_cameras), on = false, onChange = null, soon = true)
     }
-}
-
-@Composable
-private fun ModuleToggle(on: Boolean, onChange: (Boolean) -> Unit) {
-    Button(stringResource(if (on) R.string.module_turn_off else R.string.module_turn_on), { onChange(!on) }, primary = !on)
 }
 
 /**
@@ -1158,8 +1140,9 @@ private fun openAppSettings(context: Context) {
     runCatching { context.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
 }
 
+/** Un renglón de Inicio → Piezas: ícono, nombre, detalle y su botón. */
 @Composable
-private fun ModuleRow(
+private fun TileRow(
     icon: ImageVector,
     title: String,
     detail: String,
@@ -1179,6 +1162,59 @@ private fun ModuleRow(
             Label(detail, Typography.small, detailColor, maxLines = 2)
         }
         action()
+    }
+}
+
+/**
+ * Un módulo: ícono, nombre e interruptor (todo eso se toca para prender o apagar) y, prendido y
+ * con [onOpen], una flecha redonda aparte que entra a sus ajustes. Apagado, en gris. [soon]: aún
+ * no existe (interruptor apagado sin tocar y la etiqueta "Pronto").
+ */
+@Composable
+private fun ModuleRow(
+    icon: ImageVector,
+    title: String,
+    on: Boolean,
+    onChange: ((Boolean) -> Unit)?,
+    soon: Boolean = false,
+    onOpen: (() -> Unit)? = null,
+) {
+    val c = LocalColors.current
+    val shape = RoundedCornerShape(Radius.card)
+    val dim = if (on) 1f else 0.45f
+    Row(
+        Modifier.fillMaxWidth().height(76.dp).clip(shape).background(c.surface).border(1.dp, c.line, shape),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Row(
+            Modifier
+                .weight(1f)
+                .fillMaxHeight()
+                .then(if (onChange != null) Modifier.clickable { onChange(!on) } else Modifier)
+                .padding(start = 20.dp, end = 16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            Icon(icon, if (on) c.accent else c.textMuted.copy(alpha = dim), 28.dp)
+            Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Label(title, Typography.subtitle, if (on) c.text else c.textMuted.copy(alpha = dim), maxLines = 1, modifier = Modifier.weight(1f, fill = false))
+                if (soon) Label(
+                    stringResource(R.string.module_soon),
+                    Typography.small.copy(fontWeight = FontWeight.SemiBold),
+                    c.textMuted,
+                    maxLines = 1,
+                    modifier = Modifier.clip(RoundedCornerShape(50)).background(c.surfaceHigh).padding(horizontal = 10.dp, vertical = 4.dp),
+                )
+            }
+            Switch(on, Modifier.graphicsLayer { alpha = if (soon) 0.45f else 1f })
+        }
+        // La flecha va aparte (con su línea): entrar no prende ni apaga nada.
+        Box(Modifier.width(76.dp).fillMaxHeight(), contentAlignment = Alignment.Center) {
+            if (on && onOpen != null) {
+                Box(Modifier.align(Alignment.CenterStart).width(1.dp).fillMaxHeight(0.5f).background(c.line))
+                IconButton(Icons.chevron, onOpen, size = 48.dp, background = c.surfaceHigh, color = c.text)
+            }
+        }
     }
 }
 

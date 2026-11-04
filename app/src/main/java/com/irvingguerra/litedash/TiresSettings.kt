@@ -439,6 +439,15 @@ private fun HomeTiresCard(d: Dependencies) {
                 { d.prefs.tiresOnCar = it },
             )
         }
+        // Tocar el auto 3D: la cámara sube a ver las llantas, o solo crece como siempre.
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Label(stringResource(R.string.tires_car_tap), Typography.body, modifier = Modifier.weight(1f).padding(end = 12.dp))
+            Segmented(
+                listOf(CarTap.BIG to stringResource(R.string.tires_car_tap_big), CarTap.TIRES to stringResource(R.string.tires_car_tap_tires)),
+                d.prefs.carTap,
+                { d.prefs.carTap = it },
+            )
+        }
         SwitchRow(stringResource(R.string.tires_banner), d.prefs.tiresBanner, { d.prefs.tiresBanner = it })
         SwitchRow(stringResource(R.string.tires_rail), d.prefs.tiresRail, { d.prefs.tiresRail = it }, stringResource(R.string.tires_rail_help))
         Row(verticalAlignment = Alignment.CenterVertically) {

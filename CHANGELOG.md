@@ -6,6 +6,31 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
+## [1.4.55] - 2026-11-03
+
+### Arreglado
+- **Música USB que no sonaba**: en pantallas donde Android no indexa la memoria USB, el reproductor
+  de LiteDash ahora busca las canciones en sus carpetas. La primera vez que tocas USB se abre la
+  biblioteca (con tus canciones o un aviso claro si no hay), en vez de quedarse en "Sistema" sin hacer nada.
+- **Música por Bluetooth de la pantalla**: anterior, siguiente y play/pausa ahora funcionan con las
+  apps de Bluetooth que no comparten qué suena (se mandan como los botones del volante), y la pieza
+  ya no abre la app en cada toque ("Abriendo música…" que regresaba sin hacer nada).
+
+### Nuevo
+- **Toca tu auto y ve sus llantas**: con Llantas activo, al tocar el auto 3D del inicio la cámara
+  sube por detrás hasta verlo desde arriba con sus cuatro llantas (otro toque regresa). Se elige en
+  Ajustes → Llantas: verlo en grande o ver sus llantas.
+- **Módulos más claros**: cada módulo con su interruptor; prendido, una flecha te lleva a sus
+  ajustes; apagado, se ve gris.
+
+### Cambiado
+- Las vistas de llantas se abren con un fundido simple (sin números que cuentan ni tarjetas que salen).
+- **Música en grande**: las fuentes (Sistema, USB, Bluetooth) van arriba junto a los botones; ya no
+  queda una franja vacía.
+- Con el reproductor USB de LiteDash prendido, la "app de USB" de Ajustes → Apps → Música se ve gris
+  y explica que no se usa.
+- Las pastillas de llantas ya no salen en piezas de auto o imagen muy chicas (se amontonaban).
+
 ## [1.4.54] - 2026-11-03
 
 ### Nuevo

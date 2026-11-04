@@ -124,7 +124,6 @@
     <string name="show_app">Mostrar</string>
     <string name="app_info">Info de la app</string>
     <string name="modules">Módulos</string>
-    <string name="modules_help">Lo que LiteDash enciende aparte, con su permiso. Lo que no usas no corre, no gasta batería ni pide nada.</string>
     <string name="on_your_home">En tu inicio</string>
     <string name="copy_info">Copiar info de mi pantalla</string>
     <string name="copied">Copiado</string>
@@ -416,27 +415,14 @@
     <string name="tab_favorites">Favoritas</string>
     <string name="favorites_help">Las apps de la barra, en su orden. Agrégalas desde el cajón de apps (deja presionada una).</string>
     <string name="module_obd">Escáner OBD</string>
-    <string name="module_obd_on">Conectado al adaptador · se usa en el Taller y el velocímetro</string>
-    <string name="module_obd_saved">Adaptador guardado · se conecta al usar el velocímetro o el Taller</string>
-    <string name="module_obd_off">Sin adaptador · se configura en el Taller</string>
     <string name="module_notifications">Avisos de otras apps</string>
-    <string name="module_notifications_help">Lo que suena en tu app de música y la siguiente vuelta de Waze o Maps</string>
     <string name="module_location">Ubicación</string>
-    <string name="module_location_help">Clima, Viaje, velocímetro por GPS y brillo por el sol</string>
     <string name="module_usb_player">Reproductor USB</string>
     <string name="module_usb_player_help">LiteDash toca la música de tu memoria USB: carpetas, artistas y álbumes, con carátulas</string>
     <string name="module_radio">Radio por internet</string>
-    <string name="module_radio_help">Estaciones de tu zona (según el GPS) y de todo el mundo, con favoritas; necesita internet</string>
-    <string name="module_turn_off">Desactivar</string>
     <string name="module_tpms">Llantas (TPMS)</string>
-    <string name="module_tpms_help">Presión y temperatura de cada llanta en la vista aérea del auto</string>
     <string name="module_cameras">Cámaras</string>
-    <string name="module_cameras_help">Reversa y cámaras de la pantalla</string>
-    <string name="module_on">Activado</string>
-    <string name="module_off">Apagado</string>
-    <string name="module_turn_on">Activar</string>
-    <string name="module_settings">Permisos</string>
-    <string name="module_soon">Próximamente</string>
+    <string name="module_soon">Pronto</string>
     <string name="tile_car_help">Tu auto en 3D; gíralo con el dedo y un toque lo agranda</string>
     <string name="tile_road_help">Tu auto en carretera con la velocidad (OBD o GPS) y los km del viaje</string>
     <string name="tile_image_help">Una foto tuya, como el logo de tu marca; sin foto, el logo de LiteDash</string>
@@ -577,7 +563,6 @@
     <string name="tires">Llantas</string>
     <string name="tile_tires">Llantas</string>
     <string name="tile_tires_help">Presión de tus cuatro llantas; un toque las muestra en grande</string>
-    <string name="tires_open_settings">Configurar</string>
     <string name="tire_good">Bien</string>
     <string name="tire_low">Baja</string>
     <string name="tire_leak">Fuga</string>
@@ -664,6 +649,9 @@
     <string name="tires_alerts_help">Las llantas se leen aunque no estén en pantalla, para avisarte a tiempo</string>
     <string name="tires_on_home">En el inicio</string>
     <string name="tires_tile_hint">La pieza Llantas también se agrega en Ajustes → Inicio o al acomodar tu inicio</string>
+    <string name="tires_car_tap">Al tocar el auto</string>
+    <string name="tires_car_tap_big">Verlo en grande</string>
+    <string name="tires_car_tap_tires">Ver sus llantas</string>
     <string name="tires_on_car">Sobre el auto</string>
     <string name="tires_on_car_corners">Esquinas</string>
     <string name="tires_on_car_off">No</string>
@@ -690,4 +678,5 @@
     <string name="tires_ble_location_off">Prende la ubicación: Android la pide para buscar Bluetooth</string>
     <string name="tires_ble_unsupported">Esta pantalla no tiene Bluetooth LE</string>
     <string name="tires_ble_failed">Android no dejó buscar sensores Bluetooth</string>
+    <string name="source_usb_own_player">Usas el reproductor USB de LiteDash (Módulos), así que esta app no se usa.</string>
 </resources>

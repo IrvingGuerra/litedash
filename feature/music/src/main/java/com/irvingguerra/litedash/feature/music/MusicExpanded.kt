@@ -79,9 +79,15 @@ fun MusicExpanded(
             val artworkMax = maxWidth * 0.4f
             Column(Modifier.fillMaxSize()) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    // Si suena el reproductor propio, la fuente ("USB", "RADIO") y no "LITEDASH".
-                    val app = ownKind?.label() ?: song?.app ?: repo.preferredName()
-                    Label(app.uppercase(), Typography.label, c.textMuted, maxLines = 1, modifier = Modifier.weight(1f).padding(start = 4.dp))
+                    // Las fuentes van junto a los botones (antes en su propia fila, dejaban arriba una
+                    // franja vacía); sin fuentes que elegir, el nombre de la app.
+                    if (hasSourceRow(repo, song)) {
+                        SourceRow(repo, song, onLinkUsb, onBrowse = { if (browser != null) browsing = it }, Modifier.weight(1f), browsing = browsing)
+                    } else {
+                        // Si suena el reproductor propio, la fuente ("USB", "RADIO") y no "LITEDASH".
+                        val app = ownKind?.label() ?: song?.app ?: repo.preferredName()
+                        Label(app.uppercase(), Typography.label, c.textMuted, maxLines = 1, modifier = Modifier.weight(1f).padding(start = 4.dp))
+                    }
                     if (browser != null && (ownKind != null || browsing != null)) {
                         IconButton(if (browsing != null) Icons.music else Icons.list, { browsing = if (browsing != null) null else ownKind }, size = 48.dp, background = c.surfaceHigh)
                     }
@@ -90,9 +96,7 @@ fun MusicExpanded(
                     }
                     IconButton(Icons.close, close, size = 48.dp, background = c.surfaceHigh)
                 }
-                Spacer(Modifier.height(12.dp))
-                SourceRow(repo, song, onLinkUsb, onBrowse = { if (browser != null) browsing = it }, browsing = browsing)
-                Spacer(Modifier.height(12.dp))
+                Spacer(Modifier.height(16.dp))
                 val open = browsing
                 if (browser != null && open != null) {
                     browser(open) { browsing = null }

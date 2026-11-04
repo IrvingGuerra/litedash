@@ -229,11 +229,11 @@ fun SwitchRow(title: String, checked: Boolean, onChange: (Boolean) -> Unit, help
 
 /** El interruptor en sí (el toque lo maneja su renglón). */
 @Composable
-private fun Switch(checked: Boolean) {
+fun Switch(checked: Boolean, modifier: Modifier = Modifier) {
     val c = LocalColors.current
     val knob by animateDpAsState(if (checked) 22.dp else 2.dp, label = "interruptor")
     Box(
-        Modifier.size(width = 52.dp, height = 32.dp).clip(CircleShape).background(if (checked) c.accent else c.line),
+        modifier.size(width = 52.dp, height = 32.dp).clip(CircleShape).background(if (checked) c.accent else c.line),
     ) {
         Box(Modifier.padding(start = knob, top = 2.dp).size(28.dp).clip(CircleShape).background(Color.White))
     }

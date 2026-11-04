@@ -29,6 +29,7 @@ import com.irvingguerra.litedash.core.ui.LocalColors
 import com.irvingguerra.litedash.core.ui.Typography
 import com.irvingguerra.litedash.feature.car.CAR_ASPECT
 import com.irvingguerra.litedash.feature.car.CarPackage
+import com.irvingguerra.litedash.feature.car.CarRise
 import com.irvingguerra.litedash.feature.car.CarRepository
 import com.irvingguerra.litedash.feature.car.CarTile
 import com.irvingguerra.litedash.feature.car.CarTurntable
@@ -42,7 +43,7 @@ import com.irvingguerra.litedash.feature.dashboard.TileTypes
  * cambian en Ajustes → Tu auto.
  */
 @Composable
-fun HomeCar(d: Dependencies, pkg: CarPackage?, onClick: () -> Unit, modifier: Modifier = Modifier, onReady: (() -> Unit)? = null) {
+fun HomeCar(d: Dependencies, pkg: CarPackage?, onClick: () -> Unit, modifier: Modifier = Modifier, onReady: (() -> Unit)? = null, rise: CarRise? = null) {
     val color = d.prefs.carColor
     // El sedán dibujado no carga nada: listo de una vez.
     if (pkg == null) ReadyNow(onReady)
@@ -52,7 +53,7 @@ fun HomeCar(d: Dependencies, pkg: CarPackage?, onClick: () -> Unit, modifier: Mo
         onClick = onClick,
         modifier = modifier,
         drawing = pkg?.let { p ->
-            { m -> CarTurntable(d.cars, p, color, m, d.prefs.carAngle, { d.prefs.carAngle = it }, onReady) }
+            { m -> CarTurntable(d.cars, p, color, m, d.prefs.carAngle, { d.prefs.carAngle = it }, onReady, rise) }
         },
         hasFloor = pkg?.hasFloor == true,
     )
@@ -60,7 +61,7 @@ fun HomeCar(d: Dependencies, pkg: CarPackage?, onClick: () -> Unit, modifier: Mo
 
 /** Las piezas que crecen a pantalla completa con un toque: auto 3D, carretera o imagen, según [tile]. */
 @Composable
-fun HeroTile(d: Dependencies, tile: Tile, pkg: CarPackage?, onClick: () -> Unit, modifier: Modifier = Modifier, onReady: (() -> Unit)? = null) {
+fun HeroTile(d: Dependencies, tile: Tile, pkg: CarPackage?, onClick: () -> Unit, modifier: Modifier = Modifier, onReady: (() -> Unit)? = null, rise: CarRise? = null) {
     when (tile.type) {
         TileTypes.ROAD -> RoadView(d, pkg, onClick, modifier, onReady)
         TileTypes.IMAGE -> {
@@ -68,7 +69,7 @@ fun HeroTile(d: Dependencies, tile: Tile, pkg: CarPackage?, onClick: () -> Unit,
             ReadyNow(onReady)
             ImageTile(d, tile.data, onClick, modifier)
         }
-        else -> HomeCar(d, pkg, onClick, modifier, onReady)
+        else -> HomeCar(d, pkg, onClick, modifier, onReady, rise)
     }
 }
 
@@ -77,6 +78,7 @@ fun HeroTile(d: Dependencies, tile: Tile, pkg: CarPackage?, onClick: () -> Unit,
  * hasta casi toda la pantalla mientras el fondo tapa el inicio. [progress] va de
  * 0 (en su pieza) a 1 (completo) y se lee solo al dibujar: la animación no
  * vuelve a armar nada. El auto se pinta una vez al tamaño final y la GPU lo escala.
+ * Con [rise] (tocar el auto con Llantas activo) además gira y sube la cámara.
  */
 @Composable
 fun CarOnly(
@@ -88,6 +90,7 @@ fun CarOnly(
     backdrop: Brush,
     onTap: () -> Unit,
     onReady: () -> Unit,
+    rise: CarRise? = null,
 ) {
     val density = LocalDensity.current
     val direction = LocalLayoutDirection.current
@@ -133,7 +136,7 @@ fun CarOnly(
                     }
                 },
         ) {
-            HeroTile(d, tile, pkg, onClick = onTap, onReady = onReady)
+            HeroTile(d, tile, pkg, onClick = onTap, onReady = onReady, rise = rise)
         }
     }
 }

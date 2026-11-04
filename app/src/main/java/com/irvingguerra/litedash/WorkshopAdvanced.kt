@@ -301,7 +301,7 @@ private val tripSaveScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
  */
 @Composable
 fun TripRecorderEffect(d: Dependencies) {
-    val on = d.prefs.tripLog && d.hasObdAdapter
+    val on = d.prefs.tripLog && d.obdAuto
     LaunchedEffect(on) { if (on) d.obd.connect() }
     if (!on || d.obdIfCreated()?.state != ObdState.ON) return
     val context = LocalContext.current

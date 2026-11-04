@@ -66,6 +66,9 @@ internal object PrefKeys {
     const val TIRES_ON_CAR = "tires_on_car"
     const val TIRES_BANNER = "tires_banner"
     const val TIRES_RAIL = "tires_rail"
+    const val CAR_TAP = "car_tap"
+    /** Boolean; sin guardar = prendido si ya hay un adaptador OBD. */
+    const val OBD_MODULE = "obd_module"
     const val SPEED_UNITS = "speed_units"
     const val TEMP_UNITS = "temp_units"
     /** Int: versión del almacenamiento ([StorageMigration]: 1 = nombres en inglés, 2 = tres piezas del auto). */
@@ -78,6 +81,15 @@ enum class TiresOnCar(val stored: String) {
 
     companion object {
         fun fromStored(value: String?) = entries.firstOrNull { it.stored == value } ?: CORNERS
+    }
+}
+
+/** Qué hace tocar el auto 3D con Llantas activo: verlo en grande o subir a ver sus llantas. */
+enum class CarTap(val stored: String) {
+    BIG("big"), TIRES("tires");
+
+    companion object {
+        fun fromStored(value: String?) = entries.firstOrNull { it.stored == value } ?: TIRES
     }
 }
 
@@ -247,6 +259,14 @@ class Preferences(context: Context) {
 
     /** Llantas sobre la pieza del auto (con una fuente de llantas elegida). */
     var tiresOnCar by mapped(PrefKeys.TIRES_ON_CAR, TiresOnCar::fromStored) { it.stored }
+
+    /** Al tocar el auto 3D con Llantas activo. */
+    var carTap by mapped(PrefKeys.CAR_TAP, CarTap::fromStored) { it.stored }
+
+    /** El módulo OBD prendido o apagado; null = nunca se tocó (ver [Dependencies.obdModule]). */
+    var obdModule by Stored(if (p.contains(PrefKeys.OBD_MODULE)) p.getBoolean(PrefKeys.OBD_MODULE, false) else null) { v ->
+        p.edit { if (v == null) remove(PrefKeys.OBD_MODULE) else putBoolean(PrefKeys.OBD_MODULE, v) }
+    }
 
     /** Aviso arriba del inicio cuando una llanta tiene problema. */
     var tiresBanner by bool(PrefKeys.TIRES_BANNER, true)

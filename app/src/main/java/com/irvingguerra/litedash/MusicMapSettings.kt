@@ -1,5 +1,8 @@
 package com.irvingguerra.litedash
 
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Box
+import androidx.compose.ui.draw.alpha
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Build
@@ -69,7 +72,12 @@ fun MusicSourcesSettings(d: Dependencies) {
     val apps = rememberApps(d.apps).orEmpty()
     var choosing by remember { mutableStateOf<SourceKind?>(null) }
     for (kind in listOf(SourceKind.USB, SourceKind.BLUETOOTH)) {
-        SourceRow(d, kind, apps, choosing == kind) { choosing = if (it) kind else null }
+        // Con el reproductor USB de LiteDash prendido, la app de USB no se usa: se ve gris y lo dice.
+        val ownUsb = kind == SourceKind.USB && d.prefs.usbPlayer
+        Box(Modifier.alpha(if (ownUsb) 0.45f else 1f)) {
+            Column { SourceRow(d, kind, apps, choosing == kind && !ownUsb, enabled = !ownUsb) { choosing = if (it) kind else null } }
+        }
+        if (ownUsb) Label(stringResource(R.string.source_usb_own_player), Typography.small, LocalColors.current.textMuted)
         if (kind == SourceKind.BLUETOOTH) BluetoothNamePermission()
     }
 }
@@ -93,14 +101,14 @@ fun RadioSettings(d: Dependencies) {
  * Elegir (abre el buscador debajo) y Quitar. [choosing] dice si el buscador está abierto.
  */
 @Composable
-private fun SourceRow(d: Dependencies, kind: SourceKind, apps: List<App>, choosing: Boolean, onChoosing: (Boolean) -> Unit) {
+private fun SourceRow(d: Dependencies, kind: SourceKind, apps: List<App>, choosing: Boolean, enabled: Boolean = true, onChoosing: (Boolean) -> Unit) {
     val c = LocalColors.current
     val pkg = d.music.sourceApps[kind]
     Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
         Label(kind.label(), Typography.body, modifier = Modifier.weight(1f))
         Label(pkg?.let { p -> apps.firstOrNull { it.pkg == p }?.name ?: d.music.appName(p) } ?: stringResource(R.string.source_unlinked), Typography.small, c.textMuted, 1)
-        Button(stringResource(R.string.source_choose), { onChoosing(!choosing) }, primary = choosing)
-        if (pkg != null) Button(stringResource(R.string.source_remove), { d.music.setSource(kind, null) })
+        Button(stringResource(R.string.source_choose), { if (enabled) onChoosing(!choosing) }, primary = choosing)
+        if (pkg != null) Button(stringResource(R.string.source_remove), { if (enabled) d.music.setSource(kind, null) })
     }
     if (choosing) {
         Label(stringResource(R.string.source_choose_for, kind.label()), Typography.small, c.textMuted)

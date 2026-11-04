@@ -52,6 +52,10 @@ object OwnPlayer {
             PlayerSource.USB -> {
                 if (!Library.hasPermission(context)) return false
                 val drive = Library.drives(context).firstOrNull() ?: return false
+                // Memoria que aún no se ha leído (o sin canciones): se abre la biblioteca, que la lee
+                // y enseña lo que hay o "no hay canciones". Antes play leía en silencio y, si Android no
+                // tenía indexada la memoria, no pasaba nada y el chip se quedaba en "Sistema".
+                if (Library.cached(drive).isNullOrEmpty()) return false
                 // Leer la memoria tarda: en un hilo, y al tener la lista se sigue con lo último que sonó.
                 Thread {
                     var tracks = Library.tracks(context, drive)

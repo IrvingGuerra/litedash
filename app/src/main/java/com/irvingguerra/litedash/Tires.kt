@@ -3,7 +3,6 @@ package com.irvingguerra.litedash
 import android.os.Build
 import com.irvingguerra.litedash.feature.tpms.BleProblem
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -33,6 +32,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -59,12 +59,12 @@ import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.irvingguerra.litedash.core.ui.Button
@@ -193,17 +193,18 @@ class TireMotion {
     val progress = Animatable(0f)
 }
 
-private const val COUNT_MS = 400
 /** Largo mínimo de la línea entre la tarjeta y el auto (dp). */
 private const val LEADER_DP = 64f
-private const val STAGGER_MS = 60
+
+/** Dónde está el auto dentro de la caja de [CarTop] (planta y dibujo), en fracciones: para encimar la subida. */
+private val TopCarInset = Rect(0.067f, 0.02f, 0.933f, 0.98f)
 
 /**
  * Tus llantas desde arriba: el auto al centro y una tarjeta por llanta en su esquina, unida a
- * su rueda con una línea fina (como las de Salud). Los números cuentan desde 0 la primera vez;
- * con [entrance] las tarjetas además salen del auto una tras otra. Una llanta con problema
- * tiene un halo en su rueda que late despacio; todo bien, nada se mueve. Sin fuente, el auto
- * apagado y un mensaje (con [onSettings], un botón para configurarlas).
+ * su rueda con una línea fina (como las de Salud). Una llanta con problema tiene un halo en su
+ * rueda que late despacio; todo bien, nada se mueve. Sin fuente, el auto apagado y un mensaje
+ * (con [onSettings], un botón para configurarlas). [onCarBounds] recibe dónde queda el auto (en
+ * la raíz), para que la subida termine justo ahí.
  */
 @Composable
 fun TiresView(
@@ -213,8 +214,8 @@ fun TiresView(
     modifier: Modifier = Modifier,
     selected: Wheel? = null,
     motion: TireMotion? = null,
-    entrance: Boolean = false,
     onSettings: (() -> Unit)? = null,
+    onCarBounds: ((Rect) -> Unit)? = null,
 ) {
     val c = LocalColors.current
     val repo = d.tpms
@@ -222,10 +223,6 @@ fun TiresView(
     val unit = repo.unit
     val fahrenheit = d.prefs.units.fahrenheit
     val wheels = repo.shownWheels()
-    val count = remember { Animatable(0f) }
-    val appear = remember { Animatable(if (entrance) 0f else 1f) }
-    LaunchedEffect(Unit) { count.animateTo(1f, tween(COUNT_MS, easing = FastOutSlowInEasing)) }
-    LaunchedEffect(Unit) { appear.animateTo(1f, tween(COUNT_MS + STAGGER_MS * 4, easing = LinearEasing)) }
     val statuses = wheels.associateWith { repo.statusOf(it) }
     val anyProblem = statuses.values.any { it.problem }
     val pulse = if (anyProblem) {
@@ -262,7 +259,6 @@ fun TiresView(
                 Wheel.SPARE to Offset((w - cw) / 2, h - ch),
             )
             val px = density.density
-            val carCenter = Offset(carX + carW / 2, carY + carH / 2)
             val line = c.textMuted.copy(alpha = 0.45f)
             val accent = c.accent
             val danger = c.danger
@@ -275,12 +271,15 @@ fun TiresView(
                     val slot = slots.getValue(wh)
                     val from = Offset(if (wh == Wheel.FRONT_LEFT || wh == Wheel.REAR_LEFT) slot.x + cw else slot.x, slot.y + ch / 2)
                     val to = wheelAt(wh)
-                    val a = appear.value
-                    drawLine(line.copy(alpha = line.alpha * a), from * px, to * px, strokeWidth = 1.dp.toPx())
-                    drawCircle(line.copy(alpha = line.alpha * a), 2.5.dp.toPx(), to * px)
+                    drawLine(line, from * px, to * px, strokeWidth = 1.dp.toPx())
+                    drawCircle(line, 2.5.dp.toPx(), to * px)
                 }
             }
-            Box(Modifier.offset(carX.dp, carY.dp).size(carW.dp, carH.dp)) {
+            val place = if (onCarBounds == null) Modifier else Modifier.onGloballyPositioned {
+                val b = it.boundsInRoot()
+                onCarBounds(Rect(b.left + b.width * TopCarInset.left, b.top + b.height * TopCarInset.top, b.left + b.width * TopCarInset.right, b.top + b.height * TopCarInset.bottom))
+            }
+            Box(Modifier.offset(carX.dp, carY.dp).size(carW.dp, carH.dp).then(place)) {
                 CarTop(d.cars, d.cars.pkg(d.prefs.carModel), d.prefs.carColor, Modifier.fillMaxSize())
                 if (anyProblem) Canvas(Modifier.fillMaxSize()) {
                     val r = size.width * 0.06f
@@ -295,7 +294,7 @@ fun TiresView(
                     }
                 }
             }
-            wheels.forEachIndexed { i, wh ->
+            for (wh in wheels) {
                 val slot = slots.getValue(wh)
                 val (kpa, temp) = watchTire(d, wh)
                 val st = statuses.getValue(wh)
@@ -303,7 +302,7 @@ fun TiresView(
                 TireCard(
                     // Tarjetas angostas: el nombre corto ("Del. izq.") para que no se corte.
                     name = stringResource(if (compact || cw < 165f) wheelShort(wh) else wheelName(wh)),
-                    pressure = kpa?.let { unit.format(it * count.value) } ?: "—",
+                    pressure = kpa?.let { unit.format(it) } ?: "—",
                     unit = unit.label,
                     temp = temp?.let { tempText(it, fahrenheit) },
                     status = st,
@@ -318,25 +317,12 @@ fun TiresView(
                         .offset(slot.x.dp, slot.y.dp)
                         .size(cw.dp, ch.dp)
                         .graphicsLayer {
-                            // Salen del auto una tras otra (60 ms) la primera vez.
-                            val local = ((appear.value * (COUNT_MS + STAGGER_MS * 4) - STAGGER_MS * i) / COUNT_MS).coerceIn(0f, 1f)
-                            val e = FastOutSlowInEasing.transform(local)
-                            alpha = e
-                            val center = Offset(slot.x + cw / 2, slot.y + ch / 2)
-                            var dx = (carCenter.x - center.x) * (1f - e) * 0.6f
-                            var dy = (carCenter.y - center.y) * (1f - e) * 0.6f
-                            scaleX = 0.85f + 0.15f * e
-                            scaleY = scaleX
                             // Rotar: la tarjeta viaja a su lugar nuevo.
-                            val to = motion?.moves?.get(wh)
-                            if (to != null) {
-                                val target = slots.getValue(to)
-                                val p = motion.progress.value
-                                dx += (target.x - slot.x) * p
-                                dy += (target.y - slot.y) * p
-                            }
-                            translationX = dx * px
-                            translationY = dy * px
+                            val to = motion?.moves?.get(wh) ?: return@graphicsLayer
+                            val target = slots.getValue(to)
+                            val p = motion.progress.value
+                            translationX = (target.x - slot.x) * p * px
+                            translationY = (target.y - slot.y) * p * px
                         },
                 )
             }
@@ -474,50 +460,26 @@ internal fun bleIssueText(repo: TpmsRepository): String? = when (repo.bleIssue) 
 // ---- Pantalla completa ----
 
 /**
- * Las llantas a pantalla completa: crece desde [from] (la pieza o la pastilla que se tocó;
- * vacío = desde el centro) mientras el fondo tapa el inicio. [progress] va de 0 a 1 y se lee
- * solo al dibujar. Tocar una tarjeta muestra su gráfica de 24 h al lado.
+ * Las llantas a pantalla completa, sobre el inicio: aparecen con [progress] (0 a 1, se lee solo
+ * al dibujar). Tocar una tarjeta muestra su gráfica de 24 h al lado; tocar fuera cierra.
+ * [onCarBounds]: dónde queda el auto (para que la subida del auto 3D termine ahí).
  */
 @Composable
-fun TiresFull(d: Dependencies, from: Rect, progress: () -> Float, onClose: () -> Unit, onSettings: () -> Unit) {
+fun TiresFull(d: Dependencies, progress: () -> Float, onClose: () -> Unit, onSettings: () -> Unit, onCarBounds: ((Rect) -> Unit)? = null) {
     val c = LocalColors.current
-    val density = LocalDensity.current
-    val direction = LocalLayoutDirection.current
-    val insets = WindowInsets.safeDrawing
     var chart by remember { mutableStateOf<Wheel?>(null) }
-    BoxWithConstraints(Modifier.fillMaxSize()) {
-        val to = with(density) {
-            val pad = 16.dp.toPx()
-            Rect(
-                insets.getLeft(this, direction) + pad,
-                insets.getTop(this) + pad,
-                maxWidth.toPx() - insets.getRight(this, direction) - pad,
-                maxHeight.toPx() - insets.getBottom(this) - pad,
-            )
-        }
-        val start = if (from.isEmpty) 0.92f else (from.width / to.width).coerceIn(0.2f, 1f)
+    Box(Modifier.fillMaxSize().graphicsLayer { alpha = progress() }) {
         Box(
             Modifier
                 .fillMaxSize()
-                .graphicsLayer { alpha = progress() }
                 .background(c.background)
                 .clickable(remember { MutableInteractionSource() }, indication = null, onClick = onClose),
         )
         Column(
             Modifier
-                .offset { IntOffset(to.left.toInt(), to.top.toInt()) }
-                .size(with(density) { to.width.toDp() }, with(density) { to.height.toDp() })
-                .graphicsLayer {
-                    val t = progress()
-                    val scale = start + (1f - start) * t
-                    scaleX = scale
-                    scaleY = scale
-                    alpha = (t * 1.6f).coerceAtMost(1f)
-                    if (!from.isEmpty) {
-                        translationX = (from.center.x - to.center.x) * (1f - t)
-                        translationY = (from.center.y - to.center.y) * (1f - t)
-                    }
-                }
+                .windowInsetsPadding(WindowInsets.safeDrawing)
+                .padding(16.dp)
+                .fillMaxSize()
                 // Lo de adentro no cierra: solo el fondo.
                 .clickable(remember { MutableInteractionSource() }, indication = null) {},
             verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -537,7 +499,7 @@ fun TiresFull(d: Dependencies, from: Rect, progress: () -> Float, onClose: () ->
                     Card(m) {
                         TiresView(
                             d, compact = false, onWheel = { chart = if (chart == it) null else it }, Modifier.fillMaxSize().padding(18.dp),
-                            selected = chart, entrance = true, onSettings = onSettings,
+                            selected = chart, onSettings = onSettings, onCarBounds = onCarBounds,
                         )
                     }
                 }

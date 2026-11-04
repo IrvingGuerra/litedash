@@ -71,6 +71,8 @@ private val SOURCE_WORDS = mapOf(
 
 /** Cuánto se espera a que la app despertada empiece a sonar antes de abrirla. */
 private const val WAKE_TIMEOUT_MS = 4_000L
+/** Tras despertar una app sin sesión, play/pausa es tecla de volante durante este rato. */
+private const val KEYS_WINDOW_MS = 30 * 60_000L
 
 /** Perfil Bluetooth "A2DP sink" (la pantalla recibe la música del celular); no es público en el SDK. */
 private const val A2DP_SINK = 11
@@ -334,6 +336,9 @@ class MusicRepository(private val context: Context) {
 
         internal var controller: MediaController? = null
 
+        /** Cuándo se despertó su app por última vez ([SystemClock.elapsedRealtime]); 0 = nunca. */
+        internal var wokeAt = 0L
+
         private val callback = object : MediaController.Callback() {
             override fun onMetadataChanged(metadata: MediaMetadata?) = read()
             override fun onPlaybackStateChanged(state: PlaybackState?) = read()
@@ -418,18 +423,29 @@ class MusicRepository(private val context: Context) {
         )
         }
 
-        /** Play o pausa; sin nada sonando, se despierta lo que toque ([onWake]). */
+        /**
+         * Play o pausa; sin nada sonando, se despierta lo que toque ([onWake]). Si ya se despertó
+         * hace poco y su app no comparte sesión (la música Bluetooth de muchas pantallas), es
+         * play/pausa como el botón del volante: si no, cada toque volvía a "Abriendo…".
+         */
         fun toggle() {
             val t = controller?.transportControls
             when {
+                t == null && SystemClock.elapsedRealtime() - wokeAt < KEYS_WINDOW_MS && wokeAt != 0L -> key(this, KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE)
                 t == null || song == null -> onWake()
                 song?.playing == true -> t.pause()
                 else -> t.play()
             }
         }
 
-        fun next() = controller?.transportControls?.skipToNext()
-        fun previous() = controller?.transportControls?.skipToPrevious()
+        /** Sin sesión, como los botones del volante (a la app de la pieza o al sistema de audio). */
+        fun next() {
+            controller?.transportControls?.skipToNext() ?: key(this, KeyEvent.KEYCODE_MEDIA_NEXT)
+        }
+
+        fun previous() {
+            controller?.transportControls?.skipToPrevious() ?: key(this, KeyEvent.KEYCODE_MEDIA_PREVIOUS)
+        }
         fun seekTo(ms: Long) = controller?.transportControls?.seekTo(ms)
         fun action(a: MediaAction) = controller?.transportControls?.sendCustomAction(a.id, null)
 
@@ -533,14 +549,38 @@ class MusicRepository(private val context: Context) {
         sourceApps[SourceKind.RADIO]?.let(::open)
     }
 
-    /** Despierta a [pkg] para que suene en [lens]: servicio de música → botón de play → sistema → abrir la app. */
+    /**
+     * Despierta a [pkg] para que suene en [lens]: su servicio de música y el botón de play a su
+     * receptor (los dos: varias apps de Bluetooth tienen servicio pero no hacen caso por ahí); si
+     * no tiene ninguno, el botón del sistema. Solo se abre la app si no hubo a quién mandarle el
+     * botón: las de Bluetooth de las pantallas no comparten qué suena, y abrirlas en cada toque
+     * hacía "Abriendo…" y regresaba sin que nada cambiara.
+     */
     private fun wake(pkg: String, lens: Lens) {
         lens.starting = appLabel(pkg)
-        if (!connectAndPlay(pkg) && !buttonPlay(pkg)) systemPlay()
+        lens.wokeAt = SystemClock.elapsedRealtime()
+        val service = connectAndPlay(pkg)
+        val button = buttonPlay(pkg)
+        if (!service && !button) systemPlay()
         mainHandler.postDelayed({
-            if (lens.song == null && lens.starting != null) open(pkg)
+            if (lens.song == null && lens.starting != null && !button) open(pkg)
             lens.starting = null
         }, WAKE_TIMEOUT_MS)
+    }
+
+    /** Una tecla multimedia a la app de [lens] (a su receptor, como el volante) o, si no tiene, al sistema de audio. */
+    private fun key(lens: Lens, code: Int) {
+        val pkg = if (lens === radio) appFor(SourceKind.RADIO) else preferred ?: store.getString(KEY_LAST_APP, null)
+        val receiver = pkg?.takeUnless(::isOwn)?.let { mediaButtonReceivers(it).firstOrNull() }
+        val audio = context.getSystemService(AudioManager::class.java)
+        for (action in intArrayOf(KeyEvent.ACTION_DOWN, KeyEvent.ACTION_UP)) {
+            val event = KeyEvent(action, code)
+            if (receiver != null) {
+                runCatching { context.sendBroadcast(Intent(Intent.ACTION_MEDIA_BUTTON).setComponent(receiver).putExtra(Intent.EXTRA_KEY_EVENT, event)) }
+            } else {
+                runCatching { audio.dispatchMediaKeyEvent(event) }
+            }
+        }
     }
 
     /** Se conecta al servicio de música de [pkg] y le pide play; si no lo acepta, el botón del sistema. */

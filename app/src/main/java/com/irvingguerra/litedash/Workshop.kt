@@ -103,7 +103,7 @@ fun Workshop(d: Dependencies, onTires: () -> Unit = {}) {
     // Sin adaptador: el estado (con lo último que se leyó) y cómo conectarlo.
     if (!connected) {
         HealthView(d, obd.lastReport, reading = false, onRead = {}, connected = false, onTires = onTires)
-        Connection(obd)
+        Connection(d)
         alerts()
         // Los viajes guardados se ven aunque no haya adaptador conectado.
         return TripsCard(d)
@@ -121,7 +121,7 @@ fun Workshop(d: Dependencies, onTires: () -> Unit = {}) {
         2 -> LiveSensors(d)
         3 -> LiveCharts(d)
         else -> {
-            Connection(obd)
+            Connection(d)
             alerts()
             AccelTimerCard(d)
             TripsCard(d)
@@ -138,7 +138,7 @@ private const val ALERT_CLEAR_MS = 30_000L
  */
 @Composable
 fun EngineAlertBanner(d: Dependencies) {
-    val on = d.prefs.engineAlerts && d.hasObdAdapter
+    val on = d.prefs.engineAlerts && d.obdAuto
     LaunchedEffect(on) { if (on) d.obd.connect() }
     if (!on || d.obdIfCreated()?.state != ObdState.ON) return
     val coolant = d.bus.watch(Signal.COOLANT)
@@ -179,8 +179,9 @@ fun WorkshopTile(d: Dependencies, onClick: () -> Unit) = HealthTile(d, onClick)
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun Connection(obd: ObdRepository) {
+private fun Connection(d: Dependencies) {
     val c = LocalColors.current
+    val obd = d.obd
     var permitted by remember { mutableStateOf(obd.hasPermission()) }
     val ask = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { permitted = it }
     // Buscar Bluetooth LE tiene su propio permiso; al darlo, busca de una vez.
@@ -192,7 +193,9 @@ private fun Connection(obd: ObdRepository) {
     val bluetooth = rememberBluetoothOn()
     val askEnable = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {}
     // Al abrir el Taller se reconecta solo al último adaptador que funcionó.
-    LaunchedEffect(Unit) { if (obd.state == ObdState.OFF) obd.connect() }
+    // (Con el módulo apagado no: conectar a mano lo vuelve a prender.)
+    LaunchedEffect(Unit) { if (obd.state == ObdState.OFF && d.obdModule) obd.connect() }
+    LaunchedEffect(obd.state) { if (obd.state == ObdState.CONNECTING || obd.state == ObdState.ON) d.prefs.obdModule = true }
     SettingsCard(stringResource(R.string.obd_adapter), stringResource(R.string.obd_adapter_help)) {
         val status = when (obd.state) {
             ObdState.OFF -> stringResource(R.string.obd_off)

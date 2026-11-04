@@ -104,9 +104,17 @@ class TpmsRepository(context: Context, private val bus: VehicleBus) {
         get() = savedSource
         set(s) {
             if (s == savedSource) return
+            val before = savedSource
             savedSource = s
-            prefs.edit().apply { if (s == null) remove(KEY_SOURCE) else putString(KEY_SOURCE, s.key) }.apply()
+            prefs.edit().apply {
+                if (s == null) remove(KEY_SOURCE) else putString(KEY_SOURCE, s.key)
+                // La que se usó al último, para prender el módulo otra vez con la misma.
+                (s ?: before)?.let { putString(KEY_LAST_SOURCE, it.key) }
+            }.apply()
         }
+
+    /** La última fuente que se eligió (aunque hoy esté apagado); null si nunca hubo. */
+    val lastSource: TpmsSource? get() = TpmsSource.fromKey(prefs.getString(KEY_LAST_SOURCE, null))
 
     var recommendedFrontKpa by floatPref(KEY_FRONT, 230f)
     var recommendedRearKpa by floatPref(KEY_REAR, 230f)
@@ -811,6 +819,7 @@ class TpmsRepository(context: Context, private val bus: VehicleBus) {
     companion object {
         private const val PREFS = "tires"
         private const val KEY_SOURCE = "source"
+        private const val KEY_LAST_SOURCE = "last_source"
         private const val KEY_FRONT = "front_kpa"
         private const val KEY_REAR = "rear_kpa"
         private const val KEY_LOW_PCT = "low_percent"
