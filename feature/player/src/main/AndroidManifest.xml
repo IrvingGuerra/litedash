@@ -1,5 +1,5 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- Reproductor propio (USB y radio por internet): opcional, se prende en Módulos. -->
+    <!-- Reproductor propio: USB (siempre) y radio por internet (opcional, en Ajustes → Apps → Radio). -->
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
     <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
     <!-- Sigue sonando con otra app encima: servicio en primer plano con su aviso. -->

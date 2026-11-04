@@ -62,6 +62,7 @@ import com.irvingguerra.litedash.feature.obd.ScanProblem
 import com.irvingguerra.litedash.feature.obd.describe
 import com.irvingguerra.litedash.feature.obd.engineAlert
 import com.irvingguerra.litedash.feature.obd.zoneOf
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -87,22 +88,28 @@ fun Workshop(d: Dependencies, onTires: () -> Unit = {}) {
         }
     }
     val connected = obd.state == ObdState.ON
+    val car = d.cars.pkg(d.prefs.carModel)
     // El reporte se lee una vez aquí y lo comparten Salud y Códigos; el último leído
     // se muestra de inmediato para que al volver a entrar no parpadee.
     val scope = rememberCoroutineScope()
     var report by remember { mutableStateOf(obd.lastReport) }
     var reading by remember { mutableStateOf(true) }
-    fun read() = scope.launch {
-        reading = true
-        // Si esta lectura falla, se queda lo último que se leyó.
-        report = obd.report() ?: report
-        reading = false
+    val job = remember { mutableStateOf<Job?>(null) }
+    // Tocar "Leer otra vez" mientras ya se lee no lanza otra lectura.
+    fun read() {
+        if (job.value?.isActive == true) return
+        job.value = scope.launch {
+            reading = true
+            // Si esta lectura falla, se queda lo último que se leyó.
+            report = obd.report() ?: report
+            reading = false
+        }
     }
     LaunchedEffect(connected) { if (connected) read() }
 
-    // Sin adaptador: el estado (con lo último que se leyó) y cómo conectarlo.
+    // Sin adaptador: la misma pantalla en gris (sin lo leído antes) y cómo conectarlo.
     if (!connected) {
-        HealthView(d, obd.lastReport, reading = false, onRead = {}, connected = false, onTires = onTires)
+        HealthView(d, car, report = null, connected = false, onTires = onTires)
         Connection(d)
         alerts()
         // Los viajes guardados se ven aunque no haya adaptador conectado.
@@ -113,9 +120,9 @@ fun Workshop(d: Dependencies, onTires: () -> Unit = {}) {
         WORKSHOP_TABS,
     )
     when (tab) {
-        0 -> HealthView(d, report, reading, { read() }, connected = true, onCodes = { selectTab(WORKSHOP_TABS, CODES_TAB) }, onTires = onTires)
+        0 -> HealthView(d, car, report, connected = true, reading, ::read, onCodes = { selectTab(WORKSHOP_TABS, CODES_TAB) }, onTires = onTires)
         CODES_TAB -> {
-            CodesCard(obd, report, reading, { read() }, onCleared = { report = it })
+            CodesCard(obd, report, reading, ::read, onCleared = { report = it })
             InspectionCard(report, reading)
         }
         2 -> LiveSensors(d)
@@ -138,9 +145,7 @@ private const val ALERT_CLEAR_MS = 30_000L
  */
 @Composable
 fun EngineAlertBanner(d: Dependencies) {
-    val on = d.prefs.engineAlerts && d.obdAuto
-    LaunchedEffect(on) { if (on) d.obd.connect() }
-    if (!on || d.obdIfCreated()?.state != ObdState.ON) return
+    if (rememberObd(d, d.prefs.engineAlerts)?.state != ObdState.ON) return
     val coolant = d.bus.watch(Signal.COOLANT)
     val voltage = d.bus.watch(Signal.VOLTAGE)
     val alert = engineAlert(coolant, voltage, d.bus.watch(Signal.RPM))
@@ -172,10 +177,6 @@ fun EngineAlertBanner(d: Dependencies) {
         Button(stringResource(R.string.alert_ok), { dismissed = a }, primary = true)
     }
 }
-
-/** La pieza del Taller en el inicio; se queda con este nombre para no tocar el inicio. */
-@Composable
-fun WorkshopTile(d: Dependencies, onClick: () -> Unit) = HealthTile(d, onClick)
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -490,7 +491,7 @@ fun sensorText(signal: String, v: Float, units: UnitChoice, locale: java.util.Lo
         Signal.RUN_TIME -> (v / 60).toInt().let { m -> String.format(locale, "%d:%02d", m / 60, m % 60) }
         Signal.DISTANCE_MIL -> if (units.miles) String.format(locale, "%.0f mi", v.toMiles(true)) else String.format(locale, "%.0f km", v)
         // Admisión y ambiente.
-        else -> if (units.fahrenheit) String.format(locale, "%.0f °F", v.toFahrenheit(true)) else String.format(locale, "%.0f °C", v)
+        else -> tempText(v, units.fahrenheit)
     }
 }
 

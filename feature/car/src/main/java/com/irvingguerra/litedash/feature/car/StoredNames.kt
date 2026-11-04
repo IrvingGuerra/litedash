@@ -42,9 +42,8 @@ internal object CarJson {
     const val TOP_VIEW = "planta"
     /** La subida de la cámara en el catálogo (url, bytes y sha256 de su zip). */
     const val RISE = "subida"
-    /** En subida.json: cuántos cuadros, desde qué cuadro del giro y el gris de la pintura. */
+    /** En subida.json: cuántos cuadros (y el gris de la pintura, [GRAY]). */
     const val RISE_FRAMES = "cuadros"
-    const val RISE_FROM = "desde"
 }
 
 /** Capas que acompañan a cada imagen del paquete (vista o cuadro del giro). */

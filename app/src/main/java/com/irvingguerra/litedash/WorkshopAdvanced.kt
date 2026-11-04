@@ -34,7 +34,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -145,12 +144,7 @@ fun LiveCharts(d: Dependencies) {
                 val lo = points.min()
                 val hi = points.max().let { if (it - lo < 1e-3f) lo + 1f else it }
                 fun yOf(v: Float) = size.height * (1 - (v - lo) / (hi - lo)) * 0.9f + size.height * 0.05f
-                val path = Path()
-                points.forEachIndexed { k, v ->
-                    val x = size.width * (SERIES_POINTS - points.size + k) / (SERIES_POINTS - 1)
-                    if (k == 0) path.moveTo(x, yOf(v)) else path.lineTo(x, yOf(v))
-                }
-                drawPath(path, colors[i], style = Stroke(2.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round))
+                drawPath(seriesPath(points, size.width, SERIES_POINTS, ::yOf), colors[i], style = Stroke(2.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round))
                 val v = at?.let { pointAt(points, it) } ?: continue
                 drawCircle(colors[i], 5.dp.toPx(), Offset(size.width * at, yOf(v)))
             }
@@ -301,9 +295,7 @@ private val tripSaveScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
  */
 @Composable
 fun TripRecorderEffect(d: Dependencies) {
-    val on = d.prefs.tripLog && d.obdAuto
-    LaunchedEffect(on) { if (on) d.obd.connect() }
-    if (!on || d.obdIfCreated()?.state != ObdState.ON) return
+    if (rememberObd(d, d.prefs.tripLog)?.state != ObdState.ON) return
     val context = LocalContext.current
     DisposableEffect(Unit) {
         val signals = tripSignals(d)

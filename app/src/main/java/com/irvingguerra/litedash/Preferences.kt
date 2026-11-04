@@ -41,6 +41,7 @@ internal object PrefKeys {
     const val HOME_ADDRESS = "home_address"
     const val WORK_ADDRESS = "work_address"
     const val PARKED_MODE = "parked_mode"
+    const val PARKED_VIEW = "parked_view"
     const val WHEEL_KEYS = "wheel_keys"
     const val CAR_ANGLE = "car_angle"
     const val BRIGHTNESS_BY_SUN = "brightness_by_sun"
@@ -61,7 +62,6 @@ internal object PrefKeys {
     const val BEST_ACCEL = "best_0_100"
     const val STATS = "anonymous_stats"
     const val HIDE_STATUS_BAR = "hide_status_bar"
-    const val USB_PLAYER = "usb_player"
     const val INTERNET_RADIO = "internet_radio"
     const val TIRES_ON_CAR = "tires_on_car"
     const val TIRES_BANNER = "tires_banner"
@@ -90,6 +90,15 @@ enum class CarTap(val stored: String) {
 
     companion object {
         fun fromStored(value: String?) = entries.firstOrNull { it.stored == value } ?: TIRES
+    }
+}
+
+/** Qué se ve en el modo estacionado: el reloj grande o tu imagen. */
+enum class ParkedView(val stored: String) {
+    CLOCK("clock"), IMAGE("image");
+
+    companion object {
+        fun fromStored(value: String?) = entries.firstOrNull { it.stored == value } ?: CLOCK
     }
 }
 
@@ -227,6 +236,9 @@ class Preferences(context: Context) {
     /** Reloj grande tras unos minutos sin tocar el inicio. */
     var parkedMode by bool(PrefKeys.PARKED_MODE, true)
 
+    /** Lo que muestra el modo estacionado (de fábrica, el reloj). */
+    var parkedView by mapped(PrefKeys.PARKED_VIEW, ParkedView::fromStored) { it.stored }
+
     /** Dónde van la hora y tus apps: a un lado, abajo o según la pantalla. */
     var barPosition by mapped(PrefKeys.BAR_POSITION, BarPosition::fromStored) { it.stored }
 
@@ -238,9 +250,6 @@ class Preferences(context: Context) {
 
     /** En pantalla dividida, al lado del mapa va la carretera (si no, el auto 3D). */
     var splitRoad by bool(PrefKeys.SPLIT_ROAD, false)
-
-    /** Reproductor propio de LiteDash para la memoria USB (apagado de fábrica). */
-    var usbPlayer by bool(PrefKeys.USB_PLAYER, false)
 
     /** Radio por internet con las estaciones de cerca (apagada de fábrica). */
     var internetRadio by bool(PrefKeys.INTERNET_RADIO, false)
@@ -304,6 +313,9 @@ class Preferences(context: Context) {
 
     /** Lo mismo para la imagen de fondo del inicio. */
     var wallpaperRevision by mutableIntStateOf(0)
+
+    /** Lo mismo para la imagen del modo estacionado. */
+    var parkedRevision by mutableIntStateOf(0)
 
     /** Hacia dónde dejó girado el auto en el inicio (fracción de vuelta); null = tres cuartos. */
     var carAngle by Stored(p.getFloat(PrefKeys.CAR_ANGLE, -1f).takeIf { it >= 0f }) { p.edit { putFloat(PrefKeys.CAR_ANGLE, it ?: -1f) } }

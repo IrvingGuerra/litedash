@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Llantas (TPMS): textos nuevos desde la 1.4.58. -->
+<resources>
+    <string name="tires_error_usb_missing">No está conectado el receptor USB de llantas</string>
+    <string name="tires_error_usb_denied">Sin permiso para el receptor USB</string>
+    <string name="tires_error_usb_open">No se pudo abrir el receptor USB</string>
+    <string name="tires_error_usb_unplugged">Se desconectó el receptor USB</string>
+    <string name="tires_error_usb_lost">Se perdió la conexión con el receptor USB</string>
+    <string name="tires_error_swap">El receptor no confirmó el cambio de llantas</string>
+    <string name="tires_tap_hint">Toca una llanta para acomodar su sensor o cambiarla de lugar</string>
+</resources>

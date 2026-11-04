@@ -6,7 +6,13 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -16,6 +22,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -26,6 +34,10 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.irvingguerra.litedash.core.ui.Button
+import com.irvingguerra.litedash.core.ui.Card
+import com.irvingguerra.litedash.core.ui.Radius
 import com.irvingguerra.litedash.core.ui.Colors
 import com.irvingguerra.litedash.core.ui.Icon
 import com.irvingguerra.litedash.core.ui.IconButton
@@ -108,57 +120,44 @@ fun SourceKind.label(): String = stringResource(
 )
 
 /**
- * Fila de fuentes como en un estéreo: Sistema, las fuentes enlazadas (USB, Bluetooth,
- * radio; las que toca LiteDash mismo incluidas), la app elegida y la que suena. Tocar una
- * la pone a sonar; si es propia y no hay nada que tocar, [onBrowse] abre su biblioteca.
- * Vacía si no hay nada que elegir. [onLinkUsb] abre Ajustes cuando hay una memoria puesta
- * pero nada que la reproduzca. Con la biblioteca abierta, [browsing] es la fuente que se
- * marca (y nada más).
+ * Fila de fuentes como en un estéreo: USB (siempre: el reproductor de LiteDash), tu app de
+ * música (si elegiste una) y Bluetooth (si hay app enlazada). Cada chip se marca por lo que
+ * eligió el usuario, no por lo último que sonó. Tocar uno cierra la biblioteca ([onSelect]) y
+ * lo pone a sonar; USB sin nada que tocar abre su biblioteca ([onBrowse]). Con la biblioteca
+ * abierta ([browsing]) se marca USB.
  */
 @Composable
 internal fun SourceRow(
     repo: MusicRepository,
     song: Song?,
-    onLinkUsb: () -> Unit,
-    onBrowse: (SourceKind) -> Unit,
+    browsing: Boolean,
+    onSelect: () -> Unit,
+    onBrowse: () -> Unit,
     modifier: Modifier = Modifier,
-    browsing: SourceKind? = null,
 ) {
     val c = LocalColors.current
-    val current = song?.pkg ?: repo.preferred
-    val linked = linkedSources(repo)
-    val apps = otherApps(repo, song, linked)
-    val usbHint = usbHint(repo)
-    if (linked.isEmpty() && apps.isEmpty() && !usbHint) return
-    val ownNow = if (song != null && repo.isOwn(song.pkg)) song.source else null
-    val selected = if (browsing != null) setOf(browsing) else linked.filter { (kind, pkg) -> if (repo.isOwn(pkg)) ownNow == kind else current == pkg }.map { it.first }.toSet()
+    val active = repo.active
+    val usb = browsing || active?.let(repo::isOwn) == true || song != null && repo.isOwn(song.pkg)
+    val bluetooth = repo.sourceApps[SourceKind.BLUETOOTH]
+    // Si tu app de música es la de Bluetooth, sale una vez (como Bluetooth).
+    val app = repo.preferred?.takeIf { it != bluetooth && !repo.isOwn(it) }
+    // Sin nada tocado, manda tu app de música; si no hay, lo que suene.
+    val pick = active ?: app ?: song?.pkg
     Row(modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-        // "Sistema" se marca solo cuando ninguna fuente ni app está marcada (si no, se ven dos).
-        Chip(stringResource(R.string.source_system), browsing == null && repo.preferred == null && selected.isEmpty() && apps.none { current == it }, c) { repo.choose(null) }
-        for ((kind, pkg) in linked) {
-            Chip(kind.label(), kind in selected, c) {
-                if (repo.isOwn(pkg)) { if (!repo.playOwn(kind)) onBrowse(kind) } else repo.switchTo(pkg)
-            }
+        Chip(SourceKind.USB.label(), usb, c) {
+            onSelect()
+            repo.playOwn(onEmpty = onBrowse)
         }
-        if (usbHint) Chip(stringResource(R.string.source_usb), false, c, onClick = onLinkUsb)
-        for (pkg in apps) Chip(repo.appName(pkg), browsing == null && current == pkg, c) { repo.switchTo(pkg) }
+        if (app != null) Chip(repo.appName(app), !usb && pick == app, c) {
+            onSelect()
+            repo.switchTo(app)
+        }
+        if (bluetooth != null) Chip(SourceKind.BLUETOOTH.label(), !usb && pick == bluetooth, c) {
+            onSelect()
+            repo.switchTo(bluetooth)
+        }
     }
 }
-
-/** ¿[SourceRow] tiene algo que mostrar? (si no, el encabezado pone el nombre de la app). */
-internal fun hasSourceRow(repo: MusicRepository, song: Song?): Boolean {
-    val linked = linkedSources(repo)
-    return linked.isNotEmpty() || otherApps(repo, song, linked).isNotEmpty() || usbHint(repo)
-}
-
-// La radio tiene su propia pieza: aquí solo USB y Bluetooth.
-private fun linkedSources(repo: MusicRepository) =
-    SourceKind.entries.filter { it != SourceKind.RADIO }.mapNotNull { k -> repo.appFor(k)?.let { k to it } }
-
-private fun otherApps(repo: MusicRepository, song: Song?, linked: List<Pair<SourceKind, String>>) =
-    listOfNotNull(repo.preferred, song?.pkg).distinct().filter { pkg -> !repo.isOwn(pkg) && linked.none { it.second == pkg } }
-
-private fun usbHint(repo: MusicRepository) = repo.usbDrive != null && repo.appFor(SourceKind.USB) == null
 
 /** Botón de fuente, redondo y chico (la fila cabe en pantallas chicas). */
 @Composable
@@ -170,4 +169,159 @@ private fun Chip(text: String, selected: Boolean, c: Colors, onClick: () -> Unit
             .clickable(onClick = onClick)
             .padding(horizontal = 16.dp, vertical = 9.dp),
     ) { Label(text, Typography.small.copy(fontWeight = FontWeight.SemiBold), if (selected) c.background else c.text, 1) }
+}
+
+/** La vista cuenta como usuaria de [repo] mientras está en pantalla (escucha solo entonces). */
+@Composable
+internal fun UseRepo(repo: MusicRepository) {
+    DisposableEffect(repo) {
+        repo.use()
+        onDispose { repo.release() }
+    }
+}
+
+/**
+ * La base de las piezas Música y Radio. Se acomoda a su tamaño: chica es una fila con carátula
+ * y play (o los tres botones si cabe); alta y no tan ancha, carátula arriba y lo demás abajo.
+ * Tocarla (fuera de los botones) la amplía con [onExpand]. [revision] cambia al volver a la
+ * app, para notar si el usuario acaba de dar el permiso. [text] es lo escrito y [controls] los
+ * botones (con [Modifier] y si van compactos).
+ */
+@Composable
+internal fun MediaTile(
+    repo: MusicRepository,
+    revision: Int,
+    onExpand: () -> Unit,
+    modifier: Modifier,
+    song: Song?,
+    icon: ImageVector,
+    title: String,
+    explain: String,
+    text: @Composable (tall: Boolean) -> Unit,
+    controls: @Composable (Modifier, compact: Boolean) -> Unit,
+) {
+    UseRepo(repo)
+    val permission = remember(revision) { repo.hasPermission().also { if (it) repo.recheck() } }
+    Card(modifier.fillMaxSize(), onClick = if (permission) onExpand else null) {
+        if (!permission) return@Card NoPermission(repo, icon, title, explain)
+        BoxWithConstraints(Modifier.fillMaxSize().padding(10.dp)) {
+            val tall = maxHeight > 150.dp
+            if (tall && maxWidth < maxHeight * 1.5f) {
+                // Una columna del tablero: carátula arriba, el resto abajo y centrado.
+                return@BoxWithConstraints Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Artwork(song, Modifier.fillMaxWidth().weight(1f), Radius.inner, icon)
+                    Column(Modifier.fillMaxWidth().padding(start = 6.dp, end = 6.dp, top = 14.dp)) { text(true) }
+                    controls(Modifier.padding(top = 8.dp), false)
+                }
+            }
+            // Angosta (la fila de abajo en 7"): solo play/pausa, para que el título se lea.
+            val compact = !tall && maxWidth < 400.dp
+            // Carátula cuadrada con esquinas, dentro de la tarjeta, si deja lugar al título.
+            val art = minOf(maxHeight, 240.dp)
+            val withArtwork = maxWidth - art >= if (compact) 150.dp else 220.dp
+            Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
+                if (withArtwork) Artwork(song, Modifier.size(art), Radius.inner, icon)
+                Column(Modifier.weight(1f).padding(horizontal = 12.dp), verticalArrangement = Arrangement.Center) {
+                    text(tall)
+                    if (tall) {
+                        Spacer(Modifier.height(12.dp))
+                        controls(Modifier, false)
+                    }
+                }
+                if (!tall) controls(Modifier, compact)
+            }
+        }
+    }
+}
+
+/** Sin acceso a notificaciones: qué hace la pieza y el botón para activarlo. */
+@Composable
+private fun NoPermission(repo: MusicRepository, icon: ImageVector, title: String, explain: String) {
+    val c = LocalColors.current
+    Row(
+        Modifier.fillMaxSize().padding(16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        Icon(icon, c.accent, 32.dp)
+        Column(Modifier.weight(1f)) {
+            Label(title, Typography.subtitle, maxLines = 1)
+            Label(explain, Typography.small, c.textMuted, maxLines = 2)
+        }
+        Button(stringResource(R.string.enable), { repo.requestPermission() }, primary = true)
+    }
+}
+
+/** Título de lo que suena y, debajo, el error, "Conectando…" o el artista y la app. */
+@Composable
+internal fun SongLines(repo: MusicRepository, song: Song, tall: Boolean) {
+    val c = LocalColors.current
+    Label(song.title, if (tall) Typography.title else Typography.subtitle, maxLines = 1)
+    val error = song.error
+    when {
+        error != null -> Label(error, Typography.small, c.danger, maxLines = 1)
+        song.buffering -> Label(stringResource(R.string.player_connecting), Typography.small, c.textMuted, maxLines = 1)
+        else -> Label(
+            // Sin canción (Bluetooth sin datos) el título ya es la app: no repetirla. El
+            // reproductor propio no agrega "LiteDash".
+            listOf(subtitleFor(repo, song), if (repo.isOwn(song.pkg)) "" else song.app)
+                .filter { it.isNotBlank() && it != song.title }.distinct().joinToString(" · "),
+            Typography.small, c.textMuted, maxLines = 1,
+        )
+    }
+}
+
+/**
+ * La base de la música y la radio en grande: tarjeta a pantalla completa con margen. [content]
+ * recibe si es ancha (carátula a un lado) y el ancho máximo de la carátula.
+ */
+@Composable
+internal fun ExpandedCard(repo: MusicRepository, modifier: Modifier, content: @Composable ColumnScope.(wide: Boolean, artworkMax: Dp) -> Unit) {
+    UseRepo(repo)
+    Card(modifier.fillMaxSize()) {
+        BoxWithConstraints(Modifier.fillMaxSize().padding(20.dp)) {
+            val wide = maxWidth > 520.dp && maxWidth > maxHeight
+            // La portada cuadrada, pero sin pasar del 40 % del ancho: el título y los botones
+            // siguen cabiendo a su lado.
+            val artworkMax = maxWidth * 0.4f
+            Column(Modifier.fillMaxSize()) { content(wide, artworkMax) }
+        }
+    }
+}
+
+/** Carátula y [details] (título y botones): lado a lado si es [wide], si no uno arriba del otro. */
+@Composable
+internal fun ColumnScope.NowPlaying(song: Song?, icon: ImageVector, wide: Boolean, artworkMax: Dp, details: @Composable (Modifier) -> Unit) {
+    if (wide) {
+        Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
+            Artwork(song, Modifier.widthIn(max = artworkMax).fillMaxHeight().aspectRatio(1f, matchHeightConstraintsFirst = false), Radius.card, icon)
+            Spacer(Modifier.width(24.dp))
+            details(Modifier.weight(1f))
+        }
+    } else {
+        Column(Modifier.weight(1f).fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+            Artwork(song, Modifier.weight(1f, fill = false).aspectRatio(1f, matchHeightConstraintsFirst = true), Radius.card, icon)
+            Spacer(Modifier.height(16.dp))
+            details(Modifier.fillMaxWidth())
+        }
+    }
+}
+
+/** Título y subtítulo grandes, con dos líneas reservadas cada uno: los botones no se mueven. */
+@Composable
+internal fun BigTitle(title: String, subtitle: String, error: Boolean) {
+    val c = LocalColors.current
+    Box(Modifier.heightIn(min = 68.dp), contentAlignment = Alignment.BottomStart) {
+        Label(title, Typography.title.copy(fontSize = 26.sp), maxLines = 2)
+    }
+    Spacer(Modifier.height(4.dp))
+    Box(Modifier.heightIn(min = 48.dp)) {
+        Label(subtitle, Typography.subtitle, if (error) c.danger else c.textMuted, maxLines = 2)
+    }
+}
+
+/** Botón redondo del encabezado de la vista en grande (lista, abrir app, cerrar). */
+@Composable
+internal fun HeaderButton(icon: ImageVector, onClick: () -> Unit) {
+    IconButton(icon, onClick, size = 48.dp, background = LocalColors.current.surfaceHigh)
 }

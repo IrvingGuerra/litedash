@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Chips USB-serie de los receptores de llantas y cables OBD: los mismos que TpmsRepository.USB_IDS (en decimal). -->
+<resources>
+    <!-- CH340 (1A86:7523) -->
+    <usb-device vendor-id="6790" product-id="29987" />
+    <!-- FTDI FT232R (0403:6001) y FT231X (0403:6015) -->
+    <usb-device vendor-id="1027" product-id="24577" />
+    <usb-device vendor-id="1027" product-id="24597" />
+    <!-- CP210x (10C4:EA60) -->
+    <usb-device vendor-id="4292" product-id="60000" />
+    <!-- PL2303 (067B:2303) -->
+    <usb-device vendor-id="1659" product-id="8963" />
+</resources>

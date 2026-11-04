@@ -8,6 +8,7 @@ import android.location.Location
 import android.location.LocationManager
 import android.os.Build
 import android.os.CancellationSignal
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -67,11 +68,11 @@ fun skyOf(code: Int) = when (code) {
 class WeatherRepository(private val context: Context, private val prefs: Preferences) {
     private val store = context.getSharedPreferences(STORE, Context.MODE_PRIVATE)
 
-    /** Como llegó de Open-Meteo (en la unidad que se pidió entonces). */
-    private var saved by mutableStateOf(read())
+    /** Como llegó de Open-Meteo, siempre en °C (lo guardado en °F por versiones viejas se pasa a °C). */
+    private var saved by mutableStateOf(read()?.inUnits(fahrenheit = false))
 
-    /** El clima en la unidad elegida ahora: si cambió, se convierte al momento (sin esperar a la red). */
-    val weather: Weather? get() = saved?.inUnits(fahrenheit)
+    /** El clima en la unidad elegida: se convierte una vez por cambio (de clima o de unidad), sin ir a la red. */
+    val weather: Weather? by derivedStateOf { saved?.inUnits(fahrenheit) }
 
     // Solo si el usuario lo activó: el permiso de ubicación también llega al activar
     // Viaje, y eso no debe encender el clima. Quien ya tenía clima guardado lo conserva.
@@ -91,7 +92,7 @@ class WeatherRepository(private val context: Context, private val prefs: Prefere
     suspend fun refreshIfStale(force: Boolean = false) {
         if (!active) return
         val last = saved
-        if (!force && last != null && last.fahrenheit == fahrenheit && System.currentTimeMillis() - last.fetchedAt < STALE_MS) return
+        if (!force && last != null && System.currentTimeMillis() - last.fetchedAt < STALE_MS) return
         val place = location() ?: return
         val fresh = runCatching { fetch(place.latitude, place.longitude) }.getOrNull() ?: return
         saved = fresh
@@ -118,11 +119,11 @@ class WeatherRepository(private val context: Context, private val prefs: Prefere
         }
     }
 
+    /** Siempre en °C: cambiar la unidad solo convierte lo que ya hay. */
     private suspend fun fetch(lat: Double, lon: Double): Weather = withContext(Dispatchers.IO) {
-        val unit = if (fahrenheit) "&temperature_unit=fahrenheit" else ""
         val url = "https://api.open-meteo.com/v1/forecast?latitude=%.2f&longitude=%.2f".format(Locale.US, lat, lon) +
             "&current=temperature_2m,weather_code,is_day&daily=weather_code,temperature_2m_max,temperature_2m_min" +
-            "&timezone=auto&forecast_days=4$unit"
+            "&timezone=auto&forecast_days=4"
         val connection = Https.open(context, url).apply {
             connectTimeout = 10_000
             readTimeout = 15_000
@@ -145,7 +146,6 @@ class WeatherRepository(private val context: Context, private val prefs: Prefere
                 )
             },
             fetchedAt = System.currentTimeMillis(),
-            fahrenheit = fahrenheit,
         )
     }
 

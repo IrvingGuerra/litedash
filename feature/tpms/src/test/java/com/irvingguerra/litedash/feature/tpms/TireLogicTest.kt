@@ -15,6 +15,10 @@ class TireLogicTest {
 
     private fun kinds(alerts: List<TireAlert>, w: Wheel) = alerts.filter { it.wheel == w }.map { it.kind to it.severity }
 
+    /** Lo que el repositorio saca del historial: el máximo de los últimos 5 min y la fuga lenta. */
+    private fun trend(hist: List<TireSample>) =
+        TireTrend(hist.filter { now - it.atMillis <= FAST_LEAK_WINDOW_MS }.maxOfOrNull { it.kpa }, slowLeak(hist, now))
+
     @Test
     fun todoBienSinAlertas() {
         val r = Wheel.ROAD.associateWith { reading(it.key, 230f) }
@@ -44,11 +48,11 @@ class TireLogicTest {
     @Test
     fun fugaRapidaPorHistorialYPorBandera() {
         val hist = listOf(TireSample(now - 4 * 60_000, 230f), TireSample(now - 2 * 60_000, 222f))
-        val a = tireAlerts(mapOf(Wheel.FRONT_LEFT to reading("a", 215f)), mapOf(Wheel.FRONT_LEFT to hist), TireLimits(), now)
+        val a = tireAlerts(mapOf(Wheel.FRONT_LEFT to reading("a", 215f)), mapOf(Wheel.FRONT_LEFT to trend(hist)), TireLimits(), now)
         assertEquals(listOf(TireAlertKind.FAST_LEAK to TireSeverity.DANGER), kinds(a, Wheel.FRONT_LEFT))
         // Lo de hace más de 5 min no cuenta.
         val old = listOf(TireSample(now - 6 * 60_000, 240f))
-        assertTrue(tireAlerts(mapOf(Wheel.FRONT_LEFT to reading("a", 225f)), mapOf(Wheel.FRONT_LEFT to old), TireLimits(), now).isEmpty())
+        assertTrue(tireAlerts(mapOf(Wheel.FRONT_LEFT to reading("a", 225f)), mapOf(Wheel.FRONT_LEFT to trend(old)), TireLimits(), now).isEmpty())
         val flag = tireAlerts(mapOf(Wheel.REAR_LEFT to reading("c", 230f, leak = true)), emptyMap(), TireLimits(), now)
         assertEquals(TireAlertKind.FAST_LEAK, flag.single().kind)
     }
@@ -57,11 +61,11 @@ class TireLogicTest {
     fun fugaLenta() {
         // Tres días bajando de 240 a 215 kPa, una muestra cada 30 min.
         val hist = (0..144).map { i -> TireSample(now - 72 * hour + i * 30 * 60_000L, 240f - 25f * i / 144f) }
-        val a = tireAlerts(mapOf(Wheel.REAR_RIGHT to reading("d", 215f)), mapOf(Wheel.REAR_RIGHT to hist), TireLimits(), now)
+        val a = tireAlerts(mapOf(Wheel.REAR_RIGHT to reading("d", 215f)), mapOf(Wheel.REAR_RIGHT to trend(hist)), TireLimits(), now)
         assertEquals(listOf(TireAlertKind.SLOW_LEAK to TireSeverity.WARNING), kinds(a, Wheel.REAR_RIGHT))
         // Poco historial (12 h): no se dice nada aunque baje.
         val short = hist.filter { now - it.atMillis <= 12 * hour }
-        assertTrue(tireAlerts(mapOf(Wheel.REAR_RIGHT to reading("d", 215f)), mapOf(Wheel.REAR_RIGHT to short), TireLimits(), now).isEmpty())
+        assertTrue(tireAlerts(mapOf(Wheel.REAR_RIGHT to reading("d", 215f)), mapOf(Wheel.REAR_RIGHT to trend(short)), TireLimits(), now).isEmpty())
     }
 
     @Test
@@ -82,7 +86,6 @@ class TireLogicTest {
         // Perdida: solo LOST (su presión vieja no da "baja").
         assertEquals(listOf(TireAlertKind.LOST to TireSeverity.WARNING), kinds(a, Wheel.REAR_RIGHT))
         assertEquals(listOf(TireAlertKind.LOST to TireSeverity.WARNING), kinds(a, Wheel.SPARE))
-        assertTrue(a.all { it.message.isNotBlank() })
     }
 
     @Test
@@ -116,6 +119,25 @@ class TireLogicTest {
     }
 
     @Test
+    fun historialMaximoRecienteYCopia() {
+        val h = TireHistory()
+        h.add(Wheel.FRONT_LEFT, 0L, 240f)
+        h.add(Wheel.FRONT_LEFT, 60_000L, 230f)
+        h.add(Wheel.FRONT_LEFT, 120_000L, 225f)
+        assertEquals(230f, h.maxSince(Wheel.FRONT_LEFT, 60_000L)!!, 0.01f)
+        assertEquals(240f, h.maxSince(Wheel.FRONT_LEFT, 0L)!!, 0.01f)
+        assertNull(h.maxSince(Wheel.FRONT_LEFT, 200_000L))
+        assertNull(h.maxSince(Wheel.REAR_LEFT, 0L))
+        // La copia para guardar no cambia con lo que entra después.
+        assertTrue(h.dirty)
+        val copy = h.snapshot()
+        assertTrue(!h.dirty)
+        h.add(Wheel.FRONT_LEFT, 180_000L, 220f)
+        assertEquals(3, copy.samples(Wheel.FRONT_LEFT).size)
+        assertEquals(h.samples(Wheel.FRONT_LEFT).take(3), copy.samples(Wheel.FRONT_LEFT))
+    }
+
+    @Test
     fun historialSeGuardaYSeLee() {
         val h = TireHistory()
         for (i in 0 until 100) {
@@ -128,16 +150,19 @@ class TireLogicTest {
         assertEquals(h.samples(Wheel.SPARE), back.samples(Wheel.SPARE))
         // Dañado o vacío: empieza limpio.
         assertTrue(TireHistory.decode(bytes.copyOf(20)).samples(Wheel.FRONT_LEFT).isEmpty())
-        assertTrue(TireHistory.decode(null).all().isEmpty())
+        assertTrue(TireHistory.decode(null).samples(Wheel.FRONT_LEFT).isEmpty())
     }
 
     @Test
-    fun identificarPorCambioOSensorNuevo() {
+    fun identificarPorCambioTambienSiApareceNuevo() {
         val t0 = 1_000L
         val idf = SensorIdentifier(mapOf("a" to 230f, "b" to 228f), t0)
         assertNull(idf.check(mapOf("a" to reading("a", 233f, at = t0 + 5_000), "b" to reading("b", 228f, at = t0 + 5_000)), t0 + 5_000))
         assertEquals("b", idf.check(mapOf("a" to reading("a", 233f, at = t0 + 9_000), "b" to reading("b", 220f, at = t0 + 9_000)), t0 + 9_000))
-        assertEquals("c", idf.check(mapOf("c" to reading("c", 200f, at = t0 + 9_000)), t0 + 9_000))
+        // Uno nuevo (otro auto que pasó) no basta: tiene que cambiar desde que se oyó.
+        assertNull(idf.check(mapOf("c" to reading("c", 200f, at = t0 + 9_000)), t0 + 9_000))
+        assertNull(idf.check(mapOf("c" to reading("c", 203f, at = t0 + 10_000)), t0 + 10_000))
+        assertEquals("c", idf.check(mapOf("c" to reading("c", 192f, at = t0 + 11_000)), t0 + 11_000))
         // Ya pasaron los 120 s.
         assertNull(idf.check(mapOf("b" to reading("b", 100f, at = t0 + 121_000)), t0 + 121_000))
     }

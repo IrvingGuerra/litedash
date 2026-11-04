@@ -84,8 +84,7 @@ private const val STREAKS = 18
 fun RoadView(d: Dependencies, pkg: CarPackage?, onClick: () -> Unit, modifier: Modifier = Modifier, onReady: (() -> Unit)? = null) {
     val c = LocalColors.current
     // Con un adaptador ya guardado, se reconecta solo (como el velocímetro).
-    AutoConnectObd(d)
-    val obdOn = d.obdIfCreated()?.state == ObdState.ON
+    val obdOn = rememberObd(d)?.state == ObdState.ON
     val (gps, ask) = rememberGpsPermission(d)
     // El GPS da los km del viaje (y la velocidad si no hay OBD) mientras la pieza se ve.
     if (gps) KeepTripRunning(d.trip)

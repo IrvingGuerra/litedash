@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Tires (TPMS): new texts since 1.4.58. -->
+<resources>
+    <string name="tires_error_usb_missing">The USB tire receiver is not plugged in</string>
+    <string name="tires_error_usb_denied">No permission for the USB receiver</string>
+    <string name="tires_error_usb_open">The USB receiver could not be opened</string>
+    <string name="tires_error_usb_unplugged">The USB receiver was unplugged</string>
+    <string name="tires_error_usb_lost">The connection with the USB receiver was lost</string>
+    <string name="tires_error_swap">The receiver did not confirm the tire swap</string>
+    <string name="tires_tap_hint">Tap a tire to set up its sensor or move it</string>
+</resources>

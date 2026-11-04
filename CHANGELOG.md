@@ -6,6 +6,33 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
+## [1.4.58] - 2026-11-04
+
+### Arreglado
+- **Música: cambiar de Spotify a USB y regresar**: el primer toque a USB ya toca la música (antes abría la
+  biblioteca y Spotify seguía sonando), tocar tu app pausa la USB y regresa a ella, y nada se traba.
+- La actualización anterior podía dejar como "tu app de música" una app de la pantalla que LiteDash solo
+  había adivinado; ya no.
+- **Llantas por Bluetooth**: si el Bluetooth se apaga y se prende (al dar marcha), LiteDash lo dice y vuelve a
+  escuchar solo; ya no muestra presiones viejas como si fueran actuales.
+- Llantas: cambiar la calibración ya no dispara avisos falsos de fuga; el receptor USB puede quedarse con
+  "usar siempre" (no pide permiso en cada encendido); el historial se guarda sin trabar la pantalla.
+- El widget Taller ya no dice "Todo bien" sin haber leído los códigos de falla.
+- El auto visto desde arriba es del mismo color en el Taller y en Llantas.
+- Otros arreglos de la auditoría: reproductor (errores al cargar, aviso en pausa), Bluetooth del celular
+  (otros aparatos ya no lo confunden), cable OBD USB desconectado, menos trabajo en segundo plano.
+
+### Cambiado
+- **Música**: botones USB · tu app de música · Bluetooth (sin "Apps"). El reproductor USB ya no se prende: siempre está.
+- **Módulos**: OBD, Llantas y Cámaras, más la pestaña **Permisos** (Avisos y Ubicación). Un módulo apagado
+  **desaparece** del menú, del inicio y de los avisos.
+- **Sistema** (antes "Acerca de" y "Ajustes de Android"): Actualizaciones · Ajustes de Android · Estadísticas · Pantalla.
+- **Llantas** en pestañas: Llantas · Presión y avisos · Inicio · Diagnóstico. **Apariencia**: General · Pantalla · Unidades.
+- En el inicio ahora se llaman **widgets**.
+
+### Nuevo
+- **Modo estacionado** con tu propia imagen, además del reloj.
+
 ## [1.4.57] - 2026-11-03
 
 ### Cambiado

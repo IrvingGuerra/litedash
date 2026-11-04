@@ -1,12 +1,5 @@
 package com.irvingguerra.litedash
 
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -22,13 +15,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SnapshotMutationPolicy
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -41,6 +34,7 @@ import com.irvingguerra.litedash.core.ui.Typography
 import com.irvingguerra.litedash.core.vehicle.Signal
 import com.irvingguerra.litedash.core.vehicle.watch
 import com.irvingguerra.litedash.feature.car.CAR_TOP_ASPECT
+import com.irvingguerra.litedash.feature.car.CarPackage
 import com.irvingguerra.litedash.feature.car.CarTop
 import com.irvingguerra.litedash.feature.obd.EngineReport
 import com.irvingguerra.litedash.feature.obd.HealthLevel
@@ -58,51 +52,81 @@ private val MAIN_ZONES = listOf(Zone.ENGINE, Zone.INTAKE, Zone.COOLING, Zone.BAT
  * La pantalla Salud del Taller: tu auto desde arriba con un punto sobre cada parte que pide
  * atención (ámbar) o tiene falla (rojo); al lado, la frase de estado y una tarjeta por
  * sistema con su palabra de estado o su dato en vivo. Sin adaptador ([connected] = false)
- * el auto se ve apagado y las tarjetas en gris: la misma pantalla, nunca una vacía.
- * [onCodes] lleva a la pestaña de códigos al tocar una parte con códigos.
+ * las tarjetas van en gris: la misma pantalla, nunca una vacía. [onRead] (solo conectado)
+ * vuelve a leer; [onCodes] lleva a la pestaña de códigos al tocar una parte con códigos.
  */
 @Composable
-fun HealthView(d: Dependencies, report: EngineReport?, reading: Boolean, onRead: () -> Unit, connected: Boolean, onCodes: () -> Unit = {}, onTires: () -> Unit = {}) {
+fun HealthView(
+    d: Dependencies,
+    car: CarPackage?,
+    report: EngineReport?,
+    connected: Boolean,
+    reading: Boolean = false,
+    onRead: (() -> Unit)? = null,
+    onCodes: () -> Unit = {},
+    onTires: () -> Unit = {},
+) {
     val health = rememberHealth(d, report, connected)
     Card(Modifier.fillMaxWidth().widthIn(max = 860.dp)) {
         BoxWithConstraints(Modifier.padding(22.dp)) {
             val wide = maxWidth > 620.dp
             // El auto se mide por su alto: en una pantalla acostada no debe pasar de lo que se ve.
             val carHeight = if (wide) 330.dp else 270.dp
-            val summary = @Composable { Summary(d, health, report, reading, connected) }
-            val cards = @Composable { SystemTiles(d, health, report, connected, onCodes, onTires) }
+            val details = @Composable {
+                Summary(d, health, report, reading, connected)
+                SystemTiles(d, health, report, connected, onCodes, onTires)
+                if (onRead != null) Button(stringResource(R.string.obd_read_again), onRead)
+            }
             if (wide) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(28.dp)) {
-                    CarWithMarks(d, health, connected, Modifier.padding(horizontal = 12.dp).height(carHeight))
-                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                        summary()
-                        cards()
-                        if (connected) Button(stringResource(R.string.obd_read_again), onRead)
-                    }
+                    CarWithMarks(d, car, health, Modifier.padding(horizontal = 12.dp).height(carHeight))
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(16.dp)) { details() }
                 }
             } else {
                 Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                    CarWithMarks(d, health, connected, Modifier.height(carHeight))
-                    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                        summary()
-                        cards()
-                        if (connected) Button(stringResource(R.string.obd_read_again), onRead)
-                    }
+                    CarWithMarks(d, car, health, Modifier.height(carHeight))
+                    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(16.dp)) { details() }
                 }
             }
         }
     }
 }
 
-/** La salud con lo que se sabe ahora: el reporte, la alerta en vivo y los datos del bus (solo conectado). */
+/** Las señales que deciden la salud en vivo (calor, carga y si el motor anda). */
+private val HEALTH_SIGNALS = listOf(Signal.COOLANT, Signal.VOLTAGE, Signal.RPM)
+
+/**
+ * Misma salud si cada parte sigue con el mismo nivel, alerta y si tiene dato: así un rpm nuevo
+ * no vuelve a armar la pantalla (el número en vivo lo lee cada tarjeta).
+ */
+private object SameLevels : SnapshotMutationPolicy<List<SystemHealth>> {
+    override fun equivalent(a: List<SystemHealth>, b: List<SystemHealth>) =
+        a.size == b.size && a.indices.all { i ->
+            a[i].level == b[i].level && a[i].alert == b[i].alert && (a[i].value == null) == (b[i].value == null)
+        }
+}
+
+/**
+ * La salud con lo que se sabe ahora: el reporte, la alerta en vivo y los datos del bus (solo
+ * conectado). Los datos se leen dentro de un [derivedStateOf]: quien la usa solo se vuelve a
+ * dibujar cuando cambia el estado de alguna parte, no con cada lectura.
+ */
 @Composable
 private fun rememberHealth(d: Dependencies, report: EngineReport?, connected: Boolean): List<SystemHealth> {
-    if (!connected) return remember { healthOf(null, null, null, null, null) }
-    val coolant = d.bus.watch(Signal.COOLANT)
-    val voltage = d.bus.watch(Signal.VOLTAGE)
-    val rpm = d.bus.watch(Signal.RPM)
-    val alert = engineAlert(coolant, voltage, rpm)
-    return remember(report, alert, coolant, voltage, rpm) { healthOf(report, alert, coolant, voltage, rpm) }
+    if (connected) DisposableEffect(d.bus) {
+        HEALTH_SIGNALS.forEach(d.bus::want)
+        onDispose { HEALTH_SIGNALS.forEach(d.bus::unwant) }
+    }
+    val health = remember(report, connected) {
+        derivedStateOf(SameLevels) {
+            if (!connected) return@derivedStateOf healthOf(null, null, null, null, null)
+            val coolant = d.bus.value(Signal.COOLANT)
+            val voltage = d.bus.value(Signal.VOLTAGE)
+            val rpm = d.bus.value(Signal.RPM)
+            healthOf(report, engineAlert(coolant, voltage, rpm), coolant, voltage, rpm)
+        }
+    }
+    return health.value
 }
 
 /**
@@ -154,7 +178,8 @@ private fun signalOf(zone: Zone) = when (zone) {
 
 /**
  * Una parte del auto: con falla o atención, la palabra grande en su color y los códigos
- * abajo; bien, su dato en vivo (o "Bien") y la línea de los últimos 90 s.
+ * abajo; bien, su dato en vivo (o "Bien") y la línea de los últimos 90 s. Solo esta tarjeta
+ * lee el dato en vivo: cada lectura vuelve a dibujar esta, no toda la pantalla.
  */
 @Composable
 private fun SystemTile(d: Dependencies, h: SystemHealth, report: EngineReport?, connected: Boolean, onCodes: () -> Unit, modifier: Modifier) {
@@ -168,7 +193,9 @@ private fun SystemTile(d: Dependencies, h: SystemHealth, report: EngineReport?, 
     val signal = signalOf(h.zone)
     val locale = currentLocale()
     val units = d.prefs.units
-    val value = h.value
+    // La batería sin dato en vivo usa el voltaje que leyó el reporte.
+    val live = if (connected && signal != null) d.bus.watch(signal) else null
+    val value = live ?: report?.voltage?.takeIf { h.zone == Zone.BATTERY }
     val word = when (h.level) {
         HealthLevel.FAULT -> stringResource(R.string.health_fault)
         HealthLevel.WARN -> stringResource(R.string.health_warn)
@@ -206,37 +233,20 @@ private fun SystemTile(d: Dependencies, h: SystemHealth, report: EngineReport?, 
 }
 
 /**
- * Tu auto desde arriba (su render, o la silueta si el paquete no la trae) con los puntos de atención. El punto late despacio solo si hay una
- * falla; sin fallas nada se mueve.
+ * Tu auto desde arriba (su render, o la silueta si el paquete no la trae), del mismo color que
+ * en Llantas, con los puntos de atención. El punto late despacio solo si hay una falla; sin
+ * fallas nada se mueve.
  */
 @Composable
-private fun CarWithMarks(d: Dependencies, health: List<SystemHealth>, connected: Boolean, modifier: Modifier) {
+private fun CarWithMarks(d: Dependencies, car: CarPackage?, health: List<SystemHealth>, modifier: Modifier) {
     val c = LocalColors.current
-    val marked = health.filter { it.level == HealthLevel.WARN || it.level == HealthLevel.FAULT }
-    val anyFault = marked.any { it.level == HealthLevel.FAULT }
-    // El latido se lee solo al dibujar: con una falla se repinta el Canvas, no se rearma el auto.
-    val pulse = if (anyFault) {
-        rememberInfiniteTransition(label = "fault").animateFloat(0f, 1f, infiniteRepeatable(tween(1600, easing = LinearEasing), RepeatMode.Restart), label = "pulse")
-    } else null
-    val accent = c.accent
-    val danger = c.danger
+    val marks = health.filter { it.level == HealthLevel.WARN || it.level == HealthLevel.FAULT }.map {
+        val fault = it.level == HealthLevel.FAULT
+        ProblemMark(it.zone.x, it.zone.y, if (fault) c.danger else c.accent, pulsing = fault)
+    }
     Box(modifier.aspectRatio(CAR_TOP_ASPECT)) {
-        CarTop(d.cars, d.cars.pkg(d.prefs.carModel), d.prefs.carColor, Modifier.fillMaxSize(), muted = !connected)
-        if (marked.isNotEmpty()) Canvas(Modifier.fillMaxSize()) {
-            val r = size.width * 0.045f
-            for (h in marked) {
-                val at = Offset(size.width * h.zone.x, size.height * h.zone.y)
-                val color = if (h.level == HealthLevel.FAULT) danger else accent
-                // Halo suave; con falla, un anillo que se expande y se desvanece.
-                drawCircle(Brush.radialGradient(listOf(color.copy(alpha = 0.35f), Color.Transparent), at, r * 3f), r * 3f, at)
-                if (h.level == HealthLevel.FAULT && pulse != null) {
-                    val t = pulse.value
-                    drawCircle(color.copy(alpha = (1f - t) * 0.6f), r * (1f + t * 2.2f), at, style = Stroke(r * 0.25f))
-                }
-                drawCircle(color, r, at)
-                drawCircle(Color.White.copy(alpha = 0.9f), r * 0.35f, at)
-            }
-        }
+        CarTop(d.cars, car, d.prefs.carColor, Modifier.fillMaxSize())
+        ProblemMarks(marks, Modifier.fillMaxSize())
     }
 }
 
@@ -256,18 +266,21 @@ internal fun zoneName(zone: Zone) = when (zone) {
  * (N avisos, Todo bien, Conectando…, o nada si no hay adaptador). Un toque abre el Taller.
  */
 @Composable
-fun HealthTile(d: Dependencies, onClick: () -> Unit) {
+fun HealthTile(d: Dependencies, car: CarPackage?, onClick: () -> Unit) {
     val c = LocalColors.current
     val obd = d.obdIfCreated()
     val connected = obd?.state == ObdState.ON
-    val health = rememberHealth(d, obd?.lastReport, connected)
+    // Los códigos se leen una vez por conexión: sin eso diría "Todo bien" sin haberlos visto.
+    LaunchedEffect(obd, connected) { if (connected && obd?.lastReport == null) obd?.report() }
+    val report = if (connected) obd?.lastReport else null
+    val health = rememberHealth(d, report, connected)
     val issues = health.issues()
-    val known = health.any { it.level != HealthLevel.UNKNOWN }
+    val known = report != null && health.any { it.level != HealthLevel.UNKNOWN }
     val detail = when {
         obd?.state == ObdState.CONNECTING -> stringResource(R.string.obd_connecting_short)
         connected && issues > 0 -> pluralStringResource(R.plurals.health_issues, issues, issues)
         connected && known -> stringResource(R.string.health_all_good)
-        connected -> stringResource(R.string.obd_connected_short)
+        connected -> stringResource(R.string.obd_reading)
         else -> null
     }
     val detailColor = when {
@@ -281,14 +294,14 @@ fun HealthTile(d: Dependencies, onClick: () -> Unit) {
             val sideWidth = maxHeight * CAR_TOP_ASPECT
             if (tall) {
                 Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
-                    CarWithMarks(d, health, connected, Modifier.weight(1f).fillMaxHeight())
+                    CarWithMarks(d, car, health, Modifier.weight(1f).fillMaxHeight())
                     Spacer(Modifier.height(8.dp))
                     Label(stringResource(R.string.workshop), Typography.subtitle, maxLines = 1)
                     if (detail != null) Label(detail, Typography.small, detailColor, maxLines = 1)
                 }
             } else {
                 Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
-                    CarWithMarks(d, health, connected, Modifier.fillMaxHeight().width(sideWidth))
+                    CarWithMarks(d, car, health, Modifier.fillMaxHeight().width(sideWidth))
                     Column(Modifier.padding(start = 14.dp)) {
                         Label(stringResource(R.string.workshop), Typography.subtitle, maxLines = 1)
                         if (detail != null) Label(detail, Typography.small, detailColor, maxLines = 1)

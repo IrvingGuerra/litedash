@@ -21,8 +21,7 @@ import java.util.Locale
 @Composable
 fun SpeedometerTile(d: Dependencies, look: GaugeLook) {
     // Con un adaptador ya guardado, se reconecta solo (sin abrir el Taller).
-    AutoConnectObd(d)
-    val obdOn = d.obdIfCreated()?.state == ObdState.ON
+    val obdOn = rememberObd(d)?.state == ObdState.ON
     val (gps, ask) = rememberGpsPermission(d)
     if (!obdOn && !gps) {
         return ShortcutTile(Icons.speed, stringResource(R.string.tile_speedometer), stringResource(R.string.tap_to_enable), ask)
@@ -164,8 +163,7 @@ fun GaugeTile(d: Dependencies, signal: String, look: GaugeLook, onPick: () -> Un
     val spec = gaugeOf(signal)
         ?: return ShortcutTile(Icons.plus, stringResource(R.string.tile_gauge), stringResource(R.string.gauge_pick), onPick)
     // Con un adaptador ya guardado, se reconecta solo (sin abrir el Taller).
-    AutoConnectObd(d)
-    val obd = d.obdIfCreated()
+    val obd = rememberObd(d)
     val name = stringResource(spec.name)
     if (obd?.state != ObdState.ON) {
         val detail = if (obd?.state == ObdState.CONNECTING) R.string.obd_connecting_short else R.string.gauge_connect

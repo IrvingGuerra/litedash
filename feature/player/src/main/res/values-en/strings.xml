@@ -33,7 +33,6 @@
     <string name="radio_no_location">No location: these are your country\'s most played. Turn on location in Modules to see your area\'s.</string>
     <string name="radio_no_favorites">Tap a station\'s star to keep it here.</string>
     <string name="radio_km">%1$d km</string>
-    <string name="radio_source">Internet radio</string>
     <string name="library_pick_folder">Choose folder</string>
     <string name="library_pick_folder_help">If your music is on the drive but doesn\'t show up, choose its folder: LiteDash will remember it.</string>
     <string name="library_unreadable">I can see the drive %1$s, but your screen doesn\'t let apps read its songs. Choose its folder and LiteDash will remember it.</string>

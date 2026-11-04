@@ -52,7 +52,7 @@
     <string name="trip_max">máx. %1$s</string>
     <string name="tab_split">Pantalla dividida</string>
     <string name="split_title">Abrir mapa y música en pantalla dividida</string>
-    <string name="split_help">Al abrir Waze, Maps, Spotify u otra app de mapa o de música desde LiteDash, se abre en una mitad y tu auto (3D o en carretera) en la otra, sin las demás piezas. Solo con la pantalla acostada. Tu inicio no cambia: al regresar está como lo dejaste.</string>
+    <string name="split_help">Al abrir Waze, Maps, Spotify u otra app de mapa o de música desde LiteDash, se abre en una mitad y tu auto (3D o en carretera) en la otra, sin los demás widgets. Solo con la pantalla acostada. Tu inicio no cambia: al regresar está como lo dejaste.</string>
     <string name="split_view">Al lado del mapa</string>
     <string name="split_side">Lado del auto</string>
     <string name="split_left">Izquierda</string>
@@ -99,7 +99,7 @@
     <string name="templates_wallpaper_help">Tu foto de fondo con unas cuantas tarjetas encima y la hora flotando. Elige el fondo aquí o en Apariencia.</string>
     <string name="add">Agregar</string>
     <string name="add_tile">Agregar al inicio</string>
-    <string name="no_room">Ya no hay lugar: quita o achica alguna pieza.</string>
+    <string name="no_room">Ya no hay lugar: quita o achica algún widget.</string>
     <string name="done">Listo</string>
     <string name="theme">Tema</string>
     <string name="theme_dark">Oscuro</string>
@@ -110,7 +110,6 @@
     <string name="home">Inicio</string>
     <string name="arrange">Acomodar inicio</string>
     <string name="arrange_help">También puedes dejar presionado cualquier lugar del inicio.</string>
-    <string name="about">Acerca de</string>
     <string name="model_generic">Sedán (dibujo)</string>
     <string name="download_mb">Bajar · %.1f MB</string>
     <string name="catalog_error">No se pudo bajar. Revisa tu conexión e inténtalo otra vez.</string>
@@ -174,11 +173,10 @@
     <string name="units_metric">km/h y km</string>
     <string name="units_imperial">mph y millas</string>
     <string name="units_auto_now">Automático ahora: %1$s y %2$s (según tu idioma y región)</string>
-    <string name="map_help">La app que abre la pieza Navegar. Mientras navegas, la pieza muestra la siguiente vuelta (usa el mismo acceso a notificaciones que la música).</string>
+    <string name="map_help">La app que abre el widget Navegar. Mientras navegas, el widget muestra la siguiente vuelta (usa el mismo acceso a notificaciones que la música).</string>
     <string name="map_no_apps">Instala Waze o Google Maps para navegar desde LiteDash.</string>
     <string name="music">Música</string>
-    <string name="music_system">Apps</string>
-    <string name="music_help">La app que sale como botón en la música en grande y que despierta play. "Apps" sigue lo que suene en cualquier app (la radio tiene su propia pieza).</string>
+    <string name="music_help">Sale con su nombre junto a USB en la música en grande y play la despierta. Sin app elegida, la música muestra lo que suene (la radio tiene su propio widget).</string>
     <string name="template_cards">Tarjetas abajo</string>
     <string name="template_columns">Tres columnas</string>
     <string name="template_panel">Panel completo</string>
@@ -223,7 +221,10 @@
     <string name="unit_kmh">km/h</string>
     <string name="unit_mph">mph</string>
     <string name="parked_mode">Modo estacionado</string>
-    <string name="parked_mode_help">Tras 5 minutos sin tocar el inicio (y sin ir en movimiento) se ve un reloj grande. Un toque lo quita.</string>
+    <string name="parked_mode_help">Tras 5 minutos sin tocar el inicio (y sin ir en movimiento) se ve un reloj grande o tu imagen. Un toque lo quita.</string>
+    <string name="parked_clock">Reloj</string>
+    <string name="parked_image">Tu imagen</string>
+    <string name="parked_no_image">Elige una imagen de tu galería; mientras no haya, se ve el reloj.</string>
     <string name="reminder_service">Servicio</string>
     <string name="reminder_verification">Verificación</string>
     <string name="reminder_tax">Tenencia o refrendo</string>
@@ -386,7 +387,6 @@
     <string name="monitor_o2">Sensor de oxígeno</string>
     <string name="monitor_o2_heater">Calentador del sensor de oxígeno</string>
     <string name="monitor_egr">Recirculación de gases (EGR)</string>
-    <string name="obd_connected_short">Conectado</string>
     <string name="obd_connecting_short">Conectando…</string>
     <!-- Pestañas de Ajustes -->
     <string name="tab_general">General</string>
@@ -410,30 +410,32 @@
     <string name="release_notes">NOVEDADES DE ESTA VERSIÓN</string>
     <string name="apps_section">Apps</string>
     <string name="tab_layout">Acomodo</string>
-    <string name="tab_tiles">Piezas</string>
+    <string name="tab_tiles">Widgets</string>
     <string name="tab_navigation">Navegación</string>
     <string name="tab_favorites">Favoritas</string>
     <string name="favorites_help">Las apps de la barra, en su orden. Agrégalas desde el cajón de apps (deja presionada una).</string>
     <string name="module_obd">Escáner OBD</string>
     <string name="module_notifications">Avisos de otras apps</string>
     <string name="module_location">Ubicación</string>
-    <string name="module_usb_player">Reproductor USB</string>
-    <string name="module_usb_player_help">LiteDash toca la música de tu memoria USB: carpetas, artistas y álbumes, con carátulas</string>
     <string name="module_radio">Radio por internet</string>
     <string name="module_tpms">Llantas (TPMS)</string>
     <string name="module_cameras">Cámaras</string>
     <string name="module_soon">Pronto</string>
+    <string name="module_off">Módulo apagado: quítalo o préndelo en Ajustes → Módulos</string>
+    <string name="tab_permissions">Permisos</string>
+    <string name="system">Sistema</string>
+    <string name="tab_updates">Actualizaciones</string>
     <string name="tile_car_help">Tu auto en 3D; gíralo con el dedo y un toque lo agranda</string>
     <string name="tile_road_help">Tu auto en carretera con la velocidad (OBD o GPS) y los km del viaje</string>
     <string name="tile_image_help">Una foto tuya, como el logo de tu marca; sin foto, el logo de LiteDash</string>
-    <string name="image_title">Imagen de la pieza</string>
-    <string name="image_help">Elígela de tu galería: cada pieza de imagen tiene la suya. LiteDash no trae logos de marcas.</string>
+    <string name="image_title">Imagen del widget</string>
+    <string name="image_help">Elígela de tu galería: cada widget de imagen tiene la suya. LiteDash no trae logos de marcas.</string>
     <string name="image_empty">Sin foto se muestra el logo de LiteDash.</string>
     <string name="tile_music_help">Lo que suena, con controles; un toque la abre en grande</string>
     <string name="tile_navigate_help">Tu app de mapas, Casa y Trabajo, y la siguiente vuelta</string>
     <string name="tile_clock_help">Hora, fecha y clima</string>
     <string name="tile_phone_help">Abre el marcador</string>
-    <string name="logo_intro_help">Al abrir LiteDash, tu imagen (como el logo de tu marca) aparece unos segundos. Es aparte de las piezas de imagen.</string>
+    <string name="logo_intro_help">Al abrir LiteDash, tu imagen (como el logo de tu marca) aparece unos segundos. Es aparte de los widgets de imagen.</string>
     <string name="intro_no_image">Sin imagen se muestra el logo de LiteDash.</string>
     <string name="unit_rpm" translatable="false">rpm</string>
     <string name="unit_c" translatable="false">°C</string>
@@ -533,7 +535,7 @@
     <string name="tile_radio">Radio</string>
     <string name="tile_radio_help">La radio de tu pantalla (FM) y, si la activas, por internet; un toque la abre en grande</string>
     <string name="radio_fm_app">Radio de tu pantalla</string>
-    <string name="radio_fm_app_help">La app de radio FM que trae tu pantalla: LiteDash la controla desde la pieza Radio (play, siguiente, anterior y abrirla).</string>
+    <string name="radio_fm_app_help">La app de radio FM que trae tu pantalla: LiteDash la controla desde el widget Radio (play, siguiente, anterior y abrirla).</string>
     <string name="radio_internet_help">Estaciones de tu zona por GPS y de todo el mundo, con favoritas. Necesita internet; si no tienes, usa la radio de tu pantalla.</string>
     <string name="tab_health">Salud</string>
     <string name="tab_more">Más</string>
@@ -607,7 +609,6 @@
     <string name="tires_source_usb">Receptor USB</string>
     <string name="tires_source_ble">Bluetooth</string>
     <string name="tires_source_demo">Demo</string>
-    <string name="tires_source_off">Apagado</string>
     <string name="tires_source_help">Receptor USB: los kits TPMS para pantallas de auto. Bluetooth: tapones o sensores con Bluetooth. Demo: datos de prueba para ver cómo se ve.</string>
     <string name="tires_grant">Dar permiso</string>
     <string name="tires_retry">Reintentar</string>
@@ -648,7 +649,7 @@
     <string name="tires_alerts">Avisos</string>
     <string name="tires_alerts_help">Las llantas se leen aunque no estén en pantalla, para avisarte a tiempo</string>
     <string name="tires_on_home">En el inicio</string>
-    <string name="tires_tile_hint">La pieza Llantas también se agrega en Ajustes → Inicio o al acomodar tu inicio</string>
+    <string name="tires_tile_hint">El widget Llantas también se agrega en Ajustes → Inicio o al acomodar tu inicio</string>
     <string name="tires_car_tap">Al tocar el auto</string>
     <string name="tires_car_tap_big">Verlo en grande</string>
     <string name="tires_car_tap_tires">Ver sus llantas</string>
@@ -658,14 +659,12 @@
     <string name="tires_banner">Aviso arriba del inicio</string>
     <string name="tires_rail">Testigo en la barra lateral</string>
     <string name="tires_rail_help">Una llanta en la barra, solo cuando hay un problema</string>
-    <string name="tires_alerts_off_note">Con los avisos apagados, el aviso y el testigo solo salen mientras ves tus llantas</string>
+    <string name="tires_alerts_off_note">Con los avisos apagados no salen el aviso ni el testigo</string>
     <string name="tires_diagnostics">Diagnóstico</string>
     <string name="tires_diagnostics_help">Lo que llega del receptor o de sensores que LiteDash no reconoce; cópialo y mándanoslo</string>
-    <string name="tires_show">Ver</string>
-    <string name="tires_hide">Ocultar</string>
     <string name="tires_diagnostics_empty">Nada por ahora</string>
     <string name="tires_copy">Copiar</string>
-    <string name="tires_tile">Pieza Llantas</string>
+    <string name="tires_tile">Widget Llantas</string>
     <plurals name="tires_sensors">
         <item quantity="one">%1$d sensor</item>
         <item quantity="many">%1$d sensores</item>

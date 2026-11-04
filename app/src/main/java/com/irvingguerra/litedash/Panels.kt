@@ -523,8 +523,17 @@ private fun CarPreview(e: CatalogEntry, cars: CarRepository, progress: Float?, o
 /** Secciones de Ajustes en el orden del menú: cada cosa vive en un solo lugar. */
 enum class SettingsSection(val title: Int) {
     CAR(R.string.your_car), HOME(R.string.home), APPS(R.string.apps_section), WORKSHOP(R.string.workshop), TIRES(R.string.tires),
-    WHEEL(R.string.wheel), APPEARANCE(R.string.appearance), MODULES(R.string.modules), SYSTEM(R.string.android_settings),
-    ABOUT(R.string.about),
+    WHEEL(R.string.wheel), APPEARANCE(R.string.appearance), MODULES(R.string.modules), SYSTEM(R.string.system),
+}
+
+/**
+ * Las secciones de un módulo apagado no salen en el menú (Taller sin OBD, Llantas sin fuente);
+ * la que ya está abierta sí (al prender Llantas se entra a elegir su fuente).
+ */
+private fun SettingsSection.shown(d: Dependencies, current: SettingsSection) = this == current || when (this) {
+    SettingsSection.WORKSHOP -> d.obdModule
+    SettingsSection.TIRES -> d.hasTpmsSource
+    else -> true
 }
 
 private fun SettingsSection.icon() = when (this) {
@@ -536,8 +545,7 @@ private fun SettingsSection.icon() = when (this) {
     SettingsSection.WORKSHOP -> Icons.engine
     SettingsSection.TIRES -> Icons.tire
     SettingsSection.MODULES -> Icons.settings
-    SettingsSection.SYSTEM -> Icons.openExternal
-    SettingsSection.ABOUT -> Icons.info
+    SettingsSection.SYSTEM -> Icons.info
 }
 
 /**
@@ -573,7 +581,7 @@ fun SettingsPanel(
             ) {
                 MenuEntry(Icons.back, stringResource(R.string.back_home), selected = false, narrow, close)
                 Spacer(Modifier.height(10.dp))
-                for (s in SettingsSection.entries) MenuEntry(s.icon(), stringResource(s.title), s == section, narrow) { section = s }
+                for (s in SettingsSection.entries) if (s.shown(d, section)) MenuEntry(s.icon(), stringResource(s.title), s == section, narrow) { section = s }
             }
             Column(
                 Modifier.weight(1f).fillMaxHeight().verticalScroll(rememberScrollState()).padding(start = 8.dp, end = 24.dp, top = 20.dp, bottom = 24.dp),
@@ -589,11 +597,11 @@ fun SettingsPanel(
                         SettingsCard(help = stringResource(R.string.wheel_help)) { WheelSettings(d.wheel, d.prefs) }
                         SettingsCard(stringResource(R.string.wheel_assigned)) { WheelAssigned(d.prefs) }
                     }
-                    SettingsSection.WORKSHOP -> Workshop(d, onTires)
+                    // Con el OBD apagado el escáner ni se crea.
+                    SettingsSection.WORKSHOP -> if (d.obdModule) Workshop(d, onTires)
                     SettingsSection.TIRES -> TiresSettings(d)
                     SettingsSection.MODULES -> Modules(d, revision, open = { section = it })
-                    SettingsSection.SYSTEM -> AndroidSettings()
-                    SettingsSection.ABOUT -> About(d)
+                    SettingsSection.SYSTEM -> SystemSettings(d)
                 }
             }
         }
@@ -614,6 +622,12 @@ internal fun tabs(titles: List<Int>, key: String): Int {
 
 /** Las pestañas de Ajustes → Apps (Música 0, Radio 1…). */
 private const val APPS_TABS = "apps"
+
+/** Las pestañas de Ajustes → Sistema (Actualizaciones es la 0 cuando hay). */
+private const val SYSTEM_TABS = "system"
+
+/** Ajustes → Sistema abre en Actualizaciones (desde el aviso de versión nueva). */
+internal fun openUpdates() = selectTab(SYSTEM_TABS, 0)
 
 /** La pestaña elegida en cada sección (al cambiar de sección y regresar sigue ahí). */
 private val TabMemory = mutableStateMapOf<String, Int>()
@@ -664,7 +678,8 @@ private fun Appearance(d: Dependencies, revision: Int) {
     val prefs = d.prefs
     val c = LocalColors.current
     val context = LocalContext.current
-    val tab = tabs(listOf(R.string.tab_general, R.string.tab_screen), "apariencia")
+    val tab = tabs(listOf(R.string.tab_general, R.string.tab_screen, R.string.units_title), "apariencia")
+    if (tab == 2) return SettingsCard { UnitsSettings(d) }
     if (tab == 0) SettingsCard(stringResource(R.string.your_name), stringResource(R.string.your_name_help)) {
         TextInput(prefs.driverName ?: "", { prefs.driverName = it.take(24).ifBlank { null } }, stringResource(R.string.your_name_hint), Modifier.fillMaxWidth())
     }
@@ -716,7 +731,6 @@ private fun Appearance(d: Dependencies, revision: Int) {
             },
         )
     }
-    if (tab == 0) SettingsCard(stringResource(R.string.units_title)) { UnitsSettings(d) }
     if (tab == 1) SettingsCard(stringResource(R.string.scale), stringResource(R.string.scale_help)) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             IconButton(Icons.minus, { prefs.scale = (prefs.scale - 0.1f).coerceAtLeast(0.8f).roundToTenth() }, background = c.surfaceHigh)
@@ -788,9 +802,7 @@ private fun HomeSettings(d: Dependencies, onEdit: () -> Unit, onTemplates: () ->
             { prefs.barPosition = it },
         )
     }
-    SettingsCard {
-        SwitchRow(stringResource(R.string.parked_mode), prefs.parkedMode, { prefs.parkedMode = it }, stringResource(R.string.parked_mode_help))
-    }
+    SettingsCard { ParkedSettings(prefs) }
     val (requestHome, returns) = rememberRequestHome()
     val isHome = remember(returns) { isHomeApp(context) }
     SettingsCard(stringResource(R.string.welcome_home_title)) {
@@ -808,7 +820,7 @@ private fun AppsSettings(d: Dependencies) {
     val c = LocalColors.current
     when (tabs(listOf(R.string.music, R.string.tab_radio, R.string.tab_navigation, R.string.tab_favorites, R.string.tab_split), APPS_TABS)) {
         0 -> {
-            SettingsCard { UsbPlayerCard(d) }
+            SettingsCard { UsbPlayerCard() }
             SettingsCard(stringResource(R.string.music_app_title)) { MusicSettings(d) }
             SettingsCard(stringResource(R.string.music_sources), stringResource(R.string.music_sources_help)) { MusicSourcesSettings(d) }
         }
@@ -847,11 +859,47 @@ private fun Favorites(d: Dependencies) {
     }
 }
 
+/**
+ * Sistema: lo de LiteDash y de la pantalla en pestañas. Actualizaciones (la versión con sus
+ * novedades y, en la de GitHub, buscar la siguiente), atajos a Ajustes de Android, estadísticas
+ * anónimas e info de la pantalla.
+ */
+@Composable
+private fun SystemSettings(d: Dependencies) {
+    val titles = listOf(R.string.tab_updates, R.string.android_settings, R.string.stats_title, R.string.tab_screen)
+    when (titles[tabs(titles, SYSTEM_TABS).coerceAtMost(titles.lastIndex)]) {
+        R.string.tab_updates -> {
+            About(d)
+            if (d.updater.available) SettingsCard { Updates(d.updater) }
+        }
+        R.string.android_settings -> AndroidSettings()
+        R.string.stats_title -> SettingsCard {
+            SwitchRow(stringResource(R.string.stats_switch), d.prefs.stats, { d.prefs.stats = it }, stringResource(R.string.stats_help))
+        }
+        else -> ScreenInfo(d)
+    }
+}
+
+/** La pantalla en unas líneas (lo que más sirve para reportar un problema) y copiar todo. */
+@Composable
+private fun ScreenInfo(d: Dependencies) {
+    val c = LocalColors.current
+    val context = LocalContext.current
+    SettingsCard(stringResource(R.string.copy_info), stringResource(R.string.copy_info_help)) {
+        val lines = remember { screenLines(context) }
+        for (line in lines) Label(line, Typography.body, maxLines = 2)
+        var copied by remember { mutableStateOf(false) }
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Button(stringResource(R.string.copy_info), { copySystemInfo(context, d.music); copied = true }, primary = true)
+            if (copied) Label(stringResource(R.string.copied), Typography.small, c.accent)
+        }
+    }
+}
+
+/** La versión en grande, sus novedades y tu auto a la derecha (como DuduAuto). */
 @Composable
 private fun About(d: Dependencies) {
     val c = LocalColors.current
-    val context = LocalContext.current
-    // Como DuduAuto: la versión en grande, sus novedades y tu auto a la derecha.
     Card(Modifier.fillMaxWidth().widthIn(max = 860.dp)) {
         BoxWithConstraints(Modifier.fillMaxWidth()) {
             val wide = maxWidth > 560.dp
@@ -869,18 +917,7 @@ private fun About(d: Dependencies) {
                         else Label("• $line", Typography.small)
                     }
                 }
-                if (d.updater.available) Updates(d.updater)
             }
-        }
-    }
-    SettingsCard(stringResource(R.string.stats_title)) {
-        SwitchRow(stringResource(R.string.stats_switch), d.prefs.stats, { d.prefs.stats = it }, stringResource(R.string.stats_help))
-    }
-    SettingsCard(stringResource(R.string.copy_info), stringResource(R.string.copy_info_help)) {
-        var copied by remember { mutableStateOf(false) }
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            Button(stringResource(R.string.copy_info), { copySystemInfo(context, d.music); copied = true })
-            if (copied) Label(stringResource(R.string.copied), Typography.small, c.accent)
         }
     }
 }
@@ -1001,15 +1038,17 @@ private fun TemplateThumbnail(p: Template, grid: Grid, hero: String) {
 }
 
 @Composable
-fun AddTilePanel(dashboard: DashboardState, close: () -> Unit, onPickApp: () -> Unit, onPickGauge: () -> Unit) {
+fun AddTilePanel(d: Dependencies, close: () -> Unit, onPickApp: () -> Unit, onPickGauge: () -> Unit) {
     val c = LocalColors.current
+    val dashboard = d.dashboard
     var noRoom by remember { mutableStateOf(false) }
     PanelScaffold(stringResource(R.string.add_tile), close) {
         if (noRoom) {
             Label(stringResource(R.string.no_room), Typography.body, c.danger, modifier = Modifier.padding(bottom = 12.dp))
         }
         // Todas a la vista: tantas columnas como quepan (de 180 dp o más).
-        CardGrid(TileSpecs, minWidth = 180.dp, height = if (isSmallScreen()) 100.dp else 120.dp, onClick = { spec ->
+        // Los de un módulo apagado no se ofrecen.
+        CardGrid(TileSpecs.filter { moduleOff(d, it.type) == null }, minWidth = 180.dp, height = if (isSmallScreen()) 100.dp else 120.dp, onClick = { spec ->
             if (spec.type == TileTypes.APP) onPickApp()
             else if (spec.type == TileTypes.GAUGE) onPickGauge()
             else if (dashboard.add(spec.type, spec.initialSize, spec.limits)) close()
@@ -1021,7 +1060,7 @@ fun AddTilePanel(dashboard: DashboardState, close: () -> Unit, onPickApp: () -> 
     }
 }
 
-private fun iconOf(type: String) = when (type) {
+internal fun iconOf(type: String) = when (type) {
     TileTypes.CAR -> Icons.car
     TileTypes.ROAD -> Icons.road
     TileTypes.IMAGE -> Icons.image
@@ -1041,14 +1080,14 @@ private fun iconOf(type: String) = when (type) {
 }
 
 
-/** Inicio → Piezas: todo lo que puedes poner en tu inicio y si ya está. */
+/** Inicio → Widgets: todo lo que puedes poner en tu inicio y si ya está (sin los de módulos apagados). */
 @Composable
 private fun Tiles(d: Dependencies, onEdit: () -> Unit) {
     val c = LocalColors.current
     // Tipo que no cupo al agregarlo: se avisa y se ofrece acomodar el inicio.
     var noRoom by remember { mutableStateOf<String?>(null) }
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        for (spec in TileSpecs.filter { it.type != TileTypes.APP }) {
+        for (spec in TileSpecs.filter { it.type != TileTypes.APP && moduleOff(d, it.type) == null }) {
             val onHome = d.dashboard.tiles.any { it.type == spec.type }
             val didNotFit = noRoom == spec.type && !onHome
             val detail = if (didNotFit) stringResource(R.string.no_room) else spec.detail?.let { stringResource(it) } ?: ""
@@ -1064,23 +1103,15 @@ private fun Tiles(d: Dependencies, onEdit: () -> Unit) {
 }
 
 /**
- * Módulos: cada uno con su interruptor y, prendido, una flecha a sus ajustes. Apagado todo en
- * gris. Apagado no corre ni pide nada; los permisos (avisos y ubicación) se dan con Android.
+ * Módulos, en dos pestañas. Módulos: cada uno con su interruptor y, prendido, una flecha a sus
+ * ajustes; apagado en gris, no corre ni pide nada y desaparece de todo. Permisos: los que se dan
+ * con Android (avisos de otras apps y ubicación), con el mismo interruptor.
  */
 @Composable
 private fun Modules(d: Dependencies, revision: Int, open: (SettingsSection) -> Unit) {
-    val context = LocalContext.current
-    val (_, returns) = rememberRequestHome()
-    // [revision] cambia al volver a la app: los permisos que se dan en Ajustes de Android se notan al regresar.
-    val notifications = remember(returns, revision) { d.music.hasPermission() }
-    val (location, askLocation) = rememberGpsPermission(d)
-    val setUsb = rememberUsbPlayerToggle(d)
-    val setRadio = rememberInternetRadioToggle(d)
-    fun apps(tab: Int) {
-        selectTab(APPS_TABS, tab)
-        open(SettingsSection.APPS)
-    }
+    val permissions = tabs(listOf(R.string.modules, R.string.tab_permissions), "modules") == 1
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        if (permissions) return@Column Permissions(d, revision)
         ModuleRow(Icons.engine, stringResource(R.string.module_obd), d.obdModule, { d.obdModule = it }) { open(SettingsSection.WORKSHOP) }
         // Llantas: prendido = hay una fuente (sin crear el módulo para saberlo). Al prender vuelve
         // la última que se usó; si nunca hubo, a elegirla en Ajustes → Llantas.
@@ -1089,17 +1120,26 @@ private fun Modules(d: Dependencies, revision: Int, open: (SettingsSection) -> U
             if (!on) tpms.source = null
             else tpms.lastSource?.let { tpms.source = it } ?: open(SettingsSection.TIRES)
         }) { open(SettingsSection.TIRES) }
-        ModuleRow(Icons.usb, stringResource(R.string.module_usb_player), d.prefs.usbPlayer, setUsb) { apps(0) }
-        ModuleRow(Icons.radio, stringResource(R.string.module_radio), d.prefs.internetRadio, setRadio) { apps(1) }
-        // Permisos: prender los pide; apagar solo se puede en Ajustes de Android.
-        ModuleRow(Icons.bell, stringResource(R.string.module_notifications), notifications, { on ->
-            if (on) d.music.requestPermission() else openAppSettings(context)
-        })
-        ModuleRow(Icons.location, stringResource(R.string.module_location), location, { on ->
-            if (on) askLocation() else openAppSettings(context)
-        })
         ModuleRow(Icons.car, stringResource(R.string.module_cameras), on = false, onChange = null, soon = true)
     }
+}
+
+/**
+ * Módulos → Permisos: prender los pide; apagar solo se puede en Ajustes de Android. [revision]
+ * cambia al volver a la app: lo que se dio o quitó allá se nota al regresar.
+ */
+@Composable
+private fun Permissions(d: Dependencies, revision: Int) {
+    val context = LocalContext.current
+    val (_, returns) = rememberRequestHome()
+    val notifications = remember(returns, revision) { d.music.hasPermission() }
+    val (location, askLocation) = rememberGpsPermission(d, revision)
+    ModuleRow(Icons.bell, stringResource(R.string.module_notifications), notifications, { on ->
+        if (on) d.music.requestPermission() else openAppSettings(context)
+    })
+    ModuleRow(Icons.location, stringResource(R.string.module_location), location, { on ->
+        if (on) askLocation() else openAppSettings(context)
+    })
 }
 
 /**
@@ -1140,7 +1180,7 @@ private fun openAppSettings(context: Context) {
     runCatching { context.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
 }
 
-/** Un renglón de Inicio → Piezas: ícono, nombre, detalle y su botón. */
+/** Un renglón de Inicio → Widgets: ícono, nombre, detalle y su botón. */
 @Composable
 private fun TileRow(
     icon: ImageVector,
@@ -1233,19 +1273,32 @@ private fun releaseNotes(notes: String = BuildConfig.RELEASE_NOTES): List<String
     return items.map { it.replace("**", "") }
 }
 
+/** Lo básico de la pantalla: equipo, Android, resolución y memoria (sin etiquetas: se entienden solos). */
+private fun screenLines(context: Context): List<String> {
+    val m = context.resources.displayMetrics
+    return listOf(
+        "${Build.MANUFACTURER} ${Build.MODEL} (${Build.DEVICE}) · ${Build.HARDWARE}",
+        "Android ${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT}) · ${Build.SUPPORTED_ABIS.joinToString()}",
+        "${m.widthPixels}×${m.heightPixels} px · ${m.densityDpi} dpi · ${memoryMb(context)} MB",
+    )
+}
+
+/** La memoria (RAM) de la pantalla en MB. */
+private fun memoryMb(context: Context): Long {
+    val memory = ActivityManager.MemoryInfo().also { context.getSystemService(ActivityManager::class.java).getMemoryInfo(it) }
+    return memory.totalMem / (1024 * 1024)
+}
+
 /** Datos de la pantalla para reportar problemas (marca, modelo, Android, resolución, memoria). */
 private fun copySystemInfo(context: Context, music: MusicRepository) {
     val m = context.resources.displayMetrics
-    val memory = ActivityManager.MemoryInfo().also {
-        context.getSystemService(ActivityManager::class.java).getMemoryInfo(it)
-    }
     val text = buildString {
         appendLine("LiteDash ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE}) · ${BuildConfig.CHANNEL}")
         appendLine("Equipo: ${Build.MANUFACTURER} ${Build.MODEL} (${Build.DEVICE})")
         appendLine("Plataforma: ${Build.HARDWARE} · ${Build.BOARD}")
         appendLine("Android ${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT})")
         appendLine("Pantalla: ${m.widthPixels}×${m.heightPixels} px · ${m.densityDpi} dpi")
-        appendLine("Memoria: ${memory.totalMem / (1024 * 1024)} MB")
+        appendLine("Memoria: ${memoryMb(context)} MB")
         appendLine("CPU: ${Build.SUPPORTED_ABIS.joinToString()}")
         appendLine("Pantalla dividida: ${if (SplitScreen.supported()) "sí" else "no"}")
         appendLine(lightsInfo(context))

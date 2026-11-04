@@ -8,7 +8,6 @@
     <string name="no_song_info">No song info</string>
     <string name="opening_app">Opening %1$s…</string>
     <string name="opening_wait">Almost there: it starts in a moment.</string>
-    <string name="source_system">Apps</string>
     <string name="source_usb">USB</string>
     <string name="source_bluetooth">Bluetooth</string>
     <string name="source_radio">Radio</string>

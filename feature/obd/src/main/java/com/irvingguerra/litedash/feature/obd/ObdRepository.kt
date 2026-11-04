@@ -290,6 +290,8 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
                     supported = pids
                     adapter = version
                     target = t
+                    // Conexión nueva: lo leído en otra ya no vale (el Taller y su pieza vuelven a leer).
+                    lastReport = null
                     state = ObdState.ON
                     reconnects = 0
                     if (t is ObdTarget.Usb) watchUsbDetach(t)

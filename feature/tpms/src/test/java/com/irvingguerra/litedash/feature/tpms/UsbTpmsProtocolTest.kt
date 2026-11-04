@@ -167,7 +167,7 @@ class UsbTpmsProtocolTest {
     fun registroCrudo() {
         val r = UsbTpmsProtocol.FrameReader()
         val raws = mutableListOf<String>()
-        r.onRaw = { raws += it.hex() }
+        r.onRaw = { bytes, _ -> raws += bytes.hex() }
         r.feed(hex("55 AA 08 10 24 49 00 8A 55 AA 08 05 46 46 00 F2"))
         assertEquals(listOf("55AA08102449008A", "55AA0805464600F2"), raws)
     }

@@ -49,6 +49,9 @@ class AacStream(private val context: Context, private val url: String, private v
 
     fun stop() {
         closed = true
+        // Callado al momento: el hilo puede tardar en salir (lectura de red o búfer de audio lleno).
+        volume = 0f
+        runCatching { track?.setVolume(0f) }
         thread?.interrupt()
     }
 

@@ -3,7 +3,6 @@ package com.irvingguerra.litedash.feature.player
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -50,6 +49,7 @@ import com.irvingguerra.litedash.core.ui.Segmented
 import com.irvingguerra.litedash.core.ui.TextInput
 import com.irvingguerra.litedash.core.ui.Typography
 import com.irvingguerra.litedash.feature.music.Drive
+import com.irvingguerra.litedash.feature.music.Drives
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -78,6 +78,9 @@ private object LibraryBrowserMemory {
     // Dentro de un grupo (una carpeta, un artista…): sus canciones; null = la lista de grupos.
     var inside by mutableStateOf<String?>(null)
 
+    /** Ya se pidieron los permisos solos en este arranque. */
+    var asked = false
+
     /** Cambiar de grupo regresa a su lista. */
     fun pick(g: Group) {
         if (g == group) return
@@ -91,23 +94,26 @@ private fun LibraryBrowser(onPicked: () -> Unit, modifier: Modifier) {
     val c = LocalColors.current
     val context = LocalContext.current
     var permission by remember { mutableStateOf(Library.hasPermission(context)) }
-    val ask = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { permission = it }
-    // Al conectar o sacar una memoria se vuelve a leer.
+    // Leer la música y, desde Android 13, mostrar el aviso del reproductor.
+    val ask = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { permission = it[Library.permission] == true }
+    val askAll = { ask.launch((listOf(Library.permission) + Library.noticePermission).toTypedArray()) }
+    // La primera vez que se usa USB se piden solos (una vez por arranque; después, con el botón).
+    LaunchedEffect(Unit) {
+        if (!permission && !LibraryBrowserMemory.asked) {
+            LibraryBrowserMemory.asked = true
+            askAll()
+        }
+    }
+    // Al conectar o sacar una memoria (o al terminar de indexarla) se vuelve a leer.
     var mounts by remember { mutableIntStateOf(0) }
     DisposableEffect(Unit) {
         val receiver = object : BroadcastReceiver() {
-            override fun onReceive(c: Context, i: Intent) { mounts++ }
+            override fun onReceive(c: Context, i: Intent) {
+                Drives.changed()
+                mounts++
+            }
         }
-        val filter = IntentFilter().apply {
-            addAction(Intent.ACTION_MEDIA_MOUNTED)
-            addAction(Intent.ACTION_MEDIA_UNMOUNTED)
-            addAction(Intent.ACTION_MEDIA_EJECT)
-            addAction(Intent.ACTION_MEDIA_BAD_REMOVAL)
-            // Al reconectar, Android tarda unos segundos en indexar: se vuelve a leer al terminar.
-            addAction(Intent.ACTION_MEDIA_SCANNER_FINISHED)
-            addDataScheme("file")
-        }
-        ContextCompat.registerReceiver(context, receiver, filter, ContextCompat.RECEIVER_EXPORTED)
+        ContextCompat.registerReceiver(context, receiver, Drives.mediaFilter(scanner = true), ContextCompat.RECEIVER_EXPORTED)
         onDispose { runCatching { context.unregisterReceiver(receiver) } }
     }
     // Elegir la carpeta de la música con el selector de Android: sirve aunque la pantalla no deje
@@ -124,7 +130,7 @@ private fun LibraryBrowser(onPicked: () -> Unit, modifier: Modifier) {
     if (!permission) {
         Column(modifier, verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Label(stringResource(R.string.library_no_permission), Typography.body, c.textMuted)
-            Button(stringResource(R.string.library_grant), { ask.launch(Library.permission) }, primary = true)
+            Button(stringResource(R.string.library_grant), askAll, primary = true)
         }
         return
     }

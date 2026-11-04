@@ -16,14 +16,8 @@ import android.os.Looper
 import android.os.SystemClock
 import androidx.compose.runtime.mutableStateListOf
 
-/** Por qué no se puede escuchar a los tapones Bluetooth. */
-enum class BleProblem(val message: String) {
-    NO_PERMISSION("Falta el permiso de dispositivos cercanos"),
-    BLUETOOTH_OFF("El Bluetooth está apagado"),
-    LOCATION_OFF("Prende la ubicación: Android la pide para buscar Bluetooth"),
-    UNSUPPORTED("Esta pantalla no tiene Bluetooth LE"),
-    FAILED("Android no dejó buscar sensores Bluetooth"),
-}
+/** Por qué no se puede escuchar a los tapones Bluetooth (la app lo dice en su idioma). */
+enum class BleProblem { NO_PERMISSION, BLUETOOTH_OFF, LOCATION_OFF, UNSUPPORTED, FAILED }
 
 /** Un anuncio con datos que no se pudo leer (para que el usuario reporte familias nuevas). */
 data class UnknownAdvert(
@@ -45,7 +39,12 @@ data class UnknownAdvert(
  * llama `startScan` más de ~5 veces en 30 s: aquí nunca se reinicia en bucle; un cambio de modo
  * que no cabe en ese límite se aplaza.
  */
-class BleTpmsScanner(private val context: Context, private val onReading: (TireReading) -> Unit) {
+class BleTpmsScanner(
+    private val context: Context,
+    /** Juntar los anuncios desconocidos (solo con el diagnóstico a la vista). */
+    private val collectUnknown: () -> Boolean,
+    private val onReading: (TireReading) -> Unit,
+) {
     /** Los últimos 60 anuncios desconocidos con datos, el más nuevo al final. */
     val unknown = mutableStateListOf<UnknownAdvert>()
 
@@ -56,8 +55,6 @@ class BleTpmsScanner(private val context: Context, private val onReading: (TireR
     private var pendingRestart: Runnable? = null
     /** Alguien pidió escuchar (aunque el arranque esté aplazado). */
     private var wanted = false
-
-    val running get() = scanner != null
 
     /** El permiso que hay que pedir: "dispositivos cercanos" desde Android 12, ubicación antes. */
     fun permission(): String =
@@ -153,6 +150,7 @@ class BleTpmsScanner(private val context: Context, private val onReading: (TireR
         val now = System.currentTimeMillis()
         val reading = BleTpmsFormats.decode(adv, now)
         if (reading != null) return onReading(reading)
+        if (!collectUnknown()) return
         val serviceData = record?.serviceData.orEmpty().entries.joinToString(" ") { (k, v) -> "${shortUuid(k.uuid.toString())}=${v.hex()}" }
         if (adv.manufacturerData == null && serviceData.isEmpty()) return
         val entry = UnknownAdvert(adv.address, name, companyId, adv.fullPayload?.hex(), uuids, serviceData.ifEmpty { null }, adv.rssi, now)

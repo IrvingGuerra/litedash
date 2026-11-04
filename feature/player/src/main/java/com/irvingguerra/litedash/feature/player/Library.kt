@@ -14,8 +14,8 @@ import java.io.File
 import com.irvingguerra.litedash.feature.music.Drive
 import com.irvingguerra.litedash.feature.music.Drives
 
-/** Una canción de la memoria. */
-class Track(
+/** Una canción de la memoria (dos con los mismos datos son la misma: tocar USB otra vez no la reinicia). */
+data class Track(
     override val uri: Uri,
     override val title: String,
     val artist: String,
@@ -43,31 +43,29 @@ object Library {
 
     fun hasPermission(context: Context) = context.checkSelfPermission(permission) == PackageManager.PERMISSION_GRANTED
 
-    /** Memorias montadas ahora (las detecta la pieza de música: [Drives]). */
-    fun drives(context: Context): List<Drive> = Drives.list(context)
+    /** El permiso del aviso del reproductor, que solo existe desde Android 13. */
+    val noticePermission: List<String>
+        get() = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) listOf(Manifest.permission.POST_NOTIFICATIONS) else emptyList()
 
-    /** Lo último que se encontró con música (memoria y canciones); null = aún no se ha leído o no hubo. */
+    // Lo último que se leyó con música y de qué memorias (y montajes) salió: abrir la biblioteca
+    // o tocar USB otra vez no relee la memoria. Solo se guarda si hubo canciones.
     @Volatile
-    var lastFound: Pair<Drive, List<Track>>? = null
-        private set
+    private var cache: Pair<String, Pair<Drive?, List<Track>>>? = null
 
     /**
      * Qué tocar: la primera memoria con música (hay pantallas con dos USB y la "primera" puede
      * venir vacía); si ninguna, la carpeta que eligió el usuario; si nada, la primera memoria
-     * (vacía) o null. Lee el disco: llamarla fuera del hilo principal.
+     * (vacía) o null. Lee el disco (salvo que ya lo haya leído con las mismas memorias):
+     * llamarla fuera del hilo principal.
      */
     fun find(context: Context): Pair<Drive?, List<Track>> {
-        val drives = drives(context)
-        for (d in drives) {
-            val t = tracks(context, d)
-            if (t.isNotEmpty()) return (d to t).also { lastFound = it }
-        }
-        folderDrive(context)?.let { d ->
-            val t = tracks(context, d)
-            if (t.isNotEmpty()) return (d to t).also { lastFound = it }
-        }
-        lastFound = null
-        return drives.firstOrNull() to emptyList()
+        val drives = Drives.list(context)
+        val folder = folderDrive(context)
+        val key = (drives.map { it.id } + listOfNotNull(folder?.id) + Drives.revision.toString()).joinToString("|")
+        cache?.takeIf { it.first == key }?.let { return it.second }
+        val found = (drives + listOfNotNull(folder)).firstNotNullOfOrNull { d -> tracks(context, d).takeIf { it.isNotEmpty() }?.let { d to it } }
+        if (found != null) cache = key to found
+        return found ?: (drives.firstOrNull() to emptyList())
     }
 
     /** La carpeta elegida como "memoria" (si sigue habiendo permiso para leerla). */
@@ -86,7 +84,6 @@ object Library {
         val store = PlayerStore(context)
         store.musicFolder?.toUri()?.let { uri -> runCatching { context.contentResolver.releasePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION) } }
         store.musicFolder = null
-        lastFound = null
     }
 
     /**
@@ -96,48 +93,39 @@ object Library {
     fun setFolder(context: Context, uri: Uri) {
         runCatching { context.contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION) }
         PlayerStore(context).musicFolder = uri.toString()
-        lastFound = null
     }
 
     /** Todas las canciones de [drive], ordenadas por carpeta y archivo (como se ven en la memoria). */
-    fun tracks(context: Context, drive: Drive): List<Track> {
+    private fun tracks(context: Context, drive: Drive): List<Track> {
         val found = if (drive.id.startsWith(FOLDER)) folderTracks(context, drive.id.removePrefix(FOLDER).toUri())
         else indexed(context, drive).ifEmpty { drive.path?.let { scan(File(it)) }.orEmpty() }
         return found.sortedWith(compareBy<Track, String>(String.CASE_INSENSITIVE_ORDER) { it.folder }.thenBy(String.CASE_INSENSITIVE_ORDER) { it.file })
     }
 
-    /** Las canciones de la carpeta elegida, por el sistema de documentos (con los mismos topes que [scan]). */
+    /** Las canciones de la carpeta elegida, por el sistema de documentos. */
     private fun folderTracks(context: Context, tree: Uri): List<Track> {
-        val out = ArrayList<Track>()
         val cols = arrayOf(DocumentsContract.Document.COLUMN_DOCUMENT_ID, DocumentsContract.Document.COLUMN_DISPLAY_NAME, DocumentsContract.Document.COLUMN_MIME_TYPE)
-        val pending = ArrayDeque<Triple<String, String, Int>>().apply { add(Triple(DocumentsContract.getTreeDocumentId(tree), "", 0)) }
-        var dirs = 0
-        while (pending.isNotEmpty() && out.size < MAX_FILES && dirs < MAX_DIRS) {
-            val (id, folder, depth) = pending.removeFirst()
-            dirs++
-            runCatching {
-                context.contentResolver.query(DocumentsContract.buildChildDocumentsUriUsingTree(tree, id), cols, null, null, null)?.use { c ->
-                    while (c.moveToNext()) {
-                        val child = c.getString(0) ?: continue
-                        val name = c.getString(1).orEmpty()
-                        val mime = c.getString(2).orEmpty()
-                        if (name.startsWith(".")) continue
-                        if (mime == DocumentsContract.Document.MIME_TYPE_DIR) {
-                            if (depth < MAX_DEPTH && name !in SKIP_DIRS) pending.add(Triple(child, if (folder.isEmpty()) name else "$folder/$name", depth + 1))
-                        } else if (mime.startsWith("audio/") || name.substringAfterLast('.', "").lowercase() in AUDIO) {
-                            out += Track(DocumentsContract.buildDocumentUriUsingTree(tree, child), name.substringBeforeLast('.'), "", "", folder, 0, name)
-                        }
-                    }
+        return walk(DocumentsContract.getTreeDocumentId(tree), { id ->
+            val out = ArrayList<Entry<String>>()
+            context.contentResolver.query(DocumentsContract.buildChildDocumentsUriUsingTree(tree, id), cols, null, null, null)?.use { c ->
+                while (c.moveToNext()) {
+                    val child = c.getString(0) ?: continue
+                    val name = c.getString(1).orEmpty()
+                    val mime = c.getString(2).orEmpty()
+                    val dir = mime == DocumentsContract.Document.MIME_TYPE_DIR
+                    out += Entry(child, name, dir, !dir && (mime.startsWith("audio/") || isAudio(name)))
                 }
             }
-        }
-        return out
+            out
+        }) { child, name, folder -> Track(DocumentsContract.buildDocumentUriUsingTree(tree, child), name.substringBeforeLast('.'), "", "", folder, 0, name) }
     }
 
     /** Las de MediaStore (rápido, con artista, álbum y duración). */
     private fun indexed(context: Context, drive: Drive): List<Track> {
         val uri = if (drive.volume != null) MediaStore.Audio.Media.getContentUri(drive.volume) else MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
         val root = drive.path?.trimEnd('/')
+        // Sin volumen ni ruta no hay cómo separar la memoria del resto: sin esto saldría toda la música interna.
+        if (drive.volume == null && root == null) return emptyList()
         // En API < 29 el volumen "external" junta todo: se filtra por la ruta de la memoria.
         val selection = buildString {
             append("${MediaStore.Audio.Media.IS_MUSIC} != 0")
@@ -180,37 +168,39 @@ object Library {
     /**
      * Recorre las carpetas de la memoria buscando audio (sin índice de Android): título = nombre
      * del archivo; artista, álbum y duración no se saben sin abrir cada archivo (lento en una USB).
-     * Con tope de carpetas y archivos para que una memoria enorme no se quede leyendo minutos.
      */
-    private fun scan(root: File): List<Track> {
+    private fun scan(root: File): List<Track> = walk(root, { dir ->
+        dir.listFiles()?.map { f -> Entry(f, f.name, f.isDirectory, !f.isDirectory && isAudio(f.name)) }
+    }) { f, name, folder -> Track(Uri.fromFile(f), name.substringBeforeLast('.'), "", "", folder, 0, name) }
+
+    /** Un archivo o carpeta dentro de [walk]: [node] es lo que sirve para abrirlo. */
+    private class Entry<N>(val node: N, val name: String, val dir: Boolean, val audio: Boolean)
+
+    /**
+     * Recorre las carpetas desde [root] a lo ancho y junta las canciones ([track] con el nombre del
+     * archivo y su carpeta relativa). Sin ocultas ni carpetas de sistema, y con tope de profundidad,
+     * carpetas y archivos para que una memoria enorme no se quede leyendo minutos.
+     */
+    private fun <N> walk(root: N, children: (N) -> List<Entry<N>>?, track: (N, String, String) -> Track): List<Track> {
         val out = ArrayList<Track>()
-        val base = root.path.trimEnd('/')
-        val pending = ArrayDeque<Pair<File, Int>>().apply { add(root to 0) }
+        val pending = ArrayDeque<Triple<N, String, Int>>().apply { add(Triple(root, "", 0)) }
         var dirs = 0
         while (pending.isNotEmpty() && out.size < MAX_FILES && dirs < MAX_DIRS) {
-            val (dir, depth) = pending.removeFirst()
+            val (node, folder, depth) = pending.removeFirst()
             dirs++
-            val children = runCatching { dir.listFiles() }.getOrNull() ?: continue
-            for (f in children) {
-                val name = f.name
-                if (name.startsWith(".")) continue
-                if (f.isDirectory) {
-                    if (depth < MAX_DEPTH && name !in SKIP_DIRS) pending.add(f to depth + 1)
-                } else if (name.substringAfterLast('.', "").lowercase() in AUDIO) {
-                    out += Track(
-                        uri = Uri.fromFile(f),
-                        title = name.substringBeforeLast('.'),
-                        artist = "",
-                        album = "",
-                        folder = f.parent.orEmpty().removePrefix(base).trim('/'),
-                        durationMs = 0,
-                        file = name,
-                    )
+            for (e in runCatching { children(node) }.getOrNull().orEmpty()) {
+                if (e.name.startsWith(".")) continue
+                if (e.dir) {
+                    if (depth < MAX_DEPTH && e.name !in SKIP_DIRS) pending.add(Triple(e.node, if (folder.isEmpty()) e.name else "$folder/${e.name}", depth + 1))
+                } else if (e.audio) {
+                    out += track(e.node, e.name, folder)
                 }
             }
         }
         return out
     }
+
+    private fun isAudio(name: String) = name.substringAfterLast('.', "").lowercase() in AUDIO
 
     private val AUDIO = setOf("mp3", "m4a", "aac", "flac", "wav", "ogg", "oga", "opus", "amr", "3gp", "mka")
     private val SKIP_DIRS = setOf("Android", "LOST.DIR", "System Volume Information", "\$RECYCLE.BIN")

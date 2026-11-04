@@ -98,9 +98,9 @@ data class CarPackage(
     val hasFloor get() = floor.isNotEmpty()
 }
 
-/** La subida: [frames] cuadros que empiezan en el cuadro [from] del giro de 24, pintura de brillo [gray]. */
+/** La subida: [frames] cuadros con pintura de brillo [gray]. */
 @Immutable
-data class RiseInfo(val frames: Int, val from: Int, val gray: Float)
+data class RiseInfo(val frames: Int, val gray: Float)
 
 /** Dónde va la capa del piso respecto al auto, en anchos del auto. */
 @Immutable
@@ -140,8 +140,9 @@ class CarRepository(private val context: Context, val catalogUrl: String) {
     private val loading = ConcurrentHashMap<String, Deferred<ImageBitmap?>>()
     // Instalar, actualizar, borrar y la vista desde arriba tocan las mismas carpetas: uno a la vez.
     private val disk = Mutex()
-    private var topViewJob: Job? = null
-    private var riseJob: Job? = null
+    private val extraJobs = HashMap<Extra, Job>()
+    /** El último catálogo que pidieron los extras y cuándo (ver [recentCatalog]). */
+    private var catalogCache: Pair<Long, List<CatalogEntry>>? = null
     // Ancho original de cada imagen (no cambia): decide cuánto se reduce al decodificarla.
     private val sourceWidths = ConcurrentHashMap<String, Int>()
 
@@ -263,79 +264,66 @@ class CarRepository(private val context: Context, val catalogUrl: String) {
 
     /**
      * La vista desde arriba del auto [p] para el Taller: un archivo chico aparte del paquete
-     * (así nadie vuelve a bajar su auto por ella). Corre en el ámbito del repositorio (si se
-     * sale del Taller a media descarga, termina igual), una a la vez y con el mismo candado
-     * que instalar o borrar autos. Se pregunta al catálogo a lo más cada [CHECK_EVERY_MS]
-     * (solo cuenta si contestó); mientras no la haya, el Taller dibuja la silueta.
+     * (así nadie vuelve a bajar su auto por ella); mientras no la haya, el Taller dibuja la silueta.
      */
-    fun fetchTopView(p: CarPackage?) {
-        if (p == null || p.topView || !hasCatalog || topViewJob?.isActive == true) return
-        val key = KEY_TOP_VIEW_CHECK + p.id
-        if (System.currentTimeMillis() - checks.getLong(key, 0L) < CHECK_EVERY_MS) return
-        topViewJob = scope.launch {
-            val catalog = runCatching { catalog() }.getOrNull() ?: return@launch
-            checks.edit().putLong(key, System.currentTimeMillis()).apply()
-            val extra = catalog.firstOrNull { it.id == p.id }?.topView ?: return@launch
-            disk.withLock {
-                // Pudo cambiar mientras tanto (actualizado, borrado o ya con su vista).
-                val now = pkg(p.id)?.takeIf { it.sha256 == p.sha256 && !it.topView } ?: return@withLock
-                val done = withContext(Dispatchers.IO) {
-                    runCatching { installTopView(now, extra) }.getOrDefault(false)
-                }
-                if (done) changed()
-            }
-        }
-    }
+    fun fetchTopView(p: CarPackage?) = fetchExtra(p, Extra.TOP_VIEW)
 
-    /** Baja y acomoda la vista desde arriba en la carpeta de [p]; la imagen al último (dice que ya está completa). */
-    private fun installTopView(p: CarPackage, extra: PackageExtra): Boolean {
-        val temp = fetch(extra.url, extra.bytes, extra.sha256) {}
-        val staging = File(root, folderOf(p.id) + "-" + CarViews.TOP_VIEW + CarFiles.STAGING_SUFFIX)
-        try {
-            staging.deleteRecursively()
-            unzip(temp, staging)
-            val image = CarViews.TOP_VIEW + ".webp"
-            return staging.listFiles().orEmpty().sortedBy { it.name == image }.all { it.renameTo(File(p.folder, it.name)) }
-        } finally {
-            temp.delete()
-            staging.deleteRecursively()
+    /** La subida de la cámara de [p] (unos cientos de KB, aparte del paquete): solo con Llantas activo. */
+    fun fetchRise(p: CarPackage?) = fetchExtra(p, Extra.RISE)
+
+    /**
+     * Baja un [Extra] de [p] si el catálogo lo trae y el auto aún no. Corre en el ámbito del
+     * repositorio (si se sale de la pantalla a media descarga, termina igual), uno a la vez por
+     * tipo y con el candado [disk] de instalar o borrar. Se pregunta a lo más cada
+     * [CHECK_EVERY_MS] por auto (solo cuenta si contestó) y con el catálogo de [recentCatalog].
+     * No toca la huella del paquete.
+     */
+    private fun fetchExtra(p: CarPackage?, kind: Extra) {
+        if (p == null || kind.has(p) || !hasCatalog || extraJobs[kind]?.isActive == true) return
+        val key = kind.checkKey + p.id
+        if (System.currentTimeMillis() - checks.getLong(key, 0L) < CHECK_EVERY_MS) return
+        extraJobs[kind] = scope.launch {
+            val catalog = recentCatalog() ?: return@launch
+            checks.edit().putLong(key, System.currentTimeMillis()).apply()
+            val extra = catalog.firstOrNull { it.id == p.id }?.let(kind.pick) ?: return@launch
+            disk.withLock {
+                // Pudo cambiar mientras tanto (actualizado, borrado o ya con el extra).
+                val now = pkg(p.id)?.takeIf { it.sha256 == p.sha256 && !kind.has(it) } ?: return@withLock
+                val done = withContext(Dispatchers.IO) {
+                    runCatching { installExtra(now, extra, kind) }.getOrDefault(false)
+                }
+                // Solo llegan archivos nuevos: las imágenes del giro en memoria siguen sirviendo.
+                if (done) changed(evict = false)
+            }
         }
     }
 
     /**
-     * La subida de la cámara de [p] (unos cientos de KB, aparte del paquete): solo se pide con
-     * Llantas activo. Mismas reglas que [fetchTopView]: en el ámbito del repositorio, a lo más
-     * cada [CHECK_EVERY_MS] y con el candado [disk]; no toca la huella del paquete.
+     * El catálogo para los extras: uno bajado hace menos de [CHECK_EVERY_MS] sirve para los dos
+     * (vista desde arriba y subida), así se baja una sola vez por hora. null sin internet.
      */
-    fun fetchRise(p: CarPackage?) {
-        if (p == null || p.rise != null || !hasCatalog || riseJob?.isActive == true) return
-        val key = KEY_RISE_CHECK + p.id
-        if (System.currentTimeMillis() - checks.getLong(key, 0L) < CHECK_EVERY_MS) return
-        riseJob = scope.launch {
-            val catalog = runCatching { catalog() }.getOrNull() ?: return@launch
-            checks.edit().putLong(key, System.currentTimeMillis()).apply()
-            val extra = catalog.firstOrNull { it.id == p.id }?.rise ?: return@launch
-            disk.withLock {
-                val now = pkg(p.id)?.takeIf { it.sha256 == p.sha256 && it.rise == null } ?: return@withLock
-                val done = withContext(Dispatchers.IO) {
-                    runCatching { installRise(now, extra) }.getOrDefault(false)
-                }
-                if (done) changed()
-            }
-        }
+    private suspend fun recentCatalog(): List<CatalogEntry>? {
+        val now = System.currentTimeMillis()
+        catalogCache?.takeIf { now - it.first < CHECK_EVERY_MS }?.let { return it.second }
+        return runCatching { catalog() }.getOrNull()?.also { catalogCache = now to it }
     }
 
-    /** Baja y acomoda la subida en la carpeta de [p]: primero sus cuadros y al último subida.json. */
-    private fun installRise(p: CarPackage, extra: PackageExtra): Boolean {
+    /**
+     * Baja y acomoda un extra en la carpeta de [p]: se descomprime aparte y se mueve con su
+     * [Extra.marker] al último (dice que ya está completo); lo que hubiera de un intento cortado se quita.
+     */
+    private fun installExtra(p: CarPackage, extra: PackageExtra, kind: Extra): Boolean {
         val temp = fetch(extra.url, extra.bytes, extra.sha256) {}
-        val staging = File(root, folderOf(p.id) + "-" + CarViews.RISE + CarFiles.STAGING_SUFFIX)
+        val staging = File(root, folderOf(p.id) + "-" + kind.folder + CarFiles.STAGING_SUFFIX)
         try {
             staging.deleteRecursively()
             unzip(temp, staging)
-            if (!File(staging, CarViews.RISE_INFO).exists()) return false
-            // Restos de un intento cortado a la mitad.
-            File(p.folder, CarViews.RISE).deleteRecursively()
-            return staging.listFiles().orEmpty().sortedBy { it.name == CarViews.RISE_INFO }.all { it.renameTo(File(p.folder, it.name)) }
+            if (!File(staging, kind.marker).exists()) return false
+            return staging.listFiles().orEmpty().sortedBy { it.name == kind.marker }.all {
+                val target = File(p.folder, it.name)
+                target.deleteRecursively()
+                it.renameTo(target)
+            }
         } finally {
             temp.delete()
             staging.deleteRecursively()
@@ -413,7 +401,7 @@ class CarRepository(private val context: Context, val catalogUrl: String) {
             staging.renameTo(target)
         }
         // El paquete nuevo llega sin la vista desde arriba: que el Taller la pida de una vez.
-        checks.edit().remove(KEY_TOP_VIEW_CHECK + e.id).remove(KEY_RISE_CHECK + e.id).apply()
+        checks.edit().apply { Extra.entries.forEach { remove(it.checkKey + e.id) } }.apply()
         changed()
     }
 
@@ -449,9 +437,11 @@ class CarRepository(private val context: Context, val catalogUrl: String) {
         File(folder, CarFiles.SPIN).listFiles().orEmpty().filter { accept(it.name) }
 
     /** Después de instalar, quitar o cambiar un auto: lo de memoria ya no sirve y se vuelve a leer. */
-    private suspend fun changed() {
-        images.evictAll()
-        sourceWidths.clear()
+    private suspend fun changed(evict: Boolean = true) {
+        if (evict) {
+            images.evictAll()
+            sourceWidths.clear()
+        }
         val fresh = withContext(Dispatchers.IO) { scan() }
         installed = fresh
         outdated = outdated?.takeIf { e -> pkg(e.id)?.let { isOutdated(it, e) } == true }
@@ -647,7 +637,6 @@ class CarRepository(private val context: Context, val catalogUrl: String) {
             val a = JSONObject(file.readText())
             RiseInfo(
                 frames = a.getInt(CarJson.RISE_FRAMES),
-                from = a.optInt(CarJson.RISE_FROM, 18),
                 gray = a.optDouble(CarJson.GRAY, 0.5).toFloat(),
             ).takeIf { r -> r.frames >= 2 && (0 until r.frames).all { File(folder, "${CarViews.RISE}/%02d.webp".format(it)).exists() } }
         }.getOrNull()
@@ -739,9 +728,23 @@ class CarRepository(private val context: Context, val catalogUrl: String) {
         private const val HIGH_MARK = "m00"
         private const val CHECK_EVERY_MS = 60 * 60 * 1000L
         private const val KEY_LAST_CHECK = "last_check:"
-        private const val KEY_TOP_VIEW_CHECK = "top_view_check:"
-        private const val KEY_RISE_CHECK = "rise_check:"
         /** Lo que no va en el nombre de la carpeta de un auto. */
         private val FOLDER_CHARS = Regex("[^a-z0-9-]")
     }
+}
+
+/**
+ * Los archivos chicos que se bajan aparte del paquete: [folder] para su carpeta temporal,
+ * [marker] (lo que dice que ya está completo; se mueve al último), [checkKey] para no
+ * preguntar al catálogo más de una vez por hora, si el auto ya lo tiene y dónde viene en el catálogo.
+ */
+private enum class Extra(
+    val folder: String,
+    val marker: String,
+    val checkKey: String,
+    val has: (CarPackage) -> Boolean,
+    val pick: (CatalogEntry) -> PackageExtra?,
+) {
+    TOP_VIEW(CarViews.TOP_VIEW, CarViews.TOP_VIEW + ".webp", "top_view_check:", { it.topView }, { it.topView }),
+    RISE(CarViews.RISE, CarViews.RISE_INFO, "rise_check:", { it.rise != null }, { it.rise }),
 }

@@ -86,8 +86,8 @@ fun CarTurntable(
             direction = step
         }
     }
-    // Los cuadros de la subida, al tamaño y color con que se ve el auto.
-    if (rise != null) LaunchedEffect(p, rise.wanted, widthPx) {
+    // Los cuadros de la subida, al tamaño y color con que se ve el auto (si cambia el color, se vuelven a teñir).
+    if (rise != null) LaunchedEffect(p, rise.wanted, widthPx, color) {
         val info = p.rise
         if (!rise.wanted || widthPx <= 0 || info == null) return@LaunchedEffect
         rise.load(repo, p, info, color, widthPx)

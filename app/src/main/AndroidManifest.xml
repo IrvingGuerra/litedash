@@ -60,6 +60,26 @@
             android:resizeableActivity="true"
             android:theme="@android:style/Theme.Material.NoActionBar" />
 
+        <!--
+            Receptor de llantas o cable OBD conectado: Android ofrece "usar siempre LiteDash" y el
+            permiso queda dado (no se pide en cada encendido). Sin pantalla y en su propia tarea:
+            no toca el inicio ni lo trae al frente.
+        -->
+        <activity
+            android:name="com.irvingguerra.litedash.feature.tpms.UsbAttachActivity"
+            android:exported="true"
+            android:taskAffinity="${applicationId}.usb"
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:theme="@android:style/Theme.NoDisplay">
+            <intent-filter>
+                <action android:name="android.hardware.usb.action.USB_DEVICE_ATTACHED" />
+            </intent-filter>
+            <meta-data
+                android:name="android.hardware.usb.action.USB_DEVICE_ATTACHED"
+                android:resource="@xml/usb_devices" />
+        </activity>
+
         <activity
             android:name=".MainActivity"
             android:exported="true"

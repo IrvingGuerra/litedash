@@ -16,12 +16,11 @@ class Advert(
      * Los datos de fabricante completos, con la compañía al principio (little-endian):
      * varias familias meten sus datos en esos dos bytes.
      */
-    val fullPayload: ByteArray?
-        get() {
-            val data = manufacturerData ?: return null
-            val c = companyId ?: return data
-            return byteArrayOf((c and 0xFF).toByte(), ((c shr 8) and 0xFF).toByte()) + data
-        }
+    val fullPayload: ByteArray? by lazy(LazyThreadSafetyMode.NONE) {
+        val data = manufacturerData ?: return@lazy null
+        val c = companyId ?: return@lazy data
+        byteArrayOf((c and 0xFF).toByte(), ((c shr 8) and 0xFF).toByte()) + data
+    }
 }
 
 /**
@@ -43,15 +42,16 @@ object BleTpmsFormats {
 
     private fun reading(
         adv: Advert, now: Long, family: String, kpa: Float?, tempC: Float?,
-        volts: Float? = null, pct: Int? = null, wheel: Wheel? = null, leak: Boolean = false,
+        volts: Float? = null, pct: Int? = null, wheel: Wheel? = null,
     ) = TireReading(
         sensorId = adv.address.uppercase(),
         pressureKpa = kpa?.coerceAtLeast(0f),
         tempC = tempC,
         batteryPct = pct,
         batteryVolts = volts,
-        lowBattery = (volts != null && volts < LOW_CELL_V) || (pct != null && pct <= 10),
-        leak = leak,
+        // El % bajo lo juzgan las alertas (una sola regla); aquí solo el voltaje.
+        lowBattery = volts != null && volts < LOW_CELL_V,
+        leak = false,
         lost = false,
         family = family,
         reportedWheel = wheel,
@@ -101,13 +101,14 @@ object BleTpmsFormats {
     /**
      * WODHMIEY / ITPMS / Wicarlink: compañía 0x00AC y 15 bytes (después de la compañía):
      * [0] V×10 (escala supuesta), [1] presión (+256 si [6] == 1) × 3.144 kPa, [2] °C + 55,
-     * [3] alarma, [9..14] MAC. Confianza media y sin ejemplo real.
+     * [3] alarma (bits sin documentar: puede ser presión, calor o pila; no se toma como fuga),
+ * [9..14] MAC. Confianza media y sin ejemplo real.
      */
     private fun wodhmiey(adv: Advert, now: Long): TireReading? {
         if (adv.companyId != 0x00AC) return null
         val d = adv.manufacturerData?.takeIf { it.size == 15 } ?: return null
         val raw = d.u8(1) + if (d.u8(6) == 1) 256 else 0
-        return reading(adv, now, "WODHMIEY", raw * 3.144f, d.u8(2) - 55f, volts = d.u8(0) / 10f, leak = d.u8(3) != 0)
+        return reading(adv, now, "WODHMIEY", raw * 3.144f, d.u8(2) - 55f, volts = d.u8(0) / 10f)
     }
 
     /** Ai TPMS: nombre "AI-…" o MAC 12:30:AF; mismo acomodo que BR con 14.696 psi de atmósfera. */

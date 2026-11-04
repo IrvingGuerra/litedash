@@ -6,6 +6,7 @@ import android.hardware.usb.UsbDeviceConnection
 import android.hardware.usb.UsbEndpoint
 import android.hardware.usb.UsbInterface
 import android.hardware.usb.UsbManager
+import android.os.SystemClock
 import java.io.IOException
 
 /** Velocidades que usan los cables ELM327 por USB, de la más común a la menos. */
@@ -65,10 +66,25 @@ class UsbLink(manager: UsbManager, private val device: UsbDevice, baud: Int) : Q
 
     private fun pump() {
         val buf = ByteArray(reader.maxPacketSize.coerceAtLeast(64))
+        var fastFails = 0
         while (!closed) {
+            val start = SystemClock.uptimeMillis()
             val n = connection.bulkTransfer(reader, buf, buf.size, 200)
-            if (n < 0) continue // sin datos en este rato
-            for (i in statusBytes until n) incoming.put(buf[i])
+            if (n >= 0) {
+                fastFails = 0
+                for (i in statusBytes until n) incoming.put(buf[i])
+                continue
+            }
+            // −1 tras esperar = sin datos; −1 al instante = el cable falló (desconectado): no girar en vacío.
+            if (SystemClock.uptimeMillis() - start >= 150) {
+                fastFails = 0
+                continue
+            }
+            if (++fastFails >= 10) {
+                closed = true
+                break
+            }
+            Thread.sleep(50)
         }
     }
 

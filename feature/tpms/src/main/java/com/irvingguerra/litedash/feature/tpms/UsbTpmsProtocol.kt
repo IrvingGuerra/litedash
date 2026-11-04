@@ -109,8 +109,8 @@ object UsbTpmsProtocol {
         /** Ya llegó un ID de refacción distinto de cero (si no, se ignora la trama fija de refacción). */
         var spareKnown = false
             private set
-        /** Cada trama válida tal cual (con su CS), para el registro de diagnóstico. */
-        var onRaw: ((ByteArray) -> Unit)? = null
+        /** Cada trama válida tal cual (con su CS) y lo que se entendió (null = ignorada), para el registro. */
+        var onRaw: ((ByteArray, UsbFrame?) -> Unit)? = null
 
         private var buf = ByteArray(64)
         private var count = 0
@@ -131,8 +131,9 @@ object UsbTpmsProtocol {
                 val frame = buf.copyOfRange(start, start + len)
                 if (checksum(frame, len - 1) != frame.u8(len - 1)) { start++; continue }
                 start += len
-                onRaw?.invoke(frame)
-                parse(frame)?.let { out += it }
+                val parsed = parse(frame)
+                onRaw?.invoke(frame, parsed)
+                parsed?.let { out += it }
             }
             // Lo que no se usó pasa al principio.
             System.arraycopy(buf, start, buf, 0, count - start)

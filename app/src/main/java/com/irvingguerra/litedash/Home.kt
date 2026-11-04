@@ -108,7 +108,7 @@ enum class Expanded { MUSIC, RADIO }
 sealed interface Panel {
     data object Drawer : Panel
     data object Settings : Panel
-    /** Ajustes abiertos en "Acerca de" (desde el aviso de versión nueva). */
+    /** Ajustes abiertos en Sistema → Actualizaciones (desde el aviso de versión nueva). */
     data object About : Panel
     /** Ajustes abiertos en "Tu auto" (botón del auto en el dock). */
     data object CarSettings : Panel
@@ -219,26 +219,36 @@ class TileActions(
 @Composable
 fun TileContent(d: Dependencies, p: Tile, apps: List<App>, car: CarPackage?, revision: Int, actions: TileActions) {
     val context = LocalContext.current
+    // La pieza de un módulo apagado no se ve (al acomodar queda su lugar con un aviso, para quitarla).
+    moduleOff(d, p.type)?.let { module ->
+        if (actions.editing()) ShortcutTile(iconOf(p.type), stringResource(module), stringResource(R.string.module_off)) {}
+        return
+    }
     when (p.type) {
-        TileTypes.CAR, TileTypes.ROAD, TileTypes.IMAGE -> BoxWithConstraints(
-            Modifier
+        TileTypes.CAR, TileTypes.ROAD, TileTypes.IMAGE -> {
+            val hero = Modifier
                 .fillMaxSize()
                 .onGloballyPositioned { actions.onCarBounds(p.id, it.boundsInRoot()) }
                 // Mientras crece o se ve sola, la de la pieza se esconde (si no, se ve doble).
-                .graphicsLayer { alpha = if (actions.carHidden(p.id)) 0f else 1f },
-        ) {
-            HeroTile(
-                d,
-                p,
-                car,
-                // Una imagen sin foto abre su panel para elegirla; lo demás crece.
-                onClick = { if (p.type == TileTypes.IMAGE && p.data.isEmpty()) actions.onPanel(Panel.CustomizeImage(p.id)) else actions.onCarOnly(p) },
-                modifier = Modifier.fillMaxSize(),
-            )
+                .graphicsLayer { alpha = if (actions.carHidden(p.id)) 0f else 1f }
+            val content = @Composable {
+                HeroTile(
+                    d,
+                    p,
+                    car,
+                    // Una imagen sin foto abre su panel para elegirla; lo demás crece.
+                    onClick = { if (p.type == TileTypes.IMAGE && p.data.isEmpty()) actions.onPanel(Panel.CustomizeImage(p.id)) else actions.onCarOnly(p) },
+                    modifier = Modifier.fillMaxSize(),
+                )
+            }
             // Las llantas en las esquinas del auto o de tu imagen (la carretera ya va llena). En una
             // pieza chica las cuatro pastillas taparían todo: ahí solo la pieza Llantas o el aviso.
-            val roomy = maxWidth >= PILLS_MIN_WIDTH && maxHeight >= PILLS_MIN_HEIGHT
-            if (p.type != TileTypes.ROAD && roomy && !actions.editing()) TirePills(d, actions.onTires)
+            // Sin llantas no hace falta medir la pieza.
+            if (p.type != TileTypes.ROAD && d.hasTpmsSource) BoxWithConstraints(hero) {
+                content()
+                val roomy = maxWidth >= PILLS_MIN_WIDTH && maxHeight >= PILLS_MIN_HEIGHT
+                if (roomy && !actions.editing()) TirePills(d, actions.onTires)
+            } else Box(hero) { content() }
         }
         TileTypes.MUSIC -> MusicTile(d.music, revision, onExpand = actions.onMusic)
         TileTypes.RADIO -> RadioTile(d.music, revision, onExpand = actions.onRadio)
@@ -251,7 +261,7 @@ fun TileContent(d: Dependencies, p: Tile, apps: List<App>, car: CarPackage?, rev
             onPick = { actions.onPanel(Panel.PickGauge(p.id)) },
             onWorkshop = { actions.onPanel(Panel.Workshop) },
         )
-        TileTypes.WORKSHOP -> WorkshopTile(d) { actions.onPanel(Panel.Workshop) }
+        TileTypes.WORKSHOP -> HealthTile(d, car) { actions.onPanel(Panel.Workshop) }
         TileTypes.PROJECTION -> ProjectionTile(d, apps) { actions.onPanel(Panel.Drawer) }
         TileTypes.TIRES -> Box(Modifier.fillMaxSize().onGloballyPositioned { actions.onCarBounds(p.id, it.boundsInRoot()) }) {
             TiresTile(d, onOpen = actions.onTires, onSettings = { actions.onPanel(Panel.TiresSettings) })
@@ -276,6 +286,16 @@ fun TileContent(d: Dependencies, p: Tile, apps: List<App>, car: CarPackage?, rev
             }
         }
     }
+}
+
+/**
+ * El módulo apagado del que depende una pieza (su nombre), o null si se puede ver: el Taller y
+ * los medidores son del OBD, la pieza Llantas de Llantas.
+ */
+fun moduleOff(d: Dependencies, type: String): Int? = when (type) {
+    TileTypes.WORKSHOP, TileTypes.GAUGE -> R.string.module_obd.takeIf { !d.obdModule }
+    TileTypes.TIRES -> R.string.module_tpms.takeIf { !d.hasTpmsSource }
+    else -> null
 }
 
 /** La de la pieza, si eligió una; si no, la de Ajustes; si no, la primera instalada. */
@@ -374,9 +394,10 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
             rise.release()
         }
     }
-    // Con Llantas activo, la subida del auto se baja aparte (una vez; unos cientos de KB).
-    val tiresOn = d.hasTpmsSource
-    LaunchedEffect(car, tiresOn) { if (tiresOn) d.cars.fetchRise(car) }
+    // La subida del auto se baja aparte (una vez; unos cientos de KB), solo si se va a usar: con
+    // Llantas activo, tocar el auto lleva a las llantas y hay una pieza del auto 3D.
+    val wantsRise = d.hasTpmsSource && d.prefs.carTap == CarTap.TIRES && d.dashboard.tiles.any { it.type == TileTypes.CAR }
+    LaunchedEffect(car, wantsRise) { if (wantsRise) d.cars.fetchRise(car) }
 
     // Cada toque y cada botón del volante reinician la cuenta del modo estacionado. Se
     // leen dentro del efecto (no al armar la pantalla): tocar no vuelve a armar el inicio.
@@ -513,7 +534,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                         TiresAlertBanner(d, actions.onTires)
                         TripRecorderEffect(d)
                         if (!isShortScreen()) ReminderBanner(d.reminders)
-                        UpdateBanner(d.updater, onOpen = { panel = Panel.About })
+                        UpdateBanner(d.updater, onOpen = { openUpdates(); panel = Panel.About })
                         val newModel = d.cars.outdated?.takeIf { it.id == car?.id }
                         if (car != null && newModel != null) CarUpdateNotice(d.cars, car, newModel)
                     }
@@ -537,8 +558,8 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                     // auto está la pantalla dividida (abrir la app desde aquí la arma).
                     when (expanded) {
                         Expanded.MUSIC -> MusicExpanded(
-                            d.music, close = { expanded = null }, onLinkUsb = { panel = Panel.MusicSettings }, Modifier.padding(6.dp),
-                            browser = if (d.prefs.usbPlayer) { _, picked -> PlayerBrowser(PlayerSource.USB, picked, Modifier.fillMaxSize()) } else null,
+                            d.music, close = { expanded = null }, Modifier.padding(6.dp),
+                            browser = { picked -> PlayerBrowser(PlayerSource.USB, picked, Modifier.fillMaxSize()) },
                         )
                         Expanded.RADIO -> RadioExpanded(
                             d.music, close = { expanded = null }, onSettings = { panel = Panel.MusicSettings }, Modifier.padding(6.dp),
@@ -577,7 +598,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                 onEdit = { panel = null; editing = true },
                 onTemplates = { panel = Panel.Templates },
                 start = when (p) {
-                    Panel.About -> SettingsSection.ABOUT
+                    Panel.About -> SettingsSection.SYSTEM
                     Panel.CarSettings -> SettingsSection.CAR
                     Panel.Workshop -> SettingsSection.WORKSHOP
                     Panel.MusicSettings -> SettingsSection.APPS
@@ -588,7 +609,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
             )
             Panel.Templates -> TemplatesPanel(d.dashboard, d.prefs, close = { panel = null })
             Panel.AddTile -> AddTilePanel(
-                d.dashboard,
+                d,
                 close = { panel = null },
                 onPickApp = { panel = Panel.PickApp(null) },
                 onPickGauge = { panel = Panel.PickGauge(null) },
@@ -629,13 +650,11 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
 }
 
 /**
- * Estacionado: reloj grande, saludo y clima sobre fondo oscuro. Sale tras
- * [PARK_AFTER_MS] sin tocar el inicio (y sin ir en movimiento); un toque lo quita.
+ * Estacionado: reloj grande, saludo y clima (o tu imagen, si la elegiste) sobre fondo oscuro.
+ * Sale tras [PARK_AFTER_MS] sin tocar el inicio (y sin ir en movimiento); un toque lo quita.
  */
 @Composable
 private fun Parked(d: Dependencies, onWake: () -> Unit) {
-    val clock = rememberClock()
-    val hello = greeting(d.prefs.driverName)
     Box(
         Modifier
             .fillMaxSize()
@@ -643,6 +662,10 @@ private fun Parked(d: Dependencies, onWake: () -> Unit) {
             .clickable(remember { MutableInteractionSource() }, indication = null, onClick = onWake),
         contentAlignment = Alignment.Center,
     ) {
+        // Sin imagen guardada, el reloj.
+        if (d.prefs.parkedView == ParkedView.IMAGE && parkedImageShown(d.prefs)) return@Box
+        val clock = rememberClock()
+        val hello = greeting(d.prefs.driverName)
         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
             // Siempre en colores oscuros: de noche no deslumbra.
             LiteDashTheme(dark = true, scale = 1f) {

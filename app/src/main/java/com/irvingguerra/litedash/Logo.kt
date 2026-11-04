@@ -49,6 +49,7 @@ import com.irvingguerra.litedash.core.ui.Label
 import com.irvingguerra.litedash.core.ui.LocalColors
 import com.irvingguerra.litedash.core.ui.MORSE_ASPECT
 import com.irvingguerra.litedash.core.ui.MorseMark
+import com.irvingguerra.litedash.core.ui.Segmented
 import com.irvingguerra.litedash.core.ui.SwitchRow
 import com.irvingguerra.litedash.core.ui.Typography
 import com.irvingguerra.litedash.feature.dashboard.Tile
@@ -109,6 +110,9 @@ private val INTRO = SavedImage("intro.png", 1024, png = true)
 
 /** El fondo del inicio: una foto que llena toda la pantalla. */
 private val WALLPAPER = SavedImage("wallpaper.jpg", 1920, png = false)
+
+/** La imagen del modo estacionado (en vez del reloj), con transparencia por si es un logo. */
+private val PARKED = SavedImage("parked.png", 1920, png = true)
 
 /** Copia la imagen elegida, reducida a [SavedImage.maxPx]. */
 private suspend fun save(context: Context, uri: Uri, target: SavedImage): Boolean = withContext(Dispatchers.IO) {
@@ -230,6 +234,35 @@ fun HomeWallpaper(prefs: Preferences) {
     Box(Modifier.fillMaxSize()) {
         Image(image, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
         Box(Modifier.fillMaxSize().background(c.background.copy(alpha = 0.4f)))
+    }
+}
+
+/**
+ * Tu imagen del modo estacionado a toda la pantalla (sin recortarla). Devuelve false si no hay
+ * imagen guardada, para que se vea el reloj. Sale de memoria al quitarse el modo estacionado.
+ */
+@Composable
+fun parkedImageShown(prefs: Preferences): Boolean {
+    DisposableEffect(Unit) { onDispose { PARKED.release() } }
+    val loaded = rememberImage(PARKED, prefs.parkedRevision)
+    val image = loaded.image
+    if (image != null) Image(image, null, Modifier.fillMaxSize(), contentScale = ContentScale.Fit)
+    return image != null || !loaded.loaded
+}
+
+/** Inicio → Modo estacionado: reloj o tu imagen (elegirla, cambiarla o quitarla). */
+@Composable
+fun ParkedSettings(prefs: Preferences) {
+    val c = LocalColors.current
+    SwitchRow(stringResource(R.string.parked_mode), prefs.parkedMode, { prefs.parkedMode = it }, stringResource(R.string.parked_mode_help))
+    if (!prefs.parkedMode) return
+    Segmented(
+        listOf(ParkedView.CLOCK to stringResource(R.string.parked_clock), ParkedView.IMAGE to stringResource(R.string.parked_image)),
+        prefs.parkedView,
+        { prefs.parkedView = it },
+    )
+    if (prefs.parkedView == ParkedView.IMAGE && !ImageButtons(PARKED, prefs.parkedRevision, { prefs.parkedRevision++ })) {
+        Label(stringResource(R.string.parked_no_image), Typography.small, c.textMuted)
     }
 }
 

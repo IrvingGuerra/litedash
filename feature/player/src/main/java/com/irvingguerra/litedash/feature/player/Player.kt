@@ -5,7 +5,6 @@ import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.media.AudioAttributes
@@ -25,6 +24,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.core.content.ContextCompat
+import com.irvingguerra.litedash.feature.music.Drives
 import java.util.concurrent.Executors
 
 /** Una canción de la memoria USB o una estación de radio: lo que el reproductor sabe tocar. */
@@ -68,13 +68,17 @@ private const val LOAD_TIMEOUT_MS = 25_000L
  * y la vista en grande lo ven como a cualquier app, y el volante lo controla) y pide el foco
  * de audio como manda Android. Mientras suena, [PlaybackService] lo mantiene en primer plano
  * con su aviso. Uno solo por proceso; no hace nada hasta que algo pide [play].
+ * Guarda el contexto de la aplicación (vive lo mismo que el proceso): no es una fuga.
  */
+@SuppressLint("StaticFieldLeak")
 object Player {
     var state by mutableStateOf(PlayerState.IDLE)
         private set
 
-    // Es el contexto de la aplicación (vive lo mismo que el proceso): no es una fuga.
-    @SuppressLint("StaticFieldLeak")
+    /** Sube con cada [play] o [stop]: quien prepara algo en segundo plano sabe si ya pidieron otra cosa. */
+    var requests = 0
+        private set
+
     private lateinit var app: Context
     private val main = Handler(Looper.getMainLooper())
     // Leer carátulas y abrir archivos fuera del hilo principal, de uno en uno.
@@ -101,6 +105,7 @@ object Player {
     /** Suena [queue] desde [index]; si ya es lo mismo, solo sigue. */
     fun play(source: PlayerSource, queue: List<Playable>, index: Int) {
         val item = queue.getOrNull(index) ?: return
+        requests++
         if (state.current?.key == item.key && state.queue == queue) return resume()
         state = PlayerState(source, queue, index, playing = false, buffering = true, error = null)
         PlayerStore(app).rememberLast(source, item.key)
@@ -158,7 +163,8 @@ object Player {
 
     fun seekTo(ms: Long) {
         val p = player ?: return
-        if (state.current !is Track) return
+        // Mientras carga, MediaPlayer aún no deja adelantar.
+        if (state.current !is Track || state.buffering) return
         p.seekTo(ms.toInt())
         // La sesión se entera ya (la barra se dibuja con la posición y la hora que publica).
         publishState()
@@ -166,6 +172,7 @@ object Player {
 
     /** Para del todo: suelta el audio, la sesión y el aviso. */
     fun stop() {
+        requests++
         load++
         releaseAudio()
         abandonFocus()
@@ -182,7 +189,7 @@ object Player {
         releaseAudio()
         if (item is Track) watchUsb() else unwatchUsb()
         publishMetadata(item, null)
-        PlaybackService.start(app)
+        PlaybackService.update(app)
         // Si en un rato no suena, se avisa (la radio puede no contestar nunca).
         main.postDelayed({ if (myLoad == load && state.buffering) fail(app.getString(R.string.player_timeout)) }, LOAD_TIMEOUT_MS)
         io.execute { val art = artworkOf(item); main.post { if (myLoad == load) publishMetadata(item, art) } }
@@ -240,15 +247,19 @@ object Player {
         }
     }
 
+    /** No se pudo: se suelta el audio (play lo vuelve a intentar) y se avisa. */
     private fun fail(message: String) {
+        load++
+        releaseAudio()
         state = PlayerState(state.source, state.queue, state.index, playing = false, buffering = false, error = message)
         publishState()
+        PlaybackService.update(app)
     }
 
     private fun update(playing: Boolean = state.playing, buffering: Boolean = state.buffering) {
         state = PlayerState(state.source, state.queue, state.index, playing, buffering, null)
         publishState()
-        PlaybackService.refresh(app)
+        PlaybackService.update(app)
     }
 
     // --- Sesión de medios: lo que ven la pieza, el volante y el aviso. ---
@@ -366,16 +377,11 @@ object Player {
         if (usbWatcher != null) return
         val receiver = object : BroadcastReceiver() {
             override fun onReceive(c: Context, i: Intent) {
-                if (state.current is Track) stop()
+                Drives.changed()
+                if (i.action != Intent.ACTION_MEDIA_MOUNTED && state.current is Track) stop()
             }
         }
-        val filter = IntentFilter().apply {
-            addAction(Intent.ACTION_MEDIA_UNMOUNTED)
-            addAction(Intent.ACTION_MEDIA_EJECT)
-            addAction(Intent.ACTION_MEDIA_BAD_REMOVAL)
-            addDataScheme("file")
-        }
-        ContextCompat.registerReceiver(app, receiver, filter, ContextCompat.RECEIVER_EXPORTED)
+        ContextCompat.registerReceiver(app, receiver, Drives.mediaFilter(), ContextCompat.RECEIVER_EXPORTED)
         usbWatcher = receiver
     }
 

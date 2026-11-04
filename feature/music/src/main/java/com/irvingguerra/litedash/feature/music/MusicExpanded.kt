@@ -11,20 +11,13 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -37,92 +30,50 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.irvingguerra.litedash.core.ui.Card
-import com.irvingguerra.litedash.core.ui.IconButton
 import com.irvingguerra.litedash.core.ui.Icons
 import com.irvingguerra.litedash.core.ui.Label
 import com.irvingguerra.litedash.core.ui.LocalColors
-import com.irvingguerra.litedash.core.ui.Radius
 import com.irvingguerra.litedash.core.ui.Typography
 
 /**
- * La música en grande, sin salir de LiteDash: fuentes como en un estéreo (USB, Bluetooth,
- * radio, apps), carátula, barra para adelantar, y los botones propios de la app (en
- * Spotify: me gusta, aleatorio, repetir). Ancha pone la carátula a un lado; angosta, arriba.
- * [onLinkUsb] abre los ajustes de música (para enlazar la app de USB de la pantalla).
- * [browser] es la biblioteca del reproductor propio de LiteDash (USB o radio), si está
- * prendido: se abre con el botón de lista o al tocar una fuente propia sin nada que sonar.
+ * La música en grande, sin salir de LiteDash: fuentes como en un estéreo (USB, tu app de música,
+ * Bluetooth), carátula, barra para adelantar, y los botones propios de la app (en Spotify: me
+ * gusta, aleatorio, repetir). Ancha pone la carátula a un lado; angosta, arriba. [browser] es la
+ * biblioteca USB del reproductor propio: se abre con el botón de lista o al tocar USB sin nada
+ * que sonar; recibe qué hacer cuando ya se eligió algo.
  */
 @Composable
 fun MusicExpanded(
     repo: MusicRepository,
     close: () -> Unit,
-    onLinkUsb: () -> Unit,
     modifier: Modifier = Modifier,
-    browser: (@Composable (kind: SourceKind, onPicked: () -> Unit) -> Unit)? = null,
+    browser: @Composable (onPicked: () -> Unit) -> Unit,
 ) {
-    DisposableEffect(repo) {
-        repo.use()
-        onDispose { repo.release() }
-    }
-    val c = LocalColors.current
     val song = repo.song
-    // La biblioteca abierta (de qué fuente); null = lo que suena.
-    var browsing by remember { mutableStateOf<SourceKind?>(null) }
-    val ownKind = if (song != null && repo.isOwn(song.pkg)) song.source else null
-    Card(modifier.fillMaxSize()) {
-        BoxWithConstraints(Modifier.fillMaxSize().padding(20.dp)) {
-            val wide = maxWidth > 520.dp && maxWidth > maxHeight
-            // La portada cuadrada, pero sin pasar del 40 % del ancho: el título y los botones
-            // siguen cabiendo a su lado.
-            val artworkMax = maxWidth * 0.4f
-            Column(Modifier.fillMaxSize()) {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    // Las fuentes van junto a los botones (antes en su propia fila, dejaban arriba una
-                    // franja vacía); sin fuentes que elegir, el nombre de la app.
-                    if (hasSourceRow(repo, song)) {
-                        SourceRow(repo, song, onLinkUsb, onBrowse = { if (browser != null) browsing = it }, Modifier.weight(1f), browsing = browsing)
-                    } else {
-                        // Si suena el reproductor propio, la fuente ("USB", "RADIO") y no "LITEDASH".
-                        val app = ownKind?.label() ?: song?.app ?: repo.preferredName()
-                        Label(app.uppercase(), Typography.label, c.textMuted, maxLines = 1, modifier = Modifier.weight(1f).padding(start = 4.dp))
-                    }
-                    if (browser != null && (ownKind != null || browsing != null)) {
-                        IconButton(if (browsing != null) Icons.music else Icons.list, { browsing = if (browsing != null) null else ownKind }, size = 48.dp, background = c.surfaceHigh)
-                    }
-                    if (song != null && !repo.isOwn(song.pkg) || song == null && repo.preferred?.let { !repo.isOwn(it) } == true) {
-                        IconButton(Icons.openExternal, { repo.openApp() }, size = 48.dp, background = c.surfaceHigh)
-                    }
-                    IconButton(Icons.close, close, size = 48.dp, background = c.surfaceHigh)
-                }
-                Spacer(Modifier.height(16.dp))
-                val open = browsing
-                if (browser != null && open != null) {
-                    browser(open) { browsing = null }
-                    return@Column
-                }
-                // Sin nada sonando se ve igual, con los controles: play reanuda lo último.
-                when {
-                    wide -> Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
-                        Artwork(song, Modifier.widthIn(max = artworkMax).fillMaxHeight().aspectRatio(1f, matchHeightConstraintsFirst = false), Radius.card)
-                        Spacer(Modifier.width(24.dp))
-                        Details(repo, song, Modifier.weight(1f))
-                    }
-                    else -> Column(Modifier.weight(1f).fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-                        Artwork(song, Modifier.weight(1f, fill = false).aspectRatio(1f, matchHeightConstraintsFirst = true), Radius.card)
-                        Spacer(Modifier.height(16.dp))
-                        Details(repo, song, Modifier.fillMaxWidth())
-                    }
-                }
-            }
+    // La biblioteca USB abierta; si no, lo que suena.
+    var browsing by remember { mutableStateOf(false) }
+    val own = song != null && repo.isOwn(song.pkg)
+    ExpandedCard(repo, modifier) { wide, artworkMax ->
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            // Las fuentes van junto a los botones (en su propia fila dejaban arriba una franja vacía).
+            SourceRow(repo, song, browsing, onSelect = { browsing = false }, onBrowse = { browsing = true }, Modifier.weight(1f))
+            if (own || browsing) HeaderButton(if (browsing) Icons.music else Icons.list) { browsing = !browsing }
+            val app = song?.pkg ?: repo.active ?: repo.preferred
+            if (app != null && !repo.isOwn(app)) HeaderButton(Icons.openExternal) { repo.openApp() }
+            HeaderButton(Icons.close, close)
         }
+        Spacer(Modifier.height(16.dp))
+        if (browsing) {
+            browser { browsing = false }
+            return@ExpandedCard
+        }
+        // Sin nada sonando se ve igual, con los controles: play reanuda lo último.
+        NowPlaying(song, Icons.music, wide, artworkMax) { Details(repo, song, it) }
     }
 }
 
 @Composable
 private fun Details(repo: MusicRepository, song: Song?, modifier: Modifier) {
-    val c = LocalColors.current
     val opening = repo.starting
     Column(modifier) {
         val title = when {
@@ -130,11 +81,6 @@ private fun Details(repo: MusicRepository, song: Song?, modifier: Modifier) {
             opening != null -> stringResource(R.string.opening_app, opening)
             else -> stringResource(R.string.nothing_playing)
         }
-        // Alto de dos líneas reservado: con un nombre largo los botones no bajan.
-        Box(Modifier.heightIn(min = 68.dp), contentAlignment = Alignment.BottomStart) {
-            Label(title, Typography.title.copy(fontSize = 26.sp), maxLines = 2)
-        }
-        Spacer(Modifier.height(4.dp))
         val error = song?.error
         val subtitle = when {
             error != null -> error
@@ -144,10 +90,7 @@ private fun Details(repo: MusicRepository, song: Song?, modifier: Modifier) {
             repo.usbDrive != null -> stringResource(R.string.usb_drive_in, repo.usbDrive.orEmpty())
             else -> stringResource(R.string.resume_explain)
         }
-        // También dos líneas reservadas para el subtítulo: los botones no se mueven al cambiar de estación.
-        Box(Modifier.heightIn(min = 48.dp)) {
-            Label(subtitle, Typography.subtitle, if (error != null) c.danger else c.textMuted, maxLines = 2)
-        }
+        BigTitle(title, subtitle, error != null)
         if (song != null && song.durationMs > 0) {
             Spacer(Modifier.height(20.dp))
             TimeBar(repo, song)

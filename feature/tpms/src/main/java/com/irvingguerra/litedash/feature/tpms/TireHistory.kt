@@ -7,8 +7,9 @@ import java.io.DataOutputStream
 
 /**
  * Presión de cada llanta en el tiempo: una muestra cada 30 s, hasta 7 días (20 160 por
- * llanta). Compacto: segundos desde 1970 (Int) y décimas de kPa (Short) en anillos.
- * No es seguro entre hilos: el repositorio lo usa solo en el hilo principal.
+ * llanta). Compacto: segundos desde 1970 (Int) y décimas de kPa (Short) en anillos. Guarda
+ * la presión SIN calibrar (el ajuste se aplica al leer: cambiarlo no inventa fugas).
+ * No es seguro entre hilos: el repositorio lo usa en el hilo principal y guarda una [snapshot].
  */
 class TireHistory {
     private class Ring {
@@ -24,6 +25,11 @@ class TireHistory {
         }
 
         fun lastTime() = if (size == 0) null else times[(start + size - 1) % CAPACITY]
+
+        fun copy() = Ring().also { r ->
+            times.copyInto(r.times); values.copyInto(r.values)
+            r.start = start; r.size = size
+        }
 
         inline fun forEach(block: (Int, Short) -> Unit) {
             for (k in 0 until size) {
@@ -64,7 +70,25 @@ class TireHistory {
         return out
     }
 
-    fun all(sinceMillis: Long = 0): Map<Wheel, List<TireSample>> = rings.keys.associateWith { samples(it, sinceMillis) }
+    /** La presión más alta de [w] desde [sinceMillis], leyendo de la más nueva hacia atrás (sin copiar). */
+    fun maxSince(w: Wheel, sinceMillis: Long): Float? {
+        val ring = rings[w] ?: return null
+        var max: Short? = null
+        for (k in ring.size - 1 downTo 0) {
+            val i = (ring.start + k) % CAPACITY
+            if (ring.times[i] * 1000L < sinceMillis) break
+            if (max == null || ring.values[i] > max) max = ring.values[i]
+        }
+        return max?.let { it / 10f }
+    }
+
+    /** Una copia para guardarla en otro hilo; desde aquí, ya no hay nada sin guardar. */
+    fun snapshot(): TireHistory {
+        val copy = TireHistory()
+        for ((w, ring) in rings) copy.rings[w] = ring.copy()
+        dirty = false
+        return copy
+    }
 
     /** Formato: "TPH1", y por llanta: clave, cuántas, y (Int segundos, Short décimas) cada una. */
     fun encode(): ByteArray {
@@ -78,7 +102,6 @@ class TireHistory {
                 ring.forEach { t, v -> out.writeInt(t); out.writeShort(v.toInt()) }
             }
         }
-        dirty = false
         return bytes.toByteArray()
     }
 

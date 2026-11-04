@@ -94,26 +94,17 @@ class WheelKeys(private val context: Context, private val prefs: Preferences) {
         fun adjust(direction: Int) = runCatching {
             audio.adjustStreamVolume(AudioManager.STREAM_MUSIC, direction, AudioManager.FLAG_SHOW_UI)
         }
-        fun media(code: Int) = runCatching {
-            audio.dispatchMediaKeyEvent(KeyEvent(KeyEvent.ACTION_DOWN, code))
-            audio.dispatchMediaKeyEvent(KeyEvent(KeyEvent.ACTION_UP, code))
-        }
         when (action) {
-            // Si lo que suena es la radio, el volante la controla a ella.
-            WheelAction.PLAY_PAUSE -> when {
-                music.song != null -> music.toggle()
-                music.radio.song != null -> music.radio.toggle()
-                else -> music.resume()
-            }
-            WheelAction.NEXT -> when {
-                music.song != null -> music.next()
-                music.radio.song != null -> music.radio.next()
-                else -> media(KeyEvent.KEYCODE_MEDIA_NEXT)
-            }
-            WheelAction.PREVIOUS -> when {
-                music.song != null -> music.previous()
-                music.radio.song != null -> music.radio.previous()
-                else -> media(KeyEvent.KEYCODE_MEDIA_PREVIOUS)
+            // Si lo que suena es la radio (y la música no), el volante la controla a ella; sin
+            // nada en la música pero con la radio en pausa, también.
+            WheelAction.PLAY_PAUSE, WheelAction.NEXT, WheelAction.PREVIOUS -> {
+                val radio = music.radio.song
+                val lens = if (radio != null && (radio.playing && music.song?.playing != true || music.song == null)) music.radio else music.music
+                when (action) {
+                    WheelAction.PLAY_PAUSE -> lens.toggle()
+                    WheelAction.NEXT -> lens.next()
+                    else -> lens.previous()
+                }
             }
             WheelAction.VOLUME_UP -> adjust(AudioManager.ADJUST_RAISE)
             WheelAction.VOLUME_DOWN -> adjust(AudioManager.ADJUST_LOWER)

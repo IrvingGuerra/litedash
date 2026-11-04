@@ -77,25 +77,22 @@ private val glassShine = Brush.linearGradient(
 )
 private val tire = Color(0xFF2A2E34)
 
-/** Color del auto sin adaptador conectado (apagado). */
-private val MutedPaint = Color(0xFF5A6068)
-
 /**
  * El auto desde arriba para el Taller: el render del paquete de [p] si lo trae (lo baja
  * aparte [CarRepository.fetchTopView]) o, si no, la silueta dibujada. Los dos en la misma
  * caja ([CAR_TOP_ASPECT]), así las zonas del Taller caen en el mismo lugar.
  */
 @Composable
-fun CarTop(repo: CarRepository, p: CarPackage?, color: Color, modifier: Modifier = Modifier, muted: Boolean = false) {
+fun CarTop(repo: CarRepository, p: CarPackage?, color: Color, modifier: Modifier = Modifier) {
     // Con la llave del paquete: si se actualiza (llega sin vista desde arriba), se vuelve a pedir.
     LaunchedEffect(p) { repo.fetchTopView(p) }
-    if (p?.topView != true) return CarTopDrawing(color, modifier, muted)
+    if (p?.topView != true) return CarTopDrawing(color, modifier)
     Box(modifier.aspectRatio(CAR_TOP_ASPECT)) {
         Canvas(Modifier.fillMaxSize()) {
             val s = size.width / TOP_WIDTH
             withTransform({ scale(s, s, pivot = Offset.Zero) }) { floorShadow() }
         }
-        CarTopImage(repo, p, if (muted) MutedPaint else color, Modifier.fillMaxSize())
+        CarTopImage(repo, p, color, Modifier.fillMaxSize())
     }
 }
 
@@ -108,19 +105,18 @@ private fun DrawScope.floorShadow() {
 }
 
 /**
- * El auto desde arriba pintado del [color] elegido (gris apagado si [muted], cuando no hay
- * adaptador). Dibujo estático: se pinta una vez y no cuesta nada hasta que cambie.
+ * El auto desde arriba pintado del [color] elegido (el mismo en el Taller y en Llantas).
+ * Dibujo estático: se pinta una vez y no cuesta nada hasta que cambie.
  */
 @Composable
-private fun CarTopDrawing(color: Color, modifier: Modifier = Modifier, muted: Boolean = false) {
+private fun CarTopDrawing(color: Color, modifier: Modifier = Modifier) {
     Canvas(modifier.aspectRatio(CAR_TOP_ASPECT)) {
         val s = size.width / TOP_WIDTH
-        val paint = if (muted) MutedPaint else color
         withTransform({ scale(s, s, pivot = Offset.Zero) }) {
             floorShadow()
             for (w in TopPaths.wheels) drawRoundRect(tire, Offset(w.x - 9f, w.y - 32f), Size(18f, 64f), androidx.compose.ui.geometry.CornerRadius(6f))
-            drawPath(TopPaths.mirrors, paint)
-            drawPath(TopPaths.body, paint)
+            drawPath(TopPaths.mirrors, color)
+            drawPath(TopPaths.body, color)
             drawPath(TopPaths.body, topShade)
             clipPath(TopPaths.body) {
                 drawRect(edgeShade)

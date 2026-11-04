@@ -2,6 +2,7 @@ package com.irvingguerra.litedash
 
 import android.content.ClipData
 import android.content.ClipboardManager
+import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -61,8 +62,11 @@ import com.irvingguerra.litedash.core.ui.Segmented
 import com.irvingguerra.litedash.core.ui.SwitchRow
 import com.irvingguerra.litedash.core.ui.Typography
 import com.irvingguerra.litedash.feature.dashboard.TileTypes
+import com.irvingguerra.litedash.feature.tpms.BleProblem
 import com.irvingguerra.litedash.feature.tpms.PairState
 import com.irvingguerra.litedash.feature.tpms.PressureUnit
+import com.irvingguerra.litedash.feature.tpms.TireReading
+import com.irvingguerra.litedash.feature.tpms.TpmsError
 import com.irvingguerra.litedash.feature.tpms.TpmsRepository
 import com.irvingguerra.litedash.feature.tpms.TpmsSource
 import com.irvingguerra.litedash.feature.tpms.TpmsStatus
@@ -76,9 +80,9 @@ import kotlin.math.abs
 import kotlin.math.roundToInt
 
 /**
- * Ajustes → Llantas: de dónde se leen, la vista desde arriba (tocar una llanta la acomoda),
- * rotar, presión recomendada y avisos, qué se ve en el inicio y el diagnóstico. Mientras se
- * ve, las llantas se leen aunque nada más las muestre.
+ * Ajustes → Llantas, en pestañas: Llantas (de dónde se leen, el auto desde arriba —tocar una la
+ * acomoda— y rotar), Presión y avisos, Inicio y Diagnóstico. Sin fuente (módulo apagado), solo
+ * elegirla. Mientras se ve, las llantas se leen aunque nada más las muestre.
  */
 @Composable
 fun TiresSettings(d: Dependencies) {
@@ -87,25 +91,36 @@ fun TiresSettings(d: Dependencies) {
         val hold = repo.keepAwake()
         onDispose { hold.close() }
     }
+    if (repo.source == null) return SourceCard(repo)
     val motion = remember { TireMotion() }
     var chosen by remember { mutableStateOf<Wheel?>(null) }
-    SourceCard(repo)
-    if (repo.source != null) {
-        Card(Modifier.fillMaxWidth().widthIn(max = 860.dp).height(430.dp)) {
-            TiresView(
-                d, compact = false, onWheel = { chosen = if (chosen == it) null else it }, Modifier.fillMaxSize().padding(18.dp),
-                selected = chosen, motion = motion,
-            )
+    when (tabs(listOf(R.string.tires, R.string.tires_pressure, R.string.home, R.string.tires_diagnostics), TIRES_TABS)) {
+        // La fuente y el auto en una sola pestaña: antes el auto salía dos veces (Fuente y Llantas).
+        0 -> {
+            SourceCard(repo)
+            TiresCard(d, chosen, motion) { chosen = if (chosen == it) null else it }
+            chosen?.let { w -> ArrangeCard(repo, w, onClose = { chosen = null }) }
+                ?: Label(stringResource(R.string.tires_tap_hint), Typography.small, LocalColors.current.textMuted)
+            RotateCard(repo, motion)
         }
-        chosen?.let { w -> ArrangeCard(repo, w, onClose = { chosen = null }) }
-        RotateCard(repo, motion)
+        1 -> PressureCard(repo, d.prefs.units.fahrenheit)
+        2 -> HomeTiresCard(d)
+        else -> DiagnosticsCard(repo)
     }
-    PressureCard(repo, d.prefs.units.fahrenheit)
-    HomeTiresCard(d)
-    DiagnosticsCard(repo)
 }
 
-/** Fuente: receptor USB, Bluetooth, demostración o apagado, con su estado y qué hacer. */
+/** Las pestañas de Ajustes → Llantas (Llantas 0, Presión y avisos 1…). */
+private const val TIRES_TABS = "tires"
+
+/** La vista desde arriba en su tarjeta. */
+@Composable
+private fun TiresCard(d: Dependencies, selected: Wheel?, motion: TireMotion?, onWheel: (Wheel) -> Unit) {
+    Card(Modifier.fillMaxWidth().widthIn(max = 860.dp).height(430.dp)) {
+        TiresView(d, compact = false, onWheel = onWheel, Modifier.fillMaxSize().padding(18.dp), selected = selected, motion = motion)
+    }
+}
+
+/** Fuente: receptor USB, Bluetooth o demostración, con su estado y qué hacer (apagarlo es el switch de Módulos). */
 @Composable
 private fun SourceCard(repo: TpmsRepository) {
     val c = LocalColors.current
@@ -116,15 +131,19 @@ private fun SourceCard(repo: TpmsRepository) {
                 TpmsSource.USB to stringResource(R.string.tires_source_usb),
                 TpmsSource.BLE to stringResource(R.string.tires_source_ble),
                 TpmsSource.DEMO to stringResource(R.string.tires_source_demo),
-                null to stringResource(R.string.tires_source_off),
             ),
             repo.source,
             { repo.source = it },
         )
         val source = repo.source ?: return@SettingsCard Label(stringResource(R.string.tires_source_help), Typography.small, c.textMuted)
-        val ok = repo.status == TpmsStatus.CONNECTED
+        val problem = problemText(repo)
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            Box(Modifier.size(8.dp).clip(CircleShape).background(if (ok) Good else if (repo.error != null) c.danger else c.textMuted))
+            val dot = when {
+                repo.status == TpmsStatus.CONNECTED -> Good
+                problem != null -> c.danger
+                else -> c.textMuted
+            }
+            Box(Modifier.size(8.dp).clip(CircleShape).background(dot))
             Label(tiresStatusText(repo), Typography.body, maxLines = 1, modifier = Modifier.weight(1f))
             when {
                 repo.status == TpmsStatus.NO_PERMISSION && source == TpmsSource.BLE ->
@@ -133,10 +152,34 @@ private fun SourceCard(repo: TpmsRepository) {
                     Button(stringResource(R.string.tires_retry), repo::retry)
             }
         }
-        (bleIssueText(repo) ?: repo.error)?.let { Label(it, Typography.small, c.danger) }
+        problem?.let { Label(it, Typography.small, c.danger) }
         if (source == TpmsSource.USB) Label(stringResource(R.string.tires_usb_help), Typography.small, c.textMuted)
         if (source == TpmsSource.BLE) Label(stringResource(R.string.tires_ble_help), Typography.small, c.textMuted)
     }
+}
+
+/** Lo que salió mal, en el idioma de la app (null si nada). */
+@Composable
+private fun problemText(repo: TpmsRepository): String? {
+    val ble = when (repo.bleIssue) {
+        null -> null
+        // Hasta Android 11 buscar Bluetooth pide la ubicación; desde 12, "dispositivos cercanos".
+        BleProblem.NO_PERMISSION -> if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) R.string.tires_ble_need_nearby else R.string.tires_ble_need_location
+        BleProblem.BLUETOOTH_OFF -> R.string.tires_ble_off
+        BleProblem.LOCATION_OFF -> R.string.tires_ble_location_off
+        BleProblem.UNSUPPORTED -> R.string.tires_ble_unsupported
+        BleProblem.FAILED -> R.string.tires_ble_failed
+    }
+    val usb = when (repo.error) {
+        null -> null
+        TpmsError.USB_MISSING -> R.string.tires_error_usb_missing
+        TpmsError.USB_DENIED -> R.string.tires_error_usb_denied
+        TpmsError.USB_OPEN_FAILED -> R.string.tires_error_usb_open
+        TpmsError.USB_UNPLUGGED -> R.string.tires_error_usb_unplugged
+        TpmsError.USB_LOST -> R.string.tires_error_usb_lost
+        TpmsError.SWAP_UNCONFIRMED -> R.string.tires_error_swap
+    }
+    return (ble ?: usb)?.let { stringResource(it) }
 }
 
 /**
@@ -196,7 +239,7 @@ private fun SensorPicker(repo: TpmsRepository, w: Wheel) {
     }
     confirmed?.let { Label(stringResource(R.string.tires_identified, shortId(it)), Typography.body, Good) }
     val current = repo.assignment[w]
-    val sensors = repo.readings.values.sortedWith(compareByDescending<com.irvingguerra.litedash.feature.tpms.TireReading> { it.sensorId == current }.thenByDescending { it.rssi ?: Int.MIN_VALUE })
+    val sensors = repo.nearby.sortedWith(compareByDescending<TireReading> { it.sensorId == current }.thenByDescending { it.rssi ?: Int.MIN_VALUE })
     if (sensors.isEmpty()) Label(stringResource(R.string.tires_no_sensors), Typography.small, c.textMuted)
     for (r in sensors.take(12)) {
         val at = repo.assignment.entries.firstOrNull { it.value == r.sensorId }?.key
@@ -363,11 +406,11 @@ private fun PressureCard(repo: TpmsRepository, fahrenheit: Boolean) {
     SettingsCard(stringResource(R.string.tires_pressure), stringResource(R.string.tires_pressure_help)) {
         Segmented(PressureUnit.entries.map { it to it.label }, unit, { repo.unit = it })
         Stepper(stringResource(R.string.tires_front), "${unit.format(repo.recommendedFrontKpa)} ${unit.label}",
-            { repo.recommendedFrontKpa = stepPressure(repo.recommendedFrontKpa, unit, -1) },
-            { repo.recommendedFrontKpa = stepPressure(repo.recommendedFrontKpa, unit, 1) })
+            { repo.recommendedFrontKpa = stepKpa(repo.recommendedFrontKpa, unit, -1, RECOMMENDED_KPA) },
+            { repo.recommendedFrontKpa = stepKpa(repo.recommendedFrontKpa, unit, 1, RECOMMENDED_KPA) })
         Stepper(stringResource(R.string.tires_rear), "${unit.format(repo.recommendedRearKpa)} ${unit.label}",
-            { repo.recommendedRearKpa = stepPressure(repo.recommendedRearKpa, unit, -1) },
-            { repo.recommendedRearKpa = stepPressure(repo.recommendedRearKpa, unit, 1) })
+            { repo.recommendedRearKpa = stepKpa(repo.recommendedRearKpa, unit, -1, RECOMMENDED_KPA) },
+            { repo.recommendedRearKpa = stepKpa(repo.recommendedRearKpa, unit, 1, RECOMMENDED_KPA) })
         Stepper(stringResource(R.string.tires_low_percent), "${repo.lowPercent} %",
             { repo.lowPercent = (repo.lowPercent - 5).coerceIn(10, 30) },
             { repo.lowPercent = (repo.lowPercent + 5).coerceIn(10, 30) },
@@ -376,13 +419,16 @@ private fun PressureCard(repo: TpmsRepository, fahrenheit: Boolean) {
             { repo.highTempC = (repo.highTempC - 5f).coerceIn(50f, 100f) },
             { repo.highTempC = (repo.highTempC + 5f).coerceIn(50f, 100f) })
         Stepper(stringResource(R.string.tires_offset), offsetText(repo.offsetKpa, unit),
-            { repo.offsetKpa = stepOffset(repo.offsetKpa, unit, -1) },
-            { repo.offsetKpa = stepOffset(repo.offsetKpa, unit, 1) },
+            { repo.offsetKpa = stepKpa(repo.offsetKpa, unit, -1, OFFSET_KPA) },
+            { repo.offsetKpa = stepKpa(repo.offsetKpa, unit, 1, OFFSET_KPA) },
             help = stringResource(R.string.tires_offset_help))
         SwitchRow(stringResource(R.string.tires_show_spare), repo.showSpare, { repo.showSpare = it })
         SwitchRow(stringResource(R.string.tires_alerts), repo.alertsEnabled, { repo.alertsEnabled = it }, stringResource(R.string.tires_alerts_help))
     }
 }
+
+private val RECOMMENDED_KPA = 100f..450f
+private val OFFSET_KPA = -35f..35f
 
 /** El paso de cada unidad: 1 psi, 0.1 bar o 5 kPa. */
 private fun PressureUnit.step() = when (this) {
@@ -391,17 +437,11 @@ private fun PressureUnit.step() = when (this) {
     PressureUnit.KPA -> 5f
 }
 
-/** Sube o baja un paso redondeando a la unidad que se ve (sin arrastrar decimales de kPa). */
-private fun stepPressure(kpa: Float, unit: PressureUnit, dir: Int): Float {
+/** Sube o baja un paso redondeando a la unidad que se ve (sin arrastrar decimales de kPa ni un "−0"). */
+private fun stepKpa(kpa: Float, unit: PressureUnit, dir: Int, range: ClosedFloatingPointRange<Float>): Float {
     val step = unit.step()
     val shown = (unit.fromKpa(kpa) / step).roundToInt() + dir
-    return unit.toKpa(shown * step).coerceIn(100f, 450f)
-}
-
-private fun stepOffset(kpa: Float, unit: PressureUnit, dir: Int): Float {
-    val step = unit.step()
-    val shown = (unit.fromKpa(kpa) / step).roundToInt() + dir
-    return unit.toKpa(shown * step).coerceIn(-35f, 35f).let { if (abs(it) < 0.01f) 0f else it }
+    return unit.toKpa(shown * step).coerceIn(range).let { if (abs(it) < 0.01f) 0f else it }
 }
 
 private fun offsetText(kpa: Float, unit: PressureUnit): String {
@@ -462,45 +502,32 @@ private fun HomeTiresCard(d: Dependencies) {
     }
 }
 
-/** Lo que llega del receptor o de sensores que no se reconocen, para mandárnoslo. Cerrado de inicio. */
+/** Lo que llega del receptor o de sensores que no se reconocen, para mandárnoslo. */
 @Composable
 private fun DiagnosticsCard(repo: TpmsRepository) {
     val c = LocalColors.current
     val context = LocalContext.current
-    var open by remember { mutableStateOf(false) }
-    Card(Modifier.fillMaxWidth().widthIn(max = 860.dp)) {
-        Column(Modifier.padding(22.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.inner)).clickable { open = !open }, verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.weight(1f)) {
-                    Label(stringResource(R.string.tires_diagnostics), Typography.subtitle, maxLines = 1)
-                    Label(stringResource(R.string.tires_diagnostics_help), Typography.small, c.textMuted)
-                }
-                Label(stringResource(if (open) R.string.tires_hide else R.string.tires_show), Typography.body, c.accent)
+    SettingsCard(stringResource(R.string.tires_diagnostics), stringResource(R.string.tires_diagnostics_help)) {
+        val lines = when (repo.source) {
+            TpmsSource.USB -> repo.usbLog.toList()
+            TpmsSource.BLE -> repo.unknownAdverts.map { a ->
+                listOfNotNull(
+                    a.address, a.name, a.companyId?.let { "0x%04X".format(it) }, a.manufacturerHex,
+                    a.serviceUuids.takeIf { it.isNotEmpty() }?.joinToString(","), a.serviceDataHex, "${a.rssi} dBm",
+                ).joinToString(" ")
             }
-            if (!open) return@Column
-            val lines = when (repo.source) {
-                TpmsSource.USB -> repo.usbLog.toList()
-                TpmsSource.BLE -> repo.unknownAdverts.map { a ->
-                    listOfNotNull(
-                        a.address, a.name, a.companyId?.let { "0x%04X".format(it) }, a.manufacturerHex,
-                        a.serviceUuids.takeIf { it.isNotEmpty() }?.joinToString(","), a.serviceDataHex, "${a.rssi} dBm",
-                    ).joinToString(" ")
-                }
-                else -> emptyList()
-            }
-            if (lines.isEmpty()) Label(stringResource(R.string.tires_diagnostics_empty), Typography.small, c.textMuted)
-            else {
-                Column(
-                    Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.inner)).background(c.surfaceHigh).padding(12.dp),
-                    verticalArrangement = Arrangement.spacedBy(2.dp),
-                ) {
-                    for (l in lines.takeLast(40)) Label(l, Typography.small.copy(fontFamily = FontFamily.Monospace), c.textMuted, maxLines = 2)
-                }
-                Button(stringResource(R.string.tires_copy), {
-                    val text = "LiteDash ${BuildConfig.VERSION_NAME} · ${repo.source?.key}\n" + lines.joinToString("\n")
-                    context.getSystemService(ClipboardManager::class.java).setPrimaryClip(ClipData.newPlainText("LiteDash", text))
-                })
-            }
+            else -> emptyList()
         }
+        if (lines.isEmpty()) return@SettingsCard Label(stringResource(R.string.tires_diagnostics_empty), Typography.small, c.textMuted)
+        Column(
+            Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.inner)).background(c.surfaceHigh).padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(2.dp),
+        ) {
+            for (l in lines.takeLast(40)) Label(l, Typography.small.copy(fontFamily = FontFamily.Monospace), c.textMuted, maxLines = 2)
+        }
+        Button(stringResource(R.string.tires_copy), {
+            val text = "LiteDash ${BuildConfig.VERSION_NAME} · ${repo.source?.key}\n" + lines.joinToString("\n")
+            context.getSystemService(ClipboardManager::class.java).setPrimaryClip(ClipData.newPlainText("LiteDash", text))
+        })
     }
 }

@@ -14,63 +14,78 @@ import com.irvingguerra.litedash.feature.player.PlayerStore
 private const val SCAN_WAIT_MS = 4_000L
 
 /**
- * Une el reproductor propio ([Player]) con la pieza de música: qué fuentes toca según los
- * módulos prendidos, y qué hacer cuando el usuario toca "USB" o "Radio" (seguir con lo
- * último que sonó; si no hay nada, la vista abre la biblioteca).
+ * Une el reproductor propio ([Player]) con la pieza de música: USB siempre (es el reproductor
+ * por defecto), la radio por internet si está prendida, y qué hacer cuando el usuario toca
+ * "USB" o "Radio" (seguir con lo último que sonó; si no hay nada, la vista abre la biblioteca).
  */
 object OwnPlayer {
+    private val main = Handler(Looper.getMainLooper())
+
+    /** Sube con cada toque a USB (y al cancelarlo): una búsqueda vieja ya no arranca nada. */
+    private var generation = 0
+
     fun wire(context: Context, music: MusicRepository, prefs: Preferences) {
         Player.init(context)
-        music.ownSources = sources(prefs)
+        music.ownRadio = prefs.internetRadio
         music.ownSourceNow = { Player.state.source?.toKind() }
-        music.ownPlay = { kind -> play(context, kind) }
+        music.ownPlay = { kind, done -> play(context, kind, done) }
+        music.ownPause = {
+            generation++
+            if (Player.state.source == PlayerSource.USB && (Player.state.playing || Player.state.buffering)) Player.pause()
+        }
         music.ownStop = { Player.stop() }
     }
 
-    /** Al prender o apagar un módulo: la pieza se entera, y si sonaba esa fuente se para. */
+    /** Al prender o apagar la radio por internet: la pieza se entera, y si sonaba se para. */
     fun refresh(music: MusicRepository, prefs: Preferences) {
-        music.ownSources = sources(prefs)
-        val now = Player.state.source?.toKind()
-        if (now != null && now !in music.ownSources) Player.stop()
+        music.ownRadio = prefs.internetRadio
+        if (!music.ownRadio && Player.state.source == PlayerSource.RADIO) Player.stop()
     }
 
-    private fun sources(prefs: Preferences): Set<SourceKind> = buildSet {
-        if (prefs.usbPlayer) add(SourceKind.USB)
-        if (prefs.internetRadio) add(SourceKind.RADIO)
-    }
-
-    /** true = ya suena (o va a sonar); false = no hay nada que tocar todavía. */
-    private fun play(context: Context, kind: SourceKind): Boolean {
-        val source = kind.toPlayer() ?: return false
+    /** [done] en el hilo principal: true = ya suena (o va a sonar); false = no hay nada que tocar todavía. */
+    private fun play(context: Context, kind: SourceKind, done: (Boolean) -> Unit) {
+        val source = kind.toPlayer() ?: return done(false)
+        val gen = ++generation
         if (Player.state.source == source && Player.state.current != null) {
             Player.resume()
-            return true
+            return done(true)
         }
         val store = PlayerStore(context)
-        return when (source) {
-            PlayerSource.RADIO -> store.lastStation()?.let { Player.play(PlayerSource.RADIO, listOf(it), 0); true } ?: false
+        when (source) {
+            PlayerSource.RADIO -> {
+                val station = store.lastStation() ?: return done(false)
+                Player.play(PlayerSource.RADIO, listOf(station), 0)
+                done(true)
+            }
             PlayerSource.USB -> {
-                if (!Library.hasPermission(context)) return false
-                // Sin música encontrada todavía (memoria sin leer, sin canciones o que Android no deja
-                // leer): se abre la biblioteca, que busca en todas las memorias y deja elegir la carpeta.
-                if (Library.lastFound == null) return false
-                // Leer la memoria tarda: en un hilo, y al tener la lista se sigue con lo último que sonó.
-                Thread {
+                // Sin permiso: la biblioteca lo pide (y explica para qué).
+                if (!Library.hasPermission(context)) return done(false)
+                // Leer la memoria tarda: en un hilo (la primera vez; después queda en caché), y al
+                // tener la lista se sigue con lo último que sonó. Si no hay nada, la biblioteca.
+                val asked = Player.requests
+                Thread({
                     var tracks = Library.find(context).second
                     // Recién conectada, Android tarda unos segundos en indexarla.
-                    if (tracks.isEmpty()) { Thread.sleep(SCAN_WAIT_MS); tracks = Library.find(context).second }
-                    if (tracks.isEmpty()) return@Thread
+                    if (tracks.isEmpty() && gen == generation) {
+                        Thread.sleep(SCAN_WAIT_MS)
+                        tracks = Library.find(context).second
+                    }
                     val last = store.last(PlayerSource.USB)
                     val index = tracks.indexOfFirst { it.key == last }.coerceAtLeast(0)
-                    Handler(Looper.getMainLooper()).post { Player.play(PlayerSource.USB, tracks, index) }
-                }.start()
-                true
+                    main.post {
+                        // Mientras, ya pidieron otra cosa (otro toque, otra app, una estación): no se pisa.
+                        if (gen != generation || Player.requests != asked) return@post done(true)
+                        if (tracks.isEmpty()) return@post done(false)
+                        Player.play(PlayerSource.USB, tracks, index)
+                        done(true)
+                    }
+                }, "usb-start").start()
             }
         }
     }
 }
 
-fun SourceKind.toPlayer(): PlayerSource? = when (this) {
+private fun SourceKind.toPlayer(): PlayerSource? = when (this) {
     SourceKind.USB -> PlayerSource.USB
     SourceKind.RADIO -> PlayerSource.RADIO
     SourceKind.BLUETOOTH -> null

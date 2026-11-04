@@ -1,7 +1,5 @@
 package com.irvingguerra.litedash
 
-import android.os.Build
-import com.irvingguerra.litedash.feature.tpms.BleProblem
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -50,12 +48,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.compositeOver
+import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
@@ -171,6 +170,13 @@ private fun wheelSpot(w: Wheel) = when (w) {
     Wheel.SPARE -> Offset(0.5f, 0.9f)
 }
 
+/**
+ * El halo de una llanta con problema sobre el auto desde arriba (caja de [CarTop]): brillo y
+ * punto en su rueda; con [pulse] (0 a 1), además un anillo que crece y se desvanece. [r] = radio base.
+ */
+internal fun DrawScope.tireHalo(w: Wheel, r: Float, color: Color, pulse: Float? = null) =
+    problemHalo(Offset(size.width * wheelSpot(w).x, size.height * wheelSpot(w).y), r, color, pulse)
+
 /** Grados en la unidad del usuario ("28 °C" o "82 °F"). */
 internal fun tempText(c: Float, fahrenheit: Boolean) = "${c.toFahrenheit(fahrenheit).roundToInt()} °${if (fahrenheit) "F" else "C"}"
 
@@ -225,7 +231,8 @@ fun TiresView(
     val wheels = repo.shownWheels()
     val statuses = wheels.associateWith { repo.statusOf(it) }
     val anyProblem = statuses.values.any { it.problem }
-    val pulse = if (anyProblem) {
+    // Solo un peligro late; un aviso leve se queda quieto (nada se anima en reposo).
+    val pulse = if (statuses.values.any { it.severity == TireSeverity.DANGER }) {
         rememberInfiniteTransition(label = "tires").animateFloat(0f, 1f, infiniteRepeatable(tween(1800, easing = LinearEasing), RepeatMode.Restart), label = "pulse")
     } else null
 
@@ -282,15 +289,10 @@ fun TiresView(
             Box(Modifier.offset(carX.dp, carY.dp).size(carW.dp, carH.dp).then(place)) {
                 CarTop(d.cars, d.cars.pkg(d.prefs.carModel), d.prefs.carColor, Modifier.fillMaxSize())
                 if (anyProblem) Canvas(Modifier.fillMaxSize()) {
-                    val r = size.width * 0.06f
                     for ((wh, st) in statuses) {
                         if (!st.problem || wh == Wheel.SPARE) continue
-                        val color = if (st.severity == TireSeverity.DANGER) danger else accent
-                        val at = Offset(size.width * wheelSpot(wh).x, size.height * wheelSpot(wh).y)
-                        drawCircle(Brush.radialGradient(listOf(color.copy(alpha = 0.45f), Color.Transparent), at, r * 3.2f), r * 3.2f, at)
-                        val t = pulse?.value ?: 0f
-                        drawCircle(color.copy(alpha = (1f - t) * 0.6f), r * (1f + t * 2.2f), at, style = Stroke(r * 0.22f))
-                        drawCircle(color, r * 0.6f, at)
+                        val isDanger = st.severity == TireSeverity.DANGER
+                        tireHalo(wh, size.width * 0.06f, if (isDanger) danger else accent, pulse?.value?.takeIf { isDanger })
                     }
                 }
             }
@@ -419,7 +421,7 @@ private fun agoText(ms: Long): String {
 private fun NoTires(d: Dependencies, modifier: Modifier, onSettings: (() -> Unit)?) {
     val c = LocalColors.current
     Box(modifier, contentAlignment = Alignment.Center) {
-        CarTop(d.cars, d.cars.pkg(d.prefs.carModel), d.prefs.carColor, Modifier.fillMaxHeight().padding(vertical = 8.dp), muted = true)
+        CarTop(d.cars, d.cars.pkg(d.prefs.carModel), d.prefs.carColor, Modifier.fillMaxHeight().padding(vertical = 8.dp))
         Column(
             Modifier.clip(RoundedCornerShape(Radius.card)).background(c.surface.copy(alpha = 0.92f)).padding(20.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -440,21 +442,9 @@ internal fun tiresStatusText(repo: TpmsRepository): String = when (repo.status) 
     TpmsStatus.NO_PERMISSION -> stringResource(R.string.tires_status_no_permission)
     TpmsStatus.CONNECTED -> when (repo.source) {
         TpmsSource.DEMO -> stringResource(R.string.tires_source_demo)
-        TpmsSource.BLE -> pluralStringResource(R.plurals.tires_sensors, repo.readings.size, repo.readings.size)
+        TpmsSource.BLE -> pluralStringResource(R.plurals.tires_sensors, repo.sensorCount, repo.sensorCount)
         else -> repo.detail ?: stringResource(R.string.tires_status_connected)
     }
-}
-
-/** El problema de Bluetooth en el idioma de la app (null si no hay). */
-@Composable
-internal fun bleIssueText(repo: TpmsRepository): String? = when (repo.bleIssue) {
-    null -> null
-    // Hasta Android 11 buscar Bluetooth pide la ubicación; desde 12, "dispositivos cercanos".
-    BleProblem.NO_PERMISSION -> stringResource(if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) R.string.tires_ble_need_nearby else R.string.tires_ble_need_location)
-    BleProblem.BLUETOOTH_OFF -> stringResource(R.string.tires_ble_off)
-    BleProblem.LOCATION_OFF -> stringResource(R.string.tires_ble_location_off)
-    BleProblem.UNSUPPORTED -> stringResource(R.string.tires_ble_unsupported)
-    BleProblem.FAILED -> stringResource(R.string.tires_ble_failed)
 }
 
 // ---- Pantalla completa ----
@@ -650,13 +640,6 @@ private fun TirePill(text: String, status: TireStatus, onClick: () -> Unit, modi
     }
 }
 
-private fun Color.compositeOver(bg: Color) = Color(
-    red = red * alpha + bg.red * (1 - alpha),
-    green = green * alpha + bg.green * (1 - alpha),
-    blue = blue * alpha + bg.blue * (1 - alpha),
-    alpha = 1f,
-)
-
 /**
  * La pieza Llantas: chica (1×1) los cuatro números; mediana el auto desde arriba con los
  * valores a los lados; grande la vista completa. Sin fuente, "Configura tus llantas".
@@ -726,13 +709,8 @@ private fun TiresMedium(d: Dependencies, tall: Boolean, bare: Boolean) {
         Box(m.aspectRatio(CAR_TOP_ASPECT)) {
             CarTop(d.cars, d.cars.pkg(d.prefs.carModel), d.prefs.carColor, Modifier.fillMaxSize())
             if (statuses.values.any { it.problem }) Canvas(Modifier.fillMaxSize()) {
-                val r = size.width * 0.08f
                 for ((w, st) in statuses) {
-                    if (!st.problem) continue
-                    val color = if (st.severity == TireSeverity.DANGER) danger else accent
-                    val at = Offset(size.width * wheelSpot(w).x, size.height * wheelSpot(w).y)
-                    drawCircle(Brush.radialGradient(listOf(color.copy(alpha = 0.5f), Color.Transparent), at, r * 2.5f), r * 2.5f, at)
-                    drawCircle(color, r * 0.5f, at)
+                    if (st.problem) tireHalo(w, size.width * 0.067f, if (st.severity == TireSeverity.DANGER) danger else accent)
                 }
             }
         }
@@ -801,10 +779,10 @@ fun TiresAlertBanner(d: Dependencies, onOpen: () -> Unit) {
     }
 }
 
-/** Testigo de llanta en la barra lateral: solo con un problema, del color del más grave. */
+/** Testigo de llanta en la barra lateral: solo con un problema (y los avisos prendidos), del color del más grave. */
 @Composable
 fun TiresRailIndicator(d: Dependencies, size: androidx.compose.ui.unit.Dp, onOpen: () -> Unit) {
-    if (!d.prefs.tiresRail || !d.hasTpmsSource) return
+    if (!d.prefs.tiresRail || !d.hasTpmsSource || !d.tpms.alertsEnabled) return
     val worst = d.tpms.alerts.firstOrNull() ?: return
     val color = severityColor(worst.severity) ?: return
     Box(contentAlignment = Alignment.Center) {
