@@ -779,18 +779,6 @@ fun TiresAlertBanner(d: Dependencies, onOpen: () -> Unit) {
     }
 }
 
-/** Testigo de llanta en la barra lateral: solo con un problema (y los avisos prendidos), del color del más grave. */
-@Composable
-fun TiresRailIndicator(d: Dependencies, size: androidx.compose.ui.unit.Dp, onOpen: () -> Unit) {
-    if (!d.prefs.tiresRail || !d.hasTpmsSource || !d.tpms.alertsEnabled) return
-    val worst = d.tpms.alerts.firstOrNull() ?: return
-    val color = severityColor(worst.severity) ?: return
-    Box(contentAlignment = Alignment.Center) {
-        IconButton(Icons.tireAlert, onOpen, size = size, color = color)
-        Box(Modifier.align(Alignment.TopEnd).padding(top = size * 0.18f, end = size * 0.18f).size(8.dp).clip(CircleShape).background(color))
-    }
-}
-
 /** La tarjeta "Llantas" en Salud del Taller: estado y la presión más baja; abre la vista de llantas. */
 @Composable
 internal fun TiresHealthTile(d: Dependencies, onClick: () -> Unit, modifier: Modifier) {

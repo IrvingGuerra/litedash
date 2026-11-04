@@ -657,8 +657,6 @@
     <string name="tires_on_car_corners">Esquinas</string>
     <string name="tires_on_car_off">No</string>
     <string name="tires_banner">Aviso arriba del inicio</string>
-    <string name="tires_rail">Testigo en la barra lateral</string>
-    <string name="tires_rail_help">Una llanta en la barra, solo cuando hay un problema</string>
     <string name="tires_alerts_off_note">Con los avisos apagados no salen el aviso ni el testigo</string>
     <string name="tires_diagnostics">Diagnóstico</string>
     <string name="tires_diagnostics_help">Lo que llega del receptor o de sensores que LiteDash no reconoce; cópialo y mándanoslo</string>

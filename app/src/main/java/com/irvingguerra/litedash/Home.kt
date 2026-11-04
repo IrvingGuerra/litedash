@@ -58,6 +58,10 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import com.irvingguerra.litedash.feature.car.spinFrameAt
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.coroutineScope
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -329,9 +333,11 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
     // Tocar el auto 3D con Llantas activo: crece, gira de espaldas, la cámara sube y termina en
     // las llantas ([carTires] = este viaje; [rise] lo dibuja el auto en grande).
     var carTires by remember { mutableStateOf(false) }
+    val riseFade = remember { Animatable(0f) }
     val riseProgress = remember { Animatable(0f) }
     val rise = remember {
         CarRise().apply {
+            fade = { riseFade.value }
             progress = { riseProgress.value }
             morph = { tiresProgress.value }
         }
@@ -367,37 +373,50 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
         if (carOnly) {
             carShown = true
             val toTires = carTires
-            if (toTires) {
-                // Gira de espaldas mientras crece y ya va cargando la subida.
-                rise.turn = REAR_TURN
-                rise.wanted = car?.rise != null
-            }
+            if (toTires) rise.active = true
             // Crece cuando la imagen grande ya está pintada (en su pieza se ve igual que la
             // chica); si tarda, crece de todos modos.
             withTimeoutOrNull(600) { snapshotFlow { carReady }.first { it } }
-            carProgress.animateTo(1f, tween(480, easing = FastOutSlowInEasing))
-            if (!toTires) return@LaunchedEffect
-            if (car?.rise != null) {
-                // Si no están todos los cuadros en 300 ms, sube con los que haya.
-                withTimeoutOrNull(300) { snapshotFlow { rise.complete }.first { it } }
-                if (rise.canPlay()) riseProgress.animateTo(1f, tween(900, easing = EaseInOut))
+            if (toTires) {
+                // Ya viene preparado desde el inicio; si no alcanzó (recién encendido), se espera un poco.
+                withTimeoutOrNull(1_500) { snapshotFlow { rise.ready }.first { it } }
+                // Crece y a la vez se funde a la vista de espaldas: solo dibuja (nada se decodifica aquí).
+                coroutineScope {
+                    launch { carProgress.animateTo(1f, tween(480, easing = FastOutSlowInEasing)) }
+                    launch { riseFade.animateTo(1f, tween(420, easing = FastOutSlowInEasing)) }
+                }
+                if (rise.hasFrames) riseProgress.animateTo(1f, tween(900, easing = EaseInOut))
+                openTires()
+                return@LaunchedEffect
             }
-            openTires()
+            carProgress.animateTo(1f, tween(480, easing = FastOutSlowInEasing))
         } else if (carShown) {
             if (riseProgress.value > 0f) riseProgress.animateTo(0f, tween((900 * riseProgress.value).toInt(), easing = EaseInOut))
             // Regresa a la vuelta donde lo dejó mientras se encoge.
-            rise.turn = null
-            carProgress.animateTo(0f, tween(400, easing = FastOutSlowInEasing))
+            coroutineScope {
+                launch { if (riseFade.value > 0f) riseFade.animateTo(0f, tween(380)) }
+                launch { carProgress.animateTo(0f, tween(400, easing = FastOutSlowInEasing)) }
+            }
             carShown = false
             carReady = false
             carTires = false
-            rise.release()
+            rise.finish()
         }
     }
     // La subida del auto se baja aparte (una vez; unos cientos de KB), solo si se va a usar: con
     // Llantas activo, tocar el auto lleva a las llantas y hay una pieza del auto 3D.
     val wantsRise = d.hasTpmsSource && d.prefs.carTap == CarTap.TIRES && d.dashboard.tiles.any { it.type == TileTypes.CAR }
     LaunchedEffect(car, wantsRise) { if (wantsRise) d.cars.fetchRise(car) }
+    // Y se prepara (vista de espaldas + cuadros, al ancho de la pantalla y del color del auto)
+    // con calma mientras se ve el inicio, para que tocar el auto sea solo dibujar.
+    val screenPx = LocalWindowInfo.current.containerSize.width
+    val tapsToTires = d.hasTpmsSource && d.prefs.carTap == CarTap.TIRES
+    LaunchedEffect(car, car?.rise, tapsToTires, d.prefs.carColor, screenPx) {
+        val p = car
+        if (!tapsToTires || p == null) return@LaunchedEffect rise.clear()
+        delay(1_500)
+        rise.preload(d.cars, p, spinFrameAt(p, REAR_TURN), d.prefs.carColor, screenPx)
+    }
 
     // Cada toque y cada botón del volante reinician la cuenta del modo estacionado. Se
     // leen dentro del efecto (no al armar la pantalla): tocar no vuelve a armar el inicio.
@@ -502,12 +521,9 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
           }
           val favorites = remember(apps, d.prefs.dock, d.prefs.musicApp) { dockFavorites(d, apps) }
           Row(Modifier.fillMaxSize()) {
-            val tiresWarning = @Composable { size: Dp -> TiresRailIndicator(d, size, actions.onTires) }
             if (rail) Rail(
                 repo = d.apps,
                 favorites = favorites,
-                tires = tiresWarning,
-                onCar = { panel = Panel.CarSettings },
                 onApps = { panel = Panel.Drawer },
                 onSettings = { panel = Panel.Settings },
             )
@@ -516,7 +532,6 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                 val showTime = !rail && d.dashboard.tiles.none { it.type == TileTypes.CLOCK }
                 val barHidden = !editing && !showTime
                 TopBar(
-                    tires = tiresWarning,
                     editing = editing,
                     showTime = showTime,
                     driverName = d.prefs.driverName,
@@ -580,7 +595,6 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                 if (!rail) Dock(
                     repo = d.apps,
                     favorites = favorites,
-                    onCar = { panel = Panel.CarSettings },
                     onApps = { panel = Panel.Drawer },
                     onSettings = { panel = Panel.Settings },
                 )
@@ -700,7 +714,7 @@ private fun topBarHeight() = if (isShortScreen()) 44.dp else 64.dp
 private val TOP_BAR_HIDDEN = 12.dp
 
 @Composable
-private fun TopBar(tires: @Composable (Dp) -> Unit, editing: Boolean, showTime: Boolean, driverName: String?, weather: WeatherRepository, onAdd: () -> Unit, onTemplates: () -> Unit, onFinish: () -> Unit) {
+private fun TopBar(editing: Boolean, showTime: Boolean, driverName: String?, weather: WeatherRepository, onAdd: () -> Unit, onTemplates: () -> Unit, onFinish: () -> Unit) {
     val c = LocalColors.current
     // Sin nada que mostrar (la hora ya está en una pieza), la barra no aparta espacio: el tablero sube.
     if (!editing && !showTime) return Spacer(Modifier.height(TOP_BAR_HIDDEN))
@@ -723,7 +737,6 @@ private fun TopBar(tires: @Composable (Dp) -> Unit, editing: Boolean, showTime: 
                 Label(clock.date, Typography.body, c.textMuted, maxLines = 1)
             }
             WeatherChip(weather)
-            tires(44.dp)
             StatusIcons()
             Label(clock.full, Typography.subtitle, maxLines = 1)
         }
@@ -734,7 +747,6 @@ private fun TopBar(tires: @Composable (Dp) -> Unit, editing: Boolean, showTime: 
 private fun Dock(
     repo: AppRepository,
     favorites: List<App>,
-    onCar: () -> Unit,
     onApps: () -> Unit,
     onSettings: () -> Unit,
 ) {
@@ -757,7 +769,6 @@ private fun Dock(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         val buttonSize = if (small) 64.dp else if (short) 46.dp else 56.dp
-        IconButton(Icons.car, onCar, size = buttonSize)
         IconButton(Icons.apps, onApps, size = buttonSize)
         Box(Modifier.padding(horizontal = 8.dp).width(1.dp).height(32.dp).background(c.line))
         BoxWithConstraints(Modifier.weight(1f)) {
@@ -785,15 +796,13 @@ private fun AppShortcut(repo: AppRepository, app: App, box: Dp, icon: Dp) {
 }
 
 /**
- * Barra lateral (pantallas acostadas): hora, clima y estado arriba; el auto, todas las
- * apps y tus favoritas (las que quepan); abajo volumen, voz y Ajustes.
+ * Barra lateral (pantallas acostadas): hora, clima y estado arriba; todas las apps y tus
+ * favoritas (las que quepan); abajo volumen, voz y Ajustes.
  */
 @Composable
 private fun Rail(
     repo: AppRepository,
     favorites: List<App>,
-    tires: @Composable (Dp) -> Unit,
-    onCar: () -> Unit,
     onApps: () -> Unit,
     onSettings: () -> Unit,
 ) {
@@ -814,9 +823,6 @@ private fun Rail(
             if (clock.marker != null) Label(clock.marker, Typography.small.copy(fontSize = 11.sp), c.textMuted, maxLines = 1, modifier = Modifier.padding(start = 2.dp, bottom = 2.dp))
         }
         Box(Modifier.padding(bottom = 6.dp)) { StatusIcons() }
-        // Testigo de llantas: solo aparece con un problema.
-        tires(button)
-        IconButton(Icons.car, onCar, size = button)
         IconButton(Icons.apps, onApps, size = button)
         Box(Modifier.padding(vertical = 4.dp).width(28.dp).height(1.dp).background(c.line))
         val voice = remember { voiceIntent(context) }

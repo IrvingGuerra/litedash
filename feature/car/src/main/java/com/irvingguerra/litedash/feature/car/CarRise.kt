@@ -12,30 +12,24 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asAndroidBitmap
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.sync.Semaphore
-import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 
-/** Cuadros de la subida que se decodifican a la vez. */
-private const val PARALLEL = 3
-
 /**
- * El auto en grande camino a sus llantas: gira solo a [turn] y luego la cámara sube por detrás
- * hasta quedar arriba ([progress]). Quien la crea mueve los valores; [CarTurntable] los dibuja.
- * Los cuadros viven aquí solo mientras [wanted] (luego [release] los suelta).
+ * El auto en grande camino a sus llantas: se funde a la vista de espaldas ([fade]) y la cámara
+ * sube por detrás hasta quedar arriba ([progress]). Todo se prepara ANTES de tocar ([preload],
+ * mientras se ve el inicio): decodificar y teñir 16 cuadros al tocar saturaba el procesador justo
+ * durante la animación (se trababa y subía con cuadros faltantes). Quien la crea mueve los
+ * valores; [CarTurntable] los dibuja.
  */
 @Stable
 class CarRise {
-    /** Vuelta a la que gira solo el auto (null = la que dejó el usuario). */
-    var turn by mutableStateOf<Float?>(null)
+    /** El auto va camino a sus llantas (no se gira con el dedo ni se guarda su vuelta). */
+    var active by mutableStateOf(false)
 
-    /** Preparar los cuadros de la subida (si el paquete la trae) al tamaño y color del auto. */
-    var wanted by mutableStateOf(false)
+    /** De 0 a 1 el auto se funde a la vista de espaldas ([rear]). Se lee solo al dibujar. */
+    var fade: () -> Float = { 0f }
 
-    /** 0 = el giro normal; de 0 a 1 sube la cámara. Se lee solo al dibujar. */
+    /** 0 = la vista de espaldas; de 0 a 1 sube la cámara. Se lee solo al dibujar. */
     var progress: () -> Float = { 0f }
 
     /** De 0 a 1 el auto viaja a [target] (para encimarse con la vista de las llantas). Se lee al dibujar. */
@@ -44,11 +38,15 @@ class CarRise {
     /** Dónde está el auto de la vista de las llantas (en la raíz); vacío = no se mueve. */
     var target by mutableStateOf(Rect.Zero)
 
-    /** Cuadros en total (0 = el auto no trae subida o aún no se piden). */
+    /** El auto de espaldas en grande, ya pintado (de ahí arranca la subida). */
+    internal var rear by mutableStateOf<CarLayers?>(null)
+        private set
+
+    /** Cuadros en total (0 = el auto no trae subida o aún no se cargan). */
     var count by mutableIntStateOf(0)
         private set
 
-    /** Cuántos ya están listos; estado: el dibujo se repite al llegar cada uno. */
+    /** Cuántos ya están listos. */
     var loaded by mutableIntStateOf(0)
         private set
 
@@ -62,17 +60,26 @@ class CarRise {
     /** Esquina del lienzo del auto en la raíz (para llevarlo a [target]); no es estado. */
     internal var canvasOrigin = Offset.Zero
 
-    /** Ya están todos los cuadros. */
-    val complete get() = count > 0 && loaded >= count
+    /** Lo preparado: auto, color y ancho (si no cambia, [preload] no repite nada). */
+    private var key: Any? = null
 
-    /** Se puede empezar a subir: al menos el primer cuadro está listo. */
-    fun canPlay() = loaded > 0 && frames.getOrNull(0) != null
+    /** Ya está la vista de espaldas y todos los cuadros (o el auto no trae subida). */
+    val ready get() = rear != null && loaded >= count
 
-    /** Suelta los cuadros y regresa todo a como estaba. */
-    fun release() {
-        wanted = false
-        turn = null
+    /** Hay subida que reproducir. */
+    val hasFrames get() = count > 0 && loaded >= count
+
+    /** Termina el viaje (los cuadros se quedan para la siguiente vez). */
+    fun finish() {
+        active = false
         target = Rect.Zero
+    }
+
+    /** Suelta todo lo preparado (al salir del inicio, cambiar de auto o apagar Llantas). */
+    fun clear() {
+        finish()
+        key = null
+        rear = null
         frames = emptyArray()
         topBox = null
         count = 0
@@ -80,36 +87,38 @@ class CarRise {
     }
 
     /**
-     * Carga los cuadros de [p]: primero el primero y el último (con los que empieza y termina),
-     * luego los de en medio, unos cuantos a la vez. Si [release] llega a la mitad, lo que ya
-     * se cargó se tira.
+     * Prepara la vista de espaldas ([rearName]) y los cuadros de la subida de [p] al ancho y color
+     * con que se verá el auto en grande. Si ya está lo mismo, no hace nada. Se llama en segundo
+     * plano mientras se ve el inicio.
      */
-    internal suspend fun load(repo: CarRepository, p: CarPackage, info: RiseInfo, color: Color, screenWidthPx: Int) {
+    suspend fun preload(repo: CarRepository, p: CarPackage, rearName: String, color: Color, screenWidthPx: Int) {
         // Pantallas con poca memoria (Android 6–7 con 1 GB: los bitmaps van al heap de Java):
-        // 16 cuadros a todo lo ancho serían ~32 MB a la vez; a 640 px, ~13 MB y se ve igual de lejos.
+        // 16 cuadros a todo lo ancho serían ~32 MB; a 640 px, ~13 MB y se ve igual de lejos.
         val widthPx = if (Runtime.getRuntime().maxMemory() <= LOW_HEAP) minOf(screenWidthPx, LOW_HEAP_WIDTH) else screenWidthPx
+        val want = Triple(p.id + "@" + p.sha256 + "@" + (p.rise != null), color, widthPx)
+        if (key == want && ready) return
+        key = want
+        rear = repo.layers(p, rearName, color, screenWidthPx)
+        val info = p.rise
+        if (info == null) {
+            frames = emptyArray()
+            count = 0
+            loaded = 0
+            return
+        }
         val n = info.frames
         val own = arrayOfNulls<ImageBitmap>(n)
         frames = own
         topBox = null
         loaded = 0
         count = n
-        val order = listOf(0, n - 1) + (1 until n - 1)
-        val gate = Semaphore(PARALLEL)
-        coroutineScope {
-            order.map { i ->
-                async {
-                    val img = gate.withPermit { repo.riseFrame(p, i, color, widthPx) } ?: return@async
-                    if (i == n - 1) {
-                        val box = withContext(Dispatchers.Default) { solidBox(img.asAndroidBitmap()) }
-                        if (frames === own) topBox = box
-                    }
-                    if (frames === own) {
-                        own[i] = img
-                        loaded++
-                    }
-                }
-            }.awaitAll()
+        // De uno en uno: no hay prisa (falta para que lo toquen) y no se le roba procesador al inicio.
+        for (i in 0 until n) {
+            val img = repo.riseFrame(p, i, color, widthPx) ?: continue
+            if (frames !== own) return
+            if (i == n - 1) topBox = withContext(Dispatchers.Default) { solidBox(img.asAndroidBitmap()) }
+            own[i] = img
+            loaded++
         }
     }
 }

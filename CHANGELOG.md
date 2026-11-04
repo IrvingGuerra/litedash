@@ -6,6 +6,17 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
+## [1.4.59] - 2026-11-04
+
+### Arreglado
+- **Tocar el auto para ver las llantas ya es fluido**: los cuadros de la subida se preparan con calma
+  mientras ves el inicio (antes se preparaban al tocar y la animación se trababa). El auto se funde a
+  su vista de espaldas mientras crece, la cámara sube y aparecen las llantas.
+
+### Cambiado
+- La barra lateral (y la de abajo) ya no tienen el botón del auto ni el testigo de llantas: el auto
+  está en Ajustes y los avisos de llantas siguen arriba del inicio.
+
 ## [1.4.58] - 2026-11-04
 
 ### Arreglado

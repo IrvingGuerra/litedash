@@ -65,7 +65,6 @@ internal object PrefKeys {
     const val INTERNET_RADIO = "internet_radio"
     const val TIRES_ON_CAR = "tires_on_car"
     const val TIRES_BANNER = "tires_banner"
-    const val TIRES_RAIL = "tires_rail"
     const val CAR_TAP = "car_tap"
     /** Boolean; sin guardar = prendido si ya hay un adaptador OBD. */
     const val OBD_MODULE = "obd_module"
@@ -279,9 +278,6 @@ class Preferences(context: Context) {
 
     /** Aviso arriba del inicio cuando una llanta tiene problema. */
     var tiresBanner by bool(PrefKeys.TIRES_BANNER, true)
-
-    /** Testigo de llanta en la barra lateral, solo con un problema. */
-    var tiresRail by bool(PrefKeys.TIRES_RAIL, true)
 
     /** Velocidad y distancia: automático (según idioma y región), km o millas. */
     var speedUnits by mapped(PrefKeys.SPEED_UNITS, SpeedUnits::fromStored) { it.stored }

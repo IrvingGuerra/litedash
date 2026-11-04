@@ -489,7 +489,6 @@ private fun HomeTiresCard(d: Dependencies) {
             )
         }
         SwitchRow(stringResource(R.string.tires_banner), d.prefs.tiresBanner, { d.prefs.tiresBanner = it })
-        SwitchRow(stringResource(R.string.tires_rail), d.prefs.tiresRail, { d.prefs.tiresRail = it }, stringResource(R.string.tires_rail_help))
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f).padding(end = 16.dp)) {
                 Label(stringResource(R.string.tires_tile), Typography.body)

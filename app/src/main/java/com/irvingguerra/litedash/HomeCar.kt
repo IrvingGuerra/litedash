@@ -78,7 +78,7 @@ fun HeroTile(d: Dependencies, tile: Tile, pkg: CarPackage?, onClick: () -> Unit,
  * hasta casi toda la pantalla mientras el fondo tapa el inicio. [progress] va de
  * 0 (en su pieza) a 1 (completo) y se lee solo al dibujar: la animación no
  * vuelve a armar nada. El auto se pinta una vez al tamaño final y la GPU lo escala.
- * Con [rise] (tocar el auto con Llantas activo) además gira y sube la cámara.
+ * Con [rise] (tocar el auto con Llantas activo) además se funde de espaldas y sube la cámara.
  */
 @Composable
 fun CarOnly(
