@@ -133,6 +133,35 @@ fun speedText(kmh: Float?, miles: Boolean): String = String.format(currentLocale
 @Composable
 fun speedUnit(miles: Boolean) = stringResource(if (miles) R.string.unit_mph else R.string.unit_kmh)
 
+/** Lo del viaje ya en texto, para la pieza Viaje y la carretera. */
+class TripStats(val distance: String, val unit: String, val time: String, val average: String?, val heading: String?)
+
+/** Los datos del viaje en la unidad del usuario; el tiempo avanza solo aunque el GPS no mande nada. */
+@Composable
+fun rememberTripStats(trip: TripRepository, miles: Boolean): TripStats {
+    // Una vez por minuto basta para el tiempo.
+    val elapsed by produceState(0L, trip.startedAt) {
+        while (true) {
+            value = if (trip.startedAt == 0L) 0L else System.currentTimeMillis() - trip.startedAt
+            delay(60_000 - System.currentTimeMillis() % 60_000)
+        }
+    }
+    val minutes = (elapsed / 60_000).toInt()
+    val locale = currentLocale()
+    val heading = trip.bearing?.let { (if (locale.language == "es") COMPASS else COMPASS_EN)[((it + 22.5f) / 45f).toInt() % 8] }
+    // Promedio desde que arrancó (con paradas), cuando ya hay algo que promediar. Con la hora de
+    // ahora (no la del último minuto): se vuelve a calcular con cada metro nuevo.
+    val hours = if (trip.startedAt == 0L) 0.0 else (System.currentTimeMillis() - trip.startedAt) / 3_600_000.0
+    val average = if (minutes >= 1 && trip.meters >= 100) "${speedText((trip.meters / 1000 / hours).toFloat(), miles)} ${speedUnit(miles)}" else null
+    return TripStats(
+        distance = distanceText(trip.meters, miles),
+        unit = distanceUnit(miles),
+        time = String.format(locale, "%d:%02d", minutes / 60, minutes % 60),
+        average = average,
+        heading = heading,
+    )
+}
+
 /**
  * Pieza Viaje: solo lo del viaje (la velocidad ya está en el velocímetro y la carretera): la
  * distancia en grande, el tiempo, la velocidad promedio y el rumbo. Sin permiso, el botón para activarla.
@@ -145,23 +174,13 @@ fun TripTile(d: Dependencies) {
     val (granted, ask) = rememberGpsPermission(d)
     if (!granted) return ShortcutTile(Icons.location, stringResource(R.string.tile_trip), stringResource(R.string.tap_to_enable), ask)
     KeepTripRunning(trip)
-    // El tiempo avanza solo, aunque el GPS no mande nada (una vez por minuto).
-    val elapsed by produceState(0L, trip.startedAt) {
-        while (true) {
-            value = if (trip.startedAt == 0L) 0L else System.currentTimeMillis() - trip.startedAt
-            delay(60_000 - System.currentTimeMillis() % 60_000)
-        }
-    }
-    val minutes = (elapsed / 60_000).toInt()
+    val stats = rememberTripStats(trip, miles)
+    val distance = stats.distance
+    val unit = stats.unit
+    val time = stats.time
+    val average = stats.average
+    val heading = stats.heading
     val locale = currentLocale()
-    val heading = trip.bearing?.let { (if (locale.language == "es") COMPASS else COMPASS_EN)[((it + 22.5f) / 45f).toInt() % 8] }
-    val time = String.format(locale, "%d:%02d", minutes / 60, minutes % 60)
-    // Promedio desde que arrancó (con paradas), cuando ya hay algo que promediar. Con la hora de
-    // ahora (no la del último minuto): se vuelve a calcular con cada metro nuevo.
-    val hours = if (trip.startedAt == 0L) 0.0 else (System.currentTimeMillis() - trip.startedAt) / 3_600_000.0
-    val average = if (minutes >= 1 && trip.meters >= 100) "${speedText((trip.meters / 1000 / hours).toFloat(), miles)} ${speedUnit(miles)}" else null
-    val distance = distanceText(trip.meters, miles)
-    val unit = distanceUnit(miles)
     Card(Modifier.fillMaxSize()) {
         BoxWithConstraints(Modifier.fillMaxSize().padding(16.dp)) {
             val tall = maxHeight > 120.dp

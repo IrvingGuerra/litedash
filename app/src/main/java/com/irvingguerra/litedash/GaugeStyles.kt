@@ -190,30 +190,61 @@ fun migrateSpeedMax(data: String, miles: Boolean): String? {
 private const val MAX_KMH = "maxkmh"
 private const val LEGACY_MAX = "max"
 
-/** Cómo va la velocidad en la carretera: como velocímetro, solo el número (de fábrica) u oculta. */
-enum class RoadSpeed(val stored: String, val title: Int) {
+/**
+ * Cómo va la velocidad en la carretera: solo el número (de fábrica), como velocímetro u oculta
+ * (para quien ya tiene el widget Velocímetro aparte). [title] = su opción cuando se ve.
+ */
+enum class RoadSpeed(val stored: String, val title: Int?) {
     TEXT("text", R.string.road_speed_text),
     GAUGE("gauge", R.string.road_speed_gauge),
-    HIDDEN("hidden", R.string.road_speed_hidden),
+    HIDDEN("hidden", null),
 }
+
+/** Los datos del viaje que puede llevar la carretera arriba a la derecha (como la pieza Viaje). */
+enum class RoadTrip(val stored: String, val title: Int) {
+    DISTANCE("distance", R.string.road_trip_distance),
+    TIME("time", R.string.trip_time),
+    AVERAGE("average", R.string.trip_average),
+    HEADING("heading", R.string.trip_heading),
+}
+
+/** De fábrica, solo los km del viaje (como era antes). */
+private val DEFAULT_TRIP = setOf(RoadTrip.DISTANCE)
 
 /**
  * Cómo se ve la carretera; se guarda en su [com.irvingguerra.litedash.feature.dashboard.Tile.data]
- * como un velocímetro ([gauge]) más "speed=…" ([speed]). Lo de fábrica no se escribe.
+ * como un velocímetro ([gauge]) más "speed=…" ([speed]) y "trip=…" ([trip]). Lo de fábrica no se escribe.
  */
 @Immutable
-data class RoadLook(val speed: RoadSpeed = RoadSpeed.TEXT, val gauge: GaugeLook = GaugeLook()) {
-    fun encode(): String = (listOf(gauge.encode()) + listOfNotNull(speed.takeIf { it != RoadSpeed.TEXT }?.let { "$SPEED=${it.stored}" }))
+data class RoadLook(
+    val speed: RoadSpeed = RoadSpeed.TEXT,
+    val gauge: GaugeLook = GaugeLook(),
+    val trip: Set<RoadTrip> = DEFAULT_TRIP,
+) {
+    fun encode(): String = (
+        listOf(gauge.encode()) + listOfNotNull(
+            speed.takeIf { it != RoadSpeed.TEXT }?.let { "$SPEED=${it.stored}" },
+            // Vacío ("trip=") = sin datos del viaje.
+            trip.takeIf { it != DEFAULT_TRIP }?.let { t -> "$TRIP=" + RoadTrip.entries.filter { it in t }.joinToString(",") { it.stored } },
+        )
+    )
         .filter { it.isNotEmpty() }
         .joinToString(";")
 
     companion object {
         private const val SPEED = "speed"
+        private const val TRIP = "trip"
 
-        fun parse(data: String) = RoadLook(
-            speed = RoadSpeed.entries.firstOrNull { "$SPEED=${it.stored}" in data.split(';') } ?: RoadSpeed.TEXT,
-            gauge = GaugeLook.parse(data),
-        )
+        fun parse(data: String): RoadLook {
+            val parts = data.split(';')
+            return RoadLook(
+                speed = RoadSpeed.entries.firstOrNull { "$SPEED=${it.stored}" in parts } ?: RoadSpeed.TEXT,
+                gauge = GaugeLook.parse(data),
+                trip = parts.firstOrNull { it.startsWith("$TRIP=") }?.removePrefix("$TRIP=")?.split(',')
+                    ?.mapNotNull { s -> RoadTrip.entries.firstOrNull { it.stored == s } }?.toSet()
+                    ?: DEFAULT_TRIP,
+            )
+        }
     }
 }
 

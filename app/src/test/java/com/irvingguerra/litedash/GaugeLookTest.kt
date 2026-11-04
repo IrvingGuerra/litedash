@@ -82,5 +82,10 @@ class GaugeLookTest {
         val road = RoadLook(RoadSpeed.GAUGE, GaugeLook(GaugeStyle.NEON, GaugeColor.CYAN, max = 240))
         assertEquals(road, RoadLook.parse(road.encode()))
         assertEquals(RoadSpeed.HIDDEN, RoadLook.parse(RoadLook(RoadSpeed.HIDDEN).encode()).speed)
+        // Datos del viaje: de fábrica solo la distancia; vacío también se guarda.
+        val trip = RoadLook(trip = setOf(RoadTrip.TIME, RoadTrip.HEADING))
+        assertEquals(trip, RoadLook.parse(trip.encode()))
+        assertEquals(emptySet<RoadTrip>(), RoadLook.parse(RoadLook(trip = emptySet()).encode()).trip)
+        assertEquals(setOf(RoadTrip.DISTANCE), RoadLook.parse("speed=gauge").trip)
     }
 }

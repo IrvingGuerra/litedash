@@ -4,8 +4,10 @@
     <string name="road_speed">Velocidad</string>
     <string name="road_speed_text">Solo el número</string>
     <string name="road_speed_gauge">Velocímetro</string>
-    <string name="road_speed_hidden">Oculta</string>
+    <string name="road_speed_show">Mostrar la velocidad</string>
     <!-- Viaje -->
     <string name="trip_time">Tiempo</string>
     <string name="trip_average">Promedio</string>
+    <string name="road_trip_distance">Distancia</string>
+    <string name="trip_heading">Rumbo</string>
 </resources>

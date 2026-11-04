@@ -4,8 +4,10 @@
     <string name="road_speed">Speed</string>
     <string name="road_speed_text">Number only</string>
     <string name="road_speed_gauge">Speedometer</string>
-    <string name="road_speed_hidden">Hidden</string>
+    <string name="road_speed_show">Show speed</string>
     <!-- Trip -->
     <string name="trip_time">Time</string>
     <string name="trip_average">Average</string>
+    <string name="road_trip_distance">Distance</string>
+    <string name="trip_heading">Heading</string>
 </resources>

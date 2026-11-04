@@ -6,6 +6,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
@@ -23,7 +24,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
@@ -100,7 +100,9 @@ fun RoadView(
     val obdOn = live && rememberObd(d)?.state == ObdState.ON
     val (gps, ask) = if (live) rememberGpsPermission(d) else true to {}
     // El GPS da los km del viaje (y la velocidad si no hay OBD) mientras la pieza se ve.
-    if (live && gps) KeepTripRunning(d.trip)
+    // Solo si algo lo muestra: velocidad (sin OBD la da el GPS) o datos del viaje.
+    val needsGps = look.speed != RoadSpeed.HIDDEN || look.trip.isNotEmpty()
+    if (live && gps && needsGps) KeepTripRunning(d.trip)
     val kmh = demoKmh ?: d.bus.watch(Signal.SPEED)
 
     // Avance de las rayas en periodos (0..1) y de las líneas de velocidad: se leen solo al
@@ -132,8 +134,6 @@ fun RoadView(
     BoxWithConstraints(
         modifier
             .fillMaxSize()
-            // El reflejo del auto no se asoma debajo de los widgets de abajo.
-            .clipToBounds()
             .clickable(remember { MutableInteractionSource() }, indication = null, onClick = onClick),
     ) {
         val height = maxHeight
@@ -162,7 +162,8 @@ fun RoadView(
             .height(box)
         Box(carBox) {
             if (pkg != null) {
-                CarStill(d.cars, pkg, d.prefs.carColor, Modifier.fillMaxSize(), turn = REAR_TURN, onReady = onReady)
+                // Sin reflejo: va sobre el asfalto (el reflejo es del auto 3D en su piso).
+                CarStill(d.cars, pkg, d.prefs.carColor, Modifier.fillMaxSize(), turn = REAR_TURN, onReady = onReady, reflection = false)
             } else {
                 ReadyNow(onReady)
                 Canvas(Modifier.fillMaxSize()) { drawRear(d.prefs.carColor) }
@@ -185,16 +186,24 @@ fun RoadView(
             }
             RoadSpeed.HIDDEN -> Unit
         }
-        // Los km del viaje a la derecha.
-        Column(Modifier.align(Alignment.TopEnd).padding(16.dp), horizontalAlignment = Alignment.End) {
-            Label(
-                "${distanceText(d.trip.meters, miles)} ${distanceUnit(miles)}",
-                Typography.clock.copy(fontSize = (big * 0.45f).coerceAtLeast(20f).sp),
-                maxLines = 1,
-            )
-            Label(stringResource(R.string.road_trip), Typography.small, c.textMuted, maxLines = 1)
+        // Lo del viaje que se eligió, a la derecha.
+        if (look.trip.isNotEmpty()) {
+            val stats = rememberTripStats(d.trip, miles)
+            Column(Modifier.align(Alignment.TopEnd).padding(16.dp), horizontalAlignment = Alignment.End) {
+                if (RoadTrip.DISTANCE in look.trip) {
+                    Label("${stats.distance} ${stats.unit}", Typography.clock.copy(fontSize = (big * 0.45f).coerceAtLeast(20f).sp), maxLines = 1)
+                    Label(stringResource(R.string.road_trip), Typography.small, c.textMuted, maxLines = 1)
+                }
+                for ((item, value) in listOf(RoadTrip.TIME to stats.time, RoadTrip.AVERAGE to stats.average, RoadTrip.HEADING to stats.heading)) {
+                    if (item !in look.trip) continue
+                    Row(Modifier.padding(top = 6.dp), verticalAlignment = Alignment.Bottom) {
+                        Label(stringResource(item.title), Typography.small, c.textMuted, maxLines = 1)
+                        Label(value ?: "—", Typography.subtitle, maxLines = 1, modifier = Modifier.padding(start = 8.dp))
+                    }
+                }
+            }
         }
-        if (!obdOn && !gps) {
+        if (needsGps && !obdOn && !gps) {
             Box(Modifier.align(Alignment.TopCenter).padding(top = 16.dp)) {
                 Button(stringResource(R.string.tap_to_enable), ask, primary = true)
             }

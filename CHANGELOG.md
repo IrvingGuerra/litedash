@@ -6,6 +6,17 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
+## [1.4.63] - 2026-11-04
+
+### Agregado
+- **Carretera con datos del viaje a tu gusto**: distancia, tiempo, promedio y rumbo, cada uno con su
+  interruptor (de fábrica, solo la distancia, como antes).
+- **Mostrar la velocidad** en Carretera es un interruptor: apágala si ya tienes el widget Velocímetro
+  aparte; prendida, eliges solo el número o el velocímetro.
+
+### Arreglado
+- El auto en Carretera ya no se ve cortado abajo y va sin reflejo (el reflejo es del auto 3D).
+
 ## [1.4.62] - 2026-11-04
 
 ### Agregado

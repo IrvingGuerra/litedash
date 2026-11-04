@@ -113,10 +113,18 @@ const val REAR_TURN = 0.75f
  * de modelos, o en la vuelta [turn] (como [REAR_TURN], de espaldas en la carretera).
  */
 @Composable
-fun CarStill(repo: CarRepository, p: CarPackage, color: Color, modifier: Modifier = Modifier, turn: Float? = null, onReady: (() -> Unit)? = null) {
+fun CarStill(
+    repo: CarRepository,
+    p: CarPackage,
+    color: Color,
+    modifier: Modifier = Modifier,
+    turn: Float? = null,
+    onReady: (() -> Unit)? = null,
+    reflection: Boolean = true,
+) {
     var widthPx by remember { mutableIntStateOf(0) }
     val frame = turn?.let { (it * p.spin).roundToInt().mod(p.spin) } ?: restFrame(p.spin)
-    CarLayersImage(repo, p, baseFrame(frame), color, widthPx, modifier.onSizeChanged { widthPx = it.width }, onReady)
+    CarLayersImage(repo, p, baseFrame(frame), color, widthPx, modifier.onSizeChanged { widthPx = it.width }, onReady, reflection = reflection)
 }
 
 /** El auto desde arriba ([CarViews.TOP_VIEW] del paquete) pintado del [color]; solo si [CarPackage.topView]. */
@@ -142,6 +150,7 @@ private fun CarLayersImage(
     modifier: Modifier,
     onReady: (() -> Unit)?,
     rise: CarRise? = null,
+    reflection: Boolean = true,
 ) {
     var layers by remember(p.id) { mutableStateOf<CarLayers?>(null) }
     var notified by remember(p.id) { mutableStateOf(false) }
@@ -164,7 +173,7 @@ private fun CarLayersImage(
     val place = if (rise == null) Modifier else Modifier.onGloballyPositioned { rise.canvasOrigin = it.positionInRoot() }
     Canvas(modifier.fillMaxSize().then(place)) {
         if (rise != null && rise.active && drawRise(rise, layers)) return@Canvas
-        drawCarLayers(layers ?: return@Canvas)
+        drawCarLayers(layers ?: return@Canvas, reflection)
     }
 }
 
@@ -206,8 +215,8 @@ private fun DrawScope.drawRise(r: CarRise, layers: CarLayers?): Boolean {
     return true
 }
 
-/** El auto con su sombra y su reflejo, centrado en el lienzo. */
-private fun DrawScope.drawCarLayers(c: CarLayers) {
+/** El auto con su sombra y (si [reflection]) su reflejo, centrado en el lienzo. */
+private fun DrawScope.drawCarLayers(c: CarLayers, reflection: Boolean = true) {
     val scale = minOf(size.width / c.car.width, size.height / c.car.height)
     val w = c.car.width * scale
     val h = c.car.height * scale
@@ -215,7 +224,7 @@ private fun DrawScope.drawCarLayers(c: CarLayers) {
     c.floor?.let { f ->
         val box = Rect(Offset(origin.x + f.x * w, origin.y + f.y * w), Size(f.width * w, f.height * w))
         c.shadow?.let { drawLayer(it, box) }
-        c.reflection?.let { drawLayer(it, box) }
+        if (reflection) c.reflection?.let { drawLayer(it, box) }
     }
     drawLayer(c.car, Rect(origin, Size(w, h)))
 }
