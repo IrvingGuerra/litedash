@@ -79,12 +79,12 @@ val TileSpecs = listOf(
     TileSpec(TileTypes.NAVIGATE, R.string.tile_navigate, SizeLimits(2, 1), 3 to 1, R.string.tile_navigate_help),
     TileSpec(TileTypes.CLOCK, R.string.tile_clock, SizeLimits(2, 1), 3 to 1, R.string.tile_clock_help),
     TileSpec(TileTypes.PHONE, R.string.tile_phone, SizeLimits(1, 1), 2 to 1, R.string.tile_phone_help),
-    TileSpec(TileTypes.WEATHER, R.string.tile_weather, SizeLimits(2, 1), 3 to 1, R.string.weather_module),
-    TileSpec(TileTypes.TRIP, R.string.tile_trip, SizeLimits(2, 1), 3 to 1, R.string.trip_module),
-    TileSpec(TileTypes.SPEEDOMETER, R.string.tile_speedometer, SizeLimits(2, 1), 3 to 2, R.string.speedometer_module),
-    TileSpec(TileTypes.GAUGE, R.string.tile_gauge, SizeLimits(2, 1), 3 to 2, R.string.gauge_module),
-    TileSpec(TileTypes.WORKSHOP, R.string.workshop, SizeLimits(1, 1), 2 to 1, R.string.workshop_module),
-    TileSpec(TileTypes.PROJECTION, R.string.tile_projection, SizeLimits(2, 1), 3 to 1, R.string.projection_module),
+    TileSpec(TileTypes.WEATHER, R.string.tile_weather, SizeLimits(2, 1), 3 to 1, R.string.tile_weather_help),
+    TileSpec(TileTypes.TRIP, R.string.tile_trip, SizeLimits(2, 1), 3 to 1, R.string.tile_trip_help),
+    TileSpec(TileTypes.SPEEDOMETER, R.string.tile_speedometer, SizeLimits(2, 1), 3 to 2, R.string.tile_speedometer_help),
+    TileSpec(TileTypes.GAUGE, R.string.tile_gauge, SizeLimits(2, 1), 3 to 2, R.string.tile_gauge_help),
+    TileSpec(TileTypes.WORKSHOP, R.string.workshop, SizeLimits(1, 1), 2 to 1, R.string.tile_workshop_help),
+    TileSpec(TileTypes.PROJECTION, R.string.tile_projection, SizeLimits(2, 1), 3 to 1, R.string.tile_projection_help),
     TileSpec(TileTypes.TIRES, R.string.tile_tires, SizeLimits(1, 1), 2 to 2, R.string.tile_tires_help),
     TileSpec(TileTypes.APP, R.string.tile_app, SizeLimits(1, 1, 3, 3), 1 to 1),
 )
@@ -139,7 +139,10 @@ fun rememberClock(): Clock {
     val date = remember(language) {
         SimpleDateFormat(DateFormat.getBestDateTimePattern(language, "EEEEdMMMM"), language)
     }
-    val now by produceState(Date()) {
+    // Al volver la app al frente se pone al día (con la pantalla dormida la espera no avanza).
+    val starts = rememberStarts()
+    val now by produceState(Date(), starts) {
+        value = Date()
         while (true) {
             delay(60_000 - System.currentTimeMillis() % 60_000)
             value = Date()

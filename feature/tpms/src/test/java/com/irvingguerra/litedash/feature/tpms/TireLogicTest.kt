@@ -130,9 +130,16 @@ class TireLogicTest {
         assertNull(h.maxSince(Wheel.REAR_LEFT, 0L))
         // La copia para guardar no cambia con lo que entra después.
         assertTrue(h.dirty)
+        val changes = h.changes
         val copy = h.snapshot()
-        assertTrue(!h.dirty)
+        // Copiar no es guardar: sigue pendiente hasta que la escritura salga bien.
+        assertTrue(h.dirty)
         h.add(Wheel.FRONT_LEFT, 180_000L, 220f)
+        // Lo que entró mientras se escribía sigue pendiente.
+        h.saved(changes)
+        assertTrue(h.dirty)
+        h.saved(h.changes)
+        assertTrue(!h.dirty)
         assertEquals(3, copy.samples(Wheel.FRONT_LEFT).size)
         assertEquals(h.samples(Wheel.FRONT_LEFT).take(3), copy.samples(Wheel.FRONT_LEFT))
     }

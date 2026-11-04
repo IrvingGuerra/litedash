@@ -30,6 +30,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.LifecycleStartEffect
 import com.irvingguerra.litedash.core.ui.Label
 import com.irvingguerra.litedash.core.ui.LocalColors
 import com.irvingguerra.litedash.core.ui.Typography
@@ -37,11 +38,17 @@ import java.text.Normalizer
 
 private val ICON_SIZE = 56.dp
 
-/** Lista de apps cargada una vez fuera del hilo principal. */
+/**
+ * Lista compartida de apps; mientras la pantalla se ve, se actualiza sola al instalar o quitar
+ * apps. Null mientras carga la primera vez.
+ */
 @Composable
 fun rememberApps(repo: AppRepository): List<App>? {
-    val apps by produceState<List<App>?>(null, repo) { value = repo.load() }
-    return apps
+    LifecycleStartEffect(repo) {
+        repo.watch()
+        onStopOrDispose { repo.unwatch() }
+    }
+    return repo.apps
 }
 
 // Acentos y demás marcas: compilada una sola vez, no en cada llamada.

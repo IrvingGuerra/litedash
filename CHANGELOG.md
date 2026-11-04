@@ -6,6 +6,28 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
+## [1.4.62] - 2026-11-04
+
+### Agregado
+- **Carretera**: elige cómo ver la velocidad (solo el número, el velocímetro o nada) desde su botón de
+  ajustes al acomodar el inicio, y con Llantas activo, la presión de cada llanta junto a su rueda.
+
+### Cambiado
+- **Viaje** ya no repite la velocidad: solo los datos del viaje (y su propio ícono).
+- Recordatorios: la fecha se elige ahí mismo, sin ventana emergente.
+- El clima se puede apagar (Ajustes → Apariencia) y se actualiza solo mientras ves el inicio.
+- Una actualización que se está bajando sigue aunque cierres Ajustes.
+
+### Arreglado
+- **Radio FM de la pantalla**: play/pausa, anterior y siguiente ya la controlan como el volante, sin abrirla.
+- El cajón y la barra de apps se enteran al instante de apps instaladas o quitadas.
+- Ubicación aproximada (Android 12+) aceptada para el viaje, la carretera y el clima.
+- Día y noche ya no se queda atorado después de apagar la pantalla.
+- Tocar el auto para ver las llantas usa mucha menos memoria (pantallas de 1 GB sin cerrarse) y el giro
+  con el dedo ya no se degrada después.
+- El reflejo del auto en Carretera ya no se asoma debajo de los widgets de abajo.
+- Con las llantas o el OBD apagados, Android ya no ofrece abrir LiteDash al conectar un chip USB.
+
 ## [1.4.61] - 2026-11-04
 
 ### Cambiado

@@ -30,13 +30,15 @@ fun SpeedometerTile(d: Dependencies, look: GaugeLook) {
     if (!obdOn) KeepTripRunning(d.trip)
     val kmh = d.bus.watch(Signal.SPEED)
     val miles = d.prefs.units.miles
-    val source = when (d.bus.source(Signal.SPEED)) {
-        Source.OBD -> "OBD"
-        Source.GPS -> "GPS"
-        Source.CAN -> "CAN"
-        null -> ""
-    }
-    SpeedGaugeCard((kmh ?: 0f).toMiles(miles), miles, source, look, d.prefs.carColor)
+    SpeedGaugeCard((kmh ?: 0f).toMiles(miles), miles, speedTag(d), look, d.prefs.carColor)
+}
+
+/** De dónde viene la velocidad (OBD, GPS o CAN), para la etiqueta del velocímetro. */
+fun speedTag(d: Dependencies) = when (d.bus.source(Signal.SPEED)) {
+    Source.OBD -> "OBD"
+    Source.GPS -> "GPS"
+    Source.CAN -> "CAN"
+    null -> ""
 }
 
 /**
@@ -45,7 +47,7 @@ fun SpeedometerTile(d: Dependencies, look: GaugeLook) {
  */
 @Composable
 fun SpeedGaugeCard(speed: Float, miles: Boolean, tag: String, look: GaugeLook, carColor: Color) {
-    val max = (look.max ?: speedMaxOptions(miles).first()).toFloat()
+    val max = look.speedMax(miles).toFloat()
     // Marcas cada 20 km/h (10 mph); con 240 o más, cada 40 (20 mph) para que no se amontonen.
     val ticks = ticksFor(max, miles)
     GaugeCard(

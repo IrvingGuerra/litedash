@@ -48,6 +48,11 @@ import java.io.File
 
 /** Recibe los avisos que pasa el [NotificationService] (la app solo mira los de navegación). */
 interface NotificationListener {
+    /**
+     * Alguien los quiere ahora (la app ya está armada). Si no, el servicio no pasa nada: Android
+     * lo conecta solo (también tras forzar el cierre) y no hay por qué armar la app por un aviso.
+     */
+    val wanted: Boolean
     fun onPosted(notification: StatusBarNotification)
     fun onRemoved(notification: StatusBarNotification)
 }
@@ -203,6 +208,8 @@ class MusicRepository(private val context: Context) {
     /** Enlaza (o con null desenlaza) la app de Bluetooth o la de radio. */
     fun setSource(kind: SourceKind, pkg: String?) {
         sourceApps = if (pkg == null) sourceApps - kind else sourceApps + (kind to pkg)
+        // Al enlazar otra vez (quizá tras actualizar la app de la pantalla) se vuelve a preguntar su receptor.
+        if (pkg != null) receivers.remove(pkg)
         store.edit().putString(kind.key, pkg).apply()
         // Enlazar o quitar la radio cambia qué pieza se queda con cada sesión.
         if (users > 0) choose(sessions())
@@ -495,27 +502,45 @@ class MusicRepository(private val context: Context) {
 
         /**
          * Play o pausa; sin nada sonando, se despierta lo que toque ([onWake]). Si ya se despertó
-         * hace poco y su app no comparte sesión (la música Bluetooth de muchas pantallas), es
-         * play/pausa como el botón del volante: si no, cada toque volvía a "Abriendo…".
+         * hace poco y su app no comparte sesión (la música Bluetooth y la radio FM de muchas
+         * pantallas), es play/pausa como el botón del volante: si no, cada toque volvía a
+         * "Abriendo…". Una radio sin receptor no tiene a quién mandarle la tecla: se despierta.
          */
         fun toggle() {
-            val t = controller?.transportControls
+            val t = controller?.transportControls?.takeUnless { keysOnly(PlaybackState.ACTION_PLAY_PAUSE or PlaybackState.ACTION_PLAY or PlaybackState.ACTION_PAUSE) }
             val woke = wokePkg
             when {
-                t == null && woke != null && woke == target(this) && SystemClock.elapsedRealtime() - wokeAt < KEYS_WINDOW_MS -> key(this, KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE)
+                controller != null && t == null -> key(this, KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE)
+                t == null && woke != null && woke == target(this) && SystemClock.elapsedRealtime() - wokeAt < KEYS_WINDOW_MS && canKey(this) ->
+                    key(this, KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE)
                 t == null || song == null -> onWake()
                 song?.playing == true -> t.pause()
                 else -> t.play()
             }
         }
 
-        /** Sin sesión, como los botones del volante (a la app de la pieza o al sistema de audio). */
+        /**
+         * Sin sesión, como los botones del volante (a la app de la pieza o al sistema de audio).
+         * En la radio FM, siguiente/anterior es lo que la app haga con esas teclas (casi siempre
+         * la estación guardada que sigue o buscar la siguiente).
+         */
         fun next() {
-            controller?.transportControls?.skipToNext() ?: key(this, KeyEvent.KEYCODE_MEDIA_NEXT)
+            controller?.transportControls?.takeUnless { keysOnly(PlaybackState.ACTION_SKIP_TO_NEXT) }?.skipToNext() ?: key(this, KeyEvent.KEYCODE_MEDIA_NEXT)
         }
 
         fun previous() {
-            controller?.transportControls?.skipToPrevious() ?: key(this, KeyEvent.KEYCODE_MEDIA_PREVIOUS)
+            controller?.transportControls?.takeUnless { keysOnly(PlaybackState.ACTION_SKIP_TO_PREVIOUS) }?.skipToPrevious() ?: key(this, KeyEvent.KEYCODE_MEDIA_PREVIOUS)
+        }
+
+        /**
+         * La radio FM tiene sesión pero no anuncia [action] (varias FM de pantalla publican la
+         * sesión solo para mostrar la estación): mejor la tecla a su receptor, como el volante.
+         * La música no: sus apps sí atienden la sesión.
+         */
+        private fun keysOnly(action: Long): Boolean {
+            val c = controller ?: return false
+            if (this !== radio || isOwn(c.packageName)) return false
+            return (c.playbackState?.actions ?: 0L) and action == 0L && canKey(this)
         }
         fun seekTo(ms: Long) = controller?.transportControls?.seekTo(ms)
         fun action(a: MediaAction) = controller?.transportControls?.sendCustomAction(a.id, null)
@@ -651,9 +676,26 @@ class MusicRepository(private val context: Context) {
      */
     private fun key(lens: Lens, code: Int) {
         val pkg = target(lens)
-        val receiver = pkg?.takeUnless(::isOwn)?.let { mediaButtonReceivers(it).firstOrNull() }
+        val receiver = keyReceiver(pkg)
         if (receiver == null && (lens === radio || pkg != null && isOwn(pkg))) return
         sendMediaKey(context, code, receiver)
+    }
+
+    /** ¿Hay a quién mandarle una tecla de [lens]? La música siempre (al sistema); la radio, solo a su receptor. */
+    private fun canKey(lens: Lens): Boolean = lens !== radio || keyReceiver(target(lens)) != null
+
+    /**
+     * El receptor del botón de play de [pkg] (nunca el de LiteDash: su reproductor tiene sesión).
+     * Se pregunta una vez por app (es una llamada al sistema y la pieza lo consulta al pintarse).
+     */
+    private fun keyReceiver(pkg: String?): ComponentName? =
+        pkg?.takeUnless(::isOwn)?.let { p -> receivers.getOrPut(p) { mediaButtonReceivers(p).firstOrNull() } }
+    private val receivers = HashMap<String, ComponentName?>()
+
+    /** La pieza Radio sin sesión pero con una FM de la pantalla que atiende teclas: lleva anterior/siguiente. */
+    fun radioHasKeys(): Boolean {
+        val pkg = appFor(SourceKind.RADIO) ?: return false
+        return !isOwn(pkg) && keyReceiver(pkg) != null
     }
 
     /** Se conecta al servicio de música de [pkg] y le pide play; si no lo acepta, el botón del sistema. */
@@ -677,7 +719,7 @@ class MusicRepository(private val context: Context) {
 
     /** El botón de play directo al receptor de [pkg] (las apps de Bluetooth/radio lo atienden así). */
     private fun buttonPlay(pkg: String): Boolean {
-        val receiver = mediaButtonReceivers(pkg).firstOrNull() ?: return false
+        val receiver = keyReceiver(pkg) ?: return false
         sendMediaKey(context, KeyEvent.KEYCODE_MEDIA_PLAY, receiver)
         return true
     }
@@ -827,9 +869,10 @@ private class DeviceWatcher(
         }
         // Son avisos del sistema: los receptores deben aceptar avisos de fuera de la app.
         ContextCompat.registerReceiver(context, receiver, filter, ContextCompat.RECEIVER_EXPORTED)
-        ContextCompat.registerReceiver(context, receiver, Drives.mediaFilter(), ContextCompat.RECEIVER_EXPORTED)
-        // Sin escuchar pudieron cambiar la memoria: la biblioteca la vuelve a leer.
-        Drives.changed()
+        // También cuando Android termina de indexar la memoria: la biblioteca que se leyó a medias se relee.
+        ContextCompat.registerReceiver(context, receiver, Drives.mediaFilter(scanner = true), ContextCompat.RECEIVER_EXPORTED)
+        // Sin [Drives.changed]: si mientras no se escuchaba cambió la memoria, la biblioteca lo nota por
+        // su identificador (va en la llave de su caché); abrir o cerrar la música no la hace releer.
         onUsb(Drives.mounted(context))
         connectedPhone()
     }

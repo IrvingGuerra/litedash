@@ -49,9 +49,10 @@ import kotlinx.coroutines.delay
 private val DEMO = listOf(0.18f, 0.52f, 0.86f, 0.34f, 0.97f, 0.62f)
 
 /**
- * Personalizar un velocímetro o un medidor ([tileId]): a la izquierda se ve cómo queda
- * (con valores de muestra que se mueven) y a la derecha el estilo, el color, hasta
- * dónde llega, marcas, números y zona roja. Cada cambio se guarda al momento.
+ * Personalizar un velocímetro, un medidor o la velocidad de la carretera ([tileId]): a la
+ * izquierda se ve cómo queda (con valores de muestra que se mueven) y a la derecha el estilo,
+ * el color, hasta dónde llega, marcas, números y zona roja. En la carretera, primero cómo va
+ * la velocidad (velocímetro, solo el número u oculta). Cada cambio se guarda al momento.
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -63,15 +64,17 @@ fun CustomizeGaugePanel(d: Dependencies, tileId: String, close: () -> Unit, onPi
         LaunchedEffect(Unit) { close() }
         return
     }
-    val speedometer = tile.type == TileTypes.SPEEDOMETER
+    val road = tile.type == TileTypes.ROAD
+    val roadSpeed = if (road) RoadLook.parse(tile.data).speed else null
+    val speedometer = tile.type == TileTypes.SPEEDOMETER || road
     val signal = signalOf(tile.data)
     val spec = gaugeOf(signal)
     val look = GaugeLook.parse(tile.data)
     val units = d.prefs.units
     var applied by remember { mutableStateOf(false) }
-    fun set(new: GaugeLook) {
+    fun set(new: GaugeLook, speed: RoadSpeed? = roadSpeed) {
         applied = false
-        d.dashboard.setData(tileId, new.encode(signal))
+        d.dashboard.setData(tileId, if (speed != null) RoadLook(speed, new).encode() else new.encode(signal))
     }
 
     var demo by remember { mutableFloatStateOf(DEMO[0]) }
@@ -84,14 +87,18 @@ fun CustomizeGaugePanel(d: Dependencies, tileId: String, close: () -> Unit, onPi
         }
     }
 
-    PanelScaffold(stringResource(R.string.gauge_customize), close) {
+    PanelScaffold(stringResource(if (road) R.string.road_customize else R.string.gauge_customize), close) {
         BoxWithConstraints(Modifier.fillMaxWidth().weight(1f)) {
             val preview = @Composable { m: Modifier ->
                 Box(m) {
                     // Con o sin tarjeta, como está en tu inicio.
                     CompositionLocalProvider(LocalPlainCard provides tile.plain) {
-                        if (speedometer) {
-                            val max = (look.max ?: speedMaxOptions(units.miles).first()).toFloat()
+                        if (road) {
+                            // La carretera misma, con la velocidad de muestra.
+                            val demoKmh = demo * look.speedMax(miles = false)
+                            RoadView(d, d.cars.pkg(d.prefs.carModel), onClick = {}, look = RoadLook(roadSpeed ?: RoadSpeed.TEXT, look), demoKmh = demoKmh)
+                        } else if (speedometer) {
+                            val max = look.speedMax(units.miles).toFloat()
                             SpeedGaugeCard(demo * max, units.miles, "GPS", look, d.prefs.carColor)
                         } else if (spec != null) {
                             SpecGaugeCard(spec, spec.min + (spec.max - spec.min) * demo, units, look, d.prefs.carColor)
@@ -101,6 +108,12 @@ fun CustomizeGaugePanel(d: Dependencies, tileId: String, close: () -> Unit, onPi
             }
             val options = @Composable { m: Modifier ->
                 Column(m.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                    if (roadSpeed != null) {
+                        Label(stringResource(R.string.road_speed), Typography.label, c.textMuted)
+                        Segmented(RoadSpeed.entries.map { it to stringResource(it.title) }, roadSpeed, { set(look, it) })
+                        // Solo el número u oculta: no hay velocímetro que personalizar.
+                        if (roadSpeed != RoadSpeed.GAUGE) return@Column
+                    }
                     Label(stringResource(R.string.gauge_customize_help), Typography.small, c.textMuted)
                     Label(stringResource(R.string.gauge_style), Typography.label, c.textMuted)
                     Segmented(
@@ -128,9 +141,9 @@ fun CustomizeGaugePanel(d: Dependencies, tileId: String, close: () -> Unit, onPi
                         val choices = speedMaxOptions(units.miles)
                         Segmented(
                             choices.sorted().map { it to "$it $unit" },
-                            look.max ?: choices.first(),
-                            // El de fábrica no se guarda (así se lee igual en km/h y en mph).
-                            { set(look.copy(max = it.takeIf { v -> v != choices.first() })) },
+                            look.speedMax(units.miles),
+                            // Se guarda en km/h (al cambiar a mph se ve su pareja); el de fábrica no se guarda.
+                            { set(look.copy(max = speedMaxToStore(it, units.miles))) },
                             Modifier.horizontalScroll(rememberScrollState()),
                         )
                     }
@@ -140,12 +153,15 @@ fun CustomizeGaugePanel(d: Dependencies, tileId: String, close: () -> Unit, onPi
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         if (!speedometer) Button(stringResource(R.string.gauge_change_signal), onPickSignal)
                         Button(stringResource(R.string.gauge_apply_all), {
-                            // Mismo estilo en todos; cada uno conserva su dato y, los velocímetros, hasta dónde llegan.
-                            // Una sola escritura del acomodo para todos.
+                            // Mismo estilo en todos; cada uno conserva su dato y, los velocímetros, hasta dónde llegan
+                            // (la carretera, además, cómo va su velocidad). Una sola escritura del acomodo para todos.
                             d.dashboard.changeData(
                                 d.dashboard.tiles
-                                    .filter { it.type == TileTypes.SPEEDOMETER || it.type == TileTypes.GAUGE }
-                                    .associate { it.id to look.copy(max = GaugeLook.parse(it.data).max).encode(signalOf(it.data)) },
+                                    .filter { it.type == TileTypes.SPEEDOMETER || it.type == TileTypes.GAUGE || it.type == TileTypes.ROAD }
+                                    .associate {
+                                        val own = look.copy(max = GaugeLook.parse(it.data).max)
+                                        it.id to if (it.type == TileTypes.ROAD) RoadLook(RoadLook.parse(it.data).speed, own).encode() else own.encode(signalOf(it.data))
+                                    },
                             )
                             applied = true
                         })

@@ -18,6 +18,8 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.platform.LocalWindowInfo
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.IntOffset
@@ -59,11 +61,23 @@ fun HomeCar(d: Dependencies, pkg: CarPackage?, onClick: () -> Unit, modifier: Mo
     )
 }
 
-/** Las piezas que crecen a pantalla completa con un toque: auto 3D, carretera o imagen, según [tile]. */
+/**
+ * Las piezas que crecen a pantalla completa con un toque: auto 3D, carretera o imagen, según [tile].
+ * [onTires]: la carretera lleva la presión de cada llanta junto a su rueda (null = sin pastillas).
+ */
 @Composable
-fun HeroTile(d: Dependencies, tile: Tile, pkg: CarPackage?, onClick: () -> Unit, modifier: Modifier = Modifier, onReady: (() -> Unit)? = null, rise: CarRise? = null) {
+fun HeroTile(
+    d: Dependencies,
+    tile: Tile,
+    pkg: CarPackage?,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    onReady: (() -> Unit)? = null,
+    rise: CarRise? = null,
+    onTires: (() -> Unit)? = null,
+) {
     when (tile.type) {
-        TileTypes.ROAD -> RoadView(d, pkg, onClick, modifier, onReady)
+        TileTypes.ROAD -> RoadView(d, pkg, onClick, modifier, onReady, remember(tile.data) { RoadLook.parse(tile.data) }, onTires)
         TileTypes.IMAGE -> {
             // Sin auto que cargar: lista de una vez.
             ReadyNow(onReady)
@@ -78,7 +92,7 @@ fun HeroTile(d: Dependencies, tile: Tile, pkg: CarPackage?, onClick: () -> Unit,
  * hasta casi toda la pantalla mientras el fondo tapa el inicio. [progress] va de
  * 0 (en su pieza) a 1 (completo) y se lee solo al dibujar: la animación no
  * vuelve a armar nada. El auto se pinta una vez al tamaño final y la GPU lo escala.
- * Con [rise] (tocar el auto con Llantas activo) además se funde de espaldas y sube la cámara.
+ * Con [rise] (tocar el auto con Llantas activo) además gira hasta quedar de espaldas y sube la cámara.
  */
 @Composable
 fun CarOnly(
@@ -96,15 +110,7 @@ fun CarOnly(
     val direction = LocalLayoutDirection.current
     val insets = WindowInsets.safeDrawing
     BoxWithConstraints(Modifier.fillMaxSize()) {
-        val to = with(density) {
-            val pad = 24.dp.toPx()
-            Rect(
-                insets.getLeft(this, direction) + pad,
-                insets.getTop(this) + pad,
-                maxWidth.toPx() - insets.getRight(this, direction) - pad,
-                maxHeight.toPx() - insets.getBottom(this) - pad,
-            )
-        }
+        val to = with(density) { bigBox(maxWidth.toPx(), maxHeight.toPx(), insets, direction) }
         // La escala va del auto dibujado en su pieza al auto dibujado en grande (no de caja a
         // caja): así crece desde el tamaño que se ve y al regresar termina justo en su lugar.
         // La carretera y la imagen llenan su caja a lo alto (el auto de la carretera es una
@@ -147,6 +153,26 @@ fun CarOnly(
  */
 private fun carWidth(box: Rect, density: Density) =
     minOf(box.width, box.height * CAR_ASPECT) - with(density) { 16.dp.toPx() }
+
+/** Dónde queda la pieza en grande en una pantalla de [width] × [height] px: sin las barras y con 24 dp de aire. */
+private fun Density.bigBox(width: Float, height: Float, insets: WindowInsets, direction: LayoutDirection): Rect {
+    val pad = 24.dp.toPx()
+    return Rect(
+        insets.getLeft(this, direction) + pad,
+        insets.getTop(this) + pad,
+        width - insets.getRight(this, direction) - pad,
+        height - insets.getBottom(this) - pad,
+    )
+}
+
+/** El ancho (px) del lienzo del auto en grande ([CarOnly]): a ese ancho se prepara el camino a las llantas. */
+@Composable
+fun bigCarWidthPx(): Int {
+    val density = LocalDensity.current
+    val size = LocalWindowInfo.current.containerSize
+    val box = density.bigBox(size.width.toFloat(), size.height.toFloat(), WindowInsets.safeDrawing, LocalLayoutDirection.current)
+    return carWidth(box, density).toInt().coerceAtLeast(0)
+}
 
 /**
  * El auto tiene un modelo 3D nuevo en el catálogo: un toque lo baja con la calidad

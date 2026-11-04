@@ -46,9 +46,18 @@ class TireHistory {
 
     private val rings = mutableMapOf<Wheel, Ring>()
 
-    /** Cambió algo desde la última vez que se guardó. */
-    var dirty = false
+    /** Sube con cada muestra nueva: [saved] sabe si entró algo mientras se escribía. */
+    var changes = 0L
         private set
+    private var savedChanges = 0L
+
+    /** Hay muestras que todavía no llegan al disco. */
+    val dirty get() = changes != savedChanges
+
+    /** Ya se escribió lo que había hasta [changes] (llamar solo si la escritura salió bien). */
+    fun saved(changes: Long) {
+        if (changes > savedChanges) savedChanges = changes
+    }
 
     /** Guarda [kpa] de [w] si ya pasaron 30 s desde su última muestra; true si la guardó. */
     fun add(w: Wheel, atMillis: Long, kpa: Float): Boolean {
@@ -58,7 +67,7 @@ class TireHistory {
         if (last != null && sec - last < INTERVAL_S) return false
         ring.add(sec, (kpa * 10).toInt().coerceIn(0, Short.MAX_VALUE.toInt()).toShort())
         ring.prune(sec - KEEP_S)
-        dirty = true
+        changes++
         return true
     }
 
@@ -82,11 +91,10 @@ class TireHistory {
         return max?.let { it / 10f }
     }
 
-    /** Una copia para guardarla en otro hilo; desde aquí, ya no hay nada sin guardar. */
+    /** Una copia para guardarla en otro hilo; sigue [dirty] hasta que la escritura avise con [saved]. */
     fun snapshot(): TireHistory {
         val copy = TireHistory()
         for ((w, ring) in rings) copy.rings[w] = ring.copy()
-        dirty = false
         return copy
     }
 

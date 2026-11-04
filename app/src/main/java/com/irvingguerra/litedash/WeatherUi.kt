@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
@@ -23,7 +24,12 @@ import com.irvingguerra.litedash.core.ui.Icon
 import com.irvingguerra.litedash.core.ui.Icons
 import com.irvingguerra.litedash.core.ui.Label
 import com.irvingguerra.litedash.core.ui.LocalColors
+import com.irvingguerra.litedash.core.ui.SwitchRow
 import com.irvingguerra.litedash.core.ui.Typography
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.repeatOnLifecycle
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Locale
@@ -59,6 +65,37 @@ fun rememberEnableWeather(repo: WeatherRepository): () -> Unit {
         }
     }
     return { launcher.launch(Manifest.permission.ACCESS_COARSE_LOCATION) }
+}
+
+/**
+ * Mantiene el clima al día mientras el inicio se ve: al volver ([revision]) y cada
+ * [WeatherRepository.STALE_MS] con LiteDash al frente. Apagado o en segundo plano, nada.
+ */
+@Composable
+fun WeatherRefresh(repo: WeatherRepository, revision: Int) {
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+    val on = repo.enabled
+    LaunchedEffect(repo, revision, on) {
+        if (!on) return@LaunchedEffect
+        lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            while (true) {
+                repo.refreshIfStale()
+                delay(WeatherRepository.STALE_MS)
+            }
+        }
+    }
+}
+
+/** Ajustes → Apariencia: prender o apagar el clima (al prenderlo pide la ubicación aproximada). */
+@Composable
+fun WeatherSwitch(repo: WeatherRepository) {
+    val enable = rememberEnableWeather(repo)
+    SwitchRow(
+        stringResource(R.string.weather_switch),
+        repo.enabled,
+        { on -> if (on) enable() else repo.disable() },
+        stringResource(R.string.weather_switch_help),
+    )
 }
 
 /** Ícono y temperatura, para la barra de arriba y el reloj. */

@@ -59,7 +59,6 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import com.irvingguerra.litedash.feature.car.spinPath
-import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -72,6 +71,7 @@ import com.irvingguerra.litedash.core.ui.LiteDashTheme
 import com.irvingguerra.litedash.core.ui.LocalColors
 import com.irvingguerra.litedash.core.ui.Radius
 import com.irvingguerra.litedash.core.ui.Typography
+import com.irvingguerra.litedash.core.vehicle.Signal
 import com.irvingguerra.litedash.core.vehicle.VehicleBus
 import com.irvingguerra.litedash.feature.apps.App
 import com.irvingguerra.litedash.feature.apps.AppIcon
@@ -111,9 +111,7 @@ sealed interface Panel {
     data object Drawer : Panel
     data object Settings : Panel
     /** Ajustes abiertos en Sistema → Actualizaciones (desde el aviso de versión nueva). */
-    data object About : Panel
-    /** Ajustes abiertos en "Tu auto" (botón del auto en el dock). */
-    data object CarSettings : Panel
+    data object Updates : Panel
     data object AddTile : Panel
     data object Templates : Panel
     /** Elegir app para una pieza existente ([tileId]) o para una nueva (null). */
@@ -181,6 +179,11 @@ class Dependencies(
 
     private val tpmsCreated = mutableStateOf(false)
 
+    init {
+        // Las piezas de un módulo apagado no se ven ni apartan su lugar (ni las ponen las plantillas).
+        dashboard.hidden = { type -> moduleOff(this, type) != null }
+    }
+
     /** Las llantas: se crean la primera vez que algo las pide (sus Ajustes o una pieza con fuente elegida). */
     val tpms: TpmsRepository
         get() = tpmsLazy.value.also { if (!tpmsCreated.value) tpmsCreated.value = true }
@@ -191,9 +194,6 @@ class Dependencies(
      */
     val hasTpmsSource: Boolean
         get() = if (tpmsCreated.value) tpmsLazy.value.source != null else tpmsSaved()
-
-    /** Las llantas si ya existen, sin crearlas. */
-    fun tpmsIfCreated(): TpmsRepository? = if (tpmsCreated.value) tpmsLazy.value else null
 }
 
 /**
@@ -221,11 +221,6 @@ class TileActions(
 @Composable
 fun TileContent(d: Dependencies, p: Tile, apps: List<App>, car: CarPackage?, revision: Int, actions: TileActions) {
     val context = LocalContext.current
-    // La pieza de un módulo apagado no se ve (al acomodar queda su lugar con un aviso, para quitarla).
-    moduleOff(d, p.type)?.let { module ->
-        if (actions.editing()) ShortcutTile(iconOf(p.type), stringResource(module), stringResource(R.string.module_off)) {}
-        return
-    }
     when (p.type) {
         TileTypes.CAR, TileTypes.ROAD, TileTypes.IMAGE -> {
             val hero = Modifier
@@ -233,7 +228,7 @@ fun TileContent(d: Dependencies, p: Tile, apps: List<App>, car: CarPackage?, rev
                 .onGloballyPositioned { actions.onCarBounds(p.id, it.boundsInRoot()) }
                 // Mientras crece o se ve sola, la de la pieza se esconde (si no, se ve doble).
                 .graphicsLayer { alpha = if (actions.carHidden(p.id)) 0f else 1f }
-            val content = @Composable {
+            val content = @Composable { onTires: (() -> Unit)? ->
                 HeroTile(
                     d,
                     p,
@@ -241,22 +236,25 @@ fun TileContent(d: Dependencies, p: Tile, apps: List<App>, car: CarPackage?, rev
                     // Una imagen sin foto abre su panel para elegirla; lo demás crece.
                     onClick = { if (p.type == TileTypes.IMAGE && p.data.isEmpty()) actions.onPanel(Panel.CustomizeImage(p.id)) else actions.onCarOnly(p) },
                     modifier = Modifier.fillMaxSize(),
+                    onTires = onTires,
                 )
             }
-            // Las llantas en las esquinas del auto o de tu imagen (la carretera ya va llena). En una
-            // pieza chica las cuatro pastillas taparían todo: ahí solo la pieza Llantas o el aviso.
-            // Sin llantas no hace falta medir la pieza.
-            if (p.type != TileTypes.ROAD && d.hasTpmsSource) BoxWithConstraints(hero) {
-                content()
-                val roomy = maxWidth >= PILLS_MIN_WIDTH && maxHeight >= PILLS_MIN_HEIGHT
-                if (roomy && !actions.editing()) TirePills(d, actions.onTires)
-            } else Box(hero) { content() }
+            // Las llantas en las esquinas del auto o de tu imagen; en la carretera, junto a cada
+            // rueda de su auto. En una pieza chica las cuatro pastillas taparían todo: ahí solo la
+            // pieza Llantas o el aviso. Sin llantas no hace falta medir la pieza.
+            if (d.hasTpmsSource) BoxWithConstraints(hero) {
+                val pills = maxWidth >= PILLS_MIN_WIDTH && maxHeight >= PILLS_MIN_HEIGHT && !actions.editing()
+                if (p.type == TileTypes.ROAD) content(actions.onTires.takeIf { pills }) else {
+                    content(null)
+                    if (pills) TirePills(d, actions.onTires)
+                }
+            } else Box(hero) { content(null) }
         }
         TileTypes.MUSIC -> MusicTile(d.music, revision, onExpand = actions.onMusic)
         TileTypes.RADIO -> RadioTile(d.music, revision, onExpand = actions.onRadio)
         TileTypes.CLOCK -> ClockTile(d.prefs.driverName, d.weather)
         TileTypes.WEATHER -> WeatherTile(d.weather)
-        TileTypes.TRIP -> TripTile(d.trip, d.prefs.units.miles)
+        TileTypes.TRIP -> TripTile(d)
         TileTypes.SPEEDOMETER -> SpeedometerTile(d, remember(p.data) { GaugeLook.parse(p.data) })
         TileTypes.GAUGE -> GaugeTile(
             d, signalOf(p.data), remember(p.data) { GaugeLook.parse(p.data) },
@@ -292,7 +290,8 @@ fun TileContent(d: Dependencies, p: Tile, apps: List<App>, car: CarPackage?, rev
 
 /**
  * El módulo apagado del que depende una pieza (su nombre), o null si se puede ver: el Taller y
- * los medidores son del OBD, la pieza Llantas de Llantas.
+ * los medidores son del OBD, la pieza Llantas de Llantas. Esas piezas no se ven ni apartan su
+ * lugar ([DashboardState.hidden]) y no se ofrecen para agregar.
  */
 fun moduleOff(d: Dependencies, type: String): Int? = when (type) {
     TileTypes.WORKSHOP, TileTypes.GAUGE -> R.string.module_obd.takeIf { !d.obdModule }
@@ -389,8 +388,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
             carProgress.animateTo(1f, tween(480, easing = FastOutSlowInEasing))
         } else if (carShown) {
             if (riseProgress.value > 0f) riseProgress.animateTo(0f, tween((900 * riseProgress.value).toInt(), easing = EaseInOut))
-            // Regresa a la vuelta donde lo dejó mientras se encoge.
-            // De regreso, igual: gira a donde lo dejó y luego se encoge.
+            // De regreso, al revés: gira a donde lo dejó y luego se encoge.
             if (riseSpin.value > 0f) riseSpin.animateTo(0f, tween(spinMs(rise.turnSteps), easing = FastOutSlowInEasing))
             carProgress.animateTo(0f, tween(GROW_TO_TIRES_MS, easing = FastOutSlowInEasing))
             carShown = false
@@ -403,15 +401,17 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
     // Llantas activo, tocar el auto lleva a las llantas y hay una pieza del auto 3D.
     val wantsRise = d.hasTpmsSource && d.prefs.carTap == CarTap.TIRES && d.dashboard.tiles.any { it.type == TileTypes.CAR }
     LaunchedEffect(car, wantsRise) { if (wantsRise) d.cars.fetchRise(car) }
-    // Y se prepara (vista de espaldas + cuadros, al ancho de la pantalla y del color del auto)
-    // con calma mientras se ve el inicio, para que tocar el auto sea solo dibujar.
-    val screenPx = LocalWindowInfo.current.containerSize.width
-    val tapsToTires = d.hasTpmsSource && d.prefs.carTap == CarTap.TIRES
-    LaunchedEffect(car, car?.rise, tapsToTires, d.prefs.carColor, d.prefs.carAngle, screenPx) {
+    // Y se prepara (giro de espaldas + subida, para el lienzo del auto en grande y del color del
+    // auto) con calma mientras se ve el inicio, para que tocar el auto sea solo dibujar. Con el
+    // inicio fuera de la vista o con poca memoria se suelta; al volver se prepara otra vez.
+    val bigWidth = bigCarWidthPx()
+    val starts = rememberStarts(onStop = rise::clear)
+    TrimMemoryEffect(rise::clear)
+    LaunchedEffect(car, car?.rise, wantsRise, d.prefs.carColor, d.prefs.carAngle, bigWidth, starts) {
         val p = car
-        if (!tapsToTires || p == null) return@LaunchedEffect rise.clear()
+        if (!wantsRise || p == null) return@LaunchedEffect rise.clear()
         delay(1_500)
-        rise.preload(d.cars, p, spinPath(p, d.prefs.carAngle, REAR_TURN), d.prefs.carColor, screenPx)
+        rise.preload(d.cars, p, spinPath(p, d.prefs.carAngle, REAR_TURN), d.prefs.carColor, bigWidth)
     }
 
     // Cada toque y cada botón del volante reinician la cuenta del modo estacionado. Se
@@ -424,11 +424,15 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                 parked = false
                 if (!d.prefs.parkedMode || panel != null || editing || expanded != null || carOnly || tiresOpen) return@collectLatest
                 delay(PARK_AFTER_MS)
-                // Manejando no: espera a que se detenga (solo se sabe con la pieza Viaje).
-                snapshotFlow { d.trip.moving }.first { !it }
+                // Manejando no: espera a que se detenga (velocidad del OBD o del GPS, la que haya).
+                snapshotFlow { (d.bus.value(Signal.SPEED) ?: 0f) > MOVING_KMH }.first { !it }
                 parked = true
             }
     }
+    // Lo que sigue aunque se abra Ajustes o se acomode el inicio: el registro del viaje y el
+    // aviso del motor (si no, abrir Ajustes cortaría el viaje y "Entendido" se olvidaría).
+    val engineAlert = remember { EngineAlertState() }
+    if (d.prefs.welcomeSeen) TripRecorderEffect(d)
 
     BackHandler(enabled = (panel != null || editing || expanded != null || carOnly || tiresOpen) && d.prefs.welcomeSeen) {
         when {
@@ -441,13 +445,13 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
     }
     // Botón de inicio estando ya aquí: de vuelta al tablero tal como lo acomodaste.
     LaunchedEffect(homePressed) { if (d.prefs.welcomeSeen) backToDashboard() }
-    // Clima al volver al inicio (si pasó media hora y está activado); nunca en segundo plano.
-    LaunchedEffect(revision) { d.weather.refreshIfStale() }
-    // Versión nueva de la app (a lo más cada 12 h) y modelo 3D nuevo del auto (cada hora).
-    LaunchedEffect(Unit) { d.updater.checkQuietly() }
+    // Clima al volver al inicio y cada media hora con el inicio a la vista (si está activado); nunca en segundo plano.
+    WeatherRefresh(d.weather, revision)
+    // Versión nueva de la app (a lo más cada 12 h, al volver al inicio) y modelo 3D nuevo del auto (cada hora).
+    LaunchedEffect(revision) { d.updater.checkQuietly() }
     LaunchedEffect(d.prefs.carModel) { d.cars.checkQuietly(d.prefs.carModel) }
     // Cuántas pantallas usan LiteDash: a lo más una vez al día.
-    LaunchedEffect(Unit) { d.stats.pingDaily() }
+    LaunchedEffect(revision) { d.stats.pingDaily() }
 
     val actions = remember {
         TileActions(
@@ -487,6 +491,15 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
     val hasFloor = car?.hasFloor == true && d.dashboard.tiles.any { it.type == TileTypes.CAR }
     // Las fotos de piezas de imagen que se quitaron (o cambiaron) salen de memoria.
     LaunchedEffect(d.dashboard.tiles) { releaseTileImages(d.dashboard.tiles) }
+    // Velocímetros guardados hasta la 1.4.61 (su máximo en la unidad que se veía): a km/h.
+    LaunchedEffect(d.dashboard.tiles) {
+        val miles = d.prefs.units.miles
+        d.dashboard.changeData(
+            d.dashboard.tiles.filter { it.type == TileTypes.SPEEDOMETER }
+                .mapNotNull { t -> migrateSpeedMax(t.data, miles)?.let { t.id to it } }
+                .toMap(),
+        )
+    }
     val backdrop = if (hasFloor) {
         Brush.verticalGradient(0.3f to c.background, 1f to lerp(c.background, Color.Black, if (c.dark) 0.35f else 0.08f))
     } else SolidColor(c.background)
@@ -541,11 +554,10 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                 Column(Modifier.onSizeChanged { promptsHeight = it.height }) {
                     if (d.prefs.welcomeSeen && !editing) {
                         if (!d.prefs.dontAskHome && !isShortScreen()) HomePrompt(d.prefs, revision)
-                        EngineAlertBanner(d)
+                        EngineAlertBanner(d, engineAlert)
                         TiresAlertBanner(d, actions.onTires)
-                        TripRecorderEffect(d)
                         if (!isShortScreen()) ReminderBanner(d.reminders)
-                        UpdateBanner(d.updater, onOpen = { openUpdates(); panel = Panel.About })
+                        UpdateBanner(d.updater, onOpen = { openUpdates(); panel = Panel.Updates })
                         val newModel = d.cars.outdated?.takeIf { it.id == car?.id }
                         if (car != null && newModel != null) CarUpdateNotice(d.cars, car, newModel)
                     }
@@ -578,13 +590,13 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                         )
                         null -> Dashboard(
                             grid = grid,
-                            tiles = d.dashboard.tiles,
+                            tiles = d.dashboard.shown,
                             editing = editing,
                             limits = ::limitsOf,
-                            onChange = d.dashboard::change,
+                            onChange = d.dashboard::changeShown,
                             onEdit = { editing = true },
                             onSettings = { panel = if (it.type == TileTypes.IMAGE) Panel.CustomizeImage(it.id) else Panel.CustomizeGauge(it.id) },
-                            hasSettings = { it.type == TileTypes.SPEEDOMETER || it.type == TileTypes.GAUGE || it.type == TileTypes.IMAGE },
+                            hasSettings = { it.type == TileTypes.SPEEDOMETER || it.type == TileTypes.GAUGE || it.type == TileTypes.ROAD || it.type == TileTypes.IMAGE },
                         ) { p -> TileContent(d, p, apps, car, revision, actions) }
                     }
                 }
@@ -601,15 +613,14 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
         when (val p = panel) {
             null -> Unit
             Panel.Drawer -> DrawerPanel(d, apps, close = { panel = null })
-            Panel.Settings, Panel.About, Panel.CarSettings, Panel.Workshop, Panel.MusicSettings, Panel.TiresSettings -> SettingsPanel(
+            Panel.Settings, Panel.Updates, Panel.Workshop, Panel.MusicSettings, Panel.TiresSettings -> SettingsPanel(
                 d,
                 revision = revision,
                 close = { panel = null },
                 onEdit = { panel = null; editing = true },
                 onTemplates = { panel = Panel.Templates },
                 start = when (p) {
-                    Panel.About -> SettingsSection.SYSTEM
-                    Panel.CarSettings -> SettingsSection.CAR
+                    Panel.Updates -> SettingsSection.SYSTEM
                     Panel.Workshop -> SettingsSection.WORKSHOP
                     Panel.MusicSettings -> SettingsSection.APPS
                     Panel.TiresSettings -> SettingsSection.TIRES
@@ -688,6 +699,9 @@ private fun Parked(d: Dependencies, onWake: () -> Unit) {
 }
 
 private const val PARK_AFTER_MS = 5 * 60_000L
+
+/** Más rápido que esto, va manejando (el modo estacionado espera). */
+private const val MOVING_KMH = 8f
 
 /** Las del usuario, o unas sugeridas con lo que tenga instalado (navegación, música, mensajes). */
 fun dockFavorites(d: Dependencies, apps: List<App>): List<App> {

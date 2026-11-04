@@ -141,14 +141,16 @@ val Template.hasCar get() = this !in setOf(Template.SPEED, Template.MINIMAL, Tem
 /**
  * Acomodos de inicio. Se calculan para cualquier cuadrícula: lo que no quepa se
  * omite, y nunca se enciman (lo revisan las pruebas). La pieza grande es el auto 3D
- * o, con [hero] = [TileTypes.ROAD], la carretera en su lugar.
+ * o, con [hero] = [TileTypes.ROAD], la carretera en su lugar. Los tipos de [skip] (de un
+ * módulo apagado) no se ponen; la deportiva cambia sus medidores por la hora y el viaje.
  */
-fun Template.tiles(c: Grid, hero: String = TileTypes.CAR): List<Tile> {
+fun Template.tiles(c: Grid, hero: String = TileTypes.CAR, skip: (String) -> Boolean = { false }): List<Tile> {
     val cols = c.columns
     val rows = c.rows
     val list = mutableListOf<Tile>()
     fun place(kind: String, col: Int, row: Int, width: Int, height: Int, data: String = "", plain: Boolean = false) {
         val type = if (kind == TileTypes.CAR) hero else kind
+        if (skip(type)) return
         val p = Tile("$type-${list.size}", type, col, row, width, height, data, plain)
         if (width >= 1 && height >= 1 && list.fits(p, c)) list += p
     }
@@ -258,10 +260,13 @@ fun Template.tiles(c: Grid, hero: String = TileTypes.CAR): List<Tile> {
             val bottom = if (rows >= 5) 2 else 1
             place(TileTypes.CAR, 0, 0, cols, rows - bottom)
             val third = cols / 3
-            // Señales del bus (core/vehicle): revoluciones y temperatura del motor.
-            place(TileTypes.GAUGE, 0, rows - bottom, third, bottom, data = "rpm")
+            // Señales del bus (core/vehicle): revoluciones y temperatura del motor. Sin OBD, la hora y el viaje.
+            val obd = !skip(TileTypes.GAUGE)
+            if (obd) place(TileTypes.GAUGE, 0, rows - bottom, third, bottom, data = "rpm")
+            else place(TileTypes.CLOCK, 0, rows - bottom, third, bottom)
             place(TileTypes.SPEEDOMETER, third, rows - bottom, cols - 2 * third, bottom)
-            place(TileTypes.GAUGE, cols - third, rows - bottom, third, bottom, data = "coolant_temp")
+            if (obd) place(TileTypes.GAUGE, cols - third, rows - bottom, third, bottom, data = "coolant_temp")
+            else place(TileTypes.TRIP, cols - third, rows - bottom, third, bottom)
         }
         Template.MINIMAL -> {
             val bottom = if (rows >= 6) 2 else 1

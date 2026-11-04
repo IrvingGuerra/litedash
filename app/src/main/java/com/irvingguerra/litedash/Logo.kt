@@ -29,10 +29,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -61,14 +63,23 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /**
- * Una imagen que eliges de tu galería: el logo de tu marca (LiteDash no trae logos
- * de marcas, son suyos) o el fondo de la pieza del auto. Se guarda una copia
- * reducida en la app y se decodifica una sola vez por revisión (la usan la pieza,
- * la intro y Ajustes).
+ * Una imagen que eliges de tu galería: la de un widget Imagen (p. ej. el logo de tu marca;
+ * LiteDash no trae logos de marcas), la de la animación de entrada, el fondo del inicio o
+ * la del modo estacionado. Se guarda una copia reducida en la app y se decodifica una sola
+ * vez por [version]: cada imagen lleva la suya, así cambiar una no vuelve a leer las demás.
  */
 private class SavedImage(val file: String, val maxPx: Int, val png: Boolean) {
+    /** Sube al elegir o quitar la imagen (solo en memoria): quien la muestra la vuelve a leer. */
+    var version by mutableIntStateOf(0)
+        private set
+
+    /** La [version] que ya está decodificada en [image]; -1 = ninguna. */
     var revision = -1
     var image: ImageBitmap? = null
+
+    fun bump() {
+        version++
+    }
 
     fun file(context: Context) = File(context.filesDir, file)
 
@@ -105,7 +116,7 @@ fun releaseTileImages(tiles: List<Tile>) {
     }
 }
 
-/** La imagen de la animación de entrada: aparte de la de la pieza del auto. */
+/** La imagen de la animación de entrada: aparte de las de los widgets Imagen. */
 private val INTRO = SavedImage("intro.png", 1024, png = true)
 
 /** El fondo del inicio: una foto que llena toda la pantalla. */
@@ -134,7 +145,6 @@ private suspend fun save(context: Context, uri: Uri, target: SavedImage): Boolea
             else bitmap.compress(Bitmap.CompressFormat.JPEG, 90, it)
         }
         temp.renameTo(target.file(context))
-        target.revision = -1
         true
     }.getOrDefault(false)
 }
@@ -143,8 +153,9 @@ private suspend fun save(context: Context, uri: Uri, target: SavedImage): Boolea
 private class LoadedImage(val image: ImageBitmap?, val loaded: Boolean)
 
 @Composable
-private fun rememberImage(target: SavedImage, revision: Int): LoadedImage {
+private fun rememberImage(target: SavedImage): LoadedImage {
     val context = LocalContext.current
+    val revision = target.version
     val cached = target.revision == revision
     val loaded by produceState(if (cached) LoadedImage(target.image, true) else LoadedImage(null, false), target, revision) {
         if (target.revision != revision) {
@@ -161,7 +172,7 @@ private fun rememberImage(target: SavedImage, revision: Int): LoadedImage {
 /** Pieza Imagen: tu foto [name] centrada o, sin foto, el logo de LiteDash; un toque hace [onClick]. */
 @Composable
 fun ImageTile(d: Dependencies, name: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
-    val loaded = if (name.isEmpty()) LoadedImage(null, true) else rememberImage(tileImage(name), d.prefs.imageRevision)
+    val loaded = if (name.isEmpty()) LoadedImage(null, true) else rememberImage(tileImage(name))
     val image = loaded.image
     Box(
         modifier.fillMaxSize().clickable(remember { MutableInteractionSource() }, indication = null, onClick = onClick),
@@ -208,7 +219,7 @@ fun LogoIntro(prefs: Preferences, onDone: () -> Unit) {
             .clickable(remember { MutableInteractionSource() }, indication = null, onClick = onDone),
         contentAlignment = Alignment.Center,
     ) {
-        val logo = rememberImage(INTRO, prefs.introRevision)
+        val logo = rememberImage(INTRO)
         Box(
             Modifier.fillMaxSize(0.55f).graphicsLayer { scaleX = scale.value; scaleY = scale.value; this.alpha = alpha.value },
             contentAlignment = Alignment.Center,
@@ -230,7 +241,7 @@ fun LogoIntro(prefs: Preferences, onDone: () -> Unit) {
 @Composable
 fun HomeWallpaper(prefs: Preferences) {
     val c = LocalColors.current
-    val image = rememberImage(WALLPAPER, prefs.wallpaperRevision).image ?: return
+    val image = rememberImage(WALLPAPER).image ?: return
     Box(Modifier.fillMaxSize()) {
         Image(image, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
         Box(Modifier.fillMaxSize().background(c.background.copy(alpha = 0.4f)))
@@ -244,7 +255,7 @@ fun HomeWallpaper(prefs: Preferences) {
 @Composable
 fun parkedImageShown(prefs: Preferences): Boolean {
     DisposableEffect(Unit) { onDispose { PARKED.release() } }
-    val loaded = rememberImage(PARKED, prefs.parkedRevision)
+    val loaded = rememberImage(PARKED)
     val image = loaded.image
     if (image != null) Image(image, null, Modifier.fillMaxSize(), contentScale = ContentScale.Fit)
     return image != null || !loaded.loaded
@@ -261,7 +272,7 @@ fun ParkedSettings(prefs: Preferences) {
         prefs.parkedView,
         { prefs.parkedView = it },
     )
-    if (prefs.parkedView == ParkedView.IMAGE && !ImageButtons(PARKED, prefs.parkedRevision, { prefs.parkedRevision++ })) {
+    if (prefs.parkedView == ParkedView.IMAGE && !imageButtons(PARKED)) {
         Label(stringResource(R.string.parked_no_image), Typography.small, c.textMuted)
     }
 }
@@ -269,21 +280,23 @@ fun ParkedSettings(prefs: Preferences) {
 /** Elegir, cambiar o quitar una imagen guardada; [onPicked] avisa tras guardar una nueva. */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun ImageButtons(target: SavedImage, revision: Int, bump: () -> Unit, onPicked: () -> Unit = {}): Boolean {
+private fun imageButtons(target: SavedImage, onPicked: () -> Unit = {}): Boolean {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val pick = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
-        if (uri != null) scope.launch { if (save(context, uri, target)) { bump(); onPicked() } }
+        if (uri != null) scope.launch { if (save(context, uri, target)) { target.bump(); onPicked() } }
     }
     // Basta saber si el archivo existe: decodificar la imagen completa para esto sobraba.
-    val hasImage = remember(target, revision) { target.file(context).exists() }
+    val hasImage = remember(target, target.version) { target.file(context).exists() }
     FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Button(stringResource(if (hasImage) R.string.logo_change else R.string.logo_pick), {
             pick.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
         })
         if (hasImage) Button(stringResource(R.string.logo_remove), {
-            target.file(context).delete()
-            bump()
+            scope.launch {
+                withContext(Dispatchers.IO) { target.file(context).delete() }
+                target.bump()
+            }
         })
     }
     return hasImage
@@ -291,8 +304,8 @@ private fun ImageButtons(target: SavedImage, revision: Int, bump: () -> Unit, on
 
 /** Apariencia → Fondo del inicio: elegir, cambiar o quitar la imagen. */
 @Composable
-fun WallpaperSettings(prefs: Preferences) {
-    ImageButtons(WALLPAPER, prefs.wallpaperRevision, { prefs.wallpaperRevision++ })
+fun WallpaperSettings() {
+    imageButtons(WALLPAPER)
 }
 
 /** Apariencia → Animación de entrada: encenderla y su propia imagen. */
@@ -300,7 +313,7 @@ fun WallpaperSettings(prefs: Preferences) {
 fun IntroSettings(prefs: Preferences) {
     val c = LocalColors.current
     SwitchRow(stringResource(R.string.logo_intro), prefs.logoIntro, { prefs.logoIntro = it }, stringResource(R.string.logo_intro_help))
-    if (prefs.logoIntro && !ImageButtons(INTRO, prefs.introRevision, { prefs.introRevision++ })) {
+    if (prefs.logoIntro && !imageButtons(INTRO)) {
         Label(stringResource(R.string.intro_no_image), Typography.small, c.textMuted)
     }
 }
@@ -326,7 +339,7 @@ fun CustomizeImagePanel(d: Dependencies, tileId: String, close: () -> Unit) {
             Box(Modifier.widthIn(max = 360.dp).fillMaxWidth().aspectRatio(2f)) {
                 ImageTile(d, tile.data, onClick = {})
             }
-            val hasImage = ImageButtons(target, d.prefs.imageRevision, { d.prefs.imageRevision++ }, onPicked = {
+            val hasImage = imageButtons(target, onPicked = {
                 if (tile.data.isEmpty()) d.dashboard.setData(tileId, name)
             })
             if (!hasImage) Label(stringResource(R.string.image_empty), Typography.small, c.textMuted)

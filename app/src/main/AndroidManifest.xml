@@ -63,10 +63,12 @@
         <!--
             Receptor de llantas o cable OBD conectado: Android ofrece "usar siempre LiteDash" y el
             permiso queda dado (no se pide en cada encendido). Sin pantalla y en su propia tarea:
-            no toca el inicio ni lo trae al frente.
+            no toca el inicio ni lo trae al frente. Apagada de fábrica: LiteDashApp la prende solo
+            con llantas por USB o un cable OBD USB guardado (UsbAttachActivity.offer).
         -->
         <activity
             android:name="com.irvingguerra.litedash.feature.tpms.UsbAttachActivity"
+            android:enabled="false"
             android:exported="true"
             android:taskAffinity="${applicationId}.usb"
             android:excludeFromRecents="true"

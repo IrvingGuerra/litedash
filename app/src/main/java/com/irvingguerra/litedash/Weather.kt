@@ -23,10 +23,15 @@ import java.util.Locale
 import kotlin.coroutines.resume
 import com.irvingguerra.litedash.core.ui.Https
 
-/** Clima de ahora y de los próximos días (códigos WMO de Open-Meteo). */
-data class Weather(val temperature: Int, val code: Int, val day: Boolean, val days: List<WeatherDay>, val fetchedAt: Long, val fahrenheit: Boolean = false)
+/** Clima tal como se ve: temperaturas redondeadas en la unidad elegida (códigos WMO de Open-Meteo). */
+data class Weather(val temperature: Int, val code: Int, val day: Boolean, val days: List<WeatherDay>)
 
 data class WeatherDay(val date: String, val code: Int, val max: Int, val min: Int)
+
+/** Como llegó de Open-Meteo: °C con decimales, para que °F salga exacto (20.4 °C = 69 °F, no 68). */
+data class Forecast(val temperature: Double, val code: Int, val day: Boolean, val days: List<ForecastDay>, val fetchedAt: Long)
+
+data class ForecastDay(val date: String, val code: Int, val max: Double, val min: Double)
 
 /**
  * °F, mph y millas solo donde se usan (Estados Unidos y pocos más). Con la app en
@@ -35,15 +40,10 @@ data class WeatherDay(val date: String, val code: Int, val max: Int, val min: In
 fun imperialUnits(language: String) = language != "es" &&
     Locale.getDefault().country in setOf("US", "LR", "MM")
 
-/** [this] con las temperaturas en °F ([fahrenheit]) o °C; igual si ya está así. */
-fun Weather.inUnits(fahrenheit: Boolean): Weather {
-    if (this.fahrenheit == fahrenheit) return this
-    val convert: (Int) -> Int = if (fahrenheit) { c -> Math.round(c * 9f / 5f + 32f) } else { f -> Math.round((f - 32f) * 5f / 9f) }
-    return copy(
-        temperature = convert(temperature),
-        days = days.map { it.copy(max = convert(it.max), min = convert(it.min)) },
-        fahrenheit = fahrenheit,
-    )
+/** [this] en °F ([fahrenheit]) o °C, redondeado al final. */
+fun Forecast.inUnits(fahrenheit: Boolean): Weather {
+    val shown: (Double) -> Int = { c -> Math.round(if (fahrenheit) c * 9.0 / 5.0 + 32.0 else c).toInt() }
+    return Weather(shown(temperature), code, day, days.map { WeatherDay(it.date, it.code, shown(it.max), shown(it.min)) })
 }
 
 /** Qué cielo es cada código WMO, para el ícono y el texto. */
@@ -62,31 +62,36 @@ fun skyOf(code: Int) = when (code) {
 
 /**
  * Clima con Open-Meteo: gratis, sin clave ni anuncios, y solo con la ubicación
- * aproximada. Nada corre en segundo plano: se pide al volver al inicio si el
- * último tiene más de [STALE_MS], y se guarda para verlo al instante (y sin red).
+ * aproximada. Nada corre en segundo plano: mientras se ve el inicio se pide si el
+ * último tiene más de [STALE_MS] ([WeatherRefresh]), y se guarda para verlo al
+ * instante (y sin red). Apagado (Ajustes → Apariencia) no pide ubicación ni va a la red.
  */
 class WeatherRepository(private val context: Context, private val prefs: Preferences) {
     private val store = context.getSharedPreferences(STORE, Context.MODE_PRIVATE)
 
-    /** Como llegó de Open-Meteo, siempre en °C (lo guardado en °F por versiones viejas se pasa a °C). */
-    private var saved by mutableStateOf(read()?.inUnits(fahrenheit = false))
+    /** Como llegó de Open-Meteo, en °C con decimales. */
+    private var saved by mutableStateOf(read())
 
     /** El clima en la unidad elegida: se convierte una vez por cambio (de clima o de unidad), sin ir a la red. */
-    val weather: Weather? by derivedStateOf { saved?.inUnits(fahrenheit) }
+    val weather: Weather? by derivedStateOf { saved?.inUnits(prefs.units.fahrenheit) }
 
     // Solo si el usuario lo activó: el permiso de ubicación también llega al activar
     // Viaje, y eso no debe encender el clima. Quien ya tenía clima guardado lo conserva.
-    private var enabled by mutableStateOf(store.getBoolean(KEY_ON, store.contains(KEY)))
-
-    /** En °F si así lo eligió (o, en automático, donde se usan: Estados Unidos y pocos más). */
-    val fahrenheit get() = prefs.units.fahrenheit
+    /** Prendido por el usuario (aunque aún falte el permiso). */
+    var enabled by mutableStateOf(store.getBoolean(KEY_ON, store.contains(KEY)))
+        private set
 
     /** Activado y con permiso de ubicación aproximada. */
     val active get() = enabled && context.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
 
-    fun enable() {
-        enabled = true
-        store.edit { putBoolean(KEY_ON, true) }
+    fun enable() = turn(true)
+
+    /** Apagado: se esconde y ya no pide ubicación ni va a la red (lo guardado se queda). */
+    fun disable() = turn(false)
+
+    private fun turn(on: Boolean) {
+        enabled = on
+        store.edit { putBoolean(KEY_ON, on) }
     }
 
     suspend fun refreshIfStale(force: Boolean = false) {
@@ -96,21 +101,24 @@ class WeatherRepository(private val context: Context, private val prefs: Prefere
         val place = location() ?: return
         val fresh = runCatching { fetch(place.latitude, place.longitude) }.getOrNull() ?: return
         saved = fresh
-        store.edit { putString(KEY, fresh.toJson().toString()) }
+        withContext(Dispatchers.IO) { store.edit(commit = true) { putString(KEY, fresh.toJson().toString()) } }
     }
 
     @SuppressLint("MissingPermission") // [active] revisa el permiso antes
-    private suspend fun location(): Location? = withContext(Dispatchers.Main) {
+    private suspend fun location(): Location? {
         val manager = context.getSystemService(LocationManager::class.java)
-        val last = manager.getProviders(true)
-            .mapNotNull { runCatching { manager.getLastKnownLocation(it) }.getOrNull() }
-            .maxByOrNull { it.time }
-        if (last != null || Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return@withContext last
+        // La última conocida se lee del sistema (binder): fuera del hilo principal.
+        val last = withContext(Dispatchers.IO) {
+            manager.getProviders(true)
+                .mapNotNull { runCatching { manager.getLastKnownLocation(it) }.getOrNull() }
+                .maxByOrNull { it.time }
+        }
+        if (last != null || Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return last
         // "fused" existe desde Android 12.
         val fused = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) listOf(LocationManager.FUSED_PROVIDER) else emptyList()
         val provider = (listOf(LocationManager.NETWORK_PROVIDER) + fused + LocationManager.GPS_PROVIDER)
-            .firstOrNull { manager.isProviderEnabled(it) } ?: return@withContext null
-        withTimeoutOrNull(15_000) {
+            .firstOrNull { manager.isProviderEnabled(it) } ?: return null
+        return withTimeoutOrNull(15_000) {
             suspendCancellableCoroutine { cont ->
                 val cancel = CancellationSignal()
                 cont.invokeOnCancellation { cancel.cancel() }
@@ -119,8 +127,7 @@ class WeatherRepository(private val context: Context, private val prefs: Prefere
         }
     }
 
-    /** Siempre en °C: cambiar la unidad solo convierte lo que ya hay. */
-    private suspend fun fetch(lat: Double, lon: Double): Weather = withContext(Dispatchers.IO) {
+    private suspend fun fetch(lat: Double, lon: Double): Forecast = withContext(Dispatchers.IO) {
         val url = "https://api.open-meteo.com/v1/forecast?latitude=%.2f&longitude=%.2f".format(Locale.US, lat, lon) +
             "&current=temperature_2m,weather_code,is_day&daily=weather_code,temperature_2m_max,temperature_2m_min" +
             "&timezone=auto&forecast_days=4"
@@ -133,46 +140,50 @@ class WeatherRepository(private val context: Context, private val prefs: Prefere
         val current = json.getJSONObject("current")
         val daily = json.getJSONObject("daily")
         val dates = daily.getJSONArray("time")
-        Weather(
-            temperature = Math.round(current.getDouble("temperature_2m")).toInt(),
+        Forecast(
+            temperature = current.getDouble("temperature_2m"),
             code = current.getInt("weather_code"),
             day = current.optInt("is_day", 1) == 1,
             days = (0 until dates.length()).map { i ->
-                WeatherDay(
+                ForecastDay(
                     date = dates.getString(i),
                     code = daily.getJSONArray("weather_code").getInt(i),
-                    max = Math.round(daily.getJSONArray("temperature_2m_max").getDouble(i)).toInt(),
-                    min = Math.round(daily.getJSONArray("temperature_2m_min").getDouble(i)).toInt(),
+                    max = daily.getJSONArray("temperature_2m_max").getDouble(i),
+                    min = daily.getJSONArray("temperature_2m_min").getDouble(i),
                 )
             },
             fetchedAt = System.currentTimeMillis(),
         )
     }
 
-    private fun read(): Weather? = store.getString(KEY, null)?.let { text ->
+    /** Lo guardado; las versiones viejas guardaban enteros y algunas en °F ("f"): se pasan a °C. */
+    private fun read(): Forecast? = store.getString(KEY, null)?.let { text ->
         runCatching {
             val o = JSONObject(text)
+            val celsius: (Double) -> Double = if (o.optBoolean("f")) { f -> (f - 32.0) * 5.0 / 9.0 } else { c -> c }
             val days = o.getJSONArray("days")
-            Weather(
-                o.getInt("t"), o.getInt("c"), o.getBoolean("d"),
+            Forecast(
+                celsius(o.getDouble("t")), o.getInt("c"), o.getBoolean("d"),
                 (0 until days.length()).map { i ->
                     val x = days.getJSONObject(i)
-                    WeatherDay(x.getString("date"), x.getInt("c"), x.getInt("max"), x.getInt("min"))
+                    ForecastDay(x.getString("date"), x.getInt("c"), celsius(x.getDouble("max")), celsius(x.getDouble("min")))
                 },
                 o.getLong("at"),
-                o.optBoolean("f"),
             )
         }.getOrNull()
     }
 
-    private fun Weather.toJson() = JSONObject()
-        .put("t", temperature).put("c", code).put("d", day).put("at", fetchedAt).put("f", fahrenheit)
+    // "f" = false: las versiones viejas que lean esto saben que va en °C.
+    private fun Forecast.toJson() = JSONObject()
+        .put("t", temperature).put("c", code).put("d", day).put("at", fetchedAt).put("f", false)
         .put("days", JSONArray(days.map { JSONObject().put("date", it.date).put("c", it.code).put("max", it.max).put("min", it.min) }))
 
-    private companion object {
-        const val STORE = "weather"
-        const val KEY = "last"
-        const val KEY_ON = "enabled"
+    companion object {
+        private const val STORE = "weather"
+        private const val KEY = "last"
+        private const val KEY_ON = "enabled"
+
+        /** Cada cuánto se renueva mientras se ve el inicio. */
         const val STALE_MS = 30 * 60_000L
     }
 }

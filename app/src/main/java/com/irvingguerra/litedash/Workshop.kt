@@ -30,6 +30,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -70,7 +71,7 @@ import kotlinx.coroutines.launch
 internal val Good = Color(0xFF3FB27F)
 
 /** Las pestañas del Taller (para recordar la elegida) y cuál es la de códigos. */
-private const val WORKSHOP_TABS = "taller"
+private const val WORKSHOP_TABS = "workshop"
 private const val CODES_TAB = 1
 
 /**
@@ -140,17 +141,27 @@ fun Workshop(d: Dependencies, onTires: () -> Unit = {}) {
 private const val ALERT_CLEAR_MS = 30_000L
 
 /**
+ * Lo que avisó el motor y lo que se descartó con "Entendido". Vive en el inicio (no en el aviso):
+ * abrir Ajustes o acomodar quita el aviso de la pantalla, pero no lo vuelve a mostrar al regresar.
+ */
+@Stable
+class EngineAlertState {
+    var shown by mutableStateOf<EngineAlert?>(null)
+    var dismissed by mutableStateOf<EngineAlert?>(null)
+}
+
+/**
  * Aviso en el inicio si el motor se calienta de más o la batería no carga. Con un
  * adaptador guardado y las alertas activas, conecta el OBD aunque no haya medidores.
  */
 @Composable
-fun EngineAlertBanner(d: Dependencies) {
+fun EngineAlertBanner(d: Dependencies, state: EngineAlertState) {
     if (rememberObd(d, d.prefs.engineAlerts)?.state != ObdState.ON) return
     val coolant = d.bus.watch(Signal.COOLANT)
     val voltage = d.bus.watch(Signal.VOLTAGE)
     val alert = engineAlert(coolant, voltage, d.bus.watch(Signal.RPM))
-    var shown by remember { mutableStateOf<EngineAlert?>(null) }
-    var dismissed by remember { mutableStateOf<EngineAlert?>(null) }
+    var shown by state::shown
+    var dismissed by state::dismissed
     // Una falla tiene que durar ([EngineAlert.holdMs]) antes de avisar; y para volver a
     // avisar tras "Entendido", tiene que haberse resuelto un rato, no solo perder un dato.
     LaunchedEffect(alert) {

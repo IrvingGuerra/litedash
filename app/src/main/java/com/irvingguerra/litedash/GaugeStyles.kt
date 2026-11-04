@@ -44,6 +44,7 @@ import com.irvingguerra.litedash.core.ui.Label
 import com.irvingguerra.litedash.core.ui.LocalColors
 import com.irvingguerra.litedash.core.ui.Typography
 import kotlin.math.cos
+import kotlin.math.roundToInt
 import kotlin.math.sin
 
 /** Del arco del medidor: empieza abajo a la izquierda y da 240° (como un tablero real). */
@@ -113,7 +114,7 @@ fun GaugeStyle.suggestedColor(): GaugeColor? = when (this) {
 data class GaugeLook(
     val style: GaugeStyle = GaugeStyle.ARC,
     val color: GaugeColor = GaugeColor.ACCENT,
-    /** Máximo del velocímetro en la unidad que se ve (km/h o mph); null = 200 km/h o 120 mph. */
+    /** Máximo del velocímetro en km/h (en mph se ve su pareja, ver [speedMax]); null = 200 km/h o 120 mph. */
     val max: Int? = null,
     val ticks: Boolean = true,
     val numbers: Boolean = false,
@@ -123,7 +124,7 @@ data class GaugeLook(
         if (signal.isNotEmpty()) add(signal)
         if (style != GaugeStyle.ARC) add("style=${style.stored}")
         if (color != GaugeColor.ACCENT) add("color=${color.stored}")
-        max?.let { add("max=$it") }
+        max?.let { add("$MAX_KMH=$it") }
         if (!ticks) add("ticks=0")
         if (numbers) add("numbers=1")
         if (redline) add("redline=1")
@@ -137,7 +138,8 @@ data class GaugeLook(
             return GaugeLook(
                 style = GaugeStyle.entries.firstOrNull { it.stored == f["style"] } ?: GaugeStyle.ARC,
                 color = GaugeColor.entries.firstOrNull { it.stored == f["color"] } ?: GaugeColor.ACCENT,
-                max = f["max"]?.toIntOrNull(),
+                // Hasta la 1.4.61 se guardaba en la unidad que se veía ("max"): ver [migrateSpeedMax].
+                max = f[MAX_KMH]?.toIntOrNull() ?: f[LEGACY_MAX]?.toIntOrNull()?.let { legacyMaxKmh(it, miles = it !in SPEED_MAX_KMH) },
                 ticks = f["ticks"] != "0",
                 numbers = f["numbers"] == "1",
                 redline = f["redline"] == "1",
@@ -149,8 +151,71 @@ data class GaugeLook(
 /** La señal de un medidor OBD guardada en su pieza (lo primero, sin "="). */
 fun signalOf(data: String) = data.substringBefore(';').takeIf { '=' !in it } ?: ""
 
-/** Máximos del velocímetro para elegir, en km/h o mph; el primero es el de fábrica. */
-fun speedMaxOptions(miles: Boolean) = if (miles) listOf(120, 100, 160, 200) else listOf(200, 160, 240, 320)
+/** Máximos del velocímetro para elegir, en km/h o mph (en parejas, misma posición); el primero es el de fábrica. */
+private val SPEED_MAX_KMH = listOf(200, 160, 240, 320)
+private val SPEED_MAX_MPH = listOf(120, 100, 160, 200)
+
+fun speedMaxOptions(miles: Boolean) = if (miles) SPEED_MAX_MPH else SPEED_MAX_KMH
+
+/** Hasta dónde llega el velocímetro en la unidad que se ve: 240 km/h ↔ 160 mph. */
+fun GaugeLook.speedMax(miles: Boolean): Int {
+    val kmh = max ?: SPEED_MAX_KMH.first()
+    if (!miles) return kmh
+    return SPEED_MAX_MPH.getOrNull(SPEED_MAX_KMH.indexOf(kmh)) ?: (kmh / KM_PER_MILE).roundToInt()
+}
+
+/** El máximo elegido en la unidad que se ve, como se guarda (km/h; null = el de fábrica). */
+fun speedMaxToStore(shown: Int, miles: Boolean): Int? {
+    val kmh = if (miles) SPEED_MAX_KMH.getOrNull(SPEED_MAX_MPH.indexOf(shown)) ?: (shown * KM_PER_MILE).roundToInt() else shown
+    return kmh.takeIf { it != SPEED_MAX_KMH.first() }
+}
+
+/** Un máximo viejo (en la unidad que se veía con [miles]) a km/h. */
+private fun legacyMaxKmh(value: Int, miles: Boolean): Int =
+    if (miles) SPEED_MAX_KMH.getOrNull(SPEED_MAX_MPH.indexOf(value)) ?: (value * KM_PER_MILE).roundToInt() else value
+
+/**
+ * Los datos de un velocímetro guardado hasta la 1.4.61 (máximo en la unidad que se veía) con
+ * el máximo ya en km/h, según las unidades de ahora ([miles]); null si no hay nada que cambiar.
+ */
+fun migrateSpeedMax(data: String, miles: Boolean): String? {
+    val parts = data.split(';')
+    val old = parts.firstOrNull { it.startsWith("$LEGACY_MAX=") } ?: return null
+    val kmh = old.substringAfter('=').toIntOrNull()?.let { legacyMaxKmh(it, miles) }
+    val rest = parts.filter { it != old && !it.startsWith("$MAX_KMH=") }
+    val max = kmh?.takeIf { it != SPEED_MAX_KMH.first() }?.let { "$MAX_KMH=$it" }
+    return (rest + listOfNotNull(max)).filter { it.isNotEmpty() }.joinToString(";")
+}
+
+private const val MAX_KMH = "maxkmh"
+private const val LEGACY_MAX = "max"
+
+/** Cómo va la velocidad en la carretera: como velocímetro, solo el número (de fábrica) u oculta. */
+enum class RoadSpeed(val stored: String, val title: Int) {
+    TEXT("text", R.string.road_speed_text),
+    GAUGE("gauge", R.string.road_speed_gauge),
+    HIDDEN("hidden", R.string.road_speed_hidden),
+}
+
+/**
+ * Cómo se ve la carretera; se guarda en su [com.irvingguerra.litedash.feature.dashboard.Tile.data]
+ * como un velocímetro ([gauge]) más "speed=…" ([speed]). Lo de fábrica no se escribe.
+ */
+@Immutable
+data class RoadLook(val speed: RoadSpeed = RoadSpeed.TEXT, val gauge: GaugeLook = GaugeLook()) {
+    fun encode(): String = (listOf(gauge.encode()) + listOfNotNull(speed.takeIf { it != RoadSpeed.TEXT }?.let { "$SPEED=${it.stored}" }))
+        .filter { it.isNotEmpty() }
+        .joinToString(";")
+
+    companion object {
+        private const val SPEED = "speed"
+
+        fun parse(data: String) = RoadLook(
+            speed = RoadSpeed.entries.firstOrNull { "$SPEED=${it.stored}" in data.split(';') } ?: RoadSpeed.TEXT,
+            gauge = GaugeLook.parse(data),
+        )
+    }
+}
 
 /**
  * Los colores de lo que se llena, de principio a fin del medidor, repartidos parejo.

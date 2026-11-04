@@ -11,6 +11,16 @@ class DashboardState(private val store: DashboardStore) {
     var tiles by mutableStateOf(emptyList<Tile>())
         private set
 
+    /**
+     * Los tipos que no se ven (de un módulo apagado; lo pone la app). Sus piezas se guardan pero
+     * no apartan su lugar: se pueden acomodar otras encima, y entonces se van. Si nada las tapa,
+     * vuelven al prender el módulo. Las plantillas no los ponen.
+     */
+    var hidden: (String) -> Boolean = { false }
+
+    /** Las piezas que se ven y se acomodan. */
+    val shown: List<Tile> get() = tiles.filterNot { hidden(it.type) }
+
     /** La pantalla (o la escala) cambió: carga el acomodo de ese tamaño o una plantilla. */
     fun use(c: Grid) {
         if (c != grid) {
@@ -24,19 +34,25 @@ class DashboardState(private val store: DashboardStore) {
         grid?.let { store.save(it, newTiles) }
     }
 
+    /** Cambia las que se ven ([shown]); las escondidas se quedan si nada quedó encima de ellas. */
+    fun changeShown(newShown: List<Tile>) {
+        val kept = tiles.filter { h -> hidden(h.type) && newShown.none { it.overlaps(h) } }
+        change(newShown + kept)
+    }
+
     /**
      * Pone la plantilla [p] con el auto 3D o la carretera ([hero]) como pieza grande. Esa pieza
      * también va en las plantillas de fábrica de otras cuadrículas (otra escala u otra pantalla).
      */
     fun template(p: Template, hero: String = TileTypes.CAR) {
         store.saveHero(hero)
-        grid?.let { change(p.tiles(it, hero)) }
+        grid?.let { change(p.tiles(it, hero, hidden)) }
     }
 
     /** La plantilla recomendada para [c], con la pieza grande que se eligió la última vez. */
     private fun suggested(c: Grid): List<Tile> {
         val (hero, data) = store.hero()
-        return c.suggestedTemplate().tiles(c, hero).map { if (it.type == hero && data.isNotEmpty()) it.copy(data = data) else it }
+        return c.suggestedTemplate().tiles(c, hero, hidden).map { if (it.type == hero && data.isNotEmpty()) it.copy(data = data) else it }
     }
 
     /**
@@ -46,9 +62,9 @@ class DashboardState(private val store: DashboardStore) {
     fun add(type: String, size: Pair<Int, Int>, limits: SizeLimits, data: String = ""): Boolean {
         val c = grid ?: return false
         for ((width, height) in listOf(size, limits.minWidth to limits.minHeight)) {
-            val spot = tiles.freeSpot(width, height, c) ?: continue
+            val spot = shown.freeSpot(width, height, c) ?: continue
             val id = "$type-${System.currentTimeMillis().toString(36)}"
-            change(tiles + Tile(id, type, spot.first, spot.second, width, height, data))
+            changeShown(shown + Tile(id, type, spot.first, spot.second, width, height, data))
             return true
         }
         return false

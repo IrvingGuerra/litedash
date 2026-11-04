@@ -13,12 +13,15 @@ import java.lang.ref.WeakReference
 /**
  * Con "acceso a notificaciones" Android deja leer qué suena en otras apps. Además
  * pasa los avisos al [listener] (la app solo mira los de navegación, para la
- * siguiente vuelta); sin listener no hace nada.
+ * siguiente vuelta); sin listener, o si no los quiere ([NotificationListener.wanted]),
+ * no hace nada: Android lo conecta aunque la app no esté abierta y ahí no debe armarla.
+ * La pieza de navegación pide los avisos que ya hay ([active]) al aparecer.
  */
 class ServicioMusica : NotificationListenerService() {
     override fun onListenerConnected() {
         connected = WeakReference(this)
-        active().forEach { listener?.onPosted(it) }
+        val l = listener?.takeIf { it.wanted } ?: return
+        active().forEach(l::onPosted)
     }
 
     override fun onListenerDisconnected() {
@@ -26,11 +29,13 @@ class ServicioMusica : NotificationListenerService() {
     }
 
     override fun onNotificationPosted(sbn: StatusBarNotification?) {
-        if (sbn != null) listener?.onPosted(sbn)
+        val l = listener?.takeIf { it.wanted } ?: return
+        if (sbn != null) l.onPosted(sbn)
     }
 
     override fun onNotificationRemoved(sbn: StatusBarNotification?) {
-        if (sbn != null) listener?.onRemoved(sbn)
+        val l = listener?.takeIf { it.wanted } ?: return
+        if (sbn != null) l.onRemoved(sbn)
     }
 
     companion object {

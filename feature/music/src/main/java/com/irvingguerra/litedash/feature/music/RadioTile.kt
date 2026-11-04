@@ -1,6 +1,7 @@
 package com.irvingguerra.litedash.feature.music
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
@@ -53,7 +54,9 @@ internal fun radioHint(repo: MusicRepository): String {
 
 /**
  * Los controles de la radio. Sin sesión, solo play: despierta la FM o la de internet y,
- * si no hay con qué, llama [onIdle] (la pieza se amplía y explica qué falta).
+ * si no hay con qué, llama [onIdle] (la pieza se amplía y explica qué falta). Una FM de la
+ * pantalla sin sesión pero con receptor lleva los tres botones: van como teclas del volante
+ * (play/pausa, estación siguiente y anterior), sin abrir la app.
  */
 @Composable
 internal fun RadioControls(
@@ -66,6 +69,10 @@ internal fun RadioControls(
     playSize: Dp = 56.dp,
     gap: Dp = 0.dp,
 ) {
+    val keys = remember(repo.appFor(SourceKind.RADIO)) { repo.radioHasKeys() }
+    if (song == null && keys) {
+        return Controls(repo, false, modifier, compact = compact, size = size, playSize = playSize, gap = gap, lens = repo.radio)
+    }
     if (song == null) {
         val c = LocalColors.current
         IconButton(Icons.play, { repo.resumeRadio(onIdle) }, modifier, size = playSize, background = c.text, color = c.background)

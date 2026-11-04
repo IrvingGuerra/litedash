@@ -27,11 +27,11 @@ import com.irvingguerra.litedash.feature.music.MusicRepository
 
 /**
  * Qué hace un botón del volante. [stored] es como se guarda (no cambiarlo).
- * NORMAL = lo que haga Android con esa tecla (la música va a la app que suena,
+ * NORMAL ("Como de fábrica") = lo que haga Android con esa tecla (la música va a la app que suena,
  * el volumen al sistema): así funciona en cualquier pantalla sin configurar nada.
  */
 enum class WheelAction(val stored: String, val title: Int) {
-    NORMAL("normal", R.string.wheel_normal),
+    NORMAL("normal", R.string.wheel_reset),
     PLAY_PAUSE("play", R.string.wheel_play_pause),
     NEXT("next", R.string.wheel_next),
     PREVIOUS("previous", R.string.wheel_previous),

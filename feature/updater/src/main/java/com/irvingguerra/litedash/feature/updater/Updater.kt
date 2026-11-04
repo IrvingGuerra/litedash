@@ -13,6 +13,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
@@ -37,8 +39,9 @@ data class Version(
 /**
  * Busca, baja e instala versiones nuevas desde GitHub Releases. Solo existe en la
  * variante `github` (Play prohíbe que una app se actualice por fuera de la tienda):
- * con [apiUrl] vacío está apagado. Revisa solo al abrir LiteDash (a lo más cada
+ * con [apiUrl] vacío está apagado. Revisa solo al volver a LiteDash (a lo más cada
  * [QUIET_EVERY_MS], sin polling) y cuando el usuario toca "Buscar actualizaciones".
+ * La descarga corre en su propio scope: sigue aunque se cierre Ajustes ([progress]).
  */
 class Updater(
     private val context: Context,
@@ -48,6 +51,36 @@ class Updater(
     val available get() = apiUrl.isNotBlank()
 
     private val store by lazy { context.getSharedPreferences("updates", Context.MODE_PRIVATE) }
+
+    // Vive lo que la app: la descarga no se corta al cerrar Ajustes.
+    private val scope = MainScope()
+
+    /** Descarga o instalación en curso (o la última que falló); null = nada. */
+    sealed interface Progress {
+        data class Downloading(val v: Version, val percent: Int) : Progress
+        data class Installing(val v: Version, val apk: File) : Progress
+        data object Failed : Progress
+    }
+
+    var progress by mutableStateOf<Progress?>(null)
+        private set
+
+    /** Baja [v], la verifica y se la pasa al instalador de Android; una a la vez. */
+    fun downloadAndInstall(v: Version) {
+        if (progress is Progress.Downloading) return
+        progress = Progress.Downloading(v, 0)
+        scope.launch {
+            runCatching {
+                val apk = download(v) { f ->
+                    // Solo cuando cambia el porcentaje (no en cada bloque de 64 KB).
+                    val percent = (f * 100).toInt()
+                    if ((progress as? Progress.Downloading)?.percent != percent) progress = Progress.Downloading(v, percent)
+                }
+                progress = Progress.Installing(v, apk)
+                install(apk)
+            }.onFailure { progress = Progress.Failed }
+        }
+    }
 
     /** La versión nueva que se encontró (en silencio o a mano); null = nada que instalar. */
     var found by mutableStateOf<Version?>(null)
@@ -67,11 +100,15 @@ class Updater(
     }
 
     /**
-     * Una sola revisión al abrir la app, si pasaron [QUIET_EVERY_MS] desde la última.
+     * Revisión al volver a LiteDash, si pasaron [QUIET_EVERY_MS] desde la última.
      * Sin red o con error no pasa nada: se intenta la próxima vez.
      */
     suspend fun checkQuietly() {
         if (!available) return
+        // El APK de una instalación anterior ya no sirve (si se instaló, esta es la nueva): fuera de la caché.
+        if (progress == null) withContext(Dispatchers.IO) {
+            for (dir in listOfNotNull(context.cacheDir, context.externalCacheDir)) File(dir, APK_FILE).delete()
+        }
         dismissed = store.getString(KEY_DISMISSED, null)
         if (System.currentTimeMillis() - store.getLong(KEY_LAST, 0L) < QUIET_EVERY_MS) {
             // Sin pedir a GitHub otra vez: lo encontrado antes, si sigue siendo más nuevo.
@@ -119,7 +156,7 @@ class Updater(
 
     /** Baja el APK a la caché y lo verifica contra SHA256SUMS.txt. [progress] va de 0 a 1. */
     suspend fun download(v: Version, progress: (Float) -> Unit): File = withContext(Dispatchers.IO) {
-        val target = File(context.cacheDir, "update.apk")
+        val target = File(context.cacheDir, APK_FILE)
         val sha = MessageDigest.getInstance("SHA-256")
         open(v.apk).inputStream.use { input ->
             target.outputStream().use { output ->
@@ -209,6 +246,7 @@ class Updater(
         private const val KEY_LAST = "last_check"
         private const val KEY_FOUND = "found"
         private const val KEY_DISMISSED = "dismissed"
+        private const val APK_FILE = "update.apk"
 
         /** Lo último que dijo el instalador de Android (para mostrarlo si falló). */
         var installError by mutableStateOf<String?>(null)

@@ -182,8 +182,8 @@ private fun StyleStep(prefs: Preferences, dashboard: DashboardState) {
     Spacer(Modifier.height(28.dp))
     Label(stringResource(R.string.theme), Typography.label, c.textMuted)
     Spacer(Modifier.height(12.dp))
-    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        for ((mode, text) in listOf(ThemeMode.DARK to R.string.theme_dark, ThemeMode.LIGHT to R.string.theme_light, ThemeMode.SYSTEM to R.string.theme_system)) {
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        for ((mode, text) in ThemeOptions) {
             Button(stringResource(text), { prefs.theme = mode }, primary = prefs.theme == mode)
         }
     }

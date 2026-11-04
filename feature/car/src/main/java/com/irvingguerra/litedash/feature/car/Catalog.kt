@@ -1,5 +1,6 @@
 package com.irvingguerra.litedash.feature.car
 
+import android.app.ActivityManager
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -98,9 +99,9 @@ data class CarPackage(
     val hasFloor get() = floor.isNotEmpty()
 }
 
-/** La subida: [frames] cuadros con pintura de brillo [gray]. */
+/** La subida: [frames] cuadros con pintura de brillo [gray]; [aspect] = ancho / alto de cada cuadro. */
 @Immutable
-data class RiseInfo(val frames: Int, val gray: Float)
+data class RiseInfo(val frames: Int, val gray: Float, val aspect: Float = 2f)
 
 /** Dónde va la capa del piso respecto al auto, en anchos del auto. */
 @Immutable
@@ -147,6 +148,15 @@ class CarRepository(private val context: Context, val catalogUrl: String) {
     private val sourceWidths = ConcurrentHashMap<String, Int>()
 
     val hasCatalog get() = catalogUrl.isNotBlank()
+
+    /**
+     * Poca memoria para imágenes: un equipo marcado así por Android, o Android 6–7 (los bitmaps
+     * van al heap de Java) con heap chico. Ahí lo que se prepara aparte del giro va más reducido.
+     */
+    val lowMemory: Boolean by lazy {
+        context.getSystemService(ActivityManager::class.java)?.isLowRamDevice == true ||
+            Build.VERSION.SDK_INT < Build.VERSION_CODES.O && Runtime.getRuntime().maxMemory() <= LOW_HEAP
+    }
 
     /** Los autos bajados (se leen del disco al empezar y tras cada cambio, en IO). */
     var installed by mutableStateOf(scan())
@@ -340,12 +350,32 @@ class CarRepository(private val context: Context, val catalogUrl: String) {
         val width = decodeWidth(p, name, widthPx) ?: return null
         return withContext(Dispatchers.IO) {
             runCatching {
-                decode(p, name, width)?.also { base ->
-                    val mask = decode(p, name + CarViews.PAINT_MASK_SUFFIX, width)
-                    if (mask != null && mask.width == base.width && mask.height == base.height) tint(base, mask, color, info.gray)
-                    // La sombra horneada llena todo el cuadro: sin desvanecer las orillas se ve su rectángulo.
-                    featherEdges(base)
-                }?.asImageBitmap()
+                // La sombra horneada llena todo el cuadro: sin desvanecer las orillas se ve su rectángulo.
+                paint(p, name, width, color, info.gray)?.also(::featherEdges)?.asImageBitmap()
+            }.getOrNull()
+        }
+    }
+
+    /**
+     * El cuadro [name] del giro con sus capas (como [layers]) a [widthPx], fuera de la caché del
+     * giro: quien lo pide lo guarda (el giro en grande camino a las llantas) y así no desplaza los
+     * cuadros con que se gira con el dedo. null si falta algo o no cupo en memoria (sin capas a medias).
+     */
+    suspend fun turnFrame(p: CarPackage, name: String, color: Color, widthPx: Int): CarLayers? {
+        val width = decodeWidth(p, name, widthPx) ?: return null
+        val floor = p.floor[name]
+        val floorWidth = floor?.let { (widthPx * it.width / 2).roundToInt() }
+        val shadowWidth = floorWidth?.let { decodeWidth(p, name + CarViews.SHADOW_SUFFIX, it) }
+        val reflectionWidth = floorWidth?.let { decodeWidth(p, name + CarViews.REFLECTION_SUFFIX, it) }
+        return withContext(Dispatchers.IO) {
+            runCatching {
+                val car = paint(p, name, width, color, p.gray) ?: return@runCatching null
+                CarLayers(
+                    car.asImageBitmap(),
+                    shadowWidth?.let { decode(p, name + CarViews.SHADOW_SUFFIX, it)?.asImageBitmap() },
+                    reflectionWidth?.let { paint(p, name + CarViews.REFLECTION_SUFFIX, it, color, p.gray)?.asImageBitmap() },
+                    floor,
+                )
             }.getOrNull()
         }
     }
@@ -523,13 +553,15 @@ class CarRepository(private val context: Context, val catalogUrl: String) {
      */
     private suspend fun painted(p: CarPackage, name: String, color: Color, widthPx: Int): ImageBitmap? {
         val width = decodeWidth(p, name, widthPx) ?: return null
-        return cached("${p.id}/$name#${color.toArgb()}@$width") {
-            decode(p, name, width)?.also { base ->
-                val mask = decode(p, name + CarViews.PAINT_MASK_SUFFIX, width)
-                if (mask != null && mask.width == base.width && mask.height == base.height) tint(base, mask, color, p.gray)
-            }
-        }
+        return cached("${p.id}/$name#${color.toArgb()}@$width") { paint(p, name, width, color, p.gray) }
     }
+
+    /** Decodifica [name] a [width] y la tiñe del [color] con su máscara "-pintura" (si la trae). Solo en IO. */
+    private fun paint(p: CarPackage, name: String, width: Int, color: Color, gray: Float): Bitmap? =
+        decode(p, name, width)?.also { base ->
+            val mask = decode(p, name + CarViews.PAINT_MASK_SUFFIX, width)
+            if (mask != null && mask.width == base.width && mask.height == base.height) tint(base, mask, color, gray)
+        }
 
     /**
      * De la caché, de la carga que ya va en camino, o se carga una sola vez en IO. Si
@@ -635,9 +667,12 @@ class CarRepository(private val context: Context, val catalogUrl: String) {
         val file = File(folder, CarViews.RISE_INFO).takeIf { it.exists() } ?: return null
         return runCatching {
             val a = JSONObject(file.readText())
+            val width = a.optInt(CarJson.RISE_WIDTH)
+            val height = a.optInt(CarJson.RISE_HEIGHT)
             RiseInfo(
                 frames = a.getInt(CarJson.RISE_FRAMES),
                 gray = a.optDouble(CarJson.GRAY, 0.5).toFloat(),
+                aspect = if (width > 0 && height > 0) width.toFloat() / height else 2f,
             ).takeIf { r -> r.frames >= 2 && (0 until r.frames).all { File(folder, "${CarViews.RISE}/%02d.webp".format(it)).exists() } }
         }.getOrNull()
     }
@@ -730,6 +765,8 @@ class CarRepository(private val context: Context, val catalogUrl: String) {
         private const val KEY_LAST_CHECK = "last_check:"
         /** Lo que no va en el nombre de la carpeta de un auto. */
         private val FOLDER_CHARS = Regex("[^a-z0-9-]")
+        /** Heap de Java a partir del cual (en Android 6–7) se considera [lowMemory]. */
+        private const val LOW_HEAP = 192L * 1024 * 1024
     }
 }
 

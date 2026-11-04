@@ -27,7 +27,9 @@ import kotlin.math.acos
 import kotlin.math.cos
 import kotlin.math.sin
 import kotlin.math.tan
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.withContext
 
 /**
  * Amanecer y atardecer de hoy con la ecuación de la NOAA (sin internet). Con la
@@ -182,18 +184,23 @@ class LightHysteresis(private var night: Boolean) {
     }
 }
 
-/** Si es de noche; se vuelve a calcular justo al amanecer o al atardecer (no revisa cada rato). */
+/**
+ * Si es de noche; se vuelve a calcular justo al amanecer o al atardecer (no revisa cada rato) y
+ * al volver la app al frente (con la pantalla dormida la espera no avanza).
+ */
 @Composable
 private fun rememberSunNight(): Boolean {
     val context = LocalContext.current
     // El valor inicial se calcula una vez (lee la última ubicación), no en cada recomposición.
     val first = remember { Daylight.state(context) }
-    val night by produceState(first.first) {
-        var (now, wait) = first
+    val starts = rememberStarts()
+    val night by produceState(first.first, starts) {
+        // La primera vez ya se calculó; al volver al frente, otra vez (fuera del hilo principal: lee la ubicación).
+        var (now, wait) = if (starts <= 1) first else withContext(Dispatchers.IO) { Daylight.state(context) }
         while (true) {
             value = now
             delay(wait + 30_000)
-            val s = Daylight.state(context)
+            val s = withContext(Dispatchers.IO) { Daylight.state(context) }
             now = s.first
             wait = s.second
         }

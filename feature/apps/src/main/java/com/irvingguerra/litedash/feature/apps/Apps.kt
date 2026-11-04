@@ -1,15 +1,24 @@
 package com.irvingguerra.litedash.feature.apps
 
+import android.content.BroadcastReceiver
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
 import android.util.LruCache
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 data class App(val name: String, val pkg: String, val activity: String) {
@@ -18,16 +27,73 @@ data class App(val name: String, val pkg: String, val activity: String) {
     val key get() = "$pkg/$activity"
 }
 
-/** Lista de apps abribles e íconos, siempre fuera del hilo principal. */
+/**
+ * Lista de apps abribles e íconos, siempre fuera del hilo principal. La lista es un estado
+ * compartido: el cajón, el dock y los widgets leen la misma y se actualiza sola al instalar,
+ * quitar o actualizar una app mientras LiteDash está a la vista (ver [watch]).
+ */
 class AppRepository(context: Context) {
+    private val appContext = context.applicationContext
     private val pm: PackageManager = context.packageManager
     private val ownPackage = context.packageName
+    private val scope: CoroutineScope = MainScope()
+    private var reload: Job? = null
+    private var watchers = 0
+
+    /** Apps abribles en orden alfabético; null mientras carga la primera vez. */
+    var apps by mutableStateOf<List<App>?>(null)
+        private set
+
+    // Instalar, quitar o actualizar una app: se olvidan sus íconos y se recarga la lista.
+    private val packages = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            intent.data?.schemeSpecificPart?.let(::forgetIcons)
+            refresh()
+        }
+    }
     // Íconos ya convertidos a bitmap del tamaño que se pinta; caché por memoria (~4 MB).
     private val icons = object : LruCache<String, Bitmap>(4 * 1024 * 1024) {
         override fun sizeOf(key: String, value: Bitmap) = value.byteCount
     }
 
-    suspend fun load(): List<App> = withContext(Dispatchers.IO) {
+    /**
+     * Empieza a escuchar cambios de apps (una llamada por cada pantalla que las muestra, mientras
+     * se ve). El primero registra el receptor y recarga: lo que cambió con LiteDash en segundo
+     * plano también se ve. Siempre en el hilo principal.
+     */
+    fun watch() {
+        if (watchers++ > 0) return
+        val filter = IntentFilter().apply {
+            addAction(Intent.ACTION_PACKAGE_ADDED)
+            addAction(Intent.ACTION_PACKAGE_REMOVED)
+            addAction(Intent.ACTION_PACKAGE_CHANGED)
+            addAction(Intent.ACTION_PACKAGE_REPLACED)
+            addDataScheme("package")
+        }
+        appContext.registerReceiver(packages, filter)
+        refresh()
+    }
+
+    /** Deja de escuchar; el último en salir quita el receptor. */
+    fun unwatch() {
+        if (watchers == 0 || --watchers > 0) return
+        runCatching { appContext.unregisterReceiver(packages) }
+    }
+
+    /** Recarga la lista fuera del hilo principal; solo la cambia si de verdad cambió. */
+    private fun refresh() {
+        reload?.cancel()
+        reload = scope.launch {
+            val list = load()
+            if (list != apps) apps = list
+        }
+    }
+
+    private fun forgetIcons(pkg: String) {
+        icons.snapshot().keys.filter { it.startsWith("$pkg/") }.forEach { icons.remove(it) }
+    }
+
+    private suspend fun load(): List<App> = withContext(Dispatchers.IO) {
         val intent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
         pm.queryIntentActivities(intent, 0)
             .filter { it.activityInfo.packageName != ownPackage }

@@ -14,9 +14,9 @@ import java.security.SecureRandom
 /**
  * Cuántas pantallas usan LiteDash, sin cuentas ni SDK de Firebase: a lo más una vez al día,
  * al abrir el inicio, escribe `screens/{id}` en Firestore por REST (nombres de la nube en inglés). El id es un número al
- * azar de esta instalación; se manda solo la versión, el canal, Android, el idioma de LiteDash y el tamaño
- * de pantalla (nada de ubicación ni del usuario). Las reglas de Firestore solo dejan escribir
- * esos campos y nadie puede leerlos desde la app. Se apaga en Ajustes → Acerca de.
+ * azar de esta instalación; se manda solo la versión, el canal (GitHub o Play), Android, el idioma de LiteDash,
+ * el tamaño de pantalla y desde qué día se usa (nada de ubicación ni del usuario). Las reglas de Firestore solo dejan escribir
+ * esos campos y nadie puede leerlos desde la app. Se apaga en Ajustes → Sistema → Estadísticas.
  */
 class Stats(private val context: Context, private val enabled: () -> Boolean) {
     private val store by lazy { context.getSharedPreferences("stats", Context.MODE_PRIVATE) }

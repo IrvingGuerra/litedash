@@ -8,7 +8,6 @@ import android.provider.Settings
 import android.view.WindowManager
 import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.runtime.Composable
@@ -21,20 +20,21 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
-import com.irvingguerra.litedash.core.ui.Button
 import com.irvingguerra.litedash.core.ui.Icon
 import com.irvingguerra.litedash.core.ui.IconButton
 import com.irvingguerra.litedash.core.ui.Icons
 import com.irvingguerra.litedash.core.ui.Label
 import com.irvingguerra.litedash.core.ui.LocalColors
 import com.irvingguerra.litedash.core.ui.Typography
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 /**
- * Brillo de día y de noche con la hora del sol ([night], el mismo cálculo del
- * tema): sin sensor ni señal del vehículo, así funciona en cualquier pantalla.
- * Solo cambia algo al amanecer y al atardecer (no revisa cada rato). Sin el
- * permiso de ajustes del sistema, el brillo aplica solo mientras se ve LiteDash;
- * con él cambia el del sistema y, al apagarlo, regresa el que tenía el usuario.
+ * Brillo de día y de noche: [night] es el mismo que decide el tema (hora del sol, sensor de
+ * luz o faros, según "¿Cuándo es de noche?"). Solo cambia algo cuando cambia el día o la
+ * noche (no revisa cada rato). Sin el permiso de ajustes del sistema, el brillo aplica solo
+ * mientras se ve LiteDash; con él cambia el del sistema y, al apagarlo, regresa el que tenía
+ * el usuario. Los ajustes del sistema se escriben fuera del hilo principal.
  */
 @Composable
 fun ApplyBrightness(prefs: Preferences, night: Boolean, revision: Int) {
@@ -43,9 +43,10 @@ fun ApplyBrightness(prefs: Preferences, night: Boolean, revision: Int) {
     // [revision] sube al volver a LiteDash: así aplica justo después de dar el permiso.
     LaunchedEffect(prefs.brightnessBySun, level, prefs.brightnessAllApps, revision) {
         val system = prefs.brightnessBySun && prefs.brightnessAllApps && Settings.System.canWrite(activity)
-        if (!system) restoreSystemBrightness(activity, prefs)
         windowBrightness(activity, level.takeIf { prefs.brightnessBySun && !system })
-        if (system) setSystemBrightness(activity, prefs, level)
+        withContext(Dispatchers.IO) {
+            if (system) setSystemBrightness(activity, prefs, level) else restoreSystemBrightness(activity, prefs)
+        }
     }
 }
 

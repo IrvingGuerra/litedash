@@ -6,15 +6,14 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -24,6 +23,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
@@ -36,13 +36,13 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.irvingguerra.litedash.core.ui.Button
 import com.irvingguerra.litedash.core.ui.Label
 import com.irvingguerra.litedash.core.ui.LocalColors
+import com.irvingguerra.litedash.core.ui.LocalPlainCard
 import com.irvingguerra.litedash.core.ui.Typography
 import com.irvingguerra.litedash.core.vehicle.Signal
 import com.irvingguerra.litedash.core.vehicle.watch
@@ -77,18 +77,31 @@ private const val STREAKS = 18
 
 /**
  * Tu auto de espaldas en una carretera, como DuduAuto: las rayas de los carriles
- * avanzan con la velocidad (OBD o GPS) y arriba van la velocidad y los km del viaje.
- * Parado no se anima nada (no gasta). Un toque hace [onClick] (verla en grande).
+ * avanzan con la velocidad (OBD o GPS) y arriba van la velocidad (como diga [look]: el
+ * número, un velocímetro u oculta) y los km del viaje. Con [onTires] (Llantas activo y la
+ * pieza con espacio), la presión de cada llanta junto a su rueda. Parado no se anima nada
+ * (no gasta). Un toque hace [onClick] (verla en grande). Con [demoKmh] (la vista previa de
+ * Personalizar) usa esa velocidad y no pide nada.
  */
 @Composable
-fun RoadView(d: Dependencies, pkg: CarPackage?, onClick: () -> Unit, modifier: Modifier = Modifier, onReady: (() -> Unit)? = null) {
+fun RoadView(
+    d: Dependencies,
+    pkg: CarPackage?,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    onReady: (() -> Unit)? = null,
+    look: RoadLook = RoadLook(),
+    onTires: (() -> Unit)? = null,
+    demoKmh: Float? = null,
+) {
     val c = LocalColors.current
+    val live = demoKmh == null
     // Con un adaptador ya guardado, se reconecta solo (como el velocímetro).
-    val obdOn = rememberObd(d)?.state == ObdState.ON
-    val (gps, ask) = rememberGpsPermission(d)
+    val obdOn = live && rememberObd(d)?.state == ObdState.ON
+    val (gps, ask) = if (live) rememberGpsPermission(d) else true to {}
     // El GPS da los km del viaje (y la velocidad si no hay OBD) mientras la pieza se ve.
-    if (gps) KeepTripRunning(d.trip)
-    val kmh = d.bus.watch(Signal.SPEED)
+    if (live && gps) KeepTripRunning(d.trip)
+    val kmh = demoKmh ?: d.bus.watch(Signal.SPEED)
 
     // Avance de las rayas en periodos (0..1) y de las líneas de velocidad: se leen solo al
     // dibujar, así la pieza no se recompone en cada cuadro. Solo corren en movimiento y,
@@ -119,6 +132,8 @@ fun RoadView(d: Dependencies, pkg: CarPackage?, onClick: () -> Unit, modifier: M
     BoxWithConstraints(
         modifier
             .fillMaxSize()
+            // El reflejo del auto no se asoma debajo de los widgets de abajo.
+            .clipToBounds()
             .clickable(remember { MutableInteractionSource() }, indication = null, onClick = onClick),
     ) {
         val height = maxHeight
@@ -129,9 +144,9 @@ fun RoadView(d: Dependencies, pkg: CarPackage?, onClick: () -> Unit, modifier: M
                 .fillMaxSize()
                 .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
                 .drawWithCache {
-                    val paint = RoadPaint(size, c.surfaceHigh, c.text)
+                    val paint = RoadPaint(size, c.surfaceHigh, c.textMuted, c.text)
                     onDrawBehind {
-                        drawRoad(paint, c.textMuted, c.text, phase, effect, rush)
+                        drawRoad(paint, c.textMuted, phase, effect, rush)
                         drawRect(FADE_X, blendMode = BlendMode.DstIn)
                         drawRect(FADE_Y, blendMode = BlendMode.DstIn)
                     }
@@ -140,13 +155,12 @@ fun RoadView(d: Dependencies, pkg: CarPackage?, onClick: () -> Unit, modifier: M
 
         // El auto de espaldas en el carril de en medio, con la defensa cerca del borde de abajo.
         val box = height * 0.55f
-        Box(
-            Modifier
-                .align(Alignment.BottomCenter)
-                .offset(y = -height * 0.03f)
-                .width(box * CAR_ASPECT)
-                .height(box),
-        ) {
+        val carBox = Modifier
+            .align(Alignment.BottomCenter)
+            .offset(y = -height * 0.03f)
+            .width(box * CAR_ASPECT)
+            .height(box)
+        Box(carBox) {
             if (pkg != null) {
                 CarStill(d.cars, pkg, d.prefs.carColor, Modifier.fillMaxSize(), turn = REAR_TURN, onReady = onReady)
             } else {
@@ -154,37 +168,36 @@ fun RoadView(d: Dependencies, pkg: CarPackage?, onClick: () -> Unit, modifier: M
                 Canvas(Modifier.fillMaxSize()) { drawRear(d.prefs.carColor) }
             }
         }
+        if (onTires != null) RoadTirePills(d, onTires, carBox)
 
-        RoadNumbers(d, kmh, height.value, Modifier.fillMaxWidth().padding(16.dp))
-        if (!obdOn && !gps) {
-            Box(Modifier.align(Alignment.TopCenter).padding(top = 16.dp)) {
-                Button(stringResource(R.string.tap_to_enable), ask, primary = true)
+        val miles = d.prefs.units.miles
+        val big = (height.value * 0.16f).coerceIn(30f, 96f)
+        when (look.speed) {
+            RoadSpeed.TEXT -> Column(Modifier.padding(16.dp)) {
+                Label(speedText(kmh, miles), Typography.clock.copy(fontSize = big.sp), maxLines = 1)
+                Label(speedUnit(miles), Typography.small, c.textMuted, maxLines = 1)
             }
+            // El velocímetro de siempre (el mismo de la pieza), sin tarjeta, arriba a la izquierda.
+            RoadSpeed.GAUGE -> Box(Modifier.padding(8.dp).width(minOf(maxWidth * 0.36f, height * 0.6f)).height(height * 0.5f)) {
+                CompositionLocalProvider(LocalPlainCard provides true) {
+                    SpeedGaugeCard((kmh ?: 0f).toMiles(miles), miles, if (live) speedTag(d) else "", look.gauge, d.prefs.carColor)
+                }
+            }
+            RoadSpeed.HIDDEN -> Unit
         }
-    }
-}
-
-/** La velocidad a la izquierda y los km del viaje a la derecha, del tamaño de la pieza. */
-@Composable
-private fun RoadNumbers(d: Dependencies, kmh: Float?, heightDp: Float, modifier: Modifier) {
-    val c = LocalColors.current
-    val miles = d.prefs.units.miles
-    val locale = currentLocale()
-    val speed = kmh?.toMiles(miles)
-    val distance = d.trip.meters.metersToDistance(miles)
-    val big = (heightDp * 0.16f).coerceIn(30f, 96f)
-    Row(modifier) {
-        Column(Modifier.weight(1f)) {
-            Label(String.format(locale, "%.0f", speed ?: 0f), Typography.clock.copy(fontSize = big.sp), maxLines = 1)
-            Label(stringResource(if (miles) R.string.unit_mph else R.string.unit_kmh), Typography.small, c.textMuted, maxLines = 1)
-        }
-        Column(horizontalAlignment = Alignment.End) {
+        // Los km del viaje a la derecha.
+        Column(Modifier.align(Alignment.TopEnd).padding(16.dp), horizontalAlignment = Alignment.End) {
             Label(
-                String.format(locale, "%.1f %s", distance, if (miles) "mi" else "km"),
+                "${distanceText(d.trip.meters, miles)} ${distanceUnit(miles)}",
                 Typography.clock.copy(fontSize = (big * 0.45f).coerceAtLeast(20f).sp),
                 maxLines = 1,
             )
             Label(stringResource(R.string.road_trip), Typography.small, c.textMuted, maxLines = 1)
+        }
+        if (!obdOn && !gps) {
+            Box(Modifier.align(Alignment.TopCenter).padding(top = 16.dp)) {
+                Button(stringResource(R.string.tap_to_enable), ask, primary = true)
+            }
         }
     }
 }
@@ -200,21 +213,27 @@ private val SIDES = floatArrayOf(-1f, 1f)
  * Lo que la carretera reutiliza en cada cuadro: los degradados que solo dependen del
  * tamaño y los colores, y un [path] que se limpia antes de cada figura.
  */
-private class RoadPaint(size: Size, asphalt: Color, glow: Color) {
+private class RoadPaint(size: Size, asphalt: Color, lines: Color, glow: Color) {
     val asphalt = Brush.verticalGradient(0f to asphalt.copy(alpha = 0f), 1f to asphalt, startY = size.height * HORIZON, endY = size.height)
     /** El brillo del horizonte a toda intensidad; se atenúa con el efecto al dibujarlo. */
     val glow = Brush.radialGradient(listOf(glow.copy(alpha = 0.16f), Color.Transparent), Offset(size.width / 2, size.height * HORIZON), size.width * 0.45f)
+    /** Las orillas parado (tenues) y a toda velocidad (brillantes): se mezclan con el efecto al dibujarlas. */
+    val edge = edgeBrush(lines.copy(alpha = 0.55f), size)
+    val edgeLit = edgeBrush(glow.copy(alpha = 0.85f), size)
     val path = Path()
 }
+
+private fun edgeBrush(color: Color, size: Size) =
+    Brush.verticalGradient(0f to color.copy(alpha = 0f), 1f to color, startY = size.height * HORIZON, endY = size.height)
 
 /**
  * La carretera en perspectiva: el asfalto que se desvanece hacia el horizonte, las
  * orillas y las rayas de tres carriles. Un punto a [z] metros de la cámara cae en
  * y = horizonte + (abajo − horizonte) · NEAR_M / z, y el ancho se reduce igual.
  * Con [effect] (0–1, sube con la velocidad) el horizonte y las orillas brillan (del
- * [glow], neutro: sin el ámbar) y pasan líneas de velocidad a los lados ([rush] las mueve).
+ * texto, neutro: sin el ámbar) y pasan líneas de velocidad a los lados ([rush] las mueve).
  */
-private fun DrawScope.drawRoad(paint: RoadPaint, lines: Color, glow: Color, phase: Float, effect: Float, rush: Float) {
+private fun DrawScope.drawRoad(paint: RoadPaint, lines: Color, phase: Float, effect: Float, rush: Float) {
     val w = size.width
     val h = size.height
     val horizon = h * HORIZON
@@ -235,9 +254,7 @@ private fun DrawScope.drawRoad(paint: RoadPaint, lines: Color, glow: Color, phas
     path.close()
     drawPath(path, paint.asphalt)
 
-    // Orillas: líneas continuas que se pierden en el horizonte.
-    val edgeColor = lerp(lines.copy(alpha = 0.55f), glow.copy(alpha = 0.85f), effect)
-    val edge = Brush.verticalGradient(0f to edgeColor.copy(alpha = 0f), 1f to edgeColor, startY = horizon, endY = h)
+    // Orillas: líneas continuas que se pierden en el horizonte (tenues parado, brillan con la velocidad).
     val edgeWidth = w * 0.006f
     for (side in SIDES) {
         path.reset()
@@ -245,7 +262,8 @@ private fun DrawScope.drawRoad(paint: RoadPaint, lines: Color, glow: Color, phas
         path.lineTo(center + side * (halfNear * 0.96f - edgeWidth * 4), h)
         path.lineTo(center, horizon)
         path.close()
-        drawPath(path, edge)
+        if (effect < 0.99f) drawPath(path, paint.edge, alpha = 1f - effect)
+        if (effect > 0.01f) drawPath(path, paint.edgeLit, alpha = effect)
     }
 
     // Rayas de los carriles (a un tercio de cada lado) que vienen hacia ti.

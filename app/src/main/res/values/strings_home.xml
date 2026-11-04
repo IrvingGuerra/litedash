@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Carretera: cómo va la velocidad -->
+    <string name="road_speed">Velocidad</string>
+    <string name="road_speed_text">Solo el número</string>
+    <string name="road_speed_gauge">Velocímetro</string>
+    <string name="road_speed_hidden">Oculta</string>
+    <!-- Viaje -->
+    <string name="trip_time">Tiempo</string>
+    <string name="trip_average">Promedio</string>
+</resources>

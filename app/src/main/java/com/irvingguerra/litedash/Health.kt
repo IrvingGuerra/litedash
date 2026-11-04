@@ -268,9 +268,11 @@ internal fun zoneName(zone: Zone) = when (zone) {
 @Composable
 fun HealthTile(d: Dependencies, car: CarPackage?, onClick: () -> Unit) {
     val c = LocalColors.current
-    val obd = d.obdIfCreated()
+    // Con un adaptador guardado se conecta sola (como los medidores), sin abrir el Taller.
+    val obd = rememberObd(d)
     val connected = obd?.state == ObdState.ON
-    // Los códigos se leen una vez por conexión: sin eso diría "Todo bien" sin haberlos visto.
+    // Los códigos se leen una vez por conexión: sin eso diría "Todo bien" sin haberlos visto. Si
+    // ya hay reporte (lo leyó el Taller) no se vuelven a leer.
     LaunchedEffect(obd, connected) { if (connected && obd?.lastReport == null) obd?.report() }
     val report = if (connected) obd?.lastReport else null
     val health = rememberHealth(d, report, connected)

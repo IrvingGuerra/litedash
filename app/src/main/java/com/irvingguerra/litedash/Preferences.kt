@@ -301,18 +301,6 @@ class Preferences(context: Context) {
     /** El valor de ese ajuste con los faros prendidos. */
     var lightsOnValue by string(PrefKeys.LIGHTS_ON)
 
-    /** Cambia cada vez que se elige o quita la imagen de una pieza (para volver a leerla); solo en memoria. */
-    var imageRevision by mutableIntStateOf(0)
-
-    /** Lo mismo para la imagen de la animación de entrada. */
-    var introRevision by mutableIntStateOf(0)
-
-    /** Lo mismo para la imagen de fondo del inicio. */
-    var wallpaperRevision by mutableIntStateOf(0)
-
-    /** Lo mismo para la imagen del modo estacionado. */
-    var parkedRevision by mutableIntStateOf(0)
-
     /** Hacia dónde dejó girado el auto en el inicio (fracción de vuelta); null = tres cuartos. */
     var carAngle by Stored(p.getFloat(PrefKeys.CAR_ANGLE, -1f).takeIf { it >= 0f }) { p.edit { putFloat(PrefKeys.CAR_ANGLE, it ?: -1f) } }
 

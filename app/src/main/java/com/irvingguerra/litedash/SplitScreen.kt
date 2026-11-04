@@ -233,7 +233,10 @@ fun SplitSettings(d: Dependencies) {
     // Sin pantalla dividida en este Android: solo se dice por qué no está disponible.
     if (!supported) {
         Label(stringResource(R.string.split_title), Typography.subtitle)
-        Label(stringResource(R.string.split_unsupported, Build.VERSION.RELEASE), Typography.small, c.textMuted)
+        // Dos razones distintas: Android viejo, o un Android nuevo cuya pantalla no deja dividir.
+        val reason = if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S_V2) stringResource(R.string.split_unsupported, Build.VERSION.RELEASE)
+        else stringResource(R.string.split_unsupported_screen)
+        Label(reason, Typography.small, c.textMuted)
         return
     }
     SwitchRow(stringResource(R.string.split_title), d.prefs.splitScreen, { d.prefs.splitScreen = it }, stringResource(R.string.split_help))

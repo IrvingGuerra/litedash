@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Road: how the speed shows -->
+    <string name="road_speed">Speed</string>
+    <string name="road_speed_text">Number only</string>
+    <string name="road_speed_gauge">Speedometer</string>
+    <string name="road_speed_hidden">Hidden</string>
+    <!-- Trip -->
+    <string name="trip_time">Time</string>
+    <string name="trip_average">Average</string>
+</resources>

@@ -500,7 +500,8 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
     private fun looksLikeObd(name: String) = OBD_NAMES.containsMatchIn(name)
 
     companion object {
-        private const val PREFS = "obd"
+        /** Archivo de ajustes (la app lo escucha para ofrecer LiteDash al conectar el cable). */
+        const val PREFS = "obd"
         private const val ACTION_USB_PERMISSION = "com.irvingguerra.litedash.USB_PERMISSION"
         /** Cuánto dura una búsqueda de adaptadores Bluetooth LE. */
         private const val SCAN_MS = 10_000L
@@ -515,5 +516,9 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
         /** Hay un adaptador guardado (sin crear el escáner ni tocar Bluetooth). */
         fun hasSavedTarget(context: Context) =
             context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).contains("type")
+
+        /** El adaptador guardado es un cable USB. */
+        fun hasUsbTarget(context: Context) =
+            context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString("type", null) == "usb"
     }
 }

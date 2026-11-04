@@ -77,6 +77,7 @@
     <string name="gauge_color_purple">Morado a azul</string>
     <string name="gauge_color_cyan">Cian neón</string>
     <string name="gauge_customize">Personalizar medidor</string>
+    <string name="road_customize">Personalizar carretera</string>
     <string name="gauge_customize_help">Los cambios se ven al momento. Lo que preocupa (motor caliente, revoluciones altas) siempre se pinta de rojo.</string>
     <string name="gauge_style">Estilo</string>
     <string name="gauge_color">Color</string>
@@ -130,7 +131,7 @@
     <string name="hide_status_bar_help">La barra de arriba con la hora y los avisos. LiteDash ya trae su hora y señal; para abrirla, desliza desde arriba.</string>
     <string name="stats_title">Estadísticas</string>
     <string name="stats_switch">Contar esta pantalla (anónimo)</string>
-    <string name="stats_help">Una vez al día manda un número al azar, la versión, Android, el idioma y el tamaño de la pantalla, para saber cuánta gente usa LiteDash. Nada de ubicación, cuentas ni datos tuyos.</string>
+    <string name="stats_help">Una vez al día manda un número al azar, la versión y de dónde la bajaste (GitHub o Play), Android, el idioma, el tamaño de la pantalla y desde qué día usas LiteDash, para saber cuánta gente usa LiteDash. Nada de ubicación, cuentas ni datos tuyos.</string>
     <string name="copy_info_help">Marca, modelo, Android y resolución, para pegarlos al reportar un problema en GitHub.</string>
     <string name="back">Atrás</string>
     <string name="next">Siguiente</string>
@@ -207,7 +208,7 @@
     <string name="tile_weather">Clima</string>
     <string name="tap_to_enable">Toca para activarlo</string>
     <string name="weather_loading">Buscando el clima…</string>
-    <string name="weather_module">Hoy y los próximos días · pide tu ubicación aproximada al activarlo</string>
+    <string name="tile_weather_help">Hoy y los próximos días · pide tu ubicación aproximada al activarlo</string>
     <string name="weather_clear">Despejado</string>
     <string name="weather_partly">Parcialmente nublado</string>
     <string name="weather_cloudy">Nublado</string>
@@ -216,7 +217,7 @@
     <string name="weather_storm">Tormenta</string>
     <string name="weather_snow">Nieve</string>
     <string name="tile_trip">Viaje</string>
-    <string name="trip_module">Velocidad, rumbo y distancia por GPS · usa el GPS solo mientras se ve</string>
+    <string name="tile_trip_help">Distancia, tiempo, promedio y rumbo por GPS · usa el GPS solo mientras se ve</string>
     <string name="trip_reset">Reiniciar</string>
     <string name="unit_kmh">km/h</string>
     <string name="unit_mph">mph</string>
@@ -248,7 +249,7 @@
         <item quantity="many">venció hace %d días</item>
     </plurals>
     <string name="tile_projection">Android Auto / CarPlay</string>
-    <string name="projection_module">Abre tu app de Android Auto o CarPlay (Zlink, AutoKit…) de un toque</string>
+    <string name="tile_projection_help">Abre tu app de Android Auto o CarPlay (Zlink, AutoKit…) de un toque</string>
     <string name="projection_missing">No encontré la app</string>
     <string name="update_see">Ver</string>
     <string name="update_later">Después</string>
@@ -259,9 +260,8 @@
     <string name="wheel_learned">Botón: %1$s</string>
     <string name="wheel_choose">¿Qué hace?</string>
     <string name="wheel_assigned">Botones configurados</string>
-    <string name="wheel_none">Ninguno todavía: todos hacen lo normal.</string>
+    <string name="wheel_none">Ninguno todavía: todos funcionan como de fábrica.</string>
     <string name="wheel_reset">Como de fábrica</string>
-    <string name="wheel_normal">Lo normal</string>
     <string name="wheel_play_pause">Play / pausa</string>
     <string name="wheel_next">Siguiente</string>
     <string name="wheel_previous">Anterior</string>
@@ -290,7 +290,7 @@
     <string name="brightness_only_litedash">Solo en LiteDash</string>
     <string name="brightness_all_apps">En todas las apps</string>
     <string name="brightness_permission">Falta el permiso: activa \"Modificar ajustes del sistema\" para LiteDash.</string>
-    <string name="car_home_help">En el inicio gira el auto con el dedo. Un toque lo muestra en grande; otro toque regresa.</string>
+    <string name="car_home_help">En el inicio gira el auto con el dedo. Un toque lo muestra en grande (o sus llantas, si así lo elegiste en Llantas).</string>
     <string name="car_update">Actualizar · %1$.1f MB</string>
     <string name="car_update_notice">Hay un modelo 3D nuevo de tu %1$s</string>
     <string name="your_models">Tus modelos</string>
@@ -329,9 +329,9 @@
     <string name="spin_quality_help">Alta = más cuadros al girar, más suave. Solo se bajan los que faltan.</string>
     <!-- Escáner OBD (Taller) y velocímetro -->
     <string name="tile_speedometer">Velocímetro</string>
-    <string name="speedometer_module">Velocidad en un medidor de arco · del OBD si está conectado; si no, del GPS</string>
+    <string name="tile_speedometer_help">Velocidad en el estilo que quieras (8 estilos) · del OBD si está conectado; si no, del GPS</string>
     <string name="workshop">Taller</string>
-    <string name="workshop_module">Acceso directo en tu inicio al Taller (escáner OBD: códigos de falla, verificación y sensores)</string>
+    <string name="tile_workshop_help">Acceso directo en tu inicio al Taller (escáner OBD: códigos de falla, verificación y sensores)</string>
     <string name="obd_adapter">Adaptador OBD</string>
     <string name="obd_adapter_help">Conecta un adaptador ELM327 al puerto OBD (abajo del volante). Bluetooth clásico: empárejalo en Ajustes de Android → Bluetooth y elígelo aquí. Bluetooth LE: toca Buscar. Wi-Fi: conéctate a su red y escribe su dirección.</string>
     <string name="obd_off">Sin conectar</string>
@@ -390,7 +390,6 @@
     <string name="obd_connecting_short">Conectando…</string>
     <!-- Pestañas de Ajustes -->
     <string name="tab_general">General</string>
-    <string name="tab_screen">Pantalla</string>
     <string name="tab_my_car">Mi auto</string>
     <string name="tab_models">Modelos</string>
     <string name="tab_sensors">Sensores</string>
@@ -421,12 +420,11 @@
     <string name="module_tpms">Llantas (TPMS)</string>
     <string name="module_cameras">Cámaras</string>
     <string name="module_soon">Pronto</string>
-    <string name="module_off">Módulo apagado: quítalo o préndelo en Ajustes → Módulos</string>
     <string name="tab_permissions">Permisos</string>
     <string name="system">Sistema</string>
     <string name="tab_updates">Actualizaciones</string>
     <string name="tile_car_help">Tu auto en 3D; gíralo con el dedo y un toque lo agranda</string>
-    <string name="tile_road_help">Tu auto en carretera con la velocidad (OBD o GPS) y los km del viaje</string>
+    <string name="tile_road_help">Tu auto en carretera con la velocidad (OBD o GPS), los km del viaje y tus llantas</string>
     <string name="tile_image_help">Una foto tuya, como el logo de tu marca; sin foto, el logo de LiteDash</string>
     <string name="image_title">Imagen del widget</string>
     <string name="image_help">Elígela de tu galería: cada widget de imagen tiene la suya. LiteDash no trae logos de marcas.</string>
@@ -448,7 +446,7 @@
     <string name="unit_lh" translatable="false">L/h</string>
     <string name="unit_galh" translatable="false">gal/h</string>
     <string name="tile_gauge">Medidor</string>
-    <string name="gauge_module">Un dato del auto por OBD: revoluciones, temperatura, gasolina, batería, consumo, turbo, acelerador o aceite</string>
+    <string name="tile_gauge_help">Un dato del auto por OBD: revoluciones, temperatura, gasolina, batería, consumo, turbo, acelerador o aceite</string>
     <string name="gauge_pick">Toca para elegir qué mostrar</string>
     <string name="gauge_connect">Conecta tu adaptador OBD en el Taller</string>
     <string name="gauge_unsupported">Tu auto no da este dato</string>
@@ -654,7 +652,7 @@
     <string name="tires_car_tap_big">Verlo en grande</string>
     <string name="tires_car_tap_tires">Ver sus llantas</string>
     <string name="tires_on_car">Sobre el auto</string>
-    <string name="tires_on_car_corners">Esquinas</string>
+    <string name="tires_on_car_corners">Mostrar</string>
     <string name="tires_on_car_off">No</string>
     <string name="tires_banner">Aviso arriba del inicio</string>
     <string name="tires_alerts_off_note">Con los avisos apagados no salen el aviso ni el testigo</string>

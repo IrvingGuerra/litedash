@@ -30,6 +30,9 @@ import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import kotlinx.coroutines.flow.conflate
+import kotlin.math.abs
+import kotlin.math.ceil
+import kotlin.math.floor
 import kotlin.math.roundToInt
 
 /** Anchos de la pieza que hay que arrastrar para dar una vuelta completa. */
@@ -230,15 +233,21 @@ private fun DrawScope.drawLayer(img: ImageBitmap, box: Rect) = drawImage(
 /**
  * Los cuadros del giro, por el lado corto, de la vuelta [from] (donde lo dejó el usuario) a [to]
  * (sin el de salida; con el de llegada). Solo los del paquete (cada 15°): girar en grande no
- * necesita los de en medio y así son pocos que preparar.
+ * necesita los de en medio y así son pocos que preparar. Si el usuario lo dejó en un cuadro de en
+ * medio (calidad alta), se sale del de al lado hacia el destino: sin brincar medio cuadro de más.
  */
 fun spinPath(p: CarPackage, from: Float?, to: Float): List<String> {
     val n = p.spin
-    val start = from?.let { (it * n).roundToInt().mod(n) } ?: restFrame(n)
+    // La vuelta en cuadros del paquete; casi entera cuenta como entera (redondeo del guardado).
+    val at = from?.let { (it * n).mod(n.toFloat()).let { x -> if (abs(x - x.roundToInt()) < 0.01f) x.roundToInt().toFloat() else x } }
+        ?: restFrame(n).toFloat()
     val goal = (to * n).roundToInt().mod(n)
+    // Hacia dónde queda el destino por el lado corto (en cuadros, con fracción).
+    val ahead = (goal - at).mod(n.toFloat()).let { if (it > n / 2f) it - n else it }
+    val start = (if (ahead >= 0) floor(at) else ceil(at)).toInt()
     val diff = (goal - start).mod(n).let { if (it > n / 2) it - n else it }
     val step = if (diff >= 0) 1 else -1
-    return (1..kotlin.math.abs(diff)).map { baseFrame((start + step * it).mod(n)) }
+    return (1..abs(diff)).map { baseFrame((start + step * it).mod(n)) }
 }
 
 /** Los cuadros del giro en orden: los del paquete ("NN") y, en calidad alta, el de en medio de cada par ("mNN"). */

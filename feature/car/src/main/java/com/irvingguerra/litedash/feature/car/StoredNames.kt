@@ -44,6 +44,9 @@ internal object CarJson {
     const val RISE = "subida"
     /** En subida.json: cuántos cuadros (y el gris de la pintura, [GRAY]). */
     const val RISE_FRAMES = "cuadros"
+    /** En subida.json: ancho y alto de cada cuadro. */
+    const val RISE_WIDTH = "ancho"
+    const val RISE_HEIGHT = "alto"
 }
 
 /** Capas que acompañan a cada imagen del paquete (vista o cuadro del giro). */

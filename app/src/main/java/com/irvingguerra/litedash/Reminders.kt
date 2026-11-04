@@ -1,29 +1,43 @@
 package com.irvingguerra.litedash
 
-import android.app.DatePickerDialog
 import android.content.Context
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.content.edit
 import com.irvingguerra.litedash.core.ui.Button
+import com.irvingguerra.litedash.core.ui.IconButton
 import com.irvingguerra.litedash.core.ui.Icons
 import com.irvingguerra.litedash.core.ui.Label
 import com.irvingguerra.litedash.core.ui.LocalColors
 import com.irvingguerra.litedash.core.ui.Typography
 import java.text.DateFormat
+import java.text.SimpleDateFormat
+import java.util.Calendar
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -107,11 +121,11 @@ fun ReminderBanner(repo: ReminderRepository) {
     }
 }
 
-/** Ajustes → Tu auto: la lista y cómo agregar uno (tipo y fecha). */
+/** Ajustes → Tu auto: la lista y cómo agregar uno (tipo y, abajo, su fecha en un calendario). */
 @Composable
 fun ReminderSettings(repo: ReminderRepository) {
     val c = LocalColors.current
-    val context = LocalContext.current
+    var picking by remember { mutableStateOf<ReminderType?>(null) }
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         for (r in repo.all) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -122,14 +136,64 @@ fun ReminderSettings(repo: ReminderRepository) {
                 Button(stringResource(R.string.remove), { repo.remove(r) })
             }
         }
-        Label(stringResource(R.string.reminder_add), Typography.label, c.textMuted, modifier = Modifier.padding(top = 6.dp))
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            for (t in ReminderType.entries) {
-                Button(stringResource(t.title), {
-                    // Selector de fecha del sistema (no agrega librerías).
-                    val today = Day.today()
-                    DatePickerDialog(context, { _, y, m, d -> repo.add(t, Day(y, m + 1, d)) }, today.year, today.month - 1, today.day).show()
-                })
+        val type = picking
+        if (type == null) {
+            Label(stringResource(R.string.reminder_add), Typography.label, c.textMuted, modifier = Modifier.padding(top = 6.dp))
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                for (t in ReminderType.entries) Button(stringResource(t.title), { picking = t })
+            }
+        } else {
+            Label(stringResource(R.string.reminder_pick_date, stringResource(type.title)), Typography.label, c.textMuted, modifier = Modifier.padding(top = 6.dp))
+            DatePicker(onPick = { repo.add(type, it); picking = null })
+            Button(stringResource(R.string.cancel), { picking = null })
+        }
+    }
+}
+
+/** Calendario dentro de la tarjeta (sin ventanas emergentes): un mes a la vista, ‹ › para cambiarlo. */
+@Composable
+private fun DatePicker(onPick: (Day) -> Unit) {
+    val c = LocalColors.current
+    val locale = currentLocale()
+    val today = remember { Day.today() }
+    var month by remember { mutableStateOf(Day(today.year, today.month, 1)) }
+    val title = remember(month, locale) { SimpleDateFormat("LLLL yyyy", locale).format(month.toDate()).replaceFirstChar { it.uppercase(locale) } }
+    // Primer día de la semana según la región (domingo en México, lunes en España).
+    val firstWeekday = remember(locale) { Calendar.getInstance(locale).firstDayOfWeek }
+    val weekdays = remember(locale, firstWeekday) {
+        val narrow = SimpleDateFormat("EEEEE", locale)
+        // 1970-01-04 fue domingo: de ahí se cuentan los siete.
+        (0 until 7).map { i -> narrow.format(Day.ofEpochDay(3L + (firstWeekday - 1 + i) % 7).toDate()) }
+    }
+    val length = (month.plusMonths(1).epochDay - month.epochDay).toInt()
+    // Casillas vacías antes del día 1 (1970-01-01 fue jueves = 5 en Calendar).
+    val lead = ((month.epochDay + 4).mod(7L).toInt() + 1 - firstWeekday).mod(7)
+    Column(Modifier.widthIn(max = 420.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            IconButton(Icons.chevron, { month = month.plusMonths(-1) }, Modifier.graphicsLayer(scaleX = -1f), size = 48.dp)
+            Label(title, Typography.subtitle, maxLines = 1, modifier = Modifier.weight(1f).padding(horizontal = 8.dp))
+            IconButton(Icons.chevron, { month = month.plusMonths(1) }, size = 48.dp)
+        }
+        Row(Modifier.fillMaxWidth()) {
+            for (w in weekdays) Label(w, Typography.small.copy(textAlign = TextAlign.Center), c.textMuted, 1, Modifier.weight(1f))
+        }
+        for (week in 0 until (lead + length + 6) / 7) {
+            Row(Modifier.fillMaxWidth()) {
+                for (col in 0 until 7) {
+                    val n = week * 7 + col - lead + 1
+                    Box(Modifier.weight(1f).height(48.dp), contentAlignment = Alignment.Center) {
+                        if (n in 1..length) {
+                            val day = Day(month.year, month.month, n)
+                            val isToday = day == today
+                            Box(
+                                Modifier.size(44.dp).clip(CircleShape)
+                                    .background(if (isToday) c.surfaceHigh else Color.Transparent)
+                                    .clickable { onPick(day) },
+                                contentAlignment = Alignment.Center,
+                            ) { Label("$n", Typography.body, if (day < today) c.textMuted else c.text, 1) }
+                        }
+                    }
+                }
             }
         }
     }

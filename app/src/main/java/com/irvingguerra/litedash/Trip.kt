@@ -7,12 +7,11 @@ import android.content.pm.PackageManager
 import android.location.Location
 import android.location.LocationManager
 import android.os.Looper
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -22,7 +21,6 @@ import androidx.compose.runtime.mutableDoubleStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -43,14 +41,14 @@ import com.irvingguerra.litedash.core.vehicle.VehicleBus
 import kotlinx.coroutines.delay
 
 /**
- * Velocidad, rumbo y distancia del viaje con el GPS. Solo escucha mientras algo
+ * Velocidad (al bus), rumbo y distancia del viaje con el GPS. Solo escucha mientras algo
  * lo pide ([acquire]/[release]) y la app está al frente: así no gasta batería
- * con la pantalla en otra app ni en segundo plano.
+ * con la pantalla en otra app ni en segundo plano. Con solo la ubicación aproximada usa la
+ * red (sin velocidad casi nunca, pero el viaje cuenta igual lo que pueda).
  */
 class TripRepository(private val context: Context, private val bus: VehicleBus) {
-    /** km/h; null = sin señal todavía. */
-    var speedKmh by mutableStateOf<Float?>(null)
-        private set
+    /** km/h del GPS; null = sin señal todavía. Las piezas leen la velocidad del bus (el OBD gana). */
+    private var speedKmh: Float? = null
     var bearing by mutableStateOf<Float?>(null)
         private set
     var meters by mutableDoubleStateOf(0.0)
@@ -59,9 +57,6 @@ class TripRepository(private val context: Context, private val bus: VehicleBus) 
     var startedAt by mutableLongStateOf(0L)
         private set
 
-    /** En movimiento (más de 8 km/h): el modo estacionado espera a que se detenga. */
-    val moving get() = (speedKmh ?: 0f) > 8f
-
     private var users = 0
     private var last: Location? = null
     private val manager by lazy { context.getSystemService(LocationManager::class.java) }
@@ -69,13 +64,18 @@ class TripRepository(private val context: Context, private val bus: VehicleBus) 
     // implementa (AbstractMethodError al perder el GPS o apagar la ubicación).
     private val listener = LocationListenerCompat { update(it) }
 
-    fun hasPermission() = context.checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+    private fun granted(permission: String) = context.checkSelfPermission(permission) == PackageManager.PERMISSION_GRANTED
+
+    /** Ubicación precisa o aproximada (en Android 12+ el usuario puede dar solo la aproximada). */
+    fun hasPermission() = granted(Manifest.permission.ACCESS_FINE_LOCATION) || granted(Manifest.permission.ACCESS_COARSE_LOCATION)
 
     @SuppressLint("MissingPermission") // se revisa con hasPermission()
     fun acquire() {
         users++
         if (users == 1 && hasPermission()) {
-            runCatching { manager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1_000L, 0f, listener, Looper.getMainLooper()) }
+            // El GPS pide la precisa; con la aproximada, la red.
+            val provider = if (granted(Manifest.permission.ACCESS_FINE_LOCATION)) LocationManager.GPS_PROVIDER else LocationManager.NETWORK_PROVIDER
+            runCatching { manager.requestLocationUpdates(provider, 1_000L, 0f, listener, Looper.getMainLooper()) }
         }
     }
 
@@ -120,55 +120,97 @@ fun KeepTripRunning(trip: TripRepository) {
 private val COMPASS = arrayOf("N", "NE", "E", "SE", "S", "SO", "O", "NO")
 private val COMPASS_EN = arrayOf("N", "NE", "E", "SE", "S", "SW", "W", "NW")
 
-/** Pieza Viaje: velocidad grande, rumbo, distancia y tiempo; sin permiso, el botón para activarla. */
+/** La distancia en la unidad del usuario, con un decimal ("12.3"); la unidad con [distanceUnit]. */
 @Composable
-fun TripTile(trip: TripRepository, miles: Boolean) {
+fun distanceText(meters: Double, miles: Boolean): String = String.format(currentLocale(), "%.1f", meters.metersToDistance(miles))
+
+fun distanceUnit(miles: Boolean) = if (miles) "mi" else "km"
+
+/** La velocidad sin decimales en la unidad del usuario (sin dato, 0); la unidad con [speedUnit]. */
+@Composable
+fun speedText(kmh: Float?, miles: Boolean): String = String.format(currentLocale(), "%.0f", (kmh ?: 0f).toMiles(miles))
+
+@Composable
+fun speedUnit(miles: Boolean) = stringResource(if (miles) R.string.unit_mph else R.string.unit_kmh)
+
+/**
+ * Pieza Viaje: solo lo del viaje (la velocidad ya está en el velocímetro y la carretera): la
+ * distancia en grande, el tiempo, la velocidad promedio y el rumbo. Sin permiso, el botón para activarla.
+ */
+@Composable
+fun TripTile(d: Dependencies) {
     val c = LocalColors.current
-    var granted by remember { mutableStateOf(trip.hasPermission()) }
-    val ask = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted = it }
-    if (!granted) {
-        return ShortcutTile(Icons.speed, stringResource(R.string.tile_trip), stringResource(R.string.tap_to_enable)) {
-            ask.launch(Manifest.permission.ACCESS_FINE_LOCATION)
-        }
-    }
+    val trip = d.trip
+    val miles = d.prefs.units.miles
+    val (granted, ask) = rememberGpsPermission(d)
+    if (!granted) return ShortcutTile(Icons.location, stringResource(R.string.tile_trip), stringResource(R.string.tap_to_enable), ask)
     KeepTripRunning(trip)
-    val speed = trip.speedKmh?.toMiles(miles)
-    val distance = trip.meters.metersToDistance(miles)
     // El tiempo avanza solo, aunque el GPS no mande nada (una vez por minuto).
-    val minutes by produceState(0, trip.startedAt) {
+    val elapsed by produceState(0L, trip.startedAt) {
         while (true) {
-            value = if (trip.startedAt == 0L) 0 else ((System.currentTimeMillis() - trip.startedAt) / 60_000).toInt()
+            value = if (trip.startedAt == 0L) 0L else System.currentTimeMillis() - trip.startedAt
             delay(60_000 - System.currentTimeMillis() % 60_000)
         }
     }
+    val minutes = (elapsed / 60_000).toInt()
     val locale = currentLocale()
-    val spanish = locale.language == "es"
-    val heading = trip.bearing?.let { (if (spanish) COMPASS else COMPASS_EN)[((it + 22.5f) / 45f).toInt() % 8] }
+    val heading = trip.bearing?.let { (if (locale.language == "es") COMPASS else COMPASS_EN)[((it + 22.5f) / 45f).toInt() % 8] }
+    val time = String.format(locale, "%d:%02d", minutes / 60, minutes % 60)
+    // Promedio desde que arrancó (con paradas), cuando ya hay algo que promediar. Con la hora de
+    // ahora (no la del último minuto): se vuelve a calcular con cada metro nuevo.
+    val hours = if (trip.startedAt == 0L) 0.0 else (System.currentTimeMillis() - trip.startedAt) / 3_600_000.0
+    val average = if (minutes >= 1 && trip.meters >= 100) "${speedText((trip.meters / 1000 / hours).toFloat(), miles)} ${speedUnit(miles)}" else null
+    val distance = distanceText(trip.meters, miles)
+    val unit = distanceUnit(miles)
     Card(Modifier.fillMaxSize()) {
-        BoxWithConstraints(Modifier.fillMaxSize().padding(16.dp), contentAlignment = Alignment.CenterStart) {
-            val big = maxHeight > 120.dp
+        BoxWithConstraints(Modifier.fillMaxSize().padding(16.dp)) {
+            val tall = maxHeight > 120.dp
             val wide = maxWidth > 340.dp
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(if (wide) 18.dp else 10.dp)) {
-                Column {
-                    Label(String.format(locale, "%.0f", speed ?: 0f), Typography.clock.copy(fontSize = if (big) 56.sp else 34.sp), maxLines = 1)
-                    Label(stringResource(if (miles) R.string.unit_mph else R.string.unit_kmh), Typography.small, c.textMuted, maxLines = 1)
-                }
-                // Angosta y bajita: el rumbo deja su renglón para que quepan distancia y tiempo.
-                val compact = !wide && !big
-                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    if (!compact) Label(heading ?: "", Typography.title, c.accent, maxLines = 1)
-                    val km = String.format(locale, "%.1f %s", distance, if (miles) "mi" else "km")
-                    val time = String.format(locale, "%d:%02d", minutes / 60, minutes % 60)
-                    // En angosto no caben juntos en un renglón: la distancia se cortaba.
-                    if (wide) {
-                        Label("$km · $time", Typography.body, maxLines = 1)
-                    } else {
-                        Label(km, Typography.body, maxLines = 1)
-                        Label(if (compact && heading != null) "$time · $heading" else time, Typography.small, c.textMuted, maxLines = 1)
+            val huge = maxHeight > 200.dp
+            if (!tall) {
+                // Una fila: la distancia y, a un lado, tiempo, promedio y rumbo en chico.
+                Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                    BigValue(distance, unit, 34)
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                        Label(listOfNotNull(time, heading).joinToString(" · "), Typography.body, maxLines = 1)
+                        if (average != null) Label(average, Typography.small, c.textMuted, maxLines = 1)
                     }
                 }
-                if (big && wide) Button(stringResource(R.string.trip_reset), { trip.reset() })
+            } else {
+                Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.SpaceBetween) {
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
+                        Column(Modifier.weight(1f)) {
+                            Label(stringResource(R.string.tile_trip).uppercase(locale), Typography.label, c.textMuted, maxLines = 1)
+                            BigValue(distance, unit, if (huge) 64 else 48)
+                        }
+                        if (heading != null) Label(heading, Typography.title, c.accent, maxLines = 1)
+                    }
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(if (wide) 28.dp else 16.dp)) {
+                        TripStat(stringResource(R.string.trip_time), time)
+                        if (average != null) TripStat(stringResource(R.string.trip_average), average)
+                        Spacer(Modifier.weight(1f))
+                        if (wide) Button(stringResource(R.string.trip_reset), { trip.reset() })
+                    }
+                }
             }
         }
+    }
+}
+
+/** Un número grande con su unidad en chico a un lado (como el reloj). */
+@Composable
+private fun BigValue(value: String, unit: String, size: Int) {
+    Row(verticalAlignment = Alignment.Bottom) {
+        Label(value, Typography.clock.copy(fontSize = size.sp), maxLines = 1)
+        Label(unit, Typography.subtitle, LocalColors.current.textMuted, maxLines = 1, modifier = Modifier.padding(start = 6.dp, bottom = (size / 7).dp))
+    }
+}
+
+/** Un dato del viaje: su nombre en chico arriba y el valor. */
+@Composable
+private fun TripStat(name: String, value: String) {
+    Column {
+        Label(name, Typography.small, LocalColors.current.textMuted, maxLines = 1)
+        Label(value, Typography.subtitle, maxLines = 1)
     }
 }

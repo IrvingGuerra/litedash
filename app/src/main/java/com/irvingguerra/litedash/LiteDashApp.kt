@@ -1,11 +1,14 @@
 package com.irvingguerra.litedash
 
 import android.app.Application
+import android.content.Context
+import android.content.SharedPreferences
 import android.service.notification.StatusBarNotification
 import com.irvingguerra.litedash.feature.updater.Updater
 import com.irvingguerra.litedash.core.vehicle.VehicleBus
 import com.irvingguerra.litedash.feature.obd.ObdRepository
 import com.irvingguerra.litedash.feature.tpms.TpmsRepository
+import com.irvingguerra.litedash.feature.tpms.UsbAttachActivity
 import com.irvingguerra.litedash.feature.apps.AppRepository
 import com.irvingguerra.litedash.feature.car.CarRepository
 import com.irvingguerra.litedash.feature.music.MusicRepository
@@ -16,11 +19,12 @@ import com.irvingguerra.litedash.feature.dashboard.DashboardStore
 import com.irvingguerra.litedash.feature.dashboard.DashboardState
 
 /**
- * Las dependencias viven aquí (no en la actividad) porque el servicio de avisos
- * también las usa, aun sin la pantalla abierta. Todo es perezoso.
+ * Las dependencias viven aquí (no en la actividad) porque también las usan la pantalla
+ * dividida y el servicio de avisos (este solo si ya existen). Todo es perezoso.
  */
 class LiteDashApp : Application() {
-    val dependencies: Dependencies by lazy {
+    // Se arma la primera vez que algo de la pantalla lo pide (no por el servicio de avisos).
+    private val dependenciesLazy = lazy {
         val mapPackages = NAVIGATION_PACKAGES.toSet() +
             if (BuildConfig.DEBUG) setOf(NavigationRepository.TEST_PACKAGE) else emptySet()
         val prefs = Preferences(this)
@@ -48,15 +52,45 @@ class LiteDashApp : Application() {
             tpmsSaved = { TpmsRepository.hasSavedSource(this) },
         )
     }
+    val dependencies: Dependencies by dependenciesLazy
 
     override fun onCreate() {
         super.onCreate()
         // Antes de leer cualquier ajuste (también el idioma de attachBaseContext): nombres en inglés desde la 1.4.47.
         StorageMigration.run(this)
         // Los avisos llegan aquí solo si el usuario dio acceso a notificaciones (el mismo de la música).
+        // Android conecta ese servicio solo (aun tras forzar el cierre): sin la app armada, nada que hacer.
         NotificationService.listener = object : NotificationListener {
+            override val wanted get() = dependenciesLazy.isInitialized()
             override fun onPosted(notification: StatusBarNotification) = dependencies.navigation.posted(notification)
             override fun onRemoved(notification: StatusBarNotification) = dependencies.navigation.removed(notification)
         }
+        watchUsbOffer()
+    }
+
+    // Referencia fuerte: Android guarda los oyentes de preferencias como referencias débiles.
+    // Solo importan la fuente de llantas ("source"), el tipo de adaptador OBD ("type") y el módulo OBD.
+    private val onUsbPrefs = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+        if (key == null || key == "source" || key == "type" || key == PrefKeys.OBD_MODULE) syncUsbOffer()
+    }
+
+    /**
+     * "Usar LiteDash con este USB" solo mientras alguien lo usa: las llantas por USB o un cable
+     * OBD USB guardado con el módulo prendido. Se revisa al arrancar (fuera del hilo principal:
+     * lee del disco) y cada vez que cambian esos ajustes.
+     */
+    private fun watchUsbOffer() {
+        for (file in arrayOf(TpmsRepository.PREFS, ObdRepository.PREFS, PrefKeys.FILE)) {
+            getSharedPreferences(file, Context.MODE_PRIVATE).registerOnSharedPreferenceChangeListener(onUsbPrefs)
+        }
+        syncUsbOffer()
+    }
+
+    private fun syncUsbOffer() {
+        Thread({ synchronized(onUsbPrefs) {
+            val settings = getSharedPreferences(PrefKeys.FILE, Context.MODE_PRIVATE)
+            val obdOn = !settings.contains(PrefKeys.OBD_MODULE) || settings.getBoolean(PrefKeys.OBD_MODULE, false)
+            UsbAttachActivity.offer(this, TpmsRepository.usesUsb(this) || obdOn && ObdRepository.hasUsbTarget(this))
+        } }, "usb-offer").start()
     }
 }

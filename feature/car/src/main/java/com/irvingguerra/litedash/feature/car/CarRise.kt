@@ -13,6 +13,7 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asAndroidBitmap
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlin.math.sqrt
 
 /**
  * El auto en grande camino a sus llantas: gira hasta quedar de espaldas ([spin]) y la cámara
@@ -63,8 +64,12 @@ class CarRise {
     /** Esquina del lienzo del auto en la raíz (para llevarlo a [target]); no es estado. */
     internal var canvasOrigin = Offset.Zero
 
-    /** Lo preparado: auto, color y ancho (si no cambia, [preload] no repite nada). */
-    private var key: Any? = null
+    /** Lo preparado del giro y de la subida (si no cambia, [preload] no repite nada). */
+    private var turnKey: Any? = null
+    private var riseKey: Any? = null
+
+    /** Sube con cada [clear]: una preparación que iba a la mitad ya no guarda nada. */
+    private var generation = 0
 
     /** Ya está el giro y todos los cuadros (o el auto no trae subida). */
     val ready get() = turnReady && loaded >= count
@@ -80,12 +85,22 @@ class CarRise {
         target = Rect.Zero
     }
 
-    /** Suelta todo lo preparado (al salir del inicio, cambiar de auto o apagar Llantas). */
+    /** Suelta todo lo preparado (el inicio dejó de verse, falta memoria, cambió el auto o se apagó Llantas). */
     fun clear() {
         finish()
-        key = null
+        generation++
+        releaseTurn()
+        releaseRise()
+    }
+
+    private fun releaseTurn() {
+        turnKey = null
         turnFrames = emptyList()
         turnReady = false
+    }
+
+    private fun releaseRise() {
+        riseKey = null
         frames = emptyArray()
         topBox = null
         count = 0
@@ -94,47 +109,78 @@ class CarRise {
 
     /**
      * Prepara el giro ([turnPath]: los cuadros de donde lo dejó el usuario hasta quedar de espaldas)
-     * y los cuadros de la subida de [p], al ancho y color con que se verá el auto en grande. Si ya
-     * está lo mismo, no hace nada. Se llama en segundo plano mientras se ve el inicio.
+     * y los cuadros de la subida de [p], del [color] y para el auto en grande ([canvasWidthPx]: el
+     * ancho de su lienzo). Fuera de la caché del giro y a un ancho que cabe en memoria ([widths]).
+     * Cada parte con su llave: cambiar la vuelta del auto solo rehace el giro. Si ya está lo mismo,
+     * no hace nada. Se llama en segundo plano mientras se ve el inicio.
      */
-    suspend fun preload(repo: CarRepository, p: CarPackage, turnPath: List<String>, color: Color, screenWidthPx: Int) {
-        // Pantallas con poca memoria (Android 6–7 con 1 GB: los bitmaps van al heap de Java):
-        // 16 cuadros a todo lo ancho serían ~32 MB; a 640 px, ~13 MB y se ve igual de lejos.
-        val widthPx = if (Runtime.getRuntime().maxMemory() <= LOW_HEAP) minOf(screenWidthPx, LOW_HEAP_WIDTH) else screenWidthPx
-        val want = Triple(p.id + "@" + p.sha256 + "@" + (p.rise != null) + "@" + turnPath, color, widthPx)
-        if (key == want && ready) return
-        key = want
-        turnReady = false
-        // Uno por uno; el giro se guarda aquí (la caché del auto podría soltarlos).
-        val turn = ArrayList<CarLayers>(turnPath.size)
-        for (name in turnPath) {
-            turn += repo.layers(p, name, color, screenWidthPx) ?: break
-            if (key != want) return
+    suspend fun preload(repo: CarRepository, p: CarPackage, turnPath: List<String>, color: Color, canvasWidthPx: Int) {
+        if (canvasWidthPx <= 0) return
+        val gen = generation
+        val (turnWidth, riseWidth) = widths(p, turnPath, canvasWidthPx, repo.lowMemory)
+        val car = p.id + "@" + p.sha256
+        val turnWant = listOf(car, turnPath, color, turnWidth)
+        if (turnKey != turnWant || !turnReady) {
+            // Lo viejo se suelta antes de armar lo nuevo (no conviven los dos en memoria).
+            releaseTurn()
+            // Uno por uno; si falta uno, no hay giro (nunca a medias).
+            val turn = ArrayList<CarLayers>(turnPath.size)
+            for (name in turnPath) {
+                val layers = repo.turnFrame(p, name, color, turnWidth)
+                if (gen != generation) return
+                if (layers == null) {
+                    turn.clear()
+                    break
+                }
+                turn += layers
+            }
+            turnFrames = turn
+            turnReady = true
+            turnKey = turnWant
         }
-        turnFrames = turn
-        turnReady = true
         val info = p.rise
+        val riseWant = listOf(car, info, color, riseWidth)
+        if (riseKey == riseWant && loaded >= count) return
+        releaseRise()
         if (info == null) {
-            frames = emptyArray()
-            count = 0
-            loaded = 0
+            riseKey = riseWant
             return
         }
         val n = info.frames
         val own = arrayOfNulls<ImageBitmap>(n)
         frames = own
-        topBox = null
-        loaded = 0
         count = n
         // De uno en uno: no hay prisa (falta para que lo toquen) y no se le roba procesador al inicio.
         for (i in 0 until n) {
-            val img = repo.riseFrame(p, i, color, widthPx) ?: continue
-            if (frames !== own) return
+            val img = repo.riseFrame(p, i, color, riseWidth)
+            if (gen != generation || frames !== own) return
+            // Si falta uno, no hay subida (nunca a medias).
+            if (img == null) return releaseRise().also { riseKey = riseWant }
             if (i == n - 1) topBox = withContext(Dispatchers.Default) { solidBox(img.asAndroidBitmap()) }
             own[i] = img
             loaded++
         }
+        riseKey = riseWant
     }
+}
+
+/**
+ * Los anchos del giro y de la subida para un lienzo de [canvas] px: lo más cerca del lienzo
+ * que quepa en [TURN_BUDGET] (o [LOW_TURN_BUDGET] con poca memoria). La subida (la cámara
+ * subiendo, en movimiento) va a un ancho fijo más chico; el giro se lleva el resto. Cada cuadro
+ * del giro son el auto (proporción [CAR_ASPECT]) y su sombra y reflejo a la mitad (caja del piso).
+ */
+private fun widths(p: CarPackage, turnPath: List<String>, canvas: Int, low: Boolean): Pair<Int, Int> {
+    val budget = if (low) LOW_TURN_BUDGET else TURN_BUDGET
+    val rise = p.rise
+    val riseWidth = minOf(canvas, if (low) LOW_RISE_WIDTH else RISE_WIDTH)
+    val riseBytes = if (rise == null) 0f else rise.frames * riseWidth * (riseWidth / rise.aspect) * 4
+    if (turnPath.isEmpty()) return canvas to riseWidth
+    val floor = p.floor[turnPath.first()]
+    // Bytes de un cuadro del giro por px² de ancho.
+    val perPx = 4 * (1 / CAR_ASPECT + if (floor == null) 0f else 2 * (floor.width / 2) * (floor.height / 2))
+    val fit = sqrt((budget - riseBytes).coerceAtLeast(0f) / turnPath.size / perPx).toInt() / 32 * 32
+    return fit.coerceIn(MIN_TURN_WIDTH, maxOf(canvas, MIN_TURN_WIDTH)) to riseWidth
 }
 
 /**
@@ -168,6 +214,19 @@ private fun solidBox(b: Bitmap): Rect? {
     return Rect(left.toFloat() / w, top.toFloat() / h, (right + 1).toFloat() / w, (bottom + 1).toFloat() / h)
 }
 
-/** Heap a partir del cual los cuadros de la subida se cargan reducidos ([LOW_HEAP_WIDTH]). */
-private const val LOW_HEAP = 192L * 1024 * 1024
-private const val LOW_HEAP_WIDTH = 640
+/**
+ * Lo que puede ocupar lo preparado (giro + subida), en bytes: unos 26 MB (se queda en memoria
+ * mientras se ve el inicio); con poca memoria (Android 6 con 1 GB), 15 MB.
+ */
+private const val TURN_BUDGET = 26f * 1024 * 1024
+private const val LOW_TURN_BUDGET = 15f * 1024 * 1024
+
+/**
+ * Ancho de los cuadros de la subida: la cámara va en movimiento y no se nota que van reducidos
+ * (a 448 ya se notaba al empezar a subir, con el auto de espaldas quieto).
+ */
+private const val RISE_WIDTH = 640
+private const val LOW_RISE_WIDTH = 384
+
+/** Nunca más chico que esto (se vería borroso). */
+private const val MIN_TURN_WIDTH = 320

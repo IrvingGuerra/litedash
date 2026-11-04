@@ -475,22 +475,31 @@ class TpmsRepository(context: Context, private val bus: VehicleBus) {
         return if (running == TpmsSource.DEMO || offsetKpa == 0f) samples else samples.map { it.copy(kpa = calibrated(it.kpa)) }
     }
 
-    /** Se escribe cada 10 min y al parar: se copia aquí y se codifica y escribe fuera del hilo principal. */
+    /**
+     * Se escribe cada 10 min y al parar ([force]): se copia aquí y se codifica y escribe fuera del
+     * hilo principal. Solo una escritura buena lo da por guardado; si falla, se reintenta en el
+     * siguiente pulso (cada 30 s).
+     */
     private fun saveHistory(force: Boolean) {
         val h = history ?: return
         val now = System.currentTimeMillis()
         if (!h.dirty || (!force && now - lastSave < SAVE_MS)) return
         lastSave = now
+        val changes = h.changes
         val copy = h.snapshot()
-        scope.launch(Dispatchers.IO) {
-            disk.withLock {
-                runCatching {
-                    val bytes = copy.encode()
-                    val tmp = File(context.filesDir, "$HISTORY_FILE.tmp")
-                    tmp.writeBytes(bytes)
-                    if (!tmp.renameTo(historyFile())) historyFile().writeBytes(bytes)
+        scope.launch {
+            val ok = withContext(Dispatchers.IO) {
+                disk.withLock {
+                    runCatching {
+                        val bytes = copy.encode()
+                        val tmp = File(context.filesDir, "$HISTORY_FILE.tmp")
+                        tmp.writeBytes(bytes)
+                        if (!tmp.renameTo(historyFile())) historyFile().writeBytes(bytes)
+                    }.isSuccess
                 }
             }
+            // De vuelta en el hilo principal (el historial no es seguro entre hilos).
+            if (ok) h.saved(changes) else lastSave = 0L
         }
     }
 
@@ -893,7 +902,8 @@ class TpmsRepository(context: Context, private val bus: VehicleBus) {
     }
 
     companion object {
-        private const val PREFS = "tires"
+        /** Archivo de ajustes (la app lo escucha para prender o apagar [UsbAttachActivity]). */
+        const val PREFS = "tires"
         private const val KEY_SOURCE = "source"
         private const val KEY_LAST_SOURCE = "last_source"
         private const val KEY_FRONT = "front_kpa"
@@ -922,5 +932,9 @@ class TpmsRepository(context: Context, private val bus: VehicleBus) {
         /** Hay una fuente de llantas elegida (sin crear el repositorio ni tocar USB/Bluetooth). */
         fun hasSavedSource(context: Context) =
             context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).contains(KEY_SOURCE)
+
+        /** Las llantas se leen del receptor USB (sin crear el repositorio). */
+        fun usesUsb(context: Context) =
+            context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(KEY_SOURCE, null) == TpmsSource.USB.key
     }
 }

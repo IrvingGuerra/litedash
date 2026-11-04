@@ -1,12 +1,6 @@
 package com.irvingguerra.litedash
 
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -54,16 +48,17 @@ import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.compositeOver
-import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.irvingguerra.litedash.core.ui.Button
@@ -171,11 +166,19 @@ private fun wheelSpot(w: Wheel) = when (w) {
 }
 
 /**
- * El halo de una llanta con problema sobre el auto desde arriba (caja de [CarTop]): brillo y
- * punto en su rueda; con [pulse] (0 a 1), además un anillo que crece y se desvanece. [r] = radio base.
+ * Los halos de las llantas con problema sobre el auto desde arriba (caja de [CarTop]), con
+ * [ProblemMarks] (igual que en Salud): solo un peligro late; un aviso leve se queda quieto.
  */
-internal fun DrawScope.tireHalo(w: Wheel, r: Float, color: Color, pulse: Float? = null) =
-    problemHalo(Offset(size.width * wheelSpot(w).x, size.height * wheelSpot(w).y), r, color, pulse)
+@Composable
+private fun TireMarks(statuses: Map<Wheel, TireStatus>, modifier: Modifier, radius: Float = 0.06f) {
+    val c = LocalColors.current
+    val marks = statuses.mapNotNull { (w, st) ->
+        if (!st.problem || w == Wheel.SPARE) return@mapNotNull null
+        val danger = st.severity == TireSeverity.DANGER
+        ProblemMark(wheelSpot(w).x, wheelSpot(w).y, if (danger) c.danger else c.accent, pulsing = danger)
+    }
+    ProblemMarks(marks, modifier, radius)
+}
 
 /** Grados en la unidad del usuario ("28 °C" o "82 °F"). */
 internal fun tempText(c: Float, fahrenheit: Boolean) = "${c.toFahrenheit(fahrenheit).roundToInt()} °${if (fahrenheit) "F" else "C"}"
@@ -230,11 +233,6 @@ fun TiresView(
     val fahrenheit = d.prefs.units.fahrenheit
     val wheels = repo.shownWheels()
     val statuses = wheels.associateWith { repo.statusOf(it) }
-    val anyProblem = statuses.values.any { it.problem }
-    // Solo un peligro late; un aviso leve se queda quieto (nada se anima en reposo).
-    val pulse = if (statuses.values.any { it.severity == TireSeverity.DANGER }) {
-        rememberInfiniteTransition(label = "tires").animateFloat(0f, 1f, infiniteRepeatable(tween(1800, easing = LinearEasing), RepeatMode.Restart), label = "pulse")
-    } else null
 
     Column(modifier) {
         BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
@@ -267,8 +265,6 @@ fun TiresView(
             )
             val px = density.density
             val line = c.textMuted.copy(alpha = 0.45f)
-            val accent = c.accent
-            val danger = c.danger
 
             // Líneas: de la orilla de cada tarjeta a su rueda (no mientras las tarjetas se mueven).
             Canvas(Modifier.fillMaxSize()) {
@@ -288,13 +284,7 @@ fun TiresView(
             }
             Box(Modifier.offset(carX.dp, carY.dp).size(carW.dp, carH.dp).then(place)) {
                 CarTop(d.cars, d.cars.pkg(d.prefs.carModel), d.prefs.carColor, Modifier.fillMaxSize())
-                if (anyProblem) Canvas(Modifier.fillMaxSize()) {
-                    for ((wh, st) in statuses) {
-                        if (!st.problem || wh == Wheel.SPARE) continue
-                        val isDanger = st.severity == TireSeverity.DANGER
-                        tireHalo(wh, size.width * 0.06f, if (isDanger) danger else accent, pulse?.value?.takeIf { isDanger })
-                    }
-                }
+                TireMarks(statuses, Modifier.fillMaxSize())
             }
             for (wh in wheels) {
                 val slot = slots.getValue(wh)
@@ -617,8 +607,50 @@ fun BoxScope.TirePills(d: Dependencies, onOpen: () -> Unit) {
     val statuses = Wheel.ROAD.associateWith { repo.statusOf(it) }
     val calm = statuses.values.none { it.problem }
     for (w in Wheel.ROAD) {
-        val kpa = d.bus.watch(TireSignals.pressure(w))
-        TirePill(kpa?.let { "${repo.unit.format(it)} ${repo.unit.label}" } ?: "—", statuses.getValue(w), onOpen, Modifier.align(corner(w)).padding(6.dp).graphicsLayer { alpha = if (calm) 0.7f else 1f })
+        TirePill(pillText(d, w), statuses.getValue(w), onOpen, Modifier.align(corner(w)).padding(6.dp).graphicsLayer { alpha = if (calm) 0.7f else 1f })
+    }
+}
+
+/** La presión de [w] con su unidad ("32 psi"), o "—" sin lectura. */
+@Composable
+private fun pillText(d: Dependencies, w: Wheel): String {
+    val unit = d.tpms.unit
+    return d.bus.watch(TireSignals.pressure(w))?.let { "${unit.format(it)} ${unit.label}" } ?: "—"
+}
+
+/** Orilla del auto de espaldas en su caja (desde cada lado), en fracción del ancho: ahí junto van las pastillas. */
+private const val REAR_CAR_SIDE = 0.27f
+
+/** A qué altura de la caja del auto de espaldas va la pastilla de [w]: las traseras en su rueda, las delanteras (ocultas detrás) más arriba. */
+private fun rearPillY(w: Wheel) = if (w == Wheel.REAR_LEFT || w == Wheel.REAR_RIGHT) 0.84f else 0.5f
+
+/**
+ * Las cuatro pastillas junto a las ruedas del auto de espaldas de la carretera ([modifier] = la caja
+ * del auto): las izquierdas a su izquierda, las derechas a su derecha, a la altura de cada rueda. Igual
+ * que las de las esquinas: discretas si todo va bien y del color del problema si no.
+ */
+@Composable
+fun RoadTirePills(d: Dependencies, onOpen: () -> Unit, modifier: Modifier) {
+    if (d.prefs.tiresOnCar != TiresOnCar.CORNERS || !d.hasTpmsSource) return
+    val repo = d.tpms
+    val statuses = Wheel.ROAD.associateWith { repo.statusOf(it) }
+    val calm = statuses.values.none { it.problem }
+    Layout(
+        content = {
+            for (w in Wheel.ROAD) TirePill(pillText(d, w), statuses.getValue(w), onOpen, Modifier.graphicsLayer { alpha = if (calm) 0.7f else 1f })
+        },
+        modifier = modifier,
+    ) { measurables, constraints ->
+        val gap = 6.dp.roundToPx()
+        val pills = measurables.map { it.measure(Constraints()) }
+        layout(constraints.maxWidth, constraints.maxHeight) {
+            Wheel.ROAD.forEachIndexed { i, w ->
+                val p = pills[i]
+                val left = w == Wheel.FRONT_LEFT || w == Wheel.REAR_LEFT
+                val x = if (left) (constraints.maxWidth * REAR_CAR_SIDE).toInt() - p.width - gap else (constraints.maxWidth * (1 - REAR_CAR_SIDE)).toInt() + gap
+                p.place(x, (constraints.maxHeight * rearPillY(w)).toInt() - p.height / 2)
+            }
+        }
     }
 }
 
@@ -703,16 +735,10 @@ private fun TiresSmall(d: Dependencies) {
 private fun TiresMedium(d: Dependencies, tall: Boolean, bare: Boolean) {
     val repo = d.tpms
     val statuses = Wheel.ROAD.associateWith { repo.statusOf(it) }
-    val accent = LocalColors.current.accent
-    val danger = LocalColors.current.danger
     val car = @Composable { m: Modifier ->
         Box(m.aspectRatio(CAR_TOP_ASPECT)) {
             CarTop(d.cars, d.cars.pkg(d.prefs.carModel), d.prefs.carColor, Modifier.fillMaxSize())
-            if (statuses.values.any { it.problem }) Canvas(Modifier.fillMaxSize()) {
-                for ((w, st) in statuses) {
-                    if (st.problem) tireHalo(w, size.width * 0.067f, if (st.severity == TireSeverity.DANGER) danger else accent)
-                }
-            }
+            TireMarks(statuses, Modifier.fillMaxSize(), radius = 0.067f)
         }
     }
     if (tall) Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.SpaceBetween) {

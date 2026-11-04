@@ -110,7 +110,6 @@ import com.irvingguerra.litedash.feature.music.MusicRepository
 import com.irvingguerra.litedash.feature.tpms.PressureUnit
 import com.irvingguerra.litedash.feature.updater.Updater
 import com.irvingguerra.litedash.feature.updater.Version
-import java.io.File
 import kotlin.math.round
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -149,6 +148,7 @@ fun DrawerPanel(d: Dependencies, apps: List<App>, close: () -> Unit) {
     var query by remember { mutableStateOf("") }
     var selected by remember { mutableStateOf<App?>(null) }
     var showHidden by remember { mutableStateOf(false) }
+    var noRoom by remember { mutableStateOf(false) }
     // Sin dock propio se ven las sugeridas: fijar parte de ellas (no de cero).
     val dock = d.prefs.dock ?: remember(apps) { dockFavorites(d, apps).map { it.key } }
     val hidden = d.prefs.hidden
@@ -156,6 +156,7 @@ fun DrawerPanel(d: Dependencies, apps: List<App>, close: () -> Unit) {
     PanelScaffold(stringResource(R.string.apps), close) {
         TextInput(query, { query = it }, stringResource(R.string.search_app), Modifier.fillMaxWidth().widthIn(max = 640.dp), icon = true)
         val app = selected
+        if (noRoom) Label(stringResource(R.string.no_room), Typography.body, c.danger, modifier = Modifier.padding(top = 10.dp, start = 8.dp))
         if (app == null) {
             Row(Modifier.fillMaxWidth().padding(top = 10.dp, start = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                 Label(stringResource(R.string.drawer_help), Typography.small, c.textMuted, modifier = Modifier.weight(1f))
@@ -181,7 +182,7 @@ fun DrawerPanel(d: Dependencies, apps: List<App>, close: () -> Unit) {
                     selected = null
                 })
                 Button(stringResource(R.string.add_to_home), {
-                    d.dashboard.addTile(TileTypes.APP, app.key)
+                    noRoom = !d.dashboard.addTile(TileTypes.APP, app.key)
                     selected = null
                 })
                 val isHidden = app.key in hidden
@@ -212,17 +213,21 @@ fun DrawerPanel(d: Dependencies, apps: List<App>, close: () -> Unit) {
 fun PickAppPanel(d: Dependencies, apps: List<App>, tileId: String?, close: () -> Unit) {
     val dashboard = d.dashboard
     var query by remember { mutableStateOf("") }
+    var noRoom by remember { mutableStateOf(false) }
     PanelScaffold(stringResource(R.string.pick_app), close) {
         TextInput(query, { query = it }, stringResource(R.string.search_app), Modifier.fillMaxWidth().widthIn(max = 640.dp), icon = true)
+        if (noRoom) Label(stringResource(R.string.no_room), Typography.body, LocalColors.current.danger, modifier = Modifier.padding(top = 10.dp, start = 8.dp))
         AppGrid(
             d.apps, apps, query,
             onClick = { app ->
                 if (tileId != null) {
                     dashboard.setData(tileId, app.key)
+                    close()
+                } else if (dashboard.addTile(TileTypes.APP, app.key)) {
+                    close()
                 } else {
-                    dashboard.addTile(TileTypes.APP, app.key)
+                    noRoom = true
                 }
-                close()
             },
             modifier = Modifier.weight(1f).padding(top = 8.dp),
         )
@@ -303,7 +308,7 @@ private fun CarSettings(d: Dependencies) {
     LaunchedEffect(cars.hasCatalog) {
         if (cars.hasCatalog) runCatching { cars.catalog() }.onSuccess { catalog = it }.onFailure { unreachable = true }
     }
-    val tab = tabs(listOf(R.string.tab_my_car, R.string.tab_models, R.string.reminders), "auto")
+    val tab = tabs(listOf(R.string.tab_my_car, R.string.tab_models, R.string.reminders), "car")
 
     if (tab == 0) SettingsCard {
         Box(Modifier.fillMaxWidth().widthIn(max = 520.dp).aspectRatio(1.8f)) {
@@ -610,7 +615,7 @@ fun SettingsPanel(
 
 /**
  * Pestañas de una sección con muchas partes (para no hacer tanto scroll). Devuelve la
- * elegida; se recuerda por sección ([key]) mientras Ajustes esté abierto.
+ * elegida; se recuerda por sección ([key]) mientras LiteDash siga abierto (solo en memoria).
  */
 @Composable
 internal fun tabs(titles: List<Int>, key: String): Int {
@@ -623,13 +628,16 @@ internal fun tabs(titles: List<Int>, key: String): Int {
 /** Las pestañas de Ajustes → Apps (Música 0, Radio 1…). */
 private const val APPS_TABS = "apps"
 
-/** Las pestañas de Ajustes → Sistema (Actualizaciones es la 0 cuando hay). */
+/** Las pestañas de Ajustes → Sistema ([SystemTab]). */
 private const val SYSTEM_TABS = "system"
 
 /** Ajustes → Sistema abre en Actualizaciones (desde el aviso de versión nueva). */
-internal fun openUpdates() = selectTab(SYSTEM_TABS, 0)
+internal fun openUpdates() = selectTab(SYSTEM_TABS, SystemTab.UPDATES.ordinal)
 
-/** La pestaña elegida en cada sección (al cambiar de sección y regresar sigue ahí). */
+/**
+ * La pestaña elegida en cada sección (al cambiar de sección, o cerrar y abrir Ajustes, sigue ahí).
+ * Solo en memoria: no se guarda, así que sus claves pueden cambiar sin migrar nada.
+ */
 private val TabMemory = mutableStateMapOf<String, Int>()
 
 /** Cambia a otra pestaña de la sección [key] desde su contenido (p. ej. de Salud a Códigos). */
@@ -673,70 +681,89 @@ internal fun SettingsCard(
     }
 }
 
+/** Los temas a elegir, en Apariencia y en la bienvenida: oscuro, claro, día y noche y el del sistema. */
+internal val ThemeOptions = listOf(
+    ThemeMode.DARK to R.string.theme_dark,
+    ThemeMode.LIGHT to R.string.theme_light,
+    ThemeMode.SUN to R.string.theme_sun,
+    ThemeMode.SYSTEM to R.string.theme_system,
+)
+
+/** Pestañas de Apariencia: lo general, día y noche (tema, cuándo es de noche, brillo), tus imágenes y unidades. */
+private enum class AppearanceTab(val title: Int) {
+    GENERAL(R.string.tab_general), DAY_NIGHT(R.string.tab_day_night), IMAGES(R.string.tab_images), UNITS(R.string.units_title),
+}
+
 @Composable
 private fun Appearance(d: Dependencies, revision: Int) {
     val prefs = d.prefs
     val c = LocalColors.current
     val context = LocalContext.current
-    val tab = tabs(listOf(R.string.tab_general, R.string.tab_screen, R.string.units_title), "apariencia")
-    if (tab == 2) return SettingsCard { UnitsSettings(d) }
-    if (tab == 0) SettingsCard(stringResource(R.string.your_name), stringResource(R.string.your_name_help)) {
-        TextInput(prefs.driverName ?: "", { prefs.driverName = it.take(24).ifBlank { null } }, stringResource(R.string.your_name_hint), Modifier.fillMaxWidth())
-    }
-    if (tab == 1) SettingsCard(stringResource(R.string.night_source), stringResource(R.string.night_source_help)) {
-        val hasSensor = remember { context.getSystemService(SensorManager::class.java)?.getDefaultSensor(Sensor.TYPE_LIGHT) != null }
-        val options = listOfNotNull(
-            NightSource.SUN to R.string.night_sun,
-            (NightSource.SENSOR to R.string.night_sensor).takeIf { hasSensor },
-            NightSource.LIGHTS to R.string.night_lights,
-        )
-        Segmented(options.map { (s, text) -> s to stringResource(text) }, prefs.nightSource, { prefs.nightSource = it })
-        if (!hasSensor) Label(stringResource(R.string.night_no_sensor), Typography.small, c.textMuted)
-        if (prefs.nightSource == NightSource.LIGHTS) {
-            Label(stringResource(R.string.lights_help), Typography.small, c.textMuted)
-            LightsSettings(prefs)
-        }
-    }
-    if (tab == 1) SettingsCard(stringResource(R.string.wallpaper_title), stringResource(R.string.wallpaper_help)) {
-        WallpaperSettings(prefs)
-    }
-    // Sin título: el interruptor ya dice qué es.
-    if (tab == 1) SettingsCard {
-        IntroSettings(prefs)
-    }
-    if (tab == 1) SettingsCard {
-        SwitchRow(stringResource(R.string.hide_status_bar), prefs.hideStatusBar, { prefs.hideStatusBar = it }, stringResource(R.string.hide_status_bar_help))
-    }
-    if (tab == 1) SettingsCard(stringResource(R.string.theme)) {
-        Segmented(
-            listOf(ThemeMode.DARK to R.string.theme_dark, ThemeMode.LIGHT to R.string.theme_light, ThemeMode.SUN to R.string.theme_sun, ThemeMode.SYSTEM to R.string.theme_system)
-                .map { (mode, text) -> mode to stringResource(text) },
-            prefs.theme,
-            { prefs.theme = it },
-        )
-    }
-    if (tab == 1) SettingsCard(stringResource(R.string.brightness), stringResource(R.string.brightness_help)) {
-        BrightnessSettings(prefs, revision)
-    }
-    if (tab == 0) SettingsCard(stringResource(R.string.language)) {
-        val activity = context as? Activity
-        Segmented(
-            listOf("" to R.string.language_system, "es" to R.string.language_es, "en" to R.string.language_en).map { (code, text) -> code to stringResource(text) },
-            prefs.language,
-            { code ->
-                if (prefs.language != code) {
-                    prefs.language = code
-                    activity?.recreate()
+    when (AppearanceTab.entries[tabs(AppearanceTab.entries.map { it.title }, "appearance")]) {
+        AppearanceTab.GENERAL -> {
+            SettingsCard(stringResource(R.string.your_name), stringResource(R.string.your_name_help)) {
+                TextInput(prefs.driverName ?: "", { prefs.driverName = it.take(24).ifBlank { null } }, stringResource(R.string.your_name_hint), Modifier.fillMaxWidth())
+            }
+            SettingsCard(stringResource(R.string.language)) {
+                val activity = context as? Activity
+                Segmented(
+                    listOf("" to R.string.language_system, "es" to R.string.language_es, "en" to R.string.language_en).map { (code, text) -> code to stringResource(text) },
+                    prefs.language,
+                    { code ->
+                        if (prefs.language != code) {
+                            prefs.language = code
+                            activity?.recreate()
+                        }
+                    },
+                )
+            }
+            SettingsCard(stringResource(R.string.scale), stringResource(R.string.scale_help)) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    IconButton(Icons.minus, { prefs.scale = (prefs.scale - 0.1f).coerceAtLeast(0.8f).roundToTenth() }, background = c.surfaceHigh)
+                    Label("${(prefs.scale * 100).toInt()} %", Typography.title, modifier = Modifier.widthIn(min = 90.dp))
+                    IconButton(Icons.plus, { prefs.scale = (prefs.scale + 0.1f).coerceAtMost(1.5f).roundToTenth() }, background = c.surfaceHigh)
                 }
-            },
-        )
-    }
-    if (tab == 1) SettingsCard(stringResource(R.string.scale), stringResource(R.string.scale_help)) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            IconButton(Icons.minus, { prefs.scale = (prefs.scale - 0.1f).coerceAtLeast(0.8f).roundToTenth() }, background = c.surfaceHigh)
-            Label("${(prefs.scale * 100).toInt()} %", Typography.title, modifier = Modifier.widthIn(min = 90.dp))
-            IconButton(Icons.plus, { prefs.scale = (prefs.scale + 0.1f).coerceAtMost(1.5f).roundToTenth() }, background = c.surfaceHigh)
+            }
+            // Sin título: el interruptor ya dice qué es.
+            SettingsCard {
+                SwitchRow(stringResource(R.string.hide_status_bar), prefs.hideStatusBar, { prefs.hideStatusBar = it }, stringResource(R.string.hide_status_bar_help))
+            }
+            SettingsCard { WeatherSwitch(d.weather) }
         }
+        AppearanceTab.DAY_NIGHT -> {
+            SettingsCard(stringResource(R.string.theme)) {
+                Segmented(
+                    ThemeOptions.map { (mode, text) -> mode to stringResource(text) },
+                    prefs.theme,
+                    { prefs.theme = it },
+                )
+            }
+            SettingsCard(stringResource(R.string.night_source), stringResource(R.string.night_source_help)) {
+                val hasSensor = remember { context.getSystemService(SensorManager::class.java)?.getDefaultSensor(Sensor.TYPE_LIGHT) != null }
+                val options = listOfNotNull(
+                    NightSource.SUN to R.string.night_sun,
+                    (NightSource.SENSOR to R.string.night_sensor).takeIf { hasSensor },
+                    NightSource.LIGHTS to R.string.night_lights,
+                )
+                Segmented(options.map { (s, text) -> s to stringResource(text) }, prefs.nightSource, { prefs.nightSource = it })
+                if (!hasSensor) Label(stringResource(R.string.night_no_sensor), Typography.small, c.textMuted)
+                if (prefs.nightSource == NightSource.LIGHTS) {
+                    Label(stringResource(R.string.lights_help), Typography.small, c.textMuted)
+                    LightsSettings(prefs)
+                }
+            }
+            SettingsCard(stringResource(R.string.brightness), stringResource(R.string.brightness_help)) {
+                BrightnessSettings(prefs, revision)
+            }
+        }
+        AppearanceTab.IMAGES -> {
+            SettingsCard(stringResource(R.string.wallpaper_title), stringResource(R.string.wallpaper_help)) {
+                WallpaperSettings()
+            }
+            // Sin título: el interruptor ya dice qué es.
+            SettingsCard { IntroSettings(prefs) }
+        }
+        AppearanceTab.UNITS -> SettingsCard { UnitsSettings(d) }
     }
 }
 
@@ -787,7 +814,7 @@ private fun UnitsSettings(d: Dependencies) {
 private fun HomeSettings(d: Dependencies, onEdit: () -> Unit, onTemplates: () -> Unit) {
     val prefs = d.prefs
     val context = LocalContext.current
-    val tab = tabs(listOf(R.string.tab_layout, R.string.tab_tiles), "inicio")
+    val tab = tabs(listOf(R.string.tab_layout, R.string.tab_tiles), "home")
     if (tab == 1) return Tiles(d, onEdit)
     SettingsCard(stringResource(R.string.layout), stringResource(R.string.arrange_help)) {
         FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -859,24 +886,28 @@ private fun Favorites(d: Dependencies) {
     }
 }
 
+/** Pestañas de Sistema; Actualizaciones va primero (ahí abre el aviso de versión nueva). */
+private enum class SystemTab(val title: Int) {
+    UPDATES(R.string.tab_updates), ANDROID(R.string.android_settings), STATS(R.string.stats_title), YOUR_SCREEN(R.string.tab_your_screen),
+}
+
 /**
  * Sistema: lo de LiteDash y de la pantalla en pestañas. Actualizaciones (la versión con sus
  * novedades y, en la de GitHub, buscar la siguiente), atajos a Ajustes de Android, estadísticas
- * anónimas e info de la pantalla.
+ * anónimas e info de tu pantalla.
  */
 @Composable
 private fun SystemSettings(d: Dependencies) {
-    val titles = listOf(R.string.tab_updates, R.string.android_settings, R.string.stats_title, R.string.tab_screen)
-    when (titles[tabs(titles, SYSTEM_TABS).coerceAtMost(titles.lastIndex)]) {
-        R.string.tab_updates -> {
+    when (SystemTab.entries[tabs(SystemTab.entries.map { it.title }, SYSTEM_TABS).coerceAtMost(SystemTab.entries.lastIndex)]) {
+        SystemTab.UPDATES -> {
             About(d)
             if (d.updater.available) SettingsCard { Updates(d.updater) }
         }
-        R.string.android_settings -> AndroidSettings()
-        R.string.stats_title -> SettingsCard {
+        SystemTab.ANDROID -> AndroidSettings()
+        SystemTab.STATS -> SettingsCard {
             SwitchRow(stringResource(R.string.stats_switch), d.prefs.stats, { d.prefs.stats = it }, stringResource(R.string.stats_help))
         }
-        else -> ScreenInfo(d)
+        SystemTab.YOUR_SCREEN -> ScreenInfo(d)
     }
 }
 
@@ -949,12 +980,13 @@ private fun nameOf(t: ScreenSize) = when (t) {
 
 /**
  * Estilos de plantilla (una pestaña cada uno): con el auto 3D, con la carretera en su
- * lugar ([hero]), solo velocímetro (sin OBD: usa el GPS) o para lucir tu fondo, como BYD.
+ * lugar ([hero]), solo velocímetro (sin OBD: usa el GPS) o para lucir tu fondo, como BYD
+ * (ahí va la Mínima: hora y música, sin velocímetro). Cada plantilla sale en una sola pestaña.
  */
 private enum class TemplateTab(val title: Int, val templates: List<Template>, val hero: String = TileTypes.CAR) {
     CAR(R.string.templates_tab_car, Template.entries.filter { it.hasCar }),
     ROAD(R.string.templates_tab_road, listOf(Template.CARDS, Template.CENTER, Template.CAR_SPEED, Template.SPORT, Template.VERTICAL), TileTypes.ROAD),
-    SPEED(R.string.templates_tab_speed, listOf(Template.SPEED, Template.SPEED_WIDGETS, Template.MINIMAL)),
+    SPEED(R.string.templates_tab_speed, listOf(Template.SPEED, Template.SPEED_WIDGETS)),
     WALLPAPER(R.string.templates_tab_wallpaper, listOf(Template.WALL_CARDS, Template.WALL_SIDE, Template.MINIMAL)),
 }
 
@@ -971,7 +1003,7 @@ fun TemplatesPanel(dashboard: DashboardState, prefs: Preferences, close: () -> U
     PanelScaffold(stringResource(R.string.templates), close) {
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(24.dp)) {
             Label(stringResource(R.string.templates_help), Typography.body, c.textMuted)
-            val tab = TemplateTab.entries[tabs(TemplateTab.entries.map { it.title }, "plantillas")]
+            val tab = TemplateTab.entries[tabs(TemplateTab.entries.map { it.title }, "templates")]
             fun apply(p: Template) {
                 dashboard.template(p, tab.hero)
                 close()
@@ -981,7 +1013,7 @@ fun TemplatesPanel(dashboard: DashboardState, prefs: Preferences, close: () -> U
                 TemplateTab.SPEED -> Label(stringResource(R.string.templates_speed_help), Typography.small, c.textMuted)
                 TemplateTab.WALLPAPER -> {
                     Label(stringResource(R.string.templates_wallpaper_help), Typography.small, c.textMuted)
-                    WallpaperSettings(prefs)
+                    WallpaperSettings()
                 }
                 TemplateTab.CAR -> Unit
             }
@@ -997,7 +1029,7 @@ fun TemplatesPanel(dashboard: DashboardState, prefs: Preferences, close: () -> U
                         for (p in templates) {
                             Card(Modifier.width(260.dp), onClick = { apply(p) }) {
                                 Column(Modifier.padding(16.dp)) {
-                                    TemplateThumbnail(p, grid, tab.hero)
+                                    TemplateThumbnail(p, grid, tab.hero, dashboard.hidden)
                                     Spacer(Modifier.height(12.dp))
                                     Label(stringResource(nameOf(p)), Typography.subtitle, maxLines = 1)
                                     if (tab == TemplateTab.CAR && group == yours && p == suggested) {
@@ -1016,12 +1048,13 @@ fun TemplatesPanel(dashboard: DashboardState, prefs: Preferences, close: () -> U
 
 /** Dibujo de la plantilla en chiquito, con las proporciones de esta pantalla. */
 @Composable
-private fun TemplateThumbnail(p: Template, grid: Grid, hero: String) {
+private fun TemplateThumbnail(p: Template, grid: Grid, hero: String, skip: (String) -> Boolean) {
     val c = LocalColors.current
     BoxWithConstraints(Modifier.fillMaxWidth().aspectRatio(grid.columns.toFloat() / grid.rows).clip(RoundedCornerShape(Radius.inner)).background(c.background)) {
         val cw = maxWidth / grid.columns
         val ch = maxHeight / grid.rows
-        val tiles = p.tiles(grid, hero)
+        // Igual que al aplicarla: sin piezas de módulos apagados.
+        val tiles = p.tiles(grid, hero, skip)
         // La protagonista en ámbar: el auto (o la carretera) o, en las que no lo llevan, el velocímetro o la primera pieza.
         val main = (tiles.firstOrNull { it.type == hero } ?: tiles.firstOrNull { it.type == TileTypes.SPEEDOMETER } ?: tiles.firstOrNull())?.id
         for (tile in tiles) {
@@ -1040,7 +1073,6 @@ private fun TemplateThumbnail(p: Template, grid: Grid, hero: String) {
 @Composable
 fun AddTilePanel(d: Dependencies, close: () -> Unit, onPickApp: () -> Unit, onPickGauge: () -> Unit) {
     val c = LocalColors.current
-    val dashboard = d.dashboard
     var noRoom by remember { mutableStateOf(false) }
     PanelScaffold(stringResource(R.string.add_tile), close) {
         if (noRoom) {
@@ -1051,7 +1083,7 @@ fun AddTilePanel(d: Dependencies, close: () -> Unit, onPickApp: () -> Unit, onPi
         CardGrid(TileSpecs.filter { moduleOff(d, it.type) == null }, minWidth = 180.dp, height = if (isSmallScreen()) 100.dp else 120.dp, onClick = { spec ->
             if (spec.type == TileTypes.APP) onPickApp()
             else if (spec.type == TileTypes.GAUGE) onPickGauge()
-            else if (dashboard.add(spec.type, spec.initialSize, spec.limits)) close()
+            else if (d.dashboard.addTile(spec.type)) close()
             else noRoom = true
         }) { spec ->
             Icon(iconOf(spec.type), c.accent, 28.dp)
@@ -1070,7 +1102,7 @@ internal fun iconOf(type: String) = when (type) {
     TileTypes.CLOCK -> Icons.clock
     TileTypes.PHONE -> Icons.phone
     TileTypes.WEATHER -> Icons.sun
-    TileTypes.TRIP -> Icons.speed
+    TileTypes.TRIP -> Icons.location
     TileTypes.SPEEDOMETER -> Icons.speed
     TileTypes.GAUGE -> Icons.tachometer
     TileTypes.WORKSHOP -> Icons.engine
@@ -1339,9 +1371,7 @@ private sealed interface UpdateState {
     data object Checking : UpdateState
     data object UpToDate : UpdateState
     data class Available(val v: Version) : UpdateState
-    data class Downloading(val v: Version, val progress: Float) : UpdateState
     data class NeedsPermission(val v: Version) : UpdateState
-    data class Installing(val apk: File) : UpdateState
     data object Error : UpdateState
 }
 
@@ -1366,49 +1396,47 @@ private fun Updates(a: Updater) {
             a.requestInstallPermission()
             return
         }
-        state = UpdateState.Downloading(v, 0f)
-        scope.launch {
-            runCatching {
-                val apk = a.download(v) { f -> state = UpdateState.Downloading(v, f) }
-                state = UpdateState.Installing(apk)
-                a.install(apk)
-            }.onFailure { state = UpdateState.Error }
-        }
+        // La descarga vive en el Updater: sigue aunque se cierre Ajustes.
+        a.downloadAndInstall(v)
     }
 
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        when (val e = state) {
-            UpdateState.Idle, UpdateState.UpToDate, UpdateState.Error -> {
-                Button(stringResource(R.string.check_updates), {
-                    state = UpdateState.Checking
-                    scope.launch {
-                        state = runCatching { a.checkForUpdate() }
-                            .fold({ v -> if (v == null) UpdateState.UpToDate else UpdateState.Available(v) }, { UpdateState.Error })
-                    }
-                })
-                if (e == UpdateState.UpToDate) Label(stringResource(R.string.up_to_date), Typography.small, c.accent)
-                if (e == UpdateState.Error) Label(stringResource(R.string.update_error), Typography.small, c.danger)
-            }
-            UpdateState.Checking -> Label(stringResource(R.string.checking), Typography.body, c.textMuted)
-            is UpdateState.Available -> NewVersion(e.v) { install(e.v) }
-            is UpdateState.Downloading -> Label(stringResource(R.string.downloading, (e.progress * 100).toInt()), Typography.body, c.accent)
-            is UpdateState.NeedsPermission -> {
-                Label(stringResource(R.string.install_permission), Typography.small, c.textMuted)
-                Button(stringResource(R.string.already_allowed), { install(e.v) }, primary = true)
-            }
-            is UpdateState.Installing -> {
+        when (val p = a.progress) {
+            is Updater.Progress.Downloading -> Label(stringResource(R.string.downloading, p.percent), Typography.body, c.accent)
+            is Updater.Progress.Installing -> {
                 Label(stringResource(R.string.installing), Typography.body, c.accent)
                 // Si la confirmación de Android no aparece en unos segundos (o falla), el respaldo.
-                var stuck by remember(e) { mutableStateOf(false) }
-                LaunchedEffect(e) {
+                var stuck by remember(p) { mutableStateOf(false) }
+                LaunchedEffect(p) {
                     delay(INSTALLER_WAIT_MS)
                     stuck = true
                 }
                 if (stuck || Updater.installError != null) {
-                    Button(stringResource(R.string.open_installer), { a.openWithInstaller(e.apk) }, primary = true)
+                    Button(stringResource(R.string.open_installer), { a.openWithInstaller(p.apk) }, primary = true)
+                }
+            }
+            // Sin descarga en curso: buscar, la versión encontrada o el permiso de instalar.
+            else -> when (val e = state) {
+                UpdateState.Idle, UpdateState.UpToDate, UpdateState.Error -> {
+                    Button(stringResource(R.string.check_updates), {
+                        state = UpdateState.Checking
+                        scope.launch {
+                            state = runCatching { a.checkForUpdate() }
+                                .fold({ v -> if (v == null) UpdateState.UpToDate else UpdateState.Available(v) }, { UpdateState.Error })
+                        }
+                    })
+                    if (e == UpdateState.UpToDate) Label(stringResource(R.string.up_to_date), Typography.small, c.accent)
+                }
+                UpdateState.Checking -> Label(stringResource(R.string.checking), Typography.body, c.textMuted)
+                is UpdateState.Available -> NewVersion(e.v) { install(e.v) }
+                is UpdateState.NeedsPermission -> {
+                    Label(stringResource(R.string.install_permission), Typography.small, c.textMuted)
+                    Button(stringResource(R.string.already_allowed), { install(e.v) }, primary = true)
                 }
             }
         }
+        // Falló la búsqueda o la última descarga.
+        if (state == UpdateState.Error || a.progress == Updater.Progress.Failed) Label(stringResource(R.string.update_error), Typography.small, c.danger)
         Updater.installError?.let { Label(stringResource(R.string.install_error, it), Typography.small, c.danger) }
     }
 }
