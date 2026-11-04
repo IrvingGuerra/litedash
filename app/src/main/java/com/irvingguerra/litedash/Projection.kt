@@ -10,10 +10,12 @@ import com.irvingguerra.litedash.feature.apps.App
 private val PROJECTION_PACKAGES = listOf(
     "com.zjinnova.zlink", "cn.manstep.phonemirrorBox", "net.easyconn.carman", "com.suding.speedplay",
     "com.google.android.projection.gearhead",
+    // Android Auto por cable USB en pantallas que no lo traen (código abierto).
+    "com.andrerinas.headunitrevived",
 )
 
 // Si la pantalla trae la suya con otro paquete, se reconoce por el nombre.
-private val PROJECTION_WORDS = listOf("carplay", "android auto", "androidauto", "zlink", "autokit", "carlink", "easyconn", "tlink", "phonelink", "carbit")
+private val PROJECTION_WORDS = listOf("carplay", "android auto", "androidauto", "zlink", "autokit", "carlink", "easyconn", "tlink", "phonelink", "carbit", "headunit revived")
 
 /** La app de Android Auto / CarPlay que tenga la pantalla, o null. */
 fun projectionApp(apps: List<App>): App? =

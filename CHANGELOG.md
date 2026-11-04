@@ -6,6 +6,20 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
+## [1.4.64] - 2026-11-04
+
+### Arreglado
+- **Tocar el auto para ver las llantas, fluido de verdad**: el giro entra mientras el auto termina de
+  crecer (sin pausa) y a ritmo parejo, y la cámara sube sin brincos: cada imagen se funde con la
+  siguiente mientras el auto se acerca o aleja. Antes se veía cuadro por cuadro.
+- Abrir y cerrar Llantas se traba menos (el fundido ya no redibuja toda la pantalla aparte).
+- Taller: al conectar el adaptador con el widget Salud y el Taller abiertos, los códigos se leen una vez.
+
+### Cambiado
+- La app pesa 42 KB menos (sin licencias ni metadatos que no se usan al correr).
+- Reconoce **Headunit Revived** (Android Auto por cable en pantallas que no lo traen) en el widget
+  Android Auto / CarPlay.
+
 ## [1.4.63] - 2026-11-04
 
 ### Agregado

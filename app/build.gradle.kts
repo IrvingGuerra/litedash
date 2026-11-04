@@ -130,7 +130,15 @@ android {
     }
 
     packaging {
-        resources.excludes += setOf("/META-INF/{AL2.0,LGPL2.1}", "DebugProbesKt.bin")
+        // Lo que la app no usa al correr: licencias y versiones sueltas de las librerías (los
+        // créditos van en Sistema) y los metadatos de Kotlin para reflexión (no se usa).
+        resources.excludes += setOf(
+            "/META-INF/{AL2.0,LGPL2.1}",
+            "DebugProbesKt.bin",
+            "/META-INF/androidx/**/LICENSE.txt",
+            "/META-INF/*.version",
+            "/kotlin/**.kotlin_builtins",
+        )
     }
 }
 

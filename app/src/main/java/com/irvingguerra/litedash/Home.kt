@@ -6,6 +6,7 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.EaseInOut
 import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -58,7 +59,6 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
-import com.irvingguerra.litedash.feature.car.spinPath
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -78,9 +78,10 @@ import com.irvingguerra.litedash.feature.apps.AppIcon
 import com.irvingguerra.litedash.feature.apps.AppRepository
 import com.irvingguerra.litedash.feature.apps.rememberApps
 import com.irvingguerra.litedash.feature.car.CarPackage
+import com.irvingguerra.litedash.feature.car.CarRepository
 import com.irvingguerra.litedash.feature.car.CarRise
 import com.irvingguerra.litedash.feature.car.REAR_TURN
-import com.irvingguerra.litedash.feature.car.CarRepository
+import com.irvingguerra.litedash.feature.car.spinPath
 import com.irvingguerra.litedash.feature.dashboard.Dashboard
 import com.irvingguerra.litedash.feature.dashboard.DashboardState
 import com.irvingguerra.litedash.feature.dashboard.Grid
@@ -91,16 +92,18 @@ import com.irvingguerra.litedash.feature.music.MusicRepository
 import com.irvingguerra.litedash.feature.music.MusicTile
 import com.irvingguerra.litedash.feature.music.RadioExpanded
 import com.irvingguerra.litedash.feature.music.RadioTile
-import com.irvingguerra.litedash.feature.player.PlayerBrowser
-import com.irvingguerra.litedash.feature.player.PlayerSource
 import com.irvingguerra.litedash.feature.navigation.NavigationRepository
 import com.irvingguerra.litedash.feature.obd.ObdRepository
+import com.irvingguerra.litedash.feature.player.PlayerBrowser
+import com.irvingguerra.litedash.feature.player.PlayerSource
 import com.irvingguerra.litedash.feature.tpms.TpmsRepository
 import com.irvingguerra.litedash.feature.updater.Updater
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 
 /** Qué se ve en grande en lugar del tablero. */
@@ -377,10 +380,14 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
             if (toTires) {
                 // Ya viene preparado desde el inicio; si no alcanzó (recién encendido), se espera un poco.
                 withTimeoutOrNull(1_500) { snapshotFlow { rise.ready }.first { it } }
-                // Crece y, ya en grande, gira hasta quedar de espaldas (cuadros ya pintados: solo se dibujan).
-                // Uno después del otro: a la vez (agrandar y cambiar de cuadro juntos) se trababa el doble.
-                carProgress.animateTo(1f, tween(GROW_TO_TIRES_MS, easing = FastOutSlowInEasing))
-                if (rise.turnSteps > 0) riseSpin.animateTo(1f, tween(spinMs(rise.turnSteps), easing = FastOutSlowInEasing))
+                // Crece y, casi en grande, gira hasta quedar de espaldas (cuadros ya pintados: solo se
+                // dibujan). El giro entra en la cola del crecimiento (esperarlo se veía como pausa) y
+                // a ritmo parejo: con frenado, el último paso duraba más y se notaba el brinco.
+                coroutineScope {
+                    launch { carProgress.animateTo(1f, tween(GROW_TO_TIRES_MS, easing = FastOutSlowInEasing)) }
+                    delay(GROW_TO_TIRES_MS * 3L / 4)
+                    if (rise.turnSteps > 0) riseSpin.animateTo(1f, tween(spinMs(rise.turnSteps), easing = LinearEasing))
+                }
                 if (rise.hasFrames) riseProgress.animateTo(1f, tween(900, easing = EaseInOut))
                 openTires()
                 return@LaunchedEffect
@@ -389,7 +396,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
         } else if (carShown) {
             if (riseProgress.value > 0f) riseProgress.animateTo(0f, tween((900 * riseProgress.value).toInt(), easing = EaseInOut))
             // De regreso, al revés: gira a donde lo dejó y luego se encoge.
-            if (riseSpin.value > 0f) riseSpin.animateTo(0f, tween(spinMs(rise.turnSteps), easing = FastOutSlowInEasing))
+            if (riseSpin.value > 0f) riseSpin.animateTo(0f, tween(spinMs(rise.turnSteps), easing = LinearEasing))
             carProgress.animateTo(0f, tween(GROW_TO_TIRES_MS, easing = FastOutSlowInEasing))
             carShown = false
             carReady = false
@@ -898,5 +905,5 @@ private const val SPIN_STEP_MS = 75
 /** Lo que tarda el auto en crecer camino a las llantas. */
 private const val GROW_TO_TIRES_MS = 520
 
-/** Lo que dura el giro a la vista de espaldas: pausado, pero nunca eterno. */
-private fun spinMs(steps: Int) = (steps * SPIN_STEP_MS).coerceIn(300, 1_000)
+/** Lo que dura el giro a la vista de espaldas: cada paso igual (uno solo no se alarga: se veía la pausa y luego el brinco), nunca eterno. */
+private fun spinMs(steps: Int) = (steps * SPIN_STEP_MS).coerceAtMost(1_000)

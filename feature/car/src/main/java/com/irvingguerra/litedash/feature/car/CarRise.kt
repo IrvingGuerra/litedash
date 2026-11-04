@@ -43,6 +43,10 @@ class CarRise {
     internal var turnFrames by mutableStateOf<List<CarLayers>>(emptyList())
         private set
 
+    /** Dónde queda el auto (lo sólido) en el último cuadro del giro, en fracciones de su imagen. */
+    internal var turnEnd: Rect? = null
+        private set
+
     /** Cuántos cuadros gira (para que cada uno dure lo mismo). */
     val turnSteps get() = turnFrames.size
 
@@ -57,9 +61,12 @@ class CarRise {
     internal var frames: Array<ImageBitmap?> = emptyArray()
         private set
 
-    /** Dónde queda el auto en el último cuadro, en fracciones de la imagen. */
-    internal var topBox: Rect? = null
+    /** Dónde queda el auto en cada cuadro, en fracciones de la imagen (para fundir uno con otro sin que se vean dos). */
+    internal var boxes: Array<Rect?> = emptyArray()
         private set
+
+    /** Dónde queda el auto en el último cuadro, en fracciones de la imagen. */
+    internal val topBox: Rect? get() = boxes.lastOrNull()
 
     /** Esquina del lienzo del auto en la raíz (para llevarlo a [target]); no es estado. */
     internal var canvasOrigin = Offset.Zero
@@ -96,13 +103,14 @@ class CarRise {
     private fun releaseTurn() {
         turnKey = null
         turnFrames = emptyList()
+        turnEnd = null
         turnReady = false
     }
 
     private fun releaseRise() {
         riseKey = null
         frames = emptyArray()
-        topBox = null
+        boxes = emptyArray()
         count = 0
         loaded = 0
     }
@@ -134,6 +142,8 @@ class CarRise {
                 }
                 turn += layers
             }
+            turnEnd = turn.lastOrNull()?.let { withContext(Dispatchers.Default) { solidBox(it.car.asAndroidBitmap()) } }
+            if (gen != generation) return
             turnFrames = turn
             turnReady = true
             turnKey = turnWant
@@ -148,7 +158,9 @@ class CarRise {
         }
         val n = info.frames
         val own = arrayOfNulls<ImageBitmap>(n)
+        val ownBoxes = arrayOfNulls<Rect>(n)
         frames = own
+        boxes = ownBoxes
         count = n
         // De uno en uno: no hay prisa (falta para que lo toquen) y no se le roba procesador al inicio.
         for (i in 0 until n) {
@@ -156,7 +168,7 @@ class CarRise {
             if (gen != generation || frames !== own) return
             // Si falta uno, no hay subida (nunca a medias).
             if (img == null) return releaseRise().also { riseKey = riseWant }
-            if (i == n - 1) topBox = withContext(Dispatchers.Default) { solidBox(img.asAndroidBitmap()) }
+            ownBoxes[i] = withContext(Dispatchers.Default) { solidBox(img.asAndroidBitmap()) }
             own[i] = img
             loaded++
         }

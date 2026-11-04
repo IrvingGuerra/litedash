@@ -26,10 +26,12 @@ import com.irvingguerra.litedash.core.vehicle.Signal
 import com.irvingguerra.litedash.core.vehicle.Source
 import com.irvingguerra.litedash.core.vehicle.VehicleBus
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.isActive
@@ -368,8 +370,16 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
     var lastReport by mutableStateOf<EngineReport?>(null)
         private set
 
-    /** Lee todo lo del motor de una vez para el Taller. */
-    suspend fun report(): EngineReport? = readReport().also { if (it != null) lastReport = it }
+    /**
+     * Lee todo lo del motor de una vez para el Taller. Si ya se está leyendo (el Taller y la pieza
+     * Salud piden a la vez al conectar), espera esa misma lectura: el auto no contesta dos veces.
+     */
+    suspend fun report(): EngineReport? {
+        val running = reading?.takeIf { it.isActive }
+            ?: scope.async { readReport().also { if (it != null) lastReport = it } }.also { reading = it }
+        return running.await()
+    }
+    private var reading: Deferred<EngineReport?>? = null
 
     private suspend fun readReport(): EngineReport? = withElm { e ->
         EngineReport(

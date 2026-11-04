@@ -49,6 +49,7 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.Layout
@@ -448,7 +449,8 @@ internal fun tiresStatusText(repo: TpmsRepository): String = when (repo.status) 
 fun TiresFull(d: Dependencies, progress: () -> Float, onClose: () -> Unit, onSettings: () -> Unit, onCarBounds: ((Rect) -> Unit)? = null) {
     val c = LocalColors.current
     var chart by remember { mutableStateOf<Wheel?>(null) }
-    Box(Modifier.fillMaxSize().graphicsLayer { alpha = progress() }) {
+    // La transparencia a cada cosa al dibujarla (sin capa aparte de toda la pantalla en cada cuadro del fundido).
+    Box(Modifier.fillMaxSize().graphicsLayer { alpha = progress(); compositingStrategy = CompositingStrategy.ModulateAlpha }) {
         Box(
             Modifier
                 .fillMaxSize()
