@@ -90,6 +90,7 @@ import com.irvingguerra.litedash.feature.player.PlayerBrowser
 import com.irvingguerra.litedash.feature.player.PlayerSource
 import com.irvingguerra.litedash.feature.navigation.NavigationRepository
 import com.irvingguerra.litedash.feature.obd.ObdRepository
+import com.irvingguerra.litedash.feature.tpms.TpmsRepository
 import com.irvingguerra.litedash.feature.updater.Updater
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
@@ -122,6 +123,8 @@ sealed interface Panel {
     data class CustomizeGauge(val tileId: String) : Panel
     /** La foto de una pieza de imagen ([tileId]). */
     data class CustomizeImage(val tileId: String) : Panel
+    /** Ajustes abiertos en Llantas (desde la vista de llantas o la pieza sin configurar). */
+    data object TiresSettings : Panel
 }
 
 class Dependencies(
@@ -141,6 +144,8 @@ class Dependencies(
     val bus: VehicleBus,
     private val obdLazy: Lazy<ObdRepository>,
     private val obdSaved: () -> Boolean,
+    private val tpmsLazy: Lazy<TpmsRepository>,
+    private val tpmsSaved: () -> Boolean,
 ) {
     /** Estado de Compose: las piezas que preguntaron antes de que existiera se vuelven a dibujar. */
     private val obdCreated = mutableStateOf(false)
@@ -154,6 +159,22 @@ class Dependencies(
 
     /** El escáner si ya existe, sin crearlo (una pieza solo quiere saber si está conectado). */
     fun obdIfCreated(): ObdRepository? = if (obdCreated.value) obdLazy.value else null
+
+    private val tpmsCreated = mutableStateOf(false)
+
+    /** Las llantas: se crean la primera vez que algo las pide (sus Ajustes o una pieza con fuente elegida). */
+    val tpms: TpmsRepository
+        get() = tpmsLazy.value.also { if (!tpmsCreated.value) tpmsCreated.value = true }
+
+    /**
+     * Hay una fuente de llantas elegida. Sin crear el repositorio para saberlo; ya creado, se
+     * lee su estado (al elegir o quitar la fuente, el inicio se entera solo).
+     */
+    val hasTpmsSource: Boolean
+        get() = if (tpmsCreated.value) tpmsLazy.value.source != null else tpmsSaved()
+
+    /** Las llantas si ya existen, sin crearlas. */
+    fun tpmsIfCreated(): TpmsRepository? = if (tpmsCreated.value) tpmsLazy.value else null
 }
 
 /**
@@ -171,6 +192,10 @@ class TileActions(
     val onCarBounds: (String, Rect) -> Unit,
     /** Si la pieza (por id) se esconde porque se ve en grande; se lee al dibujar (no recompone el tablero en cada cuadro de la animación). */
     val carHidden: (String) -> Boolean,
+    /** Las llantas a pantalla completa, creciendo desde la pieza [String] (null = desde el centro). */
+    val onTires: (String?) -> Unit,
+    /** Acomodando el inicio (las pastillas de llantas se esconden: estorban a los botones). */
+    val editing: () -> Boolean,
 )
 
 /** Cada tipo de pieza dibujado según su tipo. */
@@ -178,22 +203,29 @@ class TileActions(
 fun TileContent(d: Dependencies, p: Tile, apps: List<App>, car: CarPackage?, revision: Int, actions: TileActions) {
     val context = LocalContext.current
     when (p.type) {
-        TileTypes.CAR, TileTypes.ROAD, TileTypes.IMAGE -> HeroTile(
-            d,
-            p,
-            car,
-            // Una imagen sin foto abre su panel para elegirla; lo demás crece.
-            onClick = { if (p.type == TileTypes.IMAGE && p.data.isEmpty()) actions.onPanel(Panel.CustomizeImage(p.id)) else actions.onCarOnly(p) },
-            modifier = Modifier
+        TileTypes.CAR, TileTypes.ROAD, TileTypes.IMAGE -> Box(
+            Modifier
+                .fillMaxSize()
                 .onGloballyPositioned { actions.onCarBounds(p.id, it.boundsInRoot()) }
                 // Mientras crece o se ve sola, la de la pieza se esconde (si no, se ve doble).
                 .graphicsLayer { alpha = if (actions.carHidden(p.id)) 0f else 1f },
-        )
+        ) {
+            HeroTile(
+                d,
+                p,
+                car,
+                // Una imagen sin foto abre su panel para elegirla; lo demás crece.
+                onClick = { if (p.type == TileTypes.IMAGE && p.data.isEmpty()) actions.onPanel(Panel.CustomizeImage(p.id)) else actions.onCarOnly(p) },
+                modifier = Modifier.fillMaxSize(),
+            )
+            // Las llantas en las esquinas del auto o de tu imagen (la carretera ya va llena).
+            if (p.type != TileTypes.ROAD && !actions.editing()) TirePills(d) { actions.onTires(p.id) }
+        }
         TileTypes.MUSIC -> MusicTile(d.music, revision, onExpand = actions.onMusic)
         TileTypes.RADIO -> RadioTile(d.music, revision, onExpand = actions.onRadio)
         TileTypes.CLOCK -> ClockTile(d.prefs.driverName, d.weather)
         TileTypes.WEATHER -> WeatherTile(d.weather)
-        TileTypes.TRIP -> TripTile(d.trip, d.prefs.language)
+        TileTypes.TRIP -> TripTile(d.trip, d.prefs.units.miles)
         TileTypes.SPEEDOMETER -> SpeedometerTile(d, remember(p.data) { GaugeLook.parse(p.data) })
         TileTypes.GAUGE -> GaugeTile(
             d, signalOf(p.data), remember(p.data) { GaugeLook.parse(p.data) },
@@ -202,6 +234,9 @@ fun TileContent(d: Dependencies, p: Tile, apps: List<App>, car: CarPackage?, rev
         )
         TileTypes.WORKSHOP -> WorkshopTile(d) { actions.onPanel(Panel.Workshop) }
         TileTypes.PROJECTION -> ProjectionTile(d, apps) { actions.onPanel(Panel.Drawer) }
+        TileTypes.TIRES -> Box(Modifier.fillMaxSize().onGloballyPositioned { actions.onCarBounds(p.id, it.boundsInRoot()) }) {
+            TiresTile(d, onOpen = { actions.onTires(p.id) }, onSettings = { actions.onPanel(Panel.TiresSettings) })
+        }
         TileTypes.NAVIGATE -> {
             val app = mapApp(d, apps, p.data)
             NavigationTile(
@@ -248,8 +283,27 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
     // La pieza que se ve en grande (auto, carretera o imagen) y dónde está cada una.
     var bigTile by remember { mutableStateOf<Tile?>(null) }
     val tileBounds = remember { mutableStateMapOf<String, Rect>() }
+    // Las llantas a pantalla completa: [tiresOpen] es a dónde va, [tiresShown] si sigue en pantalla.
+    var tiresOpen by remember { mutableStateOf(false) }
+    var tiresFrom by remember { mutableStateOf(Rect.Zero) }
+    var tiresShown by remember { mutableStateOf(false) }
+    val tiresProgress = remember { Animatable(0f) }
+    LaunchedEffect(tiresOpen) {
+        if (tiresOpen) {
+            tiresShown = true
+            tiresProgress.animateTo(1f, tween(420, easing = FastOutSlowInEasing))
+        } else if (tiresShown) {
+            tiresProgress.animateTo(0f, tween(320, easing = FastOutSlowInEasing))
+            tiresShown = false
+        }
+    }
+    fun openTires(from: Rect) {
+        tiresFrom = from
+        tiresOpen = true
+    }
     fun backToDashboard() {
         panel = null
+        tiresOpen = false
         carOnly = false
         expanded = null
         editing = false
@@ -277,10 +331,10 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
     var touched by remember { mutableIntStateOf(0) }
     var parked by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) {
-        snapshotFlow { listOf(touched, d.wheel.presses, panel, editing, expanded, carOnly, d.prefs.parkedMode) }
+        snapshotFlow { listOf(touched, d.wheel.presses, panel, editing, expanded, carOnly, tiresOpen, d.prefs.parkedMode) }
             .collectLatest {
                 parked = false
-                if (!d.prefs.parkedMode || panel != null || editing || expanded != null || carOnly) return@collectLatest
+                if (!d.prefs.parkedMode || panel != null || editing || expanded != null || carOnly || tiresOpen) return@collectLatest
                 delay(PARK_AFTER_MS)
                 // Manejando no: espera a que se detenga (solo se sabe con la pieza Viaje).
                 snapshotFlow { d.trip.moving }.first { !it }
@@ -288,9 +342,10 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
             }
     }
 
-    BackHandler(enabled = (panel != null || editing || expanded != null || carOnly) && d.prefs.welcomeSeen) {
+    BackHandler(enabled = (panel != null || editing || expanded != null || carOnly || tiresOpen) && d.prefs.welcomeSeen) {
         when {
             panel != null -> panel = null
+            tiresOpen -> tiresOpen = false
             carOnly -> carOnly = false
             expanded != null -> expanded = null
             else -> editing = false
@@ -315,6 +370,8 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
             onCarOnly = { bigTile = it; carOnly = true },
             onCarBounds = { id, rect -> if (tileBounds[id] != rect) tileBounds[id] = rect },
             carHidden = { id -> carShown && bigTile?.id == id && carProgress.value > 0f },
+            onTires = { id -> openTires(id?.let { tileBounds[it] } ?: Rect.Zero) },
+            editing = { editing },
         )
     }
 
@@ -368,9 +425,11 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
           }
           val favorites = remember(apps, d.prefs.dock, d.prefs.musicApp) { dockFavorites(d, apps) }
           Row(Modifier.fillMaxSize()) {
+            val tiresWarning = @Composable { size: Dp -> TiresRailIndicator(d, size) { actions.onTires(null) } }
             if (rail) Rail(
                 repo = d.apps,
                 favorites = favorites,
+                tires = tiresWarning,
                 onCar = { panel = Panel.CarSettings },
                 onApps = { panel = Panel.Drawer },
                 onSettings = { panel = Panel.Settings },
@@ -380,6 +439,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                 val showTime = !rail && d.dashboard.tiles.none { it.type == TileTypes.CLOCK }
                 val barHidden = !editing && !showTime
                 TopBar(
+                    tires = tiresWarning,
                     editing = editing,
                     showTime = showTime,
                     driverName = d.prefs.driverName,
@@ -394,6 +454,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                     if (d.prefs.welcomeSeen && !editing) {
                         if (!d.prefs.dontAskHome && !isShortScreen()) HomePrompt(d.prefs, revision)
                         EngineAlertBanner(d)
+                        TiresAlertBanner(d) { actions.onTires(null) }
                         TripRecorderEffect(d)
                         if (!isShortScreen()) ReminderBanner(d.reminders)
                         UpdateBanner(d.updater, onOpen = { panel = Panel.About })
@@ -453,7 +514,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
         when (val p = panel) {
             null -> Unit
             Panel.Drawer -> DrawerPanel(d, apps, close = { panel = null })
-            Panel.Settings, Panel.About, Panel.CarSettings, Panel.Workshop, Panel.MusicSettings -> SettingsPanel(
+            Panel.Settings, Panel.About, Panel.CarSettings, Panel.Workshop, Panel.MusicSettings, Panel.TiresSettings -> SettingsPanel(
                 d,
                 revision = revision,
                 close = { panel = null },
@@ -464,8 +525,10 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                     Panel.CarSettings -> SettingsSection.CAR
                     Panel.Workshop -> SettingsSection.WORKSHOP
                     Panel.MusicSettings -> SettingsSection.APPS
+                    Panel.TiresSettings -> SettingsSection.TIRES
                     else -> SettingsSection.CAR
                 },
+                onTires = { panel = null; openTires(Rect.Zero) },
             )
             Panel.Templates -> TemplatesPanel(d.dashboard, d.prefs, close = { panel = null })
             Panel.AddTile -> AddTilePanel(
@@ -483,6 +546,14 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
         val big = bigTile
         if (carShown && panel == null && big != null) {
             CarOnly(d, car, big, tileBounds[big.id] ?: Rect.Zero, { carProgress.value }, backdrop, onTap = { carOnly = false }, onReady = { carReady = true })
+        }
+
+        if (tiresShown && panel == null) {
+            TiresFull(
+                d, tiresFrom, { tiresProgress.value },
+                onClose = { tiresOpen = false },
+                onSettings = { tiresOpen = false; panel = Panel.TiresSettings },
+            )
         }
 
         if (parked) Parked(d, onWake = { parked = false; touched++ })
@@ -546,7 +617,7 @@ private fun topBarHeight() = if (isShortScreen()) 44.dp else 64.dp
 private val TOP_BAR_HIDDEN = 12.dp
 
 @Composable
-private fun TopBar(editing: Boolean, showTime: Boolean, driverName: String?, weather: WeatherRepository, onAdd: () -> Unit, onTemplates: () -> Unit, onFinish: () -> Unit) {
+private fun TopBar(tires: @Composable (Dp) -> Unit, editing: Boolean, showTime: Boolean, driverName: String?, weather: WeatherRepository, onAdd: () -> Unit, onTemplates: () -> Unit, onFinish: () -> Unit) {
     val c = LocalColors.current
     // Sin nada que mostrar (la hora ya está en una pieza), la barra no aparta espacio: el tablero sube.
     if (!editing && !showTime) return Spacer(Modifier.height(TOP_BAR_HIDDEN))
@@ -569,6 +640,7 @@ private fun TopBar(editing: Boolean, showTime: Boolean, driverName: String?, wea
                 Label(clock.date, Typography.body, c.textMuted, maxLines = 1)
             }
             WeatherChip(weather)
+            tires(44.dp)
             StatusIcons()
             Label(clock.full, Typography.subtitle, maxLines = 1)
         }
@@ -637,6 +709,7 @@ private fun AppShortcut(repo: AppRepository, app: App, box: Dp, icon: Dp) {
 private fun Rail(
     repo: AppRepository,
     favorites: List<App>,
+    tires: @Composable (Dp) -> Unit,
     onCar: () -> Unit,
     onApps: () -> Unit,
     onSettings: () -> Unit,
@@ -658,6 +731,8 @@ private fun Rail(
             if (clock.marker != null) Label(clock.marker, Typography.small.copy(fontSize = 11.sp), c.textMuted, maxLines = 1, modifier = Modifier.padding(start = 2.dp, bottom = 2.dp))
         }
         Box(Modifier.padding(bottom = 6.dp)) { StatusIcons() }
+        // Testigo de llantas: solo aparece con un problema.
+        tires(button)
         IconButton(Icons.car, onCar, size = button)
         IconButton(Icons.apps, onApps, size = button)
         Box(Modifier.padding(vertical = 4.dp).width(28.dp).height(1.dp).background(c.line))

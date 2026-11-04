@@ -150,7 +150,7 @@ data class GaugeLook(
 fun signalOf(data: String) = data.substringBefore(';').takeIf { '=' !in it } ?: ""
 
 /** Máximos del velocímetro para elegir, en km/h o mph; el primero es el de fábrica. */
-fun speedMaxOptions(imperial: Boolean) = if (imperial) listOf(120, 100, 160, 200) else listOf(200, 160, 240, 320)
+fun speedMaxOptions(miles: Boolean) = if (miles) listOf(120, 100, 160, 200) else listOf(200, 160, 240, 320)
 
 /**
  * Los colores de lo que se llena, de principio a fin del medidor, repartidos parejo.

@@ -1,0 +1,17 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+    <!--
+        Presión de llantas: receptor USB de 433 MHz (la pantalla es el host) o tapones
+        Bluetooth LE que solo se escuchan (sin conectarse). Los permisos son los mismos que
+        los del escáner OBD, con las mismas banderas para que el manifiesto final no choque.
+        La ubicación (Bluetooth LE hasta Android 11) ya la declara la app.
+    -->
+    <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30" />
+    <uses-permission
+        android:name="android.permission.BLUETOOTH_SCAN"
+        android:usesPermissionFlags="neverForLocation"
+        tools:targetApi="s" />
+    <uses-feature android:name="android.hardware.bluetooth_le" android:required="false" />
+    <uses-feature android:name="android.hardware.usb.host" android:required="false" />
+</manifest>

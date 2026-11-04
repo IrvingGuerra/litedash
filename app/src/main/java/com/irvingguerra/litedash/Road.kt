@@ -169,19 +169,19 @@ fun RoadView(d: Dependencies, pkg: CarPackage?, onClick: () -> Unit, modifier: M
 @Composable
 private fun RoadNumbers(d: Dependencies, kmh: Float?, heightDp: Float, modifier: Modifier) {
     val c = LocalColors.current
-    val imperial = imperialUnits(d.prefs.language)
+    val miles = d.prefs.units.miles
     val locale = currentLocale()
-    val speed = kmh?.toMiles(imperial)
-    val distance = d.trip.meters.metersToDistance(imperial)
+    val speed = kmh?.toMiles(miles)
+    val distance = d.trip.meters.metersToDistance(miles)
     val big = (heightDp * 0.16f).coerceIn(30f, 96f)
     Row(modifier) {
         Column(Modifier.weight(1f)) {
             Label(String.format(locale, "%.0f", speed ?: 0f), Typography.clock.copy(fontSize = big.sp), maxLines = 1)
-            Label(stringResource(if (imperial) R.string.unit_mph else R.string.unit_kmh), Typography.small, c.textMuted, maxLines = 1)
+            Label(stringResource(if (miles) R.string.unit_mph else R.string.unit_kmh), Typography.small, c.textMuted, maxLines = 1)
         }
         Column(horizontalAlignment = Alignment.End) {
             Label(
-                String.format(locale, "%.1f %s", distance, if (imperial) "mi" else "km"),
+                String.format(locale, "%.1f %s", distance, if (miles) "mi" else "km"),
                 Typography.clock.copy(fontSize = (big * 0.45f).coerceAtLeast(20f).sp),
                 maxLines = 1,
             )

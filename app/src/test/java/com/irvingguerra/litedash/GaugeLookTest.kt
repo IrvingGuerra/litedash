@@ -46,8 +46,8 @@ class GaugeLookTest {
 
     @Test
     fun marcasDelVelocimetro() {
-        assertEquals(10, ticksFor(200f, imperial = false))
-        assertEquals(8, ticksFor(320f, imperial = false))
-        assertEquals(12, ticksFor(120f, imperial = true))
+        assertEquals(10, ticksFor(200f, miles = false))
+        assertEquals(8, ticksFor(320f, miles = false))
+        assertEquals(12, ticksFor(120f, miles = true))
     }
 }

@@ -76,21 +76,25 @@ internal fun rememberSeries(d: Dependencies, signal: String): List<Float> {
 /**
  * Línea fina de los últimos [SERIES_SECONDS] segundos con un velo suave debajo. Se llena
  * de derecha a izquierda (lo más nuevo siempre a la derecha); con menos de dos puntos no
- * dibuja nada pero guarda su lugar.
+ * dibuja nada pero guarda su lugar. [capacity] = cuántos puntos caben a lo ancho. [minSpan] = el
+ * alto mínimo que representa la línea (en las unidades del dato): sin él, el ruido de un dato
+ * estable se estira a todo el alto y parece un garabato.
  */
 @Composable
-internal fun Sparkline(points: List<Float>, color: Color, modifier: Modifier = Modifier) {
+internal fun Sparkline(points: List<Float>, color: Color, modifier: Modifier = Modifier, capacity: Int = SERIES_POINTS, minSpan: Float = 0f) {
     Canvas(modifier) {
         if (points.size < 2) return@Canvas
-        val lo = points.min()
-        val hi = points.max().let { if (it - lo < 1e-3f) lo + 1f else it }
+        val mid = (points.min() + points.max()) / 2
+        val half = maxOf((points.max() - points.min()) / 2, minSpan / 2, 5e-4f)
+        val lo = mid - half
+        val hi = mid + half
         val line = Path()
         points.forEachIndexed { k, v ->
-            val x = size.width * (SERIES_POINTS - points.size + k) / (SERIES_POINTS - 1)
+            val x = size.width * (capacity - points.size + k) / (capacity - 1)
             val y = size.height * (1 - (v - lo) / (hi - lo)) * 0.8f + size.height * 0.1f
             if (k == 0) line.moveTo(x, y) else line.lineTo(x, y)
         }
-        val firstX = size.width * (SERIES_POINTS - points.size) / (SERIES_POINTS - 1)
+        val firstX = size.width * (capacity - points.size) / (capacity - 1)
         val fill = Path().apply {
             addPath(line)
             lineTo(size.width, size.height)

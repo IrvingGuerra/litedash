@@ -30,14 +30,14 @@ fun SpeedometerTile(d: Dependencies, look: GaugeLook) {
     // Sin OBD, el GPS publica la velocidad en el bus mientras la pieza se ve.
     if (!obdOn) KeepTripRunning(d.trip)
     val kmh = d.bus.watch(Signal.SPEED)
-    val imperial = imperialUnits(d.prefs.language)
+    val miles = d.prefs.units.miles
     val source = when (d.bus.source(Signal.SPEED)) {
         Source.OBD -> "OBD"
         Source.GPS -> "GPS"
         Source.CAN -> "CAN"
         null -> ""
     }
-    SpeedGaugeCard((kmh ?: 0f).toMiles(imperial), imperial, source, look, d.prefs.carColor)
+    SpeedGaugeCard((kmh ?: 0f).toMiles(miles), miles, source, look, d.prefs.carColor)
 }
 
 /**
@@ -45,13 +45,13 @@ fun SpeedometerTile(d: Dependencies, look: GaugeLook) {
  * usan la pieza y la vista previa de Personalizar medidor.
  */
 @Composable
-fun SpeedGaugeCard(speed: Float, imperial: Boolean, tag: String, look: GaugeLook, carColor: Color) {
-    val max = (look.max ?: speedMaxOptions(imperial).first()).toFloat()
+fun SpeedGaugeCard(speed: Float, miles: Boolean, tag: String, look: GaugeLook, carColor: Color) {
+    val max = (look.max ?: speedMaxOptions(miles).first()).toFloat()
     // Marcas cada 20 km/h (10 mph); con 240 o más, cada 40 (20 mph) para que no se amontonen.
-    val ticks = ticksFor(max, imperial)
+    val ticks = ticksFor(max, miles)
     GaugeCard(
         number = String.format(currentLocale(), "%.0f", speed),
-        unit = stringResource(if (imperial) R.string.unit_mph else R.string.unit_kmh),
+        unit = stringResource(if (miles) R.string.unit_mph else R.string.unit_kmh),
         tag = tag,
         fraction = speed / max,
         ticks = ticks,
@@ -62,8 +62,8 @@ fun SpeedGaugeCard(speed: Float, imperial: Boolean, tag: String, look: GaugeLook
 }
 
 /** Cuántas marcas lleva un velocímetro que llega a [max]. */
-fun ticksFor(max: Float, imperial: Boolean): Int {
-    val step = if (imperial) (if (max > 160f) 20f else 10f) else (if (max >= 240f) 40f else 20f)
+fun ticksFor(max: Float, miles: Boolean): Int {
+    val step = if (miles) (if (max > 160f) 20f else 10f) else (if (max >= 240f) 40f else 20f)
     return (max / step).toInt().coerceAtLeast(1)
 }
 
@@ -79,8 +79,8 @@ class GaugeSpec(
     val icon: ImageVector,
     val ticks: Int,
     /** De la unidad del bus (km/h, °C, kPa…) a la que se muestra. */
-    val shown: (value: Float, imperial: Boolean) -> Float,
-    val unit: (imperial: Boolean) -> Int,
+    val shown: (value: Float, units: UnitChoice) -> Float,
+    val unit: (units: UnitChoice) -> Int,
     val decimals: Int,
     /** El rango del arco, en la unidad del bus. */
     val min: Float,
@@ -96,9 +96,9 @@ class GaugeSpec(
     val redFrom get() = red?.let(::fraction) ?: 0.8f
 
     /** El número de la marca [i] de [ticks], en la unidad que se ve (las rpm en miles). */
-    fun label(i: Int, imperial: Boolean, locale: Locale): String {
-        val v = shown(min + (max - min) * i / ticks, imperial)
-        return String.format(locale, "%.0f", if (shown(max, imperial) >= 1000f) v / 1000f else v)
+    fun label(i: Int, units: UnitChoice, locale: Locale): String {
+        val v = shown(min + (max - min) * i / ticks, units)
+        return String.format(locale, "%.0f", if (shown(max, units) >= 1000f) v / 1000f else v)
     }
 }
 
@@ -110,7 +110,7 @@ val GaugeSpecs = listOf(
     ),
     GaugeSpec(
         Signal.COOLANT, R.string.gauge_coolant, R.string.gauge_coolant_tag, Icons.thermometer, ticks = 9,
-        shown = { v, imperial -> v.toFahrenheit(imperial) }, unit = { if (it) R.string.unit_f else R.string.unit_c }, decimals = 0,
+        shown = { v, u -> v.toFahrenheit(u.fahrenheit) }, unit = { if (it.fahrenheit) R.string.unit_f else R.string.unit_c }, decimals = 0,
         min = 40f, max = 130f, warning = { it >= HOT_COOLANT_C }, red = HOT_COOLANT_C,
     ),
     GaugeSpec(
@@ -126,7 +126,7 @@ val GaugeSpecs = listOf(
     GaugeSpec(
         Signal.CONSUMPTION, R.string.gauge_consumption, R.string.gauge_consumption_tag, Icons.drop, ticks = 6,
         // km/l a millas por galón (EE. UU.).
-        shown = { v, imperial -> if (imperial) v * 2.352f else v }, unit = { if (it) R.string.unit_mpg else R.string.unit_kml }, decimals = 1,
+        shown = { v, u -> if (u.miles) v * 2.352f else v }, unit = { if (it.miles) R.string.unit_mpg else R.string.unit_kml }, decimals = 1,
         min = 0f, max = 30f,
     ),
     GaugeSpec(
@@ -142,13 +142,13 @@ val GaugeSpecs = listOf(
     ),
     GaugeSpec(
         Signal.OIL, R.string.gauge_oil, R.string.gauge_oil_tag, Icons.oil, ticks = 9,
-        shown = { v, imperial -> v.toFahrenheit(imperial) }, unit = { if (it) R.string.unit_f else R.string.unit_c }, decimals = 0,
+        shown = { v, u -> v.toFahrenheit(u.fahrenheit) }, unit = { if (it.fahrenheit) R.string.unit_f else R.string.unit_c }, decimals = 0,
         min = 40f, max = 150f, warning = { it >= 130f }, red = 130f,
     ),
     GaugeSpec(
         Signal.FUEL_RATE, R.string.gauge_fuel_rate, R.string.gauge_fuel_rate_tag, Icons.fuel, ticks = 6,
         // Litros por hora a galones (EE. UU.) por hora.
-        shown = { v, imperial -> if (imperial) v * 0.2642f else v }, unit = { if (it) R.string.unit_galh else R.string.unit_lh }, decimals = 1,
+        shown = { v, u -> if (u.miles) v * 0.2642f else v }, unit = { if (it.miles) R.string.unit_galh else R.string.unit_lh }, decimals = 1,
         min = 0f, max = 30f,
     ),
 )
@@ -174,7 +174,7 @@ fun GaugeTile(d: Dependencies, signal: String, look: GaugeLook, onPick: () -> Un
     if (!obd.canRead(spec.signal)) return ShortcutTile(spec.icon, name, stringResource(R.string.gauge_unsupported), onPick)
     val value = d.bus.watch(spec.signal)
     // Un toque cambia qué dato muestra.
-    SpecGaugeCard(spec, value, imperialUnits(d.prefs.language), look, d.prefs.carColor, onClick = onPick)
+    SpecGaugeCard(spec, value, d.prefs.units, look, d.prefs.carColor, onClick = onPick)
 }
 
 /**
@@ -182,17 +182,17 @@ fun GaugeTile(d: Dependencies, signal: String, look: GaugeLook, onPick: () -> Un
  * lectura: "—"); la usan la pieza y la vista previa de Personalizar medidor.
  */
 @Composable
-fun SpecGaugeCard(spec: GaugeSpec, value: Float?, imperial: Boolean, look: GaugeLook, carColor: Color, onClick: (() -> Unit)? = null) {
+fun SpecGaugeCard(spec: GaugeSpec, value: Float?, units: UnitChoice, look: GaugeLook, carColor: Color, onClick: (() -> Unit)? = null) {
     val locale = currentLocale()
     GaugeCard(
-        number = value?.let { gaugeText(spec, it, imperial, locale) } ?: "—",
-        unit = stringResource(spec.unit(imperial)),
+        number = value?.let { gaugeText(spec, it, units, locale) } ?: "—",
+        unit = stringResource(spec.unit(units)),
         tag = spec.tag?.let { stringResource(it) } ?: "",
         fraction = value?.let(spec::fraction) ?: 0f,
         ticks = spec.ticks,
         look = look,
         carColor = carColor,
-        labels = { spec.label(it, imperial, locale) },
+        labels = { spec.label(it, units, locale) },
         redFrom = spec.redFrom,
         warning = value != null && spec.warning(value),
         onClick = onClick,
@@ -200,5 +200,5 @@ fun SpecGaugeCard(spec: GaugeSpec, value: Float?, imperial: Boolean, look: Gauge
 }
 
 /** El número como se lee en la tarjeta (sin unidad). */
-fun gaugeText(spec: GaugeSpec, value: Float, imperial: Boolean, locale: Locale): String =
-    String.format(locale, "%.${spec.decimals}f", spec.shown(value, imperial))
+fun gaugeText(spec: GaugeSpec, value: Float, units: UnitChoice, locale: Locale): String =
+    String.format(locale, "%.${spec.decimals}f", spec.shown(value, units))

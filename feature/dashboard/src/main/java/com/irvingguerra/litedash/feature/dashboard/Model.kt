@@ -85,6 +85,8 @@ object TileTypes {
     const val GAUGE = "gauge"
     const val WORKSHOP = "workshop"
     const val PROJECTION = "projection"
+    /** Presión de las cuatro llantas (módulo de llantas). */
+    const val TIRES = "tires"
     const val APP = "app"
 }
 

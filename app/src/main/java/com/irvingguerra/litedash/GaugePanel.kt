@@ -67,7 +67,7 @@ fun CustomizeGaugePanel(d: Dependencies, tileId: String, close: () -> Unit, onPi
     val signal = signalOf(tile.data)
     val spec = gaugeOf(signal)
     val look = GaugeLook.parse(tile.data)
-    val imperial = imperialUnits(d.prefs.language)
+    val units = d.prefs.units
     var applied by remember { mutableStateOf(false) }
     fun set(new: GaugeLook) {
         applied = false
@@ -91,10 +91,10 @@ fun CustomizeGaugePanel(d: Dependencies, tileId: String, close: () -> Unit, onPi
                     // Con o sin tarjeta, como está en tu inicio.
                     CompositionLocalProvider(LocalPlainCard provides tile.plain) {
                         if (speedometer) {
-                            val max = (look.max ?: speedMaxOptions(imperial).first()).toFloat()
-                            SpeedGaugeCard(demo * max, imperial, "GPS", look, d.prefs.carColor)
+                            val max = (look.max ?: speedMaxOptions(units.miles).first()).toFloat()
+                            SpeedGaugeCard(demo * max, units.miles, "GPS", look, d.prefs.carColor)
                         } else if (spec != null) {
-                            SpecGaugeCard(spec, spec.min + (spec.max - spec.min) * demo, imperial, look, d.prefs.carColor)
+                            SpecGaugeCard(spec, spec.min + (spec.max - spec.min) * demo, units, look, d.prefs.carColor)
                         }
                     }
                 }
@@ -124,8 +124,8 @@ fun CustomizeGaugePanel(d: Dependencies, tileId: String, close: () -> Unit, onPi
                     Label(stringResource(look.color.title), Typography.small, c.textMuted)
                     if (speedometer) {
                         Label(stringResource(R.string.gauge_max), Typography.label, c.textMuted)
-                        val unit = stringResource(if (imperial) R.string.unit_mph else R.string.unit_kmh)
-                        val choices = speedMaxOptions(imperial)
+                        val unit = stringResource(if (units.miles) R.string.unit_mph else R.string.unit_kmh)
+                        val choices = speedMaxOptions(units.miles)
                         Segmented(
                             choices.sorted().map { it to "$it $unit" },
                             look.max ?: choices.first(),

@@ -63,8 +63,22 @@ internal object PrefKeys {
     const val HIDE_STATUS_BAR = "hide_status_bar"
     const val USB_PLAYER = "usb_player"
     const val INTERNET_RADIO = "internet_radio"
+    const val TIRES_ON_CAR = "tires_on_car"
+    const val TIRES_BANNER = "tires_banner"
+    const val TIRES_RAIL = "tires_rail"
+    const val SPEED_UNITS = "speed_units"
+    const val TEMP_UNITS = "temp_units"
     /** Int: versión del almacenamiento ([StorageMigration]: 1 = nombres en inglés, 2 = tres piezas del auto). */
     const val STORAGE_VERSION = "storage_version"
+}
+
+/** Las llantas sobre la pieza del auto: pastillas en las esquinas o nada. */
+enum class TiresOnCar(val stored: String) {
+    CORNERS("corners"), OFF("off");
+
+    companion object {
+        fun fromStored(value: String?) = entries.firstOrNull { it.stored == value } ?: CORNERS
+    }
 }
 
 /** Dónde va la barra con la hora y tus apps. AUTO = a un lado si la pantalla está acostada. */
@@ -230,6 +244,25 @@ class Preferences(context: Context) {
 
     /** El mejor 0 a 100 (segundos); 0 = todavía no hay. */
     var bestAccel by float(PrefKeys.BEST_ACCEL, 0f)
+
+    /** Llantas sobre la pieza del auto (con una fuente de llantas elegida). */
+    var tiresOnCar by mapped(PrefKeys.TIRES_ON_CAR, TiresOnCar::fromStored) { it.stored }
+
+    /** Aviso arriba del inicio cuando una llanta tiene problema. */
+    var tiresBanner by bool(PrefKeys.TIRES_BANNER, true)
+
+    /** Testigo de llanta en la barra lateral, solo con un problema. */
+    var tiresRail by bool(PrefKeys.TIRES_RAIL, true)
+
+    /** Velocidad y distancia: automático (según idioma y región), km o millas. */
+    var speedUnits by mapped(PrefKeys.SPEED_UNITS, SpeedUnits::fromStored) { it.stored }
+
+    /** Temperatura: automático (según idioma y región), °C o °F. */
+    var tempUnits by mapped(PrefKeys.TEMP_UNITS, TempUnits::fromStored) { it.stored }
+
+    /** Las unidades que se ven ahora (estado de Compose: cambia al elegir otras o cambiar el idioma). */
+    val units: UnitChoice
+        get() = resolveUnits(speedUnits, tempUnits, imperialUnits(language))
 
     /** Con el OBD conectado: avisar de motor caliente o batería que no carga. */
     var engineAlerts by bool(PrefKeys.ENGINE_ALERTS, true)

@@ -85,6 +85,7 @@ val TileSpecs = listOf(
     TileSpec(TileTypes.GAUGE, R.string.tile_gauge, SizeLimits(2, 1), 3 to 2, R.string.gauge_module),
     TileSpec(TileTypes.WORKSHOP, R.string.workshop, SizeLimits(1, 1), 2 to 1, R.string.workshop_module),
     TileSpec(TileTypes.PROJECTION, R.string.tile_projection, SizeLimits(2, 1), 3 to 1, R.string.projection_module),
+    TileSpec(TileTypes.TIRES, R.string.tile_tires, SizeLimits(1, 1), 2 to 2, R.string.tile_tires_help),
     TileSpec(TileTypes.APP, R.string.tile_app, SizeLimits(1, 1, 3, 3), 1 to 1),
 )
 

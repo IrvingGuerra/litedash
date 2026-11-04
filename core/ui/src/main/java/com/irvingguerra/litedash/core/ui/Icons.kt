@@ -91,6 +91,10 @@ object Icons {
     val back = icon("M9 14l-5 -5l5 -5 M4 9h11a5 5 0 0 1 0 10h-3")
     /** Volante: aro, centro y tres rayos. */
     val wheel = icon("M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0 M10 12a2 2 0 1 0 4 0a2 2 0 1 0 -4 0 M3.5 10.5l6.5 1 M14 11.5l6.5 -1 M12 14v7")
+    /** Llanta de lado: aro, rin y cuatro birlos. */
+    val tire = icon("M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0 M7.5 12a4.5 4.5 0 1 0 9 0a4.5 4.5 0 1 0 -9 0 M12 9.5h.01 M12 14.5h.01 M9.5 12h.01 M14.5 12h.01")
+    /** El testigo del tablero de presión de llantas: la llanta en corte con un signo de admiración. */
+    val tireAlert = icon("M7 4.5c-2.6 2.2 -3.8 4.8 -3.8 7.8c0 2.6 .9 4.7 2.6 6.7 M17 4.5c2.6 2.2 3.8 4.8 3.8 7.8c0 2.6 -.9 4.7 -2.6 6.7 M5.5 19.5h13 M12 8v5 M12 16h.01")
     val clock = icon("M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0 M12 7v5l3 3")
     val play = icon(fills = listOf("M7 4.5v15a1 1 0 0 0 1.5 .9l12 -7.5a1 1 0 0 0 0 -1.8l-12 -7.5a1 1 0 0 0 -1.5 .9z"))
     val pause = icon(fills = listOf("M6 4h4v16h-4z M14 4h4v16h-4z"))

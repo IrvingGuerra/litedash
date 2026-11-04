@@ -149,6 +149,7 @@ dependencies {
     implementation(project(":feature:navigation"))
     implementation(project(":core:vehicle"))
     implementation(project(":feature:obd"))
+    implementation(project(":feature:tpms"))
 
     implementation(platform(libs.compose.bom))
     implementation(libs.compose.foundation)

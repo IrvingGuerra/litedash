@@ -34,6 +34,17 @@ data class WeatherDay(val date: String, val code: Int, val max: Int, val min: In
 fun imperialUnits(language: String) = language != "es" &&
     Locale.getDefault().country in setOf("US", "LR", "MM")
 
+/** [this] con las temperaturas en °F ([fahrenheit]) o °C; igual si ya está así. */
+fun Weather.inUnits(fahrenheit: Boolean): Weather {
+    if (this.fahrenheit == fahrenheit) return this
+    val convert: (Int) -> Int = if (fahrenheit) { c -> Math.round(c * 9f / 5f + 32f) } else { f -> Math.round((f - 32f) * 5f / 9f) }
+    return copy(
+        temperature = convert(temperature),
+        days = days.map { it.copy(max = convert(it.max), min = convert(it.min)) },
+        fahrenheit = fahrenheit,
+    )
+}
+
 /** Qué cielo es cada código WMO, para el ícono y el texto. */
 enum class Sky { CLEAR, PARTLY, CLOUDY, FOG, RAIN, STORM, SNOW }
 
@@ -56,15 +67,18 @@ fun skyOf(code: Int) = when (code) {
 class WeatherRepository(private val context: Context, private val prefs: Preferences) {
     private val store = context.getSharedPreferences(STORE, Context.MODE_PRIVATE)
 
-    var weather by mutableStateOf(read())
-        private set
+    /** Como llegó de Open-Meteo (en la unidad que se pidió entonces). */
+    private var saved by mutableStateOf(read())
+
+    /** El clima en la unidad elegida ahora: si cambió, se convierte al momento (sin esperar a la red). */
+    val weather: Weather? get() = saved?.inUnits(fahrenheit)
 
     // Solo si el usuario lo activó: el permiso de ubicación también llega al activar
     // Viaje, y eso no debe encender el clima. Quien ya tenía clima guardado lo conserva.
     private var enabled by mutableStateOf(store.getBoolean(KEY_ON, store.contains(KEY)))
 
-    /** En °F solo donde se usan (Estados Unidos y pocos más). */
-    val fahrenheit get() = imperialUnits(prefs.language)
+    /** En °F si así lo eligió (o, en automático, donde se usan: Estados Unidos y pocos más). */
+    val fahrenheit get() = prefs.units.fahrenheit
 
     /** Activado y con permiso de ubicación aproximada. */
     val active get() = enabled && context.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
@@ -76,11 +90,11 @@ class WeatherRepository(private val context: Context, private val prefs: Prefere
 
     suspend fun refreshIfStale(force: Boolean = false) {
         if (!active) return
-        val last = weather
+        val last = saved
         if (!force && last != null && last.fahrenheit == fahrenheit && System.currentTimeMillis() - last.fetchedAt < STALE_MS) return
         val place = location() ?: return
         val fresh = runCatching { fetch(place.latitude, place.longitude) }.getOrNull() ?: return
-        weather = fresh
+        saved = fresh
         store.edit { putString(KEY, fresh.toJson().toString()) }
     }
 

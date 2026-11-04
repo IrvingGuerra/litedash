@@ -104,6 +104,7 @@ import com.irvingguerra.litedash.feature.dashboard.size
 import com.irvingguerra.litedash.feature.dashboard.suggestedTemplate
 import com.irvingguerra.litedash.feature.dashboard.tiles
 import com.irvingguerra.litedash.feature.music.MusicRepository
+import com.irvingguerra.litedash.feature.tpms.PressureUnit
 import com.irvingguerra.litedash.feature.updater.Updater
 import com.irvingguerra.litedash.feature.updater.Version
 import java.io.File
@@ -518,7 +519,7 @@ private fun CarPreview(e: CatalogEntry, cars: CarRepository, progress: Float?, o
 
 /** Secciones de Ajustes en el orden del menú: cada cosa vive en un solo lugar. */
 enum class SettingsSection(val title: Int) {
-    CAR(R.string.your_car), HOME(R.string.home), APPS(R.string.apps_section), WORKSHOP(R.string.workshop),
+    CAR(R.string.your_car), HOME(R.string.home), APPS(R.string.apps_section), WORKSHOP(R.string.workshop), TIRES(R.string.tires),
     WHEEL(R.string.wheel), APPEARANCE(R.string.appearance), MODULES(R.string.modules), SYSTEM(R.string.android_settings),
     ABOUT(R.string.about),
 }
@@ -530,6 +531,7 @@ private fun SettingsSection.icon() = when (this) {
     SettingsSection.APPS -> Icons.apps
     SettingsSection.WHEEL -> Icons.wheel
     SettingsSection.WORKSHOP -> Icons.engine
+    SettingsSection.TIRES -> Icons.tire
     SettingsSection.MODULES -> Icons.settings
     SettingsSection.SYSTEM -> Icons.openExternal
     SettingsSection.ABOUT -> Icons.info
@@ -547,6 +549,8 @@ fun SettingsPanel(
     onEdit: () -> Unit,
     onTemplates: () -> Unit,
     start: SettingsSection = SettingsSection.CAR,
+    /** Las llantas a pantalla completa (desde la tarjeta de Salud). */
+    onTires: () -> Unit = {},
 ) {
     val c = LocalColors.current
     var section by rememberSaveable { mutableStateOf(start) }
@@ -574,7 +578,7 @@ fun SettingsPanel(
             ) {
                 Label(stringResource(section.title), Typography.title.copy(fontSize = 30.sp), maxLines = 1)
                 when (section) {
-                    SettingsSection.APPEARANCE -> Appearance(d.prefs, revision)
+                    SettingsSection.APPEARANCE -> Appearance(d, revision)
                     SettingsSection.CAR -> CarSettings(d)
                     SettingsSection.HOME -> HomeSettings(d, onEdit, onTemplates)
                     SettingsSection.APPS -> AppsSettings(d)
@@ -582,10 +586,11 @@ fun SettingsPanel(
                         SettingsCard(help = stringResource(R.string.wheel_help)) { WheelSettings(d.wheel, d.prefs) }
                         SettingsCard(stringResource(R.string.wheel_assigned)) { WheelAssigned(d.prefs) }
                     }
-                    SettingsSection.WORKSHOP -> Workshop(d)
+                    SettingsSection.WORKSHOP -> Workshop(d, onTires)
+                    SettingsSection.TIRES -> TiresSettings(d)
                     SettingsSection.MODULES -> {
                         Label(stringResource(R.string.modules_help), Typography.body, c.textMuted)
-                        Modules(d, revision)
+                        Modules(d, revision, onTires = { section = SettingsSection.TIRES })
                     }
                     SettingsSection.SYSTEM -> AndroidSettings()
                     SettingsSection.ABOUT -> About(d)
@@ -652,7 +657,8 @@ internal fun SettingsCard(
 }
 
 @Composable
-private fun Appearance(prefs: Preferences, revision: Int) {
+private fun Appearance(d: Dependencies, revision: Int) {
+    val prefs = d.prefs
     val c = LocalColors.current
     val context = LocalContext.current
     val tab = tabs(listOf(R.string.tab_general, R.string.tab_screen), "apariencia")
@@ -707,12 +713,56 @@ private fun Appearance(prefs: Preferences, revision: Int) {
             },
         )
     }
+    if (tab == 0) SettingsCard(stringResource(R.string.units_title)) { UnitsSettings(d) }
     if (tab == 1) SettingsCard(stringResource(R.string.scale), stringResource(R.string.scale_help)) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             IconButton(Icons.minus, { prefs.scale = (prefs.scale - 0.1f).coerceAtLeast(0.8f).roundToTenth() }, background = c.surfaceHigh)
             Label("${(prefs.scale * 100).toInt()} %", Typography.title, modifier = Modifier.widthIn(min = 90.dp))
             IconButton(Icons.plus, { prefs.scale = (prefs.scale + 0.1f).coerceAtMost(1.5f).roundToTenth() }, background = c.surfaceHigh)
         }
+    }
+}
+
+/** Unidades: velocidad y distancia, temperatura y (con llantas) presión. Automático = según idioma y región. */
+@Composable
+private fun UnitsSettings(d: Dependencies) {
+    val c = LocalColors.current
+    val prefs = d.prefs
+    val auto = imperialUnits(prefs.language)
+    Label(stringResource(R.string.units_speed), Typography.label, c.textMuted)
+    Segmented(
+        listOf(
+            SpeedUnits.AUTO to stringResource(R.string.units_auto),
+            SpeedUnits.METRIC to stringResource(R.string.units_metric),
+            SpeedUnits.IMPERIAL to stringResource(R.string.units_imperial),
+        ),
+        prefs.speedUnits,
+        { prefs.speedUnits = it },
+    )
+    Label(stringResource(R.string.units_temp), Typography.label, c.textMuted)
+    Segmented(
+        listOf(
+            TempUnits.AUTO to stringResource(R.string.units_auto),
+            TempUnits.CELSIUS to stringResource(R.string.unit_c),
+            TempUnits.FAHRENHEIT to stringResource(R.string.unit_f),
+        ),
+        prefs.tempUnits,
+        { prefs.tempUnits = it },
+    )
+    if (prefs.speedUnits == SpeedUnits.AUTO || prefs.tempUnits == TempUnits.AUTO) {
+        Label(
+            stringResource(
+                R.string.units_auto_now,
+                stringResource(if (auto) R.string.unit_mph else R.string.unit_kmh),
+                stringResource(if (auto) R.string.unit_f else R.string.unit_c),
+            ),
+            Typography.small, c.textMuted,
+        )
+    }
+    if (d.hasTpmsSource) {
+        val tpms = d.tpms
+        Label(stringResource(R.string.units_pressure), Typography.label, c.textMuted)
+        Segmented(PressureUnit.entries.map { it to it.label }, tpms.unit, { tpms.unit = it })
     }
 }
 
@@ -983,6 +1033,7 @@ private fun iconOf(type: String) = when (type) {
     TileTypes.GAUGE -> Icons.tachometer
     TileTypes.WORKSHOP -> Icons.engine
     TileTypes.PROJECTION -> Icons.phoneCar
+    TileTypes.TIRES -> Icons.tire
     else -> Icons.apps
 }
 
@@ -1014,7 +1065,7 @@ private fun Tiles(d: Dependencies, onEdit: () -> Unit) {
  * las piezas que lo usan lo piden al agregarlas.
  */
 @Composable
-private fun Modules(d: Dependencies, revision: Int) {
+private fun Modules(d: Dependencies, revision: Int, onTires: () -> Unit) {
     val c = LocalColors.current
     val context = LocalContext.current
     val (_, returns) = rememberRequestHome()
@@ -1035,10 +1086,14 @@ private fun Modules(d: Dependencies, revision: Int) {
             else Button(stringResource(R.string.module_settings), { openAppSettings(context) })
         }
         OwnPlayerModules(d)
-        for ((name, help) in listOf(R.string.module_tpms to R.string.module_tpms_help, R.string.module_cameras to R.string.module_cameras_help)) {
-            ModuleRow(Icons.car, stringResource(name), stringResource(help)) {
-                Label(stringResource(R.string.module_soon), Typography.small, c.textMuted)
-            }
+        // Llantas: encendido = hay una fuente elegida (sin crear el módulo para saberlo).
+        val tires = d.hasTpmsSource
+        ModuleRow(Icons.tire, stringResource(R.string.module_tpms), stringResource(R.string.module_tpms_help)) {
+            Label(stringResource(if (tires) R.string.module_on else R.string.module_off), Typography.small, if (tires) c.accent else c.textMuted)
+            Button(stringResource(R.string.tires_open_settings), onTires, primary = !tires)
+        }
+        ModuleRow(Icons.car, stringResource(R.string.module_cameras), stringResource(R.string.module_cameras_help)) {
+            Label(stringResource(R.string.module_soon), Typography.small, c.textMuted)
         }
     }
 }

@@ -91,7 +91,7 @@ fun LiveCharts(d: Dependencies) {
     var touch by remember { mutableStateOf<Float?>(null) }
     SettingsCard(stringResource(R.string.obd_charts), stringResource(R.string.obd_charts_help)) {
         val locale = currentLocale()
-        val imperial = imperialUnits(d.prefs.language)
+        val units = d.prefs.units
         // Con llave: al quitar la primera, la otra conserva su historial.
         val series = chosen.map { signal -> signal to key(signal) { rememberSeries(d, signal) } }
         val colors = listOf(c.accent, Second)
@@ -107,10 +107,10 @@ fun LiveCharts(d: Dependencies) {
                 val max = points.maxOrNull()
                 if (min != null && max != null) {
                     Label(
-                        stringResource(R.string.obd_chart_range, sensorText(signal, min, imperial, locale), sensorText(signal, max, imperial, locale)),
+                        stringResource(R.string.obd_chart_range, sensorText(signal, min, units, locale), sensorText(signal, max, units, locale)),
                         Typography.small, c.textMuted, maxLines = 1,
                     )
-                    Label(shown?.let { sensorText(signal, it, imperial, locale) } ?: "—", Typography.subtitle, colors[i], maxLines = 1)
+                    Label(shown?.let { sensorText(signal, it, units, locale) } ?: "—", Typography.subtitle, colors[i], maxLines = 1)
                 }
             }
         }
@@ -179,8 +179,8 @@ private fun pointAt(points: List<Float>, fraction: Float): Float? {
 @Composable
 fun AccelTimerCard(d: Dependencies) {
     val c = LocalColors.current
-    val imperial = imperialUnits(d.prefs.language)
-    val target = if (imperial) 60f * KM_PER_MILE else 100f
+    val units = d.prefs.units
+    val target = if (units.miles) 60f * KM_PER_MILE else 100f
     val timer = remember(target) { AccelTimer(target) }
     var state by remember { mutableStateOf(timer.state) }
     var now by remember { mutableIntStateOf(0) }
@@ -196,7 +196,7 @@ fun AccelTimerCard(d: Dependencies) {
     // Mientras corre, el reloj avanza aunque la velocidad tarde en llegar.
     LaunchedEffect(state) { while (state is AccelState.Running) { now++; delay(50) } }
     val locale = currentLocale()
-    SettingsCard(stringResource(if (imperial) R.string.accel_title_mph else R.string.accel_title), stringResource(R.string.accel_help)) {
+    SettingsCard(stringResource(if (units.miles) R.string.accel_title_mph else R.string.accel_title), stringResource(R.string.accel_help)) {
         val shown = when (val s = state) {
             is AccelState.Running -> { now; (SystemClock.elapsedRealtime() - s.startMs) / 1000f }
             is AccelState.Done -> s.seconds
@@ -214,7 +214,7 @@ fun AccelTimerCard(d: Dependencies) {
             ),
             Typography.subtitle, maxLines = 2,
         )
-        val speedText = speed?.let { sensorText(Signal.SPEED, it, imperial, locale) } ?: "—"
+        val speedText = speed?.let { sensorText(Signal.SPEED, it, units, locale) } ?: "—"
         val source = d.bus.source(Signal.SPEED)?.name ?: ""
         Label("$speedText · $source", Typography.body, c.textMuted, maxLines = 1)
         if (d.prefs.bestAccel > 0f) Label(stringResource(R.string.accel_best, String.format(locale, "%.2f s", d.prefs.bestAccel)), Typography.body, c.accent)
@@ -242,7 +242,7 @@ fun TripsCard(d: Dependencies) {
         }
     }
     val locale = currentLocale()
-    val imperial = imperialUnits(d.prefs.language)
+    val units = d.prefs.units
     SettingsCard(stringResource(R.string.trips_title)) {
         SwitchRow(stringResource(R.string.trips_record), d.prefs.tripLog, { d.prefs.tripLog = it }, stringResource(R.string.trips_help))
         val trips = loaded ?: return@SettingsCard
@@ -252,22 +252,22 @@ fun TripsCard(d: Dependencies) {
         }
         Button(stringResource(R.string.trips_export), { export.launch("litedash-trips.csv") }, primary = true)
         val dates = remember(locale) { DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT, locale) }
-        for (t in trips.take(30)) TripRow(t, dates, imperial, locale)
+        for (t in trips.take(30)) TripRow(t, dates, units, locale)
     }
 }
 
 @Composable
-private fun TripRow(t: TripSummary, dates: DateFormat, imperial: Boolean, locale: java.util.Locale) {
+private fun TripRow(t: TripSummary, dates: DateFormat, units: UnitChoice, locale: java.util.Locale) {
     val c = LocalColors.current
-    val km = if (imperial) String.format(locale, "%.1f mi", t.km.toMiles(true)) else String.format(locale, "%.1f km", t.km)
+    val km = if (units.miles) String.format(locale, "%.1f mi", t.km.toMiles(true)) else String.format(locale, "%.1f km", t.km)
     val minutes = t.seconds / 60
     val time = String.format(locale, "%d:%02d h", minutes / 60, minutes % 60)
     val extras = buildList {
-        add(stringResource(R.string.trip_avg, sensorText(Signal.SPEED, t.avgKmh, imperial, locale)))
-        add(stringResource(R.string.trip_max, sensorText(Signal.SPEED, t.maxKmh, imperial, locale)))
+        add(stringResource(R.string.trip_avg, sensorText(Signal.SPEED, t.avgKmh, units, locale)))
+        add(stringResource(R.string.trip_max, sensorText(Signal.SPEED, t.maxKmh, units, locale)))
         if (t.maxRpm > 0f) add(String.format(locale, "%.0f rpm", t.maxRpm))
-        t.maxCoolant?.let { add(sensorText(Signal.COOLANT, it, imperial, locale)) }
-        t.kmPerLiter?.let { add(sensorText(Signal.CONSUMPTION, it, imperial, locale)) }
+        t.maxCoolant?.let { add(sensorText(Signal.COOLANT, it, units, locale)) }
+        t.kmPerLiter?.let { add(sensorText(Signal.CONSUMPTION, it, units, locale)) }
     }
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(2.dp)) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {

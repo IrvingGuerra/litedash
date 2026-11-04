@@ -79,7 +79,7 @@ private const val CODES_TAB = 1
  * lo que hay aquí.
  */
 @Composable
-fun Workshop(d: Dependencies) {
+fun Workshop(d: Dependencies, onTires: () -> Unit = {}) {
     val obd = d.obd
     val alerts = @Composable {
         SettingsCard {
@@ -102,7 +102,7 @@ fun Workshop(d: Dependencies) {
 
     // Sin adaptador: el estado (con lo último que se leyó) y cómo conectarlo.
     if (!connected) {
-        HealthView(d, obd.lastReport, reading = false, onRead = {}, connected = false)
+        HealthView(d, obd.lastReport, reading = false, onRead = {}, connected = false, onTires = onTires)
         Connection(obd)
         alerts()
         // Los viajes guardados se ven aunque no haya adaptador conectado.
@@ -113,7 +113,7 @@ fun Workshop(d: Dependencies) {
         WORKSHOP_TABS,
     )
     when (tab) {
-        0 -> HealthView(d, report, reading, { read() }, connected = true, onCodes = { selectTab(WORKSHOP_TABS, CODES_TAB) })
+        0 -> HealthView(d, report, reading, { read() }, connected = true, onCodes = { selectTab(WORKSHOP_TABS, CODES_TAB) }, onTires = onTires)
         CODES_TAB -> {
             CodesCard(obd, report, reading, { read() }, onCleared = { report = it })
             InspectionCard(report, reading)
@@ -160,10 +160,10 @@ fun EngineAlertBanner(d: Dependencies) {
     }
     val a = shown?.takeIf { it != dismissed } ?: return
     val locale = currentLocale()
-    val imperial = imperialUnits(d.prefs.language)
+    val units = d.prefs.units
     val volts = voltage?.let { String.format(locale, "%.1f V", it) } ?: "—"
     val text = when (a) {
-        EngineAlert.HOT -> stringResource(R.string.alert_hot, coolant?.let { sensorText(Signal.COOLANT, it, imperial, locale) } ?: "—")
+        EngineAlert.HOT -> stringResource(R.string.alert_hot, coolant?.let { sensorText(Signal.COOLANT, it, units, locale) } ?: "—")
         EngineAlert.NOT_CHARGING -> stringResource(R.string.alert_not_charging, volts)
         EngineAlert.OVERCHARGING -> stringResource(R.string.alert_overcharging, volts)
         EngineAlert.LOW_BATTERY -> stringResource(R.string.alert_low_battery, volts)
@@ -420,23 +420,23 @@ private val SENSOR_ORDER = listOf(Signal.RPM, Signal.COOLANT, Signal.VOLTAGE, Si
 @Composable
 private fun LiveSensors(d: Dependencies) {
     val locale = currentLocale()
-    val imperial = imperialUnits(d.prefs.language)
+    val units = d.prefs.units
     // Los que da el auto, los calculados (consumo, turbo) y el voltaje (lo mide el adaptador si el auto no).
     val readable = readableSignals(d)
     val signals = remember(readable) { readable.sortedBy { SENSOR_ORDER.indexOf(it).let { i -> if (i < 0) SENSOR_ORDER.size else i } } }
     SettingsCard(stringResource(R.string.obd_live)) {
-        TileGrid(signals, minWidth = 170.dp, maxColumns = 4) { signal, modifier -> SensorTile(d, signal, imperial, locale, modifier) }
+        TileGrid(signals, minWidth = 170.dp, maxColumns = 4) { signal, modifier -> SensorTile(d, signal, units, locale, modifier) }
     }
 }
 
 /** Una tarjeta por sensor: cada dato nuevo solo vuelve a dibujar la suya. */
 @Composable
-private fun SensorTile(d: Dependencies, signal: String, imperial: Boolean, locale: java.util.Locale, modifier: Modifier) {
+private fun SensorTile(d: Dependencies, signal: String, units: UnitChoice, locale: java.util.Locale, modifier: Modifier) {
     val value = d.bus.watch(signal)
     val series = rememberSeries(d, signal)
     StatTile(
         name = stringResource(sensorName(signal)),
-        value = value?.let { sensorText(signal, it, imperial, locale) } ?: "—",
+        value = value?.let { sensorText(signal, it, units, locale) } ?: "—",
         modifier = modifier,
         series = series,
         seriesColor = LocalColors.current.accent,
@@ -473,10 +473,10 @@ internal fun sensorName(signal: String) = when (signal) {
  * es medidor se escribe igual que en su tarjeta ([GaugeSpecs]); aquí solo va lo demás.
  */
 @Composable
-fun sensorText(signal: String, v: Float, imperial: Boolean, locale: java.util.Locale): String {
-    gaugeOf(signal)?.let { spec -> return gaugeText(spec, v, imperial, locale) + " " + stringResource(spec.unit(imperial)) }
+fun sensorText(signal: String, v: Float, units: UnitChoice, locale: java.util.Locale): String {
+    gaugeOf(signal)?.let { spec -> return gaugeText(spec, v, units, locale) + " " + stringResource(spec.unit(units)) }
     return when (signal) {
-        Signal.SPEED -> if (imperial) String.format(locale, "%.0f mph", v.toMiles(true)) else String.format(locale, "%.0f km/h", v)
+        Signal.SPEED -> if (units.miles) String.format(locale, "%.0f mph", v.toMiles(true)) else String.format(locale, "%.0f km/h", v)
         Signal.LOAD -> String.format(locale, "%.0f %%", v)
         Signal.MAP, Signal.BARO -> String.format(locale, "%.0f kPa", v)
         Signal.MAF -> String.format(locale, "%.1f g/s", v)
@@ -485,9 +485,9 @@ fun sensorText(signal: String, v: Float, imperial: Boolean, locale: java.util.Lo
         Signal.TIMING -> String.format(locale, "%.1f°", v)
         // Horas y minutos (h:mm).
         Signal.RUN_TIME -> (v / 60).toInt().let { m -> String.format(locale, "%d:%02d", m / 60, m % 60) }
-        Signal.DISTANCE_MIL -> if (imperial) String.format(locale, "%.0f mi", v.toMiles(true)) else String.format(locale, "%.0f km", v)
+        Signal.DISTANCE_MIL -> if (units.miles) String.format(locale, "%.0f mi", v.toMiles(true)) else String.format(locale, "%.0f km", v)
         // Admisión y ambiente.
-        else -> if (imperial) String.format(locale, "%.0f °F", v.toFahrenheit(true)) else String.format(locale, "%.0f °C", v)
+        else -> if (units.fahrenheit) String.format(locale, "%.0f °F", v.toFahrenheit(true)) else String.format(locale, "%.0f °C", v)
     }
 }
 

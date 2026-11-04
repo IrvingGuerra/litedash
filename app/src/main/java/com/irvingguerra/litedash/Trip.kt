@@ -122,7 +122,7 @@ private val COMPASS_EN = arrayOf("N", "NE", "E", "SE", "S", "SW", "W", "NW")
 
 /** Pieza Viaje: velocidad grande, rumbo, distancia y tiempo; sin permiso, el botón para activarla. */
 @Composable
-fun TripTile(trip: TripRepository, language: String) {
+fun TripTile(trip: TripRepository, miles: Boolean) {
     val c = LocalColors.current
     var granted by remember { mutableStateOf(trip.hasPermission()) }
     val ask = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted = it }
@@ -132,9 +132,8 @@ fun TripTile(trip: TripRepository, language: String) {
         }
     }
     KeepTripRunning(trip)
-    val imperial = imperialUnits(language)
-    val speed = trip.speedKmh?.toMiles(imperial)
-    val distance = trip.meters.metersToDistance(imperial)
+    val speed = trip.speedKmh?.toMiles(miles)
+    val distance = trip.meters.metersToDistance(miles)
     // El tiempo avanza solo, aunque el GPS no mande nada (una vez por minuto).
     val minutes by produceState(0, trip.startedAt) {
         while (true) {
@@ -152,13 +151,13 @@ fun TripTile(trip: TripRepository, language: String) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(if (wide) 18.dp else 10.dp)) {
                 Column {
                     Label(String.format(locale, "%.0f", speed ?: 0f), Typography.clock.copy(fontSize = if (big) 56.sp else 34.sp), maxLines = 1)
-                    Label(stringResource(if (imperial) R.string.unit_mph else R.string.unit_kmh), Typography.small, c.textMuted, maxLines = 1)
+                    Label(stringResource(if (miles) R.string.unit_mph else R.string.unit_kmh), Typography.small, c.textMuted, maxLines = 1)
                 }
                 // Angosta y bajita: el rumbo deja su renglón para que quepan distancia y tiempo.
                 val compact = !wide && !big
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                     if (!compact) Label(heading ?: "", Typography.title, c.accent, maxLines = 1)
-                    val km = String.format(locale, "%.1f %s", distance, if (imperial) "mi" else "km")
+                    val km = String.format(locale, "%.1f %s", distance, if (miles) "mi" else "km")
                     val time = String.format(locale, "%d:%02d", minutes / 60, minutes % 60)
                     // En angosto no caben juntos en un renglón: la distancia se cortaba.
                     if (wide) {

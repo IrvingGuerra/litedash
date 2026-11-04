@@ -62,7 +62,7 @@ private val MAIN_ZONES = listOf(Zone.ENGINE, Zone.INTAKE, Zone.COOLING, Zone.BAT
  * [onCodes] lleva a la pestaña de códigos al tocar una parte con códigos.
  */
 @Composable
-fun HealthView(d: Dependencies, report: EngineReport?, reading: Boolean, onRead: () -> Unit, connected: Boolean, onCodes: () -> Unit = {}) {
+fun HealthView(d: Dependencies, report: EngineReport?, reading: Boolean, onRead: () -> Unit, connected: Boolean, onCodes: () -> Unit = {}, onTires: () -> Unit = {}) {
     val health = rememberHealth(d, report, connected)
     Card(Modifier.fillMaxWidth().widthIn(max = 860.dp)) {
         BoxWithConstraints(Modifier.padding(22.dp)) {
@@ -70,7 +70,7 @@ fun HealthView(d: Dependencies, report: EngineReport?, reading: Boolean, onRead:
             // El auto se mide por su alto: en una pantalla acostada no debe pasar de lo que se ve.
             val carHeight = if (wide) 330.dp else 270.dp
             val summary = @Composable { Summary(d, health, report, reading, connected) }
-            val cards = @Composable { SystemTiles(d, health, report, connected, onCodes) }
+            val cards = @Composable { SystemTiles(d, health, report, connected, onCodes, onTires) }
             if (wide) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(28.dp)) {
                     CarWithMarks(d, health, connected, Modifier.padding(horizontal = 12.dp).height(carHeight))
@@ -133,11 +133,15 @@ private fun Summary(d: Dependencies, health: List<SystemHealth>, report: EngineR
     }
 }
 
-/** Una tarjeta por sistema: las seis principales siempre; ruedas y carrocería solo con algo que decir. */
+/** Una tarjeta por sistema: las seis principales siempre; ruedas y carrocería solo con algo que decir; y llantas si hay. */
 @Composable
-private fun SystemTiles(d: Dependencies, health: List<SystemHealth>, report: EngineReport?, connected: Boolean, onCodes: () -> Unit) {
-    val shown = health.filter { it.zone in MAIN_ZONES || it.level == HealthLevel.WARN || it.level == HealthLevel.FAULT }
-    TileGrid(shown, minWidth = 150.dp) { h, modifier -> SystemTile(d, h, report, connected, onCodes, modifier) }
+private fun SystemTiles(d: Dependencies, health: List<SystemHealth>, report: EngineReport?, connected: Boolean, onCodes: () -> Unit, onTires: () -> Unit) {
+    val shown: List<SystemHealth?> = health.filter { it.zone in MAIN_ZONES || it.level == HealthLevel.WARN || it.level == HealthLevel.FAULT }
+    // Con llantas configuradas, su tarjeta al final (null = la de llantas).
+    val items = if (d.hasTpmsSource) shown + null else shown
+    TileGrid(items, minWidth = 150.dp) { h, modifier ->
+        if (h == null) TiresHealthTile(d, onTires, modifier) else SystemTile(d, h, report, connected, onCodes, modifier)
+    }
 }
 
 /** La señal en vivo que define a cada parte (la de su tarjeta y su línea). */
@@ -163,20 +167,20 @@ private fun SystemTile(d: Dependencies, h: SystemHealth, report: EngineReport?, 
     }
     val signal = signalOf(h.zone)
     val locale = currentLocale()
-    val imperial = imperialUnits(d.prefs.language)
+    val units = d.prefs.units
     val value = h.value
     val word = when (h.level) {
         HealthLevel.FAULT -> stringResource(R.string.health_fault)
         HealthLevel.WARN -> stringResource(R.string.health_warn)
         HealthLevel.UNKNOWN -> stringResource(R.string.health_unknown)
-        HealthLevel.GOOD -> if (value != null && signal != null) sensorText(signal, value, imperial, locale) else stringResource(R.string.health_good)
+        HealthLevel.GOOD -> if (value != null && signal != null) sensorText(signal, value, units, locale) else stringResource(R.string.health_good)
     }
     val readiness = report?.readiness
     val detail = when {
         h.codes.isNotEmpty() -> h.codes.joinToString(" · ")
         h.pendingCodes.isNotEmpty() -> h.pendingCodes.joinToString(" · ") + " · " + stringResource(R.string.health_pending)
         h.level == HealthLevel.WARN && h.alert == null -> stringResource(R.string.health_mil)
-        h.alert != null && value != null && signal != null -> sensorText(signal, value, imperial, locale)
+        h.alert != null && value != null && signal != null -> sensorText(signal, value, units, locale)
         h.zone == Zone.EXHAUST && readiness != null ->
             stringResource(R.string.health_monitors, readiness.monitors.count { it.complete }, readiness.monitors.size)
         else -> null

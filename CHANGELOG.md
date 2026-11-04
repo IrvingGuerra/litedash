@@ -6,6 +6,28 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
+## [1.4.54] - 2026-11-03
+
+### Nuevo
+- **Llantas (TPMS)**: LiteDash lee la presión y la temperatura de tus llantas sin la app del
+  fabricante. Funciona con los **kits con receptor USB** que se venden para pantallas Android
+  (los genéricos de 433 MHz con chip CH340, FTDI, CP210x o PL2303) y con las familias más comunes
+  de **sensores Bluetooth** (BR/SYTPMS, ZEEPIN/Sysgration, Bekubee y otras). Modo Demo para verlo
+  sin sensores. Se prende en Ajustes → Módulos → Llantas.
+- **Tu auto desde arriba con sus cuatro llantas**: presión grande, temperatura, estado y su línea
+  de los últimos 30 minutos; la que tiene problema brilla. Toca una y ves sus últimas 24 horas.
+- **Acomodar llantas**: toca una rueda para emparejar su sensor (receptor USB), asignarlo o dejar
+  que LiteDash lo identifique (Bluetooth: desinfla un poco esa llanta), o intercambiarla con otra.
+  **Rotar llantas** con un toque: adelante↔atrás, en cruz o izquierda↔derecha.
+- **En el inicio, a tu gusto**: la presión en las esquinas de la pieza del auto (también sobre tu
+  logo o foto), la pieza **Llantas** en tres tamaños, un aviso arriba y un testigo en la barra
+  lateral. Todo se prende y apaga por separado.
+- **Avisos**: presión baja, fuga rápida, fuga lenta, temperatura alta, pila del sensor baja y
+  sensor sin señal, con tu presión recomendada (la de la etiqueta de la puerta).
+- **Unidades a tu gusto** (Ajustes → Apariencia → Unidades): km/h o mph, °C o °F (por separado)
+  y psi, bar o kPa. "Automático" sigue como antes.
+- Tarjeta **Llantas** en la Salud del Taller.
+
 ## [1.4.53] - 2026-11-03
 
 ### Nuevo
