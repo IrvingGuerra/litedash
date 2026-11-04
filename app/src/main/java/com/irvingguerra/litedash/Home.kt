@@ -122,6 +122,8 @@ sealed interface Panel {
     data class CustomizeGauge(val tileId: String) : Panel
     /** La foto de una pieza de imagen ([tileId]). */
     data class CustomizeImage(val tileId: String) : Panel
+    /** Orientación, vista, zoom y colores del widget Mapa ([tileId]). */
+    data class CustomizeMap(val tileId: String) : Panel
     /** Ajustes abiertos en Llantas (desde la vista de llantas o la pieza sin configurar). */
     data object TiresSettings : Panel
 }
@@ -270,7 +272,7 @@ fun TileContent(d: Dependencies, p: Tile, apps: List<App>, car: CarPackage?, rev
                 onPlace = { navigateTo(context, app, it) },
             ) { actions.onNavigate(app) }
         }
-        TileTypes.MAP -> MapTile(d) { actions.onNavigate(mapApp(d, apps)) }
+        TileTypes.MAP -> MapTile(d, p.data) { actions.onNavigate(mapApp(d, apps)) }
         TileTypes.PHONE -> ShortcutTile(Icons.phone, stringResource(R.string.tile_phone), null) {
             openDialer(context)
         }
@@ -543,8 +545,14 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                             limits = ::limitsOf,
                             onChange = d.dashboard::changeShown,
                             onEdit = { editing = true },
-                            onSettings = { panel = if (it.type == TileTypes.IMAGE) Panel.CustomizeImage(it.id) else Panel.CustomizeGauge(it.id) },
-                            hasSettings = { it.type == TileTypes.SPEEDOMETER || it.type == TileTypes.GAUGE || it.type == TileTypes.ROAD || it.type == TileTypes.IMAGE },
+                            onSettings = {
+                                panel = when (it.type) {
+                                    TileTypes.IMAGE -> Panel.CustomizeImage(it.id)
+                                    TileTypes.MAP -> Panel.CustomizeMap(it.id)
+                                    else -> Panel.CustomizeGauge(it.id)
+                                }
+                            },
+                            hasSettings = { it.type in CUSTOMIZABLE },
                         ) { p -> TileContent(d, p, apps, car, revision, actions) }
                     }
                 }
@@ -587,6 +595,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
             is Panel.PickGauge -> PickGaugePanel(d, p.tileId, close = { panel = null })
             is Panel.CustomizeGauge -> CustomizeGaugePanel(d, p.tileId, close = { panel = null }, onPickSignal = { panel = Panel.PickGauge(p.tileId) })
             is Panel.CustomizeImage -> CustomizeImagePanel(d, p.tileId, close = { panel = null })
+            is Panel.CustomizeMap -> CustomizeMapPanel(d, p.tileId, close = { panel = null })
         }
 
         val big = bigTile
@@ -841,3 +850,6 @@ private val PILLS_MIN_HEIGHT = 160.dp
 
 /** Lo que tardan las llantas a pantalla completa en aparecer (y en irse). */
 private const val TIRES_FADE_MS = 260
+
+/** Los widgets con botón de ajustes al acomodar el inicio. */
+private val CUSTOMIZABLE = setOf(TileTypes.SPEEDOMETER, TileTypes.GAUGE, TileTypes.ROAD, TileTypes.IMAGE, TileTypes.MAP)

@@ -6,6 +6,15 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
+## [1.4.67] - 2026-11-04
+
+### Agregado
+- **Personalizar mapa** (botón de ajustes del widget al acomodar el inicio), con vista previa en vivo:
+  - Orientación: **norte arriba** o **hacia donde vas** (el mapa gira y tu flecha apunta adelante).
+  - Vista: **plano** o **inclinado 3D** (el mapa se acuesta hacia el horizonte, como al navegar).
+  - Zoom: automático según la velocidad, o fijo cerca, medio o lejos.
+  - Colores: como el tema, siempre claros o siempre oscuros.
+
 ## [1.4.66] - 2026-11-04
 
 ### Cambiado

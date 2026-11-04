@@ -3,4 +3,21 @@
     <string name="tile_map">Map</string>
     <string name="tile_map_help">OpenStreetMap with your position · only uses GPS while on screen</string>
     <string name="map_waiting">Finding your location…</string>
+    <string name="map_customize">Customize map</string>
+    <string name="map_orientation">Orientation</string>
+    <string name="map_north">North up</string>
+    <string name="map_heading">Heading up</string>
+    <string name="map_view">View</string>
+    <string name="map_flat">Flat</string>
+    <string name="map_tilted">Tilted 3D</string>
+    <string name="map_zoom">Zoom</string>
+    <string name="map_zoom_auto">Automatic</string>
+    <string name="map_zoom_near">Near</string>
+    <string name="map_zoom_mid">Medium</string>
+    <string name="map_zoom_far">Far</string>
+    <string name="map_zoom_help">Automatic: closer in the city and farther on the highway. Tap the map to zoom out for a moment.</string>
+    <string name="map_style">Colors</string>
+    <string name="map_style_theme">Like the theme</string>
+    <string name="map_style_light">Light</string>
+    <string name="map_style_dark">Dark</string>
 </resources>

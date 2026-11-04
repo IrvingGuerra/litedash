@@ -31,9 +31,9 @@ class MapMathTest {
     @Test
     fun tileRangeCoversOnlyVisible() {
         // Posición en la orilla de una tesela, al centro de 512 px con teselas de 256: una a cada lado.
-        assertEquals(9..10, tileRange(10.0, 256f, 512f, 256f))
+        assertEquals(9..10, tileSpan(10.0, -256f, 256f, 256f))
         // Una vista de 300 px con la posición a 180 px: de 9.297 a 10.47 → teselas 9 y 10.
-        assertEquals(9..10, tileRange(10.0, 180f, 300f, 256f))
+        assertEquals(9..10, tileSpan(10.0, -180f, 120f, 256f))
     }
 
     @Test

@@ -3,4 +3,21 @@
     <string name="tile_map">Mapa</string>
     <string name="tile_map_help">OpenStreetMap con tu posición · usa el GPS solo mientras se ve</string>
     <string name="map_waiting">Buscando tu ubicación…</string>
+    <string name="map_customize">Personalizar mapa</string>
+    <string name="map_orientation">Orientación</string>
+    <string name="map_north">Norte arriba</string>
+    <string name="map_heading">Hacia donde vas</string>
+    <string name="map_view">Vista</string>
+    <string name="map_flat">Plano</string>
+    <string name="map_tilted">Inclinado 3D</string>
+    <string name="map_zoom">Zoom</string>
+    <string name="map_zoom_auto">Automático</string>
+    <string name="map_zoom_near">Cerca</string>
+    <string name="map_zoom_mid">Medio</string>
+    <string name="map_zoom_far">Lejos</string>
+    <string name="map_zoom_help">Automático: más cerca en la ciudad y más lejos en carretera. Un toque al mapa lo aleja un momento.</string>
+    <string name="map_style">Colores</string>
+    <string name="map_style_theme">Como el tema</string>
+    <string name="map_style_light">Claros</string>
+    <string name="map_style_dark">Oscuros</string>
 </resources>

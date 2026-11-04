@@ -42,11 +42,11 @@ fun lonOf(x: Double, z: Int): Double = x / (1 shl z) * 360.0 - 180.0
 fun latOf(y: Double, z: Int): Double = Math.toDegrees(atan(sinh(PI * (1.0 - 2.0 * y / (1 shl z)))))
 
 /**
- * Las teselas que se ven en un eje: [center] es la coordenada de tesela de tu posición, que
- * queda a [anchor] px del borde de una vista de [extent] px con teselas de [tilePx] px.
+ * Las teselas que se ven en un eje: [center] es la coordenada de tesela de tu posición y lo visible
+ * va de [fromPx] a [toPx] px respecto a ella (en el plano del mapa), con teselas de [tilePx] px.
  */
-fun tileRange(center: Double, anchor: Float, extent: Float, tilePx: Float): IntRange =
-    floor(center - anchor / tilePx).toInt()..(ceil(center + (extent - anchor) / tilePx).toInt() - 1)
+fun tileSpan(center: Double, fromPx: Float, toPx: Float, tilePx: Float): IntRange =
+    floor(center + fromPx / tilePx).toInt()..(ceil(center + toPx / tilePx).toInt() - 1)
 
 /**
  * Zoom según la velocidad: 17 en ciudad, 16 desde 35 km/h, 15 desde 70. Al frenar regresa

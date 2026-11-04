@@ -1,5 +1,11 @@
 package com.irvingguerra.litedash.feature.map
 
+import android.graphics.Camera
+import android.graphics.Matrix as AndroidMatrix
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
+import androidx.compose.ui.graphics.drawscope.scale
+import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -37,40 +43,106 @@ import kotlin.math.roundToInt
 
 private const val TILE = 256
 
+/** Cuánto se acuesta el mapa inclinado (grados). */
+private const val TILT_DEGREES = 50f
+
+/** Inclinado, hasta dónde se dibuja hacia el horizonte (en tamaños de la vista). */
+private const val REACH = 1.6f
+
 /**
- * El mapa de OpenStreetMap con tu posición: norte arriba, tú al 60 % del alto (se ve más
- * adelante), la flecha con el rumbo y el zoom según la velocidad; un toque lo aleja (tras el
- * más lejano, vuelve al automático). En modo oscuro las teselas se invierten y giran de tono.
+ * El mapa de OpenStreetMap con tu posición y como diga [look]: norte arriba o hacia donde vas,
+ * plano o inclinado, zoom según la velocidad o fijo (un toque lo aleja; tras el más lejano vuelve
+ * al elegido) y colores del tema, claros u oscuros. En oscuro las teselas se invierten y giran de tono.
  */
 @Composable
-fun OsmMap(store: TileStore, lat: Double, lon: Double, bearing: Float?, kmh: Float?, modifier: Modifier = Modifier) {
+fun OsmMap(store: TileStore, lat: Double, lon: Double, bearing: Float?, kmh: Float?, look: MapLook, modifier: Modifier = Modifier) {
     val c = LocalColors.current
     var manual by remember { mutableStateOf<Int?>(null) }
     // El automático recuerda el anterior para no brincar alrededor de los umbrales (no es estado: no repinta).
     val auto = remember { intArrayOf(MAX_ZOOM) }
     auto[0] = autoZoom(kmh, auto[0])
-    val zoom = manual ?: auto[0]
-    val filter = if (c.dark) DarkTiles else null
+    val tilted = look.view == MapView.TILTED
+    // Inclinado se ve mucho más terreno: un zoom menos (cada tesela cubre el doble) para no pedir decenas.
+    val zoom = manual ?: ((look.zoom.level ?: auto[0]) - if (tilted) 1 else 0).coerceAtLeast(MIN_ZOOM)
+    val dark = when (look.style) {
+        MapStyle.THEME -> c.dark
+        MapStyle.LIGHT -> false
+        MapStyle.DARK -> true
+    }
+    val filter = if (dark) DarkTiles else null
     val accent = c.accent
-    Box(modifier.background(c.surfaceHigh).clickable { manual = nextZoom(zoom) }) {
+    // Hacia donde vas: el mapa gira al revés del rumbo (sin rumbo todavía, se queda como está).
+    val turn = if (look.orientation == MapOrientation.HEADING) -(bearing ?: 0f) else 0f
+    // Inclinado, tu posición va más abajo: se ve más camino adelante.
+    val anchorY = if (tilted) 0.78f else 0.6f
+    val horizon = if (dark) Color(0xFF1C1C20) else Color(0xFFE8E8EA)
+    Box(modifier.background(horizon).clickable { manual = nextZoom(zoom) }) {
         Canvas(Modifier.fillMaxSize()) {
             store.loaded // cada tesela nueva repinta
-            drawTiles(store, lat, lon, zoom, filter)
-            drawArrow(Offset(size.width / 2, size.height * 0.6f), bearing, accent)
+            val at = Offset(size.width / 2, size.height * anchorY)
+            val m = mapMatrix(at, turn, tilted)
+            drawIntoCanvas { canvas ->
+                canvas.save()
+                canvas.nativeCanvas.concat(m)
+                drawTiles(store, lat, lon, zoom, filter, at, m)
+                canvas.restore()
+            }
+            // Lo lejano se funde con el cielo: sólido hasta donde se acaba el mapa (en pantalla) y de ahí
+            // se desvanece; sin orilla dura en ningún tamaño de widget.
+            if (tilted) {
+                val edge = floatArrayOf(at.x, at.y - REACH * maxOf(size.width, size.height)).also { m.mapPoints(it) }[1]
+                val end = (edge / size.height).coerceIn(0f, 0.9f)
+                drawRect(Brush.verticalGradient(0f to horizon, end to horizon, (end + 0.15f).coerceAtMost(1f) to horizon.copy(alpha = 0f)))
+            }
+            drawArrow(at, if (look.orientation == MapOrientation.HEADING) bearing?.let { 0f } else bearing, accent, tilted)
         }
         Attribution(Modifier.align(Alignment.BottomEnd))
     }
 }
 
-private fun DrawScope.drawTiles(store: TileStore, lat: Double, lon: Double, z: Int, filter: ColorFilter?) {
+/**
+ * Del plano del mapa a la pantalla: gira [turn] grados alrededor de tu posición [at] y, si va
+ * [tilted], lo acuesta en perspectiva (la cámara mira hacia adelante, como al navegar).
+ */
+private fun DrawScope.mapMatrix(at: Offset, turn: Float, tilted: Boolean): AndroidMatrix {
+    val m = AndroidMatrix()
+    if (turn != 0f) m.postRotate(turn, at.x, at.y)
+    if (tilted) {
+        val tilt = AndroidMatrix()
+        Camera().apply {
+            // Más lejos en pantallas grandes: misma perspectiva en cualquier densidad.
+            setLocation(0f, 0f, -8f * density)
+            rotateX(TILT_DEGREES)
+            getMatrix(tilt)
+        }
+        tilt.preTranslate(-at.x, -at.y)
+        tilt.postTranslate(at.x, at.y)
+        m.postConcat(tilt)
+    }
+    return m
+}
+
+private fun DrawScope.drawTiles(store: TileStore, lat: Double, lon: Double, z: Int, filter: ColorFilter?, at: Offset, m: AndroidMatrix) {
     val ts = TILE * density.coerceIn(1f, 2f)
     val n = 1 shl z
     val fx = tileX(lon, z)
     val fy = tileY(lat, z)
-    val cx = size.width / 2
-    val cy = size.height * 0.6f
+    val cx = at.x
+    val cy = at.y
+    // Lo que se ve, en el plano del mapa: las esquinas de la pantalla llevadas de regreso. Inclinado,
+    // las de arriba quedan muy lejos: se limita a unas pantallas (más allá ya se funde con el cielo).
+    val inverse = AndroidMatrix().also { m.invert(it) }
+    val corners = floatArrayOf(0f, 0f, size.width, 0f, 0f, size.height, size.width, size.height)
+    inverse.mapPoints(corners)
+    val far = REACH * maxOf(size.width, size.height)
+    var minX = Float.MAX_VALUE; var maxX = -Float.MAX_VALUE; var minY = Float.MAX_VALUE; var maxY = -Float.MAX_VALUE
+    for (i in corners.indices step 2) {
+        val x = (corners[i] - cx).coerceIn(-far, far)
+        val y = (corners[i + 1] - cy).coerceIn(-far, far)
+        minX = minOf(minX, x); maxX = maxOf(maxX, x); minY = minOf(minY, y); maxY = maxOf(maxY, y)
+    }
     val keys = HashSet<Long>()
-    for (tx in tileRange(fx, cx, size.width, ts)) for (ty in tileRange(fy, cy, size.height, ts)) {
+    for (tx in tileSpan(fx, minX, maxX, ts)) for (ty in tileSpan(fy, minY, maxY, ts)) {
         if (ty !in 0 until n) continue
         val x = Math.floorMod(tx, n)
         val key = tileKey(z, x, ty)
@@ -95,9 +167,10 @@ private fun DrawScope.drawTiles(store: TileStore, lat: Double, lon: Double, z: I
     store.request(keys)
 }
 
-/** Tu posición: la flecha con el rumbo (color de acento) o un punto si todavía no hay rumbo. */
-private fun DrawScope.drawArrow(at: Offset, bearing: Float?, accent: Color) {
+/** Tu posición: la flecha con el rumbo (color de acento) o un punto si todavía no hay rumbo. Inclinado, un poco acostada. */
+private fun DrawScope.drawArrow(at: Offset, bearing: Float?, accent: Color, tilted: Boolean) {
     val u = 1.dp.toPx()
+    if (tilted) return scale(1f, 0.7f, at) { drawArrow(at, bearing, accent, tilted = false) }
     drawCircle(accent.copy(alpha = 0.25f), 22 * u, at)
     if (bearing == null) {
         drawCircle(Color.White, 9 * u, at)
