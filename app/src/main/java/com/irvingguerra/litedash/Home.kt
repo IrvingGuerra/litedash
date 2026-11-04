@@ -58,9 +58,7 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
-import com.irvingguerra.litedash.feature.car.spinFrameAt
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.coroutineScope
+import com.irvingguerra.litedash.feature.car.spinPath
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
@@ -333,11 +331,11 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
     // Tocar el auto 3D con Llantas activo: crece, gira de espaldas, la cámara sube y termina en
     // las llantas ([carTires] = este viaje; [rise] lo dibuja el auto en grande).
     var carTires by remember { mutableStateOf(false) }
-    val riseFade = remember { Animatable(0f) }
+    val riseSpin = remember { Animatable(0f) }
     val riseProgress = remember { Animatable(0f) }
     val rise = remember {
         CarRise().apply {
-            fade = { riseFade.value }
+            spin = { riseSpin.value }
             progress = { riseProgress.value }
             morph = { tiresProgress.value }
         }
@@ -380,11 +378,10 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
             if (toTires) {
                 // Ya viene preparado desde el inicio; si no alcanzó (recién encendido), se espera un poco.
                 withTimeoutOrNull(1_500) { snapshotFlow { rise.ready }.first { it } }
-                // Crece y a la vez se funde a la vista de espaldas: solo dibuja (nada se decodifica aquí).
-                coroutineScope {
-                    launch { carProgress.animateTo(1f, tween(480, easing = FastOutSlowInEasing)) }
-                    launch { riseFade.animateTo(1f, tween(420, easing = FastOutSlowInEasing)) }
-                }
+                // Crece y, ya en grande, gira hasta quedar de espaldas (cuadros ya pintados: solo se dibujan).
+                // Uno después del otro: a la vez (agrandar y cambiar de cuadro juntos) se trababa el doble.
+                carProgress.animateTo(1f, tween(GROW_TO_TIRES_MS, easing = FastOutSlowInEasing))
+                if (rise.turnSteps > 0) riseSpin.animateTo(1f, tween(spinMs(rise.turnSteps), easing = FastOutSlowInEasing))
                 if (rise.hasFrames) riseProgress.animateTo(1f, tween(900, easing = EaseInOut))
                 openTires()
                 return@LaunchedEffect
@@ -393,10 +390,9 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
         } else if (carShown) {
             if (riseProgress.value > 0f) riseProgress.animateTo(0f, tween((900 * riseProgress.value).toInt(), easing = EaseInOut))
             // Regresa a la vuelta donde lo dejó mientras se encoge.
-            coroutineScope {
-                launch { if (riseFade.value > 0f) riseFade.animateTo(0f, tween(380)) }
-                launch { carProgress.animateTo(0f, tween(400, easing = FastOutSlowInEasing)) }
-            }
+            // De regreso, igual: gira a donde lo dejó y luego se encoge.
+            if (riseSpin.value > 0f) riseSpin.animateTo(0f, tween(spinMs(rise.turnSteps), easing = FastOutSlowInEasing))
+            carProgress.animateTo(0f, tween(GROW_TO_TIRES_MS, easing = FastOutSlowInEasing))
             carShown = false
             carReady = false
             carTires = false
@@ -411,11 +407,11 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
     // con calma mientras se ve el inicio, para que tocar el auto sea solo dibujar.
     val screenPx = LocalWindowInfo.current.containerSize.width
     val tapsToTires = d.hasTpmsSource && d.prefs.carTap == CarTap.TIRES
-    LaunchedEffect(car, car?.rise, tapsToTires, d.prefs.carColor, screenPx) {
+    LaunchedEffect(car, car?.rise, tapsToTires, d.prefs.carColor, d.prefs.carAngle, screenPx) {
         val p = car
         if (!tapsToTires || p == null) return@LaunchedEffect rise.clear()
         delay(1_500)
-        rise.preload(d.cars, p, spinFrameAt(p, REAR_TURN), d.prefs.carColor, screenPx)
+        rise.preload(d.cars, p, spinPath(p, d.prefs.carAngle, REAR_TURN), d.prefs.carColor, screenPx)
     }
 
     // Cada toque y cada botón del volante reinician la cuenta del modo estacionado. Se
@@ -881,3 +877,12 @@ private fun statusBarHiddenHeight(): Dp {
 /** Tamaño mínimo de la pieza del auto o imagen para ponerle las pastillas de llantas en sus esquinas. */
 private val PILLS_MIN_WIDTH = 220.dp
 private val PILLS_MIN_HEIGHT = 160.dp
+
+/** Lo que dura cada cuadro del giro a la vista de espaldas (cada 15°). */
+private const val SPIN_STEP_MS = 75
+
+/** Lo que tarda el auto en crecer camino a las llantas. */
+private const val GROW_TO_TIRES_MS = 520
+
+/** Lo que dura el giro a la vista de espaldas: pausado, pero nunca eterno. */
+private fun spinMs(steps: Int) = (steps * SPIN_STEP_MS).coerceIn(300, 1_000)

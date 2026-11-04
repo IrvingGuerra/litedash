@@ -6,6 +6,13 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
+## [1.4.60] - 2026-11-04
+
+### Arreglado
+- **Tocar el auto para ver las llantas**: el auto crece y, ya en grande, **gira** hasta quedar de espaldas
+  antes de que suba la cámara, fluido y sin parpadeo (los cuadros del giro se preparan antes de tocar;
+  antes se veían dos autos encimados).
+
 ## [1.4.59] - 2026-11-04
 
 ### Arreglado

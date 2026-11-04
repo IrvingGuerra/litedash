@@ -15,7 +15,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 /**
- * El auto en grande camino a sus llantas: se funde a la vista de espaldas ([fade]) y la cámara
+ * El auto en grande camino a sus llantas: gira hasta quedar de espaldas ([spin]) y la cámara
  * sube por detrás hasta quedar arriba ([progress]). Todo se prepara ANTES de tocar ([preload],
  * mientras se ve el inicio): decodificar y teñir 16 cuadros al tocar saturaba el procesador justo
  * durante la animación (se trababa y subía con cuadros faltantes). Quien la crea mueve los
@@ -26,8 +26,8 @@ class CarRise {
     /** El auto va camino a sus llantas (no se gira con el dedo ni se guarda su vuelta). */
     var active by mutableStateOf(false)
 
-    /** De 0 a 1 el auto se funde a la vista de espaldas ([rear]). Se lee solo al dibujar. */
-    var fade: () -> Float = { 0f }
+    /** De 0 a 1 el auto gira (en grande) de donde lo dejó el usuario a la vista de espaldas. Se lee al dibujar. */
+    var spin: () -> Float = { 0f }
 
     /** 0 = la vista de espaldas; de 0 a 1 sube la cámara. Se lee solo al dibujar. */
     var progress: () -> Float = { 0f }
@@ -38,9 +38,12 @@ class CarRise {
     /** Dónde está el auto de la vista de las llantas (en la raíz); vacío = no se mueve. */
     var target by mutableStateOf(Rect.Zero)
 
-    /** El auto de espaldas en grande, ya pintado (de ahí arranca la subida). */
-    internal var rear by mutableStateOf<CarLayers?>(null)
+    /** Los cuadros del giro en grande, ya pintados: de donde lo dejó el usuario hasta quedar de espaldas. */
+    internal var turnFrames by mutableStateOf<List<CarLayers>>(emptyList())
         private set
+
+    /** Cuántos cuadros gira (para que cada uno dure lo mismo). */
+    val turnSteps get() = turnFrames.size
 
     /** Cuadros en total (0 = el auto no trae subida o aún no se cargan). */
     var count by mutableIntStateOf(0)
@@ -63,8 +66,10 @@ class CarRise {
     /** Lo preparado: auto, color y ancho (si no cambia, [preload] no repite nada). */
     private var key: Any? = null
 
-    /** Ya está la vista de espaldas y todos los cuadros (o el auto no trae subida). */
-    val ready get() = rear != null && loaded >= count
+    /** Ya está el giro y todos los cuadros (o el auto no trae subida). */
+    val ready get() = turnReady && loaded >= count
+
+    private var turnReady by mutableStateOf(false)
 
     /** Hay subida que reproducir. */
     val hasFrames get() = count > 0 && loaded >= count
@@ -79,7 +84,8 @@ class CarRise {
     fun clear() {
         finish()
         key = null
-        rear = null
+        turnFrames = emptyList()
+        turnReady = false
         frames = emptyArray()
         topBox = null
         count = 0
@@ -87,18 +93,26 @@ class CarRise {
     }
 
     /**
-     * Prepara la vista de espaldas ([rearName]) y los cuadros de la subida de [p] al ancho y color
-     * con que se verá el auto en grande. Si ya está lo mismo, no hace nada. Se llama en segundo
-     * plano mientras se ve el inicio.
+     * Prepara el giro ([turnPath]: los cuadros de donde lo dejó el usuario hasta quedar de espaldas)
+     * y los cuadros de la subida de [p], al ancho y color con que se verá el auto en grande. Si ya
+     * está lo mismo, no hace nada. Se llama en segundo plano mientras se ve el inicio.
      */
-    suspend fun preload(repo: CarRepository, p: CarPackage, rearName: String, color: Color, screenWidthPx: Int) {
+    suspend fun preload(repo: CarRepository, p: CarPackage, turnPath: List<String>, color: Color, screenWidthPx: Int) {
         // Pantallas con poca memoria (Android 6–7 con 1 GB: los bitmaps van al heap de Java):
         // 16 cuadros a todo lo ancho serían ~32 MB; a 640 px, ~13 MB y se ve igual de lejos.
         val widthPx = if (Runtime.getRuntime().maxMemory() <= LOW_HEAP) minOf(screenWidthPx, LOW_HEAP_WIDTH) else screenWidthPx
-        val want = Triple(p.id + "@" + p.sha256 + "@" + (p.rise != null), color, widthPx)
+        val want = Triple(p.id + "@" + p.sha256 + "@" + (p.rise != null) + "@" + turnPath, color, widthPx)
         if (key == want && ready) return
         key = want
-        rear = repo.layers(p, rearName, color, screenWidthPx)
+        turnReady = false
+        // Uno por uno; el giro se guarda aquí (la caché del auto podría soltarlos).
+        val turn = ArrayList<CarLayers>(turnPath.size)
+        for (name in turnPath) {
+            turn += repo.layers(p, name, color, screenWidthPx) ?: break
+            if (key != want) return
+        }
+        turnFrames = turn
+        turnReady = true
         val info = p.rise
         if (info == null) {
             frames = emptyArray()
