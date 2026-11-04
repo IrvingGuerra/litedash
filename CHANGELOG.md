@@ -6,6 +6,19 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
+## [1.4.56] - 2026-11-03
+
+### Arreglado
+- **Música USB en pantallas que no dejan leer la memoria** (p. ej. AC8227L con Android 13): la
+  biblioteca ahora tiene **"Elegir carpeta"**. Eliges la carpeta de tu música con el selector de
+  Android y LiteDash la recuerda; funciona aunque la pantalla no indexe ni deje leer el USB.
+- Con **dos puertos USB**, LiteDash busca la música en todas las memorias, no solo en la primera.
+
+### Cambiado
+- Más claro: el botón "Sistema" ahora se llama **"Apps"** (la música de tus apps), y el aviso dice
+  "Memoria USB conectada (…): toca USB para escucharla". Si LiteDash ve la memoria pero no puede
+  leerla, lo dice así y ofrece elegir la carpeta.
+
 ## [1.4.55] - 2026-11-03
 
 ### Arreglado

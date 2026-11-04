@@ -8,13 +8,13 @@
     <string name="no_song_info">No song info</string>
     <string name="opening_app">Opening %1$s…</string>
     <string name="opening_wait">Almost there: it starts in a moment.</string>
-    <string name="source_system">System</string>
+    <string name="source_system">Apps</string>
     <string name="source_usb">USB</string>
     <string name="source_bluetooth">Bluetooth</string>
     <string name="source_radio">Radio</string>
     <string name="bluetooth_connect_phone">Connect your phone over Bluetooth</string>
     <string name="usb_drive">USB drive</string>
-    <string name="usb_drive_in">USB drive plugged in: %1$s</string>
+    <string name="usb_drive_in">USB drive connected (%1$s): tap USB to play it</string>
     <string name="player_connecting">Connecting…</string>
     <string name="radio">Radio</string>
     <string name="radio_explain">Control your screen\'s radio (and internet radio if you turn it on). Needs notification access.</string>

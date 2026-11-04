@@ -110,6 +110,17 @@ private fun LibraryBrowser(onPicked: () -> Unit, modifier: Modifier) {
         ContextCompat.registerReceiver(context, receiver, filter, ContextCompat.RECEIVER_EXPORTED)
         onDispose { runCatching { context.unregisterReceiver(receiver) } }
     }
+    // Elegir la carpeta de la música con el selector de Android: sirve aunque la pantalla no deje
+    // leer la memoria directo (pasaba en una AC8227L con Android 13: "no tiene música").
+    val pickFolder = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
+        if (uri != null) {
+            Library.setFolder(context, uri)
+            mounts++
+        }
+    }
+    val folderButton: @Composable () -> Unit = {
+        Button(stringResource(R.string.library_pick_folder), { runCatching { pickFolder.launch(null) } })
+    }
     if (!permission) {
         Column(modifier, verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Label(stringResource(R.string.library_no_permission), Typography.body, c.textMuted)
@@ -117,17 +128,21 @@ private fun LibraryBrowser(onPicked: () -> Unit, modifier: Modifier) {
         }
         return
     }
-    // null = leyendo; la lista de memorias y, de la primera, sus canciones.
+    // null = leyendo; la memoria (o carpeta) con música y sus canciones.
     val loaded by produceState<Pair<Drive?, List<Track>>?>(null, mounts) {
         value = null
-        value = withContext(Dispatchers.IO) {
-            val drive = Library.drives(context).firstOrNull()
-            drive to (drive?.let { Library.tracks(context, it) } ?: emptyList())
-        }
+        value = withContext(Dispatchers.IO) { Library.find(context) }
     }
     val (drive, tracks) = loaded ?: return Label(stringResource(R.string.library_loading), Typography.body, c.textMuted, modifier = modifier)
-    if (drive == null) return Column(modifier) { Icon(Icons.usb, c.textMuted, 40.dp); Spacer(Modifier.height(10.dp)); Label(stringResource(R.string.library_no_drive), Typography.body, c.textMuted) }
-    if (tracks.isEmpty()) return Label(stringResource(R.string.library_empty), Typography.body, c.textMuted, modifier = modifier)
+    if (drive == null || tracks.isEmpty()) {
+        return Column(modifier, verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            if (drive == null) Icon(Icons.usb, c.textMuted, 40.dp)
+            // Memoria vista pero sin canciones leídas: casi siempre es la pantalla que no deja leerla.
+            Label(if (drive == null) stringResource(R.string.library_no_drive) else stringResource(R.string.library_unreadable, drive.name), Typography.body, c.textMuted)
+            if (drive == null) Label(stringResource(R.string.library_pick_folder_help), Typography.small, c.textMuted)
+            folderButton()
+        }
+    }
 
     val memory = LibraryBrowserMemory
     val group = memory.group
@@ -145,6 +160,7 @@ private fun LibraryBrowser(onPicked: () -> Unit, modifier: Modifier) {
             Segmented(Group.entries.map { it to stringResource(it.title) }, group, { memory.pick(it) })
             Spacer(Modifier.weight(1f))
             Label(drive.name, Typography.small, c.textMuted, 1)
+            folderButton()
         }
         Spacer(Modifier.height(10.dp))
         // Si la memoria cambió y el grupo recordado ya no está, a la lista.

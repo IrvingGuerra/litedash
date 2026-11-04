@@ -10,7 +10,6 @@
     <string name="library_no_drive">Plug in a USB drive with music</string>
     <string name="library_no_permission">LiteDash needs permission to read the music on the drive</string>
     <string name="library_grant">Grant permission</string>
-    <string name="library_empty">The drive has no music Android recognizes</string>
     <string name="library_loading">Reading the drive…</string>
     <string name="library_folders">Folders</string>
     <string name="library_artists">Artists</string>
@@ -35,4 +34,7 @@
     <string name="radio_no_favorites">Tap a station\'s star to keep it here.</string>
     <string name="radio_km">%1$d km</string>
     <string name="radio_source">Internet radio</string>
+    <string name="library_pick_folder">Choose folder</string>
+    <string name="library_pick_folder_help">If your music is on the drive but doesn\'t show up, choose its folder: LiteDash will remember it.</string>
+    <string name="library_unreadable">I can see the drive %1$s, but your screen doesn\'t let apps read its songs. Choose its folder and LiteDash will remember it.</string>
 </resources>

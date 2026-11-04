@@ -10,7 +10,6 @@
     <string name="library_no_drive">Conecta una memoria USB con música</string>
     <string name="library_no_permission">LiteDash necesita permiso para leer la música de la memoria</string>
     <string name="library_grant">Dar permiso</string>
-    <string name="library_empty">La memoria no tiene música que Android reconozca</string>
     <string name="library_loading">Leyendo la memoria…</string>
     <string name="library_folders">Carpetas</string>
     <string name="library_artists">Artistas</string>
@@ -35,4 +34,7 @@
     <string name="radio_no_favorites">Toca la estrella de una estación para tenerla aquí.</string>
     <string name="radio_km">%1$d km</string>
     <string name="radio_source">Radio por internet</string>
+    <string name="library_pick_folder">Elegir carpeta</string>
+    <string name="library_pick_folder_help">Si tu música está en la memoria pero no aparece, elige su carpeta: LiteDash la recordará.</string>
+    <string name="library_unreadable">Veo la memoria %1$s, pero tu pantalla no deja leer sus canciones. Elige su carpeta y LiteDash la recordará.</string>
 </resources>

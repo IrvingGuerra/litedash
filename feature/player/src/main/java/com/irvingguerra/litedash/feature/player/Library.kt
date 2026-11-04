@@ -6,7 +6,10 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
+import android.content.Intent
+import android.provider.DocumentsContract
 import android.provider.MediaStore
+import androidx.core.net.toUri
 import java.io.File
 import com.irvingguerra.litedash.feature.music.Drive
 import com.irvingguerra.litedash.feature.music.Drives
@@ -43,19 +46,80 @@ object Library {
     /** Memorias montadas ahora (las detecta la pieza de música: [Drives]). */
     fun drives(context: Context): List<Drive> = Drives.list(context)
 
-    /** Lo último que se leyó de cada memoria (por [Drive.id]): play sigue sin volver a leerla. */
-    private val cache = HashMap<String, List<Track>>()
+    /** Lo último que se encontró con música (memoria y canciones); null = aún no se ha leído o no hubo. */
+    @Volatile
+    var lastFound: Pair<Drive, List<Track>>? = null
+        private set
 
-    /** Las canciones ya leídas de [drive]; null = todavía no se ha leído desde que se conectó. */
-    @Synchronized
-    fun cached(drive: Drive): List<Track>? = cache[drive.id]
+    /**
+     * Qué tocar: la primera memoria con música (hay pantallas con dos USB y la "primera" puede
+     * venir vacía); si ninguna, la carpeta que eligió el usuario; si nada, la primera memoria
+     * (vacía) o null. Lee el disco: llamarla fuera del hilo principal.
+     */
+    fun find(context: Context): Pair<Drive?, List<Track>> {
+        val drives = drives(context)
+        for (d in drives) {
+            val t = tracks(context, d)
+            if (t.isNotEmpty()) return (d to t).also { lastFound = it }
+        }
+        folderDrive(context)?.let { d ->
+            val t = tracks(context, d)
+            if (t.isNotEmpty()) return (d to t).also { lastFound = it }
+        }
+        lastFound = null
+        return drives.firstOrNull() to emptyList()
+    }
+
+    /** La carpeta elegida como "memoria" (si sigue habiendo permiso para leerla). */
+    private fun folderDrive(context: Context): Drive? {
+        val uri = PlayerStore(context).musicFolder?.toUri() ?: return null
+        if (context.contentResolver.persistedUriPermissions.none { it.uri == uri && it.isReadPermission }) return null
+        val name = DocumentsContract.getTreeDocumentId(uri).substringAfterLast(':').substringAfterLast('/').ifBlank { "USB" }
+        return Drive(name = name, volume = null, path = null, id = FOLDER + uri)
+    }
+
+    /**
+     * Guarda la carpeta que eligió el usuario con el selector de Android (ACTION_OPEN_DOCUMENT_TREE):
+     * se lee por el sistema de documentos, así sirve aunque Android no tenga indexada la memoria.
+     */
+    fun setFolder(context: Context, uri: Uri) {
+        runCatching { context.contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION) }
+        PlayerStore(context).musicFolder = uri.toString()
+    }
 
     /** Todas las canciones de [drive], ordenadas por carpeta y archivo (como se ven en la memoria). */
     fun tracks(context: Context, drive: Drive): List<Track> {
-        val found = indexed(context, drive).ifEmpty { drive.path?.let { scan(File(it)) }.orEmpty() }
-            .sortedWith(compareBy<Track, String>(String.CASE_INSENSITIVE_ORDER) { it.folder }.thenBy(String.CASE_INSENSITIVE_ORDER) { it.file })
-        synchronized(this) { cache[drive.id] = found }
-        return found
+        val found = if (drive.id.startsWith(FOLDER)) folderTracks(context, drive.id.removePrefix(FOLDER).toUri())
+        else indexed(context, drive).ifEmpty { drive.path?.let { scan(File(it)) }.orEmpty() }
+        return found.sortedWith(compareBy<Track, String>(String.CASE_INSENSITIVE_ORDER) { it.folder }.thenBy(String.CASE_INSENSITIVE_ORDER) { it.file })
+    }
+
+    /** Las canciones de la carpeta elegida, por el sistema de documentos (con los mismos topes que [scan]). */
+    private fun folderTracks(context: Context, tree: Uri): List<Track> {
+        val out = ArrayList<Track>()
+        val cols = arrayOf(DocumentsContract.Document.COLUMN_DOCUMENT_ID, DocumentsContract.Document.COLUMN_DISPLAY_NAME, DocumentsContract.Document.COLUMN_MIME_TYPE)
+        val pending = ArrayDeque<Triple<String, String, Int>>().apply { add(Triple(DocumentsContract.getTreeDocumentId(tree), "", 0)) }
+        var dirs = 0
+        while (pending.isNotEmpty() && out.size < MAX_FILES && dirs < MAX_DIRS) {
+            val (id, folder, depth) = pending.removeFirst()
+            dirs++
+            runCatching {
+                context.contentResolver.query(DocumentsContract.buildChildDocumentsUriUsingTree(tree, id), cols, null, null, null)?.use { c ->
+                    while (c.moveToNext()) {
+                        val child = c.getString(0) ?: continue
+                        val name = c.getString(1).orEmpty()
+                        val mime = c.getString(2).orEmpty()
+                        if (name.startsWith(".")) continue
+                        if (mime == DocumentsContract.Document.MIME_TYPE_DIR) {
+                            if (depth < MAX_DEPTH && name !in SKIP_DIRS) pending.add(Triple(child, if (folder.isEmpty()) name else "$folder/$name", depth + 1))
+                        } else if (mime.startsWith("audio/") || name.substringAfterLast('.', "").lowercase() in AUDIO) {
+                            out += Track(DocumentsContract.buildDocumentUriUsingTree(tree, child), name.substringBeforeLast('.'), "", "", folder, 0, name)
+                        }
+                    }
+                }
+            }
+        }
+        return out
     }
 
     /** Las de MediaStore (rápido, con artista, álbum y duración). */
@@ -141,4 +205,5 @@ object Library {
     private const val MAX_DEPTH = 8
     private const val MAX_DIRS = 2_000
     private const val MAX_FILES = 10_000
+    private const val FOLDER = "folder:"
 }

@@ -40,9 +40,15 @@ class PlayerStore(context: Context) {
 
     fun setFavorites(list: List<Station>) = p.edit { putString(KEY_FAVORITES, JSONArray(list.map { it.toJson() }).toString()) }
 
+    /** La carpeta de música que eligió el usuario con el selector de Android (null = ninguna). */
+    var musicFolder: String?
+        get() = p.getString(KEY_MUSIC_FOLDER, null)
+        set(v) = p.edit { if (v == null) remove(KEY_MUSIC_FOLDER) else putString(KEY_MUSIC_FOLDER, v) }
+
     private fun keyFor(source: PlayerSource) = if (source == PlayerSource.USB) KEY_LAST_USB else KEY_LAST_RADIO
 
     private companion object {
         const val KEY_LAST_RADIO_STATION = "last_radio_station"
+        const val KEY_MUSIC_FOLDER = "music_folder"
     }
 }

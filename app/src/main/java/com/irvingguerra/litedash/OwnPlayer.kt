@@ -51,16 +51,14 @@ object OwnPlayer {
             PlayerSource.RADIO -> store.lastStation()?.let { Player.play(PlayerSource.RADIO, listOf(it), 0); true } ?: false
             PlayerSource.USB -> {
                 if (!Library.hasPermission(context)) return false
-                val drive = Library.drives(context).firstOrNull() ?: return false
-                // Memoria que aún no se ha leído (o sin canciones): se abre la biblioteca, que la lee
-                // y enseña lo que hay o "no hay canciones". Antes play leía en silencio y, si Android no
-                // tenía indexada la memoria, no pasaba nada y el chip se quedaba en "Sistema".
-                if (Library.cached(drive).isNullOrEmpty()) return false
+                // Sin música encontrada todavía (memoria sin leer, sin canciones o que Android no deja
+                // leer): se abre la biblioteca, que busca en todas las memorias y deja elegir la carpeta.
+                if (Library.lastFound == null) return false
                 // Leer la memoria tarda: en un hilo, y al tener la lista se sigue con lo último que sonó.
                 Thread {
-                    var tracks = Library.tracks(context, drive)
+                    var tracks = Library.find(context).second
                     // Recién conectada, Android tarda unos segundos en indexarla.
-                    if (tracks.isEmpty()) { Thread.sleep(SCAN_WAIT_MS); tracks = Library.tracks(context, drive) }
+                    if (tracks.isEmpty()) { Thread.sleep(SCAN_WAIT_MS); tracks = Library.find(context).second }
                     if (tracks.isEmpty()) return@Thread
                     val last = store.last(PlayerSource.USB)
                     val index = tracks.indexOfFirst { it.key == last }.coerceAtLeast(0)
