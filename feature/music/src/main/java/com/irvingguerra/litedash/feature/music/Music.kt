@@ -926,6 +926,7 @@ class MusicRepository(private val context: Context) {
         val session = !button && sessions().firstOrNull { it.packageName == pkg }?.also { runCatching { it.transportControls.play() } } != null
         val service = connectAndPlay(pkg, fallback = !radioLens && !button && !session)
         trace("despertar $pkg: servicio=${yes(service)} receptor=${yes(button)} sesión=${yes(session)}")
+        if (!service && !button && !session && radioLens) topWayFor(lens)?.let { return playTopWay(it, pkg, lens) }
         if (!service && !button && !session && radioLens) return openAndReturn(pkg, lens)
         if (!service && !button && !session) systemPlay()
         if ((button || session) && (sourceOf(pkg) != null || !service)) lens.assume(pkg, true)
@@ -949,6 +950,26 @@ class MusicRepository(private val context: Context) {
         // Un solo regreso pendiente aunque se toque play dos veces.
         mainHandler.removeCallbacks(returnFromRadio)
         mainHandler.postDelayed(returnFromRadio, RADIO_RETURN_MS)
+    }
+
+    /**
+     * FM TopWay: play sin abrir su app (se le pide el audio al sintonizador). Si en [TOPWAY_ANSWER_MS]
+     * el sintonizador no dice que tiene el audio, se abre la radio como antes ([openAndReturn]).
+     */
+    private fun playTopWay(tw: TopWayRadio, pkg: String, lens: Lens) {
+        val asked = SystemClock.elapsedRealtime()
+        trace("topway play sin abrir")
+        tw.takeAudio()
+        mainHandler.postDelayed({
+            lens.starting = null
+            if (tw.onAt >= asked) {
+                trace("topway suena sin abrir")
+                tw.started()
+            } else {
+                trace("topway no confirmó: se abre $pkg")
+                openAndReturn(pkg, lens)
+            }
+        }, TOPWAY_ANSWER_MS)
     }
 
     private val radioCheck = Runnable { trace("radio tras regresar: audio=${yes(musicActive())}") }

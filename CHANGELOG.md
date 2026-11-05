@@ -6,6 +6,14 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
+## [1.4.87] - 2026-11-05
+
+### Cambiado
+- **Radio de pantallas TopWay: play ya no abre la app de radio.** LiteDash le pide el audio al
+  sintonizador como lo hace la radio de fábrica, y la estación suena desde el inicio. Si tu pantalla
+  no contesta en 2 segundos, abre la radio como antes y regresa sola. Pausa usa el mismo código que
+  tu pantalla manda.
+
 ## [1.4.86] - 2026-11-05
 
 ### Arreglado

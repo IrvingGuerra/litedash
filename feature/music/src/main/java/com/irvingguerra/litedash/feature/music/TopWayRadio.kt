@@ -3,6 +3,7 @@ package com.irvingguerra.litedash.feature.music
 import android.os.Handler
 import android.os.Looper
 import android.os.Message
+import android.os.SystemClock
 import java.lang.reflect.Method
 import java.util.Locale
 
@@ -11,8 +12,9 @@ import java.util.Locale
  * publica sesión ni receptor del botón de play. Se le habla como su propia app: por
  * `android.tw.john.TWUtil`, el enlace del firmware con el sintonizador (por reflexión: en otras
  * pantallas no existe). Códigos de ivvlev/CarRadio y OpenRath (GPL). Da la estación (frecuencia y
- * nombre RDS) y siguiente/anterior; la radio solo suena con su app abierta, así que play la sigue
- * abriendo. Lo que dice el sintonizador va al registro para los reportes.
+ * nombre RDS), siguiente/anterior y play/pausa sin abrir su app: se le pide el audio como lo hace
+ * ella al abrirse ("actividad" 0x9E00 y fuente 0x9E11, como ivvlev/CarRadio). Lo que dice el
+ * sintonizador va al registro para los reportes.
  */
 internal class TopWayRadio(private val onState: (BroadcastMeta) -> Unit, private val trace: (String) -> Unit) {
     private var util: Any? = null
@@ -29,6 +31,11 @@ internal class TopWayRadio(private val onState: (BroadcastMeta) -> Unit, private
     /** El sintonizador tiene el audio; null = no ha dicho. */
     var on: Boolean? = null
         private set
+    /** Cuándo dijo por última vez el sintonizador que tiene el audio (para confirmar un play). */
+    var onAt = 0L
+        private set
+    /** El número de la radio en "actividad" y fuente: 1 en las TS18 (ivvlev/CarRadio); se aprende de lo que manda. */
+    private var source = SOURCE_RADIO
     private val seen = HashSet<Int>()
 
     private val handler = object : Handler(Looper.getMainLooper()) {
@@ -39,7 +46,13 @@ internal class TopWayRadio(private val onState: (BroadcastMeta) -> Unit, private
                 m.what == RADIO && m.arg1 == 1 -> band = m.arg2
                 m.what == RADIO && m.arg1 == 2 -> frequency = m.arg2
                 m.what == RDS -> name = (m.obj as? String)?.trim().orEmpty()
-                m.what == AUDIO || m.what == ACTIVITY -> on = m.arg1 == 1
+                m.what == AUDIO -> setOn(m.arg1 == 1)
+                // Actividad: el número de la radio al entrar (1 o 10) y con 0x80 al salir (129 o 0x8A).
+                m.what == ACTIVITY -> {
+                    val radio = m.arg1 == SOURCE_RADIO || m.arg1 == SOURCE_RADIO_ALT
+                    if (radio) source = m.arg1
+                    setOn(radio)
+                }
                 else -> return
             }
             publish()
@@ -91,15 +104,33 @@ internal class TopWayRadio(private val onState: (BroadcastMeta) -> Unit, private
     fun next() = write(RADIO, 1, 0)
     fun previous() = write(RADIO, 1, 1)
 
+    private fun setOn(v: Boolean) {
+        on = v
+        if (v) onAt = SystemClock.elapsedRealtime()
+    }
+
+    /** Play sin abrir su app: pide el audio para la radio, como ella al abrirse, y la estación. */
+    fun takeAudio() {
+        activity(source)
+        write(FOCUS, 0xC0, source)
+        refresh()
+    }
+
     /** Pausa: suelta el audio de la radio, como su app al cerrarse. */
     fun releaseAudio() {
-        write2?.let { m -> util?.let { runCatching { m.invoke(it, ACTIVITY, SOURCE_RELEASE) } } } ?: write(ACTIVITY, SOURCE_RELEASE, 0)
-        write(FOCUS, 0xC0, SOURCE_RELEASE)
+        activity(source or RELEASE)
+        write(FOCUS, 0xC0, source or RELEASE)
         on = false
         publish()
     }
 
-    /** Se dio play abriendo su app: suena hasta que el sintonizador diga otra cosa. */
+    /** La "actividad" va con write de dos números (como la radio de fábrica); si no existe, con tres. */
+    private fun activity(value: Int) {
+        val u = util ?: return
+        write2?.let { m -> runCatching { m.invoke(u, ACTIVITY, value) }.onFailure { trace("topway write $ACTIVITY falló") } } ?: write(ACTIVITY, value, 0)
+    }
+
+    /** Se dio play: suena hasta que el sintonizador diga otra cosa. */
     fun started() {
         on = true
         publish()
@@ -125,7 +156,10 @@ internal class TopWayRadio(private val onState: (BroadcastMeta) -> Unit, private
         private const val AUDIO = 769
         private const val ACTIVITY = 0x9E00
         private const val FOCUS = 0x9E11
-        private const val SOURCE_RELEASE = 0x8A
+        private const val SOURCE_RADIO = 1
+        /** El número de la radio en otras TopWay (OpenRath). */
+        private const val SOURCE_RADIO_ALT = 0x0A
+        private const val RELEASE = 0x80
 
         /** La pantalla trae el enlace de TopWay. */
         val available: Boolean by lazy { runCatching { Class.forName(CLASS) }.isSuccess }
