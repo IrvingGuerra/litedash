@@ -76,9 +76,13 @@ private const val TOPWAY_XT_BIND = "com.tw.service.xt.CommandService.Bind"
 /** Lo que tarda el sintonizador de TopWay en contestar la estación. */
 private const val TOPWAY_ANSWER_MS = 2_000L
 /** Lo que LiteDash supone de una app de fábrica (suena / en pausa) deja de valer tras este rato (p. ej. apagaron el auto). */
+/** Tras un play a una app de música, cuánto se espera a que suene antes de abrirla. */
+private const val PLAY_CHECK_MS = 4_000L
+/** Tras abrirla, cuánto se espera para regresar al inicio y darle play otra vez (Spotify tarda en despertar). */
+private const val PLAY_RETURN_MS = 4_000L
 private const val ASSUME_MAX_MS = 3 * 60 * 60_000L
 /** Cuántos eventos guarda el registro de "Enviar un reporte". */
-private const val TRACE_SIZE = 30
+private const val TRACE_SIZE = 60
 /** Un aviso (broadcast) de qué suena vale como respaldo durante este rato. */
 private const val BROADCAST_FRESH_MS = 10 * 60_000L
 
@@ -772,7 +776,11 @@ class MusicRepository(private val context: Context) {
                 return tw.releaseAudio()
             }
             val t = controller?.transportControls?.takeUnless { keysOnly(PlaybackState.ACTION_PLAY_PAUSE or PlaybackState.ACTION_PLAY or PlaybackState.ACTION_PAUSE) }
-            if (!s.blind && t != null) return if (s.playing) t.pause() else t.play()
+            if (!s.blind && t != null) {
+                if (s.playing) return t.pause()
+                if (this === music) controller?.packageName?.let(::watchPlay)
+                return t.play()
+            }
             val play = !s.playing
             val pkg = target(this)
             if (!press(this, if (play) KeyEvent.KEYCODE_MEDIA_PLAY else KeyEvent.KEYCODE_MEDIA_PAUSE)) return onWake()
@@ -887,10 +895,47 @@ class MusicRepository(private val context: Context) {
     fun resume() {
         val pkg = active ?: preferred ?: music.controller?.packageName ?: store.getString(KEY_LAST_APP, null)
         val session = music.controller?.takeIf { song != null && (pkg == null || it.packageName == pkg) }
-        if (session != null) return session.transportControls.play()
+        if (session != null) {
+            watchPlay(session.packageName)
+            return session.transportControls.play()
+        }
         if (pkg == null) return systemPlay()
         if (isOwn(pkg)) return ownPlay?.invoke(SourceKind.USB) {} ?: Unit
+        watchPlay(pkg)
         wake(pkg, music)
+    }
+
+    /**
+     * Apps como Spotify, dormidas en segundo plano, a veces dicen que suenan y no suenan hasta abrirlas.
+     * Tras un play a una app de música normal (no Bluetooth ni FM: esas suenan por fuera de Android), si en
+     * [PLAY_CHECK_MS] Android no tiene audio y la pieza no está en pausa, se abre la app, se regresa al
+     * inicio y se le vuelve a dar play.
+     */
+    private fun watchPlay(pkg: String) {
+        if (isOwn(pkg) || sourceOf(pkg) != null) return
+        playPkg = pkg
+        mainHandler.removeCallbacks(playCheck)
+        mainHandler.postDelayed(playCheck, PLAY_CHECK_MS)
+    }
+
+    private var playPkg: String? = null
+    private val playCheck = Runnable {
+        val pkg = playPkg ?: return@Runnable
+        if (users == 0 || musicActive() || music.song?.playing == false) return@Runnable trace("play $pkg: audio=${yes(musicActive())}")
+        music.starting = null
+        val over = open(pkg)
+        trace("play $pkg: no suena, se abre${if (over) " y se regresa" else ""}")
+        if (!over) return@Runnable
+        mainHandler.removeCallbacks(returnAndPlay)
+        mainHandler.postDelayed(returnAndPlay, PLAY_RETURN_MS)
+    }
+    private val returnAndPlay = Runnable {
+        val pkg = playPkg ?: return@Runnable
+        returnHome?.invoke()
+        if (musicActive()) return@Runnable trace("regreso: $pkg ya suena")
+        val session = sessions().firstOrNull { it.packageName == pkg }
+        if (session != null) runCatching { session.transportControls.play() } else buttonPlay(pkg)
+        trace("regreso: play otra vez a $pkg por ${if (session != null) "sesión" else "receptor"}")
     }
 
     /**
@@ -984,7 +1029,10 @@ class MusicRepository(private val context: Context) {
      * LiteDash volvió al frente por su cuenta (el usuario regresó o abrió otra app desde el inicio):
      * ya no se regresa solo. No va en [stop]: al abrir la radio, LiteDash se detiene y eso lo cancelaría.
      */
-    fun cancelReturn() = mainHandler.removeCallbacks(returnFromRadio)
+    fun cancelReturn() {
+        mainHandler.removeCallbacks(returnFromRadio)
+        mainHandler.removeCallbacks(returnAndPlay)
+    }
 
     private fun musicActive() = context.getSystemService(AudioManager::class.java).isMusicActive
 

@@ -42,7 +42,8 @@ internal class TopWayRadio(private val onState: (BroadcastMeta) -> Unit, private
     private val handler = object : Handler(Looper.getMainLooper()) {
         override fun handleMessage(m: Message) {
             // La primera vez de cada mensaje (y lo del audio siempre) al registro: así se aprende qué manda cada pantalla.
-            if (seen.add(m.what * 1000 + m.arg1) || m.what == AUDIO || m.what == ACTIVITY) trace("topway ${m.what} ${m.arg1} ${m.arg2}${(m.obj as? String)?.let { " \"$it\"" } ?: ""}")
+            // Las presintonías (1026, una por botón) no: llenaban el registro.
+            if (m.what != STATION && seen.add(m.what * 1000 + m.arg1) || m.what == AUDIO || m.what == ACTIVITY) trace("topway ${m.what} ${m.arg1} ${m.arg2}${(m.obj as? String)?.let { " \"$it\"" } ?: ""}")
             when {
                 m.what == RADIO && m.arg1 == 1 -> band = m.arg2
                 m.what == RADIO && m.arg1 == 2 -> frequency = m.arg2

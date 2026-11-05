@@ -6,6 +6,14 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
+## [1.4.90] - 2026-11-05
+
+### Arreglado
+- **Música: play ya despierta a Spotify (y apps parecidas) aunque esté dormida.** A veces la app
+  decía que reproducía pero no sonaba hasta abrirla. Ahora, si a los 4 segundos no suena nada,
+  LiteDash la abre, regresa solo al inicio y le vuelve a dar play.
+- Los reportes guardan más eventos (60) y la lista de estaciones de la radio ya no los llena.
+
 ## [1.4.89] - 2026-11-05
 
 ### Arreglado
