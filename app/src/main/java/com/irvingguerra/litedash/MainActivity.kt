@@ -55,6 +55,7 @@ class MainActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         inFront = true
+        dependencies.music.cancelReturn()
         revision.intValue++
     }
 

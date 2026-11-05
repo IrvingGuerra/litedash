@@ -6,6 +6,15 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
+## [1.4.81] - 2026-11-05
+
+### Arreglado (auditoría de la 1.4.79 y la 1.4.80)
+- Radio de fábrica sin control: si das play y te vas a otra app desde el inicio antes de 3 segundos,
+  LiteDash ya no te saca de ella para regresar. Dos toques seguidos dan un solo regreso.
+- Mapa sin GPS: la ubicación por red ya no apaga el velocímetro; solo mueve el punto del mapa.
+- Radio TopWay: se conecta sin trabar el inicio, y la estación ya no parpadea cada 10 minutos.
+- Los reportes ya no pueden fallar con apps de radio de manifiesto raro.
+
 ## [1.4.80] - 2026-11-05
 
 ### Agregado

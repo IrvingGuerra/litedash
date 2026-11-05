@@ -6,7 +6,9 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.location.Location
 import android.location.LocationManager
+import android.os.Handler
 import android.os.Looper
+import android.os.SystemClock
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -41,6 +43,9 @@ import com.irvingguerra.litedash.core.vehicle.Signal
 import com.irvingguerra.litedash.core.vehicle.Source
 import com.irvingguerra.litedash.core.vehicle.VehicleBus
 import kotlinx.coroutines.delay
+
+/** Un punto del GPS de hace menos que esto manda sobre la red. */
+private const val GPS_FRESH_MS = 5_000L
 
 /**
  * Velocidad (al bus), rumbo y distancia del viaje con el GPS. Solo escucha mientras algo
@@ -96,7 +101,8 @@ class TripRepository(private val context: Context, private val bus: VehicleBus) 
             // llamada al sistema: fuera del hilo principal (el estado se puede escribir desde ahí).
             if (position == null) thread(name = "last-location") {
                 val last = providers.mapNotNull { runCatching { manager.getLastKnownLocation(it) }.getOrNull() }.maxByOrNull { it.time }
-                if (position == null && last != null) position = last
+                // En el principal: si mientras tanto llegó un punto, no se pisa con uno más viejo.
+                if (last != null) main.post { if (position == null) position = last }
             }
         }
     }
@@ -116,13 +122,19 @@ class TripRepository(private val context: Context, private val bus: VehicleBus) 
         last = null
     }
 
-    /** Hora del último punto del GPS: mientras llega, la red (menos precisa) no lo pisa. */
+    /** Reloj de arranque del último punto del GPS: mientras llega, la red (menos precisa) no lo pisa. */
     private var lastGpsAt = 0L
+    private val main = Handler(Looper.getMainLooper())
 
     private fun update(l: Location) {
-        val now = System.currentTimeMillis()
-        if (l.provider == LocationManager.GPS_PROVIDER) lastGpsAt = now
-        else if (now - lastGpsAt < GPS_FRESH_MS) return
+        val now = SystemClock.elapsedRealtime()
+        if (l.provider != LocationManager.GPS_PROVIDER) {
+            // La red solo mueve el punto del mapa: no trae velocidad ni rumbo y no cuenta para el viaje
+            // (sin GPS, el velocímetro se queda con lo último en vez de apagarse en un túnel).
+            if (now - lastGpsAt >= GPS_FRESH_MS) position = l
+            return
+        }
+        lastGpsAt = now
         position = l
         speedKmh = if (l.hasSpeed()) l.speed * 3.6f else null
         bus.publish(Signal.SPEED, speedKmh, Source.GPS)
@@ -141,8 +153,6 @@ class TripRepository(private val context: Context, private val bus: VehicleBus) 
  * El inicio está tapado por algo a pantalla completa (el auto en grande, Llantas o estacionado): sus
  * widgets siguen compuestos debajo, pero lo que gasta (GPS, mapa) descansa.
  */
-private const val GPS_FRESH_MS = 5_000L
-
 val LocalHomeCovered = compositionLocalOf { false }
 
 /** Escucha el GPS mientras la pieza se ve (sin nada encima) y la app está al frente. */

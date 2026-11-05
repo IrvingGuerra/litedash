@@ -91,12 +91,11 @@ internal class TopWayRadio(private val onState: (BroadcastMeta) -> Unit, private
     fun next() = write(RADIO, 1, 0)
     fun previous() = write(RADIO, 1, 1)
 
-    /** Suelta (pausa) o toma el audio para la radio, como su app al cerrarse o abrirse. */
-    fun audio(take: Boolean) {
-        val source = if (take) SOURCE_RADIO else SOURCE_RELEASE
-        write2?.let { m -> util?.let { runCatching { m.invoke(it, ACTIVITY, source) } } } ?: write(ACTIVITY, source, 0)
-        write(FOCUS, 0xC0, source)
-        on = take
+    /** Pausa: suelta el audio de la radio, como su app al cerrarse. */
+    fun releaseAudio() {
+        write2?.let { m -> util?.let { runCatching { m.invoke(it, ACTIVITY, SOURCE_RELEASE) } } } ?: write(ACTIVITY, SOURCE_RELEASE, 0)
+        write(FOCUS, 0xC0, SOURCE_RELEASE)
+        on = false
         publish()
     }
 
@@ -126,7 +125,6 @@ internal class TopWayRadio(private val onState: (BroadcastMeta) -> Unit, private
         private const val AUDIO = 769
         private const val ACTIVITY = 0x9E00
         private const val FOCUS = 0x9E11
-        private const val SOURCE_RADIO = 0x0A
         private const val SOURCE_RELEASE = 0x8A
 
         /** La pantalla trae el enlace de TopWay. */
