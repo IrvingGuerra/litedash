@@ -2,6 +2,7 @@ rules_version = '2';
 
 // Estadísticas anónimas de LiteDash (app/Stats.kt): cada pantalla escribe solo su
 // documento, con estos campos y la hora del servidor. Nadie puede leer desde la app.
+// Reportes (app/Reports.kt): solo crear uno nuevo al tocar Enviar; nunca editar ni leer.
 service cloud.firestore {
   match /databases/{database}/documents {
     match /screens/{id} {
@@ -14,6 +15,20 @@ service cloud.firestore {
         && request.resource.data.screen is string && request.resource.data.screen.size() <= 16
         && request.resource.data.since is string && request.resource.data.since.size() == 10
         && request.resource.data.seen == request.time;
+    }
+    match /reports/{id} {
+      allow create: if id.matches('^[0-9a-f]{32}$')
+        && request.resource.data.keys().hasOnly(['version', 'channel', 'android', 'debug', 'module', 'detail', 'problem', 'note', 'info', 'sent'])
+        && request.resource.data.version is int && request.resource.data.version < 1000000000
+        && request.resource.data.channel in ['play', 'github']
+        && request.resource.data.android is int && request.resource.data.android < 1000
+        && request.resource.data.debug is bool
+        && request.resource.data.module is string && request.resource.data.module.size() <= 24
+        && request.resource.data.detail is string && request.resource.data.detail.size() <= 24
+        && request.resource.data.problem is string && request.resource.data.problem.size() <= 24
+        && request.resource.data.note is string && request.resource.data.note.size() <= 500
+        && request.resource.data.info is string && request.resource.data.info.size() <= 20000
+        && request.resource.data.sent == request.time;
     }
     // Solo para la 1.4.44 y la 1.4.45, que usaban nombres en español.
     match /pantallas/{id} {

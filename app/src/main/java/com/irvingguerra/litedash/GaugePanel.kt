@@ -103,7 +103,7 @@ fun CustomizeGaugePanel(d: Dependencies, tileId: String, close: () -> Unit, onPi
                             RoadView(d, d.cars.pkg(d.prefs.carModel), onClick = {}, look = roadLook ?: RoadLook(), demoKmh = demoKmh)
                         } else if (speedometer) {
                             val max = look.speedMax(units.miles).toFloat()
-                            SpeedGaugeCard(demo * max, units.miles, "GPS", look, d.prefs.carColor)
+                            SpeedGaugeCard(demo * max, units.miles, "GPS", look, d.prefs.carColor, speedCar(d, look))
                         } else if (spec != null) {
                             SpecGaugeCard(spec, spec.min + (spec.max - spec.min) * demo, units, look, d.prefs.carColor)
                         }
@@ -172,6 +172,10 @@ fun CustomizeGaugePanel(d: Dependencies, tileId: String, close: () -> Unit, onPi
                     SwitchRow(stringResource(R.string.gauge_ticks), look.ticks, { set(look.copy(ticks = it)) })
                     SwitchRow(stringResource(R.string.gauge_numbers), look.numbers, { set(look.copy(numbers = it)) })
                     SwitchRow(stringResource(R.string.gauge_redline), look.redline, { set(look.copy(redline = it)) })
+                    // Solo el velocímetro (no la carretera, que ya lleva el auto) y si hay un auto instalado.
+                    if (tile.type == TileTypes.SPEEDOMETER && d.cars.pkg(d.prefs.carModel) != null) {
+                        SwitchRow(stringResource(R.string.gauge_car), look.car, { set(look.copy(car = it)) })
+                    }
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         if (!speedometer) Button(stringResource(R.string.gauge_change_signal), onPickSignal)
                         Button(stringResource(R.string.gauge_apply_all), {
@@ -181,7 +185,8 @@ fun CustomizeGaugePanel(d: Dependencies, tileId: String, close: () -> Unit, onPi
                                 d.dashboard.tiles
                                     .filter { it.type == TileTypes.SPEEDOMETER || it.type == TileTypes.GAUGE || it.type == TileTypes.ROAD }
                                     .associate {
-                                        val own = look.copy(max = GaugeLook.parse(it.data).max)
+                                        // El auto al frente solo va en los velocímetros.
+                                        val own = look.copy(max = GaugeLook.parse(it.data).max, car = look.car && it.type == TileTypes.SPEEDOMETER)
                                         it.id to if (it.type == TileTypes.ROAD) RoadLook.parse(it.data).copy(gauge = own).encode() else own.encode(signalOf(it.data))
                                     },
                             )

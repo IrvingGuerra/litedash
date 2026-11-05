@@ -12,9 +12,6 @@ import androidx.compose.ui.text.font.FontWeight
 import com.irvingguerra.litedash.core.ui.Segmented
 import com.irvingguerra.litedash.core.ui.Radius
 import android.app.Activity
-import android.app.ActivityManager
-import android.content.ClipData
-import android.content.ClipboardManager
 import android.content.Context
 import android.hardware.SensorManager
 import android.hardware.Sensor
@@ -106,7 +103,6 @@ import com.irvingguerra.litedash.feature.dashboard.TileTypes
 import com.irvingguerra.litedash.feature.dashboard.size
 import com.irvingguerra.litedash.feature.dashboard.suggestedTemplate
 import com.irvingguerra.litedash.feature.dashboard.tiles
-import com.irvingguerra.litedash.feature.music.MusicRepository
 import com.irvingguerra.litedash.feature.tpms.PressureUnit
 import com.irvingguerra.litedash.feature.updater.Updater
 import com.irvingguerra.litedash.feature.updater.Version
@@ -912,20 +908,15 @@ private fun SystemSettings(d: Dependencies) {
     }
 }
 
-/** La pantalla en unas líneas (lo que más sirve para reportar un problema) y copiar todo. */
+/** La pantalla en unas líneas y "Enviar un reporte" ([SendReport]). */
 @Composable
 private fun ScreenInfo(d: Dependencies) {
-    val c = LocalColors.current
     val context = LocalContext.current
-    SettingsCard(stringResource(R.string.copy_info), stringResource(R.string.copy_info_help)) {
+    SettingsCard {
         val lines = remember { screenLines(context) }
         for (line in lines) Label(line, Typography.body, maxLines = 2)
-        var copied by remember { mutableStateOf(false) }
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            Button(stringResource(R.string.copy_info), { copySystemInfo(context, d.music); copied = true }, primary = true)
-            if (copied) Label(stringResource(R.string.copied), Typography.small, c.accent)
-        }
     }
+    SendReport(d.music)
 }
 
 /** La versión en grande, sus novedades y tu auto a la derecha (como DuduAuto). */
@@ -1330,53 +1321,6 @@ private fun screenLines(context: Context): List<String> {
         "Android ${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT}) · ${Build.SUPPORTED_ABIS.joinToString()}",
         "${m.widthPixels}×${m.heightPixels} px · ${m.densityDpi} dpi · ${memoryMb(context)} MB",
     )
-}
-
-/** La memoria (RAM) de la pantalla en MB. */
-private fun memoryMb(context: Context): Long {
-    val memory = ActivityManager.MemoryInfo().also { context.getSystemService(ActivityManager::class.java).getMemoryInfo(it) }
-    return memory.totalMem / (1024 * 1024)
-}
-
-/** Datos de la pantalla para reportar problemas (marca, modelo, Android, resolución, memoria). */
-private fun copySystemInfo(context: Context, music: MusicRepository) {
-    val m = context.resources.displayMetrics
-    val text = buildString {
-        appendLine("LiteDash ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE}) · ${BuildConfig.CHANNEL}")
-        appendLine("Equipo: ${Build.MANUFACTURER} ${Build.MODEL} (${Build.DEVICE})")
-        appendLine("Plataforma: ${Build.HARDWARE} · ${Build.BOARD}")
-        appendLine("Android ${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT})")
-        appendLine("Pantalla: ${m.widthPixels}×${m.heightPixels} px · ${m.densityDpi} dpi")
-        appendLine("Memoria: ${memoryMb(context)} MB")
-        appendLine("CPU: ${Build.SUPPORTED_ABIS.joinToString()}")
-        appendLine("Pantalla dividida: ${if (SplitScreen.supported()) "sí" else "no"}")
-        appendLine(lightsInfo(context))
-        append(music.describe())
-    }
-    context.getSystemService(ClipboardManager::class.java)
-        .setPrimaryClip(ClipData.newPlainText("LiteDash", text))
-}
-
-
-/**
- * Para conectar los faros: si hay sensor de luz y qué ajustes de la pantalla hablan de
- * luces o iluminación (cada marca los nombra distinto; solo se leen los que Android deja).
- */
-private fun lightsInfo(context: Context): String {
-    val sensor = context.getSystemService(SensorManager::class.java)?.getDefaultSensor(Sensor.TYPE_LIGHT)
-    val names = Regex("illum|headl|lamp|light|dimm|night|backlight|ill_", RegexOption.IGNORE_CASE)
-    val found = listOf(
-        "system" to Settings.System.CONTENT_URI,
-        "global" to Settings.Global.CONTENT_URI,
-        "secure" to Settings.Secure.CONTENT_URI,
-    ).flatMap { (table, uri) ->
-        runCatching {
-            context.contentResolver.query(uri, arrayOf("name", "value"), null, null, null)?.use { c ->
-                buildList { while (c.moveToNext()) c.getString(0)?.takeIf(names::containsMatchIn)?.let { add("$table/$it=${c.getString(1)}") } }
-            }.orEmpty()
-        }.getOrDefault(emptyList())
-    }
-    return "Sensor de luz: ${sensor?.name ?: "no"}\nLuces: ${found.joinToString().ifEmpty { "—" }}"
 }
 
 /** Cuánto se espera la confirmación de Android antes de ofrecer el instalador de siempre. */

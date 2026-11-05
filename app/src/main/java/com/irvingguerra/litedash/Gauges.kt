@@ -1,6 +1,7 @@
 package com.irvingguerra.litedash
 
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
@@ -8,6 +9,7 @@ import com.irvingguerra.litedash.core.ui.Icons
 import com.irvingguerra.litedash.core.vehicle.Signal
 import com.irvingguerra.litedash.core.vehicle.Source
 import com.irvingguerra.litedash.core.vehicle.watch
+import com.irvingguerra.litedash.feature.car.CarStill
 import com.irvingguerra.litedash.feature.obd.CHARGING_MAX_V
 import com.irvingguerra.litedash.feature.obd.HOT_COOLANT_C
 import com.irvingguerra.litedash.feature.obd.ObdState
@@ -30,7 +32,14 @@ fun SpeedometerTile(d: Dependencies, look: GaugeLook) {
     if (!obdOn) KeepTripRunning(d.trip)
     val kmh = d.bus.watch(Signal.SPEED)
     val miles = d.prefs.units.miles
-    SpeedGaugeCard((kmh ?: 0f).toMiles(miles), miles, speedTag(d), look, d.prefs.carColor)
+    SpeedGaugeCard((kmh ?: 0f).toMiles(miles), miles, speedTag(d), look, d.prefs.carColor, speedCar(d, look))
+}
+
+/** Tu auto quieto (de frente, sin reflejo) para "Auto al frente"; null si no se pidió o no hay auto instalado. */
+fun speedCar(d: Dependencies, look: GaugeLook): (@Composable (Modifier) -> Unit)? {
+    if (!look.car) return null
+    val pkg = d.cars.pkg(d.prefs.carModel) ?: return null
+    return { m -> CarStill(d.cars, pkg, d.prefs.carColor, m, reflection = false) }
 }
 
 /** De dónde viene la velocidad (OBD, GPS o CAN), para la etiqueta del velocímetro. */
@@ -43,10 +52,10 @@ fun speedTag(d: Dependencies) = when (d.bus.source(Signal.SPEED)) {
 
 /**
  * La tarjeta del velocímetro con [speed] ya en la unidad que se ve (km/h o mph): la
- * usan la pieza y la vista previa de Personalizar medidor.
+ * usan la pieza y la vista previa de Personalizar medidor. [car]: ver [speedCar].
  */
 @Composable
-fun SpeedGaugeCard(speed: Float, miles: Boolean, tag: String, look: GaugeLook, carColor: Color) {
+fun SpeedGaugeCard(speed: Float, miles: Boolean, tag: String, look: GaugeLook, carColor: Color, car: (@Composable (Modifier) -> Unit)? = null) {
     val max = look.speedMax(miles).toFloat()
     // Marcas cada 20 km/h (10 mph); con 240 o más, cada 40 (20 mph) para que no se amontonen.
     val ticks = ticksFor(max, miles)
@@ -59,6 +68,7 @@ fun SpeedGaugeCard(speed: Float, miles: Boolean, tag: String, look: GaugeLook, c
         look = look,
         carColor = carColor,
         labels = { i -> (max * i / ticks).toInt().toString() },
+        car = car,
     )
 }
 

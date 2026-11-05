@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="report_title">Send a report</string>
+    <string name="report_help">Tell us what\'s wrong. It\'s sent with technical data from your head unit (no personal data).</string>
+    <string name="report_what">What\'s the problem with?</string>
+    <string name="report_which">Which one?</string>
+    <string name="report_problem">What happens?</string>
+    <string name="report_workshop">Workshop (OBD)</string>
+    <string name="report_projection">Android Auto / apps</string>
+    <string name="report_lights">Day and night / headlights</string>
+    <string name="report_music_usb">USB (LiteDash player)</string>
+    <string name="report_music_bt">Bluetooth (head unit\'s)</string>
+    <string name="report_music_app">Your music app (Spotify, YouTube Music…)</string>
+    <string name="report_radio_fm">Head unit FM</string>
+    <string name="report_radio_internet">Internet radio</string>
+    <string name="report_silent">No sound</string>
+    <string name="report_no_info">It plays but doesn\'t show what\'s playing</string>
+    <string name="report_buttons">The buttons don\'t respond</string>
+    <string name="report_broken">Doesn\'t work</string>
+    <string name="report_looks_wrong">Looks wrong</string>
+    <string name="report_crash">The app closes</string>
+    <string name="report_note">Tell us more (optional)</string>
+    <string name="report_play_first">If you can, play that source before sending.</string>
+    <string name="report_send">Send</string>
+    <string name="report_sending">Sending…</string>
+    <string name="report_thanks">Thanks! We\'ll look into it.</string>
+    <string name="report_code">Report code: %1$s</string>
+    <string name="report_error">Couldn\'t send. Check your connection.</string>
+    <string name="report_wait">Wait a minute before sending another.</string>
+</resources>

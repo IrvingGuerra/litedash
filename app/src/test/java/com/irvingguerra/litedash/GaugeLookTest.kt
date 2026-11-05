@@ -45,6 +45,16 @@ class GaugeLookTest {
     }
 
     @Test
+    fun esferaYAutoAlFrente() {
+        // Esfera y "Auto al frente": de fábrica sin auto (no se escribe).
+        val look = GaugeLook(GaugeStyle.DIAL, car = true)
+        assertEquals("style=dial;car=1", look.encode())
+        assertEquals(look, GaugeLook.parse(look.encode()))
+        assertEquals(false, GaugeLook.parse("style=dial").car)
+        assertEquals(null, GaugeStyle.DIAL.suggestedColor())
+    }
+
+    @Test
     fun marcasDelVelocimetro() {
         assertEquals(10, ticksFor(200f, miles = false))
         assertEquals(8, ticksFor(320f, miles = false))

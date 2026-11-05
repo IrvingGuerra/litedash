@@ -72,6 +72,9 @@
     <string name="gauge_style_gradient">Gradient</string>
     <string name="gauge_style_neon">Neon</string>
     <string name="gauge_style_blocks">Blocks</string>
+    <!-- Dial and car in front of the speedometer -->
+    <string name="gauge_style_dial">Dial</string>
+    <string name="gauge_car">Car in front</string>
     <string name="gauge_color_purple">Purple to blue</string>
     <string name="gauge_color_cyan">Neon cyan</string>
     <string name="gauge_customize">Customize gauge</string>
@@ -130,14 +133,11 @@
     <string name="app_info">App info</string>
     <string name="modules">Modules</string>
     <string name="on_your_home">On your home</string>
-    <string name="copy_info">Copy my screen info</string>
-    <string name="copied">Copied</string>
     <string name="hide_status_bar">Hide the Android bar</string>
     <string name="hide_status_bar_help">The top bar with the time and notifications. LiteDash already shows its own time and signal; swipe down from the top to open it.</string>
     <string name="stats_title">Statistics</string>
     <string name="stats_switch">Count this screen (anonymous)</string>
     <string name="stats_help">Once a day it sends a random number, the version and where you got it (GitHub or Play), Android, language, screen size and since when you use LiteDash, to know how many people use LiteDash. No location, accounts or personal data.</string>
-    <string name="copy_info_help">Brand, model, Android and resolution, to paste when reporting a problem on GitHub.</string>
     <string name="back">Back</string>
     <string name="next">Next</string>
     <string name="skip">Skip</string>

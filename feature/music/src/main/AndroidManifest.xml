@@ -16,8 +16,8 @@
         <!--
             Existe para que el usuario pueda dar "acceso a notificaciones": con
             ese permiso Android deja leer qué suena en otras apps. De los avisos
-            solo se mira el de la app de navegación (la siguiente vuelta); no se
-            guarda nada.
+            solo se miran el de la app de navegación (la siguiente vuelta) y los
+            de las apps de Bluetooth y radio enlazadas (qué suena); no se guarda nada.
         -->
         <service
             android:name="com.irvingguerra.litedash.feature.musica.ServicioMusica"

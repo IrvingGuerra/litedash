@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- "Enviar un reporte" (Ajustes → Sistema → Tu pantalla, Reports.kt). -->
+<resources>
+    <string name="report_title">Enviar un reporte</string>
+    <string name="report_help">Cuéntanos qué falla. Se manda con datos técnicos de tu pantalla (sin datos personales).</string>
+    <string name="report_what">¿Con qué hay un problema?</string>
+    <string name="report_which">¿Cuál?</string>
+    <string name="report_problem">¿Qué pasa?</string>
+    <string name="report_workshop">Taller (OBD)</string>
+    <string name="report_projection">Android Auto / apps</string>
+    <string name="report_lights">Día y noche / faros</string>
+    <string name="report_music_usb">USB (reproductor de LiteDash)</string>
+    <string name="report_music_bt">Bluetooth (de la pantalla)</string>
+    <string name="report_music_app">Tu app de música (Spotify, YouTube Music…)</string>
+    <string name="report_radio_fm">FM de la pantalla</string>
+    <string name="report_radio_internet">Por internet</string>
+    <string name="report_usb" translatable="false">USB</string>
+    <string name="report_silent">No suena</string>
+    <string name="report_no_info">Suena pero no se ve qué suena</string>
+    <string name="report_buttons">Los botones no responden</string>
+    <string name="report_broken">No funciona</string>
+    <string name="report_looks_wrong">Se ve mal</string>
+    <string name="report_crash">Se cierra la app</string>
+    <string name="report_note">Cuéntanos más (opcional)</string>
+    <string name="report_play_first">Si puedes, pon a sonar esa fuente antes de enviar.</string>
+    <string name="report_send">Enviar</string>
+    <string name="report_sending">Enviando…</string>
+    <string name="report_thanks">¡Gracias! Lo revisamos.</string>
+    <string name="report_code">Código del reporte: %1$s</string>
+    <string name="report_error">No se pudo enviar. Revisa tu conexión.</string>
+    <string name="report_wait">Espera un minuto antes de mandar otro.</string>
+</resources>

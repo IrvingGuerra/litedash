@@ -73,6 +73,9 @@
     <string name="gauge_style_gradient">Degradado</string>
     <string name="gauge_style_neon">Neón</string>
     <string name="gauge_style_blocks">Cuadros</string>
+    <!-- Esfera y auto al frente del velocímetro -->
+    <string name="gauge_style_dial">Esfera</string>
+    <string name="gauge_car">Auto al frente</string>
     <string name="gauge_color_purple">Morado a azul</string>
     <string name="gauge_color_cyan">Cian neón</string>
     <string name="gauge_customize">Personalizar medidor</string>
@@ -131,14 +134,11 @@
     <string name="app_info">Info de la app</string>
     <string name="modules">Módulos</string>
     <string name="on_your_home">En tu inicio</string>
-    <string name="copy_info">Copiar info de mi pantalla</string>
-    <string name="copied">Copiado</string>
     <string name="hide_status_bar">Ocultar la barra de Android</string>
     <string name="hide_status_bar_help">La barra de arriba con la hora y los avisos. LiteDash ya trae su hora y señal; para abrirla, desliza desde arriba.</string>
     <string name="stats_title">Estadísticas</string>
     <string name="stats_switch">Contar esta pantalla (anónimo)</string>
     <string name="stats_help">Una vez al día manda un número al azar, la versión y de dónde la bajaste (GitHub o Play), Android, el idioma, el tamaño de la pantalla y desde qué día usas LiteDash, para saber cuánta gente usa LiteDash. Nada de ubicación, cuentas ni datos tuyos.</string>
-    <string name="copy_info_help">Marca, modelo, Android y resolución, para pegarlos al reportar un problema en GitHub.</string>
     <string name="back">Atrás</string>
     <string name="next">Siguiente</string>
     <string name="skip">Omitir</string>

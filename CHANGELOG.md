@@ -6,6 +6,27 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
+## [1.4.74] - 2026-11-04
+
+### Arreglado
+- **Música Bluetooth y radio FM de la pantalla**: muchas apps de fábrica no le dicen a Android qué suena.
+  Antes, play sí sonaba pero el botón seguía en play y no se veía nada. Ahora, al darle play, la pieza
+  muestra la fuente y pasa a pausa; pausa y play se mandan como teclas separadas (varias apps de fábrica
+  ignoraban la tecla alternada) y también a su sesión aunque esté vacía. Si la app avisa la canción por
+  su notificación, se muestra. La radio nunca despierta a otra app (como Spotify) por error.
+
+### Agregado
+- **Enviar un reporte** (Ajustes → Sistema → Tu pantalla), en lugar de "Copiar info": eliges con qué hay
+  un problema (Música → USB, Bluetooth o tu app; Radio → FM o internet; Llantas, Taller…), qué pasa y,
+  si quieres, una nota. Nos llega con datos técnicos de la pantalla, sin datos personales, y te da un
+  código del reporte.
+- **Velocímetro "Esfera"**: esfera con marcas y números por dentro y el número al centro con brillo.
+- **Auto al frente** en el velocímetro: tu auto parado delante de la esfera (con cualquier estilo).
+- Se reconoce **Open Headunit** (antes Headunit Revived) como app de Android Auto.
+
+### Cambiado
+- Los números al centro de los velocímetros Arco, Anillo, Degradado, Neón y Cuadros son un poco más chicos.
+
 ## [1.4.73] - 2026-11-04
 
 ### Agregado
