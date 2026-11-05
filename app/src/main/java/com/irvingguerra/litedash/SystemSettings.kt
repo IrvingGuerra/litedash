@@ -175,6 +175,7 @@ private fun AndroidSettings() {
             R.string.sys_all to Settings.ACTION_SETTINGS,
             R.string.sys_bluetooth to Settings.ACTION_BLUETOOTH_SETTINGS,
             R.string.sys_wifi to Settings.ACTION_WIFI_SETTINGS,
+            R.string.sys_location to Settings.ACTION_LOCATION_SOURCE_SETTINGS,
             R.string.sys_display to Settings.ACTION_DISPLAY_SETTINGS,
             R.string.sys_sound to Settings.ACTION_SOUND_SETTINGS,
             R.string.sys_apps to Settings.ACTION_APPLICATION_SETTINGS,

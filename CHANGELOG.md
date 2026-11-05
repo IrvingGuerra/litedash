@@ -6,6 +6,19 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
+## [1.4.79] - 2026-11-05
+
+### Arreglado
+- **Mapa en "Buscando tu ubicación…"** en pantallas sin antena GPS (o sin conectar): ahora también usa la
+  ubicación por Wi-Fi o red, como Google Maps. Si hay GPS, manda el GPS.
+- **Radio de fábrica que no se deja controlar** (p. ej. las pantallas TopWay): play abre la radio para que
+  suene y a los 3 segundos regresa solo al inicio.
+
+### Agregado
+- **Ajustes → Sistema → Ajustes de Android → Ubicación (GPS)**: atajo para prender o revisar la ubicación.
+- Los reportes traen el estado de la ubicación (sin decir dónde estás) y, si tu radio no se deja controlar,
+  lo que deja ver para que la próxima versión la controle.
+
 ## [1.4.78] - 2026-11-05
 
 ### Arreglado (auditoría de la 1.4.77)

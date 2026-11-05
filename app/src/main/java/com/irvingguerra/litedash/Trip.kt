@@ -74,17 +74,28 @@ class TripRepository(private val context: Context, private val bus: VehicleBus) 
     /** Ubicación precisa o aproximada (en Android 12+ el usuario puede dar solo la aproximada). */
     fun hasPermission() = granted(Manifest.permission.ACCESS_FINE_LOCATION) || granted(Manifest.permission.ACCESS_COARSE_LOCATION)
 
+    /**
+     * Con la precisa, el GPS y también la red: muchas pantallas no traen antena GPS (o no está
+     * conectada) y Google Maps las ubica por Wi-Fi; sin la red, el mapa se quedaba buscando para
+     * siempre. Con la aproximada, solo la red.
+     */
+    private fun providers(): List<String> {
+        val wanted = if (granted(Manifest.permission.ACCESS_FINE_LOCATION)) listOf(LocationManager.GPS_PROVIDER, LocationManager.NETWORK_PROVIDER)
+            else listOf(LocationManager.NETWORK_PROVIDER)
+        val existing = runCatching { manager.allProviders }.getOrDefault(emptyList())
+        return wanted.filter { it in existing }
+    }
+
     @SuppressLint("MissingPermission") // se revisa con hasPermission()
     fun acquire() {
         users++
         if (users == 1 && hasPermission()) {
-            // El GPS pide la precisa; con la aproximada, la red.
-            val provider = if (granted(Manifest.permission.ACCESS_FINE_LOCATION)) LocationManager.GPS_PROVIDER else LocationManager.NETWORK_PROVIDER
-            runCatching { manager.requestLocationUpdates(provider, 1_000L, 0f, listener, Looper.getMainLooper()) }
+            val providers = providers()
+            for (provider in providers) runCatching { manager.requestLocationUpdates(provider, 1_000L, 0f, listener, Looper.getMainLooper()) }
             // Mientras llega el primer punto, la última conocida (el mapa no espera en blanco). Es una
             // llamada al sistema: fuera del hilo principal (el estado se puede escribir desde ahí).
             if (position == null) thread(name = "last-location") {
-                val last = runCatching { manager.getLastKnownLocation(provider) }.getOrNull()
+                val last = providers.mapNotNull { runCatching { manager.getLastKnownLocation(it) }.getOrNull() }.maxByOrNull { it.time }
                 if (position == null && last != null) position = last
             }
         }
@@ -105,7 +116,13 @@ class TripRepository(private val context: Context, private val bus: VehicleBus) 
         last = null
     }
 
+    /** Hora del último punto del GPS: mientras llega, la red (menos precisa) no lo pisa. */
+    private var lastGpsAt = 0L
+
     private fun update(l: Location) {
+        val now = System.currentTimeMillis()
+        if (l.provider == LocationManager.GPS_PROVIDER) lastGpsAt = now
+        else if (now - lastGpsAt < GPS_FRESH_MS) return
         position = l
         speedKmh = if (l.hasSpeed()) l.speed * 3.6f else null
         bus.publish(Signal.SPEED, speedKmh, Source.GPS)
@@ -124,6 +141,8 @@ class TripRepository(private val context: Context, private val bus: VehicleBus) 
  * El inicio está tapado por algo a pantalla completa (el auto en grande, Llantas o estacionado): sus
  * widgets siguen compuestos debajo, pero lo que gasta (GPS, mapa) descansa.
  */
+private const val GPS_FRESH_MS = 5_000L
+
 val LocalHomeCovered = compositionLocalOf { false }
 
 /** Escucha el GPS mientras la pieza se ve (sin nada encima) y la app está al frente. */

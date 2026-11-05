@@ -526,6 +526,7 @@
     <string name="sys_all">Todos los ajustes</string>
     <string name="sys_bluetooth">Bluetooth</string>
     <string name="sys_wifi">Wi-Fi</string>
+    <string name="sys_location">Ubicación (GPS)</string>
     <string name="sys_display">Pantalla</string>
     <string name="sys_sound">Sonido</string>
     <string name="sys_apps">Apps</string>

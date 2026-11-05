@@ -65,6 +65,8 @@ private val SOURCE_WORDS = mapOf(
 
 /** Cuánto se espera a que la app despertada empiece a sonar antes de abrirla. */
 private const val WAKE_TIMEOUT_MS = 4_000L
+private const val RADIO_RETURN_MS = 3_000L
+private const val RADIO_CHECK_MS = 3_000L
 /** Lo que LiteDash supone de una app de fábrica (suena / en pausa) deja de valer tras este rato (p. ej. apagaron el auto). */
 private const val ASSUME_MAX_MS = 3 * 60 * 60_000L
 /** Cuántos eventos guarda el registro de "Enviar un reporte". */
@@ -832,13 +834,37 @@ class MusicRepository(private val context: Context) {
         val session = !button && sessions().firstOrNull { it.packageName == pkg }?.also { runCatching { it.transportControls.play() } } != null
         val service = connectAndPlay(pkg, fallback = !radioLens && !button && !session)
         trace("despertar $pkg: servicio=${yes(service)} receptor=${yes(button)} sesión=${yes(session)}")
-        if (!service && !button && !session && !radioLens) systemPlay()
+        if (!service && !button && !session && radioLens) return openAndReturn(pkg, lens)
+        if (!service && !button && !session) systemPlay()
         if ((button || session) && (sourceOf(pkg) != null || !service)) lens.assume(pkg, true)
         mainHandler.postDelayed({
             if (lens.song == null && lens.starting != null && !button && !session) open(pkg)
             lens.starting = null
         }, WAKE_TIMEOUT_MS)
     }
+
+    /**
+     * Radios de fábrica que no dejan nada por fuera (p. ej. las TopWay, `com.tw.radio`): solo suenan
+     * al abrirlas. Se abre la radio y, si quedó encima de LiteDash, se regresa al inicio en
+     * [RADIO_RETURN_MS] (Android deja a la app volver al frente unos segundos después de abrir otra).
+     * Lo que pasa con el audio queda en el registro, para los reportes.
+     */
+    private fun openAndReturn(pkg: String, lens: Lens) {
+        lens.starting = null
+        val over = open(pkg)
+        trace("radio sin control: se abre $pkg${if (over) " y se regresa" else ""}")
+        if (!over) return
+        mainHandler.postDelayed({
+            trace("regreso a LiteDash: audio=${yes(musicActive())}")
+            returnHome?.invoke()
+            mainHandler.postDelayed({ trace("radio tras regresar: audio=${yes(musicActive())}") }, RADIO_CHECK_MS)
+        }, RADIO_RETURN_MS)
+    }
+
+    private fun musicActive() = context.getSystemService(AudioManager::class.java).isMusicActive
+
+    /** Trae LiteDash al frente si otra app lo tapa (lo pone la app). */
+    var returnHome: (() -> Unit)? = null
 
     /**
      * Una tecla multimedia a la app de [lens], como el volante, por un solo camino: a su receptor o,
@@ -1029,6 +1055,9 @@ class MusicRepository(private val context: Context) {
         if (traceLog.isEmpty()) append(" ninguno") else traceLog.forEach { append("\n  ").append(it) }
     }
 
+    /** Fuentes enlazadas sin receptor ni servicio: no hay cómo hablarles (el reporte las describe con [AppProbe]). */
+    fun silentSources(): List<String> = sourceApps.values.distinct().filter { !isOwn(it) && keyReceiver(it) == null && browserService(it) == null }
+
     /** ¿[pkg] va en el reporte? Las del sistema, las enlazadas y la elegida. */
     private fun relevant(pkg: String): Boolean =
         pkg == preferred || pkg in sourceApps.values ||
@@ -1048,10 +1077,11 @@ class MusicRepository(private val context: Context) {
     /** Si devuelve true, ya abrió la app a su manera (p. ej. en pantalla dividida). */
     var opener: ((Context, Intent, String) -> Boolean)? = null
 
-    private fun open(pkg: String) {
-        val intent = context.packageManager.getLaunchIntentForPackage(pkg)?.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) ?: return
-        if (opener?.invoke(context, intent, pkg) == true) return
-        runCatching { context.startActivity(intent) }
+    /** True = se abrió encima de LiteDash (no a un lado en pantalla dividida). */
+    private fun open(pkg: String): Boolean {
+        val intent = context.packageManager.getLaunchIntentForPackage(pkg)?.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) ?: return false
+        if (opener?.invoke(context, intent, pkg) == true) return false
+        return runCatching { context.startActivity(intent) }.isSuccess
     }
 }
 

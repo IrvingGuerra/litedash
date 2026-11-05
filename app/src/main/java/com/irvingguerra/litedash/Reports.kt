@@ -1,7 +1,11 @@
 package com.irvingguerra.litedash
 
+import android.Manifest
+import android.annotation.SuppressLint
 import android.app.ActivityManager
 import android.content.Context
+import android.content.pm.PackageManager
+import android.location.LocationManager
 import android.hardware.Sensor
 import android.hardware.SensorManager
 import android.os.Build
@@ -29,6 +33,7 @@ import com.irvingguerra.litedash.core.ui.Label
 import com.irvingguerra.litedash.core.ui.LocalColors
 import com.irvingguerra.litedash.core.ui.TextInput
 import com.irvingguerra.litedash.core.ui.Typography
+import com.irvingguerra.litedash.feature.music.AppProbe
 import com.irvingguerra.litedash.feature.music.MusicRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -208,6 +213,7 @@ private suspend fun sendReport(
 ): String? {
     // Lo de la música se arma aquí, en el hilo principal: su estado lo tocan los avisos que llegan ahí.
     val musicInfo = music.describe()
+    val silent = music.silentSources()
     return withContext(Dispatchers.IO) { runCatching {
         val id = Firestore.newId()
         val fields = JSONObject()
@@ -219,7 +225,7 @@ private suspend fun sendReport(
             .put("detail", Firestore.text(detail?.key ?: ""))
             .put("problem", Firestore.text(problem.key))
             .put("note", Firestore.text(note.trim().take(NOTE_MAX)))
-            .put("info", Firestore.text(systemInfo(context, musicInfo).take(INFO_MAX)))
+            .put("info", Firestore.text(systemInfo(context, musicInfo, silent).take(INFO_MAX)))
         val write = JSONObject()
             .put("update", JSONObject().put("name", Firestore.document("reports/$id")).put("fields", fields))
             .put("currentDocument", JSONObject().put("exists", false))
@@ -228,8 +234,8 @@ private suspend fun sendReport(
     }.getOrNull() }
 }
 
-/** Datos técnicos de la pantalla para los reportes (equipo, Android, pantalla y luces) más [musicInfo]. */
-private fun systemInfo(context: Context, musicInfo: String): String {
+/** Datos técnicos de la pantalla para los reportes (equipo, Android, pantalla, luces y ubicación) más [musicInfo] y las apps [silent]. */
+private fun systemInfo(context: Context, musicInfo: String, silent: List<String>): String {
     val m = context.resources.displayMetrics
     return buildString {
         appendLine("LiteDash ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE}) · ${BuildConfig.CHANNEL}")
@@ -241,8 +247,33 @@ private fun systemInfo(context: Context, musicInfo: String): String {
         appendLine("CPU: ${Build.SUPPORTED_ABIS.joinToString()}")
         appendLine("Pantalla dividida: ${if (SplitScreen.supported()) "sí" else "no"}")
         appendLine(lightsInfo(context))
+        appendLine(locationInfo(context))
         append(musicInfo)
+        // Apps de fábrica sin receptor ni servicio: lo que dejan ver, para aprender a hablarles.
+        for (pkg in silent) append("\nSin control $pkg:").append(AppProbe.describe(context, pkg).ifEmpty { " nada legible" })
     }
+}
+
+/**
+ * Ubicación: si está prendida, qué proveedores tiene la pantalla (muchas no traen antena GPS) y la
+ * última posición de cada uno, solo su edad y precisión (nunca dónde está).
+ */
+@SuppressLint("MissingPermission") // se revisa el permiso antes de leer la última posición
+private fun locationInfo(context: Context): String {
+    val manager = context.getSystemService(LocationManager::class.java) ?: return "Ubicación: sin servicio"
+    val fine = context.checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+    val coarse = context.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
+    val on = runCatching {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) manager.isLocationEnabled else manager.isProviderEnabled(LocationManager.GPS_PROVIDER)
+    }.getOrDefault(false)
+    val now = System.currentTimeMillis()
+    val providers = runCatching { manager.allProviders }.getOrDefault(emptyList()).joinToString { p ->
+        val enabled = runCatching { manager.isProviderEnabled(p) }.getOrDefault(false)
+        val last = if (fine || coarse) runCatching { manager.getLastKnownLocation(p) }.getOrNull() else null
+        "$p(${if (enabled) "on" else "off"}" + (last?.let { ", hace ${(now - it.time) / 60_000} min ±${it.accuracy.toInt()} m" } ?: "") + ")"
+    }
+    val permission = if (fine) "precisa" else if (coarse) "aproximada" else "sin permiso"
+    return "Ubicación: ${if (on) "prendida" else "apagada"}, $permission; proveedores: ${providers.ifEmpty { "ninguno" }}"
 }
 
 /** La memoria (RAM) de la pantalla en MB. */

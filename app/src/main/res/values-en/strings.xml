@@ -507,6 +507,7 @@
     <string name="sys_all">All settings</string>
     <string name="sys_bluetooth">Bluetooth</string>
     <string name="sys_wifi">Wi-Fi</string>
+    <string name="sys_location">Location (GPS)</string>
     <string name="sys_display">Display</string>
     <string name="sys_sound">Sound</string>
     <string name="sys_apps">Apps</string>

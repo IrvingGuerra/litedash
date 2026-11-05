@@ -54,7 +54,26 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
+        inFront = true
         revision.intValue++
+    }
+
+    override fun onPause() {
+        super.onPause()
+        inFront = false
+    }
+
+    companion object {
+        /** LiteDash está al frente (para no traerlo de nuevo si ya lo está). */
+        @Volatile var inFront = false
+            private set
+
+        /** Trae el inicio al frente sin tocar lo abierto (no es el botón de inicio: no cierra paneles). */
+        fun bringToFront(context: Context) {
+            if (inFront) return
+            val intent = Intent(context, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT)
+            runCatching { context.startActivity(intent) }
+        }
     }
 }
 
