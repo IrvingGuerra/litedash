@@ -76,12 +76,13 @@ internal object PrefKeys {
     const val STORAGE_VERSION = "storage_version"
 }
 
-/** Las llantas sobre la pieza del auto: pastillas en las esquinas o nada. */
+/** Las llantas sobre la pieza del auto: pastillas en las ruedas, en las esquinas o nada. */
 enum class TiresOnCar(val stored: String) {
     /** Pegadas a cada rueda del auto 3D al girarlo; sin los datos de sus ruedas, en las esquinas. */
-    WHEELS("wheels"), CORNERS("corners"), OFF("off");
+    WHEELS("wheels"), CORNERS("in_corners"), OFF("off");
 
     companion object {
+        // "corners" es de antes de la 1.4.82, cuando solo había "Mostrar" o "No": quería decir mostrarlas.
         fun fromStored(value: String?) = entries.firstOrNull { it.stored == value } ?: WHEELS
     }
 }

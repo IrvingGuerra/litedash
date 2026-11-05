@@ -639,6 +639,7 @@
     <string name="tires_on_car">On the car</string>
     <string name="tires_on_car_wheels">On the wheels</string>
     <string name="tires_on_car_corners">In the corners</string>
+    <string name="tires_on_car_waiting">Until your car\'s wheel positions download (needs internet once), they stay in the corners. The motorcycle doesn\'t have them.</string>
     <string name="tires_on_car_off">No</string>
     <string name="tires_banner">Alert at the top of home</string>
     <string name="tires_alerts_off_note">With alerts off, the banner and the warning light don\'t show</string>

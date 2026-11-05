@@ -6,6 +6,13 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
+## [1.4.83] - 2026-11-05
+
+### Arreglado
+- **Llantas en las ruedas:** si antes habías tocado "Mostrar", se quedaban en las esquinas; ahora pasan
+  solas a las ruedas (quien elija "En las esquinas" las conserva ahí). En Llantas → Inicio un aviso dice
+  cuando todavía falta bajar dónde van las ruedas de tu auto (necesita internet una vez).
+
 ## [1.4.82] - 2026-11-05
 
 ### Agregado

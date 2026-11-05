@@ -483,6 +483,11 @@ private fun HomeTiresCard(d: Dependencies) {
                 { d.prefs.tiresOnCar = it },
             )
         }
+        // En las ruedas necesita saber dónde pisa cada una (se baja aparte); mientras, van en las esquinas.
+        val car = d.cars.pkg(d.prefs.carModel)
+        if (d.prefs.tiresOnCar == TiresOnCar.WHEELS && car != null && car.wheels == null) {
+            Label(stringResource(R.string.tires_on_car_waiting), Typography.small, c.textMuted)
+        }
         // Tocar el auto 3D: la cámara sube a ver las llantas, o solo crece como siempre.
         Row(verticalAlignment = Alignment.CenterVertically) {
             Label(stringResource(R.string.tires_car_tap), Typography.body, modifier = Modifier.weight(1f).padding(end = 12.dp))

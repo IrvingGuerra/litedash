@@ -658,6 +658,7 @@
     <string name="tires_on_car">Sobre el auto</string>
     <string name="tires_on_car_wheels">En las ruedas</string>
     <string name="tires_on_car_corners">En las esquinas</string>
+    <string name="tires_on_car_waiting">Mientras se baja dónde van las ruedas de tu auto (necesita internet una vez), van en las esquinas. La moto no lo trae.</string>
     <string name="tires_on_car_off">No</string>
     <string name="tires_banner">Aviso arriba del inicio</string>
     <string name="tires_alerts_off_note">Con los avisos apagados no salen el aviso ni el testigo</string>
