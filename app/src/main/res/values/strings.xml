@@ -11,7 +11,6 @@
     <string name="tile_road">Carretera</string>
     <string name="tile_image">Imagen</string>
     <string name="tile_music">Música</string>
-    <string name="tile_navigate">Navegar</string>
     <string name="tile_clock">Reloj</string>
     <string name="tile_phone">Teléfono</string>
     <string name="tile_app">App</string>
@@ -98,6 +97,13 @@
     <string name="templates_road_help">Tu auto en carretera con la velocidad y los km del viaje (OBD o GPS).</string>
     <string name="templates_speed_help">Sin auto en el inicio. La velocidad sale del GPS; no necesitas OBD.</string>
     <string name="templates_wallpaper_help">Tu foto de fondo con unas cuantas tarjetas encima y la hora flotando. Elige el fondo aquí o en Inicio y apariencia.</string>
+    <string name="template_map_car">Mapa y auto</string>
+    <string name="template_copilot">Copiloto</string>
+    <string name="template_route">Ruta</string>
+    <string name="template_music_radio">Música y radio</string>
+    <string name="template_vertical_map">Vertical con mapa</string>
+    <string name="templates_tab_map">Mapa</string>
+    <string name="templates_map_help">El mapa en vivo con tu posición y la siguiente vuelta, y un botón a Waze o Maps.</string>
     <string name="add">Agregar</string>
     <string name="add_tile">Agregar al inicio</string>
     <string name="no_room">Ya no hay lugar: quita o achica algún widget.</string>
@@ -430,7 +436,6 @@
     <string name="image_help">Elígela de tu galería: cada widget de imagen tiene la suya. LiteDash no trae logos de marcas.</string>
     <string name="image_empty">Sin foto se muestra el logo de LiteDash.</string>
     <string name="tile_music_help">Lo que suena, con controles; un toque la abre en grande</string>
-    <string name="tile_navigate_help">Tu app de mapas, Casa y Trabajo, y la siguiente vuelta</string>
     <string name="tile_clock_help">Hora, fecha y clima</string>
     <string name="tile_phone_help">Abre el marcador</string>
     <string name="logo_intro_help">Al abrir LiteDash, tu imagen (como el logo de tu marca) aparece unos segundos. Es aparte de los widgets de imagen.</string>

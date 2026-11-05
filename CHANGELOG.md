@@ -6,6 +6,20 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
+## [1.4.69] - 2026-11-04
+
+### Cambiado
+- **Navegar y Mapa son uno solo**: el widget Navegar se volvió Mapa (en tu inicio, en el mismo lugar).
+  El mapa muestra la siguiente vuelta mientras navegas, abre tu app de mapas y, en una fila o sin
+  ubicación, se ve como el Navegar de antes con Casa y Trabajo.
+- **Mapa, Música y Radio en grande a media pantalla**: al tocarlos crecen a la mitad y en la otra
+  mitad queda tu auto (o la carretera o tu imagen), del lado elegido para la pantalla dividida. El mapa
+  en grande trae Casa, Trabajo y tu app de mapas.
+
+### Agregado
+- **Plantillas nuevas**: Mapa y auto, Copiloto, Ruta, Música y radio, y Vertical con mapa (pestaña
+  Mapa nueva); las de siempre ahora usan el mapa. Las miniaturas muestran el ícono de cada widget.
+
 ## [1.4.68] - 2026-11-04
 
 ### Agregado

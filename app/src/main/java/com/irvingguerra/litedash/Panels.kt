@@ -968,6 +968,11 @@ fun nameOf(p: Template) = when (p) {
     Template.SPEED_WIDGETS -> R.string.template_speed_widgets
     Template.WALL_CARDS -> R.string.template_wall_cards
     Template.WALL_SIDE -> R.string.template_wall_side
+    Template.MUSIC_RADIO -> R.string.template_music_radio
+    Template.MAP_CAR -> R.string.template_map_car
+    Template.COPILOT -> R.string.template_copilot
+    Template.ROUTE -> R.string.template_route
+    Template.VERTICAL_MAP -> R.string.template_vertical_map
 }
 
 private fun nameOf(t: ScreenSize) = when (t) {
@@ -977,14 +982,18 @@ private fun nameOf(t: ScreenSize) = when (t) {
     ScreenSize.VERTICAL -> R.string.screens_vertical
 }
 
+/** Las que lucen el mapa: van en su pestaña y no se repiten en la del auto. */
+private val MAP_TEMPLATES = listOf(Template.MAP_CAR, Template.COPILOT, Template.ROUTE, Template.VERTICAL_MAP)
+
 /**
- * Estilos de plantilla (una pestaña cada uno): con el auto 3D, con la carretera en su
- * lugar ([hero]), solo velocímetro (sin OBD: usa el GPS) o para lucir tu fondo, como BYD
- * (ahí va la Mínima: hora y música, sin velocímetro). Cada plantilla sale en una sola pestaña.
+ * Estilos de plantilla (una pestaña cada uno): con el auto 3D, con el mapa de protagonista,
+ * con la carretera en lugar del auto ([hero]), solo velocímetro (sin OBD: usa el GPS) o para
+ * lucir tu fondo, como BYD (ahí va la Mínima: hora y música, sin velocímetro).
  */
 private enum class TemplateTab(val title: Int, val templates: List<Template>, val hero: String = TileTypes.CAR) {
-    CAR(R.string.templates_tab_car, Template.entries.filter { it.hasCar }),
-    ROAD(R.string.templates_tab_road, listOf(Template.CARDS, Template.CENTER, Template.CAR_SPEED, Template.SPORT, Template.VERTICAL), TileTypes.ROAD),
+    CAR(R.string.templates_tab_car, Template.entries.filter { it.hasCar && it !in MAP_TEMPLATES }),
+    MAP(R.string.templates_tab_map, MAP_TEMPLATES),
+    ROAD(R.string.templates_tab_road, listOf(Template.MAP_CAR, Template.CARDS, Template.CENTER, Template.CAR_SPEED, Template.SPORT, Template.VERTICAL), TileTypes.ROAD),
     SPEED(R.string.templates_tab_speed, listOf(Template.SPEED, Template.SPEED_WIDGETS)),
     WALLPAPER(R.string.templates_tab_wallpaper, listOf(Template.WALL_CARDS, Template.WALL_SIDE, Template.MINIMAL)),
 }
@@ -1008,6 +1017,7 @@ fun TemplatesPanel(dashboard: DashboardState, prefs: Preferences, close: () -> U
                 close()
             }
             when (tab) {
+                TemplateTab.MAP -> Label(stringResource(R.string.templates_map_help), Typography.small, c.textMuted)
                 TemplateTab.ROAD -> Label(stringResource(R.string.templates_road_help), Typography.small, c.textMuted)
                 TemplateTab.SPEED -> Label(stringResource(R.string.templates_speed_help), Typography.small, c.textMuted)
                 TemplateTab.WALLPAPER -> {
@@ -1057,14 +1067,20 @@ private fun TemplateThumbnail(p: Template, grid: Grid, hero: String, skip: (Stri
         // La protagonista en ámbar: el auto (o la carretera) o, en las que no lo llevan, el velocímetro o la primera pieza.
         val main = (tiles.firstOrNull { it.type == hero } ?: tiles.firstOrNull { it.type == TileTypes.SPEEDOMETER } ?: tiles.firstOrNull())?.id
         for (tile in tiles) {
+            val width = cw * tile.width
+            val height = ch * tile.height
             Box(
                 Modifier
                     .offset(cw * tile.col, ch * tile.row)
-                    .size(cw * tile.width, ch * tile.height)
+                    .size(width, height)
                     .padding(2.dp)
                     .clip(RoundedCornerShape(Radius.small))
                     .background(if (tile.id == main) c.accent.copy(alpha = 0.55f) else c.surfaceHigh),
-            )
+                contentAlignment = Alignment.Center,
+            ) {
+                // El ícono de cada widget: se ve qué es cada cosa (mapa, música, radio…) sin aplicarla.
+                Icon(iconOf(tile.type), if (tile.id == main) c.surface else c.textMuted, minOf(width, height, 22.dp) * 0.7f)
+            }
         }
     }
 }
@@ -1097,7 +1113,6 @@ internal fun iconOf(type: String) = when (type) {
     TileTypes.IMAGE -> Icons.image
     TileTypes.MUSIC -> Icons.music
     TileTypes.RADIO -> Icons.radio
-    TileTypes.NAVIGATE -> Icons.navigate
     TileTypes.MAP -> Icons.map
     TileTypes.CLOCK -> Icons.clock
     TileTypes.PHONE -> Icons.phone

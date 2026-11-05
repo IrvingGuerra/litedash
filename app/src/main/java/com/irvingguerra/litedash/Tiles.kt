@@ -76,8 +76,8 @@ val TileSpecs = listOf(
     TileSpec(TileTypes.IMAGE, R.string.tile_image, SizeLimits(2, 1), 3 to 2, R.string.tile_image_help),
     TileSpec(TileTypes.MUSIC, R.string.tile_music, SizeLimits(3, 1, maxHeight = 3), 4 to 1, R.string.tile_music_help),
     TileSpec(TileTypes.RADIO, R.string.tile_radio, SizeLimits(3, 1, maxHeight = 3), 4 to 1, R.string.tile_radio_help),
-    TileSpec(TileTypes.NAVIGATE, R.string.tile_navigate, SizeLimits(2, 1), 3 to 1, R.string.tile_navigate_help),
-    TileSpec(TileTypes.MAP, R.string.tile_map, SizeLimits(2, 2), 3 to 2, R.string.tile_map_help),
+    // Desde la 1.4.69 también hace lo del widget Navegar: en una fila se ve como él (vuelta, Casa, Trabajo).
+    TileSpec(TileTypes.MAP, R.string.tile_map, SizeLimits(2, 1), 3 to 2, R.string.tile_map_help),
     TileSpec(TileTypes.CLOCK, R.string.tile_clock, SizeLimits(2, 1), 3 to 1, R.string.tile_clock_help),
     TileSpec(TileTypes.PHONE, R.string.tile_phone, SizeLimits(1, 1), 2 to 1, R.string.tile_phone_help),
     TileSpec(TileTypes.WEATHER, R.string.tile_weather, SizeLimits(2, 1), 3 to 1, R.string.tile_weather_help),
@@ -251,9 +251,9 @@ fun AppTile(repo: AppRepository, app: App?, onClick: () -> Unit) {
 }
 
 /**
- * Navegar. Sin ruta: acceso a la app de mapas (y a Casa y Trabajo) sobre un mapa
- * dibujado. Navegando: la siguiente vuelta que dice el aviso de Waze o Maps
- * (flecha, distancia y calle), sin abrir el mapa.
+ * El mapa sin mapa en vivo (en una fila o sin permiso de ubicación). Sin ruta: acceso a la app de
+ * mapas (y a Casa y Trabajo) sobre un mapa dibujado. Navegando: la siguiente vuelta que dice el
+ * aviso de Waze o Maps (flecha, distancia y calle), sin abrir el mapa.
  */
 @Composable
 fun NavigationTile(
@@ -291,7 +291,7 @@ private fun Places(app: App?, home: String?, work: String?, onPlace: (String) ->
     }
     val title = @Composable {
         Column {
-            Label(stringResource(R.string.tile_navigate), if (tall) Typography.title else Typography.subtitle, maxLines = 1)
+            Label(stringResource(R.string.tile_map), if (tall) Typography.title else Typography.subtitle, maxLines = 1)
             if (app != null) Label(app.name, Typography.small, c.textMuted, maxLines = 1)
         }
     }
@@ -362,7 +362,7 @@ private fun MapArt(modifier: Modifier) {
 
 /** Flecha ámbar, distancia y calle de la siguiente vuelta. */
 @Composable
-private fun Turn(instruction: TurnInstruction, large: Boolean) {
+internal fun Turn(instruction: TurnInstruction, large: Boolean) {
     val c = LocalColors.current
     val side = if (large) 72.dp else 48.dp
     Row(verticalAlignment = Alignment.CenterVertically) {

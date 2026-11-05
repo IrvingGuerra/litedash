@@ -17,6 +17,9 @@ class DashboardStore(context: Context) {
             if (f.size < 6) return@mapNotNull null
             // Una línea dañada (escritura cortada) se salta; no tumba el inicio.
             val (col, row, width, height) = (2..5).map { f[it].toIntOrNull() ?: return@mapNotNull null }
+            // El widget Navegar (hasta la 1.4.68) es ahora el Mapa, en el mismo lugar y tamaño (sus
+            // datos eran otra cosa: el mapa queda como de fábrica).
+            if (f[1] == LEGACY_NAVIGATE) return@mapNotNull Tile(f[0], TileTypes.MAP, col, row, width, height, "", plain = f.getOrElse(7) { "" } == "1")
             Tile(f[0], f[1], col, row, width, height, f.getOrElse(6) { "" }, plain = f.getOrElse(7) { "" } == "1")
         }.filter { p -> p.col >= 0 && p.row >= 0 }.toList()
     }
@@ -44,5 +47,7 @@ class DashboardStore(context: Context) {
 private const val PREFS_FILE = "dashboard"
 private const val LAYOUT_KEY_PREFIX = "layout_"
 // La migración de la 1.4.49 (pieza del auto en tres) también los escribe: mismos nombres allá.
+/** El tipo que tenía el widget Navegar en los acomodos guardados. */
+private const val LEGACY_NAVIGATE = "navigate"
 private const val HERO_TYPE = "hero_type"
 private const val HERO_DATA = "hero_data"

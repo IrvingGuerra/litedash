@@ -10,7 +10,6 @@
     <string name="tile_road">Road</string>
     <string name="tile_image">Image</string>
     <string name="tile_music">Music</string>
-    <string name="tile_navigate">Navigate</string>
     <string name="tile_clock">Clock</string>
     <string name="tile_phone">Phone</string>
     <string name="tile_app">App</string>
@@ -97,6 +96,13 @@
     <string name="templates_road_help">Your car on the road with your speed and trip distance (OBD or GPS).</string>
     <string name="templates_speed_help">No car on the home screen. Speed comes from GPS; no OBD needed.</string>
     <string name="templates_wallpaper_help">Your background photo with a few cards on top and the time floating. Pick the background here or in Home &amp; look.</string>
+    <string name="template_map_car">Map and car</string>
+    <string name="template_copilot">Co-pilot</string>
+    <string name="template_route">Route</string>
+    <string name="template_music_radio">Music and radio</string>
+    <string name="template_vertical_map">Portrait with map</string>
+    <string name="templates_tab_map">Map</string>
+    <string name="templates_map_help">The live map with your position and next turn, plus a button to Waze or Maps.</string>
     <string name="add">Add</string>
     <string name="add_tile">Add to home</string>
     <string name="no_room">No room left: remove or shrink something.</string>
@@ -422,7 +428,6 @@
     <string name="image_help">Pick it from your gallery: each image widget has its own. LiteDash doesn\'t include brand logos.</string>
     <string name="image_empty">Without a photo the LiteDash logo is shown.</string>
     <string name="tile_music_help">What\'s playing, with controls; tap to open it big</string>
-    <string name="tile_navigate_help">Your maps app, Home and Work, and the next turn</string>
     <string name="tile_clock_help">Time, date and weather</string>
     <string name="tile_phone_help">Opens the dialer</string>
     <string name="logo_intro_help">When LiteDash opens, your image (like your brand\'s logo) shows for a few seconds. It\'s separate from the image widgets.</string>

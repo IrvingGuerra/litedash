@@ -75,7 +75,6 @@ object TileTypes {
     const val MUSIC = "music"
     /** La radio de la pantalla (FM) o la de LiteDash por internet. */
     const val RADIO = "radio"
-    const val NAVIGATE = "navigate"
     /** Mapa de OpenStreetMap con tu posición (feature/map). */
     const val MAP = "map"
     const val CLOCK = "clock"
@@ -109,24 +108,26 @@ val Grid.size: ScreenSize
 
 /** Los acomodos de inicio y para qué pantallas lucen mejor ([sizes]). */
 enum class Template(val sizes: Set<ScreenSize>) {
-    /** Como el Model 3: el auto grande al centro y dos tarjetas abajo. */
+    /** Como el Model 3: el auto grande al centro y abajo la música con el mapa (o la hora, si no cabe). */
     CENTER(setOf(ScreenSize.SMALL, ScreenSize.MEDIUM)),
     /** Como DuduAuto: el auto a todo lo ancho y una fila de tarjetas abajo (mapa, música, velocidad). */
     CARDS(setOf(ScreenSize.SMALL, ScreenSize.MEDIUM, ScreenSize.LARGE)),
-    /** El auto a la izquierda y las tarjetas a la derecha. */
+    /** El auto a la izquierda y a la derecha la hora, la música y el mapa. */
     SIDE(setOf(ScreenSize.MEDIUM, ScreenSize.LARGE)),
-    /** Tres columnas altas: navegar, música y el auto. */
+    /** Tres columnas altas: mapa, música y el auto. */
     COLUMNS(setOf(ScreenSize.MEDIUM, ScreenSize.LARGE)),
     /** Tablero completo: tarjetas a los dos lados y el auto en medio. */
     PANEL(setOf(ScreenSize.LARGE)),
-    /** Pantallas paradas: auto arriba, tarjetas abajo. */
+    /** Pantallas paradas: auto arriba, música y mapa abajo. */
     VERTICAL(setOf(ScreenSize.VERTICAL)),
     /** Solo el velocímetro, grande al centro: nada más que ver. */
     SPEED(ScreenSize.entries.toSet()),
-    /** El auto con el velocímetro al lado; música y navegar abajo. */
+    /** El auto con el velocímetro al lado; música y mapa abajo. */
     CAR_SPEED(setOf(ScreenSize.SMALL, ScreenSize.MEDIUM, ScreenSize.LARGE)),
     /** Deportiva: el auto arriba y abajo revoluciones, velocidad y temperatura del motor. */
     SPORT(setOf(ScreenSize.SMALL, ScreenSize.MEDIUM, ScreenSize.LARGE)),
+    /** Sin mapa: el auto, la música grande y la radio. */
+    MUSIC_RADIO(ScreenSize.entries.toSet()),
     /** Mínima: la hora en grande y la música, sin auto. */
     MINIMAL(ScreenSize.entries.toSet()),
     /** El velocímetro al centro con la hora y la fecha a un lado, y el clima y el viaje al otro. */
@@ -135,10 +136,18 @@ enum class Template(val sizes: Set<ScreenSize>) {
     WALL_CARDS(ScreenSize.entries.toSet()),
     /** Tu fondo a la izquierda y una columna de tarjetas a la derecha, con la hora flotando. */
     WALL_SIDE(setOf(ScreenSize.SMALL, ScreenSize.MEDIUM, ScreenSize.LARGE)),
+    /** Como el Model 3 navegando: el auto y la música del lado del conductor y el mapa grande (~55 %) al otro. */
+    MAP_CAR(setOf(ScreenSize.SMALL, ScreenSize.MEDIUM, ScreenSize.LARGE)),
+    /** El mapa en columna alta, el auto al centro y la música y la radio del lado del copiloto. */
+    COPILOT(setOf(ScreenSize.MEDIUM, ScreenSize.LARGE)),
+    /** Para manejar con navegación: el mapa casi completo y una columna angosta con velocidad y música. */
+    ROUTE(setOf(ScreenSize.SMALL, ScreenSize.MEDIUM, ScreenSize.LARGE)),
+    /** Pantallas paradas: el mapa arriba y abajo el auto con la música y la radio. */
+    VERTICAL_MAP(setOf(ScreenSize.VERTICAL)),
 }
 
 /** Las que no llevan auto (para quien no lo quiere ver en el inicio). */
-val Template.hasCar get() = this !in setOf(Template.SPEED, Template.MINIMAL, Template.SPEED_WIDGETS, Template.WALL_CARDS, Template.WALL_SIDE)
+val Template.hasCar get() = this !in setOf(Template.SPEED, Template.MINIMAL, Template.SPEED_WIDGETS, Template.WALL_CARDS, Template.WALL_SIDE, Template.ROUTE)
 
 /**
  * Acomodos de inicio. Se calculan para cualquier cuadrícula: lo que no quepa se
@@ -156,79 +165,87 @@ fun Template.tiles(c: Grid, hero: String = TileTypes.CAR, skip: (String) -> Bool
         val p = Tile("$type-${list.size}", type, col, row, width, height, data, plain)
         if (width >= 1 && height >= 1 && list.fits(p, c)) list += p
     }
+    // El mapa solo luce de 3×2 para arriba; más chico va [fallback] en su lugar (o nada).
+    fun mapOr(fallback: String?, col: Int, row: Int, width: Int, height: Int) {
+        if (width >= 3 && height >= 2) place(TileTypes.MAP, col, row, width, height)
+        else if (fallback != null) place(fallback, col, row, width, height)
+    }
+    // No caben columnas: el auto arriba y la música abajo.
+    fun carOverMusic() {
+        place(TileTypes.CAR, 0, 0, cols, rows - 1)
+        place(TileTypes.MUSIC, 0, rows - 1, cols, 1)
+    }
+    // Música y radio apiladas (3 filas cuando mucho cada una); si sobra, la hora abajo.
+    fun musicAndRadio(col: Int, row: Int, width: Int, height: Int) {
+        val music = minOf(3, (height + 1) / 2)
+        val radio = minOf(3, height - music)
+        place(TileTypes.MUSIC, col, row, width, music)
+        place(TileTypes.RADIO, col, row + music, width, radio)
+        if (music + radio < height) place(TileTypes.CLOCK, col, row + music + radio, width, height - music - radio)
+    }
+    // Fila de tarjetas de abajo: de dos filas desde 5, para que quepa el mapa.
+    val strip = if (rows >= 5) 2 else 1
     when (this) {
         Template.CENTER -> {
-            val bottom = if (rows >= 6) 2 else 1
             val carWidth = (cols * 0.6).toInt().coerceAtLeast(3)
-            place(TileTypes.CAR, (cols - carWidth) / 2, 0, carWidth, rows - bottom)
-            // Las tarjetas de abajo miden lo mismo que el auto, alineadas con él.
             val start = (cols - carWidth) / 2
+            place(TileTypes.CAR, start, 0, carWidth, rows - strip)
+            // Las tarjetas de abajo miden lo mismo que el auto, alineadas con él.
             val musicWidth = (carWidth * 0.6).toInt().coerceAtLeast(3)
-            val navWidth = carWidth - musicWidth
-            place(TileTypes.MUSIC, start, rows - bottom, musicWidth, bottom)
-            place(TileTypes.NAVIGATE, start + musicWidth, rows - bottom, navWidth, bottom)
+            place(TileTypes.MUSIC, start, rows - strip, musicWidth, strip)
+            mapOr(TileTypes.CLOCK, start + musicWidth, rows - strip, carWidth - musicWidth, strip)
         }
         Template.CARDS -> {
-            val bottom = if (rows >= 6) 2 else 1
-            place(TileTypes.CAR, 0, 0, cols, rows - bottom)
-            // Navegar, música (la más ancha) y lo que quepa: velocidad y reloj.
+            place(TileTypes.CAR, 0, 0, cols, rows - strip)
             val music = maxOf(3, cols * 4 / 10)
             val rest = cols - music
-            val others = when {
-                rest >= 7 -> listOf(TileTypes.SPEEDOMETER, TileTypes.CLOCK)
-                rest >= 4 -> listOf(TileTypes.CLOCK)
-                else -> emptyList()
-            }
-            val navWidth = if (others.isEmpty()) rest else (rest / (others.size + 1)).coerceAtLeast(2)
-            place(TileTypes.NAVIGATE, 0, rows - bottom, navWidth, bottom)
-            place(TileTypes.MUSIC, navWidth, rows - bottom, music, bottom)
-            var col = navWidth + music
-            others.forEachIndexed { i, type ->
-                val width = if (i == others.lastIndex) cols - col else (cols - col) / (others.size - i)
-                place(type, col, rows - bottom, width, bottom)
-                col += width
+            val row = rows - strip
+            if (strip >= 2 && rest >= 3) {
+                // Mapa, música (la más ancha) y, si sobra, la velocidad.
+                val speed = if (rest >= 5) rest / 2 else 0
+                val map = rest - speed
+                place(TileTypes.MAP, 0, row, map, strip)
+                place(TileTypes.MUSIC, map, row, music, strip)
+                place(TileTypes.SPEEDOMETER, map + music, row, speed, strip)
+            } else {
+                // En una fila el mapa no luce: velocidad, música y hora.
+                val speed = rest / 2
+                place(TileTypes.SPEEDOMETER, 0, row, speed, strip)
+                place(TileTypes.MUSIC, speed, row, music, strip)
+                place(TileTypes.CLOCK, speed + music, row, rest - speed, strip)
             }
         }
         Template.SIDE -> {
             val carWidth = (cols * 0.4).toInt().coerceAtLeast(3)
             place(TileTypes.CAR, 0, 0, carWidth, rows)
             val rest = cols - carWidth
-            val clockHeight = if (rows >= 5) 2 else 1
-            place(TileTypes.CLOCK, carWidth, 0, rest, clockHeight)
-            val musicHeight = if (rows - clockHeight >= 3) 2 else 1
-            place(TileTypes.MUSIC, carWidth, clockHeight, rest, musicHeight)
-            val row = clockHeight + musicHeight
-            val half = rest / 2
-            place(TileTypes.NAVIGATE, carWidth, row, half, rows - row)
-            place(TileTypes.PHONE, carWidth + half, row, rest - half, rows - row)
+            val music = if (rows >= 5) 2 else 1
+            place(TileTypes.CLOCK, carWidth, 0, rest, 1)
+            place(TileTypes.MUSIC, carWidth, 1, rest, music)
+            mapOr(null, carWidth, 1 + music, rest, rows - 1 - music)
         }
         Template.COLUMNS -> {
-            if (cols < 9) {
-                // No caben tres columnas: el auto arriba y música abajo.
-                place(TileTypes.CAR, 0, 0, cols, rows - 1)
-                place(TileTypes.MUSIC, 0, rows - 1, cols, 1)
-            } else {
-                val navWidth = cols / 4
+            if (cols < 9) carOverMusic()
+            else {
+                val mapWidth = maxOf(3, cols / 4)
                 val musicWidth = maxOf(3, cols / 3)
-                val carStart = navWidth + musicWidth
-                place(TileTypes.CAR, carStart, 0, cols - carStart, rows)
-                place(TileTypes.NAVIGATE, 0, 0, navWidth, rows)
+                val carStart = mapWidth + musicWidth
+                mapOr(null, 0, 0, mapWidth, rows)
                 val musicHeight = minOf(rows, 3)
-                place(TileTypes.MUSIC, navWidth, 0, musicWidth, musicHeight)
-                if (rows > musicHeight) place(TileTypes.CLOCK, navWidth, musicHeight, musicWidth, rows - musicHeight)
+                place(TileTypes.MUSIC, mapWidth, 0, musicWidth, musicHeight)
+                if (rows > musicHeight) place(TileTypes.CLOCK, mapWidth, musicHeight, musicWidth, rows - musicHeight)
+                place(TileTypes.CAR, carStart, 0, cols - carStart, rows)
             }
         }
         Template.PANEL -> {
             val side = cols / 4
-            if (side < 3 || cols - 2 * side < 3) {
-                // Pantalla chica: el auto con la música abajo.
-                place(TileTypes.CAR, 0, 0, cols, rows - 1)
-                place(TileTypes.MUSIC, 0, rows - 1, cols, 1)
-            } else {
+            if (side < 3 || cols - 2 * side < 3) carOverMusic()
+            else {
                 place(TileTypes.CAR, side, 0, cols - 2 * side, rows)
                 val half = (rows + 1) / 2
-                place(TileTypes.MUSIC, 0, 0, side, minOf(half, 3))
-                place(TileTypes.NAVIGATE, 0, minOf(half, 3), side, rows - minOf(half, 3))
+                val music = minOf(half, 3)
+                place(TileTypes.MUSIC, 0, 0, side, music)
+                mapOr(null, 0, music, side, rows - music)
                 place(TileTypes.CLOCK, cols - side, 0, side, half)
                 place(TileTypes.PHONE, cols - side, half, side, rows - half)
             }
@@ -237,10 +254,7 @@ fun Template.tiles(c: Grid, hero: String = TileTypes.CAR, skip: (String) -> Bool
             val carHeight = (rows * 0.45).toInt().coerceAtLeast(3)
             place(TileTypes.CAR, 0, 0, cols, carHeight)
             place(TileTypes.MUSIC, 0, carHeight, cols, 2)
-            val row = carHeight + 2
-            val half = cols / 2
-            place(TileTypes.NAVIGATE, 0, row, half, 2)
-            place(TileTypes.PHONE, half, row, cols - half, 2)
+            mapOr(TileTypes.CLOCK, 0, carHeight + 2, cols, rows - carHeight - 2)
         }
         Template.SPEED -> {
             // Un poco más ancho que alto (el arco es así); en pantallas paradas, cuadrado al centro.
@@ -249,26 +263,38 @@ fun Template.tiles(c: Grid, hero: String = TileTypes.CAR, skip: (String) -> Bool
             place(TileTypes.SPEEDOMETER, (cols - width) / 2, (rows - height) / 2, width, height, plain = true)
         }
         Template.CAR_SPEED -> {
-            val bottom = if (rows >= 6) 2 else 1
             val speedWidth = maxOf(2, (cols * 0.35f).toInt())
-            place(TileTypes.CAR, 0, 0, cols - speedWidth, rows - bottom)
-            place(TileTypes.SPEEDOMETER, cols - speedWidth, 0, speedWidth, rows - bottom)
+            place(TileTypes.CAR, 0, 0, cols - speedWidth, rows - strip)
+            place(TileTypes.SPEEDOMETER, cols - speedWidth, 0, speedWidth, rows - strip)
             val music = maxOf(3, cols * 6 / 10).coerceAtMost(cols)
-            place(TileTypes.MUSIC, 0, rows - bottom, music, bottom)
-            place(TileTypes.NAVIGATE, music, rows - bottom, cols - music, bottom)
+            place(TileTypes.MUSIC, 0, rows - strip, music, strip)
+            mapOr(TileTypes.CLOCK, music, rows - strip, cols - music, strip)
         }
         Template.SPORT -> {
             // Con 5 filas o más los medidores llevan arco; con menos, número y barra.
-            val bottom = if (rows >= 5) 2 else 1
-            place(TileTypes.CAR, 0, 0, cols, rows - bottom)
+            place(TileTypes.CAR, 0, 0, cols, rows - strip)
             val third = cols / 3
             // Señales del bus (core/vehicle): revoluciones y temperatura del motor. Sin OBD, la hora y el viaje.
             val obd = !skip(TileTypes.GAUGE)
-            if (obd) place(TileTypes.GAUGE, 0, rows - bottom, third, bottom, data = "rpm")
-            else place(TileTypes.CLOCK, 0, rows - bottom, third, bottom)
-            place(TileTypes.SPEEDOMETER, third, rows - bottom, cols - 2 * third, bottom)
-            if (obd) place(TileTypes.GAUGE, cols - third, rows - bottom, third, bottom, data = "coolant_temp")
-            else place(TileTypes.TRIP, cols - third, rows - bottom, third, bottom)
+            if (obd) place(TileTypes.GAUGE, 0, rows - strip, third, strip, data = "rpm")
+            else place(TileTypes.CLOCK, 0, rows - strip, third, strip)
+            place(TileTypes.SPEEDOMETER, third, rows - strip, cols - 2 * third, strip)
+            if (obd) place(TileTypes.GAUGE, cols - third, rows - strip, third, strip, data = "coolant_temp")
+            else place(TileTypes.TRIP, cols - third, rows - strip, third, strip)
+        }
+        Template.MUSIC_RADIO -> {
+            if (c.vertical) {
+                val cards = minOf(6, rows / 2)
+                place(TileTypes.CAR, 0, 0, cols, rows - cards)
+                musicAndRadio(0, rows - cards, cols, cards)
+            } else {
+                val carWidth = maxOf(3, (cols * 0.45f).toInt())
+                if (cols - carWidth < 3) carOverMusic()
+                else {
+                    place(TileTypes.CAR, 0, 0, carWidth, rows)
+                    musicAndRadio(carWidth, 0, cols - carWidth, rows)
+                }
+            }
         }
         Template.MINIMAL -> {
             val bottom = if (rows >= 6) 2 else 1
@@ -300,10 +326,11 @@ fun Template.tiles(c: Grid, hero: String = TileTypes.CAR, skip: (String) -> Bool
             place(TileTypes.CLOCK, 0, 0, maxOf(2, cols / 2), if (rows >= 5) 2 else 1, plain = true)
             val music = maxOf(3, cols * 4 / 10).coerceAtMost(cols)
             val rest = cols - music
-            val nav = rest / 2
-            place(TileTypes.NAVIGATE, 0, rows - bottom, nav, bottom)
-            place(TileTypes.MUSIC, nav, rows - bottom, music, bottom)
-            place(TileTypes.WEATHER, nav + music, rows - bottom, rest - nav, bottom)
+            // Mapa (o radio en una fila) y clima; si no caben los dos, solo el clima.
+            val first = if (rest >= 5) maxOf(3, rest / 2) else 0
+            mapOr(TileTypes.RADIO, 0, rows - bottom, first, bottom)
+            place(TileTypes.MUSIC, first, rows - bottom, music, bottom)
+            place(TileTypes.WEATHER, first + music, rows - bottom, rest - first, bottom)
         }
         Template.WALL_SIDE -> {
             val width = maxOf(3, cols / 3)
@@ -311,18 +338,57 @@ fun Template.tiles(c: Grid, hero: String = TileTypes.CAR, skip: (String) -> Bool
             val clock = if (rows >= 5) 2 else 1
             place(TileTypes.CLOCK, start, 0, width, clock, plain = true)
             val rest = rows - clock
-            val weather = if (rest >= 3) 1 else 0
+            // Con 4 filas libres cabe el mapa (2) bajo la música (2); si no, la radio en una fila.
+            val weather = if (rest >= 5 || rest == 3) 1 else 0
             if (weather > 0) place(TileTypes.WEATHER, start, clock, width, 1)
-            val music = minOf(2, rest - weather - 1).coerceAtLeast(1)
+            val music = if (rest >= 4) 2 else 1
             place(TileTypes.MUSIC, start, clock + weather, width, music)
             val row = clock + weather + music
-            if (row < rows) place(TileTypes.NAVIGATE, start, row, width, rows - row)
+            mapOr(TileTypes.RADIO, start, row, width, rows - row)
+        }
+        Template.MAP_CAR -> {
+            // Del lado del conductor el auto y la música; el resto (~55 %), el mapa.
+            val side = maxOf(3, cols - (cols * 0.55f + 0.5f).toInt())
+            if (cols - side < 3) carOverMusic()
+            else {
+                val music = if (rows >= 6) 2 else 1
+                place(TileTypes.CAR, 0, 0, side, rows - music)
+                place(TileTypes.MUSIC, 0, rows - music, side, music)
+                mapOr(null, side, 0, cols - side, rows)
+            }
+        }
+        Template.COPILOT -> {
+            val side = maxOf(3, (cols * 0.3f + 0.5f).toInt())
+            if (cols - 2 * side < 3) carOverMusic()
+            else {
+                mapOr(null, 0, 0, side, rows)
+                place(TileTypes.CAR, side, 0, cols - 2 * side, rows)
+                musicAndRadio(cols - side, 0, side, rows)
+            }
+        }
+        Template.ROUTE -> {
+            // Columna angosta del lado del conductor: velocidad arriba y música abajo.
+            val side = maxOf(3, (cols * 0.3f + 0.5f).toInt())
+            val music = if (rows >= 6) 2 else 1
+            place(TileTypes.SPEEDOMETER, 0, 0, side, rows - music)
+            place(TileTypes.MUSIC, 0, rows - music, side, music)
+            mapOr(null, side, 0, cols - side, rows)
+        }
+        Template.VERTICAL_MAP -> {
+            val mapHeight = rows / 2
+            mapOr(null, 0, 0, cols, mapHeight)
+            val half = cols / 2
+            place(TileTypes.CAR, 0, mapHeight, half, rows - mapHeight)
+            musicAndRadio(half, mapHeight, cols - half, rows - mapHeight)
         }
     }
     return list
 }
 
-/** El acomodo que mejor luce en esta pantalla. */
+/**
+ * El acomodo que mejor luce en esta pantalla. El auto 3D sigue de protagonista al
+ * estrenar; en las medianas, grandes y paradas el sugerido ya trae el mapa de 2 filas.
+ */
 fun Grid.suggestedTemplate() = when (size) {
     ScreenSize.SMALL -> Template.CENTER
     ScreenSize.MEDIUM -> Template.CARDS

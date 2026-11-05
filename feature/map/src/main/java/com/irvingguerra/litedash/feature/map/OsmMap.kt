@@ -54,11 +54,11 @@ private const val REACH = 1.6f
 
 /**
  * El mapa de OpenStreetMap con tu posición y como diga [look]: norte arriba o hacia donde vas,
- * plano o inclinado, zoom según la velocidad o fijo (un toque lo aleja; tras el más lejano vuelve
- * al elegido) y colores del tema, claros u oscuros. En oscuro las teselas se invierten y giran de tono.
+ * plano o inclinado, zoom según la velocidad o fijo (sin [onTap], un toque lo aleja; tras el más
+ * lejano vuelve al elegido) y colores del tema, claros u oscuros. En oscuro las teselas se invierten y giran de tono.
  */
 @Composable
-fun OsmMap(store: TileStore, lat: Double, lon: Double, bearing: Float?, kmh: Float?, look: MapLook, modifier: Modifier = Modifier) {
+fun OsmMap(store: TileStore, lat: Double, lon: Double, bearing: Float?, kmh: Float?, look: MapLook, modifier: Modifier = Modifier, onTap: (() -> Unit)? = null) {
     val c = LocalColors.current
     var manual by remember { mutableStateOf<Int?>(null) }
     // El automático recuerda el anterior para no brincar alrededor de los umbrales (no es estado: no repinta).
@@ -76,7 +76,8 @@ fun OsmMap(store: TileStore, lat: Double, lon: Double, bearing: Float?, kmh: Flo
     // Inclinado, tu posición va más abajo: se ve más camino adelante.
     val anchorY = if (tilted) 0.78f else 0.6f
     val horizon = if (dark) Color(0xFF1C1C20) else Color(0xFFE8E8EA)
-    Box(modifier.background(horizon).clickable { manual = nextZoom(zoom) }) {
+    // Un toque: lo que diga [onTap] (en el widget, verlo en grande); si no, alejar.
+    Box(modifier.background(horizon).clickable { onTap?.invoke() ?: run { manual = nextZoom(zoom) } }) {
         Canvas(Modifier.fillMaxSize()) {
             store.loaded // cada tesela nueva repinta
             val at = Offset(size.width / 2, size.height * anchorY)
