@@ -1,24 +1,27 @@
 // Ajustes → Sistema y Módulos: actualizaciones, Android, tu pantalla, módulos y permisos.
 package com.irvingguerra.litedash
 
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import android.net.Uri
-import com.irvingguerra.litedash.core.ui.SwitchRow
-import com.irvingguerra.litedash.core.ui.Radius
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.os.Build
 import android.provider.Settings
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
@@ -31,15 +34,23 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.irvingguerra.litedash.core.ui.Button
 import com.irvingguerra.litedash.core.ui.Card
+import com.irvingguerra.litedash.core.ui.Icon
+import com.irvingguerra.litedash.core.ui.IconButton
 import com.irvingguerra.litedash.core.ui.Icons
 import com.irvingguerra.litedash.core.ui.Label
 import com.irvingguerra.litedash.core.ui.LocalColors
+import com.irvingguerra.litedash.core.ui.Radius
+import com.irvingguerra.litedash.core.ui.Switch
+import com.irvingguerra.litedash.core.ui.SwitchRow
 import com.irvingguerra.litedash.core.ui.Typography
 import com.irvingguerra.litedash.feature.car.CAR_ASPECT
 import com.irvingguerra.litedash.feature.car.CarStill
@@ -305,5 +316,58 @@ private fun NewVersion(v: Version, onInstall: () -> Unit) {
         val notes = releaseNotes(v.notes).filterNot { it.startsWith("###") }.take(6).joinToString("\n") { "• $it" }
         if (notes.isNotBlank()) Label(notes, Typography.small, c.textMuted, maxLines = 8)
         Button(stringResource(R.string.download_install, v.bytes / 1e6f), onInstall, primary = true)
+    }
+}
+
+/**
+ * Un módulo: ícono, nombre e interruptor (todo eso se toca para prender o apagar) y, prendido y
+ * con [onOpen], una flecha redonda aparte que entra a sus ajustes. Apagado, en gris. [soon]: aún
+ * no existe (interruptor apagado sin tocar y la etiqueta "Pronto").
+ */
+@Composable
+private fun ModuleRow(
+    icon: ImageVector,
+    title: String,
+    on: Boolean,
+    onChange: ((Boolean) -> Unit)?,
+    soon: Boolean = false,
+    onOpen: (() -> Unit)? = null,
+) {
+    val c = LocalColors.current
+    val shape = RoundedCornerShape(Radius.card)
+    val dim = if (on) 1f else 0.45f
+    Row(
+        Modifier.fillMaxWidth().height(76.dp).clip(shape).background(c.surface).border(1.dp, c.line, shape),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Row(
+            Modifier
+                .weight(1f)
+                .fillMaxHeight()
+                .then(if (onChange != null) Modifier.clickable { onChange(!on) } else Modifier)
+                .padding(start = 20.dp, end = 16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            Icon(icon, if (on) c.accent else c.textMuted.copy(alpha = dim), 28.dp)
+            Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Label(title, Typography.subtitle, if (on) c.text else c.textMuted.copy(alpha = dim), maxLines = 1, modifier = Modifier.weight(1f, fill = false))
+                if (soon) Label(
+                    stringResource(R.string.module_soon),
+                    Typography.small.copy(fontWeight = FontWeight.SemiBold),
+                    c.textMuted,
+                    maxLines = 1,
+                    modifier = Modifier.clip(RoundedCornerShape(50)).background(c.surfaceHigh).padding(horizontal = 10.dp, vertical = 4.dp),
+                )
+            }
+            Switch(on, Modifier.graphicsLayer { alpha = if (soon) 0.45f else 1f })
+        }
+        // La flecha va aparte (con su línea): entrar no prende ni apaga nada.
+        Box(Modifier.width(76.dp).fillMaxHeight(), contentAlignment = Alignment.Center) {
+            if (on && onOpen != null) {
+                Box(Modifier.align(Alignment.CenterStart).width(1.dp).fillMaxHeight(0.5f).background(c.line))
+                IconButton(Icons.chevron, onOpen, size = 48.dp, background = c.surfaceHigh, color = c.text)
+            }
+        }
     }
 }

@@ -86,7 +86,7 @@ internal fun CarSettings(d: Dependencies) {
         Label(stringResource(R.string.name), Typography.label, c.textMuted)
         TextInput(prefs.carName ?: "", { prefs.carName = it.take(24).ifBlank { null } }, pkg?.name ?: stringResource(R.string.my_car), Modifier.fillMaxWidth())
         Label(stringResource(R.string.color), Typography.label, c.textMuted)
-        ColorPicker(prefs.carColor, prefs::previewCarColor, onChange = { prefs.carColor = it })
+        ColorPicker(prefs.carColor, prefs::previewCarColor) { prefs.carColor = it }
     }
     if (tab == 0 && pkg != null) {
         SettingsCard("${pkg.make} ${pkg.name} ${pkg.year}") {

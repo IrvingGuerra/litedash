@@ -403,13 +403,13 @@ private fun imageButtons(target: SavedImage, onPicked: (Uri) -> Unit = {}, onRem
     return known
 }
 
-/** Inicio y apariencia → Imágenes → Fondo del inicio: elegir, cambiar o quitar la imagen. */
+/** Inicio y apariencia → Inicio → Fondo de pantalla: elegir, cambiar o quitar la imagen. */
 @Composable
 fun WallpaperSettings() {
     imageButtons(WALLPAPER)
 }
 
-/** Inicio y apariencia → Imágenes → Animación de entrada: encenderla y su propia imagen. */
+/** Inicio y apariencia → Inicio → Animación de entrada: encenderla y su propia imagen. */
 @Composable
 fun IntroSettings(prefs: Preferences) {
     val c = LocalColors.current

@@ -71,3 +71,6 @@ private fun Favorites(d: Dependencies) {
         }
     }
 }
+
+/** Las pestañas de Ajustes → Apps (Música 0, Radio 1…). */
+private const val APPS_TABS = "apps"

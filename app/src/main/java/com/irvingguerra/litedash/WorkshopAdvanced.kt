@@ -34,6 +34,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -70,6 +71,13 @@ import kotlin.math.roundToInt
 private const val MAX_CHART_SIGNALS = 2
 private val Second = Color(0xFF4CA6FF)
 
+/** Qué tan lejos están dos colores en el círculo de tonos (0–180°). */
+private fun hueDistance(a: Color, b: Color): Float {
+    fun hue(c: Color) = FloatArray(3).also { android.graphics.Color.colorToHSV(c.toArgb(), it) }[0]
+    val d = kotlin.math.abs(hue(a) - hue(b))
+    return minOf(d, 360f - d)
+}
+
 /** Las señales que da este auto (las calculadas y el voltaje incluidos). */
 @Composable
 internal fun readableSignals(d: Dependencies): List<String> =
@@ -93,7 +101,8 @@ fun LiveCharts(d: Dependencies) {
         val units = d.prefs.units
         // Con llave: al quitar la primera, la otra conserva su historial.
         val series = chosen.map { signal -> signal to key(signal) { rememberSeries(d, signal) } }
-        val colors = listOf(c.accent, Second)
+        // La segunda serie no puede parecerse a la primera (con un azul o cian elegido): entonces va en ámbar.
+        val colors = listOf(c.accent, if (hueDistance(c.accent, Second) < 40f) c.warning else Second)
         for ((i, pair) in series.withIndex()) {
             val (signal, points) = pair
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {

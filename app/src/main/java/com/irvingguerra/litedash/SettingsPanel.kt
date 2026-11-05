@@ -1,18 +1,11 @@
-// Ajustes: secciones, menú, pestañas y las piezas compartidas (tarjeta y renglones).
+// Ajustes: secciones, menú, pestañas y la tarjeta compartida.
 package com.irvingguerra.litedash
 
-import com.irvingguerra.litedash.core.ui.Switch
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.text.font.FontWeight
-import com.irvingguerra.litedash.core.ui.Segmented
-import com.irvingguerra.litedash.core.ui.Radius
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -31,11 +24,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -46,10 +39,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.irvingguerra.litedash.core.ui.Card
 import com.irvingguerra.litedash.core.ui.Icon
-import com.irvingguerra.litedash.core.ui.IconButton
 import com.irvingguerra.litedash.core.ui.Icons
 import com.irvingguerra.litedash.core.ui.Label
 import com.irvingguerra.litedash.core.ui.LocalColors
+import com.irvingguerra.litedash.core.ui.Radius
+import com.irvingguerra.litedash.core.ui.Segmented
 import com.irvingguerra.litedash.core.ui.Typography
 
 /** Secciones de Ajustes en el orden del menú: cada cosa vive en un solo lugar. */
@@ -150,9 +144,6 @@ internal fun tabs(titles: List<Int>, key: String): Int {
     return selected
 }
 
-/** Las pestañas de Ajustes → Apps (Música 0, Radio 1…). */
-internal const val APPS_TABS = "apps"
-
 /** Las pestañas de Ajustes → Sistema ([SystemTab]). */
 internal const val SYSTEM_TABS = "system"
 
@@ -206,80 +197,3 @@ internal fun SettingsCard(
     }
 }
 
-/** Un renglón de Inicio → Widgets: ícono, nombre, detalle y su botón. */
-@Composable
-internal fun TileRow(
-    icon: ImageVector,
-    title: String,
-    detail: String,
-    detailColor: Color = LocalColors.current.textMuted,
-    action: @Composable () -> Unit,
-) {
-    val c = LocalColors.current
-    val shape = RoundedCornerShape(Radius.card)
-    Row(
-        Modifier.fillMaxWidth().clip(shape).background(c.surface).border(1.dp, c.line, shape).padding(16.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
-    ) {
-        Icon(icon, c.accent, 26.dp)
-        Column(Modifier.weight(1f)) {
-            Label(title, Typography.subtitle, maxLines = 1)
-            Label(detail, Typography.small, detailColor, maxLines = 2)
-        }
-        action()
-    }
-}
-
-/**
- * Un módulo: ícono, nombre e interruptor (todo eso se toca para prender o apagar) y, prendido y
- * con [onOpen], una flecha redonda aparte que entra a sus ajustes. Apagado, en gris. [soon]: aún
- * no existe (interruptor apagado sin tocar y la etiqueta "Pronto").
- */
-@Composable
-internal fun ModuleRow(
-    icon: ImageVector,
-    title: String,
-    on: Boolean,
-    onChange: ((Boolean) -> Unit)?,
-    soon: Boolean = false,
-    onOpen: (() -> Unit)? = null,
-) {
-    val c = LocalColors.current
-    val shape = RoundedCornerShape(Radius.card)
-    val dim = if (on) 1f else 0.45f
-    Row(
-        Modifier.fillMaxWidth().height(76.dp).clip(shape).background(c.surface).border(1.dp, c.line, shape),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Row(
-            Modifier
-                .weight(1f)
-                .fillMaxHeight()
-                .then(if (onChange != null) Modifier.clickable { onChange(!on) } else Modifier)
-                .padding(start = 20.dp, end = 16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
-            Icon(icon, if (on) c.accent else c.textMuted.copy(alpha = dim), 28.dp)
-            Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                Label(title, Typography.subtitle, if (on) c.text else c.textMuted.copy(alpha = dim), maxLines = 1, modifier = Modifier.weight(1f, fill = false))
-                if (soon) Label(
-                    stringResource(R.string.module_soon),
-                    Typography.small.copy(fontWeight = FontWeight.SemiBold),
-                    c.textMuted,
-                    maxLines = 1,
-                    modifier = Modifier.clip(RoundedCornerShape(50)).background(c.surfaceHigh).padding(horizontal = 10.dp, vertical = 4.dp),
-                )
-            }
-            Switch(on, Modifier.graphicsLayer { alpha = if (soon) 0.45f else 1f })
-        }
-        // La flecha va aparte (con su línea): entrar no prende ni apaga nada.
-        Box(Modifier.width(76.dp).fillMaxHeight(), contentAlignment = Alignment.Center) {
-            if (on && onOpen != null) {
-                Box(Modifier.align(Alignment.CenterStart).width(1.dp).fillMaxHeight(0.5f).background(c.line))
-                IconButton(Icons.chevron, onOpen, size = 48.dp, background = c.surfaceHigh, color = c.text)
-            }
-        }
-    }
-}

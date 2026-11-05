@@ -195,7 +195,7 @@ fun Dashboard(
                         modifier = Modifier.align(Alignment.TopStart).padding(start = editButtonStart(1), top = EDIT_MARGIN),
                         size = EDIT_BUTTON,
                         background = if (p.plain) c.accent else c.surfaceHigh,
-                        color = if (p.plain) c.background else c.text,
+                        color = if (p.plain) c.onPrimary else c.text,
                     )
                     if (onSettings != null && hasSettings(p)) IconButton(
                         Icons.settings,
@@ -225,7 +225,7 @@ fun Dashboard(
                     ) {
                         // Sin clickable: el gesto de esta esquina es solo arrastrar.
                         Box(Modifier.size(44.dp).clip(RoundedCornerShape(50)).background(c.accent), contentAlignment = Alignment.Center) {
-                            Icon(Icons.corner, c.background, 22.dp)
+                            Icon(Icons.corner, c.onPrimary, 22.dp)
                         }
                     }
                 }

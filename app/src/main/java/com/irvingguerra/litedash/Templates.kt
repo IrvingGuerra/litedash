@@ -151,7 +151,7 @@ private fun TemplateThumbnail(p: Template, grid: Grid, hero: String, skip: (Stri
         val ch = maxHeight / grid.rows
         // Igual que al aplicarla: sin piezas de módulos apagados.
         val tiles = p.tiles(grid, hero, skip)
-        // La protagonista en ámbar: el auto (o la carretera) o, en las que no lo llevan, el velocímetro o la primera pieza.
+        // La protagonista en el color de la interfaz: el auto (o la carretera) o, en las que no lo llevan, el velocímetro o la primera pieza.
         val main = (tiles.firstOrNull { it.type == hero } ?: tiles.firstOrNull { it.type == TileTypes.SPEEDOMETER } ?: tiles.firstOrNull())?.id
         for (tile in tiles) {
             val width = cw * tile.width

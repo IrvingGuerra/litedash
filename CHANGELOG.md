@@ -6,6 +6,17 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
+## [1.4.78] - 2026-11-05
+
+### Arreglado (auditoría de la 1.4.77)
+- **Color de la interfaz**: los íconos y textos encima del color elegido (play, flecha de navegación,
+  esquinas al acomodar) toman el que más contraste (con naranja, ámbar o cian ya no salen blancos). Un
+  color casi negro o casi blanco del selector libre se ajusta para que interruptores y barras se sigan viendo.
+- La nota "avisos de llantas apagados" sigue en ámbar, y en las gráficas del Taller la segunda línea ya
+  no se confunde con la primera si eliges azul o cian.
+- **Esfera con aro Neón o Cuadros**: el número del centro ya no se acerca a los de la escala, y el brillo
+  del neón ya no se recorta arriba.
+
 ## [1.4.77] - 2026-11-05
 
 ### Agregado

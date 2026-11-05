@@ -26,13 +26,13 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.graphics.isSpecified
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -51,6 +51,12 @@ object Brand {
     val LightWhite = Color(0xFFF4F6F8)
     val Amber = Color(0xFFFFB224)
 }
+
+/** Colores que se repiten entre los temas: tinta (fondo oscuro), tinta y papel del claro, y su ámbar. */
+private val Ink = Color(0xFF0E1013)
+private val LightInk = Color(0xFF16181C)
+private val LightPaper = Color(0xFFE9ECF0)
+private val LightAmber = Color(0xFFE59500)
 
 @Immutable
 data class Colors(
@@ -74,19 +80,30 @@ data class Colors(
 /**
  * Los colores con el realce que eligió el usuario; null = el natural (ámbar, y lo principal en
  * blanco o negro). Con un color, lo principal también lo toma; nunca las tarjetas ni el fondo.
- * En el tema claro los colores muy claros se oscurecen un poco para que se lean sobre blanco.
+ * Un color que no se vería se ajusta: en oscuro, uno casi negro se aclara; en claro, uno claro se
+ * oscurece. Lo de encima ([Colors.onPrimary]) es tinta o blanco, el que más contraste.
  */
 fun Colors.withAccent(chosen: Color?): Colors {
-    if (chosen == null || !chosen.isSpecified) return this
-    val color = if (!dark && chosen.luminance() > 0.45f) lerp(chosen, Color.Black, 0.2f) else chosen
-    return copy(accent = color, primary = color, onPrimary = if (color.luminance() > 0.45f) Color(0xFF0E1013) else Color.White)
+    if (chosen == null) return this
+    var color: Color = chosen
+    if (dark) while (color.luminance() < 0.12f) color = lerp(color, Color.White, 0.1f)
+    else while (color.luminance() > 0.35f) color = lerp(color, Color.Black, 0.08f)
+    // En oscuro, uno casi blanco tampoco: el interruptor prendido llevaría bolita blanca sobre blanco.
+    if (dark) while (color.luminance() > 0.8f) color = lerp(color, Color.Black, 0.08f)
+    return copy(accent = color, primary = color, onPrimary = if (contrast(color, Ink) >= contrast(color, Color.White)) Ink else Color.White)
+}
+
+/** El contraste entre dos colores (1–21), como lo mide WCAG. */
+private fun contrast(a: Color, b: Color): Float {
+    val (hi, lo) = listOf(a.luminance(), b.luminance()).sortedDescending()
+    return (hi + 0.05f) / (lo + 0.05f)
 }
 
 // Estilo limpio (Irving, 2026-11-01: "más estilo Apple o DuduAuto"): tarjetas lisas sin
-// borde sobre un fondo apenas distinto, texto secundario gris y el ámbar solo en lo importante.
+// borde sobre un fondo apenas distinto, texto secundario gris y el color de realce solo en lo importante.
 val DarkColors = Colors(
     dark = true,
-    background = Color(0xFF0E1013),
+    background = Ink,
     surface = Color(0xFF1A1D22),
     surfaceHigh = Color(0xFF262A31),
     line = Color(0xFF2A2F37),
@@ -96,22 +113,22 @@ val DarkColors = Colors(
     danger = Color(0xFFFF6B5E),
     warning = Brand.Amber,
     primary = Brand.LightWhite,
-    onPrimary = Color(0xFF0E1013),
+    onPrimary = Ink,
 )
 
 val LightColors = Colors(
     dark = false,
-    background = Color(0xFFE9ECF0),
+    background = LightPaper,
     surface = Color.White,
     surfaceHigh = Color(0xFFF0F2F5),
     line = Color(0xFFE3E6EA),
-    text = Color(0xFF16181C),
+    text = LightInk,
     textMuted = Color(0xFF7D8590),
-    accent = Color(0xFFE59500),
+    accent = LightAmber,
     danger = Color(0xFFD93A2B),
-    warning = Color(0xFFE59500),
-    primary = Color(0xFF16181C),
-    onPrimary = Color(0xFFE9ECF0),
+    warning = LightAmber,
+    primary = LightInk,
+    onPrimary = LightPaper,
 )
 
 val LocalColors = staticCompositionLocalOf { DarkColors }
@@ -133,8 +150,9 @@ object Radius {
 @Composable
 fun LiteDashTheme(dark: Boolean = true, scale: Float = 1f, accent: Color? = null, content: @Composable () -> Unit) {
     val d = LocalDensity.current
+    val colors = remember(dark, accent) { (if (dark) DarkColors else LightColors).withAccent(accent) }
     CompositionLocalProvider(
-        LocalColors provides (if (dark) DarkColors else LightColors).withAccent(accent),
+        LocalColors provides colors,
         LocalDensity provides Density(d.density * scale, d.fontScale),
         content = content,
     )

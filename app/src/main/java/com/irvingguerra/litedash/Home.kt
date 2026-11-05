@@ -485,7 +485,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                 }
             },
     ) {
-        // Tu imagen de fondo (Inicio y apariencia → Imágenes), detrás de todo.
+        // Tu imagen de fondo (Inicio y apariencia → Inicio → Fondo de pantalla), detrás de todo.
         if (panel == null) HomeWallpaper(d.prefs)
         // Los paneles tapan todo el inicio: mientras hay uno abierto no se dibuja ni se
         // pinta nada debajo (el auto del tablero no se tiñe dos veces al cambiar el color).

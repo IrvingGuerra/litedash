@@ -55,9 +55,9 @@ private val RAINBOW = listOf(Color.Red, Color.Yellow, Color.Green, Color.Cyan, C
 fun ColorPicker(
     color: Color,
     onPreview: (Color) -> Unit,
-    onChange: (Color) -> Unit,
     swatches: List<Color> = CarColors,
     leading: @Composable () -> Unit = {},
+    onChange: (Color) -> Unit,
 ) {
     val custom = color.isSpecified && swatches.none { it.toArgb() == color.toArgb() }
     var open by remember { mutableStateOf(custom) }

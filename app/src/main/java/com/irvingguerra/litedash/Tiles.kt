@@ -327,7 +327,7 @@ private fun Places(app: App?, home: String?, work: String?, onPlace: (String) ->
 }
 
 /**
- * Un mapa sugerido: calles y una ruta ámbar que llega a su pin. Dibujado, así que
+ * Un mapa sugerido: calles y una ruta del color de la interfaz que llega a su pin. Dibujado, así que
  * no pesa nada ni necesita internet; se ve igual en claro y en oscuro.
  */
 @Composable
@@ -360,7 +360,7 @@ private fun MapArt(modifier: Modifier) {
     }
 }
 
-/** Flecha ámbar, distancia y calle de la siguiente vuelta. */
+/** Flecha del color de la interfaz, distancia y calle de la siguiente vuelta. */
 @Composable
 internal fun Turn(instruction: TurnInstruction, large: Boolean) {
     val c = LocalColors.current
@@ -369,9 +369,9 @@ internal fun Turn(instruction: TurnInstruction, large: Boolean) {
         Box(Modifier.size(side).clip(RoundedCornerShape(Radius.card)).background(c.accent), contentAlignment = Alignment.Center) {
             val arrow = instruction.arrow
             if (arrow != null) {
-                Image(remember(arrow) { arrow.asImageBitmap() }, null, Modifier.size(side * 0.7f), colorFilter = ColorFilter.tint(c.background))
+                Image(remember(arrow) { arrow.asImageBitmap() }, null, Modifier.size(side * 0.7f), colorFilter = ColorFilter.tint(c.onPrimary))
             } else {
-                Icon(Icons.navigate, c.background, side * 0.5f)
+                Icon(Icons.navigate, c.onPrimary, side * 0.5f)
             }
         }
         Column(Modifier.padding(start = 14.dp)) {

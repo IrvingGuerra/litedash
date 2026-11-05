@@ -62,7 +62,7 @@ private val NEON_GLOW = floatArrayOf(3.6f, 3.1f, 2.6f, 2.2f, 1.8f, 1.45f)
 /**
  * Cómo se dibuja un medidor. [stored] es como se guarda en el acomodo (no se traduce);
  * [segmented] = en una fila su barra va de segmentos (si no, una barra lisa). La Esfera es la de
- * fábrica (desde la 1.4.77; Arco y Anillo se quitaron y Neón y Cuadros pasaron a ser su [GaugeRim]).
+ * fábrica; su aro es [GaugeRim].
  */
 enum class GaugeStyle(val stored: String, val title: Int, val segmented: Boolean = false) {
     /** Esfera tipo vidrio: aro ([GaugeRim]), marcas con sus números por dentro y el número con brillo. */
@@ -110,6 +110,9 @@ fun GaugeLook.suggestedColor(): GaugeColor? = when {
     rim == GaugeRim.BLOCKS -> GaugeColor.PURPLE
     else -> null
 }
+
+/** En una fila, la barra va de segmentos: los estilos que lo son y la Esfera con aro de cuadros. */
+val GaugeLook.segmented get() = style.segmented || (style == GaugeStyle.DIAL && rim == GaugeRim.BLOCKS)
 
 /**
  * Cómo se ve un medidor; cada pieza guarda el suyo en su [com.irvingguerra.litedash.feature.dashboard.Tile.data]
@@ -508,23 +511,24 @@ private fun BarGauge(number: String, unit: String, tag: String, p: GaugeParts, w
     }
 }
 
-/**
- * Cuánto sube la lectura con algo al frente: poco (un quinto de su alto). Más arriba chocaba con
- * los números de la escala.
- */
-private fun GaugeParts.lift(): Dp = frontSpace * 0.2f
-
-/** Con algo al frente, el número se achica un poco para caber entre la escala y lo del frente. */
-private fun GaugeParts.shrink(): Float = if (frontSpace > 0.dp) 0.9f else 1f
-
 /** La etiqueta (OBD, GPS…) se ve si [fits] y no hay nada al frente (le quita espacio). */
 private fun GaugeParts.showTag(fits: Boolean) = fits && frontSpace == 0.dp
 
-/** Tamaño del número al centro (anillo, esfera y estilos sin aguja). */
-private fun GaugeParts.centerNumberSize(side: Dp) = (side.value * 0.235f).coerceIn(28f, 108f) * shrink()
+/**
+ * Tamaño del número al centro (Esfera y Degradado). Con algo al frente se achica un poco para caber entre
+ * la escala y lo del frente; con aro Neón o Cuadros también, porque su escala queda más adentro.
+ */
+private fun GaugeParts.centerNumberSize(side: Dp): Float {
+    val front = if (frontSpace > 0.dp) 0.9f else 1f
+    val rim = if (look.style == GaugeStyle.DIAL && look.rim != GaugeRim.SMOOTH) 0.9f else 1f
+    return (side.value * 0.235f).coerceIn(28f, 108f) * front * rim
+}
 
-/** Cuánto baja (o sube, con el auto) la lectura al centro del arco. */
-private fun GaugeParts.centerOffset(side: Dp): Dp = side * 0.04f - lift()
+/**
+ * Cuánto baja la lectura al centro del arco; con algo al frente sube un quinto de su alto (más arriba
+ * chocaba con los números de la escala).
+ */
+private fun GaugeParts.centerOffset(side: Dp): Dp = side * 0.04f - frontSpace * 0.2f
 
 /** El número y su unidad al centro del arco, para los estilos sin aguja. */
 @Composable
@@ -592,44 +596,43 @@ private fun DialGauge(number: String, unit: String, tag: String, p: GaugeParts, 
     val c = LocalColors.current
     val measurer = rememberTextMeasurer()
     val tickStyle = tickText(side, c.text.copy(alpha = 0.8f))
+    // Lo que no cambia con el valor se arma una vez por composición, no en cada cuadro.
+    val shades = c.shades(p)
+    val stops = if (p.look.rim == GaugeRim.NEON) neonStops(shades) else null
     Canvas(Modifier.fillMaxSize()) {
-        // [unit] = el grosor del aro liso: de él salen las marcas en los tres aros.
-        val unit0 = (size.minDimension * 0.025f).coerceIn(2.dp.toPx(), 12.dp.toPx())
+        // [base] = el grosor del aro liso: de él salen las marcas en los tres aros.
+        val base = (size.minDimension * 0.025f).coerceIn(2.dp.toPx(), 12.dp.toPx())
+        val neon = (size.minDimension * 0.035f).coerceIn(3.dp.toPx(), 16.dp.toPx())
+        val cell = (size.minDimension * 0.06f).coerceIn(5.dp.toPx(), 28.dp.toPx())
         val f = p.fraction()
         val color = c.gauge(p.look.color, p.car, f, p.warning)
-        // Dónde empiezan las marcas (por dentro del aro).
-        val outer: Float
-        val d: Dial
+        // El círculo de cada aro (el neón deja espacio por fuera para su brillo) y dónde empiezan las marcas.
+        val d = when (p.look.rim) {
+            GaugeRim.SMOOTH -> Dial(size, base)
+            GaugeRim.NEON -> Dial(size, neon * 2.2f)
+            GaugeRim.BLOCKS -> Dial(size, cell * 0.6f)
+        }
+        val outer = d.radius - when (p.look.rim) {
+            GaugeRim.SMOOTH -> base * 2.2f
+            GaugeRim.NEON -> neon * 1.6f
+            GaugeRim.BLOCKS -> cell * 1.35f
+        }
+        // El brillo de la esfera: un relleno muy suave del color que se pierde hacia la orilla.
+        drawCircle(Brush.radialGradient(listOf(color.copy(alpha = 0.08f), Color.Transparent), d.center, d.radius), d.radius, d.center)
         when (p.look.rim) {
             GaugeRim.SMOOTH -> {
-                d = Dial(size, unit0)
-                drawCircle(Brush.radialGradient(listOf(color.copy(alpha = 0.08f), Color.Transparent), d.center, d.radius), d.radius, d.center)
-                drawArc(c.surfaceHigh, START_ANGLE, SWEEP, false, d.topLeft, d.box, style = Stroke(unit0, cap = StrokeCap.Round))
-                if (p.look.redline) drawArc(c.danger.copy(alpha = 0.35f), START_ANGLE + SWEEP * p.redFrom, SWEEP * (1 - p.redFrom), false, d.topLeft, d.box, style = Stroke(unit0))
-                if (f > 0.002f) drawArc(color, START_ANGLE, SWEEP * f, false, d.topLeft, d.box, style = Stroke(unit0, cap = StrokeCap.Round))
-                outer = d.radius - unit0 * 2.2f
+                track(c, p, d, base)
+                if (f > 0.002f) drawArc(color, START_ANGLE, SWEEP * f, false, d.topLeft, d.box, style = Stroke(base, cap = StrokeCap.Round))
             }
             GaugeRim.NEON -> {
-                val stroke = (size.minDimension * 0.035f).coerceIn(3.dp.toPx(), 16.dp.toPx())
-                // Espacio por fuera para el brillo.
-                d = Dial(size, stroke * 1.9f)
-                drawCircle(Brush.radialGradient(listOf(color.copy(alpha = 0.08f), Color.Transparent), d.center, d.radius), d.radius, d.center)
-                drawArc(c.surfaceHigh, START_ANGLE, SWEEP, false, d.topLeft, d.box, style = Stroke(stroke, cap = StrokeCap.Round))
-                if (p.look.redline) drawArc(c.danger.copy(alpha = 0.3f), START_ANGLE + SWEEP * p.redFrom, SWEEP * (1 - p.redFrom), false, d.topLeft, d.box, style = Stroke(stroke))
-                if (f > 0.002f) neonArc(c.shades(p), f, d, stroke)
-                outer = d.radius - stroke * 1.6f
+                track(c, p, d, neon)
+                if (f > 0.002f && stops != null) neonArc(stops, f, d, neon)
             }
-            GaugeRim.BLOCKS -> {
-                val cell = (size.minDimension * 0.06f).coerceIn(5.dp.toPx(), 28.dp.toPx())
-                d = Dial(size, cell * 0.6f)
-                drawCircle(Brush.radialGradient(listOf(color.copy(alpha = 0.08f), Color.Transparent), d.center, d.radius), d.radius, d.center)
-                blocksArc(c, p, c.shades(p), f, d, cell)
-                outer = d.radius - cell * 1.35f
-            }
+            GaugeRim.BLOCKS -> blocksArc(c, p, shades, f, d, cell)
         }
         // Marcas por dentro del aro (larga en cada número, corta entre medio) y los números más adentro.
         val steps = p.ticks * 2
-        val long = unit0 * 2.6f
+        val long = base * 2.6f
         for (i in 0..steps) {
             val pos = i.toFloat() / steps
             val angle = START_ANGLE + SWEEP * pos
@@ -642,7 +645,7 @@ private fun DialGauge(number: String, unit: String, tag: String, p: GaugeParts, 
                     else -> c.textMuted.copy(alpha = 0.5f)
                 }
                 drawLine(tick, d.at(angle, outer), d.at(angle, outer - if (major) long else long * 0.5f),
-                    strokeWidth = unit0 * (if (major) 0.45f else 0.3f), cap = StrokeCap.Round)
+                    strokeWidth = base * (if (major) 0.45f else 0.3f), cap = StrokeCap.Round)
             }
             if (p.look.numbers && major && (i / 2) % 2 == 0) {
                 label(measurer, p.labels(i / 2), d.at(angle, outer - long - tickStyle.fontSize.toPx() * 1.1f), tickStyle)
@@ -656,15 +659,22 @@ private fun DialGauge(number: String, unit: String, tag: String, p: GaugeParts, 
     CenterReadout(number, unit, tag, p, side)
 }
 
+/** La pista del aro (de grosor [stroke]) y, si se pide, su zona roja tenue. */
+private fun DrawScope.track(c: Colors, p: GaugeParts, d: Dial, stroke: Float) {
+    drawArc(c.surfaceHigh, START_ANGLE, SWEEP, false, d.topLeft, d.box, style = Stroke(stroke, cap = StrokeCap.Round))
+    if (p.look.redline) drawArc(c.danger.copy(alpha = 0.35f), START_ANGLE + SWEEP * p.redFrom, SWEEP * (1 - p.redFrom), false, d.topLeft, d.box, style = Stroke(stroke))
+}
+
+/**
+ * Las paradas del degradado del neón: siguen al arco desde NEON_PAD° (el lienzo se gira para eso), y lo
+ * que queda antes (la punta redonda del inicio) toma el primer color en vez del último.
+ */
+private fun neonStops(shades: List<Color>): Array<Pair<Float, Color>> =
+    (shades.mapIndexed { i, col -> (NEON_PAD + SWEEP * i / (shades.size - 1).coerceAtLeast(1)) / 360f to col } + (1f to shades.first())).toTypedArray()
+
 /** El aro de neón hasta [f]: capas anchas y tenues debajo (el brillo, sin desenfoque, que es caro) y un filo claro. */
-private fun DrawScope.neonArc(shades: List<Color>, f: Float, d: Dial, stroke: Float) {
-    // El degradado sigue al arco: se gira el lienzo para que empiece en NEON_PAD°, y lo que
-    // queda antes (la punta redonda del inicio) toma el primer color en vez del último.
-    val brush = Brush.sweepGradient(
-        *(shades.mapIndexed { i, col -> (NEON_PAD + SWEEP * i / (shades.size - 1).coerceAtLeast(1)) / 360f to col } +
-            (1f to shades.first())).toTypedArray(),
-        center = d.center,
-    )
+private fun DrawScope.neonArc(stops: Array<Pair<Float, Color>>, f: Float, d: Dial, stroke: Float) {
+    val brush = Brush.sweepGradient(*stops, center = d.center)
     rotate(START_ANGLE - NEON_PAD, d.center) {
         for (w in NEON_GLOW) {
             drawArc(brush, NEON_PAD, SWEEP * f, false, d.topLeft, d.box, alpha = 0.055f, style = Stroke(stroke * w, cap = StrokeCap.Round))
@@ -739,7 +749,7 @@ private fun CompactGauge(number: String, unit: String, tag: String, p: GaugePart
             Label(unit, Typography.small, c.textMuted, maxLines = 1, modifier = Modifier.padding(start = 6.dp, bottom = 6.dp).weight(1f))
             if (tag.isNotEmpty()) Label(tag, Typography.label, p.readoutColor(c), maxLines = 1, modifier = Modifier.padding(bottom = 6.dp))
         }
-        if (p.look.style.segmented || (p.look.style == GaugeStyle.DIAL && p.look.rim == GaugeRim.BLOCKS)) {
+        if (p.look.segmented) {
             Segments(p, Modifier.fillMaxWidth().height(8.dp), count = 20, wedge = false)
         } else Canvas(Modifier.fillMaxWidth().height(6.dp)) {
             val r = CornerRadius(size.height / 2)

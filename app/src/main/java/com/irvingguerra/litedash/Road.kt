@@ -238,7 +238,7 @@ private fun edgeBrush(color: Color, size: Size) =
  * orillas y las rayas de tres carriles. Un punto a [z] metros de la cámara cae en
  * y = horizonte + (abajo − horizonte) · NEAR_M / z, y el ancho se reduce igual.
  * Con [effect] (0–1, sube con la velocidad) el horizonte y las orillas brillan (del
- * texto, neutro: sin el ámbar) y pasan líneas de velocidad a los lados ([rush] las mueve).
+ * texto, neutro: sin el color de realce) y pasan líneas de velocidad a los lados ([rush] las mueve).
  */
 private fun DrawScope.drawRoad(paint: RoadPaint, lines: Color, phase: Float, effect: Float, rush: Float) {
     val w = size.width

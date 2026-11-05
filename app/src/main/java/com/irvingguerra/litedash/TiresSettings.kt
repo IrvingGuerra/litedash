@@ -497,7 +497,7 @@ private fun HomeTiresCard(d: Dependencies) {
             if (d.dashboard.tiles.any { it.type == TileTypes.TIRES }) Label(stringResource(R.string.on_your_home), Typography.small, c.accent)
             else Button(stringResource(R.string.add), { d.dashboard.addTile(TileTypes.TIRES) })
         }
-        if (!d.tpms.alertsEnabled) Label(stringResource(R.string.tires_alerts_off_note), Typography.small, c.accent)
+        if (!d.tpms.alertsEnabled) Label(stringResource(R.string.tires_alerts_off_note), Typography.small, c.warning)
     }
 }
 

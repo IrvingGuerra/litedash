@@ -147,7 +147,7 @@ private fun ColumnScope.CarStep(prefs: Preferences) {
                 Label(stringResource(R.string.car_name), Typography.label, c.textMuted)
                 TextInput(prefs.carName ?: "", { prefs.carName = it.take(24).ifBlank { null } }, stringResource(R.string.my_car), Modifier.fillMaxWidth())
                 Label(stringResource(R.string.color), Typography.label, c.textMuted)
-                ColorPicker(prefs.carColor, prefs::previewCarColor, onChange = { prefs.carColor = it })
+                ColorPicker(prefs.carColor, prefs::previewCarColor) { prefs.carColor = it }
             }
         }
         if (horizontal) {
@@ -232,7 +232,7 @@ private fun HomeStep(revision: Int) {
     if (alreadyHome) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(Modifier.size(44.dp).clip(CircleShape).background(c.accent), contentAlignment = Alignment.Center) {
-                Icon(Icons.done, c.background, 24.dp)
+                Icon(Icons.done, c.onPrimary, 24.dp)
             }
             Spacer(Modifier.width(14.dp))
             Label(stringResource(R.string.welcome_already_home), Typography.subtitle)

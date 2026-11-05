@@ -13,6 +13,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import com.irvingguerra.litedash.core.ui.Icon
@@ -23,10 +24,10 @@ import com.irvingguerra.litedash.core.ui.Typography
 /**
  * Aviso arriba del tablero (inicio, versión nueva, recordatorio): texto y sus
  * botones. En angosto (teléfono parado) el texto no cabe junto a los botones y va arriba. El ícono va
- * rojo con [danger], ámbar con [warning] (aunque la interfaz tenga otro color) y si no, del color elegido.
+ * de [iconColor] (p. ej. rojo o ámbar de advertencia) o, sin él, del color de la interfaz.
  */
 @Composable
-fun Notice(text: String, icon: ImageVector? = null, danger: Boolean = false, warning: Boolean = false, buttons: @Composable () -> Unit) {
+fun Notice(text: String, icon: ImageVector? = null, iconColor: Color? = null, buttons: @Composable () -> Unit) {
     val c = LocalColors.current
     val box = Modifier
         .fillMaxWidth()
@@ -36,7 +37,7 @@ fun Notice(text: String, icon: ImageVector? = null, danger: Boolean = false, war
         .padding(start = 20.dp, end = 8.dp, top = 8.dp, bottom = 8.dp)
     val label = @Composable { m: Modifier ->
         Row(m, verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            if (icon != null) Icon(icon, if (danger) c.danger else if (warning) c.warning else c.accent, 22.dp)
+            if (icon != null) Icon(icon, iconColor ?: c.accent, 22.dp)
             Label(text, Typography.body, maxLines = 2)
         }
     }

@@ -1,18 +1,19 @@
 // Ajustes → Inicio y apariencia: inicio, interfaz, día y noche, unidades y widgets.
 package com.irvingguerra.litedash
 
-import com.irvingguerra.litedash.core.ui.SwitchRow
-import com.irvingguerra.litedash.core.ui.Segmented
 import android.app.Activity
-import android.hardware.SensorManager
 import android.hardware.Sensor
+import android.hardware.SensorManager
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -20,21 +21,27 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
-import com.irvingguerra.litedash.core.ui.Brand
-import com.irvingguerra.litedash.core.ui.DarkColors
-import com.irvingguerra.litedash.core.ui.LightColors
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import com.irvingguerra.litedash.core.ui.Brand
 import com.irvingguerra.litedash.core.ui.Button
+import com.irvingguerra.litedash.core.ui.DarkColors
+import com.irvingguerra.litedash.core.ui.Icon
 import com.irvingguerra.litedash.core.ui.IconButton
 import com.irvingguerra.litedash.core.ui.Icons
 import com.irvingguerra.litedash.core.ui.Label
+import com.irvingguerra.litedash.core.ui.LightColors
 import com.irvingguerra.litedash.core.ui.LocalColors
+import com.irvingguerra.litedash.core.ui.Radius
+import com.irvingguerra.litedash.core.ui.Segmented
+import com.irvingguerra.litedash.core.ui.SwitchRow
 import com.irvingguerra.litedash.core.ui.TextInput
 import com.irvingguerra.litedash.core.ui.Typography
 import com.irvingguerra.litedash.feature.dashboard.TileTypes
@@ -115,15 +122,16 @@ private val ACCENTS = listOf(
 private fun AccentSettings(prefs: Preferences) {
     val c = LocalColors.current
     val natural = stringResource(R.string.accent_natural)
-    ColorPicker(prefs.accentColor ?: Color.Unspecified, prefs::previewAccent, { prefs.accentColor = it }, ACCENTS) {
-        // Natural: mitad blanco (o negro) y mitad ámbar, como se ve de fábrica.
-        val split = if (c.dark) DarkColors else LightColors
+    // Natural: mitad blanco (o negro) y mitad ámbar, como se ve de fábrica.
+    val split = if (c.dark) DarkColors else LightColors
+    val leading = @Composable {
         Swatch(
             prefs.accentColor == null,
             Brush.linearGradient(0f to split.primary, 0.5f to split.primary, 0.5f to split.accent, 1f to split.accent),
             Modifier.semantics { contentDescription = natural },
         ) { prefs.accentColor = null }
     }
+    ColorPicker(prefs.accentColor ?: Color.Unspecified, prefs::previewAccent, ACCENTS, leading) { prefs.accentColor = it }
 }
 
 /** Día y noche: el tema, cuándo es de noche y el brillo. */
@@ -261,5 +269,30 @@ private fun Tiles(d: Dependencies, onEdit: () -> Unit) {
                 }
             }
         }
+    }
+}
+
+/** Un renglón de Inicio → Widgets: ícono, nombre, detalle y su botón. */
+@Composable
+private fun TileRow(
+    icon: ImageVector,
+    title: String,
+    detail: String,
+    detailColor: Color = LocalColors.current.textMuted,
+    action: @Composable () -> Unit,
+) {
+    val c = LocalColors.current
+    val shape = RoundedCornerShape(Radius.card)
+    Row(
+        Modifier.fillMaxWidth().clip(shape).background(c.surface).border(1.dp, c.line, shape).padding(16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        Icon(icon, c.accent, 26.dp)
+        Column(Modifier.weight(1f)) {
+            Label(title, Typography.subtitle, maxLines = 1)
+            Label(detail, Typography.small, detailColor, maxLines = 2)
+        }
+        action()
     }
 }

@@ -53,7 +53,7 @@ class MapProjectionTest {
         }
     }
 
-    /** El `visibleTiles` real del mapa (MapCanvas.kt), centrado en la pantalla. */
+    /** El `visibleTiles` real del mapa (MapCanvas.kt); dónde se dibuja no importa aquí. */
     private fun plan(p: MapProjection, lat: Double, lon: Double, z: Int, ts: Float): TilePlan =
         visibleTiles(p, lat, lon, z, Offset.Zero, ts)
 

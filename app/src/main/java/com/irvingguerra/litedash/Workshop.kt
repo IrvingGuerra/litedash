@@ -184,7 +184,7 @@ fun EngineAlertBanner(d: Dependencies, state: EngineAlertState) {
         EngineAlert.OVERCHARGING -> stringResource(R.string.alert_overcharging, volts)
         EngineAlert.LOW_BATTERY -> stringResource(R.string.alert_low_battery, volts)
     }
-    Notice(text, Icons.warning, danger = true) {
+    Notice(text, Icons.warning, LocalColors.current.danger) {
         Button(stringResource(R.string.alert_ok), { dismissed = a }, primary = true)
     }
 }

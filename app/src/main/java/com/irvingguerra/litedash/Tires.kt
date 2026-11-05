@@ -798,7 +798,7 @@ fun TiresAlertBanner(d: Dependencies, onOpen: () -> Unit) {
     val alerts = repo.alerts
     LaunchedEffect(alerts) { dismissed.removeAll { k -> alerts.none { it.wheel to it.kind == k } } }
     val a = alerts.firstOrNull { (it.wheel to it.kind) !in dismissed } ?: return
-    Notice(alertText(repo, a, d.prefs.units.fahrenheit), Icons.tireAlert, danger = a.severity == TireSeverity.DANGER, warning = true) {
+    Notice(alertText(repo, a, d.prefs.units.fahrenheit), Icons.tireAlert, iconColor = severityColor(a.severity)) {
         Button(stringResource(R.string.tires_see), onOpen)
         Button(stringResource(R.string.alert_ok), { dismissed += a.wheel to a.kind }, primary = true)
     }
