@@ -6,6 +6,13 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
+## [1.4.72] - 2026-11-04
+
+### Mejorado
+- **Mapa inclinado más ligero**: lo lejano (que se ve chico por la perspectiva) se dibuja con menos
+  detalle, como los navegadores. Se ve igual y pide muchas menos teselas: en 7" de 64 a 35 y en
+  pantallas anchas (1920×720) de 122 a 49. Menos datos, memoria y batería.
+
 ## [1.4.71] - 2026-11-04
 
 ### Cambiado

@@ -1,6 +1,7 @@
 package com.irvingguerra.litedash.feature.map
 
 import kotlin.math.cos
+import kotlin.math.hypot
 import kotlin.math.sin
 
 /** Cuánto se acuesta el mapa inclinado (grados). */
@@ -93,6 +94,26 @@ class MapProjection(
         return out.toIntArray()
     }
 
+    /**
+     * Qué tan grande se ve en pantalla la tesela ([tx], [ty]) respecto a su tamaño ([tilePx]): 1 de cerca;
+     * inclinado, lo lejano se ve chico (0.5 = a la mitad). La orilla más larga de su cuadro proyectado.
+     */
+    fun scaleOf(fx: Double, fy: Double, tilePx: Float, tx: Int, ty: Int): Float {
+        val left = atX + ((tx - fx) * tilePx).toFloat()
+        val top0 = atY + ((ty - fy) * tilePx).toFloat()
+        val q = FloatArray(12)
+        val p = FloatArray(3)
+        for (corner in 0 until 4) {
+            project(values, left + (corner and 1) * tilePx, top0 + (corner shr 1) * tilePx, p)
+            // Detrás de la cámara: no se sabe; se queda con todo el detalle.
+            if (p[2] <= 0f) return 1f
+            q[corner * 3] = p[0]
+            q[corner * 3 + 1] = p[1]
+        }
+        fun edge(a: Int, b: Int) = hypot(q[a * 3] - q[b * 3], q[a * 3 + 1] - q[b * 3 + 1])
+        return maxOf(edge(0, 1), edge(2, 3), edge(0, 2), edge(1, 3)) / tilePx
+    }
+
     /** ¿El cuadro de la tesela con esquina ([left], [top0]) toca la parte visible de la pantalla? */
     private fun onScreen(left: Float, top0: Float, size: Float, p: FloatArray): Boolean {
         var minX = Float.MAX_VALUE; var maxX = -Float.MAX_VALUE; var minY = Float.MAX_VALUE; var maxY = -Float.MAX_VALUE
@@ -133,3 +154,20 @@ private fun invert(m: FloatArray): FloatArray {
         c / det, (m[1] * m[6] - m[0] * m[7]) / det, (m[0] * m[4] - m[1] * m[3]) / det,
     )
 }
+
+/**
+ * Cuántos zooms menos usar para una tesela que se ve a [scale] de su tamaño: lo lejano del mapa inclinado
+ * se ve chico, así que una tesela "madre" (4 veces más terreno) o "abuela" (16) basta y se piden muchas menos.
+ */
+fun detailDrop(scale: Float): Int = when {
+    scale < FAR_SCALE -> 2
+    scale < MID_SCALE -> 1
+    else -> 0
+}
+
+/**
+ * Abajo de esta escala, un zoom menos; abajo de [FAR_SCALE], dos. La madre se dibuja a lo más 1.4 veces
+ * ampliada: lejos, chica y fundiéndose con el cielo, no se nota (y en 1920×720 se piden 49 teselas, no 122).
+ */
+private const val MID_SCALE = 0.7f
+private const val FAR_SCALE = 0.35f

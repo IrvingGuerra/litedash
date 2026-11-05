@@ -111,37 +111,56 @@ fun MapCanvas(store: TileStore, lat: Double, lon: Double, bearing: Float?, kmh: 
     }
 }
 
-/** Las teselas a dibujar: su clave y dónde van en el plano del mapa (en px, ya redondeado). */
-private class TilePlan(val keys: Set<Long>, val z: Int, val x: IntArray, val y: IntArray, val left: IntArray, val top: IntArray, val right: IntArray, val bottom: IntArray)
+/**
+ * Las teselas a dibujar, de lo lejano a lo cercano (lo cercano encima): su zoom, clave y dónde van en el
+ * plano del mapa (en px, ya redondeado). Inclinado, lo lejano va con menos detalle ([detailDrop]).
+ */
+private class TilePlan(val keys: Set<Long>, val z: IntArray, val x: IntArray, val y: IntArray, val left: IntArray, val top: IntArray, val right: IntArray, val bottom: IntArray)
 
 private fun visibleTiles(projection: MapProjection, lat: Double, lon: Double, z: Int, at: Offset, ts: Float): TilePlan {
-    val n = 1 shl z
     val fx = tileX(lon, z)
     val fy = tileY(lat, z)
     val span = projection.visibleTiles(fx, fy, ts)
-    val keys = HashSet<Long>()
-    val x = ArrayList<Int>(); val y = ArrayList<Int>()
-    val left = ArrayList<Int>(); val top = ArrayList<Int>(); val right = ArrayList<Int>(); val bottom = ArrayList<Int>()
+    // Cada tesela visible, o la de menos detalle que la cubre (una sola vez aunque cubra varias).
+    val picked = LinkedHashMap<Long, IntArray>()
     for (i in span.indices step 2) {
         val tx = span[i]
         val ty = span[i + 1]
-        if (ty !in 0 until n) continue
-        val wrapped = Math.floorMod(tx, n)
-        keys += tileKey(z, wrapped, ty)
-        x += wrapped
-        y += ty
-        // Bordes redondeados a píxel con el de la siguiente: sin rayas entre teselas.
-        left += (at.x + (tx - fx) * ts).roundToInt()
-        top += (at.y + (ty - fy) * ts).roundToInt()
-        right += (at.x + (tx + 1 - fx) * ts).roundToInt()
-        bottom += (at.y + (ty + 1 - fy) * ts).roundToInt()
+        val drop = detailDrop(projection.scaleOf(fx, fy, ts, tx, ty)).coerceAtMost(z - LOD_MIN_ZOOM).coerceAtLeast(0)
+        val dz = z - drop
+        val ax = Math.floorDiv(tx, 1 shl drop)
+        val ay = Math.floorDiv(ty, 1 shl drop)
+        val n = 1 shl dz
+        if (ay !in 0 until n) continue
+        picked.getOrPut(tileKey(dz, Math.floorMod(ax, n), ay)) { intArrayOf(dz, ax, ay) }
     }
-    return TilePlan(keys, z, x.toIntArray(), y.toIntArray(), left.toIntArray(), top.toIntArray(), right.toIntArray(), bottom.toIntArray())
+    // Lo lejano (menos zoom) primero: lo cercano se dibuja encima y tapa las orillas.
+    val order = picked.entries.sortedBy { it.value[0] }
+    val count = order.size
+    val zs = IntArray(count); val x = IntArray(count); val y = IntArray(count)
+    val left = IntArray(count); val top = IntArray(count); val right = IntArray(count); val bottom = IntArray(count)
+    for ((i, entry) in order.withIndex()) {
+        val (dz, ax, ay) = entry.value
+        val scale = (1 shl (z - dz)).toDouble()
+        val size = ts * scale
+        zs[i] = dz
+        x[i] = Math.floorMod(ax, 1 shl dz)
+        y[i] = ay
+        // Bordes redondeados a píxel con el de la siguiente: sin rayas entre teselas.
+        left[i] = (at.x + (ax * scale - fx) * ts).roundToInt()
+        top[i] = (at.y + (ay * scale - fy) * ts).roundToInt()
+        right[i] = (at.x + (ax * scale - fx) * ts + size).roundToInt()
+        bottom[i] = (at.y + (ay * scale - fy) * ts + size).roundToInt()
+    }
+    return TilePlan(picked.keys, zs, x, y, left, top, right, bottom)
 }
 
+/** Lo lejano no baja de este zoom (más allá, las calles ya ni se distinguen). */
+private const val LOD_MIN_ZOOM = 12
+
 private fun DrawScope.drawTiles(store: TileStore, plan: TilePlan, filter: ColorFilter?) {
-    val z = plan.z
     for (i in plan.x.indices) {
+        val z = plan.z[i]
         val x = plan.x[i]
         val y = plan.y[i]
         val offset = IntOffset(plan.left[i], plan.top[i])
