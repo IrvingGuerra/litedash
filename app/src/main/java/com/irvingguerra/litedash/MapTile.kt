@@ -19,6 +19,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleStartEffect
@@ -31,13 +32,18 @@ import com.irvingguerra.litedash.core.ui.Segmented
 import com.irvingguerra.litedash.core.ui.Typography
 import com.irvingguerra.litedash.core.vehicle.Signal
 import com.irvingguerra.litedash.core.vehicle.watch
+import com.irvingguerra.litedash.feature.map.MapDetail
 import com.irvingguerra.litedash.feature.map.MapLook
 import com.irvingguerra.litedash.feature.map.MapOrientation
 import com.irvingguerra.litedash.feature.map.MapStyle
 import com.irvingguerra.litedash.feature.map.MapView
 import com.irvingguerra.litedash.feature.map.MapZoom
+import com.irvingguerra.litedash.feature.map.MinimalPalette
 import com.irvingguerra.litedash.feature.map.OsmMap
+import com.irvingguerra.litedash.feature.map.OsmTiles
 import com.irvingguerra.litedash.feature.map.TileStore
+import com.irvingguerra.litedash.feature.map.VectorTiles
+import com.irvingguerra.litedash.feature.map.tilePx
 
 /**
  * Widget Mapa: OpenStreetMap con tu posición del GPS, como diga su [data] ([MapLook]). GPS y
@@ -61,7 +67,10 @@ private fun LiveMap(d: Dependencies, look: MapLook, modifier: Modifier) {
     val c = LocalColors.current
     KeepTripRunning(d.trip)
     val context = LocalContext.current
-    val store = remember { newTileStore(context) }
+    val density = LocalDensity.current.density
+    // Una por fuente y colores: el minimalista se dibuja ya en los suyos.
+    val dark = look.dark(c.dark)
+    val store = remember(look.detail, dark) { newTileStore(context, look.detail, dark, density) }
     LifecycleStartEffect(store) {
         store.resume()
         onStopOrDispose { store.pause() }
@@ -78,9 +87,15 @@ private fun LiveMap(d: Dependencies, look: MapLook, modifier: Modifier) {
     }
 }
 
-private fun newTileStore(context: Context) = TileStore(context, "LiteDash/${BuildConfig.VERSION_NAME} (+https://litedash.web.app)")
+private fun newTileStore(context: Context, detail: MapDetail, dark: Boolean, density: Float): TileStore {
+    val source = when (detail) {
+        MapDetail.FULL -> OsmTiles
+        MapDetail.MINIMAL -> VectorTiles(context, if (dark) MinimalPalette.DARK else MinimalPalette.LIGHT, tilePx(density).toInt(), density)
+    }
+    return TileStore(context, "LiteDash/${BuildConfig.VERSION_NAME} (+https://litedash.web.app)", source)
+}
 
-/** Personalizar mapa: orientación, vista, zoom y colores, con el mapa en vivo como vista previa. */
+/** Personalizar mapa: detalle, orientación, vista, zoom y colores, con el mapa en vivo como vista previa. */
 @Composable
 fun CustomizeMapPanel(d: Dependencies, tileId: String, close: () -> Unit) {
     val c = LocalColors.current
@@ -98,6 +113,12 @@ fun CustomizeMapPanel(d: Dependencies, tileId: String, close: () -> Unit) {
             val preview = @Composable { m: Modifier -> if (granted) Card(m) { LiveMap(d, look, Modifier.fillMaxSize()) } }
             val options = @Composable { m: Modifier ->
                 Column(m.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                    Label(stringResource(R.string.map_detail), Typography.label, c.textMuted)
+                    Segmented(
+                        listOf(MapDetail.FULL to stringResource(R.string.map_detail_full), MapDetail.MINIMAL to stringResource(R.string.map_detail_minimal)),
+                        look.detail, { set(look.copy(detail = it)) },
+                    )
+                    Label(stringResource(if (look.detail == MapDetail.FULL) R.string.map_detail_full_help else R.string.map_detail_minimal_help), Typography.small, c.textMuted)
                     Label(stringResource(R.string.map_orientation), Typography.label, c.textMuted)
                     Segmented(
                         listOf(MapOrientation.NORTH to stringResource(R.string.map_north), MapOrientation.HEADING to stringResource(R.string.map_heading)),

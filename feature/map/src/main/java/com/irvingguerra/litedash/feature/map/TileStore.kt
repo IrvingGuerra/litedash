@@ -1,14 +1,11 @@
 package com.irvingguerra.litedash.feature.map
 
 import android.content.Context
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.util.LruCache
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.graphics.asImageBitmap
 import com.irvingguerra.litedash.core.ui.Https
 import java.io.File
 import kotlinx.coroutines.CoroutineScope
@@ -19,15 +16,17 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 /**
- * Las teselas de OpenStreetMap: memoria (LRU chica), disco (`filesDir/map_tiles`, ~50 MB) y red,
+ * Las teselas del mapa de [source]: memoria (LRU chica), disco (`filesDir/<carpeta>`, ~50 MB) y red,
  * siguiendo la política de uso de OSM (operations.osmfoundation.org/policies/tiles): User-Agent
  * propio, caché según Cache-Control/Expires con revalidación (ETag/If-Modified-Since), a lo más
  * [MAX_DOWNLOADS] descargas a la vez y solo lo que se ve (lo último que se pidió va primero).
  * Solo trabaja entre [resume] y [pause] (el widget a la vista y la app al frente).
  */
-class TileStore(context: Context, private val userAgent: String) {
+class TileStore(context: Context, private val userAgent: String, val source: TileSource) {
     private val app = context.applicationContext
-    private val dir = File(app.filesDir, "map_tiles")
+    private val dir = File(app.filesDir, source.folder)
+    /** Una descarga por archivo: varias teselas del 15–17 salen de la misma del 14. */
+    private val fileLocks = HashMap<Long, Any>()
     private val lock = Any()
     private val memory = LruCache<Long, ImageBitmap>(MEMORY_TILES)
     /** Pila: lo último que se pidió es lo que se ve ahora. */
@@ -108,28 +107,37 @@ class TileStore(context: Context, private val userAgent: String) {
 
     /** Del disco si sigue vigente; si no, de la red; sin red, la vencida (mejor que nada). */
     private fun load(key: Long): ImageBitmap? {
-        val file = File(dir, "${keyZ(key)}_${keyX(key)}_${keyY(key)}")
+        val origin = source.origin(key)
+        val data = synchronized(synchronized(lock) { fileLocks.getOrPut(origin) { Any() } }) { data(origin) } ?: return null
+        return source.decode(data, key, origin)
+    }
+
+    private fun data(origin: Long): ByteArray? {
+        val file = File(dir, "${keyZ(origin)}_${keyX(origin)}_${keyY(origin)}")
         val now = System.currentTimeMillis()
         val cached = if (file.exists()) TileFile.decode(file.readBytes()) else null
         if (cached != null) {
             file.setLastModified(now) // para el recorte: las más usadas se quedan
-            if (cached.expires > now || now < backoffUntil) decode(cached.png)?.let { return it }
+            if (cached.expires > now || now < backoffUntil) return cached.png
         }
-        val fetched = runCatching { fetch(key, cached) }.getOrNull()
-        if (fetched != null) decode(fetched.png)?.let { image ->
+        val fetched = runCatching { fetch(origin, cached) }.getOrNull()
+        if (fetched != null) {
             save(file, fetched)
-            return image
+            return fetched.png
         }
-        return cached?.let { decode(it.png) }
+        return cached?.png
     }
 
-    private fun fetch(key: Long, cached: TileFile?): TileFile? {
+    private fun fetch(origin: Long, cached: TileFile?): TileFile? {
         if (System.currentTimeMillis() < backoffUntil) return null
-        val c = Https.open(app, "https://tile.openstreetmap.org/${keyZ(key)}/${keyX(key)}/${keyY(key)}.png")
+        val url = source.url(origin, userAgent) ?: return null
+        val c = Https.open(app, url)
         try {
             c.connectTimeout = 8_000
             c.readTimeout = 10_000
             c.setRequestProperty("User-Agent", userAgent)
+            // Pedido así a mano, Android no lo descomprime: se guarda comprimido (ocupa la tercera parte).
+            if (source.gzip) c.setRequestProperty("Accept-Encoding", "gzip")
             cached?.etag?.let { c.setRequestProperty("If-None-Match", it) }
             cached?.lastModified?.let { c.setRequestProperty("If-Modified-Since", it) }
             val code = c.responseCode
@@ -153,12 +161,6 @@ class TileStore(context: Context, private val userAgent: String) {
         }
     }
 
-    private fun decode(png: ByteArray): ImageBitmap? {
-        // Las teselas no traen transparencia: a 16 bits ocupan la mitad.
-        val options = BitmapFactory.Options().apply { inPreferredConfig = Bitmap.Config.RGB_565 }
-        return BitmapFactory.decodeByteArray(png, 0, png.size, options)?.asImageBitmap()
-    }
-
     private fun save(file: File, tile: TileFile) {
         dir.mkdirs()
         val temp = File.createTempFile(file.name, ".tmp", dir)
@@ -169,7 +171,7 @@ class TileStore(context: Context, private val userAgent: String) {
 
     /** Recorta la caché en disco a [DISK_MAX] borrando las teselas que hace más que no se usan. */
     private fun trim() {
-        val files = dir.listFiles() ?: return
+        val files = dir.listFiles { f -> f.isFile && f.name != "tilejson" } ?: return
         val names = tilesToTrim(files.map { CachedTile(it.name, it.length(), it.lastModified()) }, DISK_MAX, DISK_TARGET)
         for (name in names) File(dir, name).delete()
     }

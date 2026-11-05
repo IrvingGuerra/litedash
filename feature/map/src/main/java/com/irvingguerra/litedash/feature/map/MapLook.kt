@@ -14,6 +14,9 @@ enum class MapZoom(val stored: String, val level: Int?) { AUTO("auto", null), NE
 /** Los colores: como el tema de LiteDash (día y noche), o siempre claros u oscuros. */
 enum class MapStyle(val stored: String) { THEME("theme"), LIGHT("light"), DARK("dark") }
 
+/** Todo lo de OpenStreetMap (calles, negocios, nombres) o minimalista (solo calles, agua y parques). */
+enum class MapDetail(val stored: String) { FULL("full"), MINIMAL("minimal") }
+
 /**
  * Cómo se ve el widget Mapa; se guarda en su `Tile.data` como "orientation=heading;view=tilted…".
  * Lo de fábrica (norte arriba, plano, automático, como el tema) no se escribe.
@@ -24,12 +27,21 @@ data class MapLook(
     val view: MapView = MapView.FLAT,
     val zoom: MapZoom = MapZoom.AUTO,
     val style: MapStyle = MapStyle.THEME,
+    val detail: MapDetail = MapDetail.FULL,
 ) {
+    /** ¿Se ve oscuro? Con [MapStyle.THEME], lo que diga el tema de LiteDash ([themeDark]). */
+    fun dark(themeDark: Boolean) = when (style) {
+        MapStyle.THEME -> themeDark
+        MapStyle.LIGHT -> false
+        MapStyle.DARK -> true
+    }
+
     fun encode(): String = listOfNotNull(
         orientation.takeIf { it != MapOrientation.NORTH }?.let { "$ORIENTATION=${it.stored}" },
         view.takeIf { it != MapView.FLAT }?.let { "$VIEW=${it.stored}" },
         zoom.takeIf { it != MapZoom.AUTO }?.let { "$ZOOM=${it.stored}" },
         style.takeIf { it != MapStyle.THEME }?.let { "$STYLE=${it.stored}" },
+        detail.takeIf { it != MapDetail.FULL }?.let { "$DETAIL=${it.stored}" },
     ).joinToString(";")
 
     companion object {
@@ -37,6 +49,7 @@ data class MapLook(
         private const val VIEW = "view"
         private const val ZOOM = "zoom"
         private const val STYLE = "style"
+        private const val DETAIL = "detail"
 
         fun parse(data: String): MapLook {
             val f = data.split(';').mapNotNull { part -> part.split('=', limit = 2).takeIf { it.size == 2 }?.let { it[0] to it[1] } }.toMap()
@@ -45,6 +58,7 @@ data class MapLook(
                 view = MapView.entries.firstOrNull { it.stored == f[VIEW] } ?: MapView.FLAT,
                 zoom = MapZoom.entries.firstOrNull { it.stored == f[ZOOM] } ?: MapZoom.AUTO,
                 style = MapStyle.entries.firstOrNull { it.stored == f[STYLE] } ?: MapStyle.THEME,
+                detail = MapDetail.entries.firstOrNull { it.stored == f[DETAIL] } ?: MapDetail.FULL,
             )
         }
     }

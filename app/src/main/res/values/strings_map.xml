@@ -20,4 +20,9 @@
     <string name="map_style_theme">Como el tema</string>
     <string name="map_style_light">Claros</string>
     <string name="map_style_dark">Oscuros</string>
+    <string name="map_detail">Mapa</string>
+    <string name="map_detail_full">Completo</string>
+    <string name="map_detail_minimal">Minimalista</string>
+    <string name="map_detail_full_help">Todo lo de OpenStreetMap: calles, negocios, nombres e íconos.</string>
+    <string name="map_detail_minimal_help">Solo calles, agua y parques, limpio y en los colores de LiteDash (datos de OpenFreeMap).</string>
 </resources>

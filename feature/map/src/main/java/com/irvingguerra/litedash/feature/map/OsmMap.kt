@@ -43,6 +43,9 @@ import kotlin.math.roundToInt
 
 private const val TILE = 256
 
+/** El lado de una tesela en pantalla: 256 px a densidad 1, hasta el doble (más se vería borrosa). */
+fun tilePx(density: Float) = TILE * density.coerceIn(1f, 2f)
+
 /** Cuánto se acuesta el mapa inclinado (grados). */
 private const val TILT_DEGREES = 50f
 
@@ -64,12 +67,9 @@ fun OsmMap(store: TileStore, lat: Double, lon: Double, bearing: Float?, kmh: Flo
     val tilted = look.view == MapView.TILTED
     // Inclinado se ve mucho más terreno: un zoom menos (cada tesela cubre el doble) para no pedir decenas.
     val zoom = manual ?: ((look.zoom.level ?: auto[0]) - if (tilted) 1 else 0).coerceAtLeast(MIN_ZOOM)
-    val dark = when (look.style) {
-        MapStyle.THEME -> c.dark
-        MapStyle.LIGHT -> false
-        MapStyle.DARK -> true
-    }
-    val filter = if (dark) DarkTiles else null
+    val dark = look.dark(c.dark)
+    // El minimalista ya viene en sus colores; las de OpenStreetMap se oscurecen aquí.
+    val filter = if (dark && store.source.recolor) DarkTiles else null
     val accent = c.accent
     // Hacia donde vas: el mapa gira al revés del rumbo (sin rumbo todavía, se queda como está).
     val turn = if (look.orientation == MapOrientation.HEADING) -(bearing ?: 0f) else 0f
@@ -96,7 +96,7 @@ fun OsmMap(store: TileStore, lat: Double, lon: Double, bearing: Float?, kmh: Flo
             }
             drawArrow(at, if (look.orientation == MapOrientation.HEADING) bearing?.let { 0f } else bearing, accent, tilted)
         }
-        Attribution(Modifier.align(Alignment.BottomEnd))
+        Attribution(store.source, Modifier.align(Alignment.BottomEnd))
     }
 }
 
@@ -123,7 +123,7 @@ private fun DrawScope.mapMatrix(at: Offset, turn: Float, tilted: Boolean): Andro
 }
 
 private fun DrawScope.drawTiles(store: TileStore, lat: Double, lon: Double, z: Int, filter: ColorFilter?, at: Offset, m: AndroidMatrix) {
-    val ts = TILE * density.coerceIn(1f, 2f)
+    val ts = tilePx(density)
     val n = 1 shl z
     val fx = tileX(lon, z)
     val fy = tileY(lat, z)
@@ -190,13 +190,13 @@ private fun DrawScope.drawArrow(at: Offset, bearing: Float?, accent: Color, tilt
     }
 }
 
-/** "© OpenStreetMap" en la esquina (lo pide su licencia); tocarlo abre su página de derechos. */
+/** Los créditos en la esquina (lo piden sus licencias); tocarlos abre su página. */
 @Composable
-private fun Attribution(modifier: Modifier) {
+private fun Attribution(source: TileSource, modifier: Modifier) {
     val c = LocalColors.current
     val uri = LocalUriHandler.current
     Label(
-        "© OpenStreetMap",
+        source.attribution,
         Typography.small.copy(fontSize = 11.sp),
         c.text,
         maxLines = 1,
@@ -204,7 +204,7 @@ private fun Attribution(modifier: Modifier) {
             .padding(6.dp)
             .clip(RoundedCornerShape(Radius.small))
             .background(c.surface.copy(alpha = 0.75f))
-            .clickable { runCatching { uri.openUri("https://www.openstreetmap.org/copyright") } }
+            .clickable { runCatching { uri.openUri(source.attributionUrl) } }
             .padding(horizontal = 6.dp, vertical = 2.dp),
     )
 }

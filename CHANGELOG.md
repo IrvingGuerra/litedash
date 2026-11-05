@@ -6,6 +6,13 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
+## [1.4.68] - 2026-11-04
+
+### Agregado
+- **Mapa minimalista** (Personalizar mapa → Mapa → Minimalista): solo calles, agua y parques, sin
+  íconos ni nombres, en los colores de LiteDash (claro u oscuro), nítido a cualquier zoom y también
+  inclinado. Datos de OpenFreeMap (gratis, sin cuenta); LiteDash los dibuja. De fábrica sigue el completo.
+
 ## [1.4.67] - 2026-11-04
 
 ### Agregado
