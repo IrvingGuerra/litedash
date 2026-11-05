@@ -6,6 +6,12 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
+## [1.4.73] - 2026-11-04
+
+### Agregado
+- **Nissan Tiida 2010** en el catálogo de autos (sedán, de cualquier color, con su vista desde arriba para
+  Llantas y el Taller). El catálogo ya tiene 13 modelos.
+
 ## [1.4.72] - 2026-11-04
 
 ### Mejorado
