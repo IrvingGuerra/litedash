@@ -14,12 +14,12 @@ enum class MapZoom(val stored: String, val level: Int?) { AUTO("auto", null), NE
 /** Los colores: como el tema de LiteDash (día y noche), o siempre claros u oscuros. */
 enum class MapStyle(val stored: String) { THEME("theme"), LIGHT("light"), DARK("dark") }
 
-/** Todo lo de OpenStreetMap (calles, negocios, nombres) o minimalista (solo calles, agua y parques). */
+/** Minimalista (solo calles, agua y parques; de fábrica desde la 1.4.71) o todo lo de OpenStreetMap (calles, negocios, nombres). */
 enum class MapDetail(val stored: String) { FULL("full"), MINIMAL("minimal") }
 
 /**
  * Cómo se ve el widget Mapa; se guarda en su `Tile.data` como "orientation=heading;view=tilted…".
- * Lo de fábrica (norte arriba, plano, automático, como el tema) no se escribe.
+ * Lo de fábrica (minimalista, norte arriba, plano, automático, como el tema) no se escribe.
  */
 @Immutable
 data class MapLook(
@@ -27,7 +27,7 @@ data class MapLook(
     val view: MapView = MapView.FLAT,
     val zoom: MapZoom = MapZoom.AUTO,
     val style: MapStyle = MapStyle.THEME,
-    val detail: MapDetail = MapDetail.FULL,
+    val detail: MapDetail = MapDetail.MINIMAL,
 ) {
     /** ¿Se ve oscuro? Con [MapStyle.THEME], lo que diga el tema de LiteDash ([themeDark]). */
     fun dark(themeDark: Boolean) = when (style) {
@@ -41,7 +41,7 @@ data class MapLook(
         view.takeIf { it != MapView.FLAT }?.let { "$VIEW=${it.stored}" },
         zoom.takeIf { it != MapZoom.AUTO }?.let { "$ZOOM=${it.stored}" },
         style.takeIf { it != MapStyle.THEME }?.let { "$STYLE=${it.stored}" },
-        detail.takeIf { it != MapDetail.FULL }?.let { "$DETAIL=${it.stored}" },
+        detail.takeIf { it != MapDetail.MINIMAL }?.let { "$DETAIL=${it.stored}" },
     ).joinToString(";")
 
     companion object {
@@ -58,7 +58,7 @@ data class MapLook(
                 view = MapView.entries.firstOrNull { it.stored == f[VIEW] } ?: MapView.FLAT,
                 zoom = MapZoom.entries.firstOrNull { it.stored == f[ZOOM] } ?: MapZoom.AUTO,
                 style = MapStyle.entries.firstOrNull { it.stored == f[STYLE] } ?: MapStyle.THEME,
-                detail = MapDetail.entries.firstOrNull { it.stored == f[DETAIL] } ?: MapDetail.FULL,
+                detail = MapDetail.entries.firstOrNull { it.stored == f[DETAIL] } ?: MapDetail.MINIMAL,
             )
         }
     }

@@ -99,10 +99,8 @@ fun RoadView(
     // Con un adaptador ya guardado, se reconecta solo (como el velocímetro).
     val obdOn = live && rememberObd(d)?.state == ObdState.ON
     val (gps, ask) = if (live) rememberGpsPermission(d) else true to {}
-    // El GPS da los km del viaje (y la velocidad si no hay OBD) mientras la pieza se ve.
-    // Solo si algo lo muestra: velocidad (sin OBD la da el GPS) o datos del viaje.
-    val needsGps = look.speed != RoadSpeed.HIDDEN || look.trip.isNotEmpty()
-    if (live && gps && needsGps) KeepTripRunning(d.trip)
+    // El GPS da la velocidad (si no hay OBD) para que las rayas avancen, y los datos del viaje.
+    if (live && gps) KeepTripRunning(d.trip)
     val kmh = demoKmh ?: d.bus.watch(Signal.SPEED)
 
     // Avance de las rayas en periodos (0..1) y de las líneas de velocidad: se leen solo al
@@ -203,7 +201,7 @@ fun RoadView(
                 }
             }
         }
-        if (needsGps && !obdOn && !gps) {
+        if (!obdOn && !gps) {
             Box(Modifier.align(Alignment.TopCenter).padding(top = 16.dp)) {
                 Button(stringResource(R.string.tap_to_enable), ask, primary = true)
             }

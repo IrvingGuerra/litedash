@@ -76,7 +76,7 @@ val TileSpecs = listOf(
     TileSpec(TileTypes.IMAGE, R.string.tile_image, SizeLimits(2, 1), 3 to 2, R.string.tile_image_help),
     TileSpec(TileTypes.MUSIC, R.string.tile_music, SizeLimits(3, 1, maxHeight = 3), 4 to 1, R.string.tile_music_help),
     TileSpec(TileTypes.RADIO, R.string.tile_radio, SizeLimits(3, 1, maxHeight = 3), 4 to 1, R.string.tile_radio_help),
-    // Desde la 1.4.69 también hace lo del widget Navegar: en una fila se ve como él (vuelta, Casa, Trabajo).
+    // También hace lo del widget Navegar (hasta la 1.4.68): en una fila se ve como él (vuelta, Casa, Trabajo).
     TileSpec(TileTypes.MAP, R.string.tile_map, SizeLimits(2, 1), 3 to 2, R.string.tile_map_help),
     TileSpec(TileTypes.CLOCK, R.string.tile_clock, SizeLimits(2, 1), 3 to 1, R.string.tile_clock_help),
     TileSpec(TileTypes.PHONE, R.string.tile_phone, SizeLimits(1, 1), 2 to 1, R.string.tile_phone_help),
@@ -188,7 +188,7 @@ fun ClockTile(driverName: String? = null, weather: WeatherRepository? = null) {
     }
 }
 
-/** Tarjeta de acceso grande (Navegar, Teléfono): ícono en círculo, título y detalle. */
+/** Tarjeta de acceso grande (Teléfono y los widgets sin permiso o sin datos): ícono en círculo, título y detalle. */
 @Composable
 fun ShortcutTile(icon: ImageVector, title: String, detail: String?, onClick: () -> Unit) {
     val c = LocalColors.current
@@ -259,9 +259,9 @@ fun AppTile(repo: AppRepository, app: App?, onClick: () -> Unit) {
 fun NavigationTile(
     repo: NavigationRepository,
     app: App?,
-    home: String? = null,
-    work: String? = null,
-    onPlace: (String) -> Unit = {},
+    home: String?,
+    work: String?,
+    onPlace: (String) -> Unit,
     onClick: () -> Unit,
 ) {
     DisposableEffect(repo) {

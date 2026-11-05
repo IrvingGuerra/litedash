@@ -218,6 +218,7 @@ fun TiresView(
     selected: Wheel? = null,
     motion: TireMotion? = null,
     onSettings: (() -> Unit)? = null,
+    onReady: (() -> Unit)? = null,
 ) {
     val c = LocalColors.current
     val repo = d.tpms
@@ -272,7 +273,7 @@ fun TiresView(
                 }
             }
             Box(Modifier.offset(carX.dp, carY.dp).size(carW.dp, carH.dp)) {
-                CarTop(d.cars, d.cars.pkg(d.prefs.carModel), d.prefs.carColor, Modifier.fillMaxSize())
+                CarTop(d.cars, d.cars.pkg(d.prefs.carModel), d.prefs.carColor, Modifier.fillMaxSize(), onReady)
                 TireMarks(statuses, Modifier.fillMaxSize())
             }
             for (wh in wheels) {
@@ -437,7 +438,7 @@ private const val TIRES_START_SCALE = 0.96f
  * tarjeta muestra su gráfica de 24 h al lado; tocar fuera cierra.
  */
 @Composable
-fun TiresFull(d: Dependencies, progress: () -> Float, onClose: () -> Unit, onSettings: () -> Unit) {
+fun TiresFull(d: Dependencies, progress: () -> Float, onClose: () -> Unit, onSettings: () -> Unit, onReady: () -> Unit) {
     val c = LocalColors.current
     var chart by remember { mutableStateOf<Wheel?>(null) }
     // La transparencia a cada cosa al dibujarla (sin capa aparte de toda la pantalla en cada cuadro del fundido).
@@ -477,7 +478,7 @@ fun TiresFull(d: Dependencies, progress: () -> Float, onClose: () -> Unit, onSet
                     Card(m) {
                         TiresView(
                             d, compact = false, onWheel = { chart = if (chart == it) null else it }, Modifier.fillMaxSize().padding(18.dp),
-                            selected = chart, onSettings = onSettings,
+                            selected = chart, onSettings = onSettings, onReady = onReady,
                         )
                     }
                 }

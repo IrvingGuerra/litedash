@@ -679,7 +679,7 @@ internal fun SettingsCard(
     }
 }
 
-/** Los temas a elegir, en Apariencia y en la bienvenida: oscuro, claro, día y noche y el del sistema. */
+/** Los temas a elegir, en Inicio y apariencia y en la bienvenida: oscuro, claro, día y noche y el del sistema. */
 internal val ThemeOptions = listOf(
     ThemeMode.DARK to R.string.theme_dark,
     ThemeMode.LIGHT to R.string.theme_light,
@@ -687,8 +687,10 @@ internal val ThemeOptions = listOf(
     ThemeMode.SYSTEM to R.string.theme_system,
 )
 
-/** Pestañas de Apariencia: lo general, día y noche (tema, cuándo es de noche, brillo), tus imágenes y unidades. */
-/** Inicio y apariencia: primero lo del inicio (acomodo y widgets), luego cómo se ve todo. */
+/**
+ * Pestañas de Inicio y apariencia: primero lo del inicio (acomodo y widgets), luego lo general, día y
+ * noche (tema, cuándo es de noche, brillo), tus imágenes y unidades.
+ */
 private enum class AppearanceTab(val title: Int) {
     LAYOUT(R.string.tab_layout), WIDGETS(R.string.tab_tiles), GENERAL(R.string.tab_general), DAY_NIGHT(R.string.tab_day_night), IMAGES(R.string.tab_images), UNITS(R.string.units_title),
 }

@@ -15,12 +15,12 @@
     <string name="map_zoom_near">Cerca</string>
     <string name="map_zoom_mid">Medio</string>
     <string name="map_zoom_far">Lejos</string>
-    <string name="map_zoom_help">Automático: más cerca en la ciudad y más lejos en carretera. Un toque al mapa lo aleja un momento.</string>
+    <string name="map_zoom_help">Automático: más cerca en la ciudad y más lejos en carretera. En grande, cada toque lo aleja; tras el más lejano vuelve al elegido.</string>
     <string name="map_style">Colores</string>
     <string name="map_style_theme">Como el tema</string>
     <string name="map_style_light">Claros</string>
     <string name="map_style_dark">Oscuros</string>
-    <string name="map_detail">Mapa</string>
+    <string name="map_detail">Estilo</string>
     <string name="map_detail_full">Completo</string>
     <string name="map_detail_minimal">Minimalista</string>
     <string name="map_detail_full_help">Todo lo de OpenStreetMap: calles, negocios, nombres e íconos.</string>

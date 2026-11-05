@@ -337,7 +337,8 @@ class MusicRepository(private val context: Context) {
 
     private fun start() {
         devices.start()
-        // Son avisos de otras apps: el receptor debe aceptar avisos de fuera.
+        // Son avisos de otras apps: el receptor debe aceptar avisos de fuera. Cualquier app podría mandar
+        // un título falso; solo se muestra (sin sesión de por medio) y la sesión real siempre manda.
         val filter = IntentFilter().apply { BroadcastMeta.ACTIONS.forEach(::addAction) }
         ContextCompat.registerReceiver(context, broadcasts, filter, ContextCompat.RECEIVER_EXPORTED)
         if (!store.getBoolean(KEY_SOURCES_GUESSED, false)) {
@@ -484,6 +485,7 @@ class MusicRepository(private val context: Context) {
         }
 
         internal fun detach() {
+            mainHandler.removeCallbacks(expire)
             controller?.unregisterCallback(callback)
             controller = null
             song = null

@@ -21,15 +21,7 @@ class MapMathTest {
     }
 
     @Test
-    fun projectionRoundTrip() {
-        for (z in listOf(0, 10, 17)) for ((lat, lon) in listOf(19.4326 to -99.1332, -33.86 to 151.21, 64.1 to -21.9)) {
-            assertEquals(lon, lonOf(tileX(lon, z), z), 1e-9)
-            assertEquals(lat, latOf(tileY(lat, z), z), 1e-9)
-        }
-    }
-
-    @Test
-    fun tileRangeCoversOnlyVisible() {
+    fun tileSpanCoversOnlyVisible() {
         // Posición en la orilla de una tesela, al centro de 512 px con teselas de 256: una a cada lado.
         assertEquals(9..10, tileSpan(10.0, -256f, 256f, 256f))
         // Una vista de 300 px con la posición a 180 px: de 9.297 a 10.47 → teselas 9 y 10.
@@ -96,11 +88,36 @@ class MapMathTest {
         assertEquals(42L, back.expires)
         assertEquals("\"abc\"", back.etag)
         assertEquals("Wed, 04 Nov 2026 18:00:00 GMT", back.lastModified)
-        assertArrayEquals(png, back.png)
+        assertArrayEquals(png, back.body)
         val bare = TileFile.decode(TileFile(1L, null, null, png).encode())!!
         assertNull(bare.etag)
         assertNull(bare.lastModified)
         assertNull(TileFile.decode(byteArrayOf(1, 2)))
+    }
+
+    @Test
+    fun httpCodes() {
+        assertEquals(TileResponse.OK, tileResponse(200))
+        assertEquals(TileResponse.NOT_MODIFIED, tileResponse(304))
+        // Ahí no hay nada: no se vuelve a preguntar en un día.
+        assertEquals(TileResponse.EMPTY, tileResponse(204))
+        assertEquals(TileResponse.EMPTY, tileResponse(404))
+        assertEquals(TileResponse.SLOW_DOWN, tileResponse(429))
+        assertEquals(TileResponse.SLOW_DOWN, tileResponse(503))
+        // Bloqueados: la política de OSM pide parar.
+        assertEquals(TileResponse.BLOCKED, tileResponse(403))
+        assertEquals(TileResponse.BLOCKED, tileResponse(418))
+        assertEquals(TileResponse.FAILED, tileResponse(500))
+    }
+
+    @Test
+    fun memoryAlwaysFitsWhatIsVisible() {
+        // Antes de la primera tesela, y con pocas, el mínimo.
+        assertEquals(MEMORY_MIN_BYTES, memoryBytes(60, 0))
+        assertEquals(MEMORY_MIN_BYTES, memoryBytes(4, 131_072))
+        // Inclinado, 60 teselas minimalistas de 384 px (288 KB): caben todas y 8 más.
+        val tile = 384 * 384 * 2
+        assertEquals(68 * tile, memoryBytes(60, tile))
     }
 
     @Test

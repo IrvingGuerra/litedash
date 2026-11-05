@@ -1,8 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Android 11 o menos. El número de las estadísticas anónimas (Stats.kt) es de esta
      instalación: si viajara en el respaldo, dos pantallas contarían como una. Desde la 1.4.47 se
-     llama stats.xml; estadisticas.xml (el de antes) sigue en el equipo un tiempo. -->
+     llama stats.xml; estadisticas.xml (el de antes) sigue en el equipo un tiempo. Las teselas del
+     mapa (map_tiles, map_vector) son caché: se vuelven a bajar, no viajan. -->
 <full-backup-content>
     <exclude domain="sharedpref" path="estadisticas.xml" />
     <exclude domain="sharedpref" path="stats.xml" />
+    <exclude domain="file" path="map_tiles/" />
+    <exclude domain="file" path="map_vector/" />
 </full-backup-content>

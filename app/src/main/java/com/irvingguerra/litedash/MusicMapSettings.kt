@@ -188,7 +188,7 @@ private fun AppSearch(apps: List<App>, selected: String?, onPick: (String) -> Un
     }
 }
 
-/** Sección "Mapa" de Ajustes: qué app de navegación abre la pieza Navegar. */
+/** Sección "Mapa" de Ajustes: qué app de navegación abren el widget Mapa y el volante. */
 @Composable
 fun MapSettings(d: Dependencies) {
     val apps = rememberApps(d.apps).orEmpty()

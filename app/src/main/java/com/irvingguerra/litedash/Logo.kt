@@ -60,7 +60,11 @@ import com.irvingguerra.litedash.feature.dashboard.TileTypes
 import java.io.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 
 /**
@@ -158,7 +162,7 @@ private suspend fun save(context: Context, uri: Uri, target: SavedImage): Boolea
     return write(context, bitmap, target)
 }
 
-/** Lado máximo de la foto al quitarle el fondo: memoria y CPU de pantallas viejas. */
+/** Lado máximo de la foto al quitarle el fondo (y del recorte que se guarda): memoria y CPU de pantallas viejas. */
 private const val CUT_MAX_PX = 900
 
 /** Vista previa del fondo quitado con la intensidad [level]; [image] null = no se pudo separar. */
@@ -166,8 +170,18 @@ private class CutPreview(val source: Bitmap, val level: Int, val bitmap: Bitmap?
     val image = bitmap?.asImageBitmap()
 }
 
-/** Quita el fondo de [source] (fuera del hilo principal). */
-private suspend fun cutPreview(source: Bitmap, level: Int): CutPreview = withContext(Dispatchers.Default) {
+/**
+ * Quita el fondo de [source] (fuera del hilo principal). Uno a la vez: al tocar varias intensidades
+ * seguidas, las que ya no se ven ni empiezan (cada una ocupa ~14 MB mientras corre).
+ */
+private suspend fun cutPreview(source: Bitmap, level: Int): CutPreview = cutLock.withLock {
+    currentCoroutineContext().ensureActive()
+    cut(source, level)
+}
+
+private val cutLock = Mutex()
+
+private suspend fun cut(source: Bitmap, level: Int): CutPreview = withContext(Dispatchers.Default) {
     val w = source.width
     val h = source.height
     val pixels = IntArray(w * h).also { source.getPixels(it, 0, w, 0, 0, w, h) }
@@ -328,13 +342,13 @@ private fun imageButtons(target: SavedImage, onPicked: (Uri) -> Unit = {}): Bool
     return hasImage
 }
 
-/** Apariencia → Fondo del inicio: elegir, cambiar o quitar la imagen. */
+/** Inicio y apariencia → Imágenes → Fondo del inicio: elegir, cambiar o quitar la imagen. */
 @Composable
 fun WallpaperSettings() {
     imageButtons(WALLPAPER)
 }
 
-/** Apariencia → Animación de entrada: encenderla y su propia imagen. */
+/** Inicio y apariencia → Imágenes → Animación de entrada: encenderla y su propia imagen. */
 @Composable
 fun IntroSettings(prefs: Preferences) {
     val c = LocalColors.current

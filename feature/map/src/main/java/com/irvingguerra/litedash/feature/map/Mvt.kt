@@ -15,7 +15,24 @@ class VectorTile(
 )
 
 /** Una línea o un contorno: x, y, x, y… ([parts] = en qué punto empieza cada pedazo). */
-class Shape(val points: FloatArray, val parts: IntArray)
+class Shape(val points: FloatArray, val parts: IntArray) {
+    // El rectángulo que lo encierra: al dibujar una parte de la tesela se saltan los que no la tocan.
+    val left: Float
+    val top: Float
+    val right: Float
+    val bottom: Float
+
+    init {
+        var l = Float.MAX_VALUE; var t = Float.MAX_VALUE; var r = -Float.MAX_VALUE; var b = -Float.MAX_VALUE
+        for (i in points.indices step 2) {
+            l = minOf(l, points[i]); r = maxOf(r, points[i]); t = minOf(t, points[i + 1]); b = maxOf(b, points[i + 1])
+        }
+        left = l; top = t; right = r; bottom = b
+    }
+
+    /** ¿Toca el rectángulo dado (en unidades de la tesela)? Sin puntos, nunca. */
+    fun touches(l: Float, t: Float, r: Float, b: Float) = right >= l && left <= r && bottom >= t && top <= b
+}
 
 /** De la autopista a las de servicio; el orden es el de dibujo inverso (las grandes van encima). */
 enum class RoadTier { MOTORWAY, PRIMARY, SECONDARY, MINOR, SERVICE }
@@ -30,13 +47,17 @@ fun roadTier(osmClass: String?): RoadTier? = when (osmClass) {
     else -> null
 }
 
-/** Lee lo que se usa de [data] (ya sin gzip). Una tesela dañada da lo que se alcanzó a leer. */
-fun parseVectorTile(data: ByteArray): VectorTile {
+/**
+ * Lee lo que se usa de [data] (ya sin gzip). Una tesela dañada da lo que se alcanzó a leer; null si
+ * traía algo pero ni una capa (no es una tesela: p. ej. la página de un portal cautivo). Vacía = no hay nada ahí.
+ */
+fun parseVectorTile(data: ByteArray): VectorTile? {
     val water = ArrayList<Shape>()
     val parks = ArrayList<Shape>()
     val rivers = ArrayList<Shape>()
     val roads = List(RoadTier.entries.size) { ArrayList<Shape>() }
     var extent = 4096
+    var layers = 0
     val tile = Pbf(data)
     runCatching {
         while (tile.more()) {
@@ -45,23 +66,29 @@ fun parseVectorTile(data: ByteArray): VectorTile {
                 tile.skip(tag)
                 continue
             }
+            layers++
             val layer = readLayer(tile.message()) ?: continue
             extent = layer.extent
+            val classKey = layer.keys.indexOf("class")
             when (layer.name) {
-                "water" -> layer.features.forEach { f -> if (f.type == POLYGON && f.value(layer, "class") != "swimming_pool") water += f.shape() }
+                "water" -> layer.features.forEach { f -> if (f.type == POLYGON && f.value(layer, classKey) != "swimming_pool") water += f.shape() }
                 // Los parques de la ciudad y los bosques (la capa "park" son zonas protegidas o históricas
                 // enteras: el Centro Histórico salía todo verde).
-                "landcover" -> layer.features.forEach { f ->
-                    if (f.type == POLYGON && (f.value(layer, "subclass") == "park" || f.value(layer, "class") == "wood")) parks += f.shape()
+                "landcover" -> {
+                    val subclassKey = layer.keys.indexOf("subclass")
+                    layer.features.forEach { f ->
+                        if (f.type == POLYGON && (f.value(layer, subclassKey) == "park" || f.value(layer, classKey) == "wood")) parks += f.shape()
+                    }
                 }
-                "waterway" -> layer.features.forEach { f -> if (f.type == LINE && f.value(layer, "class") in RIVERS) rivers += f.shape() }
+                "waterway" -> layer.features.forEach { f -> if (f.type == LINE && f.value(layer, classKey) in RIVERS) rivers += f.shape() }
                 "transportation" -> layer.features.forEach { f ->
                     if (f.type != LINE) return@forEach
-                    roadTier(f.value(layer, "class"))?.let { roads[it.ordinal] += f.shape() }
+                    roadTier(f.value(layer, classKey))?.let { roads[it.ordinal] += f.shape() }
                 }
             }
         }
     }
+    if (layers == 0 && data.isNotEmpty()) return null
     return VectorTile(extent, water, parks, rivers, roads)
 }
 
@@ -71,9 +98,9 @@ private val RIVERS = setOf("river", "canal")
 private class Layer(val name: String, val extent: Int, val keys: List<String>, val values: List<String?>, val features: List<Feature>)
 
 private class Feature(val type: Int, val tags: Pbf?, val geometry: Pbf?) {
-    /** El valor de texto de la etiqueta [key] (solo hace falta `class`). */
-    fun value(layer: Layer, key: String): String? {
-        val k = layer.keys.indexOf(key)
+    /** El valor de texto de la etiqueta con índice [k] en las claves de [layer] (-1 = la capa no la trae). */
+    fun value(layer: Layer, k: Int): String? {
+        if (k < 0) return null
         val t = tags?.copy() ?: return null
         while (t.more()) {
             val ki = t.varint().toInt()

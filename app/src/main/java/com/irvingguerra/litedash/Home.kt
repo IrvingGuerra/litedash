@@ -31,6 +31,7 @@ import androidx.compose.foundation.layout.statusBarsIgnoringVisibility
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -100,7 +101,6 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withTimeoutOrNull
 
-/** Qué se ve en grande en lugar del tablero. */
 /** El widget en grande (a media pantalla). */
 enum class Expanded { MUSIC, RADIO, MAP }
 
@@ -252,9 +252,9 @@ fun TileContent(d: Dependencies, p: Tile, apps: List<App>, car: CarPackage?, rev
         }
         // Ya de media pantalla o más: lo de en grande ahí mismo (no se mueve).
         TileTypes.MUSIC -> if (p.fillsHalf(d.dashboard.grid)) MusicBig(d, close = null)
-        else MusicTile(d.music, revision, onExpand = { actions.onExpand(Expanded.MUSIC, p) })
+        else MusicTile(d.music, revision, onExpand = remember(p) { { actions.onExpand(Expanded.MUSIC, p) } })
         TileTypes.RADIO -> if (p.fillsHalf(d.dashboard.grid)) RadioBig(d, close = null) { actions.onPanel(Panel.MusicSettings) }
-        else RadioTile(d.music, revision, onExpand = { actions.onExpand(Expanded.RADIO, p) })
+        else RadioTile(d.music, revision, onExpand = remember(p) { { actions.onExpand(Expanded.RADIO, p) } })
         TileTypes.CLOCK -> ClockTile(d.prefs.driverName, d.weather)
         TileTypes.WEATHER -> WeatherTile(d.weather)
         TileTypes.TRIP -> TripTile(d)
@@ -269,7 +269,13 @@ fun TileContent(d: Dependencies, p: Tile, apps: List<App>, car: CarPackage?, rev
         TileTypes.TIRES -> TiresTile(d, onOpen = actions.onTires, onSettings = { actions.onPanel(Panel.TiresSettings) })
         TileTypes.MAP -> {
             val app = mapApp(d, apps)
-            MapTile(d, p.data, app, onPlace = { navigateTo(context, app, it) }, onNavigate = { actions.onNavigate(app) }, onExpand = if (p.fillsHalf(d.dashboard.grid)) null else ({ actions.onExpand(Expanded.MAP, p) }))
+            val expand = remember(p) { { actions.onExpand(Expanded.MAP, p) } }
+            MapTile(
+                d, p.data, app, editing = actions.editing(),
+                onPlace = remember(app) { { navigateTo(context, app, it) } },
+                onNavigate = remember(app) { { actions.onNavigate(app) } },
+                onExpand = if (p.fillsHalf(d.dashboard.grid)) null else expand,
+            )
         }
         TileTypes.PHONE -> ShortcutTile(Icons.phone, stringResource(R.string.tile_phone), null) {
             openDialer(context)
@@ -309,10 +315,10 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
     val car = d.cars.pkg(d.prefs.carModel)
     var panel by remember { mutableStateOf<Panel?>(null) }
     var editing by remember { mutableStateOf(false) }
-    // La música o la radio en grande (en lugar del tablero); null = el tablero normal.
+    // La música, la radio o el mapa a media pantalla; null = el tablero normal.
     var expanded by remember { mutableStateOf<Expanded?>(null) }
-    // El widget que creció: de su lado de la pantalla y, el mapa, con su estilo.
-    var expandedFrom by remember { mutableStateOf<Tile?>(null) }
+    // El widget que creció (por id: si cambia el acomodo se lee el de ahora): da el lado y, al mapa, su estilo.
+    var expandedFromId by remember { mutableStateOf<String?>(null) }
     // Solo el auto a pantalla completa (un toque al auto entra y otro sale), con animación:
     // [carOnly] es a dónde va y [carShown] si la capa sigue en pantalla (también al regresar).
     var carOnly by remember { mutableStateOf(false) }
@@ -322,14 +328,18 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
     // Las llantas a pantalla completa: [tiresOpen] es a dónde va, [tiresShown] si sigue en pantalla.
     var tiresOpen by remember { mutableStateOf(false) }
     var tiresShown by remember { mutableStateOf(false) }
+    var tiresReady by remember { mutableStateOf(false) }
     val tiresProgress = remember { Animatable(0f) }
     LaunchedEffect(tiresOpen) {
         if (tiresOpen) {
             tiresShown = true
+            // Aparece cuando el auto de arriba ya está pintado (la primera vez tarda en leerse); si no, igual.
+            withTimeoutOrNull(TIRES_WAIT_MS) { snapshotFlow { tiresReady }.first { it } }
             tiresProgress.animateTo(1f, tween(TIRES_FADE_MS, easing = FastOutSlowInEasing))
         } else if (tiresShown) {
             tiresProgress.animateTo(0f, tween(TIRES_FADE_MS, easing = FastOutSlowInEasing))
             tiresShown = false
+            tiresReady = false
         }
     }
     fun openTires() {
@@ -404,7 +414,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
             onPanel = { panel = it },
             onNavigate = { app -> openNavigation(context, d.apps, app) },
             onExpand = { kind, tile ->
-                expandedFrom = tile
+                expandedFromId = tile.id
                 expanded = kind
             },
             onCarOnly = {
@@ -434,7 +444,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                     // Del lado de su widget; si ya es de media pantalla, se queda como está.
                     val tile = d.dashboard.shown.firstOrNull { it.type == TileTypes.MUSIC }
                     if (tile?.fillsHalf(d.dashboard.grid) != true) {
-                        expandedFrom = tile
+                        expandedFromId = tile?.id
                         expanded = Expanded.MUSIC
                     }
                 }
@@ -475,7 +485,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                 }
             },
     ) {
-        // Tu imagen de fondo (Apariencia → Fondo del inicio), detrás de todo.
+        // Tu imagen de fondo (Inicio y apariencia → Imágenes), detrás de todo.
         if (panel == null) HomeWallpaper(d.prefs)
         // Los paneles tapan todo el inicio: mientras hay uno abierto no se dibuja ni se
         // pinta nada debajo (el auto del tablero no se tiñe dos veces al cambiar el color).
@@ -536,43 +546,50 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                     val grid = remember(maxWidth, gridHeight) { Grid.forSize(maxWidth.value, gridHeight.value) }
                     // Carga el acomodo de esta cuadrícula antes de dibujar (solo hace algo si cambió).
                     d.dashboard.use(grid)
-                    // La música, la radio o el mapa en grande ocupan media pantalla; en la otra mitad, tu
-                    // auto (o la carretera o tu imagen) como en la pantalla dividida, del lado elegido ahí.
+                    // La música, la radio o el mapa en grande ocupan media pantalla; en la otra mitad, el auto
+                    // como en la pantalla dividida (auto 3D o carretera, según se eligió ahí), o tu imagen.
                     val big = expanded
-                    if (big != null) HalfScreen(
-                        side = {
-                            val hero = d.dashboard.shown.firstOrNull { it.cardless }
-                            if (hero != null) TileContent(d, hero, apps, car, revision, actions) else ClockTile(d.prefs.driverName, d.weather)
-                        },
-                        // Crece en la mitad donde estaba: derecha (o abajo) si estaba toda ahí; si no, izquierda (o arriba).
-                        heroFirst = expandedFrom?.let { if (grid.vertical) it.row * 2 >= grid.rows else it.col * 2 >= grid.columns } ?: false,
-                        vertical = grid.vertical,
-                    ) {
-                        val close = { expanded = null }
-                        when (big) {
-                            Expanded.MUSIC -> MusicBig(d, close, Modifier.padding(6.dp))
-                            Expanded.RADIO -> RadioBig(d, close, Modifier.padding(6.dp)) { panel = Panel.MusicSettings }
-                            Expanded.MAP -> {
-                                val app = mapApp(d, apps)
-                                MapExpanded(d, expandedFrom?.data ?: "", app, onPlace = { navigateTo(context, app, it) }, onNavigate = { actions.onNavigate(app) }, close = close, Modifier.padding(6.dp))
-                            }
-                        }
-                    } else Dashboard(
-                            grid = grid,
-                            tiles = d.dashboard.shown,
-                            editing = editing,
-                            limits = ::limitsOf,
-                            onChange = d.dashboard::changeShown,
-                            onEdit = { editing = true },
-                            onSettings = {
-                                panel = when (it.type) {
-                                    TileTypes.IMAGE -> Panel.CustomizeImage(it.id)
-                                    TileTypes.MAP -> Panel.CustomizeMap(it.id)
-                                    else -> Panel.CustomizeGauge(it.id)
-                                }
+                    val from = expandedFromId?.let { id -> d.dashboard.shown.firstOrNull { it.id == id } }
+                    // Si el widget ya no está (otra plantilla, otro acomodo) o ya es de media pantalla, se cierra.
+                    if (big != null && expandedFromId != null && (from == null || from.fillsHalf(grid))) LaunchedEffect(Unit) { expanded = null }
+                    // Con algo a pantalla completa encima, lo que gasta en los widgets (GPS, mapa) descansa.
+                    CompositionLocalProvider(LocalHomeCovered provides (carShown || tiresShown || parked)) {
+                        if (big != null) HalfScreen(
+                            side = {
+                                val shown = d.dashboard.shown
+                                val hero = shown.firstOrNull { it.type == (if (d.prefs.splitRoad) TileTypes.ROAD else TileTypes.CAR) } ?: shown.firstOrNull { it.cardless }
+                                if (hero != null) TileContent(d, hero, apps, car, revision, actions) else ClockTile(d.prefs.driverName, d.weather)
                             },
-                            hasSettings = { it.type in CUSTOMIZABLE },
-                        ) { p -> TileContent(d, p, apps, car, revision, actions) }
+                            // Crece en la mitad donde estaba: derecha (o abajo) si estaba toda ahí; si no, izquierda (o arriba).
+                            sideFirst = from?.let { if (grid.vertical) it.row * 2 >= grid.rows else it.col * 2 >= grid.columns } ?: false,
+                            vertical = grid.vertical,
+                        ) {
+                            val close = { expanded = null }
+                            when (big) {
+                                Expanded.MUSIC -> MusicBig(d, close, Modifier.padding(6.dp))
+                                Expanded.RADIO -> RadioBig(d, close, Modifier.padding(6.dp)) { panel = Panel.MusicSettings }
+                                Expanded.MAP -> {
+                                    val app = mapApp(d, apps)
+                                    MapExpanded(d, from?.data ?: "", app, onPlace = { navigateTo(context, app, it) }, onNavigate = { actions.onNavigate(app) }, close = close, Modifier.padding(6.dp))
+                                }
+                            }
+                        } else Dashboard(
+                                grid = grid,
+                                tiles = d.dashboard.shown,
+                                editing = editing,
+                                limits = ::limitsOf,
+                                onChange = d.dashboard::changeShown,
+                                onEdit = { editing = true },
+                                onSettings = {
+                                    panel = when (it.type) {
+                                        TileTypes.IMAGE -> Panel.CustomizeImage(it.id)
+                                        TileTypes.MAP -> Panel.CustomizeMap(it.id)
+                                        else -> Panel.CustomizeGauge(it.id)
+                                    }
+                                },
+                                hasSettings = { it.type in CUSTOMIZABLE },
+                            ) { p -> TileContent(d, p, apps, car, revision, actions) }
+                    }
                 }
                 if (!rail) Dock(
                     repo = d.apps,
@@ -591,7 +608,8 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                 d,
                 revision = revision,
                 close = { panel = null },
-                onEdit = { panel = null; editing = true },
+                // Acomodar cierra lo que esté en grande (si no, el tablero ni se ve).
+                onEdit = { panel = null; expanded = null; editing = true },
                 onTemplates = { panel = Panel.Templates },
                 start = when (p) {
                     Panel.Updates -> SettingsSection.SYSTEM
@@ -629,6 +647,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                 d, { tiresProgress.value },
                 onClose = { tiresOpen = false },
                 onSettings = { tiresOpen = false; panel = Panel.TiresSettings },
+                onReady = { tiresReady = true },
             )
         }
 
@@ -866,6 +885,9 @@ private fun statusBarHiddenHeight(): Dp {
 private val PILLS_MIN_WIDTH = 220.dp
 private val PILLS_MIN_HEIGHT = 160.dp
 
+/** Lo más que Llantas espera a que el auto de arriba esté pintado antes de aparecer. */
+private const val TIRES_WAIT_MS = 300L
+
 /** Lo que tardan las llantas a pantalla completa en aparecer (y en irse). */
 private const val TIRES_FADE_MS = 260
 
@@ -874,11 +896,11 @@ private val CUSTOMIZABLE = setOf(TileTypes.SPEEDOMETER, TileTypes.GAUGE, TileTyp
 
 /**
  * Media pantalla: [content] (el widget en grande) y, en la otra mitad, [side]. Acostada, lado a
- * lado ([heroFirst] = [side] a la izquierda); parada, uno sobre otro.
+ * lado ([sideFirst] = [side] a la izquierda); parada, uno sobre otro ([side] arriba).
  */
 @Composable
-private fun HalfScreen(side: @Composable () -> Unit, heroFirst: Boolean, vertical: Boolean, content: @Composable () -> Unit) {
-    val parts = if (heroFirst) listOf(side, content) else listOf(content, side)
+private fun HalfScreen(side: @Composable () -> Unit, sideFirst: Boolean, vertical: Boolean, content: @Composable () -> Unit) {
+    val parts = if (sideFirst) listOf(side, content) else listOf(content, side)
     if (vertical) Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         for (part in parts) Box(Modifier.weight(1f).fillMaxWidth()) { part() }
     } else Row(Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {

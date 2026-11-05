@@ -8,16 +8,14 @@ import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.TimeZone
 import kotlin.math.PI
-import kotlin.math.atan
 import kotlin.math.ceil
 import kotlin.math.cos
 import kotlin.math.floor
 import kotlin.math.ln
-import kotlin.math.sinh
 import kotlin.math.tan
 
 // Cuentas del mapa sin Android (se prueban con JUnit). Basado en LiveMapView de StradaOS
-// (GPL-3.0, https://github.com/stradaos): Web Mercator a mano, teselas raster de OpenStreetMap.
+// (GPL-3.0, https://github.com/stradaos): Web Mercator a mano; las teselas, raster de OpenStreetMap o vectoriales de OpenFreeMap.
 
 /** El zoom más cercano y el más lejano que se usan (el toque cicla entre ellos). */
 const val MAX_ZOOM = 17
@@ -34,12 +32,6 @@ fun tileY(lat: Double, z: Int): Double {
     val r = Math.toRadians(lat.coerceIn(-MAX_LAT, MAX_LAT))
     return (1.0 - ln(tan(r) + 1.0 / cos(r)) / PI) / 2.0 * (1 shl z)
 }
-
-/** Lo inverso de [tileX]. */
-fun lonOf(x: Double, z: Int): Double = x / (1 shl z) * 360.0 - 180.0
-
-/** Lo inverso de [tileY]. */
-fun latOf(y: Double, z: Int): Double = Math.toDegrees(atan(sinh(PI * (1.0 - 2.0 * y / (1 shl z)))))
 
 /**
  * Las teselas que se ven en un eje: [center] es la coordenada de tesela de tu posición y lo visible
@@ -59,8 +51,30 @@ fun autoZoom(kmh: Float?, current: Int): Int {
     return if (faster < current) faster else if (slower > current) slower else current
 }
 
-/** El toque: aleja un nivel; tras el más lejano vuelve al automático (null). */
+/** El toque: aleja un nivel; tras el más lejano vuelve al elegido (null). */
 fun nextZoom(shown: Int): Int? = if (shown <= MIN_ZOOM) null else shown - 1
+
+/** Mínimo de la memoria de teselas: unas 36 de OSM (256 px a 16 bits). */
+const val MEMORY_MIN_BYTES = 36 * 256 * 256 * 2
+
+/** Bytes que deben caber en memoria: las [visible] teselas que se ven, de [tileBytes] cada una, más 8 de holgura. */
+fun memoryBytes(visible: Int, tileBytes: Int): Int = maxOf(MEMORY_MIN_BYTES, (visible + 8) * tileBytes)
+
+/** Qué hacer con la respuesta HTTP de una tesela. */
+enum class TileResponse { OK, NOT_MODIFIED, EMPTY, SLOW_DOWN, BLOCKED, FAILED }
+
+/**
+ * 204/404 = ahí no hay nada (no se pregunta en un día); 429/503 = calma unos minutos; 403/418 = nos
+ * bloquearon: la política de OSM pide dejar de pedir (una hora); lo demás, reintentar al rato.
+ */
+fun tileResponse(code: Int): TileResponse = when (code) {
+    200 -> TileResponse.OK
+    304 -> TileResponse.NOT_MODIFIED
+    204, 404 -> TileResponse.EMPTY
+    429, 503 -> TileResponse.SLOW_DOWN
+    403, 418 -> TileResponse.BLOCKED
+    else -> TileResponse.FAILED
+}
 
 /** Una tesela en un solo número (z hasta 24, x e y hasta 2^25). */
 fun tileKey(z: Int, x: Int, y: Int): Long = (z.toLong() shl 50) or (x.toLong() shl 25) or y.toLong()
@@ -69,7 +83,7 @@ fun keyZ(key: Long) = (key ushr 50).toInt()
 fun keyX(key: Long) = ((key ushr 25) and 0x1FFFFFF).toInt()
 fun keyY(key: Long) = (key and 0x1FFFFFF).toInt()
 
-/** Sin encabezados de caché, una semana (lo mínimo que pide la política de OSM). */
+/** Sin encabezados de caché, una semana (lo mínimo que pide la política de OSM; igual con OpenFreeMap). */
 const val DEFAULT_TTL_MS = 7L * 24 * 3600 * 1000
 
 /**
@@ -97,14 +111,17 @@ fun httpDate(text: String): Long? = runCatching {
     SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss zzz", Locale.US).apply { timeZone = TimeZone.getTimeZone("GMT") }.parse(text.trim())?.time
 }.getOrNull()
 
-/** Una tesela en disco: su PNG tal cual y lo necesario para revalidarla con el servidor. */
-class TileFile(val expires: Long, val etag: String?, val lastModified: String?, val png: ByteArray) {
-    fun encode(): ByteArray = ByteArrayOutputStream(png.size + 64).also { bytes ->
+/**
+ * Una tesela en disco: lo bajado tal cual ([body]: PNG o vectorial comprimida; vacío = ahí no hay
+ * nada) y lo necesario para revalidarla con el servidor.
+ */
+class TileFile(val expires: Long, val etag: String?, val lastModified: String?, val body: ByteArray) {
+    fun encode(): ByteArray = ByteArrayOutputStream(body.size + 64).also { bytes ->
         DataOutputStream(bytes).run {
             writeLong(expires)
             writeUTF(etag.orEmpty())
             writeUTF(lastModified.orEmpty())
-            write(png)
+            write(body)
         }
     }.toByteArray()
 

@@ -117,9 +117,9 @@ fun CarStill(
 
 /** El auto desde arriba ([CarViews.TOP_VIEW] del paquete) pintado del [color]; solo si [CarPackage.topView]. */
 @Composable
-internal fun CarTopImage(repo: CarRepository, p: CarPackage, color: Color, modifier: Modifier = Modifier) {
+internal fun CarTopImage(repo: CarRepository, p: CarPackage, color: Color, modifier: Modifier = Modifier, onReady: (() -> Unit)? = null) {
     var widthPx by remember { mutableIntStateOf(0) }
-    CarLayersImage(repo, p, CarViews.TOP_VIEW, color, widthPx, modifier.onSizeChanged { widthPx = it.width }, null)
+    CarLayersImage(repo, p, CarViews.TOP_VIEW, color, widthPx, modifier.onSizeChanged { widthPx = it.width }, onReady)
 }
 
 /**

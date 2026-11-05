@@ -3,6 +3,7 @@ package com.irvingguerra.litedash.feature.map
 import java.io.ByteArrayOutputStream
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -23,7 +24,7 @@ class MvtTest {
             ))
             bytes(3, layer("water", keys = emptyList(), values = emptyList(), features = listOf(feature(3, emptyList(), square()))))
         }
-        val t = parseVectorTile(tile)
+        val t = parseVectorTile(tile)!!
         assertEquals(4096, t.extent)
         val primary = t.roads[RoadTier.PRIMARY.ordinal]
         assertEquals(1, primary.size)
@@ -47,8 +48,31 @@ class MvtTest {
     @Test
     fun damagedTileGivesWhatWasRead() {
         val tile = message { bytes(3, layer("water", emptyList(), emptyList(), listOf(feature(3, emptyList(), square())))) }
-        val t = parseVectorTile(tile + byteArrayOf(0x1A, 0x7F)) // otra capa cortada a la mitad
+        val t = parseVectorTile(tile + byteArrayOf(0x1A, 0x7F))!! // otra capa cortada a la mitad
         assertEquals(1, t.water.size)
+    }
+
+    @Test
+    fun notATileIsNull() {
+        // La página de un portal cautivo guardada como tesela: ni una capa.
+        assertNull(parseVectorTile("<!DOCTYPE html><html><body>Wi-Fi</body></html>".toByteArray()))
+        // Vacía (204): no hay nada ahí, se dibuja lisa.
+        val empty = parseVectorTile(ByteArray(0))!!
+        assertTrue(empty.water.isEmpty() && empty.roads.all { it.isEmpty() })
+    }
+
+    @Test
+    fun shapeBounds() {
+        val s = Shape(floatArrayOf(10f, 20f, 110f, 20f, 110f, 70f), intArrayOf(0))
+        assertEquals(10f, s.left, 0f)
+        assertEquals(20f, s.top, 0f)
+        assertEquals(110f, s.right, 0f)
+        assertEquals(70f, s.bottom, 0f)
+        assertTrue(s.touches(100f, 60f, 200f, 200f))
+        assertTrue(s.touches(0f, 0f, 10f, 20f)) // la orilla cuenta
+        assertFalse(s.touches(111f, 0f, 200f, 200f))
+        assertFalse(s.touches(0f, 71f, 512f, 512f))
+        assertFalse(Shape(FloatArray(0), IntArray(0)).touches(0f, 0f, 4096f, 4096f))
     }
 
     // --- Un escritor mínimo de protobuf para armar teselas de prueba ---

@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableDoubleStateOf
 import androidx.compose.runtime.mutableLongStateOf
@@ -28,6 +29,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.location.LocationListenerCompat
+import kotlin.concurrent.thread
 import androidx.lifecycle.compose.LifecycleStartEffect
 import com.irvingguerra.litedash.core.ui.Button
 import com.irvingguerra.litedash.core.ui.Card
@@ -79,8 +81,12 @@ class TripRepository(private val context: Context, private val bus: VehicleBus) 
             // El GPS pide la precisa; con la aproximada, la red.
             val provider = if (granted(Manifest.permission.ACCESS_FINE_LOCATION)) LocationManager.GPS_PROVIDER else LocationManager.NETWORK_PROVIDER
             runCatching { manager.requestLocationUpdates(provider, 1_000L, 0f, listener, Looper.getMainLooper()) }
-            // Mientras llega el primer punto, la última conocida (el mapa no espera en blanco).
-            if (position == null) position = runCatching { manager.getLastKnownLocation(provider) }.getOrNull()
+            // Mientras llega el primer punto, la última conocida (el mapa no espera en blanco). Es una
+            // llamada al sistema: fuera del hilo principal (el estado se puede escribir desde ahí).
+            if (position == null) thread(name = "last-location") {
+                val last = runCatching { manager.getLastKnownLocation(provider) }.getOrNull()
+                if (position == null && last != null) position = last
+            }
         }
     }
 
@@ -114,9 +120,17 @@ class TripRepository(private val context: Context, private val bus: VehicleBus) 
     }
 }
 
-/** Escucha el GPS mientras la pieza se ve y la app está al frente. */
+/**
+ * El inicio está tapado por algo a pantalla completa (el auto en grande, Llantas o estacionado): sus
+ * widgets siguen compuestos debajo, pero lo que gasta (GPS, mapa) descansa.
+ */
+val LocalHomeCovered = compositionLocalOf { false }
+
+/** Escucha el GPS mientras la pieza se ve (sin nada encima) y la app está al frente. */
 @Composable
 fun KeepTripRunning(trip: TripRepository) {
+    // Tapado (el auto en grande, Llantas o estacionado encima), el GPS descansa.
+    if (LocalHomeCovered.current) return
     LifecycleStartEffect(trip) {
         trip.acquire()
         onStopOrDispose { trip.release() }
@@ -181,11 +195,7 @@ fun TripTile(d: Dependencies) {
     if (!granted) return ShortcutTile(Icons.location, stringResource(R.string.tile_trip), stringResource(R.string.tap_to_enable), ask)
     KeepTripRunning(trip)
     val stats = rememberTripStats(trip, miles)
-    val distance = stats.distance
-    val unit = stats.unit
-    val time = stats.time
-    val average = stats.average
-    val heading = stats.heading
+    val (average, heading) = stats.average to stats.heading
     val locale = currentLocale()
     Card(Modifier.fillMaxSize()) {
         BoxWithConstraints(Modifier.fillMaxSize().padding(16.dp)) {
@@ -195,9 +205,9 @@ fun TripTile(d: Dependencies) {
             if (!tall) {
                 // Una fila: la distancia y, a un lado, tiempo, promedio y rumbo en chico.
                 Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-                    BigValue(distance, unit, 34)
+                    BigValue(stats.distance, stats.unit, 34)
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                        Label(listOfNotNull(time, heading).joinToString(" · "), Typography.body, maxLines = 1)
+                        Label(listOfNotNull(stats.time, heading).joinToString(" · "), Typography.body, maxLines = 1)
                         if (average != null) Label(average, Typography.small, c.textMuted, maxLines = 1)
                     }
                 }
@@ -206,12 +216,12 @@ fun TripTile(d: Dependencies) {
                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
                         Column(Modifier.weight(1f)) {
                             Label(stringResource(R.string.tile_trip).uppercase(locale), Typography.label, c.textMuted, maxLines = 1)
-                            BigValue(distance, unit, if (huge) 64 else 48)
+                            BigValue(stats.distance, stats.unit, if (huge) 64 else 48)
                         }
                         if (heading != null) Label(heading, Typography.title, c.accent, maxLines = 1)
                     }
                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(if (wide) 28.dp else 16.dp)) {
-                        TripStat(stringResource(R.string.trip_time), time)
+                        TripStat(stringResource(R.string.trip_time), stats.time)
                         if (average != null) TripStat(stringResource(R.string.trip_average), average)
                         Spacer(Modifier.weight(1f))
                         if (wide) Button(stringResource(R.string.trip_reset), { trip.reset() })

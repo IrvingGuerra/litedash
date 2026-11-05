@@ -15,12 +15,12 @@
     <string name="map_zoom_near">Near</string>
     <string name="map_zoom_mid">Medium</string>
     <string name="map_zoom_far">Far</string>
-    <string name="map_zoom_help">Automatic: closer in the city and farther on the highway. Tap the map to zoom out for a moment.</string>
+    <string name="map_zoom_help">Automatic: closer in the city, farther on the highway. When enlarged, each tap zooms out; after the farthest it returns to your choice.</string>
     <string name="map_style">Colors</string>
     <string name="map_style_theme">Like the theme</string>
     <string name="map_style_light">Light</string>
     <string name="map_style_dark">Dark</string>
-    <string name="map_detail">Map</string>
+    <string name="map_detail">Style</string>
     <string name="map_detail_full">Full</string>
     <string name="map_detail_minimal">Minimal</string>
     <string name="map_detail_full_help">Everything from OpenStreetMap: streets, places, names and icons.</string>

@@ -66,11 +66,22 @@ class ModelTest {
         }
     }
 
+    // Las de auto (todas menos el teléfono chico), incluidas las verticales.
+    private val carScreens = screens.dropLast(1)
+
+    @Test
+    fun sideAndPanelLeaveNoGaps() {
+        // Con 3 filas el mapa no cabe: va la radio en su lugar y no queda hueco.
+        for (c in listOf(Grid(10, 3), Grid(13, 3), Grid(13, 6))) for (p in listOf(Template.SIDE, Template.PANEL)) {
+            assertEquals("$p en ${c.key}", c.columns * c.rows, p.tiles(c).sumOf { it.width * it.height })
+        }
+    }
+
     @Test
     fun widgetsKeepTheirSizesOnTheirScreens() {
         // En las pantallas de auto (no el teléfono) para las que es cada plantilla:
         // auto de 3×2 o más; música y radio de 3 de ancho y hasta 3 filas.
-        for (c in screens.filter { it.columns >= 8 }) for (p in Template.entries.filter { c.size in it.sizes }) for (tile in p.tiles(c)) {
+        for (c in carScreens) for (p in Template.entries.filter { c.size in it.sizes }) for (tile in p.tiles(c)) {
             when (tile.type) {
                 TileTypes.CAR -> assertTrue("$p en ${c.key}: $tile", tile.width >= 3 && tile.height >= 2)
                 TileTypes.MUSIC, TileTypes.RADIO -> assertTrue("$p en ${c.key}: $tile", tile.width >= 3 && tile.height <= 3)
@@ -81,7 +92,7 @@ class ModelTest {
     @Test
     fun mapTemplatesShowTheMap() {
         val withMap = listOf(Template.MAP_CAR, Template.COPILOT, Template.ROUTE, Template.VERTICAL_MAP, Template.COLUMNS, Template.PANEL, Template.VERTICAL)
-        for (c in screens.filter { it.columns >= 8 }) for (p in withMap.filter { c.size in it.sizes }) {
+        for (c in carScreens) for (p in withMap.filter { c.size in it.sizes }) {
             assertTrue("$p en ${c.key} sin mapa", p.tiles(c).any { it.type == TileTypes.MAP })
         }
         // Las de tarjetas abajo lo ponen desde 5 filas.

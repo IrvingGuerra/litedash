@@ -6,6 +6,27 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
+## [1.4.71] - 2026-11-04
+
+### Cambiado
+- **El mapa minimalista es el de fábrica** (quien eligió "Completo" lo conserva). En Personalizar mapa,
+  "Mapa" se llama ahora "Estilo".
+- El mapa da crédito completo a OpenFreeMap, OpenMapTiles y OpenStreetMap (en dos líneas si no cabe).
+
+### Arreglado (auditoría del mapa y los widgets)
+- **Mapa inclinado**: ya no se queda recargando sin parar y, en widgets altos, ya muestra las calles de
+  adelante. El minimalista dibuja hasta 16 veces menos por tesela de cerca.
+- El mapa y el GPS descansan cuando algo los tapa (auto en grande, Llantas, estacionado), dejan de
+  insistir si el servidor dice que no, y su caché ya no entra al respaldo de Android.
+- Acomodar con un widget en grande lo cierra primero; si cambias de plantilla, la media pantalla se cierra
+  sola; del otro lado sale el auto 3D o la carretera, como en la pantalla dividida.
+- Las plantillas Lateral y Panel ya no dejan huecos en pantallas bajas.
+- Carretera mueve sus rayas con la velocidad aunque ocultes los números.
+- Llantas aparece cuando el auto de arriba ya está pintado; al acomodar, el botón del mapa compacto ya no
+  tapa el de tamaño.
+- Quitar fondo calcula una intensidad a la vez (menos memoria en pantallas de 1 GB).
+- Arranque más rápido con el perfil de inicio al día.
+
 ## [1.4.70] - 2026-11-04
 
 ### Cambiado

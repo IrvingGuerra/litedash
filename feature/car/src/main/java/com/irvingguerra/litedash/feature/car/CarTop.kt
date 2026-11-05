@@ -6,6 +6,10 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -83,16 +87,25 @@ private val tire = Color(0xFF2A2E34)
  * caja ([CAR_TOP_ASPECT]), así las zonas del Taller caen en el mismo lugar.
  */
 @Composable
-fun CarTop(repo: CarRepository, p: CarPackage?, color: Color, modifier: Modifier = Modifier) {
+fun CarTop(repo: CarRepository, p: CarPackage?, color: Color, modifier: Modifier = Modifier, onReady: (() -> Unit)? = null) {
     // Con la llave del paquete: si se actualiza (llega sin vista desde arriba), se vuelve a pedir.
     LaunchedEffect(p) { repo.fetchTopView(p) }
-    if (p?.topView != true) return CarTopDrawing(color, modifier)
+    if (p?.topView != true) {
+        // El dibujo ya está listo al pintarse.
+        LaunchedEffect(Unit) { onReady?.invoke() }
+        return CarTopDrawing(color, modifier)
+    }
+    // La sombra sale junto con el auto (sola, un instante, se veía rara).
+    var ready by remember(p) { mutableStateOf(false) }
     Box(modifier.aspectRatio(CAR_TOP_ASPECT)) {
-        Canvas(Modifier.fillMaxSize()) {
+        if (ready) Canvas(Modifier.fillMaxSize()) {
             val s = size.width / TOP_WIDTH
             withTransform({ scale(s, s, pivot = Offset.Zero) }) { floorShadow() }
         }
-        CarTopImage(repo, p, color, Modifier.fillMaxSize())
+        CarTopImage(repo, p, color, Modifier.fillMaxSize()) {
+            ready = true
+            onReady?.invoke()
+        }
     }
 }
 

@@ -226,10 +226,10 @@ class Preferences(context: Context) {
     /** Nombre de quien maneja, para saludarlo; null = sin saludo. */
     var driverName by string(PrefKeys.DRIVER_NAME)
 
-    /** Dirección de Casa para el atajo de Navegar; null = sin guardar. */
+    /** Dirección de Casa para el atajo del widget Mapa; null = sin guardar. */
     var homeAddress by string(PrefKeys.HOME_ADDRESS)
 
-    /** Dirección de Trabajo para el atajo de Navegar; null = sin guardar. */
+    /** Dirección de Trabajo para el atajo del widget Mapa; null = sin guardar. */
     var workAddress by string(PrefKeys.WORK_ADDRESS)
 
     /** Reloj grande tras unos minutos sin tocar el inicio. */

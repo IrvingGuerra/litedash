@@ -40,13 +40,13 @@ import com.irvingguerra.litedash.core.vehicle.Signal
 import com.irvingguerra.litedash.core.vehicle.watch
 import com.irvingguerra.litedash.feature.apps.App
 import com.irvingguerra.litedash.feature.map.MapDetail
+import com.irvingguerra.litedash.feature.map.MapCanvas
 import com.irvingguerra.litedash.feature.map.MapLook
 import com.irvingguerra.litedash.feature.map.MapOrientation
 import com.irvingguerra.litedash.feature.map.MapStyle
 import com.irvingguerra.litedash.feature.map.MapView
 import com.irvingguerra.litedash.feature.map.MapZoom
 import com.irvingguerra.litedash.feature.map.MinimalPalette
-import com.irvingguerra.litedash.feature.map.OsmMap
 import com.irvingguerra.litedash.feature.map.OsmTiles
 import com.irvingguerra.litedash.feature.map.TileStore
 import com.irvingguerra.litedash.feature.map.VectorTiles
@@ -54,14 +54,14 @@ import com.irvingguerra.litedash.feature.map.tilePx
 import com.irvingguerra.litedash.feature.music.NotificationService
 
 /**
- * Widget Mapa: OpenStreetMap con tu posición del GPS, como diga su [data] ([MapLook]); navegando,
- * la siguiente vuelta encima. Un toque lo muestra en grande ([onExpand]; null = ya es grande y el toque
- * aleja el zoom); el botón de la esquina
- * abre tu app de mapas. En una fila, o sin permiso de ubicación, se ve como el widget Navegar de
- * antes (vuelta, Casa y Trabajo) y un botón para ver el mapa. GPS y descargas solo mientras se ve.
+ * Widget Mapa: tu posición del GPS en el mapa (minimalista de OpenFreeMap o completo de OpenStreetMap),
+ * como diga su [data] ([MapLook]); navegando, la siguiente vuelta encima. Un toque lo muestra en grande
+ * ([onExpand]; null = ya es grande y el toque aleja el zoom); el botón de la esquina abre tu app de mapas.
+ * En una fila, o sin permiso de ubicación, se ve como el widget Navegar de antes (vuelta, Casa y
+ * Trabajo) y un botón para pedir el permiso o ver el mapa. GPS y descargas solo mientras se ve.
  */
 @Composable
-fun MapTile(d: Dependencies, data: String, app: App?, onPlace: (String) -> Unit, onNavigate: () -> Unit, onExpand: (() -> Unit)?) {
+fun MapTile(d: Dependencies, data: String, app: App?, editing: Boolean, onPlace: (String) -> Unit, onNavigate: () -> Unit, onExpand: (() -> Unit)?) {
     val c = LocalColors.current
     val (granted, ask) = rememberGpsPermission(d)
     val look = remember(data) { MapLook.parse(data) }
@@ -69,8 +69,10 @@ fun MapTile(d: Dependencies, data: String, app: App?, onPlace: (String) -> Unit,
         if (!granted || maxHeight < COMPACT_HEIGHT) {
             Box(Modifier.fillMaxSize()) {
                 NavigationTile(d.navigation, app, d.prefs.homeAddress, d.prefs.workAddress, onPlace, onNavigate)
-                // Sin permiso, el botón lo pide; con permiso (en una fila), abre el mapa en grande.
-                IconButton(Icons.map, if (granted) onExpand ?: {} else ask, Modifier.align(Alignment.TopEnd).padding(6.dp), size = 40.dp, background = c.surfaceHigh, color = c.accent)
+                // Sin permiso, el botón lo pide; con permiso (en una fila), abre el mapa en grande (si ya es grande,
+                // no hay a dónde: no sale). Al acomodar se esconde (estorba al botón de tamaño).
+                val action = if (granted) onExpand else ask
+                if (!editing && action != null) IconButton(Icons.map, action, Modifier.align(Alignment.TopEnd).padding(6.dp), size = 40.dp, background = c.surfaceHigh, color = c.accent)
             }
             return@BoxWithConstraints
         }
@@ -94,9 +96,7 @@ fun MapExpanded(d: Dependencies, data: String, app: App?, onPlace: (String) -> U
     Card(modifier.fillMaxSize()) {
         if (granted) LiveMap(d, look, Modifier.fillMaxSize())
         else Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Button(stringResource(R.string.tap_to_enable), ask, primary = true) }
-        Column(Modifier.align(Alignment.TopStart).padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            NextTurn(d, Modifier)
-        }
+        NextTurn(d, Modifier.align(Alignment.TopStart).padding(12.dp))
         Row(Modifier.align(Alignment.TopEnd).padding(12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             IconButton(Icons.navigate, onNavigate, size = 48.dp, background = c.surface.copy(alpha = 0.9f), color = c.accent)
             IconButton(Icons.close, close, size = 48.dp, background = c.surface.copy(alpha = 0.9f))
@@ -127,38 +127,43 @@ private fun NextTurn(d: Dependencies, modifier: Modifier) {
 /** Abajo de esto el mapa no luce: se ve como el widget Navegar. */
 private val COMPACT_HEIGHT = 120.dp
 
-/** El mapa con el GPS y las teselas corriendo solo mientras se ve (el widget y la vista previa). */
+/**
+ * El mapa con el GPS y las teselas corriendo solo mientras se ve (el widget, en grande y la vista previa)
+ * y nada lo tapa ([LocalHomeCovered]).
+ */
 @Composable
 private fun LiveMap(d: Dependencies, look: MapLook, modifier: Modifier, onTap: (() -> Unit)? = null) {
     val c = LocalColors.current
     KeepTripRunning(d.trip)
     val context = LocalContext.current
     val density = LocalDensity.current.density
-    // Una por fuente y colores: el minimalista se dibuja ya en los suyos.
-    val dark = look.dark(c.dark)
-    val store = remember(look.detail, dark) { newTileStore(context, look.detail, dark, density) }
-    LifecycleStartEffect(store) {
-        store.resume()
+    // Una por fuente y, solo el minimalista (se dibuja ya en sus colores), por claro u oscuro; el completo usa un filtro.
+    val darkTiles = look.detail == MapDetail.MINIMAL && look.dark(c.dark)
+    val store = remember(look.detail, darkTiles) { newTileStore(context, look.detail, darkTiles, density) }
+    val covered = LocalHomeCovered.current
+    LifecycleStartEffect(store, covered) {
+        if (!covered) store.resume()
         onStopOrDispose { store.pause() }
     }
     val position = d.trip.position
-    // Del bus: la del OBD si hay escáner, si no la del GPS.
-    val kmh = d.bus.watch(Signal.SPEED)
+    // Del bus (la del OBD si hay escáner, si no la del GPS); solo la usa el zoom automático.
+    val kmh = if (look.zoom == MapZoom.AUTO) d.bus.watch(Signal.SPEED) else null
     Box(modifier) {
         if (position == null) {
             Label(stringResource(R.string.map_waiting), Typography.body, c.textMuted, maxLines = 2, modifier = Modifier.align(Alignment.Center).padding(16.dp))
         } else {
-            OsmMap(store, position.latitude, position.longitude, d.trip.bearing, kmh, look, Modifier.fillMaxSize(), onTap)
+            MapCanvas(store, position.latitude, position.longitude, d.trip.bearing, kmh, look, Modifier.fillMaxSize(), onTap)
         }
     }
 }
 
 private fun newTileStore(context: Context, detail: MapDetail, dark: Boolean, density: Float): TileStore {
+    val userAgent = "LiteDash/${BuildConfig.VERSION_NAME} (+https://litedash.web.app)"
     val source = when (detail) {
         MapDetail.FULL -> OsmTiles
-        MapDetail.MINIMAL -> VectorTiles(context, if (dark) MinimalPalette.DARK else MinimalPalette.LIGHT, tilePx(density).toInt(), density)
+        MapDetail.MINIMAL -> VectorTiles(context, if (dark) MinimalPalette.DARK else MinimalPalette.LIGHT, tilePx(density).toInt(), density, userAgent)
     }
-    return TileStore(context, "LiteDash/${BuildConfig.VERSION_NAME} (+https://litedash.web.app)", source)
+    return TileStore(context, userAgent, source)
 }
 
 /** Personalizar mapa: detalle, orientación, vista, zoom y colores, con el mapa en vivo como vista previa. */
@@ -181,7 +186,7 @@ fun CustomizeMapPanel(d: Dependencies, tileId: String, close: () -> Unit) {
                 Column(m.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(14.dp)) {
                     Label(stringResource(R.string.map_detail), Typography.label, c.textMuted)
                     Segmented(
-                        listOf(MapDetail.FULL to stringResource(R.string.map_detail_full), MapDetail.MINIMAL to stringResource(R.string.map_detail_minimal)),
+                        listOf(MapDetail.MINIMAL to stringResource(R.string.map_detail_minimal), MapDetail.FULL to stringResource(R.string.map_detail_full)),
                         look.detail, { set(look.copy(detail = it)) },
                     )
                     Label(stringResource(if (look.detail == MapDetail.FULL) R.string.map_detail_full_help else R.string.map_detail_minimal_help), Typography.small, c.textMuted)

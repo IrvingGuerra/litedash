@@ -222,7 +222,8 @@ fun Template.tiles(c: Grid, hero: String = TileTypes.CAR, skip: (String) -> Bool
             val music = if (rows >= 5) 2 else 1
             place(TileTypes.CLOCK, carWidth, 0, rest, 1)
             place(TileTypes.MUSIC, carWidth, 1, rest, music)
-            mapOr(null, carWidth, 1 + music, rest, rows - 1 - music)
+            // Sin lugar para el mapa (pantallas de 3 filas), la radio: sin huecos.
+            mapOr(TileTypes.RADIO, carWidth, 1 + music, rest, rows - 1 - music)
         }
         Template.COLUMNS -> {
             if (cols < 9) carOverMusic()
@@ -245,7 +246,7 @@ fun Template.tiles(c: Grid, hero: String = TileTypes.CAR, skip: (String) -> Bool
                 val half = (rows + 1) / 2
                 val music = minOf(half, 3)
                 place(TileTypes.MUSIC, 0, 0, side, music)
-                mapOr(null, 0, music, side, rows - music)
+                mapOr(TileTypes.RADIO, 0, music, side, rows - music)
                 place(TileTypes.CLOCK, cols - side, 0, side, half)
                 place(TileTypes.PHONE, cols - side, half, side, rows - half)
             }

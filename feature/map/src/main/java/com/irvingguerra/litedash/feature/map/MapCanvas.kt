@@ -1,15 +1,10 @@
 package com.irvingguerra.litedash.feature.map
 
-import android.graphics.Camera
 import android.graphics.Matrix as AndroidMatrix
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
-import androidx.compose.ui.graphics.drawscope.scale
-import androidx.compose.ui.graphics.nativeCanvas
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -21,7 +16,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.ColorMatrix
@@ -29,7 +26,10 @@ import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.drawscope.rotate
+import androidx.compose.ui.graphics.drawscope.scale
+import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
@@ -46,19 +46,20 @@ private const val TILE = 256
 /** El lado de una tesela en pantalla: 256 px a densidad 1, hasta el doble (más se vería borrosa). */
 fun tilePx(density: Float) = TILE * density.coerceIn(1f, 2f)
 
-/** Cuánto se acuesta el mapa inclinado (grados). */
-private const val TILT_DEGREES = 50f
+/** Abajo de este ancho los créditos van en su versión corta. */
+private val SHORT_ATTRIBUTION = 320.dp
 
-/** Inclinado, hasta dónde se dibuja hacia el horizonte (en tamaños de la vista). */
-private const val REACH = 1.6f
+/** Los créditos llevan aquí (lo pide la licencia de los datos de OpenStreetMap, que usan las dos fuentes). */
+private const val ATTRIBUTION_URL = "https://www.openstreetmap.org/copyright"
 
 /**
- * El mapa de OpenStreetMap con tu posición y como diga [look]: norte arriba o hacia donde vas,
+ * El mapa (teselas de [store]) con tu posición y como diga [look]: norte arriba o hacia donde vas,
  * plano o inclinado, zoom según la velocidad o fijo (sin [onTap], un toque lo aleja; tras el más
- * lejano vuelve al elegido) y colores del tema, claros u oscuros. En oscuro las teselas se invierten y giran de tono.
+ * lejano vuelve al elegido) y colores claros u oscuros: las de OpenStreetMap se oscurecen con un
+ * filtro; el minimalista ya viene en sus colores.
  */
 @Composable
-fun OsmMap(store: TileStore, lat: Double, lon: Double, bearing: Float?, kmh: Float?, look: MapLook, modifier: Modifier = Modifier, onTap: (() -> Unit)? = null) {
+fun MapCanvas(store: TileStore, lat: Double, lon: Double, bearing: Float?, kmh: Float?, look: MapLook, modifier: Modifier = Modifier, onTap: (() -> Unit)? = null) {
     val c = LocalColors.current
     var manual by remember { mutableStateOf<Int?>(null) }
     // El automático recuerda el anterior para no brincar alrededor de los umbrales (no es estado: no repinta).
@@ -68,104 +69,96 @@ fun OsmMap(store: TileStore, lat: Double, lon: Double, bearing: Float?, kmh: Flo
     // Inclinado se ve mucho más terreno: un zoom menos (cada tesela cubre el doble) para no pedir decenas.
     val zoom = manual ?: ((look.zoom.level ?: auto[0]) - if (tilted) 1 else 0).coerceAtLeast(MIN_ZOOM)
     val dark = look.dark(c.dark)
-    // El minimalista ya viene en sus colores; las de OpenStreetMap se oscurecen aquí.
     val filter = if (dark && store.source.recolor) DarkTiles else null
     val accent = c.accent
     // Hacia donde vas: el mapa gira al revés del rumbo (sin rumbo todavía, se queda como está).
     val turn = if (look.orientation == MapOrientation.HEADING) -(bearing ?: 0f) else 0f
+    val arrow = if (look.orientation == MapOrientation.HEADING) bearing?.let { 0f } else bearing
     // Inclinado, tu posición va más abajo: se ve más camino adelante.
     val anchorY = if (tilted) 0.78f else 0.6f
-    val horizon = if (dark) Color(0xFF1C1C20) else Color(0xFFE8E8EA)
+    val sky = store.source.sky?.let(::Color) ?: if (dark) Color(0xFF1C1C20) else Color(0xFFE8E8EA)
     // Un toque: lo que diga [onTap] (en el widget, verlo en grande); si no, alejar.
-    Box(modifier.background(horizon).clickable { onTap?.invoke() ?: run { manual = nextZoom(zoom) } }) {
-        Canvas(Modifier.fillMaxSize()) {
-            store.loaded // cada tesela nueva repinta
-            val at = Offset(size.width / 2, size.height * anchorY)
-            val m = mapMatrix(at, turn, tilted)
-            drawIntoCanvas { canvas ->
-                canvas.save()
-                canvas.nativeCanvas.concat(m)
-                drawTiles(store, lat, lon, zoom, filter, at, m)
-                canvas.restore()
-            }
-            // Lo lejano se funde con el cielo: sólido hasta donde se acaba el mapa (en pantalla) y de ahí
-            // se desvanece; sin orilla dura en ningún tamaño de widget.
-            if (tilted) {
-                val edge = floatArrayOf(at.x, at.y - REACH * maxOf(size.width, size.height)).also { m.mapPoints(it) }[1]
-                val end = (edge / size.height).coerceIn(0f, 0.9f)
-                drawRect(Brush.verticalGradient(0f to horizon, end to horizon, (end + 0.15f).coerceAtMost(1f) to horizon.copy(alpha = 0f)))
-            }
-            drawArrow(at, if (look.orientation == MapOrientation.HEADING) bearing?.let { 0f } else bearing, accent, tilted)
-        }
-        Attribution(store.source, Modifier.align(Alignment.BottomEnd))
+    BoxWithConstraints(modifier.background(sky).clickable { onTap?.invoke() ?: run { manual = nextZoom(zoom) } }) {
+        val short = maxWidth < SHORT_ATTRIBUTION
+        Spacer(
+            Modifier.fillMaxSize().drawWithCache {
+                // Se arma al cambiar el tamaño o la posición; entre tesela y tesela solo se redibuja.
+                val at = Offset(size.width / 2, size.height * anchorY)
+                val projection = MapProjection(size.width, size.height, at.x, at.y, turn, tilted, density)
+                val matrix = AndroidMatrix().apply { setValues(projection.values) }
+                val tiles = visibleTiles(projection, lat, lon, zoom, at, tilePx(density))
+                // Lo lejano se funde con el cielo: sólido hasta donde se acaba el mapa (en pantalla) y de ahí
+                // se desvanece; sin orilla dura en ningún tamaño de widget.
+                val fade = if (tilted) {
+                    val end = (projection.edge / size.height).coerceIn(0f, 0.9f)
+                    Brush.verticalGradient(0f to sky, end to sky, (end + 0.15f).coerceAtMost(1f) to sky.copy(alpha = 0f))
+                } else null
+                onDrawBehind {
+                    store.loaded // cada tesela nueva repinta
+                    drawIntoCanvas { canvas ->
+                        canvas.save()
+                        canvas.nativeCanvas.concat(matrix)
+                        drawTiles(store, tiles, filter)
+                        canvas.restore()
+                    }
+                    store.request(tiles.keys)
+                    fade?.let { drawRect(it) }
+                    drawArrow(at, arrow, accent, tilted)
+                }
+            },
+        )
+        Attribution(if (short) store.source.attributionShort else store.source.attribution, Modifier.align(Alignment.BottomEnd))
     }
 }
 
-/**
- * Del plano del mapa a la pantalla: gira [turn] grados alrededor de tu posición [at] y, si va
- * [tilted], lo acuesta en perspectiva (la cámara mira hacia adelante, como al navegar).
- */
-private fun DrawScope.mapMatrix(at: Offset, turn: Float, tilted: Boolean): AndroidMatrix {
-    val m = AndroidMatrix()
-    if (turn != 0f) m.postRotate(turn, at.x, at.y)
-    if (tilted) {
-        val tilt = AndroidMatrix()
-        Camera().apply {
-            // Más lejos en pantallas grandes: misma perspectiva en cualquier densidad.
-            setLocation(0f, 0f, -8f * density)
-            rotateX(TILT_DEGREES)
-            getMatrix(tilt)
-        }
-        tilt.preTranslate(-at.x, -at.y)
-        tilt.postTranslate(at.x, at.y)
-        m.postConcat(tilt)
-    }
-    return m
-}
+/** Las teselas a dibujar: su clave y dónde van en el plano del mapa (en px, ya redondeado). */
+private class TilePlan(val keys: Set<Long>, val z: Int, val x: IntArray, val y: IntArray, val left: IntArray, val top: IntArray, val right: IntArray, val bottom: IntArray)
 
-private fun DrawScope.drawTiles(store: TileStore, lat: Double, lon: Double, z: Int, filter: ColorFilter?, at: Offset, m: AndroidMatrix) {
-    val ts = tilePx(density)
+private fun visibleTiles(projection: MapProjection, lat: Double, lon: Double, z: Int, at: Offset, ts: Float): TilePlan {
     val n = 1 shl z
     val fx = tileX(lon, z)
     val fy = tileY(lat, z)
-    val cx = at.x
-    val cy = at.y
-    // Lo que se ve, en el plano del mapa: las esquinas de la pantalla llevadas de regreso. Inclinado,
-    // las de arriba quedan muy lejos: se limita a unas pantallas (más allá ya se funde con el cielo).
-    val inverse = AndroidMatrix().also { m.invert(it) }
-    val corners = floatArrayOf(0f, 0f, size.width, 0f, 0f, size.height, size.width, size.height)
-    inverse.mapPoints(corners)
-    val far = REACH * maxOf(size.width, size.height)
-    var minX = Float.MAX_VALUE; var maxX = -Float.MAX_VALUE; var minY = Float.MAX_VALUE; var maxY = -Float.MAX_VALUE
-    for (i in corners.indices step 2) {
-        val x = (corners[i] - cx).coerceIn(-far, far)
-        val y = (corners[i + 1] - cy).coerceIn(-far, far)
-        minX = minOf(minX, x); maxX = maxOf(maxX, x); minY = minOf(minY, y); maxY = maxOf(maxY, y)
-    }
+    val span = projection.visibleTiles(fx, fy, ts)
     val keys = HashSet<Long>()
-    for (tx in tileSpan(fx, minX, maxX, ts)) for (ty in tileSpan(fy, minY, maxY, ts)) {
+    val x = ArrayList<Int>(); val y = ArrayList<Int>()
+    val left = ArrayList<Int>(); val top = ArrayList<Int>(); val right = ArrayList<Int>(); val bottom = ArrayList<Int>()
+    for (i in span.indices step 2) {
+        val tx = span[i]
+        val ty = span[i + 1]
         if (ty !in 0 until n) continue
-        val x = Math.floorMod(tx, n)
-        val key = tileKey(z, x, ty)
-        keys += key
+        val wrapped = Math.floorMod(tx, n)
+        keys += tileKey(z, wrapped, ty)
+        x += wrapped
+        y += ty
         // Bordes redondeados a píxel con el de la siguiente: sin rayas entre teselas.
-        val left = (cx + (tx - fx) * ts).roundToInt()
-        val top = (cy + (ty - fy) * ts).roundToInt()
-        val dst = IntSize((cx + (tx + 1 - fx) * ts).roundToInt() - left, (cy + (ty + 1 - fy) * ts).roundToInt() - top)
-        val image = store.tile(key)
+        left += (at.x + (tx - fx) * ts).roundToInt()
+        top += (at.y + (ty - fy) * ts).roundToInt()
+        right += (at.x + (tx + 1 - fx) * ts).roundToInt()
+        bottom += (at.y + (ty + 1 - fy) * ts).roundToInt()
+    }
+    return TilePlan(keys, z, x.toIntArray(), y.toIntArray(), left.toIntArray(), top.toIntArray(), right.toIntArray(), bottom.toIntArray())
+}
+
+private fun DrawScope.drawTiles(store: TileStore, plan: TilePlan, filter: ColorFilter?) {
+    val z = plan.z
+    for (i in plan.x.indices) {
+        val x = plan.x[i]
+        val y = plan.y[i]
+        val offset = IntOffset(plan.left[i], plan.top[i])
+        val dst = IntSize(plan.right[i] - plan.left[i], plan.bottom[i] - plan.top[i])
+        val image = store.tile(tileKey(z, x, y))
         if (image != null) {
-            drawImage(image, dstOffset = IntOffset(left, top), dstSize = dst, colorFilter = filter, filterQuality = FilterQuality.Low)
+            drawImage(image, dstOffset = offset, dstSize = dst, colorFilter = filter, filterQuality = FilterQuality.Low)
         } else {
             // Mientras llega, el cuarto de la tesela del zoom anterior (al cambiar de zoom no se ve vacío).
-            val parent = store.tile(tileKey(z - 1, x / 2, ty / 2)) ?: continue
+            val parent = store.tile(tileKey(z - 1, x / 2, y / 2)) ?: continue
             val half = parent.width / 2
             drawImage(
-                parent, IntOffset((x % 2) * half, (ty % 2) * half), IntSize(half, half),
-                IntOffset(left, top), dst, colorFilter = filter, filterQuality = FilterQuality.Low,
+                parent, IntOffset((x % 2) * half, (y % 2) * half), IntSize(half, half),
+                offset, dst, colorFilter = filter, filterQuality = FilterQuality.Low,
             )
         }
     }
-    store.request(keys)
 }
 
 /** Tu posición: la flecha con el rumbo (color de acento) o un punto si todavía no hay rumbo. Inclinado, un poco acostada. */
@@ -193,19 +186,20 @@ private fun DrawScope.drawArrow(at: Offset, bearing: Float?, accent: Color, tilt
 
 /** Los créditos en la esquina (lo piden sus licencias); tocarlos abre su página. */
 @Composable
-private fun Attribution(source: TileSource, modifier: Modifier) {
+private fun Attribution(text: String, modifier: Modifier) {
     val c = LocalColors.current
     val uri = LocalUriHandler.current
     Label(
-        source.attribution,
+        text,
         Typography.small.copy(fontSize = 11.sp),
         c.text,
-        maxLines = 1,
+        // En mapas chicos baja a otra línea: las licencias piden que se lea completo (sin "…").
+        maxLines = 2,
         modifier = modifier
             .padding(6.dp)
             .clip(RoundedCornerShape(Radius.small))
             .background(c.surface.copy(alpha = 0.75f))
-            .clickable { runCatching { uri.openUri(source.attributionUrl) } }
+            .clickable { runCatching { uri.openUri(ATTRIBUTION_URL) } }
             .padding(horizontal = 6.dp, vertical = 2.dp),
     )
 }

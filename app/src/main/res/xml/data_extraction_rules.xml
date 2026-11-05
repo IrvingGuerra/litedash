@@ -4,9 +4,13 @@
     <cloud-backup>
         <exclude domain="sharedpref" path="estadisticas.xml" />
         <exclude domain="sharedpref" path="stats.xml" />
+        <exclude domain="file" path="map_tiles/" />
+        <exclude domain="file" path="map_vector/" />
     </cloud-backup>
     <device-transfer>
         <exclude domain="sharedpref" path="estadisticas.xml" />
         <exclude domain="sharedpref" path="stats.xml" />
+        <exclude domain="file" path="map_tiles/" />
+        <exclude domain="file" path="map_vector/" />
     </device-transfer>
 </data-extraction-rules>
