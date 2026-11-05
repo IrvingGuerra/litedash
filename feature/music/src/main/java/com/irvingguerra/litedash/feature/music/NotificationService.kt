@@ -15,11 +15,12 @@ import java.lang.ref.WeakReference
  * pasa los avisos al [listener] (la app solo mira los de navegación, para la
  * siguiente vuelta) y a [media] (los de las apps de Bluetooth y radio); si nadie
  * los quiere ([NotificationListener.wanted]), no hace nada: Android lo conecta aunque la app no esté abierta y ahí no debe armarla.
- * La pieza de navegación pide los avisos que ya hay ([active]) al aparecer.
+ * La pieza de navegación y la música piden los avisos que ya hay ([active]).
  */
 class ServicioMusica : NotificationListenerService() {
     override fun onListenerConnected() {
         connected = WeakReference(this)
+        media?.takeIf { it.wanted }?.onConnected()
         val l = listener?.takeIf { it.wanted } ?: return
         active().forEach(l::onPosted)
     }

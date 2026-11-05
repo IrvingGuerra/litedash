@@ -1,6 +1,7 @@
 package com.irvingguerra.litedash
 
 import android.app.Application
+import android.content.ComponentCallbacks2
 import android.content.Context
 import android.content.SharedPreferences
 import android.service.notification.StatusBarNotification
@@ -66,6 +67,16 @@ class LiteDashApp : Application() {
             override fun onRemoved(notification: StatusBarNotification) = dependencies.navigation.removed(notification)
         }
         watchUsbOffer()
+    }
+
+    /**
+     * Al irse a segundo plano se recortan los cuadros del auto (lo más pesado en memoria): a un cuarto
+     * si solo se ocultó la pantalla, todos si Android ya la tiene en la lista de procesos a cerrar.
+     */
+    override fun onTrimMemory(level: Int) {
+        super.onTrimMemory(level)
+        if (level < ComponentCallbacks2.TRIM_MEMORY_UI_HIDDEN || !dependenciesLazy.isInitialized()) return
+        dependencies.cars.trimMemory(all = level >= ComponentCallbacks2.TRIM_MEMORY_BACKGROUND)
     }
 
     // Referencia fuerte: Android guarda los oyentes de preferencias como referencias débiles.

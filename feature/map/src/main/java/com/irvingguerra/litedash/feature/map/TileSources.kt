@@ -80,9 +80,10 @@ class VectorTiles(
 
     /**
      * Las teselas ya leídas (una del 14 sirve a varias del 15–17). [TileStore] llama a [decode] con el
-     * candado del archivo: la misma tesela no se lee dos veces a la vez.
+     * candado del archivo: la misma tesela no se lee dos veces a la vez. Ocho porque el mapa inclinado
+     * mezcla orígenes del 12 al 14 (lo lejano con menos detalle) y con cuatro se volvían a leer.
      */
-    private val parsed = LruCache<Long, VectorTile>(4)
+    private val parsed = LruCache<Long, VectorTile>(8)
 
     /** La dirección de los datos (de [template]) en memoria, cuándo se supo y el último intento fallido. */
     private var template: String? = null

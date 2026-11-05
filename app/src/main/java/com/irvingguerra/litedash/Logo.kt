@@ -4,6 +4,7 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
+import android.util.DisplayMetrics
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -46,7 +47,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.core.graphics.scale
 import com.irvingguerra.litedash.core.ui.Button
 import com.irvingguerra.litedash.core.ui.Label
 import com.irvingguerra.litedash.core.ui.LocalColors
@@ -55,6 +55,7 @@ import com.irvingguerra.litedash.core.ui.MorseMark
 import com.irvingguerra.litedash.core.ui.Segmented
 import com.irvingguerra.litedash.core.ui.SwitchRow
 import com.irvingguerra.litedash.core.ui.Typography
+import com.irvingguerra.litedash.core.ui.scaledDecode
 import com.irvingguerra.litedash.feature.dashboard.Tile
 import com.irvingguerra.litedash.feature.dashboard.TileTypes
 import java.io.File
@@ -66,14 +67,25 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import kotlin.math.ceil
+import kotlin.math.roundToInt
 
 /**
  * Una imagen que eliges de tu galería: la de un widget Imagen (p. ej. el logo de tu marca;
  * LiteDash no trae logos de marcas), la de la animación de entrada, el fondo del inicio o
- * la del modo estacionado. Se guarda una copia reducida en la app y se decodifica una sola
+ * la del modo estacionado. Se guarda una copia reducida a [maxPx] en la app y se decodifica una sola
  * vez por [version]: cada imagen lleva la suya, así cambiar una no vuelve a leer las demás.
+ * Al mostrarla se lee al tamaño en que se ve: [screenShare] = fracción del lado largo de la pantalla
+ * que ocupa a lo más (0 = como se guardó); con [cover], lo justo para cubrir la pantalla. Las JPEG
+ * (sin transparencia) se leen en RGB_565: la mitad de memoria.
  */
-private class SavedImage(val file: String, val maxPx: Int, val png: Boolean) {
+private class SavedImage(
+    val file: String,
+    val maxPx: Int,
+    val png: Boolean,
+    val screenShare: Float = 0f,
+    val cover: Boolean = false,
+) {
     /** Sube al elegir o quitar la imagen (solo en memoria): quien la muestra la vuelve a leer. */
     var version by mutableIntStateOf(0)
         private set
@@ -93,16 +105,48 @@ private class SavedImage(val file: String, val maxPx: Int, val png: Boolean) {
         image = null
         revision = -1
     }
+
+    /** La imagen guardada al tamaño en que se muestra; null si no hay o no se pudo leer (p. ej. sin memoria). Solo en IO. */
+    fun read(context: Context): ImageBitmap? = orNull {
+        val path = file(context).takeIf { it.exists() }?.path ?: return@orNull null
+        val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        BitmapFactory.decodeFile(path, bounds)
+        val options = scaledDecode(maxOf(bounds.outWidth, bounds.outHeight), shownPx(context.resources.displayMetrics, bounds.outWidth, bounds.outHeight))
+        if (!png) options.inPreferredConfig = Bitmap.Config.RGB_565
+        BitmapFactory.decodeFile(path, options)?.asImageBitmap()
+    }
+
+    /** Lado largo con que se lee una imagen de [width]×[height]; 0 = como se guardó. Nunca agranda ([scaledDecode]). */
+    private fun shownPx(display: DisplayMetrics, width: Int, height: Int): Int = when {
+        screenShare <= 0f || width <= 0 || height <= 0 -> 0
+        cover -> ceil(maxOf(width, height) * maxOf(display.widthPixels.toFloat() / width, display.heightPixels.toFloat() / height)).toInt()
+        else -> maxOf(MIN_SHOWN_PX, (maxOf(display.widthPixels, display.heightPixels) * screenShare).roundToInt())
+    }
+}
+
+/** Lo menos con que se lee una foto de widget o del frente de un velocímetro (pantallas chicas). */
+private const val MIN_SHOWN_PX = 512
+
+/**
+ * [block] o null si falla, también sin memoria: en Android 6 y 7 las imágenes viven en la memoria de
+ * la app y una foto grande puede no caber (sin esto, tumbaría la app).
+ */
+private inline fun <T> orNull(block: () -> T?): T? = try {
+    block()
+} catch (e: OutOfMemoryError) {
+    null
+} catch (e: Exception) {
+    null
 }
 
 /**
  * Las fotos de las piezas de imagen y de lo que va al frente de un velocímetro, una por nombre
  * ([Tile.data] o [GaugeLook.image]): files/images/NOMBRE.png, con transparencia y a lo más 1024 px.
- * Cada pieza tiene la suya.
+ * Cada pieza tiene la suya; se muestran a lo más a media pantalla.
  */
 private val tileImages = HashMap<String, SavedImage>()
 
-private fun newTileImage(name: String) = SavedImage("images/$name.png", 1024, png = true)
+private fun newTileImage(name: String) = SavedImage("images/$name.png", 1024, png = true, screenShare = 0.5f)
 
 private fun tileImage(name: String) = tileImages.getOrPut(name) { newTileImage(name) }
 
@@ -131,25 +175,20 @@ fun releaseTileImages(tiles: List<Tile>) {
 /** La imagen de la animación de entrada: aparte de las de los widgets Imagen. */
 private val INTRO = SavedImage("intro.png", 1024, png = true)
 
-/** El fondo del inicio: una foto que llena toda la pantalla. */
-private val WALLPAPER = SavedImage("wallpaper.jpg", 1920, png = false)
+/** El fondo del inicio: una foto que cubre toda la pantalla (se lee en RGB_565, sin transparencia). */
+private val WALLPAPER = SavedImage("wallpaper.jpg", 1920, png = false, screenShare = 1f, cover = true)
 
 /** La imagen del modo estacionado (en vez del reloj), con transparencia por si es un logo. */
-private val PARKED = SavedImage("parked.png", 1920, png = true)
+private val PARKED = SavedImage("parked.png", 1920, png = true, screenShare = 1f)
 
-/** Lee la imagen [uri] reducida a [maxPx] por lado; null si no se puede leer. Llamar fuera del hilo principal. */
-private fun decodeScaled(context: Context, uri: Uri, maxPx: Int): Bitmap? = runCatching {
+/** Lee la imagen [uri] ya reducida a [maxPx] por lado; null si no se puede leer. Llamar fuera del hilo principal. */
+private fun decodeScaled(context: Context, uri: Uri, maxPx: Int): Bitmap? = orNull {
     val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
     context.contentResolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it, null, bounds) }
-    var sample = 1
-    while (maxOf(bounds.outWidth, bounds.outHeight) / (sample * 2) >= maxPx) sample *= 2
-    val decoded = context.contentResolver.openInputStream(uri)?.use {
-        BitmapFactory.decodeStream(it, null, BitmapFactory.Options().apply { inSampleSize = sample })
-    } ?: return@runCatching null
-    // El muestreo es en potencias de 2: se termina de ajustar a maxPx exactos.
-    val k = maxPx.toFloat() / maxOf(decoded.width, decoded.height)
-    if (k < 1f) decoded.scale((decoded.width * k).toInt(), (decoded.height * k).toInt()) else decoded
-}.getOrNull()
+    context.contentResolver.openInputStream(uri)?.use {
+        BitmapFactory.decodeStream(it, null, scaledDecode(maxOf(bounds.outWidth, bounds.outHeight), maxPx))
+    }
+}
 
 /** Guarda [bitmap] en [target]: primero a un temporal, así si algo falla la imagen de antes queda intacta. */
 private suspend fun write(context: Context, bitmap: Bitmap, target: SavedImage): Boolean = withContext(Dispatchers.IO) {
@@ -206,9 +245,7 @@ private fun rememberImage(target: SavedImage): LoadedImage {
     val cached = target.revision == revision
     val loaded by produceState(if (cached) LoadedImage(target.image, true) else LoadedImage(null, false), target, revision) {
         if (target.revision != revision) {
-            target.image = withContext(Dispatchers.IO) {
-                target.file(context).takeIf { it.exists() }?.let { BitmapFactory.decodeFile(it.path)?.asImageBitmap() }
-            }
+            target.image = withContext(Dispatchers.IO) { target.read(context) }
             target.revision = revision
         }
         value = LoadedImage(target.image, loaded = true)
@@ -216,9 +253,12 @@ private fun rememberImage(target: SavedImage): LoadedImage {
     return loaded
 }
 
-/** Pieza Imagen: tu foto [name] centrada o, sin foto, el logo de LiteDash; un toque hace [onClick]. */
+/**
+ * Pieza Imagen: tu foto [name] centrada o, sin foto, el logo de LiteDash (nada si [placeholder] es
+ * false); un toque hace [onClick].
+ */
 @Composable
-fun ImageTile(d: Dependencies, name: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
+fun ImageTile(d: Dependencies, name: String, onClick: () -> Unit, modifier: Modifier = Modifier, placeholder: Boolean = true) {
     val loaded = if (name.isEmpty()) LoadedImage(null, true) else rememberImage(tileImage(name))
     val image = loaded.image
     Box(
@@ -227,7 +267,7 @@ fun ImageTile(d: Dependencies, name: String, onClick: () -> Unit, modifier: Modi
     ) {
         when {
             image != null -> Image(image, null, Modifier.fillMaxSize(0.8f))
-            loaded.loaded -> MorseMark(Modifier.fillMaxWidth(0.5f).aspectRatio(MORSE_ASPECT))
+            loaded.loaded && placeholder -> MorseMark(Modifier.fillMaxWidth(0.5f).aspectRatio(MORSE_ASPECT))
         }
     }
 }
@@ -326,34 +366,41 @@ fun ParkedSettings(prefs: Preferences) {
         prefs.parkedView,
         { prefs.parkedView = it },
     )
-    if (prefs.parkedView == ParkedView.IMAGE && !imageButtons(PARKED)) {
+    if (prefs.parkedView == ParkedView.IMAGE && imageButtons(PARKED) == false) {
         Label(stringResource(R.string.parked_no_image), Typography.small, c.textMuted)
     }
 }
 
-/** Elegir, cambiar o quitar una imagen guardada; [onPicked] avisa tras guardar una nueva. */
+/**
+ * Elegir, cambiar o quitar una imagen guardada; [onPicked] avisa tras guardar una nueva y [onRemoved]
+ * tras borrarla. Devuelve si hay imagen (null mientras se revisa el disco).
+ */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun imageButtons(target: SavedImage, onPicked: (Uri) -> Unit = {}): Boolean {
+private fun imageButtons(target: SavedImage, onPicked: (Uri) -> Unit = {}, onRemoved: () -> Unit = {}): Boolean? {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val pick = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
         if (uri != null) scope.launch { if (save(context, uri, target)) { target.bump(); onPicked(uri) } }
     }
-    // Basta saber si el archivo existe: decodificar la imagen completa para esto sobraba.
-    val hasImage = remember(target, target.version) { target.file(context).exists() }
+    // Basta saber si el archivo existe (en IO); mientras, se queda lo último que se supo.
+    val hasImage by produceState<Boolean?>(null, target, target.version) {
+        value = withContext(Dispatchers.IO) { target.file(context).exists() }
+    }
+    val known = hasImage ?: return null
     FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Button(stringResource(if (hasImage) R.string.logo_change else R.string.logo_pick), {
+        Button(stringResource(if (known) R.string.logo_change else R.string.logo_pick), {
             pick.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
         })
-        if (hasImage) Button(stringResource(R.string.logo_remove), {
+        if (known) Button(stringResource(R.string.logo_remove), {
             scope.launch {
                 withContext(Dispatchers.IO) { target.file(context).delete() }
                 target.bump()
+                onRemoved()
             }
         })
     }
-    return hasImage
+    return known
 }
 
 /** Inicio y apariencia → Imágenes → Fondo del inicio: elegir, cambiar o quitar la imagen. */
@@ -367,7 +414,7 @@ fun WallpaperSettings() {
 fun IntroSettings(prefs: Preferences) {
     val c = LocalColors.current
     SwitchRow(stringResource(R.string.logo_intro), prefs.logoIntro, { prefs.logoIntro = it }, stringResource(R.string.logo_intro_help))
-    if (prefs.logoIntro && !imageButtons(INTRO)) {
+    if (prefs.logoIntro && imageButtons(INTRO) == false) {
         Label(stringResource(R.string.intro_no_image), Typography.small, c.textMuted)
     }
 }
@@ -392,10 +439,19 @@ fun CustomizeImagePanel(d: Dependencies, tileId: String, close: () -> Unit) {
 /**
  * Elegir, cambiar o quitar una foto guardada como files/images/[current].png, con vista previa y
  * "quitar fondo". [key] identifica a quien la usa (la pieza); sin foto todavía ([current] vacío) se le
- * da un nombre nuevo y se avisa con [onNamed] al elegirla. [empty] dice qué pasa sin foto. Va dentro de una columna.
+ * da un nombre nuevo y se avisa con [onNamed] al elegirla; [onRemoved] avisa al quitarla. [empty] dice
+ * qué pasa sin foto y [placeholder], si la vista previa sin foto lleva el logo de LiteDash. Va dentro de una columna.
  */
 @Composable
-fun ImageEditor(d: Dependencies, key: String, current: String, empty: String = stringResource(R.string.image_empty), onNamed: (String) -> Unit) {
+fun ImageEditor(
+    d: Dependencies,
+    key: String,
+    current: String,
+    empty: String = stringResource(R.string.image_empty),
+    placeholder: Boolean = true,
+    onRemoved: () -> Unit = {},
+    onNamed: (String) -> Unit,
+) {
     val c = LocalColors.current
     // Sin foto todavía: se le da un nombre nuevo y se guarda al elegirla.
     val fresh = remember(key) { System.currentTimeMillis().toString(36) }
@@ -424,18 +480,18 @@ fun ImageEditor(d: Dependencies, key: String, current: String, empty: String = s
     val sourceImage = remember(source) { source?.asImageBitmap() }
     Box(Modifier.widthIn(max = 360.dp).fillMaxWidth().aspectRatio(2f), contentAlignment = Alignment.Center) {
         val shown = (if (removing) preview?.takeIf { it.source === source }?.image else null) ?: sourceImage
-        if (shown != null) Image(shown, null, Modifier.fillMaxSize(0.8f)) else ImageTile(d, current, onClick = {})
+        if (shown != null) Image(shown, null, Modifier.fillMaxSize(0.8f)) else ImageTile(d, current, onClick = {}, placeholder = placeholder)
     }
     val hasImage = imageButtons(target, onPicked = { uri ->
         if (current.isEmpty()) onNamed(name)
         picked = uri
         removing = false
         saved = -1
-    })
+    }, onRemoved = onRemoved)
     // Al quitar la imagen se olvida la foto elegida.
-    LaunchedEffect(hasImage) { if (!hasImage) picked = null }
-    if (!hasImage) Label(empty, Typography.small, c.textMuted)
-    if (hasImage && source != null) {
+    LaunchedEffect(hasImage) { if (hasImage == false) picked = null }
+    if (hasImage == false) Label(empty, Typography.small, c.textMuted)
+    if (hasImage == true && source != null) {
         Label(stringResource(R.string.image_background), Typography.label, c.textMuted)
         Segmented(
             listOf(false to stringResource(R.string.image_background_original), true to stringResource(R.string.image_background_remove)),

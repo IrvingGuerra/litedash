@@ -182,7 +182,11 @@ fun CustomizeGaugePanel(d: Dependencies, tileId: String, close: () -> Unit, onPi
                             { set(look.copy(front = it)) },
                         )
                         if (look.front == GaugeFront.IMAGE) {
-                            ImageEditor(d, tile.id, look.image, stringResource(R.string.gauge_front_image_empty)) { set(look.copy(image = it)) }
+                            ImageEditor(
+                                d, tile.id, look.image, stringResource(R.string.gauge_front_image_empty),
+                                placeholder = false,
+                                onRemoved = { set(look.copy(image = "")) },
+                            ) { set(look.copy(image = it)) }
                         }
                     }
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -194,12 +198,18 @@ fun CustomizeGaugePanel(d: Dependencies, tileId: String, close: () -> Unit, onPi
                                 d.dashboard.tiles
                                     .filter { it.type == TileTypes.SPEEDOMETER || it.type == TileTypes.GAUGE || it.type == TileTypes.ROAD }
                                     .associate {
-                                        // Lo del frente solo va en los velocímetros.
+                                        // Lo del frente solo va en los velocímetros y cada uno conserva su imagen (nunca dos
+                                        // comparten un PNG). Desde un medidor o la carretera, su frente tampoco cambia.
+                                        val current = GaugeLook.parse(it.data)
                                         val speedo = it.type == TileTypes.SPEEDOMETER
                                         val own = look.copy(
-                                            max = GaugeLook.parse(it.data).max,
-                                            front = if (speedo) look.front else GaugeFront.NONE,
-                                            image = if (speedo) look.image else "",
+                                            max = current.max,
+                                            front = when {
+                                                !speedo -> GaugeFront.NONE
+                                                tile.type == TileTypes.SPEEDOMETER -> look.front
+                                                else -> current.front
+                                            },
+                                            image = if (speedo) current.image else "",
                                         )
                                         it.id to if (it.type == TileTypes.ROAD) RoadLook.parse(it.data).copy(gauge = own).encode() else own.encode(signalOf(it.data))
                                     },

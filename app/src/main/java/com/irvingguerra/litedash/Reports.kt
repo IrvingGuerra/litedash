@@ -51,7 +51,7 @@ private enum class ReportDetail(val key: String, val title: Int) {
     USB_RECEIVER("usb", R.string.tires_source_usb),
     BLUETOOTH("bluetooth", R.string.sys_bluetooth),
     WIFI("wifi", R.string.sys_wifi),
-    USB("usb", R.string.report_usb),
+    USB("usb", com.irvingguerra.litedash.feature.music.R.string.source_usb),
 }
 
 /** Qué pasa; [key] es lo que se guarda. */
@@ -152,7 +152,8 @@ internal fun SendReport(music: MusicRepository) {
                     Button(
                         stringResource(if (sending) R.string.report_sending else R.string.report_send),
                         {
-                            if (chosen == null || sending) return@Button
+                            // Se lee el estado de ahora (dos toques en el mismo cuadro no mandan dos).
+                            if (chosen == null || state == ReportState.Sending) return@Button
                             if (lastReport != 0L && SystemClock.elapsedRealtime() - lastReport < REPORT_GAP_MS) {
                                 state = ReportState.Wait
                                 return@Button
@@ -204,8 +205,10 @@ private suspend fun sendReport(
     detail: ReportDetail?,
     problem: ReportProblem,
     note: String,
-): String? = withContext(Dispatchers.IO) {
-    runCatching {
+): String? {
+    // Lo de la música se arma aquí, en el hilo principal: su estado lo tocan los avisos que llegan ahí.
+    val musicInfo = music.describe()
+    return withContext(Dispatchers.IO) { runCatching {
         val id = Firestore.newId()
         val fields = JSONObject()
             .put("version", Firestore.int(BuildConfig.VERSION_CODE.toLong()))
@@ -216,17 +219,17 @@ private suspend fun sendReport(
             .put("detail", Firestore.text(detail?.key ?: ""))
             .put("problem", Firestore.text(problem.key))
             .put("note", Firestore.text(note.trim().take(NOTE_MAX)))
-            .put("info", Firestore.text(systemInfo(context, music).take(INFO_MAX)))
+            .put("info", Firestore.text(systemInfo(context, musicInfo).take(INFO_MAX)))
         val write = JSONObject()
             .put("update", JSONObject().put("name", Firestore.document("reports/$id")).put("fields", fields))
             .put("currentDocument", JSONObject().put("exists", false))
             .put("updateTransforms", Firestore.serverTime("sent"))
         id.takeIf { Firestore.commit(context, write) }
-    }.getOrNull()
+    }.getOrNull() }
 }
 
-/** Datos técnicos de la pantalla para los reportes (equipo, Android, pantalla, luces y música). */
-private fun systemInfo(context: Context, music: MusicRepository): String {
+/** Datos técnicos de la pantalla para los reportes (equipo, Android, pantalla y luces) más [musicInfo]. */
+private fun systemInfo(context: Context, musicInfo: String): String {
     val m = context.resources.displayMetrics
     return buildString {
         appendLine("LiteDash ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE}) · ${BuildConfig.CHANNEL}")
@@ -238,7 +241,7 @@ private fun systemInfo(context: Context, music: MusicRepository): String {
         appendLine("CPU: ${Build.SUPPORTED_ABIS.joinToString()}")
         appendLine("Pantalla dividida: ${if (SplitScreen.supported()) "sí" else "no"}")
         appendLine(lightsInfo(context))
-        append(music.describe())
+        append(musicInfo)
     }
 }
 

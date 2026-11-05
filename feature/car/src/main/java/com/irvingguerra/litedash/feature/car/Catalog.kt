@@ -15,6 +15,7 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.toArgb
 import com.irvingguerra.litedash.core.ui.Https
+import com.irvingguerra.litedash.core.ui.scaledDecode
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Deferred
@@ -411,6 +412,14 @@ class CarRepository(private val context: Context, val catalogUrl: String) {
     private fun spinFiles(folder: File, accept: (String) -> Boolean) =
         File(folder, CarFiles.SPIN).listFiles().orEmpty().filter { accept(it.name) }
 
+    /**
+     * La app se fue a segundo plano: con [all] suelta todos los cuadros del auto; si no, deja un cuarto
+     * de la caché (lo más reciente) para que al volver el auto aparezca sin esperar.
+     */
+    fun trimMemory(all: Boolean) {
+        if (all) images.evictAll() else images.trimToSize(images.maxSize() / 4)
+    }
+
     /** Después de instalar, quitar o cambiar un auto: lo de memoria ya no sirve y se vuelve a leer. */
     private suspend fun changed(evict: Boolean = true) {
         if (evict) {
@@ -567,15 +576,7 @@ class CarRepository(private val context: Context, val catalogUrl: String) {
     private fun decode(p: CarPackage, name: String, width: Int): Bitmap? {
         val file = File(p.folder, "$name.webp")
         val source = sourceWidth(file, read = true) ?: return null
-        var sample = 1
-        while (source / (sample * 2) >= width) sample *= 2
-        return BitmapFactory.decodeFile(file.path, BitmapFactory.Options().apply {
-            inSampleSize = sample
-            inScaled = true
-            inDensity = source / sample
-            inTargetDensity = width
-            inMutable = true
-        })
+        return BitmapFactory.decodeFile(file.path, scaledDecode(source, width).apply { inMutable = true })
     }
 
     private fun readPackage(folder: File): CarPackage? {

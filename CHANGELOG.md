@@ -6,6 +6,24 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
+## [1.4.76] - 2026-11-04
+
+### Arreglado (auditoría de la 1.4.72 a la 1.4.75)
+- **Música Bluetooth y radio FM**: el botón ya no se queda pegado en play o en pausa cuando la app de
+  la pantalla avisa la canción sin decir si suena, o publica la estación sin estado. Cada tecla llega
+  una sola vez (algunas apps la tomaban como play/pausa y no cambiaban). Despertar la app ya no
+  puede arrancar Spotify al mismo tiempo. Al desconectar el celular deja de mostrarse como "sonando".
+- **Enviar un reporte**: ya no puede fallar por casualidad mientras suena la música, ni mandarse dos
+  veces con un doble toque. El reporte ya no lista todas tus apps instaladas.
+- **Imagen al frente del velocímetro**: "Aplicar a todos" ya no comparte (ni borra) la imagen de otro
+  velocímetro, y quitar la imagen ya no deja un hueco.
+
+### Mejorado
+- **Mucha menos memoria con imágenes**: el fondo, la imagen de estacionado y las de los widgets se
+  cargan al tamaño en que se ven (el fondo de una pantalla de 7" pasó de ~11 MB a ~1.5 MB). Una foto
+  muy grande ya no puede cerrar la app en Android 6 y 7, y al irte a otra app LiteDash suelta la
+  memoria del auto.
+
 ## [1.4.75] - 2026-11-04
 
 ### Agregado

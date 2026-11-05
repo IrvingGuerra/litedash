@@ -59,6 +59,9 @@ interface NotificationListener {
     val wanted: Boolean
     fun onPosted(notification: StatusBarNotification)
     fun onRemoved(notification: StatusBarNotification)
+
+    /** Android acaba de conectar el servicio: ya se pueden pedir los avisos que hay ([NotificationService.active]). */
+    fun onConnected() = Unit
 }
 
 /** Nombre en inglés del servicio de avisos, que por compatibilidad conserva su nombre original. */
@@ -79,6 +82,8 @@ private val SOURCE_WORDS = mapOf(
 
 /** Cuánto se espera a que la app despertada empiece a sonar antes de abrirla. */
 private const val WAKE_TIMEOUT_MS = 4_000L
+/** Lo que LiteDash supone de una app de fábrica (suena / en pausa) deja de valer tras este rato (p. ej. apagaron el auto). */
+private const val ASSUME_MAX_MS = 3 * 60 * 60_000L
 /** Cuántos eventos guarda el registro de "Enviar un reporte". */
 private const val TRACE_SIZE = 30
 /** Un aviso (broadcast) de qué suena vale como respaldo durante este rato. */
@@ -224,6 +229,7 @@ class MusicRepository(private val context: Context) {
         music.forget()
         radio.forget()
         store.edit().putString(kind.key, pkg).apply()
+        if (users > 0) loadSourceNotes()
         // Enlazar o quitar la radio cambia qué pieza se queda con cada sesión.
         if (users > 0) choose(sessions())
     }
@@ -316,7 +322,15 @@ class MusicRepository(private val context: Context) {
     private val onSessionsChanged = MediaSessionManager.OnActiveSessionsChangedListener { choose(it.orEmpty()) }
 
     // Celular por Bluetooth y memoria USB: solo se escuchan mientras la música está en pantalla.
-    private val devices = DeviceWatcher(context, onBluetooth = { bluetoothDevice = it }, onUsb = { usbDrive = it })
+    private val devices = DeviceWatcher(context, onBluetooth = ::phoneChanged, onUsb = { usbDrive = it })
+
+    // Se desconectó el celular: la música Bluetooth que se suponía sonando ya no suena.
+    private fun phoneChanged(name: String?) {
+        bluetoothDevice = name
+        if (name != null) return
+        val app = sourceApps[SourceKind.BLUETOOTH] ?: return
+        for (lens in listOf(music, radio)) if (lens.assumedPkg == app) lens.forget()
+    }
 
     fun use() {
         users++
@@ -356,6 +370,7 @@ class MusicRepository(private val context: Context) {
         val filter = IntentFilter().apply { BroadcastMeta.ACTIONS.forEach(::addAction) }
         ContextCompat.registerReceiver(context, broadcasts, filter, ContextCompat.RECEIVER_EXPORTED)
         NotificationService.media = notifications
+        loadSourceNotes()
         if (!store.getBoolean(KEY_SOURCES_GUESSED, false)) {
             store.edit().putBoolean(KEY_SOURCES_GUESSED, true).apply()
             Thread(::guessSources, "music-sources").start()
@@ -393,41 +408,67 @@ class MusicRepository(private val context: Context) {
      */
     private fun sessions(): List<MediaController> {
         val active = runCatching { sessionManager.getActiveSessions(component) }.getOrDefault(emptyList())
-        val extra = sourceNotifications().filter { n -> active.none { it.packageName == n.packageName } }.mapNotNull { n ->
-            val token = BundleCompat.getParcelable(n.notification.extras, Notification.EXTRA_MEDIA_SESSION, MediaSession.Token::class.java)
-            token?.let { runCatching { MediaController(context, it) }.getOrNull() }
+        val extra = sourceNotes.values.filter { n -> active.none { it.packageName == n.packageName } }.mapNotNull { n ->
+            n.sessionToken()?.let { runCatching { MediaController(context, it) }.getOrNull() }
         }
-        return active + extra.distinctBy { it.packageName }
+        return active + extra
     }
 
-    /** Avisos que tienen ahora las apps enlazadas de Bluetooth y radio (vacío sin acceso a notificaciones). */
-    private fun sourceNotifications(): List<StatusBarNotification> {
+    /**
+     * El aviso de música de cada app enlazada (paquete → aviso), al día con lo que pasa el servicio:
+     * así no se le pide a Android la lista de todos los avisos (con sus imágenes) en cada lectura.
+     * Solo en el hilo principal.
+     */
+    private val sourceNotes = HashMap<String, StatusBarNotification>()
+
+    /** Vuelve a leer los avisos de las apps enlazadas (al empezar, al conectarse el servicio o al enlazar otra). */
+    private fun loadSourceNotes() {
+        sourceNotes.clear()
         val apps = sourceApps.values.toSet()
-        if (apps.isEmpty()) return emptyList()
-        return NotificationService.active().filter { it.packageName in apps }
+        if (apps.isEmpty()) return
+        NotificationService.active().filter { it.packageName in apps && it.isMedia() }.forEach { sourceNotes[it.packageName] = it }
     }
 
-    /** Título y texto del aviso de música de [pkg] (estilo multimedia o con sesión); null si no tiene. */
+    /** Título y texto del aviso de música de [pkg]; null si no tiene. */
     private fun notified(pkg: String): Pair<String, String>? {
-        if (pkg !in sourceApps.values) return null
-        val extras = sourceNotifications().firstOrNull { it.packageName == pkg && it.isMedia() }?.notification?.extras ?: return null
+        val extras = sourceNotes[pkg]?.notification?.extras ?: return null
         val title = extras.getCharSequence(Notification.EXTRA_TITLE)?.toString()?.trim().orEmpty()
         return if (title.isEmpty()) null else title to extras.getCharSequence(Notification.EXTRA_TEXT)?.toString()?.trim().orEmpty()
     }
 
-    /** Si una app enlazada cambia su aviso, se vuelve a mirar (puede traer su sesión o la canción). */
+    /**
+     * Si una app enlazada cambia su aviso de música (otra sesión u otra canción), se vuelve a mirar.
+     * Los avisos que no cambian eso (algunas apps lo actualizan cada segundo con el avance) no hacen nada.
+     */
     private val notifications = object : NotificationListener {
         override val wanted: Boolean get() = users > 0
-        override fun onPosted(notification: StatusBarNotification) = changed(notification)
-        override fun onRemoved(notification: StatusBarNotification) = changed(notification)
-
-        private fun changed(n: StatusBarNotification) {
-            if (n.packageName !in sourceApps.values) return
+        override fun onPosted(notification: StatusBarNotification) = changed(notification, removed = false)
+        override fun onRemoved(notification: StatusBarNotification) = changed(notification, removed = true)
+        override fun onConnected() {
             mainHandler.post {
-                trace("aviso visible ${n.packageName} música=${if (n.isMedia()) "sí" else "no"}")
-                if (users > 0) choose(sessions())
+                if (users == 0) return@post
+                loadSourceNotes()
+                choose(sessions())
             }
         }
+
+        private fun changed(n: StatusBarNotification, removed: Boolean) {
+            mainHandler.post {
+                val pkg = n.packageName
+                if (users == 0 || pkg !in sourceApps.values) return@post
+                val before = sourceNotes[pkg]?.let { it.sessionToken() to notifiedTitle(it) }
+                when {
+                    !removed && n.isMedia() -> sourceNotes[pkg] = n
+                    sourceNotes[pkg]?.key == n.key -> sourceNotes.remove(pkg)
+                }
+                val after = sourceNotes[pkg]?.let { it.sessionToken() to notifiedTitle(it) }
+                if (before == after) return@post
+                trace("aviso de música ${if (after == null) "quitado" else "nuevo"} $pkg")
+                choose(sessions())
+            }
+        }
+
+        private fun notifiedTitle(n: StatusBarNotification) = n.notification.extras.getCharSequence(Notification.EXTRA_TITLE)?.toString()
     }
 
     /** ¿[pkg] es la radio: la app FM enlazada de la pantalla o LiteDash tocando radio por internet? */
@@ -496,13 +537,19 @@ class MusicRepository(private val context: Context) {
          */
         internal var assumedPkg: String? = null
         private var assumedPlaying = false
+        private var assumedAt = 0L
 
         internal fun assume(pkg: String, playing: Boolean) {
             assumedPkg = pkg
             assumedPlaying = playing
+            assumedAt = SystemClock.elapsedRealtime()
             read()
             if (song != null) starting = null
         }
+
+        /** Lo que se supone de [pkg] (suena o no), si se le mandó play o pausa hace menos de [ASSUME_MAX_MS]. */
+        private fun assumedFor(pkg: String?): Boolean? =
+            assumedPlaying.takeIf { pkg != null && pkg == assumedPkg && SystemClock.elapsedRealtime() - assumedAt < ASSUME_MAX_MS }
 
         internal fun forget() {
             if (assumedPkg == null) return
@@ -513,7 +560,7 @@ class MusicRepository(private val context: Context) {
         /** Lo último que avisó una app por broadcast ([BroadcastMeta]) y cuándo; respaldo sin sesión. */
         private var heard: BroadcastMeta? = null
         private var heardAt = 0L
-        private val expire = Runnable { if (users > 0 && controller == null) read() }
+        private val expire = Runnable { if (users > 0) read() }
 
         internal fun heard(meta: BroadcastMeta) {
             heard = meta.over(heard)
@@ -576,13 +623,15 @@ class MusicRepository(private val context: Context) {
             // La sesión de LiteDash cambia de USB a radio (o al revés): que la tome la otra pieza.
             if (!accepts(c.packageName)) return this@MusicRepository.choose(sessions())
         val state = c.playbackState
-        val playing = state?.state == PlaybackState.STATE_PLAYING
+        val reported = state?.state.let { it == PlaybackState.STATE_PLAYING || it == PlaybackState.STATE_PAUSED || it == PlaybackState.STATE_BUFFERING || it == PlaybackState.STATE_CONNECTING }
+        // Una sesión que no dice si suena (con o sin título): lo que LiteDash le mandó.
+        val assumed = if (reported) null else assumedFor(c.packageName)
+        val playing = assumed ?: (state?.state == PlaybackState.STATE_PLAYING)
         val app = appLabel(c.packageName)
         val shown = notified(c.packageName)
         val named = m.text(MediaMetadata.METADATA_KEY_TITLE, MediaMetadata.METADATA_KEY_DISPLAY_TITLE).ifBlank { shown?.first.orEmpty() }
         // Sesión vacía que ni siquiera dice si suena (la abren las apps de Bluetooth y FM de fábrica
         // solo para atrapar el volante): manda lo que avisó la app o lo que LiteDash le pidió.
-        val reported = state?.state.let { it == PlaybackState.STATE_PLAYING || it == PlaybackState.STATE_PAUSED || it == PlaybackState.STATE_BUFFERING || it == PlaybackState.STATE_CONNECTING }
         if (named.isBlank() && !reported) {
             val blind = fromBroadcast() ?: fromAssumed()
             if (blind != null) {
@@ -624,6 +673,7 @@ class MusicRepository(private val context: Context) {
             source = sourceOf(c.packageName),
             buffering = state?.state == PlaybackState.STATE_BUFFERING || state?.state == PlaybackState.STATE_CONNECTING,
             error = state?.takeIf { it.state == PlaybackState.STATE_ERROR }?.errorMessage?.toString(),
+            blind = assumed != null,
         )
         }
 
@@ -635,8 +685,9 @@ class MusicRepository(private val context: Context) {
             val h = heard?.takeIf { SystemClock.elapsedRealtime() - heardAt < BROADCAST_FRESH_MS } ?: return null
             val pkg = h.pkg ?: sourceApps[SourceKind.BLUETOOTH]?.takeIf { h.bluetooth }
             val app = pkg?.let(::appLabel).orEmpty()
-            // Llegó la canción sin estado: suena.
-            val playing = h.playing ?: true
+            // Si LiteDash le mandó play o pausa después del último aviso, eso manda; si el aviso no dice, suena.
+            val sent = assumedFor(pkg ?: assumedPkg)?.takeIf { assumedAt > heardAt }
+            val playing = sent ?: h.playing ?: true
             if (h.title == null && !playing) return null
             val title = h.title ?: app.ifBlank { if (h.bluetooth) context.getString(R.string.source_bluetooth) else return null }
             return Song(
@@ -662,6 +713,7 @@ class MusicRepository(private val context: Context) {
         /** Lo que LiteDash supone de la app a la que le mandó play o pausa ([assume]). */
         private fun fromAssumed(): Song? {
             val pkg = assumedPkg ?: return null
+            val playing = assumedFor(pkg) ?: return null
             val kind = sourceOf(pkg)
             val app = appLabel(pkg)
             val fallback = context.getString(if (kind == SourceKind.RADIO) R.string.source_radio else R.string.source_bluetooth)
@@ -670,7 +722,7 @@ class MusicRepository(private val context: Context) {
                 artist = "",
                 app = app,
                 artwork = null,
-                playing = assumedPlaying,
+                playing = playing,
                 durationMs = 0,
                 positionMs = 0,
                 readAt = SystemClock.elapsedRealtime(),
@@ -793,19 +845,17 @@ class MusicRepository(private val context: Context) {
 
     /** La app a la que va el play (o una tecla) de [lens] cuando no hay sesión que lo reciba. */
     private fun target(lens: Lens): String? =
-        lens.controller?.packageName ?: lens.song?.pkg?.ifEmpty { null }
+        // Lo que se supo sin sesión (aviso o supuesto) manda: la sesión elegida puede ser otra app vacía.
+        lens.song?.takeIf { it.blind }?.pkg?.ifEmpty { null } ?: lens.controller?.packageName ?: lens.song?.pkg?.ifEmpty { null }
             ?: if (lens === radio) appFor(SourceKind.RADIO) else active ?: preferred ?: store.getString(KEY_LAST_APP, null)
 
     /**
      * Que suene lo tocado, la app elegida o, sin ninguna, la última que sonó. Con una canción
-     * cargada (en pausa), play directo. Si no, en este orden: (1) conectarse a su
-     * servicio de música, como Android Auto (algunas apps solo lo aceptan de Android
-     * Auto); (2) el botón de play a su receptor, como el del volante (así arrancan los
-     * reproductores de Bluetooth y radio de las pantallas); (3) el botón de play por
-     * el sistema de audio, que Android lleva a la última app de música (mandárselo directo
-     * a una sesión vieja lo bloquea desde Android 12); (4) si en [WAKE_TIMEOUT_MS] no
-     * suena, se abre la app, que es lo que habría que hacer a mano. Mientras, [starting]
-     * dice cuál se está abriendo.
+     * cargada (en pausa), play directo. Si no, se despierta la app ([wake]): su receptor del
+     * botón de play o su sesión, y su servicio de música, como Android Auto; sin ninguno, el
+     * botón por el sistema de audio, que Android lleva a la última app de música. Si en
+     * [WAKE_TIMEOUT_MS] no suena y no hubo a quién mandarle el botón, se abre la app.
+     * Mientras, [starting] dice cuál se está abriendo.
      */
     fun resume() {
         val pkg = active ?: preferred ?: music.controller?.packageName ?: store.getString(KEY_LAST_APP, null)
@@ -835,23 +885,21 @@ class MusicRepository(private val context: Context) {
     }
 
     /**
-     * Despierta a [pkg] para que suene en [lens]: su servicio de música y el botón de play a su
-     * receptor (los dos: varias apps de Bluetooth tienen servicio pero no hacen caso por ahí); si
-     * no tiene ninguno, el botón del sistema. Solo se abre la app si no hubo a quién mandarle el
-     * botón: las de Bluetooth de las pantallas no comparten qué suena, y abrirlas en cada toque
-     * hacía "Abriendo…" y regresaba sin que nada cambiara.
+     * Despierta a [pkg] para que suene en [lens], por un solo camino para que no le llegue play dos
+     * veces (varias apps de fábrica lo toman como play/pausa): el botón de play a su receptor o, si
+     * no tiene, a su sesión aunque esté vacía; y su servicio de música (varias apps de Bluetooth
+     * tienen servicio pero no hacen caso por ahí). Sin nada de eso, el botón del sistema (nunca en
+     * la radio: llevaría a Spotify). Las de fábrica no dicen si suenan: se da por hecho que sí
+     * ([Lens.assume]). Solo se abre la app si no hubo a quién mandarle el botón.
      */
     private fun wake(pkg: String, lens: Lens) {
         lens.starting = appLabel(pkg)
         val radioLens = lens === radio
-        val service = connectAndPlay(pkg, fallback = !radioLens)
         val button = buttonPlay(pkg)
-        // Muchas apps de fábrica abren una sesión vacía solo para el volante: también por ahí.
-        val session = sessions().firstOrNull { it.packageName == pkg }?.also { runCatching { it.transportControls.play() } } != null
+        val session = !button && sessions().firstOrNull { it.packageName == pkg }?.also { runCatching { it.transportControls.play() } } != null
+        val service = connectAndPlay(pkg, fallback = !radioLens && !button && !session)
         trace("despertar $pkg: servicio=${yes(service)} receptor=${yes(button)} sesión=${yes(session)}")
-        // Sin a quién mandárselo, el botón del sistema (nunca en la radio: llevaría a Spotify).
         if (!service && !button && !session && !radioLens) systemPlay()
-        // Las de Bluetooth y FM de fábrica no dicen si suenan: se da por hecho que sí.
         if ((button || session) && (sourceOf(pkg) != null || !service)) lens.assume(pkg, true)
         mainHandler.postDelayed({
             if (lens.song == null && lens.starting != null && !button && !session) open(pkg)
@@ -860,29 +908,29 @@ class MusicRepository(private val context: Context) {
     }
 
     /**
-     * Una tecla multimedia a la app de [lens], como el volante: a su receptor y, si es play o
-     * pausa (repetirlas no cambia nada), también a su sesión aunque esté vacía; sin receptor, a
-     * la sesión. Sin ninguno, al sistema de audio, salvo la radio y el reproductor propio: ahí el
-     * sistema la llevaría a otra app (y podría arrancar Spotify). False = no hubo a quién.
+     * Una tecla multimedia a la app de [lens], como el volante, por un solo camino: a su receptor o,
+     * sin receptor, a su sesión aunque esté vacía. Sin ninguno, al sistema de audio, salvo la radio y
+     * el reproductor propio: ahí el sistema la llevaría a otra app (y podría arrancar Spotify).
+     * False = no hubo a quién.
      */
     private fun press(lens: Lens, code: Int): Boolean {
         val pkg = target(lens)
         val receiver = keyReceiver(pkg)
-        val session = pkg?.takeUnless(::isOwn)?.let { p -> lens.controller?.takeIf { it.packageName == p } ?: sessions().firstOrNull { it.packageName == p } }
-        val repeatable = code == KeyEvent.KEYCODE_MEDIA_PLAY || code == KeyEvent.KEYCODE_MEDIA_PAUSE
-        val toSession = session != null && (receiver == null || repeatable)
-        trace("tecla ${KeyEvent.keyCodeToString(code).removePrefix("KEYCODE_MEDIA_")} $pkg: receptor=${yes(receiver != null)} sesión=${yes(toSession)}")
-        if (receiver == null && session == null) {
-            if (lens === radio || pkg != null && isOwn(pkg)) return false
-            sendMediaKey(context, code)
-            return true
+        val session = if (receiver != null) null else pkg?.takeUnless(::isOwn)?.let { p -> lens.controller?.takeIf { it.packageName == p } ?: sessions().firstOrNull { it.packageName == p } }
+        trace("tecla ${KeyEvent.keyCodeToString(code).removePrefix("KEYCODE_MEDIA_")} $pkg: receptor=${yes(receiver != null)} sesión=${yes(session != null)}")
+        when {
+            receiver != null -> sendMediaKey(context, code, receiver)
+            session != null -> for (action in intArrayOf(KeyEvent.ACTION_DOWN, KeyEvent.ACTION_UP)) runCatching { session.dispatchMediaButtonEvent(KeyEvent(action, code)) }
+            lens === radio || pkg != null && isOwn(pkg) -> return false
+            else -> sendMediaKey(context, code)
         }
-        if (receiver != null) sendMediaKey(context, code, receiver)
-        if (toSession) session?.let { c -> for (action in intArrayOf(KeyEvent.ACTION_DOWN, KeyEvent.ACTION_UP)) runCatching { c.dispatchMediaButtonEvent(KeyEvent(action, code)) } }
         return true
     }
 
-    /** ¿Hay a quién mandarle una tecla de [lens]? La música siempre (al sistema); la radio, solo a su receptor. */
+    /**
+     * ¿Hay a quién mandarle una tecla de [lens]? La música siempre (al sistema); la radio, a su receptor
+     * (si no tiene, su sesión ya recibe lo mismo por sus controles).
+     */
     private fun canKey(lens: Lens): Boolean = lens !== radio || keyReceiver(target(lens)) != null
 
     /**
@@ -899,16 +947,17 @@ class MusicRepository(private val context: Context) {
         return !isOwn(pkg) && keyReceiver(pkg) != null
     }
 
-    /** ¿[pkg] ofrece su servicio de música (MediaBrowserService)? */
-    private fun hasBrowser(pkg: String): Boolean = runCatching {
-        context.packageManager.queryIntentServices(Intent(MediaBrowserService.SERVICE_INTERFACE).setPackage(pkg), 0).isNotEmpty()
-    }.getOrDefault(false)
+    /** El servicio de música (MediaBrowserService) de [pkg]; null si no ofrece. */
+    private fun browserService(pkg: String) = runCatching {
+        context.packageManager.queryIntentServices(Intent(MediaBrowserService.SERVICE_INTERFACE).setPackage(pkg), 0).firstOrNull()?.serviceInfo
+    }.getOrNull()
 
-    /** Se conecta al servicio de música de [pkg] y le pide play; si no lo acepta, el botón del sistema. */
+    /**
+     * Se conecta al servicio de música de [pkg] y le pide play; si no lo acepta y [fallback], el botón
+     * del sistema. False = no tiene servicio.
+     */
     private fun connectAndPlay(pkg: String, fallback: Boolean): Boolean {
-        val service = context.packageManager
-            .queryIntentServices(Intent(MediaBrowserService.SERVICE_INTERFACE).setPackage(pkg), 0)
-            .firstOrNull()?.serviceInfo ?: return false
+        val service = browserService(pkg) ?: return false
         lateinit var browser: MediaBrowser
         browser = MediaBrowser(context, ComponentName(service.packageName, service.name), object : MediaBrowser.ConnectionCallback() {
             override fun onConnected() {
@@ -1006,15 +1055,16 @@ class MusicRepository(private val context: Context) {
      * de canciones ni del celular.
      */
     fun describe(): String = buildString {
-        val buttons = mediaButtonReceivers().map { it.packageName }.distinct()
-        val browsers = musicApps()
+        // Solo apps del sistema y las que el usuario enlazó o eligió: no la lista de todo lo instalado.
+        val buttons = mediaButtonReceivers().map { it.packageName }.distinct().filter(::relevant)
+        val browsers = musicApps().filter(::relevant)
         appendLine("Música elegida: ${preferred ?: "ninguna"}")
         appendLine("Fuentes: ${SourceKind.entries.joinToString { "${it.name.lowercase()}=${appFor(it) ?: "-"}" }}")
-        val notes = sourceNotifications()
+        val notes = sourceApps.values.toSet().let { apps -> NotificationService.active().filter { it.packageName in apps } }
         for ((kind, pkg) in sourceApps) {
             val own = notes.filter { it.packageName == pkg }
             appendLine(
-                "  ${kind.name.lowercase()} $pkg: receptor=${yes(keyReceiver(pkg) != null)} servicio=${yes(hasBrowser(pkg))} " +
+                "  ${kind.name.lowercase()} $pkg: receptor=${yes(keyReceiver(pkg) != null)} servicio=${yes(browserService(pkg) != null)} " +
                     "avisos=${own.size} música=${yes(own.any { it.isMedia() })}",
             )
         }
@@ -1045,6 +1095,11 @@ class MusicRepository(private val context: Context) {
         append("Últimos eventos:")
         if (traceLog.isEmpty()) append(" ninguno") else traceLog.forEach { append("\n  ").append(it) }
     }
+
+    /** ¿[pkg] va en el reporte? Las del sistema, las enlazadas y la elegida. */
+    private fun relevant(pkg: String): Boolean =
+        pkg == preferred || pkg in sourceApps.values ||
+            runCatching { context.packageManager.getApplicationInfo(pkg, 0).flags and ApplicationInfo.FLAG_SYSTEM != 0 }.getOrDefault(false)
 
     private fun actionNames(actions: Long): String = listOf(
         PlaybackState.ACTION_PLAY to "play", PlaybackState.ACTION_PAUSE to "pause", PlaybackState.ACTION_PLAY_PAUSE to "play_pause",
@@ -1289,6 +1344,10 @@ fun rememberPosition(song: Song): State<Long> = produceState(song.currentPositio
         value = song.currentPosition()
     }
 }
+
+/** La sesión que comparte un aviso de música; null si no trae. */
+private fun StatusBarNotification.sessionToken(): MediaSession.Token? =
+    BundleCompat.getParcelable(notification.extras, Notification.EXTRA_MEDIA_SESSION, MediaSession.Token::class.java)
 
 /** Aviso de música: con su sesión o con el estilo multimedia ("android.template"; la constante es de la API 24). */
 private fun StatusBarNotification.isMedia(): Boolean {
