@@ -6,6 +6,13 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
+## [1.4.80] - 2026-11-05
+
+### Agregado
+- **Radio de las pantallas TopWay** (TS7, TS10, TS18): el widget Radio muestra la estación (frecuencia y
+  nombre) y siguiente/anterior cambian de estación sin abrir la radio. Play la sigue abriendo para que suene
+  y pausa la detiene. Si algo no funciona en tu pantalla, manda un reporte de Radio: trae lo que dijo la radio.
+
 ## [1.4.79] - 2026-11-05
 
 ### Arreglado

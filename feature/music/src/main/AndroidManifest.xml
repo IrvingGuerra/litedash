@@ -8,6 +8,10 @@
         <intent>
             <action android:name="android.intent.action.MEDIA_BUTTON" />
         </intent>
+        <!-- El servicio de comandos de las pantallas TopWay (solo para saber si está, en los reportes). -->
+        <intent>
+            <action android:name="com.tw.service.xt.CommandService.Bind" />
+        </intent>
     </queries>
     <!-- El nombre del celular conectado por Bluetooth (la pieza lo muestra cuando la app no manda la canción). -->
     <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
