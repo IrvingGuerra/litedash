@@ -6,6 +6,16 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
+## [1.4.91] - 2026-11-05
+
+### Arreglado (auditoría de la 1.4.86 a la 1.4.90)
+- Radio TopWay: si pausas, cambias a internet o quitas la FM justo después de dar play, ya no se
+  vuelve a abrir la radio ni dice "sonando" con el audio apagado. La radio solo se da por encendida
+  cuando el sintonizador lo dice (antes se podía confundir con la propia orden de LiteDash).
+- Prender o apagar la radio por internet ya no borra la estación FM si la FM sigue siendo la escogida.
+- Música: el play de respaldo ya no se confunde si cambias de app en esos segundos, ya no se salta
+  la app si el widget mostraba otra en pausa, y la app se abre una sola vez.
+
 ## [1.4.90] - 2026-11-05
 
 ### Arreglado

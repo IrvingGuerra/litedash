@@ -73,14 +73,14 @@ private const val RADIO_RETURN_MS = 3_000L
 /** Marca de "abriendo TopWay": si se queda puesta, la app se cerró al abrirlo. */
 private const val KEY_TOPWAY_OPENING = "topway_opening"
 private const val TOPWAY_XT_BIND = "com.tw.service.xt.CommandService.Bind"
-/** Lo que tarda el sintonizador de TopWay en contestar la estación. */
+/** Lo que tarda el sintonizador de TopWay en contestar (la estación o que ya tiene el audio). */
 private const val TOPWAY_ANSWER_MS = 2_000L
 /** Lo que LiteDash supone de una app de fábrica (suena / en pausa) deja de valer tras este rato (p. ej. apagaron el auto). */
+private const val ASSUME_MAX_MS = 3 * 60 * 60_000L
 /** Tras un play a una app de música, cuánto se espera a que suene antes de abrirla. */
 private const val PLAY_CHECK_MS = 4_000L
 /** Tras abrirla, cuánto se espera para regresar al inicio y darle play otra vez (Spotify tarda en despertar). */
 private const val PLAY_RETURN_MS = 4_000L
-private const val ASSUME_MAX_MS = 3 * 60 * 60_000L
 /** Cuántos eventos guarda el registro de "Enviar un reporte". */
 private const val TRACE_SIZE = 60
 /** Un aviso (broadcast) de qué suena vale como respaldo durante este rato. */
@@ -174,7 +174,7 @@ class MusicRepository(private val context: Context) {
         // Al enlazar otra vez (quizá tras actualizar la app de la pantalla) se vuelve a preguntar su receptor.
         if (pkg != null) receivers.remove(pkg)
         music.forget()
-        radio.forget()
+        if (kind != SourceKind.RADIO) radio.forget()
         store.edit().putString(kind.key, pkg).apply()
         if (users > 0) loadSourceNotes()
         if (kind == SourceKind.RADIO) radioChanged()
@@ -189,8 +189,9 @@ class MusicRepository(private val context: Context) {
         get() = ownRadioState
         set(v) {
             if (v == ownRadioState) return
+            val before = appFor(SourceKind.RADIO)
             ownRadioState = v
-            radioChanged()
+            if (appFor(SourceKind.RADIO) != before) radioChanged()
         }
     private var ownRadioState by mutableStateOf(false)
 
@@ -200,6 +201,7 @@ class MusicRepository(private val context: Context) {
      * le mandó) ya no vale, y TopWay solo escucha mientras la FM sea la radio escogida.
      */
     private fun radioChanged() {
+        mainHandler.removeCallbacks(topWayConfirm)
         radio.clear()
         if (users > 0) startTopWay()
     }
@@ -235,9 +237,10 @@ class MusicRepository(private val context: Context) {
     var radioInternet: Boolean
         get() = radioInternetState
         set(v) {
+            val before = appFor(SourceKind.RADIO)
             radioInternetState = v
             store.edit().putBoolean(KEY_RADIO_INTERNET, v).apply()
-            radioChanged()
+            if (appFor(SourceKind.RADIO) != before) radioChanged()
             // Al pasar a la FM, la de internet se calla (si no, su sesión en pausa seguiría mandando).
             if (!v && ownSourceNow?.invoke() == SourceKind.RADIO) ownStop?.invoke()
         }
@@ -773,6 +776,7 @@ class MusicRepository(private val context: Context) {
             topWayFor(this)?.let { tw ->
                 if (!s.playing) return onWake()
                 trace("topway pausa")
+                mainHandler.removeCallbacks(topWayConfirm)
                 return tw.releaseAudio()
             }
             val t = controller?.transportControls?.takeUnless { keysOnly(PlaybackState.ACTION_PLAY_PAUSE or PlaybackState.ACTION_PLAY or PlaybackState.ACTION_PAUSE) }
@@ -888,9 +892,9 @@ class MusicRepository(private val context: Context) {
      * Que suene lo tocado, la app elegida o, sin ninguna, la última que sonó. Con una canción
      * cargada (en pausa), play directo. Si no, se despierta la app ([wake]): su receptor del
      * botón de play o su sesión, y su servicio de música, como Android Auto; sin ninguno, el
-     * botón por el sistema de audio, que Android lleva a la última app de música. Si en
-     * [WAKE_TIMEOUT_MS] no suena y no hubo a quién mandarle el botón, se abre la app.
-     * Mientras, [starting] dice cuál se está abriendo.
+     * botón por el sistema de audio, que Android lleva a la última app de música. Si no suena,
+     * [watchPlay] abre la app, regresa y le vuelve a dar play. Mientras, [starting] dice cuál se
+     * está abriendo.
      */
     fun resume() {
         val pkg = active ?: preferred ?: music.controller?.packageName ?: store.getString(KEY_LAST_APP, null)
@@ -915,18 +919,19 @@ class MusicRepository(private val context: Context) {
         if (isOwn(pkg) || sourceOf(pkg) != null) return
         playPkg = pkg
         mainHandler.removeCallbacks(playCheck)
+        mainHandler.removeCallbacks(returnAndPlay)
         mainHandler.postDelayed(playCheck, PLAY_CHECK_MS)
     }
 
     private var playPkg: String? = null
     private val playCheck = Runnable {
         val pkg = playPkg ?: return@Runnable
-        if (users == 0 || musicActive() || music.song?.playing == false) return@Runnable trace("play $pkg: audio=${yes(musicActive())}")
+        // En pausa = la pausaron (solo si la pieza muestra esa misma app).
+        if (users == 0 || musicActive() || music.song?.takeIf { it.pkg == pkg }?.playing == false) return@Runnable trace("play $pkg: audio=${yes(musicActive())}")
         music.starting = null
         val over = open(pkg)
         trace("play $pkg: no suena, se abre${if (over) " y se regresa" else ""}")
         if (!over) return@Runnable
-        mainHandler.removeCallbacks(returnAndPlay)
         mainHandler.postDelayed(returnAndPlay, PLAY_RETURN_MS)
     }
     private val returnAndPlay = Runnable {
@@ -934,8 +939,12 @@ class MusicRepository(private val context: Context) {
         returnHome?.invoke()
         if (musicActive()) return@Runnable trace("regreso: $pkg ya suena")
         val session = sessions().firstOrNull { it.packageName == pkg }
-        if (session != null) runCatching { session.transportControls.play() } else buttonPlay(pkg)
-        trace("regreso: play otra vez a $pkg por ${if (session != null) "sesión" else "receptor"}")
+        val by = when {
+            session != null -> runCatching { session.transportControls.play() }.let { "sesión" }
+            buttonPlay(pkg) -> "receptor"
+            else -> "nada"
+        }
+        trace("regreso: play otra vez a $pkg por $by")
     }
 
     /**
@@ -971,12 +980,14 @@ class MusicRepository(private val context: Context) {
         val session = !button && sessions().firstOrNull { it.packageName == pkg }?.also { runCatching { it.transportControls.play() } } != null
         val service = connectAndPlay(pkg, fallback = !radioLens && !button && !session)
         trace("despertar $pkg: servicio=${yes(service)} receptor=${yes(button)} sesión=${yes(session)}")
-        if (!service && !button && !session && radioLens) topWayFor(lens)?.let { return playTopWay(it, pkg, lens) }
-        if (!service && !button && !session && radioLens) return openAndReturn(pkg, lens)
-        if (!service && !button && !session) systemPlay()
+        val none = !service && !button && !session
+        if (none && radioLens) return topWayFor(lens)?.let { playTopWay(it, pkg, lens) } ?: openAndReturn(pkg, lens)
+        if (none) systemPlay()
         if ((button || session) && (sourceOf(pkg) != null || !service)) lens.assume(pkg, true)
+        // Las apps de música normales las abre [watchPlay] (y regresa); aquí solo las de la pantalla.
+        val opens = none && sourceOf(pkg) != null
         mainHandler.postDelayed({
-            if (lens.song == null && lens.starting != null && !button && !session) open(pkg)
+            if (lens.song == null && lens.starting != null && opens) open(pkg)
             lens.starting = null
         }, WAKE_TIMEOUT_MS)
     }
@@ -1005,17 +1016,20 @@ class MusicRepository(private val context: Context) {
         val asked = SystemClock.elapsedRealtime()
         trace("topway play sin abrir")
         tw.takeAudio()
-        mainHandler.postDelayed({
+        mainHandler.removeCallbacks(topWayConfirm)
+        topWayConfirm = Runnable {
             lens.starting = null
-            if (tw.onAt >= asked) {
-                trace("topway suena sin abrir")
-                tw.started()
-            } else {
-                trace("topway no confirmó: se abre $pkg")
-                openAndReturn(pkg, lens)
-            }
-        }, TOPWAY_ANSWER_MS)
+            // Se cerró (cambiaron de radio o LiteDash se fue): ya no toca.
+            if (topWay !== tw || !tw.open) return@Runnable
+            if (tw.audioAt >= asked) return@Runnable trace("topway suena sin abrir")
+            trace("topway no confirmó: se abre $pkg")
+            openAndReturn(pkg, lens)
+        }
+        mainHandler.postDelayed(topWayConfirm, TOPWAY_ANSWER_MS)
     }
+
+    /** La confirmación pendiente del play de TopWay; se cancela al pausar o cambiar de radio. */
+    private var topWayConfirm = Runnable {}
 
     private val radioCheck = Runnable { trace("radio tras regresar: audio=${yes(musicActive())}") }
     private val returnFromRadio = Runnable {

@@ -13,9 +13,8 @@ import java.util.Locale
  * `android.tw.john.TWUtil`, el enlace del firmware con el sintonizador (por reflexión: en otras
  * pantallas no existe). Códigos de ivvlev/CarRadio y OpenRath (GPL). Da la estación (frecuencia y
  * nombre RDS), siguiente/anterior y play/pausa sin abrir su app: se le pide el audio como lo hace
- * ella al abrirse ("actividad" 0x9E00, audio 769 y fuente 0x9E11, como ivvlev/CarRadio,
- * dipcore/Radio-MST768 y Orbit). Lo que dice el
- * sintonizador va al registro para los reportes.
+ * ella al abrirse ("actividad" 0x9E00, fuente de audio 769 y foco 0x9E11, como ivvlev/CarRadio,
+ * dipcore/Radio-MST768 y Orbit). Lo que dice el sintonizador va al registro para los reportes.
  */
 internal class TopWayRadio(private val onState: (BroadcastMeta) -> Unit, private val trace: (String) -> Unit) {
     private var util: Any? = null
@@ -32,8 +31,11 @@ internal class TopWayRadio(private val onState: (BroadcastMeta) -> Unit, private
     /** El sintonizador tiene el audio; null = no ha dicho. */
     var on: Boolean? = null
         private set
-    /** Cuándo dijo por última vez el sintonizador que tiene el audio (para confirmar un play). */
-    var onAt = 0L
+    /**
+     * Cuándo dijo el sintonizador que tiene el audio (769 = 1), para confirmar un play. La "actividad"
+     * no sirve: el enlace reparte lo que se escribe, así que llegaría la nuestra.
+     */
+    var audioAt = 0L
         private set
     /** El número de la radio en "actividad" y fuente: 1 en las TS18 (ivvlev/CarRadio); se aprende de lo que manda. */
     private var source = SOURCE_RADIO
@@ -43,17 +45,20 @@ internal class TopWayRadio(private val onState: (BroadcastMeta) -> Unit, private
         override fun handleMessage(m: Message) {
             // La primera vez de cada mensaje (y lo del audio siempre) al registro: así se aprende qué manda cada pantalla.
             // Las presintonías (1026, una por botón) no: llenaban el registro.
-            if (m.what != STATION && seen.add(m.what * 1000 + m.arg1) || m.what == AUDIO || m.what == ACTIVITY) trace("topway ${m.what} ${m.arg1} ${m.arg2}${(m.obj as? String)?.let { " \"$it\"" } ?: ""}")
+            if ((m.what != STATION && seen.add(m.what * 1000 + m.arg1)) || m.what == AUDIO || m.what == ACTIVITY) trace("topway ${m.what} ${m.arg1} ${m.arg2}${(m.obj as? String)?.let { " \"$it\"" } ?: ""}")
             when {
                 m.what == RADIO && m.arg1 == 1 -> band = m.arg2
                 m.what == RADIO && m.arg1 == 2 -> frequency = m.arg2
                 m.what == RDS -> name = (m.obj as? String)?.trim().orEmpty()
-                m.what == AUDIO -> setOn(m.arg1 == 1)
-                // Actividad: el número de la radio al entrar (1 o 10) y con 0x80 al salir (129 o 0x8A).
+                m.what == AUDIO -> {
+                    on = m.arg1 == 1
+                    if (on == true) audioAt = SystemClock.elapsedRealtime()
+                }
+                // Actividad: el número de la radio al entrar (1 o 0x0A) y con 0x80 al salir (0x81 o 0x8A).
                 m.what == ACTIVITY -> {
                     val radio = m.arg1 == SOURCE_RADIO || m.arg1 == SOURCE_RADIO_ALT
                     if (radio) source = m.arg1
-                    setOn(radio)
+                    on = radio
                 }
                 else -> return
             }
@@ -106,11 +111,6 @@ internal class TopWayRadio(private val onState: (BroadcastMeta) -> Unit, private
     fun next() = write(RADIO, 1, 0)
     fun previous() = write(RADIO, 1, 1)
 
-    private fun setOn(v: Boolean) {
-        on = v
-        if (v) onAt = SystemClock.elapsedRealtime()
-    }
-
     /** Play sin abrir su app: pide el audio para la radio, como ella al abrirse, y la estación. */
     fun takeAudio() {
         activity(source)
@@ -134,7 +134,7 @@ internal class TopWayRadio(private val onState: (BroadcastMeta) -> Unit, private
         write2?.let { m -> runCatching { m.invoke(u, ACTIVITY, value) }.onFailure { trace("topway write $ACTIVITY falló") } } ?: write(ACTIVITY, value, 0)
     }
 
-    /** Se dio play: suena hasta que el sintonizador diga otra cosa. */
+    /** Se dio play abriendo su app: suena hasta que el sintonizador diga otra cosa. */
     fun started() {
         on = true
         publish()

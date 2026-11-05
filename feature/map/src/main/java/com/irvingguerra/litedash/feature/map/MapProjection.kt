@@ -58,6 +58,7 @@ class MapProjection(
         val rc = cos(r).toFloat()
         val rs = sin(r).toFloat()
         // Girar alrededor de tu posición.
+        val side = maxOf(width, height)
         val rotate = floatArrayOf(rc, -rs, atX - rc * atX + rs * atY, rs, rc, atY - rs * atX - rc * atY, 0f, 0f, 1f)
         if (tilted) {
             val t = Math.toRadians(TILT_DEGREES)
@@ -66,7 +67,6 @@ class MapProjection(
             val camera = maxOf(CAMERA_PX * density, CAMERA_PER_HEIGHT * height)
             // Lo que hace falta para que lo más lejano quede a [TOP_GAP] de la orilla de arriba (ahí lo cubre el
             // desvanecido); si el horizonte queda más abajo, nunca se alcanza: hasta el tope.
-            val side = maxOf(width, height)
             val drop = atY - TOP_GAP * height
             val room = c - drop * s / camera
             val needed = if (room > 0f) drop / room else Float.MAX_VALUE
@@ -77,7 +77,7 @@ class MapProjection(
             edge = atY - far * c / (1f + far * s / camera)
             top = edge.coerceAtLeast(0f)
         } else {
-            far = REACH * maxOf(width, height)
+            far = REACH * side
             values = rotate
             edge = 0f
             top = 0f
