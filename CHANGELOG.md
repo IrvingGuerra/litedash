@@ -6,6 +6,12 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
+## [1.4.88] - 2026-11-05
+
+### Cambiado
+- Radio TopWay: al dar play también se pide la fuente de audio de la radio, como lo hacen otras
+  apps libres para estas pantallas; así es más seguro que encienda la FM sin abrir su app.
+
 ## [1.4.87] - 2026-11-05
 
 ### Cambiado

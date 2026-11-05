@@ -13,7 +13,8 @@ import java.util.Locale
  * `android.tw.john.TWUtil`, el enlace del firmware con el sintonizador (por reflexión: en otras
  * pantallas no existe). Códigos de ivvlev/CarRadio y OpenRath (GPL). Da la estación (frecuencia y
  * nombre RDS), siguiente/anterior y play/pausa sin abrir su app: se le pide el audio como lo hace
- * ella al abrirse ("actividad" 0x9E00 y fuente 0x9E11, como ivvlev/CarRadio). Lo que dice el
+ * ella al abrirse ("actividad" 0x9E00, audio 769 y fuente 0x9E11, como ivvlev/CarRadio,
+ * dipcore/Radio-MST768 y Orbit). Lo que dice el
  * sintonizador va al registro para los reportes.
  */
 internal class TopWayRadio(private val onState: (BroadcastMeta) -> Unit, private val trace: (String) -> Unit) {
@@ -112,6 +113,8 @@ internal class TopWayRadio(private val onState: (BroadcastMeta) -> Unit, private
     /** Play sin abrir su app: pide el audio para la radio, como ella al abrirse, y la estación. */
     fun takeAudio() {
         activity(source)
+        // Fuente de audio y foco, como dipcore/Radio-MST768 y Orbit (TS18).
+        write(AUDIO, 0xC0, source)
         write(FOCUS, 0xC0, source)
         refresh()
     }
