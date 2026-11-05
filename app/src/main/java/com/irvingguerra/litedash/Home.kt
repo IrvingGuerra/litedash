@@ -239,12 +239,16 @@ fun TileContent(d: Dependencies, p: Tile, apps: List<App>, car: CarPackage?, rev
                     onTires = onTires,
                 )
             }
-            // Las llantas en las esquinas del auto o de tu imagen; en la carretera, junto a cada
-            // rueda de su auto. En una pieza chica las cuatro pastillas taparían todo: ahí solo la
-            // pieza Llantas o el aviso. Sin llantas no hace falta medir la pieza.
+            // Las llantas junto a cada rueda en la carretera y en el auto 3D (si ya se sabe dónde pisan
+            // y así se eligió); si no, en las esquinas. En una pieza chica las cuatro pastillas
+            // taparían todo: ahí solo la pieza Llantas o el aviso. Sin llantas no hace falta medir la pieza.
             if (d.hasTpmsSource) BoxWithConstraints(hero) {
+                // Dónde pisa cada rueda: un archivo chico aparte del paquete, se pide la primera vez.
+                if (p.type == TileTypes.CAR && d.prefs.tiresOnCar == TiresOnCar.WHEELS) LaunchedEffect(car) { d.cars.fetchWheels(car) }
                 val pills = maxWidth >= PILLS_MIN_WIDTH && maxHeight >= PILLS_MIN_HEIGHT && !actions.editing()
-                if (p.type == TileTypes.ROAD) content(actions.onTires.takeIf { pills }) else {
+                val onWheels = p.type == TileTypes.ROAD ||
+                    p.type == TileTypes.CAR && d.prefs.tiresOnCar == TiresOnCar.WHEELS && car?.wheels != null
+                if (onWheels) content(actions.onTires.takeIf { pills && d.prefs.tiresOnCar != TiresOnCar.OFF }) else {
                     content(null)
                     if (pills) TirePills(d, actions.onTires)
                 }

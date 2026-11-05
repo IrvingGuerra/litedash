@@ -656,7 +656,8 @@
     <string name="tires_car_tap_big">Verlo en grande</string>
     <string name="tires_car_tap_tires">Ver sus llantas</string>
     <string name="tires_on_car">Sobre el auto</string>
-    <string name="tires_on_car_corners">Mostrar</string>
+    <string name="tires_on_car_wheels">En las ruedas</string>
+    <string name="tires_on_car_corners">En las esquinas</string>
     <string name="tires_on_car_off">No</string>
     <string name="tires_banner">Aviso arriba del inicio</string>
     <string name="tires_alerts_off_note">Con los avisos apagados no salen el aviso ni el testigo</string>

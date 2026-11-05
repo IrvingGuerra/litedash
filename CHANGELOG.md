@@ -6,6 +6,15 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
+## [1.4.82] - 2026-11-05
+
+### Agregado
+- **Llantas en las ruedas:** la presión de cada llanta va en una fila justo debajo del auto 3D, cada
+  pastilla bajo su rueda, y se reacomodan al girarlo (las de las ruedas que tapa el auto, más tenues).
+  Es lo de fábrica; en Llantas → Inicio → "Sobre el auto" puedes elegir En las ruedas, En las
+  esquinas o No. Dónde pisa cada rueda se baja aparte (unos 3 KB por auto): no tienes que volver a
+  bajar tu auto. Mientras no llega (o en la moto), van en las esquinas.
+
 ## [1.4.81] - 2026-11-05
 
 ### Arreglado (auditoría de la 1.4.79 y la 1.4.80)

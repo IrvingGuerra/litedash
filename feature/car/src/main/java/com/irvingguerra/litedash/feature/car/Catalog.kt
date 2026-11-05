@@ -60,6 +60,8 @@ data class CatalogEntry(
     val high: PackageExtra? = null,
     /** El auto desde arriba para el Taller (unos KB); se baja aparte, la primera vez que se necesita. */
     val topView: PackageExtra? = null,
+    /** Dónde pisa cada rueda en el giro (unos KB, para las pastillas de las llantas); se baja aparte. */
+    val wheels: PackageExtra? = null,
 )
 
 /** Un archivo extra (cuadros del giro, vista desde arriba) que se baja encima del auto ya instalado. */
@@ -89,6 +91,8 @@ data class CarPackage(
     val folder: File,
     /** SHA-256 del paquete con que se instaló ("" si se bajó antes de guardarlo). */
     val sha256: String,
+    /** Dónde pisa cada rueda en el giro, si ya se bajó ([CarRepository.fetchWheels]). */
+    val wheels: CarWheels? = null,
 ) {
     val hasFloor get() = floor.isNotEmpty()
 }
@@ -189,6 +193,7 @@ class CarRepository(private val context: Context, val catalogUrl: String) {
                     .firstOrNull { it.optInt(CarJson.LEVEL) == HIGH_LEVEL }
                     ?.let(::extraOf),
                 topView = a.optJSONObject(CarJson.TOP_VIEW)?.let(::extraOf),
+                wheels = a.optJSONObject(CarJson.WHEELS)?.let(::extraOf),
             )
         }
     }
@@ -266,6 +271,9 @@ class CarRepository(private val context: Context, val catalogUrl: String) {
      * (así nadie vuelve a bajar su auto por ella); mientras no la haya, el Taller dibuja la silueta.
      */
     fun fetchTopView(p: CarPackage?) = fetchExtra(p, Extra.TOP_VIEW)
+
+    /** Dónde pisa cada rueda de [p] en el giro (las pastillas de las llantas); como la planta, aparte del paquete. */
+    fun fetchWheels(p: CarPackage?) = fetchExtra(p, Extra.WHEELS)
 
     /**
      * Baja un [Extra] de [p] si el catálogo lo trae y el auto aún no. Corre en el ámbito del
@@ -603,6 +611,7 @@ class CarRepository(private val context: Context, val catalogUrl: String) {
                 topView = File(folder, CarViews.TOP_VIEW + ".webp").exists(),
                 folder = folder,
                 sha256 = File(folder, CarFiles.PACKAGE_HASH).takeIf { it.exists() }?.readText()?.trim().orEmpty(),
+                wheels = File(folder, CarViews.WHEELS + ".json").takeIf { it.exists() }?.let { CarWheels.parse(it.readText()) },
             )
         }.getOrNull()
     }
@@ -690,4 +699,5 @@ private enum class Extra(
     val pick: (CatalogEntry) -> PackageExtra?,
 ) {
     TOP_VIEW(CarViews.TOP_VIEW, CarViews.TOP_VIEW + ".webp", "top_view_check:", { it.topView }, { it.topView }),
+    WHEELS(CarViews.WHEELS, CarViews.WHEELS + ".json", "wheels_check:", { it.wheels != null }, { it.wheels }),
 }

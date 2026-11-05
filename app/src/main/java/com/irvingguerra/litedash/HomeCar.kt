@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -34,6 +35,7 @@ import com.irvingguerra.litedash.feature.car.CarRepository
 import com.irvingguerra.litedash.feature.car.CarTile
 import com.irvingguerra.litedash.feature.car.CarTurntable
 import com.irvingguerra.litedash.feature.car.CatalogEntry
+import com.irvingguerra.litedash.feature.car.WheelSpots
 import com.irvingguerra.litedash.feature.dashboard.Tile
 import com.irvingguerra.litedash.feature.dashboard.TileTypes
 
@@ -43,17 +45,25 @@ import com.irvingguerra.litedash.feature.dashboard.TileTypes
  * cambian en Ajustes → Tu auto.
  */
 @Composable
-fun HomeCar(d: Dependencies, pkg: CarPackage?, onClick: () -> Unit, modifier: Modifier = Modifier, onReady: (() -> Unit)? = null) {
+fun HomeCar(
+    d: Dependencies,
+    pkg: CarPackage?,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    onReady: (() -> Unit)? = null,
+    onTires: (() -> Unit)? = null,
+) {
     val color = d.prefs.carColor
     // El sedán dibujado no carga nada: listo de una vez.
     if (pkg == null) ReadyNow(onReady)
+    val wheels: (@Composable BoxScope.(WheelSpots) -> Unit)? = onTires?.let { open -> { spots -> WheelPills(d, spots, open) } }
     CarTile(
         name = d.prefs.carName ?: pkg?.name ?: stringResource(R.string.my_car),
         color = color,
         onClick = onClick,
         modifier = modifier,
         drawing = pkg?.let { p ->
-            { m -> CarTurntable(d.cars, p, color, m, d.prefs.carAngle, { d.prefs.carAngle = it }, onReady) }
+            { m -> CarTurntable(d.cars, p, color, m, d.prefs.carAngle, { d.prefs.carAngle = it }, onReady, wheels) }
         },
         hasFloor = pkg?.hasFloor == true,
     )
@@ -61,7 +71,7 @@ fun HomeCar(d: Dependencies, pkg: CarPackage?, onClick: () -> Unit, modifier: Mo
 
 /**
  * Las piezas que crecen a pantalla completa con un toque: auto 3D, carretera o imagen, según [tile].
- * [onTires]: la carretera lleva la presión de cada llanta junto a su rueda (null = sin pastillas).
+ * [onTires]: la carretera y el auto 3D llevan la presión de cada llanta junto a su rueda (null = sin pastillas).
  */
 @Composable
 fun HeroTile(
@@ -80,7 +90,7 @@ fun HeroTile(
             ReadyNow(onReady)
             ImageTile(d, tile.data, onClick, modifier)
         }
-        else -> HomeCar(d, pkg, onClick, modifier, onReady)
+        else -> HomeCar(d, pkg, onClick, modifier, onReady, onTires)
     }
 }
 

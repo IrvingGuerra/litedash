@@ -24,4 +24,7 @@ dependencies {
     implementation(platform(libs.compose.bom))
     implementation(libs.compose.foundation)
     implementation(libs.compose.ui)
+    testImplementation(libs.junit)
+    // JSONObject de verdad en las pruebas (el de Android es solo de mentiras fuera del equipo).
+    testImplementation(libs.json)
 }

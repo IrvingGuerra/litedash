@@ -2,6 +2,8 @@ package com.irvingguerra.litedash.feature.car
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -52,10 +54,14 @@ fun CarTurntable(
     angle: Float? = null,
     onAngle: ((Float) -> Unit)? = null,
     onReady: (() -> Unit)? = null,
+    wheels: (@Composable BoxScope.(WheelSpots) -> Unit)? = null,
 ) {
     val frames = remember(p) { spinFrames(p) }
     val n = frames.size
-    var widthPx by remember { mutableIntStateOf(0) }
+    var size by remember { mutableStateOf(IntSize.Zero) }
+    val widthPx = size.width
+    // El cuadro que ya se ve (el que se pidió puede seguir cargando): las ruedas siguen a ese.
+    var shown by remember(p) { mutableIntStateOf(-1) }
     val saved = angle?.let { (it * n).roundToInt().mod(n) } ?: restFrame(n)
     // Un solo estado por auto: el gesto sigue moviendo este mismo aunque cambie el
     // ángulo guardado (si se recreara al guardar, el dedo movería uno que ya no se dibuja).
@@ -90,7 +96,14 @@ fun CarTurntable(
             while (accumulated < -step) { accumulated += step; frame = (frame + 1) % n; direction = 1 }
         }
     }
-    CarLayersImage(repo, p, frames[frame], color, widthPx, modifier.onSizeChanged { widthPx = it.width }.then(turn), onReady)
+    Box(modifier.onSizeChanged { size = it }.then(turn)) {
+        CarLayersImage(repo, p, frames[frame], color, widthPx, Modifier, onReady, onShown = { shown = frames.indexOf(it) })
+        // Los datos van en medios pasos (00, m00, 01…): en calidad normal, un cuadro sí y uno no.
+        val w = p.wheels?.takeIf { it.frames == p.spin * 2 }
+        if (wheels != null && w != null && shown >= 0 && widthPx > 0) {
+            wheels(w.spots(if (p.high) shown else shown * 2, Size(size.width.toFloat(), size.height.toFloat())))
+        }
+    }
 }
 
 /** La vuelta en que el auto se ve de espaldas (en 0.25 se ve de frente; en 3/8, de tres cuartos). */
@@ -138,8 +151,10 @@ private fun CarLayersImage(
     modifier: Modifier,
     onReady: (() -> Unit)?,
     reflection: Boolean = true,
+    onShown: ((String) -> Unit)? = null,
 ) {
     var layers by remember(p.id) { mutableStateOf<CarLayers?>(null) }
+    val shown by rememberUpdatedState(onShown)
     var notified by remember(p.id) { mutableStateOf(false) }
     val ready by rememberUpdatedState(onReady)
     val wanted by rememberUpdatedState(Wanted(name, color, widthPx))
@@ -151,6 +166,7 @@ private fun CarLayersImage(
         snapshotFlow { wanted }.conflate().collect { w ->
             if (w.widthPx <= 0) return@collect
             layers = repo.layers(p, w.name, w.color, w.widthPx) ?: return@collect
+            shown?.invoke(w.name)
             if (!notified) {
                 notified = true
                 ready?.invoke()

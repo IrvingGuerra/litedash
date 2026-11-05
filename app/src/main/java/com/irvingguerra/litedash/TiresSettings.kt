@@ -474,7 +474,11 @@ private fun HomeTiresCard(d: Dependencies) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Label(stringResource(R.string.tires_on_car), Typography.body, modifier = Modifier.weight(1f))
             Segmented(
-                listOf(TiresOnCar.CORNERS to stringResource(R.string.tires_on_car_corners), TiresOnCar.OFF to stringResource(R.string.tires_on_car_off)),
+                listOf(
+                    TiresOnCar.WHEELS to stringResource(R.string.tires_on_car_wheels),
+                    TiresOnCar.CORNERS to stringResource(R.string.tires_on_car_corners),
+                    TiresOnCar.OFF to stringResource(R.string.tires_on_car_off),
+                ),
                 d.prefs.tiresOnCar,
                 { d.prefs.tiresOnCar = it },
             )

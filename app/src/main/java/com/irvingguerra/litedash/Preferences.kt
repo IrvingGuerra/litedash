@@ -78,10 +78,11 @@ internal object PrefKeys {
 
 /** Las llantas sobre la pieza del auto: pastillas en las esquinas o nada. */
 enum class TiresOnCar(val stored: String) {
-    CORNERS("corners"), OFF("off");
+    /** Pegadas a cada rueda del auto 3D al girarlo; sin los datos de sus ruedas, en las esquinas. */
+    WHEELS("wheels"), CORNERS("corners"), OFF("off");
 
     companion object {
-        fun fromStored(value: String?) = entries.firstOrNull { it.stored == value } ?: CORNERS
+        fun fromStored(value: String?) = entries.firstOrNull { it.stored == value } ?: WHEELS
     }
 }
 

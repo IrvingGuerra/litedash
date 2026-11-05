@@ -1,5 +1,6 @@
 package com.irvingguerra.litedash
 
+import com.irvingguerra.litedash.feature.car.WheelSpots
 import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -601,14 +602,60 @@ private fun corner(w: Wheel) = when (w) {
  */
 @Composable
 fun BoxScope.TirePills(d: Dependencies, onOpen: () -> Unit) {
-    if (d.prefs.tiresOnCar != TiresOnCar.CORNERS || !d.hasTpmsSource) return
-    val repo = d.tpms
-    val statuses = Wheel.ROAD.associateWith { repo.statusOf(it) }
+    if (d.prefs.tiresOnCar == TiresOnCar.OFF || !d.hasTpmsSource) return
+    val statuses = Wheel.ROAD.associateWith { d.tpms.statusOf(it) }
     val calm = statuses.values.none { it.problem }
     for (w in Wheel.ROAD) {
         TirePill(pillText(d, w), statuses.getValue(w), onOpen, Modifier.align(corner(w)).padding(6.dp).graphicsLayer { alpha = if (calm) 0.7f else 1f })
     }
 }
+
+/**
+ * Las cuatro pastillas de las llantas en una fila justo debajo del auto 3D, cada una bajo su rueda
+ * ([spots], del giro): al girarlo se reacomodan con las ruedas. Si dos chocan se recorren lo justo,
+ * sin salirse de la pieza. La de una rueda que tapa el auto, más tenue. Igual que las de las
+ * esquinas: discretas si todo va bien.
+ */
+@Composable
+fun WheelPills(d: Dependencies, spots: WheelSpots, onOpen: () -> Unit) {
+    val statuses = Wheel.ROAD.associateWith { d.tpms.statusOf(it) }
+    val calm = statuses.values.none { it.problem }
+    Layout(
+        content = {
+            Wheel.ROAD.forEachIndexed { i, w ->
+                val dim = if (spots.visible[i]) 1f else HIDDEN_WHEEL_ALPHA
+                TirePill(pillText(d, w), statuses.getValue(w), onOpen, Modifier.graphicsLayer { alpha = dim * if (calm) 0.7f else 1f })
+            }
+        },
+        modifier = Modifier.fillMaxSize(),
+    ) { measurables, constraints ->
+        val gap = 4.dp.roundToPx()
+        val pills = measurables.map { it.measure(Constraints()) }
+        val width = constraints.maxWidth
+        // La fila va justo debajo de la rueda que pisa más abajo (la más cercana).
+        val row = (spots.points.maxOf { it.y } + gap).roundToInt().coerceIn(0, (constraints.maxHeight - pills.maxOf { it.height }).coerceAtLeast(0))
+        // De izquierda a derecha como se ven; cada una centrada en su rueda y luego sin choques:
+        // se recorren a la derecha y, si la última se sale, de regreso desde la derecha.
+        val order = Wheel.ROAD.indices.sortedBy { spots.points[it].x }
+        val left = IntArray(pills.size) { (spots.points[it].x - pills[it].width / 2f).roundToInt() }
+        var edge = 0
+        for (i in order) {
+            left[i] = maxOf(left[i], edge)
+            edge = left[i] + pills[i].width + gap
+        }
+        edge = width
+        for (i in order.reversed()) {
+            left[i] = minOf(left[i], edge - pills[i].width)
+            edge = left[i] - gap
+        }
+        layout(width, constraints.maxHeight) {
+            pills.forEachIndexed { i, p -> p.place(left[i].coerceAtLeast(0), row) }
+        }
+    }
+}
+
+/** La pastilla de una rueda que tapa el auto (del otro lado): se ve, pero apenas. */
+private const val HIDDEN_WHEEL_ALPHA = 0.45f
 
 /** La presión de [w] con su unidad ("32 psi"), o "—" sin lectura. */
 @Composable
@@ -630,7 +677,7 @@ private fun rearPillY(w: Wheel) = if (w == Wheel.REAR_LEFT || w == Wheel.REAR_RI
  */
 @Composable
 fun RoadTirePills(d: Dependencies, onOpen: () -> Unit, modifier: Modifier) {
-    if (d.prefs.tiresOnCar != TiresOnCar.CORNERS || !d.hasTpmsSource) return
+    if (d.prefs.tiresOnCar == TiresOnCar.OFF || !d.hasTpmsSource) return
     val repo = d.tpms
     val statuses = Wheel.ROAD.associateWith { repo.statusOf(it) }
     val calm = statuses.values.none { it.problem }
