@@ -596,6 +596,11 @@
     <string name="tires_grant">Grant permission</string>
     <string name="tires_retry">Try again</string>
     <string name="tires_usb_help">If your screen\'s own tire app grabs the receiver, unplug it and plug it back in, then choose LiteDash with “always”.</string>
+    <string name="tires_source_obd">Car (OBD)</string>
+    <string name="tires_obd_help">Reads your car\'s factory sensors with the Workshop OBD adapter: no extra kit needed. Not every car gives them; it\'s tried by make.</string>
+    <string name="tires_obd_connected">Factory sensors · %1$s</string>
+    <string name="tires_error_obd_off">Connect your OBD adapter in the Workshop (with the OBD module on).</string>
+    <string name="tires_error_obd_unsupported">Your car didn\'t give tire pressure over OBD. Send a Tires report so we can add your model.</string>
     <string name="tires_ble_help">Sensors are heard without pairing; tap a tire to choose its sensor.</string>
     <string name="tires_arrange">Arrange tire</string>
     <string name="tires_swap_with">Swap with…</string>

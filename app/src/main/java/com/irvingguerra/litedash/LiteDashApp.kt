@@ -8,6 +8,7 @@ import android.service.notification.StatusBarNotification
 import com.irvingguerra.litedash.feature.updater.Updater
 import com.irvingguerra.litedash.core.vehicle.VehicleBus
 import com.irvingguerra.litedash.feature.obd.ObdRepository
+import com.irvingguerra.litedash.feature.tpms.CarTires
 import com.irvingguerra.litedash.feature.tpms.TpmsRepository
 import com.irvingguerra.litedash.feature.tpms.UsbAttachActivity
 import com.irvingguerra.litedash.feature.apps.AppRepository
@@ -50,7 +51,7 @@ class LiteDashApp : Application() {
             bus = bus,
             obdLazy = lazy { ObdRepository(this, bus) },
             obdSaved = { ObdRepository.hasSavedTarget(this) },
-            tpmsLazy = lazy { TpmsRepository(this, bus) },
+            tpmsLazy = lazy { TpmsRepository(this, bus).apply { carTires = CarTires { factoryTires(dependencies) } } },
             tpmsSaved = { TpmsRepository.hasSavedSource(this) },
         )
     }

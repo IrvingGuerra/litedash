@@ -98,10 +98,14 @@ fun TiresSettings(d: Dependencies) {
         // La fuente y el auto en una sola pestaña: antes el auto salía dos veces (Fuente y Llantas).
         0 -> {
             SourceCard(repo)
-            TiresCard(d, chosen, motion) { chosen = if (chosen == it) null else it }
-            chosen?.let { w -> ArrangeCard(repo, w, onClose = { chosen = null }) }
-                ?: Label(stringResource(R.string.tires_tap_hint), Typography.small, LocalColors.current.textMuted)
-            RotateCard(repo, motion)
+            // Por OBD cada llanta ya viene en su lugar (lo sabe el auto): no hay nada que acomodar.
+            val arrange = repo.source != TpmsSource.OBD
+            TiresCard(d, chosen, motion) { if (arrange) chosen = if (chosen == it) null else it }
+            if (arrange) {
+                chosen?.let { w -> ArrangeCard(repo, w, onClose = { chosen = null }) }
+                    ?: Label(stringResource(R.string.tires_tap_hint), Typography.small, LocalColors.current.textMuted)
+                RotateCard(repo, motion)
+            }
         }
         1 -> PressureCard(repo, d.prefs.units.fahrenheit)
         2 -> HomeTiresCard(d)
@@ -130,6 +134,7 @@ private fun SourceCard(repo: TpmsRepository) {
             listOf(
                 TpmsSource.USB to stringResource(R.string.tires_source_usb),
                 TpmsSource.BLE to stringResource(R.string.tires_source_ble),
+                TpmsSource.OBD to stringResource(R.string.tires_source_obd),
                 TpmsSource.DEMO to stringResource(R.string.tires_source_demo),
             ),
             repo.source,
@@ -155,6 +160,7 @@ private fun SourceCard(repo: TpmsRepository) {
         problem?.let { Label(it, Typography.small, c.danger) }
         if (source == TpmsSource.USB) Label(stringResource(R.string.tires_usb_help), Typography.small, c.textMuted)
         if (source == TpmsSource.BLE) Label(stringResource(R.string.tires_ble_help), Typography.small, c.textMuted)
+        if (source == TpmsSource.OBD) Label(stringResource(R.string.tires_obd_help), Typography.small, c.textMuted)
     }
 }
 
@@ -178,6 +184,8 @@ private fun problemText(repo: TpmsRepository): String? {
         TpmsError.USB_UNPLUGGED -> R.string.tires_error_usb_unplugged
         TpmsError.USB_LOST -> R.string.tires_error_usb_lost
         TpmsError.SWAP_UNCONFIRMED -> R.string.tires_error_swap
+        TpmsError.OBD_OFF -> R.string.tires_error_obd_off
+        TpmsError.OBD_UNSUPPORTED -> R.string.tires_error_obd_unsupported
     }
     return (ble ?: usb)?.let { stringResource(it) }
 }

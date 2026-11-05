@@ -1,6 +1,8 @@
 package com.irvingguerra.litedash.feature.obd
 
 import java.io.ByteArrayInputStream
+import org.junit.Assert.assertArrayEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -63,5 +65,16 @@ class Elm327Test {
     @Test fun describe_codigos() {
         assertEquals("Falla de encendido en el cilindro 3", describe("P0303", true))
         assertTrue(describe("P1234", true).contains("marca"))
+    }
+
+    @Test fun modulo_en_una_trama() =
+        assertArrayEquals(intArrayOf(0x1A, 0x2B), parseModuleReply("22C00B", listOf("62C00B1A2B")))
+
+    @Test fun modulo_en_varias_tramas() =
+        assertArrayEquals(intArrayOf(1, 2, 3, 4, 5, 6, 7, 8), parseModuleReply("2130", listOf("00A", "0:61300102030405", "1:060708")))
+
+    @Test fun modulo_que_dice_que_no() {
+        assertNull(parseModuleReply("22C00B", listOf("7F2231")))
+        assertNull(parseModuleReply("22C00B", listOf("NODATA")))
     }
 }

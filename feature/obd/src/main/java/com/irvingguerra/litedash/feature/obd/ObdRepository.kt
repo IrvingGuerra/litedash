@@ -392,6 +392,45 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
         )
     }
 
+    /** El perfil de llantas que contestó con este auto (se guarda: la próxima vez se pregunta directo). */
+    private var tireProfile = prefs.getString(KEY_TIRE_PROFILE, null)
+    /** Cuándo se probaron todos sin suerte: no se vuelve a buscar en [TIRES_RETRY_MS]. */
+    private var tiresMissedAt = 0L
+
+    /**
+     * La presión de fábrica ([FactoryTires]): primero el perfil que ya contestó; si no, se prueban
+     * todos (los de la marca del VIN primero), cada uno con el candado por separado para no detener
+     * los medidores. Solo en autos con CAN de 11 bits (las recetas son de ahí, y regresar al motor
+     * con "ATSH7DF" en otro protocolo dejaría de leerlo).
+     */
+    suspend fun factoryTires(): FactoryTires {
+        if (state != ObdState.ON || elm == null) return FactoryTires.NotConnected
+        TireProfiles.firstOrNull { it.id == tireProfile }?.let { p -> readTires(p)?.let { return it } }
+        if (System.currentTimeMillis() - tiresMissedAt < TIRES_RETRY_MS) return FactoryTires.Unsupported
+        val protocol = withElm { it.command("ATDPN").firstOrNull()?.removePrefix("A") } ?: return FactoryTires.NotConnected
+        if (protocol !in CAN_11_BIT) return FactoryTires.Unsupported.also { tiresMissedAt = System.currentTimeMillis() }
+        val vin = lastReport?.vin ?: withElm { runCatching { it.vin() }.getOrNull() }
+        for (p in ordered(vin)) {
+            val found = readTires(p) ?: continue
+            tireProfile = p.id
+            prefs.edit().putString(KEY_TIRE_PROFILE, p.id).apply()
+            return found
+        }
+        tiresMissedAt = System.currentTimeMillis()
+        return FactoryTires.Unsupported
+    }
+
+    /**
+     * Una receta: es de este auto si su módulo contestó que sí a todas sus peticiones (aunque los
+     * sensores aún no digan nada: parado y recién encendido regresan 0 o FF).
+     */
+    private suspend fun readTires(p: TireProfile): FactoryTires.Values? {
+        val replies = withElm { e -> runCatching { e.module(p.setup, p.requests, RESTORE_ENGINE) }.getOrNull() } ?: return null
+        if (replies.size < p.requests.size || replies.any { it == null }) return null
+        val v = runCatching { p.decode(replies.filterNotNull()) }.getOrNull() ?: return null
+        return FactoryTires.Values(v.kpa, v.tempC, p.id)
+    }
+
     /** Borra los códigos (el Taller pide confirmar dos veces antes). */
     suspend fun clearCodes(): Boolean = withElm { it.clearCodes() } ?: false
 
@@ -522,6 +561,11 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
         /** Reintentos seguidos tras caerse ya conectado, y cuánto esperar entre ellos. */
         private const val MAX_RECONNECTS = 5
         private const val RECONNECT_MS = 8_000L
+        private const val KEY_TIRE_PROFILE = "tire_profile"
+        /** Sin perfil que conteste, cada cuánto se vuelve a buscar (el auto pudo estar apagado). */
+        private const val TIRES_RETRY_MS = 5 * 60_000L
+        /** "ATDPN": CAN de 11 bits a 500 o 250 kbps. */
+        private val CAN_11_BIT = setOf("6", "8")
 
         /** Hay un adaptador guardado (sin crear el escáner ni tocar Bluetooth). */
         fun hasSavedTarget(context: Context) =

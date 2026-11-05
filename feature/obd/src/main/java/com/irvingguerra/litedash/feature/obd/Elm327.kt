@@ -64,6 +64,26 @@ class Elm327(private val link: ElmLink, private val now: () -> Long = System::cu
         return hexBytes(line.substring(head.length))
     }
 
+    /**
+     * Consultas a otro módulo del auto (no al motor): antes [setup] (su dirección, p. ej.
+     * "ATSH750", y lo que pida), luego cada una de [requests] ("22C00B"). Por cada una, los datos
+     * tras el inicio de la respuesta positiva; null si no contestó o dijo que no (y ya no se
+     * pregunta lo demás: no es este módulo). Siempre deja el adaptador como lo espera el motor
+     * ([restore]): si no, los medidores dejarían de leer.
+     */
+    fun module(setup: List<String>, requests: List<String>, restore: List<String>, timeoutMs: Long = 1_500): List<IntArray?> = try {
+        for (c in setup) command(c)
+        val out = ArrayList<IntArray?>(requests.size)
+        for (r in requests) {
+            val reply = parseModuleReply(r, command(r, timeoutMs))
+            out += reply
+            if (reply == null) break
+        }
+        out
+    } finally {
+        for (c in restore) runCatching { command(c) }
+    }
+
     /** Qué PIDs del modo 01 contesta el auto (consultando 00, 20, 40… mientras haya más). */
     fun supportedPids(): Set<Int> {
         val supported = mutableSetOf<Int>()
@@ -93,6 +113,27 @@ class Elm327(private val link: ElmLink, private val now: () -> Long = System::cu
     /** Voltaje en el conector OBD (la batería), medido por el adaptador. */
     fun voltage(): Float? = command("ATRV").firstOrNull()?.removeSuffix("V")?.toFloatOrNull()
 }
+
+/**
+ * La respuesta de un módulo a [request] (en hex, sin espacios): une los renglones de una
+ * respuesta larga ("00A", "0:62C00B…", "1:…" sin encabezados) y regresa lo que sigue de la
+ * respuesta positiva ([request] con el primer byte + 0x40); null si no está o si dijo que no (7F).
+ */
+internal fun parseModuleReply(request: String, lines: List<String>): IntArray? {
+    val req = request.replace(" ", "").uppercase()
+    if (req.length < 2) return null
+    val positive = "%02X".format(req.substring(0, 2).toInt(16) + 0x40) + req.substring(2)
+    val joined = lines
+        .filterNot { MULTI_LENGTH.matches(it) }
+        .joinToString("") { it.replace(MULTI_INDEX, "") }
+    val at = joined.indexOf(positive)
+    if (at < 0) return null
+    return hexBytes(joined.substring(at + positive.length))
+}
+
+/** El renglón con el largo de una respuesta en varias tramas ("00A") y el número de cada trama ("1:"). */
+private val MULTI_LENGTH = Regex("[0-9A-F]{3}")
+private val MULTI_INDEX = Regex("^[0-9A-F]:")
 
 internal fun hexBytes(hex: String): IntArray? {
     if (hex.length % 2 != 0 || hex.any { it !in "0123456789ABCDEF" }) return null

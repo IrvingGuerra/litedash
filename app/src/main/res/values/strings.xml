@@ -615,6 +615,11 @@
     <string name="tires_grant">Dar permiso</string>
     <string name="tires_retry">Reintentar</string>
     <string name="tires_usb_help">Si la app de llantas de tu pantalla se queda con el receptor, desconéctalo y vuelve a conectarlo, y elige LiteDash con «usar siempre».</string>
+    <string name="tires_source_obd">Auto (OBD)</string>
+    <string name="tires_obd_help">Lee los sensores de fábrica de tu auto con el adaptador OBD del Taller: no hace falta otro kit. No todos los autos lo dan; se prueba según la marca.</string>
+    <string name="tires_obd_connected">Sensores de fábrica · %1$s</string>
+    <string name="tires_error_obd_off">Conecta tu adaptador OBD en el Taller (con el módulo OBD prendido).</string>
+    <string name="tires_error_obd_unsupported">Tu auto no dio la presión por OBD. Manda un reporte de Llantas para agregar tu modelo.</string>
     <string name="tires_ble_help">Los sensores se oyen aunque no estén emparejados; toca una llanta para elegir el suyo.</string>
     <string name="tires_arrange">Acomodar llanta</string>
     <string name="tires_swap_with">Intercambiar con…</string>

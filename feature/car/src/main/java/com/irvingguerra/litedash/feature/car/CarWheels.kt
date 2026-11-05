@@ -33,9 +33,16 @@ class CarWheels private constructor(val frames: Int, private val aspect: Float, 
         /** El orden de [WheelSpots]: delantera izquierda, delantera derecha, trasera izquierda, trasera derecha. */
         private val KEYS = listOf("fl", "fr", "rl", "rr")
 
-        /** null si el archivo no sirve (otro formato o cortado). */
+        /**
+         * La versión que se necesita: un archivo anterior no cuenta como bajado y se vuelve a bajar
+         * (2 = las ruedas del lado que se ve en diagonal ya no salen como tapadas).
+         */
+        private const val VERSION = 2
+
+        /** null si el archivo no sirve (otro formato, cortado o de una versión anterior). */
         fun parse(text: String): CarWheels? = runCatching {
             val o = JSONObject(text)
+            check(o.optInt("version", 1) >= VERSION)
             val frames = o.getInt("frames")
             val data = KEYS.map { key ->
                 val a = o.getJSONArray(key)

@@ -77,3 +77,8 @@ cajas CAN son de lo más útil.
 Código bajo [GPL-3.0](LICENSE). El nombre y el logo de LiteDash no están
 incluidos en esa licencia. *The LiteDash name and logo are not covered by the
 code license.*
+
+Las recetas para leer la presión de llantas de fábrica por OBD
+(`feature/obd/.../FactoryTires.kt`) son derivadas de [OBDb](https://github.com/OBDb),
+[CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/), adaptadas. *The factory
+tire-pressure recipes are derived from OBDb (CC BY-SA 4.0), adapted.*

@@ -6,6 +6,19 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
+## [1.4.84] - 2026-11-05
+
+### Agregado
+- **Llantas: "Auto (OBD)".** Lee la presión de los sensores de fábrica de tu auto con el mismo
+  adaptador OBD del Taller, sin comprar otro kit. Se prueba según la marca (Mitsubishi, Nissan,
+  Toyota/Lexus, Hyundai/Kia, Chevrolet/GM, Ford, Mazda y Subaru) y se queda con la que contestó.
+  No todos los autos lo dan (muchos de México no traen sensores); si el tuyo no, manda un reporte.
+
+### Cambiado
+- **Llantas en las ruedas:** solo salen las de las llantas que se ven; las que tapa el auto ya no se
+  muestran (un problema en ellas lo dice el aviso de arriba). En vista de tres cuartos ahora salen
+  las dos del lado que se ve.
+
 ## [1.4.83] - 2026-11-05
 
 ### Arreglado

@@ -34,9 +34,9 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.IOException
 
-/** De dónde salen las llantas. Se guarda ("usb", "ble", "demo"). */
+/** De dónde salen las llantas. Se guarda ("usb", "ble", "obd", "demo"). */
 enum class TpmsSource(val key: String) {
-    USB("usb"), BLE("ble"), DEMO("demo");
+    USB("usb"), BLE("ble"), OBD("obd"), DEMO("demo");
 
     companion object {
         fun fromKey(key: String?): TpmsSource? = entries.firstOrNull { it.key == key }
@@ -54,7 +54,25 @@ enum class TpmsStatus {
 }
 
 /** Lo que salió mal (la app lo dice en su idioma). */
-enum class TpmsError { USB_MISSING, USB_DENIED, USB_OPEN_FAILED, USB_UNPLUGGED, USB_LOST, SWAP_UNCONFIRMED }
+enum class TpmsError { USB_MISSING, USB_DENIED, USB_OPEN_FAILED, USB_UNPLUGGED, USB_LOST, SWAP_UNCONFIRMED, OBD_OFF, OBD_UNSUPPORTED }
+
+/**
+ * La presión que ya sabe la computadora del auto (sus sensores de fábrica), por el adaptador OBD
+ * del Taller. La pone la app: así Llantas no carga el escáner si no se usa esta fuente.
+ */
+fun interface CarTires {
+    suspend fun read(): CarTiresReading
+}
+
+/** Lo que contestó el auto. */
+sealed interface CarTiresReading {
+    /** Sin adaptador conectado (o el módulo OBD apagado). */
+    data object NotConnected : CarTiresReading
+    /** Conectado, pero ningún perfil de marca le sacó la presión a este auto. */
+    data object Unsupported : CarTiresReading
+    /** Las cuatro llantas en [Wheel.ROAD]: kPa manométrica y °C (null = no lo dio). [profile] = el perfil que contestó. */
+    data class Values(val kpa: List<Float?>, val tempC: List<Float?>, val profile: String) : CarTiresReading
+}
 
 /** Emparejar un sensor con el receptor USB. */
 enum class PairState { IDLE, WAITING, DONE, TIMEOUT }
@@ -224,6 +242,7 @@ class TpmsRepository(context: Context, private val bus: VehicleBus) {
         when (s) {
             TpmsSource.USB -> startUsb()
             TpmsSource.BLE -> { watchBluetooth(); startBle() }
+            TpmsSource.OBD -> startObd()
             TpmsSource.DEMO -> startDemo()
         }
         tickJob = scope.launch {
@@ -238,6 +257,7 @@ class TpmsRepository(context: Context, private val bus: VehicleBus) {
     private fun stopSource() {
         tickJob?.cancel(); tickJob = null
         demoJob?.cancel(); demoJob = null
+        obdJob?.cancel(); obdJob = null
         stopUsb()
         ble?.stop()
         unwatchBluetooth()
@@ -278,7 +298,7 @@ class TpmsRepository(context: Context, private val bus: VehicleBus) {
         // El historial va sin calibrar.
         if (wheel != null && !raw.lost && raw.pressureKpa != null) addHistory(wheel, raw.atMillis, raw.pressureKpa)
         identifier?.check(_readings, r.atMillis)?.let { identified = it; identifying = false; identifier = null }
-        if (running == TpmsSource.BLE || running == TpmsSource.DEMO) status = TpmsStatus.CONNECTED
+        if (running == TpmsSource.BLE || running == TpmsSource.DEMO || running == TpmsSource.OBD) status = TpmsStatus.CONNECTED
         if (wheel != null) syncWheels()
         refreshSoon()
     }
@@ -342,6 +362,7 @@ class TpmsRepository(context: Context, private val bus: VehicleBus) {
     private fun loadAssignment(s: TpmsSource) {
         _assignment.clear()
         if (s == TpmsSource.DEMO) Wheel.ROAD.forEach { _assignment[it] = DemoTpms.id(it) }
+        if (s == TpmsSource.OBD) Wheel.ROAD.forEach { _assignment[it] = obdId(it) }
         if (s != TpmsSource.BLE) return
         for (w in Wheel.entries) prefs.getString(KEY_ASSIGN + w.key, null)?.let { _assignment[w] = it }
     }
@@ -518,6 +539,44 @@ class TpmsRepository(context: Context, private val bus: VehicleBus) {
             }
         }
     }
+
+    // ---- La computadora del auto (OBD) ----
+
+    /** Lo pone la app; null = no hay escáner (la fuente OBD dice que falta el adaptador). */
+    var carTires: CarTires? = null
+
+    /** El perfil de marca que le sacó la presión al auto (para Diagnóstico); null hasta que contesta. */
+    var obdProfile by mutableStateOf<String?>(null)
+        private set
+
+    private var obdJob: Job? = null
+
+    /**
+     * Pregunta cada [OBD_INTERVAL_MS] (los sensores de fábrica avisan cada medio minuto o así; el
+     * adaptador se comparte con los medidores). Sin adaptador espera y vuelve a intentar.
+     */
+    private fun startObd() {
+        obdJob = scope.launch {
+            while (isActive) {
+                when (val r = carTires?.read() ?: CarTiresReading.NotConnected) {
+                    CarTiresReading.NotConnected -> { status = TpmsStatus.NO_DEVICE; error = TpmsError.OBD_OFF }
+                    CarTiresReading.Unsupported -> { status = TpmsStatus.NO_DEVICE; error = TpmsError.OBD_UNSUPPORTED }
+                    is CarTiresReading.Values -> {
+                        error = null
+                        obdProfile = r.profile
+                        val now = System.currentTimeMillis()
+                        Wheel.ROAD.forEachIndexed { i, w ->
+                            val kpa = r.kpa.getOrNull(i) ?: return@forEachIndexed
+                            ingest(TireReading(obdId(w), kpa, r.tempC.getOrNull(i), null, null, false, false, false, OBD_FAMILY, w, null, now))
+                        }
+                    }
+                }
+                delay(OBD_INTERVAL_MS)
+            }
+        }
+    }
+
+    private fun obdId(w: Wheel) = "obd-" + w.key
 
     // ---- Bluetooth LE ----
 
@@ -923,6 +982,9 @@ class TpmsRepository(context: Context, private val bus: VehicleBus) {
 
         private const val MIN_UPDATE_MS = 1_000L
         private const val TICK_MS = 30_000L
+        /** Cada cuánto se le pregunta la presión a la computadora del auto. */
+        private const val OBD_INTERVAL_MS = 15_000L
+        private const val OBD_FAMILY = "obd"
         private const val SAVE_MS = 10 * 60_000L
         private const val HEARTBEAT_MS = 1_000L
         private const val PAIR_TIMEOUT_MS = 120_000L

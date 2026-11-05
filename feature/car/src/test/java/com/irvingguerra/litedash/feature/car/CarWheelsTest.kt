@@ -10,7 +10,7 @@ import org.junit.Test
 
 class CarWheelsTest {
     // Dos cuadros; en el 1 la delantera izquierda pisa en (0.25, 0.5) y se ve.
-    private val json = """{"frames":2,"aspect":2.0,
+    private val json = """{"version":2,"frames":2,"aspect":2.0,
         "fl":[0.1,0.9,0, 0.25,0.5,1],"fr":[0.2,0.9,1, 0.3,0.6,0],
         "rl":[0.8,0.8,0, 0.7,0.7,1],"rr":[0.9,0.8,1, 0.6,0.8,0]}"""
 
@@ -40,5 +40,7 @@ class CarWheelsTest {
     fun brokenFileIsNull() {
         assertNull(CarWheels.parse("""{"frames":2,"aspect":2.0,"fl":[0.1]}"""))
         assertNull(CarWheels.parse("no es json"))
+        // Uno de la versión anterior se vuelve a bajar.
+        assertNull(CarWheels.parse(json.replace("\"version\":2,", "")))
     }
 }

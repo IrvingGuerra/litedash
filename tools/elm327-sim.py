@@ -8,7 +8,8 @@ En el emulador de Android: Taller → Wi-Fi → 10.0.2.2:35000. Simula un auto c
 falla, dos códigos guardados (P0420, P0133), uno pendiente (P0171), el monitor EVAP
 pendiente y datos en vivo que cambian (velocidad, rpm, temperatura, gasolina, turbo…).
 Para probar las alertas: --caliente (motor a 112 °C) y --sin-carga (alternador sin cargar,
-12.2 V con el motor andando).
+12.2 V con el motor andando). También contesta la presión de llantas de fábrica (Llantas →
+Auto (OBD)) como el módulo de su marca: ver MODULOS; con --sin-tpms no la da.
 """
 import math
 import socketserver
@@ -17,6 +18,45 @@ import time
 
 HOT = "--caliente" in sys.argv
 NOT_CHARGING = "--sin-carga" in sys.argv
+NO_TPMS = "--sin-tpms" in sys.argv
+# A qué módulo se le habla (ATSH); "7DF" = el motor.
+header = "7DF"
+
+
+def multi(data):
+    """Una respuesta larga como la da el ELM327 sin encabezados: largo y tramas "0:", "1:"…"""
+    lines = ["%03X" % (len(data) // 2), "0:" + data[:12]]
+    rest, n = data[12:], 1
+    while rest:
+        lines.append("%X:" % (n % 16) + rest[:14])
+        rest, n = rest[14:], n + 1
+    return "\r".join(lines)
+
+
+def tpms(module_header, request):
+    """La presión de llantas de fábrica: (encabezado, petición) -> respuesta (sin el 62/61), o None."""
+    if NO_TPMS:
+        return None
+    return MODULOS.get((module_header, request))
+
+
+def mitsubishi(request, psi, temp):
+    """Mitsubishi GS (ASX, Outlander Sport, Lancer): 13 bytes; psi = d[8]/5, °C = d[9] − 50."""
+    def answer():
+        # La presión baja poco a poco en la trasera derecha (fuga lenta) para ver que se mueve.
+        p = psi - (time.time() - START) / 600 if request == "2125" else psi
+        return "61" + request[2:] + "00C20DB9F3830196" + "%02X%02X" % (round(p * 5), temp + 50) + "0F"
+    return answer
+
+
+# (ATSH, petición) -> función que da la respuesta positiva completa: las recetas de FactoryTires.kt
+# que se prueban sin auto (el VIN del simulador es de un Lancer: JA3…).
+MODULOS = {
+    ("600", "2123"): mitsubishi("2123", 32, 28),
+    ("600", "2126"): mitsubishi("2126", 31, 29),
+    ("600", "2124"): mitsubishi("2124", 33, 26),
+    ("600", "2125"): mitsubishi("2125", 30, 27),
+}
 
 # PIDs del modo 01 que "tiene" este auto.
 PIDS = {0x01, 0x04, 0x05, 0x06, 0x07, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10, 0x11, 0x1F, 0x21, 0x2F, 0x33, 0x42, 0x46, 0x5C, 0x5E}
@@ -78,6 +118,17 @@ def live(pid):
 def reply(cmd):
     global mil
     cmd = cmd.replace(" ", "").upper()
+    global header
+    if cmd.startswith("ATSH"):
+        header = cmd[4:]
+        return "OK"
+    if cmd == "ATDPN":
+        return "A6"
+    if header != "7DF" and not cmd.startswith("AT"):
+        answer = tpms(header, cmd)
+        if answer is None:
+            return "NO DATA"
+        return answer() if len(answer()) <= 14 else multi(answer())
     if cmd == "ATZ":
         return "\r\rELM327 v1.5"
     if cmd == "ATRV":
