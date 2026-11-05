@@ -36,7 +36,7 @@ class MapProjectionTest {
         val t = tiles(p)
         assertTrue(t.any { it.second <= 20 - 3 })
         // Lo que se pide nunca pasa de lo que cabe en memoria con su holgura sin crecer sin fin.
-        assertTrue(t.size in 10..80)
+        assertTrue(t.size in 10..120)
     }
 
     @Test
@@ -50,6 +50,17 @@ class MapProjectionTest {
             val ahead = (h * 0.78f) / ts // filas hasta la orilla de arriba si fuera plano
             assertTrue("$w×$h: ${t.size}", t.any { it[1] < 20.5 - ahead })
             assertTrue("$w×$h: ${t.size}", t.size in 10..250)
+        }
+    }
+
+    @Test
+    fun tiltedSquareFillsToTheTop() {
+        // Widget cuadrado (480 × 480): antes el mapa acababa a ~26 % del alto y arriba solo había cielo.
+        for ((w, h) in listOf(480f to 480f, 1024f to 600f, 600f to 800f, 1920f to 1080f, 1920f to 720f, 800f to 1280f)) {
+            val p = MapProjection(w, h, w / 2, h * 0.78f, turn = 0f, tilted = true, density = 1f)
+            val real = plan(p, 19.4326, -99.1332, 16, 256f)
+            assertTrue("${w}x$h: edge ${p.edge}", p.edge <= h * 0.1f)
+            assertTrue("${w}x$h: ${real.z.size}", real.z.size <= 120)
         }
     }
 

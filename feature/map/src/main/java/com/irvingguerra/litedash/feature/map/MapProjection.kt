@@ -7,8 +7,14 @@ import kotlin.math.sin
 /** Cuánto se acuesta el mapa inclinado (grados). */
 private const val TILT_DEGREES = 50.0
 
-/** Inclinado, hasta dónde se dibuja hacia el horizonte (en tamaños de la vista). */
+/** Hasta dónde se dibuja (en tamaños de la vista); inclinado es lo mínimo. */
 private const val REACH = 1.6f
+
+/** Inclinado, lo más lejos que se dibuja (en veces el lado mayor de la vista): lo lejano ya va con poco detalle. */
+private const val MAX_REACH = 4f
+
+/** Inclinado, dónde acaba el mapa (fracción del alto desde arriba): lo cubre el desvanecido hacia el cielo. */
+private const val TOP_GAP = 0.08f
 
 /** La cámara de Android a 8 pulgadas (576 px a densidad 1): la perspectiva de siempre en pantallas bajas. */
 private const val CAMERA_PX = 576f
@@ -34,8 +40,12 @@ class MapProjection(
     val values: FloatArray
     private val inverse: FloatArray
 
-    /** Más allá de esto (px del plano, desde tu posición) no se dibuja: inclinado ya se fundió con el cielo. */
-    private val far = REACH * maxOf(width, height)
+    /**
+     * Más allá de esto (px del plano, desde tu posición) no se dibuja. Inclinado, lo justo para que el mapa
+     * llegue hasta arriba de la vista (en widgets cuadrados o altos, [REACH] se quedaba a media vista y
+     * arriba solo había cielo), sin pasar de [MAX_REACH].
+     */
+    private val far: Float
 
     /** Inclinado, la altura en pantalla de lo más lejano que se dibuja ([far] adelante); puede quedar arriba de la vista. */
     val edge: Float
@@ -54,12 +64,20 @@ class MapProjection(
             val c = cos(t).toFloat()
             val s = sin(t).toFloat()
             val camera = maxOf(CAMERA_PX * density, CAMERA_PER_HEIGHT * height)
+            // Lo que hace falta para que lo más lejano quede a [TOP_GAP] de la orilla de arriba (ahí lo cubre el
+            // desvanecido); si el horizonte queda más abajo, nunca se alcanza: hasta el tope.
+            val side = maxOf(width, height)
+            val drop = atY - TOP_GAP * height
+            val room = c - drop * s / camera
+            val needed = if (room > 0f) drop / room else Float.MAX_VALUE
+            far = needed.coerceIn(REACH * side, MAX_REACH * side)
             // Lo mismo que Camera.rotateX (la y se encoge y lo de arriba se aleja), centrado en tu posición.
             val tilt = floatArrayOf(1f, 0f, 0f, 0f, c, 0f, 0f, -s / camera, 1f)
             values = multiply(translate(atX, atY), multiply(tilt, multiply(translate(-atX, -atY), rotate)))
             edge = atY - far * c / (1f + far * s / camera)
             top = edge.coerceAtLeast(0f)
         } else {
+            far = REACH * maxOf(width, height)
             values = rotate
             edge = 0f
             top = 0f

@@ -6,6 +6,13 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
+## [1.4.89] - 2026-11-05
+
+### Arreglado
+- **Mapa inclinado: ya llega hasta arriba.** En widgets cuadrados o altos el mapa se acababa a media
+  vista y arriba quedaba solo cielo. Ahora se dibuja hasta la orilla de arriba (lo lejano con menos
+  detalle) y solo se desvanece al final.
+
 ## [1.4.88] - 2026-11-05
 
 ### Cambiado
