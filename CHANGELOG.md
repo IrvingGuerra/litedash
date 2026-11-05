@@ -6,6 +6,13 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
+## [1.4.86] - 2026-11-05
+
+### Arreglado
+- **Radio: "Por internet" y "Quitar" ya hacen caso.** Al escoger Por internet (o quitar la radio de
+  tu pantalla) el widget seguía mostrando la estación FM con el botón de pausa, y play y pausa le
+  seguían hablando a la FM. Ahora se olvida de la FM en ese momento y suena la de internet.
+
 ## [1.4.85] - 2026-11-05
 
 ### Cambiado

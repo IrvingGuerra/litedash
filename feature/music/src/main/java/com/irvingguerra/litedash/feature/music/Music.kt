@@ -27,6 +27,7 @@ import android.provider.Settings
 import android.service.media.MediaBrowserService
 import android.service.notification.StatusBarNotification
 import android.view.KeyEvent
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -172,7 +173,7 @@ class MusicRepository(private val context: Context) {
         radio.forget()
         store.edit().putString(kind.key, pkg).apply()
         if (users > 0) loadSourceNotes()
-        if (users > 0 && kind == SourceKind.RADIO) startTopWay()
+        if (kind == SourceKind.RADIO) radioChanged()
         // Enlazar o quitar la radio cambia qué pieza se queda con cada sesión.
         if (users > 0) choose(sessions())
     }
@@ -180,7 +181,24 @@ class MusicRepository(private val context: Context) {
     private val SourceKind.key get() = "source_" + name.lowercase()
 
     /** La radio por internet de LiteDash está prendida (la pone el app según su ajuste). */
-    var ownRadio by mutableStateOf(false)
+    var ownRadio: Boolean
+        get() = ownRadioState
+        set(v) {
+            if (v == ownRadioState) return
+            ownRadioState = v
+            radioChanged()
+        }
+    private var ownRadioState by mutableStateOf(false)
+
+    /**
+     * Cambió con qué suena la pieza Radio (se enlazó o quitó la FM, se prendió la de internet o se
+     * escogió entre las dos): lo que se supo de la anterior (la estación de TopWay, el play que se
+     * le mandó) ya no vale, y TopWay solo escucha mientras la FM sea la radio escogida.
+     */
+    private fun radioChanged() {
+        radio.clear()
+        if (users > 0) startTopWay()
+    }
 
     /**
      * Pide al reproductor propio que suene esa fuente y avisa en el hilo principal: true = ya
@@ -215,7 +233,7 @@ class MusicRepository(private val context: Context) {
         set(v) {
             radioInternetState = v
             store.edit().putBoolean(KEY_RADIO_INTERNET, v).apply()
-            radio.forget()
+            radioChanged()
             // Al pasar a la FM, la de internet se calla (si no, su sesión en pausa seguiría mandando).
             if (!v && ownSourceNow?.invoke() == SourceKind.RADIO) ownStop?.invoke()
         }
@@ -302,7 +320,10 @@ class MusicRepository(private val context: Context) {
             val extras = i.extras.toMap()
             trace("aviso ${i.action} [${extras.keys.joinToString()}]")
             val meta = BroadcastMeta.parse(i.action ?: return, extras) ?: return
-            (if (meta.pkg != null && meta.pkg == sourceApps[SourceKind.RADIO]) radio else music).heard(meta)
+            val fm = meta.pkg != null && meta.pkg == sourceApps[SourceKind.RADIO]
+            // La FM avisando mientras la pieza Radio está en internet: no es lo que se escogió.
+            if (fm && appFor(SourceKind.RADIO) != meta.pkg) return
+            (if (fm) radio else music).heard(meta)
         }
     }
 
@@ -363,7 +384,8 @@ class MusicRepository(private val context: Context) {
         topWay?.close()
         topWay = null
         val run = ++topWayRun
-        val pkg = sourceApps[SourceKind.RADIO]?.takeUnless(::isOwn) ?: return
+        // Solo si la FM es la radio escogida (no la de internet).
+        val pkg = appFor(SourceKind.RADIO)?.takeUnless(::isOwn) ?: return
         thread(name = "topway") {
             if (!TopWayRadio.available || !isSilent(pkg)) return@thread
             val log: (String) -> Unit = { e -> mainHandler.post { trace(e) } }
@@ -497,6 +519,7 @@ class MusicRepository(private val context: Context) {
      * lista pero cada una se queda con lo suyo ([accepts]); [fixed] es la app fija (la elegida
      * en Ajustes) y [remembersLast] si guarda la última app que sonó (para que play la despierte).
      */
+    @Stable
     inner class Lens internal constructor(
         private val accepts: (String) -> Boolean,
         private val fixed: () -> String?,
@@ -535,6 +558,15 @@ class MusicRepository(private val context: Context) {
         internal fun forget() {
             if (assumedPkg == null) return
             assumedPkg = null
+            read()
+        }
+
+        /** Olvida todo lo que se supo sin sesión (avisos y supuestos): cambió la app de la pieza. */
+        internal fun clear() {
+            mainHandler.removeCallbacks(expire)
+            heard = null
+            assumedPkg = null
+            starting = null
             read()
         }
 
