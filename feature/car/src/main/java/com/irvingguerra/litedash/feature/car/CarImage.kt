@@ -3,7 +3,6 @@ package com.irvingguerra.litedash.feature.car
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -54,18 +53,18 @@ fun CarTurntable(
     angle: Float? = null,
     onAngle: ((Float) -> Unit)? = null,
     onReady: (() -> Unit)? = null,
-    wheels: (@Composable BoxScope.(WheelSpots) -> Unit)? = null,
+    wheels: (@Composable (spots: () -> WheelSpots) -> Unit)? = null,
 ) {
     val frames = remember(p) { spinFrames(p) }
     val n = frames.size
     var size by remember { mutableStateOf(IntSize.Zero) }
     val widthPx = size.width
-    // El cuadro que ya se ve (el que se pidió puede seguir cargando): las ruedas siguen a ese.
-    var shown by remember(p) { mutableIntStateOf(-1) }
     val saved = angle?.let { (it * n).roundToInt().mod(n) } ?: restFrame(n)
     // Un solo estado por auto: el gesto sigue moviendo este mismo aunque cambie el
     // ángulo guardado (si se recreara al guardar, el dedo movería uno que ya no se dibuja).
     var frame by remember(p) { mutableIntStateOf(saved) }
+    // El cuadro que ya se ve (el que se pidió puede seguir cargando): las ruedas siguen a ese.
+    var shown by remember(p) { mutableIntStateOf(saved) }
     var direction by remember(p) { mutableIntStateOf(1) }
     var dragging by remember(p) { mutableStateOf(false) }
     // Si lo giraron en otra pantalla (Ajustes o la vista en grande), aquí se pone igual.
@@ -98,10 +97,16 @@ fun CarTurntable(
     }
     Box(modifier.onSizeChanged { size = it }.then(turn)) {
         CarLayersImage(repo, p, frames[frame], color, widthPx, Modifier, onReady, onShown = { shown = frames.indexOf(it) })
-        // Los datos van en medios pasos (00, m00, 01…): en calidad normal, un cuadro sí y uno no.
-        val w = p.wheels?.takeIf { it.frames == p.spin * 2 }
-        if (wheels != null && w != null && shown >= 0 && widthPx > 0) {
-            wheels(w.spots(if (p.high) shown else shown * 2, Size(size.width.toFloat(), size.height.toFloat())))
+        // Los datos van en medios pasos (00, m00, 01…): en calidad normal, un cuadro sí y uno no. El
+        // cuadro se lee al acomodar (no al componer): al girar las pastillas solo se mueven.
+        val w = p.wheels
+        if (wheels != null && w != null && widthPx > 0) {
+            val spots: () -> WheelSpots = remember(w, size, p.high) {
+                val box = Size(size.width.toFloat(), size.height.toFloat())
+                val read: () -> WheelSpots = { w.spots(if (p.high) shown else shown * 2, box) }
+                read
+            }
+            wheels(spots)
         }
     }
 }

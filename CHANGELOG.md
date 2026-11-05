@@ -6,6 +6,21 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
+## [1.4.85] - 2026-11-05
+
+### Cambiado
+- **Más ligera: de 1.75 a 1.71 MB.** Una librería chica de dibujo ahora va comprimida dentro de la
+  APK; antes cada copia se alineaba a 16 KB y el relleno pesaba más que ella.
+- Abre un poco más rápido: el perfil de arranque se volvió a generar.
+- Las pastillas de las llantas en las ruedas ya no hacen trabajo de más al girar el auto.
+
+### Arreglado (auditoría de la 1.4.82 a la 1.4.84)
+- Llantas por OBD: si pasas el adaptador a otro auto con otro tipo de conexión, ya no deja de leer los
+  medidores; la búsqueda de tu marca es una vez por conexión (no cada 5 minutos) y no se reconecta
+  sin fin si apagaste el adaptador. Una marca se recuerda hasta que da una presión creíble.
+- Llantas por OBD con el auto parado: dice "conectado" aunque los sensores aún no manden nada.
+- El aviso "mientras se baja dónde van las ruedas" ya no se queda en autos que no lo traen (la moto).
+
 ## [1.4.84] - 2026-11-05
 
 ### Agregado

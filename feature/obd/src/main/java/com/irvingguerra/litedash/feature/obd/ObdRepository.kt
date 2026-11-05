@@ -294,6 +294,9 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
                     target = t
                     // Conexión nueva: lo leído en otra ya no vale (el Taller y su pieza vuelven a leer).
                     lastReport = null
+                    tiresCan = null
+                    tiresCandidate = null
+                    tiresMissed = false
                     state = ObdState.ON
                     reconnects = 0
                     if (t is ObdTarget.Usb) watchUsbDetach(t)
@@ -363,7 +366,9 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
     /** Olvida el adaptador guardado (para elegir otro). */
     fun forget() {
         disconnect()
+        // Sin adaptador guardado (se borra su archivo con la receta de llantas): otro auto empieza de cero.
         target = null
+        tireProfile = null
     }
 
     /** El último reporte del motor que se leyó (la pieza Taller y Salud lo muestran sin volver a leer). */
@@ -392,40 +397,63 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
         )
     }
 
-    /** El perfil de llantas que contestó con este auto (se guarda: la próxima vez se pregunta directo). */
+    /** La receta de llantas que dio presiones con este auto (se guarda: la próxima vez se pregunta directo). */
     private var tireProfile = prefs.getString(KEY_TIRE_PROFILE, null)
-    /** Cuándo se probaron todos sin suerte: no se vuelve a buscar en [TIRES_RETRY_MS]. */
-    private var tiresMissedAt = 0L
+    /**
+     * Lo que se sabe de las llantas en esta conexión (se olvida al conectar): si el protocolo es CAN
+     * de 11 bits (las recetas son de ahí, y regresar al motor con "ATSH7DF" en otro dejaría de
+     * leerlo), la receta que contestó aunque aún no haya presiones, y si ya se probaron todas sin suerte.
+     */
+    private var tiresCan: Boolean? = null
+    private var tiresCandidate: TireProfile? = null
+    private var tiresMissed = false
 
     /**
-     * La presión de fábrica ([FactoryTires]): primero el perfil que ya contestó; si no, se prueban
-     * todos (los de la marca del VIN primero), cada uno con el candado por separado para no detener
-     * los medidores. Solo en autos con CAN de 11 bits (las recetas son de ahí, y regresar al motor
-     * con "ATSH7DF" en otro protocolo dejaría de leerlo).
+     * La presión de fábrica ([FactoryTires]): la receta de esta conexión o la guardada; si no, se
+     * prueban todas (las de la marca del VIN primero) una sola vez por conexión, cada petición con el
+     * candado por separado para no detener los medidores. Una receta se guarda hasta que da una
+     * presión creíble (Ford y Mazda comparten módulo).
      */
     suspend fun factoryTires(): FactoryTires {
-        if (state != ObdState.ON || elm == null) return FactoryTires.NotConnected
-        TireProfiles.firstOrNull { it.id == tireProfile }?.let { p -> readTires(p)?.let { return it } }
-        if (System.currentTimeMillis() - tiresMissedAt < TIRES_RETRY_MS) return FactoryTires.Unsupported
-        val protocol = withElm { it.command("ATDPN").firstOrNull()?.removePrefix("A") } ?: return FactoryTires.NotConnected
-        if (protocol !in CAN_11_BIT) return FactoryTires.Unsupported.also { tiresMissedAt = System.currentTimeMillis() }
+        val e = elm?.takeIf { state == ObdState.ON } ?: return FactoryTires.NotConnected
+        val can = tiresCan ?: (withElm { it.command("ATDPN").firstOrNull()?.removePrefix("A") in CAN_11_BIT } ?: return FactoryTires.NotConnected)
+            .also { if (elm === e) tiresCan = it }
+        if (!can) return FactoryTires.Unsupported
+        val known = tiresCandidate ?: TireProfiles.firstOrNull { it.id == tireProfile }
+        if (known != null) readTires(e, known)?.let { return keep(known, it) }
+        if (tiresMissed) return FactoryTires.Unsupported
         val vin = lastReport?.vin ?: withElm { runCatching { it.vin() }.getOrNull() }
         for (p in ordered(vin)) {
-            val found = readTires(p) ?: continue
-            tireProfile = p.id
-            prefs.edit().putString(KEY_TIRE_PROFILE, p.id).apply()
-            return found
+            if (elm !== e) return FactoryTires.NotConnected
+            if (p === known) continue
+            val found = readTires(e, p) ?: continue
+            return keep(p, found)
         }
-        tiresMissedAt = System.currentTimeMillis()
+        // Si se cayó a media búsqueda no cuenta como "sin suerte": se vuelve a buscar al reconectar.
+        if (elm !== e) return FactoryTires.NotConnected
+        tiresMissed = true
         return FactoryTires.Unsupported
     }
 
+    /** [p] contestó: se usa en esta conexión y se guarda en cuanto da una presión creíble. */
+    private fun keep(p: TireProfile, v: FactoryTires.Values): FactoryTires.Values {
+        tiresCandidate = p
+        if (tireProfile != p.id && v.kpa.any { it != null && it in CREDIBLE_KPA }) {
+            tireProfile = p.id
+            prefs.edit().putString(KEY_TIRE_PROFILE, p.id).apply()
+        }
+        return v
+    }
+
     /**
-     * Una receta: es de este auto si su módulo contestó que sí a todas sus peticiones (aunque los
-     * sensores aún no digan nada: parado y recién encendido regresan 0 o FF).
+     * Una receta con el adaptador [e] (null si ya es otra conexión): es de este auto si su módulo
+     * contestó que sí a todas sus peticiones (aunque los sensores aún no digan nada: parado y recién
+     * encendido regresan 0 o FF).
      */
-    private suspend fun readTires(p: TireProfile): FactoryTires.Values? {
-        val replies = withElm { e -> runCatching { e.module(p.setup, p.requests, RESTORE_ENGINE) }.getOrNull() } ?: return null
+    private suspend fun readTires(e: Elm327, p: TireProfile): FactoryTires.Values? {
+        val replies = withContext(Dispatchers.IO) {
+            runCatching { lock.withLock { if (elm === e) e.module(p.setup, p.requests, RESTORE_ENGINE) else null } }.getOrNull()
+        } ?: return null
         if (replies.size < p.requests.size || replies.any { it == null }) return null
         val v = runCatching { p.decode(replies.filterNotNull()) }.getOrNull() ?: return null
         return FactoryTires.Values(v.kpa, v.tempC, p.id)
@@ -562,8 +590,8 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
         private const val MAX_RECONNECTS = 5
         private const val RECONNECT_MS = 8_000L
         private const val KEY_TIRE_PROFILE = "tire_profile"
-        /** Sin perfil que conteste, cada cuánto se vuelve a buscar (el auto pudo estar apagado). */
-        private const val TIRES_RETRY_MS = 5 * 60_000L
+        /** Una presión de llanta creíble (kPa): con eso se guarda la receta. */
+        private val CREDIBLE_KPA = 100f..450f
         /** "ATDPN": CAN de 11 bits a 500 o 250 kbps. */
         private val CAN_11_BIT = setOf("6", "8")
 

@@ -4,7 +4,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -56,7 +55,7 @@ fun HomeCar(
     val color = d.prefs.carColor
     // El sedán dibujado no carga nada: listo de una vez.
     if (pkg == null) ReadyNow(onReady)
-    val wheels: (@Composable BoxScope.(WheelSpots) -> Unit)? = onTires?.let { open -> { spots -> WheelPills(d, spots, open) } }
+    val wheels: (@Composable (() -> WheelSpots) -> Unit)? = remember(onTires) { onTires?.let { open -> { spots -> WheelPills(d, spots, open) } } }
     CarTile(
         name = d.prefs.carName ?: pkg?.name ?: stringResource(R.string.my_car),
         color = color,

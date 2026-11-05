@@ -275,6 +275,10 @@ class CarRepository(private val context: Context, val catalogUrl: String) {
     /** Dónde pisa cada rueda de [p] en el giro (las pastillas de las llantas); como la planta, aparte del paquete. */
     fun fetchWheels(p: CarPackage?) = fetchExtra(p, Extra.WHEELS)
 
+    /** Autos que el catálogo no trae con [CarPackage.wheels] (la moto): sus pastillas van en las esquinas. */
+    var withoutWheels by mutableStateOf<Set<String>>(emptySet())
+        private set
+
     /**
      * Baja un [Extra] de [p] si el catálogo lo trae y el auto aún no. Corre en el ámbito del
      * repositorio (si se sale de la pantalla a media descarga, termina igual), uno a la vez por
@@ -289,7 +293,11 @@ class CarRepository(private val context: Context, val catalogUrl: String) {
         extraJobs[kind] = scope.launch {
             val catalog = recentCatalog() ?: return@launch
             checks.edit().putLong(key, System.currentTimeMillis()).apply()
-            val extra = catalog.firstOrNull { it.id == p.id }?.let(kind.pick) ?: return@launch
+            val extra = catalog.firstOrNull { it.id == p.id }?.let(kind.pick)
+            if (extra == null) {
+                if (kind == Extra.WHEELS) withoutWheels += p.id
+                return@launch
+            }
             disk.withLock {
                 // Pudo cambiar mientras tanto (actualizado, borrado o ya con el extra).
                 val now = pkg(p.id)?.takeIf { it.sha256 == p.sha256 && !kind.has(it) } ?: return@withLock
@@ -611,7 +619,8 @@ class CarRepository(private val context: Context, val catalogUrl: String) {
                 topView = File(folder, CarViews.TOP_VIEW + ".webp").exists(),
                 folder = folder,
                 sha256 = File(folder, CarFiles.PACKAGE_HASH).takeIf { it.exists() }?.readText()?.trim().orEmpty(),
-                wheels = File(folder, CarViews.WHEELS + ".json").takeIf { it.exists() }?.let { CarWheels.parse(it.readText()) },
+                wheels = File(folder, CarViews.WHEELS + ".json").takeIf { it.exists() }
+                    ?.let { CarWheels.parse(it.readText(), a.optInt(CarJson.SPIN)) },
             )
         }.getOrNull()
     }

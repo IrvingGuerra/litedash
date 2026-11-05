@@ -139,6 +139,10 @@ android {
             "/META-INF/*.version",
             "/kotlin/**.kotlin_builtins",
         )
+        // Las .so (la de trazos de Compose, ~10 KB por arquitectura) van comprimidas y Android las
+        // extrae al instalar: sin comprimir, cada una se alinea a 16 KB y el relleno pesaba más
+        // que ellas (hasta ~45 KB de hueco en la APK).
+        jniLibs.useLegacyPackaging = true
     }
 }
 

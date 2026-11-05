@@ -71,11 +71,11 @@ class Elm327(private val link: ElmLink, private val now: () -> Long = System::cu
      * pregunta lo demás: no es este módulo). Siempre deja el adaptador como lo espera el motor
      * ([restore]): si no, los medidores dejarían de leer.
      */
-    fun module(setup: List<String>, requests: List<String>, restore: List<String>, timeoutMs: Long = 1_500): List<IntArray?> = try {
+    fun module(setup: List<String>, requests: List<String>, restore: List<String>): List<IntArray?> = try {
         for (c in setup) command(c)
         val out = ArrayList<IntArray?>(requests.size)
         for (r in requests) {
-            val reply = parseModuleReply(r, command(r, timeoutMs))
+            val reply = parseModuleReply(r, command(r, MODULE_TIMEOUT_MS))
             out += reply
             if (reply == null) break
         }
@@ -130,6 +130,9 @@ internal fun parseModuleReply(request: String, lines: List<String>): IntArray? {
     if (at < 0) return null
     return hexBytes(joined.substring(at + positive.length))
 }
+
+/** Lo que se espera a otro módulo del auto: uno que no existe no contesta nada. */
+private const val MODULE_TIMEOUT_MS = 1_500L
 
 /** El renglón con el largo de una respuesta en varias tramas ("00A") y el número de cada trama ("1:"). */
 private val MULTI_LENGTH = Regex("[0-9A-F]{3}")

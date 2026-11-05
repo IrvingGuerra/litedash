@@ -2,7 +2,6 @@ package com.irvingguerra.litedash
 
 import com.irvingguerra.litedash.feature.obd.ObdState
 import com.irvingguerra.litedash.feature.obd.FactoryTires
-import com.irvingguerra.litedash.feature.tpms.CarTiresReading
 import com.irvingguerra.litedash.feature.car.WheelSpots
 import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.Canvas
@@ -607,43 +606,50 @@ private fun corner(w: Wheel) = when (w) {
 @Composable
 fun BoxScope.TirePills(d: Dependencies, onOpen: () -> Unit) {
     if (d.prefs.tiresOnCar == TiresOnCar.OFF || !d.hasTpmsSource) return
+    RoadPills(d, onOpen) { Modifier.align(corner(it)).padding(6.dp) }
+}
+
+/**
+ * Las pastillas de las cuatro llantas que ruedan ([modifier] acomoda la de cada una). Todo bien:
+ * discretas (70 %); la de un problema, de su color.
+ */
+@Composable
+private fun RoadPills(d: Dependencies, onOpen: () -> Unit, modifier: (Wheel) -> Modifier = { Modifier }) {
     val statuses = Wheel.ROAD.associateWith { d.tpms.statusOf(it) }
     val calm = statuses.values.none { it.problem }
     for (w in Wheel.ROAD) {
-        TirePill(pillText(d, w), statuses.getValue(w), onOpen, Modifier.align(corner(w)).padding(6.dp).graphicsLayer { alpha = if (calm) 0.7f else 1f })
+        TirePill(pillText(d, w), statuses.getValue(w), onOpen, modifier(w).graphicsLayer { alpha = if (calm) 0.7f else 1f })
     }
+}
+
+/** La presión de [w] con su unidad ("32 psi"), o "—" sin lectura. */
+@Composable
+private fun pillText(d: Dependencies, w: Wheel): String {
+    val unit = d.tpms.unit
+    return d.bus.watch(TireSignals.pressure(w))?.let { "${unit.format(it)} ${unit.label}" } ?: "—"
 }
 
 /**
  * Las pastillas de las llantas que se ven, en una fila justo debajo del auto 3D, cada una bajo su
  * rueda ([spots], del giro): al girarlo aparecen y se van con las ruedas. Las que tapa el auto no
  * salen (un problema en ellas lo dice el aviso de arriba). Si dos chocan se recorren lo justo, sin
- * salirse de la pieza. Igual que las de las esquinas: discretas si todo va bien.
+ * salirse de la pieza. [spots] se lee al acomodar: al girar solo se mueven, no se vuelven a armar.
  */
 @Composable
-fun WheelPills(d: Dependencies, spots: WheelSpots, onOpen: () -> Unit) {
-    val statuses = Wheel.ROAD.associateWith { d.tpms.statusOf(it) }
-    val calm = statuses.values.none { it.problem }
-    // De izquierda a derecha como se ven.
-    val shown = Wheel.ROAD.indices.filter { spots.visible[it] }.sortedBy { spots.points[it].x }
-    Layout(
-        content = {
-            for (i in shown) {
-                val w = Wheel.ROAD[i]
-                TirePill(pillText(d, w), statuses.getValue(w), onOpen, Modifier.graphicsLayer { alpha = if (calm) 0.7f else 1f })
-            }
-        },
-        modifier = Modifier.fillMaxSize(),
-    ) { measurables, constraints ->
+fun WheelPills(d: Dependencies, spots: () -> WheelSpots, onOpen: () -> Unit) {
+    Layout(content = { RoadPills(d, onOpen) }, modifier = Modifier.fillMaxSize()) { measurables, constraints ->
+        val s = spots()
         val gap = 4.dp.roundToPx()
-        val pills = measurables.map { it.measure(Constraints()) }
+        // De izquierda a derecha como se ven; las tapadas ni se acomodan (no se dibujan).
+        val shown = Wheel.ROAD.indices.filter { s.visible[it] }.sortedBy { s.points[it].x }
+        val pills = shown.map { measurables[it].measure(Constraints()) }
         val width = constraints.maxWidth
         // La fila va justo debajo de la rueda que pisa más abajo (la más cercana).
-        val lowest = shown.maxOfOrNull { spots.points[it].y } ?: 0f
+        val lowest = shown.maxOfOrNull { s.points[it].y } ?: 0f
         val row = (lowest + gap).roundToInt().coerceIn(0, (constraints.maxHeight - (pills.maxOfOrNull { it.height } ?: 0)).coerceAtLeast(0))
         // Cada una centrada en su rueda y luego sin choques: se recorren a la derecha y, si la
         // última se sale, de regreso desde la derecha.
-        val left = IntArray(pills.size) { (spots.points[shown[it]].x - pills[it].width / 2f).roundToInt() }
+        val left = IntArray(pills.size) { (s.points[shown[it]].x - pills[it].width / 2f).roundToInt() }
         var edge = 0
         for (n in pills.indices) {
             left[n] = maxOf(left[n], edge)
@@ -660,14 +666,6 @@ fun WheelPills(d: Dependencies, spots: WheelSpots, onOpen: () -> Unit) {
     }
 }
 
-
-/** La presión de [w] con su unidad ("32 psi"), o "—" sin lectura. */
-@Composable
-private fun pillText(d: Dependencies, w: Wheel): String {
-    val unit = d.tpms.unit
-    return d.bus.watch(TireSignals.pressure(w))?.let { "${unit.format(it)} ${unit.label}" } ?: "—"
-}
-
 /** Orilla del auto de espaldas en su caja (desde cada lado), en fracción del ancho: ahí junto van las pastillas. */
 private const val REAR_CAR_SIDE = 0.27f
 
@@ -682,15 +680,7 @@ private fun rearPillY(w: Wheel) = if (w == Wheel.REAR_LEFT || w == Wheel.REAR_RI
 @Composable
 fun RoadTirePills(d: Dependencies, onOpen: () -> Unit, modifier: Modifier) {
     if (d.prefs.tiresOnCar == TiresOnCar.OFF || !d.hasTpmsSource) return
-    val repo = d.tpms
-    val statuses = Wheel.ROAD.associateWith { repo.statusOf(it) }
-    val calm = statuses.values.none { it.problem }
-    Layout(
-        content = {
-            for (w in Wheel.ROAD) TirePill(pillText(d, w), statuses.getValue(w), onOpen, Modifier.graphicsLayer { alpha = if (calm) 0.7f else 1f })
-        },
-        modifier = modifier,
-    ) { measurables, constraints ->
+    Layout(content = { RoadPills(d, onOpen) }, modifier = modifier) { measurables, constraints ->
         val gap = 6.dp.roundToPx()
         val pills = measurables.map { it.measure(Constraints()) }
         layout(constraints.maxWidth, constraints.maxHeight) {
@@ -885,18 +875,12 @@ internal fun TiresHealthTile(d: Dependencies, onClick: () -> Unit, modifier: Mod
 
 /**
  * La fuente "Auto (OBD)" de Llantas: con el módulo OBD prendido y adaptador guardado, conecta el
- * escáner si hace falta (como las piezas del Taller) y le pide la presión de fábrica.
+ * escáner si está apagado (no tras un error: ahí reintenta él solo unas veces, o el Taller) y le pide
+ * la presión de fábrica.
  */
-internal suspend fun factoryTires(d: Dependencies): CarTiresReading {
-    if (!d.obdAuto) return CarTiresReading.NotConnected
+internal suspend fun factoryTires(d: Dependencies): FactoryTires {
+    if (!d.obdAuto) return FactoryTires.NotConnected
     val obd = d.obd
-    if (obd.state != ObdState.ON) {
-        if (obd.state != ObdState.CONNECTING) obd.connect()
-        return CarTiresReading.NotConnected
-    }
-    return when (val r = obd.factoryTires()) {
-        FactoryTires.NotConnected -> CarTiresReading.NotConnected
-        FactoryTires.Unsupported -> CarTiresReading.Unsupported
-        is FactoryTires.Values -> CarTiresReading.Values(r.kpa, r.tempC, r.profile)
-    }
+    if (obd.state == ObdState.OFF) obd.connect()
+    return obd.factoryTires()
 }

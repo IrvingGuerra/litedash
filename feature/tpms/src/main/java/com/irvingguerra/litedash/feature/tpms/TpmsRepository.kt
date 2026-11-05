@@ -31,6 +31,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import com.irvingguerra.litedash.feature.obd.FactoryTires
 import java.io.File
 import java.io.IOException
 
@@ -61,17 +62,8 @@ enum class TpmsError { USB_MISSING, USB_DENIED, USB_OPEN_FAILED, USB_UNPLUGGED, 
  * del Taller. La pone la app: así Llantas no carga el escáner si no se usa esta fuente.
  */
 fun interface CarTires {
-    suspend fun read(): CarTiresReading
-}
-
-/** Lo que contestó el auto. */
-sealed interface CarTiresReading {
-    /** Sin adaptador conectado (o el módulo OBD apagado). */
-    data object NotConnected : CarTiresReading
-    /** Conectado, pero ningún perfil de marca le sacó la presión a este auto. */
-    data object Unsupported : CarTiresReading
-    /** Las cuatro llantas en [Wheel.ROAD]: kPa manométrica y °C (null = no lo dio). [profile] = el perfil que contestó. */
-    data class Values(val kpa: List<Float?>, val tempC: List<Float?>, val profile: String) : CarTiresReading
+    /** Las cuatro llantas en el orden de [Wheel.ROAD]. */
+    suspend fun read(): FactoryTires
 }
 
 /** Emparejar un sensor con el receptor USB. */
@@ -258,6 +250,7 @@ class TpmsRepository(context: Context, private val bus: VehicleBus) {
         tickJob?.cancel(); tickJob = null
         demoJob?.cancel(); demoJob = null
         obdJob?.cancel(); obdJob = null
+        obdProfile = null
         stopUsb()
         ble?.stop()
         unwatchBluetooth()
@@ -558,11 +551,13 @@ class TpmsRepository(context: Context, private val bus: VehicleBus) {
     private fun startObd() {
         obdJob = scope.launch {
             while (isActive) {
-                when (val r = carTires?.read() ?: CarTiresReading.NotConnected) {
-                    CarTiresReading.NotConnected -> { status = TpmsStatus.NO_DEVICE; error = TpmsError.OBD_OFF }
-                    CarTiresReading.Unsupported -> { status = TpmsStatus.NO_DEVICE; error = TpmsError.OBD_UNSUPPORTED }
-                    is CarTiresReading.Values -> {
+                when (val r = carTires?.read() ?: FactoryTires.NotConnected) {
+                    FactoryTires.NotConnected -> { status = TpmsStatus.NO_DEVICE; error = TpmsError.OBD_OFF }
+                    FactoryTires.Unsupported -> { status = TpmsStatus.NO_DEVICE; error = TpmsError.OBD_UNSUPPORTED }
+                    is FactoryTires.Values -> {
+                        // Contestó aunque los sensores aún no digan nada (parado, recién encendido).
                         error = null
+                        status = TpmsStatus.CONNECTED
                         obdProfile = r.profile
                         val now = System.currentTimeMillis()
                         Wheel.ROAD.forEachIndexed { i, w ->

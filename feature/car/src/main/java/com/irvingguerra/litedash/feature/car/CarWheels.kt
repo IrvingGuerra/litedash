@@ -39,11 +39,15 @@ class CarWheels private constructor(val frames: Int, private val aspect: Float, 
          */
         private const val VERSION = 2
 
-        /** null si el archivo no sirve (otro formato, cortado o de una versión anterior). */
-        fun parse(text: String): CarWheels? = runCatching {
+        /**
+         * null si el archivo no sirve: otro formato, cortado, de una versión anterior o de otro giro
+         * (no trae los medios pasos de los [spin] cuadros del paquete).
+         */
+        fun parse(text: String, spin: Int): CarWheels? = runCatching {
             val o = JSONObject(text)
             check(o.optInt("version", 1) >= VERSION)
             val frames = o.getInt("frames")
+            check(frames == spin * 2)
             val data = KEYS.map { key ->
                 val a = o.getJSONArray(key)
                 check(a.length() == frames * 3)
