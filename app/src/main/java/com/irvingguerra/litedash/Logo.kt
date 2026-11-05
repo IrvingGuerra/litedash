@@ -96,8 +96,9 @@ private class SavedImage(val file: String, val maxPx: Int, val png: Boolean) {
 }
 
 /**
- * Las fotos de las piezas de imagen, una por nombre ([Tile.data]): files/images/NOMBRE.png, con
- * transparencia y a lo más 1024 px. Cada pieza tiene la suya.
+ * Las fotos de las piezas de imagen y de lo que va al frente de un velocímetro, una por nombre
+ * ([Tile.data] o [GaugeLook.image]): files/images/NOMBRE.png, con transparencia y a lo más 1024 px.
+ * Cada pieza tiene la suya.
  */
 private val tileImages = HashMap<String, SavedImage>()
 
@@ -106,11 +107,17 @@ private fun newTileImage(name: String) = SavedImage("images/$name.png", 1024, pn
 private fun tileImage(name: String) = tileImages.getOrPut(name) { newTileImage(name) }
 
 /**
- * Suelta de memoria las fotos de las piezas de imagen que ya no están en [tiles] (se
- * quitaron o cambiaron de foto). Solo la memoria: los PNG se quedan en files/images/.
+ * Suelta de memoria las fotos de las piezas (imagen o al frente de un velocímetro) que ya no están en
+ * [tiles] (se quitaron o cambiaron de foto). Solo la memoria: los PNG se quedan en files/images/.
  */
 fun releaseTileImages(tiles: List<Tile>) {
-    val used = tiles.mapNotNullTo(HashSet()) { t -> t.data.takeIf { t.type == TileTypes.IMAGE } }
+    val used = tiles.mapNotNullTo(HashSet()) { t ->
+        when (t.type) {
+            TileTypes.IMAGE -> t.data
+            TileTypes.SPEEDOMETER -> GaugeLook.parse(t.data).takeIf { it.front == GaugeFront.IMAGE }?.image
+            else -> null
+        }
+    }
     val iterator = tileImages.entries.iterator()
     while (iterator.hasNext()) {
         val entry = iterator.next()
@@ -223,6 +230,13 @@ fun ImageTile(d: Dependencies, name: String, onClick: () -> Unit, modifier: Modi
             loaded.loaded -> MorseMark(Modifier.fillMaxWidth(0.5f).aspectRatio(MORSE_ASPECT))
         }
     }
+}
+
+/** La foto [name] de files/images/, abajo al centro y sin recortar (al frente de un velocímetro); sin foto, nada. */
+@Composable
+fun SavedTileImage(name: String, modifier: Modifier = Modifier) {
+    val image = rememberImage(tileImage(name)).image ?: return
+    Image(image, null, modifier, alignment = Alignment.BottomCenter)
 }
 
 /**
@@ -367,23 +381,39 @@ fun CustomizeImagePanel(d: Dependencies, tileId: String, close: () -> Unit) {
         LaunchedEffect(Unit) { close() }
         return
     }
-    // Sin foto todavía: se le da un nombre nuevo y se guarda en la pieza al elegirla.
-    val fresh = remember(tileId) { System.currentTimeMillis().toString(36) }
-    val name = tile.data.ifEmpty { fresh }
+    PanelScaffold(stringResource(R.string.image_title), close) {
+        Column(Modifier.weight(1f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            Label(stringResource(R.string.image_help), Typography.body, c.textMuted)
+            ImageEditor(d, tileId, tile.data) { d.dashboard.setData(tileId, it) }
+        }
+    }
+}
+
+/**
+ * Elegir, cambiar o quitar una foto guardada como files/images/[current].png, con vista previa y
+ * "quitar fondo". [key] identifica a quien la usa (la pieza); sin foto todavía ([current] vacío) se le
+ * da un nombre nuevo y se avisa con [onNamed] al elegirla. [empty] dice qué pasa sin foto. Va dentro de una columna.
+ */
+@Composable
+fun ImageEditor(d: Dependencies, key: String, current: String, empty: String = stringResource(R.string.image_empty), onNamed: (String) -> Unit) {
+    val c = LocalColors.current
+    // Sin foto todavía: se le da un nombre nuevo y se guarda al elegirla.
+    val fresh = remember(key) { System.currentTimeMillis().toString(36) }
+    val name = current.ifEmpty { fresh }
     // La del nombre nuevo va aparte (no en tileImages): abrir el panel y cerrarlo sin elegir no deja nada.
-    val freshImage = remember(tileId) { newTileImage(fresh) }
-    val target = if (tile.data.isEmpty()) freshImage else tileImage(name)
+    val freshImage = remember(key) { newTileImage(fresh) }
+    val target = if (current.isEmpty()) freshImage else tileImage(name)
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     // La foto elegida en este panel: mientras siga abierto se puede volver a la original.
-    var picked by remember(tileId) { mutableStateOf<Uri?>(null) }
+    var picked by remember(key) { mutableStateOf<Uri?>(null) }
     val source by produceState<Bitmap?>(null, picked) {
         value = picked?.let { withContext(Dispatchers.IO) { decodeScaled(context, it, CUT_MAX_PX) } }
     }
-    var removing by remember(tileId) { mutableStateOf(false) }
-    var level by remember(tileId) { mutableIntStateOf(1) }
+    var removing by remember(key) { mutableStateOf(false) }
+    var level by remember(key) { mutableIntStateOf(1) }
     // Lo que hay guardado: -1 = la original; si no, la intensidad con que se quitó el fondo.
-    var saved by remember(tileId) { mutableIntStateOf(-1) }
+    var saved by remember(key) { mutableIntStateOf(-1) }
     val chosen = if (removing) level else -1
     // Se queda la vista previa anterior mientras se calcula la nueva (sin parpadeo).
     val preview by produceState<CutPreview?>(null, source, removing, level) {
@@ -392,58 +422,53 @@ fun CustomizeImagePanel(d: Dependencies, tileId: String, close: () -> Unit) {
     }
     val ready = preview?.takeIf { removing && it.source === source && it.level == level }
     val sourceImage = remember(source) { source?.asImageBitmap() }
-    PanelScaffold(stringResource(R.string.image_title), close) {
-        Column(Modifier.weight(1f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            Label(stringResource(R.string.image_help), Typography.body, c.textMuted)
-            Box(Modifier.widthIn(max = 360.dp).fillMaxWidth().aspectRatio(2f), contentAlignment = Alignment.Center) {
-                val shown = (if (removing) preview?.takeIf { it.source === source }?.image else null) ?: sourceImage
-                if (shown != null) Image(shown, null, Modifier.fillMaxSize(0.8f)) else ImageTile(d, tile.data, onClick = {})
-            }
-            val hasImage = imageButtons(target, onPicked = { uri ->
-                if (tile.data.isEmpty()) d.dashboard.setData(tileId, name)
-                picked = uri
-                removing = false
-                saved = -1
-            })
-            // Al quitar la imagen se olvida la foto elegida.
-            LaunchedEffect(hasImage) { if (!hasImage) picked = null }
-            if (!hasImage) Label(stringResource(R.string.image_empty), Typography.small, c.textMuted)
-            if (hasImage && source != null) {
-                Label(stringResource(R.string.image_background), Typography.label, c.textMuted)
-                Segmented(
-                    listOf(false to stringResource(R.string.image_background_original), true to stringResource(R.string.image_background_remove)),
-                    removing,
-                    { removing = it },
-                )
-                if (removing) {
-                    Label(stringResource(R.string.image_background_help), Typography.small, c.textMuted)
-                    Label(stringResource(R.string.image_strength), Typography.label, c.textMuted)
-                    Segmented(
-                        listOf(
-                            0 to stringResource(R.string.image_strength_low),
-                            1 to stringResource(R.string.image_strength_medium),
-                            2 to stringResource(R.string.image_strength_high),
-                            3 to stringResource(R.string.image_strength_max),
-                        ),
-                        level,
-                        { level = it },
-                    )
-                    if (ready != null && ready.bitmap == null) Label(stringResource(R.string.image_cut_failed), Typography.small, c.danger)
+    Box(Modifier.widthIn(max = 360.dp).fillMaxWidth().aspectRatio(2f), contentAlignment = Alignment.Center) {
+        val shown = (if (removing) preview?.takeIf { it.source === source }?.image else null) ?: sourceImage
+        if (shown != null) Image(shown, null, Modifier.fillMaxSize(0.8f)) else ImageTile(d, current, onClick = {})
+    }
+    val hasImage = imageButtons(target, onPicked = { uri ->
+        if (current.isEmpty()) onNamed(name)
+        picked = uri
+        removing = false
+        saved = -1
+    })
+    // Al quitar la imagen se olvida la foto elegida.
+    LaunchedEffect(hasImage) { if (!hasImage) picked = null }
+    if (!hasImage) Label(empty, Typography.small, c.textMuted)
+    if (hasImage && source != null) {
+        Label(stringResource(R.string.image_background), Typography.label, c.textMuted)
+        Segmented(
+            listOf(false to stringResource(R.string.image_background_original), true to stringResource(R.string.image_background_remove)),
+            removing,
+            { removing = it },
+        )
+        if (removing) {
+            Label(stringResource(R.string.image_background_help), Typography.small, c.textMuted)
+            Label(stringResource(R.string.image_strength), Typography.label, c.textMuted)
+            Segmented(
+                listOf(
+                    0 to stringResource(R.string.image_strength_low),
+                    1 to stringResource(R.string.image_strength_medium),
+                    2 to stringResource(R.string.image_strength_high),
+                    3 to stringResource(R.string.image_strength_max),
+                ),
+                level,
+                { level = it },
+            )
+            if (ready != null && ready.bitmap == null) Label(stringResource(R.string.image_cut_failed), Typography.small, c.danger)
+        }
+        val cut = ready?.bitmap
+        if (chosen != saved && (chosen < 0 || cut != null)) {
+            Button(stringResource(R.string.image_apply), {
+                val uri = picked ?: return@Button
+                scope.launch {
+                    val ok = if (cut == null) save(context, uri, target) else write(context, cut, target)
+                    if (ok) {
+                        target.bump()
+                        saved = chosen
+                    }
                 }
-                val cut = ready?.bitmap
-                if (chosen != saved && (chosen < 0 || cut != null)) {
-                    Button(stringResource(R.string.image_apply), {
-                        val uri = picked ?: return@Button
-                        scope.launch {
-                            val ok = if (cut == null) save(context, uri, target) else write(context, cut, target)
-                            if (ok) {
-                                target.bump()
-                                saved = chosen
-                            }
-                        }
-                    }, primary = true)
-                }
-            }
+            }, primary = true)
         }
     }
 }

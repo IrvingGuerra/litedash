@@ -45,13 +45,19 @@ class GaugeLookTest {
     }
 
     @Test
-    fun esferaYAutoAlFrente() {
-        // Esfera y "Auto al frente": de fábrica sin auto (no se escribe).
-        val look = GaugeLook(GaugeStyle.DIAL, car = true)
-        assertEquals("style=dial;car=1", look.encode())
-        assertEquals(look, GaugeLook.parse(look.encode()))
-        assertEquals(false, GaugeLook.parse("style=dial").car)
+    fun esferaYAlFrente() {
+        // Esfera y "Al frente": de fábrica nada (no se escribe).
+        val car = GaugeLook(GaugeStyle.DIAL, front = GaugeFront.CAR)
+        assertEquals("style=dial;front=car", car.encode())
+        assertEquals(car, GaugeLook.parse(car.encode()))
+        assertEquals(GaugeFront.NONE, GaugeLook.parse("style=dial").front)
         assertEquals(null, GaugeStyle.DIAL.suggestedColor())
+        // La imagen se recuerda aunque se cambie a nada; "car=1" de la 1.4.74 sigue siendo el auto.
+        val image = GaugeLook(front = GaugeFront.IMAGE, image = "abc123")
+        assertEquals("front=image;img=abc123", image.encode())
+        assertEquals(image, GaugeLook.parse(image.encode()))
+        assertEquals("img=abc123", image.copy(front = GaugeFront.NONE).encode())
+        assertEquals(GaugeFront.CAR, GaugeLook.parse("car=1").front)
     }
 
     @Test

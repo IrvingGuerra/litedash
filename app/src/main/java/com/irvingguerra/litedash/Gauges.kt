@@ -32,14 +32,17 @@ fun SpeedometerTile(d: Dependencies, look: GaugeLook) {
     if (!obdOn) KeepTripRunning(d.trip)
     val kmh = d.bus.watch(Signal.SPEED)
     val miles = d.prefs.units.miles
-    SpeedGaugeCard((kmh ?: 0f).toMiles(miles), miles, speedTag(d), look, d.prefs.carColor, speedCar(d, look))
+    SpeedGaugeCard((kmh ?: 0f).toMiles(miles), miles, speedTag(d), look, d.prefs.carColor, speedFront(d, look))
 }
 
-/** Tu auto quieto (de frente, sin reflejo) para "Auto al frente"; null si no se pidió o no hay auto instalado. */
-fun speedCar(d: Dependencies, look: GaugeLook): (@Composable (Modifier) -> Unit)? {
-    if (!look.car) return null
-    val pkg = d.cars.pkg(d.prefs.carModel) ?: return null
-    return { m -> CarStill(d.cars, pkg, d.prefs.carColor, m, reflection = false) }
+/**
+ * Lo que va al frente del velocímetro: tu auto quieto (de frente, sin reflejo) o tu imagen; null si
+ * no se pidió nada, no hay auto instalado o aún no hay imagen.
+ */
+fun speedFront(d: Dependencies, look: GaugeLook): (@Composable (Modifier) -> Unit)? = when (look.front) {
+    GaugeFront.NONE -> null
+    GaugeFront.CAR -> d.cars.pkg(d.prefs.carModel)?.let { pkg -> { m -> CarStill(d.cars, pkg, d.prefs.carColor, m, reflection = false) } }
+    GaugeFront.IMAGE -> look.image.takeIf { it.isNotEmpty() }?.let { name -> { m -> SavedTileImage(name, m) } }
 }
 
 /** De dónde viene la velocidad (OBD, GPS o CAN), para la etiqueta del velocímetro. */
@@ -52,10 +55,10 @@ fun speedTag(d: Dependencies) = when (d.bus.source(Signal.SPEED)) {
 
 /**
  * La tarjeta del velocímetro con [speed] ya en la unidad que se ve (km/h o mph): la
- * usan la pieza y la vista previa de Personalizar medidor. [car]: ver [speedCar].
+ * usan la pieza y la vista previa de Personalizar medidor. [front]: ver [speedFront].
  */
 @Composable
-fun SpeedGaugeCard(speed: Float, miles: Boolean, tag: String, look: GaugeLook, carColor: Color, car: (@Composable (Modifier) -> Unit)? = null) {
+fun SpeedGaugeCard(speed: Float, miles: Boolean, tag: String, look: GaugeLook, carColor: Color, front: (@Composable (Modifier) -> Unit)? = null) {
     val max = look.speedMax(miles).toFloat()
     // Marcas cada 20 km/h (10 mph); con 240 o más, cada 40 (20 mph) para que no se amontonen.
     val ticks = ticksFor(max, miles)
@@ -68,7 +71,7 @@ fun SpeedGaugeCard(speed: Float, miles: Boolean, tag: String, look: GaugeLook, c
         look = look,
         carColor = carColor,
         labels = { i -> (max * i / ticks).toInt().toString() },
-        car = car,
+        front = front,
     )
 }
 

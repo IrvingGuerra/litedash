@@ -75,7 +75,11 @@
     <string name="gauge_style_blocks">Cuadros</string>
     <!-- Esfera y auto al frente del velocímetro -->
     <string name="gauge_style_dial">Esfera</string>
-    <string name="gauge_car">Auto al frente</string>
+    <string name="gauge_front">Al frente</string>
+    <string name="gauge_front_none">Nada</string>
+    <string name="gauge_front_car">Tu auto</string>
+    <string name="gauge_front_image">Imagen</string>
+    <string name="gauge_front_image_empty">Elige una imagen de tu galería; con fondo transparente (o quitándole el fondo) se ve mejor.</string>
     <string name="gauge_color_purple">Morado a azul</string>
     <string name="gauge_color_cyan">Cian neón</string>
     <string name="gauge_customize">Personalizar medidor</string>

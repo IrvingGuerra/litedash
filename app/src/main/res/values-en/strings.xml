@@ -74,7 +74,11 @@
     <string name="gauge_style_blocks">Blocks</string>
     <!-- Dial and car in front of the speedometer -->
     <string name="gauge_style_dial">Dial</string>
-    <string name="gauge_car">Car in front</string>
+    <string name="gauge_front">In front</string>
+    <string name="gauge_front_none">Nothing</string>
+    <string name="gauge_front_car">Your car</string>
+    <string name="gauge_front_image">Image</string>
+    <string name="gauge_front_image_empty">Pick an image from your gallery; it looks best with a transparent background (or with the background removed).</string>
     <string name="gauge_color_purple">Purple to blue</string>
     <string name="gauge_color_cyan">Neon cyan</string>
     <string name="gauge_customize">Customize gauge</string>

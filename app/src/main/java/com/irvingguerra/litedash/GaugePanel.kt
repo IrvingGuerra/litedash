@@ -103,7 +103,7 @@ fun CustomizeGaugePanel(d: Dependencies, tileId: String, close: () -> Unit, onPi
                             RoadView(d, d.cars.pkg(d.prefs.carModel), onClick = {}, look = roadLook ?: RoadLook(), demoKmh = demoKmh)
                         } else if (speedometer) {
                             val max = look.speedMax(units.miles).toFloat()
-                            SpeedGaugeCard(demo * max, units.miles, "GPS", look, d.prefs.carColor, speedCar(d, look))
+                            SpeedGaugeCard(demo * max, units.miles, "GPS", look, d.prefs.carColor, speedFront(d, look))
                         } else if (spec != null) {
                             SpecGaugeCard(spec, spec.min + (spec.max - spec.min) * demo, units, look, d.prefs.carColor)
                         }
@@ -172,9 +172,18 @@ fun CustomizeGaugePanel(d: Dependencies, tileId: String, close: () -> Unit, onPi
                     SwitchRow(stringResource(R.string.gauge_ticks), look.ticks, { set(look.copy(ticks = it)) })
                     SwitchRow(stringResource(R.string.gauge_numbers), look.numbers, { set(look.copy(numbers = it)) })
                     SwitchRow(stringResource(R.string.gauge_redline), look.redline, { set(look.copy(redline = it)) })
-                    // Solo el velocímetro (no la carretera, que ya lleva el auto) y si hay un auto instalado.
-                    if (tile.type == TileTypes.SPEEDOMETER && d.cars.pkg(d.prefs.carModel) != null) {
-                        SwitchRow(stringResource(R.string.gauge_car), look.car, { set(look.copy(car = it)) })
+                    // Solo el velocímetro (no la carretera, que ya lleva el auto). "Tu auto", si hay uno instalado.
+                    if (tile.type == TileTypes.SPEEDOMETER) {
+                        Label(stringResource(R.string.gauge_front), Typography.label, c.textMuted)
+                        val hasCar = d.cars.pkg(d.prefs.carModel) != null
+                        Segmented(
+                            GaugeFront.entries.filter { it != GaugeFront.CAR || hasCar || look.front == it }.map { it to stringResource(it.title) },
+                            look.front,
+                            { set(look.copy(front = it)) },
+                        )
+                        if (look.front == GaugeFront.IMAGE) {
+                            ImageEditor(d, tile.id, look.image, stringResource(R.string.gauge_front_image_empty)) { set(look.copy(image = it)) }
+                        }
                     }
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         if (!speedometer) Button(stringResource(R.string.gauge_change_signal), onPickSignal)
@@ -185,8 +194,13 @@ fun CustomizeGaugePanel(d: Dependencies, tileId: String, close: () -> Unit, onPi
                                 d.dashboard.tiles
                                     .filter { it.type == TileTypes.SPEEDOMETER || it.type == TileTypes.GAUGE || it.type == TileTypes.ROAD }
                                     .associate {
-                                        // El auto al frente solo va en los velocímetros.
-                                        val own = look.copy(max = GaugeLook.parse(it.data).max, car = look.car && it.type == TileTypes.SPEEDOMETER)
+                                        // Lo del frente solo va en los velocímetros.
+                                        val speedo = it.type == TileTypes.SPEEDOMETER
+                                        val own = look.copy(
+                                            max = GaugeLook.parse(it.data).max,
+                                            front = if (speedo) look.front else GaugeFront.NONE,
+                                            image = if (speedo) look.image else "",
+                                        )
                                         it.id to if (it.type == TileTypes.ROAD) RoadLook.parse(it.data).copy(gauge = own).encode() else own.encode(signalOf(it.data))
                                     },
                             )

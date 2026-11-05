@@ -6,6 +6,19 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
+## [1.4.75] - 2026-11-04
+
+### Agregado
+- **Al frente del velocímetro: nada, tu auto o una imagen tuya.** Si no tienes auto descargado puedes
+  poner una imagen de tu galería (y quitarle el fondo, como en el widget Imagen).
+
+### Arreglado
+- Con algo al frente, los números ya no se suben de más ni chocan con la escala; en la Aguja la
+  velocidad va dentro del centro y en Barra ya no se corta.
+
+### Cambiado
+- Los números al centro de los velocímetros vuelven a ser más grandes (la 1.4.74 los achicó de más).
+
 ## [1.4.74] - 2026-11-04
 
 ### Arreglado

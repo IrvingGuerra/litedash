@@ -123,8 +123,10 @@ data class GaugeLook(
     val ticks: Boolean = true,
     val numbers: Boolean = false,
     val redline: Boolean = false,
-    /** Solo el velocímetro: tu auto parado al frente de la mitad de abajo. */
-    val car: Boolean = false,
+    /** Solo el velocímetro: lo que va parado al frente de la mitad de abajo (tu auto o tu imagen). */
+    val front: GaugeFront = GaugeFront.NONE,
+    /** La imagen al frente: files/images/NOMBRE.png ("" = aún sin elegir). Se guarda aunque se escoja otra cosa. */
+    val image: String = "",
 ) {
     fun encode(signal: String = ""): String = buildList {
         if (signal.isNotEmpty()) add(signal)
@@ -134,7 +136,8 @@ data class GaugeLook(
         if (!ticks) add("ticks=0")
         if (numbers) add("numbers=1")
         if (redline) add("redline=1")
-        if (car) add("car=1")
+        if (front != GaugeFront.NONE) add("front=${front.stored}")
+        if (image.isNotEmpty()) add("img=$image")
     }.joinToString(";")
 
     companion object {
@@ -150,10 +153,19 @@ data class GaugeLook(
                 ticks = f["ticks"] != "0",
                 numbers = f["numbers"] == "1",
                 redline = f["redline"] == "1",
-                car = f["car"] == "1",
+                // "car=1" es de la 1.4.74.
+                front = GaugeFront.entries.firstOrNull { it.stored == f["front"] } ?: if (f["car"] == "1") GaugeFront.CAR else GaugeFront.NONE,
+                image = f["img"].orEmpty(),
             )
         }
     }
+}
+
+/** Qué va al frente del velocímetro. [stored] es como se guarda (no se traduce). */
+enum class GaugeFront(val stored: String, val title: Int) {
+    NONE("none", R.string.gauge_front_none),
+    CAR("car", R.string.gauge_front_car),
+    IMAGE("image", R.string.gauge_front_image),
 }
 
 /** La señal de un medidor OBD guardada en su pieza (lo primero, sin "="). */
@@ -303,8 +315,8 @@ private class GaugeParts(
     /** Desde qué parte (0–1) empieza la zona roja. */
     val redFrom: Float,
     val fraction: () -> Float,
-    /** Alto del auto al frente (0 = sin auto): la lectura sube para no quedar detrás. */
-    val carSpace: Dp,
+    /** Alto de lo que va al frente (0 = nada): la lectura sube un poco y se achica para no quedar detrás. */
+    val frontSpace: Dp,
 )
 
 /** El color de la etiqueta (OBD, GPS…) junto al número: el de la mitad del medidor, igual en todos los estilos. */
@@ -315,7 +327,7 @@ private fun GaugeParts.readoutColor(c: Colors) = c.gauge(look.color, car, 0.5f, 
  * con una barra; con más alto, el estilo elegido. [fraction] (0–1) se anima y se lee
  * solo al dibujar: la pieza no se recompone en cada cuadro. [labels] da el número de
  * cada marca (para la aguja y "Números"); [warning] pinta de rojo lo que preocupa.
- * [car] dibuja el auto al frente (abajo al centro) en el [Modifier] que recibe; no va en una fila.
+ * [front] dibuja lo del frente (tu auto o tu imagen, abajo al centro) en el [Modifier] que recibe; no va en una fila.
  */
 @Composable
 fun GaugeCard(
@@ -330,30 +342,32 @@ fun GaugeCard(
     redFrom: Float = 0.8f,
     warning: Boolean = false,
     onClick: (() -> Unit)? = null,
-    car: (@Composable (Modifier) -> Unit)? = null,
+    front: (@Composable (Modifier) -> Unit)? = null,
 ) {
     val shown = remember { Animatable(0f) }
     LaunchedEffect(fraction) { shown.animateTo(fraction.coerceIn(0f, 1f), tween(250)) }
     Card(Modifier.fillMaxSize(), onClick = onClick) {
         BoxWithConstraints(Modifier.fillMaxSize().padding(12.dp), contentAlignment = Alignment.Center) {
             val compact = maxHeight < 130.dp
-            // El auto ocupa ~62 % del ancho de la esfera.
-            val carWidth = minOf(maxWidth, maxHeight * 1.15f) * 0.62f
-            val carSpace = if (car != null && !compact) carWidth / CAR_ASPECT else 0.dp
-            val parts = GaugeParts(look, carColor, warning, ticks.coerceAtLeast(1), labels, redFrom.coerceIn(0f, 1f), { shown.value }, carSpace)
+            // Lo del frente ocupa ~62 % del ancho de la esfera, con la proporción del auto.
+            val frontWidth = minOf(maxWidth, maxHeight * 1.15f) * 0.62f
+            val frontSpace = if (front != null && !compact) frontWidth / CAR_ASPECT else 0.dp
+            val parts = GaugeParts(look, carColor, warning, ticks.coerceAtLeast(1), labels, redFrom.coerceIn(0f, 1f), { shown.value }, frontSpace)
+            // Digital y Barra se acomodan en lo que queda arriba de lo del frente.
+            val above = maxHeight - frontSpace
             if (compact) CompactGauge(number, unit, tag, parts, maxHeight)
             else when (look.style) {
                 GaugeStyle.ARC -> ArcGauge(number, unit, tag, parts, side = minOf(maxWidth, maxHeight * 1.15f))
                 GaugeStyle.NEEDLE -> NeedleGauge(number, unit, tag, parts, side = minOf(maxWidth, maxHeight * 1.15f))
-                GaugeStyle.DIGITAL -> DigitalGauge(number, unit, tag, parts, maxWidth, maxHeight)
+                GaugeStyle.DIGITAL -> DigitalGauge(number, unit, tag, parts, maxWidth, above)
                 GaugeStyle.RING -> RingGauge(number, unit, tag, parts, side = minOf(maxWidth, maxHeight))
-                GaugeStyle.BAR -> BarGauge(number, unit, tag, parts, maxWidth, maxHeight)
+                GaugeStyle.BAR -> BarGauge(number, unit, tag, parts, maxWidth, above)
                 GaugeStyle.GRADIENT -> GradientGauge(number, unit, tag, parts, side = minOf(maxWidth, maxHeight * 1.15f))
                 GaugeStyle.NEON -> NeonGauge(number, unit, tag, parts, side = minOf(maxWidth, maxHeight * 1.15f))
                 GaugeStyle.BLOCKS -> BlocksGauge(number, unit, tag, parts, side = minOf(maxWidth, maxHeight * 1.15f))
                 GaugeStyle.DIAL -> DialGauge(number, unit, tag, parts, side = minOf(maxWidth, maxHeight * 1.15f))
             }
-            if (car != null && carSpace > 0.dp) car(Modifier.align(Alignment.BottomCenter).width(carWidth).height(carSpace))
+            if (front != null && frontSpace > 0.dp) front(Modifier.align(Alignment.BottomCenter).width(frontWidth).height(frontSpace))
         }
     }
 }
@@ -422,7 +436,7 @@ private fun ArcGauge(number: String, unit: String, tag: String, p: GaugeParts, s
             if (p.look.numbers && i % 2 == 0) label(measurer, p.labels(i), d.at(angle, outer - stroke * 2.1f), tickStyle)
         }
     }
-    Readout(number, unit, tag, (side.value * 0.23f).coerceIn(26f, 100f), p.readoutColor(c), p.showTag(side > 200.dp), Modifier.offset(y = -p.lift()))
+    Readout(number, unit, tag, (side.value * 0.27f).coerceIn(28f, 118f) * p.shrink(), p.readoutColor(c), p.showTag(side > 200.dp), Modifier.offset(y = -p.lift()))
 }
 
 @Composable
@@ -430,6 +444,12 @@ private fun NeedleGauge(number: String, unit: String, tag: String, p: GaugeParts
     val c = LocalColors.current
     val measurer = rememberTextMeasurer()
     val tickStyle = tickText(side, c.text.copy(alpha = 0.85f))
+    // Con algo al frente, el hueco de abajo (donde la aguja no pasa) es suyo: la velocidad va dentro de un
+    // centro grande de la aguja, como en muchos tableros.
+    val hub = p.frontSpace > 0.dp
+    val hubText = (side.value * 0.085f).coerceIn(20f, 42f)
+    val hubNumber = Typography.clock.copy(fontSize = hubText.sp, color = c.text)
+    val hubUnit = Typography.small.copy(color = c.textMuted)
     Canvas(Modifier.fillMaxSize()) {
         val stroke = (size.minDimension * 0.05f).coerceIn(3.dp.toPx(), 22.dp.toPx())
         // Los números van por fuera del arco: así la aguja nunca pasa encima de ellos.
@@ -459,21 +479,30 @@ private fun NeedleGauge(number: String, unit: String, tag: String, p: GaugeParts
             }
             if (p.look.numbers && major && (i / 2) % 2 == 0) label(measurer, p.labels(i / 2), d.at(angle, d.radius + stroke * 0.4f + margin * 0.55f), tickStyle)
         }
-        // La aguja con su cola y el centro.
         val angle = START_ANGLE + SWEEP * f
+        if (hub) {
+            // La aguja sale del borde del centro, que lleva la velocidad y su unidad.
+            val r = hubText.sp.toPx() * 1.25f
+            drawLine(color, d.at(angle, r), d.at(angle, d.radius - stroke * 1.3f), strokeWidth = stroke * 0.42f, cap = StrokeCap.Round)
+            drawCircle(c.surface, r, d.center)
+            drawCircle(color, r, d.center, style = Stroke(stroke * 0.3f))
+            label(measurer, number, d.center - Offset(0f, r * 0.12f), hubNumber)
+            label(measurer, unit, d.center + Offset(0f, r * 0.52f), hubUnit)
+            return@Canvas
+        }
+        // La aguja con su cola y el centro.
         drawLine(color, d.at(angle + 180f, stroke * 1.4f), d.at(angle, d.radius - stroke * 1.3f), strokeWidth = stroke * 0.42f, cap = StrokeCap.Round)
         drawCircle(color, stroke * 1.05f, d.center)
         drawCircle(c.background, stroke * 0.45f, d.center)
     }
-    // La lectura abajo del centro, donde la aguja no pasa; con el auto al frente, arriba del centro.
-    val y = if (p.carSpace > 0.dp) -side * 0.2f else side * 0.24f
-    Readout(number, unit, tag, (side.value * 0.13f).coerceIn(22f, 64f), p.readoutColor(c), p.showTag(side > 260.dp), Modifier.offset(y = y))
+    // La lectura abajo del centro, donde la aguja no pasa.
+    if (!hub) Readout(number, unit, tag, (side.value * 0.13f).coerceIn(22f, 64f), p.readoutColor(c), side > 260.dp, Modifier.offset(y = side * 0.24f))
 }
 
 @Composable
 private fun DigitalGauge(number: String, unit: String, tag: String, p: GaugeParts, width: Dp, height: Dp) {
     val c = LocalColors.current
-    Column(Modifier.fillMaxSize().padding(bottom = p.carSpace), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+    Column(Modifier.fillMaxSize().padding(bottom = p.frontSpace), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
         Readout(number, unit, tag, minOf(height.value * 0.45f, width.value * 0.3f).coerceIn(36f, 200f), p.readoutColor(c), p.showTag(height > 220.dp))
         Box(Modifier.height((height.value * 0.06f).coerceIn(6f, 12f).dp))
         Segments(p, Modifier.fillMaxWidth(0.86f).height((height.value * 0.06f).coerceIn(6f, 22f).dp), count = 24, wedge = false)
@@ -502,7 +531,7 @@ private fun RingGauge(number: String, unit: String, tag: String, p: GaugeParts, 
             if (p.look.numbers && i % 2 == 0) label(measurer, p.labels(i), at(radius - stroke * 2.3f), tickStyle)
         }
     }
-    Readout(number, unit, tag, centerNumberSize(side), p.readoutColor(c), p.showTag(side > 220.dp), Modifier.offset(y = -p.lift()))
+    Readout(number, unit, tag, p.centerNumberSize(side), p.readoutColor(c), p.showTag(side > 220.dp), Modifier.offset(y = -p.lift()))
 }
 
 @Composable
@@ -510,7 +539,7 @@ private fun BarGauge(number: String, unit: String, tag: String, p: GaugeParts, w
     val c = LocalColors.current
     val measurer = rememberTextMeasurer()
     val tickStyle = tickText(minOf(width, height * 1.6f), c.textMuted)
-    Column(Modifier.fillMaxSize().padding(bottom = p.carSpace), verticalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterVertically)) {
+    Column(Modifier.fillMaxSize().padding(bottom = p.frontSpace), verticalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterVertically)) {
         Box(Modifier.fillMaxWidth().height(height * 0.5f)) {
             Segments(p, Modifier.fillMaxSize().padding(bottom = if (p.look.numbers) 22.dp else 0.dp), count = 16, wedge = true)
             if (p.look.numbers) Canvas(Modifier.fillMaxSize()) {
@@ -529,14 +558,20 @@ private fun BarGauge(number: String, unit: String, tag: String, p: GaugeParts, w
     }
 }
 
-/** Cuánto sube la lectura con el auto al frente (casi la mitad de su alto). */
-private fun GaugeParts.lift(): Dp = carSpace * 0.45f
+/**
+ * Cuánto sube la lectura con algo al frente: poco (un quinto de su alto). Más arriba chocaba con
+ * los números de la escala.
+ */
+private fun GaugeParts.lift(): Dp = frontSpace * 0.2f
 
-/** La etiqueta (OBD, GPS…) se ve si [fits] y no hay auto al frente (le quita espacio). */
-private fun GaugeParts.showTag(fits: Boolean) = fits && carSpace == 0.dp
+/** Con algo al frente, el número se achica un poco para caber entre la escala y lo del frente. */
+private fun GaugeParts.shrink(): Float = if (frontSpace > 0.dp) 0.9f else 1f
+
+/** La etiqueta (OBD, GPS…) se ve si [fits] y no hay nada al frente (le quita espacio). */
+private fun GaugeParts.showTag(fits: Boolean) = fits && frontSpace == 0.dp
 
 /** Tamaño del número al centro (anillo, esfera y estilos sin aguja). */
-private fun centerNumberSize(side: Dp) = (side.value * 0.2f).coerceIn(26f, 96f)
+private fun GaugeParts.centerNumberSize(side: Dp) = (side.value * 0.235f).coerceIn(28f, 108f) * shrink()
 
 /** Cuánto baja (o sube, con el auto) la lectura al centro del arco. */
 private fun GaugeParts.centerOffset(side: Dp): Dp = side * 0.04f - lift()
@@ -545,7 +580,7 @@ private fun GaugeParts.centerOffset(side: Dp): Dp = side * 0.04f - lift()
 @Composable
 private fun CenterReadout(number: String, unit: String, tag: String, p: GaugeParts, side: Dp) {
     val c = LocalColors.current
-    Readout(number, unit, tag, centerNumberSize(side), p.readoutColor(c), p.showTag(side > 220.dp), Modifier.offset(y = p.centerOffset(side)))
+    Readout(number, unit, tag, p.centerNumberSize(side), p.readoutColor(c), p.showTag(side > 220.dp), Modifier.offset(y = p.centerOffset(side)))
 }
 
 /** Los números del principio y del final, abajo de las puntas del arco. */
@@ -709,7 +744,7 @@ private fun DialGauge(number: String, unit: String, tag: String, p: GaugeParts, 
             }
         }
         // Halo suave detrás del número (un degradado, sin desenfoque).
-        val halo = centerNumberSize(side).sp.toPx() * 1.1f
+        val halo = p.centerNumberSize(side).sp.toPx() * 1.1f
         val at = Offset(size.width / 2, size.height / 2 + p.centerOffset(side).toPx() - halo * 0.25f)
         drawCircle(Brush.radialGradient(listOf(color.copy(alpha = 0.16f), Color.Transparent), at, halo), halo, at)
     }
