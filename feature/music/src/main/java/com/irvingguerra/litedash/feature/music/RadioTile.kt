@@ -75,7 +75,7 @@ internal fun RadioControls(
     }
     if (song == null) {
         val c = LocalColors.current
-        IconButton(Icons.play, { repo.resumeRadio(onIdle) }, modifier, size = playSize, background = c.text, color = c.background)
+        IconButton(Icons.play, { repo.resumeRadio(onIdle) }, modifier, size = playSize, background = c.primary, color = c.onPrimary)
         return
     }
     Controls(repo, song.playing, modifier, loading = song.buffering, compact = compact, size = size, playSize = playSize, gap = gap, lens = repo.radio)

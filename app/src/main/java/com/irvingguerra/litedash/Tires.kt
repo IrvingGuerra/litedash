@@ -147,7 +147,7 @@ private fun wheelShort(w: Wheel) = when (w) {
 @Composable
 internal fun severityColor(s: TireSeverity?): Color? = when (s) {
     TireSeverity.DANGER -> LocalColors.current.danger
-    TireSeverity.WARNING -> LocalColors.current.accent
+    TireSeverity.WARNING -> LocalColors.current.warning
     null -> null
 }
 
@@ -173,7 +173,7 @@ private fun TireMarks(statuses: Map<Wheel, TireStatus>, modifier: Modifier, radi
     val marks = statuses.mapNotNull { (w, st) ->
         if (!st.problem || w == Wheel.SPARE) return@mapNotNull null
         val danger = st.severity == TireSeverity.DANGER
-        ProblemMark(wheelSpot(w).x, wheelSpot(w).y, if (danger) c.danger else c.accent, pulsing = danger)
+        ProblemMark(wheelSpot(w).x, wheelSpot(w).y, if (danger) c.danger else c.warning, pulsing = danger)
     }
     ProblemMarks(marks, modifier, radius)
 }
@@ -798,7 +798,7 @@ fun TiresAlertBanner(d: Dependencies, onOpen: () -> Unit) {
     val alerts = repo.alerts
     LaunchedEffect(alerts) { dismissed.removeAll { k -> alerts.none { it.wheel to it.kind == k } } }
     val a = alerts.firstOrNull { (it.wheel to it.kind) !in dismissed } ?: return
-    Notice(alertText(repo, a, d.prefs.units.fahrenheit), Icons.tireAlert, danger = a.severity == TireSeverity.DANGER) {
+    Notice(alertText(repo, a, d.prefs.units.fahrenheit), Icons.tireAlert, danger = a.severity == TireSeverity.DANGER, warning = true) {
         Button(stringResource(R.string.tires_see), onOpen)
         Button(stringResource(R.string.alert_ok), { dismissed += a.wheel to a.kind }, primary = true)
     }

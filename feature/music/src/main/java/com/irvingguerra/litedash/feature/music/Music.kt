@@ -1,20 +1,13 @@
 package com.irvingguerra.litedash.feature.music
 
-import android.Manifest
-import android.annotation.SuppressLint
 import android.app.Notification
 import android.app.NotificationManager
-import android.bluetooth.BluetoothClass
-import android.bluetooth.BluetoothDevice
-import android.bluetooth.BluetoothManager
-import android.bluetooth.BluetoothProfile
 import android.content.BroadcastReceiver
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.ApplicationInfo
-import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.media.AudioManager
@@ -27,28 +20,18 @@ import android.media.session.PlaybackState
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
-import android.os.Environment
 import android.os.Looper
 import android.os.SystemClock
-import android.os.storage.StorageManager
-import android.provider.MediaStore
 import android.provider.Settings
 import android.service.media.MediaBrowserService
 import android.service.notification.StatusBarNotification
 import android.view.KeyEvent
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.Immutable
-import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.produceState
 import androidx.compose.runtime.setValue
 import androidx.core.content.ContextCompat
-import androidx.core.content.IntentCompat
 import androidx.core.os.BundleCompat
 import com.irvingguerra.litedash.feature.musica.ServicioMusica
-import kotlinx.coroutines.delay
-import java.io.File
 
 /** Recibe los avisos que pasa el [NotificationService] (la app solo mira los de navegación). */
 interface NotificationListener {
@@ -89,60 +72,10 @@ private const val TRACE_SIZE = 30
 /** Un aviso (broadcast) de qué suena vale como respaldo durante este rato. */
 private const val BROADCAST_FRESH_MS = 10 * 60_000L
 
-/** Perfil Bluetooth "A2DP sink" (la pantalla recibe la música del celular); no es público en el SDK. */
-private const val A2DP_SINK = 11
-
 // Ofrecen su audio a Android pero no son apps de música (el asistente, video).
 private val NOT_MUSIC_APPS = setOf(
     "com.google.android.googlequicksearchbox", "com.google.android.youtube", "com.google.android.gms",
 )
-
-/**
- * Fuentes de música, como en un estéreo: USB es siempre el reproductor propio de LiteDash;
- * Bluetooth y la radio FM son apps del sistema de la pantalla que el usuario enlaza en Ajustes
- * (los paquetes cambian con la marca: `com.microntek.bt`, `com.ts.radio`…). La radio también
- * puede ser la de internet de LiteDash.
- */
-enum class SourceKind { USB, BLUETOOTH, RADIO }
-
-/** Botón propio de la app que suena (Spotify: me gusta, aleatorio, repetir…). */
-@Immutable
-data class MediaAction(val id: String, val name: String, val icon: Bitmap?)
-
-@Immutable
-data class Song(
-    val title: String,
-    val artist: String,
-    val app: String,
-    val artwork: Bitmap?,
-    val playing: Boolean,
-    val durationMs: Long,
-    val positionMs: Long,
-    /** Momento (reloj de arranque) en que se leyó [positionMs], para calcular el avance sin preguntar. */
-    val readAt: Long,
-    val speed: Float,
-    val pkg: String,
-    /** Si la app deja adelantar o regresar arrastrando la barra. */
-    val seekable: Boolean,
-    val actions: List<MediaAction>,
-    /** Fuente de la pantalla a la que pertenece la app ([pkg]); null = una app normal. */
-    val source: SourceKind?,
-    /** Conectando o cargando (la radio tarda unos segundos). */
-    val buffering: Boolean,
-    /** Lo que la app dice que falló; null si nada. */
-    val error: String?,
-    /**
-     * No viene de una sesión que obedezca (un aviso de la app o lo que LiteDash mandó): play y
-     * pausa van como teclas del volante, explícitas, y el estado es el que LiteDash supone.
-     */
-    val blind: Boolean = false,
-) {
-    fun currentPosition(): Long {
-        if (!playing) return positionMs
-        val progress = ((SystemClock.elapsedRealtime() - readAt) * speed).toLong()
-        return (positionMs + progress).coerceAtMost(if (durationMs > 0) durationMs else Long.MAX_VALUE)
-    }
-}
 
 /**
  * Lo que suena en cualquier app (Spotify, YouTube Music, la radio de la pantalla…)
@@ -1122,206 +1055,10 @@ class MusicRepository(private val context: Context) {
     }
 }
 
-/**
- * Celular conectado por Bluetooth y memoria USB puesta en la pantalla. Avisa con el
- * nombre (o null al quitarse) y solo escucha entre [start] y [stop]. Del Bluetooth solo
- * cuentan los celulares y lo que se conecta para música (A2DP): un adaptador OBD no.
- */
-private class DeviceWatcher(
-    private val context: Context,
-    private val onBluetooth: (String?) -> Unit,
-    private val onUsb: (String?) -> Unit,
-) {
-    // El celular que se avisó (para no borrarlo cuando se desconecta otro aparato).
-    private var phone: String? = null
-
-    private val receiver = object : BroadcastReceiver() {
-        override fun onReceive(c: Context, i: Intent) {
-            when (i.action) {
-                BluetoothDevice.ACTION_ACL_CONNECTED -> {
-                    val d = IntentCompat.getParcelableExtra(i, BluetoothDevice.EXTRA_DEVICE, BluetoothDevice::class.java)
-                    if (isPhone(d)) setPhone(deviceName(d))
-                }
-                BluetoothDevice.ACTION_ACL_DISCONNECTED -> left(i)
-                A2DP_CHANGED, A2DP_SINK_CHANGED -> {
-                    val d = IntentCompat.getParcelableExtra(i, BluetoothDevice.EXTRA_DEVICE, BluetoothDevice::class.java)
-                    if (i.getIntExtra(BluetoothProfile.EXTRA_STATE, -1) == BluetoothProfile.STATE_CONNECTED) setPhone(deviceName(d)) else left(i)
-                }
-                else -> {
-                    Drives.changed()
-                    onUsb(Drives.mounted(context))
-                }
-            }
-        }
-    }
-
-    private fun setPhone(name: String?) {
-        if (name == null) return
-        phone = name
-        onBluetooth(name)
-    }
-
-    // Se fue un aparato: si era el celular, ya no hay.
-    private fun left(i: Intent) {
-        val name = deviceName(IntentCompat.getParcelableExtra(i, BluetoothDevice.EXTRA_DEVICE, BluetoothDevice::class.java))
-        if (name != null && name == phone) {
-            phone = null
-            onBluetooth(null)
-        }
-    }
-
-    fun start() {
-        val filter = IntentFilter().apply {
-            addAction(BluetoothDevice.ACTION_ACL_CONNECTED)
-            addAction(BluetoothDevice.ACTION_ACL_DISCONNECTED)
-            addAction(A2DP_CHANGED)
-            addAction(A2DP_SINK_CHANGED)
-        }
-        // Son avisos del sistema: los receptores deben aceptar avisos de fuera de la app.
-        ContextCompat.registerReceiver(context, receiver, filter, ContextCompat.RECEIVER_EXPORTED)
-        // También cuando Android termina de indexar la memoria: la biblioteca que se leyó a medias se relee.
-        ContextCompat.registerReceiver(context, receiver, Drives.mediaFilter(scanner = true), ContextCompat.RECEIVER_EXPORTED)
-        // Sin [Drives.changed]: si mientras no se escuchaba cambió la memoria, la biblioteca lo nota por
-        // su identificador (va en la llave de su caché); abrir o cerrar la música no la hace releer.
-        onUsb(Drives.mounted(context))
-        connectedPhone()
-    }
-
-    fun stop() {
-        // Está registrado dos veces (dos filtros): se quita dos veces.
-        repeat(2) { runCatching { context.unregisterReceiver(receiver) } }
-    }
-
-    /**
-     * El celular ya conectado al abrir la pieza: se pregunta al perfil de música
-     * (A2DP; en las pantallas, el "sink"). Desde Android 12 hace falta el permiso
-     * BLUETOOTH_CONNECT (se da en el Taller); sin él, solo se sabrá al reconectarse.
-     */
-    private fun connectedPhone() {
-        val adapter = context.getSystemService(BluetoothManager::class.java)?.adapter ?: return
-        if (!adapter.isEnabled || !canSeeDevices()) return
-        for (profile in intArrayOf(A2DP_SINK, BluetoothProfile.A2DP)) {
-            runCatching {
-                adapter.getProfileProxy(context, object : BluetoothProfile.ServiceListener {
-                    override fun onServiceConnected(p: Int, proxy: BluetoothProfile) {
-                        setPhone(runCatching { proxy.connectedDevices.firstOrNull() }.getOrNull()?.let(::deviceName))
-                        adapter.closeProfileProxy(p, proxy)
-                    }
-
-                    override fun onServiceDisconnected(p: Int) = Unit
-                }, profile)
-            }
-        }
-    }
-
-    /** Desde Android 12, el nombre del celular (y los avisos de conexión) piden BLUETOOTH_CONNECT. */
-    private fun canSeeDevices(): Boolean =
-        Build.VERSION.SDK_INT < Build.VERSION_CODES.S ||
-            context.checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED
-
-    @SuppressLint("MissingPermission") // se revisa con canSeeDevices()
-    private fun isPhone(d: BluetoothDevice?): Boolean =
-        d != null && canSeeDevices() && runCatching { d.bluetoothClass?.majorDeviceClass == BluetoothClass.Device.Major.PHONE }.getOrDefault(false)
-
-    @SuppressLint("MissingPermission") // se revisa con canSeeDevices()
-    private fun deviceName(d: BluetoothDevice?): String? {
-        if (d == null || !canSeeDevices()) return null
-        return runCatching { d.name?.takeIf { it.isNotBlank() } ?: d.address }.getOrNull()
-    }
-
-    private companion object {
-        /** El celular se conectó (o se fue) para música. */
-        const val A2DP_CHANGED = "android.bluetooth.a2dp.profile.action.CONNECTION_STATE_CHANGED"
-        /** Lo mismo en las pantallas que reciben la música del celular (no es público en el SDK). */
-        const val A2DP_SINK_CHANGED = "android.bluetooth.a2dp-sink.profile.action.CONNECTION_STATE_CHANGED"
-    }
-}
-
-/** Una memoria USB (o tarjeta) conectada a la pantalla. */
-class Drive(
-    /** Nombre que muestra Android ("Memoria USB SanDisk"); genérico en Android 6. */
-    val name: String,
-    /** Nombre del volumen en MediaStore (API 29+) o null. */
-    val volume: String?,
-    /** Carpeta raíz de la memoria (para filtrar por ruta antes de la API 29); null si no se sabe. */
-    val path: String?,
-    /** Identificador estable de la memoria (para recordar lo último que sonó). */
-    val id: String,
-)
-
-/** Memorias USB (y tarjetas) conectadas a la pantalla: las usan la pieza y el reproductor propio. */
-object Drives {
-    /** Sube cada vez que se pone o se quita una memoria (la biblioteca la usa para no releerla). */
-    @Volatile
-    var revision = 0
-        private set
-
-    /** Avisar que se puso, quitó o terminó de indexarse una memoria. */
-    fun changed() {
-        revision++
-    }
-
-    /**
-     * Los avisos de Android al poner o quitar una memoria; con [scanner], también cuando
-     * termina de indexarla (al reconectar tarda unos segundos).
-     */
-    fun mediaFilter(scanner: Boolean = false) = IntentFilter().apply {
-        addAction(Intent.ACTION_MEDIA_MOUNTED)
-        addAction(Intent.ACTION_MEDIA_UNMOUNTED)
-        addAction(Intent.ACTION_MEDIA_EJECT)
-        addAction(Intent.ACTION_MEDIA_BAD_REMOVAL)
-        if (scanner) addAction(Intent.ACTION_MEDIA_SCANNER_FINISHED)
-        addDataScheme("file")
-    }
-
-    /** Memorias montadas ahora (sin la del propio equipo). */
-    fun list(context: Context): List<Drive> = runCatching {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            val volumes = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) MediaStore.getExternalVolumeNames(context) else emptySet()
-            context.getSystemService(StorageManager::class.java).storageVolumes
-                .filter { it.isRemovable && it.state == Environment.MEDIA_MOUNTED }
-                .map { v ->
-                    val uuid = v.uuid
-                    Drive(
-                        name = v.getDescription(context),
-                        volume = uuid?.lowercase()?.takeIf { it in volumes },
-                        path = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) v.directory?.path else uuid?.let { "/storage/$it" },
-                        id = uuid ?: v.getDescription(context),
-                    )
-                }
-        } else {
-            // Android 6 no lista los volúmenes: las memorias se montan como carpetas de /storage
-            // (solo las removibles: ahí también hay enlaces a la memoria interna).
-            File("/storage").listFiles().orEmpty()
-                .filter { it.name != "emulated" && it.name != "self" && Environment.getExternalStorageState(it) == Environment.MEDIA_MOUNTED }
-                .filter { runCatching { Environment.isExternalStorageRemovable(it) }.getOrDefault(false) }
-                .map { Drive(name = context.getString(R.string.usb_drive), volume = null, path = it.path, id = it.name) }
-        }
-    }.getOrDefault(emptyList())
-
-    /** Nombre de la primera memoria conectada; null si no hay. */
-    fun mounted(context: Context): String? = list(context).firstOrNull()?.name
-}
-
 /** Sonando o cargando. */
 private fun MediaController.busy(): Boolean = when (playbackState?.state) {
     PlaybackState.STATE_PLAYING, PlaybackState.STATE_BUFFERING, PlaybackState.STATE_CONNECTING -> true
     else -> false
-}
-
-/**
- * Una tecla multimedia (abajo y arriba) como la del volante: a [receiver] (el receptor de una
- * app) o, sin él, al sistema de audio, que la lleva a la app de música que toca.
- */
-fun sendMediaKey(context: Context, code: Int, receiver: ComponentName? = null) {
-    val audio = context.getSystemService(AudioManager::class.java)
-    for (action in intArrayOf(KeyEvent.ACTION_DOWN, KeyEvent.ACTION_UP)) {
-        val event = KeyEvent(action, code)
-        runCatching {
-            if (receiver != null) context.sendBroadcast(Intent(Intent.ACTION_MEDIA_BUTTON).setComponent(receiver).putExtra(Intent.EXTRA_KEY_EVENT, event))
-            else audio.dispatchMediaKeyEvent(event)
-        }
-    }
 }
 
 /** Los extras de un aviso como mapa (un extra que no se puede leer deja el mapa vacío). */
@@ -1334,16 +1071,6 @@ private fun Bundle?.toMap(): Map<String, Any?> {
 /** El primer texto no vacío de [keys] (algunas apps mandan el título vacío y el bueno en otro campo). */
 private fun MediaMetadata?.text(vararg keys: String): String =
     keys.firstNotNullOfOrNull { this?.getString(it)?.takeIf(String::isNotBlank) }.orEmpty()
-
-/** Dónde va la canción, calculado con la hora: se actualiza una vez por segundo y solo mientras suena. */
-@Composable
-fun rememberPosition(song: Song): State<Long> = produceState(song.currentPosition(), song) {
-    value = song.currentPosition()
-    while (song.playing) {
-        delay(1000)
-        value = song.currentPosition()
-    }
-}
 
 /** La sesión que comparte un aviso de música; null si no trae. */
 private fun StatusBarNotification.sessionToken(): MediaSession.Token? =

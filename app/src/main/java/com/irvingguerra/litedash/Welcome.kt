@@ -147,7 +147,7 @@ private fun ColumnScope.CarStep(prefs: Preferences) {
                 Label(stringResource(R.string.car_name), Typography.label, c.textMuted)
                 TextInput(prefs.carName ?: "", { prefs.carName = it.take(24).ifBlank { null } }, stringResource(R.string.my_car), Modifier.fillMaxWidth())
                 Label(stringResource(R.string.color), Typography.label, c.textMuted)
-                ColorPicker(prefs.carColor, prefs::previewCarColor) { prefs.carColor = it }
+                ColorPicker(prefs.carColor, prefs::previewCarColor, onChange = { prefs.carColor = it })
             }
         }
         if (horizontal) {

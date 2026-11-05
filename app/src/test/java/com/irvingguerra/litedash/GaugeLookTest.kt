@@ -26,32 +26,48 @@ class GaugeLookTest {
         assertEquals("coolant_temp", signalOf(data))
         assertEquals(look, GaugeLook.parse(data))
         // El velocímetro no tiene señal: lo primero ya es una opción.
-        val speed = GaugeLook(GaugeStyle.RING, max = 320).encode()
+        val speed = GaugeLook(GaugeStyle.GRADIENT, max = 320).encode()
         assertEquals("", signalOf(speed))
-        assertEquals(GaugeLook(GaugeStyle.RING, max = 320), GaugeLook.parse(speed))
+        assertEquals(GaugeLook(GaugeStyle.GRADIENT, max = 320), GaugeLook.parse(speed))
     }
 
     @Test
     fun estilosElegantes() {
-        // 1.4.41: degradado, neón y cuadros, con sus colores en degradado.
-        for (style in listOf(GaugeStyle.GRADIENT, GaugeStyle.NEON, GaugeStyle.BLOCKS)) {
+        // Degradado y los aros de la Esfera (neón y cuadros), con sus colores en degradado.
+        for (look in listOf(GaugeLook(GaugeStyle.GRADIENT), GaugeLook(rim = GaugeRim.NEON), GaugeLook(rim = GaugeRim.BLOCKS))) {
             for (color in listOf(GaugeColor.PURPLE, GaugeColor.CYAN)) {
-                val look = GaugeLook(style, color, max = 240)
-                assertEquals(look, GaugeLook.parse(look.encode()))
+                val colored = look.copy(color = color, max = 240)
+                assertEquals(colored, GaugeLook.parse(colored.encode()))
             }
         }
         assertEquals("style=gradient;color=purple", GaugeLook(GaugeStyle.GRADIENT, GaugeColor.PURPLE).encode())
-        assertEquals(GaugeColor.CYAN, GaugeStyle.NEON.suggestedColor())
+        assertEquals("rim=neon;color=cyan", GaugeLook(color = GaugeColor.CYAN, rim = GaugeRim.NEON).encode())
+        assertEquals(GaugeColor.CYAN, GaugeLook(rim = GaugeRim.NEON).suggestedColor())
+        assertEquals(GaugeColor.PURPLE, GaugeLook(rim = GaugeRim.BLOCKS).suggestedColor())
+        // El aro solo cuenta en la Esfera.
+        assertEquals(null, GaugeLook(GaugeStyle.NEEDLE, rim = GaugeRim.NEON).suggestedColor())
+    }
+
+    @Test
+    fun losEstilosQuitadosPasanALaEsfera() {
+        // 1.4.77: Arco (el de fábrica) y Anillo → Esfera lisa; Neón y Cuadros → Esfera con ese aro. Nada más cambia.
+        assertEquals(GaugeLook(), GaugeLook.parse("style=arc"))
+        assertEquals(GaugeLook(max = 240), GaugeLook.parse("style=ring;maxkmh=240"))
+        assertEquals(GaugeLook(color = GaugeColor.CYAN, rim = GaugeRim.NEON), GaugeLook.parse("style=neon;color=cyan"))
+        assertEquals(GaugeLook(GaugeStyle.DIAL, GaugeColor.PURPLE, numbers = true, rim = GaugeRim.BLOCKS), GaugeLook.parse("rpm;style=blocks;color=purple;numbers=1"))
+        assertEquals("rpm;rim=blocks;color=purple;numbers=1", GaugeLook.parse("rpm;style=blocks;color=purple;numbers=1").encode("rpm"))
+        // La Esfera de antes ("style=dial") se lee igual y ya no se escribe.
+        assertEquals(GaugeLook(), GaugeLook.parse("style=dial"))
     }
 
     @Test
     fun esferaYAlFrente() {
         // Esfera y "Al frente": de fábrica nada (no se escribe).
         val car = GaugeLook(GaugeStyle.DIAL, front = GaugeFront.CAR)
-        assertEquals("style=dial;front=car", car.encode())
+        assertEquals("front=car", car.encode())
         assertEquals(car, GaugeLook.parse(car.encode()))
         assertEquals(GaugeFront.NONE, GaugeLook.parse("style=dial").front)
-        assertEquals(null, GaugeStyle.DIAL.suggestedColor())
+        assertEquals(null, GaugeLook().suggestedColor())
         // La imagen se recuerda aunque se cambie a nada; "car=1" de la 1.4.74 sigue siendo el auto.
         val image = GaugeLook(front = GaugeFront.IMAGE, image = "abc123")
         assertEquals("front=image;img=abc123", image.encode())
@@ -95,7 +111,7 @@ class GaugeLookTest {
     fun carretera() {
         assertEquals(RoadLook(), RoadLook.parse(""))
         assertEquals("", RoadLook().encode())
-        val road = RoadLook(RoadSpeed.GAUGE, GaugeLook(GaugeStyle.NEON, GaugeColor.CYAN, max = 240))
+        val road = RoadLook(RoadSpeed.GAUGE, GaugeLook(color = GaugeColor.CYAN, max = 240, rim = GaugeRim.NEON))
         assertEquals(road, RoadLook.parse(road.encode()))
         assertEquals(RoadSpeed.HIDDEN, RoadLook.parse(RoadLook(RoadSpeed.HIDDEN).encode()).speed)
         // Datos del viaje: de fábrica solo la distancia; vacío también se guarda.

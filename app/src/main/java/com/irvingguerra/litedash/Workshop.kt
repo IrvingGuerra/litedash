@@ -386,7 +386,7 @@ private fun CodesCard(obd: ObdRepository, report: EngineReport?, reading: Boolea
 @Composable
 private fun CodeTile(code: String, kinds: List<CodeKind>, spanish: Boolean, modifier: Modifier) {
     val c = LocalColors.current
-    val color = if (kinds.all { it == CodeKind.PENDING }) c.accent else c.danger
+    val color = if (kinds.all { it == CodeKind.PENDING }) c.warning else c.danger
     Column(
         modifier.clip(RoundedCornerShape(Radius.inner)).background(c.surfaceHigh).padding(horizontal = 16.dp, vertical = 14.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp),
@@ -420,7 +420,7 @@ private fun InspectionCard(report: EngineReport?, reading: Boolean) {
         TileGrid(readiness.monitors, minWidth = 240.dp, maxColumns = 2, gap = 6.dp) { m, modifier ->
             // Aire a la derecha: "Listo" no se pega al punto de la otra columna.
             Row(modifier.padding(end = 18.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                Box(Modifier.size(8.dp).clip(CircleShape).background(if (m.complete) Good else c.accent))
+                Box(Modifier.size(8.dp).clip(CircleShape).background(if (m.complete) Good else c.warning))
                 Label(stringResource(monitorName(m.name)), Typography.body, maxLines = 1, modifier = Modifier.weight(1f))
                 Label(stringResource(if (m.complete) R.string.obd_ready else R.string.obd_not_ready), Typography.small, c.textMuted, maxLines = 1)
             }

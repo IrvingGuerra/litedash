@@ -6,6 +6,21 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
+## [1.4.77] - 2026-11-05
+
+### Agregado
+- **Color de la interfaz** (Inicio y apariencia → Interfaz): elige el color de los interruptores,
+  botones, play y barras de avance; las tarjetas y el fondo no cambian. "Natural" regresa al de fábrica.
+  Las advertencias (Salud, Llantas) siguen en ámbar para que no se confundan.
+
+### Cambiado
+- **Velocímetros más simples**: la **Esfera** es la de fábrica y su aro puede ser **Liso, Neón o Cuadros**.
+  Arco y Anillo se quitaron; tus medidores pasan solos a la Esfera (Neón y Cuadros, con ese aro) sin
+  perder sus colores ni sus opciones.
+- **Inicio y apariencia reordenado** como lo buscarías: **Inicio** (acomodo, barra de apps, barra de
+  Android, fondo de pantalla, animación de entrada), **Interfaz** (color, tamaño, idioma, tu nombre,
+  clima y modo estacionado), Día y noche, Unidades y, al final, Widgets.
+
 ## [1.4.76] - 2026-11-04
 
 ### Arreglado (auditoría de la 1.4.72 a la 1.4.75)

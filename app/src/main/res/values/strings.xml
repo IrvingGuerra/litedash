@@ -58,12 +58,10 @@
     <string name="split_right">Derecha</string>
     <string name="split_swap_help">También lo cambias ahí mismo con el botón de las flechas, en la esquina de abajo.</string>
     <string name="split_unsupported">Esta pantalla tiene Android %1$s: abrir dos apps lado a lado necesita Android 12L o más nuevo.</string>
-    <string name="gauge_style_arc">Arco</string>
     <string name="gauge_style_needle">Aguja</string>
     <string name="gauge_style_digital">Digital</string>
-    <string name="gauge_style_ring">Anillo</string>
     <string name="gauge_style_bar">Barra</string>
-    <string name="gauge_color_accent">Ámbar</string>
+    <string name="gauge_color_accent">Interfaz</string>
     <string name="gauge_color_car">Color de tu auto</string>
     <string name="gauge_color_dynamic">Dinámico (verde, ámbar y rojo)</string>
     <string name="gauge_color_green">Verde</string>
@@ -71,8 +69,6 @@
     <string name="gauge_color_red">Rojo</string>
     <string name="gauge_color_white">Blanco</string>
     <string name="gauge_style_gradient">Degradado</string>
-    <string name="gauge_style_neon">Neón</string>
-    <string name="gauge_style_blocks">Cuadros</string>
     <!-- Esfera y auto al frente del velocímetro -->
     <string name="gauge_style_dial">Esfera</string>
     <string name="gauge_front">Al frente</string>
@@ -138,8 +134,8 @@
     <string name="app_info">Info de la app</string>
     <string name="modules">Módulos</string>
     <string name="on_your_home">En tu inicio</string>
-    <string name="hide_status_bar">Ocultar la barra de Android</string>
-    <string name="hide_status_bar_help">La barra de arriba con la hora y los avisos. LiteDash ya trae su hora y señal; para abrirla, desliza desde arriba.</string>
+    <string name="hide_status_bar">Ocultarla</string>
+    <string name="hide_status_bar_help">La franja de hasta arriba con la hora y los avisos de Android (no es la de LiteDash). Para verla un momento, desliza desde arriba.</string>
     <string name="stats_title">Estadísticas</string>
     <string name="stats_switch">Contar esta pantalla (anónimo)</string>
     <string name="stats_help">Una vez al día manda un número al azar, la versión y de dónde la bajaste (GitHub o Play), Android, el idioma, el tamaño de la pantalla y desde qué día usas LiteDash, para saber cuánta gente usa LiteDash. Nada de ubicación, cuentas ni datos tuyos.</string>
@@ -399,12 +395,11 @@
     <string name="monitor_egr">Recirculación de gases (EGR)</string>
     <string name="obd_connecting_short">Conectando…</string>
     <!-- Pestañas de Ajustes -->
-    <string name="tab_general">General</string>
     <string name="tab_my_car">Mi auto</string>
     <string name="tab_models">Modelos</string>
     <string name="tab_sensors">Sensores</string>
     <string name="obd_no_readiness">Tu auto no reporta los monitores de la verificación.</string>
-    <string name="wallpaper_title">Fondo del inicio</string>
+    <string name="wallpaper_title">Fondo de pantalla</string>
     <string name="wallpaper_help">Una foto tuya detrás de todo el inicio. Sin imagen, el fondo del tema.</string>
     <string name="road_trip">viaje</string>
     <string name="logo_pick">Elegir imagen</string>
@@ -412,13 +407,12 @@
     <string name="logo_remove">Quitar imagen</string>
     <string name="logo_intro">Animación de entrada</string>
     <string name="bar_position">Barra de apps</string>
-    <string name="bar_position_help">Dónde van la hora y tus apps. Automática: a un lado si la pantalla está acostada, abajo si está parada.</string>
+    <string name="bar_position_help">La de LiteDash, con la hora y tus apps. Automática: a un lado si la pantalla está acostada, abajo si está parada.</string>
     <string name="bar_auto">Automática</string>
     <string name="bar_side">A un lado</string>
     <string name="bar_bottom">Abajo</string>
     <string name="release_notes">NOVEDADES DE ESTA VERSIÓN</string>
     <string name="apps_section">Apps</string>
-    <string name="tab_layout">Acomodo</string>
     <string name="tab_tiles">Widgets</string>
     <string name="tab_navigation">Navegación</string>
     <string name="tab_favorites">Favoritas</string>
@@ -685,4 +679,8 @@
     <string name="usb_folder">Carpeta de música</string>
     <string name="usb_folder_auto">Automática: busca en todas tus memorias USB. Elige una si tu pantalla no deja leer la memoria.</string>
     <string name="music_app_title">Tu app de música</string>
+    <string name="gauge_rim">Aro</string>
+    <string name="gauge_rim_smooth">Liso</string>
+    <string name="gauge_rim_neon">Neón</string>
+    <string name="gauge_rim_blocks">Cuadros</string>
 </resources>

@@ -76,6 +76,8 @@ fun CustomizeGaugePanel(d: Dependencies, tileId: String, close: () -> Unit, onPi
         applied = false
         d.dashboard.setData(tileId, roadLook?.copy(gauge = new)?.encode() ?: new.encode(signal))
     }
+    // Al cambiar de estilo o de aro, los que lucen con su degradado lo toman si seguía el color de fábrica.
+    fun pickLook(new: GaugeLook) = set(new.copy(color = new.suggestedColor()?.takeIf { look.color == GaugeColor.ACCENT } ?: look.color))
     fun setRoad(new: RoadLook) {
         applied = false
         d.dashboard.setData(tileId, new.encode())
@@ -142,16 +144,14 @@ fun CustomizeGaugePanel(d: Dependencies, tileId: String, close: () -> Unit, onPi
                         GaugeStyle.entries.map { it to stringResource(it.title) },
                         look.style,
                         // La aguja se lee con números: se prenden solos la primera vez.
-                        {
-                            set(look.copy(
-                                style = it,
-                                numbers = look.numbers || it == GaugeStyle.NEEDLE,
-                                // Los estilos con degradado lucen con el suyo si seguía el ámbar de fábrica.
-                                color = it.suggestedColor()?.takeIf { look.color == GaugeColor.ACCENT } ?: look.color,
-                            ))
-                        },
+                        { pickLook(look.copy(style = it, numbers = look.numbers || it == GaugeStyle.NEEDLE)) },
                         Modifier.horizontalScroll(rememberScrollState()),
                     )
+                    // El aro de la Esfera: liso, neón o cuadros.
+                    if (look.style == GaugeStyle.DIAL) {
+                        Label(stringResource(R.string.gauge_rim), Typography.label, c.textMuted)
+                        Segmented(GaugeRim.entries.map { it to stringResource(it.title) }, look.rim, { pickLook(look.copy(rim = it)) })
+                    }
                     Label(stringResource(R.string.gauge_color), Typography.label, c.textMuted)
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         for (color in GaugeColor.entries) Swatch(color, d.prefs.carColor, color == look.color) { set(look.copy(color = color)) }

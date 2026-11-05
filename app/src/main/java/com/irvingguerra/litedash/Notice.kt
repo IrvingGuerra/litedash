@@ -22,10 +22,11 @@ import com.irvingguerra.litedash.core.ui.Typography
 
 /**
  * Aviso arriba del tablero (inicio, versión nueva, recordatorio): texto y sus
- * botones. En angosto (teléfono parado) el texto no cabe junto a los botones y va arriba.
+ * botones. En angosto (teléfono parado) el texto no cabe junto a los botones y va arriba. El ícono va
+ * rojo con [danger], ámbar con [warning] (aunque la interfaz tenga otro color) y si no, del color elegido.
  */
 @Composable
-fun Notice(text: String, icon: ImageVector? = null, danger: Boolean = false, buttons: @Composable () -> Unit) {
+fun Notice(text: String, icon: ImageVector? = null, danger: Boolean = false, warning: Boolean = false, buttons: @Composable () -> Unit) {
     val c = LocalColors.current
     val box = Modifier
         .fillMaxWidth()
@@ -35,7 +36,7 @@ fun Notice(text: String, icon: ImageVector? = null, danger: Boolean = false, but
         .padding(start = 20.dp, end = 8.dp, top = 8.dp, bottom = 8.dp)
     val label = @Composable { m: Modifier ->
         Row(m, verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            if (icon != null) Icon(icon, if (danger) c.danger else c.accent, 22.dp)
+            if (icon != null) Icon(icon, if (danger) c.danger else if (warning) c.warning else c.accent, 22.dp)
             Label(text, Typography.body, maxLines = 2)
         }
     }

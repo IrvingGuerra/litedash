@@ -682,7 +682,7 @@ private fun Parked(d: Dependencies, onWake: () -> Unit) {
         val hello = greeting(d.prefs.driverName)
         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
             // Siempre en colores oscuros: de noche no deslumbra.
-            LiteDashTheme(dark = true, scale = 1f) {
+            LiteDashTheme(dark = true, scale = 1f, accent = d.prefs.accentColor) {
                 BigTime(clock, Typography.clock.copy(fontSize = 120.sp))
                 Label(hello?.let { "$it · ${clock.date}" } ?: clock.date, Typography.subtitle, LocalColors.current.textMuted, maxLines = 1)
                 Box(Modifier.padding(top = 12.dp)) { WeatherChip(d.weather) }

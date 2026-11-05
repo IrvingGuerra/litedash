@@ -83,7 +83,7 @@ internal fun Controls(
     Row(modifier, verticalAlignment = Alignment.CenterVertically) {
         if (!compact) IconButton(Icons.previous, { lens.previous() }, size = size)
         if (!compact) Spacer(Modifier.width(gap))
-        IconButton(if (playing || loading) Icons.pause else Icons.play, { lens.toggle() }, size = playSize, background = c.text, color = c.background)
+        IconButton(if (playing || loading) Icons.pause else Icons.play, { lens.toggle() }, size = playSize, background = c.primary, color = c.onPrimary)
         if (!compact) Spacer(Modifier.width(gap))
         if (!compact) IconButton(Icons.next, { lens.next() }, size = size)
     }
@@ -94,7 +94,7 @@ internal fun Controls(
 internal fun ProgressTrack(fraction: Float, height: Dp, modifier: Modifier = Modifier) {
     val c = LocalColors.current
     Box(modifier.fillMaxWidth().height(height).clip(RoundedCornerShape(height / 2)).background(c.line)) {
-        Box(Modifier.fillMaxHeight().fillMaxWidth(fraction).background(c.text))
+        Box(Modifier.fillMaxHeight().fillMaxWidth(fraction).background(c.primary))
     }
 }
 
@@ -165,10 +165,10 @@ private fun Chip(text: String, selected: Boolean, c: Colors, onClick: () -> Unit
     Box(
         Modifier
             .clip(RoundedCornerShape(50))
-            .background(if (selected) c.text else c.surfaceHigh)
+            .background(if (selected) c.primary else c.surfaceHigh)
             .clickable(onClick = onClick)
             .padding(horizontal = 16.dp, vertical = 9.dp),
-    ) { Label(text, Typography.small.copy(fontWeight = FontWeight.SemiBold), if (selected) c.background else c.text, 1) }
+    ) { Label(text, Typography.small.copy(fontWeight = FontWeight.SemiBold), if (selected) c.onPrimary else c.text, 1) }
 }
 
 /** La vista cuenta como usuaria de [repo] mientras está en pantalla (escucha solo entonces). */

@@ -31,6 +31,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.isSpecified
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.pointer.PointerInputChange
 import androidx.compose.ui.input.pointer.pointerInput
@@ -45,17 +46,25 @@ import com.irvingguerra.litedash.feature.car.CarColors
 private val RAINBOW = listOf(Color.Red, Color.Yellow, Color.Green, Color.Cyan, Color.Blue, Color.Magenta, Color.Red)
 
 /**
- * Los colores rápidos y uno libre: el círculo de arcoíris abre un selector de
- * tono (barra) y de intensidad y brillo (cuadro). Mientras se arrastra, el auto
+ * Los colores rápidos ([swatches]) y uno libre: el círculo de arcoíris abre un selector de
+ * tono (barra) y de intensidad y brillo (cuadro). Mientras se arrastra, lo que se pinta
  * cambia en vivo con [onPreview]; al soltar (o al tocar un color) llega [onChange].
+ * [leading] va antes de los colores (p. ej. "Natural"); sin color elegido, [color] = Unspecified.
  */
 @Composable
-fun ColorPicker(color: Color, onPreview: (Color) -> Unit, onChange: (Color) -> Unit) {
-    val custom = CarColors.none { it.toArgb() == color.toArgb() }
+fun ColorPicker(
+    color: Color,
+    onPreview: (Color) -> Unit,
+    onChange: (Color) -> Unit,
+    swatches: List<Color> = CarColors,
+    leading: @Composable () -> Unit = {},
+) {
+    val custom = color.isSpecified && swatches.none { it.toArgb() == color.toArgb() }
     var open by remember { mutableStateOf(custom) }
     Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
         FlowRow(horizontalArrangement = Arrangement.spacedBy(14.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            CarColors.forEach { col ->
+            leading()
+            swatches.forEach { col ->
                 Swatch(col.toArgb() == color.toArgb(), Brush.linearGradient(listOf(col, col))) { onChange(col) }
             }
             val otherLabel = stringResource(R.string.other_color)
@@ -63,12 +72,12 @@ fun ColorPicker(color: Color, onPreview: (Color) -> Unit, onChange: (Color) -> U
                 open = !open
             }
         }
-        if (open) ColorPlane(color, onPreview, onChange)
+        if (open) ColorPlane(color.takeIf { it.isSpecified } ?: swatches.first(), onPreview, onChange)
     }
 }
 
 @Composable
-private fun Swatch(selected: Boolean, fill: Brush, modifier: Modifier = Modifier, onClick: () -> Unit) {
+internal fun Swatch(selected: Boolean, fill: Brush, modifier: Modifier = Modifier, onClick: () -> Unit) {
     val c = LocalColors.current
     Box(
         modifier

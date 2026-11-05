@@ -143,7 +143,7 @@ private fun Summary(d: Dependencies, health: List<SystemHealth>, report: EngineR
         !connected -> stringResource(R.string.health_connect) to c.textMuted
         reading && !known -> stringResource(R.string.obd_reading) to c.textMuted
         issues == 0 && known -> stringResource(R.string.health_all_good) to Good
-        issues > 0 -> pluralStringResource(R.plurals.health_issues, issues, issues) to (if (fault) c.danger else c.accent)
+        issues > 0 -> pluralStringResource(R.plurals.health_issues, issues, issues) to (if (fault) c.danger else c.warning)
         else -> stringResource(R.string.health_unknown) to c.textMuted
     }
     Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
@@ -186,7 +186,7 @@ private fun SystemTile(d: Dependencies, h: SystemHealth, report: EngineReport?, 
     val c = LocalColors.current
     val color = when (h.level) {
         HealthLevel.GOOD -> Good
-        HealthLevel.WARN -> c.accent
+        HealthLevel.WARN -> c.warning
         HealthLevel.FAULT -> c.danger
         HealthLevel.UNKNOWN -> c.textMuted
     }
@@ -242,7 +242,7 @@ private fun CarWithMarks(d: Dependencies, car: CarPackage?, health: List<SystemH
     val c = LocalColors.current
     val marks = health.filter { it.level == HealthLevel.WARN || it.level == HealthLevel.FAULT }.map {
         val fault = it.level == HealthLevel.FAULT
-        ProblemMark(it.zone.x, it.zone.y, if (fault) c.danger else c.accent, pulsing = fault)
+        ProblemMark(it.zone.x, it.zone.y, if (fault) c.danger else c.warning, pulsing = fault)
     }
     Box(modifier.aspectRatio(CAR_TOP_ASPECT)) {
         CarTop(d.cars, car, d.prefs.carColor, Modifier.fillMaxSize())
@@ -286,7 +286,7 @@ fun HealthTile(d: Dependencies, car: CarPackage?, onClick: () -> Unit) {
         else -> null
     }
     val detailColor = when {
-        connected && issues > 0 -> if (health.any { it.level == HealthLevel.FAULT }) c.danger else c.accent
+        connected && issues > 0 -> if (health.any { it.level == HealthLevel.FAULT }) c.danger else c.warning
         connected && known -> Good
         else -> c.textMuted
     }

@@ -83,5 +83,5 @@ internal fun ComponentActivity.LiteDashContent(d: Dependencies, revision: Int, c
         if (hideStatusBar) bars.hide(WindowInsetsCompat.Type.statusBars()) else bars.show(WindowInsetsCompat.Type.statusBars())
     }
     ApplyBrightness(d.prefs, night, revision)
-    LiteDashTheme(dark = dark, scale = d.prefs.scale, content = content)
+    LiteDashTheme(dark = dark, scale = d.prefs.scale, accent = d.prefs.accentColor, content = content)
 }

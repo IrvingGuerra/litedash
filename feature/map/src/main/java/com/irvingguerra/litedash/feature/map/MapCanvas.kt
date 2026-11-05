@@ -115,9 +115,9 @@ fun MapCanvas(store: TileStore, lat: Double, lon: Double, bearing: Float?, kmh: 
  * Las teselas a dibujar, de lo lejano a lo cercano (lo cercano encima): su zoom, clave y dónde van en el
  * plano del mapa (en px, ya redondeado). Inclinado, lo lejano va con menos detalle ([detailDrop]).
  */
-private class TilePlan(val keys: Set<Long>, val z: IntArray, val x: IntArray, val y: IntArray, val left: IntArray, val top: IntArray, val right: IntArray, val bottom: IntArray)
+internal class TilePlan(val keys: Set<Long>, val z: IntArray, val x: IntArray, val y: IntArray, val left: IntArray, val top: IntArray, val right: IntArray, val bottom: IntArray)
 
-private fun visibleTiles(projection: MapProjection, lat: Double, lon: Double, z: Int, at: Offset, ts: Float): TilePlan {
+internal fun visibleTiles(projection: MapProjection, lat: Double, lon: Double, z: Int, at: Offset, ts: Float): TilePlan {
     val fx = tileX(lon, z)
     val fy = tileY(lat, z)
     val span = projection.visibleTiles(fx, fy, ts)

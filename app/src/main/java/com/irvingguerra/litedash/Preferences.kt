@@ -28,6 +28,8 @@ internal object PrefKeys {
     const val SCALE = "scale"
     const val CAR_NAME = "car_name"
     const val CAR_COLOR = "car_color_argb"
+    /** Int ARGB; sin guardar = el color natural. */
+    const val ACCENT_COLOR = "accent_color_argb"
     const val CAR_MODEL = "car_model"
     const val WELCOME_SEEN = "welcome_seen"
     const val WELCOME_STEP = "welcome_step"
@@ -195,6 +197,20 @@ class Preferences(context: Context) {
     /** Mientras se arrastra el selector: el auto cambia en vivo y se guarda al soltar ([carColor]). */
     fun previewCarColor(v: Color) {
         _carColor = v.toArgb()
+    }
+
+    // El color de la interfaz; null = el natural (ámbar, con lo principal en blanco o negro).
+    private var _accent by mutableStateOf(if (p.contains(PrefKeys.ACCENT_COLOR)) p.getInt(PrefKeys.ACCENT_COLOR, 0) else null)
+    var accentColor: Color?
+        get() = _accent?.let { Color(it) }
+        set(v) {
+            _accent = v?.toArgb()
+            p.edit { if (v == null) remove(PrefKeys.ACCENT_COLOR) else putInt(PrefKeys.ACCENT_COLOR, v.toArgb()) }
+        }
+
+    /** Mientras se arrastra el selector: la interfaz cambia en vivo y se guarda al soltar ([accentColor]). */
+    fun previewAccent(v: Color) {
+        _accent = v.toArgb()
     }
 
     /** Id del auto del catálogo que se muestra; null = el sedán genérico. */

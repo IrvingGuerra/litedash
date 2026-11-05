@@ -57,12 +57,10 @@
     <string name="split_right">Right</string>
     <string name="split_swap_help">You can also switch it right there with the arrows button in the bottom corner.</string>
     <string name="split_unsupported">This head unit runs Android %1$s: two apps side by side needs Android 12L or newer.</string>
-    <string name="gauge_style_arc">Arc</string>
     <string name="gauge_style_needle">Needle</string>
     <string name="gauge_style_digital">Digital</string>
-    <string name="gauge_style_ring">Ring</string>
     <string name="gauge_style_bar">Bar</string>
-    <string name="gauge_color_accent">Amber</string>
+    <string name="gauge_color_accent">Interface</string>
     <string name="gauge_color_car">Your car\'s color</string>
     <string name="gauge_color_dynamic">Dynamic (green, amber and red)</string>
     <string name="gauge_color_green">Green</string>
@@ -70,8 +68,6 @@
     <string name="gauge_color_red">Red</string>
     <string name="gauge_color_white">White</string>
     <string name="gauge_style_gradient">Gradient</string>
-    <string name="gauge_style_neon">Neon</string>
-    <string name="gauge_style_blocks">Blocks</string>
     <!-- Dial and car in front of the speedometer -->
     <string name="gauge_style_dial">Dial</string>
     <string name="gauge_front">In front</string>
@@ -137,8 +133,8 @@
     <string name="app_info">App info</string>
     <string name="modules">Modules</string>
     <string name="on_your_home">On your home</string>
-    <string name="hide_status_bar">Hide the Android bar</string>
-    <string name="hide_status_bar_help">The top bar with the time and notifications. LiteDash already shows its own time and signal; swipe down from the top to open it.</string>
+    <string name="hide_status_bar">Hide it</string>
+    <string name="hide_status_bar_help">The strip at the very top with Android\'s time and notifications (not LiteDash\'s). Swipe down from the top to see it for a moment.</string>
     <string name="stats_title">Statistics</string>
     <string name="stats_switch">Count this screen (anonymous)</string>
     <string name="stats_help">Once a day it sends a random number, the version and where you got it (GitHub or Play), Android, language, screen size and since when you use LiteDash, to know how many people use LiteDash. No location, accounts or personal data.</string>
@@ -391,12 +387,11 @@
     <string name="monitor_egr">Exhaust gas recirculation (EGR)</string>
     <string name="obd_connecting_short">Connecting…</string>
     <!-- Pestañas de Ajustes -->
-    <string name="tab_general">General</string>
     <string name="tab_my_car">My car</string>
     <string name="tab_models">Models</string>
     <string name="tab_sensors">Sensors</string>
     <string name="obd_no_readiness">Your car doesn\'t report the inspection monitors.</string>
-    <string name="wallpaper_title">Home background</string>
+    <string name="wallpaper_title">Wallpaper</string>
     <string name="wallpaper_help">A photo of yours behind the whole home screen. Without one, the theme background.</string>
     <string name="road_trip">trip</string>
     <string name="logo_pick">Pick image</string>
@@ -404,13 +399,12 @@
     <string name="logo_remove">Remove image</string>
     <string name="logo_intro">Intro animation</string>
     <string name="bar_position">Apps bar</string>
-    <string name="bar_position_help">Where the time and your apps go. Automatic: on the side when the screen is landscape, at the bottom when it\'s portrait.</string>
+    <string name="bar_position_help">LiteDash\'s own, with the time and your apps. Automatic: on the side when the screen is landscape, at the bottom when it\'s portrait.</string>
     <string name="bar_auto">Automatic</string>
     <string name="bar_side">On the side</string>
     <string name="bar_bottom">Bottom</string>
     <string name="release_notes">WHAT\'S NEW IN THIS VERSION</string>
     <string name="apps_section">Apps</string>
-    <string name="tab_layout">Layout</string>
     <string name="tab_tiles">Widgets</string>
     <string name="tab_navigation">Navigation</string>
     <string name="tab_favorites">Favorites</string>
@@ -665,4 +659,8 @@
     <string name="usb_folder">Music folder</string>
     <string name="usb_folder_auto">Automatic: looks in all your USB drives. Choose one if your screen doesn\'t let apps read the drive.</string>
     <string name="music_app_title">Your music app</string>
+    <string name="gauge_rim">Rim</string>
+    <string name="gauge_rim_smooth">Plain</string>
+    <string name="gauge_rim_neon">Neon</string>
+    <string name="gauge_rim_blocks">Blocks</string>
 </resources>

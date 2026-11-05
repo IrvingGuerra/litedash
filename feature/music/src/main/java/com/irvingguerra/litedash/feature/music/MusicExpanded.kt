@@ -159,7 +159,7 @@ private fun TimeBar(repo: MusicRepository, song: Song) {
     ) {
         ProgressTrack(fraction, 6.dp)
         if (song.seekable) {
-            Box(Modifier.offset(maxWidth * fraction - 8.dp).size(16.dp).clip(CircleShape).background(c.text))
+            Box(Modifier.offset(maxWidth * fraction - 8.dp).size(16.dp).clip(CircleShape).background(c.primary))
         }
     }
     Row(Modifier.fillMaxWidth()) {

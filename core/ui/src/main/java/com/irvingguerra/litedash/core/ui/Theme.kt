@@ -32,6 +32,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.isSpecified
+import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
@@ -58,9 +61,26 @@ data class Colors(
     val line: Color,
     val text: Color,
     val textMuted: Color,
+    /** El color de realce: interruptores, íconos y lo que se llena. Se puede elegir ([withAccent]). */
     val accent: Color,
     val danger: Color,
+    /** Advertencia (Salud, Llantas, códigos pendientes): siempre ámbar, aunque se elija otro color. */
+    val warning: Color,
+    /** Relleno de lo principal (botón principal, play, barra de avance, chip elegido) y el texto encima. */
+    val primary: Color,
+    val onPrimary: Color,
 )
+
+/**
+ * Los colores con el realce que eligió el usuario; null = el natural (ámbar, y lo principal en
+ * blanco o negro). Con un color, lo principal también lo toma; nunca las tarjetas ni el fondo.
+ * En el tema claro los colores muy claros se oscurecen un poco para que se lean sobre blanco.
+ */
+fun Colors.withAccent(chosen: Color?): Colors {
+    if (chosen == null || !chosen.isSpecified) return this
+    val color = if (!dark && chosen.luminance() > 0.45f) lerp(chosen, Color.Black, 0.2f) else chosen
+    return copy(accent = color, primary = color, onPrimary = if (color.luminance() > 0.45f) Color(0xFF0E1013) else Color.White)
+}
 
 // Estilo limpio (Irving, 2026-11-01: "más estilo Apple o DuduAuto"): tarjetas lisas sin
 // borde sobre un fondo apenas distinto, texto secundario gris y el ámbar solo en lo importante.
@@ -74,6 +94,9 @@ val DarkColors = Colors(
     textMuted = Color(0xFF8B939E),
     accent = Brand.Amber,
     danger = Color(0xFFFF6B5E),
+    warning = Brand.Amber,
+    primary = Brand.LightWhite,
+    onPrimary = Color(0xFF0E1013),
 )
 
 val LightColors = Colors(
@@ -86,6 +109,9 @@ val LightColors = Colors(
     textMuted = Color(0xFF7D8590),
     accent = Color(0xFFE59500),
     danger = Color(0xFFD93A2B),
+    warning = Color(0xFFE59500),
+    primary = Color(0xFF16181C),
+    onPrimary = Color(0xFFE9ECF0),
 )
 
 val LocalColors = staticCompositionLocalOf { DarkColors }
@@ -102,13 +128,13 @@ object Radius {
 
 /**
  * Sin Material: la app usa solo foundation para mantenerse ligera.
- * [scale] agranda o achica toda la interfaz (pantallas que mienten con su dpi).
+ * [scale] agranda o achica toda la interfaz (pantallas que mienten con su dpi); [accent], el color elegido.
  */
 @Composable
-fun LiteDashTheme(dark: Boolean = true, scale: Float = 1f, content: @Composable () -> Unit) {
+fun LiteDashTheme(dark: Boolean = true, scale: Float = 1f, accent: Color? = null, content: @Composable () -> Unit) {
     val d = LocalDensity.current
     CompositionLocalProvider(
-        LocalColors provides if (dark) DarkColors else LightColors,
+        LocalColors provides (if (dark) DarkColors else LightColors).withAccent(accent),
         LocalDensity provides Density(d.density * scale, d.fontScale),
         content = content,
     )
@@ -177,11 +203,11 @@ fun Button(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, pri
     Box(
         modifier
             .clip(shape)
-            .background(if (primary) c.text else c.surfaceHigh)
+            .background(if (primary) c.primary else c.surfaceHigh)
             .clickable(onClick = onClick)
             .padding(horizontal = 22.dp, vertical = 14.dp),
         contentAlignment = Alignment.Center,
-    ) { Label(text, Typography.body.copy(fontWeight = FontWeight.SemiBold), if (primary) c.background else c.text, 1) }
+    ) { Label(text, Typography.body.copy(fontWeight = FontWeight.SemiBold), if (primary) c.onPrimary else c.text, 1) }
 }
 
 /**
