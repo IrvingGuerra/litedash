@@ -36,7 +36,8 @@ import com.irvingguerra.litedash.core.ui.Typography
 @Composable
 fun RadioExpanded(
     repo: MusicRepository,
-    close: () -> Unit,
+    /** Null = el widget ya es así de grande en el inicio: sin botón de cerrar. */
+    close: (() -> Unit)?,
     onSettings: () -> Unit,
     modifier: Modifier = Modifier,
     browser: (@Composable (onPicked: () -> Unit) -> Unit)? = null,
@@ -58,7 +59,7 @@ fun RadioExpanded(
             Label(stringResource(R.string.radio).uppercase(), Typography.label, c.textMuted, maxLines = 1, modifier = Modifier.weight(1f).padding(start = 4.dp))
             if (canBrowse) HeaderButton(if (browsing) Icons.radio else Icons.list) { browsing = !browsing }
             if (!internet && repo.sourceApps[SourceKind.RADIO] != null) HeaderButton(Icons.openExternal) { repo.openRadioApp() }
-            HeaderButton(Icons.close, close)
+            if (close != null) HeaderButton(Icons.close, close)
         }
         if (repo.radioHasBoth) {
             Spacer(Modifier.height(12.dp))

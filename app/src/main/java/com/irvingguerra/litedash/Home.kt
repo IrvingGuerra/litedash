@@ -203,10 +203,8 @@ class Dependencies(
 class TileActions(
     val onPanel: (Panel) -> Unit,
     val onNavigate: (App?) -> Unit,
-    val onMusic: () -> Unit,
-    val onRadio: () -> Unit,
-    /** El mapa en grande, con el estilo del widget que se tocó ([Tile.data]). */
-    val onMap: (String) -> Unit,
+    /** La música, la radio o el mapa en grande ([Expanded]), desde el widget que se tocó (su lado y su estilo). */
+    val onExpand: (Expanded, Tile) -> Unit,
     /** Ver en grande el auto, la carretera o la imagen de esta pieza. */
     val onCarOnly: (Tile) -> Unit,
     /** Dónde está cada pieza que crece (por id): de ahí crece al verla sola. */
@@ -252,8 +250,11 @@ fun TileContent(d: Dependencies, p: Tile, apps: List<App>, car: CarPackage?, rev
                 }
             } else Box(hero) { content(null) }
         }
-        TileTypes.MUSIC -> MusicTile(d.music, revision, onExpand = actions.onMusic)
-        TileTypes.RADIO -> RadioTile(d.music, revision, onExpand = actions.onRadio)
+        // Ya de media pantalla o más: lo de en grande ahí mismo (no se mueve).
+        TileTypes.MUSIC -> if (p.fillsHalf(d.dashboard.grid)) MusicBig(d, close = null)
+        else MusicTile(d.music, revision, onExpand = { actions.onExpand(Expanded.MUSIC, p) })
+        TileTypes.RADIO -> if (p.fillsHalf(d.dashboard.grid)) RadioBig(d, close = null) { actions.onPanel(Panel.MusicSettings) }
+        else RadioTile(d.music, revision, onExpand = { actions.onExpand(Expanded.RADIO, p) })
         TileTypes.CLOCK -> ClockTile(d.prefs.driverName, d.weather)
         TileTypes.WEATHER -> WeatherTile(d.weather)
         TileTypes.TRIP -> TripTile(d)
@@ -268,7 +269,7 @@ fun TileContent(d: Dependencies, p: Tile, apps: List<App>, car: CarPackage?, rev
         TileTypes.TIRES -> TiresTile(d, onOpen = actions.onTires, onSettings = { actions.onPanel(Panel.TiresSettings) })
         TileTypes.MAP -> {
             val app = mapApp(d, apps)
-            MapTile(d, p.data, app, onPlace = { navigateTo(context, app, it) }, onNavigate = { actions.onNavigate(app) }, onExpand = { actions.onMap(p.data) })
+            MapTile(d, p.data, app, onPlace = { navigateTo(context, app, it) }, onNavigate = { actions.onNavigate(app) }, onExpand = if (p.fillsHalf(d.dashboard.grid)) null else ({ actions.onExpand(Expanded.MAP, p) }))
         }
         TileTypes.PHONE -> ShortcutTile(Icons.phone, stringResource(R.string.tile_phone), null) {
             openDialer(context)
@@ -310,8 +311,8 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
     var editing by remember { mutableStateOf(false) }
     // La música o la radio en grande (en lugar del tablero); null = el tablero normal.
     var expanded by remember { mutableStateOf<Expanded?>(null) }
-    // Cómo se ve el mapa en grande: como el widget que se tocó.
-    var mapData by remember { mutableStateOf("") }
+    // El widget que creció: de su lado de la pantalla y, el mapa, con su estilo.
+    var expandedFrom by remember { mutableStateOf<Tile?>(null) }
     // Solo el auto a pantalla completa (un toque al auto entra y otro sale), con animación:
     // [carOnly] es a dónde va y [carShown] si la capa sigue en pantalla (también al regresar).
     var carOnly by remember { mutableStateOf(false) }
@@ -402,11 +403,9 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
         TileActions(
             onPanel = { panel = it },
             onNavigate = { app -> openNavigation(context, d.apps, app) },
-            onMusic = { expanded = Expanded.MUSIC },
-            onRadio = { expanded = Expanded.RADIO },
-            onMap = {
-                mapData = it
-                expanded = Expanded.MAP
+            onExpand = { kind, tile ->
+                expandedFrom = tile
+                expanded = kind
             },
             onCarOnly = {
                 // Con Llantas activo, tocar el auto 3D abre las llantas; si no, lo agranda.
@@ -430,7 +429,15 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
             d.wheel.consume()
             when (action) {
                 WheelAction.NAVIGATE -> actions.onNavigate(mapApp(d, currentApps))
-                WheelAction.MUSIC -> { backToDashboard(); expanded = Expanded.MUSIC }
+                WheelAction.MUSIC -> {
+                    backToDashboard()
+                    // Del lado de su widget; si ya es de media pantalla, se queda como está.
+                    val tile = d.dashboard.shown.firstOrNull { it.type == TileTypes.MUSIC }
+                    if (tile?.fillsHalf(d.dashboard.grid) != true) {
+                        expandedFrom = tile
+                        expanded = Expanded.MUSIC
+                    }
+                }
                 WheelAction.VOICE -> voiceIntent(context)?.let { runCatching { context.startActivity(it) } }
                 WheelAction.HOME -> backToDashboard()
                 else -> Unit
@@ -537,22 +544,17 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                             val hero = d.dashboard.shown.firstOrNull { it.cardless }
                             if (hero != null) TileContent(d, hero, apps, car, revision, actions) else ClockTile(d.prefs.driverName, d.weather)
                         },
-                        heroFirst = d.prefs.splitCarLeft,
+                        // Crece en la mitad donde estaba: derecha (o abajo) si estaba toda ahí; si no, izquierda (o arriba).
+                        heroFirst = expandedFrom?.let { if (grid.vertical) it.row * 2 >= grid.rows else it.col * 2 >= grid.columns } ?: false,
                         vertical = grid.vertical,
                     ) {
                         val close = { expanded = null }
                         when (big) {
-                            Expanded.MUSIC -> MusicExpanded(
-                                d.music, close = close, Modifier.padding(6.dp),
-                                browser = { picked -> PlayerBrowser(PlayerSource.USB, picked, Modifier.fillMaxSize()) },
-                            )
-                            Expanded.RADIO -> RadioExpanded(
-                                d.music, close = close, onSettings = { panel = Panel.MusicSettings }, Modifier.padding(6.dp),
-                                browser = if (d.prefs.internetRadio) { picked -> PlayerBrowser(PlayerSource.RADIO, picked, Modifier.fillMaxSize()) } else null,
-                            )
+                            Expanded.MUSIC -> MusicBig(d, close, Modifier.padding(6.dp))
+                            Expanded.RADIO -> RadioBig(d, close, Modifier.padding(6.dp)) { panel = Panel.MusicSettings }
                             Expanded.MAP -> {
                                 val app = mapApp(d, apps)
-                                MapExpanded(d, mapData, app, onPlace = { navigateTo(context, app, it) }, onNavigate = { actions.onNavigate(app) }, close = close, Modifier.padding(6.dp))
+                                MapExpanded(d, expandedFrom?.data ?: "", app, onPlace = { navigateTo(context, app, it) }, onNavigate = { actions.onNavigate(app) }, close = close, Modifier.padding(6.dp))
                             }
                         }
                     } else Dashboard(
@@ -883,3 +885,20 @@ private fun HalfScreen(side: @Composable () -> Unit, heroFirst: Boolean, vertica
         for (part in parts) Box(Modifier.weight(1f).fillMaxHeight()) { part() }
     }
 }
+
+/** Ocupa media pantalla o más ([grid] = la cuadrícula del inicio): crecer no tendría caso. */
+private fun Tile.fillsHalf(grid: Grid?) = grid != null && width * height * 2 >= grid.columns * grid.rows
+
+/** La música en grande: lo que suena, las fuentes y la biblioteca de la USB. */
+@Composable
+private fun MusicBig(d: Dependencies, close: (() -> Unit)?, modifier: Modifier = Modifier) = MusicExpanded(
+    d.music, close = close, modifier,
+    browser = { picked -> PlayerBrowser(PlayerSource.USB, picked, Modifier.fillMaxSize()) },
+)
+
+/** La radio en grande: FM o internet y, si está prendida, las estaciones por internet. */
+@Composable
+private fun RadioBig(d: Dependencies, close: (() -> Unit)?, modifier: Modifier = Modifier, onSettings: () -> Unit) = RadioExpanded(
+    d.music, close = close, onSettings = onSettings, modifier,
+    browser = if (d.prefs.internetRadio) { picked -> PlayerBrowser(PlayerSource.RADIO, picked, Modifier.fillMaxSize()) } else null,
+)

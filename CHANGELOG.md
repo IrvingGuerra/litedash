@@ -6,6 +6,14 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
+## [1.4.70] - 2026-11-04
+
+### Cambiado
+- Mapa, Música y Radio crecen **en la mitad donde estaban**: si el widget está en la mitad derecha,
+  a la derecha; si está a la izquierda o en medio, a la izquierda (en pantallas paradas, arriba o abajo).
+- Si el widget ya ocupa media pantalla o más, **no se mueve**: la música y la radio muestran ahí mismo
+  lo que traen en grande, y en el mapa el toque aleja el zoom.
+
 ## [1.4.69] - 2026-11-04
 
 ### Cambiado

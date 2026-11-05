@@ -55,12 +55,13 @@ import com.irvingguerra.litedash.feature.music.NotificationService
 
 /**
  * Widget Mapa: OpenStreetMap con tu posición del GPS, como diga su [data] ([MapLook]); navegando,
- * la siguiente vuelta encima. Un toque lo muestra en grande ([onExpand]); el botón de la esquina
+ * la siguiente vuelta encima. Un toque lo muestra en grande ([onExpand]; null = ya es grande y el toque
+ * aleja el zoom); el botón de la esquina
  * abre tu app de mapas. En una fila, o sin permiso de ubicación, se ve como el widget Navegar de
  * antes (vuelta, Casa y Trabajo) y un botón para ver el mapa. GPS y descargas solo mientras se ve.
  */
 @Composable
-fun MapTile(d: Dependencies, data: String, app: App?, onPlace: (String) -> Unit, onNavigate: () -> Unit, onExpand: () -> Unit) {
+fun MapTile(d: Dependencies, data: String, app: App?, onPlace: (String) -> Unit, onNavigate: () -> Unit, onExpand: (() -> Unit)?) {
     val c = LocalColors.current
     val (granted, ask) = rememberGpsPermission(d)
     val look = remember(data) { MapLook.parse(data) }
@@ -69,7 +70,7 @@ fun MapTile(d: Dependencies, data: String, app: App?, onPlace: (String) -> Unit,
             Box(Modifier.fillMaxSize()) {
                 NavigationTile(d.navigation, app, d.prefs.homeAddress, d.prefs.workAddress, onPlace, onNavigate)
                 // Sin permiso, el botón lo pide; con permiso (en una fila), abre el mapa en grande.
-                IconButton(Icons.map, if (granted) onExpand else ask, Modifier.align(Alignment.TopEnd).padding(6.dp), size = 40.dp, background = c.surfaceHigh, color = c.accent)
+                IconButton(Icons.map, if (granted) onExpand ?: {} else ask, Modifier.align(Alignment.TopEnd).padding(6.dp), size = 40.dp, background = c.surfaceHigh, color = c.accent)
             }
             return@BoxWithConstraints
         }

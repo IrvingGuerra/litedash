@@ -45,7 +45,8 @@ import com.irvingguerra.litedash.core.ui.Typography
 @Composable
 fun MusicExpanded(
     repo: MusicRepository,
-    close: () -> Unit,
+    /** Null = el widget ya es así de grande en el inicio: sin botón de cerrar. */
+    close: (() -> Unit)?,
     modifier: Modifier = Modifier,
     browser: @Composable (onPicked: () -> Unit) -> Unit,
 ) {
@@ -60,7 +61,7 @@ fun MusicExpanded(
             if (own || browsing) HeaderButton(if (browsing) Icons.music else Icons.list) { browsing = !browsing }
             val app = song?.pkg ?: repo.active ?: repo.preferred
             if (app != null && !repo.isOwn(app)) HeaderButton(Icons.openExternal) { repo.openApp() }
-            HeaderButton(Icons.close, close)
+            if (close != null) HeaderButton(Icons.close, close)
         }
         Spacer(Modifier.height(16.dp))
         if (browsing) {
