@@ -23,7 +23,6 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
@@ -61,7 +60,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.irvingguerra.litedash.core.ui.Button
@@ -337,52 +335,20 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
     var tiresOpen by remember { mutableStateOf(false) }
     var tiresShown by remember { mutableStateOf(false) }
     var tiresReady by remember { mutableStateOf(false) }
-    // La pieza del auto que se tocó (la cámara sube desde ahí) y si su copia ya se ve; null = solo fundido.
-    var tiresFrom by remember { mutableStateOf<Tile?>(null) }
-    var tiresFromReady by remember { mutableStateOf(false) }
-    // Llantas armada sin verse (fuera de la pantalla) para que el auto de arriba quede leído antes del toque.
-    var tiresWarm by remember { mutableStateOf(false) }
-    var tiresCarPx by remember { mutableIntStateOf(0) }
     val tiresProgress = remember { Animatable(0f) }
     LaunchedEffect(tiresOpen) {
-        val ms = if (tiresFrom != null) TIRES_RISE_MS else TIRES_FADE_MS
         if (tiresOpen) {
             tiresShown = true
-            // Aparece cuando el auto de arriba (y la copia del de la pieza) ya están pintados; si tardan, igual.
-            withTimeoutOrNull(TIRES_WAIT_MS) { snapshotFlow { tiresReady && (tiresFrom == null || tiresFromReady) }.first { it } }
-            tiresProgress.animateTo(1f, tween(ms, easing = FastOutSlowInEasing))
+            // Aparece cuando el auto de arriba ya está pintado (la primera vez tarda en leerse); si no, igual.
+            withTimeoutOrNull(TIRES_WAIT_MS) { snapshotFlow { tiresReady }.first { it } }
+            tiresProgress.animateTo(1f, tween(TIRES_FADE_MS, easing = FastOutSlowInEasing))
         } else if (tiresShown) {
-            tiresProgress.animateTo(0f, tween(ms, easing = FastOutSlowInEasing))
+            tiresProgress.animateTo(0f, tween(TIRES_FADE_MS, easing = FastOutSlowInEasing))
             tiresShown = false
             tiresReady = false
-            tiresFromReady = false
-            tiresFrom = null
         }
     }
-    // Precarga del auto de arriba, un momento después de verse el inicio con el auto y "Al tocar el
-    // auto" = llantas. La primera vez se arma Llantas sin verse (así se sabe a qué tamaño va); luego
-    // basta con pedirlo a ese tamaño (si sigue en caché no hace nada).
-    val tapOpensTires = d.hasTpmsSource && d.prefs.carTap == CarTap.TIRES && d.dashboard.tiles.any { it.type == TileTypes.CAR }
-    val carColor = d.prefs.carColor
-    LaunchedEffect(tapOpensTires, car, carColor, revision) {
-        if (!tapOpensTires) return@LaunchedEffect
-        delay(TIRES_PRELOAD_MS)
-        if (tiresCarPx > 0) {
-            if (car != null) d.cars.preloadTopView(car, carColor, tiresCarPx)
-            return@LaunchedEffect
-        }
-        if (tiresShown) return@LaunchedEffect
-        tiresWarm = true
-        try {
-            withTimeoutOrNull(TIRES_WARM_MAX_MS) { snapshotFlow { tiresReady }.first { it } }
-        } finally {
-            tiresWarm = false
-            if (!tiresShown) tiresReady = false
-        }
-    }
-    fun openTires(from: Tile? = null) {
-        // Sin saber aún dónde está la pieza, solo el fundido.
-        if (!tiresShown) tiresFrom = from?.takeIf { tileBounds[it.id]?.isEmpty == false }
+    fun openTires() {
         tiresOpen = true
     }
     fun backToDashboard() {
@@ -461,17 +427,14 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
             },
             onCarOnly = {
                 // Con Llantas activo, tocar el auto 3D abre las llantas; si no, lo agranda.
-                if (it.type == TileTypes.CAR && d.hasTpmsSource && d.prefs.carTap == CarTap.TIRES) openTires(it)
+                if (it.type == TileTypes.CAR && d.hasTpmsSource && d.prefs.carTap == CarTap.TIRES) openTires()
                 else {
                     bigTile = it
                     carOnly = true
                 }
             },
             onCarBounds = { id, rect -> if (tileBounds[id] != rect) tileBounds[id] = rect },
-            carHidden = { id ->
-                carShown && bigTile?.id == id && carProgress.value > 0f ||
-                    tiresShown && tiresFrom?.id == id && tiresProgress.value > 0f
-            },
+            carHidden = { id -> carShown && bigTile?.id == id && carProgress.value > 0f },
             onTires = { openTires() },
             editing = { editing },
         )
@@ -687,20 +650,13 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
             )
         }
 
-        if ((tiresShown || tiresWarm) && panel == null) {
-            val from = tiresFrom
-            // Precargando, fuera de la pantalla (ni se ve ni recibe toques); al abrir, en su lugar.
-            Box(Modifier.offset { IntOffset(if (tiresShown) 0 else OFFSCREEN_PX, 0) }) {
-                TiresFull(
-                    d, { tiresProgress.value },
-                    onClose = { tiresOpen = false },
-                    onSettings = { tiresOpen = false; panel = Panel.TiresSettings },
-                    onReady = { tiresReady = true },
-                    from = from?.let { tileBounds[it.id] } ?: Rect.Zero,
-                    origin = from?.let { t -> { m -> HeroTile(d, t, car, onClick = {}, m, onReady = { tiresFromReady = true }) } },
-                    onCarWidth = { tiresCarPx = it },
-                )
-            }
+        if (tiresShown && panel == null) {
+            TiresFull(
+                d, { tiresProgress.value },
+                onClose = { tiresOpen = false },
+                onSettings = { tiresOpen = false; panel = Panel.TiresSettings },
+                onReady = { tiresReady = true },
+            )
         }
 
         if (parked) Parked(d, onWake = { parked = false; touched++ })
@@ -942,18 +898,6 @@ private const val TIRES_WAIT_MS = 300L
 
 /** Lo que tardan las llantas a pantalla completa en aparecer (y en irse). */
 private const val TIRES_FADE_MS = 260
-
-/** Lo que tarda la cámara en subir del auto del inicio a las llantas (y en bajar). */
-private const val TIRES_RISE_MS = 420
-
-/** Cuánto lleva el inicio a la vista antes de precargar el auto de arriba. */
-private const val TIRES_PRELOAD_MS = 1_500L
-
-/** Lo más que se queda armada Llantas sin verse esperando al auto de arriba. */
-private const val TIRES_WARM_MAX_MS = 3_000L
-
-/** Fuera de la pantalla (px): ahí se arma Llantas para precargar. */
-private const val OFFSCREEN_PX = 100_000
 
 /** Los widgets con botón de ajustes al acomodar el inicio. */
 private val CUSTOMIZABLE = setOf(TileTypes.SPEEDOMETER, TileTypes.GAUGE, TileTypes.ROAD, TileTypes.IMAGE, TileTypes.MAP)

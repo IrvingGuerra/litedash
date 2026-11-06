@@ -6,6 +6,11 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
+## [1.4.98] - 2026-11-06
+
+### Cambiado
+- Tocar el auto para ver las llantas vuelve al fundido de antes: la animación de la 1.4.97 no se veía bien.
+
 ## [1.4.97] - 2026-11-06
 
 ### Mejorado

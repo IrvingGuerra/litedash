@@ -155,7 +155,7 @@ fun CarOnly(
  * Ancho con que [CarTile] dibuja el auto en una caja: lo limita el alto (proporción
  * 1.9) y lleva 8 dp a cada lado. Para que la animación empiece y termine en el auto real.
  */
-internal fun carWidth(box: Rect, density: Density) =
+private fun carWidth(box: Rect, density: Density) =
     minOf(box.width, box.height * CAR_ASPECT) - with(density) { 16.dp.toPx() }
 
 /** Dónde queda la pieza en grande en una pantalla de [width] × [height] px: sin las barras y con 24 dp de aire. */
