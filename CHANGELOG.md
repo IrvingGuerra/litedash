@@ -6,6 +6,12 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
+## [1.4.96] - 2026-11-06
+
+### Nuevo
+- **LiteDash Pro (prueba).** En Ajustes → Sistema → Tu pantalla se activa con un código de prueba. Aún no
+  trae funciones: deja listo el desbloqueo para la personalización que viene (luces, underglow, rines).
+
 ## [1.4.95] - 2026-11-05
 
 ### Cambiado
