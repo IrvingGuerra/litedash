@@ -657,8 +657,8 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
 
         if (parked) Parked(d, onWake = { parked = false; touched++ })
 
-        // Animación de entrada con tu imagen, una vez por cada vez que se abre LiteDash.
-        var intro by rememberSaveable { mutableStateOf(d.prefs.logoIntro && d.prefs.welcomeSeen) }
+        // Animación de entrada con tu imagen, una vez por cada vez que se abre LiteDash (no al cambiar de idioma).
+        var intro by rememberSaveable { mutableStateOf(!MainActivity.takeRestarted() && d.prefs.logoIntro && d.prefs.welcomeSeen) }
         if (intro) LogoIntro(d.prefs) { intro = false }
 
         if (!d.prefs.welcomeSeen) {

@@ -1,7 +1,9 @@
 package com.irvingguerra.litedash
 
+import android.app.Activity
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
 import android.view.KeyEvent
 import androidx.activity.ComponentActivity
@@ -68,6 +70,29 @@ class MainActivity : ComponentActivity() {
         /** LiteDash está al frente (para no traerlo de nuevo si ya lo está). */
         @Volatile var inFront = false
             private set
+
+        /**
+         * Abre el inicio otra vez desde cero (al cambiar de idioma). No con `recreate()`: Android
+         * reusa la ventana vieja y en Android 15 quedaba sin borde a borde (una franja abajo y,
+         * con otro alto, otro acomodo del inicio).
+         */
+        fun restart(activity: Activity) {
+            restarted = true
+            activity.finish()
+            activity.startActivity(Intent(activity, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION))
+            // Sin la animación de cierre de la vieja: el cambio se ve como un solo cuadro.
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                activity.overrideActivityTransition(Activity.OVERRIDE_TRANSITION_CLOSE, 0, 0)
+            } else {
+                @Suppress("DEPRECATION") activity.overridePendingTransition(0, 0)
+            }
+        }
+
+        // La actividad nueva viene de [restart] (no de abrir LiteDash): sin animación de entrada.
+        @Volatile private var restarted = false
+
+        /** ¿Se reinició por [restart]? Lo dice una sola vez. */
+        fun takeRestarted(): Boolean = restarted.also { restarted = false }
 
         /** Trae el inicio al frente sin tocar lo abierto (no es el botón de inicio: no cierra paneles). */
         fun bringToFront(context: Context) {

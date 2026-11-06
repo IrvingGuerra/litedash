@@ -61,6 +61,8 @@ class LiteDashApp : Application() {
         super.onCreate()
         // Antes de leer cualquier ajuste (también el idioma de attachBaseContext): nombres en inglés desde la 1.4.47.
         StorageMigration.run(this)
+        // Después de la migración (mueve la carpeta de los autos): mientras Android arma la pantalla.
+        CarRepository.prefetch(this)
         // Los avisos llegan aquí solo si el usuario dio acceso a notificaciones (el mismo de la música).
         // Android conecta ese servicio solo (aun tras forzar el cierre): sin la app armada, nada que hacer.
         NotificationService.listener = object : NotificationListener {

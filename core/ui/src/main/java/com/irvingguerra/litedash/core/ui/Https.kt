@@ -2,9 +2,11 @@ package com.irvingguerra.litedash.core.ui
 
 import android.content.Context
 import android.os.Build
+import java.io.File
 import java.net.HttpURLConnection
 import java.net.URL
 import java.security.KeyStore
+import java.security.MessageDigest
 import java.security.cert.CertificateFactory
 import javax.net.ssl.HttpsURLConnection
 import javax.net.ssl.SSLContext
@@ -18,7 +20,8 @@ import javax.net.ssl.TrustManagerFactory
  * MÁS esas dos, que vienen en `res/raw/isrg_roots.pem` (sacadas de las raíces de macOS; huellas
  * SHA-256 96:BC:EC…:08:C6 y 69:72:9B…:14:70). De la API 26 en adelante no cambia nada.
  *
- * Vive en core/ui porque es el único módulo que comparten app, feature/car y feature/updater.
+ * Vive en core/ui porque es el único módulo que comparten app, feature/car y feature/updater
+ * (por eso también aquí la descarga verificada que usan los autos y las actualizaciones).
  */
 object Https {
     @Volatile private var legacy: SSLSocketFactory? = null
@@ -31,6 +34,40 @@ object Https {
             connection.sslSocketFactory = legacyFactory(context.applicationContext)
         }
         return connection
+    }
+
+    /** GET de una descarga de LiteDash (catálogo, autos, actualizaciones); truena si no contesta 2xx. */
+    fun get(context: Context, url: String, accept: String? = null): HttpURLConnection =
+        open(context, url).apply {
+            connectTimeout = 15_000
+            readTimeout = 30_000
+            instanceFollowRedirects = true
+            setRequestProperty("User-Agent", "LiteDash")
+            accept?.let { setRequestProperty("Accept", it) }
+            if (responseCode !in 200..299) error("HTTP $responseCode")
+        }
+
+    /**
+     * Baja [url] a [target] y devuelve su SHA-256 en hexadecimal (el que llama lo compara).
+     * [progress] va de 0 a 1 cuando se sabe el tamaño ([bytes] > 0).
+     */
+    fun download(context: Context, url: String, target: File, bytes: Long, accept: String?, progress: (Float) -> Unit): String {
+        val sha = MessageDigest.getInstance("SHA-256")
+        get(context, url, accept).inputStream.use { input ->
+            target.outputStream().use { output ->
+                val buf = ByteArray(64 * 1024)
+                var total = 0L
+                while (true) {
+                    val n = input.read(buf)
+                    if (n < 0) break
+                    output.write(buf, 0, n)
+                    sha.update(buf, 0, n)
+                    total += n
+                    if (bytes > 0) progress((total.toFloat() / bytes).coerceAtMost(1f))
+                }
+            }
+        }
+        return sha.digest().joinToString("") { "%02x".format(it) }
     }
 
     private fun legacyFactory(context: Context): SSLSocketFactory =

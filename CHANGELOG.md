@@ -6,6 +6,18 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
+## [1.4.92] - 2026-11-05
+
+### Arreglado (mantenimiento)
+- **Cambiar de idioma ya no deja una franja abajo ni cambia tu acomodo.** Al cambiar el idioma,
+  el inicio se armaba un poco más bajo (sin la orilla de abajo) y, con ese otro alto, mostraba otro
+  acomodo de widgets. Ahora queda igual que siempre y sin repetir la animación de entrada.
+
+### Mejorado
+- El inicio arranca un poco más rápido: los autos bajados se leen en segundo plano mientras se arma
+  la pantalla, y se actualizó la guía de arranque de la app.
+- Por dentro: la descarga verificada de autos y actualizaciones es una sola.
+
 ## [1.4.91] - 2026-11-05
 
 ### Arreglado (auditoría de la 1.4.86 a la 1.4.90)

@@ -21,8 +21,6 @@ import org.json.JSONObject
 import java.io.File
 import androidx.core.content.FileProvider
 import androidx.core.content.IntentCompat
-import java.net.HttpURLConnection
-import java.security.MessageDigest
 import com.irvingguerra.litedash.core.ui.Https
 
 /** Una versión publicada en GitHub Releases, más nueva que la instalada. */
@@ -157,22 +155,7 @@ class Updater(
     /** Baja el APK a la caché y lo verifica contra SHA256SUMS.txt. [progress] va de 0 a 1. */
     suspend fun download(v: Version, progress: (Float) -> Unit): File = withContext(Dispatchers.IO) {
         val target = File(context.cacheDir, APK_FILE)
-        val sha = MessageDigest.getInstance("SHA-256")
-        open(v.apk).inputStream.use { input ->
-            target.outputStream().use { output ->
-                val buf = ByteArray(64 * 1024)
-                var total = 0L
-                while (true) {
-                    val n = input.read(buf)
-                    if (n < 0) break
-                    output.write(buf, 0, n)
-                    sha.update(buf, 0, n)
-                    total += n
-                    if (v.bytes > 0) progress((total.toFloat() / v.bytes).coerceAtMost(1f))
-                }
-            }
-        }
-        val computed = sha.digest().joinToString("") { "%02x".format(it) }
+        val computed = Https.download(context, v.apk, target, v.bytes, GITHUB_JSON, progress)
         v.checksums?.let { url ->
             val expected = open(url).inputStream.bufferedReader().readLines()
                 .firstOrNull { it.trim().endsWith(".apk") }?.trim()?.split(Regex("\\s+"))?.firstOrNull()
@@ -222,15 +205,7 @@ class Updater(
         }
     }
 
-    private fun open(url: String): HttpURLConnection =
-        Https.open(context, url).apply {
-            connectTimeout = 15_000
-            readTimeout = 30_000
-            instanceFollowRedirects = true
-            setRequestProperty("User-Agent", "LiteDash")
-            setRequestProperty("Accept", "application/vnd.github+json")
-            if (responseCode !in 200..299) error("HTTP $responseCode")
-        }
+    private fun open(url: String) = Https.get(context, url, GITHUB_JSON)
 
     private fun toJson(v: Version) = JSONObject()
         .put("name", v.name).put("code", v.code).put("notes", v.notes).put("apk", v.apk)
@@ -247,6 +222,8 @@ class Updater(
         private const val KEY_FOUND = "found"
         private const val KEY_DISMISSED = "dismissed"
         private const val APK_FILE = "update.apk"
+        // Encabezado que pide la API de GitHub (también va en las descargas, que siguen de ahí).
+        private const val GITHUB_JSON = "application/vnd.github+json"
 
         /** Lo último que dijo el instalador de Android (para mostrarlo si falló). */
         var installError by mutableStateOf<String?>(null)

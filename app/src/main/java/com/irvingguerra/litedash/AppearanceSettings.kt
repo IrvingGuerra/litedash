@@ -98,7 +98,7 @@ private fun InterfaceSettings(d: Dependencies) {
             { code ->
                 if (prefs.language != code) {
                     prefs.language = code
-                    activity?.recreate()
+                    activity?.let(MainActivity::restart)
                 }
             },
         )
