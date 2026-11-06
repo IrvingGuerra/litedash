@@ -26,11 +26,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
@@ -52,11 +54,13 @@ import com.irvingguerra.litedash.feature.car.CarRepository
 import com.irvingguerra.litedash.feature.car.CarStill
 import com.irvingguerra.litedash.feature.car.CarTurntable
 import com.irvingguerra.litedash.feature.car.CatalogEntry
+import com.irvingguerra.litedash.feature.music.MusicRepository
+import kotlinx.coroutines.launch
 
 /**
  * Ajustes → Tu auto, en tarjetas: el auto (nombre y color), las opciones del modelo
  * elegido justo debajo (sin bajar toda la lista), los modelos descargados a la vista
- * y el catálogo con buscador (no todos de golpe). Las descargas viven en el
+ * y el catálogo con buscador y filtro por marca. Las descargas viven en el
  * repositorio: siguen aunque se cierre Ajustes.
  */
 @Composable
@@ -99,7 +103,7 @@ internal fun CarSettings(d: Dependencies) {
     if (tab == 1) {
         if (cars.hasCatalog) {
             SettingsCard(stringResource(R.string.catalog)) {
-                CatalogSearch(prefs, cars, catalog?.filter { e -> installed.none { it.id == e.id } })
+                CatalogSearch(prefs, cars, d.music, catalog)
                 if (unreachable || cars.failed) Label(stringResource(R.string.catalog_error), Typography.small, c.danger)
             }
         } else if (installed.isEmpty()) {
@@ -187,40 +191,95 @@ private fun DownloadedModels(prefs: Preferences, cars: CarRepository, catalog: L
     }
 }
 
-/** El catálogo con buscador: aparecen al escribir (o con "Ver todos"), no toda la lista de golpe. */
+/**
+ * El catálogo: buscador, marcas (con cuántos modelos tiene cada una) y la cuadrícula filtrada.
+ * Los descargados también salen: tocarlos los elige; los demás abren su vista previa.
+ */
 @Composable
-private fun CatalogSearch(prefs: Preferences, cars: CarRepository, available: List<CatalogEntry>?) {
+private fun CatalogSearch(prefs: Preferences, cars: CarRepository, music: MusicRepository, catalog: List<CatalogEntry>?) {
     val c = LocalColors.current
     var query by remember { mutableStateOf("") }
-    var showAll by remember { mutableStateOf(false) }
+    var make by remember { mutableStateOf<String?>(null) }
     var previewing by remember { mutableStateOf<String?>(null) }
     // Busca por marca, modelo o año, sin importar acentos ni mayúsculas.
     TextInput(query, { query = it }, stringResource(R.string.search_car), Modifier.fillMaxWidth(), icon = true)
-    val list = available ?: return Label(stringResource(R.string.checking), Typography.small, c.textMuted)
-    val q = normalize(query.trim())
-    val found = if (q.isEmpty() && !showAll) emptyList() else list.filter { e -> q.split(' ').all { it in normalize("${e.make} ${e.name} ${e.year}") } }
-    when {
-        list.isEmpty() -> Label(stringResource(R.string.catalog_all_downloaded), Typography.small, c.textMuted)
-        q.isEmpty() && !showAll -> Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            Label(stringResource(R.string.catalog_hint), Typography.small, c.textMuted, modifier = Modifier.weight(1f))
-            Button(stringResource(R.string.catalog_show_all, list.size), { showAll = true })
-        }
-        found.isEmpty() -> Label(stringResource(R.string.catalog_none), Typography.small, c.textMuted)
+    val list = catalog ?: return Label(stringResource(R.string.checking), Typography.small, c.textMuted)
+    // Marcas con más modelos primero; dentro de cada una, por nombre y año.
+    val makes = remember(list) {
+        list.groupingBy { it.make }.eachCount().entries.sortedWith(compareByDescending<Map.Entry<String, Int>> { it.value }.thenBy { it.key })
     }
-    val open = found.firstOrNull { it.id == previewing }
+    val sorted = remember(list, makes) {
+        val rank = makes.withIndex().associate { (i, m) -> m.key to i }
+        list.sortedWith(compareBy<CatalogEntry> { rank[it.make] }.thenBy { it.name }.thenBy { it.year })
+    }
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Button(stringResource(R.string.catalog_all_makes), { make = null }, primary = make == null)
+        for ((name, count) in makes) Button("$name · $count", { make = name }, primary = make == name)
+    }
+    val q = normalize(query.trim())
+    val found = sorted.filter { e ->
+        (make == null || e.make == make) && q.split(' ').all { it in normalize("${e.make} ${e.name} ${e.year}") }
+    }
+    if (found.isEmpty()) return CarRequest(music, query.trim().ifEmpty { make.orEmpty() })
+    val downloaded = cars.installed.map { it.id }.toSet()
+    // Un descargado no se previsualiza (ya está): si se acaba de bajar, su vista previa se cierra.
+    val open = found.firstOrNull { it.id == previewing && it.id !in downloaded }
     if (open != null) {
         val progress = cars.downloading?.takeIf { it.first == open.id }?.second
         // Al terminar se elige, aunque ya se haya cerrado Ajustes.
         CarPreview(open, cars, progress, onDownload = { cars.install(open) { prefs.carModel = open.id } }, onClose = { previewing = null })
     }
-    // Tocar un auto solo lo muestra en grande; se baja con el botón (ver no cuesta datos).
-    FlowRow(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        for (e in found.filter { it.id != previewing }) {
-            ModelCard("${e.make} ${e.name}", detail = "${e.year} · %.1f MB".format(e.bytes / 1e6f), selected = false, onClick = { previewing = e.id }) { m ->
-                var img by remember(e.id) { mutableStateOf<ImageBitmap?>(null) }
-                LaunchedEffect(e.id) { img = cars.thumbnail(e) }
-                img?.let { Image(it, null, m, contentScale = ContentScale.Fit) }
+    val shown = found.filter { it.id != open?.id }
+    // Con "Todas" y sin texto, agrupados por marca; si no, una sola cuadrícula.
+    val groups = if (make == null && q.isEmpty()) shown.groupBy { it.make }.toList() else listOf(null to shown)
+    for ((title, entries) in groups) {
+        if (title != null) Label(title, Typography.label, c.textMuted)
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            for (e in entries) {
+                val have = e.id in downloaded
+                // Tocar uno sin bajar solo lo muestra en grande; se baja con el botón (ver no cuesta datos).
+                ModelCard(
+                    "${e.make} ${e.name}",
+                    detail = if (have) stringResource(R.string.catalog_downloaded) else "${e.year} · %.1f MB".format(e.bytes / 1e6f),
+                    selected = prefs.carModel == e.id,
+                    onClick = { if (have) prefs.carModel = e.id else previewing = e.id },
+                ) { m ->
+                    var img by remember(e.id) { mutableStateOf<ImageBitmap?>(null) }
+                    LaunchedEffect(e.id) { img = cars.thumbnail(e) }
+                    img?.let { Image(it, null, m, contentScale = ContentScale.Fit) }
+                }
             }
+        }
+    }
+}
+
+/** Sin resultados: "aún no lo tenemos" y pedirlo con un reporte (lo escrito o la marca elegida). */
+@Composable
+private fun CarRequest(music: MusicRepository, what: String) {
+    val c = LocalColors.current
+    val context = LocalContext.current.applicationContext
+    val scope = rememberCoroutineScope()
+    var state by remember(what) { mutableStateOf<ReportState>(ReportState.Idle) }
+    if (state is ReportState.Sent) return Label(stringResource(R.string.catalog_request_thanks), Typography.small, c.accent)
+    Label(stringResource(R.string.catalog_missing), Typography.small, c.textMuted)
+    if (what.isEmpty()) return
+    val sending = state == ReportState.Sending
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        Button(
+            stringResource(if (sending) R.string.report_sending else R.string.catalog_request),
+            {
+                if (state != ReportState.Sending) {
+                    state = ReportState.Sending
+                    scope.launch { state = requestCar(context, music, what) }
+                }
+            },
+            Modifier.graphicsLayer { alpha = if (sending) 0.45f else 1f },
+            primary = true,
+        )
+        when (state) {
+            ReportState.Error -> Label(stringResource(R.string.report_error), Typography.small, c.danger)
+            ReportState.Wait -> Label(stringResource(R.string.report_wait), Typography.small, c.textMuted)
+            else -> Unit
         }
     }
 }

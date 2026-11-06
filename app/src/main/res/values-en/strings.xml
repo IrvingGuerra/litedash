@@ -299,10 +299,11 @@
     <string name="update_all">Update all (%1$d) · %2$.1f MB</string>
     <string name="delete_all">Delete all downloaded</string>
     <string name="delete_car_question">Delete this downloaded car?</string>
-    <string name="catalog_hint">Type a make, model or year to search.</string>
-    <string name="catalog_show_all">Show all (%1$d)</string>
-    <string name="catalog_none">No cars with that name.</string>
-    <string name="catalog_all_downloaded">You already have every car in the catalog.</string>
+    <string name="catalog_all_makes">All</string>
+    <string name="catalog_downloaded">Downloaded</string>
+    <string name="catalog_missing">We don\'t have that car yet.</string>
+    <string name="catalog_request">Request it</string>
+    <string name="catalog_request_thanks">Thanks! We\'ll add it soon.</string>
     <string name="yes">Yes</string>
     <plurals name="delete_all_confirm">
         <item quantity="one">Delete the downloaded car?</item>

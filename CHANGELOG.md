@@ -6,6 +6,14 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
+## [1.4.94] - 2026-11-05
+
+### Mejorado
+- **Catálogo de autos con filtro por marca.** Toca una marca y ves sus modelos; con "Todas", el
+  catálogo completo agrupado por marca, sin tener que escribir. Los autos que ya bajaste también
+  salen ("Descargado") y con un toque los eliges.
+- **¿No está tu auto?** Si no aparece, toca "Pedirlo" y nos llega el pedido para agregarlo.
+
 ## [1.4.93] - 2026-11-05
 
 ### Arreglado

@@ -91,7 +91,7 @@ private enum class ReportModule(val key: String, val title: Int, val details: Li
     val problems get() = if (audio) AUDIO_PROBLEMS else GENERIC_PROBLEMS
 }
 
-private sealed interface ReportState {
+internal sealed interface ReportState {
     data object Idle : ReportState
     data object Sending : ReportState
     data object Error : ReportState
@@ -159,16 +159,8 @@ internal fun SendReport(music: MusicRepository) {
                         {
                             // Se lee el estado de ahora (dos toques en el mismo cuadro no mandan dos).
                             if (chosen == null || state == ReportState.Sending) return@Button
-                            if (lastReport != 0L && SystemClock.elapsedRealtime() - lastReport < REPORT_GAP_MS) {
-                                state = ReportState.Wait
-                                return@Button
-                            }
                             state = ReportState.Sending
-                            scope.launch {
-                                val id = sendReport(context, music, m, detail, chosen, note)
-                                if (id != null) lastReport = SystemClock.elapsedRealtime()
-                                state = if (id != null) ReportState.Sent(id.take(6).uppercase()) else ReportState.Error
-                            }
+                            scope.launch { state = submitReport(context, music, m, detail, chosen, note) }
                         },
                         Modifier.graphicsLayer { alpha = if (chosen == null || sending) 0.45f else 1f },
                         primary = true,
@@ -200,6 +192,25 @@ private fun BackRow(picked: List<Int>, onBack: () -> Unit) {
         Button(stringResource(R.string.back), onBack)
         Label(picked.map { stringResource(it) }.joinToString(" · "), Typography.body, maxLines = 1)
     }
+}
+
+/** Pide un auto que no está en el catálogo: un reporte de Tu auto → Otro con [what] en la nota. */
+internal suspend fun requestCar(context: Context, music: MusicRepository, what: String): ReportState =
+    submitReport(context, music, ReportModule.CAR, null, ReportProblem.OTHER, "Pedido de auto: $what")
+
+/** Manda un reporte respetando el límite de uno por minuto: [ReportState.Sent], [ReportState.Error] o [ReportState.Wait]. */
+private suspend fun submitReport(
+    context: Context,
+    music: MusicRepository,
+    module: ReportModule,
+    detail: ReportDetail?,
+    problem: ReportProblem,
+    note: String,
+): ReportState {
+    if (lastReport != 0L && SystemClock.elapsedRealtime() - lastReport < REPORT_GAP_MS) return ReportState.Wait
+    val id = sendReport(context, music, module, detail, problem, note) ?: return ReportState.Error
+    lastReport = SystemClock.elapsedRealtime()
+    return ReportState.Sent(id.take(6).uppercase())
 }
 
 /** Escribe `reports/{id}` (nuevo, nunca pisa otro); regresa el id o null si no se pudo. */

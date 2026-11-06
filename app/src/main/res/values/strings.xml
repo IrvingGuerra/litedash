@@ -305,10 +305,11 @@
     <string name="update_all">Actualizar todos (%1$d) · %2$.1f MB</string>
     <string name="delete_all">Eliminar todos los descargados</string>
     <string name="delete_car_question">¿Eliminar este auto descargado?</string>
-    <string name="catalog_hint">Escribe una marca, modelo o año para buscar.</string>
-    <string name="catalog_show_all">Ver todos (%1$d)</string>
-    <string name="catalog_none">No hay autos con ese nombre.</string>
-    <string name="catalog_all_downloaded">Ya tienes todos los autos del catálogo.</string>
+    <string name="catalog_all_makes">Todas</string>
+    <string name="catalog_downloaded">Descargado</string>
+    <string name="catalog_missing">Aún no tenemos ese auto.</string>
+    <string name="catalog_request">Pedirlo</string>
+    <string name="catalog_request_thanks">¡Gracias! Lo agregaremos pronto.</string>
     <string name="yes">Sí</string>
     <plurals name="delete_all_confirm">
         <item quantity="one">¿Eliminar el auto descargado?</item>
