@@ -6,6 +6,14 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
+## [1.4.97] - 2026-11-06
+
+### Mejorado
+- **Tocar el auto para ver las llantas, con animación nueva:** el auto se inclina como si la cámara
+  subiera y llega al auto visto desde arriba. Todo lo hace la tarjeta gráfica con imágenes ya
+  cargadas (antes se cambiaban fotos y a veces se trababa). El auto de arriba se prepara solo,
+  un momento después de ver el inicio, para que el primer toque no espere.
+
 ## [1.4.96] - 2026-11-06
 
 ### Nuevo

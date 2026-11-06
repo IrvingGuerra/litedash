@@ -491,6 +491,11 @@ class CarRepository(private val context: Context, val catalogUrl: String) {
         )
     }
 
+    /** Deja en caché la vista desde arriba a [widthPx] (si el paquete la trae), así Llantas abre sin esperarla. */
+    suspend fun preloadTopView(p: CarPackage, color: Color, widthPx: Int) {
+        if (p.topView) layers(p, CarViews.TOP_VIEW, color, widthPx)
+    }
+
     private suspend fun image(p: CarPackage, name: String, widthPx: Int): ImageBitmap? {
         val width = decodeWidth(p, name, widthPx) ?: return null
         return cached("${p.id}/$name@$width") { decode(p, name, width) }

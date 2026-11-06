@@ -55,6 +55,15 @@ import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.GraphicsLayerScope
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -222,6 +231,8 @@ fun TiresView(
     motion: TireMotion? = null,
     onSettings: (() -> Unit)? = null,
     onReady: (() -> Unit)? = null,
+    onCarPlaced: ((LayoutCoordinates) -> Unit)? = null,
+    carLayer: (GraphicsLayerScope.() -> Unit)? = null,
 ) {
     val c = LocalColors.current
     val repo = d.tpms
@@ -275,7 +286,13 @@ fun TiresView(
                     drawCircle(line, 2.5.dp.toPx(), to * px)
                 }
             }
-            Box(Modifier.offset(carX.dp, carY.dp).size(carW.dp, carH.dp)) {
+            Box(
+                Modifier
+                    .offset(carX.dp, carY.dp)
+                    .size(carW.dp, carH.dp)
+                    .then(if (onCarPlaced != null) Modifier.onGloballyPositioned(onCarPlaced) else Modifier)
+                    .then(if (carLayer != null) Modifier.graphicsLayer(carLayer) else Modifier),
+            ) {
                 CarTop(d.cars, d.cars.pkg(d.prefs.carModel), d.prefs.carColor, Modifier.fillMaxSize(), onReady)
                 TireMarks(statuses, Modifier.fillMaxSize())
             }
@@ -436,20 +453,46 @@ internal fun tiresStatusText(repo: TpmsRepository): String = when (repo.status) 
 /** Tamaño con que entra lo de las llantas a pantalla completa (crece a 1 mientras aparece). */
 private const val TIRES_START_SCALE = 0.96f
 
+/** Cuánto se inclina hacia atrás el auto de la pieza al subir la cámara (grados). */
+private const val RISE_TILT = 55f
+
+/** Cuánto llega inclinado el auto de arriba antes de quedar plano (grados). */
+private const val LAND_TILT = 25f
+
+/** Distancia de la cámara para las inclinaciones (más = menos deformación). */
+private const val RISE_CAMERA = 12f
+
 /**
  * Las llantas a pantalla completa, sobre el inicio: aparecen con [progress] (0 a 1, se lee solo
- * al dibujar): el fondo se funde y lo de adentro crece un poco desde [TIRES_START_SCALE]. Tocar una
- * tarjeta muestra su gráfica de 24 h al lado; tocar fuera cierra.
+ * al dibujar): el fondo se funde y lo de adentro crece un poco desde [TIRES_START_SCALE]. Con
+ * [origin] (el auto de la pieza tocada, en [from], coordenadas de la pantalla) "sube la cámara":
+ * ese auto se inclina hacia atrás y se va desvaneciendo mientras el auto de arriba llega desde su
+ * lugar ([rise] y [land]). Tocar una tarjeta muestra su gráfica de 24 h al lado; tocar fuera cierra.
+ * [onCarWidth]: el ancho (px) del auto de arriba, para precargarlo a ese tamaño.
  */
 @Composable
-fun TiresFull(d: Dependencies, progress: () -> Float, onClose: () -> Unit, onSettings: () -> Unit, onReady: () -> Unit) {
+fun TiresFull(
+    d: Dependencies,
+    progress: () -> Float,
+    onClose: () -> Unit,
+    onSettings: () -> Unit,
+    onReady: () -> Unit,
+    from: Rect = Rect.Zero,
+    origin: (@Composable (Modifier) -> Unit)? = null,
+    onCarWidth: ((Int) -> Unit)? = null,
+) {
     val c = LocalColors.current
+    val density = LocalDensity.current
     var chart by remember { mutableStateOf<Wheel?>(null) }
-    // La transparencia a cada cosa al dibujarla (sin capa aparte de toda la pantalla en cada cuadro del fundido).
-    Box(Modifier.fillMaxSize().graphicsLayer { alpha = progress(); compositingStrategy = CompositingStrategy.ModulateAlpha }) {
+    val shared = origin != null && !from.isEmpty
+    // Dónde queda el auto de arriba en la pantalla: se lee solo al dibujar.
+    var carTo by remember { mutableStateOf(Rect.Zero) }
+    Box(Modifier.fillMaxSize()) {
+        // La transparencia a cada cosa al dibujarla (sin capa aparte de toda la pantalla en cada cuadro del fundido).
         Box(
             Modifier
                 .fillMaxSize()
+                .graphicsLayer { alpha = progress(); compositingStrategy = CompositingStrategy.ModulateAlpha }
                 .background(c.background)
                 .clickable(remember { MutableInteractionSource() }, indication = null, onClick = onClose),
         )
@@ -459,9 +502,15 @@ fun TiresFull(d: Dependencies, progress: () -> Float, onClose: () -> Unit, onSet
                 .padding(16.dp)
                 .fillMaxSize()
                 .graphicsLayer {
-                    val s = TIRES_START_SCALE + (1f - TIRES_START_SCALE) * progress()
-                    scaleX = s
-                    scaleY = s
+                    val t = progress()
+                    alpha = t
+                    compositingStrategy = CompositingStrategy.ModulateAlpha
+                    // Con el auto que llega no crece: su lugar final tiene que ser el medido.
+                    if (!shared) {
+                        val s = TIRES_START_SCALE + (1f - TIRES_START_SCALE) * t
+                        scaleX = s
+                        scaleY = s
+                    }
                 }
                 // Lo de adentro no cierra: solo el fondo.
                 .clickable(remember { MutableInteractionSource() }, indication = null) {},
@@ -483,6 +532,11 @@ fun TiresFull(d: Dependencies, progress: () -> Float, onClose: () -> Unit, onSet
                         TiresView(
                             d, compact = false, onWheel = { chart = if (chart == it) null else it }, Modifier.fillMaxSize().padding(18.dp),
                             selected = chart, onSettings = onSettings, onReady = onReady,
+                            onCarPlaced = {
+                                carTo = it.boundsInRoot()
+                                onCarWidth?.invoke(it.size.width)
+                            },
+                            carLayer = if (shared) ({ land(progress(), from, carTo) }) else null,
                         )
                     }
                 }
@@ -496,7 +550,64 @@ fun TiresFull(d: Dependencies, progress: () -> Float, onClose: () -> Unit, onSet
                 }
             }
         }
+        if (shared) {
+            // Encima de las tarjetas (se va desvaneciendo) y solo mientras se mueve: abierto ya no se dibuja.
+            val moving by remember { derivedStateOf { progress() < 1f } }
+            if (moving) origin(
+                Modifier
+                    .offset { IntOffset(from.left.roundToInt(), from.top.roundToInt()) }
+                    .size(with(density) { from.width.toDp() }, with(density) { from.height.toDp() })
+                    .graphicsLayer { rise(progress(), from, carTo) },
+            )
+        }
     }
+}
+
+/** 0 antes de [a], 1 después de [b] y una curva suave en medio. */
+private fun smooth(a: Float, b: Float, t: Float): Float {
+    val x = ((t - a) / (b - a)).coerceIn(0f, 1f)
+    return x * x * (3 - 2 * x)
+}
+
+/** Cuánto crece el auto de la pieza para medir lo mismo que el de arriba a lo largo. */
+private fun Density.riseScale(from: Rect, to: Rect) = (to.height / carWidth(from, this)).coerceIn(0.85f, 2f)
+
+/**
+ * El auto de la pieza con la cámara subiendo ([t] de 0 a 1): se inclina hacia atrás desde abajo,
+ * crece (o se encoge) hasta medir lo del auto de arriba, va hacia su lugar y se desvanece en la
+ * segunda mitad. Sin saber aún dónde queda el de arriba, solo se desvanece.
+ */
+private fun GraphicsLayerScope.rise(t: Float, from: Rect, to: Rect) {
+    alpha = 1f - smooth(0.4f, 0.85f, t)
+    if (to.isEmpty) return
+    val s = 1f + (riseScale(from, to) - 1f) * t
+    transformOrigin = TransformOrigin(0.5f, 1f)
+    cameraDistance = RISE_CAMERA
+    // Se inclina pronto (con la curva de [t] casi no se notaba antes de desvanecerse).
+    rotationX = RISE_TILT * (t / 0.6f).coerceAtMost(1f)
+    scaleX = s
+    scaleY = s
+    // Con el pivote abajo, el centro de lo escalado queda a s/2 del alto sobre la orilla de abajo.
+    translationX = (to.center.x - from.center.x) * t
+    translationY = from.center.y + (to.center.y - from.center.y) * t - (from.bottom - from.height * s / 2)
+}
+
+/**
+ * El auto de arriba llegando ([t] de 0 a 1): sale del centro de la pieza con el largo del auto de
+ * ahí, todavía un poco inclinado, y aparece en la segunda mitad. Su caja ya va con la
+ * transparencia [t] de las tarjetas: aquí solo lo que falta.
+ */
+private fun GraphicsLayerScope.land(t: Float, from: Rect, to: Rect) {
+    if (to.isEmpty) return
+    alpha = if (t > 0f) (smooth(0.4f, 0.95f, t) / t).coerceAtMost(1f) else 0f
+    val s0 = 1f / riseScale(from, to)
+    val s = s0 + (1f - s0) * t
+    cameraDistance = RISE_CAMERA
+    rotationX = -LAND_TILT * (1f - t)
+    scaleX = s
+    scaleY = s
+    translationX = (from.center.x - to.center.x) * (1f - t)
+    translationY = (from.center.y - to.center.y) * (1f - t)
 }
 
 private const val DAY_MS = 24 * 3_600_000L
