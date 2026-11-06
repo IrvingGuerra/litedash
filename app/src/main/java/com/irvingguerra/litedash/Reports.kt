@@ -91,7 +91,7 @@ private enum class ReportModule(val key: String, val title: Int, val details: Li
     val problems get() = if (audio) AUDIO_PROBLEMS else GENERIC_PROBLEMS
 }
 
-internal sealed interface ReportState {
+private sealed interface ReportState {
     data object Idle : ReportState
     data object Sending : ReportState
     data object Error : ReportState
@@ -195,9 +195,6 @@ private fun BackRow(picked: List<Int>, onBack: () -> Unit) {
 }
 
 /** Pide un auto que no está en el catálogo: un reporte de Tu auto → Otro con [what] en la nota. */
-internal suspend fun requestCar(context: Context, music: MusicRepository, what: String): ReportState =
-    submitReport(context, music, ReportModule.CAR, null, ReportProblem.OTHER, "Pedido de auto: $what")
-
 /** Manda un reporte respetando el límite de uno por minuto: [ReportState.Sent], [ReportState.Error] o [ReportState.Wait]. */
 private suspend fun submitReport(
     context: Context,

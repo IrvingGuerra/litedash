@@ -302,8 +302,6 @@
     <string name="catalog_all_makes">All</string>
     <string name="catalog_downloaded">Downloaded</string>
     <string name="catalog_missing">We don\'t have that car yet.</string>
-    <string name="catalog_request">Request it</string>
-    <string name="catalog_request_thanks">Thanks! We\'ll add it soon.</string>
     <string name="yes">Yes</string>
     <plurals name="delete_all_confirm">
         <item quantity="one">Delete the downloaded car?</item>
