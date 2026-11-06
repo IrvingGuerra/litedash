@@ -12,6 +12,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.core.content.edit
 import com.irvingguerra.litedash.feature.car.CarColors
+import com.irvingguerra.litedash.feature.car.CarPaint
+import com.irvingguerra.litedash.feature.car.DEFAULT_GLOSS
+import com.irvingguerra.litedash.feature.car.PaintFinish
 import java.util.Locale
 import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty
@@ -28,6 +31,8 @@ internal object PrefKeys {
     const val SCALE = "scale"
     const val CAR_NAME = "car_name"
     const val CAR_COLOR = "car_color_argb"
+    const val CAR_FINISH = "car_finish"
+    const val CAR_GLOSS = "car_gloss"
     /** Int ARGB; sin guardar = el color natural. */
     const val ACCENT_COLOR = "accent_color_argb"
     const val CAR_MODEL = "car_model"
@@ -200,6 +205,23 @@ class Preferences(context: Context) {
     fun previewCarColor(v: Color) {
         _carColor = v.toArgb()
     }
+
+    /** Acabado de la pintura del auto (de fábrica, Satinado: la pintura del paquete). */
+    var paintFinish by mapped(PrefKeys.CAR_FINISH, PaintFinish::fromStored) { it.stored }
+
+    private var _paintGloss by mutableFloatStateOf(p.getFloat(PrefKeys.CAR_GLOSS, DEFAULT_GLOSS))
+    /** Cuánto brilla la pintura Brillante o Metálica (0–1). */
+    var paintGloss: Float
+        get() = _paintGloss
+        set(v) { _paintGloss = v; p.edit { putFloat(PrefKeys.CAR_GLOSS, v) } }
+
+    /** Mientras se arrastra el deslizador: el auto cambia en vivo y se guarda al soltar ([paintGloss]). */
+    fun previewPaintGloss(v: Float) {
+        _paintGloss = v
+    }
+
+    /** Cómo se pinta el auto 3D: color, acabado y brillo. */
+    val carPaint get() = CarPaint(carColor, paintFinish, paintGloss)
 
     // El color de la interfaz; null = el natural (ámbar, con lo principal en blanco o negro).
     private var _accent by mutableStateOf(if (p.contains(PrefKeys.ACCENT_COLOR)) p.getInt(PrefKeys.ACCENT_COLOR, 0) else null)

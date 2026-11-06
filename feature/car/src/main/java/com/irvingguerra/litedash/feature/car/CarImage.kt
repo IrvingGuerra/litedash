@@ -38,7 +38,7 @@ private const val PREFETCH = 3
 private fun restFrame(count: Int) = count * 3 / 8
 
 /**
- * El auto del paquete, pintado del [color]: gira con el dedo a los lados (como
+ * El auto del paquete, con su [paint]: gira con el dedo a los lados (como
  * una vuelta real, con su sombra y su reflejo en el piso) y se queda donde lo
  * dejas. [angle] es la vuelta en fracción (0..1; null = tres cuartos con el
  * frente a la izquierda) y [onAngle] la recibe al soltar para guardarla.
@@ -48,7 +48,7 @@ private fun restFrame(count: Int) = count * 3 / 8
 fun CarTurntable(
     repo: CarRepository,
     p: CarPackage,
-    color: Color,
+    paint: CarPaint,
     modifier: Modifier = Modifier,
     angle: Float? = null,
     onAngle: ((Float) -> Unit)? = null,
@@ -71,10 +71,10 @@ fun CarTurntable(
     LaunchedEffect(saved) { if (!dragging) frame = saved }
     // Se preparan los cuadros que siguen (con sus capas), para que aparezcan al instante.
     // Solo al cambiar de cuadro: al arrastrar el selector de color no se precargan colores de paso.
-    val currentColor by rememberUpdatedState(color)
+    val currentPaint by rememberUpdatedState(paint)
     LaunchedEffect(p, frame, widthPx) {
         if (widthPx <= 0) return@LaunchedEffect
-        for (k in 1..PREFETCH) repo.layers(p, frames[(frame + direction * k + n) % n], currentColor, widthPx)
+        for (k in 1..PREFETCH) repo.layers(p, frames[(frame + direction * k + n) % n], currentPaint, widthPx)
     }
     val turn = Modifier.pointerInput(p) {
         // La misma vuelta por arrastre, tenga los cuadros que tenga (más fluidez = pasos más chicos).
@@ -96,7 +96,7 @@ fun CarTurntable(
         }
     }
     Box(modifier.onSizeChanged { size = it }.then(turn)) {
-        CarLayersImage(repo, p, frames[frame], color, widthPx, Modifier, onReady, onShown = { shown = frames.indexOf(it) })
+        CarLayersImage(repo, p, frames[frame], paint, widthPx, Modifier, onReady, onShown = { shown = frames.indexOf(it) })
         // Los datos van en medios pasos (00, m00, 01…): en calidad normal, un cuadro sí y uno no. El
         // cuadro se lee al acomodar (no al componer): al girar las pastillas solo se mueven.
         val w = p.wheels
@@ -115,14 +115,14 @@ fun CarTurntable(
 const val REAR_TURN = 0.75f
 
 /**
- * El auto quieto, pintado del [color]: en tres cuartos para las tarjetas de la lista
+ * El auto quieto, con su [paint]: en tres cuartos para las tarjetas de la lista
  * de modelos, o en la vuelta [turn] (como [REAR_TURN], de espaldas en la carretera).
  */
 @Composable
 fun CarStill(
     repo: CarRepository,
     p: CarPackage,
-    color: Color,
+    paint: CarPaint,
     modifier: Modifier = Modifier,
     turn: Float? = null,
     onReady: (() -> Unit)? = null,
@@ -130,14 +130,14 @@ fun CarStill(
 ) {
     var widthPx by remember { mutableIntStateOf(0) }
     val frame = turn?.let { (it * p.spin).roundToInt().mod(p.spin) } ?: restFrame(p.spin)
-    CarLayersImage(repo, p, baseFrame(frame), color, widthPx, modifier.onSizeChanged { widthPx = it.width }, onReady, reflection = reflection)
+    CarLayersImage(repo, p, baseFrame(frame), paint, widthPx, modifier.onSizeChanged { widthPx = it.width }, onReady, reflection = reflection)
 }
 
-/** El auto desde arriba ([CarViews.TOP_VIEW] del paquete) pintado del [color]; solo si [CarPackage.topView]. */
+/** El auto desde arriba ([CarViews.TOP_VIEW] del paquete) pintado del [color] (satinado); solo si [CarPackage.topView]. */
 @Composable
 internal fun CarTopImage(repo: CarRepository, p: CarPackage, color: Color, modifier: Modifier = Modifier, onReady: (() -> Unit)? = null) {
     var widthPx by remember { mutableIntStateOf(0) }
-    CarLayersImage(repo, p, CarViews.TOP_VIEW, color, widthPx, modifier.onSizeChanged { widthPx = it.width }, onReady)
+    CarLayersImage(repo, p, CarViews.TOP_VIEW, CarPaint(color), widthPx, modifier.onSizeChanged { widthPx = it.width }, onReady)
 }
 
 /**
@@ -151,7 +151,7 @@ private fun CarLayersImage(
     repo: CarRepository,
     p: CarPackage,
     name: String,
-    color: Color,
+    paint: CarPaint,
     widthPx: Int,
     modifier: Modifier,
     onReady: (() -> Unit)?,
@@ -162,7 +162,7 @@ private fun CarLayersImage(
     val shown by rememberUpdatedState(onShown)
     var notified by remember(p.id) { mutableStateOf(false) }
     val ready by rememberUpdatedState(onReady)
-    val wanted by rememberUpdatedState(Wanted(name, color, widthPx))
+    val wanted by rememberUpdatedState(Wanted(name, paint, widthPx))
     LaunchedEffect(p) {
         // La imagen que se está cargando siempre termina y luego se pasa a la más reciente
         // (las de en medio se saltan): al girar rápido o al arrastrar el selector de color,
@@ -170,7 +170,7 @@ private fun CarLayersImage(
         // cancelara al anterior, ninguno terminaría y el auto se quedaría quieto.
         snapshotFlow { wanted }.conflate().collect { w ->
             if (w.widthPx <= 0) return@collect
-            layers = repo.layers(p, w.name, w.color, w.widthPx) ?: return@collect
+            layers = repo.layers(p, w.name, w.paint, w.widthPx) ?: return@collect
             shown?.invoke(w.name)
             if (!notified) {
                 notified = true
@@ -197,8 +197,8 @@ private fun DrawScope.drawCarLayers(c: CarLayers, reflection: Boolean = true) {
     drawLayer(c.car, Rect(origin, Size(w, h)))
 }
 
-/** Qué imagen debe verse: cuadro, color y ancho. */
-private data class Wanted(val name: String, val color: Color, val widthPx: Int)
+/** Qué imagen debe verse: cuadro, pintura y ancho. */
+private data class Wanted(val name: String, val paint: CarPaint, val widthPx: Int)
 
 private fun DrawScope.drawLayer(img: ImageBitmap, box: Rect) = drawImage(
     img,

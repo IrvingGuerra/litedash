@@ -161,7 +161,7 @@ fun RoadView(
         Box(carBox) {
             if (pkg != null) {
                 // Sin reflejo: va sobre el asfalto (el reflejo es del auto 3D en su piso).
-                CarStill(d.cars, pkg, d.prefs.carColor, Modifier.fillMaxSize(), turn = REAR_TURN, onReady = onReady, reflection = false)
+                CarStill(d.cars, pkg, d.prefs.carPaint, Modifier.fillMaxSize(), turn = REAR_TURN, onReady = onReady, reflection = false)
             } else {
                 ReadyNow(onReady)
                 Canvas(Modifier.fillMaxSize()) { drawRear(d.prefs.carColor) }

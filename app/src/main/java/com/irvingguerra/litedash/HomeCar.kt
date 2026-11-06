@@ -62,7 +62,7 @@ fun HomeCar(
         onClick = onClick,
         modifier = modifier,
         drawing = pkg?.let { p ->
-            { m -> CarTurntable(d.cars, p, color, m, d.prefs.carAngle, { d.prefs.carAngle = it }, onReady, wheels) }
+            { m -> CarTurntable(d.cars, p, d.prefs.carPaint, m, d.prefs.carAngle, { d.prefs.carAngle = it }, onReady, wheels) }
         },
         hasFloor = pkg?.hasFloor == true,
     )

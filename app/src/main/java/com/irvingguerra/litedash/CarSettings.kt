@@ -52,6 +52,7 @@ import com.irvingguerra.litedash.feature.car.CarRepository
 import com.irvingguerra.litedash.feature.car.CarStill
 import com.irvingguerra.litedash.feature.car.CarTurntable
 import com.irvingguerra.litedash.feature.car.CatalogEntry
+import com.irvingguerra.litedash.feature.car.PaintFinish
 
 /**
  * Ajustes → Tu auto, en tarjetas: el auto (nombre y color), las opciones del modelo
@@ -77,7 +78,7 @@ internal fun CarSettings(d: Dependencies) {
         Box(Modifier.fillMaxWidth().widthIn(max = 520.dp).aspectRatio(1.8f)) {
             if (pkg != null) {
                 // Arriba el auto; abajo queda lugar para su sombra y su reflejo en el piso.
-                CarTurntable(cars, pkg, prefs.carColor, Modifier.fillMaxWidth().fillMaxHeight(0.72f), prefs.carAngle, { prefs.carAngle = it })
+                CarTurntable(cars, pkg, prefs.carPaint, Modifier.fillMaxWidth().fillMaxHeight(0.72f), prefs.carAngle, { prefs.carAngle = it })
             } else {
                 CarDrawing(prefs.carColor, Modifier.fillMaxWidth().align(Alignment.Center))
             }
@@ -87,6 +88,7 @@ internal fun CarSettings(d: Dependencies) {
         TextInput(prefs.carName ?: "", { prefs.carName = it.take(24).ifBlank { null } }, pkg?.name ?: stringResource(R.string.my_car), Modifier.fillMaxWidth())
         Label(stringResource(R.string.color), Typography.label, c.textMuted)
         ColorPicker(prefs.carColor, prefs::previewCarColor) { prefs.carColor = it }
+        if (pkg != null) FinishPicker(prefs, cars, pkg, catalog?.firstOrNull { it.id == pkg.id })
     }
     if (tab == 0 && pkg != null) {
         SettingsCard("${pkg.make} ${pkg.name} ${pkg.year}") {
@@ -108,6 +110,48 @@ internal fun CarSettings(d: Dependencies) {
     }
     if (tab == 2) SettingsCard(stringResource(R.string.reminders), stringResource(R.string.reminders_help)) {
         ReminderSettings(d.reminders)
+    }
+}
+
+/**
+ * Acabado de la pintura (y su brillo en Brillante y Metálico): solo si el auto trae sus capas o
+ * el catálogo las tiene para este mismo modelo 3D. Elegir uno distinto de Satinado las baja.
+ */
+@Composable
+private fun FinishPicker(prefs: Preferences, cars: CarRepository, pkg: CarPackage, entry: CatalogEntry?) {
+    val c = LocalColors.current
+    val offered = entry?.takeIf { it.finish != null && !cars.isOutdated(pkg, it) }
+    if (!pkg.finish && offered == null) return
+    val finish = prefs.paintFinish
+    val idle = cars.downloading == null
+    // Con otro acabado y el auto sin capas (otro modelo, calidad alta nueva…): se bajan solas.
+    // Tras una falla espera a que se toque un acabado (si no, reintentaría sin parar).
+    LaunchedEffect(pkg, finish, offered, idle) {
+        if (idle && !cars.failed && finish != PaintFinish.SATIN && offered != null) cars.fetchFinish(pkg, offered)
+    }
+    Label(stringResource(R.string.finish), Typography.label, c.textMuted)
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        for ((f, label) in listOf(
+            PaintFinish.MATTE to R.string.finish_matte,
+            PaintFinish.SATIN to R.string.finish_satin,
+            PaintFinish.GLOSS to R.string.finish_gloss,
+            PaintFinish.METALLIC to R.string.finish_metallic,
+        )) {
+            Button(stringResource(label), {
+                prefs.paintFinish = f
+                if (f != PaintFinish.SATIN && offered != null) cars.fetchFinish(pkg, offered)
+            }, primary = finish == f)
+        }
+    }
+    val progress = cars.downloading?.takeIf { it.first == CarRepository.FINISH }?.second
+    if (progress != null) {
+        Label(stringResource(R.string.preparing_finish, (progress * 100).toInt()), Typography.small, c.accent)
+    } else if (cars.failed && finish != PaintFinish.SATIN && !pkg.finish) {
+        Label(stringResource(R.string.catalog_error), Typography.small, c.danger)
+    }
+    if (finish.shines) {
+        Label(stringResource(R.string.shine), Typography.label, c.textMuted)
+        LevelSlider(prefs.paintGloss, prefs::previewPaintGloss) { prefs.paintGloss = it }
     }
 }
 
@@ -161,7 +205,7 @@ private fun DownloadedModels(prefs: Preferences, cars: CarRepository, catalog: L
         }
         for (p in installed) {
             ModelCard("${p.make} ${p.name}", selected = prefs.carModel == p.id, onClick = { prefs.carModel = p.id }) { m ->
-                CarStill(cars, p, prefs.carColor, m)
+                CarStill(cars, p, prefs.carPaint, m)
             }
         }
     }

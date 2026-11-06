@@ -5,6 +5,13 @@
     <string name="my_car">Mi auto</string>
     <string name="name">Nombre</string>
     <string name="color">Color</string>
+    <string name="finish">Acabado</string>
+    <string name="finish_matte">Mate</string>
+    <string name="finish_satin">Satinado</string>
+    <string name="finish_gloss">Brillante</string>
+    <string name="finish_metallic">Metálico</string>
+    <string name="shine">Brillo</string>
+    <string name="preparing_finish">Preparando acabado… %d %%</string>
     <string name="other_color">Otro color</string>
     <string name="car_coming_soon">Pronto: tu modelo exacto, con su color y sus llantas.</string>
     <string name="tile_car">Auto 3D</string>

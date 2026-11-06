@@ -41,7 +41,7 @@ fun SpeedometerTile(d: Dependencies, look: GaugeLook) {
  */
 fun speedFront(d: Dependencies, look: GaugeLook): (@Composable (Modifier) -> Unit)? = when (look.front) {
     GaugeFront.NONE -> null
-    GaugeFront.CAR -> d.cars.pkg(d.prefs.carModel)?.let { pkg -> { m -> CarStill(d.cars, pkg, d.prefs.carColor, m, reflection = false) } }
+    GaugeFront.CAR -> d.cars.pkg(d.prefs.carModel)?.let { pkg -> { m -> CarStill(d.cars, pkg, d.prefs.carPaint, m, reflection = false) } }
     GaugeFront.IMAGE -> look.image.takeIf { it.isNotEmpty() }?.let { name -> { m -> SavedTileImage(name, m) } }
 }
 

@@ -145,6 +145,34 @@ private fun ColorPlane(color: Color, onPreview: (Color) -> Unit, onChange: (Colo
     }
 }
 
+/**
+ * Un deslizador de 0 a 1 (como la barra de tonos): mientras se arrastra llega [onPreview]
+ * y al soltar [onChange] con el último valor.
+ */
+@Composable
+internal fun LevelSlider(value: Float, onPreview: (Float) -> Unit, onChange: (Float) -> Unit) {
+    val c = LocalColors.current
+    val preview by rememberUpdatedState(onPreview)
+    val change by rememberUpdatedState(onChange)
+    var dragged by remember { mutableStateOf<Float?>(null) }
+    Canvas(
+        Modifier
+            .fillMaxWidth()
+            .height(32.dp)
+            .clip(CircleShape)
+            .dragInput({ dragged?.let(change); dragged = null }) { p, width, height ->
+                // La bolita no se sale: el recorrido va de medio alto a medio alto.
+                dragged = ((p.x - height / 2) / (width - height)).coerceIn(0f, 1f).also(preview)
+            },
+    ) {
+        val r = size.height / 2
+        val x = r + value.coerceIn(0f, 1f) * (size.width - 2 * r)
+        drawRect(c.surfaceHigh)
+        drawRect(c.accent, size = size.copy(width = x))
+        drawCircle(Color.White, r - 3.dp.toPx(), Offset(x, r))
+    }
+}
+
 /** Tocar o arrastrar dentro: avisa la posición del dedo y el tamaño del área, y [onEnd] al soltar. */
 private fun Modifier.dragInput(onEnd: () -> Unit, onMove: (Offset, Float, Float) -> Unit) = pointerInput(Unit) {
     awaitEachGesture {

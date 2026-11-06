@@ -42,6 +42,8 @@ internal object CarJson {
     const val TOP_VIEW = "planta"
     /** Dónde pisa cada rueda en el giro (url, bytes y sha256 de su zip). */
     const val WHEELS = "wheels"
+    /** Capas del acabado de la pintura (url, bytes y sha256 de su zip). */
+    const val FINISH = "acabado"
 }
 
 /** Capas que acompañan a cada imagen del paquete (vista o cuadro del giro). */
@@ -49,6 +51,10 @@ internal object CarViews {
     const val PAINT_MASK_SUFFIX = "-pintura"
     const val SHADOW_SUFFIX = "-sombra"
     const val REFLECTION_SUFFIX = "-reflejo"
+    /** Cuánto brilla la pintura de fábrica sobre una sin brillo (gris, solo en la pintura). */
+    const val SHINE_SUFFIX = "-brillo"
+    /** Cuánto brilla la pintura encerada sobre una sin brillo (gris, solo en la pintura). */
+    const val MIRROR_SUFFIX = "-espejo"
     /** El auto desde arriba, con el frente hacia arriba, en la caja de [CAR_TOP_ASPECT]. */
     const val TOP_VIEW = "planta"
     /** Dónde pisa cada rueda en cada cuadro del giro ([CarWheels]). */

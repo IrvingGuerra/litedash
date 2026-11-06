@@ -6,6 +6,13 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
+## [1.4.99] - 2026-11-06
+
+### Nuevo
+- **Acabado de la pintura:** Mate · Satinado · Brillante · Metálico, con un deslizador de brillo, en
+  Ajustes → Tu auto → Mi auto, junto al color. Satinado es el de siempre. Los otros bajan una vez una
+  capa ligera (menos de 1 MB) para tu modelo; el giro va igual de rápido.
+
 ## [1.4.98] - 2026-11-06
 
 ### Cambiado

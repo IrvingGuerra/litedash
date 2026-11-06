@@ -152,7 +152,7 @@ private fun About(d: Dependencies) {
             val wide = maxWidth > 560.dp
             val pkg = d.cars.pkg(d.prefs.carModel)
             if (pkg != null && wide) Box(Modifier.matchParentSize(), contentAlignment = Alignment.CenterEnd) {
-                CarStill(d.cars, pkg, d.prefs.carColor, Modifier.fillMaxWidth(0.46f).aspectRatio(CAR_ASPECT))
+                CarStill(d.cars, pkg, d.prefs.carPaint, Modifier.fillMaxWidth(0.46f).aspectRatio(CAR_ASPECT))
             }
             Column(Modifier.padding(22.dp).fillMaxWidth(if (pkg != null && wide) 0.56f else 1f), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Label("LiteDash ${BuildConfig.VERSION_NAME}", Typography.title.copy(fontSize = 30.sp), maxLines = 1)

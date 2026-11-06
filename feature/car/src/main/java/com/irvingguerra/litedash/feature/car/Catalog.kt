@@ -10,7 +10,6 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.toArgb
@@ -32,14 +31,7 @@ import java.io.File
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.FutureTask
 import java.util.zip.ZipInputStream
-import kotlin.math.exp
 import kotlin.math.roundToInt
-
-/** Desde aquí los brillos de la pintura teñida se acercan a blanco sin cortarse. */
-private const val KNEE = 0.78f
-
-/** Brillo mínimo de la pintura (el selector libre permite negro puro). */
-private const val PAINT_FLOOR = 0.07f
 
 /** Un auto del catálogo, antes de bajarlo. */
 @Immutable
@@ -61,6 +53,8 @@ data class CatalogEntry(
     val topView: PackageExtra? = null,
     /** Dónde pisa cada rueda en el giro (unos KB, para las pastillas de las llantas); se baja aparte. */
     val wheels: PackageExtra? = null,
+    /** Capas del acabado de la pintura (brillo y espejo de cada cuadro); se bajan al elegir un acabado. */
+    val finish: PackageExtra? = null,
 )
 
 /** Un archivo extra (cuadros del giro, vista desde arriba) que se baja encima del auto ya instalado. */
@@ -92,6 +86,8 @@ data class CarPackage(
     val sha256: String,
     /** Dónde pisa cada rueda en el giro, si ya se bajó ([CarRepository.fetchWheels]). */
     val wheels: CarWheels? = null,
+    /** Trae las capas del acabado ([CarRepository.fetchFinish]) de todos sus cuadros. */
+    val finish: Boolean = false,
 ) {
     val hasFloor get() = floor.isNotEmpty()
 }
@@ -159,7 +155,7 @@ class CarRepository(private val context: Context, val catalogUrl: String) {
     var outdated by mutableStateOf<CatalogEntry?>(null)
         private set
 
-    /** Lo que se está bajando ([ALL], el id de un auto o [HIGH]) y cuánto va (0–1); null = nada. */
+    /** Lo que se está bajando ([ALL], el id de un auto, [HIGH] o [FINISH]) y cuánto va (0–1); null = nada. */
     var downloading by mutableStateOf<Pair<String, Float>?>(null)
         private set
 
@@ -193,6 +189,7 @@ class CarRepository(private val context: Context, val catalogUrl: String) {
                     ?.let(::extraOf),
                 topView = a.optJSONObject(CarJson.TOP_VIEW)?.let(::extraOf),
                 wheels = a.optJSONObject(CarJson.WHEELS)?.let(::extraOf),
+                finish = a.optJSONObject(CarJson.FINISH)?.let(::extraOf),
             )
         }
     }
@@ -202,8 +199,9 @@ class CarRepository(private val context: Context, val catalogUrl: String) {
     /** El catálogo trae otro modelo 3D para [p] (mejores renders, piso nuevo…). */
     fun isOutdated(p: CarPackage, e: CatalogEntry) = p.id == e.id && p.sha256 != e.sha256
 
-    /** Lo que se baja al actualizar [p]: el paquete y, si la tenía, la calidad alta. */
-    fun updateSize(p: CarPackage, e: CatalogEntry) = e.bytes + (if (p.high) e.high?.bytes ?: 0 else 0)
+    /** Lo que se baja al actualizar [p]: el paquete y, si los tenía, la calidad alta y el acabado. */
+    fun updateSize(p: CarPackage, e: CatalogEntry) =
+        e.bytes + (if (p.high) e.high?.bytes ?: 0 else 0) + (if (p.finish) e.finish?.bytes ?: 0 else 0)
 
     /** Baja e instala [e]; al terminar, [then] (por ejemplo, elegirlo). */
     fun install(e: CatalogEntry, then: () -> Unit = {}) = download(e.id) { progress ->
@@ -223,6 +221,16 @@ class CarRepository(private val context: Context, val catalogUrl: String) {
     fun raiseQuality(p: CarPackage, e: CatalogEntry) {
         val extra = e.high ?: return
         download(HIGH) { progress -> addHigh(p, extra, progress) }
+    }
+
+    /**
+     * Baja las capas del acabado de [p] (al elegir Mate, Brillante o Metálico), con su avance en
+     * [downloading]; si ya las tiene o el catálogo trae otro modelo 3D (las capas son del nuevo), nada.
+     */
+    fun fetchFinish(p: CarPackage, e: CatalogEntry) {
+        val extra = e.finish ?: return
+        if (p.finish || isOutdated(p, e)) return
+        download(FINISH) { progress -> addFinish(p, extra, progress) }
     }
 
     /** Calidad baja: borra los cuadros de en medio (libera espacio; no necesita internet). */
@@ -301,7 +309,7 @@ class CarRepository(private val context: Context, val catalogUrl: String) {
                 // Pudo cambiar mientras tanto (actualizado, borrado o ya con el extra).
                 val now = pkg(p.id)?.takeIf { it.sha256 == p.sha256 && !kind.has(it) } ?: return@withLock
                 val done = withContext(Dispatchers.IO) {
-                    runCatching { installExtra(now, extra, kind) }.getOrDefault(false)
+                    runCatching { installExtra(now, extra, kind.folder, kind.marker) {} }.getOrDefault(false)
                 }
                 // Solo llegan archivos nuevos: las imágenes del giro en memoria siguen sirviendo.
                 if (done) changed(evict = false)
@@ -320,18 +328,21 @@ class CarRepository(private val context: Context, val catalogUrl: String) {
     }
 
     /**
-     * Baja y acomoda un extra en la carpeta de [p]: se descomprime aparte y se mueve con su
-     * [Extra.marker] al último (dice que ya está completo); lo que hubiera de un intento cortado se quita.
+     * Baja y acomoda un extra en la carpeta de [p]: se descomprime aparte ([folder]) y cada archivo
+     * va a su lugar (también dentro de giro/), con el [marker] al último (dice que ya está completo);
+     * lo que hubiera de un intento cortado se quita. Solo en IO.
      */
-    private fun installExtra(p: CarPackage, extra: PackageExtra, kind: Extra): Boolean {
-        val temp = fetch(extra.url, extra.bytes, extra.sha256) {}
-        val staging = File(root, folderOf(p.id) + "-" + kind.folder + CarFiles.STAGING_SUFFIX)
+    private fun installExtra(p: CarPackage, extra: PackageExtra, folder: String, marker: String, progress: (Float) -> Unit): Boolean {
+        val temp = fetch(extra.url, extra.bytes, extra.sha256, progress)
+        val staging = File(root, folderOf(p.id) + "-" + folder + CarFiles.STAGING_SUFFIX)
         try {
             staging.deleteRecursively()
             unzip(temp, staging)
-            if (!File(staging, kind.marker).exists()) return false
-            return staging.listFiles().orEmpty().sortedBy { it.name == kind.marker }.all {
-                val target = File(p.folder, it.name)
+            val mark = File(staging, marker)
+            if (!mark.exists()) return false
+            return staging.walkTopDown().filter { it.isFile }.sortedBy { it == mark }.toList().all {
+                val target = File(p.folder, it.relativeTo(staging).path)
+                target.parentFile?.mkdirs()
                 target.deleteRecursively()
                 it.renameTo(target)
             }
@@ -398,10 +409,26 @@ class CarRepository(private val context: Context, val catalogUrl: String) {
 
     private suspend fun updatePackage(p: CarPackage, e: CatalogEntry, progress: (Float) -> Unit) {
         val extra = e.high?.takeIf { p.high }
-        val total = (e.bytes + (extra?.bytes ?: 0)).coerceAtLeast(1).toFloat()
+        val finish = e.finish?.takeIf { p.finish }
+        val before = e.bytes + (extra?.bytes ?: 0)
+        val total = (before + (finish?.bytes ?: 0)).coerceAtLeast(1).toFloat()
         installPackage(e) { f -> progress(f * e.bytes / total) }
-        val fresh = pkg(e.id) ?: return
-        if (extra != null) addHigh(fresh, extra) { f -> progress((e.bytes + f * extra.bytes) / total) }
+        if (extra != null) addHigh(pkg(e.id) ?: return, extra) { f -> progress((e.bytes + f * extra.bytes) / total) }
+        // Las capas del acabado son de los cuadros nuevos: se vuelven a bajar (después de la calidad alta).
+        if (finish != null) addFinish(pkg(e.id) ?: return, finish) { f -> progress((before + f * finish.bytes) / total) }
+    }
+
+    /**
+     * Las capas del acabado encima de lo instalado (si [p] sigue igual). Solo llegan archivos nuevos:
+     * las imágenes en memoria siguen sirviendo (la llave de cada cuadro con acabado dice si tenía capas).
+     */
+    private suspend fun addFinish(p: CarPackage, extra: PackageExtra, progress: (Float) -> Unit) {
+        val now = pkg(p.id)?.takeIf { it.sha256 == p.sha256 && !it.finish } ?: return
+        val done = withContext(Dispatchers.IO) { installExtra(now, extra, FINISH, FINISH_MARK, progress) }
+        check(done) { "El acabado llegó incompleto" }
+        changed(evict = false)
+        // Si aun así faltan capas (p. ej. de los cuadros de en medio), es falla: no se vuelve a pedir solo.
+        check(pkg(p.id)?.finish == true) { "El acabado no trae todos los cuadros" }
     }
 
     /**
@@ -473,12 +500,13 @@ class CarRepository(private val context: Context, val catalogUrl: String) {
     }
 
     /**
-     * La imagen [name] lista para dibujar a [widthPx]: el auto pintado del [color] y,
-     * si esa imagen trae piso, su sombra y su reflejo (a la mitad: son suaves). La
-     * usan la vista y la precarga del giro, así cada cuadro llega con todas sus capas.
+     * La imagen [name] lista para dibujar a [widthPx]: el auto con su [paint] y,
+     * si esa imagen trae piso, su sombra y su reflejo (a la mitad: son suaves; el reflejo
+     * siempre satinado). La usan la vista y la precarga del giro, así cada cuadro llega con
+     * todas sus capas.
      */
-    suspend fun layers(p: CarPackage, name: String, color: Color, widthPx: Int): CarLayers? {
-        val car = painted(p, name, color, widthPx) ?: return null
+    suspend fun layers(p: CarPackage, name: String, paint: CarPaint, widthPx: Int): CarLayers? {
+        val car = painted(p, name, paint, widthPx) ?: return null
         val floor = p.floor[name] ?: return CarLayers(car, null, null, null)
         // La sombra y el reflejo son suaves: a la mitad del ancho se ven igual y ocupan
         // la cuarta parte de memoria.
@@ -486,7 +514,7 @@ class CarRepository(private val context: Context, val catalogUrl: String) {
         return CarLayers(
             car,
             image(p, name + CarViews.SHADOW_SUFFIX, floorWidth),
-            painted(p, name + CarViews.REFLECTION_SUFFIX, color, floorWidth),
+            painted(p, name + CarViews.REFLECTION_SUFFIX, CarPaint(paint.color), floorWidth),
             floor,
         )
     }
@@ -497,21 +525,35 @@ class CarRepository(private val context: Context, val catalogUrl: String) {
     }
 
     /**
-     * La imagen [name] ya pintada del [color] (con su máscara "-pintura"). Se
+     * La imagen [name] ya pintada con [paint] (con su máscara "-pintura"). Se
      * tiñe una vez aquí y queda en caché: los brillos que se pasarían de blanco se
-     * suavizan en vez de cortarse, así un auto blanco conserva su volumen.
+     * suavizan en vez de cortarse, así un auto blanco conserva su volumen. Sin las
+     * capas del acabado ([CarPackage.finish]) se pinta satinado.
      */
-    private suspend fun painted(p: CarPackage, name: String, color: Color, widthPx: Int): ImageBitmap? {
+    private suspend fun painted(p: CarPackage, name: String, paint: CarPaint, widthPx: Int): ImageBitmap? {
         val width = decodeWidth(p, name, widthPx) ?: return null
-        return cached("${p.id}/$name#${color.toArgb()}@$width") { paint(p, name, width, color) }
+        val used = if (p.finish) paint else CarPaint(paint.color)
+        return cached("${p.id}/$name#${used.color.toArgb()}${used.cacheTag}@$width") { paint(p, name, width, used) }
     }
 
-    /** Decodifica [name] a [width] y la tiñe del [color] con su máscara "-pintura" (si la trae). Solo en IO. */
-    private fun paint(p: CarPackage, name: String, width: Int, color: Color): Bitmap? =
+    /**
+     * Decodifica [name] a [width] y la tiñe con [paint] usando su máscara "-pintura" (si la trae) y,
+     * con otro acabado, sus capas de brillo y espejo (al mismo ancho; si faltan o no cuadran, satinado).
+     * Solo en IO.
+     */
+    private fun paint(p: CarPackage, name: String, width: Int, paint: CarPaint): Bitmap? =
         decode(p, name, width)?.also { base ->
             val mask = decode(p, name + CarViews.PAINT_MASK_SUFFIX, width)
-            if (mask != null && mask.width == base.width && mask.height == base.height) tint(base, mask, color, p.gray)
+            if (mask == null || !mask.sameSize(base)) return@also
+            val layered = paint.finish != PaintFinish.SATIN
+            val shine = if (layered) decode(p, name + CarViews.SHINE_SUFFIX, width)?.takeIf { it.sameSize(base) } else null
+            val mirror = if (shine != null) decode(p, name + CarViews.MIRROR_SUFFIX, width)?.takeIf { it.sameSize(base) } else null
+            val c = paint.color
+            val shader = PaintShader(floatArrayOf(c.red, c.green, c.blue), p.gray, paint.finish, paint.glossStep)
+            tint(base, mask, shader, shine?.takeIf { mirror != null }, mirror)
         }
+
+    private fun Bitmap.sameSize(other: Bitmap) = width == other.width && height == other.height
 
     /**
      * De la caché, de la carga que ya va en camino, o se carga una sola vez en IO. Si
@@ -575,41 +617,24 @@ class CarRepository(private val context: Context, val catalogUrl: String) {
         return BitmapFactory.decodeFile(file.path, scaledDecode(source, width).apply { inMutable = true })
     }
 
-    /** color = imagen × color / gris, con brillos suaves arriba de [KNEE]; solo donde hay pintura. */
-    private fun tint(base: Bitmap, mask: Bitmap, color: Color, gray: Float) {
-        val tables = floatArrayOf(color.red, color.green, color.blue).map { channel ->
-            // Nunca negro puro: el auto perdería todo su volumen y quedaría como silueta.
-            val base = PAINT_FLOOR + channel * (1 - PAINT_FLOOR)
-            IntArray(256) { i ->
-                val v = i / 255f * base / gray
-                val r = if (v <= KNEE) v else KNEE + (1 - KNEE) * (1 - exp(-(v - KNEE) / (1 - KNEE)))
-                (r * 255).roundToInt().coerceIn(0, 255)
-            }
-        }
+    /** Pinta [base] con [shader] solo donde hay pintura ([mask]); [shine] y [mirror] = capas del acabado. */
+    private fun tint(base: Bitmap, mask: Bitmap, shader: PaintShader, shine: Bitmap?, mirror: Bitmap?) {
         val w = base.width
         val h = base.height
         // Renglón por renglón: dos copias enteras de la imagen eran ~8 MB de basura por
         // cuadro (48 cuadros por color) y el recolector trababa el giro.
         val px = IntArray(w)
         val mp = IntArray(w)
+        val sp = shine?.let { IntArray(w) }
+        val ep = mirror?.let { IntArray(w) }
         for (y in 0 until h) {
             base.getPixels(px, 0, w, 0, y, w, 1)
             mask.getPixels(mp, 0, w, 0, y, w, 1)
-            var touched = false
-            for (i in 0 until w) {
-                val m = mp[i] ushr 24
-                if (m == 0) continue
-                touched = true
-                val c = px[i]
-                val r = (c shr 16) and 0xFF
-                val g = (c shr 8) and 0xFF
-                val b = c and 0xFF
-                val rr = r + (tables[0][r] - r) * m / 255
-                val gg = g + (tables[1][g] - g) * m / 255
-                val bb = b + (tables[2][b] - b) * m / 255
-                px[i] = (c and 0xFF000000.toInt()) or (rr shl 16) or (gg shl 8) or bb
+            if (sp != null && ep != null) {
+                shine.getPixels(sp, 0, w, 0, y, w, 1)
+                mirror.getPixels(ep, 0, w, 0, y, w, 1)
             }
-            if (touched) base.setPixels(px, 0, w, 0, y, w, 1)
+            if (shader.row(px, mp, sp, ep, w)) base.setPixels(px, 0, w, 0, y, w, 1)
         }
     }
 
@@ -665,6 +690,10 @@ class CarRepository(private val context: Context, val catalogUrl: String) {
                     sha256 = File(folder, CarFiles.PACKAGE_HASH).takeIf { it.exists() }?.readText()?.trim().orEmpty(),
                     wheels = File(folder, CarViews.WHEELS + ".json").takeIf { it.exists() }
                         ?.let { CarWheels.parse(it.readText(), a.optInt(CarJson.SPIN)) },
+                    // Con calidad alta, también las capas de los cuadros de en medio (llegan aparte).
+                    finish = File(folder, FINISH_MARK).exists() &&
+                        (!File(folder, "${CarFiles.SPIN}/$HIGH_MARK.webp").exists() ||
+                            File(folder, "${CarFiles.SPIN}/$HIGH_MARK${CarViews.MIRROR_SUFFIX}.webp").exists()),
                 )
             }.getOrNull()
         }
@@ -673,6 +702,10 @@ class CarRepository(private val context: Context, val catalogUrl: String) {
         const val ALL = "all"
         /** [downloading] mientras se baja la calidad alta. */
         const val HIGH = "high"
+        /** [downloading] mientras se bajan las capas del acabado (y su carpeta temporal). */
+        const val FINISH = "finish"
+        /** La última capa del acabado que se acomoda: dice que están completas. */
+        private const val FINISH_MARK = "${CarFiles.SPIN}/00${CarViews.MIRROR_SUFFIX}.webp"
         /** Nivel de la calidad alta en "extras" del catálogo. */
         private const val HIGH_LEVEL = 1
         /** Cuadros de en medio ("mNN"); el primero dice que el auto tiene calidad alta. */

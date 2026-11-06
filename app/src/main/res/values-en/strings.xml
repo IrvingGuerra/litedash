@@ -4,6 +4,13 @@
     <string name="my_car">My car</string>
     <string name="name">Name</string>
     <string name="color">Color</string>
+    <string name="finish">Finish</string>
+    <string name="finish_matte">Matte</string>
+    <string name="finish_satin">Satin</string>
+    <string name="finish_gloss">Gloss</string>
+    <string name="finish_metallic">Metallic</string>
+    <string name="shine">Shine</string>
+    <string name="preparing_finish">Preparing finish… %d %%</string>
     <string name="other_color">Other color</string>
     <string name="car_coming_soon">Coming soon: your exact model, with its color and wheels.</string>
     <string name="tile_car">3D car</string>
