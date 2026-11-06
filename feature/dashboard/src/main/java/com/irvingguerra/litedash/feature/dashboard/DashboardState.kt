@@ -18,6 +18,9 @@ class DashboardState(private val store: DashboardStore) {
      */
     var hidden: (String) -> Boolean = { false }
 
+    /** El tamaño mínimo de cada tipo (lo pone la app): para llevar un acomodo a otra cuadrícula. */
+    var limits: (String) -> SizeLimits = { SizeLimits(1, 1) }
+
     /** Las piezas que se ven y se acomodan. */
     val shown: List<Tile> get() = tiles.filterNot { hidden(it.type) }
 
@@ -25,9 +28,31 @@ class DashboardState(private val store: DashboardStore) {
     fun use(c: Grid) {
         if (c != grid) {
             grid = c
-            tiles = store.read(c) ?: suggested(c)
+            tiles = load(c)
         }
     }
+
+    /**
+     * El acomodo de [c]. Si una cuadrícula casi igual ([near]: una barra del sistema que aparece o se va)
+     * tiene uno guardado más nuevo, ese, ajustado a [c]; si [c] no tiene ninguno, la plantilla. Así el
+     * acomodo no "se reinicia" cuando el alto de la pantalla cambia un poco. Lo ajustado no se guarda
+     * hasta que se mueva algo.
+     */
+    private fun load(c: Grid): List<Tile> {
+        val exact = store.read(c)
+        val newer = store.grids().filter { it != c && it.near(c) }.maxByOrNull { store.savedAt(it) }
+            ?.takeIf { exact == null || store.savedAt(it) > store.savedAt(c) }
+        val adapted = newer?.let { store.read(it) }?.let { saved ->
+            // Primero las que se ven: las de un módulo apagado no le quitan lugar a ninguna.
+            val (off, on) = saved.partition { hidden(it.type) }
+            (on + off).adaptTo(c, limits)
+        }
+        return adapted ?: exact ?: suggested(c)
+    }
+
+    /** Para los reportes: la cuadrícula actual y las que tienen acomodo guardado. */
+    fun describe(): String =
+        "Cuadrícula: ${grid?.key ?: "-"} · guardadas: ${store.grids().sortedBy { it.key }.joinToString { "${it.key}${if (store.savedAt(it) == 0L) "" else "*"}" }.ifEmpty { "ninguna" }}"
 
     fun change(newTiles: List<Tile>) {
         tiles = newTiles

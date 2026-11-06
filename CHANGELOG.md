@@ -6,6 +6,17 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
+## [1.4.100] - 2026-11-06
+
+### Mejorado
+- **Los widgets crecen lo que quieras mientras quepan:** ya no tienen tamaño máximo (la música y la
+  radio se quedaban en 3 filas y en pantallas verticales regresaban a su tamaño al soltarlas). Lo que
+  ves al arrastrar la esquina es lo que queda. El auto y la carretera ahora se pueden achicar hasta 2×2.
+
+### Corregido
+- **El acomodo del inicio ya no "se reinicia"** cuando la pantalla cambia un poco de tamaño (una barra
+  del sistema que aparece o se va): LiteDash usa tu último acomodo, ajustado, en vez de la plantilla.
+
 ## [1.4.99] - 2026-11-06
 
 ### Nuevo

@@ -106,8 +106,8 @@ fun Dashboard(
         )
 
         // Vista previa de dónde caerá la pieza que se está arrastrando: cambia solo al pasar a otra celda.
-        val preview by remember(tiles, cwPx, chPx) {
-            derivedStateOf { drag?.let { a -> tiles.firstOrNull { it.id == a.id }?.let { target(it, a, dragOffset, cwPx, chPx, limits) } } }
+        val preview by remember(tiles, cwPx, chPx, grid) {
+            derivedStateOf { drag?.let { a -> tiles.firstOrNull { it.id == a.id }?.let { target(it, a, dragOffset, cwPx, chPx, limits, grid) } } }
         }
         preview?.let { shown ->
             val ok = tiles.fits(shown, grid)
@@ -132,11 +132,12 @@ fun Dashboard(
                     .offset(cellWidth * p.col, cellHeight * p.row)
                     .then(
                         if (a?.resizing == true) {
-                            // Mientras cambia de tamaño, la pieza sigue al dedo (acotada a su mínimo).
+                            // Mientras cambia de tamaño, la pieza sigue al dedo, acotada a su mínimo y a la orilla
+                            // de la cuadrícula: lo que se ve al arrastrar es lo que queda al soltar.
                             Modifier.layout { measurable, _ ->
                                 val m = limits(p.type)
-                                val w = (p.width * cwPx + dragOffset.x).coerceAtLeast(m.minWidth * cwPx).roundToInt()
-                                val h = (p.height * chPx + dragOffset.y).coerceAtLeast(m.minHeight * chPx).roundToInt()
+                                val w = (p.width * cwPx + dragOffset.x).coerceIn(m.minWidth * cwPx, maxOf(m.minWidth, grid.columns - p.col) * cwPx).roundToInt()
+                                val h = (p.height * chPx + dragOffset.y).coerceIn(m.minHeight * chPx, maxOf(m.minHeight, grid.rows - p.row) * chPx).roundToInt()
                                 val placeable = measurable.measure(Constraints.fixed(w, h))
                                 layout(w, h) { placeable.place(0, 0) }
                             }
@@ -234,11 +235,13 @@ fun Dashboard(
     }
 }
 
-private fun target(p: Tile, a: Drag, d: Offset, cwPx: Float, chPx: Float, limits: (String) -> SizeLimits): Tile =
+private fun target(p: Tile, a: Drag, d: Offset, cwPx: Float, chPx: Float, limits: (String) -> SizeLimits, c: Grid): Tile =
     if (a.resizing) {
         val (width, height) = limits(p.type).clamp(
             ((p.width * cwPx + d.x) / cwPx).roundToInt(),
             ((p.height * chPx + d.y) / chPx).roundToInt(),
+            c.columns - p.col,
+            c.rows - p.row,
         )
         p.copy(width = width, height = height)
     } else {
@@ -256,7 +259,7 @@ private fun drop(
     c: Grid,
     onChange: (List<Tile>) -> Unit,
 ) {
-    val moved = target(p, a, d, cwPx, chPx, limits)
+    val moved = target(p, a, d, cwPx, chPx, limits, c)
     if (moved != p && tiles.fits(moved, c)) onChange(tiles.replace(moved))
 }
 

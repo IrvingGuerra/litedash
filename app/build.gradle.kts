@@ -25,7 +25,9 @@ fun versionCodeFrom(name: String): Int {
         "rc" -> 49 + n.toInt().also { require(it in 1..49) { "rc.N va de 1 a 49" } }
         else -> 99
     }
-    return major.toInt() * 1_000_000 + minor.toInt() * 10_000 + patch.toInt() * 100 + suffix
+    require(patch.toInt() <= 999) { "el parche va de 0 a 999" }
+    // Desde la 1.4.100 (antes ×1 000 000 / ×10 000: la 1.4.100 chocaba con la 1.5.0). Igual que Versions.kt del Updater.
+    return major.toInt() * 10_000_000 + minor.toInt() * 100_000 + patch.toInt() * 100 + suffix
 }
 
 // Firma: key.properties fuera del repo (local) o variables de entorno (CI). Sin ellas, firma de depuración.

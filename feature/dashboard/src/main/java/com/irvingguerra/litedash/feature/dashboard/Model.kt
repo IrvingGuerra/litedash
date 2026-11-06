@@ -40,10 +40,13 @@ data class Tile(
             row < other.row + other.height && other.row < row + height
 }
 
-/** Los tamaños permitidos de un tipo de pieza (en celdas): mínimo y máximo de ancho y alto. */
-data class SizeLimits(val minWidth: Int, val minHeight: Int, val maxWidth: Int = 99, val maxHeight: Int = 99) {
-    fun clamp(width: Int, height: Int) =
-        width.coerceIn(minWidth, maxWidth) to height.coerceIn(minHeight, maxHeight)
+/**
+ * El tamaño mínimo de un tipo de pieza (en celdas). No hay máximo: cada pieza crece lo que quiera
+ * mientras quepa en la cuadrícula ([clamp] con el espacio que le queda).
+ */
+data class SizeLimits(val minWidth: Int, val minHeight: Int) {
+    fun clamp(width: Int, height: Int, maxWidth: Int, maxHeight: Int) =
+        width.coerceIn(minWidth, maxOf(minWidth, maxWidth)) to height.coerceIn(minHeight, maxOf(minHeight, maxHeight))
 }
 
 /** ¿Cabe [p] en la cuadrícula sin encimarse con las demás (ignorando a ella misma)? */
@@ -58,6 +61,40 @@ fun List<Tile>.freeSpot(width: Int, height: Int, c: Grid): Pair<Int, Int>? {
         if (fits(Tile("?", "?", col, row, width, height), c)) return col to row
     }
     return null
+}
+
+/**
+ * Casi la misma cuadrícula (misma orientación, ±1 columna y ±1 fila): la misma pantalla con una barra
+ * del sistema de más o de menos. Entre ellas se usa el último acomodo que se guardó.
+ */
+fun Grid.near(other: Grid) =
+    vertical == other.vertical && kotlin.math.abs(columns - other.columns) <= 1 && kotlin.math.abs(rows - other.rows) <= 1
+
+/**
+ * Lleva un acomodo de otra cuadrícula a [c]: cada pieza se queda donde estaba si cabe; si se sale, se
+ * recorta hasta su mínimo ([limits]) o se recorre hacia adentro; si choca con otra, va al primer hueco
+ * (con su tamaño o el mínimo). La que no cabe de ninguna forma se queda fuera.
+ */
+fun List<Tile>.adaptTo(c: Grid, limits: (String) -> SizeLimits): List<Tile> {
+    val placed = mutableListOf<Tile>()
+    for (t in this) {
+        val m = limits(t.type)
+        if (m.minWidth > c.columns || m.minHeight > c.rows) continue
+        val width = t.width.coerceAtMost(maxOf(m.minWidth, c.columns - t.col)).coerceIn(m.minWidth, c.columns)
+        val height = t.height.coerceAtMost(maxOf(m.minHeight, c.rows - t.row)).coerceIn(m.minHeight, c.rows)
+        val inside = t.copy(
+            col = t.col.coerceIn(0, c.columns - width),
+            row = t.row.coerceIn(0, c.rows - height),
+            width = width,
+            height = height,
+        )
+        val spot = if (placed.fits(inside, c)) inside else
+            listOf(width to height, m.minWidth to m.minHeight).firstNotNullOfOrNull { (w, h) ->
+                placed.freeSpot(w, h, c)?.let { (col, row) -> t.copy(col = col, row = row, width = w, height = h) }
+            }
+        if (spot != null) placed += spot
+    }
+    return placed
 }
 
 /** Reemplaza la pieza con el mismo id. */

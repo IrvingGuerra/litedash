@@ -13,8 +13,13 @@ fun versionCode(tag: String): Long? {
         "rc" -> n.toInt().takeIf { it in 1..49 }?.plus(49) ?: return null
         else -> 99
     }
-    return major.toLong() * 1_000_000 + minor.toLong() * 10_000 + patch.toLong() * 100 + suffix
+    if (patch.toInt() > MAX_PATCH) return null
+    // Desde la 1.4.100: el parche llega a 999 (antes 99: la 1.4.100 daba lo mismo que la 1.5.0).
+    return major.toLong() * 10_000_000 + minor.toLong() * 100_000 + patch.toLong() * 100 + suffix
 }
+
+/** El parche más alto que cabe en el versionCode. */
+const val MAX_PATCH = 999
 
 /** ¿Es versión de prueba (beta o rc)? */
 fun isPrerelease(tag: String) = tag.contains("-beta.") || tag.contains("-rc.")

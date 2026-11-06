@@ -9,15 +9,16 @@ import org.junit.Test
 class VersionsTest {
     @Test
     fun matchesGradle() {
-        assertEquals(1_000_099L, versionCode("v1.0.0"))
-        assertEquals(1_010_001L, versionCode("v1.1.0-beta.1"))
-        assertEquals(1_010_050L, versionCode("1.1.0-rc.1"))
-        assertEquals(1_010_099L, versionCode("v1.1.0"))
+        assertEquals(10_000_099L, versionCode("v1.0.0"))
+        assertEquals(10_100_001L, versionCode("v1.1.0-beta.1"))
+        assertEquals(10_100_050L, versionCode("1.1.0-rc.1"))
+        assertEquals(10_100_099L, versionCode("v1.1.0"))
+        assertEquals(10_410_099L, versionCode("v1.4.100"))
     }
 
     @Test
     fun correctOrder() {
-        val order = listOf("v1.0.0", "v1.1.0-beta.1", "v1.1.0-beta.2", "v1.1.0-rc.1", "v1.1.0", "v1.1.1", "v2.0.0-beta.1")
+        val order = listOf("v1.0.0", "v1.1.0-beta.1", "v1.1.0-beta.2", "v1.1.0-rc.1", "v1.1.0", "v1.1.1", "v1.4.99", "v1.4.100", "v1.4.999", "v1.5.0", "v2.0.0-beta.1")
         val codes = order.map { versionCode(it)!! }
         assertEquals(codes.sorted(), codes)
     }
@@ -27,6 +28,7 @@ class VersionsTest {
         assertNull(versionCode("catalogo"))
         assertNull(versionCode("v1.1"))
         assertNull(versionCode("v1.1.0-beta.0"))
+        assertNull(versionCode("v1.4.1000"))
     }
 
     @Test

@@ -30,7 +30,17 @@ class DashboardStore(context: Context) {
             listOf(it.id, it.type, it.col, it.row, it.width, it.height, it.data.replace('\t', ' ').replace('\n', ' '), if (it.plain) "1" else "")
                 .joinToString("\t")
         }
-        prefs.edit().putString(LAYOUT_KEY_PREFIX + c.key, text).apply()
+        prefs.edit().putString(LAYOUT_KEY_PREFIX + c.key, text).putLong(SAVED_AT_PREFIX + c.key, System.currentTimeMillis()).apply()
+    }
+
+    /** Cuándo se guardó el acomodo de [c] (0 si nunca o si es de antes de la 1.4.100). */
+    fun savedAt(c: Grid): Long = prefs.getLong(SAVED_AT_PREFIX + c.key, 0L)
+
+    /** Las cuadrículas que tienen acomodo guardado. */
+    fun grids(): List<Grid> = prefs.all.keys.mapNotNull { key ->
+        val size = key.removePrefix(LAYOUT_KEY_PREFIX).takeIf { key.startsWith(LAYOUT_KEY_PREFIX) } ?: return@mapNotNull null
+        val (columns, rows) = size.split('x').takeIf { it.size == 2 }?.map { it.toIntOrNull() ?: return@mapNotNull null } ?: return@mapNotNull null
+        Grid(columns, rows)
     }
 
     /** La pieza grande de las plantillas (tipo y datos): el auto 3D si nunca se eligió otra. */
@@ -46,6 +56,8 @@ class DashboardStore(context: Context) {
 // Nombres guardados en el dispositivo (en inglés desde la 1.4.47; la migración copió los viejos).
 private const val PREFS_FILE = "dashboard"
 private const val LAYOUT_KEY_PREFIX = "layout_"
+/** Hora en que se guardó cada acomodo (no empieza con "layout_" para no confundirse con ellos). */
+private const val SAVED_AT_PREFIX = "saved_at_"
 // La migración de la 1.4.49 (pieza del auto en tres) también los escribe: mismos nombres allá.
 /** El tipo que tenía el widget Navegar en los acomodos guardados. */
 private const val LEGACY_NAVIGATE = "navigate"

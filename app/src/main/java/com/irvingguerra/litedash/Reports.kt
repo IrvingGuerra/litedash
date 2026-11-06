@@ -34,6 +34,7 @@ import com.irvingguerra.litedash.core.ui.LocalColors
 import com.irvingguerra.litedash.core.ui.TextInput
 import com.irvingguerra.litedash.core.ui.Typography
 import com.irvingguerra.litedash.feature.music.AppProbe
+import com.irvingguerra.litedash.feature.dashboard.DashboardState
 import com.irvingguerra.litedash.feature.music.MusicRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -109,7 +110,7 @@ private var lastReport = 0L
 /** La tarjeta con el flujo por pasos; siempre se puede regresar al anterior. */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-internal fun SendReport(music: MusicRepository, pro: ProAccess) {
+internal fun SendReport(music: MusicRepository, pro: ProAccess, dashboard: DashboardState) {
     val c = LocalColors.current
     val context = LocalContext.current.applicationContext
     val scope = rememberCoroutineScope()
@@ -160,7 +161,7 @@ internal fun SendReport(music: MusicRepository, pro: ProAccess) {
                             // Se lee el estado de ahora (dos toques en el mismo cuadro no mandan dos).
                             if (chosen == null || state == ReportState.Sending) return@Button
                             state = ReportState.Sending
-                            scope.launch { state = submitReport(context, music, pro.isPro, m, detail, chosen, note) }
+                            scope.launch { state = submitReport(context, music, pro.isPro, dashboard, m, detail, chosen, note) }
                         },
                         Modifier.graphicsLayer { alpha = if (chosen == null || sending) 0.45f else 1f },
                         primary = true,
@@ -194,19 +195,19 @@ private fun BackRow(picked: List<Int>, onBack: () -> Unit) {
     }
 }
 
-/** Pide un auto que no está en el catálogo: un reporte de Tu auto → Otro con [what] en la nota. */
 /** Manda un reporte respetando el límite de uno por minuto: [ReportState.Sent], [ReportState.Error] o [ReportState.Wait]. */
 private suspend fun submitReport(
     context: Context,
     music: MusicRepository,
     pro: Boolean,
+    dashboard: DashboardState,
     module: ReportModule,
     detail: ReportDetail?,
     problem: ReportProblem,
     note: String,
 ): ReportState {
     if (lastReport != 0L && SystemClock.elapsedRealtime() - lastReport < REPORT_GAP_MS) return ReportState.Wait
-    val id = sendReport(context, music, pro, module, detail, problem, note) ?: return ReportState.Error
+    val id = sendReport(context, music, pro, dashboard, module, detail, problem, note) ?: return ReportState.Error
     lastReport = SystemClock.elapsedRealtime()
     return ReportState.Sent(id.take(6).uppercase())
 }
@@ -216,6 +217,7 @@ private suspend fun sendReport(
     context: Context,
     music: MusicRepository,
     pro: Boolean,
+    dashboard: DashboardState,
     module: ReportModule,
     detail: ReportDetail?,
     problem: ReportProblem,
@@ -223,6 +225,7 @@ private suspend fun sendReport(
 ): String? {
     // Lo de la música se arma aquí, en el hilo principal: su estado lo tocan los avisos que llegan ahí.
     val musicInfo = music.describe()
+    val layout = dashboard.describe()
     val silent = music.silentSources()
     return withContext(Dispatchers.IO) { runCatching {
         val id = Firestore.newId()
@@ -235,7 +238,7 @@ private suspend fun sendReport(
             .put("detail", Firestore.text(detail?.key ?: ""))
             .put("problem", Firestore.text(problem.key))
             .put("note", Firestore.text(note.trim().take(NOTE_MAX)))
-            .put("info", Firestore.text(systemInfo(context, pro, musicInfo, silent).take(INFO_MAX)))
+            .put("info", Firestore.text(systemInfo(context, pro, layout, musicInfo, silent).take(INFO_MAX)))
         val write = JSONObject()
             .put("update", JSONObject().put("name", Firestore.document("reports/$id")).put("fields", fields))
             .put("currentDocument", JSONObject().put("exists", false))
@@ -244,8 +247,8 @@ private suspend fun sendReport(
     }.getOrNull() }
 }
 
-/** Datos técnicos de la pantalla para los reportes (equipo, Android, pantalla, luces, ubicación y si tiene Pro) más [musicInfo] y las apps [silent]. */
-private fun systemInfo(context: Context, pro: Boolean, musicInfo: String, silent: List<String>): String {
+/** Datos técnicos de la pantalla para los reportes (equipo, Android, pantalla, acomodo [layout], luces, ubicación y si tiene Pro) más [musicInfo] y las apps [silent]. */
+private fun systemInfo(context: Context, pro: Boolean, layout: String, musicInfo: String, silent: List<String>): String {
     val m = context.resources.displayMetrics
     return buildString {
         appendLine("LiteDash ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE}) · ${BuildConfig.CHANNEL}")
@@ -253,6 +256,7 @@ private fun systemInfo(context: Context, pro: Boolean, musicInfo: String, silent
         appendLine("Plataforma: ${Build.HARDWARE} · ${Build.BOARD}")
         appendLine("Android ${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT})")
         appendLine("Pantalla: ${m.widthPixels}×${m.heightPixels} px · ${m.densityDpi} dpi")
+        appendLine(layout)
         appendLine("Memoria: ${memoryMb(context)} MB")
         appendLine("CPU: ${Build.SUPPORTED_ABIS.joinToString()}")
         appendLine("Pantalla dividida: ${if (SplitScreen.supported()) "sí" else "no"}")

@@ -67,15 +67,15 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import kotlinx.coroutines.delay
 
-/** Lo que la app sabe de cada tipo de pieza: nombre, tamaños y con qué tamaño se agrega. */
+/** Lo que la app sabe de cada tipo de pieza: nombre, tamaño mínimo y con qué tamaño se agrega. */
 data class TileSpec(val type: String, val name: Int, val limits: SizeLimits, val initialSize: Pair<Int, Int>, val detail: Int? = null)
 
 val TileSpecs = listOf(
-    TileSpec(TileTypes.CAR, R.string.tile_car, SizeLimits(3, 2), 5 to 3, R.string.tile_car_help),
-    TileSpec(TileTypes.ROAD, R.string.tile_road, SizeLimits(3, 2), 5 to 3, R.string.tile_road_help),
+    TileSpec(TileTypes.CAR, R.string.tile_car, SizeLimits(2, 2), 5 to 3, R.string.tile_car_help),
+    TileSpec(TileTypes.ROAD, R.string.tile_road, SizeLimits(2, 2), 5 to 3, R.string.tile_road_help),
     TileSpec(TileTypes.IMAGE, R.string.tile_image, SizeLimits(2, 1), 3 to 2, R.string.tile_image_help),
-    TileSpec(TileTypes.MUSIC, R.string.tile_music, SizeLimits(3, 1, maxHeight = 3), 4 to 1, R.string.tile_music_help),
-    TileSpec(TileTypes.RADIO, R.string.tile_radio, SizeLimits(3, 1, maxHeight = 3), 4 to 1, R.string.tile_radio_help),
+    TileSpec(TileTypes.MUSIC, R.string.tile_music, SizeLimits(3, 1), 4 to 1, R.string.tile_music_help),
+    TileSpec(TileTypes.RADIO, R.string.tile_radio, SizeLimits(3, 1), 4 to 1, R.string.tile_radio_help),
     // También hace lo del widget Navegar (hasta la 1.4.68): en una fila se ve como él (vuelta, Casa, Trabajo).
     TileSpec(TileTypes.MAP, R.string.tile_map, SizeLimits(2, 1), 3 to 2, R.string.tile_map_help),
     TileSpec(TileTypes.CLOCK, R.string.tile_clock, SizeLimits(2, 1), 3 to 1, R.string.tile_clock_help),
@@ -87,7 +87,7 @@ val TileSpecs = listOf(
     TileSpec(TileTypes.WORKSHOP, R.string.workshop, SizeLimits(1, 1), 2 to 1, R.string.tile_workshop_help),
     TileSpec(TileTypes.PROJECTION, R.string.tile_projection, SizeLimits(2, 1), 3 to 1, R.string.tile_projection_help),
     TileSpec(TileTypes.TIRES, R.string.tile_tires, SizeLimits(1, 1), 2 to 2, R.string.tile_tires_help),
-    TileSpec(TileTypes.APP, R.string.tile_app, SizeLimits(1, 1, 3, 3), 1 to 1),
+    TileSpec(TileTypes.APP, R.string.tile_app, SizeLimits(1, 1), 1 to 1),
 )
 
 fun limitsOf(type: String) = TileSpecs.firstOrNull { it.type == type }?.limits ?: SizeLimits(1, 1)

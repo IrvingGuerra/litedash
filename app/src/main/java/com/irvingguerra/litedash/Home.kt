@@ -184,6 +184,7 @@ class Dependencies(
     init {
         // Las piezas de un módulo apagado no se ven ni apartan su lugar (ni las ponen las plantillas).
         dashboard.hidden = { type -> moduleOff(this, type) != null }
+        dashboard.limits = ::limitsOf
     }
 
     /** Las llantas: se crean la primera vez que algo las pide (sus Ajustes o una pieza con fuente elegida). */

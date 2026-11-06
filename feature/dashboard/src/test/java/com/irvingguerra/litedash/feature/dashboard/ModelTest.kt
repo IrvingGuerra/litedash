@@ -122,8 +122,39 @@ class ModelTest {
 
     @Test
     fun limitsClamp() {
-        assertEquals(3 to 1, SizeLimits(3, 1, 6, 2).clamp(1, 0))
-        assertEquals(6 to 2, SizeLimits(3, 1, 6, 2).clamp(9, 9))
+        assertEquals(3 to 1, SizeLimits(3, 1).clamp(1, 0, 6, 2))
+        // Sin máximo propio: solo el espacio que queda en la cuadrícula.
+        assertEquals(6 to 2, SizeLimits(3, 1).clamp(9, 9, 6, 2))
+        assertEquals(5 to 7, SizeLimits(3, 1).clamp(5, 7, 6, 8))
+    }
+
+    @Test
+    fun nearGridsAreTheSameScreen() {
+        assertTrue(Grid(10, 5).near(Grid(10, 6)))
+        assertTrue(Grid(10, 5).near(Grid(9, 4)))
+        assertFalse(Grid(10, 5).near(Grid(10, 7)))
+        assertFalse(Grid(5, 5).near(Grid(6, 4))) // otra orientación
+    }
+
+    @Test
+    fun adaptKeepsTilesThatFitAndTrimsTheRest() {
+        val limits = { type: String -> if (type == TileTypes.CAR) SizeLimits(3, 2) else SizeLimits(1, 1) }
+        val saved = listOf(
+            Tile("car", TileTypes.CAR, 0, 0, 6, 6),
+            Tile("music", TileTypes.MUSIC, 6, 0, 4, 3),
+            Tile("clock", TileTypes.CLOCK, 6, 3, 4, 3),
+        )
+        val out = saved.adaptTo(Grid(10, 5), limits)
+        // Una fila menos: todo se queda en su lugar y lo de abajo se recorta.
+        assertEquals(Tile("car", TileTypes.CAR, 0, 0, 6, 5), out[0])
+        assertEquals(saved[1], out[1])
+        assertEquals(Tile("clock", TileTypes.CLOCK, 6, 3, 4, 2), out[2])
+        // Una columna menos: la de la orilla se recorta, nada se encima.
+        val narrow = saved.adaptTo(Grid(9, 6), limits)
+        assertEquals(3, narrow.size)
+        narrow.forEach { t -> assertTrue(narrow.fits(t, Grid(9, 6))) }
+        // Una fila más: igual que antes.
+        assertEquals(saved, saved.adaptTo(Grid(10, 7), limits))
     }
 
     @Test
