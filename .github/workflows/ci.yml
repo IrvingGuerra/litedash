@@ -1,9 +1,10 @@
 name: CI
 
+# Solo en pull requests o a mano (Irving, 2026-11-06: GitHub cobra los minutos de Linux; cada push
+# ya se compila, se revisa con lint y se prueba en la Mac antes de subirlo).
 on:
-  push:
-    branches: [main]
   pull_request:
+  workflow_dispatch:
 
 concurrency:
   group: ci-${{ github.ref }}

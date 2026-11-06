@@ -1,9 +1,11 @@
 name: Lanzamiento
 
 # Al empujar una etiqueta vX.Y.Z[-beta.N|-rc.N].
+# Apagado (Irving, 2026-11-06: dejar GitHub Actions en $0). Las versiones se publican desde la Mac:
+# ./gradlew clean assembleGithubRelease (firma real) y `gh release create` con litedash-X.apk,
+# litedash.apk, SHA256SUMS.txt y la sección del CHANGELOG. Se puede correr a mano si hace falta.
 on:
-  push:
-    tags: ["v*"]
+  workflow_dispatch:
 
 permissions:
   contents: write
