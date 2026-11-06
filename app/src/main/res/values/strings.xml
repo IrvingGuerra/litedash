@@ -690,16 +690,16 @@
     <string name="gauge_rim_smooth">Liso</string>
     <string name="gauge_rim_neon">Neón</string>
     <string name="gauge_rim_blocks">Cuadros</string>
-    <string name="pro_title" translatable="false">LiteDash Pro</string>
-    <string name="pro_help">Funciones extra de personalización. Por ahora solo con código de prueba.</string>
+    <string name="pro_title">Código de desarrollador</string>
+    <string name="pro_help">Para quienes prueban versiones en desarrollo.</string>
     <string name="pro_code">Código</string>
     <string name="pro_activate">Activar</string>
     <string name="pro_checking">Revisando…</string>
-    <string name="pro_active">Pro activo en esta pantalla</string>
+    <string name="pro_active">Código de desarrollador activo en esta pantalla</string>
     <string name="pro_remove">Quitar de esta pantalla</string>
-    <string name="pro_remove_question">¿Quitar Pro de esta pantalla?</string>
+    <string name="pro_remove_question">¿Quitar el código de esta pantalla?</string>
     <string name="pro_invalid">Código no válido</string>
     <string name="pro_taken">Este código ya se usa en otra pantalla. Pide que lo liberen.</string>
     <string name="pro_offline">Sin conexión. Inténtalo otra vez.</string>
-    <string name="pro_expired">Conéctate a internet para seguir con Pro</string>
+    <string name="pro_expired">Conéctate a internet para seguir con el código de desarrollador</string>
 </resources>

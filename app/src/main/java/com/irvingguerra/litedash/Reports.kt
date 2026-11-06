@@ -256,7 +256,7 @@ private fun systemInfo(context: Context, pro: Boolean, musicInfo: String, silent
         appendLine("Memoria: ${memoryMb(context)} MB")
         appendLine("CPU: ${Build.SUPPORTED_ABIS.joinToString()}")
         appendLine("Pantalla dividida: ${if (SplitScreen.supported()) "sí" else "no"}")
-        appendLine("Pro: ${if (pro) "sí" else "no"}")
+        appendLine("Código de desarrollador: ${if (pro) "sí" else "no"}")
         appendLine(lightsInfo(context))
         appendLine(locationInfo(context))
         append(musicInfo)
