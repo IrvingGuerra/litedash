@@ -6,6 +6,12 @@ Todos los cambios que nota quien usa LiteDash. Formato
 
 ## [Sin publicar]
 
+## [1.4.93] - 2026-11-05
+
+### Arreglado
+- **Cambiar de idioma con LiteDash abierto dos veces** (como inicio y como app) ya cambia el idioma
+  de verdad: antes a veces solo cambiaban las unidades y los textos se quedaban en el idioma anterior.
+
 ## [1.4.92] - 2026-11-05
 
 ### Arreglado (mantenimiento)

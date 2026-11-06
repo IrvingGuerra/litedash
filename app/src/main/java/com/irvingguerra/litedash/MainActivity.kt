@@ -78,8 +78,14 @@ class MainActivity : ComponentActivity() {
          */
         fun restart(activity: Activity) {
             restarted = true
+            // Como inicio si así se abrió (si no, Android hacía otro al tocar Inicio) y en una tarea limpia:
+            // con otro LiteDash abierto como app, Android le entregaba la orden a ese y no cambiaba el idioma.
+            val intent = Intent(Intent.ACTION_MAIN).setClass(activity, MainActivity::class.java)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK or Intent.FLAG_ACTIVITY_NO_ANIMATION)
+            if (activity.intent?.hasCategory(Intent.CATEGORY_HOME) == true) intent.addCategory(Intent.CATEGORY_HOME)
+            // Primero abrir y luego cerrar: Android solo deja la nueva como inicio si la abre un inicio vivo.
+            activity.startActivity(intent)
             activity.finish()
-            activity.startActivity(Intent(activity, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION))
             // Sin la animación de cierre de la vieja: el cambio se ve como un solo cuadro.
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
                 activity.overrideActivityTransition(Activity.OVERRIDE_TRANSITION_CLOSE, 0, 0)
