@@ -48,6 +48,7 @@ class LiteDashApp : Application() {
             reminders = ReminderRepository(this),
             wheel = WheelKeys(this, prefs),
             stats = Stats(this) { prefs.stats },
+            pro = ProAccess(this),
             bus = bus,
             obdLazy = lazy { ObdRepository(this, bus) },
             obdSaved = { ObdRepository.hasSavedTarget(this) },

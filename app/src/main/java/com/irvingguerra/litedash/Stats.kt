@@ -9,6 +9,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
+import java.io.IOException
 import java.security.SecureRandom
 
 /**
@@ -60,11 +61,12 @@ class Stats(private val context: Context, private val enabled: () -> Boolean) {
     }
 }
 
-/** Escrituras a Firestore por REST (documents:commit), sin SDK; las comparten [Stats] y los reportes. */
+/** Firestore por REST (documents:commit y lectura de un documento), sin SDK; lo comparten [Stats], los reportes y [ProAccess]. */
 internal object Firestore {
     private const val PROJECT = "litedash"
     private const val DOCUMENTS = "projects/$PROJECT/databases/(default)/documents"
-    private const val COMMIT_URL = "https://firestore.googleapis.com/v1/projects/$PROJECT/databases/(default)/documents:commit"
+    private const val API = "https://firestore.googleapis.com/v1"
+    private const val COMMIT_URL = "$API/$DOCUMENTS:commit"
 
     /** 32 hex al azar: el id de un documento. */
     fun newId() = ByteArray(16).also { SecureRandom().nextBytes(it) }.joinToString("") { "%02x".format(it) }
@@ -90,6 +92,27 @@ internal object Firestore {
         try {
             connection.outputStream.use { it.write(body) }
             return connection.responseCode in 200..299
+        } finally {
+            connection.disconnect()
+        }
+    }
+
+    /**
+     * Lee el documento [path]; bloquea, así que va en un hilo de IO. Null si no existe (404);
+     * sin red o con cualquier otra respuesta lanza [IOException].
+     */
+    fun get(context: Context, path: String): JSONObject? {
+        val connection = Https.open(context, "$API/${document(path)}").apply {
+            connectTimeout = 10_000
+            readTimeout = 15_000
+            setRequestProperty("User-Agent", "LiteDash")
+        }
+        try {
+            return when (val code = connection.responseCode) {
+                in 200..299 -> JSONObject(connection.inputStream.bufferedReader().use { it.readText() })
+                404 -> null
+                else -> throw IOException("HTTP $code")
+            }
         } finally {
             connection.disconnect()
         }

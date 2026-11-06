@@ -670,4 +670,15 @@
     <string name="gauge_rim_smooth">Plain</string>
     <string name="gauge_rim_neon">Neon</string>
     <string name="gauge_rim_blocks">Blocks</string>
+    <string name="pro_help">Extra customization features. For now, test codes only.</string>
+    <string name="pro_code">Code</string>
+    <string name="pro_activate">Activate</string>
+    <string name="pro_checking">Checking…</string>
+    <string name="pro_active">Pro is active on this screen</string>
+    <string name="pro_remove">Remove from this screen</string>
+    <string name="pro_remove_question">Remove Pro from this screen?</string>
+    <string name="pro_invalid">Invalid code</string>
+    <string name="pro_taken">This code is already used on another screen. Ask to have it released.</string>
+    <string name="pro_offline">No connection. Try again.</string>
+    <string name="pro_expired">Connect to the internet to keep Pro</string>
 </resources>

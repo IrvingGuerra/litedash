@@ -51,6 +51,7 @@ import com.irvingguerra.litedash.core.ui.LocalColors
 import com.irvingguerra.litedash.core.ui.Radius
 import com.irvingguerra.litedash.core.ui.Switch
 import com.irvingguerra.litedash.core.ui.SwitchRow
+import com.irvingguerra.litedash.core.ui.TextInput
 import com.irvingguerra.litedash.core.ui.Typography
 import com.irvingguerra.litedash.feature.car.CAR_ASPECT
 import com.irvingguerra.litedash.feature.car.CarStill
@@ -84,7 +85,7 @@ internal fun SystemSettings(d: Dependencies) {
     }
 }
 
-/** La pantalla en unas líneas y "Enviar un reporte" ([SendReport]). */
+/** La pantalla en unas líneas, LiteDash Pro ([ProCard]) y "Enviar un reporte" ([SendReport]). */
 @Composable
 private fun ScreenInfo(d: Dependencies) {
     val context = LocalContext.current
@@ -92,8 +93,55 @@ private fun ScreenInfo(d: Dependencies) {
         val lines = remember { screenLines(context) }
         for (line in lines) Label(line, Typography.body, maxLines = 2)
     }
-    SendReport(d.music)
+    ProCard(d.pro)
+    SendReport(d.music, d.pro)
 }
+
+/** LiteDash Pro en prueba: activarlo con un código o, si ya está, quitarlo de esta pantalla (solo lo local). */
+@Composable
+private fun ProCard(pro: ProAccess) {
+    val c = LocalColors.current
+    val scope = rememberCoroutineScope()
+    var code by remember { mutableStateOf("") }
+    var checking by remember { mutableStateOf(false) }
+    var error by remember { mutableStateOf<Int?>(null) }
+    SettingsCard(stringResource(R.string.pro_title)) {
+        if (pro.isPro) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Icon(Icons.done, c.accent, 24.dp)
+                Label(stringResource(R.string.pro_active), Typography.body)
+            }
+            Confirmed(stringResource(R.string.pro_remove), stringResource(R.string.pro_remove_question)) { scope.launch { pro.remove() } }
+        } else {
+            Label(stringResource(R.string.pro_help), Typography.small, c.textMuted)
+            TextInput(code, { code = it.take(PRO_CODE_MAX); error = null }, stringResource(R.string.pro_code), Modifier.fillMaxWidth())
+            val idle = !checking && ProCode.normalize(code).isNotEmpty()
+            Button(
+                stringResource(if (checking) R.string.pro_checking else R.string.pro_activate),
+                {
+                    if (!idle) return@Button
+                    checking = true
+                    error = null
+                    scope.launch {
+                        error = when (pro.activate(code)) {
+                            ProResult.ACTIVE -> null.also { code = "" }
+                            ProResult.INVALID -> R.string.pro_invalid
+                            ProResult.TAKEN -> R.string.pro_taken
+                            ProResult.OFFLINE -> R.string.pro_offline
+                        }
+                        checking = false
+                    }
+                },
+                Modifier.graphicsLayer { alpha = if (idle) 1f else 0.45f },
+                primary = true,
+            )
+            (error ?: R.string.pro_expired.takeIf { pro.expired })?.let { Label(stringResource(it), Typography.small, c.danger) }
+        }
+    }
+}
+
+/** Largo máximo de lo que se escribe como código. */
+private const val PRO_CODE_MAX = 64
 
 /** La versión en grande, sus novedades y tu auto a la derecha (como DuduAuto). */
 @Composable

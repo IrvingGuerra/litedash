@@ -30,6 +30,17 @@ service cloud.firestore {
         && request.resource.data.info is string && request.resource.data.info.size() <= 20000
         && request.resource.data.sent == request.time;
     }
+    // Códigos de LiteDash Pro en prueba (app/ProAccess): el id es el SHA-256 del código, así que
+    // solo quien lo tiene puede leerlo (listar no). Una pantalla se liga una sola vez: escribe su id
+    // si el código está activo y libre. Crear, desactivar o liberar: solo el dueño (consola/backoffice).
+    match /pro_codes/{id} {
+      allow get: if id.matches('^[0-9a-f]{64}$');
+      allow update: if resource.data.active == true
+        && !('screen' in resource.data)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['screen', 'bound'])
+        && request.resource.data.screen is string && request.resource.data.screen.matches('^[0-9a-f]{32}$')
+        && request.resource.data.bound == request.time;
+    }
     // Solo para la 1.4.44 y la 1.4.45, que usaban nombres en español.
     match /pantallas/{id} {
       allow create, update: if id.matches('^[0-9a-f]{32}$')

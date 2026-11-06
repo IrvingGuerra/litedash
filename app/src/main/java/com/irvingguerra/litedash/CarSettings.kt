@@ -275,7 +275,7 @@ private fun ModelCard(title: String, selected: Boolean, onClick: () -> Unit, det
 
 /** Un botón que pide confirmar con un segundo toque antes de hacer algo que no se deshace solo. */
 @Composable
-private fun Confirmed(label: String, question: String, primary: Boolean = false, action: () -> Unit) {
+internal fun Confirmed(label: String, question: String, primary: Boolean = false, action: () -> Unit) {
     var asking by remember(label) { mutableStateOf(false) }
     if (!asking) return Button(label, { asking = true }, primary = primary)
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {

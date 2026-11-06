@@ -143,6 +143,8 @@ class Dependencies(
     val reminders: ReminderRepository,
     val wheel: WheelKeys,
     val stats: Stats,
+    /** LiteDash Pro (en prueba): [ProAccess.isPro] lo leen las funciones Pro. */
+    val pro: ProAccess,
     /** Señales del auto (OBD, GPS…): el tablero solo lee de aquí. */
     val bus: VehicleBus,
     private val obdLazy: Lazy<ObdRepository>,
@@ -412,6 +414,8 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
     LaunchedEffect(d.prefs.carModel) { d.cars.checkQuietly(d.prefs.carModel) }
     // Cuántas pantallas usan LiteDash: a lo más una vez al día.
     LaunchedEffect(revision) { d.stats.pingDaily() }
+    // Pro: lee lo guardado y revisa el código a lo más cada 12 h (sin código guardado, nada de red).
+    LaunchedEffect(revision) { d.pro.refresh() }
 
     val actions = remember {
         TileActions(

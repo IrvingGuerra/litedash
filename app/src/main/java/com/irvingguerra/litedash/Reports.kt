@@ -109,7 +109,7 @@ private var lastReport = 0L
 /** La tarjeta con el flujo por pasos; siempre se puede regresar al anterior. */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-internal fun SendReport(music: MusicRepository) {
+internal fun SendReport(music: MusicRepository, pro: ProAccess) {
     val c = LocalColors.current
     val context = LocalContext.current.applicationContext
     val scope = rememberCoroutineScope()
@@ -160,7 +160,7 @@ internal fun SendReport(music: MusicRepository) {
                             // Se lee el estado de ahora (dos toques en el mismo cuadro no mandan dos).
                             if (chosen == null || state == ReportState.Sending) return@Button
                             state = ReportState.Sending
-                            scope.launch { state = submitReport(context, music, m, detail, chosen, note) }
+                            scope.launch { state = submitReport(context, music, pro.isPro, m, detail, chosen, note) }
                         },
                         Modifier.graphicsLayer { alpha = if (chosen == null || sending) 0.45f else 1f },
                         primary = true,
@@ -199,13 +199,14 @@ private fun BackRow(picked: List<Int>, onBack: () -> Unit) {
 private suspend fun submitReport(
     context: Context,
     music: MusicRepository,
+    pro: Boolean,
     module: ReportModule,
     detail: ReportDetail?,
     problem: ReportProblem,
     note: String,
 ): ReportState {
     if (lastReport != 0L && SystemClock.elapsedRealtime() - lastReport < REPORT_GAP_MS) return ReportState.Wait
-    val id = sendReport(context, music, module, detail, problem, note) ?: return ReportState.Error
+    val id = sendReport(context, music, pro, module, detail, problem, note) ?: return ReportState.Error
     lastReport = SystemClock.elapsedRealtime()
     return ReportState.Sent(id.take(6).uppercase())
 }
@@ -214,6 +215,7 @@ private suspend fun submitReport(
 private suspend fun sendReport(
     context: Context,
     music: MusicRepository,
+    pro: Boolean,
     module: ReportModule,
     detail: ReportDetail?,
     problem: ReportProblem,
@@ -233,7 +235,7 @@ private suspend fun sendReport(
             .put("detail", Firestore.text(detail?.key ?: ""))
             .put("problem", Firestore.text(problem.key))
             .put("note", Firestore.text(note.trim().take(NOTE_MAX)))
-            .put("info", Firestore.text(systemInfo(context, musicInfo, silent).take(INFO_MAX)))
+            .put("info", Firestore.text(systemInfo(context, pro, musicInfo, silent).take(INFO_MAX)))
         val write = JSONObject()
             .put("update", JSONObject().put("name", Firestore.document("reports/$id")).put("fields", fields))
             .put("currentDocument", JSONObject().put("exists", false))
@@ -242,8 +244,8 @@ private suspend fun sendReport(
     }.getOrNull() }
 }
 
-/** Datos técnicos de la pantalla para los reportes (equipo, Android, pantalla, luces y ubicación) más [musicInfo] y las apps [silent]. */
-private fun systemInfo(context: Context, musicInfo: String, silent: List<String>): String {
+/** Datos técnicos de la pantalla para los reportes (equipo, Android, pantalla, luces, ubicación y si tiene Pro) más [musicInfo] y las apps [silent]. */
+private fun systemInfo(context: Context, pro: Boolean, musicInfo: String, silent: List<String>): String {
     val m = context.resources.displayMetrics
     return buildString {
         appendLine("LiteDash ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE}) · ${BuildConfig.CHANNEL}")
@@ -254,6 +256,7 @@ private fun systemInfo(context: Context, musicInfo: String, silent: List<String>
         appendLine("Memoria: ${memoryMb(context)} MB")
         appendLine("CPU: ${Build.SUPPORTED_ABIS.joinToString()}")
         appendLine("Pantalla dividida: ${if (SplitScreen.supported()) "sí" else "no"}")
+        appendLine("Pro: ${if (pro) "sí" else "no"}")
         appendLine(lightsInfo(context))
         appendLine(locationInfo(context))
         append(musicInfo)
