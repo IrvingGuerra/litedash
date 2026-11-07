@@ -73,7 +73,12 @@ fun MusicSettings(d: Dependencies) {
 fun MusicSourcesSettings(d: Dependencies) {
     val apps = rememberApps(d.apps).orEmpty()
     var choosing by remember { mutableStateOf(false) }
-    SourceRow(d, SourceKind.BLUETOOTH, apps, choosing) { choosing = it }
+    if (!d.music.bluetoothBuiltIn) {
+        SourceRow(d, SourceKind.BLUETOOTH, apps, choosing) { choosing = it }
+    } else {
+        // El Bluetooth de Android ya se usa solo: no hay app que enlazar.
+        Label(stringResource(R.string.bt_builtin_note), Typography.small, LocalColors.current.textMuted)
+    }
     BluetoothNamePermission()
 }
 

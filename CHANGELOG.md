@@ -4,7 +4,15 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
-## [Sin publicar]
+## [1.4.101] - 2026-11-07
+
+### Nuevo
+- **Bluetooth sin app externa (Bluetooth de Android):** en pantallas que usan el Bluetooth de
+  Android, LiteDash ahora lee la música del celular directo (título, artista, álbum y duración) y
+  la controla desde la música en grande — play, pausa, siguiente y anterior — sin abrir la app de la
+  pantalla. Ajustes → Apps → Música → "Vincular celular" para emparejar (u olvidar) tu celular,
+  hacer visible la pantalla y buscar celulares cerca. En pantallas con chip propio todo queda igual:
+  se enlaza su app de Bluetooth.
 
 ## [1.4.100] - 2026-11-06
 

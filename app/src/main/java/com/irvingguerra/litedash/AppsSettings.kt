@@ -36,6 +36,7 @@ internal fun AppsSettings(d: Dependencies) {
             SettingsCard { UsbPlayerCard() }
             SettingsCard(stringResource(R.string.music_app_title)) { MusicSettings(d) }
             SettingsCard(stringResource(R.string.music_sources), stringResource(R.string.music_sources_help)) { MusicSourcesSettings(d) }
+            SettingsCard(stringResource(R.string.bt_pair), stringResource(R.string.bt_pair_help)) { BluetoothSettings(d) }
         }
         1 -> RadioSettings(d)
         2 -> {

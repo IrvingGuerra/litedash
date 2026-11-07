@@ -138,7 +138,7 @@ internal fun SourceRow(
     val c = LocalColors.current
     val active = repo.active
     val usb = browsing || active?.let(repo::isOwn) == true || song != null && repo.isOwn(song.pkg)
-    val bluetooth = repo.sourceApps[SourceKind.BLUETOOTH]
+    val bluetooth = repo.bluetoothApp()
     // Si tu app de música es la de Bluetooth, sale una vez (como Bluetooth).
     val app = repo.preferred?.takeIf { it != bluetooth && !repo.isOwn(it) }
     // Sin nada tocado, manda tu app de música; si no hay, lo que suene.

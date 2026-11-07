@@ -3,12 +3,14 @@ package com.irvingguerra.litedash.feature.music
 import android.annotation.SuppressLint
 import android.app.Notification
 import android.app.NotificationManager
+import android.bluetooth.BluetoothManager
 import android.content.BroadcastReceiver
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.ApplicationInfo
+import android.content.pm.ServiceInfo
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.media.AudioManager
@@ -89,6 +91,16 @@ private const val BROADCAST_FRESH_MS = 10 * 60_000L
 // Ofrecen su audio a Android pero no son apps de música (el asistente, video).
 private val NOT_MUSIC_APPS = setOf(
     "com.google.android.googlequicksearchbox", "com.google.android.youtube", "com.google.android.gms",
+)
+
+/** Apps de Bluetooth de marca (chip propio, no el de Android): para saber la familia en los reportes. */
+private val BRAND_BT_APPS = listOf(
+    "com.syu.bt", "com.syu.ms", "com.fyt.bt",           // FYT
+    "com.tw.bt", "com.tw.service", "com.ts.bt",         // TopWay
+    "com.microntek.bt",                                  // Microntek (MTCD/PX5)
+    "com.goodocom.gocsdk",                               // Goodocom gocsdk
+    "com.autochips.bluetooth",                           // Autochips (AC8227L…)
+    "com.yftech.service.bluetooth",                      // YF Tech (GAC)
 )
 
 /**
@@ -233,6 +245,12 @@ class MusicRepository(private val context: Context) {
         SourceKind.RADIO -> if (ownRadio && (radioInternet || sourceApps[kind] == null)) ownPackage else sourceApps[kind]
     }
 
+    /** La pantalla trae el Bluetooth de Android (AVRCP): la fuente Bluetooth no pide app. */
+    val bluetoothBuiltIn: Boolean get() = bluetoothService != null
+
+    /** La app que toca el Bluetooth: el propio Android (AVRCP) si lo trae, si no la enlazada. */
+    fun bluetoothApp(): String? = bluetoothService?.packageName ?: sourceApps[SourceKind.BLUETOOTH]
+
     /** La pieza Radio usa la radio por internet de LiteDash (si no, la FM de la pantalla). Se guarda. */
     var radioInternet: Boolean
         get() = radioInternetState
@@ -292,12 +310,41 @@ class MusicRepository(private val context: Context) {
     // Celular por Bluetooth y memoria USB: solo se escuchan mientras la música está en pantalla.
     private val devices = DeviceWatcher(context, onBluetooth = ::phoneChanged, onUsb = { usbDrive = it })
 
-    // Se desconectó el celular: la música Bluetooth que se suponía sonando ya no suena.
+    // El Bluetooth de Android como receptor (A2DP sink): si la pantalla trae el servicio AVRCP,
+    // LiteDash lee y controla la música del celular sin app externa. Solo vivo mientras la música
+    // esté a la vista; el controlador solo cuenta con un celular conectado.
+    private var avrcp: BluetoothAvrcp? = null
+    private var avrcpController: MediaController? = null
+    /** El servicio AVRCP del Bluetooth de Android; se busca una vez, sin importar si la música está a la vista. */
+    private val bluetoothService: ServiceInfo? by lazy { BluetoothAvrcp.find(context) }
+
+    // El celular llegó o se fue: con AVRCP, se conecta o desconecta; sin él, la música Bluetooth
+    // que se suponía sonando ya no suena.
     private fun phoneChanged(name: String?) {
         bluetoothDevice = name
-        if (name != null) return
+        if (name != null) {
+            avrcp?.connect()
+            return
+        }
+        avrcp?.disconnect()
+        avrcpController = null
+        if (users > 0) choose(sessions())
         val app = sourceApps[SourceKind.BLUETOOTH] ?: return
         for (lens in listOf(music, radio)) if (lens.assumedPkg == app) lens.forget()
+    }
+
+    /** Si la pantalla trae el Bluetooth de Android (AVRCP), se prepara para leer la música del celular. */
+    private fun startAvrcp() {
+        if (avrcp != null) return
+        val service = bluetoothService ?: return
+        avrcp = BluetoothAvrcp(context, service, ::onAvrcpController)
+        if (bluetoothDevice != null) avrcp?.connect()
+    }
+
+    /** El controlador AVRCP ya (des)conectó: se vuelve a repartir; sin celular conectado, no cuenta. */
+    private fun onAvrcpController(controller: MediaController?) {
+        avrcpController = controller?.takeIf { bluetoothDevice != null }
+        mainHandler.post { if (users > 0) choose(sessions()) }
     }
 
     fun use() {
@@ -336,6 +383,7 @@ class MusicRepository(private val context: Context) {
 
     private fun start() {
         devices.start()
+        startAvrcp()
         // Son avisos de otras apps: el receptor debe aceptar avisos de fuera. Cualquier app podría mandar
         // un título falso; solo se muestra (sin sesión de por medio) y la sesión real siempre manda.
         val filter = IntentFilter().apply { BroadcastMeta.ACTIONS.forEach(::addAction) }
@@ -366,6 +414,8 @@ class MusicRepository(private val context: Context) {
 
     private fun stop() {
         devices.stop()
+        avrcp?.disconnect()
+        avrcpController = null
         runCatching { context.unregisterReceiver(broadcasts) }
         if (NotificationService.media === notifications) NotificationService.media = null
         if (listening) runCatching { sessionManager.removeOnActiveSessionsChangedListener(onSessionsChanged) }
@@ -421,7 +471,10 @@ class MusicRepository(private val context: Context) {
         val extra = sourceNotes.values.filter { n -> active.none { it.packageName == n.packageName } }.mapNotNull { n ->
             n.sessionToken()?.let { runCatching { MediaController(context, it) }.getOrNull() }
         }
-        return active + extra
+        val all = active + extra
+        // El Bluetooth de Android (AVRCP) no sale entre las sesiones activas: se agrega.
+        val av = avrcpController ?: return all
+        return if (all.any { it.packageName == av.packageName }) all else all + av
     }
 
     /**
@@ -676,7 +729,7 @@ class MusicRepository(private val context: Context) {
         }
         val title = named.ifBlank { app }
         starting = null
-        if (remembersLast && playing && !isOwn(c.packageName) && c.packageName != lastSavedApp) {
+        if (remembersLast && playing && !isOwn(c.packageName) && c.packageName != avrcpPackage && c.packageName != lastSavedApp) {
             lastSavedApp = c.packageName
             store.edit().putString(KEY_LAST_APP, c.packageName).apply()
         }
@@ -783,6 +836,7 @@ class MusicRepository(private val context: Context) {
             if (!s.blind && t != null) {
                 if (s.playing) return t.pause()
                 if (this === music) controller?.packageName?.let(::watchPlay)
+                if (controller?.packageName == avrcpPackage) ensureBluetoothSound()
                 return t.play()
             }
             val play = !s.playing
@@ -824,8 +878,14 @@ class MusicRepository(private val context: Context) {
     }
 
     /** La fuente a la que está enlazada [pkg] (o la que toca LiteDash); null = una app normal. */
-    fun sourceOf(pkg: String): SourceKind? =
-        if (isOwn(pkg)) ownSourceNow?.invoke() else sourceApps.entries.firstOrNull { it.value == pkg }?.key
+    fun sourceOf(pkg: String): SourceKind? = when {
+        isOwn(pkg) -> ownSourceNow?.invoke()
+        pkg == avrcpPackage -> SourceKind.BLUETOOTH
+        else -> sourceApps.entries.firstOrNull { it.value == pkg }?.key
+    }
+
+    /** Paquete del servicio AVRCP del Bluetooth de Android; null si la pantalla no lo trae. */
+    private val avrcpPackage: String? get() = avrcp?.service?.packageName
 
     private fun appLabel(pkg: String) = labels.getOrPut(pkg) {
         runCatching {
@@ -901,6 +961,7 @@ class MusicRepository(private val context: Context) {
         val session = music.controller?.takeIf { song != null && (pkg == null || it.packageName == pkg) }
         if (session != null) {
             watchPlay(session.packageName)
+            if (session.packageName == avrcpPackage) ensureBluetoothSound()
             return session.transportControls.play()
         }
         if (pkg == null) return systemPlay()
@@ -963,6 +1024,11 @@ class MusicRepository(private val context: Context) {
     /** Abre la app de radio de la pantalla (si hay una enlazada). */
     fun openRadioApp() {
         sourceApps[SourceKind.RADIO]?.let(::open)
+    }
+
+    /** Abre la app de Bluetooth enlazada (para vincular en pantallas con chip propio). */
+    fun openBluetoothApp() {
+        sourceApps[SourceKind.BLUETOOTH]?.let(::open)
     }
 
     /**
@@ -1049,6 +1115,30 @@ class MusicRepository(private val context: Context) {
     }
 
     private fun musicActive() = context.getSystemService(AudioManager::class.java).isMusicActive
+
+    /**
+     * FYT (pantallas cuyo MCU elige la fuente de audio): dar play al celular por AVRCP no basta,
+     * el MCU tiene que pasar la fuente a Bluetooth. Si al poco rato el celular dice que suena pero
+     * Android no tiene audio, se alterna la fuente con su servicio y se vuelve a dar play. No se
+     * puede verificar sin la pantalla: todo queda en el registro para los reportes.
+     */
+    private fun ensureBluetoothSound() {
+        if (!isFyt()) return
+        mainHandler.postDelayed({
+            if (users == 0 || bluetoothDevice == null) return@postDelayed
+            val c = avrcpController ?: return@postDelayed
+            if (c.playbackState?.state != PlaybackState.STATE_PLAYING || musicActive()) return@postDelayed
+            trace("fyt: el celular suena por AVRCP pero no hay audio; se alterna la fuente")
+            runCatching {
+                context.startService(Intent("com.syu.bt.byav.widgetPlayPause").setClassName("com.syu.bt", "com.syu.bt.broadcast.BtavPlayPauseService"))
+            }
+            // El servicio alterna la fuente; el play va poco después (no dos veces en <1.5 s).
+            mainHandler.postDelayed({ runCatching { c.transportControls.play() } }, 700)
+        }, PLAY_CHECK_MS)
+    }
+
+    /** Es una pantalla FYT (tiene la app de Bluetooth de su MCU). */
+    private fun isFyt() = runCatching { context.packageManager.getPackageInfo("com.syu.bt", 0) }.isSuccess
 
     /** Trae LiteDash al frente si otra app lo tapa (lo pone la app). */
     var returnHome: (() -> Unit)? = null
@@ -1194,6 +1284,15 @@ class MusicRepository(private val context: Context) {
 
     private fun yes(v: Boolean) = if (v) "sí" else "no"
 
+    /** Para los reportes: qué Bluetooth trae la pantalla y qué apps de marca, para saber su familia. */
+    private fun describeBluetooth(): String = buildString {
+        val adapter = runCatching { context.getSystemService(BluetoothManager::class.java)?.adapter }.getOrNull()
+        val service = bluetoothService
+        appendLine("Bluetooth de Android: AVRCP=${service?.let { "${it.packageName}/${it.name}" } ?: "no"}; adaptador=${adapter?.let { if (it.isEnabled) "encendido" else "apagado" } ?: "no"}")
+        val brand = BRAND_BT_APPS.filter { runCatching { context.packageManager.getPackageInfo(it, 0) }.isSuccess }
+        appendLine("Apps de Bluetooth de marca: ${brand.joinToString().ifBlank { "ninguna" }}")
+    }
+
     /**
      * Lo que LiteDash ve de la música en esta pantalla, para los reportes: las fuentes enlazadas
      * (con su receptor, servicio y aviso), cada sesión con su estado, acciones y si trae canción,
@@ -1215,6 +1314,7 @@ class MusicRepository(private val context: Context) {
             )
         }
         appendLine("Bluetooth: ${if (bluetoothDevice != null) "celular conectado" else "-"}; USB: ${if (usbDrive != null) "memoria conectada" else "-"}")
+        append(describeBluetooth())
         appendLine("Apps de música: ${browsers.joinToString().ifBlank { "ninguna" }}")
         appendLine("Botón de play: ${buttons.joinToString().ifBlank { "ninguna" }}")
         if (!hasPermission()) appendLine("Sesiones: sin acceso a notificaciones")
