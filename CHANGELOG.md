@@ -4,6 +4,13 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.4.102] - 2026-11-07
+
+### Nuevo
+- **Carátula para la música por Bluetooth:** si el celular no manda la carátula de la canción (pasa
+  con el Bluetooth), LiteDash la busca por el título y el artista en iTunes Search y la guarda para
+  volver a verla sin internet. Si no hay carátula, todo queda igual que antes.
+
 ## [1.4.101] - 2026-11-07
 
 ### Nuevo

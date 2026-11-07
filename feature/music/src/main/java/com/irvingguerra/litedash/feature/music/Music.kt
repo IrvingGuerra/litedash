@@ -733,7 +733,7 @@ class MusicRepository(private val context: Context) {
             lastSavedApp = c.packageName
             store.edit().putString(KEY_LAST_APP, c.packageName).apply()
         }
-        song = Song(
+        song = withCover(Song(
             title = title,
             artist = m.text(MediaMetadata.METADATA_KEY_ARTIST, MediaMetadata.METADATA_KEY_ALBUM_ARTIST).ifBlank { shown?.second.orEmpty() },
             app = app,
@@ -754,7 +754,7 @@ class MusicRepository(private val context: Context) {
             buffering = state?.state == PlaybackState.STATE_BUFFERING || state?.state == PlaybackState.STATE_CONNECTING,
             error = state?.takeIf { it.state == PlaybackState.STATE_ERROR }?.errorMessage?.toString(),
             blind = assumed != null,
-        )
+        ))
         }
 
         /**
@@ -770,7 +770,7 @@ class MusicRepository(private val context: Context) {
             val playing = sent ?: h.playing ?: true
             if (h.title == null && !playing) return null
             val title = h.title ?: app.ifBlank { if (h.bluetooth) context.getString(R.string.source_bluetooth) else return null }
-            return Song(
+            return withCover(Song(
                 title = title,
                 artist = h.artist.orEmpty(),
                 app = app,
@@ -787,7 +787,7 @@ class MusicRepository(private val context: Context) {
                 buffering = false,
                 error = null,
                 blind = true,
-            )
+            ))
         }
 
         /** Lo que LiteDash supone de la app a la que le mandó play o pausa ([assume]). */
@@ -815,6 +815,30 @@ class MusicRepository(private val context: Context) {
                 error = null,
                 blind = true,
             )
+        }
+
+        /**
+         * Carátula de respaldo para la música por Bluetooth: si la sesión (o el aviso) no trajo
+         * carátula pero sí título y artista, se toma la ya resuelta ([CoverArt.cached], en memoria)
+         * o se busca en iTunes ([CoverArt.fetch], que avisa en el hilo principal solo si sigue
+         * siendo la misma canción). Fuera de Bluetooth no se busca: su carátula ya llega sola.
+         */
+        private fun withCover(s: Song): Song {
+            if (s.artwork != null || s.source != SourceKind.BLUETOOTH) return s
+            val title = s.title
+            val artist = s.artist
+            if (title.isBlank() || artist.isBlank()) return s
+            val cached = CoverArt.cached(title, artist)
+            if (cached == null) {
+                CoverArt.fetch(context, title, artist) { bmp ->
+                    val cur = song
+                    if (bmp != null && cur != null && cur.artwork == null && cur.title == title && cur.artist == artist) {
+                        song = cur.copy(artwork = bmp)
+                    }
+                }
+                return s
+            }
+            return s.copy(artwork = cached)
         }
 
         /**
