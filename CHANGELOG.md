@@ -4,13 +4,6 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
-## [1.4.103] - 2026-11-07
-
-### Mejorado
-- **El reporte ahora incluye tu red:** al enviar un reporte, agrega una línea "Celular (Link)" con la
-  red actual (WiFi, IP y si NSD está disponible). Es la primera pieza para espejar la música del
-  celular en pantallas con chip de Bluetooth propio.
-
 ## [1.4.102] - 2026-11-07
 
 ### Nuevo

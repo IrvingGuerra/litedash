@@ -20,10 +20,6 @@ import android.media.session.MediaController
 import android.media.session.MediaSession
 import android.media.session.MediaSessionManager
 import android.media.session.PlaybackState
-import android.net.ConnectivityManager
-import android.net.NetworkCapabilities
-import android.net.nsd.NsdManager
-import android.net.nsd.NsdServiceInfo
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
@@ -40,8 +36,6 @@ import androidx.compose.runtime.setValue
 import androidx.core.content.ContextCompat
 import androidx.core.os.BundleCompat
 import com.irvingguerra.litedash.feature.musica.ServicioMusica
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
 import kotlin.concurrent.thread
 
 /** Recibe los avisos que pasa el [NotificationService] (la app solo mira los de navegación). */
@@ -93,10 +87,6 @@ private const val PLAY_RETURN_MS = 4_000L
 private const val TRACE_SIZE = 60
 /** Un aviso (broadcast) de qué suena vale como respaldo durante este rato. */
 private const val BROADCAST_FRESH_MS = 10 * 60_000L
-/** El tipo de servicio que publica la app LiteDash Link por NSD. */
-private const val LINK_SERVICE_TYPE = "_litedash-link._tcp"
-/** Cuánto se espera el descubrimiento NSD de Link antes de darlo por vacío. */
-private const val LINK_NSD_MS = 3_000L
 
 // Ofrecen su audio a Android pero no son apps de música (el asistente, video).
 private val NOT_MUSIC_APPS = setOf(
@@ -401,7 +391,6 @@ class MusicRepository(private val context: Context) {
         NotificationService.media = notifications
         loadSourceNotes()
         startTopWay()
-        probeLink()
         if (!store.getBoolean(KEY_SOURCES_GUESSED, false)) {
             store.edit().putBoolean(KEY_SOURCES_GUESSED, true).apply()
             Thread(::guessSources, "music-sources").start()
@@ -1328,52 +1317,6 @@ class MusicRepository(private val context: Context) {
         appendLine("Apps de Bluetooth de marca: ${brand.joinToString().ifBlank { "ninguna" }}")
     }
 
-    // Lo que el sondeo NSD de LiteDash Link descubrió (null = aún sin sondear): para el diagnóstico L0.
-    private var linkProbe: String? = null
-    private var linkProbed = false
-
-    /**
-     * Prueba una sola vez que NSD descubre `_litedash-link` en la red de la pantalla. Corre en un
-     * hilo aparte (NSD es asíncrono); el resultado se guarda para el reporte y se anota en [trace].
-     */
-    private fun probeLink() {
-        if (linkProbed) return
-        linkProbed = true
-        val nsd = runCatching { context.getSystemService(NsdManager::class.java) }.getOrNull()
-        if (nsd == null) { linkProbe = "NSD no disponible"; return }
-        Thread({
-            var found = 0
-            var failed: String? = null
-            val done = CountDownLatch(1)
-            val listener = object : NsdManager.DiscoveryListener {
-                override fun onDiscoveryStarted(serviceType: String) = Unit
-                override fun onServiceFound(info: NsdServiceInfo) { found++ }
-                override fun onServiceLost(info: NsdServiceInfo) = Unit
-                override fun onDiscoveryStopped(serviceType: String) { done.countDown() }
-                override fun onStartDiscoveryFailed(serviceType: String, errorCode: Int) { failed = "falla $errorCode"; done.countDown() }
-                override fun onStopDiscoveryFailed(serviceType: String, errorCode: Int) { done.countDown() }
-            }
-            val started = runCatching { nsd.discoverServices(LINK_SERVICE_TYPE, NsdManager.PROTOCOL_DNS_SD, listener) }.isSuccess
-            if (!started) failed = "no arranca"
-            runCatching { done.await(LINK_NSD_MS, TimeUnit.MILLISECONDS) }
-            runCatching { nsd.stopServiceDiscovery(listener) }
-            val result = failed?.let { "NSD $it" } ?: "NSD ve $found"
-            mainHandler.post { linkProbe = result; trace("link: $result servicio(s)") }
-        }, "music-link").start()
-    }
-
-    /** Para los reportes: la red de la pantalla y si NSD descubre Link (el diagnóstico L0). */
-    @SuppressLint("MissingPermission") // ACCESS_NETWORK_STATE va en el manifest de la app
-    private fun describeLink(): String = buildString {
-        val cm = runCatching { context.getSystemService(ConnectivityManager::class.java) }.getOrNull()
-        val net = cm?.activeNetwork
-        val wifi = net?.let { cm.getNetworkCapabilities(it)?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) } == true
-        val ip = net?.let { cm.getLinkProperties(it) }?.linkAddresses.orEmpty()
-            .let { addrs -> (addrs.firstOrNull { it.address?.isSiteLocalAddress == true } ?: addrs.firstOrNull())?.address?.hostAddress }
-        val nsd = runCatching { context.getSystemService(NsdManager::class.java) != null }.getOrDefault(false)
-        appendLine("Celular (Link): wifi=${yes(wifi)}, ip=${ip ?: "-"}, nsd=${yes(nsd)}, ${linkProbe ?: "sin sondear"}")
-    }
-
     /**
      * Lo que LiteDash ve de la música en esta pantalla, para los reportes: las fuentes enlazadas
      * (con su receptor, servicio y aviso), cada sesión con su estado, acciones y si trae canción,
@@ -1396,7 +1339,6 @@ class MusicRepository(private val context: Context) {
         }
         appendLine("Bluetooth: ${if (bluetoothDevice != null) "celular conectado" else "-"}; USB: ${if (usbDrive != null) "memoria conectada" else "-"}")
         append(describeBluetooth())
-        append(describeLink())
         appendLine("Apps de música: ${browsers.joinToString().ifBlank { "ninguna" }}")
         appendLine("Botón de play: ${buttons.joinToString().ifBlank { "ninguna" }}")
         if (!hasPermission()) appendLine("Sesiones: sin acceso a notificaciones")
