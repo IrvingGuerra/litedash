@@ -4,6 +4,11 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.4.104] - 2026-11-07
+
+### Arreglado
+- Se quita una línea de diagnóstico interno que salió por error en la 1.4.103. Sin cambios para quien viene de la 1.4.102.
+
 ## [1.4.102] - 2026-11-07
 
 ### Nuevo
