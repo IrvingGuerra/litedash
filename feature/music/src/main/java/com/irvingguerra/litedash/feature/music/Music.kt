@@ -68,6 +68,9 @@ private val SOURCE_WORDS = mapOf(
     SourceKind.RADIO to listOf("radio", "fm"),
 )
 
+/** Apps de Bluetooth de marca conocidas (chip propio): se prefieren sobre adivinar por nombre. */
+private val KNOWN_BT = setOf("com.syu.bt", "com.tw.bt", "com.microntek.bt", "com.clw.btmusic")
+
 /** Cuánto se espera a que la app despertada empiece a sonar antes de abrirla. */
 private const val WAKE_TIMEOUT_MS = 4_000L
 /** Tras abrir una radio sin control, cuánto se espera para regresar al inicio (y luego para anotar si sigue el audio). */
@@ -1286,10 +1289,16 @@ class MusicRepository(private val context: Context) {
             pm.queryIntentActivities(Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER), 0)
                 .map { it.activityInfo.packageName }.toSet()
         }.getOrDefault(emptySet())
-        val candidates = systemPlayers().filter { it in launchable }.map { pkg -> pkg to tokens(pkg, appLabel(pkg)) }
-        val found = SOURCE_WORDS.mapNotNull { (kind, words) ->
-            candidates.filter { (_, t) -> words.any { it in t } }.singleOrNull()?.let { kind to it.first }
-        }.toMap()
+        val players = systemPlayers().filter { it in launchable }
+        val candidates = players.map { pkg -> pkg to tokens(pkg, appLabel(pkg)) }
+        // Bluetooth: primero una app de marca conocida (chip propio, la más fiable); si no, por nombre.
+        val bluetooth = players.firstOrNull { it in KNOWN_BT }
+            ?: candidates.filter { (_, t) -> SOURCE_WORDS.getValue(SourceKind.BLUETOOTH).any { it in t } }.singleOrNull()?.first
+        val radio = candidates.filter { (_, t) -> SOURCE_WORDS.getValue(SourceKind.RADIO).any { it in t } }.singleOrNull()?.first
+        val found = buildMap {
+            bluetooth?.let { put(SourceKind.BLUETOOTH, it) }
+            radio?.let { put(SourceKind.RADIO, it) }
+        }
         if (found.isEmpty()) return
         mainHandler.post { for ((kind, pkg) in found) if (kind !in sourceApps) setSource(kind, pkg) }
     }

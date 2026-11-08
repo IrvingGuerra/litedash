@@ -4,6 +4,19 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.4.105] - 2026-11-08
+
+### Mejorado
+- **Música por Bluetooth más clara:** Ajustes → Apps → Música ya no pregunta "elige app o enlaza
+  tu celular"; ahora solo está "Vincular celular", que se adapta a tu pantalla: con el Bluetooth
+  de Android te deja emparejar (o quitar) el celular, y con su propia app de Bluetooth te abre esa
+  app (y, si no la reconoce, te deja elegirla). Se aclara que el título y el artista los manda la
+  pantalla, no LiteDash.
+
+### Corregido
+- En pantallas con chip de Bluetooth propio, LiteDash ya no confunde la app de música con la de
+  radio: prefiere las apps de Bluetooth de marca conocida.
+
 ## [1.4.104] - 2026-11-07
 
 ### Arreglado
