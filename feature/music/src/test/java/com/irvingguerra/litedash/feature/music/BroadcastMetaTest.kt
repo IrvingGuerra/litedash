@@ -17,7 +17,6 @@ class BroadcastMetaTest {
         )!!
         assertEquals("Bésame Mucho", m.title)
         assertEquals("Luis Miguel", m.artist)
-        assertEquals("Romance", m.album)
         assertEquals(true, m.playing)
         assertFalse(m.bluetooth)
         assertNull(m.pkg)
@@ -37,7 +36,6 @@ class BroadcastMetaTest {
             mapOf(avrcp + "extra.MEDIA_TITLE" to "Ojitos Lindos", avrcp + "extra.MEDIA_ARTIST" to "Bad Bunny", avrcp + "extra.MEIDA_ALBUM" to "Un Verano Sin Ti"),
         )!!
         assertTrue(media.bluetooth)
-        assertEquals("Un Verano Sin Ti", media.album)
         assertNull(media.playing)
         // El aviso de tiempo trae solo el estado (1 = sonando) y se junta con el anterior.
         val status = BroadcastMeta.parse(

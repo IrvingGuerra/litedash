@@ -507,7 +507,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
               BarPosition.BOTTOM -> false
               BarPosition.AUTO -> maxWidth > maxHeight && !isShortScreen()
           }
-          val favorites = remember(apps, d.prefs.dock, d.prefs.musicApp) { dockFavorites(d, apps) }
+          val favorites = remember(apps, d.prefs.dock, d.music.preferred) { dockFavorites(d, apps) }
           val railRight = rail && d.prefs.barPosition == BarPosition.RIGHT
           val railBar = @Composable {
               Rail(
@@ -721,7 +721,7 @@ fun dockFavorites(d: Dependencies, apps: List<App>): List<App> {
         projectionApp(apps),
         d.apps.firstOf(apps, *NAVIGATION_PACKAGES),
         // La app de música elegida en Ajustes, o la primera conocida que haya.
-        d.prefs.musicApp?.let { d.apps.firstOf(apps, it) } ?: d.apps.firstOf(apps, *MUSIC_PACKAGES),
+        d.music.preferred?.let { d.apps.firstOf(apps, it) } ?: d.apps.firstOf(apps, *MUSIC_PACKAGES),
         d.apps.firstOf(apps, "com.google.android.youtube"),
         d.apps.firstOf(apps, "com.whatsapp", "org.telegram.messenger"),
         d.apps.firstOf(apps, "com.android.chrome"),

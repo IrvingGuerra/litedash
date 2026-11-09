@@ -31,7 +31,7 @@ class LiteDashApp : Application() {
             if (BuildConfig.DEBUG) setOf(NavigationRepository.TEST_PACKAGE) else emptySet()
         val prefs = Preferences(this)
         val bus = VehicleBus()
-        val music = MusicRepository(this).apply { preferred = prefs.musicApp; onPreferredChanged = { prefs.musicApp = it }; opener = SplitScreen::open
+        val music = MusicRepository(this).apply { adoptPreferred(prefs.musicApp); opener = SplitScreen::open
             returnHome = { MainActivity.bringToFront(this@LiteDashApp) } }
         OwnPlayer.wire(this, music, prefs)
         music.migrateUsbApp()

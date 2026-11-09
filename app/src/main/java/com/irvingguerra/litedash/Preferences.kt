@@ -290,7 +290,7 @@ class Preferences(context: Context) {
     /** App de navegación elegida ([com.irvingguerra.litedash.feature.apps.App.key]); null = la primera instalada. */
     var mapApp by string(PrefKeys.MAP_APP)
 
-    /** Paquete de la app del método App de la música; null = ninguna fija (la música muestra la app que suene). */
+    /** La app de música de antes de la 1.4.116: solo se lee una vez para pasarla a `MusicRepository.preferred`, que es la que vale. */
     var musicApp by string(PrefKeys.MUSIC_APP)
 
     /** Nombre de quien maneja, para saludarlo; null = sin saludo. */

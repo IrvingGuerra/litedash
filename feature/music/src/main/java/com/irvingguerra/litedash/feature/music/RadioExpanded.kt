@@ -43,7 +43,7 @@ fun RadioExpanded(
 ) {
     val c = LocalColors.current
     val song = repo.radio.song
-    val target = repo.appFor(SourceKind.RADIO)
+    val target = repo.radioApp
     // Con qué suena la pieza: la radio escogida en Ajustes (una sola: FM o internet).
     val internet = target != null && repo.isOwn(target)
     val canBrowse = browser != null && internet

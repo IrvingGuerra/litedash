@@ -53,7 +53,7 @@ internal fun AppsSettings(d: Dependencies) {
 @Composable
 private fun Favorites(d: Dependencies) {
     val apps = rememberApps(d.apps).orEmpty()
-    val favorites = remember(apps, d.prefs.dock, d.prefs.musicApp) { dockFavorites(d, apps) }
+    val favorites = remember(apps, d.prefs.dock, d.music.preferred) { dockFavorites(d, apps) }
     FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         for (app in favorites) {
             Row(

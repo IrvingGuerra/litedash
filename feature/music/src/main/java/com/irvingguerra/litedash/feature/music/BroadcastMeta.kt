@@ -8,7 +8,6 @@ package com.irvingguerra.litedash.feature.music
 data class BroadcastMeta(
     val title: String?,
     val artist: String?,
-    val album: String?,
     val playing: Boolean?,
     /** La app que avisa, si lo manda en los extras. */
     val pkg: String?,
@@ -23,7 +22,6 @@ data class BroadcastMeta(
         return copy(
             title = title ?: prev.title,
             artist = artist ?: prev.artist.takeIf { sameSong },
-            album = album ?: prev.album.takeIf { sameSong },
             playing = playing ?: prev.playing,
         )
     }
@@ -75,11 +73,10 @@ data class BroadcastMeta(
                     title = extras.text(AVRCP + "extra.MEDIA_TITLE"),
                     artist = extras.text(AVRCP + "extra.MEDIA_ARTIST"),
                     // "MEIDA" con la errata de la app de Autochips.
-                    album = extras.text(AVRCP + "extra.MEIDA_ALBUM", AVRCP + "extra.MEDIA_ALBUM"),
                     playing = null, pkg = null, bluetooth = true,
                 )
                 AVRCP_PLAYBACK -> BroadcastMeta(
-                    title = null, artist = null, album = null,
+                    title = null, artist = null,
                     playing = (extras[AVRCP + "extra.PLAYBACK_STATUS"] as? Number)?.let { it.toInt() == 1 },
                     pkg = null, bluetooth = true,
                 )
@@ -88,7 +85,6 @@ data class BroadcastMeta(
                     BroadcastMeta(
                         title = if (info) extras.text("Media_Title") else null,
                         artist = if (info) extras.text("Media_Artist") else null,
-                        album = if (info) extras.text("Media_Album") else null,
                         playing = if (info) null else flag(extras["Play_State"]),
                         pkg = null,
                         bluetooth = (extras["Media_Type"] as? Number)?.toInt() == CLW_BLUETOOTH,
@@ -97,7 +93,6 @@ data class BroadcastMeta(
                 else -> BroadcastMeta(
                     title = extras.text("track", "title", "song", "name", "com.maxmpz.audioplayer.TRACK", "id3_title", "music_title", "TITLE"),
                     artist = extras.text("artist", "singer", "id3_artist", "music_artist", "ARTIST"),
-                    album = extras.text("album", "id3_album", "music_album", "ALBUM"),
                     playing = sequenceOf("playing", "isPlaying", "playstate").firstNotNullOfOrNull { flag(extras[it]) },
                     pkg = extras.text("package", "packageName", "pkg"),
                     bluetooth = isBluetooth(action),

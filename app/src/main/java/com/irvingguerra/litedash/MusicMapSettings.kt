@@ -47,7 +47,7 @@ import kotlinx.coroutines.withContext
 @Composable
 fun MusicSettings(d: Dependencies) {
     val apps = rememberApps(d.apps).orEmpty()
-    val chosen = d.prefs.musicApp
+    val chosen = d.music.preferred
     // Preguntarle a Android cuáles son de música es una consulta entre procesos: fuera del hilo principal.
     val detected by produceState(emptySet<String>(), d.music) { value = withContext(Dispatchers.IO) { d.music.musicApps() } }
     val musicApps = remember(apps, chosen, detected) {

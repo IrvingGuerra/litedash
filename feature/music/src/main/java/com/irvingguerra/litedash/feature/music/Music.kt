@@ -61,6 +61,10 @@ private const val KEY_LAST_APP = "last_app"
 private const val KEY_SOURCES_GUESSED = "sources_guessed"
 /** La pieza Radio prefiere la de internet (true) o la FM de la pantalla. */
 private const val KEY_RADIO_INTERNET = "radio_internet"
+/** Tu app de música (método App); antes la guardaba el app en sus preferencias (`music_app`). */
+private const val KEY_PREFERRED = "preferred_app"
+/** Ya se pasó la app de música de las preferencias del app a [KEY_PREFERRED]. */
+private const val KEY_PREFERRED_MOVED = "preferred_moved"
 /** El método de música elegido ([MusicMode]). */
 private const val KEY_MODE = "music_mode"
 /** Ya se revisó una vez la app de Bluetooth enlazada ([MusicRepository.fixBluetoothLink]). */
@@ -138,20 +142,22 @@ class MusicRepository(private val context: Context) {
     private var lastSavedApp: String? = store.getString(KEY_LAST_APP, null)
 
     /**
-     * Tu app de música, elegida en Ajustes (paquete); null = ninguna: la pieza muestra lo que
-     * suene. Es lo que sigue el método App ([mode]).
+     * Tu app de música, elegida en Ajustes ([choose]); null = ninguna: la pieza muestra lo que
+     * suene. Es lo que sigue el método App ([mode]). Se guarda aquí (una sola verdad).
      */
-    var preferred: String?
-        get() = preferredState
-        set(v) {
-            preferredState = v
-            if (users > 0) choose(sessions())
-        }
-    // Estado de Compose: la fila de fuentes resalta la elegida al momento.
-    private var preferredState by mutableStateOf<String?>(null)
+    val preferred: String? get() = preferredState
+    // Estado de Compose: Ajustes resalta la elegida al momento.
+    private var preferredState by mutableStateOf(store.getString(KEY_PREFERRED, null))
 
-    /** Guarda la elección de [choose] (la pone el app: va a sus preferencias). */
-    var onPreferredChanged: ((String?) -> Unit)? = null
+    /**
+     * Hasta la 1.4.115 la app la guardaba el app en sus preferencias ([old]): se pasa aquí una sola vez
+     * (después vale lo de aquí, aunque se quite la app).
+     */
+    fun adoptPreferred(old: String?) {
+        if (store.getBoolean(KEY_PREFERRED_MOVED, false)) return
+        store.edit().putBoolean(KEY_PREFERRED_MOVED, true).apply()
+        if (old != null && preferredState == null) choose(old)
+    }
 
     /**
      * El método de música, uno solo a la vez (Ajustes → Apps → Música): Archivos (el reproductor de
@@ -209,8 +215,8 @@ class MusicRepository(private val context: Context) {
         sourceApps = if (pkg == null) sourceApps - kind else sourceApps + (kind to pkg)
         // Al enlazar otra vez (quizá tras actualizar la app de la pantalla) se vuelve a preguntar su receptor.
         if (pkg != null) receivers.remove(pkg)
-        music.forget()
-        if (kind != SourceKind.RADIO) radio.forget()
+        // Lo que se suponía de la app anterior ya no vale (la radio lo olvida en radioChanged()).
+        if (kind == SourceKind.BLUETOOTH) music.forget()
         store.edit().putString(kind.key, pkg).apply()
         if (users > 0) loadSourceNotes()
         if (kind == SourceKind.RADIO) radioChanged()
@@ -248,15 +254,8 @@ class MusicRepository(private val context: Context) {
 
     fun isOwn(pkg: String) = pkg == ownPackage
 
-    /**
-     * La app que reproduce [kind]: USB es siempre LiteDash; Bluetooth, la enlazada. La radio: LiteDash
-     * si se escogió la de internet, si no la FM enlazada.
-     */
-    fun appFor(kind: SourceKind): String? = when (kind) {
-        SourceKind.USB -> ownPackage
-        SourceKind.BLUETOOTH -> sourceApps[kind]
-        SourceKind.RADIO -> if (radioInternet) ownPackage else sourceApps[kind]
-    }
+    /** La app que toca la radio escogida: LiteDash si es la de internet, si no la FM enlazada (null = ninguna). */
+    val radioApp: String? get() = if (radioInternet) ownPackage else sourceApps[SourceKind.RADIO]
 
     /**
      * La pieza Música necesita el acceso a notificaciones para ver qué suena: con App sí (otras apps)
@@ -529,7 +528,7 @@ class MusicRepository(private val context: Context) {
         factory = null
         val run = ++factoryRun
         // Solo si la FM es la radio escogida (no la de internet).
-        val pkg = appFor(SourceKind.RADIO)?.takeUnless(::isOwn) ?: return
+        val pkg = radioApp?.takeUnless(::isOwn) ?: return
         factoryThread.execute {
             if (run != factoryRun || !isSilent(pkg)) return@execute
             val log: (String) -> Unit = { e -> mainHandler.post { trace(e) } }
@@ -1028,8 +1027,9 @@ class MusicRepository(private val context: Context) {
 
     /** Elige tu app de música (o ninguna con null) y la guarda. */
     fun choose(pkg: String?) {
-        preferred = pkg
-        onPreferredChanged?.invoke(pkg)
+        preferredState = pkg
+        store.edit().putString(KEY_PREFERRED, pkg).apply()
+        if (users > 0) choose(sessions())
     }
 
     /** La última app que sonó, solo con el método App (con Archivos o Bluetooth no se despierta otra). */
@@ -1039,7 +1039,7 @@ class MusicRepository(private val context: Context) {
     private fun target(lens: Lens): String? =
         // Lo que se supo sin sesión (aviso o supuesto) manda: la sesión elegida puede ser otra app vacía.
         lens.song?.takeIf { it.blind }?.pkg?.ifEmpty { null } ?: lens.controller?.packageName ?: lens.song?.pkg?.ifEmpty { null }
-            ?: if (lens === radio) appFor(SourceKind.RADIO) else modeApp ?: lastApp()
+            ?: if (lens === radio) radioApp else modeApp ?: lastApp()
 
     /**
      * Que suene lo tocado, la app elegida o, sin ninguna, la última que sonó. Con una canción
@@ -1112,7 +1112,7 @@ class MusicRepository(private val context: Context) {
     fun resumeRadio(onIdle: () -> Unit = {}) {
         val session = radio.controller?.takeIf { radio.song != null }
         if (session != null) return session.transportControls.play()
-        val pkg = appFor(SourceKind.RADIO) ?: return onIdle()
+        val pkg = radioApp ?: return onIdle()
         if (isOwn(pkg)) return ownPlay?.invoke(SourceKind.RADIO) { ok -> if (!ok) onIdle() } ?: Unit
         wake(pkg, radio)
     }
@@ -1306,7 +1306,7 @@ class MusicRepository(private val context: Context) {
 
     /** La pieza Radio sin sesión pero con una FM de la pantalla que atiende teclas: lleva anterior/siguiente. */
     fun radioHasKeys(): Boolean {
-        val pkg = appFor(SourceKind.RADIO) ?: return false
+        val pkg = radioApp ?: return false
         return !isOwn(pkg) && keyReceiver(pkg) != null
     }
 
@@ -1420,7 +1420,7 @@ class MusicRepository(private val context: Context) {
         val buttons = mediaButtonReceivers().map { it.packageName }.distinct().filter(::relevant)
         val browsers = musicApps().filter(::relevant)
         appendLine("Música elegida: ${preferred ?: "ninguna"}")
-        appendLine("Fuentes: ${SourceKind.entries.joinToString { "${it.name.lowercase()}=${appFor(it) ?: "-"}" }}")
+        appendLine("Fuentes: radio=${radioApp ?: "-"}, bluetooth=${bluetoothApp() ?: "-"}")
         val notes = sourceApps.values.toSet().let { apps -> NotificationService.active().filter { it.packageName in apps } }
         for ((kind, pkg) in sourceApps) {
             val own = notes.filter { it.packageName == pkg }
@@ -1454,7 +1454,7 @@ class MusicRepository(private val context: Context) {
             )
         }
         appendLine("Audio sonando en Android: ${yes(context.getSystemService(AudioManager::class.java).isMusicActive)}")
-        if (appFor(SourceKind.RADIO)?.startsWith(NwdRadio.PACKAGE) == true) appendLine(NwdRadio.describe(context) + " perfil=${yes(factory is NwdRadio)}")
+        if (radioApp?.startsWith(NwdRadio.PACKAGE) == true) appendLine(NwdRadio.describe(context) + " perfil=${yes(factory is NwdRadio)}")
         if (TopWayRadio.available) {
             val tw = factory as? TopWayRadio
             appendLine(

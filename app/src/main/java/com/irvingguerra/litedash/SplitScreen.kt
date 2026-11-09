@@ -64,7 +64,7 @@ object SplitScreen {
     /** Las apps que se abren divididas: las de mapa y de música (las conocidas, la elegida o por su categoría). */
     @RequiresApi(Build.VERSION_CODES.S_V2)
     private fun isMapOrMusic(context: Context, d: Dependencies, pkg: String): Boolean {
-        if (pkg in NAVIGATION_PACKAGES || pkg in MUSIC_PACKAGES || pkg == d.prefs.musicApp) return true
+        if (pkg in NAVIGATION_PACKAGES || pkg in MUSIC_PACKAGES || pkg == d.music.preferred) return true
         if (d.prefs.mapApp?.substringBefore('/') == pkg) return true
         val category = runCatching { context.packageManager.getApplicationInfo(pkg, 0).category }.getOrNull()
         return category == ApplicationInfo.CATEGORY_MAPS || category == ApplicationInfo.CATEGORY_AUDIO

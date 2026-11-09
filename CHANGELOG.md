@@ -4,6 +4,12 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.4.116] - 2026-11-09
+
+### Mejorado
+- Más limpieza en música y radio: tu app de música (método App) se guarda en un solo lugar (se pasa sola
+  al actualizar) y se quitó lo último que ya no se usaba. Nada cambia en lo que ves.
+
 ## [1.4.115] - 2026-11-09
 
 Auditoría de música y radio: arreglos y limpieza.

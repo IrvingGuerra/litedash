@@ -46,7 +46,7 @@ private fun StationText(repo: MusicRepository, song: Song?, tall: Boolean) {
 /** Sin nada sonando: la FM que va a despertar, "Por internet" o que enlace una. */
 @Composable
 internal fun radioHint(repo: MusicRepository): String {
-    val pkg = repo.appFor(SourceKind.RADIO)
+    val pkg = repo.radioApp
     return when {
         pkg == null -> stringResource(R.string.radio_unlinked)
         repo.isOwn(pkg) -> stringResource(R.string.radio_internet)
@@ -71,7 +71,7 @@ internal fun RadioControls(
     playSize: Dp = 56.dp,
     gap: Dp = 0.dp,
 ) {
-    val keys = remember(repo.appFor(SourceKind.RADIO)) { repo.radioHasKeys() }
+    val keys = remember(repo.radioApp) { repo.radioHasKeys() }
     if (song == null && keys) {
         return Controls(repo, false, modifier, compact = compact, size = size, playSize = playSize, gap = gap, lens = repo.radio)
     }

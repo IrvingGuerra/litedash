@@ -51,7 +51,7 @@ internal abstract class BaseFactoryRadio(private val onState: (BroadcastMeta) ->
     protected fun publish() {
         val text = station
         if (text == null && name.isEmpty()) return
-        onState(BroadcastMeta(title = name.ifEmpty { text }, artist = text.takeIf { name.isNotEmpty() }, album = null, playing = on ?: false, pkg = null, bluetooth = false))
+        onState(BroadcastMeta(title = name.ifEmpty { text }, artist = text.takeIf { name.isNotEmpty() }, playing = on ?: false, pkg = null, bluetooth = false))
     }
 }
 
