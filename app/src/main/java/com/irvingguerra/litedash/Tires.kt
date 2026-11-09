@@ -70,6 +70,7 @@ import com.irvingguerra.litedash.core.ui.Icons
 import com.irvingguerra.litedash.core.ui.Label
 import com.irvingguerra.litedash.core.ui.LocalColors
 import com.irvingguerra.litedash.core.ui.Radius
+import com.irvingguerra.litedash.core.ui.TilePadding
 import com.irvingguerra.litedash.core.ui.Typography
 import com.irvingguerra.litedash.core.vehicle.watch
 import com.irvingguerra.litedash.feature.car.CAR_TOP_ASPECT
@@ -605,7 +606,7 @@ private fun corner(w: Wheel) = when (w) {
  */
 @Composable
 fun BoxScope.TirePills(d: Dependencies, onOpen: () -> Unit) {
-    if (d.prefs.tiresOnCar == TiresOnCar.OFF || !d.hasTpmsSource) return
+    if (!d.hasTpmsSource) return
     RoadPills(d, onOpen) { Modifier.align(corner(it)).padding(6.dp) }
 }
 
@@ -679,7 +680,7 @@ private fun rearPillY(w: Wheel) = if (w == Wheel.REAR_LEFT || w == Wheel.REAR_RI
  */
 @Composable
 fun RoadTirePills(d: Dependencies, onOpen: () -> Unit, modifier: Modifier) {
-    if (d.prefs.tiresOnCar == TiresOnCar.OFF || !d.hasTpmsSource) return
+    if (!d.hasTpmsSource) return
     Layout(content = { RoadPills(d, onOpen) }, modifier = modifier) { measurables, constraints ->
         val gap = 6.dp.roundToPx()
         val pills = measurables.map { it.measure(Constraints()) }
@@ -722,13 +723,13 @@ fun TiresTile(d: Dependencies, onOpen: () -> Unit, onSettings: () -> Unit) {
     val has = d.hasTpmsSource
     Card(Modifier.fillMaxSize(), onClick = if (has) onOpen else onSettings) {
         if (!has) {
-            Column(Modifier.fillMaxSize().padding(12.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+            Column(Modifier.fillMaxSize().padding(TilePadding), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
                 Icon(Icons.tire, c.accent, 28.dp)
                 Label(stringResource(R.string.tires_configure), Typography.small, c.textMuted, maxLines = 2, modifier = Modifier.padding(top = 6.dp))
             }
             return@Card
         }
-        BoxWithConstraints(Modifier.fillMaxSize().padding(10.dp)) {
+        BoxWithConstraints(Modifier.fillMaxSize().padding(TilePadding)) {
             when {
                 maxWidth >= 300.dp && maxHeight >= 200.dp -> TiresView(d, compact = maxHeight < 330.dp, onWheel = { onOpen() }, Modifier.fillMaxSize())
                 maxWidth >= 170.dp || maxHeight >= 170.dp -> TiresMedium(d, tall = maxHeight > maxWidth * 1.3f, bare = maxWidth < 260.dp)

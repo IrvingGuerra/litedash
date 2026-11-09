@@ -127,6 +127,8 @@ sealed interface Panel {
     data class CustomizeImage(val tileId: String) : Panel
     /** Orientación, vista, zoom y colores del widget Mapa ([tileId]). */
     data class CustomizeMap(val tileId: String) : Panel
+    /** La presión de las llantas sobre el auto 3D ([tileId]). */
+    data class CustomizeCar(val tileId: String) : Panel
     /** Ajustes abiertos en Llantas (desde la vista de llantas o la pieza sin configurar). */
     data object TiresSettings : Panel
 }
@@ -246,13 +248,14 @@ fun TileContent(d: Dependencies, p: Tile, apps: List<App>, car: CarPackage?, rev
             // Las llantas junto a cada rueda en la carretera y en el auto 3D (si ya se sabe dónde pisan
             // y así se eligió); si no, en las esquinas. En una pieza chica las cuatro pastillas
             // taparían todo: ahí solo la pieza Llantas o el aviso. Sin llantas no hace falta medir la pieza.
-            if (d.hasTpmsSource) BoxWithConstraints(hero) {
+            // Cada carretera y auto dice si las lleva (su ajuste); si no lo tiene, lo de Ajustes → Llantas.
+            if (d.hasTpmsSource && showsTires(d, p)) BoxWithConstraints(hero) {
+                val wheels = d.prefs.tiresOnCar != TiresOnCar.CORNERS
                 // Dónde pisa cada rueda: un archivo chico aparte del paquete, se pide la primera vez.
-                if (p.type == TileTypes.CAR && d.prefs.tiresOnCar == TiresOnCar.WHEELS) LaunchedEffect(car) { d.cars.fetchWheels(car) }
+                if (p.type == TileTypes.CAR && wheels) LaunchedEffect(car) { d.cars.fetchWheels(car) }
                 val pills = maxWidth >= PILLS_MIN_WIDTH && maxHeight >= PILLS_MIN_HEIGHT && !actions.editing()
-                val onWheels = p.type == TileTypes.ROAD ||
-                    p.type == TileTypes.CAR && d.prefs.tiresOnCar == TiresOnCar.WHEELS && car?.wheels != null
-                if (onWheels) content(actions.onTires.takeIf { pills && d.prefs.tiresOnCar != TiresOnCar.OFF }) else {
+                val onWheels = p.type == TileTypes.ROAD || p.type == TileTypes.CAR && wheels && car?.wheels != null
+                if (onWheels) content(actions.onTires.takeIf { pills }) else {
                     content(null)
                     if (pills) TirePills(d, actions.onTires)
                 }
@@ -306,6 +309,25 @@ fun moduleOff(d: Dependencies, type: String): Int? = when (type) {
     TileTypes.WORKSHOP, TileTypes.GAUGE -> R.string.module_obd.takeIf { !d.obdModule }
     TileTypes.TIRES -> R.string.module_tpms.takeIf { !d.hasTpmsSource }
     else -> null
+}
+
+/**
+ * Si la carretera o el auto 3D [p] llevan la presión de las llantas: lo de su ajuste ([TileTires]) o,
+ * sin él (y en la imagen), lo de Ajustes → Llantas.
+ */
+fun showsTires(d: Dependencies, p: Tile): Boolean =
+    p.type.takeIf { it != TileTypes.IMAGE }?.let { TileTires.parse(p.data) } ?: (d.prefs.tiresOnCar != TiresOnCar.OFF)
+
+/** Lo que se ofrece para agregar: Llantas siempre (agregarla prende su módulo); lo del OBD, con el OBD. */
+fun offered(d: Dependencies, type: String) = type == TileTypes.TIRES || moduleOff(d, type) == null
+
+/**
+ * Agrega la pieza Llantas y prende su módulo: vuelve la última fuente; si nunca hubo, [pickSource]
+ * (Ajustes → Llantas) y la pieza aparece al elegirla. false = no cupo.
+ */
+fun Dependencies.addTiresTile(pickSource: () -> Unit): Boolean {
+    if (!hasTpmsSource) tpms.lastSource?.let { tpms.source = it } ?: pickSource()
+    return dashboard.tiles.any { it.type == TileTypes.TIRES } || dashboard.addTile(TileTypes.TIRES)
 }
 
 /** La de Ajustes; si no, la primera instalada. */
@@ -599,10 +621,12 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                                     panel = when (it.type) {
                                         TileTypes.IMAGE -> Panel.CustomizeImage(it.id)
                                         TileTypes.MAP -> Panel.CustomizeMap(it.id)
+                                        TileTypes.CAR -> Panel.CustomizeCar(it.id)
                                         else -> Panel.CustomizeGauge(it.id)
                                     }
                                 },
-                                hasSettings = { it.type in CUSTOMIZABLE },
+                                // El auto 3D solo tiene qué ajustar con Llantas prendido.
+                                hasSettings = { it.type in CUSTOMIZABLE || it.type == TileTypes.CAR && d.hasTpmsSource },
                             ) { p -> TileContent(d, p, apps, car, revision, actions) }
                     }
                 }
@@ -643,12 +667,14 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                 close = { panel = null },
                 onPickApp = { panel = Panel.PickApp(null) },
                 onPickGauge = { panel = Panel.PickGauge(null) },
+                onTiresSettings = { panel = Panel.TiresSettings },
             )
             is Panel.PickApp -> PickAppPanel(d, apps, p.tileId, close = { panel = null })
             is Panel.PickGauge -> PickGaugePanel(d, p.tileId, close = { panel = null })
             is Panel.CustomizeGauge -> CustomizeGaugePanel(d, p.tileId, close = { panel = null }, onPickSignal = { panel = Panel.PickGauge(p.tileId) })
             is Panel.CustomizeImage -> CustomizeImagePanel(d, p.tileId, close = { panel = null })
             is Panel.CustomizeMap -> CustomizeMapPanel(d, p.tileId, close = { panel = null })
+            is Panel.CustomizeCar -> CustomizeCarPanel(d, p.tileId, close = { panel = null })
         }
 
         val big = bigTile

@@ -41,6 +41,7 @@ import com.irvingguerra.litedash.core.ui.IconButton
 import com.irvingguerra.litedash.core.ui.Icons
 import com.irvingguerra.litedash.core.ui.Label
 import com.irvingguerra.litedash.core.ui.LocalColors
+import com.irvingguerra.litedash.core.ui.TilePadding
 import com.irvingguerra.litedash.core.ui.Typography
 
 // Partes que comparten la pieza de música y la música en grande.
@@ -165,7 +166,7 @@ internal fun MediaTile(
     val permission = remember(revision, needsAccess) { !needsAccess || repo.hasPermission().also { if (it) repo.recheck() } }
     Card(modifier.fillMaxSize(), onClick = if (permission) onExpand else null) {
         if (!permission) return@Card NoPermission(repo, icon, title, explain)
-        BoxWithConstraints(Modifier.fillMaxSize().padding(10.dp)) {
+        BoxWithConstraints(Modifier.fillMaxSize().padding(TilePadding)) {
             val tall = maxHeight > 150.dp
             if (tall && maxWidth < maxHeight * 1.5f) {
                 // Una columna del tablero: carátula arriba, el resto abajo y centrado.

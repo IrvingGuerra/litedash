@@ -134,6 +134,12 @@ val LightColors = Colors(
 val LocalColors = staticCompositionLocalOf { DarkColors }
 
 /** Esquinas: moderadas (Irving pidió menos redondeado que la propuesta). */
+/**
+ * El margen de adentro de las tarjetas del inicio (los widgets): poco, para que lo de adentro
+ * luzca y se lea de lejos. Todas lo usan igual, con fondo o sin él.
+ */
+val TilePadding = 10.dp
+
 object Radius {
     /** Tarjetas del tablero y de Ajustes. */
     val card = 14.dp

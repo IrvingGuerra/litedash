@@ -30,6 +30,7 @@ import com.irvingguerra.litedash.core.ui.Button
 import com.irvingguerra.litedash.core.ui.Card
 import com.irvingguerra.litedash.core.ui.Label
 import com.irvingguerra.litedash.core.ui.LocalColors
+import com.irvingguerra.litedash.core.ui.TilePadding
 import com.irvingguerra.litedash.core.ui.Typography
 import com.irvingguerra.litedash.core.vehicle.Signal
 import com.irvingguerra.litedash.core.vehicle.watch
@@ -291,7 +292,7 @@ fun HealthTile(d: Dependencies, car: CarPackage?, onClick: () -> Unit) {
         else -> c.textMuted
     }
     Card(Modifier.fillMaxSize(), onClick = onClick) {
-        BoxWithConstraints(Modifier.fillMaxSize().padding(14.dp)) {
+        BoxWithConstraints(Modifier.fillMaxSize().padding(TilePadding)) {
             val tall = maxHeight > 150.dp
             val sideWidth = maxHeight * CAR_TOP_ASPECT
             if (tall) {

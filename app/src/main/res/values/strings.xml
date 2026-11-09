@@ -87,6 +87,8 @@
     <string name="gauge_color_cyan">Cian neón</string>
     <string name="gauge_customize">Personalizar medidor</string>
     <string name="road_customize">Personalizar carretera</string>
+    <string name="car_customize">Personalizar auto</string>
+    <string name="tires_show_pressure">Ver la presión de las llantas</string>
     <string name="gauge_customize_help">Los cambios se ven al momento. Lo que preocupa (motor caliente, revoluciones altas) siempre se pinta de rojo.</string>
     <string name="gauge_style">Estilo</string>
     <string name="gauge_color">Color</string>

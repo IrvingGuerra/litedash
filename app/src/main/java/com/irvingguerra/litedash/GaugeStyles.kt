@@ -43,6 +43,7 @@ import com.irvingguerra.litedash.core.ui.Card
 import com.irvingguerra.litedash.core.ui.Colors
 import com.irvingguerra.litedash.core.ui.Label
 import com.irvingguerra.litedash.core.ui.LocalColors
+import com.irvingguerra.litedash.core.ui.TilePadding
 import com.irvingguerra.litedash.core.ui.Typography
 import com.irvingguerra.litedash.feature.car.CAR_ASPECT
 import kotlin.math.cos
@@ -244,18 +245,33 @@ enum class RoadTrip(val stored: String, val title: Int) {
 private val DEFAULT_TRIP = setOf(RoadTrip.DISTANCE)
 
 /**
+ * Si la carretera o el auto 3D llevan la presión de las llantas: "tires=on" u "tires=off" en su
+ * [com.irvingguerra.litedash.feature.dashboard.Tile.data]. Sin guardar (null), lo de Ajustes → Llantas.
+ */
+object TileTires {
+    private const val KEY = "tires="
+
+    fun parse(data: String): Boolean? = data.split(';').firstOrNull { it.startsWith(KEY) }?.let { it == "${KEY}on" }
+
+    fun encode(on: Boolean) = KEY + if (on) "on" else "off"
+}
+
+/**
  * Cómo se ve la carretera; se guarda en su [com.irvingguerra.litedash.feature.dashboard.Tile.data]
- * como un velocímetro ([gauge]) más "speed=…" ([speed]) y "trip=…" ([trip]). Lo de fábrica no se escribe.
+ * como un velocímetro ([gauge]) más "speed=…" ([speed]), "trip=…" ([trip]) y "tires=…" ([tires],
+ * ver [TileTires]). Lo de fábrica no se escribe.
  */
 @Immutable
 data class RoadLook(
     val speed: RoadSpeed = RoadSpeed.TEXT,
     val gauge: GaugeLook = GaugeLook(),
     val trip: Set<RoadTrip> = DEFAULT_TRIP,
+    val tires: Boolean? = null,
 ) {
     fun encode(): String = (
         listOf(gauge.encode()) + listOfNotNull(
             speed.takeIf { it != RoadSpeed.TEXT }?.let { "$SPEED=${it.stored}" },
+            tires?.let { TileTires.encode(it) },
             // Vacío ("trip=") = sin datos del viaje.
             trip.takeIf { it != DEFAULT_TRIP }?.let { t -> "$TRIP=" + RoadTrip.entries.filter { it in t }.joinToString(",") { it.stored } },
         )
@@ -275,6 +291,7 @@ data class RoadLook(
                 trip = parts.firstOrNull { it.startsWith("$TRIP=") }?.removePrefix("$TRIP=")?.split(',')
                     ?.mapNotNull { s -> RoadTrip.entries.firstOrNull { it.stored == s } }?.toSet()
                     ?: DEFAULT_TRIP,
+                tires = TileTires.parse(data),
             )
         }
     }
@@ -360,7 +377,7 @@ fun GaugeCard(
     val shown = remember { Animatable(0f) }
     LaunchedEffect(fraction) { shown.animateTo(fraction.coerceIn(0f, 1f), tween(250)) }
     Card(Modifier.fillMaxSize(), onClick = onClick) {
-        BoxWithConstraints(Modifier.fillMaxSize().padding(12.dp), contentAlignment = Alignment.Center) {
+        BoxWithConstraints(Modifier.fillMaxSize().padding(TilePadding), contentAlignment = Alignment.Center) {
             val compact = maxHeight < 130.dp
             // Lo del frente ocupa ~62 % del ancho de la esfera, con la proporción del auto.
             val frontWidth = minOf(maxWidth, maxHeight * 1.15f) * 0.62f

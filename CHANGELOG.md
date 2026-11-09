@@ -4,6 +4,19 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.4.119] - 2026-11-09
+
+### Agregado
+- **Llantas en la carretera y en el auto 3D, a tu gusto**: al acomodar tu inicio, el botón de ajustes de
+  la carretera tiene "Ver la presión de las llantas", y el auto 3D ahora también tiene su botón de ajustes
+  para lo mismo (y si van en las ruedas o en las esquinas). Lo de Ajustes → Llantas sigue aplicando a todos.
+- **El widget Llantas siempre está en "Agregar"**: antes solo salía si ya tenías sensores. Agregarlo prende
+  Llantas con tus últimos sensores o, si nunca los configuraste, te lleva a elegirlos.
+
+### Mejorado
+- **Widgets con menos margen por dentro**: el ícono del widget App ahora llena su tarjeta (con fondo o sin
+  él), y Viaje, Clima, accesos, medidores, Salud, Llantas y Música aprovechan más su espacio.
+
 ## [1.4.118] - 2026-11-09
 
 ### Corregido

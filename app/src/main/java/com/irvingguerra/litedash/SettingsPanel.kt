@@ -114,7 +114,7 @@ fun SettingsPanel(
             ) {
                 Label(stringResource(section.title), Typography.title.copy(fontSize = 30.sp), maxLines = 1)
                 when (section) {
-                    SettingsSection.APPEARANCE -> Appearance(d, revision, onEdit, onTemplates)
+                    SettingsSection.APPEARANCE -> Appearance(d, revision, onEdit, onTemplates, onTires = { section = SettingsSection.TIRES })
                     SettingsSection.CAR -> CarSettings(d)
                     SettingsSection.APPS -> AppsSettings(d)
                     SettingsSection.WHEEL -> {

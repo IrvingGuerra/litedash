@@ -25,6 +25,7 @@ import com.irvingguerra.litedash.core.ui.Icons
 import com.irvingguerra.litedash.core.ui.Label
 import com.irvingguerra.litedash.core.ui.LocalColors
 import com.irvingguerra.litedash.core.ui.SwitchRow
+import com.irvingguerra.litedash.core.ui.TilePadding
 import com.irvingguerra.litedash.core.ui.Typography
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -123,7 +124,7 @@ fun WeatherTile(repo: WeatherRepository) {
         return ShortcutTile(Icons.sun, stringResource(R.string.tile_weather), stringResource(if (repo.active) R.string.weather_loading else R.string.tap_to_enable), enable)
     }
     Card(Modifier.fillMaxSize()) {
-        BoxWithConstraints(Modifier.fillMaxSize().padding(16.dp), contentAlignment = Alignment.CenterStart) {
+        BoxWithConstraints(Modifier.fillMaxSize().padding(TilePadding), contentAlignment = Alignment.CenterStart) {
             val big = maxHeight > 120.dp
             val showDays = maxWidth > 340.dp && w.days.size > 1
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {

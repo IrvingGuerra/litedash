@@ -102,7 +102,11 @@ fun CustomizeGaugePanel(d: Dependencies, tileId: String, close: () -> Unit, onPi
                         if (road) {
                             // La carretera misma, con la velocidad de muestra.
                             val demoKmh = demo * look.speedMax(miles = false)
-                            RoadView(d, d.cars.pkg(d.prefs.carModel), onClick = {}, look = roadLook ?: RoadLook(), demoKmh = demoKmh)
+                            // Con sus llantas si las lleva (las pastillas de muestra no abren nada).
+                            RoadView(
+                                d, d.cars.pkg(d.prefs.carModel), onClick = {}, look = roadLook ?: RoadLook(), demoKmh = demoKmh,
+                                onTires = if (d.hasTpmsSource && showsTires(d, tile)) ({}) else null,
+                            )
                         } else if (speedometer) {
                             val max = look.speedMax(units.miles).toFloat()
                             SpeedGaugeCard(demo * max, units.miles, "GPS", look, d.prefs.carColor, speedFront(d, look))
@@ -121,6 +125,11 @@ fun CustomizeGaugePanel(d: Dependencies, tileId: String, close: () -> Unit, onPi
                             SwitchRow(stringResource(item.title), item in roadLook.trip, { on ->
                                 setRoad(roadLook.copy(trip = if (on) roadLook.trip + item else roadLook.trip - item))
                             })
+                        }
+                        // La presión de cada llanta junto a su rueda (solo con Llantas prendido).
+                        if (d.hasTpmsSource) {
+                            Label(stringResource(R.string.tile_tires), Typography.label, c.textMuted)
+                            SwitchRow(stringResource(R.string.tires_show_pressure), showsTires(d, tile), { setRoad(roadLook.copy(tires = it)) })
                         }
                         Label(stringResource(R.string.road_speed), Typography.label, c.textMuted)
                         // Prendida o apagada como lo del viaje; prendida, número o velocímetro.

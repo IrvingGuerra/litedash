@@ -52,7 +52,9 @@ import com.irvingguerra.litedash.core.ui.Icon
 import com.irvingguerra.litedash.core.ui.Icons
 import com.irvingguerra.litedash.core.ui.Label
 import com.irvingguerra.litedash.core.ui.LocalColors
+import com.irvingguerra.litedash.core.ui.LocalPlainCard
 import com.irvingguerra.litedash.core.ui.Radius
+import com.irvingguerra.litedash.core.ui.TilePadding
 import com.irvingguerra.litedash.core.ui.Typography
 import com.irvingguerra.litedash.feature.apps.App
 import com.irvingguerra.litedash.feature.apps.AppIcon
@@ -193,7 +195,7 @@ fun ClockTile(driverName: String? = null, weather: WeatherRepository? = null) {
 fun ShortcutTile(icon: ImageVector, title: String, detail: String?, onClick: () -> Unit) {
     val c = LocalColors.current
     Card(Modifier.fillMaxSize(), onClick = onClick) {
-        BoxWithConstraints(Modifier.fillMaxSize().padding(16.dp)) {
+        BoxWithConstraints(Modifier.fillMaxSize().padding(TilePadding)) {
             val large = maxHeight > 120.dp
             val small = isSmallScreen()
             val width = maxWidth
@@ -214,7 +216,7 @@ fun ShortcutTile(icon: ImageVector, title: String, detail: String?, onClick: () 
                 Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
                     content()
                     if (width > 120.dp) {
-                        Column(Modifier.padding(start = 14.dp)) {
+                        Column(Modifier.padding(start = 12.dp)) {
                             Label(title, Typography.subtitle, maxLines = 1)
                             if (detail != null) Label(detail, Typography.small, c.textMuted, maxLines = 1)
                         }
@@ -225,23 +227,26 @@ fun ShortcutTile(icon: ImageVector, title: String, detail: String?, onClick: () 
     }
 }
 
-/** Una app como pieza: ícono grande y nombre. Vacía, invita a elegir cuál. */
+/**
+ * Una app como pieza: el ícono llena la pieza (solo deja lugar al nombre, si cabe) y, sin fondo,
+ * casi hasta la orilla. Vacía, invita a elegir cuál.
+ */
 @Composable
 fun AppTile(repo: AppRepository, app: App?, onClick: () -> Unit) {
     val c = LocalColors.current
     Card(Modifier.fillMaxSize(), onClick = onClick) {
-        BoxWithConstraints(Modifier.fillMaxSize().padding(10.dp), contentAlignment = Alignment.Center) {
-            val side = (minOf(maxWidth, maxHeight) * 0.55f).coerceAtMost(96.dp)
-            val height = maxHeight
+        BoxWithConstraints(Modifier.fillMaxSize().padding(if (LocalPlainCard.current) 2.dp else 6.dp), contentAlignment = Alignment.Center) {
+            val named = maxHeight > 90.dp
+            val side = minOf(maxWidth * 0.8f, if (named) maxHeight - 26.dp else maxHeight * 0.86f).coerceIn(24.dp, 140.dp)
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 if (app == null) {
-                    Icon(Icons.plus, c.textMuted, side * 0.6f)
-                    Spacer(Modifier.height(6.dp))
+                    Icon(Icons.plus, c.textMuted, side * 0.5f)
+                    Spacer(Modifier.height(4.dp))
                     Label(stringResource(R.string.pick_app), Typography.small, c.textMuted, maxLines = 1)
                 } else {
                     AppIcon(repo, app, side)
-                    if (height > 90.dp) {
-                        Spacer(Modifier.height(8.dp))
+                    if (named) {
+                        Spacer(Modifier.height(4.dp))
                         Label(app.name, Typography.small.copy(fontWeight = FontWeight.Medium), maxLines = 1)
                     }
                 }
@@ -270,7 +275,7 @@ fun NavigationTile(
     }
     val instruction = repo.instruction
     Card(Modifier.fillMaxSize(), onClick = onClick) {
-        BoxWithConstraints(Modifier.fillMaxSize().padding(10.dp), contentAlignment = Alignment.CenterStart) {
+        BoxWithConstraints(Modifier.fillMaxSize().padding(TilePadding), contentAlignment = Alignment.CenterStart) {
             val large = maxHeight > 120.dp
             if (instruction != null) Box(Modifier.padding(4.dp)) { Turn(instruction, large) }
             else Places(app, home, work, onPlace, tall = maxHeight > 150.dp, width = maxWidth, height = maxHeight)

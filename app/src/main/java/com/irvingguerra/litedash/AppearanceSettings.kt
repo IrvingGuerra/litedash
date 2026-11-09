@@ -67,13 +67,13 @@ private enum class AppearanceTab(val title: Int) {
 }
 
 @Composable
-internal fun Appearance(d: Dependencies, revision: Int, onEdit: () -> Unit, onTemplates: () -> Unit) {
+internal fun Appearance(d: Dependencies, revision: Int, onEdit: () -> Unit, onTemplates: () -> Unit, onTires: () -> Unit) {
     when (AppearanceTab.entries[tabs(AppearanceTab.entries.map { it.title }, "appearance")]) {
         AppearanceTab.HOME -> HomeSettings(d, onEdit, onTemplates)
         AppearanceTab.INTERFACE -> InterfaceSettings(d)
         AppearanceTab.DAY_NIGHT -> DayNightSettings(d.prefs, revision)
         AppearanceTab.UNITS -> SettingsCard { UnitsSettings(d) }
-        AppearanceTab.WIDGETS -> Tiles(d, onEdit)
+        AppearanceTab.WIDGETS -> Tiles(d, onEdit, onTires)
     }
 }
 
@@ -299,22 +299,29 @@ private fun OpenOnBootSettings(prefs: Preferences) {
 
 private fun Float.roundToTenth() = round(this * 10) / 10f
 
-/** Inicio → Widgets: todo lo que puedes poner en tu inicio y si ya está (sin los de módulos apagados). */
+/**
+ * Inicio → Widgets: todo lo que puedes poner en tu inicio y si ya está (sin los del OBD apagado).
+ * Llantas siempre: agregarla prende su módulo o, si nunca tuvo sensores, lleva a elegirlos ([onTires]).
+ */
 @Composable
-private fun Tiles(d: Dependencies, onEdit: () -> Unit) {
+private fun Tiles(d: Dependencies, onEdit: () -> Unit, onTires: () -> Unit) {
     val c = LocalColors.current
     // Tipo que no cupo al agregarlo: se avisa y se ofrece acomodar el inicio.
     var noRoom by remember { mutableStateOf<String?>(null) }
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        for (spec in TileSpecs.filter { it.type != TileTypes.APP && moduleOff(d, it.type) == null }) {
-            val onHome = d.dashboard.tiles.any { it.type == spec.type }
+        for (spec in TileSpecs.filter { it.type != TileTypes.APP && offered(d, it.type) }) {
+            // Llantas sin sensores no se ve aunque esté en el acomodo.
+            val onHome = d.dashboard.tiles.any { it.type == spec.type } && moduleOff(d, spec.type) == null
             val didNotFit = noRoom == spec.type && !onHome
             val detail = if (didNotFit) stringResource(R.string.no_room) else spec.detail?.let { stringResource(it) } ?: ""
             TileRow(iconOf(spec.type), stringResource(spec.name), detail, if (didNotFit) c.danger else c.textMuted) {
                 when {
                     onHome -> Label(stringResource(R.string.on_your_home), Typography.small, c.accent)
                     didNotFit -> Button(stringResource(R.string.arrange), onEdit, primary = true)
-                    else -> Button(stringResource(R.string.add), { noRoom = if (d.dashboard.addTile(spec.type)) null else spec.type })
+                    else -> Button(stringResource(R.string.add), {
+                        val added = if (spec.type == TileTypes.TIRES) d.addTiresTile(onTires) else d.dashboard.addTile(spec.type)
+                        noRoom = if (added) null else spec.type
+                    })
                 }
             }
         }

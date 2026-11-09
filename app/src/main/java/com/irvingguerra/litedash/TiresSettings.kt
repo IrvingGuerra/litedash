@@ -488,7 +488,14 @@ private fun HomeTiresCard(d: Dependencies) {
                     TiresOnCar.OFF to stringResource(R.string.tires_on_car_off),
                 ),
                 d.prefs.tiresOnCar,
-                { d.prefs.tiresOnCar = it },
+                { on ->
+                    d.prefs.tiresOnCar = on
+                    // Aquí se decide para todos: la carretera y el auto 3D dejan su propio ajuste.
+                    d.dashboard.changeData(
+                        d.dashboard.tiles.filter { (it.type == TileTypes.ROAD || it.type == TileTypes.CAR) && TileTires.parse(it.data) != null }
+                            .associate { it.id to if (it.type == TileTypes.ROAD) RoadLook.parse(it.data).copy(tires = null).encode() else "" },
+                    )
+                },
             )
         }
         // En las ruedas necesita saber dónde pisa cada una (se baja aparte); mientras, van en las esquinas.

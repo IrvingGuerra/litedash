@@ -224,7 +224,7 @@ private fun <T> ColumnScope.CardGrid(
 }
 
 @Composable
-fun AddTilePanel(d: Dependencies, close: () -> Unit, onPickApp: () -> Unit, onPickGauge: () -> Unit) {
+fun AddTilePanel(d: Dependencies, close: () -> Unit, onPickApp: () -> Unit, onPickGauge: () -> Unit, onTiresSettings: () -> Unit) {
     val c = LocalColors.current
     var noRoom by remember { mutableStateOf(false) }
     PanelScaffold(stringResource(R.string.add_tile), close) {
@@ -232,10 +232,14 @@ fun AddTilePanel(d: Dependencies, close: () -> Unit, onPickApp: () -> Unit, onPi
             Label(stringResource(R.string.no_room), Typography.body, c.danger, modifier = Modifier.padding(bottom = 12.dp))
         }
         // Todas a la vista: tantas columnas como quepan (de 180 dp o más).
-        // Los de un módulo apagado no se ofrecen.
-        CardGrid(TileSpecs.filter { moduleOff(d, it.type) == null }, minWidth = 180.dp, height = if (isSmallScreen()) 100.dp else 120.dp, onClick = { spec ->
+        // Los del OBD apagado no se ofrecen; Llantas sí: agregarla prende su módulo (o lleva a elegir los sensores).
+        CardGrid(TileSpecs.filter { offered(d, it.type) }, minWidth = 180.dp, height = if (isSmallScreen()) 100.dp else 120.dp, onClick = { spec ->
             if (spec.type == TileTypes.APP) onPickApp()
             else if (spec.type == TileTypes.GAUGE) onPickGauge()
+            else if (spec.type == TileTypes.TIRES) {
+                var picking = false
+                if (d.addTiresTile { picking = true }) { if (picking) onTiresSettings() else close() } else noRoom = true
+            }
             else if (d.dashboard.addTile(spec.type)) close()
             else noRoom = true
         }) { spec ->

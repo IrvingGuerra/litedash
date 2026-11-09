@@ -38,6 +38,7 @@ import com.irvingguerra.litedash.core.ui.Card
 import com.irvingguerra.litedash.core.ui.Icons
 import com.irvingguerra.litedash.core.ui.Label
 import com.irvingguerra.litedash.core.ui.LocalColors
+import com.irvingguerra.litedash.core.ui.TilePadding
 import com.irvingguerra.litedash.core.ui.Typography
 import com.irvingguerra.litedash.core.vehicle.Signal
 import com.irvingguerra.litedash.core.vehicle.Source
@@ -227,7 +228,7 @@ fun TripTile(d: Dependencies) {
     val (average, heading) = stats.average to stats.heading
     val locale = currentLocale()
     Card(Modifier.fillMaxSize()) {
-        BoxWithConstraints(Modifier.fillMaxSize().padding(16.dp)) {
+        BoxWithConstraints(Modifier.fillMaxSize().padding(TilePadding)) {
             val tall = maxHeight > 120.dp
             val wide = maxWidth > 340.dp
             val huge = maxHeight > 200.dp
