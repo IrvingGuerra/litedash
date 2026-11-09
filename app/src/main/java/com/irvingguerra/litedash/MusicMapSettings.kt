@@ -110,7 +110,7 @@ fun RadioSettings(d: Dependencies) {
     val apps = rememberApps(d.apps).orEmpty()
     var choosing by remember { mutableStateOf(false) }
     val setInternet = rememberInternetRadioToggle(d)
-    val internet = d.prefs.internetRadio
+    val internet = d.music.radioInternet
     SettingsCard(stringResource(R.string.radio_mode_title), stringResource(R.string.radio_mode_help)) {
         Segmented(
             listOf(false to stringResource(MusicR.string.radio_fm), true to stringResource(MusicR.string.radio_internet)),
@@ -158,9 +158,7 @@ private fun SourceRow(d: Dependencies, kind: SourceKind, apps: List<App>, choosi
 fun rememberInternetRadioToggle(d: Dependencies): (Boolean) -> Unit {
     val ask = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {}
     return { on ->
-        d.prefs.internetRadio = on
         d.music.radioInternet = on
-        OwnPlayer.refresh(d.music, d.prefs)
         val notifications = Library.noticePermission
         if (on && notifications.isNotEmpty()) ask.launch(notifications.toTypedArray())
     }

@@ -88,7 +88,7 @@ class LiteDashApp : Application() {
     // Referencia fuerte: Android guarda los oyentes de preferencias como referencias débiles.
     // Solo importan la fuente de llantas ("source"), el tipo de adaptador OBD ("type") y el módulo OBD.
     private val onUsbPrefs = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
-        if (key == null || key == "source" || key == "type" || key == PrefKeys.OBD_MODULE) syncUsbOffer()
+        if (key == null || key == "source" || key == "type" || key == PrefKeys.OBD_MODULE) syncReceivers()
     }
 
     /**
@@ -100,16 +100,16 @@ class LiteDashApp : Application() {
         for (file in arrayOf(TpmsRepository.PREFS, ObdRepository.PREFS, PrefKeys.FILE)) {
             getSharedPreferences(file, Context.MODE_PRIVATE).registerOnSharedPreferenceChangeListener(onUsbPrefs)
         }
-        syncUsbOffer()
+        syncReceivers()
     }
 
-    private fun syncUsbOffer() {
+    private fun syncReceivers() {
         Thread({ synchronized(onUsbPrefs) {
             // El receptor de "Abrir al encender" igual que su opción (por si se restauró un respaldo).
             BootLaunch.sync(this, getSharedPreferences(PrefKeys.FILE, Context.MODE_PRIVATE).getBoolean(PrefKeys.OPEN_ON_BOOT, false))
             val settings = getSharedPreferences(PrefKeys.FILE, Context.MODE_PRIVATE)
             val obdOn = !settings.contains(PrefKeys.OBD_MODULE) || settings.getBoolean(PrefKeys.OBD_MODULE, false)
             UsbAttachActivity.offer(this, TpmsRepository.usesUsb(this) || obdOn && ObdRepository.hasUsbTarget(this))
-        } }, "usb-offer").start()
+        } }, "sync-receivers").start()
     }
 }

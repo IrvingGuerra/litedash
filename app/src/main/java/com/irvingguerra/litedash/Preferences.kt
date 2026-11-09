@@ -77,6 +77,7 @@ internal object PrefKeys {
     const val STATS = "anonymous_stats"
     const val HIDE_STATUS_BAR = "hide_status_bar"
     const val INTERNET_RADIO = "internet_radio"
+    const val RADIO_UNIFIED = "radio_unified"
     const val TIRES_ON_CAR = "tires_on_car"
     const val TIRES_BANNER = "tires_banner"
     const val CAR_TAP = "car_tap"
@@ -328,8 +329,14 @@ class Preferences(context: Context) {
     /** En pantalla dividida, al lado del mapa va la carretera (si no, el auto 3D). */
     var splitRoad by bool(PrefKeys.SPLIT_ROAD, false)
 
-    /** Radio por internet con las estaciones de cerca (apagada de fábrica). */
+    /**
+     * El interruptor de la radio por internet de antes de la 1.4.112: solo se lee una vez para pasar
+     * a la radio escogida (`MusicRepository.radioInternet`), que es la que vale.
+     */
     var internetRadio by bool(PrefKeys.INTERNET_RADIO, false)
+
+    /** Ya se pasó [internetRadio] a la radio escogida. */
+    var radioUnified by bool(PrefKeys.RADIO_UNIFIED, false)
 
     /** Guardar un resumen de cada viaje con el OBD conectado (apagado de fábrica). */
     var tripLog by bool(PrefKeys.TRIP_LOG, false)

@@ -9,6 +9,7 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
+import android.os.SystemClock
 import android.provider.Settings
 import androidx.core.content.edit
 import androidx.core.net.toUri
@@ -22,7 +23,8 @@ import androidx.core.net.toUri
  * cada marca (FYT, GLSX, Microntek) según la guía de arranque de HeadUnit Revived
  * (gist.github.com/andrecuellar/3c39b4f1bdc03a5c4e97336217f13c38). Desde Android 10 una app solo
  * puede abrirse sola con el permiso "Mostrar sobre otras apps". El receptor está apagado (no corre)
- * mientras la opción esté apagada.
+ * mientras la opción esté apagada. Desde Android 8 los avisos de marca (ACC) solo llegan si el
+ * sistema los manda a apps en segundo plano; el que siempre llega es el de arranque.
  */
 class BootReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
@@ -31,14 +33,20 @@ class BootReceiver : BroadcastReceiver() {
         val app = context.applicationContext
         if (!app.getSharedPreferences(PrefKeys.FILE, Context.MODE_PRIVATE).getBoolean(PrefKeys.OPEN_ON_BOOT, false)) return
         val log = app.getSharedPreferences(BootLaunch.LOG, Context.MODE_PRIVATE)
-        val now = System.currentTimeMillis()
-        // Algunas marcas mandan varios avisos seguidos al encender: se abre una sola vez.
-        if (now - log.getLong(KEY_OPENED_AT, 0L) < DEBOUNCE_MS) return
+        // Algunas marcas mandan varios avisos seguidos al encender: se abre una sola vez. Se mide con el
+        // tiempo desde el arranque, no con la hora: muchas pantallas no tienen pila de reloj y prenden en
+        // 1970 o 2015 hasta tener red. Si el sello es mayor que el tiempo actual, hubo reinicio.
+        val up = SystemClock.elapsedRealtime()
+        val last = log.getLong(KEY_UPTIME, -1L)
+        if (last in 0..up && up - last < DEBOUNCE_MS) return
+        // El sello va antes de esperar: los avisos que llegan juntos en esos segundos ya no pasan.
+        log.edit { putLong(KEY_UPTIME, up) }
         val pending = goAsync()
         // Se espera a que el sistema termine de abrir su launcher, para quedar encima.
         Handler(Looper.getMainLooper()).postDelayed({
-            val ok = BootLaunch.open(app)
-            log.edit { putString(KEY_ACTION, action).putLong(KEY_OPENED_AT, now).putBoolean(KEY_OK, ok) }
+            // Desde Android 10, sin el permiso el sistema bloquea la apertura sin avisar: se anota.
+            val ok = BootLaunch.allowed(app) && BootLaunch.open(app)
+            log.edit { putString(KEY_ACTION, action).putLong(KEY_OPENED_AT, System.currentTimeMillis()).putBoolean(KEY_OK, ok) }
             pending.finish()
         }, DELAY_MS)
     }
@@ -46,6 +54,7 @@ class BootReceiver : BroadcastReceiver() {
     companion object {
         private const val DELAY_MS = 3_000L
         private const val DEBOUNCE_MS = 30_000L
+        private const val KEY_UPTIME = "opened_uptime"
         internal const val KEY_ACTION = "last_action"
         internal const val KEY_OPENED_AT = "opened_at"
         internal const val KEY_OK = "opened_ok"
@@ -98,6 +107,7 @@ object BootLaunch {
         appendLine("Inicio: ${if (isHomeApp(context)) "LiteDash" else "otro"} (predeterminado=${default ?: "-"}; inicios=${all.joinToString().ifEmpty { "-" }})")
         val log = context.getSharedPreferences(LOG, Context.MODE_PRIVATE)
         val at = log.getLong(BootReceiver.KEY_OPENED_AT, 0L)
+        // "hace" puede salir raro si el reloj de la pantalla se movió desde entonces (sin pila de reloj).
         val last = if (at == 0L) "nunca" else "${log.getString(BootReceiver.KEY_ACTION, "?")} hace ${(System.currentTimeMillis() - at) / 60_000} min, abrió=${if (log.getBoolean(BootReceiver.KEY_OK, false)) "sí" else "no"}"
         append("Abrir al encender: ${if (on) "sí" else "no"}; permiso=${if (allowed(context)) "sí" else "no"}; último=$last")
     }

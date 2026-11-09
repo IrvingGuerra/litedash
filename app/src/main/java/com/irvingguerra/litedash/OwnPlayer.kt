@@ -26,7 +26,6 @@ object OwnPlayer {
 
     fun wire(context: Context, music: MusicRepository, prefs: Preferences) {
         Player.init(context)
-        music.ownRadio = prefs.internetRadio
         music.ownSourceNow = { Player.state.source?.toKind() }
         music.ownPlay = { kind, done -> play(context, kind, done) }
         music.ownPause = {
@@ -36,19 +35,13 @@ object OwnPlayer {
         music.ownStop = { Player.stop() }
         music.ownSession = { Player.sessionToken }
         Player.onSession = music::ownSessionChanged
-        // Hasta la 1.4.110 podían estar prendidas las dos radios (se escogía en el widget): queda la
-        // que el widget tenía escogida. Desde la 1.4.111 hay una sola (Ajustes → Apps → Radio).
-        if (prefs.internetRadio != music.radioInternet) {
-            if (prefs.internetRadio && music.sourceApps[SourceKind.RADIO] != null) prefs.internetRadio = music.radioInternet
-            else music.radioInternet = prefs.internetRadio
-            music.ownRadio = prefs.internetRadio
+        // Hasta la 1.4.111 la radio por internet tenía además su interruptor en las preferencias del app
+        // (y hasta la 1.4.110 el widget escogía entre las dos). Una vez: queda la que sonaba en el widget.
+        if (!prefs.radioUnified) {
+            val internet = prefs.internetRadio && (music.radioInternet || music.sourceApps[SourceKind.RADIO] == null)
+            music.radioInternet = internet
+            prefs.radioUnified = true
         }
-    }
-
-    /** Al prender o apagar la radio por internet: la pieza se entera, y si sonaba se para. */
-    fun refresh(music: MusicRepository, prefs: Preferences) {
-        music.ownRadio = prefs.internetRadio
-        if (!music.ownRadio && Player.state.source == PlayerSource.RADIO) Player.stop()
     }
 
     /** [done] en el hilo principal: true = ya suena (o va a sonar); false = no hay nada que tocar todavía. */

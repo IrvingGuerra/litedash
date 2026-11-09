@@ -82,8 +82,8 @@ private const val RADIO_RETURN_MS = 3_000L
 /** Marca de "abriendo TopWay": si se queda puesta, la app se cerró al abrirlo. */
 private const val KEY_TOPWAY_OPENING = "topway_opening"
 private const val TOPWAY_XT_BIND = "com.tw.service.xt.CommandService.Bind"
-/** Lo que tarda el sintonizador de TopWay en contestar (la estación o que ya tiene el audio). */
-private const val TOPWAY_ANSWER_MS = 2_000L
+/** Lo que tarda el sintonizador de fábrica (TopWay, NWD) en contestar (la estación o que ya tiene el audio). */
+private const val FACTORY_ANSWER_MS = 2_000L
 /** Lo que LiteDash supone de una app de fábrica (suena / en pausa) deja de valer tras este rato (p. ej. apagaron el auto). */
 private const val ASSUME_MAX_MS = 3 * 60 * 60_000L
 /** Tras un play a una app de música, cuánto se espera a que suene antes de abrirla. */
@@ -220,20 +220,9 @@ class MusicRepository(private val context: Context) {
 
     private val SourceKind.key get() = "source_" + name.lowercase()
 
-    /** La radio por internet de LiteDash está prendida (la pone el app según su ajuste). */
-    var ownRadio: Boolean
-        get() = ownRadioState
-        set(v) {
-            if (v == ownRadioState) return
-            val before = appFor(SourceKind.RADIO)
-            ownRadioState = v
-            if (appFor(SourceKind.RADIO) != before) radioChanged()
-        }
-    private var ownRadioState by mutableStateOf(false)
-
     /**
-     * Cambió con qué suena la pieza Radio (se enlazó o quitó la FM, se prendió la de internet o se
-     * escogió entre las dos): lo que se supo de la anterior (la estación de TopWay, el play que se
+     * Cambió con qué suena la pieza Radio (se enlazó o quitó la FM, o se pasó entre la FM y la de
+     * internet): lo que se supo de la anterior (la estación de TopWay, el play que se
      * le mandó) ya no vale, y TopWay solo escucha mientras la FM sea la radio escogida.
      */
     private fun radioChanged() {
@@ -260,13 +249,13 @@ class MusicRepository(private val context: Context) {
     fun isOwn(pkg: String) = pkg == ownPackage
 
     /**
-     * La app que reproduce [kind]: USB es siempre LiteDash; Bluetooth, la enlazada. La radio: la
-     * de internet si está prendida y se prefiere (o no hay FM enlazada), si no la FM enlazada.
+     * La app que reproduce [kind]: USB es siempre LiteDash; Bluetooth, la enlazada. La radio: LiteDash
+     * si se escogió la de internet, si no la FM enlazada.
      */
     fun appFor(kind: SourceKind): String? = when (kind) {
         SourceKind.USB -> ownPackage
         SourceKind.BLUETOOTH -> sourceApps[kind]
-        SourceKind.RADIO -> if (ownRadio && (radioInternet || sourceApps[kind] == null)) ownPackage else sourceApps[kind]
+        SourceKind.RADIO -> if (radioInternet) ownPackage else sourceApps[kind]
     }
 
     /**
@@ -300,10 +289,14 @@ class MusicRepository(private val context: Context) {
         if (linked != null && linked != known && linked !in KNOWN_BT) setSource(SourceKind.BLUETOOTH, known)
     }
 
-    /** La pieza Radio usa la radio por internet de LiteDash (si no, la FM de la pantalla). Se guarda. */
+    /**
+     * La radio escogida (Ajustes → Apps → Radio): la de internet de LiteDash (true) o la FM de la
+     * pantalla. Una sola a la vez; se guarda.
+     */
     var radioInternet: Boolean
         get() = radioInternetState
         set(v) {
+            if (v == radioInternetState) return
             val before = appFor(SourceKind.RADIO)
             radioInternetState = v
             store.edit().putBoolean(KEY_RADIO_INTERNET, v).apply()
@@ -323,7 +316,6 @@ class MusicRepository(private val context: Context) {
     /** Detiene el reproductor propio (lo pone el app). */
     var ownStop: (() -> Unit)? = null
     private var radioInternetState by mutableStateOf(store.getBoolean(KEY_RADIO_INTERNET, false))
-
 
     /**
      * Deja una sola fuente sonando: calla la USB propia (salvo [keep]) y toda sesión de la pieza
@@ -713,7 +705,7 @@ class MusicRepository(private val context: Context) {
             // (si contesta, el aviso nuevo ya la dejó vigente y no parpadea).
             val tw = factoryFor(this) ?: return@Runnable read()
             tw.refresh()
-            mainHandler.postDelayed({ if (users > 0) read() }, TOPWAY_ANSWER_MS)
+            mainHandler.postDelayed({ if (users > 0) read() }, FACTORY_ANSWER_MS)
         }
 
         internal fun heard(meta: BroadcastMeta) {
@@ -1174,7 +1166,7 @@ class MusicRepository(private val context: Context) {
     }
 
     /**
-     * FM de fábrica: play sin abrir su app (se le pide el audio a la radio). Si en [TOPWAY_ANSWER_MS]
+     * FM de fábrica: play sin abrir su app (se le pide el audio a la radio). Si en [FACTORY_ANSWER_MS]
      * la radio no dice que tiene el audio (ni Android lo tiene: la NWD suena por Android), se abre la
      * radio como antes ([openAndReturn]).
      */
@@ -1187,14 +1179,15 @@ class MusicRepository(private val context: Context) {
             lens.starting = null
             // Se cerró (cambiaron de radio o LiteDash se fue): ya no toca.
             if (factory !== f || !f.open) return@Runnable
-            if (f.audioAt >= asked || (f is NwdRadio && musicActive())) {
+            // La NWD sin la clave de la fuente del MCU (on == null) solo se puede confirmar por el audio de Android.
+            if (f.audioAt >= asked || (f is NwdRadio && f.on == null && musicActive())) {
                 f.started()
                 return@Runnable trace("${f.tag} suena sin abrir")
             }
             trace("${f.tag} no confirmó: se abre $pkg")
             openAndReturn(pkg, lens)
         }
-        mainHandler.postDelayed(factoryConfirm, TOPWAY_ANSWER_MS)
+        mainHandler.postDelayed(factoryConfirm, FACTORY_ANSWER_MS)
     }
 
     /** La confirmación pendiente del play de la radio de fábrica; se cancela al pausar o cambiar de radio. */

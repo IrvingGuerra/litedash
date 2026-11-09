@@ -4,6 +4,20 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.4.112] - 2026-11-09
+
+### Corregido
+- **Abrir LiteDash al encender** ahora funciona en pantallas sin pila de reloj (las que prenden con la
+  fecha en 1970 o 2015 hasta tener internet): antes podía no abrirse nunca.
+- **Ajustes nunca se sale de la barra**, aunque la barra sea grande y la pantalla baja: si no cabe todo,
+  se recorta lo demás.
+- **Radio FM de las NWD:** play ya no se da por bueno con cualquier audio que suene; si la radio no
+  tomó el audio, se abre su app como antes.
+
+### Mejorado
+- La opción "Hora en la barra" solo aparece con la barra a un lado (abajo no aplica).
+- El reporte dice si "Abrir al encender" no pudo abrir por falta del permiso.
+
 ## [1.4.111] - 2026-11-09
 
 ### Mejorado

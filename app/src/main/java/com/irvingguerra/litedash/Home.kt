@@ -45,6 +45,7 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -790,6 +791,8 @@ private fun Dock(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         val buttonSize = (if (small) 64.dp else if (short) 46.dp else 56.dp) * k
+        // Lo demás va en su propio bloque con peso: Ajustes se mide primero y nunca se queda sin lugar.
+        Row(Modifier.weight(1f).clipToBounds(), verticalAlignment = Alignment.CenterVertically) {
         if (prefs.barApps) {
             IconButton(Icons.apps, onApps, size = buttonSize)
             Box(Modifier.padding(horizontal = 8.dp).width(1.dp).height(32.dp).background(c.line))
@@ -806,6 +809,7 @@ private fun Dock(
         // Voz: abre el asistente que tenga la pantalla; si no hay ninguno, no aparece.
         val voice = remember { voiceIntent(context) }
         if (voice != null && prefs.barVoice) IconButton(Icons.mic, { runCatching { context.startActivity(voice) } }, size = buttonSize)
+        }
         // Siempre: sin Ajustes no habría cómo salir del inicio.
         IconButton(Icons.settings, onSettings, size = buttonSize)
     }
@@ -845,6 +849,12 @@ private fun Rail(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
+        // Lo demás va en su propio bloque con peso: Ajustes se mide primero y nunca se queda sin lugar.
+        Column(
+            Modifier.weight(1f).fillMaxWidth().clipToBounds(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
         if (prefs.barClock) {
             // Angosta: a.m./p.m. en chico junto a la hora (en otra línea le quitaría lugar a las apps).
             Row(verticalAlignment = Alignment.Bottom) {
@@ -868,6 +878,7 @@ private fun Rail(
         }
         if (prefs.barVolume == VolumePlace.END) Volume(volume, vertical = true)
         if (voice != null && prefs.barVoice) IconButton(Icons.mic, { runCatching { context.startActivity(voice) } }, size = button)
+        }
         // Siempre: sin Ajustes no habría cómo salir del inicio.
         IconButton(Icons.settings, onSettings, size = button)
     }
@@ -953,5 +964,5 @@ private fun MusicBig(d: Dependencies, close: (() -> Unit)?, modifier: Modifier =
 @Composable
 private fun RadioBig(d: Dependencies, close: (() -> Unit)?, modifier: Modifier = Modifier, onSettings: () -> Unit) = RadioExpanded(
     d.music, close = close, onSettings = onSettings, modifier,
-    browser = if (d.prefs.internetRadio) { picked -> PlayerBrowser(PlayerSource.RADIO, picked, Modifier.fillMaxSize()) } else null,
+    browser = if (d.music.radioInternet) { picked -> PlayerBrowser(PlayerSource.RADIO, picked, Modifier.fillMaxSize()) } else null,
 )
