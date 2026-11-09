@@ -91,8 +91,9 @@ internal fun CarSettings(d: Dependencies) {
         if (pkg != null) FinishPicker(prefs, cars, pkg, catalog?.firstOrNull { it.id == pkg.id })
     }
     if (tab == 0 && pkg != null) {
-        SettingsCard("${pkg.make} ${pkg.name} ${pkg.year}") {
-            ModelOptions(cars, pkg, catalog?.firstOrNull { it.id == pkg.id }, onDelete = { prefs.carModel = null; cars.delete(pkg) })
+        val entry = catalog?.firstOrNull { it.id == pkg.id }
+        SettingsCard("${pkg.make} ${pkg.name} ${entry?.years ?: pkg.year}") {
+            ModelOptions(cars, pkg, entry, onDelete = { prefs.carModel = null; cars.delete(pkg) })
         }
     }
     if (tab == 1 && (cars.hasCatalog || installed.isNotEmpty())) {
@@ -258,7 +259,7 @@ private fun CatalogSearch(prefs: Preferences, cars: CarRepository, catalog: List
     }
     val q = normalize(query.trim())
     val found = sorted.filter { e ->
-        (make == null || e.make == make) && q.split(' ').all { it in normalize("${e.make} ${e.name} ${e.year}") }
+        (make == null || e.make == make) && q.split(' ').all { it in normalize("${e.make} ${e.name} ${e.years}") || it.length == 4 && it.toIntOrNull()?.let(e::covers) == true }
     }
     if (found.isEmpty()) return Label(stringResource(R.string.catalog_missing), Typography.small, c.textMuted)
     val downloaded = cars.installed.map { it.id }.toSet()
@@ -280,7 +281,7 @@ private fun CatalogSearch(prefs: Preferences, cars: CarRepository, catalog: List
                 // Tocar uno sin bajar solo lo muestra en grande; se baja con el botón (ver no cuesta datos).
                 ModelCard(
                     "${e.make} ${e.name}",
-                    detail = if (have) stringResource(R.string.catalog_downloaded) else "${e.year} · %.1f MB".format(e.bytes / 1e6f),
+                    detail = if (have) stringResource(R.string.catalog_downloaded) else "${e.years} · %.1f MB".format(e.bytes / 1e6f),
                     selected = prefs.carModel == e.id,
                     onClick = { if (have) prefs.carModel = e.id else previewing = e.id },
                 ) { m ->
@@ -343,7 +344,7 @@ private fun CarPreview(e: CatalogEntry, cars: CarRepository, progress: Float?, o
         Box(Modifier.fillMaxWidth().aspectRatio(2.2f), contentAlignment = Alignment.Center) {
             img?.let { Image(it, null, Modifier.fillMaxSize(), contentScale = ContentScale.Fit) }
         }
-        Label("${e.make} ${e.name} ${e.year}", Typography.subtitle, maxLines = 1)
+        Label("${e.make} ${e.name} ${e.years}", Typography.subtitle, maxLines = 1)
         if (e.author.isNotBlank()) Label(stringResource(R.string.model_credit, e.author, e.license), Typography.small, c.textMuted)
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             if (progress != null) {

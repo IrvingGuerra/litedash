@@ -4,6 +4,16 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.4.120] - 2026-11-09
+
+### Agregado
+- **Autos nuevos en el catálogo** (pedidos por quienes donaron en Ko-fi): **Toyota Corolla 2011–2013** y
+  **Peugeot 301 2013–2016**. No hace falta actualizar para verlos: aparecen en Tu auto → Modelos.
+
+### Mejorado
+- **Cada auto dice los años en que se ve igual** (su generación), por ejemplo "RAV4 2016–2018", en vez de un
+  solo año. Si buscas un año, como "2017", te salen los autos que se ven igual ese año.
+
 ## [1.4.119] - 2026-11-09
 
 ### Agregado

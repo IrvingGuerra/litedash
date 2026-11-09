@@ -55,7 +55,17 @@ data class CatalogEntry(
     val wheels: PackageExtra? = null,
     /** Capas del acabado de la pintura (brillo y espejo de cada cuadro); se bajan al elegir un acabado. */
     val finish: PackageExtra? = null,
-)
+    /** Años en que el auto se ve igual (su generación), p. ej. "2016–2018"; sin rango, el año. */
+    val years: String = year.toString(),
+) {
+    /** El auto se ve igual en [y]: está dentro de su rango de años. */
+    fun covers(y: Int): Boolean {
+        val n = YEAR_NUMBER.findAll(years).map { it.value.toInt() }.toList()
+        return n.isNotEmpty() && y in n.min()..n.max()
+    }
+}
+
+private val YEAR_NUMBER = Regex("\\d{4}")
 
 /** Un archivo extra (cuadros del giro, vista desde arriba) que se baja encima del auto ya instalado. */
 @Immutable
@@ -190,6 +200,7 @@ class CarRepository(private val context: Context, val catalogUrl: String) {
                 topView = a.optJSONObject(CarJson.TOP_VIEW)?.let(::extraOf),
                 wheels = a.optJSONObject(CarJson.WHEELS)?.let(::extraOf),
                 finish = a.optJSONObject(CarJson.FINISH)?.let(::extraOf),
+                years = a.optString(CarJson.YEARS).ifBlank { a.optInt(CarJson.YEAR).toString() },
             )
         }
     }

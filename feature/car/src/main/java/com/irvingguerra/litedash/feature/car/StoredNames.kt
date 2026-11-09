@@ -29,6 +29,8 @@ internal object CarJson {
     const val NAME = "nombre"
     const val MAKE = "marca"
     const val YEAR = "anio"
+    /** Años en que el auto se ve igual (su generación), p. ej. "2016–2018"; sin él, [YEAR]. */
+    const val YEARS = "anios"
     const val AUTHOR = "autor"
     const val LICENSE = "licencia"
     const val SOURCE = "fuente"
