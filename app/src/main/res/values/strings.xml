@@ -558,6 +558,8 @@
     <string name="tab_radio">Radio</string>
     <string name="tile_radio">Radio</string>
     <string name="tile_radio_help">La radio de tu pantalla (FM) y, si la activas, por internet; un toque la abre en grande</string>
+    <string name="radio_mode_title">Cómo escuchas la radio</string>
+    <string name="radio_mode_help">Elige una: es la que suena en el widget Radio. Al cambiar, la otra se calla.</string>
     <string name="radio_fm_app">Radio de tu pantalla</string>
     <string name="radio_fm_app_help">La app de radio FM que trae tu pantalla: LiteDash la controla desde el widget Radio (play, siguiente, anterior y abrirla).</string>
     <string name="radio_internet_help">Estaciones de tu zona por GPS y de todo el mundo, con favoritas. Necesita internet; si no tienes, usa la radio de tu pantalla.</string>

@@ -25,13 +25,13 @@ import com.irvingguerra.litedash.core.ui.Button
 import com.irvingguerra.litedash.core.ui.Label
 import com.irvingguerra.litedash.core.ui.LocalColors
 import com.irvingguerra.litedash.core.ui.Segmented
-import com.irvingguerra.litedash.core.ui.SwitchRow
 import com.irvingguerra.litedash.core.ui.TextInput
 import com.irvingguerra.litedash.core.ui.Typography
 import com.irvingguerra.litedash.feature.apps.App
 import com.irvingguerra.litedash.feature.apps.normalize
 import com.irvingguerra.litedash.feature.apps.rememberApps
 import com.irvingguerra.litedash.feature.music.MusicMode
+import com.irvingguerra.litedash.feature.music.R as MusicR
 import com.irvingguerra.litedash.feature.music.SourceKind
 import com.irvingguerra.litedash.feature.music.label
 import com.irvingguerra.litedash.feature.player.FolderPicker
@@ -74,7 +74,7 @@ fun MusicSettings(d: Dependencies) {
 @Composable
 fun MusicModeSettings(d: Dependencies) {
     SettingsCard(stringResource(R.string.music_mode_title), stringResource(R.string.music_mode_help)) {
-        Segmented(MusicMode.entries.map { it to it.label() }, d.music.mode, { d.music.mode = it }, Modifier.fillMaxWidth())
+        Segmented(MusicMode.entries.map { it to it.label() }, d.music.mode, { d.music.mode = it }, Modifier.fillMaxWidth(), check = true)
     }
     when (d.music.mode) {
         MusicMode.FILES -> SettingsCard { FilesCard() }
@@ -101,17 +101,32 @@ private fun FilesCard() {
 }
 
 /**
- * Pestaña "Radio" de Ajustes → Apps: la app de radio FM de la pantalla (lo principal; muchas
- * veces no hay internet en el auto) y, opcional, la radio por internet de LiteDash.
+ * Pestaña "Radio" de Ajustes → Apps: una sola radio a la vez, como la música (Irving, 2026-11-08):
+ * la FM de la pantalla (su app, lo principal: muchas veces no hay internet en el auto) o la radio
+ * por internet de LiteDash. La elegida lleva palomita y es la que suena en el widget Radio.
  */
 @Composable
 fun RadioSettings(d: Dependencies) {
     val apps = rememberApps(d.apps).orEmpty()
     var choosing by remember { mutableStateOf(false) }
-    SettingsCard(stringResource(R.string.radio_fm_app), stringResource(R.string.radio_fm_app_help)) {
-        SourceRow(d, SourceKind.RADIO, apps, choosing) { choosing = it }
+    val setInternet = rememberInternetRadioToggle(d)
+    val internet = d.prefs.internetRadio
+    SettingsCard(stringResource(R.string.radio_mode_title), stringResource(R.string.radio_mode_help)) {
+        Segmented(
+            listOf(false to stringResource(MusicR.string.radio_fm), true to stringResource(MusicR.string.radio_internet)),
+            internet,
+            { on -> if (on != internet) setInternet(on) },
+            Modifier.fillMaxWidth(),
+            check = true,
+        )
     }
-    SettingsCard { InternetRadioSwitch(d) }
+    if (internet) {
+        SettingsCard(stringResource(R.string.module_radio), stringResource(R.string.radio_internet_help)) {}
+    } else {
+        SettingsCard(stringResource(R.string.radio_fm_app), stringResource(R.string.radio_fm_app_help)) {
+            SourceRow(d, SourceKind.RADIO, apps, choosing) { choosing = it }
+        }
+    }
 }
 
 /**
@@ -135,19 +150,16 @@ private fun SourceRow(d: Dependencies, kind: SourceKind, apps: List<App>, choosi
     }
 }
 
-/** Interruptor de la radio por internet (Ajustes → Apps → Radio). */
-@Composable
-fun InternetRadioSwitch(d: Dependencies) {
-    val set = rememberInternetRadioToggle(d)
-    SwitchRow(stringResource(R.string.module_radio), d.prefs.internetRadio, set, stringResource(R.string.radio_internet_help))
-}
-
-/** Prender o apagar la radio por internet: al prender, desde Android 13 pide el permiso de avisos. */
+/**
+ * Cambiar la radio entre internet (true) y la FM de la pantalla: la pieza Radio queda con esa y
+ * la otra se calla. Al pasar a internet, desde Android 13 pide el permiso de avisos.
+ */
 @Composable
 fun rememberInternetRadioToggle(d: Dependencies): (Boolean) -> Unit {
     val ask = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {}
     return { on ->
         d.prefs.internetRadio = on
+        d.music.radioInternet = on
         OwnPlayer.refresh(d.music, d.prefs)
         val notifications = Library.noticePermission
         if (on && notifications.isNotEmpty()) ask.launch(notifications.toTypedArray())

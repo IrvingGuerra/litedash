@@ -230,10 +230,11 @@ fun Button(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, pri
 
 /**
  * Opciones excluyentes (una u otra), estilo iOS: un bloque con la elegida resaltada.
- * Para encender o apagar algo se usa [SwitchRow].
+ * Para encender o apagar algo se usa [SwitchRow]. [check] = la elegida lleva palomita (para un
+ * método que se activa, como la fuente de la música o de la radio, no un simple filtro).
  */
 @Composable
-fun <T> Segmented(options: List<Pair<T, String>>, selected: T, onSelect: (T) -> Unit, modifier: Modifier = Modifier) {
+fun <T> Segmented(options: List<Pair<T, String>>, selected: T, onSelect: (T) -> Unit, modifier: Modifier = Modifier, check: Boolean = false) {
     val c = LocalColors.current
     Row(
         modifier.clip(RoundedCornerShape(Radius.inner)).background(c.surfaceHigh).padding(4.dp),
@@ -249,7 +250,10 @@ fun <T> Segmented(options: List<Pair<T, String>>, selected: T, onSelect: (T) -> 
                     .padding(horizontal = 18.dp, vertical = 11.dp),
                 contentAlignment = Alignment.Center,
             ) {
-                Label(text, Typography.body.copy(fontWeight = if (on) FontWeight.SemiBold else FontWeight.Normal), if (on) c.text else c.textMuted, 1)
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    if (check && on) Icon(Icons.done, c.primary, 18.dp)
+                    Label(text, Typography.body.copy(fontWeight = if (on) FontWeight.SemiBold else FontWeight.Normal), if (on) c.text else c.textMuted, 1)
+                }
             }
         }
     }

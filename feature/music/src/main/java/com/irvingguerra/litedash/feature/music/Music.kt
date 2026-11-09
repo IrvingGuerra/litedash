@@ -324,8 +324,6 @@ class MusicRepository(private val context: Context) {
     var ownStop: (() -> Unit)? = null
     private var radioInternetState by mutableStateOf(store.getBoolean(KEY_RADIO_INTERNET, false))
 
-    /** Hay FM de la pantalla enlazada y también internet: la pieza Radio deja escoger. */
-    val radioHasBoth: Boolean get() = ownRadio && sourceApps[SourceKind.RADIO] != null
 
     /**
      * Deja una sola fuente sonando: calla la USB propia (salvo [keep]) y toda sesión de la pieza

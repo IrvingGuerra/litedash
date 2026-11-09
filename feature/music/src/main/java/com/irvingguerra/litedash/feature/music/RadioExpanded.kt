@@ -23,12 +23,11 @@ import com.irvingguerra.litedash.core.ui.Icon
 import com.irvingguerra.litedash.core.ui.Icons
 import com.irvingguerra.litedash.core.ui.Label
 import com.irvingguerra.litedash.core.ui.LocalColors
-import com.irvingguerra.litedash.core.ui.Segmented
 import com.irvingguerra.litedash.core.ui.Typography
 
 /**
- * La radio en grande: la FM de la pantalla o la radio por internet de LiteDash (si hay
- * las dos, se escoge arriba). Carátula, estación y controles, sin barra de avance (la
+ * La radio en grande: la FM de la pantalla o la radio por internet de LiteDash (la que esté
+ * escogida en Ajustes → Apps → Radio). Carátula, estación y controles, sin barra de avance (la
  * radio no tiene). [browser] es la lista de estaciones por internet (null = solo FM): se
  * abre con el botón de lista, o sola si la pieza está en internet y no suena nada.
  * [onSettings] abre los ajustes para enlazar la radio de la pantalla.
@@ -45,12 +44,8 @@ fun RadioExpanded(
     val c = LocalColors.current
     val song = repo.radio.song
     val target = repo.appFor(SourceKind.RADIO)
-    // Con qué suena la pieza: lo que ya suena manda; si no, lo que está escogido.
-    val internet = when {
-        repo.radioHasBoth -> repo.radioInternet
-        song != null -> repo.isOwn(song.pkg)
-        else -> target != null && repo.isOwn(target)
-    }
+    // Con qué suena la pieza: la radio escogida en Ajustes (una sola: FM o internet).
+    val internet = target != null && repo.isOwn(target)
     val canBrowse = browser != null && internet
     // La lista de estaciones; al entrar (o al cambiar a internet) sin nada sonando, se abre sola.
     var browsing by remember(canBrowse) { mutableStateOf(canBrowse && song == null && repo.radio.starting == null) }
@@ -60,14 +55,6 @@ fun RadioExpanded(
             if (canBrowse) HeaderButton(if (browsing) Icons.radio else Icons.list) { browsing = !browsing }
             if (!internet && repo.sourceApps[SourceKind.RADIO] != null) HeaderButton(Icons.openExternal) { repo.openRadioApp() }
             if (close != null) HeaderButton(Icons.close, close)
-        }
-        if (repo.radioHasBoth) {
-            Spacer(Modifier.height(12.dp))
-            Segmented(
-                listOf(false to stringResource(R.string.radio_fm), true to stringResource(R.string.radio_internet)),
-                repo.radioInternet,
-                { repo.radioInternet = it },
-            )
         }
         Spacer(Modifier.height(12.dp))
         if (browser != null && canBrowse && browsing) {

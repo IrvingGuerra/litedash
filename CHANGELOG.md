@@ -4,6 +4,13 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.4.111] - 2026-11-09
+
+### Mejorado
+- **Una sola radio a la vez**, como la música (Ajustes → Apps → Radio): eliges "FM de la pantalla" o
+  "Por internet" y esa es la que suena en el widget Radio. Ya no hay que escoger en el widget.
+- **La opción elegida lleva palomita** en Música (Archivos, Bluetooth o App) y en Radio.
+
 ## [1.4.110] - 2026-11-09
 
 ### Nuevo
