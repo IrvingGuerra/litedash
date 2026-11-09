@@ -164,6 +164,7 @@
     <string name="checking">Checking…</string>
     <string name="up_to_date">You have the latest version.</string>
     <string name="update_error">Couldn\'t check. Check your connection and try again.</string>
+    <string name="update_download_error">Couldn\'t download: GitHub didn\'t respond or the connection dropped. Try again in a few minutes.</string>
     <string name="new_version">LiteDash %1$s is ready</string>
     <string name="download_install">Download and install · %.1f MB</string>
     <string name="downloading">Downloading… %d %%</string>

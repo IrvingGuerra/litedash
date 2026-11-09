@@ -4,6 +4,14 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.4.117] - 2026-11-09
+
+### Mejorado
+- **Actualizar ya no falla por un tropiezo de GitHub**: si GitHub no responde un momento (como los
+  "504" de hoy) o se corta la red, LiteDash lo vuelve a intentar solo, hasta tres veces. Lo mismo al bajar
+  autos del catálogo.
+- Si la descarga sí falla, el aviso lo dice ("No se pudo descargar") en vez de "No se pudo revisar".
+
 ## [1.4.116] - 2026-11-09
 
 ### Mejorado
