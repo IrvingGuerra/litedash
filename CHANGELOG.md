@@ -4,6 +4,16 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.4.118] - 2026-11-09
+
+### Corregido
+- **La radio FM de las pantallas NWD ya se controla desde LiteDash** (Allwinner K2401, T3 y otras con la
+  app `com.nwd.radio`): LiteDash ahora le habla directo al sintonizador de la pantalla, como Radio+ y
+  OpenRadioFM. Siguiente y anterior buscan la estación, se ve la frecuencia y el nombre de la estación, y
+  play/pausa cambian a la radio sin abrir su app. Antes ningún botón hacía nada y play solo abría la app.
+- Si tu pantalla NWD no deja hacerlo, todo sigue como antes (play abre la radio). Si te pasa, manda un
+  reporte de Radio desde Ajustes → Sistema → Tu pantalla con la radio sonando.
+
 ## [1.4.117] - 2026-11-09
 
 ### Mejorado

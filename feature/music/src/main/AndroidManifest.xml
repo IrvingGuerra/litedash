@@ -23,6 +23,9 @@
         <package android:name="com.goodocom.gocsdk" />
         <package android:name="com.autochips.bluetooth" />
         <package android:name="com.yftech.service.bluetooth" />
+        <!-- La radio de las pantallas NWD: su sintonizador y el kernel que elige qué suena. -->
+        <package android:name="com.nwd.radio.service" />
+        <package android:name="com.nwd.kernel" />
     </queries>
     <!-- El nombre del celular conectado por Bluetooth (la pieza lo muestra cuando la app no manda la canción). -->
     <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />

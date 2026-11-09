@@ -84,5 +84,6 @@ Las recetas para leer la presión de llantas de fábrica por OBD
 tire-pressure recipes are derived from OBDb (CC BY-SA 4.0), adapted.*
 
 El control de la radio FM de las pantallas NWD (`feature/music/.../NwdRadio.kt`) usa la información
-de [OpenRadioFM](https://github.com/kapi21/OpenRadioFM) (Apache-2.0). *NWD FM radio control is based
-on information from OpenRadioFM (Apache-2.0).*
+de [OpenRadioFM](https://github.com/kapi21/OpenRadioFM) (Apache-2.0) y de
+[Radio+](https://github.com/edman01/radio-plus-open) (MIT). *NWD FM radio control is based on information
+from OpenRadioFM (Apache-2.0) and Radio+ (MIT).*

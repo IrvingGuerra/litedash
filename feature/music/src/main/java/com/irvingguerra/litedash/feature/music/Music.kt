@@ -1454,7 +1454,7 @@ class MusicRepository(private val context: Context) {
             )
         }
         appendLine("Audio sonando en Android: ${yes(context.getSystemService(AudioManager::class.java).isMusicActive)}")
-        if (radioApp?.startsWith(NwdRadio.PACKAGE) == true) appendLine(NwdRadio.describe(context) + " perfil=${yes(factory is NwdRadio)}")
+        if (radioApp?.startsWith(NwdRadio.PACKAGE) == true) appendLine(NwdRadio.describe(context, factory as? NwdRadio))
         if (TopWayRadio.available) {
             val tw = factory as? TopWayRadio
             appendLine(
