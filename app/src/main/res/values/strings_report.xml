@@ -14,6 +14,7 @@
     <string name="report_music_app">Tu app de música (Spotify, YouTube Music…)</string>
     <string name="report_radio_fm">FM de la pantalla</string>
     <string name="report_radio_internet">Por internet</string>
+    <string name="report_obd_usb">USB</string>
     <string name="report_silent">No suena</string>
     <string name="report_no_info">Suena pero no se ve qué suena</string>
     <string name="report_buttons">Los botones no responden</string>

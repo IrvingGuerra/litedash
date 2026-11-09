@@ -13,6 +13,7 @@
     <string name="report_music_app">Your music app (Spotify, YouTube Music…)</string>
     <string name="report_radio_fm">Head unit FM</string>
     <string name="report_radio_internet">Internet radio</string>
+    <string name="report_obd_usb">USB</string>
     <string name="report_silent">No sound</string>
     <string name="report_no_info">It plays but doesn\'t show what\'s playing</string>
     <string name="report_buttons">The buttons don\'t respond</string>

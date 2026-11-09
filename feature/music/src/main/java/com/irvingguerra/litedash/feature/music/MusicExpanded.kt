@@ -8,7 +8,6 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -82,23 +81,8 @@ fun MusicExpanded(
 
 @Composable
 private fun Details(repo: MusicRepository, song: Song?, modifier: Modifier) {
-    val opening = repo.starting
-    Column(modifier) {
-        val title = when {
-            song != null -> song.title
-            opening != null -> stringResource(R.string.opening_app, opening)
-            else -> stringResource(R.string.nothing_playing)
-        }
-        val error = song?.error
-        val subtitle = when {
-            error != null -> error
-            song?.buffering == true -> stringResource(R.string.player_connecting)
-            song != null -> subtitleFor(repo, song)
-            opening != null -> stringResource(R.string.opening_wait)
-            repo.usbDrive != null -> stringResource(R.string.usb_drive_in, repo.usbDrive.orEmpty())
-            else -> stringResource(R.string.resume_explain)
-        }
-        BigTitle(title, subtitle, error != null)
+    val idle = repo.usbDrive?.let { stringResource(R.string.usb_drive_in, it) } ?: stringResource(R.string.resume_explain)
+    ExpandedDetails(repo, song, repo.starting, stringResource(R.string.nothing_playing), idle, modifier) {
         if (song != null && song.durationMs > 0) {
             Spacer(Modifier.height(20.dp))
             TimeBar(repo, song)

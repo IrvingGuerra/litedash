@@ -20,7 +20,7 @@ import android.service.media.MediaBrowserService
  */
 internal class BluetoothAvrcp(
     private val context: Context,
-    /** El servicio AVRCP ([find]); null si la pantalla no lo trae. */
+    /** El servicio AVRCP que encontró [find] (sin él no se crea). */
     val service: ServiceInfo,
     /** El controlador de la música del celular (o null si no se pudo conectar). */
     private val onController: (MediaController?) -> Unit,
@@ -50,7 +50,7 @@ internal class BluetoothAvrcp(
         onController(null)
     }
 
-    /** Se desconecta (al irse el celular o al esconderse la música). */
+    /** Se desconecta (al esconderse la música). */
     fun disconnect() {
         val b = browser ?: return
         browser = null

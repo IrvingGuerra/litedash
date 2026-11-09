@@ -4,6 +4,26 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.4.115] - 2026-11-09
+
+Auditoría de música y radio: arreglos y limpieza.
+
+### Corregido
+- **La música del celular por Bluetooth (sin app) ya no se pierde** después de abrir la música o la radio
+  en grande: se vuelve a conectar sola.
+- **La pausa de la radio ya no pausa tu música**: si suena otra app, LiteDash no da la radio por sonando
+  ni le manda la pausa al sistema.
+- **Con Archivos o App, la pieza Música ya no muestra el Bluetooth** de la pantalla, y al dejar Archivos
+  la USB se detiene (antes un play podía hacerla sonar con otro método).
+- **El volante controla la música** aunque la radio de la pantalla muestre su estación en pausa.
+- Al pasar la radio a internet, la FM de la pantalla suelta el audio (no suenan las dos).
+- "Abrir la app de Bluetooth" funciona también con la app de Bluetooth de la marca sin enlazar.
+- El widget Radio por internet ya no pide el acceso a notificaciones.
+- El reporte del Taller dice "USB" otra vez (decía "Archivos").
+
+### Mejorado
+- Código más limpio en música y radio: se quitó lo que ya no se usaba y lo repetido.
+
 ## [1.4.114] - 2026-11-09
 
 ### Corregido

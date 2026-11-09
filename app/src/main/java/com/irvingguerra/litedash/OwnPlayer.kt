@@ -14,14 +14,14 @@ import com.irvingguerra.litedash.feature.player.PlayerStore
 private const val SCAN_WAIT_MS = 4_000L
 
 /**
- * Une el reproductor propio ([Player]) con la pieza de música: USB siempre (es el reproductor
- * por defecto), la radio por internet si está prendida, y qué hacer cuando el usuario toca
- * "USB" o "Radio" (seguir con lo último que sonó; si no hay nada, la vista abre la biblioteca).
+ * Une el reproductor propio ([Player]) con la música y la radio: Archivos (el método de música con
+ * el reproductor de LiteDash) y la radio por internet cuando es la escogida en Ajustes → Apps →
+ * Radio. Al dar play sigue con lo último que sonó; si no hay nada, la vista abre la biblioteca.
  */
 object OwnPlayer {
     private val main = Handler(Looper.getMainLooper())
 
-    /** Sube con cada toque a USB (y al cancelarlo): una búsqueda vieja ya no arranca nada. */
+    /** Sube con cada play de Archivos (y al cancelarlo): una búsqueda vieja ya no arranca nada. */
     private var generation = 0
 
     fun wire(context: Context, music: MusicRepository, prefs: Preferences) {

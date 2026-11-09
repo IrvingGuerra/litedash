@@ -26,7 +26,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
@@ -37,7 +36,6 @@ import androidx.compose.ui.unit.sp
 import com.irvingguerra.litedash.core.ui.Button
 import com.irvingguerra.litedash.core.ui.Card
 import com.irvingguerra.litedash.core.ui.Radius
-import com.irvingguerra.litedash.core.ui.Colors
 import com.irvingguerra.litedash.core.ui.Icon
 import com.irvingguerra.litedash.core.ui.IconButton
 import com.irvingguerra.litedash.core.ui.Icons
@@ -107,16 +105,6 @@ internal fun subtitleFor(repo: MusicRepository, song: Song): String = when {
     song.source == SourceKind.BLUETOOTH -> repo.bluetoothDevice ?: stringResource(R.string.bluetooth_connect_phone)
     else -> stringResource(R.string.no_song_info)
 }
-
-/** Nombre corto de la fuente para los botones. */
-@Composable
-fun SourceKind.label(): String = stringResource(
-    when (this) {
-        SourceKind.USB -> R.string.source_usb
-        SourceKind.BLUETOOTH -> R.string.source_bluetooth
-        SourceKind.RADIO -> R.string.source_radio
-    },
-)
 
 /** Nombre corto del método de música (Archivos, Bluetooth, App). */
 @Composable
@@ -290,6 +278,39 @@ internal fun BigTitle(title: String, subtitle: String, error: Boolean) {
     Spacer(Modifier.height(4.dp))
     Box(Modifier.heightIn(min = 48.dp)) {
         Label(subtitle, Typography.subtitle, if (error) c.danger else c.textMuted, maxLines = 2)
+    }
+}
+
+/**
+ * Título, subtítulo y [controls] de la música y la radio en grande: lo que suena (o el error y
+ * "Conectando…"), "Abriendo X…" mientras [opening], y sin nada [idleTitle] e [idleSubtitle].
+ */
+@Composable
+internal fun ExpandedDetails(
+    repo: MusicRepository,
+    song: Song?,
+    opening: String?,
+    idleTitle: String,
+    idleSubtitle: String,
+    modifier: Modifier,
+    controls: @Composable ColumnScope.() -> Unit,
+) {
+    Column(modifier) {
+        val title = when {
+            song != null -> song.title
+            opening != null -> stringResource(R.string.opening_app, opening)
+            else -> idleTitle
+        }
+        val error = song?.error
+        val subtitle = when {
+            error != null -> error
+            song?.buffering == true -> stringResource(R.string.player_connecting)
+            song != null -> subtitleFor(repo, song)
+            opening != null -> stringResource(R.string.opening_wait)
+            else -> idleSubtitle
+        }
+        BigTitle(title, subtitle, error != null)
+        controls()
     }
 }
 

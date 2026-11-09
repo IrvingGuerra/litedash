@@ -7,7 +7,6 @@ import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
 import android.provider.Settings
-import java.util.Locale
 
 /**
  * La radio FM de las pantallas NWD (Allwinner T3/T5 y otras; app de fábrica `com.nwd.radio`), que no
@@ -24,26 +23,15 @@ import java.util.Locale
  */
 internal class NwdRadio(
     private val context: Context,
-    private val onState: (BroadcastMeta) -> Unit,
+    onState: (BroadcastMeta) -> Unit,
     private val trace: (String) -> Unit,
-) : FactoryRadio {
+) : BaseFactoryRadio(onState) {
     override val tag = "nwd"
     override var open = false
         private set
     private var frequency = 0
     private var band = 0
-    override val station: String?
-        get() = when {
-            frequency <= 0 -> null
-            band >= BAND_AM -> "AM $frequency"
-            else -> "FM " + String.format(Locale.US, "%.1f", frequency / 100f)
-        }
-    override var name = ""
-        private set
-    override var on: Boolean? = null
-        private set
-    override var audioAt = 0L
-        private set
+    override val station get() = stationText(band >= BAND_AM, frequency)
 
     private val observer = object : ContentObserver(Handler(Looper.getMainLooper())) {
         override fun onChange(selfChange: Boolean) = refresh()
@@ -111,12 +99,6 @@ internal class NwdRadio(
 
     private fun send(intent: Intent) {
         runCatching { context.sendBroadcast(intent) }.onFailure { trace("nwd aviso ${intent.action} falló") }
-    }
-
-    private fun publish() {
-        val text = station
-        if (text == null && name.isEmpty()) return
-        onState(BroadcastMeta(title = name.ifEmpty { text }, artist = text.takeIf { name.isNotEmpty() }, album = null, playing = on ?: false, pkg = null, bluetooth = false))
     }
 
     companion object {

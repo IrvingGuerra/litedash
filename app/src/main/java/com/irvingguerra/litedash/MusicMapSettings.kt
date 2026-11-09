@@ -3,7 +3,6 @@ package com.irvingguerra.litedash
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -40,8 +39,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 /**
- * Ajustes → Apps → Música → "Tu app de música": la que sale con su nombre junto a USB en la
- * música en grande y que despierta play; de las instaladas, o cualquiera con "Otra app"
+ * Ajustes → Apps → Música → App → "Tu app de música": la del método App, cuyo nombre sale arriba
+ * de la música en grande y a la que despierta play; de las instaladas, o cualquiera con "Otra app"
  * (algunos reproductores no se anuncian como app de música). "Quitar" = ninguna: la música
  * muestra lo que suene.
  */
@@ -124,28 +123,29 @@ fun RadioSettings(d: Dependencies) {
         SettingsCard(stringResource(R.string.module_radio), stringResource(R.string.radio_internet_help)) {}
     } else {
         SettingsCard(stringResource(R.string.radio_fm_app), stringResource(R.string.radio_fm_app_help)) {
-            SourceRow(d, SourceKind.RADIO, apps, choosing) { choosing = it }
+            RadioAppRow(d, apps, choosing) { choosing = it }
         }
     }
 }
 
 /**
- * Renglón de una fuente de la pantalla: su nombre, la app enlazada (o "Sin enlazar"),
- * Elegir (abre el buscador debajo) y Quitar. [choosing] dice si el buscador está abierto.
+ * Renglón de la FM de la pantalla: la app enlazada (o "Sin enlazar"), Elegir (abre el buscador
+ * debajo) y Quitar. [choosing] dice si el buscador está abierto.
  */
 @Composable
-private fun SourceRow(d: Dependencies, kind: SourceKind, apps: List<App>, choosing: Boolean, onChoosing: (Boolean) -> Unit) {
+private fun RadioAppRow(d: Dependencies, apps: List<App>, choosing: Boolean, onChoosing: (Boolean) -> Unit) {
     val c = LocalColors.current
-    val pkg = d.music.sourceApps[kind]
+    val name = stringResource(MusicR.string.source_radio)
+    val pkg = d.music.sourceApps[SourceKind.RADIO]
     Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        Label(kind.label(), Typography.body, modifier = Modifier.weight(1f))
+        Label(name, Typography.body, modifier = Modifier.weight(1f))
         Label(pkg?.let { p -> apps.firstOrNull { it.pkg == p }?.name ?: d.music.appName(p) } ?: stringResource(R.string.source_unlinked), Typography.small, c.textMuted, 1)
         Button(stringResource(R.string.source_choose), { onChoosing(!choosing) }, primary = choosing)
-        if (pkg != null) Button(stringResource(R.string.source_remove), { d.music.setSource(kind, null) })
+        if (pkg != null) Button(stringResource(R.string.source_remove), { d.music.setSource(SourceKind.RADIO, null) })
     }
     if (choosing) {
-        Label(stringResource(R.string.source_choose_for, kind.label()), Typography.small, c.textMuted)
-        AppSearch(apps, pkg) { d.music.setSource(kind, it); onChoosing(false) }
+        Label(stringResource(R.string.source_choose_for, name), Typography.small, c.textMuted)
+        AppSearch(apps, pkg) { d.music.setSource(SourceKind.RADIO, it); onChoosing(false) }
         Spacer(Modifier.height(6.dp))
     }
 }

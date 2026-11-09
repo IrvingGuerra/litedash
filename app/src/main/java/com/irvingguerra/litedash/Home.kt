@@ -117,7 +117,7 @@ sealed interface Panel {
     data class PickApp(val tileId: String?) : Panel
     /** Ajustes abiertos en el Taller (pieza de acceso directo). */
     data object Workshop : Panel
-    /** Ajustes abiertos en Apps → Música (para enlazar las fuentes desde la música en grande). */
+    /** Ajustes abiertos en Apps (para enlazar la radio de la pantalla desde la radio en grande). */
     data object MusicSettings : Panel
     /** Elegir qué dato muestra un medidor existente ([tileId]) o uno nuevo (null). */
     data class PickGauge(val tileId: String?) : Panel
@@ -953,7 +953,7 @@ private fun HalfScreen(side: @Composable () -> Unit, sideFirst: Boolean, vertica
 /** Ocupa media pantalla o más ([grid] = la cuadrícula del inicio): crecer no tendría caso. */
 private fun Tile.fillsHalf(grid: Grid?) = grid != null && width * height * 2 >= grid.columns * grid.rows
 
-/** La música en grande: lo que suena, las fuentes y la biblioteca de la USB. */
+/** La música en grande: lo que suena con el método elegido y la biblioteca de Archivos. */
 @Composable
 private fun MusicBig(d: Dependencies, close: (() -> Unit)?, modifier: Modifier = Modifier) = MusicExpanded(
     d.music, close = close, modifier,

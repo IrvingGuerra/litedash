@@ -35,8 +35,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.core.content.ContextCompat
 import androidx.core.os.BundleCompat
+import java.util.concurrent.Executors
 import com.irvingguerra.litedash.feature.musica.ServicioMusica
-import kotlin.concurrent.thread
 
 /** Recibe los avisos que pasa el [NotificationService] (la app solo mira los de navegación). */
 interface NotificationListener {
@@ -57,7 +57,7 @@ typealias NotificationService = ServicioMusica
 
 private const val STORE = "music"
 private const val KEY_LAST_APP = "last_app"
-/** Ya se intentó adivinar las apps de las fuentes (una sola vez, al estrenar la pieza). */
+/** Ya se intentó adivinar la app de radio (una sola vez, al estrenar la pieza). */
 private const val KEY_SOURCES_GUESSED = "sources_guessed"
 /** La pieza Radio prefiere la de internet (true) o la FM de la pantalla. */
 private const val KEY_RADIO_INTERNET = "radio_internet"
@@ -66,11 +66,8 @@ private const val KEY_MODE = "music_mode"
 /** Ya se revisó una vez la app de Bluetooth enlazada ([MusicRepository.fixBluetoothLink]). */
 private const val KEY_BT_FIXED = "bt_link_fixed"
 
-/** Palabras con las que se reconoce la app de cada fuente (en el paquete o en el nombre). */
-private val SOURCE_WORDS = mapOf(
-    SourceKind.BLUETOOTH to listOf("bluetooth", "bt", "a2dp"),
-    SourceKind.RADIO to listOf("radio", "fm"),
-)
+/** Palabras con las que se reconoce la app de radio de la pantalla (en el paquete o en el nombre). */
+private val RADIO_WORDS = listOf("radio", "fm")
 
 /** Apps de Bluetooth de marca conocidas (chip propio): se prefieren sobre adivinar por nombre. */
 private val KNOWN_BT = setOf("com.syu.bt", "com.tw.bt", "com.microntek.bt", "com.clw.btmusic", "com.autochips.bluetooth")
@@ -164,11 +161,14 @@ class MusicRepository(private val context: Context) {
         get() = modeState
         set(v) {
             if (v == modeState) return
-            // Solo suena el método nuevo: los demás se callan.
+            // Solo suena el método nuevo: los demás se callan. Al dejar Archivos, el reproductor propio se
+            // detiene (en pausa su sesión seguiría recibiendo el play del sistema y sonaría la USB).
             stopOthers(pkgFor(v))
+            if (modeState == MusicMode.FILES && ownSourceNow?.invoke() == SourceKind.USB) ownStop?.invoke()
             modeState = v
             store.edit().putString(KEY_MODE, v.name).apply()
-            music.forget()
+            // Lo que se supo del método anterior (avisos, supuestos) ya no vale.
+            music.clear()
             if (users > 0) choose(sessions())
         }
     private var modeState by mutableStateOf(store.getString(KEY_MODE, null)?.let { m -> MusicMode.entries.firstOrNull { it.name == m } } ?: MusicMode.APP)
@@ -187,8 +187,8 @@ class MusicRepository(private val context: Context) {
     var onFilesEmpty: (() -> Unit)? = null
 
     /**
-     * Apps de la pantalla enlazadas a Bluetooth y radio (Ajustes → Música); se guardan en [store].
-     * USB no se enlaza: es siempre el reproductor de LiteDash.
+     * Apps de la pantalla enlazadas: la de radio FM (Ajustes → Apps → Radio) y, en pantallas con chip de
+     * Bluetooth propio, la de Bluetooth; se guardan en [store]. Archivos no se enlaza: es el reproductor de LiteDash.
      */
     var sourceApps by mutableStateOf(SourceKind.entries.filter { it != SourceKind.USB }.mapNotNull { k -> store.getString(k.key, null)?.let { k to it } }.toMap())
         private set
@@ -200,7 +200,7 @@ class MusicRepository(private val context: Context) {
     fun migrateUsbApp() {
         val old = store.getString(SourceKind.USB.key, null) ?: return
         store.edit().remove(SourceKind.USB.key).apply()
-        val system = runCatching { context.packageManager.getApplicationInfo(old, 0).flags and ApplicationInfo.FLAG_SYSTEM != 0 }.getOrDefault(true)
+        val system = isSystem(old, unknown = true)
         if (preferred == null && !system) choose(old)
     }
 
@@ -273,7 +273,7 @@ class MusicRepository(private val context: Context) {
 
     /** La app de Bluetooth de marca instalada (chip propio: TopWay, FYT, Microntek…), si hay. */
     private val knownBluetooth: String? by lazy {
-        KNOWN_BT.firstOrNull { pkg -> runCatching { context.packageManager.getPackageInfo(pkg, 0) }.isSuccess }
+        KNOWN_BT.firstOrNull(::isInstalled)
     }
 
     /**
@@ -286,7 +286,7 @@ class MusicRepository(private val context: Context) {
         store.edit().putBoolean(KEY_BT_FIXED, true).apply()
         val known = knownBluetooth ?: return
         val linked = sourceApps[SourceKind.BLUETOOTH]
-        if (linked != null && linked != known && linked !in KNOWN_BT) setSource(SourceKind.BLUETOOTH, known)
+        if (linked != null && linked != known && linked !in KNOWN_BT && linked !in BRAND_BT_APPS) setSource(SourceKind.BLUETOOTH, known)
     }
 
     /**
@@ -297,10 +297,11 @@ class MusicRepository(private val context: Context) {
         get() = radioInternetState
         set(v) {
             if (v == radioInternetState) return
-            val before = appFor(SourceKind.RADIO)
+            // Al pasar a internet, la FM de fábrica suelta el audio (si no, sonarían las dos).
+            if (v) factoryFor(radio)?.releaseAudio()
             radioInternetState = v
             store.edit().putBoolean(KEY_RADIO_INTERNET, v).apply()
-            if (appFor(SourceKind.RADIO) != before) radioChanged()
+            radioChanged()
             // Al pasar a la FM, la de internet se calla (si no, su sesión en pausa seguiría mandando).
             if (!v && ownSourceNow?.invoke() == SourceKind.RADIO) ownStop?.invoke()
         }
@@ -381,7 +382,8 @@ class MusicRepository(private val context: Context) {
 
     /** Si la pantalla trae el Bluetooth de Android (AVRCP), se prepara para leer la música del celular. */
     private fun startAvrcp() {
-        if (avrcp != null) return
+        // Ya existe (la música se escondió y volvió): stop() solo lo desconectó, se vuelve a conectar.
+        avrcp?.let { it.connect(); return }
         val service = bluetoothService ?: return
         avrcp = BluetoothAvrcp(context, service, ::onAvrcpController)
         avrcp?.connect()
@@ -447,9 +449,18 @@ class MusicRepository(private val context: Context) {
             val meta = BroadcastMeta.parse(i.action ?: return, extras) ?: return
             val fm = meta.pkg != null && meta.pkg == sourceApps[SourceKind.RADIO]
             // La FM avisando mientras la pieza Radio está en internet: no es lo que se escogió.
-            if (fm && appFor(SourceKind.RADIO) != meta.pkg) return
+            if (fm && radioInternet) return
+            // A la música, solo lo del método escogido: con Archivos no se cuela el Bluetooth de la pantalla.
+            if (!fm && !musicHears(meta)) return
             (if (fm) radio else music).heard(meta)
         }
+    }
+
+    /** ¿El aviso [meta] es del método de música escogido? Bluetooth: los del celular; App: la elegida o cualquiera. */
+    private fun musicHears(meta: BroadcastMeta): Boolean = when (mode) {
+        MusicMode.FILES -> false
+        MusicMode.BLUETOOTH -> meta.bluetooth || meta.pkg == bluetoothApp()
+        MusicMode.APP -> modeApp == null || meta.pkg == modeApp
     }
 
     private fun start() {
@@ -505,6 +516,11 @@ class MusicRepository(private val context: Context) {
     private var factory: FactoryRadio? = null
     /** Sube en cada arranque o parada: un perfil que termina de abrir tarde se descarta. */
     private var factoryRun = 0
+    /**
+     * Los perfiles se abren de uno en uno: si se piden dos seguidos (la música se esconde y vuelve), el
+     * segundo espera al primero en vez de ver la marca de TopWay a medio abrir y creer que la app se cerró.
+     */
+    private val factoryThread = Executors.newSingleThreadExecutor { Thread(it, "factory-radio") }
 
     /** Se abre en otro hilo (reflexión, el driver y el disco); se publica en el principal. */
     @SuppressLint("ApplySharedPref") // commit a propósito: debe quedar escrito antes de abrir
@@ -514,17 +530,17 @@ class MusicRepository(private val context: Context) {
         val run = ++factoryRun
         // Solo si la FM es la radio escogida (no la de internet).
         val pkg = appFor(SourceKind.RADIO)?.takeUnless(::isOwn) ?: return
-        thread(name = "factory-radio") {
-            if (!isSilent(pkg)) return@thread
+        factoryThread.execute {
+            if (run != factoryRun || !isSilent(pkg)) return@execute
             val log: (String) -> Unit = { e -> mainHandler.post { trace(e) } }
             val onState: (BroadcastMeta) -> Unit = { radio.heard(it.copy(pkg = pkg)) }
             if (pkg.startsWith(NwdRadio.PACKAGE)) {
                 val nwd = NwdRadio(context, onState, log)
                 mainHandler.post { if (run == factoryRun && nwd.open()) factory = nwd }
-                return@thread
+                return@execute
             }
-            if (!TopWayRadio.available) return@thread
-            if (store.getBoolean(KEY_TOPWAY_OPENING, false)) return@thread log("topway apagado: la app se cerró al abrirlo")
+            if (!TopWayRadio.available) return@execute
+            if (store.getBoolean(KEY_TOPWAY_OPENING, false)) return@execute log("topway apagado: la app se cerró al abrirlo")
             // Marcado antes de abrir (y guardado ya): si el firmware tumba la app, la próxima vez no se abre.
             store.edit().putBoolean(KEY_TOPWAY_OPENING, true).commit()
             val tw = TopWayRadio(onState = onState, trace = log)
@@ -657,6 +673,9 @@ class MusicRepository(private val context: Context) {
         /** La app que esta pieza está despertando ("Abriendo Spotify…"); null = nada. */
         var starting by mutableStateOf<String?>(null)
             internal set
+
+        /** El plazo del último despertar ([wake]). */
+        internal var wakeTimeout = Runnable {}
 
         internal var controller: MediaController? = null
 
@@ -845,24 +864,7 @@ class MusicRepository(private val context: Context) {
             val playing = sent ?: h.playing ?: true
             if (h.title == null && !playing) return null
             val title = h.title ?: app.ifBlank { if (h.bluetooth) context.getString(R.string.source_bluetooth) else return null }
-            return withCover(Song(
-                title = title,
-                artist = h.artist.orEmpty(),
-                app = app,
-                artwork = null,
-                playing = playing,
-                durationMs = 0,
-                positionMs = 0,
-                readAt = SystemClock.elapsedRealtime(),
-                speed = 1f,
-                pkg = pkg.orEmpty(),
-                seekable = false,
-                actions = emptyList(),
-                source = pkg?.let(::sourceOf) ?: SourceKind.BLUETOOTH.takeIf { h.bluetooth },
-                buffering = false,
-                error = null,
-                blind = true,
-            ))
+            return withCover(blindSong(title, h.artist.orEmpty(), app, playing, pkg.orEmpty(), pkg?.let(::sourceOf) ?: SourceKind.BLUETOOTH.takeIf { h.bluetooth }))
         }
 
         /** Lo que LiteDash supone de la app a la que le mandó play o pausa ([assume]). */
@@ -872,25 +874,28 @@ class MusicRepository(private val context: Context) {
             val kind = sourceOf(pkg)
             val app = appLabel(pkg)
             val fallback = context.getString(if (kind == SourceKind.RADIO) R.string.source_radio else R.string.source_bluetooth)
-            return Song(
-                title = app.ifBlank { fallback },
-                artist = "",
-                app = app,
-                artwork = null,
-                playing = playing,
-                durationMs = 0,
-                positionMs = 0,
-                readAt = SystemClock.elapsedRealtime(),
-                speed = 1f,
-                pkg = pkg,
-                seekable = false,
-                actions = emptyList(),
-                source = kind,
-                buffering = false,
-                error = null,
-                blind = true,
-            )
+            return blindSong(app.ifBlank { fallback }, "", app, playing, pkg, kind)
         }
+
+        /** Canción "a ciegas" (sin sesión que la describa): sin carátula, avance ni acciones. */
+        private fun blindSong(title: String, artist: String, app: String, playing: Boolean, pkg: String, source: SourceKind?) = Song(
+            title = title,
+            artist = artist,
+            app = app,
+            artwork = null,
+            playing = playing,
+            durationMs = 0,
+            positionMs = 0,
+            readAt = SystemClock.elapsedRealtime(),
+            speed = 1f,
+            pkg = pkg,
+            seekable = false,
+            actions = emptyList(),
+            source = source,
+            buffering = false,
+            error = null,
+            blind = true,
+        )
 
         /**
          * Carátula de respaldo para la música por Bluetooth: si la sesión (o el aviso) no trajo
@@ -979,12 +984,12 @@ class MusicRepository(private val context: Context) {
     /** La fuente a la que está enlazada [pkg] (o la que toca LiteDash); null = una app normal. */
     fun sourceOf(pkg: String): SourceKind? = when {
         isOwn(pkg) -> ownSourceNow?.invoke()
-        pkg == avrcpPackage -> SourceKind.BLUETOOTH
+        pkg == avrcpPackage || pkg == knownBluetooth -> SourceKind.BLUETOOTH
         else -> sourceApps.entries.firstOrNull { it.value == pkg }?.key
     }
 
     /** Paquete del servicio AVRCP del Bluetooth de Android; null si la pantalla no lo trae. */
-    private val avrcpPackage: String? get() = avrcp?.service?.packageName
+    private val avrcpPackage: String? get() = bluetoothService?.packageName
 
     private fun appLabel(pkg: String) = labels.getOrPut(pkg) {
         runCatching {
@@ -1117,9 +1122,9 @@ class MusicRepository(private val context: Context) {
         sourceApps[SourceKind.RADIO]?.let(::open)
     }
 
-    /** Abre la app de Bluetooth enlazada (para vincular en pantallas con chip propio). */
+    /** Abre la app de Bluetooth (la enlazada o la de marca; para vincular en pantallas con chip propio). */
     fun openBluetoothApp() {
-        sourceApps[SourceKind.BLUETOOTH]?.let(::open)
+        bluetoothApp()?.let(::open)
     }
 
     /**
@@ -1143,10 +1148,13 @@ class MusicRepository(private val context: Context) {
         if ((button || session) && (sourceOf(pkg) != null || !service)) lens.assume(pkg, true)
         // Las apps de música normales las abre [watchPlay] (y regresa); aquí solo las de la pantalla.
         val opens = none && sourceOf(pkg) != null
-        mainHandler.postDelayed({
+        // Uno solo por pieza: el de un despertar anterior no debe quitar el "Abriendo…" de este.
+        mainHandler.removeCallbacks(lens.wakeTimeout)
+        lens.wakeTimeout = Runnable {
             if (lens.song == null && lens.starting != null && opens) open(pkg)
             lens.starting = null
-        }, WAKE_TIMEOUT_MS)
+        }
+        mainHandler.postDelayed(lens.wakeTimeout, WAKE_TIMEOUT_MS)
     }
 
     /**
@@ -1180,7 +1188,7 @@ class MusicRepository(private val context: Context) {
             // Se cerró (cambiaron de radio o LiteDash se fue): ya no toca.
             if (factory !== f || !f.open) return@Runnable
             // La NWD sin la clave de la fuente del MCU (on == null) solo se puede confirmar por el audio de Android.
-            if (f.audioAt >= asked || (f is NwdRadio && f.on == null && musicActive())) {
+            if (f.audioAt >= asked || (f is NwdRadio && f.on == null && musicActive() && !othersPlaying(pkg))) {
                 f.started()
                 return@Runnable trace("${f.tag} suena sin abrir")
             }
@@ -1199,7 +1207,7 @@ class MusicRepository(private val context: Context) {
         // Sin perfil de su marca nadie dice que la radio suena: si Android tiene audio tras abrirla, se
         // supone que es ella (el botón pasa a pausa y la pieza muestra la radio en vez de quedarse en nada).
         val pkg = sourceApps[SourceKind.RADIO]
-        if (active && factoryFor(radio) == null && pkg != null && appFor(SourceKind.RADIO) == pkg) radio.assume(pkg, true)
+        if (active && factoryFor(radio) == null && pkg != null && !radioInternet && !othersPlaying(pkg)) radio.assume(pkg, true)
     }
     private val returnFromRadio = Runnable {
         trace("regreso a LiteDash: audio=${yes(musicActive())}")
@@ -1218,6 +1226,12 @@ class MusicRepository(private val context: Context) {
     }
 
     private fun musicActive() = context.getSystemService(AudioManager::class.java).isMusicActive
+
+    /**
+     * ¿Suena otra cosa que no sea [pkg]? (una sesión ocupada o el reproductor propio). isMusicActive es
+     * de todo Android: con esto se sabe si el audio puede ser de la radio o es de otra app.
+     */
+    private fun othersPlaying(pkg: String?): Boolean = sessions().any { it.packageName != pkg && it.busy() }
 
     /**
      * FYT (pantallas cuyo MCU elige la fuente de audio): dar play al celular por AVRCP no basta,
@@ -1241,7 +1255,13 @@ class MusicRepository(private val context: Context) {
     }
 
     /** Es una pantalla FYT (tiene la app de Bluetooth de su MCU). */
-    private fun isFyt() = runCatching { context.packageManager.getPackageInfo("com.syu.bt", 0) }.isSuccess
+    private fun isFyt() = isInstalled("com.syu.bt")
+
+    private fun isInstalled(pkg: String) = runCatching { context.packageManager.getPackageInfo(pkg, 0) }.isSuccess
+
+    /** App del sistema (de la pantalla); si no se puede saber, [unknown]. */
+    private fun isSystem(pkg: String, unknown: Boolean = false) =
+        runCatching { context.packageManager.getApplicationInfo(pkg, 0).flags and ApplicationInfo.FLAG_SYSTEM != 0 }.getOrDefault(unknown)
 
     /** Trae LiteDash al frente si otra app lo tapa (lo pone la app). */
     var returnHome: (() -> Unit)? = null
@@ -1262,7 +1282,8 @@ class MusicRepository(private val context: Context) {
             session != null -> for (action in intArrayOf(KeyEvent.ACTION_DOWN, KeyEvent.ACTION_UP)) runCatching { session.dispatchMediaButtonEvent(KeyEvent(action, code)) }
             // Radio sin receptor ni sesión: la pausa va al sistema de audio (como el botón del volante); el play
             // no, porque la radio solo arranca abriéndola.
-            lens === radio && code == KeyEvent.KEYCODE_MEDIA_PAUSE && pkg != null && !isOwn(pkg) -> sendMediaKey(context, code)
+            // Solo si nada más suena: si no, el sistema le daría la pausa a esa otra app.
+            lens === radio && code == KeyEvent.KEYCODE_MEDIA_PAUSE && pkg != null && !isOwn(pkg) && !othersPlaying(pkg) -> sendMediaKey(context, code)
             lens === radio || pkg != null && isOwn(pkg) -> return false
             else -> sendMediaKey(context, code)
         }
@@ -1345,22 +1366,12 @@ class MusicRepository(private val context: Context) {
     }.getOrDefault(emptySet())
 
     /**
-     * Apps del sistema de la pantalla que atienden el botón de play: ahí están sus
-     * reproductores de USB, Bluetooth y radio (para adivinar las fuentes en Ajustes).
-     */
-    fun systemPlayers(): Set<String> = runCatching {
-        val pm = context.packageManager
-        mediaButtonReceivers().map { it.packageName }.distinct()
-            .filter { pkg -> pkg != context.packageName && runCatching { pm.getApplicationInfo(pkg, 0).flags and ApplicationInfo.FLAG_SYSTEM != 0 }.getOrDefault(false) }
-            .toSet()
-    }.getOrDefault(emptySet())
-
-    /**
-     * Adivina, una vez, qué app de la pantalla reproduce cada fuente: entre las del sistema
-     * que atienden el botón de play y se pueden abrir, la que lleva "usb", "bt"/"bluetooth"
-     * o "radio"/"fm" en el paquete o en el nombre. Solo si hay una sola candidata (si hay
-     * dudas, mejor nada: el usuario la elige en Ajustes). Corre en un hilo aparte (son
-     * varias consultas al sistema) y guarda el resultado en el hilo principal.
+     * Adivina, una vez, la app de radio de la pantalla: entre las del sistema que atienden el botón de
+     * play y se pueden abrir, la que lleva "radio" o "fm" en el paquete o en el nombre. Solo si hay una
+     * sola candidata (si hay dudas, mejor nada: se elige en Ajustes → Apps → Radio). El Bluetooth no se
+     * adivina: [bluetoothApp] ya usa la app de marca instalada (adivinar por nombre enlazó ZLink en una
+     * TopWay). Corre en un hilo aparte (son varias consultas al sistema): los nombres se leen sin la
+     * caché del hilo principal, y el resultado se guarda en el principal.
      */
     private fun guessSources() {
         val pm = context.packageManager
@@ -1368,18 +1379,11 @@ class MusicRepository(private val context: Context) {
             pm.queryIntentActivities(Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER), 0)
                 .map { it.activityInfo.packageName }.toSet()
         }.getOrDefault(emptySet())
-        val players = systemPlayers().filter { it in launchable }
-        val candidates = players.map { pkg -> pkg to tokens(pkg, appLabel(pkg)) }
-        // Bluetooth: primero una app de marca conocida (chip propio, la más fiable); si no, por nombre.
-        val bluetooth = players.firstOrNull { it in KNOWN_BT }
-            ?: candidates.filter { (_, t) -> SOURCE_WORDS.getValue(SourceKind.BLUETOOTH).any { it in t } }.singleOrNull()?.first
-        val radio = candidates.filter { (_, t) -> SOURCE_WORDS.getValue(SourceKind.RADIO).any { it in t } }.singleOrNull()?.first
-        val found = buildMap {
-            bluetooth?.let { put(SourceKind.BLUETOOTH, it) }
-            radio?.let { put(SourceKind.RADIO, it) }
-        }
-        if (found.isEmpty()) return
-        mainHandler.post { for ((kind, pkg) in found) if (kind !in sourceApps) setSource(kind, pkg) }
+        val players = runCatching { mediaButtonReceivers().map { it.packageName }.distinct() }.getOrDefault(emptyList())
+            .filter { it != context.packageName && it in launchable && isSystem(it) }
+        val label = { pkg: String -> runCatching { pm.getApplicationLabel(pm.getApplicationInfo(pkg, 0)).toString() }.getOrDefault("") }
+        val radio = players.filter { pkg -> RADIO_WORDS.any { it in tokens(pkg, label(pkg)) } }.singleOrNull() ?: return
+        mainHandler.post { if (SourceKind.RADIO !in sourceApps) setSource(SourceKind.RADIO, radio) }
     }
 
     /** Palabras sueltas del paquete y del nombre, en minúsculas ("com.syu.bt" → com, syu, bt). */
@@ -1401,7 +1405,7 @@ class MusicRepository(private val context: Context) {
         val adapter = runCatching { context.getSystemService(BluetoothManager::class.java)?.adapter }.getOrNull()
         val service = bluetoothService
         appendLine("Bluetooth de Android: AVRCP=${service?.let { "${it.packageName}/${it.name}" } ?: "no"}; adaptador=${adapter?.let { if (it.isEnabled) "encendido" else "apagado" } ?: "no"}")
-        val brand = BRAND_BT_APPS.filter { runCatching { context.packageManager.getPackageInfo(it, 0) }.isSuccess }
+        val brand = BRAND_BT_APPS.filter(::isInstalled)
         appendLine("Apps de Bluetooth de marca: ${brand.joinToString().ifBlank { "ninguna" }}")
     }
 
@@ -1473,8 +1477,7 @@ class MusicRepository(private val context: Context) {
 
     /** ¿[pkg] va en el reporte? Las del sistema, las enlazadas y la elegida. */
     private fun relevant(pkg: String): Boolean =
-        pkg == preferred || pkg in sourceApps.values ||
-            runCatching { context.packageManager.getApplicationInfo(pkg, 0).flags and ApplicationInfo.FLAG_SYSTEM != 0 }.getOrDefault(false)
+        pkg == preferred || pkg in sourceApps.values || isSystem(pkg)
 
     private fun actionNames(actions: Long): String = listOf(
         PlaybackState.ACTION_PLAY to "play", PlaybackState.ACTION_PAUSE to "pause", PlaybackState.ACTION_PLAY_PAUSE to "play_pause",

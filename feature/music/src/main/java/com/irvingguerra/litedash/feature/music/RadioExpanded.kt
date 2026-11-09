@@ -85,22 +85,7 @@ private fun NoRadio(onSettings: () -> Unit, modifier: Modifier) {
 
 @Composable
 private fun Details(repo: MusicRepository, song: Song?, onIdle: () -> Unit, modifier: Modifier) {
-    val opening = repo.radio.starting
-    Column(modifier) {
-        val title = when {
-            song != null -> song.title
-            opening != null -> stringResource(R.string.opening_app, opening)
-            else -> stringResource(R.string.radio)
-        }
-        val error = song?.error
-        val subtitle = when {
-            error != null -> error
-            song?.buffering == true -> stringResource(R.string.player_connecting)
-            song != null -> subtitleFor(repo, song)
-            opening != null -> stringResource(R.string.opening_wait)
-            else -> radioHint(repo)
-        }
-        BigTitle(title, subtitle, error != null)
+    ExpandedDetails(repo, song, repo.radio.starting, stringResource(R.string.radio), radioHint(repo), modifier) {
         Spacer(Modifier.height(16.dp))
         Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
             RadioControls(repo, song, onIdle, size = 64.dp, playSize = 76.dp, gap = 12.dp)

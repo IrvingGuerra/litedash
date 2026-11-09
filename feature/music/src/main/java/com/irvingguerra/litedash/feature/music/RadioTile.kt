@@ -25,6 +25,8 @@ fun RadioTile(repo: MusicRepository, revision: Int, onExpand: () -> Unit, modifi
         repo, revision, onExpand, modifier, song, Icons.radio, stringResource(R.string.radio), stringResource(R.string.radio_explain),
         text = { tall -> StationText(repo, song, tall) },
         controls = { m, compact -> RadioControls(repo, song, onExpand, m, compact = compact) },
+        // La radio por internet es el reproductor propio: su sesión se lee directo, sin el acceso a notificaciones.
+        needsAccess = !repo.radioInternet,
     )
 }
 

@@ -58,7 +58,7 @@ private enum class ReportDetail(val key: String, val title: Int) {
     USB_RECEIVER("usb", R.string.tires_source_usb),
     BLUETOOTH("bluetooth", R.string.sys_bluetooth),
     WIFI("wifi", R.string.sys_wifi),
-    USB("usb", com.irvingguerra.litedash.feature.music.R.string.source_usb),
+    USB("usb", R.string.report_obd_usb),
 }
 
 /** Qué pasa; [key] es lo que se guarda. */

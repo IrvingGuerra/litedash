@@ -5,7 +5,6 @@ import android.os.Looper
 import android.os.Message
 import android.os.SystemClock
 import java.lang.reflect.Method
-import java.util.Locale
 
 /**
  * La radio FM de las pantallas TopWay (TS7, TS10, TS18; app de fábrica `com.tw.radio`), que no
@@ -16,7 +15,7 @@ import java.util.Locale
  * ella al abrirse ("actividad" 0x9E00, fuente de audio 769 y foco 0x9E11, como ivvlev/CarRadio,
  * dipcore/Radio-MST768 y Orbit). Lo que dice el sintonizador va al registro para los reportes.
  */
-internal class TopWayRadio(private val onState: (BroadcastMeta) -> Unit, private val trace: (String) -> Unit) : FactoryRadio {
+internal class TopWayRadio(onState: (BroadcastMeta) -> Unit, private val trace: (String) -> Unit) : BaseFactoryRadio(onState) {
     override val tag = "topway"
     private var util: Any? = null
     private var write3: Method? = null
@@ -26,18 +25,9 @@ internal class TopWayRadio(private val onState: (BroadcastMeta) -> Unit, private
     private var frequency = 0
     private var band = 0
     /** "FM 91.1"; null si no ha dicho. */
-    override val station get() = stationText(band, frequency)
-    override var name = ""
-        private set
-    /** El sintonizador tiene el audio; null = no ha dicho. */
-    override var on: Boolean? = null
-        private set
-    /**
-     * Cuándo dijo el sintonizador que tiene el audio (769 = 1), para confirmar un play. La "actividad"
-     * no sirve: el enlace reparte lo que se escribe, así que llegaría la nuestra.
-     */
-    override var audioAt = 0L
-        private set
+    override val station get() = stationText(band == BAND_AM, frequency)
+    // audioAt: cuándo dijo el sintonizador que tiene el audio (769 = 1), para confirmar un play. La
+    // "actividad" no sirve: el enlace reparte lo que se escribe, así que llegaría la nuestra.
     /** El número de la radio en "actividad" y fuente: 1 en las TS18 (ivvlev/CarRadio); se aprende de lo que manda. */
     private var source = SOURCE_RADIO
     private val seen = HashSet<Int>()
@@ -147,12 +137,6 @@ internal class TopWayRadio(private val onState: (BroadcastMeta) -> Unit, private
         runCatching { write3?.invoke(u, what, a1, a2) }.onFailure { trace("topway write $what falló") }
     }
 
-    private fun publish() {
-        val text = station
-        if (text == null && name.isEmpty()) return
-        onState(BroadcastMeta(title = name.ifEmpty { text }, artist = text.takeIf { name.isNotEmpty() }, album = null, playing = on ?: false, pkg = null, bluetooth = false))
-    }
-
     companion object {
         private const val CLASS = "android.tw.john.TWUtil"
         private const val RADIO = 1025
@@ -165,15 +149,9 @@ internal class TopWayRadio(private val onState: (BroadcastMeta) -> Unit, private
         /** El número de la radio en otras TopWay (OpenRath). */
         private const val SOURCE_RADIO_ALT = 0x0A
         private const val RELEASE = 0x80
+        private const val BAND_AM = 2
 
         /** La pantalla trae el enlace de TopWay. */
         val available: Boolean by lazy { runCatching { Class.forName(CLASS) }.isSuccess }
-
-        /** "FM 91.1" o "AM 1220"; null sin frecuencia. */
-        internal fun stationText(band: Int, frequency: Int): String? = when {
-            frequency <= 0 -> null
-            band == 2 -> "AM $frequency"
-            else -> "FM " + String.format(Locale.US, "%.1f", frequency / 100f)
-        }
     }
 }

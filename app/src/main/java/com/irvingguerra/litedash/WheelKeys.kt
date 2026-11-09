@@ -95,11 +95,10 @@ class WheelKeys(private val context: Context, private val prefs: Preferences) {
             audio.adjustStreamVolume(AudioManager.STREAM_MUSIC, direction, AudioManager.FLAG_SHOW_UI)
         }
         when (action) {
-            // Si lo que suena es la radio (y la música no), el volante la controla a ella; sin
-            // nada en la música pero con la radio en pausa, también.
+            // Si lo que suena es la radio (y la música no), el volante la controla a ella; si no, a la
+            // música (aunque la radio de fábrica muestre su estación en pausa: el método de música manda).
             WheelAction.PLAY_PAUSE, WheelAction.NEXT, WheelAction.PREVIOUS -> {
-                val radio = music.radio.song
-                val lens = if (radio != null && (radio.playing && music.song?.playing != true || music.song == null)) music.radio else music.music
+                val lens = if (music.radio.song?.playing == true && music.song?.playing != true) music.radio else music.music
                 when (action) {
                     WheelAction.PLAY_PAUSE -> lens.toggle()
                     WheelAction.NEXT -> lens.next()
