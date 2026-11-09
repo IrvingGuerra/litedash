@@ -4,6 +4,15 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.4.108] - 2026-11-09
+
+### Nuevo
+- **Abrir LiteDash al encender** (Ajustes → Inicio y apariencia → Hazlo tu inicio): para pantallas que
+  regresan su launcher de fábrica cada vez que apagas y prendes el auto. Al encender, LiteDash se pone
+  al frente solo. Desde Android 10 pide el permiso "Mostrar sobre otras apps". Apagado de fábrica.
+- El reporte dice cuál es el inicio predeterminado de tu pantalla y qué pasó al encender, para saber
+  qué marca lo cambia.
+
 ## [1.4.107] - 2026-11-08
 
 ### Cambiado

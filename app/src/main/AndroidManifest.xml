@@ -20,8 +20,17 @@
             <action android:name="android.intent.action.GET_CONTENT" />
             <data android:mimeType="image/*" />
         </intent>
+        <!-- Qué launchers hay y cuál es el predeterminado (solo para los reportes). -->
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.HOME" />
+        </intent>
     </queries>
 
+    <!-- "Abrir LiteDash al encender" (apagado de fábrica): saber que la pantalla encendió y, desde
+         Android 10, poder ponerse al frente sola ("Mostrar sobre otras apps", lo da el usuario). -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <!-- Solo para bajar el catálogo de autos (imágenes) cuando el usuario lo abre. -->
     <uses-permission android:name="android.permission.INTERNET" />
     <!-- Ícono de Wi-Fi o datos en la barra (permiso normal, sin pregunta). -->
@@ -90,6 +99,23 @@
                 android:name="android.hardware.usb.action.USB_DEVICE_ATTACHED"
                 android:resource="@xml/usb_devices" />
         </activity>
+
+        <!-- Apagado: solo se prende con "Abrir LiteDash al encender" (BootLaunch.sync). -->
+        <receiver
+            android:name=".BootReceiver"
+            android:enabled="false"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+                <action android:name="com.htc.intent.action.QUICKBOOT_POWERON" />
+                <action android:name="android.intent.action.ACTION_BOOT_IPO" />
+                <action android:name="com.fyt.boot.ACCON" />
+                <action android:name="com.glsx.boot.ACCON" />
+                <action android:name="com.cayboy.action.ACC_ON" />
+                <action android:name="com.carboy.action.ACC_ON" />
+            </intent-filter>
+        </receiver>
 
         <activity
             android:name=".MainActivity"

@@ -729,4 +729,8 @@
     <string name="music_mode_title">Cómo escuchas música</string>
     <string name="music_mode_help">Elige uno: es el que suena en el widget Música. Al cambiar, el anterior se pausa.</string>
     <string name="image_no_permission">Sin el permiso de archivos no se puede buscar en la memoria.</string>
+    <string name="open_on_boot">Abrir LiteDash al encender</string>
+    <string name="open_on_boot_help">Para pantallas que regresan su launcher de fábrica al apagar y encender el auto: LiteDash se pone al frente solo. Si tu pantalla tiene en sus ajustes la opción «Launcher predeterminado», elige LiteDash ahí también.</string>
+    <string name="open_on_boot_permission">Falta el permiso «Mostrar sobre otras apps»: sin él, Android no deja que LiteDash se abra solo.</string>
+    <string name="open_on_boot_grant">Dar permiso</string>
 </resources>

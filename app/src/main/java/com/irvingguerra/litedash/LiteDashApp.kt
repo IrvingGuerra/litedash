@@ -105,6 +105,8 @@ class LiteDashApp : Application() {
 
     private fun syncUsbOffer() {
         Thread({ synchronized(onUsbPrefs) {
+            // El receptor de "Abrir al encender" igual que su opción (por si se restauró un respaldo).
+            BootLaunch.sync(this, getSharedPreferences(PrefKeys.FILE, Context.MODE_PRIVATE).getBoolean(PrefKeys.OPEN_ON_BOOT, false))
             val settings = getSharedPreferences(PrefKeys.FILE, Context.MODE_PRIVATE)
             val obdOn = !settings.contains(PrefKeys.OBD_MODULE) || settings.getBoolean(PrefKeys.OBD_MODULE, false)
             UsbAttachActivity.offer(this, TpmsRepository.usesUsb(this) || obdOn && ObdRepository.hasUsbTarget(this))

@@ -39,6 +39,7 @@ internal object PrefKeys {
     const val WELCOME_SEEN = "welcome_seen"
     const val WELCOME_STEP = "welcome_step"
     const val DONT_ASK_HOME = "dont_ask_home"
+    const val OPEN_ON_BOOT = "open_on_boot"
     const val LANGUAGE = "language"
     const val HIDDEN = "hidden_apps"
     const val DOCK = "dock"
@@ -247,6 +248,9 @@ class Preferences(context: Context) {
 
     /** El usuario pidió no volver a ver el aviso de "hazlo tu pantalla de inicio". */
     var dontAskHome by bool(PrefKeys.DONT_ASK_HOME, false)
+
+    /** Abrir LiteDash al encender la pantalla ([BootLaunch]); apagado de fábrica. */
+    var openOnBoot by bool(PrefKeys.OPEN_ON_BOOT, false)
 
     /** "" (sistema), "es" o "en". Cambiarlo recrea la actividad: se escribe al instante (commit). */
     var language by Stored(p.getString(PrefKeys.LANGUAGE, "") ?: "") { p.edit(commit = true) { putString(PrefKeys.LANGUAGE, it) } }

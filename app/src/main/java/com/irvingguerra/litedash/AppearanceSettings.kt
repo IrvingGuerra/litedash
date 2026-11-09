@@ -30,6 +30,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import com.irvingguerra.litedash.core.ui.Brand
 import com.irvingguerra.litedash.core.ui.Button
 import com.irvingguerra.litedash.core.ui.DarkColors
@@ -245,6 +246,31 @@ private fun HomeSettings(d: Dependencies, onEdit: () -> Unit, onTemplates: () ->
         } else {
             Button(stringResource(R.string.make_home), { prefs.dontAskHome = false; requestHome() }, primary = true)
         }
+        OpenOnBootSettings(prefs)
+    }
+}
+
+/**
+ * "Abrir LiteDash al encender": para pantallas que regresan su launcher de fábrica al encender. Desde
+ * Android 10 necesita "Mostrar sobre otras apps"; si falta, se pide al prender y se avisa.
+ */
+@Composable
+private fun OpenOnBootSettings(prefs: Preferences) {
+    val context = LocalContext.current
+    var allowed by remember { mutableStateOf(BootLaunch.allowed(context)) }
+    // Al volver de Ajustes de Android (donde se da el permiso) se revisa otra vez.
+    LifecycleResumeEffect(Unit) {
+        allowed = BootLaunch.allowed(context)
+        onPauseOrDispose {}
+    }
+    SwitchRow(stringResource(R.string.open_on_boot), prefs.openOnBoot, { on ->
+        prefs.openOnBoot = on
+        BootLaunch.sync(context, on)
+        if (on && !BootLaunch.allowed(context)) runCatching { context.startActivity(BootLaunch.permissionIntent(context)) }
+    }, stringResource(R.string.open_on_boot_help))
+    if (prefs.openOnBoot && !allowed) {
+        Label(stringResource(R.string.open_on_boot_permission), Typography.small, LocalColors.current.danger)
+        Button(stringResource(R.string.open_on_boot_grant), { runCatching { context.startActivity(BootLaunch.permissionIntent(context)) } })
     }
 }
 

@@ -708,4 +708,8 @@
     <string name="music_mode_title">How you listen to music</string>
     <string name="music_mode_help">Pick one: it is what plays in the Music widget. Switching pauses the previous one.</string>
     <string name="image_no_permission">Without the files permission LiteDash can\'t browse the storage.</string>
+    <string name="open_on_boot">Open LiteDash on startup</string>
+    <string name="open_on_boot_help">For head units that bring back their factory launcher when the car turns off and on: LiteDash comes to the front by itself. If your head unit has a “Default launcher” option in its settings, choose LiteDash there too.</string>
+    <string name="open_on_boot_permission">The “Display over other apps” permission is missing: without it Android won\'t let LiteDash open by itself.</string>
+    <string name="open_on_boot_grant">Grant permission</string>
 </resources>
