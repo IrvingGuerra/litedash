@@ -118,14 +118,8 @@ private fun LibraryBrowser(onPicked: () -> Unit, modifier: Modifier) {
     }
     // Elegir la carpeta de la música con el selector de Android: sirve aunque la pantalla no deje
     // leer la memoria directo (pasaba en una AC8227L con Android 13: "no tiene música").
-    val pickFolder = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
-        if (uri != null) {
-            Library.setFolder(context, uri)
-            mounts++
-        }
-    }
     val folderButton: @Composable () -> Unit = {
-        Button(stringResource(R.string.library_pick_folder), { runCatching { pickFolder.launch(null) } })
+        FolderPicker(stringResource(R.string.library_pick_folder), onChosen = { mounts++ })
     }
     if (!permission) {
         Column(modifier, verticalArrangement = Arrangement.spacedBy(12.dp)) {

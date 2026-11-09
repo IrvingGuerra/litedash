@@ -35,6 +35,7 @@ class LiteDashApp : Application() {
             returnHome = { MainActivity.bringToFront(this@LiteDashApp) } }
         OwnPlayer.wire(this, music, prefs)
         music.migrateUsbApp()
+        music.fixBluetoothLink()
         Dependencies(
             apps = AppRepository(this).apply { opener = SplitScreen::open },
             music = music,

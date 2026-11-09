@@ -4,6 +4,24 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.4.107] - 2026-11-08
+
+### Cambiado
+- **Música: un solo método.** En Ajustes → Apps → Música eliges cómo escuchas: **Archivos** (antes
+  "USB": la música de tus memorias con el reproductor de LiteDash), **Bluetooth** (tu celular) o
+  **App** (tu app de música). Solo ese suena en el widget Música; al cambiar, el anterior se pausa.
+
+### Corregido
+- **Ya no se cierra la app al elegir una imagen** en pantallas sin galería ni "Archivos": si tu
+  pantalla no trae el selector, LiteDash abre su propio explorador de la memoria.
+- **"Elegir carpeta" de la música ya abre** en pantallas sin el selector de Android (antes no pasaba
+  nada): se abre el explorador propio.
+- **Bluetooth con título y artista en pantallas TopWay** (y otras con varias sesiones): LiteDash ahora
+  toma la sesión que sí trae la canción, no la primera vacía. Si la música por Bluetooth estaba
+  enlazada a otra app (como ZLink), se cambia sola a la app de Bluetooth de tu pantalla.
+- La música por el Bluetooth de Android ya no depende del permiso de ver el nombre del celular.
+- La carátula por internet se vuelve a buscar cuando regresa la señal.
+
 ## [1.4.106] - 2026-11-08
 
 ### Mejorado

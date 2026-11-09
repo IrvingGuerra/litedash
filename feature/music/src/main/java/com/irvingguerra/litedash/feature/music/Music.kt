@@ -61,6 +61,10 @@ private const val KEY_LAST_APP = "last_app"
 private const val KEY_SOURCES_GUESSED = "sources_guessed"
 /** La pieza Radio prefiere la de internet (true) o la FM de la pantalla. */
 private const val KEY_RADIO_INTERNET = "radio_internet"
+/** El método de música elegido ([MusicMode]). */
+private const val KEY_MODE = "music_mode"
+/** Ya se revisó una vez la app de Bluetooth enlazada ([MusicRepository.fixBluetoothLink]). */
+private const val KEY_BT_FIXED = "bt_link_fixed"
 
 /** Palabras con las que se reconoce la app de cada fuente (en el paquete o en el nombre). */
 private val SOURCE_WORDS = mapOf(
@@ -69,7 +73,7 @@ private val SOURCE_WORDS = mapOf(
 )
 
 /** Apps de Bluetooth de marca conocidas (chip propio): se prefieren sobre adivinar por nombre. */
-private val KNOWN_BT = setOf("com.syu.bt", "com.tw.bt", "com.microntek.bt", "com.clw.btmusic")
+private val KNOWN_BT = setOf("com.syu.bt", "com.tw.bt", "com.microntek.bt", "com.clw.btmusic", "com.autochips.bluetooth")
 
 /** Cuánto se espera a que la app despertada empiece a sonar antes de abrirla. */
 private const val WAKE_TIMEOUT_MS = 4_000L
@@ -138,7 +142,7 @@ class MusicRepository(private val context: Context) {
 
     /**
      * Tu app de música, elegida en Ajustes (paquete); null = ninguna: la pieza muestra lo que
-     * suene. Los botones de la música en grande no la cambian ([active] es lo del momento).
+     * suene. Es lo que sigue el método App ([mode]).
      */
     var preferred: String?
         get() = preferredState
@@ -153,17 +157,34 @@ class MusicRepository(private val context: Context) {
     var onPreferredChanged: ((String?) -> Unit)? = null
 
     /**
-     * La fuente que el usuario tocó en la música en grande (paquete; el de LiteDash = USB);
-     * null = la app elegida o lo que suene. No se guarda: si otra app empieza a sonar sola, se suelta.
+     * El método de música, uno solo a la vez (Ajustes → Apps → Música): Archivos (el reproductor de
+     * LiteDash), Bluetooth (el celular) o App (tu app de música; sin elegir, la que suene). Se guarda.
      */
-    var active by mutableStateOf<String?>(null)
-        private set
+    var mode: MusicMode
+        get() = modeState
+        set(v) {
+            if (v == modeState) return
+            // Solo suena el método nuevo: los demás se callan.
+            stopOthers(pkgFor(v))
+            modeState = v
+            store.edit().putString(KEY_MODE, v.name).apply()
+            music.forget()
+            if (users > 0) choose(sessions())
+        }
+    private var modeState by mutableStateOf(store.getString(KEY_MODE, null)?.let { m -> MusicMode.entries.firstOrNull { it.name == m } } ?: MusicMode.APP)
 
-    /** Tocaron USB y el reproductor propio aún busca qué tocar: no soltar [active] mientras. */
-    private var ownPending = false
+    /** La app que toca [m]: LiteDash, la del Bluetooth o tu app de música (null = la que suene). */
+    private fun pkgFor(m: MusicMode): String? = when (m) {
+        MusicMode.FILES -> ownPackage
+        MusicMode.BLUETOOTH -> bluetoothApp()
+        MusicMode.APP -> preferred
+    }
 
-    /** Sube con cada toque a USB o a otra fuente: la respuesta de un toque viejo se ignora. */
-    private var ownToken = 0
+    /** La app del método elegido (la que la pieza Música sigue y despierta); null = la que suene. */
+    val modeApp: String? get() = pkgFor(mode)
+
+    /** Archivos sin nada que tocar: la vista abre la biblioteca (lo pone la música en grande mientras se ve). */
+    var onFilesEmpty: (() -> Unit)? = null
 
     /**
      * Apps de la pantalla enlazadas a Bluetooth y radio (Ajustes → Música); se guardan en [store].
@@ -248,11 +269,36 @@ class MusicRepository(private val context: Context) {
         SourceKind.RADIO -> if (ownRadio && (radioInternet || sourceApps[kind] == null)) ownPackage else sourceApps[kind]
     }
 
+    /**
+     * La pieza Música necesita el acceso a notificaciones para ver qué suena: con App sí (otras apps)
+     * y con Bluetooth de chip propio también; con Archivos o el Bluetooth de Android, no.
+     */
+    val needsAccess: Boolean
+        get() = mode == MusicMode.APP || (mode == MusicMode.BLUETOOTH && !bluetoothBuiltIn)
+
     /** La pantalla trae el Bluetooth de Android (AVRCP): la fuente Bluetooth no pide app. */
     val bluetoothBuiltIn: Boolean get() = bluetoothService != null
 
     /** La app que toca el Bluetooth: el propio Android (AVRCP) si lo trae, si no la enlazada. */
-    fun bluetoothApp(): String? = bluetoothService?.packageName ?: sourceApps[SourceKind.BLUETOOTH]
+    fun bluetoothApp(): String? = bluetoothService?.packageName ?: sourceApps[SourceKind.BLUETOOTH] ?: knownBluetooth
+
+    /** La app de Bluetooth de marca instalada (chip propio: TopWay, FYT, Microntek…), si hay. */
+    private val knownBluetooth: String? by lazy {
+        KNOWN_BT.firstOrNull { pkg -> runCatching { context.packageManager.getPackageInfo(pkg, 0) }.isSuccess }
+    }
+
+    /**
+     * Antes se adivinaba la app de Bluetooth por palabras y en algunas pantallas quedó otra (p. ej.
+     * ZLink, la de CarPlay, en una TopWay). Si hay una app de Bluetooth de marca conocida y la enlazada
+     * no es esa, se cambia por la conocida. Una sola vez.
+     */
+    fun fixBluetoothLink() {
+        if (store.getBoolean(KEY_BT_FIXED, false)) return
+        store.edit().putBoolean(KEY_BT_FIXED, true).apply()
+        val known = knownBluetooth ?: return
+        val linked = sourceApps[SourceKind.BLUETOOTH]
+        if (linked != null && linked != known && linked !in KNOWN_BT) setSource(SourceKind.BLUETOOTH, known)
+    }
 
     /** La pieza Radio usa la radio por internet de LiteDash (si no, la FM de la pantalla). Se guarda. */
     var radioInternet: Boolean
@@ -266,6 +312,14 @@ class MusicRepository(private val context: Context) {
             if (!v && ownSourceNow?.invoke() == SourceKind.RADIO) ownStop?.invoke()
         }
 
+    /** La sesión del reproductor propio (lo pone el app): se lee directo, sin el permiso de avisos. */
+    var ownSession: (() -> MediaSession.Token?)? = null
+
+    /** El reproductor propio creó su sesión: la pieza la toma (sin el permiso de avisos nadie más avisaría). */
+    fun ownSessionChanged() {
+        mainHandler.post { if (users > 0) choose(sessions()) }
+    }
+
     /** Detiene el reproductor propio (lo pone el app). */
     var ownStop: (() -> Unit)? = null
     private var radioInternetState by mutableStateOf(store.getBoolean(KEY_RADIO_INTERNET, false))
@@ -277,7 +331,7 @@ class MusicRepository(private val context: Context) {
      * Deja una sola fuente sonando: calla la USB propia (salvo [keep]) y toda sesión de la pieza
      * Música que esté sonando (salvo [keep] y la radio, que vive en su propia pieza). La música
      * "a ciegas" (Bluetooth/FM sin sesión que LiteDash da por sonando) se calla con la tecla de
-     * pausa a su receptor. No cambia [active].
+     * pausa a su receptor.
      */
     private fun stopOthers(keep: String?) {
         if (keep != ownPackage) ownPause?.invoke()
@@ -290,25 +344,6 @@ class MusicRepository(private val context: Context) {
         }
         val blind = music.song?.takeIf { it.blind && it.playing && it.pkg.isNotBlank() }
         if (blind != null && blind.pkg != keep) press(music, KeyEvent.KEYCODE_MEDIA_PAUSE)
-    }
-
-    /**
-     * Tocaron USB: que suene el reproductor propio (sin cambiar la app elegida). Busca qué tocar
-     * en segundo plano; si no hay nada, [onEmpty] (la vista abre la biblioteca para escoger).
-     */
-    fun playOwn(onEmpty: () -> Unit) {
-        val play = ownPlay ?: return
-        stopOthers(ownPackage)
-        val token = ++ownToken
-        active = ownPackage
-        ownPending = true
-        music.forget()
-        play(SourceKind.USB) { ok ->
-            if (token != ownToken) return@play
-            ownPending = false
-            if (!ok) onEmpty()
-            if (users > 0) choose(sessions())
-        }
     }
 
     private val icons = HashMap<String, Bitmap?>()
@@ -334,26 +369,24 @@ class MusicRepository(private val context: Context) {
     private val devices = DeviceWatcher(context, onBluetooth = ::phoneChanged, onUsb = { usbDrive = it })
 
     // El Bluetooth de Android como receptor (A2DP sink): si la pantalla trae el servicio AVRCP,
-    // LiteDash lee y controla la música del celular sin app externa. Solo vivo mientras la música
-    // esté a la vista; el controlador solo cuenta con un celular conectado.
+    // LiteDash lee y controla la música del celular sin app externa. Conectado mientras la música
+    // esté a la vista (sin celular, su sesión simplemente no trae canción). No depende de poder ver
+    // el nombre del celular: sin el permiso BLUETOOTH_CONNECT nunca se conectaba.
     private var avrcp: BluetoothAvrcp? = null
     private var avrcpController: MediaController? = null
     /** El servicio AVRCP del Bluetooth de Android; se busca una vez, sin importar si la música está a la vista. */
     private val bluetoothService: ServiceInfo? by lazy { BluetoothAvrcp.find(context) }
 
-    // El celular llegó o se fue: con AVRCP, se conecta o desconecta; sin él, la música Bluetooth
-    // que se suponía sonando ya no suena.
+    // El celular llegó o se fue: la música Bluetooth que se suponía sonando ya no suena.
     private fun phoneChanged(name: String?) {
         bluetoothDevice = name
         if (name != null) {
             avrcp?.connect()
             return
         }
-        avrcp?.disconnect()
-        avrcpController = null
-        if (users > 0) choose(sessions())
-        val app = sourceApps[SourceKind.BLUETOOTH] ?: return
+        val app = bluetoothApp() ?: return
         for (lens in listOf(music, radio)) if (lens.assumedPkg == app) lens.forget()
+        if (users > 0) choose(sessions())
     }
 
     /** Si la pantalla trae el Bluetooth de Android (AVRCP), se prepara para leer la música del celular. */
@@ -361,13 +394,38 @@ class MusicRepository(private val context: Context) {
         if (avrcp != null) return
         val service = bluetoothService ?: return
         avrcp = BluetoothAvrcp(context, service, ::onAvrcpController)
-        if (bluetoothDevice != null) avrcp?.connect()
+        avrcp?.connect()
     }
 
-    /** El controlador AVRCP ya (des)conectó: se vuelve a repartir; sin celular conectado, no cuenta. */
+    /**
+     * El controlador AVRCP ya (des)conectó. Su sesión no siempre llega por las sesiones activas (sin
+     * el permiso de avisos, nunca): cuando cambia de estado y ninguna pieza la tiene, se vuelve a repartir.
+     */
     private fun onAvrcpController(controller: MediaController?) {
-        avrcpController = controller?.takeIf { bluetoothDevice != null }
-        mainHandler.post { if (users > 0) choose(sessions()) }
+        mainHandler.post {
+            avrcpController?.unregisterCallback(avrcpWatch)
+            avrcpController = controller
+            avrcpLast = controller?.playbackState?.state
+            controller?.registerCallback(avrcpWatch, mainHandler)
+            if (users > 0) choose(sessions())
+        }
+    }
+
+    private var avrcpLast: Int? = null
+    private val avrcpWatch = object : MediaController.Callback() {
+        override fun onPlaybackStateChanged(state: PlaybackState?) {
+            if (state?.state == avrcpLast) return
+            avrcpLast = state?.state
+            avrcpRechoose()
+        }
+        override fun onMetadataChanged(metadata: MediaMetadata?) = avrcpRechoose()
+    }
+
+    /** Solo si la pieza podría tomarla (Bluetooth, o App sin app elegida) y aún no la tiene: cada vuelta es IPC. */
+    private fun avrcpRechoose() {
+        if (users == 0 || !(mode == MusicMode.BLUETOOTH || (mode == MusicMode.APP && preferred == null))) return
+        val token = avrcpController?.sessionToken
+        if (listOf(music, radio).none { it.controller?.sessionToken == token }) choose(sessions())
     }
 
     fun use() {
@@ -419,11 +477,9 @@ class MusicRepository(private val context: Context) {
             Thread(::guessSources, "music-sources").start()
         }
         listen()
-        // Sin permiso de avisos no hay sesiones: se muestra lo último avisado por broadcast.
-        if (!listening) {
-            music.read()
-            radio.read()
-        }
+        // Sin permiso de avisos, igual se ven la sesión propia (Archivos) y la del Bluetooth de Android;
+        // lo demás, lo último avisado por broadcast.
+        if (!listening) choose(sessions())
     }
 
     private fun listen() {
@@ -438,6 +494,7 @@ class MusicRepository(private val context: Context) {
     private fun stop() {
         devices.stop()
         avrcp?.disconnect()
+        avrcpController?.unregisterCallback(avrcpWatch)
         avrcpController = null
         runCatching { context.unregisterReceiver(broadcasts) }
         if (NotificationService.media === notifications) NotificationService.media = null
@@ -494,7 +551,9 @@ class MusicRepository(private val context: Context) {
         val extra = sourceNotes.values.filter { n -> active.none { it.packageName == n.packageName } }.mapNotNull { n ->
             n.sessionToken()?.let { runCatching { MediaController(context, it) }.getOrNull() }
         }
-        val all = active + extra
+        val own = ownSession?.invoke()?.takeIf { t -> (active + extra).none { it.sessionToken == t } }
+            ?.let { runCatching { MediaController(context, it) }.getOrNull() }
+        val all = active + extra + listOfNotNull(own)
         // El Bluetooth de Android (AVRCP) no sale entre las sesiones activas: se agrega.
         val av = avrcpController ?: return all
         return if (all.any { it.packageName == av.packageName }) all else all + av
@@ -561,11 +620,11 @@ class MusicRepository(private val context: Context) {
     fun isRadio(pkg: String): Boolean =
         pkg == sourceApps[SourceKind.RADIO] || (isOwn(pkg) && ownSourceNow?.invoke() == SourceKind.RADIO)
 
-    /** La pieza Música: todo menos la radio; sigue lo que tocó el usuario ([active]), la app elegida o lo que suene. */
-    val music = Lens(accepts = { !isRadio(it) }, fixed = { active ?: preferred }, remembersLast = true)
+    /** La pieza Música: todo menos la radio; sigue la app del método elegido ([modeApp]) o, sin ella, lo que suene. */
+    val music = Lens(accepts = { !isRadio(it) }, fixed = { modeApp }, remembersLast = true, anyApp = { mode == MusicMode.APP })
 
     /** La pieza Radio: solo la radio de la pantalla (FM) o la de LiteDash (internet). */
-    val radio = Lens(accepts = { isRadio(it) }, fixed = { null }, remembersLast = false)
+    val radio = Lens(accepts = { isRadio(it) }, fixed = { null }, remembersLast = false, anyApp = { true })
 
     init {
         music.onWake = ::resume
@@ -574,27 +633,11 @@ class MusicRepository(private val context: Context) {
 
     /** Cada pieza elige su sesión de la misma lista. */
     private fun choose(list: List<MediaController>) {
-        release(list)
         // Otra app empezó a sonar: lo que LiteDash suponía de la de Bluetooth o FM ya no vale.
         val playing = list.filter { it.playbackState?.state == PlaybackState.STATE_PLAYING }.map { it.packageName }
         for (lens in listOf(music, radio)) if (lens.assumedPkg != null && playing.any { it != lens.assumedPkg }) lens.forget()
         music.choose(list)
         radio.choose(list)
-    }
-
-    /**
-     * Suelta [active] cuando ya no manda: el reproductor propio se fue, o lo tocado no suena y
-     * otra app empezó a sonar sola (p. ej. abrieron Spotify a mano). Nunca mientras USB arranca.
-     */
-    private fun release(list: List<MediaController>) {
-        val pick = active ?: return
-        if (ownPending) return
-        val mine = list.filter { !isRadio(it.packageName) }
-        if (isOwn(pick) && mine.none { isOwn(it.packageName) }) {
-            active = null
-            return
-        }
-        if (mine.none { it.packageName == pick && (it.busy() || it.playbackState?.state == PlaybackState.STATE_ERROR) } && mine.any { it.packageName != pick && it.playbackState?.state == PlaybackState.STATE_PLAYING }) active = null
     }
 
     /**
@@ -607,6 +650,8 @@ class MusicRepository(private val context: Context) {
         private val accepts: (String) -> Boolean,
         private val fixed: () -> String?,
         private val remembersLast: Boolean,
+        /** Sin app fija, ¿vale cualquiera que suene? Solo con el método App (Archivos y Bluetooth no muestran otras). */
+        private val anyApp: () -> Boolean,
     ) {
         var song by mutableStateOf<Song?>(null)
             private set
@@ -694,12 +739,21 @@ class MusicRepository(private val context: Context) {
             val chosen = if (own != null) {
                 own
             } else if (p != null) {
-                list.firstOrNull { it.packageName == p }
+                // Varias apps de fábrica dejan muchas sesiones (las TopWay, `com.tw.bt`, acumulan vacías):
+                // la que suena con canción, si no la que tiene canción, si no la que suena, si no cualquiera.
+                val mine = list.filter { it.packageName == p }
+                mine.firstOrNull { it in withTitle && it.playbackState?.state == PlaybackState.STATE_PLAYING }
+                    ?: mine.firstOrNull { it in withTitle }
+                    ?: mine.firstOrNull { it.playbackState?.state == PlaybackState.STATE_PLAYING }
+                    ?: mine.firstOrNull()
+            } else if (!anyApp()) {
+                null
             } else {
+                // La del Bluetooth de Android sin celular sonando es una sesión vacía: no cuenta como "cualquiera".
                 withTitle.firstOrNull { it.playbackState?.state == PlaybackState.STATE_PLAYING }
                     ?: list.firstOrNull { it.playbackState?.state == PlaybackState.STATE_PLAYING }
                     ?: withTitle.firstOrNull()
-                    ?: list.firstOrNull()
+                    ?: list.firstOrNull { it.packageName != avrcpPackage }
             }
             if (chosen?.sessionToken != controller?.sessionToken) {
                 controller?.unregisterCallback(callback)
@@ -975,25 +1029,14 @@ class MusicRepository(private val context: Context) {
         onPreferredChanged?.invoke(pkg)
     }
 
-    /**
-     * Tocaron la app elegida o Bluetooth en la música en grande: se calla la USB propia (y se
-     * cancela si iba arrancando) y suena [pkg]. La app elegida en Ajustes no cambia.
-     */
-    fun switchTo(pkg: String) {
-        ownToken++
-        ownPending = false
-        stopOthers(pkg)
-        if (music.assumedPkg != pkg) music.forget()
-        active = pkg
-        if (users > 0) choose(sessions())
-        resume()
-    }
+    /** La última app que sonó, solo con el método App (con Archivos o Bluetooth no se despierta otra). */
+    private fun lastApp(): String? = if (mode == MusicMode.APP) store.getString(KEY_LAST_APP, null) else null
 
     /** La app a la que va el play (o una tecla) de [lens] cuando no hay sesión que lo reciba. */
     private fun target(lens: Lens): String? =
         // Lo que se supo sin sesión (aviso o supuesto) manda: la sesión elegida puede ser otra app vacía.
         lens.song?.takeIf { it.blind }?.pkg?.ifEmpty { null } ?: lens.controller?.packageName ?: lens.song?.pkg?.ifEmpty { null }
-            ?: if (lens === radio) appFor(SourceKind.RADIO) else active ?: preferred ?: store.getString(KEY_LAST_APP, null)
+            ?: if (lens === radio) appFor(SourceKind.RADIO) else modeApp ?: lastApp()
 
     /**
      * Que suene lo tocado, la app elegida o, sin ninguna, la última que sonó. Con una canción
@@ -1004,7 +1047,7 @@ class MusicRepository(private val context: Context) {
      * está abriendo.
      */
     fun resume() {
-        val pkg = active ?: preferred ?: music.controller?.packageName ?: store.getString(KEY_LAST_APP, null)
+        val pkg = modeApp ?: music.controller?.packageName ?: lastApp()
         val session = music.controller?.takeIf { song != null && (pkg == null || it.packageName == pkg) }
         if (session != null) {
             watchPlay(session.packageName)
@@ -1012,7 +1055,10 @@ class MusicRepository(private val context: Context) {
             return session.transportControls.play()
         }
         if (pkg == null) return systemPlay()
-        if (isOwn(pkg)) return ownPlay?.invoke(SourceKind.USB) {} ?: Unit
+        if (isOwn(pkg)) return ownPlay?.invoke(SourceKind.USB) { ok ->
+            if (!ok) onFilesEmpty?.invoke()
+            if (users > 0) choose(sessions())
+        } ?: Unit
         watchPlay(pkg)
         wake(pkg, music)
     }
@@ -1424,7 +1470,7 @@ class MusicRepository(private val context: Context) {
 
     /** Abre la app que está sonando o, si no hay, la tocada o la elegida en Ajustes. */
     fun openApp() {
-        open(music.controller?.packageName ?: song?.pkg?.ifEmpty { null } ?: active ?: preferred ?: return)
+        open(music.controller?.packageName ?: song?.pkg?.ifEmpty { null } ?: modeApp ?: return)
     }
 
     /** Si devuelve true, ya abrió la app a su manera (p. ej. en pantalla dividida). */

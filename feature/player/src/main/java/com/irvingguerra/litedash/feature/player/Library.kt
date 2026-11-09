@@ -71,6 +71,11 @@ object Library {
     /** La carpeta elegida como "memoria" (si sigue habiendo permiso para leerla). */
     private fun folderDrive(context: Context): Drive? {
         val uri = PlayerStore(context).musicFolder?.toUri() ?: return null
+        // Elegida con el explorador propio (pantallas sin el selector de Android): una ruta.
+        if (uri.scheme == "file") {
+            val dir = File(uri.path ?: return null).takeIf { it.isDirectory && it.canRead() } ?: return null
+            return Drive(name = dir.name.ifBlank { dir.path }, volume = null, path = dir.path, id = FOLDER + uri)
+        }
         if (context.contentResolver.persistedUriPermissions.none { it.uri == uri && it.isReadPermission }) return null
         val name = DocumentsContract.getTreeDocumentId(uri).substringAfterLast(':').substringAfterLast('/').ifBlank { "USB" }
         return Drive(name = name, volume = null, path = null, id = FOLDER + uri)
@@ -95,9 +100,17 @@ object Library {
         PlayerStore(context).musicFolder = uri.toString()
     }
 
+    /** Guarda la carpeta elegida con el explorador propio ([com.irvingguerra.litedash.core.ui.FileBrowser]): se lee con [File]. */
+    fun setFolder(context: Context, dir: File) {
+        clearFolder(context)
+        PlayerStore(context).musicFolder = Uri.fromFile(dir).toString()
+    }
+
     /** Todas las canciones de [drive], ordenadas por carpeta y archivo (como se ven en la memoria). */
     private fun tracks(context: Context, drive: Drive): List<Track> {
-        val found = if (drive.id.startsWith(FOLDER)) folderTracks(context, drive.id.removePrefix(FOLDER).toUri())
+        val folder = drive.id.takeIf { it.startsWith(FOLDER) }?.removePrefix(FOLDER)?.toUri()
+        val found = if (folder != null && folder.scheme == "file") scan(File(folder.path.orEmpty()))
+        else if (folder != null) folderTracks(context, folder)
         else indexed(context, drive).ifEmpty { drive.path?.let { scan(File(it)) }.orEmpty() }
         return found.sortedWith(compareBy<Track, String>(String.CASE_INSENSITIVE_ORDER) { it.folder }.thenBy(String.CASE_INSENSITIVE_ORDER) { it.file })
     }

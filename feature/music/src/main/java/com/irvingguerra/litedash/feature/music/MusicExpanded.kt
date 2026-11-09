@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -36,11 +37,11 @@ import com.irvingguerra.litedash.core.ui.LocalColors
 import com.irvingguerra.litedash.core.ui.Typography
 
 /**
- * La música en grande, sin salir de LiteDash: fuentes como en un estéreo (USB, tu app de música,
- * Bluetooth), carátula, barra para adelantar, y los botones propios de la app (en Spotify: me
+ * La música en grande, sin salir de LiteDash: el método elegido en Ajustes (Archivos, Bluetooth o
+ * App, uno solo), carátula, barra para adelantar, y los botones propios de la app (en Spotify: me
  * gusta, aleatorio, repetir). Ancha pone la carátula a un lado; angosta, arriba. [browser] es la
- * biblioteca USB del reproductor propio: se abre con el botón de lista o al tocar USB sin nada
- * que sonar; recibe qué hacer cuando ya se eligió algo.
+ * biblioteca de Archivos del reproductor propio: se abre con el botón de lista o al dar play sin
+ * nada que sonar; recibe qué hacer cuando ya se eligió algo.
  */
 @Composable
 fun MusicExpanded(
@@ -51,15 +52,21 @@ fun MusicExpanded(
     browser: @Composable (onPicked: () -> Unit) -> Unit,
 ) {
     val song = repo.song
-    // La biblioteca USB abierta; si no, lo que suena.
+    // La biblioteca de Archivos abierta; si no, lo que suena.
     var browsing by remember { mutableStateOf(false) }
-    val own = song != null && repo.isOwn(song.pkg)
+    val files = repo.mode == MusicMode.FILES
+    // Con Archivos, play sin nada que tocar abre la biblioteca.
+    DisposableEffect(repo, files) {
+        val open = { browsing = true }
+        if (files) repo.onFilesEmpty = open
+        // Solo la suya: con dos vistas (pantalla dividida) no borra la de la otra.
+        onDispose { if (repo.onFilesEmpty === open) repo.onFilesEmpty = null }
+    }
     ExpandedCard(repo, modifier) { wide, artworkMax ->
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            // Las fuentes van junto a los botones (en su propia fila dejaban arriba una franja vacía).
-            SourceRow(repo, song, browsing, onSelect = { browsing = false }, onBrowse = { browsing = true }, Modifier.weight(1f))
-            if (own || browsing) HeaderButton(if (browsing) Icons.music else Icons.list) { browsing = !browsing }
-            val app = song?.pkg ?: repo.active ?: repo.preferred
+            ModeTitle(repo, song, Modifier.weight(1f))
+            if (files) HeaderButton(if (browsing) Icons.music else Icons.list) { browsing = !browsing }
+            val app = song?.pkg?.ifEmpty { null } ?: repo.modeApp
             if (app != null && !repo.isOwn(app)) HeaderButton(Icons.openExternal) { repo.openApp() }
             if (close != null) HeaderButton(Icons.close, close)
         }

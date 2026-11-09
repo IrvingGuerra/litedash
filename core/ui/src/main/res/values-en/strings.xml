@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="files_where">Choose a drive</string>
+    <string name="files_internal">Internal storage</string>
+    <string name="files_none">No drives found. Check the files permission.</string>
+    <string name="files_empty">This folder is empty.</string>
+    <string name="files_use_folder">Use this folder</string>
+    <string name="files_cancel">Close</string>
+</resources>

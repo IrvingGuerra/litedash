@@ -279,9 +279,14 @@ object Player {
             if (open != null) setSessionActivity(PendingIntent.getActivity(app, 0, open, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE))
             isActive = true
         }
+        onSession?.invoke()
     }
 
-    internal val sessionToken get() = session?.sessionToken
+    /** La sesión del reproductor (la pieza Música la lee directo: no necesita el permiso de avisos). */
+    val sessionToken get() = session?.sessionToken
+
+    /** Se creó la sesión (empezó a sonar algo): la pieza Música la toma. */
+    var onSession: (() -> Unit)? = null
 
     private fun publishMetadata(item: Playable, art: Bitmap?) {
         val duration = (item as? Track)?.durationMs ?: -1L

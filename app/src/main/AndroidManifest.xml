@@ -11,6 +11,15 @@
         <intent>
             <action android:name="android.intent.action.ASSIST" />
         </intent>
+        <!-- Para saber si la pantalla trae galería o "Archivos" antes de pedir una imagen (si no, el explorador propio). -->
+        <intent>
+            <action android:name="android.intent.action.OPEN_DOCUMENT" />
+            <data android:mimeType="image/*" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.GET_CONTENT" />
+            <data android:mimeType="image/*" />
+        </intent>
     </queries>
 
     <!-- Solo para bajar el catálogo de autos (imágenes) cuando el usuario lo abre. -->

@@ -27,16 +27,12 @@ import com.irvingguerra.litedash.core.ui.LocalColors
 import com.irvingguerra.litedash.core.ui.TextInput
 import com.irvingguerra.litedash.core.ui.Typography
 
-/** Sección Apps: la de música (con el reproductor USB), la radio, la de navegación (con Casa y Trabajo) y las favoritas de la barra. */
+/** Sección Apps: la música (Archivos, Bluetooth o App), la radio, la de navegación (con Casa y Trabajo) y las favoritas de la barra. */
 @Composable
 internal fun AppsSettings(d: Dependencies) {
     val c = LocalColors.current
     when (tabs(listOf(R.string.music, R.string.tab_radio, R.string.tab_navigation, R.string.tab_favorites, R.string.tab_split), APPS_TABS)) {
-        0 -> {
-            SettingsCard { UsbPlayerCard() }
-            SettingsCard(stringResource(R.string.music_app_title)) { MusicSettings(d) }
-            SettingsCard(stringResource(R.string.bt_pair), stringResource(R.string.bt_pair_help)) { BluetoothSettings(d) }
-        }
+        0 -> MusicModeSettings(d)
         1 -> RadioSettings(d)
         2 -> {
             SettingsCard { MapSettings(d) }

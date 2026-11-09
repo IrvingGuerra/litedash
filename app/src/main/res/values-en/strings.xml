@@ -186,7 +186,7 @@
     <string name="map_help">The app the Navigate widget opens. While navigating, it shows the next turn (it uses the same notification access as music).</string>
     <string name="map_no_apps">Install Waze or Google Maps to navigate from LiteDash.</string>
     <string name="music">Music</string>
-    <string name="music_help">Shown by name next to USB in the big music view, and play wakes it up. With no app chosen, music shows whatever is playing (radio has its own widget).</string>
+    <string name="music_help">It is what plays in the Music widget, and play wakes it up. With no app chosen, it shows whatever is playing (radio has its own widget).</string>
     <string name="template_cards">Cards below</string>
     <string name="template_columns">Three columns</string>
     <string name="template_panel">Full panel</string>
@@ -704,4 +704,8 @@
     <string name="pro_taken">This code is already used on another screen. Ask to have it released.</string>
     <string name="pro_offline">No connection. Try again.</string>
     <string name="pro_expired">Connect to the internet to keep the developer code</string>
+    <string name="image_browse_memory">Didn\'t open? Browse the storage</string>
+    <string name="music_mode_title">How you listen to music</string>
+    <string name="music_mode_help">Pick one: it is what plays in the Music widget. Switching pauses the previous one.</string>
+    <string name="image_no_permission">Without the files permission LiteDash can\'t browse the storage.</string>
 </resources>

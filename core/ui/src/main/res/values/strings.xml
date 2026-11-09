@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Explorador de archivos propio (pantallas sin el selector de Android). -->
+    <string name="files_where">Elige una memoria</string>
+    <string name="files_internal">Memoria interna</string>
+    <string name="files_none">No veo memorias. Revisa el permiso de archivos.</string>
+    <string name="files_empty">Esta carpeta está vacía.</string>
+    <string name="files_use_folder">Usar esta carpeta</string>
+    <string name="files_cancel">Cerrar</string>
+</resources>

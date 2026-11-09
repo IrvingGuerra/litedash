@@ -25,6 +25,7 @@ fun MusicTile(repo: MusicRepository, revision: Int, onExpand: () -> Unit, modifi
         text = { tall -> SongText(repo, song, tall) },
         // Cargando se pinta como pausa: tocarlo cancela la carga.
         controls = { m, compact -> Controls(repo, song?.playing == true, m, loading = song?.buffering == true, compact = compact) },
+        needsAccess = repo.needsAccess,
     )
 }
 
@@ -51,10 +52,11 @@ private fun SongText(repo: MusicRepository, song: Song?, tall: Boolean) {
 /** Sin nada sonando: la memoria USB recién puesta, la app elegida o "pon música". */
 @Composable
 private fun idleHint(repo: MusicRepository): String {
-    val usb = repo.usbDrive
-    return when {
-        usb != null -> stringResource(R.string.usb_drive_in, usb)
-        else -> repo.preferredName().ifBlank { stringResource(R.string.open_an_app) }
+    // Lo que toca según el método elegido (Archivos, Bluetooth o App).
+    return when (repo.mode) {
+        MusicMode.FILES -> repo.usbDrive?.let { stringResource(R.string.usb_drive_in, it) } ?: MusicMode.FILES.label()
+        MusicMode.BLUETOOTH -> repo.bluetoothDevice ?: stringResource(R.string.bluetooth_connect_phone)
+        MusicMode.APP -> repo.preferredName().ifBlank { stringResource(R.string.open_an_app) }
     }
 }
 

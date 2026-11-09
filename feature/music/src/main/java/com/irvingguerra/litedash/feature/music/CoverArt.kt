@@ -56,10 +56,12 @@ internal object CoverArt {
         if (key in missing || !inFlight.add(key)) return
         val app = context.applicationContext
         io.execute {
-            val bmp = read(app, key, title, artist)
+            // Sin red (lo normal en el auto) no se recuerda como "sin carátula": se vuelve a intentar después.
+            val result = runCatching { read(app, key, title, artist) }
             inFlight.remove(key)
             main.post {
-                if (bmp != null) memory.put(key, bmp) else rememberMissing(key)
+                val bmp = result.getOrNull()
+                if (bmp != null) memory.put(key, bmp) else if (result.isSuccess) rememberMissing(key)
                 onReady(bmp)
             }
         }
@@ -70,27 +72,26 @@ internal object CoverArt {
         while (missing.size > 512) missing.remove(missing.first())
     }
 
-    /** Disco primero (rápido, sirve sin red); si no, iTunes. Devuelve el bitmap decodificado. */
+    /** Disco primero (rápido, sirve sin red); si no, iTunes. Devuelve el bitmap decodificado; lanza si falló la red. */
     private fun read(context: Context, key: String, title: String, artist: String): Bitmap? {
         val file = file(context, key)
         if (file.length() > 0) BitmapFactory.decodeFile(file.path)?.let { return it }
         val url = search(context, title, artist) ?: return null
-        val bytes = runCatching { Https.get(context, url).inputStream.use { it.readBytes() } }.getOrNull()
-            ?: return null
+        val bytes = Https.get(context, url).inputStream.use { it.readBytes() }
         val bmp = BitmapFactory.decodeByteArray(bytes, 0, bytes.size) ?: return null
         runCatching { file.parentFile?.mkdirs(); file.writeBytes(bytes) }
         return bmp
     }
 
-    /** URL de la carátula de 600×600 que iTunes da para la primera coincidencia, o null. */
-    private fun search(context: Context, title: String, artist: String): String? = runCatching {
+    /** URL de la carátula de 600×600 que iTunes da para la primera coincidencia, o null (lanza si falló la red). */
+    private fun search(context: Context, title: String, artist: String): String? {
         val term = URLEncoder.encode("$artist $title", "UTF-8")
         val url = "https://itunes.apple.com/search?term=$term&media=music&entity=song&limit=1"
         val text = Https.get(context, url, "application/json").inputStream.use { String(it.readBytes(), Charsets.UTF_8) }
-        JSONObject(text).optJSONArray("results")?.optJSONObject(0)?.optString("artworkUrl100")
+        return runCatching { JSONObject(text) }.getOrNull()?.optJSONArray("results")?.optJSONObject(0)?.optString("artworkUrl100")
             ?.takeIf { it.isNotEmpty() }
             ?.replace("100x100", "600x600")
-    }.getOrNull()
+    }
 
     private fun file(context: Context, key: String): File = File(File(context.cacheDir, TAG), "$key.jpg")
 

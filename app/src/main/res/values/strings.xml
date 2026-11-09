@@ -190,7 +190,7 @@
     <string name="map_help">La app que abre el widget Navegar. Mientras navegas, el widget muestra la siguiente vuelta (usa el mismo acceso a notificaciones que la música).</string>
     <string name="map_no_apps">Instala Waze o Google Maps para navegar desde LiteDash.</string>
     <string name="music">Música</string>
-    <string name="music_help">Sale con su nombre junto a USB en la música en grande y play la despierta. Sin app elegida, la música muestra lo que suene (la radio tiene su propio widget).</string>
+    <string name="music_help">Es la que suena en el widget Música y play la despierta. Sin app elegida, se muestra la que esté sonando (la radio tiene su propio widget).</string>
     <string name="template_cards">Tarjetas abajo</string>
     <string name="template_columns">Tres columnas</string>
     <string name="template_panel">Panel completo</string>
@@ -725,4 +725,8 @@
     <string name="pro_taken">Este código ya se usa en otra pantalla. Pide que lo liberen.</string>
     <string name="pro_offline">Sin conexión. Inténtalo otra vez.</string>
     <string name="pro_expired">Conéctate a internet para seguir con el código de desarrollador</string>
+    <string name="image_browse_memory">¿No se abrió? Buscar en la memoria</string>
+    <string name="music_mode_title">Cómo escuchas música</string>
+    <string name="music_mode_help">Elige uno: es el que suena en el widget Música. Al cambiar, el anterior se pausa.</string>
+    <string name="image_no_permission">Sin el permiso de archivos no se puede buscar en la memoria.</string>
 </resources>

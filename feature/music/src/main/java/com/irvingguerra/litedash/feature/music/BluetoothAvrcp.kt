@@ -37,11 +37,17 @@ internal class BluetoothAvrcp(
                 onController(runCatching { MediaController(context, b.sessionToken) }.getOrNull())
             }
 
-            override fun onConnectionFailed() = onController(null)
-            override fun onConnectionSuspended() = onController(null)
+            // Si falla o se cae, se suelta: el siguiente connect() vuelve a intentar.
+            override fun onConnectionFailed() = lost(b)
+            override fun onConnectionSuspended() = lost(b)
         }, null)
         browser = b
-        runCatching { b.connect() }
+        if (runCatching { b.connect() }.isFailure) browser = null
+    }
+
+    private fun lost(b: MediaBrowser) {
+        if (browser === b) browser = null
+        onController(null)
     }
 
     /** Se desconecta (al irse el celular o al esconderse la música). */

@@ -1,9 +1,9 @@
 package com.irvingguerra.litedash
 
-import androidx.compose.foundation.layout.Column
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -24,14 +24,17 @@ import androidx.compose.ui.unit.dp
 import com.irvingguerra.litedash.core.ui.Button
 import com.irvingguerra.litedash.core.ui.Label
 import com.irvingguerra.litedash.core.ui.LocalColors
+import com.irvingguerra.litedash.core.ui.Segmented
 import com.irvingguerra.litedash.core.ui.SwitchRow
 import com.irvingguerra.litedash.core.ui.TextInput
 import com.irvingguerra.litedash.core.ui.Typography
 import com.irvingguerra.litedash.feature.apps.App
 import com.irvingguerra.litedash.feature.apps.normalize
 import com.irvingguerra.litedash.feature.apps.rememberApps
+import com.irvingguerra.litedash.feature.music.MusicMode
 import com.irvingguerra.litedash.feature.music.SourceKind
 import com.irvingguerra.litedash.feature.music.label
+import com.irvingguerra.litedash.feature.player.FolderPicker
 import com.irvingguerra.litedash.feature.player.Library
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -64,30 +67,36 @@ fun MusicSettings(d: Dependencies) {
 
 
 /**
- * El reproductor USB de LiteDash (siempre activo, sin switch: es el de fábrica) y, si la pantalla
- * no deja leer la memoria, la carpeta de la música (selector de Android; sin carpeta, busca sola
- * en todas las memorias).
+ * Ajustes → Apps → Música: el método de música, uno solo a la vez (Irving, 2026-11-08): Archivos (el
+ * reproductor de LiteDash), Bluetooth (el celular) o App. La pestaña elegida es la que suena en la
+ * pieza Música; debajo, sus ajustes.
  */
 @Composable
-fun UsbPlayerCard() {
+fun MusicModeSettings(d: Dependencies) {
+    SettingsCard(stringResource(R.string.music_mode_title), stringResource(R.string.music_mode_help)) {
+        Segmented(MusicMode.entries.map { it to it.label() }, d.music.mode, { d.music.mode = it }, Modifier.fillMaxWidth())
+    }
+    when (d.music.mode) {
+        MusicMode.FILES -> SettingsCard { FilesCard() }
+        MusicMode.BLUETOOTH -> SettingsCard(stringResource(R.string.bt_pair), stringResource(R.string.bt_pair_help)) { BluetoothSettings(d) }
+        MusicMode.APP -> SettingsCard(stringResource(R.string.music_app_title)) { MusicSettings(d) }
+    }
+}
+
+/**
+ * Archivos: el reproductor de LiteDash lee la música de tus memorias (USB o tarjeta) solo; si tu
+ * pantalla no deja leerla, eliges su carpeta (con el selector de Android o, si no lo trae, el
+ * explorador propio).
+ */
+@Composable
+private fun FilesCard() {
     val context = LocalContext.current
     val c = LocalColors.current
     var folder by remember { mutableStateOf(Library.folderName(context)) }
-    val pick = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
-        if (uri != null) {
-            Library.setFolder(context, uri)
-            folder = Library.folderName(context)
-        }
-    }
-    Label(stringResource(R.string.usb_player), Typography.subtitle, maxLines = 1)
-    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        Column(Modifier.weight(1f)) {
-            Label(stringResource(R.string.usb_folder), Typography.body)
-            Label(folder ?: stringResource(R.string.usb_folder_auto), Typography.small, c.textMuted, 2)
-        }
-        Button(stringResource(R.string.source_choose), { runCatching { pick.launch(null) } })
-        if (folder != null) Button(stringResource(R.string.source_remove), { Library.clearFolder(context); folder = null })
-    }
+    Label(stringResource(R.string.usb_folder), Typography.body)
+    Label(folder ?: stringResource(R.string.usb_folder_auto), Typography.small, c.textMuted, 2)
+    if (folder != null) Button(stringResource(R.string.source_remove), { Library.clearFolder(context); folder = null })
+    FolderPicker(stringResource(R.string.source_choose), onChosen = { folder = Library.folderName(context) }, Modifier.fillMaxWidth())
     Label(stringResource(R.string.usb_player_help), Typography.small, c.textMuted)
 }
 

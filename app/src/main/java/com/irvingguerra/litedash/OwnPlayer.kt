@@ -34,6 +34,8 @@ object OwnPlayer {
             if (Player.state.source == PlayerSource.USB && (Player.state.playing || Player.state.buffering)) Player.pause()
         }
         music.ownStop = { Player.stop() }
+        music.ownSession = { Player.sessionToken }
+        Player.onSession = music::ownSessionChanged
     }
 
     /** Al prender o apagar la radio por internet: la pieza se entera, y si sonaba se para. */

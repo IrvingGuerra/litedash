@@ -12,6 +12,12 @@ import androidx.compose.runtime.Immutable
  */
 enum class SourceKind { USB, BLUETOOTH, RADIO }
 
+/**
+ * Cómo se escucha música en la pieza Música, uno solo a la vez (Ajustes → Apps → Música): los
+ * archivos de una memoria con el reproductor de LiteDash, el celular por Bluetooth o una app.
+ */
+enum class MusicMode { FILES, BLUETOOTH, APP }
+
 /** Botón propio de la app que suena (Spotify: me gusta, aleatorio, repetir…). */
 @Immutable
 data class MediaAction(val id: String, val name: String, val icon: Bitmap?)

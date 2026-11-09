@@ -56,7 +56,8 @@ fun BluetoothSettings(d: Dependencies) {
     if (adapter == null || !d.music.bluetoothBuiltIn) {
         Label(stringResource(R.string.bt_own_pair), Typography.body, c.textMuted)
         val apps = rememberApps(d.apps).orEmpty()
-        val app = d.music.sourceApps[SourceKind.BLUETOOTH]
+        // La enlazada o, si no hay, la de Bluetooth de marca que trae la pantalla (TopWay, FYT…).
+        val app = d.music.bluetoothApp()
         var choosing by remember { mutableStateOf(false) }
         if (app == null) {
             Label(stringResource(R.string.bt_pick_help), Typography.small, c.textMuted)

@@ -1,9 +1,13 @@
 package com.irvingguerra.litedash
 
+import android.Manifest
 import android.content.Context
+import android.content.Intent
+import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
+import android.os.Build
 import android.util.DisplayMetrics
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -48,6 +52,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.irvingguerra.litedash.core.ui.Button
+import com.irvingguerra.litedash.core.ui.FileBrowser
 import com.irvingguerra.litedash.core.ui.Label
 import com.irvingguerra.litedash.core.ui.LocalColors
 import com.irvingguerra.litedash.core.ui.MORSE_ASPECT
@@ -59,16 +64,16 @@ import com.irvingguerra.litedash.core.ui.scaledDecode
 import com.irvingguerra.litedash.feature.dashboard.Tile
 import com.irvingguerra.litedash.feature.dashboard.TileTypes
 import java.io.File
+import kotlin.math.ceil
+import kotlin.math.roundToInt
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
-import kotlin.math.ceil
-import kotlin.math.roundToInt
 
 /**
  * Una imagen que eliges de tu galería: la de un widget Imagen (p. ej. el logo de tu marca;
@@ -380,8 +385,29 @@ fun ParkedSettings(prefs: Preferences) {
 private fun imageButtons(target: SavedImage, onPicked: (Uri) -> Unit = {}, onRemoved: () -> Unit = {}): Boolean? {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    val pick = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
-        if (uri != null) scope.launch { if (save(context, uri, target)) { target.bump(); onPicked(uri) } }
+    val use: (Uri) -> Unit = { uri -> scope.launch { if (save(context, uri, target)) { target.bump(); onPicked(uri) } } }
+    // El selector de Android regresó sin imagen (quizá ni se abrió) o no hay: el explorador propio.
+    var missed by remember { mutableStateOf(false) }
+    var browsing by remember { mutableStateOf(false) }
+    val onResult: (Uri?) -> Unit = { uri -> if (uri != null) use(uri) else missed = true }
+    val pick = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia(), onResult)
+    val content = rememberLauncherForActivityResult(ActivityResultContracts.GetContent(), onResult)
+    var denied by remember { mutableStateOf(false) }
+    val ask = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { ok ->
+        denied = !ok
+        if (ok) browsing = true
+    }
+    val browse = {
+        // Hasta Android 12 leer la memoria pide permiso; desde 13 el selector de fotos viene en el sistema.
+        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.S_V2 && context.checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+            ask.launch(Manifest.permission.READ_EXTERNAL_STORAGE)
+        } else browsing = true
+    }
+    // Pantallas de auto sin "Archivos" ni galería: lanzar el selector tronaba la app (no había quién lo abriera).
+    val open = {
+        val opened = (canPickImage(context) && runCatching { pick.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) }.isSuccess) ||
+            (canGetImage(context) && runCatching { content.launch("image/*") }.isSuccess)
+        if (!opened) browse()
     }
     // Basta saber si el archivo existe (en IO); mientras, se queda lo último que se supo.
     val hasImage by produceState<Boolean?>(null, target, target.version) {
@@ -389,9 +415,9 @@ private fun imageButtons(target: SavedImage, onPicked: (Uri) -> Unit = {}, onRem
     }
     val known = hasImage ?: return null
     FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Button(stringResource(if (known) R.string.logo_change else R.string.logo_pick), {
-            pick.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
-        })
+        Button(stringResource(if (known) R.string.logo_change else R.string.logo_pick), open)
+        if (missed && !browsing) Button(stringResource(R.string.image_browse_memory), browse)
+        if (denied) Label(stringResource(R.string.image_no_permission), Typography.small, LocalColors.current.danger)
         if (known) Button(stringResource(R.string.logo_remove), {
             scope.launch {
                 withContext(Dispatchers.IO) { target.file(context).delete() }
@@ -400,8 +426,32 @@ private fun imageButtons(target: SavedImage, onPicked: (Uri) -> Unit = {}, onRem
             }
         })
     }
+    if (browsing) FileBrowser(
+        pickFolder = false,
+        accept = { name -> name.substringAfterLast('.', "").lowercase() in IMAGE_TYPES },
+        onPick = { file ->
+            browsing = false
+            missed = false
+            use(Uri.fromFile(file))
+        },
+        onCancel = { browsing = false },
+    )
     return known
 }
+
+private val IMAGE_TYPES = setOf("jpg", "jpeg", "png", "webp", "gif", "bmp", "heic")
+
+/** Hay quién abra el selector de fotos (el del sistema o, si no, "Archivos" con imágenes). */
+private fun canPickImage(context: Context): Boolean =
+    ActivityResultContracts.PickVisualMedia.isPhotoPickerAvailable(context) ||
+        resolves(context, Intent(Intent.ACTION_OPEN_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE).setType("image/*"))
+
+/** Hay una galería o un gestor de archivos que entregue una imagen. */
+private fun canGetImage(context: Context): Boolean =
+    resolves(context, Intent(Intent.ACTION_GET_CONTENT).addCategory(Intent.CATEGORY_OPENABLE).setType("image/*"))
+
+private fun resolves(context: Context, intent: Intent) =
+    runCatching { intent.resolveActivity(context.packageManager) != null }.getOrDefault(false)
 
 /** Inicio y apariencia → Inicio → Fondo de pantalla: elegir, cambiar o quitar la imagen. */
 @Composable

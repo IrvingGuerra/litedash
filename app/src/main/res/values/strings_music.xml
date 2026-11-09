@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="usb_player">Reproductor USB</string>
-    <string name="usb_player_help">LiteDash toca la música de tu memoria USB (carpetas, artistas y álbumes, con carátulas). Toca USB en la música en grande.</string>
+    <string name="usb_player_help">LiteDash toca la música de tus memorias USB o tarjeta (carpetas, artistas y álbumes, con carátulas). En la música en grande, el botón de lista abre la biblioteca.</string>
 </resources>

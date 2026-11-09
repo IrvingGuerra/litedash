@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="usb_player">USB player</string>
-    <string name="usb_player_help">LiteDash plays the music on your USB drive (folders, artists and albums, with artwork). Tap USB in the big music view.</string>
+    <string name="usb_player_help">LiteDash plays the music on your USB drives or card (folders, artists and albums, with artwork). In the big music view, the list button opens the library.</string>
 </resources>
