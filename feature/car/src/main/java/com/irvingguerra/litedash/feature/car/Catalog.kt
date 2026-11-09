@@ -366,14 +366,17 @@ class CarRepository(private val context: Context, val catalogUrl: String) {
     /**
      * Miniatura de un auto del catálogo: se baja la primera vez que se ve la
      * lista y se guarda (unos KB por auto), así la app no carga con ninguna.
+     * El archivo lleva el nombre de su URL: si el catálogo publica una miniatura
+     * nueva (otra URL, p. ej. al rehacer un auto), se baja de nuevo.
      */
     suspend fun thumbnail(e: CatalogEntry): ImageBitmap? {
         if (e.thumbnail.isBlank()) return null
-        val key = "mini/${e.id}"
+        val key = "mini/${e.thumbnail}"
         images.get(key)?.let { return it }
         return withContext(Dispatchers.IO) {
             runCatching {
-                val file = File(File(root, CarFiles.THUMBNAILS).apply { mkdirs() }, folderOf(e.id) + ".webp")
+                val name = folderOf(e.id) + "-" + Integer.toHexString(e.thumbnail.hashCode()) + ".webp"
+                val file = File(File(root, CarFiles.THUMBNAILS).apply { mkdirs() }, name)
                 if (!file.exists()) {
                     val temp = File(file.path + CarFiles.PARTIAL_SUFFIX)
                     Https.get(context, e.thumbnail).inputStream.use { input -> temp.outputStream().use { input.copyTo(it) } }

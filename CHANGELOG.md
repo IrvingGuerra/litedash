@@ -4,6 +4,16 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.4.121] - 2026-11-09
+
+### Agregado
+- **Honda Pilot 2003–2005 en el catálogo** (pedida en Ko-fi). Aparece en Tu auto → Modelos sin actualizar.
+
+### Corregido
+- **La foto de un auto del catálogo se actualiza cuando el auto se rehace**: antes, si ya la habías visto,
+  se quedaba la foto vieja (la RAV4 2009–2012 seguía con los faros negros en la lista aunque el auto bajado
+  ya venía bien).
+
 ## [1.4.120] - 2026-11-09
 
 ### Agregado
