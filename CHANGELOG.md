@@ -4,6 +4,13 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.4.109] - 2026-11-09
+
+### Mejorado
+- **Radio FM de las pantallas NWD** (`com.nwd.radio`, Allwinner T3/T5 y otras): play y pausa sin abrir
+  la app de radio, siguiente/anterior y la estación (frecuencia y nombre RDS) en el widget Radio. Si la
+  pantalla no responde, se abre la radio como antes. Gracias al proyecto OpenRadioFM por la información.
+
 ## [1.4.108] - 2026-11-09
 
 ### Nuevo

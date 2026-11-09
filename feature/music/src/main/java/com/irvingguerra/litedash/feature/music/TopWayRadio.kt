@@ -16,7 +16,8 @@ import java.util.Locale
  * ella al abrirse ("actividad" 0x9E00, fuente de audio 769 y foco 0x9E11, como ivvlev/CarRadio,
  * dipcore/Radio-MST768 y Orbit). Lo que dice el sintonizador va al registro para los reportes.
  */
-internal class TopWayRadio(private val onState: (BroadcastMeta) -> Unit, private val trace: (String) -> Unit) {
+internal class TopWayRadio(private val onState: (BroadcastMeta) -> Unit, private val trace: (String) -> Unit) : FactoryRadio {
+    override val tag = "topway"
     private var util: Any? = null
     private var write3: Method? = null
     private var write2: Method? = null
@@ -25,17 +26,17 @@ internal class TopWayRadio(private val onState: (BroadcastMeta) -> Unit, private
     private var frequency = 0
     private var band = 0
     /** "FM 91.1"; null si no ha dicho. */
-    val station get() = stationText(band, frequency)
-    var name = ""
+    override val station get() = stationText(band, frequency)
+    override var name = ""
         private set
     /** El sintonizador tiene el audio; null = no ha dicho. */
-    var on: Boolean? = null
+    override var on: Boolean? = null
         private set
     /**
      * Cuándo dijo el sintonizador que tiene el audio (769 = 1), para confirmar un play. La "actividad"
      * no sirve: el enlace reparte lo que se escribe, así que llegaría la nuestra.
      */
-    var audioAt = 0L
+    override var audioAt = 0L
         private set
     /** El número de la radio en "actividad" y fuente: 1 en las TS18 (ivvlev/CarRadio); se aprende de lo que manda. */
     private var source = SOURCE_RADIO
@@ -66,10 +67,10 @@ internal class TopWayRadio(private val onState: (BroadcastMeta) -> Unit, private
         }
     }
 
-    val open get() = util != null
+    override val open get() = util != null
 
     /** Se conecta al sintonizador y le pide la estación. False si la pantalla no lo deja. */
-    fun open(): Boolean {
+    override fun open(): Boolean {
         if (util != null) return true
         return runCatching {
             val cls = Class.forName(CLASS)
@@ -94,7 +95,7 @@ internal class TopWayRadio(private val onState: (BroadcastMeta) -> Unit, private
         }
     }
 
-    fun close() {
+    override fun close() {
         val u = util ?: return
         util = null
         handler.removeCallbacksAndMessages(null)
@@ -103,16 +104,16 @@ internal class TopWayRadio(private val onState: (BroadcastMeta) -> Unit, private
     }
 
     /** Pide banda, frecuencia y nombre (llegan como mensajes). */
-    fun refresh() {
+    override fun refresh() {
         write(RADIO, 255, 0)
         write(RDS, 255, 0)
     }
 
-    fun next() = write(RADIO, 1, 0)
-    fun previous() = write(RADIO, 1, 1)
+    override fun next() = write(RADIO, 1, 0)
+    override fun previous() = write(RADIO, 1, 1)
 
     /** Play sin abrir su app: pide el audio para la radio, como ella al abrirse, y la estación. */
-    fun takeAudio() {
+    override fun takeAudio() {
         activity(source)
         // Fuente de audio y foco, como dipcore/Radio-MST768 y Orbit (TS18).
         write(AUDIO, 0xC0, source)
@@ -121,7 +122,7 @@ internal class TopWayRadio(private val onState: (BroadcastMeta) -> Unit, private
     }
 
     /** Pausa: suelta el audio de la radio, como su app al cerrarse. */
-    fun releaseAudio() {
+    override fun releaseAudio() {
         activity(source or RELEASE)
         write(FOCUS, 0xC0, source or RELEASE)
         on = false
@@ -135,7 +136,7 @@ internal class TopWayRadio(private val onState: (BroadcastMeta) -> Unit, private
     }
 
     /** Se dio play abriendo su app: suena hasta que el sintonizador diga otra cosa. */
-    fun started() {
+    override fun started() {
         on = true
         publish()
         refresh()
