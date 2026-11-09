@@ -159,7 +159,7 @@ private fun About(d: Dependencies) {
                 Label(BuildConfig.CHANNEL, Typography.small, c.textMuted)
                 if (BuildConfig.RELEASE_NOTES.isNotBlank()) {
                     Label(stringResource(R.string.release_notes), Typography.label, c.textMuted)
-                    for (line in releaseNotes()) {
+                    for (line in remember { releaseNotes() }) {
                         if (line.startsWith("###")) Label(line.removePrefix("###").trim(), Typography.subtitle, maxLines = 1)
                         else Label("• $line", Typography.small)
                     }
@@ -198,8 +198,7 @@ internal fun Modules(d: Dependencies, revision: Int, open: (SettingsSection) -> 
 @Composable
 private fun Permissions(d: Dependencies, revision: Int) {
     val context = LocalContext.current
-    val (_, returns) = rememberRequestHome()
-    val notifications = remember(returns, revision) { d.music.hasPermission() }
+    val notifications = remember(revision) { d.music.hasPermission() }
     val (location, askLocation) = rememberGpsPermission(d, revision)
     ModuleRow(Icons.bell, stringResource(R.string.module_notifications), notifications, { on ->
         if (on) d.music.requestPermission() else openAppSettings(context)

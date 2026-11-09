@@ -42,7 +42,7 @@ fun imperialUnits(language: String) = language != "es" &&
 
 /** [this] en °F ([fahrenheit]) o °C, redondeado al final. */
 fun Forecast.inUnits(fahrenheit: Boolean): Weather {
-    val shown: (Double) -> Int = { c -> Math.round(if (fahrenheit) c * 9.0 / 5.0 + 32.0 else c).toInt() }
+    val shown: (Double) -> Int = { c -> Math.round(c.toFahrenheit(fahrenheit)).toInt() }
     return Weather(shown(temperature), code, day, days.map { WeatherDay(it.date, it.code, shown(it.max), shown(it.min)) })
 }
 
@@ -108,11 +108,7 @@ class WeatherRepository(private val context: Context, private val prefs: Prefere
     private suspend fun location(): Location? {
         val manager = context.getSystemService(LocationManager::class.java)
         // La última conocida se lee del sistema (binder): fuera del hilo principal.
-        val last = withContext(Dispatchers.IO) {
-            manager.getProviders(true)
-                .mapNotNull { runCatching { manager.getLastKnownLocation(it) }.getOrNull() }
-                .maxByOrNull { it.time }
-        }
+        val last = withContext(Dispatchers.IO) { manager.newestLastKnown(manager.getProviders(true)) }
         if (last != null || Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return last
         // "fused" existe desde Android 12.
         val fused = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) listOf(LocationManager.FUSED_PROVIDER) else emptyList()

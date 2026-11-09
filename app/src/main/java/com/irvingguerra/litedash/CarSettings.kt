@@ -285,9 +285,7 @@ private fun CatalogSearch(prefs: Preferences, cars: CarRepository, catalog: List
                     selected = prefs.carModel == e.id,
                     onClick = { if (have) prefs.carModel = e.id else previewing = e.id },
                 ) { m ->
-                    var img by remember(e.id) { mutableStateOf<ImageBitmap?>(null) }
-                    LaunchedEffect(e.id) { img = cars.thumbnail(e) }
-                    img?.let { Image(it, null, m, contentScale = ContentScale.Fit) }
+                    rememberThumbnail(cars, e)?.let { Image(it, null, m, contentScale = ContentScale.Fit) }
                 }
             }
         }
@@ -330,13 +328,17 @@ internal fun Confirmed(label: String, question: String, primary: Boolean = false
     }
 }
 
+/** La miniatura de [e]: null mientras llega (o si no tiene). */
+@Composable
+private fun rememberThumbnail(cars: CarRepository, e: CatalogEntry): ImageBitmap? =
+    produceState<ImageBitmap?>(null, e.id, e.thumbnail) { value = cars.thumbnail(e) }.value
+
 /** Un auto del catálogo abierto en la lista: su vista previa en grande, de quién es y el botón para bajarlo. */
 @Composable
 private fun CarPreview(e: CatalogEntry, cars: CarRepository, progress: Float?, onDownload: () -> Unit, onClose: () -> Unit) {
     val c = LocalColors.current
     val shape = RoundedCornerShape(Radius.card)
-    var img by remember(e.id) { mutableStateOf<ImageBitmap?>(null) }
-    LaunchedEffect(e.id) { img = cars.thumbnail(e) }
+    val img = rememberThumbnail(cars, e)
     Column(
         Modifier.fillMaxWidth().clip(shape).background(c.surface).border(2.dp, c.accent, shape).padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),

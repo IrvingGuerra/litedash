@@ -20,11 +20,20 @@ private val SPP: UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB")
 @SuppressLint("MissingPermission") // el repositorio revisa BLUETOOTH_CONNECT antes
 class BluetoothLink(device: BluetoothDevice) : ElmLink {
     private val socket: BluetoothSocket = try {
-        device.createRfcommSocketToServiceRecord(SPP).also { it.connect() }
+        connected(device.createRfcommSocketToServiceRecord(SPP))
     } catch (e: Exception) {
         // Varios clones solo aceptan la conexión "insegura".
-        device.createInsecureRfcommSocketToServiceRecord(SPP).also { it.connect() }
+        connected(device.createInsecureRfcommSocketToServiceRecord(SPP))
     }
+
+    // Si no conecta se cierra: un canal colgado hace fallar los intentos que siguen.
+    private fun connected(s: BluetoothSocket) = try {
+        s.apply { connect() }
+    } catch (e: Exception) {
+        runCatching { s.close() }
+        throw e
+    }
+
     override val input: InputStream = socket.inputStream
     override val output: OutputStream = socket.outputStream
     override fun close() = socket.close()
@@ -33,8 +42,13 @@ class BluetoothLink(device: BluetoothDevice) : ElmLink {
 /** ELM327 por Wi-Fi (suelen ser 192.168.0.10:35000); también el simulador de pruebas. */
 class WifiLink(host: String, port: Int) : ElmLink {
     private val socket = Socket().apply {
-        connect(InetSocketAddress(host, port), 5_000)
-        tcpNoDelay = true
+        try {
+            connect(InetSocketAddress(host, port), 5_000)
+            tcpNoDelay = true
+        } catch (e: Exception) {
+            runCatching { close() }
+            throw e
+        }
     }
     override val input: InputStream = socket.getInputStream()
     override val output: OutputStream = socket.getOutputStream()

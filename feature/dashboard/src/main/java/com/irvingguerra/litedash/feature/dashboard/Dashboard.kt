@@ -160,26 +160,28 @@ fun Dashboard(
                 ) { CompositionLocalProvider(LocalPlainCard provides p.plain) { content(p) } }
 
                 if (editing) {
+                    // Arrastrar la pieza (mover) o su esquina (cambiar de tamaño): el mismo gesto.
+                    fun Modifier.tileDrag(resizing: Boolean) = pointerInput(p.id, tiles, grid, cwPx, chPx) {
+                        detectDragGestures(
+                            onDragStart = { drag = Drag(p.id, resizing); dragOffset = Offset.Zero },
+                            onDrag = { change, d ->
+                                change.consume()
+                                dragOffset += d
+                            },
+                            onDragEnd = {
+                                drag?.let { end -> drop(p, end, dragOffset, cwPx, chPx, limits, tiles, grid, onChange) }
+                                drag = null
+                            },
+                            onDragCancel = { drag = null },
+                        )
+                    }
                     // Capa que atrapa los gestos: editando, la pieza no se usa, se acomoda.
                     Box(
                         Modifier
                             .fillMaxSize()
                             .clip(RoundedCornerShape(Radius.card))
                             .border(2.dp, c.accent.copy(alpha = 0.7f), RoundedCornerShape(Radius.card))
-                            .pointerInput(p.id, tiles, grid, cwPx, chPx) {
-                                detectDragGestures(
-                                    onDragStart = { drag = Drag(p.id, resizing = false); dragOffset = Offset.Zero },
-                                    onDrag = { change, d ->
-                                        change.consume()
-                                        dragOffset += d
-                                    },
-                                    onDragEnd = {
-                                        drag?.let { end -> drop(p, end, dragOffset, cwPx, chPx, limits, tiles, grid, onChange) }
-                                        drag = null
-                                    },
-                                    onDragCancel = { drag = null },
-                                )
-                            },
+                            .tileDrag(resizing = false),
                     )
                     IconButton(
                         Icons.close,
@@ -209,20 +211,7 @@ fun Dashboard(
                         Modifier
                             .align(Alignment.BottomEnd)
                             .padding(6.dp)
-                            .pointerInput(p.id, tiles, grid, cwPx, chPx) {
-                                detectDragGestures(
-                                    onDragStart = { drag = Drag(p.id, resizing = true); dragOffset = Offset.Zero },
-                                    onDrag = { change, d ->
-                                        change.consume()
-                                        dragOffset += d
-                                    },
-                                    onDragEnd = {
-                                        drag?.let { end -> drop(p, end, dragOffset, cwPx, chPx, limits, tiles, grid, onChange) }
-                                        drag = null
-                                    },
-                                    onDragCancel = { drag = null },
-                                )
-                            },
+                            .tileDrag(resizing = true),
                     ) {
                         // Sin clickable: el gesto de esta esquina es solo arrastrar.
                         Box(Modifier.size(44.dp).clip(RoundedCornerShape(50)).background(c.accent), contentAlignment = Alignment.Center) {

@@ -106,7 +106,7 @@ class Elm327(private val link: ElmLink, private val now: () -> Long = System::cu
     fun troubleCodes(mode: String): List<String> = parseTroubleCodes(mode, command(mode, 5_000))
 
     /** Borra códigos y apaga la luz de falla (también reinicia los monitores). */
-    fun clearCodes(): Boolean = command("04", 5_000).any { it.startsWith("44") }
+    fun clearCodes(): Boolean = afterHead("44", command("04", 5_000)) != null
 
     /** El número de serie del auto (17 caracteres), si lo da. */
     fun vin(): String? = parseVin(command("0902", 5_000))
@@ -171,32 +171,57 @@ internal fun hexBytes(hex: String): IntArray? {
 }
 
 /**
- * Respuesta de los modos 03/07/0A a códigos "P0301". En CAN cada renglón trae primero
- * cuántos códigos son; en los protocolos viejos no: se nota en que los bytes son nones.
+ * Respuesta de los modos 03/07/0A a códigos "P0301". En CAN viene primero cuántos códigos son
+ * (con tres o más, en varias tramas: "00A", "0:4304…", "1:…"); en los protocolos viejos no: se
+ * nota en que los bytes son nones. Un clon que deja encabezados también se entiende.
  */
 internal fun parseTroubleCodes(mode: String, lines: List<String>): List<String> {
     val head = "%02X".format(mode.toInt(16) + 0x40)
-    val codes = mutableListOf<String>()
-    for (line in lines) {
-        val clean = line.substringAfter(':')
-        if (!clean.startsWith(head)) continue
-        var bytes = hexBytes(clean.substring(head.length)) ?: continue
-        if (bytes.size % 2 == 1) bytes = bytes.copyOfRange(1, bytes.size)
-        for (i in bytes.indices step 2) {
-            val a = bytes[i]
-            val b = bytes.getOrNull(i + 1) ?: 0
-            if (a == 0 && b == 0) continue
-            val letter = "PCBU"[a shr 6]
-            codes += "%c%d%X%02X".format(letter, (a shr 4) and 0x3, a and 0xF, b)
-        }
+    val long = if (lines.any { MULTI_INDEX.containsMatchIn(it) }) {
+        lines.filterNot { MULTI_LENGTH.matches(it) }.joinToString("") { it.replace(MULTI_INDEX, "") }
+    } else joinHeadedFrames(lines)
+    if (long != null) {
+        // Una sola respuesta larga: el byte de cuenta dice cuántos pares valen (lo demás es relleno).
+        val bytes = long.substringAfter(head, "").let { hexBytes(it.dropLast(it.length % 2)) } ?: return emptyList()
+        return codesOf(bytes.drop(1).take((bytes.firstOrNull() ?: 0) * 2))
     }
-    return codes.distinct()
+    return lines.flatMap { line ->
+        val data = if (line.startsWith(head)) line.substring(head.length) else afterHead(head, listOf(line))
+        val bytes = data?.let(::hexBytes) ?: return@flatMap emptyList()
+        codesOf(if (bytes.size % 2 == 1) bytes.drop(1) else bytes.toList())
+    }.distinct()
+}
+
+/** Pares de bytes a códigos ("P0301"); los pares en cero son relleno. */
+private fun codesOf(bytes: List<Int>): List<String> = bytes.chunked(2).mapNotNull { pair ->
+    val a = pair[0]
+    val b = pair.getOrElse(1) { 0 }
+    if (a == 0 && b == 0) null else "%c%d%X%02X".format("PCBU"[a shr 6], (a shr 4) and 0x3, a and 0xF, b)
+}.distinct()
+
+/**
+ * Una respuesta larga de un clon que deja encabezados CAN ("7E8 10 14 49 02…", "7E8 21 …"): sus
+ * datos ya unidos (sin encabezado ni número de trama); null si no es eso.
+ */
+internal fun joinHeadedFrames(lines: List<String>): String? {
+    for (size in CAN_HEADERS) {
+        // La primera trama viene llena (8 bytes): así un renglón normal sin encabezado no se confunde.
+        val first = lines.firstOrNull { it.length == size + 16 && it[size] == '1' } ?: continue
+        val total = first.substring(size + 1, size + 4).toIntOrNull(16) ?: continue
+        val data = StringBuilder(first.substring(size + 4))
+        for (line in lines) {
+            if (line !== first && line.length > size + 2 && line[size] == '2' && line.startsWith(first.substring(0, size))) data.append(line.substring(size + 2))
+        }
+        if (total > 0 && data.length >= total * 2) return data.substring(0, total * 2)
+    }
+    return null
 }
 
 /** VIN del modo 09 PID 02: viene en varios renglones ("0:", "1:"…) o en uno. */
 internal fun parseVin(lines: List<String>): String? {
     val joined = lines.filter { it.contains(':') || it.startsWith("49") }
         .joinToString("") { it.substringAfter(':') }
+        .takeIf { "4902" in it } ?: joinHeadedFrames(lines) ?: return null
     val start = joined.indexOf("4902")
     if (start < 0) return null
     // Después de "4902" viene un byte con el número de mensaje y luego los caracteres.

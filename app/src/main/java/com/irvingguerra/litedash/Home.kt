@@ -102,9 +102,6 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withTimeoutOrNull
 
-/** El widget en grande (a media pantalla). */
-enum class Expanded { MUSIC }
-
 /** Qué panel está abierto encima del inicio (uno a la vez). */
 sealed interface Panel {
     data object Drawer : Panel
@@ -203,8 +200,8 @@ class Dependencies(
 }
 
 /**
- * Qué hace cada pieza al tocarla (abrir un panel, el mapa, la música o el auto en
- * grande). Se crea una vez: sus funciones leen el estado del inicio al llamarse.
+ * Qué hace cada pieza al tocarla (abrir un panel, el mapa o el auto en grande). Se crea
+ * una vez: sus funciones leen el estado del inicio al llamarse.
  */
 class TileActions(
     val onPanel: (Panel) -> Unit,
@@ -261,9 +258,9 @@ fun TileContent(d: Dependencies, p: Tile, apps: List<App>, car: CarPackage?, rev
         }
         // Ya de media pantalla o más: lo de en grande ahí mismo (no se mueve).
         TileTypes.MUSIC -> if (p.fillsHalf(d.dashboard.grid)) MusicBig(d, close = null)
-        else MusicTile(d.music, revision)
-        TileTypes.RADIO -> if (p.fillsHalf(d.dashboard.grid)) RadioBig(d, close = null) { actions.onPanel(Panel.MusicSettings) }
-        else RadioTile(d.music, revision, onIdle = { actions.onPanel(Panel.MusicSettings) })
+        else MusicTile(d.music, revision) { picked -> FilesBrowser(picked) }
+        TileTypes.RADIO -> if (p.fillsHalf(d.dashboard.grid)) RadioBig(d) { openRadioSettings(); actions.onPanel(Panel.MusicSettings) }
+        else RadioTile(d.music, revision, onIdle = { openRadioSettings(); actions.onPanel(Panel.MusicSettings) }) { picked -> StationsBrowser(picked) }
         TileTypes.CLOCK -> ClockTile(d.prefs.driverName, d.weather)
         TileTypes.WEATHER -> WeatherTile(d.weather)
         TileTypes.TRIP -> TripTile(d)
@@ -338,12 +335,16 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
     val context = LocalContext.current
     val apps = rememberApps(d.apps).orEmpty()
     val currentApps by rememberUpdatedState(apps)
+    // Voz: el asistente que tenga la pantalla (volante y barra); null si no hay ninguno (sin botón).
+    val onVoice: (() -> Unit)? = remember {
+        voiceIntent(context)?.let { intent -> { runCatching { context.startActivity(intent) }; Unit } }
+    }
     val car = d.cars.pkg(d.prefs.carModel)
     var panel by remember { mutableStateOf<Panel?>(null) }
     var editing by remember { mutableStateOf(false) }
-    // La música, la radio o el mapa a media pantalla; null = el tablero normal.
-    var expanded by remember { mutableStateOf<Expanded?>(null) }
-    // El widget que creció (por id: si cambia el acomodo se lee el de ahora): da el lado y, al mapa, su estilo.
+    // La música a media pantalla (desde el volante); false = el tablero normal.
+    var musicBig by remember { mutableStateOf(false) }
+    // El widget que creció (por id: si cambia el acomodo se lee el de ahora): da el lado.
     var expandedFromId by remember { mutableStateOf<String?>(null) }
     // Solo el auto a pantalla completa (un toque al auto entra y otro sale), con animación:
     // [carOnly] es a dónde va y [carShown] si la capa sigue en pantalla (también al regresar).
@@ -375,7 +376,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
         panel = null
         tiresOpen = false
         carOnly = false
-        expanded = null
+        musicBig = false
         editing = false
     }
 
@@ -401,10 +402,10 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
     var touched by remember { mutableIntStateOf(0) }
     var parked by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) {
-        snapshotFlow { listOf(touched, d.wheel.presses, panel, editing, expanded, carOnly, tiresOpen, d.prefs.parkedMode) }
+        snapshotFlow { listOf(touched, d.wheel.presses, panel, editing, musicBig, carOnly, tiresOpen, d.prefs.parkedMode) }
             .collectLatest {
                 parked = false
-                if (!d.prefs.parkedMode || panel != null || editing || expanded != null || carOnly || tiresOpen) return@collectLatest
+                if (!d.prefs.parkedMode || panel != null || editing || musicBig || carOnly || tiresOpen) return@collectLatest
                 delay(PARK_AFTER_MS)
                 // Manejando no: espera a que se detenga (velocidad del OBD o del GPS, la que haya).
                 snapshotFlow { (d.bus.value(Signal.SPEED) ?: 0f) > MOVING_KMH }.first { !it }
@@ -416,12 +417,12 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
     val engineAlert = remember { EngineAlertState() }
     if (d.prefs.welcomeSeen) TripRecorderEffect(d)
 
-    BackHandler(enabled = (panel != null || editing || expanded != null || carOnly || tiresOpen) && d.prefs.welcomeSeen) {
+    BackHandler(enabled = (panel != null || editing || musicBig || carOnly || tiresOpen) && d.prefs.welcomeSeen) {
         when {
             panel != null -> panel = null
             tiresOpen -> tiresOpen = false
             carOnly -> carOnly = false
-            expanded != null -> expanded = null
+            musicBig -> musicBig = false
             else -> editing = false
         }
     }
@@ -469,10 +470,10 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                     val tile = d.dashboard.shown.firstOrNull { it.type == TileTypes.MUSIC }
                     if (tile?.fillsHalf(d.dashboard.grid) != true) {
                         expandedFromId = tile?.id
-                        expanded = Expanded.MUSIC
+                        musicBig = true
                     }
                 }
-                WheelAction.VOICE -> voiceIntent(context)?.let { runCatching { context.startActivity(it) } }
+                WheelAction.VOICE -> onVoice?.invoke()
                 WheelAction.HOME -> backToDashboard()
                 else -> Unit
             }
@@ -510,7 +511,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
             },
     ) {
         // Tu imagen de fondo (Inicio y apariencia → Inicio → Fondo de pantalla), detrás de todo.
-        if (panel == null) HomeWallpaper(d.prefs)
+        if (panel == null) HomeWallpaper()
         // Los paneles tapan todo el inicio: mientras hay uno abierto no se dibuja ni se
         // pinta nada debajo (el auto del tablero no se tiñe dos veces al cambiar el color).
         if (panel == null) BoxWithConstraints(Modifier.fillMaxSize().safeDrawingPadding()) {
@@ -528,6 +529,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                   repo = d.apps,
                   prefs = d.prefs,
                   favorites = favorites,
+                  onVoice = onVoice,
                   onApps = { panel = Panel.Drawer },
                   onSettings = { panel = Panel.Settings },
               )
@@ -575,15 +577,14 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                     val grid = remember(maxWidth, gridHeight) { Grid.forSize(maxWidth.value, gridHeight.value) }
                     // Carga el acomodo de esta cuadrícula antes de dibujar (solo hace algo si cambió).
                     d.dashboard.use(grid)
-                    // La música, la radio o el mapa en grande ocupan media pantalla; en la otra mitad, el auto
-                    // como en la pantalla dividida (auto 3D o carretera, según se eligió ahí), o tu imagen.
-                    val big = expanded
+                    // La música en grande ocupa media pantalla; en la otra mitad, el auto como en la
+                    // pantalla dividida (auto 3D o carretera, según se eligió ahí), o tu imagen.
                     val from = expandedFromId?.let { id -> d.dashboard.shown.firstOrNull { it.id == id } }
                     // Si el widget ya no está (otra plantilla, otro acomodo) o ya es de media pantalla, se cierra.
-                    if (big != null && expandedFromId != null && (from == null || from.fillsHalf(grid))) LaunchedEffect(Unit) { expanded = null }
+                    if (musicBig && expandedFromId != null && (from == null || from.fillsHalf(grid))) LaunchedEffect(Unit) { musicBig = false }
                     // Con algo a pantalla completa encima, lo que gasta en los widgets (GPS, mapa) descansa.
                     CompositionLocalProvider(LocalHomeCovered provides (carShown || tiresShown || parked)) {
-                        if (big != null) HalfScreen(
+                        if (musicBig) HalfScreen(
                             side = {
                                 val shown = d.dashboard.shown
                                 val hero = shown.firstOrNull { it.type == (if (d.prefs.splitRoad) TileTypes.ROAD else TileTypes.CAR) } ?: shown.firstOrNull { it.cardless }
@@ -593,10 +594,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                             sideFirst = from?.let { if (grid.vertical) it.row * 2 >= grid.rows else it.col * 2 >= grid.columns } ?: false,
                             vertical = grid.vertical,
                         ) {
-                            val close = { expanded = null }
-                            when (big) {
-                                Expanded.MUSIC -> MusicBig(d, close, Modifier.padding(6.dp))
-                            }
+                            MusicBig(d, close = { musicBig = false }, Modifier.padding(6.dp))
                         } else Dashboard(
                                 grid = grid,
                                 tiles = d.dashboard.shown,
@@ -621,6 +619,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                     repo = d.apps,
                     prefs = d.prefs,
                     favorites = favorites,
+                    onVoice = onVoice,
                     onApps = { panel = Panel.Drawer },
                     onSettings = { panel = Panel.Settings },
                 )
@@ -637,7 +636,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                 revision = revision,
                 close = { panel = null },
                 // Acomodar cierra lo que esté en grande (si no, el tablero ni se ve).
-                onEdit = { panel = null; expanded = null; editing = true },
+                onEdit = { panel = null; musicBig = false; editing = true },
                 onTemplates = { panel = Panel.Templates },
                 start = when (p) {
                     Panel.Updates -> SettingsSection.SYSTEM
@@ -648,7 +647,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                 },
                 onTires = { panel = null; openTires() },
             )
-            Panel.Templates -> TemplatesPanel(d.dashboard, d.prefs, close = { panel = null })
+            Panel.Templates -> TemplatesPanel(d.dashboard, close = { panel = null })
             Panel.AddTile -> AddTilePanel(
                 d,
                 close = { panel = null },
@@ -685,7 +684,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
 
         // Animación de entrada con tu imagen, una vez por cada vez que se abre LiteDash (no al cambiar de idioma).
         var intro by rememberSaveable { mutableStateOf(!MainActivity.takeRestarted() && d.prefs.logoIntro && d.prefs.welcomeSeen) }
-        if (intro) LogoIntro(d.prefs) { intro = false }
+        if (intro) LogoIntro { intro = false }
 
         if (!d.prefs.welcomeSeen) {
             Welcome(d.prefs, d.dashboard, revision, onFinish = { d.prefs.welcomeSeen = true })
@@ -707,7 +706,7 @@ private fun Parked(d: Dependencies, onWake: () -> Unit) {
         contentAlignment = Alignment.Center,
     ) {
         // Sin imagen guardada, el reloj.
-        if (d.prefs.parkedView == ParkedView.IMAGE && parkedImageShown(d.prefs)) return@Box
+        if (d.prefs.parkedView == ParkedView.IMAGE && parkedImageShown()) return@Box
         val clock = rememberClock()
         val hello = greeting(d.prefs.driverName)
         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -781,11 +780,11 @@ private fun Dock(
     repo: AppRepository,
     prefs: Preferences,
     favorites: List<App>,
+    onVoice: (() -> Unit)?,
     onApps: () -> Unit,
     onSettings: () -> Unit,
 ) {
     val c = LocalColors.current
-    val context = LocalContext.current
     // En pantallas chicas (7") todo se ve lejos: íconos más grandes, más fáciles de atinar manejando.
     // Pero si casi no hay altura (teléfono acostado), compacto: el tablero va primero. El tamaño elegido escala todo.
     val k = prefs.barSize.scale
@@ -820,8 +819,7 @@ private fun Dock(
         }
         if (prefs.barVolume == VolumePlace.END) Volume(buttonSize)
         // Voz: abre el asistente que tenga la pantalla; si no hay ninguno, no aparece.
-        val voice = remember { voiceIntent(context) }
-        if (voice != null && prefs.barVoice) IconButton(Icons.mic, { runCatching { context.startActivity(voice) } }, size = buttonSize)
+        if (onVoice != null && prefs.barVoice) IconButton(Icons.mic, onVoice, size = buttonSize)
         }
         // Siempre: sin Ajustes no habría cómo salir del inicio.
         IconButton(Icons.settings, onSettings, size = buttonSize)
@@ -846,11 +844,11 @@ private fun Rail(
     repo: AppRepository,
     prefs: Preferences,
     favorites: List<App>,
+    onVoice: (() -> Unit)?,
     onApps: () -> Unit,
     onSettings: () -> Unit,
 ) {
     val c = LocalColors.current
-    val context = LocalContext.current
     val small = isSmallScreen()
     val k = prefs.barSize.scale
     val button = (if (small) 52.dp else 56.dp) * k
@@ -881,7 +879,6 @@ private fun Rail(
             Box(Modifier.padding(vertical = 4.dp).width(28.dp).height(1.dp).background(c.line))
         }
         if (prefs.barVolume == VolumePlace.START) Volume(volume, vertical = true)
-        val voice = remember { voiceIntent(context) }
         BoxWithConstraints(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
             // Las favoritas que quepan entre los accesos de arriba y los controles de abajo.
             val fit = (maxHeight / (button + 4.dp)).toInt()
@@ -890,7 +887,7 @@ private fun Rail(
             }
         }
         if (prefs.barVolume == VolumePlace.END) Volume(volume, vertical = true)
-        if (voice != null && prefs.barVoice) IconButton(Icons.mic, { runCatching { context.startActivity(voice) } }, size = button)
+        if (onVoice != null && prefs.barVoice) IconButton(Icons.mic, onVoice, size = button)
         }
         // Siempre: sin Ajustes no habría cómo salir del inicio.
         IconButton(Icons.settings, onSettings, size = button)
@@ -970,12 +967,19 @@ private fun Tile.fillsHalf(grid: Grid?) = grid != null && width * height * 2 >= 
 @Composable
 private fun MusicBig(d: Dependencies, close: (() -> Unit)?, modifier: Modifier = Modifier) = MusicExpanded(
     d.music, close = close, modifier,
-    browser = { picked -> PlayerBrowser(PlayerSource.USB, picked, Modifier.fillMaxSize()) },
+    browser = { picked -> FilesBrowser(picked) },
 )
 
 /** La radio en grande: FM o internet y, si está prendida, las estaciones por internet. */
 @Composable
-private fun RadioBig(d: Dependencies, close: (() -> Unit)?, modifier: Modifier = Modifier, onSettings: () -> Unit) = RadioExpanded(
-    d.music, close = close, onSettings = onSettings, modifier,
-    browser = if (d.music.radioInternet) { picked -> PlayerBrowser(PlayerSource.RADIO, picked, Modifier.fillMaxSize()) } else null,
+private fun RadioBig(d: Dependencies, onSettings: () -> Unit) = RadioExpanded(
+    d.music, onSettings = onSettings,
+    browser = if (d.music.radioInternet) { picked -> StationsBrowser(picked) } else null,
 )
+
+/** La biblioteca de Archivos y las estaciones por internet, para la vista en grande y para el widget donde quepan. */
+@Composable
+private fun FilesBrowser(onPicked: () -> Unit) = PlayerBrowser(PlayerSource.USB, onPicked, Modifier.fillMaxSize())
+
+@Composable
+private fun StationsBrowser(onPicked: () -> Unit) = PlayerBrowser(PlayerSource.RADIO, onPicked, Modifier.fillMaxSize())

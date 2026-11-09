@@ -147,7 +147,14 @@ private fun removeReflection(p: IntArray, bg: BooleanArray, w: Int, h: Int, queu
         val i = queue[head++]
         val x = i % w
         val y = i / w
-        for (j in intArrayOf(if (x > 0) i - 1 else -1, if (x < w - 1) i + 1 else -1, if (y > start) i - w else -1, if (y < h - 1) i + w else -1)) {
+        // Los 4 vecinos sin crear un arreglo por píxel.
+        for (k in 0 until 4) {
+            val j = when (k) {
+                0 -> if (x > 0) i - 1 else -1
+                1 -> if (x < w - 1) i + 1 else -1
+                2 -> if (y > start) i - w else -1
+                else -> if (y < h - 1) i + w else -1
+            }
             if (j < 0 || bg[j]) continue
             val c = p[j]
             val r = (c shr 16) and 255

@@ -93,6 +93,7 @@ fun MapCanvas(store: TileStore, lat: Double, lon: Double, bearing: Float?, kmh: 
                     val end = (projection.edge / size.height).coerceIn(0f, 0.9f)
                     Brush.verticalGradient(0f to sky, end to sky, (end + 0.15f).coerceAtMost(1f) to sky.copy(alpha = 0f))
                 } else null
+                val arrowPath = arrowPath(at, 1.dp.toPx())
                 onDrawBehind {
                     store.loaded // cada tesela nueva repinta
                     drawIntoCanvas { canvas ->
@@ -103,7 +104,7 @@ fun MapCanvas(store: TileStore, lat: Double, lon: Double, bearing: Float?, kmh: 
                     }
                     store.request(tiles.keys)
                     fade?.let { drawRect(it) }
-                    drawArrow(at, arrow, accent, tilted)
+                    drawArrow(at, arrowPath, arrow, accent, tilted)
                 }
             },
         )
@@ -181,26 +182,28 @@ private fun DrawScope.drawTiles(store: TileStore, plan: TilePlan, filter: ColorF
 }
 
 /** Tu posición: la flecha con el rumbo (color de acento) o un punto si todavía no hay rumbo. Inclinado, un poco acostada. */
-private fun DrawScope.drawArrow(at: Offset, bearing: Float?, accent: Color, tilted: Boolean) {
+private fun DrawScope.drawArrow(at: Offset, arrow: Path, bearing: Float?, accent: Color, tilted: Boolean) {
     val u = 1.dp.toPx()
-    if (tilted) return scale(1f, 0.7f, at) { drawArrow(at, bearing, accent, tilted = false) }
+    if (tilted) return scale(1f, 0.7f, at) { drawArrow(at, arrow, bearing, accent, tilted = false) }
     drawCircle(accent.copy(alpha = 0.25f), 22 * u, at)
     if (bearing == null) {
         drawCircle(Color.White, 9 * u, at)
         drawCircle(accent, 7 * u, at)
         return
     }
-    val arrow = Path().apply {
-        moveTo(at.x, at.y - 14 * u)
-        lineTo(at.x + 10 * u, at.y + 11 * u)
-        lineTo(at.x, at.y + 5 * u)
-        lineTo(at.x - 10 * u, at.y + 11 * u)
-        close()
-    }
     rotate(bearing, at) {
         drawPath(arrow, accent)
         drawPath(arrow, Color.White, style = Stroke(2 * u))
     }
+}
+
+/** La flecha de [drawArrow] apuntando al norte en [at] ([u] = 1 dp); se arma con la caché del dibujo, no en cada cuadro. */
+private fun arrowPath(at: Offset, u: Float) = Path().apply {
+    moveTo(at.x, at.y - 14 * u)
+    lineTo(at.x + 10 * u, at.y + 11 * u)
+    lineTo(at.x, at.y + 5 * u)
+    lineTo(at.x - 10 * u, at.y + 11 * u)
+    close()
 }
 
 /** Los créditos en la esquina (lo piden sus licencias); tocarlos abre su página. */

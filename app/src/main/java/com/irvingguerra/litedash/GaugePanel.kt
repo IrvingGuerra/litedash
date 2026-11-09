@@ -168,7 +168,7 @@ fun CustomizeGaugePanel(d: Dependencies, tileId: String, close: () -> Unit, onPi
                     Label(stringResource(look.color.title), Typography.small, c.textMuted)
                     if (speedometer) {
                         Label(stringResource(R.string.gauge_max), Typography.label, c.textMuted)
-                        val unit = stringResource(if (units.miles) R.string.unit_mph else R.string.unit_kmh)
+                        val unit = speedUnit(units.miles)
                         val choices = speedMaxOptions(units.miles)
                         Segmented(
                             choices.sorted().map { it to "$it $unit" },
@@ -192,7 +192,7 @@ fun CustomizeGaugePanel(d: Dependencies, tileId: String, close: () -> Unit, onPi
                         )
                         if (look.front == GaugeFront.IMAGE) {
                             ImageEditor(
-                                d, tile.id, look.image, stringResource(R.string.gauge_front_image_empty),
+                                tile.id, look.image, stringResource(R.string.gauge_front_image_empty),
                                 placeholder = false,
                                 onRemoved = { set(look.copy(image = "")) },
                             ) { set(look.copy(image = it)) }

@@ -14,6 +14,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -22,6 +23,9 @@ import com.irvingguerra.litedash.core.ui.Button
 import com.irvingguerra.litedash.core.ui.Label
 import com.irvingguerra.litedash.core.ui.LocalColors
 import com.irvingguerra.litedash.core.ui.Typography
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * Las luces del auto como señal de noche. Android no tiene un aviso estándar de faros:
@@ -60,10 +64,13 @@ data class LightsKey(val table: String, val name: String) {
 /** Nombres que suelen tener los ajustes de luces en las pantallas de auto. */
 private val LIGHT_WORDS = Regex("illum|headl|lamp|light|dimm|night|backlight|ill_|acc_", RegexOption.IGNORE_CASE)
 
-/** Todos los ajustes de la pantalla (las tres tablas) con su valor, para comparar dos momentos. */
-private fun snapshotSettings(context: Context): Map<String, String> {
+/**
+ * Todos los ajustes de la pantalla (las tres tablas, "tabla/nombre" en ese orden) con su valor, para
+ * comparar dos momentos. Cientos de filas por IPC: fuera del hilo principal.
+ */
+internal fun snapshotSettings(context: Context): Map<String, String> {
     val tables = listOf("system" to Settings.System.CONTENT_URI, "global" to Settings.Global.CONTENT_URI, "secure" to Settings.Secure.CONTENT_URI)
-    val all = HashMap<String, String>()
+    val all = LinkedHashMap<String, String>()
     for ((table, uri) in tables) {
         runCatching {
             context.contentResolver.query(uri, arrayOf("name", "value"), null, null, null)?.use { c ->
@@ -111,7 +118,16 @@ fun LightsSettings(prefs: Preferences) {
     val c = LocalColors.current
     val context = LocalContext.current
     var step by remember { mutableStateOf<LearnStep>(LearnStep.Idle) }
+    val scope = rememberCoroutineScope()
     val key = LightsKey.fromStored(prefs.lightsKey)
+    // La foto de los ajustes, fuera del hilo principal; si mientras tanto se cambió de paso (Cancelar), se ignora.
+    fun withSnapshot(next: (Map<String, String>) -> LearnStep) {
+        val from = step
+        scope.launch {
+            val snapshot = withContext(Dispatchers.IO) { snapshotSettings(context) }
+            if (step === from) step = next(snapshot)
+        }
+    }
     val night = rememberLightsNight(prefs)
     fun save(stored: String, onValue: String) {
         prefs.lightsKey = stored
@@ -130,7 +146,7 @@ fun LightsSettings(prefs: Preferences) {
                     Label(stringResource(R.string.lights_not_learned), Typography.small, c.textMuted)
                 }
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Button(stringResource(R.string.lights_learn), { step = LearnStep.LightsOff(snapshotSettings(context)) }, primary = key == null)
+                    Button(stringResource(R.string.lights_learn), { withSnapshot { LearnStep.LightsOff(it) } }, primary = key == null)
                     if (key != null) Button(stringResource(R.string.lights_forget), { prefs.lightsKey = null; prefs.lightsOnValue = null })
                 }
             }
@@ -138,14 +154,15 @@ fun LightsSettings(prefs: Preferences) {
                 Label(stringResource(R.string.lights_step_on), Typography.body, c.accent)
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Button(stringResource(R.string.lights_done), {
-                        val after = snapshotSettings(context)
-                        // Lo que cambió entre una foto y otra; si varios, primero los que suenan a luces.
-                        val changed = after.filter { (k, v) -> s.before[k] != v }.toList()
-                            .sortedByDescending { LIGHT_WORDS.containsMatchIn(it.first) }
-                        step = when {
-                            changed.isEmpty() -> LearnStep.Nothing
-                            changed.size == 1 || LIGHT_WORDS.containsMatchIn(changed[0].first) -> { save(changed[0].first, changed[0].second); LearnStep.Idle }
-                            else -> LearnStep.Choose(changed.take(8))
+                        withSnapshot { after ->
+                            // Lo que cambió entre una foto y otra; si varios, primero los que suenan a luces.
+                            val changed = after.filter { (k, v) -> s.before[k] != v }.toList()
+                                .sortedByDescending { LIGHT_WORDS.containsMatchIn(it.first) }
+                            when {
+                                changed.isEmpty() -> LearnStep.Nothing
+                                changed.size == 1 || LIGHT_WORDS.containsMatchIn(changed[0].first) -> { save(changed[0].first, changed[0].second); LearnStep.Idle }
+                                else -> LearnStep.Choose(changed.take(8))
+                            }
                         }
                     }, primary = true)
                     Button(stringResource(R.string.cancel), { step = LearnStep.Idle })
@@ -160,7 +177,7 @@ fun LightsSettings(prefs: Preferences) {
             }
             LearnStep.Nothing -> {
                 Label(stringResource(R.string.lights_nothing), Typography.body, c.danger)
-                Button(stringResource(R.string.lights_retry), { step = LearnStep.LightsOff(snapshotSettings(context)) })
+                Button(stringResource(R.string.lights_retry), { withSnapshot { LearnStep.LightsOff(it) } })
             }
         }
     }

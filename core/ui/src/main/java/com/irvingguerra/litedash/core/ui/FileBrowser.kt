@@ -54,13 +54,16 @@ fun FileBrowser(
     // null = la lista de memorias.
     var dir by remember { mutableStateOf<File?>(null) }
     val roots by produceState(emptyList<StorageRoot>()) { value = withContext(Dispatchers.IO) { storageRoots(context) } }
-    val entries by produceState<List<File>?>(null, dir) {
+    // Cada archivo con si es carpeta: se pregunta aquí (es leer el disco), no al dibujar.
+    val entries by produceState<List<Pair<File, Boolean>>?>(null, dir) {
         value = null
         val d = dir ?: return@produceState
         value = withContext(Dispatchers.IO) {
             d.listFiles().orEmpty()
-                .filter { !it.name.startsWith(".") && (it.isDirectory || (!pickFolder && accept(it.name))) }
-                .sortedWith(compareBy<File>({ !it.isDirectory }, { it.name.lowercase() }))
+                .filter { !it.name.startsWith(".") }
+                .map { it to it.isDirectory }
+                .filter { (f, isDir) -> isDir || (!pickFolder && accept(f.name)) }
+                .sortedWith(compareBy({ !it.second }, { it.first.name.lowercase() }))
                 .take(MAX_ENTRIES)
         }
     }
@@ -88,8 +91,8 @@ fun FileBrowser(
                 when {
                     list == null -> Label("…", Typography.body, c.textMuted, modifier = Modifier.padding(16.dp))
                     list.isEmpty() -> Label(stringResource(R.string.files_empty), Typography.body, c.textMuted, modifier = Modifier.padding(16.dp))
-                    else -> for (f in list) {
-                        if (f.isDirectory) Entry(Icons.folder, f.name) { dir = f }
+                    else -> for ((f, isDir) in list) {
+                        if (isDir) Entry(Icons.folder, f.name) { dir = f }
                         else Entry(Icons.image, f.name) { onPick(f) }
                     }
                 }
@@ -113,14 +116,14 @@ private fun Entry(icon: ImageVector, name: String, onClick: () -> Unit) {
 }
 
 /** Una memoria donde empezar a buscar. */
-class StorageRoot(val name: String, val dir: File)
+private class StorageRoot(val name: String, val dir: File)
 
 /**
- * Las memorias que se pueden leer: la interna y las removibles (USB, tarjeta). En Android 7+
+ * Las memorias que se pueden leer: la interna y las removibles (USB, tarjeta). En Android 11+
  * con sus nombres; en todas, además, las carpetas de `/storage` y `/mnt` que se dejen leer (varias
  * pantallas montan la USB ahí sin anunciarla). Leer fuera del hilo principal.
  */
-fun storageRoots(context: Context): List<StorageRoot> {
+private fun storageRoots(context: Context): List<StorageRoot> {
     val out = LinkedHashMap<String, StorageRoot>()
     fun add(name: String, dir: File?) {
         val d = dir ?: return

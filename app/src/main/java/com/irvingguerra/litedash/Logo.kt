@@ -263,7 +263,7 @@ private fun rememberImage(target: SavedImage): LoadedImage {
  * false); un toque hace [onClick].
  */
 @Composable
-fun ImageTile(d: Dependencies, name: String, onClick: () -> Unit, modifier: Modifier = Modifier, placeholder: Boolean = true) {
+fun ImageTile(name: String, onClick: () -> Unit, modifier: Modifier = Modifier, placeholder: Boolean = true) {
     val loaded = if (name.isEmpty()) LoadedImage(null, true) else rememberImage(tileImage(name))
     val image = loaded.image
     Box(
@@ -289,7 +289,7 @@ fun SavedTileImage(name: String, modifier: Modifier = Modifier) {
  * poco y se desvanece hacia el inicio. Un toque la salta.
  */
 @Composable
-fun LogoIntro(prefs: Preferences, onDone: () -> Unit) {
+fun LogoIntro(onDone: () -> Unit) {
     val c = LocalColors.current
     val done by rememberUpdatedState(onDone)
     // El fondo tapa el inicio desde el primer cuadro; el logo aparece encima y al final
@@ -338,7 +338,7 @@ fun LogoIntro(prefs: Preferences, onDone: () -> Unit) {
  * Lleva un velo del color del tema para que la hora y los textos se lean encima.
  */
 @Composable
-fun HomeWallpaper(prefs: Preferences) {
+fun HomeWallpaper() {
     val c = LocalColors.current
     val image = rememberImage(WALLPAPER).image ?: return
     Box(Modifier.fillMaxSize()) {
@@ -352,7 +352,7 @@ fun HomeWallpaper(prefs: Preferences) {
  * imagen guardada, para que se vea el reloj. Sale de memoria al quitarse el modo estacionado.
  */
 @Composable
-fun parkedImageShown(prefs: Preferences): Boolean {
+fun parkedImageShown(): Boolean {
     DisposableEffect(Unit) { onDispose { PARKED.release() } }
     val loaded = rememberImage(PARKED)
     val image = loaded.image
@@ -481,7 +481,7 @@ fun CustomizeImagePanel(d: Dependencies, tileId: String, close: () -> Unit) {
     PanelScaffold(stringResource(R.string.image_title), close) {
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(16.dp)) {
             Label(stringResource(R.string.image_help), Typography.body, c.textMuted)
-            ImageEditor(d, tileId, tile.data) { d.dashboard.setData(tileId, it) }
+            ImageEditor(tileId, tile.data) { d.dashboard.setData(tileId, it) }
         }
     }
 }
@@ -494,7 +494,6 @@ fun CustomizeImagePanel(d: Dependencies, tileId: String, close: () -> Unit) {
  */
 @Composable
 fun ImageEditor(
-    d: Dependencies,
     key: String,
     current: String,
     empty: String = stringResource(R.string.image_empty),
@@ -530,7 +529,7 @@ fun ImageEditor(
     val sourceImage = remember(source) { source?.asImageBitmap() }
     Box(Modifier.widthIn(max = 360.dp).fillMaxWidth().aspectRatio(2f), contentAlignment = Alignment.Center) {
         val shown = (if (removing) preview?.takeIf { it.source === source }?.image else null) ?: sourceImage
-        if (shown != null) Image(shown, null, Modifier.fillMaxSize(0.8f)) else ImageTile(d, current, onClick = {}, placeholder = placeholder)
+        if (shown != null) Image(shown, null, Modifier.fillMaxSize(0.8f)) else ImageTile(current, onClick = {}, placeholder = placeholder)
     }
     val hasImage = imageButtons(target, onPicked = { uri ->
         if (current.isEmpty()) onNamed(name)

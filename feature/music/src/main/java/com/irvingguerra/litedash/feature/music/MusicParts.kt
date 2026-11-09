@@ -22,15 +22,22 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.Stable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.zIndex
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.irvingguerra.litedash.core.ui.Button
@@ -146,7 +153,8 @@ internal fun UseRepo(repo: MusicRepository) {
  * y play (o los tres botones si cabe); alta y no tan ancha, carátula arriba y lo demás abajo.
  * [revision] cambia al volver a la
  * app, para notar si el usuario acaba de dar el permiso. [text] es lo escrito y [controls] los
- * botones (con [Modifier] y si van compactos).
+ * botones (con [Modifier] y si van compactos). Con [browser] (la biblioteca de Archivos o las
+ * estaciones por internet) y lugar para ella, lleva el botón de lista y la abre ahí mismo.
  */
 @Composable
 internal fun MediaTile(
@@ -161,12 +169,27 @@ internal fun MediaTile(
     controls: @Composable (Modifier, compact: Boolean) -> Unit,
     /** Sin acceso a notificaciones no se ve nada (Archivos y el Bluetooth de Android no lo necesitan). */
     needsAccess: Boolean = true,
+    browsing: Browsing = remember { Browsing() },
+    browser: (@Composable (onPicked: () -> Unit) -> Unit)? = null,
 ) {
     UseRepo(repo)
     val permission = remember(revision, needsAccess) { !needsAccess || repo.hasPermission().also { if (it) repo.recheck() } }
     Card(modifier.fillMaxSize()) {
         if (!permission) return@Card NoPermission(repo, icon, title, explain)
         BoxWithConstraints(Modifier.fillMaxSize().padding(TilePadding)) {
+            val fits = browser != null && maxWidth >= BROWSER_MIN_WIDTH && maxHeight >= BROWSER_MIN_HEIGHT
+            SideEffect { browsing.fits = fits }
+            if (browser != null && fits && browsing.open) {
+                return@BoxWithConstraints Column(Modifier.fillMaxSize()) {
+                    Row(Modifier.padding(start = 6.dp, bottom = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Label(title.uppercase(), Typography.label, LocalColors.current.textMuted, 1, Modifier.weight(1f))
+                        CornerButton(icon, LocalColors.current.surfaceHigh) { browsing.open = false }
+                    }
+                    browser { browsing.open = false }
+                }
+            }
+            // Encima de la carátula (lo demás se compone después).
+            if (fits) CornerButton(Icons.list, LocalColors.current.surface, Modifier.align(Alignment.TopEnd).zIndex(1f)) { browsing.open = true }
             val tall = maxHeight > 150.dp
             if (tall && maxWidth < maxHeight * 1.5f) {
                 // Una columna del tablero: carátula arriba, el resto abajo y centrado.
@@ -196,6 +219,33 @@ internal fun MediaTile(
         }
     }
 }
+
+/** La biblioteca dentro de una pieza: si cabe ahí ([fits], lo dice la pieza al medirse) y si está abierta. */
+@Stable
+internal class Browsing {
+    var fits by mutableStateOf(false)
+    var open by mutableStateOf(false)
+}
+
+/** Botón de la esquina de la pieza: abre la biblioteca o regresa a lo que suena. */
+@Composable
+private fun CornerButton(icon: ImageVector, background: Color, modifier: Modifier = Modifier, onClick: () -> Unit) {
+    IconButton(icon, onClick, modifier, size = 44.dp, background = background)
+}
+
+/** Con Archivos, play sin nada que tocar llama [open] (abre la biblioteca) mientras [enabled]. */
+@Composable
+internal fun OnFilesEmpty(repo: MusicRepository, enabled: Boolean, open: () -> Unit) {
+    DisposableEffect(repo, enabled) {
+        if (enabled) repo.onFilesEmpty = open
+        // Solo la suya: con dos vistas (pantalla dividida) no borra la de la otra.
+        onDispose { if (repo.onFilesEmpty === open) repo.onFilesEmpty = null }
+    }
+}
+
+/** Lo que la biblioteca necesita para leerse dentro de una pieza. */
+private val BROWSER_MIN_WIDTH = 260.dp
+private val BROWSER_MIN_HEIGHT = 240.dp
 
 /** Lo que necesita la columna del título con los tres controles abajo, y la carátula más chica que vale la pena. */
 private val TALL_TEXT_MIN = 200.dp

@@ -64,7 +64,7 @@ fun SpeedGaugeCard(speed: Float, miles: Boolean, tag: String, look: GaugeLook, c
     val ticks = ticksFor(max, miles)
     GaugeCard(
         number = String.format(currentLocale(), "%.0f", speed),
-        unit = stringResource(if (miles) R.string.unit_mph else R.string.unit_kmh),
+        unit = speedUnit(miles),
         tag = tag,
         fraction = speed / max,
         ticks = ticks,

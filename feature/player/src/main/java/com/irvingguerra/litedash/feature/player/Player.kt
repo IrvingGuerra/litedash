@@ -92,7 +92,7 @@ object Player {
     /** Se pausó por una llamada o un aviso: al terminar, sigue solo. */
     private var resumeAfterFocus = false
     /** Qué versión de la cola va cargándose (una carga vieja no debe pisar a la nueva). */
-    private var load = 0
+    @Volatile private var load = 0
     private var usbWatcher: BroadcastReceiver? = null
     /** Canciones sin carátula incrustada: no se vuelve a abrir el archivo cada vez que suenan. */
     private val noArt = HashSet<String>()
@@ -115,13 +115,13 @@ object Player {
 
     fun resume() {
         val item = state.current ?: return
+        // Ya suena o va cargando (arrancará solo al estar listo): otro play no la corta ni la reinicia.
+        if (state.playing || state.buffering) return
         // La radio en pausa se desconecta: play la vuelve a abrir (igual si se canceló la carga o falló).
         val p = player ?: run {
             update(playing = false, buffering = true)
             return start(item)
         }
-        // Todavía cargando: arrancará solo al estar listo.
-        if (state.buffering) return
         if (!requestFocus()) return
         p.start()
         update(playing = true)
@@ -129,7 +129,7 @@ object Player {
 
     fun pause() {
         resumeAfterFocus = false
-        if (state.buffering || aac != null) {
+        if (state.buffering || state.current is Station) {
             // Pausar mientras carga (o una radio en vivo) = cortar; play la vuelve a abrir.
             load++
             releaseAudio()
@@ -192,12 +192,13 @@ object Player {
         PlaybackService.update(app)
         // Si en un rato no suena, se avisa (la radio puede no contestar nunca).
         main.postDelayed({ if (myLoad == load && state.buffering) fail(app.getString(R.string.player_timeout)) }, LOAD_TIMEOUT_MS)
-        io.execute { val art = artworkOf(item); main.post { if (myLoad == load) publishMetadata(item, art) } }
-        if (item is Station && item.isAac) {
-            startAac(item, myLoad)
-            return
+        if (item is Station && item.isAac) startAac(item, myLoad) else startMediaPlayer(item, myLoad)
+        // La carátula después: en el mismo hilo va la carga del audio, que no espera a un logo lento.
+        io.execute {
+            if (myLoad != load) return@execute
+            val art = artworkOf(item)
+            main.post { if (myLoad == load) publishMetadata(item, art) }
         }
-        startMediaPlayer(item, myLoad)
     }
 
     /** Radio AAC en vivo con el decodificador propio; si el flujo no es AAC, MediaPlayer. */
@@ -329,7 +330,8 @@ object Player {
         val bytes = when (item) {
             is Track -> MediaMetadataRetriever().let { r -> try { r.setDataSource(app, item.uri); r.embeddedPicture } finally { r.release() } }
             is Station -> item.logoUrl?.let { Radio.fetchBytes(app, it, maxBytes = 512 * 1024) }
-        } ?: return null.also { noArt += item.key }
+        // Solo las canciones: el logo de una estación pudo no llegar por la red y se vuelve a pedir.
+        } ?: return null.also { if (item is Track) noArt += item.key }
         val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
         BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)
         var sample = 1

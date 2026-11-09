@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -78,6 +79,8 @@ fun BluetoothSettings(d: Dependencies) {
     var on by remember { mutableStateOf(adapter.isEnabled) }
     var scanning by remember { mutableStateOf(false) }
     val found = remember { mutableStateListOf<BluetoothDevice>() }
+    // Sube con cada emparejamiento nuevo o perdido: recarga la lista de guardados.
+    var bonds by remember { mutableIntStateOf(0) }
 
     LifecycleStartEffect(adapter) {
         on = adapter.isEnabled
@@ -90,6 +93,7 @@ fun BluetoothSettings(d: Dependencies) {
                         if (dev != null && found.none { it.address == dev.address }) found.add(dev)
                     }
                     BluetoothAdapter.ACTION_DISCOVERY_FINISHED -> scanning = false
+                    BluetoothDevice.ACTION_BOND_STATE_CHANGED -> bonds++
                 }
             }
         }
@@ -97,10 +101,16 @@ fun BluetoothSettings(d: Dependencies) {
             addAction(BluetoothAdapter.ACTION_STATE_CHANGED)
             addAction(BluetoothDevice.ACTION_FOUND)
             addAction(BluetoothAdapter.ACTION_DISCOVERY_FINISHED)
+            addAction(BluetoothDevice.ACTION_BOND_STATE_CHANGED)
         }
         // Avisos del sistema: el receptor debe aceptar avisos de fuera de la app.
         ContextCompat.registerReceiver(context, receiver, filter, ContextCompat.RECEIVER_EXPORTED)
-        onStopOrDispose { runCatching { context.unregisterReceiver(receiver) } }
+        onStopOrDispose {
+            runCatching { context.unregisterReceiver(receiver) }
+            // Sin el receptor no llegaría el fin de la búsqueda: se corta aquí.
+            cancelDiscovery(adapter)
+            scanning = false
+        }
     }
 
     if (!on) {
@@ -115,8 +125,8 @@ fun BluetoothSettings(d: Dependencies) {
             listOf(Manifest.permission.BLUETOOTH_CONNECT, Manifest.permission.BLUETOOTH_SCAN)
         else listOf(Manifest.permission.ACCESS_FINE_LOCATION)
     }
-    val granted = permissions.all { ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED }
-    val ask = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {}
+    var granted by remember { mutableStateOf(permissions.all { ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED }) }
+    val ask = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { granted = it.values.all { v -> v } }
 
     if (!granted) {
         Label(stringResource(R.string.bt_permission_help), Typography.small, c.textMuted)
@@ -145,8 +155,8 @@ fun BluetoothSettings(d: Dependencies) {
     Button(stringResource(if (scanning) R.string.bt_searching else R.string.bt_search), {
         if (scanning) return@Button
         found.clear()
-        scanning = true
-        startDiscovery(adapter)
+        // Si Android rechaza la búsqueda, el botón no se queda en "Buscando…".
+        scanning = startDiscovery(adapter)
     })
     if (found.isNotEmpty()) {
         Label(stringResource(R.string.bt_found), Typography.label, c.textMuted)
@@ -156,7 +166,7 @@ fun BluetoothSettings(d: Dependencies) {
     }
 
     // Celulares ya guardados, con "Olvidar" para volver a empezar.
-    val bonded = remember(granted, on) { mutableStateListOf<BluetoothDevice>().apply { addAll(bondedDevices(adapter)) } }
+    val bonded = remember(granted, on, bonds) { mutableStateListOf<BluetoothDevice>().apply { addAll(bondedDevices(adapter)) } }
     if (bonded.isNotEmpty()) {
         Label(stringResource(R.string.bt_paired), Typography.label, c.textMuted)
         FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -195,6 +205,9 @@ private fun bondedDevices(adapter: BluetoothAdapter): List<BluetoothDevice> =
 @SuppressLint("MissingPermission")
 private fun startDiscovery(adapter: BluetoothAdapter): Boolean =
     runCatching { adapter.startDiscovery() }.getOrDefault(false)
+
+@SuppressLint("MissingPermission")
+private fun cancelDiscovery(adapter: BluetoothAdapter) = runCatching { adapter.cancelDiscovery() }
 
 @SuppressLint("MissingPermission")
 private fun bond(dev: BluetoothDevice) = runCatching { dev.createBond() }

@@ -102,6 +102,16 @@ class ModelTest {
     }
 
     @Test
+    fun cardsKeepMinimumWidthOnNarrowGrids() {
+        // 5 columnas: lo que queda junto a la música no alcanza para velocidad y hora de 2 de ancho.
+        for (c in listOf(Grid(5, 3), Grid(5, 4))) {
+            val tiles = Template.CARDS.tiles(c)
+            for (tile in tiles) assertTrue("CARDS en ${c.key}: $tile", tile.width >= 2)
+            assertTrue("CARDS en ${c.key} sin música", tiles.any { it.type == TileTypes.MUSIC })
+        }
+    }
+
+    @Test
     fun doesNotFitWhenOverlapping() {
         val c = Grid(10, 4)
         val a = Tile("a", TileTypes.CAR, 0, 0, 4, 4)

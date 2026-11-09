@@ -193,15 +193,21 @@ class Updater(
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) setRequireUserAction(PackageInstaller.SessionParams.USER_ACTION_NOT_REQUIRED)
         }
         val id = installer.createSession(params)
-        installer.openSession(id).use { session ->
-            session.openWrite("litedash.apk", 0, apk.length()).use { output ->
-                apk.inputStream().use { it.copyTo(output) }
-                session.fsync(output)
+        try {
+            installer.openSession(id).use { session ->
+                session.openWrite("litedash.apk", 0, apk.length()).use { output ->
+                    apk.inputStream().use { it.copyTo(output) }
+                    session.fsync(output)
+                }
+                val intent = Intent(context, InstallReceiver::class.java).setPackage(context.packageName)
+                val flag = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) PendingIntent.FLAG_MUTABLE else 0
+                val pending = PendingIntent.getBroadcast(context, id, intent, PendingIntent.FLAG_UPDATE_CURRENT or flag)
+                session.commit(pending.intentSender)
             }
-            val intent = Intent(context, InstallReceiver::class.java).setPackage(context.packageName)
-            val flag = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) PendingIntent.FLAG_MUTABLE else 0
-            val pending = PendingIntent.getBroadcast(context, id, intent, PendingIntent.FLAG_UPDATE_CURRENT or flag)
-            session.commit(pending.intentSender)
+        } catch (e: Throwable) {
+            // Sin esto la sesión queda huérfana (con su copia del APK) hasta que Android la limpie.
+            runCatching { installer.abandonSession(id) }
+            throw e
         }
     }
 

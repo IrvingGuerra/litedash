@@ -67,9 +67,9 @@ class ReminderRepository(context: Context) {
 
     fun remove(r: Reminder) = save(all - r)
 
-    /** Hecho: si se repite, pasa a la siguiente fecha; si no, se quita. */
+    /** Hecho: si se repite, pasa a la siguiente fecha después de hoy; si no, se quita. */
     fun done(r: Reminder) = save(
-        if (r.type.months > 0) all.map { if (it == r) r.copy(date = r.date.plusMonths(r.type.months)) else it } else all - r,
+        if (r.type.months > 0) all.map { if (it == r) r.copy(date = nextDue(r.date, r.type.months, Day.today())) else it } else all - r,
     )
 
     private fun save(list: List<Reminder>) {
@@ -93,6 +93,18 @@ class ReminderRepository(context: Context) {
         const val KEY = "list"
         const val DAYS_BEFORE = 7L
     }
+}
+
+/**
+ * La siguiente fecha de un recordatorio que se repite cada [months] (> 0): al menos un periodo
+ * después de [date] y ya pasado [today] (uno vencido hace varios periodos no sigue vencido).
+ * Se cuenta desde [date] para que el día no se recorra (31 → 28 → 28…).
+ */
+internal fun nextDue(date: Day, months: Long, today: Day): Day {
+    require(months > 0)
+    var periods = 1L
+    while (!date.plusMonths(months * periods).isAfter(today)) periods++
+    return date.plusMonths(months * periods)
 }
 
 @Composable

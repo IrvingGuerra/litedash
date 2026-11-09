@@ -244,13 +244,17 @@ fun Template.tiles(c: Grid, hero: String = TileTypes.CAR, skip: (String) -> Bool
                 place(TileTypes.MAP, 0, row, map, strip)
                 place(TileTypes.MUSIC, map, row, music, strip)
                 place(TileTypes.SPEEDOMETER, map + music, row, speed, strip)
-            } else {
+            } else if (rest >= 4) {
                 // En una fila el mapa no luce: velocidad, música y hora.
                 val speed = rest / 2
                 place(TileTypes.SPEEDOMETER, 0, row, speed, strip)
                 place(TileTypes.MUSIC, speed, row, music, strip)
                 place(TileTypes.CLOCK, speed + music, row, rest - speed, strip)
-            }
+            } else if (rest >= 2) {
+                // Angosta (5 columnas): velocidad y hora no caben de 2 de ancho; solo música y hora.
+                place(TileTypes.MUSIC, 0, row, music, strip)
+                place(TileTypes.CLOCK, music, row, rest, strip)
+            } else place(TileTypes.MUSIC, 0, row, cols, strip)
         }
         Template.SIDE -> {
             val carWidth = (cols * 0.4).toInt().coerceAtLeast(3)

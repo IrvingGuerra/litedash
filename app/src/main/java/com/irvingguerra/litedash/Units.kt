@@ -10,7 +10,9 @@ fun Float.toMiles(imperial: Boolean): Float = if (imperial) this / KM_PER_MILE e
 fun Double.metersToDistance(imperial: Boolean): Double = if (imperial) this / (KM_PER_MILE * 1000.0) else this / 1000.0
 
 /** Grados Celsius a Fahrenheit si [imperial]; si no, tal cual. */
-fun Float.toFahrenheit(imperial: Boolean): Float = if (imperial) this * 9f / 5f + 32f else this
+fun Double.toFahrenheit(imperial: Boolean): Double = if (imperial) this * 9.0 / 5.0 + 32.0 else this
+
+fun Float.toFahrenheit(imperial: Boolean): Float = toDouble().toFahrenheit(imperial).toFloat()
 
 /**
  * Las unidades que se ven: [miles] = mph, millas, mpg y galones (si no, km/h, km, km/l y

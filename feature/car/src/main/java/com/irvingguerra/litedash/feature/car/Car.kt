@@ -60,9 +60,10 @@ private object CarPaths {
     val roof = path("M150 74 C180 58 225 44 265 43 C310 43 360 52 398 63")
     val crease = path("M40 116 C120 100 200 96 260 95 C340 94 410 88 456 84")
     val wheels = listOf(105f, 395f)
-
-    private fun path(d: String) = PathParser().parsePathString(d).toPath()
 }
+
+/** Un trazo SVG ("M10 20…") listo para dibujar: las siluetas del auto de lado y desde arriba. */
+internal fun path(d: String) = PathParser().parsePathString(d).toPath()
 
 // Luz de arriba y sombra abajo sobre la pintura: sirve para cualquier color.
 private val bodyShade = Brush.verticalGradient(

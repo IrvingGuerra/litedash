@@ -1,6 +1,5 @@
 package com.irvingguerra.litedash.feature.car
 
-import android.app.ActivityManager
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -142,20 +141,11 @@ class CarRepository(private val context: Context, val catalogUrl: String) {
     private val disk = Mutex()
     private val extraJobs = HashMap<Extra, Job>()
     /** El último catálogo que pidieron los extras y cuándo (ver [recentCatalog]). */
-    private var catalogCache: Pair<Long, List<CatalogEntry>>? = null
+    @Volatile private var catalogCache: Pair<Long, List<CatalogEntry>>? = null
     // Ancho original de cada imagen (no cambia): decide cuánto se reduce al decodificarla.
     private val sourceWidths = ConcurrentHashMap<String, Int>()
 
     val hasCatalog get() = catalogUrl.isNotBlank()
-
-    /**
-     * Poca memoria para imágenes: un equipo marcado así por Android, o Android 6–7 (los bitmaps
-     * van al heap de Java) con heap chico. Ahí lo que se prepara aparte del giro va más reducido.
-     */
-    val lowMemory: Boolean by lazy {
-        context.getSystemService(ActivityManager::class.java)?.isLowRamDevice == true ||
-            Build.VERSION.SDK_INT < Build.VERSION_CODES.O && Runtime.getRuntime().maxMemory() <= LOW_HEAP
-    }
 
     /** Los autos bajados (se leen del disco al empezar y tras cada cambio, en IO). */
     var installed by mutableStateOf(takeEarlyScan() ?: scan(root))
@@ -180,29 +170,31 @@ class CarRepository(private val context: Context, val catalogUrl: String) {
 
     suspend fun catalog(): List<CatalogEntry> = withContext(Dispatchers.IO) {
         val cars = JSONObject(readText(catalogUrl)).getJSONArray(CarJson.CARS)
-        (0 until cars.length()).map { i ->
-            val a = cars.getJSONObject(i)
-            val extras = a.optJSONArray(CarJson.EXTRAS)
-            CatalogEntry(
-                id = a.getString("id"),
-                name = a.getString(CarJson.NAME),
-                make = a.getString(CarJson.MAKE),
-                year = a.optInt(CarJson.YEAR),
-                author = a.optString(CarJson.AUTHOR),
-                license = a.optString(CarJson.LICENSE),
-                url = a.getString("url"),
-                bytes = a.optLong("bytes"),
-                sha256 = a.getString("sha256"),
-                thumbnail = a.optString(CarJson.THUMBNAIL),
-                high = (0 until (extras?.length() ?: 0)).map { extras!!.getJSONObject(it) }
-                    .firstOrNull { it.optInt(CarJson.LEVEL) == HIGH_LEVEL }
-                    ?.let(::extraOf),
-                topView = a.optJSONObject(CarJson.TOP_VIEW)?.let(::extraOf),
-                wheels = a.optJSONObject(CarJson.WHEELS)?.let(::extraOf),
-                finish = a.optJSONObject(CarJson.FINISH)?.let(::extraOf),
-                years = a.optString(CarJson.YEARS).ifBlank { a.optInt(CarJson.YEAR).toString() },
-            )
-        }
+        // Una entrada mal escrita se salta: no tumba el catálogo de todos.
+        (0 until cars.length()).mapNotNull { i -> runCatching { entryOf(cars.getJSONObject(i)) }.getOrNull() }
+    }.also { catalogCache = System.currentTimeMillis() to it }
+
+    private fun entryOf(a: JSONObject): CatalogEntry {
+        val extras = a.optJSONArray(CarJson.EXTRAS)
+        return CatalogEntry(
+            id = a.getString("id"),
+            name = a.getString(CarJson.NAME),
+            make = a.getString(CarJson.MAKE),
+            year = a.optInt(CarJson.YEAR),
+            author = a.optString(CarJson.AUTHOR),
+            license = a.optString(CarJson.LICENSE),
+            url = a.getString("url"),
+            bytes = a.optLong("bytes"),
+            sha256 = a.getString("sha256"),
+            thumbnail = a.optString(CarJson.THUMBNAIL),
+            high = (0 until (extras?.length() ?: 0)).map { extras!!.getJSONObject(it) }
+                .firstOrNull { it.optInt(CarJson.LEVEL) == HIGH_LEVEL }
+                ?.let(::extraOf),
+            topView = a.optJSONObject(CarJson.TOP_VIEW)?.let(::extraOf),
+            wheels = a.optJSONObject(CarJson.WHEELS)?.let(::extraOf),
+            finish = a.optJSONObject(CarJson.FINISH)?.let(::extraOf),
+            years = a.optString(CarJson.YEARS).ifBlank { a.optInt(CarJson.YEAR).toString() },
+        )
     }
 
     private fun extraOf(o: JSONObject) = PackageExtra(o.getString("url"), o.optLong("bytes"), o.getString("sha256"))
@@ -231,7 +223,14 @@ class CarRepository(private val context: Context, val catalogUrl: String) {
     /** Baja los cuadros de en medio de [p] (calidad alta). */
     fun raiseQuality(p: CarPackage, e: CatalogEntry) {
         val extra = e.high ?: return
-        download(HIGH) { progress -> addHigh(p, extra, progress) }
+        download(HIGH) { progress ->
+            // Los cuadros de en medio son del modelo 3D del catálogo: si el instalado es otro, primero se actualiza.
+            if (isOutdated(p, e)) {
+                val total = (e.bytes + extra.bytes).coerceAtLeast(1).toFloat()
+                installPackage(e) { f -> progress(f * e.bytes / total) }
+                addHigh(pkg(e.id) ?: return@download, extra) { f -> progress((e.bytes + f * extra.bytes) / total) }
+            } else addHigh(p, extra, progress)
+        }
     }
 
     /**
@@ -279,9 +278,10 @@ class CarRepository(private val context: Context, val catalogUrl: String) {
         val key = KEY_LAST_CHECK + p.id
         val now = System.currentTimeMillis()
         if (now - checks.getLong(key, 0L) < CHECK_EVERY_MS && p.sha256.isNotEmpty()) return
-        val entry = runCatching { catalog() }.getOrNull()?.firstOrNull { it.id == p.id } ?: return
-        checks.edit().putLong(key, now).apply()
+        val entry = recentCatalog()?.firstOrNull { it.id == p.id } ?: return
         outdated = entry.takeIf { isOutdated(p, it) }
+        // Con modelo nuevo no se anota: el aviso vive en memoria y debe volver al reabrir la app.
+        if (outdated == null) checks.edit().putLong(key, now).apply()
     }
 
     /**
@@ -311,7 +311,10 @@ class CarRepository(private val context: Context, val catalogUrl: String) {
         extraJobs[kind] = scope.launch {
             val catalog = recentCatalog() ?: return@launch
             checks.edit().putLong(key, System.currentTimeMillis()).apply()
-            val extra = catalog.firstOrNull { it.id == p.id }?.let(kind.pick)
+            val entry = catalog.firstOrNull { it.id == p.id }
+            // El extra del catálogo es del modelo 3D nuevo: no va sobre el instalado (llega al actualizar).
+            if (entry != null && p.sha256.isNotEmpty() && isOutdated(p, entry)) return@launch
+            val extra = entry?.let(kind.pick)
             if (extra == null) {
                 if (kind == Extra.WHEELS) withoutWheels += p.id
                 return@launch
@@ -335,7 +338,7 @@ class CarRepository(private val context: Context, val catalogUrl: String) {
     private suspend fun recentCatalog(): List<CatalogEntry>? {
         val now = System.currentTimeMillis()
         catalogCache?.takeIf { now - it.first < CHECK_EVERY_MS }?.let { return it.second }
-        return runCatching { catalog() }.getOrNull()?.also { catalogCache = now to it }
+        return runCatching { catalog() }.getOrNull()
     }
 
     /**
@@ -375,14 +378,20 @@ class CarRepository(private val context: Context, val catalogUrl: String) {
         images.get(key)?.let { return it }
         return withContext(Dispatchers.IO) {
             runCatching {
-                val name = folderOf(e.id) + "-" + Integer.toHexString(e.thumbnail.hashCode()) + ".webp"
+                val prefix = folderOf(e.id) + "-"
+                val name = prefix + Integer.toHexString(e.thumbnail.hashCode()) + ".webp"
                 val file = File(File(root, CarFiles.THUMBNAILS).apply { mkdirs() }, name)
                 if (!file.exists()) {
                     val temp = File(file.path + CarFiles.PARTIAL_SUFFIX)
                     Https.get(context, e.thumbnail).inputStream.use { input -> temp.outputStream().use { input.copyTo(it) } }
                     temp.renameTo(file)
+                    // Las de antes de este auto (otra URL) ya no se usan.
+                    file.parentFile?.listFiles { f -> f.name.startsWith(prefix) && f.name != name }?.forEach { it.delete() }
                 }
-                BitmapFactory.decodeFile(file.path)?.asImageBitmap()?.also { images.put(key, it) }
+                val bitmap = BitmapFactory.decodeFile(file.path)
+                // Dañada (se apagó a media escritura): se baja de nuevo la próxima vez.
+                if (bitmap == null) file.delete()
+                bitmap?.asImageBitmap()?.also { images.put(key, it) }
             }.getOrNull()
         }
     }
@@ -409,12 +418,17 @@ class CarRepository(private val context: Context, val catalogUrl: String) {
             val temp = fetch(e.url, e.bytes, e.sha256, progress)
             val target = File(root, folderOf(e.id))
             val staging = File(root, folderOf(e.id) + CarFiles.STAGING_SUFFIX)
-            staging.deleteRecursively()
-            unzip(temp, staging)
-            File(staging, CarFiles.PACKAGE_HASH).writeText(e.sha256)
-            temp.delete()
-            target.deleteRecursively()
-            staging.renameTo(target)
+            try {
+                staging.deleteRecursively()
+                unzip(temp, staging)
+                File(staging, CarFiles.PACKAGE_HASH).writeText(e.sha256)
+                target.deleteRecursively()
+                check(staging.renameTo(target)) { "No se pudo acomodar el auto" }
+            } finally {
+                // Si algo se cortó, nada queda ocupando espacio.
+                temp.delete()
+                staging.deleteRecursively()
+            }
         }
         // El paquete nuevo llega sin la vista desde arriba: que el Taller la pida de una vez.
         checks.edit().apply { Extra.entries.forEach { remove(it.checkKey + e.id) } }.apply()
@@ -446,22 +460,12 @@ class CarRepository(private val context: Context, val catalogUrl: String) {
     }
 
     /**
-     * Los cuadros de en medio, encima de lo instalado. Se descomprimen aparte y se
-     * mueven al final, el primero ("m00", el que dice que hay calidad alta) al último:
-     * si algo se corta a la mitad, el auto sigue completo en calidad baja.
+     * Los cuadros de en medio, encima de lo instalado: como todo extra, el primero ("m00", el que
+     * dice que hay calidad alta) se acomoda al último; si algo se corta, el auto sigue completo en baja.
      */
     private suspend fun addHigh(p: CarPackage, extra: PackageExtra, progress: (Float) -> Unit) {
-        withContext(Dispatchers.IO) {
-            val temp = fetch(extra.url, extra.bytes, extra.sha256, progress)
-            val staging = File(p.folder, CarFiles.SPIN + CarFiles.STAGING_SUFFIX)
-            staging.deleteRecursively()
-            unzip(temp, staging)
-            temp.delete()
-            val spin = File(p.folder, CarFiles.SPIN)
-            val files = File(staging, CarFiles.SPIN).listFiles().orEmpty().sortedBy { it.name.startsWith(HIGH_MARK) }
-            files.forEach { it.renameTo(File(spin, it.name)) }
-            staging.deleteRecursively()
-        }
+        val done = withContext(Dispatchers.IO) { installExtra(p, extra, HIGH, HIGH_FILE, progress) }
+        check(done) { "La calidad alta llegó incompleta" }
         changed()
     }
 
@@ -490,12 +494,11 @@ class CarRepository(private val context: Context, val catalogUrl: String) {
     private fun fetch(url: String, bytes: Long, sha256: String, progress: (Float) -> Unit): File {
         // Cada paquete con su archivo: dos descargas nunca escriben en el mismo.
         val temp = File(root, CarFiles.DOWNLOAD_PREFIX + sha256.take(12) + ".zip")
-        val computed = Https.download(context, url, temp, bytes, null, progress)
-        if (!computed.equals(sha256, ignoreCase = true)) {
-            temp.delete()
-            error("El archivo llegó dañado")
-        }
-        return temp
+        val ok = runCatching { Https.download(context, url, temp, bytes, null, progress).equals(sha256, ignoreCase = true) }
+        if (ok.getOrDefault(false)) return temp
+        temp.delete()
+        ok.getOrThrow()
+        error("El archivo llegó dañado")
     }
 
     private fun unzip(zip: File, target: File) {
@@ -533,9 +536,12 @@ class CarRepository(private val context: Context, val catalogUrl: String) {
         )
     }
 
+    // Con la huella: una carga del modelo viejo que termine tarde no se confunde con el nuevo.
+    private val CarPackage.cacheKey get() = "$id:${sha256.take(8)}"
+
     private suspend fun image(p: CarPackage, name: String, widthPx: Int): ImageBitmap? {
         val width = decodeWidth(p, name, widthPx) ?: return null
-        return cached("${p.id}/$name@$width") { decode(p, name, width) }
+        return cached("${p.cacheKey}/$name@$width") { decode(p, name, width) }
     }
 
     /**
@@ -547,7 +553,7 @@ class CarRepository(private val context: Context, val catalogUrl: String) {
     private suspend fun painted(p: CarPackage, name: String, paint: CarPaint, widthPx: Int): ImageBitmap? {
         val width = decodeWidth(p, name, widthPx) ?: return null
         val used = if (p.finish) paint else CarPaint(paint.color)
-        return cached("${p.id}/$name#${used.color.toArgb()}${used.cacheTag}@$width") { paint(p, name, width, used) }
+        return cached("${p.cacheKey}/$name#${used.color.toArgb()}${used.cacheTag}@$width") { paint(p, name, width, used) }
     }
 
     /**
@@ -617,7 +623,8 @@ class CarRepository(private val context: Context, val catalogUrl: String) {
         if (!read || !file.exists()) return null
         val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
         BitmapFactory.decodeFile(file.path, bounds)
-        return bounds.outWidth.also { sourceWidths[file.path] = it }
+        // Vacía o dañada: no se dibuja (un ancho de -1 tumbaba la app al acotarlo).
+        return bounds.outWidth.takeIf { it > 0 }?.also { sourceWidths[file.path] = it }
     }
 
     /**
@@ -667,7 +674,12 @@ class CarRepository(private val context: Context, val catalogUrl: String) {
         fun prefetch(context: Context) {
             if (early != null) return
             val root = File(context.filesDir, CarFiles.ROOT)
-            early = FutureTask { scan(root) }.also { Thread(it, "cars-scan").start() }
+            early = FutureTask {
+                // Al arrancar no hay descargas: lo que quedó de una cortada (zip o carpeta a medias) se quita.
+                root.listFiles { f -> f.name.startsWith(CarFiles.DOWNLOAD_PREFIX) || f.name.endsWith(CarFiles.STAGING_SUFFIX) }
+                    ?.forEach { it.deleteRecursively() }
+                scan(root)
+            }.also { Thread(it, "cars-scan").start() }
         }
 
         // Lo que leyó [prefetch] (espera lo que le falte); null si nadie la empezó o falló.
@@ -682,6 +694,7 @@ class CarRepository(private val context: Context, val catalogUrl: String) {
             val json = File(folder, CarFiles.PACKAGE_INFO).takeIf { it.exists() } ?: return null
             return runCatching {
                 val a = JSONObject(json.readText())
+                val high = File(folder, HIGH_FILE).exists()
                 val floor = a.optJSONObject(CarJson.FLOOR)
                 CarPackage(
                     id = a.getString("id"),
@@ -694,7 +707,7 @@ class CarRepository(private val context: Context, val catalogUrl: String) {
                     gray = a.optDouble(CarJson.GRAY, 0.45).toFloat(),
                     // Todos los paquetes traen giro; uno sin giro no sirve en esta versión.
                     spin = a.optInt(CarJson.SPIN).takeIf { it > 0 } ?: return null,
-                    high = File(folder, "${CarFiles.SPIN}/$HIGH_MARK.webp").exists(),
+                    high = high,
                     floor = floor?.keys()?.asSequence()?.associateWith { v ->
                         val c = floor.getJSONArray(v)
                         FloorBox(c.getDouble(0).toFloat(), c.getDouble(1).toFloat(), c.getDouble(2).toFloat(), c.getDouble(3).toFloat())
@@ -706,7 +719,7 @@ class CarRepository(private val context: Context, val catalogUrl: String) {
                         ?.let { CarWheels.parse(it.readText(), a.optInt(CarJson.SPIN)) },
                     // Con calidad alta, también las capas de los cuadros de en medio (llegan aparte).
                     finish = File(folder, FINISH_MARK).exists() &&
-                        (!File(folder, "${CarFiles.SPIN}/$HIGH_MARK.webp").exists() ||
+                        (!high ||
                             File(folder, "${CarFiles.SPIN}/$HIGH_MARK${CarViews.MIRROR_SUFFIX}.webp").exists()),
                 )
             }.getOrNull()
@@ -725,12 +738,11 @@ class CarRepository(private val context: Context, val catalogUrl: String) {
         /** Cuadros de en medio ("mNN"); el primero dice que el auto tiene calidad alta. */
         private const val HIGH_PREFIX = "m"
         private const val HIGH_MARK = "m00"
+        private const val HIGH_FILE = "${CarFiles.SPIN}/$HIGH_MARK.webp"
         private const val CHECK_EVERY_MS = 60 * 60 * 1000L
         private const val KEY_LAST_CHECK = "last_check:"
         /** Lo que no va en el nombre de la carpeta de un auto. */
         private val FOLDER_CHARS = Regex("[^a-z0-9-]")
-        /** Heap de Java a partir del cual (en Android 6–7) se considera [lowMemory]. */
-        private const val LOW_HEAP = 192L * 1024 * 1024
     }
 }
 

@@ -315,7 +315,8 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
                     elm = null
                     unwatchUsbDetach()
                     bus.clear(Source.OBD)
-                    if (dropped && reconnects < MAX_RECONNECTS) {
+                    // (reconnects > 0: un reintento que falla también cuenta; si no, solo se intentaba una vez.)
+                    if ((dropped || reconnects > 0) && reconnects < MAX_RECONNECTS) {
                         reconnects++
                         scope.launch(Dispatchers.Main) {
                             delay(RECONNECT_MS)

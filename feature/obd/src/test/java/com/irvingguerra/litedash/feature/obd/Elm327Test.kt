@@ -49,6 +49,24 @@ class Elm327Test {
         assertEquals(listOf("P0301", "C0300"), parseTroubleCodes("03", listOf("43030143000000")))
     }
 
+    @Test fun codigos_en_varias_tramas() {
+        // Cuatro códigos no caben en una trama CAN: antes solo salían los dos primeros.
+        val lines = listOf("00A", "0:430401330420", "1:01710300AAAAAA")
+        assertEquals(listOf("P0133", "P0420", "P0171", "P0300"), parseTroubleCodes("03", lines))
+    }
+
+    @Test fun codigos_y_vin_con_encabezados() {
+        // Clon que deja "7E8" + largo: antes decía "sin códigos" con la luz prendida.
+        assertEquals(listOf("P0133", "P0420"), parseTroubleCodes("03", listOf("7E806430201330420")))
+        assertEquals(emptyList<String>(), parseTroubleCodes("03", listOf("7E8024300")))
+        assertEquals(
+            listOf("P0133", "P0420", "P0171", "P0300"),
+            parseTroubleCodes("03", listOf("7E8100A430401330420", "7E82101710300AAAAAA")),
+        )
+        val vin = listOf("7E81014490201314731", "7E8214A433534343452", "7E82237323532333637")
+        assertEquals("1G1JC5444R7252367", parseVin(vin))
+    }
+
     @Test fun vin_en_varios_renglones() {
         val lines = listOf("014", "0:490201314731", "1:4A433534343452", "2:37323532333637")
         assertEquals("1G1JC5444R7252367", parseVin(lines))

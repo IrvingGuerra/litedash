@@ -34,3 +34,9 @@ fun rememberPosition(song: Song): State<Long> = produceState(song.currentPositio
         value = song.currentPosition()
     }
 }
+
+/** "sí" o "no", para los reportes. */
+internal fun yes(v: Boolean) = if (v) "sí" else "no"
+
+/** La app [pkg] está instalada. */
+internal fun Context.hasPackage(pkg: String) = runCatching { packageManager.getPackageInfo(pkg, 0) }.isSuccess

@@ -90,7 +90,7 @@ private enum class TemplateTab(val title: Int, val templates: List<Template>, va
  * primero el de la tuya, con el recomendado marcado.
  */
 @Composable
-fun TemplatesPanel(dashboard: DashboardState, prefs: Preferences, close: () -> Unit) {
+fun TemplatesPanel(dashboard: DashboardState, close: () -> Unit) {
     val grid = dashboard.grid ?: return
     val c = LocalColors.current
     val yours = grid.size

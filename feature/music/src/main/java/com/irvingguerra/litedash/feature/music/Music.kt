@@ -1027,6 +1027,8 @@ class MusicRepository(private val context: Context) {
 
     /** Elige tu app de música (o ninguna con null) y la guarda. */
     fun choose(pkg: String?) {
+        // Lo que se supo de la app anterior (avisos, supuestos) no es de la nueva.
+        if (pkg != preferredState) music.clear()
         preferredState = pkg
         store.edit().putString(KEY_PREFERRED, pkg).apply()
         if (users > 0) choose(sessions())
@@ -1257,7 +1259,7 @@ class MusicRepository(private val context: Context) {
     /** Es una pantalla FYT (tiene la app de Bluetooth de su MCU). */
     private fun isFyt() = isInstalled("com.syu.bt")
 
-    private fun isInstalled(pkg: String) = runCatching { context.packageManager.getPackageInfo(pkg, 0) }.isSuccess
+    private fun isInstalled(pkg: String) = context.hasPackage(pkg)
 
     /** App del sistema (de la pantalla); si no se puede saber, [unknown]. */
     private fun isSystem(pkg: String, unknown: Boolean = false) =
@@ -1397,8 +1399,6 @@ class MusicRepository(private val context: Context) {
         traceLog.addLast("${SystemClock.elapsedRealtime() / 1000 % 100_000}s $event")
         while (traceLog.size > TRACE_SIZE) traceLog.removeFirst()
     }
-
-    private fun yes(v: Boolean) = if (v) "sí" else "no"
 
     /** Para los reportes: qué Bluetooth trae la pantalla y qué apps de marca, para saber su familia. */
     private fun describeBluetooth(): String = buildString {

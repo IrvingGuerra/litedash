@@ -31,7 +31,8 @@
          Android 10, poder ponerse al frente sola ("Mostrar sobre otras apps", lo da el usuario). -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
-    <!-- Solo para bajar el catálogo de autos (imágenes) cuando el usuario lo abre. -->
+    <!-- Catálogo de autos, actualizaciones (GitHub), clima, mapa, radio por internet, carátulas,
+         estadísticas anónimas (apagables), "Enviar un reporte" y el escáner OBD por Wi-Fi. -->
     <uses-permission android:name="android.permission.INTERNET" />
     <!-- Ícono de Wi-Fi o datos en la barra (permiso normal, sin pregunta). -->
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />

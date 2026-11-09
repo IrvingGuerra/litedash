@@ -87,7 +87,7 @@ fun HeroTile(
         TileTypes.IMAGE -> {
             // Sin auto que cargar: lista de una vez.
             ReadyNow(onReady)
-            ImageTile(d, tile.data, onClick, modifier)
+            ImageTile(tile.data, onClick, modifier)
         }
         else -> HomeCar(d, pkg, onClick, modifier, onReady, onTires)
     }

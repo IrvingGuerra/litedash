@@ -19,7 +19,7 @@ import kotlinx.coroutines.launch
 
 /**
  * Las teselas del mapa de [source]: memoria (LRU por bytes que siempre cabe lo que se ve), disco
- * (`filesDir/<carpeta>`, ~50 MB) y red, siguiendo la política de uso de OSM
+ * (`filesDir/<carpeta>`, ~25 MB por estilo: entre los dos ~50 MB) y red, siguiendo la política de uso de OSM
  * (operations.osmfoundation.org/policies/tiles; OpenFreeMap pide lo mismo): User-Agent propio, caché
  * según Cache-Control/Expires con revalidación (ETag/If-Modified-Since), a lo más [MAX_DOWNLOADS]
  * descargas a la vez, solo lo que se ve (lo último que se pidió va primero) y parar si nos bloquean.
@@ -231,8 +231,9 @@ class TileStore(context: Context, private val userAgent: String, val source: Til
         const val EMPTY_MS = 86_400_000L
         const val TRIM_EVERY = 100
         const val TRIM_INTERVAL_MS = 3_600_000L
-        const val DISK_MAX = 50L * 1024 * 1024
-        const val DISK_TARGET = 40L * 1024 * 1024
+        // Por carpeta (map_tiles y map_vector): alternando estilos, entre las dos no pasan de ~50 MB.
+        const val DISK_MAX = 25L * 1024 * 1024
+        const val DISK_TARGET = 20L * 1024 * 1024
         /** Último recorte por carpeta (los almacenes se recrean al cambiar de estilo). */
         val lastTrim = HashMap<String, Long>()
     }

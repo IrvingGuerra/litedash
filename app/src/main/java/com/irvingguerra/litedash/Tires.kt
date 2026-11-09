@@ -851,7 +851,8 @@ fun TiresAlertBanner(d: Dependencies, onOpen: () -> Unit) {
 internal fun TiresHealthTile(d: Dependencies, onClick: () -> Unit, modifier: Modifier) {
     val c = LocalColors.current
     val repo = d.tpms
-    val worst = Wheel.ROAD.map { it to repo.statusOf(it) }.firstOrNull { it.second.problem }
+    // La más grave primero (una fuga antes que una pila baja), no la primera en el orden de las ruedas.
+    val worst = Wheel.ROAD.map { it to repo.statusOf(it) }.filter { it.second.problem }.maxByOrNull { it.second.severity?.ordinal ?: -1 }
     val lowest = Wheel.ROAD.mapNotNull { w -> d.bus.watch(TireSignals.pressure(w))?.let { w to it } }.minByOrNull { it.second }
     val color = severityColor(worst?.second?.severity)
     val word = when {

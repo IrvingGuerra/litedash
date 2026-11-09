@@ -133,7 +133,10 @@ data class Clock(val time: String, val marker: String?, val date: String) {
 fun rememberClock(): Clock {
     val language = currentLocale()
     val context = LocalContext.current
-    val h24 = DateFormat.is24HourFormat(context)
+    // Al volver la app al frente se pone al día (con la pantalla dormida la espera no avanza);
+    // también el formato de 12/24 h, que se cambia en Ajustes de Android.
+    val starts = rememberStarts()
+    val h24 = remember(starts) { DateFormat.is24HourFormat(context) }
     val time = remember(language, h24) {
         // El patrón del idioma sin la marca "a" (va aparte).
         SimpleDateFormat(DateFormat.getBestDateTimePattern(language, if (h24) "Hm" else "hm").replace("a", "").trim(), language)
@@ -142,8 +145,6 @@ fun rememberClock(): Clock {
     val date = remember(language) {
         SimpleDateFormat(DateFormat.getBestDateTimePattern(language, "EEEEdMMMM"), language)
     }
-    // Al volver la app al frente se pone al día (con la pantalla dormida la espera no avanza).
-    val starts = rememberStarts()
     val now by produceState(Date(), starts) {
         value = Date()
         while (true) {

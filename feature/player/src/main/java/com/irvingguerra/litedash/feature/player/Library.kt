@@ -96,6 +96,7 @@ object Library {
      * se lee por el sistema de documentos, así sirve aunque Android no tenga indexada la memoria.
      */
     fun setFolder(context: Context, uri: Uri) {
+        clearFolder(context)
         runCatching { context.contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION) }
         PlayerStore(context).musicFolder = uri.toString()
     }

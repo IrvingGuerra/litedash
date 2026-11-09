@@ -335,6 +335,9 @@ private fun Colors.shades(p: GaugeParts): List<Color> = when {
 private fun Colors.gauge(color: GaugeColor, car: Color, f: Float, warning: Boolean): Color =
     if (warning) danger else colorAt(ramp(color, car), f)
 
+/** Lo mismo que [gauge] para cualquier valor con [colorAt]: se arma una vez fuera del dibujo, no por cuadro. */
+private fun Colors.fillRamp(p: GaugeParts): List<Color> = if (p.warning) listOf(danger) else ramp(p.look.color, p.car)
+
 /** Lo que cada estilo necesita para dibujarse, además del número. */
 private class GaugeParts(
     val look: GaugeLook,
@@ -567,10 +570,11 @@ private fun GradientGauge(number: String, unit: String, tag: String, p: GaugePar
     val c = LocalColors.current
     val measurer = rememberTextMeasurer()
     val endStyle = tickText(side, c.text.copy(alpha = 0.85f))
+    // Lo que no cambia con el valor se arma una vez por composición, no en cada cuadro.
+    val shades = c.shades(p)
     Canvas(Modifier.fillMaxSize()) {
         val band = (size.minDimension * 0.14f).coerceIn(10.dp.toPx(), 64.dp.toPx())
         val d = Dial(size, band * 0.25f, if (p.look.numbers) endStyle.fontSize.toPx() * 1.4f else 0f)
-        val shades = c.shades(p)
         val f = p.fraction()
         val count = 44
         val outer = d.radius
@@ -733,6 +737,7 @@ private fun DrawScope.blocksArc(c: Colors, p: GaugeParts, shades: List<Color>, f
 @Composable
 private fun Segments(p: GaugeParts, modifier: Modifier, count: Int, wedge: Boolean) {
     val c = LocalColors.current
+    val ramp = c.fillRamp(p)
     Canvas(modifier) {
         val gap = size.width * 0.012f
         val w = (size.width - gap * (count - 1)) / count
@@ -743,7 +748,7 @@ private fun Segments(p: GaugeParts, modifier: Modifier, count: Int, wedge: Boole
             val red = p.look.redline && pos >= p.redFrom
             val color = when {
                 lit && red -> c.danger
-                lit -> c.gauge(p.look.color, p.car, pos, p.warning)
+                lit -> colorAt(ramp, pos)
                 red -> c.danger.copy(alpha = 0.22f)
                 else -> c.surfaceHigh
             }
@@ -768,11 +773,14 @@ private fun CompactGauge(number: String, unit: String, tag: String, p: GaugePart
         }
         if (p.look.segmented) {
             Segments(p, Modifier.fillMaxWidth().height(8.dp), count = 20, wedge = false)
-        } else Canvas(Modifier.fillMaxWidth().height(6.dp)) {
-            val r = CornerRadius(size.height / 2)
-            drawRoundRect(c.surfaceHigh, cornerRadius = r)
-            val f = p.fraction().coerceIn(0f, 1f)
-            if (f > 0.002f) drawRoundRect(c.gauge(p.look.color, p.car, f, p.warning), size = Size(size.width * f, size.height), cornerRadius = r)
+        } else {
+            val ramp = c.fillRamp(p)
+            Canvas(Modifier.fillMaxWidth().height(6.dp)) {
+                val r = CornerRadius(size.height / 2)
+                drawRoundRect(c.surfaceHigh, cornerRadius = r)
+                val f = p.fraction().coerceIn(0f, 1f)
+                if (f > 0.002f) drawRoundRect(colorAt(ramp, f), size = Size(size.width * f, size.height), cornerRadius = r)
+            }
         }
     }
 }

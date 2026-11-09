@@ -20,7 +20,6 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.drawscope.withTransform
-import androidx.compose.ui.graphics.vector.PathParser
 
 // El mismo sedán concepto visto desde arriba (el frente hacia arriba), con el lenguaje de la
 // maqueta: una sola forma con volumen, cristales oscuros, sin manijas ni faros. Caja de
@@ -41,8 +40,6 @@ private object TopPaths {
     val mirrors = path("M14 146 L3 142 C0 143 0 157 3 158 L14 160 Z M186 146 L197 142 C200 143 200 157 197 158 L186 160 Z")
     // Llantas: apenas asoman por los costados.
     val wheels = listOf(Offset(14f, 118f), Offset(186f, 118f), Offset(14f, 302f), Offset(186f, 302f))
-
-    private fun path(d: String) = PathParser().parsePathString(d).toPath()
 }
 
 // Luz del cielo: más clara adelante y al centro, más oscura hacia atrás y a las orillas.

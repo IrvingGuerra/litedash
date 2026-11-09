@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -55,12 +54,7 @@ fun MusicExpanded(
     var browsing by remember { mutableStateOf(false) }
     val files = repo.mode == MusicMode.FILES
     // Con Archivos, play sin nada que tocar abre la biblioteca.
-    DisposableEffect(repo, files) {
-        val open = { browsing = true }
-        if (files) repo.onFilesEmpty = open
-        // Solo la suya: con dos vistas (pantalla dividida) no borra la de la otra.
-        onDispose { if (repo.onFilesEmpty === open) repo.onFilesEmpty = null }
-    }
+    OnFilesEmpty(repo, files, remember { { browsing = true } })
     ExpandedCard(repo, modifier) { wide, artworkMax ->
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             ModeTitle(repo, song, Modifier.weight(1f))

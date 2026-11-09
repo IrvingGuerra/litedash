@@ -1,13 +1,10 @@
 // Ajustes → Apps: música, radio, navegación y pantalla dividida.
 package com.irvingguerra.litedash
 
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import com.irvingguerra.litedash.core.ui.Label
 import com.irvingguerra.litedash.core.ui.LocalColors
 import com.irvingguerra.litedash.core.ui.TextInput
@@ -35,3 +32,6 @@ internal fun AppsSettings(d: Dependencies) {
 
 /** Las pestañas de Ajustes → Apps (Música 0, Radio 1…). */
 private const val APPS_TABS = "apps"
+
+/** Ajustes → Apps abre en Radio (desde la radio sin nada enlazado). */
+internal fun openRadioSettings() = selectTab(APPS_TABS, 1)

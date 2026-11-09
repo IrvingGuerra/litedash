@@ -52,7 +52,6 @@ import com.irvingguerra.litedash.feature.dashboard.TileTypes
 internal fun PanelScaffold(
     title: String,
     close: () -> Unit,
-    actions: @Composable () -> Unit = {},
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val c = LocalColors.current
@@ -67,7 +66,6 @@ internal fun PanelScaffold(
     ) {
         Row(Modifier.fillMaxWidth().height(72.dp), verticalAlignment = Alignment.CenterVertically) {
             Label(title, Typography.title, maxLines = 1, modifier = Modifier.weight(1f))
-            actions()
             IconButton(Icons.close, close, background = c.surfaceHigh)
         }
         content()

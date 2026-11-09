@@ -4,6 +4,41 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.4.123] - 2026-11-09
+
+### Agregado
+- **Elige tu música desde el widget**: con Archivos, si el widget de Música es suficientemente grande trae un
+  botón de lista (arriba a la derecha) con tu biblioteca: carpetas, artistas, álbumes y todas. Tocas una canción
+  y regresa a lo que suena. El widget de Radio por internet hace lo mismo con las estaciones.
+
+### Corregido
+- **Taller: códigos de falla incompletos**: con tres o más códigos solo salían los dos primeros. Además, con los
+  adaptadores que mandan encabezados (los que antes solo daban voltaje) ya se leen los códigos, se borran y sale
+  el número de serie.
+- **El escáner se reconecta de verdad**: si se caía (auto apagado un rato) lo intentaba una sola vez; ahora hasta
+  cinco, y abrir el Taller lo vuelve a conectar.
+- **Radio por internet**: tocar la estación que ya suena (o play en el volante) ya no la corta y la vuelve a
+  conectar; las estaciones empiezan sin esperar a que baje su logo; en pausa ya no se queda "en diferido".
+- **Tu app de música**: al cambiarla, el widget ya no sigue mostrando ni controlando la anterior.
+- **Radio sin enlazar**: play ahora lleva a Ajustes → Apps → Radio (antes caía en Música).
+- **Viaje**: el tiempo y el promedio ya no se vuelven locos cuando la pantalla corrige su reloj al tener internet.
+- **Recordatorios**: "Hecho" en uno muy atrasado lo pasa a la siguiente fecha que sí falta.
+- **Noche por sensor de luz**: si el sensor se daba por descompuesto (mucho rato con la misma luz) ya no se
+  volvía a usar hasta reiniciar.
+- **Vincular celular**: "Buscando…" ya no se queda pegado, el permiso se nota al darlo y el celular recién
+  emparejado aparece en Guardados.
+- **Tu auto**: un cuadro dañado del auto ya no cierra la app; subir a calidad Alta con un modelo 3D nuevo
+  pendiente primero lo actualiza (antes mezclaba cuadros); el aviso de "modelo 3D nuevo" ya no se pierde al
+  reabrir; las descargas cortadas ya no dejan archivos ocupando espacio.
+- **Llantas en Salud**: muestra el problema más grave (una fuga antes que una pila baja).
+- **"Hazla tu pantalla de inicio"** se quita al volver de elegirla en Android 9 o anterior.
+- Plantilla Tarjetas en pantallas angostas: ya no pone widgets más chicos que su mínimo.
+
+### Cambiado
+- Auditoría completa del código: menos trabajo repetido al dibujar velocímetros y el mapa, la lista de archivos
+  ya no lee la memoria mientras dibuja, el mapa guarda la mitad en disco (hasta ~50 MB entre sus dos estilos) y
+  limpieza de código sin uso.
+
 ## [1.4.122] - 2026-11-09
 
 ### Corregido

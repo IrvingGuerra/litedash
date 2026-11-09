@@ -72,7 +72,7 @@ private enum class AppearanceTab(val title: Int) {
 @Composable
 internal fun Appearance(d: Dependencies, revision: Int, onEdit: () -> Unit, onTemplates: () -> Unit, onTires: () -> Unit) {
     when (AppearanceTab.entries[tabs(AppearanceTab.entries.map { it.title }, "appearance")]) {
-        AppearanceTab.HOME -> HomeSettings(d, onEdit, onTemplates)
+        AppearanceTab.HOME -> HomeSettings(d, revision, onEdit, onTemplates)
         AppearanceTab.INTERFACE -> InterfaceSettings(d)
         AppearanceTab.DAY_NIGHT -> DayNightSettings(d.prefs, revision)
         AppearanceTab.UNITS -> SettingsCard { UnitsSettings(d) }
@@ -217,7 +217,7 @@ private fun UnitsSettings(d: Dependencies) {
  * el fondo, la animación de entrada y hacerlo tu pantalla de inicio.
  */
 @Composable
-private fun HomeSettings(d: Dependencies, onEdit: () -> Unit, onTemplates: () -> Unit) {
+private fun HomeSettings(d: Dependencies, revision: Int, onEdit: () -> Unit, onTemplates: () -> Unit) {
     val prefs = d.prefs
     val context = LocalContext.current
     SettingsCard(stringResource(R.string.layout), stringResource(R.string.arrange_help)) {
@@ -266,7 +266,7 @@ private fun HomeSettings(d: Dependencies, onEdit: () -> Unit, onTemplates: () ->
     // Sin título: el interruptor ya dice qué es.
     SettingsCard { IntroSettings(prefs) }
     val (requestHome, returns) = rememberRequestHome()
-    val isHome = remember(returns) { isHomeApp(context) }
+    val isHome = remember(returns, revision) { isHomeApp(context) }
     SettingsCard(stringResource(R.string.welcome_home_title)) {
         if (isHome) {
             Label(stringResource(R.string.welcome_already_home), Typography.body, LocalColors.current.accent)

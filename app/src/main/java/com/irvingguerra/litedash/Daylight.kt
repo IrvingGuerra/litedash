@@ -1,7 +1,6 @@
 package com.irvingguerra.litedash
 
 import android.Manifest
-import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.PackageManager
 import android.hardware.Sensor
@@ -56,14 +55,12 @@ object Daylight {
         return sunrise to sunset
     }
 
-    @SuppressLint("MissingPermission") // se revisa el permiso justo antes
+    /** Con la última ubicación conocida; sin ella, la latitud media de México y la longitud de la zona horaria. */
     fun place(context: Context): Pair<Double, Double> {
         val granted = context.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
         if (granted) {
             val manager = context.getSystemService(LocationManager::class.java)
-            val last = runCatching {
-                manager.getProviders(true).mapNotNull { manager.getLastKnownLocation(it) }.maxByOrNull { it.time }
-            }.getOrNull()
+            val last = manager?.newestLastKnown(runCatching { manager.getProviders(true) }.getOrDefault(emptyList()))
             if (last != null) return last.latitude to last.longitude
         }
         return DEFAULT_LATITUDE to TimeZone.getDefault().rawOffset / 3_600_000.0 * 15
@@ -90,8 +87,9 @@ object Daylight {
  */
 @Composable
 fun rememberIsNight(prefs: Preferences, needed: Boolean): Boolean {
+    // Sin uso, ni el sol se calcula (ni se lee la ubicación).
+    if (!needed) return false
     val sun = rememberSunNight()
-    if (!needed) return sun
     return when (prefs.nightSource) {
         NightSource.SUN -> sun
         NightSource.SENSOR -> rememberSensorNight(sun) ?: sun
@@ -131,7 +129,11 @@ private fun rememberSensorNight(initial: Boolean): Boolean? {
         val listener = object : SensorEventListener {
             override fun onSensorChanged(e: SensorEvent) {
                 lux = e.values[0]
-                if (first == null) first = lux else if (lux != first) varies = true
+                if (first == null) first = lux else if (lux != first) {
+                    // Varió: sirve, aunque antes se haya dado por pegado.
+                    varies = true
+                    stuck = false
+                }
                 handler.removeCallbacks(confirm)
                 confirm.run()
             }
@@ -191,7 +193,8 @@ class LightHysteresis(private var night: Boolean) {
 @Composable
 private fun rememberSunNight(): Boolean {
     val context = LocalContext.current
-    // El valor inicial se calcula una vez (lee la última ubicación), no en cada recomposición.
+    // El valor inicial se calcula una vez aquí mismo (una lectura corta de la última ubicación): si
+    // esperara a otro hilo, el tema podría brincar de claro a oscuro al abrir.
     val first = remember { Daylight.state(context) }
     val starts = rememberStarts()
     val night by produceState(first.first, starts) {

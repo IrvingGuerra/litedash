@@ -47,8 +47,8 @@ internal class NwdRadio(
     override val station get() = stationText(band >= BAND_AM, frequency)
 
     // Se crea en el hilo de los perfiles: el PackageManager no se consulta en el principal.
-    private val tunerInstalled = installed(context, SERVICE_PACKAGE)
-    private val kernel = installed(context, KERNEL_PACKAGE)
+    private val tunerInstalled = context.hasPackage(SERVICE_PACKAGE)
+    private val kernel = context.hasPackage(KERNEL_PACKAGE)
 
     private val main = Handler(Looper.getMainLooper())
     /** Las llamadas al sintonizador son IPC: nunca en el hilo principal. Null = cerrado. */
@@ -143,6 +143,8 @@ internal class NwdRadio(
         worker = Executors.newSingleThreadExecutor { Thread(it, "nwd-radio") }
         open = true
         if (tunerInstalled) bind(create = false)
+        // Sin ajustes y sin sintonizador que conecte, el enlace ya lo cerró: nada que escuchar.
+        if (!open) return false
         for (key in listOf(FREQ, BAND, PS, SOURCE)) runCatching { cr.registerContentObserver(Settings.System.getUriFor(key), false, observer) }
         trace("nwd abierto: sintonizador=${yes(tunerInstalled)} ajustes=${yes(settingsKeys)} kernel=${yes(kernel)}")
         refresh()
@@ -346,10 +348,6 @@ internal class NwdRadio(
         private const val CHANGE_SOURCE = "com.nwd.action.ACTION_CHANGE_SOURCE"
         private const val APP_IN_OUT = "com.nwd.action.ACTION_APP_IN_OUT"
         private const val EXIT_RADIO = "com.nwd.android.ACTION_EXIT_ARM_FM_RAIDO"
-
-        private fun yes(b: Boolean) = if (b) "sí" else "no"
-
-        private fun installed(context: Context, pkg: String) = runCatching { context.packageManager.getPackageInfo(pkg, 0) }.isSuccess
 
         /** El nombre RDS viene en hexadecimal (8 letras = 16 cifras); "" si no hay o no se entiende. */
         internal fun decodePs(hex: String?): String {

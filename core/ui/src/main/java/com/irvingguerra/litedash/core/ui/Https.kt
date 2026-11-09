@@ -56,7 +56,10 @@ object Https {
                 disconnect()
                 throw IOException("HTTP $code")
             }
-            if (code !in 200..299) error("HTTP $code")
+            if (code !in 200..299) {
+                disconnect()
+                error("HTTP $code")
+            }
         }
 
     /** Hace [block] hasta [RETRY_WAIT_MS].size + 1 veces mientras falle la red o el servidor (IOException). */

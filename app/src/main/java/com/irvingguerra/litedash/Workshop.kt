@@ -204,9 +204,9 @@ private fun Connection(d: Dependencies) {
     val context = LocalContext.current
     val bluetooth = rememberBluetoothOn()
     val askEnable = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {}
-    // Al abrir el Taller se reconecta solo al último adaptador que funcionó.
-    // (Con el módulo apagado no: conectar a mano lo vuelve a prender.)
-    LaunchedEffect(Unit) { if (obd.state == ObdState.OFF && d.obdModule) obd.connect() }
+    // Al abrir el Taller se reconecta solo al último adaptador que funcionó, también si se había
+    // caído y ya no reintentaba. (Con el módulo apagado no: conectar a mano lo vuelve a prender.)
+    LaunchedEffect(Unit) { if ((obd.state == ObdState.OFF || obd.state == ObdState.ERROR) && d.obdModule) obd.connect() }
     LaunchedEffect(obd.state) { if (obd.state == ObdState.CONNECTING || obd.state == ObdState.ON) d.prefs.obdModule = true }
     SettingsCard(stringResource(R.string.obd_adapter), stringResource(R.string.obd_adapter_help)) {
         val status = when (obd.state) {

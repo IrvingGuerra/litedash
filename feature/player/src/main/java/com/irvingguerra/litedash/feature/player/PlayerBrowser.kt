@@ -8,7 +8,10 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -155,44 +158,54 @@ private fun LibraryBrowser(onPicked: () -> Unit, modifier: Modifier) {
         }.toSortedMap(String.CASE_INSENSITIVE_ORDER)
     }
     val playing = Player.state.current?.key
-    Column(modifier) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            Segmented(Group.entries.map { it to stringResource(it.title) }, group, { memory.pick(it) })
-            Spacer(Modifier.weight(1f))
-            Label(drive.name, Typography.small, c.textMuted, 1)
-            folderButton()
-        }
-        Spacer(Modifier.height(10.dp))
-        // Si la memoria cambió y el grupo recordado ya no está, a la lista.
-        val shown = memory.inside?.takeIf { it in groups }
-        if (group == Group.ALL || shown != null) {
-            val list = if (group == Group.ALL) tracks else groups[shown].orEmpty()
-            LazyColumn(Modifier.fillMaxSize()) {
-                item {
-                    Row(Modifier.fillMaxWidth().padding(bottom = 6.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        if (shown != null) IconButton(Icons.back, { memory.inside = null }, size = 44.dp, background = c.surfaceHigh)
-                        Label(groupName(group, shown ?: ""), Typography.subtitle, maxLines = 1, modifier = Modifier.weight(1f))
-                        Button(stringResource(R.string.library_play_all), { Player.play(PlayerSource.USB, list, 0); onPicked() })
-                        Button(stringResource(R.string.library_shuffle), { Player.play(PlayerSource.USB, list.shuffled(), 0); onPicked() })
-                    }
+    BoxWithConstraints(modifier) {
+        // Angosta (dentro de un widget): solo las pestañas; la carpeta se cambia en Ajustes.
+        val narrow = maxWidth < NARROW
+        Column {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Box(Modifier.weight(1f)) {
+                    Segmented(Group.entries.map { it to stringResource(it.title) }, group, { memory.pick(it) }, Modifier.horizontalScroll(rememberScrollState()))
                 }
-                items(list, key = { it.key }) { t ->
-                    BrowserRow(
-                        Icons.music, t.title, listOf(t.artist, t.album).filter { it.isNotBlank() }.joinToString(" · "),
-                        selected = t.key == playing,
-                    ) { Player.play(PlayerSource.USB, list, list.indexOf(t)); onPicked() }
+                if (!narrow) {
+                    Label(drive.name, Typography.small, c.textMuted, 1)
+                    folderButton()
                 }
             }
-        } else {
-            LazyColumn(Modifier.fillMaxSize()) {
-                items(groups.keys.toList(), key = { it }) { name ->
-                    val icon = if (group == Group.FOLDERS) Icons.folder else Icons.music
-                    BrowserRow(icon, groupName(group, name), (groups[name]?.size ?: 0).let { n -> pluralStringResource(R.plurals.library_songs, n, n) }, selected = false) { memory.inside = name }
+            Spacer(Modifier.height(10.dp))
+            // Si la memoria cambió y el grupo recordado ya no está, a la lista.
+            val shown = memory.inside?.takeIf { it in groups }
+            if (group == Group.ALL || shown != null) {
+                val list = if (group == Group.ALL) tracks else groups[shown].orEmpty()
+                LazyColumn(Modifier.fillMaxSize()) {
+                    item {
+                        Row(Modifier.fillMaxWidth().padding(bottom = 6.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                            if (shown != null) IconButton(Icons.back, { memory.inside = null }, size = 44.dp, background = c.surfaceHigh)
+                            Label(groupName(group, shown ?: ""), Typography.subtitle, maxLines = 1, modifier = Modifier.weight(1f))
+                            if (!narrow) Button(stringResource(R.string.library_play_all), { Player.play(PlayerSource.USB, list, 0); onPicked() })
+                            Button(stringResource(R.string.library_shuffle), { Player.play(PlayerSource.USB, list.shuffled(), 0); onPicked() })
+                        }
+                    }
+                    items(list, key = { it.key }) { t ->
+                        BrowserRow(
+                            Icons.music, t.title, listOf(t.artist, t.album).filter { it.isNotBlank() }.joinToString(" · "),
+                            selected = t.key == playing,
+                        ) { Player.play(PlayerSource.USB, list, list.indexOf(t)); onPicked() }
+                    }
+                }
+            } else {
+                LazyColumn(Modifier.fillMaxSize()) {
+                    items(groups.keys.toList(), key = { it }) { name ->
+                        val icon = if (group == Group.FOLDERS) Icons.folder else Icons.music
+                        BrowserRow(icon, groupName(group, name), (groups[name]?.size ?: 0).let { n -> pluralStringResource(R.plurals.library_songs, n, n) }, selected = false) { memory.inside = name }
+                    }
                 }
             }
         }
     }
 }
+
+/** Menos ancho que esto es un widget, no la vista en grande ni Ajustes. */
+private val NARROW = 440.dp
 
 @Composable
 private fun groupName(group: Group, name: String): String = when {
@@ -247,7 +260,7 @@ private fun RadioBrowser(onPicked: () -> Unit, modifier: Modifier) {
         onPicked()
     }
     Column(modifier) {
-        Segmented(RadioTab.entries.map { it to stringResource(it.title) }, tab, { memory.tab = it })
+        Segmented(RadioTab.entries.map { it to stringResource(it.title) }, tab, { memory.tab = it }, Modifier.horizontalScroll(rememberScrollState()))
         Spacer(Modifier.height(10.dp))
         val (list, empty) = when (tab) {
             RadioTab.NEARBY -> nearby to stringResource(if (nearby == null) R.string.radio_loading else R.string.radio_none)

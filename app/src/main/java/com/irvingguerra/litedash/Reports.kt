@@ -11,7 +11,6 @@ import android.location.LocationManager
 import android.media.AudioManager
 import android.os.Build
 import android.os.SystemClock
-import android.provider.Settings
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -317,21 +316,12 @@ internal fun memoryMb(context: Context): Long {
  */
 private fun lightsInfo(context: Context): String {
     val sensor = context.getSystemService(SensorManager::class.java)?.getDefaultSensor(Sensor.TYPE_LIGHT)
+    // Su propia lista (sin el "acc_" de LIGHT_WORDS): el reporte sale igual que antes.
     val names = Regex("illum|headl|lamp|light|dimm|night|backlight|ill_", RegexOption.IGNORE_CASE)
-    val found = listOf(
-        "system" to Settings.System.CONTENT_URI,
-        "global" to Settings.Global.CONTENT_URI,
-        "secure" to Settings.Secure.CONTENT_URI,
-    ).flatMap { (table, uri) ->
-        runCatching {
-            context.contentResolver.query(uri, arrayOf("name", "value"), null, null, null)?.use { c ->
-                // Sin los de autollenado ("autofill_" contiene "ill_"); valores cortos (las luces son números).
-                buildList {
-                    while (c.moveToNext()) c.getString(0)?.takeIf { names.containsMatchIn(it) && !it.startsWith("autofill") }
-                        ?.let { add("$table/$it=${c.getString(1).orEmpty().take(24)}") }
-                }
-            }.orEmpty()
-        }.getOrDefault(emptyList())
+    val found = snapshotSettings(context).mapNotNull { (key, value) ->
+        val name = key.substringAfter('/')
+        // Sin los de autollenado ("autofill_" contiene "ill_"); valores cortos (las luces son números).
+        "$key=${value.take(24)}".takeIf { names.containsMatchIn(name) && !name.startsWith("autofill") }
     }
     return "Sensor de luz: ${sensor?.name ?: "no"}\nLuces: ${found.joinToString().ifEmpty { "—" }}"
 }
