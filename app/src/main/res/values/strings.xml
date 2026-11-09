@@ -411,9 +411,9 @@
     <string name="logo_remove">Quitar imagen</string>
     <string name="logo_intro">Animación de entrada</string>
     <string name="bar_position">Barra de apps</string>
-    <string name="bar_position_help">La de LiteDash, con la hora y tus apps. Automática: a un lado si la pantalla está acostada, abajo si está parada.</string>
+    <string name="bar_position_help">La de LiteDash, con la hora y tus apps. Automática: a la izquierda si la pantalla está acostada, abajo si está parada.</string>
     <string name="bar_auto">Automática</string>
-    <string name="bar_side">A un lado</string>
+    <string name="bar_side">Izquierda</string>
     <string name="bar_bottom">Abajo</string>
     <string name="release_notes">NOVEDADES DE ESTA VERSIÓN</string>
     <string name="apps_section">Apps</string>
@@ -733,4 +733,20 @@
     <string name="open_on_boot_help">Para pantallas que regresan su launcher de fábrica al apagar y encender el auto: LiteDash se pone al frente solo. Si tu pantalla tiene en sus ajustes la opción «Launcher predeterminado», elige LiteDash ahí también.</string>
     <string name="open_on_boot_permission">Falta el permiso «Mostrar sobre otras apps»: sin él, Android no deja que LiteDash se abra solo.</string>
     <string name="open_on_boot_grant">Dar permiso</string>
+    <string name="bar_right">Derecha</string>
+    <string name="bar_size">TAMAÑO</string>
+    <string name="bar_size_small">Compacta</string>
+    <string name="bar_size_normal">Normal</string>
+    <string name="bar_size_large">Grande</string>
+    <string name="bar_volume">VOLUMEN</string>
+    <string name="bar_volume_end">Al final</string>
+    <string name="bar_volume_start">Al principio</string>
+    <string name="bar_volume_hidden">No</string>
+    <string name="bar_clock">Hora y estado</string>
+    <string name="bar_clock_help">Arriba de la barra lateral. Sin ellos, la hora va en la barra de arriba.</string>
+    <string name="bar_apps">Botón de todas las apps</string>
+    <string name="bar_favorites">Favoritas</string>
+    <string name="bar_favorites_help">Cuáles salen: Ajustes → Apps → Favoritas.</string>
+    <string name="bar_voice">Botón de voz</string>
+    <string name="bar_settings_always">Ajustes siempre está en la barra: sin él no habría cómo salir del inicio.</string>
 </resources>

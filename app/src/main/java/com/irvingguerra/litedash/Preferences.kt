@@ -59,6 +59,12 @@ internal object PrefKeys {
     const val BRIGHTNESS_ORIGINAL = "brightness_original"
     const val ENGINE_ALERTS = "engine_alerts"
     const val BAR_POSITION = "bar_position"
+    const val BAR_SIZE = "bar_size"
+    const val BAR_VOLUME = "bar_volume"
+    const val BAR_CLOCK = "bar_clock"
+    const val BAR_APPS = "bar_apps"
+    const val BAR_FAVORITES = "bar_favorites"
+    const val BAR_VOICE = "bar_voice"
     const val LOGO_INTRO = "logo_intro"
     const val INTRO_MIGRATED = "intro_image_migrated"
     const val LIGHTS_KEY = "lights_key"
@@ -113,10 +119,29 @@ enum class ParkedView(val stored: String) {
 
 /** Dónde va la barra con la hora y tus apps. AUTO = a un lado si la pantalla está acostada. */
 enum class BarPosition(val stored: String) {
-    AUTO("auto"), SIDE("side"), BOTTOM("bottom");
+    // SIDE = a la izquierda (como se guardaba antes de haber derecha).
+    AUTO("auto"), SIDE("side"), RIGHT("right"), BOTTOM("bottom");
 
     companion object {
         fun fromStored(value: String?) = entries.firstOrNull { it.stored == value } ?: AUTO
+    }
+}
+
+/** Tamaño de la barra de apps (ancho al lado, alto abajo): botones e íconos a escala. */
+enum class BarSize(val stored: String, val scale: Float) {
+    SMALL("small", 0.82f), NORMAL("normal", 1f), LARGE("large", 1.2f);
+
+    companion object {
+        fun fromStored(value: String?) = entries.firstOrNull { it.stored == value } ?: NORMAL
+    }
+}
+
+/** Dónde va el volumen en la barra: al final (junto a Ajustes), al principio (junto a las apps) o no va. */
+enum class VolumePlace(val stored: String) {
+    END("end"), START("start"), HIDDEN("hidden");
+
+    companion object {
+        fun fromStored(value: String?) = entries.firstOrNull { it.stored == value } ?: END
     }
 }
 
@@ -284,6 +309,15 @@ class Preferences(context: Context) {
 
     /** Dónde van la hora y tus apps: a un lado, abajo o según la pantalla. */
     var barPosition by mapped(PrefKeys.BAR_POSITION, BarPosition::fromStored) { it.stored }
+    var barSize by mapped(PrefKeys.BAR_SIZE, BarSize::fromStored) { it.stored }
+    var barVolume by mapped(PrefKeys.BAR_VOLUME, VolumePlace::fromStored) { it.stored }
+    /** Hora y estado arriba de la barra lateral (sin ella, la hora va en la barra de arriba). */
+    var barClock by bool(PrefKeys.BAR_CLOCK, true)
+    /** Botón de todas las apps. */
+    var barApps by bool(PrefKeys.BAR_APPS, true)
+    var barFavorites by bool(PrefKeys.BAR_FAVORITES, true)
+    var barVoice by bool(PrefKeys.BAR_VOICE, true)
+    // Ajustes no se puede quitar: sin él no habría cómo salir del inicio.
 
     /** Abrir las apps de mapa y música en pantalla dividida, con el auto al lado (solo acostada). */
     var splitScreen by bool(PrefKeys.SPLIT_SCREEN, false)

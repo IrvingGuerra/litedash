@@ -4,6 +4,18 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.4.110] - 2026-11-09
+
+### Nuevo
+- **Barra de apps a tu gusto** (Ajustes → Inicio y apariencia → Barra de apps): a la izquierda, a la
+  derecha o abajo; compacta, normal o grande; el volumen al final, al principio o sin él; y puedes
+  quitar la hora, el botón de todas las apps, las favoritas o el de voz. Ajustes siempre se queda.
+
+### Corregido
+- **Los botones de volumen de la barra** ahora funcionan en pantallas que manejan el volumen con su
+  propio chip (pasaba en una NWD): si Android no cambia el volumen, LiteDash aprieta la tecla de
+  volumen como el botón físico. Ahí no se muestra el número, porque el de Android no es el real.
+
 ## [1.4.109] - 2026-11-09
 
 ### Mejorado

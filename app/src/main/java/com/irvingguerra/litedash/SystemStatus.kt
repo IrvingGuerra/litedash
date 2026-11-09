@@ -1,5 +1,6 @@
 package com.irvingguerra.litedash
 
+import android.app.Instrumentation
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -13,6 +14,7 @@ import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.NetworkRequest
 import android.os.Build
+import android.view.KeyEvent
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -38,6 +40,7 @@ import com.irvingguerra.litedash.core.ui.Icons
 import com.irvingguerra.litedash.core.ui.Label
 import com.irvingguerra.litedash.core.ui.LocalColors
 import com.irvingguerra.litedash.core.ui.Typography
+import kotlin.concurrent.thread
 
 /** Avisos del sistema para LiteDash: escucha solo mientras se ve (con otra app al frente, nada). */
 private fun Context.listen(receiver: BroadcastReceiver, action: String) =
@@ -60,23 +63,40 @@ fun Volume(buttonSize: Dp, vertical: Boolean = false) {
         onStopOrDispose { context.unregisterReceiver(receiver) }
     }
     fun adjust(direction: Int) {
-        audio.adjustStreamVolume(AudioManager.STREAM_MUSIC, direction, 0)
+        val before = audio.getStreamVolume(AudioManager.STREAM_MUSIC)
+        val atEdge = if (direction == AudioManager.ADJUST_RAISE) before >= audio.getStreamMaxVolume(AudioManager.STREAM_MUSIC) else before <= 0
+        if (!audio.isVolumeFixed) audio.adjustStreamVolume(AudioManager.STREAM_MUSIC, direction, 0)
         level = audio.getStreamVolume(AudioManager.STREAM_MUSIC)
+        // Muchas pantallas manejan el volumen con su propio chip (Android lo tiene fijo o no lo deja
+        // cambiar: pasaba en una NWD). Entonces, la tecla de volumen como el botón físico: la toma el
+        // sistema y la lleva a ese chip (y muestra su propia barra de volumen).
+        if (level == before && !atEdge || audio.isVolumeFixed) volumeKey(if (direction == AudioManager.ADJUST_RAISE) KeyEvent.KEYCODE_VOLUME_UP else KeyEvent.KEYCODE_VOLUME_DOWN)
     }
+    // Con el volumen fijo (lo maneja el chip de la pantalla) el número de Android no dice nada: no se muestra.
+    val number = if (audio.isVolumeFixed) "" else level.toString()
     // En la barra lateral: + arriba, el nivel y − abajo.
     if (vertical) return Column(horizontalAlignment = Alignment.CenterHorizontally) {
         IconButton(Icons.plus, { adjust(AudioManager.ADJUST_RAISE) }, size = buttonSize)
-        Label(level.toString(), Typography.subtitle, maxLines = 1)
+        Label(number, Typography.subtitle, maxLines = 1)
         IconButton(Icons.minus, { adjust(AudioManager.ADJUST_LOWER) }, size = buttonSize)
     }
     Row(verticalAlignment = Alignment.CenterVertically) {
         IconButton(Icons.minus, { adjust(AudioManager.ADJUST_LOWER) }, size = buttonSize)
         Row(Modifier.widthIn(min = 52.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
-            Label(level.toString(), Typography.subtitle, maxLines = 1)
+            Label(number, Typography.subtitle, maxLines = 1)
         }
         IconButton(Icons.plus, { adjust(AudioManager.ADJUST_RAISE) }, size = buttonSize)
         Spacer(Modifier.width(4.dp))
     }
+}
+
+/**
+ * Aprieta la tecla de volumen dentro de la ventana de LiteDash (se permite sin permisos porque es la
+ * propia app): el sistema la intercepta antes, como la del volante o la del panel. En otro hilo:
+ * Instrumentation no se puede usar en el principal.
+ */
+private fun volumeKey(code: Int) {
+    thread(name = "volume-key") { runCatching { Instrumentation().sendKeyDownUpSync(code) } }
 }
 
 /** El sistema lo manda al cambiar cualquier volumen; no está en el SDK público. */

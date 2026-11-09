@@ -225,10 +225,32 @@ private fun HomeSettings(d: Dependencies, onEdit: () -> Unit, onTemplates: () ->
     }
     SettingsCard(stringResource(R.string.bar_position), stringResource(R.string.bar_position_help)) {
         Segmented(
-            listOf(BarPosition.AUTO to stringResource(R.string.bar_auto), BarPosition.SIDE to stringResource(R.string.bar_side), BarPosition.BOTTOM to stringResource(R.string.bar_bottom)),
+            listOf(
+                BarPosition.AUTO to stringResource(R.string.bar_auto),
+                BarPosition.SIDE to stringResource(R.string.bar_side),
+                BarPosition.RIGHT to stringResource(R.string.bar_right),
+                BarPosition.BOTTOM to stringResource(R.string.bar_bottom),
+            ),
             prefs.barPosition,
             { prefs.barPosition = it },
         )
+        Label(stringResource(R.string.bar_size), Typography.label, LocalColors.current.textMuted)
+        Segmented(
+            listOf(BarSize.SMALL to stringResource(R.string.bar_size_small), BarSize.NORMAL to stringResource(R.string.bar_size_normal), BarSize.LARGE to stringResource(R.string.bar_size_large)),
+            prefs.barSize,
+            { prefs.barSize = it },
+        )
+        Label(stringResource(R.string.bar_volume), Typography.label, LocalColors.current.textMuted)
+        Segmented(
+            listOf(VolumePlace.END to stringResource(R.string.bar_volume_end), VolumePlace.START to stringResource(R.string.bar_volume_start), VolumePlace.HIDDEN to stringResource(R.string.bar_volume_hidden)),
+            prefs.barVolume,
+            { prefs.barVolume = it },
+        )
+        SwitchRow(stringResource(R.string.bar_clock), prefs.barClock, { prefs.barClock = it }, stringResource(R.string.bar_clock_help))
+        SwitchRow(stringResource(R.string.bar_apps), prefs.barApps, { prefs.barApps = it })
+        SwitchRow(stringResource(R.string.bar_favorites), prefs.barFavorites, { prefs.barFavorites = it }, stringResource(R.string.bar_favorites_help))
+        SwitchRow(stringResource(R.string.bar_voice), prefs.barVoice, { prefs.barVoice = it })
+        Label(stringResource(R.string.bar_settings_always), Typography.small, LocalColors.current.textMuted)
     }
     SettingsCard(stringResource(R.string.android_bar)) {
         SwitchRow(stringResource(R.string.hide_status_bar), prefs.hideStatusBar, { prefs.hideStatusBar = it }, stringResource(R.string.hide_status_bar_help))

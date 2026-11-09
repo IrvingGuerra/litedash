@@ -502,21 +502,26 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
           // Pantalla acostada: barra lateral a la izquierda (como DuduAuto), con la hora y tus
           // apps; el tablero se queda con toda la altura. Parada: el dock abajo, como siempre.
           val rail = when (d.prefs.barPosition) {
-              BarPosition.SIDE -> true
+              BarPosition.SIDE, BarPosition.RIGHT -> true
               BarPosition.BOTTOM -> false
               BarPosition.AUTO -> maxWidth > maxHeight && !isShortScreen()
           }
           val favorites = remember(apps, d.prefs.dock, d.prefs.musicApp) { dockFavorites(d, apps) }
+          val railRight = rail && d.prefs.barPosition == BarPosition.RIGHT
+          val railBar = @Composable {
+              Rail(
+                  repo = d.apps,
+                  prefs = d.prefs,
+                  favorites = favorites,
+                  onApps = { panel = Panel.Drawer },
+                  onSettings = { panel = Panel.Settings },
+              )
+          }
           Row(Modifier.fillMaxSize()) {
-            if (rail) Rail(
-                repo = d.apps,
-                favorites = favorites,
-                onApps = { panel = Panel.Drawer },
-                onSettings = { panel = Panel.Settings },
-            )
+            if (rail && !railRight) railBar()
             Column(Modifier.weight(1f).fillMaxHeight()) {
                 // Si ya hay un reloj en el tablero (o en la barra lateral), la barra no repite la hora.
-                val showTime = !rail && d.dashboard.tiles.none { it.type == TileTypes.CLOCK }
+                val showTime = !(rail && d.prefs.barClock) && d.dashboard.tiles.none { it.type == TileTypes.CLOCK }
                 val barHidden = !editing && !showTime
                 TopBar(
                     editing = editing,
@@ -602,11 +607,13 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                 }
                 if (!rail) Dock(
                     repo = d.apps,
+                    prefs = d.prefs,
                     favorites = favorites,
                     onApps = { panel = Panel.Drawer },
                     onSettings = { panel = Panel.Settings },
                 )
             }
+            if (railRight) railBar()
           }
         }
 
@@ -758,6 +765,7 @@ private fun TopBar(editing: Boolean, showTime: Boolean, driverName: String?, wea
 @Composable
 private fun Dock(
     repo: AppRepository,
+    prefs: Preferences,
     favorites: List<App>,
     onApps: () -> Unit,
     onSettings: () -> Unit,
@@ -765,35 +773,40 @@ private fun Dock(
     val c = LocalColors.current
     val context = LocalContext.current
     // En pantallas chicas (7") todo se ve lejos: íconos más grandes, más fáciles de atinar manejando.
-    // Pero si casi no hay altura (teléfono acostado), compacto: el tablero va primero.
+    // Pero si casi no hay altura (teléfono acostado), compacto: el tablero va primero. El tamaño elegido escala todo.
+    val k = prefs.barSize.scale
     val short = isShortScreen()
     val small = isSmallScreen() && !short
-    val side = if (small) 56.dp else if (short) 36.dp else 44.dp
-    val box = if (small) 68.dp else if (short) 46.dp else 56.dp
+    val side = (if (small) 56.dp else if (short) 36.dp else 44.dp) * k
+    val box = (if (small) 68.dp else if (short) 46.dp else 56.dp) * k
     Row(
         Modifier
             .fillMaxWidth()
-            .height(if (small) 96.dp else if (short) 64.dp else 84.dp)
+            .height((if (small) 96.dp else if (short) 64.dp else 84.dp) * k)
             .padding(horizontal = 16.dp, vertical = 8.dp)
             .clip(RoundedCornerShape(Radius.card))
             .background(c.surface)
             .padding(horizontal = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        val buttonSize = if (small) 64.dp else if (short) 46.dp else 56.dp
-        IconButton(Icons.apps, onApps, size = buttonSize)
-        Box(Modifier.padding(horizontal = 8.dp).width(1.dp).height(32.dp).background(c.line))
+        val buttonSize = (if (small) 64.dp else if (short) 46.dp else 56.dp) * k
+        if (prefs.barApps) {
+            IconButton(Icons.apps, onApps, size = buttonSize)
+            Box(Modifier.padding(horizontal = 8.dp).width(1.dp).height(32.dp).background(c.line))
+        }
+        if (prefs.barVolume == VolumePlace.START) Volume(buttonSize)
         BoxWithConstraints(Modifier.weight(1f)) {
             // Caben las que quepan: en pantallas chicas el dock no se encima.
             val fitCount = (maxWidth / (box + 8.dp)).toInt()
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            if (prefs.barFavorites) Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                 for (app in favorites.take(fitCount)) AppShortcut(repo, app, box, side)
             }
         }
-        Volume(buttonSize)
+        if (prefs.barVolume == VolumePlace.END) Volume(buttonSize)
         // Voz: abre el asistente que tenga la pantalla; si no hay ninguno, no aparece.
         val voice = remember { voiceIntent(context) }
-        if (voice != null) IconButton(Icons.mic, { runCatching { context.startActivity(voice) } }, size = buttonSize)
+        if (voice != null && prefs.barVoice) IconButton(Icons.mic, { runCatching { context.startActivity(voice) } }, size = buttonSize)
+        // Siempre: sin Ajustes no habría cómo salir del inicio.
         IconButton(Icons.settings, onSettings, size = buttonSize)
     }
 }
@@ -814,6 +827,7 @@ private fun AppShortcut(repo: AppRepository, app: App, box: Dp, icon: Dp) {
 @Composable
 private fun Rail(
     repo: AppRepository,
+    prefs: Preferences,
     favorites: List<App>,
     onApps: () -> Unit,
     onSettings: () -> Unit,
@@ -821,32 +835,40 @@ private fun Rail(
     val c = LocalColors.current
     val context = LocalContext.current
     val small = isSmallScreen()
-    val button = if (small) 52.dp else 56.dp
-    val icon = if (small) 40.dp else 44.dp
+    val k = prefs.barSize.scale
+    val button = (if (small) 52.dp else 56.dp) * k
+    val icon = (if (small) 40.dp else 44.dp) * k
+    val volume = (if (small) 40.dp else 44.dp) * k
     val clock = rememberClock()
     Column(
-        Modifier.fillMaxHeight().width(if (small) 76.dp else 88.dp).padding(vertical = 10.dp),
+        Modifier.fillMaxHeight().width((if (small) 76.dp else 88.dp) * k).padding(vertical = 10.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
-        // Angosta: a.m./p.m. en chico junto a la hora (en otra línea le quitaría lugar a las apps).
-        Row(verticalAlignment = Alignment.Bottom) {
-            Label(clock.time, Typography.subtitle, maxLines = 1)
-            if (clock.marker != null) Label(clock.marker, Typography.small.copy(fontSize = 11.sp), c.textMuted, maxLines = 1, modifier = Modifier.padding(start = 2.dp, bottom = 2.dp))
+        if (prefs.barClock) {
+            // Angosta: a.m./p.m. en chico junto a la hora (en otra línea le quitaría lugar a las apps).
+            Row(verticalAlignment = Alignment.Bottom) {
+                Label(clock.time, Typography.subtitle, maxLines = 1)
+                if (clock.marker != null) Label(clock.marker, Typography.small.copy(fontSize = 11.sp), c.textMuted, maxLines = 1, modifier = Modifier.padding(start = 2.dp, bottom = 2.dp))
+            }
+            Box(Modifier.padding(bottom = 6.dp)) { StatusIcons() }
         }
-        Box(Modifier.padding(bottom = 6.dp)) { StatusIcons() }
-        IconButton(Icons.apps, onApps, size = button)
-        Box(Modifier.padding(vertical = 4.dp).width(28.dp).height(1.dp).background(c.line))
+        if (prefs.barApps) {
+            IconButton(Icons.apps, onApps, size = button)
+            Box(Modifier.padding(vertical = 4.dp).width(28.dp).height(1.dp).background(c.line))
+        }
+        if (prefs.barVolume == VolumePlace.START) Volume(volume, vertical = true)
         val voice = remember { voiceIntent(context) }
         BoxWithConstraints(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
             // Las favoritas que quepan entre los accesos de arriba y los controles de abajo.
             val fit = (maxHeight / (button + 4.dp)).toInt()
-            Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            if (prefs.barFavorites) Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 for (app in favorites.take(fit)) AppShortcut(repo, app, button, icon)
             }
         }
-        Volume(if (small) 40.dp else 44.dp, vertical = true)
-        if (voice != null) IconButton(Icons.mic, { runCatching { context.startActivity(voice) } }, size = button)
+        if (prefs.barVolume == VolumePlace.END) Volume(volume, vertical = true)
+        if (voice != null && prefs.barVoice) IconButton(Icons.mic, { runCatching { context.startActivity(voice) } }, size = button)
+        // Siempre: sin Ajustes no habría cómo salir del inicio.
         IconButton(Icons.settings, onSettings, size = button)
     }
 }

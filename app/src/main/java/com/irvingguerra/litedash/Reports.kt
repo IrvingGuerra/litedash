@@ -5,9 +5,10 @@ import android.annotation.SuppressLint
 import android.app.ActivityManager
 import android.content.Context
 import android.content.pm.PackageManager
-import android.location.LocationManager
 import android.hardware.Sensor
 import android.hardware.SensorManager
+import android.location.LocationManager
+import android.media.AudioManager
 import android.os.Build
 import android.os.SystemClock
 import android.provider.Settings
@@ -33,8 +34,8 @@ import com.irvingguerra.litedash.core.ui.Label
 import com.irvingguerra.litedash.core.ui.LocalColors
 import com.irvingguerra.litedash.core.ui.TextInput
 import com.irvingguerra.litedash.core.ui.Typography
-import com.irvingguerra.litedash.feature.music.AppProbe
 import com.irvingguerra.litedash.feature.dashboard.DashboardState
+import com.irvingguerra.litedash.feature.music.AppProbe
 import com.irvingguerra.litedash.feature.music.MusicRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -247,6 +248,12 @@ private suspend fun sendReport(
     }.getOrNull() }
 }
 
+/** El volumen de la música en Android y si está fijo (la pantalla lo maneja con su propio chip). */
+private fun volumeInfo(context: Context): String = runCatching {
+    val audio = context.getSystemService(AudioManager::class.java)
+    "Volumen: música ${audio.getStreamVolume(AudioManager.STREAM_MUSIC)}/${audio.getStreamMaxVolume(AudioManager.STREAM_MUSIC)}, fijo=${if (audio.isVolumeFixed) "sí" else "no"}"
+}.getOrDefault("Volumen: ?")
+
 /** Datos técnicos de la pantalla para los reportes (equipo, Android, pantalla, acomodo [layout], luces, ubicación y si tiene Pro) más [musicInfo] y las apps [silent]. */
 private fun systemInfo(context: Context, pro: Boolean, layout: String, musicInfo: String, silent: List<String>): String {
     val m = context.resources.displayMetrics
@@ -261,6 +268,7 @@ private fun systemInfo(context: Context, pro: Boolean, layout: String, musicInfo
         appendLine("Memoria: ${memoryMb(context)} MB")
         appendLine("CPU: ${Build.SUPPORTED_ABIS.joinToString()}")
         appendLine("Pantalla dividida: ${if (SplitScreen.supported()) "sí" else "no"}")
+        appendLine(volumeInfo(context))
         appendLine("Código de desarrollador: ${if (pro) "sí" else "no"}")
         appendLine(lightsInfo(context))
         appendLine(locationInfo(context))
