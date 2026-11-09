@@ -1193,7 +1193,14 @@ class MusicRepository(private val context: Context) {
     /** La confirmación pendiente del play de la radio de fábrica; se cancela al pausar o cambiar de radio. */
     private var factoryConfirm = Runnable {}
 
-    private val radioCheck = Runnable { trace("radio tras regresar: audio=${yes(musicActive())}") }
+    private val radioCheck = Runnable {
+        val active = musicActive()
+        trace("radio tras regresar: audio=${yes(active)}")
+        // Sin perfil de su marca nadie dice que la radio suena: si Android tiene audio tras abrirla, se
+        // supone que es ella (el botón pasa a pausa y la pieza muestra la radio en vez de quedarse en nada).
+        val pkg = sourceApps[SourceKind.RADIO]
+        if (active && factoryFor(radio) == null && pkg != null && appFor(SourceKind.RADIO) == pkg) radio.assume(pkg, true)
+    }
     private val returnFromRadio = Runnable {
         trace("regreso a LiteDash: audio=${yes(musicActive())}")
         returnHome?.invoke()
@@ -1253,6 +1260,9 @@ class MusicRepository(private val context: Context) {
         when {
             receiver != null -> sendMediaKey(context, code, receiver)
             session != null -> for (action in intArrayOf(KeyEvent.ACTION_DOWN, KeyEvent.ACTION_UP)) runCatching { session.dispatchMediaButtonEvent(KeyEvent(action, code)) }
+            // Radio sin receptor ni sesión: la pausa va al sistema de audio (como el botón del volante); el play
+            // no, porque la radio solo arranca abriéndola.
+            lens === radio && code == KeyEvent.KEYCODE_MEDIA_PAUSE && pkg != null && !isOwn(pkg) -> sendMediaKey(context, code)
             lens === radio || pkg != null && isOwn(pkg) -> return false
             else -> sendMediaKey(context, code)
         }

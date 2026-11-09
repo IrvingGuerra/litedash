@@ -4,6 +4,13 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.4.114] - 2026-11-09
+
+### Corregido
+- **Radio que solo suena abriendo su app** (NWD sin control y otras): al dar play se abre la radio, se
+  regresa solo y ahora el widget queda sonando (botón de pausa y la radio a la vista), en vez de quedarse
+  como si nada. La pausa ya no vuelve a abrir la app: se manda como el botón del volante.
+
 ## [1.4.113] - 2026-11-09
 
 ### Corregido
