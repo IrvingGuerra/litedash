@@ -61,6 +61,12 @@ class MainActivity : ComponentActivity() {
         revision.intValue++
     }
 
+    // Algunos teléfonos (Samsung) regresan la barra al cerrar un aviso o un diálogo, sin pasar por onResume.
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (hasFocus && dependencies.prefs.hideStatusBar) applyStatusBar(window, true)
+    }
+
     override fun onPause() {
         super.onPause()
         inFront = false
@@ -127,12 +133,16 @@ internal fun ComponentActivity.LiteDashContent(d: Dependencies, revision: Int, c
         enableEdgeToEdge(style, style)
     }
     // La barra de Android de arriba, oculta si se pidió: deslizando desde arriba se asoma un momento.
+    // También al volver a LiteDash ([revision]): otra app o el apagado de pantalla la regresan.
     val hideStatusBar = d.prefs.hideStatusBar
-    LaunchedEffect(hideStatusBar) {
-        val bars = WindowCompat.getInsetsController(window, window.decorView)
-        bars.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-        if (hideStatusBar) bars.hide(WindowInsetsCompat.Type.statusBars()) else bars.show(WindowInsetsCompat.Type.statusBars())
-    }
+    LaunchedEffect(hideStatusBar, revision) { applyStatusBar(window, hideStatusBar) }
     ApplyBrightness(d.prefs, night, revision)
     LiteDashTheme(dark = dark, scale = d.prefs.scale, accent = d.prefs.accentColor, content = content)
+}
+
+/** Oculta o muestra la barra de Android de arriba (deslizando desde arriba se asoma un momento). */
+private fun applyStatusBar(window: android.view.Window, hide: Boolean) {
+    val bars = WindowCompat.getInsetsController(window, window.decorView)
+    bars.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+    if (hide) bars.hide(WindowInsetsCompat.Type.statusBars()) else bars.show(WindowInsetsCompat.Type.statusBars())
 }

@@ -4,6 +4,13 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.4.113] - 2026-11-09
+
+### Corregido
+- **"Ocultar la barra de Android" se mantiene**: al volver de otra app, cerrar los avisos o prender la
+  pantalla, la barra se vuelve a ocultar sola (en algunos teléfonos, como Samsung, regresaba y había que
+  apagar y prender la opción).
+
 ## [1.4.112] - 2026-11-09
 
 ### Corregido
