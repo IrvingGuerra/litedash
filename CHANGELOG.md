@@ -4,6 +4,13 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.4.106] - 2026-11-08
+
+### Mejorado
+- **Una sola música a la vez:** en la música en grande, las fuentes (USB, tu app y Bluetooth) ahora
+  son pestañas claras y solo una suena: al tocar otra, la que estaba sonando se pausa sola. Antes
+  podía quedar, por ejemplo, Spotify sonando a la vez que el Bluetooth.
+
 ## [1.4.105] - 2026-11-08
 
 ### Mejorado

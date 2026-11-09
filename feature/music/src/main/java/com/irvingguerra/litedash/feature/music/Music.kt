@@ -274,11 +274,31 @@ class MusicRepository(private val context: Context) {
     val radioHasBoth: Boolean get() = ownRadio && sourceApps[SourceKind.RADIO] != null
 
     /**
+     * Deja una sola fuente sonando: calla la USB propia (salvo [keep]) y toda sesión de la pieza
+     * Música que esté sonando (salvo [keep] y la radio, que vive en su propia pieza). La música
+     * "a ciegas" (Bluetooth/FM sin sesión que LiteDash da por sonando) se calla con la tecla de
+     * pausa a su receptor. No cambia [active].
+     */
+    private fun stopOthers(keep: String?) {
+        if (keep != ownPackage) ownPause?.invoke()
+        for (c in sessions()) {
+            val p = c.packageName
+            if (p == keep || isRadio(p)) continue
+            if (c.playbackState?.state == PlaybackState.STATE_PLAYING) {
+                runCatching { c.transportControls.pause() }
+            }
+        }
+        val blind = music.song?.takeIf { it.blind && it.playing && it.pkg.isNotBlank() }
+        if (blind != null && blind.pkg != keep) press(music, KeyEvent.KEYCODE_MEDIA_PAUSE)
+    }
+
+    /**
      * Tocaron USB: que suene el reproductor propio (sin cambiar la app elegida). Busca qué tocar
      * en segundo plano; si no hay nada, [onEmpty] (la vista abre la biblioteca para escoger).
      */
     fun playOwn(onEmpty: () -> Unit) {
         val play = ownPlay ?: return
+        stopOthers(ownPackage)
         val token = ++ownToken
         active = ownPackage
         ownPending = true
@@ -962,7 +982,7 @@ class MusicRepository(private val context: Context) {
     fun switchTo(pkg: String) {
         ownToken++
         ownPending = false
-        ownPause?.invoke()
+        stopOthers(pkg)
         if (music.assumedPkg != pkg) music.forget()
         active = pkg
         if (users > 0) choose(sessions())
