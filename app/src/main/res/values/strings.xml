@@ -422,8 +422,7 @@
     <string name="apps_section">Apps</string>
     <string name="tab_tiles">Widgets</string>
     <string name="tab_navigation">Navegación</string>
-    <string name="tab_favorites">Favoritas</string>
-    <string name="favorites_help">Las apps de la barra, en su orden. Agrégalas desde el cajón de apps (deja presionada una).</string>
+    <string name="favorites_help">Las apps de la barra, en su orden. Toca la x para quitar una; búscala aquí abajo para agregarla.</string>
     <string name="module_obd">Escáner OBD</string>
     <string name="module_notifications">Avisos de otras apps</string>
     <string name="module_location">Ubicación</string>
@@ -712,6 +711,8 @@
     <string name="tires_ble_unsupported">Esta pantalla no tiene Bluetooth LE</string>
     <string name="tires_ble_failed">Android no dejó buscar sensores Bluetooth</string>
     <string name="usb_folder">Carpeta de música</string>
+    <string name="files_library">Tu música</string>
+    <string name="files_library_help">Toca una canción, un álbum o una carpeta para escucharla.</string>
     <string name="usb_folder_auto">Automática: busca en todas tus memorias USB. Elige una si tu pantalla no deja leer la memoria.</string>
     <string name="music_app_title">Tu app de música</string>
     <string name="gauge_rim">Aro</string>
@@ -751,7 +752,6 @@
     <string name="bar_clock_help">Arriba de la barra lateral. Sin ellos, la hora va en la barra de arriba.</string>
     <string name="bar_apps">Botón de todas las apps</string>
     <string name="bar_favorites">Favoritas</string>
-    <string name="bar_favorites_help">Cuáles salen: Ajustes → Apps → Favoritas.</string>
     <string name="bar_voice">Botón de voz</string>
     <string name="bar_settings_always">Ajustes siempre está en la barra: sin él no habría cómo salir del inicio.</string>
 </resources>

@@ -1,6 +1,9 @@
 // Ajustes → Inicio y apariencia: inicio, interfaz, día y noche, unidades y widgets.
 package com.irvingguerra.litedash
 
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import com.irvingguerra.litedash.feature.apps.rememberApps
+import com.irvingguerra.litedash.feature.apps.AppIcon
 import android.app.Activity
 import android.hardware.Sensor
 import android.hardware.SensorManager
@@ -249,7 +252,8 @@ private fun HomeSettings(d: Dependencies, onEdit: () -> Unit, onTemplates: () ->
         // Solo la barra lateral lleva la hora (la de abajo la deja en la barra de arriba).
         if (prefs.barPosition != BarPosition.BOTTOM) SwitchRow(stringResource(R.string.bar_clock), prefs.barClock, { prefs.barClock = it }, stringResource(R.string.bar_clock_help))
         SwitchRow(stringResource(R.string.bar_apps), prefs.barApps, { prefs.barApps = it })
-        SwitchRow(stringResource(R.string.bar_favorites), prefs.barFavorites, { prefs.barFavorites = it }, stringResource(R.string.bar_favorites_help))
+        SwitchRow(stringResource(R.string.bar_favorites), prefs.barFavorites, { prefs.barFavorites = it })
+        if (prefs.barFavorites) Favorites(d)
         SwitchRow(stringResource(R.string.bar_voice), prefs.barVoice, { prefs.barVoice = it })
         Label(stringResource(R.string.bar_settings_always), Typography.small, LocalColors.current.textMuted)
     }
@@ -270,6 +274,31 @@ private fun HomeSettings(d: Dependencies, onEdit: () -> Unit, onTemplates: () ->
             Button(stringResource(R.string.make_home), { prefs.dontAskHome = false; requestHome() }, primary = true)
         }
         OpenOnBootSettings(prefs)
+    }
+}
+
+/** Las favoritas de la barra, en su orden: un toque en la x la quita; el buscador de abajo agrega. */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun Favorites(d: Dependencies) {
+    val apps = rememberApps(d.apps).orEmpty()
+    val favorites = remember(apps, d.prefs.dock, d.music.preferred) { dockFavorites(d, apps) }
+    Label(stringResource(R.string.favorites_help), Typography.small, LocalColors.current.textMuted)
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        for (app in favorites) {
+            Row(
+                Modifier.clip(RoundedCornerShape(Radius.inner)).background(LocalColors.current.surfaceHigh).padding(start = 10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                AppIcon(d.apps, app, 32.dp)
+                Label(app.name, Typography.body, maxLines = 1, modifier = Modifier.padding(horizontal = 10.dp).widthIn(max = 160.dp))
+                IconButton(Icons.close, { d.prefs.dock = favorites.map { it.key } - app.key }, size = 44.dp)
+            }
+        }
+    }
+    // Escribir y tocar una la pone al final (si ya está, no se repite).
+    AppSearch(apps.filter { app -> favorites.none { it.key == app.key } }, null) { pkg ->
+        apps.firstOrNull { it.pkg == pkg }?.let { app -> d.prefs.dock = favorites.map { it.key } + app.key }
     }
 }
 

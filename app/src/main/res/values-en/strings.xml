@@ -414,8 +414,7 @@
     <string name="apps_section">Apps</string>
     <string name="tab_tiles">Widgets</string>
     <string name="tab_navigation">Navigation</string>
-    <string name="tab_favorites">Favorites</string>
-    <string name="favorites_help">Apps on the bar, in order. Add them from the app drawer (long-press one).</string>
+    <string name="favorites_help">Apps on the bar, in order. Tap the x to remove one; search below to add one.</string>
     <string name="module_obd">OBD scanner</string>
     <string name="module_notifications">Other apps\' notifications</string>
     <string name="module_location">Location</string>
@@ -691,6 +690,8 @@
     <string name="tires_ble_unsupported">This screen has no Bluetooth LE</string>
     <string name="tires_ble_failed">Android didn\'t allow scanning for Bluetooth sensors</string>
     <string name="usb_folder">Music folder</string>
+    <string name="files_library">Your music</string>
+    <string name="files_library_help">Tap a song, album or folder to play it.</string>
     <string name="usb_folder_auto">Automatic: looks in all your USB drives. Choose one if your screen doesn\'t let apps read the drive.</string>
     <string name="music_app_title">Your music app</string>
     <string name="gauge_rim">Rim</string>
@@ -730,7 +731,6 @@
     <string name="bar_clock_help">At the top of the side bar. Without them, the time goes in the top bar.</string>
     <string name="bar_apps">All apps button</string>
     <string name="bar_favorites">Favorites</string>
-    <string name="bar_favorites_help">Which ones show: Settings → Apps → Favorites.</string>
     <string name="bar_voice">Voice button</string>
     <string name="bar_settings_always">Settings is always on the bar: without it there would be no way out of the home screen.</string>
 </resources>

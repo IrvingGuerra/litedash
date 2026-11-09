@@ -55,13 +55,12 @@ import com.irvingguerra.litedash.feature.music.NotificationService
 
 /**
  * Widget Mapa: tu posición del GPS en el mapa (minimalista de OpenFreeMap o completo de OpenStreetMap),
- * como diga su [data] ([MapLook]); navegando, la siguiente vuelta encima. Un toque lo muestra en grande
- * ([onExpand]; null = ya es grande y el toque aleja el zoom); el botón de la esquina abre tu app de mapas.
- * En una fila, o sin permiso de ubicación, se ve como el widget Navegar de antes (vuelta, Casa y
- * Trabajo) y un botón para pedir el permiso o ver el mapa. GPS y descargas solo mientras se ve.
+ * como diga su [data] ([MapLook]); navegando, la siguiente vuelta encima. Un toque aleja el zoom; el botón
+ * de la esquina abre tu app de mapas. En una fila, o sin permiso de ubicación, se ve como el widget Navegar
+ * de antes (vuelta, Casa y Trabajo) y, sin permiso, un botón para pedirlo. GPS y descargas solo mientras se ve.
  */
 @Composable
-fun MapTile(d: Dependencies, data: String, app: App?, editing: Boolean, onPlace: (String) -> Unit, onNavigate: () -> Unit, onExpand: (() -> Unit)?) {
+fun MapTile(d: Dependencies, data: String, app: App?, editing: Boolean, onPlace: (String) -> Unit, onNavigate: () -> Unit) {
     val c = LocalColors.current
     val (granted, ask) = rememberGpsPermission(d)
     val look = remember(data) { MapLook.parse(data) }
@@ -69,43 +68,15 @@ fun MapTile(d: Dependencies, data: String, app: App?, editing: Boolean, onPlace:
         if (!granted || maxHeight < COMPACT_HEIGHT) {
             Box(Modifier.fillMaxSize()) {
                 NavigationTile(d.navigation, app, d.prefs.homeAddress, d.prefs.workAddress, onPlace, onNavigate)
-                // Sin permiso, el botón lo pide; con permiso (en una fila), abre el mapa en grande (si ya es grande,
-                // no hay a dónde: no sale). Al acomodar se esconde (estorba al botón de tamaño).
-                val action = if (granted) onExpand else ask
-                if (!editing && action != null) IconButton(Icons.map, action, Modifier.align(Alignment.TopEnd).padding(6.dp), size = 40.dp, background = c.surfaceHigh, color = c.accent)
+                // Sin permiso, el botón lo pide. Al acomodar se esconde (estorba al botón de tamaño).
+                if (!editing && !granted) IconButton(Icons.map, ask, Modifier.align(Alignment.TopEnd).padding(6.dp), size = 40.dp, background = c.surfaceHigh, color = c.accent)
             }
             return@BoxWithConstraints
         }
         Card(Modifier.fillMaxSize()) {
-            LiveMap(d, look, Modifier.fillMaxSize(), onTap = onExpand)
+            LiveMap(d, look, Modifier.fillMaxSize())
             NextTurn(d, Modifier.align(Alignment.TopStart).padding(8.dp))
             IconButton(Icons.navigate, onNavigate, Modifier.align(Alignment.TopEnd).padding(8.dp), size = 44.dp, background = c.surface.copy(alpha = 0.85f), color = c.accent)
-        }
-    }
-}
-
-/**
- * El mapa en grande (media pantalla), como el widget que se tocó ([data]): el mapa en vivo (un toque
- * lo aleja), la siguiente vuelta, Casa y Trabajo, y abrir tu app de mapas.
- */
-@Composable
-fun MapExpanded(d: Dependencies, data: String, app: App?, onPlace: (String) -> Unit, onNavigate: () -> Unit, close: () -> Unit, modifier: Modifier = Modifier) {
-    val c = LocalColors.current
-    val (granted, ask) = rememberGpsPermission(d)
-    val look = remember(data) { MapLook.parse(data) }
-    Card(modifier.fillMaxSize()) {
-        if (granted) LiveMap(d, look, Modifier.fillMaxSize())
-        else Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Button(stringResource(R.string.tap_to_enable), ask, primary = true) }
-        NextTurn(d, Modifier.align(Alignment.TopStart).padding(12.dp))
-        Row(Modifier.align(Alignment.TopEnd).padding(12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            IconButton(Icons.navigate, onNavigate, size = 48.dp, background = c.surface.copy(alpha = 0.9f), color = c.accent)
-            IconButton(Icons.close, close, size = 48.dp, background = c.surface.copy(alpha = 0.9f))
-        }
-        val home = d.prefs.homeAddress
-        val work = d.prefs.workAddress
-        if (home != null || work != null) Row(Modifier.align(Alignment.BottomStart).padding(12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            if (home != null) Button(stringResource(R.string.place_home), { onPlace(home) }, primary = true)
-            if (work != null) Button(stringResource(R.string.place_work), { onPlace(work) })
         }
     }
 }

@@ -35,6 +35,8 @@ import com.irvingguerra.litedash.feature.music.SourceKind
 import com.irvingguerra.litedash.feature.music.label
 import com.irvingguerra.litedash.feature.player.FolderPicker
 import com.irvingguerra.litedash.feature.player.Library
+import com.irvingguerra.litedash.feature.player.PlayerBrowser
+import com.irvingguerra.litedash.feature.player.PlayerSource
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -76,11 +78,20 @@ fun MusicModeSettings(d: Dependencies) {
         Segmented(MusicMode.entries.map { it to it.label() }, d.music.mode, { d.music.mode = it }, Modifier.fillMaxWidth(), check = true)
     }
     when (d.music.mode) {
-        MusicMode.FILES -> SettingsCard { FilesCard() }
+        MusicMode.FILES -> {
+            // La biblioteca siempre aquí: en el inicio solo cabe en un widget de media pantalla o más.
+            SettingsCard(stringResource(R.string.files_library), stringResource(R.string.files_library_help)) {
+                PlayerBrowser(PlayerSource.USB, onPicked = {}, Modifier.fillMaxWidth().height(LIBRARY_HEIGHT))
+            }
+            SettingsCard { FilesCard() }
+        }
         MusicMode.BLUETOOTH -> SettingsCard(stringResource(R.string.bt_pair), stringResource(R.string.bt_pair_help)) { BluetoothSettings(d) }
         MusicMode.APP -> SettingsCard(stringResource(R.string.music_app_title)) { MusicSettings(d) }
     }
 }
+
+/** Alto de la biblioteca en Ajustes (la página ya desplaza: la lista necesita uno fijo). */
+private val LIBRARY_HEIGHT = 420.dp
 
 /**
  * Archivos: el reproductor de LiteDash lee la música de tus memorias (USB o tarjeta) solo; si tu

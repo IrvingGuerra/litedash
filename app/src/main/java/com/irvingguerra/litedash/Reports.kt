@@ -37,6 +37,7 @@ import com.irvingguerra.litedash.core.ui.Typography
 import com.irvingguerra.litedash.feature.dashboard.DashboardState
 import com.irvingguerra.litedash.feature.music.AppProbe
 import com.irvingguerra.litedash.feature.music.MusicRepository
+import com.irvingguerra.litedash.feature.obd.ObdRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -111,7 +112,7 @@ private var lastReport = 0L
 /** La tarjeta con el flujo por pasos; siempre se puede regresar al anterior. */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-internal fun SendReport(music: MusicRepository, pro: ProAccess, dashboard: DashboardState) {
+internal fun SendReport(music: MusicRepository, pro: ProAccess, dashboard: DashboardState, obd: () -> ObdRepository?) {
     val c = LocalColors.current
     val context = LocalContext.current.applicationContext
     val scope = rememberCoroutineScope()
@@ -162,7 +163,7 @@ internal fun SendReport(music: MusicRepository, pro: ProAccess, dashboard: Dashb
                             // Se lee el estado de ahora (dos toques en el mismo cuadro no mandan dos).
                             if (chosen == null || state == ReportState.Sending) return@Button
                             state = ReportState.Sending
-                            scope.launch { state = submitReport(context, music, pro.isPro, dashboard, m, detail, chosen, note) }
+                            scope.launch { state = submitReport(context, music, obd(), pro.isPro, dashboard, m, detail, chosen, note) }
                         },
                         Modifier.graphicsLayer { alpha = if (chosen == null || sending) 0.45f else 1f },
                         primary = true,
@@ -200,6 +201,7 @@ private fun BackRow(picked: List<Int>, onBack: () -> Unit) {
 private suspend fun submitReport(
     context: Context,
     music: MusicRepository,
+    obd: ObdRepository?,
     pro: Boolean,
     dashboard: DashboardState,
     module: ReportModule,
@@ -208,7 +210,7 @@ private suspend fun submitReport(
     note: String,
 ): ReportState {
     if (lastReport != 0L && SystemClock.elapsedRealtime() - lastReport < REPORT_GAP_MS) return ReportState.Wait
-    val id = sendReport(context, music, pro, dashboard, module, detail, problem, note) ?: return ReportState.Error
+    val id = sendReport(context, music, obd, pro, dashboard, module, detail, problem, note) ?: return ReportState.Error
     lastReport = SystemClock.elapsedRealtime()
     return ReportState.Sent(id.take(6).uppercase())
 }
@@ -217,6 +219,7 @@ private suspend fun submitReport(
 private suspend fun sendReport(
     context: Context,
     music: MusicRepository,
+    obd: ObdRepository?,
     pro: Boolean,
     dashboard: DashboardState,
     module: ReportModule,
@@ -228,6 +231,8 @@ private suspend fun sendReport(
     val musicInfo = music.describe()
     val layout = dashboard.describe()
     val silent = music.silentSources()
+    // El escáner solo si ya existe (abrir el Taller lo crea); si no, no se conecta nada por el reporte.
+    val obdInfo = obd?.describe() ?: "OBD: sin abrir en esta sesión"
     return withContext(Dispatchers.IO) { runCatching {
         val id = Firestore.newId()
         val fields = JSONObject()
@@ -239,7 +244,7 @@ private suspend fun sendReport(
             .put("detail", Firestore.text(detail?.key ?: ""))
             .put("problem", Firestore.text(problem.key))
             .put("note", Firestore.text(note.trim().take(NOTE_MAX)))
-            .put("info", Firestore.text(systemInfo(context, pro, layout, musicInfo, silent).take(INFO_MAX)))
+            .put("info", Firestore.text(systemInfo(context, pro, layout, musicInfo + "\n" + obdInfo, silent).take(INFO_MAX)))
         val write = JSONObject()
             .put("update", JSONObject().put("name", Firestore.document("reports/$id")).put("fields", fields))
             .put("currentDocument", JSONObject().put("exists", false))

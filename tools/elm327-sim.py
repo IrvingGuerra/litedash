@@ -10,6 +10,7 @@ pendiente y datos en vivo que cambian (velocidad, rpm, temperatura, gasolina, tu
 Para probar las alertas: --caliente (motor a 112 °C) y --sin-carga (alternador sin cargar,
 12.2 V con el motor andando). También contesta la presión de llantas de fábrica (Llantas →
 Auto (OBD)) como el módulo de su marca: ver MODULOS; con --sin-tpms no la da.
+--encabezados: como los clones que ignoran ATH0, el modo 01 llega con "7E8" y el largo.
 """
 import math
 import socketserver
@@ -19,6 +20,7 @@ import time
 HOT = "--caliente" in sys.argv
 NOT_CHARGING = "--sin-carga" in sys.argv
 NO_TPMS = "--sin-tpms" in sys.argv
+HEADERS = "--encabezados" in sys.argv
 # A qué módulo se le habla (ATSH); "7DF" = el motor.
 header = "7DF"
 
@@ -149,6 +151,13 @@ def reply(cmd):
         data = "490201" + vin
         return "014\r0:" + data[0:12] + "\r1:" + data[12:26] + "\r2:" + data[26:40]
     if len(cmd) == 4 and cmd.startswith("01"):
+        out = mode01(cmd)
+        return "7E8%02X%s" % (len(out) // 2, out) if HEADERS and out.startswith("41") else out
+    return "?"
+
+
+def mode01(cmd):
+    if True:
         pid = int(cmd[2:], 16)
         if pid in (0x00, 0x20, 0x40, 0x60):
             return "41%02X%s" % (pid, bitmap(pid))
@@ -158,7 +167,6 @@ def reply(cmd):
             return "4101%02X07650%d" % (a, 4 if mil else 0)
         value = live(pid) if pid in PIDS else None
         return "41%02X%s" % (pid, value) if value else "NO DATA"
-    return "?"
 
 
 class Handler(socketserver.BaseRequestHandler):

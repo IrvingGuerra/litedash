@@ -13,15 +13,14 @@ import com.irvingguerra.litedash.core.ui.LocalColors
 import com.irvingguerra.litedash.core.ui.Typography
 
 /**
- * Tarjeta de música (ver [MediaTile]): lo que suena, con sus controles. Tocarla (fuera de los
- * botones) la amplía con [onExpand]. [revision] cambia al volver a la app, para notar si el
- * usuario acaba de dar el permiso.
+ * Tarjeta de música (ver [MediaTile]): lo que suena, con sus controles. [revision] cambia al volver
+ * a la app, para notar si el usuario acaba de dar el permiso.
  */
 @Composable
-fun MusicTile(repo: MusicRepository, revision: Int, onExpand: () -> Unit, modifier: Modifier = Modifier) {
+fun MusicTile(repo: MusicRepository, revision: Int, modifier: Modifier = Modifier) {
     val song = repo.song
     MediaTile(
-        repo, revision, onExpand, modifier, song, Icons.music, stringResource(R.string.music), stringResource(R.string.music_explain),
+        repo, revision, modifier, song, Icons.music, stringResource(R.string.music), stringResource(R.string.music_explain),
         text = { tall -> SongText(repo, song, tall) },
         // Cargando se pinta como pausa: tocarlo cancela la carga.
         controls = { m, compact -> Controls(repo, song?.playing == true, m, loading = song?.buffering == true, compact = compact) },

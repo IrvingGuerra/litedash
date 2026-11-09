@@ -4,6 +4,25 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.4.122] - 2026-11-09
+
+### Corregido
+- **Escáner OBD que solo mostraba el voltaje**: algunos adaptadores ELM327 (clones) mandan cada respuesta con
+  su encabezado aunque se les pida que no; LiteDash no entendía esas respuestas y solo leía el voltaje del
+  adaptador. Ahora las entiende. Con los adaptadores que ya funcionaban no cambia nada.
+- **Música y Radio a media altura sin carátula**: en ese tamaño el widget dejaba de mostrar la carátula; ahora
+  se achica para caber.
+- **Radio sin "Sin datos de la canción"**: abajo de la estación ya no sale ese texto.
+
+### Cambiado
+- **Un toque a Música, Radio o Mapa ya no los abre a media pantalla** (confundía). Los botones siguen igual; el
+  mapa aleja el zoom con un toque. Si el widget ocupa media pantalla o más, se ve completo ahí mismo.
+- **Tu música en Ajustes**: con Archivos, en Ajustes → Apps → Música está tu biblioteca (carpetas, artistas,
+  álbumes y todas) para elegir qué escuchar.
+- **Favoritas en la Barra de apps**: pasaron de Apps a Inicio y apariencia → Barra de apps y solo aparecen si
+  están prendidas. Ahí mismo se quitan (x) y se agregan con el buscador.
+- Los reportes del Taller traen los datos del escáner OBD (adaptador, protocolo y qué contesta el auto).
+
 ## [1.4.121] - 2026-11-09
 
 ### Agregado

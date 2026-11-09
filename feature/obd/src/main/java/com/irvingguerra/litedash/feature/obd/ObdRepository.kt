@@ -462,6 +462,22 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
     /** Borra los códigos (el Taller pide confirmar dos veces antes). */
     suspend fun clearCodes(): Boolean = withElm { it.clearCodes() } ?: false
 
+    /** Para los reportes: estado, adaptador, protocolo, qué datos da el auto y su primera respuesta. Se llama en el hilo principal. */
+    suspend fun describe(): String {
+        val protocol = withElm { it.command("ATDPN").firstOrNull() } ?: "-"
+        val pids = supported.sorted().joinToString(" ") { "%02X".format(it) }
+        // Nombres fijos: en la release R8 cambia los de las clases.
+        val by = when (target) {
+            is ObdTarget.Bluetooth -> "bluetooth"
+            is ObdTarget.Ble -> "ble"
+            is ObdTarget.Wifi -> "wifi"
+            is ObdTarget.Usb -> "usb"
+            null -> "-"
+        }
+        return "OBD: estado=${state.name.lowercase()}, por=$by, adaptador=${adapter ?: "-"}, " +
+            "protocolo=$protocol, datos=${supported.size} [$pids], 0100=${elm?.firstReply?.joinToString("|") ?: "-"}, error=${error ?: "-"}"
+    }
+
     private suspend fun <T> withElm(block: (Elm327) -> T): T? {
         val e = elm ?: return null
         return withContext(Dispatchers.IO) { runCatching { lock.withLock { block(e) } }.getOrNull() }

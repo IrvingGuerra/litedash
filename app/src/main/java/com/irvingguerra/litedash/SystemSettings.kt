@@ -94,7 +94,7 @@ private fun ScreenInfo(d: Dependencies) {
         for (line in lines) Label(line, Typography.body, maxLines = 2)
     }
     ProCard(d.pro)
-    SendReport(d.music, d.pro, d.dashboard)
+    SendReport(d.music, d.pro, d.dashboard, d::obdIfCreated)
 }
 
 /** LiteDash Pro en prueba: activarlo con un código o, si ya está, quitarlo de esta pantalla (solo lo local). */

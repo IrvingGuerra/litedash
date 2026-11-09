@@ -98,12 +98,13 @@ internal fun ProgressTrack(fraction: Float, height: Dp, modifier: Modifier = Mod
 
 /**
  * Qué decir debajo del título cuando la app no manda artista: en Bluetooth, el celular
- * conectado (o que lo conecte); en lo demás, "sin datos".
+ * conectado (o que lo conecte); en la radio, nada (la estación ya es el título); en lo demás, "sin datos".
  */
 @Composable
 internal fun subtitleFor(repo: MusicRepository, song: Song): String = when {
     song.artist.isNotBlank() -> song.artist
     song.source == SourceKind.BLUETOOTH -> repo.bluetoothDevice ?: stringResource(R.string.bluetooth_connect_phone)
+    repo.isRadio(song.pkg) -> ""
     else -> stringResource(R.string.no_song_info)
 }
 
@@ -143,7 +144,7 @@ internal fun UseRepo(repo: MusicRepository) {
 /**
  * La base de las piezas Música y Radio. Se acomoda a su tamaño: chica es una fila con carátula
  * y play (o los tres botones si cabe); alta y no tan ancha, carátula arriba y lo demás abajo.
- * Tocarla (fuera de los botones) la amplía con [onExpand]. [revision] cambia al volver a la
+ * [revision] cambia al volver a la
  * app, para notar si el usuario acaba de dar el permiso. [text] es lo escrito y [controls] los
  * botones (con [Modifier] y si van compactos).
  */
@@ -151,7 +152,6 @@ internal fun UseRepo(repo: MusicRepository) {
 internal fun MediaTile(
     repo: MusicRepository,
     revision: Int,
-    onExpand: () -> Unit,
     modifier: Modifier,
     song: Song?,
     icon: ImageVector,
@@ -164,7 +164,7 @@ internal fun MediaTile(
 ) {
     UseRepo(repo)
     val permission = remember(revision, needsAccess) { !needsAccess || repo.hasPermission().also { if (it) repo.recheck() } }
-    Card(modifier.fillMaxSize(), onClick = if (permission) onExpand else null) {
+    Card(modifier.fillMaxSize()) {
         if (!permission) return@Card NoPermission(repo, icon, title, explain)
         BoxWithConstraints(Modifier.fillMaxSize().padding(TilePadding)) {
             val tall = maxHeight > 150.dp
@@ -178,9 +178,10 @@ internal fun MediaTile(
             }
             // Angosta (la fila de abajo en 7"): solo play/pausa, para que el título se lea.
             val compact = !tall && maxWidth < 400.dp
-            // Carátula cuadrada con esquinas, dentro de la tarjeta, si deja lugar al título.
-            val art = minOf(maxHeight, 240.dp)
-            val withArtwork = maxWidth - art >= if (compact) 150.dp else 220.dp
+            // Carátula cuadrada con esquinas, dentro de la tarjeta, si deja lugar al título. Alta (controles
+            // abajo del título) se achica a lo que deje libre la columna, en vez de desaparecer.
+            val art = if (tall) minOf(maxHeight, 240.dp, maxWidth - TALL_TEXT_MIN) else minOf(maxHeight, 240.dp)
+            val withArtwork = if (tall) art >= ARTWORK_MIN else maxWidth - art >= if (compact) 150.dp else 220.dp
             Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
                 if (withArtwork) Artwork(song, Modifier.size(art), Radius.inner, icon)
                 Column(Modifier.weight(1f).padding(horizontal = 12.dp), verticalArrangement = Arrangement.Center) {
@@ -195,6 +196,10 @@ internal fun MediaTile(
         }
     }
 }
+
+/** Lo que necesita la columna del título con los tres controles abajo, y la carátula más chica que vale la pena. */
+private val TALL_TEXT_MIN = 200.dp
+private val ARTWORK_MIN = 72.dp
 
 /** Sin acceso a notificaciones: qué hace la pieza y el botón para activarlo. */
 @Composable

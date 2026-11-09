@@ -77,4 +77,21 @@ class Elm327Test {
         assertNull(parseModuleReply("22C00B", listOf("7F2231")))
         assertNull(parseModuleReply("22C00B", listOf("NODATA")))
     }
+
+    @Test fun clon_que_deja_encabezados() {
+        // CAN 11 bits sin quitar "7E8 06": antes los medidores no leían nada (solo el voltaje del adaptador).
+        assertEquals(2700f, Pids.first { it.code == 0x0C }.decode(elm("7E804410C2A30\r>").pid(0x0C)!!))
+        val s = elm("7E8064100BE1FA813\r>").supportedPids()
+        assertTrue(0x0C in s && 0x0D in s && 0x20 in s)
+        // CAN 29 bits y protocolos viejos (suma al final).
+        assertEquals("3C", afterHead("410D", listOf("18DAF11003410D3C")))
+        assertEquals("1AF8", afterHead("410C", listOf("486B10410C1AF8C3")))
+    }
+
+    @Test fun lo_normal_no_cambia() {
+        assertEquals("3C", afterHead("410D", listOf("410D3C")))
+        assertNull(afterHead("410D", listOf("NODATA")))
+        assertNull(afterHead("410D", listOf("UNABLETOCONNECT")))
+        assertNull(afterHead("410D", listOf("STOPPED")))
+    }
 }

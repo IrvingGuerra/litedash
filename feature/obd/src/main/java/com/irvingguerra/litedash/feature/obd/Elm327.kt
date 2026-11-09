@@ -53,16 +53,17 @@ class Elm327(private val link: ElmLink, private val now: () -> Long = System::cu
         for (c in listOf("ATE0", "ATL0", "ATS0", "ATH0", "ATAT1", "ATSP0")) command(c)
         // La primera consulta busca el protocolo del auto (puede tardar unos segundos).
         val probe = command("0100", 10_000)
+        firstReply = probe
         if (probe.none { it.contains("4100") }) throw IOException(probe.firstOrNull() ?: "Sin respuesta del auto")
         return version
     }
 
+    /** Lo que contestó el auto al primer "0100" (para los reportes). */
+    var firstReply: List<String> = emptyList()
+        private set
+
     /** Datos del modo 01 para [pid] (sin el "41 PID"); null si el auto no lo da. */
-    fun pid(pid: Int): IntArray? {
-        val head = "41%02X".format(pid)
-        val line = command("01%02X".format(pid)).firstOrNull { it.startsWith(head) } ?: return null
-        return hexBytes(line.substring(head.length))
-    }
+    fun pid(pid: Int): IntArray? = afterHead("41%02X".format(pid), command("01%02X".format(pid)))?.let(::hexBytes)
 
     /**
      * Consultas a otro módulo del auto (no al motor): antes [setup] (su dirección, p. ej.
@@ -137,6 +138,32 @@ private const val MODULE_TIMEOUT_MS = 1_500L
 /** El renglón con el largo de una respuesta en varias tramas ("00A") y el número de cada trama ("1:"). */
 private val MULTI_LENGTH = Regex("[0-9A-F]{3}")
 private val MULTI_INDEX = Regex("^[0-9A-F]:")
+
+/**
+ * Los datos que siguen de [head] ("410C") en la respuesta. Lo normal: el renglón empieza con [head].
+ * Solo si ninguno, el respaldo para clones que dejan el encabezado aunque se pidió ATH0: CAN de
+ * 11 bits ("7E8" + largo), de 29 bits ("18DAF110" + largo) o los viejos (3 bytes + suma al final).
+ */
+internal fun afterHead(head: String, lines: List<String>): String? {
+    lines.firstOrNull { it.startsWith(head) }?.let { return it.substring(head.length) }
+    for (line in lines) {
+        for (size in CAN_HEADERS) {
+            if (line.length < size + 2 + head.length) continue
+            val length = line.substring(size, size + 2).toIntOrNull(16) ?: continue
+            val data = line.substring(size + 2)
+            if (length * 2 >= head.length && length * 2 <= data.length && data.startsWith(head)) {
+                return data.substring(head.length, length * 2)
+            }
+        }
+        if (line.length >= 6 + head.length + 2 && line.substring(6).startsWith(head)) {
+            return line.substring(6 + head.length, line.length - 2)
+        }
+    }
+    return null
+}
+
+/** Largo (en hex) del encabezado CAN que algunos clones no quitan: 11 y 29 bits. */
+private val CAN_HEADERS = intArrayOf(3, 8)
 
 internal fun hexBytes(hex: String): IntArray? {
     if (hex.length % 2 != 0 || hex.any { it !in "0123456789ABCDEF" }) return null

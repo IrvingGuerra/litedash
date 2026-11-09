@@ -103,7 +103,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withTimeoutOrNull
 
 /** El widget en grande (a media pantalla). */
-enum class Expanded { MUSIC, RADIO, MAP }
+enum class Expanded { MUSIC }
 
 /** Qué panel está abierto encima del inicio (uno a la vez). */
 sealed interface Panel {
@@ -209,8 +209,6 @@ class Dependencies(
 class TileActions(
     val onPanel: (Panel) -> Unit,
     val onNavigate: (App?) -> Unit,
-    /** La música, la radio o el mapa en grande ([Expanded]), desde el widget que se tocó (su lado y su estilo). */
-    val onExpand: (Expanded, Tile) -> Unit,
     /** Ver en grande el auto, la carretera o la imagen de esta pieza. */
     val onCarOnly: (Tile) -> Unit,
     /** Dónde está cada pieza que crece (por id): de ahí crece al verla sola. */
@@ -263,9 +261,9 @@ fun TileContent(d: Dependencies, p: Tile, apps: List<App>, car: CarPackage?, rev
         }
         // Ya de media pantalla o más: lo de en grande ahí mismo (no se mueve).
         TileTypes.MUSIC -> if (p.fillsHalf(d.dashboard.grid)) MusicBig(d, close = null)
-        else MusicTile(d.music, revision, onExpand = remember(p) { { actions.onExpand(Expanded.MUSIC, p) } })
+        else MusicTile(d.music, revision)
         TileTypes.RADIO -> if (p.fillsHalf(d.dashboard.grid)) RadioBig(d, close = null) { actions.onPanel(Panel.MusicSettings) }
-        else RadioTile(d.music, revision, onExpand = remember(p) { { actions.onExpand(Expanded.RADIO, p) } })
+        else RadioTile(d.music, revision, onIdle = { actions.onPanel(Panel.MusicSettings) })
         TileTypes.CLOCK -> ClockTile(d.prefs.driverName, d.weather)
         TileTypes.WEATHER -> WeatherTile(d.weather)
         TileTypes.TRIP -> TripTile(d)
@@ -280,12 +278,10 @@ fun TileContent(d: Dependencies, p: Tile, apps: List<App>, car: CarPackage?, rev
         TileTypes.TIRES -> TiresTile(d, onOpen = actions.onTires, onSettings = { actions.onPanel(Panel.TiresSettings) })
         TileTypes.MAP -> {
             val app = mapApp(d, apps)
-            val expand = remember(p) { { actions.onExpand(Expanded.MAP, p) } }
             MapTile(
                 d, p.data, app, editing = actions.editing(),
                 onPlace = remember(app) { { navigateTo(context, app, it) } },
                 onNavigate = remember(app) { { actions.onNavigate(app) } },
-                onExpand = if (p.fillsHalf(d.dashboard.grid)) null else expand,
             )
         }
         TileTypes.PHONE -> ShortcutTile(Icons.phone, stringResource(R.string.tile_phone), null) {
@@ -445,10 +441,6 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
         TileActions(
             onPanel = { panel = it },
             onNavigate = { app -> openNavigation(context, d.apps, app) },
-            onExpand = { kind, tile ->
-                expandedFromId = tile.id
-                expanded = kind
-            },
             onCarOnly = {
                 // Con Llantas activo, tocar el auto 3D abre las llantas; si no, lo agranda.
                 if (it.type == TileTypes.CAR && d.hasTpmsSource && d.prefs.carTap == CarTap.TIRES) openTires()
@@ -604,11 +596,6 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                             val close = { expanded = null }
                             when (big) {
                                 Expanded.MUSIC -> MusicBig(d, close, Modifier.padding(6.dp))
-                                Expanded.RADIO -> RadioBig(d, close, Modifier.padding(6.dp)) { panel = Panel.MusicSettings }
-                                Expanded.MAP -> {
-                                    val app = mapApp(d, apps)
-                                    MapExpanded(d, from?.data ?: "", app, onPlace = { navigateTo(context, app, it) }, onNavigate = { actions.onNavigate(app) }, close = close, Modifier.padding(6.dp))
-                                }
                             }
                         } else Dashboard(
                                 grid = grid,
