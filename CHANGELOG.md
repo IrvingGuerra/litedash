@@ -4,6 +4,14 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.4.128] - 2026-11-10
+
+### Agregado
+- **Módulo Celular** (Ajustes → Módulos, apagado de fábrica): vincula tu pantalla con la app **LiteDash Connect**
+  de tu celular escaneando un código QR. El enlace va cifrado por la red local (el hotspot de tu celular o el
+  mismo Wi-Fi), sin cuenta y sin internet. Es el primer paso: por ahora la pantalla y el celular se reconocen y
+  muestran si están conectados.
+
 ## [1.4.127] - 2026-11-10
 
 ### Cambiado
