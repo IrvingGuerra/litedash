@@ -55,6 +55,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
@@ -866,26 +867,60 @@ private fun Dock(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         val buttonSize = (if (small) 64.dp else if (short) 46.dp else 56.dp) * k
-        // Lo demás va en su propio bloque con peso: Ajustes se mide primero y nunca se queda sin lugar.
-        Row(Modifier.weight(1f).clipToBounds(), verticalAlignment = Alignment.CenterVertically) {
-        if (prefs.barApps) IconButton(Icons.apps, onApps, size = buttonSize)
-        // La pantalla Música (como en Tesla); marcado mientras está abierta.
-        if (prefs.barMusic) IconButton(Icons.music, onMusic, size = buttonSize, background = if (musicOpen) c.surfaceHigh else Color.Transparent)
-        if (prefs.barApps || prefs.barMusic) Box(Modifier.padding(horizontal = 8.dp).width(1.dp).height(32.dp).background(c.line))
-        if (prefs.barVolume == VolumePlace.START) Volume(buttonSize)
-        // Las favoritas al centro de la barra (como Tesla); caben las que quepan: en pantallas chicas no se encima.
-        BoxWithConstraints(Modifier.weight(1f), contentAlignment = Alignment.Center) {
-            val fitCount = (maxWidth / (box + 8.dp)).toInt()
-            if (prefs.barFavorites) Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                for (app in favorites.take(fitCount)) AppShortcut(repo, app, box, side)
-            }
+        DockLayout(
+            start = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (prefs.barApps) IconButton(Icons.apps, onApps, size = buttonSize)
+                    // La pantalla Música (como en Tesla); marcado mientras está abierta.
+                    if (prefs.barMusic) IconButton(Icons.music, onMusic, size = buttonSize, background = if (musicOpen) c.surfaceHigh else Color.Transparent)
+                    if (prefs.barApps || prefs.barMusic) Box(Modifier.padding(horizontal = 8.dp).width(1.dp).height(32.dp).background(c.line))
+                    if (prefs.barVolume == VolumePlace.START) Volume(buttonSize)
+                }
+            },
+            center = {
+                // Caben las que quepan: en pantallas chicas no se encima.
+                BoxWithConstraints(contentAlignment = Alignment.Center) {
+                    val fitCount = (maxWidth / (box + 8.dp)).toInt()
+                    if (prefs.barFavorites) Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                        for (app in favorites.take(fitCount)) AppShortcut(repo, app, box, side)
+                    }
+                }
+            },
+            end = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (prefs.barVolume == VolumePlace.END) Volume(buttonSize)
+                    // Voz: abre el asistente que tenga la pantalla; si no hay ninguno, no aparece.
+                    if (onVoice != null && prefs.barVoice) IconButton(Icons.mic, onVoice, size = buttonSize)
+                    // Siempre: sin Ajustes no habría cómo salir del inicio.
+                    IconButton(Icons.settings, onSettings, size = buttonSize)
+                }
+            },
+        )
+    }
+}
+
+/**
+ * La barra de abajo en tres partes: [start] pegado a la izquierda, [end] a la derecha y [center] (tus
+ * favoritas) al centro de TODA la barra, no del hueco entre los dos (como Tesla). El centro tiene lo que dejan
+ * libre los lados por igual. [end] se mide primero (lleva Ajustes: nunca se queda sin lugar) y [start] con
+ * lo que sobre, recortado si no cabe.
+ */
+@Composable
+private fun DockLayout(start: @Composable () -> Unit, center: @Composable () -> Unit, end: @Composable () -> Unit) {
+    Layout(contents = listOf(start, center, end), modifier = Modifier.fillMaxSize().clipToBounds()) { (s, m, e), constraints ->
+        val width = constraints.maxWidth
+        val loose = constraints.copy(minWidth = 0, minHeight = 0)
+        val endPlaced = e.first().measure(loose)
+        val startPlaced = s.first().measure(loose.copy(maxWidth = (width - endPlaced.width).coerceAtLeast(0)))
+        val gap = 8.dp.roundToPx()
+        val sideWidth = maxOf(startPlaced.width, endPlaced.width) + gap
+        val centerPlaced = m.first().measure(loose.copy(maxWidth = (width - 2 * sideWidth).coerceAtLeast(0)))
+        val height = constraints.maxHeight
+        layout(width, height) {
+            startPlaced.place(0, (height - startPlaced.height) / 2)
+            endPlaced.place(width - endPlaced.width, (height - endPlaced.height) / 2)
+            centerPlaced.place((width - centerPlaced.width) / 2, (height - centerPlaced.height) / 2)
         }
-        if (prefs.barVolume == VolumePlace.END) Volume(buttonSize)
-        // Voz: abre el asistente que tenga la pantalla; si no hay ninguno, no aparece.
-        if (onVoice != null && prefs.barVoice) IconButton(Icons.mic, onVoice, size = buttonSize)
-        }
-        // Siempre: sin Ajustes no habría cómo salir del inicio.
-        IconButton(Icons.settings, onSettings, size = buttonSize)
     }
 }
 
