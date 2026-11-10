@@ -38,6 +38,7 @@ object Icons {
     val swap = icon("M5 8h13 M15 5l3 3l-3 3 M19 16h-13 M9 13l-3 3l3 3")
     val expand = icon("M4 9v-5h5 M20 9v-5h-5 M4 15v5h5 M20 15v5h-5")
     val done = icon("M5 12.5l4.5 4.5l9.5 -10")
+    val volume = icon("M4 9.5h3.5l4.5 -4v13l-4.5 -4h-3.5z M15.5 9a4 4 0 0 1 0 6 M18 6.5a7.5 7.5 0 0 1 0 11")
     val mic = icon("M9 5a3 3 0 0 1 6 0v6a3 3 0 0 1 -6 0z M5 11a7 7 0 0 0 14 0 M12 18v3")
     val bluetooth = icon("M7 7l10 10l-5 4v-18l5 4l-10 10")
     val wifi = icon("M2 8.5a15 15 0 0 1 20 0 M5 12a10 10 0 0 1 14 0 M8.5 15.5a5 5 0 0 1 7 0 M12 19h.01")

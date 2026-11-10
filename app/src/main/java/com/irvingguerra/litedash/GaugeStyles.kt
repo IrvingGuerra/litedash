@@ -257,6 +257,18 @@ object TileTires {
 }
 
 /**
+ * Si el reloj lleva el clima: "weather=off" en su [com.irvingguerra.litedash.feature.dashboard.Tile.data]
+ * lo quita; sin guardar, sí lo lleva (salvo que ya haya un widget Clima en el inicio).
+ */
+object ClockWeather {
+    private const val OFF = "weather=off"
+
+    fun parse(data: String) = data.split(';').none { it == OFF }
+
+    fun encode(on: Boolean) = if (on) "" else OFF
+}
+
+/**
  * Cómo se ve la carretera; se guarda en su [com.irvingguerra.litedash.feature.dashboard.Tile.data]
  * como un velocímetro ([gauge]) más "speed=…" ([speed]), "trip=…" ([trip]) y "tires=…" ([tires],
  * ver [TileTires]). Lo de fábrica no se escribe.

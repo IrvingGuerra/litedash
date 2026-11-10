@@ -87,6 +87,9 @@
     <string name="gauge_customize">Customize gauge</string>
     <string name="road_customize">Customize road</string>
     <string name="car_customize">Customize car</string>
+    <string name="clock_customize">Customize clock</string>
+    <string name="clock_show_weather">Show the weather</string>
+    <string name="clock_weather_in_widget">You have the Weather widget on your home: the clock won\'t repeat it.</string>
     <string name="tires_show_pressure">Show tire pressure</string>
     <string name="gauge_customize_help">Changes show right away. What needs attention (hot engine, high revs) is always red.</string>
     <string name="gauge_style">Style</string>

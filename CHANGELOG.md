@@ -4,6 +4,16 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.4.125] - 2026-11-09
+
+### Cambiado
+- **Volumen en un solo botón**: en la barra ahora es una bocina con el nivel; al tocarla se abre su barra para
+  deslizar (con − y +) y se cierra sola a los 4 segundos.
+- **Tus apps favoritas, al centro de la barra.**
+- **El botón de voz viene apagado**: si lo quieres, préndelo en Ajustes → Inicio y apariencia → Barra de apps.
+- **El reloj ya no repite el clima** si tienes el widget Clima en el inicio, y ahora tiene ajustes: al acomodar,
+  su engrane deja quitarle el clima.
+
 ## [1.4.124] - 2026-11-09
 
 ### Corregido

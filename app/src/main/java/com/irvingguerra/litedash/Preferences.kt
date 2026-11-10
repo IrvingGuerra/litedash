@@ -317,7 +317,7 @@ class Preferences(context: Context) {
     /** Botón de todas las apps. */
     var barApps by bool(PrefKeys.BAR_APPS, true)
     var barFavorites by bool(PrefKeys.BAR_FAVORITES, true)
-    var barVoice by bool(PrefKeys.BAR_VOICE, true)
+    var barVoice by bool(PrefKeys.BAR_VOICE, false)
     // Ajustes no se puede quitar: sin él no habría cómo salir del inicio.
 
     /** Abrir las apps de mapa y música en pantalla dividida, con el auto al lado (solo acostada). */

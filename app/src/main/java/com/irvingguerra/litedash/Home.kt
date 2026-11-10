@@ -127,6 +127,8 @@ sealed interface Panel {
     data class CustomizeMap(val tileId: String) : Panel
     /** La presión de las llantas sobre el auto 3D ([tileId]). */
     data class CustomizeCar(val tileId: String) : Panel
+    /** Si el reloj ([tileId]) lleva el clima. */
+    data class CustomizeClock(val tileId: String) : Panel
     /** Ajustes abiertos en Llantas (desde la vista de llantas o la pieza sin configurar). */
     data object TiresSettings : Panel
 }
@@ -262,7 +264,7 @@ fun TileContent(d: Dependencies, p: Tile, apps: List<App>, car: CarPackage?, rev
         else MusicTile(d.music, revision) { picked -> FilesBrowser(picked) }
         TileTypes.RADIO -> if (p.fillsHalf(d.dashboard.grid)) RadioBig(d) { openRadioSettings(); actions.onPanel(Panel.MusicSettings) }
         else RadioTile(d.music, revision, onIdle = { openRadioSettings(); actions.onPanel(Panel.MusicSettings) }) { picked -> StationsBrowser(picked) }
-        TileTypes.CLOCK -> ClockTile(d.prefs.driverName, d.weather)
+        TileTypes.CLOCK -> ClockTile(d.prefs.driverName, clockWeather(d, p.data))
         TileTypes.WEATHER -> WeatherTile(d.weather)
         TileTypes.TRIP -> TripTile(d)
         TileTypes.SPEEDOMETER -> SpeedometerTile(d, remember(p.data) { GaugeLook.parse(p.data) })
@@ -616,6 +618,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                                         TileTypes.IMAGE -> Panel.CustomizeImage(it.id)
                                         TileTypes.MAP -> Panel.CustomizeMap(it.id)
                                         TileTypes.CAR -> Panel.CustomizeCar(it.id)
+                                        TileTypes.CLOCK -> Panel.CustomizeClock(it.id)
                                         else -> Panel.CustomizeGauge(it.id)
                                     }
                                 },
@@ -670,6 +673,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
             is Panel.CustomizeImage -> CustomizeImagePanel(d, p.tileId, close = { panel = null })
             is Panel.CustomizeMap -> CustomizeMapPanel(d, p.tileId, close = { panel = null })
             is Panel.CustomizeCar -> CustomizeCarPanel(d, p.tileId, close = { panel = null })
+            is Panel.CustomizeClock -> CustomizeClockPanel(d, p.tileId, close = { panel = null })
         }
 
         val big = bigTile
@@ -819,8 +823,8 @@ private fun Dock(
             Box(Modifier.padding(horizontal = 8.dp).width(1.dp).height(32.dp).background(c.line))
         }
         if (prefs.barVolume == VolumePlace.START) Volume(buttonSize)
-        BoxWithConstraints(Modifier.weight(1f)) {
-            // Caben las que quepan: en pantallas chicas el dock no se encima.
+        // Las favoritas al centro de la barra (como Tesla); caben las que quepan: en pantallas chicas no se encima.
+        BoxWithConstraints(Modifier.weight(1f), contentAlignment = Alignment.Center) {
             val fitCount = (maxWidth / (box + 8.dp)).toInt()
             if (prefs.barFavorites) Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                 for (app in favorites.take(fitCount)) AppShortcut(repo, app, box, side)
@@ -888,7 +892,7 @@ private fun Rail(
             Box(Modifier.padding(vertical = 4.dp).width(28.dp).height(1.dp).background(c.line))
         }
         if (prefs.barVolume == VolumePlace.START) Volume(volume, vertical = true)
-        BoxWithConstraints(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
+        BoxWithConstraints(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
             // Las favoritas que quepan entre los accesos de arriba y los controles de abajo.
             val fit = (maxHeight / (button + 4.dp)).toInt()
             if (prefs.barFavorites) Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -953,7 +957,7 @@ private const val TIRES_WAIT_MS = 300L
 private const val TIRES_FADE_MS = 260
 
 /** Los widgets con botón de ajustes al acomodar el inicio. */
-private val CUSTOMIZABLE = setOf(TileTypes.SPEEDOMETER, TileTypes.GAUGE, TileTypes.ROAD, TileTypes.IMAGE, TileTypes.MAP)
+private val CUSTOMIZABLE = setOf(TileTypes.SPEEDOMETER, TileTypes.GAUGE, TileTypes.ROAD, TileTypes.IMAGE, TileTypes.MAP, TileTypes.CLOCK)
 
 /**
  * Media pantalla: [content] (el widget en grande) y, en la otra mitad, [side]. Acostada, lado a

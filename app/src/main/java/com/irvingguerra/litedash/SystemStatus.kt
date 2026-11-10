@@ -15,12 +15,31 @@ import android.net.NetworkCapabilities
 import android.net.NetworkRequest
 import android.os.Build
 import android.view.KeyEvent
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.delay
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -46,12 +65,21 @@ import kotlin.concurrent.thread
 private fun Context.listen(receiver: BroadcastReceiver, action: String) =
     ContextCompat.registerReceiver(this, receiver, IntentFilter(action), ContextCompat.RECEIVER_NOT_EXPORTED)
 
-/** Volumen de la música en el dock: botones − / + y el nivel. */
+/**
+ * Volumen de la música en la barra: un solo botón (bocina con el nivel). Al tocarlo se abre su barra
+ * (− barra +, que se arrastra) y se cierra sola a los [VOLUME_OPEN_MS] sin tocarla. Con el volumen
+ * del chip de la pantalla (fijo para Android) no hay nivel que mostrar: solo − y +.
+ */
 @Composable
 fun Volume(buttonSize: Dp, vertical: Boolean = false) {
+    val c = LocalColors.current
     val context = LocalContext.current
     val audio = remember { context.getSystemService(AudioManager::class.java) }
+    val max = remember { audio.getStreamMaxVolume(AudioManager.STREAM_MUSIC).coerceAtLeast(1) }
     var level by remember { mutableIntStateOf(audio.getStreamVolume(AudioManager.STREAM_MUSIC)) }
+    var open by remember { mutableStateOf(false) }
+    // Cada cambio reinicia la cuenta para cerrarse.
+    var touched by remember { mutableIntStateOf(0) }
     LifecycleStartEffect(audio) {
         level = audio.getStreamVolume(AudioManager.STREAM_MUSIC)
         val receiver = object : BroadcastReceiver() {
@@ -60,11 +88,21 @@ fun Volume(buttonSize: Dp, vertical: Boolean = false) {
             }
         }
         context.listen(receiver, VOLUME_CHANGED)
-        onStopOrDispose { context.unregisterReceiver(receiver) }
+        onStopOrDispose {
+            context.unregisterReceiver(receiver)
+            open = false
+        }
+    }
+    LaunchedEffect(open, touched) {
+        if (open) {
+            delay(VOLUME_OPEN_MS)
+            open = false
+        }
     }
     fun adjust(direction: Int) {
+        touched++
         val before = audio.getStreamVolume(AudioManager.STREAM_MUSIC)
-        val atEdge = if (direction == AudioManager.ADJUST_RAISE) before >= audio.getStreamMaxVolume(AudioManager.STREAM_MUSIC) else before <= 0
+        val atEdge = if (direction == AudioManager.ADJUST_RAISE) before >= max else before <= 0
         if (!audio.isVolumeFixed) audio.adjustStreamVolume(AudioManager.STREAM_MUSIC, direction, 0)
         level = audio.getStreamVolume(AudioManager.STREAM_MUSIC)
         // Muchas pantallas manejan el volumen con su propio chip (Android lo tiene fijo o no lo deja
@@ -72,23 +110,99 @@ fun Volume(buttonSize: Dp, vertical: Boolean = false) {
         // sistema y la lleva a ese chip (y muestra su propia barra de volumen).
         if (level == before && !atEdge || audio.isVolumeFixed) volumeKey(if (direction == AudioManager.ADJUST_RAISE) KeyEvent.KEYCODE_VOLUME_UP else KeyEvent.KEYCODE_VOLUME_DOWN)
     }
-    // Con el volumen fijo (lo maneja el chip de la pantalla) el número de Android no dice nada: no se muestra.
-    val number = if (audio.isVolumeFixed) "" else level.toString()
-    // En la barra lateral: + arriba, el nivel y − abajo.
-    if (vertical) return Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        IconButton(Icons.plus, { adjust(AudioManager.ADJUST_RAISE) }, size = buttonSize)
-        Label(number, Typography.subtitle, maxLines = 1)
-        IconButton(Icons.minus, { adjust(AudioManager.ADJUST_LOWER) }, size = buttonSize)
+    fun set(fraction: Float) {
+        touched++
+        val target = (fraction * max + 0.5f).toInt().coerceIn(0, max)
+        if (target == level) return
+        runCatching { audio.setStreamVolume(AudioManager.STREAM_MUSIC, target, 0) }
+        level = audio.getStreamVolume(AudioManager.STREAM_MUSIC)
     }
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        IconButton(Icons.minus, { adjust(AudioManager.ADJUST_LOWER) }, size = buttonSize)
-        Row(Modifier.widthIn(min = 52.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
-            Label(number, Typography.subtitle, maxLines = 1)
+    val fixed = audio.isVolumeFixed
+    val button = @Composable {
+        Box(
+            Modifier.size(buttonSize).clip(CircleShape).background(if (open) c.surfaceHigh else Color.Transparent).clickable { open = !open },
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(Icons.volume, c.text, buttonSize * 0.45f)
+            // El nivel en chico, en la esquina de la bocina (no con volumen fijo).
+            if (!fixed && !open) Label(
+                level.toString(),
+                Typography.small.copy(fontSize = 11.sp, fontWeight = FontWeight.SemiBold),
+                c.textMuted,
+                maxLines = 1,
+                modifier = Modifier.align(Alignment.BottomEnd).padding(end = buttonSize * 0.14f, bottom = buttonSize * 0.12f),
+            )
         }
-        IconButton(Icons.plus, { adjust(AudioManager.ADJUST_RAISE) }, size = buttonSize)
-        Spacer(Modifier.width(4.dp))
+    }
+    val minus = @Composable { IconButton(Icons.minus, { adjust(AudioManager.ADJUST_LOWER) }, size = buttonSize * 0.8f) }
+    val plus = @Composable { IconButton(Icons.plus, { adjust(AudioManager.ADJUST_RAISE) }, size = buttonSize * 0.8f) }
+    val bar = @Composable { VolumeBar(level.toFloat() / max, vertical, ::set) }
+    if (vertical) Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        if (open) {
+            plus()
+            if (!fixed) bar()
+            minus()
+        }
+        button()
+    } else Row(verticalAlignment = Alignment.CenterVertically) {
+        button()
+        if (open) {
+            minus()
+            if (!fixed) bar()
+            plus()
+        }
     }
 }
+
+/** La barra del volumen: se toca o se arrastra a cualquier punto; lleno = [fraction]. */
+@Composable
+private fun VolumeBar(fraction: Float, vertical: Boolean, onChange: (Float) -> Unit) {
+    val c = LocalColors.current
+    val change by rememberUpdatedState(onChange)
+    fun at(offset: Offset, size: IntSize) =
+        if (vertical) 1f - offset.y / size.height.coerceAtLeast(1) else offset.x / size.width.coerceAtLeast(1)
+    Canvas(
+        (if (vertical) Modifier.width(36.dp).height(VOLUME_BAR_LENGTH) else Modifier.width(VOLUME_BAR_LENGTH).height(36.dp))
+            .pointerInput(Unit) {
+                awaitEachGesture {
+                    val down = awaitFirstDown()
+                    change(at(down.position, size).coerceIn(0f, 1f))
+                    while (true) {
+                        val move = awaitPointerEvent().changes.firstOrNull { it.id == down.id } ?: break
+                        if (!move.pressed) break
+                        move.consume()
+                        change(at(move.position, size).coerceIn(0f, 1f))
+                    }
+                }
+            },
+    ) {
+        val thick = 8.dp.toPx()
+        val knob = 9.dp.toPx()
+        val f = fraction.coerceIn(0f, 1f)
+        if (vertical) {
+            val x = size.width / 2
+            val top = knob
+            val bottom = size.height - knob
+            val y = bottom - (bottom - top) * f
+            drawLine(c.surfaceHigh, Offset(x, top), Offset(x, bottom), thick, StrokeCap.Round)
+            drawLine(c.primary, Offset(x, y), Offset(x, bottom), thick, StrokeCap.Round)
+            drawCircle(c.text, knob, Offset(x, y))
+        } else {
+            val y = size.height / 2
+            val start = knob
+            val end = size.width - knob
+            val x = start + (end - start) * f
+            drawLine(c.surfaceHigh, Offset(start, y), Offset(end, y), thick, StrokeCap.Round)
+            drawLine(c.primary, Offset(start, y), Offset(x, y), thick, StrokeCap.Round)
+            drawCircle(c.text, knob, Offset(x, y))
+        }
+    }
+}
+
+/** Lo que la barra del volumen sigue abierta sin tocarla. */
+private const val VOLUME_OPEN_MS = 4_000L
+
+private val VOLUME_BAR_LENGTH = 180.dp
 
 /**
  * Aprieta la tecla de volumen dentro de la ventana de LiteDash (se permite sin permisos porque es la
