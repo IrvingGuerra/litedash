@@ -15,6 +15,17 @@ import android.net.NetworkCapabilities
 import android.net.NetworkRequest
 import android.os.Build
 import android.view.KeyEvent
+import android.os.SystemClock
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntRect
+import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.window.Popup
+import androidx.compose.ui.window.PopupPositionProvider
+import androidx.compose.ui.window.PopupProperties
+import com.irvingguerra.litedash.core.ui.Radius
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -66,9 +77,9 @@ private fun Context.listen(receiver: BroadcastReceiver, action: String) =
     ContextCompat.registerReceiver(this, receiver, IntentFilter(action), ContextCompat.RECEIVER_NOT_EXPORTED)
 
 /**
- * Volumen de la música en la barra: un solo botón (bocina con el nivel). Al tocarlo se abre su barra
- * (− barra +, que se arrastra) y se cierra sola a los [VOLUME_OPEN_MS] sin tocarla. Con el volumen
- * del chip de la pantalla (fijo para Android) no hay nivel que mostrar: solo − y +.
+ * Volumen de la música en la barra: un solo botón (bocina con el nivel). Al tocarlo flota su barra
+ * hacia arriba (+ barra −; a un lado en la barra lateral) y se cierra sola a los [VOLUME_OPEN_MS] sin
+ * tocarla o al tocar fuera. Con el volumen del chip de la pantalla (fijo para Android) solo + y −.
  */
 @Composable
 fun Volume(buttonSize: Dp, vertical: Boolean = false) {
@@ -118,14 +129,18 @@ fun Volume(buttonSize: Dp, vertical: Boolean = false) {
         level = audio.getStreamVolume(AudioManager.STREAM_MUSIC)
     }
     val fixed = audio.isVolumeFixed
-    val button = @Composable {
+    // Tocar fuera cierra la barra; si ese toque fue en la bocina, no debe volver a abrirla.
+    var closedAt by remember { mutableLongStateOf(0L) }
+    Box {
         Box(
-            Modifier.size(buttonSize).clip(CircleShape).background(if (open) c.surfaceHigh else Color.Transparent).clickable { open = !open },
+            Modifier.size(buttonSize).clip(CircleShape).background(if (open) c.surfaceHigh else Color.Transparent).clickable {
+                open = !open && SystemClock.uptimeMillis() - closedAt > REOPEN_GUARD_MS
+            },
             contentAlignment = Alignment.Center,
         ) {
             Icon(Icons.volume, c.text, buttonSize * 0.45f)
             // El nivel en chico, en la esquina de la bocina (no con volumen fijo).
-            if (!fixed && !open) Label(
+            if (!fixed) Label(
                 level.toString(),
                 Typography.small.copy(fontSize = 11.sp, fontWeight = FontWeight.SemiBold),
                 c.textMuted,
@@ -133,36 +148,62 @@ fun Volume(buttonSize: Dp, vertical: Boolean = false) {
                 modifier = Modifier.align(Alignment.BottomEnd).padding(end = buttonSize * 0.14f, bottom = buttonSize * 0.12f),
             )
         }
+        // Flota encima de la barra (o a un lado de la lateral): no le quita lugar a las apps.
+        if (open) Popup(
+            popupPositionProvider = remember(vertical) { VolumePopupPosition(beside = vertical) },
+            onDismissRequest = {
+                open = false
+                closedAt = SystemClock.uptimeMillis()
+            },
+            // Enfocable: el toque de afuera solo la cierra (no abre lo que haya abajo).
+            properties = PopupProperties(focusable = true, dismissOnClickOutside = true),
+        ) {
+            Column(
+                Modifier
+                    .padding(6.dp)
+                    .shadow(12.dp, RoundedCornerShape(Radius.card))
+                    .clip(RoundedCornerShape(Radius.card))
+                    .background(c.surfaceHigh)
+                    .padding(vertical = 8.dp, horizontal = 6.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                IconButton(Icons.plus, { adjust(AudioManager.ADJUST_RAISE) }, size = 48.dp)
+                if (!fixed) {
+                    VolumeBar(level.toFloat() / max, ::set)
+                    Label(level.toString(), Typography.subtitle, maxLines = 1, modifier = Modifier.padding(vertical = 4.dp))
+                }
+                IconButton(Icons.minus, { adjust(AudioManager.ADJUST_LOWER) }, size = 48.dp)
+            }
+        }
     }
-    val minus = @Composable { IconButton(Icons.minus, { adjust(AudioManager.ADJUST_LOWER) }, size = buttonSize * 0.8f) }
-    val plus = @Composable { IconButton(Icons.plus, { adjust(AudioManager.ADJUST_RAISE) }, size = buttonSize * 0.8f) }
-    val bar = @Composable { VolumeBar(level.toFloat() / max, vertical, ::set) }
-    if (vertical) Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        if (open) {
-            plus()
-            if (!fixed) bar()
-            minus()
+}
+
+/**
+ * Dónde flota la barra del volumen: centrada arriba de la bocina; con [beside] (barra lateral), a un
+ * lado de ella (a la derecha, o a la izquierda si no cabe). Nunca se sale de la ventana.
+ */
+private class VolumePopupPosition(private val beside: Boolean) : PopupPositionProvider {
+    override fun calculatePosition(anchorBounds: IntRect, windowSize: IntSize, layoutDirection: LayoutDirection, popupContentSize: IntSize): IntOffset {
+        val w = popupContentSize.width
+        val h = popupContentSize.height
+        val (x, y) = if (beside) {
+            val right = anchorBounds.right
+            (if (right + w <= windowSize.width) right else anchorBounds.left - w) to anchorBounds.center.y - h / 2
+        } else {
+            anchorBounds.center.x - w / 2 to anchorBounds.top - h
         }
-        button()
-    } else Row(verticalAlignment = Alignment.CenterVertically) {
-        button()
-        if (open) {
-            minus()
-            if (!fixed) bar()
-            plus()
-        }
+        return IntOffset(x.coerceIn(0, maxOf(0, windowSize.width - w)), y.coerceIn(0, maxOf(0, windowSize.height - h)))
     }
 }
 
 /** La barra del volumen: se toca o se arrastra a cualquier punto; lleno = [fraction]. */
 @Composable
-private fun VolumeBar(fraction: Float, vertical: Boolean, onChange: (Float) -> Unit) {
+private fun VolumeBar(fraction: Float, onChange: (Float) -> Unit) {
     val c = LocalColors.current
     val change by rememberUpdatedState(onChange)
-    fun at(offset: Offset, size: IntSize) =
-        if (vertical) 1f - offset.y / size.height.coerceAtLeast(1) else offset.x / size.width.coerceAtLeast(1)
+    fun at(offset: Offset, size: IntSize) = 1f - offset.y / size.height.coerceAtLeast(1)
     Canvas(
-        (if (vertical) Modifier.width(36.dp).height(VOLUME_BAR_LENGTH) else Modifier.width(VOLUME_BAR_LENGTH).height(36.dp))
+        Modifier.width(48.dp).height(VOLUME_BAR_LENGTH)
             .pointerInput(Unit) {
                 awaitEachGesture {
                     val down = awaitFirstDown()
@@ -176,33 +217,24 @@ private fun VolumeBar(fraction: Float, vertical: Boolean, onChange: (Float) -> U
                 }
             },
     ) {
-        val thick = 8.dp.toPx()
-        val knob = 9.dp.toPx()
-        val f = fraction.coerceIn(0f, 1f)
-        if (vertical) {
-            val x = size.width / 2
-            val top = knob
-            val bottom = size.height - knob
-            val y = bottom - (bottom - top) * f
-            drawLine(c.surfaceHigh, Offset(x, top), Offset(x, bottom), thick, StrokeCap.Round)
-            drawLine(c.primary, Offset(x, y), Offset(x, bottom), thick, StrokeCap.Round)
-            drawCircle(c.text, knob, Offset(x, y))
-        } else {
-            val y = size.height / 2
-            val start = knob
-            val end = size.width - knob
-            val x = start + (end - start) * f
-            drawLine(c.surfaceHigh, Offset(start, y), Offset(end, y), thick, StrokeCap.Round)
-            drawLine(c.primary, Offset(start, y), Offset(x, y), thick, StrokeCap.Round)
-            drawCircle(c.text, knob, Offset(x, y))
-        }
+        // Como la de iOS: una píldora ancha que se llena desde abajo.
+        val thick = 14.dp.toPx()
+        val x = size.width / 2
+        val top = thick / 2
+        val bottom = size.height - thick / 2
+        val y = bottom - (bottom - top) * fraction.coerceIn(0f, 1f)
+        drawLine(c.line, Offset(x, top), Offset(x, bottom), thick, StrokeCap.Round)
+        drawLine(c.primary, Offset(x, y), Offset(x, bottom), thick, StrokeCap.Round)
     }
 }
 
 /** Lo que la barra del volumen sigue abierta sin tocarla. */
 private const val VOLUME_OPEN_MS = 4_000L
 
-private val VOLUME_BAR_LENGTH = 180.dp
+private val VOLUME_BAR_LENGTH = 160.dp
+
+/** Un toque en la bocina justo después de cerrarse la barra (tocando fuera) no la vuelve a abrir. */
+private const val REOPEN_GUARD_MS = 300L
 
 /**
  * Aprieta la tecla de volumen dentro de la ventana de LiteDash (se permite sin permisos porque es la
