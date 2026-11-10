@@ -1,5 +1,6 @@
 package com.irvingguerra.litedash.feature.music
 
+import android.graphics.Bitmap
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -26,6 +27,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
@@ -41,6 +45,7 @@ import com.irvingguerra.litedash.core.ui.IconButton
 import com.irvingguerra.litedash.core.ui.Icons
 import com.irvingguerra.litedash.core.ui.Label
 import com.irvingguerra.litedash.core.ui.LocalColors
+import com.irvingguerra.litedash.core.ui.LocalPlainCard
 import com.irvingguerra.litedash.core.ui.TilePadding
 import com.irvingguerra.litedash.core.ui.Typography
 
@@ -63,7 +68,8 @@ internal fun Artwork(song: Song?, modifier: Modifier, radius: Dp, icon: ImageVec
 /**
  * Anterior, play/pausa y siguiente; [compact] deja solo play/pausa. Con [loading]
  * (conectando) se ve pausa, porque tocarlo cancela la carga. [lens] es la vista que
- * controla: la música (por omisión) o la radio.
+ * controla: la música (por omisión) o la radio. [playBackground] y [playColor] pintan el
+ * círculo de play; [skipBackground], el de anterior y siguiente.
  */
 @Composable
 internal fun Controls(
@@ -76,14 +82,16 @@ internal fun Controls(
     playSize: Dp = 56.dp,
     gap: Dp = 0.dp,
     lens: MusicRepository.Lens = repo.music,
+    playBackground: Color = LocalColors.current.primary,
+    playColor: Color = LocalColors.current.onPrimary,
+    skipBackground: Color = Color.Transparent,
 ) {
-    val c = LocalColors.current
     Row(modifier, verticalAlignment = Alignment.CenterVertically) {
-        if (!compact) IconButton(Icons.previous, { lens.previous() }, size = size)
+        if (!compact) IconButton(Icons.previous, { lens.previous() }, size = size, background = skipBackground)
         if (!compact) Spacer(Modifier.width(gap))
-        IconButton(if (playing || loading) Icons.pause else Icons.play, { lens.toggle() }, size = playSize, background = c.primary, color = c.onPrimary)
+        IconButton(if (playing || loading) Icons.pause else Icons.play, { lens.toggle() }, size = playSize, background = playBackground, color = playColor)
         if (!compact) Spacer(Modifier.width(gap))
-        if (!compact) IconButton(Icons.next, { lens.next() }, size = size)
+        if (!compact) IconButton(Icons.next, { lens.next() }, size = size, background = skipBackground)
     }
 }
 
@@ -145,9 +153,10 @@ internal fun UseRepo(repo: MusicRepository) {
  * La base de las piezas Música y Radio. Se acomoda a su tamaño: chica es una fila con carátula
  * y play (o los tres botones si cabe); alta y no tan ancha, carátula arriba y lo demás abajo.
  * [revision] cambia al volver a la
- * app, para notar si el usuario acaba de dar el permiso. [text] es lo escrito y [controls] los
- * botones (con [Modifier] y si van compactos). La biblioteca y las estaciones no van aquí (aunque
- * el widget sea grande): viven en la pantalla Música.
+ * app, para notar si el usuario acaba de dar el permiso. [label] es la etiqueta chica arriba del
+ * texto (de dónde suena; se omite si no cabe), [text] lo escrito y [controls] los botones (con
+ * [Modifier] y si van compactos). Con [tinted], la carátula tiñe la tarjeta. La biblioteca y las
+ * estaciones no van aquí (aunque el widget sea grande): viven en la pantalla Música.
  */
 @Composable
 internal fun MediaTile(
@@ -158,6 +167,7 @@ internal fun MediaTile(
     icon: ImageVector,
     title: String,
     explain: String,
+    label: String?,
     text: @Composable (tall: Boolean) -> Unit,
     controls: @Composable (Modifier, compact: Boolean) -> Unit,
     /** Sin acceso a notificaciones no se ve nada (Archivos y el Bluetooth de Android no lo necesitan). */
@@ -165,19 +175,28 @@ internal fun MediaTile(
     /** Opciones del widget: con carátula y con anterior/siguiente (sin ellos, solo play/pausa). */
     artwork: Boolean = true,
     skip: Boolean = true,
+    tinted: Boolean = false,
 ) {
     UseRepo(repo)
     val permission = remember(revision, needsAccess) { !needsAccess || repo.hasPermission().also { if (it) repo.recheck() } }
     Card(modifier.fillMaxSize()) {
         if (!permission) return@Card NoPermission(repo, icon, title, explain)
+        if (tinted && !LocalPlainCard.current) song?.artwork?.let { ArtworkTint(it) }
         BoxWithConstraints(Modifier.fillMaxSize().padding(TilePadding)) {
             val tall = maxHeight > 150.dp
+            // La etiqueta solo si deja lugar al título, el subtítulo y la barra.
+            val labeled: @Composable () -> Unit = {
+                if (label != null && (tall || maxHeight >= LABEL_MIN)) {
+                    Label(label.uppercase(), Typography.label, LocalColors.current.textMuted, 1, Modifier.padding(bottom = 2.dp))
+                }
+                text(tall)
+            }
             if (tall && maxWidth < maxHeight * 1.5f) {
                 // Una columna del tablero: carátula arriba, el resto abajo y centrado.
                 return@BoxWithConstraints Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
                     // Sin carátula, el título y los botones al centro de la columna.
                     if (artwork) Artwork(song, Modifier.fillMaxWidth().weight(1f), Radius.inner, icon) else Spacer(Modifier.weight(1f))
-                    Column(Modifier.fillMaxWidth().padding(start = 6.dp, end = 6.dp, top = 14.dp)) { text(true) }
+                    Column(Modifier.fillMaxWidth().padding(start = 6.dp, end = 6.dp, top = 14.dp)) { labeled() }
                     controls(Modifier.padding(top = 8.dp), !skip)
                     if (!artwork) Spacer(Modifier.weight(1f))
                 }
@@ -191,7 +210,7 @@ internal fun MediaTile(
             Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
                 if (withArtwork) Artwork(song, Modifier.size(art), Radius.inner, icon)
                 Column(Modifier.weight(1f).padding(horizontal = 12.dp), verticalArrangement = Arrangement.Center) {
-                    text(tall)
+                    labeled()
                     if (tall) {
                         Spacer(Modifier.height(12.dp))
                         controls(Modifier, !skip)
@@ -217,9 +236,40 @@ fun OnFilesEmpty(repo: MusicRepository, enabled: Boolean, open: () -> Unit) {
     }
 }
 
-/** Lo que necesita la columna del título con los tres controles abajo, y la carátula más chica que vale la pena. */
+/**
+ * Lo que necesita la columna del título con los tres controles abajo, la carátula más chica que vale la
+ * pena y la altura desde la que cabe la etiqueta arriba del texto.
+ */
 private val TALL_TEXT_MIN = 200.dp
 private val ARTWORK_MIN = 72.dp
+private val LABEL_MIN = 88.dp
+
+/** El color promedio de la carátula en degradado suave desde la esquina superior izquierda (como Apple Music). */
+@Composable
+private fun ArtworkTint(artwork: Bitmap) {
+    val dark = LocalColors.current.dark
+    // Una vez por carátula: se reduce a 16×16 y se promedia (si no se puede leer, sin tinte).
+    val average = remember(artwork) { runCatching { averageColor(artwork) }.getOrNull() } ?: return
+    val brush = remember(average, dark) {
+        Brush.linearGradient(listOf(average.copy(alpha = if (dark) 0.30f else 0.22f), Color.Transparent), Offset.Zero, Offset.Infinite)
+    }
+    Box(Modifier.fillMaxSize().background(brush))
+}
+
+private fun averageColor(bmp: Bitmap): Color {
+    val side = 16
+    val pixels = IntArray(side * side)
+    Bitmap.createScaledBitmap(bmp, side, side, true).getPixels(pixels, 0, side, 0, 0, side, side)
+    var r = 0
+    var g = 0
+    var b = 0
+    for (p in pixels) {
+        r += p shr 16 and 0xFF
+        g += p shr 8 and 0xFF
+        b += p and 0xFF
+    }
+    return Color(r / pixels.size, g / pixels.size, b / pixels.size)
+}
 
 /** Sin acceso a notificaciones: qué hace la pieza y el botón para activarlo. */
 @Composable
@@ -239,22 +289,23 @@ private fun NoPermission(repo: MusicRepository, icon: ImageVector, title: String
     }
 }
 
-/** Título de lo que suena y, debajo, el error, "Conectando…" o el artista y la app. */
+/** Título de lo que suena y, debajo, [SongDetail]. */
 @Composable
 internal fun SongLines(repo: MusicRepository, song: Song, tall: Boolean) {
-    val c = LocalColors.current
     Label(song.title, if (tall) Typography.title else Typography.subtitle, maxLines = 1)
+    SongDetail(repo, song)
+}
+
+/** Debajo del título: el error, "Conectando…" o el artista (la app ya va en la etiqueta de arriba). */
+@Composable
+internal fun SongDetail(repo: MusicRepository, song: Song) {
+    val c = LocalColors.current
     val error = song.error
     when {
         error != null -> Label(error, Typography.small, c.danger, maxLines = 1)
         song.buffering -> Label(stringResource(R.string.player_connecting), Typography.small, c.textMuted, maxLines = 1)
-        else -> Label(
-            // Sin canción (Bluetooth sin datos) el título ya es la app: no repetirla. El
-            // reproductor propio no agrega "LiteDash".
-            listOf(subtitleFor(repo, song), if (repo.isOwn(song.pkg)) "" else song.app)
-                .filter { it.isNotBlank() && it != song.title }.distinct().joinToString(" · "),
-            Typography.small, c.textMuted, maxLines = 1,
-        )
+        // Sin canción (Bluetooth sin datos) el título ya es la app: no repetirla.
+        else -> Label(subtitleFor(repo, song).takeIf { it != song.title }.orEmpty(), Typography.small, c.textMuted, maxLines = 1)
     }
 }
 

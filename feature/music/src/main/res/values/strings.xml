@@ -22,4 +22,5 @@
     <string name="radio_unlinked">Enlaza la radio de tu pantalla en Ajustes o activa la radio por internet</string>
     <string name="radio_settings">Ajustes</string>
     <string name="mode_app">App</string>
+    <string name="radio_fm_label">Radio FM</string>
 </resources>

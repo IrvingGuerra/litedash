@@ -1,11 +1,15 @@
 package com.irvingguerra.litedash.feature.music
 
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.irvingguerra.litedash.core.ui.IconButton
 import com.irvingguerra.litedash.core.ui.Icons
 import com.irvingguerra.litedash.core.ui.Label
@@ -28,11 +32,19 @@ fun RadioTile(
     artwork: Boolean = true,
     skip: Boolean = true,
 ) {
+    val c = LocalColors.current
     val song = repo.radio.song
     MediaTile(
         repo, revision, modifier, song, Icons.radio, stringResource(R.string.radio), stringResource(R.string.radio_explain),
+        // Con estación, arriba si es la FM de la pantalla o la de internet.
+        label = song?.let { stringResource(if (repo.radioInternet) R.string.radio else R.string.radio_fm_label) },
         text = { tall -> StationText(repo, song, tall) },
-        controls = { m, compact -> RadioControls(repo, song, onIdle, m, compact = compact) },
+        controls = { m, compact ->
+            RadioControls(
+                repo, song, onIdle, m, compact = compact, gap = 8.dp,
+                playBackground = c.text, playColor = c.background, skipBackground = c.surfaceHigh,
+            )
+        },
         // La radio por internet es el reproductor propio: su sesión se lee directo, sin el acceso a notificaciones.
         needsAccess = !repo.radioInternet,
         artwork = artwork,
@@ -40,11 +52,21 @@ fun RadioTile(
     )
 }
 
-/** La estación y lo que dice (o, sin nada sonando, con qué va a sonar). */
+/** La estación en grande y lo que dice (o, sin nada sonando, con qué va a sonar). */
 @Composable
 private fun StationText(repo: MusicRepository, song: Song?, tall: Boolean) {
     val c = LocalColors.current
-    if (song != null) return SongLines(repo, song, tall)
+    if (song != null) {
+        // La estación del tamaño que quepa a lo ancho y en lo alto que dejan la etiqueta, la línea de abajo
+        // y, si va alta, los botones; nunca se corta.
+        BoxWithConstraints {
+            val free = maxHeight - STATION_RESERVED - if (tall) STATION_CONTROLS else 0.dp
+            // En sp sin la escala de letra del sistema: el tamaño ya es lo que cabe.
+            val size = fitFont(song.title, maxWidth, free, max = if (tall) 48f else 40f) / LocalDensity.current.fontScale
+            Label(song.title, Typography.title.copy(fontSize = size.sp, lineHeight = (size * 1.2f).sp), maxLines = 1)
+        }
+        return SongDetail(repo, song)
+    }
     Label(stringResource(R.string.radio), if (tall) Typography.title else Typography.subtitle, maxLines = 1)
     val opening = repo.radio.starting
     Label(
@@ -52,6 +74,17 @@ private fun StationText(repo: MusicRepository, song: Song?, tall: Boolean) {
         Typography.small, if (opening != null) c.accent else c.textMuted, maxLines = 1,
     )
 }
+
+/** La etiqueta y la línea de abajo, y los botones bajo el texto (alta), que no caben en el número grande. */
+private val STATION_RESERVED = 36.dp
+private val STATION_CONTROLS = 68.dp
+
+/**
+ * Tamaño de letra (sp) para que [text] quepa en una línea de [width] × [height]: el alto de línea es
+ * 1.2 veces la letra y cada carácter mide ~0.6 de ella (uno de margen).
+ */
+private fun fitFont(text: String, width: Dp, height: Dp, min: Float = 18f, max: Float = 48f): Float =
+    minOf(height.value / 1.2f, width.value / ((text.length + 1) * 0.6f)).coerceIn(min, max)
 
 /** Sin nada sonando: la FM que va a despertar, "Por internet" o que enlace una. */
 @Composable
@@ -68,7 +101,7 @@ internal fun radioHint(repo: MusicRepository): String {
  * Los controles de la radio. Sin sesión, solo play: despierta la FM o la de internet y,
  * si no hay con qué, llama [onIdle] (la pieza se amplía y explica qué falta). Una FM de la
  * pantalla sin sesión pero con receptor lleva los tres botones: van como teclas del volante
- * (play/pausa, estación siguiente y anterior), sin abrir la app.
+ * (play/pausa, estación siguiente y anterior), sin abrir la app. Los colores, como en [Controls].
  */
 @Composable
 internal fun RadioControls(
@@ -80,15 +113,17 @@ internal fun RadioControls(
     size: Dp = 56.dp,
     playSize: Dp = 56.dp,
     gap: Dp = 0.dp,
+    playBackground: Color = LocalColors.current.primary,
+    playColor: Color = LocalColors.current.onPrimary,
+    skipBackground: Color = Color.Transparent,
 ) {
     val keys = remember(repo.radioApp) { repo.radioHasKeys() }
-    if (song == null && keys) {
-        return Controls(repo, false, modifier, compact = compact, size = size, playSize = playSize, gap = gap, lens = repo.radio)
-    }
-    if (song == null) {
-        val c = LocalColors.current
-        IconButton(Icons.play, { repo.resumeRadio(onIdle) }, modifier, size = playSize, background = c.primary, color = c.onPrimary)
+    if (song == null && !keys) {
+        IconButton(Icons.play, { repo.resumeRadio(onIdle) }, modifier, size = playSize, background = playBackground, color = playColor)
         return
     }
-    Controls(repo, song.playing, modifier, loading = song.buffering, compact = compact, size = size, playSize = playSize, gap = gap, lens = repo.radio)
+    Controls(
+        repo, song?.playing == true, modifier, loading = song?.buffering == true, compact = compact, size = size, playSize = playSize,
+        gap = gap, lens = repo.radio, playBackground = playBackground, playColor = playColor, skipBackground = skipBackground,
+    )
 }
