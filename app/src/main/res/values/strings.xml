@@ -440,6 +440,21 @@
     <string name="logo_intro">Animación de entrada</string>
     <string name="bar_position">Barra de apps</string>
     <string name="bar_position_help">La de LiteDash, con la hora y tus apps. Automática: a la izquierda si la pantalla está acostada, abajo si está parada.</string>
+    <string name="bar_edit">Barra</string>
+    <string name="bar_edit_help">Para quitar un botón toca su x en la barra; para cambiarlo de lugar, arrástralo. Ajustes siempre va.</string>
+    <string name="bar_add">Agregar a la barra</string>
+    <string name="bar_place">Posición</string>
+    <string name="bar_style">Estilo</string>
+    <string name="bar_style_floating">Flotante</string>
+    <string name="bar_style_full">A lo ancho</string>
+    <string name="bar_item_clock">Hora</string>
+    <string name="bar_item_apps">Todas las apps</string>
+    <string name="bar_item_music">Música</string>
+    <string name="bar_item_volume">Volumen</string>
+    <string name="bar_item_navigate">Navegar</string>
+    <string name="bar_item_phone">Teléfono</string>
+    <string name="bar_item_voice">Voz</string>
+    <string name="bar_item_favorites">Tus apps favoritas</string>
     <string name="bar_auto">Automática</string>
     <string name="bar_side">Izquierda</string>
     <string name="bar_bottom">Abajo</string>
@@ -770,15 +785,4 @@
     <string name="bar_size_small">Compacta</string>
     <string name="bar_size_normal">Normal</string>
     <string name="bar_size_large">Grande</string>
-    <string name="bar_volume">VOLUMEN</string>
-    <string name="bar_volume_end">Al final</string>
-    <string name="bar_volume_start">Al principio</string>
-    <string name="bar_volume_hidden">No</string>
-    <string name="bar_clock">Hora y estado</string>
-    <string name="bar_clock_help">Arriba de la barra lateral. Sin ellos, la hora va en la barra de arriba.</string>
-    <string name="bar_apps">Botón de todas las apps</string>
-    <string name="bar_music">Botón de música</string>
-    <string name="bar_favorites">Favoritas</string>
-    <string name="bar_voice">Botón de voz</string>
-    <string name="bar_settings_always">Ajustes siempre está en la barra: sin él no habría cómo salir del inicio.</string>
 </resources>

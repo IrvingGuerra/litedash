@@ -66,6 +66,9 @@ internal object PrefKeys {
     const val BAR_FAVORITES = "bar_favorites"
     const val BAR_VOICE = "bar_voice"
     const val BAR_MUSIC = "bar_music"
+    /** Los botones de la barra en orden ([BarItem]); sin guardar, se arman de las opciones de antes. */
+    const val BAR_ITEMS = "bar_items"
+    const val BAR_STYLE = "bar_style"
     const val LOGO_INTRO = "logo_intro"
     const val INTRO_MIGRATED = "intro_image_migrated"
     const val LIGHTS_KEY = "lights_key"
@@ -138,12 +141,29 @@ enum class BarSize(val stored: String, val scale: Float) {
     }
 }
 
-/** Dónde va el volumen en la barra: al final (junto a Ajustes), al principio (junto a las apps) o no va. */
-enum class VolumePlace(val stored: String) {
-    END("end"), START("start"), HIDDEN("hidden");
+/**
+ * Un botón de la barra de apps. Los de antes de [FAVORITES] van a la izquierda (arriba en la lateral) y
+ * los de después a la derecha; tus apps favoritas, al centro. [SETTINGS] siempre va y al final: sin él no
+ * habría cómo salir del inicio.
+ */
+enum class BarItem(val stored: String) {
+    CLOCK("clock"), APPS("apps"), MUSIC("music"), VOLUME("volume"), NAVIGATE("navigate"), PHONE("phone"),
+    VOICE("voice"), FAVORITES("favorites"), SETTINGS("settings");
 
     companion object {
-        fun fromStored(value: String?) = entries.firstOrNull { it.stored == value } ?: END
+        fun fromStored(value: String) = entries.firstOrNull { it.stored == value }
+
+        /** Ajustes al final y una sola vez; lo que no se conoce, fuera. */
+        fun normalize(items: List<BarItem>) = items.distinct().filter { it != SETTINGS } + SETTINGS
+    }
+}
+
+/** Cómo se ve la barra de abajo: flotante (una píldora al centro, de fábrica) o a todo lo ancho. */
+enum class BarStyle(val stored: String) {
+    FLOATING("floating"), FULL("full");
+
+    companion object {
+        fun fromStored(value: String?) = entries.firstOrNull { it.stored == value } ?: FLOATING
     }
 }
 
@@ -312,15 +332,38 @@ class Preferences(context: Context) {
     /** Dónde van la hora y tus apps: a un lado, abajo o según la pantalla. */
     var barPosition by mapped(PrefKeys.BAR_POSITION, BarPosition::fromStored) { it.stored }
     var barSize by mapped(PrefKeys.BAR_SIZE, BarSize::fromStored) { it.stored }
-    var barVolume by mapped(PrefKeys.BAR_VOLUME, VolumePlace::fromStored) { it.stored }
-    /** Hora y estado arriba de la barra lateral (sin ella, la hora va en la barra de arriba). */
-    var barClock by bool(PrefKeys.BAR_CLOCK, true)
-    /** Botón de todas las apps. */
-    var barApps by bool(PrefKeys.BAR_APPS, true)
-    var barFavorites by bool(PrefKeys.BAR_FAVORITES, true)
-    var barVoice by bool(PrefKeys.BAR_VOICE, false)
-    var barMusic by bool(PrefKeys.BAR_MUSIC, true)
-    // Ajustes no se puede quitar: sin él no habría cómo salir del inicio.
+    var barStyle by mapped(PrefKeys.BAR_STYLE, BarStyle::fromStored) { it.stored }
+
+    /** Los botones de la barra en orden (siempre con Ajustes al final, [BarItem.normalize]). */
+    var barItems: List<BarItem>
+        get() = storedBarItems
+        set(value) {
+            storedBarItems = BarItem.normalize(value)
+        }
+    private var storedBarItems by mapped(
+        PrefKeys.BAR_ITEMS,
+        { v -> BarItem.normalize(v?.split(',')?.mapNotNull(BarItem::fromStored) ?: legacyBarItems()) },
+        { items -> BarItem.normalize(items).joinToString(",") { it.stored } },
+    )
+
+    /**
+     * Los botones como se veían antes de poder editar la barra (Plan Widgets): de los interruptores y del
+     * lugar del volumen de Ajustes → Barra de apps. Solo se leen mientras no se guarde una lista.
+     */
+    private fun legacyBarItems(): List<BarItem> {
+        val volume = p.getString(PrefKeys.BAR_VOLUME, null) ?: "end"
+        return listOfNotNull(
+            // La hora iba en la barra lateral; con "Abajo" se quedaba en la de arriba. "Automática" en una pantalla de
+            // auto (acostada) es la lateral: ahí se conserva (en una parada pasaría abajo; se quita con su ✕).
+            BarItem.CLOCK.takeIf { p.getBoolean(PrefKeys.BAR_CLOCK, true) && p.getString(PrefKeys.BAR_POSITION, null) != "bottom" },
+            BarItem.APPS.takeIf { p.getBoolean(PrefKeys.BAR_APPS, true) },
+            BarItem.MUSIC.takeIf { p.getBoolean(PrefKeys.BAR_MUSIC, true) },
+            BarItem.VOLUME.takeIf { volume == "start" },
+            BarItem.FAVORITES.takeIf { p.getBoolean(PrefKeys.BAR_FAVORITES, true) },
+            BarItem.VOLUME.takeIf { volume == "end" },
+            BarItem.VOICE.takeIf { p.getBoolean(PrefKeys.BAR_VOICE, false) },
+        )
+    }
 
     /** Abrir las apps de mapa y música en pantalla dividida, con el auto al lado (solo acostada). */
     var splitScreen by bool(PrefKeys.SPLIT_SCREEN, false)

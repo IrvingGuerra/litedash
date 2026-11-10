@@ -268,7 +268,7 @@ private fun target(p: Tile, a: Drag, d: Offset, cwPx: Float, chPx: Float, limits
  * la pieza: escucha antes que ellos (pase Initial) y solo consume si se cumplió
  * el tiempo, para que el botón no reciba también un toque.
  */
-private fun Modifier.longPress(onLongPress: () -> Unit) = pointerInput(Unit) {
+fun Modifier.longPress(onLongPress: () -> Unit) = pointerInput(Unit) {
     val timeout = viewConfiguration.longPressTimeoutMillis
     awaitEachGesture {
         val down = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)

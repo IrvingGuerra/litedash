@@ -48,7 +48,6 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -57,7 +56,6 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
@@ -80,7 +78,6 @@ import com.irvingguerra.litedash.core.ui.Typography
 import com.irvingguerra.litedash.core.vehicle.Signal
 import com.irvingguerra.litedash.core.vehicle.VehicleBus
 import com.irvingguerra.litedash.feature.apps.App
-import com.irvingguerra.litedash.feature.apps.AppIcon
 import com.irvingguerra.litedash.feature.apps.AppRepository
 import com.irvingguerra.litedash.feature.apps.rememberApps
 import com.irvingguerra.litedash.feature.car.CarPackage
@@ -116,6 +113,8 @@ sealed interface Panel {
     data object Templates : Panel
     /** El fondo de pantalla del inicio (botón "Fondo" al acomodar). */
     data object Wallpaper : Panel
+    /** Lo de la barra de apps (botón "Barra" al acomodarla): agregar botones y apps, posición, tamaño, estilo. */
+    data object BarSettings : Panel
     /** Elegir app para una pieza existente ([tileId]) o para una nueva (null); al elegir, regresa a [back]. */
     data class PickApp(val tileId: String?, val back: Panel? = null) : Panel
     /** Ajustes abiertos en el Taller (pieza de acceso directo). */
@@ -573,23 +572,25 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
           }
           val favorites = remember(apps, d.prefs.dock, d.music.preferred) { dockFavorites(d, apps) }
           val railRight = rail && d.prefs.barPosition == BarPosition.RIGHT
-          val railBar = @Composable {
-              Rail(
-                  repo = d.apps,
-                  prefs = d.prefs,
-                  favorites = favorites,
-                  onVoice = onVoice,
-                  onApps = { panel = Panel.Drawer },
-                  musicOpen = musicBig,
-                  onMusic = { if (musicBig) musicBig = false else openMedia(null) },
-                  onSettings = { panel = Panel.Settings },
-              )
+          val barActions = BarActions(
+              onApps = { panel = Panel.Drawer },
+              onMusic = { if (musicBig) musicBig = false else openMedia(null) },
+              onNavigate = { actions.onNavigate(mapApp(d, apps)) },
+              onPhone = { openDialer(context) },
+              onVoice = onVoice,
+              onSettings = { panel = Panel.Settings },
+              onBarSettings = { panel = Panel.BarSettings },
+              onEdit = { musicBig = false; editing = true },
+          )
+          val bar = @Composable { vertical: Boolean ->
+              AppBar(d.apps, d.prefs, favorites, vertical, editing, musicBig, barActions)
           }
+          val railBar = @Composable { bar(true) }
           Row(Modifier.fillMaxSize()) {
             if (rail && !railRight) railBar()
             Column(Modifier.weight(1f).fillMaxHeight()) {
-                // Si ya hay un reloj en el tablero (o en la barra lateral), la barra no repite la hora.
-                val showTime = !(rail && d.prefs.barClock) && d.dashboard.tiles.none { it.type == TileTypes.CLOCK }
+                // Si ya hay un reloj en el tablero (o en la barra de apps), la barra de arriba no repite la hora.
+                val showTime = BarItem.CLOCK !in d.prefs.barItems && d.dashboard.tiles.none { it.type == TileTypes.CLOCK }
                 val barHidden = !editing && !showTime
                 TopBar(
                     editing = editing,
@@ -671,16 +672,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                             ) { p -> TileContent(d, p, apps, car, revision, actions) }
                     }
                 }
-                if (!rail) Dock(
-                    repo = d.apps,
-                    prefs = d.prefs,
-                    favorites = favorites,
-                    onVoice = onVoice,
-                    onApps = { panel = Panel.Drawer },
-                    musicOpen = musicBig,
-                    onMusic = { if (musicBig) musicBig = false else openMedia(null) },
-                    onSettings = { panel = Panel.Settings },
-                )
+                if (!rail) bar(false)
             }
             if (railRight) railBar()
           }
@@ -706,6 +698,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                 onTires = { panel = null; openTires() },
             )
             Panel.Templates -> TemplatesPanel(d.dashboard, close = { panel = null })
+            Panel.BarSettings -> BarSettingsPanel(d, close = { panel = null })
             Panel.Wallpaper -> PanelScaffold(stringResource(R.string.wallpaper_title), close = { panel = null }) {
                 Column(Modifier.weight(1f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(16.dp)) {
                     Label(stringResource(R.string.wallpaper_help), Typography.body, c.textMuted)
@@ -858,162 +851,6 @@ private fun TopBar(
     }
 }
 
-@Composable
-private fun Dock(
-    repo: AppRepository,
-    prefs: Preferences,
-    favorites: List<App>,
-    onVoice: (() -> Unit)?,
-    onApps: () -> Unit,
-    musicOpen: Boolean,
-    onMusic: () -> Unit,
-    onSettings: () -> Unit,
-) {
-    val c = LocalColors.current
-    // En pantallas chicas (7") todo se ve lejos: íconos más grandes, más fáciles de atinar manejando.
-    // Pero si casi no hay altura (teléfono acostado), compacto: el tablero va primero. El tamaño elegido escala todo.
-    val k = prefs.barSize.scale
-    val short = isShortScreen()
-    val small = isSmallScreen() && !short
-    val side = (if (small) 56.dp else if (short) 36.dp else 44.dp) * k
-    val box = (if (small) 68.dp else if (short) 46.dp else 56.dp) * k
-    Row(
-        Modifier
-            .fillMaxWidth()
-            .height((if (small) 96.dp else if (short) 64.dp else 84.dp) * k)
-            .padding(horizontal = 16.dp, vertical = 8.dp)
-            .clip(RoundedCornerShape(Radius.card))
-            .background(c.surface)
-            .padding(horizontal = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        val buttonSize = (if (small) 64.dp else if (short) 46.dp else 56.dp) * k
-        DockLayout(
-            start = {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    if (prefs.barApps) IconButton(Icons.apps, onApps, size = buttonSize)
-                    // La pantalla Música (como en Tesla); marcado mientras está abierta.
-                    if (prefs.barMusic) IconButton(Icons.music, onMusic, size = buttonSize, background = if (musicOpen) c.surfaceHigh else Color.Transparent)
-                    if (prefs.barApps || prefs.barMusic) Box(Modifier.padding(horizontal = 8.dp).width(1.dp).height(32.dp).background(c.line))
-                    if (prefs.barVolume == VolumePlace.START) Volume(buttonSize)
-                }
-            },
-            center = {
-                // Caben las que quepan: en pantallas chicas no se encima.
-                BoxWithConstraints(contentAlignment = Alignment.Center) {
-                    val fitCount = (maxWidth / (box + 8.dp)).toInt()
-                    if (prefs.barFavorites) Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                        for (app in favorites.take(fitCount)) AppShortcut(repo, app, box, side)
-                    }
-                }
-            },
-            end = {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    if (prefs.barVolume == VolumePlace.END) Volume(buttonSize)
-                    // Voz: abre el asistente que tenga la pantalla; si no hay ninguno, no aparece.
-                    if (onVoice != null && prefs.barVoice) IconButton(Icons.mic, onVoice, size = buttonSize)
-                    // Siempre: sin Ajustes no habría cómo salir del inicio.
-                    IconButton(Icons.settings, onSettings, size = buttonSize)
-                }
-            },
-        )
-    }
-}
-
-/**
- * La barra de abajo en tres partes: [start] pegado a la izquierda, [end] a la derecha y [center] (tus
- * favoritas) al centro de TODA la barra, no del hueco entre los dos (como Tesla). El centro tiene lo que dejan
- * libre los lados por igual. [end] se mide primero (lleva Ajustes: nunca se queda sin lugar) y [start] con
- * lo que sobre, recortado si no cabe.
- */
-@Composable
-private fun DockLayout(start: @Composable () -> Unit, center: @Composable () -> Unit, end: @Composable () -> Unit) {
-    Layout(contents = listOf(start, center, end), modifier = Modifier.fillMaxSize().clipToBounds()) { (s, m, e), constraints ->
-        val width = constraints.maxWidth
-        val loose = constraints.copy(minWidth = 0, minHeight = 0)
-        val endPlaced = e.first().measure(loose)
-        val startPlaced = s.first().measure(loose.copy(maxWidth = (width - endPlaced.width).coerceAtLeast(0)))
-        val gap = 8.dp.roundToPx()
-        val sideWidth = maxOf(startPlaced.width, endPlaced.width) + gap
-        val centerPlaced = m.first().measure(loose.copy(maxWidth = (width - 2 * sideWidth).coerceAtLeast(0)))
-        val height = constraints.maxHeight
-        layout(width, height) {
-            startPlaced.place(0, (height - startPlaced.height) / 2)
-            endPlaced.place(width - endPlaced.width, (height - endPlaced.height) / 2)
-            centerPlaced.place((width - centerPlaced.width) / 2, (height - centerPlaced.height) / 2)
-        }
-    }
-}
-
-/** Una app favorita del dock o de la barra lateral: su ícono, un toque la abre. */
-@Composable
-private fun AppShortcut(repo: AppRepository, app: App, box: Dp, icon: Dp) {
-    val context = LocalContext.current
-    Box(Modifier.size(box).clip(RoundedCornerShape(Radius.inner)).clickable { repo.open(context, app) }, contentAlignment = Alignment.Center) {
-        AppIcon(repo, app, icon)
-    }
-}
-
-/**
- * Barra lateral (pantallas acostadas): hora, clima y estado arriba; todas las apps y tus
- * favoritas (las que quepan); abajo volumen, voz y Ajustes.
- */
-@Composable
-private fun Rail(
-    repo: AppRepository,
-    prefs: Preferences,
-    favorites: List<App>,
-    onVoice: (() -> Unit)?,
-    onApps: () -> Unit,
-    musicOpen: Boolean,
-    onMusic: () -> Unit,
-    onSettings: () -> Unit,
-) {
-    val c = LocalColors.current
-    val small = isSmallScreen()
-    val k = prefs.barSize.scale
-    val button = (if (small) 52.dp else 56.dp) * k
-    val icon = (if (small) 40.dp else 44.dp) * k
-    val volume = (if (small) 40.dp else 44.dp) * k
-    val clock = rememberClock()
-    Column(
-        Modifier.fillMaxHeight().width((if (small) 76.dp else 88.dp) * k).padding(vertical = 10.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(4.dp),
-    ) {
-        // Lo demás va en su propio bloque con peso: Ajustes se mide primero y nunca se queda sin lugar.
-        Column(
-            Modifier.weight(1f).fillMaxWidth().clipToBounds(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(4.dp),
-        ) {
-        if (prefs.barClock) {
-            // Angosta: a.m./p.m. en chico junto a la hora (en otra línea le quitaría lugar a las apps).
-            Row(verticalAlignment = Alignment.Bottom) {
-                Label(clock.time, Typography.subtitle, maxLines = 1)
-                if (clock.marker != null) Label(clock.marker, Typography.small.copy(fontSize = 11.sp), c.textMuted, maxLines = 1, modifier = Modifier.padding(start = 2.dp, bottom = 2.dp))
-            }
-            Box(Modifier.padding(bottom = 6.dp)) { StatusIcons() }
-        }
-        if (prefs.barApps) IconButton(Icons.apps, onApps, size = button)
-        if (prefs.barMusic) IconButton(Icons.music, onMusic, size = button, background = if (musicOpen) c.surfaceHigh else Color.Transparent)
-        if (prefs.barApps || prefs.barMusic) Box(Modifier.padding(vertical = 4.dp).width(28.dp).height(1.dp).background(c.line))
-        if (prefs.barVolume == VolumePlace.START) Volume(volume, vertical = true)
-        BoxWithConstraints(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
-            // Las favoritas que quepan entre los accesos de arriba y los controles de abajo.
-            val fit = (maxHeight / (button + 4.dp)).toInt()
-            if (prefs.barFavorites) Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                for (app in favorites.take(fit)) AppShortcut(repo, app, button, icon)
-            }
-        }
-        if (prefs.barVolume == VolumePlace.END) Volume(volume, vertical = true)
-        if (onVoice != null && prefs.barVoice) IconButton(Icons.mic, onVoice, size = button)
-        }
-        // Siempre: sin Ajustes no habría cómo salir del inicio.
-        IconButton(Icons.settings, onSettings, size = button)
-    }
-}
-
 /** Versión nueva encontrada al abrir LiteDash: verla en Ajustes o dejarla para después. */
 @Composable
 private fun UpdateBanner(updater: Updater, onOpen: () -> Unit) {
@@ -1038,7 +875,7 @@ private fun HomePrompt(prefs: Preferences, revision: Int) {
 }
 
 /** El asistente de voz del sistema (manos libres primero); null si la pantalla no trae ninguno. */
-private fun voiceIntent(context: Context): Intent? =
+internal fun voiceIntent(context: Context): Intent? =
     listOf(Intent.ACTION_VOICE_COMMAND, Intent.ACTION_ASSIST)
         .map { Intent(it).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) }
         .firstOrNull { it.resolveActivity(context.packageManager) != null }
