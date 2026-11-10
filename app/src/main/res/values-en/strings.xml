@@ -596,6 +596,14 @@
     <string name="health_warn">Attention</string>
     <string name="health_fault">Fault</string>
     <string name="health_unknown">No data</string>
+    <string name="health_engine">Engine health</string>
+    <string name="health_connect_short">Connect your adapter</string>
+    <string name="health_offline">Not connected</string>
+    <string name="health_codes_title">Codes</string>
+    <plurals name="health_codes">
+        <item quantity="one">%1$d code</item>
+        <item quantity="other">%1$d codes</item>
+    </plurals>
     <string name="health_pending">pending</string>
     <plurals name="health_issues">
         <item quantity="one">%1$d alert</item>

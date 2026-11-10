@@ -29,6 +29,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
@@ -713,9 +714,11 @@ private fun TirePill(text: String, status: TireStatus, onClick: () -> Unit, modi
     }
 }
 
+
 /**
- * La pieza Llantas: chica (1×1) los cuatro números; mediana el auto desde arriba con los
- * valores a los lados; grande la vista completa. Sin fuente, "Configura tus llantas".
+ * La pieza Llantas: chica (1×1) los cuatro números; mediana o alta el encabezado con el estado y el
+ * auto desde arriba con cada llanta a su lado; grande la vista completa. Sin el auto, los cuatro
+ * valores en cuadrícula. Sin fuente, "Configura tus llantas".
  */
 @Composable
 fun TiresTile(d: Dependencies, showCar: Boolean = true, onOpen: () -> Unit, onSettings: () -> Unit) {
@@ -730,40 +733,128 @@ fun TiresTile(d: Dependencies, showCar: Boolean = true, onOpen: () -> Unit, onSe
             return@Card
         }
         BoxWithConstraints(Modifier.fillMaxSize().padding(TilePadding)) {
+            val roomy = maxWidth >= 170.dp || maxHeight >= 170.dp
+            val header = maxHeight >= 120.dp && maxWidth >= 150.dp
+            // Angosta: el nombre corto de la llanta en el estado ("Tras. der.").
+            val short = maxWidth < 280.dp
             when {
-                // Sin el auto: los cuatro valores en sus cuartos, más grandes si hay lugar.
-                !showCar -> TiresSmall(d, size = if (maxHeight >= 170.dp && maxWidth >= 220.dp) 26 else 16, bare = maxWidth < 220.dp)
+                !showCar -> TiresSmall(d, header = header, short = short, rich = roomy)
                 maxWidth >= 300.dp && maxHeight >= 200.dp -> TiresView(d, compact = maxHeight < 330.dp, onWheel = { onOpen() }, Modifier.fillMaxSize())
-                maxWidth >= 170.dp || maxHeight >= 170.dp -> TiresMedium(d, tall = maxHeight > maxWidth * 1.3f, bare = maxWidth < 260.dp)
-                else -> TiresSmall(d)
+                roomy -> TiresMedium(d, tall = maxHeight > maxWidth * 1.3f, header = header, short = short)
+                else -> TiresSmall(d, header = false, short = true, rich = false)
             }
         }
     }
 }
 
-/** Valor de una llanta en la pieza: punto de estado y la presión (sin unidad en [bare]). */
+/** La llanta que rueda con el problema más grave (una fuga antes que una pila baja), o null si todas van bien. */
+private fun TpmsRepository.worstRoad(): Pair<Wheel, TireStatus>? =
+    Wheel.ROAD.map { it to statusOf(it) }.filter { it.second.problem }.maxByOrNull { it.second.severity?.ordinal ?: -1 }
+
+/** Encabezado de un widget: el nombre en chico a la izquierda y el estado con su punto a la derecha. */
 @Composable
-private fun TileValue(d: Dependencies, w: Wheel, bare: Boolean, size: Int, gap: Int = 6) {
+internal fun TileHeader(title: String, status: String, color: Color) {
     val c = LocalColors.current
-    val repo = d.tpms
-    val kpa = d.bus.watch(TireSignals.pressure(w))
-    val st = repo.statusOf(w)
-    val color = severityColor(st.severity)
-    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(gap.dp)) {
-        Box(Modifier.size(6.dp).clip(CircleShape).background(color ?: if (st.state == TireState.GOOD) Good else c.textMuted))
-        Label(kpa?.let { repo.unit.format(it) } ?: "—", Typography.title.copy(fontSize = size.sp), color ?: c.text, maxLines = 1)
-        if (!bare) Label(repo.unit.label, Typography.small, c.textMuted, maxLines = 1)
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Label(title.uppercase(), Typography.label, c.textMuted, maxLines = 1)
+        // El estado cede: se corta con "…" antes que encimarse con el nombre.
+        Row(Modifier.weight(1f).padding(start = 10.dp), horizontalArrangement = Arrangement.End, verticalAlignment = Alignment.CenterVertically) {
+            Box(Modifier.size(7.dp).clip(CircleShape).background(color))
+            Label(status, Typography.small, color, maxLines = 1, modifier = Modifier.padding(start = 6.dp).weight(1f, fill = false))
+        }
     }
 }
 
+/** "LLANTAS" y el estado: "Todo bien" en verde o la llanta más grave en su color ("Trasera derecha · Baja"). */
 @Composable
-private fun TiresSmall(d: Dependencies, size: Int = 16, bare: Boolean = true) {
-    // Cuadrícula 2×2: cada llanta centrada en su cuarto.
+private fun TiresHeader(d: Dependencies, short: Boolean) {
+    val c = LocalColors.current
+    val repo = d.tpms
+    val worst = repo.worstRoad()
+    val (text, color) = when {
+        worst != null -> {
+            val name = stringResource(if (short) wheelShort(worst.first) else wheelName(worst.first))
+            "$name · ${stringResource(worst.second.state.word())}" to (severityColor(worst.second.severity) ?: c.warning)
+        }
+        Wheel.ROAD.any { repo.wheelReading(it) != null } -> stringResource(R.string.health_all_good) to Good
+        else -> stringResource(R.string.health_unknown) to c.textMuted
+    }
+    TileHeader(stringResource(R.string.tires), text, color)
+}
+
+/** Lo que mide de ancho la unidad chica junto a la presión (dp, a ojo: 13 sp por letra). */
+private fun unitWidth(unit: PressureUnit) = unit.label.length * 8f + 4f
+
+/** Alto de la línea chica bajo la presión (dp). */
+private const val TIRE_LINE_DP = 17f
+
+/** Un texto de muestra tan largo como la presión más larga que se verá (al menos tres cifras). */
+private fun pressureSample(repo: TpmsRepository) = "0".repeat(maxOf(3, repo.unit.format(repo.recommendedFrontKpa).length))
+
+/**
+ * Cómo se dibuja una llanta en un hueco de [width] × [height]: el tamaño de la presión (para que
+ * no se corte), si cabe su unidad y si cabe la línea de abajo.
+ */
+private class TireFit(val size: Float, val unit: Boolean, val line: Boolean)
+
+private fun fitTire(repo: TpmsRepository, width: Float, height: Float, max: Float, rich: Boolean = true): TireFit {
+    val sample = pressureSample(repo)
+    // Sin detalle: el punto de color (6 dp + 4 de aire) en vez de la unidad.
+    if (!rich) return TireFit(fitFont(sample, (width - 10f).dp, height.dp, 0.6f, min = 12f, max = max, extraChars = 0.3f), unit = false, line = false)
+    val unit = width >= 70f
+    val line = height >= 44f
+    val textWidth = width - if (unit) unitWidth(repo.unit) else 0f
+    val textHeight = height - if (line) TIRE_LINE_DP else 0f
+    return TireFit(fitFont(sample, textWidth.dp, textHeight.dp, 0.7f, min = 14f, max = max, extraChars = 0.3f), unit, line)
+}
+
+/**
+ * Una llanta en el widget. Con detalle: la presión grande (en el color de su problema), la unidad
+ * chica y abajo la temperatura o, si tiene problema, su estado. Sin detalle: un punto y el número.
+ */
+@Composable
+private fun TileValue(d: Dependencies, w: Wheel, fit: TireFit, rich: Boolean, end: Boolean = false) {
+    val c = LocalColors.current
+    val repo = d.tpms
+    val st = repo.statusOf(w)
+    val color = severityColor(st.severity)
+    val style = Typography.title.copy(fontSize = fit.size.sp)
+    if (!rich) {
+        val kpa = d.bus.watch(TireSignals.pressure(w))
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            Box(Modifier.size(6.dp).clip(CircleShape).background(color ?: if (st.state == TireState.GOOD) Good else c.textMuted))
+            Label(kpa?.let { repo.unit.format(it) } ?: "—", style, color ?: c.text, maxLines = 1)
+        }
+        return
+    }
+    val (kpa, temp) = watchTire(d, w)
+    Column(horizontalAlignment = if (end) Alignment.End else Alignment.Start) {
+        Row(verticalAlignment = Alignment.Bottom) {
+            Label(kpa?.let { repo.unit.format(it) } ?: "—", style, color ?: c.text, maxLines = 1)
+            if (fit.unit) Label(repo.unit.label, Typography.small, c.textMuted, maxLines = 1, modifier = Modifier.padding(start = 3.dp, bottom = (fit.size * 0.14f).dp))
+        }
+        val line = if (st.problem) stringResource(st.state.word()) else temp?.let { tempText(it, d.prefs.units.fahrenheit) }
+        if (fit.line && line != null) Label(line, Typography.small, color ?: c.textMuted, maxLines = 1)
+    }
+}
+
+/** Sin el auto (o 1×1): cada llanta centrada en su cuarto, con el encabezado arriba si cabe. */
+@Composable
+private fun TiresSmall(d: Dependencies, header: Boolean, short: Boolean, rich: Boolean) {
     Column(Modifier.fillMaxSize()) {
-        for (row in listOf(Wheel.FRONT_LEFT to Wheel.FRONT_RIGHT, Wheel.REAR_LEFT to Wheel.REAR_RIGHT)) {
-            Row(Modifier.fillMaxWidth().weight(1f)) {
-                for (w in listOf(row.first, row.second)) Box(Modifier.weight(1f).fillMaxHeight(), contentAlignment = Alignment.Center) {
-                    TileValue(d, w, bare = bare, size = size, gap = 4)
+        if (header) {
+            TiresHeader(d, short)
+            Spacer(Modifier.height(6.dp))
+        }
+        BoxWithConstraints(Modifier.fillMaxWidth().weight(1f)) {
+            val fit = fitTire(d.tpms, maxWidth.value / 2 - 4f, maxHeight.value / 2, max = if (rich) 44f else 32f, rich = rich)
+            Column(Modifier.fillMaxSize()) {
+                for (row in listOf(Wheel.FRONT_LEFT to Wheel.FRONT_RIGHT, Wheel.REAR_LEFT to Wheel.REAR_RIGHT)) {
+                    Row(Modifier.fillMaxWidth().weight(1f)) {
+                        for (w in listOf(row.first, row.second)) Box(Modifier.weight(1f).fillMaxHeight(), contentAlignment = Alignment.Center) {
+                            TileValue(d, w, fit, rich)
+                        }
+                    }
                 }
             }
         }
@@ -771,11 +862,11 @@ private fun TiresSmall(d: Dependencies, size: Int = 16, bare: Boolean = true) {
 }
 
 /**
- * Mediana: el auto desde arriba con sus cuatro valores. Ancha: los valores a los lados;
- * alta (1×2): arriba las delanteras y abajo las traseras. Angosta, sin la unidad.
+ * Mediana: el encabezado y el auto desde arriba con cada llanta a su lado. Ancha: las izquierdas a
+ * la izquierda y las derechas a la derecha; alta (1×2): arriba las delanteras y abajo las traseras.
  */
 @Composable
-private fun TiresMedium(d: Dependencies, tall: Boolean, bare: Boolean) {
+private fun TiresMedium(d: Dependencies, tall: Boolean, header: Boolean, short: Boolean) {
     val repo = d.tpms
     val statuses = Wheel.ROAD.associateWith { repo.statusOf(it) }
     val car = @Composable { m: Modifier ->
@@ -784,28 +875,51 @@ private fun TiresMedium(d: Dependencies, tall: Boolean, bare: Boolean) {
             TireMarks(statuses, Modifier.fillMaxSize(), radius = 0.067f)
         }
     }
-    if (tall) Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.SpaceBetween) {
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            TileValue(d, Wheel.FRONT_LEFT, bare = true, size = 17)
-            TileValue(d, Wheel.FRONT_RIGHT, bare = true, size = 17)
+    Column(Modifier.fillMaxSize()) {
+        if (header) {
+            TiresHeader(d, short)
+            Spacer(Modifier.height(8.dp))
         }
-        car(Modifier.weight(1f).padding(vertical = 6.dp))
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            TileValue(d, Wheel.REAR_LEFT, bare = true, size = 17)
-            TileValue(d, Wheel.REAR_RIGHT, bare = true, size = 17)
-        }
-    } else Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
-        Column(Modifier.fillMaxHeight(), verticalArrangement = Arrangement.SpaceAround) {
-            TileValue(d, Wheel.FRONT_LEFT, bare = bare, size = 20)
-            TileValue(d, Wheel.REAR_LEFT, bare = bare, size = 20)
-        }
-        car(Modifier.fillMaxHeight().padding(horizontal = 6.dp))
-        Column(Modifier.fillMaxHeight(), verticalArrangement = Arrangement.SpaceAround, horizontalAlignment = Alignment.End) {
-            TileValue(d, Wheel.FRONT_RIGHT, bare = bare, size = 20)
-            TileValue(d, Wheel.REAR_RIGHT, bare = bare, size = 20)
+        BoxWithConstraints(Modifier.fillMaxWidth().weight(1f)) {
+            val w = maxWidth.value
+            val h = maxHeight.value
+            val gap = 8f
+            if (tall) {
+                // Las filas de arriba y abajo se quedan con lo justo; el auto, con lo demás.
+                val rowH = (h * 0.26f).coerceAtMost(90f)
+                val fit = fitTire(repo, w / 2 - gap, rowH, max = 40f)
+                Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Row(Modifier.fillMaxWidth().height(rowH.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Top) {
+                        TileValue(d, Wheel.FRONT_LEFT, fit, rich = true)
+                        TileValue(d, Wheel.FRONT_RIGHT, fit, rich = true, end = true)
+                    }
+                    Box(Modifier.fillMaxWidth().weight(1f).padding(vertical = 4.dp), contentAlignment = Alignment.Center) { car(Modifier.fillMaxHeight()) }
+                    Row(Modifier.fillMaxWidth().height(rowH.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Bottom) {
+                        TileValue(d, Wheel.REAR_LEFT, fit, rich = true)
+                        TileValue(d, Wheel.REAR_RIGHT, fit, rich = true, end = true)
+                    }
+                }
+            } else {
+                // El auto a lo alto, pero sin quitarle a las llantas más de un tercio del ancho.
+                val carW = minOf(h * CAR_TOP_ASPECT, w * 0.34f)
+                val sideW = (w - carW - 2 * gap) / 2
+                val fit = fitTire(repo, sideW, h / 2, max = 44f)
+                Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.width(sideW.dp).fillMaxHeight(), verticalArrangement = Arrangement.SpaceAround) {
+                        TileValue(d, Wheel.FRONT_LEFT, fit, rich = true)
+                        TileValue(d, Wheel.REAR_LEFT, fit, rich = true)
+                    }
+                    Box(Modifier.padding(horizontal = gap.dp).width(carW.dp).fillMaxHeight(), contentAlignment = Alignment.Center) { car(Modifier.fillMaxWidth()) }
+                    Column(Modifier.width(sideW.dp).fillMaxHeight(), verticalArrangement = Arrangement.SpaceAround, horizontalAlignment = Alignment.End) {
+                        TileValue(d, Wheel.FRONT_RIGHT, fit, rich = true, end = true)
+                        TileValue(d, Wheel.REAR_RIGHT, fit, rich = true, end = true)
+                    }
+                }
+            }
         }
     }
 }
+
 
 /** Texto del aviso: "Trasera derecha · 24 psi · baja". */
 @Composable
@@ -853,8 +967,7 @@ fun TiresAlertBanner(d: Dependencies, onOpen: () -> Unit) {
 internal fun TiresHealthTile(d: Dependencies, onClick: () -> Unit, modifier: Modifier) {
     val c = LocalColors.current
     val repo = d.tpms
-    // La más grave primero (una fuga antes que una pila baja), no la primera en el orden de las ruedas.
-    val worst = Wheel.ROAD.map { it to repo.statusOf(it) }.filter { it.second.problem }.maxByOrNull { it.second.severity?.ordinal ?: -1 }
+    val worst = repo.worstRoad()
     val lowest = Wheel.ROAD.mapNotNull { w -> d.bus.watch(TireSignals.pressure(w))?.let { w to it } }.minByOrNull { it.second }
     val color = severityColor(worst?.second?.severity)
     val word = when {
