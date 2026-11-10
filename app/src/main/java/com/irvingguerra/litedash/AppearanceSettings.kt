@@ -252,6 +252,7 @@ private fun HomeSettings(d: Dependencies, revision: Int, onEdit: () -> Unit, onT
         // Solo la barra lateral lleva la hora (la de abajo la deja en la barra de arriba).
         if (prefs.barPosition != BarPosition.BOTTOM) SwitchRow(stringResource(R.string.bar_clock), prefs.barClock, { prefs.barClock = it }, stringResource(R.string.bar_clock_help))
         SwitchRow(stringResource(R.string.bar_apps), prefs.barApps, { prefs.barApps = it })
+        SwitchRow(stringResource(R.string.bar_music), prefs.barMusic, { prefs.barMusic = it })
         SwitchRow(stringResource(R.string.bar_favorites), prefs.barFavorites, { prefs.barFavorites = it })
         if (prefs.barFavorites) Favorites(d)
         SwitchRow(stringResource(R.string.bar_voice), prefs.barVoice, { prefs.barVoice = it })

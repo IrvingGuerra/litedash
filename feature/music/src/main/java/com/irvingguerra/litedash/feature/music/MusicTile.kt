@@ -4,7 +4,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -15,8 +14,8 @@ import com.irvingguerra.litedash.core.ui.Typography
 
 /**
  * Tarjeta de música (ver [MediaTile]): lo que suena, con sus controles. [revision] cambia al volver
- * a la app, para notar si el usuario acaba de dar el permiso. [browser] es la biblioteca de
- * Archivos: con ese método y una pieza donde quepa, se elige la música ahí mismo.
+ * a la app, para notar si el usuario acaba de dar el permiso. Con Archivos, play sin nada que sonar
+ * abre la pantalla Música en la biblioteca (lo atiende el inicio, ver [OnFilesEmpty]).
  */
 @Composable
 fun MusicTile(
@@ -25,20 +24,14 @@ fun MusicTile(
     modifier: Modifier = Modifier,
     artwork: Boolean = true,
     skip: Boolean = true,
-    browser: @Composable (onPicked: () -> Unit) -> Unit,
 ) {
     val song = repo.song
-    val files = repo.mode == MusicMode.FILES
-    val browsing = remember { Browsing() }
-    OnFilesEmpty(repo, files && browsing.fits, remember { { browsing.open = true } })
     MediaTile(
         repo, revision, modifier, song, Icons.music, stringResource(R.string.music), stringResource(R.string.music_explain),
         text = { tall -> SongText(repo, song, tall) },
         // Cargando se pinta como pausa: tocarlo cancela la carga.
         controls = { m, compact -> Controls(repo, song?.playing == true, m, loading = song?.buffering == true, compact = compact) },
         needsAccess = repo.needsAccess,
-        browsing = browsing,
-        browser = browser.takeIf { files },
         artwork = artwork,
         skip = skip,
     )

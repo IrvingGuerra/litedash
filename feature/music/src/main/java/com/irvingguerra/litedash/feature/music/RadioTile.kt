@@ -16,8 +16,8 @@ import com.irvingguerra.litedash.core.ui.Typography
  * Tarjeta de radio (ver [MediaTile]): la FM de la pantalla (la app de la marca, enlazada en
  * Ajustes) o la radio por internet de LiteDash. Play sin nada con qué sonar llama [onIdle]
  * (abre los ajustes de la radio para enlazarla). [revision] cambia al
- * volver a la app, para notar si el usuario acaba de dar el permiso. [browser] es la lista de
- * estaciones por internet: con esa radio y una pieza donde quepa, se elige ahí mismo.
+ * volver a la app, para notar si el usuario acaba de dar el permiso. Las estaciones por internet no se
+ * eligen aquí: [onIdle] lleva a la pantalla Música (o a los ajustes, sin radio enlazada).
  */
 @Composable
 fun RadioTile(
@@ -27,20 +27,14 @@ fun RadioTile(
     modifier: Modifier = Modifier,
     artwork: Boolean = true,
     skip: Boolean = true,
-    browser: @Composable (onPicked: () -> Unit) -> Unit,
 ) {
     val song = repo.radio.song
-    val browsing = remember { Browsing() }
-    // Play sin estación: la lista si cabe en la pieza; si no, los ajustes.
-    val idle = { if (browsing.fits) browsing.open = true else onIdle() }
     MediaTile(
         repo, revision, modifier, song, Icons.radio, stringResource(R.string.radio), stringResource(R.string.radio_explain),
         text = { tall -> StationText(repo, song, tall) },
-        controls = { m, compact -> RadioControls(repo, song, idle, m, compact = compact) },
+        controls = { m, compact -> RadioControls(repo, song, onIdle, m, compact = compact) },
         // La radio por internet es el reproductor propio: su sesión se lee directo, sin el acceso a notificaciones.
         needsAccess = !repo.radioInternet,
-        browsing = browsing,
-        browser = browser.takeIf { repo.radioInternet },
         artwork = artwork,
         skip = skip,
     )

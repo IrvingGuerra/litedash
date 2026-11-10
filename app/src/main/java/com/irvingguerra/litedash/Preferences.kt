@@ -65,6 +65,7 @@ internal object PrefKeys {
     const val BAR_APPS = "bar_apps"
     const val BAR_FAVORITES = "bar_favorites"
     const val BAR_VOICE = "bar_voice"
+    const val BAR_MUSIC = "bar_music"
     const val LOGO_INTRO = "logo_intro"
     const val INTRO_MIGRATED = "intro_image_migrated"
     const val LIGHTS_KEY = "lights_key"
@@ -318,6 +319,7 @@ class Preferences(context: Context) {
     var barApps by bool(PrefKeys.BAR_APPS, true)
     var barFavorites by bool(PrefKeys.BAR_FAVORITES, true)
     var barVoice by bool(PrefKeys.BAR_VOICE, false)
+    var barMusic by bool(PrefKeys.BAR_MUSIC, true)
     // Ajustes no se puede quitar: sin él no habría cómo salir del inicio.
 
     /** Abrir las apps de mapa y música en pantalla dividida, con el auto al lado (solo acostada). */

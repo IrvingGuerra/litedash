@@ -776,6 +776,7 @@
     <string name="bar_clock">Hora y estado</string>
     <string name="bar_clock_help">Arriba de la barra lateral. Sin ellos, la hora va en la barra de arriba.</string>
     <string name="bar_apps">Botón de todas las apps</string>
+    <string name="bar_music">Botón de música</string>
     <string name="bar_favorites">Favoritas</string>
     <string name="bar_voice">Botón de voz</string>
     <string name="bar_settings_always">Ajustes siempre está en la barra: sin él no habría cómo salir del inicio.</string>

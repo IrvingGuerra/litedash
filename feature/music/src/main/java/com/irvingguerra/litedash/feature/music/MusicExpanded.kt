@@ -44,15 +44,15 @@ import com.irvingguerra.litedash.core.ui.Typography
 @Composable
 fun MusicExpanded(
     repo: MusicRepository,
-    /** Null = el widget ya es así de grande en el inicio: sin botón de cerrar. */
-    close: (() -> Unit)?,
     modifier: Modifier = Modifier,
+    /** Abre ya en la biblioteca (se llegó aquí por play sin nada que sonar). */
+    startBrowsing: Boolean = false,
     browser: @Composable (onPicked: () -> Unit) -> Unit,
 ) {
     val song = repo.song
-    // La biblioteca de Archivos abierta; si no, lo que suena.
-    var browsing by remember { mutableStateOf(false) }
     val files = repo.mode == MusicMode.FILES
+    // La biblioteca de Archivos abierta; si no, lo que suena.
+    var browsing by remember { mutableStateOf(startBrowsing && files) }
     // Con Archivos, play sin nada que tocar abre la biblioteca.
     OnFilesEmpty(repo, files, remember { { browsing = true } })
     ExpandedCard(repo, modifier) { wide, artworkMax ->
@@ -61,7 +61,6 @@ fun MusicExpanded(
             if (files) HeaderButton(if (browsing) Icons.music else Icons.list) { browsing = !browsing }
             val app = song?.pkg?.ifEmpty { null } ?: repo.modeApp
             if (app != null && !repo.isOwn(app)) HeaderButton(Icons.openExternal) { repo.openApp() }
-            if (close != null) HeaderButton(Icons.close, close)
         }
         Spacer(Modifier.height(16.dp))
         if (browsing) {

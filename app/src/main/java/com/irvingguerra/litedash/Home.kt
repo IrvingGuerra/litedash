@@ -88,15 +88,13 @@ import com.irvingguerra.litedash.feature.dashboard.Grid
 import com.irvingguerra.litedash.feature.dashboard.Tile
 import com.irvingguerra.litedash.feature.dashboard.TileTypes
 import com.irvingguerra.litedash.feature.dashboard.cardless
-import com.irvingguerra.litedash.feature.music.MusicExpanded
+import com.irvingguerra.litedash.feature.music.MusicMode
 import com.irvingguerra.litedash.feature.music.MusicRepository
 import com.irvingguerra.litedash.feature.music.MusicTile
-import com.irvingguerra.litedash.feature.music.RadioExpanded
+import com.irvingguerra.litedash.feature.music.OnFilesEmpty
 import com.irvingguerra.litedash.feature.music.RadioTile
 import com.irvingguerra.litedash.feature.navigation.NavigationRepository
 import com.irvingguerra.litedash.feature.obd.ObdRepository
-import com.irvingguerra.litedash.feature.player.PlayerBrowser
-import com.irvingguerra.litedash.feature.player.PlayerSource
 import com.irvingguerra.litedash.feature.tpms.TpmsRepository
 import com.irvingguerra.litedash.feature.updater.Updater
 import kotlinx.coroutines.delay
@@ -221,6 +219,8 @@ class TileActions(
     val onTires: () -> Unit,
     /** Acomodando el inicio (las pastillas de llantas se esconden: estorban a los botones). */
     val editing: () -> Boolean,
+    /** Abre la pantalla Música en esa pestaña (play sin nada que sonar: ahí está la biblioteca). */
+    val onMedia: (MediaTab) -> Unit,
 )
 
 /** Cada tipo de pieza dibujado según su tipo. */
@@ -261,14 +261,20 @@ fun TileContent(d: Dependencies, p: Tile, apps: List<App>, car: CarPackage?, rev
                 }
             } else Box(hero) { content(null) }
         }
-        // Ya de media pantalla o más: lo de en grande ahí mismo (no se mueve).
-        TileTypes.MUSIC -> if (p.fillsHalf(d.dashboard.grid)) MusicBig(d, close = null)
-        else MusicTile(d.music, revision, artwork = p.flag(WidgetFlags.ART), skip = p.flag(WidgetFlags.SKIP)) { picked -> FilesBrowser(picked) }
-        TileTypes.RADIO -> if (p.fillsHalf(d.dashboard.grid)) RadioBig(d) { openRadioSettings(); actions.onPanel(Panel.MusicSettings) }
-        else RadioTile(
-            d.music, revision, onIdle = { openRadioSettings(); actions.onPanel(Panel.MusicSettings) },
+        // Aunque sean grandes, sin biblioteca ni estaciones: eso vive en la pantalla Música.
+        TileTypes.MUSIC -> MusicTile(d.music, revision, artwork = p.flag(WidgetFlags.ART), skip = p.flag(WidgetFlags.SKIP))
+        TileTypes.RADIO -> RadioTile(
+            d.music, revision,
+            // Play sin estación: la radio por internet elige en la pantalla Música; sin radio enlazada, los ajustes.
+            onIdle = {
+                if (d.music.radioInternet) actions.onMedia(MediaTab.RADIO)
+                else {
+                    openRadioSettings()
+                    actions.onPanel(Panel.MusicSettings)
+                }
+            },
             artwork = p.flag(WidgetFlags.ART), skip = p.flag(WidgetFlags.SKIP),
-        ) { picked -> StationsBrowser(picked) }
+        )
         TileTypes.CLOCK -> ClockTile(d.prefs.driverName.takeIf { p.flag(WidgetFlags.GREETING) }, clockWeather(d, p.data), date = p.flag(WidgetFlags.DATE))
         TileTypes.WEATHER -> WeatherTile(d.weather, days = p.flag(WidgetFlags.DAYS), range = p.flag(WidgetFlags.RANGE))
         TileTypes.TRIP -> TripTile(d, time = p.flag(WidgetFlags.TIME), average = p.flag(WidgetFlags.AVERAGE), heading = p.flag(WidgetFlags.HEADING))
@@ -362,10 +368,12 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
         inFront = true
         onPauseOrDispose { inFront = false }
     }
-    // La música a media pantalla (desde el volante); false = el tablero normal.
+    // La pantalla Música a media pantalla (su botón de la barra o el del volante); false = el tablero normal.
     var musicBig by remember { mutableStateOf(false) }
-    // El widget que creció (por id: si cambia el acomodo se lee el de ahora): da el lado.
-    var expandedFromId by remember { mutableStateOf<String?>(null) }
+    var mediaTab by remember { mutableStateOf(MediaTab.MUSIC) }
+    var mediaBrowse by remember { mutableStateOf(false) }
+    // De qué lado va la pantalla Música (se decide al abrirla: no brinca si su widget cambia).
+    var mediaSideFirst by remember { mutableStateOf(false) }
     // Solo el auto a pantalla completa (un toque al auto entra y otro sale), con animación:
     // [carOnly] es a dónde va y [carShown] si la capa sigue en pantalla (también al regresar).
     var carOnly by remember { mutableStateOf(false) }
@@ -392,6 +400,26 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
     fun openTires() {
         tiresOpen = true
     }
+    // La pantalla Música en [tab] (null = la de lo que suena), del lado de su widget si lo hay; [browse] la abre
+    // en la biblioteca.
+    fun openMedia(tab: MediaTab?, browse: Boolean = false) {
+        val shown = tab ?: if (d.music.radio.song?.playing == true) MediaTab.RADIO else MediaTab.MUSIC
+        panel = null
+        tiresOpen = false
+        carOnly = false
+        editing = false
+        mediaTab = shown
+        mediaBrowse = browse
+        // Crece en la mitad donde está su widget: derecha (o abajo) si está toda ahí; si no, izquierda (o arriba).
+        val from = d.dashboard.shown.firstOrNull { it.type == if (shown == MediaTab.RADIO) TileTypes.RADIO else TileTypes.MUSIC }
+        val grid = d.dashboard.grid
+        mediaSideFirst = from != null && grid != null && if (grid.vertical) from.row * 2 >= grid.rows else from.col * 2 >= grid.columns
+        musicBig = true
+    }
+    // Con Archivos, play sin nada que sonar (volante, barra de Android, widget) abre la pantalla Música en la
+    // biblioteca; mientras está abierta, la atiende ella.
+    val currentOpenMedia by rememberUpdatedState(::openMedia)
+    OnFilesEmpty(d.music, d.music.mode == MusicMode.FILES, remember { { currentOpenMedia(MediaTab.MUSIC, true) } })
     fun backToDashboard() {
         panel = null
         tiresOpen = false
@@ -474,6 +502,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
             carHidden = { id -> carShown && bigTile?.id == id && carProgress.value > 0f },
             onTires = { openTires() },
             editing = { editing },
+            onMedia = { openMedia(it) },
         )
     }
 
@@ -484,15 +513,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
             d.wheel.consume()
             when (action) {
                 WheelAction.NAVIGATE -> actions.onNavigate(mapApp(d, currentApps))
-                WheelAction.MUSIC -> {
-                    backToDashboard()
-                    // Del lado de su widget; si ya es de media pantalla, se queda como está.
-                    val tile = d.dashboard.shown.firstOrNull { it.type == TileTypes.MUSIC }
-                    if (tile?.fillsHalf(d.dashboard.grid) != true) {
-                        expandedFromId = tile?.id
-                        musicBig = true
-                    }
-                }
+                WheelAction.MUSIC -> openMedia(null)
                 WheelAction.VOICE -> onVoice?.invoke()
                 WheelAction.HOME -> backToDashboard()
                 else -> Unit
@@ -554,6 +575,8 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                   favorites = favorites,
                   onVoice = onVoice,
                   onApps = { panel = Panel.Drawer },
+                  musicOpen = musicBig,
+                  onMusic = { if (musicBig) musicBig = false else openMedia(null) },
                   onSettings = { panel = Panel.Settings },
               )
           }
@@ -602,11 +625,8 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                     if (inFront || d.dashboard.grid == null) d.dashboard.use(grid)
                     val cellNow = DpSize(maxWidth / grid.columns, maxHeight / grid.rows)
                     SideEffect { cell = cellNow }
-                    // La música en grande ocupa media pantalla; en la otra mitad, el auto como en la
+                    // La pantalla Música ocupa media pantalla; en la otra mitad, el auto como en la
                     // pantalla dividida (auto 3D o carretera, según se eligió ahí), o tu imagen.
-                    val from = expandedFromId?.let { id -> d.dashboard.shown.firstOrNull { it.id == id } }
-                    // Si el widget ya no está (otra plantilla, otro acomodo) o ya es de media pantalla, se cierra.
-                    if (musicBig && expandedFromId != null && (from == null || from.fillsHalf(grid))) LaunchedEffect(Unit) { musicBig = false }
                     // Con algo a pantalla completa encima, lo que gasta en los widgets (GPS, mapa) descansa.
                     CompositionLocalProvider(LocalHomeCovered provides (carShown || tiresShown || parked)) {
                         if (musicBig) HalfScreen(
@@ -615,11 +635,15 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                                 val hero = shown.firstOrNull { it.type == (if (d.prefs.splitRoad) TileTypes.ROAD else TileTypes.CAR) } ?: shown.firstOrNull { it.cardless }
                                 if (hero != null) TileContent(d, hero, apps, car, revision, actions) else ClockTile(d.prefs.driverName, d.weather)
                             },
-                            // Crece en la mitad donde estaba: derecha (o abajo) si estaba toda ahí; si no, izquierda (o arriba).
-                            sideFirst = from?.let { if (grid.vertical) it.row * 2 >= grid.rows else it.col * 2 >= grid.columns } ?: false,
+                            sideFirst = mediaSideFirst,
                             vertical = grid.vertical,
                         ) {
-                            MusicBig(d, close = { musicBig = false }, Modifier.padding(6.dp))
+                            MediaScreen(
+                                d, mediaTab, onTab = { mediaTab = it; mediaBrowse = false }, close = { musicBig = false },
+                                onRadioSettings = { openRadioSettings(); panel = Panel.MusicSettings },
+                                modifier = Modifier.padding(6.dp),
+                                browse = mediaBrowse,
+                            )
                         } else Dashboard(
                                 grid = grid,
                                 tiles = d.dashboard.shown,
@@ -647,6 +671,8 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                     favorites = favorites,
                     onVoice = onVoice,
                     onApps = { panel = Panel.Drawer },
+                    musicOpen = musicBig,
+                    onMusic = { if (musicBig) musicBig = false else openMedia(null) },
                     onSettings = { panel = Panel.Settings },
                 )
             }
@@ -817,6 +843,8 @@ private fun Dock(
     favorites: List<App>,
     onVoice: (() -> Unit)?,
     onApps: () -> Unit,
+    musicOpen: Boolean,
+    onMusic: () -> Unit,
     onSettings: () -> Unit,
 ) {
     val c = LocalColors.current
@@ -840,10 +868,10 @@ private fun Dock(
         val buttonSize = (if (small) 64.dp else if (short) 46.dp else 56.dp) * k
         // Lo demás va en su propio bloque con peso: Ajustes se mide primero y nunca se queda sin lugar.
         Row(Modifier.weight(1f).clipToBounds(), verticalAlignment = Alignment.CenterVertically) {
-        if (prefs.barApps) {
-            IconButton(Icons.apps, onApps, size = buttonSize)
-            Box(Modifier.padding(horizontal = 8.dp).width(1.dp).height(32.dp).background(c.line))
-        }
+        if (prefs.barApps) IconButton(Icons.apps, onApps, size = buttonSize)
+        // La pantalla Música (como en Tesla); marcado mientras está abierta.
+        if (prefs.barMusic) IconButton(Icons.music, onMusic, size = buttonSize, background = if (musicOpen) c.surfaceHigh else Color.Transparent)
+        if (prefs.barApps || prefs.barMusic) Box(Modifier.padding(horizontal = 8.dp).width(1.dp).height(32.dp).background(c.line))
         if (prefs.barVolume == VolumePlace.START) Volume(buttonSize)
         // Las favoritas al centro de la barra (como Tesla); caben las que quepan: en pantallas chicas no se encima.
         BoxWithConstraints(Modifier.weight(1f), contentAlignment = Alignment.Center) {
@@ -881,6 +909,8 @@ private fun Rail(
     favorites: List<App>,
     onVoice: (() -> Unit)?,
     onApps: () -> Unit,
+    musicOpen: Boolean,
+    onMusic: () -> Unit,
     onSettings: () -> Unit,
 ) {
     val c = LocalColors.current
@@ -909,10 +939,9 @@ private fun Rail(
             }
             Box(Modifier.padding(bottom = 6.dp)) { StatusIcons() }
         }
-        if (prefs.barApps) {
-            IconButton(Icons.apps, onApps, size = button)
-            Box(Modifier.padding(vertical = 4.dp).width(28.dp).height(1.dp).background(c.line))
-        }
+        if (prefs.barApps) IconButton(Icons.apps, onApps, size = button)
+        if (prefs.barMusic) IconButton(Icons.music, onMusic, size = button, background = if (musicOpen) c.surfaceHigh else Color.Transparent)
+        if (prefs.barApps || prefs.barMusic) Box(Modifier.padding(vertical = 4.dp).width(28.dp).height(1.dp).background(c.line))
         if (prefs.barVolume == VolumePlace.START) Volume(volume, vertical = true)
         BoxWithConstraints(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
             // Las favoritas que quepan entre los accesos de arriba y los controles de abajo.
@@ -994,27 +1023,3 @@ private fun HalfScreen(side: @Composable () -> Unit, sideFirst: Boolean, vertica
         for (part in parts) Box(Modifier.weight(1f).fillMaxHeight()) { part() }
     }
 }
-
-/** Ocupa media pantalla o más ([grid] = la cuadrícula del inicio): crecer no tendría caso. */
-private fun Tile.fillsHalf(grid: Grid?) = grid != null && width * height * 2 >= grid.columns * grid.rows
-
-/** La música en grande: lo que suena con el método elegido y la biblioteca de Archivos. */
-@Composable
-private fun MusicBig(d: Dependencies, close: (() -> Unit)?, modifier: Modifier = Modifier) = MusicExpanded(
-    d.music, close = close, modifier,
-    browser = { picked -> FilesBrowser(picked) },
-)
-
-/** La radio en grande: FM o internet y, si está prendida, las estaciones por internet. */
-@Composable
-private fun RadioBig(d: Dependencies, onSettings: () -> Unit) = RadioExpanded(
-    d.music, onSettings = onSettings,
-    browser = if (d.music.radioInternet) { picked -> StationsBrowser(picked) } else null,
-)
-
-/** La biblioteca de Archivos y las estaciones por internet, para la vista en grande y para el widget donde quepan. */
-@Composable
-private fun FilesBrowser(onPicked: () -> Unit) = PlayerBrowser(PlayerSource.USB, onPicked, Modifier.fillMaxSize())
-
-@Composable
-private fun StationsBrowser(onPicked: () -> Unit) = PlayerBrowser(PlayerSource.RADIO, onPicked, Modifier.fillMaxSize())
