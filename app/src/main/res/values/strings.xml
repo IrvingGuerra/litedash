@@ -28,6 +28,7 @@
     <string name="arrange_your_home">Acomoda tu inicio</string>
     <string name="arrange_hint">Toca un widget para ver sus opciones</string>
     <string name="templates">Plantillas</string>
+    <string name="wallpaper_button">Fondo</string>
     <string name="templates_help">Elige un punto de partida. Después mueve y cambia el tamaño de lo que quieras.</string>
     <string name="template_center">Auto al centro</string>
     <string name="template_side">Auto a un lado</string>

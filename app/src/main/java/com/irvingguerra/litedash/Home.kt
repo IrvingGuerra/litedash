@@ -7,6 +7,8 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
@@ -112,6 +114,8 @@ sealed interface Panel {
     data object Updates : Panel
     data object AddTile : Panel
     data object Templates : Panel
+    /** El fondo de pantalla del inicio (botón "Fondo" al acomodar). */
+    data object Wallpaper : Panel
     /** Elegir app para una pieza existente ([tileId]) o para una nueva (null); al elegir, regresa a [back]. */
     data class PickApp(val tileId: String?, val back: Panel? = null) : Panel
     /** Ajustes abiertos en el Taller (pieza de acceso directo). */
@@ -594,6 +598,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                     weather = d.weather,
                     onAdd = { panel = Panel.AddTile },
                     onTemplates = { panel = Panel.Templates },
+                    onWallpaper = { panel = Panel.Wallpaper },
                     onFinish = { editing = false },
                 )
                 // Los avisos tampoco cuentan para la cuadrícula: aparecen y se van, y no deben
@@ -701,6 +706,12 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                 onTires = { panel = null; openTires() },
             )
             Panel.Templates -> TemplatesPanel(d.dashboard, close = { panel = null })
+            Panel.Wallpaper -> PanelScaffold(stringResource(R.string.wallpaper_title), close = { panel = null }) {
+                Column(Modifier.weight(1f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                    Label(stringResource(R.string.wallpaper_help), Typography.body, c.textMuted)
+                    WallpaperSettings()
+                }
+            }
             Panel.AddTile -> AddTilePanel(
                 d,
                 close = { panel = null },
@@ -805,7 +816,16 @@ private fun topBarHeight() = if (isShortScreen()) 44.dp else 64.dp
 private val TOP_BAR_HIDDEN = 12.dp
 
 @Composable
-private fun TopBar(editing: Boolean, showTime: Boolean, driverName: String?, weather: WeatherRepository, onAdd: () -> Unit, onTemplates: () -> Unit, onFinish: () -> Unit) {
+private fun TopBar(
+    editing: Boolean,
+    showTime: Boolean,
+    driverName: String?,
+    weather: WeatherRepository,
+    onAdd: () -> Unit,
+    onTemplates: () -> Unit,
+    onWallpaper: () -> Unit,
+    onFinish: () -> Unit,
+) {
     val c = LocalColors.current
     // Sin nada que mostrar (la hora ya está en una pieza), la barra no aparta espacio: el tablero sube.
     if (!editing && !showTime) return Spacer(Modifier.height(TOP_BAR_HIDDEN))
@@ -819,6 +839,7 @@ private fun TopBar(editing: Boolean, showTime: Boolean, driverName: String?, wea
                 Label(stringResource(R.string.arrange_your_home), Typography.subtitle, maxLines = 1)
                 Label(stringResource(R.string.arrange_hint), Typography.small, c.textMuted, maxLines = 1)
             }
+            Button(stringResource(R.string.wallpaper_button), onWallpaper)
             Button(stringResource(R.string.templates), onTemplates)
             Button(stringResource(R.string.add), onAdd)
             Button(stringResource(R.string.done), onFinish, primary = true)

@@ -27,6 +27,7 @@
     <string name="arrange_your_home">Arrange your home</string>
     <string name="arrange_hint">Tap a widget to see its options</string>
     <string name="templates">Layouts</string>
+    <string name="wallpaper_button">Wallpaper</string>
     <string name="templates_help">Pick a starting point. Then move and resize anything you like.</string>
     <string name="template_center">Car in the middle</string>
     <string name="template_side">Car on the side</string>
