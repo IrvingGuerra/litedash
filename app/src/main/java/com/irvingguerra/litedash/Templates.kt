@@ -38,6 +38,7 @@ import com.irvingguerra.litedash.feature.dashboard.Template
 import com.irvingguerra.litedash.feature.dashboard.hasCar
 import com.irvingguerra.litedash.feature.dashboard.TileTypes
 import com.irvingguerra.litedash.feature.dashboard.size
+import com.irvingguerra.litedash.feature.dashboard.coarse
 import com.irvingguerra.litedash.feature.dashboard.suggestedTemplate
 import com.irvingguerra.litedash.feature.dashboard.tiles
 
@@ -93,8 +94,8 @@ private enum class TemplateTab(val title: Int, val templates: List<Template>, va
 fun TemplatesPanel(dashboard: DashboardState, close: () -> Unit) {
     val grid = dashboard.grid ?: return
     val c = LocalColors.current
-    val yours = grid.size
-    val suggested = grid.suggestedTemplate()
+    val yours = grid.coarse.size
+    val suggested = grid.coarse.suggestedTemplate()
     PanelScaffold(stringResource(R.string.templates), close) {
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(24.dp)) {
             Label(stringResource(R.string.templates_help), Typography.body, c.textMuted)

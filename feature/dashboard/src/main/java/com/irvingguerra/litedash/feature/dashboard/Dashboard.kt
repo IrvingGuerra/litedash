@@ -1,5 +1,7 @@
 package com.irvingguerra.litedash.feature.dashboard
 
+import androidx.compose.animation.core.animateIntOffsetAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.awaitEachGesture
@@ -17,6 +19,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -32,6 +35,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.irvingguerra.litedash.core.ui.Icon
 import com.irvingguerra.litedash.core.ui.IconButton
@@ -44,8 +48,11 @@ import kotlinx.coroutines.withTimeoutOrNull
 
 private val GAP = 6.dp
 
-/** Los botones redondos de arriba de cada pieza en el modo edición (✕, sin tarjeta, ajustes). */
+/** Los botones redondos de arriba de la pieza elegida en el modo edición (✕, sin tarjeta, ajustes). */
 private val EDIT_BUTTON = 40.dp
+
+/** Lo que tardan las demás piezas en hacerse a un lado mientras arrastras. */
+private const val MAKE_ROOM_MS = 180
 
 /** Aire entre esos botones y la orilla de la pieza, y entre uno y otro. */
 private val EDIT_MARGIN = 6.dp
@@ -59,7 +66,8 @@ private data class Drag(val id: String, val resizing: Boolean)
 /**
  * El tablero del inicio. Fuera del modo edición solo pinta las piezas (nada se
  * recalcula ni se anima). Dejar presionado en cualquier parte entra al modo
- * edición; ahí cada pieza se arrastra, cambia de tamaño desde la esquina o se quita.
+ * edición; ahí cada pieza se arrastra (las que estorban se hacen a un lado, [arrange]) y,
+ * tocándola, muestra sus botones: quitar, sin tarjeta, ajustes y la esquina del tamaño.
  */
 @Composable
 fun Dashboard(
@@ -87,17 +95,22 @@ fun Dashboard(
         // Cuánto se ha movido el dedo: se lee al acomodar o dibujar la pieza, no al
         // componer, así arrastrar no vuelve a armar todo el tablero en cada evento.
         var dragOffset by remember { mutableStateOf(Offset.Zero) }
+        // La pieza tocada al acomodar: solo ella lleva botones (las demás, su borde), así no tapan todo.
+        var selected by remember { mutableStateOf<String?>(null) }
+        if (!editing && selected != null) selected = null
 
         // Fondo: dejar presionado entra al modo edición; editando, se ven las celdas.
         Box(
             Modifier
                 .fillMaxSize()
                 .pointerInput(editing) {
+                    // Editando, tocar el fondo suelta la pieza elegida.
                     if (!editing) detectTapGestures(onLongPress = { currentOnEdit() })
+                    else detectTapGestures(onTap = { selected = null })
                 }
                 .then(
                     if (editing) Modifier.drawBehind {
-                        val r = 2.dp.toPx()
+                        val r = 1.5.dp.toPx()
                         for (i in 0..grid.columns) for (j in 0..grid.rows) {
                             drawCircle(c.line, r, Offset(i * cwPx, j * chPx))
                         }
@@ -109,8 +122,11 @@ fun Dashboard(
         val preview by remember(tiles, cwPx, chPx, grid) {
             derivedStateOf { drag?.let { a -> tiles.firstOrNull { it.id == a.id }?.let { target(it, a, dragOffset, cwPx, chPx, limits, grid) } } }
         }
+        // El acomodo si la soltaras ahí: las que estorban, ya a un lado (null = no cabe). Se recalcula
+        // solo cuando la vista previa cambia de celda, no en cada movimiento del dedo.
+        val arranged by remember(tiles, grid, cwPx, chPx) { derivedStateOf { preview?.let { tiles.arrange(it, grid) } } }
         preview?.let { shown ->
-            val ok = tiles.fits(shown, grid)
+            val ok = arranged != null
             Box(
                 Modifier
                     .offset(cellWidth * shown.col, cellHeight * shown.row)
@@ -125,11 +141,19 @@ fun Dashboard(
         // El auto va primero: su sombra y reflejo pueden salirse de su pieza y deben
         // quedar debajo de las demás.
         val ordered = remember(tiles) { tiles.sortedBy { if (it.type == TileTypes.CAR) 0 else 1 } }
-        for (p in ordered) {
+        // Con llave: el estado de cada pieza (su animación) se queda con ella aunque cambie el orden.
+        for (p in ordered) key(p.id) {
             val a = drag?.takeIf { it.id == p.id }
+            // Las demás se van a donde quedarían (con una animación corta); al soltar, ahí se guardan.
+            val spot = if (a == null) arranged?.firstOrNull { it.id == p.id } ?: p else p
+            // Solo se anima mientras arrastras: al soltar, al girar la pantalla o al cargar otro acomodo va
+            // directo a su lugar (si no, se vería un cuadro en el de antes).
+            val target = IntOffset((cwPx * spot.col).roundToInt(), (chPx * spot.row).roundToInt())
+            val moving by animateIntOffsetAsState(target, tween(MAKE_ROOM_MS), label = "tile")
+            val chosen = editing && selected == p.id
             Box(
                 Modifier
-                    .offset(cellWidth * p.col, cellHeight * p.row)
+                    .offset { if (drag != null) moving else target }
                     .then(
                         if (a?.resizing == true) {
                             // Mientras cambia de tamaño, la pieza sigue al dedo, acotada a su mínimo y a la orilla
@@ -163,27 +187,28 @@ fun Dashboard(
                     // Arrastrar la pieza (mover) o su esquina (cambiar de tamaño): el mismo gesto.
                     fun Modifier.tileDrag(resizing: Boolean) = pointerInput(p.id, tiles, grid, cwPx, chPx) {
                         detectDragGestures(
-                            onDragStart = { drag = Drag(p.id, resizing); dragOffset = Offset.Zero },
+                            onDragStart = { drag = Drag(p.id, resizing); dragOffset = Offset.Zero; selected = p.id },
                             onDrag = { change, d ->
                                 change.consume()
                                 dragOffset += d
                             },
                             onDragEnd = {
-                                drag?.let { end -> drop(p, end, dragOffset, cwPx, chPx, limits, tiles, grid, onChange) }
+                                arranged?.takeIf { it != tiles }?.let(onChange)
                                 drag = null
                             },
                             onDragCancel = { drag = null },
                         )
                     }
-                    // Capa que atrapa los gestos: editando, la pieza no se usa, se acomoda.
+                    // Capa que atrapa los gestos: editando, la pieza no se usa, se acomoda (tocarla la elige).
                     Box(
                         Modifier
                             .fillMaxSize()
                             .clip(RoundedCornerShape(Radius.card))
-                            .border(2.dp, c.accent.copy(alpha = 0.7f), RoundedCornerShape(Radius.card))
+                            .border(if (chosen) 2.dp else 1.dp, if (chosen) c.accent else c.accent.copy(alpha = 0.35f), RoundedCornerShape(Radius.card))
+                            .pointerInput(p.id) { detectTapGestures(onTap = { selected = if (selected == p.id) null else p.id }) }
                             .tileDrag(resizing = false),
                     )
-                    IconButton(
+                    if (chosen) IconButton(
                         Icons.close,
                         onClick = { onChange(tiles.filterNot { it.id == p.id }) },
                         modifier = Modifier.align(Alignment.TopStart).padding(EDIT_MARGIN),
@@ -192,7 +217,7 @@ fun Dashboard(
                     )
                     // Con o sin fondo de tarjeta (el auto, la carretera y la imagen no llevan). Junto
                     // a la ✕: en las piezas de una fila, la esquina de la derecha ya la ocupa la del tamaño.
-                    if (!p.cardless) IconButton(
+                    if (chosen && !p.cardless) IconButton(
                         Icons.noCard,
                         onClick = { onChange(tiles.replace(p.copy(plain = !p.plain))) },
                         modifier = Modifier.align(Alignment.TopStart).padding(start = editButtonStart(1), top = EDIT_MARGIN),
@@ -200,14 +225,14 @@ fun Dashboard(
                         background = if (p.plain) c.accent else c.surfaceHigh,
                         color = if (p.plain) c.onPrimary else c.text,
                     )
-                    if (onSettings != null && hasSettings(p)) IconButton(
+                    if (chosen && onSettings != null && hasSettings(p)) IconButton(
                         Icons.settings,
                         onClick = { onSettings(p) },
                         modifier = Modifier.align(Alignment.TopStart).padding(start = editButtonStart(2), top = EDIT_MARGIN),
                         size = EDIT_BUTTON,
                         background = c.surfaceHigh,
                     )
-                    Box(
+                    if (chosen) Box(
                         Modifier
                             .align(Alignment.BottomEnd)
                             .padding(6.dp)
@@ -236,21 +261,6 @@ private fun target(p: Tile, a: Drag, d: Offset, cwPx: Float, chPx: Float, limits
     } else {
         p.copy(col = p.col + (d.x / cwPx).roundToInt(), row = p.row + (d.y / chPx).roundToInt())
     }
-
-private fun drop(
-    p: Tile,
-    a: Drag,
-    d: Offset,
-    cwPx: Float,
-    chPx: Float,
-    limits: (String) -> SizeLimits,
-    tiles: List<Tile>,
-    c: Grid,
-    onChange: (List<Tile>) -> Unit,
-) {
-    val moved = target(p, a, d, cwPx, chPx, limits, c)
-    if (moved != p && tiles.fits(moved, c)) onChange(tiles.replace(moved))
-}
 
 /**
  * Detecta "dejar presionado" sin quitarle los toques normales a los botones de

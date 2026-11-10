@@ -769,7 +769,10 @@ private fun TopBar(editing: Boolean, showTime: Boolean, driverName: String?, wea
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         if (editing) {
-            Label(stringResource(R.string.arrange_your_home), Typography.subtitle, maxLines = 1, modifier = Modifier.weight(1f))
+            Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                Label(stringResource(R.string.arrange_your_home), Typography.subtitle, maxLines = 1)
+                Label(stringResource(R.string.arrange_hint), Typography.small, c.textMuted, maxLines = 1)
+            }
             Button(stringResource(R.string.templates), onTemplates)
             Button(stringResource(R.string.add), onAdd)
             Button(stringResource(R.string.done), onFinish, primary = true)

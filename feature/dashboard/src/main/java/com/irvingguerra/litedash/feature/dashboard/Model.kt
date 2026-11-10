@@ -1,9 +1,16 @@
 package com.irvingguerra.litedash.feature.dashboard
 
 import androidx.compose.runtime.Immutable
+import kotlin.math.roundToInt
 
-/** Lado mínimo de una celda: de él sale cuántas columnas y filas caben en la pantalla. */
-const val MIN_CELL_DP = 96
+/**
+ * Lado mínimo de una celda: de él sale cuántas columnas y filas caben en la pantalla. Fina (desde el
+ * Plan Widgets): el doble de columnas y filas que la de 96 dp de antes, para acomodar con más libertad.
+ */
+const val MIN_CELL_DP = 48
+
+/** Celdas finas por cada celda de las plantillas ([coarse], las de 96 dp de antes). */
+const val FINE = 2
 
 /** Tamaño de la cuadrícula en celdas. Más pantalla = más celdas = más libertad. */
 @Immutable
@@ -13,10 +20,28 @@ data class Grid(val columns: Int, val rows: Int) {
 
     companion object {
         fun forSize(widthDp: Float, heightDp: Float) = Grid(
-            columns = (widthDp / MIN_CELL_DP).toInt().coerceAtLeast(4),
-            rows = (heightDp / MIN_CELL_DP).toInt().coerceAtLeast(3),
+            columns = (widthDp / MIN_CELL_DP).toInt().coerceAtLeast(4 * FINE),
+            rows = (heightDp / MIN_CELL_DP).toInt().coerceAtLeast(3 * FINE),
         )
     }
+}
+
+/**
+ * La misma pantalla en celdas de plantilla (de 96 dp): ahí se calculan las plantillas, su tamaño de
+ * pantalla ([size]) y la recomendada, y luego se escalan a la fina ([Template.tiles]).
+ */
+val Grid.coarse get() = Grid(columns / FINE, rows / FINE)
+
+/**
+ * La pieza de la cuadrícula [from] llevada a [to] (la misma pantalla con otras celdas): cada orilla va a
+ * la celda más cercana, así las piezas que se tocaban se siguen tocando y ninguna se encima.
+ */
+fun Tile.scaledTo(from: Grid, to: Grid): Tile {
+    fun x(v: Int) = (v.toFloat() * to.columns / from.columns).roundToInt()
+    fun y(v: Int) = (v.toFloat() * to.rows / from.rows).roundToInt()
+    val left = x(col)
+    val top = y(row)
+    return copy(col = left, row = top, width = maxOf(1, x(col + width) - left), height = maxOf(1, y(row + height) - top))
 }
 
 /**
@@ -64,11 +89,66 @@ fun List<Tile>.freeSpot(width: Int, height: Int, c: Grid): Pair<Int, Int>? {
 }
 
 /**
- * Casi la misma cuadrícula (misma orientación, ±1 columna y ±1 fila): la misma pantalla con una barra
- * del sistema de más o de menos. Entre ellas se usa el último acomodo que se guardó.
+ * Casi la misma cuadrícula (misma orientación y ±1 celda de plantilla, [coarse]): la misma pantalla con una
+ * barra del sistema de más o de menos. Entre ellas se usa el último acomodo guardado.
  */
-fun Grid.near(other: Grid) =
-    vertical == other.vertical && kotlin.math.abs(columns - other.columns) <= 1 && kotlin.math.abs(rows - other.rows) <= 1
+fun Grid.near(other: Grid): Boolean {
+    val a = coarse
+    val b = other.coarse
+    return vertical == other.vertical && kotlin.math.abs(a.columns - b.columns) <= 1 && kotlin.math.abs(a.rows - b.rows) <= 1
+}
+
+/**
+ * El acomodo con [moved] (una pieza que se arrastró o cambió de tamaño) en su lugar nuevo: las que le
+ * estorban se hacen a un lado (como en Android). Cada una va al hueco libre más cercano a donde estaba; si
+ * no hay, empuja a su vez a otras que sí tengan hueco (en cadena, un paso), o se va al lugar que dejó
+ * [moved]. Las demás no se mueven. null si [moved] se sale de la cuadrícula o si alguna ya no cabe.
+ * Conserva el orden de la lista.
+ */
+fun List<Tile>.arrange(moved: Tile, c: Grid): List<Tile>? {
+    if (!moved.inside(c)) return null
+    val before = firstOrNull { it.id == moved.id }
+    val (hit, stay) = filter { it.id != moved.id }.partition { it.overlaps(moved) }
+    val placed = (stay + moved).toMutableList()
+    // Las grandes primero: las chicas encuentran hueco más fácil.
+    for (t in hit.sortedByDescending { it.width * it.height }) {
+        val free = spotsByDistance(t, c).firstOrNull { s -> placed.none { it.overlaps(s) } }
+        if (free != null) {
+            placed += free
+            continue
+        }
+        // En cadena: un lugar donde solo estorbe a piezas que no se han movido y que sí tienen hueco.
+        val chained = spotsByDistance(t, c).take(CHAIN_TRIES).firstNotNullOfOrNull { s ->
+            if (s.overlaps(moved)) return@firstNotNullOfOrNull null
+            val blocked = placed.filter { it.overlaps(s) }
+            if (blocked.any { it.id == moved.id || it !in stay }) return@firstNotNullOfOrNull null
+            val rest = (placed - blocked.toSet() + s).toMutableList()
+            for (o in blocked) rest += spotsByDistance(o, c).firstOrNull { o2 -> rest.none { it.overlaps(o2) } } ?: return@firstNotNullOfOrNull null
+            rest
+        }
+        if (chained != null) {
+            placed.clear()
+            placed += chained
+            continue
+        }
+        // Intercambio: al lugar que dejó la pieza movida, si ahí cabe.
+        val swap = before?.let { t.copy(col = it.col, row = it.row) }?.takeIf { s -> s.inside(c) && placed.none { it.overlaps(s) } }
+        placed += swap ?: return null
+    }
+    return map { orig -> placed.first { it.id == orig.id } }.let { if (before == null) it + moved else it }
+}
+
+/** Cuántos lugares cercanos prueba el empuje en cadena (es el paso caro). */
+private const val CHAIN_TRIES = 40
+
+private fun Tile.inside(c: Grid) = col >= 0 && row >= 0 && col + width <= c.columns && row + height <= c.rows
+
+/** Todos los lugares de la cuadrícula donde cabe [t] (por su tamaño), del más cercano a donde está al más lejano. */
+private fun spotsByDistance(t: Tile, c: Grid): List<Tile> {
+    val spots = mutableListOf<Tile>()
+    for (row in 0..c.rows - t.height) for (col in 0..c.columns - t.width) spots += t.copy(col = col, row = row)
+    return spots.sortedBy { (it.col - t.col) * (it.col - t.col) + (it.row - t.row) * (it.row - t.row) }
+}
 
 /**
  * Lleva un acomodo de otra cuadrícula a [c]: cada pieza se queda donde estaba si cabe; si se sale, se
@@ -134,7 +214,7 @@ val Tile.cardless get() = type == TileTypes.CAR || type == TileTypes.ROAD || typ
 /** Tamaños de pantalla, para agrupar los acomodos y sugerir el mejor. */
 enum class ScreenSize { SMALL, MEDIUM, LARGE, VERTICAL }
 
-/** Qué tamaño es esta cuadrícula: de 7" (10×4) a 11" o más (13×6 y arriba). */
+/** Qué tamaño es esta cuadrícula de plantilla ([Grid.coarse]): de 7" (10×4) a 11" o más (13×6 y arriba). */
 val Grid.size: ScreenSize
     get() = when {
         vertical -> ScreenSize.VERTICAL
@@ -187,12 +267,21 @@ enum class Template(val sizes: Set<ScreenSize>) {
 val Template.hasCar get() = this !in setOf(Template.SPEED, Template.MINIMAL, Template.SPEED_WIDGETS, Template.WALL_CARDS, Template.WALL_SIDE, Template.ROUTE)
 
 /**
- * Acomodos de inicio. Se calculan para cualquier cuadrícula: lo que no quepa se
+ * La plantilla en la cuadrícula fina [c]: se calcula en sus celdas de plantilla ([Grid.coarse], ver
+ * [layout]) y se escala ([scaledTo]); así llena la pantalla igual que antes.
+ */
+fun Template.tiles(c: Grid, hero: String = TileTypes.CAR, skip: (String) -> Boolean = { false }): List<Tile> {
+    val coarse = c.coarse
+    return layout(coarse, hero, skip).map { it.scaledTo(coarse, c) }
+}
+
+/**
+ * Acomodos de inicio en celdas de plantilla (de 96 dp). Se calculan para cualquier cuadrícula: lo que no quepa se
  * omite, y nunca se enciman (lo revisan las pruebas). La pieza grande es el auto 3D
  * o, con [hero] = [TileTypes.ROAD], la carretera en su lugar. Los tipos de [skip] (de un
  * módulo apagado) no se ponen; la deportiva cambia sus medidores por la hora y el viaje.
  */
-fun Template.tiles(c: Grid, hero: String = TileTypes.CAR, skip: (String) -> Boolean = { false }): List<Tile> {
+fun Template.layout(c: Grid, hero: String = TileTypes.CAR, skip: (String) -> Boolean = { false }): List<Tile> {
     val cols = c.columns
     val rows = c.rows
     val list = mutableListOf<Tile>()
@@ -428,7 +517,7 @@ fun Template.tiles(c: Grid, hero: String = TileTypes.CAR, skip: (String) -> Bool
 }
 
 /**
- * El acomodo que mejor luce en esta pantalla. El auto 3D sigue de protagonista al
+ * El acomodo que mejor luce en esta pantalla (en celdas de plantilla: [Grid.coarse]). El auto 3D sigue de protagonista al
  * estrenar; en las medianas, grandes y paradas el sugerido ya trae el mapa de 2 filas.
  */
 fun Grid.suggestedTemplate() = when (size) {

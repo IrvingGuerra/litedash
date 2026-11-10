@@ -42,10 +42,13 @@ class DashboardState(private val store: DashboardStore) {
         val exact = store.read(c)
         val newer = store.grids().filter { it != c && it.near(c) }.maxByOrNull { store.savedAt(it) }
             ?.takeIf { exact == null || store.savedAt(it) > store.savedAt(c) }
-        val adapted = newer?.let { store.read(it) }?.let { saved ->
-            // Primero las que se ven: las de un módulo apagado no le quitan lugar a ninguna.
+        val adapted = newer?.let { from -> store.read(from)?.let { from to it } }?.let { (from, saved) ->
+            // Primero las que se ven: las de un módulo apagado no le quitan lugar a ninguna. Hacia donde hay
+            // más lugar se estira en proporción (sin hueco en la orilla); hacia donde hay menos, no se
+            // encoge (bajaría piezas de su mínimo): ahí [adaptTo] recorta o recorre como siempre.
             val (off, on) = saved.partition { hidden(it.type) }
-            (on + off).adaptTo(c, limits)
+            val grown = Grid(maxOf(from.columns, c.columns), maxOf(from.rows, c.rows))
+            (on + off).map { it.scaledTo(from, grown) }.adaptTo(c, limits)
         }
         return adapted ?: exact ?: suggested(c)
     }
@@ -77,7 +80,7 @@ class DashboardState(private val store: DashboardStore) {
     /** La plantilla recomendada para [c], con la pieza grande que se eligió la última vez. */
     private fun suggested(c: Grid): List<Tile> {
         val (hero, data) = store.hero()
-        return c.suggestedTemplate().tiles(c, hero, hidden).map { if (it.type == hero && data.isNotEmpty()) it.copy(data = data) else it }
+        return c.coarse.suggestedTemplate().tiles(c, hero, hidden).map { if (it.type == hero && data.isNotEmpty()) it.copy(data = data) else it }
     }
 
     /**

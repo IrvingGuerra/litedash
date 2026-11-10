@@ -15,9 +15,7 @@ import android.net.NetworkCapabilities
 import android.net.NetworkRequest
 import android.os.Build
 import android.view.KeyEvent
-import android.os.SystemClock
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntRect
@@ -27,6 +25,13 @@ import androidx.compose.ui.window.PopupPositionProvider
 import androidx.compose.ui.window.PopupProperties
 import com.irvingguerra.litedash.core.ui.Radius
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.layout.layout
+import androidx.compose.ui.layout.onGloballyPositioned
+import kotlin.math.roundToInt
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
@@ -129,41 +134,54 @@ fun Volume(buttonSize: Dp, vertical: Boolean = false) {
         level = audio.getStreamVolume(AudioManager.STREAM_MUSIC)
     }
     val fixed = audio.isVolumeFixed
-    // Tocar fuera cierra la barra; si ese toque fue en la bocina, no debe volver a abrirla.
-    var closedAt by remember { mutableLongStateOf(0L) }
-    Box {
-        Box(
-            Modifier.size(buttonSize).clip(CircleShape).background(if (open) c.surfaceHigh else Color.Transparent).clickable {
-                open = !open && SystemClock.uptimeMillis() - closedAt > REOPEN_GUARD_MS
-            },
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(Icons.volume, c.text, buttonSize * 0.45f)
-            // El nivel en chico, en la esquina de la bocina (no con volumen fijo).
-            if (!fixed) Label(
-                level.toString(),
-                Typography.small.copy(fontSize = 11.sp, fontWeight = FontWeight.SemiBold),
-                c.textMuted,
-                maxLines = 1,
-                modifier = Modifier.align(Alignment.BottomEnd).padding(end = buttonSize * 0.14f, bottom = buttonSize * 0.12f),
-            )
-        }
-        // Flota encima de la barra (o a un lado de la lateral): no le quita lugar a las apps.
-        if (open) Popup(
-            popupPositionProvider = remember(vertical) { VolumePopupPosition(beside = vertical) },
-            onDismissRequest = {
-                open = false
-                closedAt = SystemClock.uptimeMillis()
-            },
-            // Enfocable: el toque de afuera solo la cierra (no abre lo que haya abajo).
-            properties = PopupProperties(focusable = true, dismissOnClickOutside = true),
-        ) {
+    // Dónde está la bocina en la ventana: de ahí se acomoda la barra flotante.
+    var anchor by remember { mutableStateOf(Rect.Zero) }
+    Box(
+        Modifier
+            .size(buttonSize)
+            .onGloballyPositioned { anchor = it.boundsInWindow() }
+            .clip(CircleShape)
+            .background(if (open) c.surfaceHigh else Color.Transparent)
+            .clickable { open = !open },
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(Icons.volume, c.text, buttonSize * 0.45f)
+        // El nivel en chico, en la esquina de la bocina (no con volumen fijo).
+        if (!fixed) Label(
+            level.toString(),
+            Typography.small.copy(fontSize = 11.sp, fontWeight = FontWeight.SemiBold),
+            c.textMuted,
+            maxLines = 1,
+            modifier = Modifier.align(Alignment.BottomEnd).padding(end = buttonSize * 0.14f, bottom = buttonSize * 0.12f),
+        )
+    }
+    // Flota encima de la barra (o a un lado de la lateral): no le quita lugar a las apps. Cubre toda la
+    // ventana con un fondo transparente: tocar fuera solo la cierra (no abre lo que haya abajo). No
+    // toma el enfoque: las teclas del volante siguen llegando a LiteDash.
+    if (open) Popup(popupPositionProvider = WholeWindow, properties = PopupProperties(focusable = false)) {
+        Box(Modifier.fillMaxSize().pointerInput(Unit) { detectTapGestures { open = false } }) {
             Column(
                 Modifier
+                    .layout { measurable, constraints ->
+                        val pill = measurable.measure(constraints.copy(minWidth = 0, minHeight = 0))
+                        layout(constraints.maxWidth, constraints.maxHeight) {
+                            val (x, y) = if (vertical) {
+                                // A la derecha de la bocina, o a la izquierda si no cabe.
+                                val right = anchor.right.roundToInt()
+                                (if (right + pill.width <= constraints.maxWidth) right else anchor.left.roundToInt() - pill.width) to
+                                    anchor.center.y.roundToInt() - pill.height / 2
+                            } else {
+                                anchor.center.x.roundToInt() - pill.width / 2 to anchor.top.roundToInt() - pill.height
+                            }
+                            pill.place(x.coerceIn(0, maxOf(0, constraints.maxWidth - pill.width)), y.coerceIn(0, maxOf(0, constraints.maxHeight - pill.height)))
+                        }
+                    }
                     .padding(6.dp)
                     .shadow(12.dp, RoundedCornerShape(Radius.card))
                     .clip(RoundedCornerShape(Radius.card))
                     .background(c.surfaceHigh)
+                    // Tocar dentro de la píldora (fuera de sus botones) no la cierra.
+                    .pointerInput(Unit) { detectTapGestures { } }
                     .padding(vertical = 8.dp, horizontal = 6.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
@@ -178,22 +196,9 @@ fun Volume(buttonSize: Dp, vertical: Boolean = false) {
     }
 }
 
-/**
- * Dónde flota la barra del volumen: centrada arriba de la bocina; con [beside] (barra lateral), a un
- * lado de ella (a la derecha, o a la izquierda si no cabe). Nunca se sale de la ventana.
- */
-private class VolumePopupPosition(private val beside: Boolean) : PopupPositionProvider {
-    override fun calculatePosition(anchorBounds: IntRect, windowSize: IntSize, layoutDirection: LayoutDirection, popupContentSize: IntSize): IntOffset {
-        val w = popupContentSize.width
-        val h = popupContentSize.height
-        val (x, y) = if (beside) {
-            val right = anchorBounds.right
-            (if (right + w <= windowSize.width) right else anchorBounds.left - w) to anchorBounds.center.y - h / 2
-        } else {
-            anchorBounds.center.x - w / 2 to anchorBounds.top - h
-        }
-        return IntOffset(x.coerceIn(0, maxOf(0, windowSize.width - w)), y.coerceIn(0, maxOf(0, windowSize.height - h)))
-    }
+/** La capa de la barra del volumen ocupa toda la ventana desde su esquina (la píldora se acomoda adentro). */
+private object WholeWindow : PopupPositionProvider {
+    override fun calculatePosition(anchorBounds: IntRect, windowSize: IntSize, layoutDirection: LayoutDirection, popupContentSize: IntSize) = IntOffset.Zero
 }
 
 /** La barra del volumen: se toca o se arrastra a cualquier punto; lleno = [fraction]. */
@@ -233,8 +238,6 @@ private const val VOLUME_OPEN_MS = 4_000L
 
 private val VOLUME_BAR_LENGTH = 160.dp
 
-/** Un toque en la bocina justo después de cerrarse la barra (tocando fuera) no la vuelve a abrir. */
-private const val REOPEN_GUARD_MS = 300L
 
 /**
  * Aprieta la tecla de volumen dentro de la ventana de LiteDash (se permite sin permisos porque es la

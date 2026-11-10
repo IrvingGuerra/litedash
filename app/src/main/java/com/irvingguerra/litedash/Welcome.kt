@@ -55,6 +55,7 @@ import com.irvingguerra.litedash.feature.car.CarDrawing
 import com.irvingguerra.litedash.feature.dashboard.DashboardState
 import com.irvingguerra.litedash.feature.dashboard.Template
 import com.irvingguerra.litedash.feature.dashboard.size
+import com.irvingguerra.litedash.feature.dashboard.coarse
 import com.irvingguerra.litedash.feature.dashboard.suggestedTemplate
 
 /** ¿LiteDash ya es la pantalla de inicio? */
@@ -172,7 +173,7 @@ private fun StyleStep(prefs: Preferences, dashboard: DashboardState) {
     Spacer(Modifier.height(12.dp))
     var selected by rememberSaveable { mutableIntStateOf(-1) }
     // Los acomodos que lucen en esta pantalla, el recomendado primero.
-    val options = dashboard.grid?.let { c -> listOf(c.suggestedTemplate()) + Template.entries.filter { c.size in it.sizes } }
+    val options = dashboard.grid?.coarse?.let { c -> listOf(c.suggestedTemplate()) + Template.entries.filter { c.size in it.sizes } }
         ?.distinct().orEmpty()
     FlowRow(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         for ((i, p) in options.withIndex()) {

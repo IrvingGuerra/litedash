@@ -60,6 +60,7 @@ import com.irvingguerra.litedash.feature.apps.App
 import com.irvingguerra.litedash.feature.apps.AppIcon
 import com.irvingguerra.litedash.feature.apps.AppRepository
 import com.irvingguerra.litedash.feature.dashboard.DashboardState
+import com.irvingguerra.litedash.feature.dashboard.FINE
 import com.irvingguerra.litedash.feature.dashboard.SizeLimits
 import com.irvingguerra.litedash.feature.dashboard.TileTypes
 import com.irvingguerra.litedash.feature.music.NotificationService
@@ -69,30 +70,33 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import kotlinx.coroutines.delay
 
-/** Lo que la app sabe de cada tipo de pieza: nombre, tamaño mínimo y con qué tamaño se agrega. */
+/**
+ * Lo que la app sabe de cada tipo de pieza: nombre, tamaño mínimo y con qué tamaño se agrega, en celdas
+ * finas (de 48 dp: el doble de las de antes).
+ */
 data class TileSpec(val type: String, val name: Int, val limits: SizeLimits, val initialSize: Pair<Int, Int>, val detail: Int? = null)
 
 val TileSpecs = listOf(
-    TileSpec(TileTypes.CAR, R.string.tile_car, SizeLimits(2, 2), 5 to 3, R.string.tile_car_help),
-    TileSpec(TileTypes.ROAD, R.string.tile_road, SizeLimits(2, 2), 5 to 3, R.string.tile_road_help),
-    TileSpec(TileTypes.IMAGE, R.string.tile_image, SizeLimits(2, 1), 3 to 2, R.string.tile_image_help),
-    TileSpec(TileTypes.MUSIC, R.string.tile_music, SizeLimits(3, 1), 4 to 1, R.string.tile_music_help),
-    TileSpec(TileTypes.RADIO, R.string.tile_radio, SizeLimits(3, 1), 4 to 1, R.string.tile_radio_help),
+    TileSpec(TileTypes.CAR, R.string.tile_car, SizeLimits(4, 4), 10 to 6, R.string.tile_car_help),
+    TileSpec(TileTypes.ROAD, R.string.tile_road, SizeLimits(4, 4), 10 to 6, R.string.tile_road_help),
+    TileSpec(TileTypes.IMAGE, R.string.tile_image, SizeLimits(4, 2), 6 to 4, R.string.tile_image_help),
+    TileSpec(TileTypes.MUSIC, R.string.tile_music, SizeLimits(6, 2), 8 to 2, R.string.tile_music_help),
+    TileSpec(TileTypes.RADIO, R.string.tile_radio, SizeLimits(6, 2), 8 to 2, R.string.tile_radio_help),
     // También hace lo del widget Navegar (hasta la 1.4.68): en una fila se ve como él (vuelta, Casa, Trabajo).
-    TileSpec(TileTypes.MAP, R.string.tile_map, SizeLimits(2, 1), 3 to 2, R.string.tile_map_help),
-    TileSpec(TileTypes.CLOCK, R.string.tile_clock, SizeLimits(2, 1), 3 to 1, R.string.tile_clock_help),
-    TileSpec(TileTypes.PHONE, R.string.tile_phone, SizeLimits(1, 1), 2 to 1, R.string.tile_phone_help),
-    TileSpec(TileTypes.WEATHER, R.string.tile_weather, SizeLimits(2, 1), 3 to 1, R.string.tile_weather_help),
-    TileSpec(TileTypes.TRIP, R.string.tile_trip, SizeLimits(2, 1), 3 to 1, R.string.tile_trip_help),
-    TileSpec(TileTypes.SPEEDOMETER, R.string.tile_speedometer, SizeLimits(2, 1), 3 to 2, R.string.tile_speedometer_help),
-    TileSpec(TileTypes.GAUGE, R.string.tile_gauge, SizeLimits(2, 1), 3 to 2, R.string.tile_gauge_help),
-    TileSpec(TileTypes.WORKSHOP, R.string.workshop, SizeLimits(1, 1), 2 to 1, R.string.tile_workshop_help),
-    TileSpec(TileTypes.PROJECTION, R.string.tile_projection, SizeLimits(2, 1), 3 to 1, R.string.tile_projection_help),
-    TileSpec(TileTypes.TIRES, R.string.tile_tires, SizeLimits(1, 1), 2 to 2, R.string.tile_tires_help),
-    TileSpec(TileTypes.APP, R.string.tile_app, SizeLimits(1, 1), 1 to 1),
+    TileSpec(TileTypes.MAP, R.string.tile_map, SizeLimits(4, 2), 6 to 4, R.string.tile_map_help),
+    TileSpec(TileTypes.CLOCK, R.string.tile_clock, SizeLimits(4, 2), 6 to 2, R.string.tile_clock_help),
+    TileSpec(TileTypes.PHONE, R.string.tile_phone, SizeLimits(2, 2), 4 to 2, R.string.tile_phone_help),
+    TileSpec(TileTypes.WEATHER, R.string.tile_weather, SizeLimits(4, 2), 6 to 2, R.string.tile_weather_help),
+    TileSpec(TileTypes.TRIP, R.string.tile_trip, SizeLimits(4, 2), 6 to 2, R.string.tile_trip_help),
+    TileSpec(TileTypes.SPEEDOMETER, R.string.tile_speedometer, SizeLimits(4, 2), 6 to 4, R.string.tile_speedometer_help),
+    TileSpec(TileTypes.GAUGE, R.string.tile_gauge, SizeLimits(4, 2), 6 to 4, R.string.tile_gauge_help),
+    TileSpec(TileTypes.WORKSHOP, R.string.workshop, SizeLimits(2, 2), 4 to 2, R.string.tile_workshop_help),
+    TileSpec(TileTypes.PROJECTION, R.string.tile_projection, SizeLimits(4, 2), 6 to 2, R.string.tile_projection_help),
+    TileSpec(TileTypes.TIRES, R.string.tile_tires, SizeLimits(2, 2), 4 to 4, R.string.tile_tires_help),
+    TileSpec(TileTypes.APP, R.string.tile_app, SizeLimits(2, 2), 2 to 2),
 )
 
-fun limitsOf(type: String) = TileSpecs.firstOrNull { it.type == type }?.limits ?: SizeLimits(1, 1)
+fun limitsOf(type: String) = TileSpecs.firstOrNull { it.type == type }?.limits ?: SizeLimits(FINE, FINE)
 
 // Apps de navegación en orden de preferencia (Waze, Google Maps, Maps.me, OsmAnd, HERE).
 val NAVIGATION_PACKAGES = arrayOf(
