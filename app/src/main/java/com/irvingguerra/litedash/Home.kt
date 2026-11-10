@@ -88,6 +88,7 @@ import com.irvingguerra.litedash.feature.dashboard.Grid
 import com.irvingguerra.litedash.feature.dashboard.Tile
 import com.irvingguerra.litedash.feature.dashboard.TileTypes
 import com.irvingguerra.litedash.feature.dashboard.cardless
+import com.irvingguerra.litedash.feature.link.PhoneLink
 import com.irvingguerra.litedash.feature.music.MusicMode
 import com.irvingguerra.litedash.feature.music.MusicRepository
 import com.irvingguerra.litedash.feature.music.MusicTile
@@ -158,6 +159,7 @@ class Dependencies(
     private val obdSaved: () -> Boolean,
     private val tpmsLazy: Lazy<TpmsRepository>,
     private val tpmsSaved: () -> Boolean,
+    private val phoneLazy: Lazy<PhoneLink>,
 ) {
     /** Estado de Compose: las piezas que preguntaron antes de que existiera se vuelven a dibujar. */
     private val obdCreated = mutableStateOf(false)
@@ -185,6 +187,17 @@ class Dependencies(
 
     /** El escáner si ya existe, sin crearlo (una pieza solo quiere saber si está conectado). */
     fun obdIfCreated(): ObdRepository? = if (obdCreated.value) obdLazy.value else null
+
+    /** El enlace con el celular: se crea al prender su módulo (o al abrir LiteDash con él prendido). */
+    val phone: PhoneLink get() = phoneLazy.value
+
+    /** El módulo Celular. Apagado no existe nada suyo; apagarlo suelta la conexión. */
+    var phoneModule: Boolean
+        get() = prefs.phoneModule
+        set(on) {
+            prefs.phoneModule = on
+            if (on) phone.start() else if (phoneLazy.isInitialized()) phone.stop()
+        }
 
     private val tpmsCreated = mutableStateOf(false)
 

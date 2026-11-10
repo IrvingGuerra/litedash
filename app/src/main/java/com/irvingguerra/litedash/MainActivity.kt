@@ -58,6 +58,8 @@ class MainActivity : ComponentActivity() {
         super.onResume()
         inFront = true
         dependencies.music.cancelReturn()
+        // Con el módulo Celular prendido: al abrir LiteDash se busca al celular vinculado.
+        if (dependencies.prefs.phoneModule) dependencies.phone.start()
         revision.intValue++
     }
 

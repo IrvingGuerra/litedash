@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Phone module: link the screen with the LiteDash Connect app. -->
+<resources>
+    <string name="module_phone">Phone</string>
+    <string name="phone_link_title">Link with my phone</string>
+    <string name="phone_link_code">Code %1$s · expires in 5 minutes</string>
+    <string name="phone_step_install">Install LiteDash Connect on your phone</string>
+    <string name="phone_step_tap">Tap “Link my screen”</string>
+    <string name="phone_step_scan">Point the camera at this code</string>
+    <string name="phone_connected">Connected</string>
+    <string name="phone_offline">Not connected</string>
+    <string name="phone_app_version">Its app version</string>
+    <string name="phone_unlink">Unlink</string>
+</resources>

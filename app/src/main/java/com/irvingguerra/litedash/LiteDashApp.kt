@@ -4,6 +4,7 @@ import android.app.Application
 import android.content.ComponentCallbacks2
 import android.content.Context
 import android.content.SharedPreferences
+import android.os.Build
 import android.service.notification.StatusBarNotification
 import com.irvingguerra.litedash.feature.updater.Updater
 import com.irvingguerra.litedash.core.vehicle.VehicleBus
@@ -13,6 +14,8 @@ import com.irvingguerra.litedash.feature.tpms.TpmsRepository
 import com.irvingguerra.litedash.feature.tpms.UsbAttachActivity
 import com.irvingguerra.litedash.feature.apps.AppRepository
 import com.irvingguerra.litedash.feature.car.CarRepository
+import com.irvingguerra.litedash.feature.link.PhoneLink
+import com.irvingguerra.litedash.feature.link.ScreenInfo
 import com.irvingguerra.litedash.feature.music.MusicRepository
 import com.irvingguerra.litedash.feature.music.NotificationListener
 import com.irvingguerra.litedash.feature.music.NotificationService
@@ -36,13 +39,14 @@ class LiteDashApp : Application() {
         OwnPlayer.wire(this, music, prefs)
         music.migrateUsbApp()
         music.fixBluetoothLink()
+        val cars = CarRepository(this, BuildConfig.CATALOG_URL)
         Dependencies(
             apps = AppRepository(this).apply { opener = SplitScreen::open },
             music = music,
             navigation = NavigationRepository(this, mapPackages),
             prefs = prefs,
             dashboard = DashboardState(DashboardStore(this)),
-            cars = CarRepository(this, BuildConfig.CATALOG_URL),
+            cars = cars,
             updater = Updater(this, BuildConfig.UPDATES_URL, BuildConfig.VERSION_CODE.toLong()),
             weather = WeatherRepository(this, prefs),
             trip = TripRepository(this, bus),
@@ -55,6 +59,12 @@ class LiteDashApp : Application() {
             obdSaved = { ObdRepository.hasSavedTarget(this) },
             tpmsLazy = lazy { TpmsRepository(this, bus).apply { carTires = CarTires { factoryTires(dependencies) } } },
             tpmsSaved = { TpmsRepository.hasSavedSource(this) },
+            phoneLazy = lazy {
+                PhoneLink(this) {
+                    val car = prefs.carName ?: cars.pkg(prefs.carModel)?.name ?: contextWithLanguage(this).getString(R.string.my_car)
+                    ScreenInfo(BuildConfig.VERSION_NAME, car, prefs.carModel ?: "", Build.MODEL)
+                }
+            },
         )
     }
     val dependencies: Dependencies by dependenciesLazy
