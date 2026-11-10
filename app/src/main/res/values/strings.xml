@@ -497,8 +497,10 @@
     <string name="tile_gauge">Medidor</string>
     <string name="tile_gauge_help">Un dato del auto por OBD: revoluciones, temperatura, gasolina, batería, consumo, turbo, acelerador o aceite</string>
     <string name="gauge_pick">Toca para elegir qué mostrar</string>
-    <string name="gauge_connect">Conecta tu adaptador OBD en el Taller</string>
     <string name="gauge_unsupported">Tu auto no da este dato</string>
+    <string name="speed_title">Velocidad</string>
+    <string name="gauge_no_obd">Sin OBD</string>
+    <string name="gauge_no_data">Sin dato</string>
     <string name="pick_gauge">¿Qué quieres ver?</string>
     <string name="pick_gauge_help">Lo lee el adaptador OBD (se conecta en el Taller). Para cambiarlo después, toca el medidor.</string>
     <string name="gauge_rpm">Tacómetro</string>

@@ -72,6 +72,8 @@ fun SpeedGaugeCard(speed: Float, miles: Boolean, tag: String, look: GaugeLook, c
         carColor = carColor,
         labels = { i -> (max * i / ticks).toInt().toString() },
         front = front,
+        title = stringResource(R.string.speed_title),
+        arc = true,
     )
 }
 
@@ -179,12 +181,12 @@ fun GaugeTile(d: Dependencies, signal: String, look: GaugeLook, onPick: () -> Un
         ?: return ShortcutTile(Icons.plus, stringResource(R.string.tile_gauge), stringResource(R.string.gauge_pick), onPick)
     // Con un adaptador ya guardado, se reconecta solo (sin abrir el Taller).
     val obd = rememberObd(d)
-    val name = stringResource(spec.name)
+    // Sin adaptador (o sin ese dato) se ve igual, vacío y con "—", y una nota corta: no un texto largo.
     if (obd?.state != ObdState.ON) {
-        val detail = if (obd?.state == ObdState.CONNECTING) R.string.obd_connecting_short else R.string.gauge_connect
-        return ShortcutTile(spec.icon, name, stringResource(detail), onWorkshop)
+        val note = stringResource(if (obd?.state == ObdState.CONNECTING) R.string.obd_connecting_short else R.string.gauge_no_obd)
+        return SpecGaugeCard(spec, null, d.prefs.units, look, d.prefs.carColor, onClick = onWorkshop, note = note)
     }
-    if (!obd.canRead(spec.signal)) return ShortcutTile(spec.icon, name, stringResource(R.string.gauge_unsupported), onPick)
+    if (!obd.canRead(spec.signal)) return SpecGaugeCard(spec, null, d.prefs.units, look, d.prefs.carColor, onClick = onPick, note = stringResource(R.string.gauge_no_data))
     val value = d.bus.watch(spec.signal)
     // Un toque cambia qué dato muestra.
     SpecGaugeCard(spec, value, d.prefs.units, look, d.prefs.carColor, onClick = onPick)
@@ -195,12 +197,13 @@ fun GaugeTile(d: Dependencies, signal: String, look: GaugeLook, onPick: () -> Un
  * lectura: "—"); la usan la pieza y la vista previa de Personalizar medidor.
  */
 @Composable
-fun SpecGaugeCard(spec: GaugeSpec, value: Float?, units: UnitChoice, look: GaugeLook, carColor: Color, onClick: (() -> Unit)? = null) {
+fun SpecGaugeCard(spec: GaugeSpec, value: Float?, units: UnitChoice, look: GaugeLook, carColor: Color, onClick: (() -> Unit)? = null, note: String? = null) {
     val locale = currentLocale()
     GaugeCard(
         number = value?.let { gaugeText(spec, it, units, locale) } ?: "—",
         unit = stringResource(spec.unit(units)),
-        tag = spec.tag?.let { stringResource(it) } ?: "",
+        // La nota (sin OBD, conectando…) va donde va la etiqueta del dato.
+        tag = note ?: spec.tag?.let { stringResource(it) } ?: "",
         fraction = value?.let(spec::fraction) ?: 0f,
         ticks = spec.ticks,
         look = look,
@@ -209,6 +212,7 @@ fun SpecGaugeCard(spec: GaugeSpec, value: Float?, units: UnitChoice, look: Gauge
         redFrom = spec.redFrom,
         warning = value != null && spec.warning(value),
         onClick = onClick,
+        title = stringResource(spec.name),
     )
 }
 

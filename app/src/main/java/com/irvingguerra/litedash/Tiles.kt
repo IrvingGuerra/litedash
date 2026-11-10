@@ -159,6 +159,14 @@ fun rememberClock(): Clock {
     return Clock(time.format(now), marker?.format(now), date.format(now).replaceFirstChar { it.uppercase() })
 }
 
+/**
+ * El tamaño de letra (sp) para que [text] quepa en [width] × [height]: lo alto que deja [heightShare] del widget
+ * y lo ancho que da cada carácter (unos 0.6 del tamaño, [extraChars] de más por la unidad), entre [min] y [max].
+ * Así los números grandes no se cortan en un widget chico ni se ven perdidos en uno grande.
+ */
+fun fitFont(text: String, width: Dp, height: Dp, heightShare: Float, min: Float = 16f, max: Float = 96f, extraChars: Float = 1f): Float =
+    minOf(height.value * heightShare, width.value / ((text.length + extraChars) * 0.6f)).coerceIn(min, max)
+
 /** La hora en grande con la marca de 12 h en chico a un lado (si la hay). */
 @Composable
 fun BigTime(clock: Clock, style: TextStyle) {
@@ -183,16 +191,20 @@ fun ClockTile(driverName: String? = null, weather: WeatherRepository? = null, da
     val clock = rememberClock()
     val hello = greeting(driverName)
     BoxWithConstraints(Modifier.fillMaxSize().padding(8.dp), contentAlignment = Alignment.CenterStart) {
-        // El reloj crece con la pieza: en 1 fila es discreto, en 2 o más es protagonista.
-        // En una columna angosta lo limita el ancho (si no, la hora se corta).
-        val size = minOf(maxHeight.value * 0.5f, maxWidth.value * 0.26f).coerceIn(28f, 96f)
-        // Con la barra oculta (hay reloj), el clima va aquí junto a la hora.
-        if (weather != null) Box(Modifier.align(Alignment.TopEnd)) { WeatherChip(weather) }
+        // El reloj crece con la pieza: en 1 fila es discreto, en 2 o más es protagonista; lo limita lo que
+        // quepa a lo ancho (con la a.m./p.m.), para que nunca se corte.
+        val tall = maxHeight > 120.dp
+        val size = fitFont(clock.time, maxWidth, maxHeight, if (tall) 0.42f else 0.5f, min = 28f, max = 104f, extraChars = if (clock.marker != null) 1.6f else 0.3f)
+        // En una fila el clima va en la esquina; con lugar, en una píldora bajo la fecha.
+        if (weather != null && !tall) Box(Modifier.align(Alignment.TopEnd)) { WeatherChip(weather) }
         Column {
             BigTime(clock, Typography.clock.copy(fontSize = size.sp))
             // La fecha y el saludo son opciones del widget (sin los dos, solo la hora).
             val line = listOfNotNull(hello, clock.date.takeIf { date }).joinToString(" · ")
             if (line.isNotEmpty()) Label(line, Typography.body, c.textMuted, maxLines = 1)
+            if (weather != null && tall) Box(
+                Modifier.padding(top = 10.dp).clip(RoundedCornerShape(50)).background(c.surfaceHigh).padding(horizontal = 12.dp, vertical = 4.dp),
+            ) { WeatherChip(weather) }
         }
     }
 }

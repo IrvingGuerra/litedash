@@ -3,10 +3,13 @@ package com.irvingguerra.litedash
 import android.Manifest
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -16,10 +19,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.irvingguerra.litedash.core.ui.Card
+import com.irvingguerra.litedash.core.ui.Colors
 import com.irvingguerra.litedash.core.ui.Icon
 import com.irvingguerra.litedash.core.ui.Icons
 import com.irvingguerra.litedash.core.ui.Label
@@ -123,33 +131,80 @@ fun WeatherTile(repo: WeatherRepository, days: Boolean = true, range: Boolean = 
     if (!repo.active || w == null) {
         return ShortcutTile(Icons.sun, stringResource(R.string.tile_weather), stringResource(if (repo.active) R.string.weather_loading else R.string.tap_to_enable), enable)
     }
+    val sky = skyOf(w.code)
+    val today = w.days.firstOrNull()?.takeIf { range }
+    val detail = stringResource(textOf(sky)) + (today?.let { " · ${it.max}° / ${it.min}°" } ?: "")
+    val locale = currentLocale()
+    // Los formatos se crean una vez por idioma, no en cada recomposición.
+    val parse = remember(locale) { SimpleDateFormat("yyyy-MM-dd", Locale.US) }
+    val weekday = remember(locale) { SimpleDateFormat("EEE", locale) }
+    fun dayName(date: String) = runCatching { weekday.format(parse.parse(date)!!) }.getOrDefault("").replaceFirstChar { it.uppercase() }
     Card(Modifier.fillMaxSize()) {
-        BoxWithConstraints(Modifier.fillMaxSize().padding(TilePadding), contentAlignment = Alignment.CenterStart) {
-            val big = maxHeight > 120.dp
-            val showDays = days && maxWidth > 340.dp && w.days.size > 1
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                Icon(iconOf(skyOf(w.code), w.day), c.accent, if (big) 56.dp else 36.dp)
-                Column(Modifier.weight(1f)) {
-                    Label("${w.temperature}°", Typography.title.copy(fontSize = if (big) 40.sp else 26.sp), maxLines = 1)
-                    val today = w.days.firstOrNull()?.takeIf { range }
-                    val detail = stringResource(textOf(skyOf(w.code))) + (today?.let { " · ${it.max}° / ${it.min}°" } ?: "")
-                    Label(detail, Typography.small, c.textMuted, maxLines = 1)
+        // Un tinte suave del color del cielo desde la esquina (como el clima de iOS); nada se anima.
+        Box(Modifier.fillMaxSize().background(Brush.linearGradient(listOf(skyTint(sky, w.day, c), Color.Transparent), end = Offset(600f, 600f))))
+        BoxWithConstraints(Modifier.fillMaxSize().padding(TilePadding)) {
+            // El tamaño se lee aquí: dentro de las filas y columnas no se alcanza.
+            val width = maxWidth
+            val height = maxHeight
+            val tall = height > 120.dp
+            val nextDays = if (days) w.days.drop(1).take(3) else emptyList()
+            if (!tall) {
+                // Una fila: ícono, temperatura y cómo está; si es ancha, los próximos días.
+                Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                    Icon(iconOf(sky, w.day), c.accent, 34.dp)
+                    Column(Modifier.weight(1f)) {
+                        Label("${w.temperature}°", Typography.clock.copy(fontSize = fitFont("${w.temperature}°", width / 3, height, 0.5f, max = 40f).sp), maxLines = 1)
+                        Label(detail, Typography.small, c.textMuted, maxLines = 1)
+                    }
+                    if (width > 340.dp) for (d in nextDays) DayColumn(dayName(d.date), iconOf(skyOf(d.code), true), "${d.max}°")
                 }
-                if (showDays) {
-                    val locale = currentLocale()
-                    // Los formatos se crean una vez por idioma, no en cada recomposición.
-                    val parse = remember(locale) { SimpleDateFormat("yyyy-MM-dd", Locale.US) }
-                    val weekday = remember(locale) { SimpleDateFormat("EEE", locale) }
-                    for (d in w.days.drop(1).take(3)) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                            val name = runCatching { weekday.format(parse.parse(d.date)!!) }.getOrDefault("")
-                            Label(name.replaceFirstChar { it.uppercase() }, Typography.small, c.textMuted, maxLines = 1)
-                            Icon(iconOf(skyOf(d.code), true), c.text, 24.dp)
-                            Label("${d.max}°", Typography.small, maxLines = 1)
-                        }
+                return@BoxWithConstraints
+            }
+            Column(Modifier.fillMaxSize()) {
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
+                    Column(Modifier.weight(1f)) {
+                        Label(stringResource(R.string.tile_weather).uppercase(locale), Typography.label, c.textMuted, maxLines = 1)
+                        val temp = "${w.temperature}°"
+                        Label(temp, Typography.clock.copy(fontSize = fitFont(temp, width * 0.6f, height, 0.32f, min = 28f, max = 72f).sp), maxLines = 1)
+                    }
+                    Icon(iconOf(sky, w.day), c.accent, (height * 0.22f).coerceIn(32.dp, 56.dp))
+                }
+                Label(detail, Typography.small, c.textMuted, maxLines = 1)
+                // Lo de hoy junto arriba; los próximos días, abajo.
+                Spacer(Modifier.weight(1f))
+                // Los próximos días en renglón, si hay lugar (a lo ancho cabe uno por cada ~80 dp).
+                val fit = (width / 80.dp).toInt().coerceAtMost(nextDays.size)
+                if (fit > 0 && height > 150.dp) Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    for (d in nextDays.take(fit)) Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Label(dayName(d.date), Typography.small, c.textMuted, maxLines = 1)
+                        Icon(iconOf(skyOf(d.code), true), c.text, 18.dp)
+                        Label("${d.max}°", Typography.small, maxLines = 1)
                     }
                 }
             }
         }
     }
 }
+
+/** Un día del pronóstico en una fila: nombre, ícono y máxima, uno sobre otro. */
+@Composable
+private fun DayColumn(name: String, icon: ImageVector, max: String) {
+    val c = LocalColors.current
+    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Label(name, Typography.small, c.textMuted, maxLines = 1)
+        Icon(icon, c.text, 22.dp)
+        Label(max, Typography.small, maxLines = 1)
+    }
+}
+
+/** El tinte del cielo: ámbar con sol, azul con nubes o lluvia, gris con niebla; de noche, más tenue. */
+private fun skyTint(sky: Sky, day: Boolean, c: Colors): Color {
+    val base = when (sky) {
+        Sky.CLEAR -> c.accent
+        Sky.PARTLY, Sky.CLOUDY, Sky.RAIN, Sky.STORM -> SkyBlue
+        Sky.FOG, Sky.SNOW -> c.textMuted
+    }
+    return base.copy(alpha = if (day) 0.16f else 0.1f)
+}
+
+private val SkyBlue = Color(0xFF5B8CFF)

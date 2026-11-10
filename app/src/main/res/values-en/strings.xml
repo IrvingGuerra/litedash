@@ -480,8 +480,10 @@
     <string name="tile_gauge">Gauge</string>
     <string name="tile_gauge_help">A car reading over OBD: rpm, engine temperature, fuel, battery, economy, boost, throttle or oil</string>
     <string name="gauge_pick">Tap to choose what to show</string>
-    <string name="gauge_connect">Connect your OBD adapter in the Workshop</string>
     <string name="gauge_unsupported">Your car doesn\'t report this</string>
+    <string name="speed_title">Speed</string>
+    <string name="gauge_no_obd">No OBD</string>
+    <string name="gauge_no_data">No data</string>
     <string name="pick_gauge">What do you want to see?</string>
     <string name="pick_gauge_help">Read by the OBD adapter (connect it in the Workshop). To change it later, tap the gauge.</string>
     <string name="gauge_rpm">Tachometer</string>

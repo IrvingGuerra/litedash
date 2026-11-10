@@ -8,11 +8,13 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
@@ -386,6 +388,10 @@ fun GaugeCard(
     warning: Boolean = false,
     onClick: (() -> Unit)? = null,
     front: (@Composable (Modifier) -> Unit)? = null,
+    /** El nombre en chico (VELOCIDAD, RPM…) que lleva en una fila. */
+    title: String = "",
+    /** En una fila: arco a la derecha (velocímetro) en vez de anillo a la izquierda (medidores). */
+    arc: Boolean = false,
 ) {
     val shown = remember { Animatable(0f) }
     LaunchedEffect(fraction) { shown.animateTo(fraction.coerceIn(0f, 1f), tween(250)) }
@@ -398,7 +404,7 @@ fun GaugeCard(
             val parts = GaugeParts(look, carColor, warning, ticks.coerceAtLeast(1), labels, redFrom.coerceIn(0f, 1f), { shown.value }, frontSpace)
             // Digital y Barra se acomodan en lo que queda arriba de lo del frente.
             val above = maxHeight - frontSpace
-            if (compact) CompactGauge(number, unit, tag, parts, maxHeight)
+            if (compact) CompactGauge(number, unit, tag, title, arc, parts, maxWidth, maxHeight)
             else when (look.style) {
                 GaugeStyle.NEEDLE -> NeedleGauge(number, unit, tag, parts, side = minOf(maxWidth, maxHeight * 1.15f))
                 GaugeStyle.DIGITAL -> DigitalGauge(number, unit, tag, parts, maxWidth, above)
@@ -631,10 +637,15 @@ private fun DialGauge(number: String, unit: String, tag: String, p: GaugeParts, 
     val shades = c.shades(p)
     val stops = if (p.look.rim == GaugeRim.NEON) neonStops(shades) else null
     Canvas(Modifier.fillMaxSize()) {
-        // [base] = el grosor del aro liso: de él salen las marcas en los tres aros.
-        val base = (size.minDimension * 0.025f).coerceIn(2.dp.toPx(), 12.dp.toPx())
-        val neon = (size.minDimension * 0.035f).coerceIn(3.dp.toPx(), 16.dp.toPx())
-        val cell = (size.minDimension * 0.06f).coerceIn(5.dp.toPx(), 28.dp.toPx())
+        // [base] = el grosor del aro liso; las marcas usan [mark], que no engorda en grande.
+        // En chico, delgado; de ~200 dp para arriba engorda hasta 2.4 veces a los ~500 dp (pantalla completa):
+        // un aro de 12 dp en una esfera enorme se veía como un hilo (Irving, 2026-11-09).
+        val grow = 1f + 1.4f * ((size.minDimension.toDp() - 200.dp) / 300.dp).coerceIn(0f, 1f)
+        val base = (size.minDimension * 0.025f * grow).coerceIn(2.dp.toPx(), 36.dp.toPx())
+        val neon = (size.minDimension * 0.035f * grow).coerceIn(3.dp.toPx(), 44.dp.toPx())
+        val cell = (size.minDimension * 0.06f * grow).coerceIn(5.dp.toPx(), 48.dp.toPx())
+        // Las marcas no engordan con el aro: con su grosor de siempre se ven finas y elegantes.
+        val mark = (size.minDimension * 0.025f).coerceIn(2.dp.toPx(), 12.dp.toPx())
         val f = p.fraction()
         val color = c.gauge(p.look.color, p.car, f, p.warning)
         // El círculo de cada aro (el neón deja espacio por fuera para su brillo) y dónde empiezan las marcas.
@@ -663,7 +674,7 @@ private fun DialGauge(number: String, unit: String, tag: String, p: GaugeParts, 
         }
         // Marcas por dentro del aro (larga en cada número, corta entre medio) y los números más adentro.
         val steps = p.ticks * 2
-        val long = base * 2.6f
+        val long = mark * 2.6f
         for (i in 0..steps) {
             val pos = i.toFloat() / steps
             val angle = START_ANGLE + SWEEP * pos
@@ -676,7 +687,7 @@ private fun DialGauge(number: String, unit: String, tag: String, p: GaugeParts, 
                     else -> c.textMuted.copy(alpha = 0.5f)
                 }
                 drawLine(tick, d.at(angle, outer), d.at(angle, outer - if (major) long else long * 0.5f),
-                    strokeWidth = base * (if (major) 0.45f else 0.3f), cap = StrokeCap.Round)
+                    strokeWidth = mark * (if (major) 0.45f else 0.3f), cap = StrokeCap.Round)
             }
             if (p.look.numbers && major && (i / 2) % 2 == 0) {
                 label(measurer, p.labels(i / 2), d.at(angle, outer - long - tickStyle.fontSize.toPx() * 1.1f), tickStyle)
@@ -769,28 +780,48 @@ private fun Segments(p: GaugeParts, modifier: Modifier, count: Int, wedge: Boole
 }
 
 /**
- * Medidor de una fila: el número grande con su unidad y, abajo, una barra que se
- * llena (de segmentos en los estilos Digital y Barra).
+ * Medidor de una fila (como una "complicación" de reloj): el nombre en chico arriba y el número grande con su
+ * unidad; los medidores llevan a la izquierda un anillo de 3/4 que se llena y el velocímetro ([arc]) un arco a
+ * la derecha. El número se achica para caber en lo que deja el anillo o el arco.
  */
 @Composable
-private fun CompactGauge(number: String, unit: String, tag: String, p: GaugeParts, height: Dp) {
+private fun CompactGauge(number: String, unit: String, tag: String, title: String, arc: Boolean, p: GaugeParts, width: Dp, height: Dp) {
     val c = LocalColors.current
-    Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.SpaceBetween) {
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom) {
-            Label(number, Typography.clock.copy(fontSize = (height.value * 0.55f).coerceIn(28f, 56f).sp), maxLines = 1)
-            Label(unit, Typography.small, c.textMuted, maxLines = 1, modifier = Modifier.padding(start = 6.dp, bottom = 6.dp).weight(1f))
-            if (tag.isNotEmpty()) Label(tag, Typography.label, p.readoutColor(c), maxLines = 1, modifier = Modifier.padding(bottom = 6.dp))
+    val ramp = c.fillRamp(p)
+    val ringSide = (height * 0.92f).coerceAtMost(72.dp)
+    val arcWidth = if (arc) minOf(width * 0.42f, height * 2.4f) else 0.dp
+    val textWidth = width - (if (arc) arcWidth + 12.dp else ringSide + 12.dp)
+    // Lo que quepa a lo alto y a lo ancho (unos 0.62 del tamaño de letra por carácter, más la unidad).
+    val numberSize = minOf(height.value * 0.54f, textWidth.value / ((number.length + 1) * 0.62f)).coerceIn(16f, 50f)
+    Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        if (!arc) Canvas(Modifier.size(ringSide)) {
+            val stroke = size.minDimension * 0.13f
+            val inset = stroke / 2
+            val box = Size(size.width - stroke, size.height - stroke)
+            drawArc(c.surfaceHigh, 135f, 270f, false, Offset(inset, inset), box, style = Stroke(stroke, cap = StrokeCap.Round))
+            val f = p.fraction().coerceIn(0f, 1f)
+            if (f > 0.002f) drawArc(colorAt(ramp, f), 135f, 270f * f, false, Offset(inset, inset), box, style = Stroke(stroke, cap = StrokeCap.Round))
         }
-        if (p.look.segmented) {
-            Segments(p, Modifier.fillMaxWidth().height(8.dp), count = 20, wedge = false)
-        } else {
-            val ramp = c.fillRamp(p)
-            Canvas(Modifier.fillMaxWidth().height(6.dp)) {
-                val r = CornerRadius(size.height / 2)
-                drawRoundRect(c.surfaceHigh, cornerRadius = r)
-                val f = p.fraction().coerceIn(0f, 1f)
-                if (f > 0.002f) drawRoundRect(colorAt(ramp, f), size = Size(size.width * f, size.height), cornerRadius = r)
+        Column(Modifier.weight(1f)) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                if (title.isNotEmpty()) Label(title.uppercase(), Typography.label, c.textMuted, maxLines = 1)
+                if (tag.isNotEmpty()) Label(tag, Typography.label, p.readoutColor(c), maxLines = 1)
             }
+            Row(verticalAlignment = Alignment.Bottom) {
+                Label(number, Typography.clock.copy(fontSize = numberSize.sp), maxLines = 1)
+                Label(unit, Typography.small, c.textMuted, maxLines = 1, modifier = Modifier.padding(start = 4.dp, bottom = (numberSize * 0.12f).dp))
+            }
+        }
+        if (arc) Canvas(Modifier.width(arcWidth).fillMaxHeight()) {
+            val stroke = (size.height * 0.1f).coerceIn(4.dp.toPx(), 7.dp.toPx())
+            // Medio círculo que llena el ancho, apoyado abajo.
+            val r = minOf(size.width / 2, size.height - stroke) - stroke / 2
+            val center = Offset(size.width / 2, size.height - stroke / 2)
+            val topLeft = Offset(center.x - r, center.y - r)
+            val box = Size(r * 2, r * 2)
+            drawArc(c.surfaceHigh, 180f, 180f, false, topLeft, box, style = Stroke(stroke, cap = StrokeCap.Round))
+            val f = p.fraction().coerceIn(0f, 1f)
+            if (f > 0.002f) drawArc(colorAt(ramp, f), 180f, 180f * f, false, topLeft, box, style = Stroke(stroke, cap = StrokeCap.Round))
         }
     }
 }

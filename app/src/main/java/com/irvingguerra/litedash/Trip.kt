@@ -9,12 +9,15 @@ import android.location.LocationManager
 import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
@@ -35,6 +38,7 @@ import kotlin.concurrent.thread
 import androidx.lifecycle.compose.LifecycleStartEffect
 import com.irvingguerra.litedash.core.ui.Button
 import com.irvingguerra.litedash.core.ui.Card
+import com.irvingguerra.litedash.core.ui.Icon
 import com.irvingguerra.litedash.core.ui.Icons
 import com.irvingguerra.litedash.core.ui.Label
 import com.irvingguerra.litedash.core.ui.LocalColors
@@ -240,13 +244,15 @@ fun TripTile(d: Dependencies, time: Boolean = true, average: Boolean = true, hea
     val locale = currentLocale()
     Card(Modifier.fillMaxSize()) {
         BoxWithConstraints(Modifier.fillMaxSize().padding(TilePadding)) {
-            val tall = maxHeight > 120.dp
-            val wide = maxWidth > 340.dp
-            val huge = maxHeight > 200.dp
+            val width = maxWidth
+            val height = maxHeight
+            val tall = height > 120.dp
+            // La distancia del tamaño que quepa (en un widget chico no se corta; en uno grande luce).
+            val distanceSize = fitFont(stats.distance, width * 0.75f, height, if (tall) 0.3f else 0.5f, min = 24f, max = if (tall) 72f else 40f, extraChars = 1.5f)
             if (!tall) {
                 // Una fila: la distancia y, a un lado, tiempo, promedio y rumbo en chico.
                 Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-                    BigValue(stats.distance, stats.unit, 34)
+                    BigValue(stats.distance, stats.unit, distanceSize.toInt())
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                         val line = listOfNotNull(shownTime, shownHeading).joinToString(" · ")
                         if (line.isNotEmpty()) Label(line, Typography.body, maxLines = 1)
@@ -255,18 +261,23 @@ fun TripTile(d: Dependencies, time: Boolean = true, average: Boolean = true, hea
                 }
             } else {
                 Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.SpaceBetween) {
-                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
-                        Column(Modifier.weight(1f)) {
-                            Label(stringResource(R.string.tile_trip).uppercase(locale), Typography.label, c.textMuted, maxLines = 1)
-                            BigValue(stats.distance, stats.unit, if (huge) 64 else 48)
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        Label(stringResource(R.string.tile_trip).uppercase(locale), Typography.label, c.textMuted, maxLines = 1, modifier = Modifier.weight(1f))
+                        if (shownHeading != null) Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Icon(Icons.navigate, c.accent, 14.dp)
+                            Label(shownHeading, Typography.subtitle, c.accent, maxLines = 1)
                         }
-                        if (shownHeading != null) Label(shownHeading, Typography.title, c.accent, maxLines = 1)
                     }
-                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(if (wide) 28.dp else 16.dp)) {
-                        if (shownTime != null) TripStat(stringResource(R.string.trip_time), shownTime)
-                        if (shownAverage != null) TripStat(stringResource(R.string.trip_average), shownAverage)
-                        Spacer(Modifier.weight(1f))
-                        if (wide) Button(stringResource(R.string.trip_reset), { trip.reset() })
+                    BigValue(stats.distance, stats.unit, distanceSize.toInt())
+                    // Tiempo y promedio bajo una línea fina, cada uno con su nombre arriba.
+                    val stat = listOfNotNull(shownTime?.let { R.string.trip_time to it }, shownAverage?.let { R.string.trip_average to it })
+                    if (stat.isNotEmpty() || width > 340.dp) Column {
+                        Box(Modifier.fillMaxWidth().height(1.dp).background(c.line))
+                        Row(Modifier.fillMaxWidth().padding(top = 8.dp), verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(if (width > 340.dp) 28.dp else 16.dp)) {
+                            for ((name, value) in stat) TripStat(stringResource(name), value)
+                            Spacer(Modifier.weight(1f))
+                            if (width > 340.dp) Button(stringResource(R.string.trip_reset), { trip.reset() })
+                        }
                     }
                 }
             }
