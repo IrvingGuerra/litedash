@@ -7,6 +7,7 @@ import android.text.format.DateFormat
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -18,6 +19,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
@@ -29,6 +31,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
@@ -42,6 +45,7 @@ import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -213,36 +217,55 @@ fun ClockTile(driverName: String? = null, weather: WeatherRepository? = null, da
     }
 }
 
-/** Tarjeta de acceso grande (Teléfono y los widgets sin permiso o sin datos): ícono en círculo, título y detalle. */
+/**
+ * Tarjeta de acceso grande (Teléfono, Android Auto y los widgets sin permiso o sin datos): ícono blanco en
+ * un círculo de [tint], título y detalle. [image] pone otra cosa en lugar del círculo (el ícono real de
+ * una app) y [chevron] una flecha tenue a la derecha.
+ */
 @Composable
-fun ShortcutTile(icon: ImageVector, title: String, detail: String?, onClick: () -> Unit) {
+fun ShortcutTile(
+    icon: ImageVector,
+    title: String,
+    detail: String?,
+    onClick: () -> Unit,
+    tint: Color = LocalColors.current.accent,
+    image: (@Composable (Dp) -> Unit)? = null,
+    chevron: Boolean = false,
+) {
     val c = LocalColors.current
     Card(Modifier.fillMaxSize(), onClick = onClick) {
         BoxWithConstraints(Modifier.fillMaxSize().padding(TilePadding)) {
             val large = maxHeight > 120.dp
             val small = isSmallScreen()
             val width = maxWidth
+            val side = if (large) 64.dp else if (small) 52.dp else 44.dp
             val content = @Composable {
-                Box(Modifier.size(if (large) 64.dp else if (small) 52.dp else 44.dp).clip(CircleShape).background(c.surfaceHigh), contentAlignment = Alignment.Center) {
-                    Icon(icon, c.accent, if (large) 30.dp else if (small) 26.dp else 22.dp)
+                if (image != null) image(side)
+                else Box(Modifier.size(side).clip(CircleShape).background(tint), contentAlignment = Alignment.Center) {
+                    Icon(icon, c.onPrimary, side * 0.47f)
                 }
             }
+            val texts = @Composable { m: Modifier ->
+                Column(m) {
+                    Label(title, Typography.subtitle, maxLines = 1)
+                    if (detail != null) Label(detail, Typography.small, c.textMuted, maxLines = 1)
+                }
+            }
+            val arrow = @Composable { if (chevron) Icon(Icons.chevron, c.textMuted.copy(alpha = 0.6f), 20.dp) }
             if (large) {
                 Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.SpaceBetween) {
                     content()
-                    Column {
-                        Label(title, Typography.title, maxLines = 1)
-                        if (detail != null) Label(detail, Typography.small, c.textMuted, maxLines = 1)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        texts(Modifier.weight(1f))
+                        arrow()
                     }
                 }
             } else {
                 Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
                     content()
                     if (width > 120.dp) {
-                        Column(Modifier.padding(start = 12.dp)) {
-                            Label(title, Typography.subtitle, maxLines = 1)
-                            if (detail != null) Label(detail, Typography.small, c.textMuted, maxLines = 1)
-                        }
+                        texts(Modifier.weight(1f).padding(start = 12.dp))
+                        arrow()
                     }
                 }
             }
@@ -261,6 +284,7 @@ fun AppTile(repo: AppRepository, app: App?, named: Boolean = true, onClick: () -
         BoxWithConstraints(Modifier.fillMaxSize().padding(if (LocalPlainCard.current) 2.dp else 6.dp), contentAlignment = Alignment.Center) {
             // El nombre, si se quiere y si cabe.
             val withName = named && maxHeight > 90.dp
+            val width = maxWidth
             val side = minOf(maxWidth * 0.8f, if (withName) maxHeight - 26.dp else maxHeight * 0.86f).coerceIn(24.dp, 140.dp)
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 if (app == null) {
@@ -271,7 +295,8 @@ fun AppTile(repo: AppRepository, app: App?, named: Boolean = true, onClick: () -
                     AppIcon(repo, app, side)
                     if (withName) {
                         Spacer(Modifier.height(4.dp))
-                        Label(app.name, Typography.small.copy(fontWeight = FontWeight.Medium), maxLines = 1)
+                        // A lo ancho de la pieza y centrado: si no cabe, se corta parejo con "…".
+                        Label(app.name, Typography.small.copy(textAlign = TextAlign.Center), maxLines = 1, modifier = Modifier.width(width))
                     }
                 }
             }
@@ -301,8 +326,12 @@ fun NavigationTile(
     Card(Modifier.fillMaxSize(), onClick = onClick) {
         BoxWithConstraints(Modifier.fillMaxSize().padding(TilePadding), contentAlignment = Alignment.CenterStart) {
             val large = maxHeight > 120.dp
-            if (instruction != null) Box(Modifier.padding(4.dp)) { Turn(instruction, large) }
-            else Places(app, home, work, onPlace, tall = maxHeight > 150.dp, width = maxWidth, height = maxHeight)
+            val wide = maxWidth >= 380.dp
+            if (instruction != null) Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
+                // La vuelta se encoge (con "…") y Casa y Trabajo van a su lado, si caben, sin encimarse.
+                Box(Modifier.weight(1f).padding(4.dp)) { Turn(instruction, large) }
+                if (wide) PlacePills(home, work, onPlace, Modifier.padding(start = 8.dp), background = LocalColors.current.surfaceHigh)
+            } else Places(app, home, work, onPlace, tall = maxHeight > 150.dp, width = maxWidth, height = maxHeight)
         }
     }
 }
@@ -393,21 +422,48 @@ private fun MapArt(modifier: Modifier) {
 @Composable
 internal fun Turn(instruction: TurnInstruction, large: Boolean) {
     val c = LocalColors.current
-    val side = if (large) 72.dp else 48.dp
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Box(Modifier.size(side).clip(RoundedCornerShape(Radius.card)).background(c.accent), contentAlignment = Alignment.Center) {
-            val arrow = instruction.arrow
-            if (arrow != null) {
-                Image(remember(arrow) { arrow.asImageBitmap() }, null, Modifier.size(side * 0.7f), colorFilter = ColorFilter.tint(c.onPrimary))
-            } else {
-                Icon(Icons.navigate, c.onPrimary, side * 0.5f)
-            }
-        }
+        TurnArrow(instruction, if (large) 72.dp else 48.dp, Radius.card)
         Column(Modifier.padding(start = 14.dp)) {
             if (instruction.title.isNotBlank()) Label(instruction.title, if (large) Typography.title.copy(fontSize = 28.sp) else Typography.title, maxLines = 1)
             if (instruction.text.isNotBlank()) Label(instruction.text, Typography.body, maxLines = if (large) 2 else 1)
             if (large && instruction.detail.isNotBlank()) Label(instruction.detail, Typography.small, c.textMuted, maxLines = 1)
         }
+    }
+}
+
+/** El cuadro del color de la interfaz con la flecha del aviso (o la de navegar, si no trae). */
+@Composable
+internal fun TurnArrow(instruction: TurnInstruction, side: Dp, radius: Dp) {
+    val c = LocalColors.current
+    Box(Modifier.size(side).clip(RoundedCornerShape(radius)).background(c.accent), contentAlignment = Alignment.Center) {
+        val arrow = instruction.arrow
+        if (arrow != null) {
+            Image(remember(arrow) { arrow.asImageBitmap() }, null, Modifier.size(side * 0.7f), colorFilter = ColorFilter.tint(c.onPrimary))
+        } else {
+            Icon(Icons.navigate, c.onPrimary, side * 0.5f)
+        }
+    }
+}
+
+/** Casa y Trabajo (los que estén guardados) como píldoras: un toque y el mapa ya va para allá. */
+@Composable
+internal fun PlacePills(home: String?, work: String?, onPlace: (String) -> Unit, modifier: Modifier = Modifier, background: Color = LocalColors.current.surface) {
+    Row(modifier, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        if (home != null) PlacePill(stringResource(R.string.place_home), background) { onPlace(home) }
+        if (work != null) PlacePill(stringResource(R.string.place_work), background) { onPlace(work) }
+    }
+}
+
+@Composable
+private fun PlacePill(text: String, background: Color, onClick: () -> Unit) {
+    val c = LocalColors.current
+    Row(
+        Modifier.clip(RoundedCornerShape(50)).background(background).clickable(onClick = onClick).padding(horizontal = 12.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(Icons.navigate, c.accent, 14.dp)
+        Label(text, Typography.small.copy(fontWeight = FontWeight.Medium), maxLines = 1, modifier = Modifier.padding(start = 6.dp))
     }
 }
 

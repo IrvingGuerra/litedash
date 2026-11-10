@@ -3,8 +3,10 @@ package com.irvingguerra.litedash
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.Dp
 import com.irvingguerra.litedash.core.ui.Icons
 import com.irvingguerra.litedash.feature.apps.App
+import com.irvingguerra.litedash.feature.apps.AppIcon
 
 // Apps conocidas para usar el celular en la pantalla (Android Auto / CarPlay con o sin cable).
 private val PROJECTION_PACKAGES = listOf(
@@ -34,7 +36,11 @@ fun projectionApp(apps: List<App>): App? =
 fun ProjectionTile(d: Dependencies, apps: List<App>, chosen: String?, onMissing: () -> Unit) {
     val context = LocalContext.current
     val app = chosen?.let { d.apps.find(apps, it) } ?: projectionApp(apps)
-    ShortcutTile(Icons.phoneCar, stringResource(R.string.tile_projection), app?.name ?: stringResource(R.string.projection_missing)) {
-        if (app != null) d.apps.open(context, app) else onMissing()
-    }
+    ShortcutTile(
+        Icons.phoneCar, stringResource(R.string.tile_projection), app?.name ?: stringResource(R.string.projection_missing),
+        onClick = { if (app != null) d.apps.open(context, app) else onMissing() },
+        // Con app, su ícono real y una flecha: se ve que ahí se abre.
+        image = app?.let { a -> { side: Dp -> AppIcon(d.apps, a, side) } },
+        chevron = app != null,
+    )
 }

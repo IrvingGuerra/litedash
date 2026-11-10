@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -54,8 +55,8 @@ import com.irvingguerra.litedash.feature.music.NotificationService
 
 /**
  * Widget Mapa: tu posición del GPS en el mapa (minimalista de OpenFreeMap o completo de OpenStreetMap),
- * como diga su [data] ([MapLook]); navegando, la siguiente vuelta encima. Un toque aleja el zoom; el botón
- * de la esquina abre tu app de mapas. En una fila, o sin permiso de ubicación, se ve como el widget Navegar
+ * como diga su [data] ([MapLook]); navegando, la siguiente vuelta flota arriba a la izquierda y Casa y
+ * Trabajo, abajo a la derecha (sobre los créditos). Un toque aleja el zoom; el botón de la esquina abre tu app de mapas. En una fila, o sin permiso de ubicación, se ve como el widget Navegar
  * de antes (vuelta, Casa y Trabajo) y, sin permiso, un botón para pedirlo. GPS y descargas solo mientras se ve.
  */
 @Composable
@@ -72,9 +73,18 @@ fun MapTile(d: Dependencies, data: String, app: App?, editing: Boolean, onPlace:
             }
             return@BoxWithConstraints
         }
+        val turnWidth = maxWidth - 68.dp
+        val withPlaces = maxHeight >= PLACES_HEIGHT
         Card(Modifier.fillMaxSize()) {
             LiveMap(d, look, Modifier.fillMaxSize())
-            NextTurn(d, Modifier.align(Alignment.TopStart).padding(8.dp))
+            // La vuelta no llega al botón de la app.
+            NextTurn(d, Modifier.align(Alignment.TopStart).padding(8.dp).widthIn(max = turnWidth))
+            if (withPlaces) {
+                PlacePills(
+                    d.prefs.homeAddress, d.prefs.workAddress, onPlace,
+                    Modifier.align(Alignment.BottomEnd).padding(end = 8.dp, bottom = ATTRIBUTION_CLEARANCE),
+                )
+            }
             IconButton(Icons.navigate, onNavigate, Modifier.align(Alignment.TopEnd).padding(8.dp), size = 44.dp, background = c.surface.copy(alpha = 0.85f), color = c.accent)
         }
     }
@@ -83,19 +93,30 @@ fun MapTile(d: Dependencies, data: String, app: App?, editing: Boolean, onPlace:
 /** La siguiente vuelta que dice el aviso de Waze o Maps, en una tarjeta sobre el mapa (nada si no navegas). */
 @Composable
 private fun NextTurn(d: Dependencies, modifier: Modifier) {
+    val c = LocalColors.current
     val repo = d.navigation
     DisposableEffect(repo) {
         repo.use { NotificationService.active() }
         onDispose { repo.release() }
     }
     val instruction = repo.instruction ?: return
-    Box(modifier.clip(RoundedCornerShape(Radius.card)).background(LocalColors.current.surface.copy(alpha = 0.92f)).padding(8.dp)) {
-        Turn(instruction, large = false)
+    Row(modifier.clip(RoundedCornerShape(Radius.inner)).background(c.surface).padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
+        TurnArrow(instruction, 44.dp, Radius.small)
+        Column(Modifier.padding(start = 10.dp, end = 6.dp)) {
+            if (instruction.title.isNotBlank()) Label(instruction.title, Typography.title, maxLines = 1)
+            if (instruction.text.isNotBlank()) Label(instruction.text, Typography.small, c.textMuted, maxLines = 1)
+        }
     }
 }
 
 /** Abajo de esto el mapa no luce: se ve como el widget Navegar. */
 private val COMPACT_HEIGHT = 120.dp
+
+/** Más bajo, Casa y Trabajo se encimarían con la vuelta: se quedan solo en el modo de una fila. */
+private val PLACES_HEIGHT = 170.dp
+
+/** Lo que ocupan los créditos de OpenStreetMap abajo a la derecha (obligatorios: nada los tapa). */
+private val ATTRIBUTION_CLEARANCE = 40.dp
 
 /**
  * El mapa con el GPS y las teselas corriendo solo mientras se ve (el widget, en grande y la vista previa)

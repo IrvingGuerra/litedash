@@ -302,9 +302,11 @@ fun TileContent(d: Dependencies, p: Tile, apps: List<App>, car: CarPackage?, rev
         TileTypes.PHONE -> {
             // La app de llamadas que se eligió (la del Bluetooth de la pantalla, por ejemplo) o el marcador.
             val app = appKeyOf(p.data)?.let { d.apps.find(apps, it) }
-            ShortcutTile(Icons.phone, stringResource(R.string.tile_phone), app?.name) {
-                if (app != null) d.apps.open(context, app) else openDialer(context)
-            }
+            ShortcutTile(
+                Icons.phone, stringResource(R.string.tile_phone), app?.name,
+                onClick = { if (app != null) d.apps.open(context, app) else openDialer(context) },
+                tint = Good,
+            )
         }
         TileTypes.APP -> {
             val app = appKeyOf(p.data)?.let { d.apps.find(apps, it) }
