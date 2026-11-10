@@ -162,7 +162,7 @@ private fun tileImage(name: String) = tileImages.getOrPut(name) { newTileImage(n
 fun releaseTileImages(tiles: List<Tile>) {
     val used = tiles.mapNotNullTo(HashSet()) { t ->
         when (t.type) {
-            TileTypes.IMAGE -> t.data
+            TileTypes.IMAGE -> ImageData.name(t.data)
             TileTypes.SPEEDOMETER -> GaugeLook.parse(t.data).takeIf { it.front == GaugeFront.IMAGE }?.image
             else -> null
         }
@@ -481,7 +481,14 @@ fun CustomizeImagePanel(d: Dependencies, tileId: String, close: () -> Unit) {
     PanelScaffold(stringResource(R.string.image_title), close) {
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(16.dp)) {
             Label(stringResource(R.string.image_help), Typography.body, c.textMuted)
-            ImageEditor(tileId, tile.data) { d.dashboard.setData(tileId, it) }
+            val name = ImageData.name(tile.data)
+            val tires = TileTires.parse(tile.data)
+            ImageEditor(tileId, name) { d.dashboard.setData(tileId, ImageData.encode(it, tires)) }
+            // Las llantas en sus esquinas (solo con Llantas prendido); de fábrica no.
+            if (d.hasTpmsSource) {
+                Label(stringResource(R.string.tile_tires), Typography.label, c.textMuted)
+                SwitchRow(stringResource(R.string.tires_show_pressure), showsTires(d, tile), { d.dashboard.setData(tileId, ImageData.encode(name, it)) })
+            }
         }
     }
 }

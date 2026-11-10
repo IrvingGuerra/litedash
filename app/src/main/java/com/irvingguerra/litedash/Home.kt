@@ -240,7 +240,7 @@ fun TileContent(d: Dependencies, p: Tile, apps: List<App>, car: CarPackage?, rev
                     p,
                     car,
                     // Una imagen sin foto abre su panel para elegirla; lo demás crece.
-                    onClick = { if (p.type == TileTypes.IMAGE && p.data.isEmpty()) actions.onPanel(Panel.CustomizeImage(p.id)) else actions.onCarOnly(p) },
+                    onClick = { if (p.type == TileTypes.IMAGE && ImageData.name(p.data).isEmpty()) actions.onPanel(Panel.CustomizeImage(p.id)) else actions.onCarOnly(p) },
                     modifier = Modifier.fillMaxSize(),
                     onTires = onTires,
                 )
@@ -317,11 +317,11 @@ fun moduleOff(d: Dependencies, type: String): Int? = when (type) {
 }
 
 /**
- * Si la carretera o el auto 3D [p] llevan la presión de las llantas: lo de su ajuste ([TileTires]) o,
- * sin él (y en la imagen), lo de Ajustes → Llantas.
+ * Si la carretera, el auto 3D o la imagen [p] llevan la presión de las llantas: lo de su ajuste ([TileTires]);
+ * sin él, el auto y la carretera siguen lo de Ajustes → Llantas y la imagen no las lleva (no tiene ruedas).
  */
 fun showsTires(d: Dependencies, p: Tile): Boolean =
-    p.type.takeIf { it != TileTypes.IMAGE }?.let { TileTires.parse(p.data) } ?: (d.prefs.tiresOnCar != TiresOnCar.OFF)
+    TileTires.parse(p.data) ?: (p.type != TileTypes.IMAGE && d.prefs.tiresOnCar != TiresOnCar.OFF)
 
 /** Lo que se ofrece para agregar: Llantas siempre (agregarla prende su módulo); lo del OBD, con el OBD. */
 fun offered(d: Dependencies, type: String) = type == TileTypes.TIRES || moduleOff(d, type) == null

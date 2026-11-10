@@ -257,6 +257,16 @@ object TileTires {
 }
 
 /**
+ * El dato del widget Imagen: el nombre de su foto (files/images/NOMBRE.png; vacío = sin foto) y, después de
+ * ";", si lleva la presión de las llantas ([TileTires]; de fábrica no: una foto no tiene ruedas).
+ */
+object ImageData {
+    fun name(data: String) = data.substringBefore(';')
+
+    fun encode(name: String, tires: Boolean?) = listOfNotNull(name, tires?.let { TileTires.encode(it) }).joinToString(";")
+}
+
+/**
  * Cómo se ve la carretera; se guarda en su [com.irvingguerra.litedash.feature.dashboard.Tile.data]
  * como un velocímetro ([gauge]) más "speed=…" ([speed]), "trip=…" ([trip]) y "tires=…" ([tires],
  * ver [TileTires]). Lo de fábrica no se escribe.

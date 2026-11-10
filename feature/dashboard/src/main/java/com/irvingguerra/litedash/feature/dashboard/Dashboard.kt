@@ -228,7 +228,8 @@ fun Dashboard(
                     if (chosen && onSettings != null && hasSettings(p)) IconButton(
                         Icons.settings,
                         onClick = { onSettings(p) },
-                        modifier = Modifier.align(Alignment.TopStart).padding(start = editButtonStart(2), top = EDIT_MARGIN),
+                        // Junto a la ✕ si no lleva el de "sin tarjeta" (auto, carretera, imagen): sin hueco en medio.
+                        modifier = Modifier.align(Alignment.TopStart).padding(start = editButtonStart(if (p.cardless) 1 else 2), top = EDIT_MARGIN),
                         size = EDIT_BUTTON,
                         background = c.surfaceHigh,
                     )
