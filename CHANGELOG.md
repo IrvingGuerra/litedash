@@ -4,6 +4,17 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.4.127] - 2026-11-10
+
+### Cambiado
+- **Pantalla Música en celulares y pantallas chicas**: la carátula ya no tapa el título ni aplasta los botones. Se
+  acomoda sola: a un lado en pantallas anchas, arriba si hay lugar y, en pantallas bajas (un celular acostado),
+  chica junto al título con los botones a su lado. Lo mismo en Radio.
+- **Widget Música mediano**: ya no pierde la carátula; si en fila no se lee el título, pone la carátula chica junto
+  al título y los botones abajo.
+- **Ajustes → Apps → Música (Archivos)**: una sola tarjeta "Tu música". "Elegir carpeta" y el nuevo "Quitar carpeta"
+  van arriba de la biblioteca (ya no se repiten abajo).
+
 ## [1.4.126] - 2026-11-10
 
 ### Agregado

@@ -204,12 +204,23 @@ internal fun MediaTile(
                     if (!artwork) Spacer(Modifier.weight(1f))
                 }
             }
+            // Mediana y angosta: en fila el título no se leería; carátula chica junto al título y los botones abajo.
+            if (artwork && !tall && maxHeight >= STACKED_MIN_HEIGHT && maxWidth < STACKED_MAX_WIDTH) {
+                return@BoxWithConstraints Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Artwork(song, Modifier.size(ARTWORK_ROW_MIN), Radius.inner, icon)
+                        Column(Modifier.weight(1f).padding(start = 12.dp)) { labeled() }
+                    }
+                    controls(Modifier.align(Alignment.CenterHorizontally).padding(top = 8.dp), !skip)
+                }
+            }
             // Angosta (la fila de abajo en 7"): solo play/pausa, para que el título se lea.
             val compact = !skip || !tall && maxWidth < 400.dp
-            // Carátula cuadrada con esquinas, dentro de la tarjeta, si deja lugar al título. Alta (controles
-            // abajo del título) se achica a lo que deje libre la columna, en vez de desaparecer.
-            val art = if (tall) minOf(maxHeight, 240.dp, maxWidth - TALL_TEXT_MIN) else minOf(maxHeight, 240.dp)
-            val withArtwork = artwork && if (tall) art >= ARTWORK_MIN else maxWidth - art >= if (compact) 150.dp else 220.dp
+            // Carátula cuadrada con esquinas, dentro de la tarjeta: se achica a lo que deje libre el título (y los
+            // botones, si van al lado) en vez de desaparecer; solo se quita si quedaría más chica que el mínimo.
+            val text = if (tall) TALL_TEXT_MIN else if (compact) 170.dp else 230.dp
+            val art = minOf(maxHeight, 240.dp, maxWidth - text)
+            val withArtwork = artwork && art >= if (tall) ARTWORK_MIN else ARTWORK_ROW_MIN
             Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
                 if (withArtwork) Artwork(song, Modifier.size(art), Radius.inner, icon)
                 Column(Modifier.weight(1f).padding(horizontal = 12.dp), verticalArrangement = Arrangement.Center) {
@@ -245,6 +256,19 @@ fun OnFilesEmpty(repo: MusicRepository, enabled: Boolean, open: () -> Unit) {
  */
 private val TALL_TEXT_MIN = 200.dp
 private val ARTWORK_MIN = 72.dp
+/** En fila (título y botones al lado) la carátula puede ser más chica: junto al texto se ve bien. */
+private val ARTWORK_ROW_MIN = 52.dp
+/** Desde este alto y hasta este ancho, el widget pone los botones abajo del título (ver [MediaTile]). */
+private val STACKED_MIN_HEIGHT = 116.dp
+private val STACKED_MAX_WIDTH = 320.dp
+
+/** En grande: ancha desde aquí (carátula a un lado); arriba solo si queda de [ARTWORK_ABOVE_MIN] o más; si no, chica junto al título. */
+private val WIDE_MIN = 480.dp
+private val ARTWORK_ABOVE_MIN = 140.dp
+private val ARTWORK_SMALL = 96.dp
+/** Más bajo que esto, la vista muy baja (ver [NowPlaying]), con la carátula hasta [ARTWORK_SHORT]. */
+private val SHORT_MAX = 190.dp
+private val ARTWORK_SHORT = 140.dp
 private val LABEL_MIN = 88.dp
 
 /** El color promedio de la carátula en degradado suave desde la esquina superior izquierda (como Apple Music). */
@@ -323,84 +347,127 @@ internal fun SongDetail(repo: MusicRepository, song: Song) {
 }
 
 /**
- * La base de la música y la radio en grande: tarjeta a pantalla completa con margen. [content]
- * recibe si es ancha (carátula a un lado) y el ancho máximo de la carátula.
+ * La base de la música y la radio en grande: la tarjeta (teñida con la carátula de [tint], como el widget) con
+ * su margen. [content] va en una columna que llena la tarjeta.
  */
 @Composable
-internal fun ExpandedCard(repo: MusicRepository, modifier: Modifier, content: @Composable ColumnScope.(wide: Boolean, artworkMax: Dp) -> Unit) {
+internal fun ExpandedCard(repo: MusicRepository, modifier: Modifier, tint: Song? = null, content: @Composable ColumnScope.() -> Unit) {
     UseRepo(repo)
     Card(modifier.fillMaxSize()) {
-        BoxWithConstraints(Modifier.fillMaxSize().padding(20.dp)) {
-            val wide = maxWidth > 520.dp && maxWidth > maxHeight
-            // La portada cuadrada, pero sin pasar del 40 % del ancho: el título y los botones
-            // siguen cabiendo a su lado.
-            val artworkMax = maxWidth * 0.4f
-            Column(Modifier.fillMaxSize()) { content(wide, artworkMax) }
+        tint?.artwork?.let { if (!LocalPlainCard.current) ArtworkTint(it, "${tint.pkg}|${tint.title}|${tint.artist}") }
+        Column(Modifier.fillMaxSize().padding(20.dp)) { content() }
+    }
+}
+
+/** Cuánto lugar tienen los controles de la vista en grande (ver [NowPlaying]). */
+internal enum class ControlsFit {
+    /** Todo: barra para adelantar, botones grandes y los botones propios de la app. */
+    FULL,
+    /** Lo mismo con botones más chicos y menos aire. */
+    COMPACT,
+    /** Pantallas muy bajas (un celular acostado): solo anterior, play y siguiente, chicos. */
+    MINI,
+}
+
+/**
+ * Carátula, [title] y [controls] en lo que quede de la tarjeta, en pantallas acostadas y paradas. Primero se
+ * aparta lo que necesitan título y controles ([detailsHeight]) y la carátula toma lo que sobra: nunca tapa el
+ * título ni aplasta los botones.
+ * - Ancha: carátula a un lado y título con controles al otro.
+ * - Alta con lugar: carátula arriba, título y controles abajo.
+ * - Alta sin lugar: carátula chica junto al título y los controles abajo a todo lo ancho.
+ * - Muy baja: carátula a un lado y, junto a ella, el título en una línea y los controles chicos.
+ */
+@Composable
+internal fun ColumnScope.NowPlaying(
+    song: Song?,
+    icon: ImageVector,
+    detailsHeight: Dp,
+    title: @Composable (Modifier, compact: Boolean) -> Unit,
+    controls: @Composable ColumnScope.(ControlsFit) -> Unit,
+) {
+    BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
+        val width = maxWidth
+        val height = maxHeight
+        val wide = width > height * 1.1f && width >= WIDE_MIN
+        val above = minOf(width, height - detailsHeight - 16.dp)
+        val fit = if (height < detailsHeight) ControlsFit.COMPACT else ControlsFit.FULL
+        when {
+            height < SHORT_MAX -> Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
+                val art = minOf(height, width * 0.3f, ARTWORK_SHORT)
+                if (art >= ARTWORK_MIN) {
+                    Artwork(song, Modifier.size(art), Radius.inner, icon)
+                    Spacer(Modifier.width(16.dp))
+                }
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.Center) {
+                    title(Modifier.fillMaxWidth(), true)
+                    controls(ControlsFit.MINI)
+                }
+            }
+            wide -> Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
+                Artwork(song, Modifier.size(minOf(height, width * 0.4f)), Radius.card, icon)
+                Spacer(Modifier.width(20.dp))
+                Column(Modifier.weight(1f)) {
+                    title(Modifier.fillMaxWidth(), fit != ControlsFit.FULL)
+                    controls(fit)
+                }
+            }
+            above >= ARTWORK_ABOVE_MIN -> Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+                Artwork(song, Modifier.size(above), Radius.card, icon)
+                Spacer(Modifier.height(16.dp))
+                title(Modifier.fillMaxWidth(), false)
+                controls(ControlsFit.FULL)
+            }
+            else -> Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    val small = minOf(ARTWORK_SMALL, width * 0.28f)
+                    if (small >= ARTWORK_MIN) {
+                        Artwork(song, Modifier.size(small), Radius.inner, icon)
+                        Spacer(Modifier.width(16.dp))
+                    }
+                    title(Modifier.weight(1f), true)
+                }
+                controls(fit)
+            }
         }
     }
 }
 
-/** Carátula y [details] (título y botones): lado a lado si es [wide], si no uno arriba del otro. */
+/** Título y subtítulo de lo que suena (o el error, "Conectando…", "Abriendo X…" o, sin nada, [idleTitle] e [idleSubtitle]). */
 @Composable
-internal fun ColumnScope.NowPlaying(song: Song?, icon: ImageVector, wide: Boolean, artworkMax: Dp, details: @Composable (Modifier) -> Unit) {
-    if (wide) {
-        Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
-            Artwork(song, Modifier.widthIn(max = artworkMax).fillMaxHeight().aspectRatio(1f, matchHeightConstraintsFirst = false), Radius.card, icon)
-            Spacer(Modifier.width(24.dp))
-            details(Modifier.weight(1f))
-        }
-    } else {
-        Column(Modifier.weight(1f).fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-            Artwork(song, Modifier.weight(1f, fill = false).aspectRatio(1f, matchHeightConstraintsFirst = true), Radius.card, icon)
-            Spacer(Modifier.height(16.dp))
-            details(Modifier.fillMaxWidth())
-        }
+internal fun ExpandedTitle(repo: MusicRepository, song: Song?, opening: String?, idleTitle: String, idleSubtitle: String, modifier: Modifier, compact: Boolean) {
+    val title = when {
+        song != null -> song.title
+        opening != null -> stringResource(R.string.opening_app, opening)
+        else -> idleTitle
     }
+    val error = song?.error
+    val subtitle = when {
+        error != null -> error
+        song?.buffering == true -> stringResource(R.string.player_connecting)
+        song != null -> subtitleFor(repo, song)
+        opening != null -> stringResource(R.string.opening_wait)
+        else -> idleSubtitle
+    }
+    Column(modifier) { BigTitle(title, subtitle, error != null, compact) }
 }
 
 /** Título y subtítulo grandes, con dos líneas reservadas cada uno: los botones no se mueven. */
 @Composable
-internal fun BigTitle(title: String, subtitle: String, error: Boolean) {
+internal fun BigTitle(title: String, subtitle: String, error: Boolean, compact: Boolean) {
     val c = LocalColors.current
+    if (compact) {
+        // Sin lugar: una línea de cada uno y sin reservar espacio.
+        Label(title, Typography.title.copy(fontSize = 22.sp), maxLines = 1)
+        Label(subtitle, Typography.subtitle, if (error) c.danger else c.textMuted, maxLines = 1)
+        return
+    }
     Box(Modifier.heightIn(min = 68.dp), contentAlignment = Alignment.BottomStart) {
         Label(title, Typography.title.copy(fontSize = 26.sp), maxLines = 2)
     }
     Spacer(Modifier.height(4.dp))
     Box(Modifier.heightIn(min = 48.dp)) {
         Label(subtitle, Typography.subtitle, if (error) c.danger else c.textMuted, maxLines = 2)
-    }
-}
-
-/**
- * Título, subtítulo y [controls] de la música y la radio en grande: lo que suena (o el error y
- * "Conectando…"), "Abriendo X…" mientras [opening], y sin nada [idleTitle] e [idleSubtitle].
- */
-@Composable
-internal fun ExpandedDetails(
-    repo: MusicRepository,
-    song: Song?,
-    opening: String?,
-    idleTitle: String,
-    idleSubtitle: String,
-    modifier: Modifier,
-    controls: @Composable ColumnScope.() -> Unit,
-) {
-    Column(modifier) {
-        val title = when {
-            song != null -> song.title
-            opening != null -> stringResource(R.string.opening_app, opening)
-            else -> idleTitle
-        }
-        val error = song?.error
-        val subtitle = when {
-            error != null -> error
-            song?.buffering == true -> stringResource(R.string.player_connecting)
-            song != null -> subtitleFor(repo, song)
-            opening != null -> stringResource(R.string.opening_wait)
-            else -> idleSubtitle
-        }
-        BigTitle(title, subtitle, error != null)
-        controls()
     }
 }
 

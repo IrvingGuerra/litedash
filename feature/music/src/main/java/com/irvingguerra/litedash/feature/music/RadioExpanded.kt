@@ -47,7 +47,7 @@ fun RadioExpanded(
     val canBrowse = browser != null && internet
     // La lista de estaciones; al entrar (o al cambiar a internet) sin nada sonando, se abre sola.
     var browsing by remember(canBrowse) { mutableStateOf(canBrowse && song == null && repo.radio.starting == null) }
-    ExpandedCard(repo, modifier) { wide, artworkMax ->
+    ExpandedCard(repo, modifier) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Label(stringResource(R.string.radio).uppercase(), Typography.label, c.textMuted, maxLines = 1, modifier = Modifier.weight(1f).padding(start = 4.dp))
             if (canBrowse) HeaderButton(if (browsing) Icons.radio else Icons.list) { browsing = !browsing }
@@ -63,7 +63,19 @@ fun RadioExpanded(
             return@ExpandedCard
         }
         val onIdle: () -> Unit = { if (canBrowse) browsing = true }
-        NowPlaying(song, Icons.radio, wide, artworkMax) { Details(repo, song, onIdle, it) }
+        // Título (~120) y botones (~92); la radio no tiene barra de tiempo.
+        NowPlaying(
+            song, Icons.radio,
+            detailsHeight = 212.dp,
+            title = { m, compact -> ExpandedTitle(repo, song, repo.radio.starting, stringResource(R.string.radio), radioHint(repo), m, compact) },
+        ) { fit ->
+            val compact = fit != ControlsFit.FULL
+            Spacer(Modifier.height(if (compact) 8.dp else 16.dp))
+            Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                if (compact) RadioControls(repo, song, onIdle, size = 52.dp, playSize = 60.dp, gap = 8.dp)
+                else RadioControls(repo, song, onIdle, size = 64.dp, playSize = 76.dp, gap = 12.dp)
+            }
+        }
     }
 }
 
@@ -80,12 +92,3 @@ private fun NoRadio(onSettings: () -> Unit, modifier: Modifier) {
     }
 }
 
-@Composable
-private fun Details(repo: MusicRepository, song: Song?, onIdle: () -> Unit, modifier: Modifier) {
-    ExpandedDetails(repo, song, repo.radio.starting, stringResource(R.string.radio), radioHint(repo), modifier) {
-        Spacer(Modifier.height(16.dp))
-        Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-            RadioControls(repo, song, onIdle, size = 64.dp, playSize = 76.dp, gap = 12.dp)
-        }
-    }
-}

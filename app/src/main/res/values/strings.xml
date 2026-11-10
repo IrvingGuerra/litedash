@@ -761,10 +761,8 @@
     <string name="tires_ble_location_off">Prende la ubicación: Android la pide para buscar Bluetooth</string>
     <string name="tires_ble_unsupported">Esta pantalla no tiene Bluetooth LE</string>
     <string name="tires_ble_failed">Android no dejó buscar sensores Bluetooth</string>
-    <string name="usb_folder">Carpeta de música</string>
     <string name="files_library">Tu música</string>
     <string name="files_library_help">Toca una canción, un álbum o una carpeta para escucharla.</string>
-    <string name="usb_folder_auto">Automática: busca en todas tus memorias USB. Elige una si tu pantalla no deja leer la memoria.</string>
     <string name="music_app_title">Tu app de música</string>
     <string name="gauge_rim">Aro</string>
     <string name="gauge_rim_smooth">Liso</string>

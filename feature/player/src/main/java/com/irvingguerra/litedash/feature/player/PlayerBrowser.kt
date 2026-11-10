@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -121,8 +122,13 @@ private fun LibraryBrowser(onPicked: () -> Unit, modifier: Modifier) {
     }
     // Elegir la carpeta de la música con el selector de Android: sirve aunque la pantalla no deje
     // leer la memoria directo (pasaba en una AC8227L con Android 13: "no tiene música").
+    // Con carpeta elegida, "Quitar carpeta" regresa a buscar sola en todas las memorias.
+    val chosen = remember(mounts) { Library.folderName(context) != null }
     val folderButton: @Composable () -> Unit = {
-        FolderPicker(stringResource(R.string.library_pick_folder), onChosen = { mounts++ })
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            if (chosen) Button(stringResource(R.string.library_clear_folder), { Library.clearFolder(context); mounts++ })
+            FolderPicker(stringResource(R.string.library_pick_folder), onChosen = { mounts++ })
+        }
     }
     if (!permission) {
         Column(modifier, verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -161,15 +167,22 @@ private fun LibraryBrowser(onPicked: () -> Unit, modifier: Modifier) {
     BoxWithConstraints(modifier) {
         // Angosta (dentro de un widget): solo las pestañas; la carpeta se cambia en Ajustes.
         val narrow = maxWidth < NARROW
+        // Con lugar, la carpeta va en la misma línea que las pestañas; si no, en su propio renglón.
+        val oneLine = maxWidth >= ONE_LINE
+        val folder: @Composable RowScope.() -> Unit = {
+            Label(drive.name, Typography.small, c.textMuted, 1, Modifier.weight(1f, fill = !oneLine))
+            folderButton()
+        }
         Column {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 Box(Modifier.weight(1f)) {
                     Segmented(Group.entries.map { it to stringResource(it.title) }, group, { memory.pick(it) }, Modifier.horizontalScroll(rememberScrollState()))
                 }
-                if (!narrow) {
-                    Label(drive.name, Typography.small, c.textMuted, 1)
-                    folderButton()
-                }
+                if (!narrow && oneLine) folder()
+            }
+            if (!narrow && !oneLine) {
+                Spacer(Modifier.height(10.dp))
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) { folder() }
             }
             Spacer(Modifier.height(10.dp))
             // Si la memoria cambió y el grupo recordado ya no está, a la lista.
@@ -206,6 +219,8 @@ private fun LibraryBrowser(onPicked: () -> Unit, modifier: Modifier) {
 
 /** Menos ancho que esto es un widget, no la vista en grande ni Ajustes. */
 private val NARROW = 440.dp
+/** Desde este ancho, pestañas y carpeta caben en una línea. */
+private val ONE_LINE = 700.dp
 
 @Composable
 private fun groupName(group: Group, name: String): String = when {

@@ -739,10 +739,8 @@
     <string name="tires_ble_location_off">Turn on location: Android requires it to scan for Bluetooth</string>
     <string name="tires_ble_unsupported">This screen has no Bluetooth LE</string>
     <string name="tires_ble_failed">Android didn\'t allow scanning for Bluetooth sensors</string>
-    <string name="usb_folder">Music folder</string>
     <string name="files_library">Your music</string>
     <string name="files_library_help">Tap a song, album or folder to play it.</string>
-    <string name="usb_folder_auto">Automatic: looks in all your USB drives. Choose one if your screen doesn\'t let apps read the drive.</string>
     <string name="music_app_title">Your music app</string>
     <string name="gauge_rim">Rim</string>
     <string name="gauge_rim_smooth">Plain</string>

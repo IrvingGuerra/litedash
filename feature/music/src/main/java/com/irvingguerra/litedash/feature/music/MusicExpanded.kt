@@ -7,6 +7,7 @@ import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -55,7 +56,7 @@ fun MusicExpanded(
     var browsing by remember { mutableStateOf(startBrowsing && files) }
     // Con Archivos, play sin nada que tocar abre la biblioteca.
     OnFilesEmpty(repo, files, remember { { browsing = true } })
-    ExpandedCard(repo, modifier) { wide, artworkMax ->
+    ExpandedCard(repo, modifier, tint = song) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             ModeTitle(repo, song, Modifier.weight(1f))
             if (files) HeaderButton(if (browsing) Icons.music else Icons.list) { browsing = !browsing }
@@ -68,27 +69,33 @@ fun MusicExpanded(
             return@ExpandedCard
         }
         // Sin nada sonando se ve igual, con los controles: play reanuda lo último.
-        NowPlaying(song, Icons.music, wide, artworkMax) { Details(repo, song, it) }
+        // Título (~120), barra (~50), botones (~92) y, si la app trae, sus botones propios (~64).
+        val idle = repo.usbDrive?.let { stringResource(R.string.usb_drive_in, it) } ?: stringResource(R.string.resume_explain)
+        NowPlaying(
+            song, Icons.music,
+            detailsHeight = if (song?.actions.isNullOrEmpty()) 262.dp else 326.dp,
+            title = { m, compact -> ExpandedTitle(repo, song, repo.starting, stringResource(R.string.nothing_playing), idle, m, compact) },
+        ) { PlayerControls(repo, song, it) }
     }
 }
 
+/** La barra para adelantar (si la canción tiene duración), los controles y los botones propios de la app. */
 @Composable
-private fun Details(repo: MusicRepository, song: Song?, modifier: Modifier) {
-    val idle = repo.usbDrive?.let { stringResource(R.string.usb_drive_in, it) } ?: stringResource(R.string.resume_explain)
-    ExpandedDetails(repo, song, repo.starting, stringResource(R.string.nothing_playing), idle, modifier) {
-        if (song != null && song.durationMs > 0) {
-            Spacer(Modifier.height(20.dp))
-            TimeBar(repo, song)
-        }
-        Spacer(Modifier.height(16.dp))
-        Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-            Controls(repo, song?.playing == true, loading = song?.buffering == true, size = 64.dp, playSize = 76.dp, gap = 12.dp)
-        }
-        if (song != null && song.actions.isNotEmpty()) {
-            Spacer(Modifier.height(8.dp))
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
-                for (a in song.actions.take(5)) ActionButton(a) { repo.action(a) }
-            }
+private fun ColumnScope.PlayerControls(repo: MusicRepository, song: Song?, fit: ControlsFit) {
+    val compact = fit != ControlsFit.FULL
+    if (fit != ControlsFit.MINI && song != null && song.durationMs > 0) {
+        Spacer(Modifier.height(if (compact) 10.dp else 20.dp))
+        TimeBar(repo, song)
+    }
+    Spacer(Modifier.height(if (compact) 8.dp else 16.dp))
+    Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+        if (compact) Controls(repo, song?.playing == true, loading = song?.buffering == true, size = 52.dp, playSize = 60.dp, gap = 8.dp)
+        else Controls(repo, song?.playing == true, loading = song?.buffering == true, size = 64.dp, playSize = 76.dp, gap = 12.dp)
+    }
+    if (fit != ControlsFit.MINI && song != null && song.actions.isNotEmpty()) {
+        Spacer(Modifier.height(if (compact) 4.dp else 8.dp))
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
+            for (a in song.actions.take(5)) ActionButton(a) { repo.action(a) }
         }
     }
 }

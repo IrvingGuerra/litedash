@@ -17,7 +17,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.irvingguerra.litedash.core.ui.Button
@@ -33,7 +32,6 @@ import com.irvingguerra.litedash.feature.music.MusicMode
 import com.irvingguerra.litedash.feature.music.R as MusicR
 import com.irvingguerra.litedash.feature.music.SourceKind
 import com.irvingguerra.litedash.feature.music.label
-import com.irvingguerra.litedash.feature.player.FolderPicker
 import com.irvingguerra.litedash.feature.player.Library
 import com.irvingguerra.litedash.feature.player.PlayerBrowser
 import com.irvingguerra.litedash.feature.player.PlayerSource
@@ -80,10 +78,11 @@ fun MusicModeSettings(d: Dependencies) {
     when (d.music.mode) {
         MusicMode.FILES -> {
             // La biblioteca siempre aquí: en el inicio solo cabe en un widget de media pantalla o más.
+            // Una sola tarjeta: la biblioteca trae arriba "Elegir carpeta" (y "Quitar carpeta") para las pantallas
+            // que no dejan leer la memoria sola.
             SettingsCard(stringResource(R.string.files_library), stringResource(R.string.files_library_help)) {
                 PlayerBrowser(PlayerSource.USB, onPicked = {}, Modifier.fillMaxWidth().height(LIBRARY_HEIGHT))
             }
-            SettingsCard { FilesCard() }
         }
         MusicMode.BLUETOOTH -> SettingsCard(stringResource(R.string.bt_pair), stringResource(R.string.bt_pair_help)) { BluetoothSettings(d) }
         MusicMode.APP -> SettingsCard(stringResource(R.string.music_app_title)) { MusicSettings(d) }
@@ -92,23 +91,6 @@ fun MusicModeSettings(d: Dependencies) {
 
 /** Alto de la biblioteca en Ajustes (la página ya desplaza: la lista necesita uno fijo). */
 private val LIBRARY_HEIGHT = 420.dp
-
-/**
- * Archivos: el reproductor de LiteDash lee la música de tus memorias (USB o tarjeta) solo; si tu
- * pantalla no deja leerla, eliges su carpeta (con el selector de Android o, si no lo trae, el
- * explorador propio).
- */
-@Composable
-private fun FilesCard() {
-    val context = LocalContext.current
-    val c = LocalColors.current
-    var folder by remember { mutableStateOf(Library.folderName(context)) }
-    Label(stringResource(R.string.usb_folder), Typography.body)
-    Label(folder ?: stringResource(R.string.usb_folder_auto), Typography.small, c.textMuted, 2)
-    if (folder != null) Button(stringResource(R.string.source_remove), { Library.clearFolder(context); folder = null })
-    FolderPicker(stringResource(R.string.source_choose), onChosen = { folder = Library.folderName(context) }, Modifier.fillMaxWidth())
-    Label(stringResource(R.string.usb_player_help), Typography.small, c.textMuted)
-}
 
 /**
  * Pestaña "Radio" de Ajustes → Apps: una sola radio a la vez, como la música (Irving, 2026-11-08):
