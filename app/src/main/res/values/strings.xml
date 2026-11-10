@@ -89,9 +89,24 @@
     <string name="gauge_customize">Personalizar medidor</string>
     <string name="road_customize">Personalizar carretera</string>
     <string name="car_customize">Personalizar auto</string>
-    <string name="clock_customize">Personalizar reloj</string>
     <string name="clock_show_weather">Mostrar el clima</string>
     <string name="clock_weather_in_widget">Tienes el widget Clima en el inicio: el reloj no lo repite.</string>
+    <string name="widget_customize">Personalizar %1$s</string>
+    <string name="option_date">Mostrar la fecha</string>
+    <string name="option_greeting">Mostrar el saludo</string>
+    <string name="option_range">Máxima y mínima de hoy</string>
+    <string name="option_days">Los próximos días</string>
+    <string name="option_days_help">Los próximos días salen cuando el widget es suficientemente ancho.</string>
+    <string name="option_trip_help">La distancia siempre se ve. Elige qué más:</string>
+    <string name="option_car">Mostrar el auto</string>
+    <string name="option_artwork">Mostrar la carátula</string>
+    <string name="option_logo">Mostrar el logo de la estación</string>
+    <string name="option_skip">Botones de anterior y siguiente</string>
+    <string name="option_app_name">Mostrar el nombre</string>
+    <string name="option_change_app">Elegir app</string>
+    <string name="option_opens">AL TOCARLO ABRE</string>
+    <string name="option_opens_dialer">El marcador</string>
+    <string name="option_opens_auto">La que encuentre LiteDash</string>
     <string name="tires_show_pressure">Ver la presión de las llantas</string>
     <string name="gauge_customize_help">Los cambios se ven al momento. Lo que preocupa (motor caliente, revoluciones altas) siempre se pinta de rojo.</string>
     <string name="gauge_style">Estilo</string>
@@ -122,6 +137,11 @@
     <string name="templates_map_help">El mapa en vivo con tu posición y la siguiente vuelta, y un botón a Waze o Maps.</string>
     <string name="add">Agregar</string>
     <string name="add_tile">Agregar al inicio</string>
+    <string name="add_group_car">Tu auto</string>
+    <string name="add_group_media">Música y radio</string>
+    <string name="add_group_nav">Navegación y llamadas</string>
+    <string name="add_group_info">Información</string>
+    <string name="add_group_apps">Apps</string>
     <string name="no_room">Ya no hay lugar: quita o achica algún widget.</string>
     <string name="done">Listo</string>
     <string name="theme">Tema</string>
@@ -445,7 +465,8 @@
     <string name="image_empty">Sin foto se muestra el logo de LiteDash.</string>
     <string name="tile_music_help">Lo que suena, con controles; un toque la abre en grande</string>
     <string name="tile_clock_help">Hora, fecha y clima</string>
-    <string name="tile_phone_help">Abre el marcador</string>
+    <string name="tile_phone_help">Abre el marcador o la app de llamadas que elijas</string>
+    <string name="tile_app_help">Cualquier app instalada, de un toque</string>
     <string name="logo_intro_help">Al abrir LiteDash, tu imagen (como el logo de tu marca) aparece unos segundos. Es aparte de los widgets de imagen.</string>
     <string name="intro_no_image">Sin imagen se muestra el logo de LiteDash.</string>
     <string name="unit_rpm" translatable="false">rpm</string>

@@ -225,7 +225,7 @@ fun rememberTripStats(trip: TripRepository, miles: Boolean): TripStats {
  * distancia en grande, el tiempo, la velocidad promedio y el rumbo. Sin permiso, el botón para activarla.
  */
 @Composable
-fun TripTile(d: Dependencies) {
+fun TripTile(d: Dependencies, time: Boolean = true, average: Boolean = true, heading: Boolean = true) {
     val c = LocalColors.current
     val trip = d.trip
     val miles = d.prefs.units.miles
@@ -233,7 +233,10 @@ fun TripTile(d: Dependencies) {
     if (!granted) return ShortcutTile(Icons.location, stringResource(R.string.tile_trip), stringResource(R.string.tap_to_enable), ask)
     KeepTripRunning(trip)
     val stats = rememberTripStats(trip, miles)
-    val (average, heading) = stats.average to stats.heading
+    // Cada dato es una opción del widget (la distancia siempre va).
+    val shownTime = stats.time.takeIf { time }
+    val shownAverage = stats.average?.takeIf { average }
+    val shownHeading = stats.heading?.takeIf { heading }
     val locale = currentLocale()
     Card(Modifier.fillMaxSize()) {
         BoxWithConstraints(Modifier.fillMaxSize().padding(TilePadding)) {
@@ -245,8 +248,9 @@ fun TripTile(d: Dependencies) {
                 Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
                     BigValue(stats.distance, stats.unit, 34)
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                        Label(listOfNotNull(stats.time, heading).joinToString(" · "), Typography.body, maxLines = 1)
-                        if (average != null) Label(average, Typography.small, c.textMuted, maxLines = 1)
+                        val line = listOfNotNull(shownTime, shownHeading).joinToString(" · ")
+                        if (line.isNotEmpty()) Label(line, Typography.body, maxLines = 1)
+                        if (shownAverage != null) Label(shownAverage, Typography.small, c.textMuted, maxLines = 1)
                     }
                 }
             } else {
@@ -256,11 +260,11 @@ fun TripTile(d: Dependencies) {
                             Label(stringResource(R.string.tile_trip).uppercase(locale), Typography.label, c.textMuted, maxLines = 1)
                             BigValue(stats.distance, stats.unit, if (huge) 64 else 48)
                         }
-                        if (heading != null) Label(heading, Typography.title, c.accent, maxLines = 1)
+                        if (shownHeading != null) Label(shownHeading, Typography.title, c.accent, maxLines = 1)
                     }
                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(if (wide) 28.dp else 16.dp)) {
-                        TripStat(stringResource(R.string.trip_time), stats.time)
-                        if (average != null) TripStat(stringResource(R.string.trip_average), average)
+                        if (shownTime != null) TripStat(stringResource(R.string.trip_time), shownTime)
+                        if (shownAverage != null) TripStat(stringResource(R.string.trip_average), shownAverage)
                         Spacer(Modifier.weight(1f))
                         if (wide) Button(stringResource(R.string.trip_reset), { trip.reset() })
                     }

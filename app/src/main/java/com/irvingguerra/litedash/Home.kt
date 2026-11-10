@@ -33,6 +33,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateMapOf
@@ -61,6 +62,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.LifecycleResumeEffect
@@ -111,8 +113,8 @@ sealed interface Panel {
     data object Updates : Panel
     data object AddTile : Panel
     data object Templates : Panel
-    /** Elegir app para una pieza existente ([tileId]) o para una nueva (null). */
-    data class PickApp(val tileId: String?) : Panel
+    /** Elegir app para una pieza existente ([tileId]) o para una nueva (null); al elegir, regresa a [back]. */
+    data class PickApp(val tileId: String?, val back: Panel? = null) : Panel
     /** Ajustes abiertos en el Taller (pieza de acceso directo). */
     data object Workshop : Panel
     /** Ajustes abiertos en Apps (para enlazar la radio de la pantalla desde la radio en grande). */
@@ -127,8 +129,8 @@ sealed interface Panel {
     data class CustomizeMap(val tileId: String) : Panel
     /** La presión de las llantas sobre el auto 3D ([tileId]). */
     data class CustomizeCar(val tileId: String) : Panel
-    /** Si el reloj ([tileId]) lleva el clima. */
-    data class CustomizeClock(val tileId: String) : Panel
+    /** Las opciones de un widget sin panel propio ([WIDGET_OPTIONS]): reloj, clima, música… */
+    data class CustomizeWidget(val tileId: String) : Panel
     /** Ajustes abiertos en Llantas (desde la vista de llantas o la pieza sin configurar). */
     data object TiresSettings : Panel
 }
@@ -261,21 +263,24 @@ fun TileContent(d: Dependencies, p: Tile, apps: List<App>, car: CarPackage?, rev
         }
         // Ya de media pantalla o más: lo de en grande ahí mismo (no se mueve).
         TileTypes.MUSIC -> if (p.fillsHalf(d.dashboard.grid)) MusicBig(d, close = null)
-        else MusicTile(d.music, revision) { picked -> FilesBrowser(picked) }
+        else MusicTile(d.music, revision, artwork = p.flag(WidgetFlags.ART), skip = p.flag(WidgetFlags.SKIP)) { picked -> FilesBrowser(picked) }
         TileTypes.RADIO -> if (p.fillsHalf(d.dashboard.grid)) RadioBig(d) { openRadioSettings(); actions.onPanel(Panel.MusicSettings) }
-        else RadioTile(d.music, revision, onIdle = { openRadioSettings(); actions.onPanel(Panel.MusicSettings) }) { picked -> StationsBrowser(picked) }
-        TileTypes.CLOCK -> ClockTile(d.prefs.driverName, clockWeather(d, p.data))
-        TileTypes.WEATHER -> WeatherTile(d.weather)
-        TileTypes.TRIP -> TripTile(d)
+        else RadioTile(
+            d.music, revision, onIdle = { openRadioSettings(); actions.onPanel(Panel.MusicSettings) },
+            artwork = p.flag(WidgetFlags.ART), skip = p.flag(WidgetFlags.SKIP),
+        ) { picked -> StationsBrowser(picked) }
+        TileTypes.CLOCK -> ClockTile(d.prefs.driverName.takeIf { p.flag(WidgetFlags.GREETING) }, clockWeather(d, p.data), date = p.flag(WidgetFlags.DATE))
+        TileTypes.WEATHER -> WeatherTile(d.weather, days = p.flag(WidgetFlags.DAYS), range = p.flag(WidgetFlags.RANGE))
+        TileTypes.TRIP -> TripTile(d, time = p.flag(WidgetFlags.TIME), average = p.flag(WidgetFlags.AVERAGE), heading = p.flag(WidgetFlags.HEADING))
         TileTypes.SPEEDOMETER -> SpeedometerTile(d, remember(p.data) { GaugeLook.parse(p.data) })
         TileTypes.GAUGE -> GaugeTile(
             d, signalOf(p.data), remember(p.data) { GaugeLook.parse(p.data) },
             onPick = { actions.onPanel(Panel.PickGauge(p.id)) },
             onWorkshop = { actions.onPanel(Panel.Workshop) },
         )
-        TileTypes.WORKSHOP -> HealthTile(d, car) { actions.onPanel(Panel.Workshop) }
-        TileTypes.PROJECTION -> ProjectionTile(d, apps) { actions.onPanel(Panel.Drawer) }
-        TileTypes.TIRES -> TiresTile(d, onOpen = actions.onTires, onSettings = { actions.onPanel(Panel.TiresSettings) })
+        TileTypes.WORKSHOP -> HealthTile(d, car, showCar = p.flag(WidgetFlags.CAR)) { actions.onPanel(Panel.Workshop) }
+        TileTypes.PROJECTION -> ProjectionTile(d, apps, appKeyOf(p.data)) { actions.onPanel(Panel.Drawer) }
+        TileTypes.TIRES -> TiresTile(d, showCar = p.flag(WidgetFlags.CAR), onOpen = actions.onTires, onSettings = { actions.onPanel(Panel.TiresSettings) })
         TileTypes.MAP -> {
             val app = mapApp(d, apps)
             MapTile(
@@ -284,12 +289,16 @@ fun TileContent(d: Dependencies, p: Tile, apps: List<App>, car: CarPackage?, rev
                 onNavigate = remember(app) { { actions.onNavigate(app) } },
             )
         }
-        TileTypes.PHONE -> ShortcutTile(Icons.phone, stringResource(R.string.tile_phone), null) {
-            openDialer(context)
+        TileTypes.PHONE -> {
+            // La app de llamadas que se eligió (la del Bluetooth de la pantalla, por ejemplo) o el marcador.
+            val app = appKeyOf(p.data)?.let { d.apps.find(apps, it) }
+            ShortcutTile(Icons.phone, stringResource(R.string.tile_phone), app?.name) {
+                if (app != null) d.apps.open(context, app) else openDialer(context)
+            }
         }
         TileTypes.APP -> {
-            val app = d.apps.find(apps, p.data)
-            AppTile(d.apps, app) {
+            val app = appKeyOf(p.data)?.let { d.apps.find(apps, it) }
+            AppTile(d.apps, app, named = p.flag(WidgetFlags.NAME)) {
                 if (app != null) d.apps.open(context, app) else actions.onPanel(Panel.PickApp(p.id))
             }
         }
@@ -509,6 +518,9 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
         Brush.verticalGradient(0.3f to c.background, 1f to lerp(c.background, Color.Black, if (c.dark) 0.35f else 0.08f))
     } else SolidColor(c.background)
     var promptsHeight by remember { mutableIntStateOf(0) }
+    // Lo que mide una celda del inicio (la última vez que se dibujó): la vista previa de las opciones de un
+    // widget lo muestra a su tamaño real.
+    var cell by remember { mutableStateOf(DpSize(48.dp, 48.dp)) }
     Box(
         Modifier
             .fillMaxSize()
@@ -588,6 +600,8 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                     val grid = remember(maxWidth, gridHeight) { Grid.forSize(maxWidth.value, gridHeight.value) }
                     // Carga el acomodo de esta cuadrícula antes de dibujar (solo hace algo si cambió).
                     if (inFront || d.dashboard.grid == null) d.dashboard.use(grid)
+                    val cellNow = DpSize(maxWidth / grid.columns, maxHeight / grid.rows)
+                    SideEffect { cell = cellNow }
                     // La música en grande ocupa media pantalla; en la otra mitad, el auto como en la
                     // pantalla dividida (auto 3D o carretera, según se eligió ahí), o tu imagen.
                     val from = expandedFromId?.let { id -> d.dashboard.shown.firstOrNull { it.id == id } }
@@ -618,12 +632,12 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                                         TileTypes.IMAGE -> Panel.CustomizeImage(it.id)
                                         TileTypes.MAP -> Panel.CustomizeMap(it.id)
                                         TileTypes.CAR -> Panel.CustomizeCar(it.id)
-                                        TileTypes.CLOCK -> Panel.CustomizeClock(it.id)
+                                        in WIDGET_OPTIONS -> Panel.CustomizeWidget(it.id)
                                         else -> Panel.CustomizeGauge(it.id)
                                     }
                                 },
-                                // El auto 3D solo tiene qué ajustar con Llantas prendido.
-                                hasSettings = { it.type in CUSTOMIZABLE || it.type == TileTypes.CAR && d.hasTpmsSource },
+                                // Todos tienen opciones; el auto 3D, solo con Llantas prendido (las de las llantas).
+                                hasSettings = { it.type != TileTypes.CAR || d.hasTpmsSource },
                             ) { p -> TileContent(d, p, apps, car, revision, actions) }
                     }
                 }
@@ -667,13 +681,18 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                 onPickGauge = { panel = Panel.PickGauge(null) },
                 onTiresSettings = { panel = Panel.TiresSettings },
             )
-            is Panel.PickApp -> PickAppPanel(d, apps, p.tileId, close = { panel = null })
+            is Panel.PickApp -> PickAppPanel(d, apps, p.tileId, close = { panel = p.back })
             is Panel.PickGauge -> PickGaugePanel(d, p.tileId, close = { panel = null })
             is Panel.CustomizeGauge -> CustomizeGaugePanel(d, p.tileId, close = { panel = null }, onPickSignal = { panel = Panel.PickGauge(p.tileId) })
             is Panel.CustomizeImage -> CustomizeImagePanel(d, p.tileId, close = { panel = null })
             is Panel.CustomizeMap -> CustomizeMapPanel(d, p.tileId, close = { panel = null })
             is Panel.CustomizeCar -> CustomizeCarPanel(d, p.tileId, close = { panel = null })
-            is Panel.CustomizeClock -> CustomizeClockPanel(d, p.tileId, close = { panel = null })
+            is Panel.CustomizeWidget -> CustomizeWidgetPanel(
+                d, p.tileId, apps, cell,
+                close = { panel = null },
+                onPickApp = { panel = Panel.PickApp(p.tileId, back = p) },
+                preview = { t -> TileContent(d, t, apps, car, revision, actions) },
+            )
         }
 
         val big = bigTile
@@ -959,8 +978,8 @@ private const val TIRES_WAIT_MS = 300L
 /** Lo que tardan las llantas a pantalla completa en aparecer (y en irse). */
 private const val TIRES_FADE_MS = 260
 
-/** Los widgets con botón de ajustes al acomodar el inicio. */
-private val CUSTOMIZABLE = setOf(TileTypes.SPEEDOMETER, TileTypes.GAUGE, TileTypes.ROAD, TileTypes.IMAGE, TileTypes.MAP, TileTypes.CLOCK)
+/** Una opción del widget (de fábrica prendida, [WidgetFlags]). */
+private fun Tile.flag(key: String) = WidgetFlags.on(data, key)
 
 /**
  * Media pantalla: [content] (el widget en grande) y, en la otra mitad, [side]. Acostada, lado a

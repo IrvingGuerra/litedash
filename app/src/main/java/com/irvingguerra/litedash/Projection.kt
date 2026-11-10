@@ -26,11 +26,14 @@ fun projectionApp(apps: List<App>): App? =
             PROJECTION_WORDS.any { w -> w in name || w.replace(" ", "") in pkg }
         }
 
-/** Pieza Android Auto / CarPlay: abre la app de proyección; si no hay, el cajón para buscarla. */
+/**
+ * Pieza Android Auto / CarPlay: abre la app elegida en sus opciones ([chosen]) o la de proyección que
+ * encuentre; si no hay, el cajón para buscarla.
+ */
 @Composable
-fun ProjectionTile(d: Dependencies, apps: List<App>, onMissing: () -> Unit) {
+fun ProjectionTile(d: Dependencies, apps: List<App>, chosen: String?, onMissing: () -> Unit) {
     val context = LocalContext.current
-    val app = projectionApp(apps)
+    val app = chosen?.let { d.apps.find(apps, it) } ?: projectionApp(apps)
     ShortcutTile(Icons.phoneCar, stringResource(R.string.tile_projection), app?.name ?: stringResource(R.string.projection_missing)) {
         if (app != null) d.apps.open(context, app) else onMissing()
     }

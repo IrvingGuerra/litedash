@@ -19,7 +19,14 @@ import com.irvingguerra.litedash.core.ui.Typography
  * Archivos: con ese método y una pieza donde quepa, se elige la música ahí mismo.
  */
 @Composable
-fun MusicTile(repo: MusicRepository, revision: Int, modifier: Modifier = Modifier, browser: @Composable (onPicked: () -> Unit) -> Unit) {
+fun MusicTile(
+    repo: MusicRepository,
+    revision: Int,
+    modifier: Modifier = Modifier,
+    artwork: Boolean = true,
+    skip: Boolean = true,
+    browser: @Composable (onPicked: () -> Unit) -> Unit,
+) {
     val song = repo.song
     val files = repo.mode == MusicMode.FILES
     val browsing = remember { Browsing() }
@@ -32,6 +39,8 @@ fun MusicTile(repo: MusicRepository, revision: Int, modifier: Modifier = Modifie
         needsAccess = repo.needsAccess,
         browsing = browsing,
         browser = browser.takeIf { files },
+        artwork = artwork,
+        skip = skip,
     )
 }
 

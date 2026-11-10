@@ -171,6 +171,9 @@ internal fun MediaTile(
     needsAccess: Boolean = true,
     browsing: Browsing = remember { Browsing() },
     browser: (@Composable (onPicked: () -> Unit) -> Unit)? = null,
+    /** Opciones del widget: con carátula y con anterior/siguiente (sin ellos, solo play/pausa). */
+    artwork: Boolean = true,
+    skip: Boolean = true,
 ) {
     UseRepo(repo)
     val permission = remember(revision, needsAccess) { !needsAccess || repo.hasPermission().also { if (it) repo.recheck() } }
@@ -194,24 +197,26 @@ internal fun MediaTile(
             if (tall && maxWidth < maxHeight * 1.5f) {
                 // Una columna del tablero: carátula arriba, el resto abajo y centrado.
                 return@BoxWithConstraints Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
-                    Artwork(song, Modifier.fillMaxWidth().weight(1f), Radius.inner, icon)
+                    // Sin carátula, el título y los botones al centro de la columna.
+                    if (artwork) Artwork(song, Modifier.fillMaxWidth().weight(1f), Radius.inner, icon) else Spacer(Modifier.weight(1f))
                     Column(Modifier.fillMaxWidth().padding(start = 6.dp, end = 6.dp, top = 14.dp)) { text(true) }
-                    controls(Modifier.padding(top = 8.dp), false)
+                    controls(Modifier.padding(top = 8.dp), !skip)
+                    if (!artwork) Spacer(Modifier.weight(1f))
                 }
             }
             // Angosta (la fila de abajo en 7"): solo play/pausa, para que el título se lea.
-            val compact = !tall && maxWidth < 400.dp
+            val compact = !skip || !tall && maxWidth < 400.dp
             // Carátula cuadrada con esquinas, dentro de la tarjeta, si deja lugar al título. Alta (controles
             // abajo del título) se achica a lo que deje libre la columna, en vez de desaparecer.
             val art = if (tall) minOf(maxHeight, 240.dp, maxWidth - TALL_TEXT_MIN) else minOf(maxHeight, 240.dp)
-            val withArtwork = if (tall) art >= ARTWORK_MIN else maxWidth - art >= if (compact) 150.dp else 220.dp
+            val withArtwork = artwork && if (tall) art >= ARTWORK_MIN else maxWidth - art >= if (compact) 150.dp else 220.dp
             Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
                 if (withArtwork) Artwork(song, Modifier.size(art), Radius.inner, icon)
                 Column(Modifier.weight(1f).padding(horizontal = 12.dp), verticalArrangement = Arrangement.Center) {
                     text(tall)
                     if (tall) {
                         Spacer(Modifier.height(12.dp))
-                        controls(Modifier, false)
+                        controls(Modifier, !skip)
                     }
                 }
                 if (!tall) controls(Modifier, compact)
@@ -237,9 +242,10 @@ private fun CornerButton(icon: ImageVector, background: Color, modifier: Modifie
 @Composable
 internal fun OnFilesEmpty(repo: MusicRepository, enabled: Boolean, open: () -> Unit) {
     DisposableEffect(repo, enabled) {
+        // La de antes (otra vista: pantalla dividida o la vista previa de las opciones) se regresa al irse esta.
+        val previous = repo.onFilesEmpty
         if (enabled) repo.onFilesEmpty = open
-        // Solo la suya: con dos vistas (pantalla dividida) no borra la de la otra.
-        onDispose { if (repo.onFilesEmpty === open) repo.onFilesEmpty = null }
+        onDispose { if (repo.onFilesEmpty === open) repo.onFilesEmpty = previous }
     }
 }
 

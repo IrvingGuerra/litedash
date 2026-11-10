@@ -1,16 +1,16 @@
 package com.irvingguerra.litedash
 
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import com.irvingguerra.litedash.feature.obd.ObdState
 import android.content.Intent
 import android.provider.Settings
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -18,9 +18,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -29,6 +31,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
@@ -46,6 +49,7 @@ import com.irvingguerra.litedash.core.ui.Typography
 import com.irvingguerra.litedash.feature.apps.App
 import com.irvingguerra.litedash.feature.apps.AppGrid
 import com.irvingguerra.litedash.feature.dashboard.TileTypes
+import com.irvingguerra.litedash.feature.obd.ObdState
 
 /** Panel a pantalla completa sobre el inicio, con título y botón para cerrar. */
 @Composable
@@ -152,7 +156,8 @@ fun PickAppPanel(d: Dependencies, apps: List<App>, tileId: String?, close: () ->
             d.apps, apps, query,
             onClick = { app ->
                 if (tileId != null) {
-                    dashboard.setData(tileId, app.key)
+                    // La app nueva, sin perder las opciones del widget.
+                    dashboard.setData(tileId, withAppKey(dashboard.tiles.firstOrNull { it.id == tileId }?.data ?: "", app.key))
                     close()
                 } else if (dashboard.addTile(TileTypes.APP, app.key)) {
                     close()
@@ -209,8 +214,7 @@ private fun <T> ColumnScope.CardGrid(
 ) {
     BoxWithConstraints(Modifier.fillMaxWidth().weight(1f).verticalScroll(rememberScrollState()).padding(bottom = 16.dp)) {
         val gap = 14.dp
-        val columns = ((maxWidth + gap) / (minWidth + gap)).toInt().coerceAtLeast(2)
-        val width = (maxWidth - gap * (columns - 1)) / columns
+        val width = columnWidth(maxWidth, minWidth, gap)
         FlowRow(horizontalArrangement = Arrangement.spacedBy(gap), verticalArrangement = Arrangement.spacedBy(gap)) {
             for (item in items) {
                 Card(Modifier.width(width).height(height), onClick = { onClick(item) }) {
@@ -221,30 +225,81 @@ private fun <T> ColumnScope.CardGrid(
     }
 }
 
+/** Los grupos de "Agregar al inicio", en orden, con sus widgets. */
+private enum class AddGroup(val title: Int, val types: List<String>) {
+    CAR(R.string.add_group_car, listOf(TileTypes.CAR, TileTypes.ROAD, TileTypes.IMAGE, TileTypes.SPEEDOMETER, TileTypes.GAUGE, TileTypes.TIRES, TileTypes.WORKSHOP, TileTypes.TRIP)),
+    MEDIA(R.string.add_group_media, listOf(TileTypes.MUSIC, TileTypes.RADIO)),
+    ROAD(R.string.add_group_nav, listOf(TileTypes.MAP, TileTypes.PROJECTION, TileTypes.PHONE)),
+    INFO(R.string.add_group_info, listOf(TileTypes.CLOCK, TileTypes.WEATHER)),
+    APPS(R.string.add_group_apps, listOf(TileTypes.APP)),
+}
+
+/**
+ * Agregar al inicio: los widgets por grupos (tu auto, música, navegación…), cada uno con su ícono, su
+ * nombre y qué hace. Los del OBD apagado no se ofrecen; Llantas sí: agregarla prende su módulo (o lleva a
+ * elegir los sensores).
+ */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun AddTilePanel(d: Dependencies, close: () -> Unit, onPickApp: () -> Unit, onPickGauge: () -> Unit, onTiresSettings: () -> Unit) {
     val c = LocalColors.current
     var noRoom by remember { mutableStateOf(false) }
-    PanelScaffold(stringResource(R.string.add_tile), close) {
-        if (noRoom) {
-            Label(stringResource(R.string.no_room), Typography.body, c.danger, modifier = Modifier.padding(bottom = 12.dp))
-        }
-        // Todas a la vista: tantas columnas como quepan (de 180 dp o más).
-        // Los del OBD apagado no se ofrecen; Llantas sí: agregarla prende su módulo (o lleva a elegir los sensores).
-        CardGrid(TileSpecs.filter { offered(d, it.type) }, minWidth = 180.dp, height = if (isSmallScreen()) 100.dp else 120.dp, onClick = { spec ->
-            if (spec.type == TileTypes.APP) onPickApp()
-            else if (spec.type == TileTypes.GAUGE) onPickGauge()
-            else if (spec.type == TileTypes.TIRES) {
+    fun add(type: String) {
+        when (type) {
+            TileTypes.APP -> onPickApp()
+            TileTypes.GAUGE -> onPickGauge()
+            TileTypes.TIRES -> {
                 var picking = false
                 if (d.addTiresTile { picking = true }) { if (picking) onTiresSettings() else close() } else noRoom = true
             }
-            else if (d.dashboard.addTile(spec.type)) close()
-            else noRoom = true
-        }) { spec ->
-            Icon(iconOf(spec.type), c.accent, 28.dp)
-            Label(stringResource(spec.name), Typography.subtitle, maxLines = 1)
+            else -> if (d.dashboard.addTile(type)) close() else noRoom = true
         }
     }
+    PanelScaffold(stringResource(R.string.add_tile), close) {
+        if (noRoom) Label(stringResource(R.string.no_room), Typography.body, c.danger, modifier = Modifier.padding(bottom = 12.dp))
+        BoxWithConstraints(Modifier.fillMaxWidth().weight(1f).verticalScroll(rememberScrollState()).padding(bottom = 16.dp)) {
+            val gap = 12.dp
+            val width = columnWidth(maxWidth, 240.dp, gap)
+            Column(verticalArrangement = Arrangement.spacedBy(22.dp)) {
+                for (group in AddGroup.entries) {
+                    val specs = group.types.mapNotNull { t -> TileSpecs.firstOrNull { it.type == t } }.filter { offered(d, it.type) }
+                    if (specs.isEmpty()) continue
+                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Label(stringResource(group.title).uppercase(), Typography.label, c.textMuted, modifier = Modifier.padding(start = 4.dp))
+                        FlowRow(horizontalArrangement = Arrangement.spacedBy(gap), verticalArrangement = Arrangement.spacedBy(gap)) {
+                            for (spec in specs) AddCard(spec, Modifier.width(width)) { add(spec.type) }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/** Un widget para agregar: su ícono en un círculo del color de la interfaz, su nombre y qué hace. */
+@Composable
+private fun AddCard(spec: TileSpec, modifier: Modifier, onClick: () -> Unit) {
+    val c = LocalColors.current
+    Card(modifier.height(if (isSmallScreen()) 96.dp else 104.dp), onClick = onClick) {
+        Row(Modifier.fillMaxSize().padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+            Box(Modifier.size(48.dp).clip(CircleShape).background(c.accent.copy(alpha = 0.14f)), contentAlignment = Alignment.Center) {
+                Icon(iconOf(spec.type), c.accent, 24.dp)
+            }
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Label(stringResource(spec.name), Typography.subtitle, maxLines = 1)
+                spec.detail?.let { Label(stringResource(it), Typography.small, c.textMuted, maxLines = 2) }
+            }
+        }
+    }
+}
+
+/**
+ * El ancho de cada tarjeta para que quepan tantas columnas de [min] o más (dos como mínimo) en [total].
+ * Medio punto menos: con la interfaz escalada, el redondeo a píxeles dejaba fuera la última.
+ */
+private fun columnWidth(total: Dp, min: Dp, gap: Dp): Dp {
+    val columns = ((total + gap) / (min + gap)).toInt().coerceAtLeast(2)
+    return (total - gap * (columns - 1)) / columns - 0.5.dp
 }
 
 internal fun iconOf(type: String) = when (type) {

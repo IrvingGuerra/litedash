@@ -718,7 +718,7 @@ private fun TirePill(text: String, status: TireStatus, onClick: () -> Unit, modi
  * valores a los lados; grande la vista completa. Sin fuente, "Configura tus llantas".
  */
 @Composable
-fun TiresTile(d: Dependencies, onOpen: () -> Unit, onSettings: () -> Unit) {
+fun TiresTile(d: Dependencies, showCar: Boolean = true, onOpen: () -> Unit, onSettings: () -> Unit) {
     val c = LocalColors.current
     val has = d.hasTpmsSource
     Card(Modifier.fillMaxSize(), onClick = if (has) onOpen else onSettings) {
@@ -731,6 +731,8 @@ fun TiresTile(d: Dependencies, onOpen: () -> Unit, onSettings: () -> Unit) {
         }
         BoxWithConstraints(Modifier.fillMaxSize().padding(TilePadding)) {
             when {
+                // Sin el auto: los cuatro valores en sus cuartos, más grandes si hay lugar.
+                !showCar -> TiresSmall(d, size = if (maxHeight >= 170.dp && maxWidth >= 220.dp) 26 else 16, bare = maxWidth < 220.dp)
                 maxWidth >= 300.dp && maxHeight >= 200.dp -> TiresView(d, compact = maxHeight < 330.dp, onWheel = { onOpen() }, Modifier.fillMaxSize())
                 maxWidth >= 170.dp || maxHeight >= 170.dp -> TiresMedium(d, tall = maxHeight > maxWidth * 1.3f, bare = maxWidth < 260.dp)
                 else -> TiresSmall(d)
@@ -755,13 +757,13 @@ private fun TileValue(d: Dependencies, w: Wheel, bare: Boolean, size: Int, gap: 
 }
 
 @Composable
-private fun TiresSmall(d: Dependencies) {
+private fun TiresSmall(d: Dependencies, size: Int = 16, bare: Boolean = true) {
     // Cuadrícula 2×2: cada llanta centrada en su cuarto.
     Column(Modifier.fillMaxSize()) {
         for (row in listOf(Wheel.FRONT_LEFT to Wheel.FRONT_RIGHT, Wheel.REAR_LEFT to Wheel.REAR_RIGHT)) {
             Row(Modifier.fillMaxWidth().weight(1f)) {
                 for (w in listOf(row.first, row.second)) Box(Modifier.weight(1f).fillMaxHeight(), contentAlignment = Alignment.Center) {
-                    TileValue(d, w, bare = true, size = 16, gap = 4)
+                    TileValue(d, w, bare = bare, size = size, gap = 4)
                 }
             }
         }

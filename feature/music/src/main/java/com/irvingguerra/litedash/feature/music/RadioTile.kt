@@ -25,6 +25,8 @@ fun RadioTile(
     revision: Int,
     onIdle: () -> Unit,
     modifier: Modifier = Modifier,
+    artwork: Boolean = true,
+    skip: Boolean = true,
     browser: @Composable (onPicked: () -> Unit) -> Unit,
 ) {
     val song = repo.radio.song
@@ -39,6 +41,8 @@ fun RadioTile(
         needsAccess = !repo.radioInternet,
         browsing = browsing,
         browser = browser.takeIf { repo.radioInternet },
+        artwork = artwork,
+        skip = skip,
     )
 }
 

@@ -93,7 +93,7 @@ val TileSpecs = listOf(
     TileSpec(TileTypes.WORKSHOP, R.string.workshop, SizeLimits(2, 2), 4 to 2, R.string.tile_workshop_help),
     TileSpec(TileTypes.PROJECTION, R.string.tile_projection, SizeLimits(4, 2), 6 to 2, R.string.tile_projection_help),
     TileSpec(TileTypes.TIRES, R.string.tile_tires, SizeLimits(2, 2), 4 to 4, R.string.tile_tires_help),
-    TileSpec(TileTypes.APP, R.string.tile_app, SizeLimits(2, 2), 2 to 2),
+    TileSpec(TileTypes.APP, R.string.tile_app, SizeLimits(2, 2), 2 to 2, R.string.tile_app_help),
 )
 
 fun limitsOf(type: String) = TileSpecs.firstOrNull { it.type == type }?.limits ?: SizeLimits(FINE, FINE)
@@ -178,7 +178,7 @@ fun BigTime(clock: Clock, style: TextStyle) {
 }
 
 @Composable
-fun ClockTile(driverName: String? = null, weather: WeatherRepository? = null) {
+fun ClockTile(driverName: String? = null, weather: WeatherRepository? = null, date: Boolean = true) {
     val c = LocalColors.current
     val clock = rememberClock()
     val hello = greeting(driverName)
@@ -190,7 +190,9 @@ fun ClockTile(driverName: String? = null, weather: WeatherRepository? = null) {
         if (weather != null) Box(Modifier.align(Alignment.TopEnd)) { WeatherChip(weather) }
         Column {
             BigTime(clock, Typography.clock.copy(fontSize = size.sp))
-            Label(if (hello != null) "$hello · ${clock.date}" else clock.date, Typography.body, c.textMuted, maxLines = 1)
+            // La fecha y el saludo son opciones del widget (sin los dos, solo la hora).
+            val line = listOfNotNull(hello, clock.date.takeIf { date }).joinToString(" · ")
+            if (line.isNotEmpty()) Label(line, Typography.body, c.textMuted, maxLines = 1)
         }
     }
 }
@@ -237,12 +239,13 @@ fun ShortcutTile(icon: ImageVector, title: String, detail: String?, onClick: () 
  * casi hasta la orilla. Vacía, invita a elegir cuál.
  */
 @Composable
-fun AppTile(repo: AppRepository, app: App?, onClick: () -> Unit) {
+fun AppTile(repo: AppRepository, app: App?, named: Boolean = true, onClick: () -> Unit) {
     val c = LocalColors.current
     Card(Modifier.fillMaxSize(), onClick = onClick) {
         BoxWithConstraints(Modifier.fillMaxSize().padding(if (LocalPlainCard.current) 2.dp else 6.dp), contentAlignment = Alignment.Center) {
-            val named = maxHeight > 90.dp
-            val side = minOf(maxWidth * 0.8f, if (named) maxHeight - 26.dp else maxHeight * 0.86f).coerceIn(24.dp, 140.dp)
+            // El nombre, si se quiere y si cabe.
+            val withName = named && maxHeight > 90.dp
+            val side = minOf(maxWidth * 0.8f, if (withName) maxHeight - 26.dp else maxHeight * 0.86f).coerceIn(24.dp, 140.dp)
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 if (app == null) {
                     Icon(Icons.plus, c.textMuted, side * 0.5f)
@@ -250,7 +253,7 @@ fun AppTile(repo: AppRepository, app: App?, onClick: () -> Unit) {
                     Label(stringResource(R.string.pick_app), Typography.small, c.textMuted, maxLines = 1)
                 } else {
                     AppIcon(repo, app, side)
-                    if (named) {
+                    if (withName) {
                         Spacer(Modifier.height(4.dp))
                         Label(app.name, Typography.small.copy(fontWeight = FontWeight.Medium), maxLines = 1)
                     }

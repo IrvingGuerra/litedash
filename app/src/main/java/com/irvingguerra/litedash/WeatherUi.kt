@@ -116,7 +116,7 @@ fun WeatherChip(repo: WeatherRepository) {
  * botón para activarlo (lo pide solo entonces).
  */
 @Composable
-fun WeatherTile(repo: WeatherRepository) {
+fun WeatherTile(repo: WeatherRepository, days: Boolean = true, range: Boolean = true) {
     val c = LocalColors.current
     val enable = rememberEnableWeather(repo)
     val w = repo.weather
@@ -126,12 +126,12 @@ fun WeatherTile(repo: WeatherRepository) {
     Card(Modifier.fillMaxSize()) {
         BoxWithConstraints(Modifier.fillMaxSize().padding(TilePadding), contentAlignment = Alignment.CenterStart) {
             val big = maxHeight > 120.dp
-            val showDays = maxWidth > 340.dp && w.days.size > 1
+            val showDays = days && maxWidth > 340.dp && w.days.size > 1
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 Icon(iconOf(skyOf(w.code), w.day), c.accent, if (big) 56.dp else 36.dp)
                 Column(Modifier.weight(1f)) {
                     Label("${w.temperature}°", Typography.title.copy(fontSize = if (big) 40.sp else 26.sp), maxLines = 1)
-                    val today = w.days.firstOrNull()
+                    val today = w.days.firstOrNull()?.takeIf { range }
                     val detail = stringResource(textOf(skyOf(w.code))) + (today?.let { " · ${it.max}° / ${it.min}°" } ?: "")
                     Label(detail, Typography.small, c.textMuted, maxLines = 1)
                 }

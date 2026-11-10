@@ -267,7 +267,7 @@ internal fun zoneName(zone: Zone) = when (zone) {
  * (N avisos, Todo bien, Conectando…, o nada si no hay adaptador). Un toque abre el Taller.
  */
 @Composable
-fun HealthTile(d: Dependencies, car: CarPackage?, onClick: () -> Unit) {
+fun HealthTile(d: Dependencies, car: CarPackage?, showCar: Boolean = true, onClick: () -> Unit) {
     val c = LocalColors.current
     // Con un adaptador guardado se conecta sola (como los medidores), sin abrir el Taller.
     val obd = rememberObd(d)
@@ -295,7 +295,13 @@ fun HealthTile(d: Dependencies, car: CarPackage?, onClick: () -> Unit) {
         BoxWithConstraints(Modifier.fillMaxSize().padding(TilePadding)) {
             val tall = maxHeight > 150.dp
             val sideWidth = maxHeight * CAR_TOP_ASPECT
-            if (tall) {
+            if (!showCar) {
+                // Sin el auto: solo el estado, al centro.
+                Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+                    Label(stringResource(R.string.workshop), Typography.subtitle, maxLines = 1)
+                    if (detail != null) Label(detail, Typography.small, detailColor, maxLines = 1)
+                }
+            } else if (tall) {
                 Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
                     CarWithMarks(d, car, health, Modifier.weight(1f).fillMaxHeight())
                     Spacer(Modifier.height(8.dp))
