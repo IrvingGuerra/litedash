@@ -25,21 +25,41 @@ fun MusicTile(
     artwork: Boolean = true,
     skip: Boolean = true,
 ) {
+    val c = LocalColors.current
     val song = repo.song
+    val label = sourceLabel(repo, song)
     MediaTile(
         repo, revision, modifier, song, Icons.music, stringResource(R.string.music), stringResource(R.string.music_explain),
-        text = { tall -> SongText(repo, song, tall) },
+        label = label,
+        text = { tall -> SongText(repo, song, tall, label) },
         // Cargando se pinta como pausa: tocarlo cancela la carga.
-        controls = { m, compact -> Controls(repo, song?.playing == true, m, loading = song?.buffering == true, compact = compact) },
+        controls = { m, compact ->
+            Controls(
+                repo, song?.playing == true, m, loading = song?.buffering == true, compact = compact,
+                playBackground = c.text, playColor = c.background,
+            )
+        },
         needsAccess = repo.needsAccess,
         artwork = artwork,
         skip = skip,
+        tinted = true,
     )
 }
 
-/** Título, artista (o lo que esté pasando) y la barra de avance. */
+/** De dónde suena, para la etiqueta: la app que suena (o la elegida) o el método; nunca repite el título. */
 @Composable
-private fun SongText(repo: MusicRepository, song: Song?, tall: Boolean) {
+private fun sourceLabel(repo: MusicRepository, song: Song?): String {
+    val app = when {
+        song == null -> if (repo.mode == MusicMode.APP) repo.preferredName() else ""
+        repo.isOwn(song.pkg) -> MusicMode.FILES.label()
+        else -> song.app
+    }
+    return app.takeIf { it.isNotBlank() && it != song?.title } ?: repo.mode.label()
+}
+
+/** Título, artista (o lo que esté pasando) y la barra de avance; sin nada, la pista que no repite [label]. */
+@Composable
+private fun SongText(repo: MusicRepository, song: Song?, tall: Boolean, label: String) {
     val c = LocalColors.current
     val opening = repo.starting
     if (song == null && opening != null) {
@@ -47,7 +67,7 @@ private fun SongText(repo: MusicRepository, song: Song?, tall: Boolean) {
         Label(stringResource(R.string.opening_wait), Typography.small, c.textMuted, maxLines = 1)
     } else if (song == null) {
         Label(stringResource(R.string.nothing_playing), if (tall) Typography.title else Typography.subtitle, maxLines = 1)
-        Label(idleHint(repo), Typography.small, c.textMuted, maxLines = 1)
+        Label(idleHint(repo).takeIf { it != label }.orEmpty(), Typography.small, c.textMuted, maxLines = 1)
     } else {
         SongLines(repo, song, tall)
         if (song.durationMs > 0) {
@@ -72,5 +92,5 @@ private fun idleHint(repo: MusicRepository): String {
 @Composable
 private fun Progress(song: Song) {
     val pos by rememberPosition(song)
-    ProgressTrack((pos.toFloat() / song.durationMs).coerceIn(0f, 1f), 4.dp)
+    ProgressTrack((pos.toFloat() / song.durationMs).coerceIn(0f, 1f), 3.dp)
 }
