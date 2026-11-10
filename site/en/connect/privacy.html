@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Privacy — LiteDash Connect</title>
+  <meta name="theme-color" content="#101317">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="alternate" hreflang="es" href="/connect/privacidad/">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <header class="barra">
+    <div class="contenedor">
+      <a class="logo" href="/en/" aria-label="LiteDash"><img src="/img/litedash-horizontal-sobre-oscuro.svg" alt="LiteDash" width="132" height="30"></a>
+      <nav><a class="idioma" href="/connect/privacidad/" hreflang="es" lang="es">ES</a></nav>
+    </div>
+  </header>
+  <main class="contenedor texto">
+    <h1>LiteDash Connect privacy policy</h1>
+    <p>Last updated: November 10, 2026 · Applies to LiteDash Connect for Android, the phone app that goes with LiteDash. The car screen app has its own <a href="/en/privacy/">LiteDash policy</a>.</p>
+
+    <h2>In short</h2>
+    <p><strong>LiteDash Connect does not collect or send personal data.</strong> It has no accounts, ads or analytics of its own. What it does is talk to the car screen you linked, over your local network, through an encrypted channel. The only thing that goes to the internet is anonymous technical data that Google's QR code reader (ML Kit) sends to Google about how it works; see below.</p>
+
+    <h2>Camera</h2>
+    <p>The camera is used <strong>only to read the QR code</strong> shown by your car's screen (Settings → Modules → Phone). The permission is requested only when you tap "Link my screen". The image is read on your phone at that moment: no photos are taken, no images are saved and nothing is sent anywhere.</p>
+
+    <h2>The link with your screen</h2>
+    <p>When you link, the app saves <strong>only on your phone</strong>: the screen's identifier, the link key, your car's name and the screen model (and the date you linked). The key is encrypted with the Android keystore. This data is not backed up to the cloud and never leaves your phone.</p>
+
+    <h2>The connection</h2>
+    <p>Your phone and the linked screen talk <strong>directly over the local network</strong>: your phone's hotspot or the same Wi‑Fi. To find each other, the phone announces itself on that local network. Everything they exchange is encrypted with the link key, and the phone only accepts the screen you linked. Nothing goes through the internet or anyone's servers. That's why the app asks for network and Wi‑Fi state permissions.</p>
+
+    <h2>Link notification</h2>
+    <p>While a screen is linked, the app keeps the link alive with a <strong>discreet, persistent notification</strong> ("Link with your car"), also after restarting the phone. It's how Android lets the connection continue with the app closed. With no link, the app doesn't run in the background.</p>
+
+    <h2>How to delete everything</h2>
+    <p>Tap <strong>Unlink</strong> in the app: the saved link is deleted and the screen is notified. You can also uninstall the app or clear its data in Android settings; nothing remains anywhere else.</p>
+
+    <h2>Third parties</h2>
+    <p>The QR code reader is <strong>Google ML Kit</strong> and reads the code on your phone: camera images never leave it. ML Kit does send Google, encrypted, technical data for diagnostics and usage analytics of that reader: the phone's make, model and Android version, the app's name and version, a per-installation identifier that can't tell who you are, and metrics such as how long it took or which error occurred. Google doesn't share it with third parties (<a href="https://developers.google.com/ml-kit/android-data-disclosure">ML Kit data disclosure</a>). Other than that, LiteDash Connect includes no analytics, advertising or tracking SDK and sends no data to any server of ours. If you install it from Google Play, Google may collect store data under its own policy. This page is hosted on Firebase Hosting, which may log technical data about the visit.</p>
+
+    <h2>Children</h2>
+    <p>LiteDash Connect is not directed at children under 13 and collects no personal data from anyone.</p>
+
+    <h2>Changes</h2>
+    <p>If a new version uses any data differently, this policy is updated before it ships.</p>
+
+    <h2>Contact</h2>
+    <p>Questions or reports: <a href="https://github.com/IrvingGuerra/litedash/issues">github.com/IrvingGuerra/litedash/issues</a>.</p>
+  </main>
+  <footer><div class="contenedor"><span>© 2026 LiteDash</span><nav><a href="/en/">Home</a><a href="https://ko-fi.com/irvingguerradev" target="_blank" rel="noopener">Ko-fi</a></nav></div></footer>
+</body>
+</html>
