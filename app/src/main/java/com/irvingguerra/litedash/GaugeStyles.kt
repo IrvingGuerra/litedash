@@ -63,21 +63,20 @@ private const val NEON_PAD = 30f
 private val NEON_GLOW = floatArrayOf(3.6f, 3.1f, 2.6f, 2.2f, 1.8f, 1.45f)
 
 /**
- * Cómo se dibuja un medidor. [stored] es como se guarda en el acomodo (no se traduce);
- * [segmented] = en una fila su barra va de segmentos (si no, una barra lisa). La Esfera es la de
- * fábrica; su aro es [GaugeRim].
+ * Cómo se dibuja un medidor con lugar (en una fila todos son el anillo o el arco de [CompactGauge]).
+ * [stored] es como se guarda en el acomodo (no se traduce). La Esfera es la de fábrica; su aro es [GaugeRim].
  */
-enum class GaugeStyle(val stored: String, val title: Int, val segmented: Boolean = false) {
+enum class GaugeStyle(val stored: String, val title: Int) {
     /** Esfera tipo vidrio: aro ([GaugeRim]), marcas con sus números por dentro y el número con brillo. */
     DIAL("dial", R.string.gauge_style_dial),
     /** Aguja clásica con marcas y números, como un tablero de verdad. */
     NEEDLE("needle", R.string.gauge_style_needle),
     /** El número enorme y una barra de segmentos abajo (como un HUD). */
-    DIGITAL("digital", R.string.gauge_style_digital, segmented = true),
+    DIGITAL("digital", R.string.gauge_style_digital),
     /** Luces de cambio deportivas: segmentos que crecen hacia la derecha. */
-    BAR("bar", R.string.gauge_style_bar, segmented = true),
+    BAR("bar", R.string.gauge_style_bar),
     /** Arco de rayitas que se encienden en degradado, sin aguja (elegante). */
-    GRADIENT("gradient", R.string.gauge_style_gradient, segmented = true),
+    GRADIENT("gradient", R.string.gauge_style_gradient),
 }
 
 /** El aro de la Esfera: liso (de fábrica), con brillo de neón o de cuadritos que se llenan. */
@@ -113,9 +112,6 @@ fun GaugeLook.suggestedColor(): GaugeColor? = when {
     rim == GaugeRim.BLOCKS -> GaugeColor.PURPLE
     else -> null
 }
-
-/** En una fila, la barra va de segmentos: los estilos que lo son y la Esfera con aro de cuadros. */
-val GaugeLook.segmented get() = style.segmented || (style == GaugeStyle.DIAL && rim == GaugeRim.BLOCKS)
 
 /**
  * Cómo se ve un medidor; cada pieza guarda el suyo en su [com.irvingguerra.litedash.feature.dashboard.Tile.data]
@@ -804,7 +800,8 @@ private fun CompactGauge(number: String, unit: String, tag: String, title: Strin
         }
         Column(Modifier.weight(1f)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                if (title.isNotEmpty()) Label(title.uppercase(), Typography.label, c.textMuted, maxLines = 1)
+                // El nombre cede su lugar: la nota (Sin OBD, Conectando…) siempre se lee.
+                if (title.isNotEmpty()) Label(title.uppercase(), Typography.label, c.textMuted, maxLines = 1, modifier = Modifier.weight(1f, fill = false))
                 if (tag.isNotEmpty()) Label(tag, Typography.label, p.readoutColor(c), maxLines = 1)
             }
             Row(verticalAlignment = Alignment.Bottom) {

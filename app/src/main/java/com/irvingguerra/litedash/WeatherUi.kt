@@ -32,6 +32,7 @@ import com.irvingguerra.litedash.core.ui.Icon
 import com.irvingguerra.litedash.core.ui.Icons
 import com.irvingguerra.litedash.core.ui.Label
 import com.irvingguerra.litedash.core.ui.LocalColors
+import com.irvingguerra.litedash.core.ui.LocalPlainCard
 import com.irvingguerra.litedash.core.ui.SwitchRow
 import com.irvingguerra.litedash.core.ui.TilePadding
 import com.irvingguerra.litedash.core.ui.Typography
@@ -141,7 +142,8 @@ fun WeatherTile(repo: WeatherRepository, days: Boolean = true, range: Boolean = 
     fun dayName(date: String) = runCatching { weekday.format(parse.parse(date)!!) }.getOrDefault("").replaceFirstChar { it.uppercase() }
     Card(Modifier.fillMaxSize()) {
         // Un tinte suave del color del cielo desde la esquina (como el clima de iOS); nada se anima.
-        Box(Modifier.fillMaxSize().background(Brush.linearGradient(listOf(skyTint(sky, w.day, c), Color.Transparent), end = Offset(600f, 600f))))
+        // (Sin tarjeta no: sería un rectángulo de color sobre el fondo.) Hasta la esquina contraria, en cualquier pantalla.
+        if (!LocalPlainCard.current) Box(Modifier.fillMaxSize().background(Brush.linearGradient(listOf(skyTint(sky, w.day, c), Color.Transparent), end = Offset.Infinite)))
         BoxWithConstraints(Modifier.fillMaxSize().padding(TilePadding)) {
             // El tamaño se lee aquí: dentro de las filas y columnas no se alcanza.
             val width = maxWidth
@@ -156,7 +158,8 @@ fun WeatherTile(repo: WeatherRepository, days: Boolean = true, range: Boolean = 
                         Label("${w.temperature}°", Typography.clock.copy(fontSize = fitFont("${w.temperature}°", width / 3, height, 0.5f, max = 40f).sp), maxLines = 1)
                         Label(detail, Typography.small, c.textMuted, maxLines = 1)
                     }
-                    if (width > 340.dp) for (d in nextDays) DayColumn(dayName(d.date), iconOf(skyOf(d.code), true), "${d.max}°")
+                    // Los días solo si caben a lo alto (si no, salían cortados).
+                    if (width > 340.dp && height > 64.dp) for (d in nextDays) DayColumn(dayName(d.date), iconOf(skyOf(d.code), true), "${d.max}°")
                 }
                 return@BoxWithConstraints
             }
@@ -197,10 +200,10 @@ private fun DayColumn(name: String, icon: ImageVector, max: String) {
     }
 }
 
-/** El tinte del cielo: ámbar con sol, azul con nubes o lluvia, gris con niebla; de noche, más tenue. */
+/** El tinte del cielo: ámbar con sol, azul con nubes, lluvia o noche despejada, gris con niebla; de noche, más tenue. */
 private fun skyTint(sky: Sky, day: Boolean, c: Colors): Color {
     val base = when (sky) {
-        Sky.CLEAR -> c.accent
+        Sky.CLEAR -> if (day) c.accent else SkyBlue
         Sky.PARTLY, Sky.CLOUDY, Sky.RAIN, Sky.STORM -> SkyBlue
         Sky.FOG, Sky.SNOW -> c.textMuted
     }

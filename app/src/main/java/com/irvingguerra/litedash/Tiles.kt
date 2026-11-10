@@ -194,15 +194,19 @@ fun ClockTile(driverName: String? = null, weather: WeatherRepository? = null, da
         // El reloj crece con la pieza: en 1 fila es discreto, en 2 o más es protagonista; lo limita lo que
         // quepa a lo ancho (con la a.m./p.m.), para que nunca se corte.
         val tall = maxHeight > 120.dp
-        val size = fitFont(clock.time, maxWidth, maxHeight, if (tall) 0.42f else 0.5f, min = 28f, max = 104f, extraChars = if (clock.marker != null) 1.6f else 0.3f)
+        // Solo si ya hay clima que mostrar (con permiso y ya bajado): si no, ni esquina ni píldora vacía.
+        val withWeather = weather != null && weather.active && weather.weather != null
+        // En una fila, la hora deja libre la esquina del clima.
+        val timeWidth = if (withWeather && !tall) maxWidth - 80.dp else maxWidth
+        val size = fitFont(clock.time, timeWidth, maxHeight, if (tall) 0.42f else 0.5f, min = 28f, max = 104f, extraChars = if (clock.marker != null) 1.6f else 0.3f)
         // En una fila el clima va en la esquina; con lugar, en una píldora bajo la fecha.
-        if (weather != null && !tall) Box(Modifier.align(Alignment.TopEnd)) { WeatherChip(weather) }
+        if (withWeather && !tall) Box(Modifier.align(Alignment.TopEnd)) { WeatherChip(weather) }
         Column {
             BigTime(clock, Typography.clock.copy(fontSize = size.sp))
             // La fecha y el saludo son opciones del widget (sin los dos, solo la hora).
             val line = listOfNotNull(hello, clock.date.takeIf { date }).joinToString(" · ")
             if (line.isNotEmpty()) Label(line, Typography.body, c.textMuted, maxLines = 1)
-            if (weather != null && tall) Box(
+            if (withWeather && tall) Box(
                 Modifier.padding(top = 10.dp).clip(RoundedCornerShape(50)).background(c.surfaceHigh).padding(horizontal = 12.dp, vertical = 4.dp),
             ) { WeatherChip(weather) }
         }
