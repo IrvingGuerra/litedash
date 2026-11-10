@@ -32,6 +32,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.irvingguerra.litedash.core.ui.Button
 import com.irvingguerra.litedash.core.ui.Card
@@ -335,6 +336,18 @@ fun HealthTile(d: Dependencies, car: CarPackage?, showCar: Boolean = true, onCli
                 TileHeader(stringResource(R.string.workshop), status, statusColor)
                 Spacer(Modifier.height(8.dp))
                 BoxWithConstraints(Modifier.fillMaxWidth().weight(1f)) {
+                    // Angosto y alto: el anillo arriba y el texto abajo, centrados (a un lado no cabía y se cortaba).
+                    val narrowRing = minOf(maxWidth * 0.62f, maxHeight * 0.55f, 130.dp)
+                    if (maxWidth < 220.dp) return@BoxWithConstraints Column(
+                        Modifier.fillMaxSize(),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center,
+                    ) {
+                        HealthRing(score, scoreColor, Modifier.size(narrowRing))
+                        Spacer(Modifier.height(10.dp))
+                        Label(stringResource(R.string.health_engine), Typography.subtitle.copy(textAlign = TextAlign.Center), maxLines = 1)
+                        Label(line, Typography.small.copy(textAlign = TextAlign.Center), if (codes != null && codes > 0) scoreColor else c.textMuted, maxLines = 2)
+                    }
                     val ring = minOf(maxHeight, maxWidth * 0.4f, 130.dp)
                     val carWidth = maxHeight * CAR_TOP_ASPECT
                     // El auto solo si al texto le quedan al menos 150 dp.
@@ -400,7 +413,8 @@ private fun HealthStats(d: Dependencies, report: EngineReport?, connected: Boole
         val column = maxWidth / 3
         Row(Modifier.fillMaxWidth()) {
             for ((name, value, color) in items) Column(Modifier.weight(1f)) {
-                Label(name.uppercase(), Typography.label, LocalColors.current.textMuted, maxLines = 1)
+                // Angosto: el nombre en letra chica normal (en mayúsculas se enciman).
+                Label(if (column < 80.dp) name else name.uppercase(), if (column < 80.dp) Typography.small else Typography.label, LocalColors.current.textMuted, maxLines = 1)
                 val size = fitFont(value, column - 6.dp, 40.dp, 0.6f, min = 12f, max = 22f, extraChars = 0f)
                 Label(value, Typography.subtitle.copy(fontSize = size.sp), color, maxLines = 1)
             }

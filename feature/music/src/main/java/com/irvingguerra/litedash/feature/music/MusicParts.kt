@@ -22,6 +22,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -186,10 +188,10 @@ internal fun MediaTile(
             val tall = maxHeight > 150.dp
             // La etiqueta solo si deja lugar al título, el subtítulo y la barra.
             val labeled: @Composable () -> Unit = {
-                if (label != null && (tall || maxHeight >= LABEL_MIN)) {
-                    Label(label.uppercase(), Typography.label, LocalColors.current.textMuted, 1, Modifier.padding(bottom = 2.dp))
-                }
-                text(tall)
+                val shown = label != null && (tall || maxHeight >= LABEL_MIN)
+                if (shown) Label(label.uppercase(), Typography.label, LocalColors.current.textMuted, 1, Modifier.padding(bottom = 2.dp))
+                // Si no cupo, la app va en la línea de abajo ([SongDetail]): siempre se sabe qué suena.
+                CompositionLocalProvider(LocalHiddenLabel provides label.takeIf { !shown }) { text(tall) }
             }
             if (tall && maxWidth < maxHeight * 1.5f) {
                 // Una columna del tablero: carátula arriba, el resto abajo y centrado.
@@ -296,7 +298,13 @@ internal fun SongLines(repo: MusicRepository, song: Song, tall: Boolean) {
     SongDetail(repo, song)
 }
 
-/** Debajo del título: el error, "Conectando…" o el artista (la app ya va en la etiqueta de arriba). */
+/**
+ * La etiqueta de la fuente (la app) cuando la tarjeta es tan baja que no cupo arriba: [SongDetail] la agrega
+ * a su línea. null = ya se ve arriba.
+ */
+internal val LocalHiddenLabel = compositionLocalOf<String?> { null }
+
+/** Debajo del título: el error, "Conectando…" o el artista (con la app si no cupo arriba). */
 @Composable
 internal fun SongDetail(repo: MusicRepository, song: Song) {
     val c = LocalColors.current
@@ -304,8 +312,12 @@ internal fun SongDetail(repo: MusicRepository, song: Song) {
     when {
         error != null -> Label(error, Typography.small, c.danger, maxLines = 1)
         song.buffering -> Label(stringResource(R.string.player_connecting), Typography.small, c.textMuted, maxLines = 1)
-        // Sin canción (Bluetooth sin datos) el título ya es la app: no repetirla.
-        else -> Label(subtitleFor(repo, song).takeIf { it != song.title }.orEmpty(), Typography.small, c.textMuted, maxLines = 1)
+        else -> {
+            // Sin canción (Bluetooth sin datos) el título ya es la app: no repetirla.
+            val detail = subtitleFor(repo, song).takeIf { it != song.title }
+            val app = LocalHiddenLabel.current?.takeIf { it != song.title && it != detail }
+            Label(listOfNotNull(detail?.ifBlank { null }, app).joinToString(" · "), Typography.small, c.textMuted, maxLines = 1)
+        }
     }
 }
 
