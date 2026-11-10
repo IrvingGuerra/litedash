@@ -63,6 +63,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import com.irvingguerra.litedash.core.ui.Button
 import com.irvingguerra.litedash.core.ui.IconButton
 import com.irvingguerra.litedash.core.ui.Icons
@@ -342,6 +343,14 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
     val car = d.cars.pkg(d.prefs.carModel)
     var panel by remember { mutableStateOf<Panel?>(null) }
     var editing by remember { mutableStateOf(false) }
+    // LiteDash puede estar abierto dos veces (como inicio y como app) y el acomodo es uno solo: la
+    // cuadrícula la decide la ventana que se está usando. Si no, la de atrás (que no se vuelve a medir
+    // y se queda con la escala de antes) recargaba su acomodo en cada cambio y deshacía lo que se movía.
+    var inFront by remember { mutableStateOf(false) }
+    LifecycleResumeEffect(Unit) {
+        inFront = true
+        onPauseOrDispose { inFront = false }
+    }
     // La música a media pantalla (desde el volante); false = el tablero normal.
     var musicBig by remember { mutableStateOf(false) }
     // El widget que creció (por id: si cambia el acomodo se lee el de ahora): da el lado.
@@ -576,7 +585,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                     val gridHeight = (if (barHidden) maxHeight - (topBarHeight() - TOP_BAR_HIDDEN) else maxHeight) + prompts + (if (rail) 10.dp else 0.dp) - statusHidden
                     val grid = remember(maxWidth, gridHeight) { Grid.forSize(maxWidth.value, gridHeight.value) }
                     // Carga el acomodo de esta cuadrícula antes de dibujar (solo hace algo si cambió).
-                    d.dashboard.use(grid)
+                    if (inFront || d.dashboard.grid == null) d.dashboard.use(grid)
                     // La música en grande ocupa media pantalla; en la otra mitad, el auto como en la
                     // pantalla dividida (auto 3D o carretera, según se eligió ahí), o tu imagen.
                     val from = expandedFromId?.let { id -> d.dashboard.shown.firstOrNull { it.id == id } }

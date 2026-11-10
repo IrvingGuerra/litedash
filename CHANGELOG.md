@@ -4,6 +4,13 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.4.124] - 2026-11-09
+
+### Corregido
+- **Widgets que no se podían quitar ni mover**: con LiteDash abierto dos veces (como inicio y como app), después
+  de cambiar el tamaño de la interfaz el inicio quedaba con el acomodo de otro tamaño y, al acomodar, la ✕, mover
+  y cambiar de tamaño no hacían nada. Ahora el acomodo lo decide la ventana que estás usando.
+
 ## [1.4.123] - 2026-11-09
 
 ### Agregado
