@@ -33,7 +33,6 @@ import com.irvingguerra.litedash.feature.apps.rememberApps
 
 /** El nombre de cada botón que se puede agregar a la barra (Ajustes no: siempre va). */
 private fun BarItem.title(): Int? = when (this) {
-    BarItem.CLOCK -> R.string.bar_item_clock
     BarItem.APPS -> R.string.bar_item_apps
     BarItem.MUSIC -> R.string.bar_item_music
     BarItem.VOLUME -> R.string.bar_item_volume

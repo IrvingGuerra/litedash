@@ -147,7 +147,7 @@ enum class BarSize(val stored: String, val scale: Float) {
  * habría cómo salir del inicio.
  */
 enum class BarItem(val stored: String) {
-    CLOCK("clock"), APPS("apps"), MUSIC("music"), VOLUME("volume"), NAVIGATE("navigate"), PHONE("phone"),
+    APPS("apps"), MUSIC("music"), VOLUME("volume"), NAVIGATE("navigate"), PHONE("phone"),
     VOICE("voice"), FAVORITES("favorites"), SETTINGS("settings");
 
     companion object {
@@ -157,6 +157,15 @@ enum class BarItem(val stored: String) {
         fun normalize(items: List<BarItem>) = items.distinct().filter { it != SETTINGS } + SETTINGS
     }
 }
+
+/**
+ * La barra de fábrica: Apps, volumen y Música; tus favoritas (vacías: ninguna app de fábrica); Navegar, voz y
+ * Ajustes. Teléfono se agrega si se quiere.
+ */
+private val DEFAULT_BAR = listOf(BarItem.APPS, BarItem.VOLUME, BarItem.MUSIC, BarItem.FAVORITES, BarItem.NAVIGATE, BarItem.VOICE)
+
+/** Las opciones de la barra de antes de poder editarla: si alguna se guardó, se respeta lo de esa persona. */
+private val LEGACY_BAR_KEYS = listOf(PrefKeys.BAR_APPS, PrefKeys.BAR_MUSIC, PrefKeys.BAR_VOLUME, PrefKeys.BAR_FAVORITES, PrefKeys.BAR_VOICE, PrefKeys.BAR_CLOCK)
 
 /** Cómo se ve la barra de abajo: flotante (una píldora al centro, de fábrica) o a todo lo ancho. */
 enum class BarStyle(val stored: String) {
@@ -227,6 +236,12 @@ private class Stored<T>(initial: T, private val save: (T) -> Unit) : ReadWritePr
 /** Ajustes del usuario: cada cambio se guarda al momento y redibuja lo que lo usa. */
 class Preferences(context: Context) {
     private val p = context.getSharedPreferences(PrefKeys.FILE, Context.MODE_PRIVATE)
+
+    init {
+        // Instalación nueva: tus favoritas de la barra empiezan vacías (antes se sugerían las instaladas, y quien
+        // ya tenía LiteDash las conserva).
+        if (!p.contains(PrefKeys.WELCOME_SEEN) && !p.contains(PrefKeys.DOCK)) p.edit { putString(PrefKeys.DOCK, "") }
+    }
 
     private fun bool(key: String, default: Boolean) = Stored(p.getBoolean(key, default)) { p.edit { putBoolean(key, it) } }
     private fun int(key: String, default: Int) = Stored(p.getInt(key, default)) { p.edit { putInt(key, it) } }
@@ -351,11 +366,10 @@ class Preferences(context: Context) {
      * lugar del volumen de Ajustes → Barra de apps. Solo se leen mientras no se guarde una lista.
      */
     private fun legacyBarItems(): List<BarItem> {
+        // Quien nunca tocó la barra: la de fábrica (Irving, 2026-11-09).
+        if (LEGACY_BAR_KEYS.none(p::contains)) return DEFAULT_BAR
         val volume = p.getString(PrefKeys.BAR_VOLUME, null) ?: "end"
         return listOfNotNull(
-            // La hora iba en la barra lateral; con "Abajo" se quedaba en la de arriba. "Automática" en una pantalla de
-            // auto (acostada) es la lateral: ahí se conserva (en una parada pasaría abajo; se quita con su ✕).
-            BarItem.CLOCK.takeIf { p.getBoolean(PrefKeys.BAR_CLOCK, true) && p.getString(PrefKeys.BAR_POSITION, null) != "bottom" },
             BarItem.APPS.takeIf { p.getBoolean(PrefKeys.BAR_APPS, true) },
             BarItem.MUSIC.takeIf { p.getBoolean(PrefKeys.BAR_MUSIC, true) },
             BarItem.VOLUME.takeIf { volume == "start" },

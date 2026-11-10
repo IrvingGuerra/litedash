@@ -589,8 +589,8 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
           Row(Modifier.fillMaxSize()) {
             if (rail && !railRight) railBar()
             Column(Modifier.weight(1f).fillMaxHeight()) {
-                // Si ya hay un reloj en el tablero (o en la barra de apps), la barra de arriba no repite la hora.
-                val showTime = BarItem.CLOCK !in d.prefs.barItems && d.dashboard.tiles.none { it.type == TileTypes.CLOCK }
+                // Si ya hay un reloj en el tablero, la barra de arriba no repite la hora.
+                val showTime = d.dashboard.tiles.none { it.type == TileTypes.CLOCK }
                 val barHidden = !editing && !showTime
                 TopBar(
                     editing = editing,

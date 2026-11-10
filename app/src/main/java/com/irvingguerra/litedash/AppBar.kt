@@ -164,7 +164,6 @@ private data class BarSizes(val button: Dp, val icon: Dp, val box: Dp = button, 
 private fun BarButton(item: BarItem, sizes: BarSizes, vertical: Boolean, musicOpen: Boolean, actions: BarActions) {
     val c = LocalColors.current
     when (item) {
-        BarItem.CLOCK -> BarClock(vertical)
         BarItem.APPS -> IconButton(Icons.apps, actions.onApps, size = sizes.button)
         // La pantalla Música (como en Tesla); marcado mientras está abierta.
         BarItem.MUSIC -> IconButton(Icons.music, actions.onMusic, size = sizes.button, background = if (musicOpen) c.surfaceHigh else Color.Transparent)
@@ -175,24 +174,6 @@ private fun BarButton(item: BarItem, sizes: BarSizes, vertical: Boolean, musicOp
         // Siempre: sin Ajustes no habría cómo salir del inicio.
         BarItem.SETTINGS -> IconButton(Icons.settings, actions.onSettings, size = sizes.button)
         BarItem.FAVORITES -> Unit
-    }
-}
-
-/** La hora en la barra con los íconos de estado: a un lado, con la a.m./p.m. en chico; abajo, en una línea. */
-@Composable
-private fun BarClock(vertical: Boolean) {
-    val c = LocalColors.current
-    val clock = rememberClock()
-    if (!vertical) return Row(Modifier.padding(horizontal = 10.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        Label(clock.full, Typography.subtitle, maxLines = 1)
-        StatusIcons()
-    }
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Row(verticalAlignment = Alignment.Bottom) {
-            Label(clock.time, Typography.subtitle, maxLines = 1)
-            if (clock.marker != null) Label(clock.marker, Typography.small.copy(fontSize = 11.sp), c.textMuted, maxLines = 1, modifier = Modifier.padding(start = 2.dp, bottom = 2.dp))
-        }
-        Box(Modifier.padding(bottom = 6.dp)) { StatusIcons() }
     }
 }
 

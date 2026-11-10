@@ -439,7 +439,6 @@
     <string name="bar_style">Style</string>
     <string name="bar_style_floating">Floating</string>
     <string name="bar_style_full">Full width</string>
-    <string name="bar_item_clock">Time</string>
     <string name="bar_item_apps">All apps</string>
     <string name="bar_item_music">Music</string>
     <string name="bar_item_volume">Volume</string>

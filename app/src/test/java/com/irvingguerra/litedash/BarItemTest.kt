@@ -15,5 +15,7 @@ class BarItemTest {
         assertEquals(listOf(BarItem.SETTINGS), BarItem.normalize(emptyList()))
         // Lo guardado se lee por nombre; lo desconocido se ignora.
         assertEquals(listOf(BarItem.VOLUME, BarItem.FAVORITES), listOf("volume", "nada", "favorites").mapNotNull(BarItem::fromStored))
+        // La hora ya no es un botón de la barra: la guardada se ignora.
+        assertEquals(listOf(BarItem.APPS, BarItem.SETTINGS), BarItem.normalize(listOf("clock", "apps").mapNotNull(BarItem::fromStored)))
     }
 }
