@@ -60,7 +60,8 @@ private const val SWEEP = 240f
 private const val NEON_PAD = 30f
 
 /** Grosor (veces el del arco) de las capas tenues que hacen el brillo del neón, de afuera hacia adentro. */
-private val NEON_GLOW = floatArrayOf(3.6f, 3.1f, 2.6f, 2.2f, 1.8f, 1.45f)
+/** Capas del brillo del neón: muchas y finas, cada una apenas visible, para que se difumine sin anillos. */
+private const val NEON_GLOW_LAYERS = 12
 
 /**
  * Cómo se dibuja un medidor con lugar (en una fila todos son el anillo o el arco de [CompactGauge]).
@@ -639,7 +640,11 @@ private fun DialGauge(number: String, unit: String, tag: String, p: GaugeParts, 
         val grow = 1f + 1.4f * ((size.minDimension.toDp() - 200.dp) / 300.dp).coerceIn(0f, 1f)
         val base = (size.minDimension * 0.025f * grow).coerceIn(2.dp.toPx(), 36.dp.toPx())
         val neon = (size.minDimension * 0.035f * grow).coerceIn(3.dp.toPx(), 44.dp.toPx())
-        val cell = (size.minDimension * 0.06f * grow).coerceIn(5.dp.toPx(), 48.dp.toPx())
+        // Los cuadros ya son anchos: crecen la mitad que el aro liso (si no, en grande se veían toscos).
+        val cell = (size.minDimension * 0.06f * (1f + (grow - 1f) / 2)).coerceIn(5.dp.toPx(), 36.dp.toPx())
+        // Lo que el brillo del neón sale de su aro: fijo (el de siempre en chico), no engorda con el aro; si
+        // creciera, la esfera se achicaba en grande y ya no medía lo mismo que con el aro liso o de cuadros.
+        val glow = (size.minDimension * 0.035f).coerceIn(3.dp.toPx(), 16.dp.toPx()) * 1.7f
         // Las marcas no engordan con el aro: con su grosor de siempre se ven finas y elegantes.
         val mark = (size.minDimension * 0.025f).coerceIn(2.dp.toPx(), 12.dp.toPx())
         val f = p.fraction()
@@ -647,7 +652,7 @@ private fun DialGauge(number: String, unit: String, tag: String, p: GaugeParts, 
         // El círculo de cada aro (el neón deja espacio por fuera para su brillo) y dónde empiezan las marcas.
         val d = when (p.look.rim) {
             GaugeRim.SMOOTH -> Dial(size, base)
-            GaugeRim.NEON -> Dial(size, neon * 2.2f)
+            GaugeRim.NEON -> Dial(size, neon / 2 + glow)
             GaugeRim.BLOCKS -> Dial(size, cell * 0.6f)
         }
         val outer = d.radius - when (p.look.rim) {
@@ -664,7 +669,7 @@ private fun DialGauge(number: String, unit: String, tag: String, p: GaugeParts, 
             }
             GaugeRim.NEON -> {
                 track(c, p, d, neon)
-                if (f > 0.002f && stops != null) neonArc(stops, f, d, neon)
+                if (f > 0.002f && stops != null) neonArc(stops, f, d, neon, glow)
             }
             GaugeRim.BLOCKS -> blocksArc(c, p, shades, f, d, cell)
         }
@@ -711,11 +716,14 @@ private fun neonStops(shades: List<Color>): Array<Pair<Float, Color>> =
     (shades.mapIndexed { i, col -> (NEON_PAD + SWEEP * i / (shades.size - 1).coerceAtLeast(1)) / 360f to col } + (1f to shades.first())).toTypedArray()
 
 /** El aro de neón hasta [f]: capas anchas y tenues debajo (el brillo, sin desenfoque, que es caro) y un filo claro. */
-private fun DrawScope.neonArc(stops: Array<Pair<Float, Color>>, f: Float, d: Dial, stroke: Float) {
+private fun DrawScope.neonArc(stops: Array<Pair<Float, Color>>, f: Float, d: Dial, stroke: Float, glow: Float) {
     val brush = Brush.sweepGradient(*stops, center = d.center)
     rotate(START_ANGLE - NEON_PAD, d.center) {
-        for (w in NEON_GLOW) {
-            drawArc(brush, NEON_PAD, SWEEP * f, false, d.topLeft, d.box, alpha = 0.055f, style = Stroke(stroke * w, cap = StrokeCap.Round))
+        // El brillo: capas cada vez más anchas (hasta [glow] por cada lado) y casi transparentes; donde se
+        // enciman se suman, así es más intenso pegado al aro y se pierde hacia afuera.
+        for (k in NEON_GLOW_LAYERS downTo 1) {
+            val width = stroke + 2 * glow * k / NEON_GLOW_LAYERS
+            drawArc(brush, NEON_PAD, SWEEP * f, false, d.topLeft, d.box, alpha = 0.04f, style = Stroke(width, cap = StrokeCap.Round))
         }
         drawArc(brush, NEON_PAD, SWEEP * f, false, d.topLeft, d.box, style = Stroke(stroke, cap = StrokeCap.Round))
         drawArc(Color.White.copy(alpha = 0.55f), NEON_PAD, SWEEP * f, false, d.topLeft, d.box, style = Stroke(stroke * 0.25f, cap = StrokeCap.Round))
