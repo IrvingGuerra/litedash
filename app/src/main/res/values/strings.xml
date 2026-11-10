@@ -616,6 +616,15 @@
     <string name="health_warn">Atención</string>
     <string name="health_fault">Falla</string>
     <string name="health_unknown">Sin datos</string>
+    <string name="health_engine">Salud del motor</string>
+    <string name="health_connect_short">Conecta tu adaptador</string>
+    <string name="health_offline">Sin conexión</string>
+    <string name="health_codes_title">Códigos</string>
+    <plurals name="health_codes">
+        <item quantity="one">%1$d código</item>
+        <item quantity="many">%1$d códigos</item>
+        <item quantity="other">%1$d códigos</item>
+    </plurals>
     <string name="health_pending">pendiente</string>
     <plurals name="health_issues">
         <item quantity="one">%1$d aviso</item>

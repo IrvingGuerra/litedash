@@ -1,5 +1,7 @@
 package com.irvingguerra.litedash
 
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -12,7 +14,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -22,6 +24,11 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -45,6 +52,7 @@ import com.irvingguerra.litedash.feature.obd.Zone
 import com.irvingguerra.litedash.feature.obd.engineAlert
 import com.irvingguerra.litedash.feature.obd.healthOf
 import com.irvingguerra.litedash.feature.obd.issues
+import kotlin.math.roundToInt
 
 /** Las partes que siempre se listan; ruedas y carrocería solo cuando algo las señala. */
 private val MAIN_ZONES = listOf(Zone.ENGINE, Zone.INTAKE, Zone.COOLING, Zone.BATTERY, Zone.TRANSMISSION, Zone.EXHAUST)
@@ -262,9 +270,15 @@ internal fun zoneName(zone: Zone) = when (zone) {
     Zone.BODY -> R.string.zone_body
 }
 
+/** Los códigos distintos del reporte (guardados, pendientes y permanentes). */
+private fun EngineReport.codeCount() = (stored + pending + permanent).distinct().size
+
 /**
- * La pieza del inicio "Taller": el mini aéreo con sus puntos y una línea de estado
- * (N avisos, Todo bien, Conectando…, o nada si no hay adaptador). Un toque abre el Taller.
+ * La pieza del inicio "Taller": encabezado con el estado (Todo bien, N avisos, Conectando…), el
+ * anillo de salud (sistemas sin problema entre los conocidos) con "Salud del motor", y abajo, si
+ * cabe, batería, motor y códigos. Con el auto prendido y lugar de sobra, el aéreo con sus puntos va
+ * a la derecha (el anillo se queda: es el dato del widget). En una fila: anillo chico y estado.
+ * Un toque abre el Taller.
  */
 @Composable
 fun HealthTile(d: Dependencies, car: CarPackage?, showCar: Boolean = true, onClick: () -> Unit) {
@@ -278,44 +292,117 @@ fun HealthTile(d: Dependencies, car: CarPackage?, showCar: Boolean = true, onCli
     val report = if (connected) obd?.lastReport else null
     val health = rememberHealth(d, report, connected)
     val issues = health.issues()
+    val fault = health.any { it.level == HealthLevel.FAULT }
     val known = report != null && health.any { it.level != HealthLevel.UNKNOWN }
-    val detail = when {
-        obd?.state == ObdState.CONNECTING -> stringResource(R.string.obd_connecting_short)
-        connected && issues > 0 -> pluralStringResource(R.plurals.health_issues, issues, issues)
-        connected && known -> stringResource(R.string.health_all_good)
-        connected -> stringResource(R.string.obd_reading)
-        else -> null
+    val (status, statusColor) = when {
+        obd?.state == ObdState.CONNECTING -> stringResource(R.string.obd_connecting_short) to c.textMuted
+        connected && issues > 0 -> pluralStringResource(R.plurals.health_issues, issues, issues) to (if (fault) c.danger else c.warning)
+        connected && known -> stringResource(R.string.health_all_good) to Good
+        connected -> stringResource(R.string.obd_reading) to c.textMuted
+        else -> stringResource(R.string.health_offline) to c.textMuted
     }
-    val detailColor = when {
-        connected && issues > 0 -> if (health.any { it.level == HealthLevel.FAULT }) c.danger else c.warning
-        connected && known -> Good
-        else -> c.textMuted
+    val systems = if (connected) health.filter { it.level != HealthLevel.UNKNOWN } else emptyList()
+    val score = if (systems.isEmpty()) null else systems.count { it.level == HealthLevel.GOOD } / systems.size.toFloat()
+    val scoreColor = when {
+        score == null -> c.textMuted
+        fault -> c.danger
+        issues > 0 -> c.warning
+        else -> Good
+    }
+    val codes = report?.codeCount()
+    val line = when {
+        !connected -> stringResource(R.string.health_connect_short)
+        codes == null -> stringResource(R.string.obd_reading)
+        codes == 0 -> stringResource(R.string.obd_no_codes)
+        else -> pluralStringResource(R.plurals.health_codes, codes, codes)
     }
     Card(Modifier.fillMaxSize(), onClick = onClick) {
         BoxWithConstraints(Modifier.fillMaxSize().padding(TilePadding)) {
-            val tall = maxHeight > 150.dp
-            val sideWidth = maxHeight * CAR_TOP_ASPECT
-            if (!showCar) {
-                // Sin el auto: solo el estado, al centro.
-                Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-                    Label(stringResource(R.string.workshop), Typography.subtitle, maxLines = 1)
-                    if (detail != null) Label(detail, Typography.small, detailColor, maxLines = 1)
-                }
-            } else if (tall) {
-                Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
-                    CarWithMarks(d, car, health, Modifier.weight(1f).fillMaxHeight())
-                    Spacer(Modifier.height(8.dp))
-                    Label(stringResource(R.string.workshop), Typography.subtitle, maxLines = 1)
-                    if (detail != null) Label(detail, Typography.small, detailColor, maxLines = 1)
-                }
-            } else {
+            val stats = maxHeight >= 190.dp
+            val smallRing = minOf(maxHeight, 64.dp)
+            if (maxHeight < 110.dp) {
+                // Una fila: anillo chico y el estado a su lado.
                 Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
-                    CarWithMarks(d, car, health, Modifier.fillMaxHeight().width(sideWidth))
-                    Column(Modifier.padding(start = 14.dp)) {
-                        Label(stringResource(R.string.workshop), Typography.subtitle, maxLines = 1)
-                        if (detail != null) Label(detail, Typography.small, detailColor, maxLines = 1)
+                    HealthRing(score, scoreColor, Modifier.size(smallRing))
+                    Column(Modifier.padding(start = 12.dp).weight(1f)) {
+                        Label(stringResource(R.string.workshop).uppercase(), Typography.label, c.textMuted, maxLines = 1)
+                        Label(status, Typography.small, statusColor, maxLines = 1)
                     }
                 }
+                return@BoxWithConstraints
+            }
+            Column(Modifier.fillMaxSize()) {
+                TileHeader(stringResource(R.string.workshop), status, statusColor)
+                Spacer(Modifier.height(8.dp))
+                BoxWithConstraints(Modifier.fillMaxWidth().weight(1f)) {
+                    val ring = minOf(maxHeight, maxWidth * 0.4f, 130.dp)
+                    val carWidth = maxHeight * CAR_TOP_ASPECT
+                    // El auto solo si al texto le quedan al menos 150 dp.
+                    val withCar = showCar && maxWidth - ring - carWidth - 28.dp >= 150.dp
+                    Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
+                        HealthRing(score, scoreColor, Modifier.size(ring))
+                        Column(Modifier.padding(horizontal = 14.dp).weight(1f)) {
+                            Label(stringResource(R.string.health_engine), Typography.subtitle, maxLines = 1)
+                            Label(line, Typography.small, if (codes != null && codes > 0) scoreColor else c.textMuted, maxLines = 2)
+                        }
+                        if (withCar) CarWithMarks(d, car, health, Modifier.fillMaxHeight())
+                    }
+                }
+                if (stats) {
+                    Box(Modifier.padding(vertical = 10.dp).fillMaxWidth().height(1.dp).background(c.line))
+                    HealthStats(d, report, connected, codes, if (codes != null && codes > 0) scoreColor else c.text)
+                }
+            }
+        }
+    }
+}
+
+/** El anillo de salud: trazo grueso hasta [score] (0 a 1) y el porcentaje en medio; sin datos, gris y "—". */
+@Composable
+private fun HealthRing(score: Float?, color: Color, modifier: Modifier) {
+    val c = LocalColors.current
+    val track = c.surfaceHigh
+    BoxWithConstraints(modifier, contentAlignment = Alignment.Center) {
+        Canvas(Modifier.fillMaxSize()) {
+            val stroke = size.minDimension * 0.11f
+            val inset = stroke / 2
+            val box = Size(size.minDimension - stroke, size.minDimension - stroke)
+            drawArc(track, -90f, 360f, false, Offset(inset, inset), box, style = Stroke(stroke))
+            if (score != null && score > 0f) drawArc(color, -90f, 360f * score, false, Offset(inset, inset), box, style = Stroke(stroke, cap = StrokeCap.Round))
+        }
+        val text = score?.let { (it * 100).roundToInt().toString() } ?: "—"
+        // Lo que cabe dentro del aro: "100" con su "%" chico.
+        val size = fitFont("100", maxWidth * 0.66f, maxHeight, 0.34f, min = 10f, max = 40f, extraChars = 0.6f)
+        Row(verticalAlignment = Alignment.Bottom) {
+            Label(text, Typography.title.copy(fontSize = size.sp), if (score == null) c.textMuted else c.text, maxLines = 1)
+            if (score != null) Label("%", Typography.title.copy(fontSize = (size * 0.5f).sp), c.textMuted, maxLines = 1, modifier = Modifier.padding(bottom = (size * 0.1f).dp))
+        }
+    }
+}
+
+/**
+ * Batería (voltaje), motor (refrigerante) y códigos, cada uno con su nombre arriba; "—" sin dato.
+ * Aparte del widget: solo esto se vuelve a dibujar con cada lectura.
+ */
+@Composable
+private fun HealthStats(d: Dependencies, report: EngineReport?, connected: Boolean, codes: Int?, codesColor: Color) {
+    val units = d.prefs.units
+    val locale = currentLocale()
+    // La batería sin dato en vivo usa el voltaje que leyó el reporte.
+    val voltage = (if (connected) d.bus.watch(Signal.VOLTAGE) else null) ?: report?.voltage
+    val coolant = if (connected) d.bus.watch(Signal.COOLANT) else null
+    val items = listOf(
+        Triple(stringResource(R.string.gauge_voltage), voltage?.let { sensorText(Signal.VOLTAGE, it, units, locale) } ?: "—", LocalColors.current.text),
+        Triple(stringResource(R.string.zone_engine), coolant?.let { sensorText(Signal.COOLANT, it, units, locale) } ?: "—", LocalColors.current.text),
+        Triple(stringResource(R.string.health_codes_title), codes?.toString() ?: "—", codesColor),
+    )
+    BoxWithConstraints(Modifier.fillMaxWidth()) {
+        val column = maxWidth / 3
+        Row(Modifier.fillMaxWidth()) {
+            for ((name, value, color) in items) Column(Modifier.weight(1f)) {
+                Label(name.uppercase(), Typography.label, LocalColors.current.textMuted, maxLines = 1)
+                val size = fitFont(value, column - 6.dp, 40.dp, 0.6f, min = 12f, max = 22f, extraChars = 0f)
+                Label(value, Typography.subtitle.copy(fontSize = size.sp), color, maxLines = 1)
             }
         }
     }
