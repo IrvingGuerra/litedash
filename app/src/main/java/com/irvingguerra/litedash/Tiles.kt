@@ -60,6 +60,7 @@ import com.irvingguerra.litedash.core.ui.LocalPlainCard
 import com.irvingguerra.litedash.core.ui.Radius
 import com.irvingguerra.litedash.core.ui.TilePadding
 import com.irvingguerra.litedash.core.ui.Typography
+import com.irvingguerra.litedash.core.ui.fitFont
 import com.irvingguerra.litedash.feature.apps.App
 import com.irvingguerra.litedash.feature.apps.AppIcon
 import com.irvingguerra.litedash.feature.apps.AppRepository
@@ -163,14 +164,6 @@ fun rememberClock(): Clock {
     return Clock(time.format(now), marker?.format(now), date.format(now).replaceFirstChar { it.uppercase() })
 }
 
-/**
- * El tamaño de letra (sp) para que [text] quepa en [width] × [height]: lo alto que deja [heightShare] del widget
- * y lo ancho que da cada carácter (unos 0.6 del tamaño, [extraChars] de más por la unidad), entre [min] y [max].
- * Así los números grandes no se cortan en un widget chico ni se ven perdidos en uno grande.
- */
-fun fitFont(text: String, width: Dp, height: Dp, heightShare: Float, min: Float = 16f, max: Float = 96f, extraChars: Float = 1f): Float =
-    minOf(height.value * heightShare, width.value / ((text.length + extraChars) * 0.6f)).coerceIn(min, max)
-
 /** La hora en grande con la marca de 12 h en chico a un lado (si la hay). */
 @Composable
 fun BigTime(clock: Clock, style: TextStyle) {
@@ -242,7 +235,8 @@ fun ShortcutTile(
             val content = @Composable {
                 if (image != null) image(side)
                 else Box(Modifier.size(side).clip(CircleShape).background(tint), contentAlignment = Alignment.Center) {
-                    Icon(icon, c.onPrimary, side * 0.47f)
+                    // Blanco sobre el color del acceso (verde, ámbar…): se lee en claro y en oscuro.
+                    Icon(icon, Color.White, side * 0.47f)
                 }
             }
             val texts = @Composable { m: Modifier ->
@@ -317,6 +311,8 @@ fun NavigationTile(
     work: String?,
     onPlace: (String) -> Unit,
     onClick: () -> Unit,
+    /** Lugar libre a la derecha (el botón para pedir la ubicación va ahí). */
+    endInset: Dp = 0.dp,
 ) {
     DisposableEffect(repo) {
         repo.use { NotificationService.active() }
@@ -324,7 +320,7 @@ fun NavigationTile(
     }
     val instruction = repo.instruction
     Card(Modifier.fillMaxSize(), onClick = onClick) {
-        BoxWithConstraints(Modifier.fillMaxSize().padding(TilePadding), contentAlignment = Alignment.CenterStart) {
+        BoxWithConstraints(Modifier.fillMaxSize().padding(TilePadding).padding(end = endInset), contentAlignment = Alignment.CenterStart) {
             val large = maxHeight > 120.dp
             val wide = maxWidth >= 380.dp
             if (instruction != null) Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
@@ -498,4 +494,18 @@ fun openNavigation(context: Context, repo: AppRepository, app: App?) {
 fun DashboardState.addTile(type: String, data: String = ""): Boolean {
     val spec = TileSpecs.first { it.type == type }
     return add(spec.type, spec.initialSize, spec.limits, data)
+}
+
+/** Encabezado de un widget: el nombre en chico a la izquierda y el estado con su punto a la derecha. */
+@Composable
+internal fun TileHeader(title: String, status: String, color: Color) {
+    val c = LocalColors.current
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Label(title.uppercase(), Typography.label, c.textMuted, maxLines = 1)
+        // El estado cede: se corta con "…" antes que encimarse con el nombre.
+        Row(Modifier.weight(1f).padding(start = 10.dp), horizontalArrangement = Arrangement.End, verticalAlignment = Alignment.CenterVertically) {
+            Box(Modifier.size(7.dp).clip(CircleShape).background(color))
+            Label(status, Typography.small, color, maxLines = 1, modifier = Modifier.padding(start = 6.dp).weight(1f, fill = false))
+        }
+    }
 }

@@ -67,7 +67,7 @@ fun MapTile(d: Dependencies, data: String, app: App?, editing: Boolean, onPlace:
     BoxWithConstraints(Modifier.fillMaxSize()) {
         if (!granted || maxHeight < COMPACT_HEIGHT) {
             Box(Modifier.fillMaxSize()) {
-                NavigationTile(d.navigation, app, d.prefs.homeAddress, d.prefs.workAddress, onPlace, onNavigate)
+                NavigationTile(d.navigation, app, d.prefs.homeAddress, d.prefs.workAddress, onPlace, onNavigate, endInset = if (!editing && !granted) 46.dp else 0.dp)
                 // Sin permiso, el botón lo pide. Al acomodar se esconde (estorba al botón de tamaño).
                 if (!editing && !granted) IconButton(Icons.map, ask, Modifier.align(Alignment.TopEnd).padding(6.dp), size = 40.dp, background = c.surfaceHigh, color = c.accent)
             }
@@ -116,7 +116,7 @@ private val COMPACT_HEIGHT = 120.dp
 private val PLACES_HEIGHT = 170.dp
 
 /** Lo que ocupan los créditos de OpenStreetMap abajo a la derecha (obligatorios: nada los tapa). */
-private val ATTRIBUTION_CLEARANCE = 40.dp
+private val ATTRIBUTION_CLEARANCE = 56.dp
 
 /**
  * El mapa con el GPS y las teselas corriendo solo mientras se ve (el widget, en grande y la vista previa)

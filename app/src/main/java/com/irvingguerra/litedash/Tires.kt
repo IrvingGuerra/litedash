@@ -73,6 +73,7 @@ import com.irvingguerra.litedash.core.ui.LocalColors
 import com.irvingguerra.litedash.core.ui.Radius
 import com.irvingguerra.litedash.core.ui.TilePadding
 import com.irvingguerra.litedash.core.ui.Typography
+import com.irvingguerra.litedash.core.ui.fitFont
 import com.irvingguerra.litedash.core.vehicle.watch
 import com.irvingguerra.litedash.feature.car.CAR_TOP_ASPECT
 import com.irvingguerra.litedash.feature.car.CarTop
@@ -714,7 +715,6 @@ private fun TirePill(text: String, status: TireStatus, onClick: () -> Unit, modi
     }
 }
 
-
 /**
  * La pieza Llantas: chica (1×1) los cuatro números; mediana o alta el encabezado con el estado y el
  * auto desde arriba con cada llanta a su lado; grande la vista completa. Sin el auto, los cuatro
@@ -751,20 +751,6 @@ fun TiresTile(d: Dependencies, showCar: Boolean = true, onOpen: () -> Unit, onSe
 private fun TpmsRepository.worstRoad(): Pair<Wheel, TireStatus>? =
     Wheel.ROAD.map { it to statusOf(it) }.filter { it.second.problem }.maxByOrNull { it.second.severity?.ordinal ?: -1 }
 
-/** Encabezado de un widget: el nombre en chico a la izquierda y el estado con su punto a la derecha. */
-@Composable
-internal fun TileHeader(title: String, status: String, color: Color) {
-    val c = LocalColors.current
-    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        Label(title.uppercase(), Typography.label, c.textMuted, maxLines = 1)
-        // El estado cede: se corta con "…" antes que encimarse con el nombre.
-        Row(Modifier.weight(1f).padding(start = 10.dp), horizontalArrangement = Arrangement.End, verticalAlignment = Alignment.CenterVertically) {
-            Box(Modifier.size(7.dp).clip(CircleShape).background(color))
-            Label(status, Typography.small, color, maxLines = 1, modifier = Modifier.padding(start = 6.dp).weight(1f, fill = false))
-        }
-    }
-}
-
 /** "LLANTAS" y el estado: "Todo bien" en verde o la llanta más grave en su color ("Trasera derecha · Baja"). */
 @Composable
 private fun TiresHeader(d: Dependencies, short: Boolean) {
@@ -797,6 +783,7 @@ private fun pressureSample(repo: TpmsRepository) = "0".repeat(maxOf(3, repo.unit
  */
 private class TireFit(val size: Float, val unit: Boolean, val line: Boolean)
 
+@Composable
 private fun fitTire(repo: TpmsRepository, width: Float, height: Float, max: Float, rich: Boolean = true): TireFit {
     val sample = pressureSample(repo)
     // Sin detalle: el punto de color (6 dp + 4 de aire) en vez de la unidad.
@@ -919,7 +906,6 @@ private fun TiresMedium(d: Dependencies, tall: Boolean, header: Boolean, short: 
         }
     }
 }
-
 
 /** Texto del aviso: "Trasera derecha · 24 psi · baja". */
 @Composable

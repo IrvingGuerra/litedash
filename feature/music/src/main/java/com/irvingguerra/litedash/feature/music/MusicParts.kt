@@ -183,7 +183,8 @@ internal fun MediaTile(
     val permission = remember(revision, needsAccess) { !needsAccess || repo.hasPermission().also { if (it) repo.recheck() } }
     Card(modifier.fillMaxSize()) {
         if (!permission) return@Card NoPermission(repo, icon, title, explain)
-        if (tinted && !LocalPlainCard.current) song?.artwork?.let { ArtworkTint(it) }
+        // La llave es la canción, no el Bitmap: cada play o pausa trae otra instancia de la misma carátula.
+        if (tinted && !LocalPlainCard.current) song?.artwork?.let { ArtworkTint(it, "${song.pkg}|${song.title}|${song.artist}") }
         BoxWithConstraints(Modifier.fillMaxSize().padding(TilePadding)) {
             val tall = maxHeight > 150.dp
             // La etiqueta solo si deja lugar al título, el subtítulo y la barra.
@@ -248,10 +249,10 @@ private val LABEL_MIN = 88.dp
 
 /** El color promedio de la carátula en degradado suave desde la esquina superior izquierda (como Apple Music). */
 @Composable
-private fun ArtworkTint(artwork: Bitmap) {
+private fun ArtworkTint(artwork: Bitmap, key: String) {
     val dark = LocalColors.current.dark
     // Una vez por carátula: se reduce a 16×16 y se promedia (si no se puede leer, sin tinte).
-    val average = remember(artwork) { runCatching { averageColor(artwork) }.getOrNull() } ?: return
+    val average = remember(key) { runCatching { averageColor(artwork) }.getOrNull() } ?: return
     val brush = remember(average, dark) {
         Brush.linearGradient(listOf(average.copy(alpha = if (dark) 0.30f else 0.22f), Color.Transparent), Offset.Zero, Offset.Infinite)
     }

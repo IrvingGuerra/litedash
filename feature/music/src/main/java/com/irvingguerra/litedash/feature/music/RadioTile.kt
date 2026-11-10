@@ -5,7 +5,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -15,6 +14,7 @@ import com.irvingguerra.litedash.core.ui.Icons
 import com.irvingguerra.litedash.core.ui.Label
 import com.irvingguerra.litedash.core.ui.LocalColors
 import com.irvingguerra.litedash.core.ui.Typography
+import com.irvingguerra.litedash.core.ui.fitFont
 
 /**
  * Tarjeta de radio (ver [MediaTile]): la FM de la pantalla (la app de la marca, enlazada en
@@ -62,7 +62,7 @@ private fun StationText(repo: MusicRepository, song: Song?, tall: Boolean) {
         BoxWithConstraints {
             val free = maxHeight - STATION_RESERVED - if (tall) STATION_CONTROLS else 0.dp
             // En sp sin la escala de letra del sistema: el tamaño ya es lo que cabe.
-            val size = fitFont(song.title, maxWidth, free, max = if (tall) 48f else 40f) / LocalDensity.current.fontScale
+            val size = fitFont(song.title, maxWidth, free, heightShare = 1 / 1.2f, min = 18f, max = if (tall) 48f else 40f)
             Label(song.title, Typography.title.copy(fontSize = size.sp, lineHeight = (size * 1.2f).sp), maxLines = 1)
         }
         return SongDetail(repo, song)
@@ -78,13 +78,6 @@ private fun StationText(repo: MusicRepository, song: Song?, tall: Boolean) {
 /** La etiqueta y la línea de abajo, y los botones bajo el texto (alta), que no caben en el número grande. */
 private val STATION_RESERVED = 36.dp
 private val STATION_CONTROLS = 68.dp
-
-/**
- * Tamaño de letra (sp) para que [text] quepa en una línea de [width] × [height]: el alto de línea es
- * 1.2 veces la letra y cada carácter mide ~0.6 de ella (uno de margen).
- */
-private fun fitFont(text: String, width: Dp, height: Dp, min: Float = 18f, max: Float = 48f): Float =
-    minOf(height.value / 1.2f, width.value / ((text.length + 1) * 0.6f)).coerceIn(min, max)
 
 /** Sin nada sonando: la FM que va a despertar, "Por internet" o que enlace una. */
 @Composable

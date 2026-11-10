@@ -40,6 +40,7 @@ import com.irvingguerra.litedash.core.ui.Label
 import com.irvingguerra.litedash.core.ui.LocalColors
 import com.irvingguerra.litedash.core.ui.TilePadding
 import com.irvingguerra.litedash.core.ui.Typography
+import com.irvingguerra.litedash.core.ui.fitFont
 import com.irvingguerra.litedash.core.vehicle.Signal
 import com.irvingguerra.litedash.core.vehicle.watch
 import com.irvingguerra.litedash.feature.car.CAR_TOP_ASPECT
@@ -338,15 +339,18 @@ fun HealthTile(d: Dependencies, car: CarPackage?, showCar: Boolean = true, onCli
                 BoxWithConstraints(Modifier.fillMaxWidth().weight(1f)) {
                     // Angosto y alto: el anillo arriba y el texto abajo, centrados (a un lado no cabía y se cortaba).
                     val narrowRing = minOf(maxWidth * 0.62f, maxHeight * 0.55f, 130.dp)
+                    val narrowHeight = maxHeight
                     if (maxWidth < 220.dp) return@BoxWithConstraints Column(
                         Modifier.fillMaxSize(),
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center,
                     ) {
                         HealthRing(score, scoreColor, Modifier.size(narrowRing))
-                        Spacer(Modifier.height(10.dp))
-                        Label(stringResource(R.string.health_engine), Typography.subtitle.copy(textAlign = TextAlign.Center), maxLines = 1)
-                        Label(line, Typography.small.copy(textAlign = TextAlign.Center), if (codes != null && codes > 0) scoreColor else c.textMuted, maxLines = 2)
+                        // Bajo: sin el título y en un renglón, para no salirse sobre el encabezado.
+                        val roomy = narrowHeight >= 150.dp
+                        Spacer(Modifier.height(if (roomy) 10.dp else 4.dp))
+                        if (roomy) Label(stringResource(R.string.health_engine), Typography.subtitle.copy(textAlign = TextAlign.Center), maxLines = 1)
+                        Label(line, Typography.small.copy(textAlign = TextAlign.Center), if (codes != null && codes > 0) scoreColor else c.textMuted, maxLines = if (roomy) 2 else 1)
                     }
                     val ring = minOf(maxHeight, maxWidth * 0.4f, 130.dp)
                     val carWidth = maxHeight * CAR_TOP_ASPECT

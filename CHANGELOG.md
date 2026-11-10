@@ -4,6 +4,35 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.4.126] - 2026-11-10
+
+### Agregado
+- **Cada widget con sus opciones**: al acomodar el inicio, toca un widget y su engrane abre "Personalizar" con
+  el widget en vivo. Reloj (clima, fecha, saludo), Clima (máxima y mínima, próximos días), Viaje (qué datos),
+  Llantas y Taller (con o sin el auto), Música y Radio (carátula, anterior y siguiente), App (nombre), Teléfono y
+  Android Auto (qué app abren) e Imagen (presión de las llantas, apagada de fábrica).
+- **Pantalla Música**: un botón en la barra abre la música a media pantalla con tu auto al lado, con Música y
+  Radio. Ahí están tu biblioteca y las estaciones; los widgets ya no traen listas.
+- **Barra editable**: al acomodar el inicio, quita botones con su ✕ o mantén y arrastra para cambiarlos de lugar.
+  "Barra" agrega botones (Navegar, Teléfono, Voz…) y apps, y cambia su lugar, tamaño y estilo. Botón **Fondo** al
+  acomodar.
+
+### Cambiado
+- **Cuadrícula el doble de fina** y los widgets **se hacen a un lado** al arrastrar uno encima (o intercambian
+  lugar). Al acomodar, solo el widget que tocas muestra sus botones. Tus acomodos se conservan.
+- **Barra nueva**: flotante al centro (o a lo ancho). De fábrica: Apps, volumen, Música, Navegar, voz y Ajustes. El
+  volumen es una barra que flota hacia arriba. Ya no hay botón de hora (va arriba).
+- **Widgets rediseñados**: medidores de una fila con anillo y velocímetro con arco; Viaje, Clima (con el color del
+  cielo), Reloj, Llantas (con su estado), Taller (anillo de salud), Música (la carátula tiñe la tarjeta), Radio
+  (frecuencia grande), Mapa (la vuelta en una tarjeta) y accesos con su color. Los números se ajustan al tamaño.
+- **Agregar al inicio** por grupos, con lo que hace cada widget.
+- **Velocímetro en grande** con el aro más grueso; el aro Neón con brillo difuminado.
+- Ajustes: sale la sección "Barra de apps" (ahora se edita en la barra misma).
+
+### Corregido
+- El widget Imagen mostraba la presión de las llantas sin pedirlo.
+- Con la interfaz escalada, Agregar dejaba una columna vacía.
+
 ## [1.4.125] - 2026-11-09
 
 ### Cambiado
