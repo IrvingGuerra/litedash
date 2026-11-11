@@ -17,6 +17,7 @@ APPS = [  # clave, nombre, nota bajo el nombre
     ("strada", "StradaOS", {"es": "2.16.0", "en": "2.16.0"}),
     ("agama", "AGAMA", {"es": "6.1.2", "en": "6.1.2"}),
     ("cwg", "CarWebGuru", {"es": "3.7.0", "en": "3.7.0"}),
+    ("dashito", "Dashito", {"es": "act. 9 nov 2026", "en": "upd. Nov 9, 2026"}),
     ("cl", "Car Launcher PRO", {"es": "5.7.1", "en": "5.7.1"}),
 ]
 
@@ -29,29 +30,32 @@ ROWS = [
         "strada": (T, "0.6 MB", "0.6 MB"),
         "agama": (T, "11.6 MB", "11.6 MB"),
         "cwg": (T, "29.3 MB", "29.3 MB"),
+        "dashito": (D, "", ""),
         "cl": (D, "", ""),
     }),
     ("row", {"es": "Android mínimo", "en": "Minimum Android"}, {
         "ld": (T, "6.0", "6.0"), "strada": (T, "4.1", "4.1"), "agama": (T, "6.0", "6.0"),
-        "cwg": (T, "5.0", "5.0"), "cl": (T, "5.0", "5.0"),
+        "cwg": (T, "5.0", "5.0"), "dashito": (T, "8.0", "8.0"), "cl": (T, "5.0", "5.0"),
     }),
     ("row", {"es": "Precio", "en": "Price"}, {
         "ld": (T, "Gratis", "Free"),
         "strada": (T, "Gratis", "Free"),
         "agama": (T, "30 días de prueba, luego US$8.99", "30-day trial, then US$8.99"),
         "cwg": (T, "Gratis con anuncios; Pro de pago", "Free with ads; paid Pro"),
+        "dashito": (T, "Gratis con anuncios; pago único para quitarlos", "Free with ads; one-time purchase removes them"),
         "cl": (T, "US$15.99 (hay versión gratis limitada)", "US$15.99 (limited free version)"),
     }),
     ("row", {"es": "Sin anuncios", "en": "No ads"}, {
-        "ld": (S, "", ""), "strada": (S, "", ""), "agama": (S, "", ""), "cwg": (N, "", ""), "cl": (S, "", ""),
+        "ld": (S, "", ""), "strada": (S, "", ""), "agama": (S, "", ""), "cwg": (N, "", ""),
+        "dashito": (N, "Se quitan pagando", "Removed by paying"), "cl": (S, "", ""),
     }),
     ("row", {"es": "Código abierto", "en": "Open source"}, {
         "ld": (S, "GPL-3.0", "GPL-3.0"), "strada": (S, "GPL-3.0", "GPL-3.0"),
-        "agama": (N, "", ""), "cwg": (N, "", ""), "cl": (N, "", ""),
+        "agama": (N, "", ""), "cwg": (N, "", ""), "dashito": (N, "", ""), "cl": (N, "", ""),
     }),
     ("row", {"es": "En Google Play", "en": "On Google Play"}, {
         "ld": (S, "", ""), "strada": (N, "Solo GitHub", "GitHub only"),
-        "agama": (S, "", ""), "cwg": (S, "", ""), "cl": (S, "", ""),
+        "agama": (S, "", ""), "cwg": (S, "", ""), "dashito": (S, "", ""), "cl": (S, "", ""),
     }),
     ("group", {"es": "Para tu auto, sin instalar otra app", "en": "For your car, no extra app needed"}),
     ("feat", {"es": "Escáner OBD2 (ELM327)", "en": "OBD2 scanner (ELM327)"}, {
@@ -59,65 +63,76 @@ ROWS = [
         "strada": (N, "", ""),
         "agama": (P, "Con la app CRAB y licencia aparte", "Needs the CRAB app and a separate license"),
         "cwg": (S, "Widgets OBD2", "OBD2 widgets"),
+        "dashito": (S, "Bluetooth y BLE", "Bluetooth and BLE"),
         "cl": (N, "", ""),
     }),
     ("feat", {"es": "Códigos de falla y salud del auto", "en": "Trouble codes and car health"}, {
         "ld": (S, "Explicados y se borran", "Explained, and you can clear them"),
-        "strada": (N, "", ""), "agama": (D, "", ""), "cwg": (D, "", ""), "cl": (N, "", ""),
+        "strada": (N, "", ""), "agama": (D, "", ""), "cwg": (D, "", ""),
+        "dashito": (S, "En español y se borran", "In Spanish, and you can clear them"), "cl": (N, "", ""),
     }),
     ("feat", {"es": "Presión de llantas (TPMS)", "en": "Tire pressure (TPMS)"}, {
         "ld": (S, "Receptor USB, Bluetooth u OBD", "USB receiver, Bluetooth or OBD"),
         "strada": (N, "", ""),
         "agama": (P, "Con la app MANTA y licencia aparte", "Needs the MANTA app and a separate license"),
-        "cwg": (D, "", ""), "cl": (N, "", ""),
+        "cwg": (D, "", ""), "dashito": (N, "", ""), "cl": (N, "", ""),
     }),
     ("feat", {"es": "Controla la radio FM de tu pantalla", "en": "Controls your unit's FM radio"}, {
         "ld": (S, "Estación y botones (NWD, TopWay, Hengchen)", "Station and buttons (NWD, TopWay, Hengchen)"),
         "strada": (P, "Solo la abre", "Only opens it"),
         "agama": (P, "Si la radio publica su aviso", "If the radio app posts a notification"),
-        "cwg": (D, "", ""), "cl": (N, "", ""),
+        "cwg": (D, "", ""), "dashito": (N, "", ""), "cl": (N, "", ""),
     }),
     ("feat", {"es": "Reproductor USB propio", "en": "Own USB music player"}, {
         "ld": (S, "Carpetas, artistas y álbumes", "Folders, artists and albums"),
         "strada": (N, "", ""), "agama": (N, "", ""),
-        "cwg": (S, "Reproductor de archivos", "File player"), "cl": (N, "", ""),
+        "cwg": (S, "Reproductor de archivos", "File player"), "dashito": (N, "", ""), "cl": (N, "", ""),
     }),
     ("feat", {"es": "Radio por internet", "en": "Internet radio"}, {
         "ld": (S, "Estaciones cerca de ti", "Stations near you"),
-        "strada": (N, "", ""), "agama": (N, "", ""), "cwg": (D, "", ""), "cl": (N, "", ""),
+        "strada": (N, "", ""), "agama": (N, "", ""), "cwg": (D, "", ""), "dashito": (D, "", ""), "cl": (N, "", ""),
     }),
     ("feat", {"es": "Mapa en el inicio", "en": "Map on the home screen"}, {
         "ld": (S, "En vivo, plano o inclinado", "Live, flat or tilted"),
         "strada": (S, "OpenStreetMap", "OpenStreetMap"),
         "agama": (P, "Solo la siguiente vuelta de otra app", "Only the next turn from another app"),
         "cwg": (P, "Tus recorridos, no navegación", "Your trips, not navigation"),
+        "dashito": (S, "Propio, con gasolineras y su precio", "Its own, with gas stations and prices"),
         "cl": (N, "", ""),
     }),
     ("feat", {"es": "Mapas descargables sin internet", "en": "Downloadable offline maps"}, {
         "ld": (N, "En camino", "Coming"),
         "strada": (S, "Por país", "By country"),
-        "agama": (N, "", ""), "cwg": (N, "", ""), "cl": (N, "", ""),
+        "agama": (N, "", ""), "cwg": (N, "", ""), "dashito": (D, "", ""), "cl": (N, "", ""),
     }),
     ("feat", {"es": "Widgets que mueves y agrandas", "en": "Widgets you move and resize"}, {
         "ld": (S, "", ""), "strada": (N, "Diseño con opciones", "Layout with options"),
-        "agama": (S, "", ""), "cwg": (S, "", ""), "cl": (S, "En PRO", "In PRO"),
+        "agama": (S, "", ""), "cwg": (S, "", ""), "dashito": (D, "", ""), "cl": (S, "En PRO", "In PRO"),
     }),
     ("feat", {"es": "Tu auto en 3D", "en": "Your car in 3D"}, {
         "ld": (S, "15 modelos, de tu color", "15 models, in your color"),
         "strada": (N, "Foto de tu auto", "Photo of your car"),
-        "agama": (D, "", ""), "cwg": (D, "", ""), "cl": (N, "", ""),
+        "agama": (D, "", ""), "cwg": (D, "", ""),
+        "dashito": (N, "Foto de tu auto", "Photo of your car"), "cl": (N, "", ""),
     }),
     ("feat", {"es": "Día y noche automático", "en": "Automatic day/night"}, {
         "ld": (S, "Hora, sensor de luz o faros", "Time, light sensor or headlights"),
         "strada": (S, "Por hora", "By time"), "agama": (S, "Por hora", "By time"),
-        "cwg": (D, "", ""), "cl": (P, "Solo el brillo", "Brightness only"),
+        "cwg": (D, "", ""), "dashito": (D, "", ""), "cl": (P, "Solo el brillo", "Brightness only"),
     }),
     ("feat", {"es": "Pantalla dividida con el mapa", "en": "Split screen with the map"}, {
-        "ld": (S, "", ""), "strada": (D, "", ""), "agama": (D, "", ""), "cwg": (S, "", ""), "cl": (D, "", ""),
+        "ld": (S, "", ""), "strada": (D, "", ""), "agama": (D, "", ""), "cwg": (S, "", ""), "dashito": (D, "", ""),
+        "cl": (D, "", ""),
+    }),
+    ("feat", {"es": "Panel junto a Android Auto", "en": "Panel next to Android Auto"}, {
+        "ld": (N, "", ""), "strada": (D, "", ""), "agama": (D, "", ""), "cwg": (D, "", ""),
+        "dashito": (S, "Con Open Headunit", "With Open Headunit"), "cl": (D, "", ""),
     }),
     ("feat", {"es": "App para tu celular", "en": "Phone companion app"}, {
         "ld": (S, "LiteDash Connect", "LiteDash Connect"),
-        "strada": (N, "", ""), "agama": (N, "", ""), "cwg": (D, "", ""), "cl": (N, "", ""),
+        "strada": (N, "", ""), "agama": (N, "", ""), "cwg": (D, "", ""),
+        "dashito": (S, "Dashito GPS: ubicación, vueltas y música", "Dashito GPS: location, turns and music"),
+        "cl": (N, "", ""),
     }),
 ]
 
@@ -131,16 +146,20 @@ SOURCES = [
                ("Instructions", "https://altercars.ru/agama/instructions/en.html")]),
     ("CarWebGuru", [("Google Play", "https://play.google.com/store/apps/details?id=com.softartstudio.carwebguru"),
                     ("RuStore", "https://www.rustore.ru/catalog/app/com.softartstudio.carwebguru")]),
+    ("Dashito", [("Google Play", "https://play.google.com/store/apps/details?id=com.invence.dashito"),
+                 ("Web", "https://invence.com.mx/dashito/"),
+                 ("Dashito GPS", "https://play.google.com/store/apps/details?id=com.invence.dashito_gps"),
+                 ("Video", "https://www.youtube.com/watch?v=zxmKdXjjVEw")]),
     ("Car Launcher PRO", [("Google Play", "https://play.google.com/store/apps/details?id=com.autolauncher.motorcar")]),
 ]
 
 TEXT = {
     "es": {
-        "title": "LiteDash vs StradaOS, AGAMA y CarWebGuru — comparativa de launchers para auto",
-        "desc": "Comparativa honesta de launchers para pantallas Android de auto: peso, Android mínimo, precio, escáner OBD2, presión de llantas (TPMS), radio FM, reproductor USB y mapa. LiteDash, StradaOS, AGAMA, CarWebGuru y Car Launcher.",
+        "title": "LiteDash vs StradaOS, AGAMA, CarWebGuru y Dashito — comparativa de launchers para auto",
+        "desc": "Comparativa honesta de launchers para pantallas Android de auto: peso, Android mínimo, precio, escáner OBD2, presión de llantas (TPMS), radio FM, reproductor USB y mapa. LiteDash, StradaOS, AGAMA, CarWebGuru, Dashito y Car Launcher.",
         "ceja": ["Comparativa", "Con fuentes", "Actualizada"],
         "h1": 'Cuánto ofrece <em>por lo que pesa.</em>',
-        "lead": "LiteDash pesa un poco más que el más ligero, pero trae lo que los demás piden instalar aparte: escáner OBD2, llantas, radio de fábrica y reproductor USB.",
+        "lead": "LiteDash pesa un poco más que StradaOS, pero trae juntos escáner OBD2, llantas, radio de fábrica y reproductor USB, sin instalar otra app. Ninguno de los demás anuncia los cuatro.",
         "nota": "Datos públicos de cada app, consultados el {date}. Si algo cambió, avísanos en GitHub.",
         "tabla_sobre": "Lado a lado", "tabla_h2": "Funciones primero, peso al lado.",
         "tabla_p": "Integrado = lo hace el launcher solo, sin instalar otra app.",
@@ -152,15 +171,17 @@ TEXT = {
             ("StradaOS", "Si tu pantalla tiene Android 4 o 5, o necesitas hoy mapas sin internet. Pesa 0.6 MB y también es gratis y abierto; no trae OBD, llantas ni reproductor."),
             ("AGAMA", "Si quieres muchos temas y no te importa pagar, y ya usas sus apps CRAB y MANTA para OBD y llantas."),
             ("CarWebGuru", "Si te gustan sus temas y su reproductor de archivos, y no te molestan los anuncios."),
+            ("Dashito", "Si quieres un panel junto a Android Auto o las gasolineras con su precio del día, y no te molestan los anuncios. También trae OBD2 y su propia app de celular."),
             ("DuduAuto", "No es una app: es el sistema de las radios DUDUAUTO. Si ya tienes una, no necesitas launcher; LiteDash es para las demás pantallas."),
         ],
         "preguntas_h2": "Preguntas de la comparación.",
         "faq": [
-            ("¿Cuál es el launcher para auto más ligero?", "StradaOS, con 0.6 MB. LiteDash pesa 1.8 MB y suma escáner OBD2, presión de llantas, control de la radio FM de fábrica, reproductor USB y radio por internet, que StradaOS no trae."),
-            ("¿Qué launcher trae escáner OBD2 sin otra app?", "LiteDash lo trae integrado: conectas un ELM327 por Bluetooth, BLE, Wi‑Fi o USB y ves salud del auto, códigos de falla y gráficas. AGAMA necesita su app CRAB con licencia aparte y StradaOS no tiene OBD."),
+            ("¿Cuál es el launcher para auto más ligero?", "De los que publican su peso, StradaOS, con 0.6 MB. LiteDash pesa 1.8 MB y suma escáner OBD2, presión de llantas, control de la radio FM de fábrica, reproductor USB y radio por internet, que StradaOS no trae."),
+            ("¿Qué launcher trae escáner OBD2 sin otra app?", "LiteDash y Dashito lo traen integrado. En LiteDash conectas un ELM327 por Bluetooth, BLE, Wi‑Fi o USB y ves salud del auto, códigos de falla y gráficas; Dashito lo conecta por Bluetooth o BLE y también lee y borra códigos. AGAMA necesita su app CRAB con licencia aparte y StradaOS no tiene OBD."),
             ("¿LiteDash o AGAMA?", "AGAMA es más popular y tiene muchos temas, pero es de pago tras 30 días, pesa 11.6 MB y pide apps aparte para OBD y llantas. LiteDash es gratis, de código abierto y los trae dentro en 1.8 MB."),
             ("¿LiteDash o CarWebGuru?", "CarWebGuru tiene anuncios y pesa 29.3 MB, unas 16 veces más. LiteDash no tiene anuncios y trae presión de llantas y control de la radio FM de fábrica."),
-            ("¿De dónde salen los datos?", "De la página de cada app en GitHub, Google Play y RuStore (Play ya no muestra el tamaño). Abajo están los enlaces. Si un dato no se pudo comprobar, dice \"sin dato\"."),
+            ("¿LiteDash o Dashito?", "Dashito, también hecho en México, trae escáner OBD2, app de celular, mapa con gasolineras y su precio, y un panel junto a Android Auto, que LiteDash no tiene. Pero tiene anuncios (se quitan con un pago) y no es de código abierto. LiteDash es gratis, sin anuncios y GPL-3.0, y suma presión de llantas, radio FM de fábrica y reproductor USB, que Dashito no anuncia, y tu auto en 3D (Dashito usa una foto)."),
+            ("¿De dónde salen los datos?", "De la página de cada app en GitHub, Google Play y RuStore, de su web y, en Dashito, de su video tutorial (Play ya no muestra el tamaño). Abajo están los enlaces. Si un dato no se pudo comprobar, dice \"sin dato\"."),
         ],
         "fuentes_h": "Fuentes",
         "cta_h2": "Pruébalo en tu pantalla.",
@@ -175,11 +196,11 @@ TEXT = {
         "estado": {"si": "Sí", "no": "No", "parcial": "A medias", "nd": "Sin dato"},
     },
     "en": {
-        "title": "LiteDash vs StradaOS, AGAMA and CarWebGuru — car launcher comparison",
-        "desc": "Honest comparison of launchers for Android car head units: size, minimum Android, price, OBD2 scanner, tire pressure (TPMS), FM radio, USB player and map. LiteDash, StradaOS, AGAMA, CarWebGuru and Car Launcher.",
+        "title": "LiteDash vs StradaOS, AGAMA, CarWebGuru and Dashito — car launcher comparison",
+        "desc": "Honest comparison of launchers for Android car head units: size, minimum Android, price, OBD2 scanner, tire pressure (TPMS), FM radio, USB player and map. LiteDash, StradaOS, AGAMA, CarWebGuru, Dashito and Car Launcher.",
         "ceja": ["Comparison", "With sources", "Up to date"],
         "h1": 'What you get <em>for the size.</em>',
-        "lead": "LiteDash weighs a bit more than the lightest one, but it includes what the others ask you to install separately: OBD2 scanner, tires, factory radio and a USB player.",
+        "lead": "LiteDash weighs a bit more than StradaOS, but it brings an OBD2 scanner, tires, factory radio and a USB player together, with no extra app. None of the others advertises all four.",
         "nota": "Public data from each app, checked on {date}. If something changed, tell us on GitHub.",
         "tabla_sobre": "Side by side", "tabla_h2": "Features first, size alongside.",
         "tabla_p": "Built in = the launcher does it on its own, no extra app.",
@@ -191,15 +212,17 @@ TEXT = {
             ("StradaOS", "If your unit runs Android 4 or 5, or you need offline maps today. It's 0.6 MB, also free and open source; no OBD, tires or music player."),
             ("AGAMA", "If you want lots of themes, don't mind paying, and already use its CRAB and MANTA apps for OBD and tires."),
             ("CarWebGuru", "If you like its themes and file player, and ads don't bother you."),
+            ("Dashito", "If you want a panel next to Android Auto or gas stations with today's prices, and ads don't bother you. It also has OBD2 and its own phone app."),
             ("DuduAuto", "It's not an app: it's the system on DUDUAUTO units. If you have one, you don't need a launcher; LiteDash is for every other screen."),
         ],
         "preguntas_h2": "Comparison questions.",
         "faq": [
-            ("What is the lightest car launcher?", "StradaOS, at 0.6 MB. LiteDash is 1.8 MB and adds an OBD2 scanner, tire pressure, factory FM radio control, a USB player and internet radio, which StradaOS doesn't have."),
-            ("Which launcher has an OBD2 scanner without another app?", "LiteDash has it built in: connect an ELM327 over Bluetooth, BLE, Wi‑Fi or USB and see car health, trouble codes and charts. AGAMA needs its CRAB app with a separate license, and StradaOS has no OBD."),
+            ("What is the lightest car launcher?", "Of those that publish their size, StradaOS, at 0.6 MB. LiteDash is 1.8 MB and adds an OBD2 scanner, tire pressure, factory FM radio control, a USB player and internet radio, which StradaOS doesn't have."),
+            ("Which launcher has an OBD2 scanner without another app?", "LiteDash and Dashito have it built in. With LiteDash you connect an ELM327 over Bluetooth, BLE, Wi‑Fi or USB and see car health, trouble codes and charts; Dashito connects over Bluetooth or BLE and also reads and clears codes. AGAMA needs its CRAB app with a separate license, and StradaOS has no OBD."),
             ("LiteDash or AGAMA?", "AGAMA is more popular and has many themes, but it's paid after 30 days, weighs 11.6 MB and needs separate apps for OBD and tires. LiteDash is free, open source and has them built in at 1.8 MB."),
             ("LiteDash or CarWebGuru?", "CarWebGuru has ads and weighs 29.3 MB, about 16 times more. LiteDash has no ads and adds tire pressure and factory FM radio control."),
-            ("Where does the data come from?", "From each app's page on GitHub, Google Play and RuStore (Play no longer shows the size). Links are below. If something couldn't be verified, it says \"no data\"."),
+            ("LiteDash or Dashito?", "Dashito, also made in Mexico, has an OBD2 scanner, a phone app, a map with gas stations and their prices, and a panel next to Android Auto, which LiteDash doesn't have. But it has ads (a purchase removes them) and isn't open source. LiteDash is free, ad-free and GPL-3.0, and adds tire pressure, factory FM radio and a USB player, which Dashito doesn't advertise, plus your car in 3D (Dashito uses a photo)."),
+            ("Where does the data come from?", "From each app's page on GitHub, Google Play and RuStore, its website and, for Dashito, its tutorial video (Play no longer shows the size). Links are below. If something couldn't be verified, it says \"no data\"."),
         ],
         "fuentes_h": "Sources",
         "cta_h2": "Try it on your screen.",
@@ -249,10 +272,12 @@ def table(lang):
 def counts(lang):
     feats = [r for r in ROWS if r[0] == "feat"]
     out = []
-    for key, name, _ in APPS[:4]:  # Car Launcher PRO no entra: no hay dato de su peso
+    sizes = next(rest[0] for kind, _, *rest in ROWS if kind == "row")  # la fila del peso
+    for key, name, _ in APPS:
+        size = sizes[key]
+        if size[0] != T:  # sin peso publicado (Dashito, Car Launcher PRO) no entra
+            continue
         n = sum(1 for _, _, values in feats if values[key][0] == S)
-        size = next(v for kind, _, *rest in ROWS if kind == "row" for k, v in rest[0].items()
-                    if k == key and v[0] == T and "MB" in v[1])
         cls = ' class="nuestra"' if key == "ld" else ""
         out.append(f'<div{cls}><b>{n}</b><small>{name} · {size[1 if lang == "es" else 2]}</small></div>')
     title = TEXT[lang]["cuenta_h"].format(n=len(feats))

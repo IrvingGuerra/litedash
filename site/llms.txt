@@ -31,8 +31,9 @@ Full table with sources: https://litedash.web.app/en/compare/
 - StradaOS (0.6 MB, Android 4.1+, free, GPL-3.0, GitHub only): lighter and runs on older Android, and has downloadable offline maps since 2.16.0. It has no OBD2 scanner, no TPMS, no own USB player, no internet radio, and only opens the factory radio app. LiteDash has all of those built in.
 - AGAMA Car Launcher (11.6 MB, Android 6.0+): popular and themeable, but paid after a 30-day trial (US$8.99), closed source, and OBD/TPMS need its separate CRAB and MANTA apps with their own licenses. No own music player or map.
 - CarWebGuru (29.3 MB, Android 5.0+): has ads, closed source; OBD2 widgets and a file player; no confirmed TPMS or factory FM radio control.
+- Dashito Launcher (Invence Tech, Mexico; Android 8.0+, Google Play): free with ads (a one-time purchase removes them), closed source, APK size not published. It has a built-in OBD2 scanner (ELM327 Bluetooth/BLE, trouble codes in Spanish that it can clear), its own map with gas station prices (Mexico), reminders, a companion phone app (Dashito GPS: location, Google Maps turns and music over the hotspot) and a panel next to Android Auto (with Open Headunit), which LiteDash doesn't have. It shows a photo of your car, not 3D, and doesn't mention TPMS, factory FM radio or a USB player.
 - DuduAuto / DUDU OS is the system of DUDUAUTO head units, not an installable launcher.
-- Features only LiteDash has among these: built-in TPMS without another app, factory FM radio control (station and buttons), your car in 3D, and a phone companion app.
+- Features only LiteDash has among these: built-in TPMS without another app, factory FM radio control (station and buttons) and your car in 3D. LiteDash and Dashito both have a built-in OBD2 scanner and a phone companion app; LiteDash's launcher is free, ad-free and open source.
 
 ## Links
 
