@@ -4,6 +4,12 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.4.135] - 2026-11-11
+
+### Cambiado
+- **La animación de entrada viene prendida:** al abrir LiteDash se arma su logo (o aparece tu imagen). Si ya la habías
+  apagado, sigue apagada. Se cambia en Inicio y apariencia → Inicio → Animación de entrada; un toque la salta.
+
 ## [1.4.134] - 2026-11-11
 
 ### Cambiado

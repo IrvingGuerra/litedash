@@ -436,8 +436,8 @@ class Preferences(context: Context) {
     /** Con el OBD conectado: avisar de motor caliente o batería que no carga. */
     var engineAlerts by bool(PrefKeys.ENGINE_ALERTS, true)
 
-    /** Al abrir LiteDash, tu imagen (o el logo de LiteDash) aparece unos instantes a pantalla completa. */
-    var logoIntro by bool(PrefKeys.LOGO_INTRO, false)
+    /** Al abrir LiteDash, el logo se arma (o aparece tu imagen) unos instantes; prendida de fábrica (Irving, 2026-11-11). */
+    var logoIntro by bool(PrefKeys.LOGO_INTRO, true)
 
     /** Ajuste de la pantalla que dice si los faros están prendidos ("tabla/nombre"); null = sin aprender. */
     var lightsKey by string(PrefKeys.LIGHTS_KEY)
