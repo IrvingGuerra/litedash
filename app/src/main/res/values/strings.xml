@@ -727,8 +727,10 @@
     <string name="tires_low_percent">Avisar si baja más de</string>
     <string name="tires_low_percent_help">Adelante, abajo de %1$s</string>
     <string name="tires_high_temp">Temperatura alta</string>
-    <string name="tires_offset">Ajuste del sensor</string>
-    <string name="tires_offset_help">Si tu receptor marca de más o de menos que el manómetro</string>
+    <string name="tires_offset">Ajuste de cada sensor</string>
+    <string name="tires_offset_help">Mide cada llanta en frío con un manómetro y ajusta hasta que LiteDash marque lo mismo.</string>
+    <string name="tires_calibrate">Calibrar</string>
+    <string name="tires_reads">Marca %1$s</string>
     <string name="tires_show_spare">Mostrar refacción</string>
     <string name="tires_alerts">Avisos</string>
     <string name="tires_alerts_help">Las llantas se leen aunque no estén en pantalla, para avisarte a tiempo</string>

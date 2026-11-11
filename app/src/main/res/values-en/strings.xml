@@ -706,8 +706,10 @@
     <string name="tires_low_percent">Alert if it drops more than</string>
     <string name="tires_low_percent_help">Front, below %1$s</string>
     <string name="tires_high_temp">High temperature</string>
-    <string name="tires_offset">Sensor adjustment</string>
-    <string name="tires_offset_help">If your receiver reads higher or lower than a gauge</string>
+    <string name="tires_offset">Adjust each sensor</string>
+    <string name="tires_offset_help">Check each cold tire with a gauge and adjust until LiteDash reads the same.</string>
+    <string name="tires_calibrate">Calibrate</string>
+    <string name="tires_reads">Reads %1$s</string>
     <string name="tires_show_spare">Show spare</string>
     <string name="tires_alerts">Alerts</string>
     <string name="tires_alerts_help">Tires are read even when not on screen, so you are warned in time</string>

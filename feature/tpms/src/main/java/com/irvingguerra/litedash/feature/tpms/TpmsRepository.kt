@@ -99,7 +99,8 @@ class TpmsRepository(context: Context, private val bus: VehicleBus) {
         private set
 
     /**
-     * Lo último de cada sensor que se oye (asignado o no), con el ajuste de calibración. No es
+     * Lo último de cada sensor que se oye (asignado o no), tal como llega (el ajuste de cada llanta
+     * se pone al pasarlo a su llanta: así cambiar de llanta un sensor no arrastra el de otra). No es
      * estado de Compose: los sensores de otros autos no deben rearmar la pantalla; lo que se ve
      * sale de [wheelReading], [sensorCount] y [nearby].
      */
@@ -122,9 +123,9 @@ class TpmsRepository(context: Context, private val bus: VehicleBus) {
 
     fun wheelReading(w: Wheel): TireReading? = wheelStates.getValue(w).value
 
-    /** Pasa lo último de cada sensor asignado a su llanta (igual = sin aviso a Compose). */
+    /** Pasa lo último de cada sensor asignado a su llanta, con su ajuste (igual = sin aviso a Compose). */
     private fun syncWheels() {
-        for ((w, state) in wheelStates) state.value = _assignment[w]?.let { _readings[it] }
+        for ((w, state) in wheelStates) state.value = _assignment[w]?.let { _readings[it] }?.let { calibrated(w, it) }
     }
 
     private fun forget(id: String) {
@@ -167,8 +168,22 @@ class TpmsRepository(context: Context, private val bus: VehicleBus) {
     /** Avisa abajo de (100 − esto) % de la recomendada. */
     var lowPercent by intPref(KEY_LOW_PCT, 20)
     var highTempC by floatPref(KEY_HIGH_TEMP, 75f)
-    /** Se suma a la presión que llega (el receptor USB puede venir corrido); el historial queda sin ella. */
-    var offsetKpa by floatPref(KEY_OFFSET, 0f)
+    /**
+     * Ajuste de cada llanta: se suma a lo que dice su sensor (cada sensor puede venir corrido distinto
+     * respecto al manómetro); el historial queda sin él. Antes era uno solo para todas ([KEY_OFFSET]):
+     * ese valor es el de fábrica de cada una hasta que se toque.
+     */
+    private val offsets = Wheel.entries.associateWith { w ->
+        mutableStateOf(prefs.getFloat(KEY_OFFSET + "_" + w.key, prefs.getFloat(KEY_OFFSET, 0f)))
+    }
+
+    fun offsetKpa(w: Wheel): Float = offsets.getValue(w).value
+
+    fun setOffsetKpa(w: Wheel, kpa: Float) {
+        offsets.getValue(w).value = kpa
+        prefs.edit().putFloat(KEY_OFFSET + "_" + w.key, kpa).apply()
+        refreshSoon()
+    }
     var showSpare by boolPref(KEY_SHOW_SPARE, false)
     /** Alertas prendidas: entonces se lee siempre, aunque nada muestre las llantas. */
     var alertsEnabled by boolPref(KEY_ALERTS, true)
@@ -276,20 +291,19 @@ class TpmsRepository(context: Context, private val bus: VehicleBus) {
     private val lastUpdate = mutableMapOf<String, Long>()
 
     /** Entra una lectura de cualquier fuente (hilo principal). */
-    private fun ingest(raw: TireReading) {
+    private fun ingest(r: TireReading) {
         // Bluetooth anuncia muchas veces por segundo: con una por segundo por sensor basta.
-        val prev = lastUpdate[raw.sensorId]
-        if (prev != null && raw.atMillis - prev < MIN_UPDATE_MS && raw.family != DemoTpms.FAMILY) return
-        lastUpdate[raw.sensorId] = raw.atMillis
-        val r = if (running == TpmsSource.DEMO || offsetKpa == 0f) raw else raw.copy(pressureKpa = raw.pressureKpa?.let(::calibrated))
+        val prev = lastUpdate[r.sensorId]
+        if (prev != null && r.atMillis - prev < MIN_UPDATE_MS && r.family != DemoTpms.FAMILY) return
+        lastUpdate[r.sensorId] = r.atMillis
         if (_readings.put(r.sensorId, r) == null) sensorCount = _readings.size
         // Sysgration dice su llanta: se acomoda sola si esa llanta está libre.
         if (running == TpmsSource.BLE && r.reportedWheel != null && r.reportedWheel !in _assignment && r.sensorId !in _assignment.values) {
             assign(r.reportedWheel, r.sensorId)
         }
         val wheel = _assignment.entries.firstOrNull { it.value == r.sensorId }?.key
-        // El historial va sin calibrar.
-        if (wheel != null && !raw.lost && raw.pressureKpa != null) addHistory(wheel, raw.atMillis, raw.pressureKpa)
+        // El historial va sin calibrar y con la temperatura (para no confundir enfriarse con una fuga).
+        if (wheel != null && !r.lost && r.pressureKpa != null) addHistory(wheel, r.atMillis, r.pressureKpa, r.tempC)
         identifier?.check(_readings, r.atMillis)?.let { identified = it; identifying = false; identifier = null }
         if (running == TpmsSource.BLE || running == TpmsSource.DEMO || running == TpmsSource.OBD) status = TpmsStatus.CONNECTED
         if (wheel != null) syncWheels()
@@ -323,15 +337,25 @@ class TpmsRepository(context: Context, private val bus: VehicleBus) {
         val h = activeHistory()
         // La fuga rápida lee solo la cola del historial; la lenta se recalcula al entrar una muestra.
         val trends = byWheel.keys.associateWith { w ->
-            TireTrend(h?.maxSince(w, now - FAST_LEAK_WINDOW_MS)?.let(::calibrated), slowLeaks[w] == true)
+            TireTrend(h?.samples(w, now - FAST_LEAK_WINDOW_MS).orEmpty().map { calibrated(w, it) }, slowLeaks[w] == true)
         }
         alerts = tireAlerts(byWheel, trends, limits, now)
-        nearby = if (holds > 0) _readings.values.toList() else emptyList()
+        nearby = if (holds > 0) {
+            val wheelOf = _assignment.entries.associate { (w, id) -> id to w }
+            _readings.values.map { r -> wheelOf[r.sensorId]?.let { calibrated(it, r) } ?: r }
+        } else emptyList()
         saveHistory(force = false)
     }
 
-    /** El ajuste del usuario sobre una presión del sensor (la demostración no lo lleva). */
-    private fun calibrated(kpa: Float) = if (running == TpmsSource.DEMO || offsetKpa == 0f) kpa else (kpa + offsetKpa).coerceAtLeast(0f)
+    /** El ajuste del usuario para [w] sobre una presión del sensor (también en la demostración: así se ve qué hace). */
+    private fun calibrated(w: Wheel, kpa: Float): Float {
+        val offset = offsetKpa(w)
+        return if (offset == 0f) kpa else (kpa + offset).coerceAtLeast(0f)
+    }
+
+    private fun calibrated(w: Wheel, r: TireReading) = r.pressureKpa?.let { r.copy(pressureKpa = calibrated(w, it)) } ?: r
+
+    private fun calibrated(w: Wheel, s: TireSample) = s.copy(kpa = calibrated(w, s.kpa))
 
     /**
      * Bluetooth: los sensores sin asignar que ya no se oyen (autos que pasaron al lado) se
@@ -425,6 +449,10 @@ class TpmsRepository(context: Context, private val bus: VehicleBus) {
         val ib = _assignment[b]
         if (ib == null) _assignment.remove(a) else _assignment[a] = ib
         if (ia == null) _assignment.remove(b) else _assignment[b] = ia
+        // El ajuste es del sensor (cada uno viene corrido distinto): se va con él a su llanta nueva.
+        val oa = offsetKpa(a)
+        setOffsetKpa(a, offsetKpa(b))
+        setOffsetKpa(b, oa)
     }
 
     // ---- ¿Cuál sensor es? ----
@@ -471,9 +499,9 @@ class TpmsRepository(context: Context, private val bus: VehicleBus) {
     /** Qué llantas pierden aire poco a poco; cambia solo cuando entra una muestra (cada 30 s). */
     private val slowLeaks = mutableMapOf<Wheel, Boolean>()
 
-    private fun addHistory(w: Wheel, at: Long, kpa: Float) {
+    private fun addHistory(w: Wheel, at: Long, kpa: Float, tempC: Float?) {
         val h = activeHistory() ?: return
-        if (h.add(w, at, kpa)) slowLeaks[w] = slowLeak(h.samples(w, at - SLOW_LEAK_WINDOW_MS), at)
+        if (h.add(w, at, kpa, tempC)) slowLeaks[w] = slowLeak(h.samples(w, at - SLOW_LEAK_WINDOW_MS), at)
     }
 
     private fun updateSlowLeaks() {
@@ -483,11 +511,9 @@ class TpmsRepository(context: Context, private val bus: VehicleBus) {
         for (w in Wheel.entries) slowLeaks[w] = slowLeak(h.samples(w, now - SLOW_LEAK_WINDOW_MS), now)
     }
 
-    /** Presión de [w] desde [sinceMillis] con la calibración de hoy (una muestra cada 30 s, hasta 7 días). */
-    fun history(w: Wheel, sinceMillis: Long = 0): List<TireSample> {
-        val samples = activeHistory()?.samples(w, sinceMillis).orEmpty()
-        return if (running == TpmsSource.DEMO || offsetKpa == 0f) samples else samples.map { it.copy(kpa = calibrated(it.kpa)) }
-    }
+    /** Presión de [w] desde [sinceMillis] con su ajuste de hoy (una muestra cada 30 s, hasta 7 días). */
+    fun history(w: Wheel, sinceMillis: Long = 0): List<TireSample> =
+        activeHistory()?.samples(w, sinceMillis).orEmpty().map { calibrated(w, it) }
 
     /**
      * Se escribe cada 10 min y al parar ([force]): se copia aquí y se codifica y escribe fuera del
@@ -964,6 +990,7 @@ class TpmsRepository(context: Context, private val bus: VehicleBus) {
         private const val KEY_REAR = "rear_kpa"
         private const val KEY_LOW_PCT = "low_percent"
         private const val KEY_HIGH_TEMP = "high_temp_c"
+        /** Ajuste de cada llanta: "offset_kpa_fl"…; sin sufijo, el de antes (uno para todas). */
         private const val KEY_OFFSET = "offset_kpa"
         private const val KEY_UNIT = "unit"
         private const val KEY_SHOW_SPARE = "show_spare"

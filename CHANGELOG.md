@@ -4,6 +4,20 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.4.131] - 2026-11-11
+
+### Agregado
+- **Calibrar cada llanta** (Ajustes → Llantas → Calibrar): un ajuste por llanta, con lo que marca cada una junto,
+  para igualarlas al manómetro. Si ya tenías el ajuste de antes, cada llanta empieza con ese valor.
+- **Radio de las pantallas Hengchen/Junsun** (app `com.hcn.autoradio`): el widget Radio ya muestra la estación
+  (frecuencia y nombre RDS) y play la enciende aunque su app esté cerrada, sin abrirla.
+
+### Corregido
+- **Llantas: ya no avisa "fuga" cuando la llanta solo se enfría.** Al manejar el aire se calienta y la presión
+  sube; al estacionarte baja sin perder aire. Ahora LiteDash compara las presiones a la misma temperatura, así que
+  solo avisa cuando de verdad pierde aire.
+- El reporte de la pantalla trae más datos para leer la canción de ZLINK en pantallas Hengchen.
+
 ## [1.4.130] - 2026-11-10
 
 ### Agregado

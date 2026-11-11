@@ -512,7 +512,8 @@ class MusicRepository(private val context: Context) {
     /**
      * Perfil de la radio de fábrica ([FactoryRadio]) cuando la FM enlazada no tiene receptor ni servicio:
      * TopWay (`com.tw.radio`, por su enlace TWUtil; si alguna vez la app se cerró al abrirlo, no se vuelve a
-     * intentar) o NWD (`com.nwd.radio`, por los ajustes y avisos del sistema).
+     * intentar) o NWD (`com.nwd.radio`, por los ajustes y avisos del sistema). HCN (`com.hcn.autoradio`) sí
+     * tiene receptor, pero no dice la estación ni arranca con él: lleva perfil aunque no esté "callada".
      */
     private var factory: FactoryRadio? = null
     /** Sube en cada arranque o parada: un perfil que termina de abrir tarde se descarta. */
@@ -532,9 +533,15 @@ class MusicRepository(private val context: Context) {
         // Solo si la FM es la radio escogida (no la de internet).
         val pkg = radioApp?.takeUnless(::isOwn) ?: return
         factoryThread.execute {
-            if (run != factoryRun || !isSilent(pkg)) return@execute
+            if (run != factoryRun) return@execute
             val log: (String) -> Unit = { e -> mainHandler.post { trace(e) } }
             val onState: (BroadcastMeta) -> Unit = { radio.heard(it.copy(pkg = pkg)) }
+            if (pkg == HcnRadio.PACKAGE) {
+                val hcn = HcnRadio(context, onState, log)
+                mainHandler.post { if (run == factoryRun && hcn.open()) factory = hcn }
+                return@execute
+            }
+            if (!isSilent(pkg)) return@execute
             if (pkg.startsWith(NwdRadio.PACKAGE)) {
                 val nwd = NwdRadio(context, onState, log)
                 mainHandler.post { if (run == factoryRun && nwd.open()) factory = nwd }
@@ -1211,12 +1218,14 @@ class MusicRepository(private val context: Context) {
     private fun wake(pkg: String, lens: Lens) {
         lens.starting = appLabel(pkg)
         val radioLens = lens === radio
+        // Con perfil de su marca, la radio se arranca por él (la HCN tiene receptor, pero con la app cerrada no le hace caso).
+        if (radioLens) factoryFor(lens)?.let { return playFactory(it, pkg, lens) }
         val button = buttonPlay(pkg)
         val session = !button && sessions().firstOrNull { it.packageName == pkg }?.also { runCatching { it.transportControls.play() } } != null
         val service = connectAndPlay(pkg, fallback = !radioLens && !button && !session)
         trace("despertar $pkg: servicio=${yes(service)} receptor=${yes(button)} sesión=${yes(session)}")
         val none = !service && !button && !session
-        if (none && radioLens) return factoryFor(lens)?.let { playFactory(it, pkg, lens) } ?: openAndReturn(pkg, lens)
+        if (none && radioLens) return openAndReturn(pkg, lens)
         if (none) systemPlay()
         if ((button || session) && (sourceOf(pkg) != null || !service)) lens.assume(pkg, true)
         // Las apps de música normales las abre [watchPlay] (y regresa); aquí solo las de la pantalla.
@@ -1253,13 +1262,19 @@ class MusicRepository(private val context: Context) {
      */
     private fun playFactory(f: FactoryRadio, pkg: String, lens: Lens) {
         val asked = SystemClock.elapsedRealtime()
+        val run = factoryRun
         trace("${f.tag} play sin abrir")
         f.takeAudio()
         mainHandler.removeCallbacks(factoryConfirm)
         factoryConfirm = Runnable {
             lens.starting = null
-            // Se cerró (cambiaron de radio o LiteDash se fue): ya no toca.
-            if (factory !== f || !f.open) return@Runnable
+            // Cambiaron de radio o LiteDash se fue: ya no toca.
+            if (run != factoryRun || factory !== f) return@Runnable
+            // El perfil se cerró solo (su servicio no contestó): la radio se abre como antes.
+            if (!f.open) {
+                trace("${f.tag} se cerró: se abre $pkg")
+                return@Runnable openAndReturn(pkg, lens)
+            }
             // La NWD sin la clave de la fuente del MCU (on == null) solo se puede confirmar por el audio de Android.
             if (f.audioAt >= asked || (f is NwdRadio && f.on == null && musicActive() && !othersPlaying(pkg))) {
                 f.started()
@@ -1526,6 +1541,7 @@ class MusicRepository(private val context: Context) {
         }
         appendLine("Audio sonando en Android: ${yes(context.getSystemService(AudioManager::class.java).isMusicActive)}")
         if (radioApp?.startsWith(NwdRadio.PACKAGE) == true) appendLine(NwdRadio.describe(context, factory as? NwdRadio))
+        if (radioApp == HcnRadio.PACKAGE) appendLine(HcnRadio.describe(context, factory as? HcnRadio))
         if (TopWayRadio.available) {
             val tw = factory as? TopWayRadio
             appendLine(

@@ -36,6 +36,7 @@ import com.irvingguerra.litedash.core.ui.Typography
 import com.irvingguerra.litedash.feature.dashboard.DashboardState
 import com.irvingguerra.litedash.feature.music.AppProbe
 import com.irvingguerra.litedash.feature.music.MusicRepository
+import com.irvingguerra.litedash.feature.music.SystemSource
 import com.irvingguerra.litedash.feature.obd.ObdRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -280,6 +281,7 @@ private fun systemInfo(context: Context, pro: Boolean, layout: String, musicInfo
         appendLine(lightsInfo(context))
         appendLine(locationInfo(context))
         append(musicInfo)
+        SystemSource.describe(context)?.let { append("\n").append(it) }
         // Apps de fábrica sin receptor ni servicio: lo que dejan ver, para aprender a hablarles.
         for (pkg in silent) append("\nSin control $pkg:").append(AppProbe.describe(context, pkg).ifEmpty { " nada legible" })
     }

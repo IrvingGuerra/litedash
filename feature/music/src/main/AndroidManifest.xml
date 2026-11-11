@@ -26,7 +26,11 @@
         <!-- La radio de las pantallas NWD: su sintonizador y el kernel que elige qué suena. -->
         <package android:name="com.nwd.radio.service" />
         <package android:name="com.nwd.kernel" />
+        <!-- Radio FM de las pantallas Hengchen (HCN): su servicio FMPlugService. -->
+        <package android:name="com.hcn.autoradio" />
     </queries>
+    <!-- Algunas radios HCN piden este permiso para hablar con su servicio (si es de firma, no se concede y no pasa nada). -->
+    <uses-permission android:name="hcn.permission.FM_PLUG_SERVICE" />
     <!-- El nombre del celular conectado por Bluetooth (la pieza lo muestra cuando la app no manda la canción). -->
     <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />

@@ -81,7 +81,7 @@ import kotlin.math.roundToInt
 
 /**
  * Ajustes → Llantas, en pestañas: Llantas (de dónde se leen, el auto desde arriba —tocar una la
- * acomoda— y rotar), Presión y avisos, Inicio y Diagnóstico. Sin fuente (módulo apagado), solo
+ * acomoda— y rotar), Presión y avisos, Calibrar (cada llanta contra el manómetro), Inicio y Diagnóstico. Sin fuente (módulo apagado), solo
  * elegirla. Mientras se ve, las llantas se leen aunque nada más las muestre.
  */
 @Composable
@@ -94,7 +94,7 @@ fun TiresSettings(d: Dependencies) {
     if (repo.source == null) return SourceCard(repo)
     val motion = remember { TireMotion() }
     var chosen by remember { mutableStateOf<Wheel?>(null) }
-    when (tabs(listOf(R.string.tires, R.string.tires_pressure, R.string.home, R.string.tires_diagnostics), TIRES_TABS)) {
+    when (tabs(listOf(R.string.tires, R.string.tires_pressure, R.string.tires_calibrate, R.string.home, R.string.tires_diagnostics), TIRES_TABS)) {
         // La fuente y el auto en una sola pestaña: antes el auto salía dos veces (Fuente y Llantas).
         0 -> {
             SourceCard(repo)
@@ -108,7 +108,8 @@ fun TiresSettings(d: Dependencies) {
             }
         }
         1 -> PressureCard(repo, d.prefs.units.fahrenheit)
-        2 -> HomeTiresCard(d)
+        2 -> CalibrateCard(repo)
+        3 -> HomeTiresCard(d)
         else -> DiagnosticsCard(repo)
     }
 }
@@ -426,12 +427,28 @@ private fun PressureCard(repo: TpmsRepository, fahrenheit: Boolean) {
         Stepper(stringResource(R.string.tires_high_temp), tempText(repo.highTempC, fahrenheit),
             { repo.highTempC = (repo.highTempC - 5f).coerceIn(50f, 100f) },
             { repo.highTempC = (repo.highTempC + 5f).coerceIn(50f, 100f) })
-        Stepper(stringResource(R.string.tires_offset), offsetText(repo.offsetKpa, unit),
-            { repo.offsetKpa = stepKpa(repo.offsetKpa, unit, -1, OFFSET_KPA) },
-            { repo.offsetKpa = stepKpa(repo.offsetKpa, unit, 1, OFFSET_KPA) },
-            help = stringResource(R.string.tires_offset_help))
         SwitchRow(stringResource(R.string.tires_show_spare), repo.showSpare, { repo.showSpare = it })
         SwitchRow(stringResource(R.string.tires_alerts), repo.alertsEnabled, { repo.alertsEnabled = it }, stringResource(R.string.tires_alerts_help))
+    }
+}
+
+/**
+ * El ajuste de cada llanta, con lo que marca ahora (ya ajustado): se mide con el manómetro y se
+ * sube o baja hasta que coincida. Cada sensor puede venir corrido distinto.
+ */
+@Composable
+private fun CalibrateCard(repo: TpmsRepository) {
+    val unit = repo.unit
+    val wheels = if (repo.showSpare) Wheel.entries else Wheel.ROAD
+    SettingsCard(stringResource(R.string.tires_offset), stringResource(R.string.tires_offset_help)) {
+        for (w in wheels) {
+            val kpa = repo.wheelReading(w)?.takeUnless { it.lost }?.pressureKpa
+            val offset = repo.offsetKpa(w)
+            Stepper(stringResource(wheelName(w)), offsetText(offset, unit),
+                { repo.setOffsetKpa(w, stepKpa(offset, unit, -1, OFFSET_KPA)) },
+                { repo.setOffsetKpa(w, stepKpa(offset, unit, 1, OFFSET_KPA)) },
+                help = kpa?.let { stringResource(R.string.tires_reads, "${unit.format(it)} ${unit.label}") } ?: stringResource(R.string.tire_none))
+        }
     }
 }
 

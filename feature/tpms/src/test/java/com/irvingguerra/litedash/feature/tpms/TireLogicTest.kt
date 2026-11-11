@@ -15,9 +15,9 @@ class TireLogicTest {
 
     private fun kinds(alerts: List<TireAlert>, w: Wheel) = alerts.filter { it.wheel == w }.map { it.kind to it.severity }
 
-    /** Lo que el repositorio saca del historial: el máximo de los últimos 5 min y la fuga lenta. */
+    /** Lo que el repositorio saca del historial: las muestras de los últimos 5 min y la fuga lenta. */
     private fun trend(hist: List<TireSample>) =
-        TireTrend(hist.filter { now - it.atMillis <= FAST_LEAK_WINDOW_MS }.maxOfOrNull { it.kpa }, slowLeak(hist, now))
+        TireTrend(hist.filter { now - it.atMillis <= FAST_LEAK_WINDOW_MS }, slowLeak(hist, now))
 
     @Test
     fun todoBienSinAlertas() {
@@ -66,6 +66,36 @@ class TireLogicTest {
         // Poco historial (12 h): no se dice nada aunque baje.
         val short = hist.filter { now - it.atMillis <= 12 * hour }
         assertTrue(tireAlerts(mapOf(Wheel.REAR_RIGHT to reading("d", 215f)), mapOf(Wheel.REAR_RIGHT to trend(short)), TireLimits(), now).isEmpty())
+    }
+
+    @Test
+    fun enfriarseNoEsFuga() {
+        // Rodó: 264 kPa a 50 °C (230 kPa en frío). Estacionado, el aire baja a 25 °C y la presión a 237: mismo aire.
+        assertEquals(230f, coldKpa(264f, 50f), 1f)
+        val hot = listOf(TireSample(now - 4 * 60_000, 264f, 50f), TireSample(now - 2 * 60_000, 250f, 38f))
+        assertTrue(tireAlerts(mapOf(Wheel.FRONT_LEFT to reading("a", 237f, tempC = 25f)), mapOf(Wheel.FRONT_LEFT to trend(hot)), TireLimits(), now).isEmpty())
+        // Sin temperatura en la lectura de ahora no se corrige: esa misma bajada sí avisa (como antes).
+        val a = tireAlerts(mapOf(Wheel.FRONT_LEFT to reading("a", 237f, tempC = null)), mapOf(Wheel.FRONT_LEFT to trend(hot)), TireLimits(), now)
+        assertEquals(TireAlertKind.FAST_LEAK, a.single().kind)
+        // Una fuga de verdad sigue avisando aunque la llanta esté caliente.
+        val leak = listOf(TireSample(now - 4 * 60_000, 264f, 50f))
+        val b = tireAlerts(mapOf(Wheel.FRONT_LEFT to reading("a", 245f, tempC = 50f)), mapOf(Wheel.FRONT_LEFT to trend(leak)), TireLimits(), now)
+        assertEquals(TireAlertKind.FAST_LEAK, b.single().kind)
+        // Un receptor sin dato manda 205 °C (o −50): esa muestra no se mezcla con las corregidas.
+        val absurd = listOf(TireSample(now - 4 * 60_000, 250f, 205f), TireSample(now - 2 * 60_000, 240f, 30f))
+        assertTrue(tireAlerts(mapOf(Wheel.FRONT_LEFT to reading("a", 236f, tempC = 30f)), mapOf(Wheel.FRONT_LEFT to trend(absurd)), TireLimits(), now).isEmpty())
+    }
+
+    @Test
+    fun rodarEnCalienteYHoyEnFrioNoEsFugaLenta() {
+        // Hace 3 días rodó con las llantas a 55 °C (≈ 268 kPa); hoy amaneció a 18 °C (≈ 227 kPa): mismo aire.
+        val hot = (0..12).map { i -> TireSample(now - 72 * hour + i * 30 * 60_000L, 268f, 55f) }
+        val cold = (0..4).map { i -> TireSample(now - 40 * 60_000L + i * 10 * 60_000L, 227f, 18f) }
+        assertTrue(!slowLeak(hot + cold, now))
+        // Sin temperaturas eso sí parecía fuga (lo que reportó el usuario).
+        assertTrue(slowLeak((hot + cold).map { it.copy(tempC = null) }, now))
+        // Las muestras viejas sin temperatura no se mezclan con las nuevas.
+        assertTrue(!slowLeak(hot.map { it.copy(tempC = null) } + cold, now))
     }
 
     @Test
@@ -119,15 +149,15 @@ class TireLogicTest {
     }
 
     @Test
-    fun historialMaximoRecienteYCopia() {
+    fun historialColaConTemperaturaYCopia() {
         val h = TireHistory()
-        h.add(Wheel.FRONT_LEFT, 0L, 240f)
+        h.add(Wheel.FRONT_LEFT, 0L, 240f, 41.4f)
         h.add(Wheel.FRONT_LEFT, 60_000L, 230f)
-        h.add(Wheel.FRONT_LEFT, 120_000L, 225f)
-        assertEquals(230f, h.maxSince(Wheel.FRONT_LEFT, 60_000L)!!, 0.01f)
-        assertEquals(240f, h.maxSince(Wheel.FRONT_LEFT, 0L)!!, 0.01f)
-        assertNull(h.maxSince(Wheel.FRONT_LEFT, 200_000L))
-        assertNull(h.maxSince(Wheel.REAR_LEFT, 0L))
+        h.add(Wheel.FRONT_LEFT, 120_000L, 225f, -5f)
+        assertEquals(listOf(TireSample(60_000L, 230f, null), TireSample(120_000L, 225f, -5f)), h.samples(Wheel.FRONT_LEFT, 60_000L))
+        assertEquals(41f, h.samples(Wheel.FRONT_LEFT).first().tempC!!, 0.01f)
+        assertTrue(h.samples(Wheel.FRONT_LEFT, 200_000L).isEmpty())
+        assertTrue(h.samples(Wheel.REAR_LEFT, 0L).isEmpty())
         // La copia para guardar no cambia con lo que entra después.
         assertTrue(h.dirty)
         val changes = h.changes
@@ -148,13 +178,21 @@ class TireLogicTest {
     fun historialSeGuardaYSeLee() {
         val h = TireHistory()
         for (i in 0 until 100) {
-            h.add(Wheel.FRONT_LEFT, 1_700_000_000_000L + i * 30_000L, 220f + i / 10f)
+            h.add(Wheel.FRONT_LEFT, 1_700_000_000_000L + i * 30_000L, 220f + i / 10f, if (i % 2 == 0) 20f + i % 30 else null)
             h.add(Wheel.SPARE, 1_700_000_000_000L + i * 30_000L, 150f)
         }
         val bytes = h.encode()
         val back = TireHistory.decode(bytes)
         assertEquals(h.samples(Wheel.FRONT_LEFT), back.samples(Wheel.FRONT_LEFT))
         assertEquals(h.samples(Wheel.SPARE), back.samples(Wheel.SPARE))
+        // El formato de antes (TPH1, sin temperatura) se sigue leyendo.
+        val v1 = java.io.ByteArrayOutputStream().also { b ->
+            java.io.DataOutputStream(b).use { o ->
+                o.writeInt(0x54504831); o.writeByte(1); o.writeUTF("fl"); o.writeInt(2)
+                o.writeInt(1_700_000_000); o.writeShort(2300); o.writeInt(1_700_000_030); o.writeShort(2290)
+            }
+        }.toByteArray()
+        assertEquals(listOf(TireSample(1_700_000_000_000L, 230f), TireSample(1_700_000_030_000L, 229f)), TireHistory.decode(v1).samples(Wheel.FRONT_LEFT))
         // Dañado o vacío: empieza limpio.
         assertTrue(TireHistory.decode(bytes.copyOf(20)).samples(Wheel.FRONT_LEFT).isEmpty())
         assertTrue(TireHistory.decode(null).samples(Wheel.FRONT_LEFT).isEmpty())
