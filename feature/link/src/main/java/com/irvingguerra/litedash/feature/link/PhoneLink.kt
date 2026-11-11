@@ -84,25 +84,14 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
 
     private val active get() = running && (paired || watching)
 
-    /** El módulo se prendió o LiteDash volvió al frente: si hay celular vinculado, lo busca. */
+    /** LiteDash volvió al frente: si hay celular vinculado, lo busca. */
     fun start() {
         running = true
         sync()
         connect()
     }
 
-    /** El módulo se apagó: suelta todo. */
-    fun stop() {
-        running = false
-        watching = false
-        main.removeCallbacksAndMessages(null)
-        drop()
-        offered = null
-        pairing = null
-        sync()
-    }
-
-    /** El panel del módulo se abrió o se cerró: abierto, intenta cada 2 s y mantiene el QR al día. */
+    /** Ajustes → Cuenta se abrió o se cerró: abierta, intenta cada 2 s y mantiene el QR al día. */
     fun watch(on: Boolean) {
         watching = on && running
         main.removeCallbacks(tick)
@@ -116,7 +105,7 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
     }
 
     /** Para "Enviar un reporte". */
-    fun describe(): String = "Celular: módulo prendido, vinculado=${yes(paired)}, conectado=${yes(connected)}, " +
+    fun describe(): String = "Celular: vinculado=${yes(paired)}, conectado=${yes(connected)}, " +
         "puerta de enlace=${lastGateways.ifEmpty { "—" }}, última dirección=${store.getString(LAST_ADDRESS, null) ?: "—"}, " +
         "NSD=${if (discovery != null) "buscando" else "no"}${announced?.let { " ($it)" } ?: ""}, error=${lastError ?: "—"}"
 
