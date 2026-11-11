@@ -132,6 +132,8 @@ private fun Linked(link: PhoneLink) {
         Box(Modifier.fillMaxWidth().height(1.dp).background(c.line))
         Fact(stringResource(R.string.phone_app_version), link.phoneApp)
     }
+    // La música del celular necesita un permiso que solo se da en el celular.
+    if (link.connected && link.musicBlocked) Label(stringResource(R.string.phone_music_blocked), Typography.body, c.textMuted)
     Row { Button(stringResource(R.string.phone_unlink), link::unlink) }
 }
 

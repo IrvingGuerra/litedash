@@ -12,5 +12,6 @@
     <string name="phone_connected">Conectado</string>
     <string name="phone_offline">Sin conexión</string>
     <string name="phone_app_version">Versión de su app</string>
+    <string name="phone_music_blocked">Para ver aquí la música de tu celular, en LiteDash Connect toca “Permitir la música”.</string>
     <string name="phone_unlink">Desvincular</string>
 </resources>
