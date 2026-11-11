@@ -8,6 +8,7 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Build
+import android.os.ext.SdkExtensions
 import android.util.DisplayMetrics
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -441,10 +442,19 @@ private fun imageButtons(target: SavedImage, onPicked: (Uri) -> Unit = {}, onRem
 
 private val IMAGE_TYPES = setOf("jpg", "jpeg", "png", "webp", "gif", "bmp", "heic")
 
-/** Hay quién abra el selector de fotos (el del sistema o, si no, "Archivos" con imágenes). */
+/**
+ * Hay quién abra el selector de fotos: el que trae Android (13+, o 11–12 actualizado) o, si no, "Archivos" con
+ * imágenes. Sin el de Android, androidx usa el de Google Play Services, que se baja de Play la primera vez: en
+ * pantallas de auto la tienda decía "No es posible acceder" y LiteDash se quedaba trabado hasta forzar su cierre.
+ */
 private fun canPickImage(context: Context): Boolean =
-    ActivityResultContracts.PickVisualMedia.isPhotoPickerAvailable(context) ||
+    if (systemPhotoPicker()) true
+    else !ActivityResultContracts.PickVisualMedia.isPhotoPickerAvailable(context) &&
         resolves(context, Intent(Intent.ACTION_OPEN_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE).setType("image/*"))
+
+private fun systemPhotoPicker(): Boolean =
+    Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU ||
+        (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && SdkExtensions.getExtensionVersion(Build.VERSION_CODES.R) >= 2)
 
 /** Hay una galería o un gestor de archivos que entregue una imagen. */
 private fun canGetImage(context: Context): Boolean =

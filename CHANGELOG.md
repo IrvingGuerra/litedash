@@ -4,6 +4,13 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.4.132] - 2026-11-11
+
+### Corregido
+- **Elegir imagen (fondo, logo de entrada, widget Imagen) en pantallas con Android 12 o anterior:** te mandaba a
+  Play Store ("No es posible acceder") y LiteDash se quedaba trabado hasta forzar su cierre. Ahora abre el
+  selector de archivos de tu pantalla o el explorador de LiteDash.
+
 ## [1.4.131] - 2026-11-11
 
 ### Agregado
