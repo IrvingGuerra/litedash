@@ -180,6 +180,7 @@
           <a class="boton secundario" href="https://github.com/IrvingGuerra/litedash/releases/latest/download/litedash.apk" download>Download APK <small class="version">1.4.131 · 1.8 MB</small></a>
           <a class="boton secundario" href="https://github.com/IrvingGuerra/litedash"><span class="estrella">★</span> <span class="gh-estrellas">15</span> on GitHub</a>
         </div>
+        <p class="nota tras-descarga" style="margin:14px 0 0;font-size:14px;color:var(--suave)" hidden>Installed it? If you like it, <a href="https://github.com/IrvingGuerra/litedash">give it a ★ on GitHub</a>: it helps more people find it.</p>
         <p class="nota">Android 6.0 or newer · No accounts, no tracking · Now on Google Play</p>
 
         <div class="giro" id="giro" role="img" aria-label="Silver Lancer Evolution X in 3D: drag it to spin it, just like on the LiteDash home screen">
@@ -427,8 +428,9 @@
         <div class="botones">
           <a class="boton principal" href="https://play.google.com/store/apps/details?id=com.irvingguerra.litedash" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true" style="flex:none"><path d="M8 5v14l11-7z" fill="currentColor"/></svg> Google Play</a>
           <a class="boton secundario" href="https://github.com/IrvingGuerra/litedash/releases/latest/download/litedash.apk" download>Download APK <small class="version">1.4.131 · 1.8 MB</small></a>
-          <a class="boton secundario" href="https://github.com/IrvingGuerra/litedash/releases/latest">What's new on GitHub</a>
+          <a class="boton secundario" href="https://github.com/IrvingGuerra/litedash"><span class="estrella">★</span> Star it on GitHub</a>
         </div>
+        <p class="nota tras-descarga" style="margin:14px 0 0;font-size:14px;color:var(--suave)" hidden>Installed it? If you like it, <a href="https://github.com/IrvingGuerra/litedash">give it a ★ on GitHub</a>: it helps more people find it.</p>
         <p class="requisitos">Android 6.0 or newer · cars and motorcycles from 6" to 11" and up · <code>—··</code> is the D in Dash in Morse code</p>
       </div>
     </section>
@@ -526,6 +528,10 @@
       const n = rs.flatMap(r => r.assets).filter(a => a.name.endsWith('.apk')).reduce((s, a) => s + a.download_count, 0);
       if (n > 0) put('.gh-descargas', fmt(Math.floor(n / 100) * 100) + '+');
     }).catch(() => {});
+    // Tras bajar la APK, pedir la estrella (quien baja directo nunca ve el repo).
+    document.querySelectorAll('a[download]').forEach(a => a.addEventListener('click', () => {
+      document.querySelectorAll('.tras-descarga').forEach(p => { p.hidden = false; });
+    }));
   })();
   </script>
 </body>

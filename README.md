@@ -17,6 +17,17 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/IrvingGuerra/litedash/stargazers"><img src="https://img.shields.io/github/stars/IrvingGuerra/litedash?style=social" alt="Estrellas en GitHub"></a>
+  <a href="https://github.com/IrvingGuerra/litedash/releases"><img src="https://img.shields.io/github/downloads/IrvingGuerra/litedash/total?label=descargas" alt="Descargas"></a>
+  <a href="https://github.com/IrvingGuerra/litedash/releases/latest"><img src="https://img.shields.io/github/v/release/IrvingGuerra/litedash?label=versión" alt="Versión"></a>
+</p>
+
+<p align="center">
+  <b>⭐ ¿Te sirve? Dale una estrella arriba a la derecha:</b> ayuda a que más gente lo encuentre.<br>
+  <i>Like it? Star the repo (top right): it helps more people find it.</i>
+</p>
+
+<p align="center">
   <a href="https://ko-fi.com/irvingguerradev"><img src="https://ko-fi.com/img/githubbutton_sm.svg" alt="Apóyame en Ko-fi"></a>
 </p>
 
