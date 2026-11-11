@@ -150,7 +150,7 @@ form.addEventListener("submit", (event) => {
   });
 });
 
-$("reset").addEventListener("click", () => {
+$("forgot").addEventListener("click", () => {
   const email = form.email.value.trim();
   if (!email) return say(t.badEmail, true);
   attempt(async () => {

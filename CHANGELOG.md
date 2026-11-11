@@ -4,6 +4,14 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.4.129] - 2026-11-10
+
+### Cambiado
+- **Ajustes → Cuenta** (nuevo): ahí está el código QR para vincular tu pantalla con la app **LiteDash Connect** de
+  tu celular, donde ahora creas tu cuenta de LiteDash (con Google o con tu correo). Ya vinculado, ves si están
+  conectados y puedes desvincular. Siempre está disponible: sin celular vinculado no usa la red ni corre nada.
+- Ya no hay módulo Celular en Ajustes → Módulos (pasó a Cuenta). Si ya tenías tu celular vinculado, sigue igual.
+
 ## [1.4.128] - 2026-11-10
 
 ### Agregado
