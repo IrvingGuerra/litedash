@@ -6,10 +6,13 @@
 </p>
 
 <p align="center">
-  <b>Launcher para pantallas Android de autos y motos: ligero, rápido y elegante.</b><br>
-  <i>A light, fast and clean launcher for Android car and motorcycle screens.</i><br><br>
+  <b>El launcher para pantallas Android de auto y moto: 1.8 MB con escáner OBD2, presión de llantas, radio FM, música USB y mapa.</b><br>
+  <i>The car launcher for Android head units: 1.8 MB with an OBD2 scanner, TPMS, FM radio, USB music and a map.</i><br><br>
+  <b>Android 6.0+ · Gratis · Sin anuncios · GPL-3.0</b><br><br>
   <a href="https://litedash.web.app/">Sitio</a> ·
+  <a href="https://play.google.com/store/apps/details?id=com.irvingguerra.litedash">Google Play</a> ·
   <a href="https://github.com/IrvingGuerra/litedash/releases/latest">Descargar APK</a> ·
+  <a href="https://litedash.web.app/compare/">Comparativa</a> ·
   <a href="https://litedash.web.app/en/">English</a>
 </p>
 
@@ -21,35 +24,49 @@
 
 ## Qué es
 
-LiteDash es una pantalla de inicio limpia para las pantallas Android que se
-ponen en autos y motos, y también para tablets y teléfonos (de 6" a 11" o más).
-**Todo es opcional y viene apagado**, para que vuele hasta en una pantalla de
-1 GB de RAM: lo que está apagado no gasta memoria, batería ni permisos.
+LiteDash es la pantalla de inicio (launcher) para las pantallas Android de autos y motos
+(*head units*, las "chinas" de 7" a 11"), tablets y teléfonos. **En 1.8 MB trae escáner OBD2,
+presión de llantas, la radio FM de tu pantalla, reproductor USB, mapa, velocímetros y tu auto en
+3D.** Todo es opcional y viene apagado, para que vuele hasta en una pantalla de 1 GB de RAM: lo
+apagado no gasta memoria, batería ni permisos. Tú acomodas tu inicio: deja presionado para mover,
+agrandar o quitar widgets.
 
-**Tú acomodas tu inicio**: deja presionado para mover, agrandar o quitar piezas
-(tu auto, música, navegar, reloj, apps). Entre más grande la pantalla, más
-lugares. Sin anuncios, sin cuentas, sin rastreo: cada permiso se pide solo si
-activas la función que lo usa. Las funciones nuevas llegan dentro de la misma
-app, con actualizaciones frecuentes.
+## Qué trae
+
+| | |
+| --- | --- |
+| **Escáner OBD2** (Taller) | Adaptador ELM327 por Bluetooth, BLE, Wi‑Fi o USB. Salud del auto, códigos de falla explicados y borrarlos, monitores de verificación, gráficas en vivo, 0 a 100 y registro de viajes. Sin otra app. |
+| **Presión de llantas (TPMS)** | Kits con receptor USB, sensores Bluetooth comunes o la presión de fábrica por OBD en algunos autos. Avisos de presión baja, fuga, calor y pila. |
+| **Radio FM de tu pantalla** | Controla la radio de fábrica (TopWay, NWD, Hengchen) desde su widget, y radio por internet con las estaciones cerca de ti. |
+| **Música** | Reproductor USB propio (carpetas, artistas, álbumes), Bluetooth con carátula y tu app (Spotify, YouTube Music…). |
+| **Mapa** | Tu posición en vivo, plano o inclinado, y Waze o Google Maps a un toque. |
+| **Velocímetros y medidores** | Por OBD o GPS: esfera, aguja, digital, barra o degradado; tacómetro, temperatura, gasolina, batería, turbo. |
+| **Tu auto en 3D** | Catálogo de 15 modelos, del color que quieras, con giro de 360°. |
+| **Tu inicio** | Widgets que se mueven y crecen, plantillas para 7", 10" y 11", mandos al volante, día y noche por hora, sensor de luz o faros, pantalla dividida. |
+| **Android Auto y CarPlay** | Zlink, AutoKit, CarLink u Open Headunit a un toque. |
+| **App del celular** | [LiteDash Connect](https://litedash.web.app/connect/) (opcional): lo que suena en tu celular, con carátula y controles. |
+
+¿Cómo se compara con StradaOS, AGAMA o CarWebGuru? → [litedash.web.app/compare](https://litedash.web.app/compare/)
 
 ## What it is (English)
 
-LiteDash is a clean home screen for Android car and motorcycle screens, tablets and phones
-(6"–11"+). **Everything is optional and off by default**, so it stays fast on
-low-end units. **You arrange your home**: long-press to move, resize or remove
-pieces (your car, music, navigation, clock, apps). No ads, no accounts, no
-tracking.
+LiteDash is a home screen (launcher) for Android car and motorcycle head units, tablets and phones.
+**In 1.8 MB it packs an OBD2 scanner, TPMS tire pressure, your unit's factory FM radio, its own USB
+music player, a live map, speedometers and your car in 3D.** Everything is optional and off by
+default, so it stays fast on 1 GB units running Android 6.0 or newer. No ads, no tracking, no
+account. See the [comparison with other car launchers](https://litedash.web.app/en/compare/).
 
 ## Instalar / Install
 
-1. Descarga el APK de [Releases](https://github.com/IrvingGuerra/litedash/releases/latest)
-   (pronto también en Google Play). Después se actualiza solo desde
-   Ajustes → Acerca de → Buscar actualizaciones.
-2. Instálalo y elige **LiteDash** como pantalla de inicio. En muchas pantallas de
-   auto esto está en Ajustes → Aplicaciones → Pantalla de inicio, o en un menú
-   del fabricante para elegir el launcher.
+1. Bájalo de [Google Play](https://play.google.com/store/apps/details?id=com.irvingguerra.litedash)
+   o el APK de [Releases](https://github.com/IrvingGuerra/litedash/releases/latest). El APK se
+   actualiza solo desde Ajustes → Sistema → Actualizaciones.
+2. Ábrelo y toca **Hazlo tu inicio**. En muchas pantallas de auto esto también está en Ajustes →
+   Aplicaciones → Pantalla de inicio, o en un menú del fabricante para elegir el launcher.
 
-Requiere Android 6.0 o más nuevo.
+Requiere Android 6.0 o más nuevo. *Requires Android 6.0+.*
+
+**¿Te sirve? Dale una ⭐ al repo:** ayuda a que más gente lo encuentre. *Like it? Star the repo.*
 
 ## Compilar / Build
 

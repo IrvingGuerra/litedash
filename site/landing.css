@@ -224,3 +224,32 @@ footer nav { display: flex; flex-wrap: wrap; gap: 20px; }
 .rejilla.cuatro { grid-template-columns: repeat(4, 1fr); }
 @media (max-width: 1000px) { .rejilla.cuatro { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 560px) { .rejilla.cuatro { grid-template-columns: 1fr; } }
+
+/* ── Comparativa (/compare/) ──────────────────────────── */
+.heroe.comparativa { padding-bottom: 0; }
+.heroe.comparativa h1 { font-size: clamp(38px, 6.4vw, 76px); }
+.tabla { max-width: 1100px; margin: 0 auto; overflow-x: auto; border: 1px solid var(--linea); border-radius: var(--radio); background: var(--grafito-2); -webkit-overflow-scrolling: touch; }
+.tabla table { width: 100%; min-width: 760px; border-collapse: collapse; font-size: 15px; }
+.tabla th, .tabla td { padding: 13px 16px; text-align: center; border-bottom: 1px solid var(--linea); vertical-align: middle; }
+.tabla tr:last-child th, .tabla tr:last-child td { border-bottom: 0; }
+.tabla thead th { font-size: 14px; color: var(--suave); font-weight: 650; background: var(--grafito-3); }
+.tabla thead th small { display: block; font-weight: 400; font-size: 12px; }
+.tabla tbody th { text-align: left; font-weight: 600; color: var(--blanco); position: sticky; left: 0; background: var(--grafito-2); min-width: 190px; }
+.tabla thead th:first-child { position: sticky; left: 0; z-index: 1; }
+.tabla .nuestra { background: rgb(255 178 36 / .07); color: var(--blanco); }
+.tabla thead .nuestra { color: var(--ambar); background: rgb(255 178 36 / .14); }
+.tabla .grupo th { color: var(--ambar); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; background: var(--grafito); }
+.tabla td small { display: block; color: var(--suave); font-size: 12px; }
+.si, .no, .parcial, .nd { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; font-size: 14px; font-weight: 700; }
+.si { background: rgb(60 207 122 / .16); color: var(--verde); }
+.no { background: var(--grafito-3); color: var(--suave); }
+.parcial { background: var(--ambar-suave); color: var(--ambar); }
+.nd { color: var(--suave); font-weight: 400; }
+.leyenda { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px 20px; margin-top: 16px; color: var(--suave); font-size: 13px; }
+.leyenda span { display: inline-flex; align-items: center; gap: 8px; }
+.cuenta { display: flex; justify-content: center; flex-wrap: wrap; gap: 12px; margin: 30px auto 0; max-width: 820px; }
+.cuenta div { flex: 1 1 160px; background: var(--grafito-2); border: 1px solid var(--linea); border-radius: 16px; padding: 16px; text-align: center; }
+.cuenta b { display: block; font-size: 30px; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.cuenta div.nuestra { border-color: rgb(255 178 36 / .4); }
+.cuenta div.nuestra b { color: var(--ambar); }
+.cuenta small { color: var(--suave); font-size: 13px; }

@@ -1,0 +1,51 @@
+# LiteDash
+
+> LiteDash is a free, open-source (GPL-3.0), ad-free home screen (launcher) for Android car and motorcycle head units ("Chinese" Android car stereos from 6" to 11"), tablets and phones. The APK is about 1.8 MB and runs on Android 6.0 or newer, even with 1 GB of RAM. In that size it includes an OBD2 scanner, TPMS tire pressure, control of the head unit's factory FM radio, its own USB music player, internet radio, a live map, speedometers and your car in 3D. Everything is optional and off by default. Made in Mexico by Irving Guerra. Spanish and English.
+
+Key facts:
+
+- Download size: ~1.8 MB (measured on every release; the website reads it live from GitHub). About 6 times lighter than AGAMA Car Launcher (11.6 MB) and 16 times lighter than CarWebGuru (29.3 MB).
+- Minimum Android: 6.0 (API 23). Tested on Android 6 with 1 GB of RAM.
+- Price: free, no ads, no account needed for the launcher. Optional donations on Ko-fi.
+- Source code: https://github.com/IrvingGuerra/litedash (GPL-3.0).
+- Install: Google Play (com.irvingguerra.litedash) or the APK from GitHub Releases; both update the same way.
+- Companion phone app: LiteDash Connect (Android) shows what's playing on your phone, with album art and controls, on the head unit.
+
+## What it includes
+
+- Launcher: movable and resizable widgets, layouts for 7", 10" and 11", landscape or portrait, wallpaper, split screen with the map, steering wheel buttons, day/night by sun time, light sensor or headlights, parked mode.
+- OBD2 scanner ("Workshop"): ELM327 adapter over Bluetooth, Bluetooth LE, Wi-Fi or USB. Car health view from above, trouble codes in plain words (and clearing them), emissions readiness monitors, live sensors and charts, 0–100 timer, trip log, overheating and charging alerts. No extra app needed.
+- Tire pressure (TPMS): USB receiver kits sold for Android head units, common Bluetooth sensor families, and factory tire pressure over OBD on some cars. Pressure shown on each wheel of the 3D car, 24-hour history, low pressure, leak, temperature, sensor battery and no-signal alerts.
+- Music and radio: own USB player (folders, artists, albums), Bluetooth music with title and album art, apps like Spotify or YouTube Music, factory FM radio of TopWay, NWD and Hengchen (HCN) head units in its own widget, and internet radio with nearby stations.
+- Map: live position, flat or tilted, light or dark, tiles from OpenStreetMap/OpenFreeMap cached on the device; one tap to Waze or Google Maps.
+- Gauges: OBD or GPS speedometer (dial, needle, digital, bar, gradient), tachometer, coolant, fuel, battery, consumption, boost; km/h or mph, °C or °F, psi, bar or kPa.
+- Your car in 3D: catalog of 15 pre-rendered models (about 2 MB each, downloaded only if you want), any color, 360° spin.
+- Phone projection: one tap to Zlink, AutoKit, CarLink and Open Headunit (Android Auto / CarPlay apps).
+- Updates: checks GitHub, verifies SHA-256 and installs with one tap (APK version).
+- Privacy: internet only for what you ask (3D car, weather, radio, map, updates) plus an anonymous daily count you can turn off.
+
+## How it compares (checked November 11, 2026)
+
+Full table with sources: https://litedash.web.app/en/compare/
+
+- StradaOS (0.6 MB, Android 4.1+, free, GPL-3.0, GitHub only): lighter and runs on older Android, and has downloadable offline maps since 2.16.0. It has no OBD2 scanner, no TPMS, no own USB player, no internet radio, and only opens the factory radio app. LiteDash has all of those built in.
+- AGAMA Car Launcher (11.6 MB, Android 6.0+): popular and themeable, but paid after a 30-day trial (US$8.99), closed source, and OBD/TPMS need its separate CRAB and MANTA apps with their own licenses. No own music player or map.
+- CarWebGuru (29.3 MB, Android 5.0+): has ads, closed source; OBD2 widgets and a file player; no confirmed TPMS or factory FM radio control.
+- DuduAuto / DUDU OS is the system of DUDUAUTO head units, not an installable launcher.
+- Features only LiteDash has among these: built-in TPMS without another app, factory FM radio control (station and buttons), your car in 3D, and a phone companion app.
+
+## Links
+
+- [Website (Spanish)](https://litedash.web.app/)
+- [Website (English)](https://litedash.web.app/en/)
+- [Comparison with other car launchers](https://litedash.web.app/en/compare/)
+- [LiteDash Connect](https://litedash.web.app/en/connect/)
+- [Google Play](https://play.google.com/store/apps/details?id=com.irvingguerra.litedash)
+- [GitHub and releases](https://github.com/IrvingGuerra/litedash)
+- [Privacy policy](https://litedash.web.app/en/privacy/)
+
+## Optional
+
+- [LiteDash Connect on Google Play](https://play.google.com/store/apps/details?id=com.irvingguerra.litedash.connect)
+- [Report a problem](https://github.com/IrvingGuerra/litedash/issues)
+- [Support on Ko-fi](https://ko-fi.com/irvingguerradev)
