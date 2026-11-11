@@ -26,7 +26,7 @@ Key facts:
 
 ## How it compares (checked November 11, 2026)
 
-Full table with sources: https://litedash.web.app/en/compare/
+Full table with sources: https://litedash.dev/en/compare/
 
 - StradaOS (0.6 MB, Android 4.1+, free, GPL-3.0, GitHub only): lighter and runs on older Android, and has downloadable offline maps since 2.16.0. It has no OBD2 scanner, no TPMS, no own USB player, no internet radio, and only opens the factory radio app. LiteDash has all of those built in.
 - AGAMA Car Launcher (11.6 MB, Android 6.0+): popular and themeable, but paid after a 30-day trial (US$8.99), closed source, and OBD/TPMS need its separate CRAB and MANTA apps with their own licenses. No own music player or map.
@@ -37,13 +37,13 @@ Full table with sources: https://litedash.web.app/en/compare/
 
 ## Links
 
-- [Website (Spanish)](https://litedash.web.app/)
-- [Website (English)](https://litedash.web.app/en/)
-- [Comparison with other car launchers](https://litedash.web.app/en/compare/)
-- [LiteDash Connect](https://litedash.web.app/en/connect/)
+- [Website (Spanish)](https://litedash.dev/)
+- [Website (English)](https://litedash.dev/en/)
+- [Comparison with other car launchers](https://litedash.dev/en/compare/)
+- [LiteDash Connect](https://litedash.dev/en/connect/)
 - [Google Play](https://play.google.com/store/apps/details?id=com.irvingguerra.litedash)
 - [GitHub and releases](https://github.com/IrvingGuerra/litedash)
-- [Privacy policy](https://litedash.web.app/en/privacy/)
+- [Privacy policy](https://litedash.dev/en/privacy/)
 
 ## Optional
 

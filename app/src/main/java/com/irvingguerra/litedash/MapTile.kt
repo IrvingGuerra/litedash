@@ -149,7 +149,7 @@ private fun LiveMap(d: Dependencies, look: MapLook, modifier: Modifier, onTap: (
 }
 
 private fun newTileStore(context: Context, detail: MapDetail, dark: Boolean, density: Float): TileStore {
-    val userAgent = "LiteDash/${BuildConfig.VERSION_NAME} (+https://litedash.web.app)"
+    val userAgent = "LiteDash/${BuildConfig.VERSION_NAME} (+https://litedash.dev)"
     val source = when (detail) {
         MapDetail.FULL -> OsmTiles
         MapDetail.MINIMAL -> VectorTiles(context, if (dark) MinimalPalette.DARK else MinimalPalette.LIGHT, tilePx(density).toInt(), density, userAgent)

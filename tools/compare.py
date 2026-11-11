@@ -191,7 +191,8 @@ TEXT = {
         "home": "../", "root": "../",
         "footer": "© 2026 LiteDash · Hecho en México",
         "footer_links": [("../", "LiteDash"), ("../connect/", "Connect"), ("../privacidad/", "Privacidad"),
-                         ("https://github.com/IrvingGuerra/litedash", "GitHub"), ("../en/compare/", "English")],
+                         ("https://github.com/IrvingGuerra/litedash", "GitHub"), ("mailto:support@litedash.dev", "Contacto"),
+                         ("../en/compare/", "English")],
         "apk_label": "Descargar APK",
         "estado": {"si": "Sí", "no": "No", "parcial": "A medias", "nd": "Sin dato"},
     },
@@ -232,7 +233,8 @@ TEXT = {
         "home": "../", "root": "../../",
         "footer": "© 2026 LiteDash · Made in Mexico",
         "footer_links": [("../", "LiteDash"), ("../connect/", "Connect"), ("../privacy/", "Privacy"),
-                         ("https://github.com/IrvingGuerra/litedash", "GitHub"), ("../../compare/", "Español")],
+                         ("https://github.com/IrvingGuerra/litedash", "GitHub"), ("mailto:support@litedash.dev", "Contact"),
+                         ("../../compare/", "Español")],
         "apk_label": "Download APK",
         "estado": {"si": "Yes", "no": "No", "parcial": "Partly", "nd": "No data"},
     },
@@ -309,16 +311,16 @@ def page(lang):
   <title>{t["title"]}</title>
   <meta name="description" content="{t["desc"]}">
   <meta name="theme-color" content="#101317">
-  <link rel="canonical" href="https://litedash.web.app{me}">
+  <link rel="canonical" href="https://litedash.dev{me}">
   <link rel="icon" href="{root}favicon.ico" sizes="48x48">
   <link rel="icon" href="{root}favicon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="{root}apple-touch-icon.png">
-  <link rel="alternate" hreflang="es" href="https://litedash.web.app/compare/">
-  <link rel="alternate" hreflang="en" href="https://litedash.web.app/en/compare/">
+  <link rel="alternate" hreflang="es" href="https://litedash.dev/compare/">
+  <link rel="alternate" hreflang="en" href="https://litedash.dev/en/compare/">
   <meta property="og:title" content="{t["title"]}">
   <meta property="og:description" content="{t["desc"]}">
-  <meta property="og:image" content="https://litedash.web.app/img/og{'' if lang == 'es' else '-en'}.jpg">
-  <meta property="og:url" content="https://litedash.web.app{me}">
+  <meta property="og:image" content="https://litedash.dev/img/og{'' if lang == 'es' else '-en'}.jpg">
+  <meta property="og:url" content="https://litedash.dev{me}">
   <meta property="og:type" content="website">
   <meta name="twitter:card" content="summary_large_image">
   <link rel="stylesheet" href="{root}landing.css?v=20261111b">

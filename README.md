@@ -9,11 +9,11 @@
   <b>El launcher para pantallas Android de auto y moto: 1.8 MB con escáner OBD2, presión de llantas, radio FM, música USB y mapa.</b><br>
   <i>The car launcher for Android head units: 1.8 MB with an OBD2 scanner, TPMS, FM radio, USB music and a map.</i><br><br>
   <b>Android 6.0+ · Gratis · Sin anuncios · GPL-3.0</b><br><br>
-  <a href="https://litedash.web.app/">Sitio</a> ·
+  <a href="https://litedash.dev/">Sitio</a> ·
   <a href="https://play.google.com/store/apps/details?id=com.irvingguerra.litedash">Google Play</a> ·
   <a href="https://github.com/IrvingGuerra/litedash/releases/latest">Descargar APK</a> ·
-  <a href="https://litedash.web.app/compare/">Comparativa</a> ·
-  <a href="https://litedash.web.app/en/">English</a>
+  <a href="https://litedash.dev/compare/">Comparativa</a> ·
+  <a href="https://litedash.dev/en/">English</a>
 </p>
 
 <p align="center">
@@ -55,9 +55,9 @@ agrandar o quitar widgets.
 | **Tu auto en 3D** | Catálogo de 15 modelos, del color que quieras, con giro de 360°. |
 | **Tu inicio** | Widgets que se mueven y crecen, plantillas para 7", 10" y 11", mandos al volante, día y noche por hora, sensor de luz o faros, pantalla dividida. |
 | **Android Auto y CarPlay** | Zlink, AutoKit, CarLink u Open Headunit a un toque. |
-| **App del celular** | [LiteDash Connect](https://litedash.web.app/connect/) (opcional): lo que suena en tu celular, con carátula y controles. |
+| **App del celular** | [LiteDash Connect](https://litedash.dev/connect/) (opcional): lo que suena en tu celular, con carátula y controles. |
 
-¿Cómo se compara con StradaOS, AGAMA o CarWebGuru? → [litedash.web.app/compare](https://litedash.web.app/compare/)
+¿Cómo se compara con StradaOS, AGAMA o CarWebGuru? → [litedash.dev/compare](https://litedash.dev/compare/)
 
 ## What it is (English)
 
@@ -65,7 +65,7 @@ LiteDash is a home screen (launcher) for Android car and motorcycle head units, 
 **In 1.8 MB it packs an OBD2 scanner, TPMS tire pressure, your unit's factory FM radio, its own USB
 music player, a live map, speedometers and your car in 3D.** Everything is optional and off by
 default, so it stays fast on 1 GB units running Android 6.0 or newer. No ads, no tracking, no
-account. See the [comparison with other car launchers](https://litedash.web.app/en/compare/).
+account. See the [comparison with other car launchers](https://litedash.dev/en/compare/).
 
 ## Instalar / Install
 

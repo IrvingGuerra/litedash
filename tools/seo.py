@@ -17,7 +17,7 @@ import subprocess
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 SITE = ROOT / "site"
-BASE = "https://litedash.web.app"
+BASE = "https://litedash.dev"
 PLAY = "https://play.google.com/store/apps/details?id=com.irvingguerra.litedash"
 PLAY_CONNECT = PLAY + ".connect"
 REPO = "https://github.com/IrvingGuerra/litedash"

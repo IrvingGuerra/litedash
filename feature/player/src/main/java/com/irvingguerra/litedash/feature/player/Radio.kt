@@ -76,7 +76,7 @@ class Here(val latitude: Double, val longitude: Double)
  */
 object Radio {
     private val SERVERS = listOf("https://de1.api.radio-browser.info", "https://nl1.api.radio-browser.info", "https://at1.api.radio-browser.info", "https://fi1.api.radio-browser.info")
-    private const val USER_AGENT = "LiteDash/1.4 (+https://litedash.web.app)"
+    private const val USER_AGENT = "LiteDash/1.4 (+https://litedash.dev)"
     private const val LIMIT = 150
     private const val ROUNDS = 2
 

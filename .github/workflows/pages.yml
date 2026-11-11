@@ -1,4 +1,4 @@
-# GitHub Pages solo redirige al sitio de verdad (litedash.web.app, Firebase Hosting; ver firebase.json).
+# GitHub Pages solo redirige al sitio de verdad (litedash.dev, Firebase Hosting; ver firebase.json).
 name: Pages
 
 on:
