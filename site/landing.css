@@ -196,3 +196,31 @@ footer nav { display: flex; flex-wrap: wrap; gap: 20px; }
   .js .aparece { opacity: 0; transform: translateY(18px); transition: opacity .7s ease, transform .7s ease; }
   .js .aparece.visto { opacity: 1; transform: none; }
 }
+
+/* ── LiteDash Connect (/connect/) ─────────────────────── */
+.heroe.connect { padding-bottom: 8px; }
+.heroe.connect h1 { font-size: clamp(40px, 7vw, 84px); }
+.heroe.connect h1 em { white-space: nowrap; }
+.heroe.connect .pantalla { margin-top: 44px; }
+.celular { width: min(330px, 100%); margin: 0 auto; padding: 11px; border-radius: 46px; background: linear-gradient(180deg, #252b33, #0a0c0f); box-shadow: 0 40px 110px rgb(0 0 0 / .6), inset 0 1px 0 rgb(255 255 255 / .07); }
+.celular .vista { background: var(--grafito); border-radius: 36px; padding: 34px 20px 30px; min-height: 470px; display: flex; flex-direction: column; }
+.celular .estado { display: flex; align-items: center; gap: 9px; color: var(--texto); font-size: 14px; }
+.celular .estado::before { content: ""; width: 9px; height: 9px; border-radius: 50%; background: var(--ambar); }
+.celular b.nombre { display: block; font-size: 30px; letter-spacing: -0.02em; line-height: 1.1; margin: 10px 0 22px; }
+.celular dl { margin: 0; background: var(--grafito-2); border-radius: 18px; padding: 4px 16px; }
+.celular dl div { display: flex; justify-content: space-between; gap: 12px; padding: 13px 0; font-size: 14px; }
+.celular dl div + div { border-top: 1px solid var(--linea); }
+.celular dt { color: var(--suave); }
+.celular dd { margin: 0; text-align: right; }
+.celular .desvincular { margin-top: auto; padding-top: 28px; text-align: center; color: var(--suave); font-size: 14px; }
+.pasos { counter-reset: paso; }
+.pasos .tarjeta::before { counter-increment: paso; content: counter(paso); display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; background: var(--ambar-suave); color: var(--ambar); font-weight: 700; margin-bottom: 14px; }
+.pasos + .fuente { text-align: center; margin-top: 18px; font-size: 15px; }
+.portada-connect { display: grid; grid-template-columns: 1.3fr 1fr; gap: 36px; align-items: center; }
+.portada-connect h3 { font-size: clamp(24px, 3vw, 32px); letter-spacing: -0.02em; line-height: 1.12; margin: 0 0 10px; }
+.portada-connect p { color: var(--texto); margin: 0 0 18px; }
+.portada-connect .enlace { color: var(--ambar); font-weight: 650; text-decoration: none; }
+@media (max-width: 900px) { .portada-connect { grid-template-columns: 1fr; } }
+.rejilla.cuatro { grid-template-columns: repeat(4, 1fr); }
+@media (max-width: 1000px) { .rejilla.cuatro { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 560px) { .rejilla.cuatro { grid-template-columns: 1fr; } }
