@@ -482,8 +482,8 @@
     <string name="tile_clock_help">Hora, fecha y clima</string>
     <string name="tile_phone_help">Abre el marcador o la app de llamadas que elijas</string>
     <string name="tile_app_help">Cualquier app instalada, de un toque</string>
-    <string name="logo_intro_help">Al abrir LiteDash, tu imagen (como el logo de tu marca) aparece unos segundos. Es aparte de los widgets de imagen.</string>
-    <string name="intro_no_image">Sin imagen se muestra el logo de LiteDash.</string>
+    <string name="logo_intro_help">Al abrir LiteDash se arma el logo de LiteDash o aparece tu imagen (como el logo de tu marca) unos segundos. Es aparte de los widgets de imagen.</string>
+    <string name="intro_no_image">Sin imagen, se arma el logo de LiteDash.</string>
     <string name="unit_rpm" translatable="false">rpm</string>
     <string name="unit_c" translatable="false">°C</string>
     <string name="unit_f" translatable="false">°F</string>

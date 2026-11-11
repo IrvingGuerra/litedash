@@ -13,6 +13,7 @@ import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -40,6 +41,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -55,7 +57,9 @@ import com.irvingguerra.litedash.core.ui.FileBrowser
 import com.irvingguerra.litedash.core.ui.Label
 import com.irvingguerra.litedash.core.ui.LocalColors
 import com.irvingguerra.litedash.core.ui.MORSE_ASPECT
+import com.irvingguerra.litedash.core.ui.MORSE_INTRO_MS
 import com.irvingguerra.litedash.core.ui.MorseMark
+import com.irvingguerra.litedash.core.ui.MorseMarkIntro
 import com.irvingguerra.litedash.core.ui.Segmented
 import com.irvingguerra.litedash.core.ui.SwitchRow
 import com.irvingguerra.litedash.core.ui.Typography
@@ -69,6 +73,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -284,18 +289,22 @@ fun SavedTileImage(name: String, modifier: Modifier = Modifier) {
 }
 
 /**
- * Animación de entrada al abrir LiteDash: el logo aparece desde el fondo, crece un
- * poco y se desvanece hacia el inicio. Un toque la salta.
+ * Animación de entrada al abrir LiteDash. Sin imagen propia, la marca —·· se arma (el guion
+ * entra y los puntos caen saltando); con tu imagen, aparece desde el fondo y crece un poco.
+ * Al final se desvanece hacia el inicio. Un toque la salta.
  */
 @Composable
 fun LogoIntro(onDone: () -> Unit) {
     val c = LocalColors.current
     val done by rememberUpdatedState(onDone)
+    val logo = rememberImage(INTRO)
+    val current by rememberUpdatedState(logo)
     // El fondo tapa el inicio desde el primer cuadro; el logo aparece encima y al final
     // todo se desvanece hacia el inicio.
     val curtain = remember { Animatable(1f) }
     val alpha = remember { Animatable(0f) }
     val scale = remember { Animatable(0.82f) }
+    val time = remember { Animatable(0f) }
     // Solo se ve al abrir: al terminar (o saltarla) su imagen sale de memoria.
     DisposableEffect(Unit) { onDispose { INTRO.release() } }
     LaunchedEffect(Unit) {
@@ -303,9 +312,15 @@ fun LogoIntro(onDone: () -> Unit) {
         // arranque (y el inicio carga el auto) la animación se iba sin que se viera.
         repeat(3) { withFrameNanos { } }
         delay(250)
-        launch { scale.animateTo(1f, tween(1400, easing = FastOutSlowInEasing)) }
-        alpha.animateTo(1f, tween(600))
-        delay(1100)
+        snapshotFlow { current.loaded }.first { it }
+        if (current.image == null) {
+            time.animateTo(MORSE_INTRO_MS.toFloat(), tween(MORSE_INTRO_MS, easing = LinearEasing))
+            delay(450)
+        } else {
+            launch { scale.animateTo(1f, tween(1400, easing = FastOutSlowInEasing)) }
+            alpha.animateTo(1f, tween(600))
+            delay(1100)
+        }
         curtain.animateTo(0f, tween(500))
         done()
     }
@@ -317,17 +332,14 @@ fun LogoIntro(onDone: () -> Unit) {
             .clickable(remember { MutableInteractionSource() }, indication = null, onClick = onDone),
         contentAlignment = Alignment.Center,
     ) {
-        val logo = rememberImage(INTRO)
-        Box(
-            Modifier.fillMaxSize(0.55f).graphicsLayer { scaleX = scale.value; scaleY = scale.value; this.alpha = alpha.value },
-            contentAlignment = Alignment.Center,
-        ) {
-            // Con tu imagen, la tuya; sin ella, el logo de LiteDash.
-            val image = logo.image
-            when {
-                image != null -> Image(image, null, Modifier.fillMaxSize(0.7f))
-                logo.loaded -> MorseMark(Modifier.fillMaxWidth(0.6f).aspectRatio(MORSE_ASPECT))
-            }
+        // Con tu imagen, la tuya; sin ella, la marca de LiteDash armándose.
+        val image = logo.image
+        when {
+            image != null -> Box(
+                Modifier.fillMaxSize(0.55f).graphicsLayer { scaleX = scale.value; scaleY = scale.value; this.alpha = alpha.value },
+                contentAlignment = Alignment.Center,
+            ) { Image(image, null, Modifier.fillMaxSize(0.7f)) }
+            logo.loaded -> MorseMarkIntro({ time.value }, Modifier.fillMaxWidth(0.33f).aspectRatio(MORSE_ASPECT))
         }
     }
 }

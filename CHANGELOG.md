@@ -4,6 +4,13 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.4.134] - 2026-11-11
+
+### Cambiado
+- **Animación de entrada nueva:** sin imagen propia, el logo de LiteDash se arma al abrir: el guion entra desde la
+  izquierda y los dos puntos caen saltando hasta su lugar. Con tu imagen sigue como antes. Se prende en Inicio y
+  apariencia → Inicio → Animación de entrada; un toque la salta.
+
 ## [1.4.133] - 2026-11-11
 
 ### Cambiado

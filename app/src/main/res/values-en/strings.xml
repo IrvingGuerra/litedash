@@ -474,8 +474,8 @@
     <string name="tile_clock_help">Time, date and weather</string>
     <string name="tile_phone_help">Opens the dialer or the calling app you choose</string>
     <string name="tile_app_help">Any installed app, one tap away</string>
-    <string name="logo_intro_help">When LiteDash opens, your image (like your brand\'s logo) shows for a few seconds. It\'s separate from the image widgets.</string>
-    <string name="intro_no_image">Without an image, the LiteDash logo shows.</string>
+    <string name="logo_intro_help">When LiteDash opens, the LiteDash logo builds itself or your image (like your brand\'s logo) shows for a few seconds. It\'s separate from the image widgets.</string>
+    <string name="intro_no_image">Without an image, the LiteDash logo builds itself.</string>
     <string name="unit_kml">km/L</string>
     <string name="tile_gauge">Gauge</string>
     <string name="tile_gauge_help">A car reading over OBD: rpm, engine temperature, fuel, battery, economy, boost, throttle or oil</string>
