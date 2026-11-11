@@ -48,6 +48,7 @@
 
     <application
         android:name=".LiteDashApp"
+        android:requestLegacyExternalStorage="true"
         android:allowBackup="true"
         android:fullBackupContent="@xml/backup_rules"
         android:dataExtractionRules="@xml/data_extraction_rules"

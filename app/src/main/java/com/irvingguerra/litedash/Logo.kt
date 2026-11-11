@@ -2,13 +2,11 @@ package com.irvingguerra.litedash
 
 import android.Manifest
 import android.content.Context
-import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Build
-import android.os.ext.SdkExtensions
 import android.util.DisplayMetrics
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -387,28 +385,25 @@ private fun imageButtons(target: SavedImage, onPicked: (Uri) -> Unit = {}, onRem
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val use: (Uri) -> Unit = { uri -> scope.launch { if (save(context, uri, target)) { target.bump(); onPicked(uri) } } }
-    // El selector de Android regresó sin imagen (quizá ni se abrió) o no hay: el explorador propio.
-    var missed by remember { mutableStateOf(false) }
     var browsing by remember { mutableStateOf(false) }
-    val onResult: (Uri?) -> Unit = { uri -> if (uri != null) use(uri) else missed = true }
-    val pick = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia(), onResult)
-    val content = rememberLauncherForActivityResult(ActivityResultContracts.GetContent(), onResult)
+    val pick = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri -> if (uri != null) use(uri) }
     var denied by remember { mutableStateOf(false) }
     val ask = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { ok ->
         denied = !ok
         if (ok) browsing = true
     }
-    val browse = {
-        // Hasta Android 12 leer la memoria pide permiso; desde 13 el selector de fotos viene en el sistema.
-        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.S_V2 && context.checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-            ask.launch(Manifest.permission.READ_EXTERNAL_STORAGE)
-        } else browsing = true
-    }
-    // Pantallas de auto sin "Archivos" ni galería: lanzar el selector tronaba la app (no había quién lo abriera).
-    val open = {
-        val opened = (canPickImage(context) && runCatching { pick.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) }.isSuccess) ||
-            (canGetImage(context) && runCatching { content.launch("image/*") }.isSuccess)
-        if (!opened) browse()
+    // Un solo camino por versión. Android 13+: el selector de fotos del sistema (siempre viene, no pide permisos y el
+    // explorador propio ya no puede ver fotos sin un permiso que Play no da a un launcher). Hasta 12: el explorador
+    // propio, porque los selectores de las pantallas de auto fallan (sin "Archivos", o el de Google Play Services, que
+    // se baja de Play: "No es posible acceder" y LiteDash trabado).
+    val open: () -> Unit = {
+        when {
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU ->
+                runCatching { pick.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) }
+            context.checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED ->
+                ask.launch(Manifest.permission.READ_EXTERNAL_STORAGE)
+            else -> browsing = true
+        }
     }
     // Basta saber si el archivo existe (en IO); mientras, se queda lo último que se supo.
     val hasImage by produceState<Boolean?>(null, target, target.version) {
@@ -417,7 +412,6 @@ private fun imageButtons(target: SavedImage, onPicked: (Uri) -> Unit = {}, onRem
     val known = hasImage ?: return null
     FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Button(stringResource(if (known) R.string.logo_change else R.string.logo_pick), open)
-        if (missed && !browsing) Button(stringResource(R.string.image_browse_memory), browse)
         if (denied) Label(stringResource(R.string.image_no_permission), Typography.small, LocalColors.current.danger)
         if (known) Button(stringResource(R.string.logo_remove), {
             scope.launch {
@@ -432,36 +426,15 @@ private fun imageButtons(target: SavedImage, onPicked: (Uri) -> Unit = {}, onRem
         accept = { name -> name.substringAfterLast('.', "").lowercase() in IMAGE_TYPES },
         onPick = { file ->
             browsing = false
-            missed = false
             use(Uri.fromFile(file))
         },
         onCancel = { browsing = false },
+        images = true,
     )
     return known
 }
 
 private val IMAGE_TYPES = setOf("jpg", "jpeg", "png", "webp", "gif", "bmp", "heic")
-
-/**
- * Hay quién abra el selector de fotos: el que trae Android (13+, o 11–12 actualizado) o, si no, "Archivos" con
- * imágenes. Sin el de Android, androidx usa el de Google Play Services, que se baja de Play la primera vez: en
- * pantallas de auto la tienda decía "No es posible acceder" y LiteDash se quedaba trabado hasta forzar su cierre.
- */
-private fun canPickImage(context: Context): Boolean =
-    if (systemPhotoPicker()) true
-    else !ActivityResultContracts.PickVisualMedia.isPhotoPickerAvailable(context) &&
-        resolves(context, Intent(Intent.ACTION_OPEN_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE).setType("image/*"))
-
-private fun systemPhotoPicker(): Boolean =
-    Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU ||
-        (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && SdkExtensions.getExtensionVersion(Build.VERSION_CODES.R) >= 2)
-
-/** Hay una galería o un gestor de archivos que entregue una imagen. */
-private fun canGetImage(context: Context): Boolean =
-    resolves(context, Intent(Intent.ACTION_GET_CONTENT).addCategory(Intent.CATEGORY_OPENABLE).setType("image/*"))
-
-private fun resolves(context: Context, intent: Intent) =
-    runCatching { intent.resolveActivity(context.packageManager) != null }.getOrDefault(false)
 
 /** Inicio y apariencia → Inicio → Fondo de pantalla: elegir, cambiar o quitar la imagen. */
 @Composable

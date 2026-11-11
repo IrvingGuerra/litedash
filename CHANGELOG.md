@@ -4,6 +4,17 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.4.133] - 2026-11-11
+
+### Cambiado
+- **Elegir imagen, un solo camino:** en Android 12 o anterior (casi todas las pantallas de auto) se abre siempre el
+  explorador de LiteDash, ahora con **fotos en miniatura** y **Recientes** (las últimas fotos de tu pantalla) antes de
+  las memorias. En Android 13 o más nuevo se abre el selector de fotos del sistema. Ya no hay que probar varios
+  selectores ni el botón "¿No se abrió?".
+
+### Corregido
+- En pantallas con Android 10, el explorador ya puede leer las carpetas de la memoria.
+
 ## [1.4.132] - 2026-11-11
 
 ### Corregido

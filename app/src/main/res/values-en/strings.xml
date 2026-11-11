@@ -760,7 +760,6 @@
     <string name="pro_taken">This code is already used on another screen. Ask to have it released.</string>
     <string name="pro_offline">No connection. Try again.</string>
     <string name="pro_expired">Connect to the internet to keep the developer code</string>
-    <string name="image_browse_memory">Didn\'t open? Browse the storage</string>
     <string name="music_mode_title">How you listen to music</string>
     <string name="music_mode_help">Pick one: it is what plays in the Music widget. Switching pauses the previous one.</string>
     <string name="image_no_permission">Without the files permission LiteDash can\'t browse the storage.</string>

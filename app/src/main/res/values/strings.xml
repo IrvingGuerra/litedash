@@ -782,7 +782,6 @@
     <string name="pro_taken">Este código ya se usa en otra pantalla. Pide que lo liberen.</string>
     <string name="pro_offline">Sin conexión. Inténtalo otra vez.</string>
     <string name="pro_expired">Conéctate a internet para seguir con el código de desarrollador</string>
-    <string name="image_browse_memory">¿No se abrió? Buscar en la memoria</string>
     <string name="music_mode_title">Cómo escuchas música</string>
     <string name="music_mode_help">Elige uno: es el que suena en el widget Música. Al cambiar, el anterior se pausa.</string>
     <string name="image_no_permission">Sin el permiso de archivos no se puede buscar en la memoria.</string>

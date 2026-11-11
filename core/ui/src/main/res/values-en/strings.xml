@@ -6,4 +6,6 @@
     <string name="files_empty">This folder is empty.</string>
     <string name="files_use_folder">Use this folder</string>
     <string name="files_cancel">Close</string>
+    <string name="files_recent">Recent</string>
+    <string name="files_recent_empty">No recent photos.</string>
 </resources>
