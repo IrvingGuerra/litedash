@@ -1,5 +1,5 @@
 // Eliminar la cuenta de LiteDash Connect desde la web (lo pide Google Play).
-// Lo usan /connect/eliminar-cuenta/ (es) y /en/connect/delete-account/ (en).
+// Lo usan /connect/delete-account/ (es) y /en/connect/delete-account/ (en).
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
 import {
   initializeAuth, browserSessionPersistence, browserPopupRedirectResolver,
