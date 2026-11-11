@@ -173,6 +173,8 @@ dependencies {
     implementation(libs.activity.compose)
     implementation(libs.core)
     implementation(libs.profileinstaller)
+    // Experimento: el tablero en Android Auto, solo en la versión de GitHub (Play no lo aceptaría).
+    "githubImplementation"(libs.car.app)
     debugImplementation(libs.compose.ui.tooling)
     testImplementation(libs.junit)
     // org.json de verdad en las pruebas (el de Android es solo un esqueleto fuera del equipo).

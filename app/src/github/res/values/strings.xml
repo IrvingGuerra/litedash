@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Android Auto (experimento): el botón de Android Auto que cierra lo abierto. -->
+    <string name="auto_home">Inicio</string>
+</resources>

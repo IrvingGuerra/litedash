@@ -122,12 +122,7 @@ class MainActivity : ComponentActivity() {
 internal fun ComponentActivity.LiteDashContent(d: Dependencies, revision: Int, content: @Composable () -> Unit) {
     // Una sola cuenta de la noche (sol o sensor de luz) para el tema y el brillo.
     val night = rememberIsNight(d.prefs, needed = d.prefs.theme == ThemeMode.SUN || d.prefs.brightnessBySun)
-    val dark = when (d.prefs.theme) {
-        ThemeMode.DARK -> true
-        ThemeMode.LIGHT -> false
-        ThemeMode.SYSTEM -> isSystemInDarkTheme()
-        ThemeMode.SUN -> night
-    }
+    val dark = isDark(d, night)
     // Íconos de la barra del sistema claros u oscuros según el tema.
     LaunchedEffect(dark) {
         val transparent = android.graphics.Color.TRANSPARENT
@@ -140,6 +135,15 @@ internal fun ComponentActivity.LiteDashContent(d: Dependencies, revision: Int, c
     LaunchedEffect(hideStatusBar, revision) { applyStatusBar(window, hideStatusBar) }
     ApplyBrightness(d.prefs, night, revision)
     LiteDashTheme(dark = dark, scale = d.prefs.scale, accent = d.prefs.accentColor, content = content)
+}
+
+/** ¿Tema oscuro? Según lo elegido en Ajustes; [night] es la cuenta del sol o del sensor de luz. */
+@Composable
+internal fun isDark(d: Dependencies, night: Boolean): Boolean = when (d.prefs.theme) {
+    ThemeMode.DARK -> true
+    ThemeMode.LIGHT -> false
+    ThemeMode.SYSTEM -> isSystemInDarkTheme()
+    ThemeMode.SUN -> night
 }
 
 /** Oculta o muestra la barra de Android de arriba (deslizando desde arriba se asoma un momento). */

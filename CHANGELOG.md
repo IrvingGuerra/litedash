@@ -4,6 +4,14 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.4.136] - 2026-11-11
+
+### Agregado
+- **Experimento: LiteDash en Android Auto** (solo la versión de GitHub). Instala LiteDash en tu celular, prende en
+  Android Auto los ajustes de desarrollador → **Fuentes desconocidas**, y LiteDash aparece entre sus apps con tu
+  tablero de siempre. Por ahora solo con toques (sin deslizar) y sin lo que viene del equipo del auto (OBD, llantas,
+  radio). Es una prueba: cuéntanos cómo se ve en tu auto.
+
 ## [1.4.135] - 2026-11-11
 
 ### Cambiado
