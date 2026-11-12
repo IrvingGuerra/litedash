@@ -43,7 +43,7 @@ import com.irvingguerra.litedash.feature.apps.rememberApps
 import com.irvingguerra.litedash.feature.music.SourceKind
 
 /**
- * Vincular (o quitar) el celular por el Bluetooth de Android de la pantalla. En pantallas con
+ * Emparejar (u olvidar) el celular por el Bluetooth de Android de la pantalla. En pantallas con
  * chip propio (sin el Bluetooth de Android), se abre su propia app. Todo inline, sin ventanas.
  */
 @OptIn(ExperimentalLayoutApi::class)

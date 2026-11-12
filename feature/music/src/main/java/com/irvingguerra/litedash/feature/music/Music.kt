@@ -357,8 +357,32 @@ class MusicRepository(private val context: Context) {
 
     private val onSessionsChanged = MediaSessionManager.OnActiveSessionsChangedListener { choose(it.orEmpty()) }
 
-    // Celular por Bluetooth y memoria USB: solo se escuchan mientras la música está en pantalla.
+    // Celular por Bluetooth y memoria USB: solo se escuchan mientras la música (o Ajustes → Celular) está en pantalla.
     private val devices = DeviceWatcher(context, onBluetooth = ::phoneChanged, onUsb = { usbDrive = it })
+    private var devicesOn = false
+    private var phoneWatchers = 0
+
+    /**
+     * Se puede saber si hay celular por Bluetooth: la pantalla usa el Bluetooth de Android (AVRCP) y deja
+     * ver sus aparatos. Con chip propio, o sin el permiso de ver su nombre (Android 12+), no se sabe.
+     */
+    val phoneKnowable: Boolean
+        get() = bluetoothBuiltIn && context.getSystemService(BluetoothManager::class.java)?.adapter != null && devices.canSeeDevices()
+
+    /** Ajustes → Celular a la vista: escucha solo los aparatos (no la música) para decir si hay celular. */
+    fun watchPhone(on: Boolean) {
+        phoneWatchers = (phoneWatchers + if (on) 1 else -1).coerceAtLeast(0)
+        // Sin la música a la vista, lo de antes pudo quedar viejo: se vuelve a preguntar.
+        if (on && !devicesOn) bluetoothDevice = null
+        syncDevices()
+    }
+
+    private fun syncDevices() {
+        val want = users > 0 || phoneWatchers > 0
+        if (want == devicesOn) return
+        devicesOn = want
+        if (want) devices.start() else devices.stop()
+    }
 
     // El Bluetooth de Android como receptor (A2DP sink): si la pantalla trae el servicio AVRCP,
     // LiteDash lee y controla la música del celular sin app externa. Conectado mientras la música
@@ -372,6 +396,8 @@ class MusicRepository(private val context: Context) {
     // El celular llegó o se fue: la música Bluetooth que se suponía sonando ya no suena.
     private fun phoneChanged(name: String?) {
         bluetoothDevice = name
+        // Solo Ajustes → Celular escuchando: nada de la música se toca.
+        if (users == 0) return
         if (name != null) {
             avrcp?.connect()
             return
@@ -465,7 +491,7 @@ class MusicRepository(private val context: Context) {
     }
 
     private fun start() {
-        devices.start()
+        syncDevices()
         startAvrcp()
         // Son avisos de otras apps: el receptor debe aceptar avisos de fuera. Cualquier app podría mandar
         // un título falso; solo se muestra (sin sesión de por medio) y la sesión real siempre manda.
@@ -494,7 +520,7 @@ class MusicRepository(private val context: Context) {
     }
 
     private fun stop() {
-        devices.stop()
+        syncDevices()
         avrcp?.disconnect()
         avrcpController?.unregisterCallback(avrcpWatch)
         avrcpController = null

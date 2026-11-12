@@ -1,17 +1,34 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Ajustes → Cuenta: vincular la pantalla con la app LiteDash Connect. -->
+<!-- Ajustes → Celular: la red, vincular la pantalla con la app LiteDash Connect y cómo va el enlace. -->
 <resources>
-    <string name="account">Cuenta</string>
-    <string name="account_help">Tu cuenta de LiteDash vive en la app LiteDash Connect de tu celular.</string>
-    <string name="phone_name">Celular</string>
-    <string name="phone_link_title">Vincular con mi celular</string>
+    <string name="phone_section">Celular</string>
+    <string name="phone_help">Tu cuenta de LiteDash vive en la app LiteDash Connect de tu celular.</string>
+    <string name="phone_no_wifi">Tu pantalla no tiene Wi-Fi</string>
+    <string name="phone_no_wifi_body">Tu celular y tu pantalla se hablan por Wi-Fi. Elige cómo:</string>
+    <string name="phone_use_phone">Usar el internet de mi celular</string>
+    <string name="phone_use_phone_body">Prende el Wi-Fi de la pantalla y conéctala al hotspot de tu celular.</string>
+    <string name="phone_share_screen">Compartir el de la pantalla</string>
+    <string name="phone_share_screen_body">Prende el hotspot de la pantalla y conecta ahí tu celular.</string>
+    <string name="phone_open_wifi">Abrir Wi-Fi</string>
+    <string name="phone_open_hotspot">Abrir hotspot</string>
+    <string name="phone_waiting">Esperando a tu celular…</string>
     <string name="phone_link_code">Código %1$s · vence en 5 minutos</string>
     <string name="phone_step_install">Instala LiteDash Connect y crea tu cuenta</string>
     <string name="phone_step_tap">Toca “Vincular mi pantalla”</string>
     <string name="phone_step_scan">Apunta la cámara a este código</string>
     <string name="phone_connected">Conectado</string>
-    <string name="phone_offline">Sin conexión</string>
-    <string name="phone_app_version">Versión de su app</string>
-    <string name="phone_music_blocked">Para ver aquí la música de tu celular, en LiteDash Connect toca “Permitir la música”.</string>
+    <string name="phone_searching">Buscando tu celular…</string>
+    <string name="phone_model_app">%1$s · LiteDash Connect %2$s</string>
+    <string name="phone_data">Datos</string>
+    <string name="phone_data_ok">Tu celular y la pantalla se están hablando</string>
+    <string name="phone_music_blocked">Para ver aquí tu música, en LiteDash Connect toca “Permitir la música”</string>
+    <string name="phone_data_no_network">La pantalla no está en ninguna red con tu celular</string>
+    <string name="phone_data_open_app">Abre LiteDash Connect en tu celular y conéctalo a esta misma red</string>
+    <string name="phone_sound">Sonido</string>
+    <string name="phone_sound_ok">Bluetooth conectado · %1$s</string>
+    <string name="phone_sound_missing">Falta conectar el Bluetooth del celular</string>
+    <string name="phone_connect_bt">Conectar Bluetooth</string>
+    <string name="phone_sound_stereo">El sonido llega por el Bluetooth de tu estéreo</string>
+    <string name="phone_search_now">Buscar ahora</string>
     <string name="phone_unlink">Desvincular</string>
 </resources>

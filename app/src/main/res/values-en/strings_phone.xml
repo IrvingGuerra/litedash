@@ -1,17 +1,34 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Settings → Account: link the screen with the LiteDash Connect app. -->
+<!-- Settings → Phone: the network, linking the screen with the LiteDash Connect app and how the link is doing. -->
 <resources>
-    <string name="account">Account</string>
-    <string name="account_help">Your LiteDash account lives in the LiteDash Connect app on your phone.</string>
-    <string name="phone_name">Phone</string>
-    <string name="phone_link_title">Link with my phone</string>
+    <string name="phone_section">Phone</string>
+    <string name="phone_help">Your LiteDash account lives in the LiteDash Connect app on your phone.</string>
+    <string name="phone_no_wifi">Your screen has no Wi-Fi</string>
+    <string name="phone_no_wifi_body">Your phone and your screen talk over Wi-Fi. Pick how:</string>
+    <string name="phone_use_phone">Use my phone’s internet</string>
+    <string name="phone_use_phone_body">Turn on the screen’s Wi-Fi and connect it to your phone’s hotspot.</string>
+    <string name="phone_share_screen">Share the screen’s</string>
+    <string name="phone_share_screen_body">Turn on the screen’s hotspot and connect your phone to it.</string>
+    <string name="phone_open_wifi">Open Wi-Fi</string>
+    <string name="phone_open_hotspot">Open hotspot</string>
+    <string name="phone_waiting">Waiting for your phone…</string>
     <string name="phone_link_code">Code %1$s · expires in 5 minutes</string>
     <string name="phone_step_install">Install LiteDash Connect and create your account</string>
     <string name="phone_step_tap">Tap “Link my screen”</string>
     <string name="phone_step_scan">Point the camera at this code</string>
     <string name="phone_connected">Connected</string>
-    <string name="phone_offline">Not connected</string>
-    <string name="phone_app_version">Its app version</string>
+    <string name="phone_searching">Looking for your phone…</string>
+    <string name="phone_model_app">%1$s · LiteDash Connect %2$s</string>
+    <string name="phone_data">Data</string>
+    <string name="phone_data_ok">Your phone and the screen are talking</string>
+    <string name="phone_music_blocked">To see your music here, tap “Allow music” in LiteDash Connect</string>
+    <string name="phone_data_no_network">The screen isn’t on any network with your phone</string>
+    <string name="phone_data_open_app">Open LiteDash Connect on your phone and connect it to this same network</string>
+    <string name="phone_sound">Sound</string>
+    <string name="phone_sound_ok">Bluetooth connected · %1$s</string>
+    <string name="phone_sound_missing">Your phone’s Bluetooth isn’t connected yet</string>
+    <string name="phone_connect_bt">Connect Bluetooth</string>
+    <string name="phone_sound_stereo">Sound comes through your stereo’s Bluetooth</string>
+    <string name="phone_search_now">Search now</string>
     <string name="phone_unlink">Unlink</string>
-    <string name="phone_music_blocked">To see your phone’s music here, tap “Allow music” in LiteDash Connect.</string>
 </resources>

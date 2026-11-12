@@ -49,7 +49,7 @@ import com.irvingguerra.litedash.core.ui.Typography
 /** Secciones de Ajustes en el orden del menú: cada cosa vive en un solo lugar. */
 enum class SettingsSection(val title: Int) {
     CAR(R.string.your_car), APPEARANCE(R.string.appearance), APPS(R.string.apps_section), WORKSHOP(R.string.workshop),
-    TIRES(R.string.tires), WHEEL(R.string.wheel), MODULES(R.string.modules), ACCOUNT(R.string.account), SYSTEM(R.string.system),
+    TIRES(R.string.tires), WHEEL(R.string.wheel), MODULES(R.string.modules), PHONE(R.string.phone_section), SYSTEM(R.string.system),
 }
 
 /**
@@ -69,7 +69,7 @@ private fun SettingsSection.icon() = when (this) {
     SettingsSection.WHEEL -> Icons.wheel
     SettingsSection.WORKSHOP -> Icons.engine
     SettingsSection.TIRES -> Icons.tire
-    SettingsSection.ACCOUNT -> Icons.account
+    SettingsSection.PHONE -> Icons.phone
     SettingsSection.MODULES -> Icons.settings
     SettingsSection.SYSTEM -> Icons.info
 }
@@ -126,7 +126,10 @@ fun SettingsPanel(
                     SettingsSection.WORKSHOP -> if (d.obdModule) Workshop(d, onTires)
                     SettingsSection.TIRES -> TiresSettings(d)
                     SettingsSection.MODULES -> Modules(d, revision, open = { section = it })
-                    SettingsSection.ACCOUNT -> AccountSettings(d.phone)
+                    SettingsSection.PHONE -> PhoneSettings(d, openMusic = {
+                        openMusicSettings()
+                        section = SettingsSection.APPS
+                    })
                     SettingsSection.SYSTEM -> SystemSettings(d)
                 }
             }

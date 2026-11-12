@@ -35,3 +35,6 @@ private const val APPS_TABS = "apps"
 
 /** Ajustes → Apps abre en Radio (desde la radio sin nada enlazado). */
 internal fun openRadioSettings() = selectTab(APPS_TABS, 1)
+
+/** Ajustes → Apps abre en Música (desde Ajustes → Celular, para emparejar el Bluetooth). */
+internal fun openMusicSettings() = selectTab(APPS_TABS, 0)

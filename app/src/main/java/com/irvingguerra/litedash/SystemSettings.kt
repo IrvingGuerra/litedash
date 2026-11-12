@@ -234,17 +234,21 @@ private fun AndroidSettings() {
     SettingsCard(stringResource(R.string.android_settings), stringResource(R.string.android_settings_help)) {
         FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             for ((name, action) in shortcuts) {
-                Button(stringResource(name), { runCatching { context.startActivity(Intent(action).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) } }, primary = action == Settings.ACTION_SETTINGS)
+                Button(stringResource(name), { openSystemScreen(context, Intent(action)) }, primary = action == Settings.ACTION_SETTINGS)
             }
         }
         if (shortcuts.isEmpty()) Label(stringResource(R.string.android_settings_none), Typography.small, c.textMuted)
     }
 }
 
+/** Abre una pantalla de los ajustes de Android; falso si la pantalla no la tiene (o no deja abrirla). */
+internal fun openSystemScreen(context: Context, intent: Intent): Boolean =
+    runCatching { context.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }.isSuccess
+
 /** Los permisos de LiteDash en Ajustes de Android (para dar o quitar ubicación). */
 private fun openAppSettings(context: Context) {
     val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", context.packageName, null))
-    runCatching { context.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
+    openSystemScreen(context, intent)
 }
 
 /** Notas de una versión (sección del CHANGELOG) en renglones: títulos ("### Agregado") y viñetas sin formato. */

@@ -115,7 +115,7 @@ internal class DeviceWatcher(
     }
 
     /** Desde Android 12, el nombre del celular (y los avisos de conexión) piden BLUETOOTH_CONNECT. */
-    private fun canSeeDevices(): Boolean =
+    fun canSeeDevices(): Boolean =
         Build.VERSION.SDK_INT < Build.VERSION_CODES.S ||
             context.checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED
 

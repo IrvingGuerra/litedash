@@ -4,6 +4,16 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.4.138] - 2026-11-11
+
+### Cambiado
+- **Ajustes → Celular** (antes "Cuenta"): conectar tu celular con LiteDash Connect ahora se entiende. Si la pantalla
+  no tiene red, te dice cómo tenerla antes de mostrar el código. Ya vinculado ves en verde **Conectado** o en ámbar
+  **Buscando tu celular…** con el motivo, y dos renglones: **Datos** (el enlace con tu celular) y **Sonido** (el
+  Bluetooth, que es por donde viaja el audio).
+- Botón **Buscar ahora** para conectar en el momento.
+- En Música, "Vincular celular" ahora se llama **Sonido por Bluetooth**, para no confundirlo con vincular LiteDash Connect.
+
 ## [1.4.137] - 2026-11-11
 
 ### Arreglado

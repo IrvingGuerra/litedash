@@ -314,7 +314,7 @@ private fun turnOffBluetooth(context: Context) {
     val adapter = context.getSystemService(BluetoothManager::class.java)?.adapter
     @Suppress("DEPRECATION")
     val done = Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU && adapter != null && runCatching { adapter.disable() }.getOrDefault(false)
-    if (!done) runCatching { context.startActivity(Intent(Settings.ACTION_BLUETOOTH_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
+    if (!done) openSystemScreen(context, Intent(Settings.ACTION_BLUETOOTH_SETTINGS))
 }
 
 /** Cómo está guardado un código: encendió la luz, el auto lo vigila o ya no se borra a mano. */

@@ -548,7 +548,7 @@
     <string name="obd_usb_found">USB cable</string>
     <string name="bluetooth_off">The head unit\'s Bluetooth is off.</string>
     <string name="bluetooth_turn_on">Turn on Bluetooth</string>
-    <string name="bt_pair">Pair phone</string>
+    <string name="bt_pair">Bluetooth sound</string>
     <string name="bt_pair_help">Pair your phone with this head unit to play its music, or forget it when you want. Music is controlled from the big music widget.</string>
     <string name="bt_own_pair">Your head unit pairs the phone from its own Bluetooth app.</string>
     <string name="bt_open_app">Open the Bluetooth app</string>

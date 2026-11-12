@@ -189,7 +189,7 @@ class Dependencies(
     fun obdIfCreated(): ObdRepository? = if (obdCreated.value) obdLazy.value else null
 
     /**
-     * El enlace con LiteDash Connect (Ajustes → Cuenta). Siempre disponible, pero sin celular vinculado
+     * El enlace con LiteDash Connect (Ajustes → Celular). Siempre disponible, pero sin celular vinculado
      * no escucha la red ni busca nada: solo trabaja con la sección abierta (el QR) o ya vinculado.
      */
     val phone: PhoneLink get() = phoneLazy.value

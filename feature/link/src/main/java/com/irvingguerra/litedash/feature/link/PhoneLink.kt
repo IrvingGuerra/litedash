@@ -6,6 +6,7 @@ import android.graphics.BitmapFactory
 import android.net.ConnectivityManager
 import android.net.LinkProperties
 import android.net.Network
+import android.net.NetworkCapabilities
 import android.net.NetworkRequest
 import android.net.nsd.NsdManager
 import android.net.nsd.NsdServiceInfo
@@ -110,6 +111,21 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
         return true
     }
 
+    /**
+     * La pantalla tiene por dónde hablar con un celular: una red local (Wi‑Fi, cable) o su propio hotspot.
+     * Se revisa en hilos: en cada intento y, con el panel abierto, cada 2 s.
+     */
+    var localNetwork by mutableStateOf(true)
+        private set
+    private var checkingNetwork = false
+
+    /** "Buscar ahora": intenta ya, con los reintentos de vuelta al principio y tocando a los vecinos. */
+    fun searchNow() {
+        retries = 0
+        sweptAt = 0
+        connect()
+    }
+
     /** El QR para vincular; solo con el panel abierto y sin celular vinculado. */
     var pairing by mutableStateOf<Pairing?>(null)
         private set
@@ -153,7 +169,7 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
         connect()
     }
 
-    /** Ajustes → Cuenta se abrió o se cerró: abierta, intenta cada 2 s y mantiene el QR al día. */
+    /** Ajustes → Celular se abrió o se cerró: abierta, intenta cada 2 s y mantiene el QR al día. */
     fun watch(on: Boolean) {
         watching = on && running
         main.removeCallbacks(tick)
@@ -178,6 +194,7 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
     private val tick = object : Runnable {
         override fun run() {
             refreshPairing()
+            checkNetwork()
             sync()
             connect()
             main.postDelayed(this, WATCH_RETRY_MS)
@@ -187,6 +204,46 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
     private val retry = Runnable { connect() }
     /** Reintentos seguidos sin conexión (0 = conectado, o recién cambió la red). */
     private var retries = 0
+
+    /** Revisa la red en un hilo corto (uno a la vez) y la publica en el principal. */
+    private fun checkNetwork() {
+        if (checkingNetwork) return
+        checkingNetwork = true
+        io {
+            val found = hasLocalNetwork()
+            main.post {
+                checkingNetwork = false
+                localNetwork = found
+            }
+        }
+    }
+
+    /**
+     * ¿Hay red local? Una red de Android con IPv4 que no sea de datos móviles, o una interfaz arriba (no
+     * loopback ni punto a punto, tampoco la de datos) con IPv4 privada: así cuenta el hotspot de la propia
+     * pantalla, que no es una "red" para Android. Enumera interfaces: nunca en el hilo principal.
+     */
+    private fun hasLocalNetwork(): Boolean {
+        val manager = app.getSystemService(ConnectivityManager::class.java)
+        @Suppress("DEPRECATION") // aquí basta una foto, como en el intento
+        val networks = runCatching { manager?.allNetworks?.toList() }.getOrNull().orEmpty()
+        val mobile = HashSet<String>()
+        for (network in networks) {
+            val properties = runCatching { manager?.getLinkProperties(network) }.getOrNull() ?: continue
+            val cellular = runCatching { manager?.getNetworkCapabilities(network)?.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) }.getOrNull() == true
+            if (cellular) {
+                properties.interfaceName?.let(mobile::add)
+                continue
+            }
+            if (properties.linkAddresses.any { it.address is Inet4Address }) return true
+        }
+        return runCatching { NetworkInterface.getNetworkInterfaces()?.toList() }.getOrNull().orEmpty().any { face ->
+            runCatching {
+                face.isUp && !face.isLoopback && !face.isPointToPoint && face.name !in mobile &&
+                    face.inetAddresses.toList().any { it is Inet4Address && it.isSiteLocalAddress }
+            }.getOrDefault(false)
+        }
+    }
 
     /** Con el panel abierto y sin celular: una llave nueva si no hay o si la del QR ya venció. */
     private fun refreshPairing() {
@@ -522,6 +579,8 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
         private var served = false
 
         override fun run() {
+            val local = hasLocalNetwork()
+            main.post { localNetwork = local }
             val tried = HashSet<String>()
             fun pass(addresses: List<Pair<String, String>>) {
                 for ((address, how) in addresses) {
