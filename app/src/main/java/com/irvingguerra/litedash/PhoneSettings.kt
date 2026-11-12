@@ -229,7 +229,8 @@ private fun Linked(d: Dependencies, openMusic: () -> Unit) {
     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
         // Conectado, buscar es lo de menos; sin conexión es lo principal.
         Button(stringResource(R.string.phone_search_now), link::searchNow, primary = !link.connected)
-        Button(stringResource(R.string.phone_unlink), link::unlink)
+        val unlink = stringResource(R.string.phone_unlink)
+        Confirmed(unlink, stringResource(R.string.phone_unlink_question), unlink, stringResource(R.string.phone_unlink_message), action = link::unlink)
     }
 }
 

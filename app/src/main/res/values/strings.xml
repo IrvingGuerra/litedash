@@ -233,6 +233,8 @@
     <string name="search_car">Buscar tu auto (marca, modelo o año)</string>
     <string name="delete_car">Eliminar descargado · %.1f MB</string>
     <string name="cancel">Cancelar</string>
+    <string name="confirm_delete">Eliminar</string>
+    <string name="confirm_update">Actualizar</string>
     <string name="greeting_morning">Buenos días, %1$s</string>
     <string name="greeting_afternoon">Buenas tardes, %1$s</string>
     <string name="greeting_evening">Buenas noches, %1$s</string>
@@ -343,7 +345,6 @@
     <string name="catalog_all_makes">Todas</string>
     <string name="catalog_downloaded">Descargado</string>
     <string name="catalog_missing">Aún no tenemos ese auto.</string>
-    <string name="yes">Sí</string>
     <plurals name="delete_all_confirm">
         <item quantity="one">¿Eliminar el auto descargado?</item>
         <item quantity="other">¿Eliminar los %1$d autos descargados?</item>
@@ -393,8 +394,8 @@
     <string name="obd_no_codes">Sin códigos de falla</string>
     <string name="obd_clear">Borrar códigos</string>
     <string name="obd_clear_warning">Borrar apaga la luz de falla pero no arregla nada, y reinicia los monitores: la verificación no pasará hasta que manejes unos días.</string>
-    <string name="obd_clear_sure">Entiendo, continuar</string>
-    <string name="obd_clear_final">Borrar ahora</string>
+    <string name="obd_clear_question">¿Borrar los códigos?</string>
+    <string name="obd_clear_confirm">Borrar</string>
     <string name="obd_cleared">Códigos borrados</string>
     <string name="obd_not_cleared">El auto no aceptó el borrado (prueba con el motor apagado y la llave en encendido)</string>
     <string name="obd_inspection">¿Pasas la verificación?</string>
@@ -586,6 +587,8 @@
     <string name="bt_found">Cerca:</string>
     <string name="bt_paired">Guardados:</string>
     <string name="bt_forget">Olvidar</string>
+    <string name="bt_forget_question">¿Olvidar %1$s?</string>
+    <string name="bt_forget_message">Para volver a usarlo tendrás que emparejarlo otra vez.</string>
     <string name="bluetooth_turn_off">Apagar Bluetooth</string>
     <string name="android_settings">Ajustes de Android</string>
     <string name="android_settings_help">Los ajustes del sistema de tu pantalla, que a veces quedan escondidos detrás del launcher de la marca.</string>

@@ -179,9 +179,9 @@ private fun ModelOptions(cars: CarRepository, current: CarPackage, entry: Catalo
         if (progress != null) Label(stringResource(R.string.downloading, (progress * 100).toInt()), Typography.small, c.accent)
         else Label(stringResource(R.string.spin_quality_help), Typography.small, c.textMuted)
     }
-    // Eliminar lo descargado: pide confirmar con un segundo toque.
+    // Eliminar lo descargado: pide confirmar.
     val mb by produceState(0f, current) { value = cars.sizeOnDisk(current) / 1e6f }
-    Confirmed(stringResource(R.string.delete_car, mb), stringResource(R.string.delete_car_question), action = onDelete)
+    Confirmed(stringResource(R.string.delete_car, mb), stringResource(R.string.delete_car_question), stringResource(R.string.confirm_delete), action = onDelete)
     // Crédito del modelo 3D (lo pide su licencia).
     if (current.author.isNotBlank()) {
         Label(
@@ -223,10 +223,12 @@ private fun DownloadedModels(prefs: Preferences, cars: CarRepository, catalog: L
         Confirmed(
             stringResource(R.string.update_all, outdated.size, outdated.sumOf { (p, e) -> cars.updateSize(p, e) } / 1e6f),
             pluralStringResource(R.plurals.update_all_confirm, outdated.size, outdated.size),
+            stringResource(R.string.confirm_update),
             primary = true,
+            destructive = false,
         ) { cars.updateAll(outdated) }
     }
-    Confirmed(stringResource(R.string.delete_all), pluralStringResource(R.plurals.delete_all_confirm, installed.size, installed.size)) {
+    Confirmed(stringResource(R.string.delete_all), pluralStringResource(R.plurals.delete_all_confirm, installed.size, installed.size), stringResource(R.string.confirm_delete)) {
         prefs.carModel = null
         cars.deleteAll()
     }
@@ -313,18 +315,6 @@ private fun ModelCard(title: String, selected: Boolean, onClick: () -> Unit, det
             if (selected) Icon(Icons.done, c.accent, 18.dp)
         }
         if (detail != null) Label(detail, Typography.small, c.accent, maxLines = 1)
-    }
-}
-
-/** Un botón que pide confirmar con un segundo toque antes de hacer algo que no se deshace solo. */
-@Composable
-internal fun Confirmed(label: String, question: String, primary: Boolean = false, action: () -> Unit) {
-    var asking by remember(label) { mutableStateOf(false) }
-    if (!asking) return Button(label, { asking = true }, primary = primary)
-    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        Label(question, Typography.small, LocalColors.current.textMuted, modifier = Modifier.weight(1f, fill = false))
-        Button(stringResource(R.string.yes), { asking = false; action() }, primary = true)
-        Button(stringResource(R.string.cancel), { asking = false })
     }
 }
 

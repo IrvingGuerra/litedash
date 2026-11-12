@@ -173,7 +173,11 @@ fun BluetoothSettings(d: Dependencies) {
             for (dev in bonded) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Label(deviceLabel(dev), Typography.body, maxLines = 1)
-                    Button(stringResource(R.string.bt_forget), { forget(dev); bonded.remove(dev) })
+                    val forgetLabel = stringResource(R.string.bt_forget)
+                    Confirmed(forgetLabel, stringResource(R.string.bt_forget_question, deviceLabel(dev)), forgetLabel, stringResource(R.string.bt_forget_message)) {
+                        forget(dev)
+                        bonded.remove(dev)
+                    }
                 }
             }
         }

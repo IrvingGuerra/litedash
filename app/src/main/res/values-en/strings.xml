@@ -229,6 +229,8 @@
     <string name="search_car">Find your car (make, model or year)</string>
     <string name="delete_car">Delete download · %.1f MB</string>
     <string name="cancel">Cancel</string>
+    <string name="confirm_delete">Delete</string>
+    <string name="confirm_update">Update</string>
     <string name="greeting_morning">Good morning, %1$s</string>
     <string name="greeting_afternoon">Good afternoon, %1$s</string>
     <string name="greeting_evening">Good evening, %1$s</string>
@@ -337,7 +339,6 @@
     <string name="catalog_all_makes">All</string>
     <string name="catalog_downloaded">Downloaded</string>
     <string name="catalog_missing">We don\'t have that car yet.</string>
-    <string name="yes">Yes</string>
     <plurals name="delete_all_confirm">
         <item quantity="one">Delete the downloaded car?</item>
         <item quantity="other">Delete the %1$d downloaded cars?</item>
@@ -385,8 +386,8 @@
     <string name="obd_no_codes">No trouble codes</string>
     <string name="obd_clear">Clear codes</string>
     <string name="obd_clear_warning">Clearing turns the light off but fixes nothing, and resets the monitors: you won\'t pass an inspection until you drive for a few days.</string>
-    <string name="obd_clear_sure">I understand, continue</string>
-    <string name="obd_clear_final">Clear now</string>
+    <string name="obd_clear_question">Clear the codes?</string>
+    <string name="obd_clear_confirm">Clear</string>
     <string name="obd_cleared">Codes cleared</string>
     <string name="obd_not_cleared">The car didn\'t accept it (try with the engine off and the key on)</string>
     <string name="obd_inspection">Would you pass inspection?</string>
@@ -566,6 +567,8 @@
     <string name="bt_found">Nearby:</string>
     <string name="bt_paired">Saved:</string>
     <string name="bt_forget">Forget</string>
+    <string name="bt_forget_question">Forget %1$s?</string>
+    <string name="bt_forget_message">To use it again you\'ll have to pair it again.</string>
     <string name="bluetooth_turn_off">Turn off Bluetooth</string>
     <string name="android_settings">Android settings</string>
     <string name="android_settings_help">Your head unit\'s system settings, which sometimes hide behind the maker\'s launcher.</string>

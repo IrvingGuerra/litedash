@@ -32,7 +32,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -332,7 +331,6 @@ private enum class CodeKind(val label: Int) {
 private fun CodesCard(obd: ObdRepository, report: EngineReport?, reading: Boolean, onRead: () -> Unit, onCleared: (EngineReport?) -> Unit) {
     val c = LocalColors.current
     val scope = rememberCoroutineScope()
-    var confirm by remember { mutableIntStateOf(0) }
     var cleared by remember { mutableStateOf<Boolean?>(null) }
     val spanish = currentLocale().language == "es"
     val r = report
@@ -352,29 +350,20 @@ private fun CodesCard(obd: ObdRepository, report: EngineReport?, reading: Boolea
         }
         cleared?.let { Label(stringResource(if (it) R.string.obd_cleared else R.string.obd_not_cleared), Typography.small, if (it) Good else c.danger) }
         if (r != null && (r.stored.isNotEmpty() || r.pending.isNotEmpty() || r.readiness?.mil == true)) {
-            // Doble confirmación: borrar también reinicia los monitores de la verificación.
-            when (confirm) {
-                0 -> Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Button(stringResource(R.string.obd_clear), { confirm = 1 })
-                    Button(stringResource(R.string.obd_read_again), onRead)
-                }
-                1 -> Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Label(stringResource(R.string.obd_clear_warning), Typography.small, c.danger)
-                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Button(stringResource(R.string.obd_clear_sure), { confirm = 2 }, primary = true)
-                        Button(stringResource(R.string.cancel), { confirm = 0 })
+            // Se confirma con la advertencia a la vista: borrar también reinicia los monitores de la verificación.
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Confirmed(
+                    stringResource(R.string.obd_clear),
+                    stringResource(R.string.obd_clear_question),
+                    stringResource(R.string.obd_clear_confirm),
+                    stringResource(R.string.obd_clear_warning),
+                ) {
+                    scope.launch {
+                        cleared = obd.clearCodes()
+                        onCleared(obd.report())
                     }
                 }
-                else -> Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Button(stringResource(R.string.obd_clear_final), {
-                        confirm = 0
-                        scope.launch {
-                            cleared = obd.clearCodes()
-                            onCleared(obd.report())
-                        }
-                    }, primary = true)
-                    Button(stringResource(R.string.cancel), { confirm = 0 })
-                }
+                Button(stringResource(R.string.obd_read_again), onRead)
             }
         } else {
             Button(stringResource(R.string.obd_read_again), onRead)

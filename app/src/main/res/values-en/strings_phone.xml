@@ -35,6 +35,8 @@
     <string name="phone_sound_unknown">We’ll know once your phone is connected and playing</string>
     <string name="phone_search_now">Search now</string>
     <string name="phone_unlink">Unlink</string>
+    <string name="phone_unlink_question">Unlink this phone?</string>
+    <string name="phone_unlink_message">To connect it again you\'ll have to scan the code again from LiteDash Connect.</string>
     <string name="phone_no_sound">No sound? Connect Bluetooth</string>
     <string name="music_mode_phone">While your phone is connected and plays music, the Music widget shows and controls it. When it leaves, it goes back to what you had.</string>
 </resources>

@@ -4,6 +4,18 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.4.146] - 2026-11-12
+
+### Cambiado
+- **Confirmaciones más claras:** eliminar un auto descargado, eliminar todos, actualizar todos, quitar el código Pro y
+  borrar los códigos del Taller ya no preguntan "¿Seguro? Sí · Cancelar" dentro del mismo botón: ahora sale una alerta al
+  centro, estilo iOS, con la acción en rojo cuando no se puede deshacer. Borrar códigos pasa de dos pasos a uno, con la
+  advertencia a la vista.
+
+### Arreglado
+- **Desvincular el celular** (Ajustes → Celular) y **Olvidar** un Bluetooth guardado ahora preguntan antes; antes lo
+  hacían al primer toque.
+
 ## [1.4.145] - 2026-11-12
 
 ### Cambiado

@@ -111,7 +111,7 @@ private fun ProCard(pro: ProAccess) {
                 Icon(Icons.done, c.accent, 24.dp)
                 Label(stringResource(R.string.pro_active), Typography.body)
             }
-            Confirmed(stringResource(R.string.pro_remove), stringResource(R.string.pro_remove_question)) { scope.launch { pro.remove() } }
+            Confirmed(stringResource(R.string.pro_remove), stringResource(R.string.pro_remove_question), stringResource(R.string.remove)) { scope.launch { pro.remove() } }
         } else {
             Label(stringResource(R.string.pro_help), Typography.small, c.textMuted)
             TextInput(code, { code = it.take(PRO_CODE_MAX); error = null }, stringResource(R.string.pro_code), Modifier.fillMaxWidth())

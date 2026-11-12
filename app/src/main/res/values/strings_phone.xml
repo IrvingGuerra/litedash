@@ -35,6 +35,8 @@
     <string name="phone_sound_unknown">Se sabrá cuando tu celular esté conectado y sonando</string>
     <string name="phone_search_now">Buscar ahora</string>
     <string name="phone_unlink">Desvincular</string>
+    <string name="phone_unlink_question">¿Desvincular este celular?</string>
+    <string name="phone_unlink_message">Para volver a conectarlo tendrás que escanear el código otra vez desde LiteDash Connect.</string>
     <string name="phone_no_sound">¿Sin sonido? Conecta el Bluetooth</string>
     <string name="music_mode_phone">Mientras tu celular esté conectado y ponga música, el widget Música la muestra y controla. Cuando se vaya, regresa a lo que tenías.</string>
 </resources>
