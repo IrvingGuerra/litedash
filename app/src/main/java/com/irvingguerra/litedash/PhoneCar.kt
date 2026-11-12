@@ -21,17 +21,22 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-/** Vive mientras viva la app, como el enlace: solo trabaja con el celular conectado. */
-private val phoneCarScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+/** Vive mientras viva la app, como el enlace: lo del celular solo trabaja con él conectado. */
+internal val phoneScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 
 /**
- * Tu auto en LiteDash Connect (PROTOCOLO_LINK.md §5d): al conectarse un celular que lo pide y cada vez que cambian
- * el modelo, el color, el acabado o el nombre, se le manda; la imagen (la misma del inicio) solo si no la tiene.
- * [name] es como se llama el auto en la pantalla.
+ * Tu auto en LiteDash Connect (PROTOCOLO_LINK.md §5d y §5e): al conectarse un celular que lo pide y cada vez que
+ * cambian el modelo, el color, el acabado, el brillo, el nombre o los autos instalados, se le manda; la imagen (la
+ * misma del inicio) solo si no la tiene. [name] es como se llama el auto en la pantalla; [edit] sabe qué entradas
+ * del catálogo mandó el celular (para decir si el modelo tiene acabados).
  */
-internal fun wirePhoneCar(link: PhoneLink, prefs: Preferences, cars: CarRepository, name: () -> String) {
-    phoneCarScope.launch {
-        snapshotFlow { if (link.connected && link.wantsCar) Shown(cars.pkg(prefs.carModel), prefs.carPaint, name()) else null }
+internal fun wirePhoneCar(link: PhoneLink, prefs: Preferences, cars: CarRepository, edit: PhoneCarEdit, name: () -> String) {
+    phoneScope.launch {
+        snapshotFlow {
+            if (!link.connected || !link.wantsCar) return@snapshotFlow null
+            val p = cars.pkg(prefs.carModel)
+            Shown(p, prefs.carPaint, name(), p != null && cars.hasFinishes(p, edit.entryOf(p.id)), cars.installed.map { it.id })
+        }
             .collectLatest { shown ->
                 shown ?: return@collectLatest
                 // El selector de color pinta en vivo: se manda cuando se queda quieto.
@@ -57,6 +62,9 @@ internal fun wirePhoneCar(link: PhoneLink, prefs: Preferences, cars: CarReposito
                     make = p?.make.orEmpty(),
                     color = shown.paint.color.toArgb(),
                     finish = shown.paint.finish.stored,
+                    gloss = shown.paint.gloss,
+                    finishes = shown.finishes,
+                    cars = shown.cars,
                     image = image,
                 )
                 link.sendCar(car, webp)
@@ -64,8 +72,8 @@ internal fun wirePhoneCar(link: PhoneLink, prefs: Preferences, cars: CarReposito
     }
 }
 
-/** Lo que se ve del auto: si cambia algo, se vuelve a mandar. */
-private data class Shown(val p: CarPackage?, val paint: CarPaint, val name: String)
+/** Lo que se ve del auto (y lo que puede cambiar el celular): si cambia algo, se vuelve a mandar. */
+private data class Shown(val p: CarPackage?, val paint: CarPaint, val name: String, val finishes: Boolean, val cars: List<String>)
 
 /** Huella de la imagen: cambia con lo que se ve (modelo y su versión, pintura), no con el nombre. */
 private fun imageKey(p: CarPackage?, paint: CarPaint): String {

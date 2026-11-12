@@ -27,8 +27,11 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import java.io.File
+import java.io.IOException
+import java.security.MessageDigest
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.FutureTask
+import java.util.zip.ZipException
 import java.util.zip.ZipInputStream
 import kotlin.math.roundToInt
 
@@ -62,13 +65,77 @@ data class CatalogEntry(
         val n = YEAR_NUMBER.findAll(years).map { it.value.toInt() }.toList()
         return n.isNotEmpty() && y in n.min()..n.max()
     }
+
+    /**
+     * Una entrada que mandó otro (el celular, §5e) solo se usa si todos sus archivos son de la release del catálogo
+     * de LiteDash en GitHub, con su SHA-256 y un tamaño de auto. El SHA-256 lo da quien manda la entrada: solo prueba
+     * que llegó el archivo que se anunció, no que sea bueno; lo que lo contiene son los topes al descomprimir.
+     */
+    val isSafe: Boolean
+        get() = listOfNotNull(PackageExtra(url, bytes, sha256), high, topView, wheels, finish).all { it.isSafe }
+
+    companion object {
+        /** Una entrada de catalogo.json (lanza si le falta algo). */
+        fun fromJson(a: JSONObject): CatalogEntry {
+            val extras = a.optJSONArray(CarJson.EXTRAS)
+            return CatalogEntry(
+                id = a.getString("id"),
+                name = a.getString(CarJson.NAME),
+                make = a.getString(CarJson.MAKE),
+                year = a.optInt(CarJson.YEAR),
+                author = a.optString(CarJson.AUTHOR),
+                license = a.optString(CarJson.LICENSE),
+                url = a.getString("url"),
+                bytes = a.optLong("bytes"),
+                sha256 = a.getString("sha256"),
+                thumbnail = a.optString(CarJson.THUMBNAIL),
+                high = (0 until (extras?.length() ?: 0)).map { extras!!.getJSONObject(it) }
+                    .firstOrNull { it.optInt(CarJson.LEVEL) == HIGH_LEVEL }
+                    ?.let(::extraOf),
+                topView = a.optJSONObject(CarJson.TOP_VIEW)?.let(::extraOf),
+                wheels = a.optJSONObject(CarJson.WHEELS)?.let(::extraOf),
+                finish = a.optJSONObject(CarJson.FINISH)?.let(::extraOf),
+                years = a.optString(CarJson.YEARS).ifBlank { a.optInt(CarJson.YEAR).toString() },
+            )
+        }
+
+        private fun extraOf(o: JSONObject) = PackageExtra(o.getString("url"), o.optLong("bytes"), o.getString("sha256"))
+
+        /** Nivel de la calidad alta en "extras" del catálogo. */
+        private const val HIGH_LEVEL = 1
+    }
 }
 
 private val YEAR_NUMBER = Regex("\\d{4}")
 
 /** Un archivo extra (cuadros del giro, vista desde arriba) que se baja encima del auto ya instalado. */
 @Immutable
-data class PackageExtra(val url: String, val bytes: Long, val sha256: String)
+data class PackageExtra(val url: String, val bytes: Long, val sha256: String) {
+    internal val isSafe get() = url.startsWith(TRUSTED_FILES) && bytes in 1..MAX_PACKAGE_BYTES && SHA256.matches(sha256)
+}
+
+/** De dónde salen los archivos de los autos (la release `catalogo`): lo de otro lado que mande el celular no se baja. */
+private const val TRUSTED_FILES = "https://github.com/IrvingGuerra/litedash/releases/download/"
+
+/** Por qué no se pudo bajar o instalar algo del catálogo. */
+enum class InstallError {
+    /** Sin internet o el servidor no contestó: otro (el celular) lo puede pasar. */
+    OFFLINE,
+    /** Llegó otro archivo (SHA-256 o tamaño), o es un zip roto o que se expande de más. */
+    DAMAGED,
+    /** Lo demás: sin espacio, el auto cambió mientras tanto, el servidor dijo que no existe… */
+    OTHER,
+}
+
+/** Sin red o el servidor falló (lo que lanza [Https] como IOException). */
+private class Offline(cause: Throwable) : IOException(cause)
+
+/** El archivo no es el que se anunció o no se puede descomprimir como un auto. */
+private class Damaged(message: String) : IllegalStateException(message)
+
+private val SHA256 = Regex("[0-9a-fA-F]{64}")
+/** Ningún archivo de un auto pesa tanto (los paquetes son de ~2 MB). */
+private const val MAX_PACKAGE_BYTES = 64L shl 20
 
 /** Un auto ya instalado: sus imágenes viven en [folder]. */
 @Immutable
@@ -171,46 +238,42 @@ class CarRepository(private val context: Context, val catalogUrl: String) {
     suspend fun catalog(): List<CatalogEntry> = withContext(Dispatchers.IO) {
         val cars = JSONObject(readText(catalogUrl)).getJSONArray(CarJson.CARS)
         // Una entrada mal escrita se salta: no tumba el catálogo de todos.
-        (0 until cars.length()).mapNotNull { i -> runCatching { entryOf(cars.getJSONObject(i)) }.getOrNull() }
+        (0 until cars.length()).mapNotNull { i -> runCatching { CatalogEntry.fromJson(cars.getJSONObject(i)) }.getOrNull() }
     }.also { catalogCache = System.currentTimeMillis() to it }
 
-    private fun entryOf(a: JSONObject): CatalogEntry {
-        val extras = a.optJSONArray(CarJson.EXTRAS)
-        return CatalogEntry(
-            id = a.getString("id"),
-            name = a.getString(CarJson.NAME),
-            make = a.getString(CarJson.MAKE),
-            year = a.optInt(CarJson.YEAR),
-            author = a.optString(CarJson.AUTHOR),
-            license = a.optString(CarJson.LICENSE),
-            url = a.getString("url"),
-            bytes = a.optLong("bytes"),
-            sha256 = a.getString("sha256"),
-            thumbnail = a.optString(CarJson.THUMBNAIL),
-            high = (0 until (extras?.length() ?: 0)).map { extras!!.getJSONObject(it) }
-                .firstOrNull { it.optInt(CarJson.LEVEL) == HIGH_LEVEL }
-                ?.let(::extraOf),
-            topView = a.optJSONObject(CarJson.TOP_VIEW)?.let(::extraOf),
-            wheels = a.optJSONObject(CarJson.WHEELS)?.let(::extraOf),
-            finish = a.optJSONObject(CarJson.FINISH)?.let(::extraOf),
-            years = a.optString(CarJson.YEARS).ifBlank { a.optInt(CarJson.YEAR).toString() },
-        )
-    }
-
-    private fun extraOf(o: JSONObject) = PackageExtra(o.getString("url"), o.optLong("bytes"), o.getString("sha256"))
+    /** La entrada de [id] en el último catálogo que se bajó (sin ir a internet); null si no se ha bajado. */
+    fun knownEntry(id: String): CatalogEntry? = catalogCache?.second?.firstOrNull { it.id == id }
 
     /** El catálogo trae otro modelo 3D para [p] (mejores renders, piso nuevo…). */
     fun isOutdated(p: CarPackage, e: CatalogEntry) = p.id == e.id && p.sha256 != e.sha256
+
+    /** [e] ofrece las capas del acabado para este mismo modelo 3D de [p] (las de otro no le sirven). */
+    fun offersFinish(p: CarPackage, e: CatalogEntry?) = e != null && e.finish != null && !isOutdated(p, e)
+
+    /** [p] puede verse Mate, Brillante o Metálico: trae sus capas o [e] se las ofrece. */
+    fun hasFinishes(p: CarPackage, e: CatalogEntry?) = p.finish || offersFinish(p, e)
 
     /** Lo que se baja al actualizar [p]: el paquete y, si los tenía, la calidad alta y el acabado. */
     fun updateSize(p: CarPackage, e: CatalogEntry) =
         e.bytes + (if (p.high) e.high?.bytes ?: 0 else 0) + (if (p.finish) e.finish?.bytes ?: 0 else 0)
 
-    /** Baja e instala [e]; al terminar, [then] (por ejemplo, elegirlo). */
-    fun install(e: CatalogEntry, then: () -> Unit = {}) = download(e.id) { progress ->
+    /**
+     * Baja e instala [e]; al terminar, [then] (por ejemplo, elegirlo) y si falla, [failed] con el motivo. Falso si
+     * no empezó (ya se baja otra cosa).
+     */
+    fun install(e: CatalogEntry, failed: (InstallError) -> Unit = {}, then: () -> Unit = {}) = download(e.id, failed) { progress ->
         installPackage(e, progress)
         then()
     }
+
+    /**
+     * Instala [e] desde [file], que llegó por otro camino (el celular, §5f): se revisan su tamaño y SHA-256 contra
+     * [e] y se acomoda igual que una descarga; el archivo se borra al terminar. Como [install].
+     */
+    fun install(e: CatalogEntry, file: File, failed: (InstallError) -> Unit, then: () -> Unit) = download(e.id, failed) {
+        placePackage(e) { verified(file, e.bytes, e.sha256) }
+        then()
+    }.also { started -> if (!started) scope.launch(Dispatchers.IO) { file.delete() } }
 
     /** Baja el modelo 3D nuevo de [p] y vuelve a poner su calidad. */
     fun update(p: CarPackage, e: CatalogEntry) = download(p.id) { progress -> updatePackage(p, e, progress) }
@@ -235,12 +298,34 @@ class CarRepository(private val context: Context, val catalogUrl: String) {
 
     /**
      * Baja las capas del acabado de [p] (al elegir Mate, Brillante o Metálico), con su avance en
-     * [downloading]; si ya las tiene o el catálogo trae otro modelo 3D (las capas son del nuevo), nada.
+     * [downloading]; si ya las tiene o el catálogo trae otro modelo 3D (las capas son del nuevo), nada. [then]
+     * solo si quedaron puestas; si el auto cambió mientras tanto, [failed] con [InstallError.OTHER].
      */
-    fun fetchFinish(p: CarPackage, e: CatalogEntry) {
-        val extra = e.finish ?: return
-        if (p.finish || isOutdated(p, e)) return
-        download(FINISH) { progress -> addFinish(p, extra, progress) }
+    fun fetchFinish(p: CarPackage, e: CatalogEntry, failed: (InstallError) -> Unit = {}, then: () -> Unit = {}): Boolean {
+        val extra = e.finish ?: return false
+        if (p.finish || isOutdated(p, e)) return false
+        return download(FINISH, failed) { progress ->
+            if (addFinish(p) { fetch(extra.url, extra.bytes, extra.sha256, progress) }) then() else failed(InstallError.OTHER)
+        }
+    }
+
+    /**
+     * Las capas del acabado de [p] desde [file] (llegó del celular), revisadas contra [e]. Como [fetchFinish]; falso
+     * si no empezó (ya se baja otra cosa: quien llama revisa antes [offersFinish]).
+     */
+    fun installFinish(p: CarPackage, e: CatalogEntry, file: File, failed: (InstallError) -> Unit, then: () -> Unit): Boolean {
+        val extra = e.finish?.takeIf { offersFinish(p, e) }
+        val started = extra != null && download(FINISH, failed) {
+            val done = try {
+                addFinish(p) { verified(file, extra.bytes, extra.sha256) }
+            } finally {
+                // Si el auto cambió mientras tanto, no se usó: igual se quita.
+                withContext(Dispatchers.IO) { file.delete() }
+            }
+            if (done) then() else failed(InstallError.OTHER)
+        }
+        if (!started) scope.launch(Dispatchers.IO) { file.delete() }
+        return started
     }
 
     /** Calidad baja: borra los cuadros de en medio (libera espacio; no necesita internet). */
@@ -323,7 +408,7 @@ class CarRepository(private val context: Context, val catalogUrl: String) {
                 // Pudo cambiar mientras tanto (actualizado, borrado o ya con el extra).
                 val now = pkg(p.id)?.takeIf { it.sha256 == p.sha256 && !kind.has(it) } ?: return@withLock
                 val done = withContext(Dispatchers.IO) {
-                    runCatching { installExtra(now, extra, kind.folder, kind.marker) {} }.getOrDefault(false)
+                    runCatching { installExtra(now, kind.folder, kind.marker) { fetch(extra.url, extra.bytes, extra.sha256) {} } }.getOrDefault(false)
                 }
                 // Solo llegan archivos nuevos: las imágenes del giro en memoria siguen sirviendo.
                 if (done) changed(evict = false)
@@ -342,12 +427,12 @@ class CarRepository(private val context: Context, val catalogUrl: String) {
     }
 
     /**
-     * Baja y acomoda un extra en la carpeta de [p]: se descomprime aparte ([folder]) y cada archivo
-     * va a su lugar (también dentro de giro/), con el [marker] al último (dice que ya está completo);
-     * lo que hubiera de un intento cortado se quita. Solo en IO.
+     * Acomoda un extra (el zip que da [obtain], ya revisado) en la carpeta de [p]: se descomprime aparte
+     * ([folder]) y cada archivo va a su lugar (también dentro de giro/), con el [marker] al último (dice
+     * que ya está completo); lo que hubiera de un intento cortado se quita, y el zip también. Solo en IO.
      */
-    private fun installExtra(p: CarPackage, extra: PackageExtra, folder: String, marker: String, progress: (Float) -> Unit): Boolean {
-        val temp = fetch(extra.url, extra.bytes, extra.sha256, progress)
+    private fun installExtra(p: CarPackage, folder: String, marker: String, obtain: () -> File): Boolean {
+        val temp = obtain()
         val staging = File(root, folderOf(p.id) + "-" + folder + CarFiles.STAGING_SUFFIX)
         try {
             staging.deleteRecursively()
@@ -401,21 +486,39 @@ class CarRepository(private val context: Context, val catalogUrl: String) {
         p.folder.walkTopDown().filter { it.isFile }.sumOf { it.length() }
     }
 
-    /** Una descarga a la vez, en el ámbito del repositorio, con su avance en [downloading]. */
-    private fun download(what: String, work: suspend ((Float) -> Unit) -> Unit) {
-        if (downloading != null) return
+    /**
+     * Una descarga a la vez, en el ámbito del repositorio, con su avance en [downloading]; si falla, [onFail] con el
+     * motivo. Falso si ya había otra (esta no empieza).
+     */
+    private fun download(what: String, onFail: (InstallError) -> Unit = {}, work: suspend ((Float) -> Unit) -> Unit): Boolean {
+        if (downloading != null) return false
         downloading = what to 0f
         failed = false
         scope.launch {
-            disk.withLock { runCatching { work { f -> downloading = what to f } }.onFailure { failed = true } }
+            val error = disk.withLock { runCatching { work { f -> downloading = what to f } }.exceptionOrNull() }
+            if (error != null) failed = true
             downloading = null
+            if (error != null) {
+                onFail(
+                    when (error) {
+                        is Offline -> InstallError.OFFLINE
+                        is Damaged -> InstallError.DAMAGED
+                        else -> InstallError.OTHER
+                    },
+                )
+            }
         }
+        return true
     }
 
-    private suspend fun installPackage(e: CatalogEntry, progress: (Float) -> Unit) {
+    private suspend fun installPackage(e: CatalogEntry, progress: (Float) -> Unit) =
+        placePackage(e) { fetch(e.url, e.bytes, e.sha256, progress) }
+
+    /** Instala [e] con el zip que da [obtain] (ya revisado con su SHA-256); el zip se borra al terminar. */
+    private suspend fun placePackage(e: CatalogEntry, obtain: () -> File) {
         withContext(Dispatchers.IO) {
             root.mkdirs()
-            val temp = fetch(e.url, e.bytes, e.sha256, progress)
+            val temp = obtain()
             val target = File(root, folderOf(e.id))
             val staging = File(root, folderOf(e.id) + CarFiles.STAGING_SUFFIX)
             try {
@@ -443,20 +546,24 @@ class CarRepository(private val context: Context, val catalogUrl: String) {
         installPackage(e) { f -> progress(f * e.bytes / total) }
         if (extra != null) addHigh(pkg(e.id) ?: return, extra) { f -> progress((e.bytes + f * extra.bytes) / total) }
         // Las capas del acabado son de los cuadros nuevos: se vuelven a bajar (después de la calidad alta).
-        if (finish != null) addFinish(pkg(e.id) ?: return, finish) { f -> progress((before + f * finish.bytes) / total) }
+        if (finish != null) {
+            addFinish(pkg(e.id) ?: return) { fetch(finish.url, finish.bytes, finish.sha256) { f -> progress((before + f * finish.bytes) / total) } }
+        }
     }
 
     /**
-     * Las capas del acabado encima de lo instalado (si [p] sigue igual). Solo llegan archivos nuevos:
-     * las imágenes en memoria siguen sirviendo (la llave de cada cuadro con acabado dice si tenía capas).
+     * Las capas del acabado encima de lo instalado (si [p] sigue igual; si cambió o ya las tiene, nada y falso).
+     * Solo llegan archivos nuevos: las imágenes en memoria siguen sirviendo (la llave de cada cuadro con acabado
+     * dice si tenía capas).
      */
-    private suspend fun addFinish(p: CarPackage, extra: PackageExtra, progress: (Float) -> Unit) {
-        val now = pkg(p.id)?.takeIf { it.sha256 == p.sha256 && !it.finish } ?: return
-        val done = withContext(Dispatchers.IO) { installExtra(now, extra, FINISH, FINISH_MARK, progress) }
-        check(done) { "El acabado llegó incompleto" }
+    private suspend fun addFinish(p: CarPackage, obtain: () -> File): Boolean {
+        val now = pkg(p.id)?.takeIf { it.sha256 == p.sha256 && !it.finish } ?: return false
+        val done = withContext(Dispatchers.IO) { installExtra(now, FINISH, FINISH_MARK, obtain) }
+        if (!done) throw Damaged("El acabado llegó incompleto")
         changed(evict = false)
         // Si aun así faltan capas (p. ej. de los cuadros de en medio), es falla: no se vuelve a pedir solo.
-        check(pkg(p.id)?.finish == true) { "El acabado no trae todos los cuadros" }
+        if (pkg(p.id)?.finish != true) throw Damaged("El acabado no trae todos los cuadros")
+        return true
     }
 
     /**
@@ -464,7 +571,7 @@ class CarRepository(private val context: Context, val catalogUrl: String) {
      * dice que hay calidad alta) se acomoda al último; si algo se corta, el auto sigue completo en baja.
      */
     private suspend fun addHigh(p: CarPackage, extra: PackageExtra, progress: (Float) -> Unit) {
-        val done = withContext(Dispatchers.IO) { installExtra(p, extra, HIGH, HIGH_FILE, progress) }
+        val done = withContext(Dispatchers.IO) { installExtra(p, HIGH, HIGH_FILE) { fetch(extra.url, extra.bytes, extra.sha256, progress) } }
         check(done) { "La calidad alta llegó incompleta" }
         changed()
     }
@@ -497,22 +604,69 @@ class CarRepository(private val context: Context, val catalogUrl: String) {
         val ok = runCatching { Https.download(context, url, temp, bytes, null, progress).equals(sha256, ignoreCase = true) }
         if (ok.getOrDefault(false)) return temp
         temp.delete()
-        ok.getOrThrow()
-        error("El archivo llegó dañado")
+        ok.exceptionOrNull()?.let { throw if (it is IOException) Offline(it) else it }
+        throw Damaged("El archivo llegó dañado")
     }
 
-    private fun unzip(zip: File, target: File) {
-        ZipInputStream(zip.inputStream().buffered()).use { input ->
-            while (true) {
-                val item = input.nextEntry ?: break
-                val file = File(target, item.name)
-                // Nada fuera de la carpeta del auto (zip con rutas "../").
-                if (!file.canonicalPath.startsWith(target.canonicalPath + File.separator)) continue
-                if (item.isDirectory) file.mkdirs() else {
-                    file.parentFile?.mkdirs()
-                    file.outputStream().use { input.copyTo(it) }
+    /**
+     * [file] tal cual llegó (el celular ya lo bajó): si no mide [bytes] o su SHA-256 no es [sha256], se borra y
+     * lanza. Solo en IO.
+     */
+    private fun verified(file: File, bytes: Long, sha256: String): File {
+        val digest = MessageDigest.getInstance("SHA-256")
+        val ok = runCatching {
+            file.inputStream().use { input ->
+                val buffer = ByteArray(64 * 1024)
+                while (true) {
+                    val n = input.read(buffer)
+                    if (n < 0) break
+                    digest.update(buffer, 0, n)
                 }
             }
+            (bytes <= 0 || file.length() == bytes) && digest.digest().joinToString("") { "%02x".format(it) }.equals(sha256, ignoreCase = true)
+        }.getOrDefault(false)
+        if (ok) return file
+        file.delete()
+        throw Damaged("El archivo llegó dañado")
+    }
+
+    /**
+     * Descomprime [zip] en [target] con topes para cualquier paquete (también los del catálogo): a lo más
+     * [UNZIP_RATIO] veces lo que mide el zip (y nunca más de [UNZIP_MAX]), [UNZIP_ENTRIES] archivos y [UNZIP_FILE_MAX]
+     * por archivo, contando lo que de verdad sale (no lo que dice el zip). Los paquetes reales son imágenes WebP que
+     * casi no se comprimen (≤ 1.0×, ≤ 127 archivos, ≤ 70 KB cada uno): un zip que se expande de más no es un auto.
+     */
+    private fun unzip(zip: File, target: File) {
+        val budget = (zip.length() * UNZIP_RATIO).coerceIn(UNZIP_MIN, UNZIP_MAX)
+        var total = 0L
+        var entries = 0
+        val buffer = ByteArray(64 * 1024)
+        try {
+            ZipInputStream(zip.inputStream().buffered()).use { input ->
+                while (true) {
+                    val item = input.nextEntry ?: break
+                    if (++entries > UNZIP_ENTRIES) throw Damaged("Demasiados archivos")
+                    val file = File(target, item.name)
+                    // Nada fuera de la carpeta del auto (zip con rutas "../").
+                    if (!file.canonicalPath.startsWith(target.canonicalPath + File.separator)) continue
+                    if (item.isDirectory) file.mkdirs() else {
+                        file.parentFile?.mkdirs()
+                        file.outputStream().use { out ->
+                            var written = 0L
+                            while (true) {
+                                val n = input.read(buffer)
+                                if (n < 0) break
+                                written += n
+                                total += n
+                                if (written > UNZIP_FILE_MAX || total > budget) throw Damaged("El paquete se expande de más")
+                                out.write(buffer, 0, n)
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (e: ZipException) {
+            throw Damaged("Zip dañado: ${e.message}")
         }
     }
 
@@ -733,13 +887,17 @@ class CarRepository(private val context: Context, val catalogUrl: String) {
         const val FINISH = "finish"
         /** La última capa del acabado que se acomoda: dice que están completas. */
         private const val FINISH_MARK = "${CarFiles.SPIN}/00${CarViews.MIRROR_SUFFIX}.webp"
-        /** Nivel de la calidad alta en "extras" del catálogo. */
-        private const val HIGH_LEVEL = 1
         /** Cuadros de en medio ("mNN"); el primero dice que el auto tiene calidad alta. */
         private const val HIGH_PREFIX = "m"
         private const val HIGH_MARK = "m00"
         private const val HIGH_FILE = "${CarFiles.SPIN}/$HIGH_MARK.webp"
         private const val CHECK_EVERY_MS = 60 * 60 * 1000L
+        /** Topes al descomprimir ([unzip]): con mucho aire sobre los paquetes de hoy (~2.5 MB, 127 archivos). */
+        private const val UNZIP_RATIO = 8
+        private const val UNZIP_MIN = 1L shl 20
+        private const val UNZIP_MAX = 200L shl 20
+        private const val UNZIP_ENTRIES = 2_000
+        private const val UNZIP_FILE_MAX = 16L shl 20
         private const val KEY_LAST_CHECK = "last_check:"
         /** Lo que no va en el nombre de la carpeta de un auto. */
         private val FOLDER_CHARS = Regex("[^a-z0-9-]")

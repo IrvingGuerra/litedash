@@ -17,7 +17,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import java.io.BufferedInputStream
+import java.io.File
+import java.io.FileOutputStream
 import java.io.IOException
+import java.io.OutputStream
 import java.net.DatagramPacket
 import java.net.DatagramSocket
 import java.net.Inet4Address
@@ -30,6 +33,7 @@ import java.util.Collections
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.locks.ReentrantLock
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -37,8 +41,8 @@ import org.json.JSONObject
 class ScreenInfo(val app: String, val car: String, val carId: String, val screen: String)
 
 /**
- * Tu auto para LiteDash Connect (mensaje `car`, PROTOCOLO_LINK.md §5d). [image] es la huella de su imagen: la
- * imagen solo viaja si el celular no la tiene ya ([PhoneLink.needsCarImage]).
+ * Tu auto para LiteDash Connect (mensaje `car`, PROTOCOLO_LINK.md §5d y §5e). [image] es la huella de su imagen:
+ * la imagen solo viaja si el celular no la tiene ya ([PhoneLink.needsCarImage]).
  */
 class ScreenCar(
     val id: String,
@@ -48,6 +52,11 @@ class ScreenCar(
     /** RGB, sin transparencia. */
     val color: Int,
     val finish: String,
+    val gloss: Float,
+    /** Este modelo puede verse Mate, Brillante o Metálico (trae sus capas o el catálogo se las ofrece). */
+    val finishes: Boolean,
+    /** Ids de los autos instalados. */
+    val cars: List<String>,
     val image: String,
 )
 
@@ -131,6 +140,31 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
     var wantsCar by mutableStateOf(false)
         private set
 
+    /** El celular conectado quiere el estado de tu auto (§5g): se le manda con [sendState]. */
+    var wantsState by mutableStateOf(false)
+        private set
+
+    /** El celular pide cambiar tu auto (`setCar`, §5e); en el hilo principal. */
+    var onSetCar: ((CarEdit) -> Unit)? = null
+
+    /**
+     * Llegó completo el paquete [kind] (`car` o `finish`) de [id] que mandó el celular (§5f), en un archivo temporal
+     * que se queda quien lo recibe (lo instala o lo borra); sin archivo = llegó mal y ya se tiró. En el hilo principal.
+     */
+    var onPackage: ((id: String, kind: String, file: File?) -> Unit)? = null
+
+    /** El celular pide el diagnóstico de la pantalla (`report`, §5h) con el id de su reporte; en el hilo principal. */
+    var onReport: ((String) -> Unit)? = null
+
+    /** El paquete que la pantalla le pidió al celular (id, kind y cuántos bytes mide); lo demás se rechaza sin escribirlo. */
+    private class Expected(val id: String, val kind: String, val bytes: Long)
+    @Volatile private var expected: Expected? = null
+
+    /** La pantalla le pidió al celular el paquete [kind] de [id], de [bytes] (`need`, §5f); null = ya no espera nada. */
+    fun expectPackage(id: String?, kind: String = "", bytes: Long = 0) {
+        expected = id?.let { Expected(it, kind, bytes) }
+    }
+
     /** Avisa (hilo principal) cuando el celular se conecta o se va. */
     var onLink: ((Boolean) -> Unit)? = null
 
@@ -140,6 +174,7 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
         if (!on) {
             phoneSound = null
             wantsCar = false
+            wantsState = false
         }
         onLink?.invoke(on)
     }
@@ -165,12 +200,41 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
         val open = session?.takeIf { it.car } ?: return false
         val message = JSONObject().put("t", "car").put("id", car.id).put("name", car.name).put("model", car.model)
             .put("make", car.make).put("color", "%06X".format(car.color and 0xFFFFFF))
-            .put("finish", car.finish).put("img", car.image)
+            .put("finish", car.finish).put("gloss", hundredths(car.gloss)).put("finishes", car.finishes)
+            .put("cars", JSONArray(car.cars)).put("img", car.image)
         if (webp != null) message.put("webp", Base64.encode(webp))
         commands.execute {
             runCatching { open.send(message) }.onSuccess { if (webp != null) open.carImage = car.image }
         }
         return true
+    }
+
+    /**
+     * Cómo va lo que pidió el celular de su auto (`carJob`, §5e): [step] `download` (con [progress]), `need`,
+     * `install`, `done` o `failed` (con [why], corto, para el usuario).
+     */
+    fun sendCarJob(id: String, kind: String, step: String, progress: Float? = null, why: String? = null) {
+        val message = JSONObject().put("t", "carJob").put("id", id).put("kind", kind).put("step", step)
+        if (progress != null) message.put("progress", hundredths(progress.coerceIn(0f, 1f)))
+        if (why != null) message.put("why", why)
+        send(message)
+    }
+
+    /** El estado de tu auto (§5g), si el celular lo pidió; [state] trae todo menos `t`. */
+    fun sendState(state: JSONObject) {
+        if (session?.state == true) send(state.put("t", "state"))
+    }
+
+    /** El diagnóstico de la pantalla para el reporte [id] del celular (§5h). */
+    fun sendReport(id: String, text: String) = send(JSONObject().put("t", "report").put("id", id).put("text", text.take(REPORT_MAX)))
+
+    /** 0–1 con dos decimales (un Float tal cual sale como 0.30000001192092896). */
+    private fun hundredths(value: Float) = Math.round(value * 100) / 100.0
+
+    /** Manda [message] al celular conectado (en orden con los demás); sin conexión, nada. */
+    private fun send(message: JSONObject) {
+        val open = session ?: return
+        commands.execute { runCatching { open.send(message) } }
     }
 
     /**
@@ -563,10 +627,11 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
         sync()
     }
 
-    private fun heard(from: Attempt, name: String, version: String, music: Boolean, car: Boolean) {
+    private fun heard(from: Attempt, name: String, version: String, music: Boolean, car: Boolean, state: Boolean) {
         if (attempt !== from) return
         session?.music = music
         wantsCar = car
+        wantsState = state
         phoneName = name
         phoneApp = version
         store.edit().putString(PHONE_NAME, name).putString(PHONE_APP, version).apply()
@@ -619,18 +684,42 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
     /** Una conexión ya saludada: escribe de un mensaje a la vez (el contador del cifrado va en orden). */
     private class Session(private val socket: Socket, private val channel: SecureChannel) {
         private val output = socket.getOutputStream()
-        @Volatile var lastSent = SystemClock.elapsedRealtime()
+        private val writing = ReentrantLock()
         /** El celular declaró la música en su `info`. */
         @Volatile var music = false
         /** El celular declaró tu auto en su `info` ([CAP_CAR]). */
         @Volatile var car = false
         /** La huella de la imagen de tu auto que el celular ya tiene. */
         @Volatile var carImage: String? = null
+        /** El celular declaró el estado de tu auto ([CAP_STATE]). */
+        @Volatile var state = false
 
-        fun send(message: JSONObject) = synchronized(this) {
+        fun send(message: JSONObject) {
+            writing.lock()
+            try {
+                write(message)
+            } finally {
+                writing.unlock()
+            }
+        }
+
+        /**
+         * Para el hilo que lee (`ping`, `pong`): si otro está escribiendo (un `car` grande a un celular que se fue sin
+         * cerrar), no espera: se salta este y el lector sigue contando el silencio. Falso si no se mandó.
+         */
+        fun trySend(message: JSONObject): Boolean {
+            if (!writing.tryLock()) return false
+            try {
+                write(message)
+            } finally {
+                writing.unlock()
+            }
+            return true
+        }
+
+        private fun write(message: JSONObject) {
             output.write((channel.seal(message.toString()) + "\n").toByteArray(Charsets.US_ASCII))
             output.flush()
-            lastSent = SystemClock.elapsedRealtime()
         }
 
         fun close() {
@@ -653,6 +742,9 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
         @Volatile var cancelled = false
         @Volatile private var socket: Socket? = null
         private val music = MusicReader()
+        /** El paquete que manda el celular: el orden se revisa y se escribe aquí, en el hilo de la conexión. */
+        private val parts = PackageParts()
+        private val writer = PackageWriter()
 
         @Volatile private var sweepers: ExecutorService? = null
 
@@ -703,7 +795,7 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
                 val ready = Session(open, channel)
                 ready.send(
                     JSONObject().put("t", "info").put("role", "screen").put("app", info.app).put("car", info.car)
-                        .put("carId", info.carId).put("screen", info.screen).put("caps", JSONArray().put(CAP_MUSIC)),
+                        .put("carId", info.carId).put("screen", info.screen).put("caps", JSONArray(SCREEN_CAPS)),
                 )
                 // Ya hubo conexión: cuando se cierre o se caiga, este intento termina aquí.
                 served = true
@@ -715,6 +807,9 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
                 if (open.isConnected) error = "$address: ${e.message ?: e.javaClass.simpleName}"
             } finally {
                 runCatching { open.close() }
+                // Un paquete a medias ya no se va a completar.
+                writer.drop()
+                parts.cancel()
             }
         }
 
@@ -827,15 +922,45 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
             return SecureChannel(LinkProtocol.screenToPhoneKey(key, nc, ns), LinkProtocol.phoneToScreenKey(key, nc, ns))
         }
 
+        /**
+         * Una parte del paquete que manda el celular (§5f): se revisa el orden y se escribe aquí mismo (ya vienen en
+         * orden y son de 64 KiB: nada se junta en memoria). Solo se acepta el paquete que la pantalla pidió y hasta su
+         * tamaño; si no, se tira y se avisa una vez.
+         */
+        private fun receive(message: JSONObject) {
+            val id = message.optString("id")
+            val kind = message.optString("kind")
+            val n = message.optInt("n", -1)
+            // Datos que no son base64: como una parte fuera de orden.
+            val data = runCatching { Base64.decode(message.optString("data")) }.getOrNull()
+            val step = parts.take(id, kind, if (data == null) -1 else n, message.optInt("of", -1), data?.size ?: 0)
+            if (step == PackageParts.Step.IGNORE) return
+            val wanted = expected?.takeIf { it.id == id && it.kind == kind }
+            val ok = step != PackageParts.Step.BAD && wanted != null && writer.part(n, data!!, wanted.bytes)
+            if (!ok) {
+                // Lo que siga de este paquete se ignora (un solo aviso).
+                if (step != PackageParts.Step.BAD) parts.cancel()
+                writer.drop()
+                main.post { delivered(id, kind, null) }
+            } else if (step == PackageParts.Step.LAST) {
+                val done = writer.finish()
+                main.post { delivered(id, kind, done) }
+            }
+        }
+
         /** Atiende la conexión hasta que se cierre; true si el celular se despidió (`bye`). Lanza si se cae. */
         private fun serve(open: Socket, reader: LineReader, channel: SecureChannel, ready: Session): Boolean {
             var lastHeard = SystemClock.elapsedRealtime()
+            var lastPing = lastHeard
             while (true) {
                 val now = SystemClock.elapsedRealtime()
                 if (now - lastHeard >= SILENCE_MS) throw IOException("sin respuesta del celular")
-                val quiet = now - maxOf(lastHeard, ready.lastSent)
+                // Se mide desde lo último que se OYÓ (no desde lo que se mandó): con el `state` cada 5 s la pantalla
+                // nunca callaba, no pedía `pong` y daba la conexión por caída a los 45 s si el celular no hablaba.
+                val quiet = now - maxOf(lastHeard, lastPing)
                 if (quiet >= PING_MS) {
-                    ready.send(JSONObject().put("t", "ping"))
+                    ready.trySend(JSONObject().put("t", "ping"))
+                    lastPing = now
                     continue
                 }
                 // Despierta solo cuando toca mandar un ping o dar la conexión por caída.
@@ -856,9 +981,26 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
                         // Ya se puede mandar `cmd` (antes de que el hilo principal se entere).
                         ready.music = music
                         val car = caps != null && (0 until caps.length()).any { caps.optString(it) == CAP_CAR }
+                        val state = caps != null && (0 until caps.length()).any { caps.optString(it) == CAP_STATE }
                         ready.carImage = message.optString("carImg")
                         ready.car = car
-                        main.post { heard(this, name, version, music, car) }
+                        ready.state = state
+                        main.post { heard(this, name, version, music, car, state) }
+                    }
+                    "setCar" -> {
+                        val edit = CarEdit.parse(message)
+                        // Otro auto cancela el paquete que venía del anterior (sin avisar que falló).
+                        val receiving = parts.current
+                        if (edit.id != null && receiving != null && receiving.first != edit.id) {
+                            parts.cancel()
+                            writer.drop()
+                        }
+                        main.post { if (attempt === this) onSetCar?.invoke(edit) }
+                    }
+                    "pkg" -> receive(message)
+                    "report" -> {
+                        val id = message.optString("id")
+                        if (REPORT_ID.matches(id)) main.post { if (attempt === this) onReport?.invoke(id) }
                     }
                     "music" -> {
                         val next = music.heard(message)
@@ -871,12 +1013,71 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
                         val why = message.optString("why")
                         main.post { heardSound(this, route, why) }
                     }
-                    "ping" -> ready.send(JSONObject().put("t", "pong"))
+                    "ping" -> ready.trySend(JSONObject().put("t", "pong"))
                     "bye" -> return true
                     // "pong" y lo que no se conoce: nada (compatibilidad hacia adelante).
                 }
             }
         }
+    }
+
+    /**
+     * Escribe en orden, en el hilo de la conexión, el paquete que manda el celular (§5f), en un archivo temporal dentro
+     * de la app; completo, se lo pasa a quien lo pidió ([finish]).
+     */
+    private inner class PackageWriter {
+        private var file: File? = null
+        private var out: OutputStream? = null
+        private var written = 0L
+
+        /** La parte [n]; falso (y no escribe) si no se pudo o si con ella pasaría de [max] bytes. */
+        fun part(n: Int, data: ByteArray, max: Long): Boolean = try {
+            if (n == 0) {
+                drop()
+                val folder = File(app.cacheDir, PACKAGE_FOLDER).apply { mkdirs() }
+                // Lo que haya quedado de una vez que se cortó la app (lo entregado ya lo borró quien lo instaló).
+                val old = System.currentTimeMillis() - STALE_MS
+                folder.listFiles()?.filter { it.lastModified() < old }?.forEach { it.delete() }
+                file = File.createTempFile("pkg-", ".zip", folder).also { out = FileOutputStream(it) }
+            }
+            val o = out
+            written += data.size
+            if (o == null || written > max) {
+                false
+            } else {
+                o.write(data)
+                true
+            }
+        } catch (_: IOException) {
+            // Sin espacio o sin poder escribir.
+            false
+        }
+
+        /** El paquete completo: el archivo pasa a quien lo pidió (ya no es de aquí). */
+        fun finish(): File? {
+            val done = runCatching { out?.close() }.isSuccess
+            out = null
+            val f = file
+            file = null
+            written = 0
+            if (!done) f?.delete()
+            return f.takeIf { done }
+        }
+
+        /** Tira lo que se estaba escribiendo. */
+        fun drop() {
+            runCatching { out?.close() }
+            out = null
+            file?.delete()
+            file = null
+            written = 0
+        }
+    }
+
+    /** Un paquete del celular llegó completo ([file]) o mal (null); sin quién lo reciba, se borra. */
+    private fun delivered(id: String, kind: String, file: File?) {
+        val take = onPackage
+        if (take != null) take(id, kind, file) else if (file != null) io { file.delete() }
     }
 
     /**
@@ -943,6 +1144,16 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
         const val PHONE_APP = "phone_app"
         const val CAP_MUSIC = "music"
         const val CAP_CAR = "car"
+        const val CAP_STATE = "state"
+        /** Lo que entiende esta pantalla (§5, §5b, §5e–§5h). */
+        val SCREEN_CAPS = listOf(CAP_MUSIC, "carEdit", "carPkg", CAP_STATE, "report")
+        /** El id de un reporte del celular: 32 hex. */
+        val REPORT_ID = Regex("[0-9a-f]{32}")
+        /** El diagnóstico que se le pasa al celular para su reporte. */
+        const val REPORT_MAX = 15_000
+        /** Carpeta (en la caché de la app) de los paquetes que llegan del celular, y cuándo uno quedó abandonado. */
+        const val PACKAGE_FOLDER = "link-packages"
+        const val STALE_MS = 60 * 60_000L
 
         /** Lo que vive la llave de un QR sin vincular. */
         const val OFFER_MS = 5 * 60_000L

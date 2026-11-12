@@ -39,4 +39,11 @@
     <string name="phone_unlink_message">Para volver a conectarlo tendrás que escanear el código otra vez desde LiteDash Connect.</string>
     <string name="phone_no_sound">¿Sin sonido? Conecta el Bluetooth</string>
     <string name="music_mode_phone">Mientras tu celular esté conectado y ponga música, el widget Música la muestra y controla. Cuando se vaya, regresa a lo que tenías.</string>
+    <!-- Lo que ve el celular cuando no se pudo cambiar tu auto (carJob failed). -->
+    <string name="phone_job_unknown">Falta la información de ese auto del catálogo</string>
+    <string name="phone_job_no_finish">Este modelo no tiene acabados</string>
+    <string name="phone_job_damaged">El archivo llegó dañado</string>
+    <string name="phone_job_unexpected">La pantalla no pidió ese archivo</string>
+    <string name="phone_job_busy">La pantalla está bajando otra cosa; intenta en un momento</string>
+    <string name="phone_job_install_failed">No se pudo instalar en la pantalla</string>
 </resources>

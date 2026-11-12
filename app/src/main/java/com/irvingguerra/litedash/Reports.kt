@@ -34,6 +34,7 @@ import com.irvingguerra.litedash.core.ui.LocalColors
 import com.irvingguerra.litedash.core.ui.TextInput
 import com.irvingguerra.litedash.core.ui.Typography
 import com.irvingguerra.litedash.feature.dashboard.DashboardState
+import com.irvingguerra.litedash.feature.link.PhoneLink
 import com.irvingguerra.litedash.feature.music.AppProbe
 import com.irvingguerra.litedash.feature.music.MusicRepository
 import com.irvingguerra.litedash.feature.music.SystemSource
@@ -229,13 +230,7 @@ private suspend fun sendReport(
     problem: ReportProblem,
     note: String,
 ): String? {
-    // Lo de la música se arma aquí, en el hilo principal: su estado lo tocan los avisos que llegan ahí.
-    val musicInfo = music.describe()
-    val layout = dashboard.describe()
-    val silent = music.silentSources()
-    // El escáner solo si ya existe (abrir el Taller lo crea); si no, no se conecta nada por el reporte.
-    // El módulo Celular solo si está prendido ([phone] ya viene armado).
-    val obdInfo = (obd?.describe() ?: "OBD: sin abrir en esta sesión") + (phone?.let { "\n" + it } ?: "")
+    val info = runCatching { reportInfo(context, music, obd, phone, pro, dashboard) }.getOrElse { return null }
     return withContext(Dispatchers.IO) { runCatching {
         val id = Firestore.newId()
         val fields = JSONObject()
@@ -247,7 +242,7 @@ private suspend fun sendReport(
             .put("detail", Firestore.text(detail?.key ?: ""))
             .put("problem", Firestore.text(problem.key))
             .put("note", Firestore.text(note.trim().take(NOTE_MAX)))
-            .put("info", Firestore.text(systemInfo(context, pro, layout, musicInfo + "\n" + obdInfo, silent).take(INFO_MAX)))
+            .put("info", Firestore.text(info.take(INFO_MAX)))
         val write = JSONObject()
             .put("update", JSONObject().put("name", Firestore.document("reports/$id")).put("fields", fields))
             .put("currentDocument", JSONObject().put("exists", false))
@@ -255,6 +250,50 @@ private suspend fun sendReport(
         id.takeIf { Firestore.commit(context, write) }
     }.getOrNull() }
 }
+
+/**
+ * Las líneas técnicas del reporte (lo que va en "info"); también se las pide LiteDash Connect para el suyo
+ * ([wirePhoneReport]). Se llama en el hilo principal; lo que lee del sistema, en IO.
+ */
+private suspend fun reportInfo(context: Context, music: MusicRepository, obd: ObdRepository?, phone: String?, pro: Boolean, dashboard: DashboardState): String {
+    val layout = dashboard.describe()
+    // El escáner solo si ya existe (abrir el Taller lo crea); si no, no se conecta nada por el reporte.
+    // El módulo Celular solo si está prendido ([phone] ya viene armado).
+    val obdInfo = (obd?.describe() ?: "OBD: sin abrir en esta sesión") + (phone?.let { "\n" + it } ?: "")
+    return withContext(Dispatchers.IO) {
+        // La música pregunta al PackageManager y a las sesiones: fuera del hilo principal. Su estado lo tocan los
+        // avisos que llegan ahí; si cambia justo mientras se lee, el reporte va sin esa parte.
+        val musicInfo = runCatching { music.describe() }.getOrElse { "Música: no se pudo leer (${it.javaClass.simpleName})" }
+        val silent = runCatching { music.silentSources() }.getOrDefault(emptyList())
+        systemInfo(context, pro, layout, musicInfo + "\n" + obdInfo, silent)
+    }
+}
+
+/**
+ * LiteDash Connect pide el diagnóstico de la pantalla para su reporte (PROTOCOLO_LINK.md §5h): el mismo de aquí. Uno a
+ * la vez y a lo más uno cada [PHONE_REPORT_GAP_MS] (lo demás se ignora: el celular manda el suyo sin el de la pantalla).
+ */
+internal fun wirePhoneReport(link: PhoneLink, context: Context, deps: () -> Dependencies) {
+    var busy = false
+    var lastAt = 0L
+    link.onReport = report@{ id ->
+        val now = SystemClock.elapsedRealtime()
+        if (busy || (lastAt != 0L && now - lastAt < PHONE_REPORT_GAP_MS)) return@report
+        busy = true
+        lastAt = now
+        phoneScope.launch {
+            val d = deps()
+            try {
+                runCatching { reportInfo(context, d.music, d.obdIfCreated(), link.describe(), d.pro.isPro, d.dashboard) }
+                    .onSuccess { link.sendReport(id, it) }
+            } finally {
+                busy = false
+            }
+        }
+    }
+}
+
+private const val PHONE_REPORT_GAP_MS = 10_000L
 
 /** El volumen de la música en Android y si está fijo (la pantalla lo maneja con su propio chip). */
 private fun volumeInfo(context: Context): String = runCatching {

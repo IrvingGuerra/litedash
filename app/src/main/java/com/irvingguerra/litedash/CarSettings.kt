@@ -121,7 +121,7 @@ internal fun CarSettings(d: Dependencies) {
 @Composable
 private fun FinishPicker(prefs: Preferences, cars: CarRepository, pkg: CarPackage, entry: CatalogEntry?) {
     val c = LocalColors.current
-    val offered = entry?.takeIf { it.finish != null && !cars.isOutdated(pkg, it) }
+    val offered = entry?.takeIf { cars.offersFinish(pkg, it) }
     if (!pkg.finish && offered == null) return
     val finish = prefs.paintFinish
     val idle = cars.downloading == null

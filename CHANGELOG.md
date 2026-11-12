@@ -4,6 +4,20 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.4.148] - 2026-11-12
+
+### Agregado
+- **Cambia tu auto desde el celular** (con LiteDash Connect 0.6.0): color, acabado, brillo, nombre y el modelo del
+  catálogo. La pantalla lo aplica al momento; si no tiene internet, el celular le pasa el auto por el enlace (solo
+  imágenes, revisadas con su huella antes de instalarse).
+- **El estado de tu auto en el celular:** si lo pide LiteDash Connect, la pantalla le manda una foto del viaje, del
+  motor (códigos, batería y temperatura) y de las llantas, de los módulos que tengas prendidos.
+- **Reportes con los dos lados:** cuando mandas un reporte desde el celular, va también el diagnóstico de la pantalla.
+
+### Arreglado
+- **Ajustes → Apps → Música (Archivos):** "Elegir carpeta" y "Quitar carpeta" ya no se enciman con las pestañas de
+  "Tu música" en pantallas de 1024×600.
+
 ## [1.4.147] - 2026-11-12
 
 ### Agregado

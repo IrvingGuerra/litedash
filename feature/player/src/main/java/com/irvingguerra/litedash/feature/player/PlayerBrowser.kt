@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -37,6 +36,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -167,23 +168,11 @@ private fun LibraryBrowser(onPicked: () -> Unit, modifier: Modifier) {
     BoxWithConstraints(modifier) {
         // Angosta (dentro de un widget): solo las pestañas; la carpeta se cambia en Ajustes.
         val narrow = maxWidth < NARROW
-        // Con lugar, la carpeta va en la misma línea que las pestañas; si no, en su propio renglón.
-        val oneLine = maxWidth >= ONE_LINE
-        val folder: @Composable RowScope.() -> Unit = {
-            Label(drive.name, Typography.small, c.textMuted, 1, Modifier.weight(1f, fill = !oneLine))
-            folderButton()
-        }
         Column {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                Box(Modifier.weight(1f)) {
-                    Segmented(Group.entries.map { it to stringResource(it.title) }, group, { memory.pick(it) }, Modifier.horizontalScroll(rememberScrollState()))
-                }
-                if (!narrow && oneLine) folder()
+            val tabs = @Composable {
+                Segmented(Group.entries.map { it to stringResource(it.title) }, group, { memory.pick(it) }, Modifier.horizontalScroll(rememberScrollState()))
             }
-            if (!narrow && !oneLine) {
-                Spacer(Modifier.height(10.dp))
-                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) { folder() }
-            }
+            if (narrow) tabs() else TabsWithFolder(tabs, { Label(drive.name, Typography.small, c.textMuted, 1) }, folderButton)
             Spacer(Modifier.height(10.dp))
             // Si la memoria cambió y el grupo recordado ya no está, a la lista.
             val shown = memory.inside?.takeIf { it in groups }
@@ -219,8 +208,34 @@ private fun LibraryBrowser(onPicked: () -> Unit, modifier: Modifier) {
 
 /** Menos ancho que esto es un widget, no la vista en grande ni Ajustes. */
 private val NARROW = 440.dp
-/** Desde este ancho, pestañas y carpeta caben en una línea. */
-private val ONE_LINE = 700.dp
+
+/**
+ * Las pestañas y, a la derecha, el nombre de la carpeta con sus botones, en una línea solo si caben enteros (a
+ * cualquier ancho, idioma o tamaño de letra); si no, la carpeta va en su propio renglón, con los botones a la
+ * derecha y el nombre recortado. Así nunca se enciman.
+ */
+@Composable
+private fun TabsWithFolder(tabs: @Composable () -> Unit, name: @Composable () -> Unit, buttons: @Composable () -> Unit) {
+    Layout({ Box { tabs() }; Box { name() }; Box { buttons() } }) { (t, n, b), constraints ->
+        val gap = 10.dp.roundToPx()
+        val max = constraints.maxWidth
+        val oneLine = t.maxIntrinsicWidth(Constraints.Infinity) + n.maxIntrinsicWidth(Constraints.Infinity) +
+            b.maxIntrinsicWidth(Constraints.Infinity) + 2 * gap <= max
+        val loose = Constraints(maxWidth = max)
+        val bp = b.measure(loose)
+        val tp = t.measure(loose)
+        val room = max - bp.width - gap - if (oneLine) tp.width + gap else 0
+        val np = n.measure(Constraints(maxWidth = room.coerceAtLeast(0)))
+        val folderHeight = maxOf(np.height, bp.height)
+        val height = if (oneLine) maxOf(tp.height, folderHeight) else tp.height + gap + folderHeight
+        layout(max, height) {
+            val folderTop = if (oneLine) (height - folderHeight) / 2 else tp.height + gap
+            tp.placeRelative(0, if (oneLine) (height - tp.height) / 2 else 0)
+            np.placeRelative(if (oneLine) tp.width + gap else 0, folderTop + (folderHeight - np.height) / 2)
+            bp.placeRelative(max - bp.width, folderTop + (folderHeight - bp.height) / 2)
+        }
+    }
+}
 
 @Composable
 private fun groupName(group: Group, name: String): String = when {

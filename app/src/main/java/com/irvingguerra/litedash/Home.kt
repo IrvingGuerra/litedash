@@ -207,6 +207,9 @@ class Dependencies(
     val tpms: TpmsRepository
         get() = tpmsLazy.value.also { if (!tpmsCreated.value) tpmsCreated.value = true }
 
+    /** Las llantas si ya existen, sin crearlas (el estado para el celular solo lee lo que ya corre). */
+    fun tpmsIfCreated(): TpmsRepository? = if (tpmsCreated.value) tpmsLazy.value else null
+
     /**
      * Hay una fuente de llantas elegida. Sin crear el repositorio para saberlo; ya creado, se
      * lee su estado (al elegir o quitar la fuente, el inicio se entera solo).

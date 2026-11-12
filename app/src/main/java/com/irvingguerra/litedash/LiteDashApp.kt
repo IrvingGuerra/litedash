@@ -70,7 +70,10 @@ class LiteDashApp : Application() {
                     wirePhoneMusic(link, music) { sound ->
                         contextWithLanguage(this).getString(if (sound == PhoneSound.CALLS) R.string.phone_calls_only else R.string.phone_no_sound)
                     }
-                    wirePhoneCar(link, prefs, cars, carName)
+                    val edit = PhoneCarEdit(link, prefs, cars) { contextWithLanguage(this).getString(it) }
+                    wirePhoneCar(link, prefs, cars, edit, carName)
+                    wirePhoneState(link) { dependencies }
+                    wirePhoneReport(link, this) { dependencies }
                 }
             },
         )
