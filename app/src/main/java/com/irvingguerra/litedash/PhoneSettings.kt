@@ -43,6 +43,7 @@ import com.irvingguerra.litedash.core.ui.Radius
 import com.irvingguerra.litedash.core.ui.Typography
 import com.irvingguerra.litedash.feature.link.Pairing
 import com.irvingguerra.litedash.feature.link.PhoneLink
+import com.irvingguerra.litedash.feature.link.PhoneSound
 import com.irvingguerra.litedash.feature.link.QrCode
 import com.irvingguerra.litedash.feature.music.MusicMode
 
@@ -270,11 +271,14 @@ private fun SoundRow(d: Dependencies, openMusic: () -> Unit) {
     val title = stringResource(R.string.phone_sound)
     val phone = d.music.bluetoothDevice
     // Lo que dice el propio celular vale en cualquier pantalla, también con chip de Bluetooth propio.
-    val onBluetooth = d.phone.phoneOnBluetooth
+    val sound = d.phone.phoneSound
     when {
         phone != null -> CheckRow(Mark.OK, title, stringResource(R.string.phone_sound_ok, phone))
-        onBluetooth == true -> CheckRow(Mark.OK, title, stringResource(R.string.phone_sound_ok, d.phone.phoneName?.ifBlank { null } ?: "✓"))
-        onBluetooth == false || d.music.phoneKnowable -> CheckRow(Mark.WARN, title, stringResource(R.string.phone_sound_missing)) {
+        sound == PhoneSound.BLUETOOTH -> CheckRow(Mark.OK, title, stringResource(R.string.phone_sound_ok, d.phone.phoneName?.ifBlank { null } ?: "✓"))
+        // Android Auto o un cable llevan el audio: no hace falta el Bluetooth.
+        sound == PhoneSound.CAR -> CheckRow(Mark.OK, title, stringResource(R.string.phone_sound_car))
+        sound == PhoneSound.WIRED -> CheckRow(Mark.OK, title, stringResource(R.string.phone_sound_wired))
+        sound == PhoneSound.PHONE || d.music.phoneKnowable -> CheckRow(Mark.WARN, title, stringResource(R.string.phone_sound_missing)) {
             Button(stringResource(R.string.phone_connect_bt), {
                 // Donde se empareja: la tarjeta de LiteDash si la música ya va por Bluetooth; si no, la de Android.
                 if (d.music.mode == MusicMode.BLUETOOTH || !openSystemScreen(context, Intent(Settings.ACTION_BLUETOOTH_SETTINGS))) openMusic()

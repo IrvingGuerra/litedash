@@ -39,6 +39,12 @@ class ScreenInfo(val app: String, val car: String, val carId: String, val screen
 /** Lo que se dibuja para vincular: el texto del QR y el código de 4 dígitos de esa llave. */
 class Pairing(val text: String, val code: String)
 
+/**
+ * Por dónde llega al auto el sonido del celular (mensaje `sound`, PROTOCOLO_LINK.md §5c): Bluetooth, Android
+ * Auto (él lleva el audio), cable, o solo la bocina del celular.
+ */
+enum class PhoneSound(val route: String) { BLUETOOTH("bt"), CAR("car"), WIRED("wired"), PHONE("phone") }
+
 /** Lo que suena en el celular (mensaje `music` con su `art`, PROTOCOLO_LINK.md §5b). */
 class PhoneSong(
     val title: String,
@@ -99,10 +105,10 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
         private set
 
     /**
-     * El sonido del celular sale por Bluetooth (el estéreo), según LiteDash Connect; falso = por su bocina;
-     * null si no lo ha dicho (Connect anterior a la 0.4.1) o no hay conexión.
+     * Por dónde llega al auto el sonido del celular, según LiteDash Connect; null si no lo ha dicho
+     * (Connect anterior a la 0.4.1) o no hay conexión.
      */
-    var phoneOnBluetooth by mutableStateOf<Boolean?>(null)
+    var phoneSound by mutableStateOf<PhoneSound?>(null)
         private set
 
     /** Avisa (hilo principal) cuando el celular se conecta o se va. */
@@ -111,7 +117,7 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
     private fun linked(on: Boolean) {
         if (connected == on) return
         connected = on
-        if (!on) phoneOnBluetooth = null
+        if (!on) phoneSound = null
         onLink?.invoke(on)
     }
 
@@ -204,7 +210,7 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
         "puerta de enlace=${lastGateways.ifEmpty { "—" }}, última dirección=${store.getString(LAST_ADDRESS, null) ?: "—"}, " +
         "NSD=${if (discovery != null) "buscando" else "no"}${announced?.let { " ($it)" } ?: ""}, faro=${beaconed ?: "—"}, " +
         "redes=${lastNeighbors.ifEmpty { "—" }}, encontrado por=${lastFound ?: "—"}, error=${lastError ?: "—"}, " +
-        "sonido=${when (phoneOnBluetooth) { true -> "Bluetooth"; false -> "bocina del celular"; null -> "—" }}, música=${when { session?.music != true -> "no" ; musicBlocked -> "sin permiso"; song == null -> "nada"; song?.playing == true -> "suena"; else -> "en pausa" }}\n" +
+        "sonido=${phoneSound?.route ?: "—"}, música=${when { session?.music != true -> "no" ; musicBlocked -> "sin permiso"; song == null -> "nada"; song?.playing == true -> "suena"; else -> "en pausa" }}\n" +
         ble.describe()
 
     private fun yes(value: Boolean) = if (value) "sí" else "no"
@@ -532,11 +538,7 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
     /** El celular dijo por dónde sale su sonido: la canción a la vista se vuelve a publicar (lleva el aviso). */
     private fun heardSound(from: Attempt, route: String) {
         if (attempt !== from) return
-        phoneOnBluetooth = when (route) {
-            "bt" -> true
-            "phone" -> false
-            else -> null
-        }
+        phoneSound = PhoneSound.entries.firstOrNull { it.route == route }
         song?.let { onMusic?.invoke(it) }
     }
 

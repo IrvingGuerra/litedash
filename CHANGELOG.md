@@ -4,6 +4,15 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.4.142] - 2026-11-11
+
+### Arreglado
+- **Ya no dice "Sin sonido" cuando sí se oye:** si tu celular manda el audio por Android Auto o por cable, LiteDash lo
+  reconoce (con LiteDash Connect 0.4.3). Cuando el celular solo suena en su bocina, el widget pregunta
+  "¿Sin sonido? Conecta el Bluetooth" en vez de afirmarlo.
+- En Ajustes → Celular, el renglón Sonido dice "Por Android Auto" o "Por cable" cuando es el caso, y explica qué hacer si
+  el Bluetooth quedó "solo para llamadas": conectarlo desde el estéreo.
+
 ## [1.4.141] - 2026-11-11
 
 ### Agregado

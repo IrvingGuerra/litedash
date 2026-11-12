@@ -26,11 +26,13 @@
     <string name="phone_data_open_app">Open LiteDash Connect on your phone and connect it to this same network</string>
     <string name="phone_sound">Sound</string>
     <string name="phone_sound_ok">Bluetooth connected · %1$s</string>
-    <string name="phone_sound_missing">Your phone’s Bluetooth isn’t connected yet</string>
+    <string name="phone_sound_missing">Can’t hear it? Connect your phone’s Bluetooth. If it says “calls only”, connect it from the stereo</string>
+    <string name="phone_sound_car">Through Android Auto</string>
+    <string name="phone_sound_wired">By cable</string>
     <string name="phone_connect_bt">Connect Bluetooth</string>
     <string name="phone_sound_stereo">Sound comes through your stereo’s Bluetooth</string>
     <string name="phone_search_now">Search now</string>
     <string name="phone_unlink">Unlink</string>
-    <string name="phone_no_sound">No sound: Bluetooth missing</string>
+    <string name="phone_no_sound">No sound? Connect Bluetooth</string>
     <string name="music_mode_phone">Your phone is connected: meanwhile music goes over Bluetooth. When it leaves, it goes back to what you had.</string>
 </resources>
