@@ -1,5 +1,6 @@
 package com.irvingguerra.litedash.feature.car
 
+import android.graphics.Bitmap
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Box
@@ -18,14 +19,21 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Canvas
 import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asAndroidBitmap
+import androidx.compose.ui.graphics.drawscope.CanvasDrawScope
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.LayoutDirection
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.conflate
+import kotlinx.coroutines.withContext
 import kotlin.math.roundToInt
 
 /** Anchos de la pieza que hay que arrastrar para dar una vuelta completa. */
@@ -188,14 +196,90 @@ private fun DrawScope.drawCarLayers(c: CarLayers, reflection: Boolean = true) {
     val scale = minOf(size.width / c.car.width, size.height / c.car.height)
     val w = c.car.width * scale
     val h = c.car.height * scale
-    val origin = Offset((size.width - w) / 2, (size.height - h) / 2)
-    c.floor?.let { f ->
-        val box = Rect(Offset(origin.x + f.x * w, origin.y + f.y * w), Size(f.width * w, f.height * w))
+    drawCarLayersAt(c, Rect(Offset((size.width - w) / 2, (size.height - h) / 2), Size(w, h)), reflection)
+}
+
+/** Las capas con el auto en [car]: la sombra y el reflejo se salen de esa caja. */
+private fun DrawScope.drawCarLayersAt(c: CarLayers, car: Rect, reflection: Boolean) {
+    c.floorBox(car)?.let { box ->
         c.shadow?.let { drawLayer(it, box) }
         if (reflection) c.reflection?.let { drawLayer(it, box) }
     }
-    drawLayer(c.car, Rect(origin, Size(w, h)))
+    drawLayer(c.car, car)
 }
+
+/** Dónde caen la sombra y el reflejo si el auto ocupa [car]; null sin piso. */
+private fun CarLayers.floorBox(car: Rect) =
+    floor?.let { f -> Rect(Offset(car.left + f.x * car.width, car.top + f.y * car.width), Size(f.width * car.width, f.height * car.width)) }
+
+/**
+ * El auto quieto en tres cuartos, como en el inicio, en una imagen suelta de [widthPx] de ancho (el auto; la
+ * sombra y el reflejo pueden agrandarla): para LiteDash Connect. Sin [p], el sedán genérico. Fondo transparente.
+ */
+suspend fun CarRepository.snapshot(p: CarPackage?, paint: CarPaint, widthPx: Int): Bitmap? {
+    if (p == null) {
+        val image = ImageBitmap(widthPx, (widthPx / SEDAN_ASPECT).roundToInt())
+        withContext(Dispatchers.Default) { image.drawOffscreen { drawSedan(paint.color) } }
+        return image.asAndroidBitmap()
+    }
+    val c = layers(p, baseFrame(restFrame(p.spin)), paint, widthPx) ?: return null
+    val car = Rect(Offset.Zero, Size(widthPx.toFloat(), widthPx * c.car.height.toFloat() / c.car.width))
+    val all = c.floorBox(car)?.let { car.union(it) } ?: car
+    val image = ImageBitmap(all.width.roundToInt(), all.height.roundToInt())
+    return withContext(Dispatchers.Default) {
+        image.drawOffscreen { drawCarLayersAt(c, car.translate(-all.left, -all.top), reflection = true) }
+        image.asAndroidBitmap().trimmed()
+    }
+}
+
+/**
+ * Lista para mostrarse sobre cualquier fondo: la sombra y el reflejo traen un velo casi invisible que llena su caja
+ * y corta de golpe en la orilla (en fondo claro se ve como un rectángulo), así que se le resta [HAZE_ALPHA] a la
+ * transparencia; y sin el aire de las orillas (la caja del piso es mucho más grande que lo que se ve), con un margen
+ * chico, para que el auto llene el espacio donde lo pongan.
+ */
+private fun Bitmap.trimmed(): Bitmap {
+    val pixels = IntArray(width * height)
+    getPixels(pixels, 0, width, 0, 0, width, height)
+    var top = height
+    var bottom = -1
+    var left = width
+    var right = -1
+    for (y in 0 until height) for (x in 0 until width) {
+        val i = y * width + x
+        val alpha = pixels[i] ushr 24
+        if (alpha == 255) {
+            // Lo sólido (el auto) no cambia.
+        } else if (alpha <= HAZE_ALPHA) {
+            pixels[i] = 0
+            continue
+        } else {
+            val faded = (alpha - HAZE_ALPHA) * 255 / (255 - HAZE_ALPHA)
+            pixels[i] = (faded shl 24) or (pixels[i] and 0xFFFFFF)
+        }
+        if (y < top) top = y
+        bottom = y
+        if (x < left) left = x
+        if (x > right) right = x
+    }
+    if (bottom < 0) return this
+    val margin = width / 50
+    val x0 = (left - margin).coerceAtLeast(0)
+    val y0 = (top - margin).coerceAtLeast(0)
+    val x1 = (right + margin).coerceAtMost(width - 1)
+    val y1 = (bottom + margin).coerceAtMost(height - 1)
+    val out = Bitmap.createBitmap(x1 - x0 + 1, y1 - y0 + 1, Bitmap.Config.ARGB_8888)
+    out.setPixels(pixels, y0 * width + x0, width, 0, 0, out.width, out.height)
+    return out
+}
+
+/** El velo de la sombra y el reflejo (de 255): menos que esto no se nota en fondo oscuro y en claro estorba. */
+private const val HAZE_ALPHA = 10
+
+private fun Rect.union(o: Rect) = Rect(minOf(left, o.left), minOf(top, o.top), maxOf(right, o.right), maxOf(bottom, o.bottom))
+
+private fun ImageBitmap.drawOffscreen(block: DrawScope.() -> Unit) =
+    CanvasDrawScope().draw(Density(1f), LayoutDirection.Ltr, Canvas(this), Size(width.toFloat(), height.toFloat()), block)
 
 /** Qué imagen debe verse: cuadro, pintura y ancho. */
 private data class Wanted(val name: String, val paint: CarPaint, val widthPx: Int)

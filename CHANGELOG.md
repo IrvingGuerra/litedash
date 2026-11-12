@@ -4,6 +4,13 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.4.147] - 2026-11-12
+
+### Agregado
+- **Tu auto en LiteDash Connect:** al conectarse, la pantalla le manda al celular tu auto tal como se ve en el inicio
+  (modelo, color, acabado y nombre). Si lo cambias en Ajustes → Tu auto, el celular se actualiza en un segundo. La
+  imagen solo viaja cuando cambia y nunca sale del enlace cifrado entre tu pantalla y tu celular.
+
 ## [1.4.146] - 2026-11-12
 
 ### Cambiado

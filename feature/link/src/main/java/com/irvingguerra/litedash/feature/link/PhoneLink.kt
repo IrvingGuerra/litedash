@@ -36,6 +36,21 @@ import org.json.JSONObject
 /** Lo que la pantalla dice de sí misma en el QR y en su `info`. */
 class ScreenInfo(val app: String, val car: String, val carId: String, val screen: String)
 
+/**
+ * Tu auto para LiteDash Connect (mensaje `car`, PROTOCOLO_LINK.md §5d). [image] es la huella de su imagen: la
+ * imagen solo viaja si el celular no la tiene ya ([PhoneLink.needsCarImage]).
+ */
+class ScreenCar(
+    val id: String,
+    val name: String,
+    val model: String,
+    val make: String,
+    /** RGB, sin transparencia. */
+    val color: Int,
+    val finish: String,
+    val image: String,
+)
+
 /** Lo que se dibuja para vincular: el texto del QR y el código de 4 dígitos de esa llave. */
 class Pairing(val text: String, val code: String)
 
@@ -112,13 +127,20 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
     var phoneSound by mutableStateOf<PhoneSound?>(null)
         private set
 
+    /** El celular conectado quiere ver tu auto (LiteDash Connect 0.5.0+): se le manda con [sendCar]. */
+    var wantsCar by mutableStateOf(false)
+        private set
+
     /** Avisa (hilo principal) cuando el celular se conecta o se va. */
     var onLink: ((Boolean) -> Unit)? = null
 
     private fun linked(on: Boolean) {
         if (connected == on) return
         connected = on
-        if (!on) phoneSound = null
+        if (!on) {
+            phoneSound = null
+            wantsCar = false
+        }
         onLink?.invoke(on)
     }
 
@@ -132,6 +154,22 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
         val open = session?.takeIf { it.music } ?: return false
         // En un solo hilo: play y pausa seguidos llegan en el orden en que se tocaron.
         commands.execute { runCatching { open.send(JSONObject().put("t", "cmd").put("do", action).put("ms", ms)) } }
+        return true
+    }
+
+    /** El celular conectado no tiene la imagen [image] de tu auto (hay que mandársela con el `car`). */
+    fun needsCarImage(image: String) = session?.carImage != image
+
+    /** Manda tu auto al celular conectado, con su imagen [webp] si va. Falso si no hay a quién. */
+    fun sendCar(car: ScreenCar, webp: ByteArray?): Boolean {
+        val open = session?.takeIf { it.car } ?: return false
+        val message = JSONObject().put("t", "car").put("id", car.id).put("name", car.name).put("model", car.model)
+            .put("make", car.make).put("color", "%06X".format(car.color and 0xFFFFFF))
+            .put("finish", car.finish).put("img", car.image)
+        if (webp != null) message.put("webp", Base64.encode(webp))
+        commands.execute {
+            runCatching { open.send(message) }.onSuccess { if (webp != null) open.carImage = car.image }
+        }
         return true
     }
 
@@ -525,9 +563,10 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
         sync()
     }
 
-    private fun heard(from: Attempt, name: String, version: String, music: Boolean) {
+    private fun heard(from: Attempt, name: String, version: String, music: Boolean, car: Boolean) {
         if (attempt !== from) return
         session?.music = music
+        wantsCar = car
         phoneName = name
         phoneApp = version
         store.edit().putString(PHONE_NAME, name).putString(PHONE_APP, version).apply()
@@ -583,6 +622,10 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
         @Volatile var lastSent = SystemClock.elapsedRealtime()
         /** El celular declaró la música en su `info`. */
         @Volatile var music = false
+        /** El celular declaró tu auto en su `info` ([CAP_CAR]). */
+        @Volatile var car = false
+        /** La huella de la imagen de tu auto que el celular ya tiene. */
+        @Volatile var carImage: String? = null
 
         fun send(message: JSONObject) = synchronized(this) {
             output.write((channel.seal(message.toString()) + "\n").toByteArray(Charsets.US_ASCII))
@@ -812,7 +855,10 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
                         val music = caps != null && (0 until caps.length()).any { caps.optString(it) == CAP_MUSIC }
                         // Ya se puede mandar `cmd` (antes de que el hilo principal se entere).
                         ready.music = music
-                        main.post { heard(this, name, version, music) }
+                        val car = caps != null && (0 until caps.length()).any { caps.optString(it) == CAP_CAR }
+                        ready.carImage = message.optString("carImg")
+                        ready.car = car
+                        main.post { heard(this, name, version, music, car) }
                     }
                     "music" -> {
                         val next = music.heard(message)
@@ -896,6 +942,7 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
         const val PHONE_NAME = "phone_name"
         const val PHONE_APP = "phone_app"
         const val CAP_MUSIC = "music"
+        const val CAP_CAR = "car"
 
         /** Lo que vive la llave de un QR sin vincular. */
         const val OFFER_MS = 5 * 60_000L

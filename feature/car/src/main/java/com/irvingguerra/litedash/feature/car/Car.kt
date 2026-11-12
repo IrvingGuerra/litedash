@@ -18,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.drawscope.scale
@@ -109,40 +110,46 @@ private val tire = Color(0xFF2A2E34)
  */
 @Composable
 fun CarDrawing(color: Color, modifier: Modifier = Modifier) {
-    Canvas(modifier.aspectRatio(WIDTH / HEIGHT)) {
-        val s = size.width / WIDTH
-        withTransform({
-            scale(s, s, pivot = Offset.Zero)
-            translate(0f, -TOP)
-        }) {
-            // Sombra en el piso: un círculo con degradado aplastado a elipse.
-            val floor = Offset(240f, 196f)
-            withTransform({ scale(1f, 12f / 250f, pivot = floor) }) {
-                drawCircle(Brush.radialGradient(listOf(Color.Black.copy(alpha = 0.5f), Color.Transparent), floor, 250f), 250f, floor)
-            }
-            drawPath(CarPaths.wells, Color(0xFF0B0D10))
-            drawPath(CarPaths.body, color)
-            drawPath(CarPaths.body, bodyShade)
-            clipPath(CarPaths.body) {
-                drawPath(CarPaths.side, sideShade)
-                drawCircle(frontFender, 80f, frontGlow)
-                drawCircle(rearFender, 80f, rearGlow)
-            }
-            drawPath(CarPaths.canopy, canopyShade)
-            drawPath(CarPaths.roof, Color.White.copy(alpha = 0.35f), style = Stroke(1.5f))
-            drawPath(CarPaths.crease, creaseShine, style = Stroke(1.2f))
-            // Contorno apenas visible: un auto oscuro no se pierde en el tema oscuro.
-            drawPath(CarPaths.body, Color.White.copy(alpha = 0.12f), style = Stroke(1f))
-            for (cx in CarPaths.wheels) {
-                val c = Offset(cx, WHEEL_Y)
-                drawCircle(tire, 41f, c)
-                drawCircle(
-                    Brush.radialGradient(listOf(Color(0xFFEEF0F2), Color(0xFF9AA2AB)), Offset(cx - 7f, WHEEL_Y - 10f), 52f),
-                    35f,
-                    c,
-                )
-                drawCircle(Color.Black.copy(alpha = 0.2f), 35f, c, style = Stroke(1.5f))
-            }
+    Canvas(modifier.aspectRatio(SEDAN_ASPECT)) { drawSedan(color) }
+}
+
+/** Proporción (ancho / alto) del sedán genérico. */
+internal const val SEDAN_ASPECT = WIDTH / HEIGHT
+
+/** El sedán genérico del [color] a lo ancho del lienzo (que mide [SEDAN_ASPECT]). */
+internal fun DrawScope.drawSedan(color: Color) {
+    val s = size.width / WIDTH
+    withTransform({
+        scale(s, s, pivot = Offset.Zero)
+        translate(0f, -TOP)
+    }) {
+        // Sombra en el piso: un círculo con degradado aplastado a elipse.
+        val floor = Offset(240f, 196f)
+        withTransform({ scale(1f, 12f / 250f, pivot = floor) }) {
+            drawCircle(Brush.radialGradient(listOf(Color.Black.copy(alpha = 0.5f), Color.Transparent), floor, 250f), 250f, floor)
+        }
+        drawPath(CarPaths.wells, Color(0xFF0B0D10))
+        drawPath(CarPaths.body, color)
+        drawPath(CarPaths.body, bodyShade)
+        clipPath(CarPaths.body) {
+            drawPath(CarPaths.side, sideShade)
+            drawCircle(frontFender, 80f, frontGlow)
+            drawCircle(rearFender, 80f, rearGlow)
+        }
+        drawPath(CarPaths.canopy, canopyShade)
+        drawPath(CarPaths.roof, Color.White.copy(alpha = 0.35f), style = Stroke(1.5f))
+        drawPath(CarPaths.crease, creaseShine, style = Stroke(1.2f))
+        // Contorno apenas visible: un auto oscuro no se pierde en el tema oscuro.
+        drawPath(CarPaths.body, Color.White.copy(alpha = 0.12f), style = Stroke(1f))
+        for (cx in CarPaths.wheels) {
+            val c = Offset(cx, WHEEL_Y)
+            drawCircle(tire, 41f, c)
+            drawCircle(
+                Brush.radialGradient(listOf(Color(0xFFEEF0F2), Color(0xFF9AA2AB)), Offset(cx - 7f, WHEEL_Y - 10f), 52f),
+                35f,
+                c,
+            )
+            drawCircle(Color.Black.copy(alpha = 0.2f), 35f, c, style = Stroke(1.5f))
         }
     }
 }

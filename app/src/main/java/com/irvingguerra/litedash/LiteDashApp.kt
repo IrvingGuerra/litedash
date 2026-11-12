@@ -63,13 +63,14 @@ class LiteDashApp : Application() {
             tpmsLazy = lazy { TpmsRepository(this, bus).apply { carTires = CarTires { factoryTires(dependencies) } } },
             tpmsSaved = { TpmsRepository.hasSavedSource(this) },
             phoneLazy = lazy {
+                val carName = { prefs.carName ?: cars.pkg(prefs.carModel)?.name ?: contextWithLanguage(this).getString(R.string.my_car) }
                 PhoneLink(this) {
-                    val car = prefs.carName ?: cars.pkg(prefs.carModel)?.name ?: contextWithLanguage(this).getString(R.string.my_car)
-                    ScreenInfo(BuildConfig.VERSION_NAME, car, prefs.carModel ?: "", Build.MODEL)
+                    ScreenInfo(BuildConfig.VERSION_NAME, carName(), prefs.carModel ?: "", Build.MODEL)
                 }.also { link ->
                     wirePhoneMusic(link, music) { sound ->
                         contextWithLanguage(this).getString(if (sound == PhoneSound.CALLS) R.string.phone_calls_only else R.string.phone_no_sound)
                     }
+                    wirePhoneCar(link, prefs, cars, carName)
                 }
             },
         )
