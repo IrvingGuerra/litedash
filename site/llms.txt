@@ -19,7 +19,7 @@ Key facts:
 - Music and radio: own USB player (folders, artists, albums), Bluetooth music with title and album art, apps like Spotify or YouTube Music, factory FM radio of TopWay, NWD and Hengchen (HCN) head units in its own widget, and internet radio with nearby stations.
 - Map: live position, flat or tilted, light or dark, tiles from OpenStreetMap/OpenFreeMap cached on the device; one tap to Waze or Google Maps.
 - Gauges: OBD or GPS speedometer (dial, needle, digital, bar, gradient), tachometer, coolant, fuel, battery, consumption, boost; km/h or mph, °C or °F, psi, bar or kPa.
-- Your car in 3D: catalog of 15 pre-rendered models (about 2 MB each, downloaded only if you want), any color, 360° spin.
+- Your car in 3D: catalog of 16 pre-rendered models (about 2 MB each, downloaded only if you want), any color, 360° spin.
 - Phone projection: one tap to Zlink, AutoKit, CarLink and Open Headunit (Android Auto / CarPlay apps).
 - Updates: checks GitHub, verifies SHA-256 and installs with one tap (APK version).
 - Privacy: internet only for what you ask (3D car, weather, radio, map, updates) plus an anonymous daily count you can turn off.

@@ -110,7 +110,7 @@ ROWS = [
         "agama": (S, "", ""), "cwg": (S, "", ""), "dashito": (D, "", ""), "cl": (S, "En PRO", "In PRO"),
     }),
     ("feat", {"es": "Tu auto en 3D", "en": "Your car in 3D"}, {
-        "ld": (S, "15 modelos, de tu color", "15 models, in your color"),
+        "ld": (S, "16 modelos, de tu color", "16 models, in your color"),
         "strada": (N, "Foto de tu auto", "Photo of your car"),
         "agama": (D, "", ""), "cwg": (D, "", ""),
         "dashito": (N, "Foto de tu auto", "Photo of your car"), "cl": (N, "", ""),

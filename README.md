@@ -52,7 +52,7 @@ agrandar o quitar widgets.
 | **Música** | Reproductor USB propio (carpetas, artistas, álbumes), Bluetooth con carátula y tu app (Spotify, YouTube Music…). |
 | **Mapa** | Tu posición en vivo, plano o inclinado, y Waze o Google Maps a un toque. |
 | **Velocímetros y medidores** | Por OBD o GPS: esfera, aguja, digital, barra o degradado; tacómetro, temperatura, gasolina, batería, turbo. |
-| **Tu auto en 3D** | Catálogo de 15 modelos, del color que quieras, con giro de 360°. |
+| **Tu auto en 3D** | Catálogo de 16 modelos, del color que quieras, con giro de 360°. |
 | **Tu inicio** | Widgets que se mueven y crecen, plantillas para 7", 10" y 11", mandos al volante, día y noche por hora, sensor de luz o faros, pantalla dividida. |
 | **Android Auto y CarPlay** | Zlink, AutoKit, CarLink u Open Headunit a un toque. |
 | **App del celular** | [LiteDash Connect](https://litedash.dev/connect/) (opcional): lo que suena en tu celular, con carátula y controles. |
