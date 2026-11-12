@@ -171,7 +171,7 @@
     <string name="hide_status_bar_help">The strip at the very top with Android\'s time and notifications (not LiteDash\'s). Swipe down from the top to see it for a moment.</string>
     <string name="stats_title">Statistics</string>
     <string name="stats_switch">Count this screen (anonymous)</string>
-    <string name="stats_help">Once a day it sends a random number, the version and where you got it (GitHub or Play), Android, language, screen size and since when you use LiteDash, to know how many people use LiteDash. No location, accounts or personal data.</string>
+    <string name="stats_help">Once a day it sends a random number, the version and where you got it (GitHub or Play), Android, language, screen size, since when you use LiteDash and which built-in radio and Bluetooth your screen has, to know how many people use LiteDash. No location, accounts or personal data.</string>
     <string name="back">Back</string>
     <string name="next">Next</string>
     <string name="skip">Skip</string>

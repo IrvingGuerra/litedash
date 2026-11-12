@@ -108,7 +108,7 @@ private val NOT_MUSIC_APPS = setOf(
 )
 
 /** Apps de Bluetooth de marca (chip propio, no el de Android): para saber la familia en los reportes. */
-private val BRAND_BT_APPS = listOf(
+internal val BRAND_BT_APPS = listOf(
     "com.syu.bt", "com.syu.ms", "com.fyt.bt",           // FYT
     "com.tw.bt", "com.tw.service", "com.ts.bt",         // TopWay
     "com.microntek.bt",                                  // Microntek (MTCD/PX5)

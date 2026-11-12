@@ -7,13 +7,17 @@ service cloud.firestore {
   match /databases/{database}/documents {
     match /screens/{id} {
       allow create, update: if id.matches('^[0-9a-f]{32}$')
-        && request.resource.data.keys().hasOnly(['version', 'channel', 'android', 'language', 'screen', 'since', 'seen'])
+        && request.resource.data.keys().hasOnly(['version', 'channel', 'android', 'language', 'screen', 'since', 'seen', 'radio', 'bluetooth', 'ble'])
         && request.resource.data.version is int && request.resource.data.version < 1000000000
         && request.resource.data.channel in ['play', 'github']
         && request.resource.data.android is int && request.resource.data.android < 1000
         && request.resource.data.language is string && request.resource.data.language.size() <= 8
         && request.resource.data.screen is string && request.resource.data.screen.size() <= 16
         && request.resource.data.since is string && request.resource.data.since.size() == 10
+        // Radio y Bluetooth de fábrica (paquetes del sistema) y si tiene Bluetooth LE; desde la 1.4.145, opcionales.
+        && (!('radio' in request.resource.data) || (request.resource.data.radio is string && request.resource.data.radio.size() <= 64))
+        && (!('bluetooth' in request.resource.data) || (request.resource.data.bluetooth is string && request.resource.data.bluetooth.size() <= 64))
+        && (!('ble' in request.resource.data) || request.resource.data.ble is bool)
         && request.resource.data.seen == request.time;
     }
     match /reports/{id} {

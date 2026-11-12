@@ -5,6 +5,7 @@ import android.content.res.Configuration
 import android.os.Build
 import androidx.core.content.edit
 import com.irvingguerra.litedash.core.ui.Https
+import com.irvingguerra.litedash.feature.music.FactoryAudio
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
@@ -16,7 +17,8 @@ import java.security.SecureRandom
  * Cuántas pantallas usan LiteDash, sin cuentas ni SDK de Firebase: a lo más una vez al día,
  * al abrir el inicio, escribe `screens/{id}` en Firestore por REST (nombres de la nube en inglés). El id es un número al
  * azar de esta instalación; se manda solo la versión, el canal (GitHub o Play), Android, el idioma de LiteDash,
- * el tamaño de pantalla y desde qué día se usa (nada de ubicación ni del usuario). Las reglas de Firestore solo dejan escribir
+ * el tamaño de pantalla, desde qué día se usa y la radio y el Bluetooth DE FÁBRICA de la pantalla ([FactoryAudio]: solo
+ * apps del sistema, para saber qué familias soportar; nada de ubicación ni del usuario). Las reglas de Firestore solo dejan escribir
  * esos campos y nadie puede leerlos desde la app. Se apaga en Ajustes → Sistema → Estadísticas.
  */
 class Stats(private val context: Context, private val enabled: () -> Boolean) {
@@ -41,6 +43,9 @@ class Stats(private val context: Context, private val enabled: () -> Boolean) {
             .put("language", Firestore.text(Language.read(context).ifBlank { primaryLocale(config).language }.take(8)))
             .put("screen", Firestore.text(screen(config)))
             .put("since", Firestore.text(since))
+            .put("radio", Firestore.text(FactoryAudio.radio(context).take(64)))
+            .put("bluetooth", Firestore.text(FactoryAudio.bluetooth(context).take(64)))
+            .put("ble", Firestore.bool(FactoryAudio.ble(context)))
         val write = JSONObject()
             .put("update", JSONObject().put("name", Firestore.document("screens/$id")).put("fields", fields))
             .put("updateTransforms", Firestore.serverTime("seen"))

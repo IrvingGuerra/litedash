@@ -4,6 +4,14 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.4.145] - 2026-11-12
+
+### Cambiado
+- **Estadísticas anónimas:** además de lo de antes, cuentan qué radio y qué Bluetooth trae **de fábrica** tu pantalla
+  (solo el nombre técnico de las apps que vienen con el sistema, como `com.hcn.autoradio`, y si tiene Bluetooth de baja
+  energía; nunca las apps que tú instalas). Así sabemos a qué radios y Bluetooth darles soporte primero. Se apagan igual que
+  siempre en Ajustes → Sistema → Estadísticas.
+
 ## [1.4.144] - 2026-11-12
 
 ### Cambiado

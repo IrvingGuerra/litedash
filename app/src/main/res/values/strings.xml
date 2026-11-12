@@ -172,7 +172,7 @@
     <string name="hide_status_bar_help">La franja de hasta arriba con la hora y los avisos de Android (no es la de LiteDash). Para verla un momento, desliza desde arriba.</string>
     <string name="stats_title">Estadísticas</string>
     <string name="stats_switch">Contar esta pantalla (anónimo)</string>
-    <string name="stats_help">Una vez al día manda un número al azar, la versión y de dónde la bajaste (GitHub o Play), Android, el idioma, el tamaño de la pantalla y desde qué día usas LiteDash, para saber cuánta gente usa LiteDash. Nada de ubicación, cuentas ni datos tuyos.</string>
+    <string name="stats_help">Una vez al día manda un número al azar, la versión y de dónde la bajaste (GitHub o Play), Android, el idioma, el tamaño de la pantalla, desde qué día usas LiteDash y qué radio y Bluetooth trae de fábrica tu pantalla, para saber cuánta gente usa LiteDash. Nada de ubicación, cuentas ni datos tuyos.</string>
     <string name="back">Atrás</string>
     <string name="next">Siguiente</string>
     <string name="skip">Omitir</string>
