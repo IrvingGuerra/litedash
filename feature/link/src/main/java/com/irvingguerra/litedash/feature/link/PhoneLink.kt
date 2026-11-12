@@ -98,6 +98,23 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
     var musicBlocked by mutableStateOf(false)
         private set
 
+    /**
+     * El sonido del celular sale por Bluetooth (el estéreo), según LiteDash Connect; falso = por su bocina;
+     * null si no lo ha dicho (Connect anterior a la 0.4.1) o no hay conexión.
+     */
+    var phoneOnBluetooth by mutableStateOf<Boolean?>(null)
+        private set
+
+    /** Avisa (hilo principal) cuando el celular se conecta o se va. */
+    var onLink: ((Boolean) -> Unit)? = null
+
+    private fun linked(on: Boolean) {
+        if (connected == on) return
+        connected = on
+        if (!on) phoneOnBluetooth = null
+        onLink?.invoke(on)
+    }
+
     /** Lo que suena en el celular; null = nada, o sin conexión. Avisa a [onMusic] en el hilo principal. */
     var song: PhoneSong? = null
         private set
@@ -187,7 +204,7 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
         "puerta de enlace=${lastGateways.ifEmpty { "—" }}, última dirección=${store.getString(LAST_ADDRESS, null) ?: "—"}, " +
         "NSD=${if (discovery != null) "buscando" else "no"}${announced?.let { " ($it)" } ?: ""}, faro=${beaconed ?: "—"}, " +
         "redes=${lastNeighbors.ifEmpty { "—" }}, encontrado por=${lastFound ?: "—"}, error=${lastError ?: "—"}, " +
-        "música=${when { session?.music != true -> "no" ; musicBlocked -> "sin permiso"; song == null -> "nada"; song?.playing == true -> "suena"; else -> "en pausa" }}"
+        "sonido=${when (phoneOnBluetooth) { true -> "Bluetooth"; false -> "bocina del celular"; null -> "—" }}, música=${when { session?.music != true -> "no" ; musicBlocked -> "sin permiso"; song == null -> "nada"; song?.playing == true -> "suena"; else -> "en pausa" }}"
 
     private fun yes(value: Boolean) = if (value) "sí" else "no"
 
@@ -441,7 +458,7 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
         played(current, null, blocked = false)
         attempt = null
         session = null
-        connected = false
+        linked(false)
         current.cancelled = true
         io {
             if (bye && open != null) runCatching { open.send(JSONObject().put("t", "bye").put("reason", "unlink")) }
@@ -480,7 +497,7 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
             pairing = null
         }
         session = open
-        connected = true
+        linked(true)
         retries = 0
         lastError = null
         sync()
@@ -502,13 +519,24 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
         onMusic?.invoke(next)
     }
 
+    /** El celular dijo por dónde sale su sonido: la canción a la vista se vuelve a publicar (lleva el aviso). */
+    private fun heardSound(from: Attempt, route: String) {
+        if (attempt !== from) return
+        phoneOnBluetooth = when (route) {
+            "bt" -> true
+            "phone" -> false
+            else -> null
+        }
+        song?.let { onMusic?.invoke(it) }
+    }
+
     private fun closed(from: Attempt, error: String?, bye: Boolean) {
         if (attempt !== from) return
         played(from, null, blocked = false)
         val wasConnected = connected
         attempt = null
         session = null
-        connected = false
+        linked(false)
         if (error != null) lastError = error
         if (bye) return forget()
         sync()
@@ -765,6 +793,10 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
                         main.post { played(this, next, blocked) }
                     }
                     "art" -> music.art(message)?.let { next -> main.post { played(this, next, blocked = false) } }
+                    "sound" -> {
+                        val route = message.optString("route")
+                        main.post { heardSound(this, route) }
+                    }
                     "ping" -> ready.send(JSONObject().put("t", "pong"))
                     "bye" -> return true
                     // "pong" y lo que no se conoce: nada (compatibilidad hacia adelante).

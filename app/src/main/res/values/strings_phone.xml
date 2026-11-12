@@ -31,4 +31,6 @@
     <string name="phone_sound_stereo">El sonido llega por el Bluetooth de tu estéreo</string>
     <string name="phone_search_now">Buscar ahora</string>
     <string name="phone_unlink">Desvincular</string>
+    <string name="phone_no_sound">Sin sonido: falta el Bluetooth</string>
+    <string name="music_mode_phone">Tu celular está conectado: mientras tanto la música va por Bluetooth. Al irse, regresa a lo que tenías.</string>
 </resources>

@@ -4,6 +4,16 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.4.139] - 2026-11-11
+
+### Cambiado
+- **Con tu celular conectado (LiteDash Connect), la música pasa sola a Bluetooth:** lo que sonaba en la pantalla se
+  pausa y el widget muestra y controla lo de tu celular. Cuando el celular se va, regresa al método que tenías
+  (Archivos o tu app). Si cambias el método a mano mientras tanto, se queda el que elegiste.
+- **Aviso de "Sin sonido":** si la canción está sonando en la bocina de tu celular porque falta el Bluetooth, el
+  widget Música lo dice. Necesita LiteDash Connect 0.4.1.
+- En Ajustes → Celular, el renglón **Sonido** ahora también funciona en pantallas con Bluetooth propio del estéreo.
+
 ## [1.4.138] - 2026-11-11
 
 ### Cambiado

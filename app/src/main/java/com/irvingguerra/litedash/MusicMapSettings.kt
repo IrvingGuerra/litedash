@@ -74,6 +74,8 @@ fun MusicSettings(d: Dependencies) {
 fun MusicModeSettings(d: Dependencies) {
     SettingsCard(stringResource(R.string.music_mode_title), stringResource(R.string.music_mode_help)) {
         Segmented(MusicMode.entries.map { it to it.label() }, d.music.mode, { d.music.mode = it }, Modifier.fillMaxWidth(), check = true)
+        // El celular conectado presta el Bluetooth: que no parezca que el método cambió solo.
+        if (d.music.phoneHolds) Label(stringResource(R.string.music_mode_phone), Typography.small, LocalColors.current.textMuted)
     }
     when (d.music.mode) {
         MusicMode.FILES -> {

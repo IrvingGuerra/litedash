@@ -6,15 +6,24 @@ import com.irvingguerra.litedash.feature.music.MusicRepository
 import com.irvingguerra.litedash.feature.music.Song
 import com.irvingguerra.litedash.feature.music.SourceKind
 
-/** La música del celular (LiteDash Connect) entra a la pieza Música y sus botones regresan por el enlace. */
-fun wirePhoneMusic(link: PhoneLink, music: MusicRepository) {
-    link.onMusic = { song -> music.fromPhone(song?.toSong(), artComing = song != null && song.hasArt && song.art == null) }
+/**
+ * La música del celular (LiteDash Connect) entra a la pieza Música y sus botones regresan por el enlace.
+ * Con el celular conectado la música de la pantalla pasa a Bluetooth, y si la canción suena en la bocina
+ * del celular (sin Bluetooth) la pieza lo dice con [noSound].
+ */
+fun wirePhoneMusic(link: PhoneLink, music: MusicRepository, noSound: () -> String) {
+    link.onMusic = { song ->
+        val silent = song != null && song.playing && link.phoneOnBluetooth == false
+        music.fromPhone(song?.toSong(if (silent) noSound() else null), artComing = song != null && song.hasArt && song.art == null)
+    }
     music.phoneControl = link::command
+    link.onLink = music::phoneLinked
+    if (link.connected) music.phoneLinked(true)
     // El enlace ya traía una canción antes de unirlos (LiteDash volvió al frente).
     link.song?.let { link.onMusic?.invoke(it) }
 }
 
-private fun PhoneSong.toSong() = Song(
+private fun PhoneSong.toSong(error: String?) = Song(
     title = title,
     artist = artist,
     app = app,
@@ -29,6 +38,6 @@ private fun PhoneSong.toSong() = Song(
     actions = emptyList(),
     source = SourceKind.BLUETOOTH,
     buffering = buffering,
-    error = null,
+    error = error,
     phone = true,
 )

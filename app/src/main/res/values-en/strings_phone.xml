@@ -31,4 +31,6 @@
     <string name="phone_sound_stereo">Sound comes through your stereo’s Bluetooth</string>
     <string name="phone_search_now">Search now</string>
     <string name="phone_unlink">Unlink</string>
+    <string name="phone_no_sound">No sound: Bluetooth missing</string>
+    <string name="music_mode_phone">Your phone is connected: meanwhile music goes over Bluetooth. When it leaves, it goes back to what you had.</string>
 </resources>

@@ -269,9 +269,12 @@ private fun SoundRow(d: Dependencies, openMusic: () -> Unit) {
     val context = LocalContext.current
     val title = stringResource(R.string.phone_sound)
     val phone = d.music.bluetoothDevice
+    // Lo que dice el propio celular vale en cualquier pantalla, también con chip de Bluetooth propio.
+    val onBluetooth = d.phone.phoneOnBluetooth
     when {
         phone != null -> CheckRow(Mark.OK, title, stringResource(R.string.phone_sound_ok, phone))
-        d.music.phoneKnowable -> CheckRow(Mark.WARN, title, stringResource(R.string.phone_sound_missing)) {
+        onBluetooth == true -> CheckRow(Mark.OK, title, stringResource(R.string.phone_sound_ok, d.phone.phoneName?.ifBlank { null } ?: "✓"))
+        onBluetooth == false || d.music.phoneKnowable -> CheckRow(Mark.WARN, title, stringResource(R.string.phone_sound_missing)) {
             Button(stringResource(R.string.phone_connect_bt), {
                 // Donde se empareja: la tarjeta de LiteDash si la música ya va por Bluetooth; si no, la de Android.
                 if (d.music.mode == MusicMode.BLUETOOTH || !openSystemScreen(context, Intent(Settings.ACTION_BLUETOOTH_SETTINGS))) openMusic()

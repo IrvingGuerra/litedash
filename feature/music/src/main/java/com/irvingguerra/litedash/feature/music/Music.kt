@@ -67,6 +67,10 @@ private const val KEY_PREFERRED = "preferred_app"
 private const val KEY_PREFERRED_MOVED = "preferred_moved"
 /** El método de música elegido ([MusicMode]). */
 private const val KEY_MODE = "music_mode"
+/** El método que había antes de que el celular (LiteDash Connect) lo pasara a Bluetooth. */
+private const val KEY_MODE_HELD = "music_mode_held"
+/** Lo que se espera tras irse el celular antes de regresar el método: Android cierra y reabre Connect a ratos. */
+private const val PHONE_LEFT_MS = 20_000L
 /** Lo que se espera la carátula que el celular anunció antes de buscarla por título y artista. */
 private const val PHONE_ART_WAIT_MS = 3_000L
 /** Ya se revisó una vez la app de Bluetooth enlazada ([MusicRepository.fixBluetoothLink]). */
@@ -169,17 +173,71 @@ class MusicRepository(private val context: Context) {
         get() = modeState
         set(v) {
             if (v == modeState) return
-            // Solo suena el método nuevo: los demás se callan. Al dejar Archivos, el reproductor propio se
-            // detiene (en pausa su sesión seguiría recibiendo el play del sistema y sonaría la USB).
-            stopOthers(pkgFor(v))
-            if (modeState == MusicMode.FILES && ownSourceNow?.invoke() == SourceKind.USB) ownStop?.invoke()
-            modeState = v
-            store.edit().putString(KEY_MODE, v.name).apply()
-            // Lo que se supo del método anterior (avisos, supuestos) ya no vale.
-            music.clear()
-            if (users > 0) choose(sessions())
+            // Lo eligió el usuario: eso gana, y ya no se regresa al de antes cuando se vaya el celular.
+            releaseHold()
+            switchMode(v)
         }
-    private var modeState by mutableStateOf(store.getString(KEY_MODE, null)?.let { m -> MusicMode.entries.firstOrNull { it.name == m } } ?: MusicMode.APP)
+
+    private fun switchMode(v: MusicMode) {
+        if (v == modeState) return
+        // Solo suena el método nuevo: los demás se callan. Al dejar Archivos, el reproductor propio se
+        // detiene (en pausa su sesión seguiría recibiendo el play del sistema y sonaría la USB).
+        stopOthers(pkgFor(v))
+        if (modeState == MusicMode.FILES && ownSourceNow?.invoke() == SourceKind.USB) ownStop?.invoke()
+        modeState = v
+        store.edit().putString(KEY_MODE, v.name).apply()
+        // Lo que se supo del método anterior (avisos, supuestos) ya no vale.
+        music.clear()
+        if (users > 0) choose(sessions())
+    }
+
+    private var modeState by mutableStateOf(savedMode())
+
+    /**
+     * El método guardado. Si LiteDash se cerró con el celular conectado, lo guardado es el Bluetooth
+     * prestado: se regresa el de antes (al reconectarse el celular, se vuelve a prestar).
+     */
+    private fun savedMode(): MusicMode {
+        fun read(key: String) = store.getString(key, null)?.let { m -> MusicMode.entries.firstOrNull { it.name == m } }
+        val held = read(KEY_MODE_HELD)
+        if (held != null) store.edit().putString(KEY_MODE, held.name).remove(KEY_MODE_HELD).apply()
+        return held ?: read(KEY_MODE) ?: MusicMode.APP
+    }
+
+    /** El método que el usuario tenía mientras el celular conectado presta el Bluetooth; null = nada prestado. */
+    private var heldMode by mutableStateOf<MusicMode?>(null)
+
+    /** El método es Bluetooth porque el celular (LiteDash Connect) está conectado, no porque se eligiera. */
+    val phoneHolds: Boolean get() = heldMode != null
+
+    /**
+     * El celular con LiteDash Connect se conectó o se fue (Irving, 2026-11-11: sonaban a la vez el Spotify de
+     * la pantalla y el del celular). Conectado, la música pasa a Bluetooth (lo demás se calla); al irse,
+     * regresa al método que había. Si el usuario cambia el método mientras tanto, eso gana.
+     */
+    fun phoneLinked(on: Boolean) {
+        mainHandler.removeCallbacks(phoneLeft)
+        if (!on) {
+            if (heldMode != null) mainHandler.postDelayed(phoneLeft, PHONE_LEFT_MS)
+        } else if (heldMode == null && modeState != MusicMode.BLUETOOTH) {
+            heldMode = modeState
+            store.edit().putString(KEY_MODE_HELD, modeState.name).apply()
+            switchMode(MusicMode.BLUETOOTH)
+        }
+    }
+
+    private val phoneLeft = Runnable {
+        val back = heldMode ?: return@Runnable
+        releaseHold()
+        switchMode(back)
+    }
+
+    private fun releaseHold() {
+        mainHandler.removeCallbacks(phoneLeft)
+        if (heldMode == null) return
+        heldMode = null
+        store.edit().remove(KEY_MODE_HELD).apply()
+    }
 
     /** La app que toca [m]: LiteDash, la del Bluetooth o tu app de música (null = la que suene). */
     private fun pkgFor(m: MusicMode): String? = when (m) {
