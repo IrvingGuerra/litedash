@@ -47,6 +47,23 @@ internal object LinkProtocol {
     /** Llave de sesión del celular a la pantalla. */
     fun phoneToScreenKey(key: ByteArray, nc: ByteArray, ns: ByteArray) = hmac(key, "LD-LINK-1 s2c", nc, ns)
 
+    /**
+     * ¿Es [text] el faro de un celular con esta llave? (PROTOCOLO_LINK.md §1b:
+     * `LD-LINK-1 beacon <número al azar, 16 hex> <sello, 16 hex>`).
+     */
+    fun isBeacon(key: ByteArray, text: String): Boolean {
+        if (text.length != BEACON_LENGTH || !text.startsWith(BEACON_PREFIX) || text[BEACON_PREFIX.length + 16] != ' ') return false
+        val nonce = ByteArray(8)
+        for (i in 0 until 8) {
+            nonce[i] = (text.substring(BEACON_PREFIX.length + i * 2, BEACON_PREFIX.length + i * 2 + 2).toIntOrNull(16) ?: return false).toByte()
+        }
+        val seal = hmac(key, "LD-LINK-1 beacon", nonce).take(8).joinToString("") { "%02x".format(it) }
+        return sameMac(seal.toByteArray(Charsets.US_ASCII), text.substring(BEACON_PREFIX.length + 17).toByteArray(Charsets.US_ASCII))
+    }
+
+    private const val BEACON_PREFIX = "LD-LINK-1 beacon "
+    const val BEACON_LENGTH = 50
+
     /** Compara en tiempo constante. */
     fun sameMac(a: ByteArray, b: ByteArray) = MessageDigest.isEqual(a, b)
 

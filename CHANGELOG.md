@@ -4,6 +4,14 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.4.137] - 2026-11-11
+
+### Arreglado
+- **Tu celular con LiteDash Connect ahora conecta en cualquier red:** con la pantalla en el hotspot del celular, con
+  el celular en el **hotspot de la pantalla** (antes se quedaba en "Esperando a tu pantalla…") o en el mismo Wi‑Fi.
+- **Se vuelve a conectar solo:** si el celular llega después, o Android cerró LiteDash Connect, la pantalla lo sigue
+  buscando sin que abras Ajustes. Mejor todavía con LiteDash Connect 0.3.2.
+
 ## [1.4.136] - 2026-11-11
 
 ### Agregado

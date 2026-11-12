@@ -17,12 +17,18 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import java.io.BufferedInputStream
 import java.io.IOException
+import java.net.DatagramPacket
+import java.net.DatagramSocket
 import java.net.Inet4Address
 import java.net.InetSocketAddress
+import java.net.NetworkInterface
 import java.net.Socket
 import java.net.SocketTimeoutException
 import java.security.SecureRandom
+import java.util.Collections
+import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -53,15 +59,18 @@ class PhoneSong(
 
 /**
  * El enlace con el celular (LiteDash Connect), lado pantalla de Link v1 (PROTOCOLO_LINK.md): el
- * celular es el servidor y la pantalla lo busca en la puerta de enlace de la red, en la última
- * dirección que funcionó y por NSD.
+ * celular es el servidor y la pantalla lo busca en las puertas de enlace de sus redes, en la última
+ * dirección que funcionó, donde lo anuncien su faro o NSD y, de respaldo, tocando a los vecinos de
+ * sus redes locales (así lo encuentra también cuando el celular entra al hotspot de la pantalla).
  *
- * Ya vinculada intenta al abrir LiteDash ([start]), al cambiar la red y cuando NSD encuentra al
- * celular; si la conexión se cae, reintenta cada vez más espaciado (5 s… hasta 1 min): Android puede
- * cerrar y volver a abrir LiteDash Connect sin que cambie la red. Con su panel abierto ([watch])
- * intenta cada 2 s. Apagado ([stop]) no deja hilos, receptores ni sockets.
+ * Ya vinculada intenta al abrir LiteDash ([start]), al cambiar la red y cuando oye al celular; sin
+ * conexión reintenta cada vez más espaciado (5 s… hasta 1 min): Android puede cerrar y volver a abrir
+ * LiteDash Connect sin que cambie la red. Con su panel abierto ([watch]) intenta cada 2 s. Sin celular
+ * vinculado y con el panel cerrado no deja hilos, receptores ni sockets; con celular vinculado, el oído
+ * del faro y los reintentos duran mientras viva LiteDash (a propósito: es lo que lo hace conectar solo).
  *
- * El estado se maneja en el hilo principal; la red, en un hilo por intento.
+ * El estado se maneja en el hilo principal; la red, en sus hilos (uno por intento, el oído del faro y
+ * los que tocan a los vecinos).
  */
 class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
     private val app = context.applicationContext
@@ -118,10 +127,22 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
     private var discovery: Discovery? = null
     /** Dónde anunció NSD al celular ("host:puerto"). */
     private var announced: String? = null
+    /** El oído del faro del celular y de dónde llegó su último aviso ("host:puerto"). */
+    private var ear: Ear? = null
+    private var beaconed: String? = null
+    /** Llegó un aviso del faro mientras había un intento en curso: al cerrarse se intenta de una vez. */
+    private var beaconFresh = false
+    /** La llave que el oído reconoce (la lee su hilo). */
+    @Volatile private var earKey: ByteArray? = null
+    /** Cuándo se tocó por última vez a los vecinos de la red. */
+    private var sweptAt = 0L
 
     // Para el reporte.
     private var lastError: String? = null
     @Volatile private var lastGateways = ""
+    @Volatile private var lastNeighbors = ""
+    /** Cómo se encontró al celular la última vez que conectó. */
+    private var lastFound: String? = null
 
     private val active get() = running && (paired || watching)
 
@@ -148,7 +169,8 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
     /** Para "Enviar un reporte". */
     fun describe(): String = "Celular: vinculado=${yes(paired)}, conectado=${yes(connected)}, " +
         "puerta de enlace=${lastGateways.ifEmpty { "—" }}, última dirección=${store.getString(LAST_ADDRESS, null) ?: "—"}, " +
-        "NSD=${if (discovery != null) "buscando" else "no"}${announced?.let { " ($it)" } ?: ""}, error=${lastError ?: "—"}, " +
+        "NSD=${if (discovery != null) "buscando" else "no"}${announced?.let { " ($it)" } ?: ""}, faro=${beaconed ?: "—"}, " +
+        "redes=${lastNeighbors.ifEmpty { "—" }}, encontrado por=${lastFound ?: "—"}, error=${lastError ?: "—"}, " +
         "música=${when { session?.music != true -> "no" ; musicBlocked -> "sin permiso"; song == null -> "nada"; song?.playing == true -> "suena"; else -> "en pausa" }}"
 
     private fun yes(value: Boolean) = if (value) "sí" else "no"
@@ -163,7 +185,7 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
     }
 
     private val retry = Runnable { connect() }
-    /** Reintentos seguidos desde que se cayó la conexión (0 = conectado o nunca se cayó). */
+    /** Reintentos seguidos sin conexión (0 = conectado, o recién cambió la red). */
     private var retries = 0
 
     /** Con el panel abierto y sin celular: una llave nueva si no hay o si la del QR ya venció. */
@@ -195,16 +217,100 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
         }
         // NSD se prende después de un intento fallido ([closed]); aquí solo se apaga.
         if (!active || connected) discover(false)
+        earKey = currentKey()
+        listen(active && !connected)
+    }
+
+    /** Prende o apaga el oído del faro. */
+    private fun listen(on: Boolean) {
+        if (on == (ear != null)) return
+        val current = ear
+        if (current != null) {
+            ear = null
+            io(current::close)
+        } else {
+            ear = Ear().also { Thread(it, "phone-link-ear").start() }
+        }
+    }
+
+    /** Oye los avisos UDP del celular (su faro) mientras se le busca. */
+    private inner class Ear : Runnable {
+        @Volatile private var socket: DatagramSocket? = null
+        @Volatile private var closed = false
+
+        fun close() {
+            closed = true
+            runCatching { socket?.close() }
+        }
+
+        override fun run() {
+            try {
+                val open = DatagramSocket(null).apply {
+                    reuseAddress = true
+                    bind(InetSocketAddress(LinkProtocol.PORT))
+                }
+                socket = open
+                if (closed) open.close()
+                val packet = DatagramPacket(ByteArray(BEACON_MAX), BEACON_MAX)
+                var lastTold = 0L
+                while (!closed) {
+                    packet.length = BEACON_MAX
+                    open.receive(packet)
+                    // Todo se decide aquí: el ruido de la red (o alguien que inunde el puerto) no llega al hilo principal.
+                    if (packet.length != LinkProtocol.BEACON_LENGTH) continue
+                    val key = earKey ?: continue
+                    val now = SystemClock.elapsedRealtime()
+                    if (now - lastTold < BEACON_EVERY_MS) continue
+                    if (!LinkProtocol.isBeacon(key, String(packet.data, 0, packet.length, Charsets.US_ASCII))) continue
+                    val from = packet.address?.hostAddress ?: continue
+                    lastTold = now
+                    main.post { if (ear === this) heardBeacon(from) }
+                }
+            } catch (e: Exception) {
+                // Cerrado al apagar, o el puerto falló: el oído se suelta y el siguiente intento lo vuelve a abrir.
+                main.post {
+                    if (ear === this && !closed) {
+                        ear = null
+                        lastError = "faro: ${e.message ?: e.javaClass.simpleName}"
+                    }
+                }
+            } finally {
+                runCatching { socket?.close() }
+            }
+        }
+    }
+
+    /** Un aviso del faro del celular de esta pantalla: se le busca ahí. */
+    private fun heardBeacon(from: String) {
+        beaconed = "$from:${LinkProtocol.PORT}"
+        if (attempt != null) beaconFresh = true else connect()
+    }
+
+    /** La llave con la que toca intentar: la guardada o, con el panel abierto, la del QR. */
+    private fun currentKey(): ByteArray? {
+        val stored = store.getString(KEY, null)
+        val key = if (stored != null) runCatching { Base64.decode(stored) }.getOrNull() else offered.takeIf { watching }
+        return key?.takeIf { it.size == LinkProtocol.KEY_BYTES }
     }
 
     private val onNetwork = object : ConnectivityManager.NetworkCallback() {
         override fun onAvailable(network: Network) {
-            main.post { connect() }
+            main.post(::networkChanged)
         }
 
         override fun onLinkPropertiesChanged(network: Network, properties: LinkProperties) {
+            // Llega seguido en algunas pantallas (IPv6, DNS): se intenta, sin reiniciar la cuenta de reintentos.
             main.post { connect() }
         }
+    }
+
+    /** Otra red: se busca de inmediato, los reintentos vuelven a empezar seguidos y lo oído en la red anterior ya no vale. */
+    private fun networkChanged() {
+        if (!connected) {
+            retries = 0
+            beaconed = null
+        }
+        connect()
     }
 
     private fun discover(on: Boolean) {
@@ -256,11 +362,16 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
     /** Un intento de conexión, si toca y no hay otro en curso. */
     private fun connect() {
         if (!active || attempt != null) return
-        val stored = store.getString(KEY, null)
-        val key = if (stored != null) runCatching { Base64.decode(stored) }.getOrNull() else offered.takeIf { watching }
-        if (key == null || key.size != LinkProtocol.KEY_BYTES) return
+        val key = currentKey() ?: return
         main.removeCallbacks(retry)
-        val next = Attempt(key, fresh = stored == null, screenId(), screen(), listOfNotNull(store.getString(LAST_ADDRESS, null), announced))
+        // Tocar a los vecinos es el respaldo: seguido con el panel abierto, espaciado si no.
+        val now = SystemClock.elapsedRealtime()
+        val sweep = sweptAt == 0L || now - sweptAt >= if (watching) SWEEP_WATCHING_MS else SWEEP_MS
+        if (sweep) sweptAt = now
+        val known = listOfNotNull(
+            beaconed?.let { it to "faro" }, store.getString(LAST_ADDRESS, null)?.let { it to "última" }, announced?.let { it to "NSD" },
+        )
+        val next = Attempt(key, fresh = !store.contains(KEY), screenId(), screen(), known, sweep)
         attempt = next
         Thread(next, "phone-link").start()
     }
@@ -283,7 +394,10 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
 
     /** Borra la llave y lo que se sabía del celular; con el panel abierto sale un QR nuevo. */
     private fun forget() {
-        store.edit().remove(KEY).remove(PHONE_NAME).remove(PHONE_APP).apply()
+        store.edit().remove(KEY).remove(PHONE_NAME).remove(PHONE_APP).remove(LAST_ADDRESS).apply()
+        beaconed = null
+        announced = null
+        lastFound = null
         paired = false
         retries = 0
         main.removeCallbacks(retry)
@@ -296,8 +410,9 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
 
     // Lo que sigue llega del hilo del intento, ya en el hilo principal.
 
-    private fun opened(from: Attempt, open: Session, address: String) {
+    private fun opened(from: Attempt, open: Session, address: String, how: String) {
         if (attempt !== from) return
+        lastFound = how
         val edit = store.edit().putString(LAST_ADDRESS, address)
         // El saludo con la llave del QR terminó bien: desde ahora es la definitiva.
         if (from.fresh) edit.putString(KEY, Base64.encode(from.key))
@@ -341,13 +456,20 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
         if (bye) return forget()
         sync()
         if (!active) return
-        // Se cayó (o sigue sin volver tras caerse): otro intento, cada vez más espaciado. Nunca conectó en
-        // esta red: queda esperando a la red o a NSD.
-        if (wasConnected || retries > 0) {
+        // Con celular vinculado y sin conexión: otro intento, cada vez más espaciado (también si nunca
+        // conectó en esta red: Connect pudo no estar despierto todavía). Sin vincular, el panel marca el paso.
+        val fresh = beaconFresh
+        beaconFresh = false
+        // Lo que se oyó antes de este intento ya se probó y no sirvió: que no se pruebe primero para siempre.
+        if (!fresh && !wasConnected) beaconed = null
+        if (!wasConnected) discover(true)
+        if (fresh) {
+            // El celular avisó dónde está mientras se buscaba en otro lado: ahí, de una vez.
+            connect()
+        } else if (paired) {
             main.postDelayed(retry, RETRY_MS.getOrElse(retries) { RETRY_MS.last() })
             retries++
         }
-        if (!wasConnected) discover(true)
     }
 
     /** Una conexión ya saludada: escribe de un mensaje a la vez (el contador del cifrado va en orden). */
@@ -375,62 +497,152 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
         val fresh: Boolean,
         private val id: String,
         private val info: ScreenInfo,
-        private val known: List<String>,
+        /** Direcciones donde ya se sabe del celular, cada una con el nombre de cómo se supo (para el reporte). */
+        private val known: List<Pair<String, String>>,
+        /** Si nadie contesta en las direcciones conocidas, tocar a los vecinos de las redes locales. */
+        private val sweep: Boolean,
     ) : Runnable {
         @Volatile var cancelled = false
         @Volatile private var socket: Socket? = null
         private val music = MusicReader()
 
+        @Volatile private var sweepers: ExecutorService? = null
+
+        /** Las redes de la pantalla con su dirección: un socket hacia una de ellas se amarra a esa red. */
+        private var nets: List<Pair<String, Network>> = emptyList()
+        private val gatewayNets = HashMap<String, Network>()
+
         fun close() {
             runCatching { socket?.close() }
+            sweepers?.shutdownNow()
         }
 
+        private var error: String? = "sin celular en la red"
+        private var bye = false
+        private var served = false
+
         override fun run() {
-            var error: String? = "sin celular en la red"
-            var bye = false
-            var served = false
-            for (address in (gateways() + known).distinct()) {
-                if (cancelled) break
-                val host = address.substringBeforeLast(':')
-                val port = address.substringAfterLast(':').toIntOrNull() ?: continue
-                val open = Socket()
-                socket = open
-                try {
-                    // Cancelado justo antes de guardar el socket: nadie más lo cerraría.
-                    if (cancelled) break
-                    open.connect(InetSocketAddress(host, port), CONNECT_MS)
-                    val reader = LineReader(BufferedInputStream(open.getInputStream()))
-                    val channel = greet(open, reader)
-                    val ready = Session(open, channel)
-                    ready.send(
-                        JSONObject().put("t", "info").put("role", "screen").put("app", info.app).put("car", info.car)
-                            .put("carId", info.carId).put("screen", info.screen).put("caps", JSONArray().put(CAP_MUSIC)),
-                    )
-                    served = true
-                    main.post { opened(this, ready, address) }
-                    bye = serve(open, reader, channel, ready)
-                    error = null
-                } catch (e: Exception) {
-                    // Nadie escucha en esa dirección: no es un error que contar, se prueba la siguiente.
-                    if (open.isConnected) error = "$address: ${e.message ?: e.javaClass.simpleName}"
-                } finally {
-                    runCatching { open.close() }
+            val tried = HashSet<String>()
+            fun pass(addresses: List<Pair<String, String>>) {
+                for ((address, how) in addresses) {
+                    if (cancelled || served) return
+                    if (tried.add(address)) reach(address, how)
                 }
-                // Ya hubo conexión (y se cerró o se cayó): este intento termina aquí.
-                if (served) break
             }
+            nets = localNetworks()
+            pass(gateways().map { it to "puerta de enlace" } + known)
+            if (sweep && !served && !cancelled) pass(neighbors().map { it to "vecinos" })
             main.post { closed(this, error.takeIf { !cancelled }, bye) }
         }
 
-        /** Las puertas de enlace (IPv4) de la red activa: en el hotspot del celular, es el celular. */
+        /** Prueba una dirección: saluda y, si es el celular, atiende hasta que la conexión se cierre. */
+        private fun reach(address: String, how: String) {
+            val host = address.substringBeforeLast(':')
+            val port = address.substringAfterLast(':').toIntOrNull() ?: return
+            val open = Socket()
+            socket = open
+            try {
+                // Cancelado justo antes de guardar el socket: nadie más lo cerraría.
+                if (cancelled) return
+                bind(open, host)
+                open.connect(InetSocketAddress(host, port), CONNECT_MS)
+                val reader = LineReader(BufferedInputStream(open.getInputStream()))
+                val channel = greet(open, reader)
+                val ready = Session(open, channel)
+                ready.send(
+                    JSONObject().put("t", "info").put("role", "screen").put("app", info.app).put("car", info.car)
+                        .put("carId", info.carId).put("screen", info.screen).put("caps", JSONArray().put(CAP_MUSIC)),
+                )
+                // Ya hubo conexión: cuando se cierre o se caiga, este intento termina aquí.
+                served = true
+                main.post { opened(this, ready, address, how) }
+                bye = serve(open, reader, channel, ready)
+                error = null
+            } catch (e: Exception) {
+                // Nadie escucha en esa dirección: no es un error que contar, se prueba la siguiente.
+                if (open.isConnected) error = "$address: ${e.message ?: e.javaClass.simpleName}"
+            } finally {
+                runCatching { open.close() }
+            }
+        }
+
+        /**
+         * Amarra el socket a la red donde vive [host]. Sin esto saldría por la red por defecto (los datos de
+         * la SIM, por ejemplo) y nunca llegaría a un Wi‑Fi sin internet. El hotspot de la propia pantalla no
+         * es una "red" de Android: no se amarra y sale bien solo.
+         */
+        private fun bind(open: Socket, host: String) {
+            val prefix = host.substringBeforeLast('.')
+            val network = gatewayNets[host] ?: nets.firstOrNull { it.first.substringBeforeLast('.') == prefix }?.second ?: return
+            runCatching { network.bindSocket(open) }
+        }
+
+        private fun localNetworks(): List<Pair<String, Network>> {
+            val manager = app.getSystemService(ConnectivityManager::class.java) ?: return emptyList()
+            @Suppress("DEPRECATION") // el reemplazo pide un NetworkCallback por red; aquí basta una foto
+            val networks = runCatching { manager.allNetworks.toList() }.getOrDefault(emptyList())
+            return networks.flatMap { network ->
+                val properties = runCatching { manager.getLinkProperties(network) }.getOrNull()
+                for (route in properties?.routes.orEmpty()) {
+                    val gateway = route.gateway?.takeIf { route.isDefaultRoute && it is Inet4Address && !it.isAnyLocalAddress }?.hostAddress
+                    if (gateway != null) gatewayNets[gateway] = network
+                }
+                properties?.linkAddresses.orEmpty().mapNotNull { (it.address as? Inet4Address)?.hostAddress?.let { own -> own to network } }
+            }
+        }
+
+        /** Las puertas de enlace (IPv4) de todas las redes: en el hotspot del celular, es el celular. */
         private fun gateways(): List<String> {
-            val manager = app.getSystemService(ConnectivityManager::class.java)
-            val routes = runCatching { manager?.getLinkProperties(manager.activeNetwork)?.routes }.getOrNull().orEmpty()
-            val found = routes.mapNotNull { route ->
-                route.gateway?.takeIf { route.isDefaultRoute && it is Inet4Address && !it.isAnyLocalAddress }?.hostAddress
-            }.distinct()
-            lastGateways = found.joinToString()
-            return found.map { "$it:${LinkProtocol.PORT}" }
+            lastGateways = gatewayNets.keys.joinToString()
+            return gatewayNets.keys.map { "$it:${LinkProtocol.PORT}" }
+        }
+
+        /**
+         * Los vecinos que escuchan en el puerto de Link en las redes locales de la pantalla (su /24), incluida
+         * la de su propio hotspot (que no es una "red" para Android y no tiene puerta de enlace).
+         */
+        private fun neighbors(): List<String> {
+            val own = runCatching { NetworkInterface.getNetworkInterfaces()?.toList() }.getOrNull().orEmpty()
+                .filter { runCatching { it.isUp && !it.isLoopback && !it.isPointToPoint }.getOrDefault(false) }
+                // Primero el Wi‑Fi y el hotspot: muchas pantallas traen además redes internas (cámara, CarPlay).
+                .sortedBy { face -> if (WIFI_NAMES.any { face.name.startsWith(it) }) 0 else 1 }
+                .flatMap { it.inetAddresses.toList() }
+                .filterIsInstance<Inet4Address>()
+                .filter { it.isSiteLocalAddress }
+                .mapNotNull { it.hostAddress }
+                // Una sola vez por red, aunque la pantalla tenga dos direcciones en ella.
+                .distinctBy { it.substringBeforeLast('.') }
+                .take(SWEEP_NETWORKS)
+            lastNeighbors = own.joinToString()
+            if (own.isEmpty() || cancelled) return emptyList()
+            val found = Collections.synchronizedList(ArrayList<String>())
+            val pool = Executors.newFixedThreadPool(SWEEP_THREADS) { Thread(it, "phone-link-sweep") }
+            sweepers = pool
+            for (address in own) {
+                val prefix = address.substringBeforeLast('.')
+                for (last in 1..254) {
+                    val host = "$prefix.$last"
+                    if (host == address) continue
+                    pool.execute {
+                        if (cancelled) return@execute
+                        val probe = Socket()
+                        try {
+                            bind(probe, host)
+                            probe.connect(InetSocketAddress(host, LinkProtocol.PORT), SWEEP_CONNECT_MS)
+                            found += "$host:${LinkProtocol.PORT}"
+                        } catch (_: Exception) {
+                            // Ahí no hay nadie.
+                        } finally {
+                            runCatching { probe.close() }
+                        }
+                    }
+                }
+            }
+            pool.shutdown()
+            runCatching { pool.awaitTermination(SWEEP_WAIT_MS, TimeUnit.MILLISECONDS) }
+            pool.shutdownNow()
+            sweepers = null
+            return found.toList()
         }
 
         /** El saludo: cada lado prueba que tiene la llave. Regresa el canal cifrado o lanza. */
@@ -571,6 +783,18 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
         const val WATCH_RETRY_MS = 2_000L
         val RETRY_MS = longArrayOf(5_000, 10_000, 20_000, 40_000, 60_000)
         const val CONNECT_MS = 1_500
+
+        /** Un aviso del faro mide 50 bytes; lo que no quepa aquí no es uno. Se atiende a lo más uno por segundo. */
+        const val BEACON_MAX = 64
+        const val BEACON_EVERY_MS = 1_000L
+        val WIFI_NAMES = listOf("wlan", "ap", "swlan", "softap")
+        /** Tocar a los vecinos: a lo más cada tanto, pocas redes, muchos a la vez y con poca espera. */
+        const val SWEEP_WATCHING_MS = 10_000L
+        const val SWEEP_MS = 60_000L
+        const val SWEEP_NETWORKS = 2
+        const val SWEEP_THREADS = 32
+        const val SWEEP_CONNECT_MS = 400
+        const val SWEEP_WAIT_MS = 9_000L
         const val HELLO_MS = 5_000
         const val PING_MS = 20_000L
         const val SILENCE_MS = 45_000L

@@ -44,6 +44,17 @@ class LinkProtocolTest {
     }
 
     @Test
+    fun vectorBeacon() {
+        assertTrue(LinkProtocol.isBeacon(key, "LD-LINK-1 beacon 6465666768696a6b 75b83c422a160e18"))
+        // Otro sello, otra llave, o algo que no es un faro.
+        assertFalse(LinkProtocol.isBeacon(key, "LD-LINK-1 beacon 6465666768696a6b 75b83c422a160e19"))
+        assertFalse(LinkProtocol.isBeacon(ByteArray(32), "LD-LINK-1 beacon 6465666768696a6b 75b83c422a160e18"))
+        assertFalse(LinkProtocol.isBeacon(key, "LD-LINK-1 beacon 6465666768696a6bX75b83c422a160e18"))
+        assertFalse(LinkProtocol.isBeacon(key, "LD-LINK-1 beacon zz65666768696a6b 75b83c422a160e18"))
+        assertFalse(LinkProtocol.isBeacon(key, "hola"))
+    }
+
+    @Test
     fun vectorCode() {
         assertEquals("8058", LinkProtocol.code(key))
         // Siempre cuatro dígitos, con ceros a la izquierda.

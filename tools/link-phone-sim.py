@@ -18,7 +18,9 @@ Uso (con ese Python):
 
 Opciones: --port 47600 · --name "Pixel de prueba" · --app 0.1.0 · --bye N (se despide
 `bye` N segundos después de vincularse: la pantalla debe olvidar el vínculo) · --once (termina
-al cerrarse la primera conexión). Escribe `bye` + Enter para despedirse a mano.
+al cerrarse la primera conexión) · --beacon HOST[:PUERTO] (manda el faro UDP a esa dirección
+cada 2 s mientras no hay conexión; para el emulador: `adb emu redir add udp:47600:47600` y
+--beacon 127.0.0.1). Escribe `bye` + Enter para despedirse a mano.
 """
 import argparse
 import base64
@@ -46,6 +48,22 @@ SILENCE_SECONDS = 45
 
 def tag(key, label, nc, ns):
     return hmac.new(key, label + nc + ns, hashlib.sha256).digest()
+
+
+def beacon(key):
+    nonce = os.urandom(8)
+    seal = hmac.new(key, b"LD-LINK-1 beacon" + nonce, hashlib.sha256).digest()[:8]
+    return ("LD-LINK-1 beacon %s %s" % (nonce.hex(), seal.hex())).encode()
+
+
+def announce(key, target, quiet):
+    host, _, port = target.partition(":")
+    out = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    out.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+    while True:
+        if not quiet.is_set():
+            out.sendto(beacon(key), (host, int(port or 47600)))
+        time.sleep(2)
 
 
 def code(key):
@@ -184,6 +202,7 @@ def main():
     parser.add_argument("--app", default="0.1.0-sim")
     parser.add_argument("--bye", type=float, metavar="N", help="despedirse N segundos después de vincularse")
     parser.add_argument("--once", action="store_true", help="terminar al cerrarse la primera conexión")
+    parser.add_argument("--beacon", metavar="HOST[:PUERTO]", help="mandar el faro UDP a esa dirección")
     args = parser.parse_args()
 
     screen_id, key_text = args.id, args.key
@@ -208,16 +227,22 @@ def main():
     server.bind(("0.0.0.0", args.port))
     server.listen(1)
     log("escuchando en el puerto %d" % args.port)
+    connected = threading.Event()
+    if args.beacon:
+        threading.Thread(target=announce, args=(key, args.beacon, connected), daemon=True).start()
+        log("faro hacia", args.beacon)
     while True:
         conn, address = server.accept()
         log("conexión de %s:%d" % address)
         ended = False
+        connected.set()
         try:
             ended = serve(conn, args, screen_id, key, current)
         except Exception as error:  # una línea que no descifra, JSON roto, conexión cortada…
             log("conexión cerrada:", repr(error))
         finally:
             conn.close()
+            connected.clear()
         if ended:
             log("vínculo terminado")
             return
