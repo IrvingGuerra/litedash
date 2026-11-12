@@ -19,9 +19,9 @@
     <string name="phone_connected">Conectado</string>
     <string name="phone_searching">Buscando tu celular…</string>
     <string name="phone_model_app">%1$s · LiteDash Connect %2$s</string>
-    <string name="phone_data">Datos</string>
+    <string name="phone_data">Enlace</string>
     <string name="phone_data_ok">Tu celular y la pantalla se están hablando</string>
-    <string name="phone_music_blocked">Para ver aquí tu música, abre LiteDash Connect y en Datos toca «Permitir»</string>
+    <string name="phone_music_blocked">Para ver aquí tu música, abre LiteDash Connect y en Enlace toca «Permitir»</string>
     <string name="phone_data_no_network">La pantalla no está en ninguna red con tu celular</string>
     <string name="phone_data_open_app">Abre LiteDash Connect en tu celular y conéctalo a esta misma red</string>
     <string name="phone_sound">Sonido</string>

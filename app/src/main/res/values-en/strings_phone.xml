@@ -19,9 +19,9 @@
     <string name="phone_connected">Connected</string>
     <string name="phone_searching">Looking for your phone…</string>
     <string name="phone_model_app">%1$s · LiteDash Connect %2$s</string>
-    <string name="phone_data">Data</string>
+    <string name="phone_data">Link</string>
     <string name="phone_data_ok">Your phone and the screen are talking</string>
-    <string name="phone_music_blocked">To see your music here, open LiteDash Connect and tap “Allow” under Data</string>
+    <string name="phone_music_blocked">To see your music here, open LiteDash Connect and tap “Allow” under Link</string>
     <string name="phone_data_no_network">The screen isn’t on any network with your phone</string>
     <string name="phone_data_open_app">Open LiteDash Connect on your phone and connect it to this same network</string>
     <string name="phone_sound">Sound</string>

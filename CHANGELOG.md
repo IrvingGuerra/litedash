@@ -4,6 +4,12 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.4.144] - 2026-11-12
+
+### Cambiado
+- En Ajustes → Celular, el renglón "Datos" ahora se llama **Enlace** (es la conexión con LiteDash Connect, no tus
+  datos móviles).
+
 ## [1.4.143] - 2026-11-12
 
 Revisión completa de todo lo del celular y LiteDash Connect (tres auditorías independientes).

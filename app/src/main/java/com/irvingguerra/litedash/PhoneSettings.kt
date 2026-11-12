@@ -245,7 +245,7 @@ private fun phoneLine(link: PhoneLink): String? {
     }
 }
 
-/** Datos: el enlace con LiteDash Connect. */
+/** Enlace: la conexión con LiteDash Connect. */
 @Composable
 private fun DataRow(link: PhoneLink) {
     val context = LocalContext.current
