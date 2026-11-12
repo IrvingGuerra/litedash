@@ -5,9 +5,6 @@
         el usuario toca "Buscar actualizaciones", e instalarlas con su confirmación.
     -->
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
-    <!-- Experimento Android Auto: lienzo libre (como el mapa de una app de navegación). -->
-    <uses-permission android:name="androidx.car.app.ACCESS_SURFACE" />
-    <uses-permission android:name="androidx.car.app.NAVIGATION_TEMPLATES" />
 
     <application>
         <receiver
@@ -23,20 +20,5 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/updates" />
         </provider>
-        <!-- Experimento: el tablero en Android Auto (solo con "Fuentes desconocidas" en Android Auto). -->
-        <service
-            android:name="com.irvingguerra.litedash.auto.AutoService"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="androidx.car.app.CarAppService" />
-                <category android:name="androidx.car.app.category.NAVIGATION" />
-            </intent-filter>
-        </service>
-        <meta-data
-            android:name="com.google.android.gms.car.application"
-            android:resource="@xml/automotive_app_desc" />
-        <meta-data
-            android:name="androidx.car.app.minCarApiLevel"
-            android:value="1" />
     </application>
 </manifest>

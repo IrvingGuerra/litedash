@@ -443,6 +443,7 @@
     <string name="bar_item_music">Music</string>
     <string name="bar_item_volume">Volume</string>
     <string name="bar_item_navigate">Navigate</string>
+    <string name="bar_item_bluetooth">Bluetooth</string>
     <string name="bar_item_phone">Phone</string>
     <string name="bar_item_voice">Voice</string>
     <string name="bar_item_favorites">Your favorite apps</string>

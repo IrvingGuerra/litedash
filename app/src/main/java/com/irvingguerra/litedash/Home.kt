@@ -2,6 +2,7 @@ package com.irvingguerra.litedash
 
 import android.content.Context
 import android.content.Intent
+import android.provider.Settings
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -586,6 +587,17 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
               onApps = { panel = Panel.Drawer },
               onMusic = { if (musicBig) musicBig = false else openMedia(null) },
               onNavigate = { actions.onNavigate(mapApp(d, apps)) },
+              // Chip propio del estéreo: su app de Bluetooth (la misma que usa la música). Con el Bluetooth de
+              // Android, donde se empareja el celular: sus ajustes de Bluetooth (o, si la pantalla no los trae,
+              // Ajustes → Apps → Música).
+              onBluetooth = {
+                  if (!d.music.bluetoothBuiltIn && d.music.bluetoothApp() != null) {
+                      d.music.openBluetoothApp()
+                  } else if (!openSystemScreen(context, Intent(Settings.ACTION_BLUETOOTH_SETTINGS))) {
+                      openMusicSettings()
+                      panel = Panel.MusicSettings
+                  }
+              },
               onPhone = { openDialer(context) },
               onVoice = onVoice,
               onSettings = { panel = Panel.Settings },

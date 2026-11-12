@@ -4,6 +4,16 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.4.140] - 2026-11-11
+
+### Agregado
+- **Botón de Bluetooth en la barra**, junto al de navegar: abre la app de Bluetooth de tu estéreo (o los ajustes de
+  Bluetooth de la pantalla) para conectar tu celular sin buscarla. Se quita y se mueve como los demás botones.
+
+### Quitado
+- El experimento de Android Auto de la versión de GitHub: no se puede publicar en las tiendas. LiteDash vuelve a
+  pesar **1.9 MB**.
+
 ## [1.4.139] - 2026-11-11
 
 ### Cambiado

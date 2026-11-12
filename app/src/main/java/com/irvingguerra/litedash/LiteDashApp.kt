@@ -38,6 +38,7 @@ class LiteDashApp : Application() {
             returnHome = { MainActivity.bringToFront(this@LiteDashApp) } }
         OwnPlayer.wire(this, music, prefs)
         music.migrateUsbApp()
+        prefs.addBluetoothToBar()
         music.fixBluetoothLink()
         val cars = CarRepository(this, BuildConfig.CATALOG_URL)
         Dependencies(

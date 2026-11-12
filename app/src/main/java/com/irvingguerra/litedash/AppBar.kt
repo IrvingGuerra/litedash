@@ -62,6 +62,8 @@ class BarActions(
     val onApps: () -> Unit,
     val onMusic: () -> Unit,
     val onNavigate: () -> Unit,
+    /** La app de Bluetooth del estéreo (o el emparejado): para conectar el celular sin buscarla. */
+    val onBluetooth: () -> Unit,
     val onPhone: () -> Unit,
     /** El asistente de voz de la pantalla; null si no trae (el botón no aparece ni se ofrece). */
     val onVoice: (() -> Unit)?,
@@ -169,6 +171,7 @@ private fun BarButton(item: BarItem, sizes: BarSizes, vertical: Boolean, musicOp
         BarItem.MUSIC -> IconButton(Icons.music, actions.onMusic, size = sizes.button, background = if (musicOpen) c.surfaceHigh else Color.Transparent)
         BarItem.VOLUME -> Volume(if (vertical) sizes.volume else sizes.button, vertical = vertical)
         BarItem.NAVIGATE -> IconButton(Icons.navigate, actions.onNavigate, size = sizes.button)
+        BarItem.BLUETOOTH -> IconButton(Icons.bluetooth, actions.onBluetooth, size = sizes.button)
         BarItem.PHONE -> IconButton(Icons.phone, actions.onPhone, size = sizes.button)
         BarItem.VOICE -> actions.onVoice?.let { IconButton(Icons.mic, it, size = sizes.button) }
         // Siempre: sin Ajustes no habría cómo salir del inicio.

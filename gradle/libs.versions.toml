@@ -10,7 +10,6 @@ uiautomator = "2.4.0"
 junitExt = "1.3.0"
 junit = "4.13.2"
 json = "20250517"
-carApp = "1.7.0"
 
 [libraries]
 compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }
@@ -25,7 +24,6 @@ benchmark-macro = { group = "androidx.benchmark", name = "benchmark-macro-junit4
 uiautomator = { group = "androidx.test.uiautomator", name = "uiautomator", version.ref = "uiautomator" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitExt" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
-car-app = { group = "androidx.car.app", name = "app", version.ref = "carApp" }
 json = { group = "org.json", name = "json", version.ref = "json" }
 
 [plugins]

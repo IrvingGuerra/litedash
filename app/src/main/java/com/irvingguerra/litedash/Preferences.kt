@@ -68,6 +68,7 @@ internal object PrefKeys {
     const val BAR_MUSIC = "bar_music"
     /** Los botones de la barra en orden ([BarItem]); sin guardar, se arman de las opciones de antes. */
     const val BAR_ITEMS = "bar_items"
+    const val BAR_BLUETOOTH_ADDED = "bar_bluetooth_added"
     const val BAR_STYLE = "bar_style"
     const val LOGO_INTRO = "logo_intro"
     const val INTRO_MIGRATED = "intro_image_migrated"
@@ -147,7 +148,7 @@ enum class BarSize(val stored: String, val scale: Float) {
  * habría cómo salir del inicio.
  */
 enum class BarItem(val stored: String) {
-    APPS("apps"), MUSIC("music"), VOLUME("volume"), NAVIGATE("navigate"), PHONE("phone"),
+    APPS("apps"), MUSIC("music"), VOLUME("volume"), NAVIGATE("navigate"), BLUETOOTH("bluetooth"), PHONE("phone"),
     VOICE("voice"), FAVORITES("favorites"), SETTINGS("settings");
 
     companion object {
@@ -162,7 +163,7 @@ enum class BarItem(val stored: String) {
  * La barra de fábrica: Apps, volumen y Música; tus favoritas (vacías: ninguna app de fábrica); Navegar, voz y
  * Ajustes. Teléfono se agrega si se quiere.
  */
-private val DEFAULT_BAR = listOf(BarItem.APPS, BarItem.VOLUME, BarItem.MUSIC, BarItem.FAVORITES, BarItem.NAVIGATE, BarItem.VOICE)
+private val DEFAULT_BAR = listOf(BarItem.APPS, BarItem.VOLUME, BarItem.MUSIC, BarItem.FAVORITES, BarItem.NAVIGATE, BarItem.BLUETOOTH, BarItem.VOICE)
 
 /** Las opciones de la barra de antes de poder editarla: si alguna se guardó, se respeta lo de esa persona. */
 private val LEGACY_BAR_KEYS = listOf(PrefKeys.BAR_APPS, PrefKeys.BAR_MUSIC, PrefKeys.BAR_VOLUME, PrefKeys.BAR_FAVORITES, PrefKeys.BAR_VOICE, PrefKeys.BAR_CLOCK)
@@ -355,6 +356,19 @@ class Preferences(context: Context) {
         set(value) {
             storedBarItems = BarItem.normalize(value)
         }
+    /**
+     * El botón de Bluetooth llegó a la barra en la 1.4.140 (Irving: "por defecto, como el del mapa"): una
+     * sola vez se le pone, junto al de navegar, a quien ya tenía su barra. Si luego lo quita, no regresa.
+     */
+    fun addBluetoothToBar() {
+        if (p.getBoolean(PrefKeys.BAR_BLUETOOTH_ADDED, false)) return
+        p.edit().putBoolean(PrefKeys.BAR_BLUETOOTH_ADDED, true).apply()
+        val items = barItems
+        if (BarItem.BLUETOOTH in items) return
+        val after = items.indexOf(BarItem.NAVIGATE).takeIf { it >= 0 } ?: (items.size - 2)
+        barItems = items.toMutableList().apply { add(after + 1, BarItem.BLUETOOTH) }
+    }
+
     private var storedBarItems by mapped(
         PrefKeys.BAR_ITEMS,
         { v -> BarItem.normalize(v?.split(',')?.mapNotNull(BarItem::fromStored) ?: legacyBarItems()) },

@@ -451,6 +451,7 @@
     <string name="bar_item_music">Música</string>
     <string name="bar_item_volume">Volumen</string>
     <string name="bar_item_navigate">Navegar</string>
+    <string name="bar_item_bluetooth">Bluetooth</string>
     <string name="bar_item_phone">Teléfono</string>
     <string name="bar_item_voice">Voz</string>
     <string name="bar_item_favorites">Tus apps favoritas</string>
