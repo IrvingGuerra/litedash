@@ -4,6 +4,15 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.4.141] - 2026-11-11
+
+### Agregado
+- **La pantalla nota cuando llega tu celular:** con LiteDash Connect 0.4.2 y su permiso de Bluetooth cercano, la
+  pantalla lo ve por Bluetooth (sin emparejar nada) y lo busca al instante, en vez de esperar al siguiente intento.
+  Necesita el Bluetooth de la pantalla prendido; si no, todo sigue como antes.
+- "Enviar un reporte" ahora dice si tu pantalla puede ver a tu celular por Bluetooth: nos ayuda a preparar la conexión
+  sin hotspot.
+
 ## [1.4.140] - 2026-11-11
 
 ### Agregado

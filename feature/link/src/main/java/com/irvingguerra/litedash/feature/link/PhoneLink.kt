@@ -204,7 +204,8 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
         "puerta de enlace=${lastGateways.ifEmpty { "—" }}, última dirección=${store.getString(LAST_ADDRESS, null) ?: "—"}, " +
         "NSD=${if (discovery != null) "buscando" else "no"}${announced?.let { " ($it)" } ?: ""}, faro=${beaconed ?: "—"}, " +
         "redes=${lastNeighbors.ifEmpty { "—" }}, encontrado por=${lastFound ?: "—"}, error=${lastError ?: "—"}, " +
-        "sonido=${when (phoneOnBluetooth) { true -> "Bluetooth"; false -> "bocina del celular"; null -> "—" }}, música=${when { session?.music != true -> "no" ; musicBlocked -> "sin permiso"; song == null -> "nada"; song?.playing == true -> "suena"; else -> "en pausa" }}"
+        "sonido=${when (phoneOnBluetooth) { true -> "Bluetooth"; false -> "bocina del celular"; null -> "—" }}, música=${when { session?.music != true -> "no" ; musicBlocked -> "sin permiso"; song == null -> "nada"; song?.playing == true -> "suena"; else -> "en pausa" }}\n" +
+        ble.describe()
 
     private fun yes(value: Boolean) = if (value) "sí" else "no"
 
@@ -293,6 +294,15 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
         if (!active || connected) discover(false)
         earKey = currentKey()
         listen(active && !connected)
+        ble.watch(active && paired && !connected)
+    }
+
+    /** El celular vinculado se ve cerca por Bluetooth: se le busca ya, con los reintentos de vuelta al principio. */
+    private val ble = BlePresence(app) {
+        if (active && !connected) {
+            retries = 0
+            connect()
+        }
     }
 
     /** Prende o apaga el oído del faro. */
