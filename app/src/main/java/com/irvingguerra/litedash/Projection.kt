@@ -19,6 +19,21 @@ private val PROJECTION_PACKAGES = listOf(
 // Si la pantalla trae la suya con otro paquete, se reconoce por el nombre.
 private val PROJECTION_WORDS = listOf("carplay", "android auto", "androidauto", "zlink", "autokit", "carlink", "easyconn", "tlink", "phonelink", "carbit", "headunit revived", "open headunit")
 
+/** ¿Ese paquete es una app de Android Auto / CarPlay de la pantalla? (por su paquete: sin pedir su nombre). */
+fun isProjectionPackage(pkg: String): Boolean {
+    val name = pkg.lowercase()
+    return pkg in PROJECTION_PACKAGES || PROJECTION_WORDS.any { it.replace(" ", "") in name }
+}
+
+/**
+ * La app de proyección instalada que maneja ella misma el Bluetooth del celular (ZLink y parecidas), o null.
+ * La de Google no cuenta: es la del celular, no la de una pantalla.
+ */
+fun projectionPackage(context: android.content.Context): String? =
+    PROJECTION_PACKAGES.firstOrNull { it != GOOGLE_AUTO && context.packageManager.getLaunchIntentForPackage(it) != null }
+
+private const val GOOGLE_AUTO = "com.google.android.projection.gearhead"
+
 /** La app de Android Auto / CarPlay que tenga la pantalla, o null. */
 fun projectionApp(apps: List<App>): App? =
     PROJECTION_PACKAGES.firstNotNullOfOrNull { p -> apps.firstOrNull { it.pkg == p } }

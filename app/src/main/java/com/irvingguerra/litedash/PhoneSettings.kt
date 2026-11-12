@@ -45,7 +45,6 @@ import com.irvingguerra.litedash.feature.link.Pairing
 import com.irvingguerra.litedash.feature.link.PhoneLink
 import com.irvingguerra.litedash.feature.link.PhoneSound
 import com.irvingguerra.litedash.feature.link.QrCode
-import com.irvingguerra.litedash.feature.music.MusicMode
 
 /** Lado del QR a lo ancho; angosto se ajusta a lo que haya. */
 private val QR_SIZE = 320.dp
@@ -262,30 +261,45 @@ private fun DataRow(link: PhoneLink) {
 }
 
 /**
- * Sonido: el Bluetooth del celular. Solo se sabe con el Bluetooth de Android (y permiso de ver sus
- * aparatos); con chip propio el sonido va por el estéreo y aquí solo se dice eso.
+ * Sonido: por dónde llega al auto lo que suena en el celular. Manda lo que dice el propio celular (vale en
+ * cualquier pantalla, también con chip de Bluetooth propio); sin ese dato, lo que vea el Bluetooth de Android
+ * de la pantalla, y si tampoco se sabe, se dice que no se sabe.
  */
 @Composable
 private fun SoundRow(d: Dependencies, openMusic: () -> Unit) {
     val context = LocalContext.current
     val title = stringResource(R.string.phone_sound)
-    val phone = d.music.bluetoothDevice
-    // Lo que dice el propio celular vale en cualquier pantalla, también con chip de Bluetooth propio.
-    val sound = d.phone.phoneSound
-    when {
-        phone != null -> CheckRow(Mark.OK, title, stringResource(R.string.phone_sound_ok, phone))
-        sound == PhoneSound.BLUETOOTH -> CheckRow(Mark.OK, title, stringResource(R.string.phone_sound_ok, d.phone.phoneName?.ifBlank { null } ?: "✓"))
-        // Android Auto o un cable llevan el audio: no hace falta el Bluetooth.
-        sound == PhoneSound.CAR -> CheckRow(Mark.OK, title, stringResource(R.string.phone_sound_car))
-        sound == PhoneSound.WIRED -> CheckRow(Mark.OK, title, stringResource(R.string.phone_sound_wired))
-        sound == PhoneSound.PHONE || d.music.phoneKnowable -> CheckRow(Mark.WARN, title, stringResource(R.string.phone_sound_missing)) {
-            Button(stringResource(R.string.phone_connect_bt), {
-                // Donde se empareja: la tarjeta de LiteDash si la música ya va por Bluetooth; si no, la de Android.
-                if (d.music.mode == MusicMode.BLUETOOTH || !openSystemScreen(context, Intent(Settings.ACTION_BLUETOOTH_SETTINGS))) openMusic()
-            })
-        }
-        else -> CheckRow(Mark.INFO, title, stringResource(R.string.phone_sound_stereo))
+    val seen = d.music.bluetoothDevice
+    val connect: @Composable () -> Unit = {
+        Button(stringResource(R.string.phone_connect_bt), { if (!openStereoBluetooth(d, context)) openMusic() })
     }
+    when (d.phone.phoneSound) {
+        PhoneSound.BLUETOOTH -> CheckRow(Mark.OK, title, stringResource(R.string.phone_sound_ok, seen ?: d.phone.phoneName?.ifBlank { null } ?: "✓"))
+        // Android Auto o un cable llevan el audio: no hace falta el Bluetooth.
+        PhoneSound.CAR -> CheckRow(Mark.OK, title, stringResource(R.string.phone_sound_car))
+        PhoneSound.WIRED -> CheckRow(Mark.OK, title, stringResource(R.string.phone_sound_wired))
+        // El celular se conectó solo para llamadas: se arregla desde el estéreo, y ahí lleva el botón.
+        PhoneSound.CALLS -> CheckRow(Mark.WARN, title, stringResource(R.string.phone_sound_calls), connect)
+        PhoneSound.PHONE -> CheckRow(Mark.WARN, title, stringResource(R.string.phone_sound_missing), connect)
+        null -> when {
+            seen != null -> CheckRow(Mark.OK, title, stringResource(R.string.phone_sound_ok, seen))
+            d.music.phoneKnowable -> CheckRow(Mark.WARN, title, stringResource(R.string.phone_sound_missing), connect)
+            else -> CheckRow(Mark.INFO, title, stringResource(R.string.phone_sound_unknown))
+        }
+    }
+}
+
+/**
+ * Abre donde se conecta el celular al estéreo: con chip de Bluetooth propio, la app de Bluetooth del estéreo
+ * (la misma que usa la música); si no hay y la pantalla trae ZLink o parecida (ellas manejan el Bluetooth del
+ * celular para Android Auto / CarPlay), esa app; si no, los ajustes de Bluetooth de Android. Falso si no se
+ * pudo abrir nada.
+ */
+internal fun openStereoBluetooth(d: Dependencies, context: Context): Boolean {
+    if (!d.music.bluetoothBuiltIn && d.music.openBluetoothApp()) return true
+    val projection = projectionPackage(context)?.let(context.packageManager::getLaunchIntentForPackage)
+    if (projection != null && openSystemScreen(context, projection)) return true
+    return openSystemScreen(context, Intent(Settings.ACTION_BLUETOOTH_SETTINGS))
 }
 
 /** Un renglón: la marca (✓, ! o i), qué es y cómo va, y a la derecha el botón que lo arregla (si hay). */

@@ -172,18 +172,24 @@ class MusicRepository(private val context: Context) {
     var mode: MusicMode
         get() = modeState
         set(v) {
-            if (v == modeState) return
-            // Lo eligió el usuario: eso gana, y ya no se regresa al de antes cuando se vaya el celular.
+            // Lo eligió el usuario: eso gana (también si eligió el Bluetooth que estaba prestado), y mientras el
+            // celular siga aquí ya no se le vuelve a prestar ni se regresa al de antes.
+            if (phoneHere) userChose = true
             releaseHold()
             switchMode(v)
         }
 
-    private fun switchMode(v: MusicMode) {
+    /**
+     * Cambia el método. Con [silence] (lo de siempre) solo suena el nuevo: los demás se callan y, al dejar
+     * Archivos, el reproductor propio se detiene (en pausa su sesión seguiría recibiendo el play del sistema y
+     * sonaría la USB). Sin [silence] solo cambia qué muestra la pieza: es para devolver el método prestado.
+     */
+    private fun switchMode(v: MusicMode, silence: Boolean = true) {
         if (v == modeState) return
-        // Solo suena el método nuevo: los demás se callan. Al dejar Archivos, el reproductor propio se
-        // detiene (en pausa su sesión seguiría recibiendo el play del sistema y sonaría la USB).
-        stopOthers(pkgFor(v))
-        if (modeState == MusicMode.FILES && ownSourceNow?.invoke() == SourceKind.USB) ownStop?.invoke()
+        if (silence) {
+            stopOthers(pkgFor(v))
+            if (modeState == MusicMode.FILES && ownSourceNow?.invoke() == SourceKind.USB) ownStop?.invoke()
+        }
         modeState = v
         store.edit().putString(KEY_MODE, v.name).apply()
         // Lo que se supo del método anterior (avisos, supuestos) ya no vale.
@@ -210,16 +216,33 @@ class MusicRepository(private val context: Context) {
     /** El método es Bluetooth porque el celular (LiteDash Connect) está conectado, no porque se eligiera. */
     val phoneHolds: Boolean get() = heldMode != null
 
+    /** El celular (LiteDash Connect) está conectado, y si el usuario eligió un método desde que llegó. */
+    private var phoneHere = false
+    private var userChose = false
+
     /**
-     * El celular con LiteDash Connect se conectó o se fue (Irving, 2026-11-11: sonaban a la vez el Spotify de
-     * la pantalla y el del celular). Conectado, la música pasa a Bluetooth (lo demás se calla); al irse,
-     * regresa al método que había. Si el usuario cambia el método mientras tanto, eso gana.
+     * Cómo va el celular con LiteDash Connect (Irving, 2026-11-11: sonaban a la vez el Spotify de la pantalla y
+     * el del celular). Mientras está [connected] y su música suena y llega por Bluetooth o por su bocina
+     * ([playing]; no si la lleva Android Auto o un cable), la música de la pantalla pasa a Bluetooth y lo demás
+     * se calla. Solo entonces: con el celular en la bolsa, lo que suena en la pantalla no se toca. Cuando se
+     * va, se regresa al método que había sin callar nada (si sigue sonando por Bluetooth, que siga). Si el
+     * usuario cambia el método mientras tanto, eso gana.
      */
-    fun phoneLinked(on: Boolean) {
-        mainHandler.removeCallbacks(phoneLeft)
-        if (!on) {
+    fun phone(connected: Boolean, playing: Boolean) {
+        if (!connected) {
+            phoneHere = false
+            userChose = false
+            mainHandler.removeCallbacks(phoneLeft)
+            // Android cierra y reabre Connect a ratos: se espera antes de devolver el método.
             if (heldMode != null) mainHandler.postDelayed(phoneLeft, PHONE_LEFT_MS)
-        } else if (heldMode == null && modeState != MusicMode.BLUETOOTH) {
+            return
+        }
+        if (!phoneHere) {
+            phoneHere = true
+            userChose = false
+        }
+        mainHandler.removeCallbacks(phoneLeft)
+        if (playing && !userChose && heldMode == null && modeState != MusicMode.BLUETOOTH) {
             heldMode = modeState
             store.edit().putString(KEY_MODE_HELD, modeState.name).apply()
             switchMode(MusicMode.BLUETOOTH)
@@ -229,7 +252,7 @@ class MusicRepository(private val context: Context) {
     private val phoneLeft = Runnable {
         val back = heldMode ?: return@Runnable
         releaseHold()
-        switchMode(back)
+        switchMode(back, silence = false)
     }
 
     private fun releaseHold() {
@@ -383,11 +406,15 @@ class MusicRepository(private val context: Context) {
      * "a ciegas" (Bluetooth/FM sin sesión que LiteDash da por sonando) se calla con la tecla de
      * pausa a su receptor.
      */
+    /** Lo pone el app: ¿ese paquete es una app de proyección (Android Auto / CarPlay en la pantalla)? */
+    var isProjection: ((String) -> Boolean)? = null
+
     private fun stopOthers(keep: String?) {
         if (keep != ownPackage) ownPause?.invoke()
         for (c in sessions()) {
             val p = c.packageName
-            if (p == keep || isRadio(p)) continue
+            // Android Auto / CarPlay de la pantalla (ZLink…) llevan su propio audio: nunca se les pausa.
+            if (p == keep || isRadio(p) || isProjection?.invoke(p) == true) continue
             if (c.playbackState?.state == PlaybackState.STATE_PLAYING) {
                 runCatching { c.transportControls.pause() }
             }
@@ -1287,8 +1314,12 @@ class MusicRepository(private val context: Context) {
     }
 
     /** Abre la app de Bluetooth (la enlazada o la de marca; para vincular en pantallas con chip propio). */
-    fun openBluetoothApp() {
-        bluetoothApp()?.let(::open)
+    /** Abre la app de Bluetooth; falso si no hay o no tiene pantalla que abrir. */
+    fun openBluetoothApp(): Boolean {
+        val pkg = bluetoothApp() ?: return false
+        if (context.packageManager.getLaunchIntentForPackage(pkg) == null) return false
+        open(pkg)
+        return true
     }
 
     /**

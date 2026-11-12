@@ -15,6 +15,7 @@ import com.irvingguerra.litedash.feature.tpms.UsbAttachActivity
 import com.irvingguerra.litedash.feature.apps.AppRepository
 import com.irvingguerra.litedash.feature.car.CarRepository
 import com.irvingguerra.litedash.feature.link.PhoneLink
+import com.irvingguerra.litedash.feature.link.PhoneSound
 import com.irvingguerra.litedash.feature.link.ScreenInfo
 import com.irvingguerra.litedash.feature.music.MusicRepository
 import com.irvingguerra.litedash.feature.music.NotificationListener
@@ -38,6 +39,7 @@ class LiteDashApp : Application() {
             returnHome = { MainActivity.bringToFront(this@LiteDashApp) } }
         OwnPlayer.wire(this, music, prefs)
         music.migrateUsbApp()
+        music.isProjection = ::isProjectionPackage
         prefs.addBluetoothToBar()
         music.fixBluetoothLink()
         val cars = CarRepository(this, BuildConfig.CATALOG_URL)
@@ -64,7 +66,11 @@ class LiteDashApp : Application() {
                 PhoneLink(this) {
                     val car = prefs.carName ?: cars.pkg(prefs.carModel)?.name ?: contextWithLanguage(this).getString(R.string.my_car)
                     ScreenInfo(BuildConfig.VERSION_NAME, car, prefs.carModel ?: "", Build.MODEL)
-                }.also { link -> wirePhoneMusic(link, music) { contextWithLanguage(this).getString(R.string.phone_no_sound) } }
+                }.also { link ->
+                    wirePhoneMusic(link, music) { sound ->
+                        contextWithLanguage(this).getString(if (sound == PhoneSound.CALLS) R.string.phone_calls_only else R.string.phone_no_sound)
+                    }
+                }
             },
         )
     }

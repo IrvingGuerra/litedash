@@ -591,9 +591,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
               // Android, donde se empareja el celular: sus ajustes de Bluetooth (o, si la pantalla no los trae,
               // Ajustes → Apps → Música).
               onBluetooth = {
-                  if (!d.music.bluetoothBuiltIn && d.music.bluetoothApp() != null) {
-                      d.music.openBluetoothApp()
-                  } else if (!openSystemScreen(context, Intent(Settings.ACTION_BLUETOOTH_SETTINGS))) {
+                  if (!openStereoBluetooth(d, context)) {
                       openMusicSettings()
                       panel = Panel.MusicSettings
                   }

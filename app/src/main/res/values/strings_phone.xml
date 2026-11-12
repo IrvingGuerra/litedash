@@ -21,18 +21,20 @@
     <string name="phone_model_app">%1$s · LiteDash Connect %2$s</string>
     <string name="phone_data">Datos</string>
     <string name="phone_data_ok">Tu celular y la pantalla se están hablando</string>
-    <string name="phone_music_blocked">Para ver aquí tu música, en LiteDash Connect toca “Permitir la música”</string>
+    <string name="phone_music_blocked">Para ver aquí tu música, abre LiteDash Connect y en Datos toca «Permitir»</string>
     <string name="phone_data_no_network">La pantalla no está en ninguna red con tu celular</string>
     <string name="phone_data_open_app">Abre LiteDash Connect en tu celular y conéctalo a esta misma red</string>
     <string name="phone_sound">Sonido</string>
     <string name="phone_sound_ok">Bluetooth conectado · %1$s</string>
-    <string name="phone_sound_missing">¿No se oye? Conecta el Bluetooth del celular. Si dice «solo para llamadas», conéctalo desde el estéreo</string>
+    <string name="phone_sound_missing">¿No se oye? Conecta el Bluetooth desde el estéreo</string>
+    <string name="phone_sound_calls">El Bluetooth quedó solo para llamadas, por eso suena en tu celular. Conéctalo desde el estéreo, o en tu celular activa «Audio multimedia» para este estéreo</string>
+    <string name="phone_calls_only">Bluetooth solo para llamadas</string>
     <string name="phone_sound_car">Por Android Auto</string>
     <string name="phone_sound_wired">Por cable</string>
     <string name="phone_connect_bt">Conectar Bluetooth</string>
-    <string name="phone_sound_stereo">El sonido llega por el Bluetooth de tu estéreo</string>
+    <string name="phone_sound_unknown">Se sabrá cuando tu celular esté conectado y sonando</string>
     <string name="phone_search_now">Buscar ahora</string>
     <string name="phone_unlink">Desvincular</string>
     <string name="phone_no_sound">¿Sin sonido? Conecta el Bluetooth</string>
-    <string name="music_mode_phone">Tu celular está conectado: mientras tanto la música va por Bluetooth. Al irse, regresa a lo que tenías.</string>
+    <string name="music_mode_phone">Mientras tu celular esté conectado y ponga música, el widget Música la muestra y controla. Cuando se vaya, regresa a lo que tenías.</string>
 </resources>

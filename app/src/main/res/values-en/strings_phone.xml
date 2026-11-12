@@ -21,18 +21,20 @@
     <string name="phone_model_app">%1$s · LiteDash Connect %2$s</string>
     <string name="phone_data">Data</string>
     <string name="phone_data_ok">Your phone and the screen are talking</string>
-    <string name="phone_music_blocked">To see your music here, tap “Allow music” in LiteDash Connect</string>
+    <string name="phone_music_blocked">To see your music here, open LiteDash Connect and tap “Allow” under Data</string>
     <string name="phone_data_no_network">The screen isn’t on any network with your phone</string>
     <string name="phone_data_open_app">Open LiteDash Connect on your phone and connect it to this same network</string>
     <string name="phone_sound">Sound</string>
     <string name="phone_sound_ok">Bluetooth connected · %1$s</string>
-    <string name="phone_sound_missing">Can’t hear it? Connect your phone’s Bluetooth. If it says “calls only”, connect it from the stereo</string>
+    <string name="phone_sound_missing">Can’t hear it? Connect Bluetooth from the stereo</string>
+    <string name="phone_sound_calls">Bluetooth is connected for calls only, so it plays on your phone. Connect it from the stereo, or turn on “Media audio” for this stereo on your phone</string>
+    <string name="phone_calls_only">Bluetooth for calls only</string>
     <string name="phone_sound_car">Through Android Auto</string>
     <string name="phone_sound_wired">By cable</string>
     <string name="phone_connect_bt">Connect Bluetooth</string>
-    <string name="phone_sound_stereo">Sound comes through your stereo’s Bluetooth</string>
+    <string name="phone_sound_unknown">We’ll know once your phone is connected and playing</string>
     <string name="phone_search_now">Search now</string>
     <string name="phone_unlink">Unlink</string>
     <string name="phone_no_sound">No sound? Connect Bluetooth</string>
-    <string name="music_mode_phone">Your phone is connected: meanwhile music goes over Bluetooth. When it leaves, it goes back to what you had.</string>
+    <string name="music_mode_phone">While your phone is connected and plays music, the Music widget shows and controls it. When it leaves, it goes back to what you had.</string>
 </resources>

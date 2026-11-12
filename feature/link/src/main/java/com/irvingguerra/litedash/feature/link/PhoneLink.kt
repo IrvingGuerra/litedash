@@ -41,9 +41,10 @@ class Pairing(val text: String, val code: String)
 
 /**
  * Por dónde llega al auto el sonido del celular (mensaje `sound`, PROTOCOLO_LINK.md §5c): Bluetooth, Android
- * Auto (él lleva el audio), cable, o solo la bocina del celular.
+ * Auto (él lleva el audio), cable, el Bluetooth solo para llamadas (sin audio: suena en el celular; llega como
+ * `route:"phone"` con `why:"calls"`), o solo la bocina del celular.
  */
-enum class PhoneSound(val route: String) { BLUETOOTH("bt"), CAR("car"), WIRED("wired"), PHONE("phone") }
+enum class PhoneSound(val route: String) { BLUETOOTH("bt"), CAR("car"), WIRED("wired"), CALLS("calls"), PHONE("phone") }
 
 /** Lo que suena en el celular (mensaje `music` con su `art`, PROTOCOLO_LINK.md §5b). */
 class PhoneSong(
@@ -145,7 +146,7 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
     /** "Buscar ahora": intenta ya, con los reintentos de vuelta al principio y tocando a los vecinos. */
     fun searchNow() {
         retries = 0
-        sweptAt = 0
+        sweepNext = true
         connect()
     }
 
@@ -173,8 +174,11 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
     private var beaconFresh = false
     /** La llave que el oído reconoce (la lee su hilo). */
     @Volatile private var earKey: ByteArray? = null
-    /** Cuándo se tocó por última vez a los vecinos de la red. */
+    /** Cuándo se tocó por última vez a los vecinos de la red, y si toca hacerlo en el siguiente intento. */
     private var sweptAt = 0L
+    private var sweepNext = true
+    /** Cuándo empezó el último intento. */
+    private var attemptedAt = 0L
 
     // Para el reporte.
     private var lastError: String? = null
@@ -303,12 +307,10 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
         ble.watch(active && paired && !connected)
     }
 
-    /** El celular vinculado se ve cerca por Bluetooth: se le busca ya, con los reintentos de vuelta al principio. */
+    /** El celular vinculado se ve cerca por Bluetooth de baja energía: se le busca ya por la red. */
     private val ble = BlePresence(app) {
-        if (active && !connected) {
-            retries = 0
-            connect()
-        }
+        // Solo adelanta el intento que ya tocaba (sin reiniciar su espaciado), y sin red en común no hay por dónde.
+        if (active && !connected && localNetwork) connect()
     }
 
     /** Prende o apaga el oído del faro. */
@@ -389,8 +391,9 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
         }
 
         override fun onLinkPropertiesChanged(network: Network, properties: LinkProperties) {
-            // Llega seguido en algunas pantallas (IPv6, DNS): se intenta, sin reiniciar la cuenta de reintentos.
-            main.post { connect() }
+            // Llega seguido en algunas pantallas (IPv6, DNS): se intenta sin reiniciar la cuenta de reintentos, y no
+            // más seguido que cada tanto.
+            main.post { if (SystemClock.elapsedRealtime() - attemptedAt >= LINK_CHANGE_MS) connect() }
         }
     }
 
@@ -398,6 +401,7 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
     private fun networkChanged() {
         if (!connected) {
             retries = 0
+            sweepNext = true
             beaconed = null
         }
         connect()
@@ -456,8 +460,10 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
         main.removeCallbacks(retry)
         // Tocar a los vecinos es el respaldo: seguido con el panel abierto, espaciado si no.
         val now = SystemClock.elapsedRealtime()
-        val sweep = sweptAt == 0L || now - sweptAt >= if (watching) SWEEP_WATCHING_MS else SWEEP_MS
+        val sweep = sweepNext || (watching && now - sweptAt >= SWEEP_WATCHING_MS)
+        sweepNext = false
         if (sweep) sweptAt = now
+        attemptedAt = now
         val known = listOfNotNull(
             beaconed?.let { it to "faro" }, store.getString(LAST_ADDRESS, null)?.let { it to "última" }, announced?.let { it to "NSD" },
         )
@@ -536,9 +542,11 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
     }
 
     /** El celular dijo por dónde sale su sonido: la canción a la vista se vuelve a publicar (lleva el aviso). */
-    private fun heardSound(from: Attempt, route: String) {
+    private fun heardSound(from: Attempt, route: String, why: String) {
         if (attempt !== from) return
-        phoneSound = PhoneSound.entries.firstOrNull { it.route == route }
+        // "calls" llega como motivo de `phone`: así las pantallas anteriores siguen avisando.
+        phoneSound = if (route == PhoneSound.PHONE.route && why == PhoneSound.CALLS.route) PhoneSound.CALLS
+        else PhoneSound.entries.firstOrNull { it.route == route }
         song?.let { onMusic?.invoke(it) }
     }
 
@@ -608,6 +616,8 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
         /** Las redes de la pantalla con su dirección: un socket hacia una de ellas se amarra a esa red. */
         private var nets: List<Pair<String, Network>> = emptyList()
         private val gatewayNets = HashMap<String, Network>()
+        /** Las interfaces de los datos móviles (no se tocan). */
+        private val mobileFaces = HashSet<String>()
 
         fun close() {
             runCatching { socket?.close() }
@@ -681,12 +691,17 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
             @Suppress("DEPRECATION") // el reemplazo pide un NetworkCallback por red; aquí basta una foto
             val networks = runCatching { manager.allNetworks.toList() }.getOrDefault(emptyList())
             return networks.flatMap { network ->
-                val properties = runCatching { manager.getLinkProperties(network) }.getOrNull()
-                for (route in properties?.routes.orEmpty()) {
+                val properties = runCatching { manager.getLinkProperties(network) }.getOrNull() ?: return@flatMap emptyList()
+                // Los datos de la SIM no son una red donde pueda estar el celular: ni su puerta de enlace ni sus vecinos.
+                if (runCatching { manager.getNetworkCapabilities(network)?.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) }.getOrNull() == true) {
+                    properties.interfaceName?.let(mobileFaces::add)
+                    return@flatMap emptyList()
+                }
+                for (route in properties.routes) {
                     val gateway = route.gateway?.takeIf { route.isDefaultRoute && it is Inet4Address && !it.isAnyLocalAddress }?.hostAddress
                     if (gateway != null) gatewayNets[gateway] = network
                 }
-                properties?.linkAddresses.orEmpty().mapNotNull { (it.address as? Inet4Address)?.hostAddress?.let { own -> own to network } }
+                properties.linkAddresses.mapNotNull { (it.address as? Inet4Address)?.hostAddress?.let { own -> own to network } }
             }
         }
 
@@ -702,7 +717,7 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
          */
         private fun neighbors(): List<String> {
             val own = runCatching { NetworkInterface.getNetworkInterfaces()?.toList() }.getOrNull().orEmpty()
-                .filter { runCatching { it.isUp && !it.isLoopback && !it.isPointToPoint }.getOrDefault(false) }
+                .filter { runCatching { it.isUp && !it.isLoopback && !it.isPointToPoint && it.name !in mobileFaces }.getOrDefault(false) }
                 // Primero el Wi‑Fi y el hotspot: muchas pantallas traen además redes internas (cámara, CarPlay).
                 .sortedBy { face -> if (WIFI_NAMES.any { face.name.startsWith(it) }) 0 else 1 }
                 .flatMap { it.inetAddresses.toList() }
@@ -807,7 +822,8 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
                     "art" -> music.art(message)?.let { next -> main.post { played(this, next, blocked = false) } }
                     "sound" -> {
                         val route = message.optString("route")
-                        main.post { heardSound(this, route) }
+                        val why = message.optString("why")
+                        main.post { heardSound(this, route, why) }
                     }
                     "ping" -> ready.send(JSONObject().put("t", "pong"))
                     "bye" -> return true
@@ -893,7 +909,7 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
         val WIFI_NAMES = listOf("wlan", "ap", "swlan", "softap")
         /** Tocar a los vecinos: a lo más cada tanto, pocas redes, muchos a la vez y con poca espera. */
         const val SWEEP_WATCHING_MS = 10_000L
-        const val SWEEP_MS = 60_000L
+        const val LINK_CHANGE_MS = 5_000L
         const val SWEEP_NETWORKS = 2
         const val SWEEP_THREADS = 32
         const val SWEEP_CONNECT_MS = 400

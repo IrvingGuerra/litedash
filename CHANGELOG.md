@@ -4,6 +4,26 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.4.143] - 2026-11-12
+
+Revisión completa de todo lo del celular y LiteDash Connect (tres auditorías independientes).
+
+### Arreglado
+- **Tu música ya no se pausa sola:** la música de la pantalla pasa a Bluetooth solo cuando tu celular **está sonando**
+  (antes, con solo conectarse, aunque viniera en la bolsa). Si el audio lo lleva Android Auto o un cable, no se toca
+  nada; y cuando el celular se va, se regresa a lo que tenías sin pausar lo que suene.
+- **Android Auto / CarPlay de la pantalla (ZLink y parecidas) nunca se pausan** al cambiar de método de música.
+- **"Bluetooth solo para llamadas":** cuando tu celular se conecta al estéreo solo para llamadas, la música sigue
+  sonando en el celular. LiteDash lo dice tal cual en el widget Música (con LiteDash Connect 0.4.4) y en
+  Ajustes → Celular explica cómo arreglarlo: conectar el celular desde el estéreo, o activar «Audio multimedia» para
+  ese estéreo en el Bluetooth del celular.
+- En Ajustes → Celular, el renglón **Sonido** ya no dice "Bluetooth conectado" cuando solo están conectadas las llamadas.
+- **Botón de Bluetooth** (barra y Ajustes → Celular): en pantallas con ZLink abre ZLink, que es quien maneja ahí el
+  Bluetooth del celular; antes abría los ajustes de Android.
+- Buscar al celular gasta menos: ya no revisa la red de la SIM ni toca a los vecinos cada minuto (solo al cambiar la
+  red, con Ajustes → Celular abierto o con "Buscar ahora"), y se recupera si el Bluetooth de la pantalla se apaga y
+  se prende.
+
 ## [1.4.142] - 2026-11-11
 
 ### Arreglado
