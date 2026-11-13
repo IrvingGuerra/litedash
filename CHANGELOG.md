@@ -4,6 +4,13 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.4.149] - 2026-11-13
+
+### Arreglado
+- **Ajustes → Celular en Android 17:** al entrar, Android abría y cerraba sin parar su ventana "Elige un dispositivo
+  para conectar" y la pantalla parpadeaba. Android 17 pide un permiso nuevo para la red local (Dispositivos cercanos):
+  ahora LiteDash lo pide con un botón «Permitir» y, mientras no lo tenga, no intenta buscar al celular.
+
 ## [1.4.148] - 2026-11-12
 
 ### Agregado

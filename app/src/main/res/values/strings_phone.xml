@@ -3,6 +3,10 @@
 <resources>
     <string name="phone_section">Celular</string>
     <string name="phone_help">Tu cuenta de LiteDash vive en la app LiteDash Connect de tu celular.</string>
+    <string name="phone_permission">Falta un permiso</string>
+    <string name="phone_permission_body">Para hablar con tu celular, Android pide que permitas a LiteDash usar la red local (Dispositivos cercanos).</string>
+    <string name="phone_permission_allow">Permitir</string>
+    <string name="phone_permission_settings">Permisos</string>
     <string name="phone_no_wifi">Tu pantalla no tiene Wi-Fi</string>
     <string name="phone_no_wifi_body">Tu celular y tu pantalla se hablan por Wi-Fi. Elige cómo:</string>
     <string name="phone_use_phone">Usar el internet de mi celular</string>

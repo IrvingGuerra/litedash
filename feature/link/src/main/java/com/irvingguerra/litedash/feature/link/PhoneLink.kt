@@ -1,6 +1,7 @@
 package com.irvingguerra.litedash.feature.link
 
 import android.content.Context
+import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.ConnectivityManager
@@ -10,6 +11,7 @@ import android.net.NetworkCapabilities
 import android.net.NetworkRequest
 import android.net.nsd.NsdManager
 import android.net.nsd.NsdServiceInfo
+import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
@@ -62,6 +64,9 @@ class ScreenCar(
 
 /** Lo que se dibuja para vincular: el texto del QR y el código de 4 dígitos de esa llave. */
 class Pairing(val text: String, val code: String)
+
+/** El permiso de la red local (Android 17+, grupo "Dispositivos cercanos"); antes no existe y no se pide. */
+const val LOCAL_NETWORK_PERMISSION = "android.permission.ACCESS_LOCAL_NETWORK"
 
 /**
  * Por dónde llega al auto el sonido del celular (mensaje `sound`, PROTOCOLO_LINK.md §5c): Bluetooth, Android
@@ -289,11 +294,30 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
     /** Cómo se encontró al celular la última vez que conectó. */
     private var lastFound: String? = null
 
-    private val active get() = running && (paired || watching)
+    /**
+     * Se puede usar la red local. Desde Android 17 (con targetSdk 37) pide el permiso de "Dispositivos
+     * cercanos": sin él no se toca la red, porque cada intento hace que Android abra su selector y, al
+     * volver LiteDash al frente, se volvería a abrir en bucle.
+     */
+    var networkAllowed by mutableStateOf(localNetworkAllowed())
+        private set
+
+    private fun localNetworkAllowed(): Boolean =
+        Build.VERSION.SDK_INT < LOCAL_NETWORK_SDK || app.checkSelfPermission(LOCAL_NETWORK_PERMISSION) == PackageManager.PERMISSION_GRANTED
+
+    /** Se dio o se negó el permiso de la red local: si ya se puede, se busca de una vez. */
+    fun permissionChanged() {
+        networkAllowed = localNetworkAllowed()
+        sync()
+        connect()
+    }
+
+    private val active get() = running && networkAllowed && (paired || watching)
 
     /** LiteDash volvió al frente: si hay celular vinculado, lo busca. */
     fun start() {
         running = true
+        networkAllowed = localNetworkAllowed()
         sync()
         connect()
     }
@@ -312,7 +336,7 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
     }
 
     /** Para "Enviar un reporte". */
-    fun describe(): String = "Celular: vinculado=${yes(paired)}, conectado=${yes(connected)}, " +
+    fun describe(): String = "Celular: vinculado=${yes(paired)}, conectado=${yes(connected)}, red local permitida=${yes(networkAllowed)}, " +
         "puerta de enlace=${lastGateways.ifEmpty { "—" }}, última dirección=${store.getString(LAST_ADDRESS, null) ?: "—"}, " +
         "NSD=${if (discovery != null) "buscando" else "no"}${announced?.let { " ($it)" } ?: ""}, faro=${beaconed ?: "—"}, " +
         "redes=${lastNeighbors.ifEmpty { "—" }}, encontrado por=${lastFound ?: "—"}, error=${lastError ?: "—"}, " +
@@ -323,6 +347,12 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
 
     private val tick = object : Runnable {
         override fun run() {
+            networkAllowed = localNetworkAllowed()
+            if (!networkAllowed) {
+                // Sin permiso no hay nada que buscar: se revisa de nuevo al volver de Ajustes de Android.
+                sync()
+                return
+            }
             refreshPairing()
             checkNetwork()
             sync()
@@ -671,7 +701,8 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
         beaconFresh = false
         // Lo que se oyó antes de este intento ya se probó y no sirvió: que no se pruebe primero para siempre.
         if (!fresh && !wasConnected) beaconed = null
-        if (!wasConnected) discover(true)
+        // NSD solo con red local: sin ella no hay dónde anunciarse el celular.
+        if (!wasConnected && localNetwork) discover(true)
         if (fresh) {
             // El celular avisó dónde está mientras se buscaba en otro lado: ahí, de una vez.
             connect()
@@ -1137,6 +1168,8 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
 
     private companion object {
         const val PREFS = "link"
+        /** Desde aquí la red local pide permiso (Android 17). */
+        const val LOCAL_NETWORK_SDK = 37
         const val SCREEN_ID = "screen_id"
         const val KEY = "key"
         const val LAST_ADDRESS = "last_address"

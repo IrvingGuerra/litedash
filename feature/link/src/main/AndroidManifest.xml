@@ -3,6 +3,8 @@
     <!-- El enlace con el celular va por la red local; los dos permisos ya los declara la app. -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <!-- Android 17+: la red local (hablar con LiteDash Connect) pide este permiso. -->
+    <uses-permission android:name="android.permission.ACCESS_LOCAL_NETWORK" />
     <!--
         Ver por Bluetooth de baja energía si el celular vinculado está cerca. Los mismos permisos (y con
         las mismas banderas) que Llantas y OBD; no se piden aquí: se usan si la pantalla ya los dio.

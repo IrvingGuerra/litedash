@@ -5,6 +5,8 @@ package com.irvingguerra.litedash
 import android.content.Context
 import android.content.Intent
 import android.provider.Settings
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -21,7 +23,11 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -41,6 +47,7 @@ import com.irvingguerra.litedash.core.ui.Label
 import com.irvingguerra.litedash.core.ui.LocalColors
 import com.irvingguerra.litedash.core.ui.Radius
 import com.irvingguerra.litedash.core.ui.Typography
+import com.irvingguerra.litedash.feature.link.LOCAL_NETWORK_PERMISSION
 import com.irvingguerra.litedash.feature.link.Pairing
 import com.irvingguerra.litedash.feature.link.PhoneLink
 import com.irvingguerra.litedash.feature.link.PhoneSound
@@ -61,7 +68,8 @@ private const val QUIET_ZONE = 4
 /**
  * La sección Celular. Mientras está a la vista el enlace intenta conectarse cada 2 s, revisa la red
  * y mantiene vigente el QR; al salir (o irse LiteDash al fondo) deja de intentar. Sin red no hay
- * código: primero se dice cómo tenerla. [openMusic] lleva a Ajustes → Apps → Música.
+ * código: primero se dice cómo tenerla. En Android 17+ sin el permiso de la red local, antes que nada se pide
+ * (solo al tocar: pedirlo solo abriría el diálogo en bucle). [openMusic] lleva a Ajustes → Apps → Música.
  */
 @Composable
 internal fun PhoneSettings(d: Dependencies, openMusic: () -> Unit) {
@@ -73,6 +81,7 @@ internal fun PhoneSettings(d: Dependencies, openMusic: () -> Unit) {
     val pairing = link.pairing
     SettingsCard(help = stringResource(R.string.phone_help)) {
         when {
+            !link.networkAllowed -> AskLocalNetwork(link)
             link.paired -> Linked(d, openMusic)
             !link.localNetwork -> NoNetwork()
             pairing != null -> PairingCode(pairing)
@@ -96,6 +105,25 @@ private fun StatusTitle(mark: Mark, text: String) {
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         Box(Modifier.size(10.dp).clip(CircleShape).background(mark.color()))
         Label(text, Typography.title, maxLines = 1)
+    }
+}
+
+/** 0 · Android 17+ sin permiso de la red local: sin él la pantalla no puede hablar con el celular. */
+@Composable
+private fun AskLocalNetwork(link: PhoneLink) {
+    val c = LocalColors.current
+    val context = LocalContext.current
+    var denied by rememberSaveable { mutableStateOf(false) }
+    val ask = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { ok ->
+        denied = !ok
+        link.permissionChanged()
+    }
+    StatusTitle(Mark.WARN, stringResource(R.string.phone_permission))
+    Label(stringResource(R.string.phone_permission_body), Typography.body, c.textMuted)
+    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        Button(stringResource(R.string.phone_permission_allow), { ask.launch(LOCAL_NETWORK_PERMISSION) }, primary = true)
+        // Negado para siempre, Android ya no pregunta: se da en sus ajustes.
+        if (denied) Button(stringResource(R.string.phone_permission_settings), { openAppSettings(context) })
     }
 }
 

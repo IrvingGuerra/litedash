@@ -245,8 +245,8 @@ private fun AndroidSettings() {
 internal fun openSystemScreen(context: Context, intent: Intent): Boolean =
     runCatching { context.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }.isSuccess
 
-/** Los permisos de LiteDash en Ajustes de Android (para dar o quitar ubicación). */
-private fun openAppSettings(context: Context) {
+/** Los permisos de LiteDash en Ajustes de Android (ubicación, red local…). */
+internal fun openAppSettings(context: Context) {
     val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", context.packageName, null))
     openSystemScreen(context, intent)
 }
