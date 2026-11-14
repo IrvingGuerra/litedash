@@ -51,9 +51,6 @@ fun autoZoom(kmh: Float?, current: Int): Int {
     return if (faster < current) faster else if (slower > current) slower else current
 }
 
-/** El toque: aleja un nivel; tras el más lejano vuelve al elegido (null). */
-fun nextZoom(shown: Int): Int? = if (shown <= MIN_ZOOM) null else shown - 1
-
 /** Mínimo de la memoria de teselas: unas 36 de OSM (256 px a 16 bits). */
 const val MEMORY_MIN_BYTES = 36 * 256 * 256 * 2
 

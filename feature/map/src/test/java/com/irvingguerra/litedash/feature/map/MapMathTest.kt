@@ -50,13 +50,6 @@ class MapMathTest {
     }
 
     @Test
-    fun tapCyclesZoom() {
-        assertEquals(16, nextZoom(17))
-        assertEquals(14, nextZoom(15))
-        assertNull(nextZoom(14))
-    }
-
-    @Test
     fun cacheControl() {
         val now = 1_000_000L
         assertEquals(now + 604_800_000, expiresAt(now, "max-age=604800, stale-while-revalidate=604800", null))

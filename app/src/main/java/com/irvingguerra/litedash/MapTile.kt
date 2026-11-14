@@ -58,7 +58,7 @@ import com.irvingguerra.litedash.feature.music.NotificationService
  * Widget Mapa: tu posición del GPS en el mapa (minimalista de OpenFreeMap o completo de OpenStreetMap),
  * como diga su [data] ([MapLook]); navegando, la siguiente vuelta flota arriba a la izquierda y Casa y
  * Trabajo, abajo a la derecha (sobre los créditos). Un toque hace [onTap] (tu app de mapas o el mapa en grande, según
- * Ajustes → Apps → Navegación); el botón de la esquina abre tu app de mapas. En una fila, o sin permiso de ubicación, se ve
+ * Ajustes → Apps → Navegación); con la app externa, el botón de la esquina la abre (sin ella no hay botón). En una fila, o sin permiso de ubicación, se ve
  * como el widget Navegar de antes (vuelta, Casa y Trabajo) y, sin permiso, un botón para pedirlo. GPS y descargas solo
  * mientras se ve.
  */
@@ -69,14 +69,16 @@ fun MapTile(d: Dependencies, data: String, app: App?, editing: Boolean, onPlace:
     val look = remember(data) { MapLook.parse(data) }
     BoxWithConstraints(Modifier.fillMaxSize()) {
         if (!granted || maxHeight < COMPACT_HEIGHT) {
+            // Un toque, igual que al mapa en vivo: tu app de mapas o el mapa en grande.
             Box(Modifier.fillMaxSize()) {
-                NavigationTile(d.navigation, app, d.prefs.homeAddress, d.prefs.workAddress, onPlace, onNavigate, endInset = if (!editing && !granted) 46.dp else 0.dp)
+                NavigationTile(d.navigation, app, d.prefs.homeAddress, d.prefs.workAddress, onPlace, onTap, endInset = if (!editing && !granted) 46.dp else 0.dp)
                 // Sin permiso, el botón lo pide. Al acomodar se esconde (estorba al botón de tamaño).
                 if (!editing && !granted) IconButton(Icons.map, ask, Modifier.align(Alignment.TopEnd).padding(6.dp), size = 40.dp, background = c.surfaceHigh, color = c.accent)
             }
             return@BoxWithConstraints
         }
-        val turnWidth = maxWidth - 68.dp
+        val external = d.prefs.mapExternal && app != null
+        val turnWidth = maxWidth - if (external) 68.dp else 16.dp
         val withPlaces = maxHeight >= PLACES_HEIGHT
         Card(Modifier.fillMaxSize()) {
             LiveMap(d, look, Modifier.fillMaxSize(), onTap = onTap)
@@ -88,14 +90,15 @@ fun MapTile(d: Dependencies, data: String, app: App?, editing: Boolean, onPlace:
                     Modifier.align(Alignment.BottomEnd).padding(end = 8.dp, bottom = ATTRIBUTION_CLEARANCE),
                 )
             }
-            IconButton(Icons.navigate, onNavigate, Modifier.align(Alignment.TopEnd).padding(8.dp), size = 44.dp, background = c.surface.copy(alpha = 0.85f), color = c.accent)
+            // Con "Usar app externa" apagado no hay botón que te saque de LiteDash (se queda en el mapa en grande).
+            if (external) IconButton(Icons.navigate, onNavigate, Modifier.align(Alignment.TopEnd).padding(8.dp), size = 44.dp, background = c.surface.copy(alpha = 0.85f), color = c.accent)
         }
     }
 }
 
 /**
  * El mapa de LiteDash en grande (los accesos directos al mapa con "Usar app externa" apagado), como el widget
- * [data] si hay uno: el mapa en vivo (un toque aleja el zoom), la siguiente vuelta, Casa y Trabajo, y botones
+ * [data] si hay uno: el mapa en vivo (con dos dedos se acerca o aleja), la siguiente vuelta, Casa y Trabajo, y botones
  * para abrir tu app de mapas y para cerrar.
  */
 @Composable

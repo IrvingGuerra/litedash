@@ -2,6 +2,15 @@ package com.irvingguerra.litedash.feature.map
 
 import android.graphics.Matrix as AndroidMatrix
 import androidx.compose.foundation.background
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.PointerInputScope
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.foundation.gestures.calculateZoom
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Spacer
@@ -54,8 +63,8 @@ private const val ATTRIBUTION_URL = "https://www.openstreetmap.org/copyright"
 
 /**
  * El mapa (teselas de [store]) con tu posición y como diga [look]: norte arriba o hacia donde vas,
- * plano o inclinado, zoom según la velocidad o fijo (sin [onTap], un toque lo aleja; tras el más
- * lejano vuelve al elegido) y colores claros u oscuros: las de OpenStreetMap se oscurecen con un
+ * plano o inclinado, zoom según la velocidad o fijo (con dos dedos se acerca o aleja; al regresar al
+ * elegido vuelve a ser el automático o el fijo), un toque hace [onTap] y colores claros u oscuros: las de OpenStreetMap se oscurecen con un
  * filtro; el minimalista ya viene en sus colores.
  */
 @Composable
@@ -77,11 +86,38 @@ fun MapCanvas(store: TileStore, lat: Double, lon: Double, bearing: Float?, kmh: 
     // Inclinado, tu posición va más abajo: se ve más camino adelante.
     val anchorY = if (tilted) 0.78f else 0.6f
     val sky = store.source.sky?.let(::Color) ?: if (dark) Color(0xFF1C1C20) else Color(0xFFE8E8EA)
-    // Un toque: lo que diga [onTap] (en el widget, verlo en grande); si no, alejar.
-    BoxWithConstraints(modifier.background(sky).clickable { onTap?.invoke() ?: run { manual = nextZoom(zoom) } }) {
+    // Con dos dedos: mientras se pellizca el mapa se escala ([pinch]) y al doblar (o partir a la mitad) cambia de zoom.
+    var pinch by remember { mutableFloatStateOf(1f) }
+    val base = ((look.zoom.level ?: auto[0]) - if (tilted) 1 else 0).coerceAtLeast(MIN_ZOOM)
+    val onPinch by rememberUpdatedState { factor: Float ->
+        var p = pinch * factor
+        var z = zoom
+        while (p >= 2f && z < MAX_ZOOM) { z++; p /= 2f }
+        while (p <= 0.5f && z > MIN_ZOOM) { z--; p *= 2f }
+        // En el límite solo cede un poco: se nota que ya no hay más.
+        pinch = p.coerceIn(if (z <= MIN_ZOOM) 0.85f else 0.5f, if (z >= MAX_ZOOM) 1.15f else 2f)
+        if (z != zoom) manual = z.takeIf { it != base }
+    }
+    val onPinchEnd by rememberUpdatedState {
+        // Al soltar se queda en el zoom más cercano.
+        val z = when {
+            pinch > 1.41f -> (zoom + 1).coerceAtMost(MAX_ZOOM)
+            pinch < 0.71f -> (zoom - 1).coerceAtLeast(MIN_ZOOM)
+            else -> zoom
+        }
+        manual = z.takeIf { it != base }
+        pinch = 1f
+    }
+    // Un toque: lo que diga [onTap] (en el widget, verlo en grande o abrir tu app de mapas).
+    val tap = if (onTap != null) Modifier.clickable(onClick = onTap) else Modifier
+    BoxWithConstraints(modifier.background(sky).then(tap).pointerInput(Unit) { detectPinch({ onPinch(it) }, { onPinchEnd() }) }) {
         val short = maxWidth < SHORT_ATTRIBUTION
         Spacer(
-            Modifier.fillMaxSize().drawWithCache {
+            Modifier.fillMaxSize().graphicsLayer {
+                scaleX = pinch
+                scaleY = pinch
+                transformOrigin = TransformOrigin(0.5f, anchorY)
+            }.drawWithCache {
                 // Se arma al cambiar el tamaño o la posición; entre tesela y tesela solo se redibuja.
                 val at = Offset(size.width / 2, size.height * anchorY)
                 val projection = MapProjection(size.width, size.height, at.x, at.y, turn, tilted, density)
@@ -109,6 +145,28 @@ fun MapCanvas(store: TileStore, lat: Double, lon: Double, bearing: Float?, kmh: 
             },
         )
         Attribution(if (short) store.source.attributionShort else store.source.attribution, Modifier.align(Alignment.BottomEnd))
+    }
+}
+
+/**
+ * Pellizco con dos dedos: [onZoom] con cuánto creció la separación en cada movimiento y [onEnd] al soltar. Con un
+ * dedo no hace nada ni se come el toque (el toque y arrastrar el widget siguen funcionando).
+ */
+private suspend fun PointerInputScope.detectPinch(onZoom: (Float) -> Unit, onEnd: () -> Unit) {
+    awaitEachGesture {
+        awaitFirstDown(requireUnconsumed = false)
+        var pinched = false
+        do {
+            val event = awaitPointerEvent()
+            if (event.changes.count { it.pressed } >= 2) {
+                val factor = event.calculateZoom()
+                if (factor != 1f) onZoom(factor)
+                pinched = true
+            }
+            // Ya pellizcado, todo es del pellizco (también al soltar): si no, levantar los dedos contaba como toque.
+            if (pinched) event.changes.forEach { it.consume() }
+        } while (event.changes.any { it.pressed })
+        if (pinched) onEnd()
     }
 }
 
