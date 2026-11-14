@@ -6,8 +6,8 @@
 </p>
 
 <p align="center">
-  <b>El launcher para pantallas Android de auto y moto: 1.8 MB con escáner OBD2, presión de llantas, radio FM, música USB y mapa.</b><br>
-  <i>The car launcher for Android head units: 1.8 MB with an OBD2 scanner, TPMS, FM radio, USB music and a map.</i><br><br>
+  <b>El launcher para pantallas Android de auto y moto: 1.9 MB con escáner OBD2, presión de llantas, radio FM, música USB y mapa.</b><br>
+  <i>The car launcher for Android head units: 1.9 MB with an OBD2 scanner, TPMS, FM radio, USB music and a map.</i><br><br>
   <b>Android 6.0+ · Gratis · Sin anuncios · GPL-3.0</b><br><br>
   <a href="https://litedash.dev/">Sitio</a> ·
   <a href="https://play.google.com/store/apps/details?id=com.irvingguerra.litedash">Google Play</a> ·
@@ -36,7 +36,7 @@
 ## Qué es
 
 LiteDash es la pantalla de inicio (launcher) para las pantallas Android de autos y motos
-(*head units*, las "chinas" de 7" a 11"), tablets y teléfonos. **En 1.8 MB trae escáner OBD2,
+(*head units*, las "chinas" de 7" a 11"), tablets y teléfonos. **En 1.9 MB trae escáner OBD2,
 presión de llantas, la radio FM de tu pantalla, reproductor USB, mapa, velocímetros y tu auto en
 3D.** Todo es opcional y viene apagado, para que vuele hasta en una pantalla de 1 GB de RAM: lo
 apagado no gasta memoria, batería ni permisos. Tú acomodas tu inicio: deja presionado para mover,
@@ -62,7 +62,7 @@ agrandar o quitar widgets.
 ## What it is (English)
 
 LiteDash is a home screen (launcher) for Android car and motorcycle head units, tablets and phones.
-**In 1.8 MB it packs an OBD2 scanner, TPMS tire pressure, your unit's factory FM radio, its own USB
+**In 1.9 MB it packs an OBD2 scanner, TPMS tire pressure, your unit's factory FM radio, its own USB
 music player, a live map, speedometers and your car in 3D.** Everything is optional and off by
 default, so it stays fast on 1 GB units running Android 6.0 or newer. No ads, no tracking, no
 account. See the [comparison with other car launchers](https://litedash.dev/en/compare/).
