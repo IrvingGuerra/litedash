@@ -119,6 +119,25 @@ internal class TopWayRadio(onState: (BroadcastMeta) -> Unit, private val trace: 
         publish()
     }
 
+    /**
+     * La música del Bluetooth de TopWay (`com.tw.bt`, con chip propio): el MCU solo la deja pasar a las bocinas
+     * con su fuente (8), y eso lo pide la app de fábrica al entrar a su Música. Se pide igual que ella: actividad,
+     * fuente de audio y foco (visto en el Lancer de Irving, 2026-11-13: `40448 8`, `769 8`).
+     */
+    fun takeBluetooth() {
+        activity(SOURCE_BT)
+        write(AUDIO, 0xC0, SOURCE_BT)
+        write(FOCUS, 0xC0, SOURCE_BT)
+        trace("topway bluetooth: fuente $SOURCE_BT")
+    }
+
+    /** Suelta la fuente del Bluetooth (como la radio al pausar): el MCU regresa al audio de Android. */
+    fun releaseBluetooth() {
+        activity(SOURCE_BT or RELEASE)
+        write(FOCUS, 0xC0, SOURCE_BT or RELEASE)
+        trace("topway bluetooth: suelta")
+    }
+
     /** La "actividad" va con write de dos números (como la radio de fábrica); si no existe, con tres. */
     private fun activity(value: Int) {
         val u = util ?: return
@@ -148,6 +167,8 @@ internal class TopWayRadio(onState: (BroadcastMeta) -> Unit, private val trace: 
         private const val SOURCE_RADIO = 1
         /** El número de la radio en otras TopWay (OpenRath). */
         private const val SOURCE_RADIO_ALT = 0x0A
+        /** La música del Bluetooth de fábrica (`com.tw.bt`). */
+        private const val SOURCE_BT = 8
         private const val RELEASE = 0x80
         private const val BAND_AM = 2
 

@@ -4,6 +4,15 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.4.152] - 2026-11-13
+
+### Arreglado
+- **Pantallas TopWay: la música del celular por Bluetooth no se oía.** En las pantallas con la app de Bluetooth de
+  fábrica `com.tw.bt` (chip propio) la canción salía sonando en la pantalla y en el celular, pero no llegaba a las
+  bocinas: la pantalla solo deja pasar ese audio cuando alguien elige su entrada de Bluetooth, y eso lo hacía únicamente
+  la app de fábrica al entrar a su Música. Ahora, cuando tu celular con LiteDash Connect empieza a sonar, LiteDash elige
+  esa entrada solo; al irse el celular o al cambiar de método, regresa al audio normal de la pantalla.
+
 ## [1.4.151] - 2026-11-13
 
 ### Arreglado

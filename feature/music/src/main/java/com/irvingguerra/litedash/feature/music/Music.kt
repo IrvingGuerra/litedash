@@ -89,6 +89,8 @@ private const val RADIO_RETURN_MS = 3_000L
 /** Marca de "abriendo TopWay": si se queda puesta, la app se cerró al abrirlo. */
 private const val KEY_TOPWAY_OPENING = "topway_opening"
 private const val TOPWAY_XT_BIND = "com.tw.service.xt.CommandService.Bind"
+/** La app de Bluetooth de fábrica de TopWay (chip propio: su música necesita la fuente del MCU). */
+private const val TOPWAY_BT = "com.tw.bt"
 /** Lo que tarda el sintonizador de fábrica (TopWay, NWD) en contestar (la estación o que ya tiene el audio). */
 private const val FACTORY_ANSWER_MS = 2_000L
 /** Lo que LiteDash supone de una app de fábrica (suena / en pausa) deja de valer tras este rato (p. ej. apagaron el auto). */
@@ -192,6 +194,7 @@ class MusicRepository(private val context: Context) {
         }
         modeState = v
         store.edit().putString(KEY_MODE, v.name).apply()
+        if (v == MusicMode.BLUETOOTH) { if (phonePlaying) topWayBluetooth(take = true) } else topWayBluetooth(take = false)
         // Lo que se supo del método anterior (avisos, supuestos) ya no vale.
         music.clear()
         if (users > 0) choose(sessions())
@@ -219,6 +222,8 @@ class MusicRepository(private val context: Context) {
     /** El celular (LiteDash Connect) está conectado, y si el usuario eligió un método desde que llegó. */
     private var phoneHere = false
     private var userChose = false
+    /** La música del celular suena (por Bluetooth o su bocina), según el último aviso. */
+    private var phonePlaying = false
 
     /**
      * Cómo va el celular con LiteDash Connect (Irving, 2026-11-11: sonaban a la vez el Spotify de la pantalla y
@@ -232,11 +237,14 @@ class MusicRepository(private val context: Context) {
         if (!connected) {
             phoneHere = false
             userChose = false
+            phonePlaying = false
             mainHandler.removeCallbacks(phoneLeft)
             // Android cierra y reabre Connect a ratos: se espera antes de devolver el método.
-            if (heldMode != null) mainHandler.postDelayed(phoneLeft, PHONE_LEFT_MS)
+            if (heldMode != null || twBtHeld) mainHandler.postDelayed(phoneLeft, PHONE_LEFT_MS)
             return
         }
+        val started = playing && !phonePlaying
+        phonePlaying = playing
         if (!phoneHere) {
             phoneHere = true
             userChose = false
@@ -247,9 +255,12 @@ class MusicRepository(private val context: Context) {
             store.edit().putString(KEY_MODE_HELD, modeState.name).apply()
             switchMode(MusicMode.BLUETOOTH)
         }
+        // TopWay: cada vez que el celular empieza a sonar se pide la fuente (la radio pudo quitársela).
+        if (playing && modeState == MusicMode.BLUETOOTH && (started || !twBtHeld)) topWayBluetooth(take = true)
     }
 
     private val phoneLeft = Runnable {
+        topWayBluetooth(take = false)
         val back = heldMode ?: return@Runnable
         releaseHold()
         switchMode(back, silence = false)
@@ -260,6 +271,42 @@ class MusicRepository(private val context: Context) {
         if (heldMode == null) return
         heldMode = null
         store.edit().remove(KEY_MODE_HELD).apply()
+    }
+
+    /**
+     * TopWay con Bluetooth de chip propio (`com.tw.bt`): la música del celular llega al chip, pero el MCU no la pasa a
+     * las bocinas hasta que alguien pide su fuente (la app de fábrica lo hace al entrar a su Música). Mientras el
+     * celular suena en el método Bluetooth se pide desde aquí, con un enlace TWUtil propio (la radio tiene el suyo y
+     * solo vive con la pieza); al dejar el método o irse el celular se suelta y se cierra. [twBt] solo en [factoryThread].
+     */
+    private var twBt: TopWayRadio? = null
+    private var twBtHeld = false
+
+    @SuppressLint("ApplySharedPref") // commit a propósito: debe quedar escrito antes de abrir
+    private fun topWayBluetooth(take: Boolean) {
+        if (!take && !twBtHeld) return
+        if (take && (!TopWayRadio.available || bluetoothApp() != TOPWAY_BT)) return
+        twBtHeld = take
+        val log: (String) -> Unit = { e -> mainHandler.post { trace(e) } }
+        factoryThread.execute {
+            if (!take) {
+                val tw = twBt ?: return@execute
+                twBt = null
+                tw.releaseBluetooth()
+                tw.close()
+                return@execute
+            }
+            val tw = twBt ?: run {
+                if (store.getBoolean(KEY_TOPWAY_OPENING, false)) return@execute log("topway bluetooth: apagado (la app se cerró al abrirlo)")
+                store.edit().putBoolean(KEY_TOPWAY_OPENING, true).commit()
+                val t = TopWayRadio(onState = {}, trace = log)
+                val opened = t.open()
+                store.edit().putBoolean(KEY_TOPWAY_OPENING, false).apply()
+                if (!opened) return@execute
+                t.also { twBt = it }
+            }
+            tw.takeBluetooth()
+        }
     }
 
     /** La app que toca [m]: LiteDash, la del Bluetooth o tu app de música (null = la que suene). */
@@ -1662,7 +1709,8 @@ class MusicRepository(private val context: Context) {
             appendLine(
                 "TopWay: abierto=${yes(tw?.open == true)} estación=${tw?.station ?: "-"} " +
                     "nombre=${tw?.name?.ifEmpty { "-" } ?: "-"} audio=${tw?.on?.let(::yes) ?: "?"} " +
-                    "servicioXT=${yes(xtService())} se cerró=${yes(store.getBoolean(KEY_TOPWAY_OPENING, false))}",
+                    "servicioXT=${yes(xtService())} se cerró=${yes(store.getBoolean(KEY_TOPWAY_OPENING, false))} " +
+                    "fuente bluetooth=${if (twBtHeld) "pedida" else "no"}",
             )
         }
         append("Últimos eventos:")
