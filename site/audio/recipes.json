@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "recipes": [
+    {
+      "bluetooth": "com.tw.bt",
+      "radio": "com.tw.radio",
+      "bt": "tw.source8",
+      "fm": "profile"
+    }
+  ]
+}

@@ -166,6 +166,8 @@ internal fun MediaTile(
     revision: Int,
     modifier: Modifier,
     song: Song?,
+    /** Qué pieza es: si la calibración del sonido le pregunta algo, va en su lugar ([SoundCheckPrompt]). */
+    piece: SoundPiece,
     icon: ImageVector,
     title: String,
     explain: String,
@@ -183,6 +185,9 @@ internal fun MediaTile(
     val permission = remember(revision, needsAccess) { !needsAccess || repo.hasPermission().also { if (it) repo.recheck() } }
     Card(modifier.fillMaxSize()) {
         if (!permission) return@Card NoPermission(repo, icon, title, explain)
+        repo.soundCheckFor(piece)?.let { check ->
+            return@Card Box(Modifier.fillMaxSize().padding(TilePadding), contentAlignment = Alignment.CenterStart) { SoundCheckPrompt(repo, check) }
+        }
         // La llave es la canción, no el Bitmap: cada play o pausa trae otra instancia de la misma carátula.
         if (tinted && !LocalPlainCard.current) song?.artwork?.let { ArtworkTint(it, "${song.pkg}|${song.title}|${song.artist}") }
         BoxWithConstraints(Modifier.fillMaxSize().padding(TilePadding)) {

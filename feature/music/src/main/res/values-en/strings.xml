@@ -23,4 +23,17 @@
     <string name="radio_settings">Settings</string>
     <string name="mode_app">App</string>
     <string name="radio_fm_label">FM radio</string>
+    <string name="sound_question">Can you hear it?</string>
+    <string name="sound_yes">Yes</string>
+    <string name="sound_no">No</string>
+    <string name="sound_failed">Couldn\'t make it play</string>
+    <string name="sound_report">Report</string>
+    <string name="recipe_none">Not calibrated yet: it happens on its own the first time it plays</string>
+    <string name="recipe_plain">Works as is</string>
+    <string name="recipe_tw_source8">Screen\'s Bluetooth input</string>
+    <string name="recipe_fyt_toggle">Switches the screen\'s source</string>
+    <string name="recipe_profile">Direct radio control</string>
+    <string name="recipe_open_bluetooth">Opens the Bluetooth app and comes back</string>
+    <string name="recipe_open_radio">Opens the radio app and comes back</string>
+    <string name="recipe_failed">No way found</string>
 </resources>

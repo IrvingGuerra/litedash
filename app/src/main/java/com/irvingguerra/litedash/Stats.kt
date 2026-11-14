@@ -17,8 +17,9 @@ import java.security.SecureRandom
  * Cuántas pantallas usan LiteDash, sin cuentas ni SDK de Firebase: a lo más una vez al día,
  * al abrir el inicio, escribe `screens/{id}` en Firestore por REST (nombres de la nube en inglés). El id es un número al
  * azar de esta instalación; se manda solo la versión, el canal (GitHub o Play), Android, el idioma de LiteDash,
- * el tamaño de pantalla, desde qué día se usa y la radio y el Bluetooth DE FÁBRICA de la pantalla ([FactoryAudio]: solo
- * apps del sistema, para saber qué familias soportar; nada de ubicación ni del usuario). Las reglas de Firestore solo dejan escribir
+ * el tamaño de pantalla, desde qué día se usa, la radio y el Bluetooth DE FÁBRICA de la pantalla ([FactoryAudio]: solo
+ * apps del sistema, para saber qué familias soportar; nada de ubicación ni del usuario) y, si ya se calibró, la receta de
+ * sonido que le funcionó a cada uno (`btRecipe`, `fmRecipe`: para el catálogo compartido de recetas). Las reglas de Firestore solo dejan escribir
  * esos campos y nadie puede leerlos desde la app. Se apaga en Ajustes → Sistema → Estadísticas.
  */
 class Stats(private val context: Context, private val enabled: () -> Boolean) {
@@ -46,6 +47,9 @@ class Stats(private val context: Context, private val enabled: () -> Boolean) {
             .put("radio", Firestore.text(FactoryAudio.radio(context).take(64)))
             .put("bluetooth", Firestore.text(FactoryAudio.bluetooth(context).take(64)))
             .put("ble", Firestore.bool(FactoryAudio.ble(context)))
+        // Solo si hay receta guardada: sin calibrar, el campo no va.
+        FactoryAudio.bluetoothRecipe(context)?.let { fields.put("btRecipe", Firestore.text(it.take(RECIPE_MAX))) }
+        FactoryAudio.radioRecipe(context)?.let { fields.put("fmRecipe", Firestore.text(it.take(RECIPE_MAX))) }
         val write = JSONObject()
             .put("update", JSONObject().put("name", Firestore.document("screens/$id")).put("fields", fields))
             .put("updateTransforms", Firestore.serverTime("seen"))
@@ -56,6 +60,8 @@ class Stats(private val context: Context, private val enabled: () -> Boolean) {
         const val KEY_ID = "id"
         const val KEY_SINCE = "since"
         const val KEY_LAST = "last_ping"
+        /** Lo más largo de un id de receta (lo mismo dicen las reglas de Firestore). */
+        const val RECIPE_MAX = 32
 
         /** En dp y acostada (ancho × alto): así se distingue una pantalla de auto de un celular. */
         fun screen(config: Configuration): String {

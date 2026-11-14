@@ -171,7 +171,7 @@
     <string name="hide_status_bar_help">The strip at the very top with Android\'s time and notifications (not LiteDash\'s). Swipe down from the top to see it for a moment.</string>
     <string name="stats_title">Statistics</string>
     <string name="stats_switch">Count this screen (anonymous)</string>
-    <string name="stats_help">Once a day it sends a random number, the version and where you got it (GitHub or Play), Android, language, screen size, since when you use LiteDash and which built-in radio and Bluetooth your screen has, to know how many people use LiteDash. No location, accounts or personal data.</string>
+    <string name="stats_help">Once a day it sends a random number, the version and where you got it (GitHub or Play), Android, language, screen size, since when you use LiteDash and which built-in radio and Bluetooth your screen has and which sound setting worked on it, to know how many people use LiteDash. No location, accounts or personal data.</string>
     <string name="back">Back</string>
     <string name="next">Next</string>
     <string name="skip">Skip</string>
@@ -767,6 +767,9 @@
     <string name="pro_expired">Connect to the internet to keep the developer code</string>
     <string name="music_mode_title">How you listen to music</string>
     <string name="music_mode_help">Pick one: it is what plays in the Music widget. Switching pauses the previous one.</string>
+    <string name="sound_calibration">Calibrate sound</string>
+    <string name="sound_calibration_help">How LiteDash gets your screen\'s Bluetooth and radio to play. It\'s tested on its own the first time they play; if something stops playing, calibrate again.</string>
+    <string name="sound_calibrate_again">Calibrate again</string>
     <string name="image_no_permission">Without the files permission LiteDash can\'t browse the storage.</string>
     <string name="open_on_boot">Open LiteDash on startup</string>
     <string name="open_on_boot_help">For head units that bring back their factory launcher when the car turns off and on: LiteDash comes to the front by itself. If your head unit has a “Default launcher” option in its settings, choose LiteDash there too.</string>

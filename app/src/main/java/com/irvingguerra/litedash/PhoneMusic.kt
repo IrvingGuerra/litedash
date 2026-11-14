@@ -17,7 +17,12 @@ fun wirePhoneMusic(link: PhoneLink, music: MusicRepository, noSound: (PhoneSound
     // Lo de la pantalla solo se calla cuando el celular de verdad suena; con Android Auto o cable, ellos mandan.
     fun tell() {
         val route = link.phoneSound
-        music.phone(link.connected, playing = link.song?.playing == true && route != PhoneSound.CAR && route != PhoneSound.WIRED)
+        music.phone(
+            link.connected,
+            playing = link.song?.playing == true && route != PhoneSound.CAR && route != PhoneSound.WIRED,
+            // Sin decir por dónde (Connect viejo) se supone el Bluetooth, como antes.
+            bluetooth = route == null || route == PhoneSound.BLUETOOTH,
+        )
     }
     link.onMusic = { song ->
         val silent = link.phoneSound?.takeIf { song != null && song.playing && (it == PhoneSound.PHONE || it == PhoneSound.CALLS) }

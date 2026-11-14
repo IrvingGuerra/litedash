@@ -30,8 +30,10 @@ import com.irvingguerra.litedash.feature.apps.normalize
 import com.irvingguerra.litedash.feature.apps.rememberApps
 import com.irvingguerra.litedash.feature.music.MusicMode
 import com.irvingguerra.litedash.feature.music.R as MusicR
+import com.irvingguerra.litedash.feature.music.SoundPiece
 import com.irvingguerra.litedash.feature.music.SourceKind
 import com.irvingguerra.litedash.feature.music.label
+import com.irvingguerra.litedash.feature.music.recipeLabel
 import com.irvingguerra.litedash.feature.player.Library
 import com.irvingguerra.litedash.feature.player.PlayerBrowser
 import com.irvingguerra.litedash.feature.player.PlayerSource
@@ -88,6 +90,24 @@ fun MusicModeSettings(d: Dependencies) {
         }
         MusicMode.BLUETOOTH -> SettingsCard(stringResource(R.string.bt_pair), stringResource(R.string.bt_pair_help)) { BluetoothSettings(d) }
         MusicMode.APP -> SettingsCard(stringResource(R.string.music_app_title)) { MusicSettings(d) }
+    }
+    SoundCalibrationCard(d)
+}
+
+/**
+ * "Calibrar sonido": con qué receta suenan el Bluetooth y la radio de esta pantalla (la calibración la encuentra
+ * sola la primera vez que suenan) y "Calibrar otra vez", que olvida lo guardado. Solo si hay algo que calibrar.
+ */
+@Composable
+private fun SoundCalibrationCard(d: Dependencies) {
+    val pieces = SoundPiece.entries.filter(d.music::calibrates)
+    if (pieces.isEmpty()) return
+    SettingsCard(stringResource(R.string.sound_calibration), stringResource(R.string.sound_calibration_help)) {
+        for (piece in pieces) {
+            val name = stringResource(if (piece == SoundPiece.MUSIC) MusicR.string.source_bluetooth else MusicR.string.radio)
+            Label("$name: ${recipeLabel(piece, d.music.soundRecipe(piece))}", Typography.body)
+        }
+        if (pieces.any { d.music.soundRecipe(it) != null }) Button(stringResource(R.string.sound_calibrate_again), d.music::recalibrate)
     }
 }
 

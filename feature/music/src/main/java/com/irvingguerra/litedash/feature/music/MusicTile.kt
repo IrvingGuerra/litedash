@@ -29,7 +29,7 @@ fun MusicTile(
     val song = repo.song
     val label = sourceLabel(repo, song)
     MediaTile(
-        repo, revision, modifier, song, Icons.music, stringResource(R.string.music), stringResource(R.string.music_explain),
+        repo, revision, modifier, song, SoundPiece.MUSIC, Icons.music, stringResource(R.string.music), stringResource(R.string.music_explain),
         label = label,
         text = { tall -> SongText(repo, song, tall, label) },
         // Cargando se pinta como pausa: tocarlo cancela la carga.

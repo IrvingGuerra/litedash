@@ -54,6 +54,7 @@ fun RadioExpanded(
             if (!internet && repo.sourceApps[SourceKind.RADIO] != null) HeaderButton(Icons.openExternal) { repo.openRadioApp() }
         }
         Spacer(Modifier.height(12.dp))
+        repo.soundCheckFor(SoundPiece.RADIO)?.let { SoundCheckPrompt(repo, it, Modifier.fillMaxWidth().padding(bottom = 12.dp)) }
         if (browser != null && canBrowse && browsing) {
             browser { browsing = false }
             return@ExpandedCard

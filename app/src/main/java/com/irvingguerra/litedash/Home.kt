@@ -35,6 +35,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
@@ -95,6 +96,7 @@ import com.irvingguerra.litedash.feature.music.MusicRepository
 import com.irvingguerra.litedash.feature.music.MusicTile
 import com.irvingguerra.litedash.feature.music.OnFilesEmpty
 import com.irvingguerra.litedash.feature.music.RadioTile
+import com.irvingguerra.litedash.feature.music.SoundPiece
 import com.irvingguerra.litedash.feature.navigation.NavigationRepository
 import com.irvingguerra.litedash.feature.obd.ObdRepository
 import com.irvingguerra.litedash.feature.tpms.TpmsRepository
@@ -111,6 +113,8 @@ sealed interface Panel {
     data object Settings : Panel
     /** Ajustes abiertos en Sistema → Actualizaciones (desde el aviso de versión nueva). */
     data object Updates : Panel
+    /** Ajustes abiertos en Sistema → Tu pantalla, en "Enviar un reporte" (desde el aviso de la calibración del sonido). */
+    data object Report : Panel
     data object AddTile : Panel
     data object Templates : Panel
     /** El fondo de pantalla del inicio (botón "Fondo" al acomodar). */
@@ -438,6 +442,13 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
     // biblioteca; mientras está abierta, la atiende ella.
     val currentOpenMedia by rememberUpdatedState(::openMedia)
     OnFilesEmpty(d.music, d.music.mode == MusicMode.FILES, remember { { currentOpenMedia(MediaTab.MUSIC, true) } })
+    // El aviso de la calibración ("No encontramos cómo hacerlo sonar aquí") lleva a "Enviar un reporte".
+    DisposableEffect(d.music) {
+        val previous = d.music.onSoundReport
+        val mine: (SoundPiece) -> Unit = { openSoundReport(it); panel = Panel.Report }
+        d.music.onSoundReport = mine
+        onDispose { if (d.music.onSoundReport === mine) d.music.onSoundReport = previous }
+    }
     fun backToDashboard() {
         panel = null
         tiresOpen = false
@@ -704,7 +715,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
         when (val p = panel) {
             null -> Unit
             Panel.Drawer -> DrawerPanel(d, apps, close = { panel = null })
-            Panel.Settings, Panel.Updates, Panel.Workshop, Panel.MusicSettings, Panel.TiresSettings -> SettingsPanel(
+            Panel.Settings, Panel.Updates, Panel.Report, Panel.Workshop, Panel.MusicSettings, Panel.TiresSettings -> SettingsPanel(
                 d,
                 revision = revision,
                 close = { panel = null },
@@ -712,7 +723,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                 onEdit = { panel = null; musicBig = false; editing = true },
                 onTemplates = { panel = Panel.Templates },
                 start = when (p) {
-                    Panel.Updates -> SettingsSection.SYSTEM
+                    Panel.Updates, Panel.Report -> SettingsSection.SYSTEM
                     Panel.Workshop -> SettingsSection.WORKSHOP
                     Panel.MusicSettings -> SettingsSection.APPS
                     Panel.TiresSettings -> SettingsSection.TIRES

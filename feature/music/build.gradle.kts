@@ -26,4 +26,6 @@ dependencies {
     implementation(libs.compose.foundation)
     implementation(libs.compose.ui)
     testImplementation(libs.junit)
+    // org.json de verdad en las pruebas (el de Android es solo un esqueleto fuera del equipo).
+    testImplementation(libs.json)
 }

@@ -7,7 +7,7 @@ service cloud.firestore {
   match /databases/{database}/documents {
     match /screens/{id} {
       allow create, update: if id.matches('^[0-9a-f]{32}$')
-        && request.resource.data.keys().hasOnly(['version', 'channel', 'android', 'language', 'screen', 'since', 'seen', 'radio', 'bluetooth', 'ble'])
+        && request.resource.data.keys().hasOnly(['version', 'channel', 'android', 'language', 'screen', 'since', 'seen', 'radio', 'bluetooth', 'ble', 'btRecipe', 'fmRecipe'])
         && request.resource.data.version is int && request.resource.data.version < 1000000000
         && request.resource.data.channel in ['play', 'github']
         && request.resource.data.android is int && request.resource.data.android < 1000
@@ -18,6 +18,9 @@ service cloud.firestore {
         && (!('radio' in request.resource.data) || (request.resource.data.radio is string && request.resource.data.radio.size() <= 64))
         && (!('bluetooth' in request.resource.data) || (request.resource.data.bluetooth is string && request.resource.data.bluetooth.size() <= 64))
         && (!('ble' in request.resource.data) || request.resource.data.ble is bool)
+        // Receta de audio que le funcionó a la pantalla (Bluetooth y radio, p. ej. 'tw.source8'); desde la 1.4.153, opcionales.
+        && (!('btRecipe' in request.resource.data) || (request.resource.data.btRecipe is string && request.resource.data.btRecipe.size() <= 32))
+        && (!('fmRecipe' in request.resource.data) || (request.resource.data.fmRecipe is string && request.resource.data.fmRecipe.size() <= 32))
         && request.resource.data.seen == request.time;
     }
     match /reports/{id} {

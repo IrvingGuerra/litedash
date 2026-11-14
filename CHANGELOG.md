@@ -4,6 +4,22 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.4.153] - 2026-11-14
+
+### Agregado
+- **Calibración del sonido:** la primera vez que suenan el Bluetooth de tu celular o la radio de la pantalla, LiteDash
+  prueba solo las formas conocidas de hacerlos sonar en tu marca de pantalla (TopWay, FYT, NWD, HCN, Autochips, Jancar y
+  más) y se queda con la que funciona. Si no puede saber si ya se oye, te pregunta en el mismo widget: «¿Se escucha?» Sí /
+  No. Si nada funciona, te ofrece mandar un reporte con lo que se probó.
+- **Ajustes → Apps → Música → Calibrar sonido:** qué ajuste usa tu pantalla para el Bluetooth y la radio, y «Calibrar otra
+  vez» si algo deja de sonar.
+- **Lo que funcionó en una pantalla ayuda a las demás:** el ajuste que encontró la tuya va en las estadísticas anónimas
+  (puedes apagarlas en Ajustes → Sistema → Estadísticas) y, revisado por nosotros, otras pantallas iguales lo usan a la
+  primera, sin preguntar.
+
+### Cambiado
+- Las pantallas NWD y Jancar con su propia app de Bluetooth ahora se reconocen como fuente Bluetooth.
+
 ## [1.4.152] - 2026-11-13
 
 ### Arreglado

@@ -172,7 +172,7 @@
     <string name="hide_status_bar_help">La franja de hasta arriba con la hora y los avisos de Android (no es la de LiteDash). Para verla un momento, desliza desde arriba.</string>
     <string name="stats_title">Estadísticas</string>
     <string name="stats_switch">Contar esta pantalla (anónimo)</string>
-    <string name="stats_help">Una vez al día manda un número al azar, la versión y de dónde la bajaste (GitHub o Play), Android, el idioma, el tamaño de la pantalla, desde qué día usas LiteDash y qué radio y Bluetooth trae de fábrica tu pantalla, para saber cuánta gente usa LiteDash. Nada de ubicación, cuentas ni datos tuyos.</string>
+    <string name="stats_help">Una vez al día manda un número al azar, la versión y de dónde la bajaste (GitHub o Play), Android, el idioma, el tamaño de la pantalla, desde qué día usas LiteDash y qué radio y Bluetooth trae de fábrica tu pantalla y qué ajuste de sonido le funcionó, para saber cuánta gente usa LiteDash. Nada de ubicación, cuentas ni datos tuyos.</string>
     <string name="back">Atrás</string>
     <string name="next">Siguiente</string>
     <string name="skip">Omitir</string>
@@ -789,6 +789,9 @@
     <string name="pro_expired">Conéctate a internet para seguir con el código de desarrollador</string>
     <string name="music_mode_title">Cómo escuchas música</string>
     <string name="music_mode_help">Elige uno: es el que suena en el widget Música. Al cambiar, el anterior se pausa.</string>
+    <string name="sound_calibration">Calibrar sonido</string>
+    <string name="sound_calibration_help">Cómo hace LiteDash que suenen el Bluetooth y la radio de tu pantalla. Se prueba solo la primera vez que suenan; si algo deja de sonar, calibra otra vez.</string>
+    <string name="sound_calibrate_again">Calibrar otra vez</string>
     <string name="image_no_permission">Sin el permiso de archivos no se puede buscar en la memoria.</string>
     <string name="open_on_boot">Abrir LiteDash al encender</string>
     <string name="open_on_boot_help">Para pantallas que regresan su launcher de fábrica al apagar y encender el auto: LiteDash se pone al frente solo. Si tu pantalla tiene en sus ajustes la opción «Launcher predeterminado», elige LiteDash ahí también.</string>

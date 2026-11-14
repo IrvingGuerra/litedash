@@ -7,8 +7,9 @@ import android.content.pm.PackageManager
 
 /**
  * Para las estadísticas anónimas: la radio y el Bluetooth **de fábrica** de esta pantalla, para saber qué
- * familias conviene soportar. Solo paquetes que vienen en el sistema (nunca apps que instaló el usuario) y sin
- * nada del celular ni de lo que suena. Bloquea (consultas al sistema): va en un hilo de IO.
+ * familias conviene soportar, y la receta de sonido que le funcionó a cada uno (para el catálogo compartido).
+ * Solo paquetes que vienen en el sistema (nunca apps que instaló el usuario) y sin nada del celular ni de lo que
+ * suena. Bloquea (consultas al sistema): va en un hilo de IO.
  */
 object FactoryAudio {
     /** Lo que se manda cuando la pantalla no trae esa app. */
@@ -16,9 +17,6 @@ object FactoryAudio {
 
     /** El Bluetooth es el de Android (sin app de marca). */
     const val ANDROID = "android"
-
-    /** Radios de fábrica que LiteDash ya controla: si hay varias, gana la conocida. */
-    private val KNOWN_RADIOS = listOf(HcnRadio.PACKAGE, NwdRadio.PACKAGE, "com.tw.radio")
 
     /** La FM genérica de Android: solo si no hay otra (la de la marca dice más). */
     private const val ANDROID_FM = "com.android.fmradio"
@@ -29,7 +27,8 @@ object FactoryAudio {
     /** De las apps del sistema, la radio: la conocida, si no la de la marca y al último la FM genérica de Android. */
     internal fun pickRadio(system: Set<String>): String {
         val found = system.filter { pkg -> parts(pkg).any { "radio" in it || it.startsWith("fm") } }
-        return KNOWN_RADIOS.firstOrNull { it in found }
+        // Las que LiteDash ya controla ganan si hay varias.
+        return HeadUnit.radioApps.firstOrNull { it in found }
             ?: found.filter { it != ANDROID_FM }.minOrNull()
             ?: ANDROID_FM.takeIf { it in found }
             ?: NONE
@@ -38,7 +37,7 @@ object FactoryAudio {
     /** La app de Bluetooth de marca ("com.autochips.bluetooth"…); si no hay, [ANDROID] o [NONE] si no tiene Bluetooth. */
     fun bluetooth(context: Context): String =
         pickBluetooth(
-            brand = BRAND_BT_APPS.filter { isSystem(context, it) },
+            brand = HeadUnit.bluetoothApps.filter { isSystem(context, it) },
             system = systemLaunchable(context),
             hasBluetooth = context.packageManager.hasSystemFeature(PackageManager.FEATURE_BLUETOOTH),
         )
@@ -47,6 +46,15 @@ object FactoryAudio {
         brand.firstOrNull()
             ?: system.filter { pkg -> parts(pkg).any { it.startsWith("bt") || "bluetooth" in it } }.minOrNull()
             ?: if (hasBluetooth) ANDROID else NONE
+
+    /** La receta de sonido que funcionó en el Bluetooth (ver [Recipes]); null si no se ha calibrado. */
+    fun bluetoothRecipe(context: Context): String? = savedRecipe(context, SoundPiece.MUSIC)
+
+    /** La receta de sonido que funcionó en la radio de fábrica; null si no se ha calibrado. */
+    fun radioRecipe(context: Context): String? = savedRecipe(context, SoundPiece.RADIO)
+
+    private fun savedRecipe(context: Context, piece: SoundPiece) =
+        PrefsRecipeStore.savedId(context.getSharedPreferences(MUSIC_STORE, Context.MODE_PRIVATE), piece)
 
     /** La pantalla tiene Bluetooth de baja energía (lo que usaría el enlace con el celular sin hotspot). */
     fun ble(context: Context): Boolean = context.packageManager.hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)

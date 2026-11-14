@@ -1,5 +1,7 @@
 package com.irvingguerra.litedash.feature.music
 
+import android.annotation.SuppressLint
+import android.content.SharedPreferences
 import android.os.Handler
 import android.os.Looper
 import android.os.Message
@@ -157,6 +159,10 @@ internal class TopWayRadio(onState: (BroadcastMeta) -> Unit, private val trace: 
     }
 
     companion object {
+        /** La app de radio de fábrica. */
+        const val PACKAGE = "com.tw.radio"
+        /** Marca de "abriendo TopWay" en el store de música: si se queda puesta, la app se cerró al abrirlo. */
+        private const val KEY_OPENING = "topway_opening"
         private const val CLASS = "android.tw.john.TWUtil"
         private const val RADIO = 1025
         private const val STATION = 1026
@@ -174,5 +180,26 @@ internal class TopWayRadio(onState: (BroadcastMeta) -> Unit, private val trace: 
 
         /** La pantalla trae el enlace de TopWay. */
         val available: Boolean by lazy { runCatching { Class.forName(CLASS) }.isSuccess }
+
+        /** Alguna vez la app de la pantalla se cerró al abrir el enlace (desde entonces ya no se abre). */
+        fun crashedBefore(store: SharedPreferences) = store.getBoolean(KEY_OPENING, false)
+
+        /**
+         * Abre un enlace con seguro: se marca antes de abrir (y queda escrito ya) y se quita al terminar; si el
+         * firmware tumba la app a medio abrir, la marca se queda y no se vuelve a intentar. null si no abre. En el
+         * hilo de los perfiles (reflexión y disco).
+         */
+        @SuppressLint("ApplySharedPref") // commit a propósito: debe quedar escrito antes de abrir
+        fun openGuarded(store: SharedPreferences, onState: (BroadcastMeta) -> Unit, trace: (String) -> Unit): TopWayRadio? {
+            if (crashedBefore(store)) {
+                trace("topway apagado: la app se cerró al abrirlo")
+                return null
+            }
+            store.edit().putBoolean(KEY_OPENING, true).commit()
+            val tw = TopWayRadio(onState, trace)
+            val opened = tw.open()
+            store.edit().putBoolean(KEY_OPENING, false).apply()
+            return tw.takeIf { opened }
+        }
     }
 }
