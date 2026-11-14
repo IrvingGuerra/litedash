@@ -24,6 +24,8 @@ fun MusicTile(
     modifier: Modifier = Modifier,
     artwork: Boolean = true,
     skip: Boolean = true,
+    /** Un toque fuera de los botones: la pantalla Música en grande (en su pestaña). */
+    onOpen: (() -> Unit)? = null,
 ) {
     val c = LocalColors.current
     val song = repo.song
@@ -42,6 +44,7 @@ fun MusicTile(
         needsAccess = repo.needsAccess,
         artwork = artwork,
         skip = skip,
+        onOpen = onOpen,
         tinted = true,
     )
 }

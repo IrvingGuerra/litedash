@@ -37,7 +37,6 @@ import com.irvingguerra.litedash.feature.dashboard.ScreenSize
 import com.irvingguerra.litedash.feature.dashboard.Template
 import com.irvingguerra.litedash.feature.dashboard.hasCar
 import com.irvingguerra.litedash.feature.dashboard.TileTypes
-import com.irvingguerra.litedash.feature.dashboard.size
 import com.irvingguerra.litedash.feature.dashboard.coarse
 import com.irvingguerra.litedash.feature.dashboard.suggestedTemplate
 import com.irvingguerra.litedash.feature.dashboard.tiles
@@ -63,12 +62,8 @@ fun nameOf(p: Template) = when (p) {
     Template.VERTICAL_MAP -> R.string.template_vertical_map
 }
 
-private fun nameOf(t: ScreenSize) = when (t) {
-    ScreenSize.SMALL -> R.string.screens_small
-    ScreenSize.MEDIUM -> R.string.screens_medium
-    ScreenSize.LARGE -> R.string.screens_large
-    ScreenSize.VERTICAL -> R.string.screens_vertical
-}
+/** Para pantallas paradas o acostadas: las de acostadas se acomodan a cualquier tamaño (de 7" a 12"). */
+private fun Template.fits(vertical: Boolean) = if (vertical) ScreenSize.VERTICAL in sizes else sizes.any { it != ScreenSize.VERTICAL }
 
 /** Las que lucen el mapa: van en su pestaña y no se repiten en la del auto. */
 private val MAP_TEMPLATES = listOf(Template.MAP_CAR, Template.COPILOT, Template.ROUTE, Template.VERTICAL_MAP)
@@ -87,14 +82,14 @@ private enum class TemplateTab(val title: Int, val templates: List<Template>, va
 }
 
 /**
- * Plantillas en pestañas por estilo y, en cada una, agrupadas por tamaño de pantalla;
- * primero el de la tuya, con el recomendado marcado.
+ * Plantillas en pestañas por estilo y, en cada una, en dos grupos: pantallas acostadas y paradas (la
+ * cuadrícula fina acomoda cada una a cualquier tamaño); primero el de la tuya, con la recomendada marcada.
+ * En el de la tuya no se repiten las que en esta pantalla quedan igual que otra.
  */
 @Composable
 fun TemplatesPanel(dashboard: DashboardState, close: () -> Unit) {
     val grid = dashboard.grid ?: return
     val c = LocalColors.current
-    val yours = grid.coarse.size
     val suggested = grid.coarse.suggestedTemplate()
     PanelScaffold(stringResource(R.string.templates), close) {
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(24.dp)) {
@@ -114,13 +109,16 @@ fun TemplatesPanel(dashboard: DashboardState, close: () -> Unit) {
                 }
                 TemplateTab.CAR -> Unit
             }
-            for (group in listOf(yours) + ScreenSize.entries.filter { it != yours }) {
-                val templates = tab.templates.filter { group in it.sizes }
+            for (vertical in listOf(grid.vertical, !grid.vertical)) {
+                val mine = vertical == grid.vertical
+                val templates = tab.templates.filter { it.fits(vertical) }.let { list ->
+                    if (!mine) list else list.distinctBy { p -> p.tiles(grid, tab.hero, dashboard.hidden).map { listOf(it.type, it.col, it.row, it.width, it.height) } }
+                }
                 if (templates.isEmpty()) continue
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Label(stringResource(nameOf(group)).uppercase(), Typography.label, c.textMuted)
-                        if (group == yours) Label(stringResource(R.string.your_screen).uppercase(), Typography.label, c.accent)
+                        Label(stringResource(if (vertical) R.string.screens_vertical else R.string.screens_horizontal).uppercase(), Typography.label, c.textMuted)
+                        if (mine) Label(stringResource(R.string.your_screen).uppercase(), Typography.label, c.accent)
                     }
                     Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                         for (p in templates) {
@@ -129,7 +127,7 @@ fun TemplatesPanel(dashboard: DashboardState, close: () -> Unit) {
                                     TemplateThumbnail(p, grid, tab.hero, dashboard.hidden)
                                     Spacer(Modifier.height(12.dp))
                                     Label(stringResource(nameOf(p)), Typography.subtitle, maxLines = 1)
-                                    if (tab == TemplateTab.CAR && group == yours && p == suggested) {
+                                    if (tab == TemplateTab.CAR && mine && p == suggested) {
                                         Label(stringResource(R.string.recommended).uppercase(), Typography.label, c.accent, maxLines = 1)
                                     }
                                 }

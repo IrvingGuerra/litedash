@@ -37,8 +37,8 @@ import com.irvingguerra.litedash.core.ui.LocalColors
 import com.irvingguerra.litedash.core.ui.Typography
 
 /**
- * La música en grande, sin salir de LiteDash: el método elegido en Ajustes (Archivos, Bluetooth o
- * App, uno solo), carátula, barra para adelantar, y los botones propios de la app (en Spotify: me
+ * La música en grande, sin salir de LiteDash: arriba de dónde suena (Archivos, Bluetooth o App, uno
+ * solo; ahí mismo se cambia), carátula, barra para adelantar, y los botones propios de la app (en Spotify: me
  * gusta, aleatorio, repetir). Ancha pone la carátula a un lado; angosta, arriba. [browser] es la
  * biblioteca de Archivos del reproductor propio: se abre con el botón de lista o al dar play sin
  * nada que sonar; recibe qué hacer cuando ya se eligió algo.
@@ -59,7 +59,8 @@ fun MusicExpanded(
     OnFilesEmpty(repo, files, remember { { browsing = true } })
     ExpandedCard(repo, modifier, tint = song) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            ModeTitle(repo, song, Modifier.weight(1f))
+            // Lo que sobra es del selector; los botones, siempre a la derecha.
+            Box(Modifier.weight(1f)) { ModePicker(repo) }
             if (files) HeaderButton(if (browsing) Icons.music else Icons.list) { browsing = !browsing }
             val app = song?.pkg?.ifEmpty { null } ?: repo.modeApp
             if (app != null && !repo.isOwn(app)) HeaderButton(Icons.openExternal) { repo.openApp() }

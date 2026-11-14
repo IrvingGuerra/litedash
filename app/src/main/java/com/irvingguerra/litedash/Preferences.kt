@@ -44,6 +44,7 @@ internal object PrefKeys {
     const val HIDDEN = "hidden_apps"
     const val DOCK = "dock"
     const val MAP_APP = "map_app"
+    const val MAP_EXTERNAL = "map_external"
     const val MUSIC_APP = "music_app"
     const val DRIVER_NAME = "driver_name"
     const val HOME_ADDRESS = "home_address"
@@ -326,6 +327,12 @@ class Preferences(context: Context) {
 
     /** App de navegación elegida ([com.irvingguerra.litedash.feature.apps.App.key]); null = la primera instalada. */
     var mapApp by string(PrefKeys.MAP_APP)
+
+    /**
+     * Los accesos directos al mapa (botón de la barra, del volante y el toque al widget Mapa) abren tu app de
+     * navegación; apagado, el mapa de LiteDash en grande.
+     */
+    var mapExternal by bool(PrefKeys.MAP_EXTERNAL, true)
 
     /** La app de música de antes de la 1.4.116: solo se lee una vez para pasarla a `MusicRepository.preferred`, que es la que vale. */
     var musicApp by string(PrefKeys.MUSIC_APP)

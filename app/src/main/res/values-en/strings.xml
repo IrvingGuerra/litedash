@@ -213,14 +213,14 @@
     <string name="language_system">Follow system</string>
     <string name="map_help">The app the Navigate widget opens. While navigating, it shows the next turn (it uses the same notification access as music).</string>
     <string name="map_no_apps">Install Waze or Google Maps to navigate from LiteDash.</string>
+    <string name="map_external">Use external app for shortcuts</string>
+    <string name="map_external_help">The bar button, the steering wheel button and the Map widget open your maps app. Off, they open the LiteDash map full screen.</string>
     <string name="music">Music</string>
     <string name="music_help">It is what plays in the Music widget, and play wakes it up. With no app chosen, it shows whatever is playing (radio has its own widget).</string>
     <string name="template_cards">Cards below</string>
     <string name="template_columns">Three columns</string>
     <string name="template_panel">Full panel</string>
-    <string name="screens_small">Small screens (7\")</string>
-    <string name="screens_medium">Medium screens (9–10\")</string>
-    <string name="screens_large">Large screens (11\" or more)</string>
+    <string name="screens_horizontal">Horizontal screens</string>
     <string name="screens_vertical">Vertical screens</string>
     <string name="your_screen">· Your screen</string>
     <string name="recommended">Recommended</string>

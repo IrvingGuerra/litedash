@@ -89,6 +89,8 @@ fun AppBar(
     editing: Boolean,
     musicOpen: Boolean,
     actions: BarActions,
+    /** El mapa de LiteDash en grande: su botón va marcado (otro toque lo cierra). */
+    mapOpen: Boolean = false,
 ) {
     val c = LocalColors.current
     val k = prefs.barSize.scale
@@ -101,7 +103,7 @@ fun AppBar(
         box = (if (small) 68.dp else if (short) 46.dp else 56.dp) * k,
     )
     val items = prefs.barItems.filter { it != BarItem.VOICE || actions.onVoice != null }
-    val item = @Composable { it: BarItem -> BarButton(it, sizes, vertical, musicOpen, actions) }
+    val item = @Composable { it: BarItem -> BarButton(it, sizes, vertical, musicOpen, mapOpen, actions) }
     val favoritesBlock = @Composable { maxApps: Int? ->
         val shown = if (maxApps != null) favorites.take(maxApps) else favorites
         if (vertical) Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -163,14 +165,14 @@ private data class BarSizes(val button: Dp, val icon: Dp, val box: Dp = button, 
 
 /** Un botón de la barra. Las favoritas no pasan por aquí: van en su propio bloque. */
 @Composable
-private fun BarButton(item: BarItem, sizes: BarSizes, vertical: Boolean, musicOpen: Boolean, actions: BarActions) {
+private fun BarButton(item: BarItem, sizes: BarSizes, vertical: Boolean, musicOpen: Boolean, mapOpen: Boolean, actions: BarActions) {
     val c = LocalColors.current
     when (item) {
         BarItem.APPS -> IconButton(Icons.apps, actions.onApps, size = sizes.button)
         // La pantalla Música (como en Tesla); marcado mientras está abierta.
         BarItem.MUSIC -> IconButton(Icons.music, actions.onMusic, size = sizes.button, background = if (musicOpen) c.surfaceHigh else Color.Transparent)
         BarItem.VOLUME -> Volume(if (vertical) sizes.volume else sizes.button, vertical = vertical)
-        BarItem.NAVIGATE -> IconButton(Icons.navigate, actions.onNavigate, size = sizes.button)
+        BarItem.NAVIGATE -> IconButton(Icons.navigate, actions.onNavigate, size = sizes.button, background = if (mapOpen) c.surfaceHigh else Color.Transparent)
         BarItem.BLUETOOTH -> IconButton(Icons.bluetooth, actions.onBluetooth, size = sizes.button)
         BarItem.PHONE -> IconButton(Icons.phone, actions.onPhone, size = sizes.button)
         BarItem.VOICE -> actions.onVoice?.let { IconButton(Icons.mic, it, size = sizes.button) }

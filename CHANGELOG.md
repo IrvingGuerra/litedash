@@ -4,6 +4,22 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.4.154] - 2026-11-14
+
+### Agregado
+- **Música y radio en grande con un toque:** toca el widget Música o Radio fuera de sus botones y la pantalla Música crece
+  desde él a pantalla completa (la radio, ya en su pestaña). La barra de apps se queda para cambiar entre música y mapa.
+- **Archivos, Bluetooth o App desde la música en grande:** arriba de lo que suena eliges de dónde suena, sin ir a Ajustes.
+- **Ajustes → Apps → Navegación → Usar app externa en accesos directos:** prendido (como siempre), el botón del mapa de la
+  barra, el del volante y un toque al widget Mapa abren Waze o Maps. Apagado, abren el mapa de LiteDash a pantalla
+  completa, con la siguiente vuelta, Casa y Trabajo y un botón a tu app de mapas.
+
+### Cambiado
+- La pantalla Música ya no ocupa media pantalla: llena el tablero y crece con una animación (desde su widget o desde el
+  centro si la abres con la barra o el volante).
+- Plantillas: solo dos grupos, pantallas horizontales y verticales (antes chicas, medianas y grandes); cada plantilla se
+  acomoda sola al tamaño de tu pantalla y no se repiten las que en la tuya quedan iguales.
+
 ## [1.4.153] - 2026-11-14
 
 ### Agregado

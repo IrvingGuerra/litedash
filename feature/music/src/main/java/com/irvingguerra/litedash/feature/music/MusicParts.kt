@@ -49,6 +49,7 @@ import com.irvingguerra.litedash.core.ui.Label
 import com.irvingguerra.litedash.core.ui.LocalColors
 import com.irvingguerra.litedash.core.ui.LocalPlainCard
 import com.irvingguerra.litedash.core.ui.TilePadding
+import com.irvingguerra.litedash.core.ui.Segmented
 import com.irvingguerra.litedash.core.ui.Typography
 
 // Partes que comparten la pieza de música y la música en grande.
@@ -129,17 +130,16 @@ fun MusicMode.label(): String = stringResource(
 )
 
 /**
- * Qué se está escuchando, arriba de la música en grande: el método elegido en Ajustes (uno solo; ahí
- * se cambia). Con App, el nombre de tu app (o de la que suena).
+ * De dónde suena la música, arriba de la música en grande: Archivos, Bluetooth o App (con App, el nombre de
+ * tu app), y ahí mismo se cambia (lo mismo que en Ajustes → Apps → Música).
  */
 @Composable
-internal fun ModeTitle(repo: MusicRepository, song: Song?, modifier: Modifier = Modifier) {
-    val c = LocalColors.current
-    val text = when (repo.mode) {
-        MusicMode.APP -> (repo.preferred ?: song?.pkg?.ifEmpty { null })?.let(repo::appName)?.ifBlank { null } ?: MusicMode.APP.label()
-        else -> repo.mode.label()
-    }
-    Label(text.uppercase(), Typography.label, c.textMuted, 1, modifier)
+internal fun ModePicker(repo: MusicRepository, modifier: Modifier = Modifier) {
+    val app = repo.preferred?.let(repo::appName)?.ifBlank { null }
+    Segmented(
+        MusicMode.entries.map { it to if (it == MusicMode.APP && app != null) app else it.label() },
+        repo.mode, { repo.mode = it }, modifier, check = true,
+    )
 }
 
 /** La vista cuenta como usuaria de [repo] mientras está en pantalla (escucha solo entonces). */
@@ -154,7 +154,7 @@ internal fun UseRepo(repo: MusicRepository) {
 /**
  * La base de las piezas Música y Radio. Se acomoda a su tamaño: chica es una fila con carátula
  * y play (o los tres botones si cabe); alta y no tan ancha, carátula arriba y lo demás abajo.
- * [revision] cambia al volver a la
+ * Un toque fuera de los botones la abre en grande ([onOpen]). [revision] cambia al volver a la
  * app, para notar si el usuario acaba de dar el permiso. [label] es la etiqueta chica arriba del
  * texto (de dónde suena; se omite si no cabe), [text] lo escrito y [controls] los botones (con
  * [Modifier] y si van compactos). Con [tinted], la carátula tiñe la tarjeta. La biblioteca y las
@@ -180,10 +180,12 @@ internal fun MediaTile(
     artwork: Boolean = true,
     skip: Boolean = true,
     tinted: Boolean = false,
+    /** Un toque fuera de los botones: la pantalla Música en grande. */
+    onOpen: (() -> Unit)? = null,
 ) {
     UseRepo(repo)
     val permission = remember(revision, needsAccess) { !needsAccess || repo.hasPermission().also { if (it) repo.recheck() } }
-    Card(modifier.fillMaxSize()) {
+    Card(modifier.fillMaxSize(), onClick = onOpen.takeIf { permission }) {
         if (!permission) return@Card NoPermission(repo, icon, title, explain)
         repo.soundCheckFor(piece)?.let { check ->
             return@Card Box(Modifier.fillMaxSize().padding(TilePadding), contentAlignment = Alignment.CenterStart) { SoundCheckPrompt(repo, check) }

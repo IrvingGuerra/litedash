@@ -23,6 +23,7 @@ import com.irvingguerra.litedash.core.ui.Button
 import com.irvingguerra.litedash.core.ui.Label
 import com.irvingguerra.litedash.core.ui.LocalColors
 import com.irvingguerra.litedash.core.ui.Segmented
+import com.irvingguerra.litedash.core.ui.SwitchRow
 import com.irvingguerra.litedash.core.ui.TextInput
 import com.irvingguerra.litedash.core.ui.Typography
 import com.irvingguerra.litedash.feature.apps.App
@@ -195,7 +196,10 @@ internal fun AppSearch(apps: List<App>, selected: String?, onPick: (String) -> U
     }
 }
 
-/** Sección "Mapa" de Ajustes: qué app de navegación abren el widget Mapa y el volante. */
+/**
+ * Sección "Mapa" de Ajustes: qué app de navegación abren el widget Mapa y el volante, y si los accesos
+ * directos la abren a ella o al mapa de LiteDash en grande.
+ */
 @Composable
 fun MapSettings(d: Dependencies) {
     val apps = rememberApps(d.apps).orEmpty()
@@ -209,4 +213,7 @@ fun MapSettings(d: Dependencies) {
         Typography.small,
         LocalColors.current.textMuted,
     )
+    if (mapApps.isNotEmpty()) {
+        SwitchRow(stringResource(R.string.map_external), d.prefs.mapExternal, { d.prefs.mapExternal = it }, stringResource(R.string.map_external_help))
+    }
 }

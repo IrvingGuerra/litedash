@@ -28,6 +28,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleStartEffect
+import com.irvingguerra.litedash.core.ui.Button
 import com.irvingguerra.litedash.core.ui.Card
 import com.irvingguerra.litedash.core.ui.IconButton
 import com.irvingguerra.litedash.core.ui.Icons
@@ -56,11 +57,13 @@ import com.irvingguerra.litedash.feature.music.NotificationService
 /**
  * Widget Mapa: tu posición del GPS en el mapa (minimalista de OpenFreeMap o completo de OpenStreetMap),
  * como diga su [data] ([MapLook]); navegando, la siguiente vuelta flota arriba a la izquierda y Casa y
- * Trabajo, abajo a la derecha (sobre los créditos). Un toque aleja el zoom; el botón de la esquina abre tu app de mapas. En una fila, o sin permiso de ubicación, se ve como el widget Navegar
- * de antes (vuelta, Casa y Trabajo) y, sin permiso, un botón para pedirlo. GPS y descargas solo mientras se ve.
+ * Trabajo, abajo a la derecha (sobre los créditos). Un toque hace [onTap] (tu app de mapas o el mapa en grande, según
+ * Ajustes → Apps → Navegación); el botón de la esquina abre tu app de mapas. En una fila, o sin permiso de ubicación, se ve
+ * como el widget Navegar de antes (vuelta, Casa y Trabajo) y, sin permiso, un botón para pedirlo. GPS y descargas solo
+ * mientras se ve.
  */
 @Composable
-fun MapTile(d: Dependencies, data: String, app: App?, editing: Boolean, onPlace: (String) -> Unit, onNavigate: () -> Unit) {
+fun MapTile(d: Dependencies, data: String, app: App?, editing: Boolean, onPlace: (String) -> Unit, onNavigate: () -> Unit, onTap: () -> Unit) {
     val c = LocalColors.current
     val (granted, ask) = rememberGpsPermission(d)
     val look = remember(data) { MapLook.parse(data) }
@@ -76,7 +79,7 @@ fun MapTile(d: Dependencies, data: String, app: App?, editing: Boolean, onPlace:
         val turnWidth = maxWidth - 68.dp
         val withPlaces = maxHeight >= PLACES_HEIGHT
         Card(Modifier.fillMaxSize()) {
-            LiveMap(d, look, Modifier.fillMaxSize())
+            LiveMap(d, look, Modifier.fillMaxSize(), onTap = onTap)
             // La vuelta no llega al botón de la app.
             NextTurn(d, Modifier.align(Alignment.TopStart).padding(8.dp).widthIn(max = turnWidth))
             if (withPlaces) {
@@ -87,6 +90,31 @@ fun MapTile(d: Dependencies, data: String, app: App?, editing: Boolean, onPlace:
             }
             IconButton(Icons.navigate, onNavigate, Modifier.align(Alignment.TopEnd).padding(8.dp), size = 44.dp, background = c.surface.copy(alpha = 0.85f), color = c.accent)
         }
+    }
+}
+
+/**
+ * El mapa de LiteDash en grande (los accesos directos al mapa con "Usar app externa" apagado), como el widget
+ * [data] si hay uno: el mapa en vivo (un toque aleja el zoom), la siguiente vuelta, Casa y Trabajo, y botones
+ * para abrir tu app de mapas y para cerrar.
+ */
+@Composable
+fun MapExpanded(d: Dependencies, data: String, app: App?, onPlace: (String) -> Unit, onNavigate: () -> Unit, close: () -> Unit, modifier: Modifier = Modifier) {
+    val c = LocalColors.current
+    val (granted, ask) = rememberGpsPermission(d)
+    val look = remember(data) { MapLook.parse(data) }
+    Card(modifier.fillMaxSize()) {
+        if (granted) LiveMap(d, look, Modifier.fillMaxSize())
+        else Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Button(stringResource(R.string.tap_to_enable), ask, primary = true) }
+        NextTurn(d, Modifier.align(Alignment.TopStart).padding(12.dp).widthIn(max = 520.dp))
+        Row(Modifier.align(Alignment.TopEnd).padding(12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            if (app != null) IconButton(Icons.navigate, onNavigate, size = 48.dp, background = c.surface.copy(alpha = 0.9f), color = c.accent)
+            IconButton(Icons.close, close, size = 48.dp, background = c.surface.copy(alpha = 0.9f))
+        }
+        PlacePills(
+            d.prefs.homeAddress, d.prefs.workAddress, onPlace,
+            Modifier.align(Alignment.BottomEnd).padding(end = 12.dp, bottom = ATTRIBUTION_CLEARANCE),
+        )
     }
 }
 
@@ -120,7 +148,7 @@ private val ATTRIBUTION_CLEARANCE = 56.dp
 
 /**
  * El mapa con el GPS y las teselas corriendo solo mientras se ve (el widget, en grande y la vista previa)
- * y nada lo tapa ([LocalHomeCovered]).
+ * y nada lo tapa ([LocalHomeCovered]). [onTap] = qué hace un toque (sin él, aleja el zoom).
  */
 @Composable
 private fun LiveMap(d: Dependencies, look: MapLook, modifier: Modifier, onTap: (() -> Unit)? = null) {

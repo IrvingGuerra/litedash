@@ -26,9 +26,9 @@ import com.irvingguerra.litedash.feature.player.PlayerSource
 enum class MediaTab { MUSIC, RADIO }
 
 /**
- * La pantalla Música (como la de Tesla): se abre con su botón de la barra o con el del volante y ocupa
- * media pantalla; en la otra mitad, el auto. Arriba Música | Radio y cerrar; abajo el reproductor en
- * grande de esa pestaña. La biblioteca de Archivos y las estaciones por internet viven aquí (los
+ * La pantalla Música (como la de Tesla): se abre con su botón de la barra, el del volante o tocando el widget
+ * Música o Radio (en su pestaña), y llena el tablero. Arriba Música | Radio y cerrar; abajo el reproductor en
+ * grande de esa pestaña (en Música, ahí mismo se elige Archivos, Bluetooth o App). La biblioteca de Archivos y las estaciones por internet viven aquí (los
  * widgets ya no las traen). [onRadioSettings] lleva a enlazar la radio de la pantalla.
  */
 @Composable

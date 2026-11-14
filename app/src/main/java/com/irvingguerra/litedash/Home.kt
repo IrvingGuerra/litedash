@@ -55,6 +55,8 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
@@ -106,6 +108,12 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withTimeoutOrNull
+
+/**
+ * Lo que se ve en grande sobre el tablero, a pantalla completa (la barra de apps se queda): crece desde su widget
+ * (o desde el centro, si se abrió con la barra o el volante).
+ */
+enum class Expanded { MEDIA, MAP }
 
 /** Qué panel está abierto encima del inicio (uno a la vez). */
 sealed interface Panel {
@@ -241,6 +249,8 @@ class TileActions(
     val editing: () -> Boolean,
     /** Abre la pantalla Música en esa pestaña (play sin nada que sonar: ahí está la biblioteca). */
     val onMedia: (MediaTab) -> Unit,
+    /** Un toque al widget Música, Radio o Mapa: en grande, creciendo desde él (la radio, en su pestaña). */
+    val onExpand: (Expanded, Tile) -> Unit,
 )
 
 /** Cada tipo de pieza dibujado según su tipo. */
@@ -281,8 +291,11 @@ fun TileContent(d: Dependencies, p: Tile, apps: List<App>, car: CarPackage?, rev
                 }
             } else Box(hero) { content(null) }
         }
-        // Aunque sean grandes, sin biblioteca ni estaciones: eso vive en la pantalla Música.
-        TileTypes.MUSIC -> MusicTile(d.music, revision, artwork = p.flag(WidgetFlags.ART), skip = p.flag(WidgetFlags.SKIP))
+        // Aunque sean grandes, sin biblioteca ni estaciones: eso vive en la pantalla Música (un toque la abre).
+        TileTypes.MUSIC -> MusicTile(
+            d.music, revision, expandable(p, actions), artwork = p.flag(WidgetFlags.ART), skip = p.flag(WidgetFlags.SKIP),
+            onOpen = remember(p.id) { { actions.onExpand(Expanded.MEDIA, p) } },
+        )
         TileTypes.RADIO -> RadioTile(
             d.music, revision,
             // Play sin estación: la radio por internet elige en la pantalla Música; sin radio enlazada, los ajustes.
@@ -293,7 +306,9 @@ fun TileContent(d: Dependencies, p: Tile, apps: List<App>, car: CarPackage?, rev
                     actions.onPanel(Panel.MusicSettings)
                 }
             },
+            modifier = expandable(p, actions),
             artwork = p.flag(WidgetFlags.ART), skip = p.flag(WidgetFlags.SKIP),
+            onOpen = remember(p.id) { { actions.onExpand(Expanded.MEDIA, p) } },
         )
         TileTypes.CLOCK -> ClockTile(d.prefs.driverName.takeIf { p.flag(WidgetFlags.GREETING) }, clockWeather(d, p.data), date = p.flag(WidgetFlags.DATE))
         TileTypes.WEATHER -> WeatherTile(d.weather, days = p.flag(WidgetFlags.DAYS), range = p.flag(WidgetFlags.RANGE))
@@ -307,12 +322,15 @@ fun TileContent(d: Dependencies, p: Tile, apps: List<App>, car: CarPackage?, rev
         TileTypes.WORKSHOP -> HealthTile(d, car, showCar = p.flag(WidgetFlags.CAR)) { actions.onPanel(Panel.Workshop) }
         TileTypes.PROJECTION -> ProjectionTile(d, apps, appKeyOf(p.data)) { actions.onPanel(Panel.Drawer) }
         TileTypes.TIRES -> TiresTile(d, showCar = p.flag(WidgetFlags.CAR), onOpen = actions.onTires, onSettings = { actions.onPanel(Panel.TiresSettings) })
-        TileTypes.MAP -> {
+        TileTypes.MAP -> Box(expandable(p, actions)) {
             val app = mapApp(d, apps)
+            // Un toque: tu app de mapas o el mapa de LiteDash en grande (Ajustes → Apps → Navegación).
+            val external = d.prefs.mapExternal && app != null
             MapTile(
                 d, p.data, app, editing = actions.editing(),
                 onPlace = remember(app) { { navigateTo(context, app, it) } },
                 onNavigate = remember(app) { { actions.onNavigate(app) } },
+                onTap = remember(app, external, p.id) { if (external) { { actions.onNavigate(app) } } else { { actions.onExpand(Expanded.MAP, p) } } },
             )
         }
         TileTypes.PHONE -> {
@@ -332,6 +350,10 @@ fun TileContent(d: Dependencies, p: Tile, apps: List<App>, car: CarPackage?, rev
         }
     }
 }
+
+/** Llena la pieza y avisa dónde está: de ahí crece al verse en grande ([Expanded]). */
+private fun expandable(p: Tile, actions: TileActions) =
+    Modifier.fillMaxSize().onGloballyPositioned { actions.onCarBounds(p.id, it.boundsInRoot()) }
 
 /**
  * El módulo apagado del que depende una pieza (su nombre), o null si se puede ver: el Taller y
@@ -390,12 +412,33 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
         inFront = true
         onPauseOrDispose { inFront = false }
     }
-    // La pantalla Música a media pantalla (su botón de la barra o el del volante); false = el tablero normal.
-    var musicBig by remember { mutableStateOf(false) }
+    // Lo que se ve en grande ([Expanded]: la pantalla Música o el mapa) o null = el tablero normal. [expanded] es a
+    // dónde va y [expandedShown] lo que se dibuja (sigue mientras se encoge al cerrar); [expandedFrom], el widget
+    // del que crece (null = desde el centro).
+    var expanded by remember { mutableStateOf<Expanded?>(null) }
+    var expandedShown by remember { mutableStateOf<Expanded?>(null) }
+    var expandedFrom by remember { mutableStateOf<Tile?>(null) }
+    val expandProgress = remember { Animatable(0f) }
+    LaunchedEffect(expanded) {
+        val target = expanded
+        if (target != null) {
+            // De la música al mapa (o al revés) ya en grande: se cambia sin volver a crecer.
+            if (expandedShown != null && expandedShown != target && expandProgress.value > 0.99f) {
+                expandedShown = target
+                return@LaunchedEffect
+            }
+            expandedShown = target
+            expandProgress.animateTo(1f, tween(EXPAND_MS, easing = FastOutSlowInEasing))
+        } else if (expandedShown != null) {
+            expandProgress.animateTo(0f, tween(SHRINK_MS, easing = FastOutSlowInEasing))
+            expandedShown = null
+        }
+    }
+    val musicBig = expanded == Expanded.MEDIA
+    // Ya cubre todo el tablero: lo que gasta debajo (GPS, mapa del widget) descansa.
+    val expandedCovers by remember { derivedStateOf { expandedShown != null && expandProgress.value >= 1f } }
     var mediaTab by remember { mutableStateOf(MediaTab.MUSIC) }
     var mediaBrowse by remember { mutableStateOf(false) }
-    // De qué lado va la pantalla Música (se decide al abrirla: no brinca si su widget cambia).
-    var mediaSideFirst by remember { mutableStateOf(false) }
     // Solo el auto a pantalla completa (un toque al auto entra y otro sale), con animación:
     // [carOnly] es a dónde va y [carShown] si la capa sigue en pantalla (también al regresar).
     var carOnly by remember { mutableStateOf(false) }
@@ -422,26 +465,33 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
     fun openTires() {
         tiresOpen = true
     }
-    // La pantalla Música en [tab] (null = la de lo que suena), del lado de su widget si lo hay; [browse] la abre
-    // en la biblioteca.
-    fun openMedia(tab: MediaTab?, browse: Boolean = false) {
-        val shown = tab ?: if (d.music.radio.song?.playing == true) MediaTab.RADIO else MediaTab.MUSIC
+    // Lo que esté encima del tablero se quita para ver [what] en grande, creciendo desde el widget [from].
+    fun expand(what: Expanded, from: Tile?) {
         panel = null
         tiresOpen = false
         carOnly = false
         editing = false
-        mediaTab = shown
+        if (expanded == null) expandedFrom = from
+        expanded = what
+    }
+    // La pantalla Música en [tab] (null = la de lo que suena); [browse] la abre en la biblioteca y [from] es el
+    // widget que se tocó.
+    fun openMedia(tab: MediaTab?, browse: Boolean = false, from: Tile? = null) {
+        mediaTab = tab ?: if (d.music.radio.song?.playing == true) MediaTab.RADIO else MediaTab.MUSIC
         mediaBrowse = browse
-        // Crece en la mitad donde está su widget: derecha (o abajo) si está toda ahí; si no, izquierda (o arriba).
-        val from = d.dashboard.shown.firstOrNull { it.type == if (shown == MediaTab.RADIO) TileTypes.RADIO else TileTypes.MUSIC }
-        val grid = d.dashboard.grid
-        mediaSideFirst = from != null && grid != null && if (grid.vertical) from.row * 2 >= grid.rows else from.col * 2 >= grid.columns
-        musicBig = true
+        expand(Expanded.MEDIA, from)
+    }
+    // Los accesos directos al mapa (barra, volante): tu app de mapas o, con "Usar app externa" apagado (o sin app
+    // de mapas), el mapa de LiteDash en grande.
+    fun openMapShortcut() {
+        val app = mapApp(d, currentApps)
+        if (d.prefs.mapExternal && app != null) openNavigation(context, d.apps, app)
+        else expand(Expanded.MAP, null)
     }
     // Con Archivos, play sin nada que sonar (volante, barra de Android, widget) abre la pantalla Música en la
     // biblioteca; mientras está abierta, la atiende ella.
     val currentOpenMedia by rememberUpdatedState(::openMedia)
-    OnFilesEmpty(d.music, d.music.mode == MusicMode.FILES, remember { { currentOpenMedia(MediaTab.MUSIC, true) } })
+    OnFilesEmpty(d.music, d.music.mode == MusicMode.FILES, remember { { currentOpenMedia(MediaTab.MUSIC, true, null) } })
     // El aviso de la calibración ("No encontramos cómo hacerlo sonar aquí") lleva a "Enviar un reporte".
     DisposableEffect(d.music) {
         val previous = d.music.onSoundReport
@@ -453,7 +503,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
         panel = null
         tiresOpen = false
         carOnly = false
-        musicBig = false
+        expanded = null
         editing = false
     }
 
@@ -479,10 +529,10 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
     var touched by remember { mutableIntStateOf(0) }
     var parked by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) {
-        snapshotFlow { listOf(touched, d.wheel.presses, panel, editing, musicBig, carOnly, tiresOpen, d.prefs.parkedMode) }
+        snapshotFlow { listOf(touched, d.wheel.presses, panel, editing, expanded, carOnly, tiresOpen, d.prefs.parkedMode) }
             .collectLatest {
                 parked = false
-                if (!d.prefs.parkedMode || panel != null || editing || musicBig || carOnly || tiresOpen) return@collectLatest
+                if (!d.prefs.parkedMode || panel != null || editing || expanded != null || carOnly || tiresOpen) return@collectLatest
                 delay(PARK_AFTER_MS)
                 // Manejando no: espera a que se detenga (velocidad del OBD o del GPS, la que haya).
                 snapshotFlow { (d.bus.value(Signal.SPEED) ?: 0f) > MOVING_KMH }.first { !it }
@@ -494,12 +544,12 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
     val engineAlert = remember { EngineAlertState() }
     if (d.prefs.welcomeSeen) TripRecorderEffect(d)
 
-    BackHandler(enabled = (panel != null || editing || musicBig || carOnly || tiresOpen) && d.prefs.welcomeSeen) {
+    BackHandler(enabled = (panel != null || editing || expanded != null || carOnly || tiresOpen) && d.prefs.welcomeSeen) {
         when {
             panel != null -> panel = null
             tiresOpen -> tiresOpen = false
             carOnly -> carOnly = false
-            musicBig -> musicBig = false
+            expanded != null -> expanded = null
             else -> editing = false
         }
     }
@@ -532,6 +582,13 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
             onTires = { openTires() },
             editing = { editing },
             onMedia = { openMedia(it) },
+            onExpand = { what, tile ->
+                // En la vista previa de las opciones del widget no: ahí se está personalizando.
+                if (panel == null && !editing) {
+                    if (what == Expanded.MEDIA) openMedia(if (tile.type == TileTypes.RADIO) MediaTab.RADIO else MediaTab.MUSIC, from = tile)
+                    else expand(Expanded.MAP, tile)
+                }
+            },
         )
     }
 
@@ -541,7 +598,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
         snapshotFlow { d.wheel.request }.filterNotNull().collect { action ->
             d.wheel.consume()
             when (action) {
-                WheelAction.NAVIGATE -> actions.onNavigate(mapApp(d, currentApps))
+                WheelAction.NAVIGATE -> openMapShortcut()
                 WheelAction.MUSIC -> openMedia(null)
                 WheelAction.VOICE -> onVoice?.invoke()
                 WheelAction.HOME -> backToDashboard()
@@ -599,8 +656,8 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
           val railRight = rail && d.prefs.barPosition == BarPosition.RIGHT
           val barActions = BarActions(
               onApps = { panel = Panel.Drawer },
-              onMusic = { if (musicBig) musicBig = false else openMedia(null) },
-              onNavigate = { actions.onNavigate(mapApp(d, apps)) },
+              onMusic = { if (musicBig) expanded = null else openMedia(null) },
+              onNavigate = { if (expanded == Expanded.MAP) expanded = null else openMapShortcut() },
               // Chip propio del estéreo: su app de Bluetooth (la misma que usa la música). Con el Bluetooth de
               // Android, donde se empareja el celular: sus ajustes de Bluetooth (o, si la pantalla no los trae,
               // Ajustes → Apps → Música).
@@ -614,10 +671,10 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
               onVoice = onVoice,
               onSettings = { panel = Panel.Settings },
               onBarSettings = { panel = Panel.BarSettings },
-              onEdit = { musicBig = false; editing = true },
+              onEdit = { expanded = null; editing = true },
           )
           val bar = @Composable { vertical: Boolean ->
-              AppBar(d.apps, d.prefs, favorites, vertical, editing, musicBig, barActions)
+              AppBar(d.apps, d.prefs, favorites, vertical, editing, musicBig, barActions, mapOpen = expanded == Expanded.MAP)
           }
           val railBar = @Composable { bar(true) }
           Row(Modifier.fillMaxSize()) {
@@ -666,26 +723,9 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                     if (inFront || d.dashboard.grid == null) d.dashboard.use(grid)
                     val cellNow = DpSize(maxWidth / grid.columns, maxHeight / grid.rows)
                     SideEffect { cell = cellNow }
-                    // La pantalla Música ocupa media pantalla; en la otra mitad, el auto como en la
-                    // pantalla dividida (auto 3D o carretera, según se eligió ahí), o tu imagen.
                     // Con algo a pantalla completa encima, lo que gasta en los widgets (GPS, mapa) descansa.
-                    CompositionLocalProvider(LocalHomeCovered provides (carShown || tiresShown || parked)) {
-                        if (musicBig) HalfScreen(
-                            side = {
-                                val shown = d.dashboard.shown
-                                val hero = shown.firstOrNull { it.type == (if (d.prefs.splitRoad) TileTypes.ROAD else TileTypes.CAR) } ?: shown.firstOrNull { it.cardless }
-                                if (hero != null) TileContent(d, hero, apps, car, revision, actions) else ClockTile(d.prefs.driverName, d.weather)
-                            },
-                            sideFirst = mediaSideFirst,
-                            vertical = grid.vertical,
-                        ) {
-                            MediaScreen(
-                                d, mediaTab, onTab = { mediaTab = it; mediaBrowse = false }, close = { musicBig = false },
-                                onRadioSettings = { openRadioSettings(); panel = Panel.MusicSettings },
-                                modifier = Modifier.padding(6.dp),
-                                browse = mediaBrowse,
-                            )
-                        } else Dashboard(
+                    CompositionLocalProvider(LocalHomeCovered provides (carShown || tiresShown || parked || expandedCovers)) {
+                        Dashboard(
                                 grid = grid,
                                 tiles = d.dashboard.shown,
                                 editing = editing,
@@ -705,6 +745,30 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                                 hasSettings = { it.type != TileTypes.CAR || d.hasTpmsSource },
                             ) { p -> TileContent(d, p, apps, car, revision, actions) }
                     }
+                    // La pantalla Música o el mapa en grande: llenan el tablero (la barra se queda para cambiar entre ellos).
+                    val shownBig = expandedShown
+                    if (shownBig != null) ExpandedLayer(expandedFrom?.let { tileBounds[it.id] }, { expandProgress.value }) {
+                        CompositionLocalProvider(LocalHomeCovered provides (carShown || tiresShown || parked)) {
+                            val close = { expanded = null }
+                            when (shownBig) {
+                                Expanded.MEDIA -> MediaScreen(
+                                    d, mediaTab, onTab = { mediaTab = it; mediaBrowse = false }, close = close,
+                                    onRadioSettings = { openRadioSettings(); panel = Panel.MusicSettings },
+                                    modifier = Modifier.padding(6.dp),
+                                    browse = mediaBrowse,
+                                )
+                                Expanded.MAP -> {
+                                    val app = mapApp(d, apps)
+                                    // Como el widget Mapa que se tocó (o el primero que haya).
+                                    val look = (expandedFrom ?: d.dashboard.shown.firstOrNull { it.type == TileTypes.MAP })?.data.orEmpty()
+                                    MapExpanded(
+                                        d, look, app, onPlace = { navigateTo(context, app, it) }, onNavigate = { actions.onNavigate(app) },
+                                        close = close, modifier = Modifier.padding(6.dp),
+                                    )
+                                }
+                            }
+                        }
+                    }
                 }
                 if (!rail) bar(false)
             }
@@ -720,7 +784,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                 revision = revision,
                 close = { panel = null },
                 // Acomodar cierra lo que esté en grande (si no, el tablero ni se ve).
-                onEdit = { panel = null; musicBig = false; editing = true },
+                onEdit = { panel = null; expanded = null; editing = true },
                 onTemplates = { panel = Panel.Templates },
                 start = when (p) {
                     Panel.Updates, Panel.Report -> SettingsSection.SYSTEM
@@ -937,16 +1001,45 @@ private const val TIRES_FADE_MS = 260
 /** Una opción del widget (de fábrica prendida, [WidgetFlags]). */
 private fun Tile.flag(key: String) = WidgetFlags.on(data, key)
 
+
+/** Cuánto tarda en crecer lo que se ve en grande ([Expanded]) y en regresar a su widget. */
+private const val EXPAND_MS = 320
+private const val SHRINK_MS = 260
+
 /**
- * Media pantalla: [content] (el widget en grande) y, en la otra mitad, [side]. Acostada, lado a
- * lado ([sideFirst] = [side] a la izquierda); parada, uno sobre otro ([side] arriba).
+ * La capa de lo que se ve en grande: llena el tablero y crece desde [from] (el widget que se tocó, en la raíz)
+ * o, sin él, desde el centro un poco más chica; aparece desvaneciéndose. [content] se acomoda una sola vez a su
+ * tamaño final y la animación solo lo escala (en las pantallas lentas no se reacomoda en cada cuadro). Tapa los
+ * toques: nada de lo de abajo se toca por accidente.
  */
 @Composable
-private fun HalfScreen(side: @Composable () -> Unit, sideFirst: Boolean, vertical: Boolean, content: @Composable () -> Unit) {
-    val parts = if (sideFirst) listOf(side, content) else listOf(content, side)
-    if (vertical) Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        for (part in parts) Box(Modifier.weight(1f).fillMaxWidth()) { part() }
-    } else Row(Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        for (part in parts) Box(Modifier.weight(1f).fillMaxHeight()) { part() }
-    }
+private fun ExpandedLayer(from: Rect?, progress: () -> Float, content: @Composable () -> Unit) {
+    val c = LocalColors.current
+    var area by remember { mutableStateOf(Rect.Zero) }
+    val shape = RoundedCornerShape(Radius.card)
+    Box(
+        Modifier
+            .fillMaxSize()
+            .onGloballyPositioned { area = it.boundsInRoot() }
+            .graphicsLayer {
+                val t = progress()
+                val start = from?.takeIf { !it.isEmpty && !area.isEmpty }
+                if (start != null) {
+                    transformOrigin = TransformOrigin(0f, 0f)
+                    scaleX = start.width / area.width + (1f - start.width / area.width) * t
+                    scaleY = start.height / area.height + (1f - start.height / area.height) * t
+                    translationX = (start.left - area.left) * (1f - t)
+                    translationY = (start.top - area.top) * (1f - t)
+                } else {
+                    val scale = 0.92f + 0.08f * t
+                    scaleX = scale
+                    scaleY = scale
+                }
+                alpha = (t * 2.5f).coerceAtMost(1f)
+                this.shape = shape
+                clip = true
+            }
+            .background(c.background)
+            .clickable(remember { MutableInteractionSource() }, indication = null) {},
+    ) { content() }
 }
