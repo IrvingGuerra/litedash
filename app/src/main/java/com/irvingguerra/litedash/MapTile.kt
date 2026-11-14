@@ -1,6 +1,7 @@
 package com.irvingguerra.litedash
 
 import android.content.Context
+import android.text.format.DateFormat
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -19,10 +20,17 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
@@ -30,6 +38,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleStartEffect
 import com.irvingguerra.litedash.core.ui.Button
 import com.irvingguerra.litedash.core.ui.Card
+import com.irvingguerra.litedash.core.ui.Icon
 import com.irvingguerra.litedash.core.ui.IconButton
 import com.irvingguerra.litedash.core.ui.Icons
 import com.irvingguerra.litedash.core.ui.Label
@@ -40,19 +49,24 @@ import com.irvingguerra.litedash.core.ui.Typography
 import com.irvingguerra.litedash.core.vehicle.Signal
 import com.irvingguerra.litedash.core.vehicle.watch
 import com.irvingguerra.litedash.feature.apps.App
-import com.irvingguerra.litedash.feature.map.MapDetail
 import com.irvingguerra.litedash.feature.map.MapCanvas
+import com.irvingguerra.litedash.feature.map.MapDetail
 import com.irvingguerra.litedash.feature.map.MapLook
 import com.irvingguerra.litedash.feature.map.MapOrientation
 import com.irvingguerra.litedash.feature.map.MapStyle
 import com.irvingguerra.litedash.feature.map.MapView
 import com.irvingguerra.litedash.feature.map.MapZoom
+import com.irvingguerra.litedash.feature.map.rememberMapCamera
 import com.irvingguerra.litedash.feature.map.MinimalPalette
+import com.irvingguerra.litedash.feature.map.OfflineError
+import com.irvingguerra.litedash.feature.map.OfflineMaps
 import com.irvingguerra.litedash.feature.map.OsmTiles
 import com.irvingguerra.litedash.feature.map.TileStore
 import com.irvingguerra.litedash.feature.map.VectorTiles
 import com.irvingguerra.litedash.feature.map.tilePx
 import com.irvingguerra.litedash.feature.music.NotificationService
+import java.text.SimpleDateFormat
+import java.util.Date
 
 /**
  * Widget Mapa: tu posición del GPS en el mapa (minimalista de OpenFreeMap o completo de OpenStreetMap),
@@ -151,7 +165,8 @@ private val ATTRIBUTION_CLEARANCE = 56.dp
 
 /**
  * El mapa con el GPS y las teselas corriendo solo mientras se ve (el widget, en grande y la vista previa)
- * y nada lo tapa ([LocalHomeCovered]). [onTap] = qué hace un toque (sin él, aleja el zoom).
+ * y nada lo tapa ([LocalHomeCovered]). [onTap] = qué hace un toque (sin él, nada); con un dedo se mueve y abajo
+ * a la izquierda van el botón para regresar a ti, la calle donde vas y si el mapa es en línea o bajado.
  */
 @Composable
 private fun LiveMap(d: Dependencies, look: MapLook, modifier: Modifier, onTap: (() -> Unit)? = null) {
@@ -170,22 +185,66 @@ private fun LiveMap(d: Dependencies, look: MapLook, modifier: Modifier, onTap: (
     val position = d.trip.position
     // Del bus (la del OBD si hay escáner, si no la del GPS); solo la usa el zoom automático.
     val kmh = if (look.zoom == MapZoom.AUTO) d.bus.watch(Signal.SPEED) else null
-    Box(modifier) {
+    val camera = rememberMapCamera()
+    // Solo cambia al mover o centrar el mapa (no con cada movimiento del dedo).
+    val centered by remember(camera) { derivedStateOf { camera.centered } }
+    BoxWithConstraints(modifier) {
         if (position == null) {
             Label(stringResource(R.string.map_waiting), Typography.body, c.textMuted, maxLines = 2, modifier = Modifier.align(Alignment.Center).padding(16.dp))
-        } else {
-            MapCanvas(store, position.latitude, position.longitude, d.trip.bearing, kmh, look, Modifier.fillMaxSize(), onTap)
+            return@BoxWithConstraints
+        }
+        MapCanvas(store, position.latitude, position.longitude, d.trip.bearing, kmh, look, Modifier.fillMaxSize(), camera, onTap)
+        // Abajo a la izquierda (a la derecha van los créditos): centrar si lo moviste, la calle y si es en línea o bajado.
+        val offline = look.detail == MapDetail.MINIMAL && OfflineMaps.get(context).covers(position.latitude, position.longitude)
+        // Angosto, los créditos ocupan dos renglones a lo ancho: lo de la izquierda va arriba de ellos y sin el estado.
+        val narrow = maxWidth < NARROW_MAP
+        val showStatus = maxHeight >= STATUS_HEIGHT && !narrow
+        Column(
+            Modifier.align(Alignment.BottomStart).padding(start = 8.dp, end = 8.dp, bottom = if (narrow) 44.dp else 8.dp).widthIn(max = if (narrow) maxWidth else maxWidth * 0.55f),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            if (!centered) IconButton(Icons.recenter, camera::recenter, size = 44.dp, background = c.surface.copy(alpha = 0.9f), color = c.accent)
+            camera.street?.let { MapPill(Icons.location, it, c.text) }
+            if (showStatus) {
+                MapPill(
+                    if (offline) Icons.offline else Icons.map,
+                    stringResource(if (offline) R.string.map_offline_now else R.string.map_online_now),
+                    c.textMuted,
+                )
+            }
         }
     }
 }
 
+/** Una pastilla sobre el mapa: ícono y un texto corto. */
+@Composable
+private fun MapPill(icon: ImageVector, text: String, color: Color) {
+    val c = LocalColors.current
+    Row(
+        Modifier.clip(RoundedCornerShape(Radius.small)).background(c.surface.copy(alpha = 0.88f)).padding(horizontal = 8.dp, vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        Icon(icon, c.accent, 14.dp)
+        Label(text, Typography.small, color, maxLines = 1)
+    }
+}
+
+/** Más bajo, el mapa no lleva la pastilla de en línea o sin conexión (estorba). */
+private val STATUS_HEIGHT = 150.dp
+
+/** Más angosto, los créditos del mapa van en dos renglones (como en `MapCanvas`). */
+private val NARROW_MAP = 320.dp
+
+/** Como se presenta LiteDash ante los servidores de mapas (lo piden sus políticas de uso). */
+private val MAP_USER_AGENT = "LiteDash/${BuildConfig.VERSION_NAME} (+https://litedash.dev)"
+
 private fun newTileStore(context: Context, detail: MapDetail, dark: Boolean, density: Float): TileStore {
-    val userAgent = "LiteDash/${BuildConfig.VERSION_NAME} (+https://litedash.dev)"
     val source = when (detail) {
         MapDetail.FULL -> OsmTiles
-        MapDetail.MINIMAL -> VectorTiles(context, if (dark) MinimalPalette.DARK else MinimalPalette.LIGHT, tilePx(density).toInt(), density, userAgent)
+        MapDetail.MINIMAL -> VectorTiles(context, if (dark) MinimalPalette.DARK else MinimalPalette.LIGHT, tilePx(density).toInt(), density, MAP_USER_AGENT)
     }
-    return TileStore(context, userAgent, source)
+    return TileStore(context, MAP_USER_AGENT, source)
 }
 
 /** Personalizar mapa: detalle, orientación, vista, zoom y colores, con el mapa en vivo como vista previa. */
@@ -236,6 +295,7 @@ fun CustomizeMapPanel(d: Dependencies, tileId: String, close: () -> Unit) {
                         listOf(MapStyle.THEME to stringResource(R.string.map_style_theme), MapStyle.LIGHT to stringResource(R.string.map_style_light), MapStyle.DARK to stringResource(R.string.map_style_dark)),
                         look.style, { set(look.copy(style = it)) },
                     )
+                    OfflineSection(d, look.detail)
                     Box(Modifier.height(12.dp))
                 }
             }
@@ -254,3 +314,76 @@ fun CustomizeMapPanel(d: Dependencies, tileId: String, close: () -> Unit) {
         }
     }
 }
+
+/**
+ * Sin conexión: las zonas guardadas (con Borrar), el radio a bajar con su tamaño aproximado y el botón para
+ * bajar la zona donde estás; mientras baja, el avance y Cancelar. Solo el minimalista (OSM no deja bajar en bloque).
+ */
+@Composable
+private fun OfflineSection(d: Dependencies, detail: MapDetail) {
+    val c = LocalColors.current
+    Label(stringResource(R.string.map_offline), Typography.label, c.textMuted)
+    if (detail != MapDetail.MINIMAL) {
+        Label(stringResource(R.string.map_offline_full), Typography.small, c.textMuted)
+        return
+    }
+    val context = LocalContext.current
+    val density = LocalDensity.current.density
+    val offline = remember { OfflineMaps.get(context) }
+    val position = d.trip.position
+    Label(stringResource(R.string.map_offline_help), Typography.small, c.textMuted)
+    val locale = currentLocale()
+    val dateFormat = remember(locale) { SimpleDateFormat(DateFormat.getBestDateTimePattern(locale, "dMMM"), locale) }
+    for (area in offline.areas) {
+        val here = position != null && area.contains(position.latitude, position.longitude)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Label(
+                stringResource(
+                    R.string.map_offline_area, stringResource(if (here) R.string.map_offline_here else R.string.map_offline_other),
+                    area.km, megabytes(area.bytes), dateFormat.format(Date(area.savedAt)),
+                ),
+                Typography.body, maxLines = 2, modifier = Modifier.weight(1f).padding(end = 12.dp),
+            )
+            Confirmed(stringResource(R.string.map_offline_delete), stringResource(R.string.map_offline_delete_question), stringResource(R.string.confirm_delete),
+                message = stringResource(R.string.map_offline_delete_message)) { offline.delete(area.id) }
+        }
+    }
+    val job = offline.job
+    if (job != null && job.error == null) {
+        val fraction = if (job.total > 0) job.done.toFloat() / job.total else 0f
+        Box(Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp)).background(c.surfaceHigh)) {
+            Box(Modifier.fillMaxWidth(fraction).fillMaxHeight().background(c.accent))
+        }
+        Label(stringResource(R.string.map_offline_progress, job.done, job.total, megabytes(job.bytes)), Typography.small, c.textMuted)
+        if (job.waiting) Label(stringResource(R.string.map_offline_waiting_server), Typography.small, c.warning)
+        Button(stringResource(R.string.cancel), { offline.cancel() })
+        return
+    }
+    job?.error?.let { error ->
+        Label(stringResource(if (error == OfflineError.BLOCKED) R.string.map_offline_blocked else R.string.map_offline_failed), Typography.small, c.warning)
+    }
+    var km by rememberSaveable { mutableIntStateOf(OFFLINE_RADII[1]) }
+    Segmented(OFFLINE_RADII.map { it to "$it km" }, km, { km = it })
+    // El tamaño depende de la latitud (no de cada metro): se recalcula solo al cambiar de radio o de zona.
+    val lat = position?.latitude?.let { Math.round(it * 10) / 10.0 }
+    val lon = position?.longitude?.let { Math.round(it * 10) / 10.0 }
+    if (lat != null && lon != null) {
+        val tiles = remember(lat, lon, km) { offline.estimate(lat, lon, km) }
+        Label(stringResource(R.string.map_offline_size, megabytes(tiles * OfflineMaps.AVG_TILE_BYTES)), Typography.small, c.textMuted)
+    }
+    if (position == null) {
+        Button(stringResource(R.string.map_offline_download), {}, primary = true, enabled = false)
+        Label(stringResource(R.string.map_offline_waiting), Typography.small, c.textMuted)
+    } else {
+        Button(stringResource(R.string.map_offline_download), {
+            val source = VectorTiles(context, MinimalPalette.LIGHT, tilePx(density).toInt(), density, MAP_USER_AGENT)
+            offline.download(position.latitude, position.longitude, km, source, MAP_USER_AGENT)
+        }, primary = true)
+    }
+}
+
+/** Radios que se pueden bajar (km); el de en medio, de fábrica. */
+private val OFFLINE_RADII = listOf(10, 25, 50)
+
+/** Bytes a MB enteros (al menos 1: «0 MB» confunde). */
+private fun megabytes(bytes: Long) = maxOf(1L, Math.round(bytes / 1e6))

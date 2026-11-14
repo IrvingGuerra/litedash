@@ -2,6 +2,19 @@ package com.irvingguerra.litedash.feature.map
 
 import android.graphics.Matrix as AndroidMatrix
 import androidx.compose.foundation.background
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.snapshotFlow
+import androidx.compose.runtime.withFrameNanos
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.distinctUntilChanged
+import androidx.compose.runtime.Stable
+import androidx.compose.runtime.mutableDoubleStateOf
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.input.pointer.positionChange
+import kotlinx.coroutines.delay
+import kotlin.math.abs
+import kotlin.math.cos
+import kotlin.math.hypot
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.PointerInputScope
 import androidx.compose.ui.graphics.graphicsLayer
@@ -52,6 +65,32 @@ import kotlin.math.roundToInt
 
 private const val TILE = 256
 
+/** Las teselas que traen los nombres de las calles (las del minimalista llegan hasta el 14). */
+private const val DATA_ZOOM = 14
+
+/** Movido con el dedo, regresa a ti tras este rato sin tocarlo. */
+private const val RECENTER_MS = 20_000L
+
+/** Lo más que se aleja el mapa de ti con el dedo (fracción del mundo, ~80 km). */
+private const val MAX_PAN = 0.002
+
+/** En el plano, un movimiento del dedo no avanza más de tantas veces lo que se movió en pantalla. */
+private const val MAX_PAN_STRETCH = 4.0
+
+/** A lo más tantos nombres de calles a la vez (más, es ruido). */
+private const val MAX_LABELS = 14
+
+/** Lo que tarda tu flecha en deslizarse a la lectura nueva del GPS (llegan una por segundo). */
+private const val GLIDE_MS = 950
+
+/** Cada cuánto avanza el deslizamiento (~30 cuadros por segundo). */
+private const val GLIDE_STEP_MS = 33L
+
+/** Más que esto de una lectura a otra (o casi nada, quieto) va directo, sin deslizar. */
+private const val SNAP_METERS = 150.0
+private const val STILL_METERS = 3.0
+private const val STILL_DEGREES = 3f
+
 /** El lado de una tesela en pantalla: 256 px a densidad 1, hasta el doble (más se vería borrosa). */
 fun tilePx(density: Float) = TILE * density.coerceIn(1f, 2f)
 
@@ -62,13 +101,49 @@ private val SHORT_ATTRIBUTION = 320.dp
 private const val ATTRIBUTION_URL = "https://www.openstreetmap.org/copyright"
 
 /**
+ * Lo que la app ve del mapa y le puede pedir: si lo moviste con el dedo ([centered] = false; vuelve solo tras
+ * [RECENTER_MS] sin tocarlo o con [recenter]) y la calle donde estás ([street], solo con el minimalista).
+ */
+@Stable
+class MapCamera {
+    /** Cuánto se movió el mapa con el dedo, en fracciones del mundo (0 = tú en tu lugar). */
+    internal var panX by mutableDoubleStateOf(0.0)
+    internal var panY by mutableDoubleStateOf(0.0)
+
+    val centered: Boolean get() = panX == 0.0 && panY == 0.0
+
+    fun recenter() {
+        panX = 0.0
+        panY = 0.0
+    }
+
+    /** La calle donde estás; null = no se sabe (lejos de una calle con nombre o con el mapa completo). */
+    var street by mutableStateOf<String?>(null)
+        internal set
+}
+
+@Composable
+fun rememberMapCamera() = remember { MapCamera() }
+
+/**
  * El mapa (teselas de [store]) con tu posición y como diga [look]: norte arriba o hacia donde vas,
  * plano o inclinado, zoom según la velocidad o fijo (con dos dedos se acerca o aleja; al regresar al
- * elegido vuelve a ser el automático o el fijo), un toque hace [onTap] y colores claros u oscuros: las de OpenStreetMap se oscurecen con un
- * filtro; el minimalista ya viene en sus colores.
+ * elegido vuelve a ser el automático o el fijo), con un dedo se mueve ([camera]), un toque hace [onTap] y colores
+ * claros u oscuros: las de OpenStreetMap se oscurecen con un filtro; el minimalista ya viene en sus colores y con los
+ * nombres de las calles. Tu flecha se desliza entre una lectura del GPS y la siguiente.
  */
 @Composable
-fun MapCanvas(store: TileStore, lat: Double, lon: Double, bearing: Float?, kmh: Float?, look: MapLook, modifier: Modifier = Modifier, onTap: (() -> Unit)? = null) {
+fun MapCanvas(
+    store: TileStore,
+    lat: Double,
+    lon: Double,
+    bearing: Float?,
+    kmh: Float?,
+    look: MapLook,
+    modifier: Modifier = Modifier,
+    camera: MapCamera = rememberMapCamera(),
+    onTap: (() -> Unit)? = null,
+) {
     val c = LocalColors.current
     var manual by remember { mutableStateOf<Int?>(null) }
     // El automático recuerda el anterior para no brincar alrededor de los umbrales (no es estado: no repinta).
@@ -80,9 +155,8 @@ fun MapCanvas(store: TileStore, lat: Double, lon: Double, bearing: Float?, kmh: 
     val dark = look.dark(c.dark)
     val filter = if (dark && store.source.recolor) DarkTiles else null
     val accent = c.accent
-    // Hacia donde vas: el mapa gira al revés del rumbo (sin rumbo todavía, se queda como está).
-    val turn = if (look.orientation == MapOrientation.HEADING) -(bearing ?: 0f) else 0f
-    val arrow = if (look.orientation == MapOrientation.HEADING) bearing?.let { 0f } else bearing
+    val glide = rememberGlide(lat, lon, bearing)
+    val heading = look.orientation == MapOrientation.HEADING
     // Inclinado, tu posición va más abajo: se ve más camino adelante.
     val anchorY = if (tilted) 0.78f else 0.6f
     val sky = store.source.sky?.let(::Color) ?: if (dark) Color(0xFF1C1C20) else Color(0xFFE8E8EA)
@@ -108,9 +182,53 @@ fun MapCanvas(store: TileStore, lat: Double, lon: Double, bearing: Float?, kmh: 
         manual = z.takeIf { it != base }
         pinch = 1f
     }
+    // La última proyección dibujada y cuántos px de pantalla mide el mundo: con eso un arrastre se vuelve movimiento del mapa.
+    val drawn = remember { DrawnView() }
+    val onPan by rememberUpdatedState { at: Offset, delta: Offset ->
+        val projection = drawn.projection
+        if (projection != null && drawn.worldPx > 0.0) {
+            val a = FloatArray(3)
+            val b = FloatArray(3)
+            if (projection.toPlane(at.x - delta.x, at.y - delta.y, a) && projection.toPlane(at.x, at.y, b)) {
+                // Cerca del horizonte un pixel del dedo son cientos de metros: no más de unas veces lo que se movió.
+                var dx = (b[0] - a[0]).toDouble()
+                var dy = (b[1] - a[1]).toDouble()
+                val most = MAX_PAN_STRETCH * hypot(delta.x, delta.y)
+                val length = hypot(dx, dy)
+                if (length > most && length > 0.0) {
+                    dx *= most / length
+                    dy *= most / length
+                }
+                camera.panX = (camera.panX - dx / drawn.worldPx).coerceIn(-MAX_PAN, MAX_PAN)
+                camera.panY = (camera.panY - dy / drawn.worldPx).coerceIn(-MAX_PAN, MAX_PAN)
+            }
+        }
+    }
+    // Movido con el dedo y sin tocarlo un rato: regresa a ti solo (como Waze). Sin recomponer en cada movimiento del dedo.
+    LaunchedEffect(camera) {
+        snapshotFlow { camera.centered to camera.panX + camera.panY }.collectLatest { (centered, _) ->
+            if (!centered) {
+                delay(RECENTER_MS)
+                camera.recenter()
+            }
+        }
+    }
+    // La calle donde estás: al moverte o cuando llegan los nombres de tu tesela (no con cada tesela).
+    LaunchedEffect(store, lat, lon) {
+        val origin = tileKey(DATA_ZOOM, tileX(lon, DATA_ZOOM).toInt(), tileY(lat, DATA_ZOOM).toInt())
+        snapshotFlow { store.loaded.let { store.source.names(origin) } }.distinctUntilChanged().collect { names ->
+            camera.street = names?.let { nearestStreet(origin, it, lat, lon) }
+        }
+    }
+    val labels = remember { LabelCache() }
+    val labelColor = if (dark) Color(0xFFC3C6CD) else Color(0xFF4E535C)
     // Un toque: lo que diga [onTap] (en el widget, verlo en grande o abrir tu app de mapas).
     val tap = if (onTap != null) Modifier.clickable(onClick = onTap) else Modifier
-    BoxWithConstraints(modifier.background(sky).then(tap).pointerInput(Unit) { detectPinch({ onPinch(it) }, { onPinchEnd() }) }) {
+    BoxWithConstraints(
+        modifier.background(sky).then(tap).pointerInput(Unit) {
+            detectMapGestures({ at, delta -> onPan(at, delta) }, { onPinch(it) }, { onPinchEnd() })
+        },
+    ) {
         val short = maxWidth < SHORT_ATTRIBUTION
         Spacer(
             Modifier.fillMaxSize().graphicsLayer {
@@ -118,20 +236,39 @@ fun MapCanvas(store: TileStore, lat: Double, lon: Double, bearing: Float?, kmh: 
                 scaleY = pinch
                 transformOrigin = TransformOrigin(0.5f, anchorY)
             }.drawWithCache {
-                // Se arma al cambiar el tamaño o la posición; entre tesela y tesela solo se redibuja.
+                // Se arma en cada paso del deslizamiento, al mover el mapa y al llegar una tesela (sin recomponer).
+                store.loaded // cada tesela que llega rehace esto (y los nombres nuevos se acomodan)
+                val pose = glide()
+                val turn = if (heading) -(pose.bearing ?: 0f) else 0f
+                val arrow = if (heading) pose.bearing?.let { 0f } else pose.bearing
                 val at = Offset(size.width / 2, size.height * anchorY)
                 val projection = MapProjection(size.width, size.height, at.x, at.y, turn, tilted, density)
+                val ts = tilePx(density)
+                val n = (1 shl zoom).toDouble()
+                // El centro del mapa: tú, o a donde lo moviste.
+                val fx = tileX(pose.lon, zoom) + camera.panX * n
+                val fy = tileY(pose.lat, zoom) + camera.panY * n
+                drawn.projection = projection
+                drawn.worldPx = ts * n
                 val matrix = AndroidMatrix().apply { setValues(projection.values) }
-                val tiles = visibleTiles(projection, lat, lon, zoom, at, tilePx(density))
+                val tiles = visibleTiles(projection, fx, fy, zoom, at, ts)
+                // Tú en pantalla (fuera de la vista si moviste el mapa lejos).
+                val you = FloatArray(3)
+                val youShown = projection.toScreen(at.x - (camera.panX * n * ts).toFloat(), at.y - (camera.panY * n * ts).toFloat(), you)
                 // Lo lejano se funde con el cielo: sólido hasta donde se acaba el mapa (en pantalla) y de ahí
                 // se desvanece; sin orilla dura en ningún tamaño de widget.
                 val fade = if (tilted) {
                     val end = (projection.edge / size.height).coerceIn(0f, 0.9f)
                     Brush.verticalGradient(0f to sky, end to sky, (end + 0.15f).coerceAtMost(1f) to sky.copy(alpha = 0f))
                 } else null
-                val arrowPath = arrowPath(at, 1.dp.toPx())
+                val arrowPath = arrowPath(Offset(you[0], you[1]), 1.dp.toPx())
+                val text = labels.paint(12.sp.toPx(), labelColor, sky)
+                val runs = labels.runs(store, tiles, zoom, ts, density)
+                val top = if (tilted) projection.edge.coerceAtLeast(0f) + size.height * 0.12f else 0f
+                val placed = placeLabels(runs, size.width, size.height, top, text.textSize, density, MAX_LABELS) { x, y, out ->
+                    projection.toScreen(at.x + ((x - fx) * ts).toFloat(), at.y + ((y - fy) * ts).toFloat(), out)
+                }
                 onDrawBehind {
-                    store.loaded // cada tesela nueva repinta
                     drawIntoCanvas { canvas ->
                         canvas.save()
                         canvas.nativeCanvas.concat(matrix)
@@ -140,7 +277,8 @@ fun MapCanvas(store: TileStore, lat: Double, lon: Double, bearing: Float?, kmh: 
                     }
                     store.request(tiles.keys)
                     fade?.let { drawRect(it) }
-                    drawArrow(at, arrowPath, arrow, accent, tilted)
+                    drawIntoCanvas { canvas -> drawLabels(canvas.nativeCanvas, placed, text) }
+                    if (youShown) drawArrow(Offset(you[0], you[1]), arrowPath, arrow, accent, tilted)
                 }
             },
         )
@@ -148,37 +286,162 @@ fun MapCanvas(store: TileStore, lat: Double, lon: Double, bearing: Float?, kmh: 
     }
 }
 
+/** Lo último que se dibujó, para convertir arrastres de la pantalla en movimiento del mapa. */
+private class DrawnView {
+    var projection: MapProjection? = null
+    /** Lo que mide el mundo entero en px del plano del mapa (tesela × 2^zoom). */
+    var worldPx = 0.0
+}
+
+/** Los tramos con nombre de las teselas que se ven (se rehacen solo al cambiar de teselas o de zoom, o al llegar nombres nuevos). */
+private class LabelCache {
+    private var key: Any? = null
+    private var cached: List<LabelRun> = emptyList()
+    private var fill: android.graphics.Paint? = null
+    private var halo = 0
+    /** Lo que mide cada nombre con [fill] (medir texto cuesta). */
+    private val widths = HashMap<String, Float>()
+
+    fun paint(size: Float, color: Color, halo: Color): android.graphics.Paint {
+        val p = fill
+        if (p != null && p.textSize == size && p.color == color.toArgb() && this.halo == halo.toArgb()) return p
+        this.halo = halo.toArgb()
+        widths.clear()
+        key = null
+        return android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+            textSize = size
+            this.color = color.toArgb()
+            typeface = android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD)
+            // El halo del color del fondo: se lee sobre las calles.
+            setShadowLayer(size * 0.18f, 0f, 0f, halo.toArgb())
+        }.also { fill = it }
+    }
+
+    fun runs(store: TileStore, tiles: TilePlan, z: Int, ts: Float, dp: Float): List<LabelRun> {
+        // Solo lo cercano (con todo el detalle): lejos, en el mapa inclinado, los nombres ni se leerían.
+        val names = HashMap<Long, TileNames>()
+        val origins = HashSet<Long>()
+        for (i in tiles.z.indices) {
+            if (tiles.z[i] != z) continue
+            val o = store.source.origin(tileKey(tiles.z[i], tiles.x[i], tiles.y[i]))
+            if (origins.add(o)) store.source.names(o)?.let { names[o] = it }
+        }
+        // Cambia solo con otras teselas, otro zoom o al llegar los nombres de una (no con cada tesela que llega).
+        val newKey = Triple(origins, z, names.size)
+        if (newKey == key) return cached
+        val measure = fill ?: return emptyList()
+        key = newKey
+        cached = labelRuns(names, z, ts, dp) { name -> widths.getOrPut(name) { measure.measureText(name) } }
+        return cached
+    }
+}
+
+/** Los nombres ya acomodados, derechos y centrados en su tramo. */
+private fun drawLabels(canvas: android.graphics.Canvas, labels: List<PlacedLabel>, paint: android.graphics.Paint) {
+    val baseline = paint.textSize * 0.35f
+    for (l in labels) {
+        canvas.save()
+        canvas.translate(l.x, l.y)
+        canvas.rotate(l.degrees)
+        canvas.drawText(l.name, -l.width / 2, baseline, paint)
+        canvas.restore()
+    }
+}
+
+/** Dónde se ve tu posición: latitud, longitud y rumbo. */
+private class Pose(val lat: Double, val lon: Double, val bearing: Float?)
+
 /**
- * Pellizco con dos dedos: [onZoom] con cuánto creció la separación en cada movimiento y [onEnd] al soltar. Con un
- * dedo no hace nada ni se come el toque (el toque y arrastrar el widget siguen funcionando).
+ * Tu posición deslizándose de la lectura anterior del GPS a la nueva en [GLIDE_MS] (llegan una por segundo: sin esto
+ * la flecha brinca), a [GLIDE_STEP_MS] por paso (las pantallas de auto no dan para 60 cuadros). Saltos grandes, o
+ * moverse menos que [STILL_METERS] (el GPS baila estando quieto), van directo: un solo cuadro. Se lee al dibujar.
  */
-private suspend fun PointerInputScope.detectPinch(onZoom: (Float) -> Unit, onEnd: () -> Unit) {
+@Composable
+private fun rememberGlide(lat: Double, lon: Double, bearing: Float?): () -> Pose {
+    // De dónde a dónde va y cuánto lleva; los dos son estado: un salto directo también repinta.
+    var ends by remember { mutableStateOf(Pose(lat, lon, bearing) to Pose(lat, lon, bearing)) }
+    var t by remember { mutableFloatStateOf(1f) }
+    LaunchedEffect(lat, lon, bearing) {
+        val now = between(ends, t)
+        val target = Pose(lat, lon, bearing)
+        val meters = distanceMeters(now.lat, now.lon, lat, lon)
+        val turned = if (now.bearing != null && bearing != null) abs(((bearing - now.bearing) % 360f + 540f) % 360f - 180f) else 0f
+        if (meters > SNAP_METERS || (meters < STILL_METERS && turned < STILL_DEGREES)) {
+            ends = target to target
+            t = 1f
+            return@LaunchedEffect
+        }
+        ends = now to target
+        t = 0f
+        val start = withFrameNanos { it }
+        while (t < 1f) {
+            delay(GLIDE_STEP_MS)
+            t = ((withFrameNanos { it } - start) / 1_000_000f / GLIDE_MS).coerceAtMost(1f)
+        }
+    }
+    return { between(ends, t) }
+}
+
+/** La posición a [t] (0–1) del camino [ends]; el rumbo gira por el lado corto. */
+private fun between(ends: Pair<Pose, Pose>, t: Float): Pose {
+    val (from, to) = ends
+    val b = when {
+        to.bearing == null -> null
+        from.bearing == null -> to.bearing
+        else -> from.bearing + (((to.bearing - from.bearing) % 360f + 540f) % 360f - 180f) * t
+    }
+    return Pose(from.lat + (to.lat - from.lat) * t, from.lon + (to.lon - from.lon) * t, b)
+}
+
+/** Distancia aproximada en metros (basta para decidir si deslizar). */
+private fun distanceMeters(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Double {
+    val dy = (lat2 - lat1) * 111_320.0
+    val dx = (lon2 - lon1) * 111_320.0 * cos(Math.toRadians(lat1))
+    return hypot(dx, dy)
+}
+
+/**
+ * Los gestos del mapa: con un dedo se mueve ([onPan] con dónde está el dedo y cuánto se movió), con dos se acerca
+ * o aleja ([onZoom] con cuánto creció la separación; [onEnd] al soltar). Un toque sin moverse no se toca (el toque
+ * y el acomodo del widget siguen funcionando).
+ */
+private suspend fun PointerInputScope.detectMapGestures(onPan: (Offset, Offset) -> Unit, onZoom: (Float) -> Unit, onEnd: () -> Unit) {
     awaitEachGesture {
         awaitFirstDown(requireUnconsumed = false)
         var pinched = false
+        var panning = false
+        var travel = Offset.Zero
         do {
             val event = awaitPointerEvent()
-            if (event.changes.count { it.pressed } >= 2) {
+            val pressed = event.changes.filter { it.pressed }
+            if (pressed.size >= 2) {
                 val factor = event.calculateZoom()
                 if (factor != 1f) onZoom(factor)
                 pinched = true
+            } else if (!pinched && pressed.size == 1) {
+                val change = pressed[0]
+                val delta = change.positionChange()
+                if (!panning) {
+                    travel += delta
+                    panning = travel.getDistance() > viewConfiguration.touchSlop
+                } else if (delta != Offset.Zero) {
+                    onPan(change.position, delta)
+                }
             }
-            // Ya pellizcado, todo es del pellizco (también al soltar): si no, levantar los dedos contaba como toque.
-            if (pinched) event.changes.forEach { it.consume() }
+            // Ya movido o pellizcado, todo es del mapa (también al soltar): si no, levantar el dedo contaba como toque.
+            if (pinched || panning) event.changes.forEach { it.consume() }
         } while (event.changes.any { it.pressed })
         if (pinched) onEnd()
     }
 }
 
 /**
- * Las teselas a dibujar, de lo lejano a lo cercano (lo cercano encima): su zoom, clave y dónde van en el
- * plano del mapa (en px, ya redondeado). Inclinado, lo lejano va con menos detalle ([detailDrop]).
+ * Las teselas a dibujar alrededor del centro ([fx], [fy] en teselas del zoom [z]), de lo lejano a lo cercano (lo
+ * cercano encima): su zoom, clave y dónde van en el plano del mapa (en px, ya redondeado). Inclinado, lo lejano va con menos detalle ([detailDrop]).
  */
 internal class TilePlan(val keys: Set<Long>, val z: IntArray, val x: IntArray, val y: IntArray, val left: IntArray, val top: IntArray, val right: IntArray, val bottom: IntArray)
 
-internal fun visibleTiles(projection: MapProjection, lat: Double, lon: Double, z: Int, at: Offset, ts: Float): TilePlan {
-    val fx = tileX(lon, z)
-    val fy = tileY(lat, z)
+internal fun visibleTiles(projection: MapProjection, fx: Double, fy: Double, z: Int, at: Offset, ts: Float): TilePlan {
     val span = projection.visibleTiles(fx, fy, ts)
     // Cada tesela visible, o la de menos detalle que la cubre (una sola vez aunque cubra varias).
     val picked = LinkedHashMap<Long, IntArray>()

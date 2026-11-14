@@ -15,6 +15,7 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
@@ -37,6 +38,27 @@ class MainActivity : ComponentActivity() {
         setContent {
             LiteDashContent(dependencies, revision.intValue) { Home(dependencies, revision.intValue, homePressed.intValue) }
         }
+        // Al encender el auto LiteDash arranca antes que la barra del sistema de algunas pantallas (TS10): se quedaba
+        // con el hueco de una barra que ya no está. Se vuelve a medir unas veces mientras la pantalla termina de arrancar.
+        for (ms in REFIT_MS) window.decorView.postDelayed(refitLater, ms)
+    }
+
+    private val refitLater = Runnable { refit() }
+
+    override fun onDestroy() {
+        window.decorView.removeCallbacks(refitLater)
+        super.onDestroy()
+    }
+
+    /** Pide otra vez el tamaño y las barras del sistema (y vuelve a ocultar la de arriba si así se eligió). */
+    private fun refit() {
+        if (isDestroyed) return
+        if (dependencies.prefs.hideStatusBar) applyStatusBar(window, true)
+        val view = window.decorView
+        ViewCompat.requestApplyInsets(view)
+        view.requestLayout()
+        // Después del layout: así el reporte trae la medida nueva.
+        view.post { windowInfo = describeWindow(view) }
     }
 
     // Idioma elegido en Ajustes (o el del sistema si no eligió).
@@ -61,12 +83,13 @@ class MainActivity : ComponentActivity() {
         // Al abrir LiteDash se busca al celular vinculado (sin celular, no hace nada).
         dependencies.phone.start()
         revision.intValue++
+        refit()
     }
 
     // Algunos teléfonos (Samsung) regresan la barra al cerrar un aviso o un diálogo, sin pasar por onResume.
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         super.onWindowFocusChanged(hasFocus)
-        if (hasFocus && dependencies.prefs.hideStatusBar) applyStatusBar(window, true)
+        if (hasFocus) refit()
     }
 
     override fun onPause() {
@@ -78,6 +101,13 @@ class MainActivity : ComponentActivity() {
         /** LiteDash está al frente (para no traerlo de nuevo si ya lo está). */
         @Volatile var inFront = false
             private set
+
+        /** El tamaño de la ventana y lo que ocupan las barras del sistema, la última vez que se midió (para los reportes). */
+        @Volatile var windowInfo = "Ventana: ?"
+            private set
+
+        /** Después de crear la ventana: la barra del sistema de algunas pantallas aparece varios segundos tarde. */
+        private val REFIT_MS = longArrayOf(1_500L, 5_000L, 12_000L, 30_000L)
 
         /**
          * Abre el inicio otra vez desde cero (al cambiar de idioma). No con `recreate()`: Android
@@ -144,6 +174,14 @@ internal fun isDark(d: Dependencies, night: Boolean): Boolean = when (d.prefs.th
     ThemeMode.LIGHT -> false
     ThemeMode.SYSTEM -> isSystemInDarkTheme()
     ThemeMode.SUN -> night
+}
+
+/** "Ventana: 1024×600 · barras arriba 0, abajo 48, izq. 0, der. 0 · teclado 0" (lo que se resta al dibujar). */
+private fun describeWindow(view: android.view.View): String {
+    val insets = ViewCompat.getRootWindowInsets(view) ?: return "Ventana: ${view.width}×${view.height} · barras ?"
+    val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+    val ime = insets.getInsets(WindowInsetsCompat.Type.ime()).bottom
+    return "Ventana: ${view.width}×${view.height} · barras arriba ${bars.top}, abajo ${bars.bottom}, izq. ${bars.left}, der. ${bars.right} · teclado $ime"
 }
 
 /** Oculta o muestra la barra de Android de arriba (deslizando desde arriba se asoma un momento). */

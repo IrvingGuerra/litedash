@@ -30,6 +30,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
@@ -219,16 +220,17 @@ fun IconButton(
     ) { Icon(icon, color, size * 0.45f) }
 }
 
-/** Botón de texto con esquinas [Radius.inner]. */
+/** Botón de texto con esquinas [Radius.inner]; sin [enabled] se ve apagado y no responde. */
 @Composable
-fun Button(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, primary: Boolean = false) {
+fun Button(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, primary: Boolean = false, enabled: Boolean = true) {
     val c = LocalColors.current
     val shape = RoundedCornerShape(Radius.inner)
     Box(
         modifier
+            .alpha(if (enabled) 1f else 0.4f)
             .clip(shape)
             .background(if (primary) c.primary else c.surfaceHigh)
-            .clickable(onClick = onClick)
+            .clickable(enabled = enabled, onClick = onClick)
             .padding(horizontal = 22.dp, vertical = 14.dp),
         contentAlignment = Alignment.Center,
     ) { Label(text, Typography.body.copy(fontWeight = FontWeight.SemiBold), if (primary) c.onPrimary else c.text, 1) }

@@ -15,7 +15,7 @@
     <string name="map_zoom_near">Near</string>
     <string name="map_zoom_mid">Medium</string>
     <string name="map_zoom_far">Far</string>
-    <string name="map_zoom_help">Automatic: closer in the city, farther on the highway. When enlarged, each tap zooms out; after the farthest it returns to your choice.</string>
+    <string name="map_zoom_help">Automatic: closer in the city, farther on the highway. Pinch with two fingers to zoom; drag with one to look around (it comes back to you on its own).</string>
     <string name="map_style">Colors</string>
     <string name="map_style_theme">Like the theme</string>
     <string name="map_style_light">Light</string>
@@ -25,4 +25,22 @@
     <string name="map_detail_minimal">Minimal</string>
     <string name="map_detail_full_help">Everything from OpenStreetMap: streets, places, names and icons.</string>
     <string name="map_detail_minimal_help">Just streets, water and parks, clean and in LiteDash colors (data from OpenFreeMap).</string>
+    <string name="map_offline">Offline</string>
+    <string name="map_offline_full">Available with the minimal map.</string>
+    <string name="map_offline_help">Save a zone\'s streets to see them without internet.</string>
+    <string name="map_offline_here">Your zone</string>
+    <string name="map_offline_other">Another zone</string>
+    <string name="map_offline_area">%1$s · %2$d km · %3$d MB · %4$s</string>
+    <string name="map_offline_delete">Delete</string>
+    <string name="map_offline_delete_question">Delete this zone?</string>
+    <string name="map_offline_delete_message">Without internet you won\'t see its streets anymore.</string>
+    <string name="map_offline_size">About %d MB</string>
+    <string name="map_offline_download">Download this zone</string>
+    <string name="map_offline_waiting">Waiting for your location</string>
+    <string name="map_offline_waiting_server">The server asked us to wait a moment; it will continue on its own.</string>
+    <string name="map_offline_progress">Downloading… %1$d of %2$d · %3$d MB</string>
+    <string name="map_offline_blocked">The map server asked us to stop. Try again later; what was downloaded stays.</string>
+    <string name="map_offline_failed">Stopped: check your internet. What was downloaded stays and resumes from there.</string>
+    <string name="map_online_now">Live map</string>
+    <string name="map_offline_now">Offline map</string>
 </resources>

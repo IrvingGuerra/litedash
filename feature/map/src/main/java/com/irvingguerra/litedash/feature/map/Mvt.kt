@@ -2,8 +2,8 @@ package com.irvingguerra.litedash.feature.map
 
 /**
  * Lo poco que el mapa minimalista necesita de una tesela vectorial (formato Mapbox Vector Tile,
- * esquema OpenMapTiles): agua y parques (áreas), ríos (líneas) y calles por tipo. Todo lo demás
- * (edificios, negocios, números de casa…) se salta sin leerlo. Coordenadas en unidades de [extent].
+ * esquema OpenMapTiles): agua, parques y edificios (áreas), ríos (líneas), calles por tipo y sus
+ * nombres. Todo lo demás (negocios, números de casa…) se salta sin leerlo. Coordenadas en unidades de [extent].
  */
 class VectorTile(
     val extent: Int,
@@ -12,7 +12,12 @@ class VectorTile(
     val rivers: List<Shape>,
     /** Por [RoadTier.ordinal]. */
     val roads: List<List<Shape>>,
+    val buildings: List<Shape> = emptyList(),
+    val names: List<RoadName> = emptyList(),
 )
+
+/** Una calle con nombre (capa `transportation_name`): su trazo y su tipo. */
+class RoadName(val name: String, val tier: RoadTier, val shape: Shape)
 
 /** Una línea o un contorno: x, y, x, y… ([parts] = en qué punto empieza cada pedazo). */
 class Shape(val points: FloatArray, val parts: IntArray) {
@@ -51,11 +56,13 @@ fun roadTier(osmClass: String?): RoadTier? = when (osmClass) {
  * Lee lo que se usa de [data] (ya sin gzip). Una tesela dañada da lo que se alcanzó a leer; null si
  * traía algo pero ni una capa (no es una tesela: p. ej. la página de un portal cautivo). Vacía = no hay nada ahí.
  */
-fun parseVectorTile(data: ByteArray): VectorTile? {
+fun parseVectorTile(data: ByteArray, withBuildings: Boolean = true): VectorTile? {
     val water = ArrayList<Shape>()
     val parks = ArrayList<Shape>()
     val rivers = ArrayList<Shape>()
     val roads = List(RoadTier.entries.size) { ArrayList<Shape>() }
+    val buildings = ArrayList<Shape>()
+    val names = ArrayList<RoadName>()
     var extent = 4096
     var layers = 0
     val tile = Pbf(data)
@@ -85,14 +92,24 @@ fun parseVectorTile(data: ByteArray): VectorTile? {
                     if (f.type != LINE) return@forEach
                     roadTier(f.value(layer, classKey))?.let { roads[it.ordinal] += f.shape() }
                 }
+                "building" -> if (withBuildings) layer.features.forEach { f -> if (f.type == POLYGON) buildings += f.shape() }
+                "transportation_name" -> {
+                    val nameKey = layer.keys.indexOf("name")
+                    layer.features.forEach { f ->
+                        if (f.type != LINE) return@forEach
+                        val tier = roadTier(f.value(layer, classKey)) ?: return@forEach
+                        val name = f.value(layer, nameKey)?.takeIf { it.isNotBlank() } ?: return@forEach
+                        names += RoadName(name, tier, f.shape())
+                    }
+                }
             }
         }
     }
     if (layers == 0 && data.isNotEmpty()) return null
-    return VectorTile(extent, water, parks, rivers, roads)
+    return VectorTile(extent, water, parks, rivers, roads, buildings, names)
 }
 
-private val USED_LAYERS = setOf("water", "landcover", "waterway", "transportation")
+private val USED_LAYERS = setOf("water", "landcover", "waterway", "transportation", "building", "transportation_name")
 private val RIVERS = setOf("river", "canal")
 
 private class Layer(val name: String, val extent: Int, val keys: List<String>, val values: List<String?>, val features: List<Feature>)
@@ -151,7 +168,7 @@ private fun readLayer(p: Pbf): Layer? {
             EXTENT -> extent = p.varint().toInt()
             else -> p.skip(tag)
         }
-        // Las capas que no se usan no se leen (son casi toda la tesela: edificios, negocios…).
+        // Las capas que no se usan no se leen (negocios, números de casa, límites…).
         if (name.isNotEmpty() && name !in USED_LAYERS) return null
     }
     return Layer(name, extent, keys, values, features.map(::readFeature))

@@ -44,6 +44,9 @@ object Icons {
     val wifi = icon("M2 8.5a15 15 0 0 1 20 0 M5 12a10 10 0 0 1 14 0 M8.5 15.5a5 5 0 0 1 7 0 M12 19h.01")
     val signal = icon("M5 19v-2 M10 19v-5 M15 19v-8 M20 19v-11")
     val location = icon("M12 21s-6 -5.5 -6 -10.5a6 6 0 0 1 12 0c0 5 -6 10.5 -6 10.5z M12 10.5h.01")
+    // Mapa: regresar a tu posición (flecha de navegación) y sin conexión (nube tachada).
+    val recenter = icon("M12 3l7 18l-7 -4l-7 4z")
+    val offline = icon("M7 18h10a4 4 0 0 0 1.5 -.3 M20.6 15.6a4 4 0 0 0 -3.6 -5.6a6 6 0 0 0 -8.3 -4.4 M6.2 8a6 6 0 0 0 -.7 3.5a3.3 3.3 0 0 0 1.5 6.5 M3 3l18 18")
     // Clima: dibujados en código, sin imágenes.
     val sun = icon("M12 8a4 4 0 1 0 0 8a4 4 0 1 0 0 -8 M12 2v2 M12 20v2 M4.9 4.9l1.4 1.4 M17.7 17.7l1.4 1.4 M2 12h2 M20 12h2 M4.9 19.1l1.4 -1.4 M17.7 6.3l1.4 -1.4")
     val moon = icon("M20 14.5a8 8 0 1 1 -10.5 -10.5a6.5 6.5 0 0 0 10.5 10.5z")

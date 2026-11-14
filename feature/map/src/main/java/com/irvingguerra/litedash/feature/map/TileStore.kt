@@ -28,6 +28,8 @@ import kotlinx.coroutines.launch
 class TileStore(context: Context, private val userAgent: String, val source: TileSource) {
     private val app = context.applicationContext
     private val dir = File(app.filesDir, source.folder)
+    /** Las zonas descargadas (solo el minimalista: OSM no deja bajar en bloque). */
+    private val offline = if (source is VectorTiles) OfflineMaps.get(app) else null
     /** Una descarga (y una lectura) por archivo: varias teselas del 15–17 salen de la misma del 14. */
     private val fileLocks = Array(FILE_LOCKS) { Any() }
     private val lock = Any()
@@ -132,6 +134,11 @@ class TileStore(context: Context, private val userAgent: String, val source: Til
         return synchronized(fileLocks[Math.floorMod(origin.hashCode(), FILE_LOCKS)]) {
             val file = File(dir, "${keyZ(origin)}_${keyX(origin)}_${keyY(origin)}")
             val now = System.currentTimeMillis()
+            // Primero lo descargado sin conexión (no caduca ni gasta datos); vacía = ahí no hay nada y se dibuja lisa.
+            offline?.tile(keyZ(origin), keyX(origin), keyY(origin))?.let { body ->
+                val image = runCatching { source.decode(body, key, origin) }.getOrNull()
+                if (image != null) return Loaded(image, 0L)
+            }
             val tile = data(file, origin) ?: return Loaded(null, now + RETRY_MS)
             val image = runCatching { source.decode(tile.body, key, origin) }.getOrNull()
             when {

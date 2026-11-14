@@ -85,6 +85,18 @@ class MapProjection(
         inverse = invert(values)
     }
 
+    /** El punto ([x], [y]) del plano del mapa en la pantalla, en [out] (x, y); false si queda detrás de la cámara. */
+    fun toScreen(x: Float, y: Float, out: FloatArray): Boolean {
+        project(values, x, y, out)
+        return out[2] > 0f && out[0].isFinite() && out[1].isFinite()
+    }
+
+    /** El punto ([x], [y]) de la pantalla en el plano del mapa, en [out] (x, y); false si cae en el cielo. */
+    fun toPlane(x: Float, y: Float, out: FloatArray): Boolean {
+        project(inverse, x, y, out)
+        return out[2] > 0f && out[0].isFinite() && out[1].isFinite()
+    }
+
     /**
      * Las teselas que se ven, en pares (columna, fila) sin dar la vuelta al mundo: [fx], [fy] son tu
      * posición en coordenadas de tesela y [tilePx] el lado de una en pantalla. Se toma lo visible

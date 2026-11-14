@@ -66,7 +66,7 @@ class MapProjectionTest {
 
     /** El `visibleTiles` real del mapa (MapCanvas.kt); dónde se dibuja no importa aquí. */
     private fun plan(p: MapProjection, lat: Double, lon: Double, z: Int, ts: Float): TilePlan =
-        visibleTiles(p, lat, lon, z, Offset.Zero, ts)
+        visibleTiles(p, tileX(lon, z), tileY(lat, z), z, Offset.Zero, ts)
 
     @Test
     fun farTilesUseLessDetail() {

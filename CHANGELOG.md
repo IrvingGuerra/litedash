@@ -4,6 +4,24 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.4.156] - 2026-11-14
+
+### Agregado
+- **Mapa sin conexión:** en Personalizar mapa → Sin conexión bajas tu zona (10, 25 o 50 km; te dice cuánto pesa) y el
+  mapa minimalista funciona sin internet. Abajo del mapa se ve si es «Mapa en línea» o «Mapa sin conexión». Las zonas
+  guardadas se pueden volver a bajar o borrar.
+- **Nombres de las calles** en el mapa minimalista, siempre derechos (también en la vista inclinada, como en Waze), y
+  la calle donde vas en una pastilla abajo.
+- **Edificios** de cerca y avenidas con más color: se ve por dónde se cruza la ciudad.
+- **Mueve el mapa con un dedo:** aparece un botón para regresar a ti, y si lo dejas, regresa solo a los 20 segundos.
+
+### Cambiado
+- Tu flecha se desliza entre una lectura del GPS y la siguiente en vez de brincar cada segundo (quieto no se mueve nada).
+
+### Arreglado
+- En algunas pantallas (TS10) quedaba un hueco abajo después de encender el auto: LiteDash vuelve a medir la pantalla
+  mientras termina de arrancar. El reporte ahora dice el tamaño de la ventana y de las barras del sistema.
+
 ## [1.4.155] - 2026-11-14
 
 ### Agregado
