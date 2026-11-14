@@ -434,7 +434,12 @@
     <string name="tab_sensors">Sensores</string>
     <string name="obd_no_readiness">Tu auto no reporta los monitores de la verificación.</string>
     <string name="wallpaper_title">Fondo de pantalla</string>
-    <string name="wallpaper_help">Una foto tuya detrás de todo el inicio. Sin imagen, el fondo del tema.</string>
+    <string name="wallpaper_help">Uno de los fondos de LiteDash (se baja al tocarlo) o una foto tuya detrás de todo el inicio. Sin fondo, el del tema.</string>
+    <string name="wallpaper_included">Fondos de LiteDash</string>
+    <string name="wallpaper_downloading">Bajando…</string>
+    <string name="wallpaper_failed">No se pudo bajar el fondo; revisa tu conexión.</string>
+    <string name="wallpaper_credit">Foto: %1$s</string>
+    <string name="wallpaper_own">Tu foto</string>
     <string name="road_trip">viaje</string>
     <string name="logo_pick">Elegir imagen</string>
     <string name="logo_change">Cambiar imagen</string>

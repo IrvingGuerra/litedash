@@ -4,6 +4,18 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.4.155] - 2026-11-14
+
+### Agregado
+- **Fondos de LiteDash:** en Fondo de pantalla hay 10 fondos para elegir (auroras, la Tierra de noche desde la Estación
+  Espacial, la Vía Láctea, dunas al atardecer y abstractos propios). Se bajan de litedash.dev solo cuando tocas uno, así
+  que la app no pesa más; ya bajado queda guardado y no vuelve a usar internet. Sin conexión, sigue tu foto.
+- **Mapa con dos dedos:** júntalos para alejar y sepáralos para acercar; ya no se aleja con toques.
+
+### Cambiado
+- Con «Usar app externa en accesos directos» apagado, el widget Mapa ya no trae el botón a Waze o Maps ni hay toque que
+  te saque de LiteDash: todo abre el mapa de LiteDash en grande.
+
 ## [1.4.154] - 2026-11-14
 
 ### Agregado

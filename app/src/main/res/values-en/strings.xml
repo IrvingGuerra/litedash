@@ -426,7 +426,12 @@
     <string name="tab_sensors">Sensors</string>
     <string name="obd_no_readiness">Your car doesn\'t report the inspection monitors.</string>
     <string name="wallpaper_title">Wallpaper</string>
-    <string name="wallpaper_help">A photo of yours behind the whole home screen. Without one, the theme background.</string>
+    <string name="wallpaper_help">A LiteDash wallpaper (downloaded when you tap it) or a photo of yours behind the whole home screen. Without one, the theme background.</string>
+    <string name="wallpaper_included">LiteDash wallpapers</string>
+    <string name="wallpaper_downloading">Downloading…</string>
+    <string name="wallpaper_failed">Couldn\'t download the wallpaper; check your connection.</string>
+    <string name="wallpaper_credit">Photo: %1$s</string>
+    <string name="wallpaper_own">Your photo</string>
     <string name="road_trip">trip</string>
     <string name="logo_pick">Pick image</string>
     <string name="logo_change">Change image</string>

@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "wallpapers": [
+    {"id": "aurora-suave", "credit": "LiteDash"},
+    {"id": "venus-dunas", "credit": "NPS · Great Sand Dunes"},
+    {"id": "glow", "credit": "LiteDash"},
+    {"id": "aurora-iss", "credit": "NASA · Samantha Cristoforetti"},
+    {"id": "tierra-de-noche", "credit": "NASA"},
+    {"id": "via-lactea", "credit": "NPS · Jeremy M. White"},
+    {"id": "luna-dunas", "credit": "NPS · Great Sand Dunes"},
+    {"id": "curvas-de-nivel", "credit": "LiteDash"},
+    {"id": "niebla-valle", "credit": "Ted Moravec (CC0)"},
+    {"id": "bruma-clara", "credit": "LiteDash"}
+  ]
+}

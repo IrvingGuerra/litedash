@@ -17,6 +17,14 @@ import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import com.irvingguerra.litedash.core.ui.Radius
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -448,11 +456,68 @@ private fun imageButtons(target: SavedImage, onPicked: (Uri) -> Unit = {}, onRem
 
 private val IMAGE_TYPES = setOf("jpg", "jpeg", "png", "webp", "gif", "bmp", "heic")
 
-/** Inicio y apariencia → Inicio → Fondo de pantalla: elegir, cambiar o quitar la imagen. */
+/**
+ * Inicio y apariencia → Inicio → Fondo de pantalla: los fondos de LiteDash (miniaturas; uno se baja de litedash.dev
+ * al tocarlo y queda guardado como si fuera tu foto) y elegir, cambiar o quitar una foto tuya. Sin internet, solo tu foto.
+ */
 @Composable
 fun WallpaperSettings() {
-    imageButtons(WALLPAPER)
+    val c = LocalColors.current
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    // Cuál de los de LiteDash está puesto (un archivo junto al fondo: elegir tu foto o quitarlo lo borra).
+    val marker = remember { File(context.filesDir, "wallpaper.id") }
+    var chosen by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(WALLPAPER.version) { chosen = withContext(Dispatchers.IO) { marker.takeIf { it.exists() }?.readText()?.trim() } }
+    val choices by produceState<List<WallpaperChoice>?>(null) { value = loadWallpapers(context) }
+    var downloading by remember { mutableStateOf<String?>(null) }
+    var failed by remember { mutableStateOf(false) }
+    val list = choices
+    if (!list.isNullOrEmpty()) {
+        Label(stringResource(R.string.wallpaper_included).uppercase(), Typography.label, c.textMuted)
+        Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            for (w in list) {
+                val thumb by produceState<ImageBitmap?>(null, w.id) { value = wallpaperThumb(context, w.id) }
+                val selected = chosen == w.id
+                val shape = RoundedCornerShape(Radius.inner)
+                Box(
+                    Modifier
+                        .size(WALLPAPER_THUMB_WIDTH, WALLPAPER_THUMB_WIDTH * 9 / 16)
+                        .clip(shape)
+                        .background(c.surfaceHigh)
+                        .border(if (selected) 3.dp else 0.dp, if (selected) c.accent else Color.Transparent, shape)
+                        .clickable(enabled = downloading == null) {
+                            downloading = w.id
+                            failed = false
+                            scope.launch {
+                                val ok = downloadWallpaper(context, w.id, WALLPAPER.file(context))
+                                if (ok) {
+                                    withContext(Dispatchers.IO) { runCatching { marker.writeText(w.id) } }
+                                    WALLPAPER.bump()
+                                }
+                                failed = !ok
+                                downloading = null
+                            }
+                        },
+                ) {
+                    thumb?.let { Image(it, null, Modifier.fillMaxSize().graphicsLayer { alpha = if (downloading == w.id) 0.4f else 1f }, contentScale = ContentScale.Crop) }
+                    if (downloading == w.id) Label(stringResource(R.string.wallpaper_downloading), Typography.small, c.text, 1, Modifier.align(Alignment.Center))
+                }
+            }
+        }
+        val credit = list.firstOrNull { it.id == chosen }?.credit
+        when {
+            failed -> Label(stringResource(R.string.wallpaper_failed), Typography.small, c.danger)
+            !credit.isNullOrBlank() && credit != "LiteDash" -> Label(stringResource(R.string.wallpaper_credit, credit), Typography.small, c.textMuted)
+        }
+        Label(stringResource(R.string.wallpaper_own).uppercase(), Typography.label, c.textMuted)
+    }
+    val forget: () -> Unit = { scope.launch { withContext(Dispatchers.IO) { marker.delete() }; chosen = null } }
+    imageButtons(WALLPAPER, onPicked = { forget() }, onRemoved = forget)
 }
+
+/** Ancho de cada miniatura de los fondos de LiteDash (16:9). */
+private val WALLPAPER_THUMB_WIDTH = 144.dp
 
 /** Inicio y apariencia → Inicio → Animación de entrada: encenderla y su propia imagen. */
 @Composable
