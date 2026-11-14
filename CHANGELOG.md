@@ -4,6 +4,23 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.4.157] - 2026-11-14
+
+### Agregado
+- **Opciones del mapa en Ajustes → Apps → Navegación:** «App de mapas», «Mapa de LiteDash» (estilo, orientación, zoom y
+  colores, con vista previa; se aplica a todos tus widgets Mapa) y «Sin conexión».
+- **Elige la zona a descargar en un mapa:** se ve el círculo del radio y puedes arrastrarlo a otro lugar («Mi ubicación»
+  regresa a ti). Ahora también de 100 y 200 km, con el espacio libre y un aviso si la zona es grande.
+
+### Cambiado
+- **El mapa siempre es plano.** De viaje (andando o con Waze/Maps navegando) se acerca hasta ver un par de calles y se
+  inclina como Waze, siempre hacia donde vas; si lo alejas con dos dedos vuelve a ser plano. Se quitó la opción «Vista».
+- **Velocímetro sin fondo:** sobre tu fondo de pantalla el aro y los textos apagados ahora son translúcidos (antes se
+  veía una mancha gris).
+
+### Arreglado
+- La música de una carpeta o USB muestra el título y el artista que trae la canción (antes, el nombre del archivo).
+
 ## [1.4.156] - 2026-11-14
 
 ### Agregado

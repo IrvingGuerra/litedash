@@ -18,7 +18,7 @@ import kotlin.math.tan
 // (GPL-3.0, https://github.com/stradaos): Web Mercator a mano; las teselas, raster de OpenStreetMap o vectoriales de OpenFreeMap.
 
 /** El zoom más cercano y el más lejano que se usan (el toque cicla entre ellos). */
-const val MAX_ZOOM = 17
+const val MAX_ZOOM = 18
 const val MIN_ZOOM = 14
 
 /** Hasta dónde llega Web Mercator (más allá la latitud se va al infinito). */
@@ -39,17 +39,6 @@ fun tileY(lat: Double, z: Int): Double {
  */
 fun tileSpan(center: Double, fromPx: Float, toPx: Float, tilePx: Float): IntRange =
     floor(center + fromPx / tilePx).toInt()..(ceil(center + toPx / tilePx).toInt() - 1)
-
-/**
- * Zoom según la velocidad: 17 en ciudad, 16 desde 35 km/h, 15 desde 70. Al frenar regresa
- * 5 km/h abajo del umbral para no brincar de zoom en zoom alrededor de él.
- */
-fun autoZoom(kmh: Float?, current: Int): Int {
-    val v = kmh ?: 0f
-    val faster = if (v > 70f) 15 else if (v > 35f) 16 else 17
-    val slower = if (v > 65f) 15 else if (v > 30f) 16 else 17
-    return if (faster < current) faster else if (slower > current) slower else current
-}
 
 /** Mínimo de la memoria de teselas: unas 36 de OSM (256 px a 16 bits). */
 const val MEMORY_MIN_BYTES = 36 * 256 * 256 * 2

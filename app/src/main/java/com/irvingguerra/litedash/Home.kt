@@ -213,6 +213,8 @@ class Dependencies(
         // Las piezas de un módulo apagado no se ven ni apartan su lugar (ni las ponen las plantillas).
         dashboard.hidden = { type -> moduleOff(this, type) != null }
         dashboard.limits = ::limitsOf
+        // Un widget Mapa nuevo arranca con el aspecto de Ajustes → Apps → Navegación.
+        dashboard.initialData = { type -> if (type == TileTypes.MAP) prefs.mapLook.orEmpty() else "" }
     }
 
     /** Las llantas: se crean la primera vez que algo las pide (sus Ajustes o una pieza con fuente elegida). */
@@ -759,8 +761,8 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                                 )
                                 Expanded.MAP -> {
                                     val app = mapApp(d, apps)
-                                    // Como el widget Mapa que se tocó (o el primero que haya).
-                                    val look = (expandedFrom ?: d.dashboard.shown.firstOrNull { it.type == TileTypes.MAP })?.data.orEmpty()
+                                    // Como el widget Mapa que se tocó (o el primero que haya; sin widget, el aspecto de Ajustes).
+                                    val look = (expandedFrom ?: d.dashboard.shown.firstOrNull { it.type == TileTypes.MAP })?.data ?: d.prefs.mapLook.orEmpty()
                                     MapExpanded(
                                         d, look, app, onPlace = { navigateTo(context, app, it) }, onNavigate = { actions.onNavigate(app) },
                                         close = close, modifier = Modifier.padding(6.dp),

@@ -42,6 +42,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.irvingguerra.litedash.core.ui.Card
+import com.irvingguerra.litedash.core.ui.LocalPlainCard
+import androidx.compose.runtime.CompositionLocalProvider
 import com.irvingguerra.litedash.core.ui.Colors
 import com.irvingguerra.litedash.core.ui.Label
 import com.irvingguerra.litedash.core.ui.LocalColors
@@ -392,7 +394,11 @@ fun GaugeCard(
 ) {
     val shown = remember { Animatable(0f) }
     LaunchedEffect(fraction) { shown.animateTo(fraction.coerceIn(0f, 1f), tween(250)) }
-    Card(Modifier.fillMaxSize(), onClick = onClick) {
+    // Sin tarjeta (sobre el fondo de pantalla) el aro y las marcas apagadas van translúcidos: un gris opaco se veía
+    // como mancha; y lo apagado, un poco más claro para leerse sobre cualquier fondo.
+    val base = LocalColors.current
+    val colors = if (LocalPlainCard.current) base.copy(surfaceHigh = base.text.copy(alpha = 0.16f), textMuted = base.text.copy(alpha = 0.72f)) else base
+    CompositionLocalProvider(LocalColors provides colors) { Card(Modifier.fillMaxSize(), onClick = onClick) {
         BoxWithConstraints(Modifier.fillMaxSize().padding(TilePadding), contentAlignment = Alignment.Center) {
             val compact = maxHeight < 130.dp
             // Lo del frente ocupa ~62 % del ancho de la esfera, con la proporción del auto.
@@ -411,7 +417,7 @@ fun GaugeCard(
             }
             if (front != null && frontSpace > 0.dp) front(Modifier.align(Alignment.BottomCenter).width(frontWidth).height(frontSpace))
         }
-    }
+    } }
 }
 
 /** El círculo del arco (de la aguja también): centrado un poco abajo, del tamaño que quepa. */

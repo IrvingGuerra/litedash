@@ -21,6 +21,9 @@ class DashboardState(private val store: DashboardStore) {
     /** El tamaño mínimo de cada tipo (lo pone la app): para llevar un acomodo a otra cuadrícula. */
     var limits: (String) -> SizeLimits = { SizeLimits(1, 1) }
 
+    /** Con qué datos arranca una pieza nueva de cada tipo si no se le dan (lo pone la app; p. ej. el aspecto del mapa). */
+    var initialData: (String) -> String = { "" }
+
     /** Las piezas que se ven y se acomodan. */
     val shown: List<Tile> get() = tiles.filterNot { hidden(it.type) }
 
@@ -92,7 +95,7 @@ class DashboardState(private val store: DashboardStore) {
         for ((width, height) in listOf(size, limits.minWidth to limits.minHeight)) {
             val spot = shown.freeSpot(width, height, c) ?: continue
             val id = "$type-${System.currentTimeMillis().toString(36)}"
-            changeShown(shown + Tile(id, type, spot.first, spot.second, width, height, data))
+            changeShown(shown + Tile(id, type, spot.first, spot.second, width, height, data.ifEmpty { initialData(type) }))
             return true
         }
         return false

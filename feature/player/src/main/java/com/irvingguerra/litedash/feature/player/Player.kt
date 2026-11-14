@@ -196,8 +196,10 @@ object Player {
         // La carátula después: en el mismo hilo va la carga del audio, que no espera a un logo lento.
         io.execute {
             if (myLoad != load) return@execute
+            // Las canciones de una carpeta o USB solo traen el nombre del archivo: título, artista y álbum de sus etiquetas.
+            val tags = (item as? Track)?.let(::tagsOf)
             val art = artworkOf(item)
-            main.post { if (myLoad == load) publishMetadata(item, art) }
+            main.post { if (myLoad == load) publishMetadata(item, art, tags) }
         }
     }
 
@@ -289,13 +291,13 @@ object Player {
     /** Se creó la sesión (empezó a sonar algo): la pieza Música la toma. */
     var onSession: (() -> Unit)? = null
 
-    private fun publishMetadata(item: Playable, art: Bitmap?) {
+    private fun publishMetadata(item: Playable, art: Bitmap?, tags: Tags? = null) {
         val duration = (item as? Track)?.durationMs ?: -1L
         session?.setMetadata(
             MediaMetadata.Builder()
-                .putString(MediaMetadata.METADATA_KEY_TITLE, item.title)
-                .putString(MediaMetadata.METADATA_KEY_ARTIST, item.subtitle)
-                .putString(MediaMetadata.METADATA_KEY_ALBUM, (item as? Track)?.album ?: "")
+                .putString(MediaMetadata.METADATA_KEY_TITLE, tags?.title ?: item.title)
+                .putString(MediaMetadata.METADATA_KEY_ARTIST, tags?.artist ?: item.subtitle)
+                .putString(MediaMetadata.METADATA_KEY_ALBUM, tags?.album ?: (item as? Track)?.album ?: "")
                 .putLong(MediaMetadata.METADATA_KEY_DURATION, duration)
                 .apply { if (art != null) putBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART, art) }
                 .build(),
@@ -323,6 +325,23 @@ object Player {
                 .apply { if (s.error != null) setErrorMessage(s.error) }.build(),
         )
     }
+
+    /** Lo que dicen las etiquetas de la canción (null = nada o vacío: se queda lo que ya se sabía). */
+    private class Tags(val title: String?, val artist: String?, val album: String?)
+
+    private fun tagsOf(track: Track): Tags? = runCatching {
+        // Ya vienen de MediaStore (con artista): no hace falta leer el archivo otra vez.
+        if (track.artist.isNotBlank()) return null
+        MediaMetadataRetriever().let { r ->
+            try {
+                r.setDataSource(app, track.uri)
+                fun tag(key: Int) = r.extractMetadata(key)?.trim()?.takeIf { it.isNotEmpty() }
+                Tags(tag(MediaMetadataRetriever.METADATA_KEY_TITLE), tag(MediaMetadataRetriever.METADATA_KEY_ARTIST), tag(MediaMetadataRetriever.METADATA_KEY_ALBUM))
+            } finally {
+                r.release()
+            }
+        }
+    }.getOrNull()?.takeIf { it.title != null || it.artist != null }
 
     /** Carátula del archivo (etiqueta incrustada) o el logo de la estación, reducida a [ART_SIDE]. */
     private fun artworkOf(item: Playable): Bitmap? = runCatching {

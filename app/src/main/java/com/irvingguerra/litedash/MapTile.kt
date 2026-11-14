@@ -1,6 +1,9 @@
 package com.irvingguerra.litedash
 
 import android.content.Context
+import android.os.Build
+import android.os.StatFs
+import android.os.storage.StorageManager
 import android.text.format.DateFormat
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -23,7 +26,9 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -54,9 +59,11 @@ import com.irvingguerra.litedash.feature.map.MapDetail
 import com.irvingguerra.litedash.feature.map.MapLook
 import com.irvingguerra.litedash.feature.map.MapOrientation
 import com.irvingguerra.litedash.feature.map.MapStyle
-import com.irvingguerra.litedash.feature.map.MapView
 import com.irvingguerra.litedash.feature.map.MapZoom
+import com.irvingguerra.litedash.feature.map.rememberFreeMapCamera
 import com.irvingguerra.litedash.feature.map.rememberMapCamera
+import com.irvingguerra.litedash.feature.map.zoomToFit
+import com.irvingguerra.litedash.feature.dashboard.TileTypes
 import com.irvingguerra.litedash.feature.map.MinimalPalette
 import com.irvingguerra.litedash.feature.map.OfflineError
 import com.irvingguerra.litedash.feature.map.OfflineMaps
@@ -67,6 +74,8 @@ import com.irvingguerra.litedash.feature.map.tilePx
 import com.irvingguerra.litedash.feature.music.NotificationService
 import java.text.SimpleDateFormat
 import java.util.Date
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 /**
  * Widget Mapa: tu posición del GPS en el mapa (minimalista de OpenFreeMap o completo de OpenStreetMap),
@@ -173,18 +182,11 @@ private fun LiveMap(d: Dependencies, look: MapLook, modifier: Modifier, onTap: (
     val c = LocalColors.current
     KeepTripRunning(d.trip)
     val context = LocalContext.current
-    val density = LocalDensity.current.density
-    // Una por fuente y, solo el minimalista (se dibuja ya en sus colores), por claro u oscuro; el completo usa un filtro.
-    val darkTiles = look.detail == MapDetail.MINIMAL && look.dark(c.dark)
-    val store = remember(look.detail, darkTiles) { newTileStore(context, look.detail, darkTiles, density) }
-    val covered = LocalHomeCovered.current
-    LifecycleStartEffect(store, covered) {
-        if (!covered) store.resume()
-        onStopOrDispose { store.pause() }
-    }
+    val store = rememberTileStore(look, c.dark)
     val position = d.trip.position
-    // Del bus (la del OBD si hay escáner, si no la del GPS); solo la usa el zoom automático.
-    val kmh = if (look.zoom == MapZoom.AUTO) d.bus.watch(Signal.SPEED) else null
+    // Del bus (la del OBD si hay escáner, si no la del GPS): andando (o con Waze/Maps navegando) va de viaje.
+    val kmh = d.bus.watch(Signal.SPEED)
+    val navigating = d.navigation.instruction != null
     val camera = rememberMapCamera()
     // Solo cambia al mover o centrar el mapa (no con cada movimiento del dedo).
     val centered by remember(camera) { derivedStateOf { camera.centered } }
@@ -193,7 +195,7 @@ private fun LiveMap(d: Dependencies, look: MapLook, modifier: Modifier, onTap: (
             Label(stringResource(R.string.map_waiting), Typography.body, c.textMuted, maxLines = 2, modifier = Modifier.align(Alignment.Center).padding(16.dp))
             return@BoxWithConstraints
         }
-        MapCanvas(store, position.latitude, position.longitude, d.trip.bearing, kmh, look, Modifier.fillMaxSize(), camera, onTap)
+        MapCanvas(store, position.latitude, position.longitude, d.trip.bearing, kmh, look, Modifier.fillMaxSize(), camera, navigating, onTap = onTap)
         // Abajo a la izquierda (a la derecha van los créditos): centrar si lo moviste, la calle y si es en línea o bajado.
         val offline = look.detail == MapDetail.MINIMAL && OfflineMaps.get(context).covers(position.latitude, position.longitude)
         // Angosto, los créditos ocupan dos renglones a lo ancho: lo de la izquierda va arriba de ellos y sin el estado.
@@ -231,13 +233,31 @@ private fun MapPill(icon: ImageVector, text: String, color: Color) {
 }
 
 /** Más bajo, el mapa no lleva la pastilla de en línea o sin conexión (estorba). */
-private val STATUS_HEIGHT = 150.dp
+private val STATUS_HEIGHT = 220.dp
 
 /** Más angosto, los créditos del mapa van en dos renglones (como en `MapCanvas`). */
 private val NARROW_MAP = 320.dp
 
 /** Como se presenta LiteDash ante los servidores de mapas (lo piden sus políticas de uso). */
 private val MAP_USER_AGENT = "LiteDash/${BuildConfig.VERSION_NAME} (+https://litedash.dev)"
+
+/**
+ * Las teselas de [look], bajando solo mientras se ve y nada lo tapa: una por fuente y, solo el minimalista (se
+ * dibuja ya en sus colores), por claro u oscuro; el completo usa un filtro.
+ */
+@Composable
+private fun rememberTileStore(look: MapLook, themeDark: Boolean): TileStore {
+    val context = LocalContext.current
+    val density = LocalDensity.current.density
+    val darkTiles = look.detail == MapDetail.MINIMAL && look.dark(themeDark)
+    val store = remember(look.detail, darkTiles) { newTileStore(context, look.detail, darkTiles, density) }
+    val covered = LocalHomeCovered.current
+    LifecycleStartEffect(store, covered) {
+        if (!covered) store.resume()
+        onStopOrDispose { store.pause() }
+    }
+    return store
+}
 
 private fun newTileStore(context: Context, detail: MapDetail, dark: Boolean, density: Float): TileStore {
     val source = when (detail) {
@@ -247,10 +267,9 @@ private fun newTileStore(context: Context, detail: MapDetail, dark: Boolean, den
     return TileStore(context, MAP_USER_AGENT, source)
 }
 
-/** Personalizar mapa: detalle, orientación, vista, zoom y colores, con el mapa en vivo como vista previa. */
+/** Personalizar mapa: estilo, orientación, zoom y colores de este widget, con el mapa en vivo como vista previa. */
 @Composable
 fun CustomizeMapPanel(d: Dependencies, tileId: String, close: () -> Unit) {
-    val c = LocalColors.current
     val tile = d.dashboard.tiles.firstOrNull { it.id == tileId }
     if (tile == null) {
         // Cerrar escribe estado: fuera de la composición.
@@ -265,36 +284,7 @@ fun CustomizeMapPanel(d: Dependencies, tileId: String, close: () -> Unit) {
             val preview = @Composable { m: Modifier -> if (granted) Card(m) { LiveMap(d, look, Modifier.fillMaxSize()) } }
             val options = @Composable { m: Modifier ->
                 Column(m.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                    Label(stringResource(R.string.map_detail), Typography.label, c.textMuted)
-                    Segmented(
-                        listOf(MapDetail.MINIMAL to stringResource(R.string.map_detail_minimal), MapDetail.FULL to stringResource(R.string.map_detail_full)),
-                        look.detail, { set(look.copy(detail = it)) },
-                    )
-                    Label(stringResource(if (look.detail == MapDetail.FULL) R.string.map_detail_full_help else R.string.map_detail_minimal_help), Typography.small, c.textMuted)
-                    Label(stringResource(R.string.map_orientation), Typography.label, c.textMuted)
-                    Segmented(
-                        listOf(MapOrientation.NORTH to stringResource(R.string.map_north), MapOrientation.HEADING to stringResource(R.string.map_heading)),
-                        look.orientation, { set(look.copy(orientation = it)) },
-                    )
-                    Label(stringResource(R.string.map_view), Typography.label, c.textMuted)
-                    Segmented(
-                        listOf(MapView.FLAT to stringResource(R.string.map_flat), MapView.TILTED to stringResource(R.string.map_tilted)),
-                        look.view, { set(look.copy(view = it)) },
-                    )
-                    Label(stringResource(R.string.map_zoom), Typography.label, c.textMuted)
-                    Segmented(
-                        listOf(
-                            MapZoom.AUTO to stringResource(R.string.map_zoom_auto), MapZoom.NEAR to stringResource(R.string.map_zoom_near),
-                            MapZoom.MID to stringResource(R.string.map_zoom_mid), MapZoom.FAR to stringResource(R.string.map_zoom_far),
-                        ),
-                        look.zoom, { set(look.copy(zoom = it)) },
-                    )
-                    Label(stringResource(R.string.map_zoom_help), Typography.small, c.textMuted)
-                    Label(stringResource(R.string.map_style), Typography.label, c.textMuted)
-                    Segmented(
-                        listOf(MapStyle.THEME to stringResource(R.string.map_style_theme), MapStyle.LIGHT to stringResource(R.string.map_style_light), MapStyle.DARK to stringResource(R.string.map_style_dark)),
-                        look.style, { set(look.copy(style = it)) },
-                    )
+                    MapLookOptions(look, ::set)
                     OfflineSection(d, look.detail)
                     Box(Modifier.height(12.dp))
                 }
@@ -316,8 +306,84 @@ fun CustomizeMapPanel(d: Dependencies, tileId: String, close: () -> Unit) {
 }
 
 /**
- * Sin conexión: las zonas guardadas (con Borrar), el radio a bajar con su tamaño aproximado y el botón para
- * bajar la zona donde estás; mientras baja, el avance y Cancelar. Solo el minimalista (OSM no deja bajar en bloque).
+ * Ajustes → Apps → Navegación → Mapa de LiteDash: las mismas opciones que el panel de un widget, para todos los
+ * widgets Mapa y el mapa en grande ([applyMapLook]), con el mapa en vivo como vista previa.
+ */
+@Composable
+internal fun MapLookSettings(d: Dependencies) {
+    val look = MapLook.parse(d.prefs.mapLook.orEmpty())
+    val (granted, _) = rememberGpsPermission(d)
+    val options = @Composable { m: Modifier ->
+        Column(m, verticalArrangement = Arrangement.spacedBy(14.dp)) { MapLookOptions(look) { applyMapLook(d, it) } }
+    }
+    if (!granted) return options(Modifier.fillMaxWidth())
+    BoxWithConstraints(Modifier.fillMaxWidth()) {
+        if (maxWidth >= SETTINGS_SIDE_BY_SIDE) {
+            Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
+                Card(Modifier.weight(1f).height(SETTINGS_PREVIEW_HEIGHT)) { LiveMap(d, look, Modifier.fillMaxSize()) }
+                options(Modifier.weight(1f))
+            }
+        } else {
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                Card(Modifier.fillMaxWidth().height(OFFLINE_PREVIEW_HEIGHT)) { LiveMap(d, look, Modifier.fillMaxSize()) }
+                options(Modifier.fillMaxWidth())
+            }
+        }
+    }
+}
+
+/** Ajustes → Apps → Navegación → Sin conexión (con el estilo que tenga el mapa de LiteDash). */
+@Composable
+internal fun MapOfflineSettings(d: Dependencies) {
+    OfflineSection(d, MapLook.parse(d.prefs.mapLook.orEmpty()).detail)
+}
+
+/** El aspecto de LiteDash: se guarda y se pone en todos los widgets Mapa del inicio (de una sola escritura). */
+private fun applyMapLook(d: Dependencies, look: MapLook) {
+    val data = look.encode()
+    d.prefs.mapLook = data.ifEmpty { null }
+    d.dashboard.changeData(d.dashboard.tiles.filter { it.type == TileTypes.MAP }.associate { it.id to data })
+}
+
+/** Ancho desde el que la vista previa de Ajustes va a un lado de las opciones. */
+private val SETTINGS_SIDE_BY_SIDE = 640.dp
+private val SETTINGS_PREVIEW_HEIGHT = 340.dp
+
+/** Las opciones del aspecto (las comparten el panel de un widget y Ajustes). */
+@Composable
+private fun MapLookOptions(look: MapLook, set: (MapLook) -> Unit) {
+    val c = LocalColors.current
+    Label(stringResource(R.string.map_detail), Typography.label, c.textMuted)
+    Segmented(
+        listOf(MapDetail.MINIMAL to stringResource(R.string.map_detail_minimal), MapDetail.FULL to stringResource(R.string.map_detail_full)),
+        look.detail, { set(look.copy(detail = it)) },
+    )
+    Label(stringResource(if (look.detail == MapDetail.FULL) R.string.map_detail_full_help else R.string.map_detail_minimal_help), Typography.small, c.textMuted)
+    Label(stringResource(R.string.map_orientation), Typography.label, c.textMuted)
+    Segmented(
+        listOf(MapOrientation.NORTH to stringResource(R.string.map_north), MapOrientation.HEADING to stringResource(R.string.map_heading)),
+        look.orientation, { set(look.copy(orientation = it)) },
+    )
+    Label(stringResource(R.string.map_zoom), Typography.label, c.textMuted)
+    Segmented(
+        listOf(
+            MapZoom.AUTO to stringResource(R.string.map_zoom_auto), MapZoom.NEAR to stringResource(R.string.map_zoom_near),
+            MapZoom.MID to stringResource(R.string.map_zoom_mid), MapZoom.FAR to stringResource(R.string.map_zoom_far),
+        ),
+        look.zoom, { set(look.copy(zoom = it)) },
+    )
+    Label(stringResource(R.string.map_zoom_help), Typography.small, c.textMuted)
+    Label(stringResource(R.string.map_style), Typography.label, c.textMuted)
+    Segmented(
+        listOf(MapStyle.THEME to stringResource(R.string.map_style_theme), MapStyle.LIGHT to stringResource(R.string.map_style_light), MapStyle.DARK to stringResource(R.string.map_style_dark)),
+        look.style, { set(look.copy(style = it)) },
+    )
+}
+
+/**
+ * Sin conexión: las zonas guardadas (con Borrar); el radio y un mapa con su círculo para elegir la zona (se arrastra;
+ * «Mi ubicación» regresa), su tamaño aproximado y lo libre; mientras baja, el avance y Cancelar. Solo el minimalista
+ * (OSM no deja bajar en bloque).
  */
 @Composable
 private fun OfflineSection(d: Dependencies, detail: MapDetail) {
@@ -327,8 +393,8 @@ private fun OfflineSection(d: Dependencies, detail: MapDetail) {
         Label(stringResource(R.string.map_offline_full), Typography.small, c.textMuted)
         return
     }
+    KeepTripRunning(d.trip)
     val context = LocalContext.current
-    val density = LocalDensity.current.density
     val offline = remember { OfflineMaps.get(context) }
     val position = d.trip.position
     Label(stringResource(R.string.map_offline_help), Typography.small, c.textMuted)
@@ -354,7 +420,8 @@ private fun OfflineSection(d: Dependencies, detail: MapDetail) {
         Box(Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp)).background(c.surfaceHigh)) {
             Box(Modifier.fillMaxWidth(fraction).fillMaxHeight().background(c.accent))
         }
-        Label(stringResource(R.string.map_offline_progress, job.done, job.total, megabytes(job.bytes)), Typography.small, c.textMuted)
+        // Sin total todavía se están contando las teselas (un instante; de 200 km, un poco más).
+        if (job.total > 0) Label(stringResource(R.string.map_offline_progress, job.done, job.total, megabytes(job.bytes)), Typography.small, c.textMuted)
         if (job.waiting) Label(stringResource(R.string.map_offline_waiting_server), Typography.small, c.warning)
         Button(stringResource(R.string.cancel), { offline.cancel() })
         return
@@ -364,26 +431,84 @@ private fun OfflineSection(d: Dependencies, detail: MapDetail) {
     }
     var km by rememberSaveable { mutableIntStateOf(OFFLINE_RADII[1]) }
     Segmented(OFFLINE_RADII.map { it to "$it km" }, km, { km = it })
-    // El tamaño depende de la latitud (no de cada metro): se recalcula solo al cambiar de radio o de zona.
-    val lat = position?.latitude?.let { Math.round(it * 10) / 10.0 }
-    val lon = position?.longitude?.let { Math.round(it * 10) / 10.0 }
-    if (lat != null && lon != null) {
-        val tiles = remember(lat, lon, km) { offline.estimate(lat, lon, km) }
-        Label(stringResource(R.string.map_offline_size, megabytes(tiles * OfflineMaps.AVG_TILE_BYTES)), Typography.small, c.textMuted)
-    }
     if (position == null) {
         Button(stringResource(R.string.map_offline_download), {}, primary = true, enabled = false)
         Label(stringResource(R.string.map_offline_waiting), Typography.small, c.textMuted)
     } else {
-        Button(stringResource(R.string.map_offline_download), {
-            val source = VectorTiles(context, MinimalPalette.LIGHT, tilePx(density).toInt(), density, MAP_USER_AGENT)
-            offline.download(position.latitude, position.longitude, km, source, MAP_USER_AGENT)
-        }, primary = true)
+        OfflinePicker(offline, position.latitude, position.longitude, km)
     }
 }
 
-/** Radios que se pueden bajar (km); el de en medio, de fábrica. */
-private val OFFLINE_RADII = listOf(10, 25, 50)
+/**
+ * El mapa para elegir la zona (minimalista, plano, norte arriba) con el círculo de [km] alrededor de su centro y el
+ * zoom para que quepa; se arrastra hasta ~2 000 km. Abajo, el tamaño, lo libre y el botón para bajarla.
+ */
+@Composable
+private fun OfflinePicker(offline: OfflineMaps, lat: Double, lon: Double, km: Int) {
+    val c = LocalColors.current
+    val context = LocalContext.current
+    val density = LocalDensity.current.density
+    val look = remember { MapLook() }
+    val store = rememberTileStore(look, c.dark)
+    val camera = rememberFreeMapCamera()
+    val centered by remember(camera) { derivedStateOf { camera.centered } }
+    Card(Modifier.fillMaxWidth().height(OFFLINE_PREVIEW_HEIGHT)) {
+        BoxWithConstraints(Modifier.fillMaxSize()) {
+            val viewPx = with(LocalDensity.current) { minOf(maxWidth, maxHeight).toPx() }
+            val zoom = zoomToFit(km.toFloat(), lat, viewPx, tilePx(density))
+            MapCanvas(store, lat, lon, null, null, look, Modifier.fillMaxSize(), camera, fixedZoom = zoom, ringKm = km.toFloat())
+            if (!centered) Button(stringResource(R.string.map_offline_my_location), camera::recenter, Modifier.align(Alignment.TopStart).padding(8.dp))
+        }
+    }
+    // El tamaño depende de la latitud (no de cada metro): se recalcula solo al cambiar de radio o de zona (a ~10 km).
+    val here by rememberUpdatedState(lat to lon)
+    val zone by remember(camera) {
+        derivedStateOf { camera.center(here.first, here.second).let { (a, b) -> Math.round(a * 10) / 10.0 to Math.round(b * 10) / 10.0 } }
+    }
+    val tiles by produceState<Int?>(null, zone, km) { value = offline.estimate(zone.first, zone.second, km) }
+    // Lo libre se vuelve a leer al terminar o borrar una zona.
+    val free by produceState<Long?>(null, offline.areas) { value = withContext(Dispatchers.IO) { freeBytes(context) } }
+    val bytes = tiles?.let { it * OfflineMaps.AVG_TILE_BYTES }
+    val fits = bytes != null && free?.let { bytes + FREE_MARGIN_BYTES <= it } ?: false
+    if (bytes != null) {
+        val big = bytes > BIG_ZONE_BYTES
+        Label(
+            free?.let { stringResource(R.string.map_offline_size_free, megabytes(bytes), megabytes(it)) } ?: stringResource(R.string.map_offline_size, megabytes(bytes)),
+            Typography.small, if (big) c.warning else c.textMuted,
+        )
+        if (big && fits) Label(stringResource(R.string.map_offline_big), Typography.small, c.warning)
+        if (free != null && !fits) Label(stringResource(R.string.map_offline_no_room), Typography.small, c.warning)
+    }
+    Button(stringResource(R.string.map_offline_download), {
+        val (centerLat, centerLon) = camera.center(lat, lon)
+        val source = VectorTiles(context, MinimalPalette.LIGHT, tilePx(density).toInt(), density, MAP_USER_AGENT)
+        offline.download(centerLat, centerLon, km, source, MAP_USER_AGENT)
+    }, primary = true, enabled = fits)
+}
+
+/** Radios que se pueden bajar (km); 25, de fábrica. */
+private val OFFLINE_RADII = listOf(10, 25, 50, 100, 200)
+
+/** Alto del mapa para elegir la zona (y de la vista previa de Ajustes en pantallas angostas). */
+private val OFFLINE_PREVIEW_HEIGHT = 240.dp
+
+/** Desde aquí la descarga se avisa en ámbar (tarda y llena la memoria). */
+private const val BIG_ZONE_BYTES = 500_000_000L
+
+/** Lo que se deja libre además de la zona (Android y otras apps lo necesitan). */
+private const val FREE_MARGIN_BYTES = 200_000_000L
+
+/** Lo libre para la app (desde Android 8 cuenta también la caché que el sistema puede soltar). */
+private fun freeBytes(context: Context): Long {
+    val dir = context.filesDir
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        runCatching {
+            val storage = context.getSystemService(StorageManager::class.java)
+            return storage.getAllocatableBytes(storage.getUuidForPath(dir))
+        }
+    }
+    return StatFs(dir.path).availableBytes
+}
 
 /** Bytes a MB enteros (al menos 1: «0 MB» confunde). */
 private fun megabytes(bytes: Long) = maxOf(1L, Math.round(bytes / 1e6))

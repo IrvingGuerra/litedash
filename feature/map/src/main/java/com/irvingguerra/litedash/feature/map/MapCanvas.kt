@@ -68,6 +68,20 @@ private const val TILE = 256
 /** Las teselas que traen los nombres de las calles (las del minimalista llegan hasta el 14). */
 private const val DATA_ZOOM = 14
 
+/** El zoom de siempre (calles de tu colonia) y el de viaje (un par de calles a los lados, inclinado). */
+private const val CITY_ZOOM = 17
+private const val DRIVE_ZOOM = MAX_ZOOM
+
+/** Desde esta velocidad vas de viaje; detenido más de [STOP_MS], ya no. */
+private const val DRIVE_KMH = 12f
+private const val STOP_MS = 25_000L
+
+/** Para elegir una zona el mapa se mueve hasta ~2 000 km de ti. */
+private const val FREE_PAN = 0.05
+
+/** El ecuador en metros. */
+private const val EARTH_METERS = 40_075_016.686
+
 /** Movido con el dedo, regresa a ti tras este rato sin tocarlo. */
 private const val RECENTER_MS = 20_000L
 
@@ -105,7 +119,12 @@ private const val ATTRIBUTION_URL = "https://www.openstreetmap.org/copyright"
  * [RECENTER_MS] sin tocarlo o con [recenter]) y la calle donde estás ([street], solo con el minimalista).
  */
 @Stable
-class MapCamera {
+class MapCamera(
+    /** Lo más que se aleja el centro de ti (fracción del mundo). */
+    internal val maxPan: Double = MAX_PAN,
+    /** Regresa solo a ti tras un rato sin tocarlo (en la vista previa de la descarga, no). */
+    internal val returns: Boolean = true,
+) {
     /** Cuánto se movió el mapa con el dedo, en fracciones del mundo (0 = tú en tu lugar). */
     internal var panX by mutableDoubleStateOf(0.0)
     internal var panY by mutableDoubleStateOf(0.0)
@@ -117,6 +136,13 @@ class MapCamera {
         panY = 0.0
     }
 
+    /** El centro del mapa (latitud, longitud) estando tú en [lat], [lon]: tú mismo, o a donde lo moviste. */
+    fun center(lat: Double, lon: Double): Pair<Double, Double> {
+        val x = tileX(lon, 0) + panX
+        val y = tileY(lat, 0) + panY
+        return Math.toDegrees(kotlin.math.atan(kotlin.math.sinh(Math.PI * (1 - 2 * y)))) to x * 360.0 - 180.0
+    }
+
     /** La calle donde estás; null = no se sabe (lejos de una calle con nombre o con el mapa completo). */
     var street by mutableStateOf<String?>(null)
         internal set
@@ -125,12 +151,18 @@ class MapCamera {
 @Composable
 fun rememberMapCamera() = remember { MapCamera() }
 
+/** La cámara para elegir una zona: se mueve lejos (~2 000 km) y no regresa sola. */
+@Composable
+fun rememberFreeMapCamera() = remember { MapCamera(maxPan = FREE_PAN, returns = false) }
+
 /**
- * El mapa (teselas de [store]) con tu posición y como diga [look]: norte arriba o hacia donde vas,
- * plano o inclinado, zoom según la velocidad o fijo (con dos dedos se acerca o aleja; al regresar al
- * elegido vuelve a ser el automático o el fijo), con un dedo se mueve ([camera]), un toque hace [onTap] y colores
- * claros u oscuros: las de OpenStreetMap se oscurecen con un filtro; el minimalista ya viene en sus colores y con los
- * nombres de las calles. Tu flecha se desliza entre una lectura del GPS y la siguiente.
+ * El mapa (teselas de [store]) con tu posición y como diga [look]: norte arriba o hacia donde vas, siempre plano y,
+ * de viaje (andando a [DRIVE_KMH] o más, o con Waze/Maps navegando: [navigating]) en el zoom automático, se acerca
+ * hasta ver un par de calles y se inclina como Waze, siempre hacia donde vas; si lo alejas con dos dedos vuelve a
+ * ser plano. Con un dedo se mueve ([camera]), un toque hace [onTap] y colores claros u oscuros: las de
+ * OpenStreetMap se oscurecen con un filtro; el minimalista ya viene en sus colores y con los nombres de las calles.
+ * Tu flecha se desliza entre una lectura del GPS y la siguiente. Para elegir una zona: [fixedZoom] (sin gestos de
+ * zoom ni viaje) y [ringKm], un círculo de ese radio alrededor del centro.
  */
 @Composable
 fun MapCanvas(
@@ -142,27 +174,39 @@ fun MapCanvas(
     look: MapLook,
     modifier: Modifier = Modifier,
     camera: MapCamera = rememberMapCamera(),
+    navigating: Boolean = false,
+    fixedZoom: Int? = null,
+    ringKm: Float? = null,
     onTap: (() -> Unit)? = null,
 ) {
     val c = LocalColors.current
     var manual by remember { mutableStateOf<Int?>(null) }
-    // El automático recuerda el anterior para no brincar alrededor de los umbrales (no es estado: no repinta).
-    val auto = remember { intArrayOf(MAX_ZOOM) }
-    auto[0] = autoZoom(kmh, auto[0])
-    val tilted = look.view == MapView.TILTED
-    // Inclinado se ve mucho más terreno: un zoom menos (cada tesela cubre el doble) para no pedir decenas.
-    val zoom = manual ?: ((look.zoom.level ?: auto[0]) - if (tilted) 1 else 0).coerceAtLeast(MIN_ZOOM)
+    // De viaje: andando o navegando; se acaba tras un rato detenido (un alto no lo quita).
+    val moving = fixedZoom == null && ((kmh ?: 0f) >= DRIVE_KMH || navigating)
+    var driving by remember { mutableStateOf(false) }
+    LaunchedEffect(moving) {
+        if (moving) driving = true else {
+            delay(STOP_MS)
+            driving = false
+        }
+    }
+    // Al empezar o terminar el viaje, lo que hayas acercado o alejado a mano se olvida.
+    LaunchedEffect(driving) { manual = null }
+    val base = fixedZoom ?: look.zoom.level ?: if (driving) DRIVE_ZOOM else CITY_ZOOM
+    val zoom = fixedZoom ?: manual ?: base
+    // Solo de viaje y en lo más cerca: alejado, plano.
+    val tilted = driving && look.zoom == MapZoom.AUTO && zoom == DRIVE_ZOOM
     val dark = look.dark(c.dark)
     val filter = if (dark && store.source.recolor) DarkTiles else null
     val accent = c.accent
     val glide = rememberGlide(lat, lon, bearing)
-    val heading = look.orientation == MapOrientation.HEADING
+    // Inclinado siempre mira hacia donde vas (como Waze).
+    val heading = tilted || look.orientation == MapOrientation.HEADING
     // Inclinado, tu posición va más abajo: se ve más camino adelante.
-    val anchorY = if (tilted) 0.78f else 0.6f
+    val anchorY = if (tilted) 0.7f else 0.6f
     val sky = store.source.sky?.let(::Color) ?: if (dark) Color(0xFF1C1C20) else Color(0xFFE8E8EA)
     // Con dos dedos: mientras se pellizca el mapa se escala ([pinch]) y al doblar (o partir a la mitad) cambia de zoom.
     var pinch by remember { mutableFloatStateOf(1f) }
-    val base = ((look.zoom.level ?: auto[0]) - if (tilted) 1 else 0).coerceAtLeast(MIN_ZOOM)
     val onPinch by rememberUpdatedState { factor: Float ->
         var p = pinch * factor
         var z = zoom
@@ -199,15 +243,15 @@ fun MapCanvas(
                     dx *= most / length
                     dy *= most / length
                 }
-                camera.panX = (camera.panX - dx / drawn.worldPx).coerceIn(-MAX_PAN, MAX_PAN)
-                camera.panY = (camera.panY - dy / drawn.worldPx).coerceIn(-MAX_PAN, MAX_PAN)
+                camera.panX = (camera.panX - dx / drawn.worldPx).coerceIn(-camera.maxPan, camera.maxPan)
+                camera.panY = (camera.panY - dy / drawn.worldPx).coerceIn(-camera.maxPan, camera.maxPan)
             }
         }
     }
     // Movido con el dedo y sin tocarlo un rato: regresa a ti solo (como Waze). Sin recomponer en cada movimiento del dedo.
     LaunchedEffect(camera) {
         snapshotFlow { camera.centered to camera.panX + camera.panY }.collectLatest { (centered, _) ->
-            if (!centered) {
+            if (!centered && camera.returns) {
                 delay(RECENTER_MS)
                 camera.recenter()
             }
@@ -226,7 +270,7 @@ fun MapCanvas(
     val tap = if (onTap != null) Modifier.clickable(onClick = onTap) else Modifier
     BoxWithConstraints(
         modifier.background(sky).then(tap).pointerInput(Unit) {
-            detectMapGestures({ at, delta -> onPan(at, delta) }, { onPinch(it) }, { onPinchEnd() })
+            detectMapGestures({ at, delta -> onPan(at, delta) }, { if (fixedZoom == null) onPinch(it) }, { if (fixedZoom == null) onPinchEnd() })
         },
     ) {
         val short = maxWidth < SHORT_ATTRIBUTION
@@ -262,6 +306,12 @@ fun MapCanvas(
                     Brush.verticalGradient(0f to sky, end to sky, (end + 0.15f).coerceAtMost(1f) to sky.copy(alpha = 0f))
                 } else null
                 val arrowPath = arrowPath(Offset(you[0], you[1]), 1.dp.toPx())
+                // El círculo de la zona: metros por px del plano en el centro del mapa.
+                val ring = ringKm?.let { km ->
+                    val (centerLat, _) = camera.center(pose.lat, pose.lon)
+                    val metersPerPx = EARTH_METERS * cos(Math.toRadians(centerLat)) / (n * ts)
+                    (km * 1000 / metersPerPx).toFloat()
+                }
                 val text = labels.paint(12.sp.toPx(), labelColor, sky)
                 val runs = labels.runs(store, tiles, zoom, ts, density)
                 val top = if (tilted) projection.edge.coerceAtLeast(0f) + size.height * 0.12f else 0f
@@ -277,6 +327,10 @@ fun MapCanvas(
                     }
                     store.request(tiles.keys)
                     fade?.let { drawRect(it) }
+                    ring?.let {
+                        drawCircle(accent.copy(alpha = 0.12f), it, at)
+                        drawCircle(accent, it, at, style = Stroke(2.dp.toPx()))
+                    }
                     drawIntoCanvas { canvas -> drawLabels(canvas.nativeCanvas, placed, text) }
                     if (youShown) drawArrow(Offset(you[0], you[1]), arrowPath, arrow, accent, tilted)
                 }

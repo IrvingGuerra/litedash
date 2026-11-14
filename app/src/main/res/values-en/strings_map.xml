@@ -7,15 +7,12 @@
     <string name="map_orientation">Orientation</string>
     <string name="map_north">North up</string>
     <string name="map_heading">Heading up</string>
-    <string name="map_view">View</string>
-    <string name="map_flat">Flat</string>
-    <string name="map_tilted">Tilted 3D</string>
     <string name="map_zoom">Zoom</string>
     <string name="map_zoom_auto">Automatic</string>
     <string name="map_zoom_near">Near</string>
     <string name="map_zoom_mid">Medium</string>
     <string name="map_zoom_far">Far</string>
-    <string name="map_zoom_help">Automatic: closer in the city, farther on the highway. Pinch with two fingers to zoom; drag with one to look around (it comes back to you on its own).</string>
+    <string name="map_zoom_help">Automatic: your streets when you are stopped; on a trip it zooms in to a couple of streets and tilts like Waze (zoom out and it goes flat again). Pinch with two fingers to zoom; drag with one to look around.</string>
     <string name="map_style">Colors</string>
     <string name="map_style_theme">Like the theme</string>
     <string name="map_style_light">Light</string>
@@ -43,4 +40,11 @@
     <string name="map_offline_failed">Stopped: check your internet. What was downloaded stays and resumes from there.</string>
     <string name="map_online_now">Live map</string>
     <string name="map_offline_now">Offline map</string>
+    <string name="map_offline_size_free">About %1$d MB · %2$d MB free</string>
+    <string name="map_offline_big">This is a big zone: better on Wi‑Fi and with time.</string>
+    <string name="map_offline_no_room">Not enough storage: pick a smaller radius or free up space.</string>
+    <string name="map_offline_my_location">My location</string>
+    <string name="map_tab_app">Map app</string>
+    <string name="map_tab_look">LiteDash map</string>
+    <string name="map_look_help">Applies to all your Map widgets and the full-screen map. Each widget can still be changed from its gear.</string>
 </resources>

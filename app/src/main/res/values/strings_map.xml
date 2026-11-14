@@ -7,15 +7,12 @@
     <string name="map_orientation">Orientación</string>
     <string name="map_north">Norte arriba</string>
     <string name="map_heading">Hacia donde vas</string>
-    <string name="map_view">Vista</string>
-    <string name="map_flat">Plano</string>
-    <string name="map_tilted">Inclinado 3D</string>
     <string name="map_zoom">Zoom</string>
     <string name="map_zoom_auto">Automático</string>
     <string name="map_zoom_near">Cerca</string>
     <string name="map_zoom_mid">Medio</string>
     <string name="map_zoom_far">Lejos</string>
-    <string name="map_zoom_help">Automático: más cerca en la ciudad y más lejos en carretera. Con dos dedos lo acercas o alejas; con uno lo mueves (luego regresa solo a ti).</string>
+    <string name="map_zoom_help">Automático: tus calles cuando estás detenido; de viaje se acerca hasta un par de calles y se inclina como Waze (si lo alejas, vuelve a ser plano). Con dos dedos lo acercas o alejas; con uno lo mueves.</string>
     <string name="map_style">Colores</string>
     <string name="map_style_theme">Como el tema</string>
     <string name="map_style_light">Claros</string>
@@ -43,4 +40,11 @@
     <string name="map_offline_failed">Se detuvo: revisa tu internet. Lo bajado se queda y sigue desde ahí.</string>
     <string name="map_online_now">Mapa en línea</string>
     <string name="map_offline_now">Mapa sin conexión</string>
+    <string name="map_offline_size_free">Aprox. %1$d MB · libres %2$d MB</string>
+    <string name="map_offline_big">Es una zona grande: mejor con Wi‑Fi y sin prisa.</string>
+    <string name="map_offline_no_room">No cabe en la memoria: elige un radio menor o libera espacio.</string>
+    <string name="map_offline_my_location">Mi ubicación</string>
+    <string name="map_tab_app">App de mapas</string>
+    <string name="map_tab_look">Mapa de LiteDash</string>
+    <string name="map_look_help">Se aplica a todos tus widgets Mapa y al mapa en grande. Cada widget se puede cambiar aparte desde su engrane.</string>
 </resources>

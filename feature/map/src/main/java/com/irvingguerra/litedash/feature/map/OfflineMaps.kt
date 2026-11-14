@@ -32,6 +32,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -78,8 +79,8 @@ class OfflineMaps private constructor(private val app: Context) {
     var job by mutableStateOf<OfflineJob?>(null)
         private set
 
-    /** Cuántas teselas lleva una zona (por [AVG_TILE_BYTES], su tamaño aproximado). */
-    fun estimate(lat: Double, lon: Double, km: Int): Int = areaTiles(lat, lon, km).size
+    /** Cuántas teselas lleva una zona (por [AVG_TILE_BYTES], su tamaño aproximado); de 200 km son decenas de miles: fuera del hilo principal. */
+    suspend fun estimate(lat: Double, lon: Double, km: Int): Int = withContext(Dispatchers.Default) { areaTiles(lat, lon, km).size }
 
     /** ¿([lat], [lon]) está dentro de alguna zona descargada? */
     fun covers(lat: Double, lon: Double): Boolean = areas.any { it.contains(lat, lon) }
@@ -90,12 +91,20 @@ class OfflineMaps private constructor(private val app: Context) {
     /** Baja la zona de [km] alrededor de ([lat], [lon]); sigue aunque se cierre el panel. Lo ya bajado se salta. */
     fun download(lat: Double, lon: Double, km: Int, source: VectorTiles, userAgent: String) = synchronized(lock) {
         if (running?.isActive == true) return@synchronized
-        // Antes de arrancar: desde ya, nadie borra estas teselas (ni borrar otra zona ni la limpieza).
-        val keys = areaTiles(lat, lon, km)
-        val run = Run(++generation, keys.size)
-        runningKeys = keys.toHashSet()
-        job = OfflineJob(0, keys.size, 0L)
-        running = scope.launch { run(run, keys, lat, lon, km, source, userAgent) }
+        val gen = ++generation
+        // Mientras se calculan las teselas (en IO: de 200 km son decenas de miles) ya se ve que empezó.
+        job = OfflineJob(0, 0, 0L)
+        running = scope.launch {
+            val keys = areaTiles(lat, lon, km)
+            val run = Run(gen, keys.size)
+            // Desde ya, nadie borra estas teselas (ni borrar otra zona ni la limpieza); lo que se borró antes se baja otra vez.
+            synchronized(lock) {
+                if (!run.current) return@launch
+                runningKeys = keys.toHashSet()
+                job = OfflineJob(0, keys.size, 0L)
+            }
+            run(run, keys, lat, lon, km, source, userAgent)
+        }
     }
 
     /** Detiene la descarga y borra lo que bajó que no sea de ninguna zona. */
