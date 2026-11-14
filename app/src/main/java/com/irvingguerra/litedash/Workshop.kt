@@ -252,8 +252,13 @@ private fun Connection(d: Dependencies) {
                     })
                 }
             }
-            wifi -> Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
-                TextInput(address, { address = it.trim() }, "192.168.0.10:35000", Modifier.weight(1f, fill = false).widthIn(max = 260.dp))
+            // Si no cabe todo en un renglón (celular), los botones bajan y el campo conserva su ancho.
+            wifi -> FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+                itemVerticalAlignment = Alignment.CenterVertically,
+            ) {
+                TextInput(address, { address = it.trim() }, "192.168.0.10:35000", Modifier.widthIn(min = 220.dp, max = 260.dp))
                 Button(stringResource(R.string.obd_connect), {
                     val host = address.substringBefore(':')
                     val port = address.substringAfter(':', "35000").toIntOrNull() ?: 35000

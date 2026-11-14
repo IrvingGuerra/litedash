@@ -4,6 +4,13 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.4.151] - 2026-11-13
+
+### Arreglado
+- **Pantallas angostas (celular de pie):** en Ajustes → Módulos los nombres ya no se cortan ("Escáner OBD", "Llantas
+  (TPMS)"): van en dos renglones si hace falta y la etiqueta «Pronto» baja debajo del nombre. En el Taller, el campo de
+  la dirección del OBD por Wi‑Fi conserva su ancho y los botones pasan al renglón de abajo.
+
 ## [1.4.150] - 2026-11-13
 
 ### Arreglado

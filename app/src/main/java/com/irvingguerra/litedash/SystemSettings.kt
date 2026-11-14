@@ -15,11 +15,13 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
@@ -389,8 +391,11 @@ private fun ModuleRow(
     val c = LocalColors.current
     val shape = RoundedCornerShape(Radius.card)
     val dim = if (on) 1f else 0.45f
+    BoxWithConstraints(Modifier.fillMaxWidth()) {
+    // Angosto (celular): todo más junto y el nombre en dos renglones, para que no se corte.
+    val narrow = maxWidth < MODULE_NARROW
     Row(
-        Modifier.fillMaxWidth().height(76.dp).clip(shape).background(c.surface).border(1.dp, c.line, shape),
+        Modifier.fillMaxWidth().heightIn(min = 76.dp).height(IntrinsicSize.Min).clip(shape).background(c.surface).border(1.dp, c.line, shape),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Row(
@@ -398,13 +403,15 @@ private fun ModuleRow(
                 .weight(1f)
                 .fillMaxHeight()
                 .then(if (onChange != null) Modifier.clickable { onChange(!on) } else Modifier)
-                .padding(start = 20.dp, end = 16.dp),
+                .padding(start = if (narrow) 14.dp else 20.dp, end = if (narrow) 10.dp else 16.dp, top = 10.dp, bottom = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(if (narrow) 12.dp else 16.dp),
         ) {
-            Icon(icon, if (on) c.accent else c.textMuted.copy(alpha = dim), 28.dp)
-            Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                Label(title, Typography.subtitle, if (on) c.text else c.textMuted.copy(alpha = dim), maxLines = 1, modifier = Modifier.weight(1f, fill = false))
+            Icon(icon, if (on) c.accent else c.textMuted.copy(alpha = dim), if (narrow) 24.dp else 28.dp)
+            val name: @Composable (Modifier) -> Unit = {
+                Label(title, Typography.subtitle, if (on) c.text else c.textMuted.copy(alpha = dim), maxLines = if (narrow) 2 else 1, modifier = it)
+            }
+            val badge: @Composable () -> Unit = {
                 if (soon) Label(
                     stringResource(R.string.module_soon),
                     Typography.small.copy(fontWeight = FontWeight.SemiBold),
@@ -413,14 +420,26 @@ private fun ModuleRow(
                     modifier = Modifier.clip(RoundedCornerShape(50)).background(c.surfaceHigh).padding(horizontal = 10.dp, vertical = 4.dp),
                 )
             }
+            // Angosto, la etiqueta va debajo del nombre (a un lado lo partía a media palabra).
+            if (narrow) Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                name(Modifier)
+                badge()
+            } else Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                name(Modifier.weight(1f, fill = false))
+                badge()
+            }
             Switch(on, Modifier.graphicsLayer { alpha = if (soon) 0.45f else 1f })
         }
         // La flecha va aparte (con su línea): entrar no prende ni apaga nada.
-        Box(Modifier.width(76.dp).fillMaxHeight(), contentAlignment = Alignment.Center) {
+        Box(Modifier.width(if (narrow) 60.dp else 76.dp).fillMaxHeight(), contentAlignment = Alignment.Center) {
             if (on && onOpen != null) {
                 Box(Modifier.align(Alignment.CenterStart).width(1.dp).fillMaxHeight(0.5f).background(c.line))
-                IconButton(Icons.chevron, onOpen, size = 48.dp, background = c.surfaceHigh, color = c.text)
+                IconButton(Icons.chevron, onOpen, size = if (narrow) 40.dp else 48.dp, background = c.surfaceHigh, color = c.text)
             }
         }
     }
+    }
 }
+
+/** Menos ancho que esto (celular de pie), el renglón de un módulo se aprieta. */
+private val MODULE_NARROW = 420.dp
