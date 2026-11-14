@@ -382,6 +382,7 @@
     <string name="obd_connect">Conectar</string>
     <string name="obd_bluetooth">Bluetooth</string>
     <string name="obd_wifi">Wi-Fi</string>
+    <string name="obd_local_network">Tu adaptador es por Wi‑Fi: Android pide que permitas a LiteDash usar la red local (Dispositivos cercanos).</string>
     <string name="obd_allow_bluetooth">Permitir Bluetooth</string>
     <string name="obd_no_paired">No hay adaptadores emparejados. Empareja el tuyo en Ajustes de Android → Bluetooth (la clave suele ser 1234 o 0000).</string>
     <string name="obd_reading">Leyendo el auto…</string>

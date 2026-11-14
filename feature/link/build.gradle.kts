@@ -18,6 +18,7 @@ kotlin {
 }
 
 dependencies {
+    implementation(project(":core:vehicle"))
     implementation(platform(libs.compose.bom))
     implementation(libs.compose.runtime)
     testImplementation(libs.junit)

@@ -47,7 +47,7 @@ import com.irvingguerra.litedash.core.ui.Label
 import com.irvingguerra.litedash.core.ui.LocalColors
 import com.irvingguerra.litedash.core.ui.Radius
 import com.irvingguerra.litedash.core.ui.Typography
-import com.irvingguerra.litedash.feature.link.LOCAL_NETWORK_PERMISSION
+import com.irvingguerra.litedash.core.vehicle.LOCAL_NETWORK_PERMISSION
 import com.irvingguerra.litedash.feature.link.Pairing
 import com.irvingguerra.litedash.feature.link.PhoneLink
 import com.irvingguerra.litedash.feature.link.PhoneSound
@@ -121,9 +121,9 @@ private fun AskLocalNetwork(link: PhoneLink) {
     StatusTitle(Mark.WARN, stringResource(R.string.phone_permission))
     Label(stringResource(R.string.phone_permission_body), Typography.body, c.textMuted)
     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        Button(stringResource(R.string.phone_permission_allow), { ask.launch(LOCAL_NETWORK_PERMISSION) }, primary = true)
+        Button(stringResource(R.string.local_network_allow), { ask.launch(LOCAL_NETWORK_PERMISSION) }, primary = true)
         // Negado para siempre, Android ya no pregunta: se da en sus ajustes.
-        if (denied) Button(stringResource(R.string.phone_permission_settings), { openAppSettings(context) })
+        if (denied) Button(stringResource(R.string.local_network_settings), { openAppSettings(context) })
     }
 }
 

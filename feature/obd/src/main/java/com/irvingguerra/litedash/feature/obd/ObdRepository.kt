@@ -23,6 +23,7 @@ import androidx.compose.runtime.setValue
 import androidx.core.content.ContextCompat
 import androidx.core.content.IntentCompat
 import com.irvingguerra.litedash.core.vehicle.Signal
+import com.irvingguerra.litedash.core.vehicle.localNetworkAllowed
 import com.irvingguerra.litedash.core.vehicle.Source
 import com.irvingguerra.litedash.core.vehicle.VehicleBus
 import kotlinx.coroutines.CoroutineScope
@@ -122,6 +123,13 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
         "usb" -> ObdTarget.Usb(prefs.getInt("vendor_id", 0), prefs.getInt("product_id", 0), prefs.getString("name", "")!!)
         else -> null
     }
+
+    /**
+     * El adaptador es por Wi‑Fi y falta el permiso de la red local (Android 17+): no se intenta (fallaría sin decir
+     * por qué) y el Taller lo pide.
+     */
+    var needsLocalNetwork by mutableStateOf(false)
+        private set
 
     /** Reconexiones seguidas sin lograr leer (se reinicia al conectar bien). */
     private var reconnects = 0
@@ -264,6 +272,8 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
     /** Se conecta a [t] (o al último que funcionó) y empieza a leer. */
     fun connect(t: ObdTarget? = target) {
         if (t == null || state == ObdState.CONNECTING || state == ObdState.ON && target == t) return
+        needsLocalNetwork = t is ObdTarget.Wifi && !localNetworkAllowed(context)
+        if (needsLocalNetwork) return
         // Android olvida el permiso del cable al desenchufarlo: si ya no lo hay, se vuelve a
         // pedir (con su diálogo) y al darlo [connectUsb] regresa aquí. Sin cable, sigue y
         // dice que no está conectado.
@@ -370,6 +380,7 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
         // Sin adaptador guardado (se borra su archivo con la receta de llantas): otro auto empieza de cero.
         target = null
         tireProfile = null
+        needsLocalNetwork = false
     }
 
     /** El último reporte del motor que se leyó (la pieza Taller y Salud lo muestran sin volver a leer). */

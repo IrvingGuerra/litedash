@@ -4,6 +4,13 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.4.150] - 2026-11-13
+
+### Arreglado
+- **OBD por Wi‑Fi en Android 17:** sin el permiso de red local (Dispositivos cercanos) el adaptador nunca conectaba y
+  no se decía por qué. Ahora el Taller lo pide al conectar; si ya lo negaste, te lleva a los permisos de Android y, al
+  volver con el permiso dado, conecta solo.
+
 ## [1.4.149] - 2026-11-13
 
 ### Arreglado

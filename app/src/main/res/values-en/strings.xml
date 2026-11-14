@@ -374,6 +374,7 @@
     <string name="obd_connect">Connect</string>
     <string name="obd_bluetooth">Bluetooth</string>
     <string name="obd_wifi">Wi-Fi</string>
+    <string name="obd_local_network">Your adapter uses Wi‑Fi: Android asks you to let LiteDash use the local network (Nearby devices).</string>
     <string name="obd_allow_bluetooth">Allow Bluetooth</string>
     <string name="obd_no_paired">No paired adapters. Pair yours in Android Settings → Bluetooth (the PIN is usually 1234 or 0000).</string>
     <string name="obd_reading">Reading the car…</string>

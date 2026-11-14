@@ -1,7 +1,6 @@
 package com.irvingguerra.litedash.feature.link
 
 import android.content.Context
-import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.ConnectivityManager
@@ -11,13 +10,13 @@ import android.net.NetworkCapabilities
 import android.net.NetworkRequest
 import android.net.nsd.NsdManager
 import android.net.nsd.NsdServiceInfo
-import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import com.irvingguerra.litedash.core.vehicle.localNetworkAllowed
 import java.io.BufferedInputStream
 import java.io.File
 import java.io.FileOutputStream
@@ -64,9 +63,6 @@ class ScreenCar(
 
 /** Lo que se dibuja para vincular: el texto del QR y el código de 4 dígitos de esa llave. */
 class Pairing(val text: String, val code: String)
-
-/** El permiso de la red local (Android 17+, grupo "Dispositivos cercanos"); antes no existe y no se pide. */
-const val LOCAL_NETWORK_PERMISSION = "android.permission.ACCESS_LOCAL_NETWORK"
 
 /**
  * Por dónde llega al auto el sonido del celular (mensaje `sound`, PROTOCOLO_LINK.md §5c): Bluetooth, Android
@@ -299,15 +295,12 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
      * cercanos": sin él no se toca la red, porque cada intento hace que Android abra su selector y, al
      * volver LiteDash al frente, se volvería a abrir en bucle.
      */
-    var networkAllowed by mutableStateOf(localNetworkAllowed())
+    var networkAllowed by mutableStateOf(localNetworkAllowed(app))
         private set
-
-    private fun localNetworkAllowed(): Boolean =
-        Build.VERSION.SDK_INT < LOCAL_NETWORK_SDK || app.checkSelfPermission(LOCAL_NETWORK_PERMISSION) == PackageManager.PERMISSION_GRANTED
 
     /** Se dio o se negó el permiso de la red local: si ya se puede, se busca de una vez. */
     fun permissionChanged() {
-        networkAllowed = localNetworkAllowed()
+        networkAllowed = localNetworkAllowed(app)
         sync()
         connect()
     }
@@ -317,7 +310,7 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
     /** LiteDash volvió al frente: si hay celular vinculado, lo busca. */
     fun start() {
         running = true
-        networkAllowed = localNetworkAllowed()
+        networkAllowed = localNetworkAllowed(app)
         sync()
         connect()
     }
@@ -347,7 +340,7 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
 
     private val tick = object : Runnable {
         override fun run() {
-            networkAllowed = localNetworkAllowed()
+            networkAllowed = localNetworkAllowed(app)
             if (!networkAllowed) {
                 // Sin permiso no hay nada que buscar: se revisa de nuevo al volver de Ajustes de Android.
                 sync()
@@ -1168,8 +1161,6 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
 
     private companion object {
         const val PREFS = "link"
-        /** Desde aquí la red local pide permiso (Android 17). */
-        const val LOCAL_NETWORK_SDK = 37
         const val SCREEN_ID = "screen_id"
         const val KEY = "key"
         const val LAST_ADDRESS = "last_address"

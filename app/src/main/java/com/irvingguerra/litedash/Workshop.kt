@@ -12,6 +12,7 @@ import android.os.Build
 import android.provider.Settings
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.LifecycleStartEffect
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -34,6 +35,7 @@ import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -50,7 +52,9 @@ import com.irvingguerra.litedash.core.ui.Radius
 import com.irvingguerra.litedash.core.ui.SwitchRow
 import com.irvingguerra.litedash.core.ui.TextInput
 import com.irvingguerra.litedash.core.ui.Typography
+import com.irvingguerra.litedash.core.vehicle.LOCAL_NETWORK_PERMISSION
 import com.irvingguerra.litedash.core.vehicle.Signal
+import com.irvingguerra.litedash.core.vehicle.localNetworkAllowed
 import com.irvingguerra.litedash.core.vehicle.watch
 import com.irvingguerra.litedash.feature.obd.EngineAlert
 import com.irvingguerra.litedash.feature.obd.EngineReport
@@ -201,6 +205,21 @@ private fun Connection(d: Dependencies) {
     var address by remember { mutableStateOf("192.168.0.10:35000") }
     // Muchas pantallas esconden dónde prender el Bluetooth: aquí se prende y se apaga.
     val context = LocalContext.current
+    // OBD por Wi‑Fi en Android 17+: la red local pide permiso; al darlo, conecta al que se estaba tratando.
+    var wifiTarget by remember { mutableStateOf<ObdTarget.Wifi?>(null) }
+    var lanDenied by rememberSaveable { mutableStateOf(false) }
+    val askLan = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { ok ->
+        lanDenied = !ok
+        if (ok) obd.connect(wifiTarget ?: obd.target)
+    }
+    // Al volver de Ajustes de Android con el permiso ya dado, conecta sin tocar nada más.
+    LifecycleResumeEffect(Unit) {
+        if ((obd.needsLocalNetwork || lanDenied) && localNetworkAllowed(context)) {
+            lanDenied = false
+            obd.connect(wifiTarget ?: obd.target)
+        }
+        onPauseOrDispose { }
+    }
     val bluetooth = rememberBluetoothOn()
     val askEnable = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {}
     // Al abrir el Taller se reconecta solo al último adaptador que funcionó, también si se había
@@ -220,12 +239,29 @@ private fun Connection(d: Dependencies) {
                 Button(stringResource(R.string.obd_disconnect), { obd.disconnect() })
                 Button(stringResource(R.string.obd_other), { obd.forget() })
             }
+            obd.needsLocalNetwork || wifi && lanDenied -> {
+                Label(stringResource(R.string.obd_local_network), Typography.body, c.textMuted)
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Button(stringResource(R.string.local_network_allow), { askLan.launch(LOCAL_NETWORK_PERMISSION) }, primary = true)
+                    // Negado para siempre, Android ya no pregunta: se da en sus ajustes.
+                    if (lanDenied) Button(stringResource(R.string.local_network_settings), { openAppSettings(context) })
+                    Button(stringResource(R.string.obd_other), {
+                        lanDenied = false
+                        wifi = false
+                        obd.forget()
+                    })
+                }
+            }
             wifi -> Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
                 TextInput(address, { address = it.trim() }, "192.168.0.10:35000", Modifier.weight(1f, fill = false).widthIn(max = 260.dp))
                 Button(stringResource(R.string.obd_connect), {
                     val host = address.substringBefore(':')
                     val port = address.substringAfter(':', "35000").toIntOrNull() ?: 35000
-                    if (host.isNotBlank()) obd.connect(ObdTarget.Wifi(host, port))
+                    if (host.isNotBlank()) {
+                        val t = ObdTarget.Wifi(host, port)
+                        wifiTarget = t
+                        if (localNetworkAllowed(context)) obd.connect(t) else askLan.launch(LOCAL_NETWORK_PERMISSION)
+                    }
                 }, primary = true)
                 Button(stringResource(R.string.obd_bluetooth), { wifi = false })
             }
