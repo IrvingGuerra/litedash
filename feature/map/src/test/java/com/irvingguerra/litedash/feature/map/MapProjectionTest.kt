@@ -83,13 +83,13 @@ class MapProjectionTest {
         for ((size, density) in listOf((1024f to 600f) to 1f, (1920f to 720f) to 1.5f, (1920f to 1080f) to 1f, (800f to 1280f) to 1f)) {
             val (w, h) = size
             val ts = 256f * density
-            val p = MapProjection(w, h, w / 2, h * 0.78f, turn = 0f, tilted = true, density = density)
+            val p = MapProjection(w, h, w / 2, h * 0.82f, turn = 0f, tilted = true, density = density)
             val fy = tileY(lat, z)
             val all = p.visibleTiles(tileX(lon, z), fy, ts).size / 2
             val real = plan(p, lat, lon, z, ts)
             val n = real.z.size
             val label = "${w}x$h"
-            assertTrue("$label: ${real.z.size} de $all", n <= all * 0.65)
+            assertTrue("$label: ${real.z.size} de $all", n <= all * 0.7)
             // Fila de arriba de cada tesela en el zoom de la vista (una "madre" cubre 2 filas, una "abuela" 4).
             val row = IntArray(n) { real.y[it] shl (z - real.z[it]) }
             // Lo de cerca (de una fila arriba de tu posición para abajo) va con todo el detalle.

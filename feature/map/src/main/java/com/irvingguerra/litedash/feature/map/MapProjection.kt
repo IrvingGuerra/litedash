@@ -5,7 +5,7 @@ import kotlin.math.hypot
 import kotlin.math.sin
 
 /** Cuánto se acuesta el mapa inclinado (grados). */
-private const val TILT_DEGREES = 50.0
+private const val TILT_DEGREES = 42.0
 
 /** Hasta dónde se dibuja (en tamaños de la vista); inclinado es lo mínimo. */
 private const val REACH = 1.6f

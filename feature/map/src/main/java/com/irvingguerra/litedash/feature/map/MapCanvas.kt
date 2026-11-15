@@ -203,7 +203,7 @@ fun MapCanvas(
     // Inclinado siempre mira hacia donde vas (como Waze).
     val heading = tilted || look.orientation == MapOrientation.HEADING
     // Inclinado, tu posición va más abajo: se ve más camino adelante.
-    val anchorY = if (tilted) 0.7f else 0.6f
+    val anchorY = if (tilted) 0.82f else 0.6f
     val sky = store.source.sky?.let(::Color) ?: if (dark) Color(0xFF1C1C20) else Color(0xFFE8E8EA)
     // Con dos dedos: mientras se pellizca el mapa se escala ([pinch]) y al doblar (o partir a la mitad) cambia de zoom.
     var pinch by remember { mutableFloatStateOf(1f) }

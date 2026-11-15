@@ -136,7 +136,7 @@ class VectorTiles(
         canvas.translate(-sx * sizePx.toFloat(), -sy * sizePx.toFloat())
         canvas.scale(scale, scale)
         // Grosor en px de pantalla → en unidades de la tesela; un poco más delgado al alejarse.
-        val zoomFactor = 2.0.pow(0.7 * (z - 16)).toFloat().coerceIn(0.35f, 1.6f)
+        val zoomFactor = 2.0.pow(0.7 * (z - 16)).toFloat().coerceIn(0.35f, 3.2f)
         // Solo lo que toca este pedazo (más el grosor de la calle más ancha): del 17 son 64 pedazos por tesela.
         val window = t.extent.toFloat() / sub
         val margin = (ROAD_WIDTH[0] + CASING) * density * zoomFactor / scale
