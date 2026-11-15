@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.mutableDoubleStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.pointer.positionChange
 import kotlinx.coroutines.delay
@@ -68,9 +69,8 @@ private const val TILE = 256
 /** Las teselas que traen los nombres de las calles (las del minimalista llegan hasta el 14). */
 private const val DATA_ZOOM = 14
 
-/** El zoom de siempre (calles de tu colonia) y el de viaje (un par de calles a los lados, inclinado). */
+/** El zoom de siempre (calles de tu colonia); el de viaje es lo más cerca de la fuente (un par de calles, inclinado). */
 private const val CITY_ZOOM = 17
-private const val DRIVE_ZOOM = MAX_ZOOM
 
 /** Desde esta velocidad vas de viaje; detenido más de [STOP_MS], ya no. */
 private const val DRIVE_KMH = 12f
@@ -115,8 +115,9 @@ private val SHORT_ATTRIBUTION = 320.dp
 private const val ATTRIBUTION_URL = "https://www.openstreetmap.org/copyright"
 
 /**
- * Lo que la app ve del mapa y le puede pedir: si lo moviste con el dedo ([centered] = false; vuelve solo tras
- * [RECENTER_MS] sin tocarlo o con [recenter]) y la calle donde estás ([street], solo con el minimalista).
+ * Lo que la app ve del mapa y le puede pedir: si lo moviste con el dedo ([centered] = false; de viaje vuelve solo tras
+ * [RECENTER_MS] sin tocarlo; [recenter] te regresa al zoom de manejo en 3D), mirar otro lugar ([lookAt]) y la calle donde
+ * estás ([street], solo con el minimalista).
  */
 @Stable
 class MapCamera(
@@ -131,9 +132,19 @@ class MapCamera(
 
     val centered: Boolean get() = panX == 0.0 && panY == 0.0
 
+    /** Cuántas veces se pidió centrar (el mapa vuelve a lo más cerca, inclinado). */
+    internal var recenters by mutableIntStateOf(0)
+
     fun recenter() {
         panX = 0.0
         panY = 0.0
+        recenters++
+    }
+
+    /** Mueve el centro del mapa a ([lat], [lon]) estando tú en ([fromLat], [fromLon]) (hasta donde deja [maxPan]). */
+    fun lookAt(lat: Double, lon: Double, fromLat: Double, fromLon: Double) {
+        panX = (tileX(lon, 0) - tileX(fromLon, 0)).coerceIn(-maxPan, maxPan)
+        panY = (tileY(lat, 0) - tileY(fromLat, 0)).coerceIn(-maxPan, maxPan)
     }
 
     /** El centro del mapa (latitud, longitud) estando tú en [lat], [lon]: tú mismo, o a donde lo moviste. */
@@ -181,6 +192,7 @@ fun MapCanvas(
 ) {
     val c = LocalColors.current
     var manual by remember { mutableStateOf<Int?>(null) }
+    val driveZoom = store.source.maxZoom
     // De viaje: andando o navegando; se acaba tras un rato detenido (un alto no lo quita).
     val moving = fixedZoom == null && ((kmh ?: 0f) >= DRIVE_KMH || navigating)
     var driving by remember { mutableStateOf(false) }
@@ -192,10 +204,14 @@ fun MapCanvas(
     }
     // Al empezar o terminar el viaje, lo que hayas acercado o alejado a mano se olvida.
     LaunchedEffect(driving) { manual = null }
-    val base = fixedZoom ?: look.zoom.level ?: if (driving) DRIVE_ZOOM else CITY_ZOOM
+    val base = fixedZoom ?: look.zoom.level ?: if (driving) driveZoom else CITY_ZOOM
     val zoom = fixedZoom ?: manual ?: base
-    // Solo de viaje y en lo más cerca: alejado, plano.
-    val tilted = driving && look.zoom == MapZoom.AUTO && zoom == DRIVE_ZOOM
+    // En lo más cerca (de viaje llega solo; detenido, acercándolo o con "centrar"): alejado, plano.
+    val tilted = fixedZoom == null && look.zoom == MapZoom.AUTO && zoom == driveZoom
+    // Centrar regresa a lo más cerca, inclinado.
+    LaunchedEffect(camera.recenters) {
+        if (camera.recenters > 0 && fixedZoom == null && look.zoom == MapZoom.AUTO) manual = driveZoom.takeIf { it != base }
+    }
     val dark = look.dark(c.dark)
     val filter = if (dark && store.source.recolor) DarkTiles else null
     val accent = c.accent
@@ -210,16 +226,16 @@ fun MapCanvas(
     val onPinch by rememberUpdatedState { factor: Float ->
         var p = pinch * factor
         var z = zoom
-        while (p >= 2f && z < MAX_ZOOM) { z++; p /= 2f }
+        while (p >= 2f && z < driveZoom) { z++; p /= 2f }
         while (p <= 0.5f && z > MIN_ZOOM) { z--; p *= 2f }
         // En el límite solo cede un poco: se nota que ya no hay más.
-        pinch = p.coerceIn(if (z <= MIN_ZOOM) 0.85f else 0.5f, if (z >= MAX_ZOOM) 1.15f else 2f)
+        pinch = p.coerceIn(if (z <= MIN_ZOOM) 0.85f else 0.5f, if (z >= driveZoom) 1.15f else 2f)
         if (z != zoom) manual = z.takeIf { it != base }
     }
     val onPinchEnd by rememberUpdatedState {
         // Al soltar se queda en el zoom más cercano.
         val z = when {
-            pinch > 1.41f -> (zoom + 1).coerceAtMost(MAX_ZOOM)
+            pinch > 1.41f -> (zoom + 1).coerceAtMost(driveZoom)
             pinch < 0.71f -> (zoom - 1).coerceAtLeast(MIN_ZOOM)
             else -> zoom
         }
@@ -250,8 +266,9 @@ fun MapCanvas(
     }
     // Movido con el dedo y sin tocarlo un rato: regresa a ti solo (como Waze). Sin recomponer en cada movimiento del dedo.
     LaunchedEffect(camera) {
-        snapshotFlow { camera.centered to camera.panX + camera.panY }.collectLatest { (centered, _) ->
-            if (!centered && camera.returns) {
+        // Solo de viaje: detenido, el mapa se queda donde lo dejaste.
+        snapshotFlow { Triple(camera.centered, camera.panX + camera.panY, driving) }.collectLatest { (centered, _, onTrip) ->
+            if (!centered && camera.returns && onTrip) {
                 delay(RECENTER_MS)
                 camera.recenter()
             }
@@ -284,7 +301,8 @@ fun MapCanvas(
                 store.loaded // cada tesela que llega rehace esto (y los nombres nuevos se acomodan)
                 val pose = glide()
                 val turn = if (heading) -(pose.bearing ?: 0f) else 0f
-                val arrow = if (heading) pose.bearing?.let { 0f } else pose.bearing
+                // Siempre flecha: hacia arriba con el mapa girado, o con el último rumbo (sin rumbo aún, al norte).
+                val arrow = if (heading) 0f else pose.bearing ?: 0f
                 val at = Offset(size.width / 2, size.height * anchorY)
                 val projection = MapProjection(size.width, size.height, at.x, at.y, turn, tilted, density)
                 val ts = tilePx(density)
@@ -557,27 +575,22 @@ private fun DrawScope.drawTiles(store: TileStore, plan: TilePlan, filter: ColorF
 }
 
 /** Tu posición: la flecha con el rumbo (color de acento) o un punto si todavía no hay rumbo. Inclinado, un poco acostada. */
-private fun DrawScope.drawArrow(at: Offset, arrow: Path, bearing: Float?, accent: Color, tilted: Boolean) {
+private fun DrawScope.drawArrow(at: Offset, arrow: Path, bearing: Float, accent: Color, tilted: Boolean) {
     val u = 1.dp.toPx()
     if (tilted) return scale(1f, 0.7f, at) { drawArrow(at, arrow, bearing, accent, tilted = false) }
-    drawCircle(accent.copy(alpha = 0.25f), 22 * u, at)
-    if (bearing == null) {
-        drawCircle(Color.White, 9 * u, at)
-        drawCircle(accent, 7 * u, at)
-        return
-    }
+    drawCircle(accent.copy(alpha = 0.22f), 34 * u, at)
     rotate(bearing, at) {
         drawPath(arrow, accent)
-        drawPath(arrow, Color.White, style = Stroke(2 * u))
+        drawPath(arrow, Color.White, style = Stroke(3 * u))
     }
 }
 
 /** La flecha de [drawArrow] apuntando al norte en [at] ([u] = 1 dp); se arma con la caché del dibujo, no en cada cuadro. */
 private fun arrowPath(at: Offset, u: Float) = Path().apply {
-    moveTo(at.x, at.y - 14 * u)
-    lineTo(at.x + 10 * u, at.y + 11 * u)
-    lineTo(at.x, at.y + 5 * u)
-    lineTo(at.x - 10 * u, at.y + 11 * u)
+    moveTo(at.x, at.y - 22 * u)
+    lineTo(at.x + 16 * u, at.y + 17 * u)
+    lineTo(at.x, at.y + 8 * u)
+    lineTo(at.x - 16 * u, at.y + 17 * u)
     close()
 }
 

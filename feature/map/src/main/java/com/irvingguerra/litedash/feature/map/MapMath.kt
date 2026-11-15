@@ -18,7 +18,7 @@ import kotlin.math.tan
 // (GPL-3.0, https://github.com/stradaos): Web Mercator a mano; las teselas, raster de OpenStreetMap o vectoriales de OpenFreeMap.
 
 /** El zoom más cercano y el más lejano que se usan (el toque cicla entre ellos). */
-const val MAX_ZOOM = 19
+const val MAX_ZOOM = 20
 const val MIN_ZOOM = 14
 
 /** Hasta dónde llega Web Mercator (más allá la latitud se va al infinito). */

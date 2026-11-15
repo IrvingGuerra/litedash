@@ -32,6 +32,9 @@ interface TileSource {
     /** Pedir comprimido y guardarlo así (se descomprime al usarlo). */
     val gzip: Boolean
 
+    /** Lo más cerca que se puede ver (las de OSM llegan al 19; las vectoriales se dibujan a cualquier zoom). */
+    val maxZoom: Int get() = MAX_ZOOM
+
     /** La tesela que hay que bajar para mostrar [key] (las vectoriales llegan hasta el zoom 14). */
     fun origin(key: Long): Long = key
 
@@ -57,6 +60,7 @@ object OsmTiles : TileSource {
     override val attribution = "© OpenStreetMap"
     override val recolor = true
     override val gzip = false
+    override val maxZoom = 19
 
     override fun url(origin: Long) = "https://tile.openstreetmap.org/${keyZ(origin)}/${keyX(origin)}/${keyY(origin)}.png"
 
@@ -136,7 +140,7 @@ class VectorTiles(
         canvas.translate(-sx * sizePx.toFloat(), -sy * sizePx.toFloat())
         canvas.scale(scale, scale)
         // Grosor en px de pantalla → en unidades de la tesela; un poco más delgado al alejarse.
-        val zoomFactor = 2.0.pow(0.7 * (z - 16)).toFloat().coerceIn(0.35f, 3.2f)
+        val zoomFactor = 2.0.pow(0.7 * (z - 16)).toFloat().coerceIn(0.35f, 4.5f)
         // Solo lo que toca este pedazo (más el grosor de la calle más ancha): del 17 son 64 pedazos por tesela.
         val window = t.extent.toFloat() / sub
         val margin = (ROAD_WIDTH[0] + CASING) * density * zoomFactor / scale

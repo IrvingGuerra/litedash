@@ -5,7 +5,9 @@ import android.os.Build
 import android.os.StatFs
 import android.os.storage.StorageManager
 import android.text.format.DateFormat
+import android.text.format.Formatter
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -26,6 +28,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -66,6 +69,7 @@ import com.irvingguerra.litedash.feature.map.zoomToFit
 import com.irvingguerra.litedash.feature.dashboard.TileTypes
 import com.irvingguerra.litedash.feature.map.MinimalPalette
 import com.irvingguerra.litedash.feature.map.OfflineError
+import com.irvingguerra.litedash.feature.map.OfflineArea
 import com.irvingguerra.litedash.feature.map.OfflineMaps
 import com.irvingguerra.litedash.feature.map.OsmTiles
 import com.irvingguerra.litedash.feature.map.TileStore
@@ -381,7 +385,7 @@ private fun MapLookOptions(look: MapLook, set: (MapLook) -> Unit) {
 }
 
 /**
- * Sin conexión: las zonas guardadas (con Borrar); el radio y un mapa con su círculo para elegir la zona (se arrastra;
+ * Sin conexión: las zonas guardadas (tocar una la muestra en el mapa, con Volver a bajar y Borrar); el radio y un mapa con su círculo para elegir la zona (se arrastra;
  * «Mi ubicación» regresa), su tamaño aproximado y lo libre; mientras baja, el avance y Cancelar. Solo el minimalista
  * (OSM no deja bajar en bloque).
  */
@@ -400,19 +404,23 @@ private fun OfflineSection(d: Dependencies, detail: MapDetail) {
     Label(stringResource(R.string.map_offline_help), Typography.small, c.textMuted)
     val locale = currentLocale()
     val dateFormat = remember(locale) { SimpleDateFormat(DateFormat.getBestDateTimePattern(locale, "dMMM"), locale) }
+    // La zona guardada que se está viendo (null = elegir una nueva); si se borra, se vuelve a elegir.
+    var selectedId by rememberSaveable { mutableStateOf<String?>(null) }
+    val selected = offline.areas.firstOrNull { it.id == selectedId }
     for (area in offline.areas) {
         val here = position != null && area.contains(position.latitude, position.longitude)
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Label(
-                stringResource(
-                    R.string.map_offline_area, stringResource(if (here) R.string.map_offline_here else R.string.map_offline_other),
-                    area.km, megabytes(area.bytes), dateFormat.format(Date(area.savedAt)),
-                ),
-                Typography.body, maxLines = 2, modifier = Modifier.weight(1f).padding(end = 12.dp),
-            )
-            Confirmed(stringResource(R.string.map_offline_delete), stringResource(R.string.map_offline_delete_question), stringResource(R.string.confirm_delete),
-                message = stringResource(R.string.map_offline_delete_message)) { offline.delete(area.id) }
-        }
+        val chosen = area.id == selectedId
+        Label(
+            stringResource(
+                R.string.map_offline_area, stringResource(if (here) R.string.map_offline_here else R.string.map_offline_other),
+                area.km, Formatter.formatShortFileSize(context, area.bytes), dateFormat.format(Date(area.savedAt)),
+            ),
+            Typography.body, if (chosen) c.accent else c.text, maxLines = 2,
+            modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.inner))
+                .background(if (chosen) c.accent.copy(alpha = 0.18f) else c.surfaceHigh)
+                .clickable { selectedId = if (chosen) null else area.id }
+                .padding(horizontal = 12.dp, vertical = 10.dp),
+        )
     }
     val job = offline.job
     if (job != null && job.error == null) {
@@ -421,7 +429,7 @@ private fun OfflineSection(d: Dependencies, detail: MapDetail) {
             Box(Modifier.fillMaxWidth(fraction).fillMaxHeight().background(c.accent))
         }
         // Sin total todavía se están contando las teselas (un instante; de 200 km, un poco más).
-        if (job.total > 0) Label(stringResource(R.string.map_offline_progress, job.done, job.total, megabytes(job.bytes)), Typography.small, c.textMuted)
+        if (job.total > 0) Label(stringResource(R.string.map_offline_progress, job.done, job.total, Formatter.formatShortFileSize(context, job.bytes)), Typography.small, c.textMuted)
         if (job.waiting) Label(stringResource(R.string.map_offline_waiting_server), Typography.small, c.warning)
         Button(stringResource(R.string.cancel), { offline.cancel() })
         return
@@ -430,21 +438,23 @@ private fun OfflineSection(d: Dependencies, detail: MapDetail) {
         Label(stringResource(if (error == OfflineError.BLOCKED) R.string.map_offline_blocked else R.string.map_offline_failed), Typography.small, c.warning)
     }
     var km by rememberSaveable { mutableIntStateOf(OFFLINE_RADII[1]) }
-    Segmented(OFFLINE_RADII.map { it to "$it km" }, km, { km = it })
+    // Con una zona elegida el radio es el suyo.
+    if (selected == null) Segmented(OFFLINE_RADII.map { it to "$it km" }, km, { km = it })
     if (position == null) {
         Button(stringResource(R.string.map_offline_download), {}, primary = true, enabled = false)
         Label(stringResource(R.string.map_offline_waiting), Typography.small, c.textMuted)
     } else {
-        OfflinePicker(offline, position.latitude, position.longitude, km)
+        OfflinePicker(offline, position.latitude, position.longitude, km, selected) { selectedId = null }
     }
 }
 
 /**
  * El mapa para elegir la zona (minimalista, plano, norte arriba) con el círculo de [km] alrededor de su centro y el
- * zoom para que quepa; se arrastra hasta ~2 000 km. Abajo, el tamaño, lo libre y el botón para bajarla.
+ * zoom para que quepa; se arrastra hasta ~2 000 km. Abajo, el tamaño, lo libre y el botón para bajarla. Con una zona
+ * guardada elegida ([selected]) se ve esa, con Volver a bajar y Borrar; «Mi ubicación» la suelta ([onClear]).
  */
 @Composable
-private fun OfflinePicker(offline: OfflineMaps, lat: Double, lon: Double, km: Int) {
+private fun OfflinePicker(offline: OfflineMaps, lat: Double, lon: Double, km: Int, selected: OfflineArea?, onClear: () -> Unit) {
     val c = LocalColors.current
     val context = LocalContext.current
     val density = LocalDensity.current.density
@@ -452,13 +462,31 @@ private fun OfflinePicker(offline: OfflineMaps, lat: Double, lon: Double, km: In
     val store = rememberTileStore(look, c.dark)
     val camera = rememberFreeMapCamera()
     val centered by remember(camera) { derivedStateOf { camera.centered } }
+    // Al elegir una zona el mapa va a ella; al soltarla, de regreso a ti.
+    LaunchedEffect(selected?.id) {
+        if (selected != null) camera.lookAt(selected.lat, selected.lon, lat, lon) else if (!camera.centered) camera.recenter()
+    }
+    val ringKm = selected?.km ?: km
     Card(Modifier.fillMaxWidth().height(OFFLINE_PREVIEW_HEIGHT)) {
         BoxWithConstraints(Modifier.fillMaxSize()) {
             val viewPx = with(LocalDensity.current) { minOf(maxWidth, maxHeight).toPx() }
-            val zoom = zoomToFit(km.toFloat(), lat, viewPx, tilePx(density))
-            MapCanvas(store, lat, lon, null, null, look, Modifier.fillMaxSize(), camera, fixedZoom = zoom, ringKm = km.toFloat())
-            if (!centered) Button(stringResource(R.string.map_offline_my_location), camera::recenter, Modifier.align(Alignment.TopStart).padding(8.dp))
+            val zoom = zoomToFit(ringKm.toFloat(), selected?.lat ?: lat, viewPx, tilePx(density))
+            MapCanvas(store, lat, lon, null, null, look, Modifier.fillMaxSize(), camera, fixedZoom = zoom, ringKm = ringKm.toFloat())
+            if (!centered) {
+                Button(stringResource(R.string.map_offline_my_location), { onClear(); camera.recenter() }, Modifier.align(Alignment.TopStart).padding(8.dp))
+            }
         }
+    }
+    if (selected != null) {
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Button(stringResource(R.string.map_offline_redownload), {
+                val source = VectorTiles(context, MinimalPalette.LIGHT, tilePx(density).toInt(), density, MAP_USER_AGENT)
+                offline.download(selected.lat, selected.lon, selected.km, source, MAP_USER_AGENT)
+            }, primary = true)
+            Confirmed(stringResource(R.string.map_offline_delete), stringResource(R.string.map_offline_delete_question), stringResource(R.string.confirm_delete),
+                message = stringResource(R.string.map_offline_delete_message)) { offline.delete(selected.id) }
+        }
+        return
     }
     // El tamaño depende de la latitud (no de cada metro): se recalcula solo al cambiar de radio o de zona (a ~10 km).
     val here by rememberUpdatedState(lat to lon)
@@ -473,7 +501,8 @@ private fun OfflinePicker(offline: OfflineMaps, lat: Double, lon: Double, km: In
     if (bytes != null) {
         val big = bytes > BIG_ZONE_BYTES
         Label(
-            free?.let { stringResource(R.string.map_offline_size_free, megabytes(bytes), megabytes(it)) } ?: stringResource(R.string.map_offline_size, megabytes(bytes)),
+            free?.let { stringResource(R.string.map_offline_size_free, Formatter.formatShortFileSize(context, bytes), Formatter.formatShortFileSize(context, it)) }
+                ?: stringResource(R.string.map_offline_size, Formatter.formatShortFileSize(context, bytes)),
             Typography.small, if (big) c.warning else c.textMuted,
         )
         if (big && fits) Label(stringResource(R.string.map_offline_big), Typography.small, c.warning)
@@ -509,6 +538,3 @@ private fun freeBytes(context: Context): Long {
     }
     return StatFs(dir.path).availableBytes
 }
-
-/** Bytes a MB enteros (al menos 1: «0 MB» confunde). */
-private fun megabytes(bytes: Long) = maxOf(1L, Math.round(bytes / 1e6))

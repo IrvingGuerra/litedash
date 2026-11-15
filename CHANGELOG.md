@@ -4,6 +4,17 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.4.160] - 2026-11-14
+
+### Cambiado
+- **Tu posición siempre es una flecha, más grande.** Antes, sin rumbo del GPS, se veía un punto.
+- **El mapa se inclina en lo más cerca**, también detenido o al acercarlo con dos dedos (antes solo de viaje), y se
+  acerca un poco más (como Waze). Alejado, plano.
+- **Centrar** tiene un ícono de mira y te regresa a lo más cerca, inclinado. Detenido, el mapa ya no se centra solo
+  si lo moviste; de viaje sí, tras 20 segundos.
+- **Mapas sin conexión:** toca una zona guardada para verla en el mapa con su círculo, y volver a bajarla o borrarla.
+- Los tamaños se ven en MB, GB o TB.
+
 ## [1.4.159] - 2026-11-14
 
 ### Cambiado
