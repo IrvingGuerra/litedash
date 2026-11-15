@@ -4,6 +4,12 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.4.159] - 2026-11-14
+
+### Cambiado
+- **El mapa de viaje se ve como Waze:** al manejar se acerca mucho más (un par de calles a los lados), tu flecha va
+  hasta abajo para ver más camino adelante y la inclinación es más suave.
+
 ## [1.4.158] - 2026-11-14
 
 ### Arreglado
