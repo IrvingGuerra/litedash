@@ -1,5 +1,8 @@
 package com.irvingguerra.litedash.feature.music
 
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
@@ -75,7 +78,7 @@ private fun SongText(repo: MusicRepository, song: Song?, tall: Boolean, label: S
         SongLines(repo, song, tall)
         if (song.durationMs > 0) {
             Spacer(Modifier.height(10.dp))
-            Progress(song)
+            Progress(song, tall)
         }
     }
 }
@@ -91,9 +94,20 @@ private fun idleHint(repo: MusicRepository): String {
     }
 }
 
-/** Barra de avance: se calcula con la hora, un repintado por segundo solo mientras suena. */
+/**
+ * Barra de avance: se calcula con la hora, un repintado por segundo solo mientras suena. Alta ([withTimes]), más
+ * gruesa y con el tiempo que va y el total debajo.
+ */
 @Composable
-private fun Progress(song: Song) {
+private fun Progress(song: Song, withTimes: Boolean) {
     val pos by rememberPosition(song)
-    ProgressTrack((pos.toFloat() / song.durationMs).coerceIn(0f, 1f), 3.dp)
+    ProgressTrack((pos.toFloat() / song.durationMs).coerceIn(0f, 1f), if (withTimes) 4.dp else 3.dp)
+    if (withTimes) {
+        val c = LocalColors.current
+        Row(Modifier.fillMaxWidth().padding(top = 4.dp)) {
+            Label(formatTime(pos), Typography.small, c.textMuted, 1)
+            Spacer(Modifier.weight(1f))
+            Label(formatTime(song.durationMs), Typography.small, c.textMuted, 1)
+        }
+    }
 }

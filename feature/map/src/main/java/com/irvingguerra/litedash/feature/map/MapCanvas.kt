@@ -85,6 +85,13 @@ private const val EARTH_METERS = 40_075_016.686
 /** Movido con el dedo, regresa a ti tras este rato sin tocarlo. */
 private const val RECENTER_MS = 20_000L
 
+/** Cuánto tarda en deslizarse hasta ti al centrar, y cada paso de zoom al acercarse después. */
+private const val RECENTER_GLIDE_MS = 900f
+private const val ZOOM_STEP_MS = 220f
+
+/** Arranca y llega suave. */
+private fun easeInOut(t: Float): Float = if (t < 0.5f) 2 * t * t else 1 - (-2 * t + 2).let { it * it } / 2
+
 /** Lo más que se aleja el mapa de ti con el dedo (fracción del mundo, ~80 km). */
 private const val MAX_PAN = 0.002
 
@@ -135,11 +142,22 @@ class MapCamera(
     /** Cuántas veces se pidió centrar (el mapa vuelve a lo más cerca, inclinado). */
     internal var recenters by mutableIntStateOf(0)
 
+    /** Regresa a ti deslizándose (lo anima `MapCanvas`) y acerca hasta lo más cerca, inclinado. */
     fun recenter() {
-        panX = 0.0
-        panY = 0.0
         recenters++
     }
+
+    /** El zoom que pusiste con dos dedos o al centrar (null = el de fábrica): igual en el widget y en grande. */
+    internal var zoom by mutableStateOf<Int?>(null)
+
+    /** De viaje (andando o navegando); se guarda aquí para que el widget y el mapa en grande coincidan. */
+    internal var driving by mutableStateOf(false)
+
+    /** Con qué [driving] se puso [zoom]: al empezar o terminar el viaje se olvida. */
+    internal var zoomFor = false
+
+    /** Cuántas veces se movió con el dedo: si lo tocas mientras se desliza a ti, se queda donde lo dejaste. */
+    internal var touches = 0
 
     /** Mueve el centro del mapa a ([lat], [lon]) estando tú en ([fromLat], [fromLon]) (hasta donde deja [maxPan]). */
     fun lookAt(lat: Double, lon: Double, fromLat: Double, fromLon: Double) {
@@ -191,26 +209,67 @@ fun MapCanvas(
     onTap: (() -> Unit)? = null,
 ) {
     val c = LocalColors.current
-    var manual by remember { mutableStateOf<Int?>(null) }
     val driveZoom = store.source.maxZoom
     // De viaje: andando o navegando; se acaba tras un rato detenido (un alto no lo quita).
     val moving = fixedZoom == null && ((kmh ?: 0f) >= DRIVE_KMH || navigating)
-    var driving by remember { mutableStateOf(false) }
     LaunchedEffect(moving) {
-        if (moving) driving = true else {
+        if (moving) camera.driving = true else {
             delay(STOP_MS)
-            driving = false
+            camera.driving = false
         }
     }
-    // Al empezar o terminar el viaje, lo que hayas acercado o alejado a mano se olvida.
-    LaunchedEffect(driving) { manual = null }
+    val driving = camera.driving
+    // Al empezar o terminar el viaje, lo que hayas acercado o alejado a mano se olvida (abrir en grande no lo cambia).
+    LaunchedEffect(driving) {
+        if (camera.zoomFor != driving) {
+            camera.zoom = null
+            camera.zoomFor = driving
+        }
+    }
+    val manual = camera.zoom
     val base = fixedZoom ?: look.zoom.level ?: if (driving) driveZoom else CITY_ZOOM
     val zoom = fixedZoom ?: manual ?: base
     // En lo más cerca (de viaje llega solo; detenido, acercándolo o con "centrar"): alejado, plano.
     val tilted = fixedZoom == null && look.zoom == MapZoom.AUTO && zoom == driveZoom
-    // Centrar regresa a lo más cerca, inclinado.
+    // Con dos dedos: mientras se pellizca el mapa se escala ([pinch]) y al doblar (o partir a la mitad) cambia de zoom.
+    var pinch by remember { mutableFloatStateOf(1f) }
+    // Centrar: el mapa se desliza hasta ti y luego se acerca paso a paso hasta lo más cerca, inclinado.
+    val latestZoom by rememberUpdatedState(zoom)
     LaunchedEffect(camera.recenters) {
-        if (camera.recenters > 0 && fixedZoom == null && look.zoom == MapZoom.AUTO) manual = driveZoom.takeIf { it != base }
+        if (camera.recenters == 0) return@LaunchedEffect
+        val touched = camera.touches
+        val fromX = camera.panX
+        val fromY = camera.panY
+        if (fromX != 0.0 || fromY != 0.0) {
+            val start = withFrameNanos { it }
+            var t = 0f
+            while (t < 1f) {
+                t = withFrameNanos { (it - start) / 1_000_000f / RECENTER_GLIDE_MS }.coerceAtMost(1f)
+                // Lo tocaste en medio: se queda ahí.
+                if (camera.touches != touched) return@LaunchedEffect
+                val e = easeInOut(t)
+                camera.panX = fromX * (1 - e)
+                camera.panY = fromY * (1 - e)
+            }
+        }
+        if (fixedZoom != null || look.zoom != MapZoom.AUTO) return@LaunchedEffect
+        while (latestZoom < driveZoom) {
+            val start = withFrameNanos { it }
+            var t = 0f
+            while (t < 1f) {
+                t = withFrameNanos { (it - start) / 1_000_000f / ZOOM_STEP_MS }.coerceAtMost(1f)
+                if (camera.touches != touched) {
+                    pinch = 1f
+                    return@LaunchedEffect
+                }
+                pinch = 1f + easeInOut(t)
+            }
+            camera.zoom = (latestZoom + 1).takeIf { it != base }
+            pinch = 1f
+            // Que se dibuje el zoom nuevo antes del siguiente paso.
+            withFrameNanos { }
+        }
+        if (latestZoom > driveZoom) camera.zoom = driveZoom.takeIf { it != base }
     }
     val dark = look.dark(c.dark)
     val filter = if (dark && store.source.recolor) DarkTiles else null
@@ -221,8 +280,6 @@ fun MapCanvas(
     // Inclinado, tu posición va más abajo: se ve más camino adelante.
     val anchorY = if (tilted) 0.82f else 0.6f
     val sky = store.source.sky?.let(::Color) ?: if (dark) Color(0xFF1C1C20) else Color(0xFFE8E8EA)
-    // Con dos dedos: mientras se pellizca el mapa se escala ([pinch]) y al doblar (o partir a la mitad) cambia de zoom.
-    var pinch by remember { mutableFloatStateOf(1f) }
     val onPinch by rememberUpdatedState { factor: Float ->
         var p = pinch * factor
         var z = zoom
@@ -230,7 +287,7 @@ fun MapCanvas(
         while (p <= 0.5f && z > MIN_ZOOM) { z--; p *= 2f }
         // En el límite solo cede un poco: se nota que ya no hay más.
         pinch = p.coerceIn(if (z <= MIN_ZOOM) 0.85f else 0.5f, if (z >= driveZoom) 1.15f else 2f)
-        if (z != zoom) manual = z.takeIf { it != base }
+        if (z != zoom) camera.zoom = z.takeIf { it != base }
     }
     val onPinchEnd by rememberUpdatedState {
         // Al soltar se queda en el zoom más cercano.
@@ -239,7 +296,7 @@ fun MapCanvas(
             pinch < 0.71f -> (zoom - 1).coerceAtLeast(MIN_ZOOM)
             else -> zoom
         }
-        manual = z.takeIf { it != base }
+        camera.zoom = z.takeIf { it != base }
         pinch = 1f
     }
     // La última proyección dibujada y cuántos px de pantalla mide el mundo: con eso un arrastre se vuelve movimiento del mapa.
@@ -259,6 +316,7 @@ fun MapCanvas(
                     dx *= most / length
                     dy *= most / length
                 }
+                camera.touches++
                 camera.panX = (camera.panX - dx / drawn.worldPx).coerceIn(-camera.maxPan, camera.maxPan)
                 camera.panY = (camera.panY - dy / drawn.worldPx).coerceIn(-camera.maxPan, camera.maxPan)
             }

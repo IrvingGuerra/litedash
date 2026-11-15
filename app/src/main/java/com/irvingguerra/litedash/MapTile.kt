@@ -57,6 +57,7 @@ import com.irvingguerra.litedash.core.ui.Typography
 import com.irvingguerra.litedash.core.vehicle.Signal
 import com.irvingguerra.litedash.core.vehicle.watch
 import com.irvingguerra.litedash.feature.apps.App
+import com.irvingguerra.litedash.feature.map.MapCamera
 import com.irvingguerra.litedash.feature.map.MapCanvas
 import com.irvingguerra.litedash.feature.map.MapDetail
 import com.irvingguerra.litedash.feature.map.MapLook
@@ -90,7 +91,7 @@ import kotlinx.coroutines.withContext
  * mientras se ve.
  */
 @Composable
-fun MapTile(d: Dependencies, data: String, app: App?, editing: Boolean, onPlace: (String) -> Unit, onNavigate: () -> Unit, onTap: () -> Unit) {
+fun MapTile(d: Dependencies, tileId: String, data: String, app: App?, editing: Boolean, onPlace: (String) -> Unit, onNavigate: () -> Unit, onTap: () -> Unit) {
     val c = LocalColors.current
     val (granted, ask) = rememberGpsPermission(d)
     val look = remember(data) { MapLook.parse(data) }
@@ -108,7 +109,7 @@ fun MapTile(d: Dependencies, data: String, app: App?, editing: Boolean, onPlace:
         val turnWidth = maxWidth - if (external) 68.dp else 16.dp
         val withPlaces = maxHeight >= PLACES_HEIGHT
         Card(Modifier.fillMaxSize()) {
-            LiveMap(d, look, Modifier.fillMaxSize(), onTap = onTap)
+            LiveMap(d, look, Modifier.fillMaxSize(), cameraKey = tileId, onTap = onTap)
             // La vuelta no llega al botón de la app.
             NextTurn(d, Modifier.align(Alignment.TopStart).padding(8.dp).widthIn(max = turnWidth))
             if (withPlaces) {
@@ -129,12 +130,12 @@ fun MapTile(d: Dependencies, data: String, app: App?, editing: Boolean, onPlace:
  * para abrir tu app de mapas y para cerrar.
  */
 @Composable
-fun MapExpanded(d: Dependencies, data: String, app: App?, onPlace: (String) -> Unit, onNavigate: () -> Unit, close: () -> Unit, modifier: Modifier = Modifier) {
+fun MapExpanded(d: Dependencies, tileId: String?, data: String, app: App?, onPlace: (String) -> Unit, onNavigate: () -> Unit, close: () -> Unit, modifier: Modifier = Modifier) {
     val c = LocalColors.current
     val (granted, ask) = rememberGpsPermission(d)
     val look = remember(data) { MapLook.parse(data) }
     Card(modifier.fillMaxSize()) {
-        if (granted) LiveMap(d, look, Modifier.fillMaxSize())
+        if (granted) LiveMap(d, look, Modifier.fillMaxSize(), cameraKey = tileId)
         else Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Button(stringResource(R.string.tap_to_enable), ask, primary = true) }
         NextTurn(d, Modifier.align(Alignment.TopStart).padding(12.dp).widthIn(max = 520.dp))
         Row(Modifier.align(Alignment.TopEnd).padding(12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -182,7 +183,7 @@ private val ATTRIBUTION_CLEARANCE = 56.dp
  * a la izquierda van el botón para regresar a ti, la calle donde vas y si el mapa es en línea o bajado.
  */
 @Composable
-private fun LiveMap(d: Dependencies, look: MapLook, modifier: Modifier, onTap: (() -> Unit)? = null) {
+private fun LiveMap(d: Dependencies, look: MapLook, modifier: Modifier, cameraKey: String? = null, onTap: (() -> Unit)? = null) {
     val c = LocalColors.current
     KeepTripRunning(d.trip)
     val context = LocalContext.current
@@ -191,7 +192,7 @@ private fun LiveMap(d: Dependencies, look: MapLook, modifier: Modifier, onTap: (
     // Del bus (la del OBD si hay escáner, si no la del GPS): andando (o con Waze/Maps navegando) va de viaje.
     val kmh = d.bus.watch(Signal.SPEED)
     val navigating = d.navigation.instruction != null
-    val camera = rememberMapCamera()
+    val camera = sharedMapCamera(cameraKey)
     // Solo cambia al mover o centrar el mapa (no con cada movimiento del dedo).
     val centered by remember(camera) { derivedStateOf { camera.centered } }
     BoxWithConstraints(modifier) {
@@ -221,6 +222,16 @@ private fun LiveMap(d: Dependencies, look: MapLook, modifier: Modifier, onTap: (
         }
     }
 }
+
+/**
+ * Una cámara por widget Mapa ([key] = su id), la misma en el widget y en grande: lo que muevas o acerques se conserva
+ * al abrirlo o cerrarlo (solo cambia el tamaño). Sin [key] (vistas previas), una propia.
+ */
+private val mapCameras = HashMap<String, MapCamera>()
+
+@Composable
+private fun sharedMapCamera(key: String?): MapCamera =
+    if (key == null) rememberMapCamera() else remember(key) { mapCameras.getOrPut(key) { MapCamera() } }
 
 /** Una pastilla sobre el mapa: ícono y un texto corto. */
 @Composable

@@ -329,7 +329,7 @@ fun TileContent(d: Dependencies, p: Tile, apps: List<App>, car: CarPackage?, rev
             // Un toque: tu app de mapas o el mapa de LiteDash en grande (Ajustes → Apps → Navegación).
             val external = d.prefs.mapExternal && app != null
             MapTile(
-                d, p.data, app, editing = actions.editing(),
+                d, p.id, p.data, app, editing = actions.editing(),
                 onPlace = remember(app) { { navigateTo(context, app, it) } },
                 onNavigate = remember(app) { { actions.onNavigate(app) } },
                 onTap = remember(app, external, p.id) { if (external) { { actions.onNavigate(app) } } else { { actions.onExpand(Expanded.MAP, p) } } },
@@ -762,9 +762,10 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                                 Expanded.MAP -> {
                                     val app = mapApp(d, apps)
                                     // Como el widget Mapa que se tocó (o el primero que haya; sin widget, el aspecto de Ajustes).
-                                    val look = (expandedFrom ?: d.dashboard.shown.firstOrNull { it.type == TileTypes.MAP })?.data ?: d.prefs.mapLook.orEmpty()
+                                    val from = expandedFrom ?: d.dashboard.shown.firstOrNull { it.type == TileTypes.MAP }
+                                    val look = from?.data ?: d.prefs.mapLook.orEmpty()
                                     MapExpanded(
-                                        d, look, app, onPlace = { navigateTo(context, app, it) }, onNavigate = { actions.onNavigate(app) },
+                                        d, from?.id, look, app, onPlace = { navigateTo(context, app, it) }, onNavigate = { actions.onNavigate(app) },
                                         close = close, modifier = Modifier.padding(6.dp),
                                     )
                                 }

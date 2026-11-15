@@ -4,6 +4,16 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.4.161] - 2026-11-14
+
+### Cambiado
+- **Música y radio en grande, rediseñadas:** con espacio, carátula grande a un lado y, al otro, el título centrado, la
+  barra de avance con el tiempo que va y el total, y botones más grandes y con aire.
+- **Barra de avance en la música de tus archivos** (USB o carpeta): antes no salía porque esas canciones no traían
+  duración. El widget Música, si es alto, también muestra los tiempos.
+- **El mapa es el mismo en el widget y en grande:** lo que muevas o acerques se conserva al abrirlo y al cerrarlo.
+- **Centrar se ve:** el mapa se desliza hasta ti y luego se acerca paso a paso, en vez de saltar.
+
 ## [1.4.160] - 2026-11-14
 
 ### Cambiado

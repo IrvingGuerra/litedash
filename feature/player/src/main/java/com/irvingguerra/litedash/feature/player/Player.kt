@@ -179,6 +179,7 @@ object Player {
         session?.isActive = false
         session?.release()
         session = null
+        shown = null
         unwatchUsb()
         state = PlayerState.IDLE
         PlaybackService.stop(app)
@@ -186,6 +187,7 @@ object Player {
 
     private fun start(item: Playable) {
         val myLoad = ++load
+        preparedDuration = -1L
         releaseAudio()
         if (item is Track) watchUsb() else unwatchUsb()
         publishMetadata(item, null)
@@ -218,6 +220,11 @@ object Player {
             setAudioAttributes(AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_MEDIA).setContentType(AudioAttributes.CONTENT_TYPE_MUSIC).build())
             setOnPreparedListener {
                 if (myLoad != load) return@setOnPreparedListener
+                // Las canciones de una carpeta o USB no traen duración: la da el reproductor (para la barra de avance).
+                if (item is Track && item.durationMs <= 0) {
+                    preparedDuration = it.duration.toLong()
+                    shown?.let { (i, art, tags) -> publishMetadata(i, art, tags) }
+                }
                 if (requestFocus()) {
                     it.start()
                     update(playing = true, buffering = false)
@@ -291,8 +298,15 @@ object Player {
     /** Se creó la sesión (empezó a sonar algo): la pieza Música la toma. */
     var onSession: (() -> Unit)? = null
 
+    /** La duración que dio el reproductor al preparar (−1 = aún no o no se sabe). */
+    private var preparedDuration = -1L
+
+    /** Lo último publicado, para volverlo a publicar con la duración. */
+    private var shown: Triple<Playable, Bitmap?, Tags?>? = null
+
     private fun publishMetadata(item: Playable, art: Bitmap?, tags: Tags? = null) {
-        val duration = (item as? Track)?.durationMs ?: -1L
+        shown = Triple(item, art, tags)
+        val duration = (item as? Track)?.durationMs?.takeIf { it > 0 } ?: preparedDuration.takeIf { item is Track && it > 0 } ?: -1L
         session?.setMetadata(
             MediaMetadata.Builder()
                 .putString(MediaMetadata.METADATA_KEY_TITLE, tags?.title ?: item.title)

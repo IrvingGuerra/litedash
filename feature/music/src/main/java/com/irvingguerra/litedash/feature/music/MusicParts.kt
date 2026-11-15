@@ -36,6 +36,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -411,12 +412,15 @@ internal fun ColumnScope.NowPlaying(
                     controls(ControlsFit.MINI)
                 }
             }
+            // Con lugar (como un reproductor de escritorio): carátula grande y, al lado, todo centrado y con aire.
             wide -> Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
-                Artwork(song, Modifier.size(minOf(height, width * 0.4f)), Radius.card, icon)
-                Spacer(Modifier.width(20.dp))
-                Column(Modifier.weight(1f)) {
-                    title(Modifier.fillMaxWidth(), fit != ControlsFit.FULL)
-                    controls(fit)
+                Artwork(song, Modifier.size(minOf(height, width * 0.45f)), Radius.card, icon)
+                Spacer(Modifier.width(32.dp))
+                Column(Modifier.weight(1f).padding(horizontal = 8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                    CompositionLocalProvider(LocalWide provides (fit == ControlsFit.FULL)) {
+                        title(Modifier.fillMaxWidth(), fit != ControlsFit.FULL)
+                        controls(fit)
+                    }
                 }
             }
             above >= ARTWORK_ABOVE_MIN -> Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
@@ -459,10 +463,27 @@ internal fun ExpandedTitle(repo: MusicRepository, song: Song?, opening: String?,
     Column(modifier) { BigTitle(title, subtitle, error != null, compact) }
 }
 
+/**
+ * La vista en grande con lugar de sobra ([NowPlaying] ancha): título más grande y centrado, barra de avance con
+ * tiempos y botones con más aire.
+ */
+internal val LocalWide = compositionLocalOf { false }
+
 /** Título y subtítulo grandes, con dos líneas reservadas cada uno: los botones no se mueven. */
 @Composable
 internal fun BigTitle(title: String, subtitle: String, error: Boolean, compact: Boolean) {
     val c = LocalColors.current
+    if (LocalWide.current && !compact) {
+        val center = TextAlign.Center
+        Box(Modifier.fillMaxWidth().heightIn(min = 84.dp), contentAlignment = Alignment.BottomCenter) {
+            Label(title, Typography.title.copy(fontSize = 34.sp, lineHeight = 40.sp, textAlign = center), maxLines = 2)
+        }
+        Spacer(Modifier.height(6.dp))
+        Box(Modifier.fillMaxWidth().heightIn(min = 28.dp), contentAlignment = Alignment.TopCenter) {
+            Label(subtitle, Typography.subtitle.copy(fontSize = 20.sp, textAlign = center), if (error) c.danger else c.textMuted, maxLines = 1)
+        }
+        return
+    }
     if (compact) {
         // Sin lugar: una línea de cada uno y sin reservar espacio.
         Label(title, Typography.title.copy(fontSize = 22.sp), maxLines = 1)
