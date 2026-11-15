@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.location.Location
 import android.location.LocationManager
+import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
@@ -140,6 +141,21 @@ class TripRepository(private val context: Context, private val bus: VehicleBus) 
     private var lastGpsAt = 0L
     private val main = Handler(Looper.getMainLooper())
 
+    /** Donde se midió el último rumbo calculado con el avance (para cuando el GPS no da uno confiable). */
+    private var courseFrom: Location? = null
+
+    /**
+     * Hacia dónde vas: el rumbo del GPS si es confiable; si no lo trae o viene impreciso (algunas pantallas mandan 0°),
+     * el del avance entre lecturas (a partir de [COURSE_METERS]). Así el mapa siempre mira hacia adelante, como Waze.
+     */
+    private fun heading(l: Location): Float? {
+        val from = courseFrom
+        val moved = if (from != null && from.distanceTo(l) >= COURSE_METERS) ((from.bearingTo(l) + 360f) % 360f).also { courseFrom = l } else null
+        if (from == null) courseFrom = l
+        val trusted = l.hasBearing() && (Build.VERSION.SDK_INT < Build.VERSION_CODES.O || !l.hasBearingAccuracy() || l.bearingAccuracyDegrees <= MAX_BEARING_ERROR)
+        return if (trusted) l.bearing else moved
+    }
+
     private fun update(l: Location) {
         val now = SystemClock.elapsedRealtime()
         if (l.provider != LocationManager.GPS_PROVIDER) {
@@ -152,7 +168,7 @@ class TripRepository(private val context: Context, private val bus: VehicleBus) 
         position = l
         speedKmh = if (l.hasSpeed()) l.speed * 3.6f else null
         bus.publish(Signal.SPEED, speedKmh, Source.GPS)
-        if (l.hasBearing() && (speedKmh ?: 0f) > 3f) bearing = l.bearing
+        if ((speedKmh ?: 0f) > 3f) heading(l)?.let { bearing = it }
         val previous = last
         // Solo puntos buenos y en movimiento: parado, el GPS "camina" solo unos metros.
         if (l.accuracy <= 30f && (speedKmh ?: 0f) > 3f) {
@@ -303,3 +319,9 @@ private fun TripStat(name: String, value: String) {
         Label(value, Typography.subtitle, maxLines = 1)
     }
 }
+
+/** Avance mínimo para calcular el rumbo con dos lecturas (menos, el error del GPS lo voltea). */
+private const val COURSE_METERS = 8f
+
+/** Más imprecisión que esto (grados) y el rumbo del GPS no se usa. */
+private const val MAX_BEARING_ERROR = 20f

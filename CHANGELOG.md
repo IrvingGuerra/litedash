@@ -4,6 +4,12 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.4.158] - 2026-11-14
+
+### Arreglado
+- **El mapa siempre mira hacia adelante, como Waze:** en pantallas cuyo GPS no da el rumbo (o lo da en 0°), la flecha
+  avanzaba de lado. Ahora, si el rumbo del GPS no es confiable, LiteDash lo calcula con tu avance.
+
 ## [1.4.157] - 2026-11-14
 
 ### Agregado
