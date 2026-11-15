@@ -104,7 +104,7 @@ h2 { font-size: clamp(32px, 4.6vw, 52px); letter-spacing: -0.03em; line-height: 
 .pestanas button:hover { border-color: var(--linea-2); color: var(--blanco); }
 .pestanas button[aria-selected="true"] { background: var(--blanco); color: var(--grafito); border-color: var(--blanco); font-weight: 650; }
 .pantalla { margin: 0 auto; max-width: 1000px; padding: 14px; border-radius: 30px; background: linear-gradient(180deg, #252b33, #0a0c0f); box-shadow: 0 50px 140px rgb(0 0 0 / .65), inset 0 1px 0 rgb(255 255 255 / .07); }
-.pantalla img { border-radius: 16px; width: 100%; background: var(--grafito); }
+.pantalla img { border-radius: 16px; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; background: var(--grafito); }
 .pie-pantalla { max-width: 1000px; margin: 18px auto 0; text-align: center; color: var(--texto); min-height: 3.2em; }
 .pie-pantalla b { color: var(--blanco); }
 @media (max-width: 640px) { .pantalla { padding: 7px; border-radius: 18px; } .pantalla img { border-radius: 11px; } }

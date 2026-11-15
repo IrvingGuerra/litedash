@@ -19,7 +19,7 @@
   <meta property="og:type" content="website">
   <meta name="twitter:card" content="summary_large_image">
   <link rel="preload" as="image" href="../img/giro/04.webp">
-  <link rel="stylesheet" href="../landing.css?v=20261111b">
+  <link rel="stylesheet" href="../landing.css?v=20261114">
   <script>document.documentElement.classList.add('js')</script>
   <!-- seo:begin -->
   <link rel="alternate" hreflang="x-default" href="https://litedash.dev/en/">
@@ -37,7 +37,7 @@
    "applicationCategory": "UtilitiesApplication",
    "applicationSubCategory": "Car launcher",
    "operatingSystem": "Android 6.0+",
-   "softwareVersion": "1.4.160",
+   "softwareVersion": "1.4.161",
    "description": "Lightweight, open-source launcher for Android car and motorcycle head units: OBD2 scanner, TPMS tire pressure, factory FM radio, USB player, map, speedometers and your car in 3D.",
    "url": "https://litedash.dev/en/",
    "downloadUrl": "https://github.com/IrvingGuerra/litedash/releases/latest/download/litedash.apk",
@@ -77,7 +77,7 @@
     "url": "https://irvingguerra.github.io/"
    },
    "inLanguage": "en",
-   "fileSize": "1.9 MB"
+   "fileSize": "2.0 MB"
   },
   {
    "@type": "FAQPage",
@@ -118,6 +118,14 @@
     },
     {
      "@type": "Question",
+     "name": "Does it work with my head unit's radio?",
+     "acceptedAnswer": {
+      "@type": "Answer",
+      "text": "The FM radio is controlled without opening its app on TopWay, NWD and HCN, and factory Bluetooth on FYT, TopWay, Microntek, Clinkway, Autochips, NWD, Jancar and Reglink. On others, LiteDash opens its app and brings you back. If yours doesn't respond, send a report from Settings → System."
+     }
+    },
+    {
+     "@type": "Question",
      "name": "What do I need for the Workshop and tires?",
      "acceptedAnswer": {
       "@type": "Answer",
@@ -153,6 +161,7 @@
       <a class="logo" href="./" aria-label="LiteDash"><img src="../img/litedash-horizontal-sobre-oscuro.svg" alt="LiteDash" width="132" height="30"></a>
       <nav>
         <a class="seccion" href="#todo">Features</a>
+        <a class="seccion" href="#radios">Radios</a>
         <a class="seccion" href="#taller">Workshop</a>
         <a class="seccion" href="#autos">Cars</a>
         <a class="seccion" href="#preguntas">FAQ</a>
@@ -209,21 +218,40 @@
           <p>Real LiteDash screenshots on a 7" screen. Tap each tab.</p>
         </div>
         <div class="pestanas" role="tablist" aria-label="LiteDash screens">
-          <button role="tab" aria-selected="true" data-img="inicio-oscuro" data-pie="<b>Your home.</b> Your car standing on the floor with its reflection, each tire's pressure, the speedometer, music and the map. Move and resize anything.">Home</button>
-          <button role="tab" aria-selected="false" data-img="carretera" data-pie="<b>Road.</b> Your car on the road: the lane lines move with your speed (OBD or GPS), with your widgets below.">Road</button>
-          <button role="tab" aria-selected="false" data-img="llantas" data-pie="<b>Tires.</b> Pressure and temperature of each tire, with its last 24 hours and an alert if one drops.">Tires</button>
+          <button role="tab" aria-selected="true" data-img="inicio-oscuro" data-pie="<b>Your home.</b> Your car in 3D over your wallpaper, the speedometer, music with its progress bar and the map. Move and resize anything.">Home</button>
+          <button role="tab" aria-selected="false" data-img="acomodo" data-pie="<b>Make it yours.</b> Move, resize or remove any widget, with or without a card. Or start from a layout.">Layout</button>
+          <button role="tab" aria-selected="false" data-img="fondos" data-pie="<b>Wallpapers.</b> LiteDash wallpapers download with one tap, or use your own photo.">Wallpapers</button>
+          <button role="tab" aria-selected="false" data-img="tu-auto" data-pie="<b>Your car in 3D.</b> Sixteen catalog models in your color and finish. Spin it with your finger.">Your car</button>
+          <button role="tab" aria-selected="false" data-img="velocimetro" data-pie="<b>Speedometers.</b> Dial (plain, neon or blocks), needle, digital, bar or gradient; any color, with or without a card.">Speedometers</button>
+          <button role="tab" aria-selected="false" data-img="musica" data-pie="<b>Music.</b> Big cover art, progress bar and controls. Your files or USB drive, your unit's Bluetooth or your favorite app.">Music</button>
+          <button role="tab" aria-selected="false" data-img="mapa" data-pie="<b>Map.</b> 3D like Waze, with street names, and offline in the areas you download.">Map</button>
+          <button role="tab" aria-selected="false" data-img="llantas" data-pie="<b>Tires.</b> Pressure and temperature of each tire, with a 24-hour history and an alert if one drops.">Tires</button>
           <button role="tab" aria-selected="false" data-img="taller" data-pie="<b>Workshop.</b> Your car's health at a glance: a dot where something needs attention and a card per system.">Workshop</button>
           <button role="tab" aria-selected="false" data-img="graficas" data-pie="<b>Live charts.</b> RPM, speed, engine load, boost and more, straight from the OBD port.">Charts</button>
-          <button role="tab" aria-selected="false" data-img="mapa" data-pie="<b>Map.</b> Your live position, flat or tilted, and Waze or Google Maps one tap away.">Map</button>
-          <button role="tab" aria-selected="false" data-img="musica" data-pie="<b>Music.</b> Your USB drive with its own player, Bluetooth music and your favorite app, without leaving home.">Music</button>
-          <button role="tab" aria-selected="false" data-img="velocimetro" data-pie="<b>Speedometers.</b> Dial, needle, digital, bar or gradient; any color and up to 200 mph.">Speedometers</button>
-          <button role="tab" aria-selected="false" data-img="plantillas" data-pie="<b>Layouts.</b> Start from a layout made for 7&quot;, 10&quot; or 11&quot; screens and make it yours.">Layouts</button>
-          <button role="tab" aria-selected="false" data-img="inicio-claro" data-pie="<b>Day and night.</b> Light or dark theme by sunset time, the light sensor or your car's headlights.">Light mode</button>
+          <button role="tab" aria-selected="false" data-img="inicio-claro" data-pie="<b>Day and night.</b> Light or dark theme by sunrise and sunset, the light sensor or your car's headlights.">Light mode</button>
         </div>
         <figure class="pantalla aparece" role="tabpanel">
-          <img id="pantalla" src="../img/inicio-oscuro-en.webp" alt="LiteDash home: silver Lancer Evolution with its tire pressures, OBD speedometer, music and map" width="1024" height="600" loading="lazy">
+          <img id="pantalla" src="../img/inicio-oscuro-en.webp" alt="LiteDash home: silver Lancer Evolution X over an aurora wallpaper, neon speedometer at 39 mph, music playing and map" width="1280" height="720" loading="lazy">
         </figure>
-        <p class="pie-pantalla" id="pie" aria-live="polite"><b>Your home.</b> Your car standing on the floor with its reflection, each tire's pressure, the speedometer, music and the map. Move and resize anything.</p>
+        <p class="pie-pantalla" id="pie" aria-live="polite"><b>Your home.</b> Your car in 3D over your wallpaper, the speedometer, music with its progress bar and the map. Move and resize anything.</p>
+      </div>
+    </section>
+
+    <section id="radios">
+      <div class="contenedor">
+        <div class="titulo centro aparece">
+          <span class="sobre">Works with your head unit</span>
+          <h2>Your factory radio and Bluetooth, on your home screen.</h2>
+          <p>LiteDash talks to the FM radio and Bluetooth your head unit already has: see the station or the song and control it without opening another app.</p>
+        </div>
+        <div class="rejilla aparece">
+          <div class="tarjeta"><div class="icono"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="8" width="18" height="12" rx="2"/><path d="M7 8l9-5"/><circle cx="8" cy="14" r="2"/><path d="M14 13h4M14 16h4"/></svg></div><h3>Factory FM radio</h3><p>Station, RDS name, next, previous and play without opening its app on <b>TopWay</b> (TS10, TS18), <b>NWD</b> and <b>HCN</b>. Others open and LiteDash brings you back.</p></div>
+          <div class="tarjeta"><div class="icono"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 7l10 10-5 5V2l5 5L7 17"/></svg></div><h3>Factory Bluetooth</h3><p>Your phone's music with title and cover art on <b>FYT</b>, <b>TopWay</b>, <b>Microntek</b>, <b>Clinkway</b>, <b>Autochips</b>, <b>NWD</b>, <b>Jancar</b>, <b>Reglink</b> and Android Bluetooth.</p></div>
+          <div class="tarjeta"><div class="icono"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 12a8 8 0 0114-5.3M20 12a8 8 0 01-14 5.3"/><path d="M18 3v4h-4M6 21v-4h4"/></svg></div><h3>Calibrates itself</h3><p>If your unit is silent at first, LiteDash tries ways to make it play and asks "Can you hear it?". What works is shared, so every version supports more units.</p></div>
+          <div class="tarjeta"><div class="icono"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M12 6v12"/></svg></div><h3>Android Auto and CarPlay</h3><p>ZLink, AutoKit, CarLink or Open Headunit one tap away, from the bar or a widget.</p></div>
+        </div>
+        <div class="chips" style="justify-content:center;margin-top:26px"><span>TopWay</span><span>FYT</span><span>NWD</span><span>HCN</span><span>Microntek</span><span>Autochips</span><span>Clinkway</span><span>Jancar</span><span>Reglink</span></div>
+        <p class="fuente" style="text-align:center">Your unit isn't listed? Send a report from Settings → System → Send a report: that's how its radio gets added.</p>
       </div>
     </section>
 
@@ -266,32 +294,32 @@
             <h3>Music, radio and map on your home screen.</h3>
             <p>What used to take three apps is already here.</p>
             <ul class="puntos">
-              <li><b>USB drive</b> with its own player: folders, artists and albums.</li>
-              <li><b>Bluetooth and your music app</b> (Spotify, YouTube Music…) with play, next and cover art.</li>
+              <li><b>USB drive or folder</b> with its own player: folders, artists, albums, cover art and progress bar.</li>
+              <li><b>Bluetooth and your music app</b> (Spotify, YouTube Music…) with play, next and cover art. With <a href="connect/">LiteDash Connect</a>, whatever plays on your phone.</li>
               <li><b>FM radio</b> from your head unit in its own widget and, if you want, internet radio with stations near you.</li>
-              <li><b>Live map</b>, flat or tilted, and the next turn without opening Waze.</li>
-              <li><b>Split screen:</b> the map on one half and your car on the other.</li>
+              <li><b>3D map like Waze</b>, with street names; download your area (up to 200 km) and use it offline.</li>
+              <li><b>The next turn</b> from Waze or Google Maps on the map, without leaving your home screen.</li>
             </ul>
           </div>
           <div class="captura doble">
-            <img src="../img/musica-en.webp" alt="Music full screen: controls, USB and YouTube Music sources, and the Lancer beside it" width="1024" height="600" loading="lazy">
+            <img src="../img/musica-en.webp" alt="Full-screen music: cover art, “Midnight Drive”, progress bar and controls" width="1280" height="720" loading="lazy">
           </div>
         </div>
 
         <div class="fila invertida aparece">
           <div class="texto-fila">
             <span class="sobre">Made your way</span>
-            <h3>Speedometers, colors and the road.</h3>
+            <h3>Layouts, widgets, wallpapers and speedometers.</h3>
             <p>Everything is customizable and everything has a good default.</p>
             <ul class="puntos">
-              <li>Speedometer from <b>OBD or GPS</b>: dial (plain, neon or blocks), needle, digital, bar or gradient.</li>
-              <li>Tachometer, temperature, fuel, battery, economy, boost and more as widgets.</li>
-              <li>Any color for the interface and for your car.</li>
-              <li>Your car <b>on the road</b>, with lane lines moving at your speed.</li>
+              <li><b>Arrange your home:</b> move, resize or remove widgets, with or without a card, or start from a layout.</li>
+              <li><b>LiteDash wallpapers</b> that download with one tap, or your own photo.</li>
+              <li>Speedometer from <b>OBD or GPS</b>: dial (plain, neon or blocks), needle, digital, bar or gradient, with or without a card.</li>
+              <li>Any color for the interface and your car; and your car <b>on the road</b>, with lane lines moving at your speed.</li>
             </ul>
             <div class="chips"><span>mph or km/h</span><span>°F or °C</span><span>psi, bar or kPa</span><span>English and Spanish</span></div>
           </div>
-          <div class="captura"><img src="../img/carretera-en.webp" alt="Road layout: the Lancer on the road at 56 mph with its tire pressures, map, music and speedometer" width="1024" height="600" loading="lazy"></div>
+          <div class="captura"><img src="../img/acomodo-en.webp" alt="Arranging the home screen: the Lancer, a selected neon speedometer, music and map" width="1280" height="720" loading="lazy"></div>
         </div>
       </div>
     </section>
@@ -357,7 +385,7 @@
           <div class="tarjeta"><div class="icono"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg></div><h3>Day and night</h3><p>Theme and brightness by sunset time, the light sensor or your car's headlights.</p></div>
           <div class="tarjeta"><div class="icono"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 17a4 4 0 010-8 6 6 0 0111.3 2A3.5 3.5 0 0117 17z"/></svg></div><h3>Weather and trip</h3><p>Temperature and a 3-day forecast; distance, time and heading by GPS.</p></div>
           <div class="tarjeta"><div class="icono"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="4" y="5" width="16" height="16" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/></svg></div><h3>Reminders</h3><p>Service, inspection, registration and insurance, with a heads-up days before.</p></div>
-          <div class="tarjeta"><div class="icono"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M12 6v12"/></svg></div><h3>Android Auto and CarPlay</h3><p>Your projection app (Zlink, AutoKit…) one tap away, plus split screen.</p></div>
+          <div class="tarjeta"><div class="icono"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M12 6v12"/></svg></div><h3>Offline maps</h3><p>Download your city or your route (10 to 200 km) and the map keeps working without internet.</p></div>
           <div class="tarjeta"><div class="icono"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div><h3>Parked</h3><p>After a few idle minutes, a big clock that won't dazzle you at night, or your own image.</p></div>
           <div class="tarjeta"><div class="icono"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg></div><h3>Updates</h3><p>Finds the new version, verifies it (SHA-256) and installs it with a tap.</p></div>
         </div>
@@ -414,6 +442,7 @@
           <details><summary>How do I make it my home screen?</summary><p>Install the APK, open LiteDash and tap "Make it your home". Android asks which home to use: pick LiteDash and "Always".</p></details>
           <details><summary>Is it free? Does it have ads?</summary><p>Free, ad-free and no tracking. LiteDash never asks for an account; the optional phone app, LiteDash Connect, uses a free one. LiteDash's code is on GitHub under the GPL-3.0 license.</p></details>
           <details><summary>Do I need internet?</summary><p>Not to use it. Only for what you ask: downloading your 3D car, weather, internet radio, the map or checking for updates.</p></details>
+          <details><summary>Does it work with my head unit's radio?</summary><p>The FM radio is controlled without opening its app on TopWay, NWD and HCN, and factory Bluetooth on FYT, TopWay, Microntek, Clinkway, Autochips, NWD, Jancar and Reglink. On others, LiteDash opens its app and brings you back. If yours doesn't respond, send a report from Settings → System.</p></details>
           <details><summary>What do I need for the Workshop and tires?</summary><p>For the Workshop, an ELM327 adapter (Bluetooth, Wi-Fi or USB). For tires, a TPMS kit with a USB receiver or Bluetooth sensors; some cars report them over OBD.</p></details>
           <details><summary>What about Google Play?</summary><p>Already on Google Play, or grab the APK from GitHub. Same app: it installs and updates the same wherever you download it.</p></details>
           <details><summary>What is LiteDash Connect?</summary><p>An optional app for your Android phone that shows what's playing on it in LiteDash, with album art and controls. LiteDash works fully without it. More on <a href="connect/">Connect</a>.</p></details>
