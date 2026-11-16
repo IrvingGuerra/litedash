@@ -28,7 +28,7 @@ fun ReadyNow(onReady: (() -> Unit)?) {
 /**
  * El escáner OBD para una pieza o un aviso que lo quiere ([wanted]: su ajuste prendido). Con
  * adaptador guardado y el módulo prendido dice "lo quiero" mientras está en pantalla (el escáner
- * se conecta solo y, cuando ya nadie lo quiere, se desconecta); devuelve el escáner si ya existe.
+ * se conecta solo y, cuando ya nadie lo quiere, se desconecta al rato); devuelve el escáner si ya existe.
  * Sin [wanted] o con el módulo apagado devuelve null y no crea ni conecta nada.
  */
 @Composable
@@ -38,6 +38,13 @@ fun rememberObd(d: Dependencies, wanted: Boolean = true): ObdRepository? {
         val owner = Any()
         if (auto) d.obd.want(owner)
         onDispose { if (auto) d.obdIfCreated()?.release(owner) }
+    }
+    // Al volver a LiteDash (no al aparecer la pieza: el primer inicio no cuenta), si esperaba un reintento, intenta ya.
+    val started = remember { booleanArrayOf(false) }
+    LifecycleStartEffect(auto) {
+        if (auto && started[0]) d.obdIfCreated()?.wake()
+        started[0] = true
+        onStopOrDispose { }
     }
     return if (wanted && d.obdModule) d.obdIfCreated() else null
 }

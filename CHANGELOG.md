@@ -4,6 +4,16 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.4.166] - 2026-11-16
+
+### Arreglado
+- **El escáner OBD por Bluetooth vuelve a ser estable** (issue #23): desde la 1.4.163 se desconectaba cada vez que
+  abrías Ajustes y al volver se reconectaba de cero, y muchos adaptadores ELM327 fallan al reconectar tan rápido. Ahora
+  sigue conectado mientras usas la app, espera un momento antes de reabrir la conexión y, al volver a LiteDash, reintenta
+  de inmediato si se había quedado esperando. Si tu auto no da el voltaje, ya no cuenta como falla.
+- **Música por Bluetooth sin sonido con el volumen en 0:** si la pantalla pregunta «¿Se escucha?» y el volumen de la
+  música está en 0, ahora te lo avisa, y contestar «No» ya no guarda que nada funciona en tu pantalla.
+
 ## [1.4.165] - 2026-11-16
 
 ### Nuevo

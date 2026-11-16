@@ -10,6 +10,7 @@ import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.graphics.Bitmap
 import android.graphics.Canvas
+import android.media.AudioManager
 import android.media.MediaMetadata
 import android.media.session.MediaController
 import android.media.session.MediaSession
@@ -1036,12 +1037,27 @@ class MusicRepository(internal val context: Context) {
     /** "Enviar un reporte" desde el aviso de que no se encontró cómo (lo pone la app: abre Ajustes → Sistema). */
     var onSoundReport: ((SoundPiece) -> Unit)? = null
 
-    /** La respuesta a "¿Se escucha?". */
+    /**
+     * El volumen de la música de Android está en 0 (y se puede mover): por más receta, no se oiría. En una FYT el
+     * Bluetooth del celular suena por ahí (reporte AA6C26: 0/15, "no se escucha" y se guardó que nada funcionaba).
+     */
+    private var mutedAnswerSkipped = false
+
+    val musicMuted: Boolean
+        get() = context.getSystemService(AudioManager::class.java)
+            ?.let { !it.isVolumeFixed && it.getStreamVolume(AudioManager.STREAM_MUSIC) == 0 } == true
+
+    /** La respuesta a "¿Se escucha?". En la música, un "No" con el volumen en 0 no cuenta: se deja la prueba sin guardar. */
     fun answerSound(yes: Boolean) {
-        when (soundCheck?.takeUnless { it.failed }?.piece) {
-            SoundPiece.MUSIC -> btCalibration.answer(yes)
-            SoundPiece.RADIO -> fmCalibration.answer(yes)
-            null -> Unit
+        val piece = soundCheck?.takeUnless { it.failed }?.piece ?: return
+        val calibration = if (piece == SoundPiece.MUSIC) btCalibration else fmCalibration
+        // Una sola vez por sesión: hay pantallas que siempre dicen 0 (el volumen real lo lleva su MCU).
+        if (!yes && piece == SoundPiece.MUSIC && !mutedAnswerSkipped && musicMuted) {
+            mutedAnswerSkipped = true
+            trace("calibración ${piece.key}: no se escucha con el volumen en 0, no cuenta")
+            calibration.abort()
+        } else {
+            calibration.answer(yes)
         }
     }
 

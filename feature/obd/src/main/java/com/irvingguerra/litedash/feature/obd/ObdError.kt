@@ -89,6 +89,10 @@ internal object ObdTiming {
     const val WANTED_RETRY_MS = 15_000L
     /** …y la más larga. */
     const val WANTED_MAX_MS = 5 * 60_000L
+    /** Cuánto sigue conectado cuando ya nadie lo quiere (abrir Ajustes un momento no lo corta). */
+    const val RELEASE_GRACE_MS = 45_000L
+    /** Respiro entre cerrar un enlace Bluetooth y abrir otro. */
+    const val REOPEN_GAP_MS = 1_200L
     /** Espera tras un 133 de GATT. */
     const val GATT_RETRY_MS = 1_000L
     /** Un respiro antes de abrir BLE: que el Bluetooth termine la búsqueda o el GATT que se acaba de cerrar. */
