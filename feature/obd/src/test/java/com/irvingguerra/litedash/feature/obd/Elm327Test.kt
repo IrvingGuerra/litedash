@@ -164,17 +164,17 @@ class Elm327Test {
     }
 
     @Test fun describe_codigos() {
-        assertEquals("Falla de encendido en el cilindro 3", describe("P0303", true))
-        assertEquals("Cylinder 3 misfire", describe("P0303", false))
-        assertTrue(describe("P1234", true).contains("marca"))
-        assertTrue(describe("P1234", false).contains("manufacturer"))
+        meaning("P0303").let { assertEquals(R.string.code_misfire, it.text); assertEquals(3, it.cylinder) }
+        assertEquals(R.string.code_p0420, meaning("P0420").text)
+        meaning("P1234").let { assertEquals(R.string.code_system_fuel_air, it.text); assertTrue(it.maker) }
+        assertEquals(R.string.code_system_network, meaning("U0073").text)
     }
 
     @Test fun codigos_de_la_marca_segun_sae() {
         for (c in listOf("P1234", "P3000", "P3399", "B1001", "C2100", "U1000")) assertTrue(c, isMakerCode(c))
         // P2xxx y P34xx–P39xx son genéricos (antes salían "de la marca"), igual U0/U3.
         for (c in listOf("P0420", "P2096", "P2187", "P3400", "P3999", "B0001", "U0100", "U3000")) assertFalse(c, isMakerCode(c))
-        assertFalse(describe("P2096", true).contains("marca"))
+        assertFalse(meaning("P2096").maker)
     }
 
     @Test fun vin_sin_simbolos_de_relleno() {

@@ -466,7 +466,6 @@
     <string name="bar_position_help">Automatic: on the left when the screen is landscape, at the bottom when it\'s portrait.</string>
     <string name="bar_edit">Bar</string>
     <string name="bar_edit_help">To remove a button, tap its x on the bar; to move it, drag it. Settings always stays.</string>
-    <string name="bar_add">Add to the bar</string>
     <string name="bar_add_item">+ %1$s</string>
     <string name="radio_mi">%1$d mi</string>
     <string name="bar_place">Position</string>
@@ -494,11 +493,10 @@
     <string name="module_location">Location</string>
     <string name="radio_internet_title">Internet radio</string>
     <string name="module_tpms">Tires (TPMS)</string>
-    <string name="module_cameras">Cameras</string>
-    <string name="module_soon">Soon</string>
     <string name="tab_permissions">Permissions</string>
     <string name="system">System</string>
     <string name="tab_updates">Updates</string>
+    <string name="tab_about">About</string>
     <string name="tile_car_help">Your car in 3D; spin it with your finger and tap to make it big</string>
     <string name="tile_road_help">Your car on the road with your speed (OBD or GPS), trip distance and your tires</string>
     <string name="tile_image_help">A photo of yours, like your brand\'s logo; without one, the LiteDash logo</string>

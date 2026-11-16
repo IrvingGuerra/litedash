@@ -475,7 +475,6 @@
     <string name="bar_position_help">Automática: a la izquierda si la pantalla está acostada, abajo si está parada.</string>
     <string name="bar_edit">Barra</string>
     <string name="bar_edit_help">Para quitar un botón toca su x en la barra; para cambiarlo de lugar, arrástralo. Ajustes siempre va.</string>
-    <string name="bar_add">Agregar a la barra</string>
     <string name="bar_add_item">+ %1$s</string>
     <string name="radio_mi">%1$d mi</string>
     <string name="bar_place">Posición</string>
@@ -503,11 +502,10 @@
     <string name="module_location">Ubicación</string>
     <string name="radio_internet_title">Radio por internet</string>
     <string name="module_tpms">Llantas (TPMS)</string>
-    <string name="module_cameras">Cámaras</string>
-    <string name="module_soon">Pronto</string>
     <string name="tab_permissions">Permisos</string>
     <string name="system">Sistema</string>
     <string name="tab_updates">Actualizaciones</string>
+    <string name="tab_about">Acerca de</string>
     <string name="tile_car_help">Tu auto en 3D; gíralo con el dedo y un toque lo agranda</string>
     <string name="tile_road_help">Tu auto en carretera con la velocidad (OBD o GPS), los km del viaje y tus llantas</string>
     <string name="tile_image_help">Una foto tuya, como el logo de tu marca; sin foto, el logo de LiteDash</string>

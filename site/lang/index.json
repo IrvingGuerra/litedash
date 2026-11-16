@@ -1,3 +1,20 @@
 {
- "languages": []
+ "languages": [
+  {
+   "lang": "fr",
+   "name": "Français",
+   "progress": 100,
+   "bytes": 59968,
+   "sha256": "42abdf5f95cc2419d48939ee32eb53fa5a3f2173a638fd171a196e620a0af535",
+   "base": 10416299
+  },
+  {
+   "lang": "tr",
+   "name": "Türkçe",
+   "progress": 100,
+   "bytes": 57093,
+   "sha256": "d1446a4cc82731a5ab4a5eb72e84d0c9e26511a210aa0f6d2b9a8589c35fdd5d",
+   "base": 10416299
+  }
+ ]
 }

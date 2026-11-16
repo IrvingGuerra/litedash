@@ -1,4 +1,4 @@
-// Ajustes → Sistema y Módulos: actualizaciones, Android, tu pantalla, módulos y permisos.
+// Ajustes → Sistema y Módulos: acerca de, Android, tu pantalla, módulos y permisos.
 package com.irvingguerra.litedash
 
 import android.content.ActivityNotFoundException
@@ -39,11 +39,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.irvingguerra.litedash.core.ui.Button
@@ -64,20 +62,20 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-/** Pestañas de Sistema; Actualizaciones va primero (ahí abre el aviso de versión nueva). */
+/** Pestañas de Sistema; Acerca de va primero (ahí abre el aviso de versión nueva). */
 internal enum class SystemTab(val title: Int) {
-    UPDATES(R.string.tab_updates), ANDROID(R.string.android_settings), STATS(R.string.stats_title), YOUR_SCREEN(R.string.tab_your_screen),
+    ABOUT(R.string.tab_about), ANDROID(R.string.android_settings), STATS(R.string.stats_title), YOUR_SCREEN(R.string.tab_your_screen),
 }
 
 /**
- * Sistema: lo de LiteDash y de la pantalla en pestañas. Actualizaciones (la versión con sus
+ * Sistema: lo de LiteDash y de la pantalla en pestañas. Acerca de (la versión con sus
  * novedades y, en la de GitHub, buscar la siguiente), atajos a Ajustes de Android, estadísticas
  * anónimas e info de tu pantalla.
  */
 @Composable
 internal fun SystemSettings(d: Dependencies) {
     when (SystemTab.entries[tabs(SystemTab.entries.map { it.title }, SYSTEM_TABS).coerceAtMost(SystemTab.entries.lastIndex)]) {
-        SystemTab.UPDATES -> {
+        SystemTab.ABOUT -> {
             About(d)
             d.updates?.Card()
         }
@@ -196,7 +194,6 @@ internal fun Modules(d: Dependencies, revision: Int, open: (SettingsSection) -> 
             if (!on) tpms.source = null
             else tpms.lastSource?.let { tpms.source = it } ?: open(SettingsSection.TIRES)
         }) { open(SettingsSection.TIRES) }
-        ModuleRow(Icons.car, stringResource(R.string.module_cameras), on = false, onChange = null, soon = true)
     }
 }
 
@@ -304,16 +301,14 @@ private fun screenLines(context: Context): List<String> {
 
 /**
  * Un módulo: ícono, nombre e interruptor (todo eso se toca para prender o apagar) y, prendido y
- * con [onOpen], una flecha redonda aparte que entra a sus ajustes. Apagado, en gris. [soon]: aún
- * no existe (interruptor apagado sin tocar y la etiqueta "Pronto").
+ * con [onOpen], una flecha redonda aparte que entra a sus ajustes. Apagado, en gris.
  */
 @Composable
 private fun ModuleRow(
     icon: ImageVector,
     title: String,
     on: Boolean,
-    onChange: ((Boolean) -> Unit)?,
-    soon: Boolean = false,
+    onChange: (Boolean) -> Unit,
     onOpen: (() -> Unit)? = null,
 ) {
     val c = LocalColors.current
@@ -330,33 +325,14 @@ private fun ModuleRow(
             Modifier
                 .weight(1f)
                 .fillMaxHeight()
-                .then(if (onChange != null) Modifier.clickable { onChange(!on) } else Modifier)
+                .clickable { onChange(!on) }
                 .padding(start = if (narrow) 14.dp else 20.dp, end = if (narrow) 10.dp else 16.dp, top = 10.dp, bottom = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(if (narrow) 12.dp else 16.dp),
         ) {
             Icon(icon, if (on) c.accent else c.textMuted.copy(alpha = dim), if (narrow) 24.dp else 28.dp)
-            val name: @Composable (Modifier) -> Unit = {
-                Label(title, Typography.subtitle, if (on) c.text else c.textMuted.copy(alpha = dim), maxLines = if (narrow) 2 else 1, modifier = it)
-            }
-            val badge: @Composable () -> Unit = {
-                if (soon) Label(
-                    stringResource(R.string.module_soon),
-                    Typography.small.copy(fontWeight = FontWeight.SemiBold),
-                    c.textMuted,
-                    maxLines = 1,
-                    modifier = Modifier.clip(RoundedCornerShape(50)).background(c.surfaceHigh).padding(horizontal = 10.dp, vertical = 4.dp),
-                )
-            }
-            // Angosto, la etiqueta va debajo del nombre (a un lado lo partía a media palabra).
-            if (narrow) Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                name(Modifier)
-                badge()
-            } else Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                name(Modifier.weight(1f, fill = false))
-                badge()
-            }
-            Switch(on, Modifier.graphicsLayer { alpha = if (soon) 0.45f else 1f })
+            Label(title, Typography.subtitle, if (on) c.text else c.textMuted.copy(alpha = dim), maxLines = if (narrow) 2 else 1, modifier = Modifier.weight(1f))
+            Switch(on)
         }
         // La flecha va aparte (con su línea): entrar no prende ni apaga nada.
         Box(Modifier.width(if (narrow) 60.dp else 76.dp).fillMaxHeight(), contentAlignment = Alignment.Center) {

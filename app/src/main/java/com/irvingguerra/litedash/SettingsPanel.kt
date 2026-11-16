@@ -184,8 +184,8 @@ private val TAB_FADE = 40.dp
 /** Las pestañas de Ajustes → Sistema ([SystemTab]). */
 internal const val SYSTEM_TABS = "system"
 
-/** Ajustes → Sistema abre en Actualizaciones (desde el aviso de versión nueva). */
-internal fun openUpdates() = selectTab(SYSTEM_TABS, SystemTab.UPDATES.ordinal)
+/** Ajustes → Sistema abre en Acerca de (desde el aviso de versión nueva). */
+internal fun openAbout() = selectTab(SYSTEM_TABS, SystemTab.ABOUT.ordinal)
 
 /**
  * La pestaña elegida en cada sección (al cambiar de sección, o cerrar y abrir Ajustes, sigue ahí).

@@ -1,5 +1,7 @@
 package com.irvingguerra.litedash
 
+import kotlin.math.roundToInt
+
 /** Kilómetros que hay en una milla. */
 const val KM_PER_MILE = 1.609344f
 
@@ -8,6 +10,15 @@ fun Float.toMiles(imperial: Boolean): Float = if (imperial) this / KM_PER_MILE e
 
 /** Metros a la unidad de distancia que se muestra: millas o kilómetros. */
 fun Double.metersToDistance(imperial: Boolean): Double = if (imperial) this / (KM_PER_MILE * 1000.0) else this / 1000.0
+
+/**
+ * Un radio en [km] como millas «bonitas» para la etiqueta: múltiplos de 5 desde 15 mi, entero abajo de eso
+ * (10 km → 6, 25 → 15, 50 → 30, 100 → 60, 200 → 125).
+ */
+fun roundMiles(km: Int): Int {
+    val miles = km / KM_PER_MILE
+    return if (miles < 15f) miles.roundToInt() else (miles / 5f).roundToInt() * 5
+}
 
 /** Grados Celsius a Fahrenheit si [imperial]; si no, tal cual. */
 fun Double.toFahrenheit(imperial: Boolean): Double = if (imperial) this * 9.0 / 5.0 + 32.0 else this

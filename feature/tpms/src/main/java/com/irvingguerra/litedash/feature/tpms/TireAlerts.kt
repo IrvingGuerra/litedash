@@ -92,7 +92,8 @@ fun TireReading.stale(now: Long) = now - atMillis >= LOST_AFTER_MS
 /**
  * Las alertas de cada llanta con lo que se sabe ahora, de la más grave a la menos.
  * [readings] = lo último de cada llanta asignada; [trends] = lo que dice su historial. Una
- * llanta perdida solo da LOST (sus valores ya son viejos).
+ * llanta perdida solo da LOST (sus valores ya son viejos). Si todas son viejas, solo LOW y
+ * SLOW_LEAK: la fuga rápida, el calor y la pila son de un momento que ya pasó.
  */
 fun tireAlerts(
     readings: Map<Wheel, TireReading>,
@@ -101,9 +102,10 @@ fun tireAlerts(
     now: Long,
 ): List<TireAlert> {
     val out = mutableListOf<TireAlert>()
-    val anyFresh = readings.values.any { !it.stale(now) }
+    // Todas viejas (auto apagado, OBD que ya no contesta): lo último sabido solo da baja y fuga lenta.
+    val old = readings.values.none { !it.stale(now) }
     for ((w, r) in readings) {
-        if (r.lost || (anyFresh && r.stale(now))) {
+        if (r.lost || (!old && r.stale(now))) {
             out += TireAlert(w, TireAlertKind.LOST, TireSeverity.WARNING)
             continue
         }
@@ -115,12 +117,13 @@ fun tireAlerts(
             if (pct < DANGER_PERCENT) out += TireAlert(w, TireAlertKind.LOW, TireSeverity.DANGER)
             else if (pct < 100 - limits.lowPercent) out += TireAlert(w, TireAlertKind.LOW, TireSeverity.WARNING)
         }
-        val drop = if (p != null && trend != null) pressureDrop(trend.recent, p, r.tempC) else null
-        if (r.leak || (drop != null && drop >= FAST_LEAK_KPA)) {
+        val drop = if (!old && p != null && trend != null) pressureDrop(trend.recent, p, r.tempC) else null
+        if (!old && (r.leak || (drop != null && drop >= FAST_LEAK_KPA))) {
             out += TireAlert(w, TireAlertKind.FAST_LEAK, TireSeverity.DANGER)
         } else if (trend?.slowLeak == true) {
             out += TireAlert(w, TireAlertKind.SLOW_LEAK, TireSeverity.WARNING)
         }
+        if (old) continue
         if (r.tempC != null && r.tempC >= limits.highTempC) out += TireAlert(w, TireAlertKind.HIGH_TEMP, TireSeverity.DANGER)
         if (r.lowBattery || (r.batteryPct != null && r.batteryPct <= LOW_BATTERY_PCT)) out += TireAlert(w, TireAlertKind.LOW_BATTERY, TireSeverity.WARNING)
     }

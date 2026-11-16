@@ -41,6 +41,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
@@ -453,7 +454,8 @@ private fun PressureCard(repo: TpmsRepository, fahrenheit: Boolean) {
 
 /**
  * El ajuste de cada llanta, con lo que marca ahora (ya ajustado): se mide con el manómetro y se
- * sube o baja hasta que coincida. Cada sensor puede venir corrido distinto.
+ * sube o baja hasta que coincida. Cada sensor puede venir corrido distinto y su ajuste va con él;
+ * una llanta sin sensor no se puede ajustar.
  */
 @Composable
 private fun CalibrateCard(repo: TpmsRepository) {
@@ -463,10 +465,12 @@ private fun CalibrateCard(repo: TpmsRepository) {
         for (w in wheels) {
             val kpa = repo.wheelReading(w)?.takeUnless { it.lost }?.pressureKpa
             val offset = repo.offsetKpa(w)
-            Stepper(stringResource(wheelName(w)), offsetText(offset, unit),
+            val hasSensor = repo.assignment[w] != null
+            Stepper(stringResource(wheelName(w)), if (hasSensor) offsetText(offset, unit) else "—",
                 { repo.setOffsetKpa(w, stepKpa(offset, unit, -1, OFFSET_KPA)) },
                 { repo.setOffsetKpa(w, stepKpa(offset, unit, 1, OFFSET_KPA)) },
-                help = kpa?.let { stringResource(R.string.tires_reads, unit.text(it)) } ?: stringResource(R.string.tire_none))
+                help = kpa?.let { stringResource(R.string.tires_reads, unit.text(it)) } ?: stringResource(R.string.tire_none),
+                enabled = hasSensor)
         }
     }
 }
@@ -498,18 +502,22 @@ internal fun offsetText(kpa: Float, unit: PressureUnit): String {
 
 /** Un valor con − y + a la derecha. */
 @Composable
-private fun Stepper(title: String, value: String, onMinus: () -> Unit, onPlus: () -> Unit, help: String? = null) {
+private fun Stepper(title: String, value: String, onMinus: () -> Unit, onPlus: () -> Unit, help: String? = null, enabled: Boolean = true) {
     val c = LocalColors.current
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
         Column(Modifier.weight(1f)) {
             Label(title, Typography.body)
             if (help != null) Label(help, Typography.small, c.textMuted)
         }
-        IconButton(Icons.minus, onMinus, size = 44.dp, background = c.surfaceHigh)
+        // Deshabilitado: los botones se ven apagados y no hacen nada.
+        val buttons = if (enabled) Modifier else Modifier.alpha(DISABLED_ALPHA)
+        IconButton(Icons.minus, if (enabled) onMinus else ({}), buttons, size = 44.dp, background = c.surfaceHigh)
         Label(value, Typography.subtitle.copy(textAlign = TextAlign.Center), maxLines = 1, modifier = Modifier.width(92.dp))
-        IconButton(Icons.plus, onPlus, size = 44.dp, background = c.surfaceHigh)
+        IconButton(Icons.plus, if (enabled) onPlus else ({}), buttons, size = 44.dp, background = c.surfaceHigh)
     }
 }
+
+private const val DISABLED_ALPHA = 0.35f
 
 /** Qué se ve en el inicio: pastillas sobre el auto, aviso y testigo. */
 @Composable

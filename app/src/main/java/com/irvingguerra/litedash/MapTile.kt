@@ -492,8 +492,12 @@ private fun OfflineSection(d: Dependencies, detail: MapDetail) {
         Label(stringResource(if (error == OfflineError.BLOCKED) R.string.map_offline_blocked else R.string.map_offline_failed), Typography.small, c.warning)
     }
     var km by rememberSaveable { mutableIntStateOf(OFFLINE_RADII[1]) }
-    // Con una zona elegida el radio es el suyo.
-    if (selected == null) Segmented(OFFLINE_RADII.map { it to stringResource(R.string.map_offline_radius, it) }, km, { km = it })
+    // Con una zona elegida el radio es el suyo. En millas solo cambia la etiqueta: se baja lo mismo.
+    val miles = d.prefs.units.miles
+    if (selected == null) Segmented(
+        OFFLINE_RADII.map { it to if (miles) stringResource(R.string.radio_mi, roundMiles(it)) else stringResource(R.string.map_offline_radius, it) },
+        km, { km = it },
+    )
     if (position == null) {
         Button(stringResource(R.string.map_offline_download), {}, primary = true, enabled = false)
         Label(stringResource(R.string.map_offline_waiting), Typography.small, c.textMuted)

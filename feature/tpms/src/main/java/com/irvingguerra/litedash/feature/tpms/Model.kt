@@ -18,7 +18,7 @@ enum class Wheel(val key: String) {
 
 /**
  * Lo último que dijo un sensor. [pressureKpa] es manométrica (0 = ponchada): tal como llega
- * dentro del repositorio, y con el ajuste de calibración de su llanta en lo que el repositorio
+ * dentro del repositorio, y con el ajuste de calibración de su sensor en lo que el repositorio
  * entrega (`wheelReading`, `nearby`). [reportedWheel] = la llanta que dice el propio sensor o
  * receptor (null si no lo sabe). [batteryVolts] solo va al reporte (la pila baja ya viene en [lowBattery]).
  */
@@ -36,6 +36,12 @@ data class TireReading(
     val rssi: Int?,
     val atMillis: Long,
 )
+
+/** El "sensor" de [w] cuando las llantas salen de la computadora del auto. */
+internal fun obdSensorId(w: Wheel) = "obd-" + w.key
+
+/** El sensor de [w] del receptor USB mientras no diga su id real. */
+internal fun usbSensorId(w: Wheel) = "usb-" + w.key
 
 /** Señales de llantas en el bus del auto ("tire_pressure_fl" en kPa, "tire_temp_fl" en °C). */
 object TireSignals {

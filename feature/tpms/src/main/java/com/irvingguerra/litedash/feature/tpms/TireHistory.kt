@@ -101,6 +101,21 @@ class TireHistory {
         return true
     }
 
+    /** Intercambia los historiales de [a] y [b] (sus sensores cambiaron de llanta: cada historial va con su sensor). */
+    fun swap(a: Wheel, b: Wheel) {
+        if (a == b) return
+        val ra = rings.remove(a)
+        val rb = rings.remove(b)
+        if (rb != null) rings[a] = rb
+        if (ra != null) rings[b] = ra
+        if (ra != null || rb != null) changes++
+    }
+
+    /** Vacía el historial de [w] (entró otro sensor: lo de antes era de uno que ya no está ahí). */
+    fun cut(w: Wheel) {
+        if (rings.remove(w) != null) changes++
+    }
+
     /** Muestras de [w] entre [sinceMillis] y [untilMillis], la más vieja primero. */
     fun samples(w: Wheel, sinceMillis: Long = 0, untilMillis: Long = Long.MAX_VALUE): List<TireSample> {
         val ring = rings[w] ?: return emptyList()

@@ -250,7 +250,7 @@ private fun OpenOnBootSettings(prefs: Preferences) {
 private fun Float.roundToTenth() = round(this * 10) / 10f
 
 /**
- * Inicio → Widgets: todo lo que puedes poner en tu inicio y si ya está (sin los del OBD apagado).
+ * Inicio → Widgets: todo lo que puedes poner en tu inicio y si ya está (sin los del OBD ni el clima apagados).
  * Llantas siempre: agregarla prende su módulo o, si nunca tuvo sensores, lleva a elegirlos ([onTires]).
  */
 @Composable

@@ -9,7 +9,6 @@ import android.hardware.usb.UsbDevice
 import android.hardware.usb.UsbManager
 import android.os.SystemClock
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateMapOf
@@ -134,6 +133,7 @@ class TpmsRepository(context: Context, private val bus: VehicleBus) {
 
     /** Pasa lo último de cada sensor asignado a su llanta, con su ajuste (igual = sin aviso a Compose). */
     private fun syncWheels() {
+        if (!offsetsReady) return
         for ((w, state) in wheelStates) state.value = _assignment[w]?.let { _readings[it] }?.let { calibrated(w, it) }
     }
 
@@ -182,20 +182,51 @@ class TpmsRepository(context: Context, private val bus: VehicleBus) {
     var lowPercent by intPref(KEY_LOW_PCT, 20)
     var highTempC by floatPref(KEY_HIGH_TEMP, 75f)
     /**
-     * Ajuste de cada llanta: se suma a lo que dice su sensor (cada sensor puede venir corrido distinto
-     * respecto al manómetro); el historial queda sin él. Antes era uno solo para todas ([KEY_OFFSET]):
-     * ese valor es el de fábrica de cada una hasta que se toque.
+     * Ajuste de cada sensor (por su id): se suma a lo que dice (cada sensor puede venir corrido
+     * distinto respecto al manómetro) y va con él a la llanta donde lo pongan; el historial queda
+     * sin él. Se lee (y se migra del ajuste por llanta de antes) fuera del hilo principal: hasta
+     * [offsetsReady] no se entrega ninguna lectura, para no mostrar ni avisar sin el ajuste.
      */
-    private val offsets = Wheel.entries.associateWith { w ->
-        mutableFloatStateOf(prefs.getFloat(KEY_OFFSET + "_" + w.key, prefs.getFloat(KEY_OFFSET, 0f)))
+    private val offsets = mutableStateMapOf<String, Float>()
+    /** El ajuste de antes de una llanta sin sensor: lo estrena el primero que se le ponga. */
+    private val pendingOffsets = HashMap<Wheel, Float>()
+    private var offsetsReady = false
+
+    /** El ajuste del sensor puesto en [w] (sin sensor, 0: la pantalla Calibrar no deja tocarlo). */
+    fun offsetKpa(w: Wheel): Float = _assignment[w]?.let { offsets[it] } ?: 0f
+
+    /** Cambia el ajuste del sensor puesto en [w] (sin sensor, nada). */
+    fun setOffsetKpa(w: Wheel, kpa: Float) {
+        val id = _assignment[w] ?: return
+        if (!offsetsReady) return
+        writeOffset(id, kpa)
+        refreshSoon()
     }
 
-    fun offsetKpa(w: Wheel): Float = offsets.getValue(w).floatValue
+    private fun writeOffset(id: String, kpa: Float) {
+        if (kpa == 0f) offsets.remove(id) else offsets[id] = kpa
+        prefs.edit().apply { if (kpa == 0f) remove(OffsetKeys.BY_ID + id) else putFloat(OffsetKeys.BY_ID + id, kpa) }.apply()
+    }
 
-    fun setOffsetKpa(w: Wheel, kpa: Float) {
-        offsets.getValue(w).floatValue = kpa
-        prefs.edit().putFloat(KEY_OFFSET + "_" + w.key, kpa).apply()
-        refreshSoon()
+    /**
+     * Migra una sola vez el ajuste por llanta al ajuste por sensor ([offsetMigration]) y lee los
+     * ajustes (hilo de E/S). Primero escribe lo nuevo; solo si llegó al disco quita lo viejo y marca
+     * [OffsetKeys.MIGRATED] (si algo falla, la siguiente vez lo repite igual: no pisa lo ya escrito).
+     */
+    private fun loadOffsets(): Pair<Map<String, Float>, Map<Wheel, Float>> {
+        if (!prefs.getBoolean(OffsetKeys.MIGRATED, false)) {
+            val m = offsetMigration(prefs.all)
+            val written = prefs.edit().apply { m.put.forEach { (k, v) -> putFloat(k, v) } }.commit()
+            if (written) prefs.edit().apply { m.remove.forEach(::remove); putBoolean(OffsetKeys.MIGRATED, true) }.apply()
+        }
+        val byId = HashMap<String, Float>()
+        val pending = HashMap<Wheel, Float>()
+        for ((k, v) in prefs.all) {
+            if (v !is Float) continue
+            if (k.startsWith(OffsetKeys.BY_ID)) byId[k.removePrefix(OffsetKeys.BY_ID)] = v
+            else if (k.startsWith(OffsetKeys.PENDING)) Wheel.fromKey(k.removePrefix(OffsetKeys.PENDING))?.let { pending[it] = v }
+        }
+        return byId to pending
     }
     var showSpare by boolPref(KEY_SHOW_SPARE, false)
     /** Alertas prendidas: entonces se lee siempre, aunque nada muestre las llantas. */
@@ -314,10 +345,8 @@ class TpmsRepository(context: Context, private val bus: VehicleBus) {
         if (prev != null && tick - prev < MIN_UPDATE_MS && r.family != DemoTpms.FAMILY) return
         lastUpdate[r.sensorId] = tick
         if (_readings.put(r.sensorId, r) == null) sensorCount = _readings.size
-        // Sysgration dice su llanta: se acomoda sola si esa llanta está libre.
-        if (running == TpmsSource.BLE && r.reportedWheel != null && r.reportedWheel !in _assignment && r.sensorId !in _assignment.values) {
-            assign(r.reportedWheel, r.sensorId)
-        }
+        // Sysgration dice su llanta: se acomoda sola si esa llanta está libre, solo con Llantas abierta y si no lo quitaron.
+        if (running == TpmsSource.BLE) autoAssignTarget(_assignment, r, removed, holds > 0)?.let { assign(it, r.sensorId) }
         val wheel = _assignment.entries.firstOrNull { it.value == r.sensorId }?.key
         // El historial va sin calibrar y con la temperatura (para no confundir enfriarse con una fuga).
         if (wheel != null && !r.lost && r.pressureKpa != null) addHistory(wheel, r.atMillis, r.pressureKpa, r.tempC)
@@ -343,7 +372,7 @@ class TpmsRepository(context: Context, private val bus: VehicleBus) {
     }
 
     private fun refresh() {
-        if (running == null) return
+        if (running == null || !offsetsReady) return
         syncWheels()
         val now = System.currentTimeMillis()
         for (w in Wheel.entries) {
@@ -398,12 +427,23 @@ class TpmsRepository(context: Context, private val bus: VehicleBus) {
 
     // ---- Asignación ----
 
+    /** Los sensores que el usuario quitó (Bluetooth): ya no se acomodan solos. El más nuevo al final. */
+    private val removed = mutableListOf<String>()
+
     private fun loadAssignment(s: TpmsSource) {
         _assignment.clear()
         if (s == TpmsSource.DEMO) Wheel.ROAD.forEach { _assignment[it] = DemoTpms.id(it) }
-        if (s == TpmsSource.OBD) Wheel.ROAD.forEach { _assignment[it] = obdId(it) }
+        if (s == TpmsSource.OBD) Wheel.ROAD.forEach { _assignment[it] = obdSensorId(it) }
         if (s != TpmsSource.BLE) return
         for (w in Wheel.entries) prefs.getString(KEY_ASSIGN + w.key, null)?.let { _assignment[w] = it }
+        removed.clear()
+        prefs.getString(KEY_REMOVED, null)?.split(',')?.filter { it.isNotEmpty() }?.let(removed::addAll)
+    }
+
+    private fun saveRemoved(list: List<String>) {
+        if (list == removed) return
+        removed.clear(); removed.addAll(list)
+        prefs.edit().putString(KEY_REMOVED, removed.joinToString(",")).apply()
     }
 
     private fun saveAssignment() {
@@ -422,15 +462,33 @@ class TpmsRepository(context: Context, private val bus: VehicleBus) {
      */
     fun assign(w: Wheel, sensorId: String) {
         if (running == TpmsSource.USB) return
-        _assignment.entries.filter { it.value == sensorId }.map { it.key }.forEach { _assignment.remove(it) }
-        _assignment[w] = sensorId
+        if (_assignment[w] == sensorId) return
+        val move = moveSensor(_assignment, w, sensorId, pendingOffsets, offsets)
+        _assignment.clear()
+        _assignment.putAll(move.assignment)
+        // El historial va con el sensor; el de uno que ya no está se vacía.
+        activeHistory()?.let { h ->
+            move.swapWith?.let { h.swap(it, w) }
+            move.cut.forEach(h::cut)
+            updateSlowLeaks()
+        }
+        // El ajuste de antes de esta llanta lo estrena su primer sensor.
+        move.offset?.let { kpa ->
+            writeOffset(sensorId, kpa)
+            pendingOffsets.remove(w)
+            prefs.edit().remove(OffsetKeys.PENDING + w.key).apply()
+        }
+        // Si el usuario lo pone a mano, vuelve a valer para acomodarse solo.
+        if (running == TpmsSource.BLE) saveRemoved(removed - sensorId)
         saveAssignment()
         refresh()
     }
 
     fun unassign(w: Wheel) {
         if (running == TpmsSource.USB) return
-        _assignment.remove(w)
+        val id = _assignment.remove(w) ?: return
+        // «Quitar» se queda: ese sensor ya no se acomoda solo.
+        if (running == TpmsSource.BLE) saveRemoved(pushRecent(removed, id, MAX_REMOVED))
         saveAssignment()
         refresh()
     }
@@ -468,13 +526,13 @@ class TpmsRepository(context: Context, private val bus: VehicleBus) {
         }
     }
 
+    /** Intercambiar es mover los dos sensores: su historial va con ellos (el ajuste ya va con su id). */
     private fun swapLocal(a: Wheel, b: Wheel) {
         _assignment.swapKeys(a, b)
-        // Intercambiar es mover los dos sensores: su ajuste se va con ellos (en assign() y con un ID USB
-        // nuevo todavía no; ver la auditoría 1.4.162, tema 2).
-        val oa = offsetKpa(a)
-        setOffsetKpa(a, offsetKpa(b))
-        setOffsetKpa(b, oa)
+        activeHistory()?.let { h ->
+            h.swap(a, b)
+            updateSlowLeaks()
+        }
     }
 
     // ---- ¿Cuál sensor es? ----
@@ -622,7 +680,7 @@ class TpmsRepository(context: Context, private val bus: VehicleBus) {
                         val now = System.currentTimeMillis()
                         Wheel.ROAD.forEachIndexed { i, w ->
                             val kpa = r.kpa.getOrNull(i) ?: return@forEachIndexed
-                            ingest(TireReading(obdId(w), kpa, r.tempC.getOrNull(i), null, null, false, false, false, OBD_FAMILY, w, null, now))
+                            ingest(TireReading(obdSensorId(w), kpa, r.tempC.getOrNull(i), null, null, false, false, false, OBD_FAMILY, w, null, now))
                         }
                     }
                 }
@@ -630,8 +688,6 @@ class TpmsRepository(context: Context, private val bus: VehicleBus) {
             }
         }
     }
-
-    private fun obdId(w: Wheel) = "obd-" + w.key
 
     // ---- Bluetooth LE ----
 
@@ -847,7 +903,7 @@ class TpmsRepository(context: Context, private val bus: VehicleBus) {
         when (f) {
             is UsbFrame.State -> {
                 val w = f.wheel ?: return
-                val id = usbIds[w] ?: "usb-${w.key}"
+                val id = usbIds[w] ?: usbSensorId(w)
                 _assignment[w]?.takeIf { it != id }?.let(::forget)
                 _assignment[w] = id
                 ingest(
@@ -860,8 +916,11 @@ class TpmsRepository(context: Context, private val bus: VehicleBus) {
             is UsbFrame.SensorId -> {
                 val w = f.wheel ?: return
                 val newId = if (f.empty) null else f.id
-                if (usbIds[w] == newId) return
+                val before = usbIds[w]
+                if (before == newId) return
                 if (newId == null) usbIds.remove(w) else usbIds[w] = newId
+                // Otro sensor en esa llanta (antes tenía un id real distinto, o ya no hay ninguno): su historial no es de este.
+                if (before != null) activeHistory()?.let { h -> h.cut(w); updateSlowLeaks() }
                 val old = _assignment[w] ?: return
                 if (newId == null) {
                     // Ahí ya no hay sensor (sus tramas se tiran): lo de antes no se queda mostrando.
@@ -869,11 +928,15 @@ class TpmsRepository(context: Context, private val bus: VehicleBus) {
                     _assignment.remove(w)
                     sensorCount = _readings.size
                 } else {
+                    // Es el mismo sensor que se llamaba "usb-<llanta>": su ajuste pasa a su id real. Un id real distinto empieza en 0.
+                    if (old == usbSensorId(w) && offsetsReady) offsets[old]?.let { kpa ->
+                        writeOffset(newId, kpa)
+                        writeOffset(old, 0f)
+                    }
                     // Lo que ya se sabe de esa llanta pasa al nombre nuevo.
-                    val r = _readings[old] ?: return
-                    forget(old)
-                    _readings[newId] = r.copy(sensorId = newId)
                     _assignment[w] = newId
+                    lastUpdate.remove(old)
+                    _readings.remove(old)?.let { r -> _readings[newId] = r.copy(sensorId = newId) }
                 }
                 syncWheels()
             }
@@ -1051,6 +1114,13 @@ class TpmsRepository(context: Context, private val bus: VehicleBus) {
             }.distinctUntilChanged().collect { applyWant(it) }
         }
         scope.launch {
+            val (byId, pending) = withContext(Dispatchers.IO) { loadOffsets() }
+            offsets.putAll(byId)
+            pendingOffsets.putAll(pending)
+            offsetsReady = true
+            refresh()
+        }
+        scope.launch {
             history = withContext(Dispatchers.IO) { disk.withLock { TireHistory.decode(runCatching { historyFile().readBytes() }.getOrNull()) } }
             if (running != null && running != TpmsSource.DEMO) updateSlowLeaks()
         }
@@ -1065,12 +1135,13 @@ class TpmsRepository(context: Context, private val bus: VehicleBus) {
         private const val KEY_REAR = "rear_kpa"
         private const val KEY_LOW_PCT = "low_percent"
         private const val KEY_HIGH_TEMP = "high_temp_c"
-        /** Ajuste de cada llanta: "offset_kpa_fl"…; sin sufijo, el de antes (uno para todas). */
-        private const val KEY_OFFSET = "offset_kpa"
         private const val KEY_UNIT = "unit"
         private const val KEY_SHOW_SPARE = "show_spare"
         private const val KEY_ALERTS = "alerts"
-        private const val KEY_ASSIGN = "assign_"
+        private const val KEY_ASSIGN = OffsetKeys.ASSIGN
+        /** Sensores quitados a mano (Bluetooth), separados por coma, el más nuevo al final. */
+        private const val KEY_REMOVED = "removed_sensors"
+        private const val MAX_REMOVED = 20
         private const val HISTORY_FILE = "tire_history.bin"
         private const val ACTION_USB_PERMISSION = "com.irvingguerra.litedash.TPMS_USB_PERMISSION"
         private const val USB_REQUEST = 1

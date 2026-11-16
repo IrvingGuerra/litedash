@@ -131,6 +131,40 @@ class TireLogicTest {
     }
 
     @Test
+    fun todosViejosSoloBajaYFugaLenta() {
+        // Lo último que se supo hace 2 h: una llanta ponchada, caliente y con la bandera de fuga.
+        val r = Wheel.ROAD.associateWith { reading(it.key, 230f, at = now - 2 * hour) } +
+            (Wheel.REAR_LEFT to reading("rl", 120f, at = now - 2 * hour, tempC = 90f, leak = true, lowBattery = true))
+        val a = tireAlerts(r, emptyMap(), TireLimits(), now)
+        assertEquals(listOf(TireAlert(Wheel.REAR_LEFT, TireAlertKind.LOW, TireSeverity.DANGER)), a)
+        // La fuga lenta sí (ya venía del historial).
+        val slow = tireAlerts(r, mapOf(Wheel.FRONT_LEFT to TireTrend(emptyList(), slowLeak = true)), TireLimits(), now)
+        assertEquals(listOf(TireAlertKind.SLOW_LEAK to TireSeverity.WARNING), kinds(slow, Wheel.FRONT_LEFT))
+    }
+
+    @Test
+    fun historialSeIntercambiaYSeCorta() {
+        val h = TireHistory()
+        h.add(Wheel.FRONT_LEFT, now, 200f, 20f)
+        h.add(Wheel.REAR_RIGHT, now, 240f, 20f)
+        val before = h.changes
+        h.swap(Wheel.FRONT_LEFT, Wheel.REAR_RIGHT)
+        assertEquals(240f, h.samples(Wheel.FRONT_LEFT).single().kpa)
+        assertEquals(200f, h.samples(Wheel.REAR_RIGHT).single().kpa)
+        // Con una vacía, la otra queda vacía.
+        h.swap(Wheel.FRONT_LEFT, Wheel.SPARE)
+        assertTrue(h.samples(Wheel.FRONT_LEFT).isEmpty())
+        assertEquals(240f, h.samples(Wheel.SPARE).single().kpa)
+        h.cut(Wheel.SPARE)
+        assertTrue(h.samples(Wheel.SPARE).isEmpty())
+        assertEquals(200f, h.samples(Wheel.REAR_RIGHT).single().kpa)
+        // Cada cambio se tiene que guardar.
+        assertEquals(before + 3, h.changes)
+        h.cut(Wheel.SPARE)
+        assertEquals(before + 3, h.changes)
+    }
+
+    @Test
     fun historialUnaMuestraCada30sYSieteDias() {
         val h = TireHistory()
         assertTrue(h.add(Wheel.FRONT_LEFT, 0L, 230f))

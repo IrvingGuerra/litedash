@@ -468,7 +468,6 @@ private fun CodesCard(obd: ObdRepository, report: EngineReport?, reading: Boolea
     val c = LocalColors.current
     val scope = rememberCoroutineScope()
     var cleared by remember { mutableStateOf<Boolean?>(null) }
-    val spanish = currentLocale().language == "es"
     val r = report
     SettingsCard(stringResource(R.string.obd_codes), stringResource(R.string.obd_codes_help)) {
         if (reading && r == null) return@SettingsCard Label(stringResource(R.string.obd_reading), Typography.body, c.textMuted)
@@ -481,7 +480,7 @@ private fun CodesCard(obd: ObdRepository, report: EngineReport?, reading: Boolea
             if (codes.isEmpty()) {
                 StatTile(stringResource(R.string.obd_codes), stringResource(R.string.obd_no_codes), Modifier.fillMaxWidth(), valueColor = c.good, dot = c.good)
             } else {
-                TileGrid(codes, minWidth = 280.dp, maxColumns = 2) { (code, kinds), modifier -> CodeTile(code, kinds, spanish, modifier) }
+                TileGrid(codes, minWidth = 280.dp, maxColumns = 2) { (code, kinds), modifier -> CodeTile(code, kinds, modifier) }
             }
         }
         if (failed && !reading) Label(stringResource(R.string.obd_read_failed), Typography.body, c.danger)
@@ -511,7 +510,7 @@ private fun CodesCard(obd: ObdRepository, report: EngineReport?, reading: Boolea
 
 /** Un código: grande en su color (rojo si encendió la luz, ámbar si está pendiente), qué es y dónde. */
 @Composable
-private fun CodeTile(code: String, kinds: List<CodeKind>, spanish: Boolean, modifier: Modifier) {
+private fun CodeTile(code: String, kinds: List<CodeKind>, modifier: Modifier) {
     val c = LocalColors.current
     val color = if (kinds.all { it == CodeKind.PENDING }) c.warning else c.danger
     Column(
@@ -522,7 +521,7 @@ private fun CodeTile(code: String, kinds: List<CodeKind>, spanish: Boolean, modi
             Label(code, Typography.title, color, maxLines = 1, modifier = Modifier.weight(1f))
             Label(kinds.map { stringResource(it.label) }.joinToString(" · "), Typography.small, color, maxLines = 1)
         }
-        Label(describe(code, spanish), Typography.body, maxLines = 2)
+        Label(describe(code, LocalContext.current.resources), Typography.body, maxLines = 2)
         Label(stringResource(zoneName(zoneOf(code))), Typography.small, c.textMuted, maxLines = 1)
     }
 }

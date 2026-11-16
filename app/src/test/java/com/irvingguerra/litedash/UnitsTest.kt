@@ -23,4 +23,11 @@ class UnitsTest {
         assertEquals(TempUnits.AUTO, TempUnits.fromStored("xyz"))
         assertEquals(TempUnits.FAHRENHEIT, TempUnits.fromStored("fahrenheit"))
     }
+
+    @Test
+    fun radiosEnMillasRedondeados() {
+        assertEquals(listOf(6, 15, 30, 60, 125), listOf(10, 25, 50, 100, 200).map(::roundMiles))
+        assertEquals(12, roundMiles(20))
+        assertEquals(20, roundMiles(32))
+    }
 }
