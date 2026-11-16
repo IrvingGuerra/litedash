@@ -4,6 +4,47 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.4.163] - 2026-11-16
+
+Auditoría total: cada parte de la app revisada archivo por archivo, con una segunda revisión independiente antes de publicar.
+
+### Nuevo
+- **Más idiomas, descargables:** francés, turco y portugués en Ajustes → Inicio y apariencia → Interfaz → Idioma →
+  Más idiomas. Se bajan al elegirlos (la app sigue igual de ligera) y lo que falte de traducir sale en inglés. Cualquiera
+  puede aportar un idioma: ver `translations/` en GitHub.
+- **Ocultar la barra de LiteDash** y una pestaña **Barra** en Ajustes → Inicio y apariencia con toda su configuración
+  (botones, apps favoritas, posición, estilo y tamaño). Oculta, el inicio gana su lugar sin mover tus widgets; para verla
+  y entrar a Ajustes, deja presionado cualquier lugar del inicio.
+- **Códigos de falla en tu idioma:** las descripciones del Taller también se traducen con los idiomas descargables.
+- Los radios de descarga del mapa sin conexión se muestran en millas si usas millas.
+
+### Cambiado
+- **Llantas: la calibración y el historial van con el sensor**, no con la posición: al rotar las llantas o cambiar un
+  sensor de lugar, su ajuste se va con él. Tu calibración actual se conserva.
+- **Sensores de llantas por Bluetooth:** solo se acomodan solos con la pantalla de Llantas abierta, y uno que quitaste
+  ya no regresa por su cuenta.
+- **Avisos de llantas con lecturas viejas:** si ningún sensor ha hablado hace rato, solo se avisa de presión baja y
+  fuga lenta (ya no de temperatura, pila ni fuga rápida con datos viejos).
+- **Enlace con LiteDash Connect más sencillo:** la pantalla busca al celular por su hotspot, su aviso por la red y la
+  última dirección; con LiteDash en segundo plano ya no insiste cada rato.
+- La pestaña «Actualizaciones» de Sistema ahora es «Acerca de» (en la versión de GitHub ahí sigue el botón para
+  buscar versiones). Se quitó «Cámaras · Pronto» de Módulos.
+- El actualizador (versión de GitHub) siempre pide confirmar y verifica la descarga antes de instalar.
+
+### Arreglado
+- **Radio FM de fábrica:** LiteDash ya solo la calla cuando sabe que está sonando; antes podía mandarle una pausa a
+  ciegas y, en radios que alternan con cualquier tecla, prenderla.
+- **Música:** reproducir, pausar y cambiar de canción siguen un solo camino para todas las fuentes (app, archivos,
+  Bluetooth y radio), con menos casos raros al cambiar de una a otra.
+- **Escáner OBD:** una sola regla de reintentos (ya no se queda intentando si nadie lo usa) y mensajes de error que
+  dicen qué pasó.
+- **Clima:** un pronóstico guardado de hace días ya no se muestra como el de hoy.
+- **Fotos de widgets y fondos** tomadas con la cámara ya no salen acostadas; elegir una imagen dañada avisa en vez de
+  fallar en silencio.
+- **Barra lateral con muchos botones** en pantallas chicas: Ajustes siempre queda a la vista.
+- Con LiteDash abierto dos veces (como inicio y como app), el volante y los avisos ya solo los atiende la ventana al frente.
+- Decenas de correcciones menores de textos, memoria y casos poco comunes encontradas en la revisión.
+
 ## [1.4.162] - 2026-11-16
 
 Revisión completa de la semana: errores reportados, pedidos de la comunidad y limpieza.

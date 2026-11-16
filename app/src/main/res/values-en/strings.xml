@@ -295,7 +295,7 @@
     <string name="tile_projection">Android Auto / CarPlay</string>
     <string name="tile_projection_help">Opens your Android Auto or CarPlay app (Zlink, AutoKit…) with one tap</string>
     <string name="projection_missing">App not found</string>
-    <string name="wheel">Steering wheel buttons</string>
+    <string name="wheel">Steering wheel</string>
     <string name="wheel_help">Tap \"Learn button\" and then press the steering wheel button: LiteDash recognizes it and you choose what it does. Unchanged buttons work as usual (music, volume). Any button leaves parked mode.</string>
     <string name="wheel_learn">Learn button</string>
     <string name="wheel_press">Press a steering wheel button…</string>

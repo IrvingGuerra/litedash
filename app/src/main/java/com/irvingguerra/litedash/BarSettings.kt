@@ -70,8 +70,8 @@ internal fun BarSettingsTab(d: Dependencies, onEdit: () -> Unit) {
 
 /**
  * Lo que se configura de la barra, por partes: cada una va en [section] con su título (el panel las pone con
- * un rótulo; la pestaña, en tarjetas). Oculta, solo queda el interruptor. [onEdit]: botón para ir a acomodarla
- * (en el panel no hace falta: ya se está acomodando).
+ * un rótulo; la pestaña, en tarjetas). [onEdit]: es la pestaña de Ajustes, con su botón para ir a acomodarla (en el
+ * panel no hace falta: ya se está acomodando).
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -84,7 +84,8 @@ private fun BarSettings(d: Dependencies, apps: List<App>, onEdit: (() -> Unit)? 
     section(null) {
         SwitchRow(stringResource(R.string.bar_hide), prefs.barHidden, { prefs.barHidden = it }, stringResource(R.string.bar_hide_help))
     }
-    if (prefs.barHidden) return
+    // En la pestaña, oculta solo queda el interruptor; en el panel se está acomodando y la barra se ve: va todo.
+    if (prefs.barHidden && onEdit != null) return
     // Ajustes ya va siempre.
     val missing = BarItem.entries.filter { it != BarItem.SETTINGS && it !in prefs.barItems && (it != BarItem.VOICE || hasVoice) }
     section(stringResource(R.string.bar_buttons)) {

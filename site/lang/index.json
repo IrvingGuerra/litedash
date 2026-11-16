@@ -5,24 +5,24 @@
    "name": "Français",
    "progress": 100,
    "bytes": 59968,
-   "sha256": "42abdf5f95cc2419d48939ee32eb53fa5a3f2173a638fd171a196e620a0af535",
-   "base": 10416299
+   "sha256": "c26dbb4519501f3a0b37aaf0eb982f32f0b08d8c06045ae2bfcc8fa5ef55c02d",
+   "base": 10416399
   },
   {
    "lang": "pt",
    "name": "Português",
    "progress": 100,
    "bytes": 56665,
-   "sha256": "ac6515bc09b4fdfdd8bf7dc90899a091c798b8fb0e2b747f0c0b20eed0ed68e3",
-   "base": 10416299
+   "sha256": "50226025d33f9efa31edf81cee1f2e00c18a1356149ce3f930b59a69a9774c2e",
+   "base": 10416399
   },
   {
    "lang": "tr",
    "name": "Türkçe",
    "progress": 100,
    "bytes": 57093,
-   "sha256": "d1446a4cc82731a5ab4a5eb72e84d0c9e26511a210aa0f6d2b9a8589c35fdd5d",
-   "base": 10416299
+   "sha256": "65807f2af83fb6f52b8ad57eb908bfc593ee7fccba9054e04dc0502bc3fec011",
+   "base": 10416399
   }
  ]
 }
