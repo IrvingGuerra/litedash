@@ -9,6 +9,14 @@
    "base": 10416299
   },
   {
+   "lang": "pt",
+   "name": "Português",
+   "progress": 100,
+   "bytes": 56665,
+   "sha256": "ac6515bc09b4fdfdd8bf7dc90899a091c798b8fb0e2b747f0c0b20eed0ed68e3",
+   "base": 10416299
+  },
+  {
    "lang": "tr",
    "name": "Türkçe",
    "progress": 100,

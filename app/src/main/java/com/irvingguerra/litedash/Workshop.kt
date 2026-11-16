@@ -12,6 +12,7 @@ import android.content.IntentFilter
 import android.os.Build
 import android.provider.Settings
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.LifecycleStartEffect
@@ -521,7 +522,7 @@ private fun CodeTile(code: String, kinds: List<CodeKind>, modifier: Modifier) {
             Label(code, Typography.title, color, maxLines = 1, modifier = Modifier.weight(1f))
             Label(kinds.map { stringResource(it.label) }.joinToString(" · "), Typography.small, color, maxLines = 1)
         }
-        Label(describe(code, LocalContext.current.resources), Typography.body, maxLines = 2)
+        Label(describe(code, LocalResources.current), Typography.body, maxLines = 2)
         Label(stringResource(zoneName(zoneOf(code))), Typography.small, c.textMuted, maxLines = 1)
     }
 }
