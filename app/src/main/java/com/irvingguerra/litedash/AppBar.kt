@@ -115,9 +115,10 @@ fun AppBar(
     val floating = !vertical && prefs.barStyle == BarStyle.FLOATING
     // Fuera de acomodar, dejarla presionada entra a acomodar (sin quitarle los toques a sus botones).
     val press = if (editing) Modifier else Modifier.longPress(actions.onEdit)
+    val thickness = barThickness(prefs, vertical)
     val shell: Modifier = when {
-        vertical -> Modifier.fillMaxHeight().width((if (small) 76.dp else 88.dp) * k).padding(vertical = 10.dp)
-        else -> Modifier.fillMaxWidth().height((if (small) 96.dp else if (short) 64.dp else 84.dp) * k).padding(horizontal = 16.dp, vertical = 8.dp)
+        vertical -> Modifier.fillMaxHeight().width(thickness).padding(vertical = 10.dp)
+        else -> Modifier.fillMaxWidth().height(thickness).padding(horizontal = 16.dp, vertical = 8.dp)
     }
     Box(shell, contentAlignment = Alignment.Center) {
         val shape = RoundedCornerShape(if (floating) 40.dp else Radius.card)
@@ -159,6 +160,14 @@ fun AppBar(
             )
         }
     }
+}
+
+/** Lo que ocupa la barra: su ancho al lado ([vertical]) o su alto abajo. Oculta, el inicio lo descuenta de la cuadrícula. */
+@Composable
+fun barThickness(prefs: Preferences, vertical: Boolean): Dp {
+    val short = isShortScreen()
+    val small = isSmallScreen() && !short
+    return (if (vertical) (if (small) 76.dp else 88.dp) else if (small) 96.dp else if (short) 64.dp else 84.dp) * prefs.barSize.scale
 }
 
 /** Medidas de la barra: botón, ícono de app y caja de cada favorita (abajo) o del volumen (al lado). */

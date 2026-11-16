@@ -68,6 +68,7 @@ internal object PrefKeys {
     const val BAR_ITEMS = "bar_items"
     const val BAR_BLUETOOTH_ADDED = "bar_bluetooth_added"
     const val BAR_STYLE = "bar_style"
+    const val BAR_HIDDEN = "bar_hidden"
     const val LOGO_INTRO = "logo_intro"
     const val LIGHTS_KEY = "lights_key"
     const val LIGHTS_ON = "lights_on_value"
@@ -387,6 +388,9 @@ class Preferences(context: Context) {
     var barPosition by mapped(PrefKeys.BAR_POSITION, BarPosition::fromStored) { it.stored }
     var barSize by mapped(PrefKeys.BAR_SIZE, BarSize::fromStored) { it.stored }
     var barStyle by mapped(PrefKeys.BAR_STYLE, BarStyle::fromStored) { it.stored }
+
+    /** La barra de LiteDash oculta: solo se ve al acomodar el inicio (de ahí se entra a Ajustes). */
+    var barHidden by bool(PrefKeys.BAR_HIDDEN, false)
 
     /** Los botones de la barra en orden (siempre con Ajustes al final, [BarItem.normalize]). */
     var barItems: List<BarItem>

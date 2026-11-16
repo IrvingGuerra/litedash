@@ -12,9 +12,11 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.irvingguerra.litedash.core.ui.Button
@@ -24,9 +26,11 @@ import com.irvingguerra.litedash.core.ui.Label
 import com.irvingguerra.litedash.core.ui.LocalColors
 import com.irvingguerra.litedash.core.ui.Radius
 import com.irvingguerra.litedash.core.ui.Segmented
+import com.irvingguerra.litedash.core.ui.SwitchRow
 import com.irvingguerra.litedash.core.ui.Typography
 import com.irvingguerra.litedash.feature.apps.App
 import com.irvingguerra.litedash.feature.apps.AppIcon
+import com.irvingguerra.litedash.feature.apps.rememberApps
 
 /** El nombre de cada botón que se puede agregar a la barra (Ajustes no: siempre va). */
 private fun BarItem.title(): Int? = when (this) {
@@ -42,60 +46,84 @@ private fun BarItem.title(): Int? = when (this) {
 }
 
 /**
- * La barra de apps (botón "Barra" al acomodarla): agregar los botones que no tiene, tus apps favoritas,
- * dónde va, su tamaño y, abajo, si es flotante o a lo ancho. Quitar y ordenar se hace en la barra misma.
- * [hasVoice]: la pantalla trae asistente de voz (si no, su botón no se ofrece).
+ * La barra de apps (botón "Barra" al acomodarla): ocultarla, agregar los botones que no tiene, tus apps
+ * favoritas, dónde va, su tamaño y, abajo, si es flotante o a lo ancho. Quitar y ordenar se hace en la barra misma.
+ */
+@Composable
+fun BarSettingsPanel(d: Dependencies, apps: List<App>, close: () -> Unit) {
+    val c = LocalColors.current
+    PanelScaffold(stringResource(R.string.bar_title), close) {
+        Column(Modifier.weight(1f).widthIn(max = 720.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+            BarSettings(d, apps) { title, content ->
+                if (title != null) Label(title.uppercase(currentLocale()), Typography.label, c.textMuted)
+                content()
+            }
+        }
+    }
+}
+
+/** La misma configuración como pestaña de Ajustes → Inicio y apariencia; [onEdit] lleva a acomodar la barra. */
+@Composable
+internal fun BarSettingsTab(d: Dependencies, onEdit: () -> Unit) {
+    BarSettings(d, rememberApps(d.apps).orEmpty(), onEdit) { title, content -> SettingsCard(title) { content() } }
+}
+
+/**
+ * Lo que se configura de la barra, por partes: cada una va en [section] con su título (el panel las pone con
+ * un rótulo; la pestaña, en tarjetas). Oculta, solo queda el interruptor. [onEdit]: botón para ir a acomodarla
+ * (en el panel no hace falta: ya se está acomodando).
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun BarSettingsPanel(d: Dependencies, apps: List<App>, hasVoice: Boolean, close: () -> Unit) {
+private fun BarSettings(d: Dependencies, apps: List<App>, onEdit: (() -> Unit)? = null, section: @Composable (title: String?, content: @Composable () -> Unit) -> Unit) {
     val c = LocalColors.current
     val prefs = d.prefs
+    val context = LocalContext.current
+    // La voz solo se ofrece si la pantalla trae asistente.
+    val hasVoice = remember { voiceIntent(context) != null }
+    section(null) {
+        SwitchRow(stringResource(R.string.bar_hide), prefs.barHidden, { prefs.barHidden = it }, stringResource(R.string.bar_hide_help))
+    }
+    if (prefs.barHidden) return
     // Ajustes ya va siempre.
     val missing = BarItem.entries.filter { it != BarItem.SETTINGS && it !in prefs.barItems && (it != BarItem.VOICE || hasVoice) }
-    PanelScaffold(stringResource(R.string.bar_title), close) {
-        Column(Modifier.weight(1f).widthIn(max = 720.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            Label(stringResource(R.string.bar_edit_help), Typography.body, c.textMuted)
-            if (missing.isNotEmpty()) {
-                Label(stringResource(R.string.bar_add).uppercase(currentLocale()), Typography.label, c.textMuted)
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    // Se agrega antes de Ajustes; luego se arrastra a donde se quiera.
-                    for (item in missing) item.title()?.let { title ->
-                        Button(stringResource(R.string.bar_add_item, stringResource(title)), { prefs.barItems = prefs.barItems + item })
-                    }
-                }
+    section(stringResource(R.string.bar_buttons)) {
+        Label(stringResource(R.string.bar_edit_help), Typography.body, c.textMuted)
+        if (missing.isNotEmpty() || onEdit != null) FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            if (onEdit != null) Button(stringResource(R.string.bar_arrange), onEdit, primary = true)
+            // Se agrega antes de Ajustes; luego se arrastra a donde se quiera.
+            for (item in missing) item.title()?.let { title ->
+                Button(stringResource(R.string.bar_add_item, stringResource(title)), { prefs.barItems = prefs.barItems + item })
             }
-            if (BarItem.FAVORITES in prefs.barItems) {
-                Label(stringResource(R.string.bar_item_favorites).uppercase(currentLocale()), Typography.label, c.textMuted)
-                Favorites(d, apps)
-            }
-            Label(stringResource(R.string.bar_place).uppercase(currentLocale()), Typography.label, c.textMuted)
-            Segmented(
-                listOf(
-                    BarPosition.AUTO to stringResource(R.string.bar_auto),
-                    BarPosition.SIDE to stringResource(R.string.bar_side),
-                    BarPosition.RIGHT to stringResource(R.string.bar_right),
-                    BarPosition.BOTTOM to stringResource(R.string.bar_bottom),
-                ),
-                prefs.barPosition,
-                { prefs.barPosition = it },
-            )
-            Label(stringResource(R.string.bar_position_help), Typography.small, c.textMuted)
-            if (prefs.barPosition != BarPosition.SIDE && prefs.barPosition != BarPosition.RIGHT) {
-                Label(stringResource(R.string.bar_style).uppercase(currentLocale()), Typography.label, c.textMuted)
-                Segmented(
-                    listOf(BarStyle.FLOATING to stringResource(R.string.bar_style_floating), BarStyle.FULL to stringResource(R.string.bar_style_full)),
-                    prefs.barStyle,
-                    { prefs.barStyle = it },
-                )
-            }
-            Label(stringResource(R.string.bar_size).uppercase(currentLocale()), Typography.label, c.textMuted)
-            Segmented(
-                listOf(BarSize.SMALL to stringResource(R.string.bar_size_small), BarSize.NORMAL to stringResource(R.string.bar_size_normal), BarSize.LARGE to stringResource(R.string.bar_size_large)),
-                prefs.barSize,
-                { prefs.barSize = it },
-            )
         }
+    }
+    if (BarItem.FAVORITES in prefs.barItems) section(stringResource(R.string.bar_item_favorites)) { Favorites(d, apps) }
+    section(stringResource(R.string.bar_place)) {
+        Segmented(
+            listOf(
+                BarPosition.AUTO to stringResource(R.string.bar_auto),
+                BarPosition.SIDE to stringResource(R.string.bar_side),
+                BarPosition.RIGHT to stringResource(R.string.bar_right),
+                BarPosition.BOTTOM to stringResource(R.string.bar_bottom),
+            ),
+            prefs.barPosition,
+            { prefs.barPosition = it },
+        )
+        Label(stringResource(R.string.bar_position_help), Typography.small, c.textMuted)
+    }
+    if (prefs.barPosition != BarPosition.SIDE && prefs.barPosition != BarPosition.RIGHT) section(stringResource(R.string.bar_style)) {
+        Segmented(
+            listOf(BarStyle.FLOATING to stringResource(R.string.bar_style_floating), BarStyle.FULL to stringResource(R.string.bar_style_full)),
+            prefs.barStyle,
+            { prefs.barStyle = it },
+        )
+    }
+    section(stringResource(R.string.bar_size)) {
+        Segmented(
+            listOf(BarSize.SMALL to stringResource(R.string.bar_size_small), BarSize.NORMAL to stringResource(R.string.bar_size_normal), BarSize.LARGE to stringResource(R.string.bar_size_large)),
+            prefs.barSize,
+            { prefs.barSize = it },
+        )
     }
 }
 

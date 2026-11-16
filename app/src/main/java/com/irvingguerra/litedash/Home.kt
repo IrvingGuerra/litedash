@@ -661,11 +661,15 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                     }
                     val favorites = rememberFavorites(d, apps)
                     val railRight = rail && d.prefs.barPosition == BarPosition.RIGHT
+                    // Oculta (Inicio y apariencia → Barra) solo se ve al acomodar: ahí está Ajustes.
+                    val barShown = editing || !d.prefs.barHidden
+                    // Lo que deja libre al ocultarse: el tablero lo gana, pero la cuadrícula no lo cuenta.
+                    val freed = if (barShown) 0.dp else barThickness(d.prefs, rail)
                     val bar = @Composable { vertical: Boolean ->
                         AppBar(d.apps, d.prefs, favorites, vertical, editing, musicBig, barActions, mapOpen = expanded == Expanded.MAP)
                     }
                     Row(Modifier.fillMaxSize()) {
-                        if (rail && !railRight) bar(true)
+                        if (barShown && rail && !railRight) bar(true)
                         Column(Modifier.weight(1f).fillMaxHeight()) {
                             // Si ya hay un reloj en el tablero, la barra de arriba no repite la hora.
                             val showTime = d.dashboard.tiles.none { it.type == TileTypes.CLOCK }
@@ -693,19 +697,21 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                                     if (car != null && newModel != null) CarUpdateNotice(d.cars, car, newModel)
                                 }
                             }
-                            // Con la barra al costado no hay barra abajo: el tablero lleva su propio aire inferior
+                            // Sin barra abajo (va al costado o está oculta) el tablero lleva su propio aire inferior
                             // (en pantallas sin barra de gestos las piezas quedaban pegadas al borde).
-                            BoxWithConstraints(Modifier.weight(1f).fillMaxWidth().padding(start = 10.dp, end = 10.dp, bottom = if (rail) 10.dp else 0.dp)) {
+                            val barBelow = barShown && !rail
+                            BoxWithConstraints(Modifier.weight(1f).fillMaxWidth().padding(start = 10.dp, end = 10.dp, bottom = if (barBelow) 0.dp else 10.dp)) {
                                 // La cuadrícula se calcula siempre como si la barra estuviera: si dependiera
                                 // de ella, un reloj en el acomodo la oculta, la cuadrícula crece, se carga
                                 // otro acomodo sin reloj, vuelve la barra... y el inicio parpadea sin parar.
                                 val prompts = with(LocalDensity.current) { promptsHeight.toDp() }
-                                // El aire inferior de la barra lateral tampoco cuenta: la cuadrícula (y el acomodo
-                                // guardado) debe ser la misma con o sin él.
+                                // El aire inferior tampoco cuenta, ni el lugar que deja la barra oculta: la cuadrícula
+                                // (y el acomodo guardado) debe ser la misma con la barra en cualquier lado o sin ella.
                                 // Con la barra de Android oculta hay más alto, pero la cuadrícula tampoco cambia.
                                 val statusHidden = statusBarHiddenHeight()
-                                val gridHeight = (if (barHidden) maxHeight - (topBarHeight() - TOP_BAR_HIDDEN) else maxHeight) + prompts + (if (rail) 10.dp else 0.dp) - statusHidden
-                                val grid = remember(maxWidth, gridHeight) { Grid.forSize(maxWidth.value, gridHeight.value) }
+                                val gridHeight = (if (barHidden) maxHeight - (topBarHeight() - TOP_BAR_HIDDEN) else maxHeight) + prompts + (if (barBelow) 0.dp else 10.dp) - statusHidden - (if (rail) 0.dp else freed)
+                                val gridWidth = maxWidth - (if (rail) freed else 0.dp)
+                                val grid = remember(gridWidth, gridHeight) { Grid.forSize(gridWidth.value, gridHeight.value) }
                                 // Carga el acomodo de esta cuadrícula antes de dibujar (solo hace algo si cambió).
                                 if (inFront || d.dashboard.grid == null) d.dashboard.use(grid)
                                 val cellNow = DpSize(maxWidth / grid.columns, maxHeight / grid.rows)
@@ -759,9 +765,9 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                                     }
                                 }
                             }
-                            if (!rail) bar(false)
+                            if (barBelow) bar(false)
                         }
-                        if (railRight) bar(true)
+                        if (barShown && railRight) bar(true)
                     }
                 }
             }
@@ -787,7 +793,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                 onTires = { panel = null; tiresLayer.open = true },
             )
             Panel.Templates -> TemplatesPanel(d.dashboard, close = { panel = null })
-            Panel.BarSettings -> BarSettingsPanel(d, apps, hasVoice = onVoice != null, close = { panel = null })
+            Panel.BarSettings -> BarSettingsPanel(d, apps, close = { panel = null })
             Panel.Wallpaper -> PanelScaffold(stringResource(R.string.wallpaper_title), close = { panel = null }) {
                 Column(Modifier.weight(1f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(16.dp)) {
                     Label(stringResource(R.string.wallpaper_help), Typography.body, c.textMuted)

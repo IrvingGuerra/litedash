@@ -58,17 +58,18 @@ internal val ThemeOptions = listOf(
 
 /**
  * Pestañas de Inicio y apariencia, en el orden en que se busca: el inicio (acomodo, barra de Android, fondo,
- * entrada y hacerlo tu inicio), la interfaz (color, tamaño, idioma, nombre, clima y estacionado), día y noche, unidades y,
+ * entrada y hacerlo tu inicio), la barra de LiteDash, la interfaz (color, tamaño, idioma, nombre, clima y estacionado), día y noche, unidades y,
  * al final, la lista de widgets para agregar.
  */
 private enum class AppearanceTab(val title: Int) {
-    HOME(R.string.tab_home), INTERFACE(R.string.tab_interface), DAY_NIGHT(R.string.tab_day_night), UNITS(R.string.units_title), WIDGETS(R.string.tab_tiles),
+    HOME(R.string.tab_home), BAR(R.string.bar_edit), INTERFACE(R.string.tab_interface), DAY_NIGHT(R.string.tab_day_night), UNITS(R.string.units_title), WIDGETS(R.string.tab_tiles),
 }
 
 @Composable
 internal fun Appearance(d: Dependencies, revision: Int, onEdit: () -> Unit, onTemplates: () -> Unit, onTires: () -> Unit) {
     when (AppearanceTab.entries[tabs(AppearanceTab.entries.map { it.title }, "appearance")]) {
         AppearanceTab.HOME -> HomeSettings(d, revision, onEdit, onTemplates)
+        AppearanceTab.BAR -> BarSettingsTab(d, onEdit)
         AppearanceTab.INTERFACE -> InterfaceSettings(d)
         AppearanceTab.DAY_NIGHT -> DayNightSettings(d.prefs, revision)
         AppearanceTab.UNITS -> SettingsCard { UnitsSettings(d) }

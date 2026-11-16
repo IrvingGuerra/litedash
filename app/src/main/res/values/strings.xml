@@ -468,6 +468,10 @@
     <string name="logo_remove">Quitar imagen</string>
     <string name="logo_intro">Animación de entrada</string>
     <string name="bar_title">Barra de apps</string>
+    <string name="bar_hide">Ocultar la barra</string>
+    <string name="bar_hide_help">Para verla y entrar a Ajustes, deja presionado cualquier lugar del inicio.</string>
+    <string name="bar_buttons">Botones</string>
+    <string name="bar_arrange">Acomodar la barra</string>
     <string name="bar_position_help">Automática: a la izquierda si la pantalla está acostada, abajo si está parada.</string>
     <string name="bar_edit">Barra</string>
     <string name="bar_edit_help">Para quitar un botón toca su x en la barra; para cambiarlo de lugar, arrástralo. Ajustes siempre va.</string>
