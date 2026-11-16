@@ -466,14 +466,14 @@ class TpmsRepository(context: Context, private val bus: VehicleBus) {
         val move = moveSensor(_assignment, w, sensorId, pendingOffsets, offsets)
         _assignment.clear()
         _assignment.putAll(move.assignment)
-        // El historial va con el sensor; el de uno que ya no está se vacía.
-        activeHistory()?.let { h ->
+        // El historial va con el sensor; el de uno que ya no está se vacía. Por OBD no: ahí cada llanta es siempre la suya.
+        if (running != TpmsSource.OBD) activeHistory()?.let { h ->
             move.swapWith?.let { h.swap(it, w) }
             move.cut.forEach(h::cut)
             updateSlowLeaks()
         }
-        // El ajuste de antes de esta llanta lo estrena su primer sensor.
-        move.offset?.let { kpa ->
+        // El ajuste de antes de esta llanta lo estrena su primer sensor de Bluetooth (no uno de la demostración ni del OBD).
+        if (running == TpmsSource.BLE) move.offset?.let { kpa ->
             writeOffset(sensorId, kpa)
             pendingOffsets.remove(w)
             prefs.edit().remove(OffsetKeys.PENDING + w.key).apply()
@@ -897,6 +897,18 @@ class TpmsRepository(context: Context, private val bus: VehicleBus) {
         pairingWheel = null
     }
 
+    /**
+     * El ajuste guardado como "usb-<llanta>" (antes de saber el id del sensor, o migrado de versiones
+     * anteriores) pasa al id real [id], sin pisar uno que ese sensor ya tenga. Con los ajustes aún sin
+     * cargar no hace nada: al cargarse se repite para los ids ya conocidos.
+     */
+    private fun adoptUsbOffset(w: Wheel, id: String) {
+        if (!offsetsReady) return
+        val kpa = offsets[usbSensorId(w)] ?: return
+        if (id !in offsets) writeOffset(id, kpa)
+        writeOffset(usbSensorId(w), 0f)
+    }
+
     private fun onUsbFrame(session: UsbSession, f: UsbFrame) {
         if (usb !== session) return
         val now = System.currentTimeMillis()
@@ -921,6 +933,8 @@ class TpmsRepository(context: Context, private val bus: VehicleBus) {
                 if (newId == null) usbIds.remove(w) else usbIds[w] = newId
                 // Otro sensor en esa llanta (antes tenía un id real distinto, o ya no hay ninguno): su historial no es de este.
                 if (before != null) activeHistory()?.let { h -> h.cut(w); updateSlowLeaks() }
+                // El primer id real de esa llanta es el sensor que se llamaba "usb-<llanta>": hereda su ajuste.
+                if (before == null && newId != null) adoptUsbOffset(w, newId)
                 val old = _assignment[w] ?: return
                 if (newId == null) {
                     // Ahí ya no hay sensor (sus tramas se tiran): lo de antes no se queda mostrando.
@@ -928,11 +942,6 @@ class TpmsRepository(context: Context, private val bus: VehicleBus) {
                     _assignment.remove(w)
                     sensorCount = _readings.size
                 } else {
-                    // Es el mismo sensor que se llamaba "usb-<llanta>": su ajuste pasa a su id real. Un id real distinto empieza en 0.
-                    if (old == usbSensorId(w) && offsetsReady) offsets[old]?.let { kpa ->
-                        writeOffset(newId, kpa)
-                        writeOffset(old, 0f)
-                    }
                     // Lo que ya se sabe de esa llanta pasa al nombre nuevo.
                     _assignment[w] = newId
                     lastUpdate.remove(old)
@@ -956,6 +965,13 @@ class TpmsRepository(context: Context, private val bus: VehicleBus) {
                 swapJob?.cancel(); swapJob = null
                 pendingSwap = null
                 swapping = false
+                // Sin ids reales el sensor se llama como su posición: su ajuste cambia de nombre con él.
+                if (usbIds[a] == null && usbIds[b] == null && offsetsReady) {
+                    val ka = offsets[usbSensorId(a)] ?: 0f
+                    val kb = offsets[usbSensorId(b)] ?: 0f
+                    writeOffset(usbSensorId(a), kb)
+                    writeOffset(usbSensorId(b), ka)
+                }
                 usbIds.swapKeys(a, b)
                 swapLocal(a, b)
                 session.send(UsbTpmsProtocol.queryIds())
@@ -1118,6 +1134,8 @@ class TpmsRepository(context: Context, private val bus: VehicleBus) {
             offsets.putAll(byId)
             pendingOffsets.putAll(pending)
             offsetsReady = true
+            // Ids del receptor USB que llegaron antes que los ajustes.
+            for ((w, id) in usbIds.toMap()) adoptUsbOffset(w, id)
             refresh()
         }
         scope.launch {

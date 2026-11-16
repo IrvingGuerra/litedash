@@ -372,16 +372,20 @@ class MusicRepository(internal val context: Context) {
     /** Una pieza de [piece] (widget o en grande) entra a la pantalla. */
     fun use(piece: SoundPiece) {
         if (piece == SoundPiece.MUSIC) musicUsers++ else radioUsers++
-        if (users == 1) start()
-        if (piece == SoundPiece.RADIO && radioUsers == 1) startRadio()
+        if (users == 1) {
+            start()
+            startRadio()
+        }
         loadCatalog()
     }
 
     /** La pieza de [piece] sale de la pantalla. */
     fun release(piece: SoundPiece) {
         if (piece == SoundPiece.MUSIC) musicUsers = (musicUsers - 1).coerceAtLeast(0) else radioUsers = (radioUsers - 1).coerceAtLeast(0)
-        if (piece == SoundPiece.RADIO && radioUsers == 0) stopRadio()
-        if (users == 0) stop()
+        if (users == 0) {
+            stopRadio()
+            stop()
+        }
     }
 
     /** Llamar al volver a la app: si se acaba de dar el permiso, empieza a escuchar las sesiones. */

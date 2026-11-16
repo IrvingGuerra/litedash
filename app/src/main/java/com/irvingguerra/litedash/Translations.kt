@@ -11,6 +11,7 @@ import android.util.Log
 import androidx.annotation.RequiresApi
 import java.io.File
 import java.io.IOException
+import java.util.IllegalFormatException
 import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
 import org.json.JSONException
@@ -107,6 +108,20 @@ internal class TranslatedResources(
         // "other" del inglés: la que trae todos los datos (con 0, el inglés siempre elige "other").
         val forms = plurals.getOrPut(id) { pack.plural(getResourceEntryName(id), english.getQuantityText(id, 0).toString()) }
         return forms[category(quantity, forms.keys)] ?: english.getQuantityText(id, quantity)
+    }
+
+    // Segunda red: si un texto traducido no se puede formatear con sus datos (un paquete con un marcador que la
+    // validación no vio), sale el inglés en vez de cerrarse la app.
+    override fun getString(id: Int, vararg formatArgs: Any?): String = try {
+        super.getString(id, *formatArgs)
+    } catch (e: IllegalFormatException) {
+        if (ours(id)) english.getString(id, *formatArgs) else throw e
+    }
+
+    override fun getQuantityString(id: Int, quantity: Int, vararg formatArgs: Any?): String = try {
+        super.getQuantityString(id, quantity, *formatArgs)
+    } catch (e: IllegalFormatException) {
+        if (ours(id)) english.getQuantityString(id, quantity, *formatArgs) else throw e
     }
 
     override fun getStringArray(id: Int): Array<String> {

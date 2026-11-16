@@ -5,9 +5,6 @@ import android.content.Intent
 /** Cómo quedó una app al abrirla. */
 internal enum class Opened { NONE, BESIDE, OVER }
 
-/** "Sin pantalla que abrir" en la caché de [MusicRepository.launchIntentFor] (el mapa concurrente no guarda nulos). */
-private val NO_LAUNCH = Intent()
-
 // —— Abrir apps y regresar ——
 
 /**
@@ -19,7 +16,11 @@ internal fun MusicRepository.open(pkg: String): Opened {
     val bluetooth = sourceOf(pkg) == SourceKind.BLUETOOTH || pkg in HeadUnit.bluetoothApps || looksBluetooth(pkg) && isSystemApp(context, pkg)
     val intent = launchIntentFor(pkg, bluetooth)?.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) ?: return Opened.NONE
     if (opener?.invoke(context, intent, pkg) == true) return Opened.BESIDE
-    return if (runCatching { context.startActivity(intent) }.onFailure { trace("no se abrió $pkg (${it.javaClass.simpleName})") }.isSuccess) Opened.OVER else Opened.NONE
+    return if (runCatching { context.startActivity(intent) }.onFailure {
+            trace("no se abrió $pkg (${it.javaClass.simpleName})")
+            // La app cambió (se actualizó): la próxima vez se pregunta de nuevo cómo abrirla.
+            launches.remove("$pkg|$bluetooth")
+        }.isSuccess) Opened.OVER else Opened.NONE
 }
 
 /**
@@ -43,7 +44,8 @@ internal fun MusicRepository.openOver(pkg: String, afterMs: Long, then: () -> Un
 
 internal fun MusicRepository.launchIntentFor(pkg: String, bluetooth: Boolean): Intent? {
     val key = "$pkg|$bluetooth"
-    val cached = launches[key] ?: (launchIntent(context, pkg, bluetooth) ?: NO_LAUNCH).also { launches[key] = it }
+    // "Sin pantalla que abrir" no se guarda: la app puede instalarse después.
+    val cached = launches[key] ?: launchIntent(context, pkg, bluetooth)?.also { launches[key] = it }
     // Copia: quien la usa le agrega banderas.
-    return cached.takeUnless { it === NO_LAUNCH }?.let(::Intent)
+    return cached?.let(::Intent)
 }

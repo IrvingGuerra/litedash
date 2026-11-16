@@ -243,6 +243,10 @@ private fun exifOrientation(context: Context, uri: Uri): Int {
     } catch (e: IOException) {
         Log.w(LOG_TAG, "No se pudo leer la orientación de $uri", e)
         normal
+    } catch (e: RuntimeException) {
+        // La ExifInterface de Android truena de varias formas con una foto dañada.
+        Log.w(LOG_TAG, "Orientación ilegible en $uri", e)
+        normal
     }
 }
 

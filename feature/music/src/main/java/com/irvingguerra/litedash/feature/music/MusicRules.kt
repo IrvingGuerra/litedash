@@ -132,6 +132,8 @@ internal fun opensAfterWake(plan: Plan, via: Channel?, source: Boolean): Boolean
  */
 internal data class RadioSignals(
     val profileOn: Boolean? = null,
+    /** Su perfil está abierto (aunque todavía no diga si suena). */
+    val profileOpen: Boolean = false,
     /** Su sesión dice que suena (y cuándo lo dijo); null = no. */
     val sessionAt: Long? = null,
     /** Su aviso (broadcast) dijo que suena; null = no. */
@@ -141,15 +143,17 @@ internal data class RadioSignals(
 )
 
 /**
- * ¿Se SABE que la radio suena? Su perfil manda (dice sí o no); sin él, su sesión, su aviso o el play que le dio LiteDash,
+ * ¿Se calla la radio? Su perfil manda (dice sí o no; abierto y sin decir, sí); sin él, solo si se SABE que suena: su sesión, su aviso o el play que le dio LiteDash,
  * siempre que sea más nuevo que la última vez que se calló ([quietAt]): cada señal sirve para callarla una sola vez, así un
  * play que pasa por dos caminos no le manda dos pausas (en radios que toman cualquier tecla como alternar, la segunda
  * la prendería). Sin ninguna señal, no se sabe: no se toca.
  */
-internal fun radioSounds(s: RadioSignals, quietAt: Long): Boolean = when (s.profileOn) {
-    false -> false
-    true -> true
-    null -> listOfNotNull(s.sessionAt, s.heardAt, s.claimedAt).any { it > quietAt }
+internal fun radioSounds(s: RadioSignals, quietAt: Long): Boolean = when {
+    s.profileOn == false -> false
+    // Con el perfil abierto y sin decir (la prendieron desde su app o un botón antes de abrirlo) se calla igual, como
+    // hasta la 1.4.162: soltar el audio por su perfil nunca la prende.
+    s.profileOn == true || s.profileOpen -> true
+    else -> listOfNotNull(s.sessionAt, s.heardAt, s.claimedAt).any { it > quietAt }
 }
 
 /** Por dónde se calla la radio. */

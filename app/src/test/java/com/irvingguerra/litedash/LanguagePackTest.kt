@@ -63,6 +63,10 @@ class LanguagePackTest {
         assertTrue(sameMarkers("%.1f V", "%.1f V"))
         assertFalse(sameMarkers("%s km", "%d km"))
         assertFalse(sameMarkers("km", "%d km"))
+        // Lo que String.format no acepta aunque "parezca" el mismo marcador, y un % suelto.
+        for (bad in listOf("%#s", "%-s", "%<s", "%S")) assertFalse(bad, sameMarkers(bad, "%s"))
+        for (bad in listOf("%D", "%.2d", "%d %", "%é %d")) assertFalse(bad, sameMarkers(bad, "%d"))
+        assertTrue(sameMarkers("100 %", "100 %"))
         assertFalse(sameMarkers("%d %d km", "%d km"))
         assertFalse(sameMarkers("%d %s", "%s %d"))
         assertFalse(sameMarkers("%2\$s", "%1\$s"))

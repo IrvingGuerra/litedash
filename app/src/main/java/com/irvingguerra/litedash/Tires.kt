@@ -1037,7 +1037,11 @@ internal fun TiresHealthTile(d: Dependencies, onClick: () -> Unit, modifier: Mod
  * guarda con la fuente ya andando. Al parar la fuente ([CarTires.stop]), [releaseFactoryTires] lo suelta.
  */
 internal suspend fun factoryTires(d: Dependencies): FactoryTires {
-    if (!d.obdAuto) return FactoryTires.NotConnected
+    if (!d.obdAuto) {
+        // Apagaron el módulo OBD con esta fuente andando: Llantas ya no lo retiene.
+        releaseFactoryTires(d)
+        return FactoryTires.NotConnected
+    }
     val obd = d.obd
     obd.want(TIRES_OBD)
     return obd.factoryTires()

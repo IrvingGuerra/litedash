@@ -53,7 +53,8 @@ fun Forecast.at(now: Long, today: Day, fahrenheit: Boolean): Weather? {
     val shown: (Double) -> Int = { c -> Math.round(c.toFahrenheit(fahrenheit)).toInt() }
     fun ForecastDay.inUnits() = WeatherDay(date, code, shown(max), shown(min))
     val date = today.toString()
-    val current = now - fetchedAt in 0 until CURRENT_MAX_AGE_MS
+    // Con el reloj de la pantalla atrasado (sin pila, hasta que hay red) no se sabe su edad: se muestra lo guardado.
+    val current = now - fetchedAt < CURRENT_MAX_AGE_MS
     val todays = days.firstOrNull { it.date == date }?.inUnits()
     if (!current && todays == null) return null
     // Las fechas "aaaa-mm-dd" se ordenan igual como texto.
@@ -147,7 +148,8 @@ class WeatherRepository(private val context: Context, private val prefs: Prefere
     suspend fun refreshIfStale(force: Boolean = false): Boolean {
         if (!active) return true
         val last = forecast
-        if (!force && last != null && System.currentTimeMillis() - last.fetchedAt < STALE_MS) return true
+        // Una edad negativa es el reloj atrasado: se trae de nuevo en cuanto se pueda.
+        if (!force && last != null && System.currentTimeMillis() - last.fetchedAt in 0 until STALE_MS) return true
         val place = location()
         if (place == null) {
             failure = "sin ubicación"

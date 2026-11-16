@@ -32,7 +32,7 @@ CATEGORIES = {"zero", "one", "two", "few", "many", "other"}
 RIGHT_TO_LEFT = {"ar", "arc", "ckb", "dv", "fa", "he", "iw", "ks", "ps", "sd", "ug", "ur", "yi"}
 TAG = re.compile(r"[a-z]{2,3}(-[A-Za-z0-9]{2,8}){0,2}$")
 NAME = re.compile(r"[a-z0-9_]{1,100}$")
-MARKER = re.compile(r"%(\d+\$)?[-#+ 0,(<]*\d*(?:\.\d+)?([a-zA-Z%])")
+MARKER = re.compile(r"%(\d+\$)?([-#+ 0,(<]*\d*(?:\.\d+)?[a-zA-Z%])")
 
 # Formas de plural que pide cada idioma (CLDR, lo que Android usa con números enteros). Lo que no está aquí: solo
 # "other" es obligatoria. Las formas "many" del francés, italiano, portugués y catalán (para millones) no se piden.
@@ -52,21 +52,22 @@ PLURAL_FORMS = {
 
 
 def markers(text):
-    """Como LanguagePack.kt: (sin orden: con posición, %% y %n) y (los que toman el siguiente dato, en su orden)."""
+    """Como LanguagePack.kt: (sin orden: con posición, %% y %n), (los que toman el siguiente dato, en su orden) y si
+    queda un "%" suelto. Cada marcador va completo: "%#s", "%D" o "%.2d" no son "%s" ni "%d" (String.format truena)."""
     loose, ordered = [], []
     for m in MARKER.finditer(text):
-        conversion = m.group(2).lower()
-        if m.group(1) is None and conversion not in ("%", "n"):
-            ordered.append(conversion)
+        spec = m.group(2)
+        if m.group(1) is None and spec not in ("%", "n"):
+            ordered.append(spec)
         else:
-            loose.append((m.group(1) or "") + conversion)
-    return sorted(loose), ordered
+            loose.append((m.group(1) or "") + spec)
+    return sorted(loose), ordered, "%" in MARKER.sub("", text)
 
 
 def plural_fits(form, english_other):
-    loose, ordered = markers(form)
-    en_loose, en_ordered = markers(english_other)
-    return all(x in en_loose for x in loose) and en_ordered[:len(ordered)] == ordered
+    loose, ordered, stray = markers(form)
+    en_loose, en_ordered, en_stray = markers(english_other)
+    return stray == en_stray and all(x in en_loose for x in loose) and en_ordered[:len(ordered)] == ordered
 
 
 def unescape(raw):

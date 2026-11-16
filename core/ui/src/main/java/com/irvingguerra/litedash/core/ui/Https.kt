@@ -7,6 +7,7 @@ import java.io.IOException
 import java.io.InputStream
 import java.net.HttpURLConnection
 import java.net.URL
+import java.security.GeneralSecurityException
 import java.security.KeyStore
 import java.security.MessageDigest
 import java.security.cert.CertificateFactory
@@ -116,8 +117,12 @@ object Https {
         return sha.digest().joinToString("") { "%02x".format(it) }
     }
 
-    private fun legacyFactory(context: Context): SSLSocketFactory =
+    /** Un almacén de certificados raro (Android 6–7.1) es, para quien llama, una falla de red más. */
+    private fun legacyFactory(context: Context): SSLSocketFactory = try {
         legacy ?: synchronized(this) { legacy ?: build(context).also { legacy = it } }
+    } catch (e: GeneralSecurityException) {
+        throw IOException("TLS: ${e.message}", e)
+    }
 
     private fun build(context: Context): SSLSocketFactory {
         val store = KeyStore.getInstance(KeyStore.getDefaultType()).apply { load(null, null) }

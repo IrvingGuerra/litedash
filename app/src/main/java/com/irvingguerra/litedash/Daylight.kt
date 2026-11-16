@@ -100,8 +100,8 @@ fun rememberIsNight(prefs: Preferences, needed: Boolean): Boolean {
 /**
  * Noche por el sensor de luz: cambia solo si la luz se mantiene un rato (al pasar bajo
  * un puente no). null = no hay sensor o todavía no demuestra que sirve: varias pantallas traen
- * uno "de adorno" que manda un solo valor (a menudo 0) al registrarse y nada más; mientras no
- * dé un segundo valor distinto manda la hora del sol ([initial]). Un sensor real cambia en
+ * uno "de adorno" que manda un solo 0 al registrarse y nada más; mientras solo haya dado ese 0
+ * manda la hora del sol ([initial]). Un sensor real cambia en
  * segundos (el ruido de la luz) y desde ahí se sigue con lo que ya llevaba contado.
  */
 @Composable
@@ -127,7 +127,8 @@ private fun rememberSensorNight(initial: Boolean): Boolean? {
         val listener = object : SensorEventListener {
             override fun onSensorChanged(e: SensorEvent) {
                 lux = e.values[0]
-                if (first == null) first = lux else if (lux != first) varies = true
+                // Uno de adorno manda un 0 y nada más; con luz medida (o un segundo valor) ya es de verdad.
+                if (first == null) { first = lux; if (lux > 0f) varies = true } else if (lux != first) varies = true
                 handler.removeCallbacks(confirm)
                 confirm.run()
             }

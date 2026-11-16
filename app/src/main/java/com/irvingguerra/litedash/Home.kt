@@ -360,14 +360,13 @@ private fun Modifier.expandable(p: Tile, actions: TileActions) =
 
 /**
  * El módulo apagado del que depende una pieza (su nombre), o null si se puede ver: el Taller y
- * los medidores son del OBD, la pieza Llantas de Llantas y la pieza Clima del clima (Inicio y
- * apariencia → Interfaz). Esas piezas no se ven ni apartan su lugar ([DashboardState.hidden]) y no
- * se ofrecen para agregar.
+ * los medidores son del OBD y la pieza Llantas de Llantas. Esas piezas no se ven ni apartan su
+ * lugar ([DashboardState.hidden]) y no se ofrecen para agregar. La pieza Clima no: el clima viene
+ * apagado, las plantillas la traen y desde ella se prende.
  */
 fun moduleOff(d: Dependencies, type: String): Int? = when (type) {
     TileTypes.WORKSHOP, TileTypes.GAUGE -> R.string.module_obd.takeIf { !d.obdModule }
     TileTypes.TIRES -> R.string.module_tpms.takeIf { !d.hasTpmsSource }
-    TileTypes.WEATHER -> R.string.weather_switch.takeIf { !d.weather.enabled }
     else -> null
 }
 
@@ -378,7 +377,7 @@ fun moduleOff(d: Dependencies, type: String): Int? = when (type) {
 fun showsTires(d: Dependencies, p: Tile): Boolean =
     TileTires.parse(p.data) ?: (p.type != TileTypes.IMAGE && d.prefs.tiresOnCar != TiresOnCar.OFF)
 
-/** Lo que se ofrece para agregar: Llantas siempre (agregarla prende su módulo); lo del OBD con el OBD y Clima con el clima. */
+/** Lo que se ofrece para agregar: Llantas siempre (agregarla prende su módulo); lo del OBD, con el OBD. */
 fun offered(d: Dependencies, type: String) = type == TileTypes.TIRES || moduleOff(d, type) == null
 
 /**

@@ -90,22 +90,25 @@ private fun <T> JSONObject.entries(cast: (Any?) -> T?): Map<String, T> {
     return out
 }
 
-/** Un marcador de String.format: %s, %d, %1$s, %.1f, %02d, %%… (grupo 1 = posición, grupo 2 = conversión). */
-private val MARKER = Regex("""%(\d+\$)?[-#+ 0,(<]*\d*(?:\.\d+)?([a-zA-Z%])""")
+/** Un marcador de String.format: %s, %d, %1$s, %.1f, %02d, %%… (grupo 1 = posición, grupo 2 = lo demás, que acaba en la conversión). */
+private val MARKER = Regex("""%(\d+\$)?([-#+ 0,(<]*\d*(?:\.\d+)?[a-zA-Z%])""")
 
 /**
- * Los marcadores de [text]: los que no dependen del orden (con posición, "1\$s", y los que no toman dato, "%%" y "%n")
- * y los que toman el siguiente dato ("d", en su orden).
+ * Los marcadores de [text]: los que no dependen del orden (con posición, "1\$s", y los que no toman dato, "%%" y "%n"),
+ * los que toman el siguiente dato ("d", en su orden) y si queda algún "%" suelto. Cada uno va completo (banderas, ancho,
+ * precisión y conversión tal cual): "%#s", "%D" o "%.2d" no son "%s" ni "%d", y String.format truena con ellos.
  */
-private fun markers(text: String): Pair<List<String>, List<String>> {
+private data class Markers(val positional: List<String>, val ordered: List<String>, val stray: Boolean)
+
+private fun markers(text: String): Markers {
     val positional = ArrayList<String>()
     val ordered = ArrayList<String>()
     for (m in MARKER.findAll(text)) {
-        val conversion = m.groupValues[2].lowercase()
-        if (m.groupValues[1].isEmpty() && conversion != "%" && conversion != "n") ordered += conversion else positional += m.groupValues[1] + conversion
+        val spec = m.groupValues[2]
+        if (m.groupValues[1].isEmpty() && spec != "%" && spec != "n") ordered += spec else positional += m.groupValues[1] + spec
     }
     positional.sort()
-    return positional to ordered
+    return Markers(positional, ordered, '%' in MARKER.replace(text, ""))
 }
 
 /** ¿[text] trae exactamente los marcadores de [english]? Si no, String.format podría tronar o mostrar otro dato. */
@@ -117,9 +120,9 @@ internal fun sameMarkers(text: String, english: String) = markers(text) == marke
  * los que van sin posición, solo los primeros (quitar uno de en medio correría los demás).
  */
 internal fun pluralFits(form: String, englishOther: String): Boolean {
-    val (positional, ordered) = markers(form)
-    val (enPositional, enOrdered) = markers(englishOther)
-    return enPositional.containsAll(positional) && enOrdered.take(ordered.size) == ordered
+    val own = markers(form)
+    val en = markers(englishOther)
+    return own.stray == en.stray && en.positional.containsAll(own.positional) && en.ordered.take(own.ordered.size) == own.ordered
 }
 
 /** El texto de [name] en [pack] si sus marcadores son los del inglés; null = usar el inglés. */

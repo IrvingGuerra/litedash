@@ -13,17 +13,21 @@ internal const val FACTORY_ANSWER_MS = 2_000L
 /**
  * Cambió con qué suena la pieza Radio (se enlazó o quitó la FM, o se pasó entre la FM y la de internet): lo que se supo
  * de la anterior (su estación, el play que se le mandó o se le confirmaba) ya no vale, y su perfil solo se abre si la FM
- * es la radio escogida y la pieza Radio está a la vista.
+ * es la radio escogida y hay una pieza de sonido a la vista.
  */
 internal fun MusicRepository.radioChanged() {
     mainHandler.removeCallbacks(profileAnswer)
     fmCalibration.abort()
     radioClaimedAt = null
     radio.clear()
-    if (radioUsers > 0) startFactory()
+    if (users > 0) startFactory()
 }
 
-/** La pieza Radio entró: el perfil de la radio de fábrica y, la primera vez, adivinar su app. */
+/**
+ * La primera pieza de sonido entró (Música o Radio): el perfil de la radio de fábrica y, la primera vez, adivinar su app.
+ * También con solo la pieza Música: sin el perfil no se sabe si la FM suena, y entonces ni el volante la pausa ni un
+ * play de música la calla (issue #17).
+ */
 internal fun MusicRepository.startRadio() {
     startFactory()
     if (!store.getBoolean(KEY_SOURCES_GUESSED, false)) {
@@ -32,7 +36,7 @@ internal fun MusicRepository.startRadio() {
     }
 }
 
-/** La pieza Radio salió: su perfil se cierra (se queda, con la última estación, para el reporte). */
+/** La última pieza de sonido salió: su perfil se cierra (se queda, con la última estación, para el reporte). */
 internal fun MusicRepository.stopRadio() {
     factoryRun++
     factory?.close()
@@ -87,6 +91,7 @@ internal fun MusicRepository.quietRadio(target: String?) {
     val session = sessions().firstOrNull { it.packageName == fm }
     val signals = RadioSignals(
         profileOn = f?.on,
+        profileOpen = f != null,
         // Una sesión que no dice cuándo cambió cuenta como de ahora (su estado es lo que hay).
         sessionAt = session?.takeIf { it.busy() }?.let { it.playbackState?.lastPositionUpdateTime?.takeIf { t -> t > 0 } ?: now },
         heardAt = radio.heardPlayingAt(fm),

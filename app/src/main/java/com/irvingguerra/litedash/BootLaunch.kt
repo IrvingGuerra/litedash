@@ -11,6 +11,7 @@ import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
 import android.provider.Settings
+import android.util.Log
 import androidx.core.content.edit
 
 /**
@@ -98,7 +99,12 @@ object BootLaunch {
         val pm = context.packageManager
         val component = ComponentName(context, BootReceiver::class.java)
         val wanted = if (on) PackageManager.COMPONENT_ENABLED_STATE_ENABLED else PackageManager.COMPONENT_ENABLED_STATE_DEFAULT
-        if (pm.getComponentEnabledSetting(component) != wanted) pm.setComponentEnabledSetting(component, wanted, PackageManager.DONT_KILL_APP)
+        try {
+            if (pm.getComponentEnabledSetting(component) != wanted) pm.setComponentEnabledSetting(component, wanted, PackageManager.DONT_KILL_APP)
+        } catch (e: RuntimeException) {
+            // Corre en un hilo suelto al abrir: una pantalla que no deja cambiarlo no debe cerrar la app.
+            Log.w(LOG_TAG, "No se pudo cambiar el receptor de encendido", e)
+        }
     }
 
     /**

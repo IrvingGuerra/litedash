@@ -106,7 +106,9 @@ class MusicRulesTest {
             // 1.4.162: FM con receptor nunca tocada, sin perfil ni señal → antes PAUSE a ciegas (la prendía). Ahora nada.
             "sin ninguna señal" to (RadioSignals() to false),
             // HCN/TopWay antes del primer aviso (perfil sin decir): sin otra señal, nada.
-            "perfil sin decir" to (RadioSignals(profileOn = null) to false),
+            "sin perfil y sin decir" to (RadioSignals(profileOn = null) to false),
+            "perfil abierto sin decir" to (RadioSignals(profileOpen = true) to true),
+            "perfil abierto dice que no" to (RadioSignals(profileOn = false, profileOpen = true) to false),
             "perfil dice que no (aunque su sesión diga otra cosa)" to (RadioSignals(profileOn = false, sessionAt = 500) to false),
             // TopWay con perfil que dice que suena.
             "perfil dice que sí" to (RadioSignals(profileOn = true) to true),

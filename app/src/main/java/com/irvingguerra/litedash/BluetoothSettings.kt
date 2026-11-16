@@ -130,8 +130,9 @@ fun BluetoothSettings(d: Dependencies) {
             addAction(BluetoothAdapter.ACTION_DISCOVERY_FINISHED)
             addAction(BluetoothDevice.ACTION_BOND_STATE_CHANGED)
         }
-        // Los avisos protegidos del sistema llegan aunque el receptor no esté exportado; así ninguna app se hace pasar por él.
-        ContextCompat.registerReceiver(context, receiver, filter, ContextCompat.RECEIVER_NOT_EXPORTED)
+        // Exportado: estos avisos los manda la app de Bluetooth del sistema, que hasta Android 12 no pasa por un
+        // receptor no exportado (ContextCompat lo protege con un permiso que ella no tiene).
+        ContextCompat.registerReceiver(context, receiver, filter, ContextCompat.RECEIVER_EXPORTED)
         onStopOrDispose {
             context.unregisterReceiver(receiver)
             // Sin el receptor no llegaría el fin de la búsqueda: se corta aquí.

@@ -505,6 +505,9 @@ private fun Context.tryStart(intent: Intent): Boolean = try {
     true
 } catch (e: ActivityNotFoundException) {
     false
+} catch (e: SecurityException) {
+    // La actividad existe pero no deja que la abran (apps de fábrica).
+    false
 }
 
 fun openDialer(context: Context) {

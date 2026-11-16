@@ -7,6 +7,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.provider.Settings
+import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -62,7 +63,12 @@ fun isHomeApp(context: Context): Boolean {
     // Android 10+: el rol del sistema. Sin esto, desde Android 11 las otras apps de
     // inicio no se ven y LiteDash creería que es la única.
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-        context.getSystemService(RoleManager::class.java)?.let { return it.isRoleHeld(RoleManager.ROLE_HOME) }
+        // Capas de Android recortadas truenan al preguntar por el rol: entonces se decide como antes de Android 10.
+        try {
+            context.getSystemService(RoleManager::class.java)?.let { return it.isRoleHeld(RoleManager.ROLE_HOME) }
+        } catch (e: RuntimeException) {
+            Log.w(LOG_TAG, "Rol de inicio ilegible", e)
+        }
     }
     val intent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME)
     val resolved = context.packageManager.resolveActivity(intent, PackageManager.MATCH_DEFAULT_ONLY)
@@ -226,8 +232,8 @@ fun rememberRequestHome(): Pair<() -> Unit, Int> {
 private fun requestHomeRole(context: Context, launch: (Intent) -> Unit): Boolean {
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return false
     val roles = context.getSystemService(RoleManager::class.java) ?: return false
-    if (!roles.isRoleAvailable(RoleManager.ROLE_HOME)) return false
     return try {
+        if (!roles.isRoleAvailable(RoleManager.ROLE_HOME)) return false
         launch(roles.createRequestRoleIntent(RoleManager.ROLE_HOME))
         true
     } catch (e: ActivityNotFoundException) {
