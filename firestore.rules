@@ -48,18 +48,6 @@ service cloud.firestore {
         && request.resource.data.screen is string && request.resource.data.screen.matches('^[0-9a-f]{32}$')
         && request.resource.data.bound == request.time;
     }
-    // Solo para la 1.4.44 y la 1.4.45, que usaban nombres en español.
-    match /pantallas/{id} {
-      allow create, update: if id.matches('^[0-9a-f]{32}$')
-        && request.resource.data.keys().hasOnly(['version', 'canal', 'android', 'idioma', 'pantalla', 'alta', 'visto'])
-        && request.resource.data.version is int && request.resource.data.version < 1000000000
-        && request.resource.data.canal in ['play', 'github']
-        && request.resource.data.android is int && request.resource.data.android < 1000
-        && request.resource.data.idioma is string && request.resource.data.idioma.size() <= 8
-        && request.resource.data.pantalla is string && request.resource.data.pantalla.size() <= 16
-        && request.resource.data.alta is string && request.resource.data.alta.size() == 10
-        && request.resource.data.visto == request.time;
-    }
     // Cuentas de LiteDash Connect: cada quien escribe solo la suya, nadie lee desde las apps.
     // Al eliminar la cuenta el documento se reemplaza por {provider, since, deleted} (sin nombre)
     // y ya no se puede tocar: la sesión de Auth se borra justo después.
