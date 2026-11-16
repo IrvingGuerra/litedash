@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # Crea los emuladores de la matriz de pruebas.
+# De cajón: LD_HU11 (acostada, 11") y LD_Vertical_1080x1920 (de pie, tipo Tesla); LD_A6 cubre lo mínimo.
 # Uso: tools/avd.sh            (crea los que falten)
 # Imagen: android-35 google_apis_playstore arm64-v8a, salvo la que diga otra en la 7.ª
 # columna (LD_A6: Android 6, el mínimo que soporta LiteDash, con 1 GB como las pantallas
@@ -19,6 +20,7 @@ MATRIX=(
   "LD_HU11_2000x1200 2000 1200 240 4096 4"
   "LD_Ancha_1920x720 1920 720  160 4096 4"
   "LD_Vertical_768x1024 768 1024 160 2048 4"
+  "LD_Vertical_1080x1920 1080 1920 240 4096 4"
   "LD_A6_1024x600    1024 600  160 1024 2 system-images;android-23;default;arm64-v8a"
   "LD_A10_1024x600   1024 600  160 2048 2 system-images;android-29;default;arm64-v8a"
 )
