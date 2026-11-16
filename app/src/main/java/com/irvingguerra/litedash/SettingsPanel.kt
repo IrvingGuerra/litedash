@@ -24,6 +24,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
@@ -90,7 +91,8 @@ fun SettingsPanel(
     onTires: () -> Unit = {},
 ) {
     val c = LocalColors.current
-    var section by rememberSaveable { mutableStateOf(start) }
+    // Si el inicio pide otra sección con Ajustes abiertos (p. ej. el aviso de la calibración), cambia a ella.
+    var section by rememberSaveable(start) { mutableStateOf(start) }
     BoxWithConstraints(
         Modifier
             .fillMaxSize()
@@ -109,28 +111,31 @@ fun SettingsPanel(
                 Spacer(Modifier.height(10.dp))
                 for (s in SettingsSection.entries) if (s.shown(d, section)) MenuEntry(s.icon(), stringResource(s.title), s == section, narrow) { section = s }
             }
-            Column(
-                Modifier.weight(1f).fillMaxHeight().verticalScroll(rememberScrollState()).padding(start = 8.dp, end = 24.dp, top = 20.dp, bottom = 24.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-            ) {
-                Label(stringResource(section.title), Typography.title.copy(fontSize = 30.sp), maxLines = 1)
-                when (section) {
-                    SettingsSection.APPEARANCE -> Appearance(d, revision, onEdit, onTemplates, onTires = { section = SettingsSection.TIRES })
-                    SettingsSection.CAR -> CarSettings(d)
-                    SettingsSection.APPS -> AppsSettings(d)
-                    SettingsSection.WHEEL -> {
-                        SettingsCard(help = stringResource(R.string.wheel_help)) { WheelSettings(d.wheel, d.prefs) }
-                        SettingsCard(stringResource(R.string.wheel_assigned)) { WheelAssigned(d.prefs) }
+            // Cada sección con su propio scroll: al cambiar de sección se empieza arriba.
+            key(section) {
+                Column(
+                    Modifier.weight(1f).fillMaxHeight().verticalScroll(rememberScrollState()).padding(start = 8.dp, end = 24.dp, top = 20.dp, bottom = 24.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                ) {
+                    Label(stringResource(section.title), Typography.title.copy(fontSize = 30.sp), maxLines = 1)
+                    when (section) {
+                        SettingsSection.APPEARANCE -> Appearance(d, revision, onEdit, onTemplates, onTires = { section = SettingsSection.TIRES })
+                        SettingsSection.CAR -> CarSettings(d)
+                        SettingsSection.APPS -> AppsSettings(d)
+                        SettingsSection.WHEEL -> {
+                            SettingsCard(help = stringResource(R.string.wheel_help)) { WheelSettings(d.wheel, d.prefs) }
+                            SettingsCard(stringResource(R.string.wheel_assigned)) { WheelAssigned(d.prefs) }
+                        }
+                        // Con el OBD apagado el escáner ni se crea.
+                        SettingsSection.WORKSHOP -> if (d.obdModule) Workshop(d, onTires)
+                        SettingsSection.TIRES -> TiresSettings(d)
+                        SettingsSection.MODULES -> Modules(d, revision, open = { section = it })
+                        SettingsSection.PHONE -> PhoneSettings(d, openMusic = {
+                            openMusicSettings()
+                            section = SettingsSection.APPS
+                        })
+                        SettingsSection.SYSTEM -> SystemSettings(d)
                     }
-                    // Con el OBD apagado el escáner ni se crea.
-                    SettingsSection.WORKSHOP -> if (d.obdModule) Workshop(d, onTires)
-                    SettingsSection.TIRES -> TiresSettings(d)
-                    SettingsSection.MODULES -> Modules(d, revision, open = { section = it })
-                    SettingsSection.PHONE -> PhoneSettings(d, openMusic = {
-                        openMusicSettings()
-                        section = SettingsSection.APPS
-                    })
-                    SettingsSection.SYSTEM -> SystemSettings(d)
                 }
             }
         }
@@ -185,7 +190,7 @@ private fun MenuEntry(icon: ImageVector, text: String, selected: Boolean, narrow
     }
 }
 
-/** Tarjeta de Ajustes: título, controles y el ícono de la sección grande y tenue a la derecha. */
+/** Tarjeta de Ajustes: título (opcional), controles y una ayuda abajo (opcional). */
 @Composable
 internal fun SettingsCard(
     title: String? = null,

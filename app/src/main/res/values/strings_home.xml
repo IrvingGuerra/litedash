@@ -10,4 +10,24 @@
     <string name="trip_average">Promedio</string>
     <string name="road_trip_distance">Distancia</string>
     <string name="trip_heading">Rumbo</string>
+    <!-- Puntos cardinales del rumbo, desde el norte y en el sentido del reloj -->
+    <string-array name="compass_points">
+        <item>N</item>
+        <item>NE</item>
+        <item>E</item>
+        <item>SE</item>
+        <item>S</item>
+        <item>SO</item>
+        <item>O</item>
+        <item>NO</item>
+    </string-array>
+    <string name="unit_km" translatable="false">km</string>
+    <string name="unit_mi" translatable="false">mi</string>
+    <!-- Un número con su unidad ("12.3 km") y dos datos en una línea ("Seguro · en 3 días") -->
+    <string name="value_with_unit">%1$s %2$s</string>
+    <string name="two_parts">%1$s · %2$s</string>
+    <!-- Clima: temperatura y máxima / mínima del día -->
+    <string name="weather_degrees">%1$d°</string>
+    <string name="weather_range">%1$d° / %2$d°</string>
+    <string name="health_vin" translatable="false">VIN %1$s</string>
 </resources>

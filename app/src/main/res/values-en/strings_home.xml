@@ -10,4 +10,21 @@
     <string name="trip_average">Average</string>
     <string name="road_trip_distance">Distance</string>
     <string name="trip_heading">Heading</string>
+    <!-- Compass points for the heading, from north, clockwise -->
+    <string-array name="compass_points">
+        <item>N</item>
+        <item>NE</item>
+        <item>E</item>
+        <item>SE</item>
+        <item>S</item>
+        <item>SW</item>
+        <item>W</item>
+        <item>NW</item>
+    </string-array>
+    <!-- A number with its unit ("12.3 km") and two pieces on one line ("Insurance · in 3 days") -->
+    <string name="value_with_unit">%1$s %2$s</string>
+    <string name="two_parts">%1$s · %2$s</string>
+    <!-- Weather: temperature and the day's high / low -->
+    <string name="weather_degrees">%1$d°</string>
+    <string name="weather_range">%1$d° / %2$d°</string>
 </resources>

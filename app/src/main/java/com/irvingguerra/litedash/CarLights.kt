@@ -45,14 +45,17 @@ data class LightsKey(val table: String, val name: String) {
         else -> Settings.System.getUriFor(name)
     }
 
-    fun read(context: Context): String? = runCatching {
+    // Desde Android 12 algunas claves de secure/global no se dejan leer (SecurityException): como si no existiera.
+    fun read(context: Context): String? = try {
         val r = context.contentResolver
         when (table) {
             "global" -> Settings.Global.getString(r, name)
             "secure" -> Settings.Secure.getString(r, name)
             else -> Settings.System.getString(r, name)
         }
-    }.getOrNull()
+    } catch (_: SecurityException) {
+        null
+    }
 
     companion object {
         fun fromStored(v: String?): LightsKey? {
@@ -88,10 +91,12 @@ internal fun snapshotSettings(context: Context): Map<String, String> {
     val tables = listOf("system" to Settings.System.CONTENT_URI, "global" to Settings.Global.CONTENT_URI, "secure" to Settings.Secure.CONTENT_URI)
     val all = LinkedHashMap<String, String>()
     for ((table, uri) in tables) {
-        runCatching {
+        // Una tabla que Android no deja leer se salta (el reporte cuenta cuántas filas dio cada una).
+        try {
             context.contentResolver.query(uri, arrayOf("name", "value"), null, null, null)?.use { c ->
                 while (c.moveToNext()) c.getString(0)?.let { all["$table/$it"] = c.getString(1) ?: "" }
             }
+        } catch (_: SecurityException) {
         }
     }
     return all
@@ -216,9 +221,12 @@ private fun UseSunButton(prefs: Preferences) {
  */
 internal fun lightsReport(context: Context): String {
     val sensor = context.getSystemService(SensorManager::class.java)?.getDefaultSensor(Sensor.TYPE_LIGHT)
+    val all = snapshotSettings(context)
     // Valores cortos: las luces son números.
-    val found = snapshotSettings(context).mapNotNull { (key, value) ->
+    val found = all.mapNotNull { (key, value) ->
         "$key=${value.take(24)}".takeIf { soundsLikeLights(key.substringAfter('/')) }
     }
-    return "Sensor de luz: ${sensor?.name ?: "no"}\nLuces: ${found.joinToString().ifEmpty { "—" }}"
+    // Cuántos ajustes deja leer Android por tabla (0 = negada o vacía): si son pocos, "Aprender luces" no ve los faros.
+    val rows = listOf("system", "global", "secure").joinToString { t -> "$t ${all.keys.count { it.startsWith("$t/") }}" }
+    return "Sensor de luz: ${sensor?.name ?: "no"}\nLuces: ${found.joinToString().ifEmpty { "—" }}\nAjustes leídos: $rows"
 }

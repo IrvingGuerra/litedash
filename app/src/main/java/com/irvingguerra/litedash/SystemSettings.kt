@@ -1,11 +1,14 @@
 // Ajustes → Sistema y Módulos: actualizaciones, Android, tu pantalla, módulos y permisos.
 package com.irvingguerra.litedash
 
+import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.provider.Settings
+import android.text.format.Formatter
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -30,6 +33,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -59,8 +63,10 @@ import com.irvingguerra.litedash.feature.car.CAR_ASPECT
 import com.irvingguerra.litedash.feature.car.CarStill
 import com.irvingguerra.litedash.feature.updater.Updater
 import com.irvingguerra.litedash.feature.updater.Version
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /** Pestañas de Sistema; Actualizaciones va primero (ahí abre el aviso de versión nueva). */
 internal enum class SystemTab(val title: Int) {
@@ -87,19 +93,24 @@ internal fun SystemSettings(d: Dependencies) {
     }
 }
 
-/** La pantalla en unas líneas, LiteDash Pro ([ProCard]) y "Enviar un reporte" ([SendReport]). */
+/**
+ * La pantalla en unas líneas, «Código de desarrollador» ([ProCard]) y "Enviar un reporte" ([SendReport]). Si el
+ * widget pidió el reporte de sonido, la tarjeta del reporte va primero (abajo no se vería en pantallas bajitas).
+ */
 @Composable
 private fun ScreenInfo(d: Dependencies) {
     val context = LocalContext.current
+    val reportFirst = remember { soundReportPending() }
+    if (reportFirst) SendReport(d)
     SettingsCard {
         val lines = remember { screenLines(context) }
         for (line in lines) Label(line, Typography.body, maxLines = 2)
     }
     ProCard(d.pro)
-    SendReport(d.music, d.pro, d.dashboard, d::obdIfCreated) { reportExtras(d) }
+    if (!reportFirst) SendReport(d)
 }
 
-/** LiteDash Pro en prueba: activarlo con un código o, si ya está, quitarlo de esta pantalla (solo lo local). */
+/** «Código de desarrollador»: activarlo con un código o, si ya está, quitarlo de esta pantalla (solo lo local). */
 @Composable
 private fun ProCard(pro: ProAccess) {
     val c = LocalColors.current
@@ -134,8 +145,8 @@ private fun ProCard(pro: ProAccess) {
                         checking = false
                     }
                 },
-                Modifier.graphicsLayer { alpha = if (idle) 1f else 0.45f },
                 primary = true,
+                enabled = idle,
             )
             (error ?: R.string.pro_expired.takeIf { pro.expired })?.let { Label(stringResource(it), Typography.small, c.danger) }
         }
@@ -158,7 +169,7 @@ private fun About(d: Dependencies) {
             }
             Column(Modifier.padding(22.dp).fillMaxWidth(if (pkg != null && wide) 0.56f else 1f), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Label("LiteDash ${BuildConfig.VERSION_NAME}", Typography.title.copy(fontSize = 30.sp), maxLines = 1)
-                Label(BuildConfig.CHANNEL, Typography.small, c.textMuted)
+                Label(stringResource(if (BuildConfig.CHANNEL == "play") R.string.channel_play else R.string.channel_github), Typography.small, c.textMuted)
                 if (BuildConfig.RELEASE_NOTES.isNotBlank()) {
                     Label(stringResource(R.string.release_notes), Typography.label, c.textMuted)
                     for (line in remember { releaseNotes() }) {
@@ -178,7 +189,7 @@ private fun About(d: Dependencies) {
  */
 @Composable
 internal fun Modules(d: Dependencies, revision: Int, open: (SettingsSection) -> Unit) {
-    val permissions = tabs(listOf(R.string.modules, R.string.tab_permissions), "modules") == 1
+    val permissions = tabs(listOf(R.string.modules, R.string.tab_permissions), MODULES_TABS) == 1
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         if (permissions) return@Column Permissions(d, revision)
         ModuleRow(Icons.engine, stringResource(R.string.module_obd), d.obdModule, { d.obdModule = it }) { open(SettingsSection.WORKSHOP) }
@@ -193,6 +204,9 @@ internal fun Modules(d: Dependencies, revision: Int, open: (SettingsSection) -> 
     }
 }
 
+/** Las pestañas de Módulos (Módulos 0, Permisos 1). */
+private const val MODULES_TABS = "modules"
+
 /**
  * Módulos → Permisos: prender los pide; apagar solo se puede en Ajustes de Android. [revision]
  * cambia al volver a la app: lo que se dio o quitó allá se nota al regresar.
@@ -202,9 +216,8 @@ private fun Permissions(d: Dependencies, revision: Int) {
     val context = LocalContext.current
     val notifications = remember(revision) { d.music.hasPermission() }
     val (location, askLocation) = rememberGpsPermission(d, revision)
-    ModuleRow(Icons.bell, stringResource(R.string.module_notifications), notifications, { on ->
-        if (on) d.music.requestPermission() else openAppSettings(context)
-    })
+    // El acceso a notificaciones no está en la información de la app: se da y se quita en su propia pantalla de Android.
+    ModuleRow(Icons.bell, stringResource(R.string.module_notifications), notifications, { d.music.requestPermission() })
     ModuleRow(Icons.location, stringResource(R.string.module_location), location, { on ->
         if (on) askLocation() else openAppSettings(context)
     })
@@ -219,33 +232,45 @@ private fun Permissions(d: Dependencies, revision: Int) {
 private fun AndroidSettings() {
     val c = LocalColors.current
     val context = LocalContext.current
-    val shortcuts = remember {
-        listOf(
-            R.string.sys_all to Settings.ACTION_SETTINGS,
-            R.string.sys_bluetooth to Settings.ACTION_BLUETOOTH_SETTINGS,
-            R.string.sys_wifi to Settings.ACTION_WIFI_SETTINGS,
-            R.string.sys_location to Settings.ACTION_LOCATION_SOURCE_SETTINGS,
-            R.string.sys_display to Settings.ACTION_DISPLAY_SETTINGS,
-            R.string.sys_sound to Settings.ACTION_SOUND_SETTINGS,
-            R.string.sys_apps to Settings.ACTION_APPLICATION_SETTINGS,
-            R.string.sys_date to Settings.ACTION_DATE_SETTINGS,
-            R.string.sys_language to Settings.ACTION_LOCALE_SETTINGS,
-            R.string.sys_home to Settings.ACTION_HOME_SETTINGS,
-        ).filter { (_, action) -> Intent(action).resolveActivity(context.packageManager) != null }
-    }
+    // Preguntar a Android cuáles abren es una consulta entre procesos: fuera del hilo principal.
+    val shortcuts by produceState<List<Pair<Int, String>>?>(null) { value = withContext(Dispatchers.IO) { systemShortcuts(context) } }
     SettingsCard(stringResource(R.string.android_settings), stringResource(R.string.android_settings_help)) {
+        val list = shortcuts ?: return@SettingsCard
         FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            for ((name, action) in shortcuts) {
+            for ((name, action) in list) {
                 Button(stringResource(name), { openSystemScreen(context, Intent(action)) }, primary = action == Settings.ACTION_SETTINGS)
             }
         }
-        if (shortcuts.isEmpty()) Label(stringResource(R.string.android_settings_none), Typography.small, c.textMuted)
+        if (list.isEmpty()) Label(stringResource(R.string.android_settings_none), Typography.small, c.textMuted)
     }
 }
 
+/** Los atajos que esta pantalla sí abre. */
+private fun systemShortcuts(context: Context): List<Pair<Int, String>> =
+    listOf(
+        R.string.sys_all to Settings.ACTION_SETTINGS,
+        R.string.sys_bluetooth to Settings.ACTION_BLUETOOTH_SETTINGS,
+        R.string.sys_wifi to Settings.ACTION_WIFI_SETTINGS,
+        R.string.sys_location to Settings.ACTION_LOCATION_SOURCE_SETTINGS,
+        R.string.sys_display to Settings.ACTION_DISPLAY_SETTINGS,
+        R.string.sys_sound to Settings.ACTION_SOUND_SETTINGS,
+        R.string.apps to Settings.ACTION_APPLICATION_SETTINGS,
+        R.string.sys_date to Settings.ACTION_DATE_SETTINGS,
+        R.string.sys_language to Settings.ACTION_LOCALE_SETTINGS,
+        R.string.sys_home to Settings.ACTION_HOME_SETTINGS,
+    ).filter { (_, action) -> Intent(action).resolveActivity(context.packageManager) != null }
+
 /** Abre una pantalla de los ajustes de Android; falso si la pantalla no la tiene (o no deja abrirla). */
-internal fun openSystemScreen(context: Context, intent: Intent): Boolean =
-    runCatching { context.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }.isSuccess
+internal fun openSystemScreen(context: Context, intent: Intent): Boolean = try {
+    context.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+    true
+} catch (e: ActivityNotFoundException) {
+    Log.w("SystemSettings", "sin pantalla para ${intent.action}", e)
+    false
+} catch (e: SecurityException) {
+    Log.w("SystemSettings", "no deja abrir ${intent.action}", e)
+    false
+}
 
 /** Los permisos de LiteDash en Ajustes de Android (ubicación, red local…). */
 internal fun openAppSettings(context: Context) {
@@ -254,7 +279,7 @@ internal fun openAppSettings(context: Context) {
 }
 
 /** Notas de una versión (sección del CHANGELOG) en renglones: títulos ("### Agregado") y viñetas sin formato. */
-private fun releaseNotes(notes: String = BuildConfig.RELEASE_NOTES): List<String> {
+internal fun releaseNotes(notes: String = BuildConfig.RELEASE_NOTES): List<String> {
     val items = mutableListOf<String>()
     for (raw in notes.lines()) {
         val line = raw.trim()
@@ -268,13 +293,13 @@ private fun releaseNotes(notes: String = BuildConfig.RELEASE_NOTES): List<String
     return items.map { it.replace("**", "") }
 }
 
-/** Lo básico de la pantalla: equipo, Android, resolución y memoria (sin etiquetas: se entienden solos). */
+/** Lo básico de la pantalla, sin jerga: equipo, Android, resolución y memoria (lo técnico va solo en el reporte). */
 private fun screenLines(context: Context): List<String> {
     val m = context.resources.displayMetrics
     return listOf(
-        "${Build.MANUFACTURER} ${Build.MODEL} (${Build.DEVICE}) · ${Build.HARDWARE}",
-        "Android ${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT}) · ${Build.SUPPORTED_ABIS.joinToString()}",
-        "${m.widthPixels}×${m.heightPixels} px · ${m.densityDpi} dpi · ${memoryMb(context)} MB",
+        "${Build.MANUFACTURER} ${Build.MODEL}",
+        "Android ${Build.VERSION.RELEASE}",
+        "${m.widthPixels}×${m.heightPixels} · ${Formatter.formatShortFileSize(context, memoryBytes(context))}",
     )
 }
 

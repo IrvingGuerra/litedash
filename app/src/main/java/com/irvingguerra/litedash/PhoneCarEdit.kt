@@ -218,11 +218,11 @@ internal class PhoneCarEdit(
         link.expectPackage(null)
         link.sendCarJob(id, kind, INSTALL)
         val failed = { e: InstallError -> fail(j, reason(e)) }
-        // Si no empieza (ya se baja otra cosa), el repositorio borra el archivo.
-        val started = if (kind == CAR || p == null) {
-            cars.install(j.entry, file, failed) { installed(j) }
-        } else {
+        // Si no empieza (ya se baja otra cosa), el repositorio borra el archivo. Las capas ya llevan su auto ([p]).
+        val started = if (kind == FINISH && p != null) {
             cars.installFinish(p, j.entry, file, failed) { finished(j) }
+        } else {
+            cars.install(j.entry, file, failed) { installed(j) }
         }
         if (!started) fail(j, R.string.phone_job_busy)
     }

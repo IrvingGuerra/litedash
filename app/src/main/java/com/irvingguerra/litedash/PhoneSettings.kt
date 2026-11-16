@@ -1,12 +1,10 @@
 // Ajustes → Celular: revisar la red, el QR para vincular LiteDash Connect (donde vive la cuenta) y, ya vinculado,
-// cómo van los datos (el enlace) y el sonido (el Bluetooth).
+// cómo van el enlace y el sonido (el Bluetooth).
 package com.irvingguerra.litedash
 
 import android.content.Context
 import android.content.Intent
 import android.provider.Settings
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -23,11 +21,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -85,6 +79,8 @@ internal fun PhoneSettings(d: Dependencies, openMusic: () -> Unit) {
             link.paired -> Linked(d, openMusic)
             !link.localNetwork -> NoNetwork()
             pairing != null -> PairingCode(pairing)
+            // Con red y el código aún sin hacer (un instante al abrir).
+            else -> StatusTitle(Mark.INFO, stringResource(R.string.phone_waiting))
         }
     }
 }
@@ -112,18 +108,11 @@ private fun StatusTitle(mark: Mark, text: String) {
 @Composable
 private fun AskLocalNetwork(link: PhoneLink) {
     val c = LocalColors.current
-    val context = LocalContext.current
-    var denied by rememberSaveable { mutableStateOf(false) }
-    val ask = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { ok ->
-        denied = !ok
-        link.permissionChanged()
-    }
+    val ask = rememberPermissionAsk(LOCAL_NETWORK_PERMISSION) { link.permissionChanged() }
     StatusTitle(Mark.WARN, stringResource(R.string.phone_permission))
     Label(stringResource(R.string.phone_permission_body), Typography.body, c.textMuted)
     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        Button(stringResource(R.string.local_network_allow), { ask.launch(LOCAL_NETWORK_PERMISSION) }, primary = true)
-        // Negado para siempre, Android ya no pregunta: se da en sus ajustes.
-        if (denied) Button(stringResource(R.string.local_network_settings), { openAppSettings(context) })
+        PermissionButtons(ask, stringResource(R.string.local_network_allow))
     }
 }
 
@@ -249,7 +238,7 @@ private fun Linked(d: Dependencies, openMusic: () -> Unit) {
     }
     Column {
         Divider()
-        DataRow(link)
+        LinkRow(link)
         Divider()
         SoundRow(d, openMusic)
         Divider()
@@ -276,16 +265,16 @@ private fun phoneLine(link: PhoneLink): String? {
 
 /** Enlace: la conexión con LiteDash Connect. */
 @Composable
-private fun DataRow(link: PhoneLink) {
+private fun LinkRow(link: PhoneLink) {
     val context = LocalContext.current
-    val title = stringResource(R.string.phone_data)
+    val title = stringResource(R.string.phone_link)
     when {
         link.connected && link.musicBlocked -> CheckRow(Mark.WARN, title, stringResource(R.string.phone_music_blocked))
-        link.connected -> CheckRow(Mark.OK, title, stringResource(R.string.phone_data_ok))
-        !link.localNetwork -> CheckRow(Mark.WARN, title, stringResource(R.string.phone_data_no_network)) {
+        link.connected -> CheckRow(Mark.OK, title, stringResource(R.string.phone_link_ok))
+        !link.localNetwork -> CheckRow(Mark.WARN, title, stringResource(R.string.phone_link_no_network)) {
             Button(stringResource(R.string.phone_open_wifi), { openWifi(context) })
         }
-        else -> CheckRow(Mark.WARN, title, stringResource(R.string.phone_data_open_app))
+        else -> CheckRow(Mark.WARN, title, stringResource(R.string.phone_link_open_app))
     }
 }
 
@@ -303,7 +292,10 @@ private fun SoundRow(d: Dependencies, openMusic: () -> Unit) {
         Button(stringResource(R.string.phone_connect_bt), { if (!openStereoBluetooth(d, context)) openMusic() })
     }
     when (d.phone.phoneSound) {
-        PhoneSound.BLUETOOTH -> CheckRow(Mark.OK, title, stringResource(R.string.phone_sound_ok, seen ?: d.phone.phoneName?.ifBlank { null } ?: "✓"))
+        PhoneSound.BLUETOOTH -> {
+            val name = seen ?: d.phone.phoneName?.ifBlank { null }
+            CheckRow(Mark.OK, title, name?.let { stringResource(R.string.phone_sound_ok, it) } ?: stringResource(R.string.phone_sound_ok_plain))
+        }
         // Android Auto o un cable llevan el audio: no hace falta el Bluetooth.
         PhoneSound.CAR -> CheckRow(Mark.OK, title, stringResource(R.string.phone_sound_car))
         PhoneSound.WIRED -> CheckRow(Mark.OK, title, stringResource(R.string.phone_sound_wired))

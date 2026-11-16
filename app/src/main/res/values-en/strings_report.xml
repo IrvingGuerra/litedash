@@ -2,13 +2,13 @@
 <resources>
     <string name="report_title">Send a report</string>
     <string name="report_help">Tell us what\'s wrong. It\'s sent with technical data from your head unit (no personal data).</string>
-    <string name="report_what">What\'s the problem with?</string>
+    <string name="report_what">What has a problem?</string>
     <string name="report_which">Which one?</string>
     <string name="report_problem">What happens?</string>
     <string name="report_workshop">Workshop (OBD)</string>
     <string name="report_projection">Android Auto / apps</string>
     <string name="report_lights">Day and night / headlights</string>
-    <string name="report_music_usb">USB (LiteDash player)</string>
+    <string name="report_music_usb">Files (LiteDash player)</string>
     <string name="report_music_bt">Bluetooth (head unit\'s)</string>
     <string name="report_music_app">Your music app (Spotify, YouTube Music…)</string>
     <string name="report_radio_fm">Head unit FM</string>

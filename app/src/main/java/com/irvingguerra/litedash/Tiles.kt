@@ -1,10 +1,10 @@
 package com.irvingguerra.litedash
 
+import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.text.format.DateFormat
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -30,6 +30,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
@@ -76,10 +77,7 @@ import java.util.Date
 import java.util.TimeZone
 import kotlinx.coroutines.delay
 
-/**
- * Lo que la app sabe de cada tipo de pieza: nombre, tamaño mínimo y con qué tamaño se agrega, en celdas
- * finas (de 48 dp: el doble de las de antes).
- */
+/** Lo que la app sabe de cada tipo de pieza: nombre, tamaño mínimo y con qué tamaño se agrega, en celdas de 48 dp. */
 data class TileSpec(val type: String, val name: Int, val limits: SizeLimits, val initialSize: Pair<Int, Int>, val detail: Int? = null)
 
 val TileSpecs = listOf(
@@ -169,7 +167,7 @@ fun rememberClock(): Clock {
     // La zona se lee al formatear: muchas pantallas la ponen por red o GPS después de arrancar.
     val zone = TimeZone.getDefault()
     listOfNotNull(time, marker, date).forEach { it.timeZone = zone }
-    return Clock(time.format(now), marker?.format(now), date.format(now).replaceFirstChar { it.uppercase() })
+    return Clock(time.format(now), marker?.format(now), date.format(now).replaceFirstChar { it.uppercase(language) })
 }
 
 /** La hora en grande con la marca de 12 h en chico a un lado (si la hay). */
@@ -196,14 +194,16 @@ fun ClockTile(driverName: String? = null, weather: WeatherRepository? = null, da
     val clock = rememberClock()
     val hello = greeting(driverName)
     // La fecha y el saludo son opciones del widget (sin los dos, solo la hora).
-    val line = listOfNotNull(hello, clock.date.takeIf { date }).joinToString(" · ")
+    val shownDate = clock.date.takeIf { date }
+    val line = if (hello != null && shownDate != null) stringResource(R.string.two_parts, hello, shownDate) else hello ?: shownDate.orEmpty()
+    // Solo si ya hay temperatura vigente (con permiso y ya bajada): si no, ni esquina ni píldora vacía.
+    val current = if (weather != null && weather.active) rememberWeather(weather) else null
     val fontScale = LocalDensity.current.fontScale
     BoxWithConstraints(Modifier.fillMaxSize().padding(8.dp), contentAlignment = Alignment.CenterStart) {
         // El reloj crece con la pieza: en 1 fila es discreto, en 2 o más es protagonista; lo limita lo que
         // quepa a lo ancho (con la a.m./p.m.) y a lo alto (con la fecha y el clima), para que nunca se corte.
         val tall = maxHeight > 120.dp
-        // Solo si ya hay clima que mostrar (con permiso y ya bajado): si no, ni esquina ni píldora vacía.
-        val hasWeather = weather != null && weather.active && weather.weather != null
+        val hasWeather = current?.temperature != null
         val extra = if (clock.marker != null) 1.6f else 0.3f
         val grow = fontScale.coerceAtLeast(1f)
         val dateHeight = if (line.isNotEmpty()) CLOCK_DATE_HEIGHT * grow else 0f
@@ -223,13 +223,13 @@ fun ClockTile(driverName: String? = null, weather: WeatherRepository? = null, da
         var size = minOf(fits, room(withWeather && tall) / CLOCK_LINE / fontScale).coerceAtLeast(CLOCK_MIN_FONT / fontScale)
         // …y a lo ancho con la a.m./p.m. a su tamaño real (con letra chica pesa más de lo que supone fitFont).
         while (size * fontScale > CLOCK_MIN_FONT && width(size * fontScale) > timeWidth.value) size -= 1f
-        if (withWeather && !tall) Box(Modifier.align(Alignment.TopEnd)) { WeatherChip(weather) }
+        if (withWeather && !tall) Box(Modifier.align(Alignment.TopEnd)) { WeatherChip(current!!) }
         Column {
             BigTime(clock, Typography.clock.copy(fontSize = size.sp))
             if (line.isNotEmpty()) Label(line, Typography.body, c.textMuted, maxLines = 1)
             if (withWeather && tall) Box(
                 Modifier.padding(top = 10.dp).clip(RoundedCornerShape(50)).background(c.surfaceHigh).padding(horizontal = 12.dp, vertical = 4.dp),
-            ) { WeatherChip(weather) }
+            ) { WeatherChip(current!!) }
         }
     }
 }
@@ -419,16 +419,13 @@ private fun Places(app: App?, home: String?, work: String?, onPlace: (String) ->
 @Composable
 private fun MapArt(modifier: Modifier) {
     val c = LocalColors.current
-    Canvas(modifier.background(c.surfaceHigh)) {
+    // La ruta y su trazo se arman una vez por tamaño, no en cada dibujado.
+    Spacer(modifier.background(c.surfaceHigh).drawWithCache {
         val w = size.width
         val h = size.height
         val road = (minOf(w, h) * 0.08f).coerceIn(4f, 14f)
         val main = c.textMuted.copy(alpha = 0.22f)
         val minor = c.textMuted.copy(alpha = 0.12f)
-        drawLine(minor, Offset(0f, h * 0.30f), Offset(w, h * 0.22f), road * 0.6f)
-        drawLine(main, Offset(0f, h * 0.70f), Offset(w, h * 0.64f), road)
-        drawLine(main, Offset(w * 0.30f, 0f), Offset(w * 0.34f, h), road)
-        drawLine(minor, Offset(w * 0.74f, 0f), Offset(w * 0.70f, h), road * 0.6f)
         // La ruta: sube por una calle, da vuelta y llega al pin.
         val corner = Offset(w * 0.335f, h * 0.67f)
         val pin = Offset(w * 0.71f, h * 0.36f)
@@ -440,15 +437,22 @@ private fun MapArt(modifier: Modifier) {
             quadraticTo(w * 0.705f, h * 0.645f, w * 0.705f, h * 0.645f - road)
             lineTo(pin.x, pin.y)
         }
-        drawPath(route, c.accent, style = Stroke(road * 0.8f, cap = StrokeCap.Round, join = StrokeJoin.Round))
-        drawCircle(c.accent, road * 1.6f, pin)
-        drawCircle(c.surfaceHigh, road * 0.65f, pin)
-    }
+        val stroke = Stroke(road * 0.8f, cap = StrokeCap.Round, join = StrokeJoin.Round)
+        onDrawBehind {
+            drawLine(minor, Offset(0f, h * 0.30f), Offset(w, h * 0.22f), road * 0.6f)
+            drawLine(main, Offset(0f, h * 0.70f), Offset(w, h * 0.64f), road)
+            drawLine(main, Offset(w * 0.30f, 0f), Offset(w * 0.34f, h), road)
+            drawLine(minor, Offset(w * 0.74f, 0f), Offset(w * 0.70f, h), road * 0.6f)
+            drawPath(route, c.accent, style = stroke)
+            drawCircle(c.accent, road * 1.6f, pin)
+            drawCircle(c.surfaceHigh, road * 0.65f, pin)
+        }
+    })
 }
 
 /** Flecha del color de la interfaz, distancia y calle de la siguiente vuelta. */
 @Composable
-internal fun Turn(instruction: TurnInstruction, large: Boolean) {
+private fun Turn(instruction: TurnInstruction, large: Boolean) {
     val c = LocalColors.current
     Row(verticalAlignment = Alignment.CenterVertically) {
         TurnArrow(instruction, if (large) 72.dp else 48.dp, Radius.card)
@@ -495,9 +499,16 @@ private fun PlacePill(text: String, background: Color, onClick: () -> Unit) {
     }
 }
 
+/** Abre [intent]; false si no hay app que lo atienda (pantallas sin marcador o sin mapas). */
+private fun Context.tryStart(intent: Intent): Boolean = try {
+    startActivity(intent)
+    true
+} catch (e: ActivityNotFoundException) {
+    false
+}
+
 fun openDialer(context: Context) {
-    val intent = Intent(Intent.ACTION_DIAL).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-    runCatching { context.startActivity(intent) }
+    context.tryStart(Intent(Intent.ACTION_DIAL).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
 }
 
 /** Navegación directa a [address]: Waze o Maps si son la app elegida; si no, la que atienda "geo:". */
@@ -509,17 +520,14 @@ fun navigateTo(context: Context, app: App?, address: String) {
         else -> Intent(Intent.ACTION_VIEW, "geo:0,0?q=$q".toUri()).apply { app?.let { setPackage(it.pkg) } }
     }.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
     if (app != null && SplitScreen.open(context, intent, app.pkg)) return
-    runCatching { context.startActivity(intent) }.onFailure {
-        // La app elegida no entendió la dirección: que la abra cualquiera que sepa de mapas.
-        runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, "geo:0,0?q=$q".toUri()).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
-    }
+    // La app elegida no entendió la dirección: que la abra cualquiera que sepa de mapas.
+    if (!context.tryStart(intent)) context.tryStart(Intent(Intent.ACTION_VIEW, "geo:0,0?q=$q".toUri()).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
 }
 
 /** Abre la navegación: la app elegida, o la que haya instalada, o lo que atienda "geo:". */
 fun openNavigation(context: Context, repo: AppRepository, app: App?) {
     if (app != null) return repo.open(context, app)
-    val intent = Intent(Intent.ACTION_VIEW, "geo:0,0?q=".toUri()).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-    runCatching { context.startActivity(intent) }
+    context.tryStart(Intent(Intent.ACTION_VIEW, "geo:0,0?q=".toUri()).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
 }
 
 /** Agrega una pieza de [type] con su tamaño inicial en el primer hueco; false si ya no cabe. */
@@ -533,7 +541,7 @@ fun DashboardState.addTile(type: String, data: String = ""): Boolean {
 internal fun TileHeader(title: String, status: String, color: Color) {
     val c = LocalColors.current
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        Label(title.uppercase(), Typography.label, c.textMuted, maxLines = 1)
+        Label(title.uppercase(currentLocale()), Typography.label, c.textMuted, maxLines = 1)
         // El estado cede: se corta con "…" antes que encimarse con el nombre.
         Row(Modifier.weight(1f).padding(start = 10.dp), horizontalArrangement = Arrangement.End, verticalAlignment = Alignment.CenterVertically) {
             Box(Modifier.size(7.dp).clip(CircleShape).background(color))

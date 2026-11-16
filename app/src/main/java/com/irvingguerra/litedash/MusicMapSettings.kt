@@ -65,12 +65,11 @@ fun MusicSettings(d: Dependencies) {
     FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         for (app in musicApps) Button(app.name, { d.music.choose(app.pkg) }, primary = chosen == app.pkg)
         Button(stringResource(R.string.music_other_app), { other = !other }, primary = other)
-        if (chosen != null) Button(stringResource(R.string.source_remove), { d.music.choose(null) })
+        if (chosen != null) Button(stringResource(R.string.remove), { d.music.choose(null) })
     }
     if (other) AppSearch(apps, chosen) { d.music.choose(it); other = false }
     Label(stringResource(R.string.music_help), Typography.small, LocalColors.current.textMuted)
 }
-
 
 /**
  * Ajustes → Apps → Música: el método de música, uno solo a la vez (Irving, 2026-11-08): Archivos (el
@@ -110,7 +109,7 @@ private fun SoundCalibrationCard(d: Dependencies) {
     SettingsCard(stringResource(R.string.sound_calibration), stringResource(R.string.sound_calibration_help)) {
         for (piece in pieces) {
             val name = stringResource(if (piece == SoundPiece.MUSIC) MusicR.string.source_bluetooth else MusicR.string.radio)
-            Label("$name: ${recipeLabel(piece, d.music.soundRecipe(piece))}", Typography.body)
+            Label(stringResource(R.string.sound_recipe_line, name, recipeLabel(piece, d.music.soundRecipe(piece))), Typography.body)
         }
         if (pieces.any { d.music.soundRecipe(it) != null }) Button(stringResource(R.string.sound_calibrate_again), d.music::recalibrate)
     }
@@ -140,7 +139,7 @@ fun RadioSettings(d: Dependencies) {
         )
     }
     if (internet) {
-        SettingsCard(stringResource(R.string.module_radio), stringResource(R.string.radio_internet_help)) {}
+        SettingsCard(stringResource(R.string.radio_internet_title), stringResource(R.string.radio_internet_help)) {}
     } else {
         SettingsCard(stringResource(R.string.radio_fm_app), stringResource(R.string.radio_fm_app_help)) {
             RadioAppRow(d, apps, choosing) { choosing = it }
@@ -155,16 +154,18 @@ fun RadioSettings(d: Dependencies) {
 @Composable
 private fun RadioAppRow(d: Dependencies, apps: List<App>, choosing: Boolean, onChoosing: (Boolean) -> Unit) {
     val c = LocalColors.current
-    val name = stringResource(MusicR.string.source_radio)
     val pkg = d.music.sourceApps[SourceKind.RADIO]
     Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        Label(name, Typography.body, modifier = Modifier.weight(1f))
-        Label(pkg?.let { p -> apps.firstOrNull { it.pkg == p }?.name ?: d.music.appName(p) } ?: stringResource(R.string.source_unlinked), Typography.small, c.textMuted, 1)
+        // El nombre toma lo que sobra (y se corta él): los botones nunca se aprietan.
+        Label(
+            pkg?.let { p -> apps.firstOrNull { it.pkg == p }?.name ?: d.music.appName(p) } ?: stringResource(R.string.source_unlinked),
+            Typography.body, c.textMuted, 1, Modifier.weight(1f),
+        )
         Button(stringResource(R.string.source_choose), { onChoosing(!choosing) }, primary = choosing)
-        if (pkg != null) Button(stringResource(R.string.source_remove), { d.music.setSource(SourceKind.RADIO, null) })
+        if (pkg != null) Button(stringResource(R.string.remove), { d.music.setSource(SourceKind.RADIO, null) })
     }
     if (choosing) {
-        Label(stringResource(R.string.source_choose_for, name), Typography.small, c.textMuted)
+        Label(stringResource(R.string.source_choose_for), Typography.small, c.textMuted)
         AppSearch(apps, pkg) { d.music.setSource(SourceKind.RADIO, it); onChoosing(false) }
         Spacer(Modifier.height(6.dp))
     }
@@ -175,7 +176,7 @@ private fun RadioAppRow(d: Dependencies, apps: List<App>, choosing: Boolean, onC
  * la otra se calla. Al pasar a internet, desde Android 13 pide el permiso de avisos.
  */
 @Composable
-fun rememberInternetRadioToggle(d: Dependencies): (Boolean) -> Unit {
+private fun rememberInternetRadioToggle(d: Dependencies): (Boolean) -> Unit {
     val ask = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {}
     return { on ->
         d.music.radioInternet = on
@@ -184,16 +185,20 @@ fun rememberInternetRadioToggle(d: Dependencies): (Boolean) -> Unit {
     }
 }
 
+/** A lo más tantas apps encontradas en el buscador. */
+private const val SEARCH_MAX = 12
 
 /** Buscador de apps instaladas: escribir y tocar una la elige ([selected] va resaltada). */
 @Composable
 internal fun AppSearch(apps: List<App>, selected: String?, onPick: (String) -> Unit) {
     var query by remember { mutableStateOf("") }
+    // Los nombres se normalizan una vez, no en cada tecla.
+    val names = remember(apps) { apps.map { it to normalize(it.name) } }
     TextInput(query, { query = it }, stringResource(R.string.search_app), Modifier.fillMaxWidth(), icon = true)
     val q = normalize(query.trim())
     if (q.isNotEmpty()) {
         FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            for (app in apps.filter { q in normalize(it.name) }.take(12)) {
+            for (app in names.filter { q in it.second }.take(SEARCH_MAX).map { it.first }) {
                 Button(app.name, { onPick(app.pkg) }, primary = selected == app.pkg)
             }
         }

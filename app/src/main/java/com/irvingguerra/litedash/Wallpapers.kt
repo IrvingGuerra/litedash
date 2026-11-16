@@ -2,14 +2,21 @@
 package com.irvingguerra.litedash
 
 import android.content.Context
+import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.util.Log
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import com.irvingguerra.litedash.core.ui.Https
 import java.io.File
+import java.io.IOException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import org.json.JSONException
 import org.json.JSONObject
+
+/** Etiqueta del registro de Android para lo que falla con las imágenes y los fondos. */
+internal const val LOG_TAG = "LiteDash"
 
 /** Dónde viven: `index.json` (la lista) y por cada fondo `<id>.webp` (1920×1080) y `<id>-thumb.webp` (320×180). */
 private const val WALLPAPERS_URL = "https://litedash.dev/wallpapers/"
@@ -27,17 +34,33 @@ suspend fun loadWallpapers(context: Context): List<WallpaperChoice>? = withConte
     val file = File(folder(context), "index.json")
     val fresh = file.exists() && System.currentTimeMillis() - file.lastModified() < LIST_MAX_AGE_MS
     // Una lista ilegible (p. ej. la página de un wifi con registro) no reemplaza a la buena.
-    (if (fresh) null else runCatching { download(context, "index.json", file, ::readList) }.getOrNull()) ?: readList(file)
+    val downloaded = if (fresh) null else try {
+        download(context, "index.json", file, ::readList)
+    } catch (e: IOException) {
+        Log.w(LOG_TAG, "No se pudo bajar la lista de fondos", e)
+        null
+    }
+    downloaded ?: readList(file)
 }
 
 /** La lista guardada en [file]; null si no existe o no se puede leer. */
-private fun readList(file: File): List<WallpaperChoice>? = runCatching {
-    val list = JSONObject(file.readText()).getJSONArray("wallpapers")
+private fun readList(file: File): List<WallpaperChoice>? = try {
+    if (file.exists()) parseWallpapers(file.readText()) else null
+} catch (e: IOException) {
+    Log.w(LOG_TAG, "No se pudo leer la lista de fondos", e)
+    null
+}
+
+/** Los fondos de un `index.json`: solo los que tienen un id seguro ([SAFE_ID]); null si el texto no es esa lista. */
+internal fun parseWallpapers(text: String): List<WallpaperChoice>? = try {
+    val list = JSONObject(text).getJSONArray("wallpapers")
     (0 until list.length()).map { i ->
         val o = list.getJSONObject(i)
         WallpaperChoice(o.getString("id"), o.optString("credit"))
     }.filter { it.id.matches(SAFE_ID) }
-}.getOrNull()
+} catch (e: JSONException) {
+    null
+}
 
 /** Las medidas de la imagen en [file]; null si Android no la puede leer. */
 private fun readImage(file: File): BitmapFactory.Options? =
@@ -46,30 +69,55 @@ private fun readImage(file: File): BitmapFactory.Options? =
 /** Solo letras, números y guiones: el id va en la URL y en el nombre del archivo. */
 private val SAFE_ID = Regex("[a-z0-9-]{1,40}")
 
-/** La miniatura de [id] (se baja una vez y se queda en caché); null sin internet. */
+/** La miniatura de [id] (se baja una vez y se queda en caché), en RGB_565: son fotos sin transparencia. null sin internet. */
 suspend fun wallpaperThumb(context: Context, id: String): ImageBitmap? = withContext(Dispatchers.IO) {
     val file = File(folder(context), "$id-thumb.webp")
-    if (!file.exists() && runCatching { download(context, "$id-thumb.webp", file, ::readImage) }.isFailure) return@withContext null
-    runCatching { BitmapFactory.decodeFile(file.path)?.asImageBitmap() }.getOrNull()
+    if (!file.exists()) {
+        try {
+            download(context, "$id-thumb.webp", file, ::readImage)
+        } catch (e: IOException) {
+            Log.w(LOG_TAG, "No se pudo bajar la miniatura $id", e)
+            return@withContext null
+        }
+    }
+    BitmapFactory.decodeFile(file.path, BitmapFactory.Options().apply { inPreferredConfig = Bitmap.Config.RGB_565 })?.asImageBitmap()
 }
 
 /** Baja el fondo [id] a [target] (lo reemplaza solo si llegó completo y se puede leer). false si no se pudo. */
 suspend fun downloadWallpaper(context: Context, id: String, target: File): Boolean = withContext(Dispatchers.IO) {
-    runCatching { download(context, "$id.webp", target, ::readImage) }.isSuccess
+    try {
+        download(context, "$id.webp", target, ::readImage)
+        true
+    } catch (e: IOException) {
+        Log.w(LOG_TAG, "No se pudo bajar el fondo $id", e)
+        false
+    }
+}
+
+/** Baja [name] a [target] solo si [read] lo puede leer (devuelve lo leído); si no, lanza y [target] no cambia. */
+private fun <T : Any> download(context: Context, name: String, target: File, read: (File) -> T?): T = replaceFile(target) { temp ->
+    val connection = try {
+        Https.get(context, WALLPAPERS_URL + name)
+    } catch (e: IllegalStateException) {
+        // Un 4xx (p. ej. un fondo que se quitó de la lista): Https lo avisa así.
+        throw IOException("$name: ${e.message}", e)
+    }
+    connection.inputStream.use { input -> temp.outputStream().use { input.copyTo(it) } }
+    read(temp) ?: throw IOException("unreadable $name")
 }
 
 /**
- * Baja [name] a [target]: primero a un temporal y luego se mueve, así una descarga a medias nunca queda como la
- * buena. Solo si [read] lo puede leer (devuelve lo leído).
+ * Reemplaza [target] con lo que [fill] escriba en un temporal a su lado: solo si [fill] termina se pone en su lugar,
+ * así algo a medias (descarga cortada, disco lleno) nunca queda como el bueno. Lanza si no se pudo.
  */
-private fun <T : Any> download(context: Context, name: String, target: File, read: (File) -> T?): T {
+internal fun <T> replaceFile(target: File, fill: (File) -> T): T {
     val temp = File(target.parentFile, "${target.name}.part")
-    Https.get(context, WALLPAPERS_URL + name).inputStream.use { input -> temp.outputStream().use { input.copyTo(it) } }
-    val result = read(temp)
-    if (result == null) {
+    temp.parentFile?.mkdirs()
+    try {
+        val result = fill(temp)
+        if (!temp.renameTo(target)) throw IOException("rename $temp")
+        return result
+    } finally {
         temp.delete()
-        error("unreadable")
     }
-    if (!temp.renameTo(target)) error("rename")
-    return result
 }

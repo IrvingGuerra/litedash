@@ -1,8 +1,5 @@
 package com.irvingguerra.litedash
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -16,9 +13,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -29,7 +24,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
@@ -109,7 +103,7 @@ fun CustomizeGaugePanel(d: Dependencies, tileId: String, close: () -> Unit, onPi
                             )
                         } else if (speedometer) {
                             val max = look.speedMax(units.miles).toFloat()
-                            SpeedGaugeCard(demo * max, units.miles, "GPS", look, d.prefs.carColor, speedFront(d, look))
+                            SpeedGaugeCard(demo * max, units.miles, "GPS", look, d.prefs.carColor, rememberSpeedFront(d, look))
                         } else if (spec != null) {
                             SpecGaugeCard(spec, spec.min + (spec.max - spec.min) * demo, units, look, d.prefs.carColor)
                         }
@@ -163,15 +157,16 @@ fun CustomizeGaugePanel(d: Dependencies, tileId: String, close: () -> Unit, onPi
                     }
                     Label(stringResource(R.string.gauge_color), Typography.label, c.textMuted)
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        for (color in GaugeColor.entries) Swatch(color, d.prefs.carColor, color == look.color) { set(look.copy(color = color)) }
+                        for (color in GaugeColor.entries) Swatch(color == look.color, swatchFill(c.ramp(color, d.prefs.carColor), color)) { set(look.copy(color = color)) }
                     }
                     Label(stringResource(look.color.title), Typography.small, c.textMuted)
                     if (speedometer) {
                         Label(stringResource(R.string.gauge_max), Typography.label, c.textMuted)
                         val unit = speedUnit(units.miles)
+                        val locale = currentLocale()
                         val choices = speedMaxOptions(units.miles)
                         Segmented(
-                            choices.sorted().map { it to "$it $unit" },
+                            choices.sorted().map { it to stringResource(R.string.value_with_unit, String.format(locale, "%d", it), unit) },
                             look.speedMax(units.miles),
                             // Se guarda en km/h (al cambiar a mph se ve su pareja); el de fábrica no se guarda.
                             { set(look.copy(max = speedMaxToStore(it, units.miles))) },
@@ -208,15 +203,17 @@ fun CustomizeGaugePanel(d: Dependencies, tileId: String, close: () -> Unit, onPi
                                     .filter { it.type == TileTypes.SPEEDOMETER || it.type == TileTypes.GAUGE || it.type == TileTypes.ROAD }
                                     .associate {
                                         // Lo del frente solo va en los velocímetros y cada uno conserva su imagen (nunca dos
-                                        // comparten un PNG). Desde un medidor o la carretera, su frente tampoco cambia.
+                                        // comparten un PNG): uno sin imagen propia no queda con "Imagen" y nada que mostrar.
+                                        // Desde un medidor o la carretera, su frente tampoco cambia.
                                         val current = GaugeLook.parse(it.data)
                                         val speedo = it.type == TileTypes.SPEEDOMETER
                                         val own = look.copy(
                                             max = current.max,
                                             front = when {
                                                 !speedo -> GaugeFront.NONE
-                                                tile.type == TileTypes.SPEEDOMETER -> look.front
-                                                else -> current.front
+                                                tile.type != TileTypes.SPEEDOMETER -> current.front
+                                                look.front == GaugeFront.IMAGE && current.image.isEmpty() -> GaugeFront.NONE
+                                                else -> look.front
                                             },
                                             image = if (speedo) current.image else "",
                                         )
@@ -246,24 +243,9 @@ fun CustomizeGaugePanel(d: Dependencies, tileId: String, close: () -> Unit, onPi
     }
 }
 
-/** Un círculo de color para elegir; el dinámico va en degradado y el del auto, de su color. */
-@Composable
-private fun Swatch(color: GaugeColor, car: Color, selected: Boolean, onClick: () -> Unit) {
-    val c = LocalColors.current
-    val ramp = c.ramp(color, car)
-    val brush = when {
-        color == GaugeColor.DYNAMIC -> Brush.sweepGradient(ramp + ramp.first())
-        ramp.size == 1 -> SolidColor(ramp[0])
-        else -> Brush.linearGradient(ramp)
-    }
-    Box(
-        Modifier
-            .size(48.dp)
-            .clip(CircleShape)
-            .border(if (selected) 3.dp else 1.dp, if (selected) c.text else c.line, CircleShape)
-            .clickable(onClick = onClick)
-            .padding(6.dp)
-            .clip(CircleShape)
-            .background(brush),
-    )
+/** El relleno del círculo de [color] con su [ramp]: el dinámico va en degradado alrededor y uno solo, liso. */
+private fun swatchFill(ramp: List<Color>, color: GaugeColor): Brush = when {
+    color == GaugeColor.DYNAMIC -> Brush.sweepGradient(ramp + ramp.first())
+    ramp.size == 1 -> SolidColor(ramp[0])
+    else -> Brush.linearGradient(ramp)
 }

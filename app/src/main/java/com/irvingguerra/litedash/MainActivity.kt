@@ -96,6 +96,18 @@ class MainActivity : ComponentActivity() {
     override fun onKeyUp(keyCode: Int, event: KeyEvent): Boolean =
         dependencies.wheel.onKey(event, dependencies.music) || super.onKeyUp(keyCode, event)
 
+    // Ventanas de LiteDash a la vista (puede haber dos: una como inicio y otra como app). El enlace con el celular
+    // busca seguido solo si alguna se ve; avisarle no lo crea (sin celular vinculado no existe hasta que se pide).
+    override fun onStart() {
+        super.onStart()
+        if (visibleWindows++ == 0) (application as LiteDashApp).phoneIfCreated()?.visible(true)
+    }
+
+    override fun onStop() {
+        super.onStop()
+        if (--visibleWindows == 0) (application as LiteDashApp).phoneIfCreated()?.visible(false)
+    }
+
     override fun onResume() {
         super.onResume()
         inFront = true
@@ -118,6 +130,12 @@ class MainActivity : ComponentActivity() {
     }
 
     companion object {
+        /** Cuántas [MainActivity] se ven ahora (onStart/onStop; solo en el hilo principal). */
+        private var visibleWindows = 0
+
+        /** Alguna ventana de LiteDash se ve. */
+        val anyVisible get() = visibleWindows > 0
+
         /** LiteDash está al frente (para no traerlo de nuevo si ya lo está). */
         @Volatile var inFront = false
             private set
@@ -185,7 +203,7 @@ internal fun ComponentActivity.LiteDashContent(d: Dependencies, revision: Int, c
 
 /** ¿Tema oscuro? Según lo elegido en Ajustes; [night] es la cuenta del sol o del sensor de luz. */
 @Composable
-internal fun isDark(d: Dependencies, night: Boolean): Boolean = when (d.prefs.theme) {
+private fun isDark(d: Dependencies, night: Boolean): Boolean = when (d.prefs.theme) {
     ThemeMode.DARK -> true
     ThemeMode.LIGHT -> false
     ThemeMode.SYSTEM -> isSystemInDarkTheme()

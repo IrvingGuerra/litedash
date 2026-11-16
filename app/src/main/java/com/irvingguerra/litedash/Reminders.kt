@@ -17,6 +17,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -40,6 +41,7 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import org.json.JSONArray
 import org.json.JSONObject
+import kotlinx.coroutines.delay
 
 /** Trámites y cuidados del auto; [months] es cada cuánto se repite al marcarlo como hecho (0 = no se repite). */
 enum class ReminderType(val stored: String, val title: Int, val months: Long) {
@@ -61,7 +63,7 @@ class ReminderRepository(context: Context) {
         private set
 
     /** Los que vencen en los próximos [DAYS_BEFORE] días o ya vencieron, el más próximo primero. */
-    fun due(today: Day = Day.today()) = all.filter { !it.date.isAfter(today.plusDays(DAYS_BEFORE)) }.sortedBy { it.date }
+    fun due(today: Day) = all.filter { !it.date.isAfter(today.plusDays(DAYS_BEFORE)) }.sortedBy { it.date }
 
     fun add(type: ReminderType, date: Day) = save(all + Reminder(System.currentTimeMillis(), type, date))
 
@@ -107,16 +109,40 @@ internal fun nextDue(date: Day, months: Long, today: Day): Day {
     return date.plusMonths(months * periods)
 }
 
+/**
+ * Casillas vacías antes del día 1 de [firstOfMonth] en un calendario cuya semana empieza en [firstWeekday]
+ * (como [Calendar.SUNDAY] = 1 … [Calendar.SATURDAY] = 7). 1970-01-01 fue jueves (5).
+ */
+internal fun leadingBlanks(firstOfMonth: Day, firstWeekday: Int): Int =
+    ((firstOfMonth.epochDay + 4).mod(7L).toInt() + 1 - firstWeekday).mod(7)
+
 @Composable
 private fun formatDate(date: Day): String {
     val locale = currentLocale()
     return DateFormat.getDateInstance(DateFormat.LONG, locale).format(date.toDate())
 }
 
-/** "en 3 días", "hoy", "venció hace 2 días". */
+/**
+ * Hoy, como estado que cambia a medianoche y al volver a la app (con la pantalla dormida la espera no
+ * avanza): el inicio de un launcher siempre abierto puede no volver a componerse en días.
+ */
 @Composable
-private fun whenText(date: Day): String {
-    val days = Day.today().daysUntil(date).toInt()
+private fun rememberToday(): Day {
+    val starts = rememberStarts()
+    val today by produceState(Day.today(), starts) {
+        while (true) {
+            value = Day.today()
+            val now = System.currentTimeMillis()
+            delay(nextMidnight(now) - now)
+        }
+    }
+    return today
+}
+
+/** "en 3 días", "hoy", "venció hace 2 días" contando desde [today]. */
+@Composable
+private fun whenText(date: Day, today: Day): String {
+    val days = today.daysUntil(date).toInt()
     return when {
         days == 0 -> stringResource(R.string.reminder_today)
         days > 0 -> pluralStringResource(R.plurals.reminder_in_days, days, days)
@@ -127,8 +153,9 @@ private fun whenText(date: Day): String {
 /** Aviso en el inicio del recordatorio más próximo; "Hecho" lo pasa a la siguiente fecha. */
 @Composable
 fun ReminderBanner(repo: ReminderRepository) {
-    val r = repo.due().firstOrNull() ?: return
-    Notice("${stringResource(r.type.title)} · ${whenText(r.date)}", Icons.bell) {
+    val today = rememberToday()
+    val r = repo.due(today).firstOrNull() ?: return
+    Notice(stringResource(R.string.two_parts, stringResource(r.type.title), whenText(r.date, today)), Icons.bell) {
         Button(stringResource(R.string.reminder_done), { repo.done(r) }, primary = true)
     }
 }
@@ -138,12 +165,13 @@ fun ReminderBanner(repo: ReminderRepository) {
 fun ReminderSettings(repo: ReminderRepository) {
     val c = LocalColors.current
     var picking by remember { mutableStateOf<ReminderType?>(null) }
+    val today = rememberToday()
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         for (r in repo.all) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Column(Modifier.weight(1f)) {
                     Label(stringResource(r.type.title), Typography.subtitle, maxLines = 1)
-                    Label("${formatDate(r.date)} · ${whenText(r.date)}", Typography.small, c.textMuted, maxLines = 1)
+                    Label(stringResource(R.string.two_parts, formatDate(r.date), whenText(r.date, today)), Typography.small, c.textMuted, maxLines = 1)
                 }
                 Button(stringResource(R.string.remove), { repo.remove(r) })
             }
@@ -169,7 +197,10 @@ private fun DatePicker(onPick: (Day) -> Unit) {
     val locale = currentLocale()
     val today = remember { Day.today() }
     var month by remember { mutableStateOf(Day(today.year, today.month, 1)) }
-    val title = remember(month, locale) { SimpleDateFormat("LLLL yyyy", locale).format(month.toDate()).replaceFirstChar { it.uppercase(locale) } }
+    // El patrón del idioma: hay idiomas que ponen el año primero.
+    val title = remember(month, locale) {
+        SimpleDateFormat(android.text.format.DateFormat.getBestDateTimePattern(locale, "LLLLyyyy"), locale).format(month.toDate()).replaceFirstChar { it.uppercase(locale) }
+    }
     // Primer día de la semana según la región (domingo en México, lunes en España).
     val firstWeekday = remember(locale) { Calendar.getInstance(locale).firstDayOfWeek }
     val weekdays = remember(locale, firstWeekday) {
@@ -178,8 +209,7 @@ private fun DatePicker(onPick: (Day) -> Unit) {
         (0 until 7).map { i -> narrow.format(Day.ofEpochDay(3L + (firstWeekday - 1 + i) % 7).toDate()) }
     }
     val length = (month.plusMonths(1).epochDay - month.epochDay).toInt()
-    // Casillas vacías antes del día 1 (1970-01-01 fue jueves = 5 en Calendar).
-    val lead = ((month.epochDay + 4).mod(7L).toInt() + 1 - firstWeekday).mod(7)
+    val lead = leadingBlanks(month, firstWeekday)
     Column(Modifier.widthIn(max = 420.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             IconButton(Icons.chevron, { month = month.plusMonths(-1) }, Modifier.graphicsLayer(scaleX = -1f), size = 48.dp)

@@ -54,6 +54,8 @@ import com.irvingguerra.litedash.feature.obd.Zone
 import com.irvingguerra.litedash.feature.obd.engineAlert
 import com.irvingguerra.litedash.feature.obd.healthOf
 import com.irvingguerra.litedash.feature.obd.issues
+import java.text.DecimalFormat
+import java.text.NumberFormat
 import kotlin.math.roundToInt
 
 /** Las partes que siempre se listan; ruedas y carrocería solo cuando algo las señala. */
@@ -158,11 +160,12 @@ private fun Summary(d: Dependencies, health: List<SystemHealth>, report: EngineR
         else -> stringResource(R.string.health_unknown) to c.textMuted
     }
     Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-        Label(stringResource(R.string.health_title).uppercase(), Typography.label, c.textMuted, maxLines = 1)
+        Label(stringResource(R.string.health_title).uppercase(currentLocale()), Typography.label, c.textMuted, maxLines = 1)
         Label(text, Typography.title.copy(fontSize = if (connected) 30.sp else 20.sp), color, maxLines = 2)
         if (connected) {
             val obd = d.obd
-            val line = listOfNotNull(obd.target?.name, obd.adapter, report?.vin?.let { "VIN $it" }).joinToString(" · ")
+            val vin = report?.vin?.let { stringResource(R.string.health_vin, it) }
+            val line = listOfNotNull(obd.target?.name, obd.adapter, vin).joinToString(" · ")
             if (line.isNotEmpty()) Label(line, Typography.small, c.textMuted, maxLines = 1)
         }
     }
@@ -216,7 +219,7 @@ private fun SystemTile(d: Dependencies, h: SystemHealth, report: EngineReport?, 
     val readiness = report?.readiness
     val detail = when {
         h.codes.isNotEmpty() -> h.codes.joinToString(" · ")
-        h.pendingCodes.isNotEmpty() -> h.pendingCodes.joinToString(" · ") + " · " + stringResource(R.string.health_pending)
+        h.pendingCodes.isNotEmpty() -> stringResource(R.string.two_parts, h.pendingCodes.joinToString(" · "), stringResource(R.string.health_pending))
         h.level == HealthLevel.WARN && h.alert == null -> stringResource(R.string.health_mil)
         h.alert != null && value != null && signal != null -> sensorText(signal, value, units, locale)
         h.zone == Zone.EXHAUST && readiness != null ->
@@ -327,7 +330,7 @@ fun HealthTile(d: Dependencies, car: CarPackage?, showCar: Boolean = true, onCli
                 Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
                     HealthRing(score, scoreColor, Modifier.size(smallRing))
                     Column(Modifier.padding(start = 12.dp).weight(1f)) {
-                        Label(stringResource(R.string.workshop).uppercase(), Typography.label, c.textMuted, maxLines = 1)
+                        Label(stringResource(R.string.workshop).uppercase(currentLocale()), Typography.label, c.textMuted, maxLines = 1)
                         Label(status, Typography.small, statusColor, maxLines = 1)
                     }
                 }
@@ -387,12 +390,19 @@ private fun HealthRing(score: Float?, color: Color, modifier: Modifier) {
             drawArc(track, -90f, 360f, false, Offset(inset, inset), box, style = Stroke(stroke))
             if (score != null && score > 0f) drawArc(color, -90f, 360f * score, false, Offset(inset, inset), box, style = Stroke(stroke, cap = StrokeCap.Round))
         }
-        val text = score?.let { (it * 100).roundToInt().toString() } ?: "—"
+        val locale = currentLocale()
+        // Con los dígitos del idioma, y el "%" donde lo pone (antes en turco, después en casi todos).
+        val text = score?.let { String.format(locale, "%d", (it * 100).roundToInt()) } ?: "—"
+        val percentFirst = remember(locale) { (NumberFormat.getPercentInstance(locale) as? DecimalFormat)?.positivePrefix?.contains('%') == true }
         // Lo que cabe dentro del aro: "100" con su "%" chico.
         val size = fitFont("100", maxWidth * 0.66f, maxHeight, 0.34f, min = 10f, max = 40f, extraChars = 0.6f)
-        Row(verticalAlignment = Alignment.Bottom) {
-            Label(text, Typography.title.copy(fontSize = size.sp), if (score == null) c.textMuted else c.text, maxLines = 1)
+        val percent = @Composable {
             if (score != null) Label("%", Typography.title.copy(fontSize = (size * 0.5f).sp), c.textMuted, maxLines = 1, modifier = Modifier.padding(bottom = (size * 0.1f).dp))
+        }
+        Row(verticalAlignment = Alignment.Bottom) {
+            if (percentFirst) percent()
+            Label(text, Typography.title.copy(fontSize = size.sp), if (score == null) c.textMuted else c.text, maxLines = 1)
+            if (!percentFirst) percent()
         }
     }
 }
@@ -411,14 +421,14 @@ private fun HealthStats(d: Dependencies, report: EngineReport?, connected: Boole
     val items = listOf(
         Triple(stringResource(R.string.gauge_voltage), voltage?.let { sensorText(Signal.VOLTAGE, it, units, locale) } ?: "—", LocalColors.current.text),
         Triple(stringResource(R.string.zone_engine), coolant?.let { sensorText(Signal.COOLANT, it, units, locale) } ?: "—", LocalColors.current.text),
-        Triple(stringResource(R.string.health_codes_title), codes?.toString() ?: "—", codesColor),
+        Triple(stringResource(R.string.health_codes_title), codes?.let { String.format(locale, "%d", it) } ?: "—", codesColor),
     )
     BoxWithConstraints(Modifier.fillMaxWidth()) {
         val column = maxWidth / 3
         Row(Modifier.fillMaxWidth()) {
             for ((name, value, color) in items) Column(Modifier.weight(1f)) {
                 // Angosto: el nombre en letra chica normal (en mayúsculas se enciman).
-                Label(if (column < 80.dp) name else name.uppercase(), if (column < 80.dp) Typography.small else Typography.label, LocalColors.current.textMuted, maxLines = 1)
+                Label(if (column < 80.dp) name else name.uppercase(locale), if (column < 80.dp) Typography.small else Typography.label, LocalColors.current.textMuted, maxLines = 1)
                 val size = fitFont(value, column - 6.dp, 40.dp, 0.6f, min = 12f, max = 22f, extraChars = 0f)
                 Label(value, Typography.subtitle.copy(fontSize = size.sp), color, maxLines = 1)
             }

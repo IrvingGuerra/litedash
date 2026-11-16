@@ -1,12 +1,13 @@
 package com.irvingguerra.litedash
 
+import android.content.Context
+import android.net.Uri
 import android.os.SystemClock
+import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.awaitEachGesture
-import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -38,7 +39,6 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -49,6 +49,7 @@ import com.irvingguerra.litedash.core.ui.LocalColors
 import com.irvingguerra.litedash.core.ui.SwitchRow
 import com.irvingguerra.litedash.core.ui.Typography
 import com.irvingguerra.litedash.core.vehicle.Signal
+import com.irvingguerra.litedash.core.vehicle.Source
 import com.irvingguerra.litedash.core.vehicle.watch
 import com.irvingguerra.litedash.feature.obd.AccelState
 import com.irvingguerra.litedash.feature.obd.AccelTimer
@@ -63,6 +64,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.io.IOException
 import java.text.DateFormat
 import java.util.Date
 import kotlin.math.roundToInt
@@ -89,11 +92,15 @@ internal fun readableSignals(d: Dependencies): List<String> =
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun LiveCharts(d: Dependencies) {
+internal fun LiveCharts(d: Dependencies) {
     val c = LocalColors.current
     val signals = readableSignals(d)
     val chosen = remember { mutableStateListOf<String>() }
-    LaunchedEffect(signals) { if (chosen.isEmpty()) chosen += listOf(Signal.RPM, Signal.SPEED).filter { it in signals } }
+    // Otro auto puede no dar las de antes: se sueltan (si no, se seguirían pidiendo al bus).
+    LaunchedEffect(signals) {
+        chosen.retainAll(signals)
+        if (chosen.isEmpty()) chosen += listOf(Signal.RPM, Signal.SPEED).filter { it in signals }
+    }
     // Dónde se está tocando la gráfica (0–1 del ancho); null = sin tocar.
     var touch by remember { mutableStateOf<Float?>(null) }
     SettingsCard(stringResource(R.string.obd_charts), stringResource(R.string.obd_charts_help)) {
@@ -124,27 +131,8 @@ fun LiveCharts(d: Dependencies) {
         }
         val grid = c.line
         val cursor = c.textMuted
-        Canvas(
-            Modifier
-                .fillMaxWidth()
-                .height(220.dp)
-                .pointerInput(Unit) {
-                    awaitEachGesture {
-                        val down = awaitFirstDown()
-                        touch = (down.position.x / size.width).coerceIn(0f, 1f)
-                        while (true) {
-                            val change = awaitPointerEvent().changes.firstOrNull() ?: break
-                            if (!change.pressed) break
-                            touch = (change.position.x / size.width).coerceIn(0f, 1f)
-                        }
-                        touch = null
-                    }
-                },
-        ) {
-            for (k in 0..4) {
-                val y = size.height * k / 4
-                drawLine(grid, Offset(0f, y), Offset(size.width, y), strokeWidth = 1.dp.toPx())
-            }
+        Canvas(Modifier.fillMaxWidth().height(220.dp).chartTouch { touch = it }) {
+            chartGrid(grid)
             val at = touch
             for ((i, pair) in series.withIndex()) {
                 val points = pair.second
@@ -155,9 +143,9 @@ fun LiveCharts(d: Dependencies) {
                 fun yOf(v: Float) = size.height * (1 - (v - lo) / (hi - lo)) * 0.9f + size.height * 0.05f
                 drawPath(seriesPath(points, size.width, SERIES_POINTS, ::yOf), colors[i], style = Stroke(2.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round))
                 val v = at?.let { pointAt(points, it) } ?: continue
-                drawCircle(colors[i], 5.dp.toPx(), Offset(size.width * at, yOf(v)))
+                chartDot(Offset(size.width * at, yOf(v)), colors[i])
             }
-            if (at != null) drawLine(cursor, Offset(size.width * at, 0f), Offset(size.width * at, size.height), strokeWidth = 1.dp.toPx())
+            if (at != null) chartCursor(size.width * at, cursor)
         }
         // Primero la gráfica (que se vea sin bajar) y luego qué datos mostrar.
         FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -172,15 +160,18 @@ fun LiveCharts(d: Dependencies) {
     }
 }
 
-/** El valor que había en [fraction] del ancho de la gráfica (null si ahí todavía no hay datos). */
-private fun pointAt(points: List<Float>, fraction: Float): Float? {
-    val k = (fraction * (SERIES_POINTS - 1)).roundToInt() - (SERIES_POINTS - points.size)
+/**
+ * El valor que había en [fraction] del ancho de la gráfica (null si ahí todavía no hay datos): lo más nuevo va a
+ * la derecha y caben [capacity] puntos.
+ */
+internal fun pointAt(points: List<Float>, fraction: Float, capacity: Int = SERIES_POINTS): Float? {
+    val k = (fraction * (capacity - 1)).roundToInt() - (capacity - points.size)
     return points.getOrNull(k)
 }
 
 /** Cronómetro de 0 a 100 km/h (o 0 a 60 mph) con la velocidad del OBD o del GPS. */
 @Composable
-fun AccelTimerCard(d: Dependencies) {
+internal fun AccelTimerCard(d: Dependencies) {
     val c = LocalColors.current
     val units = d.prefs.units
     val target = if (units.miles) 60f * KM_PER_MILE else 100f
@@ -218,8 +209,13 @@ fun AccelTimerCard(d: Dependencies) {
             Typography.subtitle, maxLines = 2,
         )
         val speedText = speed?.let { sensorText(Signal.SPEED, it, units, locale) } ?: "—"
-        val source = d.bus.source(Signal.SPEED)?.name ?: ""
-        Label("$speedText · $source", Typography.body, c.textMuted, maxLines = 1)
+        val source = when (d.bus.source(Signal.SPEED)) {
+            Source.GPS -> R.string.speed_from_gps
+            Source.OBD -> R.string.speed_from_obd
+            Source.CAN -> R.string.speed_from_can
+            else -> null
+        }
+        Label(source?.let { stringResource(it, speedText) } ?: speedText, Typography.body, c.textMuted, maxLines = 1)
         if (d.prefs.bestAccel > 0f) Label(stringResource(R.string.accel_best, String.format(locale, "%.2f s", d.prefs.bestAccel)), Typography.body, c.accent)
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             Button(stringResource(R.string.accel_reset), { timer.reset(); state = timer.state })
@@ -230,18 +226,19 @@ fun AccelTimerCard(d: Dependencies) {
 
 /** Ajustes → Taller → Viajes: guardar cada viaje, la lista y exportarla. */
 @Composable
-fun TripsCard(d: Dependencies) {
+internal fun TripsCard(d: Dependencies) {
     val c = LocalColors.current
     val context = LocalContext.current
     val store = remember { TripStore(context) }
     // null mientras se lee el archivo (para no mostrar "sin viajes" un instante).
     val loaded by produceState<List<TripSummary>?>(null, d.prefs.tripLog, tripsRevision.intValue) { value = store.all() }
     val scope = rememberCoroutineScope()
+    // Si no se pudo escribir el archivo, se dice.
+    var exportFailed by remember { mutableStateOf(false) }
     val export = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("text/csv")) { uri ->
         uri ?: return@rememberLauncherForActivityResult
-        scope.launch(Dispatchers.IO) {
-            val text = store.csv()
-            runCatching { context.contentResolver.openOutputStream(uri)?.use { it.write(text.toByteArray()) } }
+        scope.launch {
+            exportFailed = !withContext(Dispatchers.IO) { writeCsv(context, uri, store.csv()) }
         }
     }
     val locale = currentLocale()
@@ -254,21 +251,33 @@ fun TripsCard(d: Dependencies) {
             return@SettingsCard
         }
         Button(stringResource(R.string.trips_export), { export.launch("litedash-trips.csv") }, primary = true)
+        if (exportFailed) Label(stringResource(R.string.trips_export_failed), Typography.small, c.danger)
         val dates = remember(locale) { DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT, locale) }
         for (t in trips.take(30)) TripRow(t, dates, units, locale)
     }
 }
 
+/** Escribe [text] en el archivo que eligió el usuario; falso si no se pudo (se anota). */
+private fun writeCsv(context: Context, uri: Uri, text: String): Boolean = try {
+    context.contentResolver.openOutputStream(uri)?.use { it.write(text.toByteArray()) } != null
+} catch (e: IOException) {
+    Log.w("Trips", "no se pudo exportar", e)
+    false
+} catch (e: SecurityException) {
+    Log.w("Trips", "no se pudo exportar", e)
+    false
+}
+
 @Composable
 private fun TripRow(t: TripSummary, dates: DateFormat, units: UnitChoice, locale: java.util.Locale) {
     val c = LocalColors.current
-    val km = if (units.miles) String.format(locale, "%.1f mi", t.km.toMiles(true)) else String.format(locale, "%.1f km", t.km)
+    val km = String.format(locale, "%.1f", if (units.miles) t.km.toMiles(true) else t.km) + " " + stringResource(if (units.miles) R.string.unit_mi else R.string.unit_km)
     val minutes = t.seconds / 60
-    val time = String.format(locale, "%d:%02d h", minutes / 60, minutes % 60)
+    val time = stringResource(R.string.trip_hours, String.format(locale, "%d:%02d", minutes / 60, minutes % 60))
     val extras = buildList {
         add(stringResource(R.string.trip_avg, sensorText(Signal.SPEED, t.avgKmh, units, locale)))
         add(stringResource(R.string.trip_max, sensorText(Signal.SPEED, t.maxKmh, units, locale)))
-        if (t.maxRpm > 0f) add(String.format(locale, "%.0f rpm", t.maxRpm))
+        if (t.maxRpm > 0f) add(String.format(locale, "%.0f", t.maxRpm) + " " + stringResource(R.string.unit_rpm))
         t.maxCoolant?.let { add(sensorText(Signal.COOLANT, it, units, locale)) }
         t.kmPerLiter?.let { add(sensorText(Signal.CONSUMPTION, it, units, locale)) }
     }

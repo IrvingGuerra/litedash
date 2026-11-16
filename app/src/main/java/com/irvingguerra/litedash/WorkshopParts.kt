@@ -8,6 +8,8 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -41,6 +43,7 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -129,27 +132,26 @@ internal fun seriesPath(points: List<Float>, width: Float, capacity: Int, y: (Fl
 
 /** Un punto de problema sobre el auto desde arriba: dónde (fracciones de la caja), su color y si late. */
 @Immutable
-internal class ProblemMark(val x: Float, val y: Float, val color: Color, val pulsing: Boolean)
+internal data class ProblemMark(val x: Float, val y: Float, val color: Color, val pulsing: Boolean)
 
 /** El halo suave de un punto de problema de radio [r] en [at] (ver [problemHalo]). */
-internal fun haloBrush(at: Offset, r: Float, color: Color) =
+private fun haloBrush(at: Offset, r: Float, color: Color) =
     Brush.radialGradient(listOf(color.copy(alpha = 0.45f), Color.Transparent), at, r * 3f)
 
 /**
- * Un punto de problema sobre el auto desde arriba, igual en el Taller y en Llantas: halo suave,
- * el punto y, con [pulse] (0–1), un anillo que crece y se desvanece. [halo] se puede pasar ya
- * armado (para no crear un degradado en cada cuadro).
+ * Un punto de problema sobre el auto desde arriba: halo suave ([halo], armado una vez), el punto y,
+ * con [pulse] (0–1), un anillo que crece y se desvanece.
  */
-internal fun DrawScope.problemHalo(at: Offset, r: Float, color: Color, pulse: Float? = null, halo: Brush = haloBrush(at, r, color)) {
+private fun DrawScope.problemHalo(at: Offset, r: Float, color: Color, pulse: Float?, halo: Brush) {
     drawCircle(halo, r * 3f, at)
     if (pulse != null) drawCircle(color.copy(alpha = (1f - pulse) * 0.6f), r * (1f + pulse * 2.2f), at, style = Stroke(r * 0.22f))
     drawCircle(color, r * 0.55f, at)
 }
 
 /**
- * Los puntos de problema del Taller sobre el auto desde arriba ([problemHalo], de [radius] del
- * ancho). Los halos se arman una vez por tamaño y el latido se lee solo al dibujar; sin puntos
- * que latan no corre nada.
+ * Los puntos de problema sobre el auto desde arriba, igual en el Taller y en Llantas ([problemHalo],
+ * de [radius] del ancho). Los halos se arman solo si cambian los puntos o el tamaño (no con cada
+ * lectura) y el latido se lee solo al dibujar; sin puntos que latan no corre nada.
  */
 @Composable
 internal fun ProblemMarks(marks: List<ProblemMark>, modifier: Modifier, radius: Float = 0.06f) {
@@ -157,8 +159,8 @@ internal fun ProblemMarks(marks: List<ProblemMark>, modifier: Modifier, radius: 
     val pulse = if (marks.any { it.pulsing }) {
         rememberInfiniteTransition(label = "problem").animateFloat(0f, 1f, infiniteRepeatable(tween(1600, easing = LinearEasing), RepeatMode.Restart), label = "pulse")
     } else null
-    Spacer(
-        modifier.drawWithCache {
+    val draw = remember(marks, radius, pulse) {
+        Modifier.drawWithCache {
             val r = size.width * radius
             val placed = marks.map { m ->
                 val at = Offset(size.width * m.x, size.height * m.y)
@@ -167,8 +169,45 @@ internal fun ProblemMarks(marks: List<ProblemMark>, modifier: Modifier, radius: 
             onDrawBehind {
                 for ((m, at, halo) in placed) problemHalo(at, r, m.color, pulse?.value?.takeIf { m.pulsing }, halo)
             }
-        },
-    )
+        }
+    }
+    Spacer(modifier.then(draw))
+}
+
+// ---- Las gráficas (Taller y Llantas) ----
+
+/**
+ * Tocar o arrastrar una gráfica: [onTouch] recibe dónde va el dedo (0–1 del ancho) y null al soltar.
+ */
+internal fun Modifier.chartTouch(onTouch: (Float?) -> Unit) = pointerInput(Unit) {
+    awaitEachGesture {
+        val down = awaitFirstDown()
+        onTouch((down.position.x / size.width).coerceIn(0f, 1f))
+        while (true) {
+            val change = awaitPointerEvent().changes.firstOrNull() ?: break
+            if (!change.pressed) break
+            onTouch((change.position.x / size.width).coerceIn(0f, 1f))
+        }
+        onTouch(null)
+    }
+}
+
+/** Las cinco líneas de fondo de una gráfica. */
+internal fun DrawScope.chartGrid(color: Color) {
+    for (k in 0..4) {
+        val y = size.height * k / 4
+        drawLine(color, Offset(0f, y), Offset(size.width, y), strokeWidth = 1.dp.toPx())
+    }
+}
+
+/** La raya donde va el dedo, en [x]. */
+internal fun DrawScope.chartCursor(x: Float, color: Color) {
+    drawLine(color, Offset(x, 0f), Offset(x, size.height), strokeWidth = 1.dp.toPx())
+}
+
+/** El punto de una serie donde va el dedo. */
+internal fun DrawScope.chartDot(at: Offset, color: Color) {
+    drawCircle(color, 5.dp.toPx(), at)
 }
 
 /**

@@ -76,6 +76,7 @@ fun ColorPicker(
     }
 }
 
+/** Un círculo de color para elegir (el color del auto, de la interfaz o de un medidor): el elegido con aro del acento. */
 @Composable
 internal fun Swatch(selected: Boolean, fill: Brush, modifier: Modifier = Modifier, onClick: () -> Unit) {
     val c = LocalColors.current
@@ -84,10 +85,10 @@ internal fun Swatch(selected: Boolean, fill: Brush, modifier: Modifier = Modifie
             .size(56.dp)
             .clip(CircleShape)
             .border(3.dp, if (selected) c.accent else c.line, CircleShape)
+            .clickable(onClick = onClick)
             .padding(6.dp)
             .clip(CircleShape)
-            .background(fill)
-            .clickable(onClick = onClick),
+            .background(fill),
     )
 }
 

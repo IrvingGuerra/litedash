@@ -31,14 +31,10 @@ class BootReceiver : BroadcastReceiver() {
         val action = intent.action ?: return
         if (action !in BootLaunch.ACTIONS) return
         val app = context.applicationContext
-        if (!app.getSharedPreferences(PrefKeys.FILE, Context.MODE_PRIVATE).getBoolean(PrefKeys.OPEN_ON_BOOT, false)) return
+        if (!BootLaunch.enabled(app)) return
         val log = app.getSharedPreferences(BootLaunch.LOG, Context.MODE_PRIVATE)
-        // Algunas marcas mandan varios avisos seguidos al encender: se abre una sola vez. Se mide con el
-        // tiempo desde el arranque, no con la hora: muchas pantallas no tienen pila de reloj y prenden en
-        // 1970 o 2015 hasta tener red. Si el sello es mayor que el tiempo actual, hubo reinicio.
         val up = SystemClock.elapsedRealtime()
-        val last = log.getLong(KEY_UPTIME, -1L)
-        if (last in 0..up && up - last < DEBOUNCE_MS) return
+        if (repeated(log.getLong(KEY_UPTIME, -1L), up)) return
         // El sello va antes de esperar: los avisos que llegan juntos en esos segundos ya no pasan.
         log.edit { putLong(KEY_UPTIME, up) }
         val pending = goAsync()
@@ -52,6 +48,13 @@ class BootReceiver : BroadcastReceiver() {
     }
 
     companion object {
+        /**
+         * Algunas marcas mandan varios avisos seguidos al encender: se abre una sola vez. Se mide con el
+         * tiempo desde el arranque ([up]), no con la hora: muchas pantallas no tienen pila de reloj y prenden
+         * en 1970 o 2015 hasta tener red. Sello mayor que [up] = hubo reinicio; -1 = nunca.
+         */
+        internal fun repeated(last: Long, up: Long) = last in 0..up && up - last < DEBOUNCE_MS
+
         private const val DELAY_MS = 3_000L
         private const val DEBOUNCE_MS = 30_000L
         private const val KEY_UPTIME = "opened_uptime"
@@ -65,6 +68,7 @@ object BootLaunch {
     /** Lo último que pasó al encender (para los reportes). */
     internal const val LOG = "boot"
 
+    /** Lo mismo que el `<intent-filter>` de `.BootReceiver` en el manifiesto: cambiar los dos juntos. */
     val ACTIONS = setOf(
         Intent.ACTION_BOOT_COMPLETED,
         "android.intent.action.QUICKBOOT_POWERON", "com.htc.intent.action.QUICKBOOT_POWERON", // encendido rápido
@@ -73,6 +77,10 @@ object BootLaunch {
         "com.glsx.boot.ACCON",                                                                 // GLSX
         "com.cayboy.action.ACC_ON", "com.carboy.action.ACC_ON",                                // Microntek/HCT
     )
+
+    /** La opción "Abrir LiteDash al encender", leída del disco (el receptor y el arranque corren sin [Preferences]). */
+    fun enabled(context: Context): Boolean =
+        context.getSharedPreferences(PrefKeys.FILE, Context.MODE_PRIVATE).getBoolean(PrefKeys.OPEN_ON_BOOT, false)
 
     /** Desde Android 10, abrirse sola necesita "Mostrar sobre otras apps". */
     fun allowed(context: Context): Boolean =
@@ -91,7 +99,7 @@ object BootLaunch {
         val pm = context.packageManager
         val component = ComponentName(context, BootReceiver::class.java)
         val wanted = if (on) PackageManager.COMPONENT_ENABLED_STATE_ENABLED else PackageManager.COMPONENT_ENABLED_STATE_DEFAULT
-        runCatching { if (pm.getComponentEnabledSetting(component) != wanted) pm.setComponentEnabledSetting(component, wanted, PackageManager.DONT_KILL_APP) }
+        if (pm.getComponentEnabledSetting(component) != wanted) pm.setComponentEnabledSetting(component, wanted, PackageManager.DONT_KILL_APP)
     }
 
     /**

@@ -2,7 +2,6 @@ package com.irvingguerra.litedash
 
 import android.content.Context
 import android.content.Intent
-import android.provider.Settings
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -28,16 +27,15 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.statusBarsIgnoringVisibility
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateMapOf
@@ -49,7 +47,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -72,7 +70,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import com.irvingguerra.litedash.core.ui.Button
-import com.irvingguerra.litedash.core.ui.IconButton
 import com.irvingguerra.litedash.core.ui.Icons
 import com.irvingguerra.litedash.core.ui.Label
 import com.irvingguerra.litedash.core.ui.LiteDashTheme
@@ -91,7 +88,6 @@ import com.irvingguerra.litedash.feature.dashboard.DashboardState
 import com.irvingguerra.litedash.feature.dashboard.Grid
 import com.irvingguerra.litedash.feature.dashboard.Tile
 import com.irvingguerra.litedash.feature.dashboard.TileTypes
-import com.irvingguerra.litedash.feature.dashboard.cardless
 import com.irvingguerra.litedash.feature.link.PhoneLink
 import com.irvingguerra.litedash.feature.music.MusicMode
 import com.irvingguerra.litedash.feature.music.MusicRepository
@@ -107,6 +103,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 
 /**
@@ -392,7 +389,7 @@ fun mapApp(d: Dependencies, apps: List<App>): App? =
     d.prefs.mapApp?.let { d.apps.find(apps, it) }
         ?: d.apps.firstOf(apps, *NAVIGATION_PACKAGES)
 
-/** Inicio: barra de estado, tablero personalizable y dock. */
+/** Inicio: la barra de arriba (hora y avisos), el tablero personalizable y la barra de apps. */
 @Composable
 fun Home(d: Dependencies, revision: Int, homePressed: Int) {
     val c = LocalColors.current
@@ -406,9 +403,9 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
     val car = d.cars.pkg(d.prefs.carModel)
     var panel by remember { mutableStateOf<Panel?>(null) }
     var editing by remember { mutableStateOf(false) }
-    // LiteDash puede estar abierto dos veces (como inicio y como app) y el acomodo es uno solo: la
-    // cuadrícula la decide la ventana que se está usando. Si no, la de atrás (que no se vuelve a medir
-    // y se queda con la escala de antes) recargaba su acomodo en cada cambio y deshacía lo que se movía.
+    // LiteDash puede estar abierto dos veces (como inicio y como app) y el estado es uno solo por proceso. Una sola
+    // regla: solo la ventana al frente decide la cuadrícula (la de atrás no se vuelve a medir y deshacía lo que se
+    // movía) y atiende lo que llega de fuera (volante, aviso de la calibración, play sin nada con Archivos).
     var inFront by remember { mutableStateOf(false) }
     LifecycleResumeEffect(Unit) {
         inFront = true
@@ -437,43 +434,26 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
         }
     }
     val musicBig = expanded == Expanded.MEDIA
-    // Ya cubre todo el tablero: lo que gasta debajo (GPS, mapa del widget) descansa.
+    // Ya cubre todo el tablero: el tablero no se dibuja y lo que gasta en los widgets (GPS, mapa) descansa.
     val expandedCovers by remember { derivedStateOf { expandedShown != null && expandProgress.value >= 1f } }
     var mediaTab by remember { mutableStateOf(MediaTab.MUSIC) }
     var mediaBrowse by remember { mutableStateOf(false) }
-    // Solo el auto a pantalla completa (un toque al auto entra y otro sale), con animación:
-    // [carOnly] es a dónde va y [carShown] si la capa sigue en pantalla (también al regresar).
-    var carOnly by remember { mutableStateOf(false) }
     // La pieza que se ve en grande (auto, carretera o imagen) y dónde está cada una.
     var bigTile by remember { mutableStateOf<Tile?>(null) }
     val tileBounds = remember { mutableStateMapOf<String, Rect>() }
-    // Las llantas a pantalla completa: [tiresOpen] es a dónde va, [tiresShown] si sigue en pantalla.
-    var tiresOpen by remember { mutableStateOf(false) }
-    var tiresShown by remember { mutableStateOf(false) }
-    var tiresReady by remember { mutableStateOf(false) }
-    val tiresProgress = remember { Animatable(0f) }
-    LaunchedEffect(tiresOpen) {
-        if (tiresOpen) {
-            tiresShown = true
-            // Aparece cuando el auto de arriba ya está pintado (la primera vez tarda en leerse); si no, igual.
-            withTimeoutOrNull(TIRES_WAIT_MS) { snapshotFlow { tiresReady }.first { it } }
-            tiresProgress.animateTo(1f, tween(TIRES_FADE_MS, easing = FastOutSlowInEasing))
-        } else if (tiresShown) {
-            tiresProgress.animateTo(0f, tween(TIRES_FADE_MS, easing = FastOutSlowInEasing))
-            tiresShown = false
-            tiresReady = false
-        }
-    }
-    fun openTires() {
-        tiresOpen = true
-    }
-    // Lo que esté encima del tablero se quita para ver [what] en grande, creciendo desde el widget [from].
+    // Solo el auto a pantalla completa (un toque al auto entra y otro sale): crece cuando la imagen grande ya está
+    // pintada (en su pieza se ve igual que la chica); si tarda, crece de todos modos.
+    val carLayer = rememberOverlay(CAR_WAIT_MS, CAR_GROW_MS, CAR_SHRINK_MS)
+    // Las llantas a pantalla completa: aparecen cuando el auto de arriba ya está pintado (la primera vez tarda en leerse).
+    val tiresLayer = rememberOverlay(TIRES_WAIT_MS, TIRES_FADE_MS, TIRES_FADE_MS)
+    // Lo que esté encima del tablero se quita para ver [what] en grande, creciendo desde el widget [from] (si ya
+    // se está encogiendo otra cosa, sigue el origen de esa: no salta a medio camino).
     fun expand(what: Expanded, from: Tile?) {
         panel = null
-        tiresOpen = false
-        carOnly = false
+        tiresLayer.open = false
+        carLayer.open = false
         editing = false
-        if (expanded == null) expandedFrom = from
+        if (expandedShown == null) expandedFrom = from
         expanded = what
     }
     // La pantalla Música en [tab] (null = la de lo que suena); [browse] la abre en la biblioteca y [from] es el
@@ -493,37 +473,20 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
     // Con Archivos, play sin nada que sonar (volante, barra de Android, widget) abre la pantalla Música en la
     // biblioteca; mientras está abierta, la atiende ella.
     val currentOpenMedia by rememberUpdatedState(::openMedia)
-    OnFilesEmpty(d.music, d.music.mode == MusicMode.FILES, remember { { currentOpenMedia(MediaTab.MUSIC, true, null) } })
+    OnFilesEmpty(d.music, inFront && d.music.mode == MusicMode.FILES, remember { { currentOpenMedia(MediaTab.MUSIC, true, null) } })
     // El aviso de la calibración ("No encontramos cómo hacerlo sonar aquí") lleva a "Enviar un reporte".
-    DisposableEffect(d.music) {
-        val previous = d.music.onSoundReport
+    DisposableEffect(d.music, inFront) {
+        if (!inFront) return@DisposableEffect onDispose {}
         val mine: (SoundPiece) -> Unit = { openSoundReport(it); panel = Panel.Report }
         d.music.onSoundReport = mine
-        onDispose { if (d.music.onSoundReport === mine) d.music.onSoundReport = previous }
+        onDispose { if (d.music.onSoundReport === mine) d.music.onSoundReport = null }
     }
     fun backToDashboard() {
         panel = null
-        tiresOpen = false
-        carOnly = false
+        tiresLayer.open = false
+        carLayer.open = false
         expanded = null
         editing = false
-    }
-
-    var carShown by remember { mutableStateOf(false) }
-    var carReady by remember { mutableStateOf(false) }
-    val carProgress = remember { Animatable(0f) }
-    LaunchedEffect(carOnly) {
-        if (carOnly) {
-            carShown = true
-            // Crece cuando la imagen grande ya está pintada (en su pieza se ve igual que la
-            // chica); si tarda, crece de todos modos.
-            withTimeoutOrNull(600) { snapshotFlow { carReady }.first { it } }
-            carProgress.animateTo(1f, tween(480, easing = FastOutSlowInEasing))
-        } else if (carShown) {
-            carProgress.animateTo(0f, tween(520, easing = FastOutSlowInEasing))
-            carShown = false
-            carReady = false
-        }
     }
 
     // Cada toque y cada botón del volante reinician la cuenta del modo estacionado. Se
@@ -531,26 +494,30 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
     var touched by remember { mutableIntStateOf(0) }
     var parked by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) {
-        snapshotFlow { listOf(touched, d.wheel.presses, panel, editing, expanded, carOnly, tiresOpen, d.prefs.parkedMode) }
+        snapshotFlow { listOf(touched, d.wheel.presses, panel, editing, expanded, carLayer.open, tiresLayer.open, d.prefs.parkedMode) }
             .collectLatest {
                 parked = false
-                if (!d.prefs.parkedMode || panel != null || editing || expanded != null || carOnly || tiresOpen) return@collectLatest
+                if (!d.prefs.parkedMode || panel != null || editing || expanded != null || carLayer.open || tiresLayer.open) return@collectLatest
                 delay(PARK_AFTER_MS)
                 // Manejando no: espera a que se detenga (velocidad del OBD o del GPS, la que haya).
                 snapshotFlow { (d.bus.value(Signal.SPEED) ?: 0f) > MOVING_KMH }.first { !it }
                 parked = true
             }
     }
+    // Algo opaco tapa todo el inicio (estacionado, que puede durar horas, o el auto o las llantas ya en grande): lo
+    // de abajo sigue compuesto y medido (al destaparse se ve al instante y lo que crece sabe de dónde), pero no se
+    // dibuja y lo que gasta descansa ([LocalHomeCovered]).
+    val homeCovered by remember { derivedStateOf { parked || carLayer.covers || tiresLayer.covers } }
     // Lo que sigue aunque se abra Ajustes o se acomode el inicio: el registro del viaje y el
     // aviso del motor (si no, abrir Ajustes cortaría el viaje y "Entendido" se olvidaría).
     val engineAlert = remember { EngineAlertState() }
     if (d.prefs.welcomeSeen) TripRecorderEffect(d)
 
-    BackHandler(enabled = (panel != null || editing || expanded != null || carOnly || tiresOpen) && d.prefs.welcomeSeen) {
+    BackHandler(enabled = (panel != null || editing || expanded != null || carLayer.open || tiresLayer.open) && d.prefs.welcomeSeen) {
         when {
             panel != null -> panel = null
-            tiresOpen -> tiresOpen = false
-            carOnly -> carOnly = false
+            tiresLayer.open -> tiresLayer.open = false
+            carLayer.open -> carLayer.open = false
             expanded != null -> expanded = null
             else -> editing = false
         }
@@ -559,13 +526,15 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
     LaunchedEffect(homePressed) { if (d.prefs.welcomeSeen) backToDashboard() }
     // Clima al volver al inicio y cada media hora con el inicio a la vista (si está activado); nunca en segundo plano.
     WeatherRefresh(d.weather, revision)
-    // Versión nueva de la app (a lo más cada 12 h, al volver al inicio) y modelo 3D nuevo del auto (cada hora).
-    LaunchedEffect(revision) { d.updater.checkQuietly() }
+    // Al volver al inicio: versión nueva de la app (a lo más cada 12 h), cuántas pantallas usan LiteDash (a lo más
+    // una vez al día) y Pro (revisa el código a lo más cada 12 h; sin código guardado, nada de red). Cada uno se limita solo.
+    LaunchedEffect(revision) {
+        launch { d.updater.checkQuietly() }
+        launch { d.stats.pingDaily() }
+        launch { d.pro.refresh() }
+    }
+    // Modelo 3D nuevo del auto (a lo más cada hora).
     LaunchedEffect(d.prefs.carModel) { d.cars.checkQuietly(d.prefs.carModel) }
-    // Cuántas pantallas usan LiteDash: a lo más una vez al día.
-    LaunchedEffect(revision) { d.stats.pingDaily() }
-    // Pro: lee lo guardado y revisa el código a lo más cada 12 h (sin código guardado, nada de red).
-    LaunchedEffect(revision) { d.pro.refresh() }
 
     val actions = remember {
         TileActions(
@@ -573,15 +542,15 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
             onNavigate = { app -> openNavigation(context, d.apps, app) },
             onCarOnly = {
                 // Con Llantas activo, tocar el auto 3D abre las llantas; si no, lo agranda.
-                if (it.type == TileTypes.CAR && d.hasTpmsSource && d.prefs.carTap == CarTap.TIRES) openTires()
+                if (it.type == TileTypes.CAR && d.hasTpmsSource && d.prefs.carTap == CarTap.TIRES) tiresLayer.open = true
                 else {
                     bigTile = it
-                    carOnly = true
+                    carLayer.open = true
                 }
             },
             onCarBounds = { id, rect -> if (tileBounds[id] != rect) tileBounds[id] = rect },
-            carHidden = { id -> carShown && bigTile?.id == id && carProgress.value > 0f },
-            onTires = { openTires() },
+            carHidden = { id -> carLayer.shown && bigTile?.id == id && carLayer.progress.value > 0f },
+            onTires = { tiresLayer.open = true },
             editing = { editing },
             onMedia = { openMedia(it) },
             onExpand = { what, tile ->
@@ -593,10 +562,34 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
             },
         )
     }
+    // Se crea una vez (como [actions]): sus funciones leen el estado al llamarse y la barra no se vuelve a armar
+    // cada vez que cambia algo del inicio.
+    val barActions = remember {
+        BarActions(
+            onApps = { panel = Panel.Drawer },
+            onMusic = { if (expanded == Expanded.MEDIA) expanded = null else openMedia(null) },
+            onNavigate = { if (expanded == Expanded.MAP) expanded = null else openMapShortcut() },
+            // Chip propio del estéreo: su app de Bluetooth (la misma que usa la música). Con el Bluetooth de
+            // Android, donde se empareja el celular: sus ajustes de Bluetooth (o, si la pantalla no los trae,
+            // Ajustes → Apps → Música).
+            onBluetooth = {
+                if (!openStereoBluetooth(d, context)) {
+                    openMusicSettings()
+                    panel = Panel.MusicSettings
+                }
+            },
+            onPhone = { openDialer(context) },
+            onVoice = onVoice,
+            onSettings = { panel = Panel.Settings },
+            onBarSettings = { panel = Panel.BarSettings },
+            onEdit = { expanded = null; editing = true },
+        )
+    }
 
-    // Mandos al volante: las acciones que abren algo (mapa, música, voz, inicio) se hacen
-    // aquí, una sola vez cada una.
-    LaunchedEffect(Unit) {
+    // Mandos al volante: las acciones que abren algo (mapa, música, voz, inicio) se hacen aquí, una sola vez cada
+    // una y solo en la ventana al frente (la de atrás no se ve: ahí no pasaría nada).
+    LaunchedEffect(inFront) {
+        if (!inFront) return@LaunchedEffect
         snapshotFlow { d.wheel.request }.filterNotNull().collect { action ->
             d.wheel.consume()
             when (action) {
@@ -612,10 +605,15 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
     // Con un auto que trae piso, el fondo baja un poco de tono hacia abajo: es el
     // piso donde se para el auto (como en Tesla), y su sombra y reflejo caen ahí.
     val hasFloor = car?.hasFloor == true && d.dashboard.tiles.any { it.type == TileTypes.CAR }
-    // Las fotos de piezas de imagen que se quitaron (o cambiaron) salen de memoria.
-    LaunchedEffect(d.dashboard.tiles) { releaseTileImages(d.dashboard.tiles) }
-    // Velocímetros guardados hasta la 1.4.61 (su máximo en la unidad que se veía): a km/h.
+    // Las fotos de piezas de imagen que se quitaron (o cambiaron) salen de memoria, y también dónde estaba cada widget quitado.
     LaunchedEffect(d.dashboard.tiles) {
+        releaseTileImages(d.dashboard.tiles)
+        val ids = d.dashboard.tiles.mapTo(HashSet()) { it.id }
+        tileBounds.keys.retainAll(ids)
+    }
+    // Velocímetros guardados hasta la 1.4.61 (su máximo en la unidad que se veía): a km/h. Basta al cargar el
+    // acomodo de una cuadrícula (los que se agregan o cambian después ya vienen en km/h).
+    LaunchedEffect(d.dashboard.grid) {
         val miles = d.prefs.units.miles
         d.dashboard.changeData(
             d.dashboard.tiles.filter { it.type == TileTypes.SPEEDOMETER }
@@ -642,143 +640,126 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                 }
             },
     ) {
-        // Tu imagen de fondo (Inicio y apariencia → Inicio → Fondo de pantalla), detrás de todo.
-        if (panel == null) HomeWallpaper()
-        // Los paneles tapan todo el inicio: mientras hay uno abierto no se dibuja ni se
-        // pinta nada debajo (el auto del tablero no se tiñe dos veces al cambiar el color).
-        if (panel == null) BoxWithConstraints(Modifier.fillMaxSize().safeDrawingPadding()) {
-          // Pantalla acostada: barra lateral a la izquierda (como DuduAuto), con la hora y tus
-          // apps; el tablero se queda con toda la altura. Parada: el dock abajo, como siempre.
-          val rail = when (d.prefs.barPosition) {
-              BarPosition.SIDE, BarPosition.RIGHT -> true
-              BarPosition.BOTTOM -> false
-              BarPosition.AUTO -> maxWidth > maxHeight && !isShortScreen()
-          }
-          val favorites = remember(apps, d.prefs.dock, d.music.preferred) { dockFavorites(d, apps) }
-          val railRight = rail && d.prefs.barPosition == BarPosition.RIGHT
-          val barActions = BarActions(
-              onApps = { panel = Panel.Drawer },
-              onMusic = { if (musicBig) expanded = null else openMedia(null) },
-              onNavigate = { if (expanded == Expanded.MAP) expanded = null else openMapShortcut() },
-              // Chip propio del estéreo: su app de Bluetooth (la misma que usa la música). Con el Bluetooth de
-              // Android, donde se empareja el celular: sus ajustes de Bluetooth (o, si la pantalla no los trae,
-              // Ajustes → Apps → Música).
-              onBluetooth = {
-                  if (!openStereoBluetooth(d, context)) {
-                      openMusicSettings()
-                      panel = Panel.MusicSettings
-                  }
-              },
-              onPhone = { openDialer(context) },
-              onVoice = onVoice,
-              onSettings = { panel = Panel.Settings },
-              onBarSettings = { panel = Panel.BarSettings },
-              onEdit = { expanded = null; editing = true },
-          )
-          val bar = @Composable { vertical: Boolean ->
-              AppBar(d.apps, d.prefs, favorites, vertical, editing, musicBig, barActions, mapOpen = expanded == Expanded.MAP)
-          }
-          val railBar = @Composable { bar(true) }
-          Row(Modifier.fillMaxSize()) {
-            if (rail && !railRight) railBar()
-            Column(Modifier.weight(1f).fillMaxHeight()) {
-                // Si ya hay un reloj en el tablero, la barra de arriba no repite la hora.
-                val showTime = d.dashboard.tiles.none { it.type == TileTypes.CLOCK }
-                val barHidden = !editing && !showTime
-                TopBar(
-                    editing = editing,
-                    showTime = showTime,
-                    driverName = d.prefs.driverName,
-                    weather = d.weather,
-                    onAdd = { panel = Panel.AddTile },
-                    onTemplates = { panel = Panel.Templates },
-                    onWallpaper = { panel = Panel.Wallpaper },
-                    onFinish = { editing = false },
-                )
-                // Los avisos tampoco cuentan para la cuadrícula: aparecen y se van, y no deben
-                // hacer que se cargue otro acomodo.
-                Column(Modifier.onSizeChanged { promptsHeight = it.height }) {
-                    if (d.prefs.welcomeSeen && !editing) {
-                        if (!d.prefs.dontAskHome && !isShortScreen()) HomePrompt(d.prefs, revision)
-                        EngineAlertBanner(d, engineAlert)
-                        TiresAlertBanner(d, actions.onTires)
-                        if (!isShortScreen()) ReminderBanner(d.reminders)
-                        UpdateBanner(d.updater, onOpen = { openUpdates(); panel = Panel.Updates })
-                        val newModel = d.cars.outdated?.takeIf { it.id == car?.id }
-                        if (car != null && newModel != null) CarUpdateNotice(d.cars, car, newModel)
+        // Los paneles tapan todo el inicio: mientras hay uno abierto no se compone ni se pinta nada debajo (el
+        // auto del tablero no se tiñe dos veces al cambiar el color).
+        if (panel == null) CompositionLocalProvider(LocalHomeCovered provides homeCovered) {
+            Box(Modifier.fillMaxSize().hiddenWhen { homeCovered }) {
+                // Tu imagen de fondo (Inicio y apariencia → Inicio → Fondo de pantalla), detrás de todo.
+                HomeWallpaper()
+                BoxWithConstraints(Modifier.fillMaxSize().safeDrawingPadding()) {
+                    // Pantalla acostada: barra lateral (como DuduAuto) y el tablero con toda la altura. Parada: la
+                    // barra abajo.
+                    val rail = when (d.prefs.barPosition) {
+                        BarPosition.SIDE, BarPosition.RIGHT -> true
+                        BarPosition.BOTTOM -> false
+                        BarPosition.AUTO -> maxWidth > maxHeight && !isShortScreen()
                     }
-                }
-                // Con la barra al costado no hay dock abajo: el tablero lleva su propio aire inferior
-                // (en pantallas sin barra de gestos las piezas quedaban pegadas al borde).
-                BoxWithConstraints(Modifier.weight(1f).fillMaxWidth().padding(start = 10.dp, end = 10.dp, bottom = if (rail) 10.dp else 0.dp)) {
-                    // La cuadrícula se calcula siempre como si la barra estuviera: si dependiera
-                    // de ella, un reloj en el acomodo la oculta, la cuadrícula crece, se carga
-                    // otro acomodo sin reloj, vuelve la barra... y el inicio parpadea sin parar.
-                    val prompts = with(LocalDensity.current) { promptsHeight.toDp() }
-                    // El aire inferior de la barra lateral tampoco cuenta: la cuadrícula (y el acomodo
-                    // guardado) debe ser la misma con o sin él.
-                    // Con la barra de Android oculta hay más alto, pero la cuadrícula tampoco cambia.
-                    val statusHidden = statusBarHiddenHeight()
-                    val gridHeight = (if (barHidden) maxHeight - (topBarHeight() - TOP_BAR_HIDDEN) else maxHeight) + prompts + (if (rail) 10.dp else 0.dp) - statusHidden
-                    val grid = remember(maxWidth, gridHeight) { Grid.forSize(maxWidth.value, gridHeight.value) }
-                    // Carga el acomodo de esta cuadrícula antes de dibujar (solo hace algo si cambió).
-                    if (inFront || d.dashboard.grid == null) d.dashboard.use(grid)
-                    val cellNow = DpSize(maxWidth / grid.columns, maxHeight / grid.rows)
-                    SideEffect { cell = cellNow }
-                    // Con algo a pantalla completa encima, lo que gasta en los widgets (GPS, mapa) descansa.
-                    CompositionLocalProvider(LocalHomeCovered provides (carShown || tiresShown || parked || expandedCovers)) {
-                        Dashboard(
-                                grid = grid,
-                                tiles = d.dashboard.shown,
+                    val favorites = rememberFavorites(d, apps)
+                    val railRight = rail && d.prefs.barPosition == BarPosition.RIGHT
+                    val bar = @Composable { vertical: Boolean ->
+                        AppBar(d.apps, d.prefs, favorites, vertical, editing, musicBig, barActions, mapOpen = expanded == Expanded.MAP)
+                    }
+                    Row(Modifier.fillMaxSize()) {
+                        if (rail && !railRight) bar(true)
+                        Column(Modifier.weight(1f).fillMaxHeight()) {
+                            // Si ya hay un reloj en el tablero, la barra de arriba no repite la hora.
+                            val showTime = d.dashboard.tiles.none { it.type == TileTypes.CLOCK }
+                            val barHidden = !editing && !showTime
+                            TopBar(
                                 editing = editing,
-                                limits = ::limitsOf,
-                                onChange = d.dashboard::changeShown,
-                                onEdit = { editing = true },
-                                onSettings = {
-                                    panel = when (it.type) {
-                                        TileTypes.IMAGE -> Panel.CustomizeImage(it.id)
-                                        TileTypes.MAP -> Panel.CustomizeMap(it.id)
-                                        TileTypes.CAR -> Panel.CustomizeCar(it.id)
-                                        in WIDGET_OPTIONS -> Panel.CustomizeWidget(it.id)
-                                        else -> Panel.CustomizeGauge(it.id)
-                                    }
-                                },
-                                // Todos tienen opciones; el auto 3D, solo con Llantas prendido (las de las llantas).
-                                hasSettings = { it.type != TileTypes.CAR || d.hasTpmsSource },
-                            ) { p -> TileContent(d, p, apps, car, revision, actions) }
-                    }
-                    // La pantalla Música o el mapa en grande: llenan el tablero (la barra se queda para cambiar entre ellos).
-                    val shownBig = expandedShown
-                    if (shownBig != null) ExpandedLayer(expandedFrom?.let { tileBounds[it.id] }, { expandProgress.value }) {
-                        CompositionLocalProvider(LocalHomeCovered provides (carShown || tiresShown || parked)) {
-                            val close = { expanded = null }
-                            when (shownBig) {
-                                Expanded.MEDIA -> MediaScreen(
-                                    d, mediaTab, onTab = { mediaTab = it; mediaBrowse = false }, close = close,
-                                    onRadioSettings = { openRadioSettings(); panel = Panel.MusicSettings },
-                                    modifier = Modifier.padding(6.dp),
-                                    browse = mediaBrowse,
-                                )
-                                Expanded.MAP -> {
-                                    val app = mapApp(d, apps)
-                                    // Como el widget Mapa que se tocó (o el primero que haya; sin widget, el aspecto de Ajustes). Si
-                                    // se llegó desde la música en grande, [expandedFrom] es el de la música: no sirve aquí.
-                                    val from = expandedFrom?.takeIf { it.type == TileTypes.MAP }
-                                        ?: d.dashboard.shown.firstOrNull { it.type == TileTypes.MAP }
-                                    val look = from?.data ?: d.prefs.mapLook.orEmpty()
-                                    MapExpanded(
-                                        d, from?.id, look, app, onPlace = { navigateTo(context, app, it) }, onNavigate = { actions.onNavigate(app) },
-                                        close = close, modifier = Modifier.padding(6.dp),
-                                    )
+                                showTime = showTime,
+                                driverName = d.prefs.driverName,
+                                weather = d.weather,
+                                onAdd = { panel = Panel.AddTile },
+                                onTemplates = { panel = Panel.Templates },
+                                onWallpaper = { panel = Panel.Wallpaper },
+                                onFinish = { editing = false },
+                            )
+                            // Los avisos tampoco cuentan para la cuadrícula: aparecen y se van, y no deben
+                            // hacer que se cargue otro acomodo.
+                            Column(Modifier.onSizeChanged { promptsHeight = it.height }) {
+                                if (d.prefs.welcomeSeen && !editing) {
+                                    if (!d.prefs.dontAskHome && !isShortScreen()) HomePrompt(d.prefs, revision)
+                                    EngineAlertBanner(d, engineAlert)
+                                    TiresAlertBanner(d, actions.onTires)
+                                    if (!isShortScreen()) ReminderBanner(d.reminders)
+                                    UpdateBanner(d.updater, onOpen = { openUpdates(); panel = Panel.Updates })
+                                    val newModel = d.cars.outdated?.takeIf { it.id == car?.id }
+                                    if (car != null && newModel != null) CarUpdateNotice(d.cars, car, newModel)
                                 }
                             }
+                            // Con la barra al costado no hay barra abajo: el tablero lleva su propio aire inferior
+                            // (en pantallas sin barra de gestos las piezas quedaban pegadas al borde).
+                            BoxWithConstraints(Modifier.weight(1f).fillMaxWidth().padding(start = 10.dp, end = 10.dp, bottom = if (rail) 10.dp else 0.dp)) {
+                                // La cuadrícula se calcula siempre como si la barra estuviera: si dependiera
+                                // de ella, un reloj en el acomodo la oculta, la cuadrícula crece, se carga
+                                // otro acomodo sin reloj, vuelve la barra... y el inicio parpadea sin parar.
+                                val prompts = with(LocalDensity.current) { promptsHeight.toDp() }
+                                // El aire inferior de la barra lateral tampoco cuenta: la cuadrícula (y el acomodo
+                                // guardado) debe ser la misma con o sin él.
+                                // Con la barra de Android oculta hay más alto, pero la cuadrícula tampoco cambia.
+                                val statusHidden = statusBarHiddenHeight()
+                                val gridHeight = (if (barHidden) maxHeight - (topBarHeight() - TOP_BAR_HIDDEN) else maxHeight) + prompts + (if (rail) 10.dp else 0.dp) - statusHidden
+                                val grid = remember(maxWidth, gridHeight) { Grid.forSize(maxWidth.value, gridHeight.value) }
+                                // Carga el acomodo de esta cuadrícula antes de dibujar (solo hace algo si cambió).
+                                if (inFront || d.dashboard.grid == null) d.dashboard.use(grid)
+                                val cellNow = DpSize(maxWidth / grid.columns, maxHeight / grid.rows)
+                                SideEffect { cell = cellNow }
+                                // Con algo en grande encima (la música o el mapa) el tablero tampoco se dibuja.
+                                CompositionLocalProvider(LocalHomeCovered provides (homeCovered || expandedCovers)) {
+                                    Dashboard(
+                                        grid = grid,
+                                        tiles = d.dashboard.shown,
+                                        editing = editing,
+                                        limits = ::limitsOf,
+                                        onChange = d.dashboard::changeShown,
+                                        onEdit = { editing = true },
+                                        modifier = Modifier.hiddenWhen { expandedCovers },
+                                        onSettings = {
+                                            panel = when (it.type) {
+                                                TileTypes.IMAGE -> Panel.CustomizeImage(it.id)
+                                                TileTypes.MAP -> Panel.CustomizeMap(it.id)
+                                                TileTypes.CAR -> Panel.CustomizeCar(it.id)
+                                                in WIDGET_OPTIONS -> Panel.CustomizeWidget(it.id)
+                                                else -> Panel.CustomizeGauge(it.id)
+                                            }
+                                        },
+                                        // Todos tienen opciones; el auto 3D, solo con Llantas prendido (las de las llantas).
+                                        hasSettings = { it.type != TileTypes.CAR || d.hasTpmsSource },
+                                    ) { p -> TileContent(d, p, apps, car, revision, actions) }
+                                }
+                                // La pantalla Música o el mapa en grande: llenan el tablero (la barra se queda para cambiar entre ellos).
+                                val shownBig = expandedShown
+                                if (shownBig != null) ExpandedLayer(expandedFrom?.let { tileBounds[it.id] }, { expandProgress.value }) {
+                                    val close = { expanded = null }
+                                    when (shownBig) {
+                                        Expanded.MEDIA -> MediaScreen(
+                                            d, mediaTab, onTab = { mediaTab = it; mediaBrowse = false }, close = close,
+                                            onRadioSettings = { openRadioSettings(); panel = Panel.MusicSettings },
+                                            modifier = Modifier.padding(6.dp),
+                                            browse = mediaBrowse,
+                                        )
+                                        Expanded.MAP -> {
+                                            val app = mapApp(d, apps)
+                                            // Como el widget Mapa que se tocó (o el primero que haya; sin widget, el aspecto de Ajustes). Si
+                                            // se llegó desde la música en grande, [expandedFrom] es el de la música: no sirve aquí.
+                                            val from = expandedFrom?.takeIf { it.type == TileTypes.MAP }
+                                                ?: d.dashboard.shown.firstOrNull { it.type == TileTypes.MAP }
+                                            val look = from?.data ?: d.prefs.mapLook.orEmpty()
+                                            MapExpanded(
+                                                d, from?.id, look, app, onPlace = { navigateTo(context, app, it) }, onNavigate = { actions.onNavigate(app) },
+                                                close = close, modifier = Modifier.padding(6.dp),
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                            if (!rail) bar(false)
                         }
+                        if (railRight) bar(true)
                     }
                 }
-                if (!rail) bar(false)
             }
-            if (railRight) railBar()
-          }
         }
 
         when (val p = panel) {
@@ -798,10 +779,10 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                     Panel.TiresSettings -> SettingsSection.TIRES
                     else -> SettingsSection.CAR
                 },
-                onTires = { panel = null; openTires() },
+                onTires = { panel = null; tiresLayer.open = true },
             )
             Panel.Templates -> TemplatesPanel(d.dashboard, close = { panel = null })
-            Panel.BarSettings -> BarSettingsPanel(d, close = { panel = null })
+            Panel.BarSettings -> BarSettingsPanel(d, apps, hasVoice = onVoice != null, close = { panel = null })
             Panel.Wallpaper -> PanelScaffold(stringResource(R.string.wallpaper_title), close = { panel = null }) {
                 Column(Modifier.weight(1f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(16.dp)) {
                     Label(stringResource(R.string.wallpaper_help), Typography.body, c.textMuted)
@@ -830,19 +811,19 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
         }
 
         val big = bigTile
-        if (carShown && panel == null && big != null) {
+        if (carLayer.shown && panel == null && big != null) {
             CarOnly(
-                d, car, big, tileBounds[big.id] ?: Rect.Zero, { carProgress.value }, backdrop,
-                onTap = { carOnly = false }, onReady = { carReady = true },
+                d, car, big, tileBounds[big.id] ?: Rect.Zero, { carLayer.progress.value }, backdrop,
+                onTap = { carLayer.open = false }, onReady = { carLayer.ready = true },
             )
         }
 
-        if (tiresShown && panel == null) {
+        if (tiresLayer.shown && panel == null) {
             TiresFull(
-                d, { tiresProgress.value },
-                onClose = { tiresOpen = false },
-                onSettings = { tiresOpen = false; panel = Panel.TiresSettings },
-                onReady = { tiresReady = true },
+                d, { tiresLayer.progress.value },
+                onClose = { tiresLayer.open = false },
+                onSettings = { tiresLayer.open = false; panel = Panel.TiresSettings },
+                onReady = { tiresLayer.ready = true },
             )
         }
 
@@ -857,6 +838,46 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
         }
     }
 }
+
+/**
+ * Una capa a pantalla completa que aparece y se va animada (el auto o las llantas en grande): [open] es a dónde va,
+ * [shown] si sigue en pantalla (también mientras se va), [ready] lo marca la capa cuando ya está pintada y
+ * [progress] va de 0 a 1 (se lee al dibujar).
+ */
+@Stable
+private class Overlay {
+    var open by mutableStateOf(false)
+    var shown by mutableStateOf(false)
+    var ready by mutableStateOf(false)
+    val progress = Animatable(0f)
+
+    /** Ya completa: tapa todo el inicio. */
+    val covers get() = shown && progress.value >= 1f
+}
+
+/** Una [Overlay]: al abrirse espera hasta [waitMs] a estar pintada, aparece en [inMs] y se va en [outMs]. */
+@Composable
+private fun rememberOverlay(waitMs: Long, inMs: Int, outMs: Int): Overlay {
+    val layer = remember { Overlay() }
+    LaunchedEffect(layer.open) {
+        if (layer.open) {
+            layer.shown = true
+            withTimeoutOrNull(waitMs) { snapshotFlow { layer.ready }.first { it } }
+            layer.progress.animateTo(1f, tween(inMs, easing = FastOutSlowInEasing))
+        } else if (layer.shown) {
+            layer.progress.animateTo(0f, tween(outMs, easing = FastOutSlowInEasing))
+            layer.shown = false
+            layer.ready = false
+        }
+    }
+    return layer
+}
+
+/**
+ * No dibuja lo de adentro mientras [hidden] (algo opaco lo tapa por completo). Sigue compuesto y medido: al destaparse
+ * se ve en ese mismo cuadro y lo que crece desde un widget sabe de dónde. Se lee al dibujar: no rearma nada.
+ */
+private fun Modifier.hiddenWhen(hidden: () -> Boolean) = drawWithContent { if (!hidden()) drawContent() }
 
 /**
  * Estacionado: reloj grande, saludo y clima (o tu imagen, si la elegiste) sobre fondo oscuro.
@@ -879,7 +900,7 @@ private fun Parked(d: Dependencies, onWake: () -> Unit) {
             // Siempre en colores oscuros: de noche no deslumbra.
             LiteDashTheme(dark = true, scale = 1f, accent = d.prefs.accentColor) {
                 BigTime(clock, Typography.clock.copy(fontSize = 120.sp))
-                Label(hello?.let { "$it · ${clock.date}" } ?: clock.date, Typography.subtitle, LocalColors.current.textMuted, maxLines = 1)
+                Label(hello?.let { stringResource(R.string.two_parts, it, clock.date) } ?: clock.date, Typography.subtitle, LocalColors.current.textMuted, maxLines = 1)
                 Box(Modifier.padding(top = 12.dp)) { WeatherChip(d.weather) }
             }
         }
@@ -890,6 +911,11 @@ private const val PARK_AFTER_MS = 5 * 60_000L
 
 /** Más rápido que esto, va manejando (el modo estacionado espera). */
 private const val MOVING_KMH = 8f
+
+/** Tus apps favoritas de la barra ([dockFavorites]), al día con lo que cambie. */
+@Composable
+fun rememberFavorites(d: Dependencies, apps: List<App>): List<App> =
+    remember(apps, d.prefs.dock, d.music.preferred) { dockFavorites(d, apps) }
 
 /** Las del usuario, o unas sugeridas con lo que tenga instalado (navegación, música, mensajes). */
 fun dockFavorites(d: Dependencies, apps: List<App>): List<App> {
@@ -997,6 +1023,11 @@ private fun statusBarHiddenHeight(): Dp {
 private val PILLS_MIN_WIDTH = 220.dp
 private val PILLS_MIN_HEIGHT = 160.dp
 
+/** Lo más que el auto en grande espera a estar pintado antes de crecer, lo que tarda en crecer y en regresar. */
+private const val CAR_WAIT_MS = 600L
+private const val CAR_GROW_MS = 480
+private const val CAR_SHRINK_MS = 520
+
 /** Lo más que Llantas espera a que el auto de arriba esté pintado antes de aparecer. */
 private const val TIRES_WAIT_MS = 300L
 
@@ -1005,7 +1036,6 @@ private const val TIRES_FADE_MS = 260
 
 /** Una opción del widget (de fábrica prendida, [WidgetFlags]). */
 private fun Tile.flag(key: String) = WidgetFlags.on(data, key)
-
 
 /** Cuánto tarda en crecer lo que se ve en grande ([Expanded]) y en regresar a su widget. */
 private const val EXPAND_MS = 320

@@ -4,6 +4,7 @@ import android.Manifest
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -27,14 +28,18 @@ fun ReadyNow(onReady: (() -> Unit)?) {
 
 /**
  * El escáner OBD para una pieza o un aviso que lo quiere ([wanted]: su ajuste prendido). Con
- * adaptador guardado y el módulo prendido se conecta solo (también si se prende después);
- * devuelve el escáner si ya existe. Sin [wanted] o con el módulo apagado devuelve null y no
- * crea ni conecta nada.
+ * adaptador guardado y el módulo prendido dice "lo quiero" mientras está en pantalla (el escáner
+ * se conecta solo y, cuando ya nadie lo quiere, se desconecta); devuelve el escáner si ya existe.
+ * Sin [wanted] o con el módulo apagado devuelve null y no crea ni conecta nada.
  */
 @Composable
 fun rememberObd(d: Dependencies, wanted: Boolean = true): ObdRepository? {
     val auto = wanted && d.obdAuto
-    LaunchedEffect(auto) { if (auto) d.obd.connect() }
+    DisposableEffect(auto) {
+        val owner = Any()
+        if (auto) d.obd.want(owner)
+        onDispose { if (auto) d.obdIfCreated()?.release(owner) }
+    }
     return if (wanted && d.obdModule) d.obdIfCreated() else null
 }
 

@@ -1,5 +1,6 @@
 package com.irvingguerra.litedash
 
+import android.text.format.Formatter
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -17,6 +18,7 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.res.stringResource
@@ -181,7 +183,8 @@ fun CarUpdateNotice(cars: CarRepository, car: CarPackage, entry: CatalogEntry) {
         if (progress != null) {
             Label(stringResource(R.string.downloading, (progress * 100).toInt()), Typography.body, LocalColors.current.accent)
         } else {
-            Button(stringResource(R.string.car_update, cars.updateSize(car, entry) / 1e6f), { cars.update(car, entry) }, primary = true)
+            val size = Formatter.formatShortFileSize(LocalContext.current, cars.updateSize(car, entry))
+            Button(stringResource(R.string.car_update, size), { cars.update(car, entry) }, primary = true)
         }
     }
 }

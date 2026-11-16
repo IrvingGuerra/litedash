@@ -26,4 +26,17 @@ class ReminderTest {
         assertEquals(Day(2026, 11, 30), nextDue(Day(2026, 1, 31), 1, Day(2026, 10, 31)))
         assertEquals(Day(2026, 12, 31), nextDue(Day(2026, 1, 31), 1, Day(2026, 11, 30)))
     }
+
+    @Test
+    fun casillasAntesDelDiaUno() {
+        // Noviembre de 2026 empieza en domingo: con semana de domingo (México) ninguna, de lunes (España) seis.
+        assertEquals(0, leadingBlanks(Day(2026, 11, 1), java.util.Calendar.SUNDAY))
+        assertEquals(6, leadingBlanks(Day(2026, 11, 1), java.util.Calendar.MONDAY))
+        // Enero de 1970 empezó en jueves.
+        assertEquals(4, leadingBlanks(Day(1970, 1, 1), java.util.Calendar.SUNDAY))
+        assertEquals(3, leadingBlanks(Day(1970, 1, 1), java.util.Calendar.MONDAY))
+        // Diciembre de 2026 empieza en martes.
+        assertEquals(2, leadingBlanks(Day(2026, 12, 1), java.util.Calendar.SUNDAY))
+        assertEquals(1, leadingBlanks(Day(2026, 12, 1), java.util.Calendar.MONDAY))
+    }
 }

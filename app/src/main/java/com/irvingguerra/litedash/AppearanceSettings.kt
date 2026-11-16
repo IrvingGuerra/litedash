@@ -1,9 +1,6 @@
 // Ajustes → Inicio y apariencia: inicio, interfaz, día y noche, unidades y widgets.
 package com.irvingguerra.litedash
 
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import com.irvingguerra.litedash.feature.apps.rememberApps
-import com.irvingguerra.litedash.feature.apps.AppIcon
 import android.app.Activity
 import android.hardware.Sensor
 import android.hardware.SensorManager
@@ -46,11 +43,11 @@ import com.irvingguerra.litedash.core.ui.LocalColors
 import com.irvingguerra.litedash.core.ui.Radius
 import com.irvingguerra.litedash.core.ui.Segmented
 import com.irvingguerra.litedash.core.ui.SwitchRow
-import com.irvingguerra.litedash.core.ui.TextInput
 import com.irvingguerra.litedash.core.ui.Typography
 import com.irvingguerra.litedash.feature.dashboard.TileTypes
 import com.irvingguerra.litedash.feature.tpms.PressureUnit
 import kotlin.math.round
+import kotlin.math.roundToInt
 
 /** Los temas a elegir, en Inicio y apariencia y en la bienvenida: oscuro, claro, día y noche y el del sistema. */
 internal val ThemeOptions = listOf(
@@ -61,8 +58,8 @@ internal val ThemeOptions = listOf(
 )
 
 /**
- * Pestañas de Inicio y apariencia, en el orden en que se busca: el inicio (acomodo, barras, fondo y
- * entrada), la interfaz (color, tamaño, idioma, nombre, clima y estacionado), día y noche, unidades y,
+ * Pestañas de Inicio y apariencia, en el orden en que se busca: el inicio (acomodo, barra de Android, fondo,
+ * entrada y hacerlo tu inicio), la interfaz (color, tamaño, idioma, nombre, clima y estacionado), día y noche, unidades y,
  * al final, la lista de widgets para agregar.
  */
 private enum class AppearanceTab(val title: Int) {
@@ -90,7 +87,7 @@ private fun InterfaceSettings(d: Dependencies) {
     SettingsCard(stringResource(R.string.scale), stringResource(R.string.scale_help)) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             IconButton(Icons.minus, { prefs.scale = (prefs.scale - 0.1f).coerceAtLeast(0.8f).roundToTenth() }, background = c.surfaceHigh)
-            Label("${(prefs.scale * 100).toInt()} %", Typography.title, modifier = Modifier.widthIn(min = 90.dp))
+            Label(stringResource(R.string.scale_percent, (prefs.scale * 100).roundToInt()), Typography.title, modifier = Modifier.widthIn(min = 90.dp))
             IconButton(Icons.plus, { prefs.scale = (prefs.scale + 0.1f).coerceAtMost(1.5f).roundToTenth() }, background = c.surfaceHigh)
         }
     }
@@ -108,7 +105,7 @@ private fun InterfaceSettings(d: Dependencies) {
         )
     }
     SettingsCard(stringResource(R.string.your_name), stringResource(R.string.your_name_help)) {
-        TextInput(prefs.driverName ?: "", { prefs.driverName = it.take(24).ifBlank { null } }, stringResource(R.string.your_name_hint), Modifier.fillMaxWidth())
+        DriverNameField(prefs)
     }
     // Sin título: el interruptor ya dice qué es.
     SettingsCard { WeatherSwitch(d.weather) }
@@ -157,7 +154,9 @@ private fun DayNightSettings(prefs: Preferences, revision: Int) {
             (NightSource.SENSOR to R.string.night_sensor).takeIf { hasSensor },
             NightSource.LIGHTS to R.string.night_lights,
         )
-        Segmented(options.map { (s, text) -> s to stringResource(text) }, prefs.nightSource, { prefs.nightSource = it })
+        // Sin sensor, lo guardado como Sensor se comporta como Hora del sol (lo de otra pantalla o un respaldo).
+        val shown = if (!hasSensor && prefs.nightSource == NightSource.SENSOR) NightSource.SUN else prefs.nightSource
+        Segmented(options.map { (s, text) -> s to stringResource(text) }, shown, { prefs.nightSource = it })
         if (!hasSensor) Label(stringResource(R.string.night_no_sensor), Typography.small, c.textMuted)
         if (prefs.nightSource == NightSource.LIGHTS) {
             Label(stringResource(R.string.lights_help), Typography.small, c.textMuted)
@@ -212,14 +211,10 @@ private fun UnitsSettings(d: Dependencies) {
     }
 }
 
-/**
- * Inicio: acomodo y plantillas, la barra de apps (de LiteDash) junto a la de Android (la de arriba),
- * el fondo, la animación de entrada y hacerlo tu pantalla de inicio.
- */
+/** Inicio: acomodo y plantillas, la barra de Android (la de arriba), el fondo, la animación de entrada y hacerlo tu pantalla de inicio. */
 @Composable
 private fun HomeSettings(d: Dependencies, revision: Int, onEdit: () -> Unit, onTemplates: () -> Unit) {
     val prefs = d.prefs
-    val context = LocalContext.current
     SettingsCard(stringResource(R.string.layout), stringResource(R.string.arrange_help)) {
         FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Button(stringResource(R.string.arrange), onEdit, primary = true)
@@ -234,20 +229,13 @@ private fun HomeSettings(d: Dependencies, revision: Int, onEdit: () -> Unit, onT
     }
     // Sin título: el interruptor ya dice qué es.
     SettingsCard { IntroSettings(prefs) }
-    val (requestHome, returns) = rememberRequestHome()
-    val isHome = remember(returns, revision) { isHomeApp(context) }
     SettingsCard(stringResource(R.string.welcome_home_title)) {
-        if (isHome) {
-            Label(stringResource(R.string.welcome_already_home), Typography.body, LocalColors.current.accent)
-        } else {
-            Button(stringResource(R.string.make_home), { prefs.dontAskHome = false; requestHome() }, primary = true)
-        }
+        // Al pedirlo a mano se vuelve a preguntar al abrir si no queda como inicio.
+        MakeHome(revision, big = false) { prefs.dontAskHome = false }
         OpenOnBootSettings(prefs)
     }
 }
 
-/** Las favoritas de la barra, en su orden: un toque en la x la quita; el buscador de abajo agrega. */
-@OptIn(ExperimentalLayoutApi::class)
 /**
  * "Abrir LiteDash al encender": para pantallas que regresan su launcher de fábrica al encender. Desde
  * Android 10 necesita "Mostrar sobre otras apps"; si falta, se pide al prender y se avisa.
@@ -264,11 +252,11 @@ private fun OpenOnBootSettings(prefs: Preferences) {
     SwitchRow(stringResource(R.string.open_on_boot), prefs.openOnBoot, { on ->
         prefs.openOnBoot = on
         BootLaunch.sync(context, on)
-        if (on && !BootLaunch.allowed(context)) runCatching { context.startActivity(BootLaunch.permissionIntent(context)) }
+        if (on && !BootLaunch.allowed(context)) openSystemScreen(context, BootLaunch.permissionIntent(context))
     }, stringResource(R.string.open_on_boot_help))
     if (prefs.openOnBoot && !allowed) {
         Label(stringResource(R.string.open_on_boot_permission), Typography.small, LocalColors.current.danger)
-        Button(stringResource(R.string.open_on_boot_grant), { runCatching { context.startActivity(BootLaunch.permissionIntent(context)) } })
+        Button(stringResource(R.string.open_on_boot_grant), { openSystemScreen(context, BootLaunch.permissionIntent(context)) })
     }
 }
 

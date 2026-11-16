@@ -99,8 +99,8 @@ fun CustomizeWidgetPanel(
         LaunchedEffect(Unit) { close() }
         return
     }
-    val name = stringResource(TileSpecs.first { it.type == tile.type }.name).lowercase(currentLocale())
-    PanelScaffold(stringResource(R.string.widget_customize, name), close) {
+    // El nombre tal cual (sin pasarlo a minúsculas: en otros idiomas los sustantivos llevan mayúscula).
+    PanelScaffold(stringResource(R.string.widget_customize, stringResource(TileSpecs.first { it.type == tile.type }.name)), close) {
         WidgetPanelLayout(
             preview = { m -> WidgetPreview(tile, cell, m) { preview(tile) } },
             options = { m -> Column(m.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(14.dp)) { WidgetOptionRows(d, tile, apps, onPickApp) } },

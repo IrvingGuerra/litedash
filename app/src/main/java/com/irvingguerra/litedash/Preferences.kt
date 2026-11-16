@@ -19,11 +19,7 @@ import java.util.Locale
 import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty
 
-/**
- * Claves y valores guardados en el dispositivo, en inglés desde la 1.4.47. Lo que
- * guardaron las versiones anteriores (en español) lo copia una sola vez
- * [StorageMigration]; cambiar estos nombres borraría los ajustes de quien ya tiene LiteDash.
- */
+/** Claves y valores guardados en el dispositivo: cambiar estos nombres borraría los ajustes de quien ya tiene LiteDash. */
 internal object PrefKeys {
     const val FILE = "settings"
     const val THEME = "theme"
@@ -73,7 +69,6 @@ internal object PrefKeys {
     const val BAR_BLUETOOTH_ADDED = "bar_bluetooth_added"
     const val BAR_STYLE = "bar_style"
     const val LOGO_INTRO = "logo_intro"
-    const val INTRO_MIGRATED = "intro_image_migrated"
     const val LIGHTS_KEY = "lights_key"
     const val LIGHTS_ON = "lights_on_value"
     const val SPLIT_SCREEN = "split_screen"
@@ -92,8 +87,6 @@ internal object PrefKeys {
     const val OBD_MODULE = "obd_module"
     const val SPEED_UNITS = "speed_units"
     const val TEMP_UNITS = "temp_units"
-    /** Int: versión del almacenamiento ([StorageMigration]: 1 = nombres en inglés, 2 = tres piezas del auto). */
-    const val STORAGE_VERSION = "storage_version"
 }
 
 /** Las llantas sobre la pieza del auto: pastillas en las ruedas, en las esquinas o nada. */
@@ -162,8 +155,8 @@ enum class BarItem(val stored: String) {
 }
 
 /**
- * La barra de fábrica: Apps, volumen y Música; tus favoritas (vacías: ninguna app de fábrica); Navegar, voz y
- * Ajustes. Teléfono se agrega si se quiere.
+ * La barra de fábrica: Apps, volumen y Música; tus favoritas (vacías: ninguna app de fábrica); Navegar, Bluetooth,
+ * voz y Ajustes. Teléfono se agrega si se quiere.
  */
 private val DEFAULT_BAR = listOf(BarItem.APPS, BarItem.VOLUME, BarItem.MUSIC, BarItem.FAVORITES, BarItem.NAVIGATE, BarItem.BLUETOOTH, BarItem.VOICE)
 
@@ -206,20 +199,42 @@ enum class NightSource(val stored: String) {
     }
 }
 
-/** Idioma de la app: "" = el del sistema. Se lee antes de crear la pantalla. */
+/**
+ * Idioma de la app: "" = el del sistema. Se lee del disco una vez (antes de crear la pantalla) y después
+ * se recuerda; [Preferences.language] lo cambia aquí también.
+ */
 object Language {
-    fun read(context: Context) = context.getSharedPreferences(PrefKeys.FILE, Context.MODE_PRIVATE).getString(PrefKeys.LANGUAGE, "") ?: ""
+    @Volatile private var current: String? = null
+
+    fun read(context: Context): String = current
+        ?: (context.getSharedPreferences(PrefKeys.FILE, Context.MODE_PRIVATE).getString(PrefKeys.LANGUAGE, "") ?: "").also { current = it }
+
+    internal fun changed(language: String) {
+        current = language
+    }
 }
 
-/** [base] con el idioma elegido en Ajustes. */
+/**
+ * El idioma con región para [language]: la del sistema si habla ese idioma (es-MX: "12.6 V"); si no, para el
+ * español México, que escribe los decimales con punto (el español genérico usa coma). JVM pura para probarla.
+ */
+internal fun localeFor(language: String, system: Locale): Locale =
+    if (system.language == language) system else Locale.forLanguageTag(if (language == "es") "es-MX" else language)
+
+/**
+ * [base] con el idioma elegido en Ajustes. El ÚNICO lugar donde se aplica el idioma: las actividades al
+ * crearse y los textos del contexto de la aplicación ([LiteDashApp.getResources]) pasan por aquí.
+ */
 fun contextWithLanguage(base: Context): Context {
     val language = Language.read(base)
     if (language.isBlank()) return base
-    // Con la región del sistema si habla ese idioma (es-MX: "12.6 V"); si no, México, que
-    // escribe los decimales con punto (el español genérico usa coma).
-    val system = primaryLocale(Resources.getSystem().configuration)
-    val locale = if (system.language == language) system else Locale.forLanguageTag(if (language == "es") "es-MX" else language)
-    val config = Configuration(base.resources.configuration).apply { setLocale(locale) }
+    val locale = localeFor(language, primaryLocale(Resources.getSystem().configuration))
+    // Solo el idioma encima de lo del sistema (no una copia de toda la configuración): al girar la pantalla o
+    // cambiar el modo noche, lo demás sigue al sistema. fontScale = 0 = "sin cambiar" (1 pisaría la letra del usuario).
+    val config = Configuration().apply {
+        fontScale = 0f
+        setLocale(locale)
+    }
     return base.createConfigurationContext(config)
 }
 
@@ -317,8 +332,11 @@ class Preferences(context: Context) {
     /** Abrir LiteDash al encender la pantalla ([BootLaunch]); apagado de fábrica. */
     var openOnBoot by bool(PrefKeys.OPEN_ON_BOOT, false)
 
-    /** "" (sistema), "es" o "en". Cambiarlo recrea la actividad: se escribe al instante (commit). */
-    var language by Stored(p.getString(PrefKeys.LANGUAGE, "") ?: "") { p.edit(commit = true) { putString(PrefKeys.LANGUAGE, it) } }
+    /** "" (sistema) o la etiqueta del idioma ("es", "en"…). Cambiarlo reabre la actividad: se escribe al instante (commit). */
+    var language by Stored(p.getString(PrefKeys.LANGUAGE, "") ?: "") {
+        p.edit(commit = true) { putString(PrefKeys.LANGUAGE, it) }
+        Language.changed(it)
+    }
 
     /** Apps que no salen en el cajón ([com.irvingguerra.litedash.feature.apps.App.key]). */
     var hidden by Stored(p.getStringSet(PrefKeys.HIDDEN, emptySet())!!.toSet()) { p.edit { putStringSet(PrefKeys.HIDDEN, it) } }

@@ -63,7 +63,7 @@ class WheelKeys(private val context: Context, private val prefs: Preferences) {
     var presses by mutableIntStateOf(0)
         private set
 
-    /** La acción que el inicio debe hacer (abrir el mapa, la música…); el inicio la [consume]. */
+    /** La acción que el inicio debe hacer (abrir el mapa, la música…); la [consume] el inicio de la ventana al frente. */
     var request by mutableStateOf<WheelAction?>(null)
         private set
 

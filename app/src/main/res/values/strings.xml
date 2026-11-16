@@ -24,7 +24,7 @@
     <string name="pick_app">Elegir app</string>
     <string name="apps">Apps</string>
     <string name="search_app">Buscar app</string>
-    <string name="drawer_help">Deja presionada una app para fijarla en el dock, ponerla en el inicio u ocultarla.</string>
+    <string name="drawer_help">Deja presionada una app para fijarla en la barra, ponerla en el inicio u ocultarla.</string>
     <string name="arrange_your_home">Acomoda tu inicio</string>
     <string name="arrange_hint">Toca un widget para ver sus opciones</string>
     <string name="templates">Plantillas</string>
@@ -56,12 +56,17 @@
     <string name="trips_help">Con el adaptador OBD conectado, guarda un resumen de cada viaje: distancia, tiempo, velocidades, revoluciones, temperatura del motor y gasolina. Se queda en tu pantalla; nada sale de ella.</string>
     <string name="trips_none">Todavía no hay viajes guardados.</string>
     <string name="trips_export">Exportar a CSV</string>
+    <string name="trips_export_failed">No se pudo guardar el archivo.</string>
+    <string name="trip_hours">%1$s h</string>
+    <string name="speed_from_gps">%1$s · del GPS</string>
+    <string name="speed_from_obd">%1$s · del OBD</string>
+    <string name="speed_from_can">%1$s · del auto</string>
     <string name="trip_avg">prom. %1$s</string>
     <string name="trip_max">máx. %1$s</string>
     <string name="tab_split">Pantalla dividida</string>
     <string name="split_title">Abrir mapa y música en pantalla dividida</string>
     <string name="split_help">Al abrir Waze, Maps, Spotify u otra app de mapa o de música desde LiteDash, se abre en una mitad y tu auto (3D o en carretera) en la otra, sin los demás widgets. Solo con la pantalla acostada. Tu inicio no cambia: al regresar está como lo dejaste.</string>
-    <string name="split_view">Al lado del mapa</string>
+    <string name="split_view">Junto a la app</string>
     <string name="split_side">Lado del auto</string>
     <string name="split_left">Izquierda</string>
     <string name="split_right">Derecha</string>
@@ -92,7 +97,7 @@
     <string name="car_customize">Personalizar auto</string>
     <string name="clock_show_weather">Mostrar el clima</string>
     <string name="clock_weather_in_widget">Tienes el widget Clima en el inicio: el reloj no lo repite.</string>
-    <string name="widget_customize">Personalizar %1$s</string>
+    <string name="widget_customize">Opciones · %1$s</string>
     <string name="option_date">Mostrar la fecha</string>
     <string name="option_greeting">Mostrar el saludo</string>
     <string name="option_range">Máxima y mínima de hoy</string>
@@ -135,7 +140,7 @@
     <string name="template_music_radio">Música y radio</string>
     <string name="template_vertical_map">Vertical con mapa</string>
     <string name="templates_tab_map">Mapa</string>
-    <string name="templates_map_help">El mapa en vivo con tu posición y la siguiente vuelta, y un botón a Waze o Maps.</string>
+    <string name="templates_map_help">El mapa en vivo con tu posición y la siguiente vuelta.</string>
     <string name="add">Agregar</string>
     <string name="add_tile">Agregar al inicio</string>
     <string name="add_group_car">Tu auto</string>
@@ -151,6 +156,7 @@
     <string name="theme_system">Como el sistema</string>
     <string name="scale">Tamaño de la interfaz</string>
     <string name="scale_help">Si todo se ve muy chico o muy grande en tu pantalla. Cada tamaño guarda su propio acomodo.</string>
+    <string name="scale_percent">%d %%</string>
     <string name="home">Inicio</string>
     <string name="arrange">Acomodar inicio</string>
     <string name="arrange_help">También puedes dejar presionado cualquier lugar del inicio.</string>
@@ -160,8 +166,8 @@
     <string name="model_credit">Modelo 3D: %1$s · %2$s</string>
     <string name="show_hidden">Ver ocultas (%d)</string>
     <string name="hide_hidden">Esconder ocultas (%d)</string>
-    <string name="pin_to_dock">Fijar en el dock</string>
-    <string name="unpin_from_dock">Quitar del dock</string>
+    <string name="pin_to_dock">Fijar en la barra</string>
+    <string name="unpin_from_dock">Quitar de la barra</string>
     <string name="add_to_home">Poner en el inicio</string>
     <string name="hide_app">Ocultar</string>
     <string name="show_app">Mostrar</string>
@@ -200,6 +206,8 @@
     <string name="install_permission">Android pide que permitas a LiteDash instalar apps (solo se usa para sus propias actualizaciones). Actívalo en la pantalla que se abrió y regresa.</string>
     <string name="already_allowed">Ya lo permití, instalar</string>
     <string name="install_error">Android no pudo instalarla: %1$s</string>
+    <string name="channel_play">De Google Play</string>
+    <string name="channel_github">De GitHub</string>
     <string name="not_home_notice">LiteDash todavía no es tu pantalla de inicio.</string>
     <string name="dont_ask">No preguntar</string>
     <string name="language">Idioma</string>
@@ -215,7 +223,7 @@
     <string name="units_metric">km/h y km</string>
     <string name="units_imperial">mph y millas</string>
     <string name="units_auto_now">Automático ahora: %1$s y %2$s (según tu idioma y región)</string>
-    <string name="map_help">La app que abre el widget Navegar. Mientras navegas, el widget muestra la siguiente vuelta (usa el mismo acceso a notificaciones que la música).</string>
+    <string name="map_help">La app que abren el widget Mapa y el botón de la barra. Mientras navegas, el widget muestra la siguiente vuelta (usa el mismo acceso a notificaciones que la música).</string>
     <string name="map_no_apps">Instala Waze o Google Maps para navegar desde LiteDash.</string>
     <string name="map_external">Usar app externa en accesos directos</string>
     <string name="map_external_help">El botón de la barra, el del volante y el widget Mapa abren tu app de mapas. Apagado, abren el mapa de LiteDash a pantalla completa.</string>
@@ -246,7 +254,7 @@
     <string name="place_home">Casa</string>
     <string name="place_work">Trabajo</string>
     <string name="places">Casa y Trabajo</string>
-    <string name="places_help">Aparecen en Navegar: un toque y el mapa te lleva.</string>
+    <string name="places_help">Aparecen en el widget Mapa: un toque y el mapa te lleva.</string>
     <string name="place_hint">Calle, número, colonia y ciudad</string>
     <string name="tile_weather">Clima</string>
     <string name="tap_to_enable">Toca para activarlo</string>
@@ -293,7 +301,7 @@
     </plurals>
     <string name="tile_projection">Android Auto / CarPlay</string>
     <string name="tile_projection_help">Abre tu app de Android Auto o CarPlay (Zlink, AutoKit…) de un toque</string>
-    <string name="projection_missing">No encontré la app</string>
+    <string name="projection_missing">No se encontró la app</string>
     <string name="update_see">Ver</string>
     <string name="update_later">Después</string>
     <string name="wheel">Mandos al volante</string>
@@ -329,12 +337,13 @@
     <string name="brightness_sun">Día y noche</string>
     <string name="brightness_day">Día</string>
     <string name="brightness_night">Noche</string>
+    <string name="brightness_level">%1$d %%</string>
     <string name="brightness_all_apps_help">Solo en LiteDash no pide nada. En todas las apps cambia el brillo de la pantalla y Android pide permiso para modificar ajustes del sistema.</string>
     <string name="brightness_only_litedash">Solo en LiteDash</string>
     <string name="brightness_all_apps">En todas las apps</string>
     <string name="brightness_permission">Falta el permiso: activa \"Modificar ajustes del sistema\" para LiteDash.</string>
     <string name="car_home_help">En el inicio gira el auto con el dedo. Un toque lo muestra en grande (o sus llantas, si así lo elegiste en Llantas).</string>
-    <string name="car_update">Actualizar · %1$.1f MB</string>
+    <string name="car_update">Actualizar · %1$s</string>
     <string name="car_update_notice">Hay un modelo 3D nuevo de tu %1$s</string>
     <string name="your_models">Tus modelos</string>
     <string name="catalog">Catálogo</string>
@@ -344,6 +353,7 @@
     <string name="delete_car_question">¿Eliminar este auto descargado?</string>
     <string name="catalog_all_makes">Todas</string>
     <string name="catalog_downloaded">Descargado</string>
+    <string name="catalog_entry_detail">%1$s · %2$s</string>
     <string name="catalog_missing">Aún no tenemos ese auto.</string>
     <plurals name="delete_all_confirm">
         <item quantity="one">¿Eliminar el auto descargado?</item>
@@ -358,25 +368,40 @@
     <string name="music_other_app">Otra app…</string>
     <string name="source_unlinked">Sin enlazar</string>
     <string name="source_choose">Elegir</string>
-    <string name="source_remove">Quitar</string>
-    <string name="source_choose_for">¿Qué app de tu pantalla reproduce %1$s?</string>
-    <string name="bluetooth_name_permission">Ver el nombre del celular</string>
+    <string name="source_choose_for">¿Qué app de tu pantalla es la radio FM?</string>
     <string name="open_installer">Abrir con el instalador de Android</string>
     <string name="spin_quality">Calidad del giro</string>
     <string name="spin_quality_low">Baja</string>
     <string name="spin_quality_high">Alta</string>
+    <string name="spin_quality_low_saves">Baja · −%s</string>
+    <string name="spin_quality_high_costs">Alta · +%s</string>
     <string name="spin_quality_help">Alta = más cuadros al girar, más suave. Solo se bajan los que faltan.</string>
     <!-- Escáner OBD (Taller) y velocímetro -->
     <string name="tile_speedometer">Velocímetro</string>
-    <string name="tile_speedometer_help">Velocidad en el estilo que quieras (8 estilos) · del OBD si está conectado; si no, del GPS</string>
+    <string name="tile_speedometer_help">Velocidad en el estilo que quieras · del OBD si está conectado; si no, del GPS</string>
     <string name="workshop">Taller</string>
     <string name="tile_workshop_help">Acceso directo en tu inicio al Taller (escáner OBD: códigos de falla, verificación y sensores)</string>
     <string name="obd_adapter">Adaptador OBD</string>
-    <string name="obd_adapter_help">Conecta un adaptador ELM327 al puerto OBD (abajo del volante). Bluetooth clásico: empárejalo en Ajustes de Android → Bluetooth y elígelo aquí. Bluetooth LE: toca Buscar. Wi-Fi: conéctate a su red y escribe su dirección.</string>
+    <string name="obd_adapter_help">Conecta un adaptador ELM327 al puerto OBD (abajo del volante). Bluetooth clásico: emparéjalo en Ajustes de Android → Bluetooth y elígelo aquí. Bluetooth LE: toca Buscar. Wi-Fi: conéctate a su red y escribe su dirección.</string>
     <string name="obd_off">Sin conectar</string>
     <string name="obd_connecting">Conectando con %1$s…</string>
     <string name="obd_on">Conectado a %1$s</string>
-    <string name="obd_error">No se pudo conectar: %1$s</string>
+    <string name="obd_on_adapter">Conectado a %1$s · %2$s</string>
+    <string name="obd_error_bluetooth_off">El Bluetooth está apagado.</string>
+    <string name="obd_error_no_bluetooth_permission">Falta el permiso de Bluetooth.</string>
+    <string name="obd_error_no_usb">Esta pantalla no maneja USB.</string>
+    <string name="obd_error_no_usb_permission">No se dio permiso para el cable USB.</string>
+    <string name="obd_error_usb_unplugged">El cable USB no está conectado.</string>
+    <string name="obd_error_usb_not_serial">Ese cable USB no es un adaptador OBD.</string>
+    <string name="obd_error_usb_silent">El cable USB no respondió. Desconéctalo y vuelve a conectarlo.</string>
+    <string name="obd_error_not_obd">Ese aparato no parece un adaptador OBD.</string>
+    <string name="obd_error_gatt_busy">El Bluetooth está ocupado. Intenta de nuevo en un momento.</string>
+    <string name="obd_error_adapter_unreachable">No se encontró el adaptador. ¿Está conectado al auto y cerca?</string>
+    <string name="obd_error_adapter_silent">El adaptador no responde. Desconéctalo y vuelve a conectarlo.</string>
+    <string name="obd_error_car_silent">El auto no contesta. ¿Diste contacto?</string>
+    <string name="obd_error_connection_lost">Se perdió la conexión con el adaptador.</string>
+    <string name="obd_error_unknown">No se pudo conectar.</string>
+    <string name="obd_read_failed">No se pudo leer el auto. Toca «Leer de nuevo».</string>
     <string name="obd_disconnect">Desconectar</string>
     <string name="obd_other">Usar otro</string>
     <string name="obd_connect">Conectar</string>
@@ -445,11 +470,13 @@
     <string name="logo_change">Cambiar imagen</string>
     <string name="logo_remove">Quitar imagen</string>
     <string name="logo_intro">Animación de entrada</string>
-    <string name="bar_position">Barra de apps</string>
-    <string name="bar_position_help">La de LiteDash, con la hora y tus apps. Automática: a la izquierda si la pantalla está acostada, abajo si está parada.</string>
+    <string name="bar_title">Barra de apps</string>
+    <string name="bar_position_help">Automática: a la izquierda si la pantalla está acostada, abajo si está parada.</string>
     <string name="bar_edit">Barra</string>
     <string name="bar_edit_help">Para quitar un botón toca su x en la barra; para cambiarlo de lugar, arrástralo. Ajustes siempre va.</string>
     <string name="bar_add">Agregar a la barra</string>
+    <string name="bar_add_item">+ %1$s</string>
+    <string name="radio_mi">%1$d mi</string>
     <string name="bar_place">Posición</string>
     <string name="bar_style">Estilo</string>
     <string name="bar_style_floating">Flotante</string>
@@ -473,7 +500,7 @@
     <string name="module_obd">Escáner OBD</string>
     <string name="module_notifications">Avisos de otras apps</string>
     <string name="module_location">Ubicación</string>
-    <string name="module_radio">Radio por internet</string>
+    <string name="radio_internet_title">Radio por internet</string>
     <string name="module_tpms">Llantas (TPMS)</string>
     <string name="module_cameras">Cámaras</string>
     <string name="module_soon">Pronto</string>
@@ -501,9 +528,11 @@
     <string name="unit_mpg" translatable="false">mpg</string>
     <string name="unit_psi" translatable="false">psi</string>
     <string name="unit_lh" translatable="false">L/h</string>
+    <string name="unit_kpa" translatable="false">kPa</string>
+    <string name="unit_gs" translatable="false">g/s</string>
     <string name="unit_galh" translatable="false">gal/h</string>
     <string name="tile_gauge">Medidor</string>
-    <string name="tile_gauge_help">Un dato del auto por OBD: revoluciones, temperatura, gasolina, batería, consumo, turbo, acelerador o aceite</string>
+    <string name="tile_gauge_help">Un dato del auto por OBD: revoluciones, temperatura, gasolina, batería, consumo, turbo, acelerador, aceite o gasto de gasolina</string>
     <string name="gauge_pick">Toca para elegir qué mostrar</string>
     <string name="gauge_unsupported">Tu auto no da este dato</string>
     <string name="speed_title">Velocidad</string>
@@ -578,13 +607,17 @@
     <string name="bluetooth_turn_on">Encender Bluetooth</string>
     <!-- Emparejar el celular por Bluetooth para su sonido (Ajustes → Apps → Música). -->
     <string name="bt_pair">Sonido por Bluetooth</string>
-    <string name="bt_pair_help">Empareja tu celular con esta pantalla para escuchar su música, y olvídalo cuando quieras. La música se controla desde la música en grande.</string>
+    <string name="bt_pair_help">Escucha la música de tu celular en esta pantalla. Se controla desde el widget Música o la música en grande.</string>
     <string name="bt_own_pair">Tu pantalla empareja el celular desde su propia app de Bluetooth.</string>
     <string name="bt_open_app">Abrir la app de Bluetooth</string>
     <string name="bt_pick_help">¿Qué app de tu pantalla reproduce la música del celular?</string>
     <string name="bt_own_help">El título y el artista los manda tu pantalla; si no aparecen, es que su app de Bluetooth no los envía.</string>
     <string name="bt_permission">Dar permisos de Bluetooth</string>
     <string name="bt_permission_help">Para buscar y emparejar celulares, LiteDash necesita permiso del Bluetooth (buscar cerca y emparejar).</string>
+    <string name="bt_permission_help_location">Para buscar y emparejar celulares, Android le pide a LiteDash el permiso de ubicación (no se guarda dónde estás).</string>
+    <string name="bt_location_off">Para encontrar celulares, esta versión de Android necesita la ubicación prendida.</string>
+    <string name="bt_pairing">Emparejando…</string>
+    <string name="bt_forget_failed">Android no deja olvidarlo desde aquí: hazlo en Ajustes de Android → Bluetooth.</string>
     <string name="bt_connected">Celular conectado: %1$s</string>
     <string name="bt_not_connected">Ningún celular conectado todavía.</string>
     <string name="bt_screen_name">Esta pantalla se llama «%1$s»: búscala desde el celular.</string>
@@ -606,13 +639,11 @@
     <string name="sys_location">Ubicación (GPS)</string>
     <string name="sys_display">Pantalla</string>
     <string name="sys_sound">Sonido</string>
-    <string name="sys_apps">Apps</string>
     <string name="sys_date">Fecha y hora</string>
     <string name="sys_language">Idioma del sistema</string>
     <string name="sys_home">Pantalla de inicio</string>
-    <string name="tab_radio">Radio</string>
     <string name="tile_radio">Radio</string>
-    <string name="tile_radio_help">La radio de tu pantalla (FM) y, si la activas, por internet; un toque la abre en grande</string>
+    <string name="tile_radio_help">La radio de tu pantalla (FM) o por internet, la que elijas en Ajustes; un toque la abre en grande</string>
     <string name="radio_mode_title">Cómo escuchas la radio</string>
     <string name="radio_mode_help">Elige una: es la que suena en el widget Radio. Al cambiar, la otra se calla.</string>
     <string name="radio_fm_app">Radio de tu pantalla</string>
@@ -695,6 +726,9 @@
     <string name="tire_alert_hot">muy caliente: baja la velocidad</string>
     <string name="tire_alert_battery">al sensor se le acaba la pila</string>
     <string name="tire_alert_lost">el sensor no responde</string>
+    <string name="tire_alert_line">%1$s · %2$s · %3$s</string>
+    <string name="tire_line">%1$s · %2$s</string>
+    <string name="tires_recommended_pair">%1$s / %2$s</string>
     <string name="tires_source">De dónde se leen</string>
     <string name="tires_source_usb">Receptor USB</string>
     <string name="tires_source_ble">Bluetooth</string>
@@ -707,7 +741,7 @@
     <string name="tires_obd_help">Lee los sensores de fábrica de tu auto con el adaptador OBD del Taller: no hace falta otro kit. No todos los autos lo dan; se prueba según la marca.</string>
     <string name="tires_obd_connected">Sensores de fábrica · %1$s</string>
     <string name="tires_error_obd_off">Conecta tu adaptador OBD en el Taller (con el módulo OBD prendido).</string>
-    <string name="tires_error_obd_unsupported">Tu auto no dio la presión por OBD. Manda un reporte de Llantas para agregar tu modelo.</string>
+    <string name="tires_error_obd_unsupported">Tu auto no dio la presión por OBD. Manda un reporte de Llantas → Auto (OBD) para agregar tu modelo.</string>
     <string name="tires_ble_help">Los sensores se oyen aunque no estén emparejados; toca una llanta para elegir el suyo.</string>
     <string name="tires_arrange">Acomodar llanta</string>
     <string name="tires_swap_with">Intercambiar con…</string>
@@ -717,7 +751,9 @@
     <string name="tires_identify_help">Desinfla un poco esa llanta o quita y pon el tapón del sensor…</string>
     <string name="tires_identified">Listo: el sensor %1$s quedó en esta llanta</string>
     <string name="tires_no_sensors">Todavía no se oye ningún sensor</string>
-    <string name="tires_signal">señal %1$d dBm</string>
+    <string name="tires_signal_strong">señal fuerte</string>
+    <string name="tires_signal_medium">señal media</string>
+    <string name="tires_signal_weak">señal débil</string>
     <string name="tires_assigned_to">en %1$s</string>
     <string name="tires_remove">Quitar</string>
     <string name="tires_put_here">Poner aquí</string>
@@ -798,13 +834,14 @@
     <string name="sound_calibration">Calibrar sonido</string>
     <string name="sound_calibration_help">Cómo hace LiteDash que suenen el Bluetooth y la radio de tu pantalla. Se prueba solo la primera vez que suenan; si algo deja de sonar, calibra otra vez.</string>
     <string name="sound_calibrate_again">Calibrar otra vez</string>
+    <string name="sound_recipe_line">%1$s: %2$s</string>
     <string name="image_no_permission">Sin el permiso de archivos no se puede buscar en la memoria.</string>
     <string name="open_on_boot">Abrir LiteDash al encender</string>
     <string name="open_on_boot_help">Para pantallas que regresan su launcher de fábrica al apagar y encender el auto: LiteDash se pone al frente solo. Si tu pantalla tiene en sus ajustes la opción «Launcher predeterminado», elige LiteDash ahí también.</string>
     <string name="open_on_boot_permission">Falta el permiso «Mostrar sobre otras apps»: sin él, Android no deja que LiteDash se abra solo.</string>
     <string name="open_on_boot_grant">Dar permiso</string>
     <string name="bar_right">Derecha</string>
-    <string name="bar_size">TAMAÑO</string>
+    <string name="bar_size">Tamaño</string>
     <string name="bar_size_small">Compacta</string>
     <string name="bar_size_normal">Normal</string>
     <string name="bar_size_large">Grande</string>

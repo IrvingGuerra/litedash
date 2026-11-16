@@ -24,13 +24,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableDoubleStateOf
-import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -55,12 +54,54 @@ import kotlinx.coroutines.delay
 private const val GPS_FRESH_MS = 5_000L
 
 /**
+ * Un viaje termina tras este rato sin avanzar (estacionado, apagado o con la pantalla dormida): el
+ * siguiente empieza en cero. Una parada a comer no lo corta; la noche estacionado, sí.
+ */
+internal const val TRIP_IDLE_MS = 3 * 3_600_000L
+
+/** Más lento que esto (km/h) entre dos puntos es estar parado: ese rato no cuenta para el tiempo ni el promedio. */
+private const val MOVING_KMH = 3.0
+
+/**
+ * El viaje en curso, sin Android: metros, tiempo en movimiento y los relojes de arranque del primer y
+ * del último punto en movimiento ([startedAt] y [lastAt]; 0 = aún no empieza).
+ */
+internal data class TripLeg(val meters: Double = 0.0, val movingMs: Long = 0L, val startedAt: Long = 0L, val lastAt: Long = 0L) {
+    /** Ya terminó: pasó [TRIP_IDLE_MS] sin avanzar. */
+    fun over(now: Long) = lastAt != 0L && now - lastAt > TRIP_IDLE_MS
+
+    /**
+     * Un punto en movimiento a [now], a [step] metros del anterior. El rato desde el anterior solo cuenta si se
+     * avanzó a más de [MOVING_KMH] (un semáforo o el auto estacionado con la app cerrada, no). Si el viaje no
+     * había empezado o ya terminó, este punto empieza uno nuevo.
+     */
+    fun moved(now: Long, step: Double): TripLeg {
+        if (lastAt == 0L || over(now)) return TripLeg(startedAt = now, lastAt = now)
+        val dt = now - lastAt
+        // m/ms × 3 600 = km/h.
+        val moving = dt > 0 && step / dt * 3_600.0 > MOVING_KMH
+        return copy(meters = meters + step, movingMs = movingMs + if (moving) dt else 0L, lastAt = now)
+    }
+
+    /** km/h de promedio en movimiento; null mientras hay poco que promediar (un minuto y 100 m). */
+    fun averageKmh(): Double? = if (movingMs >= 60_000 && meters >= 100) meters / movingMs * 3_600.0 else null
+}
+
+/**
  * La última ubicación conocida más reciente de [providers] (null si ninguno tiene). Es una llamada al
  * sistema: fuera del hilo principal. Quien llama revisa antes el permiso.
  */
 @SuppressLint("MissingPermission")
 internal fun LocationManager.newestLastKnown(providers: List<String>): Location? =
-    providers.mapNotNull { runCatching { getLastKnownLocation(it) }.getOrNull() }.maxByOrNull { it.time }
+    providers.mapNotNull { p ->
+        try {
+            getLastKnownLocation(p)
+        } catch (e: IllegalArgumentException) {
+            null // el proveedor no existe en esta pantalla
+        } catch (e: SecurityException) {
+            null // se quitó el permiso
+        }
+    }.maxByOrNull { it.time }
 
 /**
  * Velocidad (al bus), rumbo y distancia del viaje con el GPS. Solo escucha mientras algo
@@ -76,13 +117,30 @@ class TripRepository(private val context: Context, private val bus: VehicleBus) 
     /** La última posición (la lee el mapa); se queda aunque el GPS se apague. */
     var position by mutableStateOf<Location?>(null)
         private set
-    var meters by mutableDoubleStateOf(0.0)
+    /** El viaje tal como va (puede haber terminado: ver [current]). */
+    internal var leg by mutableStateOf(TripLeg())
         private set
-    /** Reloj de arranque del primer punto en movimiento (0 = todavía no arranca): no cuenta lo que estuvo parado. */
-    var startedAt by mutableLongStateOf(0L)
+
+    /** El viaje a la hora [now] (reloj de arranque): vacío si ya terminó por llevar mucho sin avanzar. */
+    internal fun current(now: Long = SystemClock.elapsedRealtime()) = leg.takeUnless { it.over(now) } ?: TripLeg()
+
+    val meters get() = current().meters
+
+    /** Reloj de arranque del primer punto en movimiento del viaje (0 = todavía no arranca). */
+    val startedAt get() = current().startedAt
+
+    /**
+     * Si hay permiso de ubicación. Es estado: al darlo desde un widget, todos los que lo piden lo ven a
+     * la vez. Se pone al día con [refreshPermission] (al responder el diálogo y al volver a la app).
+     */
+    var permitted by mutableStateOf(hasPermission())
         private set
 
     private var users = 0
+    private var listening = false
+    /** Los proveedores que sí quedaron escuchando y la última falla al registrarlos (para el reporte). */
+    private var registered = emptyList<String>()
+    private var failure: String? = null
     private var last: Location? = null
     private val manager by lazy { context.getSystemService(LocationManager::class.java) }
     // Compat: en Android 6–10 LocationListener tiene más métodos abstractos que el lambda no
@@ -94,6 +152,10 @@ class TripRepository(private val context: Context, private val bus: VehicleBus) 
     /** Ubicación precisa o aproximada (en Android 12+ el usuario puede dar solo la aproximada). */
     fun hasPermission() = granted(Manifest.permission.ACCESS_FINE_LOCATION) || granted(Manifest.permission.ACCESS_COARSE_LOCATION)
 
+    fun refreshPermission() {
+        permitted = hasPermission()
+    }
+
     /**
      * Con la precisa, el GPS y también la red: muchas pantallas no traen antena GPS (o no está
      * conectada) y Google Maps las ubica por Wi-Fi; sin la red, el mapa se quedaba buscando para
@@ -102,40 +164,68 @@ class TripRepository(private val context: Context, private val bus: VehicleBus) 
     private fun providers(): List<String> {
         val wanted = if (granted(Manifest.permission.ACCESS_FINE_LOCATION)) listOf(LocationManager.GPS_PROVIDER, LocationManager.NETWORK_PROVIDER)
             else listOf(LocationManager.NETWORK_PROVIDER)
-        val existing = runCatching { manager.allProviders }.getOrDefault(emptyList())
+        val existing = manager.allProviders
         return wanted.filter { it in existing }
     }
 
-    @SuppressLint("MissingPermission") // se revisa con hasPermission()
+    /**
+     * Alguien quiere el GPS. Empieza a escuchar si aún no lo hace y ya hay permiso, aunque otros lo
+     * hayan pedido antes sin permiso (el que lo pidió primero no lo deja apagado para siempre).
+     */
     fun acquire() {
         users++
-        if (users == 1 && hasPermission()) {
-            val providers = providers()
-            for (provider in providers) runCatching { manager.requestLocationUpdates(provider, 1_000L, 0f, listener, Looper.getMainLooper()) }
-            // Mientras llega el primer punto, la última conocida (el mapa no espera en blanco). Es una
-            // llamada al sistema: fuera del hilo principal (el estado se puede escribir desde ahí).
-            if (position == null) thread(name = "last-location") {
-                val last = manager.newestLastKnown(providers)
-                // En el principal: si mientras tanto llegó un punto, no se pisa con uno más viejo.
-                if (last != null) main.post { if (position == null) position = last }
+        refreshPermission()
+        if (!listening && permitted) listen()
+    }
+
+    @SuppressLint("MissingPermission") // se revisa con permitted
+    private fun listen() {
+        listening = true
+        val providers = providers()
+        registered = providers.filter { provider ->
+            try {
+                manager.requestLocationUpdates(provider, 1_000L, 0f, listener, Looper.getMainLooper())
+                true
+            } catch (e: IllegalArgumentException) {
+                failure = "$provider: ${e.message}"
+                false
+            } catch (e: SecurityException) {
+                failure = "$provider: sin permiso"
+                false
             }
+        }
+        // Mientras llega el primer punto, la última conocida (el mapa no espera en blanco). Es una
+        // llamada al sistema: fuera del hilo principal (el estado se puede escribir desde ahí).
+        if (position == null) thread(name = "last-location") {
+            val last = manager.newestLastKnown(providers)
+            // En el principal: si mientras tanto llegó un punto, no se pisa con uno más viejo.
+            if (last != null) main.post { if (position == null) position = last }
         }
     }
 
     fun release() {
         users = (users - 1).coerceAtLeast(0)
-        if (users == 0) {
-            runCatching { manager.removeUpdates(listener) }
-            speedKmh = null
-            bus.publish(Signal.SPEED, null, Source.GPS)
+        if (users > 0) return
+        if (listening) {
+            manager.removeUpdates(listener)
+            listening = false
+            registered = emptyList()
         }
+        speedKmh = null
+        // Al volver (quizá horas después y en otro lugar), el rumbo no se calcula desde el punto de antes.
+        courseFrom = null
+        bus.publish(Signal.SPEED, null, Source.GPS)
     }
 
     fun reset() {
-        meters = 0.0
-        startedAt = 0L
+        leg = TripLeg()
         last = null
     }
+
+    /** Para el reporte técnico: qué proveedores escuchan y la última falla al registrarlos. */
+    fun describe(): String =
+        "GPS: " + (if (listening) "escucha ${registered.ifEmpty { listOf("ninguno") }.joinToString()}" else "sin escuchar") +
+            (failure?.let { " · falló $it" } ?: "")
 
     /** Reloj de arranque del último punto del GPS: mientras llega, la red (menos precisa) no lo pisa. */
     private var lastGpsAt = 0L
@@ -169,11 +259,9 @@ class TripRepository(private val context: Context, private val bus: VehicleBus) 
         speedKmh = if (l.hasSpeed()) l.speed * 3.6f else null
         bus.publish(Signal.SPEED, speedKmh, Source.GPS)
         if ((speedKmh ?: 0f) > 3f) heading(l)?.let { bearing = it }
-        val previous = last
         // Solo puntos buenos y en movimiento: parado, el GPS "camina" solo unos metros.
         if (l.accuracy <= 30f && (speedKmh ?: 0f) > 3f) {
-            if (startedAt == 0L) startedAt = now
-            if (previous != null) meters += previous.distanceTo(l)
+            leg = leg.moved(now, last?.distanceTo(l)?.toDouble() ?: 0.0)
             last = l
         }
     }
@@ -196,14 +284,15 @@ fun KeepTripRunning(trip: TripRepository) {
     }
 }
 
-private val COMPASS = arrayOf("N", "NE", "E", "SE", "S", "SO", "O", "NO")
-private val COMPASS_EN = arrayOf("N", "NE", "E", "SE", "S", "SW", "W", "NW")
+/** Cuál de los ocho puntos cardinales ([R.array.compass_points], desde el norte) es el rumbo [bearing] en grados. */
+internal fun compassIndex(bearing: Float): Int = (((bearing % 360f + 360f) % 360f + 22.5f) / 45f).toInt() % 8
 
 /** La distancia en la unidad del usuario, con un decimal ("12.3"); la unidad con [distanceUnit]. */
 @Composable
 fun distanceText(meters: Double, miles: Boolean): String = String.format(currentLocale(), "%.1f", meters.metersToDistance(miles))
 
-fun distanceUnit(miles: Boolean) = if (miles) "mi" else "km"
+@Composable
+private fun distanceUnit(miles: Boolean) = stringResource(if (miles) R.string.unit_mi else R.string.unit_km)
 
 /** La velocidad sin decimales en la unidad del usuario (sin dato, 0); la unidad con [speedUnit]. */
 @Composable
@@ -212,29 +301,38 @@ fun speedText(kmh: Float?, miles: Boolean): String = String.format(currentLocale
 @Composable
 fun speedUnit(miles: Boolean) = stringResource(if (miles) R.string.unit_mph else R.string.unit_kmh)
 
-/** Lo del viaje ya en texto, para la pieza Viaje y la carretera. */
-class TripStats(val distance: String, val unit: String, val time: String, val average: String?, val heading: String?)
+/** Lo del viaje ya en texto, para la pieza Viaje y la carretera. [distanceWithUnit] = las dos juntas en el orden del idioma. */
+class TripStats(val distance: String, val unit: String, val distanceWithUnit: String, val time: String, val average: String?, val heading: String?)
 
-/** Los datos del viaje en la unidad del usuario; el tiempo avanza solo aunque el GPS no mande nada. */
+/**
+ * Los datos del viaje en la unidad del usuario. El tiempo es el que llevas en movimiento y el promedio no cuenta
+ * lo parado; un viaje que ya terminó ([TRIP_IDLE_MS] sin avanzar) se ve en cero aunque no llegue ningún punto.
+ */
 @Composable
 fun rememberTripStats(trip: TripRepository, miles: Boolean): TripStats {
-    // Una vez por minuto basta para el tiempo.
-    val elapsed by produceState(0L, trip.startedAt) {
+    val leg = trip.leg
+    // Con la pantalla dormida la espera no avanza: al volver a la app se revisa otra vez.
+    val starts = rememberStarts()
+    val over by produceState(leg.over(SystemClock.elapsedRealtime()), leg, starts) {
         while (true) {
-            value = if (trip.startedAt == 0L) 0L else SystemClock.elapsedRealtime() - trip.startedAt
-            delay(60_000 - value % 60_000)
+            val now = SystemClock.elapsedRealtime()
+            value = leg.over(now)
+            if (value || leg.lastAt == 0L) break
+            delay(leg.lastAt + TRIP_IDLE_MS - now + 1)
         }
     }
-    val minutes = (elapsed / 60_000).toInt()
+    val shown = if (over) TripLeg() else leg
+    val minutes = (shown.movingMs / 60_000).toInt()
     val locale = currentLocale()
-    val heading = trip.bearing?.let { (if (locale.language == "es") COMPASS else COMPASS_EN)[((it + 22.5f) / 45f).toInt() % 8] }
-    // Promedio desde que arrancó (con paradas), cuando ya hay algo que promediar. Con la hora de
-    // ahora (no la del último minuto): se vuelve a calcular con cada metro nuevo.
-    val hours = if (trip.startedAt == 0L) 0.0 else (SystemClock.elapsedRealtime() - trip.startedAt) / 3_600_000.0
-    val average = if (minutes >= 1 && trip.meters >= 100) "${speedText((trip.meters / 1000 / hours).toFloat(), miles)} ${speedUnit(miles)}" else null
+    val points = stringArrayResource(R.array.compass_points)
+    val heading = trip.bearing?.let { points[compassIndex(it)] }
+    val average = shown.averageKmh()?.let { stringResource(R.string.value_with_unit, speedText(it.toFloat(), miles), speedUnit(miles)) }
+    val distance = distanceText(shown.meters, miles)
+    val unit = distanceUnit(miles)
     return TripStats(
-        distance = distanceText(trip.meters, miles),
-        unit = distanceUnit(miles),
+        distance = distance,
+        unit = unit,
+        distanceWithUnit = stringResource(R.string.value_with_unit, distance, unit),
         time = String.format(locale, "%d:%02d", minutes / 60, minutes % 60),
         average = average,
         heading = heading,

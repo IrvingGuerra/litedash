@@ -2,9 +2,11 @@ package com.irvingguerra.litedash
 
 import com.irvingguerra.litedash.core.ui.Segmented
 import android.app.Activity
+import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.provider.Settings
+import android.util.Log
 import android.view.WindowManager
 import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.layout.Arrangement
@@ -58,26 +60,31 @@ private object SystemBrightnessLock
 /** Cambia el brillo del sistema; la primera vez guarda el que tenía el usuario. */
 private fun setSystemBrightness(context: Context, prefs: Preferences, percent: Int) {
     val r = context.contentResolver
-    runCatching {
-        if (prefs.brightnessOriginal == null) {
-            prefs.brightnessOriginal = Settings.System.getInt(r, Settings.System.SCREEN_BRIGHTNESS_MODE) to
-                Settings.System.getInt(r, Settings.System.SCREEN_BRIGHTNESS)
-        }
-        Settings.System.putInt(r, Settings.System.SCREEN_BRIGHTNESS_MODE, Settings.System.SCREEN_BRIGHTNESS_MODE_MANUAL)
-        Settings.System.putInt(r, Settings.System.SCREEN_BRIGHTNESS, (percent * 255 / 100).coerceIn(1, 255))
+    if (prefs.brightnessOriginal == null) {
+        // Sin valor guardado en la pantalla: manual y a todo (lo de fábrica de Android).
+        prefs.brightnessOriginal = Settings.System.getInt(r, Settings.System.SCREEN_BRIGHTNESS_MODE, Settings.System.SCREEN_BRIGHTNESS_MODE_MANUAL) to
+            Settings.System.getInt(r, Settings.System.SCREEN_BRIGHTNESS, 255)
     }
+    writeBrightness(context, Settings.System.SCREEN_BRIGHTNESS_MODE_MANUAL, (percent * 255 / 100).coerceIn(1, 255))
 }
 
 /** Regresa el brillo del sistema como estaba antes de LiteDash (automático incluido). */
 private fun restoreSystemBrightness(context: Context, prefs: Preferences) {
     val (mode, level) = prefs.brightnessOriginal ?: return
     if (!Settings.System.canWrite(context)) return
-    runCatching {
-        val r = context.contentResolver
-        Settings.System.putInt(r, Settings.System.SCREEN_BRIGHTNESS, level)
-        Settings.System.putInt(r, Settings.System.SCREEN_BRIGHTNESS_MODE, mode)
-    }
-    prefs.brightnessOriginal = null
+    if (writeBrightness(context, mode, level)) prefs.brightnessOriginal = null
+}
+
+/** Escribe modo y nivel del brillo del sistema; false si Android quitó el permiso entre la revisión y la escritura. */
+private fun writeBrightness(context: Context, mode: Int, level: Int): Boolean = try {
+    val r = context.contentResolver
+    // El nivel antes que el modo: al regresar a automático, el nivel manual del usuario ya quedó.
+    Settings.System.putInt(r, Settings.System.SCREEN_BRIGHTNESS, level)
+    Settings.System.putInt(r, Settings.System.SCREEN_BRIGHTNESS_MODE, mode)
+    true
+} catch (e: SecurityException) {
+    Log.w("LiteDash", "Sin permiso para el brillo del sistema", e)
+    false
 }
 
 private fun windowBrightness(activity: Activity, percent: Int?) {
@@ -90,7 +97,11 @@ private fun windowBrightness(activity: Activity, percent: Int?) {
 private fun requestWriteSettings(context: Context) {
     val intent = Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS, "package:${context.packageName}".toUri())
         .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-    runCatching { context.startActivity(intent) }
+    // Algunas pantallas de auto no traen esa página de Ajustes.
+    try {
+        context.startActivity(intent)
+    } catch (_: ActivityNotFoundException) {
+    }
 }
 
 /** Ajustes → Inicio y apariencia → Brillo: encender, cuánto de día y de noche, y en todas las apps. */
@@ -129,7 +140,7 @@ private fun Level(icon: ImageVector, title: String, value: Int, set: (Int) -> Un
         Icon(icon, c.accent, 22.dp)
         Label(title, Typography.body, modifier = Modifier.widthIn(min = 70.dp))
         IconButton(Icons.minus, { set((value - 10).coerceAtLeast(10)) }, background = c.surfaceHigh)
-        Label("$value %", Typography.title, modifier = Modifier.widthIn(min = 90.dp))
+        Label(stringResource(R.string.brightness_level, value), Typography.title, modifier = Modifier.widthIn(min = 90.dp))
         IconButton(Icons.plus, { set((value + 10).coerceAtMost(100)) }, background = c.surfaceHigh)
     }
 }

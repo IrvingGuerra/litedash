@@ -1,14 +1,17 @@
 package com.irvingguerra.litedash
 
 import android.annotation.SuppressLint
+import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ApplicationInfo
+import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.content.res.Resources
 import android.os.Build
 import android.os.Bundle
 import android.os.SystemClock
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.annotation.RequiresApi
 import androidx.activity.compose.setContent
@@ -66,7 +69,11 @@ object SplitScreen {
     private fun isMapOrMusic(context: Context, d: Dependencies, pkg: String): Boolean {
         if (pkg in NAVIGATION_PACKAGES || pkg in MUSIC_PACKAGES || pkg == d.music.preferred) return true
         if (d.prefs.mapApp?.substringBefore('/') == pkg) return true
-        val category = runCatching { context.packageManager.getApplicationInfo(pkg, 0).category }.getOrNull()
+        val category = try {
+            context.packageManager.getApplicationInfo(pkg, 0).category
+        } catch (_: PackageManager.NameNotFoundException) {
+            return false
+        }
         return category == ApplicationInfo.CATEGORY_MAPS || category == ApplicationInfo.CATEGORY_AUDIO
     }
 
@@ -96,8 +103,22 @@ object SplitScreen {
             .putExtra(EXTRA_OPEN, true)
             .putExtra(EXTRA_LEFT, carLeft)
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        runCatching { context.startActivity(intent) }
+        launch(context, intent)
     }
+
+    /** Abre [intent]; si Android no deja, queda anotado en el registro y regresa false. */
+    private fun launch(context: Context, intent: Intent): Boolean = try {
+        context.startActivity(intent)
+        true
+    } catch (e: ActivityNotFoundException) {
+        Log.w(TAG, "no se pudo abrir ${intent.component ?: intent.`package`}", e)
+        false
+    } catch (e: SecurityException) {
+        Log.w(TAG, "Android no dejó abrir ${intent.component ?: intent.`package`}", e)
+        false
+    }
+
+    private const val TAG = "SplitScreen"
 
     internal fun appOf(intent: Intent): Intent? = IntentCompat.getParcelableExtra(intent, EXTRA_APP, Intent::class.java)
 
@@ -116,12 +137,13 @@ object SplitScreen {
         val view = activity.window.decorView
         val since = SystemClock.elapsedRealtime()
         fun tryOpen() {
-            if (activity.isFinishing) return
+            // Una ventana vieja (se recreó al girar) ya no abre nada.
+            if (activity.isFinishing || activity.isDestroyed) return
             if (!activity.onSide(left) && SystemClock.elapsedRealtime() - since < GIVE_UP_MS) {
                 view.postDelayed(::tryOpen, CHECK_MS)
                 return
             }
-            runCatching { activity.startActivity(Intent(app).addFlags(Intent.FLAG_ACTIVITY_LAUNCH_ADJACENT or Intent.FLAG_ACTIVITY_NEW_TASK)) }
+            launch(activity, Intent(app).addFlags(Intent.FLAG_ACTIVITY_LAUNCH_ADJACENT or Intent.FLAG_ACTIVITY_NEW_TASK))
         }
         view.post(::tryOpen)
     }
@@ -135,7 +157,7 @@ object SplitScreen {
             .putExtra(EXTRA_OPEN, true)
             .putExtra(EXTRA_LEFT, intent.getBooleanExtra(EXTRA_LEFT, false))
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_LAUNCH_ADJACENT)
-        runCatching { activity.startActivity(board) }
+        launch(activity, board)
     }
 
     /**
@@ -147,12 +169,13 @@ object SplitScreen {
     internal fun swap(activity: SplitActivity, app: Intent?) {
         app ?: return
         val prefs = (activity.application as LiteDashApp).dependencies.prefs
-        prefs.splitCarLeft = !prefs.splitCarLeft
+        val left = !prefs.splitCarLeft
         val step = Intent(activity, SplitStartActivity::class.java)
             .putExtra(EXTRA_APP, app)
-            .putExtra(EXTRA_LEFT, prefs.splitCarLeft)
+            .putExtra(EXTRA_LEFT, left)
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_MULTIPLE_TASK)
-        runCatching { activity.startActivity(step) }
+        // El lado guardado cambia solo si de verdad se movió (si no, quedaría al revés de lo que se ve).
+        if (launch(activity, step)) prefs.splitCarLeft = left
     }
 }
 
@@ -161,11 +184,18 @@ object SplitScreen {
 private fun ComponentActivity.onSide(left: Boolean): Boolean {
     val at = IntArray(2)
     window.decorView.getLocationOnScreen(at)
-    val screen = resources.displayMetrics.widthPixels.coerceAtLeast(1)
-    val onLeft = at[0] < screen / 4
+    return onSide(left, at[0], window.decorView.width, resources.displayMetrics.widthPixels, isInMultiWindowMode)
+}
+
+/**
+ * Una ventana que empieza en [x] y mide [width] de una pantalla de [screen], ¿está del lado [left]? A la izquierda
+ * cuenta completa (recién abierta desde el inicio) o ya en la mitad izquierda; a la derecha, la que empieza pasado el cuarto.
+ */
+internal fun onSide(left: Boolean, x: Int, width: Int, screen: Int, multiWindow: Boolean): Boolean {
+    val total = screen.coerceAtLeast(1)
+    val onLeft = x < total / 4
     if (!left) return !onLeft
-    // A la izquierda: completa (recién abierto desde el inicio) o ya en la mitad izquierda.
-    return onLeft && (!isInMultiWindowMode || window.decorView.width < screen * 3 / 4)
+    return onLeft && (!multiWindow || width < total * 3 / 4)
 }
 
 /** El auto solo, para la mitad de la pantalla dividida, con cambiar de lado y salir. */

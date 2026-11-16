@@ -28,6 +28,7 @@
     <string name="map_offline_here">Tu zona</string>
     <string name="map_offline_other">Otra zona</string>
     <string name="map_offline_area">%1$s · %2$d km · %3$s · %4$s</string>
+    <string name="map_offline_radius">%1$d km</string>
     <string name="map_offline_redownload">Volver a bajar</string>
     <string name="map_offline_delete">Borrar</string>
     <string name="map_offline_delete_question">¿Borrar esta zona?</string>

@@ -9,7 +9,7 @@
     <string name="report_workshop">Taller (OBD)</string>
     <string name="report_projection">Android Auto / apps</string>
     <string name="report_lights">Día y noche / faros</string>
-    <string name="report_music_usb">USB (reproductor de LiteDash)</string>
+    <string name="report_music_usb">Archivos (reproductor de LiteDash)</string>
     <string name="report_music_bt">Bluetooth (de la pantalla)</string>
     <string name="report_music_app">Tu app de música (Spotify, YouTube Music…)</string>
     <string name="report_radio_fm">FM de la pantalla</string>

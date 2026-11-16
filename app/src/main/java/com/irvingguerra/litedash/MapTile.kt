@@ -87,14 +87,18 @@ import kotlinx.coroutines.withContext
  * como diga su [data] ([MapLook]); navegando, la siguiente vuelta flota arriba a la izquierda y Casa y
  * Trabajo, abajo a la derecha (sobre los créditos). Un toque hace [onTap] (tu app de mapas o el mapa en grande, según
  * Ajustes → Apps → Navegación); con la app externa, el botón de la esquina la abre (sin ella no hay botón). En una fila, o sin permiso de ubicación, se ve
- * como el widget Navegar de antes (vuelta, Casa y Trabajo) y, sin permiso, un botón para pedirlo. GPS y descargas solo
- * mientras se ve.
+ * solo la vuelta, Casa y Trabajo ([NavigationTile]) y, sin permiso, un botón para pedirlo. GPS y descargas solo
+ * mientras se ve. Al quitar el widget se sueltan su cámara y su almacén de teselas.
  */
 @Composable
 fun MapTile(d: Dependencies, tileId: String, data: String, app: App?, editing: Boolean, onPlace: (String) -> Unit, onNavigate: () -> Unit, onTap: () -> Unit) {
     val c = LocalColors.current
     val (granted, ask) = rememberGpsPermission(d)
     val look = remember(data) { MapLook.parse(data) }
+    // Sale de la pantalla: si fue porque se quitó el widget, lo suyo ya no sirve (si no, se queda para cuando vuelva).
+    DisposableEffect(tileId) {
+        onDispose { if (d.dashboard.tiles.none { it.id == tileId }) forgetMap(tileId) }
+    }
     BoxWithConstraints(Modifier.fillMaxSize()) {
         if (!granted || maxHeight < COMPACT_HEIGHT) {
             // Un toque, igual que al mapa en vivo: tu app de mapas o el mapa en grande.
@@ -109,7 +113,7 @@ fun MapTile(d: Dependencies, tileId: String, data: String, app: App?, editing: B
         val turnWidth = maxWidth - if (external) 68.dp else 16.dp
         val withPlaces = maxHeight >= PLACES_HEIGHT
         Card(Modifier.fillMaxSize()) {
-            LiveMap(d, look, Modifier.fillMaxSize(), cameraKey = tileId, onTap = onTap)
+            LiveMap(d, look, Modifier.fillMaxSize(), tileId, onTap = onTap)
             // La vuelta no llega al botón de la app.
             NextTurn(d, Modifier.align(Alignment.TopStart).padding(8.dp).widthIn(max = turnWidth))
             if (withPlaces) {
@@ -134,8 +138,15 @@ fun MapExpanded(d: Dependencies, tileId: String?, data: String, app: App?, onPla
     val c = LocalColors.current
     val (granted, ask) = rememberGpsPermission(d)
     val look = remember(data) { MapLook.parse(data) }
+    // Mientras se ve, su widget (que queda debajo) se rige por lo que tape a este: no suelta las teselas que comparten.
+    val covered = LocalHomeCovered.current
+    if (tileId != null) DisposableEffect(tileId, covered) {
+        val shown = ExpandedMap(tileId, covered)
+        expandedMap = shown
+        onDispose { if (expandedMap === shown) expandedMap = null }
+    }
     Card(modifier.fillMaxSize()) {
-        if (granted) LiveMap(d, look, Modifier.fillMaxSize(), cameraKey = tileId)
+        if (granted) LiveMap(d, look, Modifier.fillMaxSize(), tileId)
         else Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Button(stringResource(R.string.tap_to_enable), ask, primary = true) }
         NextTurn(d, Modifier.align(Alignment.TopStart).padding(12.dp).widthIn(max = 520.dp))
         Row(Modifier.align(Alignment.TopEnd).padding(12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -179,22 +190,23 @@ private val ATTRIBUTION_CLEARANCE = 56.dp
 
 /**
  * El mapa con el GPS y las teselas corriendo solo mientras se ve (el widget, en grande y la vista previa)
- * y nada lo tapa ([LocalHomeCovered]). [onTap] = qué hace un toque (sin él, nada); con un dedo se mueve y abajo
- * a la izquierda van el botón para regresar a ti, la calle donde vas y si el mapa es en línea o bajado.
+ * y nada lo tapa ([LocalHomeCovered]). Con [tileId], las teselas son las de ese widget y, salvo con [ownCamera]
+ * (la vista previa del panel), también su cámara. [onTap] = qué hace un toque (sin él, nada); con un dedo se mueve
+ * y abajo a la izquierda van el botón para regresar a ti, la calle donde vas y si el mapa es en línea o bajado.
  */
 @Composable
-private fun LiveMap(d: Dependencies, look: MapLook, modifier: Modifier, cameraKey: String? = null, onTap: (() -> Unit)? = null) {
+private fun LiveMap(d: Dependencies, look: MapLook, modifier: Modifier, tileId: String? = null, ownCamera: Boolean = false, onTap: (() -> Unit)? = null) {
     val c = LocalColors.current
     KeepTripRunning(d.trip)
     val context = LocalContext.current
-    val store = rememberTileStore(look, c.dark, cameraKey)
+    val store = rememberTileStore(look, c.dark, tileId)
     // Tapado (por el mapa en grande o un panel) se queda como está: no pide teselas ni anima.
     val active = !LocalHomeCovered.current
     val position = d.trip.position
     // Del bus (la del OBD si hay escáner, si no la del GPS): andando (o con Waze/Maps navegando) va de viaje.
     val kmh = d.bus.watch(Signal.SPEED)
     val navigating = d.navigation.instruction != null
-    val camera = sharedMapCamera(cameraKey)
+    val camera = sharedMapCamera(tileId?.takeUnless { ownCamera })
     // Solo cambia al mover o centrar el mapa (no con cada movimiento del dedo).
     val centered by remember(camera) { derivedStateOf { camera.centered } }
     BoxWithConstraints(modifier) {
@@ -230,6 +242,18 @@ private fun LiveMap(d: Dependencies, look: MapLook, modifier: Modifier, cameraKe
  * al abrirlo o cerrarlo (solo cambia el tamaño). Sin [key] (vistas previas), una propia.
  */
 private val mapCameras = HashMap<String, MapCamera>()
+
+/** Se quitó el widget Mapa [tileId]: su cámara y su almacén ya no sirven (el almacén ya soltó todo al dejar de verse). */
+private fun forgetMap(tileId: String) {
+    mapCameras.remove(tileId)
+    tileStores.remove(tileId)
+}
+
+/** El mapa en grande que se ve: de qué widget es y si algo lo tapa. */
+private class ExpandedMap(val tileId: String, val covered: Boolean)
+
+/** El mapa en grande a la vista (null = ninguno); lo pone [MapExpanded]. */
+private var expandedMap by mutableStateOf<ExpandedMap?>(null)
 
 @Composable
 private fun sharedMapCamera(key: String?): MapCamera =
@@ -275,7 +299,8 @@ private fun rememberTileStore(look: MapLook, themeDark: Boolean, shareKey: Strin
         tileStores[shareKey]?.takeIf { it.first == kind }?.second
             ?: newTileStore(context, look.detail, darkTiles, density).also { tileStores[shareKey] = kind to it }
     }
-    val covered = LocalHomeCovered.current
+    // Tapado por su propio mapa en grande no cuenta como tapado: se rige por lo que tape a ese (comparten almacén).
+    val covered = expandedMap?.takeIf { shareKey != null && it.tileId == shareKey }?.covered ?: LocalHomeCovered.current
     LifecycleStartEffect(store, covered) {
         // El almacén cuenta quién lo ve: solo lo suelta quien lo tomó.
         if (!covered) store.resume()
@@ -290,10 +315,14 @@ private val tileStores = HashMap<String, Pair<String, TileStore>>()
 private fun newTileStore(context: Context, detail: MapDetail, dark: Boolean, density: Float): TileStore {
     val source = when (detail) {
         MapDetail.FULL -> OsmTiles
-        MapDetail.MINIMAL -> VectorTiles(context, if (dark) MinimalPalette.DARK else MinimalPalette.LIGHT, tilePx(density).toInt(), density, MAP_USER_AGENT)
+        MapDetail.MINIMAL -> minimalTiles(context, dark, density)
     }
     return TileStore(context, MAP_USER_AGENT, source)
 }
+
+/** Las teselas del minimalista (claras u oscuras), a la medida de la pantalla. */
+private fun minimalTiles(context: Context, dark: Boolean, density: Float) =
+    VectorTiles(context, if (dark) MinimalPalette.DARK else MinimalPalette.LIGHT, tilePx(density).toInt(), density, MAP_USER_AGENT)
 
 /** Personalizar mapa: estilo, orientación, zoom y colores de este widget, con el mapa en vivo como vista previa. */
 @Composable
@@ -309,7 +338,8 @@ fun CustomizeMapPanel(d: Dependencies, tileId: String, close: () -> Unit) {
     val (granted, _) = rememberGpsPermission(d)
     PanelScaffold(stringResource(R.string.map_customize), close) {
         BoxWithConstraints(Modifier.fillMaxWidth().weight(1f)) {
-            val preview = @Composable { m: Modifier -> if (granted) Card(m) { LiveMap(d, look, Modifier.fillMaxSize()) } }
+            // Las mismas teselas que el widget (no se bajan dos veces), con su propia cámara: moverla no mueve el widget.
+            val preview = @Composable { m: Modifier -> if (granted) Card(m) { LiveMap(d, look, Modifier.fillMaxSize(), tileId, ownCamera = true) } }
             val options = @Composable { m: Modifier ->
                 Column(m.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(14.dp)) {
                     MapLookOptions(look, ::set)
@@ -463,7 +493,7 @@ private fun OfflineSection(d: Dependencies, detail: MapDetail) {
     }
     var km by rememberSaveable { mutableIntStateOf(OFFLINE_RADII[1]) }
     // Con una zona elegida el radio es el suyo.
-    if (selected == null) Segmented(OFFLINE_RADII.map { it to "$it km" }, km, { km = it })
+    if (selected == null) Segmented(OFFLINE_RADII.map { it to stringResource(R.string.map_offline_radius, it) }, km, { km = it })
     if (position == null) {
         Button(stringResource(R.string.map_offline_download), {}, primary = true, enabled = false)
         Label(stringResource(R.string.map_offline_waiting), Typography.small, c.textMuted)
@@ -484,6 +514,8 @@ private fun OfflinePicker(offline: OfflineMaps, lat: Double, lon: Double, km: In
     val density = LocalDensity.current.density
     val look = remember { MapLook() }
     val store = rememberTileStore(look, c.dark)
+    // Lo que se baja va siempre en claro (el oscuro se pinta al dibujar); una sola fuente para las dos descargas.
+    val download = remember(density) { minimalTiles(context, dark = false, density) }
     val camera = rememberFreeMapCamera()
     val centered by remember(camera) { derivedStateOf { camera.centered } }
     // Al elegir una zona el mapa va a ella; al soltarla, de regreso a ti.
@@ -504,8 +536,7 @@ private fun OfflinePicker(offline: OfflineMaps, lat: Double, lon: Double, km: In
     if (selected != null) {
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Button(stringResource(R.string.map_offline_redownload), {
-                val source = VectorTiles(context, MinimalPalette.LIGHT, tilePx(density).toInt(), density, MAP_USER_AGENT)
-                offline.download(selected.lat, selected.lon, selected.km, source, MAP_USER_AGENT)
+                offline.download(selected.lat, selected.lon, selected.km, download, MAP_USER_AGENT)
             }, primary = true)
             Confirmed(stringResource(R.string.map_offline_delete), stringResource(R.string.map_offline_delete_question), stringResource(R.string.confirm_delete),
                 message = stringResource(R.string.map_offline_delete_message)) { offline.delete(selected.id) }
@@ -534,8 +565,7 @@ private fun OfflinePicker(offline: OfflineMaps, lat: Double, lon: Double, km: In
     }
     Button(stringResource(R.string.map_offline_download), {
         val (centerLat, centerLon) = camera.center(lat, lon)
-        val source = VectorTiles(context, MinimalPalette.LIGHT, tilePx(density).toInt(), density, MAP_USER_AGENT)
-        offline.download(centerLat, centerLon, km, source, MAP_USER_AGENT)
+        offline.download(centerLat, centerLon, km, download, MAP_USER_AGENT)
     }, primary = true, enabled = fits)
 }
 

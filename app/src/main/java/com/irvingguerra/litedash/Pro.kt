@@ -11,7 +11,9 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
+import org.json.JSONException
 import org.json.JSONObject
+import java.io.IOException
 import java.security.MessageDigest
 
 /** Cómo terminó un intento de activar un código. */
@@ -42,7 +44,7 @@ class ProAccess(private val context: Context) {
     /** Al arrancar y al volver al inicio: lee lo guardado y, si toca, revisa el código en la nube. */
     suspend fun refresh() = lock.withLock {
         val now = SystemClock.elapsedRealtime()
-        val canAttempt = lastAttempt == 0L || now - lastAttempt >= RECHECK_MS
+        val canAttempt = lastAttempt == 0L || now - lastAttempt >= ProCheck.RECHECK_MS
         val state = withContext(Dispatchers.IO) { revalidate(canAttempt) }
         if (state.attempted) lastAttempt = now
         isPro = state.pro
@@ -71,18 +73,23 @@ class ProAccess(private val context: Context) {
         val hash = store.getString(KEY_HASH, null) ?: return Refreshed(pro = false)
         val lastCheck = store.getLong(KEY_LAST_CHECK, 0L)
         val now = System.currentTimeMillis()
-        // Reloj hacia atrás (pantallas sin pila): se revisa de una vez.
-        val due = now - lastCheck >= RECHECK_MS || now < lastCheck
+        val due = ProCheck.due(now, lastCheck)
         if (due && canAttempt) {
-            // Sin red (o cualquier falla) no cambia nada; solo cuenta el límite de 30 días.
-            val doc = runCatching { Firestore.get(context, "$COLLECTION/$hash") }
-            if (doc.isSuccess) {
-                val ok = doc.getOrNull()?.let { isActive(it) && boundTo(it) == screenId() } == true
-                if (ok) store.edit { putLong(KEY_LAST_CHECK, now) } else clear()
-                return Refreshed(pro = ok, attempted = true)
+            // Sin red (o una respuesta rara) no cambia nada; solo cuenta el límite de 30 días.
+            val answered = try {
+                val doc = Firestore.get(context, "$COLLECTION/$hash")
+                doc?.let { isActive(it) && boundTo(it) == screenId() } == true
+            } catch (_: IOException) {
+                null
+            } catch (_: JSONException) {
+                null
+            }
+            if (answered != null) {
+                if (answered) store.edit { putLong(KEY_LAST_CHECK, now) } else clear()
+                return Refreshed(pro = answered, attempted = true)
             }
         }
-        if (now - lastCheck > OFFLINE_LIMIT_MS) {
+        if (ProCheck.expired(now, lastCheck)) {
             clear()
             return Refreshed(pro = false, attempted = due && canAttempt, expired = true)
         }
@@ -111,7 +118,9 @@ class ProAccess(private val context: Context) {
                 putLong(KEY_LAST_CHECK, System.currentTimeMillis())
             }
             result
-        } catch (_: Exception) {
+        } catch (_: IOException) {
+            ProResult.OFFLINE
+        } catch (_: JSONException) {
             ProResult.OFFLINE
         }
     }
@@ -136,13 +145,23 @@ class ProAccess(private val context: Context) {
         const val KEY_HASH = "code_hash"
         const val KEY_LAST_CHECK = "last_check"
         const val KEY_SCREEN = "screen_id"
-        const val RECHECK_MS = 12 * 60 * 60 * 1000L
-        const val OFFLINE_LIMIT_MS = 30 * 24 * 60 * 60 * 1000L
 
         fun field(doc: JSONObject, name: String) = doc.optJSONObject("fields")?.optJSONObject(name)
         fun isActive(doc: JSONObject) = field(doc, "active")?.optBoolean("booleanValue") == true
         fun boundTo(doc: JSONObject) = field(doc, "screen")?.optString("stringValue")?.takeIf { it.isNotEmpty() }
     }
+}
+
+/** Cuándo se revisa Pro en la nube y cuándo vence sin red (horas de pared). JVM pura para probarla. */
+internal object ProCheck {
+    const val RECHECK_MS = 12 * 60 * 60 * 1000L
+    const val OFFLINE_LIMIT_MS = 30 * 24 * 60 * 60 * 1000L
+
+    /** Toca revisar: pasaron 12 h o el reloj se fue hacia atrás (pantallas sin pila de reloj). */
+    fun due(now: Long, lastCheck: Long) = now - lastCheck >= RECHECK_MS || now < lastCheck
+
+    /** Pasaron más de 30 días sin poder revisarlo. */
+    fun expired(now: Long, lastCheck: Long) = now - lastCheck > OFFLINE_LIMIT_MS
 }
 
 /** El código como se escribe → su huella (el id del documento). JVM pura para probarla. */
@@ -153,6 +172,6 @@ internal object ProCode {
     /** SHA-256 en hex (minúsculas) del código normalizado; null si queda vacío. */
     fun hash(code: String): String? {
         val normalized = normalize(code).ifEmpty { return null }
-        return MessageDigest.getInstance("SHA-256").digest(normalized.toByteArray()).joinToString("") { "%02x".format(it) }
+        return hex(MessageDigest.getInstance("SHA-256").digest(normalized.toByteArray()))
     }
 }

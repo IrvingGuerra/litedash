@@ -3,6 +3,9 @@ package com.irvingguerra.litedash
 
 import com.irvingguerra.litedash.core.ui.Radius
 import android.content.Intent
+import android.text.format.Formatter
+import java.io.IOException
+import org.json.JSONException
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -70,9 +73,21 @@ internal fun CarSettings(d: Dependencies) {
     var catalog by remember { mutableStateOf<List<CatalogEntry>?>(null) }
     var unreachable by remember { mutableStateOf(false) }
     LaunchedEffect(cars.hasCatalog) {
-        if (cars.hasCatalog) runCatching { cars.catalog() }.onSuccess { catalog = it }.onFailure { unreachable = true }
+        if (!cars.hasCatalog) return@LaunchedEffect
+        // Sin red, un 4xx (Https lanza IllegalStateException) o un catálogo que no es JSON: se avisa abajo.
+        try {
+            catalog = cars.catalog()
+            unreachable = false
+        } catch (e: IOException) {
+            unreachable = true
+        } catch (e: IllegalStateException) {
+            unreachable = true
+        } catch (e: JSONException) {
+            unreachable = true
+        }
     }
     val tab = tabs(listOf(R.string.tab_my_car, R.string.tab_models, R.string.reminders), "car")
+    val entry = pkg?.let { p -> catalog?.firstOrNull { it.id == p.id } }
 
     if (tab == 0) SettingsCard {
         Box(Modifier.fillMaxWidth().widthIn(max = 520.dp).aspectRatio(1.8f)) {
@@ -85,18 +100,17 @@ internal fun CarSettings(d: Dependencies) {
         }
         Label(stringResource(R.string.car_home_help), Typography.small, c.textMuted)
         Label(stringResource(R.string.name), Typography.label, c.textMuted)
-        TextInput(prefs.carName ?: "", { prefs.carName = it.take(24).ifBlank { null } }, pkg?.name ?: stringResource(R.string.my_car), Modifier.fillMaxWidth())
+        CarNameField(prefs, pkg?.name ?: stringResource(R.string.my_car))
         Label(stringResource(R.string.color), Typography.label, c.textMuted)
-        ColorPicker(prefs.carColor, prefs::previewCarColor) { prefs.carColor = it }
-        if (pkg != null) FinishPicker(prefs, cars, pkg, catalog?.firstOrNull { it.id == pkg.id })
+        CarColorPicker(prefs)
+        if (pkg != null) FinishPicker(prefs, cars, pkg, entry)
     }
     if (tab == 0 && pkg != null) {
-        val entry = catalog?.firstOrNull { it.id == pkg.id }
         SettingsCard("${pkg.make} ${pkg.name} ${entry?.years ?: pkg.year}") {
             ModelOptions(cars, pkg, entry, onDelete = { prefs.carModel = null; cars.delete(pkg) })
         }
     }
-    if (tab == 1 && (cars.hasCatalog || installed.isNotEmpty())) {
+    if (tab == 1 && (cars.hasCatalog || installed.isNotEmpty() || cars.unreadable.isNotEmpty())) {
         SettingsCard(stringResource(R.string.your_models)) { DownloadedModels(prefs, cars, catalog) }
     }
     if (tab == 1) {
@@ -105,7 +119,7 @@ internal fun CarSettings(d: Dependencies) {
                 CatalogSearch(prefs, cars, catalog)
                 if (unreachable || cars.failed) Label(stringResource(R.string.catalog_error), Typography.small, c.danger)
             }
-        } else if (installed.isEmpty()) {
+        } else if (installed.isEmpty() && cars.unreadable.isEmpty()) {
             SettingsCard { Label(stringResource(R.string.car_coming_soon), Typography.small, c.textMuted) }
         }
     }
@@ -167,12 +181,12 @@ private fun ModelOptions(cars: CarRepository, current: CarPackage, entry: Catalo
     if (high != null || current.high) {
         Label(stringResource(R.string.spin_quality), Typography.label, c.textMuted)
         FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            val mb = high?.let { "%.1f MB".format(it.bytes / 1e6f) }
-            val low = stringResource(R.string.spin_quality_low)
-            val hi = stringResource(R.string.spin_quality_high)
-            Button(if (current.high && mb != null) "$low · −$mb" else low, { if (current.high) cars.lowerQuality(current) }, primary = !current.high)
-            if (entry != null && high != null) {
-                Button(if (!current.high) "$hi · +$mb" else hi, { if (!current.high) cars.raiseQuality(current, entry) }, primary = current.high)
+            val size = high?.let { Formatter.formatShortFileSize(context, it.bytes) }
+            val low = if (current.high && size != null) stringResource(R.string.spin_quality_low_saves, size) else stringResource(R.string.spin_quality_low)
+            Button(low, { if (current.high) cars.lowerQuality(current) }, primary = !current.high)
+            if (entry != null && size != null) {
+                val hi = if (!current.high) stringResource(R.string.spin_quality_high_costs, size) else stringResource(R.string.spin_quality_high)
+                Button(hi, { if (!current.high) cars.raiseQuality(current, entry) }, primary = current.high)
             }
         }
         val progress = cars.downloading?.takeIf { it.first == CarRepository.HIGH }?.second
@@ -189,7 +203,7 @@ private fun ModelOptions(cars: CarRepository, current: CarPackage, entry: Catalo
             Typography.small,
             c.textMuted,
             modifier = Modifier.clickable {
-                runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, current.source.toUri()).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
+                openSystemScreen(context, Intent(Intent.ACTION_VIEW, current.source.toUri()))
             },
         )
     }
@@ -210,10 +224,10 @@ private fun DownloadedModels(prefs: Preferences, cars: CarRepository, catalog: L
             }
         }
     }
-    if (installed.isEmpty()) {
-        Label(stringResource(R.string.no_models), Typography.small, c.textMuted)
-        return
-    }
+    // Los que no se pudieron leer (descarga dañada) no salen arriba pero ocupan espacio: "Eliminar todos" también los quita.
+    val stored = installed.size + cars.unreadable.size
+    if (installed.isEmpty()) Label(stringResource(R.string.no_models), Typography.small, c.textMuted)
+    if (stored == 0) return
     // Todos a la vez: los que tienen modelo 3D nuevo, o quitar todo lo descargado.
     val outdated = catalog.orEmpty().mapNotNull { e -> installed.firstOrNull { cars.isOutdated(it, e) }?.let { it to e } }
     val progress = cars.downloading?.takeIf { it.first == CarRepository.ALL }?.second
@@ -228,7 +242,7 @@ private fun DownloadedModels(prefs: Preferences, cars: CarRepository, catalog: L
             destructive = false,
         ) { cars.updateAll(outdated) }
     }
-    Confirmed(stringResource(R.string.delete_all), pluralStringResource(R.plurals.delete_all_confirm, installed.size, installed.size), stringResource(R.string.confirm_delete)) {
+    Confirmed(stringResource(R.string.delete_all), pluralStringResource(R.plurals.delete_all_confirm, stored, stored), stringResource(R.string.confirm_delete)) {
         prefs.carModel = null
         cars.deleteAll()
     }
@@ -241,6 +255,7 @@ private fun DownloadedModels(prefs: Preferences, cars: CarRepository, catalog: L
 @Composable
 private fun CatalogSearch(prefs: Preferences, cars: CarRepository, catalog: List<CatalogEntry>?) {
     val c = LocalColors.current
+    val context = LocalContext.current
     var query by remember { mutableStateOf("") }
     var make by remember { mutableStateOf<String?>(null) }
     var previewing by remember { mutableStateOf<String?>(null) }
@@ -260,9 +275,7 @@ private fun CatalogSearch(prefs: Preferences, cars: CarRepository, catalog: List
         for ((name, count) in makes) Button("$name · $count", { make = name }, primary = make == name)
     }
     val q = normalize(query.trim())
-    val found = sorted.filter { e ->
-        (make == null || e.make == make) && q.split(' ').all { it in normalize("${e.make} ${e.name} ${e.years}") || it.length == 4 && it.toIntOrNull()?.let(e::covers) == true }
-    }
+    val found = sorted.filter { it.matches(make, q) }
     if (found.isEmpty()) return Label(stringResource(R.string.catalog_missing), Typography.small, c.textMuted)
     val downloaded = cars.installed.map { it.id }.toSet()
     // Un descargado no se previsualiza (ya está): si se acaba de bajar, su vista previa se cierra.
@@ -283,7 +296,7 @@ private fun CatalogSearch(prefs: Preferences, cars: CarRepository, catalog: List
                 // Tocar uno sin bajar solo lo muestra en grande; se baja con el botón (ver no cuesta datos).
                 ModelCard(
                     "${e.make} ${e.name}",
-                    detail = if (have) stringResource(R.string.catalog_downloaded) else "${e.years} · %.1f MB".format(e.bytes / 1e6f),
+                    detail = if (have) stringResource(R.string.catalog_downloaded) else stringResource(R.string.catalog_entry_detail, e.years, Formatter.formatShortFileSize(context, e.bytes)),
                     selected = prefs.carModel == e.id,
                     onClick = { if (have) prefs.carModel = e.id else previewing = e.id },
                 ) { m ->
@@ -292,6 +305,16 @@ private fun CatalogSearch(prefs: Preferences, cars: CarRepository, catalog: List
             }
         }
     }
+}
+
+/**
+ * ¿Sale [this] en el catálogo con la marca [make] (null = todas) y la búsqueda [query] (ya con [normalize])? Cada
+ * palabra debe estar en la marca, el modelo o los años; un año de 4 cifras también vale si cae en su rango.
+ */
+internal fun CatalogEntry.matches(make: String?, query: String): Boolean {
+    if (make != null && this.make != make) return false
+    val text = normalize("${this.make} $name $years")
+    return query.split(' ').all { it in text || it.length == 4 && it.toIntOrNull()?.let(::covers) == true }
 }
 
 /** Un auto como tarjeta: su imagen arriba y el nombre abajo; marcada si es el elegido. */
@@ -340,7 +363,7 @@ private fun CarPreview(e: CatalogEntry, cars: CarRepository, progress: Float?, o
         if (e.author.isNotBlank()) Label(stringResource(R.string.model_credit, e.author, e.license), Typography.small, c.textMuted)
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             if (progress != null) {
-                Button("${(progress * 100).toInt()} %", {}, primary = true)
+                Label(stringResource(R.string.downloading, (progress * 100).toInt()), Typography.small, c.accent)
             } else {
                 Button(stringResource(R.string.download_mb, e.bytes / 1e6f), onDownload, primary = true)
                 Button(stringResource(R.string.cancel), onClose)

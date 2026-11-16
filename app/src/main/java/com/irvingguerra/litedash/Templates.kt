@@ -21,6 +21,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -35,6 +36,7 @@ import com.irvingguerra.litedash.feature.dashboard.DashboardState
 import com.irvingguerra.litedash.feature.dashboard.Grid
 import com.irvingguerra.litedash.feature.dashboard.ScreenSize
 import com.irvingguerra.litedash.feature.dashboard.Template
+import com.irvingguerra.litedash.feature.dashboard.Tile
 import com.irvingguerra.litedash.feature.dashboard.hasCar
 import com.irvingguerra.litedash.feature.dashboard.TileTypes
 import com.irvingguerra.litedash.feature.dashboard.coarse
@@ -109,10 +111,12 @@ fun TemplatesPanel(dashboard: DashboardState, close: () -> Unit) {
                 }
                 TemplateTab.CAR -> Unit
             }
+            // Cada plantilla armada una vez por pestaña (para no repetir y para su miniatura).
+            val layouts = remember(tab, grid) { tab.templates.associateWith { it.tiles(grid, tab.hero, dashboard.hidden) } }
             for (vertical in listOf(grid.vertical, !grid.vertical)) {
                 val mine = vertical == grid.vertical
                 val templates = tab.templates.filter { it.fits(vertical) }.let { list ->
-                    if (!mine) list else list.distinctBy { p -> p.tiles(grid, tab.hero, dashboard.hidden).map { listOf(it.type, it.col, it.row, it.width, it.height) } }
+                    if (!mine) list else list.distinctBy { p -> layouts.getValue(p).map { listOf(it.type, it.col, it.row, it.width, it.height) } }
                 }
                 if (templates.isEmpty()) continue
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -124,7 +128,7 @@ fun TemplatesPanel(dashboard: DashboardState, close: () -> Unit) {
                         for (p in templates) {
                             Card(Modifier.width(260.dp), onClick = { apply(p) }) {
                                 Column(Modifier.padding(16.dp)) {
-                                    TemplateThumbnail(p, grid, tab.hero, dashboard.hidden)
+                                    TemplateThumbnail(layouts.getValue(p), grid, tab.hero)
                                     Spacer(Modifier.height(12.dp))
                                     Label(stringResource(nameOf(p)), Typography.subtitle, maxLines = 1)
                                     if (tab == TemplateTab.CAR && mine && p == suggested) {
@@ -141,15 +145,13 @@ fun TemplatesPanel(dashboard: DashboardState, close: () -> Unit) {
     }
 }
 
-/** Dibujo de la plantilla en chiquito, con las proporciones de esta pantalla. */
+/** Dibujo de la plantilla ya armada ([tiles], igual que al aplicarla) en chiquito, con las proporciones de esta pantalla. */
 @Composable
-private fun TemplateThumbnail(p: Template, grid: Grid, hero: String, skip: (String) -> Boolean) {
+private fun TemplateThumbnail(tiles: List<Tile>, grid: Grid, hero: String) {
     val c = LocalColors.current
     BoxWithConstraints(Modifier.fillMaxWidth().aspectRatio(grid.columns.toFloat() / grid.rows).clip(RoundedCornerShape(Radius.inner)).background(c.background)) {
         val cw = maxWidth / grid.columns
         val ch = maxHeight / grid.rows
-        // Igual que al aplicarla: sin piezas de módulos apagados.
-        val tiles = p.tiles(grid, hero, skip)
         // La protagonista en el color de la interfaz: el auto (o la carretera) o, en las que no lo llevan, el velocímetro o la primera pieza.
         val main = (tiles.firstOrNull { it.type == hero } ?: tiles.firstOrNull { it.type == TileTypes.SPEEDOMETER } ?: tiles.firstOrNull())?.id
         for (tile in tiles) {

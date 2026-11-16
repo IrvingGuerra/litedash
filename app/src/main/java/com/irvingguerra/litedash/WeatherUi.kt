@@ -15,6 +15,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
@@ -43,7 +45,6 @@ import androidx.lifecycle.repeatOnLifecycle
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
-import java.util.Locale
 
 fun iconOf(sky: Sky, day: Boolean) = when (sky) {
     Sky.CLEAR -> if (day) Icons.sun else Icons.moon
@@ -90,8 +91,9 @@ fun WeatherRefresh(repo: WeatherRepository, revision: Int) {
         if (!on) return@LaunchedEffect
         lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
             while (true) {
-                repo.refreshIfStale()
-                delay(WeatherRepository.STALE_MS)
+                // Si falló (sin red o sin ubicación), se reintenta antes: si no, "Buscando el clima…" duraba media hora.
+                val ok = repo.refreshIfStale()
+                delay(if (ok) WeatherRepository.STALE_MS else WeatherRepository.RETRY_MS)
             }
         }
     }
@@ -109,38 +111,74 @@ fun WeatherSwitch(repo: WeatherRepository) {
     )
 }
 
-/** Ícono y temperatura, para la barra de arriba y el reloj. */
+/**
+ * El clima vigente (ver [Forecast.at]). Se pone al día cuando llega otro, al vencer la temperatura, a
+ * medianoche y al volver a la app (con la pantalla dormida la espera no avanza); nada corre entre medio.
+ */
+@Composable
+fun rememberWeather(repo: WeatherRepository): Weather? {
+    val forecast = repo.forecast
+    val fahrenheit = repo.fahrenheit
+    val starts = rememberStarts()
+    val initial = remember { repo.weatherAt(System.currentTimeMillis()) }
+    val weather by produceState(initial, forecast, fahrenheit, starts) {
+        while (true) {
+            val now = System.currentTimeMillis()
+            value = repo.weatherAt(now)
+            delay((forecast ?: break).nextChange(now) - now)
+        }
+    }
+    return weather
+}
+
+/** Ícono y temperatura, para la barra de arriba (solo con una temperatura vigente). */
 @Composable
 fun WeatherChip(repo: WeatherRepository) {
-    val w = repo.weather ?: return
     if (!repo.active) return
+    WeatherChip(rememberWeather(repo) ?: return)
+}
+
+/** Ícono y temperatura de [w] (nada si su temperatura ya venció); el reloj lo usa con el clima que ya leyó. */
+@Composable
+fun WeatherChip(w: Weather) {
+    val temperature = w.temperature ?: return
     val c = LocalColors.current
     Row(verticalAlignment = Alignment.CenterVertically) {
         Icon(iconOf(skyOf(w.code), w.day), c.accent, 22.dp)
-        Label("${w.temperature}°", Typography.subtitle, maxLines = 1, modifier = Modifier.padding(start = 6.dp))
+        Label(stringResource(R.string.weather_degrees, temperature), Typography.subtitle, maxLines = 1, modifier = Modifier.padding(start = 6.dp))
     }
 }
 
 /**
  * Pieza Clima: hoy en grande y, si cabe, los próximos días. Sin permiso es un
- * botón para activarlo (lo pide solo entonces).
+ * botón para activarlo (lo pide solo entonces). Si la temperatura de ahora ya venció (sin red), en
+ * grande va lo pronosticado para hoy; sin nada vigente, como si aún no llegara.
  */
 @Composable
 fun WeatherTile(repo: WeatherRepository, days: Boolean = true, range: Boolean = true) {
     val c = LocalColors.current
     val enable = rememberEnableWeather(repo)
-    val w = repo.weather
-    if (!repo.active || w == null) {
+    val w = if (repo.active) rememberWeather(repo) else null
+    if (w == null) {
         return ShortcutTile(Icons.sun, stringResource(R.string.tile_weather), stringResource(if (repo.active) R.string.weather_loading else R.string.tap_to_enable), enable)
     }
     val sky = skyOf(w.code)
-    val today = w.days.firstOrNull()?.takeIf { range }
-    val detail = stringResource(textOf(sky)) + (today?.let { " · ${it.max}° / ${it.min}°" } ?: "")
+    val today = w.today
+    val big = w.temperature?.let { stringResource(R.string.weather_degrees, it) }
+        ?: stringResource(R.string.weather_range, today!!.max, today.min)
+    val skyText = stringResource(textOf(sky))
+    // La máxima y la mínima van abajo solo si arriba va la temperatura de ahora (si no, ya están en grande).
+    val detail = if (range && today != null && w.temperature != null) {
+        stringResource(R.string.two_parts, skyText, stringResource(R.string.weather_range, today.max, today.min))
+    } else skyText
     val locale = currentLocale()
-    // Los formatos se crean una vez por idioma, no en cada recomposición.
-    val parse = remember(locale) { SimpleDateFormat("yyyy-MM-dd", Locale.US) }
+    // El formato se crea una vez por idioma, no en cada recomposición.
     val weekday = remember(locale) { SimpleDateFormat("EEE", locale) }
-    fun dayName(date: String) = runCatching { weekday.format(parse.parse(date)!!) }.getOrDefault("").replaceFirstChar { it.uppercase() }
+    fun dayName(date: String) = try {
+        weekday.format(Day.parse(date).toDate()).replaceFirstChar { it.uppercase(locale) }
+    } catch (e: IllegalArgumentException) {
+        "" // una fecha que no se entiende: el día va sin nombre
+    }
     Card(Modifier.fillMaxSize()) {
         // Un tinte suave del color del cielo desde la esquina (como el clima de iOS); nada se anima.
         // (Sin tarjeta no: sería un rectángulo de color sobre el fondo.) Hasta la esquina contraria, en cualquier pantalla.
@@ -150,17 +188,17 @@ fun WeatherTile(repo: WeatherRepository, days: Boolean = true, range: Boolean = 
             val width = maxWidth
             val height = maxHeight
             val tall = height > 120.dp
-            val nextDays = if (days) w.days.drop(1).take(3) else emptyList()
+            val nextDays = if (days) w.next else emptyList()
             if (!tall) {
                 // Una fila: ícono, temperatura y cómo está; si es ancha, los próximos días.
                 Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
                     Icon(iconOf(sky, w.day), c.accent, 34.dp)
                     Column(Modifier.weight(1f)) {
-                        Label("${w.temperature}°", Typography.clock.copy(fontSize = fitFont("${w.temperature}°", width / 3, height, 0.5f, max = 40f).sp), maxLines = 1)
+                        Label(big, Typography.clock.copy(fontSize = fitFont(big, width / 3, height, 0.5f, max = 40f).sp), maxLines = 1)
                         Label(detail, Typography.small, c.textMuted, maxLines = 1)
                     }
                     // Los días solo si caben a lo alto (si no, salían cortados).
-                    if (width > 340.dp && height > 64.dp) for (d in nextDays) DayColumn(dayName(d.date), iconOf(skyOf(d.code), true), "${d.max}°")
+                    if (width > 340.dp && height > 64.dp) for (d in nextDays) DayColumn(dayName(d.date), iconOf(skyOf(d.code), true), stringResource(R.string.weather_degrees, d.max))
                 }
                 return@BoxWithConstraints
             }
@@ -168,8 +206,7 @@ fun WeatherTile(repo: WeatherRepository, days: Boolean = true, range: Boolean = 
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
                     Column(Modifier.weight(1f)) {
                         Label(stringResource(R.string.tile_weather).uppercase(locale), Typography.label, c.textMuted, maxLines = 1)
-                        val temp = "${w.temperature}°"
-                        Label(temp, Typography.clock.copy(fontSize = fitFont(temp, width * 0.6f, height, 0.32f, min = 28f, max = 72f).sp), maxLines = 1)
+                        Label(big, Typography.clock.copy(fontSize = fitFont(big, width * 0.6f, height, 0.32f, min = 28f, max = 72f).sp), maxLines = 1)
                     }
                     Icon(iconOf(sky, w.day), c.accent, (height * 0.22f).coerceIn(32.dp, 56.dp))
                 }
@@ -182,7 +219,7 @@ fun WeatherTile(repo: WeatherRepository, days: Boolean = true, range: Boolean = 
                     for (d in nextDays.take(fit)) Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                         Label(dayName(d.date), Typography.small, c.textMuted, maxLines = 1)
                         Icon(iconOf(skyOf(d.code), true), c.text, 18.dp)
-                        Label("${d.max}°", Typography.small, maxLines = 1)
+                        Label(stringResource(R.string.weather_degrees, d.max), Typography.small, maxLines = 1)
                     }
                 }
             }

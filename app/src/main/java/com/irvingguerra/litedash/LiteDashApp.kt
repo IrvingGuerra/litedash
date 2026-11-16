@@ -4,6 +4,7 @@ import android.app.Application
 import android.content.ComponentCallbacks2
 import android.content.Context
 import android.content.SharedPreferences
+import android.content.res.Resources
 import android.os.Build
 import android.service.notification.StatusBarNotification
 import com.irvingguerra.litedash.feature.updater.Updater
@@ -33,6 +34,28 @@ private const val MOVING_KMH = 10f
  * dividida y el servicio de avisos (este solo si ya existen). Todo es perezoso.
  */
 class LiteDashApp : Application() {
+    /** El enlace con el celular: aparte para saber si ya existe sin crearlo ([phoneIfCreated]). */
+    private val phoneLazy = lazy {
+        val d = dependencies
+        val carName = { d.prefs.carName ?: d.cars.pkg(d.prefs.carModel)?.name ?: getString(R.string.my_car) }
+        PhoneLink(this) {
+            ScreenInfo(BuildConfig.VERSION_NAME, carName(), d.prefs.carModel ?: "", Build.MODEL)
+        }.also { link ->
+            wirePhoneMusic(link, d.music) { sound ->
+                getString(if (sound == PhoneSound.CALLS) R.string.phone_calls_only else R.string.phone_no_sound)
+            }
+            val edit = PhoneCarEdit(link, d.prefs, d.cars) { getString(it) }
+            wirePhoneCar(link, d.prefs, d.cars, edit, carName)
+            wirePhoneState(link) { dependencies }
+            wirePhoneReport(link, this) { dependencies }
+            // Si ya hay una ventana a la vista (lo normal: lo crea onResume), el enlace lo sabe desde el principio.
+            if (MainActivity.anyVisible) link.visible(true)
+        }
+    }
+
+    /** El enlace si ya existe, sin crearlo (avisar que una ventana se ve o se ocultó no debe crearlo). */
+    fun phoneIfCreated(): PhoneLink? = if (phoneLazy.isInitialized()) phoneLazy.value else null
+
     // Se arma la primera vez que algo de la pantalla lo pide (no por el servicio de avisos).
     private val dependenciesLazy = lazy {
         val mapPackages = NAVIGATION_PACKAGES.toSet() +
@@ -71,29 +94,14 @@ class LiteDashApp : Application() {
             obdSaved = { ObdRepository.hasSavedTarget(this) },
             tpmsLazy = lazy { TpmsRepository(this, bus).apply { carTires = CarTires { factoryTires(dependencies) } } },
             tpmsSaved = { TpmsRepository.hasSavedSource(this) },
-            phoneLazy = lazy {
-                val carName = { prefs.carName ?: cars.pkg(prefs.carModel)?.name ?: contextWithLanguage(this).getString(R.string.my_car) }
-                PhoneLink(this) {
-                    ScreenInfo(BuildConfig.VERSION_NAME, carName(), prefs.carModel ?: "", Build.MODEL)
-                }.also { link ->
-                    wirePhoneMusic(link, music) { sound ->
-                        contextWithLanguage(this).getString(if (sound == PhoneSound.CALLS) R.string.phone_calls_only else R.string.phone_no_sound)
-                    }
-                    val edit = PhoneCarEdit(link, prefs, cars) { contextWithLanguage(this).getString(it) }
-                    wirePhoneCar(link, prefs, cars, edit, carName)
-                    wirePhoneState(link) { dependencies }
-                    wirePhoneReport(link, this) { dependencies }
-                }
-            },
+            phoneLazy = phoneLazy,
         )
     }
     val dependencies: Dependencies by dependenciesLazy
 
     override fun onCreate() {
         super.onCreate()
-        // Antes de leer cualquier ajuste (también el idioma de attachBaseContext): nombres en inglés desde la 1.4.47.
-        StorageMigration.run(this)
-        // Después de la migración (mueve la carpeta de los autos): mientras Android arma la pantalla.
+        // Los autos instalados se leen en otro hilo mientras Android arma la pantalla.
         CarRepository.prefetch(this)
         // Los avisos llegan aquí solo si el usuario dio acceso a notificaciones (el mismo de la música).
         // Android conecta ese servicio solo (aun tras forzar el cierre): sin la app armada, nada que hacer.
@@ -107,12 +115,26 @@ class LiteDashApp : Application() {
 
     /**
      * Al irse a segundo plano se recortan los cuadros del auto (lo más pesado en memoria): a un cuarto
-     * si solo se ocultó la pantalla, todos si Android ya la tiene en la lista de procesos a cerrar.
+     * si solo se ocultó la pantalla, todos si Android ya la tiene en la lista de procesos a cerrar; ahí
+     * también se sueltan los íconos de las apps (se vuelven a leer al regresar).
      */
     override fun onTrimMemory(level: Int) {
         super.onTrimMemory(level)
         if (level < ComponentCallbacks2.TRIM_MEMORY_UI_HIDDEN || !dependenciesLazy.isInitialized()) return
-        dependencies.cars.trimMemory(all = level >= ComponentCallbacks2.TRIM_MEMORY_BACKGROUND)
+        val background = level >= ComponentCallbacks2.TRIM_MEMORY_BACKGROUND
+        dependencies.cars.trimMemory(all = background)
+        if (background) dependencies.apps.trimMemory()
+    }
+
+    // Los textos que se piden a la aplicación (repositorios, avisos, servicios que usan applicationContext) salen
+    // en el idioma elegido, no en el del sistema. Se rehace solo cuando cambia el idioma ([Language]).
+    @Volatile private var localized: Pair<String, Resources>? = null
+
+    override fun getResources(): Resources {
+        val base = baseContext ?: return super.getResources()
+        val language = Language.read(base)
+        localized?.let { (lang, res) -> if (lang == language) return res }
+        return contextWithLanguage(base).resources.also { localized = language to it }
     }
 
     // Referencia fuerte: Android guarda los oyentes de preferencias como referencias débiles.
@@ -136,7 +158,7 @@ class LiteDashApp : Application() {
     private fun syncReceivers() {
         Thread({ synchronized(onUsbPrefs) {
             // El receptor de "Abrir al encender" igual que su opción (por si se restauró un respaldo).
-            BootLaunch.sync(this, getSharedPreferences(PrefKeys.FILE, Context.MODE_PRIVATE).getBoolean(PrefKeys.OPEN_ON_BOOT, false))
+            BootLaunch.sync(this, BootLaunch.enabled(this))
             val settings = getSharedPreferences(PrefKeys.FILE, Context.MODE_PRIVATE)
             val obdOn = !settings.contains(PrefKeys.OBD_MODULE) || settings.getBoolean(PrefKeys.OBD_MODULE, false)
             UsbAttachActivity.offer(this, TpmsRepository.usesUsb(this) || obdOn && ObdRepository.hasUsbTarget(this))

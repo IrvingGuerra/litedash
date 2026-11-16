@@ -97,12 +97,12 @@ fun rememberIsNight(prefs: Preferences, needed: Boolean): Boolean {
     }
 }
 
-/** Si en este tiempo el sensor no dio ni un valor distinto, está de adorno (pasa en varias pantallas). */
-private const val STUCK_SENSOR_MS = 10 * 60_000L
-
 /**
  * Noche por el sensor de luz: cambia solo si la luz se mantiene un rato (al pasar bajo
- * un puente no). Arranca con [initial] (la hora del sol). null = la pantalla no tiene sensor.
+ * un puente no). null = no hay sensor o todavía no demuestra que sirve: varias pantallas traen
+ * uno "de adorno" que manda un solo valor (a menudo 0) al registrarse y nada más; mientras no
+ * dé un segundo valor distinto manda la hora del sol ([initial]). Un sensor real cambia en
+ * segundos (el ruido de la luz) y desde ahí se sigue con lo que ya llevaba contado.
  */
 @Composable
 private fun rememberSensorNight(initial: Boolean): Boolean? {
@@ -110,7 +110,7 @@ private fun rememberSensorNight(initial: Boolean): Boolean? {
     val manager = remember { context.getSystemService(SensorManager::class.java) }
     val sensor = remember { manager?.getDefaultSensor(Sensor.TYPE_LIGHT) } ?: return null
     var night by remember { mutableStateOf(initial) }
-    var stuck by remember { mutableStateOf(false) }
+    var varies by remember { mutableStateOf(false) }
     DisposableEffect(sensor) {
         val light = LightHysteresis(night)
         val handler = Handler(Looper.getMainLooper())
@@ -124,30 +124,22 @@ private fun rememberSensorNight(initial: Boolean): Boolean? {
             }
         }
         var first: Float? = null
-        var varies = false
-        val stuckCheck = Runnable { if (!varies) stuck = true }
         val listener = object : SensorEventListener {
             override fun onSensorChanged(e: SensorEvent) {
                 lux = e.values[0]
-                if (first == null) first = lux else if (lux != first) {
-                    // Varió: sirve, aunque antes se haya dado por pegado.
-                    varies = true
-                    stuck = false
-                }
+                if (first == null) first = lux else if (lux != first) varies = true
                 handler.removeCallbacks(confirm)
                 confirm.run()
             }
             override fun onAccuracyChanged(s: Sensor, accuracy: Int) = Unit
         }
         manager.registerListener(listener, sensor, SensorManager.SENSOR_DELAY_NORMAL)
-        handler.postDelayed(stuckCheck, STUCK_SENSOR_MS)
         onDispose {
             manager.unregisterListener(listener)
             handler.removeCallbacks(confirm)
-            handler.removeCallbacks(stuckCheck)
         }
     }
-    return if (stuck) null else night
+    return if (varies) night else null
 }
 
 /**

@@ -111,9 +111,11 @@ fun RoadView(
     // Qué tanto efecto lleva (0 parado, 1 a FULL_EFFECT_KMH); sube y baja suave.
     var effect by remember { mutableFloatStateOf(0f) }
     val speed by rememberUpdatedState(kmh ?: 0f)
+    // Tapada (el auto en grande, Llantas, estacionado, la música o el mapa en grande) no se anima: nadie la ve.
+    val covered = LocalHomeCovered.current
     val moving = (kmh ?: 0f) > 1f
-    LaunchedEffect(moving) {
-        if (!moving && effect == 0f) return@LaunchedEffect
+    LaunchedEffect(moving, covered) {
+        if (covered || (!moving && effect == 0f)) return@LaunchedEffect
         var last = 0L
         while (moving || effect > 0.01f) withFrameNanos { t ->
             if (last != 0L) {
@@ -189,7 +191,7 @@ fun RoadView(
             val stats = rememberTripStats(d.trip, miles)
             Column(Modifier.align(Alignment.TopEnd).padding(16.dp), horizontalAlignment = Alignment.End) {
                 if (RoadTrip.DISTANCE in look.trip) {
-                    Label("${stats.distance} ${stats.unit}", Typography.clock.copy(fontSize = (big * 0.45f).coerceAtLeast(20f).sp), maxLines = 1)
+                    Label(stats.distanceWithUnit, Typography.clock.copy(fontSize = (big * 0.45f).coerceAtLeast(20f).sp), maxLines = 1)
                     Label(stringResource(R.string.road_trip), Typography.small, c.textMuted, maxLines = 1)
                 }
                 for ((item, value) in listOf(RoadTrip.TIME to stats.time, RoadTrip.AVERAGE to stats.average, RoadTrip.HEADING to stats.heading)) {

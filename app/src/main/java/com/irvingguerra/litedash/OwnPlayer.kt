@@ -21,8 +21,8 @@ private const val SCAN_WAIT_MS = 4_000L
 object OwnPlayer {
     private val main = Handler(Looper.getMainLooper())
 
-    /** Sube con cada play de Archivos (y al cancelarlo): una búsqueda vieja ya no arranca nada. */
-    private var generation = 0
+    /** Sube con cada play de Archivos (y al cancelarlo): una búsqueda vieja ya no arranca nada. La lee también el hilo `usb-start`. */
+    @Volatile private var generation = 0
 
     fun wire(context: Context, music: MusicRepository, prefs: Preferences) {
         Player.init(context)
@@ -37,8 +37,9 @@ object OwnPlayer {
         Player.onSession = music::ownSessionChanged
         Player.onPlay = { if (it == PlayerSource.USB) music.quietRadio() }
         music.ownDescribe = { "${Library.describe(context)} ${Player.describe()}" }
-        // Hasta la 1.4.111 la radio por internet tenía además su interruptor en las preferencias del app
-        // (y hasta la 1.4.110 el widget escogía entre las dos). Una vez: queda la que sonaba en el widget.
+        // Migración (1.4.111): hasta ahí la radio por internet tenía además su interruptor en las preferencias de la app
+        // (y hasta la 1.4.110 el widget escogía entre las dos). Una vez: queda la que sonaba en el widget. Se quita
+        // cuando ya no se actualicen pantallas de < 1.4.111.
         if (!prefs.radioUnified) {
             val internet = prefs.internetRadio && (music.radioInternet || music.sourceApps[SourceKind.RADIO] == null)
             music.radioInternet = internet

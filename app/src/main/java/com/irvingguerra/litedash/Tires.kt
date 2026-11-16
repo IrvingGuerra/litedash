@@ -1,15 +1,14 @@
 package com.irvingguerra.litedash
 
-import com.irvingguerra.litedash.feature.obd.ObdState
+import android.os.Build
 import com.irvingguerra.litedash.feature.obd.FactoryTires
+import com.irvingguerra.litedash.feature.obd.ObdRepository
 import com.irvingguerra.litedash.feature.car.WheelSpots
 import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.awaitEachGesture
-import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -44,6 +43,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
@@ -54,7 +54,6 @@ import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.pluralStringResource
@@ -77,9 +76,11 @@ import com.irvingguerra.litedash.core.ui.fitFont
 import com.irvingguerra.litedash.core.vehicle.watch
 import com.irvingguerra.litedash.feature.car.CAR_TOP_ASPECT
 import com.irvingguerra.litedash.feature.car.CarTop
+import com.irvingguerra.litedash.feature.tpms.BleProblem
 import com.irvingguerra.litedash.feature.tpms.PressureUnit
 import com.irvingguerra.litedash.feature.tpms.TireAlert
 import com.irvingguerra.litedash.feature.tpms.TireAlertKind
+import com.irvingguerra.litedash.feature.tpms.TireSample
 import com.irvingguerra.litedash.feature.tpms.TireSeverity
 import com.irvingguerra.litedash.feature.tpms.TireSignals
 import com.irvingguerra.litedash.feature.tpms.TpmsRepository
@@ -89,7 +90,6 @@ import com.irvingguerra.litedash.feature.tpms.Wheel
 import kotlinx.coroutines.delay
 import java.text.DateFormat
 import java.util.Date
-import kotlin.math.abs
 import kotlin.math.roundToInt
 
 // Llantas: la vista desde arriba (Ajustes, pantalla completa y pieza grande), las pastillas
@@ -185,7 +185,16 @@ private fun TireMarks(statuses: Map<Wheel, TireStatus>, modifier: Modifier, radi
 }
 
 /** Grados en la unidad del usuario ("28 °C" o "82 °F"). */
-internal fun tempText(c: Float, fahrenheit: Boolean) = "${c.toFahrenheit(fahrenheit).roundToInt()} °${if (fahrenheit) "F" else "C"}"
+@Composable
+internal fun tempText(c: Float, fahrenheit: Boolean) = "${c.toFahrenheit(fahrenheit).roundToInt()} ${stringResource(if (fahrenheit) R.string.unit_f else R.string.unit_c)}"
+
+/** La presión con su unidad ("32 psi"). */
+internal fun PressureUnit.text(kpa: Float) = "${format(kpa)} $label"
+
+/** El auto elegido desde arriba, en su color (Taller y Llantas lo dibujan igual). */
+@Composable
+internal fun MyCarTop(d: Dependencies, modifier: Modifier, onReady: (() -> Unit)? = null) =
+    CarTop(d.cars, d.cars.pkg(d.prefs.carModel), d.prefs.carColor, modifier, onReady)
 
 /** Presión y temperatura de [w] por el bus: mientras se ve, las llantas se leen. */
 @Composable
@@ -199,11 +208,13 @@ private fun TpmsRepository.shownWheels() =
 /**
  * Las llantas moviéndose a otro lugar (rotar): cada tarjeta de [moves] (de → a) se desliza
  * con [progress] de 0 a 1; luego se intercambian los datos y todo regresa a 0 sin saltos.
+ * [busy]: hay una rotación en curso (no se puede pedir otra).
  */
 @Stable
 class TireMotion {
     var moves by mutableStateOf<Map<Wheel, Wheel>>(emptyMap())
     val progress = Animatable(0f)
+    var busy by mutableStateOf(false)
 }
 
 /** Largo mínimo de la línea entre la tarjeta y el auto (dp). */
@@ -229,8 +240,6 @@ fun TiresView(
     val c = LocalColors.current
     val repo = d.tpms
     if (repo.source == null) return NoTires(d, modifier, onSettings)
-    val unit = repo.unit
-    val fahrenheit = d.prefs.units.fahrenheit
     val wheels = repo.shownWheels()
     val statuses = wheels.associateWith { repo.statusOf(it) }
 
@@ -279,25 +288,15 @@ fun TiresView(
                 }
             }
             Box(Modifier.offset(carX.dp, carY.dp).size(carW.dp, carH.dp)) {
-                CarTop(d.cars, d.cars.pkg(d.prefs.carModel), d.prefs.carColor, Modifier.fillMaxSize(), onReady)
+                MyCarTop(d, Modifier.fillMaxSize(), onReady)
                 TireMarks(statuses, Modifier.fillMaxSize())
             }
             for (wh in wheels) {
                 val slot = slots.getValue(wh)
-                val (kpa, temp) = watchTire(d, wh)
-                val st = statuses.getValue(wh)
-                val points = rememberTireSeries(repo, wh, unit)
-                TireCard(
+                TireSlot(
+                    d, wh, statuses.getValue(wh),
                     // Tarjetas angostas: el nombre corto ("Del. izq.") para que no se corte.
-                    name = stringResource(if (compact || cw < 165f) wheelShort(wh) else wheelName(wh)),
-                    pressure = kpa?.let { unit.format(it) } ?: "—",
-                    unit = unit.label,
-                    temp = temp?.let { tempText(it, fahrenheit) },
-                    status = st,
-                    // Con pocas muestras la línea sería un rayón: espera a tener unas cuantas.
-                    series = if (compact || points.size < 4) null else points,
-                    // Mínimo ±10 kPa a lo alto: una llanta estable se ve plana y una fuga, bajada clara.
-                    sparkSpan = unit.fromKpa(20f),
+                    short = compact || cw < 165f,
                     compact = compact,
                     selected = selected == wh,
                     onClick = { onWheel(wh) },
@@ -317,6 +316,30 @@ fun TiresView(
         }
         if (!compact) TiresFooter(repo, Modifier.padding(top = 10.dp))
     }
+}
+
+/** La tarjeta de una llanta en su lugar: cada lectura nueva solo vuelve a dibujar la suya. */
+@Composable
+private fun TireSlot(d: Dependencies, w: Wheel, status: TireStatus, short: Boolean, compact: Boolean, selected: Boolean, onClick: () -> Unit, modifier: Modifier) {
+    val repo = d.tpms
+    val unit = repo.unit
+    val (kpa, temp) = watchTire(d, w)
+    val points = rememberTireSeries(repo, w, unit)
+    TireCard(
+        name = stringResource(if (short) wheelShort(w) else wheelName(w)),
+        pressure = kpa?.let { unit.format(it) } ?: "—",
+        unit = unit.label,
+        temp = temp?.let { tempText(it, d.prefs.units.fahrenheit) },
+        status = status,
+        // Con pocas muestras la línea sería un rayón: espera a tener unas cuantas.
+        series = if (compact || points.size < 4) null else points,
+        // Mínimo ±10 kPa a lo alto: una llanta estable se ve plana y una fuga, bajada clara.
+        sparkSpan = unit.fromKpa(20f),
+        compact = compact,
+        selected = selected,
+        onClick = onClick,
+        modifier = modifier,
+    )
 }
 
 /** Las muestras de los últimos 30 min de [w] en la unidad del usuario (se vuelven a leer con cada muestra nueva). */
@@ -361,7 +384,7 @@ private fun TireCard(
             Label(unit, Typography.small, c.textMuted, maxLines = 1, modifier = Modifier.padding(start = 4.dp, bottom = if (compact) 3.dp else 5.dp))
         }
         val word = stringResource(status.state.word())
-        val line = if (compact) (if (status.problem || temp == null) word else temp) else listOfNotNull(temp, word).joinToString(" · ")
+        val line = if (compact || temp == null) (if (status.problem || temp == null) word else temp) else stringResource(R.string.tire_line, temp, word)
         Label(line, Typography.small, color ?: c.textMuted, maxLines = 1)
         if (series != null) {
             Spacer(Modifier.weight(1f))
@@ -377,7 +400,7 @@ private fun TiresFooter(repo: TpmsRepository, modifier: Modifier = Modifier) {
     val unit = repo.unit
     val front = unit.format(repo.recommendedFrontKpa)
     val rear = unit.format(repo.recommendedRearKpa)
-    val recommended = if (front == rear) "$front ${unit.label}" else "$front / $rear ${unit.label}"
+    val recommended = "${if (front == rear) front else stringResource(R.string.tires_recommended_pair, front, rear)} ${unit.label}"
     val newest = Wheel.entries.mapNotNull { repo.wheelReading(it)?.atMillis }.maxOrNull()
     // Solo esta línea se rearma cada 5 s (para el "hace…").
     val now by produceState(System.currentTimeMillis()) {
@@ -407,7 +430,7 @@ private fun agoText(ms: Long): String {
 private fun NoTires(d: Dependencies, modifier: Modifier, onSettings: (() -> Unit)?) {
     val c = LocalColors.current
     Box(modifier, contentAlignment = Alignment.Center) {
-        CarTop(d.cars, d.cars.pkg(d.prefs.carModel), d.prefs.carColor, Modifier.fillMaxHeight().padding(vertical = 8.dp))
+        MyCarTop(d, Modifier.fillMaxHeight().padding(vertical = 8.dp))
         Column(
             Modifier.clip(RoundedCornerShape(Radius.card)).background(c.surface.copy(alpha = 0.92f)).padding(20.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -504,6 +527,19 @@ fun TiresFull(d: Dependencies, progress: () -> Float, onClose: () -> Unit, onSet
 
 private const val DAY_MS = 24 * 3_600_000L
 
+/** La muestra más cercana a [atMillis] (las muestras van en orden de hora): búsqueda binaria. */
+internal fun List<TireSample>.nearest(atMillis: Long): TireSample? {
+    if (isEmpty()) return null
+    var lo = 0
+    var hi = lastIndex
+    while (lo < hi) {
+        val mid = (lo + hi) / 2
+        if (get(mid).atMillis < atMillis) lo = mid + 1 else hi = mid
+    }
+    // [lo] es la primera en o después de la hora; la de antes puede quedar más cerca.
+    return if (lo > 0 && atMillis - get(lo - 1).atMillis <= get(lo).atMillis - atMillis) get(lo - 1) else get(lo)
+}
+
 /**
  * Las últimas 24 h de una llanta: la línea de presión con la recomendada y el límite de aviso
  * punteados. Al tocar (o arrastrar) se ve la presión y la hora de ese momento.
@@ -530,9 +566,9 @@ private fun TireHistoryChart(d: Dependencies, w: Wheel, onClose: () -> Unit, mod
             IconButton(Icons.close, onClose, size = 44.dp)
         }
         val at = touch
-        val picked = if (at != null && samples.isNotEmpty()) samples.minByOrNull { abs(it.atMillis - (now - DAY_MS + (at * DAY_MS).toLong())) } else samples.lastOrNull()
+        val picked = if (at != null) samples.nearest(now - DAY_MS + (at * DAY_MS).toLong()) else samples.lastOrNull()
         Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Label(picked?.let { "${unit.format(it.kpa)} ${unit.label}" } ?: "—", Typography.title.copy(fontSize = 28.sp), maxLines = 1)
+            Label(picked?.let { unit.text(it.kpa) } ?: "—", Typography.title.copy(fontSize = 28.sp), maxLines = 1)
             if (picked != null) Label(times.format(Date(picked.atMillis)), Typography.small, c.textMuted, maxLines = 1, modifier = Modifier.padding(bottom = 4.dp))
         }
         if (samples.size < 2) {
@@ -547,44 +583,35 @@ private fun TireHistoryChart(d: Dependencies, w: Wheel, onClose: () -> Unit, mod
         val grid = c.line
         val muted = c.textMuted
         val danger = c.danger
-        Canvas(
-            Modifier
-                .fillMaxWidth()
-                .weight(1f)
-                .pointerInput(Unit) {
-                    awaitEachGesture {
-                        val down = awaitFirstDown()
-                        touch = (down.position.x / size.width).coerceIn(0f, 1f)
-                        while (true) {
-                            val change = awaitPointerEvent().changes.firstOrNull() ?: break
-                            if (!change.pressed) break
-                            touch = (change.position.x / size.width).coerceIn(0f, 1f)
-                        }
-                        touch = null
+        // La línea se arma solo cuando cambian las muestras o el tamaño; tocar solo vuelve a dibujar el cursor.
+        val chart = remember(samples, now, lo, hi, rec, low, lineColor, grid, muted, danger) {
+            Modifier.drawWithCache {
+                fun xOf(t: Long) = size.width * ((t - (now - DAY_MS)).toFloat() / DAY_MS)
+                fun yOf(v: Float) = size.height * (1 - (v - lo) / (hi - lo))
+                val dash = PathEffect.dashPathEffect(floatArrayOf(8.dp.toPx(), 6.dp.toPx()))
+                val path = Path()
+                var last: Long? = null
+                for (s in samples) {
+                    // Un hueco de más de 5 min (auto apagado) corta la línea.
+                    val gap = last == null || s.atMillis - last > 5 * 60_000L
+                    if (gap) path.moveTo(xOf(s.atMillis), yOf(s.kpa)) else path.lineTo(xOf(s.atMillis), yOf(s.kpa))
+                    last = s.atMillis
+                }
+                val stroke = Stroke(2.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round)
+                onDrawBehind {
+                    chartGrid(grid)
+                    drawLine(muted, Offset(0f, yOf(rec)), Offset(size.width, yOf(rec)), strokeWidth = 1.dp.toPx(), pathEffect = dash)
+                    drawLine(danger.copy(alpha = 0.6f), Offset(0f, yOf(low)), Offset(size.width, yOf(low)), strokeWidth = 1.dp.toPx(), pathEffect = dash)
+                    drawPath(path, lineColor, style = stroke)
+                    val p = touch?.let { samples.nearest(now - DAY_MS + (it * DAY_MS).toLong()) }
+                    if (p != null) {
+                        chartCursor(xOf(p.atMillis), muted)
+                        chartDot(Offset(xOf(p.atMillis), yOf(p.kpa)), lineColor)
                     }
-                },
-        ) {
-            fun xOf(t: Long) = size.width * ((t - (now - DAY_MS)).toFloat() / DAY_MS)
-            fun yOf(v: Float) = size.height * (1 - (v - lo) / (hi - lo))
-            for (k in 0..4) drawLine(grid, Offset(0f, size.height * k / 4), Offset(size.width, size.height * k / 4), strokeWidth = 1.dp.toPx())
-            val dash = PathEffect.dashPathEffect(floatArrayOf(8.dp.toPx(), 6.dp.toPx()))
-            drawLine(muted, Offset(0f, yOf(rec)), Offset(size.width, yOf(rec)), strokeWidth = 1.dp.toPx(), pathEffect = dash)
-            drawLine(danger.copy(alpha = 0.6f), Offset(0f, yOf(low)), Offset(size.width, yOf(low)), strokeWidth = 1.dp.toPx(), pathEffect = dash)
-            val path = Path()
-            var last: Long? = null
-            for (s in samples) {
-                // Un hueco de más de 5 min (auto apagado) corta la línea.
-                val gap = last == null || s.atMillis - last > 5 * 60_000L
-                if (gap) path.moveTo(xOf(s.atMillis), yOf(s.kpa)) else path.lineTo(xOf(s.atMillis), yOf(s.kpa))
-                last = s.atMillis
-            }
-            drawPath(path, lineColor, style = Stroke(2.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round))
-            if (at != null && picked != null) {
-                val x = xOf(picked.atMillis)
-                drawLine(muted, Offset(x, 0f), Offset(x, size.height), strokeWidth = 1.dp.toPx())
-                drawCircle(lineColor, 5.dp.toPx(), Offset(x, yOf(picked.kpa)))
+                }
             }
         }
+        Spacer(Modifier.fillMaxWidth().weight(1f).chartTouch { touch = it }.then(chart))
         Row(Modifier.fillMaxWidth()) {
             Label(stringResource(R.string.ago_hours, 24), Typography.small, c.textMuted, maxLines = 1, modifier = Modifier.weight(1f))
             Label(stringResource(R.string.tires_now), Typography.small, c.textMuted, maxLines = 1)
@@ -629,7 +656,7 @@ private fun RoadPills(d: Dependencies, onOpen: () -> Unit, modifier: (Wheel) -> 
 @Composable
 private fun pillText(d: Dependencies, w: Wheel): String {
     val unit = d.tpms.unit
-    return d.bus.watch(TireSignals.pressure(w))?.let { "${unit.format(it)} ${unit.label}" } ?: "—"
+    return d.bus.watch(TireSignals.pressure(w))?.let(unit::text) ?: "—"
 }
 
 /**
@@ -650,23 +677,30 @@ fun WheelPills(d: Dependencies, spots: () -> WheelSpots, onOpen: () -> Unit) {
         // La fila va justo debajo de la rueda que pisa más abajo (la más cercana).
         val lowest = shown.maxOfOrNull { s.points[it].y } ?: 0f
         val row = (lowest + gap).roundToInt().coerceIn(0, (constraints.maxHeight - (pills.maxOfOrNull { it.height } ?: 0)).coerceAtLeast(0))
-        // Cada una centrada en su rueda y luego sin choques: se recorren a la derecha y, si la
-        // última se sale, de regreso desde la derecha.
-        val left = IntArray(pills.size) { (s.points[shown[it]].x - pills[it].width / 2f).roundToInt() }
-        var edge = 0
-        for (n in pills.indices) {
-            left[n] = maxOf(left[n], edge)
-            edge = left[n] + pills[n].width + gap
-        }
-        edge = width
-        for (n in pills.indices.reversed()) {
-            left[n] = minOf(left[n], edge - pills[n].width)
-            edge = left[n] - gap
-        }
+        val left = spreadPills(FloatArray(pills.size) { s.points[shown[it]].x }, IntArray(pills.size) { pills[it].width }, width, gap)
         layout(width, constraints.maxHeight) {
             pills.forEachIndexed { n, p -> p.place(left[n].coerceAtLeast(0), row) }
         }
     }
+}
+
+/**
+ * Dónde empieza cada pastilla (de izquierda a derecha, [centers] en orden): centrada en su rueda y luego sin
+ * choques, a [gap] una de otra; se recorren a la derecha y, si la última se sale de [width], de regreso desde la derecha.
+ */
+internal fun spreadPills(centers: FloatArray, widths: IntArray, width: Int, gap: Int): IntArray {
+    val left = IntArray(centers.size) { (centers[it] - widths[it] / 2f).roundToInt() }
+    var edge = 0
+    for (n in left.indices) {
+        left[n] = maxOf(left[n], edge)
+        edge = left[n] + widths[n] + gap
+    }
+    edge = width
+    for (n in left.indices.reversed()) {
+        left[n] = minOf(left[n], edge - widths[n])
+        edge = left[n] - gap
+    }
+    return left
 }
 
 /** Orilla del auto de espaldas en su caja (desde cada lado), en fracción del ancho: ahí junto van las pastillas. */
@@ -721,7 +755,7 @@ private fun TirePill(text: String, status: TireStatus, onClick: () -> Unit, modi
  * valores en cuadrícula. Sin fuente, "Configura tus llantas".
  */
 @Composable
-fun TiresTile(d: Dependencies, showCar: Boolean = true, onOpen: () -> Unit, onSettings: () -> Unit) {
+fun TiresTile(d: Dependencies, showCar: Boolean, onOpen: () -> Unit, onSettings: () -> Unit) {
     val c = LocalColors.current
     val has = d.hasTpmsSource
     Card(Modifier.fillMaxSize(), onClick = if (has) onOpen else onSettings) {
@@ -747,9 +781,14 @@ fun TiresTile(d: Dependencies, showCar: Boolean = true, onOpen: () -> Unit, onSe
     }
 }
 
-/** La llanta que rueda con el problema más grave (una fuga antes que una pila baja), o null si todas van bien. */
-private fun TpmsRepository.worstRoad(): Pair<Wheel, TireStatus>? =
-    Wheel.ROAD.map { it to statusOf(it) }.filter { it.second.problem }.maxByOrNull { it.second.severity?.ordinal ?: -1 }
+/**
+ * La llanta que rueda con el problema más grave, o null si todas van bien. Las alertas ya vienen de la más grave a
+ * la menos (y a igual gravedad, por tipo: una fuga antes que una pila baja); sin alerta, una que perdió la señal.
+ */
+private fun TpmsRepository.worstRoad(): Pair<Wheel, TireStatus>? {
+    val w = alerts.firstOrNull { it.wheel in Wheel.ROAD }?.wheel ?: Wheel.ROAD.firstOrNull { statusOf(it).problem } ?: return null
+    return w to statusOf(w)
+}
 
 /** "LLANTAS" y el estado: "Todo bien" en verde o la llanta más grave en su color ("Trasera derecha · Baja"). */
 @Composable
@@ -757,12 +796,15 @@ private fun TiresHeader(d: Dependencies, short: Boolean) {
     val c = LocalColors.current
     val repo = d.tpms
     val worst = repo.worstRoad()
+    val ble = repo.bleIssue
     val (text, color) = when {
         worst != null -> {
             val name = stringResource(if (short) wheelShort(worst.first) else wheelName(worst.first))
-            "$name · ${stringResource(worst.second.state.word())}" to (severityColor(worst.second.severity) ?: c.warning)
+            stringResource(R.string.tire_line, name, stringResource(worst.second.state.word())) to (severityColor(worst.second.severity) ?: c.warning)
         }
         Wheel.ROAD.any { repo.wheelReading(it) != null } -> stringResource(R.string.health_all_good) to Good
+        // Sin lecturas porque el Bluetooth no puede buscar: se dice por qué (como en Ajustes → Llantas).
+        ble != null -> stringResource(bleProblemText(ble)) to c.warning
         else -> stringResource(R.string.health_unknown) to c.textMuted
     }
     TileHeader(stringResource(R.string.tires), text, color)
@@ -858,7 +900,7 @@ private fun TiresMedium(d: Dependencies, tall: Boolean, header: Boolean, short: 
     val statuses = Wheel.ROAD.associateWith { repo.statusOf(it) }
     val car = @Composable { m: Modifier ->
         Box(m.aspectRatio(CAR_TOP_ASPECT)) {
-            CarTop(d.cars, d.cars.pkg(d.prefs.carModel), d.prefs.carColor, Modifier.fillMaxSize())
+            MyCarTop(d, Modifier.fillMaxSize())
             TireMarks(statuses, Modifier.fillMaxSize(), radius = 0.067f)
         }
     }
@@ -914,7 +956,7 @@ private fun alertText(repo: TpmsRepository, a: TireAlert, fahrenheit: Boolean): 
     val value = when (a.kind) {
         TireAlertKind.HIGH_TEMP -> r?.tempC?.let { tempText(it, fahrenheit) }
         TireAlertKind.LOST -> null
-        else -> r?.pressureKpa?.let { "${repo.unit.format(it)} ${repo.unit.label}" }
+        else -> r?.pressureKpa?.let(repo.unit::text)
     }
     val what = stringResource(
         when (a.kind) {
@@ -926,7 +968,17 @@ private fun alertText(repo: TpmsRepository, a: TireAlert, fahrenheit: Boolean): 
             TireAlertKind.LOST -> R.string.tire_alert_lost
         },
     )
-    return listOfNotNull(stringResource(wheelName(a.wheel)), value, what).joinToString(" · ")
+    val name = stringResource(wheelName(a.wheel))
+    return if (value != null) stringResource(R.string.tire_alert_line, name, value, what) else stringResource(R.string.tire_line, name, what)
+}
+
+/**
+ * Las alertas de llantas que se descartaron con "Entendido" (por llanta y tipo). Vive en el inicio, como
+ * [EngineAlertState]: acomodar o abrir Ajustes quita el aviso de la pantalla, pero no lo vuelve a mostrar al regresar.
+ */
+@Stable
+class TiresAlertState {
+    val dismissed = mutableStateListOf<Pair<Wheel, TireAlertKind>>()
 }
 
 /**
@@ -934,11 +986,11 @@ private fun alertText(repo: TpmsRepository, a: TireAlert, fahrenheit: Boolean): 
  * la calla (por llanta y tipo) hasta que se resuelva y vuelva a pasar.
  */
 @Composable
-fun TiresAlertBanner(d: Dependencies, onOpen: () -> Unit) {
+fun TiresAlertBanner(d: Dependencies, onOpen: () -> Unit, state: TiresAlertState = remember { TiresAlertState() }) {
     if (!d.prefs.tiresBanner || !d.hasTpmsSource) return
     val repo = d.tpms
     if (!repo.alertsEnabled) return
-    val dismissed = remember { mutableStateListOf<Pair<Wheel, TireAlertKind>>() }
+    val dismissed = state.dismissed
     val alerts = repo.alerts
     LaunchedEffect(alerts) { dismissed.removeAll { k -> alerts.none { it.wheel to it.kind == k } } }
     val a = alerts.firstOrNull { (it.wheel to it.kind) !in dismissed } ?: return
@@ -968,8 +1020,8 @@ internal fun TiresHealthTile(d: Dependencies, onClick: () -> Unit, modifier: Mod
         valueColor = color ?: if (lowest != null) Good else c.textMuted,
         dot = color ?: if (lowest != null) Good else c.textMuted,
         detail = (worst?.first ?: lowest?.first)?.let { w ->
-            val kpa = d.bus.value(TireSignals.pressure(w))
-            listOfNotNull(stringResource(wheelName(w)), kpa?.let { "${repo.unit.format(it)} ${repo.unit.label}" }).joinToString(" · ")
+            val name = stringResource(wheelName(w))
+            d.bus.value(TireSignals.pressure(w))?.let { stringResource(R.string.tire_line, name, repo.unit.text(it)) } ?: name
         },
         detailColor = color ?: c.textMuted,
         onClick = onClick,
@@ -977,13 +1029,31 @@ internal fun TiresHealthTile(d: Dependencies, onClick: () -> Unit, modifier: Mod
 }
 
 /**
- * La fuente "Auto (OBD)" de Llantas: con el módulo OBD prendido y adaptador guardado, conecta el
- * escáner si está apagado (no tras un error: ahí reintenta él solo unas veces, o el Taller) y le pide
- * la presión de fábrica.
+ * La fuente "Auto (OBD)" de Llantas: con el módulo OBD prendido y adaptador guardado, leerlas es querer el
+ * escáner ([ObdRepository.want]: conecta solo y, si se cae, su política reintenta) y pedirle la presión de
+ * fábrica. Al parar la fuente, [releaseFactoryTires] lo suelta.
  */
 internal suspend fun factoryTires(d: Dependencies): FactoryTires {
     if (!d.obdAuto) return FactoryTires.NotConnected
     val obd = d.obd
-    if (obd.state == ObdState.OFF) obd.connect()
+    obd.want(TIRES_OBD)
     return obd.factoryTires()
+}
+
+/** La fuente "Auto (OBD)" de Llantas paró: ya no quiere el escáner (sin nadie más, se desconecta). */
+internal fun releaseFactoryTires(d: Dependencies) {
+    d.obdIfCreated()?.release(TIRES_OBD)
+}
+
+/** La llave con que Llantas quiere el escáner. */
+private val TIRES_OBD = Any()
+
+/** Por qué el Bluetooth no puede buscar sensores, en el idioma de la app. */
+internal fun bleProblemText(p: BleProblem) = when (p) {
+    // Hasta Android 11 buscar Bluetooth pide la ubicación; desde 12, "dispositivos cercanos".
+    BleProblem.NO_PERMISSION -> if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) R.string.tires_ble_need_nearby else R.string.tires_ble_need_location
+    BleProblem.BLUETOOTH_OFF -> R.string.tires_ble_off
+    BleProblem.LOCATION_OFF -> R.string.tires_ble_location_off
+    BleProblem.UNSUPPORTED -> R.string.tires_ble_unsupported
+    BleProblem.FAILED -> R.string.tires_ble_failed
 }

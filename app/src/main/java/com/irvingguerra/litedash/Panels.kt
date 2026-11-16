@@ -84,8 +84,8 @@ fun DrawerPanel(d: Dependencies, apps: List<App>, close: () -> Unit) {
     var selected by remember { mutableStateOf<App?>(null) }
     var showHidden by remember { mutableStateOf(false) }
     var noRoom by remember { mutableStateOf(false) }
-    // Sin dock propio se ven las sugeridas: fijar parte de ellas (no de cero).
-    val dock = d.prefs.dock ?: remember(apps) { dockFavorites(d, apps).map { it.key } }
+    // Sin favoritas propias se ven las sugeridas: agregar o quitar parte de ellas (no de cero).
+    val dock = rememberFavorites(d, apps).map { it.key }
     val hidden = d.prefs.hidden
     val visible = remember(apps, hidden, showHidden) { if (showHidden) apps else apps.filter { it.key !in hidden } }
     PanelScaffold(stringResource(R.string.apps), close) {
@@ -114,6 +114,8 @@ fun DrawerPanel(d: Dependencies, apps: List<App>, close: () -> Unit) {
                 val inDock = app.key in dock
                 Button(stringResource(if (inDock) R.string.unpin_from_dock else R.string.pin_to_dock), {
                     d.prefs.dock = if (inDock) dock - app.key else dock + app.key
+                    // Sin el bloque de favoritas en la barra, la app no se vería en ningún lado.
+                    if (!inDock && BarItem.FAVORITES !in d.prefs.barItems) d.prefs.barItems = d.prefs.barItems + BarItem.FAVORITES
                     selected = null
                 })
                 Button(stringResource(R.string.add_to_home), {
@@ -212,16 +214,25 @@ private fun <T> ColumnScope.CardGrid(
     onClick: (T) -> Unit,
     content: @Composable ColumnScope.(T) -> Unit,
 ) {
-    BoxWithConstraints(Modifier.fillMaxWidth().weight(1f).verticalScroll(rememberScrollState()).padding(bottom = 16.dp)) {
-        val gap = 14.dp
-        val width = columnWidth(maxWidth, minWidth, gap)
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(gap), verticalArrangement = Arrangement.spacedBy(gap)) {
+    ScrollingColumns(minWidth, 14.dp) { width ->
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(14.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
             for (item in items) {
                 Card(Modifier.width(width).height(height), onClick = { onClick(item) }) {
                     Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) { content(item) }
                 }
             }
         }
+    }
+}
+
+/**
+ * Lo que queda del panel, con scroll si no cabe; [content] recibe el ancho de cada tarjeta para que quepan
+ * tantas columnas de [minWidth] o más como se pueda ([columnWidth]), separadas por [gap].
+ */
+@Composable
+private fun ColumnScope.ScrollingColumns(minWidth: Dp, gap: Dp, content: @Composable (width: Dp) -> Unit) {
+    BoxWithConstraints(Modifier.fillMaxWidth().weight(1f).verticalScroll(rememberScrollState()).padding(bottom = 16.dp)) {
+        content(columnWidth(maxWidth, minWidth, gap))
     }
 }
 
@@ -257,9 +268,8 @@ fun AddTilePanel(d: Dependencies, close: () -> Unit, onPickApp: () -> Unit, onPi
     }
     PanelScaffold(stringResource(R.string.add_tile), close) {
         if (noRoom) Label(stringResource(R.string.no_room), Typography.body, c.danger, modifier = Modifier.padding(bottom = 12.dp))
-        BoxWithConstraints(Modifier.fillMaxWidth().weight(1f).verticalScroll(rememberScrollState()).padding(bottom = 16.dp)) {
-            val gap = 12.dp
-            val width = columnWidth(maxWidth, 240.dp, gap)
+        val gap = 12.dp
+        ScrollingColumns(240.dp, gap) { width ->
             Column(verticalArrangement = Arrangement.spacedBy(22.dp)) {
                 for (group in AddGroup.entries) {
                     val specs = group.types.mapNotNull { t -> TileSpecs.firstOrNull { it.type == t } }.filter { offered(d, it.type) }
@@ -297,7 +307,7 @@ private fun AddCard(spec: TileSpec, modifier: Modifier, onClick: () -> Unit) {
  * El ancho de cada tarjeta para que quepan tantas columnas de [min] o más (dos como mínimo) en [total].
  * Medio punto menos: con la interfaz escalada, el redondeo a píxeles dejaba fuera la última.
  */
-private fun columnWidth(total: Dp, min: Dp, gap: Dp): Dp {
+internal fun columnWidth(total: Dp, min: Dp, gap: Dp): Dp {
     val columns = ((total + gap) / (min + gap)).toInt().coerceAtLeast(2)
     return (total - gap * (columns - 1)) / columns - 0.5.dp
 }

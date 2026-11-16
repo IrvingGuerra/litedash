@@ -9,6 +9,7 @@ import android.location.LocationManager
 import android.media.AudioManager
 import android.os.Build
 import android.os.SystemClock
+import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -18,11 +19,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -31,14 +30,15 @@ import com.irvingguerra.litedash.core.ui.Label
 import com.irvingguerra.litedash.core.ui.LocalColors
 import com.irvingguerra.litedash.core.ui.TextInput
 import com.irvingguerra.litedash.core.ui.Typography
-import com.irvingguerra.litedash.feature.dashboard.DashboardState
 import com.irvingguerra.litedash.feature.link.PhoneLink
 import com.irvingguerra.litedash.feature.music.AppProbe
-import com.irvingguerra.litedash.feature.music.MusicRepository
 import com.irvingguerra.litedash.feature.music.SoundPiece
 import com.irvingguerra.litedash.feature.music.SystemSource
-import com.irvingguerra.litedash.feature.obd.ObdRepository
+import java.io.IOException
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
@@ -58,6 +58,7 @@ private enum class ReportDetail(val key: String, val title: Int) {
     INTERNET("internet", R.string.report_radio_internet),
     USB_RECEIVER("usb", R.string.tires_source_usb),
     BLUETOOTH("bluetooth", R.string.sys_bluetooth),
+    CAR_OBD("obd", R.string.tires_source_obd),
     WIFI("wifi", R.string.sys_wifi),
     USB("usb", R.string.report_obd_usb),
 }
@@ -81,7 +82,8 @@ private enum class ReportModule(val key: String, val title: Int, val details: Li
     MUSIC("music", R.string.tile_music, listOf(ReportDetail.USB_PLAYER, ReportDetail.HEAD_BLUETOOTH, ReportDetail.MUSIC_APP), audio = true),
     RADIO("radio", R.string.tile_radio, listOf(ReportDetail.FM, ReportDetail.INTERNET), audio = true),
     CAR("car", R.string.tile_car),
-    TIRES("tires", R.string.tires, listOf(ReportDetail.USB_RECEIVER, ReportDetail.BLUETOOTH)),
+    // Con OBD: el aviso de Llantas por OBD pide justo este reporte para agregar el modelo.
+    TIRES("tires", R.string.tires, listOf(ReportDetail.USB_RECEIVER, ReportDetail.BLUETOOTH, ReportDetail.CAR_OBD)),
     WORKSHOP("workshop", R.string.report_workshop, listOf(ReportDetail.BLUETOOTH, ReportDetail.WIFI, ReportDetail.USB)),
     MAP("map", R.string.templates_tab_map),
     SPLIT("split", R.string.tab_split),
@@ -92,6 +94,16 @@ private enum class ReportModule(val key: String, val title: Int, val details: Li
     ;
 
     val problems get() = if (audio) AUDIO_PROBLEMS else GENERIC_PROBLEMS
+}
+
+/** Los módulos que tienen sentido en esta pantalla: sin Taller con el OBD apagado, sin dividida donde no se puede, sin actualizaciones en Play. */
+private fun offeredModules(d: Dependencies): List<ReportModule> = ReportModule.entries.filter {
+    when (it) {
+        ReportModule.WORKSHOP -> d.obdModule
+        ReportModule.SPLIT -> SplitScreen.supported()
+        ReportModule.UPDATES -> d.updater.available
+        else -> true
+    }
 }
 
 private sealed interface ReportState {
@@ -111,6 +123,9 @@ internal fun openSoundReport(piece: SoundPiece) {
     selectTab(SYSTEM_TABS, SystemTab.YOUR_SCREEN.ordinal)
 }
 
+/** Hay un reporte de sonido esperando: «Tu pantalla» pone la tarjeta arriba (si no, en pantallas bajitas queda fuera de la vista). */
+internal fun soundReportPending() = pendingSound != null
+
 private const val NOTE_MAX = 500
 private const val INFO_MAX = 20_000
 private const val REPORT_GAP_MS = 60_000L
@@ -118,34 +133,43 @@ private const val REPORT_GAP_MS = 60_000L
 /** Cuándo se mandó el último (reloj desde el arranque): a lo más uno por minuto. */
 private var lastReport = 0L
 
+/**
+ * El envío vive en la app, no en la tarjeta: si se cambia de pestaña a medio enviar, el reporte llega igual, el
+ * resultado se ve al volver y no se puede mandar otro encima.
+ */
+private val reportScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+private var reportState by mutableStateOf<ReportState>(ReportState.Idle)
+
 /** La tarjeta con el flujo por pasos; siempre se puede regresar al anterior. */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-internal fun SendReport(music: MusicRepository, pro: ProAccess, dashboard: DashboardState, obd: () -> ObdRepository?, phone: () -> String?) {
+internal fun SendReport(d: Dependencies) {
     val c = LocalColors.current
     val context = LocalContext.current.applicationContext
-    val scope = rememberCoroutineScope()
     val sound = remember { pendingSound.also { pendingSound = null } }
     var module by remember { mutableStateOf(sound?.let { if (it == SoundPiece.MUSIC) ReportModule.MUSIC else ReportModule.RADIO }) }
     var detail by remember { mutableStateOf(sound?.let { if (it == SoundPiece.MUSIC) ReportDetail.HEAD_BLUETOOTH else ReportDetail.FM }) }
     var problem by remember { mutableStateOf(sound?.let { ReportProblem.SILENT }) }
     var note by remember { mutableStateOf("") }
-    var state by remember { mutableStateOf<ReportState>(ReportState.Idle) }
 
     SettingsCard(stringResource(R.string.report_title), stringResource(R.string.report_help)) {
         val m = module
-        val sent = state as? ReportState.Sent
+        val state = reportState
         when {
-            sent != null -> {
+            state is ReportState.Sent -> {
                 Label(stringResource(R.string.report_thanks), Typography.subtitle)
-                Label(stringResource(R.string.report_code, sent.code), Typography.body, c.textMuted)
+                Label(stringResource(R.string.report_code, state.code), Typography.body, c.textMuted)
                 Button(stringResource(R.string.done), {
-                    module = null; detail = null; problem = null; note = ""; state = ReportState.Idle
+                    module = null; detail = null; problem = null; note = ""; reportState = ReportState.Idle
                 }, primary = true)
             }
+            // Se mandó desde otra visita a esta pestaña: se espera aquí lo que conteste.
+            state == ReportState.Sending && m == null -> Label(stringResource(R.string.report_sending), Typography.body, c.textMuted)
             m == null -> {
+                // El envío de otra visita falló: que se sepa antes de volver a empezar.
+                if (state == ReportState.Error) Label(stringResource(R.string.report_error), Typography.small, c.danger)
                 Label(stringResource(R.string.report_what), Typography.label, c.textMuted)
-                Choices(ReportModule.entries.map { it to it.title }) { module = it }
+                Choices(offeredModules(d).map { it to it.title }) { module = it }
             }
             m.details.isNotEmpty() && detail == null -> {
                 BackRow(listOf(m.title)) { module = null }
@@ -155,7 +179,7 @@ internal fun SendReport(music: MusicRepository, pro: ProAccess, dashboard: Dashb
             else -> {
                 BackRow(listOfNotNull(m.title, detail?.title)) {
                     problem = null
-                    state = ReportState.Idle
+                    if (reportState != ReportState.Sending) reportState = ReportState.Idle
                     if (detail != null) detail = null else module = null
                 }
                 Label(stringResource(R.string.report_problem), Typography.label, c.textMuted)
@@ -171,12 +195,13 @@ internal fun SendReport(music: MusicRepository, pro: ProAccess, dashboard: Dashb
                         stringResource(if (sending) R.string.report_sending else R.string.report_send),
                         {
                             // Se lee el estado de ahora (dos toques en el mismo cuadro no mandan dos).
-                            if (chosen == null || state == ReportState.Sending) return@Button
-                            state = ReportState.Sending
-                            scope.launch { state = submitReport(context, music, obd(), phone(), pro.isPro, dashboard, m, detail, chosen, note) }
+                            if (chosen == null || reportState == ReportState.Sending) return@Button
+                            reportState = ReportState.Sending
+                            val ask = Report(m, detail, chosen, note)
+                            reportScope.launch { reportState = submitReport(context, d, ask) }
                         },
-                        Modifier.graphicsLayer { alpha = if (chosen == null || sending) 0.45f else 1f },
                         primary = true,
+                        enabled = chosen != null && !sending,
                     )
                     when (state) {
                         ReportState.Error -> Label(stringResource(R.string.report_error), Typography.small, c.danger)
@@ -189,6 +214,9 @@ internal fun SendReport(music: MusicRepository, pro: ProAccess, dashboard: Dashb
     }
 }
 
+/** Lo que eligió el usuario. */
+private class Report(val module: ReportModule, val detail: ReportDetail?, val problem: ReportProblem, val note: String)
+
 /** Opciones de un paso: un botón por opción; tocar una pasa al siguiente. */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -198,83 +226,77 @@ private fun <T> Choices(options: List<Pair<T, Int>>, onPick: (T) -> Unit) {
     }
 }
 
-/** "Atrás" y lo elegido hasta ahora ("Música · USB…"). */
+/** "Atrás" y lo elegido hasta ahora ("Música · Archivos…"); en dos renglones si no cabe (celular de pie). */
 @Composable
 private fun BackRow(picked: List<Int>, onBack: () -> Unit) {
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
         Button(stringResource(R.string.back), onBack)
-        Label(picked.map { stringResource(it) }.joinToString(" · "), Typography.body, maxLines = 1)
+        Label(picked.map { stringResource(it) }.joinToString(" · "), Typography.body, maxLines = 2, modifier = Modifier.weight(1f, fill = false))
     }
 }
 
 /** Manda un reporte respetando el límite de uno por minuto: [ReportState.Sent], [ReportState.Error] o [ReportState.Wait]. */
-private suspend fun submitReport(
-    context: Context,
-    music: MusicRepository,
-    obd: ObdRepository?,
-    phone: String?,
-    pro: Boolean,
-    dashboard: DashboardState,
-    module: ReportModule,
-    detail: ReportDetail?,
-    problem: ReportProblem,
-    note: String,
-): ReportState {
+private suspend fun submitReport(context: Context, d: Dependencies, report: Report): ReportState {
     if (lastReport != 0L && SystemClock.elapsedRealtime() - lastReport < REPORT_GAP_MS) return ReportState.Wait
-    val id = sendReport(context, music, obd, phone, pro, dashboard, module, detail, problem, note) ?: return ReportState.Error
+    val id = sendReport(context, d, report) ?: return ReportState.Error
     lastReport = SystemClock.elapsedRealtime()
     return ReportState.Sent(id.take(6).uppercase())
 }
 
 /** Escribe `reports/{id}` (nuevo, nunca pisa otro); regresa el id o null si no se pudo. */
-private suspend fun sendReport(
-    context: Context,
-    music: MusicRepository,
-    obd: ObdRepository?,
-    phone: String?,
-    pro: Boolean,
-    dashboard: DashboardState,
-    module: ReportModule,
-    detail: ReportDetail?,
-    problem: ReportProblem,
-    note: String,
-): String? {
-    val info = runCatching { reportInfo(context, music, obd, phone, pro, dashboard) }.getOrElse { return null }
-    return withContext(Dispatchers.IO) { runCatching {
+private suspend fun sendReport(context: Context, d: Dependencies, report: Report): String? {
+    val info = try {
+        reportInfo(context, d)
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        Log.w(TAG, "no se pudo armar el reporte", e)
+        return null
+    }
+    return withContext(Dispatchers.IO) {
         val id = Firestore.newId()
         val fields = JSONObject()
             .put("version", Firestore.int(BuildConfig.VERSION_CODE.toLong()))
             .put("channel", Firestore.text(BuildConfig.CHANNEL))
             .put("android", Firestore.int(Build.VERSION.SDK_INT.toLong()))
             .put("debug", Firestore.bool(BuildConfig.DEBUG))
-            .put("module", Firestore.text(module.key))
-            .put("detail", Firestore.text(detail?.key ?: ""))
-            .put("problem", Firestore.text(problem.key))
-            .put("note", Firestore.text(note.trim().take(NOTE_MAX)))
+            .put("module", Firestore.text(report.module.key))
+            .put("detail", Firestore.text(report.detail?.key ?: ""))
+            .put("problem", Firestore.text(report.problem.key))
+            .put("note", Firestore.text(report.note.trim().take(NOTE_MAX)))
             .put("info", Firestore.text(info.take(INFO_MAX)))
         val write = JSONObject()
             .put("update", JSONObject().put("name", Firestore.document("reports/$id")).put("fields", fields))
             .put("currentDocument", JSONObject().put("exists", false))
             .put("updateTransforms", Firestore.serverTime("sent"))
-        id.takeIf { Firestore.commit(context, write) }
-    }.getOrNull() }
+        try {
+            id.takeIf { Firestore.commit(context, write) }.also { if (it == null) Log.w(TAG, "Firestore no aceptó el reporte") }
+        } catch (e: IOException) {
+            Log.w(TAG, "no se pudo mandar el reporte", e)
+            null
+        }
+    }
 }
+
+private const val TAG = "Reports"
 
 /**
  * Las líneas técnicas del reporte (lo que va en "info"); también se las pide LiteDash Connect para el suyo
  * ([wirePhoneReport]). Se llama en el hilo principal; lo que lee del sistema, en IO.
  */
-private suspend fun reportInfo(context: Context, music: MusicRepository, obd: ObdRepository?, phone: String?, pro: Boolean, dashboard: DashboardState): String {
-    val layout = dashboard.describe()
+private suspend fun reportInfo(context: Context, d: Dependencies): String {
+    val layout = d.dashboard.describe()
     // El escáner solo si ya existe (abrir el Taller lo crea); si no, no se conecta nada por el reporte.
-    // El módulo Celular solo si está prendido ([phone] ya viene armado).
-    val obdInfo = (obd?.describe() ?: "OBD: sin abrir en esta sesión") + (phone?.let { "\n" + it } ?: "")
+    val obdInfo = (d.obdIfCreated()?.describe() ?: "OBD: sin abrir en esta sesión") + "\n" + reportExtras(d)
+    val pro = d.pro.isPro
+    val openOnBoot = d.prefs.openOnBoot
+    val music = d.music
     return withContext(Dispatchers.IO) {
         // La música pregunta al PackageManager y a las sesiones: fuera del hilo principal. Su estado lo tocan los
         // avisos que llegan ahí; si cambia justo mientras se lee, el reporte va sin esa parte.
         val musicInfo = runCatching { music.describe() }.getOrElse { "Música: no se pudo leer (${it.javaClass.simpleName})" }
         val silent = runCatching { music.silentSources() }.getOrDefault(emptyList())
-        systemInfo(context, pro, layout, musicInfo + "\n" + obdInfo, silent)
+        systemInfo(context, pro, openOnBoot, layout, musicInfo + "\n" + obdInfo, silent)
     }
 }
 
@@ -291,10 +313,12 @@ internal fun wirePhoneReport(link: PhoneLink, context: Context, deps: () -> Depe
         busy = true
         lastAt = now
         phoneScope.launch {
-            val d = deps()
             try {
-                runCatching { reportInfo(context, d.music, d.obdIfCreated(), reportExtras(d), d.pro.isPro, d.dashboard) }
-                    .onSuccess { link.sendReport(id, it) }
+                link.sendReport(id, reportInfo(context, deps()))
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Log.w(TAG, "no se pudo armar el reporte para el celular", e)
             } finally {
                 busy = false
             }
@@ -305,11 +329,12 @@ internal fun wirePhoneReport(link: PhoneLink, context: Context, deps: () -> Depe
 private const val PHONE_REPORT_GAP_MS = 10_000L
 
 /**
- * Lo que va después de la línea del OBD: el celular (si el módulo está prendido), las llantas (solo si su módulo ya
- * corre: el reporte no prende nada) y las últimas teclas del volante. Se arma en el hilo principal.
+ * Lo que va después de la línea del OBD: el celular (Ajustes → Celular; sin vínculo dice solo que no hay), las llantas
+ * (solo si su módulo ya corre: el reporte no prende nada), las últimas teclas del volante y los autos instalados.
+ * Se arma en el hilo principal (todo es memoria).
  */
-internal fun reportExtras(d: Dependencies): String =
-    listOfNotNull(d.phone.describe(), d.tpmsIfCreated()?.describe(), d.wheel.describe()).joinToString("\n")
+private fun reportExtras(d: Dependencies): String =
+    listOfNotNull(d.phone.describe(), d.tpmsIfCreated()?.describe(), d.wheel.describe(), d.cars.describe()).joinToString("\n")
 
 /** El volumen de la música en Android y si está fijo (la pantalla lo maneja con su propio chip). */
 private fun volumeInfo(context: Context): String = runCatching {
@@ -318,7 +343,7 @@ private fun volumeInfo(context: Context): String = runCatching {
 }.getOrDefault("Volumen: ?")
 
 /** Datos técnicos de la pantalla para los reportes (equipo, Android, pantalla, acomodo [layout], luces, ubicación y si tiene Pro) más [musicInfo] y las apps [silent]. */
-private fun systemInfo(context: Context, pro: Boolean, layout: String, musicInfo: String, silent: List<String>): String {
+private fun systemInfo(context: Context, pro: Boolean, openOnBoot: Boolean, layout: String, musicInfo: String, silent: List<String>): String {
     val m = context.resources.displayMetrics
     return buildString {
         appendLine("LiteDash ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE}) · ${BuildConfig.CHANNEL}")
@@ -328,8 +353,8 @@ private fun systemInfo(context: Context, pro: Boolean, layout: String, musicInfo
         appendLine("Pantalla: ${m.widthPixels}×${m.heightPixels} px · ${m.densityDpi} dpi")
         appendLine(MainActivity.windowInfo)
         appendLine(layout)
-        appendLine(BootLaunch.describe(context, context.getSharedPreferences(PrefKeys.FILE, Context.MODE_PRIVATE).getBoolean(PrefKeys.OPEN_ON_BOOT, false)))
-        appendLine("Memoria: ${memoryMb(context)} MB")
+        appendLine(BootLaunch.describe(context, openOnBoot))
+        appendLine("Memoria: ${memoryBytes(context) / (1024 * 1024)} MB")
         appendLine("CPU: ${Build.SUPPORTED_ABIS.joinToString()}")
         appendLine("Pantalla dividida: ${if (SplitScreen.supported()) "sí" else "no"}")
         appendLine(volumeInfo(context))
@@ -366,8 +391,6 @@ private fun locationInfo(context: Context): String {
     return "Ubicación: ${if (on) "prendida" else "apagada"}, $permission; proveedores: ${providers.ifEmpty { "ninguno" }}"
 }
 
-/** La memoria (RAM) de la pantalla en MB. */
-internal fun memoryMb(context: Context): Long {
-    val memory = ActivityManager.MemoryInfo().also { context.getSystemService(ActivityManager::class.java).getMemoryInfo(it) }
-    return memory.totalMem / (1024 * 1024)
-}
+/** La memoria (RAM) de la pantalla en bytes. */
+internal fun memoryBytes(context: Context): Long =
+    ActivityManager.MemoryInfo().also { context.getSystemService(ActivityManager::class.java).getMemoryInfo(it) }.totalMem

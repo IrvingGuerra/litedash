@@ -1,6 +1,7 @@
 package com.irvingguerra.litedash
 
 import android.app.role.RoleManager
+import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -15,7 +16,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -35,7 +35,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -57,13 +56,14 @@ import com.irvingguerra.litedash.feature.dashboard.Template
 import com.irvingguerra.litedash.feature.dashboard.size
 import com.irvingguerra.litedash.feature.dashboard.coarse
 import com.irvingguerra.litedash.feature.dashboard.suggestedTemplate
+import com.irvingguerra.litedash.feature.dashboard.tiles
 
 /** ¿LiteDash ya es la pantalla de inicio? */
 fun isHomeApp(context: Context): Boolean {
     // Android 10+: el rol del sistema. Sin esto, desde Android 11 las otras apps de
     // inicio no se ven y LiteDash creería que es la única.
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-        runCatching { return context.getSystemService(RoleManager::class.java).isRoleHeld(RoleManager.ROLE_HOME) }
+        context.getSystemService(RoleManager::class.java)?.let { return it.isRoleHeld(RoleManager.ROLE_HOME) }
     }
     val intent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME)
     val resolved = context.packageManager.resolveActivity(intent, PackageManager.MATCH_DEFAULT_ONLY)
@@ -133,7 +133,7 @@ private fun Titles(title: String, text: String) {
 }
 
 @Composable
-private fun ColumnScope.CarStep(prefs: Preferences) {
+private fun CarStep(prefs: Preferences) {
     val c = LocalColors.current
     Titles(stringResource(R.string.welcome_title), stringResource(R.string.welcome_car))
     BoxWithConstraints(Modifier.fillMaxWidth()) {
@@ -144,11 +144,11 @@ private fun ColumnScope.CarStep(prefs: Preferences) {
         val options = @Composable { m: Modifier ->
             Column(m, verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 Label(stringResource(R.string.your_name), Typography.label, c.textMuted)
-                TextInput(prefs.driverName ?: "", { prefs.driverName = it.take(24).ifBlank { null } }, stringResource(R.string.your_name_hint), Modifier.fillMaxWidth())
+                DriverNameField(prefs)
                 Label(stringResource(R.string.car_name), Typography.label, c.textMuted)
-                TextInput(prefs.carName ?: "", { prefs.carName = it.take(24).ifBlank { null } }, stringResource(R.string.my_car), Modifier.fillMaxWidth())
+                CarNameField(prefs, stringResource(R.string.my_car))
                 Label(stringResource(R.string.color), Typography.label, c.textMuted)
-                ColorPicker(prefs.carColor, prefs::previewCarColor) { prefs.carColor = it }
+                CarColorPicker(prefs)
             }
         }
         if (horizontal) {
@@ -171,13 +171,19 @@ private fun StyleStep(prefs: Preferences, dashboard: DashboardState) {
     Titles(stringResource(R.string.welcome_style_title), stringResource(R.string.welcome_style))
     Label(stringResource(R.string.layout), Typography.label, c.textMuted)
     Spacer(Modifier.height(12.dp))
-    var selected by rememberSaveable { mutableIntStateOf(-1) }
+    val grid = dashboard.grid
     // Los acomodos que lucen en esta pantalla, el recomendado primero.
-    val options = dashboard.grid?.coarse?.let { c -> listOf(c.suggestedTemplate()) + Template.entries.filter { c.size in it.sizes } }
+    val options = grid?.coarse?.let { c -> listOf(c.suggestedTemplate()) + Template.entries.filter { c.size in it.sizes } }
         ?.distinct().orEmpty()
+    // Marcado el que ya está puesto (al entrar, el recomendado de fábrica): el mismo acomodo, sin importar los ids.
+    val shown = dashboard.shown
+    val current = remember(grid, shown, options) {
+        val placed = shown.map { listOf(it.col, it.row, it.width, it.height) }.toSet()
+        options.firstOrNull { p -> grid != null && p.tiles(grid, skip = dashboard.hidden).map { listOf(it.col, it.row, it.width, it.height) }.toSet() == placed }
+    }
     FlowRow(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        for ((i, p) in options.withIndex()) {
-            Button(stringResource(nameOf(p)), { selected = i; dashboard.template(p) }, primary = selected == i)
+        for (p in options) {
+            Button(stringResource(nameOf(p)), { dashboard.template(p) }, primary = current == p)
         }
     }
     Spacer(Modifier.height(28.dp))
@@ -203,44 +209,86 @@ fun rememberRequestHome(): Pair<() -> Unit, Int> {
     var returns by remember { mutableIntStateOf(0) }
     val requestRole = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { returns++ }
     val request = {
-        val requested = Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && runCatching {
-            val roleManager = context.getSystemService(RoleManager::class.java)
-            if (!roleManager.isRoleAvailable(RoleManager.ROLE_HOME)) return@runCatching false
-            requestRole.launch(roleManager.createRequestRoleIntent(RoleManager.ROLE_HOME))
-            true
-        }.getOrDefault(false)
-        if (!requested) {
+        if (!requestHomeRole(context) { requestRole.launch(it) }) {
             // "Apps predeterminadas" existe desde Android 7.
             val defaults = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS else null
             listOfNotNull(Settings.ACTION_HOME_SETTINGS, defaults, Settings.ACTION_SETTINGS)
-                .firstOrNull { action ->
-                    runCatching { context.startActivity(Intent(action).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }.isSuccess
-                }
+                .firstOrNull { action -> openSystemScreen(context, Intent(action)) }
         }
         Unit
     }
     return request to returns
 }
 
+/**
+ * El diálogo del sistema para ser la pantalla de inicio (Android 10+), lanzado con [launch]. false si esta pantalla
+ * no lo tiene (Android 9 o menos, o una capa de la marca sin ese rol): entonces se abren sus ajustes.
+ */
+private fun requestHomeRole(context: Context, launch: (Intent) -> Unit): Boolean {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return false
+    val roles = context.getSystemService(RoleManager::class.java) ?: return false
+    if (!roles.isRoleAvailable(RoleManager.ROLE_HOME)) return false
+    return try {
+        launch(roles.createRequestRoleIntent(RoleManager.ROLE_HOME))
+        true
+    } catch (e: ActivityNotFoundException) {
+        false
+    }
+}
+
 @Composable
 private fun HomeStep(revision: Int) {
+    Titles(stringResource(R.string.welcome_home_title), stringResource(R.string.welcome_home))
+    MakeHome(revision, big = true)
+}
+
+/**
+ * "Hazlo tu pantalla de inicio": si ya lo es, lo dice; si no, el botón para pedirlo ([beforeRequest] corre antes).
+ * Se vuelve a revisar al regresar de Ajustes ([revision] cambia en onResume) o del diálogo. [big]: la bienvenida
+ * (con palomita y ayuda); si no, como renglón de Ajustes.
+ */
+@Composable
+internal fun MakeHome(revision: Int, big: Boolean, beforeRequest: () -> Unit = {}) {
     val c = LocalColors.current
     val context = LocalContext.current
     val (request, returns) = rememberRequestHome()
-    // Se vuelve a revisar al regresar de Ajustes (revision cambia en onResume).
-    val alreadyHome = remember(revision, returns) { isHomeApp(context) }
-    Titles(stringResource(R.string.welcome_home_title), stringResource(R.string.welcome_home))
-    if (alreadyHome) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
+    val isHome = remember(revision, returns) { isHomeApp(context) }
+    when {
+        isHome && big -> Row(verticalAlignment = Alignment.CenterVertically) {
             Box(Modifier.size(44.dp).clip(CircleShape).background(c.accent), contentAlignment = Alignment.Center) {
                 Icon(Icons.done, c.onPrimary, 24.dp)
             }
             Spacer(Modifier.width(14.dp))
             Label(stringResource(R.string.welcome_already_home), Typography.subtitle)
         }
-    } else {
-        Button(stringResource(R.string.make_home), request, primary = true)
-        Spacer(Modifier.height(16.dp))
-        Label(stringResource(R.string.welcome_home_help), Typography.small, c.textMuted, modifier = Modifier.widthIn(max = 640.dp))
+        isHome -> Label(stringResource(R.string.welcome_already_home), Typography.body, c.accent)
+        else -> {
+            Button(stringResource(R.string.make_home), { beforeRequest(); request() }, primary = true)
+            if (big) {
+                Spacer(Modifier.height(16.dp))
+                Label(stringResource(R.string.welcome_home_help), Typography.small, c.textMuted, modifier = Modifier.widthIn(max = 640.dp))
+            }
+        }
     }
+}
+
+/** Tu nombre (para el saludo del inicio): hasta 24 letras; vacío = sin nombre. */
+@Composable
+internal fun DriverNameField(prefs: Preferences) {
+    TextInput(prefs.driverName ?: "", { prefs.driverName = nameOrNull(it) }, stringResource(R.string.your_name_hint), Modifier.fillMaxWidth())
+}
+
+/** El nombre de tu auto: hasta 24 letras; vacío = el del modelo ([hint]). */
+@Composable
+internal fun CarNameField(prefs: Preferences, hint: String) {
+    TextInput(prefs.carName ?: "", { prefs.carName = nameOrNull(it) }, hint, Modifier.fillMaxWidth())
+}
+
+/** Un nombre escrito, recortado a 24 letras; null si quedó en blanco. */
+private fun nameOrNull(text: String) = text.take(24).ifBlank { null }
+
+/** El color de tu auto, con vista previa en vivo mientras lo eliges. */
+@Composable
+internal fun CarColorPicker(prefs: Preferences) {
+    ColorPicker(prefs.carColor, prefs::previewCarColor) { prefs.carColor = it }
 }

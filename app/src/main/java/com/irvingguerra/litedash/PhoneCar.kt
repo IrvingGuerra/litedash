@@ -46,7 +46,14 @@ internal fun wirePhoneCar(link: PhoneLink, prefs: Preferences, cars: CarReposito
                 // Si no se puede dibujar (poca memoria en una pantalla sencilla), va sin imagen: el celular sigue con la de antes.
                 val webp = if (link.needsCarImage(image)) {
                     try {
-                        cars.snapshot(p, shown.paint, IMAGE_WIDTH)?.webp()
+                        // La imagen (~1.7 MB) se suelta en cuanto queda comprimida: en pantallas de 1 GB cuenta.
+                        cars.snapshot(p, shown.paint, IMAGE_WIDTH)?.let { b ->
+                            try {
+                                b.webp()
+                            } finally {
+                                b.recycle()
+                            }
+                        }
                     } catch (e: CancellationException) {
                         throw e
                     } catch (_: Throwable) {

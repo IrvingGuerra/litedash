@@ -1,13 +1,17 @@
 package com.irvingguerra.litedash
 
 import android.Manifest
+import android.content.ActivityNotFoundException
+import android.content.ContentResolver
 import android.content.Context
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.Matrix
+import android.media.ExifInterface
 import android.net.Uri
 import android.os.Build
-import android.util.DisplayMetrics
+import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -20,6 +24,7 @@ import androidx.compose.foundation.background
 import com.irvingguerra.litedash.core.ui.Radius
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.Row
@@ -30,7 +35,6 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
@@ -75,9 +79,12 @@ import com.irvingguerra.litedash.core.ui.scaledDecode
 import com.irvingguerra.litedash.feature.dashboard.Tile
 import com.irvingguerra.litedash.feature.dashboard.TileTypes
 import java.io.File
-import kotlin.math.ceil
-import kotlin.math.roundToInt
+import java.io.FileInputStream
+import java.io.IOException
+import java.io.InputStream
+import java.util.Locale
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
@@ -87,21 +94,51 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 
+/** Cómo se ve una imagen guardada en pantalla: de eso depende a qué tamaño se lee. */
+internal enum class ImageFit {
+    /** A lo más a media pantalla (widget Imagen, frente de un velocímetro y animación de entrada), nunca menos de [MIN_SHOWN_PX]. */
+    HALF_SCREEN,
+
+    /** Completa dentro de la pantalla, sin recortar (modo estacionado). */
+    FIT_SCREEN,
+
+    /** Cubre toda la pantalla, recortada (fondo del inicio). */
+    COVER_SCREEN,
+}
+
+/**
+ * Lado largo con que se lee una imagen de [width]×[height] que se muestra como [shown] en una pantalla de
+ * [screenWidth]×[screenHeight] (0 sin medidas). Puede pedir más que la imagen: [scaledDecode] nunca agranda.
+ */
+internal fun shownPx(shown: ImageFit, width: Int, height: Int, screenWidth: Int, screenHeight: Int): Int {
+    if (width <= 0 || height <= 0) return 0
+    // El lado largo escalado para que el ancho llegue al de la pantalla, o el alto al suyo (redondeado hacia arriba,
+    // en enteros para no perder un píxel por decimales).
+    val long = maxOf(width, height).toLong()
+    val across = ((long * screenWidth + width - 1) / width).toInt()
+    val down = ((long * screenHeight + height - 1) / height).toInt()
+    return when (shown) {
+        ImageFit.HALF_SCREEN -> maxOf(MIN_SHOWN_PX, maxOf(screenWidth, screenHeight) / 2)
+        ImageFit.FIT_SCREEN -> minOf(across, down)
+        ImageFit.COVER_SCREEN -> maxOf(across, down)
+    }
+}
+
 /**
  * Una imagen que eliges de tu galería: la de un widget Imagen (p. ej. el logo de tu marca;
  * LiteDash no trae logos de marcas), la de la animación de entrada, el fondo del inicio o
  * la del modo estacionado. Se guarda una copia reducida a [maxPx] en la app y se decodifica una sola
  * vez por [version]: cada imagen lleva la suya, así cambiar una no vuelve a leer las demás.
- * Al mostrarla se lee al tamaño en que se ve: [screenShare] = fracción del lado largo de la pantalla
- * que ocupa a lo más (0 = como se guardó); con [cover], lo justo para cubrir la pantalla. Las JPEG
- * (sin transparencia) se leen en RGB_565: la mitad de memoria.
+ * Se guarda en PNG solo si tiene transparencia; si no, en JPEG (el nombre del archivo no cambia:
+ * Android la lee por su contenido, y así lo que ya tenías guardado se sigue leyendo igual). Al mostrarla
+ * se lee al tamaño en que se ve ([shown]); las JPEG y las [opaque] en RGB_565: la mitad de memoria.
  */
 private class SavedImage(
     val file: String,
     val maxPx: Int,
-    val png: Boolean,
-    val screenShare: Float = 0f,
-    val cover: Boolean = false,
+    val shown: ImageFit,
+    /** Nunca lleva transparencia (el fondo cubre la pantalla): siempre JPEG y RGB_565. */
+    val opaque: Boolean = false,
 ) {
     /** Sube al elegir o quitar la imagen (solo en memoria): quien la muestra la vuelve a leer. */
     var version by mutableIntStateOf(0)
@@ -124,20 +161,12 @@ private class SavedImage(
     }
 
     /** La imagen guardada al tamaño en que se muestra; null si no hay o no se pudo leer (p. ej. sin memoria). Solo en IO. */
-    fun read(context: Context): ImageBitmap? = orNull {
-        val path = file(context).takeIf { it.exists() }?.path ?: return@orNull null
-        val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-        BitmapFactory.decodeFile(path, bounds)
-        val options = scaledDecode(maxOf(bounds.outWidth, bounds.outHeight), shownPx(context.resources.displayMetrics, bounds.outWidth, bounds.outHeight))
-        if (!png) options.inPreferredConfig = Bitmap.Config.RGB_565
-        BitmapFactory.decodeFile(path, options)?.asImageBitmap()
-    }
-
-    /** Lado largo con que se lee una imagen de [width]×[height]; 0 = como se guardó. Nunca agranda ([scaledDecode]). */
-    private fun shownPx(display: DisplayMetrics, width: Int, height: Int): Int = when {
-        screenShare <= 0f || width <= 0 || height <= 0 -> 0
-        cover -> ceil(maxOf(width, height) * maxOf(display.widthPixels.toFloat() / width, display.heightPixels.toFloat() / height)).toInt()
-        else -> maxOf(MIN_SHOWN_PX, (maxOf(display.widthPixels, display.heightPixels) * screenShare).roundToInt())
+    fun read(context: Context): ImageBitmap? {
+        val file = file(context).takeIf { it.exists() } ?: return null
+        val screen = context.resources.displayMetrics
+        return decodeImage("read $file", maxPx = { w, h -> shownPx(shown, w, h, screen.widthPixels, screen.heightPixels) }, lowMemory = opaque) {
+            FileInputStream(file)
+        }?.asImageBitmap()
     }
 }
 
@@ -145,31 +174,99 @@ private class SavedImage(
 private const val MIN_SHOWN_PX = 512
 
 /**
- * [block] o null si falla, también sin memoria: en Android 6 y 7 las imágenes viven en la memoria de
- * la app y una foto grande puede no caber (sin esto, tumbaría la app).
+ * Lee una imagen ya reducida: primero sus medidas y luego la imagen al lado largo que da [maxPx] (0 = completa).
+ * [open] abre la imagen desde el principio (se llama dos veces). Las JPEG (nunca tienen transparencia) y con
+ * [lowMemory] se leen en RGB_565. null si no se puede leer: formato que Android no conoce, archivo dañado o sin
+ * memoria (en Android 6 y 7 las imágenes viven en la memoria de la app y una foto grande puede no caber). [what]
+ * va al registro de Android para saber por qué.
  */
-private inline fun <T> orNull(block: () -> T?): T? = try {
-    block()
+private fun decodeImage(what: String, maxPx: (Int, Int) -> Int, lowMemory: Boolean, open: () -> InputStream?): Bitmap? = try {
+    val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+    open()?.use { BitmapFactory.decodeStream(it, null, bounds) }
+    if (bounds.outWidth <= 0 || bounds.outHeight <= 0) {
+        Log.w(LOG_TAG, "No se pudo leer la imagen ($what): formato ${bounds.outMimeType}")
+        null
+    } else {
+        val options = scaledDecode(maxOf(bounds.outWidth, bounds.outHeight), maxPx(bounds.outWidth, bounds.outHeight))
+        if (lowMemory || bounds.outMimeType == JPEG_MIME) options.inPreferredConfig = Bitmap.Config.RGB_565
+        open()?.use { BitmapFactory.decodeStream(it, null, options) }
+    }
+} catch (e: IOException) {
+    Log.w(LOG_TAG, "No se pudo leer la imagen ($what)", e)
+    null
+} catch (e: SecurityException) {
+    // Un archivo de otra app que ya no nos deja leerlo.
+    Log.w(LOG_TAG, "Sin permiso para leer la imagen ($what)", e)
+    null
 } catch (e: OutOfMemoryError) {
+    Log.w(LOG_TAG, "Sin memoria para la imagen ($what)", e)
     null
-} catch (e: Exception) {
-    null
+}
+
+private const val JPEG_MIME = "image/jpeg"
+
+/**
+ * Giro en grados y espejo (horizontal, después de girar) que dejan derecha una foto con la orientación EXIF
+ * [orientation] (1–8, como la guarda la cámara). Cualquier otro valor: tal cual.
+ */
+internal fun exifTurn(orientation: Int): Pair<Int, Boolean> = when (orientation) {
+    ExifInterface.ORIENTATION_FLIP_HORIZONTAL -> 0 to true
+    ExifInterface.ORIENTATION_ROTATE_180 -> 180 to false
+    ExifInterface.ORIENTATION_FLIP_VERTICAL -> 180 to true
+    ExifInterface.ORIENTATION_TRANSPOSE -> 90 to true
+    ExifInterface.ORIENTATION_ROTATE_90 -> 90 to false
+    ExifInterface.ORIENTATION_TRANSVERSE -> 270 to true
+    ExifInterface.ORIENTATION_ROTATE_270 -> 270 to false
+    else -> 0 to false
+}
+
+/**
+ * La orientación EXIF de [uri] (las fotos de cámara vienen acostadas y la marca dice cómo girarlas). De un
+ * archivo, por su ruta (todas las versiones); de otra app, por su flujo (Android 7+; en Android 6 ese camino no
+ * se usa: ahí las fotos se eligen con el explorador propio, que da archivos). Sin dato o ilegible: normal.
+ */
+private fun exifOrientation(context: Context, uri: Uri): Int {
+    val normal = ExifInterface.ORIENTATION_NORMAL
+    return try {
+        val exif = when {
+            uri.scheme == ContentResolver.SCHEME_FILE -> uri.path?.let { ExifInterface(it) }
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.N -> context.contentResolver.openInputStream(uri)?.use { ExifInterface(it) }
+            else -> null
+        }
+        exif?.getAttributeInt(ExifInterface.TAG_ORIENTATION, normal) ?: normal
+    } catch (e: IOException) {
+        Log.w(LOG_TAG, "No se pudo leer la orientación de $uri", e)
+        normal
+    }
+}
+
+/** [bitmap] derecho según la orientación EXIF [orientation] (suelta el original si tuvo que girarlo). */
+private fun upright(bitmap: Bitmap, orientation: Int): Bitmap {
+    val (degrees, mirror) = exifTurn(orientation)
+    if (degrees == 0 && !mirror) return bitmap
+    val matrix = Matrix().apply {
+        setRotate(degrees.toFloat())
+        if (mirror) postScale(-1f, 1f)
+    }
+    val turned = Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
+    if (turned !== bitmap) bitmap.recycle()
+    return turned
 }
 
 /**
  * Las fotos de las piezas de imagen y de lo que va al frente de un velocímetro, una por nombre
- * ([Tile.data] o [GaugeLook.image]): files/images/NOMBRE.png, con transparencia y a lo más 1024 px.
- * Cada pieza tiene la suya; se muestran a lo más a media pantalla.
+ * ([Tile.data] o [GaugeLook.image]): files/images/NOMBRE.png (PNG si tiene transparencia, si no JPEG), a lo
+ * más 1024 px. Cada pieza tiene la suya; se muestran a lo más a media pantalla.
  */
 private val tileImages = HashMap<String, SavedImage>()
 
-private fun newTileImage(name: String) = SavedImage("images/$name.png", 1024, png = true, screenShare = 0.5f)
+private fun newTileImage(name: String) = SavedImage("images/$name.png", 1024, ImageFit.HALF_SCREEN)
 
 private fun tileImage(name: String) = tileImages.getOrPut(name) { newTileImage(name) }
 
 /**
  * Suelta de memoria las fotos de las piezas (imagen o al frente de un velocímetro) que ya no están en
- * [tiles] (se quitaron o cambiaron de foto). Solo la memoria: los PNG se quedan en files/images/.
+ * [tiles] (se quitaron o cambiaron de foto). Solo la memoria: los archivos se quedan en files/images/.
  */
 fun releaseTileImages(tiles: List<Tile>) {
     val used = tiles.mapNotNullTo(HashSet()) { t ->
@@ -190,38 +287,52 @@ fun releaseTileImages(tiles: List<Tile>) {
 }
 
 /** La imagen de la animación de entrada: aparte de las de los widgets Imagen. */
-private val INTRO = SavedImage("intro.png", 1024, png = true)
+private val INTRO = SavedImage("intro.png", 1024, ImageFit.HALF_SCREEN)
 
-/** El fondo del inicio: una foto que cubre toda la pantalla (se lee en RGB_565, sin transparencia). */
-private val WALLPAPER = SavedImage("wallpaper.jpg", 1920, png = false, screenShare = 1f, cover = true)
+/** El fondo del inicio: una foto que cubre toda la pantalla (sin transparencia). */
+private val WALLPAPER = SavedImage("wallpaper.jpg", 1920, ImageFit.COVER_SCREEN, opaque = true)
 
-/** La imagen del modo estacionado (en vez del reloj), con transparencia por si es un logo. */
-private val PARKED = SavedImage("parked.png", 1920, png = true, screenShare = 1f)
+/** La imagen del modo estacionado (en vez del reloj), completa; con transparencia si es un logo. */
+private val PARKED = SavedImage("parked.png", 1920, ImageFit.FIT_SCREEN)
 
-/** Lee la imagen [uri] ya reducida a [maxPx] por lado; null si no se puede leer. Llamar fuera del hilo principal. */
-private fun decodeScaled(context: Context, uri: Uri, maxPx: Int): Bitmap? = orNull {
-    val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-    context.contentResolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it, null, bounds) }
-    context.contentResolver.openInputStream(uri)?.use {
-        BitmapFactory.decodeStream(it, null, scaledDecode(maxOf(bounds.outWidth, bounds.outHeight), maxPx))
+/**
+ * Lee la imagen [uri] derecha (según su EXIF) y reducida a [maxPx] por lado; [lowMemory] = en RGB_565 aunque no
+ * sea JPEG. null si no se puede leer. Llamar fuera del hilo principal.
+ */
+private fun decodePicked(context: Context, uri: Uri, maxPx: Int, lowMemory: Boolean): Bitmap? {
+    val bitmap = decodeImage("$uri", { _, _ -> maxPx }, lowMemory) { context.contentResolver.openInputStream(uri) } ?: return null
+    return try {
+        upright(bitmap, exifOrientation(context, uri))
+    } catch (e: OutOfMemoryError) {
+        Log.w(LOG_TAG, "Sin memoria para girar la imagen ($uri)", e)
+        bitmap.recycle()
+        null
     }
 }
 
-/** Guarda [bitmap] en [target]: primero a un temporal, así si algo falla la imagen de antes queda intacta. */
+/**
+ * Guarda [bitmap] en [target]: PNG solo si tiene transparencia (un recorte o un logo), si no JPEG. Primero a un
+ * temporal, así si algo falla la imagen de antes queda intacta.
+ */
 private suspend fun write(context: Context, bitmap: Bitmap, target: SavedImage): Boolean = withContext(Dispatchers.IO) {
-    runCatching {
-        val temp = File(context.filesDir, "${target.file}.tmp").apply { parentFile?.mkdirs() }
-        temp.outputStream().use {
-            if (target.png) bitmap.compress(Bitmap.CompressFormat.PNG, 100, it)
-            else bitmap.compress(Bitmap.CompressFormat.JPEG, 90, it)
+    val png = !target.opaque && bitmap.hasAlpha()
+    try {
+        replaceFile(target.file(context)) { temp ->
+            temp.outputStream().use { out ->
+                val written = if (png) bitmap.compress(Bitmap.CompressFormat.PNG, 100, out) else bitmap.compress(Bitmap.CompressFormat.JPEG, 90, out)
+                if (!written) throw IOException("compress ${target.file}")
+            }
         }
-        temp.renameTo(target.file(context))
-    }.getOrDefault(false)
+        true
+    } catch (e: IOException) {
+        Log.w(LOG_TAG, "No se pudo guardar ${target.file}", e)
+        false
+    }
 }
 
-/** Copia la imagen elegida, reducida a [SavedImage.maxPx]. */
+/** Copia la imagen elegida, derecha y reducida a [SavedImage.maxPx]. false si no se pudo leer o guardar. */
 private suspend fun save(context: Context, uri: Uri, target: SavedImage): Boolean {
-    val bitmap = withContext(Dispatchers.IO) { decodeScaled(context, uri, target.maxPx) } ?: return false
+    val bitmap = withContext(Dispatchers.IO) { decodePicked(context, uri, target.maxPx, target.opaque) } ?: return false
     return write(context, bitmap, target)
 }
 
@@ -360,10 +471,8 @@ fun LogoIntro(onDone: () -> Unit) {
 fun HomeWallpaper() {
     val c = LocalColors.current
     val image = rememberImage(WALLPAPER).image ?: return
-    Box(Modifier.fillMaxSize()) {
-        Image(image, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
-        Box(Modifier.fillMaxSize().background(c.background.copy(alpha = 0.4f)))
-    }
+    val veil = c.background.copy(alpha = 0.4f)
+    Image(image, null, Modifier.fillMaxSize().drawWithContent { drawContent(); drawRect(veil) }, contentScale = ContentScale.Crop)
 }
 
 /**
@@ -396,15 +505,38 @@ fun ParkedSettings(prefs: Preferences) {
 }
 
 /**
- * Elegir, cambiar o quitar una imagen guardada; [onPicked] avisa tras guardar una nueva y [onRemoved]
- * tras borrarla. Devuelve si hay imagen (null mientras se revisa el disco).
+ * Elegir, cambiar o quitar una imagen guardada; [onPicked] corre tras guardar una nueva y [onRemoved] tras borrarla.
+ * Guardar y quitar terminan aunque se cierre Ajustes a la mitad (si no, el archivo cambiaba y el inicio no se
+ * enteraba). Si la imagen no se puede leer, lo dice. [busy] = otra cosa está cambiando la misma imagen (no se deja
+ * elegir a la vez). Devuelve si hay imagen (null mientras se revisa el disco).
  */
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun imageButtons(target: SavedImage, onPicked: (Uri) -> Unit = {}, onRemoved: () -> Unit = {}): Boolean? {
+private fun imageButtons(
+    target: SavedImage,
+    busy: Boolean = false,
+    onPicked: suspend (Uri) -> Unit = {},
+    onRemoved: suspend () -> Unit = {},
+): Boolean? {
     val context = LocalContext.current
+    val c = LocalColors.current
     val scope = rememberCoroutineScope()
-    val use: (Uri) -> Unit = { uri -> scope.launch { if (save(context, uri, target)) { target.bump(); onPicked(uri) } } }
+    var saving by remember { mutableStateOf(false) }
+    var unusable by remember(target) { mutableStateOf(false) }
+    val use: (Uri) -> Unit = { uri ->
+        saving = true
+        unusable = false
+        scope.launch {
+            withContext(NonCancellable) {
+                val ok = save(context, uri, target)
+                if (ok) {
+                    target.bump()
+                    onPicked(uri)
+                }
+                unusable = !ok
+                saving = false
+            }
+        }
+    }
     var browsing by remember { mutableStateOf(false) }
     val pick = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri -> if (uri != null) use(uri) }
     var denied by remember { mutableStateOf(false) }
@@ -418,8 +550,11 @@ private fun imageButtons(target: SavedImage, onPicked: (Uri) -> Unit = {}, onRem
     // se baja de Play: "No es posible acceder" y LiteDash trabado).
     val open: () -> Unit = {
         when {
-            Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU ->
-                runCatching { pick.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) }
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU -> try {
+                pick.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+            } catch (e: ActivityNotFoundException) {
+                Log.w(LOG_TAG, "Sin selector de fotos del sistema", e)
+            }
             context.checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED ->
                 ask.launch(Manifest.permission.READ_EXTERNAL_STORAGE)
             else -> browsing = true
@@ -430,20 +565,25 @@ private fun imageButtons(target: SavedImage, onPicked: (Uri) -> Unit = {}, onRem
         value = withContext(Dispatchers.IO) { target.file(context).exists() }
     }
     val known = hasImage ?: return null
+    val idle = !saving && !busy
     FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Button(stringResource(if (known) R.string.logo_change else R.string.logo_pick), open)
-        if (denied) Label(stringResource(R.string.image_no_permission), Typography.small, LocalColors.current.danger)
+        Button(stringResource(if (known) R.string.logo_change else R.string.logo_pick), open, enabled = idle)
         if (known) Button(stringResource(R.string.logo_remove), {
+            unusable = false
             scope.launch {
-                withContext(Dispatchers.IO) { target.file(context).delete() }
-                target.bump()
-                onRemoved()
+                withContext(NonCancellable) {
+                    withContext(Dispatchers.IO) { target.file(context).delete() }
+                    target.bump()
+                    onRemoved()
+                }
             }
-        })
+        }, enabled = idle)
     }
+    if (denied) Label(stringResource(R.string.image_no_permission), Typography.small, c.danger)
+    if (unusable) Label(stringResource(R.string.image_unusable), Typography.small, c.danger)
     if (browsing) FileBrowser(
         pickFolder = false,
-        accept = { name -> name.substringAfterLast('.', "").lowercase() in IMAGE_TYPES },
+        accept = { name -> name.substringAfterLast('.', "").lowercase(Locale.ROOT) in IMAGE_TYPES },
         onPick = { file ->
             browsing = false
             use(Uri.fromFile(file))
@@ -454,11 +594,14 @@ private fun imageButtons(target: SavedImage, onPicked: (Uri) -> Unit = {}, onRem
     return known
 }
 
-private val IMAGE_TYPES = setOf("jpg", "jpeg", "png", "webp", "gif", "bmp", "heic")
+/** Lo que el explorador propio ofrece como imagen: lo que Android sabe leer (HEIC desde Android 9). */
+private val IMAGE_TYPES = setOf("jpg", "jpeg", "png", "webp", "gif", "bmp") +
+    (if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) setOf("heic", "heif") else emptySet())
 
 /**
  * Inicio y apariencia → Inicio → Fondo de pantalla: los fondos de LiteDash (miniaturas; uno se baja de litedash.dev
  * al tocarlo y queda guardado como si fuera tu foto) y elegir, cambiar o quitar una foto tuya. Sin internet, solo tu foto.
+ * Mientras baja uno no se puede elegir tu foto (y al revés): el que terminara al último pisaría al otro.
  */
 @Composable
 fun WallpaperSettings() {
@@ -474,7 +617,7 @@ fun WallpaperSettings() {
     var failed by remember { mutableStateOf(false) }
     val list = choices
     if (!list.isNullOrEmpty()) {
-        Label(stringResource(R.string.wallpaper_included).uppercase(), Typography.label, c.textMuted)
+        Label(stringResource(R.string.wallpaper_included), Typography.label, c.textMuted)
         Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             for (w in list) {
                 val thumb by produceState<ImageBitmap?>(null, w.id) { value = wallpaperThumb(context, w.id) }
@@ -486,17 +629,21 @@ fun WallpaperSettings() {
                         .clip(shape)
                         .background(c.surfaceHigh)
                         .border(if (selected) 3.dp else 0.dp, if (selected) c.accent else Color.Transparent, shape)
-                        .clickable(enabled = downloading == null) {
+                        // El que ya está puesto no se vuelve a bajar.
+                        .clickable(enabled = downloading == null && !selected) {
                             downloading = w.id
                             failed = false
                             scope.launch {
-                                val ok = downloadWallpaper(context, w.id, WALLPAPER.file(context))
-                                if (ok) {
-                                    withContext(Dispatchers.IO) { runCatching { marker.writeText(w.id) } }
-                                    WALLPAPER.bump()
+                                // Termina aunque se cierre Ajustes: el archivo ya cambió y el inicio debe enterarse.
+                                withContext(NonCancellable) {
+                                    val ok = downloadWallpaper(context, w.id, WALLPAPER.file(context))
+                                    if (ok) {
+                                        withContext(Dispatchers.IO) { writeMarker(marker, w.id) }
+                                        WALLPAPER.bump()
+                                    }
+                                    failed = !ok
+                                    downloading = null
                                 }
-                                failed = !ok
-                                downloading = null
                             }
                         },
                 ) {
@@ -508,13 +655,28 @@ fun WallpaperSettings() {
         val credit = list.firstOrNull { it.id == chosen }?.credit
         when {
             failed -> Label(stringResource(R.string.wallpaper_failed), Typography.small, c.danger)
-            !credit.isNullOrBlank() && credit != "LiteDash" -> Label(stringResource(R.string.wallpaper_credit, credit), Typography.small, c.textMuted)
+            !credit.isNullOrBlank() && credit != OWN_CREDIT -> Label(stringResource(R.string.wallpaper_credit, credit), Typography.small, c.textMuted)
         }
-        Label(stringResource(R.string.wallpaper_own).uppercase(), Typography.label, c.textMuted)
+        Label(stringResource(R.string.wallpaper_own), Typography.label, c.textMuted)
     }
-    val forget: () -> Unit = { scope.launch { withContext(Dispatchers.IO) { marker.delete() }; chosen = null } }
-    imageButtons(WALLPAPER, onPicked = { forget() }, onRemoved = forget)
+    val forget: suspend () -> Unit = {
+        withContext(Dispatchers.IO) { marker.delete() }
+        chosen = null
+    }
+    imageButtons(WALLPAPER, busy = downloading != null, onPicked = { forget() }, onRemoved = forget)
 }
+
+/** Anota cuál de los fondos de LiteDash quedó puesto (si no se puede, solo no se marca su miniatura). */
+private fun writeMarker(marker: File, id: String) {
+    try {
+        marker.writeText(id)
+    } catch (e: IOException) {
+        Log.w(LOG_TAG, "No se pudo anotar el fondo $id", e)
+    }
+}
+
+/** El crédito de los fondos hechos por LiteDash en index.json: ese no se muestra. */
+private const val OWN_CREDIT = "LiteDash"
 
 /** Ancho de cada miniatura de los fondos de LiteDash (16:9). */
 private val WALLPAPER_THUMB_WIDTH = 144.dp
@@ -580,12 +742,13 @@ fun ImageEditor(
     // La foto elegida en este panel: mientras siga abierto se puede volver a la original.
     var picked by remember(key) { mutableStateOf<Uri?>(null) }
     val source by produceState<Bitmap?>(null, picked) {
-        value = picked?.let { withContext(Dispatchers.IO) { decodeScaled(context, it, CUT_MAX_PX) } }
+        value = picked?.let { withContext(Dispatchers.IO) { decodePicked(context, it, CUT_MAX_PX, lowMemory = false) } }
     }
     var removing by remember(key) { mutableStateOf(false) }
     var level by remember(key) { mutableIntStateOf(1) }
     // Lo que hay guardado: -1 = la original; si no, la intensidad con que se quitó el fondo.
     var saved by remember(key) { mutableIntStateOf(-1) }
+    var applyFailed by remember(key) { mutableStateOf(false) }
     val chosen = if (removing) level else -1
     // Se queda la vista previa anterior mientras se calcula la nueva (sin parpadeo).
     val preview by produceState<CutPreview?>(null, source, removing, level) {
@@ -603,7 +766,8 @@ fun ImageEditor(
         picked = uri
         removing = false
         saved = -1
-    }, onRemoved = onRemoved)
+        applyFailed = false
+    }, onRemoved = { onRemoved() })
     // Al quitar la imagen se olvida la foto elegida.
     LaunchedEffect(hasImage) { if (hasImage == false) picked = null }
     if (hasImage == false) Label(empty, Typography.small, c.textMuted)
@@ -617,30 +781,34 @@ fun ImageEditor(
         if (removing) {
             Label(stringResource(R.string.image_background_help), Typography.small, c.textMuted)
             Label(stringResource(R.string.image_strength), Typography.label, c.textMuted)
-            Segmented(
-                listOf(
-                    0 to stringResource(R.string.image_strength_low),
-                    1 to stringResource(R.string.image_strength_medium),
-                    2 to stringResource(R.string.image_strength_high),
-                    3 to stringResource(R.string.image_strength_max),
-                ),
-                level,
-                { level = it },
-            )
+            Segmented(List(CUT_LEVELS) { it to stringResource(CUT_STRENGTHS[it]) }, level, { level = it })
             if (ready != null && ready.bitmap == null) Label(stringResource(R.string.image_cut_failed), Typography.small, c.danger)
         }
         val cut = ready?.bitmap
         if (chosen != saved && (chosen < 0 || cut != null)) {
             Button(stringResource(R.string.image_apply), {
                 val uri = picked ?: return@Button
+                applyFailed = false
                 scope.launch {
-                    val ok = if (cut == null) save(context, uri, target) else write(context, cut, target)
-                    if (ok) {
-                        target.bump()
-                        saved = chosen
+                    withContext(NonCancellable) {
+                        val ok = if (cut == null) save(context, uri, target) else write(context, cut, target)
+                        if (ok) {
+                            target.bump()
+                            saved = chosen
+                        }
+                        applyFailed = !ok
                     }
                 }
             }, primary = true)
         }
+        if (applyFailed) Label(stringResource(R.string.image_unusable), Typography.small, c.danger)
     }
 }
+
+/** Los textos de cada intensidad de "quitar fondo", de suave a máxima: uno por cada nivel de [CUT_LEVELS]. */
+private val CUT_STRENGTHS = listOf(
+    R.string.image_strength_low,
+    R.string.image_strength_medium,
+    R.string.image_strength_high,
+    R.string.image_strength_max,
+)
