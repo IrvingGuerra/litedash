@@ -4,6 +4,16 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.4.164] - 2026-11-16
+
+### Arreglado
+- **Música por Bluetooth en pantallas con app de Bluetooth de marca** (Essgoo y parecidas, issue #13): la canción y el
+  artista ya se muestran, y play, pausa, siguiente y anterior controlan la música en vez de abrir «BT Music» cada vez.
+  También sirve deslizar la tarjeta para cambiar de canción.
+- **El botón de Bluetooth de la barra** abre la pantalla de emparejar («Bluetooth»), no la de la música («BT Music»),
+  cuando la app trae las dos.
+- Los reportes ya no se llenan con el mismo aviso de Bluetooth repetido: se ve lo que pasó antes.
+
 ## [1.4.163] - 2026-11-16
 
 Auditoría total: cada parte de la app revisada archivo por archivo, con una segunda revisión independiente antes de publicar.

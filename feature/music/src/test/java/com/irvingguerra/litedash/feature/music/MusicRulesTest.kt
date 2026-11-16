@@ -187,6 +187,20 @@ class MusicRulesTest {
         pickSession(list, { it }, own = "own", fixed = fixed, anyApp = anyApp, avrcp = "com.android.bluetooth")
 
     @Test
+    fun brandBluetoothWithoutSessionTakesAndroidBluetooth() {
+        // Essgoo (E9C1EE): la app de marca no tiene sesión; la música del celular está en la del Bluetooth de Android.
+        val android = v("com.android.bluetooth", titled = true, playing = true)
+        val list = listOf(android, v("com.hcn.bluetoothservice"), v("com.spotify.music", titled = true, playing = true))
+        fun pickBt(l: List<SessionView>) =
+            pickSession(l, { it }, own = "own", fixed = "com.autochips.bluetooth", anyApp = false, avrcp = null, standIns = listOf("com.android.bluetooth"))
+        assertEquals(android, pickBt(list))
+        // Vacía y sin sonar no cuenta; y si la de marca sí tiene sesión, manda la suya.
+        assertNull(pickBt(listOf(v("com.android.bluetooth"))))
+        val brand = v("com.autochips.bluetooth")
+        assertEquals(brand, pickBt(listOf(android, brand)))
+    }
+
+    @Test
     fun ownPlayerPlayingAlwaysWins() {
         val own = v("own", busy = true)
         assertEquals(own, pick(listOf(v("com.tw.bt", titled = true, playing = true), own), fixed = "com.tw.bt"))

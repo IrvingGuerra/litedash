@@ -90,6 +90,19 @@ internal fun launchIntent(context: Context, pkg: String, bluetooth: Boolean = fa
     return Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER).setClassName(pkg, list[i].activityInfo.name)
 }
 
+/**
+ * Cómo abrir la app del Bluetooth [pkg] para conectar un celular: si trae varias actividades de inicio, la que NO es la
+ * de la música (la de emparejar; issue #13: «Bluetooth» y «BT Music» en la misma app); si no, la que da Android.
+ */
+internal fun pairingIntent(context: Context, pkg: String): Intent? {
+    val pm = context.packageManager
+    val list = launchActivities(context, pkg)
+    val music = if (list.size < 2) -1 else pickMusicActivity(list.map { it.activityInfo.name }) { list[it].loadLabel(pm) }
+    if (music < 0) return runCatching { pm.getLaunchIntentForPackage(pkg) }.getOrNull()
+    val other = list[if (music == 0) 1 else 0]
+    return Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER).setClassName(pkg, other.activityInfo.name)
+}
+
 /** Para los reportes: las actividades de inicio de [pkg] (clase corta y etiqueta) y cuál abre LiteDash. */
 internal fun describeLaunch(context: Context, pkg: String, bluetooth: Boolean = false): String {
     val pm = context.packageManager

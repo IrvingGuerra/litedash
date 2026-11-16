@@ -396,6 +396,9 @@ class MusicRepository(internal val context: Context) {
     // Ya escucha las sesiones de medios (con el permiso de avisos).
     internal var listening = false
 
+    /** El último aviso anotado en el registro (los repetidos no se anotan). */
+    private var lastBroadcastLine: String? = null
+
     /**
      * Respaldo de "qué suena" para apps sin sesión de medios (la música Bluetooth de muchas
      * pantallas chinas): sus avisos (broadcasts). La radio enlazada va a su pieza; lo demás, a Música.
@@ -403,7 +406,10 @@ class MusicRepository(internal val context: Context) {
     internal val broadcasts = object : BroadcastReceiver() {
         override fun onReceive(c: Context, i: Intent) {
             val extras = i.extras.toMap()
-            trace("aviso ${i.action} [${extras.keys.joinToString()}]")
+            // Algunos (el AVRCP de Android) llegan cada dos segundos: repetido no se anota, o llena el registro del reporte.
+            val line = "aviso ${i.action} [${extras.keys.joinToString()}]"
+            if (line != lastBroadcastLine) trace(line)
+            lastBroadcastLine = line
             val meta = BroadcastMeta.parse(i.action ?: return, extras) ?: return
             val fm = meta.pkg != null && meta.pkg == sourceApps[SourceKind.RADIO]
             // La FM avisando mientras la pieza Radio está en internet: no es lo que se escogió.
@@ -473,7 +479,11 @@ class MusicRepository(internal val context: Context) {
         pkg == sourceApps[SourceKind.RADIO] || (isOwn(pkg) && ownSourceNow?.invoke() == SourceKind.RADIO)
 
     /** La pieza Música: todo menos la radio; sigue la app del método elegido ([modeApp]) o, sin ella, lo que suene. */
-    val music = Lens(accepts = { !isRadio(it) }, fixed = { modeApp }, remembersLast = true, anyApp = { mode == MusicMode.APP })
+    val music = Lens(
+        accepts = { !isRadio(it) }, fixed = { modeApp }, remembersLast = true, anyApp = { mode == MusicMode.APP },
+        // La app de Bluetooth de marca suele ser solo una pantalla: la música del celular la toca el Bluetooth de Android.
+        standIns = { if (mode == MusicMode.BLUETOOTH) BluetoothAvrcp.ANDROID_PACKAGES else emptyList() },
+    )
 
     /** La pieza Radio: solo la radio de la pantalla (FM) o la de LiteDash (internet). */
     val radio = Lens(accepts = { isRadio(it) }, fixed = { null }, remembersLast = false, anyApp = { true })
@@ -526,6 +536,8 @@ class MusicRepository(internal val context: Context) {
         private val remembersLast: Boolean,
         /** Sin app fija, ¿vale cualquiera que suene? Solo con el método App (Archivos y Bluetooth no muestran otras). */
         private val anyApp: () -> Boolean,
+        /** Las apps cuya sesión vale por la de la app fija cuando esta no tiene ninguna. */
+        private val standIns: () -> List<String> = { emptyList() },
     ) {
         var song by mutableStateOf<Song?>(null)
             private set
@@ -627,7 +639,7 @@ class MusicRepository(internal val context: Context) {
                     busy = c.busy(),
                 )
             }
-            val chosen = pickSession(views, { it.second }, ownPackage, fixed(), anyApp(), avrcpPackage)?.first
+            val chosen = pickSession(views, { it.second }, ownPackage, fixed(), anyApp(), avrcpPackage, standIns())?.first
             if (chosen?.sessionToken != controller?.sessionToken) {
                 controller?.unregisterCallback(callback)
                 controller = chosen
@@ -921,10 +933,14 @@ class MusicRepository(internal val context: Context) {
     }
 
     /**
-     * Abre la app de Bluetooth (la enlazada o la de marca; para vincular en pantallas con chip propio); falso si no
-     * hay o no tiene pantalla que abrir.
+     * Abre la app de Bluetooth en su pantalla de emparejar (la enlazada o la de marca; para vincular en pantallas
+     * con chip propio); falso si no hay o no tiene pantalla que abrir.
      */
-    fun openBluetoothApp(): Boolean = bluetoothApp()?.let { open(it) != Opened.NONE } == true
+    fun openBluetoothApp(): Boolean {
+        val intent = bluetoothApp()?.let { pairingIntent(context, it) } ?: return false
+        return runCatching { context.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
+            .onFailure { trace("no se abrió el Bluetooth (${it.javaClass.simpleName})") }.isSuccess
+    }
 
     /** Abre la app que está sonando o, si no hay, la tocada o la elegida en Ajustes. */
     fun openApp() {

@@ -213,14 +213,22 @@ internal data class SessionView(val pkg: String, val titled: Boolean, val playin
 /**
  * Qué sesión toma una pieza de [list] (ya filtrada a las suyas). El reproductor propio sonando o cargando siempre (lo
  * puso a sonar el usuario). Con app fija ([fixed]), solo de esa: la que suena con canción, si no la que tiene canción,
- * si no la que suena, si no cualquiera (las TopWay, `com.tw.bt`, acumulan sesiones vacías). Sin app fija y si vale
+ * si no la que suena, si no cualquiera (las TopWay, `com.tw.bt`, acumulan sesiones vacías); si esa app no tiene
+ * ninguna sesión, la de quien toca por ella ([standIns]). Sin app fija y si vale
  * cualquiera ([anyApp]): la que suena con canción, la que suena, la que tiene canción y, al final, cualquiera que no sea
  * la del Bluetooth de Android ([avrcp]: sin celular sonando es una sesión vacía).
  */
-internal fun <T> pickSession(list: List<T>, view: (T) -> SessionView, own: String, fixed: String?, anyApp: Boolean, avrcp: String?): T? {
+internal fun <T> pickSession(
+    list: List<T>, view: (T) -> SessionView, own: String, fixed: String?, anyApp: Boolean, avrcp: String?,
+    standIns: List<String> = emptyList(),
+): T? {
     list.firstOrNull { view(it).let { v -> v.pkg == own && v.busy } }?.let { return it }
     if (fixed != null) {
-        val mine = list.filter { view(it).pkg == fixed }
+        // La app fija sin sesión propia (la de Bluetooth de marca, que solo es una pantalla): vale la de quien toca por
+        // ella ([standIns]: el Bluetooth de Android), si trae canción o suena. Reportes E9C1EE y 9EB0D5 (Essgoo).
+        val mine = list.filter { view(it).pkg == fixed }.ifEmpty {
+            list.filter { view(it).let { v -> v.pkg in standIns && (v.titled || v.busy) } }
+        }
         return mine.firstOrNull { view(it).let { v -> v.titled && v.playing } }
             ?: mine.firstOrNull { view(it).titled }
             ?: mine.firstOrNull { view(it).playing }
