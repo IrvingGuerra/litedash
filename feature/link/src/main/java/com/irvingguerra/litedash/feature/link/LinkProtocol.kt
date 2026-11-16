@@ -16,7 +16,6 @@ import javax.crypto.spec.SecretKeySpec
 internal object LinkProtocol {
     const val VERSION = 1
     const val PORT = 47600
-    const val SERVICE_TYPE = "_litedash-link._tcp"
     const val KEY_BYTES = 32
     const val NONCE_BYTES = 16
 

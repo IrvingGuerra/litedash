@@ -2,7 +2,7 @@ package com.irvingguerra.litedash.feature.link
 
 /**
  * Cuándo toca buscar al celular (PROTOCOLO_LINK.md §6), en un solo lugar y sin Android (se prueba con un reloj
- * falso). Todos los avisos (abrir LiteDash, faro, red nueva, NSD, Bluetooth, el panel) solo piden un intento
+ * falso). Todos los avisos (abrir LiteDash, faro, red nueva, Bluetooth, el panel) solo piden un intento
  * ([waitFor]): nunca dos con menos de [MIN_GAP_MS] entre sí. Tras un intento fallido:
  * - **LiteDash al frente:** otro a los 5, 10, 20 y 40 s y luego cada minuto, mientras siga al frente.
  * - **En segundo plano:** ninguno por tiempo. Solo el oído del faro y los cambios de red piden intentos (el faro

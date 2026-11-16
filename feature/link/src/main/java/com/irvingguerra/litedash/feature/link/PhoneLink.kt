@@ -8,8 +8,6 @@ import android.net.LinkProperties
 import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.NetworkRequest
-import android.net.nsd.NsdManager
-import android.net.nsd.NsdServiceInfo
 import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
@@ -93,12 +91,12 @@ data class PhoneSong(
 /**
  * El enlace con el celular (LiteDash Connect), lado pantalla de Link v1 (PROTOCOLO_LINK.md): el
  * celular es el servidor y la pantalla lo busca en las puertas de enlace de sus redes, en la última
- * dirección que funcionó, donde lo anuncien su faro o NSD y, de respaldo, tocando a los vecinos de
- * sus redes locales (así lo encuentra también cuando el celular entra al hotspot de la pantalla).
+ * dirección que funcionó, donde lo anuncie su faro y, de respaldo, tocando a los vecinos de sus redes
+ * locales (así lo encuentra también cuando el celular entra al hotspot de la pantalla).
  *
  * Cuándo busca lo decide [LinkSchedule]: con LiteDash al frente ([visible]) reintenta cada vez más espaciado
- * (5 s… hasta 1 min) y busca también por NSD y Bluetooth; en segundo plano solo oye el faro y los cambios de
- * red. Con su panel abierto ([watch]) intenta cada 2 s. Sin celular vinculado y con el panel cerrado no deja
+ * (5 s… hasta 1 min) y, si ve al celular por Bluetooth de baja energía, intenta de una vez; en segundo plano
+ * solo oye el faro y los cambios de red. Con su panel abierto ([watch]) intenta cada 2 s. Sin celular vinculado y con el panel cerrado no deja
  * hilos, receptores ni sockets. Conectado, solo el hilo que lee (con su `ping`).
  *
  * El estado se maneja en el hilo principal; la red, en sus hilos (uno por intento, el oído del faro y
@@ -297,9 +295,6 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
     private var session: Session? = null
     private var networkWatched = false
     private val networks = NetworkMemory<Network>()
-    private var discovery: Discovery? = null
-    /** Dónde anunció NSD al celular ("host:puerto"). */
-    private var announced: String? = null
     /** El oído del faro del celular y de dónde llegó su último aviso ("host:puerto"). */
     private var ear: Ear? = null
     private var beaconed: String? = null
@@ -344,7 +339,7 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
 
     /**
      * Una ventana de LiteDash se ve o se dejó de ver (onStart y onStop de cada una). Al pasar al frente los
-     * reintentos vuelven a ir seguidos; al irse al fondo se apagan NSD, Bluetooth y los reintentos por tiempo
+     * reintentos vuelven a ir seguidos; al irse al fondo se apagan Bluetooth y los reintentos por tiempo
      * (queda el oído del faro). Una conexión abierta no se toca.
      */
     fun visible(on: Boolean) {
@@ -379,7 +374,6 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
     fun describe(): String = "Celular: vinculado=${yes(paired)}, conectado=${yes(connected)}, red local permitida=${yes(networkAllowed)}, " +
         "al frente=${yes(foreground)}, puerta de enlace=${lastGateways.ifEmpty { "—" }}, " +
         "última dirección=${store.getString(LAST_ADDRESS, null) ?: "—"}, " +
-        "NSD=${if (discovery != null) "buscando" else "no"}${announced?.let { " ($it)" } ?: ""}, " +
         "faro=${beaconed ?: if (earFailed) "sin puerto" else "—"}, " +
         "redes=${lastNeighbors.ifEmpty { "—" }}, encontrado por=${lastFound ?: "—"}, reintentos=${schedule.retries}, error=${lastError ?: "—"}, " +
         "sonido=${phoneSound?.route ?: "—"}, música=${when { session?.music != true -> "no" ; musicBlocked -> "sin permiso"; song == null -> "nada"; song?.playing == true -> "suena"; else -> "en pausa" }}\n" +
@@ -489,7 +483,7 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
     private fun screenId(): String = store.getString(SCREEN_ID, null)
         ?: ByteArray(8).also(random::nextBytes).joinToString("") { "%02x".format(it) }.also { store.edit().putString(SCREEN_ID, it).apply() }
 
-    /** Prende o apaga lo que escucha según haga falta: la red, NSD, el faro y el Bluetooth. */
+    /** Prende o apaga lo que escucha según haga falta: la red, el faro y el Bluetooth. */
     private fun sync() {
         val manager = app.getSystemService(ConnectivityManager::class.java)
         if (active != networkWatched && manager != null) {
@@ -511,8 +505,6 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
                 lastError = "red: ${e.message ?: e.javaClass.simpleName}"
             }
         }
-        // NSD se prende después de un intento fallido ([closed]); aquí solo se apaga.
-        if (!active || connected || !foreground) discover(false)
         earKey = currentKey()
         listen(active && !connected && !earFailed)
         ble.watch(active && paired && !connected && foreground)
@@ -631,62 +623,6 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
         wake()
     }
 
-    private fun discover(on: Boolean) {
-        if (on == (discovery != null)) return
-        val manager = app.getSystemService(NsdManager::class.java) ?: return
-        val current = discovery
-        if (current != null) {
-            discovery = null
-            try {
-                manager.stopServiceDiscovery(current)
-            } catch (e: IllegalArgumentException) {
-                lastError = "NSD no paró: ${e.message}"
-            }
-        } else {
-            val listener = Discovery(manager)
-            try {
-                manager.discoverServices(LinkProtocol.SERVICE_TYPE, NsdManager.PROTOCOL_DNS_SD, listener)
-                discovery = listener
-            } catch (e: RuntimeException) {
-                lastError = "NSD no arrancó: ${e.message ?: e.javaClass.simpleName}"
-            }
-        }
-    }
-
-    private inner class Discovery(private val manager: NsdManager) : NsdManager.DiscoveryListener {
-        override fun onServiceFound(service: NsdServiceInfo) {
-            @Suppress("DEPRECATION") // el reemplazo (registerServiceInfoCallback) es de Android 14
-            runCatching { manager.resolveService(service, Resolved()) }
-        }
-
-        override fun onStartDiscoveryFailed(serviceType: String, errorCode: Int) {
-            main.post {
-                if (discovery !== this) return@post
-                discovery = null
-                lastError = "NSD no arrancó ($errorCode)"
-            }
-        }
-
-        override fun onServiceLost(service: NsdServiceInfo) = Unit
-        override fun onDiscoveryStarted(serviceType: String) = Unit
-        override fun onDiscoveryStopped(serviceType: String) = Unit
-        override fun onStopDiscoveryFailed(serviceType: String, errorCode: Int) = Unit
-
-        private inner class Resolved : NsdManager.ResolveListener {
-            override fun onServiceResolved(service: NsdServiceInfo) {
-                @Suppress("DEPRECATION")
-                val host = service.host?.hostAddress ?: return
-                main.post {
-                    if (discovery !== this@Discovery) return@post
-                    announced = "$host:${service.port}"
-                    wake()
-                }
-            }
-
-            override fun onResolveFailed(service: NsdServiceInfo, errorCode: Int) = Unit
-        }
-    }
-
     /** Pide un intento: ya, o en cuanto se cumpla el espacio mínimo ([LinkSchedule]); nunca atrasa uno programado. */
     private fun wake() {
         if (!active || attempt != null) return
@@ -714,7 +650,7 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
         cancelRetry()
         val sweep = schedule.attempt(SystemClock.elapsedRealtime(), foreground, watching)
         val known = listOfNotNull(
-            beaconed?.let { it to "faro" }, store.getString(LAST_ADDRESS, null)?.let { it to "última" }, announced?.let { it to "NSD" },
+            beaconed?.let { it to "faro" }, store.getString(LAST_ADDRESS, null)?.let { it to "última" },
         )
         val next = Attempt(key, fresh = !store.contains(KEY), screenId(), screen(), known, sweep)
         attempt = next
@@ -741,7 +677,6 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
     private fun forget() {
         store.edit().remove(KEY).remove(PHONE_NAME).remove(PHONE_APP).remove(LAST_ADDRESS).apply()
         beaconed = null
-        announced = null
         lastFound = null
         paired = false
         schedule.resetRetries()
@@ -815,8 +750,6 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
         beaconFresh = false
         // Lo que se oyó antes de este intento ya se probó y no sirvió: que no se pruebe primero para siempre.
         if (!fresh && !wasConnected) beaconed = null
-        // NSD solo al frente y con red local: sin ella no hay dónde anunciarse el celular.
-        if (!wasConnected && localNetwork && foreground) discover(true)
         if (fresh) {
             // El celular avisó dónde está mientras se buscaba en otro lado: ahí, de una vez.
             wake()
