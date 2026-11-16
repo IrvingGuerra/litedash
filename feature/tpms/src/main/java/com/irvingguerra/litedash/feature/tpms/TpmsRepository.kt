@@ -9,7 +9,9 @@ import android.content.IntentFilter
 import android.hardware.usb.UsbDevice
 import android.hardware.usb.UsbManager
 import android.os.Build
+import android.os.SystemClock
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateMapOf
@@ -24,6 +26,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.isActive
@@ -75,9 +79,9 @@ enum class PairState { IDLE, WAITING, DONE, TIMEOUT }
 interface TpmsHold : AutoCloseable
 
 /**
- * Presión de llantas: receptor USB de 433 MHz, tapones Bluetooth LE o demostración. No
- * existe hasta que algo lo pide, y solo lee (cable abierto o búsqueda Bluetooth) mientras una
- * pieza muestra una llanta ([VehicleBus.wanted]), las alertas están prendidas o alguien tiene
+ * Presión de llantas: receptor USB de 433 MHz, tapones Bluetooth LE, la computadora del auto
+ * (OBD) o demostración. No existe hasta que algo lo pide, y solo lee (cable abierto o búsqueda
+ * Bluetooth) mientras una pieza muestra una llanta ([VehicleBus.wanted]), las alertas están prendidas o alguien tiene
  * un [keepAwake] (la pantalla de ajustes). Todo el estado vive en el hilo principal.
  */
 class TpmsRepository(context: Context, private val bus: VehicleBus) {
@@ -180,13 +184,13 @@ class TpmsRepository(context: Context, private val bus: VehicleBus) {
      * ese valor es el de fábrica de cada una hasta que se toque.
      */
     private val offsets = Wheel.entries.associateWith { w ->
-        mutableStateOf(prefs.getFloat(KEY_OFFSET + "_" + w.key, prefs.getFloat(KEY_OFFSET, 0f)))
+        mutableFloatStateOf(prefs.getFloat(KEY_OFFSET + "_" + w.key, prefs.getFloat(KEY_OFFSET, 0f)))
     }
 
-    fun offsetKpa(w: Wheel): Float = offsets.getValue(w).value
+    fun offsetKpa(w: Wheel): Float = offsets.getValue(w).floatValue
 
     fun setOffsetKpa(w: Wheel, kpa: Float) {
-        offsets.getValue(w).value = kpa
+        offsets.getValue(w).floatValue = kpa
         prefs.edit().putFloat(KEY_OFFSET + "_" + w.key, kpa).apply()
         refreshSoon()
     }
@@ -294,14 +298,17 @@ class TpmsRepository(context: Context, private val bus: VehicleBus) {
 
     // ---- Lecturas ----
 
+    /** Cuándo entró lo último de cada sensor ([SystemClock.elapsedRealtime]). */
     private val lastUpdate = mutableMapOf<String, Long>()
 
     /** Entra una lectura de cualquier fuente (hilo principal). */
     private fun ingest(r: TireReading) {
-        // Bluetooth anuncia muchas veces por segundo: con una por segundo por sensor basta.
+        // Bluetooth anuncia muchas veces por segundo: con una por segundo por sensor basta. Con el reloj
+        // desde el arranque: si la hora del sistema regresa, no se tiran las lecturas hasta alcanzarla.
+        val tick = SystemClock.elapsedRealtime()
         val prev = lastUpdate[r.sensorId]
-        if (prev != null && r.atMillis - prev < MIN_UPDATE_MS && r.family != DemoTpms.FAMILY) return
-        lastUpdate[r.sensorId] = r.atMillis
+        if (prev != null && tick - prev < MIN_UPDATE_MS && r.family != DemoTpms.FAMILY) return
+        lastUpdate[r.sensorId] = tick
         if (_readings.put(r.sensorId, r) == null) sensorCount = _readings.size
         // Sysgration dice su llanta: se acomoda sola si esa llanta está libre.
         if (running == TpmsSource.BLE && r.reportedWheel != null && r.reportedWheel !in _assignment && r.sensorId !in _assignment.values) {
@@ -312,6 +319,8 @@ class TpmsRepository(context: Context, private val bus: VehicleBus) {
         if (wheel != null && !r.lost && r.pressureKpa != null) addHistory(wheel, r.atMillis, r.pressureKpa, r.tempC)
         identifier?.check(_readings, r.atMillis)?.let { identified = it; identifying = false; identifier = null }
         if (running == TpmsSource.BLE || running == TpmsSource.DEMO || running == TpmsSource.OBD) status = TpmsStatus.CONNECTED
+        // Llegó algo por Bluetooth: ya se escucha (p. ej. tras reintentar una búsqueda que Android cortó).
+        if (running == TpmsSource.BLE) bleIssue = null
         if (wheel != null) syncWheels()
         refreshSoon()
     }
@@ -345,7 +354,7 @@ class TpmsRepository(context: Context, private val bus: VehicleBus) {
             val h = activeHistory()
             // La fuga rápida lee solo la cola del historial; la lenta se recalcula al entrar una muestra.
             val trends = byWheel.keys.associateWith { w ->
-                TireTrend(h?.samples(w, now - FAST_LEAK_WINDOW_MS).orEmpty().map { calibrated(w, it) }, slowLeaks[w] == true)
+                TireTrend(h?.recent(w, now).orEmpty().map { calibrated(w, it) }, slowLeaks[w] == true)
             }
             tireAlerts(byWheel, trends, limits, now)
         }
@@ -450,15 +459,15 @@ class TpmsRepository(context: Context, private val bus: VehicleBus) {
             swapping = false
             pendingSwap = null
             error = TpmsError.SWAP_UNCONFIRMED
+            // Quizá sí lo cambió y contestó tarde: lo que diga de sus IDs vuelve a poner cada sensor en su llanta.
+            session.send(UsbTpmsProtocol.queryIds())
         }
     }
 
     private fun swapLocal(a: Wheel, b: Wheel) {
-        val ia = _assignment[a]
-        val ib = _assignment[b]
-        if (ib == null) _assignment.remove(a) else _assignment[a] = ib
-        if (ia == null) _assignment.remove(b) else _assignment[b] = ia
-        // El ajuste es del sensor (cada uno viene corrido distinto): se va con él a su llanta nueva.
+        _assignment.swapKeys(a, b)
+        // Intercambiar es mover los dos sensores: su ajuste se va con ellos (en assign() y con un ID USB
+        // nuevo todavía no; ver la auditoría 1.4.162, tema 2).
         val oa = offsetKpa(a)
         setOffsetKpa(a, offsetKpa(b))
         setOffsetKpa(b, oa)
@@ -499,30 +508,35 @@ class TpmsRepository(context: Context, private val bus: VehicleBus) {
     private var history: TireHistory? = null
     /** La demostración no ensucia el historial de verdad. */
     private var demoHistory = TireHistory()
-    private var lastSave = 0L
+    /** Cuándo se mandó a escribir por última vez ([SystemClock.elapsedRealtime]); null = en la siguiente oportunidad. */
+    private var lastSave: Long? = null
     /** Una escritura a la vez (el .tmp es uno solo). */
     private val disk = Mutex()
 
     private fun activeHistory(): TireHistory? = if (running == TpmsSource.DEMO) demoHistory else history
 
-    /** Qué llantas pierden aire poco a poco; cambia solo cuando entra una muestra (cada 30 s). */
+    /**
+     * Qué llantas pierden aire poco a poco; cambia solo cuando entra una muestra (cada 30 s). La
+     * demostración no avisa: ahí no se calcula.
+     */
     private val slowLeaks = mutableMapOf<Wheel, Boolean>()
 
     private fun addHistory(w: Wheel, at: Long, kpa: Float, tempC: Float?) {
         val h = activeHistory() ?: return
-        if (h.add(w, at, kpa, tempC)) slowLeaks[w] = slowLeak(h.samples(w, at - SLOW_LEAK_WINDOW_MS), at)
+        if (h.add(w, at, kpa, tempC) && running != TpmsSource.DEMO) slowLeaks[w] = h.slowLeak(w, at)
     }
 
     private fun updateSlowLeaks() {
         slowLeaks.clear()
+        if (running == TpmsSource.DEMO) return
         val h = activeHistory() ?: return
         val now = System.currentTimeMillis()
-        for (w in Wheel.entries) slowLeaks[w] = slowLeak(h.samples(w, now - SLOW_LEAK_WINDOW_MS), now)
+        for (w in Wheel.entries) slowLeaks[w] = h.slowLeak(w, now)
     }
 
-    /** Presión de [w] desde [sinceMillis] con su ajuste de hoy (una muestra cada 30 s, hasta 7 días). */
+    /** Presión de [w] desde [sinceMillis] hasta ahora con su ajuste de hoy (una muestra cada 30 s, hasta 7 días). */
     fun history(w: Wheel, sinceMillis: Long = 0): List<TireSample> =
-        activeHistory()?.samples(w, sinceMillis).orEmpty().map { calibrated(w, it) }
+        activeHistory()?.samples(w, sinceMillis, System.currentTimeMillis()).orEmpty().map { calibrated(w, it) }
 
     /**
      * Se escribe cada 10 min y al parar ([force]): se copia aquí y se codifica y escribe fuera del
@@ -531,24 +545,31 @@ class TpmsRepository(context: Context, private val bus: VehicleBus) {
      */
     private fun saveHistory(force: Boolean) {
         val h = history ?: return
-        val now = System.currentTimeMillis()
-        if (!h.dirty || (!force && now - lastSave < SAVE_MS)) return
+        val now = SystemClock.elapsedRealtime()
+        val last = lastSave
+        if (!h.dirty || (!force && last != null && now - last < SAVE_MS)) return
         lastSave = now
         val changes = h.changes
         val copy = h.snapshot()
         scope.launch {
-            val ok = withContext(Dispatchers.IO) {
+            val failure = withContext(Dispatchers.IO) {
                 disk.withLock {
-                    runCatching {
+                    try {
                         val bytes = copy.encode()
                         val tmp = File(context.filesDir, "$HISTORY_FILE.tmp")
                         tmp.writeBytes(bytes)
                         if (!tmp.renameTo(historyFile())) historyFile().writeBytes(bytes)
-                    }.isSuccess
+                        null
+                    } catch (e: IOException) {
+                        e
+                    }
                 }
             }
             // De vuelta en el hilo principal (el historial no es seguro entre hilos).
-            if (ok) h.saved(changes) else lastSave = 0L
+            if (failure == null) h.saved(changes) else {
+                lastSave = null
+                noteFailure("history", failure)
+            }
         }
     }
 
@@ -727,7 +748,8 @@ class TpmsRepository(context: Context, private val bus: VehicleBus) {
         if (opening?.isActive == true || usb != null) return
         opening = scope.launch {
             val link = withContext(Dispatchers.IO) { runCatching { UsbLink(manager, device, UsbTpmsProtocol.BAUD) } }
-            val l = link.getOrElse {
+            val l = link.getOrElse { e ->
+                noteFailure("usb open", e)
                 if (running == TpmsSource.USB) {
                     status = TpmsStatus.NO_DEVICE
                     error = TpmsError.USB_OPEN_FAILED
@@ -739,7 +761,7 @@ class TpmsRepository(context: Context, private val bus: VehicleBus) {
             usb = session
             status = TpmsStatus.CONNECTED
             error = null
-            detail = device.productName?.takeIf { it.isNotBlank() } ?: "USB %04X:%04X".format(device.vendorId, device.productId)
+            detail = device.productName?.takeIf { it.isNotBlank() } ?: "USB %04X:%04X".format(Locale.US, device.vendorId, device.productId)
             session.start()
             session.send(UsbTpmsProtocol.queryIds())
         }
@@ -842,13 +864,19 @@ class TpmsRepository(context: Context, private val bus: VehicleBus) {
                 val newId = if (f.empty) null else f.id
                 if (usbIds[w] == newId) return
                 if (newId == null) usbIds.remove(w) else usbIds[w] = newId
-                // Lo que ya se sabe de esa llanta pasa al nombre nuevo.
                 val old = _assignment[w] ?: return
-                val r = _readings[old] ?: return
-                forget(old)
-                val id = newId ?: "usb-${w.key}"
-                _readings[id] = r.copy(sensorId = id)
-                _assignment[w] = id
+                if (newId == null) {
+                    // Ahí ya no hay sensor (sus tramas se tiran): lo de antes no se queda mostrando.
+                    forget(old)
+                    _assignment.remove(w)
+                    sensorCount = _readings.size
+                } else {
+                    // Lo que ya se sabe de esa llanta pasa al nombre nuevo.
+                    val r = _readings[old] ?: return
+                    forget(old)
+                    _readings[newId] = r.copy(sensorId = newId)
+                    _assignment[w] = newId
+                }
                 syncWheels()
             }
             is UsbFrame.PairOk -> {
@@ -867,10 +895,7 @@ class TpmsRepository(context: Context, private val bus: VehicleBus) {
                 swapJob?.cancel(); swapJob = null
                 pendingSwap = null
                 swapping = false
-                val ia = usbIds[a]
-                val ib = usbIds[b]
-                if (ib == null) usbIds.remove(a) else usbIds[a] = ib
-                if (ia == null) usbIds.remove(b) else usbIds[b] = ia
+                usbIds.swapKeys(a, b)
                 swapLocal(a, b)
                 session.send(UsbTpmsProtocol.queryIds())
                 refresh()
@@ -889,11 +914,24 @@ class TpmsRepository(context: Context, private val bus: VehicleBus) {
     private inner class UsbSession(private val link: UsbLink, val device: UsbDevice) {
         val reader = UsbTpmsProtocol.FrameReader()
         @Volatile private var open = true
-        private val writeLock = Any()
+        /** Lo que falta mandar: lo escribe una sola corrutina, en orden (si el cable se atora, gana lo nuevo). */
+        private val outbox = Channel<ByteArray>(OUTBOX_SIZE, BufferOverflow.DROP_OLDEST)
         private var heartbeatJob: Job? = null
+        private var writerJob: Job? = null
 
         fun start() {
             Thread({ pump() }, "tpms-usb").apply { isDaemon = true }.start()
+            writerJob = scope.launch(Dispatchers.IO) {
+                for (bytes in outbox) {
+                    try {
+                        link.output.write(bytes)
+                        link.output.flush()
+                    } catch (e: IOException) {
+                        // El lector se entera de que el cable se fue; aquí solo queda anotado.
+                        noteFailure("usb write", e)
+                    }
+                }
+            }
             heartbeatJob = scope.launch {
                 while (isActive) {
                     delay(HEARTBEAT_MS)
@@ -905,14 +943,7 @@ class TpmsRepository(context: Context, private val bus: VehicleBus) {
 
         fun send(bytes: ByteArray, logIt: Boolean = true) {
             if (logIt) log("> " + bytes.hex())
-            scope.launch(Dispatchers.IO) {
-                runCatching {
-                    synchronized(writeLock) {
-                        link.output.write(bytes)
-                        link.output.flush()
-                    }
-                }
-            }
+            outbox.trySend(bytes)
         }
 
         private fun pump() {
@@ -948,6 +979,8 @@ class TpmsRepository(context: Context, private val bus: VehicleBus) {
         fun close() {
             open = false
             heartbeatJob?.cancel()
+            outbox.close()
+            writerJob?.cancel()
             runCatching { link.close() }
         }
     }
@@ -964,18 +997,29 @@ class TpmsRepository(context: Context, private val bus: VehicleBus) {
         val wheels = Wheel.entries.mapNotNull { w ->
             val id = _assignment[w] ?: return@mapNotNull null
             val name = w.key.uppercase()
-            val r = _readings[id] ?: return@mapNotNull "$name[id=${id.takeLast(4)} sin dato]"
+            // Los mismos 6 que muestra la interfaz.
+            val shortId = id.takeLast(6)
+            val r = _readings[id] ?: return@mapNotNull "$name[id=$shortId sin dato]"
             val flags = listOfNotNull("lost".takeIf { r.lost }, "leak".takeIf { r.leak }, "lowBat".takeIf { r.lowBattery })
-            "$name[id=${id.takeLast(4)} ${r.pressureKpa?.let { "%.1f".format(Locale.US, it) } ?: "-"}" +
+            val battery = r.batteryPct?.let { "$it%" } ?: r.batteryVolts?.let { "%.2fV".format(Locale.US, it) } ?: "-"
+            "$name[id=$shortId ${r.pressureKpa?.let { "%.1f".format(Locale.US, it) } ?: "-"}" +
                 "${"%+.1f".format(Locale.US, offsetKpa(w))} kPa ${r.tempC?.roundToInt() ?: "-"}°C ${flags.joinToString("+").ifEmpty { "ok" }} " +
-                "hace ${(now - r.atMillis) / 1000} s rssi=${r.rssi ?: "-"}]"
+                "pila=$battery hace ${(now - r.atMillis) / 1000} s rssi=${r.rssi ?: "-"}]"
         }
         val active = alerts.joinToString(", ") { "${it.wheel.key.uppercase()} ${it.kind} ${it.severity}" }
         val raw = if (source == TpmsSource.USB && _usbLog.isNotEmpty()) ", usb=[${_usbLog.takeLast(6).joinToString(" | ")}]" else ""
         return "Llantas: fuente=${source?.key ?: "-"}, estado=${status.name.lowercase()}, error=${error?.name ?: bleIssue?.name ?: "-"}, " +
             "detalle=${(if (source == TpmsSource.OBD) obdProfile else detail) ?: "-"}, unidad=${unit.key}, " +
             "recomendada=${recommendedFrontKpa.roundToInt()}/${recommendedRearKpa.roundToInt()} kPa, umbral=$lowPercent%, " +
-            "alertas=${if (alertsEnabled) "sí" else "no"}, llantas=${wheels.joinToString(" ").ifEmpty { "-" }}, activas=${active.ifEmpty { "-" }}$raw"
+            "alertas=${if (alertsEnabled) "sí" else "no"}, sensores oídos=$sensorCount, llantas=${wheels.joinToString(" ").ifEmpty { "-" }}, " +
+            "activas=${active.ifEmpty { "-" }}, último fallo=${lastFailure ?: "-"}$raw"
+    }
+
+    /** El último error de disco o del cable (para el reporte): "dónde: Clase: mensaje". */
+    @Volatile private var lastFailure: String? = null
+
+    private fun noteFailure(where: String, e: Throwable) {
+        lastFailure = "$where: ${e.javaClass.simpleName}: ${e.message.orEmpty().take(80)}"
     }
 
     // ---- Preferencias como estado de Compose ----
@@ -1045,6 +1089,7 @@ class TpmsRepository(context: Context, private val bus: VehicleBus) {
         private const val PAIR_TIMEOUT_MS = 120_000L
         private const val SWAP_TIMEOUT_MS = 5_000L
         private const val MAX_LOG = 40
+        private const val OUTBOX_SIZE = 16
 
         /** Hay una fuente de llantas elegida (sin crear el repositorio ni tocar USB/Bluetooth). */
         fun hasSavedSource(context: Context) =
@@ -1054,4 +1099,12 @@ class TpmsRepository(context: Context, private val bus: VehicleBus) {
         fun usesUsb(context: Context) =
             context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(KEY_SOURCE, null) == TpmsSource.USB.key
     }
+}
+
+/** Intercambia lo que hay en [a] y [b] (si una está vacía, la otra queda vacía). */
+private fun <K, V : Any> MutableMap<K, V>.swapKeys(a: K, b: K) {
+    val va = this[a]
+    val vb = this[b]
+    if (vb == null) remove(a) else this[a] = vb
+    if (va == null) remove(b) else this[b] = va
 }

@@ -15,9 +15,14 @@ class TireLogicTest {
 
     private fun kinds(alerts: List<TireAlert>, w: Wheel) = alerts.filter { it.wheel == w }.map { it.kind to it.severity }
 
-    /** Lo que el repositorio saca del historial: las muestras de los últimos 5 min y la fuga lenta. */
-    private fun trend(hist: List<TireSample>) =
-        TireTrend(hist.filter { now - it.atMillis <= FAST_LEAK_WINDOW_MS }, slowLeak(hist, now))
+    private val w = Wheel.FRONT_LEFT
+
+    private fun historyOf(samples: List<TireSample>) = TireHistory().also { h -> samples.forEach { h.add(w, it.atMillis, it.kpa, it.tempC) } }
+
+    /** Lo mismo que arma el repositorio: las muestras de los últimos 5 min y la fuga lenta. */
+    private fun trend(hist: List<TireSample>) = historyOf(hist).let { TireTrend(it.recent(w, now), it.slowLeak(w, now)) }
+
+    private fun slowLeak(hist: List<TireSample>) = historyOf(hist).slowLeak(w, now)
 
     @Test
     fun todoBienSinAlertas() {
@@ -91,11 +96,11 @@ class TireLogicTest {
         // Hace 3 días rodó con las llantas a 55 °C (≈ 268 kPa); hoy amaneció a 18 °C (≈ 227 kPa): mismo aire.
         val hot = (0..12).map { i -> TireSample(now - 72 * hour + i * 30 * 60_000L, 268f, 55f) }
         val cold = (0..4).map { i -> TireSample(now - 40 * 60_000L + i * 10 * 60_000L, 227f, 18f) }
-        assertTrue(!slowLeak(hot + cold, now))
+        assertTrue(!slowLeak(hot + cold))
         // Sin temperaturas eso sí parecía fuga (lo que reportó el usuario).
-        assertTrue(slowLeak((hot + cold).map { it.copy(tempC = null) }, now))
+        assertTrue(slowLeak((hot + cold).map { it.copy(tempC = null) }))
         // Las muestras viejas sin temperatura no se mezclan con las nuevas.
-        assertTrue(!slowLeak(hot.map { it.copy(tempC = null) } + cold, now))
+        assertTrue(!slowLeak(hot.map { it.copy(tempC = null) } + cold))
     }
 
     @Test
@@ -196,6 +201,68 @@ class TireLogicTest {
         // Dañado o vacío: empieza limpio.
         assertTrue(TireHistory.decode(bytes.copyOf(20)).samples(Wheel.FRONT_LEFT).isEmpty())
         assertTrue(TireHistory.decode(null).samples(Wheel.FRONT_LEFT).isEmpty())
+    }
+
+    @Test
+    fun relojQueRegresaNoDetieneElHistorial() {
+        // Se guardó con la hora buena; la pantalla (sin pila de reloj) arranca con una fecha vieja.
+        val good = 1_780_000_000_000L
+        val h = TireHistory()
+        h.add(w, good, 230f, 25f)
+        h.add(w, good + 30_000L, 231f, 25f)
+        val boot = good - 400 * 24 * hour
+        assertTrue(h.add(w, boot, 228f, 20f))
+        assertTrue(h.add(w, boot + 30_000L, 227f, 20f))
+        // Lo "del futuro" se fue: solo queda lo de después del salto.
+        assertEquals(listOf(boot, boot + 30_000L), h.samples(w).map { it.atMillis })
+        // Un regreso chico (≤ 30 s, una corrección de hora) no borra nada: solo espera su turno.
+        assertTrue(!h.add(w, boot + 10_000L, 226f))
+        assertEquals(2, h.samples(w).size)
+    }
+
+    @Test
+    fun loDelFuturoNoEntraEnLasAlertas() {
+        // Muestras guardadas con un reloj adelantado (o antes de que regresara) no cuentan como de ahora.
+        val future = listOf(TireSample(now - 2 * 60_000, 230f), TireSample(now + 10 * 60_000, 260f))
+        val h = historyOf(future)
+        assertEquals(listOf(now - 2 * 60_000), h.recent(w, now).map { it.atMillis })
+        assertTrue(h.samples(w, 0, now).none { it.atMillis > now })
+        // Tres días que en verdad son "mañana": no es fuga lenta.
+        val ahead = (0..144).map { i -> TireSample(now + i * 30 * 60_000L, 240f - 25f * i / 144f) }
+        assertTrue(!slowLeak(ahead))
+    }
+
+    @Test
+    fun historialCreceSegunSeLlenaYSeGuardaDelTamanoJusto() {
+        val h = TireHistory()
+        repeat(1_000) { h.add(Wheel.REAR_LEFT, it * 30_000L, 200f) }
+        assertEquals(1_000, h.samples(Wheel.REAR_LEFT).size)
+        // 4 (formato) + 1 (llantas) + 2 + 2 ("rl") + 4 (cuántas) + 7 por muestra.
+        assertEquals(4 + 1 + 2 + 2 + 4 + 7 * 1_000, h.encode().size)
+        assertEquals(h.samples(Wheel.REAR_LEFT), h.snapshot().samples(Wheel.REAR_LEFT))
+    }
+
+    @Test
+    fun archivoConConteoImposibleEmpiezaVacio() {
+        val bytes = java.io.ByteArrayOutputStream().also { b ->
+            java.io.DataOutputStream(b).use { o ->
+                o.writeInt(0x54504832); o.writeByte(1); o.writeUTF("fl"); o.writeInt(Int.MAX_VALUE)
+                o.writeInt(1_700_000_000); o.writeShort(2300); o.writeByte(20)
+            }
+        }.toByteArray()
+        assertTrue(TireHistory.decode(bytes).samples(Wheel.FRONT_LEFT).isEmpty())
+    }
+
+    @Test
+    fun limiteDeArranquesDeBluetooth() {
+        var t = 0L
+        val l = StartLimiter { t }
+        repeat(StartLimiter.MAX_STARTS) { assertTrue(l.canStart()); l.started(); t += 1_000 }
+        assertTrue(!l.canStart())
+        // Hay que esperar a que el primero salga de la ventana (+ medio segundo).
+        assertEquals(StartLimiter.WINDOW_MS - t + 500, l.waitMs())
+        t += l.waitMs()
+        assertTrue(l.canStart())
     }
 
     @Test

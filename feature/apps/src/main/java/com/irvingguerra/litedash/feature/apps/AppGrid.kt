@@ -1,7 +1,6 @@
 package com.irvingguerra.litedash.feature.apps
 
 import com.irvingguerra.litedash.core.ui.Radius
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
@@ -35,6 +34,7 @@ import com.irvingguerra.litedash.core.ui.Label
 import com.irvingguerra.litedash.core.ui.LocalColors
 import com.irvingguerra.litedash.core.ui.Typography
 import java.text.Normalizer
+import java.util.Locale
 
 private val ICON_SIZE = 56.dp
 
@@ -56,9 +56,8 @@ private val MARKS = Regex("\\p{Mn}+")
 
 /** Sin acentos ni mayúsculas: "musica" encuentra "Música". */
 fun normalize(text: String) =
-    Normalizer.normalize(text, Normalizer.Form.NFD).replace(MARKS, "").lowercase()
+    Normalizer.normalize(text, Normalizer.Form.NFD).replace(MARKS, "").lowercase(Locale.ROOT)
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun AppGrid(
     repo: AppRepository,
@@ -84,7 +83,7 @@ fun AppGrid(
             Column(
                 Modifier
                     .clip(RoundedCornerShape(Radius.card))
-                    .background(if (app.key in marked) c.surfaceHigh else c.background.copy(alpha = 0f))
+                    .then(if (app.key in marked) Modifier.background(c.surfaceHigh) else Modifier)
                     .combinedClickable(onClick = { onClick(app) }, onLongClick = onLongPress?.let { { it(app) } })
                     .padding(8.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -100,11 +99,14 @@ fun AppGrid(
 @Composable
 fun AppIcon(repo: AppRepository, app: App, side: Dp, modifier: Modifier = Modifier) {
     val sidePx = with(LocalDensity.current) { side.roundToPx() }
-    val icon by produceState<ImageBitmap?>(null, app, sidePx) {
-        value = repo.icon(app, sidePx)?.asImageBitmap()
+    // Ya en memoria se pinta en el primer cuadro (sin el cuadro gris al desplazarse); si no, se lee fuera del hilo principal.
+    val cached = remember(app, sidePx) { repo.cachedIcon(app, sidePx)?.asImageBitmap() }
+    val loaded by produceState<ImageBitmap?>(null, app, sidePx) {
+        value = null
+        if (cached == null) value = repo.icon(app, sidePx)?.asImageBitmap()
     }
     Box(modifier.size(side)) {
-        val bmp = icon
+        val bmp = cached ?: loaded
         if (bmp != null) {
             Image(bmp, contentDescription = app.name, Modifier.size(side))
         } else {

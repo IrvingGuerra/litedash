@@ -8,18 +8,33 @@ import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.TimeZone
 import kotlin.math.PI
+import kotlin.math.asin
+import kotlin.math.atan
 import kotlin.math.ceil
 import kotlin.math.cos
 import kotlin.math.floor
 import kotlin.math.ln
+import kotlin.math.sin
+import kotlin.math.sinh
+import kotlin.math.sqrt
 import kotlin.math.tan
 
 // Cuentas del mapa sin Android (se prueban con JUnit). Basado en LiveMapView de StradaOS
 // (GPL-3.0, https://github.com/stradaos): Web Mercator a mano; las teselas, raster de OpenStreetMap o vectoriales de OpenFreeMap.
 
-/** El zoom más cercano y el más lejano que se usan. */
+/** Lo más cerca que llega el minimalista ([TileSource.maxZoom]; OSM se queda en el 19) y lo más lejos que se aleja con los dedos. */
 const val MAX_ZOOM = 20
 const val MIN_ZOOM = 14
+
+/** El zoom de los datos vectoriales: los nombres de las calles, las zonas sin conexión y las teselas del 15 en adelante salen de él. */
+internal const val DATA_ZOOM = 14
+
+/** El ecuador en metros (Web Mercator) y el radio medio de la Tierra en km (distancias sobre ella). */
+internal const val EQUATOR_METERS = 40_075_016.686
+internal const val EARTH_RADIUS_KM = 6371.0
+
+/** Descargas a la vez (la política de uso de OSM y OpenFreeMap pide pocas): el mapa y las zonas sin conexión. */
+internal const val MAX_DOWNLOADS = 2
 
 /** Hasta dónde llega Web Mercator (más allá la latitud se va al infinito). */
 private const val MAX_LAT = 85.05112878
@@ -31,6 +46,21 @@ fun tileX(lon: Double, z: Int): Double = (lon + 180.0) / 360.0 * (1 shl z)
 fun tileY(lat: Double, z: Int): Double {
     val r = Math.toRadians(lat.coerceIn(-MAX_LAT, MAX_LAT))
     return (1.0 - ln(tan(r) + 1.0 / cos(r)) / PI) / 2.0 * (1 shl z)
+}
+
+/** Lo contrario de [tileX] y [tileY]: la longitud y la latitud de una coordenada de tesela. */
+internal fun tileLon(x: Double, z: Int): Double = x / (1 shl z) * 360.0 - 180.0
+internal fun tileLat(y: Double, z: Int): Double = Math.toDegrees(atan(sinh(PI * (1 - 2 * y / (1 shl z)))))
+
+/** Cuánto hay que girar de [from] a [to] grados por el lado corto (−180 a 180). */
+internal fun shortTurn(from: Float, to: Float): Float = ((to - from) % 360f + 540f) % 360f - 180f
+
+/** Distancia en km sobre la Tierra (haversine). */
+internal fun distanceKm(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Double {
+    val dLat = Math.toRadians(lat2 - lat1)
+    val dLon = Math.toRadians(lon2 - lon1)
+    val h = sin(dLat / 2).let { it * it } + cos(Math.toRadians(lat1)) * cos(Math.toRadians(lat2)) * sin(dLon / 2).let { it * it }
+    return 2 * EARTH_RADIUS_KM * asin(sqrt(h.coerceAtMost(1.0)))
 }
 
 /**
@@ -50,6 +80,32 @@ const val MEMORY_MIN_BYTES = 36 * 256 * 256 * 2
 fun memoryBytes(visible: Int, tileBytes: Int, roomy: Int = 0): Int {
     val needed = (visible + 8) * tileBytes
     return maxOf(MEMORY_MIN_BYTES, needed, minOf(needed * 2, roomy))
+}
+
+/**
+ * El tamaño nuevo de la memoria de teselas, o null si se queda en [current]: crece si no cabe lo que se ve ([visible]
+ * teselas de [tileBytes], con la holgura de [memoryBytes] hasta [roomy]) y se encoge si sobra más de la mitad, sin pasar
+ * de [cap]. Sin nada visible no se toca (un mapa dejó de pedir antes de que el otro pida: tirarlas haría parpadear).
+ */
+internal fun memoryResize(current: Int, visible: Int, tileBytes: Int, roomy: Int, cap: Int): Int? {
+    if (visible == 0) return null
+    val needed = minOf(memoryBytes(visible, tileBytes, roomy), cap)
+    return needed.takeIf { it > current || it < current / 2 }
+}
+
+/** Lo que pide cada mapa que ve un almacén (el widget y su mapa en grande lo comparten). */
+internal class ViewRequests {
+    private val views = HashMap<Any, Set<Long>>()
+
+    fun set(view: Any, keys: Set<Long>) {
+        views[view] = keys
+    }
+
+    /** false si [view] no pedía nada. */
+    fun remove(view: Any): Boolean = views.remove(view) != null
+
+    /** Lo que piden todos juntos. */
+    fun union(): Set<Long> = views.values.singleOrNull() ?: views.values.flatMapTo(HashSet()) { it }
 }
 
 /** Qué hacer con la respuesta HTTP de una tesela. */

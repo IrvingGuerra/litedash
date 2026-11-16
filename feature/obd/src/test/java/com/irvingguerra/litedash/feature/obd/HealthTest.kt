@@ -6,7 +6,7 @@ import org.junit.Test
 
 class HealthTest {
     private fun report(stored: List<String> = emptyList(), pending: List<String> = emptyList(), mil: Boolean = false) =
-        EngineReport(Readiness(mil, stored.size, emptyList()), stored, pending, emptyList(), null, 12.6f)
+        EngineReport(Readiness(mil, emptyList()), stored, pending, emptyList(), null, 12.6f)
 
     @Test
     fun `los códigos caen en su parte`() {

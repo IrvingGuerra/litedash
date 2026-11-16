@@ -70,6 +70,10 @@ class LinkProtocolTest {
             assertArrayEquals(data, Base64.decode(Base64.encode(data)))
         }
         assertThrows(IllegalArgumentException::class.java) { Base64.decode("no es base64!") }
+        // Un carácter suelto al final (largo % 4 == 1) no es base64: antes daba bytes de menos sin avisar.
+        assertThrows(IllegalArgumentException::class.java) { Base64.decode("ZGVmZ") }
+        assertThrows(IllegalArgumentException::class.java) { Base64.decode("ZGVmZ===") }
+        assertThrows(IllegalArgumentException::class.java) { Base64.decode("ZGVm\u00e9") }
     }
 
     private fun channels(): Pair<SecureChannel, SecureChannel> {

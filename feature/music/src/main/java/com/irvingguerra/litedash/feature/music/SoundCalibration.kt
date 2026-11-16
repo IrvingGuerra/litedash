@@ -9,6 +9,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.irvingguerra.litedash.core.ui.Https
 import java.io.File
+import java.io.IOException
 import java.util.concurrent.Executor
 
 /** Lo que se espera tras aplicar una receta para revisar si ya suena (y entre revisiones). */
@@ -30,10 +31,6 @@ private const val FYT_REPLAY_MS = 700L
 private const val CATALOG_URL = "https://litedash.dev/audio/recipes.json"
 private const val CATALOG_FILE = "audio-recipes.json"
 private const val CATALOG_MAX_AGE_MS = 7 * 24 * 60 * 60_000L
-
-/** La app de Bluetooth de fábrica de TopWay y la de FYT. */
-private const val TOPWAY_BT = "com.tw.bt"
-private const val FYT_BT = "com.syu.bt"
 
 /** Qué pieza pregunta o avisa: la música (su Bluetooth) o la radio de la pantalla. */
 enum class SoundPiece(internal val key: String) { MUSIC("bt"), RADIO("fm") }
@@ -242,7 +239,7 @@ private class TopWaySource8(private val host: SoundHost) : BluetoothRecipe(Recip
     private var link: TopWayRadio? = null
     private var held = false
 
-    override fun available() = TopWayRadio.available && host.bluetoothApp() == TOPWAY_BT
+    override fun available() = TopWayRadio.available && host.bluetoothApp() == HeadUnit.TOPWAY_BLUETOOTH
 
     override fun apply(): Long {
         held = true
@@ -271,7 +268,10 @@ private class TopWaySource8(private val host: SoundHost) : BluetoothRecipe(Recip
  * servicio de su app y se vuelve a dar play.
  */
 private class FytToggle(private val host: SoundHost) : BluetoothRecipe(Recipes.FYT_TOGGLE) {
-    override fun available() = host.context.hasPackage(FYT_BT)
+    // Una vez: [available] se pregunta cada vez que empieza a sonar el Bluetooth (en el hilo principal).
+    private val installed by lazy { host.context.hasPackage(HeadUnit.FYT_BLUETOOTH) }
+
+    override fun available() = installed
 
     override fun apply(): Long {
         host.main.removeCallbacks(toggle)
@@ -288,8 +288,8 @@ private class FytToggle(private val host: SoundHost) : BluetoothRecipe(Recipes.F
         if (!host.avrcpPlaying() || host.musicActive()) return@Runnable
         host.log("fyt: el celular suena por AVRCP pero no hay audio; se alterna la fuente")
         runCatching {
-            host.context.startService(Intent("com.syu.bt.byav.widgetPlayPause").setClassName(FYT_BT, "com.syu.bt.broadcast.BtavPlayPauseService"))
-        }
+            host.context.startService(Intent("com.syu.bt.byav.widgetPlayPause").setClassName(HeadUnit.FYT_BLUETOOTH, "com.syu.bt.broadcast.BtavPlayPauseService"))
+        }.onFailure { host.log("fyt: no se pudo alternar la fuente: ${it.javaClass.simpleName}") }
         host.main.postDelayed(replay, FYT_REPLAY_MS)
     }
 
@@ -303,8 +303,14 @@ private class FytToggle(private val host: SoundHost) : BluetoothRecipe(Recipes.F
  */
 private class OpenFactory(private val host: SoundHost) : BluetoothRecipe(Recipes.OPEN_FACTORY) {
     private var opened = false
+    /** La última app revisada y si se puede abrir: [available] va en el hilo principal en cada play. */
+    private var probed: Pair<String, Boolean>? = null
 
-    override fun available() = host.factoryBluetooth()?.let { launchIntent(host.context, it, bluetooth = true) != null } == true
+    override fun available(): Boolean {
+        val pkg = host.factoryBluetooth() ?: return false
+        probed?.takeIf { it.first == pkg }?.let { return it.second }
+        return (launchIntent(host.context, pkg, bluetooth = true) != null).also { probed = pkg to it }
+    }
 
     override fun apply(): Long {
         if (opened) return VERIFY_MS
@@ -341,6 +347,7 @@ private fun download(context: Context, file: File): String {
     // Escrito aparte y luego movido: una copia a medias nunca queda como la buena.
     val temp = File(file.parentFile, "$CATALOG_FILE.part")
     temp.writeText(text)
-    temp.renameTo(file)
+    // Si no se pudo mover, la copia vieja seguiría vencida y se bajaría en cada arranque: se quita y se reintenta.
+    if (!temp.renameTo(file) && !(file.delete() && temp.renameTo(file))) throw IOException("no se guardó $CATALOG_FILE")
     return text
 }

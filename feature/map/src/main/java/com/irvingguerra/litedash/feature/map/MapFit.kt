@@ -23,5 +23,3 @@ fun zoomToFit(km: Float, lat: Double, viewPx: Float, tilePx: Float): Int {
     val tiles = worldKm * viewPx * FIT_SHARE / (2.0 * km * tilePx)
     return floor(log2(tiles)).toInt().coerceIn(FIT_MIN_ZOOM, FIT_MAX_ZOOM)
 }
-
-private const val EARTH_RADIUS_KM = 6371.0

@@ -76,9 +76,7 @@ data class SizeLimits(val minWidth: Int, val minHeight: Int) {
 
 /** ¿Cabe [p] en la cuadrícula sin encimarse con las demás (ignorando a ella misma)? */
 fun List<Tile>.fits(p: Tile, c: Grid): Boolean =
-    p.col >= 0 && p.row >= 0 && p.width >= 1 && p.height >= 1 &&
-        p.col + p.width <= c.columns && p.row + p.height <= c.rows &&
-        none { it.id != p.id && it.overlaps(p) }
+    p.width >= 1 && p.height >= 1 && p.inside(c) && none { it.id != p.id && it.overlaps(p) }
 
 /** Primer lugar libre (de arriba abajo, de izquierda a derecha) para una pieza de ese tamaño. */
 fun List<Tile>.freeSpot(width: Int, height: Int, c: Grid): Pair<Int, Int>? {
@@ -143,11 +141,22 @@ private const val CHAIN_TRIES = 40
 
 private fun Tile.inside(c: Grid) = col >= 0 && row >= 0 && col + width <= c.columns && row + height <= c.rows
 
-/** Todos los lugares de la cuadrícula donde cabe [t] (por su tamaño), del más cercano a donde está al más lejano. */
-private fun spotsByDistance(t: Tile, c: Grid): List<Tile> {
-    val spots = mutableListOf<Tile>()
-    for (row in 0..c.rows - t.height) for (col in 0..c.columns - t.width) spots += t.copy(col = col, row = row)
-    return spots.sortedBy { (it.col - t.col) * (it.col - t.col) + (it.row - t.row) * (it.row - t.row) }
+/**
+ * Todos los lugares de la cuadrícula donde cabe [t] (por su tamaño), del más cercano a donde está al más lejano (a
+ * igual distancia, de arriba abajo y de izquierda a derecha). Se ordenan números (distancia y lugar en uno) y la
+ * pieza de cada lugar se arma solo si se pide: quien busca el primero que sirva no paga los demás.
+ */
+private fun spotsByDistance(t: Tile, c: Grid): Sequence<Tile> {
+    val cols = c.columns - t.width + 1
+    val rows = c.rows - t.height + 1
+    if (cols <= 0 || rows <= 0) return emptySequence()
+    val keys = LongArray(cols * rows) { i ->
+        val dc = i % cols - t.col
+        val dr = i / cols - t.row
+        (dc.toLong() * dc + dr.toLong() * dr) shl 32 or i.toLong()
+    }
+    keys.sort()
+    return keys.asSequence().map { k -> (k and 0xFFFFFFFFL).toInt().let { i -> t.copy(col = i % cols, row = i / cols) } }
 }
 
 /**

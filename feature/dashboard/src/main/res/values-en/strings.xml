@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="dashboard_remove">Remove widget</string>
+    <string name="dashboard_card">Card on or off</string>
+    <string name="dashboard_settings">Widget settings</string>
+    <string name="dashboard_resize">Resize</string>
+</resources>

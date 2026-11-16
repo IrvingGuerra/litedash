@@ -56,8 +56,8 @@ object FactoryAudio {
     private fun savedRecipe(context: Context, piece: SoundPiece) =
         PrefsRecipeStore.savedId(context.getSharedPreferences(MUSIC_STORE, Context.MODE_PRIVATE), piece)
 
-    /** La familia de la pantalla por sus paquetes ("nwd", "topway"… o "generic"). Bloquea: varias consultas al sistema. */
-    fun family(context: Context): String = HeadUnit.detect(context::hasPackage).id
+    /** La familia de la pantalla por sus paquetes del sistema ("nwd", "topway"… o "generic"). Bloquea: varias consultas al sistema. */
+    fun family(context: Context): String = HeadUnit.detect { isSystem(context, it) }.id
 
     /** La pantalla tiene Bluetooth de baja energía (lo que usaría el enlace con el celular sin hotspot). */
     fun ble(context: Context): Boolean = context.packageManager.hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)

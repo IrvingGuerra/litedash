@@ -73,6 +73,15 @@ class OfflineMapsTest {
         val a = area("a", zocaloLat, zocaloLon, 10)
         assertTrue(a.contains(zocaloLat + 0.05, zocaloLon))   // ~5.6 km
         assertFalse(a.contains(zocaloLat + 0.1, zocaloLon))   // ~11 km
+        // En la orilla (9.8 km) la tesela de debajo puede no haberse bajado: ya no cuenta como adentro.
+        assertFalse(a.contains(zocaloLat + 0.088, zocaloLon))
+        // Todo lo que cuenta como adentro tiene su tesela del 14 en la zona.
+        val keys = areaTiles(a.lat, a.lon, a.km).toSet()
+        for (i in 0..40) for (j in 0..40) {
+            val lat = zocaloLat - 0.1 + i * 0.005
+            val lon = zocaloLon - 0.1 + j * 0.005
+            if (a.contains(lat, lon)) assertTrue("$lat,$lon", tileKey(14, tileX(lon, 14).toInt(), tileY(lat, 14).toInt()) in keys)
+        }
         assertEquals(111.2, distanceKm(0.0, 0.0, 1.0, 0.0), 0.1)
     }
 

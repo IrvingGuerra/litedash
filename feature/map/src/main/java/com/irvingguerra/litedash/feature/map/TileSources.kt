@@ -49,6 +49,12 @@ interface TileSource {
      * null = no se sabe (las imágenes de OSM ya traen los nombres dibujados).
      */
     fun names(origin: Long): TileNames? = null
+
+    /** Trae nombres de calles ([names]); sin ellos, el mapa ni los busca al dibujar. */
+    val hasNames: Boolean get() = false
+
+    /** Nadie ve el mapa: suelta lo que guarda en memoria para dibujar más rápido. */
+    fun trim() {}
 }
 
 /** Las calles con nombre de una tesela y el lado de la tesela en sus unidades. */
@@ -74,7 +80,7 @@ object OsmTiles : TileSource {
 /**
  * El mapa minimalista: los datos de OpenFreeMap (vectoriales, esquema OpenMapTiles, sin cuenta ni
  * límites) dibujados por LiteDash con solo calles, agua y parques, en los colores de [palette].
- * Nítido a cualquier zoom: del 15 al 17 se dibuja la parte que toca de la tesela del 14.
+ * Nítido a cualquier zoom: del 15 al [MAX_ZOOM] se dibuja la parte que toca de la tesela del 14.
  */
 class VectorTiles(
     context: Context,
@@ -92,7 +98,7 @@ class VectorTiles(
     override val gzip = true
 
     /**
-     * Las teselas ya leídas (una del 14 sirve a varias del 15–17). [TileStore] llama a [decode] con el
+     * Las teselas ya leídas (una del 14 sirve a todas las suyas del 15 en adelante). [TileStore] llama a [decode] con el
      * candado del archivo: la misma tesela no se lee dos veces a la vez. Ocho porque el mapa inclinado
      * mezcla orígenes del 12 al 14 (lo lejano con menos detalle) y con cuatro se volvían a leer.
      */
@@ -103,18 +109,18 @@ class VectorTiles(
 
     override fun names(origin: Long): TileNames? = names.get(origin)
 
+    override val hasNames get() = true
+
+    /** Las leídas pesan (miles de formas con edificios); los nombres, poco: esos se quedan. */
+    override fun trim() = parsed.evictAll()
+
     /** La dirección de los datos (de [template]) en memoria, cuándo se supo y el último intento fallido. */
     private var template: String? = null
     private var templateRead = false
     private var templateAt = 0L
     private var templateFailedAt = 0L
 
-    override fun origin(key: Long): Long {
-        val z = keyZ(key)
-        if (z <= DATA_ZOOM) return key
-        val shift = z - DATA_ZOOM
-        return tileKey(DATA_ZOOM, keyX(key) shr shift, keyY(key) shr shift)
-    }
+    override fun origin(key: Long): Long = dataOrigin(key)
 
     override fun url(origin: Long): String? =
         template()?.replace("{z}", "${keyZ(origin)}")?.replace("{x}", "${keyX(origin)}")?.replace("{y}", "${keyY(origin)}")
@@ -127,9 +133,8 @@ class VectorTiles(
             if (near) names.put(origin, TileNames(it.extent, it.names))
         }
         val z = keyZ(key)
-        val sub = 1 shl (z - keyZ(origin))
         val bitmap = Bitmap.createBitmap(sizePx, sizePx, Bitmap.Config.RGB_565)
-        drawMinimal(Canvas(bitmap), tile, sub, keyX(key) - (keyX(origin) shl (z - keyZ(origin))), keyY(key) - (keyY(origin) shl (z - keyZ(origin))), z)
+        drawMinimal(Canvas(bitmap), tile, 1 shl (z - keyZ(origin)), pieceX(key, origin), pieceY(key, origin), z)
         return bitmap.asImageBitmap()
     }
 
@@ -171,7 +176,7 @@ class VectorTiles(
         }
         lines(t.rivers, 2.4f, palette.water)
         // De las chicas a las grandes (las grandes encima); primero el borde de todas, luego el relleno.
-        val tiers = RoadTier.entries.reversed().filter { it != RoadTier.SERVICE || z >= 15 }
+        val tiers = if (z >= SERVICE_ZOOM) TIERS_ALL else TIERS_NO_SERVICE
         for (tier in tiers) lines(t.roads[tier.ordinal], ROAD_WIDTH[tier.ordinal] + CASING, palette.casing)
         for (tier in tiers) lines(t.roads[tier.ordinal], ROAD_WIDTH[tier.ordinal], palette.roads[tier.ordinal])
     }
@@ -210,8 +215,12 @@ class VectorTiles(
     }
 
     private companion object {
-        const val DATA_ZOOM = 14
         const val BUILDINGS_ZOOM = 16
+        /** Las calles de servicio (estacionamientos, privadas) desde este zoom. */
+        const val SERVICE_ZOOM = 15
+        /** Los tipos de calle en el orden de dibujo (de las chicas a las grandes), con y sin las de servicio. */
+        val TIERS_ALL = RoadTier.entries.reversed()
+        val TIERS_NO_SERVICE = TIERS_ALL.filter { it != RoadTier.SERVICE }
         const val NAMES_KEPT = 48
         const val TEMPLATE_MS = 7 * 86_400_000L
         const val TEMPLATE_RETRY_MS = 10 * 60_000L
@@ -222,6 +231,18 @@ class VectorTiles(
         const val CASING = 1.5f
     }
 }
+
+/** La tesela que hay que leer para dibujar [key]: la misma hasta el zoom de los datos; más cerca, la del 14 que la contiene. */
+internal fun dataOrigin(key: Long): Long {
+    val z = keyZ(key)
+    if (z <= DATA_ZOOM) return key
+    val shift = z - DATA_ZOOM
+    return tileKey(DATA_ZOOM, keyX(key) shr shift, keyY(key) shr shift)
+}
+
+/** Qué pedazo de [origin] es [key]: columna y fila dentro de ella (de 0 a 2^(zoom − zoom de origin) − 1). */
+internal fun pieceX(key: Long, origin: Long) = keyX(key) - (keyX(origin) shl (keyZ(key) - keyZ(origin)))
+internal fun pieceY(key: Long, origin: Long) = keyY(key) - (keyY(origin) shl (keyZ(key) - keyZ(origin)))
 
 /** Los colores del mapa minimalista (ARGB). [roads] en el orden de [RoadTier]. */
 class MinimalPalette(val background: Int, val water: Int, val park: Int, val building: Int, val casing: Int, val roads: IntArray) {

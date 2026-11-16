@@ -31,7 +31,7 @@
     <string name="radio_search_help">Escribe el nombre de una estación</string>
     <string name="radio_loading">Buscando estaciones…</string>
     <string name="radio_none">No se encontraron estaciones. Revisa la conexión a internet.</string>
-    <string name="radio_no_location">Sin ubicación: estas son las más escuchadas de tu país. Activa la ubicación en Módulos para ver las de tu zona.</string>
+    <string name="radio_no_location">Sin ubicación: estas son las más escuchadas de tu país. Para ver las de tu zona, da el permiso de ubicación en Módulos → Permisos.</string>
     <string name="radio_no_favorites">Toca la estrella de una estación para tenerla aquí.</string>
     <string name="radio_km">%1$d km</string>
     <string name="library_pick_folder">Elegir carpeta</string>

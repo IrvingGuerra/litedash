@@ -38,8 +38,8 @@ data class Monitor(val name: MonitorName, val complete: Boolean)
 
 enum class MonitorName { MISFIRE, FUEL, COMPONENTS, CATALYST, HEATED_CATALYST, EVAP, SECONDARY_AIR, O2_SENSOR, O2_HEATER, EGR }
 
-/** Estado del motor del PID 01: luz de falla, cuántos códigos y los monitores. */
-data class Readiness(val mil: Boolean, val codes: Int, val monitors: List<Monitor>) {
+/** Estado del motor del PID 01: luz de falla y los monitores (los códigos se leen aparte, con el modo 03). */
+data class Readiness(val mil: Boolean, val monitors: List<Monitor>) {
     /** Los monitores que todavía no terminan (en la verificación se acepta uno pendiente). */
     val incomplete get() = monitors.filter { !it.complete }
 }
@@ -61,5 +61,5 @@ fun parseReadiness(d: IntArray): Readiness? {
         )
         for ((bit, name) in bits) if (c and (1 shl bit) != 0) monitors += Monitor(name, e and (1 shl bit) == 0)
     }
-    return Readiness(mil = a and 0x80 != 0, codes = a and 0x7F, monitors = monitors)
+    return Readiness(mil = a and 0x80 != 0, monitors = monitors)
 }

@@ -41,18 +41,8 @@ class DashboardState(private val store: DashboardStore) {
      * acomodo no "se reinicia" cuando el alto de la pantalla cambia un poco. El de [c] también se revisa
      * (uno dañado o de una versión con otros mínimos). Lo ajustado no se guarda hasta que se mueva algo.
      */
-    private fun load(c: Grid): List<Tile> {
-        val exact = store.read(c)
-        val newer = store.grids().filter { it != c && it.near(c) }.maxByOrNull { store.savedAt(it) }
-            ?.takeIf { exact == null || store.savedAt(it) > store.savedAt(c) }
-        val adapted = newer?.let { from -> store.read(from)?.let { from to it } }?.let { (from, saved) ->
-            // Hacia donde hay más lugar se estira en proporción (sin hueco en la orilla); hacia donde hay
-            // menos, no se encoge (bajaría piezas de su mínimo): ahí [adaptTo] recorta o recorre como siempre.
-            val grown = Grid(maxOf(from.columns, c.columns), maxOf(from.rows, c.rows))
-            saved.map { it.scaledTo(from, grown) }.fittedTo(c)
-        }
-        return adapted ?: exact?.fittedTo(c) ?: suggested(c)
-    }
+    private fun load(c: Grid): List<Tile> =
+        savedLayoutFor(c, store.grids(), store::read, store::savedAt)?.fittedTo(c) ?: suggested(c)
 
     /** [adaptTo] con las que se ven primero: las de un módulo apagado no le quitan lugar a ninguna. */
     private fun List<Tile>.fittedTo(c: Grid): List<Tile> {
@@ -114,4 +104,24 @@ class DashboardState(private val store: DashboardStore) {
         if (updates.isEmpty()) return
         change(tiles.map { t -> updates[t.id]?.let { t.copy(data = it) } ?: t })
     }
+}
+
+/**
+ * El acomodo guardado que toca a [c] (aún sin ajustar con [adaptTo]), de las cuadrículas [grids] con acomodo, que se
+ * leen con [read] y cuya hora da [savedAt] (0 = de antes de la 1.4.100): el de una cercana ([near]) si es más nuevo
+ * que el de [c] (o [c] no tiene), estirado hacia donde [c] tiene más lugar; si no, el de [c]; null = ninguno.
+ */
+internal fun savedLayoutFor(c: Grid, grids: List<Grid>, read: (Grid) -> List<Tile>?, savedAt: (Grid) -> Long): List<Tile>? {
+    val exact = read(c)
+    val newer = grids.filter { it != c && it.near(c) }.maxByOrNull(savedAt)
+        ?.takeIf { exact == null || savedAt(it) > savedAt(c) }
+    val adapted = newer?.let { from ->
+        read(from)?.let { saved ->
+            // Hacia donde hay más lugar se estira en proporción (sin hueco en la orilla); hacia donde hay
+            // menos, no se encoge (bajaría piezas de su mínimo): ahí [adaptTo] recorta o recorre como siempre.
+            val grown = Grid(maxOf(from.columns, c.columns), maxOf(from.rows, c.rows))
+            saved.map { it.scaledTo(from, grown) }
+        }
+    }
+    return adapted ?: exact
 }

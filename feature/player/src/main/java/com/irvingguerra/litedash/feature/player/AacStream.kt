@@ -69,7 +69,7 @@ class AacStream(private val context: Context, private val url: String, private v
                 connectTimeout = 8_000
                 readTimeout = 12_000
                 setRequestProperty("Icy-MetaData", "0")
-                setRequestProperty("User-Agent", "LiteDash")
+                setRequestProperty("User-Agent", USER_AGENT)
             }
             if (connection.responseCode !in 200..299) throw IOException("HTTP ${connection.responseCode}")
             val type = connection.contentType.orEmpty().lowercase()
@@ -163,13 +163,13 @@ class AacStream(private val context: Context, private val url: String, private v
 }
 
 /** Un cuadro AAC ya sin cabecera, con lo que dice la cabecera. */
-private class AdtsFrame(val data: ByteArray, val size: Int, val objectType: Int, val rateIndex: Int, val sampleRate: Int, val channels: Int)
+internal class AdtsFrame(val data: ByteArray, val size: Int, val objectType: Int, val rateIndex: Int, val sampleRate: Int, val channels: Int)
 
 /**
  * Lee cuadros ADTS de un flujo: busca la palabra de sincronía (12 bits a 1), lee la
  * cabecera de 7 bytes (9 con CRC) y el cuadro que sigue. Un cuadro mal formado se salta.
  */
-private class AdtsReader(private val input: InputStream) {
+internal class AdtsReader(private val input: InputStream) {
     private val header = ByteArray(9)
     private val data = ByteArray(MAX_FRAME)
 

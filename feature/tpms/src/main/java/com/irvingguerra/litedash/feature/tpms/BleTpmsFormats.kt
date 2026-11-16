@@ -104,7 +104,7 @@ object BleTpmsFormats {
      * WODHMIEY / ITPMS / Wicarlink: compañía 0x00AC y 15 bytes (después de la compañía):
      * [0] V×10 (escala supuesta), [1] presión (+256 si [6] == 1) × 3.144 kPa, [2] °C + 55,
      * [3] alarma (bits sin documentar: puede ser presión, calor o pila; no se toma como fuga),
- * [9..14] MAC. Confianza media y sin ejemplo real.
+     * [9..14] MAC. Confianza media y sin ejemplo real.
      */
     private fun wodhmiey(adv: Advert, now: Long): TireReading? {
         if (adv.companyId != 0x00AC) return null

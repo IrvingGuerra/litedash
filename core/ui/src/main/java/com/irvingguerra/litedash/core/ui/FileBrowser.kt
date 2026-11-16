@@ -7,23 +7,26 @@ import android.os.Build
 import android.os.Environment
 import android.os.storage.StorageManager
 import android.provider.MediaStore
+import android.util.LruCache
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyGridState
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -49,13 +52,12 @@ import java.io.File
  * Explorador de archivos propio, para pantallas de auto que no traen el selector de Android (sin
  * "Archivos"/DocumentsUI: al pedir una imagen o una carpeta no se abría nada, o la app se cerraba).
  * Lee las memorias con [File] (necesita el permiso de leer el almacenamiento) y va dentro de una
- * columna, sin ventanas: lista con su propio scroll de alto fijo.
+ * columna, sin ventanas: lista perezosa con su propio scroll de alto fijo (solo se arma lo que se ve).
  *
  * [pickFolder] = se elige una carpeta ("Usar esta carpeta"); si no, un archivo que pase [accept]
  * (por nombre). [images] = se elige una foto: miniaturas en cuadrícula y "Recientes" (las últimas fotos de
  * la pantalla) antes de las memorias. [onPick] recibe lo elegido; [onCancel] cierra.
  */
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun FileBrowser(
     pickFolder: Boolean,
@@ -67,6 +69,9 @@ fun FileBrowser(
 ) {
     val c = LocalColors.current
     val context = LocalContext.current
+    val px = with(LocalDensity.current) { THUMB.roundToPx() }
+    // Las miniaturas ya leídas se quedan mientras el explorador esté abierto (volver a una carpeta no las relee).
+    val thumbs = remember(px) { Thumbnails(px) }
     // null = la lista de memorias.
     var dir by remember { mutableStateOf<File?>(null) }
     var recent by remember { mutableStateOf(false) }
@@ -98,43 +103,57 @@ fun FileBrowser(
                     else dir = current?.parentFile?.takeIf { p -> roots.none { it.dir == current } && p.canRead() }
                 }, size = 44.dp, background = c.surfaceHigh)
             }
+            // El nombre de la carpeta (el de la memoria en su raíz), no la ruta completa.
             val title = when {
                 recent -> stringResource(R.string.files_recent)
-                current != null -> current.path
+                current != null -> roots.firstOrNull { it.dir == current }?.name ?: current.name
                 else -> stringResource(R.string.files_where)
             }
             Label(title, Typography.body, c.textMuted, 1, Modifier.weight(1f))
-            Button(stringResource(R.string.files_cancel), onCancel)
+            Button(stringResource(R.string.files_close), onCancel)
         }
-        Column(
-            Modifier.fillMaxWidth().heightIn(max = if (images) 360.dp else 320.dp).clip(RoundedCornerShape(Radius.inner)).background(c.surfaceHigh).verticalScroll(rememberScrollState()),
+        // Con fotos, una cuadrícula de miniaturas (las carpetas y avisos ocupan el renglón completo).
+        LazyVerticalGrid(
+            columns = if (images) GridCells.FixedSize(THUMB + THUMB_GAP) else GridCells.Fixed(1),
+            // Otra carpeta empieza arriba.
+            state = remember(dir, recent) { LazyGridState() },
+            modifier = Modifier.fillMaxWidth().heightIn(max = if (images) 360.dp else 320.dp).clip(RoundedCornerShape(Radius.inner)).background(c.surfaceHigh),
+            contentPadding = PaddingValues(if (images) THUMB_GAP / 2 else 0.dp),
         ) {
             val current = dir
+            fun row(content: @Composable () -> Unit) = item(span = { GridItemSpan(maxLineSpan) }) { content() }
+            fun note(text: @Composable () -> String) = row { Label(text(), Typography.body, c.textMuted, modifier = Modifier.padding(16.dp)) }
+            fun thumbItems(files: List<File>) = items(files, key = { it.path }) { f -> Thumb(f, thumbs) { onPick(f) } }
             when {
                 recent -> {
                     val list = recentFiles
                     when {
-                        list == null -> Label("…", Typography.body, c.textMuted, modifier = Modifier.padding(16.dp))
-                        list.isEmpty() -> Label(stringResource(R.string.files_recent_empty), Typography.body, c.textMuted, modifier = Modifier.padding(16.dp))
-                        else -> Thumbs(list, onPick)
+                        list == null -> note { "…" }
+                        list.isEmpty() -> note { stringResource(R.string.files_recent_empty) }
+                        else -> thumbItems(list)
                     }
                 }
                 current == null -> {
-                    if (images) Entry(Icons.clock, stringResource(R.string.files_recent)) { recent = true }
-                    if (roots.isEmpty()) Label(stringResource(R.string.files_none), Typography.body, c.textMuted, modifier = Modifier.padding(16.dp))
-                    for (r in roots) Entry(Icons.folder, r.name) { dir = r.dir }
+                    if (images) row { Entry(Icons.clock, stringResource(R.string.files_recent)) { recent = true } }
+                    if (roots.isEmpty()) note { stringResource(R.string.files_none) }
+                    for (r in roots) row { Entry(Icons.folder, r.name) { dir = r.dir } }
                 }
                 else -> {
                     val list = entries
                     when {
-                        list == null -> Label("…", Typography.body, c.textMuted, modifier = Modifier.padding(16.dp))
-                        list.isEmpty() -> Label(stringResource(R.string.files_empty), Typography.body, c.textMuted, modifier = Modifier.padding(16.dp))
+                        list == null -> note { "…" }
+                        list.isEmpty() -> note { stringResource(R.string.files_empty) }
                         else -> {
-                            for ((f, isDir) in list) if (isDir) Entry(Icons.folder, f.name) { dir = f }
-                            val files = list.filterNot { it.second }.map { it.first }
-                            if (images) {
-                                if (files.isNotEmpty()) Thumbs(files, onPick)
-                            } else for (f in files) Entry(Icons.image, f.name) { onPick(f) }
+                            val (folders, files) = list.partition { it.second }
+                            items(folders.size, key = { "d:" + folders[it].first.path }, span = { GridItemSpan(maxLineSpan) }) { i ->
+                                val f = folders[i].first
+                                Entry(Icons.folder, f.name) { dir = f }
+                            }
+                            if (images) thumbItems(files.map { it.first })
+                            else items(files.size, key = { files[it].first.path }) { i ->
+                                val f = files[i].first
+                                Entry(Icons.image, f.name) { onPick(f) }
+                            }
                         }
                     }
                 }
@@ -157,27 +176,38 @@ private fun Entry(icon: ImageVector, name: String, onClick: () -> Unit) {
     }
 }
 
-/** Fotos en cuadrícula; cada miniatura se lee reducida y fuera del hilo principal. */
-@OptIn(ExperimentalLayoutApi::class)
+/**
+ * Una foto de la cuadrícula: se lee reducida cuando se ve (si sale de la vista antes de empezar, no se lee) y
+ * queda en [thumbs].
+ */
 @Composable
-private fun Thumbs(files: List<File>, onPick: (File) -> Unit) {
-    FlowRow(Modifier.fillMaxWidth().padding(8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        for (f in files) Thumb(f) { onPick(f) }
-    }
-}
-
-@Composable
-private fun Thumb(file: File, onClick: () -> Unit) {
+private fun Thumb(file: File, thumbs: Thumbnails, onClick: () -> Unit) {
     val c = LocalColors.current
-    val px = with(LocalDensity.current) { THUMB.roundToPx() }
-    val bitmap by produceState<ImageBitmap?>(null, file) { value = withContext(Dispatchers.IO) { thumbnail(file, px) } }
+    val bitmap by produceState(thumbs.cached(file), file) { if (value == null) value = thumbs.load(file) }
     Box(
-        Modifier.size(THUMB).clip(RoundedCornerShape(10.dp)).background(c.surface).clickable(onClick = onClick),
+        Modifier.padding(THUMB_GAP / 2).size(THUMB).clip(RoundedCornerShape(10.dp)).background(c.surface).clickable(onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
         val b = bitmap
         if (b != null) Image(b, file.name, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
         else Icon(Icons.image, c.textMuted, 22.dp)
+    }
+}
+
+/**
+ * Miniaturas de [px] ya leídas (unas cuantas: [THUMB_CACHE_BYTES]). Se leen de a [THUMB_READERS] a la vez: una
+ * carpeta con cientos de fotos no lanza cientos de lecturas juntas (en una pantalla de 1 GB era memoria y CPU de golpe).
+ */
+private class Thumbnails(private val px: Int) {
+    private val memory = object : LruCache<String, ImageBitmap>(THUMB_CACHE_BYTES) {
+        // RGB_565: dos bytes por píxel.
+        override fun sizeOf(key: String, value: ImageBitmap) = value.width * value.height * 2
+    }
+
+    fun cached(file: File): ImageBitmap? = memory.get(file.path)
+
+    suspend fun load(file: File): ImageBitmap? = withContext(THUMB_DECODER) {
+        cached(file) ?: thumbnail(file, px)?.also { memory.put(file.path, it) }
     }
 }
 
@@ -242,3 +272,9 @@ private val SKIP_ROOTS = setOf("emulated", "self", "secure", "asec", "obb", "run
 private const val MAX_ENTRIES = 500
 private const val MAX_RECENT = 60
 private val THUMB = 96.dp
+private val THUMB_GAP = 8.dp
+/** Miniaturas que se guardan mientras el explorador está abierto: ~4 MB (unas 50 a 2× de densidad). */
+private const val THUMB_CACHE_BYTES = 4 shl 20
+/** Fotos que se leen a la vez. */
+private const val THUMB_READERS = 2
+private val THUMB_DECODER = Dispatchers.IO.limitedParallelism(THUMB_READERS)

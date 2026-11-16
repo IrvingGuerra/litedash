@@ -102,7 +102,18 @@ private val creaseShine = Brush.horizontalGradient(
     startX = 40f,
     endX = 456f,
 )
-private val tire = Color(0xFF2A2E34)
+/** El neumático de los dibujos (de lado y desde arriba). */
+internal val TireColor = Color(0xFF2A2E34)
+
+/**
+ * Sombra suave en el piso: un círculo con degradado de [radius] alrededor de [center], aplastado (o estirado) a
+ * lo alto por [squash]; [alpha] = lo oscuro del centro.
+ */
+internal fun DrawScope.floorShadow(center: Offset, radius: Float, squash: Float, alpha: Float) {
+    withTransform({ scale(1f, squash, pivot = center) }) {
+        drawCircle(Brush.radialGradient(listOf(Color.Black.copy(alpha = alpha), Color.Transparent), center, radius), radius, center)
+    }
+}
 
 /**
  * El auto pintado del [color] elegido. Es un dibujo estático: se pinta una vez
@@ -116,6 +127,14 @@ fun CarDrawing(color: Color, modifier: Modifier = Modifier) {
 /** Proporción (ancho / alto) del sedán genérico. */
 internal const val SEDAN_ASPECT = WIDTH / HEIGHT
 
+/**
+ * Lo más ancho que va el auto en su pieza, en altos de la pieza. Un render ([CAR_ASPECT]) trae aire arriba y abajo:
+ * su caja llega a ~1.05 altos (2 / 1.9) y el auto queda un poco más chico que el sedán dibujado, que no trae aire y
+ * llega a ~0.9 altos (2.4 / [SEDAN_ASPECT]): así los dos se ven del mismo tamaño.
+ */
+private const val RENDER_WIDTH_PER_HEIGHT = 2f
+private const val SEDAN_WIDTH_PER_HEIGHT = 2.4f
+
 /** El sedán genérico del [color] a lo ancho del lienzo (que mide [SEDAN_ASPECT]). */
 internal fun DrawScope.drawSedan(color: Color) {
     val s = size.width / WIDTH
@@ -123,11 +142,7 @@ internal fun DrawScope.drawSedan(color: Color) {
         scale(s, s, pivot = Offset.Zero)
         translate(0f, -TOP)
     }) {
-        // Sombra en el piso: un círculo con degradado aplastado a elipse.
-        val floor = Offset(240f, 196f)
-        withTransform({ scale(1f, 12f / 250f, pivot = floor) }) {
-            drawCircle(Brush.radialGradient(listOf(Color.Black.copy(alpha = 0.5f), Color.Transparent), floor, 250f), 250f, floor)
-        }
+        floorShadow(Offset(240f, 196f), 250f, squash = 12f / 250f, alpha = 0.5f)
         drawPath(CarPaths.wells, Color(0xFF0B0D10))
         drawPath(CarPaths.body, color)
         drawPath(CarPaths.body, bodyShade)
@@ -143,7 +158,7 @@ internal fun DrawScope.drawSedan(color: Color) {
         drawPath(CarPaths.body, Color.White.copy(alpha = 0.12f), style = Stroke(1f))
         for (cx in CarPaths.wheels) {
             val c = Offset(cx, WHEEL_Y)
-            drawCircle(tire, 41f, c)
+            drawCircle(TireColor, 41f, c)
             drawCircle(
                 Brush.radialGradient(listOf(Color(0xFFEEF0F2), Color(0xFF9AA2AB)), Offset(cx - 7f, WHEEL_Y - 10f), 52f),
                 35f,
@@ -183,10 +198,9 @@ fun CarTile(
             verticalArrangement = Arrangement.Center,
         ) {
             if (drawing != null) {
-                // Los renders traen más aire arriba y abajo que el dibujo: un poco más alto.
-                drawing(Modifier.widthIn(max = height * 2f).fillMaxWidth().aspectRatio(CAR_ASPECT).padding(horizontal = 8.dp))
+                drawing(Modifier.widthIn(max = height * RENDER_WIDTH_PER_HEIGHT).fillMaxWidth().aspectRatio(CAR_ASPECT).padding(horizontal = 8.dp))
             } else {
-                CarDrawing(color, Modifier.widthIn(max = height * 2.4f).fillMaxWidth().padding(horizontal = 8.dp))
+                CarDrawing(color, Modifier.widthIn(max = height * SEDAN_WIDTH_PER_HEIGHT).fillMaxWidth().padding(horizontal = 8.dp))
             }
             if (showName) Label(name, Typography.subtitle, c.textMuted, maxLines = 1, modifier = Modifier.padding(top = 8.dp))
         }

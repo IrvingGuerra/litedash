@@ -16,7 +16,7 @@ enum class MapDetail(val stored: String) { FULL("full"), MINIMAL("minimal") }
 
 /**
  * Cómo se ve el widget Mapa; se guarda en su `Tile.data` como "orientation=heading;zoom=mid…".
- * Lo de fábrica (minimalista, norte arriba, plano, automático, como el tema) no se escribe.
+ * Lo de fábrica (minimalista, norte arriba, zoom automático: lo más cerca e inclinado, como el tema) no se escribe.
  */
 @Immutable
 data class MapLook(

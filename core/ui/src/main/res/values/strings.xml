@@ -6,7 +6,7 @@
     <string name="files_none">No veo memorias. Revisa el permiso de archivos.</string>
     <string name="files_empty">Esta carpeta está vacía.</string>
     <string name="files_use_folder">Usar esta carpeta</string>
-    <string name="files_cancel">Cerrar</string>
+    <string name="files_close">Cerrar</string>
     <string name="files_recent">Recientes</string>
     <string name="files_recent_empty">No hay fotos recientes.</string>
 </resources>

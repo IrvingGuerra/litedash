@@ -3,16 +3,10 @@ package com.irvingguerra.litedash.feature.music
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
-import android.content.ServiceConnection
-import android.os.Binder
-import android.os.Handler
 import android.os.IBinder
-import android.os.Looper
 import android.os.Parcel
 import android.os.SystemClock
 import android.view.KeyEvent
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.Executors
 
 /**
  * La radio FM de las pantallas Hengchen (HCN: Junsun/Jansun V1 y V7, UIS8581A, MT8163 y otras; app
@@ -33,192 +27,69 @@ import java.util.concurrent.Executors
  * Ver el widget solo se conecta si su servicio ya corre; se arranca al tocar play (arrancarlo puede tomar el audio).
  */
 internal class HcnRadio(
-    private val context: Context,
+    context: Context,
     onState: (BroadcastMeta) -> Unit,
-    private val trace: (String) -> Unit,
-) : BaseFactoryRadio(onState) {
-    override val tag = "hcn"
-    override var open = false
-        private set
+    trace: (String) -> Unit,
+) : BinderFactoryRadio(context, onState, trace, "hcn", DESCRIPTOR, CALLBACK, CODE_REGISTER_CALLBACK, CODE_UNREGISTER_CALLBACK) {
     /** Frecuencia en centésimas de MHz (FM) o kHz (AM), como [stationText]. */
     private var frequency = 0
     private var am = false
     override val station get() = stationText(am, frequency)
 
-    private val main = Handler(Looper.getMainLooper())
-    /** Las llamadas al servicio son IPC: nunca en el hilo principal. Null = cerrado. */
-    @Volatile private var worker: ExecutorService? = null
-    @Volatile private var service: IBinder? = null
     /** 31 o 25 llamadas; 0 = aún no se sabe. */
     @Volatile var contract = 0
         private set
-    @Volatile private var notified = false
-    private var bound = false
-    private var started = false
     /** Cuál de [ACTIONS] se está usando: si una no da la interfaz, se prueba la siguiente. */
     private var action = 0
-    /** La última conexión se pidió arrancando el servicio (recién creado puede tardar en sintonizar). */
-    @Volatile private var created = false
     /** Se pidió play antes de conectar (y cuándo): se da al conectar si no pasó mucho. */
     @Volatile private var playAskedAt = 0L
 
-    private val callback = object : Binder() {
-        init { attachInterface(null, CALLBACK) }
+    override fun serviceIntent(): Intent =
+        Intent(ACTIONS[action]).setComponent(ComponentName(PACKAGE, SERVICE_CLASS)).addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES)
 
-        override fun onTransact(code: Int, data: Parcel, reply: Parcel?, flags: Int): Boolean {
-            if (code != CALLBACK_EVENT) return super.onTransact(code, data, reply, flags)
-            runCatching {
-                data.enforceInterface(CALLBACK)
-                val event = data.readInt()
-                val value = data.readString().orEmpty().trim()
-                main.post { if (open) onEvent(event, value) }
-            }
-            reply?.writeNoException()
-            return true
-        }
+    override fun handlesCallback(code: Int) = code == CALLBACK_EVENT
+
+    override fun readCallback(code: Int, data: Parcel): () -> Unit {
+        val event = data.readInt()
+        val value = data.readString().orEmpty().trim()
+        return { onEvent(event, value) }
     }
 
-    private val connection = object : ServiceConnection {
-        override fun onServiceConnected(name: ComponentName?, binder: IBinder?) {
-            main.removeCallbacks(connectTimeout)
-            val w = worker ?: return
-            w.execute {
-                if (worker !== w || binder == null) return@execute
-                if (runCatching { binder.interfaceDescriptor }.getOrNull() != DESCRIPTOR) {
-                    trace("hcn servicio con otra interfaz")
-                    main.post(::tryNextAction)
-                    return@execute
-                }
-                val found = detectContract(binder)
-                if (found == 0) {
-                    trace("hcn contrato desconocido: se abre la app como antes")
-                    main.post(::lost)
-                    return@execute
-                }
-                contract = found
-                val registered = runCatching { call(CODE_REGISTER_CALLBACK, { it.writeStrongBinder(callback) }, binder = binder) {} }.isSuccess
-                // Se cerró mientras se conectaba: se suelta lo que se alcanzó a registrar.
-                if (worker !== w) {
-                    if (registered) runCatching { call(CODE_UNREGISTER_CALLBACK, { it.writeStrongBinder(callback) }, binder = binder) {} }
-                    return@execute
-                }
-                service = binder
-                notified = registered
-                trace("hcn conectado contrato=$contract avisos=${yes(notified)}")
-                // Primero el play pendiente (la confirmación espera poco) y luego la estación.
-                val asked = playAskedAt
-                playAskedAt = 0L
-                if (asked > 0 && SystemClock.elapsedRealtime() - asked < PLAY_PENDING_MS) requestPlay()
-                readTuner()
-            }
+    override fun prepare(binder: IBinder): Boolean {
+        // Recién arrancado puede no haber sintonizado aún (frecuencia 0): se le da un momento.
+        val found = contractOf(if (created) DETECT_TRIES else 1, { Thread.sleep(DETECT_PAUSE_MS) }) { code ->
+            runCatching { call(code, binder = binder) { it.readInt() } }.getOrNull()
         }
-
-        override fun onServiceDisconnected(name: ComponentName?) {
-            service = null
-            notified = false
-            trace("hcn servicio desconectado")
+        if (found == 0) {
+            trace("hcn contrato desconocido: se abre la app como antes")
+            return false
         }
-
-        override fun onBindingDied(name: ComponentName?) {
-            service = null
-            notified = false
-            trace("hcn servicio murió: se vuelve a conectar")
-            bind(started)
-        }
-
-        override fun onNullBinding(name: ComponentName?) {
-            trace("hcn servicio sin interfaz")
-            tryNextAction()
-        }
-    }
-
-    private val connectTimeout = Runnable {
-        if (service == null) {
-            trace("hcn servicio no contestó")
-            lost()
-        }
-    }
-
-    override fun open(): Boolean {
-        if (open) return true
-        worker = Executors.newSingleThreadExecutor { Thread(it, "hcn-radio") }
-        open = true
-        bind(create = false)
-        if (!open) return false
-        trace("hcn abierto")
+        contract = found
         return true
     }
 
-    override fun close() {
-        if (!open) return
-        open = false
-        main.removeCallbacksAndMessages(null)
-        val w = worker
-        worker = null
-        val s = service
-        service = null
-        // Soltar un aviso que no se registró no hace daño: así nunca se queda el servicio con este perfil.
-        if (s != null) w?.execute { runCatching { call(CODE_UNREGISTER_CALLBACK, { it.writeStrongBinder(callback) }, binder = s) {} } }
-        notified = false
-        w?.shutdown()
-        if (bound) runCatching { context.unbindService(connection) }
-        bound = false
+    override fun connectedDetail() = "contrato=$contract"
+
+    override fun ready() {
+        // Primero el play pendiente (la confirmación espera poco) y luego la estación.
+        val asked = playAskedAt
+        playAskedAt = 0L
+        if (asked > 0 && SystemClock.elapsedRealtime() - asked < PLAY_PENDING_MS) requestPlay()
+        readTuner()
     }
 
-    /**
-     * Conecta con su servicio con la acción [action]; [create] lo arranca si no corre. Si la pantalla no
-     * la reconoce (no conecta, o conecta sin la interfaz) se prueba la siguiente ([tryNextAction]): la de
-     * la variante "8581a" es otra acción para el mismo servicio.
-     */
-    private fun bind(create: Boolean) {
-        if (!open) return
-        if (bound) runCatching { context.unbindService(connection) }
-        created = create
-        val intent = Intent(ACTIONS[action]).setComponent(ComponentName(PACKAGE, SERVICE_CLASS)).addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES)
-        bound = runCatching { context.bindService(intent, connection, if (create) Context.BIND_AUTO_CREATE else 0) }.getOrDefault(false)
-        if (!bound) {
-            runCatching { context.unbindService(connection) }
-            trace("hcn no se pudo conectar con ${ACTIONS[action]}")
-            return tryNextAction()
-        }
-        if (create) main.postDelayed(connectTimeout, CONNECT_TIMEOUT_MS)
-    }
-
-    /** La acción no sirvió: la siguiente, y si ya no hay, el perfil se cierra. */
-    private fun tryNextAction() {
+    /** La acción no sirvió (la de la variante "8581a" es otra para el mismo servicio): la siguiente; sin más, se cierra. */
+    override fun unusable() {
         if (!open) return
         if (action + 1 >= ACTIONS.size) return lost()
         action++
         bind(created)
     }
 
-    /** Antes de play: si el servicio no está conectado, se arranca (una vez). */
-    private fun wake() {
-        if (service != null || started || !open) return
-        started = true
-        bind(create = true)
-    }
-
-    /** Sin servicio que conteste: el perfil se cierra y la radio se maneja como antes (teclas y abrir la app). */
-    private fun lost() {
-        if (!open) return
-        trace("hcn sin servicio: como antes")
-        close()
-    }
-
-    /**
-     * Cuál de los dos contratos es, solo con lecturas (ver la clase). Una lectura que la pantalla no
-     * tenga (`transact` = false) cuenta como "no es".
-     */
-    private fun detectContract(binder: IBinder): Int {
-        fun frequencyAt(code: Int) = runCatching { call(code, binder = binder) { it.readInt() } }.getOrNull()?.let(::hcnFrequency)
-        // Recién arrancado puede no haber sintonizado aún (frecuencia 0): se le da un momento.
-        repeat(if (created) DETECT_TRIES else 1) { i ->
-            if (i > 0) Thread.sleep(DETECT_PAUSE_MS)
-            if (frequencyAt(CODE_FREQ_31) != null) return 31
-            if (frequencyAt(CODE_FREQ_25) != null) return 25
-        }
-        return 0
+    override fun open(): Boolean {
+        if (!connect()) return false
+        trace("hcn abierto")
+        return true
     }
 
     override fun refresh() {
@@ -257,10 +128,10 @@ internal class HcnRadio(
     override fun next() = key(KeyEvent.KEYCODE_MEDIA_NEXT)
     override fun previous() = key(KeyEvent.KEYCODE_MEDIA_PREVIOUS)
 
-    /** La tecla a su receptor (lo que ya funcionaba); sin aviso del servicio, la estación se relee un par de veces. */
+    /** La tecla a su receptor (lo que ya funcionaba); sin aviso del servicio, la estación se relee. */
     private fun key(code: Int) {
         sendKey(code)
-        if (!notified) for (delay in READS_AFTER_KEY_MS) main.postDelayed({ if (open) refresh() }, delay)
+        rereadSoon()
     }
 
     override fun takeAudio() {
@@ -314,23 +185,6 @@ internal class HcnRadio(
         }
     }
 
-    /** Una llamada al servicio, como la hace su AIDL (token, argumentos, excepción, respuesta). */
-    private fun <T> call(code: Int, write: (Parcel) -> Unit = {}, binder: IBinder? = service, read: (Parcel) -> T): T {
-        checkNotNull(binder) { "sin servicio" }
-        val data = Parcel.obtain()
-        val reply = Parcel.obtain()
-        try {
-            data.writeInterfaceToken(DESCRIPTOR)
-            write(data)
-            check(binder.transact(code, data, reply, 0)) { "rechazó $code" }
-            reply.readException()
-            return read(reply)
-        } finally {
-            reply.recycle()
-            data.recycle()
-        }
-    }
-
     companion object {
         const val PACKAGE = "com.hcn.autoradio"
         private const val SERVICE_CLASS = "com.hcn.autoradio.service.FMPlugService"
@@ -352,12 +206,24 @@ internal class HcnRadio(
         private const val EVENT_FREQUENCY = 100
         private const val EVENT_BAND = 101
         private const val EVENT_RDS_NAME = 103
-        private const val CONNECT_TIMEOUT_MS = 6_000L
         /** Un play pedido antes de conectar se da solo si conecta en este rato (si no, ya se abrió la app). */
         private const val PLAY_PENDING_MS = 1_200L
         private const val DETECT_TRIES = 3
         private const val DETECT_PAUSE_MS = 250L
-        private val READS_AFTER_KEY_MS = longArrayOf(1_500L, 4_000L)
+
+        /**
+         * Cuál de los dos contratos es (31 o 25; 0 = ninguno), solo con lecturas ([read] = lo que da ese código o
+         * null si la pantalla no lo tiene): la 19 es la frecuencia en el de 31; si no, la 18 en el de 25. Recién
+         * arrancado se prueba [tries] veces con [pause] entre una y otra.
+         */
+        internal fun contractOf(tries: Int, pause: () -> Unit, read: (code: Int) -> Int?): Int {
+            repeat(tries) { i ->
+                if (i > 0) pause()
+                if (read(CODE_FREQ_31)?.let(::hcnFrequency) != null) return 31
+                if (read(CODE_FREQ_25)?.let(::hcnFrequency) != null) return 25
+            }
+            return 0
+        }
 
         /**
          * Lo que da `getCurrentFreq` (o el aviso 100) → (es AM, frecuencia como [stationText]); null si no es
@@ -373,7 +239,7 @@ internal class HcnRadio(
         /** Para los reportes (sin abrir nada); [radio] = el perfil abierto. */
         fun describe(context: Context, radio: HcnRadio?): String {
             val version = runCatching { context.packageManager.getPackageInfo(PACKAGE, 0).versionName }.getOrNull() ?: "no"
-            return "HCN: app=$version perfil=${yes(radio?.open == true)} conectado=${yes(radio?.service != null)} " +
+            return "HCN: app=$version perfil=${yes(radio?.open == true)} conectado=${yes(radio?.connected == true)} " +
                 "contrato=${radio?.contract?.takeIf { it > 0 } ?: "-"} avisos=${yes(radio?.notified == true)} " +
                 "estación=${radio?.station ?: "-"} nombre=${radio?.name?.ifEmpty { "-" } ?: "-"}"
         }

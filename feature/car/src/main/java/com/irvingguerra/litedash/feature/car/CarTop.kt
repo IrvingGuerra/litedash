@@ -76,7 +76,6 @@ private val glassShine = Brush.linearGradient(
     start = Offset(36f, 114f),
     end = Offset(164f, 346f),
 )
-private val tire = Color(0xFF2A2E34)
 
 /**
  * El auto desde arriba para el Taller: el render del paquete de [p] si lo trae (lo baja
@@ -97,7 +96,7 @@ fun CarTop(repo: CarRepository, p: CarPackage?, color: Color, modifier: Modifier
     Box(modifier.aspectRatio(CAR_TOP_ASPECT)) {
         if (ready) Canvas(Modifier.fillMaxSize()) {
             val s = size.width / TOP_WIDTH
-            withTransform({ scale(s, s, pivot = Offset.Zero) }) { floorShadow() }
+            withTransform({ scale(s, s, pivot = Offset.Zero) }) { topShadow() }
         }
         CarTopImage(repo, p, color, Modifier.fillMaxSize()) {
             ready = true
@@ -107,12 +106,8 @@ fun CarTop(repo: CarRepository, p: CarPackage?, color: Color, modifier: Modifier
 }
 
 /** Sombra suave en el piso, apenas más grande que el auto (en las medidas de la caja). */
-private fun DrawScope.floorShadow() {
-    val floor = Offset(TOP_WIDTH / 2, TOP_HEIGHT / 2 + 6f)
-    withTransform({ scale(1f, TOP_HEIGHT / TOP_WIDTH, pivot = floor) }) {
-        drawCircle(Brush.radialGradient(listOf(Color.Black.copy(alpha = 0.45f), Color.Transparent), floor, 118f), 118f, floor)
-    }
-}
+private fun DrawScope.topShadow() =
+    floorShadow(Offset(TOP_WIDTH / 2, TOP_HEIGHT / 2 + 6f), 118f, squash = TOP_HEIGHT / TOP_WIDTH, alpha = 0.45f)
 
 /**
  * El auto desde arriba pintado del [color] elegido (el mismo en el Taller y en Llantas).
@@ -123,8 +118,8 @@ private fun CarTopDrawing(color: Color, modifier: Modifier = Modifier) {
     Canvas(modifier.aspectRatio(CAR_TOP_ASPECT)) {
         val s = size.width / TOP_WIDTH
         withTransform({ scale(s, s, pivot = Offset.Zero) }) {
-            floorShadow()
-            for (w in TopPaths.wheels) drawRoundRect(tire, Offset(w.x - 9f, w.y - 32f), Size(18f, 64f), androidx.compose.ui.geometry.CornerRadius(6f))
+            topShadow()
+            for (w in TopPaths.wheels) drawRoundRect(TireColor, Offset(w.x - 9f, w.y - 32f), Size(18f, 64f), androidx.compose.ui.geometry.CornerRadius(6f))
             drawPath(TopPaths.mirrors, color)
             drawPath(TopPaths.body, color)
             drawPath(TopPaths.body, topShade)

@@ -72,7 +72,7 @@ class Pairing(val text: String, val code: String)
 enum class PhoneSound(val route: String) { BLUETOOTH("bt"), CAR("car"), WIRED("wired"), CALLS("calls"), PHONE("phone") }
 
 /** Lo que suena en el celular (mensaje `music` con su `art`, PROTOCOLO_LINK.md §5b). */
-class PhoneSong(
+data class PhoneSong(
     val title: String,
     val artist: String,
     /** La app que suena en el celular ("Spotify"). */
@@ -96,11 +96,10 @@ class PhoneSong(
  * dirección que funcionó, donde lo anuncien su faro o NSD y, de respaldo, tocando a los vecinos de
  * sus redes locales (así lo encuentra también cuando el celular entra al hotspot de la pantalla).
  *
- * Ya vinculada intenta al abrir LiteDash ([start]), al cambiar la red y cuando oye al celular; sin
- * conexión reintenta cada vez más espaciado (5 s… hasta 1 min): Android puede cerrar y volver a abrir
- * LiteDash Connect sin que cambie la red. Con su panel abierto ([watch]) intenta cada 2 s. Sin celular
- * vinculado y con el panel cerrado no deja hilos, receptores ni sockets; con celular vinculado, el oído
- * del faro y los reintentos duran mientras viva LiteDash (a propósito: es lo que lo hace conectar solo).
+ * Cuándo busca lo decide [LinkSchedule]: con LiteDash al frente ([visible]) reintenta cada vez más espaciado
+ * (5 s… hasta 1 min) y busca también por NSD y Bluetooth; en segundo plano solo oye el faro y los cambios de
+ * red. Con su panel abierto ([watch]) intenta cada 2 s. Sin celular vinculado y con el panel cerrado no deja
+ * hilos, receptores ni sockets. Conectado, solo el hilo que lee (con su `ping`).
  *
  * El estado se maneja en el hilo principal; la red, en sus hilos (uno por intento, el oído del faro y
  * los que tocan a los vecinos).
@@ -189,7 +188,7 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
     fun command(action: String, ms: Long = 0): Boolean {
         val open = session?.takeIf { it.music } ?: return false
         // En un solo hilo: play y pausa seguidos llegan en el orden en que se tocaron.
-        commands.execute { runCatching { open.send(JSONObject().put("t", "cmd").put("do", action).put("ms", ms)) } }
+        send(open, JSONObject().put("t", "cmd").put("do", action).put("ms", ms))
         return true
     }
 
@@ -203,9 +202,10 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
             .put("make", car.make).put("color", "%06X".format(car.color and 0xFFFFFF))
             .put("finish", car.finish).put("gloss", hundredths(car.gloss)).put("finishes", car.finishes)
             .put("cars", JSONArray(car.cars)).put("img", car.image)
-        if (webp != null) message.put("webp", Base64.encode(webp))
         commands.execute {
-            runCatching { open.send(message) }.onSuccess { if (webp != null) open.carImage = car.image }
+            // La imagen (hasta 150 KB) se pasa a base64 aquí, no en el hilo principal.
+            if (webp != null) message.put("webp", Base64.encode(webp))
+            if (write(open, message) && webp != null) open.carImage = car.image
         }
         return true
     }
@@ -218,24 +218,39 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
         val message = JSONObject().put("t", "carJob").put("id", id).put("kind", kind).put("step", step)
         if (progress != null) message.put("progress", hundredths(progress.coerceIn(0f, 1f)))
         if (why != null) message.put("why", why)
-        send(message)
+        session?.let { send(it, message) }
     }
 
     /** El estado de tu auto (§5g), si el celular lo pidió; [state] trae todo menos `t`. */
     fun sendState(state: JSONObject) {
-        if (session?.state == true) send(state.put("t", "state"))
+        session?.takeIf { it.state }?.let { send(it, state.put("t", "state")) }
     }
 
     /** El diagnóstico de la pantalla para el reporte [id] del celular (§5h). */
-    fun sendReport(id: String, text: String) = send(JSONObject().put("t", "report").put("id", id).put("text", text.take(REPORT_MAX)))
+    fun sendReport(id: String, text: String) {
+        session?.let { send(it, JSONObject().put("t", "report").put("id", id).put("text", text.take(REPORT_MAX))) }
+    }
 
     /** 0–1 con dos decimales (un Float tal cual sale como 0.30000001192092896). */
     private fun hundredths(value: Float) = Math.round(value * 100) / 100.0
 
-    /** Manda [message] al celular conectado (en orden con los demás); sin conexión, nada. */
-    private fun send(message: JSONObject) {
-        val open = session ?: return
-        commands.execute { runCatching { open.send(message) } }
+    /** Manda [message] por [open] en orden con los demás. */
+    private fun send(open: Session, message: JSONObject) {
+        commands.execute { write(open, message) }
+    }
+
+    /**
+     * Escribe en el hilo de los envíos; falso si no se pudo. La conexión caída la cierra el hilo que lee: aquí solo
+     * se anota para el reporte.
+     */
+    private fun write(open: Session, message: JSONObject): Boolean = try {
+        open.send(message)
+        true
+    } catch (e: Exception) {
+        // También lo que lance el cifrado: una excepción suelta en este hilo cerraría la app.
+        val why = "envío: ${e.message ?: e.javaClass.simpleName}"
+        main.post { if (session === open) lastError = why }
+        false
     }
 
     /**
@@ -248,8 +263,7 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
 
     /** "Buscar ahora": intenta ya, con los reintentos de vuelta al principio y tocando a los vecinos. */
     fun searchNow() {
-        retries = 0
-        sweepNext = true
+        schedule.restart()
         connect()
     }
 
@@ -259,6 +273,18 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
 
     private var running = false
     private var watching = false
+    /** Ventanas de LiteDash a la vista ([visible]): puede haber dos (la del inicio y la de app). */
+    private var windows = 0
+    /** LiteDash está al frente: busca seguido. Con el panel abierto lo está por fuerza. */
+    private val foreground get() = windows > 0 || watching
+
+    private val schedule = LinkSchedule()
+    /** Cuándo corre el siguiente intento programado ([retry]); 0 = ninguno. */
+    private var retryAt = 0L
+    private val retry = Runnable {
+        retryAt = 0L
+        connect()
+    }
 
     /** La llave del QR: provisional hasta que un saludo con ella termine bien. */
     private var offered: ByteArray? = null
@@ -267,21 +293,19 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
     private var attempt: Attempt? = null
     private var session: Session? = null
     private var networkWatched = false
+    private val networks = NetworkMemory<Network>()
     private var discovery: Discovery? = null
     /** Dónde anunció NSD al celular ("host:puerto"). */
     private var announced: String? = null
     /** El oído del faro del celular y de dónde llegó su último aviso ("host:puerto"). */
     private var ear: Ear? = null
     private var beaconed: String? = null
+    /** El puerto del faro no se pudo abrir: no se reintenta hasta otra red o hasta volver al frente. */
+    private var earFailed = false
     /** Llegó un aviso del faro mientras había un intento en curso: al cerrarse se intenta de una vez. */
     private var beaconFresh = false
     /** La llave que el oído reconoce (la lee su hilo). */
     @Volatile private var earKey: ByteArray? = null
-    /** Cuándo se tocó por última vez a los vecinos de la red, y si toca hacerlo en el siguiente intento. */
-    private var sweptAt = 0L
-    private var sweepNext = true
-    /** Cuándo empezó el último intento. */
-    private var attemptedAt = 0L
 
     // Para el reporte.
     private var lastError: String? = null
@@ -302,17 +326,37 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
     fun permissionChanged() {
         networkAllowed = localNetworkAllowed(app)
         sync()
-        connect()
+        wake()
     }
 
     private val active get() = running && networkAllowed && (paired || watching)
 
-    /** LiteDash volvió al frente: si hay celular vinculado, lo busca. */
+    /** LiteDash volvió al frente (onResume): si hay celular vinculado, lo busca. */
     fun start() {
         running = true
         networkAllowed = localNetworkAllowed(app)
         sync()
-        connect()
+        wake()
+    }
+
+    /**
+     * Una ventana de LiteDash se ve o se dejó de ver (onStart y onStop de cada una). Al pasar al frente los
+     * reintentos vuelven a ir seguidos; al irse al fondo se apagan NSD, Bluetooth y los reintentos por tiempo
+     * (queda el oído del faro). Una conexión abierta no se toca.
+     */
+    fun visible(on: Boolean) {
+        val was = foreground
+        windows = if (on) windows + 1 else (windows - 1).coerceAtLeast(0)
+        if (foreground == was) return
+        if (foreground) {
+            schedule.resetRetries()
+            earFailed = false
+            sync()
+            wake()
+        } else {
+            cancelRetry()
+            sync()
+        }
     }
 
     /** Ajustes → Celular se abrió o se cerró: abierta, intenta cada 2 s y mantiene el QR al día. */
@@ -330,9 +374,11 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
 
     /** Para "Enviar un reporte". */
     fun describe(): String = "Celular: vinculado=${yes(paired)}, conectado=${yes(connected)}, red local permitida=${yes(networkAllowed)}, " +
-        "puerta de enlace=${lastGateways.ifEmpty { "—" }}, última dirección=${store.getString(LAST_ADDRESS, null) ?: "—"}, " +
-        "NSD=${if (discovery != null) "buscando" else "no"}${announced?.let { " ($it)" } ?: ""}, faro=${beaconed ?: "—"}, " +
-        "redes=${lastNeighbors.ifEmpty { "—" }}, encontrado por=${lastFound ?: "—"}, error=${lastError ?: "—"}, " +
+        "al frente=${yes(foreground)}, puerta de enlace=${lastGateways.ifEmpty { "—" }}, " +
+        "última dirección=${store.getString(LAST_ADDRESS, null) ?: "—"}, " +
+        "NSD=${if (discovery != null) "buscando" else "no"}${announced?.let { " ($it)" } ?: ""}, " +
+        "faro=${beaconed ?: if (earFailed) "sin puerto" else "—"}, " +
+        "redes=${lastNeighbors.ifEmpty { "—" }}, encontrado por=${lastFound ?: "—"}, reintentos=${schedule.retries}, error=${lastError ?: "—"}, " +
         "sonido=${phoneSound?.route ?: "—"}, música=${when { session?.music != true -> "no" ; musicBlocked -> "sin permiso"; song == null -> "nada"; song?.playing == true -> "suena"; else -> "en pausa" }}\n" +
         ble.describe()
 
@@ -349,21 +395,17 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
             refreshPairing()
             checkNetwork()
             sync()
-            connect()
+            wake()
             main.postDelayed(this, WATCH_RETRY_MS)
         }
     }
-
-    private val retry = Runnable { connect() }
-    /** Reintentos seguidos sin conexión (0 = conectado, o recién cambió la red). */
-    private var retries = 0
 
     /** Revisa la red en un hilo corto (uno a la vez) y la publica en el principal. */
     private fun checkNetwork() {
         if (checkingNetwork) return
         checkingNetwork = true
         io {
-            val found = hasLocalNetwork()
+            val found = localNets().any
             main.post {
                 checkingNetwork = false
                 localNetwork = found
@@ -371,31 +413,57 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
         }
     }
 
-    /**
-     * ¿Hay red local? Una red de Android con IPv4 que no sea de datos móviles, o una interfaz arriba (no
-     * loopback ni punto a punto, tampoco la de datos) con IPv4 privada: así cuenta el hotspot de la propia
-     * pantalla, que no es una "red" para Android. Enumera interfaces: nunca en el hilo principal.
-     */
-    private fun hasLocalNetwork(): Boolean {
+    /** Las redes locales de la pantalla en un momento: lo que se toca en un intento y si hay por dónde. */
+    private class LocalNets(
+        /** Las IPv4 de la pantalla en cada red de Android que no es de datos móviles, con su red. */
+        val addresses: List<Pair<String, Network>>,
+        /** Las puertas de enlace IPv4 de esas redes (en el hotspot del celular, es el celular). */
+        val gateways: Map<String, Network>,
+        /**
+         * Las IPv4 privadas de las interfaces arriba que no son de datos móviles, loopback ni punto a punto (así cuenta
+         * el hotspot de la propia pantalla, que no es una "red" para Android): Wi‑Fi primero, una por red.
+         */
+        val own: List<String>,
+    ) {
+        val any get() = addresses.isNotEmpty() || own.isNotEmpty()
+    }
+
+    /** Toma la foto de las redes. Enumera interfaces: nunca en el hilo principal. */
+    private fun localNets(): LocalNets {
         val manager = app.getSystemService(ConnectivityManager::class.java)
-        @Suppress("DEPRECATION") // aquí basta una foto, como en el intento
-        val networks = runCatching { manager?.allNetworks?.toList() }.getOrNull().orEmpty()
+        @Suppress("DEPRECATION") // el reemplazo pide un NetworkCallback por red; aquí basta una foto
+        val all = runCatching { manager?.allNetworks?.toList() }.getOrNull().orEmpty()
+        val addresses = ArrayList<Pair<String, Network>>()
+        val gateways = HashMap<String, Network>()
         val mobile = HashSet<String>()
-        for (network in networks) {
+        for (network in all) {
             val properties = runCatching { manager?.getLinkProperties(network) }.getOrNull() ?: continue
-            val cellular = runCatching { manager?.getNetworkCapabilities(network)?.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) }.getOrNull() == true
-            if (cellular) {
+            // Los datos de la SIM no son una red donde pueda estar el celular: ni su puerta de enlace ni sus vecinos.
+            if (runCatching { manager?.getNetworkCapabilities(network)?.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) }.getOrNull() == true) {
                 properties.interfaceName?.let(mobile::add)
                 continue
             }
-            if (properties.linkAddresses.any { it.address is Inet4Address }) return true
+            for (gateway in ipv4Gateways(properties)) gateways[gateway] = network
+            for (own in ipv4Addresses(properties)) addresses += own to network
         }
-        return runCatching { NetworkInterface.getNetworkInterfaces()?.toList() }.getOrNull().orEmpty().any { face ->
-            runCatching {
-                face.isUp && !face.isLoopback && !face.isPointToPoint && face.name !in mobile &&
-                    face.inetAddresses.toList().any { it is Inet4Address && it.isSiteLocalAddress }
-            }.getOrDefault(false)
-        }
+        val own = runCatching { NetworkInterface.getNetworkInterfaces()?.toList() }.getOrNull().orEmpty()
+            .filter { runCatching { it.isUp && !it.isLoopback && !it.isPointToPoint && it.name !in mobile }.getOrDefault(false) }
+            // Primero el Wi‑Fi y el hotspot: muchas pantallas traen además redes internas (cámara, CarPlay).
+            .sortedBy { face -> if (WIFI_NAMES.any { face.name.startsWith(it) }) 0 else 1 }
+            .flatMap { it.inetAddresses.toList() }
+            .filterIsInstance<Inet4Address>()
+            .filter { it.isSiteLocalAddress }
+            .mapNotNull { it.hostAddress }
+            // Una sola vez por red, aunque la pantalla tenga dos direcciones en ella.
+            .distinctBy { it.substringBeforeLast('.') }
+        return LocalNets(addresses, gateways, own)
+    }
+
+    private fun ipv4Addresses(properties: LinkProperties) =
+        properties.linkAddresses.mapNotNull { (it.address as? Inet4Address)?.hostAddress }
+
+    private fun ipv4Gateways(properties: LinkProperties) = properties.routes.mapNotNull { route ->
+        route.gateway?.takeIf { route.isDefaultRoute && it is Inet4Address && !it.isAnyLocalAddress }?.hostAddress
     }
 
     /** Con el panel abierto y sin celular: una llave nueva si no hay o si la del QR ya venció. */
@@ -417,25 +485,39 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
     private fun screenId(): String = store.getString(SCREEN_ID, null)
         ?: ByteArray(8).also(random::nextBytes).joinToString("") { "%02x".format(it) }.also { store.edit().putString(SCREEN_ID, it).apply() }
 
-    /** Escucha la red y a NSD solo mientras hagan falta. */
+    /** Prende o apaga lo que escucha según haga falta: la red, NSD, el faro y el Bluetooth. */
     private fun sync() {
         val manager = app.getSystemService(ConnectivityManager::class.java)
-        if (active != networkWatched && manager != null) runCatching {
-            if (active) manager.registerNetworkCallback(NetworkRequest.Builder().build(), onNetwork)
-            else manager.unregisterNetworkCallback(onNetwork)
-            networkWatched = active
+        if (active != networkWatched && manager != null) {
+            try {
+                if (active) {
+                    // Solo Wi‑Fi y cable: los datos móviles van y vienen en un auto en movimiento y ahí no está el celular.
+                    val request = NetworkRequest.Builder()
+                        .addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
+                        .addTransportType(NetworkCapabilities.TRANSPORT_ETHERNET)
+                        .build()
+                    manager.registerNetworkCallback(request, onNetwork)
+                } else {
+                    manager.unregisterNetworkCallback(onNetwork)
+                    networks.clear()
+                }
+                networkWatched = active
+            } catch (e: RuntimeException) {
+                // Android limita los callbacks por app: queda anotado y se intenta en el siguiente cambio de estado.
+                lastError = "red: ${e.message ?: e.javaClass.simpleName}"
+            }
         }
         // NSD se prende después de un intento fallido ([closed]); aquí solo se apaga.
-        if (!active || connected) discover(false)
+        if (!active || connected || !foreground) discover(false)
         earKey = currentKey()
-        listen(active && !connected)
-        ble.watch(active && paired && !connected)
+        listen(active && !connected && !earFailed)
+        ble.watch(active && paired && !connected && foreground)
     }
 
     /** El celular vinculado se ve cerca por Bluetooth de baja energía: se le busca ya por la red. */
     private val ble = BlePresence(app) {
         // Solo adelanta el intento que ya tocaba (sin reiniciar su espaciado), y sin red en común no hay por dónde.
-        if (active && !connected && localNetwork) connect()
+        if (!connected && localNetwork) wake()
     }
 
     /** Prende o apaga el oído del faro. */
@@ -457,7 +539,7 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
 
         fun close() {
             closed = true
-            runCatching { socket?.close() }
+            socket?.close()
         }
 
         override fun run() {
@@ -484,15 +566,16 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
                     main.post { if (ear === this) heardBeacon(from) }
                 }
             } catch (e: Exception) {
-                // Cerrado al apagar, o el puerto falló: el oído se suelta y el siguiente intento lo vuelve a abrir.
+                // Cerrado al apagar, o el puerto no se pudo abrir: no se reintenta hasta otra red o volver al frente.
                 main.post {
                     if (ear === this && !closed) {
                         ear = null
+                        earFailed = true
                         lastError = "faro: ${e.message ?: e.javaClass.simpleName}"
                     }
                 }
             } finally {
-                runCatching { socket?.close() }
+                socket?.close()
             }
         }
     }
@@ -500,7 +583,7 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
     /** Un aviso del faro del celular de esta pantalla: se le busca ahí. */
     private fun heardBeacon(from: String) {
         beaconed = "$from:${LinkProtocol.PORT}"
-        if (attempt != null) beaconFresh = true else connect()
+        if (attempt != null) beaconFresh = true else wake()
     }
 
     /** La llave con la que toca intentar: la guardada o, con el panel abierto, la del QR. */
@@ -510,26 +593,38 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
         return key?.takeIf { it.size == LinkProtocol.KEY_BYTES }
     }
 
+    /**
+     * Los avisos de red llegan en el hilo de Android; cuenta como otra red solo si cambiaron sus IPv4 o su puerta de
+     * enlace (en algunas pantallas `onLinkPropertiesChanged` llega seguido por IPv6 o DNS).
+     */
     private val onNetwork = object : ConnectivityManager.NetworkCallback() {
         override fun onAvailable(network: Network) {
-            main.post(::networkChanged)
+            // Antes de Android 8 no siempre le sigue onLinkPropertiesChanged: se leen aquí.
+            app.getSystemService(ConnectivityManager::class.java)?.getLinkProperties(network)?.let { heardNetwork(network, it) }
         }
 
-        override fun onLinkPropertiesChanged(network: Network, properties: LinkProperties) {
-            // Llega seguido en algunas pantallas (IPv6, DNS): se intenta sin reiniciar la cuenta de reintentos, y no
-            // más seguido que cada tanto.
-            main.post { if (SystemClock.elapsedRealtime() - attemptedAt >= LINK_CHANGE_MS) connect() }
+        override fun onLinkPropertiesChanged(network: Network, properties: LinkProperties) = heardNetwork(network, properties)
+
+        override fun onLost(network: Network) {
+            main.post { networks.lost(network) }
         }
+    }
+
+    private fun heardNetwork(network: Network, properties: LinkProperties) {
+        val addresses = ipv4Addresses(properties)
+        val gateways = ipv4Gateways(properties)
+        main.post { if (networkWatched && networks.changed(network, addresses, gateways)) networkChanged() }
     }
 
     /** Otra red: se busca de inmediato, los reintentos vuelven a empezar seguidos y lo oído en la red anterior ya no vale. */
     private fun networkChanged() {
         if (!connected) {
-            retries = 0
-            sweepNext = true
+            schedule.restart()
             beaconed = null
         }
-        connect()
+        earFailed = false
+        sync()
+        wake()
     }
 
     private fun discover(on: Boolean) {
@@ -537,13 +632,19 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
         val manager = app.getSystemService(NsdManager::class.java) ?: return
         val current = discovery
         if (current != null) {
-            runCatching { manager.stopServiceDiscovery(current) }
             discovery = null
+            try {
+                manager.stopServiceDiscovery(current)
+            } catch (e: IllegalArgumentException) {
+                lastError = "NSD no paró: ${e.message}"
+            }
         } else {
             val listener = Discovery(manager)
-            runCatching {
+            try {
                 manager.discoverServices(LinkProtocol.SERVICE_TYPE, NsdManager.PROTOCOL_DNS_SD, listener)
                 discovery = listener
+            } catch (e: RuntimeException) {
+                lastError = "NSD no arrancó: ${e.message ?: e.javaClass.simpleName}"
             }
         }
     }
@@ -555,7 +656,11 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
         }
 
         override fun onStartDiscoveryFailed(serviceType: String, errorCode: Int) {
-            main.post { if (discovery === this) discovery = null }
+            main.post {
+                if (discovery !== this) return@post
+                discovery = null
+                lastError = "NSD no arrancó ($errorCode)"
+            }
         }
 
         override fun onServiceLost(service: NsdServiceInfo) = Unit
@@ -570,7 +675,7 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
                 main.post {
                     if (discovery !== this@Discovery) return@post
                     announced = "$host:${service.port}"
-                    connect()
+                    wake()
                 }
             }
 
@@ -578,17 +683,32 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
         }
     }
 
-    /** Un intento de conexión, si toca y no hay otro en curso. */
+    /** Pide un intento: ya, o en cuanto se cumpla el espacio mínimo ([LinkSchedule]); nunca atrasa uno programado. */
+    private fun wake() {
+        if (!active || attempt != null) return
+        val wait = schedule.waitFor(SystemClock.elapsedRealtime())
+        if (wait == 0L) connect() else retryIn(wait)
+    }
+
+    private fun retryIn(delay: Long) {
+        val at = SystemClock.elapsedRealtime() + delay
+        if (retryAt != 0L && retryAt <= at) return
+        main.removeCallbacks(retry)
+        retryAt = at
+        main.postDelayed(retry, delay)
+    }
+
+    private fun cancelRetry() {
+        main.removeCallbacks(retry)
+        retryAt = 0L
+    }
+
+    /** Un intento de conexión ya, si toca y no hay otro en curso (los avisos pasan por [wake]). */
     private fun connect() {
         if (!active || attempt != null) return
         val key = currentKey() ?: return
-        main.removeCallbacks(retry)
-        // Tocar a los vecinos es el respaldo: seguido con el panel abierto, espaciado si no.
-        val now = SystemClock.elapsedRealtime()
-        val sweep = sweepNext || (watching && now - sweptAt >= SWEEP_WATCHING_MS)
-        sweepNext = false
-        if (sweep) sweptAt = now
-        attemptedAt = now
+        cancelRetry()
+        val sweep = schedule.attempt(SystemClock.elapsedRealtime(), foreground, watching)
         val known = listOfNotNull(
             beaconed?.let { it to "faro" }, store.getString(LAST_ADDRESS, null)?.let { it to "última" }, announced?.let { it to "NSD" },
         )
@@ -620,8 +740,8 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
         announced = null
         lastFound = null
         paired = false
-        retries = 0
-        main.removeCallbacks(retry)
+        schedule.resetRetries()
+        cancelRetry()
         phoneName = null
         phoneApp = null
         offered = null
@@ -645,14 +765,13 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
         }
         session = open
         linked(true)
-        retries = 0
+        schedule.resetRetries()
         lastError = null
         sync()
     }
 
-    private fun heard(from: Attempt, name: String, version: String, music: Boolean, car: Boolean, state: Boolean) {
+    private fun heard(from: Attempt, name: String, version: String, car: Boolean, state: Boolean) {
         if (attempt !== from) return
-        session?.music = music
         wantsCar = car
         wantsState = state
         phoneName = name
@@ -688,20 +807,19 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
         if (bye) return forget()
         sync()
         if (!active) return
-        // Con celular vinculado y sin conexión: otro intento, cada vez más espaciado (también si nunca
-        // conectó en esta red: Connect pudo no estar despierto todavía). Sin vincular, el panel marca el paso.
         val fresh = beaconFresh
         beaconFresh = false
         // Lo que se oyó antes de este intento ya se probó y no sirvió: que no se pruebe primero para siempre.
         if (!fresh && !wasConnected) beaconed = null
-        // NSD solo con red local: sin ella no hay dónde anunciarse el celular.
-        if (!wasConnected && localNetwork) discover(true)
+        // NSD solo al frente y con red local: sin ella no hay dónde anunciarse el celular.
+        if (!wasConnected && localNetwork && foreground) discover(true)
         if (fresh) {
             // El celular avisó dónde está mientras se buscaba en otro lado: ahí, de una vez.
-            connect()
+            wake()
         } else if (paired) {
-            main.postDelayed(retry, RETRY_MS.getOrElse(retries) { RETRY_MS.last() })
-            retries++
+            // Con celular vinculado y sin conexión: otro intento según [LinkSchedule] (también si nunca conectó en esta
+            // red: Connect pudo no estar despierto todavía). Sin vincular, el panel marca el paso.
+            schedule.failed(foreground)?.let(::retryIn)
         }
     }
 
@@ -768,15 +886,13 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
         private val music = MusicReader()
         /** El paquete que manda el celular: el orden se revisa y se escribe aquí, en el hilo de la conexión. */
         private val parts = PackageParts()
-        private val writer = PackageWriter()
+        // La carpeta se pide al llegar la primera parte (en este hilo): leer cacheDir toca el disco.
+        private val writer = PackageWriter { File(app.cacheDir, PACKAGE_FOLDER) }
 
         @Volatile private var sweepers: ExecutorService? = null
 
-        /** Las redes de la pantalla con su dirección: un socket hacia una de ellas se amarra a esa red. */
-        private var nets: List<Pair<String, Network>> = emptyList()
-        private val gatewayNets = HashMap<String, Network>()
-        /** Las interfaces de los datos móviles (no se tocan). */
-        private val mobileFaces = HashSet<String>()
+        /** Las redes de la pantalla al empezar el intento: un socket hacia una de ellas se amarra a esa red. */
+        private var nets = LocalNets(emptyList(), emptyMap(), emptyList())
 
         fun close() {
             runCatching { socket?.close() }
@@ -788,8 +904,10 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
         private var served = false
 
         override fun run() {
-            val local = hasLocalNetwork()
-            main.post { localNetwork = local }
+            val found = localNets()
+            nets = found
+            main.post { localNetwork = found.any }
+            lastGateways = found.gateways.keys.joinToString()
             val tried = HashSet<String>()
             fun pass(addresses: List<Pair<String, String>>) {
                 for ((address, how) in addresses) {
@@ -797,9 +915,8 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
                     if (tried.add(address)) reach(address, how)
                 }
             }
-            nets = localNetworks()
-            pass(gateways().map { it to "puerta de enlace" } + known)
-            if (sweep && !served && !cancelled) pass(neighbors().map { it to "vecinos" })
+            pass(found.gateways.keys.map { "$it:${LinkProtocol.PORT}" to "puerta de enlace" } + known)
+            if (sweep && !served && !cancelled) pass(neighbors(found.own.take(SWEEP_NETWORKS)).map { it to "vecinos" })
             main.post { closed(this, error.takeIf { !cancelled }, bye) }
         }
 
@@ -844,51 +961,15 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
          */
         private fun bind(open: Socket, host: String) {
             val prefix = host.substringBeforeLast('.')
-            val network = gatewayNets[host] ?: nets.firstOrNull { it.first.substringBeforeLast('.') == prefix }?.second ?: return
+            val network = nets.gateways[host] ?: nets.addresses.firstOrNull { it.first.substringBeforeLast('.') == prefix }?.second ?: return
             runCatching { network.bindSocket(open) }
         }
 
-        private fun localNetworks(): List<Pair<String, Network>> {
-            val manager = app.getSystemService(ConnectivityManager::class.java) ?: return emptyList()
-            @Suppress("DEPRECATION") // el reemplazo pide un NetworkCallback por red; aquí basta una foto
-            val networks = runCatching { manager.allNetworks.toList() }.getOrDefault(emptyList())
-            return networks.flatMap { network ->
-                val properties = runCatching { manager.getLinkProperties(network) }.getOrNull() ?: return@flatMap emptyList()
-                // Los datos de la SIM no son una red donde pueda estar el celular: ni su puerta de enlace ni sus vecinos.
-                if (runCatching { manager.getNetworkCapabilities(network)?.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) }.getOrNull() == true) {
-                    properties.interfaceName?.let(mobileFaces::add)
-                    return@flatMap emptyList()
-                }
-                for (route in properties.routes) {
-                    val gateway = route.gateway?.takeIf { route.isDefaultRoute && it is Inet4Address && !it.isAnyLocalAddress }?.hostAddress
-                    if (gateway != null) gatewayNets[gateway] = network
-                }
-                properties.linkAddresses.mapNotNull { (it.address as? Inet4Address)?.hostAddress?.let { own -> own to network } }
-            }
-        }
-
-        /** Las puertas de enlace (IPv4) de todas las redes: en el hotspot del celular, es el celular. */
-        private fun gateways(): List<String> {
-            lastGateways = gatewayNets.keys.joinToString()
-            return gatewayNets.keys.map { "$it:${LinkProtocol.PORT}" }
-        }
-
         /**
-         * Los vecinos que escuchan en el puerto de Link en las redes locales de la pantalla (su /24), incluida
-         * la de su propio hotspot (que no es una "red" para Android y no tiene puerta de enlace).
+         * Los vecinos que escuchan en el puerto de Link en las redes [own] de la pantalla (su /24), incluida la de su
+         * propio hotspot (que no es una "red" para Android y no tiene puerta de enlace).
          */
-        private fun neighbors(): List<String> {
-            val own = runCatching { NetworkInterface.getNetworkInterfaces()?.toList() }.getOrNull().orEmpty()
-                .filter { runCatching { it.isUp && !it.isLoopback && !it.isPointToPoint && it.name !in mobileFaces }.getOrDefault(false) }
-                // Primero el Wi‑Fi y el hotspot: muchas pantallas traen además redes internas (cámara, CarPlay).
-                .sortedBy { face -> if (WIFI_NAMES.any { face.name.startsWith(it) }) 0 else 1 }
-                .flatMap { it.inetAddresses.toList() }
-                .filterIsInstance<Inet4Address>()
-                .filter { it.isSiteLocalAddress }
-                .mapNotNull { it.hostAddress }
-                // Una sola vez por red, aunque la pantalla tenga dos direcciones en ella.
-                .distinctBy { it.substringBeforeLast('.') }
-                .take(SWEEP_NETWORKS)
+        private fun neighbors(own: List<String>): List<String> {
             lastNeighbors = own.joinToString()
             if (own.isEmpty() || cancelled) return emptyList()
             val found = Collections.synchronizedList(ArrayList<String>())
@@ -921,16 +1002,20 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
             return found.toList()
         }
 
+        /** Una línea en claro (solo en el saludo). */
+        private fun writePlain(open: Socket, message: JSONObject) {
+            open.getOutputStream().run {
+                write((message.toString() + "\n").toByteArray(Charsets.UTF_8))
+                flush()
+            }
+        }
+
         /** El saludo: cada lado prueba que tiene la llave. Regresa el canal cifrado o lanza. */
         private fun greet(open: Socket, reader: LineReader): SecureChannel {
             open.soTimeout = HELLO_MS
             val deadline = SystemClock.elapsedRealtime() + HELLO_MS
             val nc = ByteArray(LinkProtocol.NONCE_BYTES).also(random::nextBytes)
-            val hello = JSONObject().put("t", "hello").put("v", LinkProtocol.VERSION).put("id", id).put("nc", Base64.encode(nc))
-            open.getOutputStream().run {
-                write((hello.toString() + "\n").toByteArray(Charsets.UTF_8))
-                flush()
-            }
+            writePlain(open, JSONObject().put("t", "hello").put("v", LinkProtocol.VERSION).put("id", id).put("nc", Base64.encode(nc)))
             val answer = JSONObject(reader.readLine(LinkProtocol.HELLO_LINE_MAX) ?: throw IOException("el celular no conoce esta pantalla"))
             if (answer.optString("t") == "error") throw IOException("el celular contestó: ${answer.optString("code")}")
             if (answer.optString("t") != "hello" || answer.optInt("v") != LinkProtocol.VERSION) throw IOException("saludo desconocido")
@@ -938,11 +1023,7 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
             if (ns.size != LinkProtocol.NONCE_BYTES) throw IOException("saludo desconocido")
             if (!LinkProtocol.sameMac(LinkProtocol.phoneMac(key, nc, ns), Base64.decode(answer.getString("mac")))) throw IOException("la llave no coincide")
             if (SystemClock.elapsedRealtime() > deadline) throw IOException("saludo lento")
-            val auth = JSONObject().put("t", "auth").put("mac", Base64.encode(LinkProtocol.screenMac(key, nc, ns)))
-            open.getOutputStream().run {
-                write((auth.toString() + "\n").toByteArray(Charsets.UTF_8))
-                flush()
-            }
+            writePlain(open, JSONObject().put("t", "auth").put("mac", Base64.encode(LinkProtocol.screenMac(key, nc, ns))))
             return SecureChannel(LinkProtocol.screenToPhoneKey(key, nc, ns), LinkProtocol.phoneToScreenKey(key, nc, ns))
         }
 
@@ -960,14 +1041,13 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
             val step = parts.take(id, kind, if (data == null) -1 else n, message.optInt("of", -1), data?.size ?: 0)
             if (step == PackageParts.Step.IGNORE) return
             val wanted = expected?.takeIf { it.id == id && it.kind == kind }
-            val ok = step != PackageParts.Step.BAD && wanted != null && writer.part(n, data!!, wanted.bytes)
-            if (!ok) {
+            if (step == PackageParts.Step.BAD || wanted == null || data == null || !writer.part(n, data, wanted.bytes)) {
                 // Lo que siga de este paquete se ignora (un solo aviso).
                 if (step != PackageParts.Step.BAD) parts.cancel()
                 writer.drop()
                 main.post { delivered(id, kind, null) }
             } else if (step == PackageParts.Step.LAST) {
-                val done = writer.finish()
+                val done = writer.finish(wanted.bytes)
                 main.post { delivered(id, kind, done) }
             }
         }
@@ -998,18 +1078,16 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
                 lastHeard = SystemClock.elapsedRealtime()
                 when (message.optString("t")) {
                     "info" -> {
-                        val name = message.optString("name")
-                        val version = message.optString("app")
-                        val caps = message.optJSONArray("caps")
-                        val music = caps != null && (0 until caps.length()).any { caps.optString(it) == CAP_MUSIC }
-                        // Ya se puede mandar `cmd` (antes de que el hilo principal se entere).
-                        ready.music = music
-                        val car = caps != null && (0 until caps.length()).any { caps.optString(it) == CAP_CAR }
-                        val state = caps != null && (0 until caps.length()).any { caps.optString(it) == CAP_STATE }
+                        val name = message.optString("name").take(INFO_MAX)
+                        val version = message.optString("app").take(INFO_MAX)
+                        val list = message.optJSONArray("caps")
+                        val caps = if (list == null) emptySet() else (0 until list.length()).mapTo(HashSet()) { list.optString(it) }
+                        // Ya se puede mandar `cmd`, `car` y `state` (antes de que el hilo principal se entere).
+                        ready.music = CAP_MUSIC in caps
                         ready.carImage = message.optString("carImg")
-                        ready.car = car
-                        ready.state = state
-                        main.post { heard(this, name, version, music, car, state) }
+                        ready.car = CAP_CAR in caps
+                        ready.state = CAP_STATE in caps
+                        main.post { heard(this, name, version, ready.car, ready.state) }
                     }
                     "setCar" -> {
                         val edit = CarEdit.parse(message)
@@ -1045,59 +1123,6 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
         }
     }
 
-    /**
-     * Escribe en orden, en el hilo de la conexión, el paquete que manda el celular (§5f), en un archivo temporal dentro
-     * de la app; completo, se lo pasa a quien lo pidió ([finish]).
-     */
-    private inner class PackageWriter {
-        private var file: File? = null
-        private var out: OutputStream? = null
-        private var written = 0L
-
-        /** La parte [n]; falso (y no escribe) si no se pudo o si con ella pasaría de [max] bytes. */
-        fun part(n: Int, data: ByteArray, max: Long): Boolean = try {
-            if (n == 0) {
-                drop()
-                val folder = File(app.cacheDir, PACKAGE_FOLDER).apply { mkdirs() }
-                // Lo que haya quedado de una vez que se cortó la app (lo entregado ya lo borró quien lo instaló).
-                val old = System.currentTimeMillis() - STALE_MS
-                folder.listFiles()?.filter { it.lastModified() < old }?.forEach { it.delete() }
-                file = File.createTempFile("pkg-", ".zip", folder).also { out = FileOutputStream(it) }
-            }
-            val o = out
-            written += data.size
-            if (o == null || written > max) {
-                false
-            } else {
-                o.write(data)
-                true
-            }
-        } catch (_: IOException) {
-            // Sin espacio o sin poder escribir.
-            false
-        }
-
-        /** El paquete completo: el archivo pasa a quien lo pidió (ya no es de aquí). */
-        fun finish(): File? {
-            val done = runCatching { out?.close() }.isSuccess
-            out = null
-            val f = file
-            file = null
-            written = 0
-            if (!done) f?.delete()
-            return f.takeIf { done }
-        }
-
-        /** Tira lo que se estaba escribiendo. */
-        fun drop() {
-            runCatching { out?.close() }
-            out = null
-            file?.delete()
-            file = null
-            written = 0
-        }
-    }
-
     /** Un paquete del celular llegó completo ([file]) o mal (null); sin quién lo reciba, se borra. */
     private fun delivered(id: String, kind: String, file: File?) {
         val take = onPackage
@@ -1106,7 +1131,8 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
 
     /**
      * Arma la canción con los mensajes `music` y `art` (en el hilo de la conexión): la carátula se guarda
-     * por canción (`track`) y se pega a cada `music` de esa misma canción.
+     * por canción (`track`) y se pega a cada `music` de esa misma canción. Lo que llega del celular se acota
+     * (textos, velocidad, tamaño de la carátula): se pinta tal cual en la pantalla.
      */
     private class MusicReader {
         private var last: PhoneSong? = null
@@ -1116,7 +1142,7 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
 
         /** null = no suena nada (o el celular no tiene permiso). */
         fun heard(m: JSONObject): PhoneSong? {
-            val title = m.optString("title")
+            val title = m.optString("title").take(TEXT_MAX)
             if (title.isEmpty()) {
                 last = null
                 track = null
@@ -1126,14 +1152,14 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
             val hasArt = m.optBoolean("art")
             return PhoneSong(
                 title = title,
-                artist = m.optString("artist"),
-                app = m.optString("app"),
+                artist = m.optString("artist").take(TEXT_MAX),
+                app = m.optString("app").take(INFO_MAX),
                 playing = m.optBoolean("playing"),
                 buffering = m.optBoolean("buffering"),
                 durationMs = m.optLong("duration").coerceAtLeast(0),
                 positionMs = m.optLong("position").coerceAtLeast(0),
                 readAt = SystemClock.elapsedRealtime(),
-                speed = m.optDouble("speed", 1.0).toFloat().takeIf { it > 0 } ?: 1f,
+                speed = m.optDouble("speed", 1.0).toFloat().takeIf { it > 0 }?.coerceAtMost(SPEED_MAX) ?: 1f,
                 seekable = m.optBoolean("seek"),
                 hasArt = hasArt,
                 art = art.takeIf { hasArt && artTrack == track },
@@ -1146,14 +1172,20 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
          */
         fun art(m: JSONObject): PhoneSong? {
             val bytes = runCatching { Base64.decode(m.optString("jpg")) }.getOrNull()
-            val decoded = bytes?.takeIf { it.isNotEmpty() }?.let { BitmapFactory.decodeByteArray(it, 0, it.size) }
+            val decoded = bytes?.takeIf { it.isNotEmpty() }?.let(::decodeArt)
             artTrack = m.optString("track")
             art = decoded
             val current = last?.takeIf { artTrack == track && it.hasArt } ?: return null
-            return PhoneSong(
-                current.title, current.artist, current.app, current.playing, current.buffering, current.durationMs,
-                current.positionMs, current.readAt, current.speed, current.seekable, hasArt = decoded != null, decoded,
-            ).also { last = it }
+            return current.copy(hasArt = decoded != null, art = decoded).also { last = it }
+        }
+
+        /** Primero mide la imagen y la decodifica reducida ([artSampleSize]): una enorme no tumba la pantalla. */
+        private fun decodeArt(bytes: ByteArray): Bitmap? {
+            val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+            BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)
+            if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return null
+            val options = BitmapFactory.Options().apply { inSampleSize = artSampleSize(bounds.outWidth, bounds.outHeight) }
+            return BitmapFactory.decodeByteArray(bytes, 0, bytes.size, options)
         }
     }
 
@@ -1175,23 +1207,23 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
         val REPORT_ID = Regex("[0-9a-f]{32}")
         /** El diagnóstico que se le pasa al celular para su reporte. */
         const val REPORT_MAX = 15_000
-        /** Carpeta (en la caché de la app) de los paquetes que llegan del celular, y cuándo uno quedó abandonado. */
+        /** Topes de lo que manda el celular y se pinta o se guarda: nombres cortos (modelo, app) y textos de canción. */
+        const val INFO_MAX = 64
+        const val TEXT_MAX = 200
+        const val SPEED_MAX = 4f
+        /** Carpeta (en la caché de la app) de los paquetes que llegan del celular. */
         const val PACKAGE_FOLDER = "link-packages"
-        const val STALE_MS = 60 * 60_000L
 
         /** Lo que vive la llave de un QR sin vincular. */
         const val OFFER_MS = 5 * 60_000L
         const val WATCH_RETRY_MS = 2_000L
-        val RETRY_MS = longArrayOf(5_000, 10_000, 20_000, 40_000, 60_000)
         const val CONNECT_MS = 1_500
 
         /** Un aviso del faro mide 50 bytes; lo que no quepa aquí no es uno. Se atiende a lo más uno por segundo. */
         const val BEACON_MAX = 64
         const val BEACON_EVERY_MS = 1_000L
         val WIFI_NAMES = listOf("wlan", "ap", "swlan", "softap")
-        /** Tocar a los vecinos: a lo más cada tanto, pocas redes, muchos a la vez y con poca espera. */
-        const val SWEEP_WATCHING_MS = 10_000L
-        const val LINK_CHANGE_MS = 5_000L
+        /** Tocar a los vecinos: pocas redes, muchos a la vez y con poca espera. */
         const val SWEEP_NETWORKS = 2
         const val SWEEP_THREADS = 32
         const val SWEEP_CONNECT_MS = 400
@@ -1199,5 +1231,82 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
         const val HELLO_MS = 5_000
         const val PING_MS = 20_000L
         const val SILENCE_MS = 45_000L
+    }
+}
+
+/** La carátula más grande que se guarda (lado mayor, en píxeles); Connect manda ≤ 320 (§5b). */
+internal const val ART_MAX_PX = 512
+
+/** Cuánto reducir al decodificar una carátula de [width]×[height] (potencia de 2) para que quepa en [ART_MAX_PX]. */
+internal fun artSampleSize(width: Int, height: Int): Int {
+    var sample = 1
+    while (maxOf(width, height) / sample > ART_MAX_PX) sample *= 2
+    return sample
+}
+
+/**
+ * Escribe en orden, en el hilo de la conexión, el paquete que manda el celular (§5f), en un archivo temporal dentro
+ * de la app ([folder]); completo, se lo pasa a quien lo pidió ([finish]).
+ */
+internal class PackageWriter(private val folder: () -> File) {
+    private var file: File? = null
+    private var out: OutputStream? = null
+    private var written = 0L
+
+    /** La parte [n]; falso (y no escribe) si no se pudo o si con ella pasaría de [max] bytes. */
+    fun part(n: Int, data: ByteArray, max: Long): Boolean = try {
+        if (n == 0) {
+            drop()
+            val folder = folder().apply { mkdirs() }
+            // Lo que haya quedado de una vez que se cortó la app (lo entregado ya lo borró quien lo instaló).
+            val old = System.currentTimeMillis() - STALE_MS
+            folder.listFiles()?.filter { it.lastModified() < old }?.forEach { it.delete() }
+            file = File.createTempFile("pkg-", ".zip", folder).also { out = FileOutputStream(it) }
+        }
+        val o = out
+        written += data.size
+        if (o == null || written > max) {
+            false
+        } else {
+            o.write(data)
+            true
+        }
+    } catch (_: IOException) {
+        // Sin espacio o sin poder escribir.
+        false
+    }
+
+    /**
+     * El paquete completo: el archivo pasa a quien lo pidió (ya no es de aquí). Null (y se borra) si no se pudo
+     * cerrar o no mide los [bytes] que se pidieron: llegó incompleto.
+     */
+    fun finish(bytes: Long): File? {
+        val closed = try {
+            out?.close()
+            true
+        } catch (_: IOException) {
+            false
+        }
+        val complete = closed && written == bytes
+        out = null
+        val f = file
+        file = null
+        written = 0
+        if (!complete) f?.delete()
+        return f.takeIf { complete }
+    }
+
+    /** Tira lo que se estaba escribiendo. */
+    fun drop() {
+        runCatching { out?.close() }
+        out = null
+        file?.delete()
+        file = null
+        written = 0
+    }
+
+    private companion object {
+        /** Cuándo un paquete a medias quedó abandonado (la app se cortó mientras llegaba). */
+        const val STALE_MS = 60 * 60_000L
     }
 }

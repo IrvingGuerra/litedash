@@ -17,9 +17,10 @@ enum class Wheel(val key: String) {
 }
 
 /**
- * Lo último que dijo un sensor. [pressureKpa] es manométrica (0 = ponchada), ya con el
- * ajuste de calibración del usuario cuando sale del repositorio. [reportedWheel] = la
- * llanta que dice el propio sensor o receptor (null si no lo sabe).
+ * Lo último que dijo un sensor. [pressureKpa] es manométrica (0 = ponchada): tal como llega
+ * dentro del repositorio, y con el ajuste de calibración de su llanta en lo que el repositorio
+ * entrega (`wheelReading`, `nearby`). [reportedWheel] = la llanta que dice el propio sensor o
+ * receptor (null si no lo sabe). [batteryVolts] solo va al reporte (la pila baja ya viene en [lowBattery]).
  */
 data class TireReading(
     val sensorId: String,

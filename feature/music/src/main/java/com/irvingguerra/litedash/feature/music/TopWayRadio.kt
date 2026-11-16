@@ -28,8 +28,6 @@ internal class TopWayRadio(onState: (BroadcastMeta) -> Unit, private val trace: 
     private var band = 0
     /** "FM 91.1"; null si no ha dicho. */
     override val station get() = stationText(band == BAND_AM, frequency)
-    // audioAt: cuándo dijo el sintonizador que tiene el audio (769 = 1), para confirmar un play. La
-    // "actividad" no sirve: el enlace reparte lo que se escribe, así que llegaría la nuestra.
     /** El número de la radio en "actividad" y fuente: 1 en las TS18 (ivvlev/CarRadio); se aprende de lo que manda. */
     private var source = SOURCE_RADIO
     private val seen = HashSet<Int>()

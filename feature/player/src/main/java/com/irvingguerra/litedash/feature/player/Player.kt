@@ -1,7 +1,6 @@
 package com.irvingguerra.litedash.feature.player
 
 import android.annotation.SuppressLint
-import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -40,7 +39,7 @@ sealed interface Playable {
 enum class PlayerSource { USB, RADIO }
 
 /** Lo que el reproductor está haciendo, como estado de Compose (lo lee la biblioteca). */
-class PlayerState(
+data class PlayerState(
     val source: PlayerSource?,
     val queue: List<Playable>,
     val index: Int,
@@ -81,8 +80,10 @@ object Player {
 
     private lateinit var app: Context
     private val main = Handler(Looper.getMainLooper())
-    // Leer carátulas y abrir archivos fuera del hilo principal, de uno en uno.
+    // Abrir el audio fuera del hilo principal, de uno en uno.
     private val io = Executors.newSingleThreadExecutor { Thread(it, "player-io") }
+    // Las etiquetas y la carátula en su propio hilo: el logo de una estación (red, segundos) no retrasa el audio de la siguiente.
+    private val art = Executors.newSingleThreadExecutor { Thread(it, "player-art") }
     private var player: MediaPlayer? = null
     /** Radio AAC en vivo (lo que MediaPlayer no sabe arrancar); null si suena por [player]. */
     private var aac: AacStream? = null
@@ -135,7 +136,7 @@ object Player {
      */
     private fun noFocus() {
         Log.w("LiteDash", "Player: sin foco de audio")
-        state = PlayerState(state.source, state.queue, state.index, playing = false, buffering = false, error = app.getString(R.string.player_no_focus))
+        state = state.copy(playing = false, buffering = false, error = app.getString(R.string.player_no_focus))
         publishState()
         PlaybackService.update(app)
     }
@@ -169,7 +170,9 @@ object Player {
         val s = state
         if (s.queue.isEmpty()) return
         val i = (s.index + by).mod(s.queue.size)
-        state = PlayerState(s.source, s.queue, i, playing = false, buffering = true, error = null)
+        // Pasar de canción en pausa también la pone a sonar: como play, calla la radio de fábrica.
+        if (!s.playing) s.source?.let { onPlay?.invoke(it) }
+        state = s.copy(index = i, playing = false, buffering = true, error = null)
         PlayerStore(app).rememberLast(s.source!!, s.queue[i].key)
         start(s.queue[i])
     }
@@ -208,8 +211,8 @@ object Player {
         // Si en un rato no suena, se avisa (la radio puede no contestar nunca).
         main.postDelayed({ if (myLoad == load && state.buffering) fail(app.getString(R.string.player_timeout)) }, LOAD_TIMEOUT_MS)
         if (item is Station && item.isAac) startAac(item, myLoad) else startMediaPlayer(item, myLoad)
-        // La carátula después: en el mismo hilo va la carga del audio, que no espera a un logo lento.
-        io.execute {
+        // La carátula aparte (ver [art]): la carga del audio no espera a un logo lento.
+        art.execute {
             if (myLoad != load) return@execute
             // Las canciones de una carpeta o USB solo traen el nombre del archivo: título, artista y álbum de sus etiquetas.
             val tags = (item as? Track)?.let(::tagsOf)
@@ -221,7 +224,7 @@ object Player {
     /** Radio AAC en vivo con el decodificador propio; si el flujo no es AAC, MediaPlayer. */
     private fun startAac(item: Station, myLoad: Int) {
         if (!requestFocus()) return noFocus()
-        aac = AacStream(app, item.uri.toString(), object : AacStream.Listener {
+        aac = AacStream(app, item.url, object : AacStream.Listener {
             override fun onStarted() { main.post { if (myLoad == load) update(playing = true, buffering = false) } }
             override fun onNotAac() { main.post { if (myLoad == load) { aac = null; startMediaPlayer(item, myLoad) } } }
             override fun onError(message: String) { main.post { if (myLoad == load) { Log.w("LiteDash", "Radio AAC: $message"); fail(app.getString(R.string.player_cannot_play)) } } }
@@ -274,13 +277,13 @@ object Player {
     private fun fail(message: String) {
         load++
         releaseAudio()
-        state = PlayerState(state.source, state.queue, state.index, playing = false, buffering = false, error = message)
+        state = state.copy(playing = false, buffering = false, error = message)
         publishState()
         PlaybackService.update(app)
     }
 
     private fun update(playing: Boolean = state.playing, buffering: Boolean = state.buffering) {
-        state = PlayerState(state.source, state.queue, state.index, playing, buffering, null)
+        state = state.copy(playing = playing, buffering = buffering, error = null)
         publishState()
         PlaybackService.update(app)
     }
@@ -290,6 +293,12 @@ object Player {
     private fun ensureSession() {
         if (session != null) return
         session = MediaSession(app, "LiteDash").apply {
+            // Android 6–7.1 solo manda las teclas de medios (volante, botones) a las sesiones que lo piden; desde la 8
+            // todas las reciben y la bandera ya no existe.
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
+                @Suppress("DEPRECATION")
+                setFlags(MediaSession.FLAG_HANDLES_MEDIA_BUTTONS or MediaSession.FLAG_HANDLES_TRANSPORT_CONTROLS)
+            }
             setCallback(object : MediaSession.Callback() {
                 override fun onPlay() = resume()
                 override fun onPause() = pause()
@@ -298,8 +307,7 @@ object Player {
                 override fun onSeekTo(pos: Long) = seekTo(pos)
                 override fun onStop() = stop()
             })
-            val open = app.packageManager.getLaunchIntentForPackage(app.packageName)
-            if (open != null) setSessionActivity(PendingIntent.getActivity(app, 0, open, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE))
+            openLiteDash(app)?.let(::setSessionActivity)
             isActive = true
         }
         onSession?.invoke()
@@ -373,7 +381,7 @@ object Player {
         }
     }.getOrNull()?.takeIf { it.title != null || it.artist != null }
 
-    /** Carátula del archivo (etiqueta incrustada) o el logo de la estación, reducida a [ART_SIDE]. */
+    /** Carátula del archivo (etiqueta incrustada) o el logo de la estación, reducida a [ART_SIDE]. Solo en [art]. */
     private fun artworkOf(item: Playable): Bitmap? = runCatching {
         if (item.key in noArt) return null
         val bytes = when (item) {
@@ -443,14 +451,17 @@ object Player {
         else @Suppress("DEPRECATION") audio.abandonAudioFocus(focusListener)
     }
 
-    // --- Si sacan la memoria USB mientras suena, se para (sin ella no hay archivos). ---
+    // --- Si sacan la memoria de la canción mientras suena, se para (sin ella no hay archivo). ---
 
     private fun watchUsb() {
         if (usbWatcher != null) return
         val receiver = object : BroadcastReceiver() {
             override fun onReceive(c: Context, i: Intent) {
                 Drives.changed()
-                if (i.action != Intent.ACTION_MEDIA_MOUNTED && state.current is Track) stop()
+                if (i.action == Intent.ACTION_MEDIA_MOUNTED) return
+                // Otra memoria o la SD que no es la de la canción: sigue sonando.
+                val track = state.current as? Track ?: return
+                if (track.onVolume(i.data?.path)) stop()
             }
         }
         ContextCompat.registerReceiver(app, receiver, Drives.mediaFilter(), ContextCompat.RECEIVER_EXPORTED)

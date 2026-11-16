@@ -38,4 +38,43 @@ class FactoryTiresTest {
     }
 
     @Test fun vin_primero() = assertEquals("Mitsubishi", ordered("JA32W8FV0AU000123").first().id)
+
+    @Test fun sin_vin_el_orden_de_siempre() = assertEquals(TireProfiles, ordered(null))
+
+    @Test fun nissan_las_dos() {
+        // 62 0E 26 8C → 140/4 = 35 psi; 62 02 01 80 → 128/4 = 32 psi.
+        val new = profile("Nissan / Mitsubishi").decode(List(4) { bytes("220E26", "620E268C") })
+        assertEquals(35f * 6.89476f, new.kpa[0]!!, 0.1f)
+        val old = profile("Nissan").decode(List(4) { bytes("220201", "62020180") })
+        assertEquals(32f * 6.89476f, old.kpa[3]!!, 0.1f)
+    }
+
+    @Test fun hyundai_kia_los_dos_acomodos() {
+        val p = profile("Hyundai / Kia")
+        // Paso 4 (Kona ≤2023): 18 bytes, presión en d[4], d[8]…; 175/5 = 35 psi y 75 − 50 = 25 °C.
+        val four = IntArray(18).also { d -> for (i in 0 until 4) { d[4 + i * 4] = 175; d[5 + i * 4] = 75 } }
+        val v4 = p.decode(listOf(four))
+        assertEquals(35f * 6.89476f, v4.kpa[3]!!, 0.1f)
+        assertEquals(25f, v4.tempC[3])
+        // Paso 5 (2024+): 21 bytes, presión en d[4], d[9]…
+        val five = IntArray(21).also { d -> for (i in 0 until 4) { d[4 + i * 5] = 170; d[5 + i * 5] = 70 } }
+        val v5 = p.decode(listOf(five))
+        assertEquals(34f * 6.89476f, v5.kpa[3]!!, 0.1f)
+        assertEquals(20f, v5.tempC[3])
+    }
+
+    @Test fun mazda_presion_y_temperatura() {
+        // Ocho peticiones: las cuatro presiones (150/5 = 30 psi) y luego las cuatro temperaturas (80 − 50).
+        val replies = List(4) { bytes("22D922", "62D92296") } + List(4) { bytes("22D926", "62D92650") }
+        val v = profile("Mazda").decode(replies)
+        assertEquals(30f * 6.89476f, v.kpa[0]!!, 0.1f)
+        assertEquals(30f, v.tempC[3])
+    }
+
+    @Test fun subaru_en_su_orden() {
+        // Vienen trasera izq., trasera der., delantera der., delantera izq.: d = [RL, RR, FR, FL].
+        val d = bytes("221022", "621022A0A5AAAF")
+        val v = profile("Subaru").decode(listOf(d))
+        assertEquals(listOf(0xAF, 0xAA, 0xA0, 0xA5).map { it / 5f * 6.894757f }, v.kpa)
+    }
 }

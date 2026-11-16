@@ -115,8 +115,8 @@ internal class PaintShader(color: FloatArray, gray: Float, private val finish: P
             val tb: Int
             if (layered) {
                 // Las capas son gris: cualquier canal sirve.
-                val s = shine!![i] and 0xFF
-                val h = mirror!![i] and 0xFF
+                val s = shine[i] and 0xFF
+                val h = mirror[i] and 0xFF
                 tr = (scaled[0][(r - s).coerceAtLeast(0)] + lift[0][h]).coerceIn(0, 255)
                 tg = (scaled[1][(g - s).coerceAtLeast(0)] + lift[1][h]).coerceIn(0, 255)
                 tb = (scaled[2][(b - s).coerceAtLeast(0)] + lift[2][h]).coerceIn(0, 255)

@@ -38,6 +38,9 @@ import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -84,7 +87,7 @@ data class Colors(
  * Un color que no se vería se ajusta: en oscuro, uno casi negro se aclara; en claro, uno claro se
  * oscurece. Lo de encima ([Colors.onPrimary]) es tinta o blanco, el que más contraste.
  */
-fun Colors.withAccent(chosen: Color?): Colors {
+internal fun Colors.withAccent(chosen: Color?): Colors {
     if (chosen == null) return this
     var color: Color = chosen
     if (dark) while (color.luminance() < 0.12f) color = lerp(color, Color.White, 0.1f)
@@ -134,13 +137,13 @@ val LightColors = Colors(
 
 val LocalColors = staticCompositionLocalOf { DarkColors }
 
-/** Esquinas: moderadas (Irving pidió menos redondeado que la propuesta). */
 /**
  * El margen de adentro de las tarjetas del inicio (los widgets): poco, para que lo de adentro
  * luzca y se lea de lejos. Todas lo usan igual, con fondo o sin él.
  */
 val TilePadding = 10.dp
 
+/** Esquinas: moderadas (Irving pidió menos redondeado que la propuesta). */
 object Radius {
     /** Tarjetas del tablero y de Ajustes. */
     val card = 14.dp
@@ -204,7 +207,7 @@ fun Card(
     Box(m, content = content)
 }
 
-/** Botón redondo con ícono, objetivo táctil de 56 dp como pide el plan. */
+/** Botón redondo con ícono, objetivo táctil de 56 dp como pide el plan; [label] = lo que dice el lector de pantalla. */
 @Composable
 fun IconButton(
     icon: ImageVector,
@@ -213,9 +216,11 @@ fun IconButton(
     size: Dp = 56.dp,
     background: Color = Color.Transparent,
     color: Color = LocalColors.current.text,
+    label: String? = null,
 ) {
     Box(
-        modifier.size(size).clip(CircleShape).background(background).clickable(onClick = onClick),
+        modifier.size(size).clip(CircleShape).background(background).clickable(role = Role.Button, onClick = onClick)
+            .then(if (label != null) Modifier.semantics { contentDescription = label } else Modifier),
         contentAlignment = Alignment.Center,
     ) { Icon(icon, color, size * 0.45f) }
 }

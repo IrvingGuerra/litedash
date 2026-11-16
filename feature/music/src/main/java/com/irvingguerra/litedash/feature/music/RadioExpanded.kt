@@ -54,9 +54,10 @@ fun RadioExpanded(
             if (!internet && repo.sourceApps[SourceKind.RADIO] != null) HeaderButton(Icons.openExternal) { repo.openRadioApp() }
         }
         Spacer(Modifier.height(12.dp))
-        repo.soundCheckFor(SoundPiece.RADIO)?.let { SoundCheckPrompt(repo, it, Modifier.fillMaxWidth().padding(bottom = 12.dp)) }
-        if (browser != null && canBrowse && browsing) {
-            browser { browsing = false }
+        val check = repo.soundCheckFor(SoundPiece.RADIO)
+        check?.let { SoundCheckPrompt(repo, it, Modifier.fillMaxWidth().padding(bottom = 12.dp)) }
+        browser?.takeIf { canBrowse && browsing }?.let { list ->
+            list { browsing = false }
             return@ExpandedCard
         }
         if (song == null && target == null) {
@@ -69,16 +70,16 @@ fun RadioExpanded(
             song, Icons.radio,
             detailsHeight = 212.dp,
             title = { m, compact -> ExpandedTitle(repo, song, repo.radio.starting, stringResource(R.string.radio), radioHint(repo), m, compact) },
+            // Deslizar sobre la carátula: estación siguiente o anterior, como en el widget.
+            onNext = { repo.radio.next() }.takeIf { song != null && check == null },
+            onPrevious = { repo.radio.previous() },
         ) { fit ->
             val compact = fit != ControlsFit.FULL
             val wide = LocalWide.current
             Spacer(Modifier.height(if (compact) 8.dp else if (wide) 28.dp else 16.dp))
             Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                when {
-                    compact -> RadioControls(repo, song, onIdle, size = 52.dp, playSize = 60.dp, gap = 8.dp)
-                    wide -> RadioControls(repo, song, onIdle, size = 72.dp, playSize = 88.dp, gap = 36.dp)
-                    else -> RadioControls(repo, song, onIdle, size = 64.dp, playSize = 76.dp, gap = 12.dp)
-                }
+                val m = fit.sizes(wide)
+                RadioControls(repo, song, onIdle, size = m.size, playSize = m.play, gap = m.gap)
             }
         }
     }

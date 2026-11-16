@@ -14,10 +14,14 @@ import android.util.LruCache
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import java.text.Collator
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -44,17 +48,22 @@ class AppRepository(context: Context) {
     var apps by mutableStateOf<List<App>?>(null)
         private set
 
-    // Instalar, quitar o actualizar una app: se olvidan sus íconos y se recarga la lista.
+    // Instalar, quitar o actualizar una app: se olvidan sus íconos y se recarga la lista. Al actualizar Android manda
+    // quitada + agregada (con EXTRA_REPLACING) + reemplazada: basta con la última.
     private val packages = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
+            val replacing = intent.getBooleanExtra(Intent.EXTRA_REPLACING, false)
+            if (replacing && intent.action != Intent.ACTION_PACKAGE_REPLACED) return
             intent.data?.schemeSpecificPart?.let(::forgetIcons)
             refresh()
         }
     }
-    // Íconos ya convertidos a bitmap del tamaño que se pinta; caché por memoria (~4 MB).
-    private val icons = object : LruCache<String, Bitmap>(4 * 1024 * 1024) {
+    // Íconos ya convertidos a bitmap del tamaño que se pinta; caché por memoria (1/32 de la memoria de la app, 2–8 MB).
+    private val icons = object : LruCache<String, Bitmap>((Runtime.getRuntime().maxMemory() / 32).coerceIn(ICONS_MIN, ICONS_MAX).toInt()) {
         override fun sizeOf(key: String, value: Bitmap) = value.byteCount
     }
+    /** Íconos que se están leyendo: dos pedidos del mismo (dock y cajón a la vez) esperan la misma lectura. */
+    private val loading = HashMap<String, Deferred<Bitmap?>>()
 
     /**
      * Empieza a escuchar cambios de apps (una llamada por cada pantalla que las muestra, mientras
@@ -93,22 +102,42 @@ class AppRepository(context: Context) {
         icons.snapshot().keys.filter { it.startsWith("$pkg/") }.forEach { icons.remove(it) }
     }
 
+    /** LiteDash se fue a segundo plano: los íconos se vuelven a leer al regresar. */
+    fun trimMemory() {
+        icons.evictAll()
+    }
+
     private suspend fun load(): List<App> = withContext(Dispatchers.IO) {
         val intent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
         pm.queryIntentActivities(intent, 0)
             .filter { it.activityInfo.packageName != ownPackage }
             .map { App(it.loadLabel(pm).toString(), it.activityInfo.packageName, it.activityInfo.name) }
-            .sortedBy { it.name.lowercase() }
+            // Por idioma: "Ángel" junto a la A, no después de la Z.
+            .sortedWith(compareBy(Collator.getInstance()) { it.name })
     }
 
+    private fun iconKey(app: App, sidePx: Int) = "${app.key}@$sidePx"
+
+    /** El ícono si ya está en memoria (sin esperar ni leer nada). */
+    fun cachedIcon(app: App, sidePx: Int): Bitmap? = icons.get(iconKey(app, sidePx))
+
+    /** El ícono de [app] a [sidePx]; lo lee fuera del hilo principal si no está en memoria. Null = la app no tiene. */
     suspend fun icon(app: App, sidePx: Int): Bitmap? {
-        val key = "${app.pkg}/${app.activity}@$sidePx"
+        val key = iconKey(app, sidePx)
         icons.get(key)?.let { return it }
-        return withContext(Dispatchers.IO) {
-            runCatching { pm.getActivityIcon(app.component) }.getOrNull()
-                ?.toBitmap(sidePx)
-                ?.also { icons.put(key, it) }
+        val read = synchronized(loading) {
+            loading.getOrPut(key) {
+                scope.async(Dispatchers.IO, CoroutineStart.LAZY) {
+                    try {
+                        // Una app que se quitó en ese momento ya no tiene ícono.
+                        runCatching { pm.getActivityIcon(app.component) }.getOrNull()?.toBitmap(sidePx)?.also { icons.put(key, it) }
+                    } finally {
+                        synchronized(loading) { loading.remove(key) }
+                    }
+                }
+            }
         }
+        return read.await()
     }
 
     /** Busca una app por su [App.key] en la lista ya cargada. */
@@ -128,6 +157,11 @@ class AppRepository(context: Context) {
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED)
         if (opener?.invoke(context, intent, app.pkg) == true) return
         runCatching { context.startActivity(intent) }
+    }
+
+    private companion object {
+        const val ICONS_MIN = 2L * 1024 * 1024
+        const val ICONS_MAX = 8L * 1024 * 1024
     }
 }
 

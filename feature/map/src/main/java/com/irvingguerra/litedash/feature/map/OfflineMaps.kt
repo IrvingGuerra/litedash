@@ -6,20 +6,16 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import java.io.File
+import java.io.IOException
 import java.util.Locale
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.AtomicReference
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.math.PI
-import kotlin.math.asin
-import kotlin.math.atan
 import kotlin.math.ceil
 import kotlin.math.cos
 import kotlin.math.floor
-import kotlin.math.sin
-import kotlin.math.sinh
-import kotlin.math.sqrt
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -38,7 +34,11 @@ import org.json.JSONObject
 
 /** Una zona descargada: un círculo de [km] alrededor de ([lat], [lon]) con sus [tiles] teselas ([bytes] en disco). */
 class OfflineArea(val id: String, val lat: Double, val lon: Double, val km: Int, val tiles: Int, val bytes: Long, val savedAt: Long) {
-    fun contains(lat: Double, lon: Double) = distanceKm(this.lat, this.lon, lat, lon) <= km
+    /**
+     * ¿([lat], [lon]) tiene bajada su tesela? La zona trae las teselas cuyo CENTRO cae a [km] o menos: en la orilla, la
+     * tesela de debajo puede no estar. Se cuenta adentro solo a media diagonal de tesela de la orilla.
+     */
+    fun contains(lat: Double, lon: Double) = distanceKm(this.lat, this.lon, lat, lon) <= km - areaTileKm(this.lat) * HALF_DIAGONAL
 }
 
 /**
@@ -86,7 +86,12 @@ class OfflineMaps private constructor(private val app: Context) {
     fun covers(lat: Double, lon: Double): Boolean = areas.any { it.contains(lat, lon) }
 
     /** La tesela tal como se bajó (vacía = ahí no hay nada que dibujar); null = no está en ninguna zona. */
-    fun tile(z: Int, x: Int, y: Int): ByteArray? = File(dir, "${z}_${x}_${y}").takeIf { it.isFile }?.let { runCatching { it.readBytes() }.getOrNull() }
+    fun tile(z: Int, x: Int, y: Int): ByteArray? = try {
+        File(dir, "${z}_${x}_${y}").readBytes()
+    } catch (_: IOException) {
+        // No está (o se borró con su zona en ese momento).
+        null
+    }
 
     /** Baja la zona de [km] alrededor de ([lat], [lon]); sigue aunque se cierre el panel. Lo ya bajado se salta. */
     fun download(lat: Double, lon: Double, km: Int, source: VectorTiles, userAgent: String) = synchronized(lock) {
@@ -126,13 +131,8 @@ class OfflineMaps private constructor(private val app: Context) {
             val area = synchronized(lock) { areas.firstOrNull { it.id == id } } ?: return@launch
             // Fuera del candado: una zona grande son decenas de miles (el botón de descargar lo espera).
             val mine = areaTiles(area.lat, area.lon, area.km)
-            val candidates = synchronized(lock) {
-                val rest = areas.filter { it.id != id }
-                writeAreas(rest)
-                replaceAreas(rest)
-                mine - areaKeys
-            }
-            removeTiles(candidates)
+            val kept = changeAreas { list -> list.filter { it.id != id } } ?: return@launch
+            removeTiles(mine.filter { it !in kept })
         }
     }
 
@@ -149,16 +149,14 @@ class OfflineMaps private constructor(private val app: Context) {
         }
 
         /** Termina (con [error] o guardando la zona [area]) y suelta sus teselas. */
-        fun finish(error: OfflineError?, area: OfflineArea?) = synchronized(lock) {
-            if (!current) return@synchronized
-            if (area != null) {
-                val list = areas.filter { it.id != area.id } + area
-                writeAreas(list)
-                replaceAreas(list)
+        fun finish(error: OfflineError?, area: OfflineArea?) {
+            if (area != null && changeAreas(allowed = { current }) { list -> list.filter { it.id != area.id } + area } == null) return
+            synchronized(lock) {
+                if (!current) return
+                job = if (error != null) OfflineJob(done.get(), total, bytes.get(), error) else null
+                running = null
+                runningKeys = emptySet()
             }
-            job = if (error != null) OfflineJob(done.get(), total, bytes.get(), error) else null
-            running = null
-            runningKeys = emptySet()
         }
     }
 
@@ -205,7 +203,7 @@ class OfflineMaps private constructor(private val app: Context) {
         while (true) {
             currentCoroutineContext().ensureActive()
             val url = source.url(key)
-            val result: Any = if (url == null) Reply.RETRY else runCatching {
+            val result: Any = if (url == null) Reply.RETRY else try {
                 httpGet(app, url, userAgent, setup = { it.setRequestProperty("Accept-Encoding", "gzip") }) { c, code ->
                     when (tileResponse(code)) {
                         // Un portal cautivo contesta 200 con su página: no sirve.
@@ -216,7 +214,10 @@ class OfflineMaps private constructor(private val app: Context) {
                         else -> Reply.RETRY
                     }
                 }
-            }.getOrDefault(Reply.RETRY)
+            } catch (_: IOException) {
+                // Sin red o se cortó: otra vez al rato.
+                Reply.RETRY
+            }
             when (result) {
                 is ByteArray -> {
                     saveTile(run, key, result)
@@ -275,10 +276,26 @@ class OfflineMaps private constructor(private val app: Context) {
         removeTiles(strayTiles(names.asList(), keep))
     }
 
-    /** Cambia la lista y sus teselas juntas (con [lock]). */
-    private fun replaceAreas(list: List<OfflineArea>) {
-        areas = list
-        areaKeys = tilesOf(list)
+    /**
+     * Cambia la lista con [change], la guarda y pone sus teselas, todo junto. La cuenta de las teselas (de una zona de
+     * 200 km son decenas de miles) va fuera del candado, que también toma la interfaz; si mientras tanto otra la cambió,
+     * se cuenta de nuevo. Devuelve las teselas de la lista nueva; null si [allowed] ya no lo deja (descarga cancelada).
+     */
+    private fun changeAreas(allowed: () -> Boolean = { true }, change: (List<OfflineArea>) -> List<OfflineArea>): Set<Long>? {
+        while (true) {
+            val before = synchronized(lock) { areas }
+            val after = change(before)
+            val keys = tilesOf(after)
+            synchronized(lock) {
+                if (!allowed()) return null
+                if (areas === before) {
+                    writeAreas(after)
+                    areas = after
+                    areaKeys = keys
+                    return keys
+                }
+            }
+        }
     }
 
     private fun readAreas() {
@@ -289,7 +306,11 @@ class OfflineMaps private constructor(private val app: Context) {
                 OfflineArea(o.getString("id"), o.getDouble("lat"), o.getDouble("lon"), o.getInt("km"), o.getInt("tiles"), o.getLong("bytes"), o.getLong("savedAt"))
             }
         }.getOrNull() ?: return
-        synchronized(lock) { replaceAreas(list) }
+        val keys = tilesOf(list)
+        synchronized(lock) {
+            areas = list
+            areaKeys = keys
+        }
     }
 
     private fun writeAreas(list: List<OfflineArea>) {
@@ -319,7 +340,6 @@ class OfflineMaps private constructor(private val app: Context) {
 
         private const val FOLDER = "map_offline"
         private const val AREAS = "areas.json"
-        private const val MAX_DOWNLOADS = 2
         private const val MAX_ATTEMPTS = 5
         private const val RETRY_MS = 5_000L
         private const val SLOW_DOWN_MS = 60_000L
@@ -337,9 +357,14 @@ class OfflineMaps private constructor(private val app: Context) {
     }
 }
 
-/** El zoom de los datos (las del 15–17 salen de él) y los dos más lejanos del mapa inclinado. */
-private const val AREA_ZOOM = 14
-private const val EARTH_KM = 6371.0
+/** Las zonas se bajan en el zoom de los datos (y los dos más lejanos del mapa inclinado). */
+private const val AREA_ZOOM = DATA_ZOOM
+
+/** Media diagonal de una tesela, en veces su lado. */
+private const val HALF_DIAGONAL = 0.7072
+
+/** Ancho de una tesela de las zonas en km a la latitud [lat] (en Mercator es igual de alta que de ancha). */
+private fun areaTileKm(lat: Double) = 2 * PI * EARTH_RADIUS_KM * cos(Math.toRadians(lat)) / (1 shl AREA_ZOOM)
 
 /**
  * Las teselas de una zona: las del 14 cuyo centro cae a [km] o menos de ([lat], [lon]) (más la de en
@@ -349,9 +374,7 @@ internal fun areaTiles(lat: Double, lon: Double, km: Int): List<Long> {
     val n = 1 shl AREA_ZOOM
     val cx = tileX(lon, AREA_ZOOM)
     val cy = tileY(lat, AREA_ZOOM)
-    // Ancho de una tesela en km a esta latitud (en Mercator es igual de alta que de ancha).
-    val tileKm = 2 * PI * EARTH_KM * cos(Math.toRadians(lat)) / n
-    val r = km / tileKm + 1
+    val r = km / areaTileKm(lat) + 1
     val near = ArrayList<Pair<Long, Double>>()
     for (x in floor(cx - r).toInt().coerceAtLeast(0)..ceil(cx + r).toInt().coerceAtMost(n - 1)) {
         for (y in floor(cy - r).toInt().coerceAtLeast(0)..ceil(cy + r).toInt().coerceAtMost(n - 1)) {
@@ -382,15 +405,3 @@ internal fun strayTiles(names: List<String>, keep: Set<Long>): List<Long> = name
 
 /** Misma zona = mismo centro (a ~100 m) y radio: volver a bajarla la actualiza en vez de repetirla. */
 internal fun areaId(lat: Double, lon: Double, km: Int) = String.format(Locale.US, "%.3f_%.3f_%d", lat, lon, km)
-
-/** Distancia en km sobre la Tierra (haversine). */
-internal fun distanceKm(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Double {
-    val dLat = Math.toRadians(lat2 - lat1)
-    val dLon = Math.toRadians(lon2 - lon1)
-    val h = sin(dLat / 2).let { it * it } + cos(Math.toRadians(lat1)) * cos(Math.toRadians(lat2)) * sin(dLon / 2).let { it * it }
-    return 2 * EARTH_KM * asin(sqrt(h.coerceAtMost(1.0)))
-}
-
-/** Lo contrario de [tileX] y [tileY]: la longitud y la latitud de una coordenada de tesela. */
-internal fun tileLon(x: Double, z: Int): Double = x / (1 shl z) * 360.0 - 180.0
-internal fun tileLat(y: Double, z: Int): Double = Math.toDegrees(atan(sinh(PI * (1 - 2 * y / (1 shl z)))))

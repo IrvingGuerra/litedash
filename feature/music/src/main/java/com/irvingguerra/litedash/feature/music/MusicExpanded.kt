@@ -35,6 +35,7 @@ import com.irvingguerra.litedash.core.ui.Icons
 import com.irvingguerra.litedash.core.ui.Label
 import com.irvingguerra.litedash.core.ui.LocalColors
 import com.irvingguerra.litedash.core.ui.Typography
+import java.util.Locale
 
 /**
  * La música en grande, sin salir de LiteDash: arriba de dónde suena (Archivos, Bluetooth o App, uno
@@ -101,11 +102,8 @@ private fun ColumnScope.PlayerControls(repo: MusicRepository, song: Song?, fit: 
     }
     Spacer(Modifier.height(if (compact) 8.dp else if (wide) 20.dp else 16.dp))
     Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-        when {
-            compact -> Controls(repo, song?.playing == true, loading = song?.buffering == true, size = 52.dp, playSize = 60.dp, gap = 8.dp)
-            wide -> Controls(repo, song?.playing == true, loading = song?.buffering == true, size = 72.dp, playSize = 88.dp, gap = 36.dp)
-            else -> Controls(repo, song?.playing == true, loading = song?.buffering == true, size = 64.dp, playSize = 76.dp, gap = 12.dp)
-        }
+        val m = fit.sizes(wide)
+        Controls(repo, song?.playing == true, loading = song?.buffering == true, size = m.size, playSize = m.play, gap = m.gap)
     }
     if (!wide && fit != ControlsFit.MINI && song != null && song.actions.isNotEmpty()) {
         Spacer(Modifier.height(if (compact) 4.dp else 8.dp))
@@ -142,16 +140,19 @@ private fun TimeBar(repo: MusicRepository, song: Song) {
     var dragFraction by remember { mutableStateOf<Float?>(null) }
     val duration = song.durationMs
     val fraction = dragFraction ?: (pos.toFloat() / duration).coerceIn(0f, 1f)
+    // Los gestos se reinician solo al cambiar de canción: cada play, pausa o posición trae otra instancia de [song]
+    // y, con ella de llave, un arrastre se cortaba cuando la app publicaba su estado (Spotify al cargar).
+    val gestureKey = Triple(song.pkg, song.title, duration)
     BoxWithConstraints(
         Modifier
             .fillMaxWidth()
             .height(32.dp)
             .then(
                 if (song.seekable) Modifier
-                    .pointerInput(song) {
+                    .pointerInput(gestureKey) {
                         detectTapGestures { o -> repo.seekTo((o.x / size.width * duration).toLong()) }
                     }
-                    .pointerInput(song) {
+                    .pointerInput(gestureKey) {
                         detectHorizontalDragGestures(
                             onDragStart = { o -> dragFraction = (o.x / size.width).coerceIn(0f, 1f) },
                             onHorizontalDrag = { change, d ->
@@ -181,7 +182,9 @@ private fun TimeBar(repo: MusicRepository, song: Song) {
     }
 }
 
+/** "3:07" o "1:02:07"; con dígitos latinos en todos los idiomas (como los muestran los reproductores). */
 internal fun formatTime(ms: Long): String {
     val s = (ms / 1000).coerceAtLeast(0)
-    return if (s >= 3600) "%d:%02d:%02d".format(s / 3600, s / 60 % 60, s % 60) else "%d:%02d".format(s / 60, s % 60)
+    return if (s >= 3600) String.format(Locale.ROOT, "%d:%02d:%02d", s / 3600, s / 60 % 60, s % 60)
+    else String.format(Locale.ROOT, "%d:%02d", s / 60, s % 60)
 }

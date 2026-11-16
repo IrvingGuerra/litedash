@@ -4,6 +4,7 @@ import android.content.Context
 import android.os.Build
 import java.io.File
 import java.io.IOException
+import java.io.InputStream
 import java.net.HttpURLConnection
 import java.net.URL
 import java.security.KeyStore
@@ -15,8 +16,8 @@ import javax.net.ssl.SSLSocketFactory
 import javax.net.ssl.TrustManagerFactory
 
 /**
- * Conexiones HTTPS que también sirven en Android 6 y 7.0. Las descargas de GitHub y el clima
- * (Open-Meteo) usan Let's Encrypt, cuya raíz (ISRG Root X1/X2) Android trae desde la 7.1.1;
+ * Conexiones HTTPS que también sirven en Android 6 y 7.0. Algunos servidores que usa la app (como
+ * el clima, Open-Meteo) usan Let's Encrypt, cuya raíz (ISRG Root X1/X2) Android trae desde la 7.1.1;
  * antes, y sin network_security_config (es de Android 7), se confía en las raíces del sistema
  * MÁS esas dos, que vienen en `res/raw/isrg_roots.pem` (sacadas de las raíces de macOS; huellas
  * SHA-256 96:BC:EC…:08:C6 y 69:72:9B…:14:70). De la API 26 en adelante no cambia nada.
@@ -85,21 +86,30 @@ object Https {
     fun download(context: Context, url: String, target: File, bytes: Long, accept: String?, progress: (Float) -> Unit): String =
         retrying { downloadOnce(context, url, target, bytes, accept, progress) }
 
-    private fun downloadOnce(context: Context, url: String, target: File, bytes: Long, accept: String?, progress: (Float) -> Unit): String {
-        val sha = MessageDigest.getInstance("SHA-256")
+    private fun downloadOnce(context: Context, url: String, target: File, bytes: Long, accept: String?, progress: (Float) -> Unit): String =
         connect(context, url, accept).inputStream.use { input ->
             target.outputStream().use { output ->
-                val buf = ByteArray(64 * 1024)
                 var total = 0L
-                while (true) {
-                    val n = input.read(buf)
-                    if (n < 0) break
+                sha256Of(input) { buf, n ->
                     output.write(buf, 0, n)
-                    sha.update(buf, 0, n)
                     total += n
                     if (bytes > 0) progress((total.toFloat() / bytes).coerceAtMost(1f))
                 }
             }
+        }
+
+    /** El SHA-256 de [file] en hexadecimal (el de un archivo que ya llegó por otro camino). Solo en IO. */
+    fun sha256(file: File): String = file.inputStream().use { sha256Of(it) { _, _ -> } }
+
+    /** Lee [input] completo en bloques, pasa cada uno a [each] y devuelve su SHA-256 en hexadecimal. */
+    private inline fun sha256Of(input: InputStream, each: (ByteArray, Int) -> Unit): String {
+        val sha = MessageDigest.getInstance("SHA-256")
+        val buf = ByteArray(64 * 1024)
+        while (true) {
+            val n = input.read(buf)
+            if (n < 0) break
+            each(buf, n)
+            sha.update(buf, 0, n)
         }
         return sha.digest().joinToString("") { "%02x".format(it) }
     }

@@ -222,7 +222,8 @@ suspend fun CarRepository.snapshot(p: CarPackage?, paint: CarPaint, widthPx: Int
         withContext(Dispatchers.Default) { image.drawOffscreen { drawSedan(paint.color) } }
         return image.asAndroidBitmap()
     }
-    val c = layers(p, baseFrame(restFrame(p.spin)), paint, widthPx) ?: return null
+    // Sin guardar en la caché: la foto es más grande que el auto en pantalla y sacaría de ella los cuadros del giro.
+    val c = layers(p, baseFrame(restFrame(p.spin)), paint, widthPx, keep = false) ?: return null
     val car = Rect(Offset.Zero, Size(widthPx.toFloat(), widthPx * c.car.height.toFloat() / c.car.width))
     val all = c.floorBox(car)?.let { car.union(it) } ?: car
     val image = ImageBitmap(all.width.roundToInt(), all.height.roundToInt())

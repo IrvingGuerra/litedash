@@ -7,7 +7,6 @@ import android.hardware.usb.UsbEndpoint
 import android.hardware.usb.UsbInterface
 import android.hardware.usb.UsbManager
 import android.os.SystemClock
-import java.io.IOException
 
 /** Velocidades que usan los cables ELM327 por USB, de la más común a la menos. */
 internal val USB_BAUDS = listOf(38_400, 115_200, 9_600)
@@ -18,8 +17,8 @@ internal val USB_BAUDS = listOf(38_400, 115_200, 9_600)
  * después todos son dos endpoints bulk: uno para leer y otro para escribir. Un hilo lee
  * sin parar a la cola de [QueuedLink], para que [Elm327] lo vea como un flujo igual que los demás.
  */
-class UsbLink(manager: UsbManager, private val device: UsbDevice, baud: Int) : QueuedLink("Se desconectó el cable USB") {
-    private val connection: UsbDeviceConnection = manager.openDevice(device) ?: throw IOException("Sin permiso para el cable USB")
+class UsbLink(manager: UsbManager, private val device: UsbDevice, baud: Int) : QueuedLink(ObdError.USB_UNPLUGGED) {
+    private val connection: UsbDeviceConnection = manager.openDevice(device) ?: throw ObdException(ObdError.NO_USB_PERMISSION, "openDevice null")
     private val claimed = mutableListOf<UsbInterface>()
     private val reader: UsbEndpoint
     private val writer: UsbEndpoint
@@ -50,14 +49,14 @@ class UsbLink(manager: UsbManager, private val device: UsbDevice, baud: Int) : Q
         }
         if (inEp == null || outEp == null) {
             close()
-            throw IOException("El cable USB no parece un puerto serie")
+            throw ObdException(ObdError.USB_NOT_SERIAL, "sin endpoints bulk")
         }
         reader = inEp
         writer = outEp
         statusBytes = if (chip == Chip.FTDI) 2 else 0
         try {
             chip.setup(connection, claimed, baud)
-        } catch (x: IOException) {
+        } catch (x: ObdException) {
             close()
             throw x
         }
@@ -72,7 +71,7 @@ class UsbLink(manager: UsbManager, private val device: UsbDevice, baud: Int) : Q
             val n = connection.bulkTransfer(reader, buf, buf.size, 200)
             if (n >= 0) {
                 fastFails = 0
-                for (i in statusBytes until n) incoming.put(buf[i])
+                if (n > statusBytes) incoming.put(buf, statusBytes, n - statusBytes)
                 continue
             }
             // −1 tras esperar = sin datos; −1 al instante = el cable falló (desconectado): no girar en vacío.
@@ -81,7 +80,7 @@ class UsbLink(manager: UsbManager, private val device: UsbDevice, baud: Int) : Q
                 continue
             }
             if (++fastFails >= 10) {
-                closed = true
+                markClosed()
                 break
             }
             Thread.sleep(50)
@@ -93,15 +92,15 @@ class UsbLink(manager: UsbManager, private val device: UsbDevice, baud: Int) : Q
         var sent = 0
         while (sent < length) {
             val n = connection.bulkTransfer(writer, bytes, offset + sent, length - sent, 1_000)
-            if (n < 0) throw IOException("No se pudo mandar al cable USB")
+            if (n < 0) throw ObdException(ObdError.USB_UNPLUGGED, "bulkTransfer $n")
             sent += n
         }
     }
 
     override fun close() {
-        closed = true
-        claimed.forEach { runCatching { connection.releaseInterface(it) } }
-        runCatching { connection.close() }
+        markClosed()
+        claimed.forEach { connection.releaseInterface(it) }
+        connection.close()
     }
 
     /** El chip puente del cable y cómo se le pide 8N1 a cierta velocidad. */
@@ -127,11 +126,7 @@ class UsbLink(manager: UsbManager, private val device: UsbDevice, baud: Int) : Q
                 }
                 CP210X -> {
                     c.vendorOut(0x00, 0x0001, 0)                  // IFC_ENABLE
-                    val b = byteArrayOf(
-                        (baud and 0xFF).toByte(), ((baud shr 8) and 0xFF).toByte(),
-                        ((baud shr 16) and 0xFF).toByte(), ((baud shr 24) and 0xFF).toByte(),
-                    )
-                    c.vendorOut(0x1E, 0, 0, b)                     // SET_BAUDRATE
+                    c.vendorOut(0x1E, 0, 0, le32(baud))           // SET_BAUDRATE
                     c.vendorOut(0x03, 0x0800, 0)                  // SET_LINE_CTL: 8 bits, sin paridad, 1 stop
                     c.vendorOut(0x07, 0x0303, 0)                  // SET_MHS: DTR y RTS
                 }
@@ -175,24 +170,23 @@ class UsbLink(manager: UsbManager, private val device: UsbDevice, baud: Int) : Q
         /** Peticiones de fabricante hacia el chip (bmRequestType 0x40) y de vuelta (0xC0). */
         fun UsbDeviceConnection.vendorOut(request: Int, value: Int, index: Int, data: ByteArray? = null) {
             val n = controlTransfer(0x40, request, value, index, data, data?.size ?: 0, TIMEOUT)
-            if (n < 0) throw IOException("El cable USB no aceptó la configuración ($request)")
+            if (n < 0) throw ObdException(ObdError.USB_SILENT, "control out $request")
         }
 
         fun UsbDeviceConnection.vendorIn(request: Int, value: Int, index: Int, length: Int) {
             val buf = ByteArray(length)
-            if (controlTransfer(0xC0, request, value, index, buf, length, TIMEOUT) < 0) throw IOException("El cable USB no contestó ($request)")
+            if (controlTransfer(0xC0, request, value, index, buf, length, TIMEOUT) < 0) throw ObdException(ObdError.USB_SILENT, "control in $request")
         }
 
         /** CDC: SET_LINE_CODING (8N1 a [baud]) y SET_CONTROL_LINE_STATE (DTR y RTS). */
         fun UsbDeviceConnection.lineCoding(iface: Int, baud: Int) {
-            val coding = byteArrayOf(
-                (baud and 0xFF).toByte(), ((baud shr 8) and 0xFF).toByte(),
-                ((baud shr 16) and 0xFF).toByte(), ((baud shr 24) and 0xFF).toByte(),
-                0, 0, 8,
-            )
-            if (controlTransfer(0x21, 0x20, 0, iface, coding, coding.size, TIMEOUT) < 0) throw IOException("El cable USB no aceptó la velocidad")
+            val coding = le32(baud) + byteArrayOf(0, 0, 8)
+            if (controlTransfer(0x21, 0x20, 0, iface, coding, coding.size, TIMEOUT) < 0) throw ObdException(ObdError.USB_SILENT, "line coding $baud")
             controlTransfer(0x21, 0x22, 0x03, iface, null, 0, TIMEOUT)
         }
+
+        /** [n] en 4 bytes, el menos significativo primero (como lo piden los chips). */
+        fun le32(n: Int) = ByteArray(4) { (n shr (8 * it)).toByte() }
 
         /** Registros del CH34x para cada velocidad (reloj de 12 MHz, prescaler y divisor). */
         fun ch34xBaud(baud: Int): Pair<Int, Int> = when (baud) {

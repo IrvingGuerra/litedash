@@ -3,6 +3,7 @@ package com.irvingguerra.litedash.feature.player
 import android.content.Context
 import androidx.core.content.edit
 import org.json.JSONArray
+import org.json.JSONObject
 
 private const val STORE = "player"
 private const val KEY_LAST_USB = "last_usb"
@@ -21,24 +22,22 @@ class PlayerStore(context: Context) {
     fun last(source: PlayerSource): String? = p.getString(keyFor(source), null)
 
     /** La última estación completa (para volver a sintonizarla sin buscar). */
-    fun lastStation(): Station? = p.getString(KEY_LAST_RADIO_STATION, null)?.let { runCatching { Station.fromJson(org.json.JSONObject(it)) }.getOrNull() }
+    fun lastStation(): Station? = p.getString(KEY_LAST_RADIO_STATION, null)?.let { runCatching { Station.fromJson(JSONObject(it)) }.getOrNull() }
 
     fun rememberStation(station: Station) = p.edit { putString(KEY_LAST_RADIO_STATION, station.toJson().toString()) }
 
     /** La última lista de "Cerca de ti" que llegó: se muestra si los servidores no contestan. */
-    fun nearbyCache(): List<Station> = runCatching {
-        val array = JSONArray(p.getString(KEY_NEARBY, "[]"))
-        (0 until array.length()).mapNotNull { Station.fromJson(array.getJSONObject(it)) }
-    }.getOrDefault(emptyList())
+    fun nearbyCache(): List<Station> = stations(KEY_NEARBY)
 
-    fun setNearbyCache(list: List<Station>) = p.edit { putString(KEY_NEARBY, JSONArray(list.take(NEARBY_KEEP).map { it.toJson() }).toString()) }
+    fun setNearbyCache(list: List<Station>) = putStations(KEY_NEARBY, list.take(NEARBY_KEEP))
 
-    fun favorites(): List<Station> = runCatching {
-        val array = JSONArray(p.getString(KEY_FAVORITES, "[]"))
-        (0 until array.length()).mapNotNull { Station.fromJson(array.getJSONObject(it)) }
-    }.getOrDefault(emptyList())
+    fun favorites(): List<Station> = stations(KEY_FAVORITES)
 
-    fun setFavorites(list: List<Station>) = p.edit { putString(KEY_FAVORITES, JSONArray(list.map { it.toJson() }).toString()) }
+    fun setFavorites(list: List<Station>) = putStations(KEY_FAVORITES, list)
+
+    private fun stations(key: String) = stationsFromJson(p.getString(key, null))
+
+    private fun putStations(key: String, list: List<Station>) = p.edit { putString(key, stationsToJson(list)) }
 
     /** La carpeta de música que eligió el usuario con el selector de Android (null = ninguna). */
     var musicFolder: String?
@@ -52,3 +51,11 @@ class PlayerStore(context: Context) {
         const val KEY_MUSIC_FOLDER = "music_folder"
     }
 }
+
+/** Una lista de estaciones guardada; vacía si no hay o está dañada (las que no tienen dirección se saltan). */
+internal fun stationsFromJson(text: String?): List<Station> = runCatching {
+    val array = JSONArray(text ?: return emptyList())
+    (0 until array.length()).mapNotNull { Station.fromJson(array.getJSONObject(it)) }
+}.getOrDefault(emptyList())
+
+internal fun stationsToJson(list: List<Station>): String = JSONArray(list.map { it.toJson() }).toString()

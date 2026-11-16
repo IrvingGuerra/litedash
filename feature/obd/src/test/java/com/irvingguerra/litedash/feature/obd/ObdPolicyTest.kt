@@ -1,0 +1,70 @@
+package com.irvingguerra.litedash.feature.obd
+
+import java.io.IOException
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
+import kotlin.concurrent.thread
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
+import org.junit.Test
+
+class ObdPolicyTest {
+    @Test fun lo_que_no_se_arregla_no_se_reintenta() {
+        for (e in listOf(ObdError.NO_BLUETOOTH_PERMISSION, ObdError.NOT_OBD, ObdError.USB_UNPLUGGED, ObdError.NO_USB_PERMISSION)) {
+            assertNull(e.name, retryDelay(e, dropped = true, retries = 0))
+        }
+    }
+
+    @Test fun el_133_se_reintenta_pronto_aunque_nunca_haya_conectado() =
+        assertEquals(ObdTiming.GATT_RETRY_MS, retryDelay(ObdError.GATT_BUSY, dropped = false, retries = 0))
+
+    @Test fun primer_fallo_sin_haber_conectado_se_queda_a_la_vista() =
+        assertNull(retryDelay(ObdError.ADAPTER_UNREACHABLE, dropped = false, retries = 0))
+
+    @Test fun caida_y_racha_de_reintentos() {
+        assertEquals(ObdTiming.RECONNECT_MS, retryDelay(ObdError.CONNECTION_LOST, dropped = true, retries = 0))
+        // Un reintento que falla sin conectar sigue la racha (antes solo se intentaba una vez).
+        assertEquals(ObdTiming.RECONNECT_MS, retryDelay(ObdError.ADAPTER_UNREACHABLE, dropped = false, retries = 1))
+    }
+
+    @Test fun se_rinde_al_tope() {
+        assertNull(retryDelay(ObdError.CONNECTION_LOST, dropped = true, retries = ObdTiming.MAX_RETRIES))
+        assertNull(retryDelay(ObdError.GATT_BUSY, dropped = false, retries = ObdTiming.MAX_RETRIES))
+    }
+
+    @Test fun clasifica_los_fallos() {
+        assertEquals(ObdError.CAR_SILENT, classify(ObdException(ObdError.CAR_SILENT), dropped = false))
+        assertEquals(ObdError.NO_BLUETOOTH_PERMISSION, classify(SecurityException("x"), dropped = false))
+        assertEquals(ObdError.CONNECTION_LOST, classify(IOException("read failed"), dropped = false))
+        assertEquals(ObdError.UNKNOWN, classify(IllegalStateException(), dropped = false))
+        // Ya conectado, un adaptador que deja de contestar es una caída; un cable desenchufado sigue siendo eso.
+        assertEquals(ObdError.CONNECTION_LOST, classify(ObdException(ObdError.ADAPTER_SILENT), dropped = true))
+        assertEquals(ObdError.USB_UNPLUGGED, classify(ObdException(ObdError.USB_UNPLUGGED), dropped = true))
+    }
+
+    @Test fun cola_de_bytes() {
+        val q = ByteQueue()
+        q.put(ByteArray(300) { it.toByte() })
+        q.put(byteArrayOf(9, 8, 7), 1, 2)
+        assertEquals(302, q.size)
+        repeat(300) { assertEquals(it and 0xFF, q.take(0)) }
+        assertEquals(8, q.take(0))
+        assertEquals(7, q.take(0))
+        assertNull(q.take(10))
+    }
+
+    @Test fun cerrar_la_cola_suelta_al_que_espera() {
+        val q = ByteQueue()
+        val done = CountDownLatch(1)
+        var got: Int? = 0
+        thread {
+            got = q.take(10_000)
+            done.countDown()
+        }
+        Thread.sleep(50)
+        q.close()
+        assertTrue(done.await(2, TimeUnit.SECONDS))
+        assertNull(got)
+    }
+}

@@ -24,17 +24,17 @@ internal class TireProfile(
     /** Las peticiones al módulo ("2123"); todas deben contestar que sí para que la receta sea de este auto. */
     val requests: List<String>,
     /** De las respuestas (en el orden de [requests]) a las presiones y temperaturas. */
-    val decode: (List<IntArray>) -> TireValues,
+    val decode: (List<IntArray>) -> FactoryTires.Values,
 )
 
-/** Presión manométrica (kPa) y temperatura (°C) de las cuatro llantas; null = el sensor aún no dijo. */
-internal class TireValues(val kpa: List<Float?>, val tempC: List<Float?> = emptyList())
+/** Lo que dan las recetas: sin receta (el repositorio le pone la que contestó). */
+private fun tireValues(kpa: List<Float?>, tempC: List<Float?> = emptyList()) = FactoryTires.Values(kpa, tempC, "")
 
 /** Lo que contestó el auto (o por qué no). */
 sealed interface FactoryTires {
     data object NotConnected : FactoryTires
     data object Unsupported : FactoryTires
-    /** Las cuatro llantas: kPa manométrica y °C. [profile] = la receta que contestó. */
+    /** Las cuatro llantas: kPa manométrica y °C (null = el sensor aún no dijo). [profile] = la receta que contestó. */
     data class Values(val kpa: List<Float?>, val tempC: List<Float?>, val profile: String) : FactoryTires
 }
 
@@ -60,7 +60,7 @@ private fun word(d: IntArray, i: Int): Int? {
 }
 
 /** Hyundai/Kia "22 C0 0B": presión y temperatura de cada llanta cada [step] bytes desde el 4. */
-private fun hyundai(d: IntArray, step: Int) = TireValues(
+private fun hyundai(d: IntArray, step: Int) = tireValues(
     List(4) { psiByte(d, 4 + it * step, 5f) },
     List(4) { tempByte(d, 5 + it * step, 50) },
 )
@@ -71,23 +71,23 @@ internal val TireProfiles: List<TireProfile> = listOf(
     TireProfile(
         "Mitsubishi", listOf("JA3", "JA4", "4A3", "4A4"), moduleSetup("600", "500"),
         listOf("2123", "2126", "2124", "2125"),
-    ) { r -> TireValues(r.map { psiByte(it, 8, 5f) }, r.map { tempByte(it, 9, 50) }) },
+    ) { r -> tireValues(r.map { psiByte(it, 8, 5f) }, r.map { tempByte(it, 9, 50) }) },
     // Nissan reciente (≈2018+) y Mitsubishi con base Nissan (Outlander 2021+).
     TireProfile(
         "Nissan / Mitsubishi", listOf("JN1", "JN8", "1N4", "1N6", "3N1", "3N6", "3N8", "5N1", "JA4"), moduleSetup("743", "763"),
         listOf("220E26", "220E25", "220E28", "220E27"),
-    ) { r -> TireValues(r.map { psiByte(it, 0, 4f) }) },
+    ) { r -> tireValues(r.map { psiByte(it, 0, 4f) }) },
     // Nissan anterior (≈2014–2022).
     TireProfile(
         "Nissan", listOf("JN1", "JN8", "1N4", "1N6", "3N1", "3N6", "3N8", "5N1"), moduleSetup("758", "778", flow = false),
         listOf("220201", "220202", "220204", "220203"),
-    ) { r -> TireValues(r.map { psiByte(it, 0, 4f) }) },
+    ) { r -> tireValues(r.map { psiByte(it, 0, 4f) }) },
     // Toyota y Lexus (≈2012–2023): direccionamiento extendido 2A (adaptadores ELM327 v1.4b o mejores).
     TireProfile(
         "Toyota / Lexus", listOf("JT", "2T1", "2T2", "2T3", "4T1", "4T3", "4T4", "5TD", "5TF"),
         listOf("ATSH750", "ATCRA758", "ATCEA2A", "ATTA2A", "ATFCSH750", "ATFCSD2A300000", "ATFCSM1"),
         listOf("2130"),
-    ) { r -> TireValues(List(4) { i -> byteOf(r[0], i)?.let { ((it / 58f - 0.5f) * 100f).orNullIfOdd() } }) },
+    ) { r -> tireValues(List(4) { i -> byteOf(r[0], i)?.let { ((it / 58f - 0.5f) * 100f).orNullIfOdd() } }) },
     // Hyundai y Kia: dos acomodos según el modelo; el de 5 bytes por llanta si la respuesta alcanza y da presiones.
     TireProfile(
         "Hyundai / Kia", listOf("KMH", "KM8", "KNA", "KND", "5NP", "5NM", "5XX", "5XY", "3KP"), moduleSetup("7A0", "7A8"),
@@ -100,22 +100,22 @@ internal val TireProfiles: List<TireProfile> = listOf(
     TireProfile(
         "GM", listOf("1G", "2G", "3G", "KL"), moduleSetup("241", "641", flow = false),
         listOf("225005", "225006", "225008", "225007"),
-    ) { r -> TireValues(r.map { d -> word(d, 0)?.let { (it / 16f).orNullIfOdd() } }) },
+    ) { r -> tireValues(r.map { d -> word(d, 0)?.let { (it / 16f).orNullIfOdd() } }) },
     // Ford y Lincoln (casi toda la gama 2011+).
     TireProfile(
         "Ford", listOf("1F", "2F", "3F", "1L", "5L", "MAJ", "NM0", "WF0"), moduleSetup("726", "72E", flow = false),
         listOf("222813", "222814", "222816", "222815"),
-    ) { r -> TireValues(r.map { d -> word(d, 0)?.let { (it / 20f * KPA_PER_PSI).orNullIfOdd() } }) },
+    ) { r -> tireValues(r.map { d -> word(d, 0)?.let { (it / 20f * KPA_PER_PSI).orNullIfOdd() } }) },
     // Mazda Skyactiv de 2.ª gen. (Mazda3 2019+, CX-30, CX-50…): presión y luego temperatura.
     TireProfile(
         "Mazda", listOf("JM1", "JM3", "3MZ", "3MV", "3MD"), moduleSetup("726", "72E", flow = false),
         listOf("22D922", "22D923", "22D924", "22D925", "22D926", "22D927", "22D928", "22D929"),
-    ) { r -> TireValues(r.take(4).map { psiByte(it, 0, 5f) }, r.drop(4).map { tempByte(it, 0, 50) }) },
+    ) { r -> tireValues(r.take(4).map { psiByte(it, 0, 5f) }, r.drop(4).map { tempByte(it, 0, 50) }) },
     // Subaru: las cuatro juntas, en el orden trasera izq., trasera der., delantera der., delantera izq.
     TireProfile(
         "Subaru", listOf("JF1", "JF2", "4S3", "4S4"), listOf("ATST64") + moduleSetup("753", "75B"),
         listOf("221022"),
-    ) { r -> TireValues(listOf(3, 2, 0, 1).map { psiByte(r[0], it, 5f) }) },
+    ) { r -> tireValues(listOf(3, 2, 0, 1).map { psiByte(r[0], it, 5f) }) },
 )
 
 /** [TireProfiles] con primero las que corresponden al VIN (si se sabe). */

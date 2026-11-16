@@ -81,7 +81,10 @@ internal class Calibrator(
     private var phase = Phase.IDLE
     private var candidates = emptyList<String>()
     private val queue = ArrayDeque<String>()
-    /** Las que la persona ya rechazó en esta sesión: si se pospuso o no contestó, se sigue desde ahí. */
+    /**
+     * Las ya rechazadas en esta sesión (por la persona o, con [trustsSignal], por la señal): si se pospuso o no
+     * contestó, se sigue desde ahí.
+     */
     private val rejected = HashSet<String>()
     /** Ya se volvió a probar (o se falló) en este arranque: un [Recipes.FAILED] de la señal no se repite. */
     private var retriedFailed = false

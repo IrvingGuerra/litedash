@@ -21,35 +21,14 @@ class DashboardStore(context: Context) {
      * el más nuevo de su cuadrícula o una cercana ([Grid.near]) y lo ajusta. Quitar esta copia en 2027.
      */
     private fun toFineGrid() {
-        val all = prefs.all
+        val copies = fineCopies(prefs.all)
+        if (copies.isEmpty()) return
         val edit = prefs.edit()
-        var copied = false
-        for ((key, value) in all) {
-            if (!key.startsWith(OLD_LAYOUT_PREFIX) || value !is String) continue
-            val old = parseGrid(key.removePrefix(OLD_LAYOUT_PREFIX)) ?: continue
-            val fine = Grid(old.columns * FINE, old.rows * FINE)
-            val oldAt = all[OLD_SAVED_AT_PREFIX + old.key] as? Long ?: 0L
-            val fineAt = all[SAVED_AT_PREFIX + fine.key] as? Long
-            if (fineAt != null && oldAt <= fineAt || fineAt == null && all.containsKey(LAYOUT_KEY_PREFIX + fine.key)) continue
-            edit.putString(LAYOUT_KEY_PREFIX + fine.key, scaleLines(value, FINE)).putLong(SAVED_AT_PREFIX + fine.key, oldAt)
-            copied = true
-        }
-        if (copied) edit.apply()
+        for ((key, copy) in copies) edit.putString(LAYOUT_KEY_PREFIX + key, copy.first).putLong(SAVED_AT_PREFIX + key, copy.second)
+        edit.apply()
     }
 
-    fun read(c: Grid): List<Tile>? {
-        val text = prefs.getString(LAYOUT_KEY_PREFIX + c.key, null) ?: return null
-        return text.lineSequence().filter { it.isNotBlank() }.mapNotNull { line ->
-            val f = line.split('\t')
-            if (f.size < 6) return@mapNotNull null
-            // Una línea dañada (escritura cortada) se salta; no tumba el inicio.
-            val (col, row, width, height) = (2..5).map { f[it].toIntOrNull() ?: return@mapNotNull null }
-            // El widget Navegar (hasta la 1.4.68) es ahora el Mapa, en el mismo lugar y tamaño (sus
-            // datos eran otra cosa: el mapa queda como de fábrica).
-            if (f[1] == LEGACY_NAVIGATE) return@mapNotNull Tile(f[0], TileTypes.MAP, col, row, width, height, "", plain = f.getOrElse(7) { "" } == "1")
-            Tile(f[0], f[1], col, row, width, height, f.getOrElse(6) { "" }, plain = f.getOrElse(7) { "" } == "1")
-        }.filter { p -> p.col >= 0 && p.row >= 0 }.toList()
-    }
+    fun read(c: Grid): List<Tile>? = prefs.getString(LAYOUT_KEY_PREFIX + c.key, null)?.let(::parseLayout)
 
     fun save(c: Grid, tiles: List<Tile>) {
         val text = tiles.joinToString("\n") {
@@ -84,6 +63,39 @@ private fun parseGrid(size: String): Grid? {
     return Grid(parts[0].toIntOrNull() ?: return null, parts[1].toIntOrNull() ?: return null)
 }
 
+/**
+ * Lo que [DashboardStore.toFineGrid] escribe, con todo lo guardado ([all]): por cada acomodo de 96 dp sin copia en
+ * la fina (o guardado después de ella), la llave de la fina ("20x10") → (su texto ×[FINE], hora del de 96 dp).
+ */
+internal fun fineCopies(all: Map<String, *>): Map<String, Pair<String, Long>> {
+    val out = HashMap<String, Pair<String, Long>>()
+    for ((key, value) in all) {
+        if (!key.startsWith(OLD_LAYOUT_PREFIX) || value !is String) continue
+        val old = parseGrid(key.removePrefix(OLD_LAYOUT_PREFIX)) ?: continue
+        val fine = Grid(old.columns * FINE, old.rows * FINE)
+        val oldAt = all[OLD_SAVED_AT_PREFIX + old.key] as? Long ?: 0L
+        val fineAt = all[SAVED_AT_PREFIX + fine.key] as? Long
+        if (fineAt != null && oldAt <= fineAt || fineAt == null && all.containsKey(LAYOUT_KEY_PREFIX + fine.key)) continue
+        out[fine.key] = scaleLines(value, FINE) to oldAt
+    }
+    return out
+}
+
+/**
+ * Un acomodo guardado: una pieza por línea, campos separados por tabulador. Una línea dañada (escritura
+ * cortada) se salta y un id repetido (acomodo dañado o editado a mano) se queda con la primera: no tumban el inicio.
+ */
+internal fun parseLayout(text: String): List<Tile> = text.lineSequence().filter { it.isNotBlank() }.mapNotNull { line ->
+    val f = line.split('\t')
+    if (f.size < 6) return@mapNotNull null
+    val (col, row, width, height) = (2..5).map { f[it].toIntOrNull() ?: return@mapNotNull null }
+    val plain = f.getOrElse(7) { "" } == "1"
+    // El widget Navegar (hasta la 1.4.68) es ahora el Mapa, en el mismo lugar y tamaño (sus
+    // datos eran otra cosa: el mapa queda como de fábrica).
+    if (f[1] == LEGACY_NAVIGATE) Tile(f[0], TileTypes.MAP, col, row, width, height, "", plain)
+    else Tile(f[0], f[1], col, row, width, height, f.getOrElse(6) { "" }, plain)
+}.filter { p -> p.col >= 0 && p.row >= 0 }.distinctBy { it.id }.toList()
+
 /** El texto de un acomodo con columna, fila, ancho y alto (campos 2 a 5) multiplicados por [k]. */
 internal fun scaleLines(text: String, k: Int) = text.lineSequence().joinToString("\n") { line ->
     val f = line.split('\t').toMutableList()
@@ -100,8 +112,8 @@ private const val SAVED_AT_PREFIX = "fine_saved_at_"
 private const val OLD_LAYOUT_PREFIX = "layout_"
 private const val OLD_SAVED_AT_PREFIX = "saved_at_"
 
-// La migración de la 1.4.49 (pieza del auto en tres) también los escribe: mismos nombres allá.
 /** El tipo que tenía el widget Navegar en los acomodos guardados. */
 private const val LEGACY_NAVIGATE = "navigate"
+// La migración de la 1.4.49 (StorageMigration, pieza del auto en tres) también los escribe: mismos nombres allá.
 private const val HERO_TYPE = "hero_type"
 private const val HERO_DATA = "hero_data"

@@ -38,6 +38,10 @@ internal enum class HeadUnit(
     val bluetoothRecipes: List<String> = own + Recipes.PLAIN + Recipes.OPEN_FACTORY
 
     companion object {
+        /** Las apps de Bluetooth de TopWay y de FYT que tocan la música (sus recetas hablan con ellas). */
+        const val TOPWAY_BLUETOOTH = "com.tw.bt"
+        const val FYT_BLUETOOTH = "com.syu.bt"
+
         /**
          * La familia por sus paquetes: gana la del Bluetooth de fábrica (una TopWay con ZLink sigue siendo
          * TopWay) y, sin Bluetooth de marca, la de la radio; sin ninguna, el kernel de NWD (el que lleva su volumen).
@@ -67,10 +71,10 @@ private class BrandBluetooth(val pkg: String, val family: HeadUnit, val music: B
  * Jancar, Reglink) al final, según las estadísticas de 315 pantallas (2026-11-13).
  */
 private val BRAND_BLUETOOTH = listOf(
-    BrandBluetooth("com.syu.bt", HeadUnit.FYT),
+    BrandBluetooth(HeadUnit.FYT_BLUETOOTH, HeadUnit.FYT),
     BrandBluetooth("com.syu.ms", HeadUnit.FYT, music = false),
     BrandBluetooth("com.fyt.bt", HeadUnit.FYT, music = false),
-    BrandBluetooth("com.tw.bt", HeadUnit.TOPWAY),
+    BrandBluetooth(HeadUnit.TOPWAY_BLUETOOTH, HeadUnit.TOPWAY),
     BrandBluetooth("com.tw.service", HeadUnit.TOPWAY, music = false),
     BrandBluetooth("com.ts.bt", HeadUnit.TOPWAY, music = false),
     BrandBluetooth("com.microntek.bt", HeadUnit.MICRONTEK),

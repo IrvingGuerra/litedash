@@ -49,7 +49,7 @@ class BleTpmsScanner(
     private val main = Handler(Looper.getMainLooper())
     private var scanner: BluetoothLeScanner? = null
     private var balanced = false
-    private val starts = ArrayDeque<Long>()
+    private val limiter = StartLimiter(SystemClock::elapsedRealtime)
     private var pendingRestart: Runnable? = null
     /** Alguien pidió escuchar (aunque el arranque esté aplazado). */
     private var wanted = false
@@ -61,8 +61,10 @@ class BleTpmsScanner(
 
         override fun onScanFailed(errorCode: Int) {
             scanner = null
-            wanted = false
             onFailure?.invoke(BleProblem.FAILED)
+            // Sin Bluetooth LE no hay nada que reintentar; si no (registro fallido, demasiados arranques…),
+            // se vuelve a intentar al pasar la ventana del límite de Android, sin dejar de avisar.
+            if (errorCode == ScanCallback.SCAN_FAILED_FEATURE_UNSUPPORTED) wanted = false else scheduleRestart()
         }
     }
 
@@ -82,16 +84,16 @@ class BleTpmsScanner(
         this.balanced = balanced
         if (scanner != null) {
             // Ya busca en el otro modo: cambiarlo solo si cabe en el límite de Android.
-            if (!canStart()) return run { scheduleRestart(); null }
+            if (!limiter.canStart()) return run { scheduleRestart(); null }
             stopNow()
         }
-        if (!canStart()) return run { scheduleRestart(); null }
+        if (!limiter.canStart()) return run { scheduleRestart(); null }
         return startNow(le)
     }
 
     @SuppressLint("MissingPermission")
     private fun startNow(le: BluetoothLeScanner): BleProblem? {
-        starts.addLast(SystemClock.elapsedRealtime())
+        limiter.started()
         val mode = if (balanced) ScanSettings.SCAN_MODE_BALANCED else ScanSettings.SCAN_MODE_LOW_POWER
         return runCatching {
             le.startScan(null, ScanSettings.Builder().setScanMode(mode).build(), callback)
@@ -100,22 +102,15 @@ class BleTpmsScanner(
         }.getOrElse { BleProblem.FAILED }
     }
 
-    /** Máximo 4 arranques en 30 s (deja uno de margen al límite de Android). */
-    private fun canStart(): Boolean {
-        val now = SystemClock.elapsedRealtime()
-        while (starts.isNotEmpty() && now - starts.first() > WINDOW_MS) starts.removeFirst()
-        return starts.size < MAX_STARTS
-    }
-
     private fun scheduleRestart() {
         if (pendingRestart != null) return
-        val wait = WINDOW_MS - (SystemClock.elapsedRealtime() - starts.first()) + 500
+        val wait = limiter.waitMs()
         val r = Runnable {
             pendingRestart = null
             if (wanted) { stopNow(); start(balanced)?.let { onFailure?.invoke(it) } }
         }
         pendingRestart = r
-        main.postDelayed(r, wait.coerceAtLeast(500))
+        main.postDelayed(r, wait)
     }
 
     fun stop() {
@@ -158,8 +153,6 @@ class BleTpmsScanner(
     }
 
     companion object {
-        private const val WINDOW_MS = 30_000L
-        private const val MAX_STARTS = 4
         private const val MAX_UNKNOWN = 60
         private const val BASE_SUFFIX = "-0000-1000-8000-00805f9b34fb"
 
@@ -168,5 +161,35 @@ class BleTpmsScanner(
             val u = uuid.lowercase()
             return if (u.startsWith("0000") && u.endsWith(BASE_SUFFIX)) u.substring(4, 8) else u
         }
+    }
+}
+
+/**
+ * Android bloquea a quien llama `startScan` más de ~5 veces en 30 s: aquí máximo 4 (uno de margen).
+ * [clock] = milisegundos desde el arranque.
+ */
+internal class StartLimiter(private val clock: () -> Long) {
+    private val starts = ArrayDeque<Long>()
+
+    fun canStart(): Boolean {
+        val now = clock()
+        while (starts.isNotEmpty() && now - starts.first() > WINDOW_MS) starts.removeFirst()
+        return starts.size < MAX_STARTS
+    }
+
+    fun started() {
+        starts.addLast(clock())
+    }
+
+    /** Cuánto esperar para que vuelva a caber un arranque (al menos medio segundo). */
+    fun waitMs(): Long {
+        val oldest = starts.firstOrNull() ?: return MIN_WAIT_MS
+        return (WINDOW_MS - (clock() - oldest) + MIN_WAIT_MS).coerceAtLeast(MIN_WAIT_MS)
+    }
+
+    companion object {
+        const val WINDOW_MS = 30_000L
+        const val MAX_STARTS = 4
+        private const val MIN_WAIT_MS = 500L
     }
 }

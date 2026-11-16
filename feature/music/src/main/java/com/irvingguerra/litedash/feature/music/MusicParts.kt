@@ -25,7 +25,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.awaitTouchSlopOrCancellation
@@ -130,7 +132,7 @@ internal fun subtitleFor(repo: MusicRepository, song: Song): String = when {
 @Composable
 fun MusicMode.label(): String = stringResource(
     when (this) {
-        MusicMode.FILES -> R.string.source_usb
+        MusicMode.FILES -> R.string.source_files
         MusicMode.BLUETOOTH -> R.string.source_bluetooth
         MusicMode.APP -> R.string.mode_app
     },
@@ -196,15 +198,15 @@ internal fun MediaTile(
     UseRepo(repo)
     val permission = remember(revision, needsAccess) { !needsAccess || repo.hasPermission().also { if (it) repo.recheck() } }
     val check = repo.soundCheckFor(piece)
-    // Sin controles (sin permiso) o con la pregunta del sonido a la vista, no se desliza.
-    val swipe = Modifier.swipeToSkip(onNext.takeIf { permission && check == null }, onPrevious)
+    // Sin controles (sin permiso), con la pregunta del sonido a la vista o con anterior/siguiente apagados en las
+    // opciones del widget ("solo play/pausa"), no se desliza.
+    val swipe = Modifier.swipeToSkip(onNext.takeIf { skip && permission && check == null }, onPrevious)
     Card(modifier.fillMaxSize().then(swipe), onClick = onOpen.takeIf { permission }) {
         if (!permission) return@Card NoPermission(repo, icon, title, explain)
         if (check != null) {
             return@Card Box(Modifier.fillMaxSize().padding(TilePadding), contentAlignment = Alignment.CenterStart) { SoundCheckPrompt(repo, check) }
         }
-        // La llave es la canción, no el Bitmap: cada play o pausa trae otra instancia de la misma carátula.
-        if (tinted && !LocalPlainCard.current) song?.artwork?.let { ArtworkTint(it, "${song.pkg}|${song.title}|${song.artist}") }
+        if (tinted && !LocalPlainCard.current) song?.let { ArtworkTint(it) }
         BoxWithConstraints(Modifier.fillMaxSize().padding(TilePadding)) {
             val tall = maxHeight > 150.dp
             // La etiqueta solo si deja lugar al título, el subtítulo y la barra.
@@ -259,10 +261,13 @@ internal fun MediaTile(
 /**
  * Deslizar a lo ancho = pasar de canción como una carátula (idea #14): a la izquierda la siguiente, a la derecha la
  * anterior, desde [SWIPE_MIN]. Solo si empieza antes del "dejar presionado" (acomodar el widget) y va más a lo ancho
- * que a lo alto; un toque sigue siendo toque. Sin [onNext] o [onPrevious], nada. Las acciones se toman al
- * prenderse: solo deben llamar al repositorio (que no cambia).
+ * que a lo alto; un toque sigue siendo toque. Sin [onNext] o [onPrevious], nada. El gesto no se reinicia al
+ * cambiar las acciones: siempre llama las últimas.
  */
+@Composable
 internal fun Modifier.swipeToSkip(onNext: (() -> Unit)?, onPrevious: (() -> Unit)?): Modifier {
+    val next by rememberUpdatedState(onNext)
+    val previous by rememberUpdatedState(onPrevious)
     if (onNext == null || onPrevious == null) return this
     return pointerInput(Unit) {
         val min = SWIPE_MIN.toPx()
@@ -278,7 +283,7 @@ internal fun Modifier.swipeToSkip(onNext: (() -> Unit)?, onPrevious: (() -> Unit
             }
             val dx = last.x - down.position.x
             if (!ended || abs(dx) < min) return@awaitEachGesture
-            if (dx < 0) onNext() else onPrevious()
+            if (dx < 0) next?.invoke() else previous?.invoke()
         }
     }
 }
@@ -321,12 +326,17 @@ private val SHORT_MAX = 190.dp
 private val ARTWORK_SHORT = 140.dp
 private val LABEL_MIN = 88.dp
 
-/** El color promedio de la carátula en degradado suave desde la esquina superior izquierda (como Apple Music). */
+/**
+ * El color promedio de la carátula de [song] en degradado suave desde la esquina superior izquierda (como Apple
+ * Music); sin carátula, nada.
+ */
 @Composable
-private fun ArtworkTint(artwork: Bitmap, key: String) {
+private fun ArtworkTint(song: Song) {
+    val artwork = song.artwork ?: return
     val dark = LocalColors.current.dark
-    // Una vez por carátula: se reduce a 16×16 y se promedia (si no se puede leer, sin tinte).
-    val average = remember(key) { runCatching { averageColor(artwork) }.getOrNull() } ?: return
+    // Una vez por carátula: se reduce a 16×16 y se promedia (si no se puede leer, sin tinte). La llave es la
+    // canción, no el Bitmap: cada play o pausa trae otra instancia de la misma carátula.
+    val average = remember(song.pkg, song.title, song.artist) { runCatching { averageColor(artwork) }.getOrNull() } ?: return
     val brush = remember(average, dark) {
         Brush.linearGradient(listOf(average.copy(alpha = if (dark) 0.30f else 0.22f), Color.Transparent), Offset.Zero, Offset.Infinite)
     }
@@ -404,9 +414,19 @@ internal fun SongDetail(repo: MusicRepository, song: Song) {
 internal fun ExpandedCard(repo: MusicRepository, modifier: Modifier, tint: Song? = null, content: @Composable ColumnScope.() -> Unit) {
     UseRepo(repo)
     Card(modifier.fillMaxSize()) {
-        tint?.artwork?.let { if (!LocalPlainCard.current) ArtworkTint(it, "${tint.pkg}|${tint.title}|${tint.artist}") }
+        if (tint != null && !LocalPlainCard.current) ArtworkTint(tint)
         Column(Modifier.fillMaxSize().padding(20.dp)) { content() }
     }
+}
+
+/** Las medidas de anterior/siguiente ([size]), play y su separación en la vista en grande. */
+internal class ControlSizes(val size: Dp, val play: Dp, val gap: Dp)
+
+/** Los botones de la música y la radio en grande según el lugar ([wide] = la vista ancha, ver [LocalWide]). */
+internal fun ControlsFit.sizes(wide: Boolean) = when {
+    this != ControlsFit.FULL -> ControlSizes(52.dp, 60.dp, 8.dp)
+    wide -> ControlSizes(72.dp, 88.dp, 36.dp)
+    else -> ControlSizes(64.dp, 76.dp, 12.dp)
 }
 
 /** Cuánto lugar tienen los controles de la vista en grande (ver [NowPlaying]). */

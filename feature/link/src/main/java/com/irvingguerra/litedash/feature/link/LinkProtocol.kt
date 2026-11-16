@@ -164,15 +164,20 @@ internal object Base64 {
         }
     }
 
-    /** Estándar, con o sin relleno. Lanza si trae algo que no es base64. */
+    /** Valor de cada carácter del alfabeto estándar; -1 = no es base64. */
+    private val VALUES = IntArray(128) { -1 }.also { table -> STANDARD.forEachIndexed { i, c -> table[c.code] = i } }
+
+    /** Estándar, con o sin relleno. Lanza si trae algo que no es base64 o le sobra un carácter suelto. */
     fun decode(text: String): ByteArray {
         val clean = text.trimEnd('=')
+        // Un carácter solo da 6 bits: nunca un byte. Ningún base64 bien hecho termina así.
+        require(clean.length % 4 != 1) { "not base64" }
         val out = ByteArray(clean.length * 3 / 4)
         var bits = 0
         var count = 0
         var k = 0
         for (c in clean) {
-            val value = STANDARD.indexOf(c)
+            val value = if (c.code < VALUES.size) VALUES[c.code] else -1
             require(value >= 0) { "not base64" }
             bits = (bits shl 6) or value
             count += 6

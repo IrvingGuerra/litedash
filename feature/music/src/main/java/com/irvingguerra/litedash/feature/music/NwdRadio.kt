@@ -3,17 +3,11 @@ package com.irvingguerra.litedash.feature.music
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
-import android.content.ServiceConnection
 import android.database.ContentObserver
-import android.os.Binder
-import android.os.Handler
 import android.os.IBinder
-import android.os.Looper
 import android.os.Parcel
 import android.os.SystemClock
 import android.provider.Settings
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.Executors
 
 /**
  * La radio FM de las pantallas NWD (Allwinner T3/K2401 y otras; app de fábrica `com.nwd.radio`), que no
@@ -35,13 +29,10 @@ import java.util.concurrent.Executors
  * podría tomar el audio). Si no conecta y no hay ajustes, el perfil se cierra y la radio se abre como antes.
  */
 internal class NwdRadio(
-    private val context: Context,
+    context: Context,
     onState: (BroadcastMeta) -> Unit,
-    private val trace: (String) -> Unit,
-) : BaseFactoryRadio(onState) {
-    override val tag = "nwd"
-    override var open = false
-        private set
+    trace: (String) -> Unit,
+) : BinderFactoryRadio(context, onState, trace, "nwd", DESCRIPTOR, CALLBACK, CODE_REGISTER, CODE_UNREGISTER) {
     private var frequency = 0
     private var band = 0
     override val station get() = stationText(band >= BAND_AM, frequency)
@@ -50,87 +41,36 @@ internal class NwdRadio(
     private val tunerInstalled = context.hasPackage(SERVICE_PACKAGE)
     private val kernel = context.hasPackage(KERNEL_PACKAGE)
 
-    private val main = Handler(Looper.getMainLooper())
-    /** Las llamadas al sintonizador son IPC: nunca en el hilo principal. Null = cerrado. */
-    @Volatile private var worker: ExecutorService? = null
-    @Volatile private var tuner: IBinder? = null
     /** 2 = Allwinner, 0 = MCU, -1 = no se sabe (sin servicio). */
     @Volatile var tunerType = -1
         private set
-    /** El sintonizador avisa los cambios de estación (si no, se relee tras buscar). */
-    @Volatile private var notified = false
-    private var bound = false
-    /** Ya se pidió arrancar el sintonizador (al tocar un botón). */
-    private var started = false
     private var settingsKeys = false
 
     private val observer = object : ContentObserver(main) {
         override fun onChange(selfChange: Boolean) = refresh()
     }
 
+    override val serviceInstalled get() = tunerInstalled
+
+    override fun serviceIntent(): Intent = Intent(SERVICE_ACTION).setComponent(ComponentName(SERVICE_PACKAGE, SERVICE_CLASS))
+
     /** `RadioCallback` del firmware: solo importa `notifyCurrentFrequency` (banda, frecuencia, nombre, presintonía). */
-    private val callback = object : Binder() {
-        init { attachInterface(null, CALLBACK) }
+    override fun handlesCallback(code: Int) = code in 1..CALLBACK_LAST
 
-        override fun onTransact(code: Int, data: Parcel, reply: Parcel?, flags: Int): Boolean {
-            if (code !in 1..CALLBACK_LAST) return super.onTransact(code, data, reply, flags)
-            runCatching {
-                data.enforceInterface(CALLBACK)
-                if (code == CALLBACK_FREQUENCY) {
-                    val tuned = Tuned(data.readByte().toInt(), data.readInt(), data.readString().orEmpty().trim())
-                    main.post { if (open) show(tuned) }
-                }
-            }
-            reply?.writeNoException()
-            return true
-        }
+    override fun readCallback(code: Int, data: Parcel): (() -> Unit)? {
+        if (code != CALLBACK_FREQUENCY) return null
+        val tuned = Tuned(data.readByte().toInt(), data.readInt(), data.readString().orEmpty().trim())
+        return { show(tuned) }
     }
 
-    private val connection = object : ServiceConnection {
-        override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
-            main.removeCallbacks(connectTimeout)
-            val w = worker ?: return
-            w.execute {
-                if (worker !== w || service == null) return@execute
-                if (runCatching { service.interfaceDescriptor }.getOrNull() != DESCRIPTOR) {
-                    trace("nwd servicio con otra interfaz")
-                    main.post(::lost)
-                    return@execute
-                }
-                tuner = service
-                tunerType = runCatching { call(CODE_RADIO_TYPE) { it.readInt() } }.getOrDefault(-1)
-                notified = runCatching { call(CODE_REGISTER, { it.writeStrongBinder(callback) }) {} }.isSuccess
-                trace("nwd servicio conectado tipo=$tunerType avisos=${if (notified) "sí" else "no"}")
-                readTuner()
-            }
-        }
-
-        override fun onServiceDisconnected(name: ComponentName?) {
-            tuner = null
-            notified = false
-            trace("nwd servicio desconectado")
-        }
-
-        override fun onBindingDied(name: ComponentName?) {
-            tuner = null
-            notified = false
-            trace("nwd servicio murió: se vuelve a conectar")
-            bind(started)
-        }
-
-        override fun onNullBinding(name: ComponentName?) {
-            trace("nwd servicio sin interfaz")
-            lost()
-        }
+    override fun prepare(binder: IBinder): Boolean {
+        tunerType = runCatching { call(CODE_RADIO_TYPE, binder = binder) { it.readInt() } }.getOrDefault(-1)
+        return true
     }
 
-    /** Se pidió arrancar el sintonizador y no contestó a tiempo. */
-    private val connectTimeout = Runnable {
-        if (tuner == null) {
-            trace("nwd servicio no contestó")
-            lost()
-        }
-    }
+    override fun connectedDetail() = "tipo=$tunerType"
+
+    override fun ready() = readTuner()
 
     override fun open(): Boolean {
         if (open) return true
@@ -140,11 +80,8 @@ internal class NwdRadio(
             trace("nwd no abre: sin $SERVICE_PACKAGE ni $FREQ")
             return false
         }
-        worker = Executors.newSingleThreadExecutor { Thread(it, "nwd-radio") }
-        open = true
-        if (tunerInstalled) bind(create = false)
         // Sin ajustes y sin sintonizador que conecte, el enlace ya lo cerró: nada que escuchar.
-        if (!open) return false
+        if (!connect()) return false
         for (key in listOf(FREQ, BAND, PS, SOURCE)) runCatching { cr.registerContentObserver(Settings.System.getUriFor(key), false, observer) }
         trace("nwd abierto: sintonizador=${yes(tunerInstalled)} ajustes=${yes(settingsKeys)} kernel=${yes(kernel)}")
         refresh()
@@ -153,54 +90,20 @@ internal class NwdRadio(
 
     override fun close() {
         if (!open) return
-        open = false
-        main.removeCallbacksAndMessages(null)
         runCatching { context.contentResolver.unregisterContentObserver(observer) }
-        val w = worker
-        worker = null
-        val t = tuner
-        tuner = null
-        if (t != null && notified) w?.execute { runCatching { call(CODE_UNREGISTER, { it.writeStrongBinder(callback) }, binder = t) {} } }
-        notified = false
-        w?.shutdown()
-        if (bound) runCatching { context.unbindService(connection) }
-        bound = false
+        super.close()
     }
 
-    /** Conecta con el sintonizador; [create] lo arranca si no corre (y espera [CONNECT_TIMEOUT_MS] a que conteste). */
-    private fun bind(create: Boolean) {
-        if (!open) return
-        if (bound) runCatching { context.unbindService(connection) }
-        val intent = Intent(SERVICE_ACTION).setComponent(ComponentName(SERVICE_PACKAGE, SERVICE_CLASS))
-        bound = runCatching { context.bindService(intent, connection, if (create) Context.BIND_AUTO_CREATE else 0) }.getOrDefault(false)
-        if (!bound) {
-            runCatching { context.unbindService(connection) }
-            trace("nwd no se pudo conectar al sintonizador")
-            return lost()
-        }
-        if (create) main.postDelayed(connectTimeout, CONNECT_TIMEOUT_MS)
-    }
-
-    /** Antes de un botón: si el sintonizador no está conectado, se arranca (una vez). */
-    private fun wake() {
-        if (tuner != null || started || !tunerInstalled || !open) return
-        started = true
-        bind(create = true)
-    }
-
-    /** Sin sintonizador: si tampoco hay ajustes no hay nada que ver ni controlar → se cierra y la radio se abre como antes. */
-    private fun lost() {
-        if (!open) return
-        tuner = null
-        if (settingsKeys) return
-        trace("nwd sin sintonizador: se abre la app")
-        close()
+    /** Sin sintonizador: con los ajustes aún se ve y se controla; si tampoco hay, se cierra y la radio se abre como antes. */
+    override fun lost() {
+        if (!open || settingsKeys) return
+        super.lost()
     }
 
     override fun refresh() {
         val cr = context.contentResolver
         // Con el sintonizador conectado, él dice la estación; los ajustes solo si suena.
-        if (tuner == null && settingsKeys) {
+        if (service == null && settingsKeys) {
             band = runCatching { Settings.System.getInt(cr, BAND, band) }.getOrDefault(band)
             frequency = runCatching { Settings.System.getInt(cr, FREQ, frequency) }.getOrDefault(frequency)
             name = decodePs(runCatching { Settings.System.getString(cr, PS) }.getOrNull())
@@ -212,12 +115,12 @@ internal class NwdRadio(
             on = radio
         }
         publish()
-        if (tuner != null) worker?.execute(::readTuner)
+        if (service != null) worker?.execute(::readTuner)
     }
 
     /** La estación del sintonizador (en [worker]); se publica en el hilo principal. */
     private fun readTuner() {
-        if (tuner == null) return
+        if (service == null) return
         val tuned = runCatching { call(CODE_FREQUENCY, read = ::readFrequency) }
             .onFailure { trace("nwd no dio la estación: ${it.javaClass.simpleName}") }
             .getOrNull() ?: return
@@ -236,7 +139,7 @@ internal class NwdRadio(
 
     private fun search(up: Boolean) {
         val w = worker
-        if (tuner == null || w == null) {
+        if (service == null || w == null) {
             wake()
             return send(Intent(if (up) SEARCH_UP else SEARCH_DOWN))
         }
@@ -246,8 +149,8 @@ internal class NwdRadio(
                 send(Intent(if (up) SEARCH_UP else SEARCH_DOWN))
             }
         }
-        // Sin el aviso del sintonizador, la búsqueda tarda: se vuelve a leer la estación un par de veces.
-        if (!notified) for (delay in SEARCH_READS_MS) main.postDelayed({ if (open) refresh() }, delay)
+        // Sin el aviso del sintonizador, la búsqueda tarda: se vuelve a leer la estación.
+        rereadSoon()
     }
 
     override fun takeAudio() {
@@ -287,23 +190,6 @@ internal class NwdRadio(
             .onFailure { trace("nwd aviso ${intent.action} falló") }
     }
 
-    /** Una llamada al sintonizador, como la hace su AIDL (token, argumentos, excepción, respuesta). */
-    private fun <T> call(code: Int, write: (Parcel) -> Unit = {}, binder: IBinder? = tuner, read: (Parcel) -> T): T {
-        checkNotNull(binder) { "sin sintonizador" }
-        val data = Parcel.obtain()
-        val reply = Parcel.obtain()
-        try {
-            data.writeInterfaceToken(DESCRIPTOR)
-            write(data)
-            check(binder.transact(code, data, reply, 0)) { "rechazó $code" }
-            reply.readException()
-            return read(reply)
-        } finally {
-            reply.recycle()
-            data.recycle()
-        }
-    }
-
     private data class Tuned(val band: Int, val frequency: Int, val name: String)
 
     /** `Frequency` del firmware: marca de no nulo, banda (byte), nombre RDS y frecuencia. */
@@ -331,8 +217,6 @@ internal class NwdRadio(
         private const val CALLBACK_FREQUENCY = 2
         private const val CALLBACK_LAST = 14
         private const val TYPE_MCU = 0
-        private const val CONNECT_TIMEOUT_MS = 6_000L
-        private val SEARCH_READS_MS = longArrayOf(1_500L, 4_000L)
 
         private const val FREQ = "nwd_radio_current_freq"
         private const val BAND = "nwd_radio_current_band"
@@ -363,7 +247,7 @@ internal class NwdRadio(
             fun version(pkg: String) = runCatching { context.packageManager.getPackageInfo(pkg, 0).versionName }.getOrNull() ?: "no"
             return "NWD: frecuencia=${v(FREQ)} banda=${v(BAND)} rds=${decodePs(v(PS).takeIf { it != "-" }).ifEmpty { "-" }} fuente=${v(SOURCE)} " +
                 "sintonizador=${version(SERVICE_PACKAGE)} kernel=${version(KERNEL_PACKAGE)} " +
-                "perfil=${yes(radio?.open == true)} conectado=${yes(radio?.tuner != null)} tipo=${radio?.tunerType ?: "-"} " +
+                "perfil=${yes(radio?.open == true)} conectado=${yes(radio?.connected == true)} tipo=${radio?.tunerType ?: "-"} " +
                 "avisos=${yes(radio?.notified == true)} estación=${radio?.station ?: "-"}"
         }
     }

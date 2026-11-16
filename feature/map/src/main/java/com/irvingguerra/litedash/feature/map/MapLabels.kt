@@ -18,8 +18,28 @@ import kotlin.math.sqrt
  */
 class LabelRun(val name: String, val tier: RoadTier, val x0: Double, val y0: Double, val x1: Double, val y1: Double, val width: Float)
 
-/** Un nombre ya acomodado: centro en pantalla, giro (grados, siempre legible) y lo que mide. */
-class PlacedLabel(val name: String, val x: Float, val y: Float, val degrees: Float, val width: Float)
+/** Un nombre ya acomodado: centro en pantalla, giro (grados, siempre legible) y lo que mide. Se reusa cuadro a cuadro. */
+class PlacedLabel internal constructor() {
+    var name = ""
+        private set
+    var x = 0f
+        private set
+    var y = 0f
+        private set
+    var degrees = 0f
+        private set
+    var width = 0f
+        private set
+
+    internal fun set(name: String, x: Float, y: Float, degrees: Float, width: Float) {
+        this.name = name; this.x = x; this.y = y; this.degrees = degrees; this.width = width
+    }
+}
+
+/** Lleva un punto en teselas del zoom del mapa a la pantalla, en `out` (x, y); false = detrás de la cámara. */
+fun interface ScreenPoint {
+    fun toScreen(x: Double, y: Double, out: FloatArray): Boolean
+}
 
 /**
  * Los tramos de [tiles] (tesela origen → sus nombres) donde caben los nombres, en el zoom [z] con teselas de [tilePx]
@@ -102,52 +122,72 @@ private fun angleBetween(a: Double, b: Double): Double {
 }
 
 /**
- * Acomoda los nombres de [runs] en una vista de [width] × [height] px (nada arriba de [top]: el cielo del mapa
- * inclinado). [toScreen] lleva un punto en teselas del zoom del mapa a la pantalla (false = detrás de la cámara);
- * [textHeight] = alto del texto y [dp] = px por dp. A lo más [max] nombres, sin encimarse ni repetir uno cerca de otro igual.
+ * Dónde van los nombres en pantalla: a lo más [max], sin encimarse ni repetir uno cerca de otro igual. Se reusa cuadro
+ * a cuadro: los nombres, sus cajas y los puntos viven aquí ([placed] = lo último que se acomodó).
  */
-fun placeLabels(
-    runs: List<LabelRun>,
-    width: Float,
-    height: Float,
-    top: Float,
-    textHeight: Float,
-    dp: Float,
-    max: Int,
-    toScreen: (Double, Double, FloatArray) -> Boolean,
-): List<PlacedLabel> {
-    val placed = ArrayList<PlacedLabel>()
-    val boxes = ArrayList<FloatArray>()
-    val a = FloatArray(3)
-    val b = FloatArray(3)
-    for (run in runs) {
-        if (placed.size >= max) break
-        if (!toScreen(run.x0, run.y0, a) || !toScreen(run.x1, run.y1, b)) continue
-        val dx = b[0] - a[0]
-        val dy = b[1] - a[1]
-        val length = sqrt(dx * dx + dy * dy)
-        // Inclinado, lo lejano se achica: si ya no cabe ahí, no va.
-        if (length < run.width + LABEL_PAD * 2 * dp) continue
-        val cx = (a[0] + b[0]) / 2
-        val cy = (a[1] + b[1]) / 2
-        var degrees = (atan2(dy, dx) * 180 / PI).toFloat()
-        // Siempre de izquierda a derecha (nunca de cabeza).
-        if (degrees > 90f) degrees -= 180f else if (degrees < -90f) degrees += 180f
-        // El rectángulo girado, en su caja derecha (con poco aire: las calles van juntas).
-        val r = degrees * PI / 180
-        val c = abs(cos(r)).toFloat()
-        val s = abs(kotlin.math.sin(r)).toFloat()
-        val halfW = (run.width * c + textHeight * s) / 2 + LABEL_GAP * dp
-        val halfH = (run.width * s + textHeight * c) / 2 + LABEL_GAP * dp
-        val box = floatArrayOf(cx - halfW, cy - halfH, cx + halfW, cy + halfH)
-        // Completo o nada: un nombre cortado por la orilla se ve roto.
-        if (box[0] < 0f || box[2] > width || box[1] < top || box[3] > height) continue
-        if (boxes.any { it[0] < box[2] && box[0] < it[2] && it[1] < box[3] && box[1] < it[3] }) continue
-        if (placed.any { it.name == run.name && hypot(it.x - cx, it.y - cy) < SAME_NAME_GAP * dp }) continue
-        boxes += box
-        placed += PlacedLabel(run.name, cx, cy, degrees, run.width)
+class LabelLayout(private val max: Int) {
+    private val pool = Array(max) { PlacedLabel() }
+    private val boxes = FloatArray(4 * max)
+    private val a = FloatArray(3)
+    private val b = FloatArray(3)
+    private val shown = ArrayList<PlacedLabel>(max)
+    val placed: List<PlacedLabel> get() = shown
+
+    /**
+     * Acomoda los nombres de [runs] en una vista de [width] × [height] px (nada arriba de [top]: el cielo del mapa
+     * inclinado). [screen] lleva un punto en teselas del zoom del mapa a la pantalla; [textHeight] = alto del texto y
+     * [dp] = px por dp.
+     */
+    fun place(runs: List<LabelRun>, width: Float, height: Float, top: Float, textHeight: Float, dp: Float, screen: ScreenPoint) {
+        shown.clear()
+        for (i in runs.indices) {
+            val run = runs[i]
+            if (shown.size >= max) break
+            if (!screen.toScreen(run.x0, run.y0, a) || !screen.toScreen(run.x1, run.y1, b)) continue
+            val dx = b[0] - a[0]
+            val dy = b[1] - a[1]
+            val length = sqrt(dx * dx + dy * dy)
+            // Inclinado, lo lejano se achica: si ya no cabe ahí, no va.
+            if (length < run.width + LABEL_PAD * 2 * dp) continue
+            val cx = (a[0] + b[0]) / 2
+            val cy = (a[1] + b[1]) / 2
+            var degrees = (atan2(dy, dx) * 180 / PI).toFloat()
+            // Siempre de izquierda a derecha (nunca de cabeza).
+            if (degrees > 90f) degrees -= 180f else if (degrees < -90f) degrees += 180f
+            // El rectángulo girado, en su caja derecha (con poco aire: las calles van juntas).
+            val r = degrees * PI / 180
+            val c = abs(cos(r)).toFloat()
+            val s = abs(kotlin.math.sin(r)).toFloat()
+            val halfW = (run.width * c + textHeight * s) / 2 + LABEL_GAP * dp
+            val halfH = (run.width * s + textHeight * c) / 2 + LABEL_GAP * dp
+            val l = cx - halfW
+            val t = cy - halfH
+            val rt = cx + halfW
+            val bt = cy + halfH
+            // Completo o nada: un nombre cortado por la orilla se ve roto.
+            if (l < 0f || rt > width || t < top || bt > height) continue
+            if (overlaps(l, t, rt, bt) || repeatsNear(run.name, cx, cy, dp)) continue
+            val n = shown.size
+            boxes[n * 4] = l; boxes[n * 4 + 1] = t; boxes[n * 4 + 2] = rt; boxes[n * 4 + 3] = bt
+            shown += pool[n].also { it.set(run.name, cx, cy, degrees, run.width) }
+        }
     }
-    return placed
+
+    private fun overlaps(l: Float, t: Float, r: Float, b: Float): Boolean {
+        for (i in shown.indices) {
+            val o = i * 4
+            if (boxes[o] < r && l < boxes[o + 2] && boxes[o + 1] < b && t < boxes[o + 3]) return true
+        }
+        return false
+    }
+
+    private fun repeatsNear(name: String, x: Float, y: Float, dp: Float): Boolean {
+        for (i in shown.indices) {
+            val p = shown[i]
+            if (p.name == name && hypot(p.x - x, p.y - y) < SAME_NAME_GAP * dp) return true
+        }
+        return false
+    }
 }
 
 /**
@@ -159,7 +199,7 @@ fun nearestStreet(origin: Long, names: TileNames, lat: Double, lon: Double): Str
     // Tu posición en unidades de la tesela.
     val px = (tileX(lon, z) - keyX(origin)) * names.extent
     val py = (tileY(lat, z) - keyY(origin)) * names.extent
-    val metersPerUnit = EARTH_METERS * cos(Math.toRadians(lat)) / (1 shl z) / names.extent
+    val metersPerUnit = EQUATOR_METERS * cos(Math.toRadians(lat)) / (1 shl z) / names.extent
     var best: String? = null
     var bestDistance = MAX_STREET_METERS / metersPerUnit
     for (road in names.roads) {
@@ -203,6 +243,3 @@ private const val SAME_NAME_GAP = 160f
 
 /** Más lejos que esto de cualquier calle con nombre, no se dice en cuál estás. */
 private const val MAX_STREET_METERS = 30.0
-
-/** El ecuador en metros (Web Mercator). */
-private const val EARTH_METERS = 40_075_016.686

@@ -14,9 +14,19 @@ fun describe(code: String, spanish: Boolean): String {
     return system(code, spanish)
 }
 
+/**
+ * De la marca (SAE J2012): P1xxx y P30xx–P33xx; en B, C y U, los que empiezan con 1 o 2. Los
+ * P2xxx y P34xx–P39xx son genéricos aunque no empiecen con 0.
+ */
+internal fun isMakerCode(code: String): Boolean = when (code.firstOrNull()) {
+    'P' -> code.getOrNull(1) == '1' || code.getOrNull(1) == '3' && code.getOrNull(2) in '0'..'3'
+    'B', 'C', 'U' -> code.getOrNull(1) == '1' || code.getOrNull(1) == '2'
+    else -> false
+}
+
 /** El sistema por la primera letra y el tercer carácter (P0 1xx = aire y combustible…). */
 private fun system(code: String, spanish: Boolean): String {
-    val maker = code.getOrNull(1) != '0'
+    val maker = isMakerCode(code)
     val text = when (code.firstOrNull()) {
         'B' -> if (spanish) "Carrocería" else "Body"
         'C' -> if (spanish) "Chasis (frenos, suspensión)" else "Chassis (brakes, suspension)"

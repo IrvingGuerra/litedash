@@ -6,6 +6,7 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import org.junit.Assert.fail
 import org.junit.Test
 
 class Elm327Test {
@@ -23,6 +24,89 @@ class Elm327Test {
         }
         override fun close() {}
     })
+
+    /**
+     * Adaptador falso que contesta según el comando ([answer] null = calla) y un reloj falso (así un
+     * comando sin respuesta expira sin esperar de verdad).
+     */
+    private class Scripted(private val answer: (String) -> String?) : ElmLink {
+        val sent = mutableListOf<String>()
+        private var reply = ByteArrayInputStream(ByteArray(0))
+        private val line = StringBuilder()
+        override val input = object : java.io.InputStream() {
+            override fun read() = reply.read()
+            override fun available() = reply.available()
+        }
+        override val output = object : java.io.OutputStream() {
+            override fun write(b: Int) {
+                if (b != '\r'.code) return run { line.append(b.toChar()) }
+                val cmd = line.toString().also { line.clear() }
+                sent += cmd
+                reply = ByteArrayInputStream((answer(cmd) ?: "").toByteArray())
+            }
+        }
+        override fun close() {}
+        private var clock = 0L
+        // El reloj solo avanza cuando ya no hay nada que leer (si no, expiraría a media respuesta).
+        fun elm() = Elm327(this, now = { if (reply.available() == 0) clock += 1_000; clock })
+    }
+
+    @Test fun comando_sin_respuesta_expira_con_su_tipo() {
+        val e = Scripted { null }.elm()
+        try {
+            e.command("ATZ")
+            fail()
+        } catch (x: ObdException) {
+            assertEquals(ObdError.ADAPTER_SILENT, x.kind)
+        }
+    }
+
+    @Test fun el_auto_que_no_contesta_se_dice_aparte() {
+        val e = Scripted { if (it == "0100") "UNABLE TO CONNECT\r>" else "OK\r>" }.elm()
+        try {
+            e.init()
+            fail()
+        } catch (x: ObdException) {
+            assertEquals(ObdError.CAR_SILENT, x.kind)
+            assertEquals("UNABLETOCONNECT", x.message)
+        }
+    }
+
+    @Test fun modulo_restaura_siempre_y_corta_al_primer_no() {
+        val link = Scripted { cmd ->
+            when (cmd) {
+                "2123" -> "6123AABB\r>"
+                "2126" -> "7F2131\r>"
+                "2124" -> null // el adaptador se queda callado
+                else -> "OK\r>"
+            }
+        }
+        val replies = link.elm().module(listOf("ATSH600"), listOf("2123", "2126", "2124"), listOf("ATSH7DF", "ATCRA"))
+        assertEquals(2, replies.size)
+        assertArrayEquals(intArrayOf(0xAA, 0xBB), replies[0])
+        assertNull(replies[1])
+        assertEquals(listOf("ATSH600", "2123", "2126", "ATSH7DF", "ATCRA"), link.sent)
+        // Aunque una petición falle, el motor queda como estaba.
+        val silent = Scripted { if (it == "2123") null else "OK\r>" }
+        try {
+            silent.elm().module(listOf("ATSH600"), listOf("2123"), listOf("ATSH7DF"))
+            fail()
+        } catch (x: ObdException) {
+            assertEquals(ObdError.ADAPTER_SILENT, x.kind)
+        }
+        assertEquals("ATSH7DF", silent.sent.last())
+    }
+
+    @Test fun voltaje_del_adaptador_perdido_no_se_traga() {
+        // Antes un runCatching lo volvía null y la caída nunca se notaba.
+        try {
+            Scripted { null }.elm().voltage()
+            fail()
+        } catch (x: ObdException) {
+            assertEquals(ObdError.ADAPTER_SILENT, x.kind)
+        }
+        assertEquals(12.6f, Scripted { "12.6V\r>" }.elm().voltage())
+    }
 
     @Test fun limpia_eco_y_espacios() {
         assertEquals(listOf("410D3C"), elm("010D\r41 0D 3C\r\r>").command("010D"))
@@ -75,14 +159,28 @@ class Elm327Test {
     @Test fun monitores() {
         val r = parseReadiness(intArrayOf(0x81, 0x07, 0x65, 0x04))!!
         assertTrue(r.mil)
-        assertEquals(1, r.codes)
         assertFalse(r.monitors.first { it.name == MonitorName.EVAP }.complete)
         assertTrue(r.monitors.first { it.name == MonitorName.CATALYST }.complete)
     }
 
     @Test fun describe_codigos() {
         assertEquals("Falla de encendido en el cilindro 3", describe("P0303", true))
+        assertEquals("Cylinder 3 misfire", describe("P0303", false))
         assertTrue(describe("P1234", true).contains("marca"))
+        assertTrue(describe("P1234", false).contains("manufacturer"))
+    }
+
+    @Test fun codigos_de_la_marca_segun_sae() {
+        for (c in listOf("P1234", "P3000", "P3399", "B1001", "C2100", "U1000")) assertTrue(c, isMakerCode(c))
+        // P2xxx y P34xx–P39xx son genéricos (antes salían "de la marca"), igual U0/U3.
+        for (c in listOf("P0420", "P2096", "P2187", "P3400", "P3999", "B0001", "U0100", "U3000")) assertFalse(c, isMakerCode(c))
+        assertFalse(describe("P2096", true).contains("marca"))
+    }
+
+    @Test fun vin_sin_simbolos_de_relleno() {
+        // Un ":" (0x3A) de relleno al final ya no se cuela en los últimos 17.
+        val lines = listOf("015", "0:490201314731", "1:4A433534343452", "2:373235323336373A")
+        assertEquals("1G1JC5444R7252367", parseVin(lines))
     }
 
     @Test fun modulo_en_una_trama() =

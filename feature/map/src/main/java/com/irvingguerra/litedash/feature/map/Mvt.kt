@@ -12,8 +12,8 @@ class VectorTile(
     val rivers: List<Shape>,
     /** Por [RoadTier.ordinal]. */
     val roads: List<List<Shape>>,
-    val buildings: List<Shape> = emptyList(),
-    val names: List<RoadName> = emptyList(),
+    val buildings: List<Shape>,
+    val names: List<RoadName>,
 )
 
 /** Una calle con nombre (capa `transportation_name`): su trazo y su tipo. */
@@ -66,7 +66,7 @@ fun parseVectorTile(data: ByteArray, withBuildings: Boolean = true): VectorTile?
     var extent = 4096
     var layers = 0
     val tile = Pbf(data)
-    runCatching {
+    try {
         while (tile.more()) {
             val tag = tile.tag()
             if (tag != LAYER) {
@@ -74,7 +74,8 @@ fun parseVectorTile(data: ByteArray, withBuildings: Boolean = true): VectorTile?
                 continue
             }
             layers++
-            val layer = readLayer(tile.message()) ?: continue
+            // Sin edificios (lo lejano), su capa ni se lee: son miles.
+            val layer = readLayer(tile.message(), skip = if (withBuildings) null else "building") ?: continue
             extent = layer.extent
             val classKey = layer.keys.indexOf("class")
             when (layer.name) {
@@ -92,7 +93,7 @@ fun parseVectorTile(data: ByteArray, withBuildings: Boolean = true): VectorTile?
                     if (f.type != LINE) return@forEach
                     roadTier(f.value(layer, classKey))?.let { roads[it.ordinal] += f.shape() }
                 }
-                "building" -> if (withBuildings) layer.features.forEach { f -> if (f.type == POLYGON) buildings += f.shape() }
+                "building" -> layer.features.forEach { f -> if (f.type == POLYGON) buildings += f.shape() }
                 "transportation_name" -> {
                     val nameKey = layer.keys.indexOf("name")
                     layer.features.forEach { f ->
@@ -104,6 +105,8 @@ fun parseVectorTile(data: ByteArray, withBuildings: Boolean = true): VectorTile?
                 }
             }
         }
+    } catch (_: RuntimeException) {
+        // Dañada o cortada (fuera de rango al leerla): lo que se alcanzó a leer.
     }
     if (layers == 0 && data.isNotEmpty()) return null
     return VectorTile(extent, water, parks, rivers, roads, buildings, names)
@@ -153,7 +156,8 @@ private class Feature(val type: Int, val tags: Pbf?, val geometry: Pbf?) {
     }
 }
 
-private fun readLayer(p: Pbf): Layer? {
+/** La capa de [p]; null si no se usa (o es [skip]): se deja sin leer sus elementos. */
+private fun readLayer(p: Pbf, skip: String?): Layer? {
     var name = ""
     var extent = 4096
     val keys = ArrayList<String>()
@@ -169,7 +173,7 @@ private fun readLayer(p: Pbf): Layer? {
             else -> p.skip(tag)
         }
         // Las capas que no se usan no se leen (negocios, números de casa, límites…).
-        if (name.isNotEmpty() && name !in USED_LAYERS) return null
+        if (name.isNotEmpty() && (name !in USED_LAYERS || name == skip)) return null
     }
     return Layer(name, extent, keys, values, features.map(::readFeature))
 }

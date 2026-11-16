@@ -2,6 +2,7 @@ package com.irvingguerra.litedash.feature.map
 
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -98,6 +99,43 @@ class MapMathTest {
         // Inclinado, 60 teselas minimalistas de 384 px (288 KB): caben todas y 8 más.
         val tile = 384 * 384 * 2
         assertEquals(68 * tile, memoryBytes(60, tile))
+        // Con memoria de sobra, el doble (las del zoom anterior de respaldo); nunca más que [roomy] ni menos que lo visible.
+        assertEquals(136 * tile, memoryBytes(60, tile, roomy = 200 * tile))
+        assertEquals(100 * tile, memoryBytes(60, tile, roomy = 100 * tile))
+        assertEquals(68 * tile, memoryBytes(60, tile, roomy = 10 * tile))
+    }
+
+    @Test
+    fun memoryGrowsShrinksAndKeepsWhatItHasWithNothingVisible() {
+        val tile = 512 * 512 * 2
+        val roomy = 1_000 * tile
+        // Crece si no cabe lo que se ve.
+        assertEquals(136 * tile, memoryResize(MEMORY_MIN_BYTES, 60, tile, roomy, Int.MAX_VALUE))
+        // Si cabe y no sobra más de la mitad, se queda.
+        assertEquals(null, memoryResize(136 * tile, 60, tile, roomy, Int.MAX_VALUE))
+        // Si sobra más de la mitad, se encoge.
+        assertEquals(36 * tile, memoryResize(136 * tile, 10, tile, roomy, Int.MAX_VALUE))
+        // Sin nada visible (un mapa dejó de pedir antes de que el otro pida) no se toca: no se tiran las teselas.
+        assertEquals(null, memoryResize(136 * tile, 0, tile, roomy, Int.MAX_VALUE))
+        // Con tope (una tesela no cupo en memoria), no pasa de él.
+        assertEquals(40 * tile, memoryResize(MEMORY_MIN_BYTES, 60, tile, roomy, 40 * tile))
+    }
+
+    @Test
+    fun viewsAskTogether() {
+        val views = ViewRequests()
+        val widget = Any()
+        val big = Any()
+        assertTrue(views.union().isEmpty())
+        views.set(widget, setOf(1L, 2L))
+        views.set(big, setOf(2L, 3L))
+        assertEquals(setOf(1L, 2L, 3L), views.union())
+        // Uno deja de pedir: queda lo del otro.
+        assertTrue(views.remove(widget))
+        assertEquals(setOf(2L, 3L), views.union())
+        assertFalse(views.remove(widget))
+        assertTrue(views.remove(big))
+        assertTrue(views.union().isEmpty())
     }
 
     @Test

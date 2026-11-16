@@ -11,6 +11,8 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asAndroidBitmap
 import com.irvingguerra.litedash.core.ui.Https
 import java.io.File
+import java.io.FileNotFoundException
+import java.io.IOException
 import java.net.HttpURLConnection
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -32,7 +34,7 @@ class TileStore(context: Context, private val userAgent: String, val source: Til
     private val dir = File(app.filesDir, source.folder)
     /** Las zonas descargadas (solo el minimalista: OSM no deja bajar en bloque). */
     private val offline = if (source is VectorTiles) OfflineMaps.get(app) else null
-    /** Una descarga (y una lectura) por archivo: varias teselas del 15–17 salen de la misma del 14. */
+    /** Una descarga (y una lectura) por archivo: varias teselas del 15 en adelante salen de la misma del 14. */
     private val fileLocks = Array(FILE_LOCKS) { Any() }
     private val lock = Any()
     private val memory = object : LruCache<Long, ImageBitmap>(MEMORY_MIN_BYTES) {
@@ -40,6 +42,8 @@ class TileStore(context: Context, private val userAgent: String, val source: Til
     }
     /** El tamaño de una tesela en memoria (de la más grande que ha llegado). */
     private var tileBytes = 0
+    /** Tope de la memoria de teselas: sin tope, hasta que una tesela no cupo (entonces, la mitad de lo que había). */
+    private var memoryCap = Int.MAX_VALUE
     /** Pila: lo último que se pidió es lo que se ve ahora. */
     private val queue = ArrayDeque<Long>()
     private val pending = HashSet<Long>()
@@ -47,14 +51,19 @@ class TileStore(context: Context, private val userAgent: String, val source: Til
     private val retryAt = HashMap<Long, Long>()
     private var visible: Set<Long> = emptySet()
     /** Lo que pidió cada mapa que lo está viendo. */
-    private val views = HashMap<Any, Set<Long>>()
+    private val views = ViewRequests()
     private var scope: CoroutineScope? = null
-    /** Cuántos mapas lo están viendo, y cuántas veces se quedó sin ninguno (para soltar la memoria solo si sigue así). */
+    /** Cuántos mapas lo están viendo (solo en el hilo principal). */
     private var users = 0
-    private var idles = 0
-    private val release = Handler(Looper.getMainLooper())
+    private val main = Handler(Looper.getMainLooper())
+    /** Sin mapas que lo vean un momento seguido: deja de trabajar y suelta la memoria. */
+    private val idle = Runnable { synchronized(lock) { if (users == 0) stop() } }
+    /** Vuelve a pedir lo que falló cuando ya toca (nadie repinta para pedirlo). */
+    private val retry = Runnable { synchronized(lock) { schedule() } }
     private var workers = 0
     private var writes = 0
+    /** Ya se escribieron [TRIM_EVERY] teselas más: el siguiente trabajador recorta el disco (sin candados de archivo en la mano). */
+    @Volatile private var trimDue = false
     /** El servidor pidió calma (429/503) o nos bloqueó (403/418): sin red hasta esa hora; se muestra lo guardado. */
     @Volatile private var backoffUntil = 0L
 
@@ -66,42 +75,54 @@ class TileStore(context: Context, private val userAgent: String, val source: Til
 
     /**
      * Las teselas que ve ahora el mapa [view] (el widget y el mapa en grande comparten almacén: cuenta lo de todos):
-     * se cargan las que falten; las que ya nadie ve salen de la fila.
+     * se cargan las que falten; las que ya nadie ve salen de la fila. Se llama solo cuando cambian.
      */
     fun request(view: Any, keys: Set<Long>) = synchronized(lock) {
-        views[view] = keys
+        views.set(view, keys)
         schedule()
     }
 
     /** El mapa [view] ya no se ve (o lo taparon): lo suyo deja de pedirse. */
     fun forget(view: Any) = synchronized(lock) {
-        if (views.remove(view) != null) schedule()
+        if (views.remove(view)) schedule()
     }
 
     private fun schedule() {
-        val keys = views.values.singleOrNull() ?: views.values.flatMapTo(HashSet()) { it }
+        val keys = views.union()
         visible = keys
         retryAt.keys.retainAll(keys)
-        // Que siempre quepa lo que se ve (inclinado son más que en plano) y, si la memoria da, otro tanto: las del
-        // zoom anterior, que tapan el hueco mientras llegan las nuevas. Si sobra más de la mitad, se encoge.
-        val needed = memoryBytes(keys.size, tileBytes, (Runtime.getRuntime().maxMemory() / MEMORY_SHARE).toInt())
-        if (needed > memory.maxSize() || needed < memory.maxSize() / 2) memory.resize(needed)
+        fitMemory(keys.size)
         val s = scope ?: return
         val now = System.currentTimeMillis()
+        var nextRetry = Long.MAX_VALUE
         for (k in keys) {
-            if (k in pending || memory.get(k) != null || (retryAt[k] ?: 0L) > now) continue
+            val at = retryAt[k] ?: 0L
+            if (at > now) nextRetry = minOf(nextRetry, at)
+            if (k in pending || at > now || memory.get(k) != null) continue
             pending += k
             queue.addLast(k)
         }
+        main.removeCallbacks(retry)
+        if (nextRetry != Long.MAX_VALUE) main.postDelayed(retry, nextRetry - now)
         while (workers < MAX_DOWNLOADS && queue.isNotEmpty()) {
             workers++
             s.launch { work(s) }
         }
     }
 
+    /**
+     * Que siempre quepan las [visible] que se ven (inclinado son más que en plano) y, si la memoria da, otro tanto: las
+     * del zoom anterior, que tapan el hueco mientras llegan las nuevas. Sin nada visible no se toca: la suelta [stop].
+     */
+    private fun fitMemory(visible: Int) {
+        val roomy = (Runtime.getRuntime().maxMemory() / MEMORY_SHARE).toInt()
+        memoryResize(memory.maxSize(), visible, tileBytes, roomy, memoryCap)?.let(memory::resize)
+    }
+
     /** Un mapa más lo está viendo (el widget y el mapa en grande comparten almacén): trabaja mientras haya alguno. */
     fun resume() = synchronized(lock) {
         users++
+        main.removeCallbacks(idle)
         if (scope != null) return@synchronized
         scope = CoroutineScope(SupervisorJob() + Dispatchers.IO).also { it.launch { trim(force = false) } }
         // Lo que ya se dibujó antes de arrancar (el primer cuadro llega antes que este efecto).
@@ -109,20 +130,27 @@ class TileStore(context: Context, private val userAgent: String, val source: Til
     }
 
     /**
-     * Un mapa menos; sin ninguno, deja de descargar y suelta la memoria (la app se fue o el mapa ya no se ve). La
-     * memoria, un momento después: al abrir el mapa en grande el widget se va antes de que llegue el otro.
+     * Un mapa menos. Sin ninguno un momento seguido ([RELEASE_MS]), deja de descargar y suelta la memoria (la app se fue
+     * o el mapa ya no se ve): al abrir el mapa en grande el widget se va antes de que llegue el otro, y así no se tira nada.
      */
     fun pause() = synchronized(lock) {
         users = (users - 1).coerceAtLeast(0)
         if (users > 0) return@synchronized
+        main.removeCallbacks(idle)
+        main.postDelayed(idle, RELEASE_MS)
+    }
+
+    /** Ya nadie lo ve: sin trabajadores, fila ni memoria (también lo que se guardó leído de la fuente). */
+    private fun stop() {
         scope?.cancel()
         scope = null
         queue.clear()
         pending.clear()
         retryAt.clear()
         workers = 0
-        val idle = ++idles
-        release.postDelayed({ synchronized(lock) { if (users == 0 && idles == idle) memory.evictAll() } }, RELEASE_MS)
+        main.removeCallbacks(retry)
+        memory.evictAll()
+        source.trim()
     }
 
     /** Un trabajador de [owner]: si mientras tanto se pausó (o se pausó y se reanudó), sale sin tocar nada. */
@@ -138,19 +166,42 @@ class TileStore(context: Context, private val userAgent: String, val source: Til
                 if (next == null) workers--
                 next
             } ?: return
-            val result = runCatching { load(key) }.getOrElse { Loaded(null, System.currentTimeMillis() + RETRY_MS) }
+            val result = try {
+                load(key)
+            } catch (_: OutOfMemoryError) {
+                // No cupo una tesela más: la memoria de teselas baja a la mitad y ya no crece más que eso.
+                synchronized(lock) {
+                    memoryCap = maxOf(MEMORY_MIN_BYTES, memory.size() / 2)
+                    memory.resize(memoryCap)
+                }
+                Loaded(null, System.currentTimeMillis() + RETRY_MS)
+            } catch (_: Exception) {
+                // Sin red, disco o un archivo que no se pudo leer: otra vez al rato.
+                Loaded(null, System.currentTimeMillis() + RETRY_MS)
+            }
+            if (trimDue) {
+                trimDue = false
+                trim(force = true)
+            }
             val image = result.image
             synchronized(lock) {
                 if (scope !== owner) return
                 pending -= key
-                if (image == null) retryAt[key] = result.retryAt
-                else {
+                if (image == null) {
+                    retryAt[key] = result.retryAt
+                    schedule()
+                } else {
                     retryAt -= key
-                    tileBytes = maxOf(tileBytes, image.asAndroidBitmap().allocationByteCount)
+                    val bytes = image.asAndroidBitmap().allocationByteCount
+                    // Más grande que las de antes: primero se agranda la memoria, que no saque a una que se ve.
+                    if (bytes > tileBytes) {
+                        tileBytes = bytes
+                        fitMemory(visible.size)
+                    }
                     memory.put(key, image)
+                    loaded++
                 }
             }
-            if (image != null) loaded++
         }
     }
 
@@ -167,11 +218,11 @@ class TileStore(context: Context, private val userAgent: String, val source: Til
             val now = System.currentTimeMillis()
             // Primero lo descargado sin conexión (no caduca ni gasta datos); vacía = ahí no hay nada y se dibuja lisa.
             offline?.tile(keyZ(origin), keyX(origin), keyY(origin))?.let { body ->
-                val image = runCatching { source.decode(body, key, origin) }.getOrNull()
+                val image = decode(body, key, origin)
                 if (image != null) return Loaded(image, 0L)
             }
             val tile = data(file, origin) ?: return Loaded(null, now + RETRY_MS)
-            val image = runCatching { source.decode(tile.body, key, origin) }.getOrNull()
+            val image = decode(tile.body, key, origin)
             when {
                 image != null -> Loaded(image, 0L)
                 // Vacía (204/404): el minimalista la dibuja lisa; las de OSM no tienen qué mostrar hasta que caduque.
@@ -185,14 +236,31 @@ class TileStore(context: Context, private val userAgent: String, val source: Til
         }
     }
 
+    /** La imagen de lo bajado; null si está dañado (gzip roto, PNG a medias). Si no cabe en memoria, eso sí sube. */
+    private fun decode(body: ByteArray, key: Long, origin: Long): ImageBitmap? = try {
+        source.decode(body, key, origin)
+    } catch (_: Exception) {
+        null
+    }
+
     private fun data(file: File, origin: Long): TileFile? {
         val now = System.currentTimeMillis()
-        val cached = if (file.exists()) TileFile.decode(file.readBytes()) else null
+        // Sin preguntar antes si existe: el recorte del disco la pudo borrar en medio (entonces no está y se baja).
+        val cached = try {
+            TileFile.decode(file.readBytes())
+        } catch (_: FileNotFoundException) {
+            null
+        }
         if (cached != null) {
             file.setLastModified(now) // para el recorte: las más usadas se quedan
             if (cached.expires > now || now < backoffUntil) return cached
         }
-        val fetched = runCatching { fetch(origin, cached) }.getOrNull()
+        // Sin red (o el servidor tardó de más): lo guardado, aunque esté vencido.
+        val fetched = try {
+            fetch(origin, cached)
+        } catch (_: IOException) {
+            null
+        }
         if (fetched != null) {
             save(file, fetched)
             return fetched
@@ -242,7 +310,7 @@ class TileStore(context: Context, private val userAgent: String, val source: Til
         val temp = File.createTempFile(file.name, ".tmp", dir)
         temp.writeBytes(tile.encode())
         if (!temp.renameTo(file)) temp.delete()
-        if (synchronized(lock) { ++writes } % TRIM_EVERY == 0) trim(force = true)
+        if (synchronized(lock) { ++writes } % TRIM_EVERY == 0) trimDue = true
     }
 
     /**
@@ -262,7 +330,6 @@ class TileStore(context: Context, private val userAgent: String, val source: Til
 
     private companion object {
         const val FILE_LOCKS = 32
-        const val MAX_DOWNLOADS = 2
         /** La memoria de teselas no pasa de esta parte de la que tiene la app (salvo que no quepa lo que se ve). */
         const val MEMORY_SHARE = 6
         const val RELEASE_MS = 1_500L

@@ -16,7 +16,6 @@ import androidx.compose.runtime.setValue
 @Immutable
 data class TurnInstruction(
     val key: String,
-    val pkg: String,
     /** Normalmente la distancia a la vuelta ("300 m"). */
     val title: String,
     /** Normalmente la maniobra ("Gira a la derecha hacia Reforma"). */
@@ -53,11 +52,7 @@ class NavigationRepository(private val context: Context, private val listens: (S
     fun posted(notification: StatusBarNotification) {
         if (users == 0 || !listens(notification.packageName)) return
         val n = notification.notification
-        // Waze y Maps navegan con un aviso fijo (o de categoría navegación); los demás avisos no cuentan.
-        // CATEGORY_NAVIGATION (API 28) es solo un texto: en Android viejo la categoría llega vacía.
-        @SuppressLint("InlinedApi")
-        val ongoing = n.flags and Notification.FLAG_ONGOING_EVENT != 0 || n.category == Notification.CATEGORY_NAVIGATION
-        if (!ongoing && notification.packageName != TEST_PACKAGE) return
+        if (!navigates(notification.packageName, n.flags, n.category)) return
         val e = n.extras
         val title = e.getCharSequence(Notification.EXTRA_TITLE)?.toString().orEmpty()
         val text = (e.getCharSequence(Notification.EXTRA_BIG_TEXT) ?: e.getCharSequence(Notification.EXTRA_TEXT))?.toString().orEmpty()
@@ -65,11 +60,9 @@ class NavigationRepository(private val context: Context, private val listens: (S
         val detail = e.getCharSequence(Notification.EXTRA_SUB_TEXT)?.toString().orEmpty()
         // Waze y Maps repiten el aviso a cada rato con lo mismo: si no cambió, ni se carga
         // la flecha (es un bitmap) ni se avisa a la pantalla.
-        val current = instruction
-        if (current != null && current.key == notification.key && current.title == title && current.text == text && current.detail == detail) return
+        if (instruction?.says(notification.key, title, text, detail) == true) return
         instruction = TurnInstruction(
             key = notification.key,
-            pkg = notification.packageName,
             title = title,
             text = text,
             detail = detail,
@@ -96,3 +89,17 @@ class NavigationRepository(private val context: Context, private val listens: (S
         const val TEST_PACKAGE = "com.android.shell"
     }
 }
+
+/**
+ * ¿Es el aviso con el que navega una app? Waze y Maps navegan con un aviso fijo (o de categoría navegación); los demás
+ * avisos no cuentan. CATEGORY_NAVIGATION (API 28) es solo un texto: en Android viejo la categoría llega vacía. Los de
+ * prueba ([NavigationRepository.TEST_PACKAGE]) cuentan aunque no sean fijos (`cmd notification post` no los fija).
+ */
+@SuppressLint("InlinedApi")
+internal fun navigates(pkg: String, flags: Int, category: String?): Boolean =
+    flags and Notification.FLAG_ONGOING_EVENT != 0 || category == Notification.CATEGORY_NAVIGATION ||
+        pkg == NavigationRepository.TEST_PACKAGE
+
+/** ¿Dice lo mismo que el aviso [key] con estos textos? (Waze y Maps lo repiten a cada rato sin cambios.) */
+internal fun TurnInstruction.says(key: String, title: String, text: String, detail: String) =
+    this.key == key && this.title == title && this.text == text && this.detail == detail

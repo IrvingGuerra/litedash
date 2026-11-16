@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Botones del modo edición del inicio (para el lector de pantalla). -->
+    <string name="dashboard_remove">Quitar widget</string>
+    <string name="dashboard_card">Con o sin tarjeta</string>
+    <string name="dashboard_settings">Ajustes del widget</string>
+    <string name="dashboard_resize">Cambiar tamaño</string>
+</resources>

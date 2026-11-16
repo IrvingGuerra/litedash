@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -34,6 +35,9 @@ import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -85,6 +89,9 @@ fun Dashboard(
 ) {
     val c = LocalColors.current
     val currentOnEdit by rememberUpdatedState(onEdit)
+    // Los gestos viven más que una composición: al soltar usan lo último que llegó.
+    val currentOnChange by rememberUpdatedState(onChange)
+    val currentLimits by rememberUpdatedState(limits)
     BoxWithConstraints(modifier.fillMaxSize()) {
         val cellWidth = maxWidth / grid.columns
         val cellHeight = maxHeight / grid.rows
@@ -97,7 +104,7 @@ fun Dashboard(
         var dragOffset by remember { mutableStateOf(Offset.Zero) }
         // La pieza tocada al acomodar: solo ella lleva botones (las demás, su borde), así no tapan todo.
         var selected by remember { mutableStateOf<String?>(null) }
-        if (!editing && selected != null) selected = null
+        LaunchedEffect(editing) { if (!editing) selected = null }
 
         // Fondo: dejar presionado entra al modo edición; editando, se ven las celdas.
         Box(
@@ -120,7 +127,7 @@ fun Dashboard(
 
         // Vista previa de dónde caerá la pieza que se está arrastrando: cambia solo al pasar a otra celda.
         val preview by remember(tiles, cwPx, chPx, grid) {
-            derivedStateOf { drag?.let { a -> tiles.firstOrNull { it.id == a.id }?.let { target(it, a, dragOffset, cwPx, chPx, limits, grid) } } }
+            derivedStateOf { drag?.let { a -> tiles.firstOrNull { it.id == a.id }?.let { dragTarget(it, a.resizing, dragOffset, cwPx, chPx, currentLimits, grid) } } }
         }
         // El acomodo si la soltaras ahí: las que estorban, ya a un lado (null = no cabe). Se recalcula
         // solo cuando la vista previa cambia de celda, no en cada movimiento del dedo.
@@ -184,6 +191,7 @@ fun Dashboard(
                 ) { CompositionLocalProvider(LocalPlainCard provides p.plain) { content(p) } }
 
                 if (editing) {
+                    val resize = stringResource(R.string.dashboard_resize)
                     // Arrastrar la pieza (mover) o su esquina (cambiar de tamaño): el mismo gesto.
                     fun Modifier.tileDrag(resizing: Boolean) = pointerInput(p.id, tiles, grid, cwPx, chPx) {
                         detectDragGestures(
@@ -193,7 +201,7 @@ fun Dashboard(
                                 dragOffset += d
                             },
                             onDragEnd = {
-                                arranged?.takeIf { it != tiles }?.let(onChange)
+                                arranged?.takeIf { it != tiles }?.let(currentOnChange)
                                 drag = null
                             },
                             onDragCancel = { drag = null },
@@ -214,6 +222,7 @@ fun Dashboard(
                         modifier = Modifier.align(Alignment.TopStart).padding(EDIT_MARGIN),
                         size = EDIT_BUTTON,
                         background = c.surfaceHigh,
+                        label = stringResource(R.string.dashboard_remove),
                     )
                     // Con o sin fondo de tarjeta (el auto, la carretera y la imagen no llevan). Junto
                     // a la ✕: en las piezas de una fila, la esquina de la derecha ya la ocupa la del tamaño.
@@ -224,6 +233,7 @@ fun Dashboard(
                         size = EDIT_BUTTON,
                         background = if (p.plain) c.accent else c.surfaceHigh,
                         color = if (p.plain) c.onPrimary else c.text,
+                        label = stringResource(R.string.dashboard_card),
                     )
                     if (chosen && onSettings != null && hasSettings(p)) IconButton(
                         Icons.settings,
@@ -232,12 +242,14 @@ fun Dashboard(
                         modifier = Modifier.align(Alignment.TopStart).padding(start = editButtonStart(if (p.cardless) 1 else 2), top = EDIT_MARGIN),
                         size = EDIT_BUTTON,
                         background = c.surfaceHigh,
+                        label = stringResource(R.string.dashboard_settings),
                     )
                     if (chosen) Box(
                         Modifier
                             .align(Alignment.BottomEnd)
                             .padding(6.dp)
-                            .tileDrag(resizing = true),
+                            .tileDrag(resizing = true)
+                            .semantics { contentDescription = resize },
                     ) {
                         // Sin clickable: el gesto de esta esquina es solo arrastrar.
                         Box(Modifier.size(44.dp).clip(RoundedCornerShape(50)).background(c.accent), contentAlignment = Alignment.Center) {
@@ -250,8 +262,12 @@ fun Dashboard(
     }
 }
 
-private fun target(p: Tile, a: Drag, d: Offset, cwPx: Float, chPx: Float, limits: (String) -> SizeLimits, c: Grid): Tile =
-    if (a.resizing) {
+/**
+ * Dónde cae [p] si se suelta con el dedo movido [d] (en px; celdas de [cwPx] × [chPx]): movida a la celda más
+ * cercana o, con [resizing], con la esquina en la más cercana, acotada a su mínimo y a la orilla de [c].
+ */
+internal fun dragTarget(p: Tile, resizing: Boolean, d: Offset, cwPx: Float, chPx: Float, limits: (String) -> SizeLimits, c: Grid): Tile =
+    if (resizing) {
         val (width, height) = limits(p.type).clamp(
             ((p.width * cwPx + d.x) / cwPx).roundToInt(),
             ((p.height * chPx + d.y) / chPx).roundToInt(),

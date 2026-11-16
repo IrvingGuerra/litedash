@@ -8,7 +8,7 @@
     <string name="no_song_info">Sin datos de la canción</string>
     <string name="opening_app">Abriendo %1$s…</string>
     <string name="opening_wait">Ya casi: empieza en un momento.</string>
-    <string name="source_usb">Archivos</string>
+    <string name="source_files">Archivos</string>
     <string name="source_bluetooth">Bluetooth</string>
     <string name="source_radio">Radio</string>
     <string name="bluetooth_connect_phone">Conecta tu celular por Bluetooth</string>

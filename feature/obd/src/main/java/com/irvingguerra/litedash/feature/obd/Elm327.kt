@@ -1,7 +1,6 @@
 package com.irvingguerra.litedash.feature.obd
 
 import java.io.Closeable
-import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
 
@@ -9,14 +8,34 @@ import java.io.OutputStream
 interface ElmLink : Closeable {
     val input: InputStream
     val output: OutputStream
+
+    /** Abre la conexión (bloqueante, en un hilo de fondo). [close] desde otro hilo la suelta. */
+    fun open() {}
+
+    /**
+     * El siguiente byte si llega en [waitMs]: null si no llegó, −1 si se cerró. De fábrica mira cada
+     * 5 ms (el Bluetooth clásico no tiene plazo de lectura); los demás esperan bloqueados con plazo.
+     */
+    fun next(waitMs: Long): Int? {
+        if (input.available() > 0) return input.read()
+        Thread.sleep(waitMs.coerceIn(0, 5))
+        return null
+    }
 }
+
+/** Reloj que no salta (las pantallas sin pila ajustan la hora al arrancar). */
+internal fun monotonicMs(): Long = System.nanoTime() / 1_000_000
 
 /**
  * Habla con un ELM327 (y sus clones): manda un comando, lee hasta el ">" y deja la
  * respuesta limpia (sin eco, espacios ni "SEARCHING..."). Bloqueante: se llama
- * desde un hilo de fondo y de uno en uno.
+ * desde un hilo de fondo y de uno en uno. [log] anota lo que falla sin cortar (para el reporte).
  */
-class Elm327(private val link: ElmLink, private val now: () -> Long = System::currentTimeMillis) {
+class Elm327(
+    private val link: ElmLink,
+    private val log: (String) -> Unit = {},
+    private val now: () -> Long = ::monotonicMs,
+) {
 
     /** Respuesta del adaptador ya en mayúsculas y sin espacios, renglón por renglón. */
     fun command(cmd: String, timeoutMs: Long = 3_000): List<String> {
@@ -28,13 +47,10 @@ class Elm327(private val link: ElmLink, private val now: () -> Long = System::cu
         val text = StringBuilder()
         val deadline = now() + timeoutMs
         while (true) {
-            if (link.input.available() == 0) {
-                if (now() > deadline) throw IOException("El adaptador no respondió a $cmd")
-                Thread.sleep(5)
-                continue
-            }
-            val b = link.input.read()
-            if (b < 0) throw IOException("Se cerró la conexión")
+            val left = deadline - now()
+            if (left <= 0) throw ObdException(ObdError.ADAPTER_SILENT, "sin respuesta a $cmd")
+            val b = link.next(left) ?: continue
+            if (b < 0) throw ObdException(ObdError.CONNECTION_LOST, "se cerró en $cmd")
             if (b.toChar() == '>') break
             text.append(b.toChar())
         }
@@ -49,12 +65,20 @@ class Elm327(private val link: ElmLink, private val now: () -> Long = System::cu
      */
     fun init(): String {
         // La respuesta llega sin espacios ("ELM327V1.5"): se le regresa el suyo para mostrarla.
-        val version = runCatching { command("ATZ", 4_000).lastOrNull() }.getOrNull()?.replace("ELM327V", "ELM327 v") ?: ""
+        // Hay clones que no contestan al reinicio y sí a lo demás: sin versión, se sigue.
+        val version = try {
+            command("ATZ", 4_000).lastOrNull()?.replace("ELM327V", "ELM327 v") ?: ""
+        } catch (x: ObdException) {
+            if (x.kind != ObdError.ADAPTER_SILENT) throw x
+            log("ATZ sin respuesta")
+            ""
+        }
         for (c in listOf("ATE0", "ATL0", "ATS0", "ATH0", "ATAT1", "ATSP0")) command(c)
         // La primera consulta busca el protocolo del auto (puede tardar unos segundos).
         val probe = command("0100", 10_000)
         firstReply = probe
-        if (probe.none { it.contains("4100") }) throw IOException(probe.firstOrNull() ?: "Sin respuesta del auto")
+        // El ELM contesta pero el auto no: "UNABLETOCONNECT", "NODATA", "CANERROR"… (contacto apagado).
+        if (probe.none { it.contains("4100") }) throw ObdException(ObdError.CAR_SILENT, probe.firstOrNull() ?: "sin respuesta")
         return version
     }
 
@@ -82,7 +106,14 @@ class Elm327(private val link: ElmLink, private val now: () -> Long = System::cu
         }
         out
     } finally {
-        for (c in restore) runCatching { command(c) }
+        for (c in restore) {
+            try {
+                command(c)
+            } catch (x: ObdException) {
+                // Se sigue con lo demás; si el adaptador se perdió, el siguiente comando del motor lo dirá.
+                log("restaurar $c: ${x.message}")
+            }
+        }
     }
 
     /** Qué PIDs del modo 01 contesta el auto (consultando 00, 20, 40… mientras haya más). */
@@ -91,7 +122,13 @@ class Elm327(private val link: ElmLink, private val now: () -> Long = System::cu
         var base = 0x00
         while (base <= 0xA0) {
             // Hay adaptadores que tardan o no contestan las páginas altas: se queda con lo que haya.
-            val bits = runCatching { pid(base) }.getOrNull() ?: break
+            val bits = try {
+                pid(base)
+            } catch (x: ObdException) {
+                if (x.kind != ObdError.ADAPTER_SILENT) throw x
+                log("página ${"%02X".format(base)} de PIDs: ${x.message}")
+                null
+            } ?: break
             for (i in 0 until 32) {
                 val byte = bits.getOrNull(i / 8) ?: 0
                 if (byte and (0x80 shr (i % 8)) != 0) supported += base + i + 1
@@ -217,6 +254,8 @@ internal fun joinHeadedFrames(lines: List<String>): String? {
     return null
 }
 
+private val VIN_CHARS = ('0'..'9') + ('A'..'Z') - setOf('I', 'O', 'Q')
+
 /** VIN del modo 09 PID 02: viene en varios renglones ("0:", "1:"…) o en uno. */
 internal fun parseVin(lines: List<String>): String? {
     val joined = lines.filter { it.contains(':') || it.startsWith("49") }
@@ -226,6 +265,7 @@ internal fun parseVin(lines: List<String>): String? {
     if (start < 0) return null
     // Después de "4902" viene un byte con el número de mensaje y luego los caracteres.
     val bytes = hexBytes(joined.substring(start + 4).let { if (it.length % 2 == 0) it else it.dropLast(1) }) ?: return null
-    val text = bytes.drop(1).filter { it in 0x30..0x5A }.map { it.toChar() }.joinToString("")
+    // Un VIN no lleva I, O ni Q; lo demás (relleno, símbolos) se salta.
+    val text = bytes.drop(1).map { it.toChar() }.filter { it in VIN_CHARS }.joinToString("")
     return text.takeLast(17).takeIf { it.length == 17 }
 }

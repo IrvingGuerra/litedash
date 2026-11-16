@@ -56,18 +56,26 @@ import com.irvingguerra.litedash.core.ui.Typography
 import com.irvingguerra.litedash.feature.music.Drive
 import com.irvingguerra.litedash.feature.music.Drives
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
 
 /**
  * La biblioteca del reproductor propio, dentro de la música en grande: la memoria USB
  * (carpetas, artistas, álbumes) o la radio por internet (cerca de ti, favoritas, buscar).
- * Al tocar algo, suena y se avisa con [onPicked] (la vista regresa a "lo que suena").
+ * Al tocar algo, suena y se avisa con [onPicked] (la vista regresa a "lo que suena"). [distance] escribe
+ * los kilómetros a una estación en las unidades de la app (de fábrica, en km).
  */
 @Composable
-fun PlayerBrowser(source: PlayerSource, onPicked: () -> Unit, modifier: Modifier = Modifier) {
+fun PlayerBrowser(
+    source: PlayerSource,
+    onPicked: () -> Unit,
+    modifier: Modifier = Modifier,
+    distance: @Composable (km: Double) -> String = { stringResource(R.string.radio_km, it.toInt()) },
+) {
     when (source) {
         PlayerSource.USB -> LibraryBrowser(onPicked, modifier)
-        PlayerSource.RADIO -> RadioBrowser(onPicked, modifier)
+        PlayerSource.RADIO -> RadioBrowser(onPicked, modifier, distance)
     }
 }
 
@@ -256,7 +264,7 @@ private object RadioBrowserMemory {
 }
 
 @Composable
-private fun RadioBrowser(onPicked: () -> Unit, modifier: Modifier) {
+private fun RadioBrowser(onPicked: () -> Unit, modifier: Modifier, distance: @Composable (km: Double) -> String) {
     val c = LocalColors.current
     val context = LocalContext.current
     val store = remember { PlayerStore(context) }
@@ -273,10 +281,13 @@ private fun RadioBrowser(onPicked: () -> Unit, modifier: Modifier) {
             if (fresh.isNotEmpty()) { store.setNearbyCache(fresh); fresh } else store.nearbyCache()
         }
     }
+    // Una búsqueda cuando se deja de escribir (no una por letra): cada tecla cancela la espera de la anterior, y
+    // una búsqueda ya en camino deja de probar servidores.
     val found by produceState<List<Station>?>(null, query) {
         value = null
         if (query.length < 2) return@produceState
-        value = withContext(Dispatchers.IO) { Radio.byName(context, query.trim()) }
+        delay(SEARCH_PAUSE_MS)
+        value = withContext(Dispatchers.IO) { Radio.byName(context, query.trim()) { isActive } }
     }
     val playing = Player.state.current?.key
     fun toggleFavorite(s: Station) {
@@ -309,7 +320,7 @@ private fun RadioBrowser(onPicked: () -> Unit, modifier: Modifier) {
         LazyColumn(Modifier.fillMaxSize()) {
             items(list, key = { it.id }) { s ->
                 val km = if (here != null) s.distanceKm(here.latitude, here.longitude) else null
-                val detail = listOfNotNull(s.subtitle, km?.let { stringResource(R.string.radio_km, it.toInt()) }).joinToString(" · ")
+                val detail = listOfNotNull(s.subtitle.ifBlank { null }, km?.let { distance(it) }).joinToString(" · ")
                 BrowserRow(Icons.radio, s.name, detail, selected = s.key == playing, trailing = {
                     val fav = favorites.any { it.id == s.id }
                     IconButton(if (fav) Icons.starFilled else Icons.star, { toggleFavorite(s) }, size = 44.dp, color = if (fav) c.accent else c.textMuted)
@@ -318,6 +329,9 @@ private fun RadioBrowser(onPicked: () -> Unit, modifier: Modifier) {
         }
     }
 }
+
+/** Lo que se espera sin teclear antes de buscar la estación. */
+private const val SEARCH_PAUSE_MS = 400L
 
 /** Un renglón de la lista: ícono, título, detalle y, si lo hay, algo a la derecha (la estrella). */
 @Composable

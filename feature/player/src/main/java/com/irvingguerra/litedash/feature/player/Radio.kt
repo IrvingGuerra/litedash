@@ -8,6 +8,7 @@ import android.location.Location
 import android.location.LocationManager
 import android.net.Uri
 import android.security.NetworkSecurityPolicy
+import androidx.core.net.toUri
 import com.irvingguerra.litedash.core.ui.Https
 import org.json.JSONArray
 import org.json.JSONObject
@@ -20,7 +21,8 @@ import java.util.Locale
 class Station(
     val id: String,
     val name: String,
-    override val uri: Uri,
+    /** La dirección del flujo (se guarda así; [uri] se arma al tocarla). */
+    val url: String,
     val logoUrl: String?,
     /** Género o lo que la estación dice de sí ("pop, noticias"). */
     val tags: String,
@@ -31,12 +33,14 @@ class Station(
     val latitude: Double?,
     val longitude: Double?,
 ) : Playable {
+    override val uri: Uri by lazy { url.toUri() }
     override val title get() = name
-    override val subtitle get() = listOf(tags, state.ifBlank { country }).filter { it.isNotBlank() }.joinToString(" · ").ifBlank { "Radio" }
+    /** Género y de dónde es; "" si no dice nada (la vista decide qué poner). */
+    override val subtitle get() = listOf(tags, state.ifBlank { country }).filter { it.isNotBlank() }.joinToString(" · ")
     override val key get() = "radio:$id"
 
     /** AAC en vivo (ADTS): va por [AacStream]; lo demás (MP3, HLS) por MediaPlayer. */
-    val isAac: Boolean get() = codec.uppercase().startsWith("AAC") && !uri.toString().contains(".m3u8")
+    val isAac: Boolean get() = codec.uppercase().startsWith("AAC") && !url.contains(".m3u8")
 
     /** Kilómetros desde [lat],[lon]; null si la estación no dice dónde está. */
     fun distanceKm(lat: Double, lon: Double): Double? {
@@ -48,7 +52,7 @@ class Station(
     }
 
     fun toJson(): JSONObject = JSONObject()
-        .put("id", id).put("name", name).put("url", uri.toString()).put("logo", logoUrl ?: JSONObject.NULL)
+        .put("id", id).put("name", name).put("url", url).put("logo", logoUrl ?: JSONObject.NULL)
         .put("tags", tags).put("country", country).put("state", state).put("codec", codec).put("bitrate", bitrateKbps)
         .put("lat", latitude ?: JSONObject.NULL).put("lon", longitude ?: JSONObject.NULL)
 
@@ -56,7 +60,7 @@ class Station(
         fun fromJson(o: JSONObject): Station? {
             val url = o.optString("url").ifBlank { return null }
             return Station(
-                id = o.optString("id"), name = o.optString("name"), uri = Uri.parse(url),
+                id = o.optString("id"), name = o.optString("name"), url = url,
                 logoUrl = o.optString("logo").takeIf { it.isNotBlank() && it != "null" },
                 tags = o.optString("tags"), country = o.optString("country"), state = o.optString("state"),
                 codec = o.optString("codec"), bitrateKbps = o.optInt("bitrate"),
@@ -65,6 +69,9 @@ class Station(
         }
     }
 }
+
+/** Cómo se presenta LiteDash ante los servidores de radio (sin versión: no hace falta y no se queda vieja). */
+internal const val USER_AGENT = "LiteDash (+https://litedash.dev)"
 
 /** Dónde está la pantalla (última ubicación conocida), para buscar las estaciones de cerca. */
 class Here(val latitude: Double, val longitude: Double)
@@ -76,7 +83,6 @@ class Here(val latitude: Double, val longitude: Double)
  */
 object Radio {
     private val SERVERS = listOf("https://de1.api.radio-browser.info", "https://nl1.api.radio-browser.info", "https://at1.api.radio-browser.info", "https://fi1.api.radio-browser.info")
-    private const val USER_AGENT = "LiteDash/1.4 (+https://litedash.dev)"
     private const val LIMIT = 150
     private const val ROUNDS = 2
 
@@ -105,9 +111,9 @@ object Radio {
     fun country(context: Context, code: String = Locale.getDefault().country): List<Station> =
         search(context, "countrycode=${encode(code)}&order=clickcount&reverse=true")
 
-    /** Por nombre, en todo el mundo. */
-    fun byName(context: Context, name: String): List<Station> =
-        search(context, "name=${encode(name)}&order=clickcount&reverse=true")
+    /** Por nombre, en todo el mundo; deja de probar servidores en cuanto [active] diga que ya no hace falta. */
+    fun byName(context: Context, name: String, active: () -> Boolean = { true }): List<Station> =
+        search(context, "name=${encode(name)}&order=clickcount&reverse=true", active)
 
     /** Le dice a Radio Browser que alguien sintonizó [station] (así ordena las populares); sin esperar respuesta. */
     fun countClick(context: Context, station: Station) {
@@ -136,28 +142,30 @@ object Radio {
         }
     }.getOrNull()
 
-    /** Los servidores fallan a ratos: se prueban todos y, si ninguno contestó, una segunda vuelta. */
-    private fun search(context: Context, query: String): List<Station> {
+    /** Los servidores fallan a ratos: se prueban todos y, si ninguno contestó, una segunda vuelta (mientras [active]). */
+    private fun search(context: Context, query: String, active: () -> Boolean = { true }): List<Station> {
+        // Si Android no deja tráfico sin cifrar (lo normal desde la 9), las http:// no sonarían: no se listan.
+        val cleartext = NetworkSecurityPolicy.getInstance().isCleartextTrafficPermitted
         repeat(ROUNDS) {
             for (server in SERVERS) {
+                if (!active()) return emptyList()
                 val text = runCatching {
                     open(context, "$server/json/stations/search?$query&hidebroken=true&limit=$LIMIT").use { c ->
                         if (c.responseCode != 200) return@runCatching null
                         c.inputStream.bufferedReader().readText()
                     }
                 }.getOrNull() ?: continue
-                return parse(text)
+                return parse(text, cleartext)
             }
         }
         return emptyList()
     }
 
-    private fun parse(text: String): List<Station> {
+    /** Lo que contesta Radio Browser → estaciones (una por nombre; sin las http:// si no se permite [cleartext]). */
+    internal fun parse(text: String, cleartext: Boolean): List<Station> {
         val array = runCatching { JSONArray(text) }.getOrNull() ?: return emptyList()
         val out = ArrayList<Station>(array.length())
         val seen = HashSet<String>()
-        // Si Android no deja tráfico sin cifrar (lo normal desde la 9), las http:// no sonarían: no se listan.
-        val cleartext = NetworkSecurityPolicy.getInstance().isCleartextTrafficPermitted
         for (i in 0 until array.length()) {
             val o = array.optJSONObject(i) ?: continue
             val url = o.optString("url_resolved").ifBlank { o.optString("url") }.ifBlank { continue }
@@ -166,7 +174,7 @@ object Radio {
             // La misma estación aparece varias veces con distintos flujos: una sola.
             if (!seen.add(name.lowercase())) continue
             out += Station(
-                id = o.optString("stationuuid"), name = name, uri = Uri.parse(url),
+                id = o.optString("stationuuid"), name = name, url = url,
                 logoUrl = o.optString("favicon").takeIf { it.startsWith("http") },
                 tags = o.optString("tags").split(',').map { it.trim() }.filter { it.isNotEmpty() }.take(2).joinToString(", "),
                 country = o.optString("country"), state = o.optString("state"),
