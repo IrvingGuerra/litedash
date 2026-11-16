@@ -33,7 +33,7 @@ for row in "${MATRIX[@]}"; do
   for k in hw.lcd.width hw.lcd.height hw.lcd.density hw.ramSize hw.cpu.ncore hw.keyboard hw.mainKeys skin.dynamic showDeviceFrame skin.name skin.path hw.device.name hw.gpu.enabled hw.gpu.mode fastboot.forceColdBoot fastboot.forceFastBoot; do
     sed -i '' "/^$k=/d" "$cfg"
   done
-  # Pantalla de auto: sin teclado físico ni botones de hardware, orientación horizontal.
+  # Pantalla de auto: sin botones de hardware; el teclado de la Mac sí escribe (hw.keyboard) para probar más rápido.
   {
     echo "hw.lcd.width=$width"; echo "hw.lcd.height=$height"; echo "hw.lcd.density=$dpi"
     echo "hw.ramSize=$ram"; echo "hw.cpu.ncore=$cores"; echo "hw.keyboard=yes"

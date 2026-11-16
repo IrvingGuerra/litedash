@@ -193,18 +193,8 @@
     <string name="make_home">Choose LiteDash</string>
     <string name="welcome_home_help">If your screen doesn\'t ask, look in Settings → Apps → Default apps → Home app, or in the manufacturer\'s launcher menu.</string>
     <string name="welcome_already_home">LiteDash is already your home screen</string>
-    <string name="check_updates">Check for updates</string>
     <string name="checking">Checking…</string>
-    <string name="up_to_date">You have the latest version.</string>
-    <string name="update_error">Couldn\'t check. Check your connection and try again.</string>
-    <string name="update_download_error">Couldn\'t download: GitHub didn\'t respond or the connection dropped. Try again in a few minutes.</string>
-    <string name="new_version">LiteDash %1$s is ready</string>
-    <string name="download_install">Download and install · %.1f MB</string>
     <string name="downloading">Downloading… %d %%</string>
-    <string name="installing">Opening the Android installer…</string>
-    <string name="install_permission">Android asks you to allow LiteDash to install apps (used only for its own updates). Turn it on in the screen that opened and come back.</string>
-    <string name="already_allowed">Done, install</string>
-    <string name="install_error">Android couldn\'t install it: %1$s</string>
     <string name="channel_play">From Google Play</string>
     <string name="channel_github">From GitHub</string>
     <string name="not_home_notice">LiteDash isn\'t your home screen yet.</string>
@@ -299,8 +289,6 @@
     <string name="tile_projection">Android Auto / CarPlay</string>
     <string name="tile_projection_help">Opens your Android Auto or CarPlay app (Zlink, AutoKit…) with one tap</string>
     <string name="projection_missing">App not found</string>
-    <string name="update_see">View</string>
-    <string name="update_later">Later</string>
     <string name="wheel">Steering wheel buttons</string>
     <string name="wheel_help">Tap \"Learn button\" and then press the steering wheel button: LiteDash recognizes it and you choose what it does. Unchanged buttons work as usual (music, volume). Any button leaves parked mode.</string>
     <string name="wheel_learn">Learn button</string>
@@ -364,7 +352,6 @@
     <string name="source_unlinked">Not linked</string>
     <string name="source_choose">Choose</string>
     <string name="source_choose_for">Which app on your screen is the FM radio?</string>
-    <string name="open_installer">Open with the Android installer</string>
     <string name="spin_quality">Spin quality</string>
     <string name="spin_quality_low">Low</string>
     <string name="spin_quality_high">High</string>

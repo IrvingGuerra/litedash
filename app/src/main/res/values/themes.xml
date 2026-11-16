@@ -5,6 +5,5 @@
         <item name="android:windowBackground">@color/graphite</item>
         <item name="android:statusBarColor">@color/graphite</item>
         <item name="android:navigationBarColor">@color/graphite</item>
-        <item name="android:windowShowWallpaper">false</item>
     </style>
 </resources>

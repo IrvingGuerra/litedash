@@ -3,8 +3,11 @@ package com.irvingguerra.litedash.feature.music
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.content.pm.ApplicationInfo
 import android.content.pm.ResolveInfo
+import android.content.pm.ServiceInfo
 import android.media.AudioManager
+import android.service.media.MediaBrowserService
 import android.view.KeyEvent
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
@@ -42,6 +45,16 @@ internal fun yes(v: Boolean) = if (v) "sí" else "no"
 /** La app [pkg] está instalada. */
 internal fun Context.hasPackage(pkg: String) = runCatching { packageManager.getPackageInfo(pkg, 0) }.isSuccess
 
+/** App del sistema (de la pantalla, no del usuario); si no se puede saber (no está), [unknown]. */
+internal fun isSystemApp(context: Context, pkg: String, unknown: Boolean = false) =
+    runCatching { context.packageManager.getApplicationInfo(pkg, 0).flags and ApplicationInfo.FLAG_SYSTEM != 0 }.getOrDefault(unknown)
+
+/** Los servicios de música (MediaBrowserService) de [pkg], o de todas las apps con null. */
+internal fun browserServices(context: Context, pkg: String? = null): List<ServiceInfo> = runCatching {
+    val intent = Intent(MediaBrowserService.SERVICE_INTERFACE).apply { if (pkg != null) setPackage(pkg) }
+    context.packageManager.queryIntentServices(intent, 0).map { it.serviceInfo }
+}.getOrDefault(emptyList())
+
 /** El paquete parece de Bluetooth: alguna parte (sin el prefijo) empieza con "bt" o lleva "bluetooth". */
 internal fun looksBluetooth(pkg: String) = pkg.lowercase().split('.').drop(1).any { it.startsWith("bt") || "bluetooth" in it }
 
@@ -55,18 +68,26 @@ private val BT_MUSIC_LABEL = Regex("audio bluetooth|m[uú]sica bluetooth|bt musi
 private val BT_MUSIC_CLASS = Regex("btmusic|bt\\.music|bt_music|btaudio|a2dp|bluetoothmusic|music\\.bt", RegexOption.IGNORE_CASE)
 
 /**
- * Cómo abrir [pkg]. Una app de Bluetooth ([bluetooth], de marca conocida o con "bt"/"bluetooth" en el paquete) con
- * varias actividades de inicio ("Bluetooth" y "BT Music" en la misma app, issue #13) abre la de la música; si no,
- * la que da Android (la primera). Null = no tiene pantalla que abrir.
+ * De las actividades de inicio de una app de Bluetooth (clase y etiqueta de cada una), cuál es la de la música
+ * ("Bluetooth" y "BT Music" en la misma app, issue #13); -1 = ninguna lo parece. La etiqueta solo se pide si la clase
+ * no lo dice (cargarla lee los recursos de la otra app).
+ */
+internal fun pickMusicActivity(classes: List<String>, label: (Int) -> CharSequence): Int =
+    classes.indices.firstOrNull { BT_MUSIC_CLASS.containsMatchIn(classes[it]) || BT_MUSIC_LABEL.containsMatchIn(label(it)) } ?: -1
+
+/**
+ * Cómo abrir [pkg]. Si es la app del Bluetooth ([bluetooth]: lo sabe quien llama) y trae varias actividades de inicio,
+ * la de la música ([pickMusicActivity]); si no, la que da Android. Null = no tiene pantalla que abrir.
  */
 internal fun launchIntent(context: Context, pkg: String, bluetooth: Boolean = false): Intent? {
     val pm = context.packageManager
     val default = runCatching { pm.getLaunchIntentForPackage(pkg) }.getOrNull()
-    if (!bluetooth && pkg !in HeadUnit.bluetoothApps && !looksBluetooth(pkg)) return default
+    if (!bluetooth) return default
     val list = launchActivities(context, pkg)
     if (list.size < 2) return default
-    val music = list.firstOrNull { BT_MUSIC_CLASS.containsMatchIn(it.activityInfo.name) || BT_MUSIC_LABEL.containsMatchIn(it.loadLabel(pm)) } ?: return default
-    return Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER).setClassName(pkg, music.activityInfo.name)
+    val i = pickMusicActivity(list.map { it.activityInfo.name }) { list[it].loadLabel(pm) }
+    if (i < 0) return default
+    return Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER).setClassName(pkg, list[i].activityInfo.name)
 }
 
 /** Para los reportes: las actividades de inicio de [pkg] (clase corta y etiqueta) y cuál abre LiteDash. */

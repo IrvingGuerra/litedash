@@ -16,18 +16,16 @@ val releaseNotes: String = rootProject.file("CHANGELOG.md").readText()
     .substringAfter("## [$appVersionName]", "")
     .substringAfter("\n").substringBefore("\n## [").trim()
 
+/**
+ * El único cálculo del versionCode (X.Y.Z; nunca beta/rc): MAYOR×10 000 000 + MENOR×100 000 + PARCHE×100 + 99. Desde la
+ * 1.4.100 (antes ×1 000 000 / ×10 000: la 1.4.100 chocaba con la 1.5.0); el 99 final se queda para no bajar de número. El
+ * actualizador compara versiones por su nombre, no con este número.
+ */
 fun versionCodeFrom(name: String): Int {
-    val m = Regex("""^(\d+)\.(\d+)\.(\d+)(?:-(beta|rc)\.(\d+))?$""").matchEntire(name)
-        ?: error("VERSION_NAME inválido: $name (formato X.Y.Z, X.Y.Z-beta.N o X.Y.Z-rc.N)")
-    val (major, minor, patch, type, n) = m.destructured
-    val suffix = when (type) {
-        "beta" -> n.toInt().also { require(it in 1..49) { "beta.N va de 1 a 49" } }
-        "rc" -> 49 + n.toInt().also { require(it in 1..49) { "rc.N va de 1 a 49" } }
-        else -> 99
-    }
+    val (major, minor, patch) = Regex("""^(\d+)\.(\d+)\.(\d+)$""").matchEntire(name)?.destructured
+        ?: error("VERSION_NAME inválido: $name (formato X.Y.Z)")
     require(patch.toInt() <= 999) { "el parche va de 0 a 999" }
-    // Desde la 1.4.100 (antes ×1 000 000 / ×10 000: la 1.4.100 chocaba con la 1.5.0). Igual que Versions.kt del Updater.
-    return major.toInt() * 10_000_000 + minor.toInt() * 100_000 + patch.toInt() * 100 + suffix
+    return major.toInt() * 10_000_000 + minor.toInt() * 100_000 + patch.toInt() * 100 + 99
 }
 
 // Firma: key.properties fuera del repo (local) o variables de entorno (CI). Sin ellas, firma de depuración.
@@ -36,7 +34,7 @@ val signing = Properties().apply {
     if (f.exists()) f.inputStream().use { load(it) }
 }
 fun signingValue(key: String, env: String): String? = signing.getProperty(key) ?: System.getenv(env)
-// Catálogo de autos (solo imágenes y datos; ver feature/car): igual en Play y en GitHub.
+// Catálogo de autos (solo imágenes y datos; ver feature/car): igual en Play y en GitHub (va en defaultConfig).
 // Publicado en el release "catalogo" (prerelease). Para probar uno local en el
 // emulador: ./gradlew ... -Pcatalog=http://10.0.2.2:8765/catalogo.json
 val CATALOG_URL = (findProperty("catalog") as String?)
@@ -53,6 +51,8 @@ android {
         targetSdk = 37
         versionCode = versionCodeFrom(appVersionName)
         versionName = appVersionName
+        buildConfigField("String", "CATALOG_URL", "\"$CATALOG_URL\"")
+        buildConfigField("String", "RELEASE_NOTES", "\"" + releaseNotes.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n") + "\"")
     }
 
     signingConfigs {
@@ -66,29 +66,21 @@ android {
         }
     }
 
-    // Mismo código, dos canales. Mismo applicationId y versionCode.
     // Solo los idiomas de LiteDash: sin esto vienen los ~80 idiomas de las librerías de AndroidX.
     androidResources {
         localeFilters += listOf("es", "en")
     }
 
-    defaultConfig {
-        buildConfigField("String", "RELEASE_NOTES", "\"" + releaseNotes.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n") + "\"")
-    }
-
+    // Mismo código, dos canales, mismo applicationId y versionCode. Lo que solo es de un canal vive en app/src/<canal>.
     flavorDimensions += "channel"
     productFlavors {
         create("play") {
             dimension = "channel"
             buildConfigField("String", "CHANNEL", "\"play\"")
-            buildConfigField("String", "CATALOG_URL", "\"$CATALOG_URL\"")
-            // Play prohíbe actualizarse por fuera de la tienda: sin actualizador.
-            buildConfigField("String", "UPDATES_URL", "\"\"")
         }
         create("github") {
             dimension = "channel"
             buildConfigField("String", "CHANNEL", "\"github\"")
-            buildConfigField("String", "CATALOG_URL", "\"$CATALOG_URL\"")
             buildConfigField("String", "UPDATES_URL", "\"https://api.github.com/repos/IrvingGuerra/litedash/releases?per_page=20\"")
         }
     }
@@ -98,6 +90,8 @@ android {
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            // Sin META-INF/version-control-info.textproto: el commit ya lo dice la etiqueta del release.
+            vcsInfo.include = false
             signingConfig = if (hasSigning) signingConfigs.getByName("release") else signingConfigs.getByName("debug")
         }
         // Igual que release pero firmable en local: es lo que mide el módulo :benchmark.
@@ -159,7 +153,8 @@ dependencies {
     implementation(project(":feature:music"))
     implementation(project(":feature:player"))
     implementation(project(":feature:car"))
-    implementation(project(":feature:updater"))
+    // Play prohíbe actualizarse por fuera de la tienda: el actualizador solo viaja en la versión de GitHub.
+    "githubImplementation"(project(":feature:updater"))
     implementation(project(":feature:navigation"))
     implementation(project(":feature:map"))
     implementation(project(":core:vehicle"))
@@ -167,9 +162,8 @@ dependencies {
     implementation(project(":feature:tpms"))
     implementation(project(":feature:link"))
 
+    // Compose (foundation y ui) llega de core:ui; el BOM se queda para las librerías de Compose sin versión (tooling).
     implementation(platform(libs.compose.bom))
-    implementation(libs.compose.foundation)
-    implementation(libs.compose.ui)
     implementation(libs.activity.compose)
     implementation(libs.core)
     implementation(libs.profileinstaller)

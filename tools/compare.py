@@ -101,7 +101,7 @@ ROWS = [
         "cl": (N, "", ""),
     }),
     ("feat", {"es": "Mapas descargables sin internet", "en": "Downloadable offline maps"}, {
-        "ld": (N, "En camino", "Coming"),
+        "ld": (S, "Por zonas, de 10 a 200 km", "By area, 10 to 200 km"),
         "strada": (S, "Por país", "By country"),
         "agama": (N, "", ""), "cwg": (N, "", ""), "dashito": (D, "", ""), "cl": (N, "", ""),
     }),
@@ -168,7 +168,7 @@ TEXT = {
         "mb": "MB",
         "honesto_sobre": "Sin trampa", "honesto_h2": "Cuándo te conviene otro.",
         "honesto": [
-            ("StradaOS", "Si tu pantalla tiene Android 4 o 5, o necesitas hoy mapas sin internet. Pesa 0.6 MB y también es gratis y abierto; no trae OBD, llantas ni reproductor."),
+            ("StradaOS", "Si tu pantalla tiene Android 4 o 5, o quieres los mapas sin internet de todo un país. Pesa 0.6 MB y también es gratis y abierto; no trae OBD, llantas ni reproductor."),
             ("AGAMA", "Si quieres muchos temas y no te importa pagar, y ya usas sus apps CRAB y MANTA para OBD y llantas."),
             ("CarWebGuru", "Si te gustan sus temas y su reproductor de archivos, y no te molestan los anuncios."),
             ("Dashito", "Si quieres un panel junto a Android Auto o las gasolineras con su precio del día, y no te molestan los anuncios. También trae OBD2 y su propia app de celular."),
@@ -210,7 +210,7 @@ TEXT = {
         "mb": "MB",
         "honesto_sobre": "No tricks", "honesto_h2": "When another one suits you.",
         "honesto": [
-            ("StradaOS", "If your unit runs Android 4 or 5, or you need offline maps today. It's 0.6 MB, also free and open source; no OBD, tires or music player."),
+            ("StradaOS", "If your unit runs Android 4 or 5, or you want offline maps for a whole country. It's 0.6 MB, also free and open source; no OBD, tires or music player."),
             ("AGAMA", "If you want lots of themes, don't mind paying, and already use its CRAB and MANTA apps for OBD and tires."),
             ("CarWebGuru", "If you like its themes and file player, and ads don't bother you."),
             ("Dashito", "If you want a panel next to Android Auto or gas stations with today's prices, and ads don't bother you. It also has OBD2 and its own phone app."),

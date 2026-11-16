@@ -101,7 +101,7 @@ private fun offeredModules(d: Dependencies): List<ReportModule> = ReportModule.e
     when (it) {
         ReportModule.WORKSHOP -> d.obdModule
         ReportModule.SPLIT -> SplitScreen.supported()
-        ReportModule.UPDATES -> d.updater.available
+        ReportModule.UPDATES -> d.updates != null
         else -> true
     }
 }
@@ -289,11 +289,13 @@ private suspend fun reportInfo(context: Context, d: Dependencies): String {
     // El escáner solo si ya existe (abrir el Taller lo crea); si no, no se conecta nada por el reporte.
     val obdInfo = (d.obdIfCreated()?.describe() ?: "OBD: sin abrir en esta sesión") + "\n" + reportExtras(d)
     val pro = d.pro.isPro
+    // Lo de la música que cambia en el hilo principal se copia aquí; lo que pregunta al sistema va en IO.
+    val musicInfoLater = d.music.describeLater()
     val music = d.music
     return withContext(Dispatchers.IO) {
         // La música pregunta al PackageManager y a las sesiones: fuera del hilo principal. Su estado lo tocan los
         // avisos que llegan ahí; si cambia justo mientras se lee, el reporte va sin esa parte.
-        val musicInfo = runCatching { music.describe() }.getOrElse { "Música: no se pudo leer (${it.javaClass.simpleName})" }
+        val musicInfo = runCatching { musicInfoLater() }.getOrElse { "Música: no se pudo leer (${it.javaClass.simpleName})" }
         val silent = runCatching { music.silentSources() }.getOrDefault(emptyList())
         systemInfo(context, pro, layout, musicInfo + "\n" + obdInfo, silent)
     }
@@ -335,7 +337,7 @@ private const val PHONE_REPORT_GAP_MS = 10_000L
  * principal (todo es memoria).
  */
 private fun reportExtras(d: Dependencies): String = listOfNotNull(
-    d.phoneIfCreated()?.describe() ?: "Celular: sin vincular", d.trip.describe(), d.weather.describe(), d.tpmsIfCreated()?.describe(), d.wheel.describe(), d.cars.describe(),
+    d.phoneIfCreated()?.describe() ?: "Celular: sin vincular", d.trip.describe(), d.weather.describe(), d.tpmsIfCreated()?.describe(), d.wheel.describe(), d.cars.describe(), d.updates?.describe(),
 ).joinToString("\n")
 
 /** El volumen de la música en Android y si está fijo (la pantalla lo maneja con su propio chip). */

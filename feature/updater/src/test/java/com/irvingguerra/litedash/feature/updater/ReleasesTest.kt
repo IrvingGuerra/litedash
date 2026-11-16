@@ -25,9 +25,8 @@ class ReleasesTest {
             release("v1.4.161"),
             release("v1.5.0-beta.1", prerelease = true),
         )
-        val v = pickNewest(json, versionCode("v1.4.160")!!)!!
+        val v = pickNewest(json, releaseOf("v1.4.160"))!!
         assertEquals("1.4.162", v.name)
-        assertEquals(10_416_299L, v.code)
         assertEquals("Novedades de v1.4.162", v.notes)
         assertEquals("https://example.com/v1.4.162.apk", v.apk)
         assertEquals("https://example.com/v1.4.162.sums", v.checksums)
@@ -36,16 +35,22 @@ class ReleasesTest {
 
     @Test
     fun nothingNewerOrWithoutApk() {
-        assertNull(pickNewest(list(release("v1.4.162")), versionCode("v1.4.162")!!))
-        assertNull(pickNewest(list(release("v1.4.163", apk = false)), versionCode("v1.4.162")!!))
+        assertNull(pickNewest(list(release("v1.4.162")), releaseOf("v1.4.162")))
+        assertNull(pickNewest(list(release("v1.4.163", apk = false)), releaseOf("v1.4.162")))
         // GitHub marcó prerelease aunque la etiqueta parezca normal.
-        assertNull(pickNewest(list(release("v1.4.163", prerelease = true)), versionCode("v1.4.162")!!))
+        assertNull(pickNewest(list(release("v1.4.163", prerelease = true)), releaseOf("v1.4.162")))
     }
 
     @Test
     fun withoutSumsFileTheVersionStillShows() {
         // Se ofrece; al bajarla, sin suma no se instala.
-        assertNull(pickNewest(list(release("v1.4.163", sums = false)), 0)!!.checksums)
+        assertNull(pickNewest(list(release("v1.4.163", sums = false)), releaseOf("0.0.0"))!!.checksums)
+    }
+
+    @Test
+    fun unknownInstalledVersionOffersNothing() {
+        // Una compilación con otro versionName (no X.Y.Z) no sabe qué tiene: no ofrece nada.
+        assertNull(pickNewest(list(release("v1.4.163")), releaseOf("1.4.163-dev")))
     }
 
     @Test

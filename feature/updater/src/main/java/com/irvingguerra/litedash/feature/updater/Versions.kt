@@ -1,18 +1,16 @@
 package com.irvingguerra.litedash.feature.updater
 
 /**
- * El mismo cálculo que app/build.gradle.kts para una versión normal (X.Y.Z → versionCode), para comparar una
- * etiqueta de GitHub con la versión instalada. Null si la etiqueta no es una versión normal de LiteDash (otra
- * cosa, o una de prueba -beta/-rc, que nunca se publica ni se ofrece).
+ * La versión de una etiqueta (`v1.4.162` o `1.4.162`) como un número que solo sirve para ordenar (no es el versionCode:
+ * ese lo calcula únicamente app/build.gradle.kts). Null si no es una versión normal de LiteDash: otra etiqueta
+ * (`catalogo`) o una de prueba (-beta/-rc), que nunca se publica ni se ofrece.
  */
-fun versionCode(tag: String): Long? {
-    val m = Regex("""^v?(\d+)\.(\d+)\.(\d+)$""").matchEntire(tag.trim()) ?: return null
-    val (major, minor, patch) = m.destructured
-    if (patch.toInt() > MAX_PATCH) return null
-    // Desde la 1.4.100: el parche llega a 999 (antes 99: la 1.4.100 daba lo mismo que la 1.5.0). El 99 final es
-    // el lugar que Gradle deja para las de prueba.
-    return major.toLong() * 10_000_000 + minor.toLong() * 100_000 + patch.toLong() * 100 + 99
+internal fun releaseOf(tag: String): Long? {
+    val (major, minor, patch) = VERSION.matchEntire(tag.trim())?.destructured ?: return null
+    return (major.toLong() * PART + minor.toLong()) * PART + patch.toLong()
 }
 
-/** El parche más alto que cabe en el versionCode. */
-const val MAX_PATCH = 999
+/** Cada parte de X.Y.Z cabe en 6 cifras (lo que acepta [VERSION]). */
+private const val PART = 1_000_000L
+
+private val VERSION = Regex("""^v?(\d{1,6})\.(\d{1,6})\.(\d{1,6})$""")

@@ -99,7 +99,6 @@ import com.irvingguerra.litedash.feature.music.SoundPiece
 import com.irvingguerra.litedash.feature.navigation.NavigationRepository
 import com.irvingguerra.litedash.feature.obd.ObdRepository
 import com.irvingguerra.litedash.feature.tpms.TpmsRepository
-import com.irvingguerra.litedash.feature.updater.Updater
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.filterNotNull
@@ -156,7 +155,8 @@ class Dependencies(
     val prefs: Preferences,
     val dashboard: DashboardState,
     val cars: CarRepository,
-    val updater: Updater,
+    /** El actualizador: solo en la versión de GitHub (null en la de Play). */
+    val updates: AppUpdates?,
     val weather: WeatherRepository,
     val trip: TripRepository,
     val reminders: ReminderRepository,
@@ -534,7 +534,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
     // Al volver al inicio: versión nueva de la app (a lo más cada 12 h), cuántas pantallas usan LiteDash (a lo más
     // una vez al día) y Pro (revisa el código a lo más cada 12 h; sin código guardado, nada de red). Cada uno se limita solo.
     LaunchedEffect(revision) {
-        launch { d.updater.checkQuietly() }
+        launch { d.updates?.checkQuietly() }
         launch { d.stats.pingDaily() }
         launch { d.pro.refresh() }
     }
@@ -688,7 +688,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                                     EngineAlertBanner(d, engineAlert)
                                     TiresAlertBanner(d, actions.onTires, tiresAlert)
                                     if (!isShortScreen()) ReminderBanner(d.reminders)
-                                    UpdateBanner(d.updater, onOpen = { openUpdates(); panel = Panel.Updates })
+                                    d.updates?.Banner(onOpen = { openUpdates(); panel = Panel.Updates })
                                     val newModel = d.cars.outdated?.takeIf { it.id == car?.id }
                                     if (car != null && newModel != null) CarUpdateNotice(d.cars, car, newModel)
                                 }
@@ -982,16 +982,6 @@ private fun TopBar(
             StatusIcons()
             Label(clock.full, Typography.subtitle, maxLines = 1)
         }
-    }
-}
-
-/** Versión nueva encontrada al abrir LiteDash: verla en Ajustes o dejarla para después. */
-@Composable
-private fun UpdateBanner(updater: Updater, onOpen: () -> Unit) {
-    val v = updater.notice ?: return
-    Notice(stringResource(R.string.new_version, v.name), Icons.info) {
-        Button(stringResource(R.string.update_see), onOpen, primary = true)
-        Button(stringResource(R.string.update_later), updater::dismiss)
     }
 }
 

@@ -7,12 +7,9 @@
 # Compila playRelease (firmado con la llave de depuración si no hay key.properties).
 set -euo pipefail
 cd "$(dirname "$0")/.."
+source tools/lib.sh
+use_serial "$@"; shift "$SERIAL_SHIFT"
 
-SERIAL_ARGS=()
-if [ "${1:-}" = "-s" ]; then SERIAL_ARGS=(-s "$2"); shift 2; fi
-adb() { command adb ${SERIAL_ARGS[@]+"${SERIAL_ARGS[@]}"} "$@"; }
-
-PKG=com.irvingguerra.litedash
 ACT=$PKG/.MainActivity
 VERSION=$(grep '^VERSION_NAME=' version.properties | cut -d= -f2)
 
@@ -128,7 +125,7 @@ PSS_KB=$(pss_kb "$PID")
 CPU=$(cpu_percent "$PID")
 PSS_MB=$([ -n "$PSS_KB" ] && echo "$((PSS_KB / 1024))" || echo "?")
 
-# 4) Fluidez: desplazar el cajón de apps.
+# 4) Fluidez: deslizar arriba y abajo sobre el inicio (el tablero, con lo que tenga puesto).
 adb shell dumpsys gfxinfo $PKG reset >/dev/null
 read -r W H <<<"$(echo "$SCREEN" | tr 'x' ' ')"
 for _ in $(seq 6); do
@@ -148,7 +145,7 @@ cat > "$REPORT" <<EOF2
 # v$VERSION · $LABEL
 
 - Equipo: $MODEL · Android $ANDROID (API $SDK) · $SCREEN @ ${DPI} dpi · RAM $((RAM_KB / 1024)) MB
-- Fecha: $(date '+%Y-%m-%d %H:%M') · variante playRelease · perfil Ligero (todo apagado)
+- Fecha: $(date '+%Y-%m-%d %H:%M') · variante playRelease · con el inicio y los módulos tal como están en el equipo
 
 | Métrica | Resultado | Presupuesto |
 | --- | --- | --- |
@@ -157,7 +154,7 @@ cat > "$REPORT" <<EOF2
 | Volver a inicio (mediana de 5) | ${WARM} ms | ≤ 150 ms gama baja · ≤ 80 ms la SRNUBI |
 | RAM (PSS) quieto en inicio | ${PSS_MB} MB | ≤ 60 MB gama baja · ≤ 70 MB la SRNUBI |
 | CPU quieto en inicio | ${CPU:-?} % | ≈ 0 % |
-| Desplazar el cajón | $JANKY de $FRAMES cuadros trabados | ≥ 95 % a tiempo |
+| Deslizar sobre el inicio | $JANKY de $FRAMES cuadros trabados | ≥ 95 % a tiempo |
 
 Tiempos de arranque en frío: ${cold_times[*]} (estado: ${cold_states[*]}; "?" = Android 6–9 no lo dice)
 EOF2

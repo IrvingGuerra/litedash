@@ -174,6 +174,9 @@ internal class NwdRadio(
         refresh()
     }
 
+    /** Sin la clave de la fuente del MCU (on = null), la NWD suena por Android: solo así se confirma un play. */
+    override val confirmsByAudio get() = on == null
+
     /** Pide la fuente al kernel (dirigido); sin kernel, los dos avisos sueltos de antes. */
     private fun source(id: Int) {
         if (kernel) return send(Intent(REQUEST_CHANGE_SOURCE).setPackage(KERNEL_PACKAGE).putExtra("extra_source_id", id.toByte()))

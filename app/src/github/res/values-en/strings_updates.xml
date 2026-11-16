@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- GitHub build only: the updater (the Play build doesn't carry these strings). -->
+<resources>
+    <string name="check_updates">Check for updates</string>
+    <string name="up_to_date">You have the latest version.</string>
+    <string name="update_error">Couldn\'t check. Check your connection and try again.</string>
+    <string name="update_download_error">Couldn\'t download: GitHub didn\'t respond or the connection dropped. Try again in a few minutes.</string>
+    <string name="new_version">LiteDash %1$s is ready</string>
+    <string name="download_install">Download and install · %1$.1f MB</string>
+    <string name="installing">Opening the Android installer…</string>
+    <string name="install_permission">Android asks you to allow LiteDash to install apps (used only for its own updates). Turn it on in the screen that opened and come back.</string>
+    <string name="already_allowed">Done, install</string>
+    <string name="install_error">Android couldn\'t install it. Try again.</string>
+    <string name="install_aborted">The installation was canceled.</string>
+    <string name="install_incompatible">This version isn\'t compatible with the one you have installed.</string>
+    <string name="install_storage">Not enough space to install it. Free up some space and try again.</string>
+    <string name="install_blocked">Android blocked the installation.</string>
+    <string name="update_see">View</string>
+    <string name="update_later">Later</string>
+    <string name="open_installer">Open with the Android installer</string>
+</resources>

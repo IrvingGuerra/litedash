@@ -30,7 +30,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
@@ -61,10 +60,7 @@ import com.irvingguerra.litedash.core.ui.TextInput
 import com.irvingguerra.litedash.core.ui.Typography
 import com.irvingguerra.litedash.feature.car.CAR_ASPECT
 import com.irvingguerra.litedash.feature.car.CarStill
-import com.irvingguerra.litedash.feature.updater.Updater
-import com.irvingguerra.litedash.feature.updater.Version
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -83,7 +79,7 @@ internal fun SystemSettings(d: Dependencies) {
     when (SystemTab.entries[tabs(SystemTab.entries.map { it.title }, SYSTEM_TABS).coerceAtMost(SystemTab.entries.lastIndex)]) {
         SystemTab.UPDATES -> {
             About(d)
-            if (d.updater.available) SettingsCard { Updates(d.updater) }
+            d.updates?.Card()
         }
         SystemTab.ANDROID -> AndroidSettings()
         SystemTab.STATS -> SettingsCard {
@@ -304,102 +300,6 @@ private fun screenLines(context: Context): List<String> {
         "Android ${Build.VERSION.RELEASE}",
         "${m.widthPixels}×${m.heightPixels} · ${Formatter.formatShortFileSize(context, memoryBytes(context))}",
     )
-}
-
-/** Cuánto se espera la confirmación de Android antes de ofrecer el instalador de siempre. */
-private const val INSTALLER_WAIT_MS = 8_000L
-
-/** Estados del botón de actualizaciones (solo versión de GitHub). */
-private sealed interface UpdateState {
-    data object Idle : UpdateState
-    data object Checking : UpdateState
-    data object UpToDate : UpdateState
-    data class Available(val v: Version) : UpdateState
-    data class NeedsPermission(val v: Version) : UpdateState
-    data object Error : UpdateState
-}
-
-@Composable
-private fun Updates(a: Updater) {
-    val c = LocalColors.current
-    val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-    // La confirmación de Android ("¿Instalar?") la abre esta pantalla, que está al frente.
-    val confirm = Updater.confirm
-    LaunchedEffect(confirm) {
-        if (confirm == null) return@LaunchedEffect
-        Updater.confirm = null
-        runCatching { context.startActivity(confirm) }
-    }
-    // Si al abrir ya se encontró una versión nueva, se muestra de una vez.
-    var state by remember { mutableStateOf(a.found?.let { UpdateState.Available(it) } ?: UpdateState.Idle) }
-
-    fun install(v: Version) {
-        if (!a.canInstall()) {
-            state = UpdateState.NeedsPermission(v)
-            a.requestInstallPermission()
-            return
-        }
-        // La descarga vive en el Updater: sigue aunque se cierre Ajustes.
-        a.downloadAndInstall(v)
-    }
-
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        when (val p = a.progress) {
-            is Updater.Progress.Downloading -> Label(stringResource(R.string.downloading, p.percent), Typography.body, c.accent)
-            is Updater.Progress.Installing -> {
-                Label(stringResource(R.string.installing), Typography.body, c.accent)
-                // Si la confirmación de Android no aparece en unos segundos (o falla), el respaldo.
-                var stuck by remember(p) { mutableStateOf(false) }
-                LaunchedEffect(p) {
-                    delay(INSTALLER_WAIT_MS)
-                    stuck = true
-                }
-                if (stuck || Updater.installError != null) {
-                    Button(stringResource(R.string.open_installer), { a.openWithInstaller(p.apk) }, primary = true)
-                }
-            }
-            // Sin descarga en curso: buscar, la versión encontrada o el permiso de instalar.
-            else -> when (val e = state) {
-                UpdateState.Idle, UpdateState.UpToDate, UpdateState.Error -> {
-                    Button(stringResource(R.string.check_updates), {
-                        state = UpdateState.Checking
-                        scope.launch {
-                            state = runCatching { a.checkForUpdate() }
-                                .fold({ v -> if (v == null) UpdateState.UpToDate else UpdateState.Available(v) }, { UpdateState.Error })
-                        }
-                    })
-                    if (e == UpdateState.UpToDate) Label(stringResource(R.string.up_to_date), Typography.small, c.accent)
-                }
-                UpdateState.Checking -> Label(stringResource(R.string.checking), Typography.body, c.textMuted)
-                is UpdateState.Available -> NewVersion(e.v) { install(e.v) }
-                is UpdateState.NeedsPermission -> {
-                    Label(stringResource(R.string.install_permission), Typography.small, c.textMuted)
-                    Button(stringResource(R.string.already_allowed), { install(e.v) }, primary = true)
-                }
-            }
-        }
-        // Falló la búsqueda o la última descarga (cada una con su aviso: no es lo mismo no revisar que no bajar).
-        if (a.progress == Updater.Progress.Failed) Label(stringResource(R.string.update_download_error), Typography.small, c.danger)
-        else if (state == UpdateState.Error) Label(stringResource(R.string.update_error), Typography.small, c.danger)
-        Updater.installError?.let { Label(stringResource(R.string.install_error, it), Typography.small, c.danger) }
-    }
-}
-
-@Composable
-private fun NewVersion(v: Version, onInstall: () -> Unit) {
-    val c = LocalColors.current
-    val shape = RoundedCornerShape(Radius.card)
-    Column(
-        Modifier.fillMaxWidth().clip(shape).background(c.surface).border(1.dp, c.accent, shape).padding(18.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
-    ) {
-        Label(stringResource(R.string.new_version, v.name), Typography.subtitle)
-        // Las notas del Release como lista corta (sin los títulos de sección).
-        val notes = releaseNotes(v.notes).filterNot { it.startsWith("###") }.take(6).joinToString("\n") { "• $it" }
-        if (notes.isNotBlank()) Label(notes, Typography.small, c.textMuted, maxLines = 8)
-        Button(stringResource(R.string.download_install, v.bytes / 1e6f), onInstall, primary = true)
-    }
 }
 
 /**

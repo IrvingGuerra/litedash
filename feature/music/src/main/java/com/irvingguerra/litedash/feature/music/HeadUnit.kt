@@ -1,12 +1,16 @@
 package com.irvingguerra.litedash.feature.music
 
+import android.content.Context
+import android.content.SharedPreferences
+
 /**
  * La familia de la pantalla (quién hizo su firmware), con lo de audio que es de esa marca: sus apps de
  * Bluetooth y, en orden, las recetas para que el Bluetooth suene ([bluetoothRecipes]; la calibración las
  * prueba de la primera a la última). Se reconoce por los paquetes del sistema instalados, nunca por el
  * nombre del modelo. [GENERIC] = Bluetooth de Android sin chip propio (la mayoría): no lleva recetas.
- * Lo de la radio de fábrica de cada marca vive en su perfil ([FactoryRadio]); el de las listas de avisos
- * de la canción, en [BroadcastMeta].
+ * Lo de la radio de fábrica de cada marca vive en su perfil ([FactoryRadio]) y cómo se reconoce y se abre, en
+ * [FactoryRadioKind] ([factoryRadios]); las listas de avisos de la canción, en [BroadcastMeta]. El motor de la música no
+ * nombra marcas: pregunta aquí.
  */
 internal enum class HeadUnit(
     val id: String,
@@ -48,7 +52,7 @@ internal enum class HeadUnit(
          */
         fun detect(installed: (String) -> Boolean): HeadUnit =
             BRAND_BLUETOOTH.firstOrNull { it.family != GENERIC && installed(it.pkg) }?.family
-                ?: FACTORY_RADIOS.firstOrNull { installed(it.first) }?.second
+                ?: factoryRadios.firstOrNull { installed(it.pkg) }?.family
                 ?: NWD.takeIf { installed(NwdRadio.KERNEL_PACKAGE) }
                 ?: GENERIC
 
@@ -58,9 +62,64 @@ internal enum class HeadUnit(
         /** Las que tocan la música del celular (las demás son servicios): la fuente Bluetooth sin app enlazada. */
         val bluetoothMusicApps: List<String> = BRAND_BLUETOOTH.filter { it.music }.map { it.pkg }
 
+        /** Las radios de fábrica con perfil, en el orden en que se prueban; si hay varias, gana la primera. */
+        val factoryRadios: List<FactoryRadioKind> = listOf(HcnKind, NwdKind, TopWayKind)
+
         /** Radios de fábrica que LiteDash controla con su perfil. */
-        val radioApps: List<String> = FACTORY_RADIOS.map { it.first }
+        val radioApps: List<String> = factoryRadios.map { it.pkg }
     }
+}
+
+/**
+ * Una radio de fábrica con perfil: su app ([pkg]) y familia, cuándo la FM enlazada es suya, cómo se arma su perfil y su
+ * renglón del reporte. El motor solo pregunta esto (no sabe de marcas).
+ */
+internal abstract class FactoryRadioKind(val pkg: String, val family: HeadUnit) {
+    /** ¿La FM enlazada [linked] se maneja con este perfil? */
+    abstract fun matches(linked: String): Boolean
+
+    /** Solo si la FM no tiene receptor ni servicio de música (si los tiene, se le habla como a cualquier app). */
+    open val needsSilent: Boolean = true
+
+    /**
+     * Arma su perfil en el hilo de los perfiles (reflexión, el PackageManager, el disco); el motor lo abre en el principal
+     * ([FactoryRadio.open]). Null = esta pantalla no lo deja. [onState] recibe la estación; [log] va al registro.
+     */
+    abstract fun create(context: Context, store: SharedPreferences, onState: (BroadcastMeta) -> Unit, log: (String) -> Unit): FactoryRadio?
+
+    /** Su renglón del reporte si esta pantalla es de la marca ([linked] = la FM enlazada, [profile] = el perfil abierto o el último). */
+    abstract fun describe(context: Context, store: SharedPreferences, linked: String?, profile: FactoryRadio?, bluetoothRecipe: String?): String?
+}
+
+/** HCN (`com.hcn.autoradio`): tiene receptor, pero no dice la estación ni arranca con él: lleva perfil aunque no esté "callada". */
+private object HcnKind : FactoryRadioKind(HcnRadio.PACKAGE, HeadUnit.HCN) {
+    override fun matches(linked: String) = linked == pkg
+    override val needsSilent = false
+    override fun create(context: Context, store: SharedPreferences, onState: (BroadcastMeta) -> Unit, log: (String) -> Unit) =
+        HcnRadio(context, onState, log)
+    override fun describe(context: Context, store: SharedPreferences, linked: String?, profile: FactoryRadio?, bluetoothRecipe: String?) =
+        HcnRadio.describe(context, profile as? HcnRadio).takeIf { linked == pkg }
+}
+
+/** NWD (`com.nwd.radio…`): por su sintonizador, sus ajustes y sus avisos del sistema. */
+private object NwdKind : FactoryRadioKind(NwdRadio.PACKAGE, HeadUnit.NWD) {
+    override fun matches(linked: String) = linked.startsWith(pkg)
+    override fun create(context: Context, store: SharedPreferences, onState: (BroadcastMeta) -> Unit, log: (String) -> Unit) =
+        NwdRadio(context, onState, log)
+    override fun describe(context: Context, store: SharedPreferences, linked: String?, profile: FactoryRadio?, bluetoothRecipe: String?) =
+        NwdRadio.describe(context, profile as? NwdRadio).takeIf { linked?.startsWith(pkg) == true }
+}
+
+/**
+ * TopWay (`com.tw.radio`): cualquier FM "callada" en una pantalla con su enlace TWUtil; se abre con seguro (si la app de
+ * la pantalla se cerró alguna vez al abrirlo, ya no). Su renglón va siempre que la pantalla traiga el enlace.
+ */
+private object TopWayKind : FactoryRadioKind(TopWayRadio.PACKAGE, HeadUnit.TOPWAY) {
+    override fun matches(linked: String) = TopWayRadio.available
+    override fun create(context: Context, store: SharedPreferences, onState: (BroadcastMeta) -> Unit, log: (String) -> Unit) =
+        TopWayRadio.openGuarded(store, onState, log)
+    override fun describe(context: Context, store: SharedPreferences, linked: String?, profile: FactoryRadio?, bluetoothRecipe: String?) =
+        TopWayRadio.describe(context, store, profile as? TopWayRadio, bluetoothRecipe).takeIf { TopWayRadio.available }
 }
 
 /** Una app de Bluetooth de marca (chip propio, no el de Android): [music] = la que toca la música del celular. */
@@ -86,11 +145,4 @@ private val BRAND_BLUETOOTH = listOf(
     BrandBluetooth("com.nwd.bt.music", HeadUnit.NWD),
     BrandBluetooth("com.jancar.bluetooth", HeadUnit.JANCAR),
     BrandBluetooth("com.reglink.apps.bluetooth", HeadUnit.REGLINK),
-)
-
-/** Radios de fábrica con perfil y su familia; si hay varias, gana la primera. */
-private val FACTORY_RADIOS = listOf(
-    HcnRadio.PACKAGE to HeadUnit.HCN,
-    NwdRadio.PACKAGE to HeadUnit.NWD,
-    TopWayRadio.PACKAGE to HeadUnit.TOPWAY,
 )

@@ -47,11 +47,11 @@ internal object CoverArt {
     private val inFlight = Collections.newSetFromMap(ConcurrentHashMap<String, Boolean>())
 
     /** La carátula ya resuelta de esta canción, o null si aún no se busca (o no se encontró). */
-    fun cached(title: String, artist: String): Bitmap? = cacheKey(title, artist)?.let(memory::get)
+    fun cached(title: String, artist: String): Bitmap? = coverKey(title, artist)?.let(memory::get)
 
     /** Busca la carátula y avisa en el hilo principal con [onReady] (null si no hay). */
     fun fetch(context: Context, title: String, artist: String, onReady: (Bitmap?) -> Unit) {
-        val key = cacheKey(title, artist) ?: return
+        val key = coverKey(title, artist) ?: return
         memory.get(key)?.let { onReady(it); return }
         if (key in missing || !inFlight.add(key)) return
         val app = context.applicationContext
@@ -94,12 +94,15 @@ internal object CoverArt {
     }
 
     private fun file(context: Context, key: String): File = File(File(context.cacheDir, TAG), "$key.jpg")
+}
 
-    /** Clave estable por canción (título+artista, sin importar mayúsculas o signos). */
-    private fun cacheKey(title: String, artist: String): String? {
-        val raw = "$artist — $title".trim().lowercase()
-        if (raw.isBlank()) return null
-        return MessageDigest.getInstance("SHA-256").digest(raw.toByteArray())
-            .joinToString("") { "%02x".format(it) }
-    }
+/**
+ * Clave estable por canción: título+artista sin importar mayúsculas (los signos sí cuentan: "AC/DC" y "ACDC" son dos).
+ * Es el nombre del archivo en disco: cambiarla dejaría huérfanas las carátulas ya guardadas. Null sin título ni artista.
+ */
+internal fun coverKey(title: String, artist: String): String? {
+    val raw = "$artist — $title".trim().lowercase()
+    if (raw == "—") return null
+    return MessageDigest.getInstance("SHA-256").digest(raw.toByteArray())
+        .joinToString("") { "%02x".format(it) }
 }

@@ -11,15 +11,6 @@
         <intent>
             <action android:name="android.intent.action.ASSIST" />
         </intent>
-        <!-- Para saber si la pantalla trae galería o "Archivos" antes de pedir una imagen (si no, el explorador propio). -->
-        <intent>
-            <action android:name="android.intent.action.OPEN_DOCUMENT" />
-            <data android:mimeType="image/*" />
-        </intent>
-        <intent>
-            <action android:name="android.intent.action.GET_CONTENT" />
-            <data android:mimeType="image/*" />
-        </intent>
         <!-- Qué launchers hay y cuál es el predeterminado (solo para los reportes). -->
         <intent>
             <action android:name="android.intent.action.MAIN" />
@@ -105,6 +96,18 @@
 
         <!-- Para medir con Macrobenchmark y adb en compilaciones release/benchmark. -->
         <profileable android:shell="true" tools:targetApi="29" />
+
+        <!-- Sin EmojiCompat (lo trae Compose): LiteDash no usa emoji de compatibilidad y así no busca la fuente de
+             emoji en cada arranque. Los demás inicializadores de androidx.startup se quedan. -->
+        <provider
+            android:name="androidx.startup.InitializationProvider"
+            android:authorities="${applicationId}.androidx-startup"
+            android:exported="false"
+            tools:node="merge">
+            <meta-data
+                android:name="androidx.emoji2.text.EmojiCompatInitializer"
+                tools:node="remove" />
+        </provider>
 
         <!-- El auto solo, para la mitad de la pantalla dividida (en su propia tarea: el inicio no puede ser una mitad). -->
         <activity

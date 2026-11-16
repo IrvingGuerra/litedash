@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Android 11 o menos. El número de las estadísticas anónimas (Stats.kt) es de esta
      instalación: si viajara en el respaldo, dos pantallas contarían como una. Desde la 1.4.47 se
-     llama stats.xml; estadisticas.xml (el de antes) sigue en el equipo un tiempo. Las teselas del
+     llama stats.xml; estadisticas.xml (el de antes) se queda en los equipos que venían de antes (no se borra). Las teselas del
      mapa (map_tiles, map_vector) son caché: se vuelven a bajar, no viajan. Tampoco las zonas sin
      conexión ni los autos (cientos de MB: pasado el cupo de 25 MB Android no respalda nada; se
      vuelven a bajar), ni Pro y el enlace con el celular (son de esta pantalla). -->

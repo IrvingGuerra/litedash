@@ -37,7 +37,7 @@ object FactoryAudio {
     /** La app de Bluetooth de marca ("com.autochips.bluetooth"…); si no hay, [ANDROID] o [NONE] si no tiene Bluetooth. */
     fun bluetooth(context: Context): String =
         pickBluetooth(
-            brand = HeadUnit.bluetoothApps.filter { isSystem(context, it) },
+            brand = HeadUnit.bluetoothApps.filter { isSystemApp(context, it) },
             system = systemLaunchable(context),
             hasBluetooth = context.packageManager.hasSystemFeature(PackageManager.FEATURE_BLUETOOTH),
         )
@@ -57,7 +57,7 @@ object FactoryAudio {
         PrefsRecipeStore.savedId(context.getSharedPreferences(MUSIC_STORE, Context.MODE_PRIVATE), piece)
 
     /** La familia de la pantalla por sus paquetes del sistema ("nwd", "topway"… o "generic"). Bloquea: varias consultas al sistema. */
-    fun family(context: Context): String = HeadUnit.detect { isSystem(context, it) }.id
+    fun family(context: Context): String = HeadUnit.detect { isSystemApp(context, it) }.id
 
     /** La pantalla tiene Bluetooth de baja energía (lo que usaría el enlace con el celular sin hotspot). */
     fun ble(context: Context): Boolean = context.packageManager.hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)
@@ -69,9 +69,6 @@ object FactoryAudio {
             .filter { it.packageName != context.packageName && it.flags and ApplicationInfo.FLAG_SYSTEM != 0 }
             .map { it.packageName }.toSet()
     }.getOrDefault(emptySet())
-
-    private fun isSystem(context: Context, pkg: String) =
-        runCatching { context.packageManager.getApplicationInfo(pkg, 0).flags and ApplicationInfo.FLAG_SYSTEM != 0 }.getOrDefault(false)
 
     /** Partes del paquete sin el prefijo ("com.hcn.autoradio" → hcn, autoradio): la radio viene pegada ("fmradio"). */
     private fun parts(pkg: String) = pkg.lowercase().split('.').drop(1)

@@ -151,12 +151,12 @@ internal fun ModePicker(repo: MusicRepository, modifier: Modifier = Modifier) {
     )
 }
 
-/** La vista cuenta como usuaria de [repo] mientras está en pantalla (escucha solo entonces). */
+/** La vista de [piece] cuenta como usuaria de [repo] mientras está en pantalla (lo suyo corre solo entonces). */
 @Composable
-internal fun UseRepo(repo: MusicRepository) {
-    DisposableEffect(repo) {
-        repo.use()
-        onDispose { repo.release() }
+internal fun UseRepo(repo: MusicRepository, piece: SoundPiece) {
+    DisposableEffect(repo, piece) {
+        repo.use(piece)
+        onDispose { repo.release(piece) }
     }
 }
 
@@ -195,7 +195,7 @@ internal fun MediaTile(
     onNext: (() -> Unit)? = null,
     onPrevious: (() -> Unit)? = null,
 ) {
-    UseRepo(repo)
+    UseRepo(repo, piece)
     val permission = remember(revision, needsAccess) { !needsAccess || repo.hasPermission().also { if (it) repo.recheck() } }
     val check = repo.soundCheckFor(piece)
     // Sin controles (sin permiso), con la pregunta del sonido a la vista o con anterior/siguiente apagados en las
@@ -411,8 +411,8 @@ internal fun SongDetail(repo: MusicRepository, song: Song) {
  * su margen. [content] va en una columna que llena la tarjeta.
  */
 @Composable
-internal fun ExpandedCard(repo: MusicRepository, modifier: Modifier, tint: Song? = null, content: @Composable ColumnScope.() -> Unit) {
-    UseRepo(repo)
+internal fun ExpandedCard(repo: MusicRepository, piece: SoundPiece, modifier: Modifier, tint: Song? = null, content: @Composable ColumnScope.() -> Unit) {
+    UseRepo(repo, piece)
     Card(modifier.fillMaxSize()) {
         if (tint != null && !LocalPlainCard.current) ArtworkTint(tint)
         Column(Modifier.fillMaxSize().padding(20.dp)) { content() }

@@ -7,7 +7,6 @@ import android.content.SharedPreferences
 import android.content.res.Resources
 import android.os.Build
 import android.service.notification.StatusBarNotification
-import com.irvingguerra.litedash.feature.updater.Updater
 import com.irvingguerra.litedash.core.vehicle.Signal
 import com.irvingguerra.litedash.core.vehicle.VehicleBus
 import com.irvingguerra.litedash.feature.obd.ObdRepository
@@ -64,13 +63,15 @@ class LiteDashApp : Application() {
         // Las conocidas y la elegida en Ajustes aunque no sea de ellas (al cambiarla se nota sin reiniciar).
         val listensTo = { pkg: String -> pkg in mapPackages || pkg == prefs.mapApp?.substringBefore('/') }
         val bus = VehicleBus()
-        val music = MusicRepository(this).apply { adoptPreferred(prefs.musicApp); opener = SplitScreen::open
+        val music = MusicRepository(this).apply { opener = SplitScreen::open
             returnHome = { MainActivity.bringToFront(this@LiteDashApp) } }
-        OwnPlayer.wire(this, music, prefs)
-        music.migrateUsbApp()
+        OwnPlayer.wire(this, music)
+        // Migraciones de la música (lista en MusicRepository.upgrade): se quedan mientras haya pantallas en versiones viejas.
+        val oldInternetRadio = prefs.internetRadio.takeUnless { prefs.radioUnified }
+        music.upgrade(prefs.musicApp, oldInternetRadio)
+        if (oldInternetRadio != null) prefs.radioUnified = true
         music.isProjection = ::isProjectionPackage
         prefs.addBluetoothToBar()
-        music.fixBluetoothLink()
         // Abrir una app de fábrica encima (una receta de sonido) espera a que el auto vaya a 10 km/h o menos. Sin dato
         // de velocidad (ningún widget usa el GPS ni hay OBD) no se sabe: se toma como en movimiento.
         music.moving = { (bus.value(Signal.SPEED) ?: Float.MAX_VALUE) > MOVING_KMH }
@@ -82,7 +83,7 @@ class LiteDashApp : Application() {
             prefs = prefs,
             dashboard = DashboardState(DashboardStore(this)),
             cars = cars,
-            updater = Updater(this, BuildConfig.UPDATES_URL, BuildConfig.VERSION_CODE.toLong()),
+            updates = appUpdates(this),
             weather = WeatherRepository(this, prefs),
             trip = TripRepository(this, bus),
             reminders = ReminderRepository(this),

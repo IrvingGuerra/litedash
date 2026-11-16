@@ -2,11 +2,9 @@ package com.irvingguerra.litedash.feature.music
 
 import android.content.ComponentName
 import android.content.Context
-import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.media.browse.MediaBrowser
 import android.media.session.MediaController
-import android.service.media.MediaBrowserService
 
 /**
  * El Bluetooth de Android como receptor (A2DP *sink*): el propio sistema trae un
@@ -60,11 +58,10 @@ internal class BluetoothAvrcp(
     companion object {
         private const val AVRCP_CLASS = "avrcpcontroller.BluetoothMediaBrowserService"
 
+        /** Los paquetes del Bluetooth de Android (su sesión AVRCP), aunque no se haya encontrado su servicio; desde la 13 es módulo Mainline. */
+        val ANDROID_PACKAGES = listOf("com.android.bluetooth", "com.google.android.bluetooth")
+
         /** El servicio AVRCP del Bluetooth de Android, por la clase (el paquete cambia con la versión). */
-        fun find(context: Context): ServiceInfo? = runCatching {
-            context.packageManager.queryIntentServices(Intent(MediaBrowserService.SERVICE_INTERFACE), 0)
-                .firstOrNull { it.serviceInfo.name.contains(AVRCP_CLASS) }
-                ?.serviceInfo
-        }.getOrNull()
+        fun find(context: Context): ServiceInfo? = browserServices(context).firstOrNull { it.name.contains(AVRCP_CLASS) }
     }
 }

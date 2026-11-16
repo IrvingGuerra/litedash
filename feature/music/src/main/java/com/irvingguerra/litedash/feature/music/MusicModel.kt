@@ -52,9 +52,12 @@ data class Song(
     /** Viene del celular por LiteDash Connect: los botones van por el enlace ([MusicRepository.phoneControl]). */
     val phone: Boolean = false,
 ) {
-    fun currentPosition(): Long {
+    fun currentPosition(): Long = positionAt(SystemClock.elapsedRealtime())
+
+    /** Dónde va en el momento [now] (reloj de arranque): sin pasarse de la duración, si se sabe. */
+    internal fun positionAt(now: Long): Long {
         if (!playing) return positionMs
-        val progress = ((SystemClock.elapsedRealtime() - readAt) * speed).toLong()
+        val progress = ((now - readAt) * speed).toLong()
         return (positionMs + progress).coerceAtMost(if (durationMs > 0) durationMs else Long.MAX_VALUE)
     }
 }

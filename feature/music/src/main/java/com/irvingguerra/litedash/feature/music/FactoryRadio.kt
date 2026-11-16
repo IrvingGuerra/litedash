@@ -30,6 +30,8 @@ internal interface FactoryRadio {
     val on: Boolean?
     /** Cuándo dijo la radio que tiene el audio (para confirmar un play). */
     val audioAt: Long
+    /** Un play solo se puede confirmar por el audio de Android (la radio no dice si tiene el audio). */
+    val confirmsByAudio: Boolean get() = false
 
     /** Se conecta; false si la pantalla no lo deja. */
     fun open(): Boolean

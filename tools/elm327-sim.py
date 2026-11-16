@@ -9,7 +9,7 @@ falla, dos códigos guardados (P0420, P0133), uno pendiente (P0171), el monitor 
 pendiente y datos en vivo que cambian (velocidad, rpm, temperatura, gasolina, turbo…).
 Para probar las alertas: --caliente (motor a 112 °C) y --sin-carga (alternador sin cargar,
 12.2 V con el motor andando). También contesta la presión de llantas de fábrica (Llantas →
-Auto (OBD)) como el módulo de su marca: ver MODULOS; con --sin-tpms no la da.
+Auto (OBD)) como el módulo de su marca: ver MODULES; con --sin-tpms no la da.
 --encabezados: como los clones que ignoran ATH0, el modo 01 llega con "7E8" y el largo.
 """
 import math
@@ -39,7 +39,7 @@ def tpms(module_header, request):
     """La presión de llantas de fábrica: (encabezado, petición) -> respuesta (sin el 62/61), o None."""
     if NO_TPMS:
         return None
-    return MODULOS.get((module_header, request))
+    return MODULES.get((module_header, request))
 
 
 def mitsubishi(request, psi, temp):
@@ -53,7 +53,7 @@ def mitsubishi(request, psi, temp):
 
 # (ATSH, petición) -> función que da la respuesta positiva completa: las recetas de FactoryTires.kt
 # que se prueban sin auto (el VIN del simulador es de un Lancer: JA3…).
-MODULOS = {
+MODULES = {
     ("600", "2123"): mitsubishi("2123", 32, 28),
     ("600", "2126"): mitsubishi("2126", 31, 29),
     ("600", "2124"): mitsubishi("2124", 33, 26),
@@ -118,9 +118,8 @@ def live(pid):
 
 
 def reply(cmd):
-    global mil
+    global mil, header
     cmd = cmd.replace(" ", "").upper()
-    global header
     if cmd.startswith("ATSH"):
         header = cmd[4:]
         return "OK"
@@ -130,7 +129,8 @@ def reply(cmd):
         answer = tpms(header, cmd)
         if answer is None:
             return "NO DATA"
-        return answer() if len(answer()) <= 14 else multi(answer())
+        text = answer()
+        return text if len(text) <= 14 else multi(text)
     if cmd == "ATZ":
         return "\r\rELM327 v1.5"
     if cmd == "ATRV":
@@ -157,16 +157,15 @@ def reply(cmd):
 
 
 def mode01(cmd):
-    if True:
-        pid = int(cmd[2:], 16)
-        if pid in (0x00, 0x20, 0x40, 0x60):
-            return "41%02X%s" % (pid, bitmap(pid))
-        if pid == 0x01:
-            a = (0x80 if mil else 0) | len(codes["03"])
-            # B: los tres continuos soportados y listos. C: catalizador, EVAP, O2, calentador. D: EVAP pendiente.
-            return "4101%02X07650%d" % (a, 4 if mil else 0)
-        value = live(pid) if pid in PIDS else None
-        return "41%02X%s" % (pid, value) if value else "NO DATA"
+    pid = int(cmd[2:], 16)
+    if pid in (0x00, 0x20, 0x40, 0x60):
+        return "41%02X%s" % (pid, bitmap(pid))
+    if pid == 0x01:
+        a = (0x80 if mil else 0) | len(codes["03"])
+        # B: los tres continuos soportados y listos. C: catalizador, EVAP, O2, calentador. D: EVAP pendiente.
+        return "4101%02X07650%d" % (a, 4 if mil else 0)
+    value = live(pid) if pid in PIDS else None
+    return "41%02X%s" % (pid, value) if value else "NO DATA"
 
 
 class Handler(socketserver.BaseRequestHandler):

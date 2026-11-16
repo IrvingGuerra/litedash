@@ -47,7 +47,7 @@ fun RadioExpanded(
     val canBrowse = browser != null && internet
     // La lista de estaciones; al entrar (o al cambiar a internet) sin nada sonando, se abre sola.
     var browsing by remember(canBrowse) { mutableStateOf(canBrowse && song == null && repo.radio.starting == null) }
-    ExpandedCard(repo, modifier) {
+    ExpandedCard(repo, SoundPiece.RADIO, modifier) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Label(stringResource(R.string.radio).uppercase(), Typography.label, c.textMuted, maxLines = 1, modifier = Modifier.weight(1f).padding(start = 4.dp))
             if (canBrowse) HeaderButton(if (browsing) Icons.radio else Icons.list) { browsing = !browsing }

@@ -58,7 +58,7 @@ fun MusicExpanded(
     var browsing by remember { mutableStateOf(startBrowsing && files) }
     // Con Archivos, play sin nada que tocar abre la biblioteca.
     OnFilesEmpty(repo, files, remember { { browsing = true } })
-    ExpandedCard(repo, modifier, tint = song) {
+    ExpandedCard(repo, SoundPiece.MUSIC, modifier, tint = song) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             // Lo que sobra es del selector; los botones, siempre a la derecha.
             Box(Modifier.weight(1f)) { ModePicker(repo) }

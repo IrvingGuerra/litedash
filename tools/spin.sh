@@ -5,16 +5,13 @@
 #
 # Uso: tools/spin.sh [-s SERIAL] [X Y]
 #   X Y = centro del auto en el inicio, en píxeles (por defecto, el centro de la pantalla).
-# Antes: LiteDash instalado como inicio, con un auto del catálogo en calidad Alta.
+# Antes: LiteDash instalado como inicio, con un auto del catálogo en fluidez Media (48 cuadros).
 # En el emulador no debe haber nada usando el GPU de la Mac (Blender renderizando lo
 # traba y la medición no sirve): pausarlo con `kill -STOP $(pgrep -if blender)` y luego `kill -CONT`.
 set -euo pipefail
+source "$(dirname "$0")/lib.sh"
+use_serial "$@"; shift "$SERIAL_SHIFT"
 
-SERIAL_ARGS=()
-if [ "${1:-}" = "-s" ]; then SERIAL_ARGS=(-s "$2"); shift 2; fi
-adb() { command adb ${SERIAL_ARGS[@]+"${SERIAL_ARGS[@]}"} "$@"; }
-
-PKG=com.irvingguerra.litedash
 SIZE=$(adb shell wm size | tail -1 | awk '{print $NF}' | tr -d '\r')
 W=${SIZE%x*}
 H=${SIZE#*x}
@@ -24,8 +21,8 @@ REACH=$((W / 4))
 
 adb shell am force-stop $PKG
 adb shell am start -n $PKG/.MainActivity >/dev/null
-# Pantallas lentas (Android 6) tardan más en pasar la animación de entrada.
-sleep 10
+# Hasta que pase la animación de entrada y el inicio quede quieto (las pantallas lentas tardan más).
+wait_idle 30 || echo "Aviso: el inicio no quedó quieto en 30 s; se mide igual."
 
 # Arrastra de lado a lado [veces] y reporta cuadros por segundo de arrastre.
 measure() {

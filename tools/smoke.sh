@@ -7,8 +7,8 @@
 # Uso: tools/smoke.sh [APK]      (por defecto compila playDebug)
 set -euo pipefail
 cd "$(dirname "$0")/.."
+source tools/lib.sh
 
-PKG=com.irvingguerra.litedash
 ACT=$PKG/.MainActivity
 APK=${1:-}
 if [ -z "$APK" ]; then
@@ -21,23 +21,25 @@ serials=$(adb devices | awk 'NR > 1 && $2 == "device" {print $1}')
 
 failed=0
 for serial in $serials; do
-  sdk=$(adb -s "$serial" shell getprop ro.build.version.sdk | tr -d '\r')
-  name=$(adb -s "$serial" emu avd name 2>/dev/null | head -1 | tr -d '\r' || true)
-  [ -n "$name" ] || name=$(adb -s "$serial" shell getprop ro.product.model | tr -d '\r')
+  SERIAL_ARGS=(-s "$serial")
+  sdk=$(adb shell getprop ro.build.version.sdk | tr -d '\r')
+  name=$(adb emu avd name 2>/dev/null | head -1 | tr -d '\r' || true)
+  [ -n "$name" ] || name=$(adb shell getprop ro.product.model | tr -d '\r')
   printf '%-28s API %-3s ' "$name" "$sdk"
-  adb -s "$serial" install -r -t "$APK" >/dev/null 2>&1 || { echo "FALLÓ instalar"; failed=1; continue; }
-  adb -s "$serial" shell am force-stop $PKG
-  adb -s "$serial" logcat -c
-  adb -s "$serial" shell am start -W -n $ACT >/dev/null
-  # Android 6 en 1 GB tarda en pasar la animación de entrada y armar el inicio.
-  sleep 12
-  alive=$(adb -s "$serial" shell pidof $PKG 2>/dev/null | tr -d '\r' || true)
-  crashes=$(adb -s "$serial" logcat -d -s AndroidRuntime:E | grep -c "$PKG" || true)
+  adb install -r -t "$APK" >/dev/null 2>&1 || { echo "FALLÓ instalar"; failed=1; continue; }
+  adb shell am force-stop $PKG
+  adb logcat -c
+  adb shell am start -W -n $ACT >/dev/null
+  # Hasta que pase la animación de entrada y el inicio quede quieto (Android 6 en 1 GB tarda más);
+  # si algo se mueve sin parar, al tope se revisa igual.
+  wait_idle 30 || true
+  alive=$(adb shell pidof $PKG 2>/dev/null | tr -d '\r' || true)
+  crashes=$(adb logcat -d -s AndroidRuntime:E | grep -c "$PKG" || true)
   if [ -n "$alive" ] && [ "$crashes" = 0 ]; then
     echo "OK"
   else
     echo "FALLÓ (viva: ${alive:-no}, errores: $crashes)"
-    adb -s "$serial" logcat -d -s AndroidRuntime:E | head -40
+    adb logcat -d -s AndroidRuntime:E | head -40
     failed=1
   fi
 done

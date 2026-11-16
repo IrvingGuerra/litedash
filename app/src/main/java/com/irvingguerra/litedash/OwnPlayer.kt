@@ -24,7 +24,7 @@ object OwnPlayer {
     /** Sube con cada play de Archivos (y al cancelarlo): una búsqueda vieja ya no arranca nada. La lee también el hilo `usb-start`. */
     @Volatile private var generation = 0
 
-    fun wire(context: Context, music: MusicRepository, prefs: Preferences) {
+    fun wire(context: Context, music: MusicRepository) {
         Player.init(context)
         music.ownSourceNow = { Player.state.source?.toKind() }
         music.ownPlay = { kind, done -> play(context, kind, done) }
@@ -35,16 +35,9 @@ object OwnPlayer {
         music.ownStop = { Player.stop() }
         music.ownSession = { Player.sessionToken }
         Player.onSession = music::ownSessionChanged
-        Player.onPlay = { if (it == PlayerSource.USB) music.quietRadio() }
+        // La USB empieza (también con el volante a su sesión): la radio de fábrica se calla si se sabe que suena.
+        Player.onPlay = { if (it == PlayerSource.USB) music.ownMusicStarted() }
         music.ownDescribe = { "${Library.describe(context)} ${Player.describe()}" }
-        // Migración (1.4.111): hasta ahí la radio por internet tenía además su interruptor en las preferencias de la app
-        // (y hasta la 1.4.110 el widget escogía entre las dos). Una vez: queda la que sonaba en el widget. Se quita
-        // cuando ya no se actualicen pantallas de < 1.4.111.
-        if (!prefs.radioUnified) {
-            val internet = prefs.internetRadio && (music.radioInternet || music.sourceApps[SourceKind.RADIO] == null)
-            music.radioInternet = internet
-            prefs.radioUnified = true
-        }
     }
 
     /** [done] en el hilo principal: true = ya suena (o va a sonar); false = no hay nada que tocar todavía. */
