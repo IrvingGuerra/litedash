@@ -94,6 +94,7 @@ import com.irvingguerra.litedash.feature.music.MusicMode
 import com.irvingguerra.litedash.feature.music.MusicRepository
 import com.irvingguerra.litedash.feature.music.MusicTile
 import com.irvingguerra.litedash.feature.music.OnFilesEmpty
+import com.irvingguerra.litedash.feature.music.ParkedSong
 import com.irvingguerra.litedash.feature.music.RadioTile
 import com.irvingguerra.litedash.feature.music.SoundPiece
 import com.irvingguerra.litedash.feature.navigation.NavigationRepository
@@ -774,52 +775,55 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
             }
         }
 
-        when (val p = panel) {
-            null -> Unit
-            Panel.Drawer -> DrawerPanel(d, apps, close = { panel = null })
-            Panel.Settings, Panel.Updates, Panel.Report, Panel.Workshop, Panel.MusicSettings, Panel.TiresSettings -> SettingsPanel(
-                d,
-                revision = revision,
-                close = { panel = null },
-                // Acomodar cierra lo que esté en grande (si no, el tablero ni se ve).
-                onEdit = { panel = null; expanded = null; editing = true },
-                onTemplates = { panel = Panel.Templates },
-                start = when (p) {
-                    Panel.Updates, Panel.Report -> SettingsSection.SYSTEM
-                    Panel.Workshop -> SettingsSection.WORKSHOP
-                    Panel.MusicSettings -> SettingsSection.APPS
-                    Panel.TiresSettings -> SettingsSection.TIRES
-                    else -> SettingsSection.CAR
-                },
-                onTires = { panel = null; tiresLayer.open = true },
-            )
-            Panel.Templates -> TemplatesPanel(d.dashboard, close = { panel = null })
-            Panel.BarSettings -> BarSettingsPanel(d, apps, close = { panel = null })
-            Panel.Wallpaper -> PanelScaffold(stringResource(R.string.wallpaper_title), close = { panel = null }) {
-                Column(Modifier.weight(1f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                    Label(stringResource(R.string.wallpaper_help), Typography.body, c.textMuted)
-                    WallpaperSettings()
+        panel?.let { p ->
+            FitShort {
+                when (p) {
+                    Panel.Drawer -> DrawerPanel(d, apps, close = { panel = null })
+                    Panel.Settings, Panel.Updates, Panel.Report, Panel.Workshop, Panel.MusicSettings, Panel.TiresSettings -> SettingsPanel(
+                        d,
+                        revision = revision,
+                        close = { panel = null },
+                        // Acomodar cierra lo que esté en grande (si no, el tablero ni se ve).
+                        onEdit = { panel = null; expanded = null; editing = true },
+                        onTemplates = { panel = Panel.Templates },
+                        start = when (p) {
+                            Panel.Updates, Panel.Report -> SettingsSection.SYSTEM
+                            Panel.Workshop -> SettingsSection.WORKSHOP
+                            Panel.MusicSettings -> SettingsSection.APPS
+                            Panel.TiresSettings -> SettingsSection.TIRES
+                            else -> SettingsSection.CAR
+                        },
+                        onTires = { panel = null; tiresLayer.open = true },
+                    )
+                    Panel.Templates -> TemplatesPanel(d.dashboard, close = { panel = null })
+                    Panel.BarSettings -> BarSettingsPanel(d, apps, close = { panel = null })
+                    Panel.Wallpaper -> PanelScaffold(stringResource(R.string.wallpaper_title), close = { panel = null }) {
+                        Column(Modifier.weight(1f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                            Label(stringResource(R.string.wallpaper_help), Typography.body, c.textMuted)
+                            WallpaperSettings()
+                        }
+                    }
+                    Panel.AddTile -> AddTilePanel(
+                        d,
+                        close = { panel = null },
+                        onPickApp = { panel = Panel.PickApp(null) },
+                        onPickGauge = { panel = Panel.PickGauge(null) },
+                        onTiresSettings = { panel = Panel.TiresSettings },
+                    )
+                    is Panel.PickApp -> PickAppPanel(d, apps, p.tileId, close = { panel = p.back })
+                    is Panel.PickGauge -> PickGaugePanel(d, p.tileId, close = { panel = null })
+                    is Panel.CustomizeGauge -> CustomizeGaugePanel(d, p.tileId, close = { panel = null }, onPickSignal = { panel = Panel.PickGauge(p.tileId) })
+                    is Panel.CustomizeImage -> CustomizeImagePanel(d, p.tileId, close = { panel = null })
+                    is Panel.CustomizeMap -> CustomizeMapPanel(d, p.tileId, close = { panel = null })
+                    is Panel.CustomizeCar -> CustomizeCarPanel(d, p.tileId, close = { panel = null })
+                    is Panel.CustomizeWidget -> CustomizeWidgetPanel(
+                        d, p.tileId, apps, cell,
+                        close = { panel = null },
+                        onPickApp = { panel = Panel.PickApp(p.tileId, back = p) },
+                        preview = { t -> TileContent(d, t, apps, car, revision, actions) },
+                    )
                 }
             }
-            Panel.AddTile -> AddTilePanel(
-                d,
-                close = { panel = null },
-                onPickApp = { panel = Panel.PickApp(null) },
-                onPickGauge = { panel = Panel.PickGauge(null) },
-                onTiresSettings = { panel = Panel.TiresSettings },
-            )
-            is Panel.PickApp -> PickAppPanel(d, apps, p.tileId, close = { panel = p.back })
-            is Panel.PickGauge -> PickGaugePanel(d, p.tileId, close = { panel = null })
-            is Panel.CustomizeGauge -> CustomizeGaugePanel(d, p.tileId, close = { panel = null }, onPickSignal = { panel = Panel.PickGauge(p.tileId) })
-            is Panel.CustomizeImage -> CustomizeImagePanel(d, p.tileId, close = { panel = null })
-            is Panel.CustomizeMap -> CustomizeMapPanel(d, p.tileId, close = { panel = null })
-            is Panel.CustomizeCar -> CustomizeCarPanel(d, p.tileId, close = { panel = null })
-            is Panel.CustomizeWidget -> CustomizeWidgetPanel(
-                d, p.tileId, apps, cell,
-                close = { panel = null },
-                onPickApp = { panel = Panel.PickApp(p.tileId, back = p) },
-                preview = { t -> TileContent(d, t, apps, car, revision, actions) },
-            )
         }
 
         val big = bigTile
@@ -830,7 +834,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
             )
         }
 
-        if (tiresLayer.shown && panel == null) {
+        if (tiresLayer.shown && panel == null) FitShort {
             TiresFull(
                 d, { tiresLayer.progress.value },
                 onClose = { tiresLayer.open = false },
@@ -839,7 +843,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
             )
         }
 
-        if (parked) Parked(d, onWake = { parked = false; touched++ })
+        if (parked) FitShort { Parked(d, onWake = { parked = false; touched++ }) }
 
         // Animación de entrada con tu imagen, una vez por cada vez que se abre LiteDash (no al cambiar de idioma).
         var intro by rememberSaveable { mutableStateOf(!MainActivity.takeRestarted() && d.prefs.logoIntro && d.prefs.welcomeSeen) }
@@ -892,7 +896,7 @@ private fun rememberOverlay(waitMs: Long, inMs: Int, outMs: Int): Overlay {
 private fun Modifier.hiddenWhen(hidden: () -> Boolean) = drawWithContent { if (!hidden()) drawContent() }
 
 /**
- * Estacionado: reloj grande, saludo y clima (o tu imagen, si la elegiste) sobre fondo oscuro.
+ * Estacionado: reloj grande, saludo, clima y lo que suena (o tu imagen, si la elegiste) sobre fondo oscuro.
  * Sale tras [PARK_AFTER_MS] sin tocar el inicio (y sin ir en movimiento); un toque lo quita.
  */
 @Composable
@@ -914,6 +918,7 @@ private fun Parked(d: Dependencies, onWake: () -> Unit) {
                 BigTime(clock, Typography.clock.copy(fontSize = 120.sp))
                 Label(hello?.let { stringResource(R.string.two_parts, it, clock.date) } ?: clock.date, Typography.subtitle, LocalColors.current.textMuted, maxLines = 1)
                 Box(Modifier.padding(top = 12.dp)) { WeatherChip(d.weather) }
+                ParkedSong(d.music, Modifier.padding(top = 20.dp))
             }
         }
     }
@@ -1078,5 +1083,5 @@ private fun ExpandedLayer(from: Rect?, progress: () -> Float, content: @Composab
             }
             .background(c.background)
             .blockTouches(),
-    ) { content() }
+    ) { FitShort(SHORT_EXPANDED_HEIGHT, content) }
 }

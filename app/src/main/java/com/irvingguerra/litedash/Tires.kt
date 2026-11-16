@@ -506,10 +506,12 @@ fun TiresFull(d: Dependencies, progress: () -> Float, onClose: () -> Unit, onSet
             }
             BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
                 val portrait = maxHeight > maxWidth
+                // Pantallas bajas (1280×480): los cuadros de cada llanta, chicos, para que no se encimen.
+                val compact = maxHeight < FULL_COMPACT_HEIGHT
                 val view = @Composable { m: Modifier ->
                     Card(m) {
                         TiresView(
-                            d, compact = false, onWheel = { chart = if (chart == it) null else it }, Modifier.fillMaxSize().padding(18.dp),
+                            d, compact = compact, onWheel = { chart = if (chart == it) null else it }, Modifier.fillMaxSize().padding(18.dp),
                             selected = chart, onSettings = onSettings, onReady = onReady,
                         )
                     }
@@ -526,6 +528,8 @@ fun TiresFull(d: Dependencies, progress: () -> Float, onClose: () -> Unit, onSet
         }
     }
 }
+
+private val FULL_COMPACT_HEIGHT = 360.dp
 
 private const val DAY_MS = 24 * 3_600_000L
 

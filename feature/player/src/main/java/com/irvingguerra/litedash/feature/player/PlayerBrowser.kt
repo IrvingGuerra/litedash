@@ -10,6 +10,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -140,7 +141,7 @@ private fun LibraryBrowser(onPicked: () -> Unit, modifier: Modifier) {
         }
     }
     if (!permission) {
-        Column(modifier, verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Column(modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Label(stringResource(R.string.library_no_permission), Typography.body, c.textMuted)
             Button(stringResource(R.string.library_grant), askAll, primary = true)
         }
@@ -153,7 +154,8 @@ private fun LibraryBrowser(onPicked: () -> Unit, modifier: Modifier) {
     }
     val (drive, tracks) = loaded ?: return Label(stringResource(R.string.library_loading), Typography.body, c.textMuted, modifier = modifier)
     if (drive == null || tracks.isEmpty()) {
-        return Column(modifier, verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        // Con desplazamiento: en pantallas bajas el botón de la carpeta quedaba fuera.
+        return Column(modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             if (drive == null) Icon(Icons.usb, c.textMuted, 40.dp)
             // Memoria vista pero sin canciones leídas: casi siempre es la pantalla que no deja leerla.
             Label(if (drive == null) stringResource(R.string.library_no_drive) else stringResource(R.string.library_unreadable, drive.name), Typography.body, c.textMuted)

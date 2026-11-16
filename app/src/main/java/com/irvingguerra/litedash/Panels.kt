@@ -23,6 +23,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -31,7 +32,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.irvingguerra.litedash.core.ui.Button
@@ -48,6 +51,31 @@ import com.irvingguerra.litedash.feature.apps.App
 import com.irvingguerra.litedash.feature.apps.AppGrid
 import com.irvingguerra.litedash.feature.dashboard.TileTypes
 import com.irvingguerra.litedash.feature.obd.ObdState
+
+/**
+ * Paneles a pantalla completa en pantallas muy bajas (8.8" de 1280×480): todo se dibuja más chico para que quepa,
+ * sin tocar el tamaño del inicio. Con más de [below] de alto no cambia nada.
+ */
+@Composable
+internal fun FitShort(below: Dp = SHORT_PANEL_HEIGHT, content: @Composable () -> Unit) {
+    BoxWithConstraints(Modifier.fillMaxSize()) {
+        val fit = (maxHeight / below).coerceIn(MIN_PANEL_FIT, 1f)
+        if (fit >= 1f) content()
+        else {
+            val d = LocalDensity.current
+            CompositionLocalProvider(LocalDensity provides Density(d.density * fit, d.fontScale)) { content() }
+        }
+    }
+}
+
+/** Por debajo de esta altura los paneles se achican (Ajustes trae título, pestañas y una tarjeta). */
+private val SHORT_PANEL_HEIGHT = 400.dp
+
+/** Lo que crece desde un widget (música, radio, mapa) vive arriba de la barra: se achica solo si queda muy bajo. */
+internal val SHORT_EXPANDED_HEIGHT = 300.dp
+
+/** Nunca más chico que esto: los textos deben seguir leyéndose. */
+private const val MIN_PANEL_FIT = 0.72f
 
 /** Panel a pantalla completa sobre el inicio, con título y botón para cerrar. */
 @Composable

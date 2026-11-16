@@ -4,6 +4,19 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.4.165] - 2026-11-16
+
+### Nuevo
+- **El modo estacionado muestra lo que suena** (issue #19): carátula, canción y artista (o la estación de radio) debajo
+  del reloj. El saludo solo sale si guardaste tu nombre en Ajustes → Inicio y apariencia → Interfaz → Tu nombre.
+
+### Arreglado
+- **Pantallas muy bajas** (8.8" de 1280×480 y parecidas, issue #21): Ajustes, la vista grande de Llantas, la música en
+  grande y el modo estacionado se acomodan solos para caber, sin cambiar el tamaño de tu inicio. Los cuadros de cada
+  llanta ya no se enciman.
+- La lista de Archivos sin música (o sin permiso) ahora se desplaza: el botón «Elegir carpeta» ya no queda fuera en
+  pantallas bajas.
+
 ## [1.4.164] - 2026-11-16
 
 ### Arreglado
