@@ -157,7 +157,7 @@ class Updater(
         val target = File(context.cacheDir, APK_FILE)
         val computed = Https.download(context, v.apk, target, v.bytes, GITHUB_JSON, progress)
         v.checksums?.let { url ->
-            val expected = open(url).inputStream.bufferedReader().readLines()
+            val expected = open(url).inputStream.bufferedReader().use { it.readLines() }
                 .firstOrNull { it.trim().endsWith(".apk") }?.trim()?.split(Regex("\\s+"))?.firstOrNull()
             if (expected != null && !expected.equals(computed, ignoreCase = true)) {
                 target.delete()

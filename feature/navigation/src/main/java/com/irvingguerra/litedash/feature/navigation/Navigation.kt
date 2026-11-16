@@ -29,10 +29,11 @@ data class TurnInstruction(
 
 /**
  * Lee la siguiente vuelta del aviso que Waze o Google Maps muestran mientras
- * navegan, para tenerla en el tablero sin abrir el mapa. Solo mira avisos de
- * [packages] y solo mientras algo la usa ([use]/[release]); no guarda nada.
+ * navegan, para tenerla en el tablero sin abrir el mapa. Solo mira avisos de las apps
+ * que [listens] acepta (se pregunta en cada aviso: la app elegida puede cambiar) y solo
+ * mientras algo la usa ([use]/[release]); no guarda nada.
  */
-class NavigationRepository(private val context: Context, private val packages: Set<String>) {
+class NavigationRepository(private val context: Context, private val listens: (String) -> Boolean) {
     var instruction by mutableStateOf<TurnInstruction?>(null)
         private set
 
@@ -50,7 +51,7 @@ class NavigationRepository(private val context: Context, private val packages: S
     }
 
     fun posted(notification: StatusBarNotification) {
-        if (users == 0 || notification.packageName !in packages) return
+        if (users == 0 || !listens(notification.packageName)) return
         val n = notification.notification
         // Waze y Maps navegan con un aviso fijo (o de categoría navegación); los demás avisos no cuentan.
         // CATEGORY_NAVIGATION (API 28) es solo un texto: en Android viejo la categoría llega vacía.

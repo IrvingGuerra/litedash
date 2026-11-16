@@ -75,7 +75,11 @@ class WheelKeys(private val context: Context, private val prefs: Preferences) {
     /** true si LiteDash se quedó con la tecla (no se le pasa a Android). */
     fun onKey(event: KeyEvent, music: MusicRepository): Boolean {
         val code = event.keyCode
-        if (code in IGNORED) return false
+        // La tecla de volumen que aprieta LiteDash ([SystemVolume]) no es del volante: sigue al sistema.
+        val own = SystemVolume.isOwn(event)
+        // Solo botones: lo que se escribe con un teclado (letras y números) no se anota.
+        if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0 && !event.isPrintingKey) note(if (own) "$code*" else "$code")
+        if (own || code in IGNORED) return false
         learning?.let { learn ->
             if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0) learn(code)
             return true
@@ -89,11 +93,19 @@ class WheelKeys(private val context: Context, private val prefs: Preferences) {
         return true
     }
 
+    /** Las últimas teclas que llegaron (con * las que apretó LiteDash), para el reporte. */
+    private val recent = ArrayDeque<String>()
+
+    private fun note(key: String) = synchronized(recent) {
+        recent.addLast(key)
+        while (recent.size > RECENT_KEPT) recent.removeFirst()
+    }
+
+    /** Para el reporte: las últimas teclas recibidas (keyCode; * = la apretó LiteDash). */
+    fun describe(): String = "Volante: últimas teclas=${synchronized(recent) { recent.joinToString() }.ifEmpty { "ninguna" }}"
+
     private fun run(action: WheelAction, music: MusicRepository) {
-        val audio = context.getSystemService(AudioManager::class.java)
-        fun adjust(direction: Int) = runCatching {
-            audio.adjustStreamVolume(AudioManager.STREAM_MUSIC, direction, AudioManager.FLAG_SHOW_UI)
-        }
+        fun adjust(direction: Int) = SystemVolume.adjust(context, direction, ui = true)
         when (action) {
             // Si lo que suena es la radio (y la música no), el volante la controla a ella; si no, a la
             // música (aunque la radio de fábrica muestre su estación en pausa: el método de música manda).
@@ -114,6 +126,8 @@ class WheelKeys(private val context: Context, private val prefs: Preferences) {
     }
 
     companion object {
+        private const val RECENT_KEPT = 6
+
         /** Teclas que nunca se aprenden ni se cambian: navegar la pantalla y "atrás". */
         val IGNORED = setOf(
             KeyEvent.KEYCODE_BACK, KeyEvent.KEYCODE_HOME, KeyEvent.KEYCODE_APP_SWITCH, KeyEvent.KEYCODE_POWER,

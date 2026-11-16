@@ -40,11 +40,12 @@ internal enum class HeadUnit(
     companion object {
         /**
          * La familia por sus paquetes: gana la del Bluetooth de fábrica (una TopWay con ZLink sigue siendo
-         * TopWay) y, sin Bluetooth de marca, la de la radio.
+         * TopWay) y, sin Bluetooth de marca, la de la radio; sin ninguna, el kernel de NWD (el que lleva su volumen).
          */
         fun detect(installed: (String) -> Boolean): HeadUnit =
             BRAND_BLUETOOTH.firstOrNull { it.family != GENERIC && installed(it.pkg) }?.family
                 ?: FACTORY_RADIOS.firstOrNull { installed(it.first) }?.second
+                ?: NWD.takeIf { installed(NwdRadio.KERNEL_PACKAGE) }
                 ?: GENERIC
 
         /** Todas las apps de Bluetooth de marca, en orden de prioridad (para la familia en reportes y estadísticas). */

@@ -26,6 +26,12 @@ import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.remember
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.awaitTouchSlopOrCancellation
+import androidx.compose.foundation.gestures.horizontalDrag
+import androidx.compose.ui.input.pointer.pointerInput
+import kotlin.math.abs
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -183,12 +189,18 @@ internal fun MediaTile(
     tinted: Boolean = false,
     /** Un toque fuera de los botones: la pantalla Música en grande. */
     onOpen: (() -> Unit)? = null,
+    /** Deslizar a lo ancho: siguiente y anterior (null = no hay qué pasar). */
+    onNext: (() -> Unit)? = null,
+    onPrevious: (() -> Unit)? = null,
 ) {
     UseRepo(repo)
     val permission = remember(revision, needsAccess) { !needsAccess || repo.hasPermission().also { if (it) repo.recheck() } }
-    Card(modifier.fillMaxSize(), onClick = onOpen.takeIf { permission }) {
+    val check = repo.soundCheckFor(piece)
+    // Sin controles (sin permiso) o con la pregunta del sonido a la vista, no se desliza.
+    val swipe = Modifier.swipeToSkip(onNext.takeIf { permission && check == null }, onPrevious)
+    Card(modifier.fillMaxSize().then(swipe), onClick = onOpen.takeIf { permission }) {
         if (!permission) return@Card NoPermission(repo, icon, title, explain)
-        repo.soundCheckFor(piece)?.let { check ->
+        if (check != null) {
             return@Card Box(Modifier.fillMaxSize().padding(TilePadding), contentAlignment = Alignment.CenterStart) { SoundCheckPrompt(repo, check) }
         }
         // La llave es la canción, no el Bitmap: cada play o pausa trae otra instancia de la misma carátula.
@@ -243,6 +255,36 @@ internal fun MediaTile(
         }
     }
 }
+
+/**
+ * Deslizar a lo ancho = pasar de canción como una carátula (idea #14): a la izquierda la siguiente, a la derecha la
+ * anterior, desde [SWIPE_MIN]. Solo si empieza antes del "dejar presionado" (acomodar el widget) y va más a lo ancho
+ * que a lo alto; un toque sigue siendo toque. Sin [onNext] o [onPrevious], nada. Las acciones se toman al
+ * prenderse: solo deben llamar al repositorio (que no cambia).
+ */
+internal fun Modifier.swipeToSkip(onNext: (() -> Unit)?, onPrevious: (() -> Unit)?): Modifier {
+    if (onNext == null || onPrevious == null) return this
+    return pointerInput(Unit) {
+        val min = SWIPE_MIN.toPx()
+        awaitEachGesture {
+            val down = awaitFirstDown(requireUnconsumed = false)
+            val start = withTimeoutOrNull(viewConfiguration.longPressTimeoutMillis) {
+                awaitTouchSlopOrCancellation(down.id) { change, over -> if (abs(over.x) > abs(over.y)) change.consume() }
+            } ?: return@awaitEachGesture
+            var last = start.position
+            val ended = horizontalDrag(start.id) {
+                it.consume()
+                last = it.position
+            }
+            val dx = last.x - down.position.x
+            if (!ended || abs(dx) < min) return@awaitEachGesture
+            if (dx < 0) onNext() else onPrevious()
+        }
+    }
+}
+
+/** Lo que hay que deslizar para pasar de canción. */
+private val SWIPE_MIN = 64.dp
 
 /**
  * Con Archivos, play sin nada que tocar llama [open] (abre la biblioteca) mientras [enabled]. El inicio
@@ -392,8 +434,12 @@ internal fun ColumnScope.NowPlaying(
     icon: ImageVector,
     detailsHeight: Dp,
     title: @Composable (Modifier, compact: Boolean) -> Unit,
+    /** Deslizar sobre la carátula: siguiente y anterior ([swipeToSkip]; null = no se desliza). */
+    onNext: (() -> Unit)? = null,
+    onPrevious: (() -> Unit)? = null,
     controls: @Composable ColumnScope.(ControlsFit) -> Unit,
 ) {
+    val artModifier = Modifier.swipeToSkip(onNext, onPrevious)
     BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
         val width = maxWidth
         val height = maxHeight
@@ -404,7 +450,7 @@ internal fun ColumnScope.NowPlaying(
             height < SHORT_MAX -> Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
                 val art = minOf(height, width * 0.3f, ARTWORK_SHORT)
                 if (art >= ARTWORK_MIN) {
-                    Artwork(song, Modifier.size(art), Radius.inner, icon)
+                    Artwork(song, Modifier.size(art).then(artModifier), Radius.inner, icon)
                     Spacer(Modifier.width(16.dp))
                 }
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.Center) {
@@ -414,7 +460,7 @@ internal fun ColumnScope.NowPlaying(
             }
             // Con lugar (como un reproductor de escritorio): carátula grande y, al lado, todo centrado y con aire.
             wide -> Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
-                Artwork(song, Modifier.size(minOf(height, width * 0.45f)), Radius.card, icon)
+                Artwork(song, Modifier.size(minOf(height, width * 0.45f)).then(artModifier), Radius.card, icon)
                 Spacer(Modifier.width(32.dp))
                 Column(Modifier.weight(1f).padding(horizontal = 8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                     CompositionLocalProvider(LocalWide provides (fit == ControlsFit.FULL)) {
@@ -424,7 +470,7 @@ internal fun ColumnScope.NowPlaying(
                 }
             }
             above >= ARTWORK_ABOVE_MIN -> Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-                Artwork(song, Modifier.size(above), Radius.card, icon)
+                Artwork(song, Modifier.size(above).then(artModifier), Radius.card, icon)
                 Spacer(Modifier.height(16.dp))
                 title(Modifier.fillMaxWidth(), false)
                 controls(ControlsFit.FULL)
@@ -433,7 +479,7 @@ internal fun ColumnScope.NowPlaying(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     val small = minOf(ARTWORK_SMALL, width * 0.28f)
                     if (small >= ARTWORK_MIN) {
-                        Artwork(song, Modifier.size(small), Radius.inner, icon)
+                        Artwork(song, Modifier.size(small).then(artModifier), Radius.inner, icon)
                         Spacer(Modifier.width(16.dp))
                     }
                     title(Modifier.weight(1f), true)

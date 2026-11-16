@@ -1,6 +1,5 @@
 package com.irvingguerra.litedash.feature.tpms
 
-import android.Manifest
 import android.annotation.SuppressLint
 import android.bluetooth.BluetoothManager
 import android.bluetooth.le.BluetoothLeScanner
@@ -8,13 +7,12 @@ import android.bluetooth.le.ScanCallback
 import android.bluetooth.le.ScanResult
 import android.bluetooth.le.ScanSettings
 import android.content.Context
-import android.content.pm.PackageManager
-import android.location.LocationManager
-import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
 import androidx.compose.runtime.mutableStateListOf
+import com.irvingguerra.litedash.core.vehicle.bleLocationOff
+import com.irvingguerra.litedash.core.vehicle.canScanBle
 
 /** Por qué no se puede escuchar a los tapones Bluetooth (la app lo dice en su idioma). */
 enum class BleProblem { NO_PERMISSION, BLUETOOTH_OFF, LOCATION_OFF, UNSUPPORTED, FAILED }
@@ -56,12 +54,6 @@ class BleTpmsScanner(
     /** Alguien pidió escuchar (aunque el arranque esté aplazado). */
     private var wanted = false
 
-    /** El permiso que hay que pedir: "dispositivos cercanos" desde Android 12, ubicación antes. */
-    fun permission(): String =
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) Manifest.permission.BLUETOOTH_SCAN else Manifest.permission.ACCESS_FINE_LOCATION
-
-    fun hasPermission() = context.checkSelfPermission(permission()) == PackageManager.PERMISSION_GRANTED
-
     private val callback = object : ScanCallback() {
         override fun onScanResult(callbackType: Int, result: ScanResult) = handle(result)
 
@@ -78,12 +70,12 @@ class BleTpmsScanner(
     var onFailure: ((BleProblem) -> Unit)? = null
 
     /** Empieza (o cambia de modo); null = ya escucha, o el problema que lo impide. Hilo principal. */
-    @SuppressLint("MissingPermission") // hasPermission() se revisa antes
+    @SuppressLint("MissingPermission") // canScanBle() se revisa antes
     fun start(balanced: Boolean): BleProblem? {
-        if (!hasPermission()) return BleProblem.NO_PERMISSION
+        if (!canScanBle(context)) return BleProblem.NO_PERMISSION
         val adapter = context.getSystemService(BluetoothManager::class.java)?.adapter ?: return BleProblem.UNSUPPORTED
         if (!adapter.isEnabled) return BleProblem.BLUETOOTH_OFF
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S && !locationOn()) return BleProblem.LOCATION_OFF
+        if (bleLocationOff(context)) return BleProblem.LOCATION_OFF
         val le = adapter.bluetoothLeScanner ?: return BleProblem.BLUETOOTH_OFF
         wanted = true
         if (scanner != null && this.balanced == balanced) return null
@@ -163,13 +155,6 @@ class BleTpmsScanner(
         }
         unknown.add(entry)
         while (unknown.size > MAX_UNKNOWN) unknown.removeAt(0)
-    }
-
-    private fun locationOn(): Boolean {
-        val m = context.getSystemService(LocationManager::class.java) ?: return true
-        return runCatching {
-            m.isProviderEnabled(LocationManager.GPS_PROVIDER) || m.isProviderEnabled(LocationManager.NETWORK_PROVIDER)
-        }.getOrDefault(true)
     }
 
     companion object {

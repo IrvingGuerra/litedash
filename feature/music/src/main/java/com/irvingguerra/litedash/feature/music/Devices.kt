@@ -14,7 +14,9 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Environment
 import android.os.storage.StorageManager
+import android.os.storage.StorageVolume
 import android.provider.MediaStore
+import androidx.annotation.RequiresApi
 import androidx.core.content.ContextCompat
 import androidx.core.content.IntentCompat
 import java.io.File
@@ -185,7 +187,7 @@ object Drives {
                     Drive(
                         name = v.getDescription(context),
                         volume = uuid?.lowercase()?.takeIf { it in volumes },
-                        path = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) v.directory?.path else uuid?.let { "/storage/$it" },
+                        path = pathOf(v),
                         id = uuid ?: v.getDescription(context),
                     )
                 }
@@ -198,6 +200,25 @@ object Drives {
                 .map { Drive(name = context.getString(R.string.usb_drive), volume = null, path = it.path, id = it.name) }
         }
     }.getOrDefault(emptyList())
+
+    /**
+     * La carpeta de la memoria. API 30+: getDirectory. Antes, getPath (oculto, por reflexión): con el uuid nulo
+     * "/storage/uuid" no existe y la biblioteca quedaba vacía (reporte DA2107, API 28); de respaldo, esa.
+     */
+    @RequiresApi(Build.VERSION_CODES.N)
+    private fun pathOf(v: StorageVolume): String? =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) v.directory?.path
+        else runCatching { StorageVolume::class.java.getMethod("getPath").invoke(v) as? String }.getOrNull() ?: v.uuid?.let { "/storage/$it" }
+
+    /** Para los reportes: cada memoria removible con uuid (sí/no), ruta y estado; sin su nombre. Bloquea: en otro hilo. */
+    fun describe(context: Context): String = runCatching {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            context.getSystemService(StorageManager::class.java).storageVolumes.filter { it.isRemovable }
+                .joinToString { "[uuid=${yes(it.uuid != null)} ruta=${pathOf(it) ?: "-"} estado=${it.state}]" }
+        } else {
+            list(context).joinToString { "[ruta=${it.path}]" }
+        }
+    }.getOrElse { "error ${it.javaClass.simpleName}" }.ifEmpty { "ninguna" }
 
     /** Nombre de la primera memoria conectada; null si no hay. */
     fun mounted(context: Context): String? = list(context).firstOrNull()?.name

@@ -44,7 +44,7 @@ object FactoryAudio {
 
     internal fun pickBluetooth(brand: List<String>, system: Set<String>, hasBluetooth: Boolean): String =
         brand.firstOrNull()
-            ?: system.filter { pkg -> parts(pkg).any { it.startsWith("bt") || "bluetooth" in it } }.minOrNull()
+            ?: system.filter(::looksBluetooth).minOrNull()
             ?: if (hasBluetooth) ANDROID else NONE
 
     /** La receta de sonido que funcionó en el Bluetooth (ver [Recipes]); null si no se ha calibrado. */
@@ -55,6 +55,9 @@ object FactoryAudio {
 
     private fun savedRecipe(context: Context, piece: SoundPiece) =
         PrefsRecipeStore.savedId(context.getSharedPreferences(MUSIC_STORE, Context.MODE_PRIVATE), piece)
+
+    /** La familia de la pantalla por sus paquetes ("nwd", "topway"… o "generic"). Bloquea: varias consultas al sistema. */
+    fun family(context: Context): String = HeadUnit.detect(context::hasPackage).id
 
     /** La pantalla tiene Bluetooth de baja energía (lo que usaría el enlace con el celular sin hotspot). */
     fun ble(context: Context): Boolean = context.packageManager.hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)

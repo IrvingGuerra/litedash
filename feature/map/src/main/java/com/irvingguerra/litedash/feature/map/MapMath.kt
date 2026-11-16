@@ -17,7 +17,7 @@ import kotlin.math.tan
 // Cuentas del mapa sin Android (se prueban con JUnit). Basado en LiveMapView de StradaOS
 // (GPL-3.0, https://github.com/stradaos): Web Mercator a mano; las teselas, raster de OpenStreetMap o vectoriales de OpenFreeMap.
 
-/** El zoom más cercano y el más lejano que se usan (el toque cicla entre ellos). */
+/** El zoom más cercano y el más lejano que se usan. */
 const val MAX_ZOOM = 20
 const val MIN_ZOOM = 14
 
@@ -43,8 +43,14 @@ fun tileSpan(center: Double, fromPx: Float, toPx: Float, tilePx: Float): IntRang
 /** Mínimo de la memoria de teselas: unas 36 de OSM (256 px a 16 bits). */
 const val MEMORY_MIN_BYTES = 36 * 256 * 256 * 2
 
-/** Bytes que deben caber en memoria: las [visible] teselas que se ven, de [tileBytes] cada una, más 8 de holgura. */
-fun memoryBytes(visible: Int, tileBytes: Int): Int = maxOf(MEMORY_MIN_BYTES, (visible + 8) * tileBytes)
+/**
+ * Bytes que deben caber en memoria: las [visible] teselas que se ven, de [tileBytes] cada una, más 8 de holgura; y el
+ * doble (las del zoom anterior, de respaldo mientras llegan las nuevas) si no pasa de [roomy].
+ */
+fun memoryBytes(visible: Int, tileBytes: Int, roomy: Int = 0): Int {
+    val needed = (visible + 8) * tileBytes
+    return maxOf(MEMORY_MIN_BYTES, needed, minOf(needed * 2, roomy))
+}
 
 /** Qué hacer con la respuesta HTTP de una tesela. */
 enum class TileResponse { OK, NOT_MODIFIED, EMPTY, SLOW_DOWN, BLOCKED, FAILED }

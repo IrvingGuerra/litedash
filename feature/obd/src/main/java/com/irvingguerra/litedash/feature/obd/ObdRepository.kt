@@ -15,7 +15,6 @@ import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.hardware.usb.UsbDevice
 import android.hardware.usb.UsbManager
-import android.location.LocationManager
 import android.os.Build
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -23,6 +22,8 @@ import androidx.compose.runtime.setValue
 import androidx.core.content.ContextCompat
 import androidx.core.content.IntentCompat
 import com.irvingguerra.litedash.core.vehicle.Signal
+import com.irvingguerra.litedash.core.vehicle.bleLocationOff
+import com.irvingguerra.litedash.core.vehicle.canScanBle
 import com.irvingguerra.litedash.core.vehicle.localNetworkAllowed
 import com.irvingguerra.litedash.core.vehicle.Source
 import com.irvingguerra.litedash.core.vehicle.VehicleBus
@@ -93,6 +94,8 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val lock = Mutex()
     private var link: ElmLink? = null
+    /** El último enlace Bluetooth LE (aunque siga a medias o haya fallado): se cancela y va al reporte. */
+    @Volatile private var bleLink: BleLink? = null
     private var elm: Elm327? = null
     private var job: Job? = null
     /** Avisa al instante si se desenchufa el cable USB mientras está conectado. */
@@ -159,25 +162,15 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
         private set
     private var stopScan: (() -> Unit)? = null
 
-    /**
-     * Buscar requiere su propio permiso: "dispositivos cercanos" desde Android 12 (sin
-     * ubicación) y, antes, la ubicación (así lo pide Android para Bluetooth LE).
-     */
-    fun scanPermission(): String =
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) Manifest.permission.BLUETOOTH_SCAN else Manifest.permission.ACCESS_FINE_LOCATION
-
-    fun canScan() = context.checkSelfPermission(scanPermission()) == PackageManager.PERMISSION_GRANTED
-
-    /** Busca adaptadores Bluetooth LE unos segundos; solo cuando el usuario lo pide. */
+    /** Busca adaptadores Bluetooth LE unos segundos; solo cuando el usuario lo pide (con [canScanBle]). */
     @SuppressLint("MissingPermission")
     fun scanBle() {
-        if (scanning || !canScan()) return
+        if (scanning || !canScanBle(context)) return
         scanProblem = null
         val adapter = context.getSystemService(BluetoothManager::class.java)?.adapter
         val scanner = adapter?.takeIf { it.isEnabled }?.bluetoothLeScanner
             ?: return run { scanProblem = ScanProblem.BLUETOOTH_OFF }
-        // Antes de Android 12 la búsqueda no regresa nada con la ubicación apagada.
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S && !locationOn()) return run { scanProblem = ScanProblem.LOCATION_OFF }
+        if (bleLocationOff(context)) return run { scanProblem = ScanProblem.LOCATION_OFF }
         val seen = linkedMapOf<String, ObdTarget.Ble>()
         val callback = object : ScanCallback() {
             override fun onScanResult(callbackType: Int, result: ScanResult) {
@@ -261,14 +254,6 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
         manager.requestPermission(device, PendingIntent.getBroadcast(context, 0, intent, flags))
     }
 
-    /** Ubicación del sistema encendida (por proveedor: funciona desde Android 8). */
-    private fun locationOn(): Boolean {
-        val m = context.getSystemService(LocationManager::class.java) ?: return true
-        return runCatching {
-            m.isProviderEnabled(LocationManager.GPS_PROVIDER) || m.isProviderEnabled(LocationManager.NETWORK_PROVIDER)
-        }.getOrDefault(true)
-    }
-
     /** Se conecta a [t] (o al último que funcionó) y empieza a leer. */
     fun connect(t: ObdTarget? = target) {
         if (t == null || state == ObdState.CONNECTING || state == ObdState.ON && target == t) return
@@ -325,8 +310,10 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
                     elm = null
                     unwatchUsbDetach()
                     bus.clear(Source.OBD)
-                    // (reconnects > 0: un reintento que falla también cuenta; si no, solo se intentaba una vez.)
-                    if ((dropped || reconnects > 0) && reconnects < MAX_RECONNECTS) {
+                    // (reconnects > 0: un reintento que falla también cuenta; si no, solo se intentaba una vez.
+                    // Un 133 de GATT al primer intento también: en MediaTek suele pasar y luego conecta.)
+                    val flaky = t is ObdTarget.Ble && bleLink?.gattStatus == BleLink.GATT_ERROR
+                    if ((dropped || flaky || reconnects > 0) && reconnects < MAX_RECONNECTS) {
                         reconnects++
                         scope.launch(Dispatchers.Main) {
                             delay(RECONNECT_MS)
@@ -370,6 +357,8 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
     fun disconnect() {
         job?.cancel()
         job = null
+        // Un Bluetooth LE a medio conectar también se suelta (si no, conectar otra vez abre un segundo GATT).
+        bleLink?.close()
         closeLink()
         state = ObdState.OFF
     }
@@ -486,8 +475,9 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
             is ObdTarget.Usb -> "usb"
             null -> "-"
         }
+        val ble = bleLink?.takeIf { target is ObdTarget.Ble }?.let { ", ble=paso:${it.stage.key}, estado=${it.gattStatus}, intentos=${it.attempts}" }.orEmpty()
         return "OBD: estado=${state.name.lowercase()}, por=$by, adaptador=${adapter ?: "-"}, " +
-            "protocolo=$protocol, datos=${supported.size} [$pids], 0100=${elm?.firstReply?.joinToString("|") ?: "-"}, error=${error ?: "-"}"
+            "protocolo=$protocol, datos=${supported.size} [$pids], 0100=${elm?.firstReply?.joinToString("|") ?: "-"}, error=${error ?: "-"}$ble"
     }
 
     private suspend fun <T> withElm(block: (Elm327) -> T): T? {
@@ -559,8 +549,12 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
     private suspend fun openAndInit(t: ObdTarget): Triple<ElmLink, Elm327, String> {
         val l = when (t) {
             is ObdTarget.Wifi -> WifiLink(t.host, t.port)
-            is ObdTarget.Bluetooth -> BluetoothLink(device(t.address))
-            is ObdTarget.Ble -> BleLink(context, device(t.address))
+            is ObdTarget.Bluetooth -> BluetoothLink(context, device(t.address))
+            is ObdTarget.Ble -> {
+                // Un respiro para que el Bluetooth termine la búsqueda o el GATT que se acaba de cerrar.
+                delay(BLE_SETTLE_MS)
+                BleLink(context, device(t.address)).also { bleLink = it; it.open() }
+            }
             is ObdTarget.Usb -> return openUsb(t)
         }
         val e = Elm327(l)
@@ -617,6 +611,7 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
         /** Reintentos seguidos tras caerse ya conectado, y cuánto esperar entre ellos. */
         private const val MAX_RECONNECTS = 5
         private const val RECONNECT_MS = 8_000L
+        private const val BLE_SETTLE_MS = 400L
         private const val KEY_TIRE_PROFILE = "tire_profile"
         /** Una presión de llanta creíble (kPa): con eso se guarda la receta. */
         private val CREDIBLE_KPA = 100f..450f

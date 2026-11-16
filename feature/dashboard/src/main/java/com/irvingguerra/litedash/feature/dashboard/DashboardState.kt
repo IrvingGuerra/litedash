@@ -38,22 +38,26 @@ class DashboardState(private val store: DashboardStore) {
     /**
      * El acomodo de [c]. Si una cuadrícula casi igual ([near]: una barra del sistema que aparece o se va)
      * tiene uno guardado más nuevo, ese, ajustado a [c]; si [c] no tiene ninguno, la plantilla. Así el
-     * acomodo no "se reinicia" cuando el alto de la pantalla cambia un poco. Lo ajustado no se guarda
-     * hasta que se mueva algo.
+     * acomodo no "se reinicia" cuando el alto de la pantalla cambia un poco. El de [c] también se revisa
+     * (uno dañado o de una versión con otros mínimos). Lo ajustado no se guarda hasta que se mueva algo.
      */
     private fun load(c: Grid): List<Tile> {
         val exact = store.read(c)
         val newer = store.grids().filter { it != c && it.near(c) }.maxByOrNull { store.savedAt(it) }
             ?.takeIf { exact == null || store.savedAt(it) > store.savedAt(c) }
         val adapted = newer?.let { from -> store.read(from)?.let { from to it } }?.let { (from, saved) ->
-            // Primero las que se ven: las de un módulo apagado no le quitan lugar a ninguna. Hacia donde hay
-            // más lugar se estira en proporción (sin hueco en la orilla); hacia donde hay menos, no se
-            // encoge (bajaría piezas de su mínimo): ahí [adaptTo] recorta o recorre como siempre.
-            val (off, on) = saved.partition { hidden(it.type) }
+            // Hacia donde hay más lugar se estira en proporción (sin hueco en la orilla); hacia donde hay
+            // menos, no se encoge (bajaría piezas de su mínimo): ahí [adaptTo] recorta o recorre como siempre.
             val grown = Grid(maxOf(from.columns, c.columns), maxOf(from.rows, c.rows))
-            (on + off).map { it.scaledTo(from, grown) }.adaptTo(c, limits)
+            saved.map { it.scaledTo(from, grown) }.fittedTo(c)
         }
-        return adapted ?: exact ?: suggested(c)
+        return adapted ?: exact?.fittedTo(c) ?: suggested(c)
+    }
+
+    /** [adaptTo] con las que se ven primero: las de un módulo apagado no le quitan lugar a ninguna. */
+    private fun List<Tile>.fittedTo(c: Grid): List<Tile> {
+        val (off, on) = partition { hidden(it.type) }
+        return (on + off).adaptTo(c, limits)
     }
 
     /** Para los reportes: la cuadrícula actual y las que tienen acomodo guardado. */

@@ -35,6 +35,8 @@ object OwnPlayer {
         music.ownStop = { Player.stop() }
         music.ownSession = { Player.sessionToken }
         Player.onSession = music::ownSessionChanged
+        Player.onPlay = { if (it == PlayerSource.USB) music.quietRadio() }
+        music.ownDescribe = { "${Library.describe(context)} ${Player.describe()}" }
         // Hasta la 1.4.111 la radio por internet tenía además su interruptor en las preferencias del app
         // (y hasta la 1.4.110 el widget escogía entre las dos). Una vez: queda la que sonaba en el widget.
         if (!prefs.radioUnified) {

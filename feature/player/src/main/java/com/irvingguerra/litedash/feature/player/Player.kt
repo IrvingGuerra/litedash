@@ -107,6 +107,7 @@ object Player {
         val item = queue.getOrNull(index) ?: return
         requests++
         if (state.current?.key == item.key && state.queue == queue) return resume()
+        onPlay?.invoke(source)
         state = PlayerState(source, queue, index, playing = false, buffering = true, error = null)
         PlayerStore(app).rememberLast(source, item.key)
         ensureSession()
@@ -117,14 +118,26 @@ object Player {
         val item = state.current ?: return
         // Ya suena o va cargando (arrancará solo al estar listo): otro play no la corta ni la reinicia.
         if (state.playing || state.buffering) return
+        state.source?.let { onPlay?.invoke(it) }
         // La radio en pausa se desconecta: play la vuelve a abrir (igual si se canceló la carga o falló).
         val p = player ?: run {
             update(playing = false, buffering = true)
             return start(item)
         }
-        if (!requestFocus()) return
+        if (!requestFocus()) return noFocus()
         p.start()
         update(playing = true)
+    }
+
+    /**
+     * Android no dio el foco de audio: sin él se quedaba mudo sin decir nada (reporte DA2107). Se avisa en la pieza
+     * (la carga queda lista: play lo vuelve a pedir) y en el registro.
+     */
+    private fun noFocus() {
+        Log.w("LiteDash", "Player: sin foco de audio")
+        state = PlayerState(state.source, state.queue, state.index, playing = false, buffering = false, error = app.getString(R.string.player_no_focus))
+        publishState()
+        PlaybackService.update(app)
     }
 
     fun pause() {
@@ -207,7 +220,7 @@ object Player {
 
     /** Radio AAC en vivo con el decodificador propio; si el flujo no es AAC, MediaPlayer. */
     private fun startAac(item: Station, myLoad: Int) {
-        if (!requestFocus()) return update(playing = false, buffering = false)
+        if (!requestFocus()) return noFocus()
         aac = AacStream(app, item.uri.toString(), object : AacStream.Listener {
             override fun onStarted() { main.post { if (myLoad == load) update(playing = true, buffering = false) } }
             override fun onNotAac() { main.post { if (myLoad == load) { aac = null; startMediaPlayer(item, myLoad) } } }
@@ -229,7 +242,7 @@ object Player {
                     it.start()
                     update(playing = true, buffering = false)
                 } else {
-                    update(playing = false, buffering = false)
+                    noFocus()
                 }
             }
             setOnCompletionListener { if (myLoad == load && state.current is Track) next() }
@@ -297,6 +310,9 @@ object Player {
 
     /** Se creó la sesión (empezó a sonar algo): la pieza Música la toma. */
     var onSession: (() -> Unit)? = null
+
+    /** Se pidió que suene (play o reanudar) [PlayerSource]: con la USB, la música calla la radio de fábrica. */
+    var onPlay: ((PlayerSource) -> Unit)? = null
 
     /** La duración que dio el reproductor al preparar (−1 = aún no o no se sabe). */
     private var preparedDuration = -1L
@@ -402,7 +418,23 @@ object Player {
             @Suppress("DEPRECATION")
             audio.requestAudioFocus(focusListener, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN)
         }
-        return granted == AudioManager.AUDIOFOCUS_REQUEST_GRANTED
+        return (granted == AudioManager.AUDIOFOCUS_REQUEST_GRANTED).also { focusGranted = it }
+    }
+
+    /** Lo que contestó Android la última vez que se pidió el foco; null = aún no se pide. */
+    @Volatile private var focusGranted: Boolean? = null
+
+    /** Para los reportes: qué hace el reproductor, su error y si tiene el foco. */
+    fun describe(): String {
+        val s = state
+        val doing = when {
+            s.buffering -> "carga"
+            s.playing -> "suena"
+            s.current != null -> "en pausa"
+            else -> "nada"
+        }
+        val focus = focusGranted?.let { if (it) "sí" else "no" } ?: "-"
+        return "reproductor=$doing${s.source?.let { " (${it.name.lowercase()})" }.orEmpty()} error=${s.error ?: "-"} foco=$focus"
     }
 
     private fun abandonFocus() {

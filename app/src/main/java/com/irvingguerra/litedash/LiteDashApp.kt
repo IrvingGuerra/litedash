@@ -38,6 +38,8 @@ class LiteDashApp : Application() {
         val mapPackages = NAVIGATION_PACKAGES.toSet() +
             if (BuildConfig.DEBUG) setOf(NavigationRepository.TEST_PACKAGE) else emptySet()
         val prefs = Preferences(this)
+        // Las conocidas y la elegida en Ajustes aunque no sea de ellas (al cambiarla se nota sin reiniciar).
+        val listensTo = { pkg: String -> pkg in mapPackages || pkg == prefs.mapApp?.substringBefore('/') }
         val bus = VehicleBus()
         val music = MusicRepository(this).apply { adoptPreferred(prefs.musicApp); opener = SplitScreen::open
             returnHome = { MainActivity.bringToFront(this@LiteDashApp) } }
@@ -53,7 +55,7 @@ class LiteDashApp : Application() {
         Dependencies(
             apps = AppRepository(this).apply { opener = SplitScreen::open },
             music = music,
-            navigation = NavigationRepository(this, mapPackages),
+            navigation = NavigationRepository(this, listensTo),
             prefs = prefs,
             dashboard = DashboardState(DashboardStore(this)),
             cars = cars,

@@ -1,5 +1,6 @@
 package com.irvingguerra.litedash.feature.tpms
 
+import com.irvingguerra.litedash.core.vehicle.KPA_PER_PSI
 import com.irvingguerra.litedash.core.vehicle.Source
 
 /** Una llanta del auto; [key] se guarda en preferencias y en el bus (no se traduce). */
@@ -79,8 +80,6 @@ enum class PressureUnit(val key: String, val label: String) {
         fun fromKey(key: String?): PressureUnit? = entries.firstOrNull { it.key == key }
     }
 }
-
-const val KPA_PER_PSI = 6.894757f
 
 internal fun ByteArray.hex(from: Int = 0, to: Int = size): String =
     (from until to).joinToString("") { "%02X".format(this[it].toInt() and 0xFF) }

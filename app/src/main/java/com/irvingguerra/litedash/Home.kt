@@ -761,8 +761,10 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                                 )
                                 Expanded.MAP -> {
                                     val app = mapApp(d, apps)
-                                    // Como el widget Mapa que se tocó (o el primero que haya; sin widget, el aspecto de Ajustes).
-                                    val from = expandedFrom ?: d.dashboard.shown.firstOrNull { it.type == TileTypes.MAP }
+                                    // Como el widget Mapa que se tocó (o el primero que haya; sin widget, el aspecto de Ajustes). Si
+                                    // se llegó desde la música en grande, [expandedFrom] es el de la música: no sirve aquí.
+                                    val from = expandedFrom?.takeIf { it.type == TileTypes.MAP }
+                                        ?: d.dashboard.shown.firstOrNull { it.type == TileTypes.MAP }
                                     val look = from?.data ?: d.prefs.mapLook.orEmpty()
                                     MapExpanded(
                                         d, from?.id, look, app, onPlace = { navigateTo(context, app, it) }, onNavigate = { actions.onNavigate(app) },

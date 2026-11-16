@@ -54,6 +54,8 @@ import com.irvingguerra.litedash.core.ui.TextInput
 import com.irvingguerra.litedash.core.ui.Typography
 import com.irvingguerra.litedash.core.vehicle.LOCAL_NETWORK_PERMISSION
 import com.irvingguerra.litedash.core.vehicle.Signal
+import com.irvingguerra.litedash.core.vehicle.bleScanPermission
+import com.irvingguerra.litedash.core.vehicle.canScanBle
 import com.irvingguerra.litedash.core.vehicle.localNetworkAllowed
 import com.irvingguerra.litedash.core.vehicle.watch
 import com.irvingguerra.litedash.feature.obd.EngineAlert
@@ -198,7 +200,12 @@ private fun Connection(d: Dependencies) {
     val c = LocalColors.current
     val obd = d.obd
     var permitted by remember { mutableStateOf(obd.hasPermission()) }
-    val ask = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { permitted = it }
+    // Negado dos veces, Android ya no pregunta: entonces se ofrece abrir sus ajustes.
+    var btDenied by rememberSaveable { mutableStateOf(false) }
+    val ask = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
+        permitted = it
+        btDenied = !it
+    }
     // Buscar Bluetooth LE tiene su propio permiso; al darlo, busca de una vez.
     val askScan = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { if (it) obd.scanBle() }
     var wifi by remember { mutableStateOf(false) }
@@ -214,6 +221,8 @@ private fun Connection(d: Dependencies) {
     }
     // Al volver de Ajustes de Android con el permiso ya dado, conecta sin tocar nada más.
     LifecycleResumeEffect(Unit) {
+        // También el de Bluetooth, por si se dio en Ajustes de Android.
+        permitted = obd.hasPermission()
         if ((obd.needsLocalNetwork || lanDenied) && localNetworkAllowed(context)) {
             lanDenied = false
             obd.connect(wifiTarget ?: obd.target)
@@ -224,7 +233,11 @@ private fun Connection(d: Dependencies) {
     val askEnable = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {}
     // Al abrir el Taller se reconecta solo al último adaptador que funcionó, también si se había
     // caído y ya no reintentaba. (Con el módulo apagado no: conectar a mano lo vuelve a prender.)
-    LaunchedEffect(Unit) { if ((obd.state == ObdState.OFF || obd.state == ObdState.ERROR) && d.obdModule) obd.connect() }
+    // Sin permiso de Bluetooth no se intenta (fallaría en rojo): se conecta al darlo.
+    LaunchedEffect(permitted) {
+        val needsBluetooth = obd.target is ObdTarget.Bluetooth || obd.target is ObdTarget.Ble
+        if ((obd.state == ObdState.OFF || obd.state == ObdState.ERROR) && d.obdModule && (permitted || !needsBluetooth)) obd.connect()
+    }
     LaunchedEffect(obd.state) { if (obd.state == ObdState.CONNECTING || obd.state == ObdState.ON) d.prefs.obdModule = true }
     SettingsCard(stringResource(R.string.obd_adapter), stringResource(R.string.obd_adapter_help)) {
         val status = when (obd.state) {
@@ -270,10 +283,11 @@ private fun Connection(d: Dependencies) {
                 }, primary = true)
                 Button(stringResource(R.string.obd_bluetooth), { wifi = false })
             }
-            !permitted -> Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            !permitted -> FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Button(stringResource(R.string.obd_allow_bluetooth), {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) ask.launch(Manifest.permission.BLUETOOTH_CONNECT)
                 }, primary = true)
+                if (btDenied) Button(stringResource(R.string.local_network_settings), { openAppSettings(context) })
                 Button(stringResource(R.string.obd_wifi), { wifi = true })
             }
             bluetooth == false -> {
@@ -290,7 +304,7 @@ private fun Connection(d: Dependencies) {
                     for (dev in devices) Button(dev.name, { obd.connect(dev) }, primary = dev == obd.target)
                     Button(stringResource(R.string.obd_wifi), { wifi = true })
                     Button(stringResource(if (obd.scanning) R.string.obd_ble_searching else R.string.obd_ble_search), {
-                        if (obd.canScan()) obd.scanBle() else askScan.launch(obd.scanPermission())
+                        if (canScanBle(context)) obd.scanBle() else askScan.launch(bleScanPermission())
                     })
                     if (bluetooth == true) Button(stringResource(R.string.bluetooth_turn_off), { turnOffBluetooth(context) })
                 }

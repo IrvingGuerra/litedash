@@ -1,5 +1,7 @@
 package com.irvingguerra.litedash.feature.obd
 
+import com.irvingguerra.litedash.core.vehicle.KPA_PER_PSI
+
 /*
  * Las recetas de esta tabla son derivadas de OBDb (https://github.com/OBDb), CC BY-SA 4.0,
  * adaptadas (compatible en un solo sentido con la GPL-3.0 de LiteDash). Solo las confirmadas con
@@ -43,15 +45,13 @@ internal val RESTORE_ENGINE = listOf("ATSH7DF", "ATCRA", "ATFCSM0", "ATCEA", "AT
 private fun moduleSetup(header: String, reply: String, flow: Boolean = true) =
     listOf("ATSH$header", "ATCRA$reply") + if (flow) listOf("ATFCSH$header", "ATFCSD300000", "ATFCSM1") else emptyList()
 
-private const val PSI_KPA = 6.89476f
-
 /** Un byte que no es dato (0, FE, FF: el sensor aún no dijo) → null. */
 private fun byteOf(d: IntArray, i: Int): Int? = d.getOrNull(i)?.takeIf { it != 0 && it < 0xFE }
 
 /** Fuera de 0–600 kPa no es una llanta: se toma como "no dijo". */
 private fun Float.orNullIfOdd(): Float? = takeIf { it in 0f..600f }
 
-private fun psiByte(d: IntArray, i: Int, divisor: Float) = byteOf(d, i)?.let { (it / divisor * PSI_KPA).orNullIfOdd() }
+private fun psiByte(d: IntArray, i: Int, divisor: Float) = byteOf(d, i)?.let { (it / divisor * KPA_PER_PSI).orNullIfOdd() }
 private fun tempByte(d: IntArray, i: Int, offset: Int) = byteOf(d, i)?.let { (it - offset).toFloat() }
 private fun word(d: IntArray, i: Int): Int? {
     val hi = d.getOrNull(i) ?: return null
@@ -105,7 +105,7 @@ internal val TireProfiles: List<TireProfile> = listOf(
     TireProfile(
         "Ford", listOf("1F", "2F", "3F", "1L", "5L", "MAJ", "NM0", "WF0"), moduleSetup("726", "72E", flow = false),
         listOf("222813", "222814", "222816", "222815"),
-    ) { r -> TireValues(r.map { d -> word(d, 0)?.let { (it / 20f * PSI_KPA).orNullIfOdd() } }) },
+    ) { r -> TireValues(r.map { d -> word(d, 0)?.let { (it / 20f * KPA_PER_PSI).orNullIfOdd() } }) },
     // Mazda Skyactiv de 2.ª gen. (Mazda3 2019+, CX-30, CX-50…): presión y luego temperatura.
     TireProfile(
         "Mazda", listOf("JM1", "JM3", "3MZ", "3MV", "3MD"), moduleSetup("726", "72E", flow = false),

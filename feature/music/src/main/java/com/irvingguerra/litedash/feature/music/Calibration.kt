@@ -54,7 +54,8 @@ internal interface RecipeStore {
  * - Sin guardada pero con la del catálogo para esta pantalla: se aplica; si suena se guarda, si no se pregunta
  *   una vez y con "No" se calibra completo.
  * - Sin nada: las recetas en orden. Si suena, se guarda (señal); si no, se pregunta ([trustsSignal]: solo en la
- *   última). "Sí" guarda (persona), "No" pasa a la siguiente; sin más, se guarda [Recipes.FAILED].
+ *   última). "Sí" guarda (persona), "No" pasa a la siguiente; sin más, se guarda [Recipes.FAILED] (de la persona si
+ *   contestó "No"; si nadie contestó, de la señal: se vuelve a probar una vez en el siguiente arranque).
  * - Abrir la app de fábrica no corre con el auto en movimiento ([moving]): se pospone sin guardar nada.
  */
 internal class Calibrator(
@@ -82,6 +83,8 @@ internal class Calibrator(
     private val queue = ArrayDeque<String>()
     /** Las que la persona ya rechazó en esta sesión: si se pospuso o no contestó, se sigue desde ahí. */
     private val rejected = HashSet<String>()
+    /** Ya se volvió a probar (o se falló) en este arranque: un [Recipes.FAILED] de la señal no se repite. */
+    private var retriedFailed = false
 
     /** La receta que se está probando o usando; null = ninguna. */
     var current: String? = null
@@ -99,7 +102,13 @@ internal class Calibrator(
         candidates = available
         val saved = store.saved
         if (saved != null) {
-            if (saved.id == Recipes.FAILED) return Step.Done
+            if (saved.id == Recipes.FAILED) {
+                // Lo dijo la persona ("No" a la última): ya no se prueba. Si nadie contestó, una vez más por arranque.
+                if (saved.by == SavedBy.USER || retriedFailed) return Step.Done
+                retriedFailed = true
+                restart()
+                return next()
+            }
             if (saved.id in available) return use(Phase.SAVED, saved.id)
             // Ahora no se puede (p. ej. el perfil de la radio aún no abre): esta vez lo de siempre, sin borrarla.
             return Step.Done
@@ -148,7 +157,7 @@ internal class Calibrator(
         if (yes) return done(id, SavedBy.USER)
         id?.let(rejected::add)
         if (phase == Phase.ASK_CATALOG) restart()
-        return next()
+        return next(answered = true)
     }
 
     /** Sin respuesta, se pausó o se cambió de método: se deja así, sin guardar nada. */
@@ -176,8 +185,9 @@ internal class Calibrator(
         return Step.Apply(id)
     }
 
-    private fun next(): Step {
-        val id = queue.removeFirstOrNull() ?: return failed()
+    /** [answered] = viene de un "No" de la persona (si ya no queda nada, el fallo es suyo). */
+    private fun next(answered: Boolean = false): Step {
+        val id = queue.removeFirstOrNull() ?: return failed(answered)
         if (id == Recipes.OPEN_FACTORY && moving()) {
             queue.addFirst(id)
             return wait()
@@ -193,8 +203,13 @@ internal class Calibrator(
         return Step.Wait
     }
 
-    private fun failed(): Step {
-        store.save(SavedRecipe(Recipes.FAILED, SavedBy.USER))
+    /**
+     * Nada funcionó. Con [answered] lo decidió la persona y queda para siempre; si no (la señal rechazó todo y la
+     * pregunta se quedó sin respuesta), queda como de la señal y se vuelve a probar en el siguiente arranque.
+     */
+    private fun failed(answered: Boolean): Step {
+        store.save(SavedRecipe(Recipes.FAILED, if (answered) SavedBy.USER else SavedBy.SIGNAL))
+        retriedFailed = true
         phase = Phase.IDLE
         current = null
         return Step.Failed

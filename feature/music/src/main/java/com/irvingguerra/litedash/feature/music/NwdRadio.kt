@@ -321,7 +321,7 @@ internal class NwdRadio(
         private const val SERVICE_ACTION = "com.nwd.radio.service.ACTION_RADIO_SERVICE"
         private const val DESCRIPTOR = "com.nwd.radio.service.RadioFeature"
         private const val CALLBACK = "com.nwd.radio.service.RadioCallback"
-        private const val KERNEL_PACKAGE = "com.nwd.kernel"
+        internal const val KERNEL_PACKAGE = "com.nwd.kernel"
         // Orden de los AIDL RadioFeature y RadioCallback (FIRST_CALL_TRANSACTION = 1).
         private const val CODE_FREQUENCY = 2
         private const val CODE_SEARCH = 4

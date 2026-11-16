@@ -4,6 +4,44 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.4.162] - 2026-11-16
+
+Revisión completa de la semana: errores reportados, pedidos de la comunidad y limpieza.
+
+### Arreglado
+- **El mapa arranca en lo más cerca e inclinado**, también detenido (antes se abría alejado y plano).
+- **El mapa ya no parpadea al acercar o alejar:** el zoom es continuo, las calles no desaparecen mientras llegan las
+  nuevas, tu flecha y los nombres no cambian de tamaño, y la inclinación baja poco a poco al alejarlo. Centrar es una
+  sola animación y abrir el mapa en grande ya no empieza vacío.
+- **Bluetooth de fábrica con dos pantallas** («Bluetooth» y «BT Music» en la misma app): al dar play se abre la de la
+  música, no la de emparejar.
+- **La radio FM de fábrica ya no se queda sonando** encima de tu música: al dar play a la música, LiteDash la calla.
+- **«No logramos que suene» falso** con el Bluetooth: la revisión del sonido espera más y ya no confunde la app de
+  Bluetooth de la pantalla con otra app.
+- **Música de una memoria USB** en pantallas con Android 7 a 10 que no la encontraban; si Android no da el sonido,
+  ahora se avisa en vez de quedarse callado.
+- **Volumen en pantallas NWD** (y otras donde lo lleva el equipo): los botones de LiteDash y del volante ahora mandan
+  la tecla de volumen de la pantalla.
+- **Llantas en modo Demo:** ya no sale el aviso de llanta baja en el inicio (era de la demostración).
+- **Escáner OBD por Bluetooth:** reintenta solo cuando la conexión falla al primer intento (adaptadores de baja
+  energía y clones clásicos).
+- **Día y noche con las luces del auto:** si tu pantalla no avisa de los faros, lo dice y te deja usar la hora del
+  sol; ya no aprende ajustes que no son de luces.
+- **Reloj** con la hora correcta cuando la pantalla cambia de zona horaria después de encender.
+- **Taller:** si negaste el permiso de Bluetooth, hay un botón para darlo en los ajustes de Android.
+- El mapa en grande abierto desde la barra usa el aspecto de tu widget Mapa; los acomodos guardados dañados se
+  reparan al cargar; los atajos a los ajustes de Android aparecen en pantallas que esconden Ajustes.
+
+### Nuevo
+- **Cualquier app de navegación:** en Ajustes → Apps → Navegación aparecen todas las apps de mapas instaladas
+  (OsmAnd, Organic Maps, Sygic, HERE, Magic Earth, Vela Maps y más), no solo cinco.
+- **Desliza la tarjeta de música** (o de radio) a la izquierda o a la derecha para pasar a la siguiente o regresar.
+
+### Cambiado
+- El respaldo de Android ya no incluye los mapas sin conexión ni los autos descargados (ocupaban tanto que no se
+  respaldaba nada), ni el enlace con tu celular.
+- Los reportes traen más datos para diagnosticar llantas, volumen, memorias USB y el escáner.
+
 ## [1.4.161] - 2026-11-14
 
 ### Cambiado

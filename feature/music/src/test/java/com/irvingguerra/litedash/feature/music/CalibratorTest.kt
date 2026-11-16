@@ -60,9 +60,33 @@ class CalibratorTest {
         }
         assertEquals(Step.Ask, c.signal(heard = false))
         assertEquals(Step.Failed, c.answer(yes = false))
-        assertEquals(Recipes.FAILED, store.saved?.id)
-        // Ya no se prueba nada.
+        assertEquals(SavedRecipe(Recipes.FAILED, SavedBy.USER), store.saved)
+        // Ya no se prueba nada, tampoco en otro arranque.
         assertEquals(Step.Done, c.play(topWay, null))
+        assertEquals(Step.Done, calibrator().play(topWay, null))
+    }
+
+    @Test
+    fun unansweredFailureIsNotTheUsersAndIsRetriedOnce() {
+        // La señal rechaza las primeras, nadie contesta la pregunta de la última y luego esa ya no se puede (su app no
+        // abre): no queda nada, pero no fue un "No" de la persona (reporte E3F104).
+        val all = listOf(Recipes.TW_SOURCE8, Recipes.PLAIN, Recipes.OPEN_FACTORY)
+        val twoRecipes = listOf(Recipes.TW_SOURCE8, Recipes.PLAIN)
+        val c = calibrator(trusts = true)
+        c.play(all, null)
+        assertEquals(Step.Apply(Recipes.PLAIN), c.signal(heard = false))
+        assertEquals(Step.Apply(Recipes.OPEN_FACTORY), c.signal(heard = false))
+        assertEquals(Step.Ask, c.signal(heard = false))
+        c.abort()
+        assertEquals(Step.Failed, c.play(twoRecipes, null))
+        assertEquals(SavedRecipe(Recipes.FAILED, SavedBy.SIGNAL), store.saved)
+        // En este arranque ya no se insiste.
+        assertEquals(Step.Done, c.play(twoRecipes, null))
+        // En el siguiente, una vez más desde el principio; si ahora suena, se guarda.
+        val next = calibrator(trusts = true)
+        assertEquals(Step.Apply(Recipes.TW_SOURCE8), next.play(twoRecipes, null))
+        assertEquals(Step.Done, next.signal(heard = true))
+        assertEquals(SavedRecipe(Recipes.TW_SOURCE8, SavedBy.SIGNAL), store.saved)
     }
 
     @Test

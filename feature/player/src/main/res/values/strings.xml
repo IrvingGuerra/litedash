@@ -7,6 +7,7 @@
     <string name="player_previous">Anterior</string>
     <string name="player_cannot_play">No se pudo reproducir. Prueba otra estación o revisa la conexión.</string>
     <string name="player_timeout">La estación no responde. Prueba otra.</string>
+    <string name="player_no_focus">Otra app tiene el audio. Toca play otra vez.</string>
     <string name="library_no_drive">Conecta una memoria USB con música</string>
     <string name="library_no_permission">LiteDash necesita permiso para leer la música de la memoria</string>
     <string name="library_grant">Dar permiso</string>

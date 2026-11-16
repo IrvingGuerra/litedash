@@ -93,6 +93,25 @@ class UsbTpmsProtocolTest {
     }
 
     @Test
+    fun posicionSinSensorSeIgnora() {
+        fun state(pos: Int, p: Int, t: Int): ByteArray =
+            byteArrayOf(0x55, 0xAA.toByte(), 8, pos.toByte(), p.toByte(), t.toByte(), 0, 0).also { it[7] = UsbTpmsProtocol.checksum(it, 7).toByte() }
+        fun id(index: Int, vararg b: Int): ByteArray =
+            byteArrayOf(0x55, 0xAA.toByte(), 9, index.toByte(), *b.map { it.toByte() }.toByteArray(), 0).also { it[8] = UsbTpmsProtocol.checksum(it, 8).toByte() }
+        val r = UsbTpmsProtocol.FrameReader()
+        // Presión y temperatura crudas en 0: no hay sensor (no es una llanta ponchada).
+        assertTrue(r.feed(state(0x11, 0, 0)).isEmpty())
+        // Ponchada de verdad: presión 0 con temperatura creíble sí cuenta.
+        assertEquals(0f, (r.feed(state(0x11, 0, 0x48)).single() as UsbFrame.State).pressureKpa, 0f)
+        // ID en ceros: esa llanta se ignora hasta que llegue un ID real.
+        assertTrue((r.feed(id(4, 0, 0, 0, 0)).single() as UsbFrame.SensorId).empty)
+        assertTrue(r.feed(state(0x11, 0x40, 0x48)).isEmpty())
+        assertEquals(Wheel.FRONT_LEFT, (r.feed(state(0x00, 0x40, 0x48)).single() as UsbFrame.State).wheel)
+        r.feed(id(4, 0x12, 0x34, 0x56, 0x78))
+        assertEquals(Wheel.REAR_RIGHT, (r.feed(state(0x11, 0x40, 0x48)).single() as UsbFrame.State).wheel)
+    }
+
+    @Test
     fun comandos() {
         assertArrayEquals(hex("55 AA 06 19 00 E0"), UsbTpmsProtocol.heartbeat())
         assertArrayEquals(hex("55 AA 06 00 00 F9"), UsbTpmsProtocol.ack())

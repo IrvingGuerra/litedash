@@ -34,6 +34,8 @@ import kotlinx.coroutines.withContext
 import com.irvingguerra.litedash.feature.obd.FactoryTires
 import java.io.File
 import java.io.IOException
+import java.util.Locale
+import kotlin.math.roundToInt
 
 /** De dónde salen las llantas. Se guarda ("usb", "ble", "obd", "demo"). */
 enum class TpmsSource(val key: String) {
@@ -140,7 +142,7 @@ class TpmsRepository(context: Context, private val bus: VehicleBus) {
         syncWheels()
     }
 
-    /** Alertas de ahora (la más grave primero); vacía si no se está leyendo. */
+    /** Alertas de ahora (la más grave primero); vacía si no se está leyendo o es la demostración. */
     var alerts by mutableStateOf<List<TireAlert>>(emptyList())
         private set
 
@@ -155,13 +157,17 @@ class TpmsRepository(context: Context, private val bus: VehicleBus) {
             savedSource = s
             prefs.edit().apply {
                 if (s == null) remove(KEY_SOURCE) else putString(KEY_SOURCE, s.key)
-                // La que se usó al último, para prender el módulo otra vez con la misma.
-                (s ?: before)?.let { putString(KEY_LAST_SOURCE, it.key) }
+                // La que se usó al último, para prender el módulo otra vez con la misma (la demostración no).
+                (s ?: before)?.takeUnless { it == TpmsSource.DEMO }?.let { putString(KEY_LAST_SOURCE, it.key) }
             }.apply()
         }
 
-    /** La última fuente que se eligió (aunque hoy esté apagado); null si nunca hubo. */
-    val lastSource: TpmsSource? get() = TpmsSource.fromKey(prefs.getString(KEY_LAST_SOURCE, null))
+    /**
+     * La última fuente de verdad que se eligió (aunque hoy esté apagado); null si nunca hubo. La
+     * demostración nunca (antes sí se guardaba): prender el módulo con ella mostraría llantas de mentira.
+     */
+    val lastSource: TpmsSource?
+        get() = TpmsSource.fromKey(prefs.getString(KEY_LAST_SOURCE, null))?.takeUnless { it == TpmsSource.DEMO }
 
     var recommendedFrontKpa by floatPref(KEY_FRONT, 230f)
     var recommendedRearKpa by floatPref(KEY_REAR, 230f)
@@ -333,13 +339,16 @@ class TpmsRepository(context: Context, private val bus: VehicleBus) {
             bus.publish(TireSignals.pressure(w), r?.pressureKpa, TPMS_SOURCE)
             bus.publish(TireSignals.temp(w), r?.tempC, TPMS_SOURCE)
         }
-        val byWheel = Wheel.entries.filter { it != Wheel.SPARE || showSpare }.mapNotNull { w -> wheelReading(w)?.let { w to it } }.toMap()
-        val h = activeHistory()
-        // La fuga rápida lee solo la cola del historial; la lenta se recalcula al entrar una muestra.
-        val trends = byWheel.keys.associateWith { w ->
-            TireTrend(h?.samples(w, now - FAST_LEAK_WINDOW_MS).orEmpty().map { calibrated(w, it) }, slowLeaks[w] == true)
+        // La demostración simula una fuga a propósito: sus valores se ven en su pantalla, pero nunca avisa como si fuera de verdad.
+        alerts = if (running == TpmsSource.DEMO) emptyList() else {
+            val byWheel = Wheel.entries.filter { it != Wheel.SPARE || showSpare }.mapNotNull { w -> wheelReading(w)?.let { w to it } }.toMap()
+            val h = activeHistory()
+            // La fuga rápida lee solo la cola del historial; la lenta se recalcula al entrar una muestra.
+            val trends = byWheel.keys.associateWith { w ->
+                TireTrend(h?.samples(w, now - FAST_LEAK_WINDOW_MS).orEmpty().map { calibrated(w, it) }, slowLeaks[w] == true)
+            }
+            tireAlerts(byWheel, trends, limits, now)
         }
-        alerts = tireAlerts(byWheel, trends, limits, now)
         nearby = if (holds > 0) {
             val wheelOf = _assignment.entries.associate { (w, id) -> id to w }
             _readings.values.map { r -> wheelOf[r.sensorId]?.let { calibrated(it, r) } ?: r }
@@ -605,9 +614,6 @@ class TpmsRepository(context: Context, private val bus: VehicleBus) {
 
     /** Anuncios con datos que no se reconocieron (diagnóstico; vacío si no se usa Bluetooth). */
     val unknownAdverts: List<UnknownAdvert> get() = ble?.unknown ?: emptyList()
-
-    /** El permiso que hay que pedir para Bluetooth (dispositivos cercanos o ubicación). */
-    fun blePermission(): String = scanner().permission()
 
     private fun scanner(): BleTpmsScanner = ble ?: BleTpmsScanner(context, { holds > 0 }, ::ingest).also { s ->
         s.onFailure = { p -> bleProblem(p) }
@@ -946,6 +952,32 @@ class TpmsRepository(context: Context, private val bus: VehicleBus) {
         }
     }
 
+    // ---- Reporte ----
+
+    /**
+     * Para "Enviar un reporte" (hilo principal): fuente, ajustes, cada llanta tal como llega más su ajuste
+     * y las alertas de ahora; con el receptor USB, sus últimas tramas. Sin datos personales.
+     */
+    fun describe(): String {
+        val now = System.currentTimeMillis()
+        val source = savedSource
+        val wheels = Wheel.entries.mapNotNull { w ->
+            val id = _assignment[w] ?: return@mapNotNull null
+            val name = w.key.uppercase()
+            val r = _readings[id] ?: return@mapNotNull "$name[id=${id.takeLast(4)} sin dato]"
+            val flags = listOfNotNull("lost".takeIf { r.lost }, "leak".takeIf { r.leak }, "lowBat".takeIf { r.lowBattery })
+            "$name[id=${id.takeLast(4)} ${r.pressureKpa?.let { "%.1f".format(Locale.US, it) } ?: "-"}" +
+                "${"%+.1f".format(Locale.US, offsetKpa(w))} kPa ${r.tempC?.roundToInt() ?: "-"}°C ${flags.joinToString("+").ifEmpty { "ok" }} " +
+                "hace ${(now - r.atMillis) / 1000} s rssi=${r.rssi ?: "-"}]"
+        }
+        val active = alerts.joinToString(", ") { "${it.wheel.key.uppercase()} ${it.kind} ${it.severity}" }
+        val raw = if (source == TpmsSource.USB && _usbLog.isNotEmpty()) ", usb=[${_usbLog.takeLast(6).joinToString(" | ")}]" else ""
+        return "Llantas: fuente=${source?.key ?: "-"}, estado=${status.name.lowercase()}, error=${error?.name ?: bleIssue?.name ?: "-"}, " +
+            "detalle=${(if (source == TpmsSource.OBD) obdProfile else detail) ?: "-"}, unidad=${unit.key}, " +
+            "recomendada=${recommendedFrontKpa.roundToInt()}/${recommendedRearKpa.roundToInt()} kPa, umbral=$lowPercent%, " +
+            "alertas=${if (alertsEnabled) "sí" else "no"}, llantas=${wheels.joinToString(" ").ifEmpty { "-" }}, activas=${active.ifEmpty { "-" }}$raw"
+    }
+
     // ---- Preferencias como estado de Compose ----
 
     private fun floatPref(key: String, default: Float) = Pref(key, prefs.getFloat(key, default)) { k, v -> putFloat(k, v) }
@@ -971,7 +1003,8 @@ class TpmsRepository(context: Context, private val bus: VehicleBus) {
         scope.launch {
             snapshotFlow {
                 val shown = bus.wanted.any(TireSignals::isTire)
-                val need = shown || holds > 0 || alertsEnabled
+                // La demostración no avisa: no corre solo por tener las alertas prendidas.
+                val need = shown || holds > 0 || alertsEnabled && savedSource != TpmsSource.DEMO
                 Want(savedSource.takeIf { need }, shown || holds > 0)
             }.distinctUntilChanged().collect { applyWant(it) }
         }

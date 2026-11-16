@@ -5,8 +5,6 @@ import android.annotation.SuppressLint
 import android.app.ActivityManager
 import android.content.Context
 import android.content.pm.PackageManager
-import android.hardware.Sensor
-import android.hardware.SensorManager
 import android.location.LocationManager
 import android.media.AudioManager
 import android.os.Build
@@ -295,7 +293,7 @@ internal fun wirePhoneReport(link: PhoneLink, context: Context, deps: () -> Depe
         phoneScope.launch {
             val d = deps()
             try {
-                runCatching { reportInfo(context, d.music, d.obdIfCreated(), link.describe(), d.pro.isPro, d.dashboard) }
+                runCatching { reportInfo(context, d.music, d.obdIfCreated(), reportExtras(d), d.pro.isPro, d.dashboard) }
                     .onSuccess { link.sendReport(id, it) }
             } finally {
                 busy = false
@@ -305,6 +303,13 @@ internal fun wirePhoneReport(link: PhoneLink, context: Context, deps: () -> Depe
 }
 
 private const val PHONE_REPORT_GAP_MS = 10_000L
+
+/**
+ * Lo que va después de la línea del OBD: el celular (si el módulo está prendido), las llantas (solo si su módulo ya
+ * corre: el reporte no prende nada) y las últimas teclas del volante. Se arma en el hilo principal.
+ */
+internal fun reportExtras(d: Dependencies): String =
+    listOfNotNull(d.phone.describe(), d.tpmsIfCreated()?.describe(), d.wheel.describe()).joinToString("\n")
 
 /** El volumen de la música en Android y si está fijo (la pantalla lo maneja con su propio chip). */
 private fun volumeInfo(context: Context): String = runCatching {
@@ -328,8 +333,9 @@ private fun systemInfo(context: Context, pro: Boolean, layout: String, musicInfo
         appendLine("CPU: ${Build.SUPPORTED_ABIS.joinToString()}")
         appendLine("Pantalla dividida: ${if (SplitScreen.supported()) "sí" else "no"}")
         appendLine(volumeInfo(context))
+        appendLine(SystemVolume.describe())
         appendLine("Código de desarrollador: ${if (pro) "sí" else "no"}")
-        appendLine(lightsInfo(context))
+        appendLine(lightsReport(context))
         appendLine(locationInfo(context))
         append(musicInfo)
         SystemSource.describe(context)?.let { append("\n").append(it) }
@@ -364,20 +370,4 @@ private fun locationInfo(context: Context): String {
 internal fun memoryMb(context: Context): Long {
     val memory = ActivityManager.MemoryInfo().also { context.getSystemService(ActivityManager::class.java).getMemoryInfo(it) }
     return memory.totalMem / (1024 * 1024)
-}
-
-/**
- * Para conectar los faros: si hay sensor de luz y qué ajustes de la pantalla hablan de
- * luces o iluminación (cada marca los nombra distinto; solo se leen los que Android deja).
- */
-private fun lightsInfo(context: Context): String {
-    val sensor = context.getSystemService(SensorManager::class.java)?.getDefaultSensor(Sensor.TYPE_LIGHT)
-    // Su propia lista (sin el "acc_" de LIGHT_WORDS): el reporte sale igual que antes.
-    val names = Regex("illum|headl|lamp|light|dimm|night|backlight|ill_", RegexOption.IGNORE_CASE)
-    val found = snapshotSettings(context).mapNotNull { (key, value) ->
-        val name = key.substringAfter('/')
-        // Sin los de autollenado ("autofill_" contiene "ill_"); valores cortos (las luces son números).
-        "$key=${value.take(24)}".takeIf { names.containsMatchIn(name) && !name.startsWith("autofill") }
-    }
-    return "Sensor de luz: ${sensor?.name ?: "no"}\nLuces: ${found.joinToString().ifEmpty { "—" }}"
 }

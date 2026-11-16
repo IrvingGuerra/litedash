@@ -10,6 +10,8 @@ import android.bluetooth.BluetoothProfile
 import android.bluetooth.BluetoothStatusCodes
 import android.content.Context
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import java.io.IOException
 import java.util.UUID
 import java.util.concurrent.CountDownLatch
@@ -37,46 +39,59 @@ private const val CHUNK = 20
  * ELM327 por Bluetooth LE: no se empareja, se conecta directo. Lo que manda el
  * adaptador llega por avisos de una característica y lo que se le manda se escribe en
  * otra, de 20 en 20 bytes. Se arma como un flujo para que [Elm327] no note diferencia.
- * El constructor espera a que todo esté listo (llamarlo desde un hilo de fondo).
+ * [open] espera a que todo esté listo (llamarlo desde un hilo de fondo); [close] lo
+ * cancela aunque siga a medias.
  */
 @SuppressLint("MissingPermission") // el repositorio revisa BLUETOOTH_CONNECT antes
-class BleLink(context: Context, device: BluetoothDevice) : QueuedLink() {
+class BleLink(private val context: Context, private val device: BluetoothDevice) : QueuedLink() {
     override val chunkSize = CHUNK
-    private val ready = CountDownLatch(1)
+    private val main = Handler(Looper.getMainLooper())
     private val written = Semaphore(0)
+    @Volatile private var ready = CountDownLatch(1)
+    @Volatile private var gatt: BluetoothGatt? = null
     @Volatile private var failure: String? = null
-    private var writer: BluetoothGattCharacteristic? = null
+    /** El fallo fue de la conexión (vale otro intento); no, si el aparato no es un OBD. */
+    @Volatile private var retryable = false
+    @Volatile private var opened = false
+    @Volatile private var writer: BluetoothGattCharacteristic? = null
+
+    // Para el reporte: en qué paso va o se quedó, el último estado de GATT y cuántos intentos.
+    @Volatile var stage = Stage.CONNECT
+        private set
+    @Volatile var gattStatus = BluetoothGatt.GATT_SUCCESS
+        private set
+    @Volatile var attempts = 0
+        private set
+
+    enum class Stage(val key: String) { CONNECT("conectar"), SERVICES("servicios"), NOTIFY("avisos"), INIT("init") }
 
     private val callback = object : BluetoothGattCallback() {
         override fun onConnectionStateChange(g: BluetoothGatt, status: Int, newState: Int) {
-            if (newState == BluetoothProfile.STATE_CONNECTED) {
-                g.discoverServices()
-            } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
-                closed = true
-                failure = failure ?: "Se desconectó el adaptador ($status)"
-                ready.countDown()
-                written.release()
+            if (stale(g)) return
+            gattStatus = status
+            if (newState == BluetoothProfile.STATE_CONNECTED && status == BluetoothGatt.GATT_SUCCESS) {
+                // Pedir los servicios en el mismo aviso falla en varias pantallas (MediaTek): un respiro antes.
+                stage = Stage.SERVICES
+                main.postDelayed({ if (g === gatt && !closed) g.discoverServices() }, DISCOVER_DELAY_MS)
+            } else if (newState == BluetoothProfile.STATE_CONNECTED || newState == BluetoothProfile.STATE_DISCONNECTED) {
+                if (opened) {
+                    closed = true
+                    written.release()
+                } else {
+                    fail("Se desconectó el adaptador ($status)", retry = true)
+                }
             }
         }
 
         override fun onServicesDiscovered(g: BluetoothGatt, status: Int) {
-            if (status != BluetoothGatt.GATT_SUCCESS) {
-                failure = "No se pudo leer el adaptador ($status)"
-                return ready.countDown()
-            }
-            val pair = serialPair(g)
-            if (pair == null) {
-                failure = "No parece un adaptador OBD"
-                return ready.countDown()
-            }
-            val (notify, write) = pair
+            if (stale(g)) return
+            gattStatus = status
+            if (status != BluetoothGatt.GATT_SUCCESS) return fail("No se pudo leer el adaptador ($status)", retry = true)
+            val (notify, write) = serialPair(g) ?: return fail("No parece un adaptador OBD")
             writer = write
+            stage = Stage.NOTIFY
             g.setCharacteristicNotification(notify, true)
-            val cccd = notify.getDescriptor(CCCD)
-            if (cccd == null) {
-                failure = "El adaptador no deja recibir sus respuestas"
-                return ready.countDown()
-            }
+            val cccd = notify.getDescriptor(CCCD) ?: return fail("El adaptador no deja recibir sus respuestas")
             val value = if (notify.properties and BluetoothGattCharacteristic.PROPERTY_NOTIFY != 0) {
                 BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
             } else {
@@ -86,7 +101,10 @@ class BleLink(context: Context, device: BluetoothDevice) : QueuedLink() {
         }
 
         override fun onDescriptorWrite(g: BluetoothGatt, descriptor: BluetoothGattDescriptor, status: Int) {
-            if (status != BluetoothGatt.GATT_SUCCESS) failure = "El adaptador no aceptó mandar respuestas ($status)"
+            if (stale(g)) return
+            gattStatus = status
+            if (status != BluetoothGatt.GATT_SUCCESS) return fail("El adaptador no aceptó mandar respuestas ($status)")
+            stage = Stage.INIT
             ready.countDown()
         }
 
@@ -105,15 +123,59 @@ class BleLink(context: Context, device: BluetoothDevice) : QueuedLink() {
         }
     }
 
-    // null si el Bluetooth está apagado.
-    private val gatt: BluetoothGatt = device.connectGatt(context, false, callback, BluetoothDevice.TRANSPORT_LE)
-        ?: throw IOException("El Bluetooth está apagado")
+    /**
+     * Aviso de un intento anterior. Un 133 puede llegar antes de que [open] guarde el GATT nuevo: sin
+     * GATT guardado se toma como del intento actual (los cerrados ya no avisan).
+     */
+    private fun stale(g: BluetoothGatt): Boolean = gatt.let { it != null && it !== g }
 
-    init {
-        val ok = ready.await(15, TimeUnit.SECONDS)
-        if (!ok || failure != null || writer == null) {
-            close()
-            throw IOException(failure ?: "El adaptador no respondió por Bluetooth LE")
+    private fun fail(why: String, retry: Boolean = false) {
+        if (failure == null) {
+            failure = why
+            retryable = retry
+        }
+        ready.countDown()
+    }
+
+    /**
+     * Conecta y deja listo el canal. Un fallo de la conexión (el 133 de GATT, típico en MediaTek) se
+     * reintenta hasta [ATTEMPTS] veces, cerrando el GATT anterior y con una pausa entre cada uno.
+     */
+    fun open() {
+        while (true) {
+            if (closed) throw IOException(CANCELLED)
+            attempts++
+            stage = Stage.CONNECT
+            failure = null
+            retryable = false
+            writer = null
+            ready = CountDownLatch(1)
+            // null si el Bluetooth está apagado.
+            val g = device.connectGatt(context, false, callback, BluetoothDevice.TRANSPORT_LE)
+                ?: throw IOException("El Bluetooth está apagado")
+            gatt = g
+            // Se canceló mientras se creaba: [close] aún no lo veía.
+            if (closed) {
+                close()
+                throw IOException(CANCELLED)
+            }
+            val ok = ready.await(ATTEMPT_S, TimeUnit.SECONDS)
+            if (closed) throw IOException(CANCELLED)
+            if (ok && failure == null && writer != null) {
+                opened = true
+                return
+            }
+            val why = failure ?: "El adaptador no respondió por Bluetooth LE"
+            gatt = null
+            runCatching { g.disconnect() }
+            runCatching { g.close() }
+            // Sin respuesta también vale otro intento; que no sea un OBD, no.
+            val again = retryable || !ok
+            if (!again || attempts >= ATTEMPTS) {
+                closed = true
+                throw IOException(why)
+            }
+            Thread.sleep(RETRY_MS)
         }
     }
 
@@ -124,6 +186,7 @@ class BleLink(context: Context, device: BluetoothDevice) : QueuedLink() {
     override fun send(bytes: ByteArray, offset: Int, length: Int) {
         val chunk = bytes.copyOfRange(offset, offset + length)
         val ch = writer ?: throw IOException("Sin canal de escritura")
+        val g = gatt ?: throw IOException("Se cerró la conexión")
         // Confirmaciones tardías de un envío anterior que ya se dio por perdido.
         written.drainPermits()
         val type = if (ch.properties and BluetoothGattCharacteristic.PROPERTY_WRITE != 0) {
@@ -132,22 +195,37 @@ class BleLink(context: Context, device: BluetoothDevice) : QueuedLink() {
             BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE
         }
         val started = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            gatt.writeCharacteristic(ch, chunk, type) == BluetoothStatusCodes.SUCCESS
+            g.writeCharacteristic(ch, chunk, type) == BluetoothStatusCodes.SUCCESS
         } else {
             @Suppress("DEPRECATION")
             ch.writeType = type
             @Suppress("DEPRECATION")
             ch.value = chunk
             @Suppress("DEPRECATION")
-            gatt.writeCharacteristic(ch)
+            g.writeCharacteristic(ch)
         }
         if (!started || !written.tryAcquire(2, TimeUnit.SECONDS)) throw IOException("No se pudo mandar al adaptador")
     }
 
+    /** Cierra; si [open] sigue esperando, lo suelta de inmediato. */
     override fun close() {
         closed = true
-        runCatching { gatt.disconnect() }
-        runCatching { gatt.close() }
+        ready.countDown()
+        written.release()
+        val g = gatt ?: return
+        gatt = null
+        runCatching { g.disconnect() }
+        runCatching { g.close() }
+    }
+
+    companion object {
+        /** El error genérico de GATT (no es público en Android): el que más dan las pantallas MediaTek. */
+        const val GATT_ERROR = 133
+        private const val ATTEMPTS = 3
+        private const val ATTEMPT_S = 15L
+        private const val RETRY_MS = 800L
+        private const val DISCOVER_DELAY_MS = 600L
+        private const val CANCELLED = "Se canceló la conexión"
     }
 }
 

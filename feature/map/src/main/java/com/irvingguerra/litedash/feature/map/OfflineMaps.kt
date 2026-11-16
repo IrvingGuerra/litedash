@@ -123,12 +123,14 @@ class OfflineMaps private constructor(private val app: Context) {
     fun delete(id: String) {
         scope.launch {
             ready.await()
+            val area = synchronized(lock) { areas.firstOrNull { it.id == id } } ?: return@launch
+            // Fuera del candado: una zona grande son decenas de miles (el botón de descargar lo espera).
+            val mine = areaTiles(area.lat, area.lon, area.km)
             val candidates = synchronized(lock) {
-                val area = areas.firstOrNull { it.id == id } ?: return@launch
                 val rest = areas.filter { it.id != id }
                 writeAreas(rest)
                 replaceAreas(rest)
-                areaTiles(area.lat, area.lon, area.km) - areaKeys
+                mine - areaKeys
             }
             removeTiles(candidates)
         }

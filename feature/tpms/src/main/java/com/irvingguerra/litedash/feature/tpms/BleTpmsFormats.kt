@@ -1,5 +1,7 @@
 package com.irvingguerra.litedash.feature.tpms
 
+import com.irvingguerra.litedash.core.vehicle.KPA_PER_PSI
+
 /**
  * Un anuncio Bluetooth LE tal como lo da Android: [manufacturerData] SIN los 2 bytes de
  * compañía ([companyId]); [serviceUuids] de 16 bits como "27a5" (minúsculas), los demás completos.

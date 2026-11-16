@@ -1,5 +1,6 @@
 package com.irvingguerra.litedash.feature.tpms
 
+import com.irvingguerra.litedash.core.vehicle.KPA_PER_PSI
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull

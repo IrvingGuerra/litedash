@@ -111,6 +111,8 @@ object UsbTpmsProtocol {
             private set
         /** Cada trama válida tal cual (con su CS) y lo que se entendió (null = ignorada), para el registro. */
         var onRaw: ((ByteArray, UsbFrame?) -> Unit)? = null
+        /** Llantas cuyo ID llegó en ceros: ahí no hay sensor. */
+        private val noSensor = mutableSetOf<Wheel>()
 
         private var buf = ByteArray(64)
         private var count = 0
@@ -153,10 +155,14 @@ object UsbTpmsProtocol {
                 val s = UsbFrame.State(f.u8(3), f.u8(4), f.u8(5), f.u8(6))
                 // Trama fija de refacción que el receptor manda aunque no haya sensor.
                 val placeholder = s.pos == 0x05 && s.rawPressure == 0x46 && s.rawTemp == 0x46 && s.flags == 0
-                if (placeholder && !spareKnown) null else s
+                // Posición sin sensor: presión y temperatura crudas en 0 (no es "0 kPa, ponchada") o su ID en ceros.
+                val vacant = s.rawPressure == 0 && s.rawTemp == 0 || s.wheel in noSensor
+                if (placeholder && !spareKnown || vacant) null else s
             }
             9 -> UsbFrame.SensorId(f.u8(3), f.hex(4, 8)).also {
-                if (it.wheel == Wheel.SPARE) spareKnown = !it.empty
+                val w = it.wheel
+                if (w != null) if (it.empty) noSensor += w else noSensor -= w
+                if (w == Wheel.SPARE) spareKnown = !it.empty
             }
             else -> UsbFrame.Unknown(f)
         }

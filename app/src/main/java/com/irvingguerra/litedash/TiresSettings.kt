@@ -61,6 +61,7 @@ import com.irvingguerra.litedash.core.ui.Radius
 import com.irvingguerra.litedash.core.ui.Segmented
 import com.irvingguerra.litedash.core.ui.SwitchRow
 import com.irvingguerra.litedash.core.ui.Typography
+import com.irvingguerra.litedash.core.vehicle.bleScanPermission
 import com.irvingguerra.litedash.feature.dashboard.TileTypes
 import com.irvingguerra.litedash.feature.tpms.BleProblem
 import com.irvingguerra.litedash.feature.tpms.PairState
@@ -153,7 +154,7 @@ private fun SourceCard(repo: TpmsRepository) {
             Label(tiresStatusText(repo), Typography.body, maxLines = 1, modifier = Modifier.weight(1f))
             when {
                 repo.status == TpmsStatus.NO_PERMISSION && source == TpmsSource.BLE ->
-                    Button(stringResource(R.string.tires_grant), { permission.launch(repo.blePermission()) }, primary = true)
+                    Button(stringResource(R.string.tires_grant), { permission.launch(bleScanPermission()) }, primary = true)
                 repo.status == TpmsStatus.NO_PERMISSION || repo.status == TpmsStatus.NO_DEVICE ->
                     Button(stringResource(R.string.tires_retry), repo::retry)
             }

@@ -1,6 +1,8 @@
 package com.irvingguerra.litedash.feature.map
 
 import android.content.Context
+import android.os.Handler
+import android.os.Looper
 import android.util.LruCache
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -44,7 +46,13 @@ class TileStore(context: Context, private val userAgent: String, val source: Til
     /** Las que fallaron o vinieron vacías: no se piden hasta esa hora (solo de las que se ven). */
     private val retryAt = HashMap<Long, Long>()
     private var visible: Set<Long> = emptySet()
+    /** Lo que pidió cada mapa que lo está viendo. */
+    private val views = HashMap<Any, Set<Long>>()
     private var scope: CoroutineScope? = null
+    /** Cuántos mapas lo están viendo, y cuántas veces se quedó sin ninguno (para soltar la memoria solo si sigue así). */
+    private var users = 0
+    private var idles = 0
+    private val release = Handler(Looper.getMainLooper())
     private var workers = 0
     private var writes = 0
     /** El servidor pidió calma (429/503) o nos bloqueó (403/418): sin red hasta esa hora; se muestra lo guardado. */
@@ -56,14 +64,29 @@ class TileStore(context: Context, private val userAgent: String, val source: Til
 
     fun tile(key: Long): ImageBitmap? = memory.get(key)
 
-    /** Las teselas que se ven ahora: se cargan las que falten; las que ya no se ven salen de la fila. */
-    fun request(keys: Set<Long>) = synchronized(lock) {
+    /**
+     * Las teselas que ve ahora el mapa [view] (el widget y el mapa en grande comparten almacén: cuenta lo de todos):
+     * se cargan las que falten; las que ya nadie ve salen de la fila.
+     */
+    fun request(view: Any, keys: Set<Long>) = synchronized(lock) {
+        views[view] = keys
+        schedule()
+    }
+
+    /** El mapa [view] ya no se ve (o lo taparon): lo suyo deja de pedirse. */
+    fun forget(view: Any) = synchronized(lock) {
+        if (views.remove(view) != null) schedule()
+    }
+
+    private fun schedule() {
+        val keys = views.values.singleOrNull() ?: views.values.flatMapTo(HashSet()) { it }
         visible = keys
         retryAt.keys.retainAll(keys)
-        // Que siempre quepa lo que se ve (inclinado son más que en plano).
-        val needed = memoryBytes(keys.size, tileBytes)
-        if (needed > memory.maxSize()) memory.resize(needed)
-        val s = scope ?: return@synchronized
+        // Que siempre quepa lo que se ve (inclinado son más que en plano) y, si la memoria da, otro tanto: las del
+        // zoom anterior, que tapan el hueco mientras llegan las nuevas. Si sobra más de la mitad, se encoge.
+        val needed = memoryBytes(keys.size, tileBytes, (Runtime.getRuntime().maxMemory() / MEMORY_SHARE).toInt())
+        if (needed > memory.maxSize() || needed < memory.maxSize() / 2) memory.resize(needed)
+        val s = scope ?: return
         val now = System.currentTimeMillis()
         for (k in keys) {
             if (k in pending || memory.get(k) != null || (retryAt[k] ?: 0L) > now) continue
@@ -76,22 +99,30 @@ class TileStore(context: Context, private val userAgent: String, val source: Til
         }
     }
 
+    /** Un mapa más lo está viendo (el widget y el mapa en grande comparten almacén): trabaja mientras haya alguno. */
     fun resume() = synchronized(lock) {
+        users++
         if (scope != null) return@synchronized
         scope = CoroutineScope(SupervisorJob() + Dispatchers.IO).also { it.launch { trim(force = false) } }
         // Lo que ya se dibujó antes de arrancar (el primer cuadro llega antes que este efecto).
-        request(visible)
+        schedule()
     }
 
-    /** Deja de descargar y suelta la memoria (la app se fue o el mapa ya no se ve). */
+    /**
+     * Un mapa menos; sin ninguno, deja de descargar y suelta la memoria (la app se fue o el mapa ya no se ve). La
+     * memoria, un momento después: al abrir el mapa en grande el widget se va antes de que llegue el otro.
+     */
     fun pause() = synchronized(lock) {
+        users = (users - 1).coerceAtLeast(0)
+        if (users > 0) return@synchronized
         scope?.cancel()
         scope = null
         queue.clear()
         pending.clear()
         retryAt.clear()
         workers = 0
-        memory.evictAll()
+        val idle = ++idles
+        release.postDelayed({ synchronized(lock) { if (users == 0 && idles == idle) memory.evictAll() } }, RELEASE_MS)
     }
 
     /** Un trabajador de [owner]: si mientras tanto se pausó (o se pausó y se reanudó), sale sin tocar nada. */
@@ -232,6 +263,9 @@ class TileStore(context: Context, private val userAgent: String, val source: Til
     private companion object {
         const val FILE_LOCKS = 32
         const val MAX_DOWNLOADS = 2
+        /** La memoria de teselas no pasa de esta parte de la que tiene la app (salvo que no quepa lo que se ve). */
+        const val MEMORY_SHARE = 6
+        const val RELEASE_MS = 1_500L
         const val RETRY_MS = 20_000L
         const val BACKOFF_MS = 120_000L
         const val BLOCKED_MS = 3_600_000L

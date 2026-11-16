@@ -62,11 +62,22 @@ object Library {
         val drives = Drives.list(context)
         val folder = folderDrive(context)
         val key = (drives.map { it.id } + listOfNotNull(folder?.id) + Drives.revision.toString()).joinToString("|")
-        cache?.takeIf { it.first == key }?.let { return it.second }
-        val found = (drives + listOfNotNull(folder)).firstNotNullOfOrNull { d -> tracks(context, d).takeIf { it.isNotEmpty() }?.let { d to it } }
-        if (found != null) cache = key to found
-        return found ?: (drives.firstOrNull() to emptyList())
+        cache?.takeIf { it.first == key }?.let { (_, hit) ->
+            found = hit.second.size
+            return hit
+        }
+        val hit = (drives + listOfNotNull(folder)).firstNotNullOfOrNull { d -> tracks(context, d).takeIf { it.isNotEmpty() }?.let { d to it } }
+        if (hit != null) cache = key to hit
+        found = hit?.second?.size ?: 0
+        return hit ?: (drives.firstOrNull() to emptyList())
     }
+
+    /** Canciones que encontró la última lectura; null = aún no se lee en este arranque. */
+    @Volatile
+    private var found: Int? = null
+
+    /** Para los reportes: permiso de lectura y canciones de la última lectura (sin leer la memoria otra vez). */
+    fun describe(context: Context): String = "permiso=${if (hasPermission(context)) "sí" else "no"} canciones=${found ?: "sin leer"}"
 
     /** La carpeta elegida como "memoria" (si sigue habiendo permiso para leerla). */
     private fun folderDrive(context: Context): Drive? {

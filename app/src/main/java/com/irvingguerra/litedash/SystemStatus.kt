@@ -14,6 +14,7 @@ import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.NetworkRequest
 import android.os.Build
+import android.os.SystemClock
 import android.view.KeyEvent
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.draw.shadow
@@ -75,7 +76,8 @@ import com.irvingguerra.litedash.core.ui.Icons
 import com.irvingguerra.litedash.core.ui.Label
 import com.irvingguerra.litedash.core.ui.LocalColors
 import com.irvingguerra.litedash.core.ui.Typography
-import kotlin.concurrent.thread
+import com.irvingguerra.litedash.feature.music.FactoryAudio
+import java.util.concurrent.Executors
 
 /** Avisos del sistema para LiteDash: escucha solo mientras se ve (con otra app al frente, nada). */
 private fun Context.listen(receiver: BroadcastReceiver, action: String) =
@@ -84,7 +86,7 @@ private fun Context.listen(receiver: BroadcastReceiver, action: String) =
 /**
  * Volumen de la música en la barra: un solo botón (bocina con el nivel). Al tocarlo flota su barra
  * hacia arriba (+ barra −; a un lado en la barra lateral) y se cierra sola a los [VOLUME_OPEN_MS] sin
- * tocarla o al tocar fuera. Con el volumen del chip de la pantalla (fijo para Android) solo + y −.
+ * tocarla o al tocar fuera. Con el volumen por tecla ([SystemVolume.byKey]) solo + y −.
  */
 @Composable
 fun Volume(buttonSize: Dp, vertical: Boolean = false) {
@@ -117,14 +119,8 @@ fun Volume(buttonSize: Dp, vertical: Boolean = false) {
     }
     fun adjust(direction: Int) {
         touched++
-        val before = audio.getStreamVolume(AudioManager.STREAM_MUSIC)
-        val atEdge = if (direction == AudioManager.ADJUST_RAISE) before >= max else before <= 0
-        if (!audio.isVolumeFixed) audio.adjustStreamVolume(AudioManager.STREAM_MUSIC, direction, 0)
+        SystemVolume.adjust(context, direction)
         level = audio.getStreamVolume(AudioManager.STREAM_MUSIC)
-        // Muchas pantallas manejan el volumen con su propio chip (Android lo tiene fijo o no lo deja
-        // cambiar: pasaba en una NWD). Entonces, la tecla de volumen como el botón físico: la toma el
-        // sistema y la lleva a ese chip (y muestra su propia barra de volumen).
-        if (level == before && !atEdge || audio.isVolumeFixed) volumeKey(if (direction == AudioManager.ADJUST_RAISE) KeyEvent.KEYCODE_VOLUME_UP else KeyEvent.KEYCODE_VOLUME_DOWN)
     }
     fun set(fraction: Float) {
         touched++
@@ -133,7 +129,8 @@ fun Volume(buttonSize: Dp, vertical: Boolean = false) {
         runCatching { audio.setStreamVolume(AudioManager.STREAM_MUSIC, target, 0) }
         level = audio.getStreamVolume(AudioManager.STREAM_MUSIC)
     }
-    val fixed = audio.isVolumeFixed
+    // Por tecla (volumen fijo o pantalla NWD): solo + y −, sin barra ni número.
+    val fixed = remember { SystemVolume.byKey(context) }
     // Dónde está la bocina en la ventana: de ahí se acomoda la barra flotante.
     var anchor by remember { mutableStateOf(Rect.Zero) }
     Box(
@@ -240,12 +237,76 @@ private val VOLUME_BAR_LENGTH = 160.dp
 
 
 /**
- * Aprieta la tecla de volumen dentro de la ventana de LiteDash (se permite sin permisos porque es la
- * propia app): el sistema la intercepta antes, como la del volante o la del panel. En otro hilo:
- * Instrumentation no se puede usar en el principal.
+ * El volumen de la música, uno solo para la barra y el volante. Muchas pantallas lo manejan con su propio chip
+ * (Android lo tiene fijo, o no lo deja cambiar: NWD, reporte 895416): ahí va por tecla, como el botón físico, que
+ * el sistema lleva a ese chip (y muestra su barra). En las demás, el nivel de Android y, si no cambió (en el tope,
+ * en 0 o la pantalla no lo deja), la tecla igual.
  */
-private fun volumeKey(code: Int) {
-    thread(name = "volume-key") { runCatching { Instrumentation().sendKeyDownUpSync(code) } }
+object SystemVolume {
+    /** Las teclas que LiteDash aprieta (por su hora de apretar): [WheelKeys] las deja pasar al sistema. */
+    private val injected = ArrayDeque<Long>()
+    // En un solo hilo y en orden (Instrumentation no se puede usar en el principal).
+    private val keys = Executors.newSingleThreadExecutor { Thread(it, "volume-key") }
+    @Volatile private var nwd: Boolean? = null
+    @Volatile private var mode = "-"
+    @Volatile private var last = "-"
+    @Volatile private var keyResult = "no"
+
+    /** Va por tecla: volumen fijo para Android o pantalla NWD (la familia se busca una vez). */
+    fun byKey(context: Context): Boolean {
+        val fixed = context.getSystemService(AudioManager::class.java).isVolumeFixed
+        val family = nwd ?: (FactoryAudio.family(context) == NWD_FAMILY).also { nwd = it }
+        mode = if (fixed) "tecla (fijo)" else if (family) "tecla (nwd)" else "stream"
+        return fixed || family
+    }
+
+    /** Sube, baja o silencia ([direction] de AudioManager); [ui] = la barra de Android (el volante). */
+    fun adjust(context: Context, direction: Int, ui: Boolean = false) {
+        val audio = context.getSystemService(AudioManager::class.java)
+        val byKey = byKey(context)
+        val before = audio.getStreamVolume(AudioManager.STREAM_MUSIC)
+        if (!byKey) runCatching { audio.adjustStreamVolume(AudioManager.STREAM_MUSIC, direction, if (ui) AudioManager.FLAG_SHOW_UI else 0) }
+        val after = audio.getStreamVolume(AudioManager.STREAM_MUSIC)
+        val mute = direction == AudioManager.ADJUST_TOGGLE_MUTE
+        val send = byKey || !mute && after == before
+        last = "${when (direction) { AudioManager.ADJUST_RAISE -> "+"; AudioManager.ADJUST_LOWER -> "−"; else -> "silencio" }} $before→$after"
+        keyResult = if (send) "enviando" else "no"
+        if (send) press(
+            when (direction) {
+                AudioManager.ADJUST_RAISE -> KeyEvent.KEYCODE_VOLUME_UP
+                AudioManager.ADJUST_LOWER -> KeyEvent.KEYCODE_VOLUME_DOWN
+                else -> KeyEvent.KEYCODE_VOLUME_MUTE
+            },
+        )
+    }
+
+    /**
+     * Aprieta la tecla dentro de la ventana de LiteDash (se permite sin permisos porque es la propia app): el
+     * sistema la intercepta antes, como la del volante o la del panel. Se marca por su hora de apretar.
+     */
+    private fun press(code: Int) {
+        keys.execute {
+            val down = SystemClock.uptimeMillis()
+            synchronized(injected) {
+                injected.addLast(down)
+                while (injected.size > INJECTED_KEPT) injected.removeFirst()
+            }
+            keyResult = runCatching {
+                val i = Instrumentation()
+                i.sendKeySync(KeyEvent(down, down, KeyEvent.ACTION_DOWN, code, 0))
+                i.sendKeySync(KeyEvent(down, SystemClock.uptimeMillis(), KeyEvent.ACTION_UP, code, 0))
+            }.fold({ "enviada" }, { "error ${it.javaClass.simpleName}" })
+        }
+    }
+
+    /** ¿La apretó LiteDash? Entonces no es un botón del volante: sigue de largo al sistema. */
+    fun isOwn(event: KeyEvent): Boolean = synchronized(injected) { event.downTime in injected }
+
+    /** Para el reporte: modo, último toque y si se mandó la tecla. */
+    fun describe(): String = "Volumen: modo=$mode; último=$last, tecla=$keyResult"
+
+    private const val NWD_FAMILY = "nwd"
+    private const val INJECTED_KEPT = 8
 }
 
 /** El sistema lo manda al cambiar cualquier volumen; no está en el SDK público. */

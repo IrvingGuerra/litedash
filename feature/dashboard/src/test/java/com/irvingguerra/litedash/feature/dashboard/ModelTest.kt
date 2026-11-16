@@ -172,6 +172,26 @@ class ModelTest {
     }
 
     @Test
+    fun adaptRepairsADamagedSavedLayout() {
+        val c = Grid(10, 6)
+        val limits = { type: String -> if (type == TileTypes.CAR) SizeLimits(4, 3) else SizeLimits(2, 2) }
+        val damaged = listOf(
+            Tile("car", TileTypes.CAR, 0, 0, 3, 2), // abajo del mínimo de esta versión
+            Tile("music", TileTypes.MUSIC, 2, 1, 4, 3), // encima del auto
+            Tile("clock", TileTypes.CLOCK, 8, 5, 4, 4), // se sale de la cuadrícula
+        )
+        val out = damaged.adaptTo(c, limits)
+        assertEquals(3, out.size)
+        out.forEach { t ->
+            val m = limits(t.type)
+            assertTrue(t.width >= m.minWidth && t.height >= m.minHeight)
+            assertTrue(out.fits(t, c))
+        }
+        // Uno sano se queda tal cual.
+        assertEquals(out, out.adaptTo(c, limits))
+    }
+
+    @Test
     fun everyScreenHasSuggestionForItsSize() {
         assertEquals(ScreenSize.SMALL, screens[0].size)
         assertEquals(ScreenSize.MEDIUM, screens[1].size)

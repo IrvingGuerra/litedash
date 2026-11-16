@@ -1,8 +1,13 @@
 package com.irvingguerra.litedash.feature.obd
 
+import android.Manifest
 import android.annotation.SuppressLint
 import android.bluetooth.BluetoothDevice
+import android.bluetooth.BluetoothManager
 import android.bluetooth.BluetoothSocket
+import android.content.Context
+import android.content.pm.PackageManager
+import android.os.Build
 import java.io.ByteArrayOutputStream
 import java.io.IOException
 import java.io.InputStream
@@ -16,27 +21,60 @@ import java.util.concurrent.TimeUnit
 /** Puerto serie de Bluetooth clásico (SPP): el de casi todos los ELM327. */
 private val SPP: UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB")
 
-/** ELM327 por Bluetooth clásico, ya emparejado en Ajustes de Android. */
+/**
+ * ELM327 por Bluetooth clásico, ya emparejado en Ajustes de Android. Muchos clones (y pantallas
+ * MediaTek) fallan con "read failed, socket might closed": se para la búsqueda de aparatos (frena
+ * la conexión), se prueba el canal seguro, el inseguro y el canal 1 directo, y todo una segunda vez.
+ * Si nada conecta, se dice el primer fallo (el más útil para el reporte).
+ */
 @SuppressLint("MissingPermission") // el repositorio revisa BLUETOOTH_CONNECT antes
-class BluetoothLink(device: BluetoothDevice) : ElmLink {
-    private val socket: BluetoothSocket = try {
-        connected(device.createRfcommSocketToServiceRecord(SPP))
-    } catch (e: Exception) {
-        // Varios clones solo aceptan la conexión "insegura".
-        connected(device.createInsecureRfcommSocketToServiceRecord(SPP))
-    }
-
-    // Si no conecta se cierra: un canal colgado hace fallar los intentos que siguen.
-    private fun connected(s: BluetoothSocket) = try {
-        s.apply { connect() }
-    } catch (e: Exception) {
-        runCatching { s.close() }
-        throw e
-    }
+class BluetoothLink(context: Context, device: BluetoothDevice) : ElmLink {
+    private val socket: BluetoothSocket = open(context, device)
 
     override val input: InputStream = socket.inputStream
     override val output: OutputStream = socket.outputStream
     override fun close() = socket.close()
+
+    private companion object {
+        const val ROUNDS = 2
+        const val RETRY_MS = 1_000L
+
+        fun open(context: Context, device: BluetoothDevice): BluetoothSocket {
+            stopDiscovery(context)
+            var first: Exception? = null
+            repeat(ROUNDS) { round ->
+                if (round > 0) Thread.sleep(RETRY_MS)
+                for (make in sockets(device)) {
+                    val s = runCatching { make() }.getOrElse { first = first ?: (it as? Exception); null } ?: continue
+                    try {
+                        s.connect()
+                        return s
+                    } catch (e: Exception) {
+                        // Un canal colgado hace fallar los intentos que siguen: se cierra.
+                        runCatching { s.close() }
+                        first = first ?: e
+                    }
+                }
+            }
+            throw first ?: IOException("No se pudo conectar por Bluetooth")
+        }
+
+        /** Seguro, inseguro (varios clones solo aceptan ese) y, de último, el canal 1 sin buscar el servicio. */
+        @SuppressLint("DiscouragedPrivateApi") // el respaldo de siempre para clones; si Android lo quita, se salta
+        fun sockets(device: BluetoothDevice): List<() -> BluetoothSocket> = listOf(
+            { device.createRfcommSocketToServiceRecord(SPP) },
+            { device.createInsecureRfcommSocketToServiceRecord(SPP) },
+            { device.javaClass.getMethod("createRfcommSocket", Int::class.javaPrimitiveType).invoke(device, 1) as BluetoothSocket },
+        )
+
+        /** Buscar aparatos a la vez hace fallar la conexión; desde Android 12 pararla pide BLUETOOTH_SCAN. */
+        fun stopDiscovery(context: Context) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
+                context.checkSelfPermission(Manifest.permission.BLUETOOTH_SCAN) != PackageManager.PERMISSION_GRANTED
+            ) return
+            runCatching { context.getSystemService(BluetoothManager::class.java)?.adapter?.cancelDiscovery() }
+        }
+    }
 }
 
 /** ELM327 por Wi-Fi (suelen ser 192.168.0.10:35000); también el simulador de pruebas. */

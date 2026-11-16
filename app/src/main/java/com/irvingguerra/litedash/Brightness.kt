@@ -45,10 +45,15 @@ fun ApplyBrightness(prefs: Preferences, night: Boolean, revision: Int) {
         val system = prefs.brightnessBySun && prefs.brightnessAllApps && Settings.System.canWrite(activity)
         windowBrightness(activity, level.takeIf { prefs.brightnessBySun && !system })
         withContext(Dispatchers.IO) {
-            if (system) setSystemBrightness(activity, prefs, level) else restoreSystemBrightness(activity, prefs)
+            // Con dos inicios abiertos, uno a la vez: si no, el segundo guardaba el brillo de LiteDash como "el original".
+            synchronized(SystemBrightnessLock) {
+                if (system) setSystemBrightness(activity, prefs, level) else restoreSystemBrightness(activity, prefs)
+            }
         }
     }
 }
+
+private object SystemBrightnessLock
 
 /** Cambia el brillo del sistema; la primera vez guarda el que tenía el usuario. */
 private fun setSystemBrightness(context: Context, prefs: Preferences, percent: Int) {

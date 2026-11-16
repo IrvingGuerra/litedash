@@ -5,7 +5,7 @@ import androidx.compose.runtime.Immutable
 /** Qué queda arriba: el norte, o hacia donde vas (el mapa gira y tu flecha siempre apunta arriba). */
 enum class MapOrientation(val stored: String) { NORTH("north"), HEADING("heading") }
 
-/** Según la velocidad, o fijo (cerca = calles, lejos = colonias). */
+/** Automático (lo más cerca, inclinado) o fijo y plano (cerca = calles, lejos = colonias). */
 enum class MapZoom(val stored: String, val level: Int?) { AUTO("auto", null), NEAR("near", 17), MID("mid", 16), FAR("far", 15) }
 
 /** Los colores: como el tema de LiteDash (día y noche), o siempre claros u oscuros. */

@@ -1,5 +1,7 @@
 package com.irvingguerra.litedash
 
+import android.content.Context
+import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
@@ -17,8 +19,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.core.net.toUri
 import com.irvingguerra.litedash.core.ui.Button
 import com.irvingguerra.litedash.core.ui.Label
 import com.irvingguerra.litedash.core.ui.LocalColors
@@ -202,8 +206,14 @@ internal fun AppSearch(apps: List<App>, selected: String?, onPick: (String) -> U
  */
 @Composable
 fun MapSettings(d: Dependencies) {
+    val context = LocalContext.current
     val apps = rememberApps(d.apps).orEmpty()
-    val mapApps = remember(apps) { NAVIGATION_PACKAGES.mapNotNull { pkg -> apps.firstOrNull { it.pkg == pkg } } }
+    // Se vuelve a buscar cuando cambian las apps instaladas.
+    val detected by produceState(emptySet<String>(), apps) { value = withContext(Dispatchers.IO) { navigationPackages(context) } }
+    val mapApps = remember(apps, detected) {
+        val known = NAVIGATION_PACKAGES.mapNotNull { pkg -> apps.firstOrNull { it.pkg == pkg } }
+        known + apps.filter { it.pkg in detected && known.none { k -> k.pkg == it.pkg } }.distinctBy { it.pkg }
+    }
     val selected = mapApp(d, apps)
     FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         for (app in mapApps) Button(app.name, { d.prefs.mapApp = app.key }, primary = app == selected)
@@ -215,5 +225,17 @@ fun MapSettings(d: Dependencies) {
     )
     if (mapApps.isNotEmpty()) {
         SwitchRow(stringResource(R.string.map_external), d.prefs.mapExternal, { d.prefs.mapExternal = it }, stringResource(R.string.map_external_help))
+    }
+}
+
+/** Las apps instaladas que abren una dirección ("geo:") o son de mapas. Consulta a Android: fuera del hilo principal. */
+private fun navigationPackages(context: Context): Set<String> {
+    val pm = context.packageManager
+    val asks = listOf(
+        Intent(Intent.ACTION_VIEW, "geo:0,0?q=x".toUri()),
+        Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_APP_MAPS),
+    )
+    return asks.flatMapTo(HashSet()) { intent ->
+        runCatching { pm.queryIntentActivities(intent, 0) }.getOrDefault(emptyList()).map { it.activityInfo.packageName }
     }
 }

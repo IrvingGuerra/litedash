@@ -2,6 +2,8 @@ package com.irvingguerra.litedash
 
 import android.content.Context
 import android.database.ContentObserver
+import android.hardware.Sensor
+import android.hardware.SensorManager
 import android.net.Uri
 import android.os.Handler
 import android.os.Looper
@@ -63,6 +65,20 @@ data class LightsKey(val table: String, val name: String) {
 
 /** Nombres que suelen tener los ajustes de luces en las pantallas de auto. */
 private val LIGHT_WORDS = Regex("illum|headl|lamp|light|dimm|night|backlight|ill_|acc_", RegexOption.IGNORE_CASE)
+
+/**
+ * Ajustes que cambian solos y nunca son los faros: brillo (LiteDash mismo lo escribe), alarmas,
+ * marcas de tiempo, contadores de wifi/bluetooth, el LED de avisos y el autollenado ("autofill" trae "ill_").
+ */
+private val NOISE_WORDS = Regex(
+    "^screen_brightness|^next_alarm|timestamp|^wifi_|^bluetooth_|^ble_|notification_light_pulse|^autofill",
+    RegexOption.IGNORE_CASE,
+)
+
+private fun isNoise(name: String) = NOISE_WORDS.containsMatchIn(name)
+
+/** Si el ajuste [name] (sin la tabla) suena a los faros. */
+internal fun soundsLikeLights(name: String) = LIGHT_WORDS.containsMatchIn(name) && !isNoise(name)
 
 /**
  * Todos los ajustes de la pantalla (las tres tablas, "tabla/nombre" en ese orden) con su valor, para
@@ -148,6 +164,7 @@ fun LightsSettings(prefs: Preferences) {
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Button(stringResource(R.string.lights_learn), { withSnapshot { LearnStep.LightsOff(it) } }, primary = key == null)
                     if (key != null) Button(stringResource(R.string.lights_forget), { prefs.lightsKey = null; prefs.lightsOnValue = null })
+                    else UseSunButton(prefs)
                 }
             }
             is LearnStep.LightsOff -> {
@@ -155,12 +172,13 @@ fun LightsSettings(prefs: Preferences) {
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Button(stringResource(R.string.lights_done), {
                         withSnapshot { after ->
-                            // Lo que cambió entre una foto y otra; si varios, primero los que suenan a luces.
-                            val changed = after.filter { (k, v) -> s.before[k] != v }.toList()
-                                .sortedByDescending { LIGHT_WORDS.containsMatchIn(it.first) }
+                            // Lo que cambió entre una foto y otra (sin el ruido), primero lo que suena a luces;
+                            // solo se guarda sin preguntar si suena a luces.
+                            val changed = after.filter { (k, v) -> s.before[k] != v && !isNoise(k.substringAfter('/')) }.toList()
+                                .sortedByDescending { soundsLikeLights(it.first.substringAfter('/')) }
                             when {
                                 changed.isEmpty() -> LearnStep.Nothing
-                                changed.size == 1 || LIGHT_WORDS.containsMatchIn(changed[0].first) -> { save(changed[0].first, changed[0].second); LearnStep.Idle }
+                                soundsLikeLights(changed[0].first.substringAfter('/')) -> { save(changed[0].first, changed[0].second); LearnStep.Idle }
                                 else -> LearnStep.Choose(changed.take(8))
                             }
                         }
@@ -177,8 +195,30 @@ fun LightsSettings(prefs: Preferences) {
             }
             LearnStep.Nothing -> {
                 Label(stringResource(R.string.lights_nothing), Typography.body, c.danger)
-                Button(stringResource(R.string.lights_retry), { withSnapshot { LearnStep.LightsOff(it) } })
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Button(stringResource(R.string.lights_retry), { withSnapshot { LearnStep.LightsOff(it) } })
+                    UseSunButton(prefs)
+                }
             }
         }
     }
+}
+
+/** Salida para pantallas que no avisan de los faros: la noche por la hora del sol (lo que ya se usa mientras). */
+@Composable
+private fun UseSunButton(prefs: Preferences) {
+    Button(stringResource(R.string.lights_use_sun), { prefs.nightSource = NightSource.SUN })
+}
+
+/**
+ * Para el reporte: si hay sensor de luz y qué ajustes de la pantalla suenan a luces (con el
+ * mismo criterio que al aprender). Cientos de filas por IPC: fuera del hilo principal.
+ */
+internal fun lightsReport(context: Context): String {
+    val sensor = context.getSystemService(SensorManager::class.java)?.getDefaultSensor(Sensor.TYPE_LIGHT)
+    // Valores cortos: las luces son números.
+    val found = snapshotSettings(context).mapNotNull { (key, value) ->
+        "$key=${value.take(24)}".takeIf { soundsLikeLights(key.substringAfter('/')) }
+    }
+    return "Sensor de luz: ${sensor?.name ?: "no"}\nLuces: ${found.joinToString().ifEmpty { "—" }}"
 }

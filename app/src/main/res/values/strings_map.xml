@@ -12,7 +12,7 @@
     <string name="map_zoom_near">Cerca</string>
     <string name="map_zoom_mid">Medio</string>
     <string name="map_zoom_far">Lejos</string>
-    <string name="map_zoom_help">Automático: tus calles cuando estás detenido; de viaje se acerca hasta un par de calles y se inclina como Waze (si lo alejas, vuelve a ser plano). Con dos dedos lo acercas o alejas; con uno lo mueves.</string>
+    <string name="map_zoom_help">Automático: lo más cerca (un par de calles) e inclinado como Waze, hacia donde vas; si lo alejas se vuelve plano, y «centrar» o empezar un viaje lo regresan. Con dos dedos lo acercas o alejas; con uno lo mueves.</string>
     <string name="map_style">Colores</string>
     <string name="map_style_theme">Como el tema</string>
     <string name="map_style_light">Claros</string>

@@ -2,6 +2,7 @@ package com.irvingguerra.litedash.feature.map
 
 import android.graphics.Matrix as AndroidMatrix
 import androidx.compose.foundation.background
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.withFrameNanos
@@ -13,13 +14,14 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.pointer.positionChange
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlin.math.log2
+import kotlin.math.pow
 import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.hypot
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.PointerInputScope
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.foundation.gestures.calculateZoom
@@ -35,6 +37,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -69,9 +72,6 @@ private const val TILE = 256
 /** Las teselas que traen los nombres de las calles (las del minimalista llegan hasta el 14). */
 private const val DATA_ZOOM = 14
 
-/** El zoom de siempre (calles de tu colonia); el de viaje es lo más cerca de la fuente (un par de calles, inclinado). */
-private const val CITY_ZOOM = 17
-
 /** Desde esta velocidad vas de viaje; detenido más de [STOP_MS], ya no. */
 private const val DRIVE_KMH = 12f
 private const val STOP_MS = 25_000L
@@ -85,9 +85,21 @@ private const val EARTH_METERS = 40_075_016.686
 /** Movido con el dedo, regresa a ti tras este rato sin tocarlo. */
 private const val RECENTER_MS = 20_000L
 
-/** Cuánto tarda en deslizarse hasta ti al centrar, y cada paso de zoom al acercarse después. */
+/** Cuánto tarda en deslizarse hasta ti al centrar. */
 private const val RECENTER_GLIDE_MS = 900f
-private const val ZOOM_STEP_MS = 220f
+
+/** El zoom animado (al centrar o al soltar los dedos): tanto por nivel, entre un mínimo y un máximo. */
+private const val ZOOM_LEVEL_MS = 260f
+private const val ZOOM_MIN_MS = 140f
+private const val ZOOM_MAX_MS = 1100f
+
+/** Agrandado más (o achicado menos) que esto, se pasa al nivel de teselas de junto: √2 y su inverso. */
+private const val SCALE_UP = 1.4142f
+private const val SCALE_DOWN = 0.7071f
+
+/** Lo que baja tu posición en la vista de plano a inclinado (se ve más camino adelante). */
+private const val ANCHOR_FLAT = 0.6f
+private const val ANCHOR_TILTED = 0.82f
 
 /** Arranca y llega suave. */
 private fun easeInOut(t: Float): Float = if (t < 0.5f) 2 * t * t else 1 - (-2 * t + 2).let { it * it } / 2
@@ -123,7 +135,7 @@ private const val ATTRIBUTION_URL = "https://www.openstreetmap.org/copyright"
 
 /**
  * Lo que la app ve del mapa y le puede pedir: si lo moviste con el dedo ([centered] = false; de viaje vuelve solo tras
- * [RECENTER_MS] sin tocarlo; [recenter] te regresa al zoom de manejo en 3D), mirar otro lugar ([lookAt]) y la calle donde
+ * [RECENTER_MS] sin tocarlo; [recenter] te regresa al zoom de fábrica), mirar otro lugar ([lookAt]) y la calle donde
  * estás ([street], solo con el minimalista).
  */
 @Stable
@@ -139,10 +151,13 @@ class MapCamera(
 
     val centered: Boolean get() = panX == 0.0 && panY == 0.0
 
-    /** Cuántas veces se pidió centrar (el mapa vuelve a lo más cerca, inclinado). */
+    /** Cuántas veces se pidió centrar (el mapa vuelve a ti y a su zoom de fábrica). */
     internal var recenters by mutableIntStateOf(0)
 
-    /** Regresa a ti deslizándose (lo anima `MapCanvas`) y acerca hasta lo más cerca, inclinado. */
+    /** Los centrados ya atendidos: el widget y el mapa en grande comparten cámara y lo anima uno solo, una vez. */
+    internal var handled = 0
+
+    /** Regresa a ti deslizándose (lo anima `MapCanvas`) y vuelve al zoom de fábrica (en automático, lo más cerca e inclinado). */
     fun recenter() {
         recenters++
     }
@@ -150,14 +165,57 @@ class MapCamera(
     /** El zoom que pusiste con dos dedos o al centrar (null = el de fábrica): igual en el widget y en grande. */
     internal var zoom by mutableStateOf<Int?>(null)
 
+    /**
+     * Cuánto se ve agrandado el nivel [zoom] ([SCALE_DOWN]–[SCALE_UP]; 1 = tal cual): el zoom con fracción mientras se
+     * pellizca o se anima. Solo lo lee el dibujo (cambiarlo no recompone).
+     */
+    internal var scale by mutableFloatStateOf(1f)
+
     /** De viaje (andando o navegando); se guarda aquí para que el widget y el mapa en grande coincidan. */
     internal var driving by mutableStateOf(false)
 
-    /** Con qué [driving] se puso [zoom]: al empezar o terminar el viaje se olvida. */
+    /** El último [driving] que se atendió: al empezar un viaje el mapa vuelve a su zoom de fábrica. */
     internal var zoomFor = false
 
     /** Cuántas veces se movió con el dedo: si lo tocas mientras se desliza a ti, se queda donde lo dejaste. */
     internal var touches = 0
+
+    /** Cuántas veces se pellizcó: un zoom animado a medias le cede el paso a los dedos. */
+    internal var pinches = 0
+
+    /**
+     * Lleva el zoom desde [from] (con la fracción de [scale]) hasta [target] sin brincos: el nivel de teselas cambia
+     * al pasar la mitad entre dos niveles y [scale] pone el resto. [base] = el de fábrica (se guarda como null).
+     */
+    internal suspend fun glideZoom(from: Int, target: Int, base: Int, max: Int) {
+        val start = from + log2(scale)
+        val span = target - start
+        val ms = (ZOOM_LEVEL_MS * abs(span)).coerceIn(ZOOM_MIN_MS, ZOOM_MAX_MS)
+        val pinched = pinches
+        var settled = false
+        try {
+            val began = withFrameNanos { it }
+            var t = 0f
+            while (t < 1f && abs(span) > 0.01f) {
+                t = ((withFrameNanos { it } - began) / 1_000_000f / ms).coerceAtMost(1f)
+                // Dos dedos en medio: mandan ellos, desde donde va.
+                if (pinches != pinched) {
+                    settled = true
+                    return
+                }
+                val z = start + span * easeInOut(t)
+                val level = z.roundToInt().coerceIn(MIN_ZOOM, max)
+                zoom = level.takeIf { it != base }
+                scale = 2f.pow(z - level)
+            }
+            zoom = target.takeIf { it != base }
+            scale = 1f
+            settled = true
+        } finally {
+            // Cancelado a medias (el mapa dejó de verse): que no se quede entre dos niveles.
+            if (!settled) scale = 1f
+        }
+    }
 
     /** Mueve el centro del mapa a ([lat], [lon]) estando tú en ([fromLat], [fromLon]) (hasta donde deja [maxPan]). */
     fun lookAt(lat: Double, lon: Double, fromLat: Double, fromLon: Double) {
@@ -185,10 +243,13 @@ fun rememberMapCamera() = remember { MapCamera() }
 fun rememberFreeMapCamera() = remember { MapCamera(maxPan = FREE_PAN, returns = false) }
 
 /**
- * El mapa (teselas de [store]) con tu posición y como diga [look]: norte arriba o hacia donde vas, siempre plano y,
- * de viaje (andando a [DRIVE_KMH] o más, o con Waze/Maps navegando: [navigating]) en el zoom automático, se acerca
- * hasta ver un par de calles y se inclina como Waze, siempre hacia donde vas; si lo alejas con dos dedos vuelve a
- * ser plano. Con un dedo se mueve ([camera]), un toque hace [onTap] y colores claros u oscuros: las de
+ * El mapa (teselas de [store]) con tu posición y como diga [look]. En el zoom automático se ve lo más cerca (un par
+ * de calles) e inclinado como Waze, siempre hacia donde vas; al alejarlo con dos dedos se va acostando hasta quedar
+ * plano (norte arriba o hacia donde vas, según [look]) un nivel más lejos, y «centrar» o empezar un viaje (andando a
+ * [DRIVE_KMH] o más, o con Waze/Maps navegando: [navigating]) lo regresan. El zoom es continuo: las teselas se
+ * agrandan o achican entre un nivel y otro, y mientras llegan las nuevas se ven las del nivel anterior. Solo el mapa
+ * [active] pide teselas y anima (el widget tapado por el mapa en grande, no).
+ * Con un dedo se mueve ([camera]), un toque hace [onTap] y colores claros u oscuros: las de
  * OpenStreetMap se oscurecen con un filtro; el minimalista ya viene en sus colores y con los nombres de las calles.
  * Tu flecha se desliza entre una lectura del GPS y la siguiente. Para elegir una zona: [fixedZoom] (sin gestos de
  * zoom ni viaje) y [ringKm], un círculo de ese radio alrededor del centro.
@@ -206,6 +267,7 @@ fun MapCanvas(
     navigating: Boolean = false,
     fixedZoom: Int? = null,
     ringKm: Float? = null,
+    active: Boolean = true,
     onTap: (() -> Unit)? = null,
 ) {
     val c = LocalColors.current
@@ -219,24 +281,23 @@ fun MapCanvas(
         }
     }
     val driving = camera.driving
-    // Al empezar o terminar el viaje, lo que hayas acercado o alejado a mano se olvida (abrir en grande no lo cambia).
+    // Al empezar un viaje, lo que hayas alejado a mano se olvida: vuelve a ti (abrir en grande no lo cambia).
     LaunchedEffect(driving) {
         if (camera.zoomFor != driving) {
-            camera.zoom = null
             camera.zoomFor = driving
+            if (driving && camera.zoom != null) camera.recenter()
         }
     }
-    val manual = camera.zoom
-    val base = fixedZoom ?: look.zoom.level ?: if (driving) driveZoom else CITY_ZOOM
-    val zoom = fixedZoom ?: manual ?: base
-    // En lo más cerca (de viaje llega solo; detenido, acercándolo o con "centrar"): alejado, plano.
-    val tilted = fixedZoom == null && look.zoom == MapZoom.AUTO && zoom == driveZoom
-    // Con dos dedos: mientras se pellizca el mapa se escala ([pinch]) y al doblar (o partir a la mitad) cambia de zoom.
-    var pinch by remember { mutableFloatStateOf(1f) }
-    // Centrar: el mapa se desliza hasta ti y luego se acerca paso a paso hasta lo más cerca, inclinado.
-    val latestZoom by rememberUpdatedState(zoom)
-    LaunchedEffect(camera.recenters) {
-        if (camera.recenters == 0) return@LaunchedEffect
+    // De fábrica, lo más cerca de la fuente (en automático, inclinado) o el nivel fijo que se eligió.
+    val base = fixedZoom ?: look.zoom.level ?: driveZoom
+    val zoom = fixedZoom ?: camera.zoom ?: base
+    // Solo el automático se inclina: del todo en lo más cerca y nada un nivel más lejos (lo calcula el dibujo).
+    val tilts = fixedZoom == null && look.zoom == MapZoom.AUTO
+    val scope = rememberCoroutineScope()
+    // Centrar: el mapa se desliza hasta ti y luego vuelve a su zoom de fábrica, de corrido.
+    LaunchedEffect(camera.recenters, active) {
+        if (!active || camera.recenters == camera.handled) return@LaunchedEffect
+        camera.handled = camera.recenters
         val touched = camera.touches
         val fromX = camera.panX
         val fromY = camera.panY
@@ -252,55 +313,36 @@ fun MapCanvas(
                 camera.panY = fromY * (1 - e)
             }
         }
-        if (fixedZoom != null || look.zoom != MapZoom.AUTO) return@LaunchedEffect
-        while (latestZoom < driveZoom) {
-            val start = withFrameNanos { it }
-            var t = 0f
-            while (t < 1f) {
-                t = withFrameNanos { (it - start) / 1_000_000f / ZOOM_STEP_MS }.coerceAtMost(1f)
-                if (camera.touches != touched) {
-                    pinch = 1f
-                    return@LaunchedEffect
-                }
-                pinch = 1f + easeInOut(t)
-            }
-            camera.zoom = (latestZoom + 1).takeIf { it != base }
-            pinch = 1f
-            // Que se dibuje el zoom nuevo antes del siguiente paso.
-            withFrameNanos { }
-        }
-        if (latestZoom > driveZoom) camera.zoom = driveZoom.takeIf { it != base }
+        if (fixedZoom == null) camera.glideZoom(camera.zoom ?: base, base, base, driveZoom)
     }
     val dark = look.dark(c.dark)
     val filter = if (dark && store.source.recolor) DarkTiles else null
     val accent = c.accent
     val glide = rememberGlide(lat, lon, bearing)
-    // Inclinado siempre mira hacia donde vas (como Waze).
-    val heading = tilted || look.orientation == MapOrientation.HEADING
-    // Inclinado, tu posición va más abajo: se ve más camino adelante.
-    val anchorY = if (tilted) 0.82f else 0.6f
+    val headingUp = look.orientation == MapOrientation.HEADING
     val sky = store.source.sky?.let(::Color) ?: if (dark) Color(0xFF1C1C20) else Color(0xFFE8E8EA)
+    // Con dos dedos el mapa se agranda o achica ([MapCamera.scale]) y, pasada la mitad, cambia al nivel de junto.
     val onPinch by rememberUpdatedState { factor: Float ->
-        var p = pinch * factor
-        var z = zoom
-        while (p >= 2f && z < driveZoom) { z++; p /= 2f }
-        while (p <= 0.5f && z > MIN_ZOOM) { z--; p *= 2f }
+        camera.pinches++
+        var p = camera.scale * factor
+        // El de ahora mismo (varios movimientos pueden llegar antes de recomponer).
+        var z = camera.zoom ?: base
+        while (p >= SCALE_UP && z < driveZoom) { z++; p /= 2f }
+        while (p < SCALE_DOWN && z > MIN_ZOOM) { z--; p *= 2f }
         // En el límite solo cede un poco: se nota que ya no hay más.
-        pinch = p.coerceIn(if (z <= MIN_ZOOM) 0.85f else 0.5f, if (z >= driveZoom) 1.15f else 2f)
-        if (z != zoom) camera.zoom = z.takeIf { it != base }
+        camera.scale = p.coerceIn(if (z <= MIN_ZOOM) 0.85f else SCALE_DOWN, if (z >= driveZoom) 1.15f else SCALE_UP)
+        camera.zoom = z.takeIf { it != base }
     }
     val onPinchEnd by rememberUpdatedState {
-        // Al soltar se queda en el zoom más cercano.
-        val z = when {
-            pinch > 1.41f -> (zoom + 1).coerceAtMost(driveZoom)
-            pinch < 0.71f -> (zoom - 1).coerceAtLeast(MIN_ZOOM)
-            else -> zoom
-        }
-        camera.zoom = z.takeIf { it != base }
-        pinch = 1f
+        // Al soltar se acomoda, deslizándose, en el nivel donde quedó.
+        val z = camera.zoom ?: base
+        scope.launch { camera.glideZoom(z, z, base, driveZoom) }
+        Unit
     }
     // La última proyección dibujada y cuántos px de pantalla mide el mundo: con eso un arrastre se vuelve movimiento del mapa.
     val drawn = remember { DrawnView() }
+    // Tapado o fuera de la vista, lo suyo deja de pedirse.
+    DisposableEffect(store, active) { onDispose { store.forget(drawn) } }
     val onPan by rememberUpdatedState { at: Offset, delta: Offset ->
         val projection = drawn.projection
         if (projection != null && drawn.worldPx > 0.0) {
@@ -325,7 +367,7 @@ fun MapCanvas(
     // Movido con el dedo y sin tocarlo un rato: regresa a ti solo (como Waze). Sin recomponer en cada movimiento del dedo.
     LaunchedEffect(camera) {
         // Solo de viaje: detenido, el mapa se queda donde lo dejaste.
-        snapshotFlow { Triple(camera.centered, camera.panX + camera.panY, driving) }.collectLatest { (centered, _, onTrip) ->
+        snapshotFlow { Triple(camera.centered, camera.panX + camera.panY, camera.driving) }.collectLatest { (centered, _, onTrip) ->
             if (!centered && camera.returns && onTrip) {
                 delay(RECENTER_MS)
                 camera.recenter()
@@ -350,20 +392,23 @@ fun MapCanvas(
     ) {
         val short = maxWidth < SHORT_ATTRIBUTION
         Spacer(
-            Modifier.fillMaxSize().graphicsLayer {
-                scaleX = pinch
-                scaleY = pinch
-                transformOrigin = TransformOrigin(0.5f, anchorY)
-            }.drawWithCache {
-                // Se arma en cada paso del deslizamiento, al mover el mapa y al llegar una tesela (sin recomponer).
+            Modifier.fillMaxSize().drawWithCache {
+                // Se arma en cada paso del deslizamiento o del zoom, al mover el mapa y al llegar una tesela (sin recomponer).
                 store.loaded // cada tesela que llega rehace esto (y los nombres nuevos se acomodan)
                 val pose = glide()
-                val turn = if (heading) -(pose.bearing ?: 0f) else 0f
+                val scale = camera.scale
+                // Cuánto se inclina (0–1): del todo en lo más cerca y nada un nivel más lejos, sin brinco entre los dos.
+                val tilt = if (tilts) (zoom + log2(scale) - (driveZoom - 1)).coerceIn(0f, 1f) else 0f
+                val bearing = pose.bearing ?: 0f
+                // Inclinado siempre mira hacia donde vas (como Waze); al acostarse gira al norte por el lado corto.
+                val turn = if (headingUp) -bearing else -(((bearing % 360f) + 540f) % 360f - 180f) * tilt
                 // Siempre flecha: hacia arriba con el mapa girado, o con el último rumbo (sin rumbo aún, al norte).
-                val arrow = if (heading) 0f else pose.bearing ?: 0f
-                val at = Offset(size.width / 2, size.height * anchorY)
-                val projection = MapProjection(size.width, size.height, at.x, at.y, turn, tilted, density)
-                val ts = tilePx(density)
+                val arrow = bearing + turn
+                // Inclinado, tu posición va más abajo: se ve más camino adelante.
+                val at = Offset(size.width / 2, size.height * (ANCHOR_FLAT + (ANCHOR_TILTED - ANCHOR_FLAT) * tilt))
+                val projection = MapProjection(size.width, size.height, at.x, at.y, turn, tilt, density)
+                // Las teselas del nivel, agrandadas o achicadas con el zoom a medias; tu flecha y los nombres, no.
+                val ts = tilePx(density) * scale
                 val n = (1 shl zoom).toDouble()
                 // El centro del mapa: tú, o a donde lo moviste.
                 val fx = tileX(pose.lon, zoom) + camera.panX * n
@@ -377,9 +422,10 @@ fun MapCanvas(
                 val youShown = projection.toScreen(at.x - (camera.panX * n * ts).toFloat(), at.y - (camera.panY * n * ts).toFloat(), you)
                 // Lo lejano se funde con el cielo: sólido hasta donde se acaba el mapa (en pantalla) y de ahí
                 // se desvanece; sin orilla dura en ningún tamaño de widget.
-                val fade = if (tilted) {
+                val fade = if (tilt > 0f) {
                     val end = (projection.edge / size.height).coerceIn(0f, 0.9f)
-                    Brush.verticalGradient(0f to sky, end to sky, (end + 0.15f).coerceAtMost(1f) to sky.copy(alpha = 0f))
+                    val solid = sky.copy(alpha = tilt)
+                    Brush.verticalGradient(0f to solid, end to solid, (end + 0.15f).coerceAtMost(1f) to sky.copy(alpha = 0f))
                 } else null
                 val arrowPath = arrowPath(Offset(you[0], you[1]), 1.dp.toPx())
                 // El círculo de la zona: metros por px del plano en el centro del mapa.
@@ -389,8 +435,9 @@ fun MapCanvas(
                     (km * 1000 / metersPerPx).toFloat()
                 }
                 val text = labels.paint(12.sp.toPx(), labelColor, sky)
-                val runs = labels.runs(store, tiles, zoom, ts, density)
-                val top = if (tilted) projection.edge.coerceAtLeast(0f) + size.height * 0.12f else 0f
+                // Qué nombres caben se decide con la tesela a su tamaño (no cambia con cada cuadro del zoom).
+                val runs = labels.runs(store, tiles, zoom, tilePx(density), density)
+                val top = projection.edge.coerceAtLeast(0f) + size.height * 0.12f * tilt
                 val placed = placeLabels(runs, size.width, size.height, top, text.textSize, density, MAX_LABELS) { x, y, out ->
                     projection.toScreen(at.x + ((x - fx) * ts).toFloat(), at.y + ((y - fy) * ts).toFloat(), out)
                 }
@@ -401,14 +448,14 @@ fun MapCanvas(
                         drawTiles(store, tiles, filter)
                         canvas.restore()
                     }
-                    store.request(tiles.keys)
+                    if (active) store.request(drawn, tiles.keys)
                     fade?.let { drawRect(it) }
                     ring?.let {
                         drawCircle(accent.copy(alpha = 0.12f), it, at)
                         drawCircle(accent, it, at, style = Stroke(2.dp.toPx()))
                     }
                     drawIntoCanvas { canvas -> drawLabels(canvas.nativeCanvas, placed, text) }
-                    if (youShown) drawArrow(Offset(you[0], you[1]), arrowPath, arrow, accent, tilted)
+                    if (youShown) drawArrow(Offset(you[0], you[1]), arrowPath, arrow, accent, 1f - 0.3f * tilt)
                 }
             },
         )
@@ -620,22 +667,46 @@ private fun DrawScope.drawTiles(store: TileStore, plan: TilePlan, filter: ColorF
         val image = store.tile(tileKey(z, x, y))
         if (image != null) {
             drawImage(image, dstOffset = offset, dstSize = dst, colorFilter = filter, filterQuality = FilterQuality.Low)
-        } else {
-            // Mientras llega, el cuarto de la tesela del zoom anterior (al cambiar de zoom no se ve vacío).
-            val parent = store.tile(tileKey(z - 1, x / 2, y / 2)) ?: continue
-            val half = parent.width / 2
+            continue
+        }
+        // Mientras llega (al cambiar de zoom no se ve vacío): su pedazo de la tesela más cercana de un zoom menor…
+        var filled = false
+        for (up in 1..minOf(FALLBACK_LEVELS, z)) {
+            val parent = store.tile(tileKey(z - up, x shr up, y shr up)) ?: continue
+            val part = parent.width shr up
+            if (part < 1) break
+            val mask = (1 shl up) - 1
             drawImage(
-                parent, IntOffset((x % 2) * half, (y % 2) * half), IntSize(half, half),
+                parent, IntOffset((x and mask) * part, (y and mask) * part), IntSize(part, part),
                 offset, dst, colorFilter = filter, filterQuality = FilterQuality.Low,
+            )
+            filled = true
+            break
+        }
+        if (filled) continue
+        // …o, al alejar, las del zoom siguiente que ya estaban (cada una, su cuarto).
+        val halfW = dst.width / 2
+        val halfH = dst.height / 2
+        for (quarter in 0 until 4) {
+            val cx = quarter and 1
+            val cy = quarter shr 1
+            val child = store.tile(tileKey(z + 1, x * 2 + cx, y * 2 + cy)) ?: continue
+            drawImage(
+                child, dstOffset = IntOffset(offset.x + cx * halfW, offset.y + cy * halfH),
+                dstSize = IntSize(if (cx == 0) halfW else dst.width - halfW, if (cy == 0) halfH else dst.height - halfH),
+                colorFilter = filter, filterQuality = FilterQuality.Low,
             )
         }
     }
 }
 
-/** Tu posición: la flecha con el rumbo (color de acento) o un punto si todavía no hay rumbo. Inclinado, un poco acostada. */
-private fun DrawScope.drawArrow(at: Offset, arrow: Path, bearing: Float, accent: Color, tilted: Boolean) {
+/** Hasta cuántos zooms menos se busca una tesela de respaldo (al centrar se cruzan varios niveles de corrido). */
+private const val FALLBACK_LEVELS = 5
+
+/** Tu posición: la flecha con el rumbo (color de acento). Inclinado, un poco acostada ([squash] < 1). */
+private fun DrawScope.drawArrow(at: Offset, arrow: Path, bearing: Float, accent: Color, squash: Float) {
     val u = 1.dp.toPx()
-    if (tilted) return scale(1f, 0.7f, at) { drawArrow(at, arrow, bearing, accent, tilted = false) }
+    if (squash < 1f) return scale(1f, squash, at) { drawArrow(at, arrow, bearing, accent, squash = 1f) }
     drawCircle(accent.copy(alpha = 0.22f), 34 * u, at)
     rotate(bearing, at) {
         drawPath(arrow, accent)

@@ -15,12 +15,13 @@ import android.bluetooth.le.ScanResult
 import android.bluetooth.le.ScanSettings
 import android.content.Context
 import android.content.pm.PackageManager
-import android.location.LocationManager
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.os.ParcelUuid
 import android.os.SystemClock
+import com.irvingguerra.litedash.core.vehicle.bleLocationOff
+import com.irvingguerra.litedash.core.vehicle.canScanBle
 import java.util.UUID
 
 /**
@@ -52,8 +53,12 @@ internal class BlePresence(private val app: Context, private val onSeen: () -> U
         if (scanner != null && missing() != null) scanner = null
         if (scanner != null) return
         val now = SystemClock.elapsedRealtime()
-        // Android bloquea a quien arranca búsquedas muy seguido: a lo más una cada tanto.
-        if (startedAt != 0L && now - startedAt < RESTART_MS) return
+        // Android bloquea a quien arranca búsquedas muy seguido: a lo más una cada tanto; se intenta al cumplirse.
+        if (startedAt != 0L && now - startedAt < RESTART_MS) {
+            main.removeCallbacks(retry)
+            main.postDelayed(retry, RESTART_MS - (now - startedAt))
+            return
+        }
         problem = missing()
         if (problem != null) return
         val le = app.getSystemService(BluetoothManager::class.java)?.adapter?.bluetoothLeScanner ?: return run { problem = "sin buscador" }
@@ -66,8 +71,12 @@ internal class BlePresence(private val app: Context, private val onSeen: () -> U
         }.onFailure { problem = "no arrancó: ${it.message ?: it.javaClass.simpleName}" }
     }
 
+    /** El arranque aplazado de [watch]; [stop] lo cancela. */
+    private val retry = Runnable { watch(true) }
+
     @SuppressLint("MissingPermission")
     private fun stop() {
+        main.removeCallbacks(retry)
         val le = scanner ?: return
         scanner = null
         runCatching { le.stopScan(found) }
@@ -76,25 +85,10 @@ internal class BlePresence(private val app: Context, private val onSeen: () -> U
     /** Lo que impide buscar; null = se puede. */
     private fun missing(): String? {
         val adapter = app.getSystemService(BluetoothManager::class.java)?.adapter ?: return "sin adaptador"
-        // Dispositivos cercanos desde Android 12; antes, la ubicación (hasta Android 9 basta la aproximada).
-        val wanted = when {
-            Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> listOf(Manifest.permission.BLUETOOTH_SCAN)
-            Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q -> listOf(Manifest.permission.ACCESS_FINE_LOCATION)
-            else -> listOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)
-        }
-        if (wanted.none { app.checkSelfPermission(it) == PackageManager.PERMISSION_GRANTED }) return "sin permiso"
+        if (!canScanBle(app)) return "sin permiso"
         if (!runCatching { adapter.isEnabled }.getOrDefault(false)) return "Bluetooth apagado"
-        // Hasta Android 11, con la ubicación del sistema apagada la búsqueda corre pero no ve nada.
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S && !locationOn()) return "ubicación apagada"
+        if (bleLocationOff(app)) return "ubicación apagada"
         return null
-    }
-
-    private fun locationOn(): Boolean {
-        val manager = app.getSystemService(LocationManager::class.java) ?: return false
-        return runCatching {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) manager.isLocationEnabled
-            else manager.isProviderEnabled(LocationManager.GPS_PROVIDER) || manager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)
-        }.getOrDefault(false)
     }
 
     private val found = object : ScanCallback() {

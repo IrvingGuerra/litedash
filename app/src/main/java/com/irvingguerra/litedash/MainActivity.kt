@@ -3,6 +3,8 @@ package com.irvingguerra.litedash
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
+import android.content.res.Configuration
+import android.graphics.Point
 import android.os.Build
 import android.os.Bundle
 import android.view.KeyEvent
@@ -35,6 +37,9 @@ class MainActivity : ComponentActivity() {
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() = Unit
         })
+        // Borde a borde desde el primer cuadro (con el tema que se pueda saber aquí; el contenido lo afina).
+        val theme = dependencies.prefs.theme
+        edgeToEdge(if (theme == ThemeMode.SUN || theme == ThemeMode.SYSTEM) isSystemNight() else theme == ThemeMode.DARK)
         setContent {
             LiteDashContent(dependencies, revision.intValue) { Home(dependencies, revision.intValue, homePressed.intValue) }
         }
@@ -50,16 +55,31 @@ class MainActivity : ComponentActivity() {
         super.onDestroy()
     }
 
-    /** Pide otra vez el tamaño y las barras del sistema (y vuelve a ocultar la de arriba si así se eligió). */
+    /**
+     * Pide otra vez las barras del sistema (y vuelve a ocultar la de arriba si así se eligió). Si la
+     * ventana quedó más chica que la pantalla (una raya negra), obliga a Android a volver a darle tamaño;
+     * si cuadra, no vuelve a medir todo.
+     */
     private fun refit() {
         if (isDestroyed) return
         if (dependencies.prefs.hideStatusBar) applyStatusBar(window, true)
         val view = window.decorView
         ViewCompat.requestApplyInsets(view)
-        view.requestLayout()
+        val screen = screenSize(this)
+        val short = view.width > 0 && !isInSplit() && (view.width != screen.x || view.height != screen.y)
+        if (short) {
+            window.attributes = window.attributes
+            view.requestLayout()
+        }
         // Después del layout: así el reporte trae la medida nueva.
-        view.post { windowInfo = describeWindow(view) }
+        view.post { windowInfo = describeWindow(view, screenSize(this)) }
     }
+
+    // En pantalla dividida la ventana es más chica a propósito.
+    private fun isInSplit() = Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && isInMultiWindowMode
+
+    private fun isSystemNight() =
+        resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
 
     // Idioma elegido en Ajustes (o el del sistema si no eligió).
     override fun attachBaseContext(base: Context) = super.attachBaseContext(contextWithLanguage(base))
@@ -153,12 +173,8 @@ internal fun ComponentActivity.LiteDashContent(d: Dependencies, revision: Int, c
     // Una sola cuenta de la noche (sol o sensor de luz) para el tema y el brillo.
     val night = rememberIsNight(d.prefs, needed = d.prefs.theme == ThemeMode.SUN || d.prefs.brightnessBySun)
     val dark = isDark(d, night)
-    // Íconos de la barra del sistema claros u oscuros según el tema.
-    LaunchedEffect(dark) {
-        val transparent = android.graphics.Color.TRANSPARENT
-        val style = if (dark) SystemBarStyle.dark(transparent) else SystemBarStyle.light(transparent, transparent)
-        enableEdgeToEdge(style, style)
-    }
+    // Íconos de la barra del sistema claros u oscuros según el tema (el borde a borde ya se puso al crear).
+    LaunchedEffect(dark) { edgeToEdge(dark) }
     // La barra de Android de arriba, oculta si se pidió: deslizando desde arriba se asoma un momento.
     // También al volver a LiteDash ([revision]): otra app o el apagado de pantalla la regresan.
     val hideStatusBar = d.prefs.hideStatusBar
@@ -176,12 +192,27 @@ internal fun isDark(d: Dependencies, night: Boolean): Boolean = when (d.prefs.th
     ThemeMode.SUN -> night
 }
 
-/** "Ventana: 1024×600 · barras arriba 0, abajo 48, izq. 0, der. 0 · teclado 0" (lo que se resta al dibujar). */
-private fun describeWindow(view: android.view.View): String {
-    val insets = ViewCompat.getRootWindowInsets(view) ?: return "Ventana: ${view.width}×${view.height} · barras ?"
+/** Borde a borde con barras transparentes y sus íconos claros u oscuros. */
+private fun ComponentActivity.edgeToEdge(dark: Boolean) {
+    val transparent = android.graphics.Color.TRANSPARENT
+    val style = if (dark) SystemBarStyle.dark(transparent) else SystemBarStyle.light(transparent, transparent)
+    enableEdgeToEdge(style, style)
+}
+
+/** Lo más que puede medir la ventana: la pantalla entera, con las barras del sistema (la ventana de ahora podría ser la chica). */
+private fun screenSize(activity: Activity): Point = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+    activity.windowManager.maximumWindowMetrics.bounds.let { Point(it.width(), it.height()) }
+} else {
+    @Suppress("DEPRECATION") Point().also { activity.windowManager.defaultDisplay.getRealSize(it) }
+}
+
+/** "Ventana: 1024×552 de 1024×600 · barras arriba 0, abajo 48, izq. 0, der. 0 · teclado 0" (lo que se resta al dibujar). */
+private fun describeWindow(view: android.view.View, screen: Point): String {
+    val size = "Ventana: ${view.width}×${view.height} de ${screen.x}×${screen.y}"
+    val insets = ViewCompat.getRootWindowInsets(view) ?: return "$size · barras ?"
     val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
     val ime = insets.getInsets(WindowInsetsCompat.Type.ime()).bottom
-    return "Ventana: ${view.width}×${view.height} · barras arriba ${bars.top}, abajo ${bars.bottom}, izq. ${bars.left}, der. ${bars.right} · teclado $ime"
+    return "$size · barras arriba ${bars.top}, abajo ${bars.bottom}, izq. ${bars.left}, der. ${bars.right} · teclado $ime"
 }
 
 /** Oculta o muestra la barra de Android de arriba (deslizando desde arriba se asoma un momento). */

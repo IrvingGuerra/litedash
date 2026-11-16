@@ -31,6 +31,8 @@ class HeadUnitTest {
         assertEquals(HeadUnit.HCN, detect("com.hcn.autoradio"))
         assertEquals(HeadUnit.NWD, detect("com.nwd.radio", "com.nwd.kernel"))
         assertEquals(HeadUnit.TOPWAY, detect("com.tw.radio"))
+        // Reporte 895416 (NWD Allwinner T3): el kernel solo ya dice NWD.
+        assertEquals(HeadUnit.NWD, detect("com.nwd.kernel"))
     }
 
     @Test

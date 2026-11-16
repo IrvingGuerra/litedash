@@ -561,14 +561,15 @@
     <!-- Luces del auto como señal de noche (se aprenden de la pantalla). -->
     <string name="night_lights">Luces del auto</string>
     <string name="lights_help">Cada pantalla avisa de los faros a su manera: LiteDash lo aprende comparando sus ajustes con las luces apagadas y prendidas. Sin señal, usa la hora del sol.</string>
-    <string name="lights_not_learned">Todavía no se aprende la señal de las luces.</string>
+    <string name="lights_not_learned">Todavía no se aprende la señal de las luces; mientras, se usa la hora del sol.</string>
     <string name="lights_learn">Aprender luces</string>
     <string name="lights_forget">Olvidar</string>
     <string name="lights_step_on">Con los faros apagados ya tomé nota. Ahora préndelos y toca Listo.</string>
     <string name="lights_done">Listo, ya prendí las luces</string>
     <string name="lights_choose">Cambiaron varios ajustes; elige el de las luces (prueba uno; si no funciona, aprende otra vez):</string>
-    <string name="lights_nothing">Ningún ajuste cambió: esta pantalla no avisa de los faros (o tardó en escribirlo). Intenta otra vez esperando unos segundos con las luces prendidas.</string>
+    <string name="lights_nothing">Ningún ajuste cambió: esta pantalla no avisa de los faros (o tardó en escribirlo). Mientras, se usa la hora del sol. Puedes intentar otra vez esperando unos segundos con las luces prendidas.</string>
     <string name="lights_retry">Intentar otra vez</string>
+    <string name="lights_use_sun">Usar hora del sol</string>
     <string name="lights_now_on">Luces prendidas ahora · %1$s</string>
     <string name="lights_now_off">Luces apagadas ahora · %1$s</string>
     <string name="obd_usb_found">Cable USB</string>

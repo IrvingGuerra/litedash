@@ -543,14 +543,15 @@
     <string name="obd_ble_failed">Android didn\'t allow searching right now. Wait a few seconds and try again.</string>
     <string name="night_lights">Car headlights</string>
     <string name="lights_help">Every head unit reports headlights its own way: LiteDash learns it by comparing its settings with the lights off and on. Without a signal it falls back to sunrise and sunset.</string>
-    <string name="lights_not_learned">The headlight signal hasn\'t been learned yet.</string>
+    <string name="lights_not_learned">The headlight signal hasn\'t been learned yet; until then, sunset time is used.</string>
     <string name="lights_learn">Learn headlights</string>
     <string name="lights_forget">Forget</string>
     <string name="lights_step_on">Noted with the headlights off. Now turn them on and tap Done.</string>
     <string name="lights_done">Done, lights are on</string>
     <string name="lights_choose">Several settings changed; pick the headlight one (try one; if it doesn\'t work, learn again):</string>
-    <string name="lights_nothing">No setting changed: this head unit doesn\'t report the headlights (or writes it late). Try again, waiting a few seconds with the lights on.</string>
+    <string name="lights_nothing">No setting changed: this head unit doesn\'t report the headlights (or writes it late). Until then, sunset time is used. You can try again, waiting a few seconds with the lights on.</string>
     <string name="lights_retry">Try again</string>
+    <string name="lights_use_sun">Use sunset time</string>
     <string name="lights_now_on">Headlights on now · %1$s</string>
     <string name="lights_now_off">Headlights off now · %1$s</string>
     <string name="obd_usb_found">USB cable</string>

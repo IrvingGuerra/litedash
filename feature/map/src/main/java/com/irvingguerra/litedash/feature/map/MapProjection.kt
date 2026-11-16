@@ -24,8 +24,8 @@ private const val CAMERA_PER_HEIGHT = 1.25f
 
 /**
  * Del plano del mapa a la pantalla de una vista de [width] × [height] px con tu posición en ([atX], [atY]):
- * gira [turn] grados alrededor de ella y, si va [tilted], la acuesta en perspectiva (la cámara mira hacia
- * adelante, como al navegar). Sin Android, para probarla con JUnit: [values] es la matriz 3×3 en el
+ * gira [turn] grados alrededor de ella y la acuesta en perspectiva cuanto diga [tilt] (0 = plano, 1 = inclinado del
+ * todo: la cámara mira hacia adelante, como al navegar; entre los dos, la transición). Sin Android, para probarla con JUnit: [values] es la matriz 3×3 en el
  * orden de `android.graphics.Matrix.setValues`.
  */
 class MapProjection(
@@ -34,7 +34,7 @@ class MapProjection(
     private val atX: Float,
     private val atY: Float,
     turn: Float,
-    tilted: Boolean,
+    tilt: Float,
     density: Float,
 ) {
     val values: FloatArray
@@ -60,8 +60,8 @@ class MapProjection(
         // Girar alrededor de tu posición.
         val side = maxOf(width, height)
         val rotate = floatArrayOf(rc, -rs, atX - rc * atX + rs * atY, rs, rc, atY - rs * atX - rc * atY, 0f, 0f, 1f)
-        if (tilted) {
-            val t = Math.toRadians(TILT_DEGREES)
+        if (tilt > 0f) {
+            val t = Math.toRadians(TILT_DEGREES * tilt.coerceAtMost(1f))
             val c = cos(t).toFloat()
             val s = sin(t).toFloat()
             val camera = maxOf(CAMERA_PX * density, CAMERA_PER_HEIGHT * height)

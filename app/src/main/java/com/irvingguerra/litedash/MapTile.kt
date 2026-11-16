@@ -187,7 +187,9 @@ private fun LiveMap(d: Dependencies, look: MapLook, modifier: Modifier, cameraKe
     val c = LocalColors.current
     KeepTripRunning(d.trip)
     val context = LocalContext.current
-    val store = rememberTileStore(look, c.dark)
+    val store = rememberTileStore(look, c.dark, cameraKey)
+    // Tapado (por el mapa en grande o un panel) se queda como está: no pide teselas ni anima.
+    val active = !LocalHomeCovered.current
     val position = d.trip.position
     // Del bus (la del OBD si hay escáner, si no la del GPS): andando (o con Waze/Maps navegando) va de viaje.
     val kmh = d.bus.watch(Signal.SPEED)
@@ -200,7 +202,7 @@ private fun LiveMap(d: Dependencies, look: MapLook, modifier: Modifier, cameraKe
             Label(stringResource(R.string.map_waiting), Typography.body, c.textMuted, maxLines = 2, modifier = Modifier.align(Alignment.Center).padding(16.dp))
             return@BoxWithConstraints
         }
-        MapCanvas(store, position.latitude, position.longitude, d.trip.bearing, kmh, look, Modifier.fillMaxSize(), camera, navigating, onTap = onTap)
+        MapCanvas(store, position.latitude, position.longitude, d.trip.bearing, kmh, look, Modifier.fillMaxSize(), camera, navigating, active = active, onTap = onTap)
         // Abajo a la izquierda (a la derecha van los créditos): centrar si lo moviste, la calle y si es en línea o bajado.
         val offline = look.detail == MapDetail.MINIMAL && OfflineMaps.get(context).covers(position.latitude, position.longitude)
         // Angosto, los créditos ocupan dos renglones a lo ancho: lo de la izquierda va arriba de ellos y sin el estado.
@@ -258,21 +260,32 @@ private val MAP_USER_AGENT = "LiteDash/${BuildConfig.VERSION_NAME} (+https://lit
 
 /**
  * Las teselas de [look], bajando solo mientras se ve y nada lo tapa: una por fuente y, solo el minimalista (se
- * dibuja ya en sus colores), por claro u oscuro; el completo usa un filtro.
+ * dibuja ya en sus colores), por claro u oscuro; el completo usa un filtro. Con [shareKey] (el id del widget), el
+ * widget y su mapa en grande usan el mismo almacén: al abrirlo o cerrarlo las teselas ya están.
  */
 @Composable
-private fun rememberTileStore(look: MapLook, themeDark: Boolean): TileStore {
+private fun rememberTileStore(look: MapLook, themeDark: Boolean, shareKey: String? = null): TileStore {
     val context = LocalContext.current
     val density = LocalDensity.current.density
     val darkTiles = look.detail == MapDetail.MINIMAL && look.dark(themeDark)
-    val store = remember(look.detail, darkTiles) { newTileStore(context, look.detail, darkTiles, density) }
+    val store = remember(look.detail, darkTiles, shareKey) {
+        if (shareKey == null) return@remember newTileStore(context, look.detail, darkTiles, density)
+        val kind = "${look.detail}/$darkTiles/$density"
+        // Uno por widget: al cambiar de estilo o de tema, el anterior se suelta.
+        tileStores[shareKey]?.takeIf { it.first == kind }?.second
+            ?: newTileStore(context, look.detail, darkTiles, density).also { tileStores[shareKey] = kind to it }
+    }
     val covered = LocalHomeCovered.current
     LifecycleStartEffect(store, covered) {
+        // El almacén cuenta quién lo ve: solo lo suelta quien lo tomó.
         if (!covered) store.resume()
-        onStopOrDispose { store.pause() }
+        onStopOrDispose { if (!covered) store.pause() }
     }
     return store
 }
+
+/** El almacén de cada widget Mapa (por su id) y de qué estilo es. */
+private val tileStores = HashMap<String, Pair<String, TileStore>>()
 
 private fun newTileStore(context: Context, detail: MapDetail, dark: Boolean, density: Float): TileStore {
     val source = when (detail) {

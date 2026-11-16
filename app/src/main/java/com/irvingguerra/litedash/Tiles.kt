@@ -73,6 +73,7 @@ import com.irvingguerra.litedash.feature.navigation.NavigationRepository
 import com.irvingguerra.litedash.feature.navigation.TurnInstruction
 import java.text.SimpleDateFormat
 import java.util.Date
+import java.util.TimeZone
 import kotlinx.coroutines.delay
 
 /**
@@ -103,9 +104,13 @@ val TileSpecs = listOf(
 
 fun limitsOf(type: String) = TileSpecs.firstOrNull { it.type == type }?.limits ?: SizeLimits(FINE, FINE)
 
-// Apps de navegación en orden de preferencia (Waze, Google Maps, Maps.me, OsmAnd, HERE).
+// Apps de navegación conocidas, en orden de preferencia (Waze y Google Maps primero). En Ajustes también
+// salen las demás instaladas que abren direcciones.
 val NAVIGATION_PACKAGES = arrayOf(
-    "com.waze", "com.google.android.apps.maps", "com.mapswithme.maps.pro", "net.osmand", "com.here.app.maps",
+    "com.waze", "com.google.android.apps.maps", "com.google.android.apps.mapslite", "com.sygic.aura",
+    "net.osmand", "net.osmand.plus", "app.organicmaps", "com.mapswithme.maps.pro", "com.here.app.maps",
+    "ru.yandex.yandexnavi", "com.huawei.maps.app", "cz.seznam.mapy", "com.tomtom.gplay.navapp", "com.navitel",
+    "com.magicearth.app", "app.vela",
 )
 
 // Apps de música que se sugieren en el dock si no eligió una (Spotify primero).
@@ -161,6 +166,9 @@ fun rememberClock(): Clock {
             value = Date()
         }
     }
+    // La zona se lee al formatear: muchas pantallas la ponen por red o GPS después de arrancar.
+    val zone = TimeZone.getDefault()
+    listOfNotNull(time, marker, date).forEach { it.timeZone = zone }
     return Clock(time.format(now), marker?.format(now), date.format(now).replaceFirstChar { it.uppercase() })
 }
 

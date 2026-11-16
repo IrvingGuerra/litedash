@@ -11,8 +11,10 @@ import com.irvingguerra.litedash.core.ui.Https
 import java.io.File
 import java.util.concurrent.Executor
 
-/** Lo que se espera tras aplicar una receta para revisar si ya suena. */
+/** Lo que se espera tras aplicar una receta para revisar si ya suena (y entre revisiones). */
 private const val VERIFY_MS = 2_500L
+/** Revisiones antes de decir que no suena (2.5, 5 y 7.5 s): una sola muestra daba "no" falsos (reporte E3F104). */
+private const val VERIFY_TRIES = 3
 /** Sin respuesta a "¿Se escucha?" en este rato, se deja así (no se sigue probando a ciegas). */
 private const val ASK_TIMEOUT_MS = 30_000L
 /** Si la revisión nunca llega (p. ej. LiteDash se fue a segundo plano), se deja así. */
@@ -95,6 +97,9 @@ internal class SoundCalibration(
 
     val current: String? get() = engine.current
 
+    /** Probando una receta o esperando la respuesta. */
+    val pending: Boolean get() = engine.pending
+
     /** La pieza empezó a sonar; false = no se aplicó nada (ya calibrando, nada que probar o nada funcionó antes). */
     fun play(available: List<String>, catalog: String?): Boolean {
         // Ya calibrando: sus tiempos siguen corriendo (no se tocan).
@@ -143,6 +148,7 @@ internal class SoundCalibration(
                 // Quien la aplica pudo soltarla ya (p. ej. el perfil de la radio se cerró).
                 if (!engine.pending) return
                 main.postDelayed(stuck, STUCK_MS)
+                checks = 0
                 if (ms != null) main.postDelayed(verify, ms)
             }
             Calibrator.Step.Ask -> {
@@ -166,14 +172,20 @@ internal class SoundCalibration(
         main.removeCallbacks(noAnswer)
     }
 
-    private val verify = Runnable {
+    /** Revisiones que van de la receta aplicada: el audio puede tardar en llegar a Android. */
+    private var checks = 0
+
+    private val verify: Runnable = Runnable {
         val heard = check()
-        if (heard == null) {
-            trace("calibración ${piece.key}: ya no suena, sin revisar")
-            main.removeCallbacks(stuck)
-            engine.abort()
-        } else {
-            heard(heard)
+        when {
+            heard == null -> {
+                trace("calibración ${piece.key}: ya no suena, sin revisar")
+                main.removeCallbacks(stuck)
+                engine.abort()
+            }
+            // "No" solo si las [VERIFY_TRIES] revisiones fallan (cada [VERIFY_MS]).
+            !heard && ++checks < VERIFY_TRIES -> main.postDelayed(verify, VERIFY_MS)
+            else -> heard(heard)
         }
     }
 
@@ -292,7 +304,7 @@ private class FytToggle(private val host: SoundHost) : BluetoothRecipe(Recipes.F
 private class OpenFactory(private val host: SoundHost) : BluetoothRecipe(Recipes.OPEN_FACTORY) {
     private var opened = false
 
-    override fun available() = host.factoryBluetooth()?.let { host.context.packageManager.getLaunchIntentForPackage(it) != null } == true
+    override fun available() = host.factoryBluetooth()?.let { launchIntent(host.context, it, bluetooth = true) != null } == true
 
     override fun apply(): Long {
         if (opened) return VERIFY_MS
@@ -307,14 +319,14 @@ private class OpenFactory(private val host: SoundHost) : BluetoothRecipe(Recipes
     }
 }
 
+/** Ya hay una copia del catálogo en disco (bajada antes). Bloquea: en un hilo aparte. */
+internal fun recipeCatalogCached(context: Context): Boolean = File(context.cacheDir, CATALOG_FILE).exists()
+
 /**
  * Lo que el catálogo compartido dice para esta pantalla (por su radio y su Bluetooth de fábrica, [FactoryAudio]).
  * Se guarda en disco y se vuelve a bajar a los 7 días; sin red sirve la copia vieja y, sin copia, nada. Bloquea
  * (consultas al sistema y la red): va en un hilo aparte.
  */
-/** Ya hay una copia del catálogo en disco (bajada antes). Bloquea: en un hilo aparte. */
-internal fun recipeCatalogCached(context: Context): Boolean = File(context.cacheDir, CATALOG_FILE).exists()
-
 internal fun loadRecipeCatalog(context: Context): CatalogRecipe? {
     val file = File(context.cacheDir, CATALOG_FILE)
     val fresh = file.exists() && System.currentTimeMillis() - file.lastModified() < CATALOG_MAX_AGE_MS
