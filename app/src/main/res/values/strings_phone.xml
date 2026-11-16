@@ -16,7 +16,11 @@
     <string name="phone_open_wifi">Abrir Wi-Fi</string>
     <string name="phone_open_hotspot">Abrir hotspot</string>
     <string name="phone_waiting">Esperando a tu celular…</string>
-    <string name="phone_link_code">Código %1$s · vence en 5 minutos</string>
+    <plurals name="phone_link_code">
+        <item quantity="one">Código %1$s · vence en %2$d minuto</item>
+        <item quantity="many">Código %1$s · vence en %2$d minutos</item>
+        <item quantity="other">Código %1$s · vence en %2$d minutos</item>
+    </plurals>
     <string name="phone_step_install">Instala LiteDash Connect y crea tu cuenta</string>
     <string name="phone_step_tap">Toca “Vincular mi pantalla”</string>
     <string name="phone_step_scan">Apunta la cámara a este código</string>

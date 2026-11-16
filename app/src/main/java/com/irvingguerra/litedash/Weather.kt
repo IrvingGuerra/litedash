@@ -156,13 +156,10 @@ class WeatherRepository(private val context: Context, private val prefs: Prefere
         val fresh = try {
             fetch(place.latitude, place.longitude)
         } catch (e: IOException) {
-            failure = "red: ${e.message}"
+            failure = "red: ${e.message}" // también un 4xx ("HTTP 404")
             return false
         } catch (e: JSONException) {
             failure = "respuesta: ${e.message}"
-            return false
-        } catch (e: IllegalStateException) {
-            failure = e.message // HTTP 4xx
             return false
         }
         failure = null

@@ -10,9 +10,7 @@ import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -36,6 +34,7 @@ import androidx.compose.ui.unit.sp
 import androidx.core.location.LocationListenerCompat
 import kotlin.concurrent.thread
 import androidx.lifecycle.compose.LifecycleStartEffect
+import com.irvingguerra.litedash.core.ui.Divider
 import com.irvingguerra.litedash.core.ui.Button
 import com.irvingguerra.litedash.core.ui.Card
 import com.irvingguerra.litedash.core.ui.Icon
@@ -150,7 +149,7 @@ class TripRepository(private val context: Context, private val bus: VehicleBus) 
     private fun granted(permission: String) = context.checkSelfPermission(permission) == PackageManager.PERMISSION_GRANTED
 
     /** Ubicación precisa o aproximada (en Android 12+ el usuario puede dar solo la aproximada). */
-    fun hasPermission() = granted(Manifest.permission.ACCESS_FINE_LOCATION) || granted(Manifest.permission.ACCESS_COARSE_LOCATION)
+    private fun hasPermission() = granted(Manifest.permission.ACCESS_FINE_LOCATION) || granted(Manifest.permission.ACCESS_COARSE_LOCATION)
 
     fun refreshPermission() {
         permitted = hasPermission()
@@ -268,8 +267,8 @@ class TripRepository(private val context: Context, private val bus: VehicleBus) 
 }
 
 /**
- * El inicio está tapado por algo a pantalla completa (el auto en grande, Llantas o estacionado): sus
- * widgets siguen compuestos debajo, pero lo que gasta (GPS, mapa) descansa.
+ * El inicio está tapado del todo por algo opaco (estacionado, el auto o Llantas ya en grande; el tablero también
+ * con la música o el mapa en grande): no se dibuja y lo que gasta (GPS, mapa, avisos del sistema) descansa.
  */
 val LocalHomeCovered = compositionLocalOf { false }
 
@@ -387,7 +386,7 @@ fun TripTile(d: Dependencies, time: Boolean = true, average: Boolean = true, hea
                     // Tiempo y promedio bajo una línea fina, cada uno con su nombre arriba.
                     val stat = listOfNotNull(shownTime?.let { R.string.trip_time to it }, shownAverage?.let { R.string.trip_average to it })
                     if (stat.isNotEmpty() || width > 340.dp) Column {
-                        Box(Modifier.fillMaxWidth().height(1.dp).background(c.line))
+                        Divider()
                         Row(Modifier.fillMaxWidth().padding(top = 8.dp), verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(if (width > 340.dp) 28.dp else 16.dp)) {
                             for ((name, value) in stat) TripStat(stringResource(name), value)
                             Spacer(Modifier.weight(1f))

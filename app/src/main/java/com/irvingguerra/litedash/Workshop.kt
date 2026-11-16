@@ -47,7 +47,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.irvingguerra.litedash.core.ui.Button
@@ -80,7 +79,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 /** El verde de "todo bien"; lo comparte la pantalla Salud. */
-internal val Good = Color(0xFF3FB27F)
 
 /** Las pestañas del Taller (para recordar la elegida) y cuál es la de códigos. */
 private const val WORKSHOP_TABS = "workshop"
@@ -115,7 +113,6 @@ internal fun Workshop(d: Dependencies, onTires: () -> Unit) {
         onDispose { if (wants) obd.release(WORKSHOP) }
     }
     val connected = obd.state == ObdState.ON
-    val car = d.cars.pkg(d.prefs.carModel)
     // El reporte se lee una vez aquí y lo comparten Salud y Códigos; el último de esta conexión se muestra de
     // inmediato para que al volver a entrar no parpadee. [failed]: la última lectura no contestó.
     val scope = rememberCoroutineScope()
@@ -145,7 +142,7 @@ internal fun Workshop(d: Dependencies, onTires: () -> Unit) {
 
     // Sin adaptador: la misma pantalla en gris (sin lo leído antes) y cómo conectarlo.
     if (!connected) {
-        HealthView(d, car, report = null, connected = false, onTires = onTires)
+        HealthView(d, report = null, connected = false, onTires = onTires)
         Connection(d, permitted) { permitted = it }
         alerts()
         // Los viajes guardados se ven aunque no haya adaptador conectado.
@@ -156,7 +153,7 @@ internal fun Workshop(d: Dependencies, onTires: () -> Unit) {
         WORKSHOP_TABS,
     )
     when (tab) {
-        0 -> HealthView(d, car, report, connected = true, reading, ::read, onCodes = { selectTab(WORKSHOP_TABS, CODES_TAB) }, onTires = onTires)
+        0 -> HealthView(d, report, connected = true, reading, ::read, onCodes = { selectTab(WORKSHOP_TABS, CODES_TAB) }, onTires = onTires)
         CODES_TAB -> {
             // Borrados: lo leído antes ya no vale (si la lectura nueva falla, se dice que no se pudo, no "Sin códigos").
             CodesCard(obd, report, reading, failed, ::read) { ok ->
@@ -232,8 +229,14 @@ fun EngineAlertBanner(d: Dependencies, state: EngineAlertState) {
 }
 
 /** La dirección de fábrica de los adaptadores por Wi‑Fi (casi todos los ELM327 la traen). */
-private const val OBD_WIFI_PORT = 35000
-private const val OBD_WIFI_ADDRESS = "192.168.0.10:$OBD_WIFI_PORT"
+/**
+ * El permiso de Bluetooth que pide «Permitir». BLUETOOTH_CONNECT solo existe desde Android 12; antes basta el de
+ * siempre (se da al instalar), así que ahí el botón ni sale ([ObdRepository.hasPermission] ya es verdadero).
+ */
+private val BLUETOOTH_PERMISSION =
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) Manifest.permission.BLUETOOTH_CONNECT else Manifest.permission.BLUETOOTH
+
+private const val OBD_WIFI_ADDRESS = "192.168.0.10:${ObdTarget.Wifi.DEFAULT_PORT}"
 
 /**
  * El adaptador: cómo va la conexión (o por qué falló) y elegir uno. [permitted] es el permiso de Bluetooth (lo
@@ -244,7 +247,7 @@ private const val OBD_WIFI_ADDRESS = "192.168.0.10:$OBD_WIFI_PORT"
 private fun Connection(d: Dependencies, permitted: Boolean, onPermitted: (Boolean) -> Unit) {
     val c = LocalColors.current
     val obd = d.obd
-    val bluetoothAsk = rememberPermissionAsk(Manifest.permission.BLUETOOTH_CONNECT, onPermitted)
+    val bluetoothAsk = rememberPermissionAsk(BLUETOOTH_PERMISSION, onPermitted)
     // Buscar Bluetooth LE tiene su propio permiso; al darlo, busca de una vez.
     val askScan = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { if (it) obd.scanBle() }
     var wifi by remember { mutableStateOf(false) }
@@ -273,7 +276,7 @@ private fun Connection(d: Dependencies, permitted: Boolean, onPermitted: (Boolea
             ObdState.ON -> obd.adapter?.let { stringResource(R.string.obd_on_adapter, name, it) } ?: stringResource(R.string.obd_on, name)
             ObdState.ERROR -> stringResource(obdErrorText(obd.errorKind))
         }
-        Label(status, Typography.body, if (obd.state == ObdState.ERROR) c.danger else if (obd.state == ObdState.ON) Good else c.textMuted)
+        Label(status, Typography.body, if (obd.state == ObdState.ERROR) c.danger else if (obd.state == ObdState.ON) c.good else c.textMuted)
         when {
             obd.state == ObdState.ON || obd.state == ObdState.CONNECTING -> Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 Button(stringResource(R.string.obd_disconnect), { obd.disconnect() })
@@ -299,7 +302,7 @@ private fun Connection(d: Dependencies, permitted: Boolean, onPermitted: (Boolea
                 TextInput(address, { address = it.trim() }, OBD_WIFI_ADDRESS, Modifier.widthIn(min = 220.dp, max = 260.dp))
                 Button(stringResource(R.string.obd_connect), {
                     val host = address.substringBefore(':')
-                    val port = address.substringAfter(':', "").toIntOrNull() ?: OBD_WIFI_PORT
+                    val port = address.substringAfter(':', "").toIntOrNull() ?: ObdTarget.Wifi.DEFAULT_PORT
                     if (host.isNotBlank()) {
                         val t = ObdTarget.Wifi(host, port)
                         wifiTarget = t
@@ -476,13 +479,13 @@ private fun CodesCard(obd: ObdRepository, report: EngineReport?, reading: Boolea
                 r.pending.map { code -> code to CodeKind.PENDING })
                 .groupBy({ it.first }, { it.second }).toList()
             if (codes.isEmpty()) {
-                StatTile(stringResource(R.string.obd_codes), stringResource(R.string.obd_no_codes), Modifier.fillMaxWidth(), valueColor = Good, dot = Good)
+                StatTile(stringResource(R.string.obd_codes), stringResource(R.string.obd_no_codes), Modifier.fillMaxWidth(), valueColor = c.good, dot = c.good)
             } else {
                 TileGrid(codes, minWidth = 280.dp, maxColumns = 2) { (code, kinds), modifier -> CodeTile(code, kinds, spanish, modifier) }
             }
         }
         if (failed && !reading) Label(stringResource(R.string.obd_read_failed), Typography.body, c.danger)
-        cleared?.let { Label(stringResource(if (it) R.string.obd_cleared else R.string.obd_not_cleared), Typography.small, if (it) Good else c.danger) }
+        cleared?.let { Label(stringResource(if (it) R.string.obd_cleared else R.string.obd_not_cleared), Typography.small, if (it) c.good else c.danger) }
         if (r != null && (r.stored.isNotEmpty() || r.pending.isNotEmpty() || r.readiness?.mil == true)) {
             // Se confirma con la advertencia a la vista: borrar también reinicia los monitores de la verificación.
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -539,12 +542,12 @@ private fun InspectionCard(report: EngineReport?, reading: Boolean) {
         Label(
             stringResource(if (pass) R.string.obd_inspection_pass else R.string.obd_inspection_fail),
             Typography.subtitle,
-            if (pass) Good else c.danger,
+            if (pass) c.good else c.danger,
         )
         TileGrid(readiness.monitors, minWidth = 240.dp, maxColumns = 2, gap = 6.dp) { m, modifier ->
             // Aire a la derecha: "Listo" no se pega al punto de la otra columna.
             Row(modifier.padding(end = 18.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                Box(Modifier.size(8.dp).clip(CircleShape).background(if (m.complete) Good else c.warning))
+                Box(Modifier.size(8.dp).clip(CircleShape).background(if (m.complete) c.good else c.warning))
                 Label(stringResource(monitorName(m.name)), Typography.body, maxLines = 1, modifier = Modifier.weight(1f))
                 Label(stringResource(if (m.complete) R.string.obd_ready else R.string.obd_not_ready), Typography.small, c.textMuted, maxLines = 1)
             }

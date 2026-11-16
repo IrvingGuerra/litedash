@@ -12,25 +12,42 @@ import org.junit.Test
 class ObdPolicyTest {
     @Test fun lo_que_no_se_arregla_no_se_reintenta() {
         for (e in listOf(ObdError.NO_BLUETOOTH_PERMISSION, ObdError.NOT_OBD, ObdError.USB_UNPLUGGED, ObdError.NO_USB_PERMISSION)) {
-            assertNull(e.name, retryDelay(e, dropped = true, retries = 0))
+            assertNull(e.name, retryDelay(e, dropped = true, retries = 0, wanted = false))
         }
     }
 
     @Test fun el_133_se_reintenta_pronto_aunque_nunca_haya_conectado() =
-        assertEquals(ObdTiming.GATT_RETRY_MS, retryDelay(ObdError.GATT_BUSY, dropped = false, retries = 0))
+        assertEquals(ObdTiming.GATT_RETRY_MS, retryDelay(ObdError.GATT_BUSY, dropped = false, retries = 0, wanted = false))
 
     @Test fun primer_fallo_sin_haber_conectado_se_queda_a_la_vista() =
-        assertNull(retryDelay(ObdError.ADAPTER_UNREACHABLE, dropped = false, retries = 0))
+        assertNull(retryDelay(ObdError.ADAPTER_UNREACHABLE, dropped = false, retries = 0, wanted = false))
 
     @Test fun caida_y_racha_de_reintentos() {
-        assertEquals(ObdTiming.RECONNECT_MS, retryDelay(ObdError.CONNECTION_LOST, dropped = true, retries = 0))
+        assertEquals(ObdTiming.RECONNECT_MS, retryDelay(ObdError.CONNECTION_LOST, dropped = true, retries = 0, wanted = false))
         // Un reintento que falla sin conectar sigue la racha (antes solo se intentaba una vez).
-        assertEquals(ObdTiming.RECONNECT_MS, retryDelay(ObdError.ADAPTER_UNREACHABLE, dropped = false, retries = 1))
+        assertEquals(ObdTiming.RECONNECT_MS, retryDelay(ObdError.ADAPTER_UNREACHABLE, dropped = false, retries = 1, wanted = false))
     }
 
     @Test fun se_rinde_al_tope() {
-        assertNull(retryDelay(ObdError.CONNECTION_LOST, dropped = true, retries = ObdTiming.MAX_RETRIES))
-        assertNull(retryDelay(ObdError.GATT_BUSY, dropped = false, retries = ObdTiming.MAX_RETRIES))
+        assertNull(retryDelay(ObdError.CONNECTION_LOST, dropped = true, retries = ObdTiming.MAX_RETRIES, wanted = false))
+        assertNull(retryDelay(ObdError.GATT_BUSY, dropped = false, retries = ObdTiming.MAX_RETRIES, wanted = false))
+    }
+
+    @Test fun mientras_alguien_lo_quiere_no_se_rinde() {
+        // Adaptador dormido al encender el auto: el primer fallo ya se reintenta.
+        assertEquals(ObdTiming.RECONNECT_MS, retryDelay(ObdError.ADAPTER_UNREACHABLE, dropped = false, retries = 0, wanted = true))
+        // Pasado el tope, esperas que crecen al doble…
+        val waits = (0..12).map { retryDelay(ObdError.ADAPTER_UNREACHABLE, dropped = false, retries = ObdTiming.MAX_RETRIES + it, wanted = true)!! }
+        assertEquals(ObdTiming.WANTED_RETRY_MS, waits.first())
+        assertEquals(ObdTiming.WANTED_RETRY_MS * 2, waits[1])
+        assertTrue(waits.zipWithNext().all { (a, b) -> b >= a })
+        // …hasta el tope, y ahí se quedan.
+        assertEquals(ObdTiming.WANTED_MAX_MS, waits.last())
+        assertTrue(waits.all { it <= ObdTiming.WANTED_MAX_MS })
+        // El 133 también sigue, ya con la espera larga.
+        assertEquals(ObdTiming.WANTED_RETRY_MS, retryDelay(ObdError.GATT_BUSY, dropped = false, retries = ObdTiming.MAX_RETRIES, wanted = true))
+        // Lo que no se arregla reintentando sigue sin reintentarse aunque lo quieran.
+        assertNull(retryDelay(ObdError.NO_USB_PERMISSION, dropped = false, retries = 0, wanted = true))
     }
 
     @Test fun clasifica_los_fallos() {

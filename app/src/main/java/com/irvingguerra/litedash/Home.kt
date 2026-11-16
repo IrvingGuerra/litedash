@@ -76,6 +76,7 @@ import com.irvingguerra.litedash.core.ui.LiteDashTheme
 import com.irvingguerra.litedash.core.ui.LocalColors
 import com.irvingguerra.litedash.core.ui.Radius
 import com.irvingguerra.litedash.core.ui.Typography
+import com.irvingguerra.litedash.core.ui.blockTouches
 import com.irvingguerra.litedash.core.vehicle.Signal
 import com.irvingguerra.litedash.core.vehicle.VehicleBus
 import com.irvingguerra.litedash.feature.apps.App
@@ -199,10 +200,13 @@ class Dependencies(
     fun obdIfCreated(): ObdRepository? = if (obdCreated.value) obdLazy.value else null
 
     /**
-     * El enlace con LiteDash Connect (Ajustes → Celular). Siempre disponible, pero sin celular vinculado
-     * no escucha la red ni busca nada: solo trabaja con la sección abierta (el QR) o ya vinculado.
+     * El enlace con LiteDash Connect (Ajustes → Celular). Se arma al volver a LiteDash solo si hay un celular
+     * vinculado, o al abrir Ajustes → Celular (el QR); sin vínculo no escucha la red ni busca nada.
      */
     val phone: PhoneLink get() = phoneLazy.value
+
+    /** El enlace si ya existe, sin crearlo (para el reporte). */
+    fun phoneIfCreated(): PhoneLink? = if (phoneLazy.isInitialized()) phoneLazy.value else null
 
     private val tpmsCreated = mutableStateOf(false)
 
@@ -292,7 +296,7 @@ fun TileContent(d: Dependencies, p: Tile, apps: List<App>, car: CarPackage?, rev
         }
         // Aunque sean grandes, sin biblioteca ni estaciones: eso vive en la pantalla Música (un toque la abre).
         TileTypes.MUSIC -> MusicTile(
-            d.music, revision, expandable(p, actions), artwork = p.flag(WidgetFlags.ART), skip = p.flag(WidgetFlags.SKIP),
+            d.music, revision, Modifier.expandable(p, actions), artwork = p.flag(WidgetFlags.ART), skip = p.flag(WidgetFlags.SKIP),
             onOpen = remember(p.id) { { actions.onExpand(Expanded.MEDIA, p) } },
         )
         TileTypes.RADIO -> RadioTile(
@@ -305,7 +309,7 @@ fun TileContent(d: Dependencies, p: Tile, apps: List<App>, car: CarPackage?, rev
                     actions.onPanel(Panel.MusicSettings)
                 }
             },
-            modifier = expandable(p, actions),
+            modifier = Modifier.expandable(p, actions),
             artwork = p.flag(WidgetFlags.ART), skip = p.flag(WidgetFlags.SKIP),
             onOpen = remember(p.id) { { actions.onExpand(Expanded.MEDIA, p) } },
         )
@@ -318,10 +322,10 @@ fun TileContent(d: Dependencies, p: Tile, apps: List<App>, car: CarPackage?, rev
             onPick = { actions.onPanel(Panel.PickGauge(p.id)) },
             onWorkshop = { actions.onPanel(Panel.Workshop) },
         )
-        TileTypes.WORKSHOP -> HealthTile(d, car, showCar = p.flag(WidgetFlags.CAR)) { actions.onPanel(Panel.Workshop) }
+        TileTypes.WORKSHOP -> HealthTile(d, showCar = p.flag(WidgetFlags.CAR)) { actions.onPanel(Panel.Workshop) }
         TileTypes.PROJECTION -> ProjectionTile(d, apps, appKeyOf(p.data)) { actions.onPanel(Panel.Drawer) }
         TileTypes.TIRES -> TiresTile(d, showCar = p.flag(WidgetFlags.CAR), onOpen = actions.onTires, onSettings = { actions.onPanel(Panel.TiresSettings) })
-        TileTypes.MAP -> Box(expandable(p, actions)) {
+        TileTypes.MAP -> Box(Modifier.expandable(p, actions)) {
             val app = mapApp(d, apps)
             // Un toque: tu app de mapas o el mapa de LiteDash en grande (Ajustes → Apps → Navegación).
             val external = d.prefs.mapExternal && app != null
@@ -338,7 +342,7 @@ fun TileContent(d: Dependencies, p: Tile, apps: List<App>, car: CarPackage?, rev
             ShortcutTile(
                 Icons.phone, stringResource(R.string.tile_phone), app?.name,
                 onClick = { if (app != null) d.apps.open(context, app) else openDialer(context) },
-                tint = Good,
+                tint = LocalColors.current.good,
             )
         }
         TileTypes.APP -> {
@@ -351,8 +355,8 @@ fun TileContent(d: Dependencies, p: Tile, apps: List<App>, car: CarPackage?, rev
 }
 
 /** Llena la pieza y avisa dónde está: de ahí crece al verse en grande ([Expanded]). */
-private fun expandable(p: Tile, actions: TileActions) =
-    Modifier.fillMaxSize().onGloballyPositioned { actions.onCarBounds(p.id, it.boundsInRoot()) }
+private fun Modifier.expandable(p: Tile, actions: TileActions) =
+    fillMaxSize().onGloballyPositioned { actions.onCarBounds(p.id, it.boundsInRoot()) }
 
 /**
  * El módulo apagado del que depende una pieza (su nombre), o null si se puede ver: el Taller y
@@ -508,9 +512,10 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
     // de abajo sigue compuesto y medido (al destaparse se ve al instante y lo que crece sabe de dónde), pero no se
     // dibuja y lo que gasta descansa ([LocalHomeCovered]).
     val homeCovered by remember { derivedStateOf { parked || carLayer.covers || tiresLayer.covers } }
-    // Lo que sigue aunque se abra Ajustes o se acomode el inicio: el registro del viaje y el
-    // aviso del motor (si no, abrir Ajustes cortaría el viaje y "Entendido" se olvidaría).
+    // Lo que sigue aunque se abra Ajustes o se acomode el inicio: el registro del viaje y
+    // los avisos del motor y de las llantas (si no, abrir Ajustes cortaría el viaje y "Entendido" se olvidaría).
     val engineAlert = remember { EngineAlertState() }
+    val tiresAlert = remember { TiresAlertState() }
     if (d.prefs.welcomeSeen) TripRecorderEffect(d)
 
     BackHandler(enabled = (panel != null || editing || expanded != null || carLayer.open || tiresLayer.open) && d.prefs.welcomeSeen) {
@@ -681,7 +686,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                                 if (d.prefs.welcomeSeen && !editing) {
                                     if (!d.prefs.dontAskHome && !isShortScreen()) HomePrompt(d.prefs, revision)
                                     EngineAlertBanner(d, engineAlert)
-                                    TiresAlertBanner(d, actions.onTires)
+                                    TiresAlertBanner(d, actions.onTires, tiresAlert)
                                     if (!isShortScreen()) ReminderBanner(d.reminders)
                                     UpdateBanner(d.updater, onOpen = { openUpdates(); panel = Panel.Updates })
                                     val newModel = d.cars.outdated?.takeIf { it.id == car?.id }
@@ -907,7 +912,7 @@ private fun Parked(d: Dependencies, onWake: () -> Unit) {
     }
 }
 
-private const val PARK_AFTER_MS = 5 * 60_000L
+internal const val PARK_AFTER_MS = 5 * 60_000L
 
 /** Más rápido que esto, va manejando (el modo estacionado espera). */
 private const val MOVING_KMH = 8f
@@ -1075,6 +1080,6 @@ private fun ExpandedLayer(from: Rect?, progress: () -> Float, content: @Composab
                 clip = true
             }
             .background(c.background)
-            .clickable(remember { MutableInteractionSource() }, indication = null) {},
+            .blockTouches(),
     ) { content() }
 }

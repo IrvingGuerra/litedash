@@ -161,7 +161,8 @@ class PlaybackService : Service() {
         /** El canal del aviso ya se creó en este arranque (cada play o pausa repinta el aviso). */
         private var channelReady = false
 
-        private fun notification(context: Context): Notification = with(context) {
+        // Los textos con el contexto de la app: ese sale en el idioma que se eligió en LiteDash (el del servicio no).
+        private fun notification(context: Context): Notification = with(context.applicationContext) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && !channelReady) {
                 getSystemService(NotificationManager::class.java).createNotificationChannel(
                     NotificationChannel(CHANNEL, getString(R.string.player_channel), NotificationManager.IMPORTANCE_LOW).apply { setShowBadge(false) },

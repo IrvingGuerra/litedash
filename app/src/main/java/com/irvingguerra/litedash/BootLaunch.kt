@@ -12,7 +12,6 @@ import android.os.Looper
 import android.os.SystemClock
 import android.provider.Settings
 import androidx.core.content.edit
-import androidx.core.net.toUri
 
 /**
  * Varias pantallas de auto regresan su launcher de fábrica cada vez que encienden (aunque LiteDash
@@ -88,7 +87,7 @@ object BootLaunch {
 
     /** La pantalla de Android para dar "Mostrar sobre otras apps" a LiteDash. */
     fun permissionIntent(context: Context): Intent =
-        Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, "package:${context.packageName}".toUri()).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        appSettingsIntent(context, Settings.ACTION_MANAGE_OVERLAY_PERMISSION)
 
     fun open(context: Context): Boolean = runCatching {
         context.startActivity(Intent(context, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
@@ -106,7 +105,7 @@ object BootLaunch {
      * Para los reportes: cuál es el inicio predeterminado (si una marca lo cambia al encender, aquí se
      * ve), qué otros inicios hay, y cómo va "Abrir al encender" (permiso y lo último que pasó).
      */
-    fun describe(context: Context, on: Boolean): String = buildString {
+    fun describe(context: Context): String = buildString {
         val pm = context.packageManager
         val home = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME)
         val default = runCatching { pm.resolveActivity(home, PackageManager.MATCH_DEFAULT_ONLY)?.activityInfo?.packageName }.getOrNull()
@@ -117,6 +116,6 @@ object BootLaunch {
         val at = log.getLong(BootReceiver.KEY_OPENED_AT, 0L)
         // "hace" puede salir raro si el reloj de la pantalla se movió desde entonces (sin pila de reloj).
         val last = if (at == 0L) "nunca" else "${log.getString(BootReceiver.KEY_ACTION, "?")} hace ${(System.currentTimeMillis() - at) / 60_000} min, abrió=${if (log.getBoolean(BootReceiver.KEY_OK, false)) "sí" else "no"}"
-        append("Abrir al encender: ${if (on) "sí" else "no"}; permiso=${if (allowed(context)) "sí" else "no"}; último=$last")
+        append("Abrir al encender: ${if (enabled(context)) "sí" else "no"}; permiso=${if (allowed(context)) "sí" else "no"}; último=$last")
     }
 }

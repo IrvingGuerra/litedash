@@ -8,7 +8,6 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
@@ -45,18 +44,17 @@ fun rememberObd(d: Dependencies, wanted: Boolean = true): ObdRepository? {
 
 /**
  * El permiso de ubicación del GPS: si ya se tiene y la función que lo pide (abre el diálogo de
- * Android; al responder se actualiza el primero). Se piden la precisa y la aproximada juntas: en
- * Android 12+ el usuario puede elegir "Aproximada" y también vale. Con [revision] (cambia al
- * volver a la app) también se nota el que se dio o quitó en Ajustes de Android.
+ * Android). Se piden la precisa y la aproximada juntas: en Android 12+ el usuario puede elegir
+ * "Aproximada" y también vale. Es uno solo para todos ([TripRepository.permitted]): al darlo desde
+ * un widget, los demás se enteran. Con [revision] (cambia al volver a la app) también se nota el
+ * que se dio o quitó en Ajustes de Android.
  */
 @Composable
 fun rememberGpsPermission(d: Dependencies, revision: Int = 0): Pair<Boolean, () -> Unit> {
-    var granted by remember(revision) { mutableStateOf(d.trip.hasPermission()) }
-    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { result ->
-        granted = result.values.any { it }
-    }
+    LaunchedEffect(revision) { d.trip.refreshPermission() }
+    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { d.trip.refreshPermission() }
     val ask = remember(launcher) { { launcher.launch(LOCATION_PERMISSIONS) } }
-    return granted to ask
+    return d.trip.permitted to ask
 }
 
 private val LOCATION_PERMISSIONS = arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)

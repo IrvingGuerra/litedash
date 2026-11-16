@@ -4,7 +4,6 @@ package com.irvingguerra.litedash
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -33,6 +32,10 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
@@ -46,6 +49,7 @@ import com.irvingguerra.litedash.core.ui.LocalColors
 import com.irvingguerra.litedash.core.ui.Radius
 import com.irvingguerra.litedash.core.ui.Segmented
 import com.irvingguerra.litedash.core.ui.Typography
+import com.irvingguerra.litedash.core.ui.blockTouches
 
 /** Secciones de Ajustes en el orden del menú: cada cosa vive en un solo lugar. */
 enum class SettingsSection(val title: Int) {
@@ -98,13 +102,14 @@ fun SettingsPanel(
             .fillMaxSize()
             .background(c.background)
             // Atrapa los toques para que no lleguen al inicio de abajo.
-            .clickable(remember { MutableInteractionSource() }, indication = null) {}
+            .blockTouches()
             .safeDrawingPadding(),
     ) {
-        val narrow = maxWidth < 720.dp
+        // Angosto (menú solo con íconos) si con el menú ancho las tarjetas quedarían apretadas (p. ej. 1080×1920 a 240 dpi).
+        val narrow = maxWidth < WIDE_MENU + MIN_CONTENT
         Row(Modifier.fillMaxSize()) {
             Column(
-                Modifier.width(if (narrow) 88.dp else 270.dp).fillMaxHeight().verticalScroll(rememberScrollState()).padding(12.dp),
+                Modifier.width(if (narrow) 88.dp else WIDE_MENU).fillMaxHeight().verticalScroll(rememberScrollState()).padding(12.dp),
                 verticalArrangement = Arrangement.spacedBy(6.dp),
             ) {
                 MenuEntry(Icons.back, stringResource(R.string.back_home), selected = false, narrow, close)
@@ -149,10 +154,32 @@ fun SettingsPanel(
 @Composable
 internal fun tabs(titles: List<Int>, key: String): Int {
     val selected = TabMemory[key] ?: 0
-    // Mismo control que las opciones (estilo iOS): una pestaña a la vez.
-    Segmented(titles.mapIndexed { i, t -> i to stringResource(t) }, selected, { TabMemory[key] = it }, Modifier.horizontalScroll(rememberScrollState()))
+    val scroll = rememberScrollState()
+    val fade = LocalColors.current.background
+    // Mismo control que las opciones (estilo iOS): una pestaña a la vez. Si no caben se desplazan y el borde
+    // derecho se desvanece, para que se note que hay más.
+    Segmented(
+        titles.mapIndexed { i, t -> i to stringResource(t) }, selected, { TabMemory[key] = it },
+        Modifier
+            .drawWithCache {
+                val width = TAB_FADE.toPx().coerceAtMost(size.width)
+                val brush = Brush.horizontalGradient(listOf(Color.Transparent, fade), startX = size.width - width, endX = size.width)
+                onDrawWithContent {
+                    drawContent()
+                    if (scroll.canScrollForward) drawRect(brush, Offset(size.width - width, 0f), Size(width, size.height))
+                }
+            }
+            .horizontalScroll(scroll),
+    )
     return selected
 }
+
+/** Lo que mide el menú de Ajustes con nombres y lo mínimo que necesitan las tarjetas a su lado (con márgenes). */
+private val WIDE_MENU = 270.dp
+private val MIN_CONTENT = 452.dp
+
+/** Lo que se desvanece el borde de las pestañas cuando hay más a la derecha. */
+private val TAB_FADE = 40.dp
 
 /** Las pestañas de Ajustes → Sistema ([SystemTab]). */
 internal const val SYSTEM_TABS = "system"

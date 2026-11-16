@@ -25,7 +25,7 @@
             <action android:name="android.intent.action.MAIN" />
             <category android:name="android.intent.category.HOME" />
         </intent>
-        <!-- Apps de navegación instaladas (Ajustes → Mapa): las que abren una dirección o son de mapas. -->
+        <!-- Apps de navegación instaladas (Ajustes → Apps → Navegación): las que abren una dirección o son de mapas. -->
         <intent>
             <action android:name="android.intent.action.VIEW" />
             <data android:scheme="geo" />
@@ -83,6 +83,9 @@
     <uses-feature android:name="android.hardware.location.gps" android:required="false" />
     <!-- Escáner OBD por cable USB (opcional: también va por Bluetooth o Wi-Fi). -->
     <uses-feature android:name="android.hardware.usb.host" android:required="false" />
+    <!-- «Hacer visible esta pantalla» (Vincular celular) en Android 12+: abre la ventana de Android de 5 minutos.
+         Solo existe desde Android 12 y nunca tiene que ver con la ubicación (no lleva maxSdkVersion ni neverForLocation). -->
+    <uses-permission android:name="android.permission.BLUETOOTH_ADVERTISE" />
     <!-- Brillo de día y noche en todas las apps: solo si lo activas (Android lo pide aparte). -->
     <uses-permission android:name="android.permission.WRITE_SETTINGS" tools:ignore="ProtectedPermissions" />
 

@@ -22,6 +22,7 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import com.irvingguerra.litedash.core.ui.LiteDashTheme
+import com.irvingguerra.litedash.feature.link.PhoneLink
 
 class MainActivity : ComponentActivity() {
     private val dependencies get() = (application as LiteDashApp).dependencies
@@ -112,8 +113,9 @@ class MainActivity : ComponentActivity() {
         super.onResume()
         inFront = true
         dependencies.music.cancelReturn()
-        // Al abrir LiteDash se busca al celular vinculado (sin celular, no hace nada).
-        dependencies.phone.start()
+        // Al abrir LiteDash se busca al celular vinculado. Sin vínculo el enlace ni se arma (Ajustes → Celular lo arma
+        // para el QR); si ya existe, se le avisa igual.
+        if (PhoneLink.isPaired(this)) dependencies.phone.start() else (application as LiteDashApp).phoneIfCreated()?.start()
         revision.intValue++
         refit()
     }

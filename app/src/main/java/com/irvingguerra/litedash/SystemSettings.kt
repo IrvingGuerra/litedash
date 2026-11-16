@@ -272,10 +272,13 @@ internal fun openSystemScreen(context: Context, intent: Intent): Boolean = try {
     false
 }
 
+/** Una pantalla de Ajustes de Android sobre una app ([action], p. ej. sus permisos): de LiteDash si no se dice [pkg]. */
+internal fun appSettingsIntent(context: Context, action: String, pkg: String = context.packageName): Intent =
+    Intent(action, Uri.fromParts("package", pkg, null))
+
 /** Los permisos de LiteDash en Ajustes de Android (ubicación, red local…). */
 internal fun openAppSettings(context: Context) {
-    val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", context.packageName, null))
-    openSystemScreen(context, intent)
+    openSystemScreen(context, appSettingsIntent(context, Settings.ACTION_APPLICATION_DETAILS_SETTINGS))
 }
 
 /** Notas de una versión (sección del CHANGELOG) en renglones: títulos ("### Agregado") y viñetas sin formato. */

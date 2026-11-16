@@ -29,12 +29,14 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import com.irvingguerra.litedash.core.ui.Button
+import com.irvingguerra.litedash.core.ui.Divider
 import com.irvingguerra.litedash.core.ui.Icon
 import com.irvingguerra.litedash.core.ui.Icons
 import com.irvingguerra.litedash.core.ui.Label
@@ -69,6 +71,8 @@ private const val QUIET_ZONE = 4
 internal fun PhoneSettings(d: Dependencies, openMusic: () -> Unit) {
     val link = d.phone
     LifecycleResumeEffect(link) {
+        // Sin celular vinculado el enlace nace aquí: se arranca (al volver a LiteDash solo se arranca si hay vínculo).
+        link.start()
         link.watch(true)
         onPauseOrDispose { link.watch(false) }
     }
@@ -77,6 +81,8 @@ internal fun PhoneSettings(d: Dependencies, openMusic: () -> Unit) {
         when {
             !link.networkAllowed -> AskLocalNetwork(link)
             link.paired -> Linked(d, openMusic)
+            // Sin la primera revisión de la red no se sabe si hay: ni el QR ni "sin red" todavía.
+            !link.networkChecked -> StatusTitle(Mark.INFO, stringResource(R.string.phone_waiting))
             !link.localNetwork -> NoNetwork()
             pairing != null -> PairingCode(pairing)
             // Con red y el código aún sin hacer (un instante al abrir).
@@ -90,7 +96,7 @@ private enum class Mark { OK, WARN, INFO }
 
 @Composable
 private fun Mark.color(): Color = when (this) {
-    Mark.OK -> Good
+    Mark.OK -> LocalColors.current.good
     Mark.WARN -> LocalColors.current.warning
     Mark.INFO -> LocalColors.current.textMuted
 }
@@ -190,7 +196,7 @@ private fun Steps(code: String, modifier: Modifier) {
     Column(modifier) {
         StatusTitle(Mark.WARN, stringResource(R.string.phone_waiting))
         // Los dígitos separados: se comparan de un vistazo con los del celular.
-        Label(stringResource(R.string.phone_link_code, code.toList().joinToString(" ")), Typography.body, c.textMuted, modifier = Modifier.padding(top = 6.dp, bottom = 12.dp))
+        Label(pluralStringResource(R.plurals.phone_link_code, OFFER_MINUTES, code.toList().joinToString(" "), OFFER_MINUTES), Typography.body, c.textMuted, modifier = Modifier.padding(top = 6.dp, bottom = 12.dp))
         val steps = listOf(R.string.phone_step_install, R.string.phone_step_tap, R.string.phone_step_scan)
         steps.forEachIndexed { i, step ->
             if (i > 0) Divider()
@@ -344,7 +350,5 @@ private fun CheckRow(mark: Mark, title: String, detail: String, action: (@Compos
     }
 }
 
-@Composable
-private fun Divider() {
-    Box(Modifier.fillMaxWidth().height(1.dp).background(LocalColors.current.line))
-}
+/** Lo que vive el código del QR, en minutos (lo decide el enlace). */
+private val OFFER_MINUTES = (PhoneLink.OFFER_MS / 60_000).toInt()

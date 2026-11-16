@@ -48,12 +48,10 @@ object TireSignals {
 }
 
 /**
- * Fuente con la que se publican las llantas. No se agrega `Source.TPMS`: la app tiene un
- * `when` exhaustivo sobre [Source] (Gauges.kt) que dejaría de compilar. Ninguna otra fuente
- * publica señales de llantas, así que la prioridad no importa; y nunca se usa
+ * Fuente con la que se publican las llantas (ninguna otra publica señales de llantas). Nunca se usa
  * `bus.clear(...)` con ella: se borran solo las señales de llantas, una por una.
  */
-internal val TPMS_SOURCE = Source.CAN
+internal val TPMS_SOURCE = Source.TPMS
 
 /** Unidad de presión que se muestra (internamente todo va en kPa). */
 enum class PressureUnit(val key: String, val label: String) {

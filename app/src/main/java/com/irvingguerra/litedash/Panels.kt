@@ -1,10 +1,8 @@
 package com.irvingguerra.litedash
 
-import android.content.Intent
 import android.provider.Settings
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -36,7 +34,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.core.net.toUri
 import com.irvingguerra.litedash.core.ui.Button
 import com.irvingguerra.litedash.core.ui.Card
 import com.irvingguerra.litedash.core.ui.Icon
@@ -46,6 +43,7 @@ import com.irvingguerra.litedash.core.ui.Label
 import com.irvingguerra.litedash.core.ui.LocalColors
 import com.irvingguerra.litedash.core.ui.TextInput
 import com.irvingguerra.litedash.core.ui.Typography
+import com.irvingguerra.litedash.core.ui.blockTouches
 import com.irvingguerra.litedash.feature.apps.App
 import com.irvingguerra.litedash.feature.apps.AppGrid
 import com.irvingguerra.litedash.feature.dashboard.TileTypes
@@ -64,7 +62,7 @@ internal fun PanelScaffold(
             .fillMaxSize()
             .background(c.background)
             // Atrapa los toques para que no lleguen al inicio de abajo.
-            .clickable(remember { MutableInteractionSource() }, indication = null) {}
+            .blockTouches()
             .safeDrawingPadding()
             .padding(horizontal = 24.dp),
     ) {
@@ -128,9 +126,7 @@ fun DrawerPanel(d: Dependencies, apps: List<App>, close: () -> Unit) {
                     selected = null
                 })
                 Button(stringResource(R.string.app_info), {
-                    val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, "package:${app.pkg}".toUri())
-                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                    runCatching { context.startActivity(intent) }
+                    openSystemScreen(context, appSettingsIntent(context, Settings.ACTION_APPLICATION_DETAILS_SETTINGS, app.pkg))
                     selected = null
                 })
                 IconButton(Icons.close, { selected = null }, size = 48.dp, background = c.surfaceHigh)

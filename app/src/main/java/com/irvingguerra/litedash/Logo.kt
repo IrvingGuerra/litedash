@@ -1,5 +1,6 @@
 package com.irvingguerra.litedash
 
+import android.annotation.SuppressLint
 import android.Manifest
 import android.content.ActivityNotFoundException
 import android.content.ContentResolver
@@ -8,7 +9,6 @@ import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Matrix
-import android.media.ExifInterface
 import android.net.Uri
 import android.os.Build
 import android.util.Log
@@ -62,6 +62,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.irvingguerra.litedash.core.ui.Button
@@ -209,14 +210,15 @@ private const val JPEG_MIME = "image/jpeg"
  * Giro en grados y espejo (horizontal, después de girar) que dejan derecha una foto con la orientación EXIF
  * [orientation] (1–8, como la guarda la cámara). Cualquier otro valor: tal cual.
  */
+@SuppressLint("ExifInterface") // Ver exifOrientation: la de Android, sin dependencia nueva.
 internal fun exifTurn(orientation: Int): Pair<Int, Boolean> = when (orientation) {
-    ExifInterface.ORIENTATION_FLIP_HORIZONTAL -> 0 to true
-    ExifInterface.ORIENTATION_ROTATE_180 -> 180 to false
-    ExifInterface.ORIENTATION_FLIP_VERTICAL -> 180 to true
-    ExifInterface.ORIENTATION_TRANSPOSE -> 90 to true
-    ExifInterface.ORIENTATION_ROTATE_90 -> 90 to false
-    ExifInterface.ORIENTATION_TRANSVERSE -> 270 to true
-    ExifInterface.ORIENTATION_ROTATE_270 -> 270 to false
+    android.media.ExifInterface.ORIENTATION_FLIP_HORIZONTAL -> 0 to true
+    android.media.ExifInterface.ORIENTATION_ROTATE_180 -> 180 to false
+    android.media.ExifInterface.ORIENTATION_FLIP_VERTICAL -> 180 to true
+    android.media.ExifInterface.ORIENTATION_TRANSPOSE -> 90 to true
+    android.media.ExifInterface.ORIENTATION_ROTATE_90 -> 90 to false
+    android.media.ExifInterface.ORIENTATION_TRANSVERSE -> 270 to true
+    android.media.ExifInterface.ORIENTATION_ROTATE_270 -> 270 to false
     else -> 0 to false
 }
 
@@ -224,16 +226,20 @@ internal fun exifTurn(orientation: Int): Pair<Int, Boolean> = when (orientation)
  * La orientación EXIF de [uri] (las fotos de cámara vienen acostadas y la marca dice cómo girarlas). De un
  * archivo, por su ruta (todas las versiones); de otra app, por su flujo (Android 7+; en Android 6 ese camino no
  * se usa: ahí las fotos se eligen con el explorador propio, que da archivos). Sin dato o ilegible: normal.
+ *
+ * Usa la ExifInterface de Android y no la de androidx para no sumar una dependencia (APK ligera): el aviso de lint
+ * es por fallas de la versión vieja, y aquí solo se lee la orientación de una foto que eligió el usuario.
  */
+@SuppressLint("ExifInterface")
 private fun exifOrientation(context: Context, uri: Uri): Int {
-    val normal = ExifInterface.ORIENTATION_NORMAL
+    val normal = android.media.ExifInterface.ORIENTATION_NORMAL
     return try {
         val exif = when {
-            uri.scheme == ContentResolver.SCHEME_FILE -> uri.path?.let { ExifInterface(it) }
-            Build.VERSION.SDK_INT >= Build.VERSION_CODES.N -> context.contentResolver.openInputStream(uri)?.use { ExifInterface(it) }
+            uri.scheme == ContentResolver.SCHEME_FILE -> uri.path?.let { android.media.ExifInterface(it) }
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.N -> context.contentResolver.openInputStream(uri)?.use { android.media.ExifInterface(it) }
             else -> null
         }
-        exif?.getAttributeInt(ExifInterface.TAG_ORIENTATION, normal) ?: normal
+        exif?.getAttributeInt(android.media.ExifInterface.TAG_ORIENTATION, normal) ?: normal
     } catch (e: IOException) {
         Log.w(LOG_TAG, "No se pudo leer la orientación de $uri", e)
         normal
@@ -492,7 +498,8 @@ fun parkedImageShown(): Boolean {
 @Composable
 fun ParkedSettings(prefs: Preferences) {
     val c = LocalColors.current
-    SwitchRow(stringResource(R.string.parked_mode), prefs.parkedMode, { prefs.parkedMode = it }, stringResource(R.string.parked_mode_help))
+    val minutes = (PARK_AFTER_MS / 60_000).toInt()
+    SwitchRow(stringResource(R.string.parked_mode), prefs.parkedMode, { prefs.parkedMode = it }, pluralStringResource(R.plurals.parked_mode_help, minutes, minutes))
     if (!prefs.parkedMode) return
     Segmented(
         listOf(ParkedView.CLOCK to stringResource(R.string.parked_clock), ParkedView.IMAGE to stringResource(R.string.parked_image)),

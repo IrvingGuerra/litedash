@@ -1,7 +1,6 @@
 package com.irvingguerra.litedash
 
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -34,6 +33,7 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.irvingguerra.litedash.core.ui.Divider
 import com.irvingguerra.litedash.core.ui.Button
 import com.irvingguerra.litedash.core.ui.Card
 import com.irvingguerra.litedash.core.ui.Label
@@ -44,8 +44,6 @@ import com.irvingguerra.litedash.core.ui.fitFont
 import com.irvingguerra.litedash.core.vehicle.Signal
 import com.irvingguerra.litedash.core.vehicle.watch
 import com.irvingguerra.litedash.feature.car.CAR_TOP_ASPECT
-import com.irvingguerra.litedash.feature.car.CarPackage
-import com.irvingguerra.litedash.feature.car.CarTop
 import com.irvingguerra.litedash.feature.obd.EngineReport
 import com.irvingguerra.litedash.feature.obd.HealthLevel
 import com.irvingguerra.litedash.feature.obd.ObdState
@@ -71,7 +69,6 @@ private val MAIN_ZONES = listOf(Zone.ENGINE, Zone.INTAKE, Zone.COOLING, Zone.BAT
 @Composable
 fun HealthView(
     d: Dependencies,
-    car: CarPackage?,
     report: EngineReport?,
     connected: Boolean,
     reading: Boolean = false,
@@ -92,12 +89,12 @@ fun HealthView(
             }
             if (wide) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(28.dp)) {
-                    CarWithMarks(d, car, health, Modifier.padding(horizontal = 12.dp).height(carHeight))
+                    CarWithMarks(d, health, Modifier.padding(horizontal = 12.dp).height(carHeight))
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(16.dp)) { details() }
                 }
             } else {
                 Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                    CarWithMarks(d, car, health, Modifier.height(carHeight))
+                    CarWithMarks(d, health, Modifier.height(carHeight))
                     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(16.dp)) { details() }
                 }
             }
@@ -155,7 +152,7 @@ private fun Summary(d: Dependencies, health: List<SystemHealth>, report: EngineR
     val (text, color) = when {
         !connected -> stringResource(R.string.health_connect) to c.textMuted
         reading && !known -> stringResource(R.string.obd_reading) to c.textMuted
-        issues == 0 && known -> stringResource(R.string.health_all_good) to Good
+        issues == 0 && known -> stringResource(R.string.health_all_good) to c.good
         issues > 0 -> pluralStringResource(R.plurals.health_issues, issues, issues) to (if (fault) c.danger else c.warning)
         else -> stringResource(R.string.health_unknown) to c.textMuted
     }
@@ -199,7 +196,7 @@ private fun signalOf(zone: Zone) = when (zone) {
 private fun SystemTile(d: Dependencies, h: SystemHealth, report: EngineReport?, connected: Boolean, onCodes: () -> Unit, modifier: Modifier) {
     val c = LocalColors.current
     val color = when (h.level) {
-        HealthLevel.GOOD -> Good
+        HealthLevel.GOOD -> c.good
         HealthLevel.WARN -> c.warning
         HealthLevel.FAULT -> c.danger
         HealthLevel.UNKNOWN -> c.textMuted
@@ -223,7 +220,7 @@ private fun SystemTile(d: Dependencies, h: SystemHealth, report: EngineReport?, 
         h.level == HealthLevel.WARN && h.alert == null -> stringResource(R.string.health_mil)
         h.alert != null && value != null && signal != null -> sensorText(signal, value, units, locale)
         h.zone == Zone.EXHAUST && readiness != null ->
-            stringResource(R.string.health_monitors, readiness.monitors.count { it.complete }, readiness.monitors.size)
+            pluralStringResource(R.plurals.health_monitors, readiness.monitors.size, readiness.monitors.count { it.complete }, readiness.monitors.size)
         else -> null
     }
     val series = if (connected && signal != null) rememberSeries(d, signal) else null
@@ -233,7 +230,7 @@ private fun SystemTile(d: Dependencies, h: SystemHealth, report: EngineReport?, 
         value = word,
         modifier = modifier,
         valueColor = when (h.level) {
-            HealthLevel.GOOD -> if (value != null) c.text else Good
+            HealthLevel.GOOD -> if (value != null) c.text else c.good
             HealthLevel.UNKNOWN -> c.textMuted
             else -> color
         },
@@ -252,14 +249,14 @@ private fun SystemTile(d: Dependencies, h: SystemHealth, report: EngineReport?, 
  * fallas nada se mueve.
  */
 @Composable
-private fun CarWithMarks(d: Dependencies, car: CarPackage?, health: List<SystemHealth>, modifier: Modifier) {
+private fun CarWithMarks(d: Dependencies, health: List<SystemHealth>, modifier: Modifier) {
     val c = LocalColors.current
     val marks = health.filter { it.level == HealthLevel.WARN || it.level == HealthLevel.FAULT }.map {
         val fault = it.level == HealthLevel.FAULT
         ProblemMark(it.zone.x, it.zone.y, if (fault) c.danger else c.warning, pulsing = fault)
     }
     Box(modifier.aspectRatio(CAR_TOP_ASPECT)) {
-        CarTop(d.cars, car, d.prefs.carColor, Modifier.fillMaxSize())
+        MyCarTop(d, Modifier.fillMaxSize())
         ProblemMarks(marks, Modifier.fillMaxSize())
     }
 }
@@ -286,7 +283,7 @@ private fun EngineReport.codeCount() = (stored + pending + permanent).distinct()
  * Un toque abre el Taller.
  */
 @Composable
-fun HealthTile(d: Dependencies, car: CarPackage?, showCar: Boolean = true, onClick: () -> Unit) {
+fun HealthTile(d: Dependencies, showCar: Boolean = true, onClick: () -> Unit) {
     val c = LocalColors.current
     // Con un adaptador guardado se conecta sola (como los medidores), sin abrir el Taller.
     val obd = rememberObd(d)
@@ -302,7 +299,7 @@ fun HealthTile(d: Dependencies, car: CarPackage?, showCar: Boolean = true, onCli
     val (status, statusColor) = when {
         obd?.state == ObdState.CONNECTING -> stringResource(R.string.obd_connecting_short) to c.textMuted
         connected && issues > 0 -> pluralStringResource(R.plurals.health_issues, issues, issues) to (if (fault) c.danger else c.warning)
-        connected && known -> stringResource(R.string.health_all_good) to Good
+        connected && known -> stringResource(R.string.health_all_good) to c.good
         connected -> stringResource(R.string.obd_reading) to c.textMuted
         else -> stringResource(R.string.health_offline) to c.textMuted
     }
@@ -312,7 +309,7 @@ fun HealthTile(d: Dependencies, car: CarPackage?, showCar: Boolean = true, onCli
         score == null -> c.textMuted
         fault -> c.danger
         issues > 0 -> c.warning
-        else -> Good
+        else -> c.good
     }
     val codes = report?.codeCount()
     val line = when {
@@ -365,11 +362,11 @@ fun HealthTile(d: Dependencies, car: CarPackage?, showCar: Boolean = true, onCli
                             Label(stringResource(R.string.health_engine), Typography.subtitle, maxLines = 1)
                             Label(line, Typography.small, if (codes != null && codes > 0) scoreColor else c.textMuted, maxLines = 2)
                         }
-                        if (withCar) CarWithMarks(d, car, health, Modifier.fillMaxHeight())
+                        if (withCar) CarWithMarks(d, health, Modifier.fillMaxHeight())
                     }
                 }
                 if (stats) {
-                    Box(Modifier.padding(vertical = 10.dp).fillMaxWidth().height(1.dp).background(c.line))
+                    Divider(Modifier.padding(vertical = 10.dp))
                     HealthStats(d, report, connected, codes, if (codes != null && codes > 0) scoreColor else c.text)
                 }
             }

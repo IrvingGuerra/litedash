@@ -259,6 +259,9 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
      */
     var localNetwork by mutableStateOf(true)
         private set
+    /** Ya se revisó la red al menos una vez ([localNetwork] antes de eso es solo un supuesto). */
+    var networkChecked by mutableStateOf(false)
+        private set
     private var checkingNetwork = false
 
     /** "Buscar ahora": intenta ya, con los reintentos de vuelta al principio y tocando a los vecinos. */
@@ -409,6 +412,7 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
             main.post {
                 checkingNetwork = false
                 localNetwork = found
+                networkChecked = true
             }
         }
     }
@@ -906,7 +910,10 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
         override fun run() {
             val found = localNets()
             nets = found
-            main.post { localNetwork = found.any }
+            main.post {
+                localNetwork = found.any
+                networkChecked = true
+            }
             lastGateways = found.gateways.keys.joinToString()
             val tried = HashSet<String>()
             fun pass(addresses: List<Pair<String, String>>) {
@@ -1191,46 +1198,49 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
 
     private fun io(block: () -> Unit) = Thread(block, "phone-link-io").start()
 
-    private companion object {
-        const val PREFS = "link"
-        const val SCREEN_ID = "screen_id"
-        const val KEY = "key"
-        const val LAST_ADDRESS = "last_address"
-        const val PHONE_NAME = "phone_name"
-        const val PHONE_APP = "phone_app"
-        const val CAP_MUSIC = "music"
-        const val CAP_CAR = "car"
-        const val CAP_STATE = "state"
-        /** Lo que entiende esta pantalla (§5, §5b, §5e–§5h). */
-        val SCREEN_CAPS = listOf(CAP_MUSIC, "carEdit", "carPkg", CAP_STATE, "report")
-        /** El id de un reporte del celular: 32 hex. */
-        val REPORT_ID = Regex("[0-9a-f]{32}")
-        /** El diagnóstico que se le pasa al celular para su reporte. */
-        const val REPORT_MAX = 15_000
-        /** Topes de lo que manda el celular y se pinta o se guarda: nombres cortos (modelo, app) y textos de canción. */
-        const val INFO_MAX = 64
-        const val TEXT_MAX = 200
-        const val SPEED_MAX = 4f
-        /** Carpeta (en la caché de la app) de los paquetes que llegan del celular. */
-        const val PACKAGE_FOLDER = "link-packages"
+    companion object {
+        /** Si hay un celular vinculado, leído del disco sin crear el enlace (sin vínculo, LiteDash ni lo arma). */
+        fun isPaired(context: Context): Boolean = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).contains(KEY)
 
-        /** Lo que vive la llave de un QR sin vincular. */
+        private const val PREFS = "link"
+        private const val SCREEN_ID = "screen_id"
+        private const val KEY = "key"
+        private const val LAST_ADDRESS = "last_address"
+        private const val PHONE_NAME = "phone_name"
+        private const val PHONE_APP = "phone_app"
+        private const val CAP_MUSIC = "music"
+        private const val CAP_CAR = "car"
+        private const val CAP_STATE = "state"
+        /** Lo que entiende esta pantalla (§5, §5b, §5e–§5h). */
+        private val SCREEN_CAPS = listOf(CAP_MUSIC, "carEdit", "carPkg", CAP_STATE, "report")
+        /** El id de un reporte del celular: 32 hex. */
+        private val REPORT_ID = Regex("[0-9a-f]{32}")
+        /** El diagnóstico que se le pasa al celular para su reporte. */
+        private const val REPORT_MAX = 15_000
+        /** Topes de lo que manda el celular y se pinta o se guarda: nombres cortos (modelo, app) y textos de canción. */
+        private const val INFO_MAX = 64
+        private const val TEXT_MAX = 200
+        private const val SPEED_MAX = 4f
+        /** Carpeta (en la caché de la app) de los paquetes que llegan del celular. */
+        private const val PACKAGE_FOLDER = "link-packages"
+
+        /** Lo que vive la llave de un QR sin vincular (Ajustes → Celular lo dice). */
         const val OFFER_MS = 5 * 60_000L
-        const val WATCH_RETRY_MS = 2_000L
-        const val CONNECT_MS = 1_500
+        private const val WATCH_RETRY_MS = 2_000L
+        private const val CONNECT_MS = 1_500
 
         /** Un aviso del faro mide 50 bytes; lo que no quepa aquí no es uno. Se atiende a lo más uno por segundo. */
-        const val BEACON_MAX = 64
-        const val BEACON_EVERY_MS = 1_000L
-        val WIFI_NAMES = listOf("wlan", "ap", "swlan", "softap")
+        private const val BEACON_MAX = 64
+        private const val BEACON_EVERY_MS = 1_000L
+        private val WIFI_NAMES = listOf("wlan", "ap", "swlan", "softap")
         /** Tocar a los vecinos: pocas redes, muchos a la vez y con poca espera. */
-        const val SWEEP_NETWORKS = 2
-        const val SWEEP_THREADS = 32
-        const val SWEEP_CONNECT_MS = 400
-        const val SWEEP_WAIT_MS = 9_000L
-        const val HELLO_MS = 5_000
-        const val PING_MS = 20_000L
-        const val SILENCE_MS = 45_000L
+        private const val SWEEP_NETWORKS = 2
+        private const val SWEEP_THREADS = 32
+        private const val SWEEP_CONNECT_MS = 400
+        private const val SWEEP_WAIT_MS = 9_000L
+        private const val HELLO_MS = 5_000
+        private const val PING_MS = 20_000L
+        private const val SILENCE_MS = 45_000L
     }
 }
 

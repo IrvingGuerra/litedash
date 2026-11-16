@@ -153,7 +153,7 @@ private fun SourceCard(d: Dependencies) {
         val problem = problemText(d)
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             val dot = when {
-                repo.status == TpmsStatus.CONNECTED -> Good
+                repo.status == TpmsStatus.CONNECTED -> c.good
                 problem != null -> c.danger
                 else -> c.textMuted
             }
@@ -247,7 +247,7 @@ private fun SensorPicker(repo: TpmsRepository, w: Wheel) {
             Button(stringResource(R.string.tires_identify), { confirmed = null; waiting = true; repo.startIdentify() }, primary = true)
         }
     }
-    confirmed?.let { Label(stringResource(R.string.tires_identified, shortId(it)), Typography.body, Good) }
+    confirmed?.let { Label(stringResource(R.string.tires_identified, shortId(it)), Typography.body, c.good) }
     val current = repo.assignment[w]
     val sensors = repo.nearby.sortedWith(compareByDescending<TireReading> { it.sensorId == current }.thenByDescending { it.rssi ?: Int.MIN_VALUE })
     if (sensors.isEmpty()) Label(stringResource(R.string.tires_no_sensors), Typography.small, c.textMuted)
@@ -310,7 +310,7 @@ private fun UsbPairing(repo: TpmsRepository, w: Wheel) {
             Button(stringResource(R.string.cancel), repo::cancelPair)
         }
         else -> {
-            if (mine && repo.pairing == PairState.DONE) Label(stringResource(R.string.tires_pair_done), Typography.body, Good)
+            if (mine && repo.pairing == PairState.DONE) Label(stringResource(R.string.tires_pair_done), Typography.body, c.good)
             if (mine && repo.pairing == PairState.TIMEOUT) Label(stringResource(R.string.tires_pair_timeout), Typography.body, c.danger)
             Button(stringResource(R.string.tires_pair), { repo.pairUsb(w) }, primary = true)
         }

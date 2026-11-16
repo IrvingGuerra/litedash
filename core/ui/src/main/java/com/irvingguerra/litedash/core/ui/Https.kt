@@ -59,7 +59,7 @@ object Https {
             }
             if (code !in 200..299) {
                 disconnect()
-                error("HTTP $code")
+                throw HttpStatusException(code)
             }
         }
 
@@ -68,6 +68,8 @@ object Https {
         for (wait in RETRY_WAIT_MS) {
             try {
                 return block()
+            } catch (e: HttpStatusException) {
+                throw e
             } catch (e: IOException) {
                 Thread.sleep(wait)
             }
@@ -132,3 +134,6 @@ object Https {
         return SSLContext.getInstance("TLS").apply { init(null, trust.trustManagers, null) }.socketFactory
     }
 }
+
+/** El servidor contestó que no (4xx: no existe, no se puede): es una falla de red más para quien llama, pero no se reintenta. */
+class HttpStatusException(val code: Int) : IOException("HTTP $code")

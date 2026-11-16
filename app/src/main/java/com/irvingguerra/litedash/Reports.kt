@@ -289,14 +289,13 @@ private suspend fun reportInfo(context: Context, d: Dependencies): String {
     // El escáner solo si ya existe (abrir el Taller lo crea); si no, no se conecta nada por el reporte.
     val obdInfo = (d.obdIfCreated()?.describe() ?: "OBD: sin abrir en esta sesión") + "\n" + reportExtras(d)
     val pro = d.pro.isPro
-    val openOnBoot = d.prefs.openOnBoot
     val music = d.music
     return withContext(Dispatchers.IO) {
         // La música pregunta al PackageManager y a las sesiones: fuera del hilo principal. Su estado lo tocan los
         // avisos que llegan ahí; si cambia justo mientras se lee, el reporte va sin esa parte.
         val musicInfo = runCatching { music.describe() }.getOrElse { "Música: no se pudo leer (${it.javaClass.simpleName})" }
         val silent = runCatching { music.silentSources() }.getOrDefault(emptyList())
-        systemInfo(context, pro, openOnBoot, layout, musicInfo + "\n" + obdInfo, silent)
+        systemInfo(context, pro, layout, musicInfo + "\n" + obdInfo, silent)
     }
 }
 
@@ -329,12 +328,15 @@ internal fun wirePhoneReport(link: PhoneLink, context: Context, deps: () -> Depe
 private const val PHONE_REPORT_GAP_MS = 10_000L
 
 /**
- * Lo que va después de la línea del OBD: el celular (Ajustes → Celular; sin vínculo dice solo que no hay), las llantas
- * (solo si su módulo ya corre: el reporte no prende nada), las últimas teclas del volante y los autos instalados.
- * Se arma en el hilo principal (todo es memoria).
+ * Lo que va después de la línea del OBD: el celular (Ajustes → Celular; sin vínculo dice solo que no hay, sin armar el
+ * enlace), el GPS (qué
+ * proveedores escucha y su última falla), el clima guardado (de cuándo y por qué falló), las llantas (solo si su módulo
+ * ya corre: el reporte no prende nada), las últimas teclas del volante y los autos instalados. Se arma en el hilo
+ * principal (todo es memoria).
  */
-private fun reportExtras(d: Dependencies): String =
-    listOfNotNull(d.phone.describe(), d.tpmsIfCreated()?.describe(), d.wheel.describe(), d.cars.describe()).joinToString("\n")
+private fun reportExtras(d: Dependencies): String = listOfNotNull(
+    d.phoneIfCreated()?.describe() ?: "Celular: sin vincular", d.trip.describe(), d.weather.describe(), d.tpmsIfCreated()?.describe(), d.wheel.describe(), d.cars.describe(),
+).joinToString("\n")
 
 /** El volumen de la música en Android y si está fijo (la pantalla lo maneja con su propio chip). */
 private fun volumeInfo(context: Context): String = runCatching {
@@ -343,7 +345,7 @@ private fun volumeInfo(context: Context): String = runCatching {
 }.getOrDefault("Volumen: ?")
 
 /** Datos técnicos de la pantalla para los reportes (equipo, Android, pantalla, acomodo [layout], luces, ubicación y si tiene Pro) más [musicInfo] y las apps [silent]. */
-private fun systemInfo(context: Context, pro: Boolean, openOnBoot: Boolean, layout: String, musicInfo: String, silent: List<String>): String {
+private fun systemInfo(context: Context, pro: Boolean, layout: String, musicInfo: String, silent: List<String>): String {
     val m = context.resources.displayMetrics
     return buildString {
         appendLine("LiteDash ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE}) · ${BuildConfig.CHANNEL}")
@@ -353,7 +355,7 @@ private fun systemInfo(context: Context, pro: Boolean, openOnBoot: Boolean, layo
         appendLine("Pantalla: ${m.widthPixels}×${m.heightPixels} px · ${m.densityDpi} dpi")
         appendLine(MainActivity.windowInfo)
         appendLine(layout)
-        appendLine(BootLaunch.describe(context, openOnBoot))
+        appendLine(BootLaunch.describe(context))
         appendLine("Memoria: ${memoryBytes(context) / (1024 * 1024)} MB")
         appendLine("CPU: ${Build.SUPPORTED_ABIS.joinToString()}")
         appendLine("Pantalla dividida: ${if (SplitScreen.supported()) "sí" else "no"}")

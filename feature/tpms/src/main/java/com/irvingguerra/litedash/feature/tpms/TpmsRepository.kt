@@ -1,6 +1,5 @@
 package com.irvingguerra.litedash.feature.tpms
 
-import android.app.PendingIntent
 import android.bluetooth.BluetoothAdapter
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -8,7 +7,6 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.hardware.usb.UsbDevice
 import android.hardware.usb.UsbManager
-import android.os.Build
 import android.os.SystemClock
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -21,7 +19,9 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.core.content.ContextCompat
 import androidx.core.content.IntentCompat
 import com.irvingguerra.litedash.core.vehicle.VehicleBus
+import com.irvingguerra.litedash.core.vehicle.requestUsbPermission
 import com.irvingguerra.litedash.feature.obd.UsbLink
+import com.irvingguerra.litedash.feature.obd.displayName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -68,8 +68,11 @@ enum class TpmsError { USB_MISSING, USB_DENIED, USB_OPEN_FAILED, USB_UNPLUGGED, 
  * del Taller. La pone la app: así Llantas no carga el escáner si no se usa esta fuente.
  */
 fun interface CarTires {
-    /** Las cuatro llantas en el orden de [Wheel.ROAD]. */
+    /** Las cuatro llantas en el orden de [Wheel.ROAD]. Leer es querer el escáner (lo conecta si hace falta). */
     suspend fun read(): FactoryTires
+
+    /** La fuente OBD paró: ya no se quiere el escáner (sin nadie más, se desconecta). */
+    fun stop() {}
 }
 
 /** Emparejar un sensor con el receptor USB. */
@@ -274,6 +277,7 @@ class TpmsRepository(context: Context, private val bus: VehicleBus) {
     private fun stopSource() {
         tickJob?.cancel(); tickJob = null
         demoJob?.cancel(); demoJob = null
+        if (obdJob != null) carTires?.stop()
         obdJob?.cancel(); obdJob = null
         obdProfile = null
         stopUsb()
@@ -690,7 +694,8 @@ class TpmsRepository(context: Context, private val bus: VehicleBus) {
 
     private var usb: UsbSession? = null
     private var usbReceiver: BroadcastReceiver? = null
-    private var permissionReceiver: BroadcastReceiver? = null
+    /** Deja de esperar la respuesta del permiso USB pedido (null = no hay pedido en curso). */
+    private var cancelPermission: (() -> Unit)? = null
     /** IDs que dio el receptor por llanta (si no, el sensor se llama "usb-fl"…). */
     private val usbIds = mutableMapOf<Wheel, String>()
 
@@ -717,28 +722,21 @@ class TpmsRepository(context: Context, private val bus: VehicleBus) {
             return
         }
         if (manager.hasPermission(device)) return openUsb(manager, device)
-        if (permissionReceiver != null) return
-        val receiver = object : BroadcastReceiver() {
-            override fun onReceive(c: Context, i: Intent) {
-                unwatchPermission()
-                if (running != TpmsSource.USB) return
-                if (i.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)) openUsb(manager, device)
-                else {
-                    status = TpmsStatus.NO_PERMISSION
-                    error = TpmsError.USB_DENIED
-                }
+        if (cancelPermission != null) return
+        cancelPermission = requestUsbPermission(context, manager, device, ACTION_USB_PERMISSION, USB_REQUEST) { granted ->
+            cancelPermission = null
+            if (running != TpmsSource.USB) return@requestUsbPermission
+            if (granted) openUsb(manager, device)
+            else {
+                status = TpmsStatus.NO_PERMISSION
+                error = TpmsError.USB_DENIED
             }
         }
-        ContextCompat.registerReceiver(context, receiver, IntentFilter(ACTION_USB_PERMISSION), ContextCompat.RECEIVER_NOT_EXPORTED)
-        permissionReceiver = receiver
-        val intent = Intent(ACTION_USB_PERMISSION).setPackage(context.packageName)
-        val flags = PendingIntent.FLAG_UPDATE_CURRENT or if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) PendingIntent.FLAG_MUTABLE else 0
-        manager.requestPermission(device, PendingIntent.getBroadcast(context, 1, intent, flags))
     }
 
     private fun unwatchPermission() {
-        permissionReceiver?.let { runCatching { context.unregisterReceiver(it) } }
-        permissionReceiver = null
+        cancelPermission?.invoke()
+        cancelPermission = null
     }
 
     private var opening: Job? = null
@@ -761,7 +759,7 @@ class TpmsRepository(context: Context, private val bus: VehicleBus) {
             usb = session
             status = TpmsStatus.CONNECTED
             error = null
-            detail = device.productName?.takeIf { it.isNotBlank() } ?: "USB %04X:%04X".format(Locale.US, device.vendorId, device.productId)
+            detail = device.displayName()
             session.start()
             session.send(UsbTpmsProtocol.queryIds())
         }
@@ -1075,6 +1073,7 @@ class TpmsRepository(context: Context, private val bus: VehicleBus) {
         private const val KEY_ASSIGN = "assign_"
         private const val HISTORY_FILE = "tire_history.bin"
         private const val ACTION_USB_PERMISSION = "com.irvingguerra.litedash.TPMS_USB_PERMISSION"
+        private const val USB_REQUEST = 1
 
         /** Chips USB‑serie que usan los receptores (CH340, FTDI ×2, CP210x, PL2303). */
         val USB_IDS = listOf(0x1A86 to 0x7523, 0x0403 to 0x6001, 0x0403 to 0x6015, 0x10C4 to 0xEA60, 0x067B to 0x2303)

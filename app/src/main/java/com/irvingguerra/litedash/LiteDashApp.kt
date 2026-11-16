@@ -92,7 +92,14 @@ class LiteDashApp : Application() {
             bus = bus,
             obdLazy = lazy { ObdRepository(this, bus) },
             obdSaved = { ObdRepository.hasSavedTarget(this) },
-            tpmsLazy = lazy { TpmsRepository(this, bus).apply { carTires = CarTires { factoryTires(dependencies) } } },
+            tpmsLazy = lazy {
+                TpmsRepository(this, bus).apply {
+                    carTires = object : CarTires {
+                        override suspend fun read() = factoryTires(dependencies)
+                        override fun stop() = releaseFactoryTires(dependencies)
+                    }
+                }
+            },
             tpmsSaved = { TpmsRepository.hasSavedSource(this) },
             phoneLazy = phoneLazy,
         )

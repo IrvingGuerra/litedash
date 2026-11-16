@@ -4,13 +4,10 @@ package com.irvingguerra.litedash.feature.car
 // autos (auto.json, giro/ y sus capas) van en español porque así están publicados:
 // las versiones viejas los leen, traducirlos rompería el catálogo. Lo que la app
 // crea por su cuenta en el dispositivo (carpetas, temporales, preferencias) va en
-// inglés desde la 1.4.47; la migración movió lo viejo.
+// inglés desde la 1.4.47.
 
-/**
- * Carpetas y archivos dentro de files/ en el dispositivo (y el archivo de preferencias).
- * Público para la migración del app (`StorageMigration`), que mueve lo viejo a estos nombres.
- */
-object CarFiles {
+/** Carpetas y archivos dentro de files/ en el dispositivo (y el archivo de preferencias). */
+internal object CarFiles {
     const val ROOT = "cars"
     const val THUMBNAILS = ".thumbnails"
     const val PACKAGE_INFO = "auto.json"

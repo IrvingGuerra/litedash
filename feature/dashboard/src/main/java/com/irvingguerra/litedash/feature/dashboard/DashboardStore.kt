@@ -103,7 +103,7 @@ internal fun scaleLines(text: String, k: Int) = text.lineSequence().joinToString
     f.joinToString("\t")
 }
 
-// Nombres guardados en el dispositivo (en inglés desde la 1.4.47; la migración copió los viejos).
+// Nombres guardados en el dispositivo (en inglés desde la 1.4.47).
 private const val PREFS_FILE = "dashboard"
 /** Los acomodos en la cuadrícula fina (de 48 dp); los de 96 dp siguen con [OLD_LAYOUT_PREFIX]. */
 private const val LAYOUT_KEY_PREFIX = "fine_layout_"
@@ -114,6 +114,5 @@ private const val OLD_SAVED_AT_PREFIX = "saved_at_"
 
 /** El tipo que tenía el widget Navegar en los acomodos guardados. */
 private const val LEGACY_NAVIGATE = "navigate"
-// La migración de la 1.4.49 (StorageMigration, pieza del auto en tres) también los escribe: mismos nombres allá.
 private const val HERO_TYPE = "hero_type"
 private const val HERO_DATA = "hero_data"

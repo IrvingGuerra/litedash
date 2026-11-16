@@ -273,7 +273,11 @@
     <string name="unit_kmh">km/h</string>
     <string name="unit_mph">mph</string>
     <string name="parked_mode">Modo estacionado</string>
-    <string name="parked_mode_help">Tras 5 minutos sin tocar el inicio (y sin ir en movimiento) se ve un reloj grande o tu imagen. Un toque lo quita.</string>
+    <plurals name="parked_mode_help">
+        <item quantity="one">Tras %d minuto sin tocar el inicio (y sin ir en movimiento) se ve un reloj grande o tu imagen. Un toque lo quita.</item>
+        <item quantity="many">Tras %d minutos sin tocar el inicio (y sin ir en movimiento) se ve un reloj grande o tu imagen. Un toque lo quita.</item>
+        <item quantity="other">Tras %d minutos sin tocar el inicio (y sin ir en movimiento) se ve un reloj grande o tu imagen. Un toque lo quita.</item>
+    </plurals>
     <string name="parked_clock">Reloj</string>
     <string name="parked_image">Tu imagen</string>
     <string name="parked_no_image">Elige una imagen de tu galería; mientras no haya, se ve el reloj.</string>
@@ -670,6 +674,7 @@
     <string name="health_pending">pendiente</string>
     <plurals name="health_issues">
         <item quantity="one">%1$d aviso</item>
+        <item quantity="many">%1$d avisos</item>
         <item quantity="other">%1$d avisos</item>
     </plurals>
     <string name="zone_engine">Motor</string>
@@ -680,7 +685,11 @@
     <string name="zone_exhaust">Emisiones</string>
     <string name="zone_wheels">Ruedas y frenos</string>
     <string name="zone_body">Carrocería y red</string>
-    <string name="health_monitors">%1$d de %2$d monitores listos</string>
+    <plurals name="health_monitors">
+        <item quantity="one">%1$d de %2$d monitor listo</item>
+        <item quantity="many">%1$d de %2$d monitores listos</item>
+        <item quantity="other">%1$d de %2$d monitores listos</item>
+    </plurals>
     <string name="health_mil">Luz de falla encendida</string>
     <!-- Llantas (TPMS) -->
     <string name="tires">Llantas</string>

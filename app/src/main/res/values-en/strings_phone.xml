@@ -16,7 +16,10 @@
     <string name="phone_open_wifi">Open Wi-Fi</string>
     <string name="phone_open_hotspot">Open hotspot</string>
     <string name="phone_waiting">Waiting for your phone…</string>
-    <string name="phone_link_code">Code %1$s · expires in 5 minutes</string>
+    <plurals name="phone_link_code">
+        <item quantity="one">Code %1$s · expires in %2$d minute</item>
+        <item quantity="other">Code %1$s · expires in %2$d minutes</item>
+    </plurals>
     <string name="phone_step_install">Install LiteDash Connect and create your account</string>
     <string name="phone_step_tap">Tap “Link my screen”</string>
     <string name="phone_step_scan">Point the camera at this code</string>

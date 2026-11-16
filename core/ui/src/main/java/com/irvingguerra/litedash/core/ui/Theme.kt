@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -58,6 +59,7 @@ object Brand {
 
 /** Colores que se repiten entre los temas: tinta (fondo oscuro), tinta y papel del claro, y su ámbar. */
 private val Ink = Color(0xFF0E1013)
+private val Good = Color(0xFF3FB27F)
 private val LightInk = Color(0xFF16181C)
 private val LightPaper = Color(0xFFE9ECF0)
 private val LightAmber = Color(0xFFE59500)
@@ -76,6 +78,8 @@ data class Colors(
     val danger: Color,
     /** Advertencia (Salud, Llantas, códigos pendientes): siempre ámbar, aunque se elija otro color. */
     val warning: Color,
+    /** Todo bien (Salud, Llantas, conectado): siempre verde, aunque se elija otro color. */
+    val good: Color,
     /** Relleno de lo principal (botón principal, play, barra de avance, chip elegido) y el texto encima. */
     val primary: Color,
     val onPrimary: Color,
@@ -116,6 +120,7 @@ val DarkColors = Colors(
     accent = Brand.Amber,
     danger = Color(0xFFFF6B5E),
     warning = Brand.Amber,
+    good = Good,
     primary = Brand.LightWhite,
     onPrimary = Ink,
 )
@@ -131,6 +136,7 @@ val LightColors = Colors(
     accent = LightAmber,
     danger = Color(0xFFD93A2B),
     warning = LightAmber,
+    good = Good,
     primary = LightInk,
     onPrimary = LightPaper,
 )
@@ -249,9 +255,11 @@ fun Button(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, pri
 @Composable
 fun <T> Segmented(options: List<Pair<T, String>>, selected: T, onSelect: (T) -> Unit, modifier: Modifier = Modifier, check: Boolean = false) {
     val c = LocalColors.current
-    Row(
+    // Si no caben (pantalla de pie), las que sobran bajan de renglón en vez de cortarse; si caben, una fila.
+    FlowRow(
         modifier.clip(RoundedCornerShape(Radius.inner)).background(c.surfaceHigh).padding(4.dp),
         horizontalArrangement = Arrangement.spacedBy(4.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         for ((value, text) in options) {
             val on = value == selected
@@ -270,6 +278,15 @@ fun <T> Segmented(options: List<Pair<T, String>>, selected: T, onSelect: (T) -> 
             }
         }
     }
+}
+
+/** Atrapa los toques para que no pasen a lo de abajo (paneles y capas sobre el inicio); no se ve ni hace nada. */
+fun Modifier.blockTouches(): Modifier = clickable(interactionSource = null, indication = null, onClick = {})
+
+/** Una raya fina que separa renglones dentro de una tarjeta. */
+@Composable
+fun Divider(modifier: Modifier = Modifier) {
+    Box(modifier.fillMaxWidth().height(1.dp).background(LocalColors.current.line))
 }
 
 /** Un renglón con su interruptor: el texto (y una ayuda opcional) a la izquierda. */

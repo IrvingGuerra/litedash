@@ -74,13 +74,11 @@ internal fun CarSettings(d: Dependencies) {
     var unreachable by remember { mutableStateOf(false) }
     LaunchedEffect(cars.hasCatalog) {
         if (!cars.hasCatalog) return@LaunchedEffect
-        // Sin red, un 4xx (Https lanza IllegalStateException) o un catálogo que no es JSON: se avisa abajo.
+        // Sin red, un 4xx (también IOException) o un catálogo que no es JSON: se avisa abajo.
         try {
             catalog = cars.catalog()
             unreachable = false
         } catch (e: IOException) {
-            unreachable = true
-        } catch (e: IllegalStateException) {
             unreachable = true
         } catch (e: JSONException) {
             unreachable = true

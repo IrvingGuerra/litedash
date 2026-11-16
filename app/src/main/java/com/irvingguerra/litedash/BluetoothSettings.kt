@@ -98,7 +98,8 @@ fun BluetoothSettings(d: Dependencies) {
         return
     }
 
-    var on by remember { mutableStateOf(adapter.isEnabled) }
+    // Prendido o apagado: el mismo vigilante que el Taller.
+    val on = rememberBluetoothOn() == true
     var scanning by remember { mutableStateOf(false) }
     val found = remember { mutableStateListOf<Found>() }
     // El que se está emparejando ahora (dirección), para decir "Emparejando…".
@@ -107,11 +108,9 @@ fun BluetoothSettings(d: Dependencies) {
     var bonds by remember { mutableIntStateOf(0) }
 
     LifecycleStartEffect(adapter) {
-        on = adapter.isEnabled
         val receiver = object : BroadcastReceiver() {
             override fun onReceive(ctx: Context, i: Intent) {
                 when (i.action) {
-                    BluetoothAdapter.ACTION_STATE_CHANGED -> on = adapter.isEnabled
                     BluetoothDevice.ACTION_FOUND -> {
                         val dev = IntentCompat.getParcelableExtra(i, BluetoothDevice.EXTRA_DEVICE, BluetoothDevice::class.java)
                         if (dev != null && found.size < FOUND_MAX && found.none { it.device.address == dev.address }) found.add(Found(dev, deviceLabel(dev)))
@@ -127,7 +126,6 @@ fun BluetoothSettings(d: Dependencies) {
             }
         }
         val filter = IntentFilter().apply {
-            addAction(BluetoothAdapter.ACTION_STATE_CHANGED)
             addAction(BluetoothDevice.ACTION_FOUND)
             addAction(BluetoothAdapter.ACTION_DISCOVERY_FINISHED)
             addAction(BluetoothDevice.ACTION_BOND_STATE_CHANGED)
@@ -145,15 +143,7 @@ fun BluetoothSettings(d: Dependencies) {
     if (!on) {
         val askEnable = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {}
         Label(stringResource(R.string.bluetooth_off), Typography.body, c.danger)
-        Button(stringResource(R.string.bluetooth_turn_on), {
-            try {
-                askEnable.launch(Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE))
-            } catch (e: ActivityNotFoundException) {
-                // Pantallas sin esa ventana: el interruptor de Android.
-                Log.w(TAG, "sin ventana para prender el Bluetooth", e)
-                openSystemScreen(context, Intent(Settings.ACTION_BLUETOOTH_SETTINGS))
-            }
-        }, primary = true)
+        Button(stringResource(R.string.bluetooth_turn_on), { requestBluetoothOn(context, askEnable) }, primary = true)
         return
     }
 

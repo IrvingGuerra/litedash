@@ -269,7 +269,10 @@
     <string name="unit_kmh">km/h</string>
     <string name="unit_mph">mph</string>
     <string name="parked_mode">Parked mode</string>
-    <string name="parked_mode_help">After 5 minutes without touching home (and not moving), a big clock or your image shows up. One tap hides it.</string>
+    <plurals name="parked_mode_help">
+        <item quantity="one">After %d minute without touching home (and not moving), a big clock or your image shows up. One tap hides it.</item>
+        <item quantity="other">After %d minutes without touching home (and not moving), a big clock or your image shows up. One tap hides it.</item>
+    </plurals>
     <string name="parked_clock">Clock</string>
     <string name="parked_image">Your image</string>
     <string name="parked_no_image">Pick an image from your gallery; until then, the clock shows.</string>
@@ -657,7 +660,10 @@
     <string name="zone_exhaust">Emissions</string>
     <string name="zone_wheels">Wheels and brakes</string>
     <string name="zone_body">Body and network</string>
-    <string name="health_monitors">%1$d of %2$d monitors ready</string>
+    <plurals name="health_monitors">
+        <item quantity="one">%1$d of %2$d monitor ready</item>
+        <item quantity="other">%1$d of %2$d monitors ready</item>
+    </plurals>
     <string name="health_mil">Check engine light is on</string>
     <!-- Tires (TPMS) -->
     <string name="tires">Tires</string>

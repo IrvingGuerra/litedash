@@ -118,7 +118,7 @@ enum class ParkedView(val stored: String) {
     }
 }
 
-/** Dónde va la barra con la hora y tus apps. AUTO = a un lado si la pantalla está acostada. */
+/** Dónde va la barra de tus apps. AUTO = a un lado si la pantalla está acostada. */
 enum class BarPosition(val stored: String) {
     // SIDE = a la izquierda (como se guardaba antes de haber derecha).
     AUTO("auto"), SIDE("side"), RIGHT("right"), BOTTOM("bottom");
@@ -374,7 +374,7 @@ class Preferences(context: Context) {
     /** Lo que muestra el modo estacionado (de fábrica, el reloj). */
     var parkedView by mapped(PrefKeys.PARKED_VIEW, ParkedView::fromStored) { it.stored }
 
-    /** Dónde van la hora y tus apps: a un lado, abajo o según la pantalla. */
+    /** Dónde va la barra de tus apps: a un lado, abajo o según la pantalla. */
     var barPosition by mapped(PrefKeys.BAR_POSITION, BarPosition::fromStored) { it.stored }
     var barSize by mapped(PrefKeys.BAR_SIZE, BarSize::fromStored) { it.stored }
     var barStyle by mapped(PrefKeys.BAR_STYLE, BarStyle::fromStored) { it.stored }
@@ -391,7 +391,7 @@ class Preferences(context: Context) {
      */
     fun addBluetoothToBar() {
         if (p.getBoolean(PrefKeys.BAR_BLUETOOTH_ADDED, false)) return
-        p.edit().putBoolean(PrefKeys.BAR_BLUETOOTH_ADDED, true).apply()
+        p.edit { putBoolean(PrefKeys.BAR_BLUETOOTH_ADDED, true) }
         val items = barItems
         if (BarItem.BLUETOOTH in items) return
         val after = items.indexOf(BarItem.NAVIGATE).takeIf { it >= 0 } ?: (items.size - 2)

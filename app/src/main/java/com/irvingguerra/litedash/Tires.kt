@@ -73,6 +73,7 @@ import com.irvingguerra.litedash.core.ui.Radius
 import com.irvingguerra.litedash.core.ui.TilePadding
 import com.irvingguerra.litedash.core.ui.Typography
 import com.irvingguerra.litedash.core.ui.fitFont
+import com.irvingguerra.litedash.core.ui.blockTouches
 import com.irvingguerra.litedash.core.vehicle.watch
 import com.irvingguerra.litedash.feature.car.CAR_TOP_ASPECT
 import com.irvingguerra.litedash.feature.car.CarTop
@@ -490,7 +491,7 @@ fun TiresFull(d: Dependencies, progress: () -> Float, onClose: () -> Unit, onSet
                     scaleY = s
                 }
                 // Lo de adentro no cierra: solo el fondo.
-                .clickable(remember { MutableInteractionSource() }, indication = null) {},
+                .blockTouches(),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             val repo = d.tpms
@@ -744,7 +745,7 @@ private fun TirePill(text: String, status: TireStatus, onClick: () -> Unit, modi
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(7.dp),
     ) {
-        Box(Modifier.size(7.dp).clip(CircleShape).background(color ?: if (status.state == TireState.GOOD) Good else c.textMuted))
+        Box(Modifier.size(7.dp).clip(CircleShape).background(color ?: if (status.state == TireState.GOOD) c.good else c.textMuted))
         Label(text, Typography.small.copy(fontWeight = FontWeight.SemiBold), color ?: c.text, maxLines = 1)
     }
 }
@@ -802,7 +803,7 @@ private fun TiresHeader(d: Dependencies, short: Boolean) {
             val name = stringResource(if (short) wheelShort(worst.first) else wheelName(worst.first))
             stringResource(R.string.tire_line, name, stringResource(worst.second.state.word())) to (severityColor(worst.second.severity) ?: c.warning)
         }
-        Wheel.ROAD.any { repo.wheelReading(it) != null } -> stringResource(R.string.health_all_good) to Good
+        Wheel.ROAD.any { repo.wheelReading(it) != null } -> stringResource(R.string.health_all_good) to c.good
         // Sin lecturas porque el Bluetooth no puede buscar: se dice por qué (como en Ajustes → Llantas).
         ble != null -> stringResource(bleProblemText(ble)) to c.warning
         else -> stringResource(R.string.health_unknown) to c.textMuted
@@ -851,7 +852,7 @@ private fun TileValue(d: Dependencies, w: Wheel, fit: TireFit, rich: Boolean, en
     if (!rich) {
         val kpa = d.bus.watch(TireSignals.pressure(w))
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-            Box(Modifier.size(6.dp).clip(CircleShape).background(color ?: if (st.state == TireState.GOOD) Good else c.textMuted))
+            Box(Modifier.size(6.dp).clip(CircleShape).background(color ?: if (st.state == TireState.GOOD) c.good else c.textMuted))
             Label(kpa?.let { repo.unit.format(it) } ?: "—", style, color ?: c.text, maxLines = 1)
         }
         return
@@ -986,7 +987,7 @@ class TiresAlertState {
  * la calla (por llanta y tipo) hasta que se resuelva y vuelva a pasar.
  */
 @Composable
-fun TiresAlertBanner(d: Dependencies, onOpen: () -> Unit, state: TiresAlertState = remember { TiresAlertState() }) {
+fun TiresAlertBanner(d: Dependencies, onOpen: () -> Unit, state: TiresAlertState) {
     if (!d.prefs.tiresBanner || !d.hasTpmsSource) return
     val repo = d.tpms
     if (!repo.alertsEnabled) return
@@ -1017,8 +1018,8 @@ internal fun TiresHealthTile(d: Dependencies, onClick: () -> Unit, modifier: Mod
         name = stringResource(R.string.tires),
         value = word,
         modifier = modifier,
-        valueColor = color ?: if (lowest != null) Good else c.textMuted,
-        dot = color ?: if (lowest != null) Good else c.textMuted,
+        valueColor = color ?: if (lowest != null) c.good else c.textMuted,
+        dot = color ?: if (lowest != null) c.good else c.textMuted,
         detail = (worst?.first ?: lowest?.first)?.let { w ->
             val name = stringResource(wheelName(w))
             d.bus.value(TireSignals.pressure(w))?.let { stringResource(R.string.tire_line, name, repo.unit.text(it)) } ?: name
@@ -1030,8 +1031,9 @@ internal fun TiresHealthTile(d: Dependencies, onClick: () -> Unit, modifier: Mod
 
 /**
  * La fuente "Auto (OBD)" de Llantas: con el módulo OBD prendido y adaptador guardado, leerlas es querer el
- * escáner ([ObdRepository.want]: conecta solo y, si se cae, su política reintenta) y pedirle la presión de
- * fábrica. Al parar la fuente, [releaseFactoryTires] lo suelta.
+ * escáner ([ObdRepository.want]: conecta solo y, mientras lo quieran, su política no se rinde) y pedirle la
+ * presión de fábrica. Querer en cada lectura (no repite nada si ya lo quiere) también cubre un adaptador que se
+ * guarda con la fuente ya andando. Al parar la fuente ([CarTires.stop]), [releaseFactoryTires] lo suelta.
  */
 internal suspend fun factoryTires(d: Dependencies): FactoryTires {
     if (!d.obdAuto) return FactoryTires.NotConnected

@@ -35,7 +35,7 @@ object Signal {
 }
 
 /** De dónde viene un dato; con varias fuentes para la misma señal gana la mayor. */
-enum class Source(val priority: Int) { GPS(1), OBD(2), CAN(3) }
+enum class Source(val priority: Int) { GPS(1), OBD(2), CAN(3), TPMS(4) }
 
 /**
  * El tablero nunca le habla directo al OBD ni al GPS: lee aquí. Cada fuente publica

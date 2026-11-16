@@ -2,9 +2,7 @@ package com.irvingguerra.litedash
 
 import com.irvingguerra.litedash.core.ui.Segmented
 import android.app.Activity
-import android.content.ActivityNotFoundException
 import android.content.Context
-import android.content.Intent
 import android.provider.Settings
 import android.util.Log
 import android.view.WindowManager
@@ -21,7 +19,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.core.net.toUri
 import com.irvingguerra.litedash.core.ui.Icon
 import com.irvingguerra.litedash.core.ui.IconButton
 import com.irvingguerra.litedash.core.ui.Icons
@@ -94,14 +91,9 @@ private fun windowBrightness(activity: Activity, percent: Int?) {
     }
 }
 
+// Algunas pantallas de auto no traen esa página de Ajustes: entonces no pasa nada (queda en el registro).
 private fun requestWriteSettings(context: Context) {
-    val intent = Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS, "package:${context.packageName}".toUri())
-        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-    // Algunas pantallas de auto no traen esa página de Ajustes.
-    try {
-        context.startActivity(intent)
-    } catch (_: ActivityNotFoundException) {
-    }
+    openSystemScreen(context, appSettingsIntent(context, Settings.ACTION_MANAGE_WRITE_SETTINGS))
 }
 
 /** Ajustes → Inicio y apariencia → Brillo: encender, cuánto de día y de noche, y en todas las apps. */

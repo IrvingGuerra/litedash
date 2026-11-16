@@ -59,15 +59,23 @@ internal fun detailOf(t: Throwable): String = t.message ?: t.cause?.message ?: t
  * La política de conexión, toda aquí (pura, con pruebas). Tras un fallo: cuánto esperar para el
  * siguiente intento, o null = rendirse (se vuelve a intentar cuando alguien pida el escáner otra vez
  * o el usuario toque Conectar). [retries] = reintentos seguidos ya hechos (se reinicia al conectar bien
- * y en cada intento del usuario).
+ * y en cada intento del usuario). [wanted] = alguien lo quiere ahora ([ObdRepository.want]).
  * - Lo que no se arregla reintentando (permiso, sin cable, no es OBD) nunca se reintenta.
  * - El 133 de GATT se reintenta pronto aunque nunca haya conectado.
- * - Lo demás, solo si ya estaba conectado o es parte de una racha de reintentos.
+ * - Tras caerse, dentro de una racha o si alguien lo quiere, se reintenta pronto hasta
+ *   [ObdTiming.MAX_RETRIES]. Un primer fallo sin haber conectado y sin nadie que lo quiera se queda a la vista.
+ * - Pasado el tope, mientras alguien lo quiera no se rinde (el adaptador puede seguir dormido al encender
+ *   el auto): espera cada vez más, [ObdTiming.WANTED_RETRY_MS] al doble hasta [ObdTiming.WANTED_MAX_MS].
+ *   Sin nadie que lo quiera, se rinde.
  */
-internal fun retryDelay(error: ObdError, dropped: Boolean, retries: Int): Long? = when {
-    !error.retry || retries >= ObdTiming.MAX_RETRIES -> null
-    error == ObdError.GATT_BUSY -> ObdTiming.GATT_RETRY_MS
-    dropped || retries > 0 -> ObdTiming.RECONNECT_MS
+internal fun retryDelay(error: ObdError, dropped: Boolean, retries: Int, wanted: Boolean): Long? = when {
+    !error.retry -> null
+    retries < ObdTiming.MAX_RETRIES && error == ObdError.GATT_BUSY -> ObdTiming.GATT_RETRY_MS
+    retries < ObdTiming.MAX_RETRIES && (dropped || retries > 0 || wanted) -> ObdTiming.RECONNECT_MS
+    wanted -> {
+        val doublings = (retries - ObdTiming.MAX_RETRIES).coerceIn(0, 8)
+        (ObdTiming.WANTED_RETRY_MS shl doublings).coerceAtMost(ObdTiming.WANTED_MAX_MS)
+    }
     else -> null
 }
 
@@ -77,6 +85,10 @@ internal object ObdTiming {
     const val MAX_RETRIES = 5
     /** Espera tras caerse (el adaptador se reinicia, el auto se apagó un momento). */
     const val RECONNECT_MS = 8_000L
+    /** Mientras alguien lo quiere, pasado el tope: la primera espera (luego al doble)… */
+    const val WANTED_RETRY_MS = 15_000L
+    /** …y la más larga. */
+    const val WANTED_MAX_MS = 5 * 60_000L
     /** Espera tras un 133 de GATT. */
     const val GATT_RETRY_MS = 1_000L
     /** Un respiro antes de abrir BLE: que el Bluetooth termine la búsqueda o el GATT que se acaba de cerrar. */

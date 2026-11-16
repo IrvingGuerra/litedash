@@ -96,12 +96,8 @@ suspend fun downloadWallpaper(context: Context, id: String, target: File): Boole
 
 /** Baja [name] a [target] solo si [read] lo puede leer (devuelve lo leído); si no, lanza y [target] no cambia. */
 private fun <T : Any> download(context: Context, name: String, target: File, read: (File) -> T?): T = replaceFile(target) { temp ->
-    val connection = try {
-        Https.get(context, WALLPAPERS_URL + name)
-    } catch (e: IllegalStateException) {
-        // Un 4xx (p. ej. un fondo que se quitó de la lista): Https lo avisa así.
-        throw IOException("$name: ${e.message}", e)
-    }
+    // Un 4xx (p. ej. un fondo que se quitó de la lista) llega como IOException igual que sin red.
+    val connection = Https.get(context, WALLPAPERS_URL + name)
     connection.inputStream.use { input -> temp.outputStream().use { input.copyTo(it) } }
     read(temp) ?: throw IOException("unreadable $name")
 }

@@ -7,6 +7,11 @@ import android.hardware.usb.UsbEndpoint
 import android.hardware.usb.UsbInterface
 import android.hardware.usb.UsbManager
 import android.os.SystemClock
+import java.util.Locale
+
+/** El nombre de un aparato USB para mostrarlo: el de su fabricante o, sin él, sus números. Lo usan OBD y Llantas. */
+fun UsbDevice.displayName(): String =
+    productName?.takeIf { it.isNotBlank() } ?: "USB %04X:%04X".format(Locale.US, vendorId, productId)
 
 /** Velocidades que usan los cables ELM327 por USB, de la más común a la menos. */
 internal val USB_BAUDS = listOf(38_400, 115_200, 9_600)

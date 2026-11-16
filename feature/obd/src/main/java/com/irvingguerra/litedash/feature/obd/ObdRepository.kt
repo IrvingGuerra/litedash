@@ -60,6 +60,11 @@ sealed interface ObdTarget {
     data class Wifi(val host: String, val port: Int) : ObdTarget {
         override val name get() = "$host:$port"
         override val key get() = "wifi"
+
+        companion object {
+            /** El puerto de casi todos los ELM327 por Wi-Fi (y del simulador). */
+            const val DEFAULT_PORT = 35000
+        }
     }
     /** Cable USB (la pantalla es el host); se reconoce por fabricante y producto. */
     data class Usb(val vendorId: Int, val productId: Int, override val name: String) : ObdTarget {
@@ -105,8 +110,9 @@ private class TireSession(val elm: Elm327) {
  *
  * La política de conexión vive toda aquí: quien lo use dice [want] ("lo quiero") y [release] ("ya
  * no"); con el primero conecta al adaptador guardado y sin ninguno desconecta. Tras un fallo,
- * [retryDelay] decide si reintenta, cuándo y cuándo se rinde; rendido, vuelve a intentar cuando
- * alguien nuevo lo quiere o el usuario toca Conectar ([connect]).
+ * [retryDelay] decide si reintenta y cuándo: mientras alguien lo quiere no se rinde (con esperas
+ * crecientes); sin nadie se rinde y vuelve a intentar cuando alguien nuevo lo quiere o el usuario toca
+ * Conectar ([connect]).
  */
 class ObdRepository(private val context: Context, private val bus: VehicleBus) {
     var state by mutableStateOf(ObdState.OFF)
@@ -116,12 +122,6 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
         private set
     /** El detalle crudo del fallo: solo para el reporte ([describe]). */
     @Volatile private var errorDetail: String? = null
-
-    /**
-     * Temporal, mientras la app pasa a [errorKind] con sus textos: el detalle crudo (o el tipo).
-     * Quitarlo cuando el Taller ya no lo use.
-     */
-    val error: String? get() = errorKind?.let { errorDetail ?: it.name }
 
     var adapter by mutableStateOf<String?>(null)
         private set
@@ -174,7 +174,7 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
     private fun readTarget(): ObdTarget? = when (prefs.getString(KEY_TYPE, null)) {
         "bt" -> ObdTarget.Bluetooth(prefs.getString("address", "")!!, prefs.getString("name", "")!!)
         "ble" -> ObdTarget.Ble(prefs.getString("address", "")!!, prefs.getString("name", "")!!)
-        "wifi" -> ObdTarget.Wifi(prefs.getString("address", "")!!, prefs.getInt("port", 35000))
+        "wifi" -> ObdTarget.Wifi(prefs.getString("address", "")!!, prefs.getInt("port", ObdTarget.Wifi.DEFAULT_PORT))
         "usb" -> ObdTarget.Usb(prefs.getInt("vendor_id", 0), prefs.getInt("product_id", 0), prefs.getString("name", "")!!)
         else -> null
     }
@@ -264,12 +264,9 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
     fun usbDevices(): List<ObdTarget.Usb> {
         val manager = context.getSystemService(UsbManager::class.java) ?: return emptyList()
         return manager.deviceList.values
-            .map { ObdTarget.Usb(it.vendorId, it.productId, usbName(it)) }
+            .map { ObdTarget.Usb(it.vendorId, it.productId, it.displayName()) }
             .sortedByDescending { looksLikeObd(it.name) }
     }
-
-    private fun usbName(d: UsbDevice): String =
-        d.productName?.takeIf { it.isNotBlank() } ?: "USB %04X:%04X".format(d.vendorId, d.productId)
 
     private fun usbDevice(t: ObdTarget.Usb): UsbDevice? =
         context.getSystemService(UsbManager::class.java)?.deviceList?.values
@@ -289,9 +286,6 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
     fun release(owner: Any) {
         if (wanters.remove(owner) && wanters.isEmpty()) disconnect()
     }
-
-    /** Conecta a un cable USB: Android pide permiso la primera vez (su diálogo); al darlo, conecta solo. */
-    fun connectUsb(t: ObdTarget.Usb) = connect(t)
 
     /** El usuario (o quien lo quiere) pide conectarse a [t] o al último que funcionó: racha nueva de reintentos. */
     fun connect(t: ObdTarget? = target) {
@@ -373,7 +367,7 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
         tires = null
         unwatchUsbDetach()
         bus.clear(Source.OBD)
-        val wait = retryDelay(kind, dropped, retries) ?: return
+        val wait = retryDelay(kind, dropped, retries, wanted = wanters.isNotEmpty()) ?: return
         retries++
         retryJob = scope.launch(Dispatchers.Main) {
             delay(wait)
