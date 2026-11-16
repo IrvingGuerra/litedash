@@ -205,7 +205,7 @@ private fun ArrangeCard(repo: TpmsRepository, w: Wheel, onClose: () -> Unit) {
         Column(Modifier.padding(22.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
-                    Label(stringResource(R.string.tires_arrange).uppercase(), Typography.label, c.textMuted, maxLines = 1)
+                    Label(stringResource(R.string.tires_arrange).uppercase(currentLocale()), Typography.label, c.textMuted, maxLines = 1)
                     Label(stringResource(wheelName(w)), Typography.title, maxLines = 1)
                 }
                 IconButton(Icons.close, onClose, size = 44.dp, background = c.surfaceHigh)
@@ -439,7 +439,7 @@ private fun PressureCard(repo: TpmsRepository, fahrenheit: Boolean) {
         Stepper(stringResource(R.string.tires_rear), unit.text(repo.recommendedRearKpa),
             { repo.recommendedRearKpa = stepKpa(repo.recommendedRearKpa, unit, -1, RECOMMENDED_KPA) },
             { repo.recommendedRearKpa = stepKpa(repo.recommendedRearKpa, unit, 1, RECOMMENDED_KPA) })
-        Stepper(stringResource(R.string.tires_low_percent), String.format(currentLocale(), "%d", repo.lowPercent) + " " + stringResource(R.string.unit_percent),
+        Stepper(stringResource(R.string.tires_low_percent), stringResource(R.string.value_with_unit, String.format(currentLocale(), "%d", repo.lowPercent), stringResource(R.string.unit_percent)),
             { repo.lowPercent = (repo.lowPercent - 5).coerceIn(10, 30) },
             { repo.lowPercent = (repo.lowPercent + 5).coerceIn(10, 30) },
             help = stringResource(R.string.tires_low_percent_help, unit.text(repo.recommendedFrontKpa * (100 - repo.lowPercent) / 100f)))

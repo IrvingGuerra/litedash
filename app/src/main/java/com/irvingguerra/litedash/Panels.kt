@@ -271,7 +271,7 @@ fun AddTilePanel(d: Dependencies, close: () -> Unit, onPickApp: () -> Unit, onPi
                     val specs = group.types.mapNotNull { t -> TileSpecs.firstOrNull { it.type == t } }.filter { offered(d, it.type) }
                     if (specs.isEmpty()) continue
                     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Label(stringResource(group.title).uppercase(), Typography.label, c.textMuted, modifier = Modifier.padding(start = 4.dp))
+                        Label(stringResource(group.title).uppercase(currentLocale()), Typography.label, c.textMuted, modifier = Modifier.padding(start = 4.dp))
                         FlowRow(horizontalArrangement = Arrangement.spacedBy(gap), verticalArrangement = Arrangement.spacedBy(gap)) {
                             for (spec in specs) AddCard(spec, Modifier.width(width)) { add(spec.type) }
                         }

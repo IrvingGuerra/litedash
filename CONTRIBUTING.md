@@ -8,6 +8,11 @@
   LiteDash en ella (plantilla "Pantalla nueva").
 - Errores con pasos para reproducirlos.
 
+## Traducir LiteDash
+
+Los idiomas que no son español ni inglés se bajan aparte. Para traducir (o arreglar una traducción) sigue
+[`translations/README.md`](translations/README.md). *To translate LiteDash, see the same file (English inside).*
+
 ## Código
 
 1. Rama corta desde `main`: `feat/<módulo>-<tema>` o `fix/<módulo>-<tema>`.

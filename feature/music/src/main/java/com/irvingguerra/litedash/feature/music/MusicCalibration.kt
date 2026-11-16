@@ -1,0 +1,64 @@
+package com.irvingguerra.litedash.feature.music
+
+import android.media.session.PlaybackState
+
+internal fun MusicRepository.showCheck(piece: SoundPiece, check: SoundCheck?) {
+    if (check != null || soundCheck?.piece == piece) soundCheck = check
+}
+
+/** La música Bluetooth empezó a sonar (un play de LiteDash, el celular por Connect o AVRCP): su receta y la revisión. */
+internal fun MusicRepository.calibrateBluetooth() {
+    if (!bluetoothCalibrates) return
+    // El celular ya suena por el Bluetooth de Android y Android tiene el audio: no hay nada que calibrar
+    // (reporte E3F104: "plain no suena" con la sesión de com.android.bluetooth sonando).
+    if (avrcpController?.playbackState?.state == PlaybackState.STATE_PLAYING && musicActive()) return trace("calibración bt: ya suena por Android")
+    val available = headUnit.bluetoothRecipes.filter { btRecipes[it]?.available() == true }
+    if (btCalibration.play(available, catalog?.bluetooth)) return
+    // Nada funcionó antes: la receta de la marca de todos modos (lo que se hacía antes de calibrar);
+    // sin receta de marca, nada que probar.
+    if (btStore.saved?.id == Recipes.FAILED && !btCalibration.pending) {
+        headUnit.bluetoothRecipes.firstOrNull { it in Recipes.BRAND && btRecipes[it]?.available() == true }?.let(::useBluetooth)
+    }
+}
+
+/** Al dejar el método Bluetooth o irse el celular: se suelta la receta (y lo pendiente se deja). */
+internal fun MusicRepository.releaseBluetoothRecipe() {
+    btCalibration.abort()
+    useBluetooth(null)
+}
+
+internal fun MusicRepository.useBluetooth(id: String?): Long? {
+    val recipe = id?.let(btRecipes::get)
+    if (btApplied !== recipe) btApplied?.release()
+    btApplied = recipe
+    return recipe?.apply()
+}
+
+/**
+ * ¿Suena el Bluetooth de verdad? ([bluetoothSounds]). Sin la prueba de que el celular suena, un celular apagado
+ * llevaría a guardar [Recipes.FAILED] con un "No" que no era culpa de la pantalla.
+ */
+internal fun MusicRepository.bluetoothHeard(): Boolean? {
+    val song = music.song
+    val playing = phoneState.onBluetooth && modeState == MusicMode.BLUETOOTH ||
+        avrcpController?.playbackState?.state == PlaybackState.STATE_PLAYING ||
+        song?.playing == true && !song.blind
+    if (!playing) return null
+    return bluetoothSounds(true, musicActive(), othersPlaying(bluetoothGroup(avrcpPackage, knownBluetooth, sourceApps[SourceKind.BLUETOOTH])))
+}
+
+internal fun MusicRepository.loadCatalog() {
+    if (catalogAsked) return
+    fun needs(piece: SoundPiece, users: Int, saved: SavedRecipe?) = users > 0 && saved == null && calibrates(piece)
+    if (!needs(SoundPiece.MUSIC, musicUsers, btStore.saved) && !needs(SoundPiece.RADIO, radioUsers, fmStore.saved)) return
+    catalogAsked = true
+    Thread({
+        val found = loadRecipeCatalog(context)
+        val retry = found == null && !recipeCatalogCached(context)
+        mainHandler.post {
+            if (retry) catalogAsked = false
+            catalog = found
+            trace("catálogo de recetas: ${found?.let { "bt=${it.bluetooth ?: "-"} fm=${it.radio ?: "-"}" } ?: "nada para esta pantalla"}")
+        }
+    }, "audio-recipes").start()
+}

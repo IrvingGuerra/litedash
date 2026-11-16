@@ -85,6 +85,12 @@ class MainActivity : ComponentActivity() {
     // Idioma elegido en Ajustes (o el del sistema si no eligió).
     override fun attachBaseContext(base: Context) = super.attachBaseContext(contextWithLanguage(base))
 
+    // Con un idioma bajado, sus recursos no los pone al día Android ([TranslatedResources.sync]).
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        syncTranslated(resources, newConfig)
+        super.onConfigurationChanged(newConfig)
+    }
+
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         if (intent.hasCategory(Intent.CATEGORY_HOME)) homePressed.intValue++

@@ -216,7 +216,7 @@ fun EngineAlertBanner(d: Dependencies, state: EngineAlertState) {
     val a = shown?.takeIf { it != dismissed } ?: return
     val locale = currentLocale()
     val units = d.prefs.units
-    val volts = voltage?.let { String.format(locale, "%.1f", it) + " " + stringResource(R.string.unit_volts) } ?: "—"
+    val volts = voltage?.let { stringResource(R.string.value_with_unit, String.format(locale, "%.1f", it), stringResource(R.string.unit_volts)) } ?: "—"
     val text = when (a) {
         EngineAlert.HOT -> stringResource(R.string.alert_hot, coolant?.let { sensorText(Signal.COOLANT, it, units, locale) } ?: "—")
         EngineAlert.NOT_CHARGING -> stringResource(R.string.alert_not_charging, volts)
@@ -616,8 +616,8 @@ internal fun sensorName(signal: String) = when (signal) {
  */
 @Composable
 fun sensorText(signal: String, v: Float, units: UnitChoice, locale: java.util.Locale): String {
-    gaugeOf(signal)?.let { spec -> return gaugeText(spec, v, units, locale) + " " + stringResource(spec.unit(units)) }
-    @Composable fun with(number: String, unit: Int) = "$number ${stringResource(unit)}"
+    @Composable fun with(number: String, unit: Int) = stringResource(R.string.value_with_unit, number, stringResource(unit))
+    gaugeOf(signal)?.let { spec -> return with(gaugeText(spec, v, units, locale), spec.unit(units)) }
     return when (signal) {
         Signal.SPEED -> if (units.miles) with(String.format(locale, "%.0f", v.toMiles(true)), R.string.unit_mph) else with(String.format(locale, "%.0f", v), R.string.unit_kmh)
         Signal.LOAD -> with(String.format(locale, "%.0f", v), R.string.unit_percent)

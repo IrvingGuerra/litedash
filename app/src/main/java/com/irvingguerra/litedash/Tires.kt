@@ -187,7 +187,8 @@ private fun TireMarks(statuses: Map<Wheel, TireStatus>, modifier: Modifier, radi
 
 /** Grados en la unidad del usuario ("28 °C" o "82 °F"). */
 @Composable
-internal fun tempText(c: Float, fahrenheit: Boolean) = "${c.toFahrenheit(fahrenheit).roundToInt()} ${stringResource(if (fahrenheit) R.string.unit_f else R.string.unit_c)}"
+internal fun tempText(c: Float, fahrenheit: Boolean) =
+    stringResource(R.string.value_with_unit, c.toFahrenheit(fahrenheit).roundToInt().toString(), stringResource(if (fahrenheit) R.string.unit_f else R.string.unit_c))
 
 /** La presión con su unidad ("32 psi"). */
 internal fun PressureUnit.text(kpa: Float) = "${format(kpa)} $label"

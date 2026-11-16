@@ -1,7 +1,6 @@
 // Ajustes → Inicio y apariencia: inicio, interfaz, día y noche, unidades y widgets.
 package com.irvingguerra.litedash
 
-import android.app.Activity
 import android.hardware.Sensor
 import android.hardware.SensorManager
 import androidx.compose.foundation.background
@@ -82,7 +81,6 @@ internal fun Appearance(d: Dependencies, revision: Int, onEdit: () -> Unit, onTe
 private fun InterfaceSettings(d: Dependencies) {
     val prefs = d.prefs
     val c = LocalColors.current
-    val context = LocalContext.current
     SettingsCard(stringResource(R.string.accent_title), stringResource(R.string.accent_help)) { AccentSettings(prefs) }
     SettingsCard(stringResource(R.string.scale), stringResource(R.string.scale_help)) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -91,19 +89,7 @@ private fun InterfaceSettings(d: Dependencies) {
             IconButton(Icons.plus, { prefs.scale = (prefs.scale + 0.1f).coerceAtMost(1.5f).roundToTenth() }, background = c.surfaceHigh)
         }
     }
-    SettingsCard(stringResource(R.string.language)) {
-        val activity = context as? Activity
-        Segmented(
-            listOf("" to R.string.language_system, "es" to R.string.language_es, "en" to R.string.language_en).map { (code, text) -> code to stringResource(text) },
-            prefs.language,
-            { code ->
-                if (prefs.language != code) {
-                    prefs.language = code
-                    activity?.let(MainActivity::restart)
-                }
-            },
-        )
-    }
+    SettingsCard(stringResource(R.string.language)) { LanguageSettings(prefs) }
     SettingsCard(stringResource(R.string.your_name), stringResource(R.string.your_name_help)) {
         DriverNameField(prefs)
     }

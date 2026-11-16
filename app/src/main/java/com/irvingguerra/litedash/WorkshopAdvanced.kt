@@ -271,13 +271,13 @@ private fun writeCsv(context: Context, uri: Uri, text: String): Boolean = try {
 @Composable
 private fun TripRow(t: TripSummary, dates: DateFormat, units: UnitChoice, locale: java.util.Locale) {
     val c = LocalColors.current
-    val km = String.format(locale, "%.1f", if (units.miles) t.km.toMiles(true) else t.km) + " " + stringResource(if (units.miles) R.string.unit_mi else R.string.unit_km)
+    val km = stringResource(R.string.value_with_unit, String.format(locale, "%.1f", if (units.miles) t.km.toMiles(true) else t.km), stringResource(if (units.miles) R.string.unit_mi else R.string.unit_km))
     val minutes = t.seconds / 60
     val time = stringResource(R.string.trip_hours, String.format(locale, "%d:%02d", minutes / 60, minutes % 60))
     val extras = buildList {
         add(stringResource(R.string.trip_avg, sensorText(Signal.SPEED, t.avgKmh, units, locale)))
         add(stringResource(R.string.trip_max, sensorText(Signal.SPEED, t.maxKmh, units, locale)))
-        if (t.maxRpm > 0f) add(String.format(locale, "%.0f", t.maxRpm) + " " + stringResource(R.string.unit_rpm))
+        if (t.maxRpm > 0f) add(stringResource(R.string.value_with_unit, String.format(locale, "%.0f", t.maxRpm), stringResource(R.string.unit_rpm)))
         t.maxCoolant?.let { add(sensorText(Signal.COOLANT, it, units, locale)) }
         t.kmPerLiter?.let { add(sensorText(Signal.CONSUMPTION, it, units, locale)) }
     }

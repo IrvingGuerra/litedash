@@ -21,8 +21,8 @@ internal const val LOG_TAG = "LiteDash"
 /** Dónde viven: `index.json` (la lista) y por cada fondo `<id>.webp` (1920×1080) y `<id>-thumb.webp` (320×180). */
 private const val WALLPAPERS_URL = "https://litedash.dev/wallpapers/"
 
-/** La lista se vuelve a pedir a lo más una vez al día; sin internet, la última que se bajó. */
-private const val LIST_MAX_AGE_MS = 24 * 60 * 60 * 1000L
+/** Las listas de litedash.dev (fondos, idiomas) se vuelven a pedir a lo más una vez al día; sin internet, la última. */
+internal const val LIST_MAX_AGE_MS = 24 * 60 * 60 * 1000L
 
 /** Un fondo de LiteDash: [credit] = de quién es la foto ("LiteDash" en los nuestros). */
 class WallpaperChoice(val id: String, val credit: String)

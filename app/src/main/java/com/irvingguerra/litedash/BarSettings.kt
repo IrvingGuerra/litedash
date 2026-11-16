@@ -57,7 +57,7 @@ fun BarSettingsPanel(d: Dependencies, apps: List<App>, hasVoice: Boolean, close:
         Column(Modifier.weight(1f).widthIn(max = 720.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(14.dp)) {
             Label(stringResource(R.string.bar_edit_help), Typography.body, c.textMuted)
             if (missing.isNotEmpty()) {
-                Label(stringResource(R.string.bar_add).uppercase(), Typography.label, c.textMuted)
+                Label(stringResource(R.string.bar_add).uppercase(currentLocale()), Typography.label, c.textMuted)
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     // Se agrega antes de Ajustes; luego se arrastra a donde se quiera.
                     for (item in missing) item.title()?.let { title ->
@@ -66,10 +66,10 @@ fun BarSettingsPanel(d: Dependencies, apps: List<App>, hasVoice: Boolean, close:
                 }
             }
             if (BarItem.FAVORITES in prefs.barItems) {
-                Label(stringResource(R.string.bar_item_favorites).uppercase(), Typography.label, c.textMuted)
+                Label(stringResource(R.string.bar_item_favorites).uppercase(currentLocale()), Typography.label, c.textMuted)
                 Favorites(d, apps)
             }
-            Label(stringResource(R.string.bar_place).uppercase(), Typography.label, c.textMuted)
+            Label(stringResource(R.string.bar_place).uppercase(currentLocale()), Typography.label, c.textMuted)
             Segmented(
                 listOf(
                     BarPosition.AUTO to stringResource(R.string.bar_auto),
@@ -82,14 +82,14 @@ fun BarSettingsPanel(d: Dependencies, apps: List<App>, hasVoice: Boolean, close:
             )
             Label(stringResource(R.string.bar_position_help), Typography.small, c.textMuted)
             if (prefs.barPosition != BarPosition.SIDE && prefs.barPosition != BarPosition.RIGHT) {
-                Label(stringResource(R.string.bar_style).uppercase(), Typography.label, c.textMuted)
+                Label(stringResource(R.string.bar_style).uppercase(currentLocale()), Typography.label, c.textMuted)
                 Segmented(
                     listOf(BarStyle.FLOATING to stringResource(R.string.bar_style_floating), BarStyle.FULL to stringResource(R.string.bar_style_full)),
                     prefs.barStyle,
                     { prefs.barStyle = it },
                 )
             }
-            Label(stringResource(R.string.bar_size).uppercase(), Typography.label, c.textMuted)
+            Label(stringResource(R.string.bar_size).uppercase(currentLocale()), Typography.label, c.textMuted)
             Segmented(
                 listOf(BarSize.SMALL to stringResource(R.string.bar_size_small), BarSize.NORMAL to stringResource(R.string.bar_size_normal), BarSize.LARGE to stringResource(R.string.bar_size_large)),
                 prefs.barSize,

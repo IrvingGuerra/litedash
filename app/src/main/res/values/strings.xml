@@ -205,6 +205,12 @@
     <!-- Cada idioma se muestra en su propio idioma. -->
     <string name="language_es" translatable="false">Español</string>
     <string name="language_en" translatable="false">English</string>
+    <string name="language_more">Más idiomas</string>
+    <string name="language_more_help">Hechos por la comunidad. Se bajan al elegirlos; lo que falte sale en inglés.</string>
+    <string name="language_offline">Sin internet: solo español e inglés.</string>
+    <string name="language_none">Todavía no hay más idiomas.</string>
+    <string name="language_details">%1$d %% traducido · %2$s</string>
+    <string name="language_failed">No se pudo bajar el idioma; revisa tu conexión.</string>
     <string name="units_title">Unidades</string>
     <string name="units_speed">Velocidad y distancia</string>
     <string name="units_temp">Temperatura</string>

@@ -39,6 +39,9 @@ fun signingValue(key: String, env: String): String? = signing.getProperty(key) ?
 // emulador: ./gradlew ... -Pcatalog=http://10.0.2.2:8765/catalogo.json
 val CATALOG_URL = (findProperty("catalog") as String?)
     ?: "https://github.com/IrvingGuerra/litedash/releases/download/catalogo/catalogo.json"
+// Idiomas descargables (lista + paquetes, ver tools/lang.py). Para probar uno local en el emulador (solo debug deja http):
+// ./gradlew ... -Planguages=http://10.0.2.2:8765/
+val LANGUAGES_URL = (findProperty("languages") as String?) ?: "https://litedash.dev/lang/"
 val hasSigning = signingValue("storeFile", "LITEDASH_STORE_FILE") != null
 
 android {
@@ -52,6 +55,7 @@ android {
         versionCode = versionCodeFrom(appVersionName)
         versionName = appVersionName
         buildConfigField("String", "CATALOG_URL", "\"$CATALOG_URL\"")
+        buildConfigField("String", "LANGUAGES_URL", "\"$LANGUAGES_URL\"")
         buildConfigField("String", "RELEASE_NOTES", "\"" + releaseNotes.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n") + "\"")
     }
 

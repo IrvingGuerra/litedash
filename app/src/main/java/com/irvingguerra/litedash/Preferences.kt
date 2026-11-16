@@ -228,14 +228,23 @@ internal fun localeFor(language: String, system: Locale): Locale =
 fun contextWithLanguage(base: Context): Context {
     val language = Language.read(base)
     if (language.isBlank()) return base
-    val locale = localeFor(language, primaryLocale(Resources.getSystem().configuration))
-    // Solo el idioma encima de lo del sistema (no una copia de toda la configuración): al girar la pantalla o
-    // cambiar el modo noche, lo demás sigue al sistema. fontScale = 0 = "sin cambiar" (1 pisaría la letra del usuario).
-    val config = Configuration().apply {
-        fontScale = 0f
-        setLocale(locale)
-    }
-    return base.createConfigurationContext(config)
+    val system = primaryLocale(Resources.getSystem().configuration)
+    // Un idioma bajado: sus textos encima del inglés de la APK ([TranslatedResources]). Si ya no está o no sirve, inglés.
+    val pack = if (language in BUILT_IN_LANGUAGES) null else LanguagePacks.active(base, language)
+    val locale = localeFor(if (pack == null && language !in BUILT_IN_LANGUAGES) "en" else language, system)
+    val localized = base.createConfigurationContext(languageConfig(locale))
+    if (pack == null) return localized
+    val english = base.createConfigurationContext(languageConfig(localeFor("en", system))).resources
+    return TranslatedContext(localized, english, pack, locale)
+}
+
+/**
+ * Solo el idioma encima de lo del sistema (no una copia de toda la configuración): al girar la pantalla o cambiar el
+ * modo noche, lo demás sigue al sistema. fontScale = 0 = "sin cambiar" (1 pisaría la letra del usuario).
+ */
+private fun languageConfig(locale: Locale) = Configuration().apply {
+    fontScale = 0f
+    setLocale(locale)
 }
 
 /**
@@ -332,7 +341,7 @@ class Preferences(context: Context) {
     /** Abrir LiteDash al encender la pantalla ([BootLaunch]); apagado de fábrica. */
     var openOnBoot by bool(PrefKeys.OPEN_ON_BOOT, false)
 
-    /** "" (sistema) o la etiqueta del idioma ("es", "en"…). Cambiarlo reabre la actividad: se escribe al instante (commit). */
+    /** "" (sistema), "es", "en" o un idioma bajado ("tr", [LanguagePacks]). Cambiarlo reabre la actividad: se escribe al instante (commit). */
     var language by Stored(p.getString(PrefKeys.LANGUAGE, "") ?: "") {
         p.edit(commit = true) { putString(PrefKeys.LANGUAGE, it) }
         Language.changed(it)

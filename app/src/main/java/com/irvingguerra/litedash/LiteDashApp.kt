@@ -4,9 +4,11 @@ import android.app.Application
 import android.content.ComponentCallbacks2
 import android.content.Context
 import android.content.SharedPreferences
+import android.content.res.Configuration
 import android.content.res.Resources
 import android.os.Build
 import android.service.notification.StatusBarNotification
+import kotlin.concurrent.thread
 import com.irvingguerra.litedash.core.vehicle.Signal
 import com.irvingguerra.litedash.core.vehicle.VehicleBus
 import com.irvingguerra.litedash.feature.obd.ObdRepository
@@ -119,6 +121,9 @@ class LiteDashApp : Application() {
             override fun onRemoved(notification: StatusBarNotification) = dependencies.navigation.removed(notification)
         }
         watchUsbOffer()
+        // Un idioma bajado se pone al día solo (la lista se revisa a lo más una vez al día); lo nuevo sale al siguiente arranque.
+        val language = Language.read(this)
+        if (language.isNotBlank() && language !in BUILT_IN_LANGUAGES) thread(name = "language") { updateLanguage(this, language) }
     }
 
     /**
@@ -135,14 +140,22 @@ class LiteDashApp : Application() {
     }
 
     // Los textos que se piden a la aplicación (repositorios, avisos, servicios que usan applicationContext) salen
-    // en el idioma elegido, no en el del sistema. Se rehace solo cuando cambia el idioma ([Language]).
-    @Volatile private var localized: Pair<String, Resources>? = null
+    // en el idioma elegido, no en el del sistema. Se rehace solo cuando cambia el idioma ([Language]) o su paquete bajado.
+    private class Localized(val language: String, val generation: Int, val resources: Resources)
+
+    @Volatile private var localized: Localized? = null
 
     override fun getResources(): Resources {
         val base = baseContext ?: return super.getResources()
         val language = Language.read(base)
-        localized?.let { (lang, res) -> if (lang == language) return res }
-        return contextWithLanguage(base).resources.also { localized = language to it }
+        val generation = LanguagePacks.generation
+        localized?.let { if (it.language == language && it.generation == generation) return it.resources }
+        return contextWithLanguage(base).resources.also { localized = Localized(language, generation, it) }
+    }
+
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        localized?.let { syncTranslated(it.resources, newConfig) }
+        super.onConfigurationChanged(newConfig)
     }
 
     // Referencia fuerte: Android guarda los oyentes de preferencias como referencias débiles.

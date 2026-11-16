@@ -209,6 +209,12 @@
     <string name="units_imperial">mph and miles</string>
     <string name="units_auto_now">Automatic right now: %1$s and %2$s (based on your language and region)</string>
     <string name="language_system">Follow system</string>
+    <string name="language_more">More languages</string>
+    <string name="language_more_help">Made by the community. They download when you pick them; anything missing shows in English.</string>
+    <string name="language_offline">No internet: only Spanish and English.</string>
+    <string name="language_none">No more languages yet.</string>
+    <string name="language_details">%1$d%% translated · %2$s</string>
+    <string name="language_failed">Couldn\'t download the language; check your connection.</string>
     <string name="map_help">The app the Map widget and the bar button open. While navigating, it shows the next turn (it uses the same notification access as music).</string>
     <string name="map_no_apps">Install Waze or Google Maps to navigate from LiteDash.</string>
     <string name="map_external">Use external app for shortcuts</string>

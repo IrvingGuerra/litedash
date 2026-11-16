@@ -121,8 +121,8 @@ fun TemplatesPanel(dashboard: DashboardState, close: () -> Unit) {
                 if (templates.isEmpty()) continue
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Label(stringResource(if (vertical) R.string.screens_vertical else R.string.screens_horizontal).uppercase(), Typography.label, c.textMuted)
-                        if (mine) Label(stringResource(R.string.your_screen).uppercase(), Typography.label, c.accent)
+                        Label(stringResource(if (vertical) R.string.screens_vertical else R.string.screens_horizontal).uppercase(currentLocale()), Typography.label, c.textMuted)
+                        if (mine) Label(stringResource(R.string.your_screen).uppercase(currentLocale()), Typography.label, c.accent)
                     }
                     Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                         for (p in templates) {
@@ -132,7 +132,7 @@ fun TemplatesPanel(dashboard: DashboardState, close: () -> Unit) {
                                     Spacer(Modifier.height(12.dp))
                                     Label(stringResource(nameOf(p)), Typography.subtitle, maxLines = 1)
                                     if (tab == TemplateTab.CAR && mine && p == suggested) {
-                                        Label(stringResource(R.string.recommended).uppercase(), Typography.label, c.accent, maxLines = 1)
+                                        Label(stringResource(R.string.recommended).uppercase(currentLocale()), Typography.label, c.accent, maxLines = 1)
                                     }
                                 }
                             }

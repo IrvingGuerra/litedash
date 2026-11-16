@@ -227,6 +227,12 @@ class SplitActivity : ComponentActivity() {
     private fun openAppIfNeeded() = SplitScreen.openBeside(this, intent)
 
     override fun attachBaseContext(base: Context) = super.attachBaseContext(contextWithLanguage(base))
+
+    // Con un idioma bajado, sus recursos no los pone al día Android ([TranslatedResources.sync]).
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        syncTranslated(resources, newConfig)
+        super.onConfigurationChanged(newConfig)
+    }
 }
 
 /**
