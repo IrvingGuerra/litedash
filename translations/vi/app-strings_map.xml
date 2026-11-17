@@ -5,8 +5,9 @@
     <string name="map_waiting">Đang tìm vị trí của bạn…</string>
     <string name="map_customize">Tùy chỉnh bản đồ</string>
     <string name="map_orientation">Hướng</string>
-    <string name="map_north">Bắc ở trên</string>
+    <string name="map_north">Tự động</string>
     <string name="map_heading">Hướng đi ở trên</string>
+    <string name="map_north_up">Luôn hướng bắc</string>
     <string name="map_zoom">Thu phóng</string>
     <string name="map_zoom_auto">Tự động</string>
     <string name="map_zoom_near">Gần</string>

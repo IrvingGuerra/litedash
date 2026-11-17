@@ -5,8 +5,9 @@
     <string name="map_waiting">Finding your location…</string>
     <string name="map_customize">Customize map</string>
     <string name="map_orientation">Orientation</string>
-    <string name="map_north">North up</string>
+    <string name="map_north">Automatic</string>
     <string name="map_heading">Heading up</string>
+    <string name="map_north_up">Always north</string>
     <string name="map_zoom">Zoom</string>
     <string name="map_zoom_auto">Automatic</string>
     <string name="map_zoom_near">Near</string>

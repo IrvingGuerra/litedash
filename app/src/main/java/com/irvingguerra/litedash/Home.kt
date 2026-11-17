@@ -5,6 +5,7 @@ import android.content.Intent
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -28,6 +29,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.statusBarsIgnoringVisibility
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -663,7 +665,6 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
     val backdrop = if (hasFloor) {
         Brush.verticalGradient(0.3f to c.background, 1f to lerp(c.background, Color.Black, if (c.dark) 0.35f else 0.08f))
     } else SolidColor(c.background)
-    var promptsHeight by remember { mutableIntStateOf(0) }
     // Para el mapa de fondo: lo que mide la ventana y dónde está el tablero en ella (tú vas en su hueco libre).
     var rootSize by remember { mutableStateOf(Size.Zero) }
     var board by remember { mutableStateOf<Rect?>(null) }
@@ -712,8 +713,18 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                     }
                     val favorites = rememberFavorites(d, apps)
                     val railRight = rail && d.prefs.barPosition == BarPosition.RIGHT
-                    // Oculta (Inicio y apariencia → Barra) solo se ve al acomodar: ahí está Ajustes.
+                    // Oculta (Inicio y apariencia → Barra) se ve al acomodar (ahí está Ajustes) y, encima del tablero,
+                    // unos segundos tras tocar un hueco del inicio: cada toque en ella o en un hueco reinicia la cuenta.
                     val barShown = editing || !d.prefs.barHidden
+                    var barPeek by remember { mutableIntStateOf(0) }
+                    var peeking by remember { mutableStateOf(false) }
+                    LaunchedEffect(barPeek) {
+                        if (barPeek == 0) return@LaunchedEffect
+                        peeking = true
+                        delay(BAR_PEEK_MS)
+                        peeking = false
+                    }
+                    val peekAlpha by animateFloatAsState(if (peeking && !barShown) 1f else 0f, tween(BAR_FADE_MS), label = "barPeek")
                     // Lo que deja libre al ocultarse: el tablero lo gana, pero la cuadrícula no lo cuenta.
                     val freed = if (barShown) 0.dp else barThickness(d.prefs, rail)
                     val bar = @Composable { vertical: Boolean ->
@@ -736,19 +747,6 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                                 onFinish = { editing = false },
                                 pages = d.dashboard,
                             )
-                            // Los avisos tampoco cuentan para la cuadrícula: aparecen y se van, y no deben
-                            // hacer que se cargue otro acomodo.
-                            Column(Modifier.onSizeChanged { promptsHeight = it.height }) {
-                                if (d.prefs.welcomeSeen && !editing) {
-                                    if (!d.prefs.dontAskHome && !isShortScreen()) HomePrompt(d.prefs, revision)
-                                    EngineAlertBanner(d, engineAlert)
-                                    TiresAlertBanner(d, actions.onTires, tiresAlert)
-                                    if (!isShortScreen()) ReminderBanner(d.reminders)
-                                    d.updates?.Banner(onOpen = { openAbout(); panel = Panel.Updates })
-                                    val newModel = d.cars.outdated?.takeIf { it.id == car?.id }
-                                    if (car != null && newModel != null) CarUpdateNotice(d.cars, car, newModel)
-                                }
-                            }
                             // Sin barra abajo (va al costado o está oculta) el tablero lleva su propio aire inferior
                             // (en pantallas sin barra de gestos las piezas quedaban pegadas al borde).
                             val barBelow = barShown && !rail
@@ -756,12 +754,11 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                                 // La cuadrícula se calcula siempre como si la barra estuviera: si dependiera
                                 // de ella, un reloj en el acomodo la oculta, la cuadrícula crece, se carga
                                 // otro acomodo sin reloj, vuelve la barra... y el inicio parpadea sin parar.
-                                val prompts = with(LocalDensity.current) { promptsHeight.toDp() }
                                 // El aire inferior tampoco cuenta, ni el lugar que deja la barra oculta: la cuadrícula
                                 // (y el acomodo guardado) debe ser la misma con la barra en cualquier lado o sin ella.
                                 // Con la barra de Android oculta hay más alto, pero la cuadrícula tampoco cambia.
                                 val statusHidden = statusBarHiddenHeight()
-                                val gridHeight = (if (barHidden) maxHeight - (topBarHeight() - TOP_BAR_HIDDEN) else maxHeight) + prompts + (if (barBelow) 0.dp else 10.dp) - statusHidden - (if (rail) 0.dp else freed)
+                                val gridHeight = (if (barHidden) maxHeight - (topBarHeight() - TOP_BAR_HIDDEN) else maxHeight) + (if (barBelow) 0.dp else 10.dp) - statusHidden - (if (rail) 0.dp else freed)
                                 val gridWidth = maxWidth - (if (rail) freed else 0.dp)
                                 val grid = remember(gridWidth, gridHeight) { Grid.forSize(gridWidth.value, gridHeight.value) }
                                 // Carga el acomodo de esta cuadrícula antes de dibujar (solo hace algo si cambió).
@@ -793,6 +790,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                                         },
                                         // Todos tienen opciones; el auto 3D, solo con Llantas prendido (las de las llantas).
                                         hasSettings = { it.type != TileTypes.CAR || d.hasTpmsSource },
+                                        onTapEmpty = { if (!barShown) barPeek++ },
                                     ) { p -> TileContent(d, p, apps, car, revision, actions) }
                                 }
                                 // Con varias páginas: los puntitos abajo; al acomodar, la barra de páginas.
@@ -825,10 +823,44 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                                         }
                                     }
                                 }
+                                // Los avisos flotan encima del tablero, arriba al centro: no lo mueven ni lo achican
+                                // (aparecen y se van; la cuadrícula tampoco los cuenta). Con la música o el mapa en
+                                // grande solo quedan los del auto (los demás taparían su buscador o sus botones).
+                                if (d.prefs.welcomeSeen && !editing) {
+                                    Column(Modifier.align(Alignment.TopCenter).widthIn(max = PROMPTS_MAX_WIDTH).fillMaxWidth()) {
+                                        val calm = !expandedCovers
+                                        if (calm && !d.prefs.dontAskHome && !isShortScreen()) HomePrompt(d.prefs, revision)
+                                        EngineAlertBanner(d, engineAlert)
+                                        TiresAlertBanner(d, actions.onTires, tiresAlert)
+                                        if (calm && !isShortScreen()) ReminderBanner(d.reminders)
+                                        if (calm) d.updates?.Banner(onOpen = { openAbout(); panel = Panel.Updates })
+                                        val newModel = d.cars.outdated?.takeIf { it.id == car?.id }
+                                        if (calm && car != null && newModel != null) CarUpdateNotice(d.cars, car, newModel)
+                                    }
+                                }
                             }
                             if (barBelow) bar(false)
                         }
                         if (barShown && railRight) bar(true)
+                    }
+                    // La barra oculta asomándose: encima del tablero en su lugar de siempre, sin reacomodar nada. Al
+                    // costado lleva el fondo del inicio (ahí no tiene tarjeta propia).
+                    if (peekAlpha > 0f) {
+                        val place = when {
+                            !rail -> Modifier.align(Alignment.BottomCenter)
+                            railRight -> Modifier.align(Alignment.CenterEnd).fillMaxHeight().background(backdrop)
+                            else -> Modifier.align(Alignment.CenterStart).fillMaxHeight().background(backdrop)
+                        }
+                        Box(
+                            place
+                                .graphicsLayer { alpha = peekAlpha }
+                                .pointerInput(Unit) {
+                                    awaitEachGesture {
+                                        awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
+                                        barPeek++
+                                    }
+                                },
+                        ) { bar(rail) }
                     }
                 }
             }
@@ -889,7 +921,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
         }
 
         // La guía tapa todo (inicio, barra y paneles) mientras manejas; al terminar, regresas a donde estabas.
-        Driving.session?.let { DrivingScreen(d, it) }
+        Driving.session?.let { DrivingScreen(d, it, revision) }
 
         val big = bigTile
         if (carLayer.shown && panel == null && big != null) {
@@ -990,6 +1022,13 @@ private fun Parked(d: Dependencies, onWake: () -> Unit) {
 }
 
 internal const val PARK_AFTER_MS = 5 * 60_000L
+
+/** Lo que se asoma la barra oculta tras un toque en un hueco del inicio, y lo que tarda en aparecer o irse. */
+private const val BAR_PEEK_MS = 5_000L
+private const val BAR_FADE_MS = 180
+
+/** Lo más ancho de los avisos que flotan encima del tablero. */
+private val PROMPTS_MAX_WIDTH = 720.dp
 
 /** Más rápido que esto, va manejando (el modo estacionado espera). */
 private const val MOVING_KMH = 8f

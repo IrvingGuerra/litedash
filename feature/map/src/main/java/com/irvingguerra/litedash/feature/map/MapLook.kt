@@ -3,7 +3,12 @@ package com.irvingguerra.litedash.feature.map
 import androidx.compose.runtime.Immutable
 
 /** Qué queda arriba: el norte, o hacia donde vas (el mapa gira y tu flecha siempre apunta arriba). */
-enum class MapOrientation(val stored: String) { NORTH("north"), HEADING("heading") }
+/**
+ * Hacia dónde mira el mapa. [NORTH] (de fábrica): al norte quieto y, de viaje (inclinado), hacia donde vas; [HEADING]:
+ * siempre hacia donde vas; [NORTH_UP]: siempre al norte, también de viaje (plano: inclinado al norte no se entiende).
+ * El botón de la brújula cambia entre [HEADING] y [NORTH_UP].
+ */
+enum class MapOrientation(val stored: String) { NORTH("north"), HEADING("heading"), NORTH_UP("north_up") }
 
 /** Automático (lo más cerca, inclinado) o fijo y plano (cerca = calles, lejos = colonias). */
 enum class MapZoom(val stored: String, val level: Int?) { AUTO("auto", null), NEAR("near", 17), MID("mid", 16), FAR("far", 15) }

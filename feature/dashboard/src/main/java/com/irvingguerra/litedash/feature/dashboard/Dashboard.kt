@@ -94,6 +94,8 @@ fun Dashboard(
     hasSettings: (Tile) -> Boolean = { false },
     /** Con varias páginas: deslizar en un hueco (fuera del modo edición). */
     swipe: PageSwipe? = null,
+    /** Un toque en un hueco (fuera del modo edición; los widgets tienen su propia acción). */
+    onTapEmpty: (() -> Unit)? = null,
     content: @Composable (Tile) -> Unit,
 ) {
     val c = LocalColors.current
@@ -101,6 +103,7 @@ fun Dashboard(
     // Los gestos viven más que una composición: al soltar usan lo último que llegó.
     val currentOnChange by rememberUpdatedState(onChange)
     val currentLimits by rememberUpdatedState(limits)
+    val currentOnTapEmpty by rememberUpdatedState(onTapEmpty)
     BoxWithConstraints(modifier.fillMaxSize()) {
         val cellWidth = maxWidth / grid.columns
         val cellHeight = maxHeight / grid.rows
@@ -115,13 +118,13 @@ fun Dashboard(
         var selected by remember { mutableStateOf<String?>(null) }
         LaunchedEffect(editing) { if (!editing) selected = null }
 
-        // Fondo: dejar presionado entra al modo edición; editando, se ven las celdas.
+        // Fondo: dejar presionado entra al modo edición y un toque hace [onTapEmpty]; editando, se ven las celdas.
         Box(
             Modifier
                 .fillMaxSize()
                 .pointerInput(editing) {
                     // Editando, tocar el fondo suelta la pieza elegida.
-                    if (!editing) detectTapGestures(onLongPress = { currentOnEdit() })
+                    if (!editing) detectTapGestures(onLongPress = { currentOnEdit() }, onTap = { currentOnTapEmpty?.invoke() })
                     else detectTapGestures(onTap = { selected = null })
                 }
                 .then(

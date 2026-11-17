@@ -461,7 +461,7 @@
     <string name="logo_intro">Κινούμενη εισαγωγή</string>
     <string name="bar_title">Γραμμή εφαρμογών</string>
     <string name="bar_hide">Απόκρυψη γραμμής</string>
-    <string name="bar_hide_help">Για να τη δείτε και να μπείτε στις Ρυθμίσεις, πατήστε παρατεταμένα οπουδήποτε στην αρχική.</string>
+    <string name="bar_hide_help">Πατήστε ένα κενό σημείο της αρχικής για να τη δείτε για λίγα δευτερόλεπτα· για τακτοποίηση και Ρυθμίσεις, πατήστε το παρατεταμένα.</string>
     <string name="bar_buttons">Κουμπιά</string>
     <string name="bar_arrange">Οργάνωση γραμμής</string>
     <string name="bar_position_help">Αυτόματα: αριστερά όταν η οθόνη είναι οριζόντια, κάτω όταν είναι κατακόρυφη.</string>

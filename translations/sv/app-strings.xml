@@ -461,7 +461,7 @@
     <string name="logo_intro">Introanimation</string>
     <string name="bar_title">Appfält</string>
     <string name="bar_hide">Dölj fältet</string>
-    <string name="bar_hide_help">För att se det och komma till Inställningar, håll in var som helst på startskärmen.</string>
+    <string name="bar_hide_help">Tryck på en tom yta på startskärmen för att se det i några sekunder; för att ordna och komma till Inställningar, håll in den.</string>
     <string name="bar_buttons">Knappar</string>
     <string name="bar_arrange">Ordna fältet</string>
     <string name="bar_position_help">Automatiskt: till vänster när skärmen ligger, nedtill när den står.</string>

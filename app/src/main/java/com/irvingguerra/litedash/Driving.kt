@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
@@ -41,12 +42,14 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.irvingguerra.litedash.core.ui.Button
+import com.irvingguerra.litedash.core.ui.Card
+import com.irvingguerra.litedash.core.ui.IconButton
 import com.irvingguerra.litedash.core.ui.Icon
 import com.irvingguerra.litedash.core.ui.Icons
 import com.irvingguerra.litedash.core.ui.Label
@@ -69,7 +72,9 @@ import com.irvingguerra.litedash.feature.map.MapPacks
 import com.irvingguerra.litedash.feature.map.MapZoom
 import com.irvingguerra.litedash.feature.map.Route
 import com.irvingguerra.litedash.feature.map.RoutePlan
+import com.irvingguerra.litedash.feature.map.ROUTE_BLUE
 import com.irvingguerra.litedash.feature.map.SearchHit
+import com.irvingguerra.litedash.feature.music.MusicTile
 import com.irvingguerra.litedash.feature.map.rememberMapCamera
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -115,13 +120,17 @@ internal class DriveSession(val to: SearchHit, route: Route) {
 }
 
 /**
- * La pantalla de conducción (maqueta aprobada de N0): ancha, a la izquierda tu auto de espaldas sobre las calles en 3D
- * con la ruta (lo recorrido en gris) y a la derecha el mapa con la próxima vuelta arriba y la llegada abajo; de pie,
- * el auto arriba y el mapa abajo. Fuera de la ruta recalcula en la pantalla; al llegar dice «Llegaste».
+ * La pantalla de conducción (como Tesla): ancha, a la izquierda tu auto de espaldas sobre las calles en 3D con la ruta
+ * azul y a la derecha el mapa con la próxima vuelta arriba, la llegada abajo y los botones redondos a la orilla; de pie,
+ * el auto arriba y el mapa abajo. Hasta abajo, a lo ancho, la música. Fuera de la ruta recalcula en la pantalla; al
+ * llegar dice «Llegaste». [revision] = la de la ventana (la música revisa sus permisos al volver).
  */
 @Composable
-internal fun DrivingScreen(d: Dependencies, session: DriveSession) {
+internal fun DrivingScreen(d: Dependencies, session: DriveSession, revision: Int) {
     val c = LocalColors.current
+    // Se entra desde la tarjeta de la ruta con el buscador quizá abierto: que el teclado no se quede encima de la guía.
+    val keyboard = LocalSoftwareKeyboardController.current
+    LaunchedEffect(session) { keyboard?.hide() }
     val context = LocalContext.current
     val packs = remember(context) { MapPacks.get(context) }
     val scope = rememberCoroutineScope()
@@ -152,15 +161,23 @@ internal fun DrivingScreen(d: Dependencies, session: DriveSession) {
     CompositionLocalProvider(LocalHomeCovered provides false) {
         BoxWithConstraints(Modifier.fillMaxSize().background(c.background)) {
             val wide = maxWidth >= WIDE_MIN && maxWidth > maxHeight * 1.2f
-            if (wide) Row(Modifier.fillMaxSize()) {
-                CarView(d, session, Modifier.weight(0.45f).fillMaxHeight())
-                MapView(d, session, end, Modifier.weight(0.55f).fillMaxHeight(), turnOnMap = true)
-            } else Column(Modifier.fillMaxSize()) {
-                Box(Modifier.weight(0.58f).fillMaxWidth()) {
-                    CarView(d, session, Modifier.fillMaxSize())
-                    TurnCard(d, session, Modifier.align(Alignment.TopCenter).padding(12.dp).widthIn(max = 520.dp))
+            // La música, como Tesla, en una franja abajo a lo ancho (más baja en pantallas bajas).
+            val musicHeight = if (maxHeight < SHORT_SCREEN) MUSIC_SHORT else MUSIC_HEIGHT
+            // Abajo la barra de Android (en pantallas con botones) no tapa la música.
+            Column(Modifier.fillMaxSize().navigationBarsPadding()) {
+                if (wide) Row(Modifier.weight(1f).fillMaxWidth()) {
+                    CarView(d, session, Modifier.weight(0.45f).fillMaxHeight())
+                    MapView(d, session, end, Modifier.weight(0.55f).fillMaxHeight(), turnOnMap = true)
+                } else Column(Modifier.weight(1f).fillMaxWidth()) {
+                    Box(Modifier.weight(0.58f).fillMaxWidth()) {
+                        CarView(d, session, Modifier.fillMaxSize())
+                        TurnCard(d, session, Modifier.align(Alignment.TopCenter).padding(12.dp).widthIn(max = 520.dp))
+                    }
+                    MapView(d, session, end, Modifier.weight(0.42f).fillMaxWidth(), turnOnMap = false)
                 }
-                MapView(d, session, end, Modifier.weight(0.42f).fillMaxWidth(), turnOnMap = false)
+                Card(Modifier.fillMaxWidth().height(musicHeight).padding(horizontal = 12.dp, vertical = 8.dp)) {
+                    MusicTile(d.music, revision, Modifier.fillMaxSize())
+                }
             }
         }
     }
@@ -215,7 +232,10 @@ private fun CarView(d: Dependencies, session: DriveSession, modifier: Modifier) 
 private fun MapView(d: Dependencies, session: DriveSession, end: () -> Unit, modifier: Modifier, turnOnMap: Boolean) {
     val c = LocalColors.current
     val context = LocalContext.current
-    val look = remember(d.prefs.mapLook) { MapLook.parse(d.prefs.mapLook.orEmpty()).copy(orientation = MapOrientation.NORTH) }
+    val heading = d.prefs.guideMapHeading && !session.overview
+    val look = remember(d.prefs.mapLook, heading) {
+        MapLook.parse(d.prefs.mapLook.orEmpty()).copy(orientation = if (heading) MapOrientation.HEADING else MapOrientation.NORTH)
+    }
     val store = rememberTileStore(look, c.dark, DRIVE_MAP_KEY)
     val camera = rememberMapCamera()
     val position = d.trip.position
@@ -237,10 +257,28 @@ private fun MapView(d: Dependencies, session: DriveSession, end: () -> Unit, mod
         }
         if (turnOnMap) TurnCard(d, session, Modifier.align(Alignment.TopStart).padding(12.dp).widthIn(max = 440.dp))
         Clock(Modifier.align(Alignment.TopEnd).padding(16.dp))
-        // Abajo: llegada, lo que falta y la barra de avance; Ver ruta y Terminar.
+        // A la orilla derecha, redondos: ver toda la ruta (o seguirte), la brújula y terminar.
+        Column(Modifier.align(Alignment.CenterEnd).padding(end = 12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            if (s?.arrived != true) {
+                IconButton(
+                    if (session.overview) Icons.navigate else Icons.map, { session.overview = !session.overview },
+                    size = ROUND_BUTTON, background = c.background.copy(alpha = 0.9f), color = c.text,
+                    label = stringResource(if (session.overview) R.string.guide_follow else R.string.guide_overview),
+                )
+            }
+            if (!session.overview) {
+                CompassButton(
+                    if (heading) -(((if (s != null && !s.offRoute) s.heading else null) ?: d.trip.bearing) ?: 0f) else 0f,
+                    northUp = !heading, onClick = { d.prefs.guideMapHeading = !d.prefs.guideMapHeading }, size = ROUND_BUTTON,
+                    background = c.background.copy(alpha = 0.9f),
+                )
+            }
+            IconButton(Icons.close, end, size = ROUND_BUTTON, background = c.danger, color = Color.White, label = stringResource(R.string.guide_end))
+        }
+        // Abajo: llegada, lo que falta y la barra de avance (sin tapar los botones de la orilla).
         Column(
-            Modifier.align(Alignment.BottomCenter).padding(12.dp).fillMaxWidth().clip(RoundedCornerShape(Radius.card))
-                .background(c.surface.copy(alpha = 0.96f)).padding(16.dp),
+            Modifier.align(Alignment.BottomStart).padding(start = 12.dp, bottom = 12.dp, end = ROUND_BUTTON + 24.dp).fillMaxWidth()
+                .clip(RoundedCornerShape(Radius.card)).background(c.surface.copy(alpha = 0.96f)).padding(16.dp),
         ) {
             val left = s?.leftS ?: session.route.seconds
             val leftM = s?.leftM ?: session.route.distanceM
@@ -256,17 +294,8 @@ private fun MapView(d: Dependencies, session: DriveSession, end: () -> Unit, mod
             }
             val before = session.doneBefore
             val progress = ((before + session.route.distanceM - leftM) / (before + session.route.distanceM).coerceAtLeast(1.0)).toFloat().coerceIn(0f, 1f)
-            Box(Modifier.padding(vertical = 12.dp).fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp)).background(c.surfaceHigh)) {
-                Box(Modifier.fillMaxWidth(progress).fillMaxHeight().background(c.accent))
-            }
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                if (s?.arrived != true) {
-                    Button(
-                        stringResource(if (session.overview) R.string.guide_follow else R.string.guide_overview),
-                        { session.overview = !session.overview }, Modifier.weight(1f),
-                    )
-                }
-                Button(stringResource(R.string.guide_end), end, Modifier.weight(1f), primary = true)
+            Box(Modifier.padding(top = 12.dp).fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp)).background(c.surfaceHigh)) {
+                Box(Modifier.fillMaxWidth(progress).fillMaxHeight().background(ROUTE_BLUE))
             }
         }
     }
@@ -404,6 +433,14 @@ private fun Clock(modifier: Modifier) {
     }
     Label(DateFormat.getTimeFormat(context).format(Date(now)), Typography.subtitle, maxLines = 1, modifier = modifier)
 }
+
+/** Los botones redondos de la orilla del mapa. */
+private val ROUND_BUTTON = 52.dp
+
+/** La franja de la música abajo; más baja si la pantalla es baja (las de 1280×480). */
+private val MUSIC_HEIGHT = 96.dp
+private val MUSIC_SHORT = 80.dp
+private val SHORT_SCREEN = 420.dp
 
 /** Desde qué ancho se ponen el auto y el mapa lado a lado. */
 private val WIDE_MIN = 720.dp

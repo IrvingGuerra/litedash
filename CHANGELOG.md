@@ -4,6 +4,29 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.4.182] - 2026-11-17
+
+### Nuevo
+- **La guía, como Tesla.** La ruta va en azul con brillo y pasa por debajo de todo tu auto; las calles se ven
+  rellenas, con banqueta, orillas y raya amarilla al centro en las de doble sentido (blanca punteada en las anchas de
+  un solo sentido), y los edificios se levantan en 3D con su altura real (donde el mapa la trae).
+- **La música en la guía.** Abajo, a lo ancho, como en Tesla: ves qué suena y cambias de canción sin salir.
+- **Brújula en el mapa.** Un botón redondo en el widget Mapa, en el mapa en grande y en la guía: apunta al norte y un
+  toque cambia entre «siempre al norte» y «hacia donde vas». En Ajustes, la orientación ahora tiene tres opciones:
+  Automático (como siempre), Hacia donde vas y Siempre al norte.
+- **La barra oculta se asoma con un toque** (#27). Con «Ocultar la barra», toca un espacio vacío del inicio y aparece
+  unos segundos encima, sin mover tus widgets.
+
+### Cambiado
+- En la guía, «Ver ruta» y «Terminar» ahora son botones redondos a la derecha del mapa, junto a la brújula.
+- Los avisos (llantas, motor, «LiteDash no es tu inicio»…) flotan arriba encima de los widgets en vez de empujarlos
+  hacia abajo (#27); con el mapa o la música en grande solo quedan los del auto.
+- El buscador de apps va arriba, entre el título y la ✕, y la lista gana casi una fila en pantallas bajas (#28).
+- La ruta se dibuja en azul en todos los mapas.
+
+### Arreglado
+- En Android 6 el teclado del buscador ya no se queda abierto encima de la guía.
+
 ## [1.4.181] - 2026-11-17
 
 ### Cambiado

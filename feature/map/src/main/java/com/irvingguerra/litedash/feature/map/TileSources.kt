@@ -53,6 +53,9 @@ interface TileSource {
     /** Trae nombres de calles ([names]); sin ellos, el mapa ni los busca al dibujar. */
     val hasNames: Boolean get() = false
 
+    /** La tesela [origin] ya leída (para los edificios en 3D), sin leer nada; null = no está en memoria o no es vectorial. */
+    fun parsed(origin: Long): VectorTile? = null
+
     /** Nadie ve el mapa: suelta lo que guarda en memoria para dibujar más rápido. */
     fun trim() {}
 }
@@ -116,6 +119,8 @@ class VectorTiles(
     override fun names(origin: Long): TileNames? = names.get(origin)
 
     override val hasNames get() = true
+
+    override fun parsed(origin: Long): VectorTile? = parsed.get(origin)
 
     /** Las leídas pesan (miles de formas con edificios); los nombres, poco: esos se quedan. */
     override fun trim() = parsed.evictAll()
@@ -189,14 +194,57 @@ class VectorTiles(
         // De las chicas a las grandes (las grandes encima); primero el borde de todas, luego el relleno.
         val tiers = if (z >= SERVICE_ZOOM) TIERS_ALL else TIERS_NO_SERVICE
         if (real > 0f) {
-            // Como Tesla: de cada calle solo sus orillas (líneas claras) sobre el fondo; por dentro, del color del fondo.
-            val edge = (1.5f * density * 2.0.pow((z - realZoom).coerceAtMost(0)).toFloat()).coerceAtLeast(1f)
-            for (tier in tiers) lines(t.roads[tier.ordinal], 0f, palette.roads[RoadTier.MOTORWAY.ordinal], real * REAL_RATIO[tier.ordinal])
-            for (tier in tiers) lines(t.roads[tier.ordinal], 0f, palette.background, (real * REAL_RATIO[tier.ordinal] - 2 * edge).coerceAtLeast(0f))
+            drawRealRoads(canvas, t, tiers, real, z, scale, path, stroke, l, tp, r, b)
             return
         }
         for (tier in tiers) lines(t.roads[tier.ordinal], ROAD_WIDTH[tier.ordinal] + CASING, palette.casing)
         for (tier in tiers) lines(t.roads[tier.ordinal], ROAD_WIDTH[tier.ordinal], palette.roads[tier.ordinal])
+    }
+
+    /**
+     * Las calles a escala real (la vista de tu auto, como Tesla): banqueta, orilla clara, asfalto y, encima, la raya del
+     * centro (amarilla doble en las de doble sentido, blanca punteada en las anchas de un solo sentido). Por tipo, de las
+     * chicas a las grandes: el asfalto de una grande tapa las rayas de la chica en el cruce. [real] = ancho en px de
+     * pantalla de una calle con [REAL_RATIO] 1.
+     */
+    private fun drawRealRoads(
+        canvas: Canvas, t: VectorTile, tiers: List<RoadTier>, real: Float, z: Int, scale: Float,
+        path: Path, stroke: Paint, l: Float, tp: Float, r: Float, b: Float,
+    ) {
+        val dark = luminance(palette.background) < 0.5f
+        val look = if (dark) REAL_DARK else REAL_LIGHT
+        // Las rayas y orillas se adelgazan al alejarse, pero nunca menos de un px.
+        val line = (1.6f * density * 2.0.pow((z - realZoom).coerceAtMost(0)).toFloat()).coerceAtLeast(1f)
+        fun draw(shapes: List<Shape>, widthPx: Float, color: Int, only: BooleanArray? = null, want: Boolean = true) {
+            if (shapes.isEmpty() || widthPx <= 0f) return
+            stroke.color = color
+            stroke.strokeWidth = widthPx / scale
+            for ((i, s) in shapes.withIndex()) {
+                if (only != null && only[i] != want) continue
+                if (s.touches(l, tp, r, b)) canvas.drawPath(s.toPath(path, close = false), stroke)
+            }
+        }
+        // Las banquetas de todas primero: así en los cruces no quedan bordes atravesados.
+        for (tier in tiers) draw(t.roads[tier.ordinal], real * REAL_RATIO[tier.ordinal] * (1f + SIDEWALK), look[0])
+        for (tier in tiers) {
+            val shapes = t.roads[tier.ordinal]
+            val w = real * REAL_RATIO[tier.ordinal]
+            draw(shapes, w, look[1])
+            draw(shapes, w - 2 * line, look[2])
+            // Las rayas solo donde la calle es bastante ancha para verse (lejos serían ruido).
+            if (tier == RoadTier.SERVICE || w < 14f * density) continue
+            val oneway = t.oneway[tier.ordinal]
+            // Doble sentido: dos rayas amarillas (una ancha con el asfalto encima en medio).
+            draw(shapes, line * 3.2f, look[3], oneway, want = false)
+            draw(shapes, line * 1.2f, look[2], oneway, want = false)
+            // Un solo sentido y ancha (dos carriles o más): una raya blanca punteada.
+            if (tier.ordinal <= RoadTier.SECONDARY.ordinal) {
+                val dash = w * 0.9f / scale
+                stroke.pathEffect = android.graphics.DashPathEffect(floatArrayOf(dash, dash * 1.6f), 0f)
+                draw(shapes, line, look[4], oneway, want = true)
+                stroke.pathEffect = null
+            }
+        }
     }
 
     /**
@@ -249,6 +297,11 @@ class VectorTiles(
         val REAL_RATIO = floatArrayOf(3.2f, 2.6f, 2.1f, 1.7f, 1.2f)
         /** El borde que separa la calle del fondo (dp de más a cada calle). */
         const val CASING = 1.5f
+        /** La banqueta a escala real: esta fracción del ancho de la calle, repartida a los dos lados. */
+        const val SIDEWALK = 0.35f
+        /** A escala real (ARGB): banqueta, orilla, asfalto, raya amarilla y raya blanca; de noche y de día. */
+        val REAL_DARK = intArrayOf(0xFF20252D.toInt(), 0xFF8A919C.toInt(), 0xFF101318.toInt(), 0xFFE9B93C.toInt(), 0xFFB9C0CA.toInt())
+        val REAL_LIGHT = intArrayOf(0xFFD9DDE3.toInt(), 0xFF8E96A3.toInt(), 0xFF6B717B.toInt(), 0xFFF2C230.toInt(), 0xFFF4F6F8.toInt())
     }
 }
 
@@ -296,3 +349,7 @@ private fun Shape.toPath(path: Path, close: Boolean): Path {
 /** Lo bajado comprimido (gzip) a los datos; si no venía comprimido, tal cual. */
 private fun unzip(data: ByteArray): ByteArray =
     if (data.size > 2 && data[0] == 0x1F.toByte() && data[1] == 0x8B.toByte()) GZIPInputStream(data.inputStream()).use { it.readBytes() } else data
+
+/** Qué tan claro es un color ARGB (0 = negro, 1 = blanco). */
+private fun luminance(argb: Int): Float =
+    (0.299f * (argb shr 16 and 0xFF) + 0.587f * (argb shr 8 and 0xFF) + 0.114f * (argb and 0xFF)) / 255f

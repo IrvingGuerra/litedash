@@ -461,7 +461,7 @@
     <string name="logo_intro">Intro-animatie</string>
     <string name="bar_title">Appbalk</string>
     <string name="bar_hide">Balk verbergen</string>
-    <string name="bar_hide_help">Om hem te zien en bij Instellingen te komen, druk je ergens op het startscherm lang.</string>
+    <string name="bar_hide_help">Tik op een lege plek op het startscherm om hem een paar seconden te zien; om te ordenen en bij Instellingen te komen, druk je er lang op.</string>
     <string name="bar_buttons">Knoppen</string>
     <string name="bar_arrange">Balk indelen</string>
     <string name="bar_position_help">Automatisch: links als het scherm liggend is, onderaan als het staand is.</string>

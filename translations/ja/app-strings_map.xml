@@ -5,8 +5,9 @@
     <string name="map_waiting">現在地を探しています…</string>
     <string name="map_customize">地図をカスタマイズ</string>
     <string name="map_orientation">向き</string>
-    <string name="map_north">ノースアップ</string>
+    <string name="map_north">自動</string>
     <string name="map_heading">ヘディングアップ</string>
+    <string name="map_north_up">常に北</string>
     <string name="map_zoom">ズーム</string>
     <string name="map_zoom_auto">自動</string>
     <string name="map_zoom_near">近く</string>

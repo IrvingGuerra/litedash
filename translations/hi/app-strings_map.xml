@@ -5,8 +5,9 @@
     <string name="map_waiting">आपकी लोकेशन ढूँढ रहे हैं…</string>
     <string name="map_customize">मैप बदलें</string>
     <string name="map_orientation">दिशा</string>
-    <string name="map_north">उत्तर ऊपर</string>
+    <string name="map_north">स्वचालित</string>
     <string name="map_heading">सफ़र की दिशा ऊपर</string>
+    <string name="map_north_up">हमेशा उत्तर</string>
     <string name="map_zoom">ज़ूम</string>
     <string name="map_zoom_auto">ऑटोमैटिक</string>
     <string name="map_zoom_near">पास</string>

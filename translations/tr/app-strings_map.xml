@@ -5,8 +5,9 @@
     <string name="map_waiting">Konumunuz bulunuyor…</string>
     <string name="map_customize">Haritayı özelleştir</string>
     <string name="map_orientation">Yön</string>
-    <string name="map_north">Kuzey yukarı</string>
+    <string name="map_north">Otomatik</string>
     <string name="map_heading">Yön yukarı</string>
+    <string name="map_north_up">Hep kuzey</string>
     <string name="map_zoom">Yakınlaştırma</string>
     <string name="map_zoom_auto">Otomatik</string>
     <string name="map_zoom_near">Yakın</string>

@@ -461,7 +461,7 @@
     <string name="logo_intro">Indítási animáció</string>
     <string name="bar_title">Alkalmazássáv</string>
     <string name="bar_hide">Sáv elrejtése</string>
-    <string name="bar_hide_help">Hogy lásd, és elérd a Beállításokat, nyomj hosszan bárhol a kezdőképernyőn.</string>
+    <string name="bar_hide_help">Koppints egy üres helyre a kezdőképernyőn, és pár másodpercig látod; az elrendezéshez és a Beállításokhoz nyomd meg hosszan.</string>
     <string name="bar_buttons">Gombok</string>
     <string name="bar_arrange">Sáv elrendezése</string>
     <string name="bar_position_help">Automatikus: bal oldalt, ha a kijelző fekvő, alul, ha álló.</string>

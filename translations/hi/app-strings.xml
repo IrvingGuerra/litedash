@@ -458,7 +458,7 @@
     <string name="logo_intro">शुरुआती एनिमेशन</string>
     <string name="bar_title">ऐप्स बार</string>
     <string name="bar_hide">बार छिपाएँ</string>
-    <string name="bar_hide_help">इसे देखने और सेटिंग्स तक जाने के लिए होम स्क्रीन पर कहीं भी देर तक दबाएँ।</string>
+    <string name="bar_hide_help">इसे कुछ सेकंड देखने के लिए होम स्क्रीन की किसी खाली जगह पर टैप करें; व्यवस्थित करने और सेटिंग्स तक जाने के लिए वहीं देर तक दबाएँ।</string>
     <string name="bar_buttons">बटन</string>
     <string name="bar_arrange">बार सजाएँ</string>
     <string name="bar_position_help">ऑटोमैटिक: स्क्रीन आड़ी हो तो बाईं ओर, खड़ी हो तो नीचे।</string>

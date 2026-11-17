@@ -5,8 +5,9 @@
     <string name="map_waiting">正在定位…</string>
     <string name="map_customize">自定义地图</string>
     <string name="map_orientation">方向</string>
-    <string name="map_north">北向朝上</string>
+    <string name="map_north">自动</string>
     <string name="map_heading">车头朝上</string>
+    <string name="map_north_up">始终北向</string>
     <string name="map_zoom">缩放</string>
     <string name="map_zoom_auto">自动</string>
     <string name="map_zoom_near">近</string>

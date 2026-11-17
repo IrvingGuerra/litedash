@@ -14,7 +14,14 @@ class VectorTile(
     val roads: List<List<Shape>>,
     val buildings: List<Shape>,
     val names: List<RoadName>,
+    /** De un solo sentido, por [RoadTier.ordinal] y en el orden de [roads] (las de doble sentido llevan raya amarilla). */
+    val oneway: List<BooleanArray> = roads.map { BooleanArray(it.size) },
+    /** La altura de cada edificio (m), en el orden de [buildings] (`render_height` de OpenMapTiles). */
+    val buildingHeights: FloatArray = FloatArray(buildings.size) { DEFAULT_BUILDING_M },
 )
+
+/** Sin altura en los datos, un edificio de unos tres pisos. */
+const val DEFAULT_BUILDING_M = 9f
 
 /** Una calle con nombre (capa `transportation_name`): su trazo y su tipo. */
 class RoadName(val name: String, val tier: RoadTier, val shape: Shape)
@@ -62,6 +69,8 @@ fun parseVectorTile(data: ByteArray, withBuildings: Boolean = true): VectorTile?
     val rivers = ArrayList<Shape>()
     val roads = List(RoadTier.entries.size) { ArrayList<Shape>() }
     val buildings = ArrayList<Shape>()
+    val heights = ArrayList<Float>()
+    val oneway = List(RoadTier.entries.size) { ArrayList<Boolean>() }
     val names = ArrayList<RoadName>()
     var extent = 4096
     var layers = 0
@@ -89,11 +98,30 @@ fun parseVectorTile(data: ByteArray, withBuildings: Boolean = true): VectorTile?
                     }
                 }
                 "waterway" -> layer.features.forEach { f -> if (f.type == LINE && f.value(layer, classKey) in RIVERS) rivers += f.shape() }
-                "transportation" -> layer.features.forEach { f ->
-                    if (f.type != LINE) return@forEach
-                    roadTier(f.value(layer, classKey))?.let { roads[it.ordinal] += f.shape() }
+                "transportation" -> {
+                    val onewayKey = layer.keys.indexOf("oneway")
+                    layer.features.forEach { f ->
+                        if (f.type != LINE) return@forEach
+                        roadTier(f.value(layer, classKey))?.let {
+                            // Primero todo lo que se lee (una tesela cortada truena aquí): la forma y su sentido van juntos.
+                            // OpenMapTiles: 1 o -1 = un solo sentido; 0 o sin dato = doble.
+                            val single = f.value(layer, onewayKey).let { v -> v != null && v != "0" }
+                            val shape = f.shape()
+                            roads[it.ordinal] += shape
+                            oneway[it.ordinal] += single
+                        }
+                    }
                 }
-                "building" -> layer.features.forEach { f -> if (f.type == POLYGON) buildings += f.shape() }
+                "building" -> {
+                    val heightKey = layer.keys.indexOf("render_height")
+                    layer.features.forEach { f ->
+                        if (f.type != POLYGON) return@forEach
+                        val height = f.value(layer, heightKey)?.toFloatOrNull()?.takeIf { it > 0f } ?: DEFAULT_BUILDING_M
+                        val shape = f.shape()
+                        buildings += shape
+                        heights += height
+                    }
+                }
                 "transportation_name" -> {
                     val nameKey = layer.keys.indexOf("name")
                     layer.features.forEach { f ->
@@ -109,7 +137,10 @@ fun parseVectorTile(data: ByteArray, withBuildings: Boolean = true): VectorTile?
         // Dañada o cortada (fuera de rango al leerla): lo que se alcanzó a leer.
     }
     if (layers == 0 && data.isNotEmpty()) return null
-    return VectorTile(extent, water, parks, rivers, roads, buildings, names)
+    return VectorTile(
+        extent, water, parks, rivers, roads, buildings, names,
+        oneway.map { it.toBooleanArray() }, heights.toFloatArray(),
+    )
 }
 
 private val USED_LAYERS = setOf("water", "landcover", "waterway", "transportation", "building", "transportation_name")
@@ -193,12 +224,17 @@ private fun readFeature(p: Pbf): Feature {
     return Feature(type, tags, geometry)
 }
 
-/** Solo los valores de texto (los números de las etiquetas no se usan). */
+/** El valor de una etiqueta como texto: los números (altura, sentido) también, escritos en decimal. */
 private fun readValue(p: Pbf): String? {
     while (p.more()) {
-        val tag = p.tag()
-        if (tag == STRING_VALUE) return p.string()
-        p.skip(tag)
+        when (val tag = p.tag()) {
+            STRING_VALUE -> return p.string()
+            FLOAT_VALUE -> return java.lang.Float.intBitsToFloat(p.fixed32()).toString()
+            DOUBLE_VALUE -> return java.lang.Double.longBitsToDouble(p.fixed64()).toString()
+            INT_VALUE, UINT_VALUE, BOOL_VALUE -> return p.varint().toString()
+            SINT_VALUE -> return zigzag(p.varint()).toString()
+            else -> p.skip(tag)
+        }
     }
     return null
 }
@@ -222,6 +258,18 @@ internal class Pbf(private val b: ByteArray, private var pos: Int = 0, private v
     }
 
     fun tag(): Int = varint().toInt()
+
+    fun fixed32(): Int {
+        var v = 0
+        for (i in 0 until 4) v = v or ((b[pos++].toInt() and 0xFF) shl (8 * i))
+        return v
+    }
+
+    fun fixed64(): Long {
+        var v = 0L
+        for (i in 0 until 8) v = v or ((b[pos++].toLong() and 0xFF) shl (8 * i))
+        return v
+    }
 
     fun message(): Pbf {
         val length = varint().toInt()
@@ -255,6 +303,12 @@ private const val TAGS = 2 shl 3 or 2
 private const val TYPE = 3 shl 3 or 0
 private const val GEOMETRY = 4 shl 3 or 2
 private const val STRING_VALUE = 1 shl 3 or 2
+private const val FLOAT_VALUE = 2 shl 3 or 5
+private const val DOUBLE_VALUE = 3 shl 3 or 1
+private const val INT_VALUE = 4 shl 3 or 0
+private const val UINT_VALUE = 5 shl 3 or 0
+private const val SINT_VALUE = 6 shl 3 or 0
+private const val BOOL_VALUE = 7 shl 3 or 0
 
 private const val LINE = 2
 private const val POLYGON = 3

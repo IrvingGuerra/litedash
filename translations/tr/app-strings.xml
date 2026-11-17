@@ -461,7 +461,7 @@
     <string name="logo_intro">Açılış animasyonu</string>
     <string name="bar_title">Uygulama çubuğu</string>
     <string name="bar_hide">Çubuğu gizle</string>
-    <string name="bar_hide_help">Görmek ve Ayarlar’a gitmek için ana ekranda herhangi bir yere uzun basın.</string>
+    <string name="bar_hide_help">Birkaç saniye görmek için ana ekranda boş bir yere dokunun; düzenlemek ve Ayarlar’a gitmek için oraya uzun basın.</string>
     <string name="bar_buttons">Düğmeler</string>
     <string name="bar_arrange">Çubuğu düzenle</string>
     <string name="bar_position_help">Otomatik: ekran yatayken solda, dikeyken altta.</string>

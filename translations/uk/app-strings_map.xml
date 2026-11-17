@@ -5,8 +5,9 @@
     <string name="map_waiting">Шукаємо, де ти…</string>
     <string name="map_customize">Налаштувати карту</string>
     <string name="map_orientation">Орієнтація</string>
-    <string name="map_north">Північ угорі</string>
+    <string name="map_north">Авто</string>
     <string name="map_heading">За напрямком</string>
+    <string name="map_north_up">Завжди північ</string>
     <string name="map_zoom">Масштаб</string>
     <string name="map_zoom_auto">Авто</string>
     <string name="map_zoom_near">Близько</string>

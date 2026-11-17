@@ -471,7 +471,7 @@
     <string name="logo_intro">Animacja startowa</string>
     <string name="bar_title">Pasek aplikacji</string>
     <string name="bar_hide">Ukryj pasek</string>
-    <string name="bar_hide_help">Aby go zobaczyć i wejść do Ustawień, przytrzymaj dowolne miejsce na ekranie głównym.</string>
+    <string name="bar_hide_help">Dotknij pustego miejsca na ekranie głównym, by zobaczyć go przez kilka sekund; aby układać i wejść do Ustawień, przytrzymaj je.</string>
     <string name="bar_buttons">Przyciski</string>
     <string name="bar_arrange">Urządź pasek</string>
     <string name="bar_position_help">Automatycznie: po lewej, gdy ekran jest poziomy, na dole, gdy pionowy.</string>

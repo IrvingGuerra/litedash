@@ -82,12 +82,42 @@ class MvtTest {
     private fun command(id: Int, count: Int) = (count shl 3) or id
     private fun zz(n: Int) = (n shl 1) xor (n shr 31)
 
-    private fun layer(name: String, keys: List<String>, values: List<String>, features: List<ByteArray>) = message {
+    private fun layer(name: String, keys: List<String>, values: List<String>, features: List<ByteArray>) =
+        rawLayer(name, keys, values.map { v -> message { string(1, v) } }, features)
+
+    /** Una capa con los valores ya armados (números de las etiquetas). */
+    private fun rawLayer(name: String, keys: List<String>, values: List<ByteArray>, features: List<ByteArray>) = message {
         string(1, name)
         features.forEach { bytes(2, it) }
         keys.forEach { string(3, it) }
-        values.forEach { v -> bytes(4, message { string(1, v) }) }
+        values.forEach { v -> bytes(4, v) }
         varint(5, 4096)
+    }
+
+    @Test
+    fun readsBuildingHeightsAndOneWayAsNumbers() {
+        // Altura como entero sin signo (campo 5) y como double (campo 3, 8 bytes); oneway como entero (campo 4).
+        val double = message {
+            out.writeVarint((3 shl 3 or 1).toLong())
+            val bits = java.lang.Double.doubleToLongBits(31.5)
+            for (i in 0 until 8) out.write(((bits ushr (8 * i)) and 0xFF).toInt())
+        }
+        val tile = message {
+            bytes(3, rawLayer(
+                "building", keys = listOf("render_height"), values = listOf(message { varint(5, 25) }, double),
+                features = listOf(feature(3, listOf(0, 0), square()), feature(3, listOf(0, 1), square()), feature(3, emptyList(), square())),
+            ))
+            bytes(3, rawLayer(
+                "transportation", keys = listOf("class", "oneway"), values = listOf(message { string(1, "primary") }, message { varint(4, 1) }),
+                features = listOf(
+                    feature(2, listOf(0, 0, 1, 1), listOf(command(1, 1), zz(0), zz(0), command(2, 1), zz(5), zz(5))),
+                    feature(2, listOf(0, 0), listOf(command(1, 1), zz(0), zz(0), command(2, 1), zz(5), zz(5))),
+                ),
+            ))
+        }
+        val t = parseVectorTile(tile)!!
+        assertArrayEquals(floatArrayOf(25f, 31.5f, DEFAULT_BUILDING_M), t.buildingHeights, 0.001f)
+        assertArrayEquals(booleanArrayOf(true, false), t.oneway[RoadTier.PRIMARY.ordinal])
     }
 
     private fun feature(type: Int, tags: List<Int>, geometry: List<Int>) = message {

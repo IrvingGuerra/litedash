@@ -21,12 +21,23 @@ import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.roundToInt
+
+/** El azul de la ruta (como Tesla) y la orilla clara de la franja a escala real. */
+val ROUTE_BLUE = Color(0xFF3D8BFF)
+private val ROUTE_EDGE = Color(0xFF9CCBFF)
+
+/** La franja de la ruta empieza este múltiplo del ancho del auto atrás de donde vas: queda debajo de todo el auto. */
+private const val UNDER_CAR = 3.6f
+
+/** Desde esta inclinación (0–1) se levantan los edificios. */
+private const val BUILDINGS_TILT = 0.5f
 
 /** A lo más tantos nombres de calles a la vez (más, es ruido). */
 private const val MAX_LABELS = 14
@@ -88,12 +99,14 @@ internal class MapFrame : ScreenPoint {
     /** El ancho de la ruta en el plano del mapa (a escala real, con perspectiva); 0 = línea en pantalla. */
     private var routeWide = 0f
     private val planeAhead = Path()
-    private val planeDone = Path()
+
+    /** Los edificios en 3D (solo la vista de tu auto) y si este cuadro los lleva. */
+    private val buildings = BuildingLayer()
+    private var buildingsOn = false
 
     /** La ruta en el plano del mapa (se dibuja con la misma perspectiva que las calles): lo recorrido aparte. */
     private fun tracePlaneRoute(world: DoubleArray?, n: Double, done: Float) {
         planeAhead.reset()
-        planeDone.reset()
         routeShown = false
         doneShown = false
         if (world == null || world.size < 4) return
@@ -134,13 +147,30 @@ internal class MapFrame : ScreenPoint {
             }
             return any
         }
-        if (done > 0f) {
-            // Lo recorrido de atrás hacia adelante, terminando donde vas.
-            val first = (split - PLANE_BACK_POINTS).coerceAtLeast(0)
-            doneShown = add(planeDone, first, split, null, null)
-            if (near(hx, hy) && doneShown) planeDone.lineTo(hx, hy)
+        if (done <= 0f || !near(hx, hy)) {
+            routeShown = add(planeAhead, if (done > 0f) next else 1, count - 1, if (done > 0f) hx else px(0), if (done > 0f) hy else py(0))
+            return
         }
-        routeShown = add(planeAhead, if (done > 0f) next else 1, count - 1, if (done > 0f) hx else px(0), if (done > 0f) hy else py(0))
+        // Como Tesla, la franja pasa por debajo de todo tu auto: empieza un largo de auto atrás de donde vas (lo recorrido
+        // antes de eso ya no se dibuja).
+        var left = routeWide * UNDER_CAR
+        var fromX = hx
+        var fromY = hy
+        var i = split
+        while (i >= 0) {
+            val d = kotlin.math.hypot(px(i) - fromX, py(i) - fromY)
+            if (d >= left) {
+                val t = left / d
+                fromX += (px(i) - fromX) * t
+                fromY += (py(i) - fromY) * t
+                break
+            }
+            left -= d
+            fromX = px(i)
+            fromY = py(i)
+            i--
+        }
+        routeShown = add(planeAhead, (i + 1).coerceIn(1, count - 1), count - 1, fromX, fromY)
     }
 
     /** Pasa la ruta (mundo en zoom 0) a la pantalla; lo que queda detrás de la cámara (inclinado) corta la línea. */
@@ -243,6 +273,7 @@ internal class MapFrame : ScreenPoint {
         routeWorld: DoubleArray? = null,
         routeDone: Float = 0f,
         routePlaneWidth: Float = 0f,
+        buildingsFrom: TileSource? = null,
     ) {
         if (density != arrowFor) {
             arrowFor = density
@@ -270,6 +301,9 @@ internal class MapFrame : ScreenPoint {
         pinShown = !pinX.isNaN() && toScreen(pinX, pinY, pinAt)
         routeWide = routePlaneWidth
         if (routePlaneWidth > 0f) tracePlaneRoute(routeWorld, n, routeDone) else traceRoute(routeWorld, n, routeDone)
+        // Solo bien inclinado: en la transición desde plano las azoteas quedarían casi encima de la cámara.
+        buildingsOn = buildingsFrom != null && tilt >= BUILDINGS_TILT
+        if (buildingsOn) buildings.trace(buildingsFrom!!, plan, projection, fx, fy, zoom, ts, atX, atY, density, night = sky.luminance() < 0.5f)
         squash = 1f - 0.3f * tilt
         // El círculo de la zona: metros por px del plano en el centro del mapa.
         ring = if (ringKm == null) 0f else (ringKm * 1000 / (EQUATOR_METERS * cos(Math.toRadians(centerLat)) / (n * ts))).toFloat()
@@ -326,16 +360,16 @@ internal class MapFrame : ScreenPoint {
             canvas.nativeCanvas.concat(matrix)
             drawTiles(store, plan, filter)
             // A escala real la ruta va en el plano (con perspectiva, como una calle más), debajo de nombres y del auto.
-            if (routeWide > 0f) {
-                // Como Tesla: una franja sólida del ancho del auto por donde vas; lo recorrido, gris tenue.
+            if (routeWide > 0f && routeShown) {
+                // Como Tesla: una franja azul del ancho del auto con halo y orillas claras.
                 val cap = StrokeCap.Butt
-                if (doneShown) drawPath(planeDone, Color.Gray.copy(alpha = 0.3f), style = Stroke(routeWide, cap = cap, join = StrokeJoin.Round))
-                // Difuminada: tres pasadas cada vez más angostas, así las orillas quedan suaves y el centro más lleno.
-                if (routeShown) for (k in 0 until 3) {
-                    drawPath(planeAhead, accent.copy(alpha = 0.22f), style = Stroke(routeWide * (1f - 0.2f * k), cap = cap, join = StrokeJoin.Round))
-                }
+                drawPath(planeAhead, ROUTE_BLUE.copy(alpha = 0.25f), style = Stroke(routeWide * 1.35f, cap = cap, join = StrokeJoin.Round))
+                drawPath(planeAhead, ROUTE_EDGE, style = Stroke(routeWide * 0.94f, cap = cap, join = StrokeJoin.Round))
+                drawPath(planeAhead, ROUTE_BLUE.copy(alpha = 0.95f), style = Stroke(routeWide * 0.86f, cap = cap, join = StrokeJoin.Round))
             }
             canvas.restore()
+            // Los edificios en pantalla (con altura no caben en la matriz del plano), encima de calles y ruta.
+            if (buildingsOn) buildings.draw(canvas.nativeCanvas)
         }
         fade?.let { drawRect(it) }
         if (ring > 0f) {
@@ -347,7 +381,7 @@ internal class MapFrame : ScreenPoint {
         if (routeWide <= 0f && doneShown) drawPath(donePath, Color.Gray.copy(alpha = 0.7f), style = routeStroke)
         if (routeWide <= 0f && routeShown) {
             drawPath(routePath, Color.Black.copy(alpha = 0.45f), style = routeEdge)
-            drawPath(routePath, accent, style = routeStroke)
+            drawPath(routePath, ROUTE_BLUE, style = routeStroke)
         }
         labelPaint?.let { paint -> drawIntoCanvas { drawLabels(it.nativeCanvas, layout.placed, paint) } }
         if (pinShown) drawPin(accent)

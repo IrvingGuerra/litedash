@@ -3,6 +3,29 @@
 What people using LiteDash notice, in English. The full history (in Spanish) is in [CHANGELOG.md](CHANGELOG.md).
 Format [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versions [SemVer](https://semver.org/).
 
+## [1.4.182] - 2026-11-17
+
+### New
+- **Turn-by-turn, Tesla style.** The route is a glowing blue band that runs under your whole car; streets are filled
+  in, with sidewalks, edges and a yellow center line on two-way streets (a dashed white one on wide one-way streets),
+  and buildings rise in 3D with their real height (where the map has it).
+- **Music in the guide.** Across the bottom, like Tesla: see what's playing and skip songs without leaving.
+- **Map compass.** A round button on the Map widget, the full-screen map and the guide: it points north and a tap
+  switches between "always north" and "heading up". In Settings the orientation now has three options: Automatic (as
+  before), Heading up and Always north.
+- **The hidden bar peeks with a tap** (#27). With "Hide the bar" on, tap an empty spot on the home screen and it shows
+  over your widgets for a few seconds, without moving them.
+
+### Changed
+- In the guide, "Route overview" and "End" are now round buttons on the right of the map, next to the compass.
+- Alerts (tires, engine, "LiteDash isn't your home screen"…) float at the top over your widgets instead of pushing
+  them down (#27); with the map or music full screen only the car alerts stay.
+- The app search sits at the top, between the title and the ✕, so the list gains almost a row on short screens (#28).
+- The route is drawn in blue on every map.
+
+### Fixed
+- On Android 6 the search keyboard no longer stays open over the guide.
+
 ## [1.4.181] - 2026-11-17
 
 ### Changed

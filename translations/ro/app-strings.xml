@@ -466,7 +466,7 @@
     <string name="logo_intro">Animație de pornire</string>
     <string name="bar_title">Bara de aplicații</string>
     <string name="bar_hide">Ascunde bara</string>
-    <string name="bar_hide_help">Ca s-o vezi și să ajungi la Setări, ține apăsat oriunde pe ecranul principal.</string>
+    <string name="bar_hide_help">Atinge un loc gol de pe ecranul principal ca s-o vezi câteva secunde; ca să aranjezi și să ajungi la Setări, ține-l apăsat.</string>
     <string name="bar_buttons">Butoane</string>
     <string name="bar_arrange">Aranjează bara</string>
     <string name="bar_position_help">Automat: în stânga când ecranul e orizontal, jos când e vertical.</string>

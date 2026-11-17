@@ -820,7 +820,7 @@
     <string name="bar_size_normal">Normale</string>
     <string name="bar_size_large">Grande</string>
     <string name="bar_hide">Masquer la barre</string>
-    <string name="bar_hide_help">Pour la voir et accéder aux Paramètres, faites un appui long n\'importe où sur l\'accueil.</string>
+    <string name="bar_hide_help">Touchez un espace vide de l\'accueil pour la voir quelques secondes ; pour ranger et accéder aux Paramètres, faites-y un appui long.</string>
     <string name="bar_buttons">Boutons</string>
     <string name="bar_arrange">Organiser la barre</string>
     <string name="tab_about">À propos</string>

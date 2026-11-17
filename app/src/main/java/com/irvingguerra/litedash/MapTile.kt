@@ -55,6 +55,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleStartEffect
 import com.irvingguerra.litedash.core.ui.Button
@@ -148,6 +149,7 @@ fun MapTile(
             // Con "Usar app externa" apagado no hay botón que te saque de LiteDash (se queda en el mapa en grande).
             // La lupa abre el mapa en grande con el buscador (al acomodar se esconde: estorba al botón de tamaño).
             Row(Modifier.align(Alignment.TopEnd).padding(8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                if (!editing) MapCompass(d, look, sharedMapCamera(tileId))
                 if (!editing) IconButton(Icons.search, onSearch, size = 44.dp, background = c.surface.copy(alpha = 0.85f), color = c.accent, label = stringResource(R.string.search_place))
                 if (external) IconButton(Icons.navigate, onNavigate, size = 44.dp, background = c.surface.copy(alpha = 0.85f), color = c.accent)
             }
@@ -256,13 +258,15 @@ fun MapExpanded(d: Dependencies, tileId: String?, data: String, app: App?, onPla
                 )
             } else Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Button(stringResource(R.string.tap_to_enable), ask, primary = true) }
             val searching = search.focused || search.query.isNotEmpty()
-            Column(Modifier.align(Alignment.TopStart).padding(12.dp).width(minOf(boxWidth - 88.dp, 480.dp))) {
+            // Con la guía encima el buscador sale de la pantalla: en Android 6 un campo enfocado debajo vuelve a abrir el teclado.
+            if (Driving.session == null) Column(Modifier.align(Alignment.TopStart).padding(12.dp).width(minOf(boxWidth - 88.dp, 480.dp))) {
                 PlaceSearchBox(d, search, focus, pick, onPlace, maxListHeight = (boxHeight - 100.dp - keyboard).coerceAtLeast(MIN_LIST))
                 if (!searching) NextTurn(d, Modifier.padding(top = 8.dp))
             }
             Row(Modifier.align(Alignment.TopEnd).padding(12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 // Con "Usar app externa" apagado no hay botón que te saque de LiteDash (igual que en el widget).
                 if (d.prefs.mapExternal && app != null && boxWidth >= WIDE_TOP) IconButton(Icons.navigate, onNavigate, size = 48.dp, background = c.surface.copy(alpha = 0.9f), color = c.accent)
+                if (route == null && granted) MapCompass(d, look, camera, size = 48.dp)
                 IconButton(Icons.close, close, size = 48.dp, background = c.surface.copy(alpha = 0.9f))
             }
             val cardModifier = Modifier.align(Alignment.BottomStart).padding(start = 12.dp, end = 12.dp, bottom = 12.dp).widthIn(max = CARD_MAX)
@@ -466,6 +470,22 @@ private var expandedMap by mutableStateOf<ExpandedMap?>(null)
 private fun sharedMapCamera(key: String?): MapCamera =
     if (key == null) rememberMapCamera() else remember(key) { mapCameras.getOrPut(key) { MapCamera() } }
 
+/**
+ * La brújula del mapa de LiteDash: apunta al norte como esté girado el mapa ahora (con Norte de fábrica, gira de viaje)
+ * y un toque cambia todos los mapas entre «siempre al norte» y «hacia donde vas».
+ */
+@Composable
+private fun MapCompass(d: Dependencies, look: MapLook, camera: MapCamera, size: Dp = 44.dp) {
+    // Con Norte de fábrica el mapa solo gira de viaje y en el zoom automático (inclinado).
+    val heading = look.orientation == MapOrientation.HEADING ||
+        (look.orientation == MapOrientation.NORTH && look.zoom == MapZoom.AUTO && camera.traveling)
+    CompassButton(
+        if (heading) -(d.trip.bearing ?: 0f) else 0f, northUp = !heading,
+        onClick = { applyMapLook(d, look.copy(orientation = if (heading) MapOrientation.NORTH_UP else MapOrientation.HEADING)) },
+        size = size,
+    )
+}
+
 /** Una pastilla sobre el mapa: ícono y un texto corto. */
 @Composable
 private fun MapPill(icon: ImageVector, text: String, color: Color) {
@@ -626,7 +646,10 @@ private fun MapLookOptions(look: MapLook, set: (MapLook) -> Unit) {
     Label(stringResource(if (look.detail == MapDetail.FULL) R.string.map_detail_full_help else R.string.map_detail_minimal_help), Typography.small, c.textMuted)
     Label(stringResource(R.string.map_orientation), Typography.label, c.textMuted)
     Segmented(
-        listOf(MapOrientation.NORTH to stringResource(R.string.map_north), MapOrientation.HEADING to stringResource(R.string.map_heading)),
+        listOf(
+            MapOrientation.NORTH to stringResource(R.string.map_north), MapOrientation.HEADING to stringResource(R.string.map_heading),
+            MapOrientation.NORTH_UP to stringResource(R.string.map_north_up),
+        ),
         look.orientation, { set(look.copy(orientation = it)) },
     )
     Label(stringResource(R.string.map_zoom), Typography.label, c.textMuted)

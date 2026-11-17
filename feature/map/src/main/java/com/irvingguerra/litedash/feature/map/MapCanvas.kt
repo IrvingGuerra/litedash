@@ -234,6 +234,9 @@ class MapCamera(
     /** De viaje (andando o navegando); se guarda aquí para que el widget y el mapa en grande coincidan. */
     internal var driving by mutableStateOf(false)
 
+    /** De viaje (inclinado y, con Norte de fábrica, girando hacia donde vas): para la brújula de afuera. */
+    val traveling: Boolean get() = driving
+
     /** El último [driving] que se atendió: al empezar un viaje el mapa vuelve a su zoom de fábrica. */
     internal var zoomFor = false
 
@@ -434,7 +437,7 @@ fun MapCanvas(
     val base = fixedZoom ?: look.zoom.level ?: driveZoom
     val zoom = fixedZoom ?: camera.zoom ?: base
     // Solo el automático se inclina: del todo en lo más cerca y nada un nivel más lejos (lo calcula el dibujo).
-    val tilts = fixedZoom == null && look.zoom == MapZoom.AUTO
+    val tilts = fixedZoom == null && look.zoom == MapZoom.AUTO && (look.orientation != MapOrientation.NORTH_UP || marker != null)
     val scope = rememberCoroutineScope()
     // Si este mapa se va o lo tapan a media animación de centrar, el otro la retoma.
     val shown = remember { Shown() }
@@ -573,6 +576,8 @@ fun MapCanvas(
                         pin?.let { tileX(it.second, zoom) } ?: Double.NaN, pin?.let { tileY(it.first, zoom) } ?: Double.NaN,
                         routeWorld, routeDone,
                         routeWidth?.let { it.toPx() * ts * n.toFloat() / (tilePx(density) * 2f.pow(driveZoom)) } ?: 0f,
+                        // A escala real (la vista de tu auto) también los edificios en 3D.
+                        store.source.takeIf { routeWidth != null },
                     )
                 }
                 onDrawBehind { frame.draw(this, store, filter, accent, marker) }

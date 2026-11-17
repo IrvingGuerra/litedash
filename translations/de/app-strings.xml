@@ -461,7 +461,7 @@
     <string name="logo_intro">Startanimation</string>
     <string name="bar_title">App-Leiste</string>
     <string name="bar_hide">Leiste ausblenden</string>
-    <string name="bar_hide_help">Um sie zu sehen und zu den Einstellungen zu kommen, halte irgendwo auf dem Startbildschirm gedrückt.</string>
+    <string name="bar_hide_help">Tippe auf eine freie Stelle des Startbildschirms, um sie ein paar Sekunden zu sehen; zum Anordnen und für die Einstellungen halte dort gedrückt.</string>
     <string name="bar_buttons">Buttons</string>
     <string name="bar_arrange">Leiste anordnen</string>
     <string name="bar_position_help">Automatisch: links im Querformat, unten im Hochformat.</string>

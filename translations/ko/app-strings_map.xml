@@ -5,8 +5,9 @@
     <string name="map_waiting">위치를 찾는 중…</string>
     <string name="map_customize">지도 맞춤 설정</string>
     <string name="map_orientation">방향</string>
-    <string name="map_north">북쪽이 위</string>
+    <string name="map_north">자동</string>
     <string name="map_heading">진행 방향이 위</string>
+    <string name="map_north_up">항상 북쪽</string>
     <string name="map_zoom">확대/축소</string>
     <string name="map_zoom_auto">자동</string>
     <string name="map_zoom_near">가깝게</string>

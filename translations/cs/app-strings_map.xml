@@ -5,8 +5,9 @@
     <string name="map_waiting">Zjišťuji tvou polohu…</string>
     <string name="map_customize">Upravit mapu</string>
     <string name="map_orientation">Orientace</string>
-    <string name="map_north">Sever nahoře</string>
+    <string name="map_north">Automaticky</string>
     <string name="map_heading">Směr jízdy nahoře</string>
+    <string name="map_north_up">Vždy na sever</string>
     <string name="map_zoom">Přiblížení</string>
     <string name="map_zoom_auto">Automaticky</string>
     <string name="map_zoom_near">Blízko</string>

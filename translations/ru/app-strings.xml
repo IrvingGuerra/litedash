@@ -471,7 +471,7 @@
     <string name="logo_intro">Заставка</string>
     <string name="bar_title">Панель приложений</string>
     <string name="bar_hide">Скрыть панель</string>
-    <string name="bar_hide_help">Чтобы увидеть её и попасть в настройки, удерживай палец в любом месте главного экрана.</string>
+    <string name="bar_hide_help">Коснись пустого места на главном экране, чтобы увидеть её на несколько секунд; чтобы расставить и попасть в настройки, удерживай на нём палец.</string>
     <string name="bar_buttons">Кнопки</string>
     <string name="bar_arrange">Настроить панель</string>
     <string name="bar_position_help">Авто: слева при горизонтальном экране, снизу — при вертикальном.</string>

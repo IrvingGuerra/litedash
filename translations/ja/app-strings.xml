@@ -456,7 +456,7 @@
     <string name="logo_intro">起動アニメーション</string>
     <string name="bar_title">アプリバー</string>
     <string name="bar_hide">バーを隠す</string>
-    <string name="bar_hide_help">バーを表示して設定を開くには、ホーム画面のどこかを長押しします。</string>
+    <string name="bar_hide_help">ホーム画面の空いている所をタップすると数秒間表示されます。並べ替えや設定を開くには、そこを長押しします。</string>
     <string name="bar_buttons">ボタン</string>
     <string name="bar_arrange">バーを編集</string>
     <string name="bar_position_help">自動：画面が横向きなら左、縦向きなら下に表示します。</string>

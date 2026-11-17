@@ -5,8 +5,9 @@
     <string name="map_waiting">กำลังหาตำแหน่งของคุณ…</string>
     <string name="map_customize">ปรับแต่งแผนที่</string>
     <string name="map_orientation">การหมุน</string>
-    <string name="map_north">ทิศเหนืออยู่บน</string>
+    <string name="map_north">อัตโนมัติ</string>
     <string name="map_heading">ทิศที่ไปอยู่บน</string>
+    <string name="map_north_up">ทิศเหนือเสมอ</string>
     <string name="map_zoom">ซูม</string>
     <string name="map_zoom_auto">อัตโนมัติ</string>
     <string name="map_zoom_near">ใกล้</string>

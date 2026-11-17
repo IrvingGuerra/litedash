@@ -5,8 +5,9 @@
     <string name="map_waiting">Mencari lokasi Anda…</string>
     <string name="map_customize">Sesuaikan peta</string>
     <string name="map_orientation">Orientasi</string>
-    <string name="map_north">Utara di atas</string>
+    <string name="map_north">Otomatis</string>
     <string name="map_heading">Arah di atas</string>
+    <string name="map_north_up">Selalu utara</string>
     <string name="map_zoom">Zoom</string>
     <string name="map_zoom_auto">Otomatis</string>
     <string name="map_zoom_near">Dekat</string>

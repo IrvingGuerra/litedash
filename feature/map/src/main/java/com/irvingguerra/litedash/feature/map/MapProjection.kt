@@ -4,6 +4,9 @@ import kotlin.math.cos
 import kotlin.math.hypot
 import kotlin.math.sin
 
+/** Lo más cerca de la cámara que se dibuja un punto con altura ([MapProjection.toScreen3]). */
+private const val MIN_DEPTH = 0.2f
+
 /** Cuánto se acuesta el mapa inclinado (grados). */
 private const val TILT_DEGREES = 42.0
 
@@ -61,6 +64,11 @@ internal class MapProjection {
     /** Arriba de esta línea no hay mapa que pedir: [edge] dentro de la vista (plano, la orilla de arriba). */
     private var top = 0f
 
+    // La inclinación de ahora (coseno, seno y distancia de la cámara) para los puntos con altura ([toScreen3]).
+    private var tiltCos = 1f
+    private var tiltSin = 0f
+    private var cameraPx = 1f
+
     /** Pone la vista y la cámara; false si nada cambió (la matriz ya es esa). */
     fun set(width: Float, height: Float, atX: Float, atY: Float, turn: Float, tilt: Float, density: Float): Boolean {
         if (width == this.width && height == this.height && atX == this.atX && atY == this.atY && turn == this.turn &&
@@ -79,6 +87,9 @@ internal class MapProjection {
             val c = cos(t).toFloat()
             val s = sin(t).toFloat()
             val camera = maxOf(CAMERA_PX * density, CAMERA_PER_HEIGHT * height)
+            tiltCos = c
+            tiltSin = s
+            cameraPx = camera
             // Lo que hace falta para que lo más lejano quede a [TOP_GAP] de la orilla de arriba (ahí lo cubre el
             // desvanecido); si el horizonte queda más abajo, nunca se alcanza: hasta el tope.
             val drop = atY - TOP_GAP * height
@@ -96,6 +107,8 @@ internal class MapProjection {
             edge = atY - far * c / (1f + far * s / camera)
             top = edge.coerceAtLeast(0f)
         } else {
+            tiltCos = 1f
+            tiltSin = 0f
             far = REACH * side
             rotate.copyInto(values)
             edge = 0f
@@ -109,6 +122,26 @@ internal class MapProjection {
     fun toScreen(x: Float, y: Float, out: FloatArray): Boolean {
         project(values, x, y, out)
         return out[2] > 0f && out[0].isFinite() && out[1].isFinite()
+    }
+
+    /**
+     * El punto ([x], [y]) del plano levantado [h] px del suelo (la azotea de un edificio), en [out] (x, y, profundidad);
+     * false si queda detrás de la cámara. Lo mismo que [toScreen] con altura: girar, acostar y en perspectiva.
+     */
+    fun toScreen3(x: Float, y: Float, h: Float, out: FloatArray): Boolean {
+        val rx = rotate[0] * x + rotate[1] * y + rotate[2] - atX
+        val ry = rotate[3] * x + rotate[4] * y + rotate[5] - atY
+        // Al acostar, lo alto sube en pantalla (seno) y se acerca a la cámara (coseno).
+        val w = 1f + (-ry * tiltSin - h * tiltCos) / cameraPx
+        if (tiltSin == 0f) {
+            out[0] = atX + rx; out[1] = atY + ry; out[2] = 1f
+            return true
+        }
+        out[0] = atX + rx / w
+        out[1] = atY + (ry * tiltCos - h * tiltSin) / w
+        out[2] = w
+        // Casi a la altura de la cámara (una torre de cerca) daría coordenadas enormes: mejor no se dibuja.
+        return w > MIN_DEPTH
     }
 
     /** El punto ([x], [y]) de la pantalla en el plano del mapa, en [out] (x, y); false si cae en el cielo. */

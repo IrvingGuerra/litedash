@@ -456,7 +456,7 @@
     <string name="logo_intro">Hiệu ứng mở đầu</string>
     <string name="bar_title">Thanh ứng dụng</string>
     <string name="bar_hide">Ẩn thanh</string>
-    <string name="bar_hide_help">Để xem thanh và vào Cài đặt, nhấn giữ bất kỳ đâu trên màn hình chính.</string>
+    <string name="bar_hide_help">Chạm vào chỗ trống trên màn hình chính để xem thanh trong vài giây; để sắp xếp và vào Cài đặt, hãy nhấn giữ chỗ đó.</string>
     <string name="bar_buttons">Nút</string>
     <string name="bar_arrange">Sắp xếp thanh</string>
     <string name="bar_position_help">Tự động: bên trái khi màn hình nằm ngang, ở dưới khi màn hình dọc.</string>

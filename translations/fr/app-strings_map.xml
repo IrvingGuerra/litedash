@@ -7,8 +7,9 @@
     <string name="map_waiting">Recherche de votre position…</string>
     <string name="map_customize">Personnaliser la carte</string>
     <string name="map_orientation">Orientation</string>
-    <string name="map_north">Nord en haut</string>
+    <string name="map_north">Automatique</string>
     <string name="map_heading">Direction en haut</string>
+    <string name="map_north_up">Toujours au nord</string>
     <string name="map_zoom">Zoom</string>
     <string name="map_zoom_auto">Automatique</string>
     <string name="map_zoom_near">Proche</string>

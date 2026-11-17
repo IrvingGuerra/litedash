@@ -5,8 +5,9 @@
     <string name="map_waiting">Se caută locația ta…</string>
     <string name="map_customize">Personalizează harta</string>
     <string name="map_orientation">Orientare</string>
-    <string name="map_north">Nordul sus</string>
+    <string name="map_north">Automat</string>
     <string name="map_heading">Direcția sus</string>
+    <string name="map_north_up">Mereu nordul</string>
     <string name="map_zoom">Zoom</string>
     <string name="map_zoom_auto">Automat</string>
     <string name="map_zoom_near">Aproape</string>

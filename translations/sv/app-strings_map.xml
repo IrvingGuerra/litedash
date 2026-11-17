@@ -5,8 +5,9 @@
     <string name="map_waiting">Söker din plats…</string>
     <string name="map_customize">Anpassa kartan</string>
     <string name="map_orientation">Orientering</string>
-    <string name="map_north">Norr uppåt</string>
+    <string name="map_north">Automatiskt</string>
     <string name="map_heading">Färdriktning uppåt</string>
+    <string name="map_north_up">Alltid norr</string>
     <string name="map_zoom">Zoom</string>
     <string name="map_zoom_auto">Automatisk</string>
     <string name="map_zoom_near">Nära</string>

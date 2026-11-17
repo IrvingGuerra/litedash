@@ -471,7 +471,7 @@
     <string name="logo_intro">Úvodní animace</string>
     <string name="bar_title">Lišta aplikací</string>
     <string name="bar_hide">Skrýt lištu</string>
-    <string name="bar_hide_help">Pro zobrazení a přístup k Nastavení podrž prst kdekoli na ploše.</string>
+    <string name="bar_hide_help">Klepni na prázdné místo na ploše a na pár sekund se zobrazí; pro uspořádání a vstup do Nastavení na něm podrž prst.</string>
     <string name="bar_buttons">Tlačítka</string>
     <string name="bar_arrange">Uspořádat lištu</string>
     <string name="bar_position_help">Automaticky: vlevo, když je displej na šířku, dole, když je na výšku.</string>

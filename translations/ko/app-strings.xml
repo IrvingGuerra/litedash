@@ -456,7 +456,7 @@
     <string name="logo_intro">시작 애니메이션</string>
     <string name="bar_title">앱 바</string>
     <string name="bar_hide">바 숨기기</string>
-    <string name="bar_hide_help">바를 보고 설정으로 가려면 홈 화면 아무 곳이나 길게 누르세요.</string>
+    <string name="bar_hide_help">홈 화면의 빈 곳을 탭하면 몇 초간 보입니다. 정리하거나 설정으로 가려면 그곳을 길게 누르세요.</string>
     <string name="bar_buttons">버튼</string>
     <string name="bar_arrange">바 정리</string>
     <string name="bar_position_help">자동: 가로 화면에서는 왼쪽, 세로 화면에서는 아래쪽.</string>

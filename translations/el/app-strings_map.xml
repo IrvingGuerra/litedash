@@ -5,8 +5,9 @@
     <string name="map_waiting">Εντοπισμός θέσης…</string>
     <string name="map_customize">Προσαρμογή χάρτη</string>
     <string name="map_orientation">Προσανατολισμός</string>
-    <string name="map_north">Βορράς επάνω</string>
+    <string name="map_north">Αυτόματα</string>
     <string name="map_heading">Κατεύθυνση επάνω</string>
+    <string name="map_north_up">Πάντα βορράς</string>
     <string name="map_zoom">Ζουμ</string>
     <string name="map_zoom_auto">Αυτόματο</string>
     <string name="map_zoom_near">Κοντά</string>

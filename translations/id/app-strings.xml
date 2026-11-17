@@ -456,7 +456,7 @@
     <string name="logo_intro">Animasi pembuka</string>
     <string name="bar_title">Bilah aplikasi</string>
     <string name="bar_hide">Sembunyikan bilah</string>
-    <string name="bar_hide_help">Untuk melihatnya dan membuka Setelan, tekan lama di mana saja pada beranda.</string>
+    <string name="bar_hide_help">Ketuk tempat kosong di beranda untuk melihatnya beberapa detik; untuk menata dan membuka Setelan, tekan lama tempat itu.</string>
     <string name="bar_buttons">Tombol</string>
     <string name="bar_arrange">Atur bilah</string>
     <string name="bar_position_help">Otomatis: di kiri saat layar lanskap, di bawah saat potret.</string>

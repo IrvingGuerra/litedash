@@ -5,8 +5,9 @@
     <string name="map_waiting">Je locatie zoeken…</string>
     <string name="map_customize">Kaart aanpassen</string>
     <string name="map_orientation">Oriëntatie</string>
-    <string name="map_north">Noorden boven</string>
+    <string name="map_north">Automatisch</string>
     <string name="map_heading">Rijrichting boven</string>
+    <string name="map_north_up">Altijd noorden</string>
     <string name="map_zoom">Zoom</string>
     <string name="map_zoom_auto">Automatisch</string>
     <string name="map_zoom_near">Dichtbij</string>

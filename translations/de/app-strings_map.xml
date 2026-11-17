@@ -5,8 +5,9 @@
     <string name="map_waiting">Standort wird gesucht…</string>
     <string name="map_customize">Karte anpassen</string>
     <string name="map_orientation">Ausrichtung</string>
-    <string name="map_north">Norden oben</string>
+    <string name="map_north">Automatisch</string>
     <string name="map_heading">Fahrtrichtung oben</string>
+    <string name="map_north_up">Immer Norden</string>
     <string name="map_zoom">Zoom</string>
     <string name="map_zoom_auto">Automatisch</string>
     <string name="map_zoom_near">Nah</string>

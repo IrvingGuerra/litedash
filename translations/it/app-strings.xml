@@ -461,7 +461,7 @@
     <string name="logo_intro">Animazione iniziale</string>
     <string name="bar_title">Barra delle app</string>
     <string name="bar_hide">Nascondi la barra</string>
-    <string name="bar_hide_help">Per vederla e andare in Impostazioni, tieni premuto in un punto qualsiasi della Home.</string>
+    <string name="bar_hide_help">Tocca un punto vuoto della Home per vederla per qualche secondo; per sistemare e andare in Impostazioni, tienilo premuto.</string>
     <string name="bar_buttons">Pulsanti</string>
     <string name="bar_arrange">Sistema la barra</string>
     <string name="bar_position_help">Automatica: a sinistra con lo schermo orizzontale, in basso con lo schermo verticale.</string>

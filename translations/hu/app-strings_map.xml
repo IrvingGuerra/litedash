@@ -5,8 +5,9 @@
     <string name="map_waiting">Helyzeted keresése…</string>
     <string name="map_customize">Térkép testreszabása</string>
     <string name="map_orientation">Tájolás</string>
-    <string name="map_north">Észak felül</string>
+    <string name="map_north">Automatikus</string>
     <string name="map_heading">Menetirány felül</string>
+    <string name="map_north_up">Mindig észak</string>
     <string name="map_zoom">Nagyítás</string>
     <string name="map_zoom_auto">Automatikus</string>
     <string name="map_zoom_near">Közel</string>

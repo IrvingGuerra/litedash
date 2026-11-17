@@ -49,6 +49,7 @@ internal object PrefKeys {
     /** En el mapa de fondo del inicio: tu auto en vez de la flecha. */
     const val MAP_BACKDROP_CAR = "map_backdrop_car"
     const val MAP_LOOK = "map_look"
+    const val GUIDE_MAP_HEADING = "guide_map_heading"
     const val MUSIC_APP = "music_app"
     const val DRIVER_NAME = "driver_name"
     const val HOME_ADDRESS = "home_address"
@@ -432,6 +433,9 @@ class Preferences(context: Context) {
      * navegación; apagado, el mapa de LiteDash en grande.
      */
     var mapExternal by bool(PrefKeys.MAP_EXTERNAL, true)
+
+    /** El mapa de la guía (el de la derecha) gira hacia donde vas en vez de quedarse al norte (botón de la brújula). */
+    var guideMapHeading by bool(PrefKeys.GUIDE_MAP_HEADING, false)
 
     /** En el mapa de fondo del inicio: tu auto visto de atrás en vez de la flecha (de fábrica, la flecha). */
     var mapBackdropCar by bool(PrefKeys.MAP_BACKDROP_CAR, false)

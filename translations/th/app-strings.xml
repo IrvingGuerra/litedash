@@ -453,7 +453,7 @@
     <string name="logo_intro">แอนิเมชันเปิดตัว</string>
     <string name="bar_title">แถบแอป</string>
     <string name="bar_hide">ซ่อนแถบ</string>
-    <string name="bar_hide_help">หากต้องการเห็นแถบและเข้าการตั้งค่า ให้แตะค้างที่ใดก็ได้บนหน้าหลัก</string>
+    <string name="bar_hide_help">แตะที่ว่างบนหน้าหลักเพื่อดูแถบสักครู่ หากต้องการจัดเรียงและเข้าการตั้งค่า ให้แตะค้างที่จุดนั้น</string>
     <string name="bar_buttons">ปุ่ม</string>
     <string name="bar_arrange">จัดแถบ</string>
     <string name="bar_position_help">อัตโนมัติ: ทางซ้ายเมื่อจอเป็นแนวนอน ด้านล่างเมื่อเป็นแนวตั้ง</string>

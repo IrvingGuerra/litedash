@@ -463,7 +463,7 @@
     <string name="logo_intro">Animação de abertura</string>
     <string name="bar_title">Barra de apps</string>
     <string name="bar_hide">Ocultar a barra</string>
-    <string name="bar_hide_help">Para vê-la e entrar em Configurações, toque e segure em qualquer lugar da tela inicial.</string>
+    <string name="bar_hide_help">Toque em um espaço vazio da tela inicial para vê-la por alguns segundos; para organizar e entrar em Configurações, toque e segure nele.</string>
     <string name="bar_buttons">Botões</string>
     <string name="bar_arrange">Organizar a barra</string>
     <string name="bar_position_help">Automática: à esquerda se a tela estiver na horizontal, embaixo se estiver na vertical.</string>
