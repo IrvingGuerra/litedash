@@ -20,7 +20,9 @@
     <string name="report_broken">Не работает</string>
     <string name="report_looks_wrong">Выглядит неправильно</string>
     <string name="report_crash">Приложение закрывается</string>
+    <string name="report_want_map">Хочу карту моей страны</string>
     <string name="report_note">Расскажи подробнее (необязательно)</string>
+    <string name="report_want_map_hint">Страна и область или регион</string>
     <string name="report_play_first">Если можешь, включи этот источник перед отправкой.</string>
     <string name="report_send">Отправить</string>
     <string name="report_sending">Отправка…</string>

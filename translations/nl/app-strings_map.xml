@@ -63,6 +63,7 @@
     <string name="map_offline_by_state">Per provincie</string>
     <string name="map_offline_by_zone">Per zone</string>
     <string name="map_pack_tip">Staat je provincie er niet bij? Gebruik «Per zone»: werkt overal.</string>
+    <string name="map_request_country">Staat je land er niet bij? Vraag het aan</string>
     <string name="search_hint">Waarheen?</string>
     <string name="search_clear">Wissen</string>
     <string name="search_recent">Recent</string>

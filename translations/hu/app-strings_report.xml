@@ -20,7 +20,9 @@
     <string name="report_broken">Nem működik</string>
     <string name="report_looks_wrong">Rosszul néz ki</string>
     <string name="report_crash">Az alkalmazás bezáródik</string>
+    <string name="report_want_map">Kérem az országom térképét</string>
     <string name="report_note">Írj többet (nem kötelező)</string>
+    <string name="report_want_map_hint">Ország és megye vagy régió</string>
     <string name="report_play_first">Ha tudod, küldés előtt indítsd el azt a forrást.</string>
     <string name="report_send">Küldés</string>
     <string name="report_sending">Küldés…</string>

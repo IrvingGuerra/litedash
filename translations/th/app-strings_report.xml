@@ -20,7 +20,9 @@
     <string name="report_broken">ใช้งานไม่ได้</string>
     <string name="report_looks_wrong">แสดงผลผิด</string>
     <string name="report_crash">แอปปิดเอง</string>
+    <string name="report_want_map">ฉันต้องการแผนที่ประเทศของฉัน</string>
     <string name="report_note">เล่าเพิ่มเติม (ไม่บังคับ)</string>
+    <string name="report_want_map_hint">ประเทศและจังหวัดหรือภูมิภาค</string>
     <string name="report_play_first">ถ้าทำได้ ให้เล่นแหล่งเสียงนั้นก่อนส่ง</string>
     <string name="report_send">ส่ง</string>
     <string name="report_sending">กำลังส่ง…</string>

@@ -20,7 +20,9 @@
     <string name="report_broken">Nefunguje</string>
     <string name="report_looks_wrong">Vypadá špatně</string>
     <string name="report_crash">Aplikace se zavírá</string>
+    <string name="report_want_map">Chci mapu své země</string>
     <string name="report_note">Řekni nám víc (nepovinné)</string>
+    <string name="report_want_map_hint">Země a kraj nebo region</string>
     <string name="report_play_first">Pokud můžeš, pusť před odesláním ten zdroj.</string>
     <string name="report_send">Odeslat</string>
     <string name="report_sending">Odesílám…</string>

@@ -20,7 +20,9 @@
     <string name="report_broken">无法使用</string>
     <string name="report_looks_wrong">显示不正常</string>
     <string name="report_crash">应用闪退</string>
+    <string name="report_want_map">我想要我国家的地图</string>
     <string name="report_note">补充说明（可选）</string>
+    <string name="report_want_map_hint">国家和省份或地区</string>
     <string name="report_play_first">如果可以，发送前先播放该音源。</string>
     <string name="report_send">发送</string>
     <string name="report_sending">正在发送…</string>

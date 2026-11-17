@@ -20,7 +20,9 @@
     <string name="report_broken">काम नहीं करता</string>
     <string name="report_looks_wrong">ठीक नहीं दिखता</string>
     <string name="report_crash">ऐप बंद हो जाता है</string>
+    <string name="report_want_map">मुझे अपने देश का नक्शा चाहिए</string>
     <string name="report_note">और बताएँ (वैकल्पिक)</string>
+    <string name="report_want_map_hint">देश और राज्य या क्षेत्र</string>
     <string name="report_play_first">हो सके तो भेजने से पहले वह सोर्स चलाएँ।</string>
     <string name="report_send">भेजें</string>
     <string name="report_sending">भेज रहे हैं…</string>

@@ -63,6 +63,7 @@
     <string name="map_offline_by_state">Efter län</string>
     <string name="map_offline_by_zone">Efter zon</string>
     <string name="map_pack_tip">Finns inte ditt län? Använd «Efter zon»: fungerar överallt.</string>
+    <string name="map_request_country">Saknas ditt land? Be om det</string>
     <string name="search_hint">Vart?</string>
     <string name="search_clear">Rensa</string>
     <string name="search_recent">Senaste</string>

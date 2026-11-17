@@ -27,6 +27,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.exclude
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.statusBarsIgnoringVisibility
 import androidx.compose.foundation.layout.widthIn
@@ -703,7 +707,9 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                     // Con algo en grande encima (la música o el mapa) se queda quieto: no se ve.
                     PageBackground.MAP -> MapBackdrop(d, remember(d.dashboard.shown, d.dashboard.grid, board, rootSize) { mapFocus(d.dashboard, board, rootSize) }, car, covered = expandedCovers)
                 }
-                BoxWithConstraints(Modifier.fillMaxSize().safeDrawingPadding()) {
+                // Sin apartarse del teclado: lo tapa (como pide adjustNothing) y quien escribe acomoda lo suyo arriba de él
+                // (el buscador del mapa). Si se apartara, en un celular acostado todo el inicio quedaba en una franja.
+                BoxWithConstraints(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing.exclude(WindowInsets.ime))) {
                     // Pantalla acostada: barra lateral (como DuduAuto) y el tablero con toda la altura. Parada: la
                     // barra abajo.
                     val rail = when (d.prefs.barPosition) {

@@ -476,11 +476,10 @@ private fun sharedMapCamera(key: String?): MapCamera =
  */
 @Composable
 private fun MapCompass(d: Dependencies, look: MapLook, camera: MapCamera, size: Dp = 44.dp) {
-    // Con Norte de fábrica el mapa solo gira de viaje y en el zoom automático (inclinado).
-    val heading = look.orientation == MapOrientation.HEADING ||
-        (look.orientation == MapOrientation.NORTH && look.zoom == MapZoom.AUTO && camera.traveling)
+    // Como esté girado el mapa ahora (con Automático gira al inclinarse en lo más cerca, aunque estés detenido).
+    val heading = camera.turning
     CompassButton(
-        if (heading) -(d.trip.bearing ?: 0f) else 0f, northUp = !heading,
+        camera.turnDegrees, northUp = !heading,
         onClick = { applyMapLook(d, look.copy(orientation = if (heading) MapOrientation.NORTH_UP else MapOrientation.HEADING)) },
         size = size,
     )
@@ -617,10 +616,14 @@ internal fun MapLookSettings(d: Dependencies) {
     }
 }
 
-/** Ajustes → Apps → Navegación → Sin conexión (con el estilo que tenga el mapa de LiteDash). */
+/**
+ * Ajustes → Apps → Navegación → Sin conexión (con el estilo que tenga el mapa de LiteDash). Abajo, siempre (también a
+ * quien viaja), pedir el mapa de otro país: [requestMap] abre el reporte ya elegido.
+ */
 @Composable
-internal fun MapOfflineSettings(d: Dependencies) {
+internal fun MapOfflineSettings(d: Dependencies, requestMap: () -> Unit) {
     OfflineSection(d, MapLook.parse(d.prefs.mapLook.orEmpty()).detail)
+    Button(stringResource(R.string.map_request_country), requestMap)
 }
 
 /** El aspecto de LiteDash: se guarda y se pone en todos los widgets Mapa del inicio (de todas las páginas). */

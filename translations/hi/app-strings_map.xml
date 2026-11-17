@@ -63,6 +63,7 @@
     <string name="map_offline_by_state">राज्य के हिसाब से</string>
     <string name="map_offline_by_zone">ज़ोन के हिसाब से</string>
     <string name="map_pack_tip">आपका राज्य नहीं है? «ज़ोन के हिसाब से» इस्तेमाल करें: यह हर जगह चलता है।</string>
+    <string name="map_request_country">आपका देश नहीं है? उसे माँगें</string>
     <string name="search_hint">कहाँ जाना है?</string>
     <string name="search_clear">साफ़ करें</string>
     <string name="search_recent">हाल के</string>

@@ -63,6 +63,7 @@
     <string name="map_offline_by_state">Por estado</string>
     <string name="map_offline_by_zone">Por zona</string>
     <string name="map_pack_tip">¿No está tu estado o región? Usa «Por zona»: sirve en cualquier parte.</string>
+    <string name="map_request_country">¿No está tu país? Pídelo</string>
     <string name="search_hint">¿A dónde vas?</string>
     <string name="search_clear">Borrar</string>
     <string name="search_recent">Recientes</string>

@@ -63,6 +63,7 @@
     <string name="map_offline_by_state">Nach Bundesland</string>
     <string name="map_offline_by_zone">Nach Zone</string>
     <string name="map_pack_tip">Dein Bundesland fehlt? Nimm «Nach Zone»: geht überall.</string>
+    <string name="map_request_country">Dein Land fehlt? Fordere es an</string>
     <string name="search_hint">Wohin?</string>
     <string name="search_clear">Löschen</string>
     <string name="search_recent">Zuletzt</string>

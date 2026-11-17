@@ -63,6 +63,7 @@
     <string name="map_offline_by_state">ตามจังหวัด</string>
     <string name="map_offline_by_zone">ตามพื้นที่</string>
     <string name="map_pack_tip">ไม่มีจังหวัดของคุณ? ใช้ «ตามพื้นที่» ใช้ได้ทุกที่</string>
+    <string name="map_request_country">ไม่มีประเทศของคุณ? ขอได้ที่นี่</string>
     <string name="search_hint">ไปที่ไหน</string>
     <string name="search_clear">ล้าง</string>
     <string name="search_recent">ล่าสุด</string>

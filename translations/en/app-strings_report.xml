@@ -22,7 +22,9 @@
     <string name="report_broken">Doesn\'t work</string>
     <string name="report_looks_wrong">Looks wrong</string>
     <string name="report_crash">The app closes</string>
+    <string name="report_want_map">I want my country\'s map</string>
     <string name="report_note">Tell us more (optional)</string>
+    <string name="report_want_map_hint">Country and state or region</string>
     <string name="report_play_first">If you can, play that source before sending.</string>
     <string name="report_send">Send</string>
     <string name="report_sending">Sending…</string>

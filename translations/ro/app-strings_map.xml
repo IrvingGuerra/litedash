@@ -63,6 +63,7 @@
     <string name="map_offline_by_state">După județ</string>
     <string name="map_offline_by_zone">După zonă</string>
     <string name="map_pack_tip">Județul tău nu e aici? Folosește «După zonă»: merge oriunde.</string>
+    <string name="map_request_country">Nu e țara ta? Cere-o</string>
     <string name="search_hint">Unde mergi?</string>
     <string name="search_clear">Șterge</string>
     <string name="search_recent">Recente</string>

@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -59,12 +61,13 @@ import com.irvingguerra.litedash.feature.obd.ObdState
 @Composable
 internal fun FitShort(below: Dp = SHORT_PANEL_HEIGHT, content: @Composable () -> Unit) {
     BoxWithConstraints(Modifier.fillMaxSize()) {
-        val fit = (maxHeight / below).coerceIn(MIN_PANEL_FIT, 1f)
-        if (fit >= 1f) content()
-        else {
-            val d = LocalDensity.current
-            CompositionLocalProvider(LocalDensity provides Density(d.density * fit, d.fontScale)) { content() }
-        }
+        val d = LocalDensity.current
+        // El teclado no cuenta (donde sí se le aparta, el alto baja): si contara, en un celular acostado al abrirlo todo se achicaría.
+        val keyboard = with(d) { WindowInsets.ime.getBottom(this).toDp() }
+        val fit = ((maxHeight + keyboard) / below).coerceIn(MIN_PANEL_FIT, 1f)
+        // Siempre por el mismo camino: si cambiara de rama, lo de adentro se rehace y un buscador perdería el foco (y el
+        // teclado se cerraría al instante).
+        CompositionLocalProvider(LocalDensity provides if (fit >= 1f) d else Density(d.density * fit, d.fontScale)) { content() }
     }
 }
 

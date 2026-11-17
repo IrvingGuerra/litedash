@@ -20,7 +20,9 @@
     <string name="report_broken">Çalışmıyor</string>
     <string name="report_looks_wrong">Yanlış görünüyor</string>
     <string name="report_crash">Uygulama kapanıyor</string>
+    <string name="report_want_map">Ülkemin haritasını istiyorum</string>
     <string name="report_note">Biraz daha anlatın (isteğe bağlı)</string>
+    <string name="report_want_map_hint">Ülke ve il veya bölge</string>
     <string name="report_play_first">Mümkünse göndermeden önce o kaynağı çalın.</string>
     <string name="report_send">Gönder</string>
     <string name="report_sending">Gönderiliyor…</string>

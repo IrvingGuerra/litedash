@@ -71,6 +71,8 @@ private enum class ReportProblem(val key: String, val title: Int) {
     BROKEN("broken", R.string.report_broken),
     LOOKS_WRONG("looks_wrong", R.string.report_looks_wrong),
     CRASH("crash", R.string.report_crash),
+    // Solo en Mapa: pedir el mapa sin conexión de un país o región que aún no está (la nota dice cuál).
+    WANT_MAP("want_map", R.string.report_want_map),
     OTHER("other", R.string.reminder_other),
 }
 
@@ -93,7 +95,11 @@ private enum class ReportModule(val key: String, val title: Int, val details: Li
     OTHER("other", R.string.reminder_other),
     ;
 
-    val problems get() = if (audio) AUDIO_PROBLEMS else GENERIC_PROBLEMS
+    val problems get() = when {
+        audio -> AUDIO_PROBLEMS
+        this == MAP -> listOf(ReportProblem.WANT_MAP) + GENERIC_PROBLEMS
+        else -> GENERIC_PROBLEMS
+    }
 }
 
 /** Los módulos que tienen sentido en esta pantalla: sin Taller con el OBD apagado, sin dividida donde no se puede, sin actualizaciones en Play. */
@@ -123,8 +129,17 @@ internal fun openSoundReport(piece: SoundPiece) {
     selectTab(SYSTEM_TABS, SystemTab.YOUR_SCREEN.ordinal)
 }
 
-/** Hay un reporte de sonido esperando: «Tu pantalla» pone la tarjeta arriba (si no, en pantallas bajitas queda fuera de la vista). */
-internal fun soundReportPending() = pendingSound != null
+/** El reporte que pidió «¿No está tu país? Pídelo» (Ajustes → Apps → Navegación → Sin conexión). Solo en memoria. */
+private var pendingMapRequest = false
+
+/** "Enviar un reporte" ya en "Mapa" con "Quiero el mapa de mi país": Ajustes → Sistema → Tu pantalla. */
+internal fun openMapRequest() {
+    pendingMapRequest = true
+    selectTab(SYSTEM_TABS, SystemTab.YOUR_SCREEN.ordinal)
+}
+
+/** Hay un reporte esperando (sonido o mapa): «Tu pantalla» pone la tarjeta arriba (si no, en pantallas bajitas queda fuera de la vista). */
+internal fun reportPending() = pendingSound != null || pendingMapRequest
 
 private const val NOTE_MAX = 500
 private const val INFO_MAX = 20_000
@@ -147,9 +162,12 @@ internal fun SendReport(d: Dependencies) {
     val c = LocalColors.current
     val context = LocalContext.current.applicationContext
     val sound = remember { pendingSound.also { pendingSound = null } }
-    var module by remember { mutableStateOf(sound?.let { if (it == SoundPiece.MUSIC) ReportModule.MUSIC else ReportModule.RADIO }) }
+    val mapRequest = remember { pendingMapRequest.also { pendingMapRequest = false } }
+    var module by remember {
+        mutableStateOf(if (mapRequest) ReportModule.MAP else sound?.let { if (it == SoundPiece.MUSIC) ReportModule.MUSIC else ReportModule.RADIO })
+    }
     var detail by remember { mutableStateOf(sound?.let { if (it == SoundPiece.MUSIC) ReportDetail.HEAD_BLUETOOTH else ReportDetail.FM }) }
-    var problem by remember { mutableStateOf(sound?.let { ReportProblem.SILENT }) }
+    var problem by remember { mutableStateOf(if (mapRequest) ReportProblem.WANT_MAP else sound?.let { ReportProblem.SILENT }) }
     var note by remember { mutableStateOf("") }
 
     SettingsCard(stringResource(R.string.report_title), stringResource(R.string.report_help)) {
@@ -186,7 +204,9 @@ internal fun SendReport(d: Dependencies) {
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     for (p in m.problems) Button(stringResource(p.title), { problem = p }, primary = p == problem)
                 }
-                TextInput(note, { note = it.take(NOTE_MAX) }, stringResource(R.string.report_note), Modifier.fillMaxWidth())
+                // Al pedir un mapa, la nota pide el país y la región.
+                val hint = if (problem == ReportProblem.WANT_MAP) R.string.report_want_map_hint else R.string.report_note
+                TextInput(note, { note = it.take(NOTE_MAX) }, stringResource(hint), Modifier.fillMaxWidth())
                 if (m.audio) Label(stringResource(R.string.report_play_first), Typography.small, c.textMuted)
                 val chosen = problem
                 val sending = state == ReportState.Sending
@@ -195,13 +215,14 @@ internal fun SendReport(d: Dependencies) {
                         stringResource(if (sending) R.string.report_sending else R.string.report_send),
                         {
                             // Se lee el estado de ahora (dos toques en el mismo cuadro no mandan dos).
-                            if (chosen == null || reportState == ReportState.Sending) return@Button
+                            if (chosen == null || reportState == ReportState.Sending || (chosen == ReportProblem.WANT_MAP && note.isBlank())) return@Button
                             reportState = ReportState.Sending
                             val ask = Report(m, detail, chosen, note)
                             reportScope.launch { reportState = submitReport(context, d, ask) }
                         },
                         primary = true,
-                        enabled = chosen != null && !sending,
+                        // Para pedir un mapa hace falta saber de dónde.
+                        enabled = chosen != null && !sending && (chosen != ReportProblem.WANT_MAP || note.isNotBlank()),
                     )
                     when (state) {
                         ReportState.Error -> Label(stringResource(R.string.report_error), Typography.small, c.danger)

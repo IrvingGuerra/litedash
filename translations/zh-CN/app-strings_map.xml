@@ -63,6 +63,7 @@
     <string name="map_offline_by_state">按省份</string>
     <string name="map_offline_by_zone">按区域</string>
     <string name="map_pack_tip">没有你的省份？用「按区域」：任何地方都能用。</string>
+    <string name="map_request_country">没有你的国家？申请添加</string>
     <string name="search_hint">去哪儿？</string>
     <string name="search_clear">清除</string>
     <string name="search_recent">最近</string>

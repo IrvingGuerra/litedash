@@ -63,6 +63,7 @@
     <string name="map_offline_by_state">За областю</string>
     <string name="map_offline_by_zone">За районом</string>
     <string name="map_pack_tip">Твоєї області немає? Скористайся «За районом»: працює будь-де.</string>
+    <string name="map_request_country">Немає вашої країни? Попросіть її</string>
     <string name="search_hint">Куди їдемо?</string>
     <string name="search_clear">Очистити</string>
     <string name="search_recent">Нещодавні</string>

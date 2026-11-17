@@ -20,7 +20,9 @@
     <string name="report_broken">Tidak berfungsi</string>
     <string name="report_looks_wrong">Tampilannya salah</string>
     <string name="report_crash">Aplikasi tertutup</string>
+    <string name="report_want_map">Saya mau peta negara saya</string>
     <string name="report_note">Ceritakan lebih banyak (opsional)</string>
+    <string name="report_want_map_hint">Negara dan provinsi atau wilayah</string>
     <string name="report_play_first">Jika bisa, putar sumber itu sebelum mengirim.</string>
     <string name="report_send">Kirim</string>
     <string name="report_sending">Mengirim…</string>

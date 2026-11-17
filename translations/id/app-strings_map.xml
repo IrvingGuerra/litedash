@@ -63,6 +63,7 @@
     <string name="map_offline_by_state">Per provinsi</string>
     <string name="map_offline_by_zone">Per zona</string>
     <string name="map_pack_tip">Provinsi Anda belum ada? Gunakan «Per zona»: berfungsi di mana saja.</string>
+    <string name="map_request_country">Negaramu tidak ada? Minta di sini</string>
     <string name="search_hint">Mau ke mana?</string>
     <string name="search_clear">Hapus</string>
     <string name="search_recent">Terbaru</string>

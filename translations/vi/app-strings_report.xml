@@ -20,7 +20,9 @@
     <string name="report_broken">Không hoạt động</string>
     <string name="report_looks_wrong">Hiển thị sai</string>
     <string name="report_crash">Ứng dụng bị đóng</string>
+    <string name="report_want_map">Tôi muốn bản đồ nước mình</string>
     <string name="report_note">Mô tả thêm (không bắt buộc)</string>
+    <string name="report_want_map_hint">Quốc gia và tỉnh hoặc vùng</string>
     <string name="report_play_first">Nếu được, hãy phát nguồn đó trước khi gửi.</string>
     <string name="report_send">Gửi</string>
     <string name="report_sending">Đang gửi…</string>

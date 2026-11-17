@@ -63,6 +63,7 @@
     <string name="map_offline_by_state">都道府県で</string>
     <string name="map_offline_by_zone">エリアで</string>
     <string name="map_pack_tip">都道府県がない場合は「エリアで」を使ってください。どこでも使えます。</string>
+    <string name="map_request_country">あなたの国がない？リクエストする</string>
     <string name="search_hint">目的地を検索</string>
     <string name="search_clear">クリア</string>
     <string name="search_recent">最近</string>

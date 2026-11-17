@@ -20,7 +20,9 @@
     <string name="report_broken">Δεν λειτουργεί</string>
     <string name="report_looks_wrong">Δεν εμφανίζεται σωστά</string>
     <string name="report_crash">Η εφαρμογή κλείνει</string>
+    <string name="report_want_map">Θέλω τον χάρτη της χώρας μου</string>
     <string name="report_note">Πείτε μας περισσότερα (προαιρετικό)</string>
+    <string name="report_want_map_hint">Χώρα και νομός ή περιοχή</string>
     <string name="report_play_first">Αν μπορείτε, παίξτε αυτή την πηγή πριν από την αποστολή.</string>
     <string name="report_send">Αποστολή</string>
     <string name="report_sending">Αποστολή…</string>

@@ -22,7 +22,9 @@
     <string name="report_broken">Não funciona</string>
     <string name="report_looks_wrong">Aparece errado</string>
     <string name="report_crash">O app fecha</string>
+    <string name="report_want_map">Quero o mapa do meu país</string>
     <string name="report_note">Conte mais (opcional)</string>
+    <string name="report_want_map_hint">País e estado ou região</string>
     <string name="report_play_first">Se puder, coloque essa fonte para tocar antes de enviar.</string>
     <string name="report_send">Enviar</string>
     <string name="report_sending">Enviando…</string>

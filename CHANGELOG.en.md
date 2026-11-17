@@ -3,6 +3,16 @@
 What people using LiteDash notice, in English. The full history (in Spanish) is in [CHANGELOG.md](CHANGELOG.md).
 Format [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versions [SemVer](https://semver.org/).
 
+## [1.4.184] - 2026-11-17
+
+### New
+- **Request your country's map.** In Settings → Apps → Navigation → Offline, "Your country isn't here? Request it"
+  opens a ready-made report: type your country and region and we add it so it works without internet.
+
+### Fixed
+- The Map widget compass did nothing on the first tap: it now points the way the map is turned and switches at once.
+- On phones in landscape the map search keyboard closed as soon as it opened.
+
 ## [1.4.183] - 2026-11-17
 
 ### Changed

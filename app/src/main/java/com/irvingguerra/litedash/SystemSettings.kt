@@ -90,13 +90,13 @@ internal fun SystemSettings(d: Dependencies) {
 }
 
 /**
- * La pantalla en unas líneas, «Código de desarrollador» ([ProCard]) y "Enviar un reporte" ([SendReport]). Si el
- * widget pidió el reporte de sonido, la tarjeta del reporte va primero (abajo no se vería en pantallas bajitas).
+ * La pantalla en unas líneas, «Código de desarrollador» ([ProCard]) y "Enviar un reporte" ([SendReport]). Si se
+ * pidió un reporte ya elegido (sonido o mapa), la tarjeta del reporte va primero (abajo no se vería en pantallas bajitas).
  */
 @Composable
 private fun ScreenInfo(d: Dependencies) {
     val context = LocalContext.current
-    val reportFirst = remember { soundReportPending() }
+    val reportFirst = remember { reportPending() }
     if (reportFirst) SendReport(d)
     SettingsCard {
         val lines = remember { screenLines(context) }

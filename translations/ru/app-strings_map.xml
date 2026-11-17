@@ -63,6 +63,7 @@
     <string name="map_offline_by_state">По региону</string>
     <string name="map_offline_by_zone">По району</string>
     <string name="map_pack_tip">Твоего региона нет? Используй «По району»: работает везде.</string>
+    <string name="map_request_country">Нет вашей страны? Запросите её</string>
     <string name="search_hint">Куда едем?</string>
     <string name="search_clear">Очистить</string>
     <string name="search_recent">Недавние</string>

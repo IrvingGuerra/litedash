@@ -63,6 +63,7 @@
     <string name="map_offline_by_state">Podle kraje</string>
     <string name="map_offline_by_zone">Podle oblasti</string>
     <string name="map_pack_tip">Tvůj kraj tu není? Použij «Podle oblasti»: funguje kdekoli.</string>
+    <string name="map_request_country">Chybí tvoje země? Požádej o ni</string>
     <string name="search_hint">Kam?</string>
     <string name="search_clear">Vymazat</string>
     <string name="search_recent">Nedávné</string>

@@ -20,7 +20,9 @@
     <string name="report_broken">Nu funcționează</string>
     <string name="report_looks_wrong">Arată greșit</string>
     <string name="report_crash">Aplicația se închide</string>
+    <string name="report_want_map">Vreau harta țării mele</string>
     <string name="report_note">Spune-ne mai multe (opțional)</string>
+    <string name="report_want_map_hint">Țara și județul sau regiunea</string>
     <string name="report_play_first">Dacă poți, pornește acea sursă înainte de trimitere.</string>
     <string name="report_send">Trimite</string>
     <string name="report_sending">Se trimite…</string>

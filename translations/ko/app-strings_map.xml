@@ -63,6 +63,7 @@
     <string name="map_offline_by_state">지역별</string>
     <string name="map_offline_by_zone">구역별</string>
     <string name="map_pack_tip">지역이 없나요? «구역별»을 쓰세요. 어디서나 돼요.</string>
+    <string name="map_request_country">내 나라가 없나요? 요청하기</string>
     <string name="search_hint">어디로 갈까요?</string>
     <string name="search_clear">지우기</string>
     <string name="search_recent">최근</string>

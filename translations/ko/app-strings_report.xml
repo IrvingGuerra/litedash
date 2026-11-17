@@ -20,7 +20,9 @@
     <string name="report_broken">작동하지 않아요</string>
     <string name="report_looks_wrong">이상하게 보여요</string>
     <string name="report_crash">앱이 종료돼요</string>
+    <string name="report_want_map">우리나라 지도가 필요해요</string>
     <string name="report_note">자세히 알려 주세요(선택)</string>
+    <string name="report_want_map_hint">국가와 주 또는 지역</string>
     <string name="report_play_first">가능하면 보내기 전에 해당 소스를 재생해 주세요.</string>
     <string name="report_send">보내기</string>
     <string name="report_sending">보내는 중…</string>

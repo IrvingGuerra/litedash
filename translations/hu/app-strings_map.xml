@@ -63,6 +63,7 @@
     <string name="map_offline_by_state">Megyénként</string>
     <string name="map_offline_by_zone">Zónánként</string>
     <string name="map_pack_tip">Nincs itt a megyéd? Használd a «Zónánként» lehetőséget: bárhol működik.</string>
+    <string name="map_request_country">Nincs itt az országod? Kérd</string>
     <string name="search_hint">Hová mész?</string>
     <string name="search_clear">Törlés</string>
     <string name="search_recent">Legutóbbiak</string>

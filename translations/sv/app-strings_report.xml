@@ -20,7 +20,9 @@
     <string name="report_broken">Fungerar inte</string>
     <string name="report_looks_wrong">Ser fel ut</string>
     <string name="report_crash">Appen stängs</string>
+    <string name="report_want_map">Jag vill ha mitt lands karta</string>
     <string name="report_note">Berätta mer (valfritt)</string>
+    <string name="report_want_map_hint">Land och län eller region</string>
     <string name="report_play_first">Spela den källan innan du skickar, om du kan.</string>
     <string name="report_send">Skicka</string>
     <string name="report_sending">Skickar…</string>

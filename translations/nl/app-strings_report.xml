@@ -20,7 +20,9 @@
     <string name="report_broken">Werkt niet</string>
     <string name="report_looks_wrong">Ziet er verkeerd uit</string>
     <string name="report_crash">De app sluit af</string>
+    <string name="report_want_map">Ik wil de kaart van mijn land</string>
     <string name="report_note">Vertel meer (optioneel)</string>
+    <string name="report_want_map_hint">Land en provincie of regio</string>
     <string name="report_play_first">Speel die bron indien mogelijk af voordat je verstuurt.</string>
     <string name="report_send">Versturen</string>
     <string name="report_sending">Versturen…</string>

@@ -63,6 +63,7 @@
     <string name="map_offline_by_state">Ανά περιφέρεια</string>
     <string name="map_offline_by_zone">Ανά ζώνη</string>
     <string name="map_pack_tip">Δεν υπάρχει η περιφέρειά σου; Χρησιμοποίησε «Ανά ζώνη»: λειτουργεί παντού.</string>
+    <string name="map_request_country">Λείπει η χώρα σου; Ζήτησέ την</string>
     <string name="search_hint">Πού πάτε;</string>
     <string name="search_clear">Εκκαθάριση</string>
     <string name="search_recent">Πρόσφατα</string>

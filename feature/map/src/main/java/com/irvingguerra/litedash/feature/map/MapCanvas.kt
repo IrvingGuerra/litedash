@@ -234,8 +234,15 @@ class MapCamera(
     /** De viaje (andando o navegando); se guarda aquí para que el widget y el mapa en grande coincidan. */
     internal var driving by mutableStateOf(false)
 
-    /** De viaje (inclinado y, con Norte de fábrica, girando hacia donde vas): para la brújula de afuera. */
-    val traveling: Boolean get() = driving
+    /**
+     * Para la brújula de afuera: si el mapa está girado hacia donde vas (con Automático, también inclinado en lo más
+     * cerca aunque estés detenido) y cuánto (grados que gira el mapa; el norte queda en esa dirección). Solo cambian al
+     * cruzar de un lado o al girar 2° o más: no recomponen con cada cuadro.
+     */
+    var turning by mutableStateOf(false)
+        internal set
+    var turnDegrees by mutableFloatStateOf(0f)
+        internal set
 
     /** El último [driving] que se atendió: al empezar un viaje el mapa vuelve a su zoom de fábrica. */
     internal var zoomFor = false
@@ -557,6 +564,9 @@ fun MapCanvas(
                     val bearing = if (pose.bearing.isNaN()) 0f else pose.bearing
                     // Inclinado siempre mira hacia donde vas (como Waze); al acostarse gira al norte por el lado corto.
                     val turn = if (headingUp) -bearing else -shortTurn(0f, bearing) * tilt
+                    val turned = headingUp || tilt >= TURNED_TILT
+                    if (camera.turning != turned) camera.turning = turned
+                    if (abs(shortTurn(camera.turnDegrees, turn)) >= COMPASS_STEP_DEGREES) camera.turnDegrees = turn
                     // Inclinado, tu posición va más abajo: se ve más camino adelante (dentro de [focus], si lo hay).
                     val f = focus ?: WHOLE
                     val atX = size.width * f.center.x
@@ -754,3 +764,9 @@ private val DarkTiles: ColorFilter by lazy {
     m.postConcat(android.graphics.ColorMatrix(floatArrayOf(0.8f, 0f, 0f, 0f, 40f, 0f, 0.8f, 0f, 0f, 40f, 0f, 0f, 0.84f, 0f, 44f, 0f, 0f, 0f, 1f, 0f)))
     ColorFilter.colorMatrix(ColorMatrix(m.array))
 }
+
+/** Desde esta inclinación, con Automático, el mapa ya mira hacia donde vas (para la brújula). */
+private const val TURNED_TILT = 0.5f
+
+/** La brújula de afuera se mueve de tanto en tanto (no con cada cuadro). */
+private const val COMPASS_STEP_DEGREES = 2f

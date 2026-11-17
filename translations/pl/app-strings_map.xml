@@ -63,6 +63,7 @@
     <string name="map_offline_by_state">Według województwa</string>
     <string name="map_offline_by_zone">Według strefy</string>
     <string name="map_pack_tip">Nie ma twojego województwa? Użyj «Według strefy»: działa wszędzie.</string>
+    <string name="map_request_country">Brak twojego kraju? Poproś o niego</string>
     <string name="search_hint">Dokąd?</string>
     <string name="search_clear">Wyczyść</string>
     <string name="search_recent">Ostatnie</string>

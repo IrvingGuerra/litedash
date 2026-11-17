@@ -15,9 +15,12 @@ private enum class AppsTab(val title: Int) {
     MUSIC(R.string.music), RADIO(R.string.tile_radio), NAVIGATION(R.string.tab_navigation), SPLIT(R.string.tab_split),
 }
 
-/** Sección Apps: la música (Archivos, Bluetooth o App), la radio, la de navegación (con Casa y Trabajo) y la pantalla dividida. */
+/**
+ * Sección Apps: la música (Archivos, Bluetooth o App), la radio, la de navegación (con Casa y Trabajo) y la pantalla
+ * dividida. [requestMap]: pedir el mapa sin conexión de tu país (lleva al reporte).
+ */
 @Composable
-internal fun AppsSettings(d: Dependencies) {
+internal fun AppsSettings(d: Dependencies, requestMap: () -> Unit) {
     val c = LocalColors.current
     when (AppsTab.entries[tabs(AppsTab.entries.map { it.title }, APPS_TABS).coerceAtMost(AppsTab.entries.lastIndex)]) {
         AppsTab.MUSIC -> MusicModeSettings(d)
@@ -34,7 +37,7 @@ internal fun AppsSettings(d: Dependencies) {
                 }
             }
             1 -> SettingsCard(help = stringResource(R.string.map_look_help)) { MapLookSettings(d) }
-            else -> SettingsCard { MapOfflineSettings(d) }
+            else -> SettingsCard { MapOfflineSettings(d, requestMap) }
         }
         AppsTab.SPLIT -> SettingsCard { SplitSettings(d) }
     }

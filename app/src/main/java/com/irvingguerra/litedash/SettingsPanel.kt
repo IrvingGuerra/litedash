@@ -129,7 +129,10 @@ fun SettingsPanel(
                     when (section) {
                         SettingsSection.APPEARANCE -> Appearance(d, revision, onEdit, onTemplates, onTires = { section = SettingsSection.TIRES })
                         SettingsSection.CAR -> CarSettings(d)
-                        SettingsSection.APPS -> AppsSettings(d)
+                        SettingsSection.APPS -> AppsSettings(d, requestMap = {
+                            openMapRequest()
+                            section = SettingsSection.SYSTEM
+                        })
                         SettingsSection.WHEEL -> {
                             SettingsCard(help = stringResource(R.string.wheel_help)) { WheelSettings(d.wheel, d.prefs) }
                             SettingsCard(stringResource(R.string.wheel_assigned)) { WheelAssigned(d.prefs) }

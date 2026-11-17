@@ -4,6 +4,16 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.4.184] - 2026-11-17
+
+### Nuevo
+- **Pide el mapa de tu país.** En Ajustes → Apps → Navegación → Sin conexión, «¿No está tu país? Pídelo» abre un
+  reporte ya listo: escribes tu país y región y lo agregamos para que funcione sin internet.
+
+### Arreglado
+- La brújula del widget Mapa no hacía nada al primer toque: ahora apunta como está girado el mapa y cambia al instante.
+- En celulares acostados el teclado del buscador del mapa se cerraba al abrirlo.
+
 ## [1.4.183] - 2026-11-17
 
 ### Cambiado

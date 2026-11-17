@@ -63,6 +63,7 @@
     <string name="map_offline_by_state">Theo tỉnh</string>
     <string name="map_offline_by_zone">Theo khu vực</string>
     <string name="map_pack_tip">Chưa có tỉnh của bạn? Dùng «Theo khu vực»: dùng được ở mọi nơi.</string>
+    <string name="map_request_country">Không có nước bạn? Yêu cầu ngay</string>
     <string name="search_hint">Bạn muốn đi đâu?</string>
     <string name="search_clear">Xóa</string>
     <string name="search_recent">Gần đây</string>
