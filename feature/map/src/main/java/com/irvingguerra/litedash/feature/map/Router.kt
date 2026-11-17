@@ -1,5 +1,6 @@
 package com.irvingguerra.litedash.feature.map
 
+import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.sqrt
 
@@ -7,7 +8,14 @@ import kotlin.math.sqrt
  * Una ruta: sus puntos (pares lat, lon en millonésimas de grado, del punto de salida al de llegada), lo que mide, lo que
  * se tarda (sin tráfico) y la calle por donde va la mayor parte ([mainRoad], "" si no tiene nombre).
  */
-class Route(val points: IntArray, val distanceM: Double, val seconds: Double, val mainRoad: String) {
+class Route(
+    val points: IntArray, val distanceM: Double, val seconds: Double, val mainRoad: String,
+    /** Las vueltas en orden (la primera es la salida y la última la llegada). */
+    val maneuvers: List<Maneuver> = emptyList(),
+    /** Por punto: metros y segundos desde la salida (para el avance y la llegada). */
+    val atM: DoubleArray = DoubleArray(0),
+    val atS: DoubleArray = DoubleArray(0),
+) {
     val pointCount get() = points.size / 2
 }
 
@@ -60,7 +68,13 @@ class Router(private val graph: RoadGraph) {
                 pts.add(e6(a.lat), e6(a.lon))
                 pts.add(e6(b.lat), e6(b.lon))
                 val d = kotlin.math.abs(b.alongM - a.alongM)
-                return Route(pts.toArray(), d, d / aSpeed, graph.name(a.edge))
+                // Con su salida, su llegada y su avance, como cualquier ruta (la guía los usa).
+                val name = graph.name(a.edge)
+                return Route(
+                    pts.toArray(), d, d / aSpeed, name,
+                    listOf(Maneuver(ManeuverType.DEPART, 0f, name, 0, 0.0), Maneuver(ManeuverType.ARRIVE, 0f, "", 1, d)),
+                    doubleArrayOf(0.0, d), doubleArrayOf(0.0, d / aSpeed),
+                )
             }
         }
         if (graph.canLeave(a.half)) seed(a.to, ((aLen - a.alongM) / aSpeed).toFloat(), b)
@@ -147,6 +161,9 @@ class Router(private val graph: RoadGraph) {
         }
         halves.reverse()
         val pts = PointList()
+        // Los tramos de la ruta: dónde empieza cada uno (índice de punto), su tramo y su velocidad.
+        val segs = ArrayList<Seg>()
+        segs += Seg(0, a.edge, -1)
         pts.add(e6(a.lat), e6(a.lon))
         // Lo que queda del tramo de salida, con sus curvas, hasta el primer cruce.
         partial(a, a.alongM, if (v == a.to) Double.MAX_VALUE else 0.0, pts)
@@ -162,6 +179,7 @@ class Router(private val graph: RoadGraph) {
         for (h in halves) {
             val e = graph.halfEdge(h)
             val t = graph.halfTarget(h)
+            segs += Seg(pts.size - 1, e, at)
             graph.addShape(e, at, t, graph.halfReversed(h), pts)
             val len = graph.lengthM(e)
             meters += len
@@ -172,10 +190,79 @@ class Router(private val graph: RoadGraph) {
         meters += last
         count(b.edge, last)
         // Del último cruce al destino, también con las curvas del tramo.
+        if (b.edge != segs.last().edge) segs += Seg(pts.size - 1, b.edge, end)
         partial(b, if (end == b.from) 0.0 else Double.MAX_VALUE, b.alongM, pts)
         pts.add(e6(b.lat), e6(b.lon))
         val main = byName.maxByOrNull { it.value }?.key.orEmpty()
-        return Route(pts.toArray(), meters, seconds, main)
+        val points = pts.toArray()
+        // Metros y segundos por punto (cada tramo a su velocidad); el total se ajusta al calculado.
+        val n = points.size / 2
+        val atM = DoubleArray(n)
+        val atS = DoubleArray(n)
+        var seg = 0
+        for (i in 1 until n) {
+            while (seg + 1 < segs.size && segs[seg + 1].start < i) seg++
+            val d = flatMeters(points, i - 1, i)
+            atM[i] = atM[i - 1] + d
+            atS[i] = atS[i - 1] + d / speed(segs[seg].edge)
+        }
+        if (atM[n - 1] > 0) for (i in 0 until n) atM[i] *= meters / atM[n - 1]
+        if (atS[n - 1] > 0) for (i in 0 until n) atS[i] *= seconds / atS[n - 1]
+        return Route(points, meters, seconds, main, maneuvers(points, segs, atM), atM, atS)
+    }
+
+    /** Un tramo de la ruta: empieza en el punto [start], es el tramo [edge] y se entra a él por el cruce [via] (-1 = la salida). */
+    private class Seg(val start: Int, val edge: Int, val via: Int)
+
+    /**
+     * Las vueltas de la ruta: la salida, cada cruce donde se da vuelta (o se sigue derecho a otra calle habiendo más
+     * opciones) y la llegada. Un cruce sin otras salidas (la calle solo se curva o cambia de nombre) no cuenta.
+     */
+    private fun maneuvers(points: IntArray, segs: List<Seg>, atM: DoubleArray): List<Maneuver> {
+        val out = ArrayList<Maneuver>()
+        out += Maneuver(ManeuverType.DEPART, 0f, graph.name(segs[0].edge), 0, 0.0)
+        for (k in 1 until segs.size) {
+            val s = segs[k]
+            val j = s.start
+            val before = graph.name(segs[k - 1].edge)
+            val name = graph.name(s.edge)
+            val turn = turnAngle(points, j)
+            // Salidas posibles en ese cruce (sin contar por donde llegas): con una sola, no hay nada que decir.
+            val came = segs[k - 1].edge
+            val options = if (s.via < 0) 0 else (graph.firstHalf(s.via) until graph.firstHalf(s.via + 1)).count { graph.canLeave(it) && graph.halfEdge(it) != came }
+            // La misma calle (aunque cambie "Calle" por "Avenida"): ligeramente o derecho no es vuelta, solo se dobla.
+            val same = sameRoad(before, name)
+            val type = when {
+                options <= 1 -> null
+                abs(turn) >= 165f -> ManeuverType.UTURN
+                abs(turn) >= 120f -> if (turn > 0) ManeuverType.SHARP_RIGHT else ManeuverType.SHARP_LEFT
+                abs(turn) >= 50f -> if (turn > 0) ManeuverType.RIGHT else ManeuverType.LEFT
+                same -> null
+                abs(turn) >= 20f -> if (turn > 0) ManeuverType.SLIGHT_RIGHT else ManeuverType.SLIGHT_LEFT
+                name.isNotEmpty() -> ManeuverType.STRAIGHT
+                else -> null
+            } ?: continue
+            out += Maneuver(type, turn, name, j, atM[j])
+        }
+        val last = points.size / 2 - 1
+        out += Maneuver(ManeuverType.ARRIVE, 0f, "", last, atM[last])
+        return out
+    }
+
+    /** Cuánto se da vuelta en el punto [j] (grados, + a la derecha): rumbo de unos 15 m antes contra unos 15 m después. */
+    private fun turnAngle(points: IntArray, j: Int): Float {
+        val n = points.size / 2
+        var a = j - 1
+        while (a > 0 && flatMeters(points, a, j) < TURN_LOOK_M) a--
+        var b = j + 1
+        while (b < n - 1 && flatMeters(points, j, b) < TURN_LOOK_M) b++
+        if (a < 0 || b >= n) return 0f
+        val inB = bearing(points, a, j)
+        val outB = bearing(points, j, b)
+        var d = outB - inB
+        while (d > 180) d -= 360
+        while (d < -180) d += 360
+        return d.toFloat()
     }
 
     /**
@@ -211,6 +298,9 @@ class Router(private val graph: RoadGraph) {
     private fun e6(d: Double) = Math.round(d * 1e6).toInt()
 
     companion object {
+        /** Qué tan lejos se mira antes y después de un cruce para medir la vuelta (las calles se curvan al llegar). */
+        private const val TURN_LOOK_M = 15.0
+
         /** km/h por clase (el orden de CLASSES en armar_mapa.py), para calles de México sin velocidad marcada. */
         private val CLASS_KMH = intArrayOf(95, 75, 55, 45, 38, 32, 25, 12, 55, 45, 35, 30, 28, 25, 12)
 
@@ -292,4 +382,39 @@ sealed interface RoutePlan {
 
     /** No se pudo (lejos de las calles o sin camino). */
     class Failed(val error: RouteError) : RoutePlan
+}
+
+/** Qué tipo de vuelta es (la flecha y el texto salen de aquí). */
+enum class ManeuverType { DEPART, STRAIGHT, SLIGHT_LEFT, LEFT, SHARP_LEFT, SLIGHT_RIGHT, RIGHT, SHARP_RIGHT, UTURN, ARRIVE }
+
+/**
+ * Una vuelta de la ruta: su tipo, cuánto se gira ([angle], grados, + a la derecha, para dibujar la flecha), la calle a la
+ * que se entra ([road], "" sin nombre), en qué punto de la ruta está y a cuántos metros de la salida.
+ */
+class Maneuver(val type: ManeuverType, val angle: Float, val road: String, val point: Int, val atM: Double)
+
+/** Metros entre los puntos [i] y [j] de [points] (pares lat, lon en millonésimas), en plano (tramos cortos). */
+internal fun flatMeters(points: IntArray, i: Int, j: Int): Double {
+    val dy = (points[2 * j] - points[2 * i]) / 1e6 * RoadGraph.M_PER_DEG
+    val dx = (points[2 * j + 1] - points[2 * i + 1]) / 1e6 * RoadGraph.M_PER_DEG * cos(Math.toRadians(points[2 * i] / 1e6))
+    return sqrt(dx * dx + dy * dy)
+}
+
+/** Rumbo (grados desde el norte, a la derecha) del punto [i] al [j]. */
+internal fun bearing(points: IntArray, i: Int, j: Int): Double {
+    val dy = (points[2 * j] - points[2 * i]) / 1e6
+    val dx = (points[2 * j + 1] - points[2 * i + 1]) / 1e6 * cos(Math.toRadians(points[2 * i] / 1e6))
+    return Math.toDegrees(kotlin.math.atan2(dx, dy))
+}
+
+/** Lo que se le quita a un nombre de calle para compararlo ("Avenida X" es la misma que "X"). */
+private val ROAD_PREFIXES = Regex(
+    "^(calle|avenida|av\\.?|calzada|calz\\.?|boulevard|bulevar|blvd\\.?|carretera|carr\\.?|prolongación|prol\\.?|privada|priv\\.?|" +
+        "andador|callejón|circuito|periférico|eje|street|st\\.?|avenue|ave\\.?|road|rd\\.?)\\s+",
+)
+
+/** ¿Es la misma calle? Igual sin mayúsculas ni el tipo de vía al principio; sin nombre las dos, también. */
+internal fun sameRoad(a: String, b: String): Boolean {
+    fun core(s: String) = s.trim().lowercase().replace(ROAD_PREFIXES, "")
+    return core(a) == core(b)
 }

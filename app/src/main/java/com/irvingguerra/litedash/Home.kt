@@ -503,8 +503,9 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
     // Con Archivos, play sin nada que sonar (volante, barra de Android, widget) abre la pantalla Música en la
     // biblioteca; mientras está abierta, la atiende ella.
     // Un lugar de otra app (geo:) o la lupa sin mapa abierto: el mapa en grande lo atiende.
-    LaunchedEffect(PlaceRequests.pending) {
-        if (PlaceRequests.pending && expanded != Expanded.MAP) expand(Expanded.MAP, null)
+    // Con la guía abierta espera a que termine (debajo no se vería).
+    LaunchedEffect(PlaceRequests.pending, Driving.session == null) {
+        if (PlaceRequests.pending && Driving.session == null && expanded != Expanded.MAP) expand(Expanded.MAP, null)
     }
     val currentOpenMedia by rememberUpdatedState(::openMedia)
     OnFilesEmpty(d.music, inFront && d.music.mode == MusicMode.FILES, remember { { currentOpenMedia(MediaTab.MUSIC, true, null) } })
@@ -528,10 +529,11 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
     var touched by remember { mutableIntStateOf(0) }
     var parked by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) {
-        snapshotFlow { listOf(touched, d.wheel.presses, panel, editing, expanded, carLayer.open, tiresLayer.open, d.prefs.parkedMode) }
+        snapshotFlow { listOf(touched, d.wheel.presses, panel, editing, expanded, carLayer.open, tiresLayer.open, d.prefs.parkedMode, Driving.session) }
             .collectLatest {
                 parked = false
-                if (!d.prefs.parkedMode || panel != null || editing || expanded != null || carLayer.open || tiresLayer.open) return@collectLatest
+                // Con la guía no: manejar minutos sin tocar la pantalla es lo normal.
+                if (!d.prefs.parkedMode || panel != null || editing || expanded != null || carLayer.open || tiresLayer.open || Driving.session != null) return@collectLatest
                 delay(PARK_AFTER_MS)
                 // Manejando no: espera a que se detenga (velocidad del OBD o del GPS, la que haya).
                 snapshotFlow { (d.bus.value(Signal.SPEED) ?: 0f) > MOVING_KMH }.first { !it }
@@ -541,7 +543,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
     // Algo opaco tapa todo el inicio (estacionado, que puede durar horas, o el auto o las llantas ya en grande): lo
     // de abajo sigue compuesto y medido (al destaparse se ve al instante y lo que crece sabe de dónde), pero no se
     // dibuja y lo que gasta descansa ([LocalHomeCovered]).
-    val homeCovered by remember { derivedStateOf { parked || carLayer.covers || tiresLayer.covers } }
+    val homeCovered by remember { derivedStateOf { parked || carLayer.covers || tiresLayer.covers || Driving.session != null } }
     // Lo que sigue aunque se abra Ajustes o se acomode el inicio: el registro del viaje y
     // los avisos del motor y de las llantas (si no, abrir Ajustes cortaría el viaje y "Entendido" se olvidaría).
     val engineAlert = remember { EngineAlertState() }
@@ -893,6 +895,9 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                 }
             }
         }
+
+        // La guía tapa todo (inicio, barra y paneles) mientras manejas; al terminar, regresas a donde estabas.
+        Driving.session?.let { DrivingScreen(d, it) }
 
         val big = bigTile
         if (carLayer.shown && panel == null && big != null) {

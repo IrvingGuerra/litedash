@@ -160,7 +160,8 @@ internal fun RouteCard(d: Dependencies, request: RouteRequest, appName: String?,
                 val job = packs.routesJob?.takeIf { it.id == plan.region.id }
                 if (job == null || job.failed) Button(stringResource(R.string.route_download), { packs.downloadRoutes(plan.region) }, primary = true)
             }
-            Button(openLabel, onOpen, primary = plan !is RoutePlan.NeedsRoutes)
+            if (plan is RoutePlan.Found) Button(stringResource(R.string.guide_go), { Driving.session = DriveSession(request.to, plan.route) }, primary = true)
+            Button(openLabel, onOpen, primary = plan !is RoutePlan.NeedsRoutes && plan !is RoutePlan.Found)
         }
     }
 }

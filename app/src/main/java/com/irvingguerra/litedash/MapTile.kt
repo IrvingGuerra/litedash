@@ -416,7 +416,7 @@ internal fun MapBackdrop(d: Dependencies, focus: Rect?, car: CarPackage?, covere
  * Solo el auto, sin el aire ni la sombra de los lados: el cuadro del giro mide lo ancho del auto visto de lado y, de
  * espaldas, el auto ocupa una parte (se vería en miniatura). Corta a lo que es casi opaco ([SOLID_ALPHA]).
  */
-private fun Bitmap.solidPart(): Bitmap {
+internal fun Bitmap.solidPart(): Bitmap {
     val px = IntArray(width * height)
     getPixels(px, 0, width, 0, 0, width, height)
     var left = width; var right = -1; var top = height; var bottom = -1
@@ -439,10 +439,10 @@ private const val SOLID_ALPHA = 200
 private const val BACKDROP_KEY = "home-backdrop"
 
 /** Tu auto de espaldas: en los paquetes, el cuadro a 3/4 de vuelta del primero. */
-private const val REAR_TURN = 0.75f
+internal const val REAR_TURN = 0.75f
 
 /** Lo ancho de la foto de tu auto en el mapa (se dibuja hasta a 240 dp: así se ve nítido en pantallas densas). */
-private const val MARKER_PX = 640
+internal const val MARKER_PX = 640
 
 /**
  * Una cámara por widget Mapa ([key] = su id), la misma en el widget y en grande: lo que muevas o acerques se conserva
@@ -495,16 +495,16 @@ private val MAP_USER_AGENT = "LiteDash/${BuildConfig.VERSION_NAME} (+https://lit
  * widget y su mapa en grande usan el mismo almacén: al abrirlo o cerrarlo las teselas ya están.
  */
 @Composable
-private fun rememberTileStore(look: MapLook, themeDark: Boolean, shareKey: String? = null): TileStore {
+internal fun rememberTileStore(look: MapLook, themeDark: Boolean, shareKey: String? = null, realRoadDp: Float = 0f): TileStore {
     val context = LocalContext.current
     val density = LocalDensity.current.density
     val darkTiles = look.detail == MapDetail.MINIMAL && look.dark(themeDark)
-    val store = remember(look.detail, darkTiles, shareKey) {
+    val store = remember(look.detail, darkTiles, shareKey, realRoadDp) {
         if (shareKey == null) return@remember newTileStore(context, look.detail, darkTiles, density)
-        val kind = "${look.detail}/$darkTiles/$density"
+        val kind = "${look.detail}/$darkTiles/$density/$realRoadDp"
         // Uno por widget: al cambiar de estilo o de tema, el anterior se suelta.
         tileStores[shareKey]?.takeIf { it.first == kind }?.second
-            ?: newTileStore(context, look.detail, darkTiles, density).also { tileStores[shareKey] = kind to it }
+            ?: newTileStore(context, look.detail, darkTiles, density, realRoadDp).also { tileStores[shareKey] = kind to it }
     }
     // Tapado por su propio mapa en grande no cuenta como tapado: se rige por lo que tape a ese (comparten almacén).
     val covered = expandedMap?.takeIf { shareKey != null && it.tileId == shareKey }?.covered ?: LocalHomeCovered.current
@@ -519,17 +519,17 @@ private fun rememberTileStore(look: MapLook, themeDark: Boolean, shareKey: Strin
 /** El almacén de cada widget Mapa (por su id) y de qué estilo es. */
 private val tileStores = HashMap<String, Pair<String, TileStore>>()
 
-private fun newTileStore(context: Context, detail: MapDetail, dark: Boolean, density: Float): TileStore {
+private fun newTileStore(context: Context, detail: MapDetail, dark: Boolean, density: Float, realRoadDp: Float = 0f): TileStore {
     val source = when (detail) {
         MapDetail.FULL -> OsmTiles
-        MapDetail.MINIMAL -> minimalTiles(context, dark, density)
+        MapDetail.MINIMAL -> minimalTiles(context, dark, density, realRoadDp)
     }
     return TileStore(context, MAP_USER_AGENT, source)
 }
 
 /** Las teselas del minimalista (claras u oscuras), a la medida de la pantalla. */
-private fun minimalTiles(context: Context, dark: Boolean, density: Float) =
-    VectorTiles(context, if (dark) MinimalPalette.DARK else MinimalPalette.LIGHT, tilePx(density).toInt(), density, MAP_USER_AGENT)
+private fun minimalTiles(context: Context, dark: Boolean, density: Float, realRoadDp: Float = 0f) =
+    VectorTiles(context, if (dark) MinimalPalette.DARK else MinimalPalette.LIGHT, tilePx(density).toInt(), density, MAP_USER_AGENT, realRoadDp)
 
 /** Personalizar mapa: estilo, orientación, zoom y colores de este widget, con el mapa en vivo como vista previa. */
 @Composable

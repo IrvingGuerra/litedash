@@ -43,3 +43,35 @@ class RouterBench {
         graph?.close()
     }
 }
+
+/** Las vueltas y la guía con un estado real (solo en la Mac). */
+class GuidanceBench {
+    private val dir = File(System.getProperty("user.dir"), "../../../litedash-claude/prototipos/mapas/datos/ldm")
+
+    @Test
+    fun maneuversOfARealRoute() {
+        assumeTrue(System.getenv("LITEDASH_ROUTER_BENCH") != null && dir.isDirectory)
+        val which = System.getenv("LITEDASH_ROUTE_STATE") ?: "colima"
+        val c = (System.getenv("LITEDASH_ROUTE_COORDS") ?: "19.2433,-103.7250,19.2900,-103.7400").split(",").map { it.toDouble() }
+        val graph = RoadGraph.open(File(dir, "$which.ldm"))!!
+        val route = Router(graph).route(c[0], c[1], c[2], c[3]).getOrThrow()
+        System.getenv("LITEDASH_ROUTE_DUMP")?.let { out ->
+            File(out).writeText((0 until route.pointCount).joinToString("\n") { "${route.points[2 * it] / 1e6} ${route.points[2 * it + 1] / 1e6}" })
+        }
+        for (m in route.maneuvers) println("VUELTA ${m.type} ${"%.0f".format(m.angle)}° a ${"%.0f".format(m.atM)} m → ${m.road}")
+        // Recorre la ruta punto por punto y algunos puntos desviados.
+        val g = Guidance(route)
+        var i = 0
+        while (i < route.pointCount) {
+            val s = g.update(route.points[2 * i] / 1e6, route.points[2 * i + 1] / 1e6)
+            if (i % 20 == 0) println("GUIA punto $i: hecho ${"%.0f".format(s.doneM)} m, próxima #${s.next} a ${"%.0f".format(s.toNextM)} m, faltan ${"%.0f".format(s.leftM)} m / ${"%.0f".format(s.leftS)} s, fuera=${s.offRoute}, llegó=${s.arrived}")
+            i += 5
+        }
+        val end = route.pointCount - 1
+        println("GUIA final: ${g.update(route.points[2 * end] / 1e6, route.points[2 * end + 1] / 1e6)}")
+        val off = Guidance(route)
+        off.update(19.2433, -103.7250)
+        println("FUERA 1: ${off.update(19.2500, -103.7100).offRoute} 2: ${off.update(19.2501, -103.7101).offRoute}")
+        graph.close()
+    }
+}

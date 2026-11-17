@@ -88,6 +88,12 @@ class VectorTiles(
     private val sizePx: Int,
     private val density: Float,
     private val userAgent: String,
+    /**
+     * Calles a escala real (la vista de tu auto en la guía): una calle normal mide esto (dp) en el zoom [realZoom] y las
+     * demás en proporción; al alejarse se achican como en la vida real. 0 = grosores de mapa (fijos en pantalla).
+     */
+    private val realRoadDp: Float = 0f,
+    private val realZoom: Int = 20,
 ) : TileSource {
     private val app = context.applicationContext
     override val folder = "map_vector"
@@ -148,7 +154,9 @@ class VectorTiles(
         val zoomFactor = 2.0.pow(0.7 * (z - 16)).toFloat().coerceIn(0.35f, 4.5f)
         // Solo lo que toca este pedazo (más el grosor de la calle más ancha): del 17 son 64 pedazos por tesela.
         val window = t.extent.toFloat() / sub
-        val margin = (ROAD_WIDTH[0] + CASING) * density * zoomFactor / scale
+        // A escala real: el grosor de la calle normal en este zoom (px de pantalla), del mismo tamaño que tu auto.
+        val real = if (realRoadDp > 0f) realRoadDp * density * 2.0.pow(z - realZoom).toFloat() else 0f
+        val margin = (if (real > 0f) real * REAL_RATIO[0] * 1.2f else (ROAD_WIDTH[0] + CASING) * density * zoomFactor) / scale
         val l = sx * window - margin
         val tp = sy * window - margin
         val r = (sx + 1) * window + margin
@@ -159,24 +167,34 @@ class VectorTiles(
             fill.color = color
             for (s in shapes) if (s.touches(l, tp, r, b)) canvas.drawPath(s.toPath(path, close = true), fill)
         }
-        area(t.parks, palette.park)
-        area(t.water, palette.water)
-        // Las casas solo de cerca: más lejos son puntitos que ensucian.
-        if (z >= BUILDINGS_ZOOM) area(t.buildings, palette.building)
+        // A escala real (la vista de tu auto) solo calles: sin manzanas, parques ni agua.
+        if (realRoadDp <= 0f) {
+            area(t.parks, palette.park)
+            area(t.water, palette.water)
+            // Las casas solo de cerca: más lejos son puntitos que ensucian.
+            if (z >= BUILDINGS_ZOOM) area(t.buildings, palette.building)
+        }
         val stroke = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             style = Paint.Style.STROKE
             strokeCap = Paint.Cap.ROUND
             strokeJoin = Paint.Join.ROUND
         }
-        fun lines(shapes: List<Shape>, widthDp: Float, color: Int) {
+        fun lines(shapes: List<Shape>, widthDp: Float, color: Int, realPx: Float = 0f) {
             if (shapes.isEmpty()) return
             stroke.color = color
-            stroke.strokeWidth = widthDp * density * zoomFactor / scale
+            stroke.strokeWidth = if (realPx > 0f) realPx / scale else widthDp * density * zoomFactor / scale
             for (s in shapes) if (s.touches(l, tp, r, b)) canvas.drawPath(s.toPath(path, close = false), stroke)
         }
-        lines(t.rivers, 2.4f, palette.water)
+        if (realRoadDp <= 0f) lines(t.rivers, 2.4f, palette.water)
         // De las chicas a las grandes (las grandes encima); primero el borde de todas, luego el relleno.
         val tiers = if (z >= SERVICE_ZOOM) TIERS_ALL else TIERS_NO_SERVICE
+        if (real > 0f) {
+            // Como Tesla: de cada calle solo sus orillas (líneas claras) sobre el fondo; por dentro, del color del fondo.
+            val edge = (1.5f * density * 2.0.pow((z - realZoom).coerceAtMost(0)).toFloat()).coerceAtLeast(1f)
+            for (tier in tiers) lines(t.roads[tier.ordinal], 0f, palette.roads[RoadTier.MOTORWAY.ordinal], real * REAL_RATIO[tier.ordinal])
+            for (tier in tiers) lines(t.roads[tier.ordinal], 0f, palette.background, (real * REAL_RATIO[tier.ordinal] - 2 * edge).coerceAtLeast(0f))
+            return
+        }
         for (tier in tiers) lines(t.roads[tier.ordinal], ROAD_WIDTH[tier.ordinal] + CASING, palette.casing)
         for (tier in tiers) lines(t.roads[tier.ordinal], ROAD_WIDTH[tier.ordinal], palette.roads[tier.ordinal])
     }
@@ -227,6 +245,8 @@ class VectorTiles(
         const val TILEJSON = "https://tiles.openfreemap.org/planet"
         /** Grosor de cada tipo de calle en el zoom 16 (dp), en el orden de [RoadTier]. */
         val ROAD_WIDTH = floatArrayOf(7f, 5.5f, 4.5f, 2.8f, 1.6f)
+        /** A escala real, cada tipo de calle contra el ancho que se pide (tu auto): una normal es más ancha que el auto. */
+        val REAL_RATIO = floatArrayOf(3.2f, 2.6f, 2.1f, 1.7f, 1.2f)
         /** El borde que separa la calle del fondo (dp de más a cada calle). */
         const val CASING = 1.5f
     }

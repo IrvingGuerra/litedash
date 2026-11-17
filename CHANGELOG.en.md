@@ -3,6 +3,16 @@
 What people using LiteDash notice, in English. The full history (in Spanish) is in [CHANGELOG.md](CHANGELOG.md).
 Format [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versions [SemVer](https://semver.org/).
 
+## [1.4.176] - 2026-11-17
+
+### New
+- **Turn-by-turn guidance, without internet:** with the route ready tap «Go» and the driving screen opens. On the left,
+  your car from behind on the streets, with the route as a band as wide as the car (like Tesla); on the right, the map
+  with the next turn («50 m · Turn left onto Av. Insurgentes», and «Then…»), arrival time, what's left and a progress
+  bar. Upright screens show the car on top and the map below.
+- If you leave the route it recalculates instantly on your screen; when you get there it says «You've arrived».
+- «See route» shows the whole route and «End» takes you back where you were, without touching your home screen.
+
 ## [1.4.175] - 2026-11-17
 
 ### New

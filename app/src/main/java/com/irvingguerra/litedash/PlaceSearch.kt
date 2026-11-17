@@ -466,6 +466,7 @@ private fun placeIcon(hit: SearchHit): ImageVector = when {
 internal fun distanceLabel(km: Double, miles: Boolean): String {
     val value = if (miles) km * 0.621371 else km
     return when {
+        miles && value < 0.1 -> stringResource(R.string.search_ft, ((km * 3280.84).toInt() / 50 * 50).coerceAtLeast(50))
         !miles && km < 1 -> stringResource(R.string.search_m, (km * 1000).toInt().coerceAtLeast(10) / 10 * 10)
         value < 10 -> stringResource(if (miles) R.string.search_mi_tenths else R.string.search_km_tenths, value)
         else -> stringResource(if (miles) R.string.radio_mi else R.string.map_offline_radius, value.toInt())

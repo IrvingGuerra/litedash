@@ -4,6 +4,16 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.4.176] - 2026-11-17
+
+### Nuevo
+- **La guía vuelta por vuelta, sin internet:** con la ruta lista toca «Ir» y se abre la pantalla de conducción. A la
+  izquierda tu auto de espaldas sobre las calles, con la ruta como una franja del ancho del auto (como Tesla); a la
+  derecha el mapa con la próxima vuelta («50 m · Gira a la izquierda hacia Av. Insurgentes», y «Luego…»), la hora de
+  llegada, lo que falta y la barra de avance. De pie, el auto arriba y el mapa abajo.
+- Si te sales de la ruta, recalcula al instante en tu pantalla; al llegar te dice «Llegaste».
+- «Ver ruta» enseña toda la ruta y «Terminar» te regresa a donde estabas, sin tocar tu inicio.
+
 ## [1.4.175] - 2026-11-17
 
 ### Nuevo

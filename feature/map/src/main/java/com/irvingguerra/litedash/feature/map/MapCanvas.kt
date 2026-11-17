@@ -45,6 +45,7 @@ import androidx.compose.ui.input.pointer.PointerInputScope
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.irvingguerra.litedash.core.ui.Label
@@ -399,6 +400,13 @@ fun MapCanvas(
     onLongPress: ((Double, Double) -> Unit)? = null,
     /** Una ruta que se dibuja (pares lat, lon en millonésimas de grado, [Route.points]); null = ninguna. */
     route: IntArray? = null,
+    /** Lo ya recorrido de la ruta (punto + fracción hacia el siguiente): se dibuja en gris. */
+    routeDone: Float = 0f,
+    /**
+     * La ruta a escala real (vista de tu auto): de este ancho en el zoom más cercano y en perspectiva, como una calle;
+     * null = una línea del mismo grosor en toda la pantalla.
+     */
+    routeWidth: Dp? = null,
 ) {
     // La ruta en coordenadas del mundo (zoom 0), una vez: cada cuadro solo la multiplica por su zoom.
     val routeWorld = remember(route) {
@@ -563,7 +571,8 @@ fun MapCanvas(
                         // Siempre flecha: hacia arriba con el mapa girado, o con el último rumbo (sin rumbo aún, al norte).
                         sky, bearing + turn, ringKm, if (ringKm == null) 0.0 else tileLat(tileY(pose.lat, 0) + panY, 0),
                         pin?.let { tileX(it.second, zoom) } ?: Double.NaN, pin?.let { tileY(it.first, zoom) } ?: Double.NaN,
-                        routeWorld,
+                        routeWorld, routeDone,
+                        routeWidth?.let { it.toPx() * ts * n.toFloat() / (tilePx(density) * 2f.pow(driveZoom)) } ?: 0f,
                     )
                 }
                 onDrawBehind { frame.draw(this, store, filter, accent, marker) }
