@@ -22,4 +22,6 @@
     <string name="cards_opacity">How visible</string>
     <string name="cards_glass_help">With a wallpaper, it shows blurred behind each card.</string>
     <string name="cards_theme">Theme</string>
+    <string name="language_search">Find your language</string>
+    <string name="language_not_found">That language isn\'t here yet. Help us translate it at litedash.dev/en/translate.</string>
 </resources>
