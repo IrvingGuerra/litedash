@@ -4,6 +4,18 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.4.180] - 2026-11-17
+
+### Nuevo
+- **La barra de apps, a tu manera.** Al acomodarla (déjala presionada) aparecen dos rayas: lo que dejes antes de la
+  primera va a la izquierda, entre las dos al centro y después de la segunda a la derecha. Arrastra los íconos para
+  ordenarlos o cambiarlos de parte, y las rayas también. En la barra lateral es arriba, centro y abajo.
+
+### Cambiado
+- **Colores más fáciles de elegir.** En Ajustes → Inicio y apariencia → Interfaz todo lo del color vive en
+  «Tarjetas»: primero las combinaciones listas y, al tocar la paleta (el último círculo), se abren el color de las
+  tarjetas y el de la interfaz por separado.
+
 ## [1.4.179] - 2026-11-17
 
 ### Cambiado

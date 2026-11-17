@@ -141,7 +141,7 @@ fun DrawerPanel(d: Dependencies, apps: List<App>, close: () -> Unit) {
                 Button(stringResource(if (inDock) R.string.unpin_from_dock else R.string.pin_to_dock), {
                     d.prefs.dock = if (inDock) dock - app.key else dock + app.key
                     // Sin el bloque de favoritas en la barra, la app no se vería en ningún lado.
-                    if (!inDock && BarItem.FAVORITES !in d.prefs.barItems) d.prefs.barItems = d.prefs.barItems + BarItem.FAVORITES
+                    if (!inDock && BarItem.FAVORITES !in d.prefs.barItems) d.prefs.barItems = BarItem.add(d.prefs.barItems, BarItem.FAVORITES)
                     selected = null
                 })
                 Button(stringResource(R.string.add_to_home), {

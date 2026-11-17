@@ -466,7 +466,7 @@
     <string name="bar_arrange">Sáv elrendezése</string>
     <string name="bar_position_help">Automatikus: bal oldalt, ha a kijelző fekvő, alul, ha álló.</string>
     <string name="bar_edit">Sáv</string>
-    <string name="bar_edit_help">Gomb eltávolításához koppints az x-ére a sávon; áthelyezéshez húzd. A Beállítások mindig ott marad.</string>
+    <string name="bar_edit_help">Gomb eltávolításához koppints az x-ére a sávon; áthelyezéshez húzd. A két vonal választja el a bal, a középső és a jobb részt: ezeket is húzd. A Beállítások mindig ott marad.</string>
     <string name="bar_add_item">+ %1$s</string>
     <string name="radio_mi">%1$d mi</string>
     <string name="bar_place">Helyzet</string>

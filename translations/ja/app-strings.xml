@@ -461,7 +461,7 @@
     <string name="bar_arrange">バーを編集</string>
     <string name="bar_position_help">自動：画面が横向きなら左、縦向きなら下に表示します。</string>
     <string name="bar_edit">バー</string>
-    <string name="bar_edit_help">ボタンを外すにはバー上の × をタップ、移動するにはドラッグします。設定ボタンは常に残ります。</string>
+    <string name="bar_edit_help">ボタンを外すにはバー上の × をタップ、移動するにはドラッグします。2本の線で左・中央・右を分けます。線もドラッグできます。設定ボタンは常に残ります。</string>
     <string name="bar_add_item">+ %1$s</string>
     <string name="radio_mi">%1$d mi</string>
     <string name="bar_place">位置</string>

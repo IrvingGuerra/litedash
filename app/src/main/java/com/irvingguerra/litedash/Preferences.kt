@@ -154,13 +154,44 @@ enum class BarSize(val stored: String, val scale: Float) {
  */
 enum class BarItem(val stored: String) {
     APPS("apps"), MUSIC("music"), VOLUME("volume"), NAVIGATE("navigate"), BLUETOOTH("bluetooth"), PHONE("phone"),
-    VOICE("voice"), FAVORITES("favorites"), SETTINGS("settings");
+    VOICE("voice"), FAVORITES("favorites"), SETTINGS("settings"),
+
+    /**
+     * Las dos divisiones de la barra (no son botones): lo de antes de la primera va al principio (izquierda o
+     * arriba), lo de entre las dos al centro y lo de después al final. Al acomodar se arrastran como un botón.
+     */
+    SPLIT_START("split1"), SPLIT_END("split2");
+
+    val isSplit get() = this == SPLIT_START || this == SPLIT_END
 
     companion object {
         fun fromStored(value: String) = entries.firstOrNull { it.stored == value }
 
-        /** Ajustes al final y una sola vez; lo que no se conoce, fuera. */
-        fun normalize(items: List<BarItem>) = items.distinct().filter { it != SETTINGS } + SETTINGS
+        /**
+         * Ajustes al final y una sola vez; lo que no se conoce, fuera; y las dos divisiones siempre, en orden. A una
+         * barra guardada sin divisiones se le ponen donde iban: alrededor de tus favoritas (eran el centro) o, sin
+         * ellas, al final (todo al principio y Ajustes al final).
+         */
+        fun normalize(items: List<BarItem>): List<BarItem> {
+            val list = items.distinct().filter { it != SETTINGS }
+            val zoned = if (list.count { it.isSplit } == 2) list else {
+                val plain = list.filter { !it.isSplit }
+                val favorites = plain.indexOf(FAVORITES)
+                if (favorites < 0) plain + SPLIT_START + SPLIT_END
+                else plain.take(favorites) + SPLIT_START + FAVORITES + SPLIT_END + plain.drop(favorites + 1)
+            }
+            // La primera que aparece es la del principio (se pueden cruzar al arrastrarlas).
+            var first = true
+            return zoned.map { if (!it.isSplit) it else if (first) SPLIT_START.also { first = false } else SPLIT_END } + SETTINGS
+        }
+
+        /** [items] con [item] agregado: tus favoritas al centro; un botón, al final (antes de Ajustes). */
+        fun add(items: List<BarItem>, item: BarItem): List<BarItem> {
+            val all = normalize(items)
+            if (item in all) return all
+            val at = if (item == FAVORITES) all.indexOf(SPLIT_START) + 1 else all.size - 1
+            return all.toMutableList().apply { add(at, item) }
+        }
     }
 }
 
@@ -440,7 +471,7 @@ class Preferences(context: Context) {
     /** La barra de LiteDash oculta: solo se ve al acomodar el inicio (de ahí se entra a Ajustes). */
     var barHidden by bool(PrefKeys.BAR_HIDDEN, false)
 
-    /** Los botones de la barra en orden (siempre con Ajustes al final, [BarItem.normalize]). */
+    /** Los botones de la barra en orden, con sus dos divisiones (siempre con Ajustes al final, [BarItem.normalize]). */
     var barItems: List<BarItem>
         get() = storedBarItems
         set(value) {

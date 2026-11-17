@@ -471,7 +471,7 @@
     <string name="bar_arrange">Aranjează bara</string>
     <string name="bar_position_help">Automat: în stânga când ecranul e orizontal, jos când e vertical.</string>
     <string name="bar_edit">Bară</string>
-    <string name="bar_edit_help">Ca să elimini un buton, atinge x-ul lui din bară; ca să-l muți, trage-l. Setări rămâne mereu.</string>
+    <string name="bar_edit_help">Ca să elimini un buton, atinge x-ul lui din bară; ca să-l muți, trage-l. Cele două linii despart stânga, centrul și dreapta: trage-le și pe ele. Setări rămâne mereu.</string>
     <string name="bar_add_item">+ %1$s</string>
     <string name="radio_mi">%1$d mi</string>
     <string name="bar_place">Poziție</string>

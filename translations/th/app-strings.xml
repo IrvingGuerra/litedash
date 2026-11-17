@@ -458,7 +458,7 @@
     <string name="bar_arrange">จัดแถบ</string>
     <string name="bar_position_help">อัตโนมัติ: ทางซ้ายเมื่อจอเป็นแนวนอน ด้านล่างเมื่อเป็นแนวตั้ง</string>
     <string name="bar_edit">แถบ</string>
-    <string name="bar_edit_help">ลบปุ่มโดยแตะ x บนแถบ ย้ายโดยลาก การตั้งค่าจะอยู่เสมอ</string>
+    <string name="bar_edit_help">ลบปุ่มโดยแตะ x บนแถบ ย้ายโดยลาก เส้นสองเส้นแบ่งซ้าย กลาง และขวา ลากเส้นได้เช่นกัน การตั้งค่าจะอยู่เสมอ</string>
     <string name="bar_add_item">+ %1$s</string>
     <string name="radio_mi">%1$d mi</string>
     <string name="bar_place">ตำแหน่ง</string>

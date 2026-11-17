@@ -469,7 +469,7 @@
     <string name="bar_arrange">Arrange the bar</string>
     <string name="bar_position_help">Automatic: on the left when the screen is landscape, at the bottom when it\'s portrait.</string>
     <string name="bar_edit">Bar</string>
-    <string name="bar_edit_help">To remove a button, tap its x on the bar; to move it, drag it. Settings always stays.</string>
+    <string name="bar_edit_help">To remove a button, tap its x on the bar; to move it, drag it. The two lines split left, center and right: drag them too. Settings always stays.</string>
     <string name="bar_add_item">+ %1$s</string>
     <string name="radio_mi">%1$d mi</string>
     <string name="bar_place">Position</string>

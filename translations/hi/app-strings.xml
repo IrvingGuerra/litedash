@@ -463,7 +463,7 @@
     <string name="bar_arrange">बार सजाएँ</string>
     <string name="bar_position_help">ऑटोमैटिक: स्क्रीन आड़ी हो तो बाईं ओर, खड़ी हो तो नीचे।</string>
     <string name="bar_edit">बार</string>
-    <string name="bar_edit_help">बटन हटाने के लिए बार पर उसके x पर टैप करें; हिलाने के लिए खींचें। सेटिंग्स हमेशा रहती है।</string>
+    <string name="bar_edit_help">बटन हटाने के लिए बार पर उसके x पर टैप करें; हिलाने के लिए खींचें। दो रेखाएँ बाएँ, बीच और दाएँ हिस्से को अलग करती हैं: इन्हें भी खींचें। सेटिंग्स हमेशा रहती है।</string>
     <string name="bar_add_item">+ %1$s</string>
     <string name="radio_mi">%1$d मील</string>
     <string name="bar_place">जगह</string>

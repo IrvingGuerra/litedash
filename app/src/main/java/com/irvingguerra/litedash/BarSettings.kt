@@ -42,7 +42,7 @@ private fun BarItem.title(): Int? = when (this) {
     BarItem.PHONE -> R.string.bar_item_phone
     BarItem.VOICE -> R.string.bar_item_voice
     BarItem.FAVORITES -> R.string.bar_item_favorites
-    BarItem.SETTINGS -> null
+    BarItem.SETTINGS, BarItem.SPLIT_START, BarItem.SPLIT_END -> null
 }
 
 /**
@@ -87,14 +87,14 @@ private fun BarSettings(d: Dependencies, apps: List<App>, onEdit: (() -> Unit)? 
     // En la pestaña, oculta solo queda el interruptor; en el panel se está acomodando y la barra se ve: va todo.
     if (prefs.barHidden && onEdit != null) return
     // Ajustes ya va siempre.
-    val missing = BarItem.entries.filter { it != BarItem.SETTINGS && it !in prefs.barItems && (it != BarItem.VOICE || hasVoice) }
+    val missing = BarItem.entries.filter { it != BarItem.SETTINGS && !it.isSplit && it !in prefs.barItems && (it != BarItem.VOICE || hasVoice) }
     section(stringResource(R.string.bar_buttons)) {
         Label(stringResource(R.string.bar_edit_help), Typography.body, c.textMuted)
         if (missing.isNotEmpty() || onEdit != null) FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             if (onEdit != null) Button(stringResource(R.string.bar_arrange), onEdit, primary = true)
             // Se agrega antes de Ajustes; luego se arrastra a donde se quiera.
             for (item in missing) item.title()?.let { title ->
-                Button(stringResource(R.string.bar_add_item, stringResource(title)), { prefs.barItems = prefs.barItems + item })
+                Button(stringResource(R.string.bar_add_item, stringResource(title)), { prefs.barItems = BarItem.add(prefs.barItems, item) })
             }
         }
     }

@@ -466,7 +466,7 @@
     <string name="bar_arrange">Οργάνωση γραμμής</string>
     <string name="bar_position_help">Αυτόματα: αριστερά όταν η οθόνη είναι οριζόντια, κάτω όταν είναι κατακόρυφη.</string>
     <string name="bar_edit">Γραμμή</string>
-    <string name="bar_edit_help">Για να αφαιρέσετε ένα κουμπί, πατήστε το x του στη γραμμή· για να το μετακινήσετε, σύρετέ το. Οι Ρυθμίσεις μένουν πάντα.</string>
+    <string name="bar_edit_help">Για να αφαιρέσετε ένα κουμπί, πατήστε το x του στη γραμμή· για να το μετακινήσετε, σύρετέ το. Οι δύο γραμμές χωρίζουν αριστερά, κέντρο και δεξιά: σύρετέ τες κι αυτές. Οι Ρυθμίσεις μένουν πάντα.</string>
     <string name="bar_add_item">+ %1$s</string>
     <string name="radio_mi">%1$d mi</string>
     <string name="bar_place">Θέση</string>

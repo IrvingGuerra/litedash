@@ -1,5 +1,6 @@
 package com.irvingguerra.litedash
 
+import androidx.compose.ui.unit.DpSize
 import com.irvingguerra.litedash.core.ui.contentColors
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.foundation.background
@@ -143,9 +144,12 @@ fun AppBar(
             }
             return@Box
         }
-        val split = items.indexOf(BarItem.FAVORITES)
-        val start = if (split >= 0) items.take(split) else items.dropLast(1)
-        val end = if (split >= 0) items.drop(split + 1) else listOf(BarItem.SETTINGS)
+        // Las tres partes, como las dejaron las dos divisiones al acomodar.
+        val first = items.indexOf(BarItem.SPLIT_START)
+        val second = items.indexOf(BarItem.SPLIT_END)
+        val start = items.subList(0, first)
+        val middle = items.subList(first + 1, second)
+        val end = items.subList(second + 1, items.size)
         // Los que no quepan se recortan; Ajustes (al final) nunca: sin él no habría cómo salir del inicio.
         val group = @Composable { list: List<BarItem> ->
             if (vertical) Column(Modifier.clipToBounds(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) { for (i in list) item(i) }
@@ -157,11 +161,13 @@ fun AppBar(
                 wrap = floating,
                 start = { group(start) },
                 center = {
-                    // Caben las que quepan: en pantallas chicas no se encima.
+                    // De tus favoritas caben las que quepan junto a los botones del centro: en pantallas chicas no se encima.
                     BoxWithConstraints(contentAlignment = Alignment.Center) {
-                        if (split >= 0) favoritesBlock(
-                            if (vertical) (maxHeight / (sizes.button + 4.dp)).toInt() else (maxWidth / (sizes.box + 8.dp)).toInt(),
-                        )
+                        val buttons = middle.count { it != BarItem.FAVORITES }
+                        val apps = (if (vertical) (maxHeight - (sizes.button + 4.dp) * buttons) / (sizes.button + 4.dp) else (maxWidth - sizes.button * buttons) / (sizes.box + 8.dp)).toInt().coerceAtLeast(0)
+                        val parts = @Composable { for (i in middle) if (i == BarItem.FAVORITES) favoritesBlock(apps) else item(i) }
+                        if (vertical) Column(Modifier.clipToBounds(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) { parts() }
+                        else Row(Modifier.clipToBounds(), verticalAlignment = Alignment.CenterVertically) { parts() }
                     }
                 },
                 end = { group(end) },
@@ -199,13 +205,13 @@ private fun BarButton(item: BarItem, sizes: BarSizes, vertical: Boolean, musicOp
         BarItem.VOICE -> actions.onVoice?.let { IconButton(Icons.mic, it, size = sizes.button) }
         // Siempre: sin Ajustes no habría cómo salir del inicio.
         BarItem.SETTINGS -> IconButton(Icons.settings, actions.onSettings, size = sizes.button)
-        BarItem.FAVORITES -> Unit
+        BarItem.FAVORITES, BarItem.SPLIT_START, BarItem.SPLIT_END -> Unit
     }
 }
 
 /**
- * La barra al acomodar: sus botones con ✕; se dejan presionados un momento y se arrastran para cambiar su
- * orden (caen donde se sueltan). Si no caben, se deslizan. Ajustes y "Barra" van fijos al final: siempre se
+ * La barra al acomodar: sus botones con ✕ y sus dos divisiones (las rayas); se dejan presionados un momento y se
+ * arrastran para cambiar su orden o de parte (caen donde se sueltan). Si no caben, se deslizan. Ajustes y "Barra" van fijos al final: siempre se
  * alcanzan, aunque haya muchos botones o la pantalla sea chica. Se trabaja sobre la lista guardada: lo que
  * no se ve aquí (la voz sin asistente) no se pierde al quitar o mover otro.
  */
@@ -251,8 +257,13 @@ private fun EditableBar(
                     }
                     .padding(top = 6.dp, start = 6.dp),
             ) {
-                if (i == BarItem.FAVORITES) FavoritesEdit(empty = noFavorites, vertical, favoritesBlock) else item(i)
-                RemoveBadge(Modifier.align(Alignment.TopStart).offset(x = (-6).dp, y = (-6).dp)) { prefs.barItems = prefs.barItems - i }
+                when {
+                    i.isSplit -> SplitHandle(vertical)
+                    i == BarItem.FAVORITES -> FavoritesEdit(empty = noFavorites, vertical, favoritesBlock)
+                    else -> item(i)
+                }
+                // Las divisiones no se quitan: solo se mueven.
+                if (!i.isSplit) RemoveBadge(Modifier.align(Alignment.TopStart).offset(x = (-6).dp, y = (-6).dp)) { prefs.barItems = prefs.barItems - i }
             }
         }
     }
@@ -264,6 +275,18 @@ private fun EditableBar(
         Row(Modifier.weight(1f, fill = false).horizontalScroll(scroll), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) { list() }
         item(BarItem.SETTINGS)
         EditChip(stringResource(R.string.bar_edit), vertical = false, onBarSettings)
+    }
+}
+
+/**
+ * Una división de la barra al acomodar: una raya del color de la interfaz que se arrastra como un botón. Lo que
+ * queda antes de la primera va al principio, entre las dos al centro y después de la segunda al final.
+ */
+@Composable
+private fun SplitHandle(vertical: Boolean) {
+    val c = LocalColors.current
+    Box(Modifier.size(if (vertical) DpSize(40.dp, 20.dp) else DpSize(20.dp, 40.dp)), contentAlignment = Alignment.Center) {
+        Box(Modifier.size(if (vertical) DpSize(32.dp, 4.dp) else DpSize(4.dp, 32.dp)).clip(CircleShape).background(c.accent))
     }
 }
 

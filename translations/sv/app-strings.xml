@@ -466,7 +466,7 @@
     <string name="bar_arrange">Ordna fältet</string>
     <string name="bar_position_help">Automatiskt: till vänster när skärmen ligger, nedtill när den står.</string>
     <string name="bar_edit">Fält</string>
-    <string name="bar_edit_help">För att ta bort en knapp, tryck på dess x i fältet; för att flytta den, dra den. Inställningar finns alltid kvar.</string>
+    <string name="bar_edit_help">För att ta bort en knapp, tryck på dess x i fältet; för att flytta den, dra den. De två strecken delar upp vänster, mitten och höger: dra dem också. Inställningar finns alltid kvar.</string>
     <string name="bar_add_item">+ %1$s</string>
     <string name="radio_mi">%1$d mi</string>
     <string name="bar_place">Placering</string>

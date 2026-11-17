@@ -43,7 +43,7 @@ import com.irvingguerra.litedash.core.ui.LocalColors
 import com.irvingguerra.litedash.feature.car.CarColors
 
 /** Arcoíris del círculo "otro color" y de la barra de tono. */
-private val RAINBOW = listOf(Color.Red, Color.Yellow, Color.Green, Color.Cyan, Color.Blue, Color.Magenta, Color.Red)
+internal val RAINBOW = listOf(Color.Red, Color.Yellow, Color.Green, Color.Cyan, Color.Blue, Color.Magenta, Color.Red)
 
 /**
  * Los colores rápidos ([swatches]) y uno libre: el círculo de arcoíris abre un selector de
@@ -57,10 +57,12 @@ fun ColorPicker(
     onPreview: (Color) -> Unit,
     swatches: List<Color> = CarColors,
     leading: @Composable () -> Unit = {},
+    /** El cuadro de colores empieza cerrado aunque el color sea uno libre: se abre al tocar su círculo. */
+    startClosed: Boolean = false,
     onChange: (Color) -> Unit,
 ) {
     val custom = color.isSpecified && swatches.none { it.toArgb() == color.toArgb() }
-    var open by remember { mutableStateOf(custom) }
+    var open by remember { mutableStateOf(custom && !startClosed) }
     Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
         FlowRow(horizontalArrangement = Arrangement.spacedBy(14.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
             leading()

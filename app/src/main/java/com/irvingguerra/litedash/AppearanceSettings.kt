@@ -1,6 +1,7 @@
 // Ajustes → Inicio y apariencia: inicio, interfaz, día y noche, unidades y widgets.
 package com.irvingguerra.litedash
 
+import androidx.compose.runtime.saveable.rememberSaveable
 import com.irvingguerra.litedash.core.ui.skinSurface
 import android.hardware.Sensor
 import android.hardware.SensorManager
@@ -88,12 +89,11 @@ internal fun Appearance(d: Dependencies, revision: Int, onEdit: () -> Unit, onTe
     }
 }
 
-/** Interfaz: su color, tamaño e idioma, tu nombre, el clima y el modo estacionado. */
+/** Interfaz: sus tarjetas y colores, tamaño e idioma, tu nombre, el clima y el modo estacionado. */
 @Composable
 private fun InterfaceSettings(d: Dependencies) {
     val prefs = d.prefs
     val c = LocalColors.current
-    SettingsCard(stringResource(R.string.accent_title), stringResource(R.string.accent_help)) { AccentSettings(prefs) }
     SettingsCard(stringResource(R.string.cards_title), stringResource(R.string.cards_help)) { CardSettings(prefs) }
     SettingsCard(stringResource(R.string.scale), stringResource(R.string.scale_help)) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -131,7 +131,7 @@ private fun AccentSettings(prefs: Preferences) {
             Modifier.semantics { contentDescription = natural },
         ) { prefs.accentColor = null }
     }
-    ColorPicker(prefs.accentColor ?: Color.Unspecified, prefs::previewAccent, ACCENTS, leading) { prefs.accentColor = it }
+    ColorPicker(prefs.accentColor ?: Color.Unspecified, prefs::previewAccent, ACCENTS, leading, startClosed = true) { prefs.accentColor = it }
 }
 
 /** Lo que dice la tarjeta de muestra (una hora: se lee igual en cualquier idioma). */
@@ -185,6 +185,10 @@ private fun CardSettings(prefs: Preferences) {
     }
     Label(stringResource(R.string.cards_themes), Typography.label, c.textMuted)
     val themeLabel = stringResource(R.string.cards_theme)
+    val otherLabel = stringResource(R.string.other_color)
+    val matched = prefs.cardColor == null && prefs.accentColor == null || CARD_THEMES.any { (card, accent) -> prefs.cardColor == card && prefs.accentColor == accent }
+    // Los colores sueltos van abajo y cerrados: se abren al tocar la paleta (el último círculo).
+    var custom by rememberSaveable { mutableStateOf(false) }
     FlowRow(horizontalArrangement = Arrangement.spacedBy(14.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
         // El de fábrica: grafito con el ámbar.
         val natural = if (c.dark) DarkColors else LightColors
@@ -198,12 +202,18 @@ private fun CardSettings(prefs: Preferences) {
                 prefs.accentColor = accent
             }
         }
+        Swatch(custom || !matched, Brush.sweepGradient(RAINBOW), Modifier.semantics { contentDescription = otherLabel }) { custom = !custom }
     }
-    Label(stringResource(R.string.color), Typography.label, c.textMuted)
-    val leading = @Composable {
-        Swatch(prefs.cardColor == null, SolidColor(if (c.dark) DarkColors.surface else LightColors.surface), Modifier.semantics { contentDescription = themeLabel }) { prefs.cardColor = null }
+    if (custom) {
+        Label(stringResource(R.string.cards_title), Typography.label, c.textMuted)
+        val leading = @Composable {
+            Swatch(prefs.cardColor == null, SolidColor(if (c.dark) DarkColors.surface else LightColors.surface), Modifier.semantics { contentDescription = themeLabel }) { prefs.cardColor = null }
+        }
+        ColorPicker(prefs.cardColor ?: Color.Unspecified, prefs::previewCardColor, CARD_COLORS, leading, startClosed = true) { prefs.cardColor = it }
+        Label(stringResource(R.string.accent_title), Typography.label, c.textMuted)
+        AccentSettings(prefs)
+        Label(stringResource(R.string.accent_help), Typography.small, c.textMuted)
     }
-    ColorPicker(prefs.cardColor ?: Color.Unspecified, prefs::previewCardColor, CARD_COLORS, leading) { prefs.cardColor = it }
 }
 
 /** Un círculo partido en dos colores (una combinación: tarjetas e interfaz). */

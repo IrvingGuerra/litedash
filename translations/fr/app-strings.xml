@@ -464,7 +464,7 @@
     <string name="bar_title">Barre d\'applis</string>
     <string name="bar_position_help">Automatique : à gauche quand l\'écran est en paysage, en bas quand il est en portrait.</string>
     <string name="bar_edit">Barre</string>
-    <string name="bar_edit_help">Pour retirer un bouton, touchez son x sur la barre ; pour le déplacer, faites-le glisser. Paramètres reste toujours.</string>
+    <string name="bar_edit_help">Pour retirer un bouton, touchez son x sur la barre ; pour le déplacer, faites-le glisser. Les deux traits séparent la gauche, le centre et la droite : faites-les glisser aussi. Paramètres reste toujours.</string>
     <string name="bar_add_item">+ %1$s</string>
     <string name="radio_mi">%1$d mi</string>
     <string name="bar_place">Position</string>

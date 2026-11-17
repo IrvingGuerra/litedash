@@ -3,6 +3,18 @@
 What people using LiteDash notice, in English. The full history (in Spanish) is in [CHANGELOG.md](CHANGELOG.md).
 Format [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versions [SemVer](https://semver.org/).
 
+## [1.4.180] - 2026-11-17
+
+### New
+- **The app bar, your way.** When you arrange it (long-press it) two lines appear: whatever sits before the first goes
+  left, between the two goes in the center and after the second goes right. Drag the icons to reorder them or move
+  them to another part, and drag the lines too. On the side bar it is top, center and bottom.
+
+### Changed
+- **Colors are easier to pick.** In Settings → Home & look → Interface, everything about color lives under "Cards":
+  the ready-made combinations first and, when you tap the palette (the last circle), the card color and the interface
+  color open separately.
+
 ## [1.4.179] - 2026-11-17
 
 ### Changed
