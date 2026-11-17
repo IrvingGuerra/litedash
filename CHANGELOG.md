@@ -4,6 +4,12 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.4.179] - 2026-11-17
+
+### Cambiado
+- **Fondo de fábrica más sobrio.** Sin imagen de fondo, el resplandor detrás del vidrio ya no lleva el ámbar: ahora
+  son luces neutras (plata y acero), en oscuro y en claro. Si eliges un color de interfaz, el resplandor lo toma.
+
 ## [1.4.178] - 2026-11-17
 
 ### Nuevo

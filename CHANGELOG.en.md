@@ -3,6 +3,12 @@
 What people using LiteDash notice, in English. The full history (in Spanish) is in [CHANGELOG.md](CHANGELOG.md).
 Format [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versions [SemVer](https://semver.org/).
 
+## [1.4.179] - 2026-11-17
+
+### Changed
+- **A more understated default background.** With no wallpaper, the glow behind the glass no longer uses amber: it
+  is now neutral light (silver and steel), in dark and light themes. If you pick an interface color, the glow takes it.
+
 ## [1.4.178] - 2026-11-17
 
 ### New

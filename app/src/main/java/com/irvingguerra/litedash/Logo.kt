@@ -1,5 +1,7 @@
 package com.irvingguerra.litedash
 
+import com.irvingguerra.litedash.core.ui.LightColors
+import com.irvingguerra.litedash.core.ui.DarkColors
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.graphics.drawscope.CanvasDrawScope
 import androidx.compose.ui.graphics.Canvas
@@ -565,12 +567,21 @@ internal fun Modifier.canvas(): Modifier {
 }
 
 /**
- * El resplandor del tema detrás del vidrio cuando no hay imagen de fondo: dos luces suaves (tu color de realce
- * arriba y un azul frío abajo) para que las tarjetas tengan qué dejar ver. Con imagen, la imagen lo tapa.
+ * El resplandor del tema detrás del vidrio cuando no hay imagen de fondo: dos luces suaves (una arriba y un azul
+ * acero abajo) para que las tarjetas tengan qué dejar ver. Con imagen, la imagen lo tapa.
  */
 @Composable
 internal fun Modifier.glow(): Modifier {
     val c = LocalColors.current
+    // De fábrica, luces neutras (plata arriba, acero abajo): el ámbar de la marca se queda en los detalles, en un
+    // degradado grande se veía sucio. Con un color de interfaz elegido, la luz de arriba es de ese color.
+    val natural = c.accent == (if (c.dark) DarkColors else LightColors).accent
+    val warm = when {
+        !natural -> c.accent.copy(alpha = if (c.dark) 0.26f else 0.22f)
+        c.dark -> GLOW_SILVER.copy(alpha = 0.16f)
+        else -> Color.White.copy(alpha = 0.7f)
+    }
+    val cool = GLOW_STEEL.copy(alpha = if (c.dark) 0.3f else 0.22f)
     return drawWithCache {
         // Se pinta una vez en chico y cada cuadro solo se estira (dos degradados a pantalla completa por cuadro
         // pesan en las pantallas lentas).
@@ -579,8 +590,8 @@ internal fun Modifier.glow(): Modifier {
         val small = ImageBitmap(w, h)
         val reach = maxOf(w, h) * 0.75f
         CanvasDrawScope().draw(this, layoutDirection, Canvas(small), Size(w.toFloat(), h.toFloat())) {
-            drawRect(Brush.radialGradient(listOf(c.accent.copy(alpha = if (c.dark) 0.26f else 0.22f), Color.Transparent), Offset(w * 0.12f, 0f), reach))
-            drawRect(Brush.radialGradient(listOf(GLOW_COOL.copy(alpha = if (c.dark) 0.22f else 0.16f), Color.Transparent), Offset(w * 0.92f, h.toFloat()), reach))
+            drawRect(Brush.radialGradient(listOf(warm, Color.Transparent), Offset(w * 0.12f, 0f), reach))
+            drawRect(Brush.radialGradient(listOf(cool, Color.Transparent), Offset(w * 0.92f, h.toFloat()), reach))
         }
         val full = IntSize(size.width.toInt(), size.height.toInt())
         onDrawBehind { drawImage(small, dstSize = full, filterQuality = FilterQuality.High) }
@@ -588,7 +599,8 @@ internal fun Modifier.glow(): Modifier {
 }
 
 private const val GLOW_WIDTH = 160
-private val GLOW_COOL = Color(0xFF0A84FF)
+private val GLOW_SILVER = Color(0xFFC9D3E0)
+private val GLOW_STEEL = Color(0xFF3F6C9E)
 
 /**
  * Tu imagen del modo estacionado a toda la pantalla (sin recortarla). Devuelve false si no hay
