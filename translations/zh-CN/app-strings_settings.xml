@@ -20,4 +20,6 @@
     <string name="cards_opacity">可见度</string>
     <string name="cards_glass_help">有壁纸时，会模糊地显示在每张卡片后面。</string>
     <string name="cards_theme">主题</string>
+    <string name="language_search">查找你的语言</string>
+    <string name="language_not_found">暂时还没有这种语言。欢迎在 litedash.dev/translate 帮我们翻译。</string>
 </resources>

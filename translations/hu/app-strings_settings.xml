@@ -20,4 +20,6 @@
     <string name="cards_opacity">Mennyire látszanak</string>
     <string name="cards_glass_help">Háttérképpel elmosódva látszik minden kártya mögött.</string>
     <string name="cards_theme">Téma</string>
+    <string name="language_search">Keresd meg a nyelved</string>
+    <string name="language_not_found">Ez a nyelv még nincs meg. Segíts lefordítani a litedash.dev/translate oldalon.</string>
 </resources>

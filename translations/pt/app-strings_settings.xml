@@ -22,4 +22,6 @@
     <string name="cards_opacity">Quanto aparecem</string>
     <string name="cards_glass_help">Com um plano de fundo, ele aparece desfocado atrás de cada cartão.</string>
     <string name="cards_theme">Tema</string>
+    <string name="language_search">Procure seu idioma</string>
+    <string name="language_not_found">Esse idioma ainda não está disponível. Ajude a traduzir em litedash.dev/translate.</string>
 </resources>

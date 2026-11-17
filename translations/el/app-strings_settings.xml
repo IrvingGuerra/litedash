@@ -20,4 +20,6 @@
     <string name="cards_opacity">Πόσο φαίνονται</string>
     <string name="cards_glass_help">Με ταπετσαρία, φαίνεται θολή πίσω από κάθε κάρτα.</string>
     <string name="cards_theme">Θέμα</string>
+    <string name="language_search">Βρες τη γλώσσα σου</string>
+    <string name="language_not_found">Αυτή η γλώσσα δεν υπάρχει ακόμα. Βοήθησέ μας να τη μεταφράσουμε στο litedash.dev/translate.</string>
 </resources>

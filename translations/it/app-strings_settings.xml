@@ -20,4 +20,6 @@
     <string name="cards_opacity">Quanto si vedono</string>
     <string name="cards_glass_help">Con uno sfondo, si vede sfocato dietro ogni scheda.</string>
     <string name="cards_theme">Tema</string>
+    <string name="language_search">Cerca la tua lingua</string>
+    <string name="language_not_found">Questa lingua non c\'è ancora. Aiutaci a tradurla su litedash.dev/translate.</string>
 </resources>

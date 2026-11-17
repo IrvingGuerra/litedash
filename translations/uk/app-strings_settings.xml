@@ -20,4 +20,6 @@
     <string name="cards_opacity">Наскільки видно</string>
     <string name="cards_glass_help">Якщо є шпалери, їх видно розмитими за кожною карткою.</string>
     <string name="cards_theme">Тема</string>
+    <string name="language_search">Знайди свою мову</string>
+    <string name="language_not_found">Цієї мови ще немає. Допоможи перекласти на litedash.dev/translate.</string>
 </resources>

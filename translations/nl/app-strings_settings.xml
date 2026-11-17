@@ -20,4 +20,6 @@
     <string name="cards_opacity">Hoe zichtbaar</string>
     <string name="cards_glass_help">Met een achtergrond zie je die wazig achter elke kaart.</string>
     <string name="cards_theme">Thema</string>
+    <string name="language_search">Zoek je taal</string>
+    <string name="language_not_found">Die taal is er nog niet. Help ons met vertalen op litedash.dev/translate.</string>
 </resources>

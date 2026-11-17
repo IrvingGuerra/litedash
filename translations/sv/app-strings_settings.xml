@@ -20,4 +20,6 @@
     <string name="cards_opacity">Hur synliga</string>
     <string name="cards_glass_help">Med en bakgrundsbild syns den suddig bakom varje kort.</string>
     <string name="cards_theme">Tema</string>
+    <string name="language_search">Hitta ditt språk</string>
+    <string name="language_not_found">Det språket finns inte än. Hjälp oss översätta på litedash.dev/translate.</string>
 </resources>

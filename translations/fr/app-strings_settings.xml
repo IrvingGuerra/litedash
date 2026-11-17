@@ -22,4 +22,6 @@
     <string name="cards_opacity">Visibilité</string>
     <string name="cards_glass_help">Avec un fond d\'écran, il apparaît flou derrière chaque carte.</string>
     <string name="cards_theme">Thème</string>
+    <string name="language_search">Trouvez votre langue</string>
+    <string name="language_not_found">Cette langue n\'est pas encore là. Aidez-nous à la traduire sur litedash.dev/translate.</string>
 </resources>

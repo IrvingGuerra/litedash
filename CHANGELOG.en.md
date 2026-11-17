@@ -3,6 +3,12 @@
 What people using LiteDash notice, in English. The full history (in Spanish) is in [CHANGELOG.md](CHANGELOG.md).
 Format [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versions [SemVer](https://semver.org/).
 
+## [1.4.173] - 2026-11-16
+
+### Changed
+- **Search in «More languages»:** instead of the full list, type your language (in your own or in the app's language:
+  «german» or «alemán» find «Deutsch») and download it. If it isn't there yet, it tells you where to help translate it.
+
 ## [1.4.172] - 2026-11-16
 
 ### Fixed

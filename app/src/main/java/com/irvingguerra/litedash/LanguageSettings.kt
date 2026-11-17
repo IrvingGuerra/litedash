@@ -16,6 +16,7 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -30,7 +31,10 @@ import com.irvingguerra.litedash.core.ui.Label
 import com.irvingguerra.litedash.core.ui.LocalColors
 import com.irvingguerra.litedash.core.ui.Radius
 import com.irvingguerra.litedash.core.ui.Segmented
+import com.irvingguerra.litedash.core.ui.TextInput
 import com.irvingguerra.litedash.core.ui.Typography
+import com.irvingguerra.litedash.feature.apps.normalize
+import java.util.Locale
 import kotlin.math.roundToInt
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
@@ -80,7 +84,19 @@ private fun MoreLanguages(current: String, choose: (String) -> Unit) {
         list == null -> Label(stringResource(R.string.language_offline), Typography.small, c.textMuted)
         list.isEmpty() -> Label(stringResource(R.string.language_none), Typography.small, c.textMuted)
         else -> {
-            for (choice in list) {
+            // No la lista completa (crecerá): el idioma elegido arriba y un buscador para los demás.
+            var query by rememberSaveable { mutableStateOf("") }
+            val locale = currentLocale()
+            // Su nombre en su idioma, en el de la app ("alemán", "German") y su código: "aleman" encuentra "Deutsch".
+            val keys = remember(list, locale) {
+                list.associate { it.tag to normalize("${it.name} ${Locale.forLanguageTag(it.tag).getDisplayName(locale)} ${it.tag}") }
+            }
+            val q = normalize(query.trim())
+            val shown = list.filter { it.tag == current || (q.isNotEmpty() && q in keys[it.tag].orEmpty()) || busy == it.tag }
+                .sortedBy { if (it.tag == current) 0 else 1 }
+            TextInput(query, { query = it }, stringResource(R.string.language_search), Modifier.fillMaxWidth(), icon = true)
+            if (q.isNotEmpty() && shown.none { it.tag != current }) Label(stringResource(R.string.language_not_found), Typography.small, c.textMuted)
+            for (choice in shown) {
                 LanguageRow(choice, selected = choice.tag == current, downloading = if (busy == choice.tag) progress else null) {
                     if (busy != null || choice.tag == current) return@LanguageRow
                     busy = choice.tag

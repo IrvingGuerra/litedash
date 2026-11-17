@@ -20,4 +20,6 @@
     <string name="cards_opacity">Cât se văd</string>
     <string name="cards_glass_help">Cu o imagine de fundal, aceasta se vede estompată în spatele fiecărui card.</string>
     <string name="cards_theme">Temă</string>
+    <string name="language_search">Caută limba ta</string>
+    <string name="language_not_found">Limba aceasta nu există încă. Ajută-ne să o traducem pe litedash.dev/translate.</string>
 </resources>

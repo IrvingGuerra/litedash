@@ -20,4 +20,6 @@
     <string name="cards_opacity">Görünürlük</string>
     <string name="cards_glass_help">Duvar kağıdı varsa her kartın arkasında bulanık görünür.</string>
     <string name="cards_theme">Tema</string>
+    <string name="language_search">Dilinizi arayın</string>
+    <string name="language_not_found">Bu dil henüz yok. litedash.dev/translate adresinde çevirmemize yardım edin.</string>
 </resources>

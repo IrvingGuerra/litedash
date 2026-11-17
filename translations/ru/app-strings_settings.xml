@@ -20,4 +20,6 @@
     <string name="cards_opacity">Насколько видны</string>
     <string name="cards_glass_help">Если есть обои, они видны размытыми за каждой карточкой.</string>
     <string name="cards_theme">Тема</string>
+    <string name="language_search">Найди свой язык</string>
+    <string name="language_not_found">Этого языка пока нет. Помоги перевести на litedash.dev/translate.</string>
 </resources>

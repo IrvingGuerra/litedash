@@ -20,4 +20,6 @@
     <string name="cards_opacity">Seberapa terlihat</string>
     <string name="cards_glass_help">Dengan wallpaper, tampak buram di balik setiap kartu.</string>
     <string name="cards_theme">Tema</string>
+    <string name="language_search">Cari bahasa Anda</string>
+    <string name="language_not_found">Bahasa itu belum ada. Bantu kami menerjemahkannya di litedash.dev/translate.</string>
 </resources>

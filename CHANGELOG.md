@@ -4,6 +4,12 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.4.173] - 2026-11-16
+
+### Cambiado
+- **«Más idiomas» con buscador:** en vez de la lista completa, escribe tu idioma (en el tuyo o en el de la app:
+  «alemán» o «german» encuentran «Deutsch») y bájalo. Si aún no está, te dice dónde ayudar a traducirlo.
+
 ## [1.4.172] - 2026-11-16
 
 ### Arreglado

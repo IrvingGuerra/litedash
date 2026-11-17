@@ -20,4 +20,6 @@
     <string name="cards_opacity">Mức hiển thị</string>
     <string name="cards_glass_help">Khi có hình nền, hình nền hiện mờ phía sau mỗi thẻ.</string>
     <string name="cards_theme">Giao diện</string>
+    <string name="language_search">Tìm ngôn ngữ của bạn</string>
+    <string name="language_not_found">Chưa có ngôn ngữ này. Hãy giúp chúng tôi dịch tại litedash.dev/translate.</string>
 </resources>

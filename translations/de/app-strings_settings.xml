@@ -20,4 +20,6 @@
     <string name="cards_opacity">Wie sichtbar</string>
     <string name="cards_glass_help">Mit einem Hintergrundbild erscheint es unscharf hinter jeder Karte.</string>
     <string name="cards_theme">Design</string>
+    <string name="language_search">Finde deine Sprache</string>
+    <string name="language_not_found">Diese Sprache gibt es noch nicht. Hilf uns beim Übersetzen auf litedash.dev/translate.</string>
 </resources>
