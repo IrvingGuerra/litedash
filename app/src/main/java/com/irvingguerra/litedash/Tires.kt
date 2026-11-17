@@ -478,7 +478,7 @@ fun TiresFull(d: Dependencies, progress: () -> Float, onClose: () -> Unit, onSet
         Box(
             Modifier
                 .fillMaxSize()
-                .background(c.background)
+                .canvas()
                 .clickable(remember { MutableInteractionSource() }, indication = null, onClick = onClose),
         )
         Column(

@@ -3,13 +3,12 @@ package com.irvingguerra.litedash.core.ui
 import android.graphics.Bitmap
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.draw.drawBehind
@@ -20,23 +19,23 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.drawscope.translate
-import androidx.compose.ui.graphics.isSpecified
-import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.layout.findRootCoordinates
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.toSize
 
-/** Cómo se rellenan las tarjetas del inicio: lisas (como siempre), translúcidas o de vidrio. */
+/** Cómo se rellenan las tarjetas de toda la app: lisas o de vidrio (lo de fábrica). */
 enum class CardStyle(val stored: String) {
-    SOLID("solid"), TRANSLUCENT("translucent"), GLASS("glass");
+    SOLID("solid"), GLASS("glass");
 
     companion object {
-        fun fromStored(value: String?) = entries.firstOrNull { it.stored == value } ?: SOLID
+        /** Sin elegir, de vidrio; también quien tenía las translúcidas (ya no existen). */
+        fun fromStored(value: String?) = if (value == SOLID.stored) SOLID else GLASS
     }
 }
 
@@ -49,45 +48,47 @@ enum class CardStyle(val stored: String) {
 class CardBackdrop(val image: ImageBitmap, val veil: Color)
 
 /**
- * Las tarjetas del inicio (Inicio y apariencia → Interfaz → Tarjetas): su [color] (sin especificar = el del tema), su
- * [style] y, translúcidas o de vidrio, cuánto se ve de ellas ([opacity], 0–1). Fuera del inicio no se pone: lisas.
+ * La piel de las tarjetas de toda la app (Inicio y apariencia → Interfaz → Tarjetas): su [style] y, de vidrio, cuánto
+ * se ve de ellas ([opacity], 0–1). Su color viene del tema ([Colors.withCards]). El [backdrop] solo lo pone el inicio
+ * (cada tarjeta recorta tu fondo desenfocado); lo demás va sobre un lienzo ya desenfocado y no lo necesita.
  */
 @Immutable
 class CardLook(
-    val color: Color = Color.Unspecified,
     val style: CardStyle = CardStyle.SOLID,
     val opacity: Float = 1f,
     val backdrop: CardBackdrop? = null,
 )
 
-val LocalCardLook = staticCompositionLocalOf { CardLook() }
+// Dinámico: al arrastrar la opacidad solo se redibujan las tarjetas, no toda la app.
+val LocalCardLook = compositionLocalOf { CardLook() }
 
-/** El relleno de una tarjeta con [look] sobre los colores [c]. */
-internal fun cardFill(look: CardLook, c: Colors): Color {
-    val base = if (look.color.isSpecified) look.color else c.surface
-    return if (look.style == CardStyle.SOLID) base else base.copy(alpha = look.opacity.coerceIn(MIN_OPACITY, 1f))
+/** El relleno de una superficie con [look] sobre los colores [c]; de vidrio, nunca menos visible que [floor]. */
+private fun skinFill(look: CardLook, c: Colors, floor: Float): Color =
+    if (look.style == CardStyle.SOLID) c.surface else c.surface.copy(alpha = look.opacity.coerceIn(maxOf(MIN_OPACITY, floor), 1f))
+
+/**
+ * Lo que va dentro de una tarjeta de vidrio o sin tarjeta ([plain]): lo que en una lisa es un gris opaco (el aro de
+ * un medidor, un botón, una raya) va como texto translúcido, para verse igual sobre cualquier fondo; y lo apagado,
+ * un poco más claro. En una tarjeta lisa, los mismos [c]. También lo usa lo que lleva la piel sin ser tarjeta (la barra).
+ */
+fun contentColors(c: Colors, look: CardLook, plain: Boolean): Colors = when {
+    // Una tarjeta dentro de otra: lo de adentro ya viene ajustado.
+    c.surfaceHigh.alpha < 1f -> c
+    plain -> c.copy(surfaceHigh = c.text.copy(alpha = 0.16f), line = c.text.copy(alpha = 0.16f), textMuted = c.text.copy(alpha = 0.72f))
+    look.style == CardStyle.GLASS -> c.copy(surfaceHigh = c.text.copy(alpha = 0.12f), line = c.text.copy(alpha = if (c.dark) 0.14f else 0.2f), textMuted = lerp(c.textMuted, c.text, 0.3f))
+    else -> c
 }
 
 /**
- * Los colores para lo de adentro de una tarjeta [look] sobre el fondo [c]: si el color elegido es claro en el tema
- * oscuro (o al revés), los textos toman los del otro tema para leerse. Sin color propio, los mismos [c].
+ * Una superficie con la piel [look] y la forma [shape] (ya recortada por quien la llama): de vidrio, tu fondo
+ * desenfocado detrás (si el inicio lo puso), el relleno translúcido, su brillo y su borde. [floor] = lo menos que se
+ * ve una flotante (la barra), que va sobre cualquier cosa.
  */
-fun cardContentColors(look: CardLook, c: Colors): Colors {
-    if (!look.color.isSpecified) return c
-    val seen = cardFill(look, c).compositeOver(c.background)
-    val light = seen.luminance() > 0.5f
-    if (light != !c.dark) return c
-    val other = if (light) LightColors else DarkColors
-    return c.copy(text = other.text, textMuted = other.textMuted)
-}
-
-/** Lo de [Card] según [look]: el fondo desenfocado (vidrio sobre una imagen), el relleno y, de vidrio, su borde y brillo. */
-internal fun Modifier.cardSurface(look: CardLook, c: Colors): Modifier {
-    val shape = RoundedCornerShape(Radius.card)
+fun Modifier.skinSurface(look: CardLook, c: Colors, shape: Shape, floor: Float = 0f): Modifier {
     var m = this
     val glass = look.style == CardStyle.GLASS
     if (glass && look.backdrop != null) m = m.blurredBackdrop(look.backdrop)
-    m = m.background(cardFill(look, c))
+    m = m.background(skinFill(look, c, floor))
     if (glass) {
         val shine = if (c.dark) 0.07f else 0.35f
         val edge = if (c.dark) 0.14f else 0.55f
@@ -158,8 +159,8 @@ internal fun boxBlur(from: IntArray, to: IntArray, w: Int, h: Int, r: Int, horiz
     }
 }
 
-/** Translúcidas, al menos esto se ve de ellas (si no, el texto se pierde en el fondo). */
-const val MIN_OPACITY = 0.25f
+/** De vidrio, al menos esto se ve de ellas (si no, el texto se pierde sobre un fondo claro). */
+const val MIN_OPACITY = 0.45f
 
 private const val BLUR_WIDTH = 96
 private const val BLUR_RADIUS = 3

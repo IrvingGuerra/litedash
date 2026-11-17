@@ -1,5 +1,7 @@
 package com.irvingguerra.litedash
 
+import com.irvingguerra.litedash.core.ui.contentColors
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -49,9 +51,11 @@ import com.irvingguerra.litedash.core.ui.Icon
 import com.irvingguerra.litedash.core.ui.IconButton
 import com.irvingguerra.litedash.core.ui.Icons
 import com.irvingguerra.litedash.core.ui.Label
+import com.irvingguerra.litedash.core.ui.LocalCardLook
 import com.irvingguerra.litedash.core.ui.LocalColors
 import com.irvingguerra.litedash.core.ui.Radius
 import com.irvingguerra.litedash.core.ui.Typography
+import com.irvingguerra.litedash.core.ui.skinSurface
 import com.irvingguerra.litedash.feature.apps.App
 import com.irvingguerra.litedash.feature.apps.AppIcon
 import com.irvingguerra.litedash.feature.apps.AppRepository
@@ -103,7 +107,10 @@ fun AppBar(
         box = (if (small) 68.dp else if (short) 46.dp else 56.dp) * k,
     )
     val items = prefs.barItems.filter { it != BarItem.VOICE || actions.onVoice != null }
-    val item = @Composable { it: BarItem -> BarButton(it, sizes, vertical, musicOpen, mapOpen, actions) }
+    // Lo de adentro, con los colores que le tocan sobre la piel (de vidrio, sin grises opacos).
+    val look = LocalCardLook.current
+    val inner = remember(c, look.style, vertical) { if (vertical) c else contentColors(c, look, plain = false) }
+    val item = @Composable { it: BarItem -> CompositionLocalProvider(LocalColors provides inner) { BarButton(it, sizes, vertical, musicOpen, mapOpen, actions) } }
     val favoritesBlock = @Composable { maxApps: Int? ->
         val shown = if (maxApps != null) favorites.take(maxApps) else favorites
         if (vertical) Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -126,7 +133,8 @@ fun AppBar(
         val surface = Modifier
             .then(if (vertical || floating) Modifier.fillMaxHeight() else Modifier.fillMaxSize())
             .clip(shape)
-            .background(if (vertical) Color.Transparent else c.surface)
+            // Lisa o de vidrio como las tarjetas; flotando sobre el inicio, nunca tan transparente que no se lea.
+            .then(if (vertical) Modifier else Modifier.skinSurface(LocalCardLook.current, c, shape, floor = BAR_OPACITY))
             .then(if (editing) Modifier.border(1.5.dp, c.accent, shape) else press)
             .padding(horizontal = if (vertical) 0.dp else if (floating || editing) 18.dp else 8.dp)
         if (editing) {
@@ -169,6 +177,9 @@ fun barThickness(prefs: Preferences, vertical: Boolean): Dp {
     val small = isSmallScreen() && !short
     return (if (vertical) (if (small) 76.dp else 88.dp) else if (small) 96.dp else if (short) 64.dp else 84.dp) * prefs.barSize.scale
 }
+
+/** De vidrio, lo menos que se ve la barra de abajo. */
+private const val BAR_OPACITY = 0.55f
 
 /** Medidas de la barra: botón, ícono de app y caja de cada favorita (abajo) o del volumen (al lado). */
 private data class BarSizes(val button: Dp, val icon: Dp, val box: Dp = button, val volume: Dp = button)

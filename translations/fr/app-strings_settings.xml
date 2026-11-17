@@ -15,13 +15,13 @@
     <string name="accent_help">Interrupteurs, boutons, lecture et barres de progression. Les cartes et le fond ne changent pas ; Naturel est l\'aspect d\'origine.</string>
     <string name="accent_natural">Naturel</string>
     <string name="cards_title">Cartes</string>
-    <string name="cards_help">L\'aspect des widgets de votre accueil : leur couleur et si le fond transparaît.</string>
+    <string name="cards_help">L\'aspect des cartes dans toute l\'application : leur couleur et si le fond transparaît.</string>
     <string name="cards_solid">Opaques</string>
-    <string name="cards_translucent">Translucides</string>
     <string name="cards_glass">Verre</string>
     <string name="cards_opacity">Visibilité</string>
-    <string name="cards_glass_help">Avec un fond d\'écran, il apparaît flou derrière chaque carte.</string>
+    <string name="cards_glass_help">Votre fond d\'écran apparaît flou derrière chaque carte.</string>
     <string name="cards_theme">Thème</string>
+    <string name="cards_themes">Combinaisons</string>
     <string name="language_search">Trouvez votre langue</string>
     <string name="language_not_found">Cette langue n\'est pas encore là. Aidez-nous à la traduire sur litedash.dev/translate.</string>
 </resources>

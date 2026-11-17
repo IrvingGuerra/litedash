@@ -1,5 +1,9 @@
 package com.irvingguerra.litedash
 
+import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.graphics.drawscope.CanvasDrawScope
+import androidx.compose.ui.graphics.Canvas
+import androidx.compose.ui.geometry.Size
 import android.Manifest
 import android.annotation.SuppressLint
 import android.content.ActivityNotFoundException
@@ -54,6 +58,16 @@ import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import com.irvingguerra.litedash.core.ui.LocalCardLook
+import com.irvingguerra.litedash.core.ui.CardStyle
+import com.irvingguerra.litedash.core.ui.CardLook
+import androidx.compose.ui.graphics.drawscope.translate
+import androidx.compose.ui.graphics.drawscope.scale
+import androidx.compose.ui.graphics.FilterQuality
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
@@ -478,12 +492,18 @@ fun LogoIntro(onDone: () -> Unit) {
 
 /**
  * Tu imagen de fondo detrás de todo el inicio, recortada para llenar la pantalla.
- * Lleva un velo del color del tema para que la hora y los textos se lean encima.
+ * Lleva un velo del color del tema para que la hora y los textos se lean encima. Sin imagen y con tarjetas de
+ * vidrio, el resplandor del tema.
  */
 @Composable
 fun HomeWallpaper() {
     val c = LocalColors.current
-    val image = rememberImage(WALLPAPER).image ?: return
+    val image = rememberImage(WALLPAPER).image
+    if (image == null) {
+        // Sin imagen, el vidrio se luce sobre el resplandor del tema.
+        if (LocalCardLook.current.style == CardStyle.GLASS) Box(Modifier.fillMaxSize().glow())
+        return
+    }
     val veil = c.background.copy(alpha = WALLPAPER_VEIL)
     Image(image, null, Modifier.fillMaxSize().drawWithContent { drawContent(); drawRect(veil) }, contentScale = ContentScale.Crop)
 }
@@ -496,15 +516,79 @@ fun HomeWallpaper() {
 fun rememberWallpaperBackdrop(wanted: Boolean): CardBackdrop? {
     val image = if (wanted) rememberImage(WALLPAPER).image else null
     val veil = LocalColors.current.background.copy(alpha = WALLPAPER_VEIL)
-    val blurred by produceState<ImageBitmap?>(null, image) {
-        value = image?.let { withContext(Dispatchers.Default) { blurredCopy(it.asAndroidBitmap()) } }
+    // El desenfoque se hace una vez por imagen y lo comparten el inicio, Ajustes y lo que se abre en grande.
+    val blurred by produceState(blurredWallpaper?.takeIf { it.first === image }?.second, image) {
+        value = image?.let { src ->
+            blurredWallpaper?.takeIf { it.first === src }?.second
+                ?: withContext(Dispatchers.Default) { blurredCopy(src.asAndroidBitmap()) }.also { blurredWallpaper = src to it }
+        }
     }
     val b = blurred ?: return null
     return remember(b, veil) { CardBackdrop(b, veil) }
 }
 
+/** El último fondo de pantalla desenfocado y de qué imagen salió (solo se toca en el hilo principal). */
+private var blurredWallpaper: Pair<ImageBitmap, ImageBitmap>? = null
+
 /** Lo que oscurece (o aclara) tu fondo de pantalla para que se lean los widgets encima. */
 private const val WALLPAPER_VEIL = 0.4f
+
+/** El velo del lienzo: más cerrado que el del inicio, encima van listas y textos largos. */
+private const val CANVAS_VEIL = 0.62f
+
+/** La piel sin el fondo desenfocado por tarjeta (lo que va sobre un lienzo ya desenfocado). */
+internal fun globalLook(look: CardLook) = if (look.backdrop == null) look else CardLook(look.style, look.opacity)
+
+/**
+ * El lienzo de lo que tapa el inicio (Ajustes, los paneles, la música o el mapa en grande): el fondo del tema y, con
+ * tarjetas de vidrio, tu fondo de pantalla desenfocado bajo un velo (una vez por pantalla; las tarjetas de encima
+ * solo llevan su relleno) o, sin imagen, el resplandor del tema.
+ */
+@Composable
+internal fun Modifier.canvas(): Modifier {
+    val c = LocalColors.current
+    val glass = LocalCardLook.current.style == CardStyle.GLASS
+    val blurred = rememberWallpaperBackdrop(glass)
+    val base = background(c.background)
+    if (!glass) return base
+    if (blurred == null) return base.glow()
+    val veil = c.background.copy(alpha = CANVAS_VEIL)
+    return base.drawBehind {
+        val iw = blurred.image.width.toFloat()
+        val ih = blurred.image.height.toFloat()
+        val s = maxOf(size.width / iw, size.height / ih)
+        translate((size.width - iw * s) / 2, (size.height - ih * s) / 2) {
+            scale(s, Offset.Zero) { drawImage(blurred.image, filterQuality = FilterQuality.High) }
+        }
+        drawRect(veil)
+    }
+}
+
+/**
+ * El resplandor del tema detrás del vidrio cuando no hay imagen de fondo: dos luces suaves (tu color de realce
+ * arriba y un azul frío abajo) para que las tarjetas tengan qué dejar ver. Con imagen, la imagen lo tapa.
+ */
+@Composable
+internal fun Modifier.glow(): Modifier {
+    val c = LocalColors.current
+    return drawWithCache {
+        // Se pinta una vez en chico y cada cuadro solo se estira (dos degradados a pantalla completa por cuadro
+        // pesan en las pantallas lentas).
+        val w = GLOW_WIDTH
+        val h = (w * size.height / size.width.coerceAtLeast(1f)).toInt().coerceIn(1, GLOW_WIDTH * 4)
+        val small = ImageBitmap(w, h)
+        val reach = maxOf(w, h) * 0.75f
+        CanvasDrawScope().draw(this, layoutDirection, Canvas(small), Size(w.toFloat(), h.toFloat())) {
+            drawRect(Brush.radialGradient(listOf(c.accent.copy(alpha = if (c.dark) 0.26f else 0.22f), Color.Transparent), Offset(w * 0.12f, 0f), reach))
+            drawRect(Brush.radialGradient(listOf(GLOW_COOL.copy(alpha = if (c.dark) 0.22f else 0.16f), Color.Transparent), Offset(w * 0.92f, h.toFloat()), reach))
+        }
+        val full = IntSize(size.width.toInt(), size.height.toInt())
+        onDrawBehind { drawImage(small, dstSize = full, filterQuality = FilterQuality.High) }
+    }
+}
+
+private const val GLOW_WIDTH = 160
+private val GLOW_COOL = Color(0xFF0A84FF)
 
 /**
  * Tu imagen del modo estacionado a toda la pantalla (sin recortarla). Devuelve false si no hay

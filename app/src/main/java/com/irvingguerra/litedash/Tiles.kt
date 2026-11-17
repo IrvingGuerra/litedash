@@ -445,7 +445,7 @@ private fun MapArt(modifier: Modifier) {
             drawLine(minor, Offset(w * 0.74f, 0f), Offset(w * 0.70f, h), road * 0.6f)
             drawPath(route, c.accent, style = stroke)
             drawCircle(c.accent, road * 1.6f, pin)
-            drawCircle(c.surfaceHigh, road * 0.65f, pin)
+            drawCircle(c.surface, road * 0.65f, pin)
         }
     })
 }

@@ -3,6 +3,22 @@
 What people using LiteDash notice, in English. The full history (in Spanish) is in [CHANGELOG.md](CHANGELOG.md).
 Format [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versions [SemVer](https://semver.org/).
 
+## [1.4.178] - 2026-11-17
+
+### New
+- **The whole app wears the look you pick.** The card style is no longer just for the home screen: the bottom bar,
+  full-screen music and map, Settings, the Workshop and every panel share the same glass and the same color.
+- **Glass by default.** Cards show your wallpaper blurred behind them; with no image, a soft glow in your color. If
+  you prefer the old look: Settings → Home & look → Interface → Cards → "Solid".
+- **Vivid colors and ready-made combinations.** Blue, green, wine, orange, violet, sand… or any color you like. You
+  pick the color and LiteDash fits it to the theme: deep at night and light by day, so everything stays readable.
+
+### Changed
+- Cards are solid or glass; "translucent" ones become glass.
+
+### Fixed
+- With glass, the speedometer and gauges no longer looked dimmed: their ring and ticks now read on any background.
+
 ## [1.4.177] - 2026-11-17
 
 ### Fixed

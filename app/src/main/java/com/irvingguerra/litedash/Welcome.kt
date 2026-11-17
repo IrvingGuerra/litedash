@@ -90,7 +90,7 @@ fun Welcome(prefs: Preferences, dashboard: DashboardState, revision: Int, onFini
     Column(
         Modifier
             .fillMaxSize()
-            .background(c.background)
+            .canvas()
             .blockTouches()
             .safeDrawingPadding()
             .padding(horizontal = 32.dp, vertical = 20.dp),

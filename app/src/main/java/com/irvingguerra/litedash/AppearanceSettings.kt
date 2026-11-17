@@ -1,6 +1,7 @@
 // Ajustes → Inicio y apariencia: inicio, interfaz, día y noche, unidades y widgets.
 package com.irvingguerra.litedash
 
+import com.irvingguerra.litedash.core.ui.skinSurface
 import android.hardware.Sensor
 import android.hardware.SensorManager
 import androidx.compose.foundation.background
@@ -52,7 +53,7 @@ import com.irvingguerra.litedash.core.ui.Radius
 import com.irvingguerra.litedash.core.ui.Segmented
 import com.irvingguerra.litedash.core.ui.SwitchRow
 import com.irvingguerra.litedash.core.ui.Typography
-import com.irvingguerra.litedash.core.ui.cardContentColors
+import com.irvingguerra.litedash.core.ui.cardTone
 import com.irvingguerra.litedash.feature.dashboard.TileTypes
 import com.irvingguerra.litedash.feature.tpms.PressureUnit
 import kotlin.math.round
@@ -126,7 +127,7 @@ private fun AccentSettings(prefs: Preferences) {
     val leading = @Composable {
         Swatch(
             prefs.accentColor == null,
-            Brush.linearGradient(0f to split.primary, 0.5f to split.primary, 0.5f to split.accent, 1f to split.accent),
+            halves(split.primary, split.accent),
             Modifier.semantics { contentDescription = natural },
         ) { prefs.accentColor = null }
     }
@@ -136,50 +137,77 @@ private fun AccentSettings(prefs: Preferences) {
 /** Lo que dice la tarjeta de muestra (una hora: se lee igual en cualquier idioma). */
 private const val SAMPLE_TIME = "12:45"
 
-/** Colores rápidos de las tarjetas: oscuros y claros que se leen bien con el texto de uno u otro tema. */
+/** Colores rápidos de las tarjetas: tonos vivos; cada tema los lleva a su claridad (profundos en oscuro, pastel en claro). */
 private val CARD_COLORS = listOf(
-    Color(0xFF000000), Color(0xFF2B2F36), Color(0xFF0F1B2D), Color(0xFF13241C),
-    Color(0xFF2A1418), Color(0xFFE9ECF0), Color(0xFFFFFFFF),
+    Color(0xFF2B2F36), Color(0xFF1F4FD8), Color(0xFF0E8F9A), Color(0xFF1E8E4E),
+    Color(0xFFB89B6A), Color(0xFFD9601A), Color(0xFFB3243C), Color(0xFF7A3FE0),
 )
 
-/** Las tarjetas del inicio: una muestra sobre tu fondo, lisas / translúcidas / de vidrio, cuánto se ven y su color. */
+/** Combinaciones listas de un toque: el color de las tarjetas y el de la interfaz que le va. */
+private val CARD_THEMES = listOf(
+    Color(0xFF1F4FD8) to Color(0xFF2BD4E8),
+    Color(0xFF1E8E4E) to Color(0xFF9BE15D),
+    Color(0xFFB3243C) to Color(0xFFFF7A8A),
+    Color(0xFFD9601A) to Color(0xFFFFC857),
+    Color(0xFF7A3FE0) to Color(0xFFFF4F9A),
+    Color(0xFFB89B6A) to Color(0xFFFF7A1A),
+)
+
+/**
+ * Las tarjetas de toda la app: una muestra sobre tu fondo, lisas o de vidrio, cuánto se ven, combinaciones listas y
+ * su color. Lo que se elige se ve al momento también aquí: Ajustes lleva la misma piel.
+ */
 @Composable
 private fun CardSettings(prefs: Preferences) {
     val c = LocalColors.current
-    val look = CardLook(prefs.cardColor ?: Color.Unspecified, prefs.cardStyle, prefs.cardOpacity)
+    val look = remember(prefs.cardStyle, prefs.cardOpacity) { CardLook(prefs.cardStyle, prefs.cardOpacity) }
     // La muestra: tu fondo (o el del tema) con una tarjeta encima, como en el inicio.
     Box(Modifier.fillMaxWidth().height(120.dp).clip(RoundedCornerShape(Radius.card)).background(c.background)) {
         HomeWallpaper()
-        CompositionLocalProvider(LocalCardLook provides look, LocalColors provides cardContentColors(look, c)) {
+        CompositionLocalProvider(LocalCardLook provides look) {
             Card(Modifier.align(Alignment.Center).fillMaxWidth(0.6f).height(84.dp)) {
                 Label(SAMPLE_TIME, Typography.title, LocalColors.current.text, modifier = Modifier.align(Alignment.Center))
             }
         }
     }
     Segmented(
-        listOf(
-            CardStyle.SOLID to stringResource(R.string.cards_solid),
-            CardStyle.TRANSLUCENT to stringResource(R.string.cards_translucent),
-            CardStyle.GLASS to stringResource(R.string.cards_glass),
-        ),
+        listOf(CardStyle.GLASS to stringResource(R.string.cards_glass), CardStyle.SOLID to stringResource(R.string.cards_solid)),
         prefs.cardStyle,
         { prefs.cardStyle = it },
     )
-    if (prefs.cardStyle != CardStyle.SOLID) {
+    if (prefs.cardStyle == CardStyle.GLASS) {
         Label(stringResource(R.string.cards_opacity), Typography.label, c.textMuted)
         // El deslizador va de lo más transparente que se permite a sólida.
-        val toSlider = { o: Float -> (o - MIN_OPACITY) / (1f - MIN_OPACITY) }
+        val toSlider = { o: Float -> ((o - MIN_OPACITY) / (1f - MIN_OPACITY)).coerceIn(0f, 1f) }
         val fromSlider = { v: Float -> MIN_OPACITY + v * (1f - MIN_OPACITY) }
         LevelSlider(toSlider(prefs.cardOpacity), { prefs.previewCardOpacity(fromSlider(it)) }) { prefs.cardOpacity = fromSlider(it) }
-        if (prefs.cardStyle == CardStyle.GLASS) Label(stringResource(R.string.cards_glass_help), Typography.small, c.textMuted)
+        Label(stringResource(R.string.cards_glass_help), Typography.small, c.textMuted)
+    }
+    Label(stringResource(R.string.cards_themes), Typography.label, c.textMuted)
+    val themeLabel = stringResource(R.string.cards_theme)
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(14.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+        // El de fábrica: grafito con el ámbar.
+        val natural = if (c.dark) DarkColors else LightColors
+        Swatch(prefs.cardColor == null && prefs.accentColor == null, halves(natural.surface, natural.accent), Modifier.semantics { contentDescription = themeLabel }) {
+            prefs.cardColor = null
+            prefs.accentColor = null
+        }
+        for ((card, accent) in CARD_THEMES) {
+            Swatch(prefs.cardColor == card && prefs.accentColor == accent, halves(cardTone(card, c.dark), accent)) {
+                prefs.cardColor = card
+                prefs.accentColor = accent
+            }
+        }
     }
     Label(stringResource(R.string.color), Typography.label, c.textMuted)
-    val themeLabel = stringResource(R.string.cards_theme)
     val leading = @Composable {
-        Swatch(prefs.cardColor == null, SolidColor(c.surface), Modifier.semantics { contentDescription = themeLabel }) { prefs.cardColor = null }
+        Swatch(prefs.cardColor == null, SolidColor(if (c.dark) DarkColors.surface else LightColors.surface), Modifier.semantics { contentDescription = themeLabel }) { prefs.cardColor = null }
     }
     ColorPicker(prefs.cardColor ?: Color.Unspecified, prefs::previewCardColor, CARD_COLORS, leading) { prefs.cardColor = it }
 }
+
+/** Un círculo partido en dos colores (una combinación: tarjetas e interfaz). */
+private fun halves(a: Color, b: Color) = Brush.linearGradient(0f to a, 0.5f to a, 0.5f to b, 1f to b)
 
 /** Día y noche: el tema, cuándo es de noche y el brillo. */
 @Composable
@@ -349,7 +377,7 @@ private fun TileRow(
     val c = LocalColors.current
     val shape = RoundedCornerShape(Radius.card)
     Row(
-        Modifier.fillMaxWidth().clip(shape).background(c.surface).border(1.dp, c.line, shape).padding(16.dp),
+        Modifier.fillMaxWidth().clip(shape).skinSurface(LocalCardLook.current, c, shape).padding(16.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(16.dp),
     ) {

@@ -337,7 +337,7 @@ class Preferences(context: Context) {
         _accent = v.toArgb()
     }
 
-    // El color de las tarjetas del inicio; null = el del tema.
+    // El color de las tarjetas de toda la app; null = el del tema.
     private var _card by mutableStateOf(if (p.contains(PrefKeys.CARD_COLOR)) p.getInt(PrefKeys.CARD_COLOR, 0) else null)
     var cardColor: Color?
         get() = _card?.let { Color(it) }
@@ -351,10 +351,10 @@ class Preferences(context: Context) {
         _card = v.toArgb()
     }
 
-    /** Lisas (como siempre), translúcidas o de vidrio. */
+    /** Lisas o de vidrio (lo de fábrica). */
     var cardStyle by mapped(PrefKeys.CARD_STYLE, CardStyle::fromStored) { it.stored }
 
-    // Cuánto se ven las translúcidas y de vidrio (0–1); se arrastra en vivo y se guarda al soltar.
+    // Cuánto se ven las de vidrio (0–1); se arrastra en vivo y se guarda al soltar.
     private var _cardOpacity by mutableFloatStateOf(p.getFloat(PrefKeys.CARD_OPACITY, DEFAULT_CARD_OPACITY))
     var cardOpacity: Float
         get() = _cardOpacity

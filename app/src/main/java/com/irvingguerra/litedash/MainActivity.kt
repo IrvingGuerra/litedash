@@ -16,12 +16,16 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import com.irvingguerra.litedash.core.ui.CardLook
 import com.irvingguerra.litedash.core.ui.LiteDashTheme
+import com.irvingguerra.litedash.core.ui.LocalCardLook
 import com.irvingguerra.litedash.feature.link.PhoneLink
 
 class MainActivity : ComponentActivity() {
@@ -216,7 +220,11 @@ internal fun ComponentActivity.LiteDashContent(d: Dependencies, revision: Int, c
     val hideStatusBar = d.prefs.hideStatusBar
     LaunchedEffect(hideStatusBar, revision) { applyStatusBar(window, hideStatusBar) }
     ApplyBrightness(d.prefs, night, revision)
-    LiteDashTheme(dark = dark, scale = d.prefs.scale, accent = d.prefs.accentColor) { AlertHost(content) }
+    // La piel de las tarjetas (lisas o de vidrio) vale para toda la app; el inicio le suma tu fondo desenfocado.
+    val look = remember(d.prefs.cardStyle, d.prefs.cardOpacity) { CardLook(d.prefs.cardStyle, d.prefs.cardOpacity) }
+    LiteDashTheme(dark = dark, scale = d.prefs.scale, accent = d.prefs.accentColor, cards = d.prefs.cardColor) {
+        CompositionLocalProvider(LocalCardLook provides look) { AlertHost(content) }
+    }
 }
 
 /** ¿Tema oscuro? Según lo elegido en Ajustes; [night] es la cuenta del sol o del sensor de luz. */

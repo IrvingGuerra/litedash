@@ -84,7 +84,6 @@ import com.irvingguerra.litedash.core.ui.LocalColors
 import com.irvingguerra.litedash.core.ui.Radius
 import com.irvingguerra.litedash.core.ui.Typography
 import com.irvingguerra.litedash.core.ui.blockTouches
-import com.irvingguerra.litedash.core.ui.cardContentColors
 import com.irvingguerra.litedash.core.vehicle.Signal
 import com.irvingguerra.litedash.core.vehicle.VehicleBus
 import com.irvingguerra.litedash.feature.apps.App
@@ -690,7 +689,11 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
     ) {
         // Los paneles tapan todo el inicio: mientras hay uno abierto no se compone ni se pinta nada debajo (el
         // auto del tablero no se tiñe dos veces al cambiar el color).
-        if (panel == null) CompositionLocalProvider(LocalHomeCovered provides homeCovered) {
+        // En el inicio el vidrio lleva tu fondo desenfocado detrás de cada tarjeta y de la barra.
+        val glass = d.prefs.cardStyle == CardStyle.GLASS
+        val blurred = rememberWallpaperBackdrop(glass && d.dashboard.background == PageBackground.WALLPAPER)
+        val homeLook = remember(d.prefs.cardStyle, d.prefs.cardOpacity, blurred) { CardLook(d.prefs.cardStyle, d.prefs.cardOpacity, blurred) }
+        if (panel == null) CompositionLocalProvider(LocalHomeCovered provides homeCovered, LocalCardLook provides homeLook) {
             Box(Modifier.fillMaxSize().hiddenWhen { homeCovered }) {
                 // Detrás de todo, el fondo de esta página: tu imagen (Inicio y apariencia → Inicio → Fondo de pantalla) o
                 // el mapa vivo, contigo en el hueco que dejan los widgets.
@@ -765,15 +768,8 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                                 if (inFront || d.dashboard.grid == null) d.dashboard.use(grid)
                                 val cellNow = DpSize(maxWidth / grid.columns, maxHeight / grid.rows)
                                 SideEffect { cell = cellNow }
-                                // Las tarjetas como se eligieron en Interfaz → Tarjetas (de vidrio, con tu fondo desenfocado detrás).
-                                val backdrop = rememberWallpaperBackdrop(d.prefs.cardStyle == CardStyle.GLASS && d.dashboard.background == PageBackground.WALLPAPER)
-                                val cardColor = d.prefs.cardColor ?: Color.Unspecified
-                                val cardLook = remember(cardColor, d.prefs.cardStyle, d.prefs.cardOpacity, backdrop) {
-                                    CardLook(cardColor, d.prefs.cardStyle, d.prefs.cardOpacity, backdrop)
-                                }
-                                val cardColors = cardContentColors(cardLook, c)
                                 // Con algo en grande encima (la música o el mapa) el tablero tampoco se dibuja.
-                                CompositionLocalProvider(LocalHomeCovered provides (homeCovered || expandedCovers), LocalCardLook provides cardLook) {
+                                CompositionLocalProvider(LocalHomeCovered provides (homeCovered || expandedCovers)) {
                                     Dashboard(
                                         grid = grid,
                                         tiles = d.dashboard.shown,
@@ -797,11 +793,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                                         },
                                         // Todos tienen opciones; el auto 3D, solo con Llantas prendido (las de las llantas).
                                         hasSettings = { it.type != TileTypes.CAR || d.hasTpmsSource },
-                                    ) { p ->
-                                        // Con color propio, el texto de adentro se ajusta para leerse (sin tarjeta, el del tema).
-                                        if (p.plain) TileContent(d, p, apps, car, revision, actions)
-                                        else CompositionLocalProvider(LocalColors provides cardColors) { TileContent(d, p, apps, car, revision, actions) }
-                                    }
+                                    ) { p -> TileContent(d, p, apps, car, revision, actions) }
                                 }
                                 // Con varias páginas: los puntitos abajo; al acomodar, la barra de páginas.
                                 if (d.dashboard.pageCount > 1 && !editing && !expandedCovers) {
@@ -1154,7 +1146,6 @@ private const val SHRINK_MS = 260
  */
 @Composable
 private fun ExpandedLayer(from: Rect?, progress: () -> Float, content: @Composable () -> Unit) {
-    val c = LocalColors.current
     var area by remember { mutableStateOf(Rect.Zero) }
     val shape = RoundedCornerShape(Radius.card)
     Box(
@@ -1179,7 +1170,7 @@ private fun ExpandedLayer(from: Rect?, progress: () -> Float, content: @Composab
                 this.shape = shape
                 clip = true
             }
-            .background(c.background)
+            .canvas()
             .blockTouches(),
-    ) { FitShort(SHORT_EXPANDED_HEIGHT, content) }
+    ) { CompositionLocalProvider(LocalCardLook provides globalLook(LocalCardLook.current)) { FitShort(SHORT_EXPANDED_HEIGHT, content) } }
 }

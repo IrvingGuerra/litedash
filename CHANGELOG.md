@@ -4,6 +4,23 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.4.178] - 2026-11-17
+
+### Nuevo
+- **Toda la app con la piel que elijas.** El estilo de las tarjetas ya no es solo del inicio: la barra de abajo, la
+  música y el mapa en grande, Ajustes, el Taller y todos los paneles llevan el mismo vidrio y el mismo color.
+- **Vidrio de fábrica.** Las tarjetas dejan ver tu fondo de pantalla desenfocado; sin imagen, un resplandor suave con
+  tu color. Si prefieres lo de antes: Ajustes → Inicio y apariencia → Interfaz → Tarjetas → «Lisas».
+- **Colores vivos y combinaciones listas.** Azul, verde, vino, naranja, violeta, arena… o el que quieras. Tú eliges
+  el color y LiteDash lo acomoda al tema: profundo de noche y claro de día, para que todo se siga leyendo.
+
+### Cambiado
+- Las tarjetas son lisas o de vidrio; las «translúcidas» pasan a vidrio.
+
+### Arreglado
+- Con vidrio, el velocímetro y los medidores ya no se veían apagados: su aro y sus marcas ahora se leen sobre
+  cualquier fondo.
+
 ## [1.4.177] - 2026-11-17
 
 ### Arreglado

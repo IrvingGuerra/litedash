@@ -101,8 +101,52 @@ internal fun Colors.withAccent(chosen: Color?): Colors {
     return copy(accent = color, primary = color, onPrimary = if (contrast(color, Ink) >= contrast(color, Color.White)) Ink else Color.White)
 }
 
+/**
+ * Los colores con las tarjetas del color que eligió el usuario; null = las del tema. Él elige el tono y el tema
+ * decide qué tan claro va: en oscuro se baja hasta [DARK_CARD_MAX] (un azul vivo queda azul profundo) y en claro se
+ * sube hasta [LIGHT_CARD_MIN] (queda pastel), así el texto del tema siempre se lee. De ese color salen lo elevado,
+ * las rayas y el fondo; el texto apagado y el realce se ajustan si no contrastan.
+ */
+internal fun Colors.withCards(chosen: Color?): Colors {
+    if (chosen == null) return this
+    val card = cardTone(chosen, dark)
+    val high = lerp(card, text, if (dark) 0.09f else 0.06f)
+    var muted = textMuted
+    while (contrast(muted, card) < MUTED_CONTRAST && muted != text) muted = lerp(muted, text, 0.15f).takeIf { it != muted } ?: text
+    var mark = accent
+    val toward = if (dark) Color.White else Color.Black
+    while (contrast(mark, card) < MARK_CONTRAST && mark != toward) mark = lerp(mark, toward, 0.12f).takeIf { it != mark } ?: toward
+    val main = if (primary == accent) mark else primary
+    return copy(
+        background = lerp(card, Color.Black, if (dark) 0.5f else 0.07f),
+        surface = card,
+        surfaceHigh = high,
+        line = lerp(card, text, 0.12f),
+        textMuted = muted,
+        accent = mark,
+        primary = main,
+        onPrimary = if (contrast(main, Ink) >= contrast(main, Color.White)) Ink else Color.White,
+    )
+}
+
+/** El color [chosen] con la claridad que le toca a una tarjeta del tema oscuro ([dark]) o del claro. */
+fun cardTone(chosen: Color, dark: Boolean): Color {
+    var color = chosen.copy(alpha = 1f)
+    if (dark) while (color.luminance() > DARK_CARD_MAX) color = lerp(color, Color.Black, 0.08f)
+    else while (color.luminance() < LIGHT_CARD_MIN) color = lerp(color, Color.White, 0.1f)
+    return color
+}
+
+/** Lo más clara que va una tarjeta en oscuro y lo más oscura en claro (luminancia 0–1). */
+private const val DARK_CARD_MAX = 0.075f
+private const val LIGHT_CARD_MIN = 0.78f
+
+/** El contraste mínimo del texto apagado y del realce contra la tarjeta. */
+private const val MUTED_CONTRAST = 3f
+private const val MARK_CONTRAST = 3f
+
 /** El contraste entre dos colores (1–21), como lo mide WCAG. */
-private fun contrast(a: Color, b: Color): Float {
+internal fun contrast(a: Color, b: Color): Float {
     val (hi, lo) = listOf(a.luminance(), b.luminance()).sortedDescending()
     return (hi + 0.05f) / (lo + 0.05f)
 }
@@ -161,12 +205,13 @@ object Radius {
 
 /**
  * Sin Material: la app usa solo foundation para mantenerse ligera.
- * [scale] agranda o achica toda la interfaz (pantallas que mienten con su dpi); [accent], el color elegido.
+ * [scale] agranda o achica toda la interfaz (pantallas que mienten con su dpi); [accent], el color elegido de la
+ * interfaz y [cards], el de las tarjetas.
  */
 @Composable
-fun LiteDashTheme(dark: Boolean = true, scale: Float = 1f, accent: Color? = null, content: @Composable () -> Unit) {
+fun LiteDashTheme(dark: Boolean = true, scale: Float = 1f, accent: Color? = null, cards: Color? = null, content: @Composable () -> Unit) {
     val d = LocalDensity.current
-    val colors = remember(dark, accent) { (if (dark) DarkColors else LightColors).withAccent(accent) }
+    val colors = remember(dark, accent, cards) { (if (dark) DarkColors else LightColors).withAccent(accent).withCards(cards) }
     CompositionLocalProvider(
         LocalColors provides colors,
         LocalDensity provides Density(d.density * scale, d.fontScale),
@@ -200,8 +245,8 @@ fun Label(
 val LocalPlainCard = compositionLocalOf { false }
 
 /**
- * Tarjeta base del tablero, con esquinas [Radius.card]: lisa con el color del tema o, en el inicio, como digan las
- * Tarjetas ([LocalCardLook]: color, translúcida o de vidrio). Sin tarjeta ([LocalPlainCard]), transparente.
+ * Tarjeta base de toda la app, con esquinas [Radius.card]: lisa o de vidrio según la piel ([LocalCardLook]) y del
+ * color del tema. Sin tarjeta ([LocalPlainCard]), transparente. Lo de adentro recibe sus colores ([contentColors]).
  */
 @Composable
 fun Card(
@@ -210,10 +255,14 @@ fun Card(
     content: @Composable BoxScope.() -> Unit,
 ) {
     val c = LocalColors.current
+    val look = LocalCardLook.current
+    val plain = LocalPlainCard.current
     val shape = RoundedCornerShape(Radius.card)
-    var m = modifier.clip(shape).then(if (LocalPlainCard.current) Modifier else Modifier.cardSurface(LocalCardLook.current, c))
+    var m = modifier.clip(shape).then(if (plain) Modifier else Modifier.skinSurface(look, c, shape))
     if (onClick != null) m = m.clickable(onClick = onClick)
-    Box(m, content = content)
+    // Una vez por tema y piel, no en cada dibujo (un valor nuevo haría releer los colores a todo lo de adentro).
+    val inner = remember(c, look.style, plain) { contentColors(c, look, plain) }
+    Box(m) { CompositionLocalProvider(LocalColors provides inner) { content() } }
 }
 
 /** Botón redondo con ícono, objetivo táctil de 56 dp como pide el plan; [label] = lo que dice el lector de pantalla. */

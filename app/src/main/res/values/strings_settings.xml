@@ -14,13 +14,13 @@
     <string name="accent_help">Interruptores, botones, play y barras de avance. Las tarjetas y el fondo no cambian; Natural es el de fábrica.</string>
     <string name="accent_natural">Natural</string>
     <string name="cards_title">Tarjetas</string>
-    <string name="cards_help">Cómo se ven los widgets de tu inicio: su color y si dejan ver el fondo.</string>
+    <string name="cards_help">Cómo se ven las tarjetas de toda la app: su color y si dejan ver el fondo.</string>
     <string name="cards_solid">Lisas</string>
-    <string name="cards_translucent">Translúcidas</string>
     <string name="cards_glass">Vidrio</string>
     <string name="cards_opacity">Cuánto se ven</string>
-    <string name="cards_glass_help">Con una imagen de fondo, se ve desenfocada detrás de cada tarjeta.</string>
+    <string name="cards_glass_help">Tu imagen de fondo se ve desenfocada detrás de cada tarjeta.</string>
     <string name="cards_theme">Del tema</string>
+    <string name="cards_themes">Combinaciones</string>
     <string name="language_search">Busca tu idioma</string>
     <string name="language_not_found">Ese idioma aún no está. Ayúdanos a traducirlo en litedash.dev/translate.</string>
 </resources>

@@ -13,13 +13,13 @@
     <string name="accent_help">Comutatoare, butoane, redare și bare de progres. Cardurile și fundalul rămân la fel; Natural e aspectul original.</string>
     <string name="accent_natural">Natural</string>
     <string name="cards_title">Carduri</string>
-    <string name="cards_help">Cum arată widgeturile de pe ecranul tău principal: culoarea și dacă se vede fundalul.</string>
+    <string name="cards_help">Cum arată cardurile în toată aplicația: culoarea și dacă se vede fundalul.</string>
     <string name="cards_solid">Opace</string>
-    <string name="cards_translucent">Translucide</string>
     <string name="cards_glass">Sticlă</string>
     <string name="cards_opacity">Cât se văd</string>
-    <string name="cards_glass_help">Cu o imagine de fundal, aceasta se vede estompată în spatele fiecărui card.</string>
+    <string name="cards_glass_help">Imaginea ta de fundal se vede estompată în spatele fiecărui card.</string>
     <string name="cards_theme">Temă</string>
+    <string name="cards_themes">Combinații</string>
     <string name="language_search">Caută limba ta</string>
     <string name="language_not_found">Limba aceasta nu există încă. Ajută-ne să o traducem pe litedash.dev/translate.</string>
 </resources>

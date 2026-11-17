@@ -1,5 +1,7 @@
 package com.irvingguerra.litedash
 
+import com.irvingguerra.litedash.core.ui.LocalCardLook
+import com.irvingguerra.litedash.core.ui.skinSurface
 import com.irvingguerra.litedash.core.ui.Radius
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -33,7 +35,8 @@ fun Notice(text: String, icon: ImageVector? = null, iconColor: Color? = null, bu
         .fillMaxWidth()
         .padding(horizontal = 16.dp, vertical = 4.dp)
         .clip(RoundedCornerShape(Radius.card))
-        .background(c.surface)
+        // Con la piel de las tarjetas, pero siempre bien visible: es un aviso.
+        .skinSurface(LocalCardLook.current, c, RoundedCornerShape(Radius.card), floor = 0.8f)
         .padding(start = 20.dp, end = 8.dp, top = 8.dp, bottom = 8.dp)
     val label = @Composable { m: Modifier ->
         Row(m, verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {

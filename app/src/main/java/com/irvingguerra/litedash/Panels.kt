@@ -88,7 +88,7 @@ internal fun PanelScaffold(
     Column(
         Modifier
             .fillMaxSize()
-            .background(c.background)
+            .canvas()
             // Atrapa los toques para que no lleguen al inicio de abajo.
             .blockTouches()
             .safeDrawingPadding()

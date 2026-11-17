@@ -13,13 +13,13 @@
     <string name="accent_help">Kapcsolók, gombok, lejátszás és folyamatjelzők. A kártyák és a háttér nem változnak; a Természetes az eredeti kinézet.</string>
     <string name="accent_natural">Természetes</string>
     <string name="cards_title">Kártyák</string>
-    <string name="cards_help">Milyenek a kezdőképernyőd widgetjei: a színük, és átlátszik-e a háttér.</string>
+    <string name="cards_help">Milyenek a kártyák az egész alkalmazásban: a színük, és átlátszik-e a háttér.</string>
     <string name="cards_solid">Tömör</string>
-    <string name="cards_translucent">Áttetsző</string>
     <string name="cards_glass">Üveg</string>
     <string name="cards_opacity">Mennyire látszanak</string>
-    <string name="cards_glass_help">Háttérképpel elmosódva látszik minden kártya mögött.</string>
+    <string name="cards_glass_help">A háttérképed elmosódva látszik minden kártya mögött.</string>
     <string name="cards_theme">Téma</string>
+    <string name="cards_themes">Kombinációk</string>
     <string name="language_search">Keresd meg a nyelved</string>
     <string name="language_not_found">Ez a nyelv még nincs meg. Segíts lefordítani a litedash.dev/translate oldalon.</string>
 </resources>

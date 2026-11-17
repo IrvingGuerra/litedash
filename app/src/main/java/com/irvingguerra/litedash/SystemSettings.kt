@@ -1,6 +1,8 @@
 // Ajustes → Sistema y Módulos: acerca de, Android, tu pantalla, módulos y permisos.
 package com.irvingguerra.litedash
 
+import com.irvingguerra.litedash.core.ui.LocalCardLook
+import com.irvingguerra.litedash.core.ui.skinSurface
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
@@ -338,7 +340,7 @@ private fun ModuleRow(
     // Angosto (celular): todo más junto y el nombre en dos renglones, para que no se corte.
     val narrow = maxWidth < MODULE_NARROW
     Row(
-        Modifier.fillMaxWidth().heightIn(min = 76.dp).height(IntrinsicSize.Min).clip(shape).background(c.surface).border(1.dp, c.line, shape),
+        Modifier.fillMaxWidth().heightIn(min = 76.dp).height(IntrinsicSize.Min).clip(shape).skinSurface(LocalCardLook.current, c, shape),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Row(

@@ -1,6 +1,9 @@
 // Ajustes: secciones, menú, pestañas y la tarjeta compartida.
 package com.irvingguerra.litedash
 
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -100,7 +103,7 @@ fun SettingsPanel(
     BoxWithConstraints(
         Modifier
             .fillMaxSize()
-            .background(c.background)
+            .canvas()
             // Atrapa los toques para que no lleguen al inicio de abajo.
             .blockTouches()
             .safeDrawingPadding(),
@@ -155,18 +158,19 @@ fun SettingsPanel(
 internal fun tabs(titles: List<Int>, key: String): Int {
     val selected = TabMemory[key] ?: 0
     val scroll = rememberScrollState()
-    val fade = LocalColors.current.background
     // Mismo control que las opciones (estilo iOS): una pestaña a la vez. Si no caben se desplazan y el borde
     // derecho se desvanece, para que se note que hay más.
     Segmented(
         titles.mapIndexed { i, t -> i to stringResource(t) }, selected, { TabMemory[key] = it },
         Modifier
+            // El borde se borra (no se pinta del color del fondo): debajo puede ir tu imagen desenfocada.
+            .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
             .drawWithCache {
                 val width = TAB_FADE.toPx().coerceAtMost(size.width)
-                val brush = Brush.horizontalGradient(listOf(Color.Transparent, fade), startX = size.width - width, endX = size.width)
+                val brush = Brush.horizontalGradient(listOf(Color.Transparent, Color.Black), startX = size.width - width, endX = size.width)
                 onDrawWithContent {
                     drawContent()
-                    if (scroll.canScrollForward) drawRect(brush, Offset(size.width - width, 0f), Size(width, size.height))
+                    if (scroll.canScrollForward) drawRect(brush, Offset(size.width - width, 0f), Size(width, size.height), blendMode = BlendMode.DstOut)
                 }
             }
             .horizontalScroll(scroll),

@@ -13,13 +13,13 @@
     <string name="accent_help">Schakelaars, knoppen, afspelen en voortgangsbalken. Kaarten en achtergrond blijven gelijk; Natuurlijk is de originele look.</string>
     <string name="accent_natural">Natuurlijk</string>
     <string name="cards_title">Kaarten</string>
-    <string name="cards_help">Hoe de widgets op je startscherm eruitzien: hun kleur en of de achtergrond doorschijnt.</string>
+    <string name="cards_help">Hoe de kaarten in de hele app eruitzien: hun kleur en of de achtergrond doorschijnt.</string>
     <string name="cards_solid">Effen</string>
-    <string name="cards_translucent">Doorschijnend</string>
     <string name="cards_glass">Glas</string>
     <string name="cards_opacity">Hoe zichtbaar</string>
-    <string name="cards_glass_help">Met een achtergrond zie je die wazig achter elke kaart.</string>
+    <string name="cards_glass_help">Je achtergrond is wazig te zien achter elke kaart.</string>
     <string name="cards_theme">Thema</string>
+    <string name="cards_themes">Combinaties</string>
     <string name="language_search">Zoek je taal</string>
     <string name="language_not_found">Die taal is er nog niet. Help ons met vertalen op litedash.dev/translate.</string>
 </resources>

@@ -13,13 +13,13 @@
     <string name="accent_help">Перемикачі, кнопки, відтворення та смуги прогресу. Картки й фон не змінюються; «Природний» — початковий вигляд.</string>
     <string name="accent_natural">Природний</string>
     <string name="cards_title">Картки</string>
-    <string name="cards_help">Який вигляд мають віджети головного екрана: їхній колір і чи просвічує фон.</string>
+    <string name="cards_help">Який вигляд мають картки в усьому застосунку: їхній колір і чи просвічує фон.</string>
     <string name="cards_solid">Суцільні</string>
-    <string name="cards_translucent">Напівпрозорі</string>
     <string name="cards_glass">Скло</string>
     <string name="cards_opacity">Наскільки видно</string>
-    <string name="cards_glass_help">Якщо є шпалери, їх видно розмитими за кожною карткою.</string>
+    <string name="cards_glass_help">Шпалери видно розмитими за кожною карткою.</string>
     <string name="cards_theme">Тема</string>
+    <string name="cards_themes">Поєднання</string>
     <string name="language_search">Знайди свою мову</string>
     <string name="language_not_found">Цієї мови ще немає. Допоможи перекласти на litedash.dev/translate.</string>
 </resources>
