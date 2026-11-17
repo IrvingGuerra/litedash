@@ -369,17 +369,22 @@ fun Switch(checked: Boolean, modifier: Modifier = Modifier) {
     }
 }
 
-/** Campo de texto de una línea con [hint]; [icon] pone la lupa (buscadores). */
+/**
+ * Campo de texto de una línea con [hint]; [icon] pone la lupa (buscadores). [compact] = píldora baja para la cabecera
+ * de un panel (#28: así la lista de abajo gana un renglón).
+ */
 @Composable
-fun TextInput(value: String, onChange: (String) -> Unit, hint: String, modifier: Modifier = Modifier, icon: Boolean = false) {
+fun TextInput(value: String, onChange: (String) -> Unit, hint: String, modifier: Modifier = Modifier, icon: Boolean = false, compact: Boolean = false) {
     val c = LocalColors.current
+    val shape = if (compact) CircleShape else RoundedCornerShape(Radius.card)
     Row(
-        modifier.height(56.dp).clip(RoundedCornerShape(Radius.card)).background(c.surface).border(1.dp, c.line, RoundedCornerShape(Radius.card)).padding(horizontal = 20.dp),
+        modifier.height(if (compact) 44.dp else 56.dp).clip(shape).background(c.surface).border(1.dp, c.line, shape)
+            .padding(horizontal = if (compact) 16.dp else 20.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         if (icon) {
-            Icon(Icons.search, c.textMuted, 22.dp)
-            Spacer(Modifier.width(12.dp))
+            Icon(Icons.search, c.textMuted, if (compact) 18.dp else 22.dp)
+            Spacer(Modifier.width(if (compact) 10.dp else 12.dp))
         }
         Box(Modifier.weight(1f)) {
             if (value.isEmpty()) Label(hint, Typography.body, c.textMuted, maxLines = 1)

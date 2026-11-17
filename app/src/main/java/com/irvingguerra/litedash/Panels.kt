@@ -77,11 +77,15 @@ internal val SHORT_EXPANDED_HEIGHT = 300.dp
 /** Nunca más chico que esto: los textos deben seguir leyéndose. */
 private const val MIN_PANEL_FIT = 0.72f
 
-/** Panel a pantalla completa sobre el inicio, con título y botón para cerrar. */
+/**
+ * Panel a pantalla completa sobre el inicio, con título y botón para cerrar. [header] va centrado entre los dos (el
+ * buscador de apps: en pantallas bajas un renglón propio le quitaba media fila a la lista, #28).
+ */
 @Composable
 internal fun PanelScaffold(
     title: String,
     close: () -> Unit,
+    header: (@Composable () -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val c = LocalColors.current
@@ -95,7 +99,11 @@ internal fun PanelScaffold(
             .padding(horizontal = 24.dp),
     ) {
         Row(Modifier.fillMaxWidth().height(72.dp), verticalAlignment = Alignment.CenterVertically) {
-            Label(title, Typography.title, maxLines = 1, modifier = Modifier.weight(1f))
+            if (header == null) Label(title, Typography.title, maxLines = 1, modifier = Modifier.weight(1f))
+            else {
+                Label(title, Typography.title, maxLines = 1)
+                Box(Modifier.weight(1f).padding(horizontal = 16.dp), contentAlignment = Alignment.Center) { header() }
+            }
             IconButton(Icons.close, close, background = c.surfaceHigh)
         }
         content()
@@ -114,12 +122,11 @@ fun DrawerPanel(d: Dependencies, apps: List<App>, close: () -> Unit) {
     val dock = rememberFavorites(d, apps).map { it.key }
     val hidden = d.prefs.hidden
     val visible = remember(apps, hidden, showHidden) { if (showHidden) apps else apps.filter { it.key !in hidden } }
-    PanelScaffold(stringResource(R.string.apps), close) {
-        TextInput(query, { query = it }, stringResource(R.string.search_app), Modifier.fillMaxWidth().widthIn(max = 640.dp), icon = true)
+    PanelScaffold(stringResource(R.string.apps), close, header = { PanelSearch(query) { query = it } }) {
         val app = selected
-        if (noRoom) Label(stringResource(R.string.no_room), Typography.body, c.danger, modifier = Modifier.padding(top = 10.dp, start = 8.dp))
+        if (noRoom) Label(stringResource(R.string.no_room), Typography.body, c.danger, modifier = Modifier.padding(start = 8.dp))
         if (app == null) {
-            Row(Modifier.fillMaxWidth().padding(top = 10.dp, start = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+            Row(Modifier.fillMaxWidth().padding(start = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                 Label(stringResource(R.string.drawer_help), Typography.small, c.textMuted, modifier = Modifier.weight(1f))
                 if (hidden.isNotEmpty()) {
                     Label(
@@ -175,9 +182,8 @@ fun PickAppPanel(d: Dependencies, apps: List<App>, tileId: String?, close: () ->
     val dashboard = d.dashboard
     var query by remember { mutableStateOf("") }
     var noRoom by remember { mutableStateOf(false) }
-    PanelScaffold(stringResource(R.string.pick_app), close) {
-        TextInput(query, { query = it }, stringResource(R.string.search_app), Modifier.fillMaxWidth().widthIn(max = 640.dp), icon = true)
-        if (noRoom) Label(stringResource(R.string.no_room), Typography.body, LocalColors.current.danger, modifier = Modifier.padding(top = 10.dp, start = 8.dp))
+    PanelScaffold(stringResource(R.string.pick_app), close, header = { PanelSearch(query) { query = it } }) {
+        if (noRoom) Label(stringResource(R.string.no_room), Typography.body, LocalColors.current.danger, modifier = Modifier.padding(start = 8.dp))
         AppGrid(
             d.apps, apps, query,
             onClick = { app ->
@@ -354,4 +360,10 @@ internal fun iconOf(type: String) = when (type) {
     TileTypes.PROJECTION -> Icons.phoneCar
     TileTypes.TIRES -> Icons.tire
     else -> Icons.apps
+}
+
+/** Buscador de apps en la cabecera de un panel: píldora baja y hasta 420 dp, centrada entre el título y la ✕. */
+@Composable
+private fun PanelSearch(query: String, onChange: (String) -> Unit) {
+    TextInput(query, onChange, stringResource(R.string.search_app), Modifier.widthIn(max = 420.dp).fillMaxWidth(), icon = true, compact = true)
 }
