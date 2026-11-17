@@ -33,7 +33,7 @@ class ObdPolicyTest {
         assertNull(retryDelay(ObdError.GATT_BUSY, dropped = false, retries = ObdTiming.MAX_RETRIES, wanted = false))
     }
 
-    @Test fun mientras_alguien_lo_quiere_no_se_rinde() {
+    @Test fun mientras_se_mantiene_no_se_rinde() {
         // Adaptador dormido al encender el auto: el primer fallo ya se reintenta.
         assertEquals(ObdTiming.RECONNECT_MS, retryDelay(ObdError.ADAPTER_UNREACHABLE, dropped = false, retries = 0, wanted = true))
         // Pasado el tope, esperas que crecen al doble…

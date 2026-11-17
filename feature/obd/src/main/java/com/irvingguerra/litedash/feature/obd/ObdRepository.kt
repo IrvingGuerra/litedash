@@ -2,12 +2,16 @@ package com.irvingguerra.litedash.feature.obd
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothManager
 import android.bluetooth.le.ScanCallback
 import android.bluetooth.le.ScanResult
 import android.bluetooth.le.ScanSettings
+import android.content.BroadcastReceiver
 import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.hardware.usb.UsbDevice
 import android.hardware.usb.UsbManager
@@ -108,11 +112,11 @@ private class TireSession(val elm: Elm327) {
  * hay un adaptador guardado) y solo pregunta al auto lo que se está mostrando ([VehicleBus.wanted]):
  * lo rápido (velocidad, rpm) unas 10 veces por segundo y lo lento cada 2 s.
  *
- * La política de conexión vive toda aquí: quien lo use dice [want] ("lo quiero") y [release] ("ya
- * no"); con el primero conecta al adaptador guardado y sin ninguno desconecta. Tras un fallo,
- * [retryDelay] decide si reintenta y cuándo: mientras alguien lo quiere no se rinde (con esperas
- * crecientes); sin nadie se rinde y vuelve a intentar cuando alguien nuevo lo quiere o el usuario toca
- * Conectar ([connect]).
+ * La política de conexión vive toda aquí: en cuanto algo lo pide ([keep]) conecta al adaptador guardado y
+ * **se queda conectado** aunque ya no se vea nada suyo (cortar y reabrir el Bluetooth hacía fallar a los
+ * ELM327 baratos, issue #23); solo lo corta el usuario o apagar el módulo ([disconnect]). Tras un fallo,
+ * [retryDelay] decide cuándo reintenta: mientras se mantiene no se rinde (con esperas crecientes), y al
+ * prender el Bluetooth de la pantalla conecta de inmediato.
  */
 class ObdRepository(private val context: Context, private val bus: VehicleBus) {
     var state by mutableStateOf(ObdState.OFF)
@@ -133,7 +137,7 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val lock = Mutex()
     private var link: ElmLink? = null
-    /** El enlace que se está abriendo o preparando: [disconnect] lo cierra desde aquí (lo suelta aunque esté bloqueado). */
+    /** El enlace que se está abriendo o preparando: [drop] lo cierra desde aquí (lo suelta aunque esté bloqueado). */
     @Volatile private var pending: ElmLink? = null
     private var elm: Elm327? = null
     @Volatile private var tires: TireSession? = null
@@ -146,10 +150,10 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
     private var retries = 0
     /** En qué intento conectó la última vez (para saber en el reporte si los tiempos sirven). */
     private var connectedOnAttempt = 0
-    /** Quiénes quieren el escáner ([want]). */
-    private val wanters = mutableSetOf<Any>()
-    /** La desconexión pendiente cuando ya nadie lo quiere ([release]); un [want] a tiempo la cancela. */
-    private var releaseJob: Job? = null
+    /** Se mantiene conectado ([keep]) hasta que el usuario lo corte o apague el módulo ([disconnect]). */
+    private var kept = false
+    /** Dejar de escuchar el encendido del Bluetooth de la pantalla ([watchBluetooth]). */
+    private var unwatchBluetooth: (() -> Unit)? = null
     /** Cuándo se cerró el último enlace (reloj de arranque): Bluetooth necesita un respiro antes de reabrir. */
     @Volatile private var closedAt = 0L
     /** Dejar de escuchar el permiso USB pedido / el desconectado del cable. */
@@ -277,50 +281,31 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
             ?.firstOrNull { it.vendorId == t.vendorId && it.productId == t.productId }
 
     /**
-     * Quien muestra algo del OBD (una pieza, el Taller, Llantas por OBD) dice que lo quiere; con
-     * adaptador guardado se conecta solo si no lo está (o si se había rendido). [owner] es cualquier
-     * llave estable del que lo pide; se suelta con [release].
+     * Algo del OBD se usa (una pieza, el Taller, Llantas por OBD): con adaptador guardado se conecta solo si no
+     * lo está (o si se había rendido) y desde aquí se mantiene conectado. Llamarlo de más no repite nada.
      */
-    fun want(owner: Any) {
-        releaseJob?.cancel()
-        releaseJob = null
-        if (!wanters.add(owner)) return
+    fun keep() {
+        kept = true
         if (state == ObdState.OFF || state == ObdState.ERROR && retryJob?.isActive != true) connect()
     }
 
     /**
-     * [owner] ya no lo quiere; sin nadie que lo quiera se desconecta tras [ObdTiming.RELEASE_GRACE_MS] (módulo sin uso =
-     * nada corriendo). No al instante: abrir Ajustes quita el tablero un momento, y cortar y reabrir el Bluetooth al
-     * cerrarlo hacía fallar a los ELM327 baratos ("antes iba perfecto", issue #23).
-     */
-    fun release(owner: Any) {
-        if (!wanters.remove(owner) || wanters.isNotEmpty()) return
-        releaseJob?.cancel()
-        releaseJob = scope.launch(Dispatchers.Main) {
-            delay(ObdTiming.RELEASE_GRACE_MS)
-            releaseJob = null
-            if (wanters.isNotEmpty() || state == ObdState.OFF) return@launch
-            note("soltado: sin quien lo quiera")
-            disconnect()
-        }
-    }
-
-    /**
-     * LiteDash volvió a la vista: si se había quedado esperando un reintento largo (hasta minutos con el adaptador
-     * dormido), intenta ya. Solo si alguien lo quiere.
+     * LiteDash volvió a la vista: si esperaba un reintento largo (el adaptador dormido), intenta ya.
      */
     fun wake() {
         val t = attempting ?: target
-        if (t == null || wanters.isEmpty() || state != ObdState.ERROR || errorKind?.retry != true) return
+        if (t == null || !kept || state != ObdState.ERROR) return
+        if (errorKind?.retry != true) return
         retryJob?.cancel()
         retryJob = null
         // Sin reiniciar la cuenta: si sigue sin contestar, la espera sigue creciendo.
         attempt(t)
     }
 
-    /** El usuario (o quien lo quiere) pide conectarse a [t] o al último que funcionó: racha nueva de reintentos. */
+    /** El usuario (o [keep]) pide conectarse a [t] o al último que funcionó: racha nueva de reintentos, y se mantiene. */
     fun connect(t: ObdTarget? = target) {
         if (t == null || state == ObdState.CONNECTING || state == ObdState.ON && target == t) return
+        kept = true
         retries = 0
         attempt(t)
     }
@@ -330,11 +315,13 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
         needsLocalNetwork = t is ObdTarget.Wifi && !localNetworkAllowed(context)
         if (needsLocalNetwork) return
         // También para la búsqueda BLE: buscar y conectar a la vez hace fallar la conexión en varios Android.
-        disconnect()
+        drop()
         attempting = t
         state = ObdState.CONNECTING
         errorKind = null
         errorDetail = null
+        // Por Bluetooth: al prender el de la pantalla (hay pantallas que tardan tras arrancar) conecta de inmediato.
+        if (t is ObdTarget.Bluetooth || t is ObdTarget.Ble) watchBluetooth() else stopWatchingBluetooth()
         // Android olvida el permiso del cable al desenchufarlo: si no lo hay, se pide (con su diálogo) y al darlo
         // se sigue. Sin cable, sigue y dice que no está conectado.
         if (t is ObdTarget.Usb) {
@@ -343,7 +330,7 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
             if (manager != null && device != null && !manager.hasPermission(device)) {
                 cancelUsbPermission = requestUsbPermission(context, manager, device, ACTION_USB_PERMISSION, USB_REQUEST) { granted ->
                     cancelUsbPermission = null
-                    // Solo si el pedido sigue vigente ([disconnect] lo cancela).
+                    // Solo si el pedido sigue vigente ([drop] lo cancela).
                     if (state != ObdState.CONNECTING || attempting != t) return@requestUsbPermission
                     if (granted) attempt(t) else fail(t, ObdException(ObdError.NO_USB_PERMISSION, "permiso negado"), dropped = false)
                 }
@@ -395,7 +382,13 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
 
     /** Falló o se cayó: se dice por qué y [retryDelay] decide si se reintenta. */
     private fun fail(t: ObdTarget, x: Throwable, dropped: Boolean) {
-        val kind = classify(x, dropped)
+        var kind = classify(x, dropped)
+        // Por Bluetooth se dice lo que pasa de verdad: con el de la pantalla apagado, eso (y no "no se alcanzó el
+        // adaptador"); y un "apagado" con el Bluetooth prendido es la pila ocupada (connectGatt nulo): se reintenta.
+        if (!dropped && (t is ObdTarget.Bluetooth || t is ObdTarget.Ble)) {
+            val on = bluetoothOn()
+            if (!on && kind.retry) kind = ObdError.BLUETOOTH_OFF else if (on && kind == ObdError.BLUETOOTH_OFF) kind = ObdError.GATT_BUSY
+        }
         errorKind = kind
         errorDetail = detailOf(x)
         note("${t.key} ${kind.name.lowercase()}: $errorDetail")
@@ -406,7 +399,7 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
         tires = null
         unwatchUsbDetach()
         bus.clear(Source.OBD)
-        val wait = retryDelay(kind, dropped, retries, wanted = wanters.isNotEmpty()) ?: return
+        val wait = retryDelay(kind, dropped, retries, kept) ?: return
         retries++
         retryJob = scope.launch(Dispatchers.Main) {
             delay(wait)
@@ -438,8 +431,53 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
         unwatchDetach = null
     }
 
-    /** Corta todo de inmediato: la conexión (también la que va a medias), los reintentos, la búsqueda y el permiso USB. */
+    /** El usuario lo corta (o apaga el módulo): ya no se mantiene conectado hasta que algo lo vuelva a pedir. */
     fun disconnect() {
+        kept = false
+        stopWatchingBluetooth()
+        drop()
+    }
+
+    private fun stopWatchingBluetooth() {
+        unwatchBluetooth?.invoke()
+        unwatchBluetooth = null
+    }
+
+    /**
+     * Mientras se mantiene un adaptador Bluetooth: cuando el Bluetooth de la pantalla termina de prender (hay
+     * pantallas que lo prenden un rato después de arrancar) se conecta, tras un respiro para que quede listo.
+     */
+    private fun watchBluetooth() {
+        if (unwatchBluetooth != null) return
+        val receiver = object : BroadcastReceiver() {
+            override fun onReceive(c: Context, i: Intent) {
+                if (i.getIntExtra(BluetoothAdapter.EXTRA_STATE, BluetoothAdapter.ERROR) != BluetoothAdapter.STATE_ON) return
+                if (!kept || state != ObdState.ERROR || errorKind != ObdError.BLUETOOTH_OFF) return
+                note("bluetooth prendió")
+                retryJob?.cancel()
+                retryJob = scope.launch(Dispatchers.Main) {
+                    delay(ObdTiming.BLUETOOTH_ON_SETTLE_MS)
+                    retryJob = null
+                    val t = attempting
+                    if (t != null && kept && state == ObdState.ERROR) attempt(t)
+                }
+            }
+        }
+        // Es un aviso del sistema (protegido: otra app no lo puede imitar); exportado para recibirlo en cualquier pantalla.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            context.registerReceiver(receiver, IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED), Context.RECEIVER_EXPORTED)
+        } else {
+            context.registerReceiver(receiver, IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED))
+        }
+        unwatchBluetooth = { context.unregisterReceiver(receiver) }
+    }
+
+    /** El Bluetooth de Android de la pantalla está encendido (sin él no hay ni clásico ni LE). */
+    private fun bluetoothOn(): Boolean =
+        context.getSystemService(BluetoothManager::class.java)?.adapter?.isEnabled == true
+
+    /** Corta todo de inmediato: la conexión (también la que va a medias), los reintentos, la búsqueda y el permiso USB. */
+    private fun drop() {
         job?.cancel()
         job = null
         retryJob?.cancel()
@@ -569,7 +607,8 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
         val log = synchronized(events) { events.joinToString(" | ") }.ifEmpty { "-" }
         return "OBD: estado=${state.name.lowercase()}, por=${target?.key ?: "-"}, adaptador=${adapter ?: "-"}, " +
             "protocolo=$protocol, datos=${supported.size} [$pids], 0100=${elm?.firstReply?.joinToString("|") ?: "-"}, " +
-            "error=$error, conectó en el intento=$connectedOnAttempt, reintentos=$retries, " +
+            "error=$error, conectó en el intento=$connectedOnAttempt, reintentos=$retries, se mantiene=${if (kept) "sí" else "no"}, " +
+            "bluetooth de Android=${context.getSystemService(BluetoothManager::class.java)?.adapter?.state ?: "no hay"} (12 = encendido), " +
             "socket=${(target as? ObdTarget.Bluetooth)?.let(::rememberedSocket)?.key ?: "-"}, eventos=$log"
     }
 
@@ -678,7 +717,7 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
         }
     }
 
-    /** Abre el enlace (cancelable desde [disconnect]) y prepara el adaptador. */
+    /** Abre el enlace (cancelable desde [drop]) y prepara el adaptador. */
     @SuppressLint("MissingPermission") // device() revisa BLUETOOTH_CONNECT
     private suspend fun openAndInit(t: ObdTarget): Triple<ElmLink, Elm327, String> {
         val l = when (t) {
@@ -694,7 +733,7 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
     }
 
     /**
-     * [l] queda como el pendiente (así [disconnect] lo corta aunque esté bloqueado), se abre con [open] y
+     * [l] queda como el pendiente (así [drop] lo corta aunque esté bloqueado), se abre con [open] y
      * se prepara el ELM327; si algo falla, se cierra.
      */
     private suspend fun prepare(l: ElmLink, open: (ElmLink) -> Unit): Triple<ElmLink, Elm327, String> {

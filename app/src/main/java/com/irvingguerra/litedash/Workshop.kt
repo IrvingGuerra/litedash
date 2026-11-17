@@ -34,7 +34,6 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.Stable
@@ -104,15 +103,11 @@ internal fun Workshop(d: Dependencies, onTires: () -> Unit) {
         permitted = obd.hasPermission()
         onPauseOrDispose { }
     }
-    // Mientras se ve el Taller lo quiere: conecta solo al último adaptador que funcionó (también si se había
-    // rendido) y al salir, si nadie más lo quiere, se desconecta. Sin permiso de Bluetooth no (fallaría en rojo):
-    // se conecta al darlo.
+    // Al entrar al Taller conecta solo al último adaptador que funcionó (también si se había rendido o lo
+    // desconectaron) y se queda conectado. Sin permiso de Bluetooth no (fallaría en rojo): se conecta al darlo.
     val needsBluetooth = obd.target is ObdTarget.Bluetooth || obd.target is ObdTarget.Ble
     val wants = permitted || !needsBluetooth
-    DisposableEffect(wants) {
-        if (wants) obd.want(WORKSHOP)
-        onDispose { if (wants) obd.release(WORKSHOP) }
-    }
+    LaunchedEffect(wants) { if (wants) obd.keep() }
     val connected = obd.state == ObdState.ON
     // El reporte se lee una vez aquí y lo comparten Salud y Códigos; el último de esta conexión se muestra de
     // inmediato para que al volver a entrar no parpadee. [failed]: la última lectura no contestó.
@@ -173,9 +168,6 @@ internal fun Workshop(d: Dependencies, onTires: () -> Unit) {
         }
     }
 }
-
-/** La llave con que el Taller quiere el escáner ([ObdRepository.want]). */
-private val WORKSHOP = Any()
 
 /** Una alerta ya resuelta se olvida tras esto (un dato perdido no la "resuelve"). */
 private const val ALERT_CLEAR_MS = 30_000L
@@ -267,7 +259,7 @@ private fun Connection(d: Dependencies, permitted: Boolean, onPermitted: (Boolea
         onPauseOrDispose { }
     }
     val bluetooth = rememberBluetoothOn()
-    val askEnable = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {}
+    val askEnable = rememberBluetoothAsk()
     LaunchedEffect(obd.state) { if (obd.state == ObdState.CONNECTING || obd.state == ObdState.ON) d.prefs.obdModule = true }
     SettingsCard(stringResource(R.string.obd_adapter), stringResource(R.string.obd_adapter_help)) {
         val name = obd.target?.name ?: ""
@@ -333,7 +325,11 @@ private fun Connection(d: Dependencies, permitted: Boolean, onPermitted: (Boolea
                     Button(stringResource(if (obd.scanning) R.string.obd_ble_searching else R.string.obd_ble_search), {
                         if (canScanBle(context)) obd.scanBle() else askScan.launch(bleScanPermission())
                     })
-                    if (bluetooth == true) Button(stringResource(R.string.bluetooth_turn_off), { turnOffBluetooth(context) })
+                    // Con confirmación: está junto a los adaptadores y un toque sin querer dejaba al escáner sin Bluetooth.
+                    if (bluetooth == true) {
+                        val off = stringResource(R.string.bluetooth_turn_off)
+                        Confirmed(off, off, off) { turnOffBluetooth(context) }
+                    }
                 }
                 // Cables USB conectados: el permiso lo pide Android al tocar uno.
                 val usb = remember(obd.state) { obd.usbDevices() }
@@ -409,6 +405,19 @@ internal fun PermissionButtons(p: PermissionAsk, allow: String) {
     val context = LocalContext.current
     Button(allow, p.ask, primary = true)
     if (p.denied) Button(stringResource(R.string.local_network_settings), { openAppSettings(context) })
+}
+
+/**
+ * Para [requestBluetoothOn]: si al cerrar el diálogo el Bluetooth sigue apagado (hay pantallas donde ese diálogo no
+ * hace nada), se abren los ajustes de Bluetooth de Android para prenderlo ahí.
+ */
+@Composable
+internal fun rememberBluetoothAsk(): ManagedActivityResultLauncher<Intent, ActivityResult> {
+    val context = LocalContext.current
+    return rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+        val on = context.getSystemService(BluetoothManager::class.java)?.adapter?.isEnabled
+        if (on == false) openSystemScreen(context, Intent(Settings.ACTION_BLUETOOTH_SETTINGS))
+    }
 }
 
 /** Pide prender el Bluetooth con el diálogo de Android; la pantalla que no lo tiene abre sus ajustes de Bluetooth. */

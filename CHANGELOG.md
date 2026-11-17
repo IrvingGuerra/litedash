@@ -4,6 +4,21 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.4.177] - 2026-11-17
+
+### Arreglado
+- **El escáner OBD por Bluetooth se queda conectado.** Antes se desconectaba al rato de no ver sus widgets (al abrir
+  Ajustes, la música o el mapa en grande, o cambiar de página) y volvía a conectar desde cero; varios adaptadores
+  ELM327 fallaban al reconectar. Ahora conecta una vez y así se queda hasta que tú lo desconectes o apagues el módulo.
+- Si el Bluetooth de la pantalla está apagado o tarda en prender al encender el auto, el Taller lo dice claro y
+  conecta solo en cuanto prende. «Encender Bluetooth» abre los ajustes de Bluetooth de Android si la pantalla no lo
+  prende sola, y «Apagar Bluetooth» ahora pide confirmar (estaba junto a los adaptadores).
+- Cada intento de conexión es más ligero (una ronda en vez de dos) y, con el adaptador dormido, reintenta a lo más
+  cada minuto en vez de cada cinco.
+- Deslizar sobre el widget de Música o Radio cambia de canción o estación aunque la pantalla no muestre los datos de
+  lo que suena (igual que sus botones).
+- El mapa ya no se va a medio océano cuando el GPS manda «0, 0» por falta de señal: conserva tu último punto.
+
 ## [1.4.176] - 2026-11-17
 
 ### Nuevo

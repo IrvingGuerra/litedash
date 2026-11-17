@@ -80,7 +80,7 @@ fun MusicExpanded(
             detailsHeight = if (song?.actions.isNullOrEmpty()) 262.dp else 326.dp,
             title = { m, compact -> ExpandedTitle(repo, song, repo.starting, stringResource(R.string.nothing_playing), idle, m, compact) },
             // Deslizar solo sobre la carátula: la barra de avance ya se arrastra.
-            onNext = { repo.next() }.takeIf { song != null && repo.soundCheckFor(SoundPiece.MUSIC) == null },
+            onNext = { repo.next() }.takeIf { repo.soundCheckFor(SoundPiece.MUSIC) == null },
             onPrevious = { repo.previous() },
         ) { PlayerControls(repo, song, it) }
     }

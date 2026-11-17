@@ -18,7 +18,6 @@ import java.net.Socket
 import java.util.UUID
 import java.net.SocketTimeoutException
 import java.util.concurrent.CancellationException
-import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
@@ -47,9 +46,10 @@ enum class BtSocket(val key: String) {
 /**
  * ELM327 por Bluetooth clásico, ya emparejado en Ajustes de Android. Muchos clones (y pantallas
  * MediaTek) fallan con "read failed, socket might closed": se para la búsqueda de aparatos (frena
- * la conexión) y se prueba el canal seguro, el inseguro y el canal 1 directo. Con la forma que ya
- * sirvió con este adaptador ([remembered]) va primero y basta una ronda; sin ella, dos. [close]
- * desde otro hilo corta el intento en curso (cerrar el socket suelta `connect()`) y las rondas.
+ * la conexión) y se prueba, una vez cada uno, el canal seguro, el inseguro y el canal 1 directo; la
+ * forma que ya sirvió con este adaptador ([remembered]) va primero. Una sola ronda por intento (los
+ * reintentos, con su espera, son del repositorio): insistir seguido atora el Bluetooth de algunas
+ * pantallas. [close] desde otro hilo corta el intento en curso (cerrar el socket suelta `connect()`).
  * Si nada conecta, se dice el primer fallo (el más útil para el reporte).
  */
 @SuppressLint("MissingPermission") // el repositorio revisa BLUETOOTH_CONNECT antes
@@ -60,7 +60,6 @@ class BluetoothLink(
 ) : ElmLink {
     @Volatile private var socket: BluetoothSocket? = null
     @Volatile private var cancelled = false
-    private val cancel = CountDownLatch(1)
 
     /** La forma que conectó (para recordarla). */
     var used: BtSocket? = null
@@ -73,38 +72,33 @@ class BluetoothLink(
 
     override fun open() {
         stopDiscovery()
-        val order = listOfNotNull(remembered) + BtSocket.entries.filter { it != remembered }
         var first: Throwable? = null
-        repeat(if (remembered != null) 1 else 2) { round ->
-            // La pausa entre rondas también se corta al cancelar.
-            if (round > 0 && cancel.await(ObdTiming.BT_ROUND_MS, TimeUnit.MILLISECONDS)) throw CancellationException()
-            for (kind in order) {
+        for (kind in listOfNotNull(remembered) + BtSocket.entries.filter { it != remembered }) {
+            if (cancelled) throw CancellationException()
+            val s = try {
+                make(kind)
+            } catch (x: Exception) {
+                // Sin la API oculta del canal 1 (o sin permiso): se salta.
+                first = first ?: x
+                continue
+            }
+            socket = s
+            try {
+                // Se canceló mientras se creaba: [close] aún no lo veía.
                 if (cancelled) throw CancellationException()
-                val s = try {
-                    make(kind)
-                } catch (x: Exception) {
-                    // Sin la API oculta del canal 1 (o sin permiso): se salta.
-                    first = first ?: x
-                    continue
-                }
-                socket = s
-                try {
-                    // Se canceló mientras se creaba: [close] aún no lo veía.
-                    if (cancelled) throw CancellationException()
-                    s.connect()
-                    used = kind
-                    return
-                } catch (x: CancellationException) {
-                    socket = null
-                    closeQuietly(s)
-                    throw x
-                } catch (x: Exception) {
-                    // Un canal colgado hace fallar los intentos que siguen: se cierra.
-                    socket = null
-                    closeQuietly(s)
-                    if (cancelled) throw CancellationException()
-                    first = first ?: x
-                }
+                s.connect()
+                used = kind
+                return
+            } catch (x: CancellationException) {
+                socket = null
+                closeQuietly(s)
+                throw x
+            } catch (x: Exception) {
+                // Un canal colgado hace fallar los intentos que siguen: se cierra.
+                socket = null
+                closeQuietly(s)
+                if (cancelled) throw CancellationException()
+                first = first ?: x
             }
         }
         val why = first
@@ -117,7 +111,6 @@ class BluetoothLink(
 
     override fun close() {
         cancelled = true
-        cancel.countDown()
         socket?.close()
     }
 

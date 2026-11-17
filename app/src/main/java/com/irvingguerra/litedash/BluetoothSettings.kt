@@ -142,7 +142,7 @@ fun BluetoothSettings(d: Dependencies) {
     }
 
     if (!on) {
-        val askEnable = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {}
+        val askEnable = rememberBluetoothAsk()
         Label(stringResource(R.string.bluetooth_off), Typography.body, c.danger)
         Button(stringResource(R.string.bluetooth_turn_on), { requestBluetoothOn(context, askEnable) }, primary = true)
         return

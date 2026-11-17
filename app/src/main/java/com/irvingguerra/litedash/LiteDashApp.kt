@@ -99,7 +99,7 @@ class LiteDashApp : Application() {
                 TpmsRepository(this, bus).apply {
                     carTires = object : CarTires {
                         override suspend fun read() = factoryTires(dependencies)
-                        override fun stop() = releaseFactoryTires(dependencies)
+                        override fun stop() = stopFactoryTires()
                     }
                 }
             },

@@ -67,10 +67,10 @@ enum class TpmsError { USB_MISSING, USB_DENIED, USB_OPEN_FAILED, USB_UNPLUGGED, 
  * del Taller. La pone la app: así Llantas no carga el escáner si no se usa esta fuente.
  */
 fun interface CarTires {
-    /** Las cuatro llantas en el orden de [Wheel.ROAD]. Leer es querer el escáner (lo conecta si hace falta). */
+    /** Las cuatro llantas en el orden de [Wheel.ROAD]. Leer pide el escáner (lo conecta si hace falta). */
     suspend fun read(): FactoryTires
 
-    /** La fuente OBD paró: ya no se quiere el escáner (sin nadie más, se desconecta). */
+    /** La fuente OBD paró (el escáner sigue conectado para lo demás). */
     fun stop() {}
 }
 

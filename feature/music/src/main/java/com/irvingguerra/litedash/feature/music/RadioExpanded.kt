@@ -71,7 +71,7 @@ fun RadioExpanded(
             detailsHeight = 212.dp,
             title = { m, compact -> ExpandedTitle(repo, song, repo.radio.starting, stringResource(R.string.radio), radioHint(repo), m, compact) },
             // Deslizar sobre la carátula: estación siguiente o anterior, como en el widget.
-            onNext = { repo.radio.next() }.takeIf { song != null && check == null },
+            onNext = { repo.radio.next() }.takeIf { check == null },
             onPrevious = { repo.radio.previous() },
         ) { fit ->
             val compact = fit != ControlsFit.FULL

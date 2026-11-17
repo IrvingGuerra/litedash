@@ -198,7 +198,7 @@ class TripRepository(private val context: Context, private val bus: VehicleBus) 
         if (position == null) thread(name = "last-location") {
             val last = manager.newestLastKnown(providers)
             // En el principal: si mientras tanto llegó un punto, no se pisa con uno más viejo.
-            if (last != null) main.post { if (position == null) position = last }
+            if (last != null && (last.latitude != 0.0 || last.longitude != 0.0)) main.post { if (position == null) position = last }
         }
     }
 
@@ -246,6 +246,8 @@ class TripRepository(private val context: Context, private val bus: VehicleBus) 
     }
 
     private fun update(l: Location) {
+        // Sin señal, algunas pantallas mandan 0,0 como si fuera un punto (el mapa se iba al mar): se ignora.
+        if (l.latitude == 0.0 && l.longitude == 0.0) return
         val now = SystemClock.elapsedRealtime()
         if (l.provider != LocationManager.GPS_PROVIDER) {
             // La red solo mueve el punto del mapa: no trae velocidad ni rumbo y no cuenta para el viaje

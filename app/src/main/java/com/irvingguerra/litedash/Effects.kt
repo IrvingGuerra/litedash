@@ -4,7 +4,6 @@ import android.Manifest
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -26,19 +25,15 @@ fun ReadyNow(onReady: (() -> Unit)?) {
 }
 
 /**
- * El escáner OBD para una pieza o un aviso que lo quiere ([wanted]: su ajuste prendido). Con
- * adaptador guardado y el módulo prendido dice "lo quiero" mientras está en pantalla (el escáner
- * se conecta solo y, cuando ya nadie lo quiere, se desconecta al rato); devuelve el escáner si ya existe.
+ * El escáner OBD para una pieza o un aviso que lo usa ([wanted]: su ajuste prendido). Con
+ * adaptador guardado y el módulo prendido lo conecta solo (también si se prende después) y el escáner
+ * se queda conectado aunque la pieza ya no se vea ([ObdRepository.keep]); devuelve el escáner si ya existe.
  * Sin [wanted] o con el módulo apagado devuelve null y no crea ni conecta nada.
  */
 @Composable
 fun rememberObd(d: Dependencies, wanted: Boolean = true): ObdRepository? {
     val auto = wanted && d.obdAuto
-    DisposableEffect(auto) {
-        val owner = Any()
-        if (auto) d.obd.want(owner)
-        onDispose { if (auto) d.obdIfCreated()?.release(owner) }
-    }
+    LaunchedEffect(auto) { if (auto) d.obd.keep() }
     // Al volver a LiteDash (no al aparecer la pieza: el primer inicio no cuenta), si esperaba un reintento, intenta ya.
     val started = remember { booleanArrayOf(false) }
     LifecycleStartEffect(auto) {

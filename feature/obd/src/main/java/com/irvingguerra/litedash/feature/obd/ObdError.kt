@@ -7,8 +7,8 @@ import java.io.IOException
  * detalle crudo del sistema solo va al reporte. [retry]: vale la pena volver a intentar solo.
  */
 enum class ObdError(val retry: Boolean) {
-    /** El Bluetooth de la pantalla está apagado (o no tiene). */
-    BLUETOOTH_OFF(false),
+    /** El Bluetooth de la pantalla está apagado (o no tiene): al prender conecta; mientras, reintentar no cuesta. */
+    BLUETOOTH_OFF(true),
     NO_BLUETOOTH_PERMISSION(false),
     /** Esta pantalla no maneja USB. */
     NO_USB(false),
@@ -57,16 +57,16 @@ internal fun detailOf(t: Throwable): String = t.message ?: t.cause?.message ?: t
 
 /**
  * La política de conexión, toda aquí (pura, con pruebas). Tras un fallo: cuánto esperar para el
- * siguiente intento, o null = rendirse (se vuelve a intentar cuando alguien pida el escáner otra vez
+ * siguiente intento, o null = rendirse (se vuelve a intentar cuando algo pida el escáner otra vez
  * o el usuario toque Conectar). [retries] = reintentos seguidos ya hechos (se reinicia al conectar bien
- * y en cada intento del usuario). [wanted] = alguien lo quiere ahora ([ObdRepository.want]).
+ * y en cada intento del usuario). [wanted] = se mantiene conectado ([ObdRepository.keep]).
  * - Lo que no se arregla reintentando (permiso, sin cable, no es OBD) nunca se reintenta.
  * - El 133 de GATT se reintenta pronto aunque nunca haya conectado.
- * - Tras caerse, dentro de una racha o si alguien lo quiere, se reintenta pronto hasta
- *   [ObdTiming.MAX_RETRIES]. Un primer fallo sin haber conectado y sin nadie que lo quiera se queda a la vista.
- * - Pasado el tope, mientras alguien lo quiera no se rinde (el adaptador puede seguir dormido al encender
+ * - Tras caerse, dentro de una racha o si se mantiene, se reintenta pronto hasta
+ *   [ObdTiming.MAX_RETRIES]. Un primer fallo sin haber conectado y sin mantenerse se queda a la vista.
+ * - Pasado el tope, mientras se mantenga no se rinde (el adaptador puede seguir dormido al encender
  *   el auto): espera cada vez más, [ObdTiming.WANTED_RETRY_MS] al doble hasta [ObdTiming.WANTED_MAX_MS].
- *   Sin nadie que lo quiera, se rinde.
+ *   Si no, se rinde.
  */
 internal fun retryDelay(error: ObdError, dropped: Boolean, retries: Int, wanted: Boolean): Long? = when {
     !error.retry -> null
@@ -85,12 +85,12 @@ internal object ObdTiming {
     const val MAX_RETRIES = 5
     /** Espera tras caerse (el adaptador se reinicia, el auto se apagó un momento). */
     const val RECONNECT_MS = 8_000L
-    /** Mientras alguien lo quiere, pasado el tope: la primera espera (luego al doble)… */
+    /** Mientras se mantiene, pasado el tope: la primera espera (luego al doble)… */
     const val WANTED_RETRY_MS = 15_000L
     /** …y la más larga. */
-    const val WANTED_MAX_MS = 5 * 60_000L
-    /** Cuánto sigue conectado cuando ya nadie lo quiere (abrir Ajustes un momento no lo corta). */
-    const val RELEASE_GRACE_MS = 45_000L
+    const val WANTED_MAX_MS = 60_000L
+    /** Lo que se espera tras prender el Bluetooth de la pantalla antes de conectar (que termine de arrancar). */
+    const val BLUETOOTH_ON_SETTLE_MS = 2_000L
     /** Respiro entre cerrar un enlace Bluetooth y abrir otro. */
     const val REOPEN_GAP_MS = 1_200L
     /** Espera tras un 133 de GATT. */
@@ -101,8 +101,6 @@ internal object ObdTiming {
     const val BLE_DISCOVER_DELAY_MS = 600L
     /** Lo que se espera a que BLE quede listo (conectar, servicios y avisos). */
     const val BLE_OPEN_S = 15L
-    /** Pausa entre rondas de sockets de Bluetooth clásico (solo sin estrategia recordada). */
-    const val BT_ROUND_MS = 1_000L
     const val WIFI_CONNECT_MS = 5_000
     /** Cuánto dura una búsqueda de adaptadores Bluetooth LE. */
     const val SCAN_MS = 10_000L

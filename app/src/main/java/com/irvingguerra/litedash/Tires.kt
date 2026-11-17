@@ -1035,29 +1035,31 @@ internal fun TiresHealthTile(d: Dependencies, onClick: () -> Unit, modifier: Mod
 }
 
 /**
- * La fuente "Auto (OBD)" de Llantas: con el módulo OBD prendido y adaptador guardado, leerlas es querer el
- * escáner ([ObdRepository.want]: conecta solo y, mientras lo quieran, su política no se rinde) y pedirle la
- * presión de fábrica. Querer en cada lectura (no repite nada si ya lo quiere) también cubre un adaptador que se
- * guarda con la fuente ya andando. Al parar la fuente ([CarTires.stop]), [releaseFactoryTires] lo suelta.
+ * La fuente "Auto (OBD)" de Llantas: con el módulo OBD prendido y adaptador guardado, la primera lectura pide el
+ * escáner ([ObdRepository.keep]: conecta solo, se queda conectado y no se rinde) y cada una le pide la presión de
+ * fábrica. Se pide una vez por arranque de la fuente (así «Desconectar» en el Taller no se deshace solo); revisar
+ * en cada lectura también cubre un adaptador que se guarda con la fuente ya andando.
  */
 internal suspend fun factoryTires(d: Dependencies): FactoryTires {
     if (!d.obdAuto) {
-        // Apagaron el módulo OBD con esta fuente andando: Llantas ya no lo retiene.
-        releaseFactoryTires(d)
+        tiresAskedObd = false
         return FactoryTires.NotConnected
     }
     val obd = d.obd
-    obd.want(TIRES_OBD)
+    if (!tiresAskedObd) {
+        tiresAskedObd = true
+        obd.keep()
+    }
     return obd.factoryTires()
 }
 
-/** La fuente "Auto (OBD)" de Llantas paró: ya no quiere el escáner (sin nadie más, se desconecta). */
-internal fun releaseFactoryTires(d: Dependencies) {
-    d.obdIfCreated()?.release(TIRES_OBD)
+/** La fuente "Auto (OBD)" de Llantas paró: al volver a arrancar pide el escáner otra vez. */
+internal fun stopFactoryTires() {
+    tiresAskedObd = false
 }
 
-/** La llave con que Llantas quiere el escáner. */
-private val TIRES_OBD = Any()
+/** Llantas ya pidió el escáner en este arranque de su fuente OBD. */
+@Volatile private var tiresAskedObd = false
 
 /** Por qué el Bluetooth no puede buscar sensores, en el idioma de la app. */
 internal fun bleProblemText(p: BleProblem) = when (p) {

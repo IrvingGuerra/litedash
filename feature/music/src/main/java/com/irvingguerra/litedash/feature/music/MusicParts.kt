@@ -191,7 +191,7 @@ internal fun MediaTile(
     tinted: Boolean = false,
     /** Un toque fuera de los botones: la pantalla Música en grande. */
     onOpen: (() -> Unit)? = null,
-    /** Deslizar a lo ancho: siguiente y anterior (null = no hay qué pasar). */
+    /** Deslizar a lo ancho: siguiente y anterior, igual que sus botones (también sin datos de la canción). */
     onNext: (() -> Unit)? = null,
     onPrevious: (() -> Unit)? = null,
 ) {

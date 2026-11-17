@@ -3,6 +3,23 @@
 What people using LiteDash notice, in English. The full history (in Spanish) is in [CHANGELOG.md](CHANGELOG.md).
 Format [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versions [SemVer](https://semver.org/).
 
+## [1.4.177] - 2026-11-17
+
+### Fixed
+- **The Bluetooth OBD scanner stays connected.** It used to disconnect a while after its widgets were out of sight
+  (opening Settings, full-screen music or map, or switching pages) and then reconnect from scratch; several ELM327
+  adapters failed on that reconnect. It now connects once and stays connected until you disconnect it or turn the
+  module off.
+- If the head unit's Bluetooth is off, or slow to come up when you start the car, the Workshop says so clearly and
+  connects by itself as soon as it turns on. "Turn on Bluetooth" opens Android's Bluetooth settings when the head
+  unit doesn't turn it on by itself, and "Turn off Bluetooth" now asks to confirm (it sat next to the adapters).
+- Each connection attempt is lighter (one round instead of two) and, with the adapter asleep, it retries at most
+  once a minute instead of every five.
+- Swiping the Music or Radio widget changes track or station even when the head unit shows no song info (same as
+  its buttons).
+- The map no longer jumps to the middle of the ocean when the GPS reports "0, 0" with no signal: it keeps your last
+  position.
+
 ## [1.4.176] - 2026-11-17
 
 ### New
