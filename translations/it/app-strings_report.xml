@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="report_title">Invia un report</string>
+    <string name="report_help">Dicci cosa non va. Viene inviato con dati tecnici del tuo schermo (niente dati personali).</string>
+    <string name="report_what">Cosa ha un problema?</string>
+    <string name="report_which">Quale?</string>
+    <string name="report_problem">Cosa succede?</string>
+    <string name="report_workshop">Officina (OBD)</string>
+    <string name="report_projection">Android Auto / app</string>
+    <string name="report_lights">Giorno e notte / fari</string>
+    <string name="report_music_usb">File (player di LiteDash)</string>
+    <string name="report_music_bt">Bluetooth (dello schermo)</string>
+    <string name="report_music_app">La tua app di musica (Spotify, YouTube Music…)</string>
+    <string name="report_radio_fm">FM dello schermo</string>
+    <string name="report_radio_internet">Radio via internet</string>
+    <string name="report_obd_usb">USB</string>
+    <string name="report_silent">Niente audio</string>
+    <string name="report_no_info">Suona ma non mostra cosa sta suonando</string>
+    <string name="report_buttons">I pulsanti non rispondono</string>
+    <string name="report_broken">Non funziona</string>
+    <string name="report_looks_wrong">Si vede male</string>
+    <string name="report_crash">L\'app si chiude</string>
+    <string name="report_note">Raccontaci di più (facoltativo)</string>
+    <string name="report_play_first">Se puoi, avvia quella sorgente prima di inviare.</string>
+    <string name="report_send">Invia</string>
+    <string name="report_sending">Invio…</string>
+    <string name="report_thanks">Grazie! Ci daremo un\'occhiata.</string>
+    <string name="report_code">Codice report: %1$s</string>
+    <string name="report_error">Invio non riuscito. Controlla la connessione.</string>
+    <string name="report_wait">Aspetta un minuto prima di inviarne un altro.</string>
+</resources>

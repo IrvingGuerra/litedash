@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="report_title">문제 보고</string>
+    <string name="report_help">무엇이 문제인지 알려 주세요. 헤드 유닛의 기술 정보와 함께 전송돼요(개인 정보 없음).</string>
+    <string name="report_what">무엇에 문제가 있나요?</string>
+    <string name="report_which">어떤 것인가요?</string>
+    <string name="report_problem">어떤 증상인가요?</string>
+    <string name="report_workshop">정비소(OBD)</string>
+    <string name="report_projection">Android Auto / 앱</string>
+    <string name="report_lights">주간/야간 / 전조등</string>
+    <string name="report_music_usb">파일(LiteDash 플레이어)</string>
+    <string name="report_music_bt">Bluetooth(헤드 유닛)</string>
+    <string name="report_music_app">음악 앱(Spotify, YouTube Music…)</string>
+    <string name="report_radio_fm">헤드 유닛 FM</string>
+    <string name="report_radio_internet">인터넷 라디오</string>
+    <string name="report_obd_usb">USB</string>
+    <string name="report_silent">소리가 안 나요</string>
+    <string name="report_no_info">재생되지만 무엇이 나오는지 표시되지 않아요</string>
+    <string name="report_buttons">버튼이 반응하지 않아요</string>
+    <string name="report_broken">작동하지 않아요</string>
+    <string name="report_looks_wrong">이상하게 보여요</string>
+    <string name="report_crash">앱이 종료돼요</string>
+    <string name="report_note">자세히 알려 주세요(선택)</string>
+    <string name="report_play_first">가능하면 보내기 전에 해당 소스를 재생해 주세요.</string>
+    <string name="report_send">보내기</string>
+    <string name="report_sending">보내는 중…</string>
+    <string name="report_thanks">감사합니다! 확인해 볼게요.</string>
+    <string name="report_code">보고 코드: %1$s</string>
+    <string name="report_error">보내지 못했어요. 연결을 확인하세요.</string>
+    <string name="report_wait">1분 후에 다시 보내 주세요.</string>
+</resources>

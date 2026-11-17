@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="tab_day_night">Siang dan malam</string>
+    <string name="tab_your_screen">Layar Anda</string>
+    <string name="weather_switch">Cuaca</string>
+    <string name="weather_switch_help">Di bilah, jam, dan widget Cuaca; diperbarui tiap setengah jam selama Anda melihat beranda. Memakai perkiraan lokasi Anda dan internet; jika nonaktif, keduanya tidak dipakai.</string>
+    <string name="reminder_pick_date">Kapan jatuh tempo %1$s?</string>
+    <string name="split_unsupported_screen">Layar Anda tidak mengizinkan dua aplikasi berdampingan (dinonaktifkan oleh pembuatnya).</string>
+    <string name="tab_home">Beranda</string>
+    <string name="tab_interface">Antarmuka</string>
+    <string name="android_bar">Bilah Android</string>
+    <string name="accent_title">Warna antarmuka</string>
+    <string name="accent_help">Sakelar, tombol, putar, dan bilah progres. Kartu dan latar tetap sama; Alami adalah tampilan aslinya.</string>
+    <string name="accent_natural">Alami</string>
+</resources>

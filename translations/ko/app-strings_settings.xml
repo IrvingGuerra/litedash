@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="tab_day_night">주간/야간</string>
+    <string name="tab_your_screen">내 화면</string>
+    <string name="weather_switch">날씨</string>
+    <string name="weather_switch_help">바, 시계, 날씨 위젯에 표시돼요. 홈 화면을 보는 동안 30분마다 새로 고쳐요. 대략적인 위치와 인터넷을 사용하며, 끄면 둘 다 사용하지 않아요.</string>
+    <string name="reminder_pick_date">%1$s 기한은 언제인가요?</string>
+    <string name="split_unsupported_screen">이 헤드 유닛은 두 앱을 나란히 띄울 수 없어요(제조사가 막아 둠).</string>
+    <string name="tab_home">홈</string>
+    <string name="tab_interface">인터페이스</string>
+    <string name="android_bar">Android 바</string>
+    <string name="accent_title">인터페이스 색상</string>
+    <string name="accent_help">스위치, 버튼, 재생, 진행 바에 적용돼요. 카드와 배경은 그대로이며, 내추럴이 기본 모습이에요.</string>
+    <string name="accent_natural">내추럴</string>
+</resources>

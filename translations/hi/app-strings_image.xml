@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="image_background">बैकग्राउंड</string>
+    <string name="image_background_original">ओरिजिनल</string>
+    <string name="image_background_remove">हटाएँ</string>
+    <string name="image_background_help">सादे बैकग्राउंड के साथ सबसे अच्छा काम करता है: दीवार, आसमान या स्टूडियो।</string>
+    <string name="image_strength">तीव्रता</string>
+    <string name="image_strength_low">हल्की</string>
+    <string name="image_strength_medium">मध्यम</string>
+    <string name="image_strength_high">ज़्यादा</string>
+    <string name="image_strength_max">अधिकतम</string>
+    <string name="image_cut_failed">कार को बैकग्राउंड से अलग नहीं कर सके: सादे बैकग्राउंड वाली फ़ोटो आज़माएँ।</string>
+    <string name="image_apply">लागू करें</string>
+    <string name="image_unusable">यह इमेज इस्तेमाल नहीं हो सकी; कोई दूसरी आज़माएँ।</string>
+</resources>

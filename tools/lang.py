@@ -238,7 +238,11 @@ def check_language(folder, english):
     done = len(strings) + len(plurals) + len(arrays)
     if done == 0:
         warnings.append(f"{tag}: sin textos traducidos")
-    pack = {"lang": tag, "name": name, "strings": strings, "plurals": plurals, "arrays": arrays}
+    # Quién lo revisó como hablante nativo (usuarios de GitHub, uno por renglón): sin nadie = traducción automática.
+    reviewers_file = folder / "reviewers.txt"
+    reviewers = [line.strip().lstrip("@") for line in reviewers_file.read_text(encoding="utf-8").splitlines()
+                 if line.strip() and not line.strip().startswith("#")] if reviewers_file.exists() else []
+    pack = {"lang": tag, "name": name, "strings": strings, "plurals": plurals, "arrays": arrays, "reviewers": reviewers}
     return pack, errors, warnings
 
 
@@ -267,7 +271,8 @@ def write_packs(packs, english, out, base):
         (out / f"{pack['lang']}.json").write_bytes(blob)
         done = len(pack["strings"]) + len(pack["plurals"]) + len(pack["arrays"])
         index.append({"lang": pack["lang"], "name": pack["name"], "progress": done * 100 // len(english),
-                      "bytes": len(blob), "sha256": hashlib.sha256(blob).hexdigest(), "base": base})
+                      "bytes": len(blob), "sha256": hashlib.sha256(blob).hexdigest(), "base": base,
+                      "reviewed": bool(pack.get("reviewers")), "reviewers": pack.get("reviewers", [])})
     for old in out.glob("*.json"):
         if old.name != "index.json" and old.stem not in {p["lang"] for p in packs}:
             old.unlink()

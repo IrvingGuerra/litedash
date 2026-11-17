@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="music_explain">Sieh und steuere, was in jeder App läuft. Braucht Zugriff auf Benachrichtigungen.</string>
+    <string name="enable">Einschalten</string>
+    <string name="nothing_playing">Es läuft nichts</string>
+    <string name="open_an_app">Spiel Musik in deiner Lieblings-App ab</string>
+    <string name="resume_explain">Drück Play, um dort weiterzumachen, wo du aufgehört hast.</string>
+    <string name="no_song_info">Keine Titelinfos</string>
+    <string name="opening_app">%1$s wird geöffnet…</string>
+    <string name="opening_wait">Gleich geht\'s los.</string>
+    <string name="source_files">Dateien</string>
+    <string name="source_bluetooth">Bluetooth</string>
+    <string name="source_radio">Radio</string>
+    <string name="bluetooth_connect_phone">Verbinde dein Handy per Bluetooth</string>
+    <string name="usb_drive">USB-Stick</string>
+    <string name="usb_drive_in">USB-Stick verbunden: %1$s</string>
+    <string name="player_connecting">Verbinde…</string>
+    <string name="radio">Radio</string>
+    <string name="radio_explain">Steuere das Radio deines Displays (und Internetradio, wenn du es einschaltest). Braucht Zugriff auf Benachrichtigungen.</string>
+    <string name="radio_internet">Internet</string>
+    <string name="radio_fm">Display-FM</string>
+    <string name="radio_unlinked">Verknüpfe das Radio deines Displays in den Einstellungen oder schalte Internetradio ein</string>
+    <string name="radio_settings">Einstellungen</string>
+    <string name="mode_app">App</string>
+    <string name="radio_fm_label">FM-Radio</string>
+    <string name="sound_question">Hörst du es?</string>
+    <string name="sound_question_muted">Hörst du es? Hinweis: Die Musiklautstärke steht auf 0</string>
+    <string name="sound_yes">Ja</string>
+    <string name="sound_no">Nein</string>
+    <string name="sound_failed">Konnte es nicht abspielen</string>
+    <string name="sound_report">Melden</string>
+    <string name="recipe_none">Noch nicht kalibriert: passiert automatisch beim ersten Abspielen</string>
+    <string name="recipe_plain">Funktioniert direkt</string>
+    <string name="recipe_tw_source8">Bluetooth-Eingang des Displays</string>
+    <string name="recipe_fyt_toggle">Wechselt die Quelle des Displays</string>
+    <string name="recipe_profile">Direkte Radiosteuerung</string>
+    <string name="recipe_open_bluetooth">Öffnet die Bluetooth-App und kehrt zurück</string>
+    <string name="recipe_open_radio">Öffnet die Radio-App und kehrt zurück</string>
+    <string name="recipe_failed">Kein Weg gefunden</string>
+</resources>

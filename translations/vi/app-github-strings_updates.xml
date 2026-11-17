@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="check_updates">Kiểm tra cập nhật</string>
+    <string name="up_to_date">Bạn đang dùng phiên bản mới nhất.</string>
+    <string name="update_error">Không kiểm tra được. Hãy kiểm tra kết nối và thử lại.</string>
+    <string name="update_download_error">Không tải được: GitHub không phản hồi hoặc mất kết nối. Hãy thử lại sau vài phút.</string>
+    <string name="new_version">LiteDash %1$s đã sẵn sàng</string>
+    <string name="download_install">Tải và cài đặt · %1$.1f MB</string>
+    <string name="installing">Đang mở trình cài đặt Android…</string>
+    <string name="install_permission">Android yêu cầu cho phép LiteDash cài ứng dụng (chỉ dùng cho bản cập nhật của chính nó). Hãy bật trong màn hình vừa mở rồi quay lại.</string>
+    <string name="already_allowed">Xong, cài đặt</string>
+    <string name="install_error">Android không cài được. Hãy thử lại.</string>
+    <string name="install_aborted">Đã hủy cài đặt.</string>
+    <string name="install_incompatible">Phiên bản này không tương thích với bản bạn đã cài.</string>
+    <string name="install_storage">Không đủ dung lượng để cài. Hãy giải phóng bộ nhớ và thử lại.</string>
+    <string name="install_blocked">Android đã chặn việc cài đặt.</string>
+    <string name="update_see">Xem</string>
+    <string name="update_later">Để sau</string>
+    <string name="open_installer">Mở bằng trình cài đặt Android</string>
+</resources>

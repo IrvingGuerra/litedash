@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="tires_error_usb_missing">USB-приймач шин не під’єднано</string>
+    <string name="tires_error_usb_denied">Немає дозволу для USB-приймача</string>
+    <string name="tires_error_usb_open">Не вдалося відкрити USB-приймач</string>
+    <string name="tires_error_usb_unplugged">USB-приймач від’єднали</string>
+    <string name="tires_error_usb_lost">Зв’язок з USB-приймачем втрачено</string>
+    <string name="tires_error_swap">Приймач не підтвердив переставлення шин</string>
+    <string name="tires_tap_hint">Натисни на шину, щоб налаштувати її датчик або переставити його</string>
+</resources>

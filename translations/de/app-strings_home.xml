@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="road_speed">Tempo</string>
+    <string name="road_speed_text">Nur Zahl</string>
+    <string name="road_speed_gauge">Tacho</string>
+    <string name="road_speed_show">Tempo anzeigen</string>
+    <string name="trip_time">Zeit</string>
+    <string name="trip_average">Schnitt</string>
+    <string name="road_trip_distance">Strecke</string>
+    <string name="trip_heading">Richtung</string>
+    <string-array name="compass_points">
+        <item>N</item>
+        <item>NO</item>
+        <item>O</item>
+        <item>SO</item>
+        <item>S</item>
+        <item>SW</item>
+        <item>W</item>
+        <item>NW</item>
+    </string-array>
+    <!-- A number with its unit ("12.3 km") and two pieces on one line ("Insurance · in 3 days") -->
+    <string name="value_with_unit">%1$s %2$s</string>
+    <string name="two_parts">%1$s · %2$s</string>
+    <string name="weather_degrees">%1$d°</string>
+    <string name="weather_range">%1$d° / %2$d°</string>
+</resources>

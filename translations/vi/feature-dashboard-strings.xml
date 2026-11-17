@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="dashboard_remove">Xóa tiện ích</string>
+    <string name="dashboard_card">Bật/tắt thẻ</string>
+    <string name="dashboard_settings">Cài đặt tiện ích</string>
+    <string name="dashboard_resize">Đổi kích thước</string>
+</resources>

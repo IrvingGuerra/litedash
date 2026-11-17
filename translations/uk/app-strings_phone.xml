@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="phone_section">Телефон</string>
+    <string name="phone_help">Твій акаунт LiteDash живе в застосунку LiteDash Connect на телефоні.</string>
+    <string name="phone_permission">Потрібен дозвіл</string>
+    <string name="phone_permission_body">Щоб спілкуватися з телефоном, Android просить дозволити LiteDash доступ до локальної мережі («Пристрої поблизу»).</string>
+    <string name="local_network_allow">Дозволити</string>
+    <string name="local_network_settings">Дозволи</string>
+    <string name="phone_no_wifi">На екрані немає Wi-Fi</string>
+    <string name="phone_no_wifi_body">Телефон і екран спілкуються через Wi-Fi. Вибери як:</string>
+    <string name="phone_use_phone">Інтернет із телефона</string>
+    <string name="phone_use_phone_body">Увімкни Wi-Fi на екрані й під’єднай його до точки доступу телефона.</string>
+    <string name="phone_share_screen">Роздати з екрана</string>
+    <string name="phone_share_screen_body">Увімкни точку доступу на екрані й під’єднай до неї телефон.</string>
+    <string name="phone_open_wifi">Відкрити Wi-Fi</string>
+    <string name="phone_open_hotspot">Відкрити точку доступу</string>
+    <string name="phone_waiting">Чекаємо на телефон…</string>
+    <plurals name="phone_link_code">
+        <item quantity="one">Код %1$s · спливає за %2$d хвилину</item>
+        <item quantity="few">Код %1$s · спливає за %2$d хвилини</item>
+        <item quantity="many">Код %1$s · спливає за %2$d хвилин</item>
+        <item quantity="other">Код %1$s · спливає за %2$d хвилини</item>
+    </plurals>
+    <string name="phone_step_install">Установи LiteDash Connect і створи акаунт</string>
+    <string name="phone_step_tap">Натисни «Прив’язати екран»</string>
+    <string name="phone_step_scan">Наведи камеру на цей код</string>
+    <string name="phone_connected">Під’єднано</string>
+    <string name="phone_searching">Шукаємо телефон…</string>
+    <string name="phone_model_app">%1$s · LiteDash Connect %2$s</string>
+    <string name="phone_link">Зв’язок</string>
+    <string name="phone_link_ok">Телефон і екран на зв’язку</string>
+    <string name="phone_music_blocked">Щоб бачити тут музику, відкрий LiteDash Connect і натисни «Дозволити» в розділі «Зв’язок»</string>
+    <string name="phone_link_no_network">Екран не в одній мережі з телефоном</string>
+    <string name="phone_link_open_app">Відкрий LiteDash Connect на телефоні й під’єднай його до тієї ж мережі</string>
+    <string name="phone_sound">Звук</string>
+    <string name="phone_sound_ok">Bluetooth під’єднано · %1$s</string>
+    <string name="phone_sound_ok_plain">Bluetooth під’єднано</string>
+    <string name="phone_sound_missing">Не чути? Під’єднай Bluetooth з магнітоли</string>
+    <string name="phone_sound_calls">Bluetooth під’єднано лише для дзвінків, тож звук іде з телефона. Під’єднайся з магнітоли або ввімкни на телефоні «Аудіо мультимедіа» для цієї магнітоли</string>
+    <string name="phone_calls_only">Bluetooth лише для дзвінків</string>
+    <string name="phone_sound_car">Через Android Auto</string>
+    <string name="phone_sound_wired">Кабелем</string>
+    <string name="phone_connect_bt">Під’єднати Bluetooth</string>
+    <string name="phone_sound_unknown">Дізнаємося, коли телефон під’єднається і почне грати</string>
+    <string name="phone_search_now">Шукати зараз</string>
+    <string name="phone_unlink">Відв’язати</string>
+    <string name="phone_unlink_question">Відв’язати цей телефон?</string>
+    <string name="phone_unlink_message">Щоб під’єднати його знову, доведеться ще раз сканувати код у LiteDash Connect.</string>
+    <string name="phone_no_sound">Немає звуку? Під’єднай Bluetooth</string>
+    <string name="music_mode_phone">Поки телефон під’єднаний і грає музику, віджет «Музика» показує її та керує нею. Коли телефон від’єднається, повернеться те, що було.</string>
+    <string name="phone_job_unknown">Немає даних каталогу для цього авто</string>
+    <string name="phone_job_no_finish">У цієї моделі немає покриттів</string>
+    <string name="phone_job_damaged">Файл прийшов пошкодженим</string>
+    <string name="phone_job_unexpected">Екран не запитував цей файл</string>
+    <string name="phone_job_busy">Екран завантажує інше; спробуй трохи згодом</string>
+    <string name="phone_job_install_failed">Екран не зміг установити</string>
+</resources>

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="tires_error_usb_missing">Penerima ban USB tidak tercolok</string>
+    <string name="tires_error_usb_denied">Tidak ada izin untuk penerima USB</string>
+    <string name="tires_error_usb_open">Penerima USB tidak bisa dibuka</string>
+    <string name="tires_error_usb_unplugged">Penerima USB dicabut</string>
+    <string name="tires_error_usb_lost">Koneksi dengan penerima USB terputus</string>
+    <string name="tires_error_swap">Penerima tidak mengonfirmasi pertukaran ban</string>
+    <string name="tires_tap_hint">Ketuk ban untuk mengatur atau memindahkan sensornya</string>
+</resources>

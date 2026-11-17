@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="files_where">Laufwerk wählen</string>
+    <string name="files_internal">Interner Speicher</string>
+    <string name="files_none">Keine Laufwerke gefunden. Prüfe die Dateiberechtigung.</string>
+    <string name="files_empty">Dieser Ordner ist leer.</string>
+    <string name="files_use_folder">Diesen Ordner nutzen</string>
+    <string name="files_close">Schließen</string>
+    <string name="files_recent">Zuletzt</string>
+    <string name="files_recent_empty">Keine neuen Fotos.</string>
+</resources>

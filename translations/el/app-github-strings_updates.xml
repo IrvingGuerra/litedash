@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="check_updates">Έλεγχος για ενημερώσεις</string>
+    <string name="up_to_date">Έχετε την πιο πρόσφατη έκδοση.</string>
+    <string name="update_error">Ο έλεγχος απέτυχε. Ελέγξτε τη σύνδεσή σας και δοκιμάστε ξανά.</string>
+    <string name="update_download_error">Η λήψη απέτυχε: το GitHub δεν απάντησε ή η σύνδεση διακόπηκε. Δοκιμάστε ξανά σε λίγα λεπτά.</string>
+    <string name="new_version">Το LiteDash %1$s είναι έτοιμο</string>
+    <string name="download_install">Λήψη και εγκατάσταση · %1$.1f MB</string>
+    <string name="installing">Άνοιγμα του προγράμματος εγκατάστασης Android…</string>
+    <string name="install_permission">Το Android ζητά να επιτρέψετε στο LiteDash να εγκαθιστά εφαρμογές (μόνο για τις δικές του ενημερώσεις). Ενεργοποιήστε το στην οθόνη που άνοιξε και επιστρέψτε.</string>
+    <string name="already_allowed">Έγινε, εγκατάσταση</string>
+    <string name="install_error">Το Android δεν μπόρεσε να το εγκαταστήσει. Δοκιμάστε ξανά.</string>
+    <string name="install_aborted">Η εγκατάσταση ακυρώθηκε.</string>
+    <string name="install_incompatible">Αυτή η έκδοση δεν είναι συμβατή με αυτή που έχετε εγκατεστημένη.</string>
+    <string name="install_storage">Δεν υπάρχει αρκετός χώρος για την εγκατάσταση. Ελευθερώστε χώρο και δοκιμάστε ξανά.</string>
+    <string name="install_blocked">Το Android απέκλεισε την εγκατάσταση.</string>
+    <string name="update_see">Προβολή</string>
+    <string name="update_later">Αργότερα</string>
+    <string name="open_installer">Άνοιγμα με το πρόγραμμα εγκατάστασης Android</string>
+</resources>

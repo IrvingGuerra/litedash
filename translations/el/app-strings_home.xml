@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="road_speed">Ταχύτητα</string>
+    <string name="road_speed_text">Μόνο αριθμός</string>
+    <string name="road_speed_gauge">Ταχύμετρο</string>
+    <string name="road_speed_show">Εμφάνιση ταχύτητας</string>
+    <string name="trip_time">Χρόνος</string>
+    <string name="trip_average">Μέση</string>
+    <string name="road_trip_distance">Απόσταση</string>
+    <string name="trip_heading">Κατεύθυνση</string>
+    <string-array name="compass_points">
+        <item>Β</item>
+        <item>ΒΑ</item>
+        <item>Α</item>
+        <item>ΝΑ</item>
+        <item>Ν</item>
+        <item>ΝΔ</item>
+        <item>Δ</item>
+        <item>ΒΔ</item>
+    </string-array>
+    <string name="value_with_unit">%1$s %2$s</string>
+    <string name="two_parts">%1$s · %2$s</string>
+    <string name="weather_degrees">%1$d°</string>
+    <string name="weather_range">%1$d° / %2$d°</string>
+</resources>

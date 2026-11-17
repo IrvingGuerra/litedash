@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="files_where">Pilih penyimpanan</string>
+    <string name="files_internal">Penyimpanan internal</string>
+    <string name="files_none">Tidak ada penyimpanan ditemukan. Periksa izin berkas.</string>
+    <string name="files_empty">Folder ini kosong.</string>
+    <string name="files_use_folder">Pakai folder ini</string>
+    <string name="files_close">Tutup</string>
+    <string name="files_recent">Terbaru</string>
+    <string name="files_recent_empty">Tidak ada foto terbaru.</string>
+</resources>

@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="player_name">Odtwarzacz LiteDash</string>
+    <string name="player_channel">Muzyka</string>
+    <string name="player_play">Odtwórz</string>
+    <string name="player_pause">Pauza</string>
+    <string name="player_next">Następny</string>
+    <string name="player_previous">Poprzedni</string>
+    <string name="player_cannot_play">Nie udało się odtworzyć. Spróbuj innej stacji lub sprawdź połączenie.</string>
+    <string name="player_timeout">Stacja nie odpowiada. Spróbuj innej.</string>
+    <string name="player_no_focus">Inna aplikacja przejęła dźwięk. Dotknij odtwarzania ponownie.</string>
+    <string name="library_no_drive">Podłącz pamięć USB z muzyką</string>
+    <string name="library_no_permission">LiteDash potrzebuje uprawnienia do odczytu muzyki z nośnika</string>
+    <string name="library_grant">Nadaj uprawnienie</string>
+    <string name="library_loading">Odczyt nośnika…</string>
+    <string name="library_folders">Foldery</string>
+    <string name="library_artists">Wykonawcy</string>
+    <string name="library_albums">Albumy</string>
+    <string name="library_all">Wszystko</string>
+    <string name="library_play_all">Odtwórz wszystko</string>
+    <plurals name="library_songs">
+        <item quantity="one">%1$d utwór</item>
+        <item quantity="few">%1$d utwory</item>
+        <item quantity="many">%1$d utworów</item>
+        <item quantity="other">%1$d utworu</item>
+    </plurals>
+    <string name="library_shuffle">Losowo</string>
+    <string name="library_unknown">Nieznane</string>
+    <string name="library_root">Katalog główny nośnika</string>
+    <string name="radio_nearby">W pobliżu</string>
+    <string name="radio_favorites">Ulubione</string>
+    <string name="radio_search_tab">Szukaj</string>
+    <string name="radio_search_hint">Nazwa stacji</string>
+    <string name="radio_search_help">Wpisz nazwę stacji</string>
+    <string name="radio_loading">Szukanie stacji…</string>
+    <string name="radio_none">Nie znaleziono stacji. Sprawdź połączenie z internetem.</string>
+    <string name="radio_no_location">Brak lokalizacji: to najpopularniejsze w Twoim kraju. Aby zobaczyć stacje z okolicy, zezwól na lokalizację w Moduły → Uprawnienia.</string>
+    <string name="radio_no_favorites">Dotknij gwiazdki stacji, aby ją tu zachować.</string>
+    <string name="radio_km">%1$d km</string>
+    <string name="library_pick_folder">Wybierz folder</string>
+    <string name="library_clear_folder">Wyczyść folder</string>
+    <string name="library_pick_folder_help">Jeśli muzyka jest na nośniku, ale się nie pokazuje, wybierz jej folder: LiteDash go zapamięta.</string>
+    <string name="library_unreadable">Widzę nośnik %1$s, ale ekran nie pozwala aplikacjom czytać jego utworów. Wybierz folder, a LiteDash go zapamięta.</string>
+    <string name="library_browse_memory">Nie otworzyło się? Przeglądaj pamięć</string>
+</resources>

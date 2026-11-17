@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="files_where">Выбери накопитель</string>
+    <string name="files_internal">Внутренняя память</string>
+    <string name="files_none">Накопители не найдены. Проверь разрешение на файлы.</string>
+    <string name="files_empty">Эта папка пуста.</string>
+    <string name="files_use_folder">Выбрать эту папку</string>
+    <string name="files_close">Закрыть</string>
+    <string name="files_recent">Недавние</string>
+    <string name="files_recent_empty">Нет недавних фото.</string>
+</resources>

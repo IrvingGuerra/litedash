@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="phone_section">휴대폰</string>
+    <string name="phone_help">LiteDash 계정은 휴대폰의 LiteDash Connect 앱에 있어요.</string>
+    <string name="phone_permission">권한 필요</string>
+    <string name="phone_permission_body">휴대폰과 통신하려면 Android에서 LiteDash의 로컬 네트워크 사용(근처 기기)을 허용해야 해요.</string>
+    <string name="local_network_allow">허용</string>
+    <string name="local_network_settings">권한</string>
+    <string name="phone_no_wifi">화면의 Wi-Fi가 없어요</string>
+    <string name="phone_no_wifi_body">휴대폰과 화면은 Wi-Fi로 통신해요. 방법을 선택하세요:</string>
+    <string name="phone_use_phone">휴대폰 인터넷 사용</string>
+    <string name="phone_use_phone_body">화면의 Wi-Fi를 켜고 휴대폰 핫스팟에 연결하세요.</string>
+    <string name="phone_share_screen">화면의 핫스팟 공유</string>
+    <string name="phone_share_screen_body">화면의 핫스팟을 켜고 휴대폰을 연결하세요.</string>
+    <string name="phone_open_wifi">Wi-Fi 열기</string>
+    <string name="phone_open_hotspot">핫스팟 열기</string>
+    <string name="phone_waiting">휴대폰을 기다리는 중…</string>
+    <plurals name="phone_link_code">
+        <item quantity="other">코드 %1$s · %2$d분 후 만료</item>
+    </plurals>
+    <string name="phone_step_install">LiteDash Connect를 설치하고 계정을 만드세요</string>
+    <string name="phone_step_tap">“내 화면 연결”을 탭하세요</string>
+    <string name="phone_step_scan">카메라로 이 코드를 비추세요</string>
+    <string name="phone_connected">연결됨</string>
+    <string name="phone_searching">휴대폰을 찾는 중…</string>
+    <string name="phone_model_app">%1$s · LiteDash Connect %2$s</string>
+    <string name="phone_link">링크</string>
+    <string name="phone_link_ok">휴대폰과 화면이 통신 중이에요</string>
+    <string name="phone_music_blocked">여기서 음악을 보려면 LiteDash Connect를 열고 링크 아래의 “허용”을 탭하세요</string>
+    <string name="phone_link_no_network">화면이 휴대폰과 같은 네트워크에 있지 않아요</string>
+    <string name="phone_link_open_app">휴대폰에서 LiteDash Connect를 열고 같은 네트워크에 연결하세요</string>
+    <string name="phone_sound">소리</string>
+    <string name="phone_sound_ok">Bluetooth 연결됨 · %1$s</string>
+    <string name="phone_sound_ok_plain">Bluetooth 연결됨</string>
+    <string name="phone_sound_missing">소리가 안 들리나요? 오디오에서 Bluetooth를 연결하세요</string>
+    <string name="phone_sound_calls">Bluetooth가 통화용으로만 연결되어 휴대폰에서 재생돼요. 오디오에서 연결하거나, 휴대폰에서 이 오디오의 “미디어 오디오”를 켜세요</string>
+    <string name="phone_calls_only">통화 전용 Bluetooth</string>
+    <string name="phone_sound_car">Android Auto로</string>
+    <string name="phone_sound_wired">케이블로</string>
+    <string name="phone_connect_bt">Bluetooth 연결</string>
+    <string name="phone_sound_unknown">휴대폰이 연결되어 재생하면 알 수 있어요</string>
+    <string name="phone_search_now">지금 찾기</string>
+    <string name="phone_unlink">연결 해제</string>
+    <string name="phone_unlink_question">이 휴대폰의 연결을 해제할까요?</string>
+    <string name="phone_unlink_message">다시 연결하려면 LiteDash Connect에서 코드를 다시 스캔해야 해요.</string>
+    <string name="phone_no_sound">소리가 안 나나요? Bluetooth를 연결하세요</string>
+    <string name="music_mode_phone">휴대폰이 연결되어 음악을 재생하면 음악 위젯에서 보고 제어할 수 있어요. 연결이 끊기면 원래대로 돌아가요.</string>
+    <string name="phone_job_unknown">그 차의 카탈로그 정보가 없어요</string>
+    <string name="phone_job_no_finish">이 모델에는 마감이 없어요</string>
+    <string name="phone_job_damaged">파일이 손상되어 도착했어요</string>
+    <string name="phone_job_unexpected">화면이 요청한 파일이 아니에요</string>
+    <string name="phone_job_busy">화면이 다른 것을 다운로드 중이에요. 잠시 후 다시 시도하세요</string>
+    <string name="phone_job_install_failed">화면이 설치하지 못했어요</string>
+</resources>

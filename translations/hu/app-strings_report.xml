@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="report_title">Hibajelentés küldése</string>
+    <string name="report_help">Írd meg, mi a gond. A fejegység műszaki adataival együtt küldjük (személyes adatok nélkül).</string>
+    <string name="report_what">Mivel van gond?</string>
+    <string name="report_which">Melyikkel?</string>
+    <string name="report_problem">Mi történik?</string>
+    <string name="report_workshop">Műhely (OBD)</string>
+    <string name="report_projection">Android Auto / alkalmazások</string>
+    <string name="report_lights">Nappal és éjszaka / fényszórók</string>
+    <string name="report_music_usb">Fájlok (LiteDash lejátszó)</string>
+    <string name="report_music_bt">Bluetooth (a fejegységé)</string>
+    <string name="report_music_app">A zenealkalmazásod (Spotify, YouTube Music…)</string>
+    <string name="report_radio_fm">A fejegység FM rádiója</string>
+    <string name="report_radio_internet">Internetes rádió</string>
+    <string name="report_obd_usb">USB</string>
+    <string name="report_silent">Nincs hang</string>
+    <string name="report_no_info">Szól, de nem mutatja, mi szól</string>
+    <string name="report_buttons">A gombok nem reagálnak</string>
+    <string name="report_broken">Nem működik</string>
+    <string name="report_looks_wrong">Rosszul néz ki</string>
+    <string name="report_crash">Az alkalmazás bezáródik</string>
+    <string name="report_note">Írj többet (nem kötelező)</string>
+    <string name="report_play_first">Ha tudod, küldés előtt indítsd el azt a forrást.</string>
+    <string name="report_send">Küldés</string>
+    <string name="report_sending">Küldés…</string>
+    <string name="report_thanks">Köszönjük! Megnézzük.</string>
+    <string name="report_code">Jelentés kódja: %1$s</string>
+    <string name="report_error">Nem sikerült elküldeni. Nézd meg a kapcsolatot.</string>
+    <string name="report_wait">Várj egy percet, mielőtt újat küldesz.</string>
+</resources>

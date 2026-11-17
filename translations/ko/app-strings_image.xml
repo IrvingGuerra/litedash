@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="image_background">배경</string>
+    <string name="image_background_original">원본</string>
+    <string name="image_background_remove">제거</string>
+    <string name="image_background_help">벽, 하늘, 스튜디오처럼 단색 배경에서 가장 잘 돼요.</string>
+    <string name="image_strength">강도</string>
+    <string name="image_strength_low">약하게</string>
+    <string name="image_strength_medium">보통</string>
+    <string name="image_strength_high">강하게</string>
+    <string name="image_strength_max">최대</string>
+    <string name="image_cut_failed">차와 배경을 분리하지 못했어요. 단색 배경 사진으로 해 보세요.</string>
+    <string name="image_apply">적용</string>
+    <string name="image_unusable">이 이미지는 사용할 수 없어요. 다른 이미지를 선택하세요.</string>
+</resources>

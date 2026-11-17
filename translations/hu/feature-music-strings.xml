@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="music_explain">Lásd és vezéreld, mi szól bármelyik alkalmazásban. Értesítési hozzáférés kell hozzá.</string>
+    <string name="enable">Bekapcsolás</string>
+    <string name="nothing_playing">Nem szól semmi</string>
+    <string name="open_an_app">Indíts zenét a kedvenc alkalmazásodban</string>
+    <string name="resume_explain">Nyomd meg a lejátszást, és ott folytatod, ahol abbahagytad.</string>
+    <string name="no_song_info">Nincs adat a dalról</string>
+    <string name="opening_app">%1$s megnyitása…</string>
+    <string name="opening_wait">Mindjárt: egy pillanat, és indul.</string>
+    <string name="source_files">Fájlok</string>
+    <string name="source_bluetooth">Bluetooth</string>
+    <string name="source_radio">Rádió</string>
+    <string name="bluetooth_connect_phone">Csatlakoztasd a telefonod Bluetoothon</string>
+    <string name="usb_drive">USB-meghajtó</string>
+    <string name="usb_drive_in">USB-meghajtó csatlakoztatva: %1$s</string>
+    <string name="player_connecting">Csatlakozás…</string>
+    <string name="radio">Rádió</string>
+    <string name="radio_explain">Vezéreld a kijelző rádióját (és az internetes rádiót, ha bekapcsolod). Értesítési hozzáférés kell hozzá.</string>
+    <string name="radio_internet">Internet</string>
+    <string name="radio_fm">A kijelző FM-je</string>
+    <string name="radio_unlinked">Kösd össze a kijelző rádióját a Beállításokban, vagy kapcsold be az internetes rádiót</string>
+    <string name="radio_settings">Beállítások</string>
+    <string name="mode_app">Alkalmazás</string>
+    <string name="radio_fm_label">FM rádió</string>
+    <string name="sound_question">Hallod?</string>
+    <string name="sound_question_muted">Hallod? Figyelem: a zene hangereje 0-n áll</string>
+    <string name="sound_yes">Igen</string>
+    <string name="sound_no">Nem</string>
+    <string name="sound_failed">Nem sikerült megszólaltatni</string>
+    <string name="sound_report">Jelentés</string>
+    <string name="recipe_none">Még nincs kalibrálva: az első lejátszáskor magától megtörténik</string>
+    <string name="recipe_plain">Így is működik</string>
+    <string name="recipe_tw_source8">A kijelző Bluetooth-bemenete</string>
+    <string name="recipe_fyt_toggle">Átváltja a kijelző forrását</string>
+    <string name="recipe_profile">Közvetlen rádióvezérlés</string>
+    <string name="recipe_open_bluetooth">Megnyitja a Bluetooth alkalmazást, majd visszatér</string>
+    <string name="recipe_open_radio">Megnyitja a rádióalkalmazást, majd visszatér</string>
+    <string name="recipe_failed">Nem találtunk módot</string>
+</resources>

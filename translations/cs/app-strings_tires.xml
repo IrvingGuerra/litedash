@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="tires_error_usb_missing">USB přijímač pneumatik není zapojený</string>
+    <string name="tires_error_usb_denied">Chybí oprávnění k USB přijímači</string>
+    <string name="tires_error_usb_open">USB přijímač nejde otevřít</string>
+    <string name="tires_error_usb_unplugged">USB přijímač byl odpojen</string>
+    <string name="tires_error_usb_lost">Spojení s USB přijímačem se ztratilo</string>
+    <string name="tires_error_swap">Přijímač nepotvrdil prohození pneumatik</string>
+    <string name="tires_tap_hint">Klepni na pneumatiku a nastav nebo přesuň její senzor</string>
+</resources>

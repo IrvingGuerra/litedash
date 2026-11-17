@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="files_where">Válassz meghajtót</string>
+    <string name="files_internal">Belső tárhely</string>
+    <string name="files_none">Nem található meghajtó. Ellenőrizd a fájlengedélyt.</string>
+    <string name="files_empty">Ez a mappa üres.</string>
+    <string name="files_use_folder">Ez a mappa legyen</string>
+    <string name="files_close">Bezárás</string>
+    <string name="files_recent">Legutóbbiak</string>
+    <string name="files_recent_empty">Nincsenek friss fotók.</string>
+</resources>

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="tires_error_usb_missing">De USB-bandenontvanger is niet aangesloten</string>
+    <string name="tires_error_usb_denied">Geen toestemming voor de USB-ontvanger</string>
+    <string name="tires_error_usb_open">De USB-ontvanger kon niet worden geopend</string>
+    <string name="tires_error_usb_unplugged">De USB-ontvanger is losgekoppeld</string>
+    <string name="tires_error_usb_lost">De verbinding met de USB-ontvanger is verbroken</string>
+    <string name="tires_error_swap">De ontvanger bevestigde de bandenwissel niet</string>
+    <string name="tires_tap_hint">Tik op een band om de sensor in te stellen of te verplaatsen</string>
+</resources>

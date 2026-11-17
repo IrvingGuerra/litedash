@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="road_speed">Sebesség</string>
+    <string name="road_speed_text">Csak a szám</string>
+    <string name="road_speed_gauge">Sebességmérő</string>
+    <string name="road_speed_show">Sebesség mutatása</string>
+    <string name="trip_time">Idő</string>
+    <string name="trip_average">Átlag</string>
+    <string name="road_trip_distance">Távolság</string>
+    <string name="trip_heading">Irány</string>
+    <string-array name="compass_points">
+        <item>É</item>
+        <item>ÉK</item>
+        <item>K</item>
+        <item>DK</item>
+        <item>D</item>
+        <item>DNy</item>
+        <item>Ny</item>
+        <item>ÉNy</item>
+    </string-array>
+    <string name="value_with_unit">%1$s %2$s</string>
+    <string name="two_parts">%1$s · %2$s</string>
+    <string name="weather_degrees">%1$d°</string>
+    <string name="weather_range">%1$d° / %2$d°</string>
+</resources>

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="dashboard_remove">ウィジェットを削除</string>
+    <string name="dashboard_card">カードのオン/オフ</string>
+    <string name="dashboard_settings">ウィジェットの設定</string>
+    <string name="dashboard_resize">サイズ変更</string>
+</resources>

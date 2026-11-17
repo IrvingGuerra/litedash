@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="check_updates">Caută actualizări</string>
+    <string name="up_to_date">Ai cea mai nouă versiune.</string>
+    <string name="update_error">Nu s-a putut verifica. Verifică conexiunea și încearcă din nou.</string>
+    <string name="update_download_error">Nu s-a putut descărca: GitHub nu a răspuns sau conexiunea s-a întrerupt. Încearcă din nou în câteva minute.</string>
+    <string name="new_version">LiteDash %1$s e gata</string>
+    <string name="download_install">Descarcă și instalează · %1$.1f MB</string>
+    <string name="installing">Se deschide instalatorul Android…</string>
+    <string name="install_permission">Android îți cere să permiți LiteDash să instaleze aplicații (doar pentru propriile actualizări). Activează opțiunea în ecranul deschis și revino.</string>
+    <string name="already_allowed">Gata, instalează</string>
+    <string name="install_error">Android nu a putut instala. Încearcă din nou.</string>
+    <string name="install_aborted">Instalarea a fost anulată.</string>
+    <string name="install_incompatible">Această versiune nu e compatibilă cu cea instalată.</string>
+    <string name="install_storage">Nu e destul spațiu pentru instalare. Eliberează spațiu și încearcă din nou.</string>
+    <string name="install_blocked">Android a blocat instalarea.</string>
+    <string name="update_see">Vezi</string>
+    <string name="update_later">Mai târziu</string>
+    <string name="open_installer">Deschide cu instalatorul Android</string>
+</resources>

@@ -209,11 +209,14 @@
     <string name="units_auto_now">Şu an otomatik: %1$s ve %2$s (dilinize ve bölgenize göre)</string>
     <string name="language_system">Sistemi izle</string>
     <string name="language_more">Daha fazla dil</string>
-    <string name="language_more_help">Topluluk tarafından yapıldı. Seçtiğinizde indirilir; eksik olanlar İngilizce görünür.</string>
+    <string name="language_more_help">Seçtiğinizde indirilir; eksik olanlar İngilizce görünür.</string>
     <string name="language_offline">İnternet yok: yalnızca İspanyolca ve İngilizce.</string>
     <string name="language_none">Henüz başka dil yok.</string>
     <string name="language_details">%1$d%% çevrildi · %2$s</string>
     <string name="language_failed">Dil indirilemedi; bağlantınızı kontrol edin.</string>
+    <string name="language_reviewed">gözden geçirildi</string>
+    <string name="language_machine">makine çevirisi</string>
+    <string name="language_report">Çeviri hatası mı gördünüz? litedash.dev/en/translate adresinden bildirin</string>
     <string name="map_help">Harita widget’ının ve çubuk düğmesinin açtığı uygulama. Gezinirken sonraki dönüşü gösterir (müzikle aynı bildirim erişimini kullanır).</string>
     <string name="map_no_apps">LiteDash’ten gezinmek için Waze veya Google Maps yükleyin.</string>
     <string name="map_external">Kısayollar için harici uygulama kullan</string>

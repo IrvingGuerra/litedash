@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="image_background">Achtergrond</string>
+    <string name="image_background_original">Origineel</string>
+    <string name="image_background_remove">Verwijderen</string>
+    <string name="image_background_help">Werkt het best met een effen achtergrond: een muur, de lucht of een studio.</string>
+    <string name="image_strength">Sterkte</string>
+    <string name="image_strength_low">Zacht</string>
+    <string name="image_strength_medium">Gemiddeld</string>
+    <string name="image_strength_high">Hoog</string>
+    <string name="image_strength_max">Max</string>
+    <string name="image_cut_failed">De auto kon niet van de achtergrond worden gescheiden: probeer een foto met een effen achtergrond.</string>
+    <string name="image_apply">Toepassen</string>
+    <string name="image_unusable">Die afbeelding kan niet worden gebruikt; probeer een andere.</string>
+</resources>

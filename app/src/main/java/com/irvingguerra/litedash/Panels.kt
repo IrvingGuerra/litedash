@@ -321,7 +321,8 @@ private fun AddCard(spec: TileSpec, modifier: Modifier, onClick: () -> Unit) {
             }
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Label(stringResource(spec.name), Typography.subtitle, maxLines = 1)
-                spec.detail?.let { Label(stringResource(it), Typography.small, c.textMuted, maxLines = 2) }
+                // Tres renglones: caben en la tarjeta y en pantallas de pie o idiomas largos dos no alcanzaban (Radio).
+                spec.detail?.let { Label(stringResource(it), Typography.small, c.textMuted, maxLines = 3) }
             }
         }
     }

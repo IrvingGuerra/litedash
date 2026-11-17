@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="phone_section">फ़ोन</string>
+    <string name="phone_help">आपका LiteDash अकाउंट आपके फ़ोन के LiteDash Connect ऐप में रहता है।</string>
+    <string name="phone_permission">अनुमति चाहिए</string>
+    <string name="phone_permission_body">आपके फ़ोन से बात करने के लिए Android पूछता है कि LiteDash को लोकल नेटवर्क (आसपास के डिवाइस) इस्तेमाल करने दें।</string>
+    <string name="local_network_allow">अनुमति दें</string>
+    <string name="local_network_settings">अनुमतियाँ</string>
+    <string name="phone_no_wifi">आपकी स्क्रीन पर Wi-Fi नहीं है</string>
+    <string name="phone_no_wifi_body">आपका फ़ोन और स्क्रीन Wi-Fi से बात करते हैं। तरीका चुनें:</string>
+    <string name="phone_use_phone">मेरे फ़ोन का इंटरनेट</string>
+    <string name="phone_use_phone_body">स्क्रीन का Wi-Fi चालू करें और उसे फ़ोन के हॉटस्पॉट से जोड़ें।</string>
+    <string name="phone_share_screen">स्क्रीन का हॉटस्पॉट</string>
+    <string name="phone_share_screen_body">स्क्रीन का हॉटस्पॉट चालू करें और अपना फ़ोन उससे जोड़ें।</string>
+    <string name="phone_open_wifi">Wi-Fi खोलें</string>
+    <string name="phone_open_hotspot">हॉटस्पॉट खोलें</string>
+    <string name="phone_waiting">आपके फ़ोन का इंतज़ार…</string>
+    <plurals name="phone_link_code">
+        <item quantity="one">कोड %1$s · %2$d मिनट में खत्म</item>
+        <item quantity="other">कोड %1$s · %2$d मिनट में खत्म</item>
+    </plurals>
+    <string name="phone_step_install">LiteDash Connect इंस्टॉल करें और अकाउंट बनाएँ</string>
+    <string name="phone_step_tap">“मेरी स्क्रीन जोड़ें” पर टैप करें</string>
+    <string name="phone_step_scan">कैमरा इस कोड पर रखें</string>
+    <string name="phone_connected">कनेक्टेड</string>
+    <string name="phone_searching">आपका फ़ोन ढूँढ रहे हैं…</string>
+    <string name="phone_model_app">%1$s · LiteDash Connect %2$s</string>
+    <string name="phone_link">लिंक</string>
+    <string name="phone_link_ok">आपका फ़ोन और स्क्रीन जुड़े हुए हैं</string>
+    <string name="phone_music_blocked">यहाँ अपना म्यूज़िक देखने के लिए LiteDash Connect खोलें और लिंक के नीचे “अनुमति दें” पर टैप करें</string>
+    <string name="phone_link_no_network">स्क्रीन आपके फ़ोन वाले किसी नेटवर्क पर नहीं है</string>
+    <string name="phone_link_open_app">फ़ोन पर LiteDash Connect खोलें और उसे इसी नेटवर्क से जोड़ें</string>
+    <string name="phone_sound">आवाज़</string>
+    <string name="phone_sound_ok">Bluetooth कनेक्टेड · %1$s</string>
+    <string name="phone_sound_ok_plain">Bluetooth कनेक्टेड</string>
+    <string name="phone_sound_missing">आवाज़ नहीं आ रही? स्टीरियो से Bluetooth जोड़ें</string>
+    <string name="phone_sound_calls">Bluetooth सिर्फ़ कॉल के लिए जुड़ा है, इसलिए गाना फ़ोन पर बजता है। इसे स्टीरियो से जोड़ें, या फ़ोन पर इस स्टीरियो के लिए “मीडिया ऑडियो” चालू करें</string>
+    <string name="phone_calls_only">Bluetooth सिर्फ़ कॉल के लिए</string>
+    <string name="phone_sound_car">Android Auto से</string>
+    <string name="phone_sound_wired">केबल से</string>
+    <string name="phone_connect_bt">Bluetooth जोड़ें</string>
+    <string name="phone_sound_unknown">फ़ोन जुड़ने और गाना बजने पर पता चलेगा</string>
+    <string name="phone_search_now">अभी ढूँढें</string>
+    <string name="phone_unlink">अनलिंक करें</string>
+    <string name="phone_unlink_question">यह फ़ोन अनलिंक करें?</string>
+    <string name="phone_unlink_message">फिर से जोड़ने के लिए LiteDash Connect से कोड दोबारा स्कैन करना होगा।</string>
+    <string name="phone_no_sound">आवाज़ नहीं? Bluetooth जोड़ें</string>
+    <string name="music_mode_phone">जब फ़ोन जुड़ा हो और गाना बजाए, तो म्यूज़िक विजेट उसे दिखाता और कंट्रोल करता है। फ़ोन हटने पर पहले वाला वापस आ जाता है।</string>
+    <string name="phone_job_unknown">इस कार की कैटलॉग जानकारी नहीं मिली</string>
+    <string name="phone_job_no_finish">इस मॉडल में फ़िनिश नहीं हैं</string>
+    <string name="phone_job_damaged">फ़ाइल खराब होकर आई</string>
+    <string name="phone_job_unexpected">स्क्रीन ने यह फ़ाइल नहीं माँगी थी</string>
+    <string name="phone_job_busy">स्क्रीन कुछ और डाउनलोड कर रही है; थोड़ी देर बाद कोशिश करें</string>
+    <string name="phone_job_install_failed">स्क्रीन इसे इंस्टॉल नहीं कर सकी</string>
+</resources>

@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="player_name">Плеер LiteDash</string>
+    <string name="player_channel">Музыка</string>
+    <string name="player_play">Играть</string>
+    <string name="player_pause">Пауза</string>
+    <string name="player_next">Следующий</string>
+    <string name="player_previous">Предыдущий</string>
+    <string name="player_cannot_play">Не удалось воспроизвести. Попробуй другую станцию или проверь подключение.</string>
+    <string name="player_timeout">Станция не отвечает. Попробуй другую.</string>
+    <string name="player_no_focus">Звук занят другим приложением. Нажми «Играть» ещё раз.</string>
+    <string name="library_no_drive">Подключи USB-накопитель с музыкой</string>
+    <string name="library_no_permission">LiteDash нужно разрешение на чтение музыки с накопителя</string>
+    <string name="library_grant">Дать разрешение</string>
+    <string name="library_loading">Читаем накопитель…</string>
+    <string name="library_folders">Папки</string>
+    <string name="library_artists">Исполнители</string>
+    <string name="library_albums">Альбомы</string>
+    <string name="library_all">Все</string>
+    <string name="library_play_all">Играть всё</string>
+    <plurals name="library_songs">
+        <item quantity="one">%1$d песня</item>
+        <item quantity="few">%1$d песни</item>
+        <item quantity="many">%1$d песен</item>
+        <item quantity="other">%1$d песни</item>
+    </plurals>
+    <string name="library_shuffle">Перемешать</string>
+    <string name="library_unknown">Неизвестно</string>
+    <string name="library_root">Корень накопителя</string>
+    <string name="radio_nearby">Рядом с тобой</string>
+    <string name="radio_favorites">Избранное</string>
+    <string name="radio_search_tab">Поиск</string>
+    <string name="radio_search_hint">Название станции</string>
+    <string name="radio_search_help">Введи название станции</string>
+    <string name="radio_loading">Ищем станции…</string>
+    <string name="radio_none">Станции не найдены. Проверь подключение к интернету.</string>
+    <string name="radio_no_location">Нет местоположения: это самые популярные в твоей стране. Чтобы видеть станции твоего района, разреши местоположение в «Модули → Разрешения».</string>
+    <string name="radio_no_favorites">Нажми на звёздочку станции, чтобы сохранить её здесь.</string>
+    <string name="radio_km">%1$d km</string>
+    <string name="library_pick_folder">Выбрать папку</string>
+    <string name="library_clear_folder">Сбросить папку</string>
+    <string name="library_pick_folder_help">Если музыка есть на накопителе, но не появляется, выбери её папку: LiteDash запомнит.</string>
+    <string name="library_unreadable">Я вижу накопитель %1$s, но экран не даёт приложениям читать песни. Выбери их папку, и LiteDash её запомнит.</string>
+    <string name="library_browse_memory">Не открылось? Посмотри память</string>
+</resources>

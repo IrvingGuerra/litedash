@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="report_title">ส่งรายงาน</string>
+    <string name="report_help">บอกเราว่ามีปัญหาอะไร รายงานจะส่งพร้อมข้อมูลทางเทคนิคของเครื่องเสียงรถ (ไม่มีข้อมูลส่วนตัว)</string>
+    <string name="report_what">อะไรมีปัญหา</string>
+    <string name="report_which">อันไหน</string>
+    <string name="report_problem">เกิดอะไรขึ้น</string>
+    <string name="report_workshop">อู่ (OBD)</string>
+    <string name="report_projection">Android Auto / แอป</string>
+    <string name="report_lights">กลางวันและกลางคืน / ไฟหน้า</string>
+    <string name="report_music_usb">ไฟล์ (เครื่องเล่น LiteDash)</string>
+    <string name="report_music_bt">Bluetooth (ของเครื่องเสียง)</string>
+    <string name="report_music_app">แอปเพลงของคุณ (Spotify, YouTube Music…)</string>
+    <string name="report_radio_fm">FM ของเครื่องเสียง</string>
+    <string name="report_radio_internet">วิทยุอินเทอร์เน็ต</string>
+    <string name="report_obd_usb">USB</string>
+    <string name="report_silent">ไม่มีเสียง</string>
+    <string name="report_no_info">เล่นได้แต่ไม่แสดงว่ากำลังเล่นอะไร</string>
+    <string name="report_buttons">ปุ่มไม่ตอบสนอง</string>
+    <string name="report_broken">ใช้งานไม่ได้</string>
+    <string name="report_looks_wrong">แสดงผลผิด</string>
+    <string name="report_crash">แอปปิดเอง</string>
+    <string name="report_note">เล่าเพิ่มเติม (ไม่บังคับ)</string>
+    <string name="report_play_first">ถ้าทำได้ ให้เล่นแหล่งเสียงนั้นก่อนส่ง</string>
+    <string name="report_send">ส่ง</string>
+    <string name="report_sending">กำลังส่ง…</string>
+    <string name="report_thanks">ขอบคุณ! เราจะตรวจสอบ</string>
+    <string name="report_code">รหัสรายงาน: %1$s</string>
+    <string name="report_error">ส่งไม่ได้ ตรวจการเชื่อมต่อ</string>
+    <string name="report_wait">รอสักหนึ่งนาทีก่อนส่งอีกครั้ง</string>
+</resources>

@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="player_name">LiteDash lejátszó</string>
+    <string name="player_channel">Zene</string>
+    <string name="player_play">Lejátszás</string>
+    <string name="player_pause">Szünet</string>
+    <string name="player_next">Következő</string>
+    <string name="player_previous">Előző</string>
+    <string name="player_cannot_play">Nem sikerült lejátszani. Próbálj másik adót, vagy nézd meg a kapcsolatot.</string>
+    <string name="player_timeout">Az adó nem válaszol. Próbálj egy másikat.</string>
+    <string name="player_no_focus">Egy másik alkalmazás használja a hangot. Koppints újra a lejátszásra.</string>
+    <string name="library_no_drive">Csatlakoztass egy zenét tartalmazó USB-meghajtót</string>
+    <string name="library_no_permission">A LiteDash-nek engedély kell a meghajtón lévő zenék olvasásához</string>
+    <string name="library_grant">Engedély megadása</string>
+    <string name="library_loading">A meghajtó olvasása…</string>
+    <string name="library_folders">Mappák</string>
+    <string name="library_artists">Előadók</string>
+    <string name="library_albums">Albumok</string>
+    <string name="library_all">Összes</string>
+    <string name="library_play_all">Összes lejátszása</string>
+    <plurals name="library_songs">
+        <item quantity="one">%1$d dal</item>
+        <item quantity="other">%1$d dal</item>
+    </plurals>
+    <string name="library_shuffle">Keverés</string>
+    <string name="library_unknown">Ismeretlen</string>
+    <string name="library_root">Meghajtó gyökere</string>
+    <string name="radio_nearby">A közeledben</string>
+    <string name="radio_favorites">Kedvencek</string>
+    <string name="radio_search_tab">Keresés</string>
+    <string name="radio_search_hint">Adó neve</string>
+    <string name="radio_search_help">Írd be egy adó nevét</string>
+    <string name="radio_loading">Adók keresése…</string>
+    <string name="radio_none">Nem található adó. Nézd meg az internetkapcsolatot.</string>
+    <string name="radio_no_location">Nincs helyzetadat: ezek az országod legnépszerűbb adói. A környékbeliekhez engedélyezd a helyzetet itt: Modulok → Engedélyek.</string>
+    <string name="radio_no_favorites">Koppints egy adó csillagára, hogy itt maradjon.</string>
+    <string name="radio_km">%1$d km</string>
+    <string name="library_pick_folder">Mappa kiválasztása</string>
+    <string name="library_clear_folder">Mappa törlése</string>
+    <string name="library_pick_folder_help">Ha a zenéd a meghajtón van, de nem jelenik meg, válaszd ki a mappáját: a LiteDash megjegyzi.</string>
+    <string name="library_unreadable">Látom a(z) %1$s meghajtót, de a kijelződ nem engedi az alkalmazásoknak olvasni a dalait. Válaszd ki a mappáját, és a LiteDash megjegyzi.</string>
+    <string name="library_browse_memory">Nem nyílt meg? Tallózás a tárhelyen</string>
+</resources>

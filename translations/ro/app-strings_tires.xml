@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="tires_error_usb_missing">Receptorul USB pentru anvelope nu e conectat</string>
+    <string name="tires_error_usb_denied">Fără permisiune pentru receptorul USB</string>
+    <string name="tires_error_usb_open">Receptorul USB nu a putut fi deschis</string>
+    <string name="tires_error_usb_unplugged">Receptorul USB a fost deconectat</string>
+    <string name="tires_error_usb_lost">S-a pierdut conexiunea cu receptorul USB</string>
+    <string name="tires_error_swap">Receptorul nu a confirmat schimbul anvelopelor</string>
+    <string name="tires_tap_hint">Atinge o anvelopă ca să-i configurezi senzorul sau s-o muți</string>
+</resources>

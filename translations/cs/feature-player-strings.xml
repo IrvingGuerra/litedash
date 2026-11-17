@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="player_name">Přehrávač LiteDash</string>
+    <string name="player_channel">Hudba</string>
+    <string name="player_play">Přehrát</string>
+    <string name="player_pause">Pozastavit</string>
+    <string name="player_next">Další</string>
+    <string name="player_previous">Předchozí</string>
+    <string name="player_cannot_play">Nepodařilo se přehrát. Zkus jinou stanici nebo zkontroluj připojení.</string>
+    <string name="player_timeout">Stanice neodpovídá. Zkus jinou.</string>
+    <string name="player_no_focus">Zvuk má jiná aplikace. Klepni znovu na přehrát.</string>
+    <string name="library_no_drive">Zapoj USB disk s hudbou</string>
+    <string name="library_no_permission">LiteDash potřebuje oprávnění číst hudbu na disku</string>
+    <string name="library_grant">Udělit oprávnění</string>
+    <string name="library_loading">Čtu disk…</string>
+    <string name="library_folders">Složky</string>
+    <string name="library_artists">Interpreti</string>
+    <string name="library_albums">Alba</string>
+    <string name="library_all">Vše</string>
+    <string name="library_play_all">Přehrát vše</string>
+    <plurals name="library_songs">
+        <item quantity="one">%1$d skladba</item>
+        <item quantity="few">%1$d skladby</item>
+        <item quantity="many">%1$d skladby</item>
+        <item quantity="other">%1$d skladeb</item>
+    </plurals>
+    <string name="library_shuffle">Náhodně</string>
+    <string name="library_unknown">Neznámé</string>
+    <string name="library_root">Kořen disku</string>
+    <string name="radio_nearby">Poblíž</string>
+    <string name="radio_favorites">Oblíbené</string>
+    <string name="radio_search_tab">Hledat</string>
+    <string name="radio_search_hint">Název stanice</string>
+    <string name="radio_search_help">Napiš název stanice</string>
+    <string name="radio_loading">Hledám stanice…</string>
+    <string name="radio_none">Žádné stanice nenalezeny. Zkontroluj připojení k internetu.</string>
+    <string name="radio_no_location">Bez polohy: toto jsou nejposlouchanější ve tvé zemi. Pro stanice z okolí povol polohu v Moduly → Oprávnění.</string>
+    <string name="radio_no_favorites">Klepnutím na hvězdičku stanice si ji tu uložíš.</string>
+    <string name="radio_km">%1$d km</string>
+    <string name="library_pick_folder">Vybrat složku</string>
+    <string name="library_clear_folder">Zrušit složku</string>
+    <string name="library_pick_folder_help">Pokud je hudba na disku, ale nezobrazuje se, vyber její složku: LiteDash si ji zapamatuje.</string>
+    <string name="library_unreadable">Vidím disk %1$s, ale tvůj displej nedovolí aplikacím číst jeho skladby. Vyber jeho složku a LiteDash si ji zapamatuje.</string>
+    <string name="library_browse_memory">Neotevřelo se? Procházej úložiště</string>
+</resources>

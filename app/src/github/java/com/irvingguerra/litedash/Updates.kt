@@ -156,7 +156,8 @@ private fun NewVersion(v: Version, onInstall: () -> Unit) {
     ) {
         Label(stringResource(R.string.new_version, v.name), Typography.subtitle)
         // Las notas del Release como lista corta (sin los títulos de sección).
-        val notes = releaseNotes(v.notes).filterNot { it.startsWith("###") }.take(6).joinToString("\n") { "• $it" }
+        val (spanish, english) = remember(v.notes) { splitReleaseNotes(v.notes) }
+        val notes = releaseNotes(localReleaseNotes(spanish, english)).filterNot { it.startsWith("###") }.take(6).joinToString("\n") { "• $it" }
         if (notes.isNotBlank()) Label(notes, Typography.small, c.textMuted, maxLines = 8)
         Button(stringResource(R.string.download_install, v.bytes / 1e6f), onInstall, primary = true)
     }

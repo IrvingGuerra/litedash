@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="dashboard_remove">위젯 삭제</string>
+    <string name="dashboard_card">카드 켜기/끄기</string>
+    <string name="dashboard_settings">위젯 설정</string>
+    <string name="dashboard_resize">크기 조정</string>
+</resources>

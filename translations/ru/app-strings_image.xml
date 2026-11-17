@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="image_background">Фон</string>
+    <string name="image_background_original">Исходный</string>
+    <string name="image_background_remove">Убрать</string>
+    <string name="image_background_help">Лучше всего с однотонным фоном: стена, небо или студия.</string>
+    <string name="image_strength">Сила</string>
+    <string name="image_strength_low">Мягко</string>
+    <string name="image_strength_medium">Средне</string>
+    <string name="image_strength_high">Сильно</string>
+    <string name="image_strength_max">Макс.</string>
+    <string name="image_cut_failed">Не удалось отделить машину от фона: попробуй фото с однотонным фоном.</string>
+    <string name="image_apply">Применить</string>
+    <string name="image_unusable">Это изображение не подходит, попробуй другое.</string>
+</resources>

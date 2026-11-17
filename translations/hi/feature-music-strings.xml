@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="music_explain">किसी भी ऐप में जो बज रहा है उसे देखें और कंट्रोल करें। नोटिफ़िकेशन एक्सेस चाहिए।</string>
+    <string name="enable">चालू करें</string>
+    <string name="nothing_playing">कुछ नहीं बज रहा</string>
+    <string name="open_an_app">अपने पसंदीदा ऐप में गाना चलाएँ</string>
+    <string name="resume_explain">जहाँ छोड़ा था वहीं से सुनने के लिए प्ले दबाएँ।</string>
+    <string name="no_song_info">गाने की जानकारी नहीं</string>
+    <string name="opening_app">%1$s खुल रहा है…</string>
+    <string name="opening_wait">बस थोड़ा सा: पल भर में शुरू होगा।</string>
+    <string name="source_files">फ़ाइलें</string>
+    <string name="source_bluetooth">Bluetooth</string>
+    <string name="source_radio">रेडियो</string>
+    <string name="bluetooth_connect_phone">अपना फ़ोन Bluetooth से जोड़ें</string>
+    <string name="usb_drive">USB ड्राइव</string>
+    <string name="usb_drive_in">USB ड्राइव जुड़ी: %1$s</string>
+    <string name="player_connecting">कनेक्ट हो रहा है…</string>
+    <string name="radio">रेडियो</string>
+    <string name="radio_explain">अपनी स्क्रीन का रेडियो कंट्रोल करें (और चालू करें तो इंटरनेट रेडियो भी)। नोटिफ़िकेशन एक्सेस चाहिए।</string>
+    <string name="radio_internet">इंटरनेट</string>
+    <string name="radio_fm">स्क्रीन का FM</string>
+    <string name="radio_unlinked">सेटिंग्स में स्क्रीन का रेडियो जोड़ें या इंटरनेट रेडियो चालू करें</string>
+    <string name="radio_settings">सेटिंग्स</string>
+    <string name="mode_app">ऐप</string>
+    <string name="radio_fm_label">FM रेडियो</string>
+    <string name="sound_question">आवाज़ आ रही है?</string>
+    <string name="sound_question_muted">आवाज़ आ रही है? ध्यान दें: म्यूज़िक का वॉल्यूम 0 पर है</string>
+    <string name="sound_yes">हाँ</string>
+    <string name="sound_no">नहीं</string>
+    <string name="sound_failed">आवाज़ चालू नहीं कर सके</string>
+    <string name="sound_report">रिपोर्ट करें</string>
+    <string name="recipe_none">अभी कैलिब्रेट नहीं: पहली बार बजने पर अपने आप होगा</string>
+    <string name="recipe_plain">बिना बदलाव काम करता है</string>
+    <string name="recipe_tw_source8">स्क्रीन का Bluetooth इनपुट</string>
+    <string name="recipe_fyt_toggle">स्क्रीन का सोर्स बदलता है</string>
+    <string name="recipe_profile">रेडियो का सीधा कंट्रोल</string>
+    <string name="recipe_open_bluetooth">Bluetooth ऐप खोलकर वापस आता है</string>
+    <string name="recipe_open_radio">रेडियो ऐप खोलकर वापस आता है</string>
+    <string name="recipe_failed">कोई तरीका नहीं मिला</string>
+</resources>

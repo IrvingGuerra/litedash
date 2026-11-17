@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="report_title">Bericht senden</string>
+    <string name="report_help">Sag uns, was nicht stimmt. Es geht mit technischen Daten deines Displays mit (keine persönlichen Daten).</string>
+    <string name="report_what">Was hat ein Problem?</string>
+    <string name="report_which">Welches?</string>
+    <string name="report_problem">Was passiert?</string>
+    <string name="report_workshop">Werkstatt (OBD)</string>
+    <string name="report_projection">Android Auto / Apps</string>
+    <string name="report_lights">Tag und Nacht / Scheinwerfer</string>
+    <string name="report_music_usb">Dateien (LiteDash-Player)</string>
+    <string name="report_music_bt">Bluetooth (des Displays)</string>
+    <string name="report_music_app">Deine Musik-App (Spotify, YouTube Music…)</string>
+    <string name="report_radio_fm">FM des Displays</string>
+    <string name="report_radio_internet">Internetradio</string>
+    <string name="report_obd_usb">USB</string>
+    <string name="report_silent">Kein Ton</string>
+    <string name="report_no_info">Es spielt, zeigt aber nicht, was läuft</string>
+    <string name="report_buttons">Die Tasten reagieren nicht</string>
+    <string name="report_broken">Funktioniert nicht</string>
+    <string name="report_looks_wrong">Sieht falsch aus</string>
+    <string name="report_crash">Die App schließt sich</string>
+    <string name="report_note">Erzähl mehr (optional)</string>
+    <string name="report_play_first">Wenn möglich, spiel diese Quelle vor dem Senden ab.</string>
+    <string name="report_send">Senden</string>
+    <string name="report_sending">Wird gesendet…</string>
+    <string name="report_thanks">Danke! Wir sehen es uns an.</string>
+    <string name="report_code">Berichtscode: %1$s</string>
+    <string name="report_error">Senden fehlgeschlagen. Prüfe deine Verbindung.</string>
+    <string name="report_wait">Warte eine Minute, bevor du noch einen sendest.</string>
+</resources>

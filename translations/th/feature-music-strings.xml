@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="music_explain">ดูและควบคุมสิ่งที่กำลังเล่นในแอปใดก็ได้ ต้องใช้สิทธิ์เข้าถึงการแจ้งเตือน</string>
+    <string name="enable">เปิด</string>
+    <string name="nothing_playing">ไม่มีอะไรกำลังเล่น</string>
+    <string name="open_an_app">เล่นเพลงในแอปโปรดของคุณ</string>
+    <string name="resume_explain">กดเล่นเพื่อฟังต่อจากที่ค้างไว้</string>
+    <string name="no_song_info">ไม่มีข้อมูลเพลง</string>
+    <string name="opening_app">กำลังเปิด %1$s…</string>
+    <string name="opening_wait">เกือบแล้ว อีกสักครู่จะเริ่ม</string>
+    <string name="source_files">ไฟล์</string>
+    <string name="source_bluetooth">Bluetooth</string>
+    <string name="source_radio">วิทยุ</string>
+    <string name="bluetooth_connect_phone">เชื่อมโทรศัพท์ผ่าน Bluetooth</string>
+    <string name="usb_drive">แฟลชไดรฟ์ USB</string>
+    <string name="usb_drive_in">เชื่อมแฟลชไดรฟ์ USB แล้ว: %1$s</string>
+    <string name="player_connecting">กำลังเชื่อมต่อ…</string>
+    <string name="radio">วิทยุ</string>
+    <string name="radio_explain">ควบคุมวิทยุของหน้าจอ (และวิทยุอินเทอร์เน็ตถ้าเปิดไว้) ต้องใช้สิทธิ์เข้าถึงการแจ้งเตือน</string>
+    <string name="radio_internet">อินเทอร์เน็ต</string>
+    <string name="radio_fm">FM ของหน้าจอ</string>
+    <string name="radio_unlinked">เชื่อมวิทยุของหน้าจอในการตั้งค่า หรือเปิดวิทยุอินเทอร์เน็ต</string>
+    <string name="radio_settings">การตั้งค่า</string>
+    <string name="mode_app">แอป</string>
+    <string name="radio_fm_label">วิทยุ FM</string>
+    <string name="sound_question">ได้ยินเสียงไหม</string>
+    <string name="sound_question_muted">ได้ยินเสียงไหม หมายเหตุ: ระดับเสียงเพลงอยู่ที่ 0</string>
+    <string name="sound_yes">ได้ยิน</string>
+    <string name="sound_no">ไม่ได้ยิน</string>
+    <string name="sound_failed">ทำให้มีเสียงไม่ได้</string>
+    <string name="sound_report">รายงาน</string>
+    <string name="recipe_none">ยังไม่ได้ปรับเทียบ: จะทำเองในครั้งแรกที่เล่น</string>
+    <string name="recipe_plain">ใช้ได้ตามปกติ</string>
+    <string name="recipe_tw_source8">อินพุต Bluetooth ของหน้าจอ</string>
+    <string name="recipe_fyt_toggle">สลับแหล่งเสียงของหน้าจอ</string>
+    <string name="recipe_profile">ควบคุมวิทยุโดยตรง</string>
+    <string name="recipe_open_bluetooth">เปิดแอป Bluetooth แล้วกลับมา</string>
+    <string name="recipe_open_radio">เปิดแอปวิทยุแล้วกลับมา</string>
+    <string name="recipe_failed">ไม่พบวิธี</string>
+</resources>

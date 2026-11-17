@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="report_title">レポートを送信</string>
+    <string name="report_help">問題の内容を教えてください。ヘッドユニットの技術データと一緒に送信されます（個人データは含みません）。</string>
+    <string name="report_what">何に問題がありますか？</string>
+    <string name="report_which">どれですか？</string>
+    <string name="report_problem">どうなりますか？</string>
+    <string name="report_workshop">整備（OBD）</string>
+    <string name="report_projection">Android Auto / アプリ</string>
+    <string name="report_lights">昼と夜 / ヘッドライト</string>
+    <string name="report_music_usb">ファイル（LiteDash プレーヤー）</string>
+    <string name="report_music_bt">Bluetooth（ヘッドユニット）</string>
+    <string name="report_music_app">音楽アプリ（Spotify、YouTube Music など）</string>
+    <string name="report_radio_fm">ヘッドユニットの FM</string>
+    <string name="report_radio_internet">インターネットラジオ</string>
+    <string name="report_obd_usb">USB</string>
+    <string name="report_silent">音が出ない</string>
+    <string name="report_no_info">再生されるが曲の情報が出ない</string>
+    <string name="report_buttons">ボタンが反応しない</string>
+    <string name="report_broken">動作しない</string>
+    <string name="report_looks_wrong">表示がおかしい</string>
+    <string name="report_crash">アプリが閉じる</string>
+    <string name="report_note">詳しく教えてください（任意）</string>
+    <string name="report_play_first">できれば、送信する前にそのソースを再生してください。</string>
+    <string name="report_send">送信</string>
+    <string name="report_sending">送信中…</string>
+    <string name="report_thanks">ありがとうございます！　確認します。</string>
+    <string name="report_code">レポートコード：%1$s</string>
+    <string name="report_error">送信できませんでした。接続を確認してください。</string>
+    <string name="report_wait">次の送信まで1分お待ちください。</string>
+</resources>

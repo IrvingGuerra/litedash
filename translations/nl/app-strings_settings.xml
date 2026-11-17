@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="tab_day_night">Dag en nacht</string>
+    <string name="tab_your_screen">Je scherm</string>
+    <string name="weather_switch">Weer</string>
+    <string name="weather_switch_help">In de balk, de klok en de Weer-widget; elk half uur bijgewerkt terwijl je het startscherm ziet. Gebruikt je geschatte locatie en internet; uit gebruikt het geen van beide.</string>
+    <string name="reminder_pick_date">Wanneer verloopt %1$s?</string>
+    <string name="split_unsupported_screen">Je autoradio staat geen twee apps naast elkaar toe (de fabrikant heeft het uitgezet).</string>
+    <string name="tab_home">Start</string>
+    <string name="tab_interface">Interface</string>
+    <string name="android_bar">Android-balk</string>
+    <string name="accent_title">Interfacekleur</string>
+    <string name="accent_help">Schakelaars, knoppen, afspelen en voortgangsbalken. Kaarten en achtergrond blijven gelijk; Natuurlijk is de originele look.</string>
+    <string name="accent_natural">Natuurlijk</string>
+</resources>

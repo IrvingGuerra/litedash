@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="image_background">Pozadí</string>
+    <string name="image_background_original">Původní</string>
+    <string name="image_background_remove">Odstranit</string>
+    <string name="image_background_help">Nejlépe funguje s jednolitým pozadím: zeď, obloha nebo studio.</string>
+    <string name="image_strength">Síla</string>
+    <string name="image_strength_low">Jemná</string>
+    <string name="image_strength_medium">Střední</string>
+    <string name="image_strength_high">Vysoká</string>
+    <string name="image_strength_max">Max.</string>
+    <string name="image_cut_failed">Auto se nepodařilo oddělit od pozadí: zkus fotku s jednolitým pozadím.</string>
+    <string name="image_apply">Použít</string>
+    <string name="image_unusable">Tento obrázek nejde použít; zkus jiný.</string>
+</resources>

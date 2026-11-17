@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="tires_error_usb_missing">टायर का USB रिसीवर लगा नहीं है</string>
+    <string name="tires_error_usb_denied">USB रिसीवर की अनुमति नहीं है</string>
+    <string name="tires_error_usb_open">USB रिसीवर खुल नहीं सका</string>
+    <string name="tires_error_usb_unplugged">USB रिसीवर निकाल दिया गया</string>
+    <string name="tires_error_usb_lost">USB रिसीवर से कनेक्शन टूट गया</string>
+    <string name="tires_error_swap">रिसीवर ने टायर की अदला-बदली की पुष्टि नहीं की</string>
+    <string name="tires_tap_hint">सेंसर सेट करने या टायर बदलने के लिए टायर पर टैप करें</string>
+</resources>

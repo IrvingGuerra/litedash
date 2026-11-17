@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="tires_error_usb_missing">Der USB-Reifenempfänger ist nicht eingesteckt</string>
+    <string name="tires_error_usb_denied">Keine Berechtigung für den USB-Empfänger</string>
+    <string name="tires_error_usb_open">Der USB-Empfänger ließ sich nicht öffnen</string>
+    <string name="tires_error_usb_unplugged">Der USB-Empfänger wurde abgezogen</string>
+    <string name="tires_error_usb_lost">Verbindung zum USB-Empfänger verloren</string>
+    <string name="tires_error_swap">Der Empfänger hat den Reifentausch nicht bestätigt</string>
+    <string name="tires_tap_hint">Tippe auf einen Reifen, um seinen Sensor einzurichten oder ihn zu tauschen</string>
+</resources>

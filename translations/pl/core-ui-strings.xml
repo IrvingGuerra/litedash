@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="files_where">Wybierz nośnik</string>
+    <string name="files_internal">Pamięć wewnętrzna</string>
+    <string name="files_none">Nie znaleziono nośników. Sprawdź uprawnienie do plików.</string>
+    <string name="files_empty">Ten folder jest pusty.</string>
+    <string name="files_use_folder">Użyj tego folderu</string>
+    <string name="files_close">Zamknij</string>
+    <string name="files_recent">Ostatnie</string>
+    <string name="files_recent_empty">Brak ostatnich zdjęć.</string>
+</resources>

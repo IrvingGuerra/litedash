@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="tires_error_usb_missing">USB タイヤ受信機が接続されていません</string>
+    <string name="tires_error_usb_denied">USB 受信機の権限がありません</string>
+    <string name="tires_error_usb_open">USB 受信機を開けませんでした</string>
+    <string name="tires_error_usb_unplugged">USB 受信機が取り外されました</string>
+    <string name="tires_error_usb_lost">USB 受信機との接続が切れました</string>
+    <string name="tires_error_swap">受信機がタイヤの入れ替えを確認しませんでした</string>
+    <string name="tires_tap_hint">タイヤをタップして、センサーの設定や位置の変更ができます</string>
+</resources>

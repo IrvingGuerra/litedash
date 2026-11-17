@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="player_name">LiteDash プレーヤー</string>
+    <string name="player_channel">ミュージック</string>
+    <string name="player_play">再生</string>
+    <string name="player_pause">一時停止</string>
+    <string name="player_next">次へ</string>
+    <string name="player_previous">前へ</string>
+    <string name="player_cannot_play">再生できませんでした。別の局を試すか、接続を確認してください。</string>
+    <string name="player_timeout">局が応答しません。別の局をお試しください。</string>
+    <string name="player_no_focus">別のアプリが音声を使用中です。もう一度再生をタップしてください。</string>
+    <string name="library_no_drive">音楽が入った USB ドライブを接続してください</string>
+    <string name="library_no_permission">ドライブの音楽を読み込むには LiteDash に権限が必要です</string>
+    <string name="library_grant">権限を許可</string>
+    <string name="library_loading">ドライブを読み込んでいます…</string>
+    <string name="library_folders">フォルダ</string>
+    <string name="library_artists">アーティスト</string>
+    <string name="library_albums">アルバム</string>
+    <string name="library_all">すべて</string>
+    <string name="library_play_all">すべて再生</string>
+    <plurals name="library_songs">
+        <item quantity="other">%1$d 曲</item>
+    </plurals>
+    <string name="library_shuffle">シャッフル</string>
+    <string name="library_unknown">不明</string>
+    <string name="library_root">ドライブのルート</string>
+    <string name="radio_nearby">近くの局</string>
+    <string name="radio_favorites">お気に入り</string>
+    <string name="radio_search_tab">検索</string>
+    <string name="radio_search_hint">局名</string>
+    <string name="radio_search_help">局名を入力してください</string>
+    <string name="radio_loading">局を探しています…</string>
+    <string name="radio_none">局が見つかりません。インターネット接続を確認してください。</string>
+    <string name="radio_no_location">位置情報がないため、国内で人気の局を表示しています。地域の局を見るには、モジュール → 権限 で位置情報を許可してください。</string>
+    <string name="radio_no_favorites">局の星をタップすると、ここに保存されます。</string>
+    <string name="radio_km">%1$d km</string>
+    <string name="library_pick_folder">フォルダを選択</string>
+    <string name="library_clear_folder">フォルダを解除</string>
+    <string name="library_pick_folder_help">ドライブに音楽があるのに表示されない場合は、そのフォルダを選んでください。LiteDash が記憶します。</string>
+    <string name="library_unreadable">ドライブ %1$s は見えますが、この画面ではアプリが曲を読み込めません。フォルダを選ぶと LiteDash が記憶します。</string>
+    <string name="library_browse_memory">開きませんでしたか？　ストレージを参照</string>
+</resources>

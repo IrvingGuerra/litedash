@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="dashboard_remove">Widget entfernen</string>
+    <string name="dashboard_card">Kachel an oder aus</string>
+    <string name="dashboard_settings">Widget-Einstellungen</string>
+    <string name="dashboard_resize">Größe ändern</string>
+</resources>

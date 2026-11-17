@@ -26,7 +26,14 @@ internal fun MusicRepository.soundCheckFor(piece: SoundPiece): SoundCheck? = sou
 @Composable
 internal fun SoundCheckPrompt(repo: MusicRepository, check: SoundCheck, modifier: Modifier = Modifier) {
     BoxWithConstraints(modifier) {
-        val text = stringResource(if (check.failed) R.string.sound_failed else R.string.sound_question)
+        val text = stringResource(
+            when {
+                check.failed -> R.string.sound_failed
+                // Con el volumen en 0 no se oye nada: que lo sepa antes de contestar.
+                check.piece == SoundPiece.MUSIC && repo.musicMuted -> R.string.sound_question_muted
+                else -> R.string.sound_question
+            },
+        )
         val buttons = @Composable {
             if (check.failed) {
                 Button(stringResource(R.string.sound_report), { repo.reportSound() }, primary = true)

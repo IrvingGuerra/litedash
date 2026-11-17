@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="player_name">LiteDash-spelaren</string>
+    <string name="player_channel">Musik</string>
+    <string name="player_play">Spela</string>
+    <string name="player_pause">Pausa</string>
+    <string name="player_next">Nästa</string>
+    <string name="player_previous">Föregående</string>
+    <string name="player_cannot_play">Kunde inte spela. Prova en annan station eller kolla anslutningen.</string>
+    <string name="player_timeout">Stationen svarar inte. Prova en annan.</string>
+    <string name="player_no_focus">En annan app har ljudet. Tryck på spela igen.</string>
+    <string name="library_no_drive">Anslut ett USB-minne med musik</string>
+    <string name="library_no_permission">LiteDash behöver behörighet att läsa musiken på minnet</string>
+    <string name="library_grant">Ge behörighet</string>
+    <string name="library_loading">Läser minnet…</string>
+    <string name="library_folders">Mappar</string>
+    <string name="library_artists">Artister</string>
+    <string name="library_albums">Album</string>
+    <string name="library_all">Alla</string>
+    <string name="library_play_all">Spela alla</string>
+    <plurals name="library_songs">
+        <item quantity="one">%1$d låt</item>
+        <item quantity="other">%1$d låtar</item>
+    </plurals>
+    <string name="library_shuffle">Blanda</string>
+    <string name="library_unknown">Okänd</string>
+    <string name="library_root">Minnets rotmapp</string>
+    <string name="radio_nearby">Nära dig</string>
+    <string name="radio_favorites">Favoriter</string>
+    <string name="radio_search_tab">Sök</string>
+    <string name="radio_search_hint">Stationens namn</string>
+    <string name="radio_search_help">Skriv en stations namn</string>
+    <string name="radio_loading">Letar efter stationer…</string>
+    <string name="radio_none">Inga stationer hittades. Kolla internetanslutningen.</string>
+    <string name="radio_no_location">Ingen plats: det här är de mest spelade i ditt land. För att se ditt områdes, tillåt plats i Moduler → Behörigheter.</string>
+    <string name="radio_no_favorites">Tryck på en stations stjärna för att spara den här.</string>
+    <string name="radio_km">%1$d km</string>
+    <string name="library_pick_folder">Välj mapp</string>
+    <string name="library_clear_folder">Rensa mapp</string>
+    <string name="library_pick_folder_help">Om musiken finns på minnet men inte syns, välj dess mapp: LiteDash kommer ihåg den.</string>
+    <string name="library_unreadable">Jag ser minnet %1$s, men skärmen låter inte appar läsa låtarna. Välj mappen så kommer LiteDash ihåg den.</string>
+    <string name="library_browse_memory">Öppnades inte? Bläddra i lagringen</string>
+</resources>

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="files_where">Kies een schijf</string>
+    <string name="files_internal">Interne opslag</string>
+    <string name="files_none">Geen schijven gevonden. Controleer de bestandsrechten.</string>
+    <string name="files_empty">Deze map is leeg.</string>
+    <string name="files_use_folder">Deze map gebruiken</string>
+    <string name="files_close">Sluiten</string>
+    <string name="files_recent">Recent</string>
+    <string name="files_recent_empty">Geen recente foto\'s.</string>
+</resources>

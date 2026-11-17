@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="player_name">LiteDash प्लेयर</string>
+    <string name="player_channel">म्यूज़िक</string>
+    <string name="player_play">चलाएँ</string>
+    <string name="player_pause">रोकें</string>
+    <string name="player_next">अगला</string>
+    <string name="player_previous">पिछला</string>
+    <string name="player_cannot_play">चल नहीं सका। दूसरा स्टेशन आज़माएँ या कनेक्शन देखें।</string>
+    <string name="player_timeout">स्टेशन जवाब नहीं दे रहा। दूसरा आज़माएँ।</string>
+    <string name="player_no_focus">ऑडियो किसी और ऐप के पास है। फिर से प्ले दबाएँ।</string>
+    <string name="library_no_drive">म्यूज़िक वाली USB ड्राइव लगाएँ</string>
+    <string name="library_no_permission">ड्राइव का म्यूज़िक पढ़ने के लिए LiteDash को अनुमति चाहिए</string>
+    <string name="library_grant">अनुमति दें</string>
+    <string name="library_loading">ड्राइव पढ़ रहे हैं…</string>
+    <string name="library_folders">फ़ोल्डर</string>
+    <string name="library_artists">कलाकार</string>
+    <string name="library_albums">एल्बम</string>
+    <string name="library_all">सभी</string>
+    <string name="library_play_all">सब चलाएँ</string>
+    <plurals name="library_songs">
+        <item quantity="one">%1$d गाना</item>
+        <item quantity="other">%1$d गाने</item>
+    </plurals>
+    <string name="library_shuffle">शफ़ल</string>
+    <string name="library_unknown">अज्ञात</string>
+    <string name="library_root">ड्राइव का रूट</string>
+    <string name="radio_nearby">आपके पास</string>
+    <string name="radio_favorites">पसंदीदा</string>
+    <string name="radio_search_tab">खोजें</string>
+    <string name="radio_search_hint">स्टेशन का नाम</string>
+    <string name="radio_search_help">स्टेशन का नाम लिखें</string>
+    <string name="radio_loading">स्टेशन ढूँढ रहे हैं…</string>
+    <string name="radio_none">कोई स्टेशन नहीं मिला। इंटरनेट कनेक्शन देखें।</string>
+    <string name="radio_no_location">लोकेशन नहीं: ये आपके देश के सबसे ज़्यादा सुने जाने वाले हैं। अपने इलाके के देखने के लिए मॉड्यूल → अनुमतियाँ में लोकेशन की अनुमति दें।</string>
+    <string name="radio_no_favorites">स्टेशन को यहाँ रखने के लिए उसके स्टार पर टैप करें।</string>
+    <string name="radio_km">%1$d km</string>
+    <string name="library_pick_folder">फ़ोल्डर चुनें</string>
+    <string name="library_clear_folder">फ़ोल्डर हटाएँ</string>
+    <string name="library_pick_folder_help">अगर म्यूज़िक ड्राइव पर है पर दिखता नहीं, तो उसका फ़ोल्डर चुनें: LiteDash उसे याद रखेगा।</string>
+    <string name="library_unreadable">ड्राइव %1$s दिख रही है, पर आपकी स्क्रीन ऐप्स को इसके गाने पढ़ने नहीं देती। उसका फ़ोल्डर चुनें और LiteDash उसे याद रखेगा।</string>
+    <string name="library_browse_memory">नहीं खुला? स्टोरेज में ढूँढें</string>
+</resources>

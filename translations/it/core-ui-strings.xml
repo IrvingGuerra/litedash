@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="files_where">Scegli un\'unità</string>
+    <string name="files_internal">Memoria interna</string>
+    <string name="files_none">Nessuna unità trovata. Controlla il permesso File.</string>
+    <string name="files_empty">Questa cartella è vuota.</string>
+    <string name="files_use_folder">Usa questa cartella</string>
+    <string name="files_close">Chiudi</string>
+    <string name="files_recent">Recenti</string>
+    <string name="files_recent_empty">Nessuna foto recente.</string>
+</resources>

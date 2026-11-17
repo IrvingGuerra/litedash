@@ -12,9 +12,13 @@ val appVersionName: String = Properties().run {
 }
 
 // Novedades de esta versión (su sección del CHANGELOG), para mostrarlas en Acerca de.
-val releaseNotes: String = rootProject.file("CHANGELOG.md").readText()
+// En inglés (CHANGELOG.en.md) para quien no tiene la app en español; sin sección, se muestran las de español.
+fun changelogSection(file: String): String = rootProject.file(file).takeIf { it.exists() }?.readText().orEmpty()
     .substringAfter("## [$appVersionName]", "")
     .substringAfter("\n").substringBefore("\n## [").trim()
+val releaseNotes: String = changelogSection("CHANGELOG.md")
+val releaseNotesEn: String = changelogSection("CHANGELOG.en.md")
+fun buildConfigText(text: String) = "\"" + text.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n") + "\""
 
 /**
  * El único cálculo del versionCode (X.Y.Z; nunca beta/rc): MAYOR×10 000 000 + MENOR×100 000 + PARCHE×100 + 99. Desde la
@@ -56,7 +60,8 @@ android {
         versionName = appVersionName
         buildConfigField("String", "CATALOG_URL", "\"$CATALOG_URL\"")
         buildConfigField("String", "LANGUAGES_URL", "\"$LANGUAGES_URL\"")
-        buildConfigField("String", "RELEASE_NOTES", "\"" + releaseNotes.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n") + "\"")
+        buildConfigField("String", "RELEASE_NOTES", buildConfigText(releaseNotes))
+        buildConfigField("String", "RELEASE_NOTES_EN", buildConfigText(releaseNotesEn))
     }
 
     signingConfigs {

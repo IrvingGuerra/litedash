@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="files_where">Chọn bộ nhớ</string>
+    <string name="files_internal">Bộ nhớ trong</string>
+    <string name="files_none">Không tìm thấy bộ nhớ nào. Hãy kiểm tra quyền truy cập tệp.</string>
+    <string name="files_empty">Thư mục này trống.</string>
+    <string name="files_use_folder">Dùng thư mục này</string>
+    <string name="files_close">Đóng</string>
+    <string name="files_recent">Gần đây</string>
+    <string name="files_recent_empty">Không có ảnh gần đây.</string>
+</resources>

@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="phone_section">Telefon</string>
+    <string name="phone_help">Ditt LiteDash-konto finns i appen LiteDash Connect på telefonen.</string>
+    <string name="phone_permission">Behörighet krävs</string>
+    <string name="phone_permission_body">För att prata med telefonen ber Android dig låta LiteDash använda det lokala nätverket (Enheter i närheten).</string>
+    <string name="local_network_allow">Tillåt</string>
+    <string name="local_network_settings">Behörigheter</string>
+    <string name="phone_no_wifi">Din skärm har inget Wi-Fi</string>
+    <string name="phone_no_wifi_body">Telefonen och skärmen pratar via Wi-Fi. Välj hur:</string>
+    <string name="phone_use_phone">Använd telefonens internet</string>
+    <string name="phone_use_phone_body">Slå på skärmens Wi-Fi och anslut den till telefonens hotspot.</string>
+    <string name="phone_share_screen">Dela skärmens</string>
+    <string name="phone_share_screen_body">Slå på skärmens hotspot och anslut telefonen till den.</string>
+    <string name="phone_open_wifi">Öppna Wi-Fi</string>
+    <string name="phone_open_hotspot">Öppna hotspot</string>
+    <string name="phone_waiting">Väntar på telefonen…</string>
+    <plurals name="phone_link_code">
+        <item quantity="one">Kod %1$s · går ut om %2$d minut</item>
+        <item quantity="other">Kod %1$s · går ut om %2$d minuter</item>
+    </plurals>
+    <string name="phone_step_install">Installera LiteDash Connect och skapa ditt konto</string>
+    <string name="phone_step_tap">Tryck på ”Länka min skärm”</string>
+    <string name="phone_step_scan">Rikta kameran mot den här koden</string>
+    <string name="phone_connected">Ansluten</string>
+    <string name="phone_searching">Letar efter telefonen…</string>
+    <string name="phone_model_app">%1$s · LiteDash Connect %2$s</string>
+    <string name="phone_link">Länk</string>
+    <string name="phone_link_ok">Telefonen och skärmen pratar med varandra</string>
+    <string name="phone_music_blocked">För att se din musik här, öppna LiteDash Connect och tryck på ”Tillåt” under Länk</string>
+    <string name="phone_link_no_network">Skärmen är inte på samma nätverk som telefonen</string>
+    <string name="phone_link_open_app">Öppna LiteDash Connect på telefonen och anslut den till samma nätverk</string>
+    <string name="phone_sound">Ljud</string>
+    <string name="phone_sound_ok">Bluetooth anslutet · %1$s</string>
+    <string name="phone_sound_ok_plain">Bluetooth anslutet</string>
+    <string name="phone_sound_missing">Hörs inget? Anslut Bluetooth från bilstereon</string>
+    <string name="phone_sound_calls">Bluetooth är anslutet bara för samtal, så det spelas i telefonen. Anslut från bilstereon, eller slå på ”Medialjud” för den här bilstereon i telefonen</string>
+    <string name="phone_calls_only">Bluetooth bara för samtal</string>
+    <string name="phone_sound_car">Via Android Auto</string>
+    <string name="phone_sound_wired">Via kabel</string>
+    <string name="phone_connect_bt">Anslut Bluetooth</string>
+    <string name="phone_sound_unknown">Det vet vi när telefonen är ansluten och spelar</string>
+    <string name="phone_search_now">Sök nu</string>
+    <string name="phone_unlink">Koppla bort</string>
+    <string name="phone_unlink_question">Koppla bort den här telefonen?</string>
+    <string name="phone_unlink_message">För att ansluta den igen måste du skanna koden på nytt från LiteDash Connect.</string>
+    <string name="phone_no_sound">Inget ljud? Anslut Bluetooth</string>
+    <string name="music_mode_phone">Medan telefonen är ansluten och spelar musik visar och styr Musik-widgeten den. När den försvinner kommer det du hade tillbaka.</string>
+    <string name="phone_job_unknown">Kataloguppgifterna för den bilen saknas</string>
+    <string name="phone_job_no_finish">Den här modellen har inga lacker</string>
+    <string name="phone_job_damaged">Filen kom fram skadad</string>
+    <string name="phone_job_unexpected">Skärmen bad inte om den filen</string>
+    <string name="phone_job_busy">Skärmen laddar ner något annat; försök igen om en stund</string>
+    <string name="phone_job_install_failed">Skärmen kunde inte installera den</string>
+</resources>

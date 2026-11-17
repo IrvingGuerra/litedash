@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="player_name">Playerul LiteDash</string>
+    <string name="player_channel">Muzică</string>
+    <string name="player_play">Redă</string>
+    <string name="player_pause">Pauză</string>
+    <string name="player_next">Următorul</string>
+    <string name="player_previous">Anteriorul</string>
+    <string name="player_cannot_play">Nu s-a putut reda. Încearcă alt post sau verifică conexiunea.</string>
+    <string name="player_timeout">Postul nu răspunde. Încearcă altul.</string>
+    <string name="player_no_focus">Altă aplicație folosește sunetul. Atinge din nou play.</string>
+    <string name="library_no_drive">Conectează un stick USB cu muzică</string>
+    <string name="library_no_permission">LiteDash are nevoie de permisiune ca să citească muzica de pe stick</string>
+    <string name="library_grant">Acordă permisiunea</string>
+    <string name="library_loading">Se citește stickul…</string>
+    <string name="library_folders">Dosare</string>
+    <string name="library_artists">Artiști</string>
+    <string name="library_albums">Albume</string>
+    <string name="library_all">Toate</string>
+    <string name="library_play_all">Redă tot</string>
+    <plurals name="library_songs">
+        <item quantity="one">%1$d melodie</item>
+        <item quantity="few">%1$d melodii</item>
+        <item quantity="other">%1$d de melodii</item>
+    </plurals>
+    <string name="library_shuffle">Amestecă</string>
+    <string name="library_unknown">Necunoscut</string>
+    <string name="library_root">Rădăcina stickului</string>
+    <string name="radio_nearby">Lângă tine</string>
+    <string name="radio_favorites">Favorite</string>
+    <string name="radio_search_tab">Caută</string>
+    <string name="radio_search_hint">Numele postului</string>
+    <string name="radio_search_help">Scrie numele unui post</string>
+    <string name="radio_loading">Se caută posturi…</string>
+    <string name="radio_none">Nu s-au găsit posturi. Verifică conexiunea la internet.</string>
+    <string name="radio_no_location">Fără locație: acestea sunt cele mai ascultate din țara ta. Ca să le vezi pe cele din zona ta, permite locația în Module → Permisiuni.</string>
+    <string name="radio_no_favorites">Atinge steaua unui post ca să-l păstrezi aici.</string>
+    <string name="radio_km">%1$d km</string>
+    <string name="library_pick_folder">Alege dosarul</string>
+    <string name="library_clear_folder">Elimină dosarul</string>
+    <string name="library_pick_folder_help">Dacă muzica e pe stick, dar nu apare, alege-i dosarul: LiteDash îl va ține minte.</string>
+    <string name="library_unreadable">Văd stickul %1$s, dar ecranul tău nu lasă aplicațiile să-i citească melodiile. Alege-i dosarul și LiteDash îl va ține minte.</string>
+    <string name="library_browse_memory">Nu s-a deschis? Răsfoiește memoria</string>
+</resources>

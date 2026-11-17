@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="files_where">เลือกไดรฟ์</string>
+    <string name="files_internal">ที่เก็บข้อมูลภายใน</string>
+    <string name="files_none">ไม่พบไดรฟ์ ตรวจสิทธิ์เข้าถึงไฟล์</string>
+    <string name="files_empty">โฟลเดอร์นี้ว่างเปล่า</string>
+    <string name="files_use_folder">ใช้โฟลเดอร์นี้</string>
+    <string name="files_close">ปิด</string>
+    <string name="files_recent">ล่าสุด</string>
+    <string name="files_recent_empty">ไม่มีรูปล่าสุด</string>
+</resources>

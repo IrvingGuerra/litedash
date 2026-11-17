@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="music_explain">Xem và điều khiển nội dung đang phát trong mọi ứng dụng. Cần quyền truy cập thông báo.</string>
+    <string name="enable">Bật</string>
+    <string name="nothing_playing">Không có gì đang phát</string>
+    <string name="open_an_app">Phát nhạc trong ứng dụng yêu thích của bạn</string>
+    <string name="resume_explain">Nhấn phát để nghe tiếp từ chỗ đã dừng.</string>
+    <string name="no_song_info">Không có thông tin bài hát</string>
+    <string name="opening_app">Đang mở %1$s…</string>
+    <string name="opening_wait">Sắp xong: sẽ bắt đầu ngay.</string>
+    <string name="source_files">Tệp</string>
+    <string name="source_bluetooth">Bluetooth</string>
+    <string name="source_radio">Radio</string>
+    <string name="bluetooth_connect_phone">Kết nối điện thoại qua Bluetooth</string>
+    <string name="usb_drive">Ổ USB</string>
+    <string name="usb_drive_in">Đã cắm ổ USB: %1$s</string>
+    <string name="player_connecting">Đang kết nối…</string>
+    <string name="radio">Radio</string>
+    <string name="radio_explain">Điều khiển radio của màn hình (và radio internet nếu bạn bật). Cần quyền truy cập thông báo.</string>
+    <string name="radio_internet">Internet</string>
+    <string name="radio_fm">FM của màn hình</string>
+    <string name="radio_unlinked">Liên kết radio của màn hình trong Cài đặt hoặc bật radio internet</string>
+    <string name="radio_settings">Cài đặt</string>
+    <string name="mode_app">Ứng dụng</string>
+    <string name="radio_fm_label">Radio FM</string>
+    <string name="sound_question">Bạn có nghe thấy không?</string>
+    <string name="sound_question_muted">Bạn có nghe thấy không? Lưu ý: âm lượng nhạc đang ở 0</string>
+    <string name="sound_yes">Có</string>
+    <string name="sound_no">Không</string>
+    <string name="sound_failed">Không phát được</string>
+    <string name="sound_report">Báo lỗi</string>
+    <string name="recipe_none">Chưa hiệu chỉnh: sẽ tự làm lần đầu tiên phát</string>
+    <string name="recipe_plain">Hoạt động bình thường</string>
+    <string name="recipe_tw_source8">Đầu vào Bluetooth của màn hình</string>
+    <string name="recipe_fyt_toggle">Chuyển nguồn của màn hình</string>
+    <string name="recipe_profile">Điều khiển radio trực tiếp</string>
+    <string name="recipe_open_bluetooth">Mở ứng dụng Bluetooth rồi quay lại</string>
+    <string name="recipe_open_radio">Mở ứng dụng radio rồi quay lại</string>
+    <string name="recipe_failed">Không tìm được cách</string>
+</resources>

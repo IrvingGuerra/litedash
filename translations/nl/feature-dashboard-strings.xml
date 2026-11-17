@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="dashboard_remove">Widget verwijderen</string>
+    <string name="dashboard_card">Kaart aan of uit</string>
+    <string name="dashboard_settings">Widget-instellingen</string>
+    <string name="dashboard_resize">Formaat wijzigen</string>
+</resources>

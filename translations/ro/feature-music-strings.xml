@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="music_explain">Vezi și controlează ce se redă în orice aplicație. Necesită acces la notificări.</string>
+    <string name="enable">Activează</string>
+    <string name="nothing_playing">Nu se redă nimic</string>
+    <string name="open_an_app">Pornește muzica în aplicația ta preferată</string>
+    <string name="resume_explain">Apasă play ca să continui de unde ai rămas.</string>
+    <string name="no_song_info">Fără informații despre melodie</string>
+    <string name="opening_app">Se deschide %1$s…</string>
+    <string name="opening_wait">Aproape gata: pornește imediat.</string>
+    <string name="source_files">Fișiere</string>
+    <string name="source_bluetooth">Bluetooth</string>
+    <string name="source_radio">Radio</string>
+    <string name="bluetooth_connect_phone">Conectează telefonul prin Bluetooth</string>
+    <string name="usb_drive">Stick USB</string>
+    <string name="usb_drive_in">Stick USB conectat: %1$s</string>
+    <string name="player_connecting">Se conectează…</string>
+    <string name="radio">Radio</string>
+    <string name="radio_explain">Controlează radioul ecranului (și radioul pe internet, dacă îl activezi). Necesită acces la notificări.</string>
+    <string name="radio_internet">Internet</string>
+    <string name="radio_fm">FM-ul ecranului</string>
+    <string name="radio_unlinked">Leagă radioul ecranului în Setări sau activează radioul pe internet</string>
+    <string name="radio_settings">Setări</string>
+    <string name="mode_app">Aplicație</string>
+    <string name="radio_fm_label">Radio FM</string>
+    <string name="sound_question">Se aude?</string>
+    <string name="sound_question_muted">Se aude? Atenție: volumul muzicii e la 0</string>
+    <string name="sound_yes">Da</string>
+    <string name="sound_no">Nu</string>
+    <string name="sound_failed">Nu am reușit să pornim sunetul</string>
+    <string name="sound_report">Raportează</string>
+    <string name="recipe_none">Necalibrat încă: se face singur prima dată când redă</string>
+    <string name="recipe_plain">Merge așa cum e</string>
+    <string name="recipe_tw_source8">Intrarea Bluetooth a ecranului</string>
+    <string name="recipe_fyt_toggle">Schimbă sursa ecranului</string>
+    <string name="recipe_profile">Control direct al radioului</string>
+    <string name="recipe_open_bluetooth">Deschide aplicația Bluetooth și revine</string>
+    <string name="recipe_open_radio">Deschide aplicația radio și revine</string>
+    <string name="recipe_failed">Nu s-a găsit nicio cale</string>
+</resources>

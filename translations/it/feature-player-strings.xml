@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="player_name">Player di LiteDash</string>
+    <string name="player_channel">Musica</string>
+    <string name="player_play">Play</string>
+    <string name="player_pause">Pausa</string>
+    <string name="player_next">Successivo</string>
+    <string name="player_previous">Precedente</string>
+    <string name="player_cannot_play">Impossibile riprodurla. Prova un\'altra stazione o controlla la connessione.</string>
+    <string name="player_timeout">La stazione non risponde. Provane un\'altra.</string>
+    <string name="player_no_focus">Un\'altra app ha l\'audio. Tocca di nuovo play.</string>
+    <string name="library_no_drive">Collega una chiavetta USB con musica</string>
+    <string name="library_no_permission">LiteDash ha bisogno del permesso per leggere la musica sulla chiavetta</string>
+    <string name="library_grant">Dai il permesso</string>
+    <string name="library_loading">Lettura della chiavetta…</string>
+    <string name="library_folders">Cartelle</string>
+    <string name="library_artists">Artisti</string>
+    <string name="library_albums">Album</string>
+    <string name="library_all">Tutti</string>
+    <string name="library_play_all">Riproduci tutto</string>
+    <plurals name="library_songs">
+        <item quantity="one">%1$d brano</item>
+        <item quantity="other">%1$d brani</item>
+    </plurals>
+    <string name="library_shuffle">Casuale</string>
+    <string name="library_unknown">Sconosciuto</string>
+    <string name="library_root">Radice della chiavetta</string>
+    <string name="radio_nearby">Vicino a te</string>
+    <string name="radio_favorites">Preferite</string>
+    <string name="radio_search_tab">Cerca</string>
+    <string name="radio_search_hint">Nome della stazione</string>
+    <string name="radio_search_help">Scrivi il nome di una stazione</string>
+    <string name="radio_loading">Cerco stazioni…</string>
+    <string name="radio_none">Nessuna stazione trovata. Controlla la connessione internet.</string>
+    <string name="radio_no_location">Niente posizione: queste sono le più ascoltate del tuo paese. Per vedere quelle della tua zona, consenti la posizione in Moduli → Permessi.</string>
+    <string name="radio_no_favorites">Tocca la stella di una stazione per tenerla qui.</string>
+    <string name="radio_km">%1$d km</string>
+    <string name="library_pick_folder">Scegli cartella</string>
+    <string name="library_clear_folder">Togli cartella</string>
+    <string name="library_pick_folder_help">Se la tua musica è sulla chiavetta ma non appare, scegli la sua cartella: LiteDash la ricorderà.</string>
+    <string name="library_unreadable">Vedo la chiavetta %1$s, ma il tuo schermo non lascia leggere i brani alle app. Scegli la sua cartella e LiteDash la ricorderà.</string>
+    <string name="library_browse_memory">Non si è aperto? Sfoglia la memoria</string>
+</resources>

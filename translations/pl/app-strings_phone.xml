@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="phone_section">Telefon</string>
+    <string name="phone_help">Twoje konto LiteDash jest w aplikacji LiteDash Connect na telefonie.</string>
+    <string name="phone_permission">Wymagane uprawnienie</string>
+    <string name="phone_permission_body">Aby rozmawiać z telefonem, Android prosi o zgodę na używanie sieci lokalnej przez LiteDash (Urządzenia w pobliżu).</string>
+    <string name="local_network_allow">Zezwól</string>
+    <string name="local_network_settings">Uprawnienia</string>
+    <string name="phone_no_wifi">Twój ekran nie ma Wi-Fi</string>
+    <string name="phone_no_wifi_body">Telefon i ekran łączą się przez Wi-Fi. Wybierz jak:</string>
+    <string name="phone_use_phone">Użyj internetu z telefonu</string>
+    <string name="phone_use_phone_body">Włącz Wi-Fi ekranu i połącz go z hotspotem telefonu.</string>
+    <string name="phone_share_screen">Udostępnij z ekranu</string>
+    <string name="phone_share_screen_body">Włącz hotspot ekranu i połącz z nim telefon.</string>
+    <string name="phone_open_wifi">Otwórz Wi-Fi</string>
+    <string name="phone_open_hotspot">Otwórz hotspot</string>
+    <string name="phone_waiting">Czekam na telefon…</string>
+    <plurals name="phone_link_code">
+        <item quantity="one">Kod %1$s · wygasa za %2$d minutę</item>
+        <item quantity="few">Kod %1$s · wygasa za %2$d minuty</item>
+        <item quantity="many">Kod %1$s · wygasa za %2$d minut</item>
+        <item quantity="other">Kod %1$s · wygasa za %2$d minuty</item>
+    </plurals>
+    <string name="phone_step_install">Zainstaluj LiteDash Connect i załóż konto</string>
+    <string name="phone_step_tap">Dotknij „Połącz mój ekran”</string>
+    <string name="phone_step_scan">Skieruj aparat na ten kod</string>
+    <string name="phone_connected">Połączono</string>
+    <string name="phone_searching">Szukanie telefonu…</string>
+    <string name="phone_model_app">%1$s · LiteDash Connect %2$s</string>
+    <string name="phone_link">Połączenie</string>
+    <string name="phone_link_ok">Telefon i ekran są połączone</string>
+    <string name="phone_music_blocked">Aby widzieć tu muzykę, otwórz LiteDash Connect i dotknij „Zezwól” w sekcji Połączenie</string>
+    <string name="phone_link_no_network">Ekran nie jest w tej samej sieci co telefon</string>
+    <string name="phone_link_open_app">Otwórz LiteDash Connect na telefonie i połącz go z tą samą siecią</string>
+    <string name="phone_sound">Dźwięk</string>
+    <string name="phone_sound_ok">Bluetooth połączony · %1$s</string>
+    <string name="phone_sound_ok_plain">Bluetooth połączony</string>
+    <string name="phone_sound_missing">Nie słychać? Połącz Bluetooth z radia</string>
+    <string name="phone_sound_calls">Bluetooth jest połączony tylko do rozmów, więc dźwięk gra w telefonie. Połącz go z radia lub włącz w telefonie „Audio multimediów” dla tego radia</string>
+    <string name="phone_calls_only">Bluetooth tylko do rozmów</string>
+    <string name="phone_sound_car">Przez Android Auto</string>
+    <string name="phone_sound_wired">Przez kabel</string>
+    <string name="phone_connect_bt">Połącz Bluetooth</string>
+    <string name="phone_sound_unknown">Dowiemy się, gdy telefon będzie połączony i będzie grał</string>
+    <string name="phone_search_now">Szukaj teraz</string>
+    <string name="phone_unlink">Odłącz</string>
+    <string name="phone_unlink_question">Odłączyć ten telefon?</string>
+    <string name="phone_unlink_message">Aby połączyć go ponownie, trzeba będzie znów zeskanować kod w LiteDash Connect.</string>
+    <string name="phone_no_sound">Brak dźwięku? Połącz Bluetooth</string>
+    <string name="music_mode_phone">Gdy telefon jest połączony i gra muzykę, widżet Muzyka ją pokazuje i nią steruje. Gdy się rozłączy, wraca to, co było.</string>
+    <string name="phone_job_unknown">Brak danych katalogu dla tego auta</string>
+    <string name="phone_job_no_finish">Ten model nie ma wykończeń</string>
+    <string name="phone_job_damaged">Plik dotarł uszkodzony</string>
+    <string name="phone_job_unexpected">Ekran nie prosił o ten plik</string>
+    <string name="phone_job_busy">Ekran pobiera coś innego; spróbuj za chwilę</string>
+    <string name="phone_job_install_failed">Ekran nie mógł tego zainstalować</string>
+</resources>

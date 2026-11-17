@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="check_updates">업데이트 확인</string>
+    <string name="up_to_date">최신 버전을 사용 중이에요.</string>
+    <string name="update_error">확인하지 못했어요. 연결을 확인하고 다시 시도하세요.</string>
+    <string name="update_download_error">다운로드하지 못했어요: GitHub가 응답하지 않거나 연결이 끊겼어요. 몇 분 후 다시 시도하세요.</string>
+    <string name="new_version">LiteDash %1$s 준비 완료</string>
+    <string name="download_install">다운로드 및 설치 · %1$.1f MB</string>
+    <string name="installing">Android 설치 프로그램을 여는 중…</string>
+    <string name="install_permission">Android에서 LiteDash의 앱 설치를 허용해야 해요(자체 업데이트에만 사용). 열린 화면에서 켜고 돌아오세요.</string>
+    <string name="already_allowed">허용했어요, 설치</string>
+    <string name="install_error">Android가 설치하지 못했어요. 다시 시도하세요.</string>
+    <string name="install_aborted">설치가 취소되었어요.</string>
+    <string name="install_incompatible">이 버전은 설치된 버전과 호환되지 않아요.</string>
+    <string name="install_storage">설치할 공간이 부족해요. 공간을 확보하고 다시 시도하세요.</string>
+    <string name="install_blocked">Android가 설치를 차단했어요.</string>
+    <string name="update_see">보기</string>
+    <string name="update_later">나중에</string>
+    <string name="open_installer">Android 설치 프로그램으로 열기</string>
+</resources>

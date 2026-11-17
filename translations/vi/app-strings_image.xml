@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="image_background">Nền</string>
+    <string name="image_background_original">Gốc</string>
+    <string name="image_background_remove">Xóa nền</string>
+    <string name="image_background_help">Hiệu quả nhất với nền trơn: bức tường, bầu trời hoặc phông studio.</string>
+    <string name="image_strength">Độ mạnh</string>
+    <string name="image_strength_low">Nhẹ</string>
+    <string name="image_strength_medium">Vừa</string>
+    <string name="image_strength_high">Mạnh</string>
+    <string name="image_strength_max">Tối đa</string>
+    <string name="image_cut_failed">Không tách được xe khỏi nền: hãy thử ảnh có nền trơn.</string>
+    <string name="image_apply">Áp dụng</string>
+    <string name="image_unusable">Không dùng được ảnh đó; hãy thử ảnh khác.</string>
+</resources>

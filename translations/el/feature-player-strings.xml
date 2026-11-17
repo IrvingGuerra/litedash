@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="player_name">Πρόγραμμα αναπαραγωγής LiteDash</string>
+    <string name="player_channel">Μουσική</string>
+    <string name="player_play">Αναπαραγωγή</string>
+    <string name="player_pause">Παύση</string>
+    <string name="player_next">Επόμενο</string>
+    <string name="player_previous">Προηγούμενο</string>
+    <string name="player_cannot_play">Δεν ήταν δυνατή η αναπαραγωγή. Δοκιμάστε άλλον σταθμό ή ελέγξτε τη σύνδεση.</string>
+    <string name="player_timeout">Ο σταθμός δεν αποκρίνεται. Δοκιμάστε άλλον.</string>
+    <string name="player_no_focus">Άλλη εφαρμογή έχει τον ήχο. Πατήστε ξανά αναπαραγωγή.</string>
+    <string name="library_no_drive">Συνδέστε μια μονάδα USB με μουσική</string>
+    <string name="library_no_permission">Το LiteDash χρειάζεται άδεια για να διαβάσει τη μουσική της μονάδας</string>
+    <string name="library_grant">Παροχή άδειας</string>
+    <string name="library_loading">Ανάγνωση της μονάδας…</string>
+    <string name="library_folders">Φάκελοι</string>
+    <string name="library_artists">Καλλιτέχνες</string>
+    <string name="library_albums">Άλμπουμ</string>
+    <string name="library_all">Όλα</string>
+    <string name="library_play_all">Αναπαραγωγή όλων</string>
+    <plurals name="library_songs">
+        <item quantity="one">%1$d τραγούδι</item>
+        <item quantity="other">%1$d τραγούδια</item>
+    </plurals>
+    <string name="library_shuffle">Τυχαία σειρά</string>
+    <string name="library_unknown">Άγνωστο</string>
+    <string name="library_root">Ρίζα μονάδας</string>
+    <string name="radio_nearby">Κοντά σας</string>
+    <string name="radio_favorites">Αγαπημένα</string>
+    <string name="radio_search_tab">Αναζήτηση</string>
+    <string name="radio_search_hint">Όνομα σταθμού</string>
+    <string name="radio_search_help">Πληκτρολογήστε το όνομα ενός σταθμού</string>
+    <string name="radio_loading">Αναζήτηση σταθμών…</string>
+    <string name="radio_none">Δεν βρέθηκαν σταθμοί. Ελέγξτε τη σύνδεση στο internet.</string>
+    <string name="radio_no_location">Χωρίς τοποθεσία: αυτοί είναι οι πιο δημοφιλείς της χώρας σας. Για τους σταθμούς της περιοχής σας, επιτρέψτε την τοποθεσία στο Λειτουργίες → Άδειες.</string>
+    <string name="radio_no_favorites">Πατήστε το αστέρι ενός σταθμού για να τον κρατήσετε εδώ.</string>
+    <string name="radio_km">%1$d km</string>
+    <string name="library_pick_folder">Επιλογή φακέλου</string>
+    <string name="library_clear_folder">Κατάργηση φακέλου</string>
+    <string name="library_pick_folder_help">Αν η μουσική σας είναι στη μονάδα αλλά δεν εμφανίζεται, επιλέξτε τον φάκελό της: το LiteDash θα τον θυμάται.</string>
+    <string name="library_unreadable">Βλέπω τη μονάδα %1$s, αλλά η οθόνη σας δεν επιτρέπει στις εφαρμογές να διαβάσουν τα τραγούδια της. Επιλέξτε τον φάκελό της και το LiteDash θα τον θυμάται.</string>
+    <string name="library_browse_memory">Δεν άνοιξε; Περιηγηθείτε στον χώρο αποθήκευσης</string>
+</resources>

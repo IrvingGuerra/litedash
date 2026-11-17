@@ -86,6 +86,8 @@ PAGES = {
 EXTRA = {
     "/privacidad/": ("privacidad/index.html", "es", None, "/en/privacy/"),
     "/en/privacy/": ("en/privacy/index.html", "en", None, "/privacidad/"),
+    "/translate/": ("translate/index.html", "es", None, "/en/translate/"),
+    "/en/translate/": ("en/translate/index.html", "en", None, "/translate/"),
 }
 
 

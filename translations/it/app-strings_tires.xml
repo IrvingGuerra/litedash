@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="tires_error_usb_missing">Il ricevitore gomme USB non è collegato</string>
+    <string name="tires_error_usb_denied">Nessun permesso per il ricevitore USB</string>
+    <string name="tires_error_usb_open">Impossibile aprire il ricevitore USB</string>
+    <string name="tires_error_usb_unplugged">Il ricevitore USB è stato scollegato</string>
+    <string name="tires_error_usb_lost">Connessione con il ricevitore USB persa</string>
+    <string name="tires_error_swap">Il ricevitore non ha confermato lo scambio delle gomme</string>
+    <string name="tires_tap_hint">Tocca una gomma per configurarne il sensore o spostarlo</string>
+</resources>

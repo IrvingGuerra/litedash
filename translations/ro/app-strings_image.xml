@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="image_background">Fundal</string>
+    <string name="image_background_original">Original</string>
+    <string name="image_background_remove">Elimină</string>
+    <string name="image_background_help">Merge cel mai bine cu un fundal simplu: un perete, cerul sau un studio.</string>
+    <string name="image_strength">Intensitate</string>
+    <string name="image_strength_low">Ușoară</string>
+    <string name="image_strength_medium">Medie</string>
+    <string name="image_strength_high">Mare</string>
+    <string name="image_strength_max">Maximă</string>
+    <string name="image_cut_failed">Mașina nu a putut fi separată de fundal: încearcă o fotografie cu fundal simplu.</string>
+    <string name="image_apply">Aplică</string>
+    <string name="image_unusable">Imaginea nu poate fi folosită; încearcă alta.</string>
+</resources>

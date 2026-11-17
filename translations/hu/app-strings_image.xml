@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="image_background">Háttér</string>
+    <string name="image_background_original">Eredeti</string>
+    <string name="image_background_remove">Eltávolítás</string>
+    <string name="image_background_help">Egyszerű háttérrel működik a legjobban: fal, ég vagy stúdió.</string>
+    <string name="image_strength">Erősség</string>
+    <string name="image_strength_low">Gyenge</string>
+    <string name="image_strength_medium">Közepes</string>
+    <string name="image_strength_high">Erős</string>
+    <string name="image_strength_max">Maximum</string>
+    <string name="image_cut_failed">Nem sikerült leválasztani az autót a háttérről: próbálj egy egyszerű hátterű fotót.</string>
+    <string name="image_apply">Alkalmaz</string>
+    <string name="image_unusable">Ez a kép nem használható; próbálj egy másikat.</string>
+</resources>

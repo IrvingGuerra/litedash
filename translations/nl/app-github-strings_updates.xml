@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="check_updates">Zoeken naar updates</string>
+    <string name="up_to_date">Je hebt de nieuwste versie.</string>
+    <string name="update_error">Controleren mislukt. Check je verbinding en probeer het opnieuw.</string>
+    <string name="update_download_error">Downloaden mislukt: GitHub reageerde niet of de verbinding viel weg. Probeer het over een paar minuten opnieuw.</string>
+    <string name="new_version">LiteDash %1$s staat klaar</string>
+    <string name="download_install">Downloaden en installeren · %1$.1f MB</string>
+    <string name="installing">Android-installatieprogramma openen…</string>
+    <string name="install_permission">Android vraagt je LiteDash toe te staan apps te installeren (alleen voor de eigen updates). Zet het aan in het scherm dat opende en kom terug.</string>
+    <string name="already_allowed">Klaar, installeren</string>
+    <string name="install_error">Android kon het niet installeren. Probeer het opnieuw.</string>
+    <string name="install_aborted">De installatie is geannuleerd.</string>
+    <string name="install_incompatible">Deze versie is niet compatibel met de geïnstalleerde versie.</string>
+    <string name="install_storage">Niet genoeg ruimte om te installeren. Maak wat ruimte vrij en probeer het opnieuw.</string>
+    <string name="install_blocked">Android heeft de installatie geblokkeerd.</string>
+    <string name="update_see">Bekijken</string>
+    <string name="update_later">Later</string>
+    <string name="open_installer">Openen met het Android-installatieprogramma</string>
+</resources>

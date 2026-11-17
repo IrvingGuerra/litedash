@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="tires_error_usb_missing">Chưa cắm bộ thu lốp USB</string>
+    <string name="tires_error_usb_denied">Không có quyền dùng bộ thu USB</string>
+    <string name="tires_error_usb_open">Không mở được bộ thu USB</string>
+    <string name="tires_error_usb_unplugged">Bộ thu USB đã bị rút ra</string>
+    <string name="tires_error_usb_lost">Mất kết nối với bộ thu USB</string>
+    <string name="tires_error_swap">Bộ thu không xác nhận việc đổi lốp</string>
+    <string name="tires_tap_hint">Nhấn vào một lốp để cài cảm biến hoặc di chuyển nó</string>
+</resources>

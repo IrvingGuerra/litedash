@@ -148,6 +148,10 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
     private var connectedOnAttempt = 0
     /** Quiénes quieren el escáner ([want]). */
     private val wanters = mutableSetOf<Any>()
+    /** La desconexión pendiente cuando ya nadie lo quiere ([release]); un [want] a tiempo la cancela. */
+    private var releaseJob: Job? = null
+    /** Cuándo se cerró el último enlace (reloj de arranque): Bluetooth necesita un respiro antes de reabrir. */
+    @Volatile private var closedAt = 0L
     /** Dejar de escuchar el permiso USB pedido / el desconectado del cable. */
     private var cancelUsbPermission: (() -> Unit)? = null
     private var unwatchDetach: (() -> Unit)? = null
@@ -278,13 +282,40 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
      * llave estable del que lo pide; se suelta con [release].
      */
     fun want(owner: Any) {
+        releaseJob?.cancel()
+        releaseJob = null
         if (!wanters.add(owner)) return
         if (state == ObdState.OFF || state == ObdState.ERROR && retryJob?.isActive != true) connect()
     }
 
-    /** [owner] ya no lo quiere; sin nadie que lo quiera se desconecta (módulo sin uso = nada corriendo). */
+    /**
+     * [owner] ya no lo quiere; sin nadie que lo quiera se desconecta tras [ObdTiming.RELEASE_GRACE_MS] (módulo sin uso =
+     * nada corriendo). No al instante: abrir Ajustes quita el tablero un momento, y cortar y reabrir el Bluetooth al
+     * cerrarlo hacía fallar a los ELM327 baratos ("antes iba perfecto", issue #23).
+     */
     fun release(owner: Any) {
-        if (wanters.remove(owner) && wanters.isEmpty()) disconnect()
+        if (!wanters.remove(owner) || wanters.isNotEmpty()) return
+        releaseJob?.cancel()
+        releaseJob = scope.launch(Dispatchers.Main) {
+            delay(ObdTiming.RELEASE_GRACE_MS)
+            releaseJob = null
+            if (wanters.isNotEmpty() || state == ObdState.OFF) return@launch
+            note("soltado: sin quien lo quiera")
+            disconnect()
+        }
+    }
+
+    /**
+     * LiteDash volvió a la vista: si se había quedado esperando un reintento largo (hasta minutos con el adaptador
+     * dormido), intenta ya. Solo si alguien lo quiere.
+     */
+    fun wake() {
+        val t = attempting ?: target
+        if (t == null || wanters.isEmpty() || state != ObdState.ERROR || errorKind?.retry != true) return
+        retryJob?.cancel()
+        retryJob = null
+        // Sin reiniciar la cuenta: si sigue sin contestar, la espera sigue creciendo.
+        attempt(t)
     }
 
     /** El usuario (o quien lo quiere) pide conectarse a [t] o al último que funcionó: racha nueva de reintentos. */
@@ -323,6 +354,11 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
             // El enlace de este intento: se cierra aquí si algo falla (aunque todavía no sea el actual).
             var opened: ElmLink? = null
             try {
+                // Reabrir Bluetooth justo después de cerrarlo falla seguido ("read failed", GATT 133): un respiro.
+                if (t is ObdTarget.Bluetooth || t is ObdTarget.Ble) {
+                    val since = SystemClock.elapsedRealtime() - closedAt
+                    if (since < ObdTiming.REOPEN_GAP_MS) delay(ObdTiming.REOPEN_GAP_MS - since)
+                }
                 val (l, e, version) = openAndInit(t)
                 opened = l
                 val pids = lock.withLock { e.supportedPids() }
@@ -340,6 +376,7 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
                     lastReport = null
                     state = ObdState.ON
                     connectedOnAttempt = retries + 1
+                    note("conectó ${t.key} en el intento $connectedOnAttempt" + ((l as? BluetoothLink)?.used?.let { " socket=$it" } ?: ""))
                     retries = 0
                     if (t is ObdTarget.Usb) watchUsbDetach(t)
                 }
@@ -348,6 +385,8 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
                 opened?.let(::closeQuietly)
                 throw c
             } catch (x: Exception) {
+                // También cuenta para el respiro antes de reabrir (fail no pasa por closeLink).
+                closedAt = SystemClock.elapsedRealtime()
                 opened?.let(::closeQuietly)
                 if (isActive) withContext(Dispatchers.Main + NonCancellable) { fail(t, x, dropped = state == ObdState.ON) }
             }
@@ -409,7 +448,10 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
         cancelUsbPermission = null
         stopScan?.invoke()
         // Cerrar el enlace a medias suelta su conexión bloqueada (Bluetooth clásico incluido): no quedan dos.
-        pending?.let(::closeQuietly)
+        pending?.let {
+            closedAt = SystemClock.elapsedRealtime()
+            closeQuietly(it)
+        }
         pending = null
         closeLink()
         state = ObdState.OFF
@@ -584,6 +626,21 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
             null
         }
 
+        /** Veces seguidas que ATRV no contestó: a la segunda se deja de pedir en esta conexión (cada una espera 3 s). */
+        private var voltageSilent = 0
+
+        /** ATRV que no contesta: sin valor y sin contar falla (ni anotarlo cada 2 s); si se perdió el adaptador, sí corta. */
+        private fun optionalVoltage(e: Elm327): Float? {
+            if (voltageSilent >= 2) return null
+            return try {
+                e.voltage().also { voltageSilent = 0 }
+            } catch (x: ObdException) {
+                if (x.kind != ObdError.ADAPTER_SILENT) throw x
+                if (++voltageSilent == 2) note("ATRV sin respuesta: se deja de pedir")
+                null
+            }
+        }
+
         suspend fun read(shown: Set<String>) {
             val derived = DerivedSignals.filter { it.signal in shown }
             // De anyOf solo el primero que dé el auto: compute ignora los demás si está ese.
@@ -602,8 +659,11 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
                 // Se leen todos y se publican juntos: un solo salto al hilo principal por vuelta.
                 val values = mutableListOf<Pair<String, Float?>>()
                 for (p in pids) if (p.fast || slow) values += p.signal to lock.withLock { ask { e.pid(p.code) } }?.let(p.decode)
-                // Sin envolver: si el adaptador se perdió, también cuenta como falla (y se nota la caída).
-                if (adapterVoltage && slow) values += Signal.VOLTAGE to lock.withLock { ask { e.voltage() } }
+                // Si el voltaje es lo único que se lee, su falla cuenta (así se nota la caída). Con PIDs, no: hay clones que
+                // no contestan ATRV y sumaban fallas hasta tirar la conexión; si el adaptador se perdió, los PIDs lo dicen.
+                if (adapterVoltage && slow) {
+                    values += Signal.VOLTAGE to lock.withLock { if (pids.isEmpty()) ask { e.voltage() } else optionalVoltage(e) }
+                }
                 for ((signal, value) in values) if (value == null) last.remove(signal) else last[signal] = value
                 for (d in derived) {
                     val raw = d.compute(last)
@@ -696,6 +756,7 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
 
     private fun closeLink() {
         unwatchUsbDetach()
+        if (link != null) closedAt = SystemClock.elapsedRealtime()
         link?.let(::closeQuietly)
         link = null
         elm = null

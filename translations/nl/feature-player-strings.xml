@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="player_name">LiteDash-speler</string>
+    <string name="player_channel">Muziek</string>
+    <string name="player_play">Afspelen</string>
+    <string name="player_pause">Pauzeren</string>
+    <string name="player_next">Volgende</string>
+    <string name="player_previous">Vorige</string>
+    <string name="player_cannot_play">Afspelen mislukt. Probeer een andere zender of check de verbinding.</string>
+    <string name="player_timeout">De zender reageert niet. Probeer een andere.</string>
+    <string name="player_no_focus">Een andere app heeft het geluid. Tik nogmaals op afspelen.</string>
+    <string name="library_no_drive">Sluit een USB-stick met muziek aan</string>
+    <string name="library_no_permission">LiteDash heeft toestemming nodig om de muziek op de stick te lezen</string>
+    <string name="library_grant">Toestemming geven</string>
+    <string name="library_loading">Stick lezen…</string>
+    <string name="library_folders">Mappen</string>
+    <string name="library_artists">Artiesten</string>
+    <string name="library_albums">Albums</string>
+    <string name="library_all">Alles</string>
+    <string name="library_play_all">Alles afspelen</string>
+    <plurals name="library_songs">
+        <item quantity="one">%1$d nummer</item>
+        <item quantity="other">%1$d nummers</item>
+    </plurals>
+    <string name="library_shuffle">Shuffle</string>
+    <string name="library_unknown">Onbekend</string>
+    <string name="library_root">Hoofdmap van de stick</string>
+    <string name="radio_nearby">In de buurt</string>
+    <string name="radio_favorites">Favorieten</string>
+    <string name="radio_search_tab">Zoeken</string>
+    <string name="radio_search_hint">Naam van de zender</string>
+    <string name="radio_search_help">Typ de naam van een zender</string>
+    <string name="radio_loading">Zenders zoeken…</string>
+    <string name="radio_none">Geen zenders gevonden. Check je internetverbinding.</string>
+    <string name="radio_no_location">Geen locatie: dit zijn de populairste in je land. Wil je die uit je regio zien, sta locatie toe in Modules → Rechten.</string>
+    <string name="radio_no_favorites">Tik op de ster van een zender om hem hier te bewaren.</string>
+    <string name="radio_km">%1$d km</string>
+    <string name="library_pick_folder">Map kiezen</string>
+    <string name="library_clear_folder">Map wissen</string>
+    <string name="library_pick_folder_help">Staat je muziek op de stick maar verschijnt ze niet? Kies de map: LiteDash onthoudt hem.</string>
+    <string name="library_unreadable">Ik zie de stick %1$s, maar je scherm laat apps de nummers niet lezen. Kies de map en LiteDash onthoudt hem.</string>
+    <string name="library_browse_memory">Niet geopend? Blader door de opslag</string>
+</resources>

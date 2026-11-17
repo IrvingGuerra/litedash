@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="tab_day_night">दिन और रात</string>
+    <string name="tab_your_screen">आपकी स्क्रीन</string>
+    <string name="weather_switch">मौसम</string>
+    <string name="weather_switch_help">बार, घड़ी और मौसम विजेट में; होम स्क्रीन दिखते समय हर आधे घंटे में अपडेट। आपकी अनुमानित लोकेशन और इंटरनेट इस्तेमाल करता है; बंद होने पर दोनों में से कुछ नहीं।</string>
+    <string name="reminder_pick_date">%1$s कब है?</string>
+    <string name="split_unsupported_screen">आपकी स्क्रीन दो ऐप साथ-साथ नहीं चलाने देती (कंपनी ने इसे बंद किया है)।</string>
+    <string name="tab_home">होम</string>
+    <string name="tab_interface">इंटरफ़ेस</string>
+    <string name="android_bar">Android बार</string>
+    <string name="accent_title">इंटरफ़ेस का रंग</string>
+    <string name="accent_help">स्विच, बटन, प्ले और प्रोग्रेस बार। कार्ड और बैकग्राउंड वैसे ही रहते हैं; नैचुरल मूल लुक है।</string>
+    <string name="accent_natural">नैचुरल</string>
+</resources>

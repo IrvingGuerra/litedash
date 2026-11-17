@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="road_speed">속도</string>
+    <string name="road_speed_text">숫자만</string>
+    <string name="road_speed_gauge">속도계</string>
+    <string name="road_speed_show">속도 표시</string>
+    <string name="trip_time">시간</string>
+    <string name="trip_average">평균</string>
+    <string name="road_trip_distance">거리</string>
+    <string name="trip_heading">방향</string>
+    <string-array name="compass_points">
+        <item>북</item>
+        <item>북동</item>
+        <item>동</item>
+        <item>남동</item>
+        <item>남</item>
+        <item>남서</item>
+        <item>서</item>
+        <item>북서</item>
+    </string-array>
+    <string name="value_with_unit">%1$s %2$s</string>
+    <string name="two_parts">%1$s · %2$s</string>
+    <string name="weather_degrees">%1$d°</string>
+    <string name="weather_range">%1$d° / %2$d°</string>
+</resources>

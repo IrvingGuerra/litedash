@@ -29,7 +29,7 @@
     <string name="map_offline_help">Enregistrez les rues d\'une zone pour les voir sans internet.</string>
     <string name="map_offline_here">Votre zone</string>
     <string name="map_offline_other">Autre zone</string>
-    <string name="map_offline_area">%1$s · %2$d km · %3$s · %4$s</string>
+    <string name="map_offline_area">%1$s · %2$s · %3$s · %4$s</string>
     <string name="map_offline_radius">%1$d km</string>
     <string name="map_offline_redownload">Retélécharger</string>
     <string name="map_offline_delete">Supprimer</string>

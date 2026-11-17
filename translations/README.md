@@ -35,6 +35,26 @@ Todavía no se pueden usar idiomas de derecha a izquierda (árabe, hebreo, persa
 `translations/en/` is generated from the app by `python3 tools/lang.py`: don't edit it.
 Right-to-left languages (Arabic, Hebrew, Persian…) aren't supported yet.
 
+## Revisar un idioma
+
+Algunos idiomas empezaron con traducción automática y necesitan a alguien que los hable de nacimiento.
+
+- **Un error suelto:** repórtalo con el
+  [formulario de traducción](https://github.com/IrvingGuerra/litedash/issues/new?template=translation.yml).
+- **Todo el idioma:** corrige los archivos de `translations/<idioma>/` y abre un PR que agregue tu usuario de GitHub a
+  `translations/<idioma>/reviewers.txt` (uno por línea). Con eso el idioma queda como revisado por la comunidad y tu
+  nombre aparece en [litedash.dev/translate/](https://litedash.dev/translate/).
+
+## Review a language
+
+Some languages started as machine translations and need a native speaker.
+
+- **One mistake:** report it with the
+  [translation form](https://github.com/IrvingGuerra/litedash/issues/new?template=translation.yml).
+- **The whole language:** fix the files in `translations/<language>/` and open a PR adding your GitHub login to
+  `translations/<language>/reviewers.txt` (one per line). The language then shows as community reviewed and you're
+  credited on [litedash.dev/translate/](https://litedash.dev/translate/).
+
 ## Para quien publica · For maintainers
 
 `python3 tools/lang.py` revisa todo, rehace `translations/en/` y escribe `site/lang/<idioma>.json` y

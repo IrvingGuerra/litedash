@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="player_name">Trình phát LiteDash</string>
+    <string name="player_channel">Nhạc</string>
+    <string name="player_play">Phát</string>
+    <string name="player_pause">Tạm dừng</string>
+    <string name="player_next">Tiếp</string>
+    <string name="player_previous">Trước</string>
+    <string name="player_cannot_play">Không phát được. Hãy thử đài khác hoặc kiểm tra kết nối.</string>
+    <string name="player_timeout">Đài không phản hồi. Hãy thử đài khác.</string>
+    <string name="player_no_focus">Ứng dụng khác đang dùng âm thanh. Nhấn phát lại.</string>
+    <string name="library_no_drive">Cắm ổ USB có nhạc</string>
+    <string name="library_no_permission">LiteDash cần quyền đọc nhạc trên ổ</string>
+    <string name="library_grant">Cấp quyền</string>
+    <string name="library_loading">Đang đọc ổ…</string>
+    <string name="library_folders">Thư mục</string>
+    <string name="library_artists">Nghệ sĩ</string>
+    <string name="library_albums">Album</string>
+    <string name="library_all">Tất cả</string>
+    <string name="library_play_all">Phát tất cả</string>
+    <plurals name="library_songs">
+        <item quantity="other">%1$d bài hát</item>
+    </plurals>
+    <string name="library_shuffle">Trộn bài</string>
+    <string name="library_unknown">Không rõ</string>
+    <string name="library_root">Thư mục gốc của ổ</string>
+    <string name="radio_nearby">Gần bạn</string>
+    <string name="radio_favorites">Yêu thích</string>
+    <string name="radio_search_tab">Tìm kiếm</string>
+    <string name="radio_search_hint">Tên đài</string>
+    <string name="radio_search_help">Nhập tên đài</string>
+    <string name="radio_loading">Đang tìm đài…</string>
+    <string name="radio_none">Không tìm thấy đài nào. Hãy kiểm tra kết nối internet.</string>
+    <string name="radio_no_location">Không có vị trí: đây là các đài nghe nhiều nhất ở nước bạn. Để xem đài trong khu vực, hãy cho phép vị trí trong Mô-đun → Quyền.</string>
+    <string name="radio_no_favorites">Nhấn ngôi sao của một đài để giữ nó ở đây.</string>
+    <string name="radio_km">%1$d km</string>
+    <string name="library_pick_folder">Chọn thư mục</string>
+    <string name="library_clear_folder">Bỏ thư mục</string>
+    <string name="library_pick_folder_help">Nếu nhạc có trên ổ nhưng không hiện, hãy chọn thư mục chứa nó: LiteDash sẽ ghi nhớ.</string>
+    <string name="library_unreadable">Tôi thấy ổ %1$s, nhưng màn hình không cho ứng dụng đọc bài hát. Hãy chọn thư mục và LiteDash sẽ ghi nhớ.</string>
+    <string name="library_browse_memory">Không mở được? Duyệt bộ nhớ</string>
+</resources>

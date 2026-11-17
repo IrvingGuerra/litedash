@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="dashboard_remove">Widget eltávolítása</string>
+    <string name="dashboard_card">Kártya be vagy ki</string>
+    <string name="dashboard_settings">Widget beállításai</string>
+    <string name="dashboard_resize">Átméretezés</string>
+</resources>

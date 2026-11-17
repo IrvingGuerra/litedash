@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="files_where">Välj en enhet</string>
+    <string name="files_internal">Intern lagring</string>
+    <string name="files_none">Inga enheter hittades. Kontrollera filbehörigheten.</string>
+    <string name="files_empty">Den här mappen är tom.</string>
+    <string name="files_use_folder">Använd den här mappen</string>
+    <string name="files_close">Stäng</string>
+    <string name="files_recent">Senaste</string>
+    <string name="files_recent_empty">Inga senaste foton.</string>
+</resources>

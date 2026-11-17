@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="phone_section">Telefon</string>
+    <string name="phone_help">Contul tău LiteDash e în aplicația LiteDash Connect de pe telefon.</string>
+    <string name="phone_permission">Lipsește o permisiune</string>
+    <string name="phone_permission_body">Ca să comunice cu telefonul, Android îți cere să permiți LiteDash să folosească rețeaua locală (Dispozitive din apropiere).</string>
+    <string name="local_network_allow">Permite</string>
+    <string name="local_network_settings">Permisiuni</string>
+    <string name="phone_no_wifi">Ecranul tău nu are Wi-Fi</string>
+    <string name="phone_no_wifi_body">Telefonul și ecranul comunică prin Wi-Fi. Alege cum:</string>
+    <string name="phone_use_phone">Folosește internetul telefonului</string>
+    <string name="phone_use_phone_body">Pornește Wi-Fi pe ecran și conectează-l la hotspotul telefonului.</string>
+    <string name="phone_share_screen">Partajează-l pe al ecranului</string>
+    <string name="phone_share_screen_body">Pornește hotspotul ecranului și conectează telefonul la el.</string>
+    <string name="phone_open_wifi">Deschide Wi-Fi</string>
+    <string name="phone_open_hotspot">Deschide hotspot</string>
+    <string name="phone_waiting">Se așteaptă telefonul…</string>
+    <plurals name="phone_link_code">
+        <item quantity="one">Cod %1$s · expiră într-un minut</item>
+        <item quantity="few">Cod %1$s · expiră în %2$d minute</item>
+        <item quantity="other">Cod %1$s · expiră în %2$d de minute</item>
+    </plurals>
+    <string name="phone_step_install">Instalează LiteDash Connect și creează-ți contul</string>
+    <string name="phone_step_tap">Atinge „Conectează ecranul”</string>
+    <string name="phone_step_scan">Îndreaptă camera spre acest cod</string>
+    <string name="phone_connected">Conectat</string>
+    <string name="phone_searching">Se caută telefonul…</string>
+    <string name="phone_model_app">%1$s · LiteDash Connect %2$s</string>
+    <string name="phone_link">Legătură</string>
+    <string name="phone_link_ok">Telefonul și ecranul comunică</string>
+    <string name="phone_music_blocked">Ca să-ți vezi muzica aici, deschide LiteDash Connect și atinge „Permite” la Legătură</string>
+    <string name="phone_link_no_network">Ecranul nu e în aceeași rețea cu telefonul</string>
+    <string name="phone_link_open_app">Deschide LiteDash Connect pe telefon și conectează-l la aceeași rețea</string>
+    <string name="phone_sound">Sunet</string>
+    <string name="phone_sound_ok">Bluetooth conectat · %1$s</string>
+    <string name="phone_sound_ok_plain">Bluetooth conectat</string>
+    <string name="phone_sound_missing">Nu se aude? Conectează Bluetooth din unitatea audio</string>
+    <string name="phone_sound_calls">Bluetooth e conectat doar pentru apeluri, așa că sunetul rămâne pe telefon. Conectează-l din unitatea audio sau activează „Audio media” pentru această unitate pe telefon</string>
+    <string name="phone_calls_only">Bluetooth doar pentru apeluri</string>
+    <string name="phone_sound_car">Prin Android Auto</string>
+    <string name="phone_sound_wired">Prin cablu</string>
+    <string name="phone_connect_bt">Conectează Bluetooth</string>
+    <string name="phone_sound_unknown">Vom ști după ce telefonul se conectează și redă</string>
+    <string name="phone_search_now">Caută acum</string>
+    <string name="phone_unlink">Deconectează</string>
+    <string name="phone_unlink_question">Deconectezi acest telefon?</string>
+    <string name="phone_unlink_message">Ca să-l conectezi din nou, va trebui să scanezi iar codul din LiteDash Connect.</string>
+    <string name="phone_no_sound">Fără sunet? Conectează Bluetooth</string>
+    <string name="music_mode_phone">Cât timp telefonul e conectat și redă muzică, widgetul Muzică o arată și o controlează. Când pleacă, revine la ce aveai.</string>
+    <string name="phone_job_unknown">Lipsesc datele din catalog pentru acea mașină</string>
+    <string name="phone_job_no_finish">Acest model nu are finisaje</string>
+    <string name="phone_job_damaged">Fișierul a ajuns deteriorat</string>
+    <string name="phone_job_unexpected">Ecranul nu a cerut acel fișier</string>
+    <string name="phone_job_busy">Ecranul descarcă altceva; încearcă din nou imediat</string>
+    <string name="phone_job_install_failed">Ecranul nu a putut instala</string>
+</resources>

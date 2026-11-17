@@ -24,6 +24,7 @@
     <string name="mode_app">Uygulama</string>
     <string name="radio_fm_label">FM radyo</string>
     <string name="sound_question">Duyabiliyor musunuz?</string>
+    <string name="sound_question_muted">Duyabiliyor musunuz? Not: müzik sesi 0\'da</string>
     <string name="sound_yes">Evet</string>
     <string name="sound_no">Hayır</string>
     <string name="sound_failed">Çaldıramadık</string>

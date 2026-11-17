@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="report_title">Надіслати звіт</string>
+    <string name="report_help">Розкажи, що не так. Звіт іде з технічними даними магнітоли (без особистих даних).</string>
+    <string name="report_what">Де проблема?</string>
+    <string name="report_which">Який саме?</string>
+    <string name="report_problem">Що відбувається?</string>
+    <string name="report_workshop">Майстерня (OBD)</string>
+    <string name="report_projection">Android Auto / застосунки</string>
+    <string name="report_lights">День і ніч / фари</string>
+    <string name="report_music_usb">Файли (плеєр LiteDash)</string>
+    <string name="report_music_bt">Bluetooth (магнітоли)</string>
+    <string name="report_music_app">Твій музичний застосунок (Spotify, YouTube Music…)</string>
+    <string name="report_radio_fm">FM магнітоли</string>
+    <string name="report_radio_internet">Інтернет-радіо</string>
+    <string name="report_obd_usb">USB</string>
+    <string name="report_silent">Немає звуку</string>
+    <string name="report_no_info">Грає, але не видно, що саме</string>
+    <string name="report_buttons">Кнопки не реагують</string>
+    <string name="report_broken">Не працює</string>
+    <string name="report_looks_wrong">Виглядає неправильно</string>
+    <string name="report_crash">Застосунок закривається</string>
+    <string name="report_note">Розкажи докладніше (необов’язково)</string>
+    <string name="report_play_first">Якщо можеш, увімкни це джерело перед надсиланням.</string>
+    <string name="report_send">Надіслати</string>
+    <string name="report_sending">Надсилання…</string>
+    <string name="report_thanks">Дякуємо! Ми розберемося.</string>
+    <string name="report_code">Код звіту: %1$s</string>
+    <string name="report_error">Не вдалося надіслати. Перевір з’єднання.</string>
+    <string name="report_wait">Зачекай хвилину перед наступним звітом.</string>
+</resources>

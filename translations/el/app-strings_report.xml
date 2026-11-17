@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="report_title">Αποστολή αναφοράς</string>
+    <string name="report_help">Πείτε μας τι δεν πάει καλά. Στέλνεται με τεχνικά στοιχεία της οθόνης σας (χωρίς προσωπικά δεδομένα).</string>
+    <string name="report_what">Τι έχει πρόβλημα;</string>
+    <string name="report_which">Ποιο;</string>
+    <string name="report_problem">Τι συμβαίνει;</string>
+    <string name="report_workshop">Συνεργείο (OBD)</string>
+    <string name="report_projection">Android Auto / εφαρμογές</string>
+    <string name="report_lights">Μέρα και νύχτα / φώτα</string>
+    <string name="report_music_usb">Αρχεία (πρόγραμμα αναπαραγωγής LiteDash)</string>
+    <string name="report_music_bt">Bluetooth (της οθόνης)</string>
+    <string name="report_music_app">Η εφαρμογή μουσικής σας (Spotify, YouTube Music…)</string>
+    <string name="report_radio_fm">FM της οθόνης</string>
+    <string name="report_radio_internet">Ραδιόφωνο internet</string>
+    <string name="report_obd_usb">USB</string>
+    <string name="report_silent">Χωρίς ήχο</string>
+    <string name="report_no_info">Παίζει αλλά δεν δείχνει τι παίζει</string>
+    <string name="report_buttons">Τα κουμπιά δεν αποκρίνονται</string>
+    <string name="report_broken">Δεν λειτουργεί</string>
+    <string name="report_looks_wrong">Δεν εμφανίζεται σωστά</string>
+    <string name="report_crash">Η εφαρμογή κλείνει</string>
+    <string name="report_note">Πείτε μας περισσότερα (προαιρετικό)</string>
+    <string name="report_play_first">Αν μπορείτε, παίξτε αυτή την πηγή πριν από την αποστολή.</string>
+    <string name="report_send">Αποστολή</string>
+    <string name="report_sending">Αποστολή…</string>
+    <string name="report_thanks">Ευχαριστούμε! Θα το εξετάσουμε.</string>
+    <string name="report_code">Κωδικός αναφοράς: %1$s</string>
+    <string name="report_error">Η αποστολή απέτυχε. Ελέγξτε τη σύνδεσή σας.</string>
+    <string name="report_wait">Περιμένετε ένα λεπτό πριν στείλετε άλλη.</string>
+</resources>

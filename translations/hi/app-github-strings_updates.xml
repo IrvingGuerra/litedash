@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="check_updates">अपडेट देखें</string>
+    <string name="up_to_date">आपके पास नया वर्ज़न है।</string>
+    <string name="update_error">जाँच नहीं हो सकी। कनेक्शन देखें और फिर कोशिश करें।</string>
+    <string name="update_download_error">डाउनलोड नहीं हुआ: GitHub ने जवाब नहीं दिया या कनेक्शन टूट गया। कुछ मिनट बाद फिर कोशिश करें।</string>
+    <string name="new_version">LiteDash %1$s तैयार है</string>
+    <string name="download_install">डाउनलोड करें और इंस्टॉल करें · %1$.1f MB</string>
+    <string name="installing">Android इंस्टॉलर खुल रहा है…</string>
+    <string name="install_permission">Android पूछता है कि LiteDash को ऐप इंस्टॉल करने दें (सिर्फ़ अपने अपडेट के लिए)। खुली स्क्रीन में इसे चालू करें और वापस आएँ।</string>
+    <string name="already_allowed">हो गया, इंस्टॉल करें</string>
+    <string name="install_error">Android इसे इंस्टॉल नहीं कर सका। फिर कोशिश करें।</string>
+    <string name="install_aborted">इंस्टॉलेशन रद्द हो गया।</string>
+    <string name="install_incompatible">यह वर्ज़न आपके इंस्टॉल किए वर्ज़न से मेल नहीं खाता।</string>
+    <string name="install_storage">इंस्टॉल करने के लिए जगह नहीं है। थोड़ी जगह खाली करें और फिर कोशिश करें।</string>
+    <string name="install_blocked">Android ने इंस्टॉलेशन रोक दिया।</string>
+    <string name="update_see">देखें</string>
+    <string name="update_later">बाद में</string>
+    <string name="open_installer">Android इंस्टॉलर से खोलें</string>
+</resources>

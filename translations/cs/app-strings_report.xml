@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="report_title">Poslat hlášení</string>
+    <string name="report_help">Napiš nám, co nefunguje. Odešle se s technickými daty z tvého displeje (bez osobních údajů).</string>
+    <string name="report_what">Co má problém?</string>
+    <string name="report_which">Které?</string>
+    <string name="report_problem">Co se děje?</string>
+    <string name="report_workshop">Dílna (OBD)</string>
+    <string name="report_projection">Android Auto / aplikace</string>
+    <string name="report_lights">Den a noc / světla</string>
+    <string name="report_music_usb">Soubory (přehrávač LiteDash)</string>
+    <string name="report_music_bt">Bluetooth (displeje)</string>
+    <string name="report_music_app">Tvoje hudební aplikace (Spotify, YouTube Music…)</string>
+    <string name="report_radio_fm">FM displeje</string>
+    <string name="report_radio_internet">Internetové rádio</string>
+    <string name="report_obd_usb">USB</string>
+    <string name="report_silent">Bez zvuku</string>
+    <string name="report_no_info">Hraje, ale neukazuje, co hraje</string>
+    <string name="report_buttons">Tlačítka nereagují</string>
+    <string name="report_broken">Nefunguje</string>
+    <string name="report_looks_wrong">Vypadá špatně</string>
+    <string name="report_crash">Aplikace se zavírá</string>
+    <string name="report_note">Řekni nám víc (nepovinné)</string>
+    <string name="report_play_first">Pokud můžeš, pusť před odesláním ten zdroj.</string>
+    <string name="report_send">Odeslat</string>
+    <string name="report_sending">Odesílám…</string>
+    <string name="report_thanks">Díky! Podíváme se na to.</string>
+    <string name="report_code">Kód hlášení: %1$s</string>
+    <string name="report_error">Odeslání selhalo. Zkontroluj připojení.</string>
+    <string name="report_wait">Před dalším odesláním chvíli počkej.</string>
+</resources>

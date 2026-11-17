@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="phone_section">Điện thoại</string>
+    <string name="phone_help">Tài khoản LiteDash của bạn nằm trong ứng dụng LiteDash Connect trên điện thoại.</string>
+    <string name="phone_permission">Cần cấp quyền</string>
+    <string name="phone_permission_body">Để kết nối với điện thoại, Android yêu cầu cho phép LiteDash dùng mạng cục bộ (Thiết bị ở gần).</string>
+    <string name="local_network_allow">Cho phép</string>
+    <string name="local_network_settings">Quyền</string>
+    <string name="phone_no_wifi">Màn hình chưa có Wi-Fi</string>
+    <string name="phone_no_wifi_body">Điện thoại và màn hình kết nối qua Wi-Fi. Chọn cách:</string>
+    <string name="phone_use_phone">Dùng internet của điện thoại</string>
+    <string name="phone_use_phone_body">Bật Wi-Fi của màn hình và kết nối với điểm phát sóng của điện thoại.</string>
+    <string name="phone_share_screen">Dùng điểm phát của màn hình</string>
+    <string name="phone_share_screen_body">Bật điểm phát sóng của màn hình và kết nối điện thoại vào đó.</string>
+    <string name="phone_open_wifi">Mở Wi-Fi</string>
+    <string name="phone_open_hotspot">Mở điểm phát sóng</string>
+    <string name="phone_waiting">Đang chờ điện thoại…</string>
+    <plurals name="phone_link_code">
+        <item quantity="other">Mã %1$s · hết hạn sau %2$d phút</item>
+    </plurals>
+    <string name="phone_step_install">Cài LiteDash Connect và tạo tài khoản</string>
+    <string name="phone_step_tap">Nhấn “Liên kết màn hình”</string>
+    <string name="phone_step_scan">Hướng camera vào mã này</string>
+    <string name="phone_connected">Đã kết nối</string>
+    <string name="phone_searching">Đang tìm điện thoại…</string>
+    <string name="phone_model_app">%1$s · LiteDash Connect %2$s</string>
+    <string name="phone_link">Liên kết</string>
+    <string name="phone_link_ok">Điện thoại và màn hình đang kết nối</string>
+    <string name="phone_music_blocked">Để xem nhạc ở đây, mở LiteDash Connect và nhấn “Cho phép” dưới mục Liên kết</string>
+    <string name="phone_link_no_network">Màn hình không ở cùng mạng với điện thoại</string>
+    <string name="phone_link_open_app">Mở LiteDash Connect trên điện thoại và kết nối vào cùng mạng này</string>
+    <string name="phone_sound">Âm thanh</string>
+    <string name="phone_sound_ok">Đã kết nối Bluetooth · %1$s</string>
+    <string name="phone_sound_ok_plain">Đã kết nối Bluetooth</string>
+    <string name="phone_sound_missing">Không nghe thấy? Hãy kết nối Bluetooth từ đầu máy</string>
+    <string name="phone_sound_calls">Bluetooth chỉ kết nối cho cuộc gọi nên nhạc phát trên điện thoại. Hãy kết nối từ đầu máy, hoặc bật “Âm thanh nội dung đa phương tiện” cho đầu máy này trên điện thoại</string>
+    <string name="phone_calls_only">Bluetooth chỉ cho cuộc gọi</string>
+    <string name="phone_sound_car">Qua Android Auto</string>
+    <string name="phone_sound_wired">Qua cáp</string>
+    <string name="phone_connect_bt">Kết nối Bluetooth</string>
+    <string name="phone_sound_unknown">Sẽ biết khi điện thoại đã kết nối và đang phát</string>
+    <string name="phone_search_now">Tìm ngay</string>
+    <string name="phone_unlink">Hủy liên kết</string>
+    <string name="phone_unlink_question">Hủy liên kết điện thoại này?</string>
+    <string name="phone_unlink_message">Để kết nối lại, bạn phải quét lại mã từ LiteDash Connect.</string>
+    <string name="phone_no_sound">Không có tiếng? Hãy kết nối Bluetooth</string>
+    <string name="music_mode_phone">Khi điện thoại kết nối và phát nhạc, tiện ích Nhạc sẽ hiển thị và điều khiển nhạc đó. Khi ngắt kết nối, mọi thứ trở lại như trước.</string>
+    <string name="phone_job_unknown">Thiếu thông tin danh mục của xe đó</string>
+    <string name="phone_job_no_finish">Mẫu xe này không có lớp hoàn thiện</string>
+    <string name="phone_job_damaged">Tệp bị hỏng khi nhận</string>
+    <string name="phone_job_unexpected">Màn hình không yêu cầu tệp đó</string>
+    <string name="phone_job_busy">Màn hình đang tải thứ khác; hãy thử lại sau giây lát</string>
+    <string name="phone_job_install_failed">Màn hình không cài được</string>
+</resources>

@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="player_name">เครื่องเล่น LiteDash</string>
+    <string name="player_channel">เพลง</string>
+    <string name="player_play">เล่น</string>
+    <string name="player_pause">หยุดชั่วคราว</string>
+    <string name="player_next">ถัดไป</string>
+    <string name="player_previous">ก่อนหน้า</string>
+    <string name="player_cannot_play">เล่นไม่ได้ ลองสถานีอื่นหรือตรวจการเชื่อมต่อ</string>
+    <string name="player_timeout">สถานีไม่ตอบสนอง ลองสถานีอื่น</string>
+    <string name="player_no_focus">แอปอื่นใช้เสียงอยู่ แตะเล่นอีกครั้ง</string>
+    <string name="library_no_drive">เสียบแฟลชไดรฟ์ USB ที่มีเพลง</string>
+    <string name="library_no_permission">LiteDash ต้องการสิทธิ์อ่านเพลงในไดรฟ์</string>
+    <string name="library_grant">ให้สิทธิ์</string>
+    <string name="library_loading">กำลังอ่านไดรฟ์…</string>
+    <string name="library_folders">โฟลเดอร์</string>
+    <string name="library_artists">ศิลปิน</string>
+    <string name="library_albums">อัลบั้ม</string>
+    <string name="library_all">ทั้งหมด</string>
+    <string name="library_play_all">เล่นทั้งหมด</string>
+    <plurals name="library_songs">
+        <item quantity="other">%1$d เพลง</item>
+    </plurals>
+    <string name="library_shuffle">สุ่ม</string>
+    <string name="library_unknown">ไม่ทราบ</string>
+    <string name="library_root">รากของไดรฟ์</string>
+    <string name="radio_nearby">ใกล้คุณ</string>
+    <string name="radio_favorites">รายการโปรด</string>
+    <string name="radio_search_tab">ค้นหา</string>
+    <string name="radio_search_hint">ชื่อสถานี</string>
+    <string name="radio_search_help">พิมพ์ชื่อสถานี</string>
+    <string name="radio_loading">กำลังหาสถานี…</string>
+    <string name="radio_none">ไม่พบสถานี ตรวจการเชื่อมต่ออินเทอร์เน็ต</string>
+    <string name="radio_no_location">ไม่มีตำแหน่ง: นี่คือสถานียอดนิยมในประเทศของคุณ หากต้องการสถานีในพื้นที่ ให้อนุญาตตำแหน่งใน โมดูล → สิทธิ์</string>
+    <string name="radio_no_favorites">แตะดาวของสถานีเพื่อเก็บไว้ที่นี่</string>
+    <string name="radio_km">%1$d km</string>
+    <string name="library_pick_folder">เลือกโฟลเดอร์</string>
+    <string name="library_clear_folder">ล้างโฟลเดอร์</string>
+    <string name="library_pick_folder_help">ถ้าเพลงอยู่ในไดรฟ์แต่ไม่แสดง ให้เลือกโฟลเดอร์ของเพลง LiteDash จะจำไว้</string>
+    <string name="library_unreadable">เห็นไดรฟ์ %1$s แต่หน้าจอไม่ยอมให้แอปอ่านเพลงในนั้น เลือกโฟลเดอร์ของเพลงแล้ว LiteDash จะจำไว้</string>
+    <string name="library_browse_memory">ไม่เปิด? เรียกดูที่เก็บข้อมูล</string>
+</resources>

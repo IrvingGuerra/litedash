@@ -27,7 +27,7 @@
     <string name="map_offline_help">İnternet olmadan görmek için bir bölgenin sokaklarını kaydedin.</string>
     <string name="map_offline_here">Bölgeniz</string>
     <string name="map_offline_other">Başka bölge</string>
-    <string name="map_offline_area">%1$s · %2$d km · %3$s · %4$s</string>
+    <string name="map_offline_area">%1$s · %2$s · %3$s · %4$s</string>
     <string name="map_offline_radius">%1$d km</string>
     <string name="map_offline_redownload">Tekrar indir</string>
     <string name="map_offline_delete">Sil</string>
