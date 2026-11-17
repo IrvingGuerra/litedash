@@ -114,11 +114,13 @@
    "lang": "tr",
    "name": "Türkçe",
    "progress": 100,
-   "bytes": 57301,
-   "sha256": "ce7e49a287c200ffb76273d3b0b520d898bd6265a24b9a423fe485dbb7ce8bab",
+   "bytes": 56936,
+   "sha256": "dfd8e97ba00e4ff831537d3cc88826bccc1e6608737bf06e5d59ae94475aed90",
    "base": 10416799,
-   "reviewed": false,
-   "reviewers": []
+   "reviewed": true,
+   "reviewers": [
+    "techo35"
+   ]
   },
   {
    "lang": "cs",
