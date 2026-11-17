@@ -30,4 +30,16 @@
     <string name="weather_degrees">%1$d°</string>
     <string name="weather_range">%1$d° / %2$d°</string>
     <string name="health_vin" translatable="false">VIN %1$s</string>
+    <string name="page_n">Página %1$d</string>
+    <string name="page_add">Agregar página</string>
+    <string name="page_remove">Quitar página</string>
+    <string name="page_remove_question">¿Quitar la página %1$d?</string>
+    <string name="page_remove_message">Se van sus widgets; tu primera página y las demás se quedan.</string>
+    <string name="page_background_title">Fondo de la página %1$d</string>
+    <string name="page_background_image">Imagen</string>
+    <string name="page_background_map">Mapa</string>
+    <string name="map_backdrop_help">El mapa te sigue detrás de tus widgets, contigo en el espacio libre. Su estilo es el de Ajustes → Apps → Navegación; sin internet usa tus zonas sin conexión.</string>
+    <string name="map_backdrop_you">Tú en el mapa</string>
+    <string name="map_backdrop_arrow">Flecha</string>
+    <string name="map_backdrop_car">Tu auto</string>
 </resources>

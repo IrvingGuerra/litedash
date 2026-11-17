@@ -12,4 +12,12 @@
     <string name="accent_title">Màu giao diện</string>
     <string name="accent_help">Công tắc, nút, phát và thanh tiến trình. Thẻ và nền giữ nguyên; Tự nhiên là giao diện gốc.</string>
     <string name="accent_natural">Tự nhiên</string>
+    <string name="cards_title">Thẻ</string>
+    <string name="cards_help">Giao diện tiện ích trên màn hình chính: màu sắc và có thấy hình nền phía sau không.</string>
+    <string name="cards_solid">Đặc</string>
+    <string name="cards_translucent">Bán trong suốt</string>
+    <string name="cards_glass">Kính</string>
+    <string name="cards_opacity">Mức hiển thị</string>
+    <string name="cards_glass_help">Khi có hình nền, hình nền hiện mờ phía sau mỗi thẻ.</string>
+    <string name="cards_theme">Giao diện</string>
 </resources>

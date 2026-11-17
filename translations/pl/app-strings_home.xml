@@ -23,4 +23,16 @@
     <string name="two_parts">%1$s · %2$s</string>
     <string name="weather_degrees">%1$d°</string>
     <string name="weather_range">%1$d° / %2$d°</string>
+    <string name="page_n">Strona %1$d</string>
+    <string name="page_add">Dodaj stronę</string>
+    <string name="page_remove">Usuń stronę</string>
+    <string name="page_remove_question">Usunąć stronę %1$d?</string>
+    <string name="page_remove_message">Jej widżety znikną; twoja pierwsza strona i pozostałe zostają.</string>
+    <string name="page_background_title">Tło strony %1$d</string>
+    <string name="page_background_image">Obraz</string>
+    <string name="page_background_map">Mapa</string>
+    <string name="map_backdrop_help">Mapa podąża za tobą za widżetami, a ty jesteś w wolnym miejscu. Jej styl to ten z Ustawienia → Aplikacje → Nawigacja; bez internetu używa twoich stref offline.</string>
+    <string name="map_backdrop_you">Ty na mapie</string>
+    <string name="map_backdrop_arrow">Strzałka</string>
+    <string name="map_backdrop_car">Twoje auto</string>
 </resources>

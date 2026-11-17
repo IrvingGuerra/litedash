@@ -3,6 +3,17 @@
 What people using LiteDash notice, in English. The full history (in Spanish) is in [CHANGELOG.md](CHANGELOG.md).
 Format [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versions [SemVer](https://semver.org/).
 
+## [1.4.169] - 2026-11-16
+
+### New
+- **Pages on your home:** while arranging, «+» adds another page (up to 5) with its own widgets; swipe on an empty spot
+  to change pages, and the dots at the bottom show where you are. With a single page, everything stays as before.
+- **The map as background:** each page picks its background, your image or the live map. The map follows you behind
+  your widgets, with you in the space they leave free, and if Waze or Maps is guiding you, its next turn shows there.
+  You can appear as an arrow or as your car (then the map turns toward where you're going).
+- **Cards your way:** in Home & look → Interface → Cards you pick their color and whether they're solid, translucent or
+  glass (with your wallpaper blurred behind), and how visible they are.
+
 ## [1.4.168] - 2026-11-16
 
 ### Changed

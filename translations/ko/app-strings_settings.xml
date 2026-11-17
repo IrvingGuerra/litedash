@@ -12,4 +12,12 @@
     <string name="accent_title">인터페이스 색상</string>
     <string name="accent_help">스위치, 버튼, 재생, 진행 바에 적용돼요. 카드와 배경은 그대로이며, 내추럴이 기본 모습이에요.</string>
     <string name="accent_natural">내추럴</string>
+    <string name="cards_title">카드</string>
+    <string name="cards_help">홈 위젯의 모습: 색상과 배경이 비쳐 보이는지 정해요.</string>
+    <string name="cards_solid">불투명</string>
+    <string name="cards_translucent">반투명</string>
+    <string name="cards_glass">유리</string>
+    <string name="cards_opacity">보이는 정도</string>
+    <string name="cards_glass_help">배경화면이 있으면 카드 뒤에 흐리게 보여요.</string>
+    <string name="cards_theme">테마</string>
 </resources>

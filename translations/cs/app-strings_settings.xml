@@ -12,4 +12,12 @@
     <string name="accent_title">Barva rozhraní</string>
     <string name="accent_help">Přepínače, tlačítka, přehrávání a ukazatele průběhu. Karty a pozadí zůstávají; Přirozená je původní vzhled.</string>
     <string name="accent_natural">Přirozená</string>
+    <string name="cards_title">Karty</string>
+    <string name="cards_help">Jak vypadají widgety na tvé ploše: jejich barva a jestli prosvítá pozadí.</string>
+    <string name="cards_solid">Plné</string>
+    <string name="cards_translucent">Průsvitné</string>
+    <string name="cards_glass">Sklo</string>
+    <string name="cards_opacity">Jak moc jsou vidět</string>
+    <string name="cards_glass_help">S tapetou je vidět rozmazaná za každou kartou.</string>
+    <string name="cards_theme">Motiv</string>
 </resources>

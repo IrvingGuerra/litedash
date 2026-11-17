@@ -12,4 +12,12 @@
     <string name="accent_title">インターフェースの色</string>
     <string name="accent_help">スイッチ、ボタン、再生ボタン、進行バーの色。カードと背景は変わりません。「ナチュラル」は元の見た目です。</string>
     <string name="accent_natural">ナチュラル</string>
+    <string name="cards_title">カード</string>
+    <string name="cards_help">ホームのウィジェットの見た目：色と、背景が透けるかどうか。</string>
+    <string name="cards_solid">不透明</string>
+    <string name="cards_translucent">半透明</string>
+    <string name="cards_glass">ガラス</string>
+    <string name="cards_opacity">見え方</string>
+    <string name="cards_glass_help">壁紙があると、各カードの後ろにぼかして表示されます。</string>
+    <string name="cards_theme">テーマ</string>
 </resources>

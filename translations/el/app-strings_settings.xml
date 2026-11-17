@@ -12,4 +12,12 @@
     <string name="accent_title">Χρώμα διεπαφής</string>
     <string name="accent_help">Διακόπτες, κουμπιά, αναπαραγωγή και γραμμές προόδου. Οι κάρτες και το φόντο μένουν ίδια· το Φυσικό είναι η αρχική εμφάνιση.</string>
     <string name="accent_natural">Φυσικό</string>
+    <string name="cards_title">Κάρτες</string>
+    <string name="cards_help">Πώς φαίνονται τα widget της αρχικής σας: το χρώμα τους και αν διακρίνεται το φόντο.</string>
+    <string name="cards_solid">Συμπαγείς</string>
+    <string name="cards_translucent">Ημιδιαφανείς</string>
+    <string name="cards_glass">Γυαλί</string>
+    <string name="cards_opacity">Πόσο φαίνονται</string>
+    <string name="cards_glass_help">Με ταπετσαρία, φαίνεται θολή πίσω από κάθε κάρτα.</string>
+    <string name="cards_theme">Θέμα</string>
 </resources>

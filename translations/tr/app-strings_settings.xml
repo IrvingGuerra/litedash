@@ -12,4 +12,12 @@
     <string name="accent_title">Arayüz rengi</string>
     <string name="accent_help">Anahtarlar, düğmeler, oynat ve ilerleme çubukları. Kartlar ve arka plan aynı kalır; Doğal orijinal görünümdür.</string>
     <string name="accent_natural">Doğal</string>
+    <string name="cards_title">Kartlar</string>
+    <string name="cards_help">Ana ekranınızdaki widget’ların görünümü: renkleri ve arka planın içinden görünüp görünmediği.</string>
+    <string name="cards_solid">Düz</string>
+    <string name="cards_translucent">Yarı saydam</string>
+    <string name="cards_glass">Cam</string>
+    <string name="cards_opacity">Görünürlük</string>
+    <string name="cards_glass_help">Duvar kağıdı varsa her kartın arkasında bulanık görünür.</string>
+    <string name="cards_theme">Tema</string>
 </resources>

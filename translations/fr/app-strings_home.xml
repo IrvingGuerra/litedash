@@ -25,4 +25,16 @@
     <string name="two_parts">%1$s · %2$s</string>
     <string name="weather_degrees">%1$d°</string>
     <string name="weather_range">%1$d° / %2$d°</string>
+    <string name="page_n">Page %1$d</string>
+    <string name="page_add">Ajouter une page</string>
+    <string name="page_remove">Retirer la page</string>
+    <string name="page_remove_question">Retirer la page %1$d ?</string>
+    <string name="page_remove_message">Ses widgets disparaissent ; votre première page et les autres restent.</string>
+    <string name="page_background_title">Fond de la page %1$d</string>
+    <string name="page_background_image">Image</string>
+    <string name="page_background_map">Carte</string>
+    <string name="map_backdrop_help">La carte vous suit derrière vos widgets, avec vous dans l\'espace libre. Son style est celui de Paramètres → Applis → Navigation ; sans internet, elle utilise vos zones hors ligne.</string>
+    <string name="map_backdrop_you">Vous sur la carte</string>
+    <string name="map_backdrop_arrow">Flèche</string>
+    <string name="map_backdrop_car">Votre voiture</string>
 </resources>

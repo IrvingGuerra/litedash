@@ -11,6 +11,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.core.content.edit
+import com.irvingguerra.litedash.core.ui.CardStyle
 import com.irvingguerra.litedash.feature.car.CarColors
 import com.irvingguerra.litedash.feature.car.CarPaint
 import com.irvingguerra.litedash.feature.car.DEFAULT_GLOSS
@@ -31,6 +32,10 @@ internal object PrefKeys {
     const val CAR_GLOSS = "car_gloss"
     /** Int ARGB; sin guardar = el color natural. */
     const val ACCENT_COLOR = "accent_color_argb"
+    /** Las tarjetas del inicio: Int ARGB (sin guardar = la del tema), estilo y cuánto se ven (0–1). */
+    const val CARD_COLOR = "card_color_argb"
+    const val CARD_STYLE = "card_style"
+    const val CARD_OPACITY = "card_opacity"
     const val CAR_MODEL = "car_model"
     const val WELCOME_SEEN = "welcome_seen"
     const val WELCOME_STEP = "welcome_step"
@@ -41,6 +46,8 @@ internal object PrefKeys {
     const val DOCK = "dock"
     const val MAP_APP = "map_app"
     const val MAP_EXTERNAL = "map_external"
+    /** En el mapa de fondo del inicio: tu auto en vez de la flecha. */
+    const val MAP_BACKDROP_CAR = "map_backdrop_car"
     const val MAP_LOOK = "map_look"
     const val MUSIC_APP = "music_app"
     const val DRIVER_NAME = "driver_name"
@@ -328,6 +335,36 @@ class Preferences(context: Context) {
         _accent = v.toArgb()
     }
 
+    // El color de las tarjetas del inicio; null = el del tema.
+    private var _card by mutableStateOf(if (p.contains(PrefKeys.CARD_COLOR)) p.getInt(PrefKeys.CARD_COLOR, 0) else null)
+    var cardColor: Color?
+        get() = _card?.let { Color(it) }
+        set(v) {
+            _card = v?.toArgb()
+            p.edit { if (v == null) remove(PrefKeys.CARD_COLOR) else putInt(PrefKeys.CARD_COLOR, v.toArgb()) }
+        }
+
+    /** Mientras se arrastra el selector: las tarjetas cambian en vivo y se guarda al soltar ([cardColor]). */
+    fun previewCardColor(v: Color) {
+        _card = v.toArgb()
+    }
+
+    /** Lisas (como siempre), translúcidas o de vidrio. */
+    var cardStyle by mapped(PrefKeys.CARD_STYLE, CardStyle::fromStored) { it.stored }
+
+    // Cuánto se ven las translúcidas y de vidrio (0–1); se arrastra en vivo y se guarda al soltar.
+    private var _cardOpacity by mutableFloatStateOf(p.getFloat(PrefKeys.CARD_OPACITY, DEFAULT_CARD_OPACITY))
+    var cardOpacity: Float
+        get() = _cardOpacity
+        set(v) {
+            _cardOpacity = v
+            p.edit { putFloat(PrefKeys.CARD_OPACITY, v) }
+        }
+
+    fun previewCardOpacity(v: Float) {
+        _cardOpacity = v
+    }
+
     /** Id del auto del catálogo que se muestra; null = el sedán genérico. */
     var carModel by string(PrefKeys.CAR_MODEL)
 
@@ -362,6 +399,9 @@ class Preferences(context: Context) {
      * navegación; apagado, el mapa de LiteDash en grande.
      */
     var mapExternal by bool(PrefKeys.MAP_EXTERNAL, true)
+
+    /** En el mapa de fondo del inicio: tu auto visto de atrás en vez de la flecha (de fábrica, la flecha). */
+    var mapBackdropCar by bool(PrefKeys.MAP_BACKDROP_CAR, false)
 
     /** El aspecto del mapa de LiteDash ([com.irvingguerra.litedash.feature.map.MapLook.encode]); null = el de fábrica. */
     var mapLook by string(PrefKeys.MAP_LOOK)
@@ -537,3 +577,6 @@ class Preferences(context: Context) {
             ?.takeIf { it.size == 2 }?.let { it[0] to it[1] }
         set(v) = p.edit { putString(PrefKeys.BRIGHTNESS_ORIGINAL, v?.let { "${it.first},${it.second}" }) }
 }
+
+/** De fábrica, las translúcidas y de vidrio se ven a un 60 %. */
+const val DEFAULT_CARD_OPACITY = 0.6f

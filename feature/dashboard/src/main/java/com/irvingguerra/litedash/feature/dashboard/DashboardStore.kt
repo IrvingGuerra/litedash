@@ -28,23 +28,68 @@ class DashboardStore(context: Context) {
         edit.apply()
     }
 
-    fun read(c: Grid): List<Tile>? = prefs.getString(LAYOUT_KEY_PREFIX + c.key, null)?.let(::parseLayout)
+    fun read(c: Grid, page: Int = 0): List<Tile>? = prefs.getString(layoutKey(page, c), null)?.let(::parseLayout)
 
-    fun save(c: Grid, tiles: List<Tile>) {
+    fun save(c: Grid, tiles: List<Tile>, page: Int = 0) {
         val text = tiles.joinToString("\n") {
             // El campo nuevo va al final: las versiones de antes lo ignoran.
             listOf(it.id, it.type, it.col, it.row, it.width, it.height, it.data.replace('\t', ' ').replace('\n', ' '), if (it.plain) "1" else "")
                 .joinToString("\t")
         }
-        prefs.edit().putString(LAYOUT_KEY_PREFIX + c.key, text).putLong(SAVED_AT_PREFIX + c.key, System.currentTimeMillis()).apply()
+        prefs.edit().putString(layoutKey(page, c), text).putLong(savedAtKey(page, c), System.currentTimeMillis()).apply()
     }
 
     /** Cuándo se guardó el acomodo de [c] (0 si nunca o si es de antes de la 1.4.100). */
-    fun savedAt(c: Grid): Long = prefs.getLong(SAVED_AT_PREFIX + c.key, 0L)
+    fun savedAt(c: Grid, page: Int = 0): Long = prefs.getLong(savedAtKey(page, c), 0L)
 
-    /** Las cuadrículas que tienen acomodo guardado. */
-    fun grids(): List<Grid> = prefs.all.keys.mapNotNull { key ->
-        key.takeIf { it.startsWith(LAYOUT_KEY_PREFIX) }?.let { parseGrid(it.removePrefix(LAYOUT_KEY_PREFIX)) }
+    /** Las cuadrículas que tienen acomodo guardado en [page]. */
+    fun grids(page: Int = 0): List<Grid> {
+        val prefix = layoutPrefix(page)
+        return prefs.all.keys.mapNotNull { key -> key.takeIf { it.startsWith(prefix) }?.let { parseGrid(it.removePrefix(prefix)) } }
+    }
+
+    /** Cuántas páginas tiene el inicio (1 = como siempre). */
+    var pages: Int
+        get() = prefs.getInt(PAGES, 1).coerceIn(1, MAX_PAGES)
+        set(v) = prefs.edit().putInt(PAGES, v.coerceIn(1, MAX_PAGES)).apply()
+
+    /** El fondo de [page]: el de siempre (tu imagen o el del tema) o el mapa. */
+    fun background(page: Int): PageBackground = PageBackground.fromStored(prefs.getString(BACKGROUND_PREFIX + page, null))
+
+    fun setBackground(page: Int, b: PageBackground) {
+        prefs.edit().putString(BACKGROUND_PREFIX + page, b.stored).apply()
+    }
+
+    /**
+     * Quita la página [page] (lo pidió el usuario, con confirmación): las de después se recorren una hacia atrás con
+     * sus acomodos y su fondo. Lo de la última, que ya quedó copiado, se suelta. La primera no se quita: es tu inicio
+     * de siempre (y sus llaves son las de antes de las páginas).
+     */
+    fun removePage(page: Int) {
+        val count = pages
+        if (page !in 1 until count) return
+        val all = prefs.all
+        val edit = prefs.edit()
+        for (p in page until count) {
+            // Lo de la página p queda con lo de la p + 1 (o vacío si es la última).
+            for (key in all.keys) if (key.startsWith(layoutPrefix(p)) || key.startsWith(savedAtPrefix(p))) edit.remove(key)
+            edit.remove(BACKGROUND_PREFIX + p)
+            if (p + 1 < count) {
+                for ((key, value) in all) {
+                    val moved = when {
+                        key.startsWith(layoutPrefix(p + 1)) -> layoutPrefix(p) + key.removePrefix(layoutPrefix(p + 1))
+                        key.startsWith(savedAtPrefix(p + 1)) -> savedAtPrefix(p) + key.removePrefix(savedAtPrefix(p + 1))
+                        else -> null
+                    } ?: continue
+                    when (value) {
+                        is String -> edit.putString(moved, value)
+                        is Long -> edit.putLong(moved, value)
+                    }
+                }
+                (all[BACKGROUND_PREFIX + (p + 1)] as? String)?.let { edit.putString(BACKGROUND_PREFIX + p, it) }
+            }
+        }
+        edit.putInt(PAGES, count - 1).apply()
     }
 
     /** La pieza grande de las plantillas (tipo y datos): el auto 3D si nunca se eligió otra. */
@@ -56,6 +101,12 @@ class DashboardStore(context: Context) {
         prefs.edit().putString(HERO_TYPE, type).putString(HERO_DATA, "").apply()
     }
 }
+
+/** Las llaves de cada página: la 0 usa las de siempre (los acomodos de antes de las páginas son la página 1). */
+private fun layoutPrefix(page: Int) = if (page == 0) LAYOUT_KEY_PREFIX else "$PAGE_LAYOUT_PREFIX${page}_"
+private fun savedAtPrefix(page: Int) = if (page == 0) SAVED_AT_PREFIX else "$PAGE_SAVED_AT_PREFIX${page}_"
+private fun layoutKey(page: Int, c: Grid) = layoutPrefix(page) + c.key
+private fun savedAtKey(page: Int, c: Grid) = savedAtPrefix(page) + c.key
 
 /** "10x5" → la cuadrícula; null si no lo es. */
 private fun parseGrid(size: String): Grid? {
@@ -116,3 +167,11 @@ private const val OLD_SAVED_AT_PREFIX = "saved_at_"
 private const val LEGACY_NAVIGATE = "navigate"
 private const val HERO_TYPE = "hero_type"
 private const val HERO_DATA = "hero_data"
+private const val PAGES = "pages"
+/** Las páginas de después de la primera: no empiezan con [LAYOUT_KEY_PREFIX] (no se confunden con la primera). */
+private const val PAGE_LAYOUT_PREFIX = "page_layout_"
+private const val PAGE_SAVED_AT_PREFIX = "page_saved_at_"
+private const val BACKGROUND_PREFIX = "page_background_"
+
+/** Hasta cuántas páginas puede tener el inicio. */
+const val MAX_PAGES = 5

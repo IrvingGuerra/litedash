@@ -22,4 +22,16 @@
     <string name="two_parts">%1$s · %2$s</string>
     <string name="weather_degrees">%1$d°</string>
     <string name="weather_range">%1$d° / %2$d°</string>
+    <string name="page_n">Pagina %1$d</string>
+    <string name="page_add">Adaugă pagină</string>
+    <string name="page_remove">Elimină pagina</string>
+    <string name="page_remove_question">Elimini pagina %1$d?</string>
+    <string name="page_remove_message">Widgeturile ei dispar; prima ta pagină și celelalte rămân.</string>
+    <string name="page_background_title">Fundalul paginii %1$d</string>
+    <string name="page_background_image">Imagine</string>
+    <string name="page_background_map">Hartă</string>
+    <string name="map_backdrop_help">Harta te urmărește în spatele widgeturilor, cu tine în spațiul liber. Stilul ei este cel din Setări → Aplicații → Navigație; fără internet folosește zonele tale offline.</string>
+    <string name="map_backdrop_you">Tu pe hartă</string>
+    <string name="map_backdrop_arrow">Săgeată</string>
+    <string name="map_backdrop_car">Mașina ta</string>
 </resources>

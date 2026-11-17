@@ -22,4 +22,16 @@
     <string name="two_parts">%1$s · %2$s</string>
     <string name="weather_degrees">%1$d°</string>
     <string name="weather_range">%1$d° / %2$d°</string>
+    <string name="page_n">Сторінка %1$d</string>
+    <string name="page_add">Додати сторінку</string>
+    <string name="page_remove">Прибрати сторінку</string>
+    <string name="page_remove_question">Прибрати сторінку %1$d?</string>
+    <string name="page_remove_message">Її віджети зникнуть; твоя перша сторінка та інші залишаться.</string>
+    <string name="page_background_title">Фон сторінки %1$d</string>
+    <string name="page_background_image">Зображення</string>
+    <string name="page_background_map">Карта</string>
+    <string name="map_backdrop_help">Карта стежить за тобою позаду віджетів, а ти — на вільному місці. Її стиль — із «Налаштування → Застосунки → Навігація»; без інтернету вона використовує твої офлайн-райони.</string>
+    <string name="map_backdrop_you">Ти на карті</string>
+    <string name="map_backdrop_arrow">Стрілка</string>
+    <string name="map_backdrop_car">Твоє авто</string>
 </resources>

@@ -27,4 +27,16 @@
     <!-- Weather: temperature and the day's high / low -->
     <string name="weather_degrees">%1$d°</string>
     <string name="weather_range">%1$d° / %2$d°</string>
+    <string name="page_n">Page %1$d</string>
+    <string name="page_add">Add page</string>
+    <string name="page_remove">Remove page</string>
+    <string name="page_remove_question">Remove page %1$d?</string>
+    <string name="page_remove_message">Its widgets go away; your first page and the others stay.</string>
+    <string name="page_background_title">Background of page %1$d</string>
+    <string name="page_background_image">Image</string>
+    <string name="page_background_map">Map</string>
+    <string name="map_backdrop_help">The map follows you behind your widgets, with you in the free space. Its style is the one in Settings → Apps → Navigation; without internet it uses your offline areas.</string>
+    <string name="map_backdrop_you">You on the map</string>
+    <string name="map_backdrop_arrow">Arrow</string>
+    <string name="map_backdrop_car">Your car</string>
 </resources>

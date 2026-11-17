@@ -22,4 +22,16 @@
     <string name="two_parts">%1$s · %2$s</string>
     <string name="weather_degrees">%1$d°</string>
     <string name="weather_range">%1$d° / %2$d°</string>
+    <string name="page_n">Sida %1$d</string>
+    <string name="page_add">Lägg till sida</string>
+    <string name="page_remove">Ta bort sida</string>
+    <string name="page_remove_question">Ta bort sida %1$d?</string>
+    <string name="page_remove_message">Dess widgetar försvinner; din första sida och de andra blir kvar.</string>
+    <string name="page_background_title">Bakgrund för sida %1$d</string>
+    <string name="page_background_image">Bild</string>
+    <string name="page_background_map">Karta</string>
+    <string name="map_backdrop_help">Kartan följer dig bakom dina widgetar, med dig i det fria utrymmet. Stilen är den i Inställningar → Appar → Navigering; utan internet använder den dina offlinezoner.</string>
+    <string name="map_backdrop_you">Du på kartan</string>
+    <string name="map_backdrop_arrow">Pil</string>
+    <string name="map_backdrop_car">Din bil</string>
 </resources>

@@ -22,4 +22,16 @@
     <string name="two_parts">%1$s · %2$s</string>
     <string name="weather_degrees">%1$d°</string>
     <string name="weather_range">%1$d° / %2$d°</string>
+    <string name="page_n">Trang %1$d</string>
+    <string name="page_add">Thêm trang</string>
+    <string name="page_remove">Gỡ trang</string>
+    <string name="page_remove_question">Gỡ trang %1$d?</string>
+    <string name="page_remove_message">Các tiện ích của trang sẽ mất; trang đầu tiên và các trang khác vẫn giữ.</string>
+    <string name="page_background_title">Nền trang %1$d</string>
+    <string name="page_background_image">Hình ảnh</string>
+    <string name="page_background_map">Bản đồ</string>
+    <string name="map_backdrop_help">Bản đồ đi theo bạn phía sau các tiện ích, với bạn ở khoảng trống. Kiểu bản đồ theo Cài đặt → Ứng dụng → Dẫn đường; khi không có internet sẽ dùng các khu vực ngoại tuyến của bạn.</string>
+    <string name="map_backdrop_you">Bạn trên bản đồ</string>
+    <string name="map_backdrop_arrow">Mũi tên</string>
+    <string name="map_backdrop_car">Xe của bạn</string>
 </resources>

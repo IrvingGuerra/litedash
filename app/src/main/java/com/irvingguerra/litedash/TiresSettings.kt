@@ -15,8 +15,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.IntrinsicSize
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -34,9 +34,6 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.NonCancellable
-import kotlinx.coroutines.withContext
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
@@ -75,12 +72,15 @@ import com.irvingguerra.litedash.feature.tpms.TpmsRepository
 import com.irvingguerra.litedash.feature.tpms.TpmsSource
 import com.irvingguerra.litedash.feature.tpms.TpmsStatus
 import com.irvingguerra.litedash.feature.tpms.Wheel
+import kotlin.math.abs
+import kotlin.math.roundToInt
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
-import kotlin.math.abs
-import kotlin.math.roundToInt
 
 /**
  * Ajustes → Llantas, en pestañas: Llantas (de dónde se leen, el auto desde arriba —tocar una la
@@ -536,10 +536,11 @@ private fun HomeTiresCard(d: Dependencies) {
                 { on ->
                     d.prefs.tiresOnCar = on
                     // Aquí se decide para todos: la carretera y el auto 3D dejan su propio ajuste.
-                    d.dashboard.changeData(
-                        d.dashboard.tiles.filter { (it.type == TileTypes.ROAD || it.type == TileTypes.CAR) && TileTires.parse(it.data) != null }
-                            .associate { it.id to if (it.type == TileTypes.ROAD) RoadLook.parse(it.data).copy(tires = null).encode() else "" },
-                    )
+                    d.dashboard.changeDataEverywhere {
+                        if ((it.type == TileTypes.ROAD || it.type == TileTypes.CAR) && TileTires.parse(it.data) != null) {
+                            if (it.type == TileTypes.ROAD) RoadLook.parse(it.data).copy(tires = null).encode() else ""
+                        } else null
+                    }
                 },
             )
         }
@@ -563,7 +564,7 @@ private fun HomeTiresCard(d: Dependencies) {
                 Label(stringResource(R.string.tires_tile), Typography.body)
                 Label(stringResource(R.string.tile_tires_help), Typography.small, c.textMuted)
             }
-            if (d.dashboard.tiles.any { it.type == TileTypes.TIRES }) Label(stringResource(R.string.on_your_home), Typography.small, c.accent)
+            if (d.dashboard.allTiles.any { it.type == TileTypes.TIRES }) Label(stringResource(R.string.on_your_home), Typography.small, c.accent)
             else Button(stringResource(R.string.add), { d.dashboard.addTile(TileTypes.TIRES) })
         }
         if (!d.tpms.alertsEnabled) Label(stringResource(R.string.tires_alerts_off_note), Typography.small, c.warning)

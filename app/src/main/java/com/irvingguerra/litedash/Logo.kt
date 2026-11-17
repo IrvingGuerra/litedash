@@ -1,7 +1,7 @@
 package com.irvingguerra.litedash
 
-import android.annotation.SuppressLint
 import android.Manifest
+import android.annotation.SuppressLint
 import android.content.ActivityNotFoundException
 import android.content.ContentResolver
 import android.content.Context
@@ -21,26 +21,22 @@ import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import com.irvingguerra.litedash.core.ui.Radius
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawWithContent
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -57,7 +53,11 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
@@ -66,6 +66,7 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.irvingguerra.litedash.core.ui.Button
+import com.irvingguerra.litedash.core.ui.CardBackdrop
 import com.irvingguerra.litedash.core.ui.FileBrowser
 import com.irvingguerra.litedash.core.ui.Label
 import com.irvingguerra.litedash.core.ui.LocalColors
@@ -73,9 +74,11 @@ import com.irvingguerra.litedash.core.ui.MORSE_ASPECT
 import com.irvingguerra.litedash.core.ui.MORSE_INTRO_MS
 import com.irvingguerra.litedash.core.ui.MorseMark
 import com.irvingguerra.litedash.core.ui.MorseMarkIntro
+import com.irvingguerra.litedash.core.ui.Radius
 import com.irvingguerra.litedash.core.ui.Segmented
 import com.irvingguerra.litedash.core.ui.SwitchRow
 import com.irvingguerra.litedash.core.ui.Typography
+import com.irvingguerra.litedash.core.ui.blurredCopy
 import com.irvingguerra.litedash.core.ui.scaledDecode
 import com.irvingguerra.litedash.feature.dashboard.Tile
 import com.irvingguerra.litedash.feature.dashboard.TileTypes
@@ -481,9 +484,27 @@ fun LogoIntro(onDone: () -> Unit) {
 fun HomeWallpaper() {
     val c = LocalColors.current
     val image = rememberImage(WALLPAPER).image ?: return
-    val veil = c.background.copy(alpha = 0.4f)
+    val veil = c.background.copy(alpha = WALLPAPER_VEIL)
     Image(image, null, Modifier.fillMaxSize().drawWithContent { drawContent(); drawRect(veil) }, contentScale = ContentScale.Crop)
 }
+
+/**
+ * Para las tarjetas de vidrio ([wanted]): tu fondo de pantalla desenfocado una vez, en chico y fuera del hilo
+ * principal, con el mismo velo que lleva el inicio. null = sin fondo (o aún no está).
+ */
+@Composable
+fun rememberWallpaperBackdrop(wanted: Boolean): CardBackdrop? {
+    val image = if (wanted) rememberImage(WALLPAPER).image else null
+    val veil = LocalColors.current.background.copy(alpha = WALLPAPER_VEIL)
+    val blurred by produceState<ImageBitmap?>(null, image) {
+        value = image?.let { withContext(Dispatchers.Default) { blurredCopy(it.asAndroidBitmap()) } }
+    }
+    val b = blurred ?: return null
+    return remember(b, veil) { CardBackdrop(b, veil) }
+}
+
+/** Lo que oscurece (o aclara) tu fondo de pantalla para que se lean los widgets encima. */
+private const val WALLPAPER_VEIL = 0.4f
 
 /**
  * Tu imagen del modo estacionado a toda la pantalla (sin recortarla). Devuelve false si no hay

@@ -22,4 +22,16 @@
     <string name="two_parts">%1$s · %2$s</string>
     <string name="weather_degrees">%1$d°</string>
     <string name="weather_range">%1$d° / %2$d°</string>
+    <string name="page_n">Halaman %1$d</string>
+    <string name="page_add">Tambah halaman</string>
+    <string name="page_remove">Hapus halaman</string>
+    <string name="page_remove_question">Hapus halaman %1$d?</string>
+    <string name="page_remove_message">Widget-nya hilang; halaman pertama Anda dan yang lain tetap ada.</string>
+    <string name="page_background_title">Latar halaman %1$d</string>
+    <string name="page_background_image">Gambar</string>
+    <string name="page_background_map">Peta</string>
+    <string name="map_backdrop_help">Peta mengikuti Anda di balik widget, dengan Anda di ruang kosong. Gayanya sesuai Setelan → Aplikasi → Navigasi; tanpa internet peta memakai zona offline Anda.</string>
+    <string name="map_backdrop_you">Anda di peta</string>
+    <string name="map_backdrop_arrow">Panah</string>
+    <string name="map_backdrop_car">Mobil Anda</string>
 </resources>

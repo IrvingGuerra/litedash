@@ -23,4 +23,16 @@
     <string name="two_parts">%1$s · %2$s</string>
     <string name="weather_degrees">%1$d°</string>
     <string name="weather_range">%1$d° / %2$d°</string>
+    <string name="page_n">ページ %1$d</string>
+    <string name="page_add">ページを追加</string>
+    <string name="page_remove">ページを削除</string>
+    <string name="page_remove_question">ページ %1$d を削除しますか？</string>
+    <string name="page_remove_message">このページのウィジェットはなくなります。最初のページとほかのページは残ります。</string>
+    <string name="page_background_title">ページ %1$d の背景</string>
+    <string name="page_background_image">画像</string>
+    <string name="page_background_map">地図</string>
+    <string name="map_backdrop_help">地図はウィジェットの後ろであなたを追いかけ、空いている場所にあなたを表示します。スタイルは「設定 → アプリ → ナビ」のものです。インターネットがないときはオフラインエリアを使います。</string>
+    <string name="map_backdrop_you">地図上のあなた</string>
+    <string name="map_backdrop_arrow">矢印</string>
+    <string name="map_backdrop_car">あなたの車</string>
 </resources>

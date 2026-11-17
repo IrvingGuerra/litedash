@@ -14,4 +14,12 @@
     <string name="accent_title">Cor da interface</string>
     <string name="accent_help">Interruptores, botões, play e barras de progresso. Os cartões e o fundo não mudam; Natural é a cor de fábrica.</string>
     <string name="accent_natural">Natural</string>
+    <string name="cards_title">Cartões</string>
+    <string name="cards_help">Como ficam os widgets da sua tela inicial: a cor e se o fundo aparece.</string>
+    <string name="cards_solid">Sólidos</string>
+    <string name="cards_translucent">Translúcidos</string>
+    <string name="cards_glass">Vidro</string>
+    <string name="cards_opacity">Quanto aparecem</string>
+    <string name="cards_glass_help">Com um plano de fundo, ele aparece desfocado atrás de cada cartão.</string>
+    <string name="cards_theme">Tema</string>
 </resources>

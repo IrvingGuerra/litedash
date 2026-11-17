@@ -12,4 +12,12 @@
     <string name="accent_title">界面颜色</string>
     <string name="accent_help">开关、按钮、播放和进度条。卡片和背景保持不变；“自然”为原始外观。</string>
     <string name="accent_natural">自然</string>
+    <string name="cards_title">卡片</string>
+    <string name="cards_help">主屏幕小组件的外观：颜色，以及是否透出背景。</string>
+    <string name="cards_solid">不透明</string>
+    <string name="cards_translucent">半透明</string>
+    <string name="cards_glass">玻璃</string>
+    <string name="cards_opacity">可见度</string>
+    <string name="cards_glass_help">有壁纸时，会模糊地显示在每张卡片后面。</string>
+    <string name="cards_theme">主题</string>
 </resources>

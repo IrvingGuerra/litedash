@@ -12,4 +12,12 @@
     <string name="accent_title">Цвет интерфейса</string>
     <string name="accent_help">Переключатели, кнопки, воспроизведение и полосы прогресса. Карточки и фон не меняются; «Натуральный» — исходный вид.</string>
     <string name="accent_natural">Натуральный</string>
+    <string name="cards_title">Карточки</string>
+    <string name="cards_help">Как выглядят виджеты главного экрана: их цвет и просвечивает ли фон.</string>
+    <string name="cards_solid">Сплошные</string>
+    <string name="cards_translucent">Полупрозрачные</string>
+    <string name="cards_glass">Стекло</string>
+    <string name="cards_opacity">Насколько видны</string>
+    <string name="cards_glass_help">Если есть обои, они видны размытыми за каждой карточкой.</string>
+    <string name="cards_theme">Тема</string>
 </resources>

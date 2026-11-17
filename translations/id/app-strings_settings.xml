@@ -12,4 +12,12 @@
     <string name="accent_title">Warna antarmuka</string>
     <string name="accent_help">Sakelar, tombol, putar, dan bilah progres. Kartu dan latar tetap sama; Alami adalah tampilan aslinya.</string>
     <string name="accent_natural">Alami</string>
+    <string name="cards_title">Kartu</string>
+    <string name="cards_help">Tampilan widget di beranda Anda: warnanya dan apakah latar belakang terlihat.</string>
+    <string name="cards_solid">Solid</string>
+    <string name="cards_translucent">Tembus pandang</string>
+    <string name="cards_glass">Kaca</string>
+    <string name="cards_opacity">Seberapa terlihat</string>
+    <string name="cards_glass_help">Dengan wallpaper, tampak buram di balik setiap kartu.</string>
+    <string name="cards_theme">Tema</string>
 </resources>

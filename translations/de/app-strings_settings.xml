@@ -12,4 +12,12 @@
     <string name="accent_title">Akzentfarbe</string>
     <string name="accent_help">Schalter, Tasten, Play und Fortschrittsbalken. Kacheln und Hintergrund bleiben gleich; Natürlich ist der Originallook.</string>
     <string name="accent_natural">Natürlich</string>
+    <string name="cards_title">Karten</string>
+    <string name="cards_help">So sehen die Widgets auf deinem Startbildschirm aus: ihre Farbe und ob der Hintergrund durchscheint.</string>
+    <string name="cards_solid">Deckend</string>
+    <string name="cards_translucent">Durchscheinend</string>
+    <string name="cards_glass">Glas</string>
+    <string name="cards_opacity">Wie sichtbar</string>
+    <string name="cards_glass_help">Mit einem Hintergrundbild erscheint es unscharf hinter jeder Karte.</string>
+    <string name="cards_theme">Design</string>
 </resources>

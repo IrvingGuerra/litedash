@@ -7,6 +7,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -64,6 +65,12 @@ private val EDIT_MARGIN = 6.dp
 /** Dónde empieza el botón [i] de esa fila (0 = la ✕, pegada a la orilla). */
 private fun editButtonStart(i: Int) = EDIT_MARGIN + (EDIT_BUTTON + EDIT_MARGIN) * i
 
+/**
+ * Deslizar con un dedo a lo ancho para cambiar de página: en un hueco o sobre un widget que no usa el arrastre (los que
+ * sí, como el auto que gira o el mapa, se lo quedan). [onDrag] con lo que avanzó el dedo y [onEnd] al soltar.
+ */
+class PageSwipe(val onDrag: (Float) -> Unit, val onEnd: () -> Unit)
+
 /** Arrastre en curso: mover la pieza o cambiarle el tamaño (cuánto, va aparte en un estado propio). */
 private data class Drag(val id: String, val resizing: Boolean)
 
@@ -85,6 +92,8 @@ fun Dashboard(
     /** Editando, las piezas que se personalizan ([hasSettings]) llevan un botón que hace esto. */
     onSettings: ((Tile) -> Unit)? = null,
     hasSettings: (Tile) -> Boolean = { false },
+    /** Con varias páginas: deslizar en un hueco (fuera del modo edición). */
+    swipe: PageSwipe? = null,
     content: @Composable (Tile) -> Unit,
 ) {
     val c = LocalColors.current
@@ -115,6 +124,14 @@ fun Dashboard(
                     if (!editing) detectTapGestures(onLongPress = { currentOnEdit() })
                     else detectTapGestures(onTap = { selected = null })
                 }
+                .then(
+                    if (swipe != null && !editing) Modifier.pointerInput(swipe) {
+                        detectHorizontalDragGestures(onDragEnd = swipe.onEnd, onDragCancel = swipe.onEnd) { change, dx ->
+                            change.consume()
+                            swipe.onDrag(dx)
+                        }
+                    } else Modifier,
+                )
                 .then(
                     if (editing) Modifier.drawBehind {
                         val r = 1.5.dp.toPx()

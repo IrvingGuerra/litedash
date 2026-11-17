@@ -22,4 +22,16 @@
     <string name="two_parts">%1$s · %2$s</string>
     <string name="weather_degrees">%1$d°</string>
     <string name="weather_range">%1$d° / %2$d°</string>
+    <string name="page_n">Pagina %1$d</string>
+    <string name="page_add">Pagina toevoegen</string>
+    <string name="page_remove">Pagina verwijderen</string>
+    <string name="page_remove_question">Pagina %1$d verwijderen?</string>
+    <string name="page_remove_message">De widgets erop verdwijnen; je eerste pagina en de andere blijven.</string>
+    <string name="page_background_title">Achtergrond van pagina %1$d</string>
+    <string name="page_background_image">Afbeelding</string>
+    <string name="page_background_map">Kaart</string>
+    <string name="map_backdrop_help">De kaart volgt je achter je widgets, met jou in de vrije ruimte. De stijl is die uit Instellingen → Apps → Navigatie; zonder internet gebruikt hij je offline zones.</string>
+    <string name="map_backdrop_you">Jij op de kaart</string>
+    <string name="map_backdrop_arrow">Pijl</string>
+    <string name="map_backdrop_car">Je auto</string>
 </resources>

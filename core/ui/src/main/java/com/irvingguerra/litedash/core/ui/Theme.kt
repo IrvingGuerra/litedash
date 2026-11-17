@@ -199,7 +199,10 @@ fun Label(
 /** La pieza del tablero va sin fondo de tarjeta: [Card] queda transparente (lo de adentro se ve igual). */
 val LocalPlainCard = compositionLocalOf { false }
 
-/** Tarjeta base del tablero: superficie lisa, sin borde, con esquinas [Radius.card]. */
+/**
+ * Tarjeta base del tablero, con esquinas [Radius.card]: lisa con el color del tema o, en el inicio, como digan las
+ * Tarjetas ([LocalCardLook]: color, translúcida o de vidrio). Sin tarjeta ([LocalPlainCard]), transparente.
+ */
 @Composable
 fun Card(
     modifier: Modifier = Modifier,
@@ -208,7 +211,7 @@ fun Card(
 ) {
     val c = LocalColors.current
     val shape = RoundedCornerShape(Radius.card)
-    var m = modifier.clip(shape).background(if (LocalPlainCard.current) Color.Transparent else c.surface)
+    var m = modifier.clip(shape).then(if (LocalPlainCard.current) Modifier else Modifier.cardSurface(LocalCardLook.current, c))
     if (onClick != null) m = m.clickable(onClick = onClick)
     Box(m, content = content)
 }

@@ -6,10 +6,13 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.calculateZoom
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -31,9 +34,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.ColorMatrix
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.input.pointer.PointerInputChange
 import androidx.compose.ui.input.pointer.PointerInputScope
 import androidx.compose.ui.input.pointer.pointerInput
@@ -342,6 +347,14 @@ fun MapCanvas(
     ringKm: Float? = null,
     active: Boolean = true,
     onTap: (() -> Unit)? = null,
+    /**
+     * Dónde vas tú y los créditos, en fracciones del mapa (null = todo el mapa): de fondo del inicio, el hueco que dejan
+     * los widgets. Sin gestos ([interactive] = false) el mapa solo se ve.
+     */
+    focus: Rect? = null,
+    interactive: Boolean = true,
+    /** Tu auto en vez de la flecha (null = la flecha). */
+    marker: ImageBitmap? = null,
 ) {
     val c = LocalColors.current
     val driveZoom = store.source.maxZoom
@@ -379,7 +392,8 @@ fun MapCanvas(
     val filter = if (dark && store.source.recolor) DarkTiles else null
     val accent = c.accent
     val glide = rememberGlide(lat, lon, bearing, active)
-    val headingUp = look.orientation == MapOrientation.HEADING
+    // Con tu auto en vez de la flecha, siempre gira el mapa: el auto va de espaldas hacia arriba y no se gira.
+    val headingUp = look.orientation == MapOrientation.HEADING || marker != null
     val sky = store.source.sky?.let(::Color) ?: if (dark) Color(0xFF1C1C20) else Color(0xFFE8E8EA)
     val zoomable by rememberUpdatedState(fixedZoom == null)
     // Con dos dedos el mapa se agranda o achica ([MapCamera.scale]) y, pasada la mitad, cambia al nivel de junto.
@@ -455,9 +469,11 @@ fun MapCanvas(
     // Un toque: lo que diga [onTap] (en el widget, verlo en grande o abrir tu app de mapas).
     val tap = if (onTap != null) Modifier.clickable(onClick = onTap) else Modifier
     BoxWithConstraints(
-        modifier.background(sky).then(tap).pointerInput(Unit) {
-            detectMapGestures({ at, delta -> onPan(at, delta) }, { if (zoomable) onPinch(it) }, { if (zoomable) onPinchEnd() })
-        },
+        modifier.background(sky).then(tap).then(
+            if (!interactive) Modifier else Modifier.pointerInput(Unit) {
+                detectMapGestures({ at, delta -> onPan(at, delta) }, { if (zoomable) onPinch(it) }, { if (zoomable) onPinchEnd() })
+            },
+        ),
     ) {
         val short = maxWidth < SHORT_ATTRIBUTION
         Spacer(
@@ -473,15 +489,17 @@ fun MapCanvas(
                     val bearing = if (pose.bearing.isNaN()) 0f else pose.bearing
                     // Inclinado siempre mira hacia donde vas (como Waze); al acostarse gira al norte por el lado corto.
                     val turn = if (headingUp) -bearing else -shortTurn(0f, bearing) * tilt
-                    // Inclinado, tu posición va más abajo: se ve más camino adelante.
-                    val atY = size.height * (ANCHOR_FLAT + (ANCHOR_TILTED - ANCHOR_FLAT) * tilt)
+                    // Inclinado, tu posición va más abajo: se ve más camino adelante (dentro de [focus], si lo hay).
+                    val f = focus ?: WHOLE
+                    val atX = size.width * f.center.x
+                    val atY = size.height * (f.top + f.height * (ANCHOR_FLAT + (ANCHOR_TILTED - ANCHOR_FLAT) * tilt))
                     // Las teselas del nivel, agrandadas o achicadas con el zoom a medias; tu flecha y los nombres, no.
                     val ts = tilePx(density) * scale
                     val n = (1 shl zoom).toDouble()
                     val panX = camera.panX
                     val panY = camera.panY
                     frame.update(
-                        size.width, size.height, density, size.width / 2, atY, turn, tilt,
+                        size.width, size.height, density, atX, atY, turn, tilt,
                         // El centro del mapa: tú, o a donde lo moviste.
                         tileX(pose.lon, zoom) + panX * n, tileY(pose.lat, zoom) + panY * n, zoom, ts, panX, panY,
                         names, tilePx(density), frame.textPaint(12.sp.toPx(), labelColor, sky),
@@ -489,12 +507,20 @@ fun MapCanvas(
                         sky, bearing + turn, ringKm, if (ringKm == null) 0.0 else tileLat(tileY(pose.lat, 0) + panY, 0),
                     )
                 }
-                onDrawBehind { frame.draw(this, store, filter, accent) }
+                onDrawBehind { frame.draw(this, store, filter, accent, marker) }
             },
         )
-        Attribution(if (short) store.source.attributionShort else store.source.attribution, Modifier.align(Alignment.BottomEnd))
+        val credits = if (short) store.source.attributionShort else store.source.attribution
+        if (focus == null) Attribution(credits, Modifier.align(Alignment.BottomEnd))
+        else Box(Modifier.offset(maxWidth * focus.left, maxHeight * focus.top).size(maxWidth * focus.width, maxHeight * focus.height)) {
+            // Abajo a la izquierda del hueco: abajo al centro van los puntitos de las páginas.
+            Attribution(credits, Modifier.align(Alignment.BottomStart))
+        }
     }
 }
+
+/** Todo el mapa: tú al centro a lo ancho. */
+private val WHOLE = Rect(0f, 0f, 1f, 1f)
 
 /** Si el mapa ya salió de la vista (para dejarle a otro lo que animaba). */
 private class Shown {

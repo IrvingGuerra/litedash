@@ -12,4 +12,12 @@
     <string name="accent_title">Gränssnittsfärg</string>
     <string name="accent_help">Reglage, knappar, uppspelning och förloppsfält. Kort och bakgrund förblir desamma; Naturlig är originalutseendet.</string>
     <string name="accent_natural">Naturlig</string>
+    <string name="cards_title">Kort</string>
+    <string name="cards_help">Hur widgetarna på din startskärm ser ut: färgen och om bakgrunden syns igenom.</string>
+    <string name="cards_solid">Täckande</string>
+    <string name="cards_translucent">Halvgenomskinliga</string>
+    <string name="cards_glass">Glas</string>
+    <string name="cards_opacity">Hur synliga</string>
+    <string name="cards_glass_help">Med en bakgrundsbild syns den suddig bakom varje kort.</string>
+    <string name="cards_theme">Tema</string>
 </resources>

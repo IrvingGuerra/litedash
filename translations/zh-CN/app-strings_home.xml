@@ -22,4 +22,16 @@
     <string name="two_parts">%1$s · %2$s</string>
     <string name="weather_degrees">%1$d°</string>
     <string name="weather_range">%1$d° / %2$d°</string>
+    <string name="page_n">第 %1$d 页</string>
+    <string name="page_add">添加页面</string>
+    <string name="page_remove">移除页面</string>
+    <string name="page_remove_question">移除第 %1$d 页？</string>
+    <string name="page_remove_message">该页的小组件会被移除；你的第一页和其他页会保留。</string>
+    <string name="page_background_title">第 %1$d 页背景</string>
+    <string name="page_background_image">图片</string>
+    <string name="page_background_map">地图</string>
+    <string name="map_backdrop_help">地图在小组件后面跟随你，你显示在空白处。样式与“设置 → 应用 → 导航”中的一致；没有网络时使用你的离线区域。</string>
+    <string name="map_backdrop_you">你在地图上</string>
+    <string name="map_backdrop_arrow">箭头</string>
+    <string name="map_backdrop_car">你的车</string>
 </resources>

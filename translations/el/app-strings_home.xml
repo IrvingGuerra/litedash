@@ -22,4 +22,16 @@
     <string name="two_parts">%1$s · %2$s</string>
     <string name="weather_degrees">%1$d°</string>
     <string name="weather_range">%1$d° / %2$d°</string>
+    <string name="page_n">Σελίδα %1$d</string>
+    <string name="page_add">Προσθήκη σελίδας</string>
+    <string name="page_remove">Αφαίρεση σελίδας</string>
+    <string name="page_remove_question">Αφαίρεση της σελίδας %1$d;</string>
+    <string name="page_remove_message">Τα widget της φεύγουν· η πρώτη σας σελίδα και οι άλλες μένουν.</string>
+    <string name="page_background_title">Φόντο σελίδας %1$d</string>
+    <string name="page_background_image">Εικόνα</string>
+    <string name="page_background_map">Χάρτης</string>
+    <string name="map_backdrop_help">Ο χάρτης σας ακολουθεί πίσω από τα widget, με εσάς στον ελεύθερο χώρο. Το στυλ του είναι αυτό από Ρυθμίσεις → Εφαρμογές → Πλοήγηση· χωρίς internet χρησιμοποιεί τις ζώνες εκτός σύνδεσης.</string>
+    <string name="map_backdrop_you">Εσείς στον χάρτη</string>
+    <string name="map_backdrop_arrow">Βέλος</string>
+    <string name="map_backdrop_car">Το αυτοκίνητό σας</string>
 </resources>

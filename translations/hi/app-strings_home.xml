@@ -22,4 +22,16 @@
     <string name="two_parts">%1$s · %2$s</string>
     <string name="weather_degrees">%1$d°</string>
     <string name="weather_range">%1$d° / %2$d°</string>
+    <string name="page_n">पेज %1$d</string>
+    <string name="page_add">पेज जोड़ें</string>
+    <string name="page_remove">पेज हटाएँ</string>
+    <string name="page_remove_question">पेज %1$d हटाएँ?</string>
+    <string name="page_remove_message">इसके विजेट हट जाएँगे; आपका पहला पेज और बाकी पेज रहेंगे।</string>
+    <string name="page_background_title">पेज %1$d का बैकग्राउंड</string>
+    <string name="page_background_image">इमेज</string>
+    <string name="page_background_map">मैप</string>
+    <string name="map_backdrop_help">मैप आपके विजेट के पीछे आपके साथ चलता है, और आप खाली जगह में दिखते हैं। इसकी स्टाइल सेटिंग्स → ऐप्स → नेविगेशन वाली है; बिना इंटरनेट यह आपके ऑफ़लाइन इलाके इस्तेमाल करता है।</string>
+    <string name="map_backdrop_you">मैप पर आप</string>
+    <string name="map_backdrop_arrow">तीर</string>
+    <string name="map_backdrop_car">आपकी कार</string>
 </resources>

@@ -1,15 +1,35 @@
 package com.irvingguerra.litedash.feature.dashboard
 
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 
-/** El acomodo actual y sus cambios; cada cambio se guarda para esta cuadrícula. */
+/**
+ * El acomodo actual y sus cambios; cada cambio se guarda para esta cuadrícula y esta página. Con varias páginas, solo
+ * la que se ve está en [tiles]; la primera es el inicio de siempre (sus acomodos son los de antes de las páginas).
+ */
 class DashboardState(private val store: DashboardStore) {
     var grid by mutableStateOf<Grid?>(null)
         private set
     var tiles by mutableStateOf(emptyList<Tile>())
         private set
+
+    /** La página que se ve (0 = la primera) y cuántas hay. */
+    var page by mutableIntStateOf(0)
+        private set
+    var pageCount by mutableIntStateOf(store.pages)
+        private set
+
+    /** El fondo de cada página. */
+    var backgrounds by mutableStateOf(List(pageCount) { store.background(it) })
+        private set
+
+    /** El fondo de la página que se ve. */
+    val background: PageBackground get() = backgrounds.getOrElse(page) { PageBackground.WALLPAPER }
+
+    /** Lo de las otras páginas en esta cuadrícula, como quedó la última vez que se vio (volver a ellas no lee el disco). */
+    private val pageTiles = HashMap<Int, List<Tile>>()
 
     /**
      * Los tipos que no se ven (de un módulo apagado; lo pone la app). Sus piezas se guardan pero
@@ -31,8 +51,68 @@ class DashboardState(private val store: DashboardStore) {
     fun use(c: Grid) {
         if (c != grid) {
             grid = c
-            tiles = load(c)
+            pageTiles.clear()
+            tiles = load(c, page)
         }
+    }
+
+    /**
+     * Las piezas de todas las páginas en esta cuadrícula (las otras, como quedaron o leídas una vez): para lo que vale
+     * para todo el inicio, como no soltar la foto o la cámara de un widget que solo está en otra página.
+     */
+    val allTiles: List<Tile>
+        get() {
+            val c = grid ?: return tiles
+            return (0 until pageCount).flatMap { p -> if (p == page) tiles else pageTiles.getOrPut(p) { load(c, p) } }
+        }
+
+    /** Cambia los datos de las piezas de todas las páginas: [update] da los nuevos de una pieza (null = igual). */
+    fun changeDataEverywhere(update: (Tile) -> String?) {
+        val c = grid ?: return
+        changeData(tiles.mapNotNull { t -> update(t)?.let { t.id to it } }.toMap())
+        for (p in 0 until pageCount) {
+            if (p == page) continue
+            val before = pageTiles.getOrPut(p) { load(c, p) }
+            val after = before.map { t -> update(t)?.let { t.copy(data = it) } ?: t }
+            if (after != before) {
+                pageTiles[p] = after
+                store.save(c, after, p)
+            }
+        }
+    }
+
+    /** Pasa a la página [p] (se queda donde está si no existe). */
+    fun goTo(p: Int) {
+        if (p == page || p !in 0 until pageCount) return
+        pageTiles[page] = tiles
+        page = p
+        tiles = grid?.let { pageTiles[p] ?: load(it, p) }.orEmpty()
+    }
+
+    /** Agrega una página vacía al final y pasa a ella; false si ya hay [MAX_PAGES]. */
+    fun addPage(): Boolean {
+        if (pageCount >= MAX_PAGES) return false
+        store.pages = pageCount + 1
+        pageCount = store.pages
+        backgrounds = List(pageCount) { store.background(it) }
+        goTo(pageCount - 1)
+        return true
+    }
+
+    /** Quita la página [p] (no la primera) y queda en la de antes. */
+    fun removePage(p: Int) {
+        if (p !in 1 until pageCount) return
+        store.removePage(p)
+        pageCount = store.pages
+        backgrounds = List(pageCount) { store.background(it) }
+        pageTiles.clear()
+        page = if (page >= p) page - 1 else page
+        tiles = grid?.let { load(it, page) }.orEmpty()
+    }
+
+    fun setBackground(p: Int, b: PageBackground) {
+        store.setBackground(p, b)
+        backgrounds = List(pageCount) { store.background(it) }
     }
 
     /**
@@ -41,8 +121,10 @@ class DashboardState(private val store: DashboardStore) {
      * acomodo no "se reinicia" cuando el alto de la pantalla cambia un poco. El de [c] también se revisa
      * (uno dañado o de una versión con otros mínimos). Lo ajustado no se guarda hasta que se mueva algo.
      */
-    private fun load(c: Grid): List<Tile> =
-        savedLayoutFor(c, store.grids(), store::read, store::savedAt)?.fittedTo(c) ?: suggested(c)
+    private fun load(c: Grid, p: Int): List<Tile> =
+        savedLayoutFor(c, store.grids(p), { store.read(it, p) }, { store.savedAt(it, p) })?.fittedTo(c)
+            // Una página nueva empieza vacía; solo la primera trae la plantilla recomendada.
+            ?: if (p == 0) suggested(c) else emptyList()
 
     /** [adaptTo] con las que se ven primero: las de un módulo apagado no le quitan lugar a ninguna. */
     private fun List<Tile>.fittedTo(c: Grid): List<Tile> {
@@ -52,11 +134,12 @@ class DashboardState(private val store: DashboardStore) {
 
     /** Para los reportes: la cuadrícula actual y las que tienen acomodo guardado. */
     fun describe(): String =
-        "Cuadrícula: ${grid?.key ?: "-"} · guardadas: ${store.grids().sortedBy { it.key }.joinToString { "${it.key}${if (store.savedAt(it) == 0L) "" else "*"}" }.ifEmpty { "ninguna" }}"
+        "Cuadrícula: ${grid?.key ?: "-"} · guardadas: ${store.grids().sortedBy { it.key }.joinToString { "${it.key}${if (store.savedAt(it) == 0L) "" else "*"}" }.ifEmpty { "ninguna" }}" +
+            if (pageCount > 1) " · páginas: $pageCount (en la ${page + 1}; fondos ${backgrounds.joinToString("/") { it.stored }})" else ""
 
     fun change(newTiles: List<Tile>) {
         tiles = newTiles
-        grid?.let { store.save(it, newTiles) }
+        grid?.let { store.save(it, newTiles, page) }
     }
 
     /** Cambia las que se ven ([shown]); las escondidas se quedan si nada quedó encima de ellas. */

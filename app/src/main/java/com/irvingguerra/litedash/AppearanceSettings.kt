@@ -6,14 +6,17 @@ import android.hardware.SensorManager
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -23,6 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -32,17 +36,23 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import com.irvingguerra.litedash.core.ui.Brand
 import com.irvingguerra.litedash.core.ui.Button
+import com.irvingguerra.litedash.core.ui.Card
+import com.irvingguerra.litedash.core.ui.CardLook
+import com.irvingguerra.litedash.core.ui.CardStyle
 import com.irvingguerra.litedash.core.ui.DarkColors
 import com.irvingguerra.litedash.core.ui.Icon
 import com.irvingguerra.litedash.core.ui.IconButton
 import com.irvingguerra.litedash.core.ui.Icons
 import com.irvingguerra.litedash.core.ui.Label
 import com.irvingguerra.litedash.core.ui.LightColors
+import com.irvingguerra.litedash.core.ui.LocalCardLook
 import com.irvingguerra.litedash.core.ui.LocalColors
+import com.irvingguerra.litedash.core.ui.MIN_OPACITY
 import com.irvingguerra.litedash.core.ui.Radius
 import com.irvingguerra.litedash.core.ui.Segmented
 import com.irvingguerra.litedash.core.ui.SwitchRow
 import com.irvingguerra.litedash.core.ui.Typography
+import com.irvingguerra.litedash.core.ui.cardContentColors
 import com.irvingguerra.litedash.feature.dashboard.TileTypes
 import com.irvingguerra.litedash.feature.tpms.PressureUnit
 import kotlin.math.round
@@ -83,6 +93,7 @@ private fun InterfaceSettings(d: Dependencies) {
     val prefs = d.prefs
     val c = LocalColors.current
     SettingsCard(stringResource(R.string.accent_title), stringResource(R.string.accent_help)) { AccentSettings(prefs) }
+    SettingsCard(stringResource(R.string.cards_title), stringResource(R.string.cards_help)) { CardSettings(prefs) }
     SettingsCard(stringResource(R.string.scale), stringResource(R.string.scale_help)) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             IconButton(Icons.minus, { prefs.scale = (prefs.scale - 0.1f).coerceAtLeast(0.8f).roundToTenth() }, background = c.surfaceHigh)
@@ -120,6 +131,54 @@ private fun AccentSettings(prefs: Preferences) {
         ) { prefs.accentColor = null }
     }
     ColorPicker(prefs.accentColor ?: Color.Unspecified, prefs::previewAccent, ACCENTS, leading) { prefs.accentColor = it }
+}
+
+/** Lo que dice la tarjeta de muestra (una hora: se lee igual en cualquier idioma). */
+private const val SAMPLE_TIME = "12:45"
+
+/** Colores rápidos de las tarjetas: oscuros y claros que se leen bien con el texto de uno u otro tema. */
+private val CARD_COLORS = listOf(
+    Color(0xFF000000), Color(0xFF2B2F36), Color(0xFF0F1B2D), Color(0xFF13241C),
+    Color(0xFF2A1418), Color(0xFFE9ECF0), Color(0xFFFFFFFF),
+)
+
+/** Las tarjetas del inicio: una muestra sobre tu fondo, lisas / translúcidas / de vidrio, cuánto se ven y su color. */
+@Composable
+private fun CardSettings(prefs: Preferences) {
+    val c = LocalColors.current
+    val look = CardLook(prefs.cardColor ?: Color.Unspecified, prefs.cardStyle, prefs.cardOpacity)
+    // La muestra: tu fondo (o el del tema) con una tarjeta encima, como en el inicio.
+    Box(Modifier.fillMaxWidth().height(120.dp).clip(RoundedCornerShape(Radius.card)).background(c.background)) {
+        HomeWallpaper()
+        CompositionLocalProvider(LocalCardLook provides look, LocalColors provides cardContentColors(look, c)) {
+            Card(Modifier.align(Alignment.Center).fillMaxWidth(0.6f).height(84.dp)) {
+                Label(SAMPLE_TIME, Typography.title, LocalColors.current.text, modifier = Modifier.align(Alignment.Center))
+            }
+        }
+    }
+    Segmented(
+        listOf(
+            CardStyle.SOLID to stringResource(R.string.cards_solid),
+            CardStyle.TRANSLUCENT to stringResource(R.string.cards_translucent),
+            CardStyle.GLASS to stringResource(R.string.cards_glass),
+        ),
+        prefs.cardStyle,
+        { prefs.cardStyle = it },
+    )
+    if (prefs.cardStyle != CardStyle.SOLID) {
+        Label(stringResource(R.string.cards_opacity), Typography.label, c.textMuted)
+        // El deslizador va de lo más transparente que se permite a sólida.
+        val toSlider = { o: Float -> (o - MIN_OPACITY) / (1f - MIN_OPACITY) }
+        val fromSlider = { v: Float -> MIN_OPACITY + v * (1f - MIN_OPACITY) }
+        LevelSlider(toSlider(prefs.cardOpacity), { prefs.previewCardOpacity(fromSlider(it)) }) { prefs.cardOpacity = fromSlider(it) }
+        if (prefs.cardStyle == CardStyle.GLASS) Label(stringResource(R.string.cards_glass_help), Typography.small, c.textMuted)
+    }
+    Label(stringResource(R.string.color), Typography.label, c.textMuted)
+    val themeLabel = stringResource(R.string.cards_theme)
+    val leading = @Composable {
+        Swatch(prefs.cardColor == null, SolidColor(c.surface), Modifier.semantics { contentDescription = themeLabel }) { prefs.cardColor = null }
+    }
+    ColorPicker(prefs.cardColor ?: Color.Unspecified, prefs::previewCardColor, CARD_COLORS, leading) { prefs.cardColor = it }
 }
 
 /** Día y noche: el tema, cuándo es de noche y el brillo. */
@@ -261,7 +320,7 @@ private fun Tiles(d: Dependencies, onEdit: () -> Unit, onTires: () -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         for (spec in TileSpecs.filter { it.type != TileTypes.APP && offered(d, it.type) }) {
             // Llantas sin sensores no se ve aunque esté en el acomodo.
-            val onHome = d.dashboard.tiles.any { it.type == spec.type } && moduleOff(d, spec.type) == null
+            val onHome = d.dashboard.allTiles.any { it.type == spec.type } && moduleOff(d, spec.type) == null
             val didNotFit = noRoom == spec.type && !onHome
             val detail = if (didNotFit) stringResource(R.string.no_room) else spec.detail?.let { stringResource(it) } ?: ""
             TileRow(iconOf(spec.type), stringResource(spec.name), detail, if (didNotFit) c.danger else c.textMuted) {

@@ -12,4 +12,12 @@
     <string name="accent_title">สีอินเทอร์เฟซ</string>
     <string name="accent_help">สวิตช์ ปุ่ม ปุ่มเล่น และแถบความคืบหน้า การ์ดและพื้นหลังยังเหมือนเดิม ธรรมชาติคือหน้าตาดั้งเดิม</string>
     <string name="accent_natural">ธรรมชาติ</string>
+    <string name="cards_title">การ์ด</string>
+    <string name="cards_help">หน้าตาของวิดเจ็ตบนหน้าหลัก: สีและจะให้เห็นพื้นหลังหรือไม่</string>
+    <string name="cards_solid">ทึบ</string>
+    <string name="cards_translucent">โปร่งแสง</string>
+    <string name="cards_glass">กระจก</string>
+    <string name="cards_opacity">ความชัด</string>
+    <string name="cards_glass_help">ถ้ามีวอลเปเปอร์ จะเห็นภาพเบลออยู่หลังการ์ดแต่ละใบ</string>
+    <string name="cards_theme">ธีม</string>
 </resources>

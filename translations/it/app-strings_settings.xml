@@ -12,4 +12,12 @@
     <string name="accent_title">Colore interfaccia</string>
     <string name="accent_help">Interruttori, pulsanti, play e barre di avanzamento. Schede e sfondo restano uguali; Naturale è l\'aspetto originale.</string>
     <string name="accent_natural">Naturale</string>
+    <string name="cards_title">Schede</string>
+    <string name="cards_help">Come appaiono i widget della tua Home: il colore e se si vede lo sfondo.</string>
+    <string name="cards_solid">Piene</string>
+    <string name="cards_translucent">Traslucide</string>
+    <string name="cards_glass">Vetro</string>
+    <string name="cards_opacity">Quanto si vedono</string>
+    <string name="cards_glass_help">Con uno sfondo, si vede sfocato dietro ogni scheda.</string>
+    <string name="cards_theme">Tema</string>
 </resources>

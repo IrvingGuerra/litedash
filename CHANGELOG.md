@@ -4,6 +4,17 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.4.169] - 2026-11-16
+
+### Nuevo
+- **Páginas en tu inicio:** al acomodar, «+» agrega otra página (hasta 5) con sus propios widgets; deslizas en un
+  espacio libre para cambiar de página y los puntitos de abajo dicen en cuál vas. Con una sola, todo igual que antes.
+- **El mapa como fondo:** cada página elige su fondo, tu imagen o el mapa vivo. El mapa te sigue detrás de tus widgets,
+  contigo en el espacio que dejan libre, y si Waze o Maps te están guiando, su siguiente vuelta sale ahí. Puedes verte
+  como flecha o como tu auto (entonces el mapa gira hacia donde vas).
+- **Tarjetas a tu gusto:** en Inicio y apariencia → Interfaz → Tarjetas eliges su color y si son lisas, translúcidas o
+  de vidrio (con tu imagen de fondo desenfocada detrás), y cuánto se ven.
+
 ## [1.4.168] - 2026-11-16
 
 ### Cambiado

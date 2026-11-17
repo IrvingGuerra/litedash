@@ -9,6 +9,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.FilterQuality
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -180,7 +181,7 @@ internal class MapFrame : ScreenPoint {
         return true
     }
 
-    fun draw(scope: DrawScope, store: TileStore, filter: ColorFilter?, accent: Color) = with(scope) {
+    fun draw(scope: DrawScope, store: TileStore, filter: ColorFilter?, accent: Color, marker: ImageBitmap? = null) = with(scope) {
         drawIntoCanvas { canvas ->
             canvas.save()
             canvas.nativeCanvas.concat(matrix)
@@ -194,12 +195,21 @@ internal class MapFrame : ScreenPoint {
             drawCircle(accent, ring, center, style = ringStroke)
         }
         labelPaint?.let { paint -> drawIntoCanvas { drawLabels(it.nativeCanvas, layout.placed, paint) } }
-        if (youShown) drawArrow(accent)
+        if (youShown) drawArrow(accent, marker)
     }
 
-    /** Tu posición: la flecha con el rumbo (color de acento). Inclinado, un poco acostada. */
-    private fun DrawScope.drawArrow(accent: Color) {
+    /**
+     * Tu posición: la flecha con el rumbo (color de acento), un poco acostada si está inclinado; o, con [marker], tu
+     * auto visto de atrás, siempre derecho (con él el mapa gira hacia donde vas: el auto no se gira).
+     */
+    private fun DrawScope.drawArrow(accent: Color, marker: ImageBitmap?) {
         translate(you[0], you[1]) {
+            if (marker != null) {
+                val w = MARKER_WIDTH_DP * unit
+                val h = w * marker.height / marker.width
+                drawImage(marker, IntOffset.Zero, IntSize(marker.width, marker.height), IntOffset((-w / 2).toInt(), (-h * 0.6f).toInt()), IntSize(w.toInt(), h.toInt()), filterQuality = FilterQuality.High)
+                return@translate
+            }
             scale(1f, squash, Offset.Zero) {
                 drawCircle(accent.copy(alpha = 0.22f), 34 * unit, Offset.Zero)
                 rotate(arrowDegrees, Offset.Zero) {
@@ -210,6 +220,9 @@ internal class MapFrame : ScreenPoint {
         }
     }
 }
+
+/** Lo ancho de tu auto en el mapa, en dp. */
+private const val MARKER_WIDTH_DP = 110f
 
 /** La flecha apuntando al norte con su centro en (0, 0); [u] = 1 dp. */
 private fun arrowPath(u: Float) = Path().apply {

@@ -22,4 +22,16 @@
     <string name="two_parts">%1$s · %2$s</string>
     <string name="weather_degrees">%1$d°</string>
     <string name="weather_range">%1$d° / %2$d°</string>
+    <string name="page_n">หน้า %1$d</string>
+    <string name="page_add">เพิ่มหน้า</string>
+    <string name="page_remove">ลบหน้า</string>
+    <string name="page_remove_question">ลบหน้า %1$d ไหม</string>
+    <string name="page_remove_message">วิดเจ็ตในหน้านี้จะหายไป หน้าแรกและหน้าอื่นยังอยู่</string>
+    <string name="page_background_title">พื้นหลังหน้า %1$d</string>
+    <string name="page_background_image">รูปภาพ</string>
+    <string name="page_background_map">แผนที่</string>
+    <string name="map_backdrop_help">แผนที่จะตามคุณอยู่หลังวิดเจ็ต โดยแสดงคุณในพื้นที่ว่าง สไตล์เป็นแบบที่ตั้งไว้ใน การตั้งค่า → แอป → การนำทาง ถ้าไม่มีอินเทอร์เน็ตจะใช้โซนออฟไลน์ของคุณ</string>
+    <string name="map_backdrop_you">คุณบนแผนที่</string>
+    <string name="map_backdrop_arrow">ลูกศร</string>
+    <string name="map_backdrop_car">รถของคุณ</string>
 </resources>

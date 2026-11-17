@@ -17,7 +17,9 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -37,7 +39,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -57,6 +62,9 @@ import com.irvingguerra.litedash.core.ui.Typography
 import com.irvingguerra.litedash.core.vehicle.Signal
 import com.irvingguerra.litedash.core.vehicle.watch
 import com.irvingguerra.litedash.feature.apps.App
+import com.irvingguerra.litedash.feature.car.CarPackage
+import com.irvingguerra.litedash.feature.car.snapshot
+import com.irvingguerra.litedash.feature.dashboard.TileTypes
 import com.irvingguerra.litedash.feature.map.MapCamera
 import com.irvingguerra.litedash.feature.map.MapCanvas
 import com.irvingguerra.litedash.feature.map.MapDetail
@@ -64,18 +72,17 @@ import com.irvingguerra.litedash.feature.map.MapLook
 import com.irvingguerra.litedash.feature.map.MapOrientation
 import com.irvingguerra.litedash.feature.map.MapStyle
 import com.irvingguerra.litedash.feature.map.MapZoom
-import com.irvingguerra.litedash.feature.map.rememberFreeMapCamera
-import com.irvingguerra.litedash.feature.map.rememberMapCamera
-import com.irvingguerra.litedash.feature.map.zoomToFit
-import com.irvingguerra.litedash.feature.dashboard.TileTypes
 import com.irvingguerra.litedash.feature.map.MinimalPalette
-import com.irvingguerra.litedash.feature.map.OfflineError
 import com.irvingguerra.litedash.feature.map.OfflineArea
+import com.irvingguerra.litedash.feature.map.OfflineError
 import com.irvingguerra.litedash.feature.map.OfflineMaps
 import com.irvingguerra.litedash.feature.map.OsmTiles
 import com.irvingguerra.litedash.feature.map.TileStore
 import com.irvingguerra.litedash.feature.map.VectorTiles
+import com.irvingguerra.litedash.feature.map.rememberFreeMapCamera
+import com.irvingguerra.litedash.feature.map.rememberMapCamera
 import com.irvingguerra.litedash.feature.map.tilePx
+import com.irvingguerra.litedash.feature.map.zoomToFit
 import com.irvingguerra.litedash.feature.music.NotificationService
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -97,7 +104,7 @@ fun MapTile(d: Dependencies, tileId: String, data: String, app: App?, editing: B
     val look = remember(data) { MapLook.parse(data) }
     // Sale de la pantalla: si fue porque se quitó el widget, lo suyo ya no sirve (si no, se queda para cuando vuelva).
     DisposableEffect(tileId) {
-        onDispose { if (d.dashboard.tiles.none { it.id == tileId }) forgetMap(tileId) }
+        onDispose { if (d.dashboard.allTiles.none { it.id == tileId }) forgetMap(tileId) }
     }
     BoxWithConstraints(Modifier.fillMaxSize()) {
         if (!granted || maxHeight < COMPACT_HEIGHT) {
@@ -237,6 +244,49 @@ private fun LiveMap(d: Dependencies, look: MapLook, modifier: Modifier, tileId: 
         }
     }
 }
+
+/**
+ * El mapa vivo detrás de los widgets de una página (#18). Te sigue sin gestos (los de ahí son del inicio: deslizar de
+ * página, dejar presionado para acomodar) y vas en [focus], el hueco que dejan los widgets (en fracciones de la
+ * pantalla), con la flecha o tu auto visto de atrás ([car], sin él la flecha). Con Waze/Maps navegando, su siguiente
+ * vuelta va arriba de ese hueco. Sin permiso de ubicación o sin lectura aún, no se dibuja (queda el fondo del tema).
+ * [covered] = algo en grande lo tapa: se queda quieto.
+ */
+@Composable
+internal fun MapBackdrop(d: Dependencies, focus: Rect?, car: CarPackage?, covered: Boolean) {
+    val c = LocalColors.current
+    KeepTripRunning(d.trip)
+    val raw = d.prefs.mapLook
+    val look = remember(raw) { MapLook.parse(raw.orEmpty()) }
+    val store = rememberTileStore(look, c.dark, BACKDROP_KEY)
+    val camera = sharedMapCamera(BACKDROP_KEY)
+    val position = d.trip.position ?: return
+    val kmh = d.bus.watch(Signal.SPEED)
+    val navigating = d.navigation.instruction != null
+    val wantsCar = d.prefs.mapBackdropCar && car != null
+    val paint = d.prefs.carPaint
+    val marker by produceState<ImageBitmap?>(null, wantsCar, car?.id, paint) {
+        value = if (wantsCar) d.cars.snapshot(car, paint, MARKER_PX, turn = REAR_TURN)?.asImageBitmap() else null
+    }
+    BoxWithConstraints(Modifier.fillMaxSize()) {
+        MapCanvas(
+            store, position.latitude, position.longitude, d.trip.bearing, kmh, look, Modifier.fillMaxSize(), camera, navigating,
+            active = !LocalHomeCovered.current && !covered, focus = focus, interactive = false, marker = marker,
+        )
+        if (focus != null) Box(Modifier.offset(maxWidth * focus.left, maxHeight * focus.top).size(maxWidth * focus.width, maxHeight * focus.height)) {
+            NextTurn(d, Modifier.align(Alignment.TopStart).padding(12.dp).widthIn(max = 420.dp))
+        }
+    }
+}
+
+/** El almacén y la cámara del mapa de fondo (uno para todas las páginas que lo usen). */
+private const val BACKDROP_KEY = "home-backdrop"
+
+/** Tu auto de espaldas: en los paquetes, el cuadro a 3/4 de vuelta del primero. */
+private const val REAR_TURN = 0.75f
+
+/** Lo ancho de la foto de tu auto en el mapa (se dibuja a 110 dp; así se ve nítido hasta en pantallas densas). */
+private const val MARKER_PX = 340
 
 /**
  * Una cámara por widget Mapa ([key] = su id), la misma en el widget y en grande: lo que muevas o acerques se conserva
@@ -397,11 +447,11 @@ internal fun MapOfflineSettings(d: Dependencies) {
     OfflineSection(d, MapLook.parse(d.prefs.mapLook.orEmpty()).detail)
 }
 
-/** El aspecto de LiteDash: se guarda y se pone en todos los widgets Mapa del inicio (de una sola escritura). */
+/** El aspecto de LiteDash: se guarda y se pone en todos los widgets Mapa del inicio (de todas las páginas). */
 private fun applyMapLook(d: Dependencies, look: MapLook) {
     val data = look.encode()
     d.prefs.mapLook = data.ifEmpty { null }
-    d.dashboard.changeData(d.dashboard.tiles.filter { it.type == TileTypes.MAP }.associate { it.id to data })
+    d.dashboard.changeDataEverywhere { if (it.type == TileTypes.MAP) data else null }
 }
 
 /** Ancho desde el que la vista previa de Ajustes va a un lado de las opciones. */

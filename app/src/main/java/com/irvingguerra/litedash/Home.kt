@@ -7,8 +7,6 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
@@ -25,17 +23,21 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.statusBarsIgnoringVisibility
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.Stable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateMapOf
@@ -49,12 +51,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.TransformOrigin
-import androidx.compose.runtime.derivedStateOf
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
@@ -63,21 +65,26 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.toSize
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import com.irvingguerra.litedash.core.ui.Button
+import com.irvingguerra.litedash.core.ui.CardLook
+import com.irvingguerra.litedash.core.ui.CardStyle
 import com.irvingguerra.litedash.core.ui.Icons
 import com.irvingguerra.litedash.core.ui.Label
 import com.irvingguerra.litedash.core.ui.LiteDashTheme
+import com.irvingguerra.litedash.core.ui.LocalCardLook
 import com.irvingguerra.litedash.core.ui.LocalColors
 import com.irvingguerra.litedash.core.ui.Radius
 import com.irvingguerra.litedash.core.ui.Typography
 import com.irvingguerra.litedash.core.ui.blockTouches
+import com.irvingguerra.litedash.core.ui.cardContentColors
 import com.irvingguerra.litedash.core.vehicle.Signal
 import com.irvingguerra.litedash.core.vehicle.VehicleBus
 import com.irvingguerra.litedash.feature.apps.App
@@ -88,6 +95,7 @@ import com.irvingguerra.litedash.feature.car.CarRepository
 import com.irvingguerra.litedash.feature.dashboard.Dashboard
 import com.irvingguerra.litedash.feature.dashboard.DashboardState
 import com.irvingguerra.litedash.feature.dashboard.Grid
+import com.irvingguerra.litedash.feature.dashboard.PageBackground
 import com.irvingguerra.litedash.feature.dashboard.Tile
 import com.irvingguerra.litedash.feature.dashboard.TileTypes
 import com.irvingguerra.litedash.feature.link.PhoneLink
@@ -390,7 +398,7 @@ fun offered(d: Dependencies, type: String) = type == TileTypes.TIRES || moduleOf
  */
 fun Dependencies.addTiresTile(pickSource: () -> Unit): Boolean {
     if (!hasTpmsSource) tpms.lastSource?.let { tpms.source = it } ?: pickSource()
-    return dashboard.tiles.any { it.type == TileTypes.TIRES } || dashboard.addTile(TileTypes.TIRES)
+    return dashboard.allTiles.any { it.type == TileTypes.TIRES } || dashboard.addTile(TileTypes.TIRES)
 }
 
 /** La de Ajustes; si no, la primera instalada. */
@@ -620,7 +628,8 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
     val hasFloor = car?.hasFloor == true && d.dashboard.tiles.any { it.type == TileTypes.CAR }
     // Las fotos de piezas de imagen que se quitaron (o cambiaron) salen de memoria, y también dónde estaba cada widget quitado.
     LaunchedEffect(d.dashboard.tiles) {
-        releaseTileImages(d.dashboard.tiles)
+        // Las de todas las páginas: cambiar de página no las suelta (al volver no parpadean).
+        releaseTileImages(d.dashboard.allTiles)
         val ids = d.dashboard.tiles.mapTo(HashSet()) { it.id }
         tileBounds.keys.retainAll(ids)
     }
@@ -638,6 +647,13 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
         Brush.verticalGradient(0.3f to c.background, 1f to lerp(c.background, Color.Black, if (c.dark) 0.35f else 0.08f))
     } else SolidColor(c.background)
     var promptsHeight by remember { mutableIntStateOf(0) }
+    // Para el mapa de fondo: lo que mide la ventana y dónde está el tablero en ella (tú vas en su hueco libre).
+    var rootSize by remember { mutableStateOf(Size.Zero) }
+    var board by remember { mutableStateOf<Rect?>(null) }
+    // Deslizar de página: cuánto se movió el tablero (px).
+    val pageShift = remember { Animatable(0f) }
+    // Un deslizamiento cortado (al entrar a acomodar, o al quitar o agregar páginas) no deja el tablero corrido.
+    LaunchedEffect(editing, d.dashboard.pageCount) { if (pageShift.value != 0f) pageShift.animateTo(0f) }
     // Lo que mide una celda del inicio (la última vez que se dibujó): la vista previa de las opciones de un
     // widget lo muestra a su tamaño real.
     var cell by remember { mutableStateOf(DpSize(48.dp, 48.dp)) }
@@ -645,6 +661,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
         Modifier
             .fillMaxSize()
             .background(backdrop)
+            .onSizeChanged { rootSize = it.toSize() }
             // Cualquier toque reinicia la cuenta del modo estacionado (sin quitarle el toque a nadie).
             .pointerInput(Unit) {
                 awaitEachGesture {
@@ -657,8 +674,13 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
         // auto del tablero no se tiñe dos veces al cambiar el color).
         if (panel == null) CompositionLocalProvider(LocalHomeCovered provides homeCovered) {
             Box(Modifier.fillMaxSize().hiddenWhen { homeCovered }) {
-                // Tu imagen de fondo (Inicio y apariencia → Inicio → Fondo de pantalla), detrás de todo.
-                HomeWallpaper()
+                // Detrás de todo, el fondo de esta página: tu imagen (Inicio y apariencia → Inicio → Fondo de pantalla) o
+                // el mapa vivo, contigo en el hueco que dejan los widgets.
+                when (d.dashboard.background) {
+                    PageBackground.WALLPAPER -> HomeWallpaper()
+                    // Con algo en grande encima (la música o el mapa) se queda quieto: no se ve.
+                    PageBackground.MAP -> MapBackdrop(d, remember(d.dashboard.shown, d.dashboard.grid, board, rootSize) { mapFocus(d.dashboard, board, rootSize) }, car, covered = expandedCovers)
+                }
                 BoxWithConstraints(Modifier.fillMaxSize().safeDrawingPadding()) {
                     // Pantalla acostada: barra lateral (como DuduAuto) y el tablero con toda la altura. Parada: la
                     // barra abajo.
@@ -691,6 +713,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                                 onTemplates = { panel = Panel.Templates },
                                 onWallpaper = { panel = Panel.Wallpaper },
                                 onFinish = { editing = false },
+                                pages = d.dashboard,
                             )
                             // Los avisos tampoco cuentan para la cuadrícula: aparecen y se van, y no deben
                             // hacer que se cargue otro acomodo.
@@ -724,8 +747,15 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                                 if (inFront || d.dashboard.grid == null) d.dashboard.use(grid)
                                 val cellNow = DpSize(maxWidth / grid.columns, maxHeight / grid.rows)
                                 SideEffect { cell = cellNow }
+                                // Las tarjetas como se eligieron en Interfaz → Tarjetas (de vidrio, con tu fondo desenfocado detrás).
+                                val backdrop = rememberWallpaperBackdrop(d.prefs.cardStyle == CardStyle.GLASS && d.dashboard.background == PageBackground.WALLPAPER)
+                                val cardColor = d.prefs.cardColor ?: Color.Unspecified
+                                val cardLook = remember(cardColor, d.prefs.cardStyle, d.prefs.cardOpacity, backdrop) {
+                                    CardLook(cardColor, d.prefs.cardStyle, d.prefs.cardOpacity, backdrop)
+                                }
+                                val cardColors = cardContentColors(cardLook, c)
                                 // Con algo en grande encima (la música o el mapa) el tablero tampoco se dibuja.
-                                CompositionLocalProvider(LocalHomeCovered provides (homeCovered || expandedCovers)) {
+                                CompositionLocalProvider(LocalHomeCovered provides (homeCovered || expandedCovers), LocalCardLook provides cardLook) {
                                     Dashboard(
                                         grid = grid,
                                         tiles = d.dashboard.shown,
@@ -733,7 +763,11 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                                         limits = ::limitsOf,
                                         onChange = d.dashboard::changeShown,
                                         onEdit = { editing = true },
-                                        modifier = Modifier.hiddenWhen { expandedCovers },
+                                        modifier = Modifier
+                                            .hiddenWhen { expandedCovers }
+                                            .onGloballyPositioned { board = it.boundsInRoot() }
+                                            .graphicsLayer { translationX = pageShift.value },
+                                        swipe = rememberPageSwipe(d.dashboard, pageShift, board?.width ?: 0f),
                                         onSettings = {
                                             panel = when (it.type) {
                                                 TileTypes.IMAGE -> Panel.CustomizeImage(it.id)
@@ -745,7 +779,16 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                                         },
                                         // Todos tienen opciones; el auto 3D, solo con Llantas prendido (las de las llantas).
                                         hasSettings = { it.type != TileTypes.CAR || d.hasTpmsSource },
-                                    ) { p -> TileContent(d, p, apps, car, revision, actions) }
+                                    ) { p ->
+                                        // Con color propio, el texto de adentro se ajusta para leerse (sin tarjeta, el del tema).
+                                        if (p.plain) TileContent(d, p, apps, car, revision, actions)
+                                        else CompositionLocalProvider(LocalColors provides cardColors) { TileContent(d, p, apps, car, revision, actions) }
+                                    }
+                                }
+                                // Con varias páginas: los puntitos abajo; al acomodar, la barra de páginas.
+                                if (d.dashboard.pageCount > 1 && !editing && !expandedCovers) {
+                                    // En el margen de abajo (sin barra abajo hay 10 dp libres); con la barra abajo, pegados a ella.
+                                    PageDots(d.dashboard, Modifier.align(Alignment.BottomCenter).offset(y = if (barBelow) 2.dp else 9.dp))
                                 }
                                 // La pantalla Música o el mapa en grande: llenan el tablero (la barra se queda para cambiar entre ellos).
                                 val shownBig = expandedShown
@@ -804,10 +847,12 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                     )
                     Panel.Templates -> TemplatesPanel(d.dashboard, close = { panel = null })
                     Panel.BarSettings -> BarSettingsPanel(d, apps, close = { panel = null })
-                    Panel.Wallpaper -> PanelScaffold(stringResource(R.string.wallpaper_title), close = { panel = null }) {
+                    Panel.Wallpaper -> PanelScaffold(
+                        if (d.dashboard.pageCount > 1) stringResource(R.string.page_background_title, d.dashboard.page + 1) else stringResource(R.string.wallpaper_title),
+                        close = { panel = null },
+                    ) {
                         Column(Modifier.weight(1f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                            Label(stringResource(R.string.wallpaper_help), Typography.body, c.textMuted)
-                            WallpaperSettings()
+                            PageBackgroundSettings(d)
                         }
                     }
                     Panel.AddTile -> AddTilePanel(
@@ -971,6 +1016,7 @@ private fun TopBar(
     onTemplates: () -> Unit,
     onWallpaper: () -> Unit,
     onFinish: () -> Unit,
+    pages: DashboardState,
 ) {
     val c = LocalColors.current
     // Sin nada que mostrar (la hora ya está en una pieza), la barra no aparta espacio: el tablero sube.
@@ -988,21 +1034,25 @@ private fun TopBar(
             // La ayuda va junto al título si cabe; si no (pantallas de pie), debajo de él, en la misma barra: su alto no
             // cambia (de él sale la cuadrícula del inicio). En pantallas bajas no hay lugar debajo: solo el título.
             BoxWithConstraints(Modifier.weight(1f)) {
+                // Las páginas van junto al título (y la ayuda, si aún cabe).
+                val bar = pageBarWidth(pages) + 14.dp
                 val needed = with(LocalDensity.current) {
                     remember(title, hint) {
                         measurer.measure(title, Typography.subtitle).size.width + measurer.measure(hint, Typography.small).size.width
                     }.toDp() + 14.dp
                 }
-                if (needed <= maxWidth) {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                val fits = needed + bar <= maxWidth
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                    if (fits) {
                         Label(title, Typography.subtitle, maxLines = 1)
                         Label(hint, Typography.small, c.textMuted, maxLines = 1)
+                    } else {
+                        Column(Modifier.weight(1f, fill = false)) {
+                            Label(title, Typography.subtitle, maxLines = 1)
+                            if (!short) Label(hint, Typography.small, c.textMuted, maxLines = 2)
+                        }
                     }
-                } else {
-                    Column {
-                        Label(title, Typography.subtitle, maxLines = 1)
-                        if (!short) Label(hint, Typography.small, c.textMuted, maxLines = 2)
-                    }
+                    PageBar(pages)
                 }
             }
             Button(stringResource(R.string.wallpaper_button), onWallpaper)

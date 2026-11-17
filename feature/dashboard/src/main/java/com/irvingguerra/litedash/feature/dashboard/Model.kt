@@ -220,6 +220,48 @@ object TileTypes {
 /** Sin fondo de tarjeta siempre: el auto, la carretera y la imagen flotan sobre el inicio. */
 val Tile.cardless get() = type == TileTypes.CAR || type == TileTypes.ROAD || type == TileTypes.IMAGE
 
+/** Un rectángulo de celdas de la cuadrícula. */
+data class Cells(val col: Int, val row: Int, val width: Int, val height: Int)
+
+/**
+ * El hueco libre más grande de [grid] con estas piezas (el rectángulo de celdas vacías de más área; a la par, el más
+ * cuadrado): ahí va tu posición en el mapa de fondo. null = no queda ninguna celda libre.
+ */
+fun List<Tile>.freeArea(grid: Grid): Cells? {
+    val filled = Array(grid.rows) { BooleanArray(grid.columns) }
+    for (t in this) for (r in t.row until minOf(grid.rows, t.row + t.height)) for (c in t.col until minOf(grid.columns, t.col + t.width)) filled[r][c] = true
+    // Por fila, cuántas celdas libres hay hacia arriba en cada columna; el rectángulo más grande de ese histograma.
+    val up = IntArray(grid.columns)
+    var best: Cells? = null
+    fun better(a: Cells, b: Cells?): Boolean {
+        if (b == null) return true
+        val area = a.width * a.height - b.width * b.height
+        return area > 0 || area == 0 && minOf(a.width, a.height) > minOf(b.width, b.height)
+    }
+    for (r in 0 until grid.rows) {
+        for (c in 0 until grid.columns) up[c] = if (filled[r][c]) 0 else up[c] + 1
+        for (c in 0 until grid.columns) {
+            var h = Int.MAX_VALUE
+            for (e in c until grid.columns) {
+                h = minOf(h, up[e])
+                if (h == 0) break
+                val cand = Cells(c, r - h + 1, e - c + 1, h)
+                if (better(cand, best)) best = cand
+            }
+        }
+    }
+    return best
+}
+
+/** Lo que va detrás de los widgets de una página: el fondo de siempre (tu imagen o el del tema) o el mapa vivo. */
+enum class PageBackground(val stored: String) {
+    WALLPAPER("wallpaper"), MAP("map");
+
+    companion object {
+        fun fromStored(value: String?) = entries.firstOrNull { it.stored == value } ?: WALLPAPER
+    }
+}
+
 /** Tamaños de pantalla, para agrupar los acomodos y sugerir el mejor. */
 enum class ScreenSize { SMALL, MEDIUM, LARGE, VERTICAL }
 

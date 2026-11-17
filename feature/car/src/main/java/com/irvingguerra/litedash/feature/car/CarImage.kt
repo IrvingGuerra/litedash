@@ -18,8 +18,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Canvas
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asAndroidBitmap
@@ -31,10 +31,10 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.LayoutDirection
+import kotlin.math.roundToInt
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.conflate
 import kotlinx.coroutines.withContext
-import kotlin.math.roundToInt
 
 /** Anchos de la pieza que hay que arrastrar para dar una vuelta completa. */
 private const val WIDTHS_PER_TURN = 0.83f
@@ -214,16 +214,18 @@ private fun CarLayers.floorBox(car: Rect) =
 
 /**
  * El auto quieto en tres cuartos, como en el inicio, en una imagen suelta de [widthPx] de ancho (el auto; la
- * sombra y el reflejo pueden agrandarla): para LiteDash Connect. Sin [p], el sedán genérico. Fondo transparente.
+ * sombra y el reflejo pueden agrandarla): para LiteDash Connect. Con [turn] (fracción de vuelta desde el primer
+ * cuadro del giro), ese cuadro; sin [p], el sedán genérico. Fondo transparente.
  */
-suspend fun CarRepository.snapshot(p: CarPackage?, paint: CarPaint, widthPx: Int): Bitmap? {
+suspend fun CarRepository.snapshot(p: CarPackage?, paint: CarPaint, widthPx: Int, turn: Float? = null): Bitmap? {
     if (p == null) {
         val image = ImageBitmap(widthPx, (widthPx / SEDAN_ASPECT).roundToInt())
         withContext(Dispatchers.Default) { image.drawOffscreen { drawSedan(paint.color) } }
         return image.asAndroidBitmap()
     }
     // Sin guardar en la caché: la foto es más grande que el auto en pantalla y sacaría de ella los cuadros del giro.
-    val c = layers(p, baseFrame(restFrame(p.spin)), paint, widthPx, keep = false) ?: return null
+    val frame = turn?.let { Math.floorMod((it * p.spin).roundToInt(), p.spin) } ?: restFrame(p.spin)
+    val c = layers(p, baseFrame(frame), paint, widthPx, keep = false) ?: return null
     val car = Rect(Offset.Zero, Size(widthPx.toFloat(), widthPx * c.car.height.toFloat() / c.car.width))
     val all = c.floorBox(car)?.let { car.union(it) } ?: car
     val image = ImageBitmap(all.width.roundToInt(), all.height.roundToInt())
