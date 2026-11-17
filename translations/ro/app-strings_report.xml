@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="report_title">Trimite un raport</string>
+    <string name="report_help">Spune-ne ce nu merge. Se trimite cu date tehnice ale unității (fără date personale).</string>
+    <string name="report_what">Ce are o problemă?</string>
+    <string name="report_which">Care?</string>
+    <string name="report_problem">Ce se întâmplă?</string>
+    <string name="report_workshop">Atelier (OBD)</string>
+    <string name="report_projection">Android Auto / aplicații</string>
+    <string name="report_lights">Zi și noapte / faruri</string>
+    <string name="report_music_usb">Fișiere (playerul LiteDash)</string>
+    <string name="report_music_bt">Bluetooth (al unității)</string>
+    <string name="report_music_app">Aplicația ta de muzică (Spotify, YouTube Music…)</string>
+    <string name="report_radio_fm">FM-ul unității</string>
+    <string name="report_radio_internet">Radio pe internet</string>
+    <string name="report_obd_usb">USB</string>
+    <string name="report_silent">Fără sunet</string>
+    <string name="report_no_info">Redă, dar nu arată ce se aude</string>
+    <string name="report_buttons">Butoanele nu răspund</string>
+    <string name="report_broken">Nu funcționează</string>
+    <string name="report_looks_wrong">Arată greșit</string>
+    <string name="report_crash">Aplicația se închide</string>
+    <string name="report_note">Spune-ne mai multe (opțional)</string>
+    <string name="report_play_first">Dacă poți, pornește acea sursă înainte de trimitere.</string>
+    <string name="report_send">Trimite</string>
+    <string name="report_sending">Se trimite…</string>
+    <string name="report_thanks">Mulțumim! Ne uităm.</string>
+    <string name="report_code">Codul raportului: %1$s</string>
+    <string name="report_error">Nu s-a putut trimite. Verifică conexiunea.</string>
+    <string name="report_wait">Așteaptă un minut înainte să trimiți altul.</string>
+</resources>

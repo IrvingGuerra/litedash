@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="files_where">选择存储设备</string>
+    <string name="files_internal">内部存储</string>
+    <string name="files_none">未找到存储设备。请检查文件权限。</string>
+    <string name="files_empty">此文件夹为空。</string>
+    <string name="files_use_folder">使用此文件夹</string>
+    <string name="files_close">关闭</string>
+    <string name="files_recent">最近</string>
+    <string name="files_recent_empty">没有最近的照片。</string>
+</resources>

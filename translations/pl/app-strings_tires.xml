@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="tires_error_usb_missing">Odbiornik USB opon nie jest podłączony</string>
+    <string name="tires_error_usb_denied">Brak uprawnienia do odbiornika USB</string>
+    <string name="tires_error_usb_open">Nie udało się otworzyć odbiornika USB</string>
+    <string name="tires_error_usb_unplugged">Odbiornik USB został odłączony</string>
+    <string name="tires_error_usb_lost">Utracono połączenie z odbiornikiem USB</string>
+    <string name="tires_error_swap">Odbiornik nie potwierdził zamiany opon</string>
+    <string name="tires_tap_hint">Dotknij opony, aby ustawić jej czujnik lub ją przenieść</string>
+</resources>

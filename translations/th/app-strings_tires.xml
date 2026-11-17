@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="tires_error_usb_missing">ไม่ได้เสียบตัวรับสัญญาณยาง USB</string>
+    <string name="tires_error_usb_denied">ไม่มีสิทธิ์ใช้ตัวรับสัญญาณ USB</string>
+    <string name="tires_error_usb_open">เปิดตัวรับสัญญาณ USB ไม่ได้</string>
+    <string name="tires_error_usb_unplugged">ถอดตัวรับสัญญาณ USB ออกแล้ว</string>
+    <string name="tires_error_usb_lost">ขาดการเชื่อมต่อกับตัวรับสัญญาณ USB</string>
+    <string name="tires_error_swap">ตัวรับสัญญาณไม่ยืนยันการสลับยาง</string>
+    <string name="tires_tap_hint">แตะยางเพื่อตั้งค่าเซ็นเซอร์หรือย้ายตำแหน่ง</string>
+</resources>

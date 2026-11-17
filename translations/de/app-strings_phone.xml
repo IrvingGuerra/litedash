@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="phone_section">Handy</string>
+    <string name="phone_help">Dein LiteDash-Konto ist in der App LiteDash Connect auf deinem Handy.</string>
+    <string name="phone_permission">Berechtigung nötig</string>
+    <string name="phone_permission_body">Für die Verbindung zum Handy muss LiteDash das lokale Netzwerk nutzen dürfen (Geräte in der Nähe).</string>
+    <string name="local_network_allow">Erlauben</string>
+    <string name="local_network_settings">Berechtigungen</string>
+    <string name="phone_no_wifi">Dein Display hat kein Wi-Fi</string>
+    <string name="phone_no_wifi_body">Handy und Display verbinden sich per Wi-Fi. Wähle wie:</string>
+    <string name="phone_use_phone">Internet vom Handy nutzen</string>
+    <string name="phone_use_phone_body">Schalte das Wi-Fi des Displays ein und verbinde es mit dem Hotspot deines Handys.</string>
+    <string name="phone_share_screen">Hotspot des Displays</string>
+    <string name="phone_share_screen_body">Schalte den Hotspot des Displays ein und verbinde dein Handy damit.</string>
+    <string name="phone_open_wifi">Wi-Fi öffnen</string>
+    <string name="phone_open_hotspot">Hotspot öffnen</string>
+    <string name="phone_waiting">Warte auf dein Handy…</string>
+    <plurals name="phone_link_code">
+        <item quantity="one">Code %1$s · läuft in %2$d Minute ab</item>
+        <item quantity="other">Code %1$s · läuft in %2$d Minuten ab</item>
+    </plurals>
+    <string name="phone_step_install">Installiere LiteDash Connect und erstelle dein Konto</string>
+    <string name="phone_step_tap">Tippe auf „Display verbinden“</string>
+    <string name="phone_step_scan">Richte die Kamera auf diesen Code</string>
+    <string name="phone_connected">Verbunden</string>
+    <string name="phone_searching">Suche dein Handy…</string>
+    <string name="phone_model_app">%1$s · LiteDash Connect %2$s</string>
+    <string name="phone_link">Verbindung</string>
+    <string name="phone_link_ok">Handy und Display sind verbunden</string>
+    <string name="phone_music_blocked">Um deine Musik hier zu sehen, öffne LiteDash Connect und tippe unter Verbindung auf „Erlauben“</string>
+    <string name="phone_link_no_network">Das Display ist in keinem Netzwerk mit deinem Handy</string>
+    <string name="phone_link_open_app">Öffne LiteDash Connect auf dem Handy und verbinde es mit demselben Netzwerk</string>
+    <string name="phone_sound">Ton</string>
+    <string name="phone_sound_ok">Bluetooth verbunden · %1$s</string>
+    <string name="phone_sound_ok_plain">Bluetooth verbunden</string>
+    <string name="phone_sound_missing">Kein Ton? Verbinde Bluetooth über das Autoradio</string>
+    <string name="phone_sound_calls">Bluetooth ist nur für Anrufe verbunden, daher spielt es auf dem Handy. Verbinde es über das Autoradio oder aktiviere am Handy „Medien-Audio“ für dieses Autoradio</string>
+    <string name="phone_calls_only">Bluetooth nur für Anrufe</string>
+    <string name="phone_sound_car">Über Android Auto</string>
+    <string name="phone_sound_wired">Per Kabel</string>
+    <string name="phone_connect_bt">Bluetooth verbinden</string>
+    <string name="phone_sound_unknown">Wir wissen es, sobald dein Handy verbunden ist und spielt</string>
+    <string name="phone_search_now">Jetzt suchen</string>
+    <string name="phone_unlink">Trennen</string>
+    <string name="phone_unlink_question">Dieses Handy trennen?</string>
+    <string name="phone_unlink_message">Zum erneuten Verbinden musst du den Code wieder in LiteDash Connect scannen.</string>
+    <string name="phone_no_sound">Kein Ton? Bluetooth verbinden</string>
+    <string name="music_mode_phone">Solange dein Handy verbunden ist und Musik spielt, zeigt und steuert das Musik-Widget sie. Danach kehrt es zu deiner Auswahl zurück.</string>
+    <string name="phone_job_unknown">Die Katalogdaten für dieses Auto fehlen</string>
+    <string name="phone_job_no_finish">Dieses Modell hat keine Lackierungen</string>
+    <string name="phone_job_damaged">Die Datei kam beschädigt an</string>
+    <string name="phone_job_unexpected">Das Display hat diese Datei nicht angefordert</string>
+    <string name="phone_job_busy">Das Display lädt gerade etwas anderes; versuch es gleich nochmal</string>
+    <string name="phone_job_install_failed">Das Display konnte es nicht installieren</string>
+</resources>

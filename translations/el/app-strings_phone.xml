@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="phone_section">Κινητό</string>
+    <string name="phone_help">Ο λογαριασμός σας LiteDash βρίσκεται στην εφαρμογή LiteDash Connect του κινητού σας.</string>
+    <string name="phone_permission">Απαιτείται άδεια</string>
+    <string name="phone_permission_body">Για να επικοινωνεί με το κινητό σας, το Android ζητά να επιτρέψετε στο LiteDash να χρησιμοποιεί το τοπικό δίκτυο (Συσκευές κοντά).</string>
+    <string name="local_network_allow">Αποδοχή</string>
+    <string name="local_network_settings">Άδειες</string>
+    <string name="phone_no_wifi">Η οθόνη σας δεν έχει Wi-Fi</string>
+    <string name="phone_no_wifi_body">Το κινητό και η οθόνη σας επικοινωνούν μέσω Wi-Fi. Επιλέξτε τρόπο:</string>
+    <string name="phone_use_phone">Χρήση του internet του κινητού</string>
+    <string name="phone_use_phone_body">Ενεργοποιήστε το Wi-Fi της οθόνης και συνδέστε το στο hotspot του κινητού σας.</string>
+    <string name="phone_share_screen">Κοινή χρήση της οθόνης</string>
+    <string name="phone_share_screen_body">Ενεργοποιήστε το hotspot της οθόνης και συνδέστε το κινητό σας σε αυτό.</string>
+    <string name="phone_open_wifi">Άνοιγμα Wi-Fi</string>
+    <string name="phone_open_hotspot">Άνοιγμα hotspot</string>
+    <string name="phone_waiting">Αναμονή για το κινητό σας…</string>
+    <plurals name="phone_link_code">
+        <item quantity="one">Κωδικός %1$s · λήγει σε %2$d λεπτό</item>
+        <item quantity="other">Κωδικός %1$s · λήγει σε %2$d λεπτά</item>
+    </plurals>
+    <string name="phone_step_install">Εγκαταστήστε το LiteDash Connect και δημιουργήστε λογαριασμό</string>
+    <string name="phone_step_tap">Πατήστε «Σύνδεση οθόνης»</string>
+    <string name="phone_step_scan">Στρέψτε την κάμερα σε αυτόν τον κωδικό</string>
+    <string name="phone_connected">Συνδέθηκε</string>
+    <string name="phone_searching">Αναζήτηση του κινητού σας…</string>
+    <string name="phone_model_app">%1$s · LiteDash Connect %2$s</string>
+    <string name="phone_link">Σύνδεση</string>
+    <string name="phone_link_ok">Το κινητό και η οθόνη επικοινωνούν</string>
+    <string name="phone_music_blocked">Για να δείτε τη μουσική σας εδώ, ανοίξτε το LiteDash Connect και πατήστε «Αποδοχή» στη Σύνδεση</string>
+    <string name="phone_link_no_network">Η οθόνη δεν είναι στο ίδιο δίκτυο με το κινητό σας</string>
+    <string name="phone_link_open_app">Ανοίξτε το LiteDash Connect στο κινητό σας και συνδέστε το σε αυτό το δίκτυο</string>
+    <string name="phone_sound">Ήχος</string>
+    <string name="phone_sound_ok">Bluetooth συνδεδεμένο · %1$s</string>
+    <string name="phone_sound_ok_plain">Bluetooth συνδεδεμένο</string>
+    <string name="phone_sound_missing">Δεν ακούγεται; Συνδέστε το Bluetooth από το ηχοσύστημα</string>
+    <string name="phone_sound_calls">Το Bluetooth είναι συνδεδεμένο μόνο για κλήσεις, οπότε παίζει στο κινητό. Συνδέστε το από το ηχοσύστημα ή ενεργοποιήστε τον «Ήχο πολυμέσων» για αυτό το ηχοσύστημα στο κινητό σας</string>
+    <string name="phone_calls_only">Bluetooth μόνο για κλήσεις</string>
+    <string name="phone_sound_car">Μέσω Android Auto</string>
+    <string name="phone_sound_wired">Με καλώδιο</string>
+    <string name="phone_connect_bt">Σύνδεση Bluetooth</string>
+    <string name="phone_sound_unknown">Θα το μάθουμε όταν το κινητό σας συνδεθεί και παίζει</string>
+    <string name="phone_search_now">Αναζήτηση τώρα</string>
+    <string name="phone_unlink">Αποσύνδεση</string>
+    <string name="phone_unlink_question">Αποσύνδεση αυτού του κινητού;</string>
+    <string name="phone_unlink_message">Για να το συνδέσετε ξανά θα πρέπει να σαρώσετε πάλι τον κωδικό από το LiteDash Connect.</string>
+    <string name="phone_no_sound">Χωρίς ήχο; Συνδέστε το Bluetooth</string>
+    <string name="music_mode_phone">Όσο το κινητό σας είναι συνδεδεμένο και παίζει μουσική, το widget Μουσική τη δείχνει και την ελέγχει. Όταν αποσυνδεθεί, επιστρέφει σε ό,τι είχατε.</string>
+    <string name="phone_job_unknown">Λείπουν τα στοιχεία καταλόγου για αυτό το αυτοκίνητο</string>
+    <string name="phone_job_no_finish">Αυτό το μοντέλο δεν έχει φινιρίσματα</string>
+    <string name="phone_job_damaged">Το αρχείο έφτασε κατεστραμμένο</string>
+    <string name="phone_job_unexpected">Η οθόνη δεν ζήτησε αυτό το αρχείο</string>
+    <string name="phone_job_busy">Η οθόνη κατεβάζει κάτι άλλο· δοκιμάστε ξανά σε λίγο</string>
+    <string name="phone_job_install_failed">Η οθόνη δεν μπόρεσε να το εγκαταστήσει</string>
+</resources>

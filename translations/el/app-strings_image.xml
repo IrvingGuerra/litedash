@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="image_background">Φόντο</string>
+    <string name="image_background_original">Αρχικό</string>
+    <string name="image_background_remove">Αφαίρεση</string>
+    <string name="image_background_help">Λειτουργεί καλύτερα με απλό φόντο: τοίχο, ουρανό ή στούντιο.</string>
+    <string name="image_strength">Ένταση</string>
+    <string name="image_strength_low">Ήπια</string>
+    <string name="image_strength_medium">Μεσαία</string>
+    <string name="image_strength_high">Υψηλή</string>
+    <string name="image_strength_max">Μέγιστη</string>
+    <string name="image_cut_failed">Δεν ήταν δυνατός ο διαχωρισμός του αυτοκινήτου από το φόντο: δοκιμάστε μια φωτογραφία με απλό φόντο.</string>
+    <string name="image_apply">Εφαρμογή</string>
+    <string name="image_unusable">Δεν ήταν δυνατή η χρήση αυτής της εικόνας· δοκιμάστε άλλη.</string>
+</resources>

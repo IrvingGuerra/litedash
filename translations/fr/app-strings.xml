@@ -211,11 +211,14 @@
     <string name="units_auto_now">Automatique pour l\'instant : %1$s et %2$s (selon votre langue et votre région)</string>
     <string name="language_system">Comme le système</string>
     <string name="language_more">Plus de langues</string>
-    <string name="language_more_help">Traduites par la communauté. Elles se téléchargent quand vous les choisissez ; ce qui manque s\'affiche en anglais.</string>
+    <string name="language_more_help">Elles se téléchargent quand vous les choisissez ; ce qui manque s\'affiche en anglais.</string>
     <string name="language_offline">Pas d\'internet : espagnol et anglais seulement.</string>
     <string name="language_none">Pas encore d\'autres langues.</string>
     <string name="language_details">%1$d %% traduit · %2$s</string>
     <string name="language_failed">Impossible de télécharger la langue ; vérifiez votre connexion.</string>
+    <string name="language_reviewed">révisée</string>
+    <string name="language_machine">traduction automatique</string>
+    <string name="language_report">Une erreur de traduction ? Signalez-la sur litedash.dev/en/translate</string>
     <string name="map_help">L\'appli qu\'ouvrent le widget Carte et le bouton de la barre. Pendant la navigation, elle affiche la prochaine indication (via le même accès aux notifications que la musique).</string>
     <string name="map_no_apps">Installez Waze ou Google Maps pour naviguer depuis LiteDash.</string>
     <string name="map_external">Appli externe pour les raccourcis</string>

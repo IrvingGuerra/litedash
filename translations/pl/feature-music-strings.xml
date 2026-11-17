@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="music_explain">Zobacz i steruj tym, co gra w dowolnej aplikacji. Wymaga dostępu do powiadomień.</string>
+    <string name="enable">Włącz</string>
+    <string name="nothing_playing">Nic nie gra</string>
+    <string name="open_an_app">Włącz muzykę w ulubionej aplikacji</string>
+    <string name="resume_explain">Naciśnij odtwarzanie, aby grać od miejsca, w którym przerwano.</string>
+    <string name="no_song_info">Brak informacji o utworze</string>
+    <string name="opening_app">Otwieranie %1$s…</string>
+    <string name="opening_wait">Już prawie: za chwilę zacznie grać.</string>
+    <string name="source_files">Pliki</string>
+    <string name="source_bluetooth">Bluetooth</string>
+    <string name="source_radio">Radio</string>
+    <string name="bluetooth_connect_phone">Połącz telefon przez Bluetooth</string>
+    <string name="usb_drive">Pamięć USB</string>
+    <string name="usb_drive_in">Pamięć USB podłączona: %1$s</string>
+    <string name="player_connecting">Łączenie…</string>
+    <string name="radio">Radio</string>
+    <string name="radio_explain">Steruj radiem ekranu (i radiem internetowym, jeśli je włączysz). Wymaga dostępu do powiadomień.</string>
+    <string name="radio_internet">Internet</string>
+    <string name="radio_fm">FM ekranu</string>
+    <string name="radio_unlinked">Połącz radio ekranu w Ustawieniach lub włącz radio internetowe</string>
+    <string name="radio_settings">Ustawienia</string>
+    <string name="mode_app">Aplikacja</string>
+    <string name="radio_fm_label">Radio FM</string>
+    <string name="sound_question">Słychać?</string>
+    <string name="sound_question_muted">Słychać? Uwaga: głośność muzyki jest na 0</string>
+    <string name="sound_yes">Tak</string>
+    <string name="sound_no">Nie</string>
+    <string name="sound_failed">Nie udało się uruchomić dźwięku</string>
+    <string name="sound_report">Zgłoś</string>
+    <string name="recipe_none">Jeszcze nie skalibrowano: stanie się samo przy pierwszym odtworzeniu</string>
+    <string name="recipe_plain">Działa bez zmian</string>
+    <string name="recipe_tw_source8">Wejście Bluetooth ekranu</string>
+    <string name="recipe_fyt_toggle">Przełącza źródło ekranu</string>
+    <string name="recipe_profile">Bezpośrednie sterowanie radiem</string>
+    <string name="recipe_open_bluetooth">Otwiera aplikację Bluetooth i wraca</string>
+    <string name="recipe_open_radio">Otwiera aplikację radia i wraca</string>
+    <string name="recipe_failed">Nie znaleziono sposobu</string>
+</resources>

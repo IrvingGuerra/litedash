@@ -162,6 +162,7 @@ class MainActivity : ComponentActivity() {
          */
         fun restart(activity: Activity) {
             restarted = true
+            reopenLanguage = true
             // Como inicio si así se abrió (si no, Android hacía otro al tocar Inicio) y en una tarea limpia:
             // con otro LiteDash abierto como app, Android le entregaba la orden a ese y no cambiaba el idioma.
             val intent = Intent(Intent.ACTION_MAIN).setClass(activity, MainActivity::class.java)
@@ -183,6 +184,12 @@ class MainActivity : ComponentActivity() {
 
         /** ¿Se reinició por [restart]? Lo dice una sola vez. */
         fun takeRestarted(): Boolean = restarted.also { restarted = false }
+
+        // Tras [restart] (cambiar idioma) Ajustes se vuelve a abrir donde estaba el idioma, no en el inicio.
+        @Volatile private var reopenLanguage = false
+
+        /** ¿Hay que volver a Ajustes → Inicio y apariencia → Interfaz? Lo dice una sola vez. */
+        fun takeReopenLanguage(): Boolean = reopenLanguage.also { reopenLanguage = false }
 
         /** Trae el inicio al frente sin tocar lo abierto (no es el botón de inicio: no cierra paneles). */
         fun bringToFront(context: Context) {

@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="player_name">LiteDash 播放器</string>
+    <string name="player_channel">音乐</string>
+    <string name="player_play">播放</string>
+    <string name="player_pause">暂停</string>
+    <string name="player_next">下一首</string>
+    <string name="player_previous">上一首</string>
+    <string name="player_cannot_play">无法播放。请换个电台或检查网络。</string>
+    <string name="player_timeout">电台无响应。请换一个。</string>
+    <string name="player_no_focus">其他应用正在占用音频。请再点一次播放。</string>
+    <string name="library_no_drive">请插入存有音乐的 U 盘</string>
+    <string name="library_no_permission">LiteDash 需要权限才能读取 U 盘中的音乐</string>
+    <string name="library_grant">授予权限</string>
+    <string name="library_loading">正在读取 U 盘…</string>
+    <string name="library_folders">文件夹</string>
+    <string name="library_artists">歌手</string>
+    <string name="library_albums">专辑</string>
+    <string name="library_all">全部</string>
+    <string name="library_play_all">全部播放</string>
+    <plurals name="library_songs">
+        <item quantity="other">%1$d 首歌曲</item>
+    </plurals>
+    <string name="library_shuffle">随机播放</string>
+    <string name="library_unknown">未知</string>
+    <string name="library_root">U 盘根目录</string>
+    <string name="radio_nearby">附近</string>
+    <string name="radio_favorites">收藏</string>
+    <string name="radio_search_tab">搜索</string>
+    <string name="radio_search_hint">电台名称</string>
+    <string name="radio_search_help">输入电台名称</string>
+    <string name="radio_loading">正在搜索电台…</string>
+    <string name="radio_none">未找到电台。请检查网络连接。</string>
+    <string name="radio_no_location">没有位置信息：这些是你所在国家最热门的电台。要查看本地电台，请在“模块 → 权限”中允许位置权限。</string>
+    <string name="radio_no_favorites">点按电台的星标，即可收藏到这里。</string>
+    <string name="radio_km">%1$d km</string>
+    <string name="library_pick_folder">选择文件夹</string>
+    <string name="library_clear_folder">清除文件夹</string>
+    <string name="library_pick_folder_help">如果音乐在 U 盘里却没有显示，请选择它所在的文件夹：LiteDash 会记住。</string>
+    <string name="library_unreadable">能看到 U 盘 %1$s，但你的屏幕不允许应用读取其中的歌曲。请选择文件夹，LiteDash 会记住。</string>
+    <string name="library_browse_memory">没打开？浏览存储空间</string>
+</resources>

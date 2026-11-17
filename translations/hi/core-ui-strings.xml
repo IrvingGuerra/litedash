@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="files_where">ड्राइव चुनें</string>
+    <string name="files_internal">इंटरनल स्टोरेज</string>
+    <string name="files_none">कोई ड्राइव नहीं मिली। फ़ाइलों की अनुमति देखें।</string>
+    <string name="files_empty">यह फ़ोल्डर खाली है।</string>
+    <string name="files_use_folder">यह फ़ोल्डर चुनें</string>
+    <string name="files_close">बंद करें</string>
+    <string name="files_recent">हाल की</string>
+    <string name="files_recent_empty">हाल की कोई फ़ोटो नहीं।</string>
+</resources>

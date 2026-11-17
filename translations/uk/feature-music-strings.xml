@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="music_explain">Дивись і керуй тим, що грає в будь-якому застосунку. Потрібен доступ до сповіщень.</string>
+    <string name="enable">Увімкнути</string>
+    <string name="nothing_playing">Нічого не грає</string>
+    <string name="open_an_app">Увімкни музику в улюбленому застосунку</string>
+    <string name="resume_explain">Натисни «Грати», щоб продовжити з того ж місця.</string>
+    <string name="no_song_info">Немає даних про пісню</string>
+    <string name="opening_app">Відкриваємо %1$s…</string>
+    <string name="opening_wait">Майже готово: зараз почнеться.</string>
+    <string name="source_files">Файли</string>
+    <string name="source_bluetooth">Bluetooth</string>
+    <string name="source_radio">Радіо</string>
+    <string name="bluetooth_connect_phone">Під’єднай телефон через Bluetooth</string>
+    <string name="usb_drive">USB-накопичувач</string>
+    <string name="usb_drive_in">USB-накопичувач під’єднано: %1$s</string>
+    <string name="player_connecting">Під’єднання…</string>
+    <string name="radio">Радіо</string>
+    <string name="radio_explain">Керуй радіо екрана (та інтернет-радіо, якщо ввімкнеш). Потрібен доступ до сповіщень.</string>
+    <string name="radio_internet">Інтернет</string>
+    <string name="radio_fm">FM екрана</string>
+    <string name="radio_unlinked">Прив’яжи радіо екрана в налаштуваннях або ввімкни інтернет-радіо</string>
+    <string name="radio_settings">Налаштування</string>
+    <string name="mode_app">Застосунок</string>
+    <string name="radio_fm_label">FM-радіо</string>
+    <string name="sound_question">Чути?</string>
+    <string name="sound_question_muted">Чути? Увага: гучність музики на 0</string>
+    <string name="sound_yes">Так</string>
+    <string name="sound_no">Ні</string>
+    <string name="sound_failed">Не вдалося ввімкнути звук</string>
+    <string name="sound_report">Повідомити</string>
+    <string name="recipe_none">Ще не відкалібровано: це станеться саме під час першого відтворення</string>
+    <string name="recipe_plain">Працює як є</string>
+    <string name="recipe_tw_source8">Вхід Bluetooth екрана</string>
+    <string name="recipe_fyt_toggle">Перемикає джерело екрана</string>
+    <string name="recipe_profile">Пряме керування радіо</string>
+    <string name="recipe_open_bluetooth">Відкриває застосунок Bluetooth і повертається</string>
+    <string name="recipe_open_radio">Відкриває застосунок радіо і повертається</string>
+    <string name="recipe_failed">Способу не знайдено</string>
+</resources>

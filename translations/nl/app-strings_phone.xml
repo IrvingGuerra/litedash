@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="phone_section">Telefoon</string>
+    <string name="phone_help">Je LiteDash-account staat in de app LiteDash Connect op je telefoon.</string>
+    <string name="phone_permission">Toestemming nodig</string>
+    <string name="phone_permission_body">Om met je telefoon te praten, vraagt Android je LiteDash het lokale netwerk te laten gebruiken (Apparaten in de buurt).</string>
+    <string name="local_network_allow">Toestaan</string>
+    <string name="local_network_settings">Rechten</string>
+    <string name="phone_no_wifi">Je scherm heeft geen Wi-Fi</string>
+    <string name="phone_no_wifi_body">Je telefoon en je scherm praten via Wi-Fi. Kies hoe:</string>
+    <string name="phone_use_phone">Internet van mijn telefoon</string>
+    <string name="phone_use_phone_body">Zet de Wi-Fi van het scherm aan en verbind met de hotspot van je telefoon.</string>
+    <string name="phone_share_screen">Die van het scherm delen</string>
+    <string name="phone_share_screen_body">Zet de hotspot van het scherm aan en verbind je telefoon ermee.</string>
+    <string name="phone_open_wifi">Wi-Fi openen</string>
+    <string name="phone_open_hotspot">Hotspot openen</string>
+    <string name="phone_waiting">Wachten op je telefoon…</string>
+    <plurals name="phone_link_code">
+        <item quantity="one">Code %1$s · verloopt over %2$d minuut</item>
+        <item quantity="other">Code %1$s · verloopt over %2$d minuten</item>
+    </plurals>
+    <string name="phone_step_install">Installeer LiteDash Connect en maak je account aan</string>
+    <string name="phone_step_tap">Tik op “Mijn scherm koppelen”</string>
+    <string name="phone_step_scan">Richt de camera op deze code</string>
+    <string name="phone_connected">Verbonden</string>
+    <string name="phone_searching">Je telefoon zoeken…</string>
+    <string name="phone_model_app">%1$s · LiteDash Connect %2$s</string>
+    <string name="phone_link">Koppeling</string>
+    <string name="phone_link_ok">Je telefoon en het scherm praten met elkaar</string>
+    <string name="phone_music_blocked">Om je muziek hier te zien, open LiteDash Connect en tik op “Toestaan” onder Koppeling</string>
+    <string name="phone_link_no_network">Het scherm zit niet op hetzelfde netwerk als je telefoon</string>
+    <string name="phone_link_open_app">Open LiteDash Connect op je telefoon en verbind hem met hetzelfde netwerk</string>
+    <string name="phone_sound">Geluid</string>
+    <string name="phone_sound_ok">Bluetooth verbonden · %1$s</string>
+    <string name="phone_sound_ok_plain">Bluetooth verbonden</string>
+    <string name="phone_sound_missing">Hoor je niets? Verbind Bluetooth vanaf de autoradio</string>
+    <string name="phone_sound_calls">Bluetooth is alleen voor bellen verbonden, dus het speelt op je telefoon. Verbind vanaf de autoradio, of zet op je telefoon “Media-audio” aan voor deze autoradio</string>
+    <string name="phone_calls_only">Bluetooth alleen voor bellen</string>
+    <string name="phone_sound_car">Via Android Auto</string>
+    <string name="phone_sound_wired">Via kabel</string>
+    <string name="phone_connect_bt">Bluetooth verbinden</string>
+    <string name="phone_sound_unknown">Dat weten we zodra je telefoon verbonden is en afspeelt</string>
+    <string name="phone_search_now">Nu zoeken</string>
+    <string name="phone_unlink">Ontkoppelen</string>
+    <string name="phone_unlink_question">Deze telefoon ontkoppelen?</string>
+    <string name="phone_unlink_message">Om hem opnieuw te verbinden, moet je de code weer scannen vanuit LiteDash Connect.</string>
+    <string name="phone_no_sound">Geen geluid? Verbind Bluetooth</string>
+    <string name="music_mode_phone">Zolang je telefoon verbonden is en muziek speelt, toont en bedient de Muziek-widget die. Gaat hij weg, dan komt terug wat je had.</string>
+    <string name="phone_job_unknown">De catalogusgegevens van die auto ontbreken</string>
+    <string name="phone_job_no_finish">Dit model heeft geen afwerkingen</string>
+    <string name="phone_job_damaged">Het bestand kwam beschadigd aan</string>
+    <string name="phone_job_unexpected">Het scherm heeft niet om dat bestand gevraagd</string>
+    <string name="phone_job_busy">Het scherm downloadt iets anders; probeer het zo opnieuw</string>
+    <string name="phone_job_install_failed">Het scherm kon het niet installeren</string>
+</resources>

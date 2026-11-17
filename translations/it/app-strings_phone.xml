@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="phone_section">Telefono</string>
+    <string name="phone_help">Il tuo account LiteDash vive nell\'app LiteDash Connect sul telefono.</string>
+    <string name="phone_permission">Serve un permesso</string>
+    <string name="phone_permission_body">Per parlare con il telefono, Android ti chiede di consentire a LiteDash l\'uso della rete locale (Dispositivi nelle vicinanze).</string>
+    <string name="local_network_allow">Consenti</string>
+    <string name="local_network_settings">Permessi</string>
+    <string name="phone_no_wifi">Il tuo schermo non ha Wi-Fi</string>
+    <string name="phone_no_wifi_body">Telefono e schermo parlano via Wi-Fi. Scegli come:</string>
+    <string name="phone_use_phone">Usa internet del telefono</string>
+    <string name="phone_use_phone_body">Accendi il Wi-Fi dello schermo e collegalo all\'hotspot del telefono.</string>
+    <string name="phone_share_screen">Condividi quello dello schermo</string>
+    <string name="phone_share_screen_body">Accendi l\'hotspot dello schermo e collega il telefono.</string>
+    <string name="phone_open_wifi">Apri Wi-Fi</string>
+    <string name="phone_open_hotspot">Apri hotspot</string>
+    <string name="phone_waiting">In attesa del telefono…</string>
+    <plurals name="phone_link_code">
+        <item quantity="one">Codice %1$s · scade tra %2$d minuto</item>
+        <item quantity="other">Codice %1$s · scade tra %2$d minuti</item>
+    </plurals>
+    <string name="phone_step_install">Installa LiteDash Connect e crea il tuo account</string>
+    <string name="phone_step_tap">Tocca “Collega il mio schermo”</string>
+    <string name="phone_step_scan">Inquadra questo codice con la fotocamera</string>
+    <string name="phone_connected">Connesso</string>
+    <string name="phone_searching">Cerco il telefono…</string>
+    <string name="phone_model_app">%1$s · LiteDash Connect %2$s</string>
+    <string name="phone_link">Collegamento</string>
+    <string name="phone_link_ok">Telefono e schermo si parlano</string>
+    <string name="phone_music_blocked">Per vedere qui la tua musica, apri LiteDash Connect e tocca “Consenti” sotto Collegamento</string>
+    <string name="phone_link_no_network">Lo schermo non è su nessuna rete con il telefono</string>
+    <string name="phone_link_open_app">Apri LiteDash Connect sul telefono e collegalo a questa stessa rete</string>
+    <string name="phone_sound">Audio</string>
+    <string name="phone_sound_ok">Bluetooth connesso · %1$s</string>
+    <string name="phone_sound_ok_plain">Bluetooth connesso</string>
+    <string name="phone_sound_missing">Non si sente? Connetti il Bluetooth dallo stereo</string>
+    <string name="phone_sound_calls">Il Bluetooth è connesso solo per le chiamate, quindi suona sul telefono. Connettilo dallo stereo, o attiva “Audio multimediale” per questo stereo sul telefono</string>
+    <string name="phone_calls_only">Bluetooth solo chiamate</string>
+    <string name="phone_sound_car">Tramite Android Auto</string>
+    <string name="phone_sound_wired">Via cavo</string>
+    <string name="phone_connect_bt">Connetti Bluetooth</string>
+    <string name="phone_sound_unknown">Lo sapremo quando il telefono sarà connesso e in riproduzione</string>
+    <string name="phone_search_now">Cerca ora</string>
+    <string name="phone_unlink">Scollega</string>
+    <string name="phone_unlink_question">Scollegare questo telefono?</string>
+    <string name="phone_unlink_message">Per ricollegarlo dovrai scansionare di nuovo il codice da LiteDash Connect.</string>
+    <string name="phone_no_sound">Niente audio? Connetti il Bluetooth</string>
+    <string name="music_mode_phone">Mentre il telefono è connesso e riproduce musica, il widget Musica la mostra e la controlla. Quando si scollega, torna a ciò che avevi.</string>
+    <string name="phone_job_unknown">Mancano i dati del catalogo per quell\'auto</string>
+    <string name="phone_job_no_finish">Questo modello non ha finiture</string>
+    <string name="phone_job_damaged">Il file è arrivato danneggiato</string>
+    <string name="phone_job_unexpected">Lo schermo non ha chiesto quel file</string>
+    <string name="phone_job_busy">Lo schermo sta scaricando altro; riprova tra poco</string>
+    <string name="phone_job_install_failed">Lo schermo non è riuscito a installarlo</string>
+</resources>

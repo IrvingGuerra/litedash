@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="phone_section">Telefon</string>
+    <string name="phone_help">A LiteDash fiókod a telefonodon lévő LiteDash Connect alkalmazásban van.</string>
+    <string name="phone_permission">Engedély szükséges</string>
+    <string name="phone_permission_body">A telefonnal való kapcsolathoz az Android azt kéri, engedd a LiteDash-nek a helyi hálózat használatát (Közeli eszközök).</string>
+    <string name="local_network_allow">Engedélyezés</string>
+    <string name="local_network_settings">Engedélyek</string>
+    <string name="phone_no_wifi">A kijelződön nincs Wi-Fi</string>
+    <string name="phone_no_wifi_body">A telefon és a kijelző Wi-Fin kommunikál. Válaszd ki, hogyan:</string>
+    <string name="phone_use_phone">A telefon internetje</string>
+    <string name="phone_use_phone_body">Kapcsold be a kijelző Wi-Fijét, és csatlakoztasd a telefon hotspotjához.</string>
+    <string name="phone_share_screen">A kijelző megosztása</string>
+    <string name="phone_share_screen_body">Kapcsold be a kijelző hotspotját, és csatlakoztasd hozzá a telefont.</string>
+    <string name="phone_open_wifi">Wi-Fi megnyitása</string>
+    <string name="phone_open_hotspot">Hotspot megnyitása</string>
+    <string name="phone_waiting">Várakozás a telefonra…</string>
+    <plurals name="phone_link_code">
+        <item quantity="one">Kód: %1$s · %2$d perc múlva lejár</item>
+        <item quantity="other">Kód: %1$s · %2$d perc múlva lejár</item>
+    </plurals>
+    <string name="phone_step_install">Telepítsd a LiteDash Connectet, és hozz létre fiókot</string>
+    <string name="phone_step_tap">Koppints a „Kijelző összekapcsolása” gombra</string>
+    <string name="phone_step_scan">Irányítsd a kamerát erre a kódra</string>
+    <string name="phone_connected">Csatlakoztatva</string>
+    <string name="phone_searching">A telefon keresése…</string>
+    <string name="phone_model_app">%1$s · LiteDash Connect %2$s</string>
+    <string name="phone_link">Kapcsolat</string>
+    <string name="phone_link_ok">A telefon és a kijelző kommunikál</string>
+    <string name="phone_music_blocked">Hogy itt lásd a zenédet, nyisd meg a LiteDash Connectet, és koppints az „Engedélyezés” gombra a Kapcsolat alatt</string>
+    <string name="phone_link_no_network">A kijelző nincs egy hálózaton a telefonnal</string>
+    <string name="phone_link_open_app">Nyisd meg a LiteDash Connectet a telefonon, és csatlakoztasd ugyanehhez a hálózathoz</string>
+    <string name="phone_sound">Hang</string>
+    <string name="phone_sound_ok">Bluetooth csatlakoztatva · %1$s</string>
+    <string name="phone_sound_ok_plain">Bluetooth csatlakoztatva</string>
+    <string name="phone_sound_missing">Nem hallod? Csatlakoztasd a Bluetootht a fejegységről</string>
+    <string name="phone_sound_calls">A Bluetooth csak hívásokhoz csatlakozik, ezért a telefonon szól. Csatlakoztasd a fejegységről, vagy kapcsold be a telefonon a „Média hang” opciót ehhez a fejegységhez</string>
+    <string name="phone_calls_only">Bluetooth csak hívásokhoz</string>
+    <string name="phone_sound_car">Android Autón keresztül</string>
+    <string name="phone_sound_wired">Kábellel</string>
+    <string name="phone_connect_bt">Bluetooth csatlakoztatása</string>
+    <string name="phone_sound_unknown">Akkor tudjuk meg, ha a telefon csatlakozik és lejátszik</string>
+    <string name="phone_search_now">Keresés most</string>
+    <string name="phone_unlink">Leválasztás</string>
+    <string name="phone_unlink_question">Leválasztod ezt a telefont?</string>
+    <string name="phone_unlink_message">Az újracsatlakozáshoz újra be kell olvasnod a kódot a LiteDash Connectből.</string>
+    <string name="phone_no_sound">Nincs hang? Csatlakoztasd a Bluetootht</string>
+    <string name="music_mode_phone">Amíg a telefon csatlakozik és zenét játszik, a Zene widget azt mutatja és vezérli. Ha lecsatlakozik, visszaáll arra, ami előtte volt.</string>
+    <string name="phone_job_unknown">Hiányoznak az autó katalógusadatai</string>
+    <string name="phone_job_no_finish">Ennek a modellnek nincs fényezése</string>
+    <string name="phone_job_damaged">A fájl sérülten érkezett</string>
+    <string name="phone_job_unexpected">A kijelző nem kérte ezt a fájlt</string>
+    <string name="phone_job_busy">A kijelző mást tölt le; próbáld újra egy pillanat múlva</string>
+    <string name="phone_job_install_failed">A kijelző nem tudta telepíteni</string>
+</resources>

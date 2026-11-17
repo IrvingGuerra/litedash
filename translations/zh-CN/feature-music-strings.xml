@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="music_explain">查看并控制任意应用正在播放的内容。需要通知访问权限。</string>
+    <string name="enable">开启</string>
+    <string name="nothing_playing">没有正在播放的内容</string>
+    <string name="open_an_app">在你常用的应用中播放音乐</string>
+    <string name="resume_explain">按播放键从上次停止的地方继续。</string>
+    <string name="no_song_info">无歌曲信息</string>
+    <string name="opening_app">正在打开 %1$s…</string>
+    <string name="opening_wait">快好了：马上开始。</string>
+    <string name="source_files">文件</string>
+    <string name="source_bluetooth">Bluetooth</string>
+    <string name="source_radio">收音机</string>
+    <string name="bluetooth_connect_phone">通过 Bluetooth 连接手机</string>
+    <string name="usb_drive">U 盘</string>
+    <string name="usb_drive_in">U 盘已连接：%1$s</string>
+    <string name="player_connecting">正在连接…</string>
+    <string name="radio">收音机</string>
+    <string name="radio_explain">控制屏幕的收音机（开启后也可控制网络电台）。需要通知访问权限。</string>
+    <string name="radio_internet">网络</string>
+    <string name="radio_fm">屏幕 FM</string>
+    <string name="radio_unlinked">请在设置中关联屏幕的收音机，或开启网络电台</string>
+    <string name="radio_settings">设置</string>
+    <string name="mode_app">应用</string>
+    <string name="radio_fm_label">FM 收音机</string>
+    <string name="sound_question">听得到吗？</string>
+    <string name="sound_question_muted">听得到吗？注意：音乐音量为 0</string>
+    <string name="sound_yes">是</string>
+    <string name="sound_no">否</string>
+    <string name="sound_failed">无法让它出声</string>
+    <string name="sound_report">报告</string>
+    <string name="recipe_none">尚未校准：首次播放时会自动进行</string>
+    <string name="recipe_plain">直接可用</string>
+    <string name="recipe_tw_source8">屏幕的 Bluetooth 输入</string>
+    <string name="recipe_fyt_toggle">切换屏幕的音源</string>
+    <string name="recipe_profile">直接控制收音机</string>
+    <string name="recipe_open_bluetooth">打开 Bluetooth 应用后返回</string>
+    <string name="recipe_open_radio">打开收音机应用后返回</string>
+    <string name="recipe_failed">未找到可行方法</string>
+</resources>

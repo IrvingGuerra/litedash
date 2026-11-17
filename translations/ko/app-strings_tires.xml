@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="tires_error_usb_missing">USB 타이어 수신기가 연결되어 있지 않아요</string>
+    <string name="tires_error_usb_denied">USB 수신기 권한이 없어요</string>
+    <string name="tires_error_usb_open">USB 수신기를 열 수 없어요</string>
+    <string name="tires_error_usb_unplugged">USB 수신기가 분리되었어요</string>
+    <string name="tires_error_usb_lost">USB 수신기와의 연결이 끊겼어요</string>
+    <string name="tires_error_swap">수신기가 타이어 교환을 확인하지 않았어요</string>
+    <string name="tires_tap_hint">타이어를 탭해 센서를 설정하거나 옮기세요</string>
+</resources>

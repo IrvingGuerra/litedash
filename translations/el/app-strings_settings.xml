@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="tab_day_night">Μέρα και νύχτα</string>
+    <string name="tab_your_screen">Η οθόνη σας</string>
+    <string name="weather_switch">Καιρός</string>
+    <string name="weather_switch_help">Στη γραμμή, στο ρολόι και στο widget Καιρός· ανανεώνεται κάθε μισή ώρα όσο βλέπετε την αρχική οθόνη. Χρησιμοποιεί την κατά προσέγγιση θέση σας και το internet· όταν είναι ανενεργό, κανένα από τα δύο.</string>
+    <string name="reminder_pick_date">Πότε λήγει: %1$s;</string>
+    <string name="split_unsupported_screen">Η οθόνη σας δεν επιτρέπει δύο εφαρμογές δίπλα δίπλα (ο κατασκευαστής το απενεργοποίησε).</string>
+    <string name="tab_home">Αρχική</string>
+    <string name="tab_interface">Διεπαφή</string>
+    <string name="android_bar">Γραμμή Android</string>
+    <string name="accent_title">Χρώμα διεπαφής</string>
+    <string name="accent_help">Διακόπτες, κουμπιά, αναπαραγωγή και γραμμές προόδου. Οι κάρτες και το φόντο μένουν ίδια· το Φυσικό είναι η αρχική εμφάνιση.</string>
+    <string name="accent_natural">Φυσικό</string>
+</resources>

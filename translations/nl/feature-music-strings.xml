@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="music_explain">Zie en bedien wat er speelt in elke app. Vereist toegang tot meldingen.</string>
+    <string name="enable">Aanzetten</string>
+    <string name="nothing_playing">Er speelt niets</string>
+    <string name="open_an_app">Speel muziek af in je favoriete app</string>
+    <string name="resume_explain">Druk op afspelen om verder te gaan waar je was.</string>
+    <string name="no_song_info">Geen nummerinfo</string>
+    <string name="opening_app">%1$s openen…</string>
+    <string name="opening_wait">Bijna: het start zo.</string>
+    <string name="source_files">Bestanden</string>
+    <string name="source_bluetooth">Bluetooth</string>
+    <string name="source_radio">Radio</string>
+    <string name="bluetooth_connect_phone">Verbind je telefoon via Bluetooth</string>
+    <string name="usb_drive">USB-stick</string>
+    <string name="usb_drive_in">USB-stick verbonden: %1$s</string>
+    <string name="player_connecting">Verbinden…</string>
+    <string name="radio">Radio</string>
+    <string name="radio_explain">Bedien de radio van je scherm (en internetradio als je die aanzet). Vereist toegang tot meldingen.</string>
+    <string name="radio_internet">Internet</string>
+    <string name="radio_fm">FM van scherm</string>
+    <string name="radio_unlinked">Koppel de radio van je scherm in Instellingen of zet internetradio aan</string>
+    <string name="radio_settings">Instellingen</string>
+    <string name="mode_app">App</string>
+    <string name="radio_fm_label">FM-radio</string>
+    <string name="sound_question">Hoor je het?</string>
+    <string name="sound_question_muted">Hoor je het? Let op: het muziekvolume staat op 0</string>
+    <string name="sound_yes">Ja</string>
+    <string name="sound_no">Nee</string>
+    <string name="sound_failed">Afspelen lukte niet</string>
+    <string name="sound_report">Melden</string>
+    <string name="recipe_none">Nog niet afgesteld: dat gebeurt vanzelf de eerste keer dat het speelt</string>
+    <string name="recipe_plain">Werkt zoals het is</string>
+    <string name="recipe_tw_source8">Bluetooth-ingang van het scherm</string>
+    <string name="recipe_fyt_toggle">Wisselt de bron van het scherm</string>
+    <string name="recipe_profile">Directe radiobediening</string>
+    <string name="recipe_open_bluetooth">Opent de Bluetooth-app en komt terug</string>
+    <string name="recipe_open_radio">Opent de radio-app en komt terug</string>
+    <string name="recipe_failed">Geen manier gevonden</string>
+</resources>

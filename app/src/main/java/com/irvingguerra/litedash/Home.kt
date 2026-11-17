@@ -63,6 +63,7 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpSize
@@ -121,6 +122,8 @@ sealed interface Panel {
     data object Updates : Panel
     /** Ajustes abiertos en Sistema → Tu pantalla, en "Enviar un reporte" (desde el aviso de la calibración del sonido). */
     data object Report : Panel
+    /** Ajustes abiertos en Inicio y apariencia (en su pestaña Interfaz, la del idioma), al volver de cambiar el idioma. */
+    data object Language : Panel
     data object AddTile : Panel
     data object Templates : Panel
     /** El fondo de pantalla del inicio (botón "Fondo" al acomodar). */
@@ -407,7 +410,8 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
         voiceIntent(context)?.let { intent -> { runCatching { context.startActivity(intent) }; Unit } }
     }
     val car = d.cars.pkg(d.prefs.carModel)
-    var panel by remember { mutableStateOf<Panel?>(null) }
+    // Recién cambiado el idioma, de vuelta en Ajustes, donde se eligió.
+    var panel by remember { mutableStateOf<Panel?>(if (MainActivity.takeReopenLanguage()) Panel.Language else null) }
     var editing by remember { mutableStateOf(false) }
     // LiteDash puede estar abierto dos veces (como inicio y como app) y el estado es uno solo por proceso. Una sola
     // regla: solo la ventana al frente decide la cuadrícula (la de atrás no se vuelve a medir y deshacía lo que se
@@ -530,7 +534,9 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
         }
     }
     // Botón de inicio estando ya aquí: de vuelta al tablero tal como lo acomodaste.
-    LaunchedEffect(homePressed) { if (d.prefs.welcomeSeen) backToDashboard() }
+    // Solo los toques a Inicio de después: al abrirse (p. ej. tras cambiar el idioma) no cierra lo que se abrió solo.
+    val homeAtStart = remember { homePressed }
+    LaunchedEffect(homePressed) { if (homePressed != homeAtStart && d.prefs.welcomeSeen) backToDashboard() }
     // Clima al volver al inicio y cada media hora con el inicio a la vista (si está activado); nunca en segundo plano.
     WeatherRefresh(d.weather, revision)
     // Al volver al inicio: versión nueva de la app (a lo más cada 12 h), cuántas pantallas usan LiteDash (a lo más
@@ -779,7 +785,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
             FitShort {
                 when (p) {
                     Panel.Drawer -> DrawerPanel(d, apps, close = { panel = null })
-                    Panel.Settings, Panel.Updates, Panel.Report, Panel.Workshop, Panel.MusicSettings, Panel.TiresSettings -> SettingsPanel(
+                    Panel.Settings, Panel.Updates, Panel.Report, Panel.Language, Panel.Workshop, Panel.MusicSettings, Panel.TiresSettings -> SettingsPanel(
                         d,
                         revision = revision,
                         close = { panel = null },
@@ -791,6 +797,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                             Panel.Workshop -> SettingsSection.WORKSHOP
                             Panel.MusicSettings -> SettingsSection.APPS
                             Panel.TiresSettings -> SettingsSection.TIRES
+                            Panel.Language -> SettingsSection.APPEARANCE
                             else -> SettingsSection.CAR
                         },
                         onTires = { panel = null; tiresLayer.open = true },
@@ -974,9 +981,29 @@ private fun TopBar(
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         if (editing) {
-            Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-                Label(stringResource(R.string.arrange_your_home), Typography.subtitle, maxLines = 1)
-                Label(stringResource(R.string.arrange_hint), Typography.small, c.textMuted, maxLines = 1)
+            val title = stringResource(R.string.arrange_your_home)
+            val hint = stringResource(R.string.arrange_hint)
+            val measurer = rememberTextMeasurer()
+            val short = isShortScreen()
+            // La ayuda va junto al título si cabe; si no (pantallas de pie), debajo de él, en la misma barra: su alto no
+            // cambia (de él sale la cuadrícula del inicio). En pantallas bajas no hay lugar debajo: solo el título.
+            BoxWithConstraints(Modifier.weight(1f)) {
+                val needed = with(LocalDensity.current) {
+                    remember(title, hint) {
+                        measurer.measure(title, Typography.subtitle).size.width + measurer.measure(hint, Typography.small).size.width
+                    }.toDp() + 14.dp
+                }
+                if (needed <= maxWidth) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                        Label(title, Typography.subtitle, maxLines = 1)
+                        Label(hint, Typography.small, c.textMuted, maxLines = 1)
+                    }
+                } else {
+                    Column {
+                        Label(title, Typography.subtitle, maxLines = 1)
+                        if (!short) Label(hint, Typography.small, c.textMuted, maxLines = 2)
+                    }
+                }
             }
             Button(stringResource(R.string.wallpaper_button), onWallpaper)
             Button(stringResource(R.string.templates), onTemplates)

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="check_updates">检查更新</string>
+    <string name="up_to_date">已是最新版本。</string>
+    <string name="update_error">无法检查。请检查网络后重试。</string>
+    <string name="update_download_error">无法下载：GitHub 没有响应或连接中断。请几分钟后重试。</string>
+    <string name="new_version">LiteDash %1$s 已就绪</string>
+    <string name="download_install">下载并安装 · %1$.1f MB</string>
+    <string name="installing">正在打开 Android 安装程序…</string>
+    <string name="install_permission">Android 需要你允许 LiteDash 安装应用（仅用于它自身的更新）。请在打开的页面中开启后返回。</string>
+    <string name="already_allowed">好了，安装</string>
+    <string name="install_error">Android 无法安装。请重试。</string>
+    <string name="install_aborted">安装已取消。</string>
+    <string name="install_incompatible">此版本与已安装的版本不兼容。</string>
+    <string name="install_storage">空间不足，无法安装。请释放一些空间后重试。</string>
+    <string name="install_blocked">Android 阻止了安装。</string>
+    <string name="update_see">查看</string>
+    <string name="update_later">稍后</string>
+    <string name="open_installer">用 Android 安装程序打开</string>
+</resources>

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="image_background">Tło</string>
+    <string name="image_background_original">Oryginalne</string>
+    <string name="image_background_remove">Usuń</string>
+    <string name="image_background_help">Najlepiej działa z jednolitym tłem: ściana, niebo lub studio.</string>
+    <string name="image_strength">Siła</string>
+    <string name="image_strength_low">Delikatna</string>
+    <string name="image_strength_medium">Średnia</string>
+    <string name="image_strength_high">Wysoka</string>
+    <string name="image_strength_max">Maks.</string>
+    <string name="image_cut_failed">Nie udało się oddzielić auta od tła: spróbuj zdjęcia z jednolitym tłem.</string>
+    <string name="image_apply">Zastosuj</string>
+    <string name="image_unusable">Nie można użyć tego obrazu; spróbuj innego.</string>
+</resources>

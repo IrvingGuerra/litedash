@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="road_speed">Rychlost</string>
+    <string name="road_speed_text">Jen číslo</string>
+    <string name="road_speed_gauge">Tachometr</string>
+    <string name="road_speed_show">Zobrazit rychlost</string>
+    <string name="trip_time">Čas</string>
+    <string name="trip_average">Průměr</string>
+    <string name="road_trip_distance">Vzdálenost</string>
+    <string name="trip_heading">Směr</string>
+    <string-array name="compass_points">
+        <item>S</item>
+        <item>SV</item>
+        <item>V</item>
+        <item>JV</item>
+        <item>J</item>
+        <item>JZ</item>
+        <item>Z</item>
+        <item>SZ</item>
+    </string-array>
+    <!-- A number with its unit ("12.3 km") and two pieces on one line ("Insurance · in 3 days") -->
+    <string name="value_with_unit">%1$s %2$s</string>
+    <string name="two_parts">%1$s · %2$s</string>
+    <string name="weather_degrees">%1$d°</string>
+    <string name="weather_range">%1$d° / %2$d°</string>
+</resources>

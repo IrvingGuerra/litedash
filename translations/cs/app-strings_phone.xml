@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="phone_section">Telefon</string>
+    <string name="phone_help">Tvůj účet LiteDash žije v aplikaci LiteDash Connect v telefonu.</string>
+    <string name="phone_permission">Je potřeba oprávnění</string>
+    <string name="phone_permission_body">Aby mohl komunikovat s telefonem, Android chce, abys LiteDash povolil místní síť (Zařízení v okolí).</string>
+    <string name="local_network_allow">Povolit</string>
+    <string name="local_network_settings">Oprávnění</string>
+    <string name="phone_no_wifi">Tvůj displej nemá Wi-Fi</string>
+    <string name="phone_no_wifi_body">Telefon a displej spolu mluví přes Wi-Fi. Vyber jak:</string>
+    <string name="phone_use_phone">Použít internet telefonu</string>
+    <string name="phone_use_phone_body">Zapni Wi-Fi displeje a připoj ho k hotspotu telefonu.</string>
+    <string name="phone_share_screen">Sdílet z displeje</string>
+    <string name="phone_share_screen_body">Zapni hotspot displeje a připoj k němu telefon.</string>
+    <string name="phone_open_wifi">Otevřít Wi-Fi</string>
+    <string name="phone_open_hotspot">Otevřít hotspot</string>
+    <string name="phone_waiting">Čekám na telefon…</string>
+    <plurals name="phone_link_code">
+        <item quantity="one">Kód %1$s · vyprší za %2$d minutu</item>
+        <item quantity="few">Kód %1$s · vyprší za %2$d minuty</item>
+        <item quantity="many">Kód %1$s · vyprší za %2$d minuty</item>
+        <item quantity="other">Kód %1$s · vyprší za %2$d minut</item>
+    </plurals>
+    <string name="phone_step_install">Nainstaluj LiteDash Connect a vytvoř si účet</string>
+    <string name="phone_step_tap">Klepni na „Propojit můj displej“</string>
+    <string name="phone_step_scan">Namiř fotoaparát na tento kód</string>
+    <string name="phone_connected">Připojeno</string>
+    <string name="phone_searching">Hledám tvůj telefon…</string>
+    <string name="phone_model_app">%1$s · LiteDash Connect %2$s</string>
+    <string name="phone_link">Propojení</string>
+    <string name="phone_link_ok">Telefon a displej spolu komunikují</string>
+    <string name="phone_music_blocked">Abys tu viděl svou hudbu, otevři LiteDash Connect a klepni na „Povolit“ v části Propojení</string>
+    <string name="phone_link_no_network">Displej není v žádné síti s tvým telefonem</string>
+    <string name="phone_link_open_app">Otevři v telefonu LiteDash Connect a připoj ho ke stejné síti</string>
+    <string name="phone_sound">Zvuk</string>
+    <string name="phone_sound_ok">Bluetooth připojen · %1$s</string>
+    <string name="phone_sound_ok_plain">Bluetooth připojen</string>
+    <string name="phone_sound_missing">Neslyšíš to? Připoj Bluetooth z rádia</string>
+    <string name="phone_sound_calls">Bluetooth je připojen jen pro hovory, takže hraje v telefonu. Připoj ho z rádia, nebo v telefonu zapni pro toto rádio „Zvuk médií“</string>
+    <string name="phone_calls_only">Bluetooth jen pro hovory</string>
+    <string name="phone_sound_car">Přes Android Auto</string>
+    <string name="phone_sound_wired">Kabelem</string>
+    <string name="phone_connect_bt">Připojit Bluetooth</string>
+    <string name="phone_sound_unknown">Zjistíme to, až bude telefon připojený a bude hrát</string>
+    <string name="phone_search_now">Hledat teď</string>
+    <string name="phone_unlink">Zrušit propojení</string>
+    <string name="phone_unlink_question">Zrušit propojení s tímto telefonem?</string>
+    <string name="phone_unlink_message">Pro nové připojení budeš muset znovu naskenovat kód z LiteDash Connect.</string>
+    <string name="phone_no_sound">Žádný zvuk? Připoj Bluetooth</string>
+    <string name="music_mode_phone">Dokud je telefon připojený a hraje hudbu, widget Hudba ji ukazuje a ovládá. Když odejde, vrátí se k tomu, co jsi měl.</string>
+    <string name="phone_job_unknown">Chybí údaje katalogu k tomuto autu</string>
+    <string name="phone_job_no_finish">Tento model nemá povrchy</string>
+    <string name="phone_job_damaged">Soubor dorazil poškozený</string>
+    <string name="phone_job_unexpected">Displej o ten soubor nežádal</string>
+    <string name="phone_job_busy">Displej stahuje něco jiného; zkus to za chvíli</string>
+    <string name="phone_job_install_failed">Displej to nedokázal nainstalovat</string>
+</resources>

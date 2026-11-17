@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="road_speed">Hastighet</string>
+    <string name="road_speed_text">Bara siffra</string>
+    <string name="road_speed_gauge">Hastighetsmätare</string>
+    <string name="road_speed_show">Visa hastighet</string>
+    <string name="trip_time">Tid</string>
+    <string name="trip_average">Snitt</string>
+    <string name="road_trip_distance">Sträcka</string>
+    <string name="trip_heading">Riktning</string>
+    <string-array name="compass_points">
+        <item>N</item>
+        <item>NO</item>
+        <item>O</item>
+        <item>SO</item>
+        <item>S</item>
+        <item>SV</item>
+        <item>V</item>
+        <item>NV</item>
+    </string-array>
+    <string name="value_with_unit">%1$s %2$s</string>
+    <string name="two_parts">%1$s · %2$s</string>
+    <string name="weather_degrees">%1$d°</string>
+    <string name="weather_range">%1$d° / %2$d°</string>
+</resources>

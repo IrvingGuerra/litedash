@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="music_explain">Se och styr det som spelas i valfri app. Kräver åtkomst till aviseringar.</string>
+    <string name="enable">Slå på</string>
+    <string name="nothing_playing">Inget spelas</string>
+    <string name="open_an_app">Spela musik i din favoritapp</string>
+    <string name="resume_explain">Tryck på spela för att fortsätta där du slutade.</string>
+    <string name="no_song_info">Ingen låtinfo</string>
+    <string name="opening_app">Öppnar %1$s…</string>
+    <string name="opening_wait">Snart: det startar om ett ögonblick.</string>
+    <string name="source_files">Filer</string>
+    <string name="source_bluetooth">Bluetooth</string>
+    <string name="source_radio">Radio</string>
+    <string name="bluetooth_connect_phone">Anslut telefonen via Bluetooth</string>
+    <string name="usb_drive">USB-minne</string>
+    <string name="usb_drive_in">USB-minne anslutet: %1$s</string>
+    <string name="player_connecting">Ansluter…</string>
+    <string name="radio">Radio</string>
+    <string name="radio_explain">Styr skärmens radio (och internetradio om du slår på den). Kräver åtkomst till aviseringar.</string>
+    <string name="radio_internet">Internet</string>
+    <string name="radio_fm">Skärmens FM</string>
+    <string name="radio_unlinked">Länka skärmens radio i Inställningar eller slå på internetradio</string>
+    <string name="radio_settings">Inställningar</string>
+    <string name="mode_app">App</string>
+    <string name="radio_fm_label">FM-radio</string>
+    <string name="sound_question">Hörs det?</string>
+    <string name="sound_question_muted">Hörs det? Obs: musikvolymen står på 0</string>
+    <string name="sound_yes">Ja</string>
+    <string name="sound_no">Nej</string>
+    <string name="sound_failed">Kunde inte få det att spela</string>
+    <string name="sound_report">Rapportera</string>
+    <string name="recipe_none">Inte kalibrerat än: det sker av sig självt första gången det spelar</string>
+    <string name="recipe_plain">Fungerar som det är</string>
+    <string name="recipe_tw_source8">Skärmens Bluetooth-ingång</string>
+    <string name="recipe_fyt_toggle">Byter skärmens källa</string>
+    <string name="recipe_profile">Direkt radiostyrning</string>
+    <string name="recipe_open_bluetooth">Öppnar Bluetooth-appen och kommer tillbaka</string>
+    <string name="recipe_open_radio">Öppnar radioappen och kommer tillbaka</string>
+    <string name="recipe_failed">Inget sätt hittades</string>
+</resources>

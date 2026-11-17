@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="check_updates">Frissítések keresése</string>
+    <string name="up_to_date">A legújabb verzió van telepítve.</string>
+    <string name="update_error">Nem sikerült ellenőrizni. Nézd meg a kapcsolatot, és próbáld újra.</string>
+    <string name="update_download_error">Nem sikerült letölteni: a GitHub nem válaszolt, vagy megszakadt a kapcsolat. Próbáld újra pár perc múlva.</string>
+    <string name="new_version">Elkészült a LiteDash %1$s</string>
+    <string name="download_install">Letöltés és telepítés · %1$.1f MB</string>
+    <string name="installing">Az Android telepítő megnyitása…</string>
+    <string name="install_permission">Az Android azt kéri, engedd meg a LiteDash-nek az alkalmazások telepítését (csak a saját frissítéseihez). Kapcsold be a megnyílt képernyőn, majd gyere vissza.</string>
+    <string name="already_allowed">Kész, telepítés</string>
+    <string name="install_error">Az Android nem tudta telepíteni. Próbáld újra.</string>
+    <string name="install_aborted">A telepítés megszakadt.</string>
+    <string name="install_incompatible">Ez a verzió nem kompatibilis a telepítettel.</string>
+    <string name="install_storage">Nincs elég hely a telepítéshez. Szabadíts fel helyet, és próbáld újra.</string>
+    <string name="install_blocked">Az Android letiltotta a telepítést.</string>
+    <string name="update_see">Megnézem</string>
+    <string name="update_later">Később</string>
+    <string name="open_installer">Megnyitás az Android telepítővel</string>
+</resources>

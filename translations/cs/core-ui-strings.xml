@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="files_where">Vyber jednotku</string>
+    <string name="files_internal">Vnitřní úložiště</string>
+    <string name="files_none">Žádné jednotky nenalezeny. Zkontroluj oprávnění k souborům.</string>
+    <string name="files_empty">Tato složka je prázdná.</string>
+    <string name="files_use_folder">Použít tuto složku</string>
+    <string name="files_close">Zavřít</string>
+    <string name="files_recent">Nedávné</string>
+    <string name="files_recent_empty">Žádné nedávné fotky.</string>
+</resources>

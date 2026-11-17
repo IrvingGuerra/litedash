@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="files_where">ドライブを選択</string>
+    <string name="files_internal">内部ストレージ</string>
+    <string name="files_none">ドライブが見つかりません。ファイルの権限を確認してください。</string>
+    <string name="files_empty">このフォルダは空です。</string>
+    <string name="files_use_folder">このフォルダを使用</string>
+    <string name="files_close">閉じる</string>
+    <string name="files_recent">最近</string>
+    <string name="files_recent_empty">最近の写真はありません。</string>
+</resources>

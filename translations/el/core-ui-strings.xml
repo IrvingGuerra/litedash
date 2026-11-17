@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="files_where">Επιλέξτε μονάδα</string>
+    <string name="files_internal">Εσωτερικός χώρος</string>
+    <string name="files_none">Δεν βρέθηκαν μονάδες. Ελέγξτε την άδεια αρχείων.</string>
+    <string name="files_empty">Ο φάκελος είναι κενός.</string>
+    <string name="files_use_folder">Χρήση αυτού του φακέλου</string>
+    <string name="files_close">Κλείσιμο</string>
+    <string name="files_recent">Πρόσφατα</string>
+    <string name="files_recent_empty">Δεν υπάρχουν πρόσφατες φωτογραφίες.</string>
+</resources>

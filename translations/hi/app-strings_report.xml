@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="report_title">रिपोर्ट भेजें</string>
+    <string name="report_help">बताएँ क्या गड़बड़ है। यह आपकी स्क्रीन के तकनीकी डेटा के साथ जाता है (कोई निजी डेटा नहीं)।</string>
+    <string name="report_what">किसमें दिक्कत है?</string>
+    <string name="report_which">कौन-सा?</string>
+    <string name="report_problem">क्या होता है?</string>
+    <string name="report_workshop">वर्कशॉप (OBD)</string>
+    <string name="report_projection">Android Auto / ऐप</string>
+    <string name="report_lights">दिन और रात / हेडलाइट</string>
+    <string name="report_music_usb">फ़ाइलें (LiteDash प्लेयर)</string>
+    <string name="report_music_bt">Bluetooth (स्क्रीन का)</string>
+    <string name="report_music_app">आपका म्यूज़िक ऐप (Spotify, YouTube Music…)</string>
+    <string name="report_radio_fm">स्क्रीन का FM</string>
+    <string name="report_radio_internet">इंटरनेट रेडियो</string>
+    <string name="report_obd_usb">USB</string>
+    <string name="report_silent">आवाज़ नहीं</string>
+    <string name="report_no_info">बजता है पर क्या बज रहा है नहीं दिखता</string>
+    <string name="report_buttons">बटन काम नहीं करते</string>
+    <string name="report_broken">काम नहीं करता</string>
+    <string name="report_looks_wrong">ठीक नहीं दिखता</string>
+    <string name="report_crash">ऐप बंद हो जाता है</string>
+    <string name="report_note">और बताएँ (वैकल्पिक)</string>
+    <string name="report_play_first">हो सके तो भेजने से पहले वह सोर्स चलाएँ।</string>
+    <string name="report_send">भेजें</string>
+    <string name="report_sending">भेज रहे हैं…</string>
+    <string name="report_thanks">धन्यवाद! हम इसे देखेंगे।</string>
+    <string name="report_code">रिपोर्ट कोड: %1$s</string>
+    <string name="report_error">भेजा नहीं जा सका। कनेक्शन देखें।</string>
+    <string name="report_wait">दूसरी भेजने से पहले एक मिनट रुकें।</string>
+</resources>

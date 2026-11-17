@@ -1,0 +1,38 @@
+name: Error de traducción / Translation mistake
+description: Un texto mal traducido en un idioma descargable / A wrong text in a downloadable language
+labels: ["tipo:traduccion"]
+body:
+  - type: input
+    id: idioma
+    attributes:
+      label: Idioma / Language
+      placeholder: "de · Deutsch"
+    validations:
+      required: true
+  - type: input
+    id: donde
+    attributes:
+      label: ¿Dónde aparece? / Where in the app?
+      placeholder: "Ajustes → Unidades / Settings → Units"
+  - type: textarea
+    id: actual
+    attributes:
+      label: Texto actual / Current text
+    validations:
+      required: true
+  - type: textarea
+    id: sugerido
+    attributes:
+      label: Texto sugerido / Suggested text
+    validations:
+      required: true
+  - type: textarea
+    id: notas
+    attributes:
+      label: ¿Por qué? Notas / Why? Notes
+  - type: checkboxes
+    id: revisor
+    attributes:
+      label: Revisión / Review
+      options:
+        - label: Es mi lengua materna y podría revisar todo el idioma / I'm a native speaker and could review the whole language

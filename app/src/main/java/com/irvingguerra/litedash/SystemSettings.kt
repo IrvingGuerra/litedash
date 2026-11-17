@@ -164,9 +164,10 @@ private fun About(d: Dependencies) {
             Column(Modifier.padding(22.dp).fillMaxWidth(if (pkg != null && wide) 0.56f else 1f), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Label("LiteDash ${BuildConfig.VERSION_NAME}", Typography.title.copy(fontSize = 30.sp), maxLines = 1)
                 Label(stringResource(if (BuildConfig.CHANNEL == "play") R.string.channel_play else R.string.channel_github), Typography.small, c.textMuted)
-                if (BuildConfig.RELEASE_NOTES.isNotBlank()) {
+                val notes = localReleaseNotes(BuildConfig.RELEASE_NOTES, BuildConfig.RELEASE_NOTES_EN)
+                if (notes.isNotBlank()) {
                     Label(stringResource(R.string.release_notes), Typography.label, c.textMuted)
-                    for (line in remember { releaseNotes() }) {
+                    for (line in remember(notes) { releaseNotes(notes) }) {
                         if (line.startsWith("###")) Label(line.removePrefix("###").trim(), Typography.subtitle, maxLines = 1)
                         else Label("• $line", Typography.small)
                     }
@@ -272,6 +273,25 @@ internal fun appSettingsIntent(context: Context, action: String, pkg: String = c
 /** Los permisos de LiteDash en Ajustes de Android (ubicación, red local…). */
 internal fun openAppSettings(context: Context) {
     openSystemScreen(context, appSettingsIntent(context, Settings.ACTION_APPLICATION_DETAILS_SETTINGS))
+}
+
+/**
+ * Las notas en el idioma de la app: en español si la app está en español; si no, en inglés ([english]) cuando las hay.
+ * Las del Release de GitHub traen las dos, separadas por [RELEASE_NOTES_EN_MARK] ([splitReleaseNotes]).
+ */
+@Composable
+internal fun localReleaseNotes(spanish: String, english: String): String {
+    val inSpanish = currentLocale().language == "es"
+    return if (inSpanish || english.isBlank()) spanish else english
+}
+
+/** Lo que separa las notas en español de las de inglés en un Release (comentario HTML: no se ve en GitHub). */
+internal const val RELEASE_NOTES_EN_MARK = "<!-- en -->"
+
+/** (español, inglés) de las notas de un Release; sin la marca, todo es español. El pie (tras "---") no es parte de ellas. */
+internal fun splitReleaseNotes(notes: String): Pair<String, String> {
+    val body = notes.substringBefore("\n---")
+    return body.substringBefore(RELEASE_NOTES_EN_MARK) to body.substringAfter(RELEASE_NOTES_EN_MARK, "")
 }
 
 /** Notas de una versión (sección del CHANGELOG) en renglones: títulos ("### Agregado") y viñetas sin formato. */

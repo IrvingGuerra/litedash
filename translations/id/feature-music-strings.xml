@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="music_explain">Lihat dan kendalikan yang sedang diputar di aplikasi apa pun. Perlu akses notifikasi.</string>
+    <string name="enable">Aktifkan</string>
+    <string name="nothing_playing">Tidak ada yang diputar</string>
+    <string name="open_an_app">Putar musik di aplikasi favorit Anda</string>
+    <string name="resume_explain">Tekan putar untuk melanjutkan dari terakhir kali.</string>
+    <string name="no_song_info">Tidak ada info lagu</string>
+    <string name="opening_app">Membuka %1$s…</string>
+    <string name="opening_wait">Hampir siap: sebentar lagi mulai.</string>
+    <string name="source_files">Berkas</string>
+    <string name="source_bluetooth">Bluetooth</string>
+    <string name="source_radio">Radio</string>
+    <string name="bluetooth_connect_phone">Sambungkan ponsel Anda lewat Bluetooth</string>
+    <string name="usb_drive">Flashdisk USB</string>
+    <string name="usb_drive_in">Flashdisk USB terhubung: %1$s</string>
+    <string name="player_connecting">Menghubungkan…</string>
+    <string name="radio">Radio</string>
+    <string name="radio_explain">Kendalikan radio layar Anda (dan radio internet jika diaktifkan). Perlu akses notifikasi.</string>
+    <string name="radio_internet">Internet</string>
+    <string name="radio_fm">FM layar</string>
+    <string name="radio_unlinked">Tautkan radio layar Anda di Setelan atau aktifkan radio internet</string>
+    <string name="radio_settings">Setelan</string>
+    <string name="mode_app">Aplikasi</string>
+    <string name="radio_fm_label">Radio FM</string>
+    <string name="sound_question">Terdengar?</string>
+    <string name="sound_question_muted">Terdengar? Catatan: volume musik di 0</string>
+    <string name="sound_yes">Ya</string>
+    <string name="sound_no">Tidak</string>
+    <string name="sound_failed">Tidak berhasil memutarnya</string>
+    <string name="sound_report">Laporkan</string>
+    <string name="recipe_none">Belum dikalibrasi: terjadi sendiri saat pertama kali diputar</string>
+    <string name="recipe_plain">Berfungsi apa adanya</string>
+    <string name="recipe_tw_source8">Input Bluetooth layar</string>
+    <string name="recipe_fyt_toggle">Mengganti sumber layar</string>
+    <string name="recipe_profile">Kontrol radio langsung</string>
+    <string name="recipe_open_bluetooth">Membuka aplikasi Bluetooth lalu kembali</string>
+    <string name="recipe_open_radio">Membuka aplikasi radio lalu kembali</string>
+    <string name="recipe_failed">Tidak ada cara yang berhasil</string>
+</resources>

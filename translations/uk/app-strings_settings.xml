@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="tab_day_night">День і ніч</string>
+    <string name="tab_your_screen">Твій екран</string>
+    <string name="weather_switch">Погода</string>
+    <string name="weather_switch_help">На панелі, у годиннику та віджеті «Погода»; оновлюється щопівгодини, поки відкритий головний екран. Використовує приблизне місцезнаходження та інтернет; якщо вимкнено — нічого з цього.</string>
+    <string name="reminder_pick_date">Коли термін «%1$s»?</string>
+    <string name="split_unsupported_screen">Твоя магнітола не дозволяє два застосунки поруч (виробник це вимкнув).</string>
+    <string name="tab_home">Головний екран</string>
+    <string name="tab_interface">Інтерфейс</string>
+    <string name="android_bar">Панель Android</string>
+    <string name="accent_title">Колір інтерфейсу</string>
+    <string name="accent_help">Перемикачі, кнопки, відтворення та смуги прогресу. Картки й фон не змінюються; «Природний» — початковий вигляд.</string>
+    <string name="accent_natural">Природний</string>
+</resources>

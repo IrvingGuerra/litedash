@@ -1,28 +1,214 @@
 {
  "languages": [
   {
+   "lang": "id",
+   "name": "Bahasa Indonesia",
+   "progress": 100,
+   "bytes": 54677,
+   "sha256": "b033f7815431736460ecb50b7d4fc455ffd7fdcf32c41f0c363907470803a43c",
+   "base": 10416799,
+   "reviewed": false,
+   "reviewers": []
+  },
+  {
+   "lang": "de",
+   "name": "Deutsch",
+   "progress": 100,
+   "bytes": 56534,
+   "sha256": "783140ea8b6656883e6792e2aff1f381430fbdd2c2e25a4c96bb8f5392a1d661",
+   "base": 10416799,
+   "reviewed": false,
+   "reviewers": []
+  },
+  {
    "lang": "fr",
    "name": "Français",
    "progress": 100,
-   "bytes": 59968,
-   "sha256": "c26dbb4519501f3a0b37aaf0eb982f32f0b08d8c06045ae2bfcc8fa5ef55c02d",
-   "base": 10416399
+   "bytes": 60188,
+   "sha256": "14f07534cecedd5410c8c2abc7c53830c725795dae62436c2d9792b7d711ea33",
+   "base": 10416799,
+   "reviewed": false,
+   "reviewers": []
+  },
+  {
+   "lang": "it",
+   "name": "Italiano",
+   "progress": 100,
+   "bytes": 56546,
+   "sha256": "1f5c684ee5637139376dece7f3f08aad3b2615f11267138f7f9e7d55cccc14e9",
+   "base": 10416799,
+   "reviewed": false,
+   "reviewers": []
+  },
+  {
+   "lang": "hu",
+   "name": "Magyar",
+   "progress": 100,
+   "bytes": 59910,
+   "sha256": "dc131ef58e49913837a013539ba5d6cbb65cc82cc1ca5cc6ab469a78e92b4794",
+   "base": 10416799,
+   "reviewed": false,
+   "reviewers": []
+  },
+  {
+   "lang": "nl",
+   "name": "Nederlands",
+   "progress": 100,
+   "bytes": 56190,
+   "sha256": "71c9e48e3470c6ddd90d880e6a5c08969850006a1cae5100279420505c516bfe",
+   "base": 10416799,
+   "reviewed": false,
+   "reviewers": []
+  },
+  {
+   "lang": "pl",
+   "name": "Polski",
+   "progress": 100,
+   "bytes": 57588,
+   "sha256": "625b93901ee46b12b1d220921126059643a486a718e2b2468a00f05e4c455cca",
+   "base": 10416799,
+   "reviewed": false,
+   "reviewers": []
   },
   {
    "lang": "pt",
    "name": "Português",
    "progress": 100,
-   "bytes": 56665,
-   "sha256": "50226025d33f9efa31edf81cee1f2e00c18a1356149ce3f930b59a69a9774c2e",
-   "base": 10416399
+   "bytes": 56879,
+   "sha256": "ecd2d220419f08bdc88f1a00224ece5c5b321bb5038abc21fc07ec7cdc44e283",
+   "base": 10416799,
+   "reviewed": false,
+   "reviewers": []
+  },
+  {
+   "lang": "ro",
+   "name": "Română",
+   "progress": 100,
+   "bytes": 58172,
+   "sha256": "3ccb864f3a63222a58688a15f987c083423e4583e0d7087e37e372b561464358",
+   "base": 10416799,
+   "reviewed": false,
+   "reviewers": []
+  },
+  {
+   "lang": "sv",
+   "name": "Svenska",
+   "progress": 100,
+   "bytes": 55073,
+   "sha256": "fbc6f32fc450078aef3ac16b727df29688578bd63fb0bd5726640ad92aa59fd6",
+   "base": 10416799,
+   "reviewed": false,
+   "reviewers": []
+  },
+  {
+   "lang": "vi",
+   "name": "Tiếng Việt",
+   "progress": 100,
+   "bytes": 61895,
+   "sha256": "298fd23dfd39db61e7c72992eda5ebfd7c48f76c180750aa58dbf331e81d47ab",
+   "base": 10416799,
+   "reviewed": false,
+   "reviewers": []
   },
   {
    "lang": "tr",
    "name": "Türkçe",
    "progress": 100,
-   "bytes": 57093,
-   "sha256": "65807f2af83fb6f52b8ad57eb908bfc593ee7fccba9054e04dc0502bc3fec011",
-   "base": 10416399
+   "bytes": 57301,
+   "sha256": "ce7e49a287c200ffb76273d3b0b520d898bd6265a24b9a423fe485dbb7ce8bab",
+   "base": 10416799,
+   "reviewed": false,
+   "reviewers": []
+  },
+  {
+   "lang": "cs",
+   "name": "Čeština",
+   "progress": 100,
+   "bytes": 56873,
+   "sha256": "fa6d84d4767dd34b6a9fe17f87d943ea4b1d135d288de35b880049656c1b4264",
+   "base": 10416799,
+   "reviewed": false,
+   "reviewers": []
+  },
+  {
+   "lang": "el",
+   "name": "Ελληνικά",
+   "progress": 100,
+   "bytes": 86894,
+   "sha256": "8a9d9bffaa3ee5c6da6cd838a8ab4ce4c3a3b054b7b8d95e2379c65ecc1f3048",
+   "base": 10416799,
+   "reviewed": false,
+   "reviewers": []
+  },
+  {
+   "lang": "ru",
+   "name": "Русский",
+   "progress": 100,
+   "bytes": 81874,
+   "sha256": "9f9e1a6e6d09598178bc6f4a75d2ab4bf6cc800ae95b174012d44dc30518b724",
+   "base": 10416799,
+   "reviewed": false,
+   "reviewers": []
+  },
+  {
+   "lang": "uk",
+   "name": "Українська",
+   "progress": 100,
+   "bytes": 82056,
+   "sha256": "3d980f81a16462b3d1f5759214b7addad7c6cbb7effe223605592bd468d949c2",
+   "base": 10416799,
+   "reviewed": false,
+   "reviewers": []
+  },
+  {
+   "lang": "hi",
+   "name": "हिन्दी",
+   "progress": 100,
+   "bytes": 94827,
+   "sha256": "96df10172c12f925a70ade975df6be5aac7486537eb7b4ba8dd9e5432bd87cbd",
+   "base": 10416799,
+   "reviewed": false,
+   "reviewers": []
+  },
+  {
+   "lang": "th",
+   "name": "ไทย",
+   "progress": 100,
+   "bytes": 95268,
+   "sha256": "a208a97cce587648421640424bb4152986c46d7f858b197e1721a8bade642c8b",
+   "base": 10416799,
+   "reviewed": false,
+   "reviewers": []
+  },
+  {
+   "lang": "ja",
+   "name": "日本語",
+   "progress": 100,
+   "bytes": 66743,
+   "sha256": "13204ef82c7fa880519a24af33c63d230391bce1b1045472bf404f6bb392b384",
+   "base": 10416799,
+   "reviewed": false,
+   "reviewers": []
+  },
+  {
+   "lang": "zh-CN",
+   "name": "简体中文",
+   "progress": 100,
+   "bytes": 52227,
+   "sha256": "f8e9fc539de85e2931814bf15ca272a5afb72b415b476bd5914ee6c360074575",
+   "base": 10416799,
+   "reviewed": false,
+   "reviewers": []
+  },
+  {
+   "lang": "ko",
+   "name": "한국어",
+   "progress": 100,
+   "bytes": 58810,
+   "sha256": "8e09569b146544389f768847f69f926f36a362f248e19744e7a85c3fe2ff53fe",
+   "base": 10416799,
+   "reviewed": false,
+   "reviewers": []
   }
  ]
 }

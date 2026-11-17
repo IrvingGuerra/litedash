@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="dashboard_remove">विजेट हटाएँ</string>
+    <string name="dashboard_card">कार्ड चालू या बंद</string>
+    <string name="dashboard_settings">विजेट सेटिंग्स</string>
+    <string name="dashboard_resize">साइज़ बदलें</string>
+</resources>

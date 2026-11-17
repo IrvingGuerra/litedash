@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="phone_section">โทรศัพท์</string>
+    <string name="phone_help">บัญชี LiteDash ของคุณอยู่ในแอป LiteDash Connect บนโทรศัพท์</string>
+    <string name="phone_permission">ต้องการสิทธิ์</string>
+    <string name="phone_permission_body">เพื่อคุยกับโทรศัพท์ Android ขอให้คุณอนุญาตให้ LiteDash ใช้เครือข่ายภายใน (อุปกรณ์ที่อยู่ใกล้เคียง)</string>
+    <string name="local_network_allow">อนุญาต</string>
+    <string name="local_network_settings">สิทธิ์</string>
+    <string name="phone_no_wifi">หน้าจอของคุณไม่มี Wi-Fi</string>
+    <string name="phone_no_wifi_body">โทรศัพท์กับหน้าจอคุยกันผ่าน Wi-Fi เลือกวิธี:</string>
+    <string name="phone_use_phone">ใช้อินเทอร์เน็ตจากโทรศัพท์</string>
+    <string name="phone_use_phone_body">เปิด Wi-Fi ของหน้าจอแล้วเชื่อมกับฮอตสปอตของโทรศัพท์</string>
+    <string name="phone_share_screen">แชร์จากหน้าจอ</string>
+    <string name="phone_share_screen_body">เปิดฮอตสปอตของหน้าจอแล้วให้โทรศัพท์เชื่อมต่อ</string>
+    <string name="phone_open_wifi">เปิด Wi-Fi</string>
+    <string name="phone_open_hotspot">เปิดฮอตสปอต</string>
+    <string name="phone_waiting">กำลังรอโทรศัพท์…</string>
+    <plurals name="phone_link_code">
+        <item quantity="other">รหัส %1$s · หมดอายุใน %2$d นาที</item>
+    </plurals>
+    <string name="phone_step_install">ติดตั้ง LiteDash Connect และสร้างบัญชี</string>
+    <string name="phone_step_tap">แตะ “เชื่อมหน้าจอของฉัน”</string>
+    <string name="phone_step_scan">หันกล้องไปที่รหัสนี้</string>
+    <string name="phone_connected">เชื่อมต่อแล้ว</string>
+    <string name="phone_searching">กำลังหาโทรศัพท์…</string>
+    <string name="phone_model_app">%1$s · LiteDash Connect %2$s</string>
+    <string name="phone_link">การเชื่อม</string>
+    <string name="phone_link_ok">โทรศัพท์กับหน้าจอเชื่อมกันแล้ว</string>
+    <string name="phone_music_blocked">หากต้องการเห็นเพลงที่นี่ ให้เปิด LiteDash Connect แล้วแตะ “อนุญาต” ใต้ การเชื่อม</string>
+    <string name="phone_link_no_network">หน้าจอไม่ได้อยู่ในเครือข่ายเดียวกับโทรศัพท์</string>
+    <string name="phone_link_open_app">เปิด LiteDash Connect บนโทรศัพท์แล้วเชื่อมเข้าเครือข่ายเดียวกันนี้</string>
+    <string name="phone_sound">เสียง</string>
+    <string name="phone_sound_ok">เชื่อม Bluetooth แล้ว · %1$s</string>
+    <string name="phone_sound_ok_plain">เชื่อม Bluetooth แล้ว</string>
+    <string name="phone_sound_missing">ไม่ได้ยินเสียง? เชื่อม Bluetooth จากเครื่องเสียง</string>
+    <string name="phone_sound_calls">Bluetooth เชื่อมไว้สำหรับโทรเท่านั้น เสียงจึงออกที่โทรศัพท์ เชื่อมจากเครื่องเสียง หรือเปิด “เสียงสื่อ” ของเครื่องเสียงนี้ในโทรศัพท์</string>
+    <string name="phone_calls_only">Bluetooth สำหรับโทรเท่านั้น</string>
+    <string name="phone_sound_car">ผ่าน Android Auto</string>
+    <string name="phone_sound_wired">ผ่านสาย</string>
+    <string name="phone_connect_bt">เชื่อม Bluetooth</string>
+    <string name="phone_sound_unknown">จะรู้เมื่อโทรศัพท์เชื่อมต่อและกำลังเล่น</string>
+    <string name="phone_search_now">ค้นหาตอนนี้</string>
+    <string name="phone_unlink">ยกเลิกการเชื่อม</string>
+    <string name="phone_unlink_question">ยกเลิกการเชื่อมโทรศัพท์นี้ไหม</string>
+    <string name="phone_unlink_message">หากจะเชื่อมอีกครั้ง ต้องสแกนรหัสจาก LiteDash Connect ใหม่</string>
+    <string name="phone_no_sound">ไม่มีเสียง? เชื่อม Bluetooth</string>
+    <string name="music_mode_phone">ขณะที่โทรศัพท์เชื่อมต่อและเล่นเพลง วิดเจ็ตเพลงจะแสดงและควบคุมเพลงนั้น เมื่อโทรศัพท์ออกไป จะกลับไปเป็นแบบเดิม</string>
+    <string name="phone_job_unknown">ไม่มีข้อมูลแคตตาล็อกของรถคันนั้น</string>
+    <string name="phone_job_no_finish">รุ่นนี้ไม่มีผิวสี</string>
+    <string name="phone_job_damaged">ไฟล์ที่ได้รับเสียหาย</string>
+    <string name="phone_job_unexpected">หน้าจอไม่ได้ขอไฟล์นั้น</string>
+    <string name="phone_job_busy">หน้าจอกำลังดาวน์โหลดอย่างอื่น ลองอีกครั้งในอีกสักครู่</string>
+    <string name="phone_job_install_failed">หน้าจอติดตั้งไม่ได้</string>
+</resources>

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="image_background">พื้นหลัง</string>
+    <string name="image_background_original">ต้นฉบับ</string>
+    <string name="image_background_remove">ลบออก</string>
+    <string name="image_background_help">ได้ผลดีที่สุดกับพื้นหลังเรียบ ๆ เช่น ผนัง ท้องฟ้า หรือสตูดิโอ</string>
+    <string name="image_strength">ความแรง</string>
+    <string name="image_strength_low">อ่อน</string>
+    <string name="image_strength_medium">กลาง</string>
+    <string name="image_strength_high">สูง</string>
+    <string name="image_strength_max">สูงสุด</string>
+    <string name="image_cut_failed">แยกรถออกจากพื้นหลังไม่ได้ ลองใช้รูปที่พื้นหลังเรียบ</string>
+    <string name="image_apply">ใช้</string>
+    <string name="image_unusable">ใช้รูปนี้ไม่ได้ ลองรูปอื่น</string>
+</resources>

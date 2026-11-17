@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="music_explain">Sleduj a ovládej, co hraje v jakékoli aplikaci. Vyžaduje přístup k oznámením.</string>
+    <string name="enable">Zapnout</string>
+    <string name="nothing_playing">Nic nehraje</string>
+    <string name="open_an_app">Pusť hudbu ve své oblíbené aplikaci</string>
+    <string name="resume_explain">Stiskni přehrát a pokračuj tam, kde jsi skončil.</string>
+    <string name="no_song_info">Bez informací o skladbě</string>
+    <string name="opening_app">Otevírám %1$s…</string>
+    <string name="opening_wait">Skoro hotovo: za chvíli to začne.</string>
+    <string name="source_files">Soubory</string>
+    <string name="source_bluetooth">Bluetooth</string>
+    <string name="source_radio">Rádio</string>
+    <string name="bluetooth_connect_phone">Připoj telefon přes Bluetooth</string>
+    <string name="usb_drive">USB disk</string>
+    <string name="usb_drive_in">USB disk připojen: %1$s</string>
+    <string name="player_connecting">Připojuji…</string>
+    <string name="radio">Rádio</string>
+    <string name="radio_explain">Ovládej rádio displeje (a internetové rádio, pokud ho zapneš). Vyžaduje přístup k oznámením.</string>
+    <string name="radio_internet">Internet</string>
+    <string name="radio_fm">FM displeje</string>
+    <string name="radio_unlinked">Propoj rádio displeje v Nastavení nebo zapni internetové rádio</string>
+    <string name="radio_settings">Nastavení</string>
+    <string name="mode_app">Aplikace</string>
+    <string name="radio_fm_label">FM rádio</string>
+    <string name="sound_question">Slyšíš to?</string>
+    <string name="sound_question_muted">Slyšíš to? Pozor: hlasitost hudby je na 0</string>
+    <string name="sound_yes">Ano</string>
+    <string name="sound_no">Ne</string>
+    <string name="sound_failed">Nepodařilo se to rozehrát</string>
+    <string name="sound_report">Nahlásit</string>
+    <string name="recipe_none">Zatím nekalibrováno: proběhne samo při prvním přehrání</string>
+    <string name="recipe_plain">Funguje tak, jak je</string>
+    <string name="recipe_tw_source8">Bluetooth vstup displeje</string>
+    <string name="recipe_fyt_toggle">Přepne zdroj displeje</string>
+    <string name="recipe_profile">Přímé ovládání rádia</string>
+    <string name="recipe_open_bluetooth">Otevře aplikaci Bluetooth a vrátí se</string>
+    <string name="recipe_open_radio">Otevře aplikaci rádia a vrátí se</string>
+    <string name="recipe_failed">Způsob nenalezen</string>
+</resources>

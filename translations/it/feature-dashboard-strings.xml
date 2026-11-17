@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="dashboard_remove">Rimuovi widget</string>
+    <string name="dashboard_card">Scheda sì o no</string>
+    <string name="dashboard_settings">Impostazioni widget</string>
+    <string name="dashboard_resize">Ridimensiona</string>
+</resources>

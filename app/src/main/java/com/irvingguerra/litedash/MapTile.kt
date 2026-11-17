@@ -131,7 +131,7 @@ fun MapTile(d: Dependencies, tileId: String, data: String, app: App?, editing: B
 /**
  * El mapa de LiteDash en grande (los accesos directos al mapa con "Usar app externa" apagado), como el widget
  * [data] si hay uno: el mapa en vivo (con dos dedos se acerca o aleja), la siguiente vuelta, Casa y Trabajo, y botones
- * para abrir tu app de mapas y para cerrar.
+ * para cerrar y, con "Usar app externa" prendido, para abrir tu app de mapas.
  */
 @Composable
 fun MapExpanded(d: Dependencies, tileId: String?, data: String, app: App?, onPlace: (String) -> Unit, onNavigate: () -> Unit, close: () -> Unit, modifier: Modifier = Modifier) {
@@ -150,7 +150,8 @@ fun MapExpanded(d: Dependencies, tileId: String?, data: String, app: App?, onPla
         else Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Button(stringResource(R.string.tap_to_enable), ask, primary = true) }
         NextTurn(d, Modifier.align(Alignment.TopStart).padding(12.dp).widthIn(max = 520.dp))
         Row(Modifier.align(Alignment.TopEnd).padding(12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            if (app != null) IconButton(Icons.navigate, onNavigate, size = 48.dp, background = c.surface.copy(alpha = 0.9f), color = c.accent)
+            // Con "Usar app externa" apagado no hay botón que te saque de LiteDash (igual que en el widget).
+            if (d.prefs.mapExternal && app != null) IconButton(Icons.navigate, onNavigate, size = 48.dp, background = c.surface.copy(alpha = 0.9f), color = c.accent)
             IconButton(Icons.close, close, size = 48.dp, background = c.surface.copy(alpha = 0.9f))
         }
         PlacePills(
@@ -461,13 +462,14 @@ private fun OfflineSection(d: Dependencies, detail: MapDetail) {
     // La zona guardada que se está viendo (null = elegir una nueva); si se borra, se vuelve a elegir.
     var selectedId by rememberSaveable { mutableStateOf<String?>(null) }
     val selected = offline.areas.firstOrNull { it.id == selectedId }
+    val miles = d.prefs.units.miles
     for (area in offline.areas) {
         val here = position != null && area.contains(position.latitude, position.longitude)
         val chosen = area.id == selectedId
         Label(
             stringResource(
                 R.string.map_offline_area, stringResource(if (here) R.string.map_offline_here else R.string.map_offline_other),
-                area.km, Formatter.formatShortFileSize(context, area.bytes), dateFormat.format(Date(area.savedAt)),
+                radiusLabel(area.km, miles), Formatter.formatShortFileSize(context, area.bytes), dateFormat.format(Date(area.savedAt)),
             ),
             Typography.body, if (chosen) c.accent else c.text, maxLines = 2,
             modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.inner))
@@ -493,9 +495,8 @@ private fun OfflineSection(d: Dependencies, detail: MapDetail) {
     }
     var km by rememberSaveable { mutableIntStateOf(OFFLINE_RADII[1]) }
     // Con una zona elegida el radio es el suyo. En millas solo cambia la etiqueta: se baja lo mismo.
-    val miles = d.prefs.units.miles
     if (selected == null) Segmented(
-        OFFLINE_RADII.map { it to if (miles) stringResource(R.string.radio_mi, roundMiles(it)) else stringResource(R.string.map_offline_radius, it) },
+        OFFLINE_RADII.map { it to radiusLabel(it, miles) },
         km, { km = it },
     )
     if (position == null) {
@@ -575,6 +576,11 @@ private fun OfflinePicker(offline: OfflineMaps, lat: Double, lon: Double, km: In
 
 /** Radios que se pueden bajar (km); 25, de fábrica. */
 private val OFFLINE_RADII = listOf(10, 25, 50, 100, 200)
+
+/** El radio de una zona como lo pide Ajustes: "25 km" o, en millas, "16 mi" (se baja lo mismo; solo cambia la etiqueta). */
+@Composable
+private fun radiusLabel(km: Int, miles: Boolean): String =
+    if (miles) stringResource(R.string.radio_mi, roundMiles(km)) else stringResource(R.string.map_offline_radius, km)
 
 /** Alto del mapa para elegir la zona (y de la vista previa de Ajustes en pantallas angostas). */
 private val OFFLINE_PREVIEW_HEIGHT = 240.dp

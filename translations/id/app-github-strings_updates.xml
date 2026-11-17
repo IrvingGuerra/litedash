@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="check_updates">Periksa pembaruan</string>
+    <string name="up_to_date">Anda memakai versi terbaru.</string>
+    <string name="update_error">Gagal memeriksa. Periksa koneksi Anda lalu coba lagi.</string>
+    <string name="update_download_error">Gagal mengunduh: GitHub tidak merespons atau koneksi terputus. Coba lagi dalam beberapa menit.</string>
+    <string name="new_version">LiteDash %1$s sudah siap</string>
+    <string name="download_install">Unduh dan pasang · %1$.1f MB</string>
+    <string name="installing">Membuka penginstal Android…</string>
+    <string name="install_permission">Android meminta Anda mengizinkan LiteDash memasang aplikasi (hanya untuk pembaruannya sendiri). Aktifkan di layar yang terbuka, lalu kembali.</string>
+    <string name="already_allowed">Sudah, pasang</string>
+    <string name="install_error">Android tidak bisa memasangnya. Coba lagi.</string>
+    <string name="install_aborted">Pemasangan dibatalkan.</string>
+    <string name="install_incompatible">Versi ini tidak cocok dengan versi yang terpasang.</string>
+    <string name="install_storage">Ruang tidak cukup untuk memasangnya. Kosongkan sedikit ruang lalu coba lagi.</string>
+    <string name="install_blocked">Android memblokir pemasangan.</string>
+    <string name="update_see">Lihat</string>
+    <string name="update_later">Nanti</string>
+    <string name="open_installer">Buka dengan penginstal Android</string>
+</resources>

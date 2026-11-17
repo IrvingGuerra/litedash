@@ -29,7 +29,7 @@
     <string name="map_offline_help">Salve as ruas de uma região para vê-las sem internet.</string>
     <string name="map_offline_here">Sua região</string>
     <string name="map_offline_other">Outra região</string>
-    <string name="map_offline_area">%1$s · %2$d km · %3$s · %4$s</string>
+    <string name="map_offline_area">%1$s · %2$s · %3$s · %4$s</string>
     <string name="map_offline_radius">%1$d km</string>
     <string name="map_offline_redownload">Baixar de novo</string>
     <string name="map_offline_delete">Excluir</string>

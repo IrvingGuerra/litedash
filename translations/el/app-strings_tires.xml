@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="tires_error_usb_missing">Ο δέκτης ελαστικών USB δεν είναι συνδεδεμένος</string>
+    <string name="tires_error_usb_denied">Χωρίς άδεια για τον δέκτη USB</string>
+    <string name="tires_error_usb_open">Δεν ήταν δυνατό το άνοιγμα του δέκτη USB</string>
+    <string name="tires_error_usb_unplugged">Ο δέκτης USB αποσυνδέθηκε</string>
+    <string name="tires_error_usb_lost">Χάθηκε η σύνδεση με τον δέκτη USB</string>
+    <string name="tires_error_swap">Ο δέκτης δεν επιβεβαίωσε την εναλλαγή ελαστικών</string>
+    <string name="tires_tap_hint">Πατήστε ένα ελαστικό για να ρυθμίσετε ή να μετακινήσετε τον αισθητήρα του</string>
+</resources>

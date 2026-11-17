@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="road_speed">ความเร็ว</string>
+    <string name="road_speed_text">ตัวเลขอย่างเดียว</string>
+    <string name="road_speed_gauge">มาตรวัดความเร็ว</string>
+    <string name="road_speed_show">แสดงความเร็ว</string>
+    <string name="trip_time">เวลา</string>
+    <string name="trip_average">เฉลี่ย</string>
+    <string name="road_trip_distance">ระยะทาง</string>
+    <string name="trip_heading">ทิศทาง</string>
+    <string-array name="compass_points">
+        <item>N</item>
+        <item>NE</item>
+        <item>E</item>
+        <item>SE</item>
+        <item>S</item>
+        <item>SW</item>
+        <item>W</item>
+        <item>NW</item>
+    </string-array>
+    <string name="value_with_unit">%1$s %2$s</string>
+    <string name="two_parts">%1$s · %2$s</string>
+    <string name="weather_degrees">%1$d°</string>
+    <string name="weather_range">%1$d° / %2$d°</string>
+</resources>

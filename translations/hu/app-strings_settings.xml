@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="tab_day_night">Nappal és éjszaka</string>
+    <string name="tab_your_screen">A kijelződ</string>
+    <string name="weather_switch">Időjárás</string>
+    <string name="weather_switch_help">A sávban, az órán és az Időjárás widgeten; félóránként frissül, amíg a kezdőképernyőt látod. A hozzávetőleges helyzetedet és az internetet használja; kikapcsolva egyiket sem.</string>
+    <string name="reminder_pick_date">Mikor esedékes: %1$s?</string>
+    <string name="split_unsupported_screen">A fejegységed nem enged két alkalmazást egymás mellett (a gyártó letiltotta).</string>
+    <string name="tab_home">Kezdőképernyő</string>
+    <string name="tab_interface">Felület</string>
+    <string name="android_bar">Android sáv</string>
+    <string name="accent_title">Felület színe</string>
+    <string name="accent_help">Kapcsolók, gombok, lejátszás és folyamatjelzők. A kártyák és a háttér nem változnak; a Természetes az eredeti kinézet.</string>
+    <string name="accent_natural">Természetes</string>
+</resources>

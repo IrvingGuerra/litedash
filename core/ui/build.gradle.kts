@@ -22,5 +22,7 @@ dependencies {
     api(platform(libs.compose.bom))
     api(libs.compose.foundation)
     api(libs.compose.ui)
+    // BackHandler del explorador de archivos (la app ya la trae: no suma peso).
+    implementation(libs.activity.compose)
     testImplementation(libs.junit)
 }

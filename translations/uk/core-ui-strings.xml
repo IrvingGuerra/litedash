@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="files_where">Вибери накопичувач</string>
+    <string name="files_internal">Внутрішня пам’ять</string>
+    <string name="files_none">Накопичувачів не знайдено. Перевір дозвіл на файли.</string>
+    <string name="files_empty">Ця папка порожня.</string>
+    <string name="files_use_folder">Вибрати цю папку</string>
+    <string name="files_close">Закрити</string>
+    <string name="files_recent">Нещодавні</string>
+    <string name="files_recent_empty">Немає нещодавніх фото.</string>
+</resources>

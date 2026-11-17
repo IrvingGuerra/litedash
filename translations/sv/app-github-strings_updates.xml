@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="check_updates">Sök efter uppdateringar</string>
+    <string name="up_to_date">Du har den senaste versionen.</string>
+    <string name="update_error">Kunde inte kontrollera. Kolla anslutningen och försök igen.</string>
+    <string name="update_download_error">Kunde inte ladda ner: GitHub svarade inte eller anslutningen bröts. Försök igen om några minuter.</string>
+    <string name="new_version">LiteDash %1$s är klar</string>
+    <string name="download_install">Ladda ner och installera · %1$.1f MB</string>
+    <string name="installing">Öppnar Androids installationsprogram…</string>
+    <string name="install_permission">Android ber dig tillåta att LiteDash installerar appar (används bara för de egna uppdateringarna). Slå på det på skärmen som öppnades och kom tillbaka.</string>
+    <string name="already_allowed">Klart, installera</string>
+    <string name="install_error">Android kunde inte installera den. Försök igen.</string>
+    <string name="install_aborted">Installationen avbröts.</string>
+    <string name="install_incompatible">Den här versionen är inte kompatibel med den du har installerad.</string>
+    <string name="install_storage">Inte tillräckligt med utrymme. Frigör lite utrymme och försök igen.</string>
+    <string name="install_blocked">Android blockerade installationen.</string>
+    <string name="update_see">Visa</string>
+    <string name="update_later">Senare</string>
+    <string name="open_installer">Öppna med Androids installationsprogram</string>
+</resources>

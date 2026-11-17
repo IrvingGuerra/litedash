@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="check_updates">Проверить обновления</string>
+    <string name="up_to_date">У тебя последняя версия.</string>
+    <string name="update_error">Не удалось проверить. Проверь подключение и попробуй снова.</string>
+    <string name="update_download_error">Не удалось скачать: GitHub не ответил или связь прервалась. Попробуй через несколько минут.</string>
+    <string name="new_version">LiteDash %1$s готова</string>
+    <string name="download_install">Скачать и установить · %1$.1f МБ</string>
+    <string name="installing">Открываем установщик Android…</string>
+    <string name="install_permission">Android просит разрешить LiteDash устанавливать приложения (только для своих обновлений). Включи это на открывшемся экране и вернись.</string>
+    <string name="already_allowed">Готово, установить</string>
+    <string name="install_error">Android не смог установить. Попробуй снова.</string>
+    <string name="install_aborted">Установка отменена.</string>
+    <string name="install_incompatible">Эта версия несовместима с установленной.</string>
+    <string name="install_storage">Недостаточно места для установки. Освободи место и попробуй снова.</string>
+    <string name="install_blocked">Android заблокировал установку.</string>
+    <string name="update_see">Смотреть</string>
+    <string name="update_later">Позже</string>
+    <string name="open_installer">Открыть в установщике Android</string>
+</resources>

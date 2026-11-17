@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="files_where">Alege o unitate de stocare</string>
+    <string name="files_internal">Memorie internă</string>
+    <string name="files_none">Nu s-au găsit unități. Verifică permisiunea pentru fișiere.</string>
+    <string name="files_empty">Dosarul e gol.</string>
+    <string name="files_use_folder">Folosește acest dosar</string>
+    <string name="files_close">Închide</string>
+    <string name="files_recent">Recente</string>
+    <string name="files_recent_empty">Nicio fotografie recentă.</string>
+</resources>

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="report_title">发送报告</string>
+    <string name="report_help">告诉我们出了什么问题。报告会附带车机的技术数据（不含个人数据）。</string>
+    <string name="report_what">哪里有问题？</string>
+    <string name="report_which">哪一个？</string>
+    <string name="report_problem">发生了什么？</string>
+    <string name="report_workshop">检修（OBD）</string>
+    <string name="report_projection">Android Auto / 应用</string>
+    <string name="report_lights">日夜 / 车灯</string>
+    <string name="report_music_usb">文件（LiteDash 播放器）</string>
+    <string name="report_music_bt">Bluetooth（车机自带）</string>
+    <string name="report_music_app">你的音乐应用（Spotify、YouTube Music…）</string>
+    <string name="report_radio_fm">车机 FM</string>
+    <string name="report_radio_internet">网络电台</string>
+    <string name="report_obd_usb">USB</string>
+    <string name="report_silent">没有声音</string>
+    <string name="report_no_info">能播放，但不显示正在播放的内容</string>
+    <string name="report_buttons">按钮没反应</string>
+    <string name="report_broken">无法使用</string>
+    <string name="report_looks_wrong">显示不正常</string>
+    <string name="report_crash">应用闪退</string>
+    <string name="report_note">补充说明（可选）</string>
+    <string name="report_play_first">如果可以，发送前先播放该音源。</string>
+    <string name="report_send">发送</string>
+    <string name="report_sending">正在发送…</string>
+    <string name="report_thanks">谢谢！我们会处理的。</string>
+    <string name="report_code">报告编号：%1$s</string>
+    <string name="report_error">发送失败。请检查网络。</string>
+    <string name="report_wait">请等一分钟再发送下一份。</string>
+</resources>

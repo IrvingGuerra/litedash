@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="player_name">LiteDash-Player</string>
+    <string name="player_channel">Musik</string>
+    <string name="player_play">Abspielen</string>
+    <string name="player_pause">Pause</string>
+    <string name="player_next">Weiter</string>
+    <string name="player_previous">Zurück</string>
+    <string name="player_cannot_play">Abspielen fehlgeschlagen. Versuch einen anderen Sender oder prüfe die Verbindung.</string>
+    <string name="player_timeout">Der Sender antwortet nicht. Versuch einen anderen.</string>
+    <string name="player_no_focus">Eine andere App nutzt den Ton. Tippe nochmal auf Play.</string>
+    <string name="library_no_drive">Steck einen USB-Stick mit Musik ein</string>
+    <string name="library_no_permission">LiteDash braucht die Berechtigung, die Musik auf dem Stick zu lesen</string>
+    <string name="library_grant">Berechtigung erteilen</string>
+    <string name="library_loading">Stick wird gelesen…</string>
+    <string name="library_folders">Ordner</string>
+    <string name="library_artists">Künstler</string>
+    <string name="library_albums">Alben</string>
+    <string name="library_all">Alle</string>
+    <string name="library_play_all">Alle abspielen</string>
+    <plurals name="library_songs">
+        <item quantity="one">%1$d Titel</item>
+        <item quantity="other">%1$d Titel</item>
+    </plurals>
+    <string name="library_shuffle">Zufällig</string>
+    <string name="library_unknown">Unbekannt</string>
+    <string name="library_root">Hauptordner</string>
+    <string name="radio_nearby">In der Nähe</string>
+    <string name="radio_favorites">Favoriten</string>
+    <string name="radio_search_tab">Suche</string>
+    <string name="radio_search_hint">Sendername</string>
+    <string name="radio_search_help">Gib den Namen eines Senders ein</string>
+    <string name="radio_loading">Suche Sender…</string>
+    <string name="radio_none">Keine Sender gefunden. Prüfe deine Internetverbindung.</string>
+    <string name="radio_no_location">Kein Standort: das sind die meistgehörten deines Landes. Für deine Gegend erlaube den Standort unter Module → Berechtigungen.</string>
+    <string name="radio_no_favorites">Tippe auf den Stern eines Senders, um ihn hier zu behalten.</string>
+    <string name="radio_km">%1$d km</string>
+    <string name="library_pick_folder">Ordner wählen</string>
+    <string name="library_clear_folder">Ordner zurücksetzen</string>
+    <string name="library_pick_folder_help">Ist deine Musik auf dem Stick, erscheint aber nicht, wähle ihren Ordner: LiteDash merkt ihn sich.</string>
+    <string name="library_unreadable">Ich sehe den Stick %1$s, aber dein Display lässt Apps seine Titel nicht lesen. Wähle seinen Ordner und LiteDash merkt ihn sich.</string>
+    <string name="library_browse_memory">Nicht geöffnet? Speicher durchsuchen</string>
+</resources>

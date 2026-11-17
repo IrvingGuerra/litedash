@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="image_background">Sfondo</string>
+    <string name="image_background_original">Originale</string>
+    <string name="image_background_remove">Rimuovi</string>
+    <string name="image_background_help">Funziona meglio con uno sfondo uniforme: un muro, il cielo o uno studio.</string>
+    <string name="image_strength">Intensità</string>
+    <string name="image_strength_low">Leggera</string>
+    <string name="image_strength_medium">Media</string>
+    <string name="image_strength_high">Alta</string>
+    <string name="image_strength_max">Max</string>
+    <string name="image_cut_failed">Impossibile separare l\'auto dallo sfondo: prova una foto con sfondo uniforme.</string>
+    <string name="image_apply">Applica</string>
+    <string name="image_unusable">Impossibile usare quell\'immagine; provane un\'altra.</string>
+</resources>

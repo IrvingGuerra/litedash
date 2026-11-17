@@ -26,6 +26,7 @@
     <string name="mode_app">App</string>
     <string name="radio_fm_label">Rádio FM</string>
     <string name="sound_question">Está ouvindo?</string>
+    <string name="sound_question_muted">Está ouvindo? Atenção: o volume da música está em 0</string>
     <string name="sound_yes">Sim</string>
     <string name="sound_no">Não</string>
     <string name="sound_failed">Não conseguimos fazer tocar</string>

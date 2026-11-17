@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="music_explain">Δείτε και ελέγξτε ό,τι παίζει σε οποιαδήποτε εφαρμογή. Απαιτεί πρόσβαση στις ειδοποιήσεις.</string>
+    <string name="enable">Ενεργοποίηση</string>
+    <string name="nothing_playing">Δεν παίζει τίποτα</string>
+    <string name="open_an_app">Βάλτε μουσική στην αγαπημένη σας εφαρμογή</string>
+    <string name="resume_explain">Πατήστε αναπαραγωγή για να συνεχίσετε από εκεί που μείνατε.</string>
+    <string name="no_song_info">Χωρίς στοιχεία τραγουδιού</string>
+    <string name="opening_app">Άνοιγμα %1$s…</string>
+    <string name="opening_wait">Σχεδόν έτοιμο: ξεκινά σε λίγο.</string>
+    <string name="source_files">Αρχεία</string>
+    <string name="source_bluetooth">Bluetooth</string>
+    <string name="source_radio">Ραδιόφωνο</string>
+    <string name="bluetooth_connect_phone">Συνδέστε το κινητό σας μέσω Bluetooth</string>
+    <string name="usb_drive">Μονάδα USB</string>
+    <string name="usb_drive_in">Συνδέθηκε μονάδα USB: %1$s</string>
+    <string name="player_connecting">Σύνδεση…</string>
+    <string name="radio">Ραδιόφωνο</string>
+    <string name="radio_explain">Ελέγξτε το ραδιόφωνο της οθόνης σας (και το ραδιόφωνο internet αν το ενεργοποιήσετε). Απαιτεί πρόσβαση στις ειδοποιήσεις.</string>
+    <string name="radio_internet">Internet</string>
+    <string name="radio_fm">FM οθόνης</string>
+    <string name="radio_unlinked">Συνδέστε το ραδιόφωνο της οθόνης στις Ρυθμίσεις ή ενεργοποιήστε το ραδιόφωνο internet</string>
+    <string name="radio_settings">Ρυθμίσεις</string>
+    <string name="mode_app">Εφαρμογή</string>
+    <string name="radio_fm_label">Ραδιόφωνο FM</string>
+    <string name="sound_question">Ακούγεται;</string>
+    <string name="sound_question_muted">Ακούγεται; Σημείωση: η ένταση της μουσικής είναι στο 0</string>
+    <string name="sound_yes">Ναι</string>
+    <string name="sound_no">Όχι</string>
+    <string name="sound_failed">Δεν ήταν δυνατή η αναπαραγωγή</string>
+    <string name="sound_report">Αναφορά</string>
+    <string name="recipe_none">Δεν έχει βαθμονομηθεί ακόμα: γίνεται αυτόματα την πρώτη φορά που παίζει</string>
+    <string name="recipe_plain">Λειτουργεί ως έχει</string>
+    <string name="recipe_tw_source8">Είσοδος Bluetooth της οθόνης</string>
+    <string name="recipe_fyt_toggle">Αλλάζει την πηγή της οθόνης</string>
+    <string name="recipe_profile">Άμεσος έλεγχος ραδιοφώνου</string>
+    <string name="recipe_open_bluetooth">Ανοίγει την εφαρμογή Bluetooth και επιστρέφει</string>
+    <string name="recipe_open_radio">Ανοίγει την εφαρμογή ραδιοφώνου και επιστρέφει</string>
+    <string name="recipe_failed">Δεν βρέθηκε τρόπος</string>
+</resources>

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="check_updates">ตรวจหาอัปเดต</string>
+    <string name="up_to_date">คุณใช้เวอร์ชันล่าสุดแล้ว</string>
+    <string name="update_error">ตรวจสอบไม่ได้ ตรวจการเชื่อมต่อแล้วลองอีกครั้ง</string>
+    <string name="update_download_error">ดาวน์โหลดไม่ได้: GitHub ไม่ตอบสนองหรือการเชื่อมต่อหลุด ลองอีกครั้งในอีกสักครู่</string>
+    <string name="new_version">LiteDash %1$s พร้อมแล้ว</string>
+    <string name="download_install">ดาวน์โหลดและติดตั้ง · %1$.1f MB</string>
+    <string name="installing">กำลังเปิดตัวติดตั้งของ Android…</string>
+    <string name="install_permission">Android ขอให้คุณอนุญาตให้ LiteDash ติดตั้งแอป (ใช้เฉพาะอัปเดตของตัวเอง) เปิดในหน้าที่เพิ่งเปิดขึ้นแล้วกลับมา</string>
+    <string name="already_allowed">เรียบร้อย ติดตั้ง</string>
+    <string name="install_error">Android ติดตั้งไม่ได้ ลองอีกครั้ง</string>
+    <string name="install_aborted">ยกเลิกการติดตั้งแล้ว</string>
+    <string name="install_incompatible">เวอร์ชันนี้เข้ากันไม่ได้กับเวอร์ชันที่ติดตั้งอยู่</string>
+    <string name="install_storage">พื้นที่ไม่พอสำหรับติดตั้ง ล้างพื้นที่แล้วลองอีกครั้ง</string>
+    <string name="install_blocked">Android บล็อกการติดตั้ง</string>
+    <string name="update_see">ดู</string>
+    <string name="update_later">ภายหลัง</string>
+    <string name="open_installer">เปิดด้วยตัวติดตั้งของ Android</string>
+</resources>

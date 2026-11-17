@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="check_updates">Cerca aggiornamenti</string>
+    <string name="up_to_date">Hai l\'ultima versione.</string>
+    <string name="update_error">Controllo non riuscito. Controlla la connessione e riprova.</string>
+    <string name="update_download_error">Download non riuscito: GitHub non ha risposto o la connessione è caduta. Riprova tra qualche minuto.</string>
+    <string name="new_version">LiteDash %1$s è pronta</string>
+    <string name="download_install">Scarica e installa · %1$.1f MB</string>
+    <string name="installing">Apro il programma di installazione di Android…</string>
+    <string name="install_permission">Android ti chiede di consentire a LiteDash di installare app (solo per i suoi aggiornamenti). Attivalo nella schermata che si è aperta e torna qui.</string>
+    <string name="already_allowed">Fatto, installa</string>
+    <string name="install_error">Android non è riuscito a installarla. Riprova.</string>
+    <string name="install_aborted">L\'installazione è stata annullata.</string>
+    <string name="install_incompatible">Questa versione non è compatibile con quella installata.</string>
+    <string name="install_storage">Spazio insufficiente per installarla. Libera un po\' di spazio e riprova.</string>
+    <string name="install_blocked">Android ha bloccato l\'installazione.</string>
+    <string name="update_see">Vedi</string>
+    <string name="update_later">Più tardi</string>
+    <string name="open_installer">Apri con il programma di installazione di Android</string>
+</resources>

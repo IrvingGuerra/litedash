@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="check_updates">Zkontrolovat aktualizace</string>
+    <string name="up_to_date">Máš nejnovější verzi.</string>
+    <string name="update_error">Kontrola selhala. Zkontroluj připojení a zkus to znovu.</string>
+    <string name="update_download_error">Stažení selhalo: GitHub neodpověděl nebo spojení spadlo. Zkus to za pár minut.</string>
+    <string name="new_version">LiteDash %1$s je připraven</string>
+    <string name="download_install">Stáhnout a nainstalovat · %1$.1f MB</string>
+    <string name="installing">Otevírám instalátor Androidu…</string>
+    <string name="install_permission">Android chce, abys LiteDash povolil instalovat aplikace (jen pro jeho vlastní aktualizace). Zapni to na otevřené obrazovce a vrať se.</string>
+    <string name="already_allowed">Hotovo, instalovat</string>
+    <string name="install_error">Android to nedokázal nainstalovat. Zkus to znovu.</string>
+    <string name="install_aborted">Instalace byla zrušena.</string>
+    <string name="install_incompatible">Tato verze není kompatibilní s tou, kterou máš nainstalovanou.</string>
+    <string name="install_storage">Na instalaci není dost místa. Uvolni trochu místa a zkus to znovu.</string>
+    <string name="install_blocked">Android instalaci zablokoval.</string>
+    <string name="update_see">Zobrazit</string>
+    <string name="update_later">Později</string>
+    <string name="open_installer">Otevřít instalátorem Androidu</string>
+</resources>

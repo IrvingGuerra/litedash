@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="phone_section">スマホ</string>
+    <string name="phone_help">LiteDash のアカウントは、スマホの LiteDash Connect アプリで管理します。</string>
+    <string name="phone_permission">許可が必要です</string>
+    <string name="phone_permission_body">スマホと通信するには、LiteDash にローカルネットワーク（付近のデバイス）の使用を許可する必要があります。</string>
+    <string name="local_network_allow">許可</string>
+    <string name="local_network_settings">権限</string>
+    <string name="phone_no_wifi">画面に Wi-Fi がありません</string>
+    <string name="phone_no_wifi_body">スマホと画面は Wi-Fi で通信します。方法を選んでください：</string>
+    <string name="phone_use_phone">スマホのインターネットを使う</string>
+    <string name="phone_use_phone_body">画面の Wi-Fi をオンにして、スマホのテザリングに接続します。</string>
+    <string name="phone_share_screen">画面のテザリングを使う</string>
+    <string name="phone_share_screen_body">画面のテザリングをオンにして、スマホを接続します。</string>
+    <string name="phone_open_wifi">Wi-Fi を開く</string>
+    <string name="phone_open_hotspot">テザリングを開く</string>
+    <string name="phone_waiting">スマホを待っています…</string>
+    <plurals name="phone_link_code">
+        <item quantity="other">コード %1$s · 有効期限 %2$d 分</item>
+    </plurals>
+    <string name="phone_step_install">LiteDash Connect をインストールしてアカウントを作成</string>
+    <string name="phone_step_tap">「画面をリンク」をタップ</string>
+    <string name="phone_step_scan">このコードにカメラを向ける</string>
+    <string name="phone_connected">接続済み</string>
+    <string name="phone_searching">スマホを探しています…</string>
+    <string name="phone_model_app">%1$s · LiteDash Connect %2$s</string>
+    <string name="phone_link">リンク</string>
+    <string name="phone_link_ok">スマホと画面が通信しています</string>
+    <string name="phone_music_blocked">ここで音楽を表示するには、LiteDash Connect を開き、「リンク」の「許可」をタップしてください</string>
+    <string name="phone_link_no_network">画面がスマホと同じネットワークにありません</string>
+    <string name="phone_link_open_app">スマホで LiteDash Connect を開き、同じネットワークに接続してください</string>
+    <string name="phone_sound">サウンド</string>
+    <string name="phone_sound_ok">Bluetooth 接続済み · %1$s</string>
+    <string name="phone_sound_ok_plain">Bluetooth 接続済み</string>
+    <string name="phone_sound_missing">聞こえませんか？　オーディオ側から Bluetooth を接続してください</string>
+    <string name="phone_sound_calls">Bluetooth が通話専用で接続されているため、スマホから音が出ます。オーディオ側から接続するか、スマホでこのオーディオの「メディアの音声」をオンにしてください</string>
+    <string name="phone_calls_only">Bluetooth は通話のみ</string>
+    <string name="phone_sound_car">Android Auto 経由</string>
+    <string name="phone_sound_wired">ケーブル接続</string>
+    <string name="phone_connect_bt">Bluetooth を接続</string>
+    <string name="phone_sound_unknown">スマホが接続されて再生が始まるとわかります</string>
+    <string name="phone_search_now">今すぐ検索</string>
+    <string name="phone_unlink">リンクを解除</string>
+    <string name="phone_unlink_question">このスマホのリンクを解除しますか？</string>
+    <string name="phone_unlink_message">再度接続するには、LiteDash Connect からもう一度コードをスキャンする必要があります。</string>
+    <string name="phone_no_sound">音が出ませんか？　Bluetooth を接続</string>
+    <string name="music_mode_phone">スマホが接続されて音楽を再生している間は、ミュージックウィジェットにその曲が表示され、操作できます。スマホが離れると、元の表示に戻ります。</string>
+    <string name="phone_job_unknown">その車のカタログ情報がありません</string>
+    <string name="phone_job_no_finish">このモデルには仕上げがありません</string>
+    <string name="phone_job_damaged">ファイルが破損していました</string>
+    <string name="phone_job_unexpected">画面はそのファイルを要求していません</string>
+    <string name="phone_job_busy">画面は別のものをダウンロード中です。少ししてからもう一度お試しください</string>
+    <string name="phone_job_install_failed">画面でインストールできませんでした</string>
+</resources>

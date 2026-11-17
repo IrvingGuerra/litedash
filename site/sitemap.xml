@@ -48,4 +48,16 @@
     <xhtml:link rel="alternate" hreflang="es" href="https://litedash.dev/privacidad/"/>
     <xhtml:link rel="alternate" hreflang="en" href="https://litedash.dev/en/privacy/"/>
   </url>
+  <url>
+    <loc>https://litedash.dev/translate/</loc>
+    <lastmod>2026-11-16</lastmod>
+    <xhtml:link rel="alternate" hreflang="es" href="https://litedash.dev/translate/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://litedash.dev/en/translate/"/>
+  </url>
+  <url>
+    <loc>https://litedash.dev/en/translate/</loc>
+    <lastmod>2026-11-16</lastmod>
+    <xhtml:link rel="alternate" hreflang="es" href="https://litedash.dev/translate/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://litedash.dev/en/translate/"/>
+  </url>
 </urlset>

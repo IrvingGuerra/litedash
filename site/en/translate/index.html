@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <script>if(/\.(web\.app|firebaseapp\.com)$/.test(location.hostname))location.replace("https://litedash.dev"+location.pathname+location.search+location.hash)</script>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LiteDash translations — help us review your language</title>
+  <meta name="description" content="LiteDash speaks many languages. See which ones the community reviewed, report a translation mistake or review your language.">
+  <meta name="theme-color" content="#101317">
+  <link rel="canonical" href="https://litedash.dev/en/translate/">
+  <link rel="icon" href="../../favicon.ico" sizes="48x48">
+  <link rel="icon" href="../../favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="../../apple-touch-icon.png">
+  <link rel="alternate" hreflang="es" href="https://litedash.dev/translate/">
+  <link rel="alternate" hreflang="en" href="https://litedash.dev/en/translate/">
+  <link rel="alternate" hreflang="x-default" href="https://litedash.dev/en/translate/">
+  <meta property="og:title" content="LiteDash translations">
+  <meta property="og:description" content="See which languages the community reviewed and help us with yours.">
+  <meta property="og:image" content="https://litedash.dev/img/og.jpg">
+  <meta property="og:url" content="https://litedash.dev/en/translate/">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="stylesheet" href="../../landing.css?v=20261114">
+  <style>
+    .idiomas { list-style: none; margin: 0 auto; padding: 0; max-width: 760px; display: grid; gap: 10px; }
+    .idiomas li { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; background: var(--grafito-2); border: 1px solid var(--linea); border-radius: 16px; padding: 16px 20px; }
+    .idiomas .nombre { font-weight: 650; font-size: 18px; }
+    .idiomas code { color: var(--suave); font-size: 14px; }
+    .idiomas .avance { margin-left: auto; color: var(--texto); font-size: 15px; font-variant-numeric: tabular-nums; }
+    .idiomas .insignia { flex-basis: 100%; font-size: 14px; color: var(--suave); }
+    .idiomas .insignia.revisado { color: var(--verde); }
+    .idiomas .insignia a { color: var(--ambar); }
+    .sin-lista { text-align: center; color: var(--suave); margin: 0; }
+  </style>
+</head>
+<body>
+  <header class="barra">
+    <div class="contenedor">
+      <a class="logo" href="../" aria-label="LiteDash"><img src="../../img/litedash-horizontal-sobre-oscuro.svg" alt="LiteDash" width="132" height="30"></a>
+      <nav>
+        <a class="seccion" href="../#todo">Features</a>
+        <a class="seccion" href="#idiomas">Languages</a>
+        <a class="pastilla idioma" href="../../translate/" hreflang="es" lang="es">ES</a>
+        <a class="pastilla bajar" href="../#descargar">Download</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section id="idiomas">
+      <div class="contenedor">
+        <div class="titulo centro">
+          <span class="sobre">Translations</span>
+          <h2>LiteDash speaks your language.</h2>
+          <p>English and Spanish are built into the app. The rest download from Settings → Home &amp; look → Interface → Language → More languages, so the app stays small. Most started as machine translations: if you speak one, help us review it.</p>
+        </div>
+        <ul class="idiomas" id="lista" hidden></ul>
+        <p class="sin-lista" id="sin-lista">The language list needs JavaScript. You can also see it at <a href="/lang/index.json">/lang/index.json</a>.</p>
+      </div>
+    </section>
+
+    <section class="alterna">
+      <div class="contenedor">
+        <div class="titulo centro">
+          <span class="sobre">Help us</span>
+          <h2>Spotted a bad translation?</h2>
+          <p>Unreviewed languages started as machine translations. If it is your native language, report the mistake or review the whole language: your name shows up here.</p>
+        </div>
+        <div class="botones">
+          <a class="boton principal" href="https://github.com/IrvingGuerra/litedash/issues/new?template=translation.yml">Report a translation mistake</a>
+          <a class="boton secundario" href="https://github.com/IrvingGuerra/litedash/blob/main/translations/README.md">Review or translate a language</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="contenedor">
+      <span>© 2026 LiteDash · Made in Mexico</span>
+      <nav>
+        <a href="../">LiteDash</a>
+        <a href="../connect/">Connect</a>
+        <a href="../privacy/">Privacy</a>
+        <a href="https://github.com/IrvingGuerra/litedash">GitHub</a>
+        <a href="mailto:support@litedash.dev">Contact</a>
+        <a href="https://ko-fi.com/irvingguerradev" target="_blank" rel="noopener">Ko-fi</a>
+        <a href="../../translate/" hreflang="es">Español</a>
+      </nav>
+    </div>
+  </footer>
+
+  <script>
+  (() => {
+    const T = {
+      reviewed: 'Community reviewed',
+      machine: 'Machine translated · ',
+      help: 'speak it? help us',
+      helpUrl: 'https://github.com/IrvingGuerra/litedash/blob/main/translations/README.md',
+      error: 'Could not load the language list. Try again later.'
+    };
+    const lista = document.getElementById('lista'), sin = document.getElementById('sin-lista');
+    const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+    fetch('/lang/index.json').then(r => r.ok ? r.json() : Promise.reject()).then(data => {
+      const langs = (data && Array.isArray(data.languages)) ? data.languages : [];
+      langs.forEach(l => {
+        const li = el('li');
+        li.append(el('span', 'nombre', l.name || l.lang), el('code', null, l.lang), el('span', 'avance', (l.progress ?? 0) + ' %'));
+        const who = Array.isArray(l.reviewers) ? l.reviewers.filter(Boolean) : [];
+        const badge = el('span', 'insignia' + (l.reviewed === true ? ' revisado' : ''));
+        if (l.reviewed === true) {
+          badge.textContent = T.reviewed + (who.length ? ' (' + who.map(w => '@' + w).join(', ') + ')' : '');
+        } else {
+          badge.textContent = T.machine;
+          const a = el('a', null, T.help); a.href = T.helpUrl; badge.append(a);
+        }
+        li.append(badge);
+        lista.append(li);
+      });
+      lista.hidden = false; sin.hidden = true;
+    }).catch(() => { sin.textContent = T.error; });
+  })();
+  </script>
+</body>
+</html>

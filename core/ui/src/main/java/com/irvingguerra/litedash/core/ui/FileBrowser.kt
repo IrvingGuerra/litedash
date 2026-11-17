@@ -8,6 +8,7 @@ import android.os.Environment
 import android.os.storage.StorageManager
 import android.provider.MediaStore
 import android.util.LruCache
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -93,16 +94,18 @@ fun FileBrowser(
                 .take(MAX_ENTRIES)
         }
     }
+    // Arriba hasta la raíz de la memoria; de ahí, a la lista de memorias.
+    val up = {
+        val current = dir
+        if (recent) recent = false
+        else dir = current?.parentFile?.takeIf { p -> roots.none { it.dir == current } && p.canRead() }
+    }
+    // "Atrás" de Android: sube de carpeta y, en la lista de memorias, cierra solo el explorador (no el panel donde está).
+    BackHandler { if (dir != null || recent) up() else onCancel() }
     Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             val current = dir
-            if (current != null || recent) {
-                IconButton(Icons.back, {
-                    // Arriba hasta la raíz de la memoria; de ahí, a la lista de memorias.
-                    if (recent) recent = false
-                    else dir = current?.parentFile?.takeIf { p -> roots.none { it.dir == current } && p.canRead() }
-                }, size = 44.dp, background = c.surfaceHigh)
-            }
+            if (current != null || recent) IconButton(Icons.back, up, size = 44.dp, background = c.surfaceHigh)
             // El nombre de la carpeta (el de la memoria en su raíz), no la ruta completa.
             val title = when {
                 recent -> stringResource(R.string.files_recent)

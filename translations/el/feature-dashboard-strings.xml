@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="dashboard_remove">Αφαίρεση widget</string>
+    <string name="dashboard_card">Κάρτα ναι ή όχι</string>
+    <string name="dashboard_settings">Ρυθμίσεις widget</string>
+    <string name="dashboard_resize">Αλλαγή μεγέθους</string>
+</resources>

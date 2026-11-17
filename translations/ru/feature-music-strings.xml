@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="music_explain">Смотри и управляй тем, что играет в любом приложении. Нужен доступ к уведомлениям.</string>
+    <string name="enable">Включить</string>
+    <string name="nothing_playing">Ничего не играет</string>
+    <string name="open_an_app">Включи музыку в любимом приложении</string>
+    <string name="resume_explain">Нажми «Играть», чтобы продолжить с того же места.</string>
+    <string name="no_song_info">Нет данных о песне</string>
+    <string name="opening_app">Открываем %1$s…</string>
+    <string name="opening_wait">Почти готово: сейчас начнётся.</string>
+    <string name="source_files">Файлы</string>
+    <string name="source_bluetooth">Bluetooth</string>
+    <string name="source_radio">Радио</string>
+    <string name="bluetooth_connect_phone">Подключи телефон по Bluetooth</string>
+    <string name="usb_drive">USB-накопитель</string>
+    <string name="usb_drive_in">USB-накопитель подключён: %1$s</string>
+    <string name="player_connecting">Подключение…</string>
+    <string name="radio">Радио</string>
+    <string name="radio_explain">Управляй радио экрана (и интернет-радио, если включишь). Нужен доступ к уведомлениям.</string>
+    <string name="radio_internet">Интернет</string>
+    <string name="radio_fm">FM экрана</string>
+    <string name="radio_unlinked">Привяжи радио экрана в настройках или включи интернет-радио</string>
+    <string name="radio_settings">Настройки</string>
+    <string name="mode_app">Приложение</string>
+    <string name="radio_fm_label">FM-радио</string>
+    <string name="sound_question">Слышно?</string>
+    <string name="sound_question_muted">Слышно? Внимание: громкость музыки на 0</string>
+    <string name="sound_yes">Да</string>
+    <string name="sound_no">Нет</string>
+    <string name="sound_failed">Не удалось включить звук</string>
+    <string name="sound_report">Сообщить</string>
+    <string name="recipe_none">Ещё не откалибровано: это произойдёт само при первом воспроизведении</string>
+    <string name="recipe_plain">Работает как есть</string>
+    <string name="recipe_tw_source8">Вход Bluetooth экрана</string>
+    <string name="recipe_fyt_toggle">Переключает источник экрана</string>
+    <string name="recipe_profile">Прямое управление радио</string>
+    <string name="recipe_open_bluetooth">Открывает приложение Bluetooth и возвращается</string>
+    <string name="recipe_open_radio">Открывает приложение радио и возвращается</string>
+    <string name="recipe_failed">Способ не найден</string>
+</resources>

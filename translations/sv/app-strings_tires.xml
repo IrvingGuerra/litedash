@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="tires_error_usb_missing">USB-mottagaren för däcken är inte ansluten</string>
+    <string name="tires_error_usb_denied">Ingen behörighet för USB-mottagaren</string>
+    <string name="tires_error_usb_open">USB-mottagaren kunde inte öppnas</string>
+    <string name="tires_error_usb_unplugged">USB-mottagaren kopplades ur</string>
+    <string name="tires_error_usb_lost">Anslutningen till USB-mottagaren bröts</string>
+    <string name="tires_error_swap">Mottagaren bekräftade inte däckbytet</string>
+    <string name="tires_tap_hint">Tryck på ett däck för att ställa in sensorn eller flytta den</string>
+</resources>

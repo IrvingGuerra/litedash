@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="music_explain">Vedi e controlla ciò che suona in qualsiasi app. Serve l\'accesso alle notifiche.</string>
+    <string name="enable">Attiva</string>
+    <string name="nothing_playing">Niente in riproduzione</string>
+    <string name="open_an_app">Fai partire la musica nella tua app preferita</string>
+    <string name="resume_explain">Premi play per riprendere da dove eri rimasto.</string>
+    <string name="no_song_info">Nessuna info sul brano</string>
+    <string name="opening_app">Apro %1$s…</string>
+    <string name="opening_wait">Ci siamo quasi: parte tra un momento.</string>
+    <string name="source_files">File</string>
+    <string name="source_bluetooth">Bluetooth</string>
+    <string name="source_radio">Radio</string>
+    <string name="bluetooth_connect_phone">Collega il telefono via Bluetooth</string>
+    <string name="usb_drive">Chiavetta USB</string>
+    <string name="usb_drive_in">Chiavetta USB collegata: %1$s</string>
+    <string name="player_connecting">Connessione…</string>
+    <string name="radio">Radio</string>
+    <string name="radio_explain">Controlla la radio del tuo schermo (e la radio via internet se la attivi). Serve l\'accesso alle notifiche.</string>
+    <string name="radio_internet">Internet</string>
+    <string name="radio_fm">FM dello schermo</string>
+    <string name="radio_unlinked">Collega la radio del tuo schermo in Impostazioni o attiva la radio via internet</string>
+    <string name="radio_settings">Impostazioni</string>
+    <string name="mode_app">App</string>
+    <string name="radio_fm_label">Radio FM</string>
+    <string name="sound_question">Si sente?</string>
+    <string name="sound_question_muted">Si sente? Nota: il volume della musica è a 0</string>
+    <string name="sound_yes">Sì</string>
+    <string name="sound_no">No</string>
+    <string name="sound_failed">Non sono riuscito a farla suonare</string>
+    <string name="sound_report">Segnala</string>
+    <string name="recipe_none">Non ancora calibrato: succede da solo la prima volta che suona</string>
+    <string name="recipe_plain">Funziona così com\'è</string>
+    <string name="recipe_tw_source8">Ingresso Bluetooth dello schermo</string>
+    <string name="recipe_fyt_toggle">Cambia la sorgente dello schermo</string>
+    <string name="recipe_profile">Controllo diretto della radio</string>
+    <string name="recipe_open_bluetooth">Apre l\'app Bluetooth e torna</string>
+    <string name="recipe_open_radio">Apre l\'app radio e torna</string>
+    <string name="recipe_failed">Nessun modo trovato</string>
+</resources>

@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="phone_section">Ponsel</string>
+    <string name="phone_help">Akun LiteDash Anda ada di aplikasi LiteDash Connect di ponsel Anda.</string>
+    <string name="phone_permission">Perlu izin</string>
+    <string name="phone_permission_body">Untuk terhubung dengan ponsel Anda, Android meminta Anda mengizinkan LiteDash memakai jaringan lokal (Perangkat sekitar).</string>
+    <string name="local_network_allow">Izinkan</string>
+    <string name="local_network_settings">Izin</string>
+    <string name="phone_no_wifi">Layar Anda tidak punya Wi-Fi</string>
+    <string name="phone_no_wifi_body">Ponsel dan layar Anda terhubung lewat Wi-Fi. Pilih caranya:</string>
+    <string name="phone_use_phone">Pakai internet ponsel saya</string>
+    <string name="phone_use_phone_body">Nyalakan Wi-Fi layar dan sambungkan ke hotspot ponsel Anda.</string>
+    <string name="phone_share_screen">Pakai milik layar</string>
+    <string name="phone_share_screen_body">Nyalakan hotspot layar dan sambungkan ponsel Anda ke situ.</string>
+    <string name="phone_open_wifi">Buka Wi-Fi</string>
+    <string name="phone_open_hotspot">Buka hotspot</string>
+    <string name="phone_waiting">Menunggu ponsel Anda…</string>
+    <plurals name="phone_link_code">
+        <item quantity="other">Kode %1$s · berlaku %2$d menit lagi</item>
+    </plurals>
+    <string name="phone_step_install">Pasang LiteDash Connect dan buat akun Anda</string>
+    <string name="phone_step_tap">Ketuk “Tautkan layar saya”</string>
+    <string name="phone_step_scan">Arahkan kamera ke kode ini</string>
+    <string name="phone_connected">Terhubung</string>
+    <string name="phone_searching">Mencari ponsel Anda…</string>
+    <string name="phone_model_app">%1$s · LiteDash Connect %2$s</string>
+    <string name="phone_link">Tautan</string>
+    <string name="phone_link_ok">Ponsel dan layar sudah terhubung</string>
+    <string name="phone_music_blocked">Agar musik Anda tampil di sini, buka LiteDash Connect dan ketuk “Izinkan” di bawah Tautan</string>
+    <string name="phone_link_no_network">Layar tidak berada di jaringan yang sama dengan ponsel Anda</string>
+    <string name="phone_link_open_app">Buka LiteDash Connect di ponsel Anda dan sambungkan ke jaringan yang sama ini</string>
+    <string name="phone_sound">Suara</string>
+    <string name="phone_sound_ok">Bluetooth terhubung · %1$s</string>
+    <string name="phone_sound_ok_plain">Bluetooth terhubung</string>
+    <string name="phone_sound_missing">Tidak terdengar? Sambungkan Bluetooth dari head unit</string>
+    <string name="phone_sound_calls">Bluetooth hanya terhubung untuk panggilan, jadi musik berbunyi di ponsel. Sambungkan dari head unit, atau aktifkan “Audio media” untuk head unit ini di ponsel Anda</string>
+    <string name="phone_calls_only">Bluetooth hanya untuk panggilan</string>
+    <string name="phone_sound_car">Lewat Android Auto</string>
+    <string name="phone_sound_wired">Lewat kabel</string>
+    <string name="phone_connect_bt">Sambungkan Bluetooth</string>
+    <string name="phone_sound_unknown">Akan diketahui setelah ponsel Anda terhubung dan memutar musik</string>
+    <string name="phone_search_now">Cari sekarang</string>
+    <string name="phone_unlink">Putuskan tautan</string>
+    <string name="phone_unlink_question">Putuskan tautan ponsel ini?</string>
+    <string name="phone_unlink_message">Untuk menghubungkannya lagi, Anda harus memindai kode lagi dari LiteDash Connect.</string>
+    <string name="phone_no_sound">Tidak ada suara? Sambungkan Bluetooth</string>
+    <string name="music_mode_phone">Selama ponsel Anda terhubung dan memutar musik, widget Musik menampilkan dan mengendalikannya. Saat terputus, kembali ke yang Anda pakai sebelumnya.</string>
+    <string name="phone_job_unknown">Info katalog untuk mobil itu tidak ada</string>
+    <string name="phone_job_no_finish">Model ini tidak punya pilihan finishing</string>
+    <string name="phone_job_damaged">Berkas tiba dalam keadaan rusak</string>
+    <string name="phone_job_unexpected">Layar tidak meminta berkas itu</string>
+    <string name="phone_job_busy">Layar sedang mengunduh hal lain; coba lagi sebentar lagi</string>
+    <string name="phone_job_install_failed">Layar tidak bisa memasangnya</string>
+</resources>

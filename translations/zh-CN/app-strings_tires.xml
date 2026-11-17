@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="tires_error_usb_missing">未插入 USB 胎压接收器</string>
+    <string name="tires_error_usb_denied">没有 USB 接收器的权限</string>
+    <string name="tires_error_usb_open">无法打开 USB 接收器</string>
+    <string name="tires_error_usb_unplugged">USB 接收器已拔出</string>
+    <string name="tires_error_usb_lost">与 USB 接收器的连接已断开</string>
+    <string name="tires_error_swap">接收器未确认轮胎交换</string>
+    <string name="tires_tap_hint">点按轮胎可设置或移动其传感器</string>
+</resources>

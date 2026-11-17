@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="image_background">Hintergrund</string>
+    <string name="image_background_original">Original</string>
+    <string name="image_background_remove">Entfernen</string>
+    <string name="image_background_help">Klappt am besten mit schlichtem Hintergrund: Wand, Himmel oder Studio.</string>
+    <string name="image_strength">Stärke</string>
+    <string name="image_strength_low">Sanft</string>
+    <string name="image_strength_medium">Mittel</string>
+    <string name="image_strength_high">Hoch</string>
+    <string name="image_strength_max">Max.</string>
+    <string name="image_cut_failed">Auto konnte nicht vom Hintergrund getrennt werden: versuch ein Foto mit schlichtem Hintergrund.</string>
+    <string name="image_apply">Anwenden</string>
+    <string name="image_unusable">Dieses Bild ging nicht; versuch ein anderes.</string>
+</resources>

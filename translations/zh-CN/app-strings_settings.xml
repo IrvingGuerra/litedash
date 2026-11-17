@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="tab_day_night">日夜</string>
+    <string name="tab_your_screen">你的屏幕</string>
+    <string name="weather_switch">天气</string>
+    <string name="weather_switch_help">显示在栏、时钟和天气小组件中；查看主屏幕时每半小时刷新一次。使用你的大致位置和网络；关闭后两者都不使用。</string>
+    <string name="reminder_pick_date">%1$s何时到期？</string>
+    <string name="split_unsupported_screen">你的车机不允许两个应用并排显示（厂商已关闭此功能）。</string>
+    <string name="tab_home">主屏幕</string>
+    <string name="tab_interface">界面</string>
+    <string name="android_bar">Android 状态栏</string>
+    <string name="accent_title">界面颜色</string>
+    <string name="accent_help">开关、按钮、播放和进度条。卡片和背景保持不变；“自然”为原始外观。</string>
+    <string name="accent_natural">自然</string>
+</resources>

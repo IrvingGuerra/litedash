@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="dashboard_remove">Usuń widżet</string>
+    <string name="dashboard_card">Karta wł./wył.</string>
+    <string name="dashboard_settings">Ustawienia widżetu</string>
+    <string name="dashboard_resize">Zmień rozmiar</string>
+</resources>

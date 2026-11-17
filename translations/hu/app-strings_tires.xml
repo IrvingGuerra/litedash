@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="tires_error_usb_missing">Nincs csatlakoztatva az USB-s gumivevő</string>
+    <string name="tires_error_usb_denied">Nincs engedély az USB-vevőhöz</string>
+    <string name="tires_error_usb_open">Az USB-vevőt nem sikerült megnyitni</string>
+    <string name="tires_error_usb_unplugged">Az USB-vevőt kihúzták</string>
+    <string name="tires_error_usb_lost">Megszakadt a kapcsolat az USB-vevővel</string>
+    <string name="tires_error_swap">A vevő nem erősítette meg a gumicserét</string>
+    <string name="tires_tap_hint">Koppints egy gumira az érzékelő beállításához vagy áthelyezéséhez</string>
+</resources>

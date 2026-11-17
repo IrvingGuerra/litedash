@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="road_speed">स्पीड</string>
+    <string name="road_speed_text">सिर्फ़ नंबर</string>
+    <string name="road_speed_gauge">स्पीडोमीटर</string>
+    <string name="road_speed_show">स्पीड दिखाएँ</string>
+    <string name="trip_time">समय</string>
+    <string name="trip_average">औसत</string>
+    <string name="road_trip_distance">दूरी</string>
+    <string name="trip_heading">दिशा</string>
+    <string-array name="compass_points">
+        <item>उ</item>
+        <item>उपू</item>
+        <item>पू</item>
+        <item>दपू</item>
+        <item>द</item>
+        <item>दप</item>
+        <item>प</item>
+        <item>उप</item>
+    </string-array>
+    <string name="value_with_unit">%1$s %2$s</string>
+    <string name="two_parts">%1$s · %2$s</string>
+    <string name="weather_degrees">%1$d°</string>
+    <string name="weather_range">%1$d° / %2$d°</string>
+</resources>

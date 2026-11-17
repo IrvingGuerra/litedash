@@ -95,6 +95,7 @@ private fun MoreLanguages(current: String, choose: (String) -> Unit) {
                 }
             }
             Label(stringResource(R.string.language_more_help), Typography.small, c.textMuted)
+            Label(stringResource(R.string.language_report), Typography.small, c.textMuted)
         }
     }
     if (failed) Label(stringResource(R.string.language_failed), Typography.small, c.danger)
@@ -115,9 +116,10 @@ private fun LanguageRow(choice: LanguageChoice, selected: Boolean, downloading: 
             val details = if (downloading != null) {
                 stringResource(R.string.downloading, (downloading * 100).roundToInt())
             } else {
-                stringResource(R.string.language_details, choice.progress, Formatter.formatShortFileSize(context, choice.bytes))
+                stringResource(R.string.language_details, choice.progress, Formatter.formatShortFileSize(context, choice.bytes)) +
+                    " · " + stringResource(if (choice.reviewed) R.string.language_reviewed else R.string.language_machine)
             }
-            Label(details, Typography.small, c.textMuted, 1)
+            Label(details, Typography.small, c.textMuted, 2)
         }
         if (selected) Icon(Icons.done, c.primary, 22.dp)
     }

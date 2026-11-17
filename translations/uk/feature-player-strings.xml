@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="player_name">Плеєр LiteDash</string>
+    <string name="player_channel">Музика</string>
+    <string name="player_play">Грати</string>
+    <string name="player_pause">Пауза</string>
+    <string name="player_next">Наступний</string>
+    <string name="player_previous">Попередній</string>
+    <string name="player_cannot_play">Не вдалося відтворити. Спробуй іншу станцію або перевір з’єднання.</string>
+    <string name="player_timeout">Станція не відповідає. Спробуй іншу.</string>
+    <string name="player_no_focus">Звук зайнятий іншим застосунком. Натисни «Грати» ще раз.</string>
+    <string name="library_no_drive">Під’єднай USB-накопичувач із музикою</string>
+    <string name="library_no_permission">LiteDash потрібен дозвіл на читання музики з накопичувача</string>
+    <string name="library_grant">Надати дозвіл</string>
+    <string name="library_loading">Читаємо накопичувач…</string>
+    <string name="library_folders">Папки</string>
+    <string name="library_artists">Виконавці</string>
+    <string name="library_albums">Альбоми</string>
+    <string name="library_all">Усі</string>
+    <string name="library_play_all">Грати все</string>
+    <plurals name="library_songs">
+        <item quantity="one">%1$d пісня</item>
+        <item quantity="few">%1$d пісні</item>
+        <item quantity="many">%1$d пісень</item>
+        <item quantity="other">%1$d пісні</item>
+    </plurals>
+    <string name="library_shuffle">Перемішати</string>
+    <string name="library_unknown">Невідомо</string>
+    <string name="library_root">Корінь накопичувача</string>
+    <string name="radio_nearby">Поруч із тобою</string>
+    <string name="radio_favorites">Вибране</string>
+    <string name="radio_search_tab">Пошук</string>
+    <string name="radio_search_hint">Назва станції</string>
+    <string name="radio_search_help">Введи назву станції</string>
+    <string name="radio_loading">Шукаємо станції…</string>
+    <string name="radio_none">Станцій не знайдено. Перевір з’єднання з інтернетом.</string>
+    <string name="radio_no_location">Немає місцезнаходження: це найпопулярніші у твоїй країні. Щоб бачити станції свого району, дозволь місцезнаходження в «Модулі → Дозволи».</string>
+    <string name="radio_no_favorites">Натисни на зірочку станції, щоб зберегти її тут.</string>
+    <string name="radio_km">%1$d km</string>
+    <string name="library_pick_folder">Вибрати папку</string>
+    <string name="library_clear_folder">Скинути папку</string>
+    <string name="library_pick_folder_help">Якщо музика є на накопичувачі, але не з’являється, вибери її папку: LiteDash запам’ятає.</string>
+    <string name="library_unreadable">Я бачу накопичувач %1$s, але екран не дає застосункам читати пісні. Вибери їхню папку, і LiteDash її запам’ятає.</string>
+    <string name="library_browse_memory">Не відкрилося? Переглянь пам’ять</string>
+</resources>

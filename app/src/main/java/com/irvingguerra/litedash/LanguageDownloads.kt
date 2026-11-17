@@ -10,7 +10,8 @@ import org.json.JSONException
 import org.json.JSONObject
 
 /** Un idioma de la lista: [progress] = % de textos traducidos; [sha256] = su versión (cambia con cada arreglo). */
-class LanguageChoice(val tag: String, val name: String, val progress: Int, val bytes: Long, val sha256: String)
+/** Un idioma de la lista; [reviewed] = lo revisó un hablante nativo (si no, es traducción automática). */
+class LanguageChoice(val tag: String, val name: String, val progress: Int, val bytes: Long, val sha256: String, val reviewed: Boolean = false)
 
 private val SHA256 = Regex("[0-9a-f]{64}")
 
@@ -19,7 +20,7 @@ internal fun parseLanguageIndex(text: String): List<LanguageChoice>? = try {
     val list = JSONObject(text).getJSONArray("languages")
     (0 until list.length()).mapNotNull { i ->
         val o = list.getJSONObject(i)
-        LanguageChoice(o.getString("lang"), o.getString("name"), o.optInt("progress"), o.optLong("bytes"), o.getString("sha256"))
+        LanguageChoice(o.getString("lang"), o.getString("name"), o.optInt("progress"), o.optLong("bytes"), o.getString("sha256"), o.optBoolean("reviewed"))
             .takeIf { isDownloadableTag(it.tag) && it.sha256.matches(SHA256) && it.bytes in 1..PACK_MAX_BYTES && it.name.isNotBlank() }
     }
 } catch (e: JSONException) {

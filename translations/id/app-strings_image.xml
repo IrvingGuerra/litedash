@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="image_background">Latar</string>
+    <string name="image_background_original">Asli</string>
+    <string name="image_background_remove">Hapus</string>
+    <string name="image_background_help">Paling bagus dengan latar polos: dinding, langit, atau studio.</string>
+    <string name="image_strength">Kekuatan</string>
+    <string name="image_strength_low">Lembut</string>
+    <string name="image_strength_medium">Sedang</string>
+    <string name="image_strength_high">Tinggi</string>
+    <string name="image_strength_max">Maks</string>
+    <string name="image_cut_failed">Tidak bisa memisahkan mobil dari latar: coba foto dengan latar polos.</string>
+    <string name="image_apply">Terapkan</string>
+    <string name="image_unusable">Gambar itu tidak bisa dipakai; coba yang lain.</string>
+</resources>

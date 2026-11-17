@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="report_title">Skicka en rapport</string>
+    <string name="report_help">Berätta vad som är fel. Den skickas med tekniska data från bilstereon (inga personuppgifter).</string>
+    <string name="report_what">Vad har problem?</string>
+    <string name="report_which">Vilken?</string>
+    <string name="report_problem">Vad händer?</string>
+    <string name="report_workshop">Verkstad (OBD)</string>
+    <string name="report_projection">Android Auto / appar</string>
+    <string name="report_lights">Dag och natt / strålkastare</string>
+    <string name="report_music_usb">Filer (LiteDash-spelaren)</string>
+    <string name="report_music_bt">Bluetooth (bilstereons)</string>
+    <string name="report_music_app">Din musikapp (Spotify, YouTube Music…)</string>
+    <string name="report_radio_fm">Bilstereons FM</string>
+    <string name="report_radio_internet">Internetradio</string>
+    <string name="report_obd_usb">USB</string>
+    <string name="report_silent">Inget ljud</string>
+    <string name="report_no_info">Det spelar men visar inte vad som spelas</string>
+    <string name="report_buttons">Knapparna svarar inte</string>
+    <string name="report_broken">Fungerar inte</string>
+    <string name="report_looks_wrong">Ser fel ut</string>
+    <string name="report_crash">Appen stängs</string>
+    <string name="report_note">Berätta mer (valfritt)</string>
+    <string name="report_play_first">Spela den källan innan du skickar, om du kan.</string>
+    <string name="report_send">Skicka</string>
+    <string name="report_sending">Skickar…</string>
+    <string name="report_thanks">Tack! Vi tittar på det.</string>
+    <string name="report_code">Rapportkod: %1$s</string>
+    <string name="report_error">Kunde inte skicka. Kolla anslutningen.</string>
+    <string name="report_wait">Vänta en minut innan du skickar en till.</string>
+</resources>

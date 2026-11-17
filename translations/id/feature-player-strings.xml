@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="player_name">Pemutar LiteDash</string>
+    <string name="player_channel">Musik</string>
+    <string name="player_play">Putar</string>
+    <string name="player_pause">Jeda</string>
+    <string name="player_next">Berikutnya</string>
+    <string name="player_previous">Sebelumnya</string>
+    <string name="player_cannot_play">Tidak bisa memutarnya. Coba stasiun lain atau periksa koneksi.</string>
+    <string name="player_timeout">Stasiun tidak merespons. Coba yang lain.</string>
+    <string name="player_no_focus">Aplikasi lain sedang memakai audio. Ketuk putar lagi.</string>
+    <string name="library_no_drive">Colokkan flashdisk USB berisi musik</string>
+    <string name="library_no_permission">LiteDash perlu izin untuk membaca musik di flashdisk</string>
+    <string name="library_grant">Beri izin</string>
+    <string name="library_loading">Membaca flashdisk…</string>
+    <string name="library_folders">Folder</string>
+    <string name="library_artists">Artis</string>
+    <string name="library_albums">Album</string>
+    <string name="library_all">Semua</string>
+    <string name="library_play_all">Putar semua</string>
+    <plurals name="library_songs">
+        <item quantity="other">%1$d lagu</item>
+    </plurals>
+    <string name="library_shuffle">Acak</string>
+    <string name="library_unknown">Tidak diketahui</string>
+    <string name="library_root">Akar flashdisk</string>
+    <string name="radio_nearby">Di sekitar Anda</string>
+    <string name="radio_favorites">Favorit</string>
+    <string name="radio_search_tab">Cari</string>
+    <string name="radio_search_hint">Nama stasiun</string>
+    <string name="radio_search_help">Ketik nama stasiun</string>
+    <string name="radio_loading">Mencari stasiun…</string>
+    <string name="radio_none">Tidak ada stasiun ditemukan. Periksa koneksi internet Anda.</string>
+    <string name="radio_no_location">Tanpa lokasi: ini yang paling banyak diputar di negara Anda. Untuk melihat stasiun daerah Anda, izinkan lokasi di Modul → Izin.</string>
+    <string name="radio_no_favorites">Ketuk bintang sebuah stasiun untuk menyimpannya di sini.</string>
+    <string name="radio_km">%1$d km</string>
+    <string name="library_pick_folder">Pilih folder</string>
+    <string name="library_clear_folder">Lepas folder</string>
+    <string name="library_pick_folder_help">Jika musik Anda ada di flashdisk tapi tidak muncul, pilih foldernya: LiteDash akan mengingatnya.</string>
+    <string name="library_unreadable">Saya melihat flashdisk %1$s, tapi layar Anda tidak mengizinkan aplikasi membaca lagunya. Pilih foldernya dan LiteDash akan mengingatnya.</string>
+    <string name="library_browse_memory">Tidak terbuka? Telusuri penyimpanan</string>
+</resources>

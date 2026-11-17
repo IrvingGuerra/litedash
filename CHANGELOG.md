@@ -4,6 +4,23 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.4.167] - 2026-11-16
+
+### Nuevo
+- **23 idiomas:** a español, inglés, francés, portugués y turco se suman alemán, italiano, ruso, ucraniano, polaco,
+  checo, neerlandés, sueco, rumano, húngaro, griego, chino, japonés, coreano, hindi, tailandés, indonesio y vietnamita.
+  Se bajan al elegirlos en Ajustes → Inicio y apariencia → Interfaz → Idioma → Más idiomas.
+- **Revisa tu idioma:** la lista dice cuáles revisó un hablante nativo y cuáles son traducción automática. Si ves un
+  error, repórtalo en litedash.dev/translate.
+- Las novedades de cada versión salen en inglés si no usas la app en español.
+
+### Arreglado
+- Con «Usar app externa» apagado, el mapa en grande ya no muestra el botón para abrir tu app de mapas.
+- Al cambiar de idioma regresas a Ajustes, donde estabas, y no al inicio.
+- Las zonas del mapa sin conexión dicen su tamaño en millas si usas millas.
+- En el explorador de fotos y carpetas, «atrás» sube de carpeta en vez de cerrar todo.
+- En pantallas de pie ya no se cortan la ayuda de «Acomoda tu inicio» ni la descripción de los widgets.
+
 ## [1.4.166] - 2026-11-16
 
 ### Arreglado
