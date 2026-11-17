@@ -3,6 +3,12 @@
 What people using LiteDash notice, in English. The full history (in Spanish) is in [CHANGELOG.md](CHANGELOG.md).
 Format [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versions [SemVer](https://semver.org/).
 
+## [1.4.183] - 2026-11-17
+
+### Changed
+- In the guide, the music sits at the bottom of the map side only (like Tesla); your car's view reaches the bottom of
+  the screen.
+
 ## [1.4.182] - 2026-11-17
 
 ### New

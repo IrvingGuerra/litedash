@@ -4,6 +4,11 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.4.183] - 2026-11-17
+
+### Cambiado
+- En la guía, la música va abajo solo del lado del mapa (como Tesla); tu auto llega hasta abajo de la pantalla.
+
 ## [1.4.182] - 2026-11-17
 
 ### Nuevo

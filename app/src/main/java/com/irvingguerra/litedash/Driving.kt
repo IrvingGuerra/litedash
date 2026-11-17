@@ -121,8 +121,8 @@ internal class DriveSession(val to: SearchHit, route: Route) {
 
 /**
  * La pantalla de conducción (como Tesla): ancha, a la izquierda tu auto de espaldas sobre las calles en 3D con la ruta
- * azul y a la derecha el mapa con la próxima vuelta arriba, la llegada abajo y los botones redondos a la orilla; de pie,
- * el auto arriba y el mapa abajo. Hasta abajo, a lo ancho, la música. Fuera de la ruta recalcula en la pantalla; al
+ * azul y a la derecha el mapa con la próxima vuelta arriba, la llegada abajo y los botones redondos a la orilla, y debajo
+ * del mapa la música; de pie, el auto arriba, el mapa y la música abajo. Fuera de la ruta recalcula en la pantalla; al
  * llegar dice «Llegaste». [revision] = la de la ventana (la música revisa sus permisos al volver).
  */
 @Composable
@@ -161,23 +161,27 @@ internal fun DrivingScreen(d: Dependencies, session: DriveSession, revision: Int
     CompositionLocalProvider(LocalHomeCovered provides false) {
         BoxWithConstraints(Modifier.fillMaxSize().background(c.background)) {
             val wide = maxWidth >= WIDE_MIN && maxWidth > maxHeight * 1.2f
-            // La música, como Tesla, en una franja abajo a lo ancho (más baja en pantallas bajas).
+            // La música, como Tesla, abajo del lado del mapa (más baja en pantallas bajas); el auto llega hasta abajo.
             val musicHeight = if (maxHeight < SHORT_SCREEN) MUSIC_SHORT else MUSIC_HEIGHT
-            // Abajo la barra de Android (en pantallas con botones) no tapa la música.
-            Column(Modifier.fillMaxSize().navigationBarsPadding()) {
-                if (wide) Row(Modifier.weight(1f).fillMaxWidth()) {
-                    CarView(d, session, Modifier.weight(0.45f).fillMaxHeight())
-                    MapView(d, session, end, Modifier.weight(0.55f).fillMaxHeight(), turnOnMap = true)
-                } else Column(Modifier.weight(1f).fillMaxWidth()) {
-                    Box(Modifier.weight(0.58f).fillMaxWidth()) {
-                        CarView(d, session, Modifier.fillMaxSize())
-                        TurnCard(d, session, Modifier.align(Alignment.TopCenter).padding(12.dp).widthIn(max = 520.dp))
-                    }
-                    MapView(d, session, end, Modifier.weight(0.42f).fillMaxWidth(), turnOnMap = false)
-                }
+            val music = @Composable {
                 Card(Modifier.fillMaxWidth().height(musicHeight).padding(horizontal = 12.dp, vertical = 8.dp)) {
                     MusicTile(d.music, revision, Modifier.fillMaxSize())
                 }
+            }
+            if (wide) Row(Modifier.fillMaxSize()) {
+                CarView(d, session, Modifier.weight(0.45f).fillMaxHeight())
+                // Abajo la barra de Android (en pantallas con botones) no tapa la música.
+                Column(Modifier.weight(0.55f).fillMaxHeight().navigationBarsPadding()) {
+                    MapView(d, session, end, Modifier.weight(1f).fillMaxWidth(), turnOnMap = true)
+                    music()
+                }
+            } else Column(Modifier.fillMaxSize().navigationBarsPadding()) {
+                Box(Modifier.weight(0.58f).fillMaxWidth()) {
+                    CarView(d, session, Modifier.fillMaxSize())
+                    TurnCard(d, session, Modifier.align(Alignment.TopCenter).padding(12.dp).widthIn(max = 520.dp))
+                }
+                MapView(d, session, end, Modifier.weight(0.42f).fillMaxWidth(), turnOnMap = false)
+                music()
             }
         }
     }
