@@ -3,6 +3,15 @@
 What people using LiteDash notice, in English. The full history (in Spanish) is in [CHANGELOG.md](CHANGELOG.md).
 Format [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versions [SemVer](https://semver.org/).
 
+## [1.4.172] - 2026-11-16
+
+### Fixed
+- **«More languages» now shows every language** after updating the app (it could keep the old list for up to a day).
+
+### Changed
+- **Search in «Other states»** of the offline map: type the name and it shows up (without typing, the ones in your
+  country).
+
 ## [1.4.171] - 2026-11-16
 
 ### New

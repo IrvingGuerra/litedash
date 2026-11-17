@@ -61,4 +61,5 @@
     <string name="map_pack_delete_message">Khi không có internet, bạn sẽ không thấy đường phố ở đó; các khu vực của bạn vẫn giữ nguyên.</string>
     <string name="map_pack_failed">Không tải được: kiểm tra internet.</string>
     <string name="map_pack_zones">Khu vực</string>
+    <string name="map_pack_search">Tìm tỉnh hoặc khu vực</string>
 </resources>

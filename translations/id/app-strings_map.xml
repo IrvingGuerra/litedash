@@ -61,4 +61,5 @@
     <string name="map_pack_delete_message">Tanpa internet Anda tidak akan melihat jalannya; zona Anda tetap ada.</string>
     <string name="map_pack_failed">Gagal mengunduh: periksa internet Anda.</string>
     <string name="map_pack_zones">Zona</string>
+    <string name="map_pack_search">Cari provinsi atau wilayah</string>
 </resources>

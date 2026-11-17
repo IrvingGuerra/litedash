@@ -63,4 +63,5 @@
     <string name="map_pack_delete_message">Sem internet, você não verá mais as ruas dele; suas regiões continuam.</string>
     <string name="map_pack_failed">Não foi possível baixar: verifique sua internet.</string>
     <string name="map_pack_zones">Regiões</string>
+    <string name="map_pack_search">Buscar estado ou região</string>
 </resources>

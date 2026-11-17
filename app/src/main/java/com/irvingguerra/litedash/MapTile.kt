@@ -60,10 +60,12 @@ import com.irvingguerra.litedash.core.ui.Label
 import com.irvingguerra.litedash.core.ui.LocalColors
 import com.irvingguerra.litedash.core.ui.Radius
 import com.irvingguerra.litedash.core.ui.Segmented
+import com.irvingguerra.litedash.core.ui.TextInput
 import com.irvingguerra.litedash.core.ui.Typography
 import com.irvingguerra.litedash.core.vehicle.Signal
 import com.irvingguerra.litedash.core.vehicle.watch
 import com.irvingguerra.litedash.feature.apps.App
+import com.irvingguerra.litedash.feature.apps.normalize
 import com.irvingguerra.litedash.feature.car.CarPackage
 import com.irvingguerra.litedash.feature.car.snapshot
 import com.irvingguerra.litedash.feature.dashboard.TileTypes
@@ -616,12 +618,20 @@ private fun StatePackSection(d: Dependencies) {
     val mine = packs.installed.mapNotNull { p -> packs.regions.firstOrNull { it.id == p.id } }
     val shown = (listOfNotNull(here) + mine).distinctBy { it.id }
     for (r in shown) StatePackRow(packs, r, language)
-    val country = here?.country ?: mine.firstOrNull()?.country ?: packs.regions.first().country
-    val others = packs.regions.filter { it.country == country && shown.none { s -> s.id == it.id } }.sortedBy { it.name(language) }
-    if (others.isNotEmpty()) {
-        if (!showAll) Button(stringResource(R.string.map_pack_others), { showAll = true })
-        else for (r in others) StatePackRow(packs, r, language)
+    if (!showAll) {
+        Button(stringResource(R.string.map_pack_others), { showAll = true })
+        return
     }
+    // Sin escribir, los de tu país; escribiendo, de cualquier país (con muchas regiones, la lista sola sería eterna).
+    var query by rememberSaveable { mutableStateOf("") }
+    TextInput(query, { query = it }, stringResource(R.string.map_pack_search), Modifier.fillMaxWidth(), icon = true)
+    val country = here?.country ?: mine.firstOrNull()?.country ?: packs.regions.first().country
+    val q = normalize(query.trim())
+    val names = remember(packs.regions, language) { packs.regions.associate { it.id to normalize(it.name(language)) } }
+    val others = packs.regions
+        .filter { shown.none { s -> s.id == it.id } && if (q.isEmpty()) it.country == country else q in names[it.id].orEmpty() }
+        .sortedBy { it.name(language) }
+    for (r in others) StatePackRow(packs, r, language)
 }
 
 /**

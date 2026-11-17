@@ -61,4 +61,5 @@
     <string name="map_pack_delete_message">Без интернета ты не увидишь его улицы; твои районы останутся.</string>
     <string name="map_pack_failed">Не удалось скачать: проверь интернет.</string>
     <string name="map_pack_zones">Районы</string>
+    <string name="map_pack_search">Найти регион</string>
 </resources>

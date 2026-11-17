@@ -61,4 +61,5 @@
     <string name="map_pack_delete_message">Zonder internet zie je de straten niet meer; je zones blijven.</string>
     <string name="map_pack_failed">Downloaden mislukt: controleer je internet.</string>
     <string name="map_pack_zones">Zones</string>
+    <string name="map_pack_search">Provincie of regio zoeken</string>
 </resources>

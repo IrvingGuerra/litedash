@@ -61,4 +61,5 @@
     <string name="map_pack_delete_message">เมื่อไม่มีอินเทอร์เน็ต คุณจะไม่เห็นถนนอีก แต่โซนของคุณยังอยู่</string>
     <string name="map_pack_failed">ดาวน์โหลดไม่สำเร็จ: ตรวจสอบอินเทอร์เน็ต</string>
     <string name="map_pack_zones">โซน</string>
+    <string name="map_pack_search">ค้นหาจังหวัดหรือภูมิภาค</string>
 </resources>

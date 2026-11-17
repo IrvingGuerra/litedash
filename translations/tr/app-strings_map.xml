@@ -61,4 +61,5 @@
     <string name="map_pack_delete_message">İnternet olmadan sokaklarını göremezsiniz; bölgeleriniz kalır.</string>
     <string name="map_pack_failed">İndirilemedi: internetinizi kontrol edin.</string>
     <string name="map_pack_zones">Bölgeler</string>
+    <string name="map_pack_search">İl veya bölge ara</string>
 </resources>

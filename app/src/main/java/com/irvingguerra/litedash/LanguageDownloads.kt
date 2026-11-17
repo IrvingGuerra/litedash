@@ -33,7 +33,9 @@ internal fun parseLanguageIndex(text: String): List<LanguageChoice>? = try {
  */
 fun fetchLanguages(context: Context): List<LanguageChoice>? {
     val file = File(LanguagePacks.folder(context), "index.json")
-    val fresh = file.exists() && System.currentTimeMillis() - file.lastModified() < LIST_MAX_AGE_MS
+    // Al día, y de esta versión de la app: tras actualizarla se vuelve a pedir (si no, quien abrió la lista con una
+    // versión vieja seguía viendo la de entonces hasta un día después).
+    val fresh = file.exists() && System.currentTimeMillis() - file.lastModified() < LIST_MAX_AGE_MS && file.lastModified() > appUpdatedAt(context)
     // Una lista ilegible (p. ej. la página de un wifi con registro) no reemplaza a la buena.
     val downloaded = if (fresh) null else try {
         replaceFile(file) { temp ->
@@ -78,3 +80,7 @@ fun updateLanguage(context: Context, tag: String) {
     val choice = fetchLanguages(context)?.firstOrNull { it.tag == tag } ?: return
     installLanguage(context, choice) {}
 }
+
+/** Cuándo se instaló o actualizó esta app por última vez (0 si no se sabe). */
+internal fun appUpdatedAt(context: Context): Long =
+    runCatching { context.packageManager.getPackageInfo(context.packageName, 0).lastUpdateTime }.getOrDefault(0L)

@@ -100,7 +100,10 @@ class MapPacks private constructor(private val app: Context) {
         scope.launch {
             val cached = File(dir, INDEX)
             if (regions.isEmpty() && cached.isFile) runCatching { useRegions(parseIndex(cached.readText())) }
-            if (!force && cached.isFile && System.currentTimeMillis() - cached.lastModified() < INDEX_MAX_AGE_MS) return@launch
+            // Al día y de esta versión de la app (tras actualizarla se vuelve a pedir).
+            val updated = runCatching { app.packageManager.getPackageInfo(app.packageName, 0).lastUpdateTime }.getOrDefault(0L)
+            val fresh = cached.isFile && System.currentTimeMillis() - cached.lastModified() < INDEX_MAX_AGE_MS && cached.lastModified() > updated
+            if (!force && fresh) return@launch
             try {
                 val text = Https.get(app, INDEX_URL).inputStream.use { it.readBytes().decodeToString() }
                 val parsed = parseIndex(text)
@@ -128,7 +131,7 @@ class MapPacks private constructor(private val app: Context) {
     }
 
     /** ¿El mapa bajado de [region] es de una versión vieja? */
-    fun outdated(region: MapRegion): Boolean = installed.firstOrNull { it.id == region.id }?.let { it.sha256 != region.map.sha256 } ?: false
+    fun outdated(region: MapRegion): Boolean = installed.firstOrNull { it.id == region.id }?.let { it.sha256.isNotEmpty() && it.sha256 != region.map.sha256 } ?: false
 
     /** Baja (o actualiza) el mapa de [region]; uno a la vez. Se verifica su huella antes de usarlo. */
     fun download(region: MapRegion) = synchronized(stateLock) {

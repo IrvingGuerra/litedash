@@ -63,4 +63,5 @@
     <string name="map_pack_delete_message">Sans internet, vous ne verrez plus ses rues ; vos zones restent.</string>
     <string name="map_pack_failed">Échec du téléchargement : vérifiez votre internet.</string>
     <string name="map_pack_zones">Zones</string>
+    <string name="map_pack_search">Rechercher une région</string>
 </resources>

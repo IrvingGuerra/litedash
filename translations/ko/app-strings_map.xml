@@ -61,4 +61,5 @@
     <string name="map_pack_delete_message">인터넷이 없으면 도로가 보이지 않아요. 내 지역은 그대로 남아요.</string>
     <string name="map_pack_failed">다운로드하지 못했어요: 인터넷을 확인하세요.</string>
     <string name="map_pack_zones">지역</string>
+    <string name="map_pack_search">지역 검색</string>
 </resources>

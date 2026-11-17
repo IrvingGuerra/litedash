@@ -4,6 +4,15 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.4.172] - 2026-11-16
+
+### Arreglado
+- **«Más idiomas» ya muestra todos los idiomas** al actualizar la app (antes podía quedarse con la lista vieja hasta un
+  día).
+
+### Cambiado
+- **Buscador en «Otros estados»** del mapa sin conexión: escribe el nombre y aparece (sin escribir, los de tu país).
+
 ## [1.4.171] - 2026-11-16
 
 ### Nuevo
