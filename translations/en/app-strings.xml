@@ -139,6 +139,7 @@
     <string name="template_route">Route</string>
     <string name="template_music_radio">Music and radio</string>
     <string name="template_vertical_map">Portrait with map</string>
+    <string name="template_map_background">Map background</string>
     <string name="templates_tab_map">Map</string>
     <string name="templates_map_help">The live map with your position and next turn.</string>
     <string name="add">Add</string>
