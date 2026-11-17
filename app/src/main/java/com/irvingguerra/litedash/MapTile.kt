@@ -197,26 +197,62 @@ fun MapExpanded(d: Dependencies, tileId: String?, data: String, app: App?, onPla
         PlaceRequests.focus = false
     }
     val selected = search.selected
+    // La ruta al lugar elegido (al tocar «Ruta»); se suelta al cambiar de lugar.
+    var routing by remember { mutableStateOf<RouteRequest?>(null) }
+    if (routing != null && routing?.to != selected) routing = null
+    routing?.let { RunRoute(d, it) }
+    val route = routing?.route
     val unselect = {
         search.clear()
         camera.recenter()
     }
-    BackHandler(selected != null && !search.focused, unselect)
+    // Al cerrar la ruta, el mapa regresa al lugar.
+    val closeRoute = {
+        routing = null
+        selected?.let { camera.show(it.lat, it.lon) }
+        Unit
+    }
+    BackHandler(routing != null && !search.focused, closeRoute)
+    BackHandler(selected != null && routing == null && !search.focused, unselect)
     // Se soltó el lugar (otra búsqueda, borrar lo escrito) o se cierra el mapa en grande: el mapa (y el widget, que
     // comparte la cámara) regresa a ti.
-    LaunchedEffect(selected) { if (selected == null && camera.showingPlace) camera.recenter() }
-    DisposableEffect(camera) { onDispose { if (camera.showingPlace) camera.recenter() } }
+    // (Lee el de ahora, no el de esta composición: al abrir con un lugar de otra app, ya se eligió.)
+    LaunchedEffect(selected) { if (search.selected == null && camera.showingPlace) camera.recenter() }
+    DisposableEffect(camera) {
+        onDispose {
+            if (camera.showingPlace) camera.recenter()
+            // Los arreglos del ruteador (~10 MB en un estado grande) se sueltan al cerrar el mapa en grande.
+            MapPacks.get(context).releaseRouter()
+        }
+    }
     Card(modifier.fillMaxSize()) {
         BoxWithConstraints(Modifier.fillMaxSize()) {
             val boxWidth = maxWidth
             val boxHeight = maxHeight
             // El teclado tapa lo de abajo (la ventana no se encoge): la lista termina arriba de él.
             val keyboard = with(LocalDensity.current) { WindowInsets.ime.getBottom(this).toDp() }
+            // Con la tarjeta de un lugar o de la ruta, el lugar va en lo que queda libre: a su derecha en pantallas anchas o
+            // arriba en las angostas (si no, la tarjeta tapa el pin).
+            val carded = selected != null && !search.focused
+            val cardShare = ((minOf(CARD_MAX, boxWidth - 24.dp) + 12.dp) / boxWidth).coerceIn(0f, 1f)
+            val clear = when {
+                !carded -> null
+                cardShare <= 0.6f -> Rect(cardShare, 0f, 1f, 1f)
+                else -> Rect(0f, 0f, 1f, 0.5f)
+            }
+            // Con la ruta: el mapa al norte y con el zoom que la enseña toda (en ese hueco).
+            val fitW = boxWidth.value * (clear?.width ?: 1f)
+            val fitH = boxHeight.value * (clear?.height ?: 1f)
+            val fit = route?.let { remember(it, fitW, fitH) { routeZoom(it, fitW, fitH) } }
+            // Solo al salir la ruta (no al cambiar el hueco: lo que movieras con el dedo se quedaría).
+            LaunchedEffect(fit?.second) { fit?.second?.let { (la, lo) -> camera.show(la, lo) } }
             if (granted) {
                 LiveMap(
-                    d, look, Modifier.fillMaxSize(), tileId, camera = camera, pin = selected?.let { it.lat to it.lon },
+                    d, if (route != null) look.copy(orientation = MapOrientation.NORTH) else look, Modifier.fillMaxSize(), tileId,
+                    camera = camera, pin = selected?.let { it.lat to it.lon },
                     overlay = selected == null,
                     onLongPress = { lat, lon -> pick(pointHit(null, lat, lon)) },
+                    route = route?.points, fixedZoom = fit?.first, focus = clear,
                 )
             } else Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Button(stringResource(R.string.tap_to_enable), ask, primary = true) }
             val searching = search.focused || search.query.isNotEmpty()
@@ -229,15 +265,21 @@ fun MapExpanded(d: Dependencies, tileId: String?, data: String, app: App?, onPla
                 if (d.prefs.mapExternal && app != null && boxWidth >= WIDE_TOP) IconButton(Icons.navigate, onNavigate, size = 48.dp, background = c.surface.copy(alpha = 0.9f), color = c.accent)
                 IconButton(Icons.close, close, size = 48.dp, background = c.surface.copy(alpha = 0.9f))
             }
+            val cardModifier = Modifier.align(Alignment.BottomStart).padding(start = 12.dp, end = 12.dp, bottom = 12.dp).widthIn(max = CARD_MAX)
+            val request = routing
             if (selected != null && !search.focused) {
-                PlaceCard(
-                    d, selected, app?.name, onOpen = { openPlace(context, app, selected) }, close = unselect,
-                    modifier = Modifier.align(Alignment.BottomStart).padding(start = 12.dp, end = 12.dp, bottom = 12.dp).widthIn(max = 460.dp),
+                if (request != null) RouteCard(d, request, app?.name, onOpen = { openPlace(context, app, selected) }, back = closeRoute, modifier = cardModifier)
+                else PlaceCard(
+                    d, selected, app?.name, onRoute = { routing = RouteRequest(selected) }, onOpen = { openPlace(context, app, selected) },
+                    close = unselect, modifier = cardModifier,
                 )
             }
         }
     }
 }
+
+/** Lo más ancho de la tarjeta del lugar o de la ruta. */
+private val CARD_MAX = 460.dp
 
 /** Lo menos que mide la lista de resultados (con el teclado arriba en pantallas bajas). */
 private val MIN_LIST = 120.dp
@@ -286,6 +328,9 @@ private fun LiveMap(
     pin: Pair<Double, Double>? = null,
     overlay: Boolean = true,
     onLongPress: ((Double, Double) -> Unit)? = null,
+    route: IntArray? = null,
+    fixedZoom: Int? = null,
+    focus: Rect? = null,
 ) {
     val c = LocalColors.current
     KeepTripRunning(d.trip)
@@ -306,7 +351,7 @@ private fun LiveMap(
         }
         MapCanvas(
             store, position.latitude, position.longitude, d.trip.bearing, kmh, look, Modifier.fillMaxSize(), camera, navigating,
-            active = active, onTap = onTap, pin = pin, onLongPress = onLongPress,
+            active = active, onTap = onTap, pin = pin, onLongPress = onLongPress, route = route, fixedZoom = fixedZoom, focus = focus,
         )
         // Con la tarjeta de un lugar abajo a la izquierda, lo de aquí estorba (al cerrarla vuelve a ti).
         if (!overlay) return@BoxWithConstraints
@@ -742,7 +787,8 @@ private fun StatePackRow(packs: MapPacks, region: MapRegion, language: String) {
     val busy = packs.job?.let { !it.failed } == true
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            val size = Formatter.formatShortFileSize(context, saved?.size ?: region.map.size)
+            // Todo el paquete: mapa, búsqueda y calles para la ruta.
+            val size = Formatter.formatShortFileSize(context, region.totalSize)
             Label(
                 if (saved != null) stringResource(R.string.map_pack_saved, name, size) else "$name · $size",
                 Typography.body, if (saved != null) c.accent else c.text, maxLines = 2, modifier = Modifier.weight(1f),

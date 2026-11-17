@@ -3,6 +3,20 @@
 What people using LiteDash notice, in English. The full history (in Spanish) is in [CHANGELOG.md](CHANGELOG.md).
 Format [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versions [SemVer](https://semver.org/).
 
+## [1.4.175] - 2026-11-17
+
+### New
+- **Your route, without internet:** on a place's card tap «Route» and LiteDash works it out on your screen with your
+  state's streets (it follows one-way streets and banned turns). You see the route drawn on the map, how long it is,
+  how long it takes (without traffic), when you arrive and which road you take. Turn-by-turn guidance comes in the next
+  stage; meanwhile, «Open in your maps app».
+- Route streets come with your state's map. If you already had it, your first route offers to download them (Colima
+  is 1.7 MB and the State of Mexico, the largest, 22 MB).
+- If the place is in another state or you haven't downloaded yours, it tells you and lets you open it in your maps app.
+
+### Changed
+- With a place's card open, the map puts the place in the part the card leaves free.
+
 ## [1.4.174] - 2026-11-16
 
 ### New

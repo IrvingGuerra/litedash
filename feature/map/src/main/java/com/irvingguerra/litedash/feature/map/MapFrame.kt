@@ -14,6 +14,8 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.drawscope.scale
@@ -22,6 +24,7 @@ import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
+import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.roundToInt
 
@@ -73,6 +76,42 @@ internal class MapFrame : ScreenPoint {
     private val you = FloatArray(3)
     private var youShown = false
 
+    /** La ruta en pantalla (se rehace en cada cuadro: pocos cientos de puntos). */
+    private val routePath = Path()
+    private var routeShown = false
+    private val routeAt = FloatArray(3)
+    private var routeStroke = Stroke(0f)
+    private var routeEdge = Stroke(0f)
+
+    /** Pasa la ruta (mundo en zoom 0) a la pantalla; lo que queda detrás de la cámara (inclinado) corta la línea. */
+    private fun traceRoute(world: DoubleArray?, n: Double) {
+        routePath.reset()
+        routeShown = false
+        if (world == null || world.size < 4) return
+        var pen = false
+        var lastX = 0f
+        var lastY = 0f
+        val step = 2 * unit
+        var i = 0
+        while (i < world.size) {
+            if (toScreen(world[i] * n, world[i + 1] * n, routeAt)) {
+                val x = routeAt[0]
+                val y = routeAt[1]
+                // Lo que queda a menos de 2 dp del punto anterior no se ve: una ruta de cientos de km tiene miles.
+                val last = i + 2 >= world.size
+                if (!pen) routePath.moveTo(x, y) else if (last || abs(x - lastX) + abs(y - lastY) >= step) routePath.lineTo(x, y) else {
+                    i += 2
+                    continue
+                }
+                lastX = x
+                lastY = y
+                pen = true
+                routeShown = true
+            } else pen = false
+            i += 2
+        }
+    }
+
     /** El pin del lugar en pantalla. */
     private val pinAt = FloatArray(3)
     private var pinShown = false
@@ -117,12 +156,15 @@ internal class MapFrame : ScreenPoint {
         names: TileSource?, labelTs: Float, text: android.graphics.Paint,
         sky: Color, arrowBearing: Float, ringKm: Float?, centerLat: Double,
         pinX: Double = Double.NaN, pinY: Double = Double.NaN,
+        routeWorld: DoubleArray? = null,
     ) {
         if (density != arrowFor) {
             arrowFor = density
             unit = density
             arrow = arrowPath(density)
             pin = pinPath(density)
+            routeStroke = Stroke(6 * density, cap = StrokeCap.Round, join = StrokeJoin.Round)
+            routeEdge = Stroke(10 * density, cap = StrokeCap.Round, join = StrokeJoin.Round)
             arrowStroke = Stroke(3 * density)
             ringStroke = Stroke(2 * density)
         }
@@ -140,6 +182,7 @@ internal class MapFrame : ScreenPoint {
         youShown = projection.toScreen(atX - (panX * n * ts).toFloat(), atY - (panY * n * ts).toFloat(), you)
         arrowDegrees = arrowBearing
         pinShown = !pinX.isNaN() && toScreen(pinX, pinY, pinAt)
+        traceRoute(routeWorld, n)
         squash = 1f - 0.3f * tilt
         // El círculo de la zona: metros por px del plano en el centro del mapa.
         ring = if (ringKm == null) 0f else (ringKm * 1000 / (EQUATOR_METERS * cos(Math.toRadians(centerLat)) / (n * ts))).toFloat()
@@ -202,6 +245,11 @@ internal class MapFrame : ScreenPoint {
             val center = Offset(atX, atY)
             drawCircle(accent.copy(alpha = 0.12f), ring, center)
             drawCircle(accent, ring, center, style = ringStroke)
+        }
+        // La ruta: de acento con un borde oscuro (se ve sobre calles claras y oscuras), debajo de los nombres.
+        if (routeShown) {
+            drawPath(routePath, Color.Black.copy(alpha = 0.45f), style = routeEdge)
+            drawPath(routePath, accent, style = routeStroke)
         }
         labelPaint?.let { paint -> drawIntoCanvas { drawLabels(it.nativeCanvas, layout.placed, paint) } }
         if (pinShown) drawPin(accent)

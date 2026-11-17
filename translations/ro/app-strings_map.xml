@@ -104,4 +104,23 @@
     <string name="place_city">Oraș</string>
     <string name="place_town">Localitate</string>
     <string name="place_neighbourhood">Cartier</string>
+    <string name="route_button">Traseu</string>
+    <string name="route_back">Închide traseul</string>
+    <string name="route_waiting">Se așteaptă locația ta…</string>
+    <string name="route_finding">Se caută traseul…</string>
+    <string name="route_minutes">%1$d min</string>
+    <string name="route_hours">%1$d h %2$d min</string>
+    <string name="route_arrive">Ajungi la %1$s</string>
+    <string name="route_via">pe %1$s</string>
+    <string name="route_no_traffic">fără trafic</string>
+    <string name="route_need_routes">Pentru traseul fără internet lipsesc străzile din %1$s (%2$s).</string>
+    <string name="route_download">Descarcă străzile</string>
+    <string name="route_download_failed">Nu s-au putut descărca. Verifică internetul și încearcă din nou.</string>
+    <string name="route_other_state">Locul acela e în %1$s: descarcă și acel județ sau deschide-l în aplicația ta de hărți.</string>
+    <string name="route_outside">Locul acela e în afara județului tău: deschide-l în aplicația ta de hărți.</string>
+    <string name="route_no_state">Pentru traseul fără internet, descarcă harta județului tău din Setări → Aplicații → Navigație → Offline.</string>
+    <string name="route_from_off">Ești departe de o stradă: apropie-te de una ca să găsim traseul.</string>
+    <string name="route_to_off">Locul acela e departe de o stradă.</string>
+    <string name="route_no_path">Nu am găsit un drum până acolo.</string>
+    <string name="route_two_states">Locul este în alt județ: rutele între județe vin mai târziu. Până atunci, deschide-l în aplicația ta de hărți.</string>
 </resources>

@@ -104,4 +104,23 @@
     <string name="place_city">Πόλη</string>
     <string name="place_town">Κωμόπολη</string>
     <string name="place_neighbourhood">Γειτονιά</string>
+    <string name="route_button">Διαδρομή</string>
+    <string name="route_back">Κλείσιμο διαδρομής</string>
+    <string name="route_waiting">Αναμονή για την τοποθεσία σας…</string>
+    <string name="route_finding">Αναζήτηση διαδρομής…</string>
+    <string name="route_minutes">%1$d λεπ.</string>
+    <string name="route_hours">%1$d ώρ. %2$d λεπ.</string>
+    <string name="route_arrive">Άφιξη στις %1$s</string>
+    <string name="route_via">μέσω %1$s</string>
+    <string name="route_no_traffic">χωρίς κίνηση</string>
+    <string name="route_need_routes">Για διαδρομή χωρίς internet λείπουν οι δρόμοι της περιοχής %1$s (%2$s).</string>
+    <string name="route_download">Λήψη δρόμων</string>
+    <string name="route_download_failed">Δεν ήταν δυνατή η λήψη. Ελέγξτε το internet και δοκιμάστε ξανά.</string>
+    <string name="route_other_state">Αυτό το μέρος είναι στην περιφέρεια %1$s: κατεβάστε κι αυτή την περιφέρεια ή ανοίξτε το στην εφαρμογή χαρτών σας.</string>
+    <string name="route_outside">Αυτό το μέρος είναι εκτός της περιφέρειάς σας: ανοίξτε το στην εφαρμογή χαρτών σας.</string>
+    <string name="route_no_state">Για διαδρομή χωρίς internet, κατεβάστε τον χάρτη της περιφέρειάς σας από Ρυθμίσεις → Εφαρμογές → Πλοήγηση → Εκτός σύνδεσης.</string>
+    <string name="route_from_off">Είστε μακριά από δρόμο: πλησιάστε σε έναν για να βρεθεί η διαδρομή.</string>
+    <string name="route_to_off">Αυτό το μέρος είναι μακριά από δρόμο.</string>
+    <string name="route_no_path">Δεν βρέθηκε οδική διαδρομή μέχρι εκεί.</string>
+    <string name="route_two_states">Αυτό το μέρος είναι σε άλλη περιφέρεια: οι διαδρομές μεταξύ περιφερειών έρχονται αργότερα. Μέχρι τότε, άνοιξέ το στην εφαρμογή χαρτών σου.</string>
 </resources>

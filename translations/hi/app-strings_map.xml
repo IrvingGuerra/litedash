@@ -104,4 +104,23 @@
     <string name="place_city">शहर</string>
     <string name="place_town">कस्बा</string>
     <string name="place_neighbourhood">मोहल्ला</string>
+    <string name="route_button">रास्ता</string>
+    <string name="route_back">रास्ता बंद करें</string>
+    <string name="route_waiting">आपकी लोकेशन का इंतज़ार…</string>
+    <string name="route_finding">रास्ता खोजा जा रहा है…</string>
+    <string name="route_minutes">%1$d मिनट</string>
+    <string name="route_hours">%1$d घं %2$d मिनट</string>
+    <string name="route_arrive">%1$s बजे पहुँचेंगे</string>
+    <string name="route_via">%1$s से होकर</string>
+    <string name="route_no_traffic">ट्रैफ़िक के बिना</string>
+    <string name="route_need_routes">बिना इंटरनेट रास्ते के लिए %1$s की सड़कें चाहिए (%2$s)।</string>
+    <string name="route_download">सड़कें डाउनलोड करें</string>
+    <string name="route_download_failed">डाउनलोड नहीं हो सका। अपना इंटरनेट जाँचें और फिर से कोशिश करें।</string>
+    <string name="route_other_state">यह जगह %1$s में है: वह राज्य भी डाउनलोड करें या इसे अपने मैप ऐप में खोलें।</string>
+    <string name="route_outside">यह जगह आपके राज्य से बाहर है: इसे अपने मैप ऐप में खोलें।</string>
+    <string name="route_no_state">बिना इंटरनेट रास्ते के लिए सेटिंग्स → ऐप्स → नेविगेशन → ऑफ़लाइन में अपने राज्य का मैप डाउनलोड करें।</string>
+    <string name="route_from_off">आप सड़क से दूर हैं: रास्ता खोजने के लिए किसी सड़क के पास जाएँ।</string>
+    <string name="route_to_off">यह जगह सड़क से दूर है।</string>
+    <string name="route_no_path">वहाँ तक सड़क से कोई रास्ता नहीं मिला।</string>
+    <string name="route_two_states">यह जगह दूसरे राज्य में है: राज्यों के बीच रास्ते बाद में आएँगे। तब तक इसे अपने मैप ऐप में खोलें।</string>
 </resources>

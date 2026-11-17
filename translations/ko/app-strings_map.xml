@@ -104,4 +104,23 @@
     <string name="place_city">도시</string>
     <string name="place_town">마을</string>
     <string name="place_neighbourhood">동네</string>
+    <string name="route_button">경로</string>
+    <string name="route_back">경로 닫기</string>
+    <string name="route_waiting">위치를 기다리는 중…</string>
+    <string name="route_finding">경로를 찾는 중…</string>
+    <string name="route_minutes">%1$d분</string>
+    <string name="route_hours">%1$d시간 %2$d분</string>
+    <string name="route_arrive">%1$s 도착</string>
+    <string name="route_via">%1$s 경유</string>
+    <string name="route_no_traffic">교통 정보 제외</string>
+    <string name="route_need_routes">인터넷 없이 경로를 찾으려면 %1$s 도로 데이터가 필요해요 (%2$s).</string>
+    <string name="route_download">도로 받기</string>
+    <string name="route_download_failed">받지 못했어요. 인터넷을 확인하고 다시 시도하세요.</string>
+    <string name="route_other_state">그곳은 %1$s에 있어요. 그 지역도 받거나 지도 앱에서 여세요.</string>
+    <string name="route_outside">그곳은 내 지역 밖에 있어요. 지도 앱에서 여세요.</string>
+    <string name="route_no_state">인터넷 없이 경로를 찾으려면 설정 → 앱 → 내비게이션 → 오프라인에서 내 지역 지도를 받으세요.</string>
+    <string name="route_from_off">도로에서 멀리 있어요. 경로를 찾으려면 도로에 더 가까이 가세요.</string>
+    <string name="route_to_off">그곳은 도로에서 멀리 있어요.</string>
+    <string name="route_no_path">그곳까지 가는 도로를 찾지 못했어요.</string>
+    <string name="route_two_states">그 장소는 다른 지역에 있습니다. 지역 간 경로는 나중에 지원됩니다. 그동안은 지도 앱에서 여세요.</string>
 </resources>

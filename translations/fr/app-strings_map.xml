@@ -106,4 +106,23 @@
     <string name="place_city">Ville</string>
     <string name="place_town">Village</string>
     <string name="place_neighbourhood">Quartier</string>
+    <string name="route_button">Itinéraire</string>
+    <string name="route_back">Fermer l\'itinéraire</string>
+    <string name="route_waiting">En attente de votre position…</string>
+    <string name="route_finding">Recherche de l\'itinéraire…</string>
+    <string name="route_minutes">%1$d min</string>
+    <string name="route_hours">%1$d h %2$d min</string>
+    <string name="route_arrive">Arrivée à %1$s</string>
+    <string name="route_via">par %1$s</string>
+    <string name="route_no_traffic">hors trafic</string>
+    <string name="route_need_routes">Pour l\'itinéraire sans internet, il manque les rues de %1$s (%2$s).</string>
+    <string name="route_download">Télécharger les rues</string>
+    <string name="route_download_failed">Échec du téléchargement. Vérifiez votre internet et réessayez.</string>
+    <string name="route_other_state">Ce lieu se trouve en %1$s : téléchargez aussi cette région ou ouvrez-le dans votre appli de cartes.</string>
+    <string name="route_outside">Ce lieu est hors de votre région : ouvrez-le dans votre appli de cartes.</string>
+    <string name="route_no_state">Pour l\'itinéraire sans internet, téléchargez la carte de votre région dans Paramètres → Applis → Navigation → Hors ligne.</string>
+    <string name="route_from_off">Vous êtes loin d\'une rue : rapprochez-vous-en pour calculer l\'itinéraire.</string>
+    <string name="route_to_off">Ce lieu est loin d\'une rue.</string>
+    <string name="route_no_path">Aucun chemin par la route n\'a été trouvé jusque-là.</string>
+    <string name="route_two_states">Ce lieu est dans une autre région : les itinéraires entre régions arrivent plus tard. En attendant, ouvrez-le dans votre app de cartes.</string>
 </resources>

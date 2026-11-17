@@ -106,4 +106,23 @@
     <string name="place_city">City</string>
     <string name="place_town">Town</string>
     <string name="place_neighbourhood">Neighborhood</string>
+    <string name="route_button">Route</string>
+    <string name="route_back">Close route</string>
+    <string name="route_waiting">Waiting for your location…</string>
+    <string name="route_finding">Finding the route…</string>
+    <string name="route_minutes">%1$d min</string>
+    <string name="route_hours">%1$d h %2$d min</string>
+    <string name="route_arrive">Arrive at %1$s</string>
+    <string name="route_via">via %1$s</string>
+    <string name="route_no_traffic">without traffic</string>
+    <string name="route_need_routes">For the route without internet, the streets of %1$s are missing (%2$s).</string>
+    <string name="route_download">Download streets</string>
+    <string name="route_download_failed">Couldn\'t download them. Check your internet and try again.</string>
+    <string name="route_other_state">That place is in %1$s: download that state too or open it in your maps app.</string>
+    <string name="route_outside">That place is outside your state: open it in your maps app.</string>
+    <string name="route_no_state">For the route without internet, download your state\'s map in Settings → Apps → Navigation → Offline.</string>
+    <string name="route_from_off">You are far from a street: get closer to one to find the route.</string>
+    <string name="route_to_off">That place is far from a street.</string>
+    <string name="route_no_path">We couldn\'t find a way there by road.</string>
+    <string name="route_two_states">That place is in another state: routes between states come later. Meanwhile, open it in your maps app.</string>
 </resources>

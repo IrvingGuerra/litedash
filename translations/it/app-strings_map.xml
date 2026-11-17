@@ -104,4 +104,23 @@
     <string name="place_city">Città</string>
     <string name="place_town">Paese</string>
     <string name="place_neighbourhood">Quartiere</string>
+    <string name="route_button">Percorso</string>
+    <string name="route_back">Chiudi percorso</string>
+    <string name="route_waiting">In attesa della tua posizione…</string>
+    <string name="route_finding">Ricerca del percorso…</string>
+    <string name="route_minutes">%1$d min</string>
+    <string name="route_hours">%1$d h %2$d min</string>
+    <string name="route_arrive">Arrivo alle %1$s</string>
+    <string name="route_via">via %1$s</string>
+    <string name="route_no_traffic">senza traffico</string>
+    <string name="route_need_routes">Per il percorso senza internet mancano le strade di %1$s (%2$s).</string>
+    <string name="route_download">Scarica strade</string>
+    <string name="route_download_failed">Download non riuscito. Controlla internet e riprova.</string>
+    <string name="route_other_state">Quel luogo è in %1$s: scarica anche quella regione o aprilo nella tua app di mappe.</string>
+    <string name="route_outside">Quel luogo è fuori dalla tua regione: aprilo nella tua app di mappe.</string>
+    <string name="route_no_state">Per il percorso senza internet, scarica la mappa della tua regione in Impostazioni → App → Navigazione → Offline.</string>
+    <string name="route_from_off">Sei lontano da una strada: avvicinati a una per trovare il percorso.</string>
+    <string name="route_to_off">Quel luogo è lontano da una strada.</string>
+    <string name="route_no_path">Non abbiamo trovato una strada per arrivarci.</string>
+    <string name="route_two_states">Questo luogo è in un\'altra regione: i percorsi tra regioni arriveranno più avanti. Nel frattempo, aprilo nella tua app di mappe.</string>
 </resources>

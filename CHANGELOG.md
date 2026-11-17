@@ -4,6 +4,20 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.4.175] - 2026-11-17
+
+### Nuevo
+- **Tu ruta, sin internet:** en la tarjeta de un lugar toca «Ruta» y LiteDash la calcula en tu pantalla con las
+  calles de tu estado (respeta sentidos y vueltas prohibidas). Ves la ruta dibujada sobre el mapa, cuánto mide, cuánto
+  tardas (sin contar el tráfico), a qué hora llegas y por qué calle vas. La guía vuelta por vuelta llega en la
+  siguiente etapa; mientras, «Abrir en tu app de mapas».
+- Las calles para la ruta vienen con el mapa de tu estado. Si ya lo tenías bajado, al pedir tu primera ruta te ofrece
+  bajarlas (Colima pesa 1.7 MB y el Estado de México, el más grande, 22 MB).
+- Si el lugar está en otro estado o no tienes bajado el tuyo, te lo dice y te deja abrirlo en tu app de mapas.
+
+### Cambiado
+- Con la tarjeta de un lugar abierta, el mapa pone el lugar en la parte que la tarjeta deja libre.
+
 ## [1.4.174] - 2026-11-16
 
 ### Nuevo

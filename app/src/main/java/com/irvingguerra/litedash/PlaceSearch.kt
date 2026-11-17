@@ -499,11 +499,14 @@ internal fun highlight(name: String, words: List<String>, color: androidx.compos
 
 /**
  * La tarjeta del lugar elegido: su nombre, qué es y dónde, a cuánto queda en línea recta (y si salió de internet o
- * del mapa de tu estado), y qué hacer: abrirlo en tu app de mapas, guardarlo de favorito, o como Casa o Trabajo.
+ * del mapa de tu estado), y qué hacer: ver la ruta, abrirlo en tu app de mapas, guardarlo de favorito, o como Casa o
+ * Trabajo.
  * [appName] = tu app de mapas (null = la que Android elija).
  */
 @Composable
-internal fun PlaceCard(d: Dependencies, hit: SearchHit, appName: String?, onOpen: () -> Unit, close: () -> Unit, modifier: Modifier = Modifier) {
+internal fun PlaceCard(
+    d: Dependencies, hit: SearchHit, appName: String?, onRoute: () -> Unit, onOpen: () -> Unit, close: () -> Unit, modifier: Modifier = Modifier,
+) {
     val c = LocalColors.current
     val here = d.trip.position
     val km = here?.let { distanceKm(it.latitude, it.longitude, hit.lat, hit.lon) }
@@ -527,7 +530,8 @@ internal fun PlaceCard(d: Dependencies, hit: SearchHit, appName: String?, onOpen
             )
         }
         FlowRow(Modifier.padding(top = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Button(if (appName != null) stringResource(R.string.search_open_in, appName) else stringResource(R.string.search_open), onOpen, primary = true)
+            Button(stringResource(R.string.route_button), onRoute, primary = true)
+            Button(if (appName != null) stringResource(R.string.search_open_in, appName) else stringResource(R.string.search_open), onOpen)
             Button(stringResource(if (favorite) R.string.search_unfavorite else R.string.search_favorite), { d.prefs.toggleFavorite(hit) })
             val asText = hit.name.takeIf { it.isNotEmpty() && hit.address != null }?.let { "${hit.name}, ${hit.address}" } ?: coords
             if (d.prefs.homeAddress != asText) Button(stringResource(R.string.search_set_home), { d.prefs.homeAddress = asText })

@@ -104,4 +104,23 @@
     <string name="place_city">Stad</string>
     <string name="place_town">Ort</string>
     <string name="place_neighbourhood">Stadsdel</string>
+    <string name="route_button">Rutt</string>
+    <string name="route_back">Stäng rutt</string>
+    <string name="route_waiting">Väntar på din position…</string>
+    <string name="route_finding">Söker rutt…</string>
+    <string name="route_minutes">%1$d min</string>
+    <string name="route_hours">%1$d h %2$d min</string>
+    <string name="route_arrive">Framme %1$s</string>
+    <string name="route_via">via %1$s</string>
+    <string name="route_no_traffic">utan trafik</string>
+    <string name="route_need_routes">För rutten utan internet saknas gatorna i %1$s (%2$s).</string>
+    <string name="route_download">Ladda ner gator</string>
+    <string name="route_download_failed">Det gick inte att ladda ner. Kontrollera internet och försök igen.</string>
+    <string name="route_other_state">Platsen ligger i %1$s: ladda ner det länet också eller öppna den i din kartapp.</string>
+    <string name="route_outside">Platsen ligger utanför ditt län: öppna den i din kartapp.</string>
+    <string name="route_no_state">Ladda ner kartan för ditt län i Inställningar → Appar → Navigering → Offline för att få rutt utan internet.</string>
+    <string name="route_from_off">Du är långt från en gata: kom närmare en för att hitta rutten.</string>
+    <string name="route_to_off">Platsen ligger långt från en gata.</string>
+    <string name="route_no_path">Vi hittade ingen väg dit.</string>
+    <string name="route_two_states">Platsen ligger i ett annat län: rutter mellan län kommer senare. Öppna den i din kartapp så länge.</string>
 </resources>

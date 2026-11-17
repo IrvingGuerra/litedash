@@ -104,4 +104,23 @@
     <string name="place_city">Město</string>
     <string name="place_town">Obec</string>
     <string name="place_neighbourhood">Čtvrť</string>
+    <string name="route_button">Trasa</string>
+    <string name="route_back">Zavřít trasu</string>
+    <string name="route_waiting">Čekám na tvou polohu…</string>
+    <string name="route_finding">Hledám trasu…</string>
+    <string name="route_minutes">%1$d min</string>
+    <string name="route_hours">%1$d h %2$d min</string>
+    <string name="route_arrive">Příjezd v %1$s</string>
+    <string name="route_via">přes %1$s</string>
+    <string name="route_no_traffic">bez provozu</string>
+    <string name="route_need_routes">Pro trasu bez internetu chybí ulice: %1$s (%2$s).</string>
+    <string name="route_download">Stáhnout ulice</string>
+    <string name="route_download_failed">Nepodařilo se je stáhnout. Zkontroluj internet a zkus to znovu.</string>
+    <string name="route_other_state">To místo je v kraji %1$s: stáhni i ten kraj, nebo ho otevři v aplikaci s mapami.</string>
+    <string name="route_outside">To místo je mimo tvůj kraj: otevři ho v aplikaci s mapami.</string>
+    <string name="route_no_state">Pro trasu bez internetu si stáhni mapu svého kraje v Nastavení → Aplikace → Navigace → Offline.</string>
+    <string name="route_from_off">Jsi daleko od silnice: přibliž se k nějaké, ať můžu najít trasu.</string>
+    <string name="route_to_off">To místo je daleko od silnice.</string>
+    <string name="route_no_path">Nenašli jsme tam cestu po silnici.</string>
+    <string name="route_two_states">To místo je v jiném kraji: trasy mezi kraji přijdou později. Zatím ho otevřete ve své aplikaci map.</string>
 </resources>

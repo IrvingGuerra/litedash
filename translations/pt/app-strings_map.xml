@@ -106,4 +106,23 @@
     <string name="place_city">Cidade</string>
     <string name="place_town">Vila</string>
     <string name="place_neighbourhood">Bairro</string>
+    <string name="route_button">Rota</string>
+    <string name="route_back">Fechar rota</string>
+    <string name="route_waiting">Aguardando sua localização…</string>
+    <string name="route_finding">Buscando a rota…</string>
+    <string name="route_minutes">%1$d min</string>
+    <string name="route_hours">%1$d h %2$d min</string>
+    <string name="route_arrive">Chegada às %1$s</string>
+    <string name="route_via">pela %1$s</string>
+    <string name="route_no_traffic">sem contar o trânsito</string>
+    <string name="route_need_routes">Para a rota sem internet faltam as ruas de %1$s (%2$s).</string>
+    <string name="route_download">Baixar ruas</string>
+    <string name="route_download_failed">Não foi possível baixar. Verifique sua internet e tente de novo.</string>
+    <string name="route_other_state">Esse lugar fica em %1$s: baixe também esse estado ou abra no seu app de mapas.</string>
+    <string name="route_outside">Esse lugar fica fora do seu estado: abra no seu app de mapas.</string>
+    <string name="route_no_state">Para a rota sem internet, baixe o mapa do seu estado em Configurações → Apps → Navegação → Offline.</string>
+    <string name="route_from_off">Você está longe de uma rua: chegue mais perto de uma para calcular a rota.</string>
+    <string name="route_to_off">Esse lugar fica longe de uma rua.</string>
+    <string name="route_no_path">Não encontramos um caminho por ruas até lá.</string>
+    <string name="route_two_states">Esse lugar fica em outro estado: rotas entre estados chegam depois. Enquanto isso, abra no seu app de mapas.</string>
 </resources>

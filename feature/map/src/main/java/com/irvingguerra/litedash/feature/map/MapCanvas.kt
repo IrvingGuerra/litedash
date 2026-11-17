@@ -397,7 +397,13 @@ fun MapCanvas(
     pin: Pair<Double, Double>? = null,
     /** Dejar presionado un punto del mapa: su latitud y longitud (null = nada). */
     onLongPress: ((Double, Double) -> Unit)? = null,
+    /** Una ruta que se dibuja (pares lat, lon en millonésimas de grado, [Route.points]); null = ninguna. */
+    route: IntArray? = null,
 ) {
+    // La ruta en coordenadas del mundo (zoom 0), una vez: cada cuadro solo la multiplica por su zoom.
+    val routeWorld = remember(route) {
+        route?.let { r -> DoubleArray(r.size) { i -> if (i % 2 == 0) tileX(r[i + 1] / 1e6, 0) else tileY(r[i - 1] / 1e6, 0) } }
+    }
     val c = LocalColors.current
     val driveZoom = store.source.maxZoom
     // De viaje: andando o navegando; se acaba tras un rato detenido (un alto no lo quita).
@@ -557,6 +563,7 @@ fun MapCanvas(
                         // Siempre flecha: hacia arriba con el mapa girado, o con el último rumbo (sin rumbo aún, al norte).
                         sky, bearing + turn, ringKm, if (ringKm == null) 0.0 else tileLat(tileY(pose.lat, 0) + panY, 0),
                         pin?.let { tileX(it.second, zoom) } ?: Double.NaN, pin?.let { tileY(it.first, zoom) } ?: Double.NaN,
+                        routeWorld,
                     )
                 }
                 onDrawBehind { frame.draw(this, store, filter, accent, marker) }

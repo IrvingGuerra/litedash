@@ -104,4 +104,23 @@
     <string name="place_city">Şehir</string>
     <string name="place_town">Kasaba</string>
     <string name="place_neighbourhood">Mahalle</string>
+    <string name="route_button">Rota</string>
+    <string name="route_back">Rotayı kapat</string>
+    <string name="route_waiting">Konumunuz bekleniyor…</string>
+    <string name="route_finding">Rota aranıyor…</string>
+    <string name="route_minutes">%1$d dk</string>
+    <string name="route_hours">%1$d sa %2$d dk</string>
+    <string name="route_arrive">Varış %1$s</string>
+    <string name="route_via">%1$s üzerinden</string>
+    <string name="route_no_traffic">trafik hariç</string>
+    <string name="route_need_routes">İnternetsiz rota için %1$s sokakları eksik (%2$s).</string>
+    <string name="route_download">Sokakları indir</string>
+    <string name="route_download_failed">İndirilemedi. İnternetinizi kontrol edip tekrar deneyin.</string>
+    <string name="route_other_state">Bu yer %1$s içinde: o ili de indirin veya harita uygulamanızda açın.</string>
+    <string name="route_outside">Bu yer ilinizin dışında: harita uygulamanızda açın.</string>
+    <string name="route_no_state">İnternetsiz rota için ilinizin haritasını Ayarlar → Uygulamalar → Gezinme → Çevrimdışı bölümünden indirin.</string>
+    <string name="route_from_off">Bir yoldan uzaktasınız: rotayı bulmak için bir yola yaklaşın.</string>
+    <string name="route_to_off">Bu yer bir yoldan uzak.</string>
+    <string name="route_no_path">Oraya giden bir yol bulamadık.</string>
+    <string name="route_two_states">Bu yer başka bir ilde: iller arası rotalar daha sonra gelecek. Şimdilik harita uygulamanızda açın.</string>
 </resources>

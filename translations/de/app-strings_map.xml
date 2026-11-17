@@ -104,4 +104,23 @@
     <string name="place_city">Stadt</string>
     <string name="place_town">Ort</string>
     <string name="place_neighbourhood">Stadtteil</string>
+    <string name="route_button">Route</string>
+    <string name="route_back">Route schließen</string>
+    <string name="route_waiting">Warte auf deinen Standort…</string>
+    <string name="route_finding">Route wird gesucht…</string>
+    <string name="route_minutes">%1$d Min.</string>
+    <string name="route_hours">%1$d Std. %2$d Min.</string>
+    <string name="route_arrive">Ankunft um %1$s</string>
+    <string name="route_via">über %1$s</string>
+    <string name="route_no_traffic">ohne Verkehr</string>
+    <string name="route_need_routes">Für die Route ohne Internet fehlen die Straßen von %1$s (%2$s).</string>
+    <string name="route_download">Straßen laden</string>
+    <string name="route_download_failed">Download fehlgeschlagen. Prüfe dein Internet und versuch es noch mal.</string>
+    <string name="route_other_state">Dieser Ort liegt in %1$s: Lade auch dieses Bundesland oder öffne ihn in deiner Karten-App.</string>
+    <string name="route_outside">Dieser Ort liegt außerhalb deines Bundeslands: Öffne ihn in deiner Karten-App.</string>
+    <string name="route_no_state">Für die Route ohne Internet lade die Karte deines Bundeslands unter Einstellungen → Apps → Navigation → Offline herunter.</string>
+    <string name="route_from_off">Du bist weit von einer Straße entfernt: Fahr näher an eine heran, um die Route zu finden.</string>
+    <string name="route_to_off">Dieser Ort ist weit von einer Straße entfernt.</string>
+    <string name="route_no_path">Wir haben keinen Weg über Straßen dorthin gefunden.</string>
+    <string name="route_two_states">Dieser Ort liegt in einem anderen Bundesland: Routen zwischen Bundesländern kommen später. Öffne ihn so lange in deiner Karten-App.</string>
 </resources>

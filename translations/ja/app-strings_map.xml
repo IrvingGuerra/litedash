@@ -104,4 +104,23 @@
     <string name="place_city">市</string>
     <string name="place_town">町</string>
     <string name="place_neighbourhood">地区</string>
+    <string name="route_button">ルート</string>
+    <string name="route_back">ルートを閉じる</string>
+    <string name="route_waiting">現在地を待っています…</string>
+    <string name="route_finding">ルートを検索中…</string>
+    <string name="route_minutes">%1$d分</string>
+    <string name="route_hours">%1$d時間%2$d分</string>
+    <string name="route_arrive">%1$s 到着</string>
+    <string name="route_via">%1$s 経由</string>
+    <string name="route_no_traffic">渋滞を考慮しない</string>
+    <string name="route_need_routes">オフラインのルートには %1$s の道路データが必要です（%2$s）。</string>
+    <string name="route_download">道路をダウンロード</string>
+    <string name="route_download_failed">ダウンロードできませんでした。インターネットを確認して、もう一度お試しください。</string>
+    <string name="route_other_state">その場所は %1$s にあります。その都道府県もダウンロードするか、地図アプリで開いてください。</string>
+    <string name="route_outside">その場所はお住まいの都道府県の外です。地図アプリで開いてください。</string>
+    <string name="route_no_state">オフラインでルートを使うには、「設定 → アプリ → ナビ → オフライン」で都道府県の地図をダウンロードしてください。</string>
+    <string name="route_from_off">道路から離れています。ルートを探すには道路に近づいてください。</string>
+    <string name="route_to_off">その場所は道路から離れています。</string>
+    <string name="route_no_path">そこまで道路で行けるルートが見つかりませんでした。</string>
+    <string name="route_two_states">その場所は別の都道府県にあります。都道府県をまたぐルートは今後対応します。それまでは地図アプリで開いてください。</string>
 </resources>

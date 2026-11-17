@@ -104,4 +104,23 @@
     <string name="place_city">Город</string>
     <string name="place_town">Посёлок</string>
     <string name="place_neighbourhood">Район</string>
+    <string name="route_button">Маршрут</string>
+    <string name="route_back">Закрыть маршрут</string>
+    <string name="route_waiting">Ждём твоё местоположение…</string>
+    <string name="route_finding">Ищем маршрут…</string>
+    <string name="route_minutes">%1$d мин</string>
+    <string name="route_hours">%1$d ч %2$d мин</string>
+    <string name="route_arrive">Прибытие в %1$s</string>
+    <string name="route_via">через %1$s</string>
+    <string name="route_no_traffic">без учёта пробок</string>
+    <string name="route_need_routes">Для маршрута без интернета не хватает улиц: %1$s (%2$s).</string>
+    <string name="route_download">Скачать улицы</string>
+    <string name="route_download_failed">Не удалось скачать. Проверь интернет и попробуй ещё раз.</string>
+    <string name="route_other_state">Это место в регионе %1$s: скачай и этот регион или открой место в своём приложении карт.</string>
+    <string name="route_outside">Это место за пределами твоего региона: открой его в своём приложении карт.</string>
+    <string name="route_no_state">Для маршрута без интернета скачай карту своего региона в «Настройки → Приложения → Навигация → Офлайн».</string>
+    <string name="route_from_off">Ты далеко от дороги: подъедь ближе к ней, чтобы найти маршрут.</string>
+    <string name="route_to_off">Это место далеко от дороги.</string>
+    <string name="route_no_path">Не нашли путь туда по дорогам.</string>
+    <string name="route_two_states">Это место в другом регионе: маршруты между регионами появятся позже. Пока откройте его в своём приложении карт.</string>
 </resources>

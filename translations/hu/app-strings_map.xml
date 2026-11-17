@@ -104,4 +104,23 @@
     <string name="place_city">Város</string>
     <string name="place_town">Település</string>
     <string name="place_neighbourhood">Városrész</string>
+    <string name="route_button">Útvonal</string>
+    <string name="route_back">Útvonal bezárása</string>
+    <string name="route_waiting">Várakozás a helyzetedre…</string>
+    <string name="route_finding">Útvonal keresése…</string>
+    <string name="route_minutes">%1$d perc</string>
+    <string name="route_hours">%1$d ó %2$d perc</string>
+    <string name="route_arrive">Érkezés: %1$s</string>
+    <string name="route_via">%1$s érintésével</string>
+    <string name="route_no_traffic">forgalom nélkül</string>
+    <string name="route_need_routes">Az internet nélküli útvonalhoz hiányoznak ezek az utcák: %1$s (%2$s).</string>
+    <string name="route_download">Utcák letöltése</string>
+    <string name="route_download_failed">Nem sikerült letölteni. Ellenőrizd az internetet, és próbáld újra.</string>
+    <string name="route_other_state">Ez a hely itt van: %1$s. Töltsd le azt a megyét is, vagy nyisd meg a térképalkalmazásodban.</string>
+    <string name="route_outside">Ez a hely a megyéden kívül van: nyisd meg a térképalkalmazásodban.</string>
+    <string name="route_no_state">Az internet nélküli útvonalhoz töltsd le a megyéd térképét itt: Beállítások → Alkalmazások → Navigáció → Offline.</string>
+    <string name="route_from_off">Messze vagy az úttól: menj közelebb egyhez az útvonal kereséséhez.</string>
+    <string name="route_to_off">Ez a hely messze van az úttól.</string>
+    <string name="route_no_path">Nem találtunk oda vezető utat.</string>
+    <string name="route_two_states">Ez a hely másik megyében van: a megyék közötti útvonalak később jönnek. Addig nyisd meg a térképalkalmazásodban.</string>
 </resources>

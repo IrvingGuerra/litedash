@@ -30,7 +30,12 @@ class MapRegion(
     val map: PackFile,
     /** El índice de búsqueda (SRCH1, con gzip); null en índices viejos. */
     val search: PackFile? = null,
+    /** Las calles para la ruta (LDM0, con gzip); null en índices viejos. */
+    val routes: PackFile? = null,
 ) {
+    /** Lo que baja todo el estado: mapa, búsqueda y calles para la ruta. */
+    val totalSize: Long get() = map.size + (search?.size ?: 0) + (routes?.size ?: 0)
+
     /** El nombre en [language] (o en inglés, o el id). */
     fun name(language: String): String = names[language] ?: names["en"] ?: id
 
@@ -45,10 +50,12 @@ class PackFile(val url: String, val size: Long, val sha256: String)
  * Un mapa de estado ya bajado: de qué región y versión (su huella), y su caja y contorno (guardados al bajarlo: así sabe
  * qué teselas son suyas aunque no haya índice).
  */
-class InstalledPack(
+data class InstalledPack(
     val id: String, val sha256: String, val size: Long, val savedAt: Long, val bbox: DoubleArray, val shape: List<DoubleArray>,
     /** La huella del índice de búsqueda bajado ("" = aún no). */
     val searchSha: String = "",
+    /** La huella de las calles para la ruta bajadas ("" = aún no). */
+    val routesSha: String = "",
 ) {
     fun contains(lat: Double, lon: Double) = insideShape(bbox, shape, lat, lon)
 }
@@ -147,12 +154,12 @@ class MapPacks private constructor(private val app: Context) {
             if (installed.any { it.shape.isEmpty() }) {
                 replaceInstalled(installed.map { p ->
                     val r = list.firstOrNull { it.id == p.id }
-                    if (p.shape.isEmpty() && r != null) InstalledPack(p.id, p.sha256, p.size, p.savedAt, r.bbox, r.shape, p.searchSha) else p
+                    if (p.shape.isEmpty() && r != null) p.copy(bbox = r.bbox, shape = r.shape) else p
                 })
             }
         }
         val missing = installed.mapNotNull { p -> list.firstOrNull { it.id == p.id && it.search != null && it.search.sha256 != p.searchSha } }
-        if (missing.isNotEmpty()) scope.launch { for (r in missing) runCatching { fetchSearch(r) { true } } }
+        if (missing.isNotEmpty()) scope.launch { for (r in missing) runCatching { fetchExtra(r, Extra.SEARCH, { true }) } }
     }
 
     /** ¿El mapa bajado de [region] es de una versión vieja? */
@@ -168,7 +175,11 @@ class MapPacks private constructor(private val app: Context) {
             try {
                 dir.mkdirs()
                 var shown = 0f
-                val sha = Https.download(app, region.map.url, temp, region.map.size, null) { p ->
+                // El avance cuenta todo el paquete (mapa, búsqueda y calles), por su tamaño.
+                val total = region.totalSize.coerceAtLeast(1).toFloat()
+                val mapShare = region.map.size / total
+                val sha = Https.download(app, region.map.url, temp, region.map.size, null) { mapP ->
+                    val p = mapP * mapShare
                     // La descarga no se suspende: aquí se nota que la cancelaron.
                     if (!me.isActive) throw CancellationException()
                     // El avance cada 1 % (no en cada bloque: serían miles de redibujos).
@@ -184,12 +195,23 @@ class MapPacks private constructor(private val app: Context) {
                     open.remove(region.id)?.close()
                     if (!temp.renameTo(target)) throw IOException("rename")
                 }
-                // Si su búsqueda no cambió, se queda la que ya está (no se vuelve a bajar).
-                val keep = installed.firstOrNull { it.id == region.id }?.searchSha?.takeIf { it.isNotEmpty() && it.equals(region.search?.sha256, ignoreCase = true) }
-                val pack = InstalledPack(region.id, sha, target.length(), System.currentTimeMillis(), region.bbox, region.shape, keep.orEmpty())
+                // Si su búsqueda o sus calles no cambiaron, se quedan las que ya están (no se vuelven a bajar).
+                val before = installed.firstOrNull { it.id == region.id }
+                fun keep(have: String?, file: PackFile?) = have?.takeIf { it.isNotEmpty() && it.equals(file?.sha256, ignoreCase = true) }.orEmpty()
+                val pack = InstalledPack(
+                    region.id, sha, target.length(), System.currentTimeMillis(), region.bbox, region.shape,
+                    keep(before?.searchSha, region.search), keep(before?.routesSha, region.routes),
+                )
                 synchronized(stateLock) { replaceInstalled(installed.filter { it.id != region.id } + pack) }
-                // Con el mapa, su búsqueda sin internet (pocos MB); si falla, se reintenta sola al volver a leer el índice.
-                runCatching { fetchSearch(region) { me.isActive } }
+                // Con el mapa, su búsqueda y sus calles para la ruta; si algo falla, la búsqueda se reintenta sola y las
+                // calles al pedir una ruta.
+                var done = region.map.size
+                for (extra in Extra.entries) {
+                    val size = extra.file(region)?.size ?: continue
+                    val from = done / total
+                    runCatching { fetchExtra(region, extra, { me.isActive }) { p -> job = PackJob(region.id, from + p * size / total) } }
+                    done += size
+                }
                 job = null
             } catch (e: CancellationException) {
                 job = null
@@ -221,36 +243,139 @@ class MapPacks private constructor(private val app: Context) {
                 indexes.remove(id)?.close()
                 File(dir, "$id.srch").delete()
             }
+            synchronized(routeLock) {
+                if (routerId == id) releaseRouterNow()
+                File(dir, "$id.ldm").delete()
+            }
         }
     }
 
+    /** Lo que baja aparte del mapa: la búsqueda y las calles para la ruta (cada una con su huella). */
+    private enum class Extra(val suffix: String) {
+        SEARCH("srch"), ROUTES("ldm");
+
+        fun file(r: MapRegion) = if (this == SEARCH) r.search else r.routes
+        fun sha(p: InstalledPack) = if (this == SEARCH) p.searchSha else p.routesSha
+        fun with(p: InstalledPack, sha: String) = if (this == SEARCH) p.copy(searchSha = sha) else p.copy(routesSha = sha)
+    }
+
     /**
-     * Baja el índice de búsqueda de [region] (con gzip), revisa su huella, lo descomprime y lo deja junto a su mapa.
-     * Uno a la vez; [active] = false lo detiene (cancelaron la descarga). Corre fuera del hilo principal.
+     * Baja [extra] de [region] (con gzip), revisa su huella, lo descomprime y lo deja junto a su mapa. Uno a la vez;
+     * [active] = false lo detiene (cancelaron). [progress] = cuánto va (0–1). Corre fuera del hilo principal.
      */
-    private fun fetchSearch(region: MapRegion, active: () -> Boolean) = synchronized(fetchLock) {
-        val file = region.search ?: return@synchronized
-        // Ya la bajó otro (al arrancar se pide con el índice guardado y otra vez con el nuevo) o borraron el estado.
+    private fun fetchExtra(region: MapRegion, extra: Extra, active: () -> Boolean, progress: ((Float) -> Unit)? = null) = synchronized(fetchLock) {
+        val file = extra.file(region) ?: return@synchronized
+        // Ya lo bajó otro (al arrancar se pide con el índice guardado y otra vez con el nuevo) o borraron el estado.
         val pack = installed.firstOrNull { it.id == region.id } ?: return@synchronized
-        if (pack.searchSha.equals(file.sha256, ignoreCase = true) && File(dir, "${region.id}.srch").isFile) return@synchronized
-        val gz = File(dir, "${region.id}.srch.gz$PART")
-        val raw = File(dir, "${region.id}.srch$PART")
+        val final = File(dir, "${region.id}.${extra.suffix}")
+        if (extra.sha(pack).equals(file.sha256, ignoreCase = true) && final.isFile) return@synchronized
+        val gz = File(dir, "${region.id}.${extra.suffix}.gz$PART")
+        val raw = File(dir, "${region.id}.${extra.suffix}$PART")
         try {
-            val sha = Https.download(app, file.url, gz, file.size, null) { if (!active()) throw CancellationException() }
+            var shown = 0f
+            val sha = Https.download(app, file.url, gz, file.size, null) { p ->
+                if (!active()) throw CancellationException()
+                if (progress != null && (p - shown >= 0.01f || p >= 1f)) {
+                    shown = p
+                    progress(p)
+                }
+            }
             if (!sha.equals(file.sha256, ignoreCase = true)) throw IOException("SHA-256")
             java.util.zip.GZIPInputStream(gz.inputStream()).use { input -> raw.outputStream().use { input.copyTo(it) } }
             if (!active() || installed.none { it.id == region.id }) throw CancellationException()
-            synchronized(searchLock) {
-                indexes.remove(region.id)?.close()
-                if (!raw.renameTo(File(dir, "${region.id}.srch"))) throw IOException("rename")
+            val lock = if (extra == Extra.SEARCH) searchLock else routeLock
+            synchronized(lock) {
+                if (extra == Extra.SEARCH) indexes.remove(region.id)?.close() else if (routerId == region.id) releaseRouterNow()
+                if (!raw.renameTo(final)) throw IOException("rename")
             }
-            synchronized(stateLock) {
-                replaceInstalled(installed.map { if (it.id == region.id) InstalledPack(it.id, it.sha256, it.size, it.savedAt, it.bbox, it.shape, sha) else it })
-            }
+            synchronized(stateLock) { replaceInstalled(installed.map { if (it.id == region.id) extra.with(it, sha) else it }) }
         } finally {
             gz.delete()
             raw.delete()
         }
+    }
+
+    /** El ruteador abierto (uno: sus arreglos pesan ~16 B por cruce) y de qué estado es. */
+    private val routeLock = Any()
+    private var routerId: String? = null
+    private var graph: RoadGraph? = null
+    private var router: Router? = null
+
+    /** Bajando las calles para la ruta de un estado (al pedir la primera ruta): cuánto va o si falló. */
+    var routesJob by mutableStateOf<PackJob?>(null)
+        private set
+
+    /**
+     * Qué se puede hacer para ir de ([fromLat], [fromLon]) a ([toLat], [toLon]) con lo bajado: la ruta, bajar antes las
+     * calles de tu estado, o nada (algún punto está fuera de tus estados bajados). Fuera del hilo principal.
+     */
+    fun planRoute(fromLat: Double, fromLon: Double, toLat: Double, toLon: Double): RoutePlan = try {
+        plan(fromLat, fromLon, toLat, toLon)
+    } catch (_: Throwable) {
+        // Un archivo raro por dentro o sin memoria para el ruteador: sin ruta, sin tumbar la app.
+        releaseRouterNow()
+        RoutePlan.Failed(RouteError.NO_PATH)
+    }
+
+    private fun plan(fromLat: Double, fromLon: Double, toLat: Double, toLon: Double): RoutePlan {
+        val pack = installed.firstOrNull { it.contains(fromLat, fromLon) && it.contains(toLat, toLon) }
+            ?: return when {
+                installed.none { it.contains(fromLat, fromLon) } -> RoutePlan.NoState
+                // Los dos estados bajados: lo que falta es la ruta entre estados (llega con los viajes largos).
+                installed.any { it.contains(toLat, toLon) } -> RoutePlan.TwoStates
+                else -> RoutePlan.OtherState(regionAt(toLat, toLon))
+            }
+        if (pack.routesSha.isEmpty() || !File(dir, "${pack.id}.ldm").isFile) {
+            // Sin el índice aún (sin red al abrir): se pide; mientras, no se sabe de dónde bajarlas.
+            val region = regions.firstOrNull { it.id == pack.id && it.routes != null } ?: return RoutePlan.Failed(RouteError.NO_PATH).also { refresh() }
+            return RoutePlan.NeedsRoutes(region)
+        }
+        return synchronized(routeLock) {
+            if (routerId != pack.id) {
+                releaseRouter()
+                // No abre (dañado): se olvida su huella para que se vuelvan a bajar.
+                val g = RoadGraph.open(File(dir, "${pack.id}.ldm")) ?: run {
+                    File(dir, "${pack.id}.ldm").delete()
+                    synchronized(stateLock) { replaceInstalled(installed.map { if (it.id == pack.id) it.copy(routesSha = "") else it }) }
+                    return@synchronized regions.firstOrNull { it.id == pack.id && it.routes != null }?.let { RoutePlan.NeedsRoutes(it) }
+                        ?: RoutePlan.Failed(RouteError.NO_PATH)
+                }
+                graph = g
+                router = Router(g)
+                routerId = pack.id
+            }
+            router!!.route(fromLat, fromLon, toLat, toLon).fold(
+                { RoutePlan.Found(it) },
+                { RoutePlan.Failed((it as? RouteException)?.error ?: RouteError.NO_PATH) },
+            )
+        }
+    }
+
+    /** Baja las calles para la ruta de [region] (lo pidió el usuario al pedir una ruta); el avance en [routesJob]. */
+    fun downloadRoutes(region: MapRegion) {
+        if (routesJob?.let { !it.failed && it.id == region.id } == true) return
+        routesJob = PackJob(region.id, 0f)
+        scope.launch {
+            try {
+                fetchExtra(region, Extra.ROUTES, { true }) { routesJob = PackJob(region.id, it) }
+                routesJob = null
+            } catch (_: Exception) {
+                routesJob = PackJob(region.id, 0f, failed = true)
+            }
+        }
+    }
+
+    /** Suelta el ruteador (memoria) al cerrar el mapa en grande; fuera del hilo principal (puede estar calculando). */
+    fun releaseRouter() {
+        scope.launch { synchronized(routeLock) { releaseRouterNow() } }
+    }
+
+    /** Suelta el ruteador ya con [routeLock] tomado. */
+    private fun releaseRouterNow() {
+        router = null
+        graph?.close()
+        graph = null
+        routerId = null
     }
 
     /** ¿Ya se puede buscar sin internet en algún estado bajado? */
@@ -269,9 +394,7 @@ class MapPacks private constructor(private val app: Context) {
                 index.search(query, lat, lon, limit)
             } catch (_: Exception) {
                 synchronized(searchLock) { if (indexes[id] === index) indexes.remove(id)?.close() }
-                synchronized(stateLock) {
-                    replaceInstalled(installed.map { if (it.id == id) InstalledPack(it.id, it.sha256, it.size, it.savedAt, it.bbox, it.shape) else it })
-                }
+                synchronized(stateLock) { replaceInstalled(installed.map { if (it.id == id) it.copy(searchSha = "") else it }) }
                 null
             }
         }
@@ -350,7 +473,7 @@ class MapPacks private constructor(private val app: Context) {
                     fun file(o: JSONObject) = PackFile(base + o.getString("name"), o.getLong("size"), o.getString("sha256"))
                     MapRegion(
                         r.getString("id"), r.getString("country"), names, box(r.getJSONArray("bbox")), rings(r.getJSONArray("shape")),
-                        file(files.getJSONObject("map")), files.optJSONObject("search")?.let(::file),
+                        file(files.getJSONObject("map")), files.optJSONObject("search")?.let(::file), files.optJSONObject("routes")?.let(::file),
                     )
                 }.getOrNull()
             }
@@ -365,11 +488,13 @@ class MapPacks private constructor(private val app: Context) {
             for (ring in p.shape) shape.put(JSONArray().apply { for (i in ring.indices step 2) put(JSONArray().put(ring[i]).put(ring[i + 1])) })
             return JSONObject().put("id", p.id).put("sha256", p.sha256).put("size", p.size).put("savedAt", p.savedAt)
                 .put("bbox", JSONArray().apply { p.bbox.forEach { put(it) } }).put("shape", shape).put("searchSha", p.searchSha)
+                .put("routesSha", p.routesSha)
         }
 
         internal fun packFromJson(o: JSONObject) = InstalledPack(
             o.getString("id"), o.getString("sha256"), o.getLong("size"), o.getLong("savedAt"),
             box(o.getJSONArray("bbox")), rings(o.optJSONArray("shape") ?: JSONArray()), o.optString("searchSha"),
+            o.optString("routesSha"),
         )
 
         private fun box(a: JSONArray) = DoubleArray(4) { a.getDouble(it) }

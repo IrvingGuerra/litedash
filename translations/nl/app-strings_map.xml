@@ -104,4 +104,23 @@
     <string name="place_city">Stad</string>
     <string name="place_town">Dorp</string>
     <string name="place_neighbourhood">Wijk</string>
+    <string name="route_button">Route</string>
+    <string name="route_back">Route sluiten</string>
+    <string name="route_waiting">Wachten op je locatie…</string>
+    <string name="route_finding">Route zoeken…</string>
+    <string name="route_minutes">%1$d min</string>
+    <string name="route_hours">%1$d u %2$d min</string>
+    <string name="route_arrive">Aankomst om %1$s</string>
+    <string name="route_via">via %1$s</string>
+    <string name="route_no_traffic">zonder verkeer</string>
+    <string name="route_need_routes">Voor de route zonder internet ontbreken de straten van %1$s (%2$s).</string>
+    <string name="route_download">Straten downloaden</string>
+    <string name="route_download_failed">Downloaden mislukt. Controleer je internet en probeer het opnieuw.</string>
+    <string name="route_other_state">Die plek ligt in %1$s: download ook die provincie of open hem in je kaarten-app.</string>
+    <string name="route_outside">Die plek ligt buiten je provincie: open hem in je kaarten-app.</string>
+    <string name="route_no_state">Download voor de route zonder internet de kaart van je provincie in Instellingen → Apps → Navigatie → Offline.</string>
+    <string name="route_from_off">Je bent ver van een straat: ga dichter naar een straat om de route te vinden.</string>
+    <string name="route_to_off">Die plek ligt ver van een straat.</string>
+    <string name="route_no_path">We vonden geen weg daarheen over de straat.</string>
+    <string name="route_two_states">Die plek ligt in een andere provincie: routes tussen provincies komen later. Open hem tot dan in je kaarten-app.</string>
 </resources>

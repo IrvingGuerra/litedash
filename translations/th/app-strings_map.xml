@@ -104,4 +104,23 @@
     <string name="place_city">เมือง</string>
     <string name="place_town">เมืองเล็ก</string>
     <string name="place_neighbourhood">ย่าน</string>
+    <string name="route_button">เส้นทาง</string>
+    <string name="route_back">ปิดเส้นทาง</string>
+    <string name="route_waiting">กำลังรอตำแหน่งของคุณ…</string>
+    <string name="route_finding">กำลังหาเส้นทาง…</string>
+    <string name="route_minutes">%1$d นาที</string>
+    <string name="route_hours">%1$d ชม. %2$d นาที</string>
+    <string name="route_arrive">ถึงเวลา %1$s</string>
+    <string name="route_via">ผ่าน %1$s</string>
+    <string name="route_no_traffic">ไม่รวมการจราจร</string>
+    <string name="route_need_routes">ถ้าจะใช้เส้นทางโดยไม่ใช้อินเทอร์เน็ต ต้องมีข้อมูลถนนของ %1$s (%2$s)</string>
+    <string name="route_download">ดาวน์โหลดถนน</string>
+    <string name="route_download_failed">ดาวน์โหลดไม่สำเร็จ ตรวจสอบอินเทอร์เน็ตแล้วลองอีกครั้ง</string>
+    <string name="route_other_state">สถานที่นี้อยู่ใน %1$s: ดาวน์โหลดจังหวัดนั้นด้วย หรือเปิดในแอปแผนที่ของคุณ</string>
+    <string name="route_outside">สถานที่นี้อยู่นอกจังหวัดของคุณ: เปิดในแอปแผนที่ของคุณ</string>
+    <string name="route_no_state">ถ้าจะใช้เส้นทางโดยไม่ใช้อินเทอร์เน็ต ให้ดาวน์โหลดแผนที่จังหวัดของคุณใน การตั้งค่า → แอป → การนำทาง → ออฟไลน์</string>
+    <string name="route_from_off">คุณอยู่ไกลจากถนน: เข้าใกล้ถนนเพื่อหาเส้นทาง</string>
+    <string name="route_to_off">สถานที่นี้อยู่ไกลจากถนน</string>
+    <string name="route_no_path">ไม่พบเส้นทางถนนไปที่นั่น</string>
+    <string name="route_two_states">สถานที่นี้อยู่ในจังหวัดอื่น เส้นทางข้ามจังหวัดจะมาในภายหลัง ระหว่างนี้เปิดในแอปแผนที่ของคุณ</string>
 </resources>

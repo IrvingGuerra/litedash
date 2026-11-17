@@ -104,4 +104,23 @@
     <string name="place_city">Kota</string>
     <string name="place_town">Kota kecil</string>
     <string name="place_neighbourhood">Lingkungan</string>
+    <string name="route_button">Rute</string>
+    <string name="route_back">Tutup rute</string>
+    <string name="route_waiting">Menunggu lokasi Anda…</string>
+    <string name="route_finding">Mencari rute…</string>
+    <string name="route_minutes">%1$d mnt</string>
+    <string name="route_hours">%1$d j %2$d mnt</string>
+    <string name="route_arrive">Tiba pukul %1$s</string>
+    <string name="route_via">lewat %1$s</string>
+    <string name="route_no_traffic">tanpa lalu lintas</string>
+    <string name="route_need_routes">Untuk rute tanpa internet, jalan di %1$s belum ada (%2$s).</string>
+    <string name="route_download">Unduh jalan</string>
+    <string name="route_download_failed">Gagal mengunduh. Periksa internet Anda dan coba lagi.</string>
+    <string name="route_other_state">Tempat itu ada di %1$s: unduh juga provinsi itu atau buka di aplikasi peta Anda.</string>
+    <string name="route_outside">Tempat itu di luar provinsi Anda: buka di aplikasi peta Anda.</string>
+    <string name="route_no_state">Untuk rute tanpa internet, unduh peta provinsi Anda di Setelan → Aplikasi → Navigasi → Offline.</string>
+    <string name="route_from_off">Anda jauh dari jalan: dekati jalan untuk mencari rute.</string>
+    <string name="route_to_off">Tempat itu jauh dari jalan.</string>
+    <string name="route_no_path">Tidak ada jalan ke sana yang ditemukan.</string>
+    <string name="route_two_states">Tempat itu ada di provinsi lain: rute antarprovinsi menyusul nanti. Sementara, buka di aplikasi peta Anda.</string>
 </resources>
