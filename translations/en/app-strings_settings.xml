@@ -14,4 +14,12 @@
     <string name="accent_title">Interface color</string>
     <string name="accent_help">Switches, buttons, play and progress bars. Cards and background stay the same; Natural is the original look.</string>
     <string name="accent_natural">Natural</string>
+    <string name="cards_title">Cards</string>
+    <string name="cards_help">How the widgets on your home look: their color and whether the background shows through.</string>
+    <string name="cards_solid">Solid</string>
+    <string name="cards_translucent">Translucent</string>
+    <string name="cards_glass">Glass</string>
+    <string name="cards_opacity">How visible</string>
+    <string name="cards_glass_help">With a wallpaper, it shows blurred behind each card.</string>
+    <string name="cards_theme">Theme</string>
 </resources>
