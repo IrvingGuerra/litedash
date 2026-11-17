@@ -6,6 +6,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.calculateZoom
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Spacer
@@ -103,6 +104,9 @@ private fun easeInOut(t: Float): Float = if (t < 0.5f) 2 * t * t else 1 - (-2 * 
 /** Lo más que se aleja el mapa de ti con el dedo (fracción del mundo, ~80 km). */
 private const val MAX_PAN = 0.002
 
+/** El zoom para enseñar un lugar buscado: se ven sus calles alrededor. */
+private const val PLACE_ZOOM = 16
+
 /** En el plano, un movimiento del dedo no avanza más de tantas veces lo que se movió en pantalla. */
 private const val MAX_PAN_STRETCH = 4.0
 
@@ -180,7 +184,41 @@ class MapCamera(
 
     /** Regresa a ti deslizándose (lo anima `MapCanvas`) y vuelve al zoom de fábrica (en automático, lo más cerca e inclinado). */
     fun recenter() {
+        place = null
+        reach = 0.0
         recenters++
+    }
+
+    /** Lo más que se aleja el centro mientras enseña un lugar ([show]); 0 = solo [maxPan]. */
+    private var reach by mutableDoubleStateOf(0.0)
+
+    /** Hasta dónde se deja mover el centro de ti ahora (fracción del mundo). */
+    internal val panLimit: Double get() = maxOf(maxPan, reach)
+
+    /** El lugar que se enseña ([show]): el centro se queda en él aunque te muevas, hasta moverlo con el dedo o centrar. */
+    internal var place by mutableStateOf<Pair<Double, Double>?>(null)
+
+    /** ¿Se enseña (o se enseñó y se movió con el dedo) un lugar lejos de ti? Centrar lo termina. */
+    val showingPlace: Boolean get() = reach > 0.0
+
+    /**
+     * Enseña el lugar ([lat], [lon]): el centro va ahí aunque esté lejos (cuando ya se sabe dónde estás) y el mapa se
+     * aleja a un zoom de ver calles. Se queda así hasta centrar (no regresa solo).
+     */
+    fun show(lat: Double, lon: Double) {
+        stopPan()
+        stopZoom()
+        place = lat to lon
+        reach = FREE_PAN
+        zoom = PLACE_ZOOM
+        scale = 1f
+    }
+
+    /** Pone el centro en [place] estando tú en ([lat], [lon]). */
+    internal fun aim(lat: Double, lon: Double) {
+        val (pLat, pLon) = place ?: return
+        panX = (tileX(pLon, 0) - tileX(lon, 0)).coerceIn(-FREE_PAN, FREE_PAN)
+        panY = (tileY(pLat, 0) - tileY(lat, 0)).coerceIn(-FREE_PAN, FREE_PAN)
     }
 
     /** El zoom que pusiste con dos dedos o al centrar (null = el de fábrica): igual en el widget y en grande. */
@@ -299,8 +337,8 @@ class MapCamera(
 
     /** Mueve el centro del mapa a ([lat], [lon]) estando tú en ([fromLat], [fromLon]) (hasta donde deja [maxPan]). */
     fun lookAt(lat: Double, lon: Double, fromLat: Double, fromLon: Double) {
-        panX = (tileX(lon, 0) - tileX(fromLon, 0)).coerceIn(-maxPan, maxPan)
-        panY = (tileY(lat, 0) - tileY(fromLat, 0)).coerceIn(-maxPan, maxPan)
+        panX = (tileX(lon, 0) - tileX(fromLon, 0)).coerceIn(-panLimit, panLimit)
+        panY = (tileY(lat, 0) - tileY(fromLat, 0)).coerceIn(-panLimit, panLimit)
     }
 
     /** El centro del mapa (latitud, longitud) estando tú en [lat], [lon]: tú mismo, o a donde lo moviste. */
@@ -355,6 +393,10 @@ fun MapCanvas(
     interactive: Boolean = true,
     /** Tu auto en vez de la flecha (null = la flecha). */
     marker: ImageBitmap? = null,
+    /** Un lugar marcado con un pin (latitud, longitud), p. ej. el que buscaste; null = ninguno. */
+    pin: Pair<Double, Double>? = null,
+    /** Dejar presionado un punto del mapa: su latitud y longitud (null = nada). */
+    onLongPress: ((Double, Double) -> Unit)? = null,
 ) {
     val c = LocalColors.current
     val driveZoom = store.source.maxZoom
@@ -436,21 +478,26 @@ fun MapCanvas(
                 dy *= most / length
             }
             camera.stopPan()
-            camera.panX = (camera.panX - dx / frame.worldPx).coerceIn(-camera.maxPan, camera.maxPan)
-            camera.panY = (camera.panY - dy / frame.worldPx).coerceIn(-camera.maxPan, camera.maxPan)
+            camera.place = null
+            val limit = camera.panLimit
+            camera.panX = (camera.panX - dx / frame.worldPx).coerceIn(-limit, limit)
+            camera.panY = (camera.panY - dy / frame.worldPx).coerceIn(-limit, limit)
         }
     }
     // Movido con el dedo y sin tocarlo un rato: regresa a ti solo (como Waze). Solo de viaje (detenido, el mapa se
     // queda donde lo dejaste) y solo el mapa que se ve (el widget tapado y el de en grande comparten cámara).
     LaunchedEffect(camera, active) {
         if (!active || !camera.returns) return@LaunchedEffect
-        snapshotFlow { if (!camera.centered && camera.driving) camera.panX + camera.panY else null }.collectLatest { moved ->
+        snapshotFlow { if (!camera.centered && camera.driving && !camera.showingPlace) camera.panX + camera.panY else null }.collectLatest { moved ->
             if (moved != null) {
                 delay(RECENTER_MS)
                 camera.recenter()
             }
         }
     }
+    // Enseñando un lugar: el centro sigue en él con cada lectura del GPS.
+    val shownPlace = camera.place
+    LaunchedEffect(shownPlace, lat, lon) { if (shownPlace != null) camera.aim(lat, lon) }
     // La calle donde estás: al moverte o cuando llegan los nombres de tu tesela (no con cada tesela).
     LaunchedEffect(store, lat, lon, active) {
         if (!active) return@LaunchedEffect
@@ -468,8 +515,12 @@ fun MapCanvas(
     val names = store.source.takeIf { it.hasNames }
     // Un toque: lo que diga [onTap] (en el widget, verlo en grande o abrir tu app de mapas).
     val tap = if (onTap != null) Modifier.clickable(onClick = onTap) else Modifier
+    val longPress by rememberUpdatedState(onLongPress)
+    val press = if (onLongPress == null || !interactive) Modifier else Modifier.pointerInput(Unit) {
+        detectTapGestures(onLongPress = { at -> frame.toLatLon(at.x, at.y)?.let { (la, lo) -> longPress?.invoke(la, lo) } })
+    }
     BoxWithConstraints(
-        modifier.background(sky).then(tap).then(
+        modifier.background(sky).then(tap).then(press).then(
             if (!interactive) Modifier else Modifier.pointerInput(Unit) {
                 detectMapGestures({ at, delta -> onPan(at, delta) }, { if (zoomable) onPinch(it) }, { if (zoomable) onPinchEnd() })
             },
@@ -505,6 +556,7 @@ fun MapCanvas(
                         names, tilePx(density), frame.textPaint(12.sp.toPx(), labelColor, sky),
                         // Siempre flecha: hacia arriba con el mapa girado, o con el último rumbo (sin rumbo aún, al norte).
                         sky, bearing + turn, ringKm, if (ringKm == null) 0.0 else tileLat(tileY(pose.lat, 0) + panY, 0),
+                        pin?.let { tileX(it.second, zoom) } ?: Double.NaN, pin?.let { tileY(it.first, zoom) } ?: Double.NaN,
                     )
                 }
                 onDrawBehind { frame.draw(this, store, filter, accent, marker) }

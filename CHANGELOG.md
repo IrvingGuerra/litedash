@@ -4,6 +4,23 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.4.174] - 2026-11-16
+
+### Nuevo
+- **Busca a dónde ir en el mapa:** en el mapa en grande (o con la lupa del widget Mapa) escribe un lugar, una calle,
+  una colonia o un pueblo y los resultados salen al instante, **sin internet**, del mapa de tu estado (más cerca
+  primero, aunque escribas sin acentos o con un error de dedo). Si no está, «Buscar en internet» lo busca en todo el
+  mundo con una sola consulta. Toca un resultado y el mapa va ahí con un pin y su tarjeta: a cuánto queda, abrirlo en tu
+  app de mapas, guardarlo de favorito o ponerlo de Casa o Trabajo. Tus recientes y favoritos quedan como atajos.
+- **Deja presionado el mapa** para marcar cualquier punto (un rancho, una entrada) y abrirlo en tu app de mapas.
+- **Lugares desde otras apps:** un lugar compartido (WhatsApp, el navegador…) se puede abrir con LiteDash y sale en su
+  mapa.
+- La búsqueda sin internet se baja sola con el mapa de tu estado (y a quien ya lo tenía, la primera vez que busca).
+
+### Cambiado
+- **Sin conexión, más claro:** elige «Por estado» (el mapa de todo tu estado) o «Por zona» (un círculo alrededor de
+  ti); si tu estado aún no está, usa la zona.
+
 ## [1.4.173] - 2026-11-16
 
 ### Cambiado

@@ -3,6 +3,22 @@
 What people using LiteDash notice, in English. The full history (in Spanish) is in [CHANGELOG.md](CHANGELOG.md).
 Format [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versions [SemVer](https://semver.org/).
 
+## [1.4.174] - 2026-11-16
+
+### New
+- **Search where to go on the map:** in the full-screen map (or with the magnifier on the Map widget) type a place,
+  street, neighborhood or town and results appear instantly, **without internet**, from your state's map (nearest
+  first, even without accents or with a typo). If it isn't there, «Search online» looks it up worldwide with a single
+  query. Tap a result and the map goes there with a pin and its card: how far it is, open it in your maps app, save it
+  as a favorite or set it as Home or Work. Your recents and favorites stay as shortcuts.
+- **Long-press the map** to mark any point (a ranch, an entrance) and open it in your maps app.
+- **Places from other apps:** a shared place (WhatsApp, the browser…) can be opened with LiteDash and shows on its map.
+- Offline search downloads with your state's map (and for anyone who already had it, the first time they search).
+
+### Changed
+- **Offline, clearer:** choose «By state» (your whole state's map) or «By zone» (a circle around you); if your state
+  isn't there yet, use the zone.
+
 ## [1.4.173] - 2026-11-16
 
 ### Changed

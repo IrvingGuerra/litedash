@@ -53,6 +53,8 @@ internal object PrefKeys {
     const val DRIVER_NAME = "driver_name"
     const val HOME_ADDRESS = "home_address"
     const val WORK_ADDRESS = "work_address"
+    const val FAVORITE_PLACES = "favorite_places"
+    const val RECENT_PLACES = "recent_places"
     const val PARKED_MODE = "parked_mode"
     const val PARKED_VIEW = "parked_view"
     const val WHEEL_KEYS = "wheel_keys"
@@ -417,6 +419,12 @@ class Preferences(context: Context) {
 
     /** Dirección de Trabajo para el atajo del widget Mapa; null = sin guardar. */
     var workAddress by string(PrefKeys.WORK_ADDRESS)
+
+    /** Tus lugares favoritos del buscador del mapa (JSON de [placesToJson]); null = ninguno. */
+    var favoritePlaces by string(PrefKeys.FAVORITE_PLACES)
+
+    /** Tus últimos destinos del buscador (JSON, el más nuevo primero); se quedan en la pantalla. */
+    var recentPlaces by string(PrefKeys.RECENT_PLACES)
 
     /** Reloj grande tras unos minutos sin tocar el inicio. */
     var parkedMode by bool(PrefKeys.PARKED_MODE, true)

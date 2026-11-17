@@ -56,7 +56,7 @@ internal fun tileLat(y: Double, z: Int): Double = Math.toDegrees(atan(sinh(PI * 
 internal fun shortTurn(from: Float, to: Float): Float = ((to - from) % 360f + 540f) % 360f - 180f
 
 /** Distancia en km sobre la Tierra (haversine). */
-internal fun distanceKm(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Double {
+fun distanceKm(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Double {
     val dLat = Math.toRadians(lat2 - lat1)
     val dLon = Math.toRadians(lon2 - lon1)
     val h = sin(dLat / 2).let { it * it } + cos(Math.toRadians(lat1)) * cos(Math.toRadians(lat2)) * sin(dLon / 2).let { it * it }

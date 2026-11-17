@@ -28,6 +28,8 @@ class MapRegion(
     /** Anillos exteriores: lon, lat, lon, lat… */
     val shape: List<DoubleArray>,
     val map: PackFile,
+    /** El índice de búsqueda (SRCH1, con gzip); null en índices viejos. */
+    val search: PackFile? = null,
 ) {
     /** El nombre en [language] (o en inglés, o el id). */
     fun name(language: String): String = names[language] ?: names["en"] ?: id
@@ -43,7 +45,11 @@ class PackFile(val url: String, val size: Long, val sha256: String)
  * Un mapa de estado ya bajado: de qué región y versión (su huella), y su caja y contorno (guardados al bajarlo: así sabe
  * qué teselas son suyas aunque no haya índice).
  */
-class InstalledPack(val id: String, val sha256: String, val size: Long, val savedAt: Long, val bbox: DoubleArray, val shape: List<DoubleArray>) {
+class InstalledPack(
+    val id: String, val sha256: String, val size: Long, val savedAt: Long, val bbox: DoubleArray, val shape: List<DoubleArray>,
+    /** La huella del índice de búsqueda bajado ("" = aún no). */
+    val searchSha: String = "",
+) {
     fun contains(lat: Double, lon: Double) = insideShape(bbox, shape, lat, lon)
 }
 
@@ -79,13 +85,24 @@ class MapPacks private constructor(private val app: Context) {
     /** Lo bajado, para las teselas (se lee sin candado desde los hilos del mapa). */
     @Volatile private var packs: List<InstalledPack> = emptyList()
 
+    /** ¿Se permite buscar en internet (Photon)? Lo apaga el índice de litedash-maps si nos lo piden. */
+    var onlineSearch by mutableStateOf(true)
+        private set
+
+    /** Los índices de búsqueda abiertos, uno por estado (con su candado, solo para abrir o cambiar uno: es corto). */
+    private val indexes = HashMap<String, SearchIndex>()
+    private val searchLock = Any()
+
+    /** Las búsquedas se bajan de una en una (aparte: bajar tarda y no debe frenar a quien busca). */
+    private val fetchLock = Any()
+
     init {
         scope.launch {
             // Lo que quedó a medias si la app se cerró bajando.
             dir.listFiles { f -> f.name.endsWith(PART) }?.forEach { it.delete() }
             readInstalled()
             // El índice de la caché: los nombres para la lista y el contorno de los adoptados.
-            File(dir, INDEX).takeIf { it.isFile }?.let { f -> runCatching { useRegions(parseIndex(f.readText())) } }
+            File(dir, INDEX).takeIf { it.isFile }?.let { f -> runCatching { useIndex(f.readText()) } }
         }
     }
 
@@ -99,17 +116,17 @@ class MapPacks private constructor(private val app: Context) {
     fun refresh(force: Boolean = false) {
         scope.launch {
             val cached = File(dir, INDEX)
-            if (regions.isEmpty() && cached.isFile) runCatching { useRegions(parseIndex(cached.readText())) }
+            if (regions.isEmpty() && cached.isFile) runCatching { useIndex(cached.readText()) }
             // Al día y de esta versión de la app (tras actualizarla se vuelve a pedir).
             val updated = runCatching { app.packageManager.getPackageInfo(app.packageName, 0).lastUpdateTime }.getOrDefault(0L)
             val fresh = cached.isFile && System.currentTimeMillis() - cached.lastModified() < INDEX_MAX_AGE_MS && cached.lastModified() > updated
             if (!force && fresh) return@launch
             try {
                 val text = Https.get(app, INDEX_URL).inputStream.use { it.readBytes().decodeToString() }
-                val parsed = parseIndex(text)
+                parseIndex(text) // dañado: no se guarda
                 dir.mkdirs()
                 File(dir, "$INDEX.tmp").apply { writeText(text) }.renameTo(cached)
-                useRegions(parsed)
+                useIndex(text)
             } catch (_: IOException) {
                 // Sin internet: el de la caché (si hay).
             } catch (_: org.json.JSONException) {
@@ -118,16 +135,24 @@ class MapPacks private constructor(private val app: Context) {
         }
     }
 
-    /** Las regiones del índice; un mapa bajado sin contorno (adoptado) toma el de su región. */
-    private fun useRegions(list: List<MapRegion>) {
+    /**
+     * Usa el índice [text]: sus regiones, el interruptor de la búsqueda en línea, el contorno de los mapas adoptados y,
+     * a los mapas bajados que aún no traen su búsqueda (o la traen vieja), se la baja sola.
+     */
+    private fun useIndex(text: String) {
+        val list = parseIndex(text)
         regions = list
+        onlineSearch = onlineAllowed(text)
         synchronized(stateLock) {
-            if (installed.none { it.shape.isEmpty() }) return
-            replaceInstalled(installed.map { p ->
-                val r = list.firstOrNull { it.id == p.id }
-                if (p.shape.isEmpty() && r != null) InstalledPack(p.id, p.sha256, p.size, p.savedAt, r.bbox, r.shape) else p
-            })
+            if (installed.any { it.shape.isEmpty() }) {
+                replaceInstalled(installed.map { p ->
+                    val r = list.firstOrNull { it.id == p.id }
+                    if (p.shape.isEmpty() && r != null) InstalledPack(p.id, p.sha256, p.size, p.savedAt, r.bbox, r.shape, p.searchSha) else p
+                })
+            }
         }
+        val missing = installed.mapNotNull { p -> list.firstOrNull { it.id == p.id && it.search != null && it.search.sha256 != p.searchSha } }
+        if (missing.isNotEmpty()) scope.launch { for (r in missing) runCatching { fetchSearch(r) { true } } }
     }
 
     /** ¿El mapa bajado de [region] es de una versión vieja? */
@@ -159,8 +184,12 @@ class MapPacks private constructor(private val app: Context) {
                     open.remove(region.id)?.close()
                     if (!temp.renameTo(target)) throw IOException("rename")
                 }
-                val pack = InstalledPack(region.id, sha, target.length(), System.currentTimeMillis(), region.bbox, region.shape)
+                // Si su búsqueda no cambió, se queda la que ya está (no se vuelve a bajar).
+                val keep = installed.firstOrNull { it.id == region.id }?.searchSha?.takeIf { it.isNotEmpty() && it.equals(region.search?.sha256, ignoreCase = true) }
+                val pack = InstalledPack(region.id, sha, target.length(), System.currentTimeMillis(), region.bbox, region.shape, keep.orEmpty())
                 synchronized(stateLock) { replaceInstalled(installed.filter { it.id != region.id } + pack) }
+                // Con el mapa, su búsqueda sin internet (pocos MB); si falla, se reintenta sola al volver a leer el índice.
+                runCatching { fetchSearch(region) { me.isActive } }
                 job = null
             } catch (e: CancellationException) {
                 job = null
@@ -180,7 +209,7 @@ class MapPacks private constructor(private val app: Context) {
         job = null
     }
 
-    /** Borra el mapa bajado de [id] (lo pidió el usuario). */
+    /** Borra el mapa bajado de [id] y su búsqueda (lo pidió el usuario). */
     fun delete(id: String) {
         scope.launch {
             synchronized(stateLock) { replaceInstalled(installed.filter { it.id != id }) }
@@ -188,7 +217,65 @@ class MapPacks private constructor(private val app: Context) {
                 open.remove(id)?.close()
                 File(dir, "$id.pmtiles").delete()
             }
+            synchronized(searchLock) {
+                indexes.remove(id)?.close()
+                File(dir, "$id.srch").delete()
+            }
         }
+    }
+
+    /**
+     * Baja el índice de búsqueda de [region] (con gzip), revisa su huella, lo descomprime y lo deja junto a su mapa.
+     * Uno a la vez; [active] = false lo detiene (cancelaron la descarga). Corre fuera del hilo principal.
+     */
+    private fun fetchSearch(region: MapRegion, active: () -> Boolean) = synchronized(fetchLock) {
+        val file = region.search ?: return@synchronized
+        // Ya la bajó otro (al arrancar se pide con el índice guardado y otra vez con el nuevo) o borraron el estado.
+        val pack = installed.firstOrNull { it.id == region.id } ?: return@synchronized
+        if (pack.searchSha.equals(file.sha256, ignoreCase = true) && File(dir, "${region.id}.srch").isFile) return@synchronized
+        val gz = File(dir, "${region.id}.srch.gz$PART")
+        val raw = File(dir, "${region.id}.srch$PART")
+        try {
+            val sha = Https.download(app, file.url, gz, file.size, null) { if (!active()) throw CancellationException() }
+            if (!sha.equals(file.sha256, ignoreCase = true)) throw IOException("SHA-256")
+            java.util.zip.GZIPInputStream(gz.inputStream()).use { input -> raw.outputStream().use { input.copyTo(it) } }
+            if (!active() || installed.none { it.id == region.id }) throw CancellationException()
+            synchronized(searchLock) {
+                indexes.remove(region.id)?.close()
+                if (!raw.renameTo(File(dir, "${region.id}.srch"))) throw IOException("rename")
+            }
+            synchronized(stateLock) {
+                replaceInstalled(installed.map { if (it.id == region.id) InstalledPack(it.id, it.sha256, it.size, it.savedAt, it.bbox, it.shape, sha) else it })
+            }
+        } finally {
+            gz.delete()
+            raw.delete()
+        }
+    }
+
+    /** ¿Ya se puede buscar sin internet en algún estado bajado? */
+    fun canSearch(): Boolean = installed.any { it.searchSha.isNotEmpty() }
+
+    /**
+     * Busca [query] en la búsqueda de tus estados bajados, cerca de ([lat], [lon]). Fuera del hilo principal. Con
+     * varios estados, se juntan en su orden (exactas primero, luego lo cercano según lo importante). Un índice que
+     * falla (dañado) se suelta y se olvida su huella: se vuelve a bajar.
+     */
+    fun searchLocal(query: String, lat: Double?, lon: Double?, limit: Int = 20): List<SearchHit> {
+        val ids = installed.filter { it.searchSha.isNotEmpty() }.map { it.id }
+        val lists = ids.mapNotNull { id ->
+            val index = synchronized(searchLock) { indexes.getOrPut(id) { SearchIndex.open(File(dir, "$id.srch")) ?: return@mapNotNull null } }
+            try {
+                index.search(query, lat, lon, limit)
+            } catch (_: Exception) {
+                synchronized(searchLock) { if (indexes[id] === index) indexes.remove(id)?.close() }
+                synchronized(stateLock) {
+                    replaceInstalled(installed.map { if (it.id == id) InstalledPack(it.id, it.sha256, it.size, it.savedAt, it.bbox, it.shape) else it })
+                }
+                null
+            }
+        }
+        return if (lists.size <= 1) lists.firstOrNull().orEmpty() else lists.flatten().sortedBy { it.order }.take(limit)
     }
 
     /** La tesela z/x/y del mapa del estado donde cae su centro (tal como está guardada, con gzip); null = ninguno. */
@@ -259,25 +346,30 @@ class MapPacks private constructor(private val app: Context) {
                     val r = list.getJSONObject(i)
                     val n = r.getJSONObject("name")
                     val names = n.keys().asSequence().associateWith { n.getString(it) }
-                    val m = r.getJSONObject("files").getJSONObject("map")
+                    val files = r.getJSONObject("files")
+                    fun file(o: JSONObject) = PackFile(base + o.getString("name"), o.getLong("size"), o.getString("sha256"))
                     MapRegion(
                         r.getString("id"), r.getString("country"), names, box(r.getJSONArray("bbox")), rings(r.getJSONArray("shape")),
-                        PackFile(base + m.getString("name"), m.getLong("size"), m.getString("sha256")),
+                        file(files.getJSONObject("map")), files.optJSONObject("search")?.let(::file),
                     )
                 }.getOrNull()
             }
         }
 
+        /** El interruptor de la búsqueda en línea del índice ("online": {"photon": false} la apaga). */
+        internal fun onlineAllowed(text: String): Boolean =
+            runCatching { JSONObject(text).optJSONObject("online")?.optBoolean("photon", true) ?: true }.getOrDefault(true)
+
         internal fun packToJson(p: InstalledPack): JSONObject {
             val shape = JSONArray()
             for (ring in p.shape) shape.put(JSONArray().apply { for (i in ring.indices step 2) put(JSONArray().put(ring[i]).put(ring[i + 1])) })
             return JSONObject().put("id", p.id).put("sha256", p.sha256).put("size", p.size).put("savedAt", p.savedAt)
-                .put("bbox", JSONArray().apply { p.bbox.forEach { put(it) } }).put("shape", shape)
+                .put("bbox", JSONArray().apply { p.bbox.forEach { put(it) } }).put("shape", shape).put("searchSha", p.searchSha)
         }
 
         internal fun packFromJson(o: JSONObject) = InstalledPack(
             o.getString("id"), o.getString("sha256"), o.getLong("size"), o.getLong("savedAt"),
-            box(o.getJSONArray("bbox")), rings(o.optJSONArray("shape") ?: JSONArray()),
+            box(o.getJSONArray("bbox")), rings(o.optJSONArray("shape") ?: JSONArray()), o.optString("searchSha"),
         )
 
         private fun box(a: JSONArray) = DoubleArray(4) { a.getDouble(it) }

@@ -346,6 +346,12 @@ fun TileContent(d: Dependencies, p: Tile, apps: List<App>, car: CarPackage?, rev
                 onPlace = remember(app) { { navigateTo(context, app, it) } },
                 onNavigate = remember(app) { { actions.onNavigate(app) } },
                 onTap = remember(app, external, p.id) { if (external) { { actions.onNavigate(app) } } else { { actions.onExpand(Expanded.MAP, p) } } },
+                onSearch = remember(p.id) {
+                    {
+                        PlaceRequests.focus = true
+                        actions.onExpand(Expanded.MAP, p)
+                    }
+                },
             )
         }
         TileTypes.PHONE -> {
@@ -496,6 +502,10 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
     }
     // Con Archivos, play sin nada que sonar (volante, barra de Android, widget) abre la pantalla Música en la
     // biblioteca; mientras está abierta, la atiende ella.
+    // Un lugar de otra app (geo:) o la lupa sin mapa abierto: el mapa en grande lo atiende.
+    LaunchedEffect(PlaceRequests.pending) {
+        if (PlaceRequests.pending && expanded != Expanded.MAP) expand(Expanded.MAP, null)
+    }
     val currentOpenMedia by rememberUpdatedState(::openMedia)
     OnFilesEmpty(d.music, inFront && d.music.mode == MusicMode.FILES, remember { { currentOpenMedia(MediaTab.MUSIC, true, null) } })
     // El aviso de la calibración ("No encontramos cómo hacerlo sonar aquí") lleva a "Enviar un reporte".

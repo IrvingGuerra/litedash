@@ -7,6 +7,7 @@ import android.os.StatFs
 import android.os.storage.StorageManager
 import android.text.format.DateFormat
 import android.text.format.Formatter
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -15,13 +16,16 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -41,6 +45,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
@@ -48,6 +53,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleStartEffect
@@ -83,6 +89,7 @@ import com.irvingguerra.litedash.feature.map.OfflineArea
 import com.irvingguerra.litedash.feature.map.OfflineError
 import com.irvingguerra.litedash.feature.map.OfflineMaps
 import com.irvingguerra.litedash.feature.map.OsmTiles
+import com.irvingguerra.litedash.feature.map.SearchHit
 import com.irvingguerra.litedash.feature.map.TileStore
 import com.irvingguerra.litedash.feature.map.VectorTiles
 import com.irvingguerra.litedash.feature.map.rememberFreeMapCamera
@@ -104,7 +111,10 @@ import kotlinx.coroutines.withContext
  * mientras se ve. Al quitar el widget se sueltan su cámara y su almacén de teselas.
  */
 @Composable
-fun MapTile(d: Dependencies, tileId: String, data: String, app: App?, editing: Boolean, onPlace: (String) -> Unit, onNavigate: () -> Unit, onTap: () -> Unit) {
+fun MapTile(
+    d: Dependencies, tileId: String, data: String, app: App?, editing: Boolean, onPlace: (String) -> Unit, onNavigate: () -> Unit, onTap: () -> Unit,
+    onSearch: () -> Unit,
+) {
     val c = LocalColors.current
     val (granted, ask) = rememberGpsPermission(d)
     val look = remember(data) { MapLook.parse(data) }
@@ -123,7 +133,7 @@ fun MapTile(d: Dependencies, tileId: String, data: String, app: App?, editing: B
             return@BoxWithConstraints
         }
         val external = d.prefs.mapExternal && app != null
-        val turnWidth = maxWidth - if (external) 68.dp else 16.dp
+        val turnWidth = maxWidth - if (external) 120.dp else 68.dp
         val withPlaces = maxHeight >= PLACES_HEIGHT
         Card(Modifier.fillMaxSize()) {
             LiveMap(d, look, Modifier.fillMaxSize(), tileId, onTap = onTap)
@@ -136,7 +146,11 @@ fun MapTile(d: Dependencies, tileId: String, data: String, app: App?, editing: B
                 )
             }
             // Con "Usar app externa" apagado no hay botón que te saque de LiteDash (se queda en el mapa en grande).
-            if (external) IconButton(Icons.navigate, onNavigate, Modifier.align(Alignment.TopEnd).padding(8.dp), size = 44.dp, background = c.surface.copy(alpha = 0.85f), color = c.accent)
+            // La lupa abre el mapa en grande con el buscador (al acomodar se esconde: estorba al botón de tamaño).
+            Row(Modifier.align(Alignment.TopEnd).padding(8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                if (!editing) IconButton(Icons.search, onSearch, size = 44.dp, background = c.surface.copy(alpha = 0.85f), color = c.accent, label = stringResource(R.string.search_place))
+                if (external) IconButton(Icons.navigate, onNavigate, size = 44.dp, background = c.surface.copy(alpha = 0.85f), color = c.accent)
+            }
         }
     }
 }
@@ -158,21 +172,78 @@ fun MapExpanded(d: Dependencies, tileId: String?, data: String, app: App?, onPla
         expandedMap = shown
         onDispose { if (expandedMap === shown) expandedMap = null }
     }
-    Card(modifier.fillMaxSize()) {
-        if (granted) LiveMap(d, look, Modifier.fillMaxSize(), tileId)
-        else Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Button(stringResource(R.string.tap_to_enable), ask, primary = true) }
-        NextTurn(d, Modifier.align(Alignment.TopStart).padding(12.dp).widthIn(max = 520.dp))
-        Row(Modifier.align(Alignment.TopEnd).padding(12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            // Con "Usar app externa" apagado no hay botón que te saque de LiteDash (igual que en el widget).
-            if (d.prefs.mapExternal && app != null) IconButton(Icons.navigate, onNavigate, size = 48.dp, background = c.surface.copy(alpha = 0.9f), color = c.accent)
-            IconButton(Icons.close, close, size = 48.dp, background = c.surface.copy(alpha = 0.9f))
+    val context = LocalContext.current
+    val camera = sharedMapCamera(tileId)
+    val search = remember { PlaceSearch() }
+    val focus = remember { FocusRequester() }
+    val focusManager = LocalFocusManager.current
+    val pick: (SearchHit) -> Unit = { hit ->
+        focusManager.clearFocus()
+        search.query = hit.name
+        search.selected = hit
+        d.prefs.addRecent(hit)
+        camera.show(hit.lat, hit.lon)
+    }
+    // Lo que llegó de otra app (geo:) o de la lupa del widget.
+    LaunchedEffect(PlaceRequests.place, PlaceRequests.query, PlaceRequests.focus) {
+        PlaceRequests.place?.let { pick(it) }
+        PlaceRequests.query?.let {
+            search.type(it.take(QUERY_MAX))
+            focus.requestFocus()
         }
-        PlacePills(
-            d.prefs.homeAddress, d.prefs.workAddress, onPlace,
-            Modifier.align(Alignment.BottomEnd).padding(end = 12.dp, bottom = ATTRIBUTION_CLEARANCE),
-        )
+        if (PlaceRequests.focus) focus.requestFocus()
+        PlaceRequests.place = null
+        PlaceRequests.query = null
+        PlaceRequests.focus = false
+    }
+    val selected = search.selected
+    val unselect = {
+        search.clear()
+        camera.recenter()
+    }
+    BackHandler(selected != null && !search.focused, unselect)
+    // Se soltó el lugar (otra búsqueda, borrar lo escrito) o se cierra el mapa en grande: el mapa (y el widget, que
+    // comparte la cámara) regresa a ti.
+    LaunchedEffect(selected) { if (selected == null && camera.showingPlace) camera.recenter() }
+    DisposableEffect(camera) { onDispose { if (camera.showingPlace) camera.recenter() } }
+    Card(modifier.fillMaxSize()) {
+        BoxWithConstraints(Modifier.fillMaxSize()) {
+            val boxWidth = maxWidth
+            val boxHeight = maxHeight
+            // El teclado tapa lo de abajo (la ventana no se encoge): la lista termina arriba de él.
+            val keyboard = with(LocalDensity.current) { WindowInsets.ime.getBottom(this).toDp() }
+            if (granted) {
+                LiveMap(
+                    d, look, Modifier.fillMaxSize(), tileId, camera = camera, pin = selected?.let { it.lat to it.lon },
+                    overlay = selected == null,
+                    onLongPress = { lat, lon -> pick(pointHit(null, lat, lon)) },
+                )
+            } else Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Button(stringResource(R.string.tap_to_enable), ask, primary = true) }
+            val searching = search.focused || search.query.isNotEmpty()
+            Column(Modifier.align(Alignment.TopStart).padding(12.dp).width(minOf(boxWidth - 88.dp, 480.dp))) {
+                PlaceSearchBox(d, search, focus, pick, onPlace, maxListHeight = (boxHeight - 100.dp - keyboard).coerceAtLeast(MIN_LIST))
+                if (!searching) NextTurn(d, Modifier.padding(top = 8.dp))
+            }
+            Row(Modifier.align(Alignment.TopEnd).padding(12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                // Con "Usar app externa" apagado no hay botón que te saque de LiteDash (igual que en el widget).
+                if (d.prefs.mapExternal && app != null && boxWidth >= WIDE_TOP) IconButton(Icons.navigate, onNavigate, size = 48.dp, background = c.surface.copy(alpha = 0.9f), color = c.accent)
+                IconButton(Icons.close, close, size = 48.dp, background = c.surface.copy(alpha = 0.9f))
+            }
+            if (selected != null && !search.focused) {
+                PlaceCard(
+                    d, selected, app?.name, onOpen = { openPlace(context, app, selected) }, close = unselect,
+                    modifier = Modifier.align(Alignment.BottomStart).padding(start = 12.dp, end = 12.dp, bottom = 12.dp).widthIn(max = 460.dp),
+                )
+            }
+        }
     }
 }
+
+/** Lo menos que mide la lista de resultados (con el teclado arriba en pantallas bajas). */
+private val MIN_LIST = 120.dp
+
+/** Más angosto, arriba solo cabe el buscador y cerrar. */
+private val WIDE_TOP = 560.dp
 
 /** La siguiente vuelta que dice el aviso de Waze o Maps, en una tarjeta sobre el mapa (nada si no navegas). */
 @Composable
@@ -209,7 +280,13 @@ private val ATTRIBUTION_CLEARANCE = 56.dp
  * y abajo a la izquierda van el botón para regresar a ti, la calle donde vas y si el mapa es en línea o bajado.
  */
 @Composable
-private fun LiveMap(d: Dependencies, look: MapLook, modifier: Modifier, tileId: String? = null, ownCamera: Boolean = false, onTap: (() -> Unit)? = null) {
+private fun LiveMap(
+    d: Dependencies, look: MapLook, modifier: Modifier, tileId: String? = null, ownCamera: Boolean = false, onTap: (() -> Unit)? = null,
+    camera: MapCamera = sharedMapCamera(tileId?.takeUnless { ownCamera }),
+    pin: Pair<Double, Double>? = null,
+    overlay: Boolean = true,
+    onLongPress: ((Double, Double) -> Unit)? = null,
+) {
     val c = LocalColors.current
     KeepTripRunning(d.trip)
     val context = LocalContext.current
@@ -220,7 +297,6 @@ private fun LiveMap(d: Dependencies, look: MapLook, modifier: Modifier, tileId: 
     // Del bus (la del OBD si hay escáner, si no la del GPS): andando (o con Waze/Maps navegando) va de viaje.
     val kmh = d.bus.watch(Signal.SPEED)
     val navigating = d.navigation.instruction != null
-    val camera = sharedMapCamera(tileId?.takeUnless { ownCamera })
     // Solo cambia al mover o centrar el mapa (no con cada movimiento del dedo).
     val centered by remember(camera) { derivedStateOf { camera.centered } }
     BoxWithConstraints(modifier) {
@@ -228,7 +304,12 @@ private fun LiveMap(d: Dependencies, look: MapLook, modifier: Modifier, tileId: 
             Label(stringResource(R.string.map_waiting), Typography.body, c.textMuted, maxLines = 2, modifier = Modifier.align(Alignment.Center).padding(16.dp))
             return@BoxWithConstraints
         }
-        MapCanvas(store, position.latitude, position.longitude, d.trip.bearing, kmh, look, Modifier.fillMaxSize(), camera, navigating, active = active, onTap = onTap)
+        MapCanvas(
+            store, position.latitude, position.longitude, d.trip.bearing, kmh, look, Modifier.fillMaxSize(), camera, navigating,
+            active = active, onTap = onTap, pin = pin, onLongPress = onLongPress,
+        )
+        // Con la tarjeta de un lugar abajo a la izquierda, lo de aquí estorba (al cerrarla vuelve a ti).
+        if (!overlay) return@BoxWithConstraints
         // Abajo a la izquierda (a la derecha van los créditos): centrar si lo moviste, la calle y si es en línea o bajado.
         val offline = look.detail == MapDetail.MINIMAL &&
             (MapPacks.get(context).covers(position.latitude, position.longitude) || OfflineMaps.get(context).covers(position.latitude, position.longitude))
@@ -535,9 +616,23 @@ private fun OfflineSection(d: Dependencies, detail: MapDetail) {
     KeepTripRunning(d.trip)
     val context = LocalContext.current
     val offline = remember { OfflineMaps.get(context) }
+    val packs = remember { MapPacks.get(context) }
+    LaunchedEffect(Unit) { packs.refresh() }
     val position = d.trip.position
-    StatePackSection(d)
-    Label(stringResource(R.string.map_pack_zones), Typography.label, c.textMuted)
+    // Por estado (todo tu estado, de nuestro repo) o por zona (un círculo, en cualquier parte del mundo). De entrada,
+    // por estado si hay mapa del estado donde estás o ya bajaste uno; si no, por zona.
+    val hasState = packs.installed.isNotEmpty() || position?.let { packs.regionAt(it.latitude, it.longitude) } != null
+    var picked by rememberSaveable { mutableStateOf<Boolean?>(null) }
+    val byZone = picked ?: !hasState
+    Segmented(
+        listOf(false to stringResource(R.string.map_offline_by_state), true to stringResource(R.string.map_offline_by_zone)),
+        byZone,
+        { picked = it },
+    )
+    if (!byZone) {
+        StatePackSection(d, packs)
+        return
+    }
     Label(stringResource(R.string.map_offline_help), Typography.small, c.textMuted)
     val locale = currentLocale()
     val dateFormat = remember(locale) { SimpleDateFormat(DateFormat.getBestDateTimePattern(locale, "dMMM"), locale) }
@@ -599,21 +694,18 @@ private fun OfflineSection(d: Dependencies, detail: MapDetail) {
  * que ya bajaste y, al pedirlo, los demás del país. Sin índice (nunca hubo internet), cómo conseguirlo.
  */
 @Composable
-private fun StatePackSection(d: Dependencies) {
+private fun StatePackSection(d: Dependencies, packs: MapPacks) {
     val c = LocalColors.current
-    val context = LocalContext.current
-    val packs = remember { MapPacks.get(context) }
-    LaunchedEffect(Unit) { packs.refresh() }
     val position = d.trip.position
     val language = currentLocale().language
-    Label(stringResource(R.string.map_pack_title), Typography.label, c.textMuted)
     Label(stringResource(R.string.map_pack_help), Typography.small, c.textMuted)
+    // Siempre a la vista: donde aún no hay mapa del estado, las zonas sirven en cualquier parte.
+    Label(stringResource(R.string.map_pack_tip), Typography.small, c.accent)
     if (packs.regions.isEmpty()) {
         Label(stringResource(R.string.map_pack_no_index), Typography.small, c.textMuted)
         return
     }
     val here = position?.let { packs.regionAt(it.latitude, it.longitude) }
-    if (position != null && here == null) Label(stringResource(R.string.map_pack_none), Typography.small, c.textMuted)
     var showAll by rememberSaveable { mutableStateOf(false) }
     val mine = packs.installed.mapNotNull { p -> packs.regions.firstOrNull { it.id == p.id } }
     val shown = (listOfNotNull(here) + mine).distinctBy { it.id }

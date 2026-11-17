@@ -72,6 +72,10 @@ internal class MapFrame : ScreenPoint {
     /** Tu posición en pantalla (fuera de la vista si moviste el mapa lejos). */
     private val you = FloatArray(3)
     private var youShown = false
+
+    /** El pin del lugar en pantalla. */
+    private val pinAt = FloatArray(3)
+    private var pinShown = false
     private var arrowDegrees = 0f
     private var squash = 1f
 
@@ -91,6 +95,7 @@ internal class MapFrame : ScreenPoint {
     /** La flecha apuntando al norte con su centro en (0, 0) y sus trazos, por densidad. */
     private var arrowFor = 0f
     private var arrow = Path()
+    private var pin = Path()
     private var arrowStroke = Stroke(0f)
     private var ringStroke = Stroke(0f)
     private var unit = 1f
@@ -111,11 +116,13 @@ internal class MapFrame : ScreenPoint {
         fx: Double, fy: Double, zoom: Int, ts: Float, panX: Double, panY: Double,
         names: TileSource?, labelTs: Float, text: android.graphics.Paint,
         sky: Color, arrowBearing: Float, ringKm: Float?, centerLat: Double,
+        pinX: Double = Double.NaN, pinY: Double = Double.NaN,
     ) {
         if (density != arrowFor) {
             arrowFor = density
             unit = density
             arrow = arrowPath(density)
+            pin = pinPath(density)
             arrowStroke = Stroke(3 * density)
             ringStroke = Stroke(2 * density)
         }
@@ -132,6 +139,7 @@ internal class MapFrame : ScreenPoint {
         worldPx = ts * n
         youShown = projection.toScreen(atX - (panX * n * ts).toFloat(), atY - (panY * n * ts).toFloat(), you)
         arrowDegrees = arrowBearing
+        pinShown = !pinX.isNaN() && toScreen(pinX, pinY, pinAt)
         squash = 1f - 0.3f * tilt
         // El círculo de la zona: metros por px del plano en el centro del mapa.
         ring = if (ringKm == null) 0f else (ringKm * 1000 / (EQUATOR_METERS * cos(Math.toRadians(centerLat)) / (n * ts))).toFloat()
@@ -196,7 +204,26 @@ internal class MapFrame : ScreenPoint {
             drawCircle(accent, ring, center, style = ringStroke)
         }
         labelPaint?.let { paint -> drawIntoCanvas { drawLabels(it.nativeCanvas, layout.placed, paint) } }
+        if (pinShown) drawPin(accent)
         if (youShown) drawArrow(accent, marker)
+    }
+
+    /** El punto ([x], [y]) de la vista en el mapa (latitud, longitud); null si cae en el cielo o aún no hay cuadro. */
+    fun toLatLon(x: Float, y: Float): Pair<Double, Double>? {
+        if (zoom < 0 || ts <= 0f || !projection.toPlane(x, y, dragFrom)) return null
+        val tx = fx + (dragFrom[0] - atX) / ts
+        val ty = fy + (dragFrom[1] - atY) / ts
+        return tileLat(ty, zoom) to tileLon(tx, zoom)
+    }
+
+    /** El pin del lugar: una gota de acento con la punta en el lugar y su sombra. */
+    private fun DrawScope.drawPin(accent: Color) {
+        val u = unit
+        translate(pinAt[0], pinAt[1]) {
+            drawOval(Color.Black.copy(alpha = 0.3f), Offset(-7 * u, -3 * u), Size(14 * u, 6 * u))
+            drawPath(pin, accent)
+            drawCircle(Color.White, 5 * u, Offset(0f, -27 * u))
+        }
     }
 
     /**
@@ -229,6 +256,16 @@ internal class MapFrame : ScreenPoint {
 private const val MARKER_SHARE = 0.22f
 private const val MARKER_MIN_DP = 140f
 private const val MARKER_MAX_DP = 240f
+
+/** El pin con la punta en (0, 0): círculo de 12 dp arriba y punta abajo; [u] = 1 dp. */
+private fun pinPath(u: Float) = Path().apply {
+    moveTo(0f, 0f)
+    cubicTo(-4 * u, -10 * u, -12 * u, -16 * u, -12 * u, -27 * u)
+    cubicTo(-12 * u, -34 * u, -7 * u, -39 * u, 0f, -39 * u)
+    cubicTo(7 * u, -39 * u, 12 * u, -34 * u, 12 * u, -27 * u)
+    cubicTo(12 * u, -16 * u, 4 * u, -10 * u, 0f, 0f)
+    close()
+}
 
 /** La flecha apuntando al norte con su centro en (0, 0); [u] = 1 dp. */
 private fun arrowPath(u: Float) = Path().apply {

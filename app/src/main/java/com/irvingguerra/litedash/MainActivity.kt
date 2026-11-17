@@ -34,6 +34,8 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Abierta desde otra app con un lugar (geo:): el mapa en grande lo enseña.
+        if (savedInstanceState == null && intent?.action == Intent.ACTION_VIEW) PlaceRequests.fromGeo(intent.data)
         // Es la pantalla de inicio: "atrás" no la cierra (los paneles sí se cierran con atrás).
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() = Unit
@@ -94,6 +96,7 @@ class MainActivity : ComponentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         if (intent.hasCategory(Intent.CATEGORY_HOME)) homePressed.intValue++
+        if (intent.action == Intent.ACTION_VIEW) PlaceRequests.fromGeo(intent.data)
     }
 
     // Mandos al volante: llegan como teclas normales de Android mientras LiteDash está al frente.
