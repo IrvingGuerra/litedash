@@ -53,6 +53,8 @@ class PmTiles private constructor(private val file: RandomAccessFile, private va
         directories.getOrPut(offset) { parseDirectory(decompress(read(offset, length.toInt()), header.internalCompression)) }
 
     private fun read(offset: Long, length: Int): ByteArray {
+        // Un archivo dañado no pide arreglos enormes: nada más allá de su tamaño.
+        if (offset < 0 || length < 0 || offset + length > file.length()) throw java.io.IOException("fuera del archivo")
         val out = ByteArray(length)
         file.seek(offset)
         file.readFully(out)
@@ -71,13 +73,16 @@ class PmTiles private constructor(private val file: RandomAccessFile, private va
         /** Abre [file] si es un PMTiles v3 de teselas MVT; null si no lo es o está dañado. */
         fun open(file: File): PmTiles? = runCatching {
             val raf = RandomAccessFile(file, "r")
-            val bytes = ByteArray(HEADER_SIZE)
-            raf.readFully(bytes)
-            val h = parseHeader(bytes)
-            if (h == null || h.tileType != TILE_TYPE_MVT) {
+            try {
+                val bytes = ByteArray(HEADER_SIZE)
+                raf.readFully(bytes)
+                val h = parseHeader(bytes)
+                if (h == null || h.tileType != TILE_TYPE_MVT) null.also { raf.close() } else PmTiles(raf, h)
+            } catch (e: Exception) {
+                // Truncado o ilegible: se cierra y no se usa.
                 raf.close()
-                null
-            } else PmTiles(raf, h)
+                throw e
+            }
         }.getOrNull()
 
         internal fun parseHeader(b: ByteArray): Header? {

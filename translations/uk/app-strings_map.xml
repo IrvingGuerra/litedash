@@ -49,4 +49,16 @@
     <string name="map_tab_app">Застосунок карт</string>
     <string name="map_tab_look">Карта LiteDash</string>
     <string name="map_look_help">Діє на всі віджети «Карта» і повноекранну карту. Кожен віджет можна змінити через його шестерню.</string>
+    <string name="map_pack_title">Карта твоєї області</string>
+    <string name="map_pack_help">Уся область без інтернету, одним завантаженням. Оновлюється кілька разів на рік.</string>
+    <string name="map_pack_no_index">Підключися до інтернету, щоб побачити доступні карти.</string>
+    <string name="map_pack_none">Для твого району карти ще немає: поки що завантаж район нижче.</string>
+    <string name="map_pack_others">Інші області</string>
+    <string name="map_pack_saved">%1$s · збережено · %2$s</string>
+    <string name="map_pack_download">Завантажити</string>
+    <string name="map_pack_update">Оновити</string>
+    <string name="map_pack_delete_question">Видалити карту %1$s?</string>
+    <string name="map_pack_delete_message">Без інтернету ти не побачиш її вулиць; твої райони залишаться.</string>
+    <string name="map_pack_failed">Не вдалося завантажити: перевір інтернет.</string>
+    <string name="map_pack_zones">Райони</string>
 </resources>

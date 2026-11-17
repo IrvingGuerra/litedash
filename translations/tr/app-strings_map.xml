@@ -49,4 +49,16 @@
     <string name="map_tab_app">Harita uygulaması</string>
     <string name="map_tab_look">LiteDash haritası</string>
     <string name="map_look_help">Tüm Harita widget’larınıza ve tam ekran haritaya uygulanır. Her widget yine dişlisinden değiştirilebilir.</string>
+    <string name="map_pack_title">İlinizin haritası</string>
+    <string name="map_pack_help">Tüm iliniz internetsiz, tek indirmede. Yılda birkaç kez güncellenir.</string>
+    <string name="map_pack_no_index">Mevcut haritaları görmek için internete bağlanın.</string>
+    <string name="map_pack_none">Bölgeniz için henüz harita yok: şimdilik aşağıdan bir bölge indirin.</string>
+    <string name="map_pack_others">Diğer iller</string>
+    <string name="map_pack_saved">%1$s · kaydedildi · %2$s</string>
+    <string name="map_pack_download">İndir</string>
+    <string name="map_pack_update">Güncelle</string>
+    <string name="map_pack_delete_question">%1$s haritası silinsin mi?</string>
+    <string name="map_pack_delete_message">İnternet olmadan sokaklarını göremezsiniz; bölgeleriniz kalır.</string>
+    <string name="map_pack_failed">İndirilemedi: internetinizi kontrol edin.</string>
+    <string name="map_pack_zones">Bölgeler</string>
 </resources>

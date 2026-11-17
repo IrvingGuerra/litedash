@@ -49,4 +49,16 @@
     <string name="map_tab_app">Aplikasi peta</string>
     <string name="map_tab_look">Peta LiteDash</string>
     <string name="map_look_help">Berlaku untuk semua widget Peta dan peta layar penuh. Tiap widget tetap bisa diubah dari ikon roda giginya.</string>
+    <string name="map_pack_title">Peta provinsi Anda</string>
+    <string name="map_pack_help">Seluruh provinsi Anda tanpa internet, dalam satu unduhan. Diperbarui beberapa kali setahun.</string>
+    <string name="map_pack_no_index">Sambungkan ke internet untuk melihat peta yang tersedia.</string>
+    <string name="map_pack_none">Belum ada peta untuk daerah Anda: untuk sementara, unduh zona di bawah.</string>
+    <string name="map_pack_others">Provinsi lain</string>
+    <string name="map_pack_saved">%1$s · tersimpan · %2$s</string>
+    <string name="map_pack_download">Unduh</string>
+    <string name="map_pack_update">Perbarui</string>
+    <string name="map_pack_delete_question">Hapus peta %1$s?</string>
+    <string name="map_pack_delete_message">Tanpa internet Anda tidak akan melihat jalannya; zona Anda tetap ada.</string>
+    <string name="map_pack_failed">Gagal mengunduh: periksa internet Anda.</string>
+    <string name="map_pack_zones">Zona</string>
 </resources>

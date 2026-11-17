@@ -49,4 +49,16 @@
     <string name="map_tab_app">Kaart-app</string>
     <string name="map_tab_look">LiteDash-kaart</string>
     <string name="map_look_help">Geldt voor al je Kaart-widgets en de kaart op volledig scherm. Elke widget is nog via zijn tandwiel aan te passen.</string>
+    <string name="map_pack_title">Kaart van je provincie</string>
+    <string name="map_pack_help">Je hele provincie zonder internet, in één download. Wordt een paar keer per jaar bijgewerkt.</string>
+    <string name="map_pack_no_index">Maak verbinding met internet om de beschikbare kaarten te zien.</string>
+    <string name="map_pack_none">Er is nog geen kaart voor jouw gebied: download voorlopig hieronder een zone.</string>
+    <string name="map_pack_others">Andere provincies</string>
+    <string name="map_pack_saved">%1$s · opgeslagen · %2$s</string>
+    <string name="map_pack_download">Downloaden</string>
+    <string name="map_pack_update">Bijwerken</string>
+    <string name="map_pack_delete_question">Kaart van %1$s verwijderen?</string>
+    <string name="map_pack_delete_message">Zonder internet zie je de straten niet meer; je zones blijven.</string>
+    <string name="map_pack_failed">Downloaden mislukt: controleer je internet.</string>
+    <string name="map_pack_zones">Zones</string>
 </resources>

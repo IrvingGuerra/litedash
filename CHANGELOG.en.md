@@ -3,6 +3,13 @@
 What people using LiteDash notice, in English. The full history (in Spanish) is in [CHANGELOG.md](CHANGELOG.md).
 Format [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versions [SemVer](https://semver.org/).
 
+## [1.4.171] - 2026-11-16
+
+### New
+- **Your whole state's map, without internet:** Settings → Apps → Navigation → Offline now has «Your state's map»:
+  LiteDash knows which one you're in and you download it at once (4 to 45 MB, depending on the state). All 32 Mexican
+  states are ready; you can also download others, update them or delete them. Your zones stay as they are.
+
 ## [1.4.170] - 2026-11-16
 
 ### New

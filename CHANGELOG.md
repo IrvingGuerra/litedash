@@ -4,6 +4,13 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.4.171] - 2026-11-16
+
+### Nuevo
+- **El mapa de todo tu estado, sin internet:** en Ajustes → Apps → Navegación → Sin conexión aparece «Mapa de tu
+  estado»: LiteDash sabe en cuál estás y lo bajas de una vez (de 4 a 45 MB, según el estado). Los 32 estados de México
+  ya están; también puedes bajar otros, actualizarlos o borrarlos. Tus zonas siguen igual.
+
 ## [1.4.170] - 2026-11-16
 
 ### Nuevo

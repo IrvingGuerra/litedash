@@ -21,4 +21,6 @@ kotlin {
 dependencies {
     implementation(project(":core:ui"))
     testImplementation(libs.junit)
+    // org.json de verdad en las pruebas (en Android viene en el sistema).
+    testImplementation(libs.json)
 }

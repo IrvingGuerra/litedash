@@ -49,4 +49,16 @@
     <string name="map_tab_app">Térképalkalmazás</string>
     <string name="map_tab_look">LiteDash térkép</string>
     <string name="map_look_help">Az összes Térkép widgetre és a teljes képernyős térképre vonatkozik. Minden widget továbbra is módosítható a saját fogaskerekéről.</string>
+    <string name="map_pack_title">A megyéd térképe</string>
+    <string name="map_pack_help">Az egész megyéd internet nélkül, egyetlen letöltéssel. Évente néhányszor frissül.</string>
+    <string name="map_pack_no_index">Csatlakozz az internethez az elérhető térképek megtekintéséhez.</string>
+    <string name="map_pack_none">A környékedhez még nincs térkép: addig tölts le lent egy területet.</string>
+    <string name="map_pack_others">Más megyék</string>
+    <string name="map_pack_saved">%1$s · mentve · %2$s</string>
+    <string name="map_pack_download">Letöltés</string>
+    <string name="map_pack_update">Frissítés</string>
+    <string name="map_pack_delete_question">Törlöd %1$s térképét?</string>
+    <string name="map_pack_delete_message">Internet nélkül nem fogod látni az utcáit; a területeid megmaradnak.</string>
+    <string name="map_pack_failed">A letöltés nem sikerült: ellenőrizd az internetet.</string>
+    <string name="map_pack_zones">Területek</string>
 </resources>

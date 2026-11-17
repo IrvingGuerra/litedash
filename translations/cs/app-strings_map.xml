@@ -49,4 +49,16 @@
     <string name="map_tab_app">Aplikace map</string>
     <string name="map_tab_look">Mapa LiteDash</string>
     <string name="map_look_help">Platí pro všechny tvé widgety Mapa a mapu na celou obrazovku. Každý widget jde dál změnit přes jeho ozubené kolo.</string>
+    <string name="map_pack_title">Mapa tvého kraje</string>
+    <string name="map_pack_help">Celý tvůj kraj bez internetu, jedním stažením. Aktualizuje se několikrát ročně.</string>
+    <string name="map_pack_no_index">Připoj se k internetu a uvidíš dostupné mapy.</string>
+    <string name="map_pack_none">Pro tvou oblast zatím mapa není: zatím si stáhni oblast níže.</string>
+    <string name="map_pack_others">Další kraje</string>
+    <string name="map_pack_saved">%1$s · uloženo · %2$s</string>
+    <string name="map_pack_download">Stáhnout</string>
+    <string name="map_pack_update">Aktualizovat</string>
+    <string name="map_pack_delete_question">Smazat mapu %1$s?</string>
+    <string name="map_pack_delete_message">Bez internetu už neuvidíš jeho ulice; tvé oblasti zůstanou.</string>
+    <string name="map_pack_failed">Stažení selhalo: zkontroluj internet.</string>
+    <string name="map_pack_zones">Oblasti</string>
 </resources>

@@ -49,4 +49,16 @@
     <string name="map_tab_app">मैप ऐप</string>
     <string name="map_tab_look">LiteDash मैप</string>
     <string name="map_look_help">आपके सभी मैप विजेट और फ़ुल-स्क्रीन मैप पर लागू होता है। हर विजेट को उसके गियर से अलग भी बदल सकते हैं।</string>
+    <string name="map_pack_title">आपके राज्य का नक्शा</string>
+    <string name="map_pack_help">पूरा राज्य बिना इंटरनेट के, एक ही डाउनलोड में। साल में कुछ बार अपडेट होता है।</string>
+    <string name="map_pack_no_index">उपलब्ध नक्शे देखने के लिए इंटरनेट से जुड़ें।</string>
+    <string name="map_pack_none">आपके इलाके का नक्शा अभी नहीं है: फ़िलहाल नीचे से एक इलाका डाउनलोड करें।</string>
+    <string name="map_pack_others">दूसरे राज्य</string>
+    <string name="map_pack_saved">%1$s · सहेजा गया · %2$s</string>
+    <string name="map_pack_download">डाउनलोड करें</string>
+    <string name="map_pack_update">अपडेट करें</string>
+    <string name="map_pack_delete_question">%1$s का नक्शा मिटाएँ?</string>
+    <string name="map_pack_delete_message">बिना इंटरनेट के इसकी सड़कें नहीं दिखेंगी; आपके इलाके बने रहेंगे।</string>
+    <string name="map_pack_failed">डाउनलोड नहीं हो सका: अपना इंटरनेट जाँचें।</string>
+    <string name="map_pack_zones">इलाके</string>
 </resources>

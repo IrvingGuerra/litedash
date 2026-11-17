@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -71,6 +72,8 @@ import com.irvingguerra.litedash.feature.map.MapCanvas
 import com.irvingguerra.litedash.feature.map.MapDetail
 import com.irvingguerra.litedash.feature.map.MapLook
 import com.irvingguerra.litedash.feature.map.MapOrientation
+import com.irvingguerra.litedash.feature.map.MapPacks
+import com.irvingguerra.litedash.feature.map.MapRegion
 import com.irvingguerra.litedash.feature.map.MapStyle
 import com.irvingguerra.litedash.feature.map.MapZoom
 import com.irvingguerra.litedash.feature.map.MinimalPalette
@@ -225,7 +228,8 @@ private fun LiveMap(d: Dependencies, look: MapLook, modifier: Modifier, tileId: 
         }
         MapCanvas(store, position.latitude, position.longitude, d.trip.bearing, kmh, look, Modifier.fillMaxSize(), camera, navigating, active = active, onTap = onTap)
         // Abajo a la izquierda (a la derecha van los créditos): centrar si lo moviste, la calle y si es en línea o bajado.
-        val offline = look.detail == MapDetail.MINIMAL && OfflineMaps.get(context).covers(position.latitude, position.longitude)
+        val offline = look.detail == MapDetail.MINIMAL &&
+            (MapPacks.get(context).covers(position.latitude, position.longitude) || OfflineMaps.get(context).covers(position.latitude, position.longitude))
         // Angosto, los créditos ocupan dos renglones a lo ancho: lo de la izquierda va arriba de ellos y sin el estado.
         val narrow = maxWidth < NARROW_MAP
         val showStatus = maxHeight >= STATUS_HEIGHT && !narrow
@@ -530,6 +534,8 @@ private fun OfflineSection(d: Dependencies, detail: MapDetail) {
     val context = LocalContext.current
     val offline = remember { OfflineMaps.get(context) }
     val position = d.trip.position
+    StatePackSection(d)
+    Label(stringResource(R.string.map_pack_zones), Typography.label, c.textMuted)
     Label(stringResource(R.string.map_offline_help), Typography.small, c.textMuted)
     val locale = currentLocale()
     val dateFormat = remember(locale) { SimpleDateFormat(DateFormat.getBestDateTimePattern(locale, "dMMM"), locale) }
@@ -583,6 +589,80 @@ private fun OfflineSection(d: Dependencies, detail: MapDetail) {
         Label(stringResource(R.string.map_offline_waiting), Typography.small, c.textMuted)
     } else {
         OfflinePicker(offline, position.latitude, position.longitude, km, selected) { selectedId = null }
+    }
+}
+
+/**
+ * El mapa de tu estado completo (M2): el de donde estás arriba (bajarlo, su avance, actualizarlo o borrarlo), luego los
+ * que ya bajaste y, al pedirlo, los demás del país. Sin índice (nunca hubo internet), cómo conseguirlo.
+ */
+@Composable
+private fun StatePackSection(d: Dependencies) {
+    val c = LocalColors.current
+    val context = LocalContext.current
+    val packs = remember { MapPacks.get(context) }
+    LaunchedEffect(Unit) { packs.refresh() }
+    val position = d.trip.position
+    val language = currentLocale().language
+    Label(stringResource(R.string.map_pack_title), Typography.label, c.textMuted)
+    Label(stringResource(R.string.map_pack_help), Typography.small, c.textMuted)
+    if (packs.regions.isEmpty()) {
+        Label(stringResource(R.string.map_pack_no_index), Typography.small, c.textMuted)
+        return
+    }
+    val here = position?.let { packs.regionAt(it.latitude, it.longitude) }
+    if (position != null && here == null) Label(stringResource(R.string.map_pack_none), Typography.small, c.textMuted)
+    var showAll by rememberSaveable { mutableStateOf(false) }
+    val mine = packs.installed.mapNotNull { p -> packs.regions.firstOrNull { it.id == p.id } }
+    val shown = (listOfNotNull(here) + mine).distinctBy { it.id }
+    for (r in shown) StatePackRow(packs, r, language)
+    val country = here?.country ?: mine.firstOrNull()?.country ?: packs.regions.first().country
+    val others = packs.regions.filter { it.country == country && shown.none { s -> s.id == it.id } }.sortedBy { it.name(language) }
+    if (others.isNotEmpty()) {
+        if (!showAll) Button(stringResource(R.string.map_pack_others), { showAll = true })
+        else for (r in others) StatePackRow(packs, r, language)
+    }
+}
+
+/**
+ * Un estado en un renglón: su nombre y tamaño a la izquierda y lo que se puede hacer a la derecha (bajar, actualizar o
+ * borrar); bajando, su avance y Cancelar debajo.
+ */
+@Composable
+private fun StatePackRow(packs: MapPacks, region: MapRegion, language: String) {
+    val c = LocalColors.current
+    val context = LocalContext.current
+    val name = region.name(language)
+    val saved = packs.installed.firstOrNull { it.id == region.id }
+    val job = packs.job?.takeIf { it.id == region.id }
+    val downloading = job != null && !job.failed
+    // Uno a la vez: mientras baja otro, este espera.
+    val busy = packs.job?.let { !it.failed } == true
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            val size = Formatter.formatShortFileSize(context, saved?.size ?: region.map.size)
+            Label(
+                if (saved != null) stringResource(R.string.map_pack_saved, name, size) else "$name · $size",
+                Typography.body, if (saved != null) c.accent else c.text, maxLines = 2, modifier = Modifier.weight(1f),
+            )
+            when {
+                downloading -> Button(stringResource(R.string.cancel), { packs.cancel() })
+                saved == null -> Button(stringResource(R.string.map_pack_download), { packs.download(region) }, primary = true, enabled = !busy)
+                else -> {
+                    if (packs.outdated(region)) Button(stringResource(R.string.map_pack_update), { packs.download(region) }, primary = true, enabled = !busy)
+                    Confirmed(
+                        stringResource(R.string.map_offline_delete), stringResource(R.string.map_pack_delete_question, name),
+                        stringResource(R.string.confirm_delete), message = stringResource(R.string.map_pack_delete_message),
+                    ) { packs.delete(region.id) }
+                }
+            }
+        }
+        if (downloading) {
+            Box(Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp)).background(c.surfaceHigh)) {
+                Box(Modifier.fillMaxWidth(job!!.progress).fillMaxHeight().background(c.accent))
+            }
+        }
+        if (job?.failed == true) Label(stringResource(R.string.map_pack_failed), Typography.small, c.warning)
     }
 }
 

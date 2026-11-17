@@ -49,4 +49,16 @@
     <string name="map_tab_app">Ứng dụng bản đồ</string>
     <string name="map_tab_look">Bản đồ LiteDash</string>
     <string name="map_look_help">Áp dụng cho mọi tiện ích Bản đồ và bản đồ toàn màn hình. Mỗi tiện ích vẫn có thể đổi riêng từ biểu tượng bánh răng.</string>
+    <string name="map_pack_title">Bản đồ tỉnh của bạn</string>
+    <string name="map_pack_help">Cả tỉnh của bạn không cần internet, chỉ một lần tải. Cập nhật vài lần mỗi năm.</string>
+    <string name="map_pack_no_index">Kết nối internet để xem các bản đồ có sẵn.</string>
+    <string name="map_pack_none">Chưa có bản đồ cho khu vực của bạn: tạm thời hãy tải một khu vực bên dưới.</string>
+    <string name="map_pack_others">Tỉnh khác</string>
+    <string name="map_pack_saved">%1$s · đã lưu · %2$s</string>
+    <string name="map_pack_download">Tải xuống</string>
+    <string name="map_pack_update">Cập nhật</string>
+    <string name="map_pack_delete_question">Xóa bản đồ %1$s?</string>
+    <string name="map_pack_delete_message">Khi không có internet, bạn sẽ không thấy đường phố ở đó; các khu vực của bạn vẫn giữ nguyên.</string>
+    <string name="map_pack_failed">Không tải được: kiểm tra internet.</string>
+    <string name="map_pack_zones">Khu vực</string>
 </resources>

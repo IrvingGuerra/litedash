@@ -49,4 +49,16 @@
     <string name="map_tab_app">Karten-App</string>
     <string name="map_tab_look">LiteDash-Karte</string>
     <string name="map_look_help">Gilt für alle Karten-Widgets und die Vollbildkarte. Jedes Widget lässt sich weiter über sein Zahnrad ändern.</string>
+    <string name="map_pack_title">Karte deines Bundeslands</string>
+    <string name="map_pack_help">Dein ganzes Bundesland ohne Internet, in einem Download. Wird ein paar Mal im Jahr aktualisiert.</string>
+    <string name="map_pack_no_index">Verbinde dich mit dem Internet, um die verfügbaren Karten zu sehen.</string>
+    <string name="map_pack_none">Für deine Gegend gibt es noch keine Karte: Lade vorerst unten eine Zone.</string>
+    <string name="map_pack_others">Andere Bundesländer</string>
+    <string name="map_pack_saved">%1$s · gespeichert · %2$s</string>
+    <string name="map_pack_download">Laden</string>
+    <string name="map_pack_update">Aktualisieren</string>
+    <string name="map_pack_delete_question">Karte von %1$s löschen?</string>
+    <string name="map_pack_delete_message">Ohne Internet siehst du seine Straßen nicht mehr; deine Zonen bleiben.</string>
+    <string name="map_pack_failed">Download fehlgeschlagen: Prüfe dein Internet.</string>
+    <string name="map_pack_zones">Zonen</string>
 </resources>

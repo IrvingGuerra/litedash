@@ -34,6 +34,8 @@ class TileStore(context: Context, private val userAgent: String, val source: Til
     private val dir = File(app.filesDir, source.folder)
     /** Las zonas descargadas (solo el minimalista: OSM no deja bajar en bloque). */
     private val offline = if (source is VectorTiles) OfflineMaps.get(app) else null
+    /** Los mapas de estado bajados (mismo esquema que el minimalista): van antes que las zonas. */
+    private val packs = if (source is VectorTiles) MapPacks.get(app) else null
     /** Una descarga (y una lectura) por archivo: varias teselas del 15 en adelante salen de la misma del 14. */
     private val fileLocks = Array(FILE_LOCKS) { Any() }
     private val lock = Any()
@@ -216,8 +218,9 @@ class TileStore(context: Context, private val userAgent: String, val source: Til
         return synchronized(fileLocks[Math.floorMod(origin.hashCode(), FILE_LOCKS)]) {
             val file = File(dir, "${keyZ(origin)}_${keyX(origin)}_${keyY(origin)}")
             val now = System.currentTimeMillis()
-            // Primero lo descargado sin conexión (no caduca ni gasta datos); vacía = ahí no hay nada y se dibuja lisa.
-            offline?.tile(keyZ(origin), keyX(origin), keyY(origin))?.let { body ->
+            // Primero lo descargado sin conexión (el mapa de tu estado y luego tus zonas: no caducan ni gastan datos);
+            // vacía = ahí no hay nada y se dibuja lisa.
+            (packs?.tile(keyZ(origin), keyX(origin), keyY(origin)) ?: offline?.tile(keyZ(origin), keyX(origin), keyY(origin)))?.let { body ->
                 val image = decode(body, key, origin)
                 if (image != null) return Loaded(image, 0L)
             }

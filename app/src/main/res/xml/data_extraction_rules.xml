@@ -7,6 +7,7 @@
         <exclude domain="file" path="map_tiles/" />
         <exclude domain="file" path="map_vector/" />
         <exclude domain="file" path="map_offline/" />
+        <exclude domain="file" path="map_packs/" />
         <exclude domain="file" path="cars/" />
         <exclude domain="sharedpref" path="cars.xml" />
         <exclude domain="sharedpref" path="pro.xml" />
@@ -18,6 +19,7 @@
         <exclude domain="file" path="map_tiles/" />
         <exclude domain="file" path="map_vector/" />
         <exclude domain="file" path="map_offline/" />
+        <exclude domain="file" path="map_packs/" />
         <exclude domain="file" path="cars/" />
         <exclude domain="sharedpref" path="cars.xml" />
         <exclude domain="sharedpref" path="pro.xml" />

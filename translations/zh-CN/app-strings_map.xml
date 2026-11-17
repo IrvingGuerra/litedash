@@ -49,4 +49,16 @@
     <string name="map_tab_app">地图应用</string>
     <string name="map_tab_look">LiteDash 地图</string>
     <string name="map_look_help">适用于所有地图小组件和全屏地图。每个小组件仍可通过其齿轮图标单独更改。</string>
+    <string name="map_pack_title">你所在省份的地图</string>
+    <string name="map_pack_help">整个省份离线可用，一次下载即可。每年更新几次。</string>
+    <string name="map_pack_no_index">连接互联网以查看可用地图。</string>
+    <string name="map_pack_none">你所在的地方还没有地图：暂时请在下方下载一个区域。</string>
+    <string name="map_pack_others">其他省份</string>
+    <string name="map_pack_saved">%1$s · 已保存 · %2$s</string>
+    <string name="map_pack_download">下载</string>
+    <string name="map_pack_update">更新</string>
+    <string name="map_pack_delete_question">删除 %1$s 的地图？</string>
+    <string name="map_pack_delete_message">无网络时将无法查看其街道；你的区域会保留。</string>
+    <string name="map_pack_failed">下载失败：请检查网络。</string>
+    <string name="map_pack_zones">区域</string>
 </resources>
