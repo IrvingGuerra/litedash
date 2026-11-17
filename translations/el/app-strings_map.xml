@@ -43,7 +43,7 @@
     <string name="map_online_now">Ζωντανός χάρτης</string>
     <string name="map_offline_now">Χάρτης εκτός σύνδεσης</string>
     <string name="map_offline_size_free">Περίπου %1$s · %2$s ελεύθερα</string>
-    <string name="map_offline_big">Μεγάλη ζώνη: καλύτερα με Wi‑Fi και με χρόνο.</string>
+    <string name="map_offline_too_big">Είναι περισσότερα από όσα επιτρέπει ο διακομιστής χαρτών σε μία λήψη: διάλεξε μικρότερη ακτίνα.</string>
     <string name="map_offline_no_room">Δεν υπάρχει αρκετός χώρος: επιλέξτε μικρότερη ακτίνα ή ελευθερώστε χώρο.</string>
     <string name="map_offline_my_location">Η θέση μου</string>
     <string name="map_tab_app">Εφαρμογή χαρτών</string>

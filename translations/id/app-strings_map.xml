@@ -43,7 +43,7 @@
     <string name="map_online_now">Peta online</string>
     <string name="map_offline_now">Peta offline</string>
     <string name="map_offline_size_free">Sekitar %1$s · %2$s kosong</string>
-    <string name="map_offline_big">Zona ini besar: sebaiknya lewat Wi‑Fi dan dengan waktu luang.</string>
+    <string name="map_offline_too_big">Itu melebihi batas server peta untuk sekali unduh: pilih radius yang lebih kecil.</string>
     <string name="map_offline_no_room">Penyimpanan tidak cukup: pilih radius lebih kecil atau kosongkan ruang.</string>
     <string name="map_offline_my_location">Lokasi saya</string>
     <string name="map_tab_app">Aplikasi peta</string>

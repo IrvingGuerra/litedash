@@ -43,7 +43,7 @@
     <string name="map_online_now">Онлайн-карта</string>
     <string name="map_offline_now">Офлайн-карта</string>
     <string name="map_offline_size_free">Около %1$s · свободно %2$s</string>
-    <string name="map_offline_big">Район большой: лучше по Wi‑Fi и не спеша.</string>
+    <string name="map_offline_too_big">Это больше, чем сервер карт разрешает скачать за раз: выбери радиус поменьше.</string>
     <string name="map_offline_no_room">Не хватает памяти: выбери радиус поменьше или освободи место.</string>
     <string name="map_offline_my_location">Моё местоположение</string>
     <string name="map_tab_app">Приложение карт</string>

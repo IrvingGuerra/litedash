@@ -43,7 +43,7 @@
     <string name="map_online_now">Canlı harita</string>
     <string name="map_offline_now">Çevrimdışı harita</string>
     <string name="map_offline_size_free">Yaklaşık %1$s · %2$s boş</string>
-    <string name="map_offline_big">Bu büyük bir bölge: Wi‑Fi’de ve zaman varken daha iyi olur.</string>
+    <string name="map_offline_too_big">Bu, harita sunucusunun tek seferde izin verdiğinden fazla: daha küçük bir yarıçap seç.</string>
     <string name="map_offline_no_room">Yeterli depolama yok: daha küçük yarıçap seçin veya yer açın.</string>
     <string name="map_offline_my_location">Konumum</string>
     <string name="map_tab_app">Harita uygulaması</string>

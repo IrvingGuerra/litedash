@@ -4,6 +4,13 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.4.168] - 2026-11-16
+
+### Cambiado
+- **Mapas sin conexión dentro de las reglas del servidor de mapas:** cada descarga es de 10, 20 o 30 km (OpenFreeMap
+  permite hasta 3 000 teselas o 50 MB por descarga). Lejos del ecuador, si la zona sale más grande, te lo dice antes.
+  Las zonas que ya bajaste se quedan.
+
 ## [1.4.167] - 2026-11-16
 
 ### Nuevo

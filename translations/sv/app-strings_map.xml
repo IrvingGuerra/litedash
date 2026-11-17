@@ -43,7 +43,7 @@
     <string name="map_online_now">Live-karta</string>
     <string name="map_offline_now">Offlinekarta</string>
     <string name="map_offline_size_free">Cirka %1$s · %2$s ledigt</string>
-    <string name="map_offline_big">Det här är en stor zon: helst via Wi‑Fi och med tid.</string>
+    <string name="map_offline_too_big">Det är mer än kartservern tillåter på en gång: välj en mindre radie.</string>
     <string name="map_offline_no_room">Inte tillräckligt med lagring: välj en mindre radie eller frigör utrymme.</string>
     <string name="map_offline_my_location">Min plats</string>
     <string name="map_tab_app">Kartapp</string>

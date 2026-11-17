@@ -43,7 +43,7 @@
     <string name="map_online_now">Mapa na żywo</string>
     <string name="map_offline_now">Mapa offline</string>
     <string name="map_offline_size_free">Około %1$s · wolne %2$s</string>
-    <string name="map_offline_big">To duża strefa: lepiej przez Wi‑Fi i bez pośpiechu.</string>
+    <string name="map_offline_too_big">To więcej, niż serwer map pozwala pobrać naraz: wybierz mniejszy promień.</string>
     <string name="map_offline_no_room">Za mało miejsca: wybierz mniejszy promień lub zwolnij miejsce.</string>
     <string name="map_offline_my_location">Moja lokalizacja</string>
     <string name="map_tab_app">Aplikacja map</string>

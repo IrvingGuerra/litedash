@@ -3,6 +3,13 @@
 What people using LiteDash notice, in English. The full history (in Spanish) is in [CHANGELOG.md](CHANGELOG.md).
 Format [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versions [SemVer](https://semver.org/).
 
+## [1.4.168] - 2026-11-16
+
+### Changed
+- **Offline maps within the map server's rules:** each download is 10, 20 or 30 km (OpenFreeMap allows up to 3,000
+  tiles or 50 MB per download). Far from the equator, if the area comes out bigger, you're told before downloading.
+  Areas you already saved stay.
+
 ## [1.4.167] - 2026-11-16
 
 ### New

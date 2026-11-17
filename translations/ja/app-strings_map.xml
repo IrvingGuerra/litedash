@@ -43,7 +43,7 @@
     <string name="map_online_now">オンライン地図</string>
     <string name="map_offline_now">オフライン地図</string>
     <string name="map_offline_size_free">約 %1$s · 空き %2$s</string>
-    <string name="map_offline_big">大きなエリアです。Wi‑Fi で時間に余裕があるときがおすすめです。</string>
+    <string name="map_offline_too_big">地図サーバーが一度に許可する量を超えています。もっと小さい半径を選んでください。</string>
     <string name="map_offline_no_room">容量が足りません。半径を小さくするか、空き容量を増やしてください。</string>
     <string name="map_offline_my_location">現在地</string>
     <string name="map_tab_app">地図アプリ</string>

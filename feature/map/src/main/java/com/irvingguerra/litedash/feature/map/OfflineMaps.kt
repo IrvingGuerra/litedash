@@ -47,14 +47,19 @@ class OfflineArea(val id: String, val lat: Double, val lon: Double, val km: Int,
  */
 class OfflineJob(val done: Int, val total: Int, val bytes: Long, val error: OfflineError? = null, val waiting: Boolean = false)
 
-/** BLOCKED = el servidor nos cortó (403/418); NETWORK = sin internet o falló varias veces seguidas. */
-enum class OfflineError { BLOCKED, NETWORK }
+/**
+ * BLOCKED = el servidor nos cortó (403/418); NETWORK = sin internet o falló varias veces seguidas; TOO_BIG = la descarga
+ * pasa del tope de OpenFreeMap ([OfflineMaps.MAX_TILES] / [OfflineMaps.MAX_BYTES]).
+ */
+enum class OfflineError { BLOCKED, NETWORK, TOO_BIG }
 
 /**
  * El mapa minimalista sin conexión: zonas que el usuario descarga completas (las teselas del 14 en un
  * círculo y las del 12 y 13 que las cubren, para lo lejano del mapa inclinado) en `filesDir/map_offline`,
  * tal como llegan (comprimidas). No caducan ni se recortan: solo se van al borrar su zona. OSM no
- * permite bajar en bloque; OpenFreeMap sí (sin límites), igual con calma: dos a la vez y nuestro User-Agent.
+ * permite bajar en bloque. OpenFreeMap sí, con sus reglas (openfreemap.org/tos, revisadas el 2026-11-16): cada
+ * descarga para usar sin conexión de máximo 3 000 teselas o 50 MB, a lo más 4 a la vez y con nuestro User-Agent.
+ * Aquí: dos a la vez, y una descarga que pasaría de [MAX_TILES] o [MAX_BYTES] no se hace (ni al volver a bajar).
  *
  * Todo el estado se cambia con [lock] y por [generation]: lo que haga una descarga ya cancelada o
  * reemplazada no toca el estado ni deja archivos. En disco solo se queda lo de alguna zona o de la
@@ -79,7 +84,7 @@ class OfflineMaps private constructor(private val app: Context) {
     var job by mutableStateOf<OfflineJob?>(null)
         private set
 
-    /** Cuántas teselas lleva una zona (por [AVG_TILE_BYTES], su tamaño aproximado); de 200 km son decenas de miles: fuera del hilo principal. */
+    /** Cuántas teselas lleva una zona (por [AVG_TILE_BYTES], su tamaño aproximado); fuera del hilo principal. */
     suspend fun estimate(lat: Double, lon: Double, km: Int): Int = withContext(Dispatchers.Default) { areaTiles(lat, lon, km).size }
 
     /** ¿([lat], [lon]) está dentro de alguna zona descargada? */
@@ -97,7 +102,7 @@ class OfflineMaps private constructor(private val app: Context) {
     fun download(lat: Double, lon: Double, km: Int, source: VectorTiles, userAgent: String) = synchronized(lock) {
         if (running?.isActive == true) return@synchronized
         val gen = ++generation
-        // Mientras se calculan las teselas (en IO: de 200 km son decenas de miles) ya se ve que empezó.
+        // Mientras se calculan las teselas (en IO) ya se ve que empezó.
         job = OfflineJob(0, 0, 0L)
         running = scope.launch {
             val keys = areaTiles(lat, lon, km)
@@ -165,10 +170,16 @@ class OfflineMaps private constructor(private val app: Context) {
             ready.await()
             dir.mkdirs()
             val missing = keys.filter { !File(dir, name(it)).isFile }
+            // Las reglas de OpenFreeMap: lo que falta es lo que se pide en esta descarga.
+            if (!withinLimits(missing.size)) {
+                run.finish(OfflineError.TOO_BIG, null)
+                return
+            }
             run.done.set(keys.size - missing.size)
             run.bytes.set(keys.sumOf { File(dir, name(it)).length() })
             run.publish()
             val next = AtomicInteger(0)
+            val fetched = AtomicLong(0)
             val failed = AtomicReference<OfflineError?>(null)
             coroutineScope {
                 List(MAX_DOWNLOADS) {
@@ -178,7 +189,10 @@ class OfflineMaps private constructor(private val app: Context) {
                             if (i >= missing.size) break
                             val size = fetch(run, missing[i], source, userAgent)
                             if (size < 0) failed.compareAndSet(null, if (size == BLOCKED) OfflineError.BLOCKED else OfflineError.NETWORK)
-                            else {
+                            else if (fetched.addAndGet(size) > MAX_BYTES) {
+                                // Las teselas pesaron más que el promedio: se para aquí en vez de pasarse del tope.
+                                failed.compareAndSet(null, OfflineError.TOO_BIG)
+                            } else {
                                 run.done.incrementAndGet()
                                 run.bytes.addAndGet(size)
                                 run.publish()
@@ -337,6 +351,13 @@ class OfflineMaps private constructor(private val app: Context) {
          * con todo, ~45 KB. Ciudades menos densas pesan menos, así que se queda como techo razonable.
          */
         const val AVG_TILE_BYTES = 45L * 1024
+
+        /** Topes de OpenFreeMap por descarga para usar sin conexión (openfreemap.org/tos). */
+        const val MAX_TILES = 3_000
+        const val MAX_BYTES = 50L * 1024 * 1024
+
+        /** ¿Una descarga de [tiles] teselas cabe en los dos topes (el peso, con el promedio)? */
+        fun withinLimits(tiles: Int) = tiles <= MAX_TILES && tiles * AVG_TILE_BYTES <= MAX_BYTES
 
         private const val FOLDER = "map_offline"
         private const val AREAS = "areas.json"

@@ -45,7 +45,7 @@
     <string name="map_online_now">Carte en ligne</string>
     <string name="map_offline_now">Carte hors ligne</string>
     <string name="map_offline_size_free">Environ %1$s · %2$s libres</string>
-    <string name="map_offline_big">Zone étendue : de préférence en Wi‑Fi et sans être pressé.</string>
+    <string name="map_offline_too_big">C\'est plus que ce que le serveur de cartes permet en une fois : choisis un rayon plus petit.</string>
     <string name="map_offline_no_room">Stockage insuffisant : choisissez un rayon plus petit ou libérez de l\'espace.</string>
     <string name="map_offline_my_location">Ma position</string>
     <string name="map_tab_app">Appli de carte</string>

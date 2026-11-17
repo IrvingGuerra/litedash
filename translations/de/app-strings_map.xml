@@ -43,7 +43,7 @@
     <string name="map_online_now">Live-Karte</string>
     <string name="map_offline_now">Offline-Karte</string>
     <string name="map_offline_size_free">Etwa %1$s · %2$s frei</string>
-    <string name="map_offline_big">Große Zone: besser per Wi‑Fi und mit Zeit.</string>
+    <string name="map_offline_too_big">Das ist mehr, als der Kartenserver auf einmal erlaubt: wähle einen kleineren Radius.</string>
     <string name="map_offline_no_room">Nicht genug Speicher: wähle einen kleineren Radius oder gib Platz frei.</string>
     <string name="map_offline_my_location">Mein Standort</string>
     <string name="map_tab_app">Karten-App</string>

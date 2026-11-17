@@ -43,7 +43,7 @@
     <string name="map_online_now">Live kaart</string>
     <string name="map_offline_now">Offline kaart</string>
     <string name="map_offline_size_free">Ongeveer %1$s · %2$s vrij</string>
-    <string name="map_offline_big">Dit is een grote zone: liever via Wi‑Fi en met de tijd.</string>
+    <string name="map_offline_too_big">Dat is meer dan de kaartserver in één keer toestaat: kies een kleinere straal.</string>
     <string name="map_offline_no_room">Niet genoeg opslag: kies een kleinere straal of maak ruimte vrij.</string>
     <string name="map_offline_my_location">Mijn locatie</string>
     <string name="map_tab_app">Kaart-app</string>

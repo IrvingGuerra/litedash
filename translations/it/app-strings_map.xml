@@ -43,7 +43,7 @@
     <string name="map_online_now">Mappa online</string>
     <string name="map_offline_now">Mappa offline</string>
     <string name="map_offline_size_free">Circa %1$s · %2$s liberi</string>
-    <string name="map_offline_big">È una zona grande: meglio con Wi‑Fi e con calma.</string>
+    <string name="map_offline_too_big">È più di quanto il server delle mappe consente in una volta: scegli un raggio più piccolo.</string>
     <string name="map_offline_no_room">Memoria insufficiente: scegli un raggio più piccolo o libera spazio.</string>
     <string name="map_offline_my_location">La mia posizione</string>
     <string name="map_tab_app">App di mappe</string>

@@ -484,14 +484,19 @@ private fun OfflineSection(d: Dependencies, detail: MapDetail) {
         Box(Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp)).background(c.surfaceHigh)) {
             Box(Modifier.fillMaxWidth(fraction).fillMaxHeight().background(c.accent))
         }
-        // Sin total todavía se están contando las teselas (un instante; de 200 km, un poco más).
+        // Sin total todavía se están contando las teselas (un instante).
         if (job.total > 0) Label(stringResource(R.string.map_offline_progress, job.done, job.total, Formatter.formatShortFileSize(context, job.bytes)), Typography.small, c.textMuted)
         if (job.waiting) Label(stringResource(R.string.map_offline_waiting_server), Typography.small, c.warning)
         Button(stringResource(R.string.cancel), { offline.cancel() })
         return
     }
     job?.error?.let { error ->
-        Label(stringResource(if (error == OfflineError.BLOCKED) R.string.map_offline_blocked else R.string.map_offline_failed), Typography.small, c.warning)
+        val text = when (error) {
+            OfflineError.BLOCKED -> R.string.map_offline_blocked
+            OfflineError.TOO_BIG -> R.string.map_offline_too_big
+            OfflineError.NETWORK -> R.string.map_offline_failed
+        }
+        Label(stringResource(text), Typography.small, c.warning)
     }
     var km by rememberSaveable { mutableIntStateOf(OFFLINE_RADII[1]) }
     // Con una zona elegida el radio es el suyo. En millas solo cambia la etiqueta: se baja lo mismo.
@@ -558,24 +563,28 @@ private fun OfflinePicker(offline: OfflineMaps, lat: Double, lon: Double, km: In
     val free by produceState<Long?>(null, offline.areas) { value = withContext(Dispatchers.IO) { freeBytes(context) } }
     val bytes = tiles?.let { it * OfflineMaps.AVG_TILE_BYTES }
     val fits = bytes != null && free?.let { bytes + FREE_MARGIN_BYTES <= it } ?: false
+    // Lejos del ecuador las teselas son más chicas y caben menos km en el tope de OpenFreeMap.
+    val allowed = tiles?.let { OfflineMaps.withinLimits(it) } ?: false
     if (bytes != null) {
-        val big = bytes > BIG_ZONE_BYTES
         Label(
             free?.let { stringResource(R.string.map_offline_size_free, Formatter.formatShortFileSize(context, bytes), Formatter.formatShortFileSize(context, it)) }
                 ?: stringResource(R.string.map_offline_size, Formatter.formatShortFileSize(context, bytes)),
-            Typography.small, if (big) c.warning else c.textMuted,
+            Typography.small, c.textMuted,
         )
-        if (big && fits) Label(stringResource(R.string.map_offline_big), Typography.small, c.warning)
-        if (free != null && !fits) Label(stringResource(R.string.map_offline_no_room), Typography.small, c.warning)
+        if (!allowed) Label(stringResource(R.string.map_offline_too_big), Typography.small, c.warning)
+        else if (free != null && !fits) Label(stringResource(R.string.map_offline_no_room), Typography.small, c.warning)
     }
     Button(stringResource(R.string.map_offline_download), {
         val (centerLat, centerLon) = camera.center(lat, lon)
         offline.download(centerLat, centerLon, km, download, MAP_USER_AGENT)
-    }, primary = true, enabled = fits)
+    }, primary = true, enabled = fits && allowed)
 }
 
-/** Radios que se pueden bajar (km); 25, de fábrica. */
-private val OFFLINE_RADII = listOf(10, 25, 50, 100, 200)
+/**
+ * Radios que se pueden bajar (km); 20, de fábrica. Hasta 30: cabe en el tope de OpenFreeMap por descarga cerca del
+ * ecuador (México); más al norte o al sur, el de 30 puede no caber y se avisa. Lo grande llegará por estado.
+ */
+private val OFFLINE_RADII = listOf(10, 20, 30)
 
 /** El radio de una zona como lo pide Ajustes: "25 km" o, en millas, "16 mi" (se baja lo mismo; solo cambia la etiqueta). */
 @Composable
@@ -584,9 +593,6 @@ private fun radiusLabel(km: Int, miles: Boolean): String =
 
 /** Alto del mapa para elegir la zona (y de la vista previa de Ajustes en pantallas angostas). */
 private val OFFLINE_PREVIEW_HEIGHT = 240.dp
-
-/** Desde aquí la descarga se avisa en ámbar (tarda y llena la memoria). */
-private const val BIG_ZONE_BYTES = 500_000_000L
 
 /** Lo que se deja libre además de la zona (Android y otras apps lo necesitan). */
 private const val FREE_MARGIN_BYTES = 200_000_000L

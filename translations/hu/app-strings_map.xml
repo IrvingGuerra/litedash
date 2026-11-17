@@ -43,7 +43,7 @@
     <string name="map_online_now">Online térkép</string>
     <string name="map_offline_now">Offline térkép</string>
     <string name="map_offline_size_free">Kb. %1$s · %2$s szabad</string>
-    <string name="map_offline_big">Ez nagy terület: inkább Wi‑Fin és ráérősen.</string>
+    <string name="map_offline_too_big">Ez több, mint amit a térképszerver egyszerre enged: válassz kisebb sugarat.</string>
     <string name="map_offline_no_room">Nincs elég tárhely: válassz kisebb sugarat, vagy szabadíts fel helyet.</string>
     <string name="map_offline_my_location">Saját helyzet</string>
     <string name="map_tab_app">Térképalkalmazás</string>

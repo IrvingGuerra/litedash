@@ -92,4 +92,15 @@ class OfflineMapsTest {
     }
 
     private fun area(id: String, lat: Double, lon: Double, km: Int) = OfflineArea(id, lat, lon, km, 0, 0L, 0L)
+
+    @Test
+    fun radiiStayWithinOpenFreeMapLimits() {
+        // Cerca del ecuador (CDMX) caben los radios que se ofrecen (10, 20, 30 km); 50 km ya no.
+        for (km in listOf(10, 20, 30)) assertTrue("$km km", OfflineMaps.withinLimits(areaTiles(zocaloLat, zocaloLon, km).size))
+        assertFalse(OfflineMaps.withinLimits(areaTiles(zocaloLat, zocaloLon, 50).size))
+        // Más al norte las teselas son más chicas: 30 km en Edimburgo pasa del tope y 20 km cabe.
+        assertFalse(OfflineMaps.withinLimits(areaTiles(55.95, -3.19, 30).size))
+        assertTrue(OfflineMaps.withinLimits(areaTiles(55.95, -3.19, 20).size))
+        assertFalse(OfflineMaps.withinLimits(OfflineMaps.MAX_TILES + 1))
+    }
 }

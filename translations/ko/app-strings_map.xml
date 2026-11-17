@@ -43,7 +43,7 @@
     <string name="map_online_now">실시간 지도</string>
     <string name="map_offline_now">오프라인 지도</string>
     <string name="map_offline_size_free">약 %1$s · %2$s 남음</string>
-    <string name="map_offline_big">큰 지역이에요. Wi‑Fi에서 여유 있게 받는 게 좋아요.</string>
+    <string name="map_offline_too_big">지도 서버가 한 번에 허용하는 양보다 많아요. 더 작은 반경을 선택하세요.</string>
     <string name="map_offline_no_room">저장 공간이 부족해요. 반경을 줄이거나 공간을 확보하세요.</string>
     <string name="map_offline_my_location">내 위치</string>
     <string name="map_tab_app">지도 앱</string>

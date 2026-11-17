@@ -43,7 +43,7 @@
     <string name="map_online_now">Živá mapa</string>
     <string name="map_offline_now">Offline mapa</string>
     <string name="map_offline_size_free">Asi %1$s · volno %2$s</string>
-    <string name="map_offline_big">Je to velká oblast: raději přes Wi‑Fi a s časem.</string>
+    <string name="map_offline_too_big">To je víc, než mapový server dovolí stáhnout najednou: zvol menší poloměr.</string>
     <string name="map_offline_no_room">Nedostatek místa: vyber menší poloměr nebo uvolni místo.</string>
     <string name="map_offline_my_location">Moje poloha</string>
     <string name="map_tab_app">Aplikace map</string>

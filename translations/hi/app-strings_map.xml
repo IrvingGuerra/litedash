@@ -43,7 +43,7 @@
     <string name="map_online_now">लाइव मैप</string>
     <string name="map_offline_now">ऑफ़लाइन मैप</string>
     <string name="map_offline_size_free">लगभग %1$s · %2$s खाली</string>
-    <string name="map_offline_big">यह बड़ा इलाका है: Wi‑Fi पर और समय लेकर करना बेहतर है।</string>
+    <string name="map_offline_too_big">यह मैप सर्वर की एक बार की सीमा से ज़्यादा है: छोटा दायरा चुनें।</string>
     <string name="map_offline_no_room">जगह कम है: छोटा दायरा चुनें या जगह खाली करें।</string>
     <string name="map_offline_my_location">मेरी लोकेशन</string>
     <string name="map_tab_app">मैप ऐप</string>

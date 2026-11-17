@@ -43,7 +43,7 @@
     <string name="map_online_now">Hartă online</string>
     <string name="map_offline_now">Hartă offline</string>
     <string name="map_offline_size_free">Cam %1$s · %2$s liber</string>
-    <string name="map_offline_big">E o zonă mare: mai bine pe Wi‑Fi și cu timp.</string>
+    <string name="map_offline_too_big">E mai mult decât permite serverul de hărți dintr-o dată: alege o rază mai mică.</string>
     <string name="map_offline_no_room">Spațiu insuficient: alege o rază mai mică sau eliberează spațiu.</string>
     <string name="map_offline_my_location">Locația mea</string>
     <string name="map_tab_app">Aplicația de hărți</string>
