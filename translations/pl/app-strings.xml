@@ -137,6 +137,7 @@
     <string name="template_route">Trasa</string>
     <string name="template_music_radio">Muzyka i radio</string>
     <string name="template_vertical_map">Pionowo z mapą</string>
+    <string name="template_map_background">Mapa w tle</string>
     <string name="templates_tab_map">Mapa</string>
     <string name="templates_map_help">Mapa na żywo z Twoją pozycją i następnym skrętem.</string>
     <string name="add">Dodaj</string>

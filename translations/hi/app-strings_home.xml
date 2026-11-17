@@ -34,4 +34,6 @@
     <string name="map_backdrop_you">मैप पर आप</string>
     <string name="map_backdrop_arrow">तीर</string>
     <string name="map_backdrop_car">आपकी कार</string>
+    <string name="map_backdrop_has_widget">इस पेज पर मैप विजेट है: पृष्ठभूमि में मैप के साथ दो मैप दिखेंगे।</string>
+    <string name="map_backdrop_remove_widget">मैप विजेट हटाएँ</string>
 </resources>

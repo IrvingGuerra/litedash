@@ -35,4 +35,6 @@
     <string name="map_backdrop_you">Du auf der Karte</string>
     <string name="map_backdrop_arrow">Pfeil</string>
     <string name="map_backdrop_car">Dein Auto</string>
+    <string name="map_backdrop_has_widget">Diese Seite hat ein Karten-Widget: mit der Karte im Hintergrund siehst du zwei.</string>
+    <string name="map_backdrop_remove_widget">Karten-Widget entfernen</string>
 </resources>

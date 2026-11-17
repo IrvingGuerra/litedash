@@ -137,6 +137,7 @@
     <string name="template_route">Lộ trình</string>
     <string name="template_music_radio">Nhạc và radio</string>
     <string name="template_vertical_map">Dọc với bản đồ</string>
+    <string name="template_map_background">Bản đồ làm nền</string>
     <string name="templates_tab_map">Bản đồ</string>
     <string name="templates_map_help">Bản đồ trực tiếp với vị trí và lượt rẽ tiếp theo.</string>
     <string name="add">Thêm</string>

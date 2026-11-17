@@ -34,4 +34,6 @@
     <string name="map_backdrop_you">Bạn trên bản đồ</string>
     <string name="map_backdrop_arrow">Mũi tên</string>
     <string name="map_backdrop_car">Xe của bạn</string>
+    <string name="map_backdrop_has_widget">Trang này có tiện ích Bản đồ: khi dùng bản đồ làm nền sẽ thấy hai bản đồ.</string>
+    <string name="map_backdrop_remove_widget">Bỏ tiện ích Bản đồ</string>
 </resources>

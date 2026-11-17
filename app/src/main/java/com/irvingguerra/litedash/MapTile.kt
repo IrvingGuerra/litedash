@@ -1,6 +1,7 @@
 package com.irvingguerra.litedash
 
 import android.content.Context
+import android.graphics.Bitmap
 import android.os.Build
 import android.os.StatFs
 import android.os.storage.StorageManager
@@ -266,7 +267,7 @@ internal fun MapBackdrop(d: Dependencies, focus: Rect?, car: CarPackage?, covere
     val wantsCar = d.prefs.mapBackdropCar && car != null
     val paint = d.prefs.carPaint
     val marker by produceState<ImageBitmap?>(null, wantsCar, car?.id, paint) {
-        value = if (wantsCar) d.cars.snapshot(car, paint, MARKER_PX, turn = REAR_TURN)?.asImageBitmap() else null
+        value = if (wantsCar) d.cars.snapshot(car, paint, MARKER_PX, turn = REAR_TURN, floor = false)?.solidPart()?.asImageBitmap() else null
     }
     BoxWithConstraints(Modifier.fillMaxSize()) {
         MapCanvas(
@@ -279,14 +280,37 @@ internal fun MapBackdrop(d: Dependencies, focus: Rect?, car: CarPackage?, covere
     }
 }
 
+/**
+ * Solo el auto, sin el aire ni la sombra de los lados: el cuadro del giro mide lo ancho del auto visto de lado y, de
+ * espaldas, el auto ocupa una parte (se vería en miniatura). Corta a lo que es casi opaco ([SOLID_ALPHA]).
+ */
+private fun Bitmap.solidPart(): Bitmap {
+    val px = IntArray(width * height)
+    getPixels(px, 0, width, 0, 0, width, height)
+    var left = width; var right = -1; var top = height; var bottom = -1
+    for (y in 0 until height) for (x in 0 until width) {
+        if ((px[y * width + x] ushr 24) >= SOLID_ALPHA) {
+            if (x < left) left = x
+            if (x > right) right = x
+            if (y < top) top = y
+            if (y > bottom) bottom = y
+        }
+    }
+    if (right < left || bottom < top) return this
+    return Bitmap.createBitmap(this, left, top, right - left + 1, bottom - top + 1)
+}
+
+/** Desde qué tan opaco cuenta como auto (la sombra es más transparente). */
+private const val SOLID_ALPHA = 200
+
 /** El almacén y la cámara del mapa de fondo (uno para todas las páginas que lo usen). */
 private const val BACKDROP_KEY = "home-backdrop"
 
 /** Tu auto de espaldas: en los paquetes, el cuadro a 3/4 de vuelta del primero. */
 private const val REAR_TURN = 0.75f
 
-/** Lo ancho de la foto de tu auto en el mapa (se dibuja a 110 dp; así se ve nítido hasta en pantallas densas). */
-private const val MARKER_PX = 340
+/** Lo ancho de la foto de tu auto en el mapa (se dibuja hasta a 240 dp: así se ve nítido en pantallas densas). */
+private const val MARKER_PX = 640
 
 /**
  * Una cámara por widget Mapa ([key] = su id), la misma en el widget y en grande: lo que muevas o acerques se conserva

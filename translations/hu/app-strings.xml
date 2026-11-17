@@ -137,6 +137,7 @@
     <string name="template_route">Útvonal</string>
     <string name="template_music_radio">Zene és rádió</string>
     <string name="template_vertical_map">Álló térképpel</string>
+    <string name="template_map_background">Térkép háttérként</string>
     <string name="templates_tab_map">Térkép</string>
     <string name="templates_map_help">Az élő térkép a helyzeteddel és a következő kanyarral.</string>
     <string name="add">Hozzáadás</string>

@@ -34,4 +34,6 @@
     <string name="map_backdrop_you">Te a térképen</string>
     <string name="map_backdrop_arrow">Nyíl</string>
     <string name="map_backdrop_car">Az autód</string>
+    <string name="map_backdrop_has_widget">Ezen az oldalon van Térkép widget: térképes háttérrel kettőt látnál.</string>
+    <string name="map_backdrop_remove_widget">Térkép widget eltávolítása</string>
 </resources>

@@ -42,4 +42,6 @@
     <string name="map_backdrop_you">Tú en el mapa</string>
     <string name="map_backdrop_arrow">Flecha</string>
     <string name="map_backdrop_car">Tu auto</string>
+    <string name="map_backdrop_has_widget">Esta página tiene un widget Mapa: con el mapa de fondo se verían dos.</string>
+    <string name="map_backdrop_remove_widget">Quitar el widget Mapa</string>
 </resources>

@@ -137,6 +137,7 @@
     <string name="template_route">Rute</string>
     <string name="template_music_radio">Musik dan radio</string>
     <string name="template_vertical_map">Potret dengan peta</string>
+    <string name="template_map_background">Peta sebagai latar</string>
     <string name="templates_tab_map">Peta</string>
     <string name="templates_map_help">Peta langsung dengan posisi Anda dan belokan berikutnya.</string>
     <string name="add">Tambah</string>

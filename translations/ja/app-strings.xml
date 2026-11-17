@@ -137,6 +137,7 @@
     <string name="template_route">ルート</string>
     <string name="template_music_radio">音楽とラジオ</string>
     <string name="template_vertical_map">縦向き・地図付き</string>
+    <string name="template_map_background">背景に地図</string>
     <string name="templates_tab_map">地図</string>
     <string name="templates_map_help">現在地と次の曲がり角を表示するライブ地図。</string>
     <string name="add">追加</string>

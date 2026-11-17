@@ -34,4 +34,6 @@
     <string name="map_backdrop_you">Du på kartan</string>
     <string name="map_backdrop_arrow">Pil</string>
     <string name="map_backdrop_car">Din bil</string>
+    <string name="map_backdrop_has_widget">Sidan har en Karta-widget: med kartan som bakgrund skulle du se två.</string>
+    <string name="map_backdrop_remove_widget">Ta bort Karta-widgeten</string>
 </resources>

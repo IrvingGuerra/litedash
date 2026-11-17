@@ -34,4 +34,6 @@
     <string name="map_backdrop_you">Anda di peta</string>
     <string name="map_backdrop_arrow">Panah</string>
     <string name="map_backdrop_car">Mobil Anda</string>
+    <string name="map_backdrop_has_widget">Halaman ini punya widget Peta: dengan peta sebagai latar, akan terlihat dua.</string>
+    <string name="map_backdrop_remove_widget">Hapus widget Peta</string>
 </resources>

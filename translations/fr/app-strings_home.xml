@@ -37,4 +37,6 @@
     <string name="map_backdrop_you">Vous sur la carte</string>
     <string name="map_backdrop_arrow">Flèche</string>
     <string name="map_backdrop_car">Votre voiture</string>
+    <string name="map_backdrop_has_widget">Cette page a un widget Carte : avec la carte en fond, tu en verrais deux.</string>
+    <string name="map_backdrop_remove_widget">Retirer le widget Carte</string>
 </resources>

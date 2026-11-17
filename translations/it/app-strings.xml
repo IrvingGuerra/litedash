@@ -137,6 +137,7 @@
     <string name="template_route">Percorso</string>
     <string name="template_music_radio">Musica e radio</string>
     <string name="template_vertical_map">Verticale con mappa</string>
+    <string name="template_map_background">Mappa di sfondo</string>
     <string name="templates_tab_map">Mappa</string>
     <string name="templates_map_help">La mappa dal vivo con la tua posizione e la prossima svolta.</string>
     <string name="add">Aggiungi</string>

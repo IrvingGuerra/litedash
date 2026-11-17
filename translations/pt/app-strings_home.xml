@@ -37,4 +37,6 @@
     <string name="map_backdrop_you">Você no mapa</string>
     <string name="map_backdrop_arrow">Seta</string>
     <string name="map_backdrop_car">Seu carro</string>
+    <string name="map_backdrop_has_widget">Esta página tem um widget Mapa: com o mapa de fundo, você veria dois.</string>
+    <string name="map_backdrop_remove_widget">Remover o widget Mapa</string>
 </resources>

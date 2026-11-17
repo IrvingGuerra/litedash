@@ -137,6 +137,7 @@
     <string name="template_route">रूट</string>
     <string name="template_music_radio">म्यूज़िक और रेडियो</string>
     <string name="template_vertical_map">मैप के साथ खड़ी स्क्रीन</string>
+    <string name="template_map_background">पृष्ठभूमि में मैप</string>
     <string name="templates_tab_map">मैप</string>
     <string name="templates_map_help">आपकी लोकेशन और अगले मोड़ के साथ लाइव मैप।</string>
     <string name="add">जोड़ें</string>

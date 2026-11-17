@@ -137,6 +137,7 @@
     <string name="template_route">Traseu</string>
     <string name="template_music_radio">Muzică și radio</string>
     <string name="template_vertical_map">Vertical cu hartă</string>
+    <string name="template_map_background">Hartă pe fundal</string>
     <string name="templates_tab_map">Hartă</string>
     <string name="templates_map_help">Harta în timp real cu poziția ta și următorul viraj.</string>
     <string name="add">Adaugă</string>

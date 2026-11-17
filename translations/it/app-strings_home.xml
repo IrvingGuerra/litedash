@@ -34,4 +34,6 @@
     <string name="map_backdrop_you">Tu sulla mappa</string>
     <string name="map_backdrop_arrow">Freccia</string>
     <string name="map_backdrop_car">La tua auto</string>
+    <string name="map_backdrop_has_widget">Questa pagina ha un widget Mappa: con la mappa di sfondo ne vedresti due.</string>
+    <string name="map_backdrop_remove_widget">Rimuovi il widget Mappa</string>
 </resources>

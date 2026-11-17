@@ -3,6 +3,20 @@
 What people using LiteDash notice, in English. The full history (in Spanish) is in [CHANGELOG.md](CHANGELOG.md).
 Format [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versions [SemVer](https://semver.org/).
 
+## [1.4.170] - 2026-11-16
+
+### New
+- **«Map background» layout** (Layouts → Map): a column of widgets on the right (at the bottom on portrait screens)
+  and the live map behind, with you in the free space.
+
+### Changed
+- **Your car on the map background looks big**, seen from behind with its shadow, sized to your screen (it used to be
+  tiny).
+- Layouts decide the page background: «Map background» sets the map and the others remove it (no more map background
+  and Map widget at the same time).
+- On a page with the map background, «Add» no longer offers the Map widget; if you pick the map background on a page
+  that has one, you're told and can remove it.
+
 ## [1.4.169] - 2026-11-16
 
 ### New

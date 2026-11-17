@@ -215,9 +215,10 @@ private fun CarLayers.floorBox(car: Rect) =
 /**
  * El auto quieto en tres cuartos, como en el inicio, en una imagen suelta de [widthPx] de ancho (el auto; la
  * sombra y el reflejo pueden agrandarla): para LiteDash Connect. Con [turn] (fracción de vuelta desde el primer
- * cuadro del giro), ese cuadro; sin [p], el sedán genérico. Fondo transparente.
+ * cuadro del giro), ese cuadro; sin [floor], solo el auto (sin sombra ni reflejo: llena la imagen); sin [p], el sedán
+ * genérico. Fondo transparente.
  */
-suspend fun CarRepository.snapshot(p: CarPackage?, paint: CarPaint, widthPx: Int, turn: Float? = null): Bitmap? {
+suspend fun CarRepository.snapshot(p: CarPackage?, paint: CarPaint, widthPx: Int, turn: Float? = null, floor: Boolean = true): Bitmap? {
     if (p == null) {
         val image = ImageBitmap(widthPx, (widthPx / SEDAN_ASPECT).roundToInt())
         withContext(Dispatchers.Default) { image.drawOffscreen { drawSedan(paint.color) } }
@@ -227,10 +228,10 @@ suspend fun CarRepository.snapshot(p: CarPackage?, paint: CarPaint, widthPx: Int
     val frame = turn?.let { Math.floorMod((it * p.spin).roundToInt(), p.spin) } ?: restFrame(p.spin)
     val c = layers(p, baseFrame(frame), paint, widthPx, keep = false) ?: return null
     val car = Rect(Offset.Zero, Size(widthPx.toFloat(), widthPx * c.car.height.toFloat() / c.car.width))
-    val all = c.floorBox(car)?.let { car.union(it) } ?: car
+    val all = c.floorBox(car)?.takeIf { floor }?.let { car.union(it) } ?: car
     val image = ImageBitmap(all.width.roundToInt(), all.height.roundToInt())
     return withContext(Dispatchers.Default) {
-        image.drawOffscreen { drawCarLayersAt(c, car.translate(-all.left, -all.top), reflection = true) }
+        image.drawOffscreen { drawCarLayersAt(c, car.translate(-all.left, -all.top), reflection = floor) }
         image.asAndroidBitmap().trimmed()
     }
 }

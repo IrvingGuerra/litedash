@@ -139,6 +139,7 @@
     <string name="template_route">Itinéraire</string>
     <string name="template_music_radio">Musique et radio</string>
     <string name="template_vertical_map">Portrait avec carte</string>
+    <string name="template_map_background">Carte en fond</string>
     <string name="templates_tab_map">Carte</string>
     <string name="templates_map_help">La carte en direct avec votre position et la prochaine indication.</string>
     <string name="add">Ajouter</string>

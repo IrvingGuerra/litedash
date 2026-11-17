@@ -34,4 +34,6 @@
     <string name="map_backdrop_you">지도 위의 나</string>
     <string name="map_backdrop_arrow">화살표</string>
     <string name="map_backdrop_car">내 차</string>
+    <string name="map_backdrop_has_widget">이 페이지에 지도 위젯이 있어요. 배경 지도를 쓰면 지도가 두 개 보여요.</string>
+    <string name="map_backdrop_remove_widget">지도 위젯 빼기</string>
 </resources>

@@ -4,6 +4,20 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.4.170] - 2026-11-16
+
+### Nuevo
+- **Plantilla «Mapa de fondo»** (Plantillas → Mapa): una columna de widgets a la derecha (abajo en pantallas de pie) y
+  el mapa vivo detrás, contigo en el espacio libre.
+
+### Cambiado
+- **Tu auto en el mapa de fondo se ve grande**, de espaldas y con su sombra, a la medida de tu pantalla (antes salía
+  en miniatura).
+- Las plantillas deciden el fondo de la página: «Mapa de fondo» pone el mapa y las demás lo quitan (ya no quedan el
+  mapa de fondo y el widget Mapa a la vez).
+- En una página con mapa de fondo, «Agregar» ya no ofrece el widget Mapa; si eliges el mapa de fondo en una página que
+  ya lo tiene, te avisa y te deja quitarlo.
+
 ## [1.4.169] - 2026-11-16
 
 ### Nuevo

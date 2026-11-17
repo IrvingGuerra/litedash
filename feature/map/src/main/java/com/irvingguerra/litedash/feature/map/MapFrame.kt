@@ -5,6 +5,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
@@ -205,8 +206,11 @@ internal class MapFrame : ScreenPoint {
     private fun DrawScope.drawArrow(accent: Color, marker: ImageBitmap?) {
         translate(you[0], you[1]) {
             if (marker != null) {
-                val w = MARKER_WIDTH_DP * unit
+                // Proporcional a la pantalla (como el auto de Tesla o Waze): se ve igual de grande en 7" que en 12".
+                val w = (minOf(size.width, size.height) * MARKER_SHARE).coerceIn(MARKER_MIN_DP * unit, MARKER_MAX_DP * unit)
                 val h = w * marker.height / marker.width
+                // Su sombra en la calle (la foto va sin piso), y el auto encima.
+                drawOval(Color.Black.copy(alpha = 0.35f), Offset(-w * 0.55f, h * 0.22f), Size(w * 1.1f, h * 0.36f))
                 drawImage(marker, IntOffset.Zero, IntSize(marker.width, marker.height), IntOffset((-w / 2).toInt(), (-h * 0.6f).toInt()), IntSize(w.toInt(), h.toInt()), filterQuality = FilterQuality.High)
                 return@translate
             }
@@ -221,8 +225,10 @@ internal class MapFrame : ScreenPoint {
     }
 }
 
-/** Lo ancho de tu auto en el mapa, en dp. */
-private const val MARKER_WIDTH_DP = 110f
+/** Lo ancho de tu auto en el mapa: esta parte del lado corto del mapa, entre [MARKER_MIN_DP] y [MARKER_MAX_DP]. */
+private const val MARKER_SHARE = 0.22f
+private const val MARKER_MIN_DP = 140f
+private const val MARKER_MAX_DP = 240f
 
 /** La flecha apuntando al norte con su centro en (0, 0); [u] = 1 dp. */
 private fun arrowPath(u: Float) = Path().apply {

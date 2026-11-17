@@ -137,6 +137,7 @@
     <string name="template_route">Διαδρομή</string>
     <string name="template_music_radio">Μουσική και ραδιόφωνο</string>
     <string name="template_vertical_map">Κατακόρυφη με χάρτη</string>
+    <string name="template_map_background">Χάρτης στο φόντο</string>
     <string name="templates_tab_map">Χάρτης</string>
     <string name="templates_map_help">Ο ζωντανός χάρτης με τη θέση σας και την επόμενη στροφή.</string>
     <string name="add">Προσθήκη</string>

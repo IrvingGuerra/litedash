@@ -34,4 +34,6 @@
     <string name="map_backdrop_you">คุณบนแผนที่</string>
     <string name="map_backdrop_arrow">ลูกศร</string>
     <string name="map_backdrop_car">รถของคุณ</string>
+    <string name="map_backdrop_has_widget">หน้านี้มีวิดเจ็ตแผนที่ ถ้าใช้แผนที่เป็นพื้นหลังจะเห็นแผนที่สองอัน</string>
+    <string name="map_backdrop_remove_widget">เอาวิดเจ็ตแผนที่ออก</string>
 </resources>

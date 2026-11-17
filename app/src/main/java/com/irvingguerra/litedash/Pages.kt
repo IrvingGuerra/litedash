@@ -43,6 +43,7 @@ import com.irvingguerra.litedash.feature.dashboard.DashboardState
 import com.irvingguerra.litedash.feature.dashboard.MAX_PAGES
 import com.irvingguerra.litedash.feature.dashboard.PageBackground
 import com.irvingguerra.litedash.feature.dashboard.PageSwipe
+import com.irvingguerra.litedash.feature.dashboard.TileTypes
 import com.irvingguerra.litedash.feature.dashboard.freeArea
 import kotlinx.coroutines.launch
 
@@ -195,6 +196,11 @@ internal fun PageBackgroundSettings(d: Dependencies) {
             }
             PageBackground.MAP -> {
                 Label(stringResource(R.string.map_backdrop_help), Typography.body, c.textMuted)
+                // Con un widget Mapa en la página se verían dos mapas: se avisa y se ofrece quitarlo.
+                if (pages.shown.any { it.type == TileTypes.MAP }) {
+                    Label(stringResource(R.string.map_backdrop_has_widget), Typography.small, c.warning)
+                    Button(stringResource(R.string.map_backdrop_remove_widget), { pages.changeShown(pages.shown.filterNot { it.type == TileTypes.MAP }) })
+                }
                 val (granted, ask) = rememberGpsPermission(d)
                 if (!granted) Button(stringResource(R.string.tap_to_enable), ask, primary = true)
                 Label(stringResource(R.string.map_backdrop_you), Typography.label, c.textMuted)

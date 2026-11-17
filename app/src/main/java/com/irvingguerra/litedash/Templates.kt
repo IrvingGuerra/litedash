@@ -40,6 +40,7 @@ import com.irvingguerra.litedash.feature.dashboard.Tile
 import com.irvingguerra.litedash.feature.dashboard.hasCar
 import com.irvingguerra.litedash.feature.dashboard.TileTypes
 import com.irvingguerra.litedash.feature.dashboard.coarse
+import com.irvingguerra.litedash.feature.dashboard.freeArea
 import com.irvingguerra.litedash.feature.dashboard.suggestedTemplate
 import com.irvingguerra.litedash.feature.dashboard.tiles
 
@@ -62,13 +63,14 @@ fun nameOf(p: Template) = when (p) {
     Template.COPILOT -> R.string.template_copilot
     Template.ROUTE -> R.string.template_route
     Template.VERTICAL_MAP -> R.string.template_vertical_map
+    Template.MAP_BACKGROUND -> R.string.template_map_background
 }
 
 /** Para pantallas paradas o acostadas: las de acostadas se acomodan a cualquier tamaño (de 7" a 12"). */
 private fun Template.fits(vertical: Boolean) = if (vertical) ScreenSize.VERTICAL in sizes else sizes.any { it != ScreenSize.VERTICAL }
 
 /** Las que lucen el mapa: van en su pestaña y no se repiten en la del auto. */
-private val MAP_TEMPLATES = listOf(Template.MAP_CAR, Template.COPILOT, Template.ROUTE, Template.VERTICAL_MAP)
+private val MAP_TEMPLATES = listOf(Template.MAP_BACKGROUND, Template.MAP_CAR, Template.COPILOT, Template.ROUTE, Template.VERTICAL_MAP)
 
 /**
  * Estilos de plantilla (una pestaña cada uno): con el auto 3D, con el mapa de protagonista,
@@ -128,7 +130,7 @@ fun TemplatesPanel(dashboard: DashboardState, close: () -> Unit) {
                         for (p in templates) {
                             Card(Modifier.width(260.dp), onClick = { apply(p) }) {
                                 Column(Modifier.padding(16.dp)) {
-                                    TemplateThumbnail(layouts.getValue(p), grid, tab.hero)
+                                    TemplateThumbnail(layouts.getValue(p), grid, tab.hero, mapBackground = p == Template.MAP_BACKGROUND)
                                     Spacer(Modifier.height(12.dp))
                                     Label(stringResource(nameOf(p)), Typography.subtitle, maxLines = 1)
                                     if (tab == TemplateTab.CAR && mine && p == suggested) {
@@ -147,11 +149,18 @@ fun TemplatesPanel(dashboard: DashboardState, close: () -> Unit) {
 
 /** Dibujo de la plantilla ya armada ([tiles], igual que al aplicarla) en chiquito, con las proporciones de esta pantalla. */
 @Composable
-private fun TemplateThumbnail(tiles: List<Tile>, grid: Grid, hero: String) {
+private fun TemplateThumbnail(tiles: List<Tile>, grid: Grid, hero: String, mapBackground: Boolean = false) {
     val c = LocalColors.current
     BoxWithConstraints(Modifier.fillMaxWidth().aspectRatio(grid.columns.toFloat() / grid.rows).clip(RoundedCornerShape(Radius.inner)).background(c.background)) {
         val cw = maxWidth / grid.columns
         val ch = maxHeight / grid.rows
+        // El mapa de fondo: el ícono del mapa grande en el hueco, en el color de la interfaz.
+        if (mapBackground) {
+            val free = tiles.freeArea(grid)
+            if (free != null) Box(Modifier.offset(cw * free.col, ch * free.row).size(cw * free.width, ch * free.height), contentAlignment = Alignment.Center) {
+                Icon(iconOf(TileTypes.MAP), c.accent.copy(alpha = 0.7f), minOf(cw * free.width, ch * free.height) * 0.5f)
+            }
+        }
         // La protagonista en el color de la interfaz: el auto (o la carretera) o, en las que no lo llevan, el velocímetro o la primera pieza.
         val main = (tiles.firstOrNull { it.type == hero } ?: tiles.firstOrNull { it.type == TileTypes.SPEEDOMETER } ?: tiles.firstOrNull())?.id
         for (tile in tiles) {

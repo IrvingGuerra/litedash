@@ -137,6 +137,7 @@
     <string name="template_route">路线</string>
     <string name="template_music_radio">音乐和收音机</string>
     <string name="template_vertical_map">竖屏带地图</string>
+    <string name="template_map_background">地图背景</string>
     <string name="templates_tab_map">地图</string>
     <string name="templates_map_help">实时地图，显示你的位置和下一个转弯。</string>
     <string name="add">添加</string>

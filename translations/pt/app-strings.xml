@@ -139,6 +139,7 @@
     <string name="template_route">Rota</string>
     <string name="template_music_radio">Música e rádio</string>
     <string name="template_vertical_map">Vertical com mapa</string>
+    <string name="template_map_background">Mapa de fundo</string>
     <string name="templates_tab_map">Mapa</string>
     <string name="templates_map_help">O mapa ao vivo com sua posição e a próxima curva.</string>
     <string name="add">Adicionar</string>

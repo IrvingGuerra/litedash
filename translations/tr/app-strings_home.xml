@@ -34,4 +34,6 @@
     <string name="map_backdrop_you">Haritada siz</string>
     <string name="map_backdrop_arrow">Ok</string>
     <string name="map_backdrop_car">Arabanız</string>
+    <string name="map_backdrop_has_widget">Bu sayfada Harita widget’ı var: arka planda haritayla iki harita görünür.</string>
+    <string name="map_backdrop_remove_widget">Harita widget’ını kaldır</string>
 </resources>

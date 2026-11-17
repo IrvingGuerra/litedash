@@ -34,4 +34,6 @@
     <string name="map_backdrop_you">你在地图上</string>
     <string name="map_backdrop_arrow">箭头</string>
     <string name="map_backdrop_car">你的车</string>
+    <string name="map_backdrop_has_widget">此页面有地图小组件：使用地图背景会看到两个地图。</string>
+    <string name="map_backdrop_remove_widget">移除地图小组件</string>
 </resources>

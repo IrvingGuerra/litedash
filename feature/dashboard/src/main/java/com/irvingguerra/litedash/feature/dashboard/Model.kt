@@ -312,10 +312,15 @@ enum class Template(val sizes: Set<ScreenSize>) {
     ROUTE(setOf(ScreenSize.SMALL, ScreenSize.MEDIUM, ScreenSize.LARGE)),
     /** Pantallas paradas: el mapa arriba y abajo el auto con la música y la radio. */
     VERTICAL_MAP(setOf(ScreenSize.VERTICAL)),
+    /**
+     * El mapa de fondo (#18): una columna de widgets a la derecha (abajo en pantallas paradas) y el resto libre para ver
+     * el mapa contigo en medio. Al aplicarla, la página pasa a fondo de mapa ([DashboardState.template]).
+     */
+    MAP_BACKGROUND(ScreenSize.entries.toSet()),
 }
 
 /** Las que no llevan auto (para quien no lo quiere ver en el inicio). */
-val Template.hasCar get() = this !in setOf(Template.SPEED, Template.MINIMAL, Template.SPEED_WIDGETS, Template.WALL_CARDS, Template.WALL_SIDE, Template.ROUTE)
+val Template.hasCar get() = this !in setOf(Template.SPEED, Template.MINIMAL, Template.SPEED_WIDGETS, Template.WALL_CARDS, Template.WALL_SIDE, Template.ROUTE, Template.MAP_BACKGROUND)
 
 /**
  * La plantilla en la cuadrícula fina [c]: se calcula en sus celdas de plantilla ([Grid.coarse], ver
@@ -527,6 +532,30 @@ fun Template.layout(c: Grid, hero: String = TileTypes.CAR, skip: (String) -> Boo
             place(TileTypes.MUSIC, start, clock + weather, width, music)
             val row = clock + weather + music
             mapOr(TileTypes.RADIO, start, row, width, rows - row)
+        }
+        Template.MAP_BACKGROUND -> {
+            if (rows > cols) {
+                // Parada: abajo, la música a lo ancho y debajo velocidad y hora; arriba, el mapa.
+                val music = if (rows >= 8) 2 else 1
+                val gauges = if (rows >= 6) 2 else 1
+                val top = rows - music - gauges
+                place(TileTypes.MUSIC, 0, top, cols, music)
+                val half = cols / 2
+                place(TileTypes.SPEEDOMETER, 0, top + music, half, gauges)
+                place(TileTypes.CLOCK, half, top + music, cols - half, gauges)
+            } else {
+                // Acostada: columna de un tercio a la derecha con la música, la velocidad y la hora, y el clima si cabe.
+                val width = maxOf(3, cols / 3)
+                val start = cols - width
+                val music = if (rows >= 5) 2 else 1
+                place(TileTypes.MUSIC, start, 0, width, music)
+                val gauges = minOf(2, rows - music)
+                val half = width / 2
+                place(TileTypes.SPEEDOMETER, start, music, half, gauges)
+                place(TileTypes.CLOCK, start + half, music, width - half, gauges)
+                val row = music + gauges
+                if (rows - row >= 1) place(TileTypes.WEATHER, start, row, width, minOf(2, rows - row))
+            }
         }
         Template.MAP_CAR -> {
             // Del lado del conductor el auto y la música; el resto (~55 %), el mapa.

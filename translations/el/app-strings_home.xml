@@ -34,4 +34,6 @@
     <string name="map_backdrop_you">Εσείς στον χάρτη</string>
     <string name="map_backdrop_arrow">Βέλος</string>
     <string name="map_backdrop_car">Το αυτοκίνητό σας</string>
+    <string name="map_backdrop_has_widget">Αυτή η σελίδα έχει widget Χάρτη: με τον χάρτη στο φόντο θα βλέπεις δύο.</string>
+    <string name="map_backdrop_remove_widget">Αφαίρεση του widget Χάρτη</string>
 </resources>

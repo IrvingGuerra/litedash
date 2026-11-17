@@ -34,4 +34,6 @@
     <string name="map_backdrop_you">Jij op de kaart</string>
     <string name="map_backdrop_arrow">Pijl</string>
     <string name="map_backdrop_car">Je auto</string>
+    <string name="map_backdrop_has_widget">Deze pagina heeft een Kaart-widget: met de kaart als achtergrond zie je er twee.</string>
+    <string name="map_backdrop_remove_widget">Kaart-widget verwijderen</string>
 </resources>

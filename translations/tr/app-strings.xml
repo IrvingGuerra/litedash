@@ -137,6 +137,7 @@
     <string name="template_route">Güzergâh</string>
     <string name="template_music_radio">Müzik ve radyo</string>
     <string name="template_vertical_map">Haritalı dikey</string>
+    <string name="template_map_background">Arka planda harita</string>
     <string name="templates_tab_map">Harita</string>
     <string name="templates_map_help">Konumunuz ve sonraki dönüşünüzle canlı harita.</string>
     <string name="add">Ekle</string>

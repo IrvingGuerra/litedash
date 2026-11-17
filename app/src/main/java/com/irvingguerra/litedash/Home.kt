@@ -389,8 +389,14 @@ fun moduleOff(d: Dependencies, type: String): Int? = when (type) {
 fun showsTires(d: Dependencies, p: Tile): Boolean =
     TileTires.parse(p.data) ?: (p.type != TileTypes.IMAGE && d.prefs.tiresOnCar != TiresOnCar.OFF)
 
-/** Lo que se ofrece para agregar: Llantas siempre (agregarla prende su módulo); lo del OBD, con el OBD. */
-fun offered(d: Dependencies, type: String) = type == TileTypes.TIRES || moduleOff(d, type) == null
+/**
+ * Lo que se ofrece para agregar: Llantas siempre (agregarla prende su módulo); lo del OBD, con el OBD; el Mapa no en
+ * una página con mapa de fondo (se verían dos).
+ */
+fun offered(d: Dependencies, type: String) = when {
+    type == TileTypes.MAP && d.dashboard.background == PageBackground.MAP -> false
+    else -> type == TileTypes.TIRES || moduleOff(d, type) == null
+}
 
 /**
  * Agrega la pieza Llantas y prende su módulo: vuelve la última fuente; si nunca hubo, [pickSource]

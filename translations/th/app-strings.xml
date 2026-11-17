@@ -137,6 +137,7 @@
     <string name="template_route">เส้นทาง</string>
     <string name="template_music_radio">เพลงและวิทยุ</string>
     <string name="template_vertical_map">แนวตั้งพร้อมแผนที่</string>
+    <string name="template_map_background">แผนที่เป็นพื้นหลัง</string>
     <string name="templates_tab_map">แผนที่</string>
     <string name="templates_map_help">แผนที่สดพร้อมตำแหน่งของคุณและการเลี้ยวถัดไป</string>
     <string name="add">เพิ่ม</string>

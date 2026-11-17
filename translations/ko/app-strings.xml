@@ -137,6 +137,7 @@
     <string name="template_route">경로</string>
     <string name="template_music_radio">음악과 라디오</string>
     <string name="template_vertical_map">세로 + 지도</string>
+    <string name="template_map_background">배경 지도</string>
     <string name="templates_tab_map">지도</string>
     <string name="templates_map_help">내 위치와 다음 회전이 보이는 실시간 지도.</string>
     <string name="add">추가</string>

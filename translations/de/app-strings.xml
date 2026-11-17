@@ -137,6 +137,7 @@
     <string name="template_route">Route</string>
     <string name="template_music_radio">Musik und Radio</string>
     <string name="template_vertical_map">Hochformat mit Karte</string>
+    <string name="template_map_background">Karte im Hintergrund</string>
     <string name="templates_tab_map">Karte</string>
     <string name="templates_map_help">Die Live-Karte mit deiner Position und der nächsten Abbiegung.</string>
     <string name="add">Hinzufügen</string>

@@ -137,6 +137,7 @@
     <string name="template_route">Rutt</string>
     <string name="template_music_radio">Musik och radio</string>
     <string name="template_vertical_map">Stående med karta</string>
+    <string name="template_map_background">Karta som bakgrund</string>
     <string name="templates_tab_map">Karta</string>
     <string name="templates_map_help">Livekartan med din position och nästa sväng.</string>
     <string name="add">Lägg till</string>

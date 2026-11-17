@@ -137,6 +137,7 @@
     <string name="template_route">Маршрут</string>
     <string name="template_music_radio">Музика й радіо</string>
     <string name="template_vertical_map">Вертикальний із картою</string>
+    <string name="template_map_background">Карта на тлі</string>
     <string name="templates_tab_map">Карта</string>
     <string name="templates_map_help">Жива карта з твоїм місцезнаходженням і наступним поворотом.</string>
     <string name="add">Додати</string>

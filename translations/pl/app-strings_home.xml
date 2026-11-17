@@ -35,4 +35,6 @@
     <string name="map_backdrop_you">Ty na mapie</string>
     <string name="map_backdrop_arrow">Strzałka</string>
     <string name="map_backdrop_car">Twoje auto</string>
+    <string name="map_backdrop_has_widget">Ta strona ma widżet Mapa: z mapą w tle widać by było dwie.</string>
+    <string name="map_backdrop_remove_widget">Usuń widżet Mapa</string>
 </resources>
