@@ -1,5 +1,7 @@
 package com.irvingguerra.litedash
 
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.key
 import androidx.compose.ui.unit.DpSize
 import com.irvingguerra.litedash.core.ui.contentColors
 import androidx.compose.runtime.CompositionLocalProvider
@@ -211,7 +213,7 @@ private fun BarButton(item: BarItem, sizes: BarSizes, vertical: Boolean, musicOp
 
 /**
  * La barra al acomodar: sus botones con ✕ y sus dos divisiones (las rayas); se dejan presionados un momento y se
- * arrastran para cambiar su orden o de parte (caen donde se sueltan). Si no caben, se deslizan. Ajustes y "Barra" van fijos al final: siempre se
+ * arrastran para cambiar su orden o de parte (los demás se recorren al pasarlos). Si no caben, se deslizan. Ajustes y "Barra" van fijos al final: siempre se
  * alcanzan, aunque haya muchos botones o la pantalla sea chica. Se trabaja sobre la lista guardada: lo que
  * no se ve aquí (la voz sin asistente) no se pierde al quitar o mover otro.
  */
@@ -226,32 +228,38 @@ private fun EditableBar(
     onBarSettings: () -> Unit,
 ) {
     val movable = items.filter { it != BarItem.SETTINGS }
-    // Dónde está el centro de cada uno (en la pantalla) y cuánto se ha arrastrado el que se mueve.
+    // Dónde está el centro de cada uno (en la pantalla) y dónde va el dedo con el que se mueve (mismo eje).
     val centers = remember { mutableStateMapOf<BarItem, Float>() }
     var dragging by remember { mutableStateOf<BarItem?>(null) }
-    var offset by remember { mutableFloatStateOf(0f) }
-    fun drop(i: BarItem) {
-        prefs.barItems = reorderBar(prefs.barItems, movable, i, (centers[i] ?: 0f) + offset) { centers[it] ?: 0f }
+    var dragAt by remember { mutableFloatStateOf(0f) }
+    val shown by rememberUpdatedState(movable)
+    // Mientras se arrastra, los demás se recorren en cuanto lo pasan (como los widgets del inicio), sin esperar a
+    // soltarlo: se guarda el orden nuevo solo cuando cambia quién le sigue.
+    fun settle(i: BarItem) {
+        val next = (shown - i).firstOrNull { (centers[it] ?: 0f) >= dragAt }
+        if (next != shown.getOrNull(shown.indexOf(i) + 1)) prefs.barItems = reorderBar(prefs.barItems, shown, i, dragAt) { centers[it] ?: 0f }
     }
     val scroll = rememberScrollState()
     val list = @Composable {
-        for (i in movable) {
+        // Con llave: al recorrerse, cada botón conserva su gesto (el arrastre no se corta a medio camino).
+        for (i in movable) key(i) {
             Box(
                 Modifier
                     .onGloballyPositioned { centers[i] = it.boundsInRoot().center.let { p -> if (vertical) p.y else p.x } }
                     .zIndex(if (dragging == i) 1f else 0f)
-                    .graphicsLayer { if (dragging == i) { if (vertical) translationY = offset else translationX = offset } }
-                    .pointerInput(i, movable) {
+                    // Sigue al dedo aunque su lugar en la fila cambie mientras tanto.
+                    .graphicsLayer {
+                        if (dragging == i) (dragAt - (centers[i] ?: dragAt)).let { if (vertical) translationY = it else translationX = it }
+                    }
+                    .pointerInput(i) {
                         detectDragGesturesAfterLongPress(
-                            onDragStart = { dragging = i; offset = 0f },
+                            onDragStart = { dragAt = centers[i] ?: 0f; dragging = i },
                             onDrag = { change, d ->
                                 change.consume()
-                                offset += if (vertical) d.y else d.x
+                                dragAt += if (vertical) d.y else d.x
+                                settle(i)
                             },
-                            onDragEnd = {
-                                drop(i)
-                                dragging = null
-                            },
+                            onDragEnd = { dragging = null },
                             onDragCancel = { dragging = null },
                         )
                     }

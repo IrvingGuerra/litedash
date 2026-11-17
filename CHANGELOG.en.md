@@ -3,6 +3,12 @@
 What people using LiteDash notice, in English. The full history (in Spanish) is in [CHANGELOG.md](CHANGELOG.md).
 Format [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versions [SemVer](https://semver.org/).
 
+## [1.4.181] - 2026-11-17
+
+### Changed
+- When arranging the app bar, the other icons move out of the way while you drag one (like the home widgets); you no
+  longer have to drop it to see the result.
+
 ## [1.4.180] - 2026-11-17
 
 ### New

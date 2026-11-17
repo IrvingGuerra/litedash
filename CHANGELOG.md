@@ -4,6 +4,12 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.4.181] - 2026-11-17
+
+### Cambiado
+- Al acomodar la barra de apps, los demás íconos se recorren mientras arrastras uno (como los widgets del inicio); ya
+  no hay que soltarlo para ver cómo queda.
+
 ## [1.4.180] - 2026-11-17
 
 ### Nuevo
