@@ -4,6 +4,15 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.5.1] - 2026-11-17
+
+### Cambiado
+- **Un toque al mapa abre la navegación de LiteDash.** El widget Mapa siempre abre el mapa de LiteDash en grande
+  (buscador, ruta y guía); tu app de mapas (Waze, Google Maps…) está en su botón de la esquina.
+- El botón de navegar de la barra y el del volante también abren el mapa de LiteDash. Si prefieres tu app de mapas,
+  prende «Abrir tu app de mapas desde la barra y el volante» en Ajustes → Apps → Navegación (si ya la habías cambiado,
+  se queda como la dejaste).
+
 ## [1.5.0] - 2026-11-17
 
 **LiteDash 1.5: Navegación sin conexión.** Todo lo de la 1.4.168 a la 1.4.184 en una versión: sin claves de API ni

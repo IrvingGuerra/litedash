@@ -225,8 +225,8 @@
     <string name="units_auto_now">Automático ahora: %1$s y %2$s (según tu idioma y región)</string>
     <string name="map_help">La app que abren el widget Mapa y el botón de la barra. Mientras navegas, el widget muestra la siguiente vuelta (usa el mismo acceso a notificaciones que la música).</string>
     <string name="map_no_apps">Instala Waze o Google Maps para navegar desde LiteDash.</string>
-    <string name="map_external">Usar app externa en accesos directos</string>
-    <string name="map_external_help">El botón de la barra, el del volante y el widget Mapa abren tu app de mapas. Apagado, abren el mapa de LiteDash a pantalla completa.</string>
+    <string name="map_external">Abrir tu app de mapas desde la barra y el volante</string>
+    <string name="map_external_help">Apagado, abren el mapa de LiteDash con su navegación. El widget Mapa siempre abre el de LiteDash; tu app de mapas está en su botón.</string>
     <string name="music">Música</string>
     <string name="music_help">Es la que suena en el widget Música y play la despierta. Sin app elegida, se muestra la que esté sonando (la radio tiene su propio widget).</string>
     <string name="template_cards">Tarjetas abajo</string>

@@ -220,8 +220,8 @@
     <string name="language_report">翻訳の誤りは litedash.dev/en/translate から報告してください</string>
     <string name="map_help">地図ウィジェットとバーのボタンで開くアプリです。ナビ中は次の曲がり角を表示します（音楽と同じ通知へのアクセスを使用）。</string>
     <string name="map_no_apps">LiteDash からナビを使うには、Waze か Google マップをインストールしてください。</string>
-    <string name="map_external">ショートカットで外部アプリを使う</string>
-    <string name="map_external_help">バーのボタン、ステアリングのボタン、地図ウィジェットで地図アプリを開きます。オフにすると LiteDash の地図を全画面で開きます。</string>
+    <string name="map_external">バーとステアリングから地図アプリを開く</string>
+    <string name="map_external_help">オフにすると、ナビ付きの LiteDash の地図を開きます。地図ウィジェットは常に LiteDash の地図を開き、地図アプリはそのボタンから開けます。</string>
     <string name="music">ミュージック</string>
     <string name="music_help">ミュージックウィジェットで再生するアプリで、再生ボタンで起動します。アプリを選んでいない場合は、再生中のものを表示します（ラジオには専用のウィジェットがあります）。</string>
     <string name="template_cards">下にカード</string>

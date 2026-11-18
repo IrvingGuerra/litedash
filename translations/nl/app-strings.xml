@@ -220,8 +220,8 @@
     <string name="language_report">Een vertaalfout gezien? Meld het op litedash.dev/en/translate</string>
     <string name="map_help">De app die de Kaart-widget en de balkknop openen. Tijdens het navigeren toont hij de volgende afslag (met dezelfde meldingstoegang als muziek).</string>
     <string name="map_no_apps">Installeer Waze of Google Maps om vanuit LiteDash te navigeren.</string>
-    <string name="map_external">Externe app voor snelkoppelingen</string>
-    <string name="map_external_help">De balkknop, de stuurknop en de Kaart-widget openen je kaart-app. Uit openen ze de LiteDash-kaart op volledig scherm.</string>
+    <string name="map_external">Je kaart-app openen vanaf de balk en het stuur</string>
+    <string name="map_external_help">Uit openen ze de LiteDash-kaart met navigatie. De Kaart-widget opent altijd de LiteDash-kaart; je kaart-app zit op de knop ervan.</string>
     <string name="music">Muziek</string>
     <string name="music_help">Dit is de app die de Muziek-widget afspeelt, en de afspeelknop maakt hem wakker. Zonder gekozen app toont hij wat er speelt (radio heeft een eigen widget).</string>
     <string name="template_cards">Kaarten onderaan</string>

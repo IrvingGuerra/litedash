@@ -220,8 +220,8 @@
     <string name="language_report">Übersetzungsfehler entdeckt? Melde ihn auf litedash.dev/en/translate</string>
     <string name="map_help">Die App, die das Karten-Widget und der Leisten-Button öffnen. Beim Navigieren zeigt es die nächste Abbiegung (nutzt denselben Benachrichtigungszugriff wie Musik).</string>
     <string name="map_no_apps">Installiere Waze oder Google Maps, um aus LiteDash zu navigieren.</string>
-    <string name="map_external">Externe App für Kurzbefehle</string>
-    <string name="map_external_help">Leisten-Button, Lenkradtaste und Karten-Widget öffnen deine Karten-App. Aus, öffnen sie die LiteDash-Karte im Vollbild.</string>
+    <string name="map_external">Karten-App über Leiste und Lenkrad öffnen</string>
+    <string name="map_external_help">Aus, öffnen sie die LiteDash-Karte mit Navigation. Das Karten-Widget öffnet immer die LiteDash-Karte; deine Karten-App liegt auf seinem Button.</string>
     <string name="music">Musik</string>
     <string name="music_help">Die App, die das Musik-Widget abspielt; die Play-Taste weckt sie auf. Ohne gewählte App zeigt es, was gerade läuft (Radio hat ein eigenes Widget).</string>
     <string name="template_cards">Kacheln unten</string>

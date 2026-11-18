@@ -3,6 +3,15 @@
 What people using LiteDash notice, in English. The full history (in Spanish) is in [CHANGELOG.md](CHANGELOG.md).
 Format [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versions [SemVer](https://semver.org/).
 
+## [1.5.1] - 2026-11-17
+
+### Changed
+- **One tap on the map opens LiteDash navigation.** The Map widget always opens the LiteDash map full screen (search,
+  route and guidance); your maps app (Waze, Google Maps…) is on its corner button.
+- The bar's navigate button and the steering wheel button also open the LiteDash map. If you prefer your maps app,
+  turn on "Open your maps app from the bar and steering wheel" in Settings → Apps → Navigation (if you had changed it
+  before, it stays as you left it).
+
 ## [1.5.0] - 2026-11-17
 
 **LiteDash 1.5: Offline navigation.** Everything from 1.4.168 to 1.4.184 in one release: no API keys, no accounts.

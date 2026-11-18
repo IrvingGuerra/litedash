@@ -220,8 +220,8 @@
     <string name="language_report">Hai trovato un errore di traduzione? Segnalalo su litedash.dev/en/translate</string>
     <string name="map_help">L\'app che aprono il widget Mappa e il pulsante della barra. Durante la navigazione mostra la prossima svolta (usa lo stesso accesso alle notifiche della musica).</string>
     <string name="map_no_apps">Installa Waze o Google Maps per navigare da LiteDash.</string>
-    <string name="map_external">Usa app esterna per le scorciatoie</string>
-    <string name="map_external_help">Il pulsante della barra, il tasto del volante e il widget Mappa aprono la tua app di mappe. Se è spento, aprono la mappa di LiteDash a schermo intero.</string>
+    <string name="map_external">Apri la tua app di mappe dalla barra e dal volante</string>
+    <string name="map_external_help">Se è spento, aprono la mappa di LiteDash con la sua navigazione. Il widget Mappa apre sempre quella di LiteDash; la tua app di mappe è sul suo pulsante.</string>
     <string name="music">Musica</string>
     <string name="music_help">È l\'app che riproduce il widget Musica, e il tasto play la risveglia. Senza app scelta, mostra ciò che sta suonando (la radio ha il suo widget).</string>
     <string name="template_cards">Schede sotto</string>

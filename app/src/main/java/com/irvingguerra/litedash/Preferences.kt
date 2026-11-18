@@ -432,7 +432,8 @@ class Preferences(context: Context) {
      * Los accesos directos al mapa (botón de la barra, del volante y el toque al widget Mapa) abren tu app de
      * navegación; apagado, el mapa de LiteDash en grande.
      */
-    var mapExternal by bool(PrefKeys.MAP_EXTERNAL, true)
+    /** El botón de la barra y el del volante abren tu app de mapas (apagado de fábrica desde la 1.5.1: el mapa de LiteDash). */
+    var mapExternal by bool(PrefKeys.MAP_EXTERNAL, false)
 
     /** El mapa de la guía (el de la derecha) gira hacia donde vas en vez de quedarse al norte (botón de la brújula). */
     var guideMapHeading by bool(PrefKeys.GUIDE_MAP_HEADING, false)

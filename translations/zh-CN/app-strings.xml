@@ -220,8 +220,8 @@
     <string name="language_report">发现翻译错误？请在 litedash.dev/en/translate 反馈</string>
     <string name="map_help">地图小组件和栏按钮打开的应用。导航时会显示下一个转弯（使用与音乐相同的通知访问权限）。</string>
     <string name="map_no_apps">安装 Waze 或 Google 地图即可从 LiteDash 导航。</string>
-    <string name="map_external">快捷方式使用外部应用</string>
-    <string name="map_external_help">栏按钮、方向盘按键和地图小组件会打开你的地图应用。关闭时则全屏打开 LiteDash 地图。</string>
+    <string name="map_external">从栏和方向盘打开你的地图应用</string>
+    <string name="map_external_help">关闭时会打开带导航的 LiteDash 地图。地图小组件始终打开 LiteDash 地图；你的地图应用在它的按钮上。</string>
     <string name="music">音乐</string>
     <string name="music_help">这是音乐小组件播放的应用，播放键也会唤醒它。未选择应用时，显示正在播放的内容（收音机有自己的小组件）。</string>
     <string name="template_cards">底部卡片</string>

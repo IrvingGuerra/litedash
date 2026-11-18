@@ -344,13 +344,12 @@ fun TileContent(d: Dependencies, p: Tile, apps: List<App>, car: CarPackage?, rev
         TileTypes.TIRES -> TiresTile(d, showCar = p.flag(WidgetFlags.CAR), onOpen = actions.onTires, onSettings = { actions.onPanel(Panel.TiresSettings) })
         TileTypes.MAP -> Box(Modifier.expandable(p, actions)) {
             val app = mapApp(d, apps)
-            // Un toque: tu app de mapas o el mapa de LiteDash en grande (Ajustes → Apps → Navegación).
-            val external = d.prefs.mapExternal && app != null
+            // Un toque: siempre el mapa de LiteDash en grande (su navegación); tu app de mapas, con su botón del widget.
             MapTile(
                 d, p.id, p.data, app, editing = actions.editing(),
                 onPlace = remember(app) { { navigateTo(context, app, it) } },
                 onNavigate = remember(app) { { actions.onNavigate(app) } },
-                onTap = remember(app, external, p.id) { if (external) { { actions.onNavigate(app) } } else { { actions.onExpand(Expanded.MAP, p) } } },
+                onTap = remember(p.id) { { actions.onExpand(Expanded.MAP, p) } },
                 onSearch = remember(p.id) {
                     {
                         PlaceRequests.focus = true
@@ -498,8 +497,8 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
         mediaBrowse = browse
         expand(Expanded.MEDIA, from)
     }
-    // Los accesos directos al mapa (barra, volante): tu app de mapas o, con "Usar app externa" apagado (o sin app
-    // de mapas), el mapa de LiteDash en grande.
+    // Los accesos directos al mapa (barra, volante): el mapa de LiteDash en grande o, con «Abrir tu app de mapas desde
+    // la barra y el volante» prendido (y una app de mapas), esa app.
     fun openMapShortcut() {
         val app = mapApp(d, currentApps)
         if (d.prefs.mapExternal && app != null) openNavigation(context, d.apps, app)

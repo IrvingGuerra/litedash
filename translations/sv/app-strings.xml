@@ -220,8 +220,8 @@
     <string name="language_report">Hittat ett översättningsfel? Rapportera det på litedash.dev/en/translate</string>
     <string name="map_help">Appen som Karta-widgeten och fältets knapp öppnar. Under navigering visas nästa sväng (med samma aviseringsåtkomst som musiken).</string>
     <string name="map_no_apps">Installera Waze eller Google Maps för att navigera från LiteDash.</string>
-    <string name="map_external">Extern app för genvägar</string>
-    <string name="map_external_help">Fältets knapp, rattknappen och Karta-widgeten öppnar din kartapp. Avstängt öppnar de LiteDash-kartan i helskärm.</string>
+    <string name="map_external">Öppna din kartapp från fältet och ratten</string>
+    <string name="map_external_help">Avstängt öppnar de LiteDash-kartan med navigering. Karta-widgeten öppnar alltid LiteDash-kartan; din kartapp finns på dess knapp.</string>
     <string name="music">Musik</string>
     <string name="music_help">Det är appen som Musik-widgeten spelar, och spelaknappen väcker den. Utan vald app visas det som spelas (radion har en egen widget).</string>
     <string name="template_cards">Kort nedtill</string>
