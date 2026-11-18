@@ -7,8 +7,9 @@ Todos los cambios que nota quien usa LiteDash. Formato
 ## [1.5.2] - 2026-11-18
 
 ### Nuevo
-- **Mapas sin conexión de Estados Unidos:** los 50 estados, Washington D. C. y Puerto Rico, cada uno completo en una
-  descarga (los grandes pesan más: California ~700 MB; bájalos con buen internet).
+- **Mapas sin conexión de tres países más:** **Estados Unidos** (los 50 estados, Washington D. C. y Puerto Rico),
+  **Canadá** (las 10 provincias y los 3 territorios) y **Colombia** (los 33 departamentos). Cada estado completo en una
+  descarga; los grandes pesan más (California ~700 MB): bájalos con buen internet.
 
 ### Cambiado
 - **La ruta usa mucha menos memoria:** solo lo que recorre, no todo el estado (en California, una ruta por la ciudad

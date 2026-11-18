@@ -6,8 +6,9 @@ Format [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versions [SemVe
 ## [1.5.2] - 2026-11-18
 
 ### New
-- **Offline maps for the United States:** all 50 states, Washington, D.C. and Puerto Rico, each one complete in a single
-  download (big states weigh more: California is ~700 MB; download them on a good connection).
+- **Offline maps for three more countries:** the **United States** (all 50 states, Washington, D.C. and Puerto Rico),
+  **Canada** (all 10 provinces and 3 territories) and **Colombia** (all 33 departments). Each state complete in a
+  single download; big ones weigh more (California is ~700 MB): download them on a good connection.
 
 ### Changed
 - **Routing uses far less memory:** only what it explores, not the whole state (in California, a city route goes from
