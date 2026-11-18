@@ -46,6 +46,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.focusTarget
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
@@ -53,7 +55,6 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -179,9 +180,13 @@ fun MapExpanded(d: Dependencies, tileId: String?, data: String, app: App?, onPla
     val camera = sharedMapCamera(tileId)
     val search = remember { PlaceSearch() }
     val focus = remember { FocusRequester() }
-    val focusManager = LocalFocusManager.current
+    // Al soltar el buscador el foco pasa al mapa (enfocable, sin nada visible). Con clearFocus() a secas, en Android ≤ 8
+    // la ventana se lo regresa al primer enfocable, que es el mismo campo: el teclado se volvía a abrir y la tarjeta del
+    // lugar no salía.
+    val rest = remember { FocusRequester() }
+    val release: () -> Unit = { rest.requestFocus() }
     val pick: (SearchHit) -> Unit = { hit ->
-        focusManager.clearFocus()
+        release()
         search.query = hit.name
         search.selected = hit
         d.prefs.addRecent(hit)
@@ -229,7 +234,7 @@ fun MapExpanded(d: Dependencies, tileId: String?, data: String, app: App?, onPla
         }
     }
     Card(modifier.fillMaxSize()) {
-        BoxWithConstraints(Modifier.fillMaxSize()) {
+        BoxWithConstraints(Modifier.fillMaxSize().focusRequester(rest).focusTarget()) {
             val boxWidth = maxWidth
             val boxHeight = maxHeight
             // El teclado tapa lo de abajo (la ventana no se encoge): la lista termina arriba de él.
@@ -261,7 +266,7 @@ fun MapExpanded(d: Dependencies, tileId: String?, data: String, app: App?, onPla
             val searching = search.focused || search.query.isNotEmpty()
             // Con la guía encima el buscador sale de la pantalla: en Android 6 un campo enfocado debajo vuelve a abrir el teclado.
             if (Driving.session == null) Column(Modifier.align(Alignment.TopStart).padding(12.dp).width(minOf(boxWidth - 88.dp, 480.dp))) {
-                PlaceSearchBox(d, search, focus, pick, onPlace, maxListHeight = (boxHeight - 100.dp - keyboard).coerceAtLeast(MIN_LIST))
+                PlaceSearchBox(d, search, focus, release, pick, onPlace, maxListHeight = (boxHeight - 100.dp - keyboard).coerceAtLeast(MIN_LIST))
                 if (!searching) NextTurn(d, Modifier.padding(top = 8.dp))
             }
             Row(Modifier.align(Alignment.TopEnd).padding(12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {

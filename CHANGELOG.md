@@ -4,6 +4,12 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.5.3] - 2026-11-18
+
+### Arreglado
+- **Android 8 y anteriores:** al elegir un lugar en el buscador del mapa, el teclado se volvía a abrir y tapaba la
+  tarjeta del lugar (Ruta, Favorito, Casa/Trabajo). Ahora el teclado se esconde y la tarjeta aparece.
+
 ## [1.5.2] - 2026-11-18
 
 ### Nuevo

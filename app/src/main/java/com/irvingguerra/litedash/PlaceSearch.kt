@@ -43,7 +43,6 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
@@ -219,6 +218,8 @@ internal fun PlaceSearchBox(
     d: Dependencies,
     search: PlaceSearch,
     focus: FocusRequester,
+    /** Suelta el teclado (ver [MapExpanded]: el foco pasa al mapa; soltarlo sin más lo regresa al campo en Android ≤ 8). */
+    release: () -> Unit,
     onPick: (SearchHit) -> Unit,
     onPlace: (String) -> Unit,
     maxListHeight: androidx.compose.ui.unit.Dp,
@@ -228,7 +229,6 @@ internal fun PlaceSearchBox(
     val context = LocalContext.current
     val packs = remember { MapPacks.get(context) }
     val scope = rememberCoroutineScope()
-    val focusManager = LocalFocusManager.current
     val language = currentLocale().language
     val here = d.trip.position
     // Con un estado bajado, revisa el índice (una vez al día o tras actualizar): si a su búsqueda le falta o es vieja, se baja.
@@ -264,11 +264,11 @@ internal fun PlaceSearchBox(
     // Atrás: primero se cierra la lista o la tarjeta y luego se borra lo escrito (el mapa en grande se cierra después).
     // Con la tarjeta de un lugar a la vista, atrás la cierra el mapa en grande (y regresa a ti).
     BackHandler((search.focused || search.query.isNotEmpty()) && (search.selected == null || search.focused)) {
-        if (search.focused) focusManager.clearFocus() else search.clear()
+        if (search.focused) release() else search.clear()
     }
     Column(modifier) {
         SearchField(search, focus, onSearch = {
-            focusManager.clearFocus()
+            release()
             if (search.local.isEmpty()) askOnline()
         })
         val q = search.query.trim()

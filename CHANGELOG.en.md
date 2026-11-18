@@ -3,6 +3,12 @@
 What people using LiteDash notice, in English. The full history (in Spanish) is in [CHANGELOG.md](CHANGELOG.md).
 Format [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versions [SemVer](https://semver.org/).
 
+## [1.5.3] - 2026-11-18
+
+### Fixed
+- **Android 8 and older:** after picking a place in the map search, the keyboard opened again and covered the place
+  card (Route, Favorite, Home/Work). Now the keyboard hides and the card shows up.
+
 ## [1.5.2] - 2026-11-18
 
 ### New
