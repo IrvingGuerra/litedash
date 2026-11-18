@@ -25,7 +25,7 @@
     <string name="map_detail_minimal_help">Hanya jalan, perairan, dan taman, bersih dengan warna LiteDash (data dari OpenFreeMap).</string>
     <string name="map_offline">Offline</string>
     <string name="map_offline_full">Tersedia dengan peta minimal.</string>
-    <string name="map_offline_help">Simpan jalan di suatu zona agar bisa dilihat tanpa internet.</string>
+    <string name="map_offline_help">Simpan peta suatu zona agar bisa dilihat tanpa internet. Untuk mencari dan membuat rute, unduh provinsi Anda.</string>
     <string name="map_offline_here">Zona Anda</string>
     <string name="map_offline_other">Zona lain</string>
     <string name="map_offline_area">%1$s · %2$s · %3$s · %4$s</string>
@@ -115,12 +115,15 @@
     <string name="route_arrive">Tiba pukul %1$s</string>
     <string name="route_via">lewat %1$s</string>
     <string name="route_no_traffic">tanpa lalu lintas</string>
-    <string name="route_need_routes">Untuk rute tanpa internet, jalan di %1$s belum ada (%2$s).</string>
+    <string name="route_need_routes">Untuk membuat rute, jalan di %1$s belum ada (%2$s).</string>
     <string name="route_download">Unduh jalan</string>
     <string name="route_download_failed">Gagal mengunduh. Periksa internet Anda dan coba lagi.</string>
     <string name="route_other_state">Tempat itu ada di %1$s: unduh juga provinsi itu atau buka di aplikasi peta Anda.</string>
     <string name="route_outside">Tempat itu di luar provinsi Anda: buka di aplikasi peta Anda.</string>
-    <string name="route_no_state">Untuk rute tanpa internet, unduh peta provinsi Anda di Setelan → Aplikasi → Navigasi → Offline.</string>
+    <string name="route_no_state">Untuk membuat rute, Anda perlu peta provinsi Anda (zona hanya untuk melihat peta).</string>
+    <string name="route_no_state_named">Untuk membuat rute, Anda perlu peta %1$s (zona hanya untuk melihat peta).</string>
+    <string name="route_no_map">Belum ada peta daerah Anda untuk rute. Buka tempat itu di aplikasi peta Anda.</string>
+    <string name="route_get_map">Unduh peta</string>
     <string name="route_from_off">Anda jauh dari jalan: dekati jalan untuk mencari rute.</string>
     <string name="route_to_off">Tempat itu jauh dari jalan.</string>
     <string name="route_no_path">Tidak ada jalan ke sana yang ditemukan.</string>

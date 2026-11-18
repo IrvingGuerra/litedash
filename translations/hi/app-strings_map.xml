@@ -25,7 +25,7 @@
     <string name="map_detail_minimal_help">सिर्फ़ सड़कें, पानी और पार्क, साफ़ और LiteDash के रंगों में (डेटा OpenFreeMap से)।</string>
     <string name="map_offline">ऑफ़लाइन</string>
     <string name="map_offline_full">मिनिमल मैप के साथ उपलब्ध।</string>
-    <string name="map_offline_help">किसी इलाके की सड़कें सेव करें ताकि बिना इंटरनेट के दिखें।</string>
+    <string name="map_offline_help">किसी इलाके का मैप सेव करें ताकि बिना इंटरनेट के दिखे। खोजने और रास्ता बनाने के लिए अपना राज्य डाउनलोड करें।</string>
     <string name="map_offline_here">आपका इलाका</string>
     <string name="map_offline_other">दूसरा इलाका</string>
     <string name="map_offline_area">%1$s · %2$s · %3$s · %4$s</string>
@@ -115,12 +115,15 @@
     <string name="route_arrive">%1$s बजे पहुँचेंगे</string>
     <string name="route_via">%1$s से होकर</string>
     <string name="route_no_traffic">ट्रैफ़िक के बिना</string>
-    <string name="route_need_routes">बिना इंटरनेट रास्ते के लिए %1$s की सड़कें चाहिए (%2$s)।</string>
+    <string name="route_need_routes">रास्ता बनाने के लिए %1$s की सड़कें चाहिए (%2$s)।</string>
     <string name="route_download">सड़कें डाउनलोड करें</string>
     <string name="route_download_failed">डाउनलोड नहीं हो सका। अपना इंटरनेट जाँचें और फिर से कोशिश करें।</string>
     <string name="route_other_state">यह जगह %1$s में है: वह राज्य भी डाउनलोड करें या इसे अपने मैप ऐप में खोलें।</string>
     <string name="route_outside">यह जगह आपके राज्य से बाहर है: इसे अपने मैप ऐप में खोलें।</string>
-    <string name="route_no_state">बिना इंटरनेट रास्ते के लिए सेटिंग्स → ऐप्स → नेविगेशन → ऑफ़लाइन में अपने राज्य का मैप डाउनलोड करें।</string>
+    <string name="route_no_state">रास्ता बनाने के लिए अपने राज्य का मैप चाहिए (इलाके सिर्फ़ मैप देखने के लिए हैं)।</string>
+    <string name="route_no_state_named">रास्ता बनाने के लिए %1$s का मैप चाहिए (इलाके सिर्फ़ मैप देखने के लिए हैं)।</string>
+    <string name="route_no_map">आपके क्षेत्र का रास्तों वाला मैप अभी उपलब्ध नहीं है। जगह को अपने मैप ऐप में खोलें।</string>
+    <string name="route_get_map">मैप डाउनलोड करें</string>
     <string name="route_from_off">आप सड़क से दूर हैं: रास्ता खोजने के लिए किसी सड़क के पास जाएँ।</string>
     <string name="route_to_off">यह जगह सड़क से दूर है।</string>
     <string name="route_no_path">वहाँ तक सड़क से कोई रास्ता नहीं मिला।</string>

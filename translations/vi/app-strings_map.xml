@@ -25,7 +25,7 @@
     <string name="map_detail_minimal_help">Chỉ đường, sông nước và công viên, gọn gàng theo màu LiteDash (dữ liệu từ OpenFreeMap).</string>
     <string name="map_offline">Ngoại tuyến</string>
     <string name="map_offline_full">Có với bản đồ tối giản.</string>
-    <string name="map_offline_help">Lưu đường phố của một khu vực để xem khi không có internet.</string>
+    <string name="map_offline_help">Lưu bản đồ của một khu vực để xem khi không có internet. Để tìm kiếm và lập lộ trình, hãy tải tỉnh của bạn.</string>
     <string name="map_offline_here">Khu vực của bạn</string>
     <string name="map_offline_other">Khu vực khác</string>
     <string name="map_offline_area">%1$s · %2$s · %3$s · %4$s</string>
@@ -115,12 +115,15 @@
     <string name="route_arrive">Đến lúc %1$s</string>
     <string name="route_via">qua %1$s</string>
     <string name="route_no_traffic">chưa tính kẹt xe</string>
-    <string name="route_need_routes">Để có lộ trình không cần internet, cần tải đường phố của %1$s (%2$s).</string>
+    <string name="route_need_routes">Để lập lộ trình, cần tải đường phố của %1$s (%2$s).</string>
     <string name="route_download">Tải đường phố</string>
     <string name="route_download_failed">Không tải được. Hãy kiểm tra internet và thử lại.</string>
     <string name="route_other_state">Nơi đó thuộc %1$s: hãy tải thêm tỉnh đó hoặc mở trong ứng dụng bản đồ của bạn.</string>
     <string name="route_outside">Nơi đó nằm ngoài tỉnh của bạn: hãy mở trong ứng dụng bản đồ của bạn.</string>
-    <string name="route_no_state">Để có lộ trình không cần internet, hãy tải bản đồ tỉnh của bạn trong Cài đặt → Ứng dụng → Dẫn đường → Ngoại tuyến.</string>
+    <string name="route_no_state">Để lập lộ trình, bạn cần bản đồ tỉnh của mình (khu vực chỉ dùng để xem bản đồ).</string>
+    <string name="route_no_state_named">Để lập lộ trình, bạn cần bản đồ của %1$s (khu vực chỉ dùng để xem bản đồ).</string>
+    <string name="route_no_map">Chưa có bản đồ lộ trình cho nơi bạn ở. Hãy mở địa điểm trong ứng dụng bản đồ của bạn.</string>
+    <string name="route_get_map">Tải bản đồ</string>
     <string name="route_from_off">Bạn đang ở xa đường: hãy đến gần một con đường để tìm lộ trình.</string>
     <string name="route_to_off">Nơi đó ở xa đường.</string>
     <string name="route_no_path">Không tìm thấy đường đi đến đó.</string>

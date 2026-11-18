@@ -25,7 +25,7 @@
     <string name="map_detail_minimal_help">Solo calles, agua y parques, limpio y en los colores de LiteDash (datos de OpenFreeMap).</string>
     <string name="map_offline">Sin conexión</string>
     <string name="map_offline_full">Disponible con el mapa minimalista.</string>
-    <string name="map_offline_help">Guarda las calles de una zona para verlas sin internet.</string>
+    <string name="map_offline_help">Guarda el mapa de una zona para verlo sin internet. Para buscar y trazar rutas, baja tu estado.</string>
     <string name="map_offline_here">Tu zona</string>
     <string name="map_offline_other">Otra zona</string>
     <string name="map_offline_area">%1$s · %2$s · %3$s · %4$s</string>
@@ -115,12 +115,15 @@
     <string name="route_arrive">Llegas a las %1$s</string>
     <string name="route_via">por %1$s</string>
     <string name="route_no_traffic">sin contar el tráfico</string>
-    <string name="route_need_routes">Para la ruta sin internet faltan las calles de %1$s (%2$s).</string>
+    <string name="route_need_routes">Para trazar la ruta faltan las calles de %1$s (%2$s).</string>
     <string name="route_download">Bajar calles</string>
     <string name="route_download_failed">No se pudieron bajar. Revisa tu internet e inténtalo otra vez.</string>
     <string name="route_other_state">Ese lugar está en %1$s: baja también ese estado o ábrelo en tu app de mapas.</string>
     <string name="route_outside">Ese lugar está fuera de tu estado: ábrelo en tu app de mapas.</string>
-    <string name="route_no_state">Para la ruta sin internet, baja el mapa de tu estado en Ajustes → Apps → Navegación → Sin conexión.</string>
+    <string name="route_no_state">Para trazar la ruta hace falta el mapa de tu estado (las zonas solo sirven para ver el mapa).</string>
+    <string name="route_no_state_named">Para trazar la ruta hace falta el mapa de %1$s (las zonas solo sirven para ver el mapa).</string>
+    <string name="route_no_map">Todavía no hay mapa de tu zona para trazar rutas. Abre el lugar en tu app de mapas.</string>
+    <string name="route_get_map">Bajar mapa</string>
     <string name="route_from_off">Estás lejos de una calle: acércate a una para calcular la ruta.</string>
     <string name="route_to_off">Ese lugar está lejos de una calle.</string>
     <string name="route_no_path">No encontramos un camino por calles hasta ahí.</string>

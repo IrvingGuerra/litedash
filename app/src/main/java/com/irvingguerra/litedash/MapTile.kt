@@ -165,7 +165,10 @@ fun MapTile(
  * para cerrar y, con una app de mapas, para abrirla.
  */
 @Composable
-fun MapExpanded(d: Dependencies, tileId: String?, data: String, app: App?, onPlace: (String) -> Unit, onNavigate: () -> Unit, close: () -> Unit, modifier: Modifier = Modifier) {
+fun MapExpanded(
+    d: Dependencies, tileId: String?, data: String, app: App?, onPlace: (String) -> Unit, onNavigate: () -> Unit, onOffline: () -> Unit,
+    close: () -> Unit, modifier: Modifier = Modifier,
+) {
     val c = LocalColors.current
     val (granted, ask) = rememberGpsPermission(d)
     val look = remember(data) { MapLook.parse(data) }
@@ -279,7 +282,7 @@ fun MapExpanded(d: Dependencies, tileId: String?, data: String, app: App?, onPla
             val cardModifier = Modifier.align(Alignment.BottomStart).padding(start = 12.dp, end = 12.dp, bottom = 12.dp).widthIn(max = CARD_MAX)
             val request = routing
             if (selected != null && !search.focused) {
-                if (request != null) RouteCard(d, request, app?.name, onOpen = { openPlace(context, app, selected) }, back = closeRoute, modifier = cardModifier)
+                if (request != null) RouteCard(d, request, app?.name, onOpen = { openPlace(context, app, selected) }, onOffline = onOffline, back = closeRoute, modifier = cardModifier)
                 else PlaceCard(
                     d, selected, app?.name, onRoute = { routing = RouteRequest(selected) }, onOpen = { openPlace(context, app, selected) },
                     close = unselect, modifier = cardModifier,

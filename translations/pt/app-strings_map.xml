@@ -27,7 +27,7 @@
     <string name="map_detail_minimal_help">Só ruas, água e parques, limpo e nas cores do LiteDash (dados do OpenFreeMap).</string>
     <string name="map_offline">Offline</string>
     <string name="map_offline_full">Disponível com o mapa minimalista.</string>
-    <string name="map_offline_help">Salve as ruas de uma região para vê-las sem internet.</string>
+    <string name="map_offline_help">Salve o mapa de uma região para vê-lo sem internet. Para buscar e traçar rotas, baixe seu estado.</string>
     <string name="map_offline_here">Sua região</string>
     <string name="map_offline_other">Outra região</string>
     <string name="map_offline_area">%1$s · %2$s · %3$s · %4$s</string>
@@ -117,12 +117,15 @@
     <string name="route_arrive">Chegada às %1$s</string>
     <string name="route_via">pela %1$s</string>
     <string name="route_no_traffic">sem contar o trânsito</string>
-    <string name="route_need_routes">Para a rota sem internet faltam as ruas de %1$s (%2$s).</string>
+    <string name="route_need_routes">Para traçar a rota faltam as ruas de %1$s (%2$s).</string>
     <string name="route_download">Baixar ruas</string>
     <string name="route_download_failed">Não foi possível baixar. Verifique sua internet e tente de novo.</string>
     <string name="route_other_state">Esse lugar fica em %1$s: baixe também esse estado ou abra no seu app de mapas.</string>
     <string name="route_outside">Esse lugar fica fora do seu estado: abra no seu app de mapas.</string>
-    <string name="route_no_state">Para a rota sem internet, baixe o mapa do seu estado em Configurações → Apps → Navegação → Offline.</string>
+    <string name="route_no_state">Para traçar a rota você precisa do mapa do seu estado (as regiões servem só para ver o mapa).</string>
+    <string name="route_no_state_named">Para traçar a rota você precisa do mapa de %1$s (as regiões servem só para ver o mapa).</string>
+    <string name="route_no_map">Ainda não há mapa da sua área para rotas. Abra o lugar no seu app de mapas.</string>
+    <string name="route_get_map">Baixar mapa</string>
     <string name="route_from_off">Você está longe de uma rua: chegue mais perto de uma para calcular a rota.</string>
     <string name="route_to_off">Esse lugar fica longe de uma rua.</string>
     <string name="route_no_path">Não encontramos um caminho por ruas até lá.</string>

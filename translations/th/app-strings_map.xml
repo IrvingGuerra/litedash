@@ -25,7 +25,7 @@
     <string name="map_detail_minimal_help">แค่ถนน แหล่งน้ำ และสวน สะอาดตาในสีของ LiteDash (ข้อมูลจาก OpenFreeMap)</string>
     <string name="map_offline">ออฟไลน์</string>
     <string name="map_offline_full">ใช้ได้กับแผนที่มินิมอล</string>
-    <string name="map_offline_help">บันทึกถนนของโซนหนึ่งไว้ดูได้โดยไม่ใช้อินเทอร์เน็ต</string>
+    <string name="map_offline_help">บันทึกแผนที่ของโซนไว้ดูได้โดยไม่ใช้อินเทอร์เน็ต หากต้องการค้นหาและวางเส้นทาง ให้ดาวน์โหลดจังหวัดของคุณ</string>
     <string name="map_offline_here">โซนของคุณ</string>
     <string name="map_offline_other">โซนอื่น</string>
     <string name="map_offline_area">%1$s · %2$s · %3$s · %4$s</string>
@@ -115,12 +115,15 @@
     <string name="route_arrive">ถึงเวลา %1$s</string>
     <string name="route_via">ผ่าน %1$s</string>
     <string name="route_no_traffic">ไม่รวมการจราจร</string>
-    <string name="route_need_routes">ถ้าจะใช้เส้นทางโดยไม่ใช้อินเทอร์เน็ต ต้องมีข้อมูลถนนของ %1$s (%2$s)</string>
+    <string name="route_need_routes">ถ้าจะวางเส้นทาง ต้องมีข้อมูลถนนของ %1$s (%2$s)</string>
     <string name="route_download">ดาวน์โหลดถนน</string>
     <string name="route_download_failed">ดาวน์โหลดไม่สำเร็จ ตรวจสอบอินเทอร์เน็ตแล้วลองอีกครั้ง</string>
     <string name="route_other_state">สถานที่นี้อยู่ใน %1$s: ดาวน์โหลดจังหวัดนั้นด้วย หรือเปิดในแอปแผนที่ของคุณ</string>
     <string name="route_outside">สถานที่นี้อยู่นอกจังหวัดของคุณ: เปิดในแอปแผนที่ของคุณ</string>
-    <string name="route_no_state">ถ้าจะใช้เส้นทางโดยไม่ใช้อินเทอร์เน็ต ให้ดาวน์โหลดแผนที่จังหวัดของคุณใน การตั้งค่า → แอป → การนำทาง → ออฟไลน์</string>
+    <string name="route_no_state">ถ้าจะวางเส้นทาง ต้องมีแผนที่จังหวัดของคุณ (โซนใช้ดูแผนที่ได้อย่างเดียว)</string>
+    <string name="route_no_state_named">ถ้าจะวางเส้นทาง ต้องมีแผนที่ของ %1$s (โซนใช้ดูแผนที่ได้อย่างเดียว)</string>
+    <string name="route_no_map">ยังไม่มีแผนที่สำหรับวางเส้นทางในพื้นที่ของคุณ เปิดสถานที่นี้ในแอปแผนที่ของคุณ</string>
+    <string name="route_get_map">ดาวน์โหลดแผนที่</string>
     <string name="route_from_off">คุณอยู่ไกลจากถนน: เข้าใกล้ถนนเพื่อหาเส้นทาง</string>
     <string name="route_to_off">สถานที่นี้อยู่ไกลจากถนน</string>
     <string name="route_no_path">ไม่พบเส้นทางถนนไปที่นั่น</string>

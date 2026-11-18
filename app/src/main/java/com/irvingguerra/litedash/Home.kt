@@ -147,7 +147,7 @@ sealed interface Panel {
     data class PickApp(val tileId: String?, val back: Panel? = null) : Panel
     /** Ajustes abiertos en el Taller (pieza de acceso directo). */
     data object Workshop : Panel
-    /** Ajustes abiertos en Apps (para enlazar la radio de la pantalla desde la radio en grande). */
+    /** Ajustes abiertos en Apps (para enlazar la radio desde la radio en grande, o bajar tu estado desde la ruta). */
     data object MusicSettings : Panel
     /** Elegir qué dato muestra un medidor existente ([tileId]) o uno nuevo (null). */
     data class PickGauge(val tileId: String?) : Panel
@@ -823,6 +823,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                                             val look = from?.data ?: d.prefs.mapLook.orEmpty()
                                             MapExpanded(
                                                 d, from?.id, look, app, onPlace = { navigateTo(context, app, it) }, onNavigate = { actions.onNavigate(app) },
+                                                onOffline = { openOfflineMaps(); panel = Panel.MusicSettings },
                                                 close = close, modifier = Modifier.padding(6.dp),
                                             )
                                         }

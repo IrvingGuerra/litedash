@@ -25,7 +25,7 @@
     <string name="map_detail_minimal_help">Solo strade, acqua e parchi, pulito e con i colori di LiteDash (dati da OpenFreeMap).</string>
     <string name="map_offline">Offline</string>
     <string name="map_offline_full">Disponibile con la mappa minimal.</string>
-    <string name="map_offline_help">Salva le strade di una zona per vederle senza internet.</string>
+    <string name="map_offline_help">Salva la mappa di una zona per vederla senza internet. Per cercare e calcolare percorsi, scarica la tua regione.</string>
     <string name="map_offline_here">La tua zona</string>
     <string name="map_offline_other">Un\'altra zona</string>
     <string name="map_offline_area">%1$s · %2$s · %3$s · %4$s</string>
@@ -115,12 +115,15 @@
     <string name="route_arrive">Arrivo alle %1$s</string>
     <string name="route_via">via %1$s</string>
     <string name="route_no_traffic">senza traffico</string>
-    <string name="route_need_routes">Per il percorso senza internet mancano le strade di %1$s (%2$s).</string>
+    <string name="route_need_routes">Per calcolare il percorso mancano le strade di %1$s (%2$s).</string>
     <string name="route_download">Scarica strade</string>
     <string name="route_download_failed">Download non riuscito. Controlla internet e riprova.</string>
     <string name="route_other_state">Quel luogo è in %1$s: scarica anche quella regione o aprilo nella tua app di mappe.</string>
     <string name="route_outside">Quel luogo è fuori dalla tua regione: aprilo nella tua app di mappe.</string>
-    <string name="route_no_state">Per il percorso senza internet, scarica la mappa della tua regione in Impostazioni → App → Navigazione → Offline.</string>
+    <string name="route_no_state">Per calcolare il percorso ti serve la mappa della tua regione (le zone servono solo a vedere la mappa).</string>
+    <string name="route_no_state_named">Per calcolare il percorso ti serve la mappa di %1$s (le zone servono solo a vedere la mappa).</string>
+    <string name="route_no_map">Non c\'è ancora una mappa per i percorsi nella tua area. Apri il luogo nella tua app di mappe.</string>
+    <string name="route_get_map">Scarica mappa</string>
     <string name="route_from_off">Sei lontano da una strada: avvicinati a una per trovare il percorso.</string>
     <string name="route_to_off">Quel luogo è lontano da una strada.</string>
     <string name="route_no_path">Non abbiamo trovato una strada per arrivarci.</string>

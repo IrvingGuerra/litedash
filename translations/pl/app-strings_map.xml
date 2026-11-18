@@ -25,7 +25,7 @@
     <string name="map_detail_minimal_help">Tylko ulice, woda i parki, czysto i w kolorach LiteDash (dane z OpenFreeMap).</string>
     <string name="map_offline">Offline</string>
     <string name="map_offline_full">Dostępne z mapą minimalną.</string>
-    <string name="map_offline_help">Zapisz ulice strefy, by widzieć je bez internetu.</string>
+    <string name="map_offline_help">Zapisz mapę strefy, by widzieć ją bez internetu. Aby szukać i wyznaczać trasy, pobierz swoje województwo.</string>
     <string name="map_offline_here">Twoja strefa</string>
     <string name="map_offline_other">Inna strefa</string>
     <string name="map_offline_area">%1$s · %2$s · %3$s · %4$s</string>
@@ -115,12 +115,15 @@
     <string name="route_arrive">Na miejscu o %1$s</string>
     <string name="route_via">przez %1$s</string>
     <string name="route_no_traffic">bez ruchu drogowego</string>
-    <string name="route_need_routes">Do trasy bez internetu brakuje ulic: %1$s (%2$s).</string>
+    <string name="route_need_routes">Do wyznaczenia trasy brakuje ulic: %1$s (%2$s).</string>
     <string name="route_download">Pobierz ulice</string>
     <string name="route_download_failed">Nie udało się pobrać. Sprawdź internet i spróbuj ponownie.</string>
     <string name="route_other_state">To miejsce jest w: %1$s. Pobierz też to województwo albo otwórz je w aplikacji z mapami.</string>
     <string name="route_outside">To miejsce jest poza Twoim województwem: otwórz je w aplikacji z mapami.</string>
-    <string name="route_no_state">Aby wyznaczać trasę bez internetu, pobierz mapę swojego województwa w Ustawienia → Aplikacje → Nawigacja → Offline.</string>
+    <string name="route_no_state">Do wyznaczenia trasy potrzebujesz mapy swojego województwa (strefy służą tylko do oglądania mapy).</string>
+    <string name="route_no_state_named">Do wyznaczenia trasy potrzebujesz mapy: %1$s (strefy służą tylko do oglądania mapy).</string>
+    <string name="route_no_map">Nie ma jeszcze mapy twojej okolicy do wyznaczania tras. Otwórz to miejsce w aplikacji z mapami.</string>
+    <string name="route_get_map">Pobierz mapę</string>
     <string name="route_from_off">Jesteś daleko od drogi: podjedź bliżej, żeby wyznaczyć trasę.</string>
     <string name="route_to_off">To miejsce jest daleko od drogi.</string>
     <string name="route_no_path">Nie znaleźliśmy tam drogi.</string>

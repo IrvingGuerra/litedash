@@ -3,6 +3,15 @@
 What people using LiteDash notice, in English. The full history (in Spanish) is in [CHANGELOG.md](CHANGELOG.md).
 Format [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versions [SemVer](https://semver.org/).
 
+## [1.5.6] - 2026-11-18
+
+### Changed
+- **The route notice is no longer confusing:** it said "For the route without internet, download your state's map" and
+  many read it as having no internet. LiteDash plans routes with your state's downloaded map; the notice now says which
+  one is needed ("you need the map of Jalisco") and explains that zones are only for viewing the map.
+- **"Download map" button on that notice:** it takes you straight to Settings → Apps → Navigation → Offline.
+- If there is no map of where you are yet, the notice says so instead of sending you to download something that doesn't exist.
+
 ## [1.5.5] - 2026-11-18
 
 ### Changed

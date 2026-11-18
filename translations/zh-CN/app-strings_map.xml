@@ -25,7 +25,7 @@
     <string name="map_detail_minimal_help">只有街道、水域和公园，简洁并使用 LiteDash 配色（数据来自 OpenFreeMap）。</string>
     <string name="map_offline">离线</string>
     <string name="map_offline_full">仅极简地图可用。</string>
-    <string name="map_offline_help">保存一个区域的街道，无网络时也能查看。</string>
+    <string name="map_offline_help">保存一个区域的地图，无网络时也能查看。要搜索和规划路线，请下载你所在的省份。</string>
     <string name="map_offline_here">你所在的区域</string>
     <string name="map_offline_other">其他区域</string>
     <string name="map_offline_area">%1$s · %2$s · %3$s · %4$s</string>
@@ -115,12 +115,15 @@
     <string name="route_arrive">%1$s 到达</string>
     <string name="route_via">途经 %1$s</string>
     <string name="route_no_traffic">未计路况</string>
-    <string name="route_need_routes">离线路线还缺少 %1$s 的道路数据（%2$s）。</string>
+    <string name="route_need_routes">规划路线还缺少 %1$s 的道路数据（%2$s）。</string>
     <string name="route_download">下载道路</string>
     <string name="route_download_failed">下载失败。请检查网络后重试。</string>
     <string name="route_other_state">该地点在 %1$s：也下载那个省份，或在你的地图应用中打开。</string>
     <string name="route_outside">该地点在你所在省份之外：请在你的地图应用中打开。</string>
-    <string name="route_no_state">要使用离线路线，请在“设置 → 应用 → 导航 → 离线”中下载你所在省份的地图。</string>
+    <string name="route_no_state">规划路线需要你所在省份的地图（区域只能用来查看地图）。</string>
+    <string name="route_no_state_named">规划路线需要 %1$s 的地图（区域只能用来查看地图）。</string>
+    <string name="route_no_map">你所在的地区暂时还没有可规划路线的地图。请在你的地图应用中打开该地点。</string>
+    <string name="route_get_map">下载地图</string>
     <string name="route_from_off">你离道路太远：请靠近道路后再查找路线。</string>
     <string name="route_to_off">该地点离道路太远。</string>
     <string name="route_no_path">找不到通往那里的道路。</string>

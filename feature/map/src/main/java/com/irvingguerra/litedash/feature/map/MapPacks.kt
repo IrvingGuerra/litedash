@@ -324,7 +324,7 @@ class MapPacks private constructor(private val app: Context) {
     private fun plan(fromLat: Double, fromLon: Double, toLat: Double, toLon: Double): RoutePlan {
         val pack = installed.firstOrNull { it.contains(fromLat, fromLon) && it.contains(toLat, toLon) }
             ?: return when {
-                installed.none { it.contains(fromLat, fromLon) } -> RoutePlan.NoState
+                installed.none { it.contains(fromLat, fromLon) } -> RoutePlan.NoState(regionAt(fromLat, fromLon))
                 // Los dos estados bajados: lo que falta es la ruta entre estados (llega con los viajes largos).
                 installed.any { it.contains(toLat, toLon) } -> RoutePlan.TwoStates
                 else -> RoutePlan.OtherState(regionAt(toLat, toLon))

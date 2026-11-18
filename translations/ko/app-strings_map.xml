@@ -25,7 +25,7 @@
     <string name="map_detail_minimal_help">도로, 물, 공원만 LiteDash 색상으로 깔끔하게(데이터: OpenFreeMap).</string>
     <string name="map_offline">오프라인</string>
     <string name="map_offline_full">미니멀 지도에서 사용할 수 있어요.</string>
-    <string name="map_offline_help">지역의 도로를 저장하면 인터넷 없이 볼 수 있어요.</string>
+    <string name="map_offline_help">구역 지도를 저장하면 인터넷 없이 볼 수 있어요. 검색하고 경로를 찾으려면 내 지역을 받으세요.</string>
     <string name="map_offline_here">내 지역</string>
     <string name="map_offline_other">다른 지역</string>
     <string name="map_offline_area">%1$s · %2$s · %3$s · %4$s</string>
@@ -115,12 +115,15 @@
     <string name="route_arrive">%1$s 도착</string>
     <string name="route_via">%1$s 경유</string>
     <string name="route_no_traffic">교통 정보 제외</string>
-    <string name="route_need_routes">인터넷 없이 경로를 찾으려면 %1$s 도로 데이터가 필요해요 (%2$s).</string>
+    <string name="route_need_routes">경로를 찾으려면 %1$s 도로 데이터가 필요해요 (%2$s).</string>
     <string name="route_download">도로 받기</string>
     <string name="route_download_failed">받지 못했어요. 인터넷을 확인하고 다시 시도하세요.</string>
     <string name="route_other_state">그곳은 %1$s에 있어요. 그 지역도 받거나 지도 앱에서 여세요.</string>
     <string name="route_outside">그곳은 내 지역 밖에 있어요. 지도 앱에서 여세요.</string>
-    <string name="route_no_state">인터넷 없이 경로를 찾으려면 설정 → 앱 → 내비게이션 → 오프라인에서 내 지역 지도를 받으세요.</string>
+    <string name="route_no_state">경로를 찾으려면 내 지역 지도가 필요해요 (구역은 지도 보기용이에요).</string>
+    <string name="route_no_state_named">경로를 찾으려면 %1$s 지도가 필요해요 (구역은 지도 보기용이에요).</string>
+    <string name="route_no_map">아직 이 근처의 경로용 지도가 없어요. 지도 앱에서 장소를 여세요.</string>
+    <string name="route_get_map">지도 받기</string>
     <string name="route_from_off">도로에서 멀리 있어요. 경로를 찾으려면 도로에 더 가까이 가세요.</string>
     <string name="route_to_off">그곳은 도로에서 멀리 있어요.</string>
     <string name="route_no_path">그곳까지 가는 도로를 찾지 못했어요.</string>

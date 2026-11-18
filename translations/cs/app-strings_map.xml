@@ -25,7 +25,7 @@
     <string name="map_detail_minimal_help">Jen ulice, voda a parky, čistě a v barvách LiteDash (data z OpenFreeMap).</string>
     <string name="map_offline">Offline</string>
     <string name="map_offline_full">Dostupné s minimální mapou.</string>
-    <string name="map_offline_help">Ulož si ulice oblasti a uvidíš je bez internetu.</string>
+    <string name="map_offline_help">Ulož si mapu oblasti a uvidíš ji bez internetu. Pro hledání a trasy si stáhni svůj kraj.</string>
     <string name="map_offline_here">Tvoje oblast</string>
     <string name="map_offline_other">Jiná oblast</string>
     <string name="map_offline_area">%1$s · %2$s · %3$s · %4$s</string>
@@ -115,12 +115,15 @@
     <string name="route_arrive">Příjezd v %1$s</string>
     <string name="route_via">přes %1$s</string>
     <string name="route_no_traffic">bez provozu</string>
-    <string name="route_need_routes">Pro trasu bez internetu chybí ulice: %1$s (%2$s).</string>
+    <string name="route_need_routes">Pro trasu chybí ulice: %1$s (%2$s).</string>
     <string name="route_download">Stáhnout ulice</string>
     <string name="route_download_failed">Nepodařilo se je stáhnout. Zkontroluj internet a zkus to znovu.</string>
     <string name="route_other_state">To místo je v kraji %1$s: stáhni i ten kraj, nebo ho otevři v aplikaci s mapami.</string>
     <string name="route_outside">To místo je mimo tvůj kraj: otevři ho v aplikaci s mapami.</string>
-    <string name="route_no_state">Pro trasu bez internetu si stáhni mapu svého kraje v Nastavení → Aplikace → Navigace → Offline.</string>
+    <string name="route_no_state">Pro trasu potřebuješ mapu svého kraje (oblasti slouží jen k prohlížení mapy).</string>
+    <string name="route_no_state_named">Pro trasu potřebuješ mapu kraje %1$s (oblasti slouží jen k prohlížení mapy).</string>
+    <string name="route_no_map">Pro tvé okolí zatím není mapa pro trasy. Otevři místo v aplikaci s mapami.</string>
+    <string name="route_get_map">Stáhnout mapu</string>
     <string name="route_from_off">Jsi daleko od silnice: přibliž se k nějaké, ať můžu najít trasu.</string>
     <string name="route_to_off">To místo je daleko od silnice.</string>
     <string name="route_no_path">Nenašli jsme tam cestu po silnici.</string>

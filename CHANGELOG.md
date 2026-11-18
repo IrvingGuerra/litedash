@@ -4,6 +4,15 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.5.6] - 2026-11-18
+
+### Cambiado
+- **El aviso de la ruta ya no confunde:** decía «Para la ruta sin internet, baja el mapa de tu estado» y muchos entendían
+  que no tenían internet. LiteDash traza la ruta con el mapa descargado de tu estado; ahora el aviso dice cuál hace falta
+  («hace falta el mapa de Jalisco») y aclara que las zonas solo sirven para ver el mapa.
+- **Botón «Bajar mapa» en ese aviso:** te lleva directo a Ajustes → Apps → Navegación → Sin conexión.
+- Si todavía no hay mapa de donde estás, el aviso lo dice en vez de mandarte a bajar algo que no existe.
+
 ## [1.5.5] - 2026-11-18
 
 ### Cambiado

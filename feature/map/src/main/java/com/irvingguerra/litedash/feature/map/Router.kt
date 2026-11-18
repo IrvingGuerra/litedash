@@ -601,8 +601,8 @@ sealed interface RoutePlan {
     /** El destino está en otro estado ([region], si se sabe cuál) que no está bajado. */
     class OtherState(val region: MapRegion?) : RoutePlan
 
-    /** No estás en un estado bajado. */
-    data object NoState : RoutePlan
+    /** No estás en un estado bajado: el que hay que bajar ([region]; null = aún no hay mapa de ahí, o no se sabe). */
+    class NoState(val region: MapRegion?) : RoutePlan
 
     /** No se pudo (lejos de las calles o sin camino). */
     class Failed(val error: RouteError) : RoutePlan

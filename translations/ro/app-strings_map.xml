@@ -25,7 +25,7 @@
     <string name="map_detail_minimal_help">Doar străzi, apă și parcuri, curat și în culorile LiteDash (date de la OpenFreeMap).</string>
     <string name="map_offline">Offline</string>
     <string name="map_offline_full">Disponibil cu harta minimală.</string>
-    <string name="map_offline_help">Salvează străzile unei zone ca să le vezi fără internet.</string>
+    <string name="map_offline_help">Salvează harta unei zone ca s-o vezi fără internet. Pentru căutare și trasee, descarcă-ți județul.</string>
     <string name="map_offline_here">Zona ta</string>
     <string name="map_offline_other">Altă zonă</string>
     <string name="map_offline_area">%1$s · %2$s · %3$s · %4$s</string>
@@ -115,12 +115,15 @@
     <string name="route_arrive">Ajungi la %1$s</string>
     <string name="route_via">pe %1$s</string>
     <string name="route_no_traffic">fără trafic</string>
-    <string name="route_need_routes">Pentru traseul fără internet lipsesc străzile din %1$s (%2$s).</string>
+    <string name="route_need_routes">Pentru traseu lipsesc străzile din %1$s (%2$s).</string>
     <string name="route_download">Descarcă străzile</string>
     <string name="route_download_failed">Nu s-au putut descărca. Verifică internetul și încearcă din nou.</string>
     <string name="route_other_state">Locul acela e în %1$s: descarcă și acel județ sau deschide-l în aplicația ta de hărți.</string>
     <string name="route_outside">Locul acela e în afara județului tău: deschide-l în aplicația ta de hărți.</string>
-    <string name="route_no_state">Pentru traseul fără internet, descarcă harta județului tău din Setări → Aplicații → Navigație → Offline.</string>
+    <string name="route_no_state">Pentru traseu ai nevoie de harta județului tău (zonele servesc doar la vizualizarea hărții).</string>
+    <string name="route_no_state_named">Pentru traseu ai nevoie de harta pentru %1$s (zonele servesc doar la vizualizarea hărții).</string>
+    <string name="route_no_map">Încă nu există o hartă a împrejurimilor tale pentru trasee. Deschide locul în aplicația ta de hărți.</string>
+    <string name="route_get_map">Descarcă harta</string>
     <string name="route_from_off">Ești departe de o stradă: apropie-te de una ca să găsim traseul.</string>
     <string name="route_to_off">Locul acela e departe de o stradă.</string>
     <string name="route_no_path">Nu am găsit un drum până acolo.</string>

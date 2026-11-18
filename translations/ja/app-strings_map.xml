@@ -25,7 +25,7 @@
     <string name="map_detail_minimal_help">道路・水域・公園だけを LiteDash のカラーですっきり表示（データは OpenFreeMap）。</string>
     <string name="map_offline">オフライン</string>
     <string name="map_offline_full">ミニマル地図で利用できます。</string>
-    <string name="map_offline_help">エリアの道路を保存して、インターネットなしで表示できます。</string>
+    <string name="map_offline_help">エリアの地図を保存して、インターネットなしで表示できます。検索やルートには、都道府県をダウンロードしてください。</string>
     <string name="map_offline_here">現在のエリア</string>
     <string name="map_offline_other">別のエリア</string>
     <string name="map_offline_area">%1$s · %2$s · %3$s · %4$s</string>
@@ -115,12 +115,15 @@
     <string name="route_arrive">%1$s 到着</string>
     <string name="route_via">%1$s 経由</string>
     <string name="route_no_traffic">渋滞を考慮しない</string>
-    <string name="route_need_routes">オフラインのルートには %1$s の道路データが必要です（%2$s）。</string>
+    <string name="route_need_routes">ルートには %1$s の道路データが必要です（%2$s）。</string>
     <string name="route_download">道路をダウンロード</string>
     <string name="route_download_failed">ダウンロードできませんでした。インターネットを確認して、もう一度お試しください。</string>
     <string name="route_other_state">その場所は %1$s にあります。その都道府県もダウンロードするか、地図アプリで開いてください。</string>
     <string name="route_outside">その場所はお住まいの都道府県の外です。地図アプリで開いてください。</string>
-    <string name="route_no_state">オフラインでルートを使うには、「設定 → アプリ → ナビ → オフライン」で都道府県の地図をダウンロードしてください。</string>
+    <string name="route_no_state">ルートには都道府県の地図が必要です（エリアは地図の表示専用です）。</string>
+    <string name="route_no_state_named">ルートには %1$s の地図が必要です（エリアは地図の表示専用です）。</string>
+    <string name="route_no_map">この地域のルート用の地図はまだありません。地図アプリで場所を開いてください。</string>
+    <string name="route_get_map">地図をダウンロード</string>
     <string name="route_from_off">道路から離れています。ルートを探すには道路に近づいてください。</string>
     <string name="route_to_off">その場所は道路から離れています。</string>
     <string name="route_no_path">そこまで道路で行けるルートが見つかりませんでした。</string>

@@ -128,10 +128,14 @@ private const val RECHECK_M = 500f
 
 /**
  * La tarjeta de la ruta: lo que mide, lo que se tarda (sin tráfico), a qué hora llegas y por dónde va; o, si no salió,
- * por qué y qué hacer (bajar las calles de tu estado, o abrir el lugar en tu app de mapas). [onOpen] = tu app de mapas.
+ * por qué y qué hacer (bajar el mapa o las calles de tu estado, o abrir el lugar en tu app de mapas). [onOpen] = tu app
+ * de mapas; [onOffline] = Ajustes → Apps → Navegación → Sin conexión.
  */
 @Composable
-internal fun RouteCard(d: Dependencies, request: RouteRequest, appName: String?, onOpen: () -> Unit, back: () -> Unit, modifier: Modifier = Modifier) {
+internal fun RouteCard(
+    d: Dependencies, request: RouteRequest, appName: String?, onOpen: () -> Unit, onOffline: () -> Unit, back: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     val c = LocalColors.current
     val context = LocalContext.current
     val packs = remember(context) { MapPacks.get(context) }
@@ -160,7 +164,14 @@ internal fun RouteCard(d: Dependencies, request: RouteRequest, appName: String?,
                         plan.region?.let { stringResource(R.string.route_other_state, it.name(currentLocale().language)) }
                             ?: stringResource(R.string.route_outside),
                     )
-                    plan is RoutePlan.NoState -> Message(stringResource(R.string.route_no_state))
+                    plan is RoutePlan.NoState -> Message(
+                        when {
+                            plan.region != null -> stringResource(R.string.route_no_state_named, plan.region!!.name(currentLocale().language))
+                            // Sin la lista de estados (sin red al abrir) no se sabe si hay mapa de ahí.
+                            packs.regions.isEmpty() -> stringResource(R.string.route_no_state)
+                            else -> stringResource(R.string.route_no_map)
+                        },
+                    )
                     plan is RoutePlan.TwoStates -> Message(stringResource(R.string.route_two_states))
                     plan is RoutePlan.Failed -> Message(
                         stringResource(
@@ -183,7 +194,14 @@ internal fun RouteCard(d: Dependencies, request: RouteRequest, appName: String?,
                 if (job == null || job.failed) Button(stringResource(R.string.route_download), { packs.downloadRoutes(plan.region) }, primary = true)
             }
             if (plan is RoutePlan.Found) Button(stringResource(R.string.guide_go), { Driving.session = DriveSession(request.to, plan.route) }, primary = true)
-            Button(openLabel, onOpen, primary = plan !is RoutePlan.NeedsRoutes && plan !is RoutePlan.Found)
+            // Falta un estado que sí existe (o no se sabe): un atajo a donde se baja.
+            val getMap = when (plan) {
+                is RoutePlan.NoState -> plan.region != null || packs.regions.isEmpty()
+                is RoutePlan.OtherState -> plan.region != null
+                else -> false
+            }
+            if (getMap) Button(stringResource(R.string.route_get_map), onOffline, primary = true)
+            Button(openLabel, onOpen, primary = plan !is RoutePlan.NeedsRoutes && plan !is RoutePlan.Found && !getMap)
         }
     }
 }

@@ -25,7 +25,7 @@
     <string name="map_detail_minimal_help">Nur Straßen, Wasser und Parks, klar und in LiteDash-Farben (Daten von OpenFreeMap).</string>
     <string name="map_offline">Offline</string>
     <string name="map_offline_full">Mit der minimalen Karte verfügbar.</string>
-    <string name="map_offline_help">Speichere die Straßen einer Zone, um sie ohne Internet zu sehen.</string>
+    <string name="map_offline_help">Speichere die Karte einer Zone, um sie ohne Internet zu sehen. Zum Suchen und für Routen lade dein Bundesland.</string>
     <string name="map_offline_here">Deine Zone</string>
     <string name="map_offline_other">Andere Zone</string>
     <string name="map_offline_area">%1$s · %2$s · %3$s · %4$s</string>
@@ -115,12 +115,15 @@
     <string name="route_arrive">Ankunft um %1$s</string>
     <string name="route_via">über %1$s</string>
     <string name="route_no_traffic">ohne Verkehr</string>
-    <string name="route_need_routes">Für die Route ohne Internet fehlen die Straßen von %1$s (%2$s).</string>
+    <string name="route_need_routes">Für die Route fehlen die Straßen von %1$s (%2$s).</string>
     <string name="route_download">Straßen laden</string>
     <string name="route_download_failed">Download fehlgeschlagen. Prüfe dein Internet und versuch es noch mal.</string>
     <string name="route_other_state">Dieser Ort liegt in %1$s: Lade auch dieses Bundesland oder öffne ihn in deiner Karten-App.</string>
     <string name="route_outside">Dieser Ort liegt außerhalb deines Bundeslands: Öffne ihn in deiner Karten-App.</string>
-    <string name="route_no_state">Für die Route ohne Internet lade die Karte deines Bundeslands unter Einstellungen → Apps → Navigation → Offline herunter.</string>
+    <string name="route_no_state">Für die Route brauchst du die Karte deines Bundeslands (Zonen dienen nur zum Ansehen der Karte).</string>
+    <string name="route_no_state_named">Für die Route brauchst du die Karte von %1$s (Zonen dienen nur zum Ansehen der Karte).</string>
+    <string name="route_no_map">Für deine Gegend gibt es noch keine Karte für Routen. Öffne den Ort in deiner Karten-App.</string>
+    <string name="route_get_map">Karte laden</string>
     <string name="route_from_off">Du bist weit von einer Straße entfernt: Fahr näher an eine heran, um die Route zu finden.</string>
     <string name="route_to_off">Dieser Ort ist weit von einer Straße entfernt.</string>
     <string name="route_no_path">Wir haben keinen Weg über Straßen dorthin gefunden.</string>

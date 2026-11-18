@@ -52,8 +52,17 @@ private const val APPS_TABS = "apps"
 /** Las de Apps → Navegación (App de mapas, Mapa de LiteDash, Sin conexión). */
 private const val NAVIGATION_TABS = "navigation"
 
+/** Sin conexión, la tercera de Navegación. */
+private const val OFFLINE_TAB = 2
+
 /** Ajustes → Apps abre en Radio (desde la radio sin nada enlazado). */
 internal fun openRadioSettings() = selectTab(APPS_TABS, AppsTab.RADIO.ordinal)
+
+/** Ajustes → Apps abre en Navegación → Sin conexión (desde la tarjeta de la ruta, para bajar el mapa de tu estado). */
+internal fun openOfflineMaps() {
+    selectTab(APPS_TABS, AppsTab.NAVIGATION.ordinal)
+    selectTab(NAVIGATION_TABS, OFFLINE_TAB)
+}
 
 /** Ajustes → Apps abre en Música (desde Ajustes → Celular, para emparejar el Bluetooth). */
 internal fun openMusicSettings() = selectTab(APPS_TABS, AppsTab.MUSIC.ordinal)

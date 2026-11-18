@@ -25,7 +25,7 @@
     <string name="map_detail_minimal_help">Только улицы, вода и парки, чисто и в цветах LiteDash (данные OpenFreeMap).</string>
     <string name="map_offline">Офлайн</string>
     <string name="map_offline_full">Доступно с минимальной картой.</string>
-    <string name="map_offline_help">Сохрани улицы района, чтобы видеть их без интернета.</string>
+    <string name="map_offline_help">Сохрани карту района, чтобы видеть её без интернета. Для поиска и маршрутов скачай свой регион.</string>
     <string name="map_offline_here">Твой район</string>
     <string name="map_offline_other">Другой район</string>
     <string name="map_offline_area">%1$s · %2$s · %3$s · %4$s</string>
@@ -115,12 +115,15 @@
     <string name="route_arrive">Прибытие в %1$s</string>
     <string name="route_via">через %1$s</string>
     <string name="route_no_traffic">без учёта пробок</string>
-    <string name="route_need_routes">Для маршрута без интернета не хватает улиц: %1$s (%2$s).</string>
+    <string name="route_need_routes">Для маршрута не хватает улиц: %1$s (%2$s).</string>
     <string name="route_download">Скачать улицы</string>
     <string name="route_download_failed">Не удалось скачать. Проверь интернет и попробуй ещё раз.</string>
     <string name="route_other_state">Это место в регионе %1$s: скачай и этот регион или открой место в своём приложении карт.</string>
     <string name="route_outside">Это место за пределами твоего региона: открой его в своём приложении карт.</string>
-    <string name="route_no_state">Для маршрута без интернета скачай карту своего региона в «Настройки → Приложения → Навигация → Офлайн».</string>
+    <string name="route_no_state">Для маршрута нужна карта твоего региона (районы — только для просмотра карты).</string>
+    <string name="route_no_state_named">Для маршрута нужна карта региона %1$s (районы — только для просмотра карты).</string>
+    <string name="route_no_map">Карты твоей местности для маршрутов пока нет. Открой место в своём приложении карт.</string>
+    <string name="route_get_map">Скачать карту</string>
     <string name="route_from_off">Ты далеко от дороги: подъедь ближе к ней, чтобы найти маршрут.</string>
     <string name="route_to_off">Это место далеко от дороги.</string>
     <string name="route_no_path">Не нашли путь туда по дорогам.</string>

@@ -25,7 +25,7 @@
     <string name="map_detail_minimal_help">Μόνο δρόμοι, νερό και πάρκα, καθαρά και στα χρώματα του LiteDash (δεδομένα από το OpenFreeMap).</string>
     <string name="map_offline">Εκτός σύνδεσης</string>
     <string name="map_offline_full">Διαθέσιμο με τον λιτό χάρτη.</string>
-    <string name="map_offline_help">Αποθηκεύστε τους δρόμους μιας ζώνης για να τους βλέπετε χωρίς internet.</string>
+    <string name="map_offline_help">Αποθηκεύστε τον χάρτη μιας ζώνης για να τον βλέπετε χωρίς internet. Για αναζήτηση και διαδρομές, κατεβάστε την περιφέρειά σας.</string>
     <string name="map_offline_here">Η ζώνη σας</string>
     <string name="map_offline_other">Άλλη ζώνη</string>
     <string name="map_offline_area">%1$s · %2$s · %3$s · %4$s</string>
@@ -115,12 +115,15 @@
     <string name="route_arrive">Άφιξη στις %1$s</string>
     <string name="route_via">μέσω %1$s</string>
     <string name="route_no_traffic">χωρίς κίνηση</string>
-    <string name="route_need_routes">Για διαδρομή χωρίς internet λείπουν οι δρόμοι της περιοχής %1$s (%2$s).</string>
+    <string name="route_need_routes">Για τη διαδρομή λείπουν οι δρόμοι της περιοχής %1$s (%2$s).</string>
     <string name="route_download">Λήψη δρόμων</string>
     <string name="route_download_failed">Δεν ήταν δυνατή η λήψη. Ελέγξτε το internet και δοκιμάστε ξανά.</string>
     <string name="route_other_state">Αυτό το μέρος είναι στην περιφέρεια %1$s: κατεβάστε κι αυτή την περιφέρεια ή ανοίξτε το στην εφαρμογή χαρτών σας.</string>
     <string name="route_outside">Αυτό το μέρος είναι εκτός της περιφέρειάς σας: ανοίξτε το στην εφαρμογή χαρτών σας.</string>
-    <string name="route_no_state">Για διαδρομή χωρίς internet, κατεβάστε τον χάρτη της περιφέρειάς σας από Ρυθμίσεις → Εφαρμογές → Πλοήγηση → Εκτός σύνδεσης.</string>
+    <string name="route_no_state">Για τη διαδρομή χρειάζεστε τον χάρτη της περιφέρειάς σας (οι ζώνες είναι μόνο για προβολή του χάρτη).</string>
+    <string name="route_no_state_named">Για τη διαδρομή χρειάζεστε τον χάρτη της περιφέρειας %1$s (οι ζώνες είναι μόνο για προβολή του χάρτη).</string>
+    <string name="route_no_map">Δεν υπάρχει ακόμη χάρτης της περιοχής σας για διαδρομές. Ανοίξτε το μέρος στην εφαρμογή χαρτών σας.</string>
+    <string name="route_get_map">Λήψη χάρτη</string>
     <string name="route_from_off">Είστε μακριά από δρόμο: πλησιάστε σε έναν για να βρεθεί η διαδρομή.</string>
     <string name="route_to_off">Αυτό το μέρος είναι μακριά από δρόμο.</string>
     <string name="route_no_path">Δεν βρέθηκε οδική διαδρομή μέχρι εκεί.</string>

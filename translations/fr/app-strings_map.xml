@@ -27,7 +27,7 @@
     <string name="map_detail_minimal_help">Seulement les rues, l\'eau et les parcs, épuré et aux couleurs de LiteDash (données d\'OpenFreeMap).</string>
     <string name="map_offline">Hors ligne</string>
     <string name="map_offline_full">Disponible avec la carte épurée.</string>
-    <string name="map_offline_help">Enregistrez les rues d\'une zone pour les voir sans internet.</string>
+    <string name="map_offline_help">Enregistrez la carte d\'une zone pour la voir sans internet. Pour chercher et tracer des itinéraires, téléchargez votre région.</string>
     <string name="map_offline_here">Votre zone</string>
     <string name="map_offline_other">Autre zone</string>
     <string name="map_offline_area">%1$s · %2$s · %3$s · %4$s</string>
@@ -117,12 +117,15 @@
     <string name="route_arrive">Arrivée à %1$s</string>
     <string name="route_via">par %1$s</string>
     <string name="route_no_traffic">hors trafic</string>
-    <string name="route_need_routes">Pour l\'itinéraire sans internet, il manque les rues de %1$s (%2$s).</string>
+    <string name="route_need_routes">Pour tracer l\'itinéraire, il manque les rues de %1$s (%2$s).</string>
     <string name="route_download">Télécharger les rues</string>
     <string name="route_download_failed">Échec du téléchargement. Vérifiez votre internet et réessayez.</string>
     <string name="route_other_state">Ce lieu se trouve en %1$s : téléchargez aussi cette région ou ouvrez-le dans votre appli de cartes.</string>
     <string name="route_outside">Ce lieu est hors de votre région : ouvrez-le dans votre appli de cartes.</string>
-    <string name="route_no_state">Pour l\'itinéraire sans internet, téléchargez la carte de votre région dans Paramètres → Applis → Navigation → Hors ligne.</string>
+    <string name="route_no_state">Pour tracer l\'itinéraire, il vous faut la carte de votre région (les zones servent seulement à voir la carte).</string>
+    <string name="route_no_state_named">Pour tracer l\'itinéraire, il vous faut la carte de %1$s (les zones servent seulement à voir la carte).</string>
+    <string name="route_no_map">Il n\'y a pas encore de carte de votre secteur pour les itinéraires. Ouvrez le lieu dans votre appli de cartes.</string>
+    <string name="route_get_map">Télécharger la carte</string>
     <string name="route_from_off">Vous êtes loin d\'une rue : rapprochez-vous-en pour calculer l\'itinéraire.</string>
     <string name="route_to_off">Ce lieu est loin d\'une rue.</string>
     <string name="route_no_path">Aucun chemin par la route n\'a été trouvé jusque-là.</string>

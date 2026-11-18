@@ -25,7 +25,7 @@
     <string name="map_detail_minimal_help">Alleen straten, water en parken, strak en in de kleuren van LiteDash (gegevens van OpenFreeMap).</string>
     <string name="map_offline">Offline</string>
     <string name="map_offline_full">Beschikbaar met de minimale kaart.</string>
-    <string name="map_offline_help">Bewaar de straten van een zone om ze zonder internet te zien.</string>
+    <string name="map_offline_help">Bewaar de kaart van een zone om hem zonder internet te zien. Download je provincie om te zoeken en routes te plannen.</string>
     <string name="map_offline_here">Jouw zone</string>
     <string name="map_offline_other">Andere zone</string>
     <string name="map_offline_area">%1$s · %2$s · %3$s · %4$s</string>
@@ -115,12 +115,15 @@
     <string name="route_arrive">Aankomst om %1$s</string>
     <string name="route_via">via %1$s</string>
     <string name="route_no_traffic">zonder verkeer</string>
-    <string name="route_need_routes">Voor de route zonder internet ontbreken de straten van %1$s (%2$s).</string>
+    <string name="route_need_routes">Voor de route ontbreken de straten van %1$s (%2$s).</string>
     <string name="route_download">Straten downloaden</string>
     <string name="route_download_failed">Downloaden mislukt. Controleer je internet en probeer het opnieuw.</string>
     <string name="route_other_state">Die plek ligt in %1$s: download ook die provincie of open hem in je kaarten-app.</string>
     <string name="route_outside">Die plek ligt buiten je provincie: open hem in je kaarten-app.</string>
-    <string name="route_no_state">Download voor de route zonder internet de kaart van je provincie in Instellingen → Apps → Navigatie → Offline.</string>
+    <string name="route_no_state">Voor de route heb je de kaart van je provincie nodig (zones zijn alleen om de kaart te bekijken).</string>
+    <string name="route_no_state_named">Voor de route heb je de kaart van %1$s nodig (zones zijn alleen om de kaart te bekijken).</string>
+    <string name="route_no_map">Er is nog geen kaart van jouw omgeving voor routes. Open de plek in je kaarten-app.</string>
+    <string name="route_get_map">Kaart downloaden</string>
     <string name="route_from_off">Je bent ver van een straat: ga dichter naar een straat om de route te vinden.</string>
     <string name="route_to_off">Die plek ligt ver van een straat.</string>
     <string name="route_no_path">We vonden geen weg daarheen over de straat.</string>

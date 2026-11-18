@@ -25,7 +25,7 @@
     <string name="map_detail_minimal_help">Just streets, water and parks, clean and in LiteDash colors (data from OpenFreeMap).</string>
     <string name="map_offline">Offline</string>
     <string name="map_offline_full">Available with the minimal map.</string>
-    <string name="map_offline_help">Save a zone\'s streets to see them without internet.</string>
+    <string name="map_offline_help">Save the map of a zone to see it without internet. To search and plan routes, download your state.</string>
     <string name="map_offline_here">Your zone</string>
     <string name="map_offline_other">Another zone</string>
     <string name="map_offline_area">%1$s · %2$s · %3$s · %4$s</string>
@@ -115,12 +115,15 @@
     <string name="route_arrive">Arrive at %1$s</string>
     <string name="route_via">via %1$s</string>
     <string name="route_no_traffic">without traffic</string>
-    <string name="route_need_routes">For the route without internet, the streets of %1$s are missing (%2$s).</string>
+    <string name="route_need_routes">To plan the route, the streets of %1$s are missing (%2$s).</string>
     <string name="route_download">Download streets</string>
     <string name="route_download_failed">Couldn\'t download them. Check your internet and try again.</string>
     <string name="route_other_state">That place is in %1$s: download that state too or open it in your maps app.</string>
     <string name="route_outside">That place is outside your state: open it in your maps app.</string>
-    <string name="route_no_state">For the route without internet, download your state\'s map in Settings → Apps → Navigation → Offline.</string>
+    <string name="route_no_state">To plan the route you need your state\'s map (zones are only for viewing the map).</string>
+    <string name="route_no_state_named">To plan the route you need the map of %1$s (zones are only for viewing the map).</string>
+    <string name="route_no_map">There is no map of your area for routes yet. Open the place in your maps app.</string>
+    <string name="route_get_map">Download map</string>
     <string name="route_from_off">You are far from a street: get closer to one to find the route.</string>
     <string name="route_to_off">That place is far from a street.</string>
     <string name="route_no_path">We couldn\'t find a way there by road.</string>
