@@ -343,13 +343,12 @@ fun TileContent(d: Dependencies, p: Tile, apps: List<App>, car: CarPackage?, rev
         TileTypes.PROJECTION -> ProjectionTile(d, apps, appKeyOf(p.data)) { actions.onPanel(Panel.Drawer) }
         TileTypes.TIRES -> TiresTile(d, showCar = p.flag(WidgetFlags.CAR), onOpen = actions.onTires, onSettings = { actions.onPanel(Panel.TiresSettings) })
         TileTypes.MAP -> Box(Modifier.expandable(p, actions)) {
-            val app = mapApp(d, apps)
-            // Un toque: siempre el mapa de LiteDash en grande (su navegación); tu app de mapas, con su botón del widget.
+            // Con «Usar app de mapas externa», el toque y Casa/Trabajo abren esa app; apagado, todo es el mapa de LiteDash.
+            val app = externalMapApp(d, apps)
             MapTile(
                 d, p.id, p.data, app, editing = actions.editing(),
-                onPlace = remember(app) { { navigateTo(context, app, it) } },
-                onNavigate = remember(app) { { actions.onNavigate(app) } },
-                onTap = remember(p.id) { { actions.onExpand(Expanded.MAP, p) } },
+                onPlace = remember(app) { { if (app != null) navigateTo(context, app, it) else PlaceRequests.fromAddress(it) } },
+                onTap = remember(p.id, app) { { if (app != null) actions.onNavigate(app) else actions.onExpand(Expanded.MAP, p) } },
                 onSearch = remember(p.id) {
                     {
                         PlaceRequests.focus = true
@@ -421,6 +420,9 @@ fun Dependencies.addTiresTile(pickSource: () -> Unit): Boolean {
 fun mapApp(d: Dependencies, apps: List<App>): App? =
     d.prefs.mapApp?.let { d.apps.find(apps, it) }
         ?: d.apps.firstOf(apps, *NAVIGATION_PACKAGES)
+
+/** Tu app de mapas solo si elegiste usarla («Usar app de mapas externa»); null = todo va por el mapa de LiteDash. */
+fun externalMapApp(d: Dependencies, apps: List<App>): App? = if (d.prefs.mapExternal) mapApp(d, apps) else null
 
 /** Inicio: la barra de arriba (hora y avisos), el tablero personalizable y la barra de apps. */
 @Composable
@@ -500,8 +502,8 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
     // Los accesos directos al mapa (barra, volante): el mapa de LiteDash en grande o, con «Abrir tu app de mapas desde
     // la barra y el volante» prendido (y una app de mapas), esa app.
     fun openMapShortcut() {
-        val app = mapApp(d, currentApps)
-        if (d.prefs.mapExternal && app != null) openNavigation(context, d.apps, app)
+        val app = externalMapApp(d, currentApps)
+        if (app != null) openNavigation(context, d.apps, app)
         else expand(Expanded.MAP, null)
     }
     // Con Archivos, play sin nada que sonar (volante, barra de Android, widget) abre la pantalla Música en la
@@ -815,14 +817,14 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                                             browse = mediaBrowse,
                                         )
                                         Expanded.MAP -> {
-                                            val app = mapApp(d, apps)
+                                            val app = externalMapApp(d, apps)
                                             // Como el widget Mapa que se tocó (o el primero que haya; sin widget, el aspecto de Ajustes). Si
                                             // se llegó desde la música en grande, [expandedFrom] es el de la música: no sirve aquí.
                                             val from = expandedFrom?.takeIf { it.type == TileTypes.MAP }
                                                 ?: d.dashboard.shown.firstOrNull { it.type == TileTypes.MAP }
                                             val look = from?.data ?: d.prefs.mapLook.orEmpty()
                                             MapExpanded(
-                                                d, from?.id, look, app, onPlace = { navigateTo(context, app, it) }, onNavigate = { actions.onNavigate(app) },
+                                                d, from?.id, look, app, onPlace = { if (app != null) navigateTo(context, app, it) else PlaceRequests.fromAddress(it) }, onNavigate = { actions.onNavigate(app) },
                                                 onOffline = { openOfflineMaps(); panel = Panel.MusicSettings },
                                                 close = close, modifier = Modifier.padding(6.dp),
                                             )

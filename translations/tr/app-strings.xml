@@ -218,10 +218,10 @@
     <string name="language_reviewed">gözden geçirildi</string>
     <string name="language_machine">makine çevirisi</string>
     <string name="language_report">Çeviri hatası mı gördünüz? litedash.dev/en/translate adresinden bildirin</string>
-    <string name="map_help">Harita widget’ının ve çubuk düğmesinin açtığı uygulama. Gezinirken sonraki dönüşü gösterir (müzikle aynı bildirim erişimini kullanır).</string>
+    <string name="map_help">Harici harita uygulamanız (Waze, Google Maps…). Onunla gezinirken widget sonraki dönüşü gösterir (müzikle aynı bildirim erişimini kullanır).</string>
     <string name="map_no_apps">LiteDash’ten gezinmek için Waze veya Google Maps yükleyin.</string>
-    <string name="map_external">Harita uygulamanızı çubuktan ve direksiyondan açın</string>
-    <string name="map_external_help">Kapalıyken navigasyonlu LiteDash haritasını açar. Harita widget’ı her zaman LiteDash haritasını açar; harita uygulamanız onun düğmesindedir.</string>
+    <string name="map_external">Harici harita uygulaması kullan</string>
+    <string name="map_external_help">Açıkken Harita widget’ına, Ev’e, İş’e, çubuğa ve direksiyona dokunmak harita uygulamanızı açar. Kapalıyken her şey navigasyonuyla birlikte LiteDash haritasını kullanır.</string>
     <string name="music">Müzik</string>
     <string name="music_help">Müzik widget’ında çalan uygulamadır ve oynat düğmesi onu uyandırır. Uygulama seçilmezse çalan neyse onu gösterir (radyonun kendi widget’ı var).</string>
     <string name="template_cards">Altta kartlar</string>

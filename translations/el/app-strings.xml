@@ -218,10 +218,10 @@
     <string name="language_reviewed">ελεγμένη</string>
     <string name="language_machine">αυτόματη μετάφραση</string>
     <string name="language_report">Βρήκατε λάθος στη μετάφραση; Αναφέρετέ το στο litedash.dev/en/translate</string>
-    <string name="map_help">Η εφαρμογή που ανοίγουν το widget Χάρτης και το κουμπί της γραμμής. Κατά την πλοήγηση δείχνει την επόμενη στροφή (με την ίδια πρόσβαση στις ειδοποιήσεις όπως η μουσική).</string>
+    <string name="map_help">Η εξωτερική εφαρμογή χαρτών σας (Waze, Google Maps…). Όσο πλοηγείστε με αυτήν, το widget δείχνει την επόμενη στροφή (με την ίδια πρόσβαση στις ειδοποιήσεις όπως η μουσική).</string>
     <string name="map_no_apps">Εγκαταστήστε Waze ή Google Maps για πλοήγηση από το LiteDash.</string>
-    <string name="map_external">Άνοιγμα της εφαρμογής χαρτών από τη γραμμή και το τιμόνι</string>
-    <string name="map_external_help">Όταν είναι ανενεργό, ανοίγουν τον χάρτη του LiteDash με την πλοήγησή του. Το widget Χάρτης ανοίγει πάντα τον χάρτη του LiteDash· η εφαρμογή χαρτών σας είναι στο κουμπί του.</string>
+    <string name="map_external">Χρήση εξωτερικής εφαρμογής χαρτών</string>
+    <string name="map_external_help">Ενεργό: ένα πάτημα στο widget Χάρτης, στο Σπίτι, στη Δουλειά, στη γραμμή και στο τιμόνι ανοίγει την εφαρμογή χαρτών σας. Ανενεργό: όλα χρησιμοποιούν τον χάρτη του LiteDash με την πλοήγησή του.</string>
     <string name="music">Μουσική</string>
     <string name="music_help">Είναι η εφαρμογή που παίζει το widget Μουσική, και το κουμπί αναπαραγωγής την ξυπνά. Χωρίς επιλεγμένη εφαρμογή, δείχνει ό,τι παίζει (το ραδιόφωνο έχει το δικό του widget).</string>
     <string name="template_cards">Κάρτες κάτω</string>

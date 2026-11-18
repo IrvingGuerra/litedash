@@ -3,6 +3,18 @@
 What people using LiteDash notice, in English. The full history (in Spanish) is in [CHANGELOG.md](CHANGELOG.md).
 Format [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versions [SemVer](https://semver.org/).
 
+## [1.5.8] - 2026-11-18
+
+### Changed
+- **"Use an external maps app" now covers everything:** the option in Settings → Apps → Navigation picks a single
+  path. Off (the default), everything uses the LiteDash map: a tap on the Map widget, Home, Work, the bar and the
+  steering wheel; the maps app button is gone from the widget, and so is "Open in…" on the place card. On, the widget
+  still shows the map with your arrow, but a tap opens your maps app directly (Waze, Google Maps…), and so do Home,
+  Work, the bar and the steering wheel.
+- **Home and Work on the LiteDash map:** with the external app off, tapping them opens the place on the LiteDash map,
+  ready to plan the route.
+- **The Map widget no longer has a compass:** that belongs to navigation (still on the full-screen map and the guide).
+
 ## [1.5.7] - 2026-11-18
 
 ### Changed

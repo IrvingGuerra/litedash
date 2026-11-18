@@ -218,10 +218,10 @@
     <string name="language_reviewed">검토됨</string>
     <string name="language_machine">기계 번역</string>
     <string name="language_report">번역 오류를 발견했나요? litedash.dev/en/translate 에서 알려 주세요</string>
-    <string name="map_help">지도 위젯과 바 버튼이 여는 앱이에요. 안내 중에는 다음 회전을 보여 줘요(음악과 같은 알림 접근 권한 사용).</string>
+    <string name="map_help">외부 지도 앱(Waze, Google Maps…)이에요. 그 앱으로 안내하는 동안 위젯이 다음 회전을 보여 줘요(음악과 같은 알림 접근 권한 사용).</string>
     <string name="map_no_apps">LiteDash에서 길 안내를 하려면 Waze나 Google 지도를 설치하세요.</string>
-    <string name="map_external">바와 스티어링 휠에서 지도 앱 열기</string>
-    <string name="map_external_help">끄면 내비게이션이 있는 LiteDash 지도를 열어요. 지도 위젯은 항상 LiteDash 지도를 열고, 지도 앱은 위젯의 버튼에 있어요.</string>
+    <string name="map_external">외부 지도 앱 사용</string>
+    <string name="map_external_help">켜면 지도 위젯, 집, 직장, 바, 스티어링 휠을 탭할 때 지도 앱이 열려요. 끄면 모두 내비게이션이 있는 LiteDash 지도를 사용해요.</string>
     <string name="music">음악</string>
     <string name="music_help">음악 위젯이 재생하는 앱이며, 재생 버튼이 이 앱을 깨워요. 앱을 고르지 않으면 재생 중인 것을 보여 줘요(라디오는 별도 위젯).</string>
     <string name="template_cards">아래에 카드</string>

@@ -218,10 +218,10 @@
     <string name="language_reviewed">ellenőrizve</string>
     <string name="language_machine">gépi fordítás</string>
     <string name="language_report">Fordítási hibát látsz? Jelezd itt: litedash.dev/en/translate</string>
-    <string name="map_help">Ezt nyitja meg a Térkép widget és a sáv gombja. Navigálás közben mutatja a következő kanyart (ugyanazt az értesítési hozzáférést használja, mint a zene).</string>
+    <string name="map_help">A külső térképalkalmazásod (Waze, Google Maps…). Amíg vele navigálsz, a widget mutatja a következő kanyart (ugyanazt az értesítési hozzáférést használja, mint a zene).</string>
     <string name="map_no_apps">Telepítsd a Waze-t vagy a Google Térképet, hogy a LiteDash-ből navigálhass.</string>
-    <string name="map_external">Térképalkalmazás megnyitása a sávról és a kormányról</string>
-    <string name="map_external_help">Kikapcsolva a LiteDash térképét nyitják meg navigációval. A Térkép widget mindig a LiteDash térképét nyitja meg; a térképalkalmazásod a gombján van.</string>
+    <string name="map_external">Külső térképalkalmazás használata</string>
+    <string name="map_external_help">Bekapcsolva a Térkép widget, az Otthon, a Munkahely, a sáv és a kormány megérintése a térképalkalmazásodat nyitja meg. Kikapcsolva minden a LiteDash térképét használja a navigációjával.</string>
     <string name="music">Zene</string>
     <string name="music_help">Ezt az alkalmazást játssza a Zene widget, és a lejátszás gomb ezt ébreszti fel. Ha nincs kiválasztva, azt mutatja, ami éppen szól (a rádiónak saját widgete van).</string>
     <string name="template_cards">Kártyák alul</string>

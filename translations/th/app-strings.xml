@@ -215,10 +215,10 @@
     <string name="language_none">ยังไม่มีภาษาอื่น</string>
     <string name="language_details">แปลแล้ว %1$d%% · %2$s</string>
     <string name="language_failed">ดาวน์โหลดภาษาไม่ได้ ตรวจการเชื่อมต่อ</string>
-    <string name="map_help">แอปที่วิดเจ็ตแผนที่และปุ่มบนแถบเปิด ขณะนำทางจะแสดงการเลี้ยวถัดไป (ใช้สิทธิ์เข้าถึงการแจ้งเตือนเดียวกับเพลง)</string>
+    <string name="map_help">แอปแผนที่ภายนอกของคุณ (Waze, Google Maps…) ขณะนำทางด้วยแอปนั้น วิดเจ็ตจะแสดงการเลี้ยวถัดไป (ใช้สิทธิ์เข้าถึงการแจ้งเตือนเดียวกับเพลง)</string>
     <string name="map_no_apps">ติดตั้ง Waze หรือ Google Maps เพื่อนำทางจาก LiteDash</string>
-    <string name="map_external">เปิดแอปแผนที่ของคุณจากแถบและพวงมาลัย</string>
-    <string name="map_external_help">ถ้าปิด จะเปิดแผนที่ LiteDash พร้อมการนำทาง วิดเจ็ตแผนที่จะเปิดแผนที่ LiteDash เสมอ ส่วนแอปแผนที่ของคุณอยู่ที่ปุ่มของวิดเจ็ต</string>
+    <string name="map_external">ใช้แอปแผนที่ภายนอก</string>
+    <string name="map_external_help">ถ้าเปิด การแตะวิดเจ็ตแผนที่ บ้าน ที่ทำงาน แถบ และพวงมาลัยจะเปิดแอปแผนที่ของคุณ ถ้าปิด ทุกอย่างจะใช้แผนที่ LiteDash พร้อมการนำทาง</string>
     <string name="music">เพลง</string>
     <string name="music_help">คือแอปที่วิดเจ็ตเพลงเล่น และปุ่มเล่นจะปลุกแอปนี้ ถ้าไม่เลือกแอป จะแสดงอะไรก็ตามที่กำลังเล่น (วิทยุมีวิดเจ็ตของตัวเอง)</string>
     <string name="template_cards">การ์ดด้านล่าง</string>

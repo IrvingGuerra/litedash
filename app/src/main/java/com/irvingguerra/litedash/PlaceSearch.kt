@@ -120,6 +120,12 @@ internal object PlaceRequests {
         if (geo.place != null) place = geo.place else query = geo.query
         return true
     }
+
+    /** Casa o Trabajo en el mapa de LiteDash: guardado como coordenadas va directo al lugar; como texto, al buscador. */
+    fun fromAddress(address: String) {
+        val geo = parseGeo("0,0?q=" + Uri.encode(address)) ?: return
+        if (geo.place != null) place = geo.place else query = geo.query
+    }
 }
 
 /** Lo que trae un enlace `geo:`: un punto (con su nombre si lo trae) o un texto que buscar. */
@@ -502,7 +508,7 @@ internal fun highlight(name: String, words: List<String>, color: androidx.compos
  * La tarjeta del lugar elegido: su nombre, qué es y dónde, a cuánto queda en línea recta (y si salió de internet o
  * del mapa de tu estado), y qué hacer: ver la ruta, abrirlo en tu app de mapas, guardarlo de favorito, o como Casa o
  * Trabajo.
- * [appName] = tu app de mapas (null = la que Android elija).
+ * [appName] = tu app de mapas (null = no usas una: sin botón para abrirla).
  */
 @Composable
 internal fun PlaceCard(
@@ -532,7 +538,7 @@ internal fun PlaceCard(
         }
         FlowRow(Modifier.padding(top = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Button(stringResource(R.string.route_button), onRoute, primary = true)
-            Button(if (appName != null) stringResource(R.string.search_open_in, appName) else stringResource(R.string.search_open), onOpen)
+            if (appName != null) Button(stringResource(R.string.search_open_in, appName), onOpen)
             Button(stringResource(if (favorite) R.string.search_unfavorite else R.string.search_favorite), { d.prefs.toggleFavorite(hit) })
             val asText = hit.name.takeIf { it.isNotEmpty() && hit.address != null }?.let { "${hit.name}, ${hit.address}" } ?: coords
             if (d.prefs.homeAddress != asText) Button(stringResource(R.string.search_set_home), { d.prefs.homeAddress = asText })

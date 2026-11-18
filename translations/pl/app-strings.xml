@@ -218,10 +218,10 @@
     <string name="language_reviewed">sprawdzone</string>
     <string name="language_machine">tłumaczenie maszynowe</string>
     <string name="language_report">Widzisz błąd w tłumaczeniu? Zgłoś go na litedash.dev/en/translate</string>
-    <string name="map_help">Aplikacja, którą otwiera widżet Mapa i przycisk na pasku. Podczas nawigacji pokazuje następny skręt (używa tego samego dostępu do powiadomień co muzyka).</string>
+    <string name="map_help">Twoja zewnętrzna aplikacja map (Waze, Google Maps…). Gdy nawigujesz z jej pomocą, widżet pokazuje następny skręt (używa tego samego dostępu do powiadomień co muzyka).</string>
     <string name="map_no_apps">Zainstaluj Waze lub Mapy Google, aby nawigować z LiteDash.</string>
-    <string name="map_external">Otwieraj aplikację map z paska i kierownicy</string>
-    <string name="map_external_help">Wyłączone otwierają mapę LiteDash z nawigacją. Widżet Mapa zawsze otwiera mapę LiteDash; Twoja aplikacja map jest pod jego przyciskiem.</string>
+    <string name="map_external">Używaj zewnętrznej aplikacji map</string>
+    <string name="map_external_help">Włączone: dotknięcie widżetu Mapa, Dom, Praca, paska i kierownicy otwiera Twoją aplikację map. Wyłączone: wszystko korzysta z mapy LiteDash z jej nawigacją.</string>
     <string name="music">Muzyka</string>
     <string name="music_help">To aplikacja, którą odtwarza widżet Muzyka, a przycisk odtwarzania ją budzi. Bez wybranej aplikacji pokazuje to, co gra (radio ma własny widżet).</string>
     <string name="template_cards">Karty na dole</string>

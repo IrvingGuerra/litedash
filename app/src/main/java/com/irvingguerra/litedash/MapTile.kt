@@ -107,15 +107,14 @@ import kotlinx.coroutines.withContext
 /**
  * Widget Mapa: tu posición del GPS en el mapa (minimalista de OpenFreeMap o completo de OpenStreetMap),
  * como diga su [data] ([MapLook]); navegando, la siguiente vuelta flota arriba a la izquierda y Casa y
- * Trabajo, abajo a la derecha (sobre los créditos). Un toque hace [onTap] (el mapa de LiteDash en grande); con una
- * app de mapas, el botón de la esquina la abre. En una fila, o sin permiso de ubicación, se ve
+ * Trabajo, abajo a la derecha (sobre los créditos). Un toque hace [onTap]: el mapa de LiteDash en grande o, con
+ * «Usar app de mapas externa» ([app] no es null), esa app. En una fila, o sin permiso de ubicación, se ve
  * solo la vuelta, Casa y Trabajo ([NavigationTile]) y, sin permiso, un botón para pedirlo. GPS y descargas solo
  * mientras se ve. Al quitar el widget se sueltan su cámara y su almacén de teselas.
  */
 @Composable
 fun MapTile(
-    d: Dependencies, tileId: String, data: String, app: App?, editing: Boolean, onPlace: (String) -> Unit, onNavigate: () -> Unit, onTap: () -> Unit,
-    onSearch: () -> Unit,
+    d: Dependencies, tileId: String, data: String, app: App?, editing: Boolean, onPlace: (String) -> Unit, onTap: () -> Unit, onSearch: () -> Unit,
 ) {
     val c = LocalColors.current
     val (granted, ask) = rememberGpsPermission(d)
@@ -134,9 +133,9 @@ fun MapTile(
             }
             return@BoxWithConstraints
         }
-        // Con una app de mapas, su botón en la esquina (un toque al mapa abre el de LiteDash).
+        // Con tu app de mapas el toque la abre: sin lupa (el buscador es del mapa de LiteDash).
         val external = app != null
-        val turnWidth = maxWidth - if (external) 120.dp else 68.dp
+        val turnWidth = maxWidth - if (external) 16.dp else 68.dp
         val withPlaces = maxHeight >= PLACES_HEIGHT
         Card(Modifier.fillMaxSize()) {
             LiveMap(d, look, Modifier.fillMaxSize(), tileId, onTap = onTap)
@@ -148,13 +147,12 @@ fun MapTile(
                     Modifier.align(Alignment.BottomEnd).padding(end = 8.dp, bottom = ATTRIBUTION_CLEARANCE),
                 )
             }
-            // Tu app de mapas solo con su botón (un toque al mapa abre el de LiteDash en grande).
             // La lupa abre el mapa en grande con el buscador (al acomodar se esconde: estorba al botón de tamaño).
-            Row(Modifier.align(Alignment.TopEnd).padding(8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                if (!editing) MapCompass(d, look, sharedMapCamera(tileId))
-                if (!editing) IconButton(Icons.search, onSearch, size = 44.dp, background = c.surface.copy(alpha = 0.85f), color = c.accent, label = stringResource(R.string.search_place))
-                if (external) IconButton(Icons.navigate, onNavigate, size = 44.dp, background = c.surface.copy(alpha = 0.85f), color = c.accent)
-            }
+            // Sin brújula: esa es de la navegación (el mapa en grande y la guía).
+            if (!editing && !external) IconButton(
+                Icons.search, onSearch, Modifier.align(Alignment.TopEnd).padding(8.dp), size = 44.dp, background = c.surface.copy(alpha = 0.85f),
+                color = c.accent, label = stringResource(R.string.search_place),
+            )
         }
     }
 }

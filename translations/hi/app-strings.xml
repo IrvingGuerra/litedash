@@ -215,10 +215,10 @@
     <string name="language_none">अभी और भाषाएँ नहीं।</string>
     <string name="language_details">%1$d%% अनुवादित · %2$s</string>
     <string name="language_failed">भाषा डाउनलोड नहीं हुई; कनेक्शन देखें।</string>
-    <string name="map_help">वह ऐप जो मैप विजेट और बार का बटन खोलते हैं। नेविगेशन के दौरान अगला मोड़ दिखाता है (म्यूज़िक वाला ही नोटिफ़िकेशन एक्सेस इस्तेमाल करता है)।</string>
+    <string name="map_help">आपका बाहरी मैप ऐप (Waze, Google Maps…)। उससे नेविगेट करते समय विजेट अगला मोड़ दिखाता है (म्यूज़िक वाला ही नोटिफ़िकेशन एक्सेस इस्तेमाल करता है)।</string>
     <string name="map_no_apps">LiteDash से नेविगेट करने के लिए Waze या Google Maps इंस्टॉल करें।</string>
-    <string name="map_external">बार और स्टीयरिंग से अपना मैप ऐप खोलें</string>
-    <string name="map_external_help">बंद हो तो ये नेविगेशन के साथ LiteDash मैप खोलते हैं। मैप विजेट हमेशा LiteDash मैप खोलता है; आपका मैप ऐप उसके बटन पर है।</string>
+    <string name="map_external">बाहरी मैप ऐप इस्तेमाल करें</string>
+    <string name="map_external_help">चालू हो तो मैप विजेट, घर, ऑफ़िस, बार और स्टीयरिंग पर टैप करने से आपका मैप ऐप खुलता है। बंद हो तो सब कुछ नेविगेशन के साथ LiteDash मैप इस्तेमाल करता है।</string>
     <string name="music">म्यूज़िक</string>
     <string name="music_help">यह वह ऐप है जो म्यूज़िक विजेट बजाता है, और प्ले बटन इसे जगाता है। कोई ऐप न चुना हो तो जो भी बज रहा हो वह दिखता है (रेडियो का अपना विजेट है)।</string>
     <string name="template_cards">नीचे कार्ड</string>

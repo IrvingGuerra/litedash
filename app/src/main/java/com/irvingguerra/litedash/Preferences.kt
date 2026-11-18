@@ -428,11 +428,7 @@ class Preferences(context: Context) {
     /** App de navegación elegida ([com.irvingguerra.litedash.feature.apps.App.key]); null = la primera instalada. */
     var mapApp by string(PrefKeys.MAP_APP)
 
-    /**
-     * Los accesos directos al mapa (botón de la barra, del volante y el toque al widget Mapa) abren tu app de
-     * navegación; apagado, el mapa de LiteDash en grande.
-     */
-    /** El botón de la barra y el del volante abren tu app de mapas (apagado de fábrica desde la 1.5.1: el mapa de LiteDash). */
+    /** Usar tu app de mapas: el toque al widget Mapa, Casa/Trabajo, la barra y el volante la abren (apagado de fábrica: el mapa de LiteDash). */
     var mapExternal by bool(PrefKeys.MAP_EXTERNAL, false)
 
     /** El mapa de la guía (el de la derecha) gira hacia donde vas en vez de quedarse al norte (botón de la brújula). */

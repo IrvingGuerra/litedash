@@ -220,10 +220,10 @@
     <string name="language_reviewed">revisado</string>
     <string name="language_machine">tradução automática</string>
     <string name="language_report">Viu um erro de tradução? Informe em litedash.dev/en/translate</string>
-    <string name="map_help">O app que o widget Mapa e o botão da barra abrem. Enquanto você navega, o widget mostra a próxima curva (usa o mesmo acesso às notificações que a música).</string>
+    <string name="map_help">Seu app de mapas externo (Waze, Google Maps…). Enquanto você navega com ele, o widget mostra a próxima curva (usa o mesmo acesso às notificações que a música).</string>
     <string name="map_no_apps">Instale o Waze ou o Google Maps para navegar pelo LiteDash.</string>
-    <string name="map_external">Abrir seu app de mapas pela barra e pelo volante</string>
-    <string name="map_external_help">Desligado, abrem o mapa do LiteDash com a navegação dele. O widget Mapa sempre abre o do LiteDash; seu app de mapas fica no botão dele.</string>
+    <string name="map_external">Usar app de mapas externo</string>
+    <string name="map_external_help">Ligado, um toque no widget Mapa, em Casa, Trabalho, na barra e no volante abre seu app de mapas. Desligado, tudo usa o mapa do LiteDash com a navegação dele.</string>
     <string name="music">Música</string>
     <string name="music_help">É o app que toca no widget Música, e o play o desperta. Sem app escolhido, mostra o que estiver tocando (o rádio tem o próprio widget).</string>
     <string name="template_cards">Cartões embaixo</string>

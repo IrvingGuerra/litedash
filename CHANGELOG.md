@@ -4,6 +4,18 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.5.8] - 2026-11-18
+
+### Cambiado
+- **«Usar app de mapas externa», ahora sí para todo:** la opción de Ajustes → Apps → Navegación decide un solo
+  camino. Apagada (de fábrica), todo usa el mapa de LiteDash: el toque al widget Mapa, Casa, Trabajo, la barra y el
+  volante; ya no aparece el botón de tu app de mapas en el widget ni «Abrir en…» en la tarjeta del lugar. Prendida, el
+  widget sigue mostrando el mapa con tu flecha, pero un toque abre directo tu app de mapas (Waze, Google Maps…), igual
+  que Casa, Trabajo, la barra y el volante.
+- **Casa y Trabajo en el mapa de LiteDash:** con la app externa apagada, tocarlos abre el lugar en el mapa de LiteDash,
+  listo para trazar la ruta.
+- **El widget Mapa ya no tiene brújula:** esa es de la navegación (sigue en el mapa en grande y en la guía).
+
 ## [1.5.7] - 2026-11-18
 
 ### Cambiado

@@ -218,10 +218,10 @@
     <string name="language_reviewed">đã duyệt</string>
     <string name="language_machine">dịch máy</string>
     <string name="language_report">Thấy lỗi dịch? Hãy báo tại litedash.dev/en/translate</string>
-    <string name="map_help">Ứng dụng mà tiện ích Bản đồ và nút trên thanh mở ra. Khi dẫn đường, hiện lượt rẽ tiếp theo (dùng cùng quyền truy cập thông báo như nhạc).</string>
+    <string name="map_help">Ứng dụng bản đồ bên ngoài của bạn (Waze, Google Maps…). Khi bạn dẫn đường bằng nó, tiện ích hiện lượt rẽ tiếp theo (dùng cùng quyền truy cập thông báo như nhạc).</string>
     <string name="map_no_apps">Cài Waze hoặc Google Maps để dẫn đường từ LiteDash.</string>
-    <string name="map_external">Mở ứng dụng bản đồ của bạn từ thanh và vô lăng</string>
-    <string name="map_external_help">Khi tắt, chúng mở bản đồ LiteDash kèm dẫn đường. Tiện ích Bản đồ luôn mở bản đồ LiteDash; ứng dụng bản đồ của bạn nằm ở nút của nó.</string>
+    <string name="map_external">Dùng ứng dụng bản đồ bên ngoài</string>
+    <string name="map_external_help">Khi bật, chạm vào tiện ích Bản đồ, Nhà, Nơi làm việc, thanh và vô lăng sẽ mở ứng dụng bản đồ của bạn. Khi tắt, mọi thứ dùng bản đồ LiteDash kèm dẫn đường.</string>
     <string name="music">Nhạc</string>
     <string name="music_help">Ứng dụng mà tiện ích Nhạc phát, và nút phát sẽ đánh thức nó. Nếu chưa chọn ứng dụng, hiện bất cứ gì đang phát (radio có tiện ích riêng).</string>
     <string name="template_cards">Thẻ ở dưới</string>
