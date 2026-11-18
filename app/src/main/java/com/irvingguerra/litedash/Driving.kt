@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
@@ -42,6 +43,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -81,6 +83,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.Date
+import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.sin
 
@@ -103,6 +106,9 @@ internal class DriveSession(val to: SearchHit, route: Route) {
     var recalculating by mutableStateOf(false)
     var overview by mutableStateOf(false)
     var lastRecalc = 0L
+
+    /** Cuánto esperar al siguiente recálculo ([RECALC_GAPS_MS]): crece si salen la misma ruta o ninguna. */
+    var recalcStep = 0
 
     /** La hora de la última lectura atendida (dos ventanas pueden recibir la misma). */
     var lastFix = 0L
@@ -147,13 +153,24 @@ internal fun DrivingScreen(d: Dependencies, session: DriveSession, revision: Int
         val s = session.guidance.update(p.latitude, p.longitude, if (p.hasAccuracy()) p.accuracy else null)
         session.state = s
         val now = System.currentTimeMillis()
-        if (s.offRoute && !s.arrived && !session.recalculating && now - session.lastRecalc > RECALC_GAP_MS) {
+        if (!s.offRoute) session.recalcStep = 0
+        if (s.offRoute && !s.arrived && !session.recalculating && now - session.lastRecalc > RECALC_GAPS_MS[session.recalcStep]) {
             session.recalculating = true
             session.lastRecalc = now
             scope.launch {
-                val plan = withContext(Dispatchers.IO) { packs.planRoute(p.latitude, p.longitude, session.to.lat, session.to.lon) }
-                if (plan is RoutePlan.Found) session.replace(plan.route)
-                session.recalculating = false
+                try {
+                    val plan = withContext(Dispatchers.IO) { packs.planRoute(p.latitude, p.longitude, session.to.lat, session.to.lon) }
+                    // Lejos de la calle (estacionamiento, GPS malo) sale la misma ruta: no se cambia (la tarjeta no parpadea).
+                    val next = (plan as? RoutePlan.Found)?.route?.takeUnless { it.sameAs(session.route) }
+                    if (next != null) {
+                        session.replace(next)
+                        session.recalcStep = 0
+                    } else {
+                        session.recalcStep = (session.recalcStep + 1).coerceAtMost(RECALC_GAPS_MS.lastIndex)
+                    }
+                } finally {
+                    session.recalculating = false
+                }
             }
         }
     }
@@ -178,7 +195,7 @@ internal fun DrivingScreen(d: Dependencies, session: DriveSession, revision: Int
             } else Column(Modifier.fillMaxSize().navigationBarsPadding()) {
                 Box(Modifier.weight(0.58f).fillMaxWidth()) {
                     CarView(d, session, Modifier.fillMaxSize())
-                    TurnCard(d, session, Modifier.align(Alignment.TopCenter).padding(12.dp).widthIn(max = 520.dp))
+                    TurnCard(d, session, Modifier.align(Alignment.TopCenter).statusBarsPadding().padding(12.dp).widthIn(max = 520.dp))
                 }
                 MapView(d, session, end, Modifier.weight(0.42f).fillMaxWidth(), turnOnMap = false)
                 music()
@@ -219,7 +236,7 @@ private fun CarView(d: Dependencies, session: DriveSession, modifier: Modifier) 
             )
         }
         // La velocidad, grande, arriba a la izquierda (como la maqueta).
-        Column(Modifier.align(Alignment.TopStart).padding(20.dp)) {
+        Column(Modifier.align(Alignment.TopStart).statusBarsPadding().padding(20.dp)) {
             val miles = d.prefs.units.miles
             val speed = ((kmh ?: 0f) * if (miles) 0.621371f else 1f).toInt()
             Label("$speed", Typography.clock.copy(fontSize = 52.sp, fontWeight = FontWeight.Bold), maxLines = 1)
@@ -245,7 +262,8 @@ private fun MapView(d: Dependencies, session: DriveSession, end: () -> Unit, mod
     val position = d.trip.position
     val s = session.state
     BoxWithConstraints(modifier.clipToBounds()) {
-        val fit = if (session.overview) remember(session.route, maxWidth, maxHeight) { routeZoom(session.route, maxWidth.value, maxHeight.value) } else null
+        val density = LocalDensity.current.density
+        val fit = if (session.overview) remember(session.route, maxWidth, maxHeight, density) { routeZoom(session.route, maxWidth.value, maxHeight.value, density) } else null
         LaunchedEffect(fit?.second) {
             val center = fit?.second
             if (center != null) camera.show(center.first, center.second) else camera.recenter()
@@ -259,8 +277,10 @@ private fun MapView(d: Dependencies, session: DriveSession, end: () -> Unit, mod
                 route = session.route.points, routeDone = s?.let { it.point + it.fraction } ?: 0f,
             )
         }
-        if (turnOnMap) TurnCard(d, session, Modifier.align(Alignment.TopStart).padding(12.dp).widthIn(max = 440.dp))
-        Clock(Modifier.align(Alignment.TopEnd).padding(16.dp))
+        // En la vista ancha el mapa llega hasta arriba: lo de arriba, bajo la barra de estado de Android.
+        val top = if (turnOnMap) Modifier.statusBarsPadding() else Modifier
+        if (turnOnMap) TurnCard(d, session, Modifier.align(Alignment.TopStart).then(top).padding(12.dp).widthIn(max = 440.dp))
+        Clock(Modifier.align(Alignment.TopEnd).then(top).padding(16.dp))
         // A la orilla derecha, redondos: ver toda la ruta (o seguirte), la brújula y terminar.
         Column(Modifier.align(Alignment.CenterEnd).padding(end = 12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             if (s?.arrived != true) {
@@ -452,8 +472,19 @@ private val WIDE_MIN = 720.dp
 /** El zoom del mapa de la derecha mientras manejas (calles alrededor). */
 private const val CLOSE_ZOOM = 15
 
-/** Entre un recálculo y otro, al menos esto (un GPS que brinca no debe recalcular sin parar). */
-private const val RECALC_GAP_MS = 5_000L
+/**
+ * Entre un recálculo y otro, al menos esto (un GPS que brinca no debe recalcular sin parar); si sale la misma ruta o
+ * ninguna, el siguiente espera más. Regresa al primero al aplicar una ruta nueva o al volver a la ruta.
+ */
+private val RECALC_GAPS_MS = longArrayOf(5_000L, 15_000L, 30_000L)
+
+/** ¿La misma ruta? (Mismos puntos, o la misma cantidad con la misma salida, llegada y distancia.) */
+private fun Route.sameAs(o: Route): Boolean {
+    if (points.contentEquals(o.points)) return true
+    val n = points.size
+    return n == o.points.size && n >= 2 && points[0] == o.points[0] && points[1] == o.points[1] &&
+        points[n - 2] == o.points[n - 2] && points[n - 1] == o.points[n - 1] && abs(distanceM - o.distanceM) < 1.0
+}
 
 private const val CLOCK_TICK_MS = 60_000L
 

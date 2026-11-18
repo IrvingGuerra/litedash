@@ -71,8 +71,9 @@ class OfflineMaps private constructor(private val app: Context) {
     private val lock = Any()
     private var running: Job? = null
     private var generation = 0
-    private var runningKeys: Set<Long> = emptySet()
-    private var areaKeys: Set<Long> = emptySet()
+    /** Se reemplazan enteras (nunca se cambian por dentro): [tile] las lee sin candado. */
+    @Volatile private var runningKeys: Set<Long> = emptySet()
+    @Volatile private var areaKeys: Set<Long> = emptySet()
     /** La lista se lee del disco una vez, fuera del hilo principal; lo que la cambia espera a que esté. */
     private val ready = scope.async {
         readAreas()
@@ -90,12 +91,21 @@ class OfflineMaps private constructor(private val app: Context) {
     /** ¿([lat], [lon]) está dentro de alguna zona descargada? */
     fun covers(lat: Double, lon: Double): Boolean = areas.any { it.contains(lat, lon) }
 
-    /** La tesela tal como se bajó (vacía = ahí no hay nada que dibujar); null = no está en ninguna zona. */
-    fun tile(z: Int, x: Int, y: Int): ByteArray? = try {
-        File(dir, "${z}_${x}_${y}").readBytes()
-    } catch (_: IOException) {
-        // No está (o se borró con su zona en ese momento).
-        null
+    /**
+     * La tesela tal como se bajó (vacía = ahí no hay nada que dibujar); null = no está en ninguna zona. Sin zonas, o si
+     * no es de ninguna (ni de la descarga en curso), sale sin tocar el disco; mientras se lee la lista al arrancar, se busca.
+     */
+    fun tile(z: Int, x: Int, y: Int): ByteArray? {
+        val key = tileKey(z, x, y)
+        if (ready.isCompleted && key !in areaKeys && key !in runningKeys) return null
+        val file = File(dir, "${z}_${x}_${y}")
+        if (!file.exists()) return null
+        return try {
+            file.readBytes()
+        } catch (_: IOException) {
+            // Se borró con su zona en ese momento.
+            null
+        }
     }
 
     /** Baja la zona de [km] alrededor de ([lat], [lon]); sigue aunque se cierre el panel. Lo ya bajado se salta. */

@@ -3,6 +3,25 @@
 What people using LiteDash notice, in English. The full history (in Spanish) is in [CHANGELOG.md](CHANGELOG.md).
 Format [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versions [SemVer](https://semver.org/).
 
+## [1.5.4] - 2026-11-18
+
+### Fixed
+- **The blue route line was missing on Android 8.1 and older:** on many head units the route was not drawn in guidance
+  ("Go") or on the map next to it. Now only the visible part is drawn, and it works on any screen.
+- **Guidance no longer recalculates endlessly** when you leave a parking lot or the GPS is far from the street (the
+  card flickered between "Recalculating" and "Waiting for location").
+- The route is calculated again by itself if your real location turned out to be far from the last known one, and when
+  the list of states arrives after opening without internet.
+- In guidance, the time, the speed and the next turn no longer overlap Android's status bar.
+- "View route" picks the right zoom on screens with low or very high density.
+
+### Changed
+- **Cleaner, Tesla-style guidance:** the route is a plain blue ribbon (no white edge or glow) and two-way streets get a
+  single thin yellow line instead of two.
+- **Lighter map:** when stopped it no longer redraws 30 times a second (GPS drifts even when you don't move); map
+  pieces are drawn without reading the disk again, on threads with lower priority than the interface, and with a memory cap.
+- Every route and recalculation reuses the open router (it used to reopen the streets file each time).
+
 ## [1.5.3] - 2026-11-18
 
 ### Fixed

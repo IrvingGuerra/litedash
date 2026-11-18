@@ -103,7 +103,7 @@ class Guidance(val route: Route) {
 
     companion object {
         /** Más lejos que esto de la ruta (metros) se cuenta como salirse. */
-        const val OFF_ROUTE_M = 40.0
+        private const val OFF_ROUTE_M = 40.0
 
         /** Lecturas seguidas fuera de la ruta para recalcular (una sola puede ser un brinco del GPS). */
         private const val OFF_ROUTE_READINGS = 2

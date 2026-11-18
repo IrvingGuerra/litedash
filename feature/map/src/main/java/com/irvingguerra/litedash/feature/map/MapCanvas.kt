@@ -122,6 +122,9 @@ private const val SNAP_METERS = 150.0
 private const val STILL_METERS = 3.0
 private const val STILL_DEGREES = 3f
 
+/** Más lento que esto (detenido o a vuelta de rueda) tampoco se desliza: el GPS baila varios metros y animaría sin parar. */
+private const val CREEP_KMH = 4f
+
 /** El lado de una tesela en pantalla: 256 px a densidad 1, hasta el doble (más se vería borrosa). */
 fun tilePx(density: Float) = TILE * density.coerceIn(1f, 2f)
 
@@ -457,7 +460,7 @@ fun MapCanvas(
     val dark = look.dark(c.dark)
     val filter = if (dark && store.source.recolor) DarkTiles else null
     val accent = c.accent
-    val glide = rememberGlide(lat, lon, bearing, active)
+    val glide = rememberGlide(lat, lon, bearing, active, creeping = kmh != null && kmh < CREEP_KMH)
     // Con tu auto en vez de la flecha, siempre gira el mapa: el auto va de espaldas hacia arriba y no se gira.
     val headingUp = look.orientation == MapOrientation.HEADING || marker != null
     val sky = store.source.sky?.let(::Color) ?: if (dark) Color(0xFF1C1C20) else Color(0xFFE8E8EA)
@@ -624,7 +627,8 @@ internal class Pose {
 /**
  * Tu posición deslizándose de la lectura anterior del GPS a la nueva en [GLIDE_MS] (llegan una por segundo: sin esto
  * la flecha brinca), a [GLIDE_STEP_MS] por paso (las pantallas de auto no dan para 60 cuadros). Saltos grandes, o
- * moverse menos que [STILL_METERS] (el GPS baila estando quieto), van directo: un solo cuadro. Tapado no se desliza.
+ * moverse menos que [STILL_METERS] o ir a menos de [CREEP_KMH] (el GPS baila estando quieto), van directo: un solo cuadro.
+ * Tapado no se desliza.
  */
 private class Glide(lat: Double, lon: Double, bearing: Float) {
     val from = Pose().apply { set(lat, lon, bearing) }
@@ -643,7 +647,7 @@ private class Glide(lat: Double, lon: Double, bearing: Float) {
 }
 
 @Composable
-private fun rememberGlide(lat: Double, lon: Double, bearing: Float?, active: Boolean): Glide {
+private fun rememberGlide(lat: Double, lon: Double, bearing: Float?, active: Boolean, creeping: Boolean): Glide {
     val heading = bearing ?: Float.NaN
     val glide = remember { Glide(lat, lon, heading) }
     LaunchedEffect(lat, lon, bearing, active) {
@@ -651,7 +655,7 @@ private fun rememberGlide(lat: Double, lon: Double, bearing: Float?, active: Boo
         between(glide.from, glide.to, glide.t, now)
         val meters = distanceKm(now.lat, now.lon, lat, lon) * 1000
         val turned = if (now.bearing.isNaN() || heading.isNaN()) 0f else abs(shortTurn(now.bearing, heading))
-        if (!active || meters > SNAP_METERS || (meters < STILL_METERS && turned < STILL_DEGREES)) {
+        if (!active || creeping || meters > SNAP_METERS || (meters < STILL_METERS && turned < STILL_DEGREES)) {
             glide.from.set(lat, lon, heading)
             glide.to.set(lat, lon, heading)
             glide.t = 1f

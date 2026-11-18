@@ -1,5 +1,6 @@
 package com.irvingguerra.litedash
 
+import android.location.Location
 import android.text.format.DateFormat
 import android.text.format.Formatter
 import androidx.compose.foundation.background
@@ -39,6 +40,7 @@ import com.irvingguerra.litedash.feature.map.Route
 import com.irvingguerra.litedash.feature.map.RouteError
 import com.irvingguerra.litedash.feature.map.RoutePlan
 import com.irvingguerra.litedash.feature.map.SearchHit
+import com.irvingguerra.litedash.feature.map.tilePx
 import com.irvingguerra.litedash.feature.map.zoomToFit
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -56,6 +58,11 @@ internal class RouteRequest(val to: SearchHit) {
     var plan by mutableStateOf<RoutePlan?>(null)
     var waitingForPosition by mutableStateOf(false)
     val route: Route? get() = (plan as? RoutePlan.Found)?.route
+
+    /** Desde dónde se calculó la última vez; [moved] = llegó una lectura lejos de ahí (se calcula otra vez, solo una). */
+    var origin: Location? = null
+    var moved by mutableStateOf(false)
+    var redone = false
 }
 
 /** Calcula [request] desde donde estás (fuera del hilo principal); si faltaban las calles y ya llegaron, otra vez. */
@@ -65,22 +72,36 @@ internal fun RunRoute(d: Dependencies, request: RouteRequest) {
     val packs = remember(context) { MapPacks.get(context) }
     val here = d.trip.position
     // Al terminar de bajar las calles de tu estado cambia su huella: se vuelve a intentar.
-    val routesReady = packs.installed.joinToString { it.routesSha }
-    LaunchedEffect(request, here == null, routesReady) {
+    val installed = packs.installed
+    val routesReady = remember(installed) { installed.joinToString { it.routesSha } }
+    // Sin la lista de estados (sin red al abrir) no se sabe de dónde bajar las calles: al llegar, otra vez.
+    val regionsReady = packs.regions.isNotEmpty()
+    // La primera ubicación puede ser la última conocida de hace horas: si una lectura nueva queda lejos y aún no tocas «Ir».
+    LaunchedEffect(request, here) {
+        val o = request.origin ?: return@LaunchedEffect
+        if (here != null && !request.moved && Driving.session == null && o.distanceTo(here) > RECHECK_M) request.moved = true
+    }
+    LaunchedEffect(request, here == null, routesReady, regionsReady, request.moved) {
+        val redo = request.moved && !request.redone
         // Ya encontrada, perder la señal un momento no la tapa.
-        if (request.plan is RoutePlan.Found) return@LaunchedEffect
+        if (request.plan is RoutePlan.Found && !redo) return@LaunchedEffect
         val from = here ?: run {
             request.waitingForPosition = true
             return@LaunchedEffect
         }
+        if (redo) request.redone = true
+        request.origin = from
         request.waitingForPosition = false
         request.plan = null
         request.plan = withContext(Dispatchers.IO) { packs.planRoute(from.latitude, from.longitude, request.to.lat, request.to.lon) }
     }
 }
 
-/** El zoom para ver toda la ruta en una vista de [widthDp] × [heightDp] (el lado corto, con aire). */
-internal fun routeZoom(route: Route, widthDp: Float, heightDp: Float): Pair<Int, Pair<Double, Double>> {
+/**
+ * El zoom para ver toda la ruta en una vista de [widthDp] × [heightDp] (el lado corto, con aire). [density] = la de la
+ * pantalla (el mapa dibuja cada tesela de [tilePx] píxeles).
+ */
+internal fun routeZoom(route: Route, widthDp: Float, heightDp: Float, density: Float): Pair<Int, Pair<Double, Double>> {
     var minLat = Int.MAX_VALUE
     var maxLat = Int.MIN_VALUE
     var minLon = Int.MAX_VALUE
@@ -99,11 +120,11 @@ internal fun routeZoom(route: Route, widthDp: Float, heightDp: Float): Pair<Int,
     val kmLon = (maxLon - minLon) / 1e6 * 111.195 * cos(Math.toRadians(lat))
     val radius = (max(abs(kmLat), abs(kmLon)) / 2).toFloat().coerceAtLeast(0.2f)
     // El centro del mapa queda al 60 % del alto (no a la mitad): hacia abajo cabe menos, por eso el alto cuenta un 80 %.
-    return zoomToFit(radius, lat, minOf(widthDp, heightDp * 0.8f), ROUTE_TILE_DP).coerceAtMost(FIT_MAX_ZOOM) to (lat to lon)
+    return zoomToFit(radius, lat, minOf(widthDp, heightDp * 0.8f), tilePx(density) / density).coerceAtMost(FIT_MAX_ZOOM) to (lat to lon)
 }
 
-/** Lo que mide una tesela en dp (como la dibuja el mapa en pantallas normales). */
-private const val ROUTE_TILE_DP = 256f
+/** Lejos de donde se calculó la ruta (metros), se calcula otra vez. */
+private const val RECHECK_M = 500f
 
 /**
  * La tarjeta de la ruta: lo que mide, lo que se tarda (sin tráfico), a qué hora llegas y por dónde va; o, si no salió,

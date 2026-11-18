@@ -2,7 +2,6 @@ package com.irvingguerra.litedash.feature.map
 
 import androidx.compose.runtime.Immutable
 
-/** Qué queda arriba: el norte, o hacia donde vas (el mapa gira y tu flecha siempre apunta arriba). */
 /**
  * Hacia dónde mira el mapa. [NORTH] (de fábrica): al norte quieto y, de viaje (inclinado), hacia donde vas; [HEADING]:
  * siempre hacia donde vas; [NORTH_UP]: siempre al norte, también de viaje (plano: inclinado al norte no se entiende).

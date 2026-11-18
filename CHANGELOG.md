@@ -4,6 +4,25 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.5.4] - 2026-11-18
+
+### Arreglado
+- **La línea azul de la ruta no aparecía en Android 8.1 y anteriores:** en muchas pantallas la ruta no se dibujaba en la
+  guía («Ir») ni en el mapa de junto. Ahora se dibuja solo lo que se ve y funciona en cualquier pantalla.
+- **La guía ya no recalcula sin parar** cuando sales de un estacionamiento o el GPS anda lejos de la calle (la tarjeta
+  parpadeaba entre «Recalculando» y «Esperando ubicación»).
+- La ruta se vuelve a calcular sola si tu ubicación real resultó estar lejos de la última conocida, y también cuando
+  llega la lista de estados si abriste sin internet.
+- En la guía, la hora, la velocidad y la próxima vuelta ya no se enciman con la barra de estado de Android.
+- Ver toda la ruta ajusta bien el zoom en pantallas de densidad baja o muy alta.
+
+### Cambiado
+- **Guía más limpia, estilo Tesla:** la ruta es una franja azul lisa (sin orilla blanca ni halo) y las calles de doble
+  sentido llevan una sola raya amarilla delgada en vez de dos.
+- **Mapa más ligero:** detenido ya no se redibuja 30 veces por segundo (el GPS baila aunque no te muevas); los pedazos
+  del mapa se dibujan sin volver a leer el disco, en hilos de menor prioridad que la interfaz, y con un tope de memoria.
+- Cada ruta y cada recálculo reusan el ruteador ya abierto (antes se volvía a abrir el archivo de calles cada vez).
+
 ## [1.5.3] - 2026-11-18
 
 ### Arreglado

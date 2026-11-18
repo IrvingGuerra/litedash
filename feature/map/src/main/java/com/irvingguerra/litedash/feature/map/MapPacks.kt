@@ -311,9 +311,13 @@ class MapPacks private constructor(private val app: Context) {
      */
     fun planRoute(fromLat: Double, fromLon: Double, toLat: Double, toLon: Double): RoutePlan = try {
         plan(fromLat, fromLon, toLat, toLon)
+    } catch (_: OutOfMemoryError) {
+        // Sin memoria para abrir el ruteador (sus arreglos): el estado no cabe en esta pantalla, sin tumbar la app.
+        synchronized(routeLock) { releaseRouterNow() }
+        RoutePlan.Failed(RouteError.TOO_BIG)
     } catch (_: Throwable) {
-        // Un archivo raro por dentro o sin memoria para el ruteador: sin ruta, sin tumbar la app.
-        releaseRouterNow()
+        // Un archivo raro por dentro: sin ruta, sin tumbar la app.
+        synchronized(routeLock) { releaseRouterNow() }
         RoutePlan.Failed(RouteError.NO_PATH)
     }
 
@@ -332,7 +336,8 @@ class MapPacks private constructor(private val app: Context) {
         }
         return synchronized(routeLock) {
             if (routerId != pack.id) {
-                releaseRouter()
+                // El de otro estado se suelta ya (con el candado tomado; la versión que espera el candado cerraría el nuevo).
+                releaseRouterNow()
                 // No abre (dañado): se olvida su huella para que se vuelvan a bajar.
                 val g = RoadGraph.open(File(dir, "${pack.id}.ldm")) ?: run {
                     File(dir, "${pack.id}.ldm").delete()

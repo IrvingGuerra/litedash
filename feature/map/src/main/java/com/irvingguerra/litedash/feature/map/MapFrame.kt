@@ -14,8 +14,6 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.StrokeJoin
-import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.drawscope.scale
@@ -29,9 +27,17 @@ import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.roundToInt
 
-/** El azul de la ruta (como Tesla) y la orilla clara de la franja a escala real. */
+/** El azul de la ruta (como Tesla), su orilla más oscura en los mapas planos y el gris de lo ya recorrido (ARGB). */
 val ROUTE_BLUE = Color(0xFF3D8BFF)
-private val ROUTE_EDGE = Color(0xFF9CCBFF)
+private const val ROUTE_ARGB = 0xFF3D8BFF.toInt()
+private const val ROUTE_EDGE_ARGB = 0xFF1C5FD0.toInt()
+private const val ROUTE_DONE_ARGB = 0xFF8A8F98.toInt()
+
+/** La franja a escala real mide esto del ancho de tu auto. */
+private const val RIBBON = 0.9f
+
+/** Lo más cerca de la cámara que se traza la ruta (1 = donde vas tú, 0 = la cámara): más acá no se puede proyectar. */
+private const val ROUTE_NEAR = 0.3f
 
 /** La franja de la ruta empieza este múltiplo del ancho del auto atrás de donde vas: queda debajo de todo el auto. */
 private const val UNDER_CAR = 3.6f
@@ -87,143 +93,177 @@ internal class MapFrame : ScreenPoint {
     private val you = FloatArray(3)
     private var youShown = false
 
-    /** La ruta en pantalla (se rehace en cada cuadro: pocos cientos de puntos). */
-    private val routePath = Path()
-    private val donePath = Path()
-    private var routeShown = false
-    private var doneShown = false
+    /**
+     * La ruta lista para dibujar, ya en pantalla y recortada a la vista: en los mapas planos, tramos sueltos (lo que falta
+     * y lo recién recorrido); a escala real, el contorno de la franja en perspectiva. Nunca mide más que la vista: Android
+     * 8.1 y anteriores vuelven imagen cada trazo y, si mide más de lo que acepta la GPU (4096 px en muchas pantallas),
+     * no lo dibujan.
+     */
+    private val routeAhead = Segments()
+    private val routeBehind = Segments()
+    private val ribbonLine = android.graphics.Path()
+    private val ribbon = android.graphics.Path()
+    private var ribbonX = Float.NaN
+    private var ribbonY = Float.NaN
     private val routeAt = FloatArray(3)
-    private var routeStroke = Stroke(0f)
-    private var routeEdge = Stroke(0f)
+    private val routeSeg = FloatArray(4)
+    private var routeMargin = 0f
+    private val routePaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+        strokeCap = android.graphics.Paint.Cap.ROUND
+        strokeJoin = android.graphics.Paint.Join.ROUND
+    }
 
     /** El ancho de la ruta en el plano del mapa (a escala real, con perspectiva); 0 = línea en pantalla. */
     private var routeWide = 0f
-    private val planeAhead = Path()
 
     /** Los edificios en 3D (solo la vista de tu auto) y si este cuadro los lleva. */
     private val buildings = BuildingLayer()
     private var buildingsOn = false
 
-    /** La ruta en el plano del mapa (se dibuja con la misma perspectiva que las calles): lo recorrido aparte. */
-    private fun tracePlaneRoute(world: DoubleArray?, n: Double, done: Float) {
-        planeAhead.reset()
-        routeShown = false
-        doneShown = false
+    /**
+     * Arma la ruta ([world] = sus puntos en el mundo, zoom 0) desde donde vas ([done] = punto + fracción al siguiente).
+     * A escala real ([routeWide] > 0) queda en el plano del mapa y empieza debajo de tu auto; si no, en pantalla, con lo
+     * recién recorrido aparte. Solo lo de cerca, recortado tramo por tramo.
+     */
+    private fun traceRoute(world: DoubleArray?, n: Double, done: Float) {
+        routeAhead.clear()
+        routeBehind.clear()
+        ribbonLine.rewind()
+        ribbon.rewind()
+        ribbonX = Float.NaN
         if (world == null || world.size < 4) return
         val count = world.size / 2
-        val split = done.toInt().coerceIn(0, count - 1)
-        val f = (done - split).toDouble().coerceIn(0.0, 1.0)
-        fun px(i: Int) = atX + ((world[2 * i] * n - fx) * ts).toFloat()
-        fun py(i: Int) = atY + ((world[2 * i + 1] * n - fy) * ts).toFloat()
-        val next = (split + 1).coerceAtMost(count - 1)
-        val hx = px(split) + (px(next) - px(split)) * f.toFloat()
-        val hy = py(split) + (py(next) - py(split)) * f.toFloat()
-        // Solo lo de cerca: una ruta de cientos de km en el plano mide millones de px y Android 6 no dibuja trazos así.
-        val reach = PLANE_REACH * maxOf(width, height)
-        fun near(x: Float, y: Float) = kotlin.math.abs(x - atX) < reach && kotlin.math.abs(y - atY) < reach
-        val box = floatArrayOf(atX - reach, atY - reach, atX + reach, atY + reach)
-        val seg = FloatArray(4)
-        // Cada tramo recortado al cuadro de alcance (una recta larga sale de él y no debe perderse entera).
-        fun add(path: Path, from: Int, to: Int, startX: Float?, startY: Float?): Boolean {
-            var any = false
-            var penX = Float.NaN
-            var penY = Float.NaN
-            var lastX = startX ?: px(from)
-            var lastY = startY ?: py(from)
-            var outside = 0
-            for (i in (if (startX == null) from + 1 else from)..to) {
-                val x = px(i)
-                val y = py(i)
-                if (clip(lastX, lastY, x, y, box, seg)) {
-                    if (seg[0] != penX || seg[1] != penY) path.moveTo(seg[0], seg[1])
-                    path.lineTo(seg[2], seg[3])
-                    penX = seg[2]
-                    penY = seg[3]
-                    any = true
-                    outside = 0
-                } else if (any && ++outside > PLANE_OUT_POINTS) break
-                lastX = x
-                lastY = y
-            }
-            return any
-        }
-        if (done <= 0f || !near(hx, hy)) {
-            routeShown = add(planeAhead, if (done > 0f) next else 1, count - 1, if (done > 0f) hx else px(0), if (done > 0f) hy else py(0))
+        // Lo que se sale de la vista por este margen (el grosor de la línea o de la franja) ya no se traza.
+        routeMargin = if (routeWide > 0f) routeWide else 12 * unit
+        if (done <= 0f) {
+            traceRun(world, n, 1, count - 1, planeX(world, n, 0), planeY(world, n, 0), routeAhead)
+            outlineRibbon()
             return
         }
-        // Como Tesla, la franja pasa por debajo de todo tu auto: empieza un largo de auto atrás de donde vas (lo recorrido
-        // antes de eso ya no se dibuja).
+        val split = done.toInt().coerceIn(0, count - 1)
+        val next = (split + 1).coerceAtMost(count - 1)
+        val f = (done - split).coerceIn(0f, 1f)
+        val hx = planeX(world, n, split) + (planeX(world, n, next) - planeX(world, n, split)) * f
+        val hy = planeY(world, n, split) + (planeY(world, n, next) - planeY(world, n, split)) * f
+        if (routeWide <= 0f) {
+            // Lo recorrido de hace mucho ya no se ve: solo los últimos puntos, hasta donde vas.
+            val from = (split - ROUTE_BACK_POINTS).coerceAtLeast(0)
+            traceRun(world, n, from + 1, split, planeX(world, n, from), planeY(world, n, from), routeBehind, hx, hy)
+            traceRun(world, n, next, count - 1, hx, hy, routeAhead)
+            return
+        }
+        // Como Tesla, la franja pasa por debajo de todo tu auto: empieza un largo de auto atrás de donde vas.
         var left = routeWide * UNDER_CAR
         var fromX = hx
         var fromY = hy
         var i = split
         while (i >= 0) {
-            val d = kotlin.math.hypot(px(i) - fromX, py(i) - fromY)
+            val x = planeX(world, n, i)
+            val y = planeY(world, n, i)
+            val d = kotlin.math.hypot(x - fromX, y - fromY)
             if (d >= left) {
                 val t = left / d
-                fromX += (px(i) - fromX) * t
-                fromY += (py(i) - fromY) * t
+                fromX += (x - fromX) * t
+                fromY += (y - fromY) * t
                 break
             }
             left -= d
-            fromX = px(i)
-            fromY = py(i)
+            fromX = x
+            fromY = y
             i--
         }
-        routeShown = add(planeAhead, (i + 1).coerceIn(1, count - 1), count - 1, fromX, fromY)
+        traceRun(world, n, (i + 1).coerceIn(1, count - 1), count - 1, fromX, fromY, routeAhead)
+        outlineRibbon()
     }
 
-    /** Pasa la ruta (mundo en zoom 0) a la pantalla; lo que queda detrás de la cámara (inclinado) corta la línea. */
-    private fun traceRoute(world: DoubleArray?, n: Double, done: Float) {
-        routePath.reset()
-        donePath.reset()
-        routeShown = false
-        doneShown = false
-        if (world == null || world.size < 4) return
-        // Lo recorrido (hasta el punto [done] y su fracción) va aparte, en gris; lo que falta empieza donde vas.
-        val split = done.toInt().coerceIn(0, world.size / 2 - 1)
-        val f = (done - split).toDouble().coerceIn(0.0, 1.0)
-        if (done > 0f) {
-            var penDone = false
-            // Lo recorrido de hace mucho ya no se ve: solo los últimos puntos.
-            for (k in (split - PLANE_BACK_POINTS).coerceAtLeast(0)..split) {
-                if (toScreen(world[2 * k] * n, world[2 * k + 1] * n, routeAt)) {
-                    if (penDone) donePath.lineTo(routeAt[0], routeAt[1]) else donePath.moveTo(routeAt[0], routeAt[1])
-                    penDone = true
-                    doneShown = true
-                } else penDone = false
-            }
-        }
-        val next = (split + 1).coerceAtMost(world.size / 2 - 1)
-        val hx = world[2 * split] + (world[2 * next] - world[2 * split]) * f
-        val hy = world[2 * split + 1] + (world[2 * next + 1] - world[2 * split + 1]) * f
-        var pen = false
-        if (done > 0f && toScreen(hx * n, hy * n, routeAt)) {
-            if (doneShown) donePath.lineTo(routeAt[0], routeAt[1])
-            routePath.moveTo(routeAt[0], routeAt[1])
-            pen = true
-        }
-        var lastX = 0f
-        var lastY = 0f
+    /** A escala real: el contorno de la franja (con vueltas redondas) se arma en el plano y se pasa a la pantalla. */
+    private fun outlineRibbon() {
+        if (routeWide <= 0f || ribbonX.isNaN()) return
+        routePaint.style = android.graphics.Paint.Style.STROKE
+        routePaint.strokeWidth = routeWide * RIBBON
+        routePaint.getFillPath(ribbonLine, ribbon)
+        ribbon.transform(matrix)
+    }
+
+    /** Un punto de la ruta en el plano del mapa (px). */
+    private fun planeX(world: DoubleArray, n: Double, i: Int) = atX + ((world[2 * i] * n - fx) * ts).toFloat()
+    private fun planeY(world: DoubleArray, n: Double, i: Int) = atY + ((world[2 * i + 1] * n - fy) * ts).toFloat()
+
+    /**
+     * Los tramos desde ([startX], [startY]) por los puntos [from]..[to] de la ruta, y al final hasta ([endX], [endY]) si
+     * se da, en [out]. Los puntos a menos de 2 dp del anterior se saltan (una ruta larga trae miles).
+     */
+    private fun traceRun(
+        world: DoubleArray, n: Double, from: Int, to: Int, startX: Float, startY: Float, out: Segments,
+        endX: Float = Float.NaN, endY: Float = Float.NaN,
+    ) {
+        var lastX = startX
+        var lastY = startY
+        var outside = 0
         val step = 2 * unit
-        var i = if (done > 0f) 2 * next else 0
-        while (i < world.size) {
-            if (toScreen(world[i] * n, world[i + 1] * n, routeAt)) {
-                val x = routeAt[0]
-                val y = routeAt[1]
-                // Lo que queda a menos de 2 dp del punto anterior no se ve: una ruta de cientos de km tiene miles.
-                val last = i + 2 >= world.size
-                if (!pen) routePath.moveTo(x, y) else if (last || abs(x - lastX) + abs(y - lastY) >= step) routePath.lineTo(x, y) else {
-                    i += 2
-                    continue
-                }
-                lastX = x
-                lastY = y
-                pen = true
-                routeShown = true
-            } else pen = false
-            i += 2
+        for (i in from..to) {
+            val x = planeX(world, n, i)
+            val y = planeY(world, n, i)
+            if (i < to && abs(x - lastX) + abs(y - lastY) < step) continue
+            if (traceSegment(lastX, lastY, x, y, out)) outside = 0
+            // Ya se fue lejos: lo que sigue de la ruta no se revisa (si regresa, se verá al acercarte).
+            else if ((out.size > 0 || !ribbonX.isNaN()) && ++outside > ROUTE_OUT_POINTS) return
+            lastX = x
+            lastY = y
         }
+        if (!endX.isNaN()) traceSegment(lastX, lastY, endX, endY, out)
+    }
+
+    /**
+     * El tramo del plano recortado a lo que se ve (con [routeMargin] de más): a escala real se suma a la franja, en el
+     * plano; si no, a [out], en pantalla. false si no se ve nada de él.
+     */
+    private fun traceSegment(x0: Float, y0: Float, x1: Float, y1: Float, out: Segments): Boolean {
+        val seg = routeSeg
+        if (!clipToView(x0, y0, x1, y1, seg)) return false
+        if (routeWide > 0f) {
+            if (seg[0] != ribbonX || seg[1] != ribbonY) ribbonLine.moveTo(seg[0], seg[1])
+            ribbonLine.lineTo(seg[2], seg[3])
+            ribbonX = seg[2]
+            ribbonY = seg[3]
+            return true
+        }
+        projection.toScreen(seg[0], seg[1], routeAt)
+        val ax = routeAt[0]
+        val ay = routeAt[1]
+        projection.toScreen(seg[2], seg[3], routeAt)
+        out.add(ax, ay, routeAt[0], routeAt[1])
+        return true
+    }
+
+    /**
+     * El tramo ([x0], [y0])–([x1], [y1]) del plano recortado a lo que cae dentro de la vista (más [routeMargin]) y delante
+     * de la cámara, en [out] (sigue en el plano); false si nada. Se recorta antes de dividir por la perspectiva: cada
+     * orilla de la vista es una recta también en el plano.
+     */
+    private fun clipToView(x0: Float, y0: Float, x1: Float, y1: Float, out: FloatArray): Boolean {
+        val m = projection.values
+        val ax = m[0] * x0 + m[1] * y0 + m[2]
+        val ay = m[3] * x0 + m[4] * y0 + m[5]
+        val aw = m[6] * x0 + m[7] * y0 + m[8]
+        val bx = m[0] * x1 + m[1] * y1 + m[2]
+        val by = m[3] * x1 + m[4] * y1 + m[5]
+        val bw = m[6] * x1 + m[7] * y1 + m[8]
+        var t0 = 0f
+        var t1 = 1f
+        for (k in 0 until 5) {
+            // Cuánto queda adentro cada punta (≥ 0): de la cámara, y de la orilla izquierda, derecha, de arriba y de abajo.
+            val a = when (k) { 0 -> aw - ROUTE_NEAR; 1 -> ax + routeMargin * aw; 2 -> (width + routeMargin) * aw - ax; 3 -> ay + routeMargin * aw; else -> (height + routeMargin) * aw - ay }
+            val b = when (k) { 0 -> bw - ROUTE_NEAR; 1 -> bx + routeMargin * bw; 2 -> (width + routeMargin) * bw - bx; 3 -> by + routeMargin * bw; else -> (height + routeMargin) * bw - by }
+            if (a < 0f && b < 0f) return false
+            if (a < 0f) t0 = maxOf(t0, a / (a - b)) else if (b < 0f) t1 = minOf(t1, a / (a - b))
+        }
+        if (t1 - t0 < 1e-6f) return false
+        out[0] = x0 + (x1 - x0) * t0
+        out[1] = y0 + (y1 - y0) * t0
+        out[2] = x0 + (x1 - x0) * t1
+        out[3] = y0 + (y1 - y0) * t1
+        return true
     }
 
     /** El pin del lugar en pantalla. */
@@ -280,8 +320,6 @@ internal class MapFrame : ScreenPoint {
             unit = density
             arrow = arrowPath(density)
             pin = pinPath(density)
-            routeStroke = Stroke(6 * density, cap = StrokeCap.Round, join = StrokeJoin.Round)
-            routeEdge = Stroke(10 * density, cap = StrokeCap.Round, join = StrokeJoin.Round)
             arrowStroke = Stroke(3 * density)
             ringStroke = Stroke(2 * density)
         }
@@ -300,7 +338,7 @@ internal class MapFrame : ScreenPoint {
         arrowDegrees = arrowBearing
         pinShown = !pinX.isNaN() && toScreen(pinX, pinY, pinAt)
         routeWide = routePlaneWidth
-        if (routePlaneWidth > 0f) tracePlaneRoute(routeWorld, n, routeDone) else traceRoute(routeWorld, n, routeDone)
+        traceRoute(routeWorld, n, routeDone)
         // Solo bien inclinado: en la transición desde plano las azoteas quedarían casi encima de la cámara.
         buildingsOn = buildingsFrom != null && tilt >= BUILDINGS_TILT
         if (buildingsOn) buildings.trace(buildingsFrom!!, plan, projection, fx, fy, zoom, ts, atX, atY, density, night = sky.luminance() < 0.5f)
@@ -359,15 +397,13 @@ internal class MapFrame : ScreenPoint {
             canvas.save()
             canvas.nativeCanvas.concat(matrix)
             drawTiles(store, plan, filter)
-            // A escala real la ruta va en el plano (con perspectiva, como una calle más), debajo de nombres y del auto.
-            if (routeWide > 0f && routeShown) {
-                // Como Tesla: una franja azul del ancho del auto con halo y orillas claras.
-                val cap = StrokeCap.Butt
-                drawPath(planeAhead, ROUTE_BLUE.copy(alpha = 0.25f), style = Stroke(routeWide * 1.35f, cap = cap, join = StrokeJoin.Round))
-                drawPath(planeAhead, ROUTE_EDGE, style = Stroke(routeWide * 0.94f, cap = cap, join = StrokeJoin.Round))
-                drawPath(planeAhead, ROUTE_BLUE.copy(alpha = 0.95f), style = Stroke(routeWide * 0.86f, cap = cap, join = StrokeJoin.Round))
-            }
             canvas.restore()
+            // A escala real la ruta va acostada como una calle más: una franja azul lisa, como Tesla, debajo de los edificios.
+            if (routeWide > 0f && !ribbonX.isNaN()) {
+                routePaint.style = android.graphics.Paint.Style.FILL
+                routePaint.color = ROUTE_ARGB
+                canvas.nativeCanvas.drawPath(ribbon, routePaint)
+            }
             // Los edificios en pantalla (con altura no caben en la matriz del plano), encima de calles y ruta.
             if (buildingsOn) buildings.draw(canvas.nativeCanvas)
         }
@@ -377,15 +413,25 @@ internal class MapFrame : ScreenPoint {
             drawCircle(accent.copy(alpha = 0.12f), ring, center)
             drawCircle(accent, ring, center, style = ringStroke)
         }
-        // La ruta: de acento con un borde oscuro (se ve sobre calles claras y oscuras), debajo de los nombres.
-        if (routeWide <= 0f && doneShown) drawPath(donePath, Color.Gray.copy(alpha = 0.7f), style = routeStroke)
-        if (routeWide <= 0f && routeShown) {
-            drawPath(routePath, Color.Black.copy(alpha = 0.45f), style = routeEdge)
-            drawPath(routePath, ROUTE_BLUE, style = routeStroke)
+        // En los mapas planos, una línea azul con su orilla (se ve sobre calles claras y oscuras), debajo de los nombres.
+        if (routeWide <= 0f && routeAhead.size + routeBehind.size > 0) drawIntoCanvas {
+            val canvas = it.nativeCanvas
+            drawRoute(canvas, routeBehind, ROUTE_DONE_ARGB, 6 * unit)
+            drawRoute(canvas, routeAhead, ROUTE_EDGE_ARGB, 9 * unit)
+            drawRoute(canvas, routeAhead, ROUTE_ARGB, 6 * unit)
         }
         labelPaint?.let { paint -> drawIntoCanvas { drawLabels(it.nativeCanvas, layout.placed, paint) } }
         if (pinShown) drawPin(accent)
         if (youShown) drawArrow(accent, marker)
+    }
+
+    /** Los tramos de [segments] de [width] px, con las puntas redondas (así se unen sin huecos en las vueltas). */
+    private fun drawRoute(canvas: android.graphics.Canvas, segments: Segments, argb: Int, width: Float) {
+        if (segments.size == 0) return
+        routePaint.style = android.graphics.Paint.Style.STROKE
+        routePaint.color = argb
+        routePaint.strokeWidth = width
+        canvas.drawLines(segments.points, 0, segments.size, routePaint)
     }
 
     /** El punto ([x], [y]) de la vista en el mapa (latitud, longitud); null si cae en el cielo o aún no hay cuadro. */
@@ -438,45 +484,28 @@ private const val MARKER_MIN_DP = 140f
 private const val MARKER_MAX_DP = 240f
 
 /** Puntos seguidos fuera del alcance para dejar de revisar (la ruta ya se fue lejos). */
-private const val PLANE_OUT_POINTS = 300
+private const val ROUTE_OUT_POINTS = 1500
 
-/**
- * El tramo ([x0], [y0])–([x1], [y1]) recortado al cuadro [box] (izq, arriba, der, abajo) en [out]; false si no lo toca
- * (Liang–Barsky).
- */
-private fun clip(x0: Float, y0: Float, x1: Float, y1: Float, box: FloatArray, out: FloatArray): Boolean {
-    val dx = x1 - x0
-    val dy = y1 - y0
-    var t0 = 0f
-    var t1 = 1f
-    val p = floatArrayOf(-dx, dx, -dy, dy)
-    val q = floatArrayOf(x0 - box[0], box[2] - x0, y0 - box[1], box[3] - y0)
-    for (k in 0 until 4) {
-        if (p[k] == 0f) {
-            if (q[k] < 0f) return false
-        } else {
-            val r = q[k] / p[k]
-            if (p[k] < 0f) {
-                if (r > t1) return false
-                if (r > t0) t0 = r
-            } else {
-                if (r < t0) return false
-                if (r < t1) t1 = r
-            }
-        }
+/** Tramos sueltos (x0, y0, x1, y1 cada uno) que se reusan cuadro a cuadro; [size] = cuántos números hay. */
+private class Segments {
+    var points = FloatArray(1024)
+        private set
+    var size = 0
+        private set
+
+    fun clear() {
+        size = 0
     }
-    out[0] = x0 + t0 * dx
-    out[1] = y0 + t0 * dy
-    out[2] = x0 + t1 * dx
-    out[3] = y0 + t1 * dy
-    return true
+
+    fun add(x0: Float, y0: Float, x1: Float, y1: Float) {
+        if (size + 4 > points.size) points = points.copyOf(points.size * 2)
+        points[size] = x0; points[size + 1] = y0; points[size + 2] = x1; points[size + 3] = y1
+        size += 4
+    }
 }
 
-/** Hasta dónde se arma la ruta en el plano: estas veces el lado largo de la vista desde ti. */
-private const val PLANE_REACH = 6f
-
 /** Cuántos puntos de lo recorrido se revisan hacia atrás (lo demás ya no se ve). */
-private const val PLANE_BACK_POINTS = 400
+private const val ROUTE_BACK_POINTS = 400
 
 /** El pin con la punta en (0, 0): círculo de 12 dp arriba y punta abajo; [u] = 1 dp. */
 private fun pinPath(u: Float) = Path().apply {

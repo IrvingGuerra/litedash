@@ -17,9 +17,7 @@ import java.util.zip.GZIPInputStream
  */
 class PmTiles private constructor(private val file: RandomAccessFile, private val header: Header) : AutoCloseable {
 
-    /** Los zooms que trae y su caja (grados). */
-    val minZoom get() = header.minZoom
-    val maxZoom get() = header.maxZoom
+    /** Su caja (grados). */
     val bounds get() = header.bounds
 
     /** Los últimos directorios leídos (el raíz y unas hojas): buscar en la misma zona no vuelve a leer el disco. */
@@ -70,14 +68,14 @@ class PmTiles private constructor(private val file: RandomAccessFile, private va
     internal class Entry(val tileId: Long, val offset: Long, val length: Int, val runLength: Int)
 
     companion object {
-        /** Abre [file] si es un PMTiles v3 de teselas MVT; null si no lo es o está dañado. */
+        /** Abre [file] si es un PMTiles v3 de teselas MVT sin comprimir o con gzip; null si no lo es o está dañado. */
         fun open(file: File): PmTiles? = runCatching {
             val raf = RandomAccessFile(file, "r")
             try {
                 val bytes = ByteArray(HEADER_SIZE)
                 raf.readFully(bytes)
                 val h = parseHeader(bytes)
-                if (h == null || h.tileType != TILE_TYPE_MVT) null.also { raf.close() } else PmTiles(raf, h)
+                if (h == null || h.tileType != TILE_TYPE_MVT || h.tileCompression !in TILE_COMPRESSIONS) null.also { raf.close() } else PmTiles(raf, h)
             } catch (e: Exception) {
                 // Truncado o ilegible: se cierra y no se usa.
                 raf.close()
@@ -159,7 +157,10 @@ class PmTiles private constructor(private val file: RandomAccessFile, private va
 
         private const val HEADER_SIZE = 127
         private const val TILE_TYPE_MVT = 1
+        private const val COMPRESSION_NONE = 1
         private const val COMPRESSION_GZIP = 2
+        /** Las teselas se abren sin comprimir o con gzip (brotli o zstd no: se verían vacías). */
+        private val TILE_COMPRESSIONS = intArrayOf(COMPRESSION_NONE, COMPRESSION_GZIP)
         private const val MAX_DEPTH = 4
         private const val CACHED_DIRECTORIES = 8
     }

@@ -38,8 +38,9 @@ class Router internal constructor(
 ) {
     constructor(graph: RoadGraph) : this(graph, denseFits(graph.vertexCount), SPARSE_START)
 
-    private val labels = Labels(graph.vertexCount, dense, sparseStart, switchToDense)
-    private val heap = Heap()
+    private val room = Room()
+    private val labels = Labels(graph.vertexCount, dense, sparseStart, switchToDense, room)
+    private val heap = Heap(room)
 
     /** Cuántos cruces tocó la última búsqueda y su memoria en bytes (para medir en las pruebas). */
     internal var touched = 0
@@ -55,7 +56,7 @@ class Router internal constructor(
     } catch (e: RouteException) {
         Result.failure(e)
     } catch (_: OutOfMemoryError) {
-        // La red de seguridad: si la cuenta de [roomFor] se quedó corta, sin ruta pero sin tumbar la app.
+        // La red de seguridad: si la cuenta de [Room.need] se quedó corta, sin ruta pero sin tumbar la app.
         Result.failure(RouteException(RouteError.TOO_BIG))
     } catch (_: RuntimeException) {
         // Un archivo dañado por dentro (pasó la revisión de la cabecera): sin ruta, sin tumbar la app.
@@ -63,6 +64,7 @@ class Router internal constructor(
     }
 
     private fun search(a: Snap, b: Snap): Route? = try {
+        room.collectedAt = 0L
         labels.reset()
         heap.clear()
         explore(a, b)
@@ -353,16 +355,26 @@ private fun PointList.toArray(): IntArray = IntArray(size * 2) { if (it % 2 == 0
 /** La memoria que le queda a la app (lo que aún puede pedir antes de un OutOfMemoryError). */
 private fun freeMemory(): Long = Runtime.getRuntime().let { it.maxMemory() - (it.totalMemory() - it.freeMemory()) }
 
-/** ¿Hay memoria para [bytes] más, dejando la mitad de lo libre a la app? (La basura cuenta como usada: se recoge y se mira otra vez.) */
-private fun hasRoom(bytes: Long): Boolean {
-    if (bytes <= freeMemory() / 2) return true
-    System.gc()
-    return bytes <= freeMemory() / 2
-}
+/** La memoria de una búsqueda: la basura se recoge pocas veces por búsqueda ([collectedAt] lo reinicia [Router.search]). */
+private class Room {
+    /** Lo que se pedía la última vez que se recogió la basura (0 = aún no en esta búsqueda). */
+    var collectedAt = 0L
 
-/** Como [hasRoom], pero si no cabe la ruta no sale ([RouteError.TOO_BIG]). */
-private fun roomFor(bytes: Long) {
-    if (!hasRoom(bytes)) throw RouteException(RouteError.TOO_BIG)
+    /** ¿Hay memoria para [bytes] más, dejando la mitad de lo libre a la app? (La basura cuenta como usada: se recoge y se mira otra vez.) */
+    fun has(bytes: Long): Boolean {
+        if (bytes <= freeMemory() / 2) return true
+        // La basura se recoge otra vez solo si se pide el doble que la vez pasada (los arreglos crecen al doble y dejan
+        // el viejo de basura): pocas recolecciones por búsqueda, sin dar «muy largo» antes de tiempo.
+        if (collectedAt > 0L && bytes < collectedAt * 2) return false
+        collectedAt = bytes
+        System.gc()
+        return bytes <= freeMemory() / 2
+    }
+
+    /** Como [has], pero si no cabe la ruta no sale ([RouteError.TOO_BIG]). */
+    fun need(bytes: Long) {
+        if (!has(bytes)) throw RouteException(RouteError.TOO_BIG)
+    }
 }
 
 /**
@@ -372,7 +384,9 @@ private fun roomFor(bytes: Long) {
  * tabla fuera a pasar de la mitad de la lista (un viaje muy largo), esa búsqueda se pasa a la lista: nunca gasta más que
  * ella. [startDense] = lista desde el principio (estados chicos).
  */
-private class Labels(private val n: Int, private val startDense: Boolean, private val start: Int, private val switchToDense: Boolean) {
+private class Labels(
+    private val n: Int, private val startDense: Boolean, private val start: Int, private val switchToDense: Boolean, private val room: Room,
+) {
     private var dense = startDense
     /** Lista por cruce: la ronda en que se tocó. Tabla: el cruce + 1 (0 = libre). */
     private var keys: IntArray
@@ -462,8 +476,8 @@ private class Labels(private val n: Int, private val startDense: Boolean, privat
         val oldVia = via
         val oldPrev = prev
         // Pasarse a la lista si la tabla doblada ya pasaría de la mitad de ella y la lista cabe; si no, doblar (si cabe).
-        val toDense = switchToDense && oldKeys.size.toLong() * 2 * 2 > n && hasRoom(n * DENSE_BYTES)
-        if (!toDense) roomFor(oldKeys.size * 2L * DENSE_BYTES)
+        val toDense = switchToDense && oldKeys.size.toLong() * 2 * 2 > n && room.has(n * DENSE_BYTES)
+        if (!toDense) room.need(oldKeys.size * 2L * DENSE_BYTES)
         if (toDense) {
             // A la lista por cruce (en esta búsqueda): el lugar pasa a ser el cruce y se marca con la ronda.
             dense = true
@@ -508,7 +522,7 @@ private class Labels(private val n: Int, private val startDense: Boolean, privat
 }
 
 /** Montón mínimo de (llave, cruce) en arreglos que crecen (sin objetos por entrada). */
-private class Heap {
+private class Heap(private val room: Room) {
     private var keys = FloatArray(START)
     private var values = IntArray(START)
     var size = 0
@@ -533,7 +547,7 @@ private class Heap {
 
     fun push(key: Float, value: Int) {
         if (size == keys.size) {
-            roomFor(size.toLong() * 2 * 8)
+            room.need(size.toLong() * 2 * 8)
             keys = keys.copyOf(size * 2)
             values = values.copyOf(size * 2)
         }

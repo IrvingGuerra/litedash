@@ -251,7 +251,8 @@ fun MapExpanded(d: Dependencies, tileId: String?, data: String, app: App?, onPla
             // Con la ruta: el mapa al norte y con el zoom que la enseña toda (en ese hueco).
             val fitW = boxWidth.value * (clear?.width ?: 1f)
             val fitH = boxHeight.value * (clear?.height ?: 1f)
-            val fit = route?.let { remember(it, fitW, fitH) { routeZoom(it, fitW, fitH) } }
+            val fitDensity = LocalDensity.current.density
+            val fit = route?.let { remember(it, fitW, fitH, fitDensity) { routeZoom(it, fitW, fitH, fitDensity) } }
             // Solo al salir la ruta (no al cambiar el hueco: lo que movieras con el dedo se quedaría).
             LaunchedEffect(fit?.second) { fit?.second?.let { (la, lo) -> camera.show(la, lo) } }
             if (granted) {

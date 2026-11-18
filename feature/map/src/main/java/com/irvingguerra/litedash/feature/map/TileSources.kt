@@ -44,6 +44,9 @@ interface TileSource {
     /** La imagen de [key] a partir de lo bajado de [origin]; null = lo bajado no sirve (o vino vacío y no hay qué dibujar). */
     fun decode(data: ByteArray, key: Long, origin: Long): ImageBitmap?
 
+    /** Dibuja [key] con lo ya leído de [origin], sin bytes; null = no lo tiene en memoria. */
+    fun draw(key: Long, origin: Long): ImageBitmap? = null
+
     /**
      * Las calles con nombre de la tesela [origin] (ya leída para dibujarla), con su lado en unidades ([VectorTile.extent]);
      * null = no se sabe (las imágenes de OSM ya traen los nombres dibujados).
@@ -107,8 +110,8 @@ class VectorTiles(
     override val gzip = true
 
     /**
-     * Las teselas ya leídas (una del 14 sirve a todas las suyas del 15 en adelante). [TileStore] llama a [decode] con el
-     * candado del archivo: la misma tesela no se lee dos veces a la vez. Ocho porque el mapa inclinado
+     * Las teselas ya leídas (una del 14 sirve a todas las suyas del 15 en adelante). [TileStore] llama a [draw] y [decode] con
+     * el candado del archivo: la misma tesela no se lee dos veces a la vez. Ocho porque el mapa inclinado
      * mezcla orígenes del 12 al 14 (lo lejano con menos detalle) y con cuatro se volvían a leer.
      */
     private val parsed = LruCache<Long, VectorTile>(8)
@@ -130,6 +133,8 @@ class VectorTiles(
     private var templateRead = false
     private var templateAt = 0L
     private var templateFailedAt = 0L
+    /** Un hilo está preguntando por la dirección (los demás no esperan). */
+    private var templateFetching = false
 
     override fun origin(key: Long): Long = dataOrigin(key)
 
@@ -143,6 +148,13 @@ class VectorTiles(
             parsed.put(origin, it)
             if (near) names.put(origin, TileNames(it.extent, it.names))
         }
+        return render(tile, key, origin)
+    }
+
+    override fun draw(key: Long, origin: Long): ImageBitmap? = parsed.get(origin)?.let { render(it, key, origin) }
+
+    /** El pedazo [key] de la tesela [origin] ya leída. */
+    private fun render(tile: VectorTile, key: Long, origin: Long): ImageBitmap {
         val z = keyZ(key)
         val bitmap = Bitmap.createBitmap(sizePx, sizePx, Bitmap.Config.RGB_565)
         drawMinimal(Canvas(bitmap), tile, 1 shl (z - keyZ(origin)), pieceX(key, origin), pieceY(key, origin), z)
@@ -203,7 +215,7 @@ class VectorTiles(
 
     /**
      * Las calles a escala real (la vista de tu auto, como Tesla): banqueta, orilla clara, asfalto y, encima, la raya del
-     * centro (amarilla doble en las de doble sentido, blanca punteada en las anchas de un solo sentido). Por tipo, de las
+     * centro (una amarilla delgada en las de doble sentido, blanca punteada en las anchas de un solo sentido). Por tipo, de las
      * chicas a las grandes: el asfalto de una grande tapa las rayas de la chica en el cruce. [real] = ancho en px de
      * pantalla de una calle con [REAL_RATIO] 1.
      */
@@ -234,9 +246,8 @@ class VectorTiles(
             // Las rayas solo donde la calle es bastante ancha para verse (lejos serían ruido).
             if (tier == RoadTier.SERVICE || w < 14f * density) continue
             val oneway = t.oneway[tier.ordinal]
-            // Doble sentido: dos rayas amarillas (una ancha con el asfalto encima en medio).
-            draw(shapes, line * 3.2f, look[3], oneway, want = false)
-            draw(shapes, line * 1.2f, look[2], oneway, want = false)
+            // Doble sentido: una sola raya amarilla, delgada.
+            draw(shapes, line * 1.1f, look[3], oneway, want = false)
             // Un solo sentido y ancha (dos carriles o más): una raya blanca punteada.
             if (tier.ordinal <= RoadTier.SECONDARY.ordinal) {
                 val dash = w * 0.9f / scale
@@ -250,34 +261,43 @@ class VectorTiles(
     /**
      * La dirección de las teselas: OpenFreeMap publica los datos por versión (su TileJSON dice
      * cuál es la actual). Se guarda una semana; sin red, la última conocida, y no se vuelve a
-     * preguntar antes de [TEMPLATE_RETRY_MS].
+     * preguntar antes de [TEMPLATE_RETRY_MS]. La red va fuera del candado: mientras un hilo pregunta, los demás
+     * se llevan la guardada (o null) sin esperar.
      */
-    @Synchronized
     private fun template(): String? {
         val now = System.currentTimeMillis()
         val file = File(File(app.filesDir, folder), "tilejson")
-        if (!templateRead) {
-            templateRead = true
-            template = file.takeIf { it.exists() }?.readText()?.takeIf { it.isNotBlank() }
-            templateAt = file.lastModified()
-        }
-        val saved = template
-        if (saved != null && now - templateAt < TEMPLATE_MS) return saved
-        if (now - templateFailedAt < TEMPLATE_RETRY_MS) return saved
-        val fresh = runCatching {
-            httpGet(app, TILEJSON, userAgent) { c, code ->
-                if (code == 200) JSONObject(c.inputStream.bufferedReader().readText()).getJSONArray("tiles").getString(0) else null
+        synchronized(this) {
+            if (!templateRead) {
+                templateRead = true
+                template = file.takeIf { it.exists() }?.readText()?.takeIf { it.isNotBlank() }
+                templateAt = file.lastModified()
             }
-        }.getOrNull()
-        if (fresh == null) {
-            templateFailedAt = now
-            return saved
+            val saved = template
+            if (saved != null && now - templateAt < TEMPLATE_MS) return saved
+            if (templateFetching || now - templateFailedAt < TEMPLATE_RETRY_MS) return saved
+            templateFetching = true
         }
-        file.parentFile?.mkdirs()
-        file.writeText(fresh)
-        template = fresh
-        templateAt = now
-        return fresh
+        try {
+            val fresh = runCatching {
+                httpGet(app, TILEJSON, userAgent) { c, code ->
+                    if (code == 200) JSONObject(c.inputStream.bufferedReader().readText()).getJSONArray("tiles").getString(0) else null
+                }
+            }.getOrNull()
+            synchronized(this) {
+                if (fresh == null) {
+                    templateFailedAt = now
+                    return template
+                }
+                file.parentFile?.mkdirs()
+                file.writeText(fresh)
+                template = fresh
+                templateAt = now
+                return fresh
+            }
+        } finally {
+            synchronized(this) { templateFetching = false }
+        }
     }
 
     private companion object {
