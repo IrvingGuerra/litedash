@@ -124,6 +124,7 @@
     <string name="route_from_off">도로에서 멀리 있어요. 경로를 찾으려면 도로에 더 가까이 가세요.</string>
     <string name="route_to_off">그곳은 도로에서 멀리 있어요.</string>
     <string name="route_no_path">그곳까지 가는 도로를 찾지 못했어요.</string>
+    <string name="route_too_big">이 화면의 메모리로는 너무 긴 경로입니다. 더 가까운 목적지로 해 보세요.</string>
     <string name="route_two_states">그 장소는 다른 지역에 있습니다. 지역 간 경로는 나중에 지원됩니다. 그동안은 지도 앱에서 여세요.</string>
     <string name="guide_go">출발</string>
     <string name="guide_end">종료</string>

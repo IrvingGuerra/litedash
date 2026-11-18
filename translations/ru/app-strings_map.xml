@@ -124,6 +124,7 @@
     <string name="route_from_off">Ты далеко от дороги: подъедь ближе к ней, чтобы найти маршрут.</string>
     <string name="route_to_off">Это место далеко от дороги.</string>
     <string name="route_no_path">Не нашли путь туда по дорогам.</string>
+    <string name="route_too_big">Этот маршрут слишком длинный для памяти этого экрана. Попробуйте пункт назначения поближе.</string>
     <string name="route_two_states">Это место в другом регионе: маршруты между регионами появятся позже. Пока откройте его в своём приложении карт.</string>
     <string name="guide_go">Поехали</string>
     <string name="guide_end">Завершить</string>

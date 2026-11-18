@@ -4,6 +4,18 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.5.2] - 2026-11-18
+
+### Nuevo
+- **Mapas sin conexión de Estados Unidos:** los 50 estados, Washington D. C. y Puerto Rico, cada uno completo en una
+  descarga (los grandes pesan más: California ~700 MB; bájalos con buen internet).
+
+### Cambiado
+- **La ruta usa mucha menos memoria:** solo lo que recorre, no todo el estado (en California, una ruta por la ciudad
+  pasa de ~46 MB a ~1 MB), así que los estados grandes funcionan también en pantallas de 1 GB.
+- Si un viaje no cabe en la memoria de tu pantalla, LiteDash te lo dice («Este viaje es muy largo…») en vez de
+  cerrarse.
+
 ## [1.5.1] - 2026-11-17
 
 ### Cambiado

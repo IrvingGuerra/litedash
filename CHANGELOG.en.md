@@ -3,6 +3,17 @@
 What people using LiteDash notice, in English. The full history (in Spanish) is in [CHANGELOG.md](CHANGELOG.md).
 Format [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versions [SemVer](https://semver.org/).
 
+## [1.5.2] - 2026-11-18
+
+### New
+- **Offline maps for the United States:** all 50 states, Washington, D.C. and Puerto Rico, each one complete in a single
+  download (big states weigh more: California is ~700 MB; download them on a good connection).
+
+### Changed
+- **Routing uses far less memory:** only what it explores, not the whole state (in California, a city route goes from
+  ~46 MB to ~1 MB), so big states also work on 1 GB screens.
+- If a trip doesn't fit in your screen's memory, LiteDash tells you ("This trip is too long…") instead of closing.
+
 ## [1.5.1] - 2026-11-17
 
 ### Changed

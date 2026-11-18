@@ -126,6 +126,7 @@
     <string name="route_from_off">You are far from a street: get closer to one to find the route.</string>
     <string name="route_to_off">That place is far from a street.</string>
     <string name="route_no_path">We couldn\'t find a way there by road.</string>
+    <string name="route_too_big">This trip is too long for this screen\'s memory. Try a closer destination.</string>
     <string name="route_two_states">That place is in another state: routes between states come later. Meanwhile, open it in your maps app.</string>
     <string name="guide_go">Go</string>
     <string name="guide_end">End</string>

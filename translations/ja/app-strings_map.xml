@@ -124,6 +124,7 @@
     <string name="route_from_off">道路から離れています。ルートを探すには道路に近づいてください。</string>
     <string name="route_to_off">その場所は道路から離れています。</string>
     <string name="route_no_path">そこまで道路で行けるルートが見つかりませんでした。</string>
+    <string name="route_too_big">この画面のメモリでは長すぎるルートです。もっと近い目的地でお試しください。</string>
     <string name="route_two_states">その場所は別の都道府県にあります。都道府県をまたぐルートは今後対応します。それまでは地図アプリで開いてください。</string>
     <string name="guide_go">開始</string>
     <string name="guide_end">終了</string>

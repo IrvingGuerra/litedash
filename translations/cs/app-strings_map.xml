@@ -124,6 +124,7 @@
     <string name="route_from_off">Jsi daleko od silnice: přibliž se k nějaké, ať můžu najít trasu.</string>
     <string name="route_to_off">To místo je daleko od silnice.</string>
     <string name="route_no_path">Nenašli jsme tam cestu po silnici.</string>
+    <string name="route_too_big">Tato cesta je na paměť této obrazovky příliš dlouhá. Zkuste bližší cíl.</string>
     <string name="route_two_states">To místo je v jiném kraji: trasy mezi kraji přijdou později. Zatím ho otevřete ve své aplikaci map.</string>
     <string name="guide_go">Jet</string>
     <string name="guide_end">Ukončit</string>

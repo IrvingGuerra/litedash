@@ -124,6 +124,7 @@
     <string name="route_from_off">Bir yoldan uzaktasınız: rotayı bulmak için bir yola yaklaşın.</string>
     <string name="route_to_off">Bu yer bir yoldan uzak.</string>
     <string name="route_no_path">Oraya giden bir yol bulamadık.</string>
+    <string name="route_too_big">Bu yolculuk bu ekranın belleği için çok uzun. Daha yakın bir hedef deneyin.</string>
     <string name="route_two_states">Bu yer başka bir ilde: iller arası rotalar daha sonra gelecek. Şimdilik harita uygulamanızda açın.</string>
     <string name="guide_go">Başla</string>
     <string name="guide_end">Bitir</string>

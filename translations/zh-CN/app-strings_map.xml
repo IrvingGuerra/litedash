@@ -124,6 +124,7 @@
     <string name="route_from_off">你离道路太远：请靠近道路后再查找路线。</string>
     <string name="route_to_off">该地点离道路太远。</string>
     <string name="route_no_path">找不到通往那里的道路。</string>
+    <string name="route_too_big">这段行程对这块屏幕的内存来说太长了。请换一个更近的目的地。</string>
     <string name="route_two_states">该地点在其他省份：跨省路线稍后推出。在此之前，请在你的地图应用中打开。</string>
     <string name="guide_go">出发</string>
     <string name="guide_end">结束</string>

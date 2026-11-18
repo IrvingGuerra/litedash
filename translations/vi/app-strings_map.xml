@@ -124,6 +124,7 @@
     <string name="route_from_off">Bạn đang ở xa đường: hãy đến gần một con đường để tìm lộ trình.</string>
     <string name="route_to_off">Nơi đó ở xa đường.</string>
     <string name="route_no_path">Không tìm thấy đường đi đến đó.</string>
+    <string name="route_too_big">Chuyến đi này quá dài so với bộ nhớ của màn hình này. Hãy thử điểm đến gần hơn.</string>
     <string name="route_two_states">Địa điểm đó ở tỉnh khác: tuyến đường giữa các tỉnh sẽ có sau. Trong lúc chờ, hãy mở trong ứng dụng bản đồ của bạn.</string>
     <string name="guide_go">Đi</string>
     <string name="guide_end">Kết thúc</string>

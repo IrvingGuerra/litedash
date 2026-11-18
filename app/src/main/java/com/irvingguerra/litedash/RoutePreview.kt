@@ -147,6 +147,7 @@ internal fun RouteCard(d: Dependencies, request: RouteRequest, appName: String?,
                                 RouteError.FROM_OFF_ROAD -> R.string.route_from_off
                                 RouteError.TO_OFF_ROAD -> R.string.route_to_off
                                 RouteError.NO_PATH -> R.string.route_no_path
+                                RouteError.TOO_BIG -> R.string.route_too_big
                             },
                         ),
                     )

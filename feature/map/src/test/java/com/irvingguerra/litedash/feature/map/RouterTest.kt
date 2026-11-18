@@ -385,6 +385,43 @@ class RouterTest {
         assertEquals("Avenida Media", r.mainRoad)
     }
 
+    /**
+     * La tabla de lo recorrido (estados grandes) da exactamente lo mismo que la lista por cruce, con muchas rutas seguidas en
+     * el mismo ruteador: reusada sin crecer (64 lugares: lo de una búsqueda no debe verse en la siguiente), creciendo muchas
+     * veces sin pasarse a la lista (desde 2) y pasándose a la lista a media búsqueda.
+     */
+    @Test
+    fun sparseLabelsMatchDense() {
+        val net = build(oneway = mapOf(h(1, 0) to 1, vt(0, 2) to -1), turns = listOf(Turn(vid(1, 1), h(1, 0), vt(1, 1), 0)))
+        val points = (0 until 13).flatMap { e -> listOf(0.1, 0.5, 0.9).map { at(e, it) } }
+        val routers = listOf(
+            Router(net.graph, dense = false, sparseStart = 64),
+            Router(net.graph, dense = false, sparseStart = 2, switchToDense = false),
+            Router(net.graph, dense = false, sparseStart = 2),
+        )
+        var compared = 0
+        repeat(2) {
+            for (from in points) for (to in points) {
+                val d = net.router.route(from[0], from[1], to[0], to[1])
+                for (sparse in routers) {
+                    val s = sparse.route(from[0], from[1], to[0], to[1])
+                    assertEquals(d.isSuccess, s.isSuccess)
+                    if (d.isSuccess) {
+                        val a = d.getOrThrow()
+                        val b = s.getOrThrow()
+                        assertTrue(a.points.contentEquals(b.points))
+                        assertEquals(a.seconds, b.seconds, 1e-6)
+                        assertEquals(a.distanceM, b.distanceM, 1e-6)
+                        compared++
+                    } else {
+                        assertEquals((d.exceptionOrNull() as RouteException).error, (s.exceptionOrNull() as RouteException).error)
+                    }
+                }
+            }
+        }
+        assertTrue(compared > 3000)
+    }
+
     private companion object {
         const val LAT0 = 19_401_500
         const val LON0 = -99_101_500

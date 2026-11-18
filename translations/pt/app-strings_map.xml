@@ -126,6 +126,7 @@
     <string name="route_from_off">Você está longe de uma rua: chegue mais perto de uma para calcular a rota.</string>
     <string name="route_to_off">Esse lugar fica longe de uma rua.</string>
     <string name="route_no_path">Não encontramos um caminho por ruas até lá.</string>
+    <string name="route_too_big">Esta viagem é longa demais para a memória desta tela. Tente um destino mais perto.</string>
     <string name="route_two_states">Esse lugar fica em outro estado: rotas entre estados chegam depois. Enquanto isso, abra no seu app de mapas.</string>
     <string name="guide_go">Ir</string>
     <string name="guide_end">Encerrar</string>

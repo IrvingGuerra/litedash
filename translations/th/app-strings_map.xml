@@ -124,6 +124,7 @@
     <string name="route_from_off">คุณอยู่ไกลจากถนน: เข้าใกล้ถนนเพื่อหาเส้นทาง</string>
     <string name="route_to_off">สถานที่นี้อยู่ไกลจากถนน</string>
     <string name="route_no_path">ไม่พบเส้นทางถนนไปที่นั่น</string>
+    <string name="route_too_big">เส้นทางนี้ยาวเกินไปสำหรับหน่วยความจำของหน้าจอนี้ ลองจุดหมายที่ใกล้กว่านี้</string>
     <string name="route_two_states">สถานที่นี้อยู่ในจังหวัดอื่น เส้นทางข้ามจังหวัดจะมาในภายหลัง ระหว่างนี้เปิดในแอปแผนที่ของคุณ</string>
     <string name="guide_go">เริ่ม</string>
     <string name="guide_end">สิ้นสุด</string>

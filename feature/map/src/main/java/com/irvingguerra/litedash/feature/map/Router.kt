@@ -19,22 +19,33 @@ class Route(
     val pointCount get() = points.size / 2
 }
 
-/** Por qué no salió una ruta. */
-enum class RouteError { FROM_OFF_ROAD, TO_OFF_ROAD, NO_PATH }
+/** Por qué no salió una ruta. [TOO_BIG] = no cabe en la memoria de esta pantalla (un estado muy grande o un viaje muy largo). */
+enum class RouteError { FROM_OFF_ROAD, TO_OFF_ROAD, NO_PATH, TOO_BIG }
 
 /**
  * Busca la ruta más rápida por las calles de [graph] (A*: el tiempo de cada tramo por su clase y velocidad máxima; respeta
- * sentidos y vueltas prohibidas u obligatorias; sin vueltas en U). Guarda sus arreglos entre búsquedas (una a la vez:
- * llamar desde un solo hilo, fuera del principal). Memoria: ~16 B por cruce (Edomex: ~10 MB).
+ * sentidos y vueltas prohibidas u obligatorias; sin vueltas en U). Una búsqueda a la vez: llamar desde un solo hilo,
+ * fuera del principal.
+ *
+ * Memoria ([Labels]): en estados chicos (≤ [DENSE_MAX] cruces, todo México) una lista por cruce, ~16 B cada uno (Edomex:
+ * ~10 MB); en los grandes (California: ~2.9 millones) solo lo que la búsqueda toca, que crece sobre la marcha y se suelta
+ * al terminar. Si no cabe en la memoria de la app, la ruta dice [RouteError.TOO_BIG] en vez de tumbarla.
  */
-class Router(private val graph: RoadGraph) {
-    private val n = graph.vertexCount
-    private val cost = FloatArray(n)
-    private val via = IntArray(n)
-    private val prev = IntArray(n)
-    private val seen = IntArray(n)
-    private var round = 0
+class Router internal constructor(
+    private val graph: RoadGraph, dense: Boolean, sparseStart: Int,
+    /** Solo pruebas: false = la tabla nunca se pasa a la lista (para probar que crezca muchas veces). */
+    switchToDense: Boolean = true,
+) {
+    constructor(graph: RoadGraph) : this(graph, denseFits(graph.vertexCount), SPARSE_START)
+
+    private val labels = Labels(graph.vertexCount, dense, sparseStart, switchToDense)
     private val heap = Heap()
+
+    /** Cuántos cruces tocó la última búsqueda y su memoria en bytes (para medir en las pruebas). */
+    internal var touched = 0
+        private set
+    internal var touchedBytes = 0L
+        private set
 
     /** La ruta de ([fromLat], [fromLon]) a ([toLat], [toLon]), o por qué no la hay. */
     fun route(fromLat: Double, fromLon: Double, toLat: Double, toLon: Double): Result<Route> = try {
@@ -43,17 +54,27 @@ class Router(private val graph: RoadGraph) {
         search(a, b)?.let { Result.success(it) } ?: Result.failure(RouteException(RouteError.NO_PATH))
     } catch (e: RouteException) {
         Result.failure(e)
+    } catch (_: OutOfMemoryError) {
+        // La red de seguridad: si la cuenta de [roomFor] se quedó corta, sin ruta pero sin tumbar la app.
+        Result.failure(RouteException(RouteError.TOO_BIG))
     } catch (_: RuntimeException) {
         // Un archivo dañado por dentro (pasó la revisión de la cabecera): sin ruta, sin tumbar la app.
         Result.failure(RouteException(RouteError.NO_PATH))
     }
 
-    private fun search(a: Snap, b: Snap): Route? {
-        if (++round == Int.MAX_VALUE) {
-            seen.fill(0)
-            round = 1
-        }
+    private fun search(a: Snap, b: Snap): Route? = try {
+        labels.reset()
         heap.clear()
+        explore(a, b)
+    } finally {
+        touched = labels.used
+        touchedBytes = labels.bytes + heap.bytes
+        // Lo que creció para una búsqueda larga se suelta: la memoria vuelve a la app entre rutas.
+        labels.release()
+        heap.release()
+    }
+
+    private fun explore(a: Snap, b: Snap): Route? {
         val aLen = graph.lengthM(a.edge)
         val bLen = graph.lengthM(b.edge)
         val aSpeed = speed(a.edge)
@@ -92,10 +113,12 @@ class Router(private val graph: RoadGraph) {
             val f = heap.topKey()
             val v = heap.pop()
             if (f >= best) break
-            val g = cost[v]
+            val sv = labels.find(v)
+            val g = labels.cost[sv]
             // Ya se sacó con algo mejor (las entradas viejas se quedan en el montón).
             if (f > g + heuristic(v, toLat, toLon, kx) + 0.01f) continue
-            val inEdge = if (via[v] >= 0) graph.halfEdge(via[v]) else a.edge
+            val inVia = labels.via[sv]
+            val inEdge = if (inVia >= 0) graph.halfEdge(inVia) else a.edge
             // Entrar al tramo del destino también es una vuelta: sin vuelta en U ni vueltas prohibidas.
             val ontoGoal = inEdge != b.edge && graph.turnAllowed(v, inEdge, b.edge)
             if (ontoGoal && v == b.from && !goalFrom.isNaN() && g + goalFrom < best) {
@@ -113,11 +136,12 @@ class Router(private val graph: RoadGraph) {
                 if (e == inEdge || !graph.turnAllowed(v, inEdge, e)) continue
                 val t = graph.halfTarget(h)
                 val c = g + (graph.lengthM(e) / speed(e)).toFloat()
-                if (seen[t] != round || c < cost[t]) {
-                    seen[t] = round
-                    cost[t] = c
-                    via[t] = h
-                    prev[t] = v
+                val st = labels.find(t)
+                if (st < 0 || c < labels.cost[st]) {
+                    val slot = if (st < 0) labels.add(t) else st
+                    labels.cost[slot] = c
+                    labels.via[slot] = h
+                    labels.prev[slot] = v
                     heap.push(c + heuristic(t, toLat, toLon, kx), t)
                 }
             }
@@ -127,11 +151,12 @@ class Router(private val graph: RoadGraph) {
     }
 
     private fun seed(v: Int, c: Float, b: Snap) {
-        if (seen[v] == round && cost[v] <= c) return
-        seen[v] = round
-        cost[v] = c
-        via[v] = -1
-        prev[v] = -1
+        val found = labels.find(v)
+        if (found >= 0 && labels.cost[found] <= c) return
+        val slot = if (found < 0) labels.add(v) else found
+        labels.cost[slot] = c
+        labels.via[slot] = -1
+        labels.prev[slot] = -1
         val kx = cos(Math.toRadians(b.lat)) * RoadGraph.M_PER_DEG
         heap.push(c + heuristic(v, b.lat, b.lon, kx), v)
     }
@@ -155,9 +180,12 @@ class Router(private val graph: RoadGraph) {
     private fun build(a: Snap, b: Snap, end: Int, seconds: Double): Route {
         val halves = ArrayList<Int>()
         var v = end
-        while (via[v] >= 0) {
-            halves += via[v]
-            v = prev[v]
+        while (true) {
+            val slot = labels.find(v)
+            val h = labels.via[slot]
+            if (h < 0) break
+            halves += h
+            v = labels.prev[slot]
         }
         halves.reverse()
         val pts = PointList()
@@ -306,6 +334,15 @@ class Router(private val graph: RoadGraph) {
 
         /** Lo más rápido que va un auto (m/s): la heurística nunca debe pasarse (si no, la ruta deja de ser la mejor). */
         private const val FASTEST = 130 / 3.6
+
+        /** Hasta cuántos cruces va la lista por cruce (16 MB): el estado más grande de México tiene ~650 mil. */
+        internal const val DENSE_MAX = 1_000_000
+
+        /** Lugares iniciales de la tabla de lo recorrido (crece al doble cuando se llena a 3/4). */
+        private const val SPARSE_START = 1 shl 14
+
+        /** ¿Cabe la lista por cruce? Solo en estados chicos y si deja de sobra memoria libre (a lo más un cuarto). */
+        private fun denseFits(n: Int) = n <= DENSE_MAX && n.toLong() * Labels.DENSE_BYTES <= freeMemory() / 4
     }
 }
 
@@ -313,10 +350,167 @@ class RouteException(val error: RouteError) : Exception(error.name)
 
 private fun PointList.toArray(): IntArray = IntArray(size * 2) { if (it % 2 == 0) lat(it / 2) else lon(it / 2) }
 
+/** La memoria que le queda a la app (lo que aún puede pedir antes de un OutOfMemoryError). */
+private fun freeMemory(): Long = Runtime.getRuntime().let { it.maxMemory() - (it.totalMemory() - it.freeMemory()) }
+
+/** ¿Hay memoria para [bytes] más, dejando la mitad de lo libre a la app? (La basura cuenta como usada: se recoge y se mira otra vez.) */
+private fun hasRoom(bytes: Long): Boolean {
+    if (bytes <= freeMemory() / 2) return true
+    System.gc()
+    return bytes <= freeMemory() / 2
+}
+
+/** Como [hasRoom], pero si no cabe la ruta no sale ([RouteError.TOO_BIG]). */
+private fun roomFor(bytes: Long) {
+    if (!hasRoom(bytes)) throw RouteException(RouteError.TOO_BIG)
+}
+
+/**
+ * Lo que la búsqueda sabe de cada cruce que tocó: costo, por qué media arista llegó y de qué cruce venía, en el lugar que
+ * da [find] / [add]. Dos formas: lista por cruce (el lugar es el cruce mismo, marcada por ronda: nada que limpiar entre
+ * búsquedas) o tabla de lo tocado (direccionamiento abierto, sondeo lineal) que crece al doble al llenarse a 3/4. Si la
+ * tabla fuera a pasar de la mitad de la lista (un viaje muy largo), esa búsqueda se pasa a la lista: nunca gasta más que
+ * ella. [startDense] = lista desde el principio (estados chicos).
+ */
+private class Labels(private val n: Int, private val startDense: Boolean, private val start: Int, private val switchToDense: Boolean) {
+    private var dense = startDense
+    /** Lista por cruce: la ronda en que se tocó. Tabla: el cruce + 1 (0 = libre). */
+    private var keys: IntArray
+    var cost: FloatArray
+        private set
+    var via: IntArray
+        private set
+    var prev: IntArray
+        private set
+    private var round = 0
+    /** Lo que ocupan sus arreglos ahora. */
+    val bytes get() = keys.size * DENSE_BYTES
+
+    /** Cruces tocados en esta búsqueda. */
+    var used = 0
+        private set
+    private var mask = 0
+    private var shift = 0
+
+    init {
+        val size = if (dense) n else start
+        keys = IntArray(size)
+        cost = FloatArray(size)
+        via = IntArray(size)
+        prev = IntArray(size)
+        mask = size - 1
+        shift = 32 - Integer.numberOfTrailingZeros(size)
+        require(dense || size and mask == 0) { "potencia de 2" }
+    }
+
+    /** Antes de cada búsqueda: nadie tocado (la tabla se limpia: lo de la búsqueda anterior no debe verse). */
+    fun reset() {
+        if (dense) {
+            if (++round == Int.MAX_VALUE) {
+                keys.fill(0)
+                round = 1
+            }
+        } else if (used > 0) {
+            keys.fill(0)
+        }
+        used = 0
+    }
+
+    /** Después de cada búsqueda: lo crecido vuelve a la app (la tabla a su tamaño inicial; si no creció, la limpia [reset]). */
+    fun release() {
+        if (!startDense && keys.size > start) {
+            dense = false
+            allocate(start)
+            used = 0
+        }
+    }
+
+    /** El lugar del cruce [v], o -1 si esta búsqueda no lo ha tocado. */
+    fun find(v: Int): Int {
+        if (dense) return if (keys[v] == round) v else -1
+        var i = hash(v)
+        while (true) {
+            val k = keys[i]
+            if (k == 0) return -1
+            if (k == v + 1) return i
+            i = (i + 1) and mask
+        }
+    }
+
+    /** Aparta un lugar para [v] (que no estaba) y lo regresa; sus valores los pone quien llama. */
+    fun add(v: Int): Int {
+        if (dense) {
+            keys[v] = round
+            used++
+            return v
+        }
+        if ((used + 1) * 4 > keys.size * 3) grow()
+        if (dense) return add(v)
+        var i = hash(v)
+        while (keys[i] != 0) i = (i + 1) and mask
+        keys[i] = v + 1
+        used++
+        return i
+    }
+
+    /** Hash de Fibonacci: los bits altos del producto (los bajos dependen solo de los bits bajos del cruce). */
+    private fun hash(v: Int) = (v * -0x61c88647) ushr shift
+
+    private fun grow() {
+        val oldKeys = keys
+        val oldCost = cost
+        val oldVia = via
+        val oldPrev = prev
+        // Pasarse a la lista si la tabla doblada ya pasaría de la mitad de ella y la lista cabe; si no, doblar (si cabe).
+        val toDense = switchToDense && oldKeys.size.toLong() * 2 * 2 > n && hasRoom(n * DENSE_BYTES)
+        if (!toDense) roomFor(oldKeys.size * 2L * DENSE_BYTES)
+        if (toDense) {
+            // A la lista por cruce (en esta búsqueda): el lugar pasa a ser el cruce y se marca con la ronda.
+            dense = true
+            if (++round == Int.MAX_VALUE) round = 1
+            allocate(n)
+            for (j in oldKeys.indices) {
+                val k = oldKeys[j]
+                if (k == 0) continue
+                keys[k - 1] = round
+                cost[k - 1] = oldCost[j]
+                via[k - 1] = oldVia[j]
+                prev[k - 1] = oldPrev[j]
+            }
+            return
+        }
+        allocate(oldKeys.size * 2)
+        for (j in oldKeys.indices) {
+            val k = oldKeys[j]
+            if (k == 0) continue
+            var i = hash(k - 1)
+            while (keys[i] != 0) i = (i + 1) and mask
+            keys[i] = k
+            cost[i] = oldCost[j]
+            via[i] = oldVia[j]
+            prev[i] = oldPrev[j]
+        }
+    }
+
+    private fun allocate(size: Int) {
+        keys = IntArray(size)
+        cost = FloatArray(size)
+        via = IntArray(size)
+        prev = IntArray(size)
+        mask = size - 1
+        shift = 32 - Integer.numberOfTrailingZeros(size)
+    }
+
+    companion object {
+        /** Bytes por lugar: llave, costo, media arista y cruce de antes. */
+        const val DENSE_BYTES = 16L
+    }
+}
+
 /** Montón mínimo de (llave, cruce) en arreglos que crecen (sin objetos por entrada). */
 private class Heap {
-    private var keys = FloatArray(1024)
-    private var values = IntArray(1024)
+    private var keys = FloatArray(START)
+    private var values = IntArray(START)
     var size = 0
         private set
 
@@ -324,10 +518,22 @@ private class Heap {
         size = 0
     }
 
+    val bytes get() = keys.size * 8L
+
+    /** Lo crecido en una búsqueda larga vuelve a la app. */
+    fun release() {
+        size = 0
+        if (keys.size > START) {
+            keys = FloatArray(START)
+            values = IntArray(START)
+        }
+    }
+
     fun topKey() = keys[0]
 
     fun push(key: Float, value: Int) {
         if (size == keys.size) {
+            roomFor(size.toLong() * 2 * 8)
             keys = keys.copyOf(size * 2)
             values = values.copyOf(size * 2)
         }
@@ -360,6 +566,10 @@ private class Heap {
         keys[i] = lastKey
         values[i] = lastValue
         return top
+    }
+
+    private companion object {
+        const val START = 1024
     }
 }
 

@@ -124,6 +124,7 @@
     <string name="route_from_off">Je bent ver van een straat: ga dichter naar een straat om de route te vinden.</string>
     <string name="route_to_off">Die plek ligt ver van een straat.</string>
     <string name="route_no_path">We vonden geen weg daarheen over de straat.</string>
+    <string name="route_too_big">Deze rit is te lang voor het geheugen van dit scherm. Probeer een dichterbij gelegen bestemming.</string>
     <string name="route_two_states">Die plek ligt in een andere provincie: routes tussen provincies komen later. Open hem tot dan in je kaarten-app.</string>
     <string name="guide_go">Start</string>
     <string name="guide_end">Stoppen</string>

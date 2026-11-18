@@ -124,6 +124,7 @@
     <string name="route_from_off">Ești departe de o stradă: apropie-te de una ca să găsim traseul.</string>
     <string name="route_to_off">Locul acela e departe de o stradă.</string>
     <string name="route_no_path">Nu am găsit un drum până acolo.</string>
+    <string name="route_too_big">Această călătorie e prea lungă pentru memoria acestui ecran. Încearcă o destinație mai apropiată.</string>
     <string name="route_two_states">Locul este în alt județ: rutele între județe vin mai târziu. Până atunci, deschide-l în aplicația ta de hărți.</string>
     <string name="guide_go">Pornește</string>
     <string name="guide_end">Încheie</string>

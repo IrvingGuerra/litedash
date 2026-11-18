@@ -124,6 +124,7 @@
     <string name="route_from_off">Du bist weit von einer Straße entfernt: Fahr näher an eine heran, um die Route zu finden.</string>
     <string name="route_to_off">Dieser Ort ist weit von einer Straße entfernt.</string>
     <string name="route_no_path">Wir haben keinen Weg über Straßen dorthin gefunden.</string>
+    <string name="route_too_big">Diese Fahrt ist zu lang für den Speicher dieses Bildschirms. Versuch ein näheres Ziel.</string>
     <string name="route_two_states">Dieser Ort liegt in einem anderen Bundesland: Routen zwischen Bundesländern kommen später. Öffne ihn so lange in deiner Karten-App.</string>
     <string name="guide_go">Los</string>
     <string name="guide_end">Beenden</string>

@@ -9,7 +9,9 @@ import java.io.File
  * `litedash-claude/prototipos/mapas/datos/ldm/`, se salta). Imprime tiempo, distancia y minutos de cada par.
  */
 class RouterBench {
-    private val dir = File(System.getProperty("user.dir"), "../../../litedash-claude/prototipos/mapas/datos/ldm")
+    // LITEDASH_LDM_DIR para otro país (p. ej. …/datos/us/ldm).
+    private val dir = System.getenv("LITEDASH_LDM_DIR")?.takeIf { it.isNotBlank() }?.let(::File)
+        ?: File(System.getProperty("user.dir"), "../../../litedash-claude/prototipos/mapas/datos/ldm")
 
     @Test
     fun benchmark() {
@@ -27,16 +29,22 @@ class RouterBench {
                 val t = System.nanoTime()
                 graph = RoadGraph.open(File(dir, "${p[0]}.ldm"))!!
                 router = Router(graph)
-                println("ABRIR ${p[0]} ${(System.nanoTime() - t) / 1e6} ms cruces=${graph.vertexCount}")
+                println("ABRIR ${p[0]} ${(System.nanoTime() - t) / 1e6} ms cruces=${graph.vertexCount} lista por cruce=${graph.vertexCount <= Router.DENSE_MAX}")
             }
             val (a, b, c, d) = p.subList(1, 5).map { it.toDouble() }
+            // LITEDASH_ROUTER_COMPARE: la tabla de lo recorrido contra la lista por cruce, punto por punto.
+            if (System.getenv("LITEDASH_ROUTER_COMPARE") != null) {
+                val x = Router(graph!!, dense = true, sparseStart = 1 shl 14).route(a, b, c, d).getOrNull()
+                val y = Router(graph, dense = false, sparseStart = 1 shl 14).route(a, b, c, d).getOrNull()
+                println("IGUAL ${p[0]} $a,$b -> $c,$d : ${x != null && y != null && x.points.contentEquals(y.points) && x.seconds == y.seconds}")
+            }
             // Una vez para calentar (JIT) y la segunda se mide.
             router!!.route(a, b, c, d)
             val t = System.nanoTime()
             val r = router.route(a, b, c, d)
             val ms = (System.nanoTime() - t) / 1e6
             r.fold(
-                { println("RUTA ${p[0]} $a,$b -> $c,$d : ${"%.0f".format(ms)} ms ${"%.2f".format(it.distanceM / 1000)} km ${"%.1f".format(it.seconds / 60)} min por ${it.mainRoad} puntos=${it.pointCount}") },
+                { println("RUTA ${p[0]} $a,$b -> $c,$d : ${"%.0f".format(ms)} ms ${"%.2f".format(it.distanceM / 1000)} km ${"%.1f".format(it.seconds / 60)} min por ${it.mainRoad} puntos=${it.pointCount} tocados=${router.touched} memoria=${router.touchedBytes / 1_000_000} MB") },
                 { println("RUTA ${p[0]} $a,$b -> $c,$d : ${"%.0f".format(ms)} ms ERROR ${it.message}") },
             )
         }

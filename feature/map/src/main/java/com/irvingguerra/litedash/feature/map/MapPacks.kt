@@ -449,7 +449,9 @@ class MapPacks private constructor(private val app: Context) {
         private const val INDEX = "index.json"
         private const val INSTALLED = "installed.json"
         private const val PART = ".part"
-        private const val INDEX_URL = "https://raw.githubusercontent.com/IrvingGuerra/litedash-maps/main/index.json"
+        // Desde la 1.5.2, todos los países (EUA trae estados con millones de cruces: el ruteador de antes no los aguanta en
+        // pantallas de 1 GB, así que index.json se queda solo con México para las versiones anteriores).
+        private const val INDEX_URL = "https://raw.githubusercontent.com/IrvingGuerra/litedash-maps/main/regions.json"
         private const val INDEX_MAX_AGE_MS = 24 * 60 * 60 * 1000L
 
         @SuppressLint("StaticFieldLeak") // solo el contexto de la aplicación

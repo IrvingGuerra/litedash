@@ -124,6 +124,7 @@
     <string name="route_from_off">आप सड़क से दूर हैं: रास्ता खोजने के लिए किसी सड़क के पास जाएँ।</string>
     <string name="route_to_off">यह जगह सड़क से दूर है।</string>
     <string name="route_no_path">वहाँ तक सड़क से कोई रास्ता नहीं मिला।</string>
+    <string name="route_too_big">यह यात्रा इस स्क्रीन की मेमोरी के लिए बहुत लंबी है। कोई नज़दीकी मंज़िल आज़माएँ।</string>
     <string name="route_two_states">यह जगह दूसरे राज्य में है: राज्यों के बीच रास्ते बाद में आएँगे। तब तक इसे अपने मैप ऐप में खोलें।</string>
     <string name="guide_go">चलें</string>
     <string name="guide_end">समाप्त करें</string>

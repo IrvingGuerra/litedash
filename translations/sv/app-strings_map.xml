@@ -124,6 +124,7 @@
     <string name="route_from_off">Du är långt från en gata: kom närmare en för att hitta rutten.</string>
     <string name="route_to_off">Platsen ligger långt från en gata.</string>
     <string name="route_no_path">Vi hittade ingen väg dit.</string>
+    <string name="route_too_big">Den här resan är för lång för skärmens minne. Prova ett närmare mål.</string>
     <string name="route_two_states">Platsen ligger i ett annat län: rutter mellan län kommer senare. Öppna den i din kartapp så länge.</string>
     <string name="guide_go">Kör</string>
     <string name="guide_end">Avsluta</string>

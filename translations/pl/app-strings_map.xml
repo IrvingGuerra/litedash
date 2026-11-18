@@ -124,6 +124,7 @@
     <string name="route_from_off">Jesteś daleko od drogi: podjedź bliżej, żeby wyznaczyć trasę.</string>
     <string name="route_to_off">To miejsce jest daleko od drogi.</string>
     <string name="route_no_path">Nie znaleźliśmy tam drogi.</string>
+    <string name="route_too_big">Ta trasa jest za długa dla pamięci tego ekranu. Spróbuj bliższego celu.</string>
     <string name="route_two_states">To miejsce jest w innym województwie: trasy między województwami pojawią się później. Na razie otwórz je w swojej aplikacji z mapami.</string>
     <string name="guide_go">Start</string>
     <string name="guide_end">Zakończ</string>

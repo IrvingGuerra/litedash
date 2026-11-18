@@ -124,6 +124,7 @@
     <string name="route_from_off">Anda jauh dari jalan: dekati jalan untuk mencari rute.</string>
     <string name="route_to_off">Tempat itu jauh dari jalan.</string>
     <string name="route_no_path">Tidak ada jalan ke sana yang ditemukan.</string>
+    <string name="route_too_big">Perjalanan ini terlalu jauh untuk memori layar ini. Coba tujuan yang lebih dekat.</string>
     <string name="route_two_states">Tempat itu ada di provinsi lain: rute antarprovinsi menyusul nanti. Sementara, buka di aplikasi peta Anda.</string>
     <string name="guide_go">Mulai</string>
     <string name="guide_end">Akhiri</string>
