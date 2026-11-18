@@ -6,8 +6,8 @@
 </p>
 
 <p align="center">
-  <b>El launcher para pantallas Android de auto y moto: 1.9 MB con escáner OBD2, presión de llantas, radio FM, música USB y mapa.</b><br>
-  <i>The car launcher for Android head units: 1.9 MB with an OBD2 scanner, TPMS, FM radio, USB music and a map.</i><br><br>
+  <b>El launcher para pantallas Android de auto y moto: 2.1 MB con navegación sin conexión, escáner OBD2, presión de llantas, radio FM y música USB.</b><br>
+  <i>The car launcher for Android head units: 2.1 MB with offline navigation, an OBD2 scanner, TPMS, FM radio and USB music.</i><br><br>
   <b>Android 6.0+ · Gratis · Sin anuncios · GPL-3.0</b><br><br>
   <a href="https://litedash.dev/">Sitio</a> ·
   <a href="https://play.google.com/store/apps/details?id=com.irvingguerra.litedash">Google Play</a> ·
@@ -36,9 +36,9 @@
 ## Qué es
 
 LiteDash es la pantalla de inicio (launcher) para las pantallas Android de autos y motos
-(*head units*, las "chinas" de 7" a 11"), tablets y teléfonos. **En 1.9 MB trae escáner OBD2,
-presión de llantas, la radio FM de tu pantalla, reproductor USB, mapa, velocímetros y tu auto en
-3D.** Todo es opcional y viene apagado, para que vuele hasta en una pantalla de 1 GB de RAM: lo
+(*head units*, las "chinas" de 7" a 11"), tablets y teléfonos. **En 2.1 MB trae navegación sin
+conexión, escáner OBD2, presión de llantas, la radio FM de tu pantalla, reproductor USB,
+velocímetros y tu auto en 3D.** Todo es opcional y viene apagado, para que vuele hasta en una pantalla de 1 GB de RAM: lo
 apagado no gasta memoria, batería ni permisos. Tú acomodas tu inicio: deja presionado para mover,
 agrandar o quitar widgets.
 
@@ -46,14 +46,16 @@ agrandar o quitar widgets.
 
 | | |
 | --- | --- |
+| **Navegación sin conexión** (nuevo en 1.5) | Baja tu estado o una zona y busca, traza tu ruta y síguela vuelta por vuelta con tu auto en 3D: ruta azul, edificios en 3D y tu música junto al mapa. Sin internet, sin claves de API ni cuentas. Mapas de OpenStreetMap (hoy México por estado; [pide tu país](https://github.com/IrvingGuerra/litedash/issues) o desde la app). |
 | **Escáner OBD2** (Taller) | Adaptador ELM327 por Bluetooth, BLE, Wi‑Fi o USB. Salud del auto, códigos de falla explicados y borrarlos, monitores de verificación, gráficas en vivo, 0 a 100 y registro de viajes. Sin otra app. |
 | **Presión de llantas (TPMS)** | Kits con receptor USB, sensores Bluetooth comunes o la presión de fábrica por OBD en algunos autos. Avisos de presión baja, fuga, calor y pila. |
 | **Radio FM de tu pantalla** | Controla la radio de fábrica (TopWay, NWD, Hengchen) desde su widget, y radio por internet con las estaciones cerca de ti. |
 | **Música** | Reproductor USB propio (carpetas, artistas, álbumes), Bluetooth con carátula y tu app (Spotify, YouTube Music…). |
-| **Mapa** | Tu posición en vivo, plano o inclinado, y Waze o Google Maps a un toque. |
+| **Mapa** | Tu posición en vivo, plano o inclinado, con brújula; de fondo en tu inicio; y Waze o Google Maps a un toque. |
 | **Velocímetros y medidores** | Por OBD o GPS: esfera, aguja, digital, barra o degradado; tacómetro, temperatura, gasolina, batería, turbo. |
 | **Tu auto en 3D** | Catálogo de 18 modelos, del color que quieras, con giro de 360°. |
-| **Tu inicio** | Widgets que se mueven y crecen, plantillas para 7", 10" y 11", mandos al volante, día y noche por hora, sensor de luz o faros, pantalla dividida. |
+| **Tu inicio** | Widgets que se mueven y crecen, hasta 5 páginas, tarjetas de vidrio con tus colores, barra de apps a tu manera, plantillas para 7", 10" y 11", mandos al volante, día y noche por hora, sensor de luz o faros, pantalla dividida. |
+| **23 idiomas** | Español e inglés incluidos y 21 más que se descargan desde la app. |
 | **Android Auto y CarPlay** | Zlink, AutoKit, CarLink u Open Headunit a un toque. |
 | **App del celular** | [LiteDash Connect](https://litedash.dev/connect/) (opcional): lo que suena en tu celular, con carátula y controles. |
 
@@ -62,8 +64,8 @@ agrandar o quitar widgets.
 ## What it is (English)
 
 LiteDash is a home screen (launcher) for Android car and motorcycle head units, tablets and phones.
-**In 1.9 MB it packs an OBD2 scanner, TPMS tire pressure, your unit's factory FM radio, its own USB
-music player, a live map, speedometers and your car in 3D.** Everything is optional and off by
+**In 2.1 MB it packs offline turn-by-turn navigation, an OBD2 scanner, TPMS tire pressure, your
+unit's factory FM radio, its own USB music player, speedometers and your car in 3D.** Everything is optional and off by
 default, so it stays fast on 1 GB units running Android 6.0 or newer. No ads, no tracking, no
 account. See the [comparison with other car launchers](https://litedash.dev/en/compare/).
 
