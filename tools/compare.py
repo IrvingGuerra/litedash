@@ -26,7 +26,7 @@ S, N, P, D, T = "si", "no", "parcial", "nd", "txt"
 ROWS = [
     ("group", {"es": "Lo básico", "en": "The basics"}),
     ("row", {"es": "Peso de descarga", "en": "Download size"}, {
-        "ld": (T, '<data class="apk-mb" value="1.9">1.9</data> MB', '<data class="apk-mb" value="1.9">1.9</data> MB'),
+        "ld": (T, '<data class="apk-mb" value="2.1">2.1</data> MB', '<data class="apk-mb" value="2.1">2.1</data> MB'),
         "strada": (T, "0.6 MB", "0.6 MB"),
         "agama": (T, "11.6 MB", "11.6 MB"),
         "cwg": (T, "29.3 MB", "29.3 MB"),
@@ -93,7 +93,7 @@ ROWS = [
         "strada": (N, "", ""), "agama": (N, "", ""), "cwg": (D, "", ""), "dashito": (D, "", ""), "cl": (N, "", ""),
     }),
     ("feat", {"es": "Mapa en el inicio", "en": "Map on the home screen"}, {
-        "ld": (S, "En vivo, plano o inclinado", "Live, flat or tilted"),
+        "ld": (S, "En vivo, también de fondo", "Live, also as background"),
         "strada": (S, "OpenStreetMap", "OpenStreetMap"),
         "agama": (P, "Solo la siguiente vuelta de otra app", "Only the next turn from another app"),
         "cwg": (P, "Tus recorridos, no navegación", "Your trips, not navigation"),
@@ -101,8 +101,13 @@ ROWS = [
         "cl": (N, "", ""),
     }),
     ("feat", {"es": "Mapas descargables sin internet", "en": "Downloadable offline maps"}, {
-        "ld": (S, "Por zonas, de 10 a 200 km", "By area, 10 to 200 km"),
+        "ld": (S, "Por estado (México) o por zona de 10 a 30 km", "By state (Mexico) or by area, 10 to 30 km"),
         "strada": (S, "Por país", "By country"),
+        "agama": (N, "", ""), "cwg": (N, "", ""), "dashito": (D, "", ""), "cl": (N, "", ""),
+    }),
+    ("feat", {"es": "Buscar, ruta y guía sin internet", "en": "Search, route and guidance offline"}, {
+        "ld": (S, "Vuelta por vuelta con tu auto en 3D, sin claves", "Turn by turn with your 3D car, no keys"),
+        "strada": (P, "Navegación propia; tráfico TomTom con tu clave", "Its own navigation; TomTom traffic with your key"),
         "agama": (N, "", ""), "cwg": (N, "", ""), "dashito": (D, "", ""), "cl": (N, "", ""),
     }),
     ("feat", {"es": "Widgets que mueves y agrandas", "en": "Widgets you move and resize"}, {
@@ -110,7 +115,7 @@ ROWS = [
         "agama": (S, "", ""), "cwg": (S, "", ""), "dashito": (D, "", ""), "cl": (S, "En PRO", "In PRO"),
     }),
     ("feat", {"es": "Tu auto en 3D", "en": "Your car in 3D"}, {
-        "ld": (S, "17 modelos, de tu color", "17 models, in your color"),
+        "ld": (S, "18 modelos, de tu color", "18 models, in your color"),
         "strada": (N, "Foto de tu auto", "Photo of your car"),
         "agama": (D, "", ""), "cwg": (D, "", ""),
         "dashito": (N, "Foto de tu auto", "Photo of your car"), "cl": (N, "", ""),
@@ -168,7 +173,7 @@ TEXT = {
         "mb": "MB",
         "honesto_sobre": "Sin trampa", "honesto_h2": "Cuándo te conviene otro.",
         "honesto": [
-            ("StradaOS", "Si tu pantalla tiene Android 4 o 5, o quieres los mapas sin internet de todo un país. Pesa 0.6 MB y también es gratis y abierto; no trae OBD, llantas ni reproductor."),
+            ("StradaOS", "Si tu pantalla tiene Android 4 o 5, o necesitas mapas sin internet de un país entero (LiteDash hoy baja México por estado y zonas en cualquier lugar). Pesa 0.6 MB y también es gratis y abierto; no trae OBD, llantas ni reproductor."),
             ("AGAMA", "Si quieres muchos temas y no te importa pagar, y ya usas sus apps CRAB y MANTA para OBD y llantas."),
             ("CarWebGuru", "Si te gustan sus temas y su reproductor de archivos, y no te molestan los anuncios."),
             ("Dashito", "Si quieres un panel junto a Android Auto o las gasolineras con su precio del día, y no te molestan los anuncios. También trae OBD2 y su propia app de celular."),
@@ -176,10 +181,10 @@ TEXT = {
         ],
         "preguntas_h2": "Preguntas de la comparación.",
         "faq": [
-            ("¿Cuál es el launcher para auto más ligero?", "De los que publican su peso, StradaOS, con 0.6 MB. LiteDash pesa 1.9 MB y suma escáner OBD2, presión de llantas, control de la radio FM de fábrica, reproductor USB y radio por internet, que StradaOS no trae."),
+            ("¿Cuál es el launcher para auto más ligero?", "De los que publican su peso, StradaOS, con 0.6 MB. LiteDash pesa 2.1 MB y suma escáner OBD2, presión de llantas, control de la radio FM de fábrica, reproductor USB y radio por internet, que StradaOS no trae."),
             ("¿Qué launcher trae escáner OBD2 sin otra app?", "LiteDash y Dashito lo traen integrado. En LiteDash conectas un ELM327 por Bluetooth, BLE, Wi‑Fi o USB y ves salud del auto, códigos de falla y gráficas; Dashito lo conecta por Bluetooth o BLE y también lee y borra códigos. AGAMA necesita su app CRAB con licencia aparte y StradaOS no tiene OBD."),
-            ("¿LiteDash o AGAMA?", "AGAMA es más popular y tiene muchos temas, pero es de pago tras 30 días, pesa 11.6 MB y pide apps aparte para OBD y llantas. LiteDash es gratis, de código abierto y los trae dentro en 1.9 MB."),
-            ("¿LiteDash o CarWebGuru?", "CarWebGuru tiene anuncios y pesa 29.3 MB, unas 15 veces más. LiteDash no tiene anuncios y trae presión de llantas y control de la radio FM de fábrica."),
+            ("¿LiteDash o AGAMA?", "AGAMA es más popular y tiene muchos temas, pero es de pago tras 30 días, pesa 11.6 MB y pide apps aparte para OBD y llantas. LiteDash es gratis, de código abierto y los trae dentro en 2.1 MB."),
+            ("¿LiteDash o CarWebGuru?", "CarWebGuru tiene anuncios y pesa 29.3 MB, unas 14 veces más. LiteDash no tiene anuncios y trae presión de llantas y control de la radio FM de fábrica."),
             ("¿LiteDash o Dashito?", "Dashito, también hecho en México, trae escáner OBD2, app de celular, mapa con gasolineras y su precio, y un panel junto a Android Auto, que LiteDash no tiene. Pero tiene anuncios (se quitan con un pago) y no es de código abierto. LiteDash es gratis, sin anuncios y GPL-3.0, y suma presión de llantas, radio FM de fábrica y reproductor USB, que Dashito no anuncia, y tu auto en 3D (Dashito usa una foto)."),
             ("¿De dónde salen los datos?", "De la página de cada app en GitHub, Google Play y RuStore, de su web y, en Dashito, de su video tutorial (Play ya no muestra el tamaño). Abajo están los enlaces. Si un dato no se pudo comprobar, dice \"sin dato\"."),
         ],
@@ -210,7 +215,7 @@ TEXT = {
         "mb": "MB",
         "honesto_sobre": "No tricks", "honesto_h2": "When another one suits you.",
         "honesto": [
-            ("StradaOS", "If your unit runs Android 4 or 5, or you want offline maps for a whole country. It's 0.6 MB, also free and open source; no OBD, tires or music player."),
+            ("StradaOS", "If your unit runs Android 4 or 5, or you need offline maps of a whole country (LiteDash covers Mexico by state today, plus areas anywhere). It's 0.6 MB, also free and open source; no OBD, tires or music player."),
             ("AGAMA", "If you want lots of themes, don't mind paying, and already use its CRAB and MANTA apps for OBD and tires."),
             ("CarWebGuru", "If you like its themes and file player, and ads don't bother you."),
             ("Dashito", "If you want a panel next to Android Auto or gas stations with today's prices, and ads don't bother you. It also has OBD2 and its own phone app."),
@@ -218,10 +223,10 @@ TEXT = {
         ],
         "preguntas_h2": "Comparison questions.",
         "faq": [
-            ("What is the lightest car launcher?", "Of those that publish their size, StradaOS, at 0.6 MB. LiteDash is 1.9 MB and adds an OBD2 scanner, tire pressure, factory FM radio control, a USB player and internet radio, which StradaOS doesn't have."),
+            ("What is the lightest car launcher?", "Of those that publish their size, StradaOS, at 0.6 MB. LiteDash is 2.1 MB and adds an OBD2 scanner, tire pressure, factory FM radio control, a USB player and internet radio, which StradaOS doesn't have."),
             ("Which launcher has an OBD2 scanner without another app?", "LiteDash and Dashito have it built in. With LiteDash you connect an ELM327 over Bluetooth, BLE, Wi‑Fi or USB and see car health, trouble codes and charts; Dashito connects over Bluetooth or BLE and also reads and clears codes. AGAMA needs its CRAB app with a separate license, and StradaOS has no OBD."),
-            ("LiteDash or AGAMA?", "AGAMA is more popular and has many themes, but it's paid after 30 days, weighs 11.6 MB and needs separate apps for OBD and tires. LiteDash is free, open source and has them built in at 1.9 MB."),
-            ("LiteDash or CarWebGuru?", "CarWebGuru has ads and weighs 29.3 MB, about 15 times more. LiteDash has no ads and adds tire pressure and factory FM radio control."),
+            ("LiteDash or AGAMA?", "AGAMA is more popular and has many themes, but it's paid after 30 days, weighs 11.6 MB and needs separate apps for OBD and tires. LiteDash is free, open source and has them built in at 2.1 MB."),
+            ("LiteDash or CarWebGuru?", "CarWebGuru has ads and weighs 29.3 MB, about 14 times more. LiteDash has no ads and adds tire pressure and factory FM radio control."),
             ("LiteDash or Dashito?", "Dashito, also made in Mexico, has an OBD2 scanner, a phone app, a map with gas stations and their prices, and a panel next to Android Auto, which LiteDash doesn't have. But it has ads (a purchase removes them) and isn't open source. LiteDash is free, ad-free and GPL-3.0, and adds tire pressure, factory FM radio and a USB player, which Dashito doesn't advertise, plus your car in 3D (Dashito uses a photo)."),
             ("Where does the data come from?", "From each app's page on GitHub, Google Play and RuStore, its website and, for Dashito, its tutorial video (Play no longer shows the size). Links are below. If something couldn't be verified, it says \"no data\"."),
         ],
@@ -389,7 +394,7 @@ def page(lang):
         <h2>{t["cta_h2"]}</h2>
         <div class="botones">
           <a class="boton principal" href="https://play.google.com/store/apps/details?id=com.irvingguerra.litedash" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true" style="flex:none"><path d="M8 5v14l11-7z" fill="currentColor"/></svg> {t["cta_play"]}</a>
-          <a class="boton secundario" href="https://github.com/IrvingGuerra/litedash/releases/latest/download/litedash.apk" download>{t["cta_apk"]} <small class="version">1.9 MB</small></a>
+          <a class="boton secundario" href="https://github.com/IrvingGuerra/litedash/releases/latest/download/litedash.apk" download>{t["cta_apk"]} <small class="version">2.1 MB</small></a>
           <a class="boton secundario" href="{t["home"]}">{t["cta_web"]}</a>
         </div>
       </div>
