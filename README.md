@@ -6,8 +6,8 @@
 </p>
 
 <p align="center">
-  <b>El launcher para pantallas Android de auto y moto: 2.1 MB con navegación sin conexión, escáner OBD2, presión de llantas, radio FM y música USB.</b><br>
-  <i>The car launcher for Android head units: 2.1 MB with offline navigation, an OBD2 scanner, TPMS, FM radio and USB music.</i><br><br>
+  <b>El launcher para pantallas Android de auto y moto: 2.2 MB con navegación sin conexión, escáner OBD2, presión de llantas, radio FM y música USB.</b><br>
+  <i>The car launcher for Android head units: 2.2 MB with offline navigation, an OBD2 scanner, TPMS, FM radio and USB music.</i><br><br>
   <b>Android 6.0+ · Gratis · Sin anuncios · GPL-3.0</b><br><br>
   <a href="https://litedash.dev/">Sitio</a> ·
   <a href="https://play.google.com/store/apps/details?id=com.irvingguerra.litedash">Google Play</a> ·
@@ -36,7 +36,7 @@
 ## Qué es
 
 LiteDash es la pantalla de inicio (launcher) para las pantallas Android de autos y motos
-(*head units*, las "chinas" de 7" a 11"), tablets y teléfonos. **En 2.1 MB trae navegación sin
+(*head units*, las "chinas" de 7" a 11"), tablets y teléfonos. **En 2.2 MB trae navegación sin
 conexión, escáner OBD2, presión de llantas, la radio FM de tu pantalla, reproductor USB,
 velocímetros y tu auto en 3D.** Todo es opcional y viene apagado, para que vuele hasta en una pantalla de 1 GB de RAM: lo
 apagado no gasta memoria, batería ni permisos. Tú acomodas tu inicio: deja presionado para mover,
@@ -64,7 +64,7 @@ agrandar o quitar widgets.
 ## What it is (English)
 
 LiteDash is a home screen (launcher) for Android car and motorcycle head units, tablets and phones.
-**In 2.1 MB it packs offline turn-by-turn navigation, an OBD2 scanner, TPMS tire pressure, your
+**In 2.2 MB it packs offline turn-by-turn navigation, an OBD2 scanner, TPMS tire pressure, your
 unit's factory FM radio, its own USB music player, speedometers and your car in 3D.** Everything is optional and off by
 default, so it stays fast on 1 GB units running Android 6.0 or newer. No ads, no tracking, no
 account. See the [comparison with other car launchers](https://litedash.dev/en/compare/).
