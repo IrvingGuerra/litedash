@@ -55,6 +55,12 @@ internal fun browserServices(context: Context, pkg: String? = null): List<Servic
     context.packageManager.queryIntentServices(intent, 0).map { it.serviceInfo }
 }.getOrDefault(emptyList())
 
+/** Las apps que se declaran de música (categoría APP_MUSIC de Android). */
+internal fun declaredMusicApps(context: Context): List<String> = runCatching {
+    context.packageManager.queryIntentActivities(Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_APP_MUSIC), 0)
+        .map { it.activityInfo.packageName }
+}.getOrDefault(emptyList())
+
 /** El paquete parece de Bluetooth: alguna parte (sin el prefijo) empieza con "bt" o lleva "bluetooth". */
 internal fun looksBluetooth(pkg: String) = pkg.lowercase().split('.').drop(1).any { it.startsWith("bt") || "bluetooth" in it }
 

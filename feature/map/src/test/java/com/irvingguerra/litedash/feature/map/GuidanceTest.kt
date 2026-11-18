@@ -107,4 +107,26 @@ class GuidanceTest {
     }
 
     private fun e6(d: Double) = Math.round(d * 1e6).toInt()
+
+    @Test
+    fun roundedRouteCurvesTheCornerAndKeepsItsTurn() {
+        val r = route.rounded()
+        assertTrue(r.pointCount > route.pointCount)
+        // Empieza y acaba igual, y ya no pasa por el pico de la esquina.
+        assertEquals(points[0], r.points[0]); assertEquals(points[9], r.points[r.points.size - 1])
+        assertFalse((0 until r.pointCount).any { r.points[2 * it] == points[4] && r.points[2 * it + 1] == points[5] })
+        // Un poco más corta (corta la esquina), con los metros y segundos crecientes y su total al final.
+        assertTrue(r.distanceM < route.distanceM && r.distanceM > route.distanceM - 15)
+        for (i in 1 until r.pointCount) assertTrue(r.atM[i] >= r.atM[i - 1] && r.atS[i] >= r.atS[i - 1])
+        assertEquals(r.distanceM, r.atM.last(), 0.001)
+        // La vuelta sigue ahí, a media curva: cerca de la esquina de antes.
+        val turn = r.maneuvers[1]
+        assertEquals(ManeuverType.RIGHT, turn.type)
+        assertEquals(atM[2], turn.atM, 10.0)
+        assertEquals(r.pointCount - 1, r.maneuvers.last().point)
+        // Sobre la curva la guía no se sale de la ruta y gira poco a poco.
+        val s = Guidance(r).update(r.points[2 * turn.point] / 1e6, r.points[2 * turn.point + 1] / 1e6)
+        assertFalse(s.offRoute)
+        assertTrue(s.heading!! in 20f..70f)
+    }
 }

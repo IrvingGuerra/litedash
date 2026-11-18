@@ -4,6 +4,11 @@
         <intent>
             <action android:name="android.media.browse.MediaBrowserService" />
         </intent>
+        <!-- Las que se declaran app de música sin ofrecer su biblioteca. -->
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.APP_MUSIC" />
+        </intent>
         <!-- Reproductores que aceptan el botón de play (los de USB y Bluetooth de la pantalla). -->
         <intent>
             <action android:name="android.intent.action.MEDIA_BUTTON" />

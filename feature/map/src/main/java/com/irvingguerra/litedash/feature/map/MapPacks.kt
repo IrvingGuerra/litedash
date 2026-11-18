@@ -350,7 +350,7 @@ class MapPacks private constructor(private val app: Context) {
                 routerId = pack.id
             }
             router!!.route(fromLat, fromLon, toLat, toLon).fold(
-                { RoutePlan.Found(it) },
+                { RoutePlan.Found(it.rounded()) },
                 { RoutePlan.Failed((it as? RouteException)?.error ?: RouteError.NO_PATH) },
             )
         }

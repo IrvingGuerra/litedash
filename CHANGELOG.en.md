@@ -3,6 +3,17 @@
 What people using LiteDash notice, in English. The full history (in Spanish) is in [CHANGELOG.md](CHANGELOG.md).
 Format [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versions [SemVer](https://semver.org/).
 
+## [1.5.5] - 2026-11-18
+
+### Changed
+- **Natural turns in guidance:** at corners the blue route no longer makes a square corner; it follows the curve a car
+  takes when turning, and your car follows it.
+
+### Fixed
+- **Tidal and other music apps missing from the list** (Settings → Apps → Music → App): apps that declare themselves
+  as music apps now show up even if they don't offer their library, and Tidal, Qobuz, SoundCloud and Pandora always do
+  when installed. (Any other app can still be picked with "Other app".)
+
 ## [1.5.4] - 2026-11-18
 
 ### Fixed

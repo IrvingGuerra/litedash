@@ -1150,11 +1150,10 @@ class MusicRepository(internal val context: Context) {
     }
 
     /**
-     * Apps de música instaladas: las que ofrecen su biblioteca a Android
-     * (Spotify, Amazon Music, YouTube Music, Deezer, el reproductor de la pantalla…).
+     * Apps de música instaladas: las que ofrecen su biblioteca a Android (Spotify, Amazon Music, YouTube Music, Deezer,
+     * el reproductor de la pantalla…) y las que se declaran app de música (algunas no ofrecen biblioteca).
      */
-    fun musicApps(): Set<String> = browserServices(context)
-        .map { it.packageName }
+    fun musicApps(): Set<String> = (browserServices(context).map { it.packageName } + declaredMusicApps(context))
         .filter { it != context.packageName && it !in NOT_MUSIC_APPS }
         .toSet()
 

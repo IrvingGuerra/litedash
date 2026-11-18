@@ -4,6 +4,17 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.5.5] - 2026-11-18
+
+### Cambiado
+- **Vueltas naturales en la guía:** en las esquinas la ruta azul ya no hace un pico cuadrado; traza la curva que da un
+  auto al girar, y tu auto la sigue.
+
+### Arreglado
+- **Tidal y otras apps de música que no salían en la lista** (Ajustes → Apps → Música → App): ahora también aparecen
+  las que se declaran app de música aunque no ofrezcan su biblioteca, y Tidal, Qobuz, SoundCloud y Pandora siempre que
+  estén instaladas. (Cualquier otra se sigue pudiendo elegir con «Otra app».)
+
 ## [1.5.4] - 2026-11-18
 
 ### Arreglado
