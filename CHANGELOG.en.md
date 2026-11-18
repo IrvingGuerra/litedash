@@ -3,6 +3,18 @@
 What people using LiteDash notice, in English. The full history (in Spanish) is in [CHANGELOG.md](CHANGELOG.md).
 Format [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versions [SemVer](https://semver.org/).
 
+## [1.5.0] - 2026-11-17
+
+**LiteDash 1.5: Offline navigation.** Everything from 1.4.168 to 1.4.184 in one release: no API keys, no accounts.
+
+### New
+- **Download your state or an area** and search, get your route and follow it without internet.
+- **Tesla-style guide:** your car in 3D on the blue route, streets with lane lines, 3D buildings, the next turn and
+  your music next to the map.
+- **Compass** on the Map widget, the full-screen map and the guide.
+- **Your country isn't there? Request it** from Settings → Apps → Navigation → Offline.
+- Map background and pages on the home screen, a glass look across the app and the app bar in parts.
+
 ## [1.4.184] - 2026-11-17
 
 ### New

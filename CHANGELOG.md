@@ -4,6 +4,19 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.5.0] - 2026-11-17
+
+**LiteDash 1.5: Navegación sin conexión.** Todo lo de la 1.4.168 a la 1.4.184 en una versión: sin claves de API ni
+cuentas.
+
+### Nuevo
+- **Descarga tu estado o una zona** y busca, traza tu ruta y síguela sin internet.
+- **Guía estilo Tesla:** tu auto en 3D sobre la ruta azul, calles con rayas, edificios en 3D, la próxima vuelta y tu
+  música junto al mapa.
+- **Brújula** en el widget Mapa, el mapa en grande y la guía.
+- **¿No está tu país? Pídelo** desde Ajustes → Apps → Navegación → Sin conexión.
+- Mapa de fondo y páginas en el inicio, apariencia de vidrio en toda la app y la barra de apps por partes.
+
 ## [1.4.184] - 2026-11-17
 
 ### Nuevo
