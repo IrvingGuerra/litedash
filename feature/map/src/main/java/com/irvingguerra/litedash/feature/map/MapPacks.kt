@@ -462,6 +462,12 @@ class MapPacks private constructor(private val app: Context) {
         @SuppressLint("StaticFieldLeak") // solo el contexto de la aplicación
         @Volatile private var instance: MapPacks? = null
 
+        /** Para el reporte técnico, sin abrir nada: cuántas regiones trae la lista y cuáles están bajadas. */
+        fun describe(): String = instance?.let { p ->
+            "Mapas: lista=${p.regions.size} regiones (${p.regions.map { it.country }.distinct().joinToString()}); bajados=" +
+                p.installed.joinToString { it.id }.ifEmpty { "ninguno" }
+        } ?: "Mapas: sin abrir en esta sesión"
+
         fun get(context: Context): MapPacks =
             instance ?: synchronized(this) { instance ?: MapPacks(context.applicationContext).also { instance = it } }
 

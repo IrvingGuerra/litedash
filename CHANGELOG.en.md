@@ -3,6 +3,16 @@
 What people using LiteDash notice, in English. The full history (in Spanish) is in [CHANGELOG.md](CHANGELOG.md).
 Format [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versions [SemVer](https://semver.org/).
 
+## [1.5.7] - 2026-11-18
+
+### Changed
+- **Countries with maps, in plain sight:** Settings → Apps → Navigation → Offline → By state now always shows the
+  available countries (Mexico, United States, Puerto Rico, Canada and Colombia); tap one to see its states. They used
+  to be hidden behind "Other states" and many people requested a country that was already there.
+- **Offline opens on "By state"** even when the screen doesn't know where you are yet (it opened on "By zone" and the
+  states weren't even visible), and turns the GPS on while it's open to put your state on top.
+- The technical report includes which maps you have downloaded.
+
 ## [1.5.6] - 2026-11-18
 
 ### Changed

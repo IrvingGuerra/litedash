@@ -4,6 +4,16 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.5.7] - 2026-11-18
+
+### Cambiado
+- **Los países con mapa, a la vista:** en Ajustes → Apps → Navegación → Sin conexión → Por estado ahora se ven siempre
+  los países disponibles (México, Estados Unidos, Puerto Rico, Canadá y Colombia); toca uno y salen sus estados. Antes
+  estaban escondidos tras «Otros estados» y mucha gente pedía un país que ya estaba.
+- **Sin conexión abre en «Por estado»** aunque la pantalla aún no sepa dónde estás (abría en «Por zona» y los estados ni
+  se veían), y enciende el GPS mientras está abierta para poner tu estado arriba.
+- El reporte técnico incluye qué mapas tienes bajados.
+
 ## [1.5.6] - 2026-11-18
 
 ### Cambiado

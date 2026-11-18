@@ -699,12 +699,18 @@ private fun OfflineSection(d: Dependencies, detail: MapDetail) {
     val offline = remember { OfflineMaps.get(context) }
     val packs = remember { MapPacks.get(context) }
     LaunchedEffect(Unit) { packs.refresh() }
+    // Aquí hace falta saber dónde estás (tu estado arriba, tu zona en el mapa) aunque ningún widget use el GPS.
+    LifecycleStartEffect(d.trip) {
+        d.trip.acquire()
+        onStopOrDispose { d.trip.release() }
+    }
     val position = d.trip.position
     // Por estado (todo tu estado, de nuestro repo) o por zona (un círculo, en cualquier parte del mundo). De entrada,
-    // por estado si hay mapa del estado donde estás o ya bajaste uno; si no, por zona.
-    val hasState = packs.installed.isNotEmpty() || position?.let { packs.regionAt(it.latitude, it.longitude) } != null
+    // por estado; por zona solo si ya se sabe que donde estás no hay mapa del estado (y no has bajado ninguno): sin
+    // ubicación se quedaba en «Por zona» y los estados ni se veían.
+    val noState = packs.installed.isEmpty() && packs.regions.isNotEmpty() && position?.let { packs.regionAt(it.latitude, it.longitude) == null } == true
     var picked by rememberSaveable { mutableStateOf<Boolean?>(null) }
-    val byZone = picked ?: !hasState
+    val byZone = picked ?: noState
     Segmented(
         listOf(false to stringResource(R.string.map_offline_by_state), true to stringResource(R.string.map_offline_by_zone)),
         byZone,
@@ -772,7 +778,8 @@ private fun OfflineSection(d: Dependencies, detail: MapDetail) {
 
 /**
  * El mapa de tu estado completo (M2): el de donde estás arriba (bajarlo, su avance, actualizarlo o borrarlo), luego los
- * que ya bajaste y, al pedirlo, los demás del país. Sin índice (nunca hubo internet), cómo conseguirlo.
+ * que ya bajaste y los demás por país (los países que hay, siempre a la vista). Sin índice (nunca hubo internet), cómo
+ * conseguirlo.
  */
 @Composable
 private fun StatePackSection(d: Dependencies, packs: MapPacks) {
@@ -787,18 +794,24 @@ private fun StatePackSection(d: Dependencies, packs: MapPacks) {
         return
     }
     val here = position?.let { packs.regionAt(it.latitude, it.longitude) }
-    var showAll by rememberSaveable { mutableStateOf(false) }
     val mine = packs.installed.mapNotNull { p -> packs.regions.firstOrNull { it.id == p.id } }
     val shown = (listOfNotNull(here) + mine).distinctBy { it.id }
     for (r in shown) StatePackRow(packs, r, language)
-    if (!showAll) {
-        Button(stringResource(R.string.map_pack_others), { showAll = true })
-        return
+    // Los países que hay, siempre a la vista (escondidos, la gente pedía países que ya estaban). Al tocar uno, sus
+    // estados; sin nada arriba (no se sabe dónde estás ni has bajado nada) ya va abierto el tuyo, por la región del sistema.
+    val countries = remember(packs.regions) { packs.regions.map { it.country }.distinct() }
+    val locale = currentLocale()
+    var pickedCountry by rememberSaveable { mutableStateOf<String?>(null) }
+    val country = pickedCountry
+        ?: if (shown.isEmpty()) java.util.Locale.getDefault().country.takeIf { it in countries } ?: countries.first() else null
+    Label(stringResource(R.string.map_pack_others), Typography.label, c.textMuted)
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        for (code in countries) Button(java.util.Locale("", code).getDisplayCountry(locale).ifEmpty { code }, { pickedCountry = code }, primary = code == country)
     }
-    // Sin escribir, los de tu país; escribiendo, de cualquier país (con muchas regiones, la lista sola sería eterna).
+    if (country == null) return
+    // Sin escribir, los del país elegido; escribiendo, de cualquier país.
     var query by rememberSaveable { mutableStateOf("") }
     TextInput(query, { query = it }, stringResource(R.string.map_pack_search), Modifier.fillMaxWidth(), icon = true)
-    val country = here?.country ?: mine.firstOrNull()?.country ?: packs.regions.first().country
     val q = normalize(query.trim())
     val names = remember(packs.regions, language) { packs.regions.associate { it.id to normalize(it.name(language)) } }
     val others = packs.regions

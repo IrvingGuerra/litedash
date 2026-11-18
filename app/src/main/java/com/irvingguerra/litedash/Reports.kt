@@ -30,6 +30,7 @@ import com.irvingguerra.litedash.core.ui.Label
 import com.irvingguerra.litedash.core.ui.LocalColors
 import com.irvingguerra.litedash.core.ui.TextInput
 import com.irvingguerra.litedash.core.ui.Typography
+import com.irvingguerra.litedash.feature.map.MapPacks
 import com.irvingguerra.litedash.feature.link.PhoneLink
 import com.irvingguerra.litedash.feature.music.AppProbe
 import com.irvingguerra.litedash.feature.music.SoundPiece
@@ -358,7 +359,7 @@ private const val PHONE_REPORT_GAP_MS = 10_000L
  * principal (todo es memoria).
  */
 private fun reportExtras(d: Dependencies): String = listOfNotNull(
-    d.phoneIfCreated()?.describe() ?: "Celular: sin vincular", d.trip.describe(), d.weather.describe(), d.tpmsIfCreated()?.describe(), d.wheel.describe(), d.cars.describe(), d.updates?.describe(),
+    d.phoneIfCreated()?.describe() ?: "Celular: sin vincular", d.trip.describe(), MapPacks.describe(), d.weather.describe(), d.tpmsIfCreated()?.describe(), d.wheel.describe(), d.cars.describe(), d.updates?.describe(),
 ).joinToString("\n")
 
 /** El volumen de la música en Android y si está fijo (la pantalla lo maneja con su propio chip). */
