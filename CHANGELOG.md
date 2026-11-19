@@ -4,6 +4,14 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.5.10] - 2026-11-18
+
+### Arreglado
+- **El botón de play/pausa del volante ya pausa a la primera:** si la música (Spotify u otra app, o tus archivos) ya
+  estaba sonando y el widget Música no estaba a la vista o aún no sabía que sonaba, el botón del volante mandaba «play»
+  otra vez en lugar de «pausa», y no había forma de pausarla sin tocar la pantalla. Ahora LiteDash pregunta en ese
+  momento si la app está sonando antes de decidir.
+
 ## [1.5.9] - 2026-11-18
 
 ### Agregado

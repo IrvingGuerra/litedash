@@ -3,6 +3,14 @@
 What people using LiteDash notice, in English. The full history (in Spanish) is in [CHANGELOG.md](CHANGELOG.md).
 Format [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versions [SemVer](https://semver.org/).
 
+## [1.5.10] - 2026-11-18
+
+### Fixed
+- **The steering wheel play/pause button now pauses on the first press:** if music (Spotify or another app, or your
+  files) was already playing and the Music widget was off screen or didn't know yet, the wheel button sent "play"
+  again instead of "pause", and you couldn't pause without touching the screen. LiteDash now checks whether the app is
+  playing at that moment before deciding.
+
 ## [1.5.9] - 2026-11-18
 
 ### Added

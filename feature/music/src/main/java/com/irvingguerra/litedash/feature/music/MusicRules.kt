@@ -106,6 +106,13 @@ internal fun skipPlan(t: Target): Plan = when {
     else -> Plan(listOf(Channel.RECEIVER, Channel.SESSION_KEY, Channel.SYSTEM))
 }
 
+/**
+ * ¿Suena lo que el botón de play/pausa va a controlar, cuando lo que se ve no es de fiar? Manda la sesión de la app si
+ * dice algo ([session]); si no, lo que LiteDash supone por lo último que le mandó ([shown], una canción «a ciegas»); y sin
+ * nada de eso, si Android tiene audio ([audio]; null = no aplica).
+ */
+internal fun soundsNow(shown: Boolean?, session: Boolean?, audio: Boolean?): Boolean = session ?: shown ?: (audio == true)
+
 /** El celular primero; si ya no hay enlace, el camino de siempre. */
 private fun phoneFirst(rest: Plan) = rest.copy(route = listOf(Channel.PHONE) + rest.route)
 

@@ -298,4 +298,17 @@ class MusicRulesTest {
         assertFalse(coverKey("Back In Black", "AC/DC") == coverKey("Back In Black", "ACDC"))
         assertNull(coverKey("", ""))
     }
+
+    @Test
+    fun toggleAsksTheAppWhenNothingReliableIsShown() {
+        // Sin pieza a la vista: la sesión de la app manda (suena → el botón pausa).
+        assertTrue(soundsNow(shown = null, session = true, audio = false))
+        assertFalse(soundsNow(shown = null, session = false, audio = true))
+        // La sesión le gana a lo que LiteDash suponía (el volante la prendió por fuera).
+        assertTrue(soundsNow(shown = false, session = true, audio = null))
+        // Sin sesión que diga algo: lo supuesto; y sin nada, el audio de Android.
+        assertTrue(soundsNow(shown = true, session = null, audio = false))
+        assertTrue(soundsNow(shown = null, session = null, audio = true))
+        assertFalse(soundsNow(shown = null, session = null, audio = null))
+    }
 }

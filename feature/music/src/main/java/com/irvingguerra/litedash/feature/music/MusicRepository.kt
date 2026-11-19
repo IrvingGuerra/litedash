@@ -818,7 +818,26 @@ class MusicRepository(internal val context: Context) {
         }
 
         /** Play o pausa ([play]/[pause]). Sin nada a la vista, play despierta lo que toque. */
-        fun toggle() = if (song?.playing == true) pause(this) else play(this)
+        fun toggle() = if (playingNow()) pause(this) else play(this)
+
+        /**
+         * ¿Suena, para decidir entre play y pausa? Lo que se ve, si es de verdad. Sin eso (la pieza no está en
+         * pantalla y no escucha, o su app aún no tiene sesión que se vea) se pregunta en el momento ([soundsNow]): si no,
+         * el volante mandaba play una y otra vez a algo que ya sonaba y no había cómo pausarlo.
+         */
+        private fun playingNow(): Boolean {
+            val s = song
+            if (s != null && !s.blind) return s.playing
+            val pkg = target(this)
+            val state = pkg?.let { sessionOf(it, this) }?.playbackState?.state
+            return soundsNow(
+                shown = s?.playing,
+                session = state?.takeIf { it == PlaybackState.STATE_PLAYING || it == PlaybackState.STATE_PAUSED || it == PlaybackState.STATE_STOPPED || it == PlaybackState.STATE_BUFFERING }
+                    ?.let { it == PlaybackState.STATE_PLAYING || it == PlaybackState.STATE_BUFFERING },
+                // El audio de Android solo dice algo de una app de música normal: el Bluetooth y la FM de fábrica suenan por fuera.
+                audio = if (this === music && pkg != null && !isOwn(pkg) && sourceOf(pkg) == null) musicActive() else null,
+            )
+        }
 
         fun next() = skip(this, forward = true)
 
