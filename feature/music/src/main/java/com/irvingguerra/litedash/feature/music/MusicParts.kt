@@ -245,13 +245,24 @@ internal fun MediaTile(
             val text = if (tall) TALL_TEXT_MIN else if (compact) 170.dp else 230.dp
             val art = minOf(maxHeight, 240.dp, maxWidth - text)
             val withArtwork = artwork && art >= if (tall) ARTWORK_MIN else ARTWORK_ROW_MIN
+            // Alta pero sin ancho para la carátula a un lado: una chica junto al título y los botones abajo, al centro.
+            if (artwork && tall && !withArtwork && maxHeight >= STACKED_TALL_MIN) {
+                return@BoxWithConstraints Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Artwork(song, Modifier.size(ARTWORK_ROW_MIN), Radius.inner, icon)
+                        Column(Modifier.weight(1f).padding(start = 12.dp)) { labeled() }
+                    }
+                    controls(Modifier.align(Alignment.CenterHorizontally).padding(top = 10.dp), !skip)
+                }
+            }
             Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
                 if (withArtwork) Artwork(song, Modifier.size(art), Radius.inner, icon)
                 Column(Modifier.weight(1f).padding(horizontal = 12.dp), verticalArrangement = Arrangement.Center) {
                     labeled()
                     if (tall) {
                         Spacer(Modifier.height(12.dp))
-                        controls(Modifier, !skip)
+                        // Sin carátula al lado, los botones al centro del widget (con ella, bajo el título).
+                        controls(if (withArtwork) Modifier else Modifier.align(Alignment.CenterHorizontally), !skip)
                     }
                 }
                 if (!tall) controls(Modifier, compact)
@@ -313,6 +324,8 @@ fun OnFilesEmpty(repo: MusicRepository, enabled: Boolean, open: () -> Unit) {
  */
 private val TALL_TEXT_MIN = 200.dp
 private val ARTWORK_MIN = 72.dp
+/** Desde este alto, un widget alto y angosto lleva la carátula chica junto al título (con el avance y sus tiempos). */
+private val STACKED_TALL_MIN = 190.dp
 /** En fila (título y botones al lado) la carátula puede ser más chica: junto al texto se ve bien. */
 private val ARTWORK_ROW_MIN = 52.dp
 /** Desde este alto y hasta este ancho, el widget pone los botones abajo del título (ver [MediaTile]). */

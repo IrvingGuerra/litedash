@@ -160,10 +160,12 @@ private val CARD_THEMES = listOf(
 @Composable
 private fun CardSettings(prefs: Preferences) {
     val c = LocalColors.current
-    val look = remember(prefs.cardStyle, prefs.cardOpacity) { CardLook(prefs.cardStyle, prefs.cardOpacity) }
-    // La muestra: tu fondo (o el del tema) con una tarjeta encima, como en el inicio.
-    Box(Modifier.fillMaxWidth().height(120.dp).clip(RoundedCornerShape(Radius.card)).background(c.background)) {
-        HomeWallpaper()
+    // La muestra es tu inicio de verdad: el pedazo de tu fondo que cae ahí (o el del tema) y una tarjeta con la misma
+    // piel, que de vidrio lleva tu fondo desenfocado detrás, igual que los widgets.
+    val backdrop = rememberWallpaperBackdrop(prefs.cardStyle == CardStyle.GLASS)
+    val look = remember(prefs.cardStyle, prefs.cardOpacity, backdrop) { CardLook(prefs.cardStyle, prefs.cardOpacity, backdrop) }
+    Box(Modifier.fillMaxWidth().height(160.dp).clip(RoundedCornerShape(Radius.card)).background(c.background)) {
+        HomeWallpaper(asInWindow = true)
         CompositionLocalProvider(LocalCardLook provides look) {
             Card(Modifier.align(Alignment.Center).fillMaxWidth(0.6f).height(84.dp)) {
                 Label(SAMPLE_TIME, Typography.title, LocalColors.current.text, modifier = Modifier.align(Alignment.Center))

@@ -99,7 +99,7 @@ fun Modifier.skinSurface(look: CardLook, c: Colors, shape: Shape, floor: Float =
 }
 
 /** Dibuja [b] detrás, recortado como el fondo de la ventana: se ve la parte del fondo que la tarjeta tapa. */
-private fun Modifier.blurredBackdrop(b: CardBackdrop): Modifier = composed {
+fun Modifier.blurredBackdrop(b: CardBackdrop): Modifier = composed {
     // Dónde está la tarjeta y cuánto mide la ventana: se leen al dibujar (moverla solo la redibuja).
     var at by remember { mutableStateOf(Offset.Zero) }
     var root by remember { mutableStateOf(Size.Zero) }

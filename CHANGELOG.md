@@ -4,6 +4,15 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.5.12] - 2026-11-18
+
+### Cambiado
+- **La muestra de las tarjetas es tu inicio de verdad:** en Ajustes → Inicio y apariencia → Interfaz, la muestra usa el
+  pedazo de tu fondo a la escala del inicio y la tarjeta lleva el mismo vidrio que tus widgets (antes mostraba el fondo
+  entero en chico y sin desenfoque, y no se parecía a lo que veías después).
+- **Widget Música angosto y alto:** los botones van al centro cuando no hay lugar para la carátula a un lado; y si el
+  widget es un poco más alto, la carátula sale chica junto al título.
+
 ## [1.5.11] - 2026-11-18
 
 ### Cambiado

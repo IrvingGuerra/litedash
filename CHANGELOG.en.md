@@ -3,6 +3,15 @@
 What people using LiteDash notice, in English. The full history (in Spanish) is in [CHANGELOG.md](CHANGELOG.md).
 Format [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versions [SemVer](https://semver.org/).
 
+## [1.5.12] - 2026-11-18
+
+### Changed
+- **The card sample is your real home screen:** in Settings → Home & look → Interface, the sample uses the piece of your
+  wallpaper at home-screen scale and the card has the same glass as your widgets (it used to show the whole wallpaper
+  shrunk and without blur, so it didn't match what you got).
+- **Narrow, tall Music widget:** the buttons are centered when there is no room for the cover on the side; if the widget
+  is a bit taller, a small cover shows next to the title.
+
 ## [1.5.11] - 2026-11-18
 
 ### Changed

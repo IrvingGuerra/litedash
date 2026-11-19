@@ -83,6 +83,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.irvingguerra.litedash.core.ui.Button
 import com.irvingguerra.litedash.core.ui.CardBackdrop
+import com.irvingguerra.litedash.core.ui.blurredBackdrop
 import com.irvingguerra.litedash.core.ui.FileBrowser
 import com.irvingguerra.litedash.core.ui.Label
 import com.irvingguerra.litedash.core.ui.LocalColors
@@ -498,7 +499,7 @@ fun LogoIntro(onDone: () -> Unit) {
  * vidrio, el resplandor del tema.
  */
 @Composable
-fun HomeWallpaper() {
+fun HomeWallpaper(asInWindow: Boolean = false) {
     val c = LocalColors.current
     val image = rememberImage(WALLPAPER).image
     if (image == null) {
@@ -507,6 +508,9 @@ fun HomeWallpaper() {
         return
     }
     val veil = c.background.copy(alpha = WALLPAPER_VEIL)
+    // Una muestra ([asInWindow]): el pedazo de tu fondo que cae justo ahí, a la escala del inicio (no la imagen
+    // entera en chico), para que lo de encima se vea igual que en el inicio.
+    if (asInWindow) return Box(Modifier.fillMaxSize().blurredBackdrop(remember(image, veil) { CardBackdrop(image, veil) }))
     Image(image, null, Modifier.fillMaxSize().drawWithContent { drawContent(); drawRect(veil) }, contentScale = ContentScale.Crop)
 }
 
