@@ -468,6 +468,7 @@
     <string name="bar_style">Gaya</string>
     <string name="bar_style_floating">Melayang</string>
     <string name="bar_style_full">Lebar penuh</string>
+    <string name="bar_item_home">Beranda</string>
     <string name="bar_item_apps">Semua aplikasi</string>
     <string name="bar_item_music">Musik</string>
     <string name="bar_item_volume">Volume</string>

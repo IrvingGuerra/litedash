@@ -3,6 +3,21 @@
 What people using LiteDash notice, in English. The full history (in Spanish) is in [CHANGELOG.md](CHANGELOG.md).
 Format [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versions [SemVer](https://semver.org/).
 
+## [1.5.9] - 2026-11-18
+
+### Added
+- **Home button on the bar:** takes you back to the dashboard and closes whatever is open or full screen (map, music).
+  It shows up at the start of the bar; move or remove it like any other button.
+- **Arrange the bar from its settings too:** Settings → Home & look → Bar now shows the bar itself; drag the buttons
+  to reorder them, remove them with the x and move the two lines that split it.
+
+### Changed
+- **The route fits the screen:** when you tap "Route", the map frames the whole way using all the free space, by
+  width or height depending on the route. It used to zoom out too far: the route looked small and sometimes the map
+  from that far wouldn't load.
+- Your favorite apps, while you haven't picked any, show a star when arranging the bar (they had the same icon as
+  "All apps").
+
 ## [1.5.8] - 2026-11-18
 
 ### Changed

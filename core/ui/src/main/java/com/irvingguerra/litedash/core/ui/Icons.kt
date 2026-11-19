@@ -29,6 +29,7 @@ object Icons {
     /** Foto: marco con una montaña y el sol. */
     val image = icon("M5 5h14a1 1 0 0 1 1 1v12a1 1 0 0 1 -1 1h-14a1 1 0 0 1 -1 -1v-12a1 1 0 0 1 1 -1z M4 16l5 -5l4 4l2 -2l5 5 M14.5 9a1.5 1.5 0 1 0 3 0a1.5 1.5 0 1 0 -3 0")
     val apps = icon("M4 4h6v6h-6z M14 4h6v6h-6z M4 14h6v6h-6z M14 14h6v6h-6z")
+    val home = icon("M4 11.5l8 -7.5l8 7.5 M6 10v10h4.5v-6h3v6h4.5v-10")
     val settings = icon("M4 6h8 M16 6h4 M14 4v4 M4 12h2 M10 12h10 M8 10v4 M4 18h11 M19 18h1 M17 16v4")
     val minus = icon("M6 12h12")
     /** Tarjeta tachada: quitar o poner el fondo de una pieza. */

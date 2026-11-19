@@ -468,6 +468,7 @@
     <string name="bar_style">Kiểu</string>
     <string name="bar_style_floating">Nổi</string>
     <string name="bar_style_full">Toàn chiều rộng</string>
+    <string name="bar_item_home">Màn hình chính</string>
     <string name="bar_item_apps">Tất cả ứng dụng</string>
     <string name="bar_item_music">Nhạc</string>
     <string name="bar_item_volume">Âm lượng</string>

@@ -4,6 +4,21 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.5.9] - 2026-11-18
+
+### Agregado
+- **Botón de Inicio en la barra:** te regresa al tablero y cierra lo que tengas en grande (mapa, música) o abierto. Sale
+  solo al principio de la barra; se puede mover o quitar como los demás.
+- **La barra se acomoda también desde sus ajustes:** en Ajustes → Inicio y apariencia → Barra ahora se ve la barra
+  misma; ahí arrastras los botones para ordenarlos, los quitas con la x y mueves las dos rayas que la parten.
+
+### Cambiado
+- **La ruta se ajusta a la pantalla:** al tocar «Ruta», el mapa encuadra el camino completo usando todo el espacio
+  libre, a lo ancho o a lo alto según la ruta. Antes se alejaba de más: la ruta se veía chica y a veces el mapa de tan
+  lejos no cargaba.
+- Tus apps favoritas, cuando aún no eliges ninguna, se marcan con una estrella al acomodar la barra (tenían el mismo
+  ícono que «Todas las apps»).
+
 ## [1.5.8] - 2026-11-18
 
 ### Cambiado

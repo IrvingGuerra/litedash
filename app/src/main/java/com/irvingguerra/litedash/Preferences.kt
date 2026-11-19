@@ -77,6 +77,7 @@ internal object PrefKeys {
     /** Los botones de la barra en orden ([BarItem]); sin guardar, se arman de las opciones de antes. */
     const val BAR_ITEMS = "bar_items"
     const val BAR_BLUETOOTH_ADDED = "bar_bluetooth_added"
+    const val BAR_HOME_ADDED = "bar_home_added"
     const val BAR_STYLE = "bar_style"
     const val BAR_HIDDEN = "bar_hidden"
     const val LOGO_INTRO = "logo_intro"
@@ -154,7 +155,7 @@ enum class BarSize(val stored: String, val scale: Float) {
  * habría cómo salir del inicio.
  */
 enum class BarItem(val stored: String) {
-    APPS("apps"), MUSIC("music"), VOLUME("volume"), NAVIGATE("navigate"), BLUETOOTH("bluetooth"), PHONE("phone"),
+    HOME("home"), APPS("apps"), MUSIC("music"), VOLUME("volume"), NAVIGATE("navigate"), BLUETOOTH("bluetooth"), PHONE("phone"),
     VOICE("voice"), FAVORITES("favorites"), SETTINGS("settings"),
 
     /**
@@ -197,10 +198,10 @@ enum class BarItem(val stored: String) {
 }
 
 /**
- * La barra de fábrica: Apps, volumen y Música; tus favoritas (vacías: ninguna app de fábrica); Navegar, Bluetooth,
+ * La barra de fábrica: Inicio, Apps, volumen y Música; tus favoritas (vacías: ninguna app de fábrica); Navegar, Bluetooth,
  * voz y Ajustes. Teléfono se agrega si se quiere.
  */
-private val DEFAULT_BAR = listOf(BarItem.APPS, BarItem.VOLUME, BarItem.MUSIC, BarItem.FAVORITES, BarItem.NAVIGATE, BarItem.BLUETOOTH, BarItem.VOICE)
+private val DEFAULT_BAR = listOf(BarItem.HOME, BarItem.APPS, BarItem.VOLUME, BarItem.MUSIC, BarItem.FAVORITES, BarItem.NAVIGATE, BarItem.BLUETOOTH, BarItem.VOICE)
 
 /** Las opciones de la barra de antes de poder editarla: si alguna se guardó, se respeta lo de esa persona. */
 private val LEGACY_BAR_KEYS = listOf(PrefKeys.BAR_APPS, PrefKeys.BAR_MUSIC, PrefKeys.BAR_VOLUME, PrefKeys.BAR_FAVORITES, PrefKeys.BAR_VOICE, PrefKeys.BAR_CLOCK)
@@ -482,6 +483,14 @@ class Preferences(context: Context) {
      * El botón de Bluetooth llegó a la barra en la 1.4.140 (Irving: "por defecto, como el del mapa"): una
      * sola vez se le pone, junto al de navegar, a quien ya tenía su barra. Si luego lo quita, no regresa.
      */
+    /** El botón de Inicio llegó en la 1.5.9: una sola vez se le pone, al principio, a quien ya tenía su barra. Si luego lo quita, no regresa. */
+    fun addHomeToBar() {
+        if (p.getBoolean(PrefKeys.BAR_HOME_ADDED, false)) return
+        p.edit { putBoolean(PrefKeys.BAR_HOME_ADDED, true) }
+        val items = barItems
+        if (BarItem.HOME !in items) barItems = listOf(BarItem.HOME) + items
+    }
+
     fun addBluetoothToBar() {
         if (p.getBoolean(PrefKeys.BAR_BLUETOOTH_ADDED, false)) return
         p.edit { putBoolean(PrefKeys.BAR_BLUETOOTH_ADDED, true) }

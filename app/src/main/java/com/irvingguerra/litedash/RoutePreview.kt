@@ -40,14 +40,17 @@ import com.irvingguerra.litedash.feature.map.Route
 import com.irvingguerra.litedash.feature.map.RouteError
 import com.irvingguerra.litedash.feature.map.RoutePlan
 import com.irvingguerra.litedash.feature.map.SearchHit
+import com.irvingguerra.litedash.feature.map.FIT_MIN_ZOOM
 import com.irvingguerra.litedash.feature.map.tilePx
-import com.irvingguerra.litedash.feature.map.zoomToFit
+import com.irvingguerra.litedash.feature.map.tileX
+import com.irvingguerra.litedash.feature.map.tileY
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.util.Date
-import kotlin.math.abs
-import kotlin.math.cos
-import kotlin.math.max
+import kotlin.math.floor
+import kotlin.math.log2
+import kotlin.math.pow
+import kotlin.math.roundToInt
 
 /**
  * La ruta al lugar elegido (M4): se pide al tocar «Ruta» y se calcula en la pantalla con las calles del estado bajado.
@@ -98,10 +101,22 @@ internal fun RunRoute(d: Dependencies, request: RouteRequest) {
 }
 
 /**
- * El zoom para ver toda la ruta en una vista de [widthDp] × [heightDp] (el lado corto, con aire). [density] = la de la
- * pantalla (el mapa dibuja cada tesela de [tilePx] píxeles).
+ * Cómo ver toda la ruta en una vista: el centro ([lat], [lon]) y el zoom justo ([exact], con fracción) para que quepa
+ * con aire. El mapa en grande lo usa entero ([zoom] + [scale]); donde no hay escala, [whole] (el nivel de abajo).
  */
-internal fun routeZoom(route: Route, widthDp: Float, heightDp: Float, density: Float): Pair<Int, Pair<Double, Double>> {
+internal class RouteFit(val exact: Double, val lat: Double, val lon: Double) {
+    /** El nivel de teselas más cercano y cuánto se agranda o achica para llegar a [exact] (como al pellizcar). */
+    val zoom: Int get() = exact.roundToInt()
+    val scale: Float get() = 2.0.pow(exact - zoom).toFloat()
+    val whole: Int get() = floor(exact).toInt()
+}
+
+/**
+ * El encuadre de la ruta en una vista de [widthDp] × [heightDp]: se ajusta a lo ancho y a lo alto por separado (una ruta
+ * alargada llena su lado largo) y sin redondear al nivel de abajo, que la dejaba hasta a la mitad de tamaño. [density] =
+ * la de la pantalla (el mapa dibuja cada tesela de [tilePx] píxeles).
+ */
+internal fun routeFit(route: Route, widthDp: Float, heightDp: Float, density: Float): RouteFit {
     var minLat = Int.MAX_VALUE
     var maxLat = Int.MIN_VALUE
     var minLon = Int.MAX_VALUE
@@ -116,12 +131,21 @@ internal fun routeZoom(route: Route, widthDp: Float, heightDp: Float, density: F
     }
     val lat = (minLat + maxLat) / 2e6
     val lon = (minLon + maxLon) / 2e6
-    val kmLat = (maxLat - minLat) / 1e6 * 111.195
-    val kmLon = (maxLon - minLon) / 1e6 * 111.195 * cos(Math.toRadians(lat))
-    val radius = (max(abs(kmLat), abs(kmLon)) / 2).toFloat().coerceAtLeast(0.2f)
+    // Lo que abarca, en fracción del mundo (la proyección del mapa).
+    val spanX = tileX(maxLon / 1e6, 0) - tileX(minLon / 1e6, 0)
+    val spanY = tileY(minLat / 1e6, 0) - tileY(maxLat / 1e6, 0)
+    val tileDp = tilePx(density) / density
     // El centro del mapa queda al 60 % del alto (no a la mitad): hacia abajo cabe menos, por eso el alto cuenta un 80 %.
-    return zoomToFit(radius, lat, minOf(widthDp, heightDp * 0.8f), tilePx(density) / density).coerceAtMost(FIT_MAX_ZOOM) to (lat to lon)
+    val tiles = minOf(widthDp * FIT_SHARE / (spanX.coerceAtLeast(MIN_SPAN) * tileDp), heightDp * 0.8f * FIT_SHARE / (spanY.coerceAtLeast(MIN_SPAN) * tileDp))
+    val exact = if (tiles > 0.0) log2(tiles).coerceIn(FIT_MIN_ZOOM.toDouble(), FIT_MAX_ZOOM.toDouble()) else FIT_MAX_ZOOM.toDouble()
+    return RouteFit(exact, lat, lon)
 }
+
+/** Cuánto de la vista ocupa la ruta (el resto es aire a los lados). */
+private const val FIT_SHARE = 0.8f
+
+/** Lo menos que abarca una ruta para el encuadre (fracción del mundo, ~40 m): una de unos metros no pide zoom infinito. */
+private const val MIN_SPAN = 1e-6
 
 /** Lejos de donde se calculó la ruta (metros), se calcula otra vez. */
 private const val RECHECK_M = 500f

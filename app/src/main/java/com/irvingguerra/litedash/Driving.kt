@@ -61,7 +61,6 @@ import com.irvingguerra.litedash.core.ui.Typography
 import com.irvingguerra.litedash.core.vehicle.Signal
 import com.irvingguerra.litedash.core.vehicle.watch
 import com.irvingguerra.litedash.feature.car.snapshot
-import com.irvingguerra.litedash.feature.map.FIT_MAX_ZOOM
 import com.irvingguerra.litedash.feature.map.Guidance
 import com.irvingguerra.litedash.feature.map.GuidanceState
 import com.irvingguerra.litedash.feature.map.Maneuver
@@ -263,17 +262,16 @@ private fun MapView(d: Dependencies, session: DriveSession, end: () -> Unit, mod
     val s = session.state
     BoxWithConstraints(modifier.clipToBounds()) {
         val density = LocalDensity.current.density
-        val fit = if (session.overview) remember(session.route, maxWidth, maxHeight, density) { routeZoom(session.route, maxWidth.value, maxHeight.value, density) } else null
-        LaunchedEffect(fit?.second) {
-            val center = fit?.second
-            if (center != null) camera.show(center.first, center.second) else camera.recenter()
+        val fit = if (session.overview) remember(session.route, maxWidth, maxHeight, density) { routeFit(session.route, maxWidth.value, maxHeight.value, density) } else null
+        LaunchedEffect(fit?.lat, fit?.lon) {
+            if (fit != null) camera.show(fit.lat, fit.lon) else camera.recenter()
         }
         if (position != null) {
             val onRoute = s != null && !s.offRoute
             MapCanvas(
                 store, if (onRoute) s!!.lat else position.latitude, if (onRoute) s!!.lon else position.longitude,
                 (if (onRoute) s!!.heading else null) ?: d.trip.bearing, null, look, Modifier.fillMaxSize(), camera,
-                fixedZoom = fit?.first?.coerceAtMost(FIT_MAX_ZOOM) ?: CLOSE_ZOOM, interactive = false,
+                fixedZoom = fit?.whole ?: CLOSE_ZOOM, interactive = false,
                 route = session.route.points, routeDone = s?.let { it.point + it.fraction } ?: 0f,
             )
         }

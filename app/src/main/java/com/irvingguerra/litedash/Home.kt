@@ -611,6 +611,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
     // cada vez que cambia algo del inicio.
     val barActions = remember {
         BarActions(
+            onHome = { backToDashboard() },
             onApps = { panel = Panel.Drawer },
             onMusic = { if (expanded == Expanded.MEDIA) expanded = null else openMedia(null) },
             onNavigate = { if (expanded == Expanded.MAP) expanded = null else openMapShortcut() },

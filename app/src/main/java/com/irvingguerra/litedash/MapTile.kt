@@ -253,16 +253,16 @@ fun MapExpanded(
             val fitW = boxWidth.value * (clear?.width ?: 1f)
             val fitH = boxHeight.value * (clear?.height ?: 1f)
             val fitDensity = LocalDensity.current.density
-            val fit = route?.let { remember(it, fitW, fitH, fitDensity) { routeZoom(it, fitW, fitH, fitDensity) } }
+            val fit = route?.let { remember(it, fitW, fitH, fitDensity) { routeFit(it, fitW, fitH, fitDensity) } }
             // Solo al salir la ruta (no al cambiar el hueco: lo que movieras con el dedo se quedaría).
-            LaunchedEffect(fit?.second) { fit?.second?.let { (la, lo) -> camera.show(la, lo) } }
+            LaunchedEffect(fit?.lat, fit?.lon) { fit?.let { camera.show(it.lat, it.lon, it.scale) } }
             if (granted) {
                 LiveMap(
                     d, if (route != null) look.copy(orientation = MapOrientation.NORTH) else look, Modifier.fillMaxSize(), tileId,
                     camera = camera, pin = selected?.let { it.lat to it.lon },
                     overlay = selected == null,
                     onLongPress = { lat, lon -> pick(pointHit(null, lat, lon)) },
-                    route = route?.points, fixedZoom = fit?.first, focus = clear,
+                    route = route?.points, fixedZoom = fit?.zoom, focus = clear,
                 )
             } else Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Button(stringResource(R.string.tap_to_enable), ask, primary = true) }
             val searching = search.focused || search.query.isNotEmpty()

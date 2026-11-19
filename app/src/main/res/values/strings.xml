@@ -485,6 +485,7 @@
     <string name="bar_style">Estilo</string>
     <string name="bar_style_floating">Flotante</string>
     <string name="bar_style_full">A lo ancho</string>
+    <string name="bar_item_home">Inicio</string>
     <string name="bar_item_apps">Todas las apps</string>
     <string name="bar_item_music">Música</string>
     <string name="bar_item_volume">Volumen</string>

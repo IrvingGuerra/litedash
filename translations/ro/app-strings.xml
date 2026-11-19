@@ -478,6 +478,7 @@
     <string name="bar_style">Stil</string>
     <string name="bar_style_floating">Plutitoare</string>
     <string name="bar_style_full">Pe toată lățimea</string>
+    <string name="bar_item_home">Acasă</string>
     <string name="bar_item_apps">Toate aplicațiile</string>
     <string name="bar_item_music">Muzică</string>
     <string name="bar_item_volume">Volum</string>

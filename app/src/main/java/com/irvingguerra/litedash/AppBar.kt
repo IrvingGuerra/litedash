@@ -66,6 +66,8 @@ import com.irvingguerra.litedash.feature.dashboard.longPress
 
 /** Lo que hacen los botones de la barra (los arma el inicio). */
 class BarActions(
+    /** De vuelta al tablero: cierra lo que haya en grande o abierto. */
+    val onHome: () -> Unit,
     val onApps: () -> Unit,
     val onMusic: () -> Unit,
     val onNavigate: () -> Unit,
@@ -178,6 +180,35 @@ fun AppBar(
     }
 }
 
+/**
+ * La barra en sus ajustes: la misma que al acomodarla en el inicio (arrastrar para ordenar, ✕ para quitar, las dos rayas
+ * para partirla), siempre acostada y con sus botones sin efecto. [hasVoice]: la pantalla trae asistente.
+ */
+@Composable
+internal fun BarPreview(repo: AppRepository, prefs: Preferences, favorites: List<App>, hasVoice: Boolean) {
+    val c = LocalColors.current
+    val sizes = BarSizes(button = 48.dp, icon = 36.dp)
+    val actions = remember(hasVoice) { BarActions({}, {}, {}, {}, {}, {}, if (hasVoice) ({}) else null, {}, {}, {}) }
+    val items = prefs.barItems.filter { it != BarItem.VOICE || hasVoice }
+    val shape = RoundedCornerShape(Radius.card)
+    Box(
+        Modifier.fillMaxWidth().height(72.dp).clip(shape).background(c.surfaceHigh).border(1.5.dp, c.accent, shape).padding(horizontal = 12.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        EditableBar(
+            prefs, items, vertical = false, noFavorites = favorites.isEmpty(),
+            // Sin toques: aquí solo se acomoda (el volumen de verdad se movería al arrastrarlo).
+            item = { Box { BarButton(it, sizes, vertical = false, musicOpen = false, mapOpen = false, actions); Box(Modifier.matchParentSize().pointerInput(Unit) {}) } },
+            favoritesBlock = { max ->
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    for (app in if (max != null) favorites.take(max) else favorites) AppIcon(repo, app, sizes.icon)
+                }
+            },
+            onBarSettings = null,
+        )
+    }
+}
+
 /** Lo que ocupa la barra: su ancho al lado ([vertical]) o su alto abajo. Oculta, el inicio lo descuenta de la cuadrícula. */
 @Composable
 fun barThickness(prefs: Preferences, vertical: Boolean): Dp {
@@ -197,6 +228,7 @@ private data class BarSizes(val button: Dp, val icon: Dp, val box: Dp = button, 
 private fun BarButton(item: BarItem, sizes: BarSizes, vertical: Boolean, musicOpen: Boolean, mapOpen: Boolean, actions: BarActions) {
     val c = LocalColors.current
     when (item) {
+        BarItem.HOME -> IconButton(Icons.home, actions.onHome, size = sizes.button)
         BarItem.APPS -> IconButton(Icons.apps, actions.onApps, size = sizes.button)
         // La pantalla Música (como en Tesla); marcado mientras está abierta.
         BarItem.MUSIC -> IconButton(Icons.music, actions.onMusic, size = sizes.button, background = if (musicOpen) c.surfaceHigh else Color.Transparent)
@@ -225,7 +257,8 @@ private fun EditableBar(
     noFavorites: Boolean,
     item: @Composable (BarItem) -> Unit,
     favoritesBlock: @Composable (Int?) -> Unit,
-    onBarSettings: () -> Unit,
+    /** «Barra» al final (lleva a sus ajustes); null = ya se está en ellos. */
+    onBarSettings: (() -> Unit)?,
 ) {
     val movable = items.filter { it != BarItem.SETTINGS }
     // Dónde está el centro de cada uno (en la pantalla) y dónde va el dedo con el que se mueve (mismo eje).
@@ -278,11 +311,11 @@ private fun EditableBar(
     if (vertical) Column(Modifier.fillMaxHeight(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Column(Modifier.weight(1f, fill = false).verticalScroll(scroll), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) { list() }
         item(BarItem.SETTINGS)
-        EditChip(stringResource(R.string.bar_edit), vertical = true, onBarSettings)
+        if (onBarSettings != null) EditChip(stringResource(R.string.bar_edit), vertical = true, onBarSettings)
     } else Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         Row(Modifier.weight(1f, fill = false).horizontalScroll(scroll), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) { list() }
         item(BarItem.SETTINGS)
-        EditChip(stringResource(R.string.bar_edit), vertical = false, onBarSettings)
+        if (onBarSettings != null) EditChip(stringResource(R.string.bar_edit), vertical = false, onBarSettings)
     }
 }
 
@@ -298,7 +331,7 @@ private fun SplitHandle(vertical: Boolean) {
     }
 }
 
-/** Las favoritas al acomodar: el bloque entero se mueve; sin ninguna ([empty]), el ícono de apps en su lugar. */
+/** Las favoritas al acomodar: el bloque entero se mueve; sin ninguna ([empty]), una estrella en su lugar. */
 @Composable
 private fun FavoritesEdit(empty: Boolean, vertical: Boolean, favoritesBlock: @Composable (Int?) -> Unit) {
     val c = LocalColors.current
@@ -307,7 +340,8 @@ private fun FavoritesEdit(empty: Boolean, vertical: Boolean, favoritesBlock: @Co
         Modifier.border(1.dp, c.line, RoundedCornerShape(Radius.inner)).padding(horizontal = if (vertical) 2.dp else 8.dp, vertical = 4.dp),
         contentAlignment = Alignment.Center,
     ) {
-        if (empty) Icon(Icons.apps, c.textMuted, 24.dp)
+        // La estrella (no el ícono de «Todas las apps», que es otro botón).
+        if (empty) Icon(Icons.star, c.textMuted, 24.dp)
         // Al acomodar caben menos (los ✕ y "Barra" ocupan lugar): las primeras tres.
         else favoritesBlock(if (vertical) 2 else 3)
     }

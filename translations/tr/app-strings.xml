@@ -473,6 +473,7 @@
     <string name="bar_style">Stil</string>
     <string name="bar_style_floating">Yüzen</string>
     <string name="bar_style_full">Tam genişlik</string>
+    <string name="bar_item_home">Ana ekran</string>
     <string name="bar_item_apps">Tüm uygulamalar</string>
     <string name="bar_item_music">Müzik</string>
     <string name="bar_item_volume">Ses</string>

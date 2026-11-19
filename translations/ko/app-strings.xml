@@ -468,6 +468,7 @@
     <string name="bar_style">스타일</string>
     <string name="bar_style_floating">플로팅</string>
     <string name="bar_style_full">전체 너비</string>
+    <string name="bar_item_home">홈</string>
     <string name="bar_item_apps">모든 앱</string>
     <string name="bar_item_music">음악</string>
     <string name="bar_item_volume">볼륨</string>

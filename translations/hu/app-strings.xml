@@ -473,6 +473,7 @@
     <string name="bar_style">Stílus</string>
     <string name="bar_style_floating">Lebegő</string>
     <string name="bar_style_full">Teljes szélesség</string>
+    <string name="bar_item_home">Kezdőképernyő</string>
     <string name="bar_item_apps">Összes alkalmazás</string>
     <string name="bar_item_music">Zene</string>
     <string name="bar_item_volume">Hangerő</string>

@@ -207,15 +207,16 @@ class MapCamera(
 
     /**
      * Enseña el lugar ([lat], [lon]): el centro va ahí aunque esté lejos (cuando ya se sabe dónde estás) y el mapa se
-     * aleja a un zoom de ver calles. Se queda así hasta centrar (no regresa solo).
+     * aleja a un zoom de ver calles. Se queda así hasta centrar (no regresa solo). [scale] = cuánto se agranda o achica
+     * el nivel fijo de quien lo pone (el encuadre de una ruta).
      */
-    fun show(lat: Double, lon: Double) {
+    fun show(lat: Double, lon: Double, scale: Float = 1f) {
         stopPan()
         stopZoom()
         place = lat to lon
         reach = FREE_PAN
         zoom = PLACE_ZOOM
-        scale = 1f
+        this.scale = scale
     }
 
     /** Pone el centro en [place] estando tú en ([lat], [lon]). */

@@ -483,6 +483,7 @@
     <string name="bar_style">Стиль</string>
     <string name="bar_style_floating">Плаваюча</string>
     <string name="bar_style_full">На всю ширину</string>
+    <string name="bar_item_home">Головна</string>
     <string name="bar_item_apps">Усі застосунки</string>
     <string name="bar_item_music">Музика</string>
     <string name="bar_item_volume">Гучність</string>

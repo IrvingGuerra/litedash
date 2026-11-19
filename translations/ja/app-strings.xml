@@ -468,6 +468,7 @@
     <string name="bar_style">スタイル</string>
     <string name="bar_style_floating">フローティング</string>
     <string name="bar_style_full">全幅</string>
+    <string name="bar_item_home">ホーム</string>
     <string name="bar_item_apps">すべてのアプリ</string>
     <string name="bar_item_music">ミュージック</string>
     <string name="bar_item_volume">音量</string>

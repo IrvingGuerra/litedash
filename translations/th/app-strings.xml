@@ -465,6 +465,7 @@
     <string name="bar_style">สไตล์</string>
     <string name="bar_style_floating">ลอย</string>
     <string name="bar_style_full">เต็มความกว้าง</string>
+    <string name="bar_item_home">หน้าหลัก</string>
     <string name="bar_item_apps">แอปทั้งหมด</string>
     <string name="bar_item_music">เพลง</string>
     <string name="bar_item_volume">ระดับเสียง</string>

@@ -473,6 +473,7 @@
     <string name="bar_style">Stijl</string>
     <string name="bar_style_floating">Zwevend</string>
     <string name="bar_style_full">Volle breedte</string>
+    <string name="bar_item_home">Start</string>
     <string name="bar_item_apps">Alle apps</string>
     <string name="bar_item_music">Muziek</string>
     <string name="bar_item_volume">Volume</string>

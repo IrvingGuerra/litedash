@@ -483,6 +483,7 @@
     <string name="bar_style">Styl</string>
     <string name="bar_style_floating">Pływający</string>
     <string name="bar_style_full">Na całą szerokość</string>
+    <string name="bar_item_home">Ekran główny</string>
     <string name="bar_item_apps">Wszystkie aplikacje</string>
     <string name="bar_item_music">Muzyka</string>
     <string name="bar_item_volume">Głośność</string>

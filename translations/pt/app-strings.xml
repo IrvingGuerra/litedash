@@ -475,6 +475,7 @@
     <string name="bar_style">Estilo</string>
     <string name="bar_style_floating">Flutuante</string>
     <string name="bar_style_full">Largura total</string>
+    <string name="bar_item_home">Início</string>
     <string name="bar_item_apps">Todos os apps</string>
     <string name="bar_item_music">Música</string>
     <string name="bar_item_volume">Volume</string>

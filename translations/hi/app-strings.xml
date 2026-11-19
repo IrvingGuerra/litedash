@@ -470,6 +470,7 @@
     <string name="bar_style">स्टाइल</string>
     <string name="bar_style_floating">तैरती हुई</string>
     <string name="bar_style_full">पूरी चौड़ाई</string>
+    <string name="bar_item_home">होम</string>
     <string name="bar_item_apps">सभी ऐप्स</string>
     <string name="bar_item_music">म्यूज़िक</string>
     <string name="bar_item_volume">वॉल्यूम</string>

@@ -473,6 +473,7 @@
     <string name="bar_style">Στυλ</string>
     <string name="bar_style_floating">Αιωρούμενη</string>
     <string name="bar_style_full">Σε όλο το πλάτος</string>
+    <string name="bar_item_home">Αρχική</string>
     <string name="bar_item_apps">Όλες οι εφαρμογές</string>
     <string name="bar_item_music">Μουσική</string>
     <string name="bar_item_volume">Ένταση</string>

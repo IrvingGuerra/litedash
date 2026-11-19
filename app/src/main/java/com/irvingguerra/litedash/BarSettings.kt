@@ -34,6 +34,7 @@ import com.irvingguerra.litedash.feature.apps.rememberApps
 
 /** El nombre de cada botón que se puede agregar a la barra (Ajustes no: siempre va). */
 private fun BarItem.title(): Int? = when (this) {
+    BarItem.HOME -> R.string.bar_item_home
     BarItem.APPS -> R.string.bar_item_apps
     BarItem.MUSIC -> R.string.bar_item_music
     BarItem.VOLUME -> R.string.bar_item_volume
@@ -89,6 +90,8 @@ private fun BarSettings(d: Dependencies, apps: List<App>, onEdit: (() -> Unit)? 
     // Ajustes ya va siempre.
     val missing = BarItem.entries.filter { it != BarItem.SETTINGS && !it.isSplit && it !in prefs.barItems && (it != BarItem.VOICE || hasVoice) }
     section(stringResource(R.string.bar_buttons)) {
+        // La barra misma, para acomodarla aquí: arrastrar, quitar con la x y mover las dos rayas.
+        BarPreview(d.apps, prefs, rememberFavorites(d, apps), hasVoice)
         Label(stringResource(R.string.bar_edit_help), Typography.body, c.textMuted)
         if (missing.isNotEmpty() || onEdit != null) FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             if (onEdit != null) Button(stringResource(R.string.bar_arrange), onEdit, primary = true)

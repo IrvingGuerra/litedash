@@ -468,6 +468,7 @@
     <string name="bar_style">样式</string>
     <string name="bar_style_floating">悬浮</string>
     <string name="bar_style_full">全宽</string>
+    <string name="bar_item_home">主页</string>
     <string name="bar_item_apps">所有应用</string>
     <string name="bar_item_music">音乐</string>
     <string name="bar_item_volume">音量</string>

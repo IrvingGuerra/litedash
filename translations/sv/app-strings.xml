@@ -473,6 +473,7 @@
     <string name="bar_style">Stil</string>
     <string name="bar_style_floating">Svävande</string>
     <string name="bar_style_full">Full bredd</string>
+    <string name="bar_item_home">Hem</string>
     <string name="bar_item_apps">Alla appar</string>
     <string name="bar_item_music">Musik</string>
     <string name="bar_item_volume">Volym</string>
