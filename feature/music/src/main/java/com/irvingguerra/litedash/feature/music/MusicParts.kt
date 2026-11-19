@@ -218,12 +218,14 @@ internal fun MediaTile(
             }
             if (tall && maxWidth < maxHeight * 1.5f) {
                 // Una columna del tablero: carátula arriba, el resto abajo y centrado.
-                return@BoxWithConstraints Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
-                    // Sin carátula, el título y los botones al centro de la columna.
-                    if (artwork) Artwork(song, Modifier.fillMaxWidth().weight(1f), Radius.inner, icon) else Spacer(Modifier.weight(1f))
+                return@BoxWithConstraints Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+                    // La carátula toma lo que sobra arriba; si es una rendija (se veía cortada) o no se quiere, el título
+                    // y los botones van al centro de la columna.
+                    if (artwork) BoxWithConstraints(Modifier.fillMaxWidth().weight(1f, fill = false)) {
+                        if (maxHeight >= ARTWORK_MIN) Artwork(song, Modifier.fillMaxSize(), Radius.inner, icon)
+                    }
                     Column(Modifier.fillMaxWidth().padding(start = 6.dp, end = 6.dp, top = 14.dp)) { labeled() }
                     controls(Modifier.padding(top = 8.dp), !skip)
-                    if (!artwork) Spacer(Modifier.weight(1f))
                 }
             }
             // Mediana y angosta: en fila el título no se leería; carátula chica junto al título y los botones abajo.

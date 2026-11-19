@@ -118,12 +118,13 @@
     <string name="route_need_routes">Para trazar la ruta faltan las calles de %1$s (%2$s).</string>
     <string name="route_download">Bajar calles</string>
     <string name="route_download_failed">No se pudieron bajar. Revisa tu internet e inténtalo otra vez.</string>
-    <string name="route_other_state">Ese lugar está en %1$s: baja también ese estado o ábrelo en tu app de mapas.</string>
+    <string name="route_other_state">Ese lugar está en %1$s. La ruta usa el mapa descargado, aunque tengas internet: baja también ese o ábrelo en tu app de mapas.</string>
     <string name="route_outside">Ese lugar está fuera de tu estado: ábrelo en tu app de mapas.</string>
-    <string name="route_no_state">Para trazar la ruta hace falta el mapa de tu estado (las zonas solo sirven para ver el mapa).</string>
-    <string name="route_no_state_named">Para trazar la ruta hace falta el mapa de %1$s (las zonas solo sirven para ver el mapa).</string>
-    <string name="route_no_map">Todavía no hay mapa de tu zona para trazar rutas. Abre el lugar en tu app de mapas.</string>
+    <string name="route_no_state">La ruta y la guía en 3D usan el mapa descargado de tu estado o país, aunque tengas internet. Bájalo una vez (las zonas solo sirven para ver el mapa).</string>
+    <string name="route_no_state_named">La ruta y la guía en 3D usan el mapa descargado, aunque tengas internet. Baja una vez el de %1$s (las zonas solo sirven para ver el mapa).</string>
+    <string name="route_no_map">La ruta y la guía en 3D usan un mapa descargado, aunque tengas internet, y todavía no hay uno de tu zona. Mira los disponibles y pide el tuyo, o abre el lugar en tu app de mapas.</string>
     <string name="route_get_map">Bajar mapa</string>
+    <string name="route_see_maps">Mapas disponibles</string>
     <string name="route_from_off">Estás lejos de una calle: acércate a una para calcular la ruta.</string>
     <string name="route_to_off">Ese lugar está lejos de una calle.</string>
     <string name="route_no_path">No encontramos un camino por calles hasta ahí.</string>

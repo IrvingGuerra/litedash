@@ -118,12 +118,13 @@
     <string name="route_need_routes">ルートには %1$s の道路データが必要です（%2$s）。</string>
     <string name="route_download">道路をダウンロード</string>
     <string name="route_download_failed">ダウンロードできませんでした。インターネットを確認して、もう一度お試しください。</string>
-    <string name="route_other_state">その場所は %1$s にあります。その都道府県もダウンロードするか、地図アプリで開いてください。</string>
+    <string name="route_other_state">その場所は %1$s にあります。ルートはインターネットがあってもダウンロードした地図を使います。その都道府県もダウンロードするか、地図アプリで開いてください。</string>
     <string name="route_outside">その場所はお住まいの都道府県の外です。地図アプリで開いてください。</string>
-    <string name="route_no_state">ルートには都道府県の地図が必要です（エリアは地図の表示専用です）。</string>
-    <string name="route_no_state_named">ルートには %1$s の地図が必要です（エリアは地図の表示専用です）。</string>
-    <string name="route_no_map">この地域のルート用の地図はまだありません。地図アプリで場所を開いてください。</string>
+    <string name="route_no_state">ルートと3Dナビは、インターネットがあってもダウンロードした都道府県または国の地図を使います。一度ダウンロードしてください（エリアは地図の表示専用です）。</string>
+    <string name="route_no_state_named">ルートと3Dナビは、インターネットがあってもダウンロードした地図を使います。%1$s の地図を一度ダウンロードしてください（エリアは地図の表示専用です）。</string>
+    <string name="route_no_map">ルートと3Dナビは、インターネットがあってもダウンロードした地図を使いますが、この地域の地図はまだありません。利用できる地図を見てリクエストするか、地図アプリで場所を開いてください。</string>
     <string name="route_get_map">地図をダウンロード</string>
+    <string name="route_see_maps">利用できる地図</string>
     <string name="route_from_off">道路から離れています。ルートを探すには道路に近づいてください。</string>
     <string name="route_to_off">その場所は道路から離れています。</string>
     <string name="route_no_path">そこまで道路で行けるルートが見つかりませんでした。</string>

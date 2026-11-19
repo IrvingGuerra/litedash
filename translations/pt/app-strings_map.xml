@@ -120,12 +120,13 @@
     <string name="route_need_routes">Para traçar a rota faltam as ruas de %1$s (%2$s).</string>
     <string name="route_download">Baixar ruas</string>
     <string name="route_download_failed">Não foi possível baixar. Verifique sua internet e tente de novo.</string>
-    <string name="route_other_state">Esse lugar fica em %1$s: baixe também esse estado ou abra no seu app de mapas.</string>
+    <string name="route_other_state">Esse lugar fica em %1$s. A rota usa o mapa baixado, mesmo com internet: baixe também esse estado ou abra no seu app de mapas.</string>
     <string name="route_outside">Esse lugar fica fora do seu estado: abra no seu app de mapas.</string>
-    <string name="route_no_state">Para traçar a rota você precisa do mapa do seu estado (as regiões servem só para ver o mapa).</string>
-    <string name="route_no_state_named">Para traçar a rota você precisa do mapa de %1$s (as regiões servem só para ver o mapa).</string>
-    <string name="route_no_map">Ainda não há mapa da sua área para rotas. Abra o lugar no seu app de mapas.</string>
+    <string name="route_no_state">A rota e a navegação em 3D usam o mapa baixado do seu estado ou país, mesmo com internet. Baixe uma vez (as regiões servem só para ver o mapa).</string>
+    <string name="route_no_state_named">A rota e a navegação em 3D usam o mapa baixado, mesmo com internet. Baixe uma vez o de %1$s (as regiões servem só para ver o mapa).</string>
+    <string name="route_no_map">A rota e a navegação em 3D usam um mapa baixado, mesmo com internet, e ainda não há um da sua área. Veja os disponíveis e peça o seu, ou abra o lugar no seu app de mapas.</string>
     <string name="route_get_map">Baixar mapa</string>
+    <string name="route_see_maps">Mapas disponíveis</string>
     <string name="route_from_off">Você está longe de uma rua: chegue mais perto de uma para calcular a rota.</string>
     <string name="route_to_off">Esse lugar fica longe de uma rua.</string>
     <string name="route_no_path">Não encontramos um caminho por ruas até lá.</string>

@@ -118,12 +118,13 @@
     <string name="route_need_routes">Az útvonalhoz hiányoznak ezek az utcák: %1$s (%2$s).</string>
     <string name="route_download">Utcák letöltése</string>
     <string name="route_download_failed">Nem sikerült letölteni. Ellenőrizd az internetet, és próbáld újra.</string>
-    <string name="route_other_state">Ez a hely itt van: %1$s. Töltsd le azt a megyét is, vagy nyisd meg a térképalkalmazásodban.</string>
+    <string name="route_other_state">Ez a hely itt van: %1$s. Az útvonal a letöltött térképet használja, akkor is, ha van internet: töltsd le azt a megyét is, vagy nyisd meg a térképalkalmazásodban.</string>
     <string name="route_outside">Ez a hely a megyéden kívül van: nyisd meg a térképalkalmazásodban.</string>
-    <string name="route_no_state">Az útvonalhoz a megyéd térképe kell (a területek csak a térkép megtekintésére valók).</string>
-    <string name="route_no_state_named">Az útvonalhoz ennek a térképe kell: %1$s (a területek csak a térkép megtekintésére valók).</string>
-    <string name="route_no_map">A környékedhez még nincs útvonaltérkép. Nyisd meg a helyet a térképalkalmazásodban.</string>
+    <string name="route_no_state">Az útvonal és a 3D navigáció a megyéd vagy országod letöltött térképét használja, akkor is, ha van internet. Töltsd le egyszer (a területek csak a térkép megtekintésére valók).</string>
+    <string name="route_no_state_named">Az útvonal és a 3D navigáció a letöltött térképet használja, akkor is, ha van internet. Töltsd le egyszer ennek a térképét: %1$s (a területek csak a térkép megtekintésére valók).</string>
+    <string name="route_no_map">Az útvonal és a 3D navigáció letöltött térképet használ, akkor is, ha van internet, és a környékedhez még nincs ilyen. Nézd meg az elérhetőket, és kérd a sajátodat, vagy nyisd meg a helyet a térképalkalmazásodban.</string>
     <string name="route_get_map">Térkép letöltése</string>
+    <string name="route_see_maps">Elérhető térképek</string>
     <string name="route_from_off">Messze vagy az úttól: menj közelebb egyhez az útvonal kereséséhez.</string>
     <string name="route_to_off">Ez a hely messze van az úttól.</string>
     <string name="route_no_path">Nem találtunk oda vezető utat.</string>

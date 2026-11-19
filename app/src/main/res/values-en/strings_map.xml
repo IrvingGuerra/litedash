@@ -118,12 +118,13 @@
     <string name="route_need_routes">To plan the route, the streets of %1$s are missing (%2$s).</string>
     <string name="route_download">Download streets</string>
     <string name="route_download_failed">Couldn\'t download them. Check your internet and try again.</string>
-    <string name="route_other_state">That place is in %1$s: download that state too or open it in your maps app.</string>
+    <string name="route_other_state">That place is in %1$s. The route uses the downloaded map, even with internet: download that one too or open it in your maps app.</string>
     <string name="route_outside">That place is outside your state: open it in your maps app.</string>
-    <string name="route_no_state">To plan the route you need your state\'s map (zones are only for viewing the map).</string>
-    <string name="route_no_state_named">To plan the route you need the map of %1$s (zones are only for viewing the map).</string>
-    <string name="route_no_map">There is no map of your area for routes yet. Open the place in your maps app.</string>
+    <string name="route_no_state">The route and 3D guidance use the downloaded map of your state or country, even with internet. Download it once (zones are only for viewing the map).</string>
+    <string name="route_no_state_named">The route and 3D guidance use the downloaded map, even with internet. Download the %1$s map once (zones are only for viewing the map).</string>
+    <string name="route_no_map">The route and 3D guidance use a downloaded map, even with internet, and there is none for your area yet. See the available ones and request yours, or open the place in your maps app.</string>
     <string name="route_get_map">Download map</string>
+    <string name="route_see_maps">Available maps</string>
     <string name="route_from_off">You are far from a street: get closer to one to find the route.</string>
     <string name="route_to_off">That place is far from a street.</string>
     <string name="route_no_path">We couldn\'t find a way there by road.</string>

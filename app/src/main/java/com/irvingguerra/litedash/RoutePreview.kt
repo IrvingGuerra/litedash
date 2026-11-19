@@ -225,9 +225,12 @@ internal fun RouteCard(
                 else -> false
             }
             if (getMap) Button(stringResource(R.string.route_get_map), onOffline, primary = true)
+            // Sin mapa de ahí todavía: a la lista de los que hay (ahí mismo se pide el de tu país).
+            val noMap = plan is RoutePlan.NoState && !getMap
+            if (noMap) Button(stringResource(R.string.route_see_maps), onOffline, primary = true)
             // Sin «Usar app de mapas externa» ([appName] null), otra app solo como salida cuando LiteDash no pudo trazar la ruta.
             if (appName != null || (plan != null && plan !is RoutePlan.Found)) {
-                Button(openLabel, onOpen, primary = plan !is RoutePlan.NeedsRoutes && plan !is RoutePlan.Found && !getMap)
+                Button(openLabel, onOpen, primary = plan !is RoutePlan.NeedsRoutes && plan !is RoutePlan.Found && !getMap && !noMap)
             }
         }
     }

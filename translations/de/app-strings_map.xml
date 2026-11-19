@@ -118,12 +118,13 @@
     <string name="route_need_routes">Für die Route fehlen die Straßen von %1$s (%2$s).</string>
     <string name="route_download">Straßen laden</string>
     <string name="route_download_failed">Download fehlgeschlagen. Prüfe dein Internet und versuch es noch mal.</string>
-    <string name="route_other_state">Dieser Ort liegt in %1$s: Lade auch dieses Bundesland oder öffne ihn in deiner Karten-App.</string>
+    <string name="route_other_state">Dieser Ort liegt in %1$s. Die Route nutzt die heruntergeladene Karte, auch mit Internet: Lade auch dieses Bundesland oder öffne ihn in deiner Karten-App.</string>
     <string name="route_outside">Dieser Ort liegt außerhalb deines Bundeslands: Öffne ihn in deiner Karten-App.</string>
-    <string name="route_no_state">Für die Route brauchst du die Karte deines Bundeslands (Zonen dienen nur zum Ansehen der Karte).</string>
-    <string name="route_no_state_named">Für die Route brauchst du die Karte von %1$s (Zonen dienen nur zum Ansehen der Karte).</string>
-    <string name="route_no_map">Für deine Gegend gibt es noch keine Karte für Routen. Öffne den Ort in deiner Karten-App.</string>
+    <string name="route_no_state">Route und 3D-Navigation nutzen die heruntergeladene Karte deines Bundeslands oder Landes, auch mit Internet. Lade sie einmal herunter (Zonen dienen nur zum Ansehen der Karte).</string>
+    <string name="route_no_state_named">Route und 3D-Navigation nutzen die heruntergeladene Karte, auch mit Internet. Lade die Karte von %1$s einmal herunter (Zonen dienen nur zum Ansehen der Karte).</string>
+    <string name="route_no_map">Route und 3D-Navigation nutzen eine heruntergeladene Karte, auch mit Internet, und für deine Gegend gibt es noch keine. Sieh dir die verfügbaren an und fordere deine an, oder öffne den Ort in deiner Karten-App.</string>
     <string name="route_get_map">Karte laden</string>
+    <string name="route_see_maps">Verfügbare Karten</string>
     <string name="route_from_off">Du bist weit von einer Straße entfernt: Fahr näher an eine heran, um die Route zu finden.</string>
     <string name="route_to_off">Dieser Ort ist weit von einer Straße entfernt.</string>
     <string name="route_no_path">Wir haben keinen Weg über Straßen dorthin gefunden.</string>

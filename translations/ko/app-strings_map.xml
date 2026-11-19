@@ -118,12 +118,13 @@
     <string name="route_need_routes">경로를 찾으려면 %1$s 도로 데이터가 필요해요 (%2$s).</string>
     <string name="route_download">도로 받기</string>
     <string name="route_download_failed">받지 못했어요. 인터넷을 확인하고 다시 시도하세요.</string>
-    <string name="route_other_state">그곳은 %1$s에 있어요. 그 지역도 받거나 지도 앱에서 여세요.</string>
+    <string name="route_other_state">그곳은 %1$s에 있어요. 경로는 인터넷이 있어도 내려받은 지도를 사용해요. 그 지역도 받거나 지도 앱에서 여세요.</string>
     <string name="route_outside">그곳은 내 지역 밖에 있어요. 지도 앱에서 여세요.</string>
-    <string name="route_no_state">경로를 찾으려면 내 지역 지도가 필요해요 (구역은 지도 보기용이에요).</string>
-    <string name="route_no_state_named">경로를 찾으려면 %1$s 지도가 필요해요 (구역은 지도 보기용이에요).</string>
-    <string name="route_no_map">아직 이 근처의 경로용 지도가 없어요. 지도 앱에서 장소를 여세요.</string>
+    <string name="route_no_state">경로와 3D 안내는 인터넷이 있어도 내려받은 내 지역이나 나라 지도를 사용해요. 한 번만 받아 두세요 (구역은 지도 보기용이에요).</string>
+    <string name="route_no_state_named">경로와 3D 안내는 인터넷이 있어도 내려받은 지도를 사용해요. %1$s 지도를 한 번만 받아 두세요 (구역은 지도 보기용이에요).</string>
+    <string name="route_no_map">경로와 3D 안내는 인터넷이 있어도 내려받은 지도를 사용하는데, 아직 이 근처 지도가 없어요. 사용할 수 있는 지도를 보고 내 지역을 요청하거나, 지도 앱에서 장소를 여세요.</string>
     <string name="route_get_map">지도 받기</string>
+    <string name="route_see_maps">사용 가능한 지도</string>
     <string name="route_from_off">도로에서 멀리 있어요. 경로를 찾으려면 도로에 더 가까이 가세요.</string>
     <string name="route_to_off">그곳은 도로에서 멀리 있어요.</string>
     <string name="route_no_path">그곳까지 가는 도로를 찾지 못했어요.</string>

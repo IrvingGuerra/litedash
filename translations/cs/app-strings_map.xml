@@ -118,12 +118,13 @@
     <string name="route_need_routes">Pro trasu chybí ulice: %1$s (%2$s).</string>
     <string name="route_download">Stáhnout ulice</string>
     <string name="route_download_failed">Nepodařilo se je stáhnout. Zkontroluj internet a zkus to znovu.</string>
-    <string name="route_other_state">To místo je v kraji %1$s: stáhni i ten kraj, nebo ho otevři v aplikaci s mapami.</string>
+    <string name="route_other_state">To místo je v kraji %1$s. Trasa používá staženou mapu, i když máš internet: stáhni i ten kraj, nebo ho otevři v aplikaci s mapami.</string>
     <string name="route_outside">To místo je mimo tvůj kraj: otevři ho v aplikaci s mapami.</string>
-    <string name="route_no_state">Pro trasu potřebuješ mapu svého kraje (oblasti slouží jen k prohlížení mapy).</string>
-    <string name="route_no_state_named">Pro trasu potřebuješ mapu kraje %1$s (oblasti slouží jen k prohlížení mapy).</string>
-    <string name="route_no_map">Pro tvé okolí zatím není mapa pro trasy. Otevři místo v aplikaci s mapami.</string>
+    <string name="route_no_state">Trasa a 3D navigace používají staženou mapu tvého kraje nebo země, i když máš internet. Stáhni ji jednou (oblasti slouží jen k prohlížení mapy).</string>
+    <string name="route_no_state_named">Trasa a 3D navigace používají staženou mapu, i když máš internet. Stáhni jednou mapu kraje %1$s (oblasti slouží jen k prohlížení mapy).</string>
+    <string name="route_no_map">Trasa a 3D navigace používají staženou mapu, i když máš internet, a pro tvé okolí zatím žádná není. Podívej se na dostupné a požádej o svou, nebo otevři místo v aplikaci s mapami.</string>
     <string name="route_get_map">Stáhnout mapu</string>
+    <string name="route_see_maps">Dostupné mapy</string>
     <string name="route_from_off">Jsi daleko od silnice: přibliž se k nějaké, ať můžu najít trasu.</string>
     <string name="route_to_off">To místo je daleko od silnice.</string>
     <string name="route_no_path">Nenašli jsme tam cestu po silnici.</string>

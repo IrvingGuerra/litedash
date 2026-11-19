@@ -118,12 +118,13 @@
     <string name="route_need_routes">Untuk membuat rute, jalan di %1$s belum ada (%2$s).</string>
     <string name="route_download">Unduh jalan</string>
     <string name="route_download_failed">Gagal mengunduh. Periksa internet Anda dan coba lagi.</string>
-    <string name="route_other_state">Tempat itu ada di %1$s: unduh juga provinsi itu atau buka di aplikasi peta Anda.</string>
+    <string name="route_other_state">Tempat itu ada di %1$s. Rute memakai peta yang sudah diunduh, meskipun ada internet: unduh juga provinsi itu atau buka di aplikasi peta Anda.</string>
     <string name="route_outside">Tempat itu di luar provinsi Anda: buka di aplikasi peta Anda.</string>
-    <string name="route_no_state">Untuk membuat rute, Anda perlu peta provinsi Anda (zona hanya untuk melihat peta).</string>
-    <string name="route_no_state_named">Untuk membuat rute, Anda perlu peta %1$s (zona hanya untuk melihat peta).</string>
-    <string name="route_no_map">Belum ada peta daerah Anda untuk rute. Buka tempat itu di aplikasi peta Anda.</string>
+    <string name="route_no_state">Rute dan panduan 3D memakai peta provinsi atau negara Anda yang sudah diunduh, meskipun ada internet. Unduh sekali saja (zona hanya untuk melihat peta).</string>
+    <string name="route_no_state_named">Rute dan panduan 3D memakai peta yang sudah diunduh, meskipun ada internet. Unduh peta %1$s sekali saja (zona hanya untuk melihat peta).</string>
+    <string name="route_no_map">Rute dan panduan 3D memakai peta yang sudah diunduh, meskipun ada internet, dan belum ada peta untuk daerah Anda. Lihat yang tersedia dan minta peta Anda, atau buka tempat itu di aplikasi peta Anda.</string>
     <string name="route_get_map">Unduh peta</string>
+    <string name="route_see_maps">Peta tersedia</string>
     <string name="route_from_off">Anda jauh dari jalan: dekati jalan untuk mencari rute.</string>
     <string name="route_to_off">Tempat itu jauh dari jalan.</string>
     <string name="route_no_path">Tidak ada jalan ke sana yang ditemukan.</string>

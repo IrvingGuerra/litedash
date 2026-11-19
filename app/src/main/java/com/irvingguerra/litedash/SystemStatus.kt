@@ -34,6 +34,7 @@ import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onGloballyPositioned
 import kotlin.math.roundToInt
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
@@ -186,7 +187,10 @@ fun Volume(buttonSize: Dp, vertical: Boolean = false) {
                     .padding(6.dp)
                     .shadow(12.dp, RoundedCornerShape(Radius.card))
                     .clip(RoundedCornerShape(Radius.card))
-                    .background(c.surfaceHigh)
+                    // Siempre lisa: flota sobre lo que sea y, con las tarjetas de vidrio, el gris de la barra es translúcido
+                    // (no se leía). Los colores de adentro siguen siendo los de la barra.
+                    .background(if (c.surfaceHigh.alpha < 1f) c.surface else c.surfaceHigh)
+                    .border(1.dp, c.line, RoundedCornerShape(Radius.card))
                     // Tocar dentro de la píldora (fuera de sus botones) no la cierra.
                     .pointerInput(Unit) { detectTapGestures { } }
                     .padding(vertical = 8.dp, horizontal = 6.dp),

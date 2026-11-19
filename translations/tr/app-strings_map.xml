@@ -118,12 +118,13 @@
     <string name="route_need_routes">Rota oluşturmak için %1$s sokakları eksik (%2$s).</string>
     <string name="route_download">Sokakları indir</string>
     <string name="route_download_failed">İndirilemedi. İnternetinizi kontrol edip tekrar deneyin.</string>
-    <string name="route_other_state">Bu yer %1$s içinde: o ili de indirin veya harita uygulamanızda açın.</string>
+    <string name="route_other_state">Bu yer %1$s içinde. Rota, internet olsa bile indirilmiş haritayı kullanır: o ili de indirin veya harita uygulamanızda açın.</string>
     <string name="route_outside">Bu yer ilinizin dışında: harita uygulamanızda açın.</string>
-    <string name="route_no_state">Rota oluşturmak için ilinizin haritası gerekiyor (bölgeler yalnızca haritayı görmek içindir).</string>
-    <string name="route_no_state_named">Rota oluşturmak için %1$s haritası gerekiyor (bölgeler yalnızca haritayı görmek içindir).</string>
-    <string name="route_no_map">Bulunduğunuz yer için henüz rota haritası yok. Yeri harita uygulamanızda açın.</string>
+    <string name="route_no_state">Rota ve 3D yol tarifi, internet olsa bile ilinizin veya ülkenizin indirilmiş haritasını kullanır. Bir kez indirin (bölgeler yalnızca haritayı görmek içindir).</string>
+    <string name="route_no_state_named">Rota ve 3D yol tarifi, internet olsa bile indirilmiş haritayı kullanır. %1$s haritasını bir kez indirin (bölgeler yalnızca haritayı görmek içindir).</string>
+    <string name="route_no_map">Rota ve 3D yol tarifi, internet olsa bile indirilmiş bir harita kullanır ve bulunduğunuz yer için henüz harita yok. Mevcut haritalara bakıp kendi bölgenizinkini isteyin veya yeri harita uygulamanızda açın.</string>
     <string name="route_get_map">Haritayı indir</string>
+    <string name="route_see_maps">Mevcut haritalar</string>
     <string name="route_from_off">Bir yoldan uzaktasınız: rotayı bulmak için bir yola yaklaşın.</string>
     <string name="route_to_off">Bu yer bir yoldan uzak.</string>
     <string name="route_no_path">Oraya giden bir yol bulamadık.</string>

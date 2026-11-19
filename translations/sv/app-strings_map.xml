@@ -118,12 +118,13 @@
     <string name="route_need_routes">För rutten saknas gatorna i %1$s (%2$s).</string>
     <string name="route_download">Ladda ner gator</string>
     <string name="route_download_failed">Det gick inte att ladda ner. Kontrollera internet och försök igen.</string>
-    <string name="route_other_state">Platsen ligger i %1$s: ladda ner det länet också eller öppna den i din kartapp.</string>
+    <string name="route_other_state">Platsen ligger i %1$s. Rutten använder den nedladdade kartan, även med internet: ladda ner det länet också eller öppna den i din kartapp.</string>
     <string name="route_outside">Platsen ligger utanför ditt län: öppna den i din kartapp.</string>
-    <string name="route_no_state">För rutten behöver du kartan för ditt län (zoner är bara för att visa kartan).</string>
-    <string name="route_no_state_named">För rutten behöver du kartan för %1$s (zoner är bara för att visa kartan).</string>
-    <string name="route_no_map">Det finns ingen karta för rutter i ditt område än. Öppna platsen i din kartapp.</string>
+    <string name="route_no_state">Rutten och 3D-navigeringen använder den nedladdade kartan för ditt län eller land, även med internet. Ladda ner den en gång (zoner är bara för att visa kartan).</string>
+    <string name="route_no_state_named">Rutten och 3D-navigeringen använder den nedladdade kartan, även med internet. Ladda ner kartan för %1$s en gång (zoner är bara för att visa kartan).</string>
+    <string name="route_no_map">Rutten och 3D-navigeringen använder en nedladdad karta, även med internet, och det finns ingen för ditt område än. Se de tillgängliga och be om din, eller öppna platsen i din kartapp.</string>
     <string name="route_get_map">Ladda ner karta</string>
+    <string name="route_see_maps">Tillgängliga kartor</string>
     <string name="route_from_off">Du är långt från en gata: kom närmare en för att hitta rutten.</string>
     <string name="route_to_off">Platsen ligger långt från en gata.</string>
     <string name="route_no_path">Vi hittade ingen väg dit.</string>

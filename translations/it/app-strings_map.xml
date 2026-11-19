@@ -118,12 +118,13 @@
     <string name="route_need_routes">Per calcolare il percorso mancano le strade di %1$s (%2$s).</string>
     <string name="route_download">Scarica strade</string>
     <string name="route_download_failed">Download non riuscito. Controlla internet e riprova.</string>
-    <string name="route_other_state">Quel luogo è in %1$s: scarica anche quella regione o aprilo nella tua app di mappe.</string>
+    <string name="route_other_state">Quel luogo è in %1$s. Il percorso usa la mappa scaricata, anche con internet: scarica anche quella regione o aprilo nella tua app di mappe.</string>
     <string name="route_outside">Quel luogo è fuori dalla tua regione: aprilo nella tua app di mappe.</string>
-    <string name="route_no_state">Per calcolare il percorso ti serve la mappa della tua regione (le zone servono solo a vedere la mappa).</string>
-    <string name="route_no_state_named">Per calcolare il percorso ti serve la mappa di %1$s (le zone servono solo a vedere la mappa).</string>
-    <string name="route_no_map">Non c\'è ancora una mappa per i percorsi nella tua area. Apri il luogo nella tua app di mappe.</string>
+    <string name="route_no_state">Il percorso e la guida 3D usano la mappa scaricata della tua regione o del tuo paese, anche con internet. Scaricala una volta (le zone servono solo a vedere la mappa).</string>
+    <string name="route_no_state_named">Il percorso e la guida 3D usano la mappa scaricata, anche con internet. Scarica una volta quella di %1$s (le zone servono solo a vedere la mappa).</string>
+    <string name="route_no_map">Il percorso e la guida 3D usano una mappa scaricata, anche con internet, e per la tua area non ce n\'è ancora una. Guarda quelle disponibili e chiedi la tua, oppure apri il luogo nella tua app di mappe.</string>
     <string name="route_get_map">Scarica mappa</string>
+    <string name="route_see_maps">Mappe disponibili</string>
     <string name="route_from_off">Sei lontano da una strada: avvicinati a una per trovare il percorso.</string>
     <string name="route_to_off">Quel luogo è lontano da una strada.</string>
     <string name="route_no_path">Non abbiamo trovato una strada per arrivarci.</string>

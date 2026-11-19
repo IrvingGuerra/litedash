@@ -118,12 +118,13 @@
     <string name="route_need_routes">Để lập lộ trình, cần tải đường phố của %1$s (%2$s).</string>
     <string name="route_download">Tải đường phố</string>
     <string name="route_download_failed">Không tải được. Hãy kiểm tra internet và thử lại.</string>
-    <string name="route_other_state">Nơi đó thuộc %1$s: hãy tải thêm tỉnh đó hoặc mở trong ứng dụng bản đồ của bạn.</string>
+    <string name="route_other_state">Nơi đó thuộc %1$s. Lộ trình dùng bản đồ đã tải về, kể cả khi có internet: hãy tải thêm tỉnh đó hoặc mở trong ứng dụng bản đồ của bạn.</string>
     <string name="route_outside">Nơi đó nằm ngoài tỉnh của bạn: hãy mở trong ứng dụng bản đồ của bạn.</string>
-    <string name="route_no_state">Để lập lộ trình, bạn cần bản đồ tỉnh của mình (khu vực chỉ dùng để xem bản đồ).</string>
-    <string name="route_no_state_named">Để lập lộ trình, bạn cần bản đồ của %1$s (khu vực chỉ dùng để xem bản đồ).</string>
-    <string name="route_no_map">Chưa có bản đồ lộ trình cho nơi bạn ở. Hãy mở địa điểm trong ứng dụng bản đồ của bạn.</string>
+    <string name="route_no_state">Lộ trình và dẫn đường 3D dùng bản đồ tỉnh hoặc quốc gia của bạn đã tải về, kể cả khi có internet. Chỉ cần tải một lần (khu vực chỉ dùng để xem bản đồ).</string>
+    <string name="route_no_state_named">Lộ trình và dẫn đường 3D dùng bản đồ đã tải về, kể cả khi có internet. Hãy tải bản đồ của %1$s một lần (khu vực chỉ dùng để xem bản đồ).</string>
+    <string name="route_no_map">Lộ trình và dẫn đường 3D dùng bản đồ đã tải về, kể cả khi có internet, và chưa có bản đồ cho nơi bạn ở. Xem các bản đồ hiện có và yêu cầu bản đồ của bạn, hoặc mở địa điểm trong ứng dụng bản đồ của bạn.</string>
     <string name="route_get_map">Tải bản đồ</string>
+    <string name="route_see_maps">Bản đồ hiện có</string>
     <string name="route_from_off">Bạn đang ở xa đường: hãy đến gần một con đường để tìm lộ trình.</string>
     <string name="route_to_off">Nơi đó ở xa đường.</string>
     <string name="route_no_path">Không tìm thấy đường đi đến đó.</string>

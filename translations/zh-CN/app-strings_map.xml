@@ -118,12 +118,13 @@
     <string name="route_need_routes">规划路线还缺少 %1$s 的道路数据（%2$s）。</string>
     <string name="route_download">下载道路</string>
     <string name="route_download_failed">下载失败。请检查网络后重试。</string>
-    <string name="route_other_state">该地点在 %1$s：也下载那个省份，或在你的地图应用中打开。</string>
+    <string name="route_other_state">该地点在 %1$s。即使有网络，路线也会使用已下载的地图：也下载那个省份，或在你的地图应用中打开。</string>
     <string name="route_outside">该地点在你所在省份之外：请在你的地图应用中打开。</string>
-    <string name="route_no_state">规划路线需要你所在省份的地图（区域只能用来查看地图）。</string>
-    <string name="route_no_state_named">规划路线需要 %1$s 的地图（区域只能用来查看地图）。</string>
-    <string name="route_no_map">你所在的地区暂时还没有可规划路线的地图。请在你的地图应用中打开该地点。</string>
+    <string name="route_no_state">即使有网络，路线和 3D 导航也会使用已下载的你所在省份或国家的地图。下载一次即可（区域只能用来查看地图）。</string>
+    <string name="route_no_state_named">即使有网络，路线和 3D 导航也会使用已下载的地图。下载一次 %1$s 的地图即可（区域只能用来查看地图）。</string>
+    <string name="route_no_map">即使有网络，路线和 3D 导航也会使用已下载的地图，而你所在的地区暂时还没有。查看可用的地图并申请你所在地区的地图，或在你的地图应用中打开该地点。</string>
     <string name="route_get_map">下载地图</string>
+    <string name="route_see_maps">可用地图</string>
     <string name="route_from_off">你离道路太远：请靠近道路后再查找路线。</string>
     <string name="route_to_off">该地点离道路太远。</string>
     <string name="route_no_path">找不到通往那里的道路。</string>

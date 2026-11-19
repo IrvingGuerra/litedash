@@ -3,6 +3,19 @@
 What people using LiteDash notice, in English. The full history (in Spanish) is in [CHANGELOG.md](CHANGELOG.md).
 Format [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versions [SemVer](https://semver.org/).
 
+## [1.5.11] - 2026-11-18
+
+### Changed
+- **Route and 3D guidance: clearer about why they ask for the map:** the notice now says they use the downloaded map of
+  your state or country even with internet, with a button straight to the download. If there is no map for your area
+  yet, the "Available maps" button takes you to the list, where you can also request yours.
+
+### Fixed
+- **The volume control with glass cards** no longer shows see-through over the home screen (it was unreadable): it is
+  always a solid card.
+- **Cut-off cover in the Music widget:** in a narrow, not very tall widget the cover showed as a thin strip on top; when
+  it doesn't fit properly it is left out and the title and buttons are centered.
+
 ## [1.5.10] - 2026-11-18
 
 ### Fixed

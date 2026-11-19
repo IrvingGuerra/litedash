@@ -4,6 +4,19 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.5.11] - 2026-11-18
+
+### Cambiado
+- **La ruta y la guía en 3D, más claro por qué piden el mapa:** el aviso ahora dice que usan el mapa descargado de tu
+  estado o país aunque tengas internet, y lleva un botón directo a la descarga. Si todavía no hay mapa de tu zona, el
+  botón «Mapas disponibles» te lleva a la lista, donde también puedes pedir el tuyo.
+
+### Arreglado
+- **El control de volumen con tarjetas de vidrio** ya no sale translúcido encima del inicio (no se leía): siempre es
+  una tarjeta lisa.
+- **Carátula cortada en el widget Música:** en un widget angosto y no muy alto la carátula salía como una franja
+  delgada arriba; si no cabe bien, ya no se pone y el título y los botones van centrados.
+
 ## [1.5.10] - 2026-11-18
 
 ### Arreglado

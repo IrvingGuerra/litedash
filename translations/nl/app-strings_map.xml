@@ -118,12 +118,13 @@
     <string name="route_need_routes">Voor de route ontbreken de straten van %1$s (%2$s).</string>
     <string name="route_download">Straten downloaden</string>
     <string name="route_download_failed">Downloaden mislukt. Controleer je internet en probeer het opnieuw.</string>
-    <string name="route_other_state">Die plek ligt in %1$s: download ook die provincie of open hem in je kaarten-app.</string>
+    <string name="route_other_state">Die plek ligt in %1$s. De route gebruikt de gedownloade kaart, ook met internet: download ook die provincie of open hem in je kaarten-app.</string>
     <string name="route_outside">Die plek ligt buiten je provincie: open hem in je kaarten-app.</string>
-    <string name="route_no_state">Voor de route heb je de kaart van je provincie nodig (zones zijn alleen om de kaart te bekijken).</string>
-    <string name="route_no_state_named">Voor de route heb je de kaart van %1$s nodig (zones zijn alleen om de kaart te bekijken).</string>
-    <string name="route_no_map">Er is nog geen kaart van jouw omgeving voor routes. Open de plek in je kaarten-app.</string>
+    <string name="route_no_state">De route en de 3D-navigatie gebruiken de gedownloade kaart van je provincie of land, ook met internet. Download hem één keer (zones zijn alleen om de kaart te bekijken).</string>
+    <string name="route_no_state_named">De route en de 3D-navigatie gebruiken de gedownloade kaart, ook met internet. Download één keer de kaart van %1$s (zones zijn alleen om de kaart te bekijken).</string>
+    <string name="route_no_map">De route en de 3D-navigatie gebruiken een gedownloade kaart, ook met internet, en voor jouw omgeving is er nog geen. Bekijk de beschikbare kaarten en vraag de jouwe aan, of open de plek in je kaarten-app.</string>
     <string name="route_get_map">Kaart downloaden</string>
+    <string name="route_see_maps">Beschikbare kaarten</string>
     <string name="route_from_off">Je bent ver van een straat: ga dichter naar een straat om de route te vinden.</string>
     <string name="route_to_off">Die plek ligt ver van een straat.</string>
     <string name="route_no_path">We vonden geen weg daarheen over de straat.</string>

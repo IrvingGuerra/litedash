@@ -120,12 +120,13 @@
     <string name="route_need_routes">Pour tracer l\'itinéraire, il manque les rues de %1$s (%2$s).</string>
     <string name="route_download">Télécharger les rues</string>
     <string name="route_download_failed">Échec du téléchargement. Vérifiez votre internet et réessayez.</string>
-    <string name="route_other_state">Ce lieu se trouve en %1$s : téléchargez aussi cette région ou ouvrez-le dans votre appli de cartes.</string>
+    <string name="route_other_state">Ce lieu se trouve en %1$s. L\'itinéraire utilise la carte téléchargée, même avec Internet : téléchargez aussi cette région ou ouvrez-le dans votre appli de cartes.</string>
     <string name="route_outside">Ce lieu est hors de votre région : ouvrez-le dans votre appli de cartes.</string>
-    <string name="route_no_state">Pour tracer l\'itinéraire, il vous faut la carte de votre région (les zones servent seulement à voir la carte).</string>
-    <string name="route_no_state_named">Pour tracer l\'itinéraire, il vous faut la carte de %1$s (les zones servent seulement à voir la carte).</string>
-    <string name="route_no_map">Il n\'y a pas encore de carte de votre secteur pour les itinéraires. Ouvrez le lieu dans votre appli de cartes.</string>
+    <string name="route_no_state">L\'itinéraire et le guidage 3D utilisent la carte téléchargée de votre région ou pays, même avec Internet. Téléchargez-la une fois (les zones servent seulement à voir la carte).</string>
+    <string name="route_no_state_named">L\'itinéraire et le guidage 3D utilisent la carte téléchargée, même avec Internet. Téléchargez une fois celle de %1$s (les zones servent seulement à voir la carte).</string>
+    <string name="route_no_map">L\'itinéraire et le guidage 3D utilisent une carte téléchargée, même avec Internet, et il n\'y en a pas encore pour votre secteur. Consultez celles disponibles et demandez la vôtre, ou ouvrez le lieu dans votre appli de cartes.</string>
     <string name="route_get_map">Télécharger la carte</string>
+    <string name="route_see_maps">Cartes disponibles</string>
     <string name="route_from_off">Vous êtes loin d\'une rue : rapprochez-vous-en pour calculer l\'itinéraire.</string>
     <string name="route_to_off">Ce lieu est loin d\'une rue.</string>
     <string name="route_no_path">Aucun chemin par la route n\'a été trouvé jusque-là.</string>
