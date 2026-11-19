@@ -478,7 +478,10 @@
     <string name="bar_arrange">Acomodar la barra</string>
     <string name="bar_position_help">Automática: a la izquierda si la pantalla está acostada, abajo si está parada.</string>
     <string name="bar_edit">Barra</string>
-    <string name="bar_edit_help">Para quitar un botón toca su x en la barra; para cambiarlo de lugar, arrástralo. Las dos rayas separan izquierda, centro y derecha: arrástralas también. Ajustes siempre va.</string>
+    <string name="bar_edit_help">Toca un botón de la barra y muévelo con las flechas, o quítalo. Las dos rayas separan izquierda, centro y derecha: se mueven igual. Ajustes siempre va.</string>
+    <string name="bar_split">División</string>
+    <string name="bar_move_right">Mover a la derecha</string>
+    <string name="bar_move_left">Mover a la izquierda</string>
     <string name="bar_add_item">+ %1$s</string>
     <string name="radio_mi">%1$d mi</string>
     <string name="bar_place">Posición</string>

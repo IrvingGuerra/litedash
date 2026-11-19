@@ -6,16 +6,22 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -90,8 +96,7 @@ private fun BarSettings(d: Dependencies, apps: List<App>, onEdit: (() -> Unit)? 
     // Ajustes ya va siempre.
     val missing = BarItem.entries.filter { it != BarItem.SETTINGS && !it.isSplit && it !in prefs.barItems && (it != BarItem.VOICE || hasVoice) }
     section(stringResource(R.string.bar_buttons)) {
-        // La barra misma, para acomodarla aquí: arrastrar, quitar con la x y mover las dos rayas.
-        BarPreview(d.apps, prefs, rememberFavorites(d, apps), hasVoice)
+        BarArrange(d, apps, hasVoice)
         Label(stringResource(R.string.bar_edit_help), Typography.body, c.textMuted)
         if (missing.isNotEmpty() || onEdit != null) FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             if (onEdit != null) Button(stringResource(R.string.bar_arrange), onEdit, primary = true)
@@ -129,6 +134,52 @@ private fun BarSettings(d: Dependencies, apps: List<App>, onEdit: (() -> Unit)? 
             { prefs.barSize = it },
         )
     }
+}
+
+/**
+ * La barra para acomodarla desde sus ajustes: se toca lo que se quiere mover (un botón, una raya, tus favoritas) y
+ * arriba salen las flechas y «Quitar». Nada de dejar presionado: en muchas pantallas de auto no responde bien.
+ */
+@Composable
+private fun BarArrange(d: Dependencies, apps: List<App>, hasVoice: Boolean) {
+    val c = LocalColors.current
+    val prefs = d.prefs
+    val shown = prefs.barItems.filter { it != BarItem.VOICE || hasVoice }
+    val movable = shown.filter { it != BarItem.SETTINGS }
+    var selected by remember { mutableStateOf<BarItem?>(null) }
+    val chosen = selected?.takeIf { it in movable }
+    // Lo recorre un lugar; lo que no se ve aquí (la voz sin asistente) conserva el suyo ([reorderBar]).
+    fun move(by: Int) {
+        val item = chosen ?: return
+        val to = movable.indexOf(item) + by
+        if (to !in movable.indices) return
+        prefs.barItems = reorderBar(prefs.barItems, movable, item, if (by < 0) to - 0.5f else to + 0.5f) { movable.indexOf(it).toFloat() }
+        // Una raya que cruza a la otra cambia de nombre (la primera siempre es la del principio): se sigue por su lugar.
+        selected = prefs.barItems.filter { it in movable }.getOrNull(to)
+    }
+    Row(Modifier.fillMaxWidth().heightIn(min = 52.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        if (chosen == null) return@Row
+        val at = movable.indexOf(chosen)
+        Label(
+            stringResource(if (chosen.isSplit) R.string.bar_split else chosen.title() ?: R.string.bar_split), Typography.subtitle,
+            maxLines = 1, modifier = Modifier.weight(1f),
+        )
+        // Las rayas no se quitan: solo se mueven. «Quitar» va antes de las flechas: así ellas no cambian de lugar.
+        if (!chosen.isSplit) Button(stringResource(R.string.remove), {
+            prefs.barItems = prefs.barItems - chosen
+            selected = null
+        })
+        val idle = c.textMuted.copy(alpha = 0.35f)
+        IconButton(
+            Icons.chevron, { move(-1) }, Modifier.graphicsLayer { rotationZ = 180f }, size = 48.dp, background = c.surfaceHigh,
+            color = if (at > 0) c.text else idle, label = stringResource(R.string.bar_move_left),
+        )
+        IconButton(
+            Icons.chevron, { move(1) }, size = 48.dp, background = c.surfaceHigh,
+            color = if (at < movable.lastIndex) c.text else idle, label = stringResource(R.string.bar_move_right),
+        )
+    }
+    BarPreview(d.apps, rememberFavorites(d, apps), shown, chosen) { selected = if (selected == it) null else it }
 }
 
 /** Tus apps favoritas de la barra: quitar con la x y agregar buscándolas. */

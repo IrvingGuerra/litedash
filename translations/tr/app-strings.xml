@@ -466,7 +466,10 @@
     <string name="bar_arrange">Çubuğu düzenle</string>
     <string name="bar_position_help">Otomatik: ekran yatayken solda, dikeyken altta.</string>
     <string name="bar_edit">Çubuk</string>
-    <string name="bar_edit_help">Çubuktaki bir düğmeyi kaldırmak için x’ine dokunun; taşımak için sürükleyin. İki çizgi solu, ortayı ve sağı ayırır: onları da sürükleyin. Ayarlar her zaman kalır.</string>
+    <string name="bar_edit_help">Çubuktaki bir düğmeye dokunun ve oklarla taşıyın ya da kaldırın. İki çizgi solu, ortayı ve sağı ayırır: onlar da aynı şekilde taşınır. Ayarlar her zaman kalır.</string>
+    <string name="bar_move_left">Sola taşı</string>
+    <string name="bar_move_right">Sağa taşı</string>
+    <string name="bar_split">Ayırıcı</string>
     <string name="bar_add_item">+ %1$s</string>
     <string name="radio_mi">%1$d mi</string>
     <string name="bar_place">Konum</string>

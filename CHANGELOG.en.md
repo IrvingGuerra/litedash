@@ -3,6 +3,13 @@
 What people using LiteDash notice, in English. The full history (in Spanish) is in [CHANGELOG.md](CHANGELOG.md).
 Format [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versions [SemVer](https://semver.org/).
 
+## [1.5.14] - 2026-11-18
+
+### Changed
+- **Arrange the bar without long-pressing:** in Settings → Home & look → Bar, tap a button on the bar (or one of its two
+  lines, or your favorites) and move it with the arrows, or take it off with "Remove". On many head units long-press
+  and drag didn't respond well. On the home screen you can still drag as before.
+
 ## [1.5.13] - 2026-11-18
 
 ### Changed

@@ -461,7 +461,10 @@
     <string name="bar_arrange">Sắp xếp thanh</string>
     <string name="bar_position_help">Tự động: bên trái khi màn hình nằm ngang, ở dưới khi màn hình dọc.</string>
     <string name="bar_edit">Thanh</string>
-    <string name="bar_edit_help">Để xóa một nút, nhấn dấu x trên thanh; để di chuyển, hãy kéo nó. Hai vạch chia trái, giữa và phải: hãy kéo cả hai vạch này. Cài đặt luôn được giữ lại.</string>
+    <string name="bar_edit_help">Nhấn một nút trên thanh rồi di chuyển bằng các mũi tên, hoặc xóa nó. Hai vạch chia trái, giữa và phải: di chuyển chúng theo cách tương tự. Cài đặt luôn được giữ lại.</string>
+    <string name="bar_move_left">Di chuyển sang trái</string>
+    <string name="bar_move_right">Di chuyển sang phải</string>
+    <string name="bar_split">Vạch chia</string>
     <string name="bar_add_item">+ %1$s</string>
     <string name="radio_mi">%1$d mi</string>
     <string name="bar_place">Vị trí</string>

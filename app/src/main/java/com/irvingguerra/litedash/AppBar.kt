@@ -181,31 +181,45 @@ fun AppBar(
 }
 
 /**
- * La barra en sus ajustes: la misma que al acomodarla en el inicio (arrastrar para ordenar, ✕ para quitar, las dos rayas
- * para partirla), siempre acostada y con sus botones sin efecto. [hasVoice]: la pantalla trae asistente.
+ * La barra en sus ajustes, acostada y con sus botones sin efecto: un toque elige un botón, una raya o tus favoritas
+ * ([selected], marcado) y quien la pone lo mueve o lo quita con sus flechas. Sin dejar presionado ni arrastrar: en
+ * muchas pantallas de auto ese gesto falla. [items] = lo que se ve, en orden; Ajustes va al final y no se elige.
  */
 @Composable
-internal fun BarPreview(repo: AppRepository, prefs: Preferences, favorites: List<App>, hasVoice: Boolean) {
+internal fun BarPreview(repo: AppRepository, favorites: List<App>, items: List<BarItem>, selected: BarItem?, onSelect: (BarItem) -> Unit) {
     val c = LocalColors.current
     val sizes = BarSizes(button = 48.dp, icon = 36.dp)
-    val actions = remember(hasVoice) { BarActions({}, {}, {}, {}, {}, {}, if (hasVoice) ({}) else null, {}, {}, {}) }
-    val items = prefs.barItems.filter { it != BarItem.VOICE || hasVoice }
+    val actions = remember { BarActions({}, {}, {}, {}, {}, {}, {}, {}, {}, {}) }
     val shape = RoundedCornerShape(Radius.card)
-    Box(
-        Modifier.fillMaxWidth().height(72.dp).clip(shape).background(c.surfaceHigh).border(1.5.dp, c.accent, shape).padding(horizontal = 12.dp),
-        contentAlignment = Alignment.Center,
+    val mark = RoundedCornerShape(Radius.inner)
+    Row(
+        Modifier.fillMaxWidth().height(76.dp).clip(shape).background(c.surfaceHigh).border(1.dp, c.line, shape)
+            .horizontalScroll(rememberScrollState()).padding(horizontal = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally),
     ) {
-        EditableBar(
-            prefs, items, vertical = false, noFavorites = favorites.isEmpty(),
-            // Sin toques: aquí solo se acomoda (el volumen de verdad se movería al arrastrarlo).
-            item = { Box { BarButton(it, sizes, vertical = false, musicOpen = false, mapOpen = false, actions); Box(Modifier.matchParentSize().pointerInput(Unit) {}) } },
-            favoritesBlock = { max ->
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                    for (app in if (max != null) favorites.take(max) else favorites) AppIcon(repo, app, sizes.icon)
+        for (i in items) key(i) {
+            val chosen = i == selected
+            Box(
+                Modifier.clip(mark)
+                    .then(if (chosen) Modifier.background(c.accent.copy(alpha = 0.18f)).border(1.5.dp, c.accent, mark) else Modifier)
+                    .then(if (i != BarItem.SETTINGS) Modifier.clickable { onSelect(i) } else Modifier)
+                    .padding(2.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                when {
+                    i.isSplit -> SplitHandle(vertical = false)
+                    i == BarItem.FAVORITES -> FavoritesEdit(favorites.isEmpty(), vertical = false) { max ->
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                            for (app in if (max != null) favorites.take(max) else favorites) AppIcon(repo, app, sizes.icon)
+                        }
+                    }
+                    else -> BarButton(i, sizes, vertical = false, musicOpen = false, mapOpen = false, actions)
                 }
-            },
-            onBarSettings = null,
-        )
+                // Encima, para que el toque elija (y no mueva el volumen ni abra nada).
+                Box(Modifier.matchParentSize().pointerInput(Unit) {})
+            }
+        }
     }
 }
 
@@ -257,8 +271,7 @@ private fun EditableBar(
     noFavorites: Boolean,
     item: @Composable (BarItem) -> Unit,
     favoritesBlock: @Composable (Int?) -> Unit,
-    /** «Barra» al final (lleva a sus ajustes); null = ya se está en ellos. */
-    onBarSettings: (() -> Unit)?,
+    onBarSettings: () -> Unit,
 ) {
     val movable = items.filter { it != BarItem.SETTINGS }
     // Dónde está el centro de cada uno (en la pantalla) y dónde va el dedo con el que se mueve (mismo eje).
@@ -311,11 +324,11 @@ private fun EditableBar(
     if (vertical) Column(Modifier.fillMaxHeight(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Column(Modifier.weight(1f, fill = false).verticalScroll(scroll), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) { list() }
         item(BarItem.SETTINGS)
-        if (onBarSettings != null) EditChip(stringResource(R.string.bar_edit), vertical = true, onBarSettings)
+        EditChip(stringResource(R.string.bar_edit), vertical = true, onBarSettings)
     } else Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         Row(Modifier.weight(1f, fill = false).horizontalScroll(scroll), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) { list() }
         item(BarItem.SETTINGS)
-        if (onBarSettings != null) EditChip(stringResource(R.string.bar_edit), vertical = false, onBarSettings)
+        EditChip(stringResource(R.string.bar_edit), vertical = false, onBarSettings)
     }
 }
 

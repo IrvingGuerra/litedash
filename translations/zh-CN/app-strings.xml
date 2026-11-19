@@ -461,7 +461,10 @@
     <string name="bar_arrange">整理栏</string>
     <string name="bar_position_help">自动：横屏时在左侧，竖屏时在底部。</string>
     <string name="bar_edit">栏</string>
-    <string name="bar_edit_help">要移除按钮，点按栏上的 x；要移动，拖动它。两条线分隔左、中、右：也可以拖动它们。“设置”始终保留。</string>
+    <string name="bar_edit_help">点按栏上的按钮，用箭头移动它，或将其移除。两条线分隔左、中、右：也用同样方式移动。“设置”始终保留。</string>
+    <string name="bar_move_left">向左移动</string>
+    <string name="bar_move_right">向右移动</string>
+    <string name="bar_split">分隔线</string>
     <string name="bar_add_item">+ %1$s</string>
     <string name="radio_mi">%1$d 英里</string>
     <string name="bar_place">位置</string>

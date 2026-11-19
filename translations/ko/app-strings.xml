@@ -461,7 +461,10 @@
     <string name="bar_arrange">바 정리</string>
     <string name="bar_position_help">자동: 가로 화면에서는 왼쪽, 세로 화면에서는 아래쪽.</string>
     <string name="bar_edit">바</string>
-    <string name="bar_edit_help">버튼을 지우려면 바에서 x를 탭하고, 옮기려면 끌어서 이동하세요. 두 선이 왼쪽, 가운데, 오른쪽을 나눠요. 선도 끌어서 옮기세요. 설정은 항상 남아요.</string>
+    <string name="bar_edit_help">바에서 버튼을 탭하고 화살표로 옮기거나 지우세요. 두 선이 왼쪽, 가운데, 오른쪽을 나눠요. 선도 같은 방법으로 옮겨요. 설정은 항상 남아요.</string>
+    <string name="bar_move_left">왼쪽으로 이동</string>
+    <string name="bar_move_right">오른쪽으로 이동</string>
+    <string name="bar_split">구분선</string>
     <string name="bar_add_item">+ %1$s</string>
     <string name="radio_mi">%1$d mi</string>
     <string name="bar_place">위치</string>

@@ -476,7 +476,10 @@
     <string name="bar_arrange">Налаштувати панель</string>
     <string name="bar_position_help">Авто: ліворуч при горизонтальному екрані, внизу — при вертикальному.</string>
     <string name="bar_edit">Панель</string>
-    <string name="bar_edit_help">Щоб прибрати кнопку, натисни її x на панелі; щоб перемістити — перетягни. Дві риски ділять панель на ліву, центральну й праву частини: перетягни і їх. «Налаштування» лишаються завжди.</string>
+    <string name="bar_edit_help">Натисни кнопку на панелі й переміщуй її стрілками або прибери. Дві риски ділять панель на ліву, центральну й праву частини: вони переміщуються так само. «Налаштування» лишаються завжди.</string>
+    <string name="bar_move_left">Перемістити ліворуч</string>
+    <string name="bar_move_right">Перемістити праворуч</string>
+    <string name="bar_split">Роздільник</string>
     <string name="bar_add_item">+ %1$s</string>
     <string name="radio_mi">%1$d mi</string>
     <string name="bar_place">Положення</string>

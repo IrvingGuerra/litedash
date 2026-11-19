@@ -466,7 +466,10 @@
     <string name="bar_arrange">Balk indelen</string>
     <string name="bar_position_help">Automatisch: links als het scherm liggend is, onderaan als het staand is.</string>
     <string name="bar_edit">Balk</string>
-    <string name="bar_edit_help">Om een knop te verwijderen, tik je op zijn x op de balk; om hem te verplaatsen, sleep je hem. De twee streepjes scheiden links, midden en rechts: sleep die ook. Instellingen blijft altijd.</string>
+    <string name="bar_edit_help">Tik op een knop op de balk en verplaats hem met de pijlen, of verwijder hem. De twee streepjes scheiden links, midden en rechts: die verplaats je op dezelfde manier. Instellingen blijft altijd.</string>
+    <string name="bar_move_left">Naar links</string>
+    <string name="bar_move_right">Naar rechts</string>
+    <string name="bar_split">Scheidingslijn</string>
     <string name="bar_add_item">+ %1$s</string>
     <string name="radio_mi">%1$d mi</string>
     <string name="bar_place">Positie</string>

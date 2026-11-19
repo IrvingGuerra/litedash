@@ -466,7 +466,10 @@
     <string name="bar_arrange">Leiste anordnen</string>
     <string name="bar_position_help">Automatisch: links im Querformat, unten im Hochformat.</string>
     <string name="bar_edit">Leiste</string>
-    <string name="bar_edit_help">Zum Entfernen tippe auf das x des Buttons in der Leiste; zum Verschieben zieh ihn. Die zwei Striche trennen links, Mitte und rechts: zieh sie auch. Einstellungen bleibt immer.</string>
+    <string name="bar_edit_help">Tippe auf einen Button in der Leiste und verschieb ihn mit den Pfeilen oder entferne ihn. Die zwei Striche trennen links, Mitte und rechts: sie lassen sich genauso verschieben. Einstellungen bleibt immer.</string>
+    <string name="bar_move_left">Nach links</string>
+    <string name="bar_move_right">Nach rechts</string>
+    <string name="bar_split">Trennstrich</string>
     <string name="bar_add_item">+ %1$s</string>
     <string name="radio_mi">%1$d mi</string>
     <string name="bar_place">Position</string>

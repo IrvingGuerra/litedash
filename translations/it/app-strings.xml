@@ -466,7 +466,10 @@
     <string name="bar_arrange">Sistema la barra</string>
     <string name="bar_position_help">Automatica: a sinistra con lo schermo orizzontale, in basso con lo schermo verticale.</string>
     <string name="bar_edit">Barra</string>
-    <string name="bar_edit_help">Per togliere un pulsante, tocca la sua x sulla barra; per spostarlo, trascinalo. Le due linee separano sinistra, centro e destra: trascina anche quelle. Impostazioni resta sempre.</string>
+    <string name="bar_edit_help">Tocca un pulsante sulla barra e spostalo con le frecce, oppure toglilo. Le due linee separano sinistra, centro e destra: si spostano allo stesso modo. Impostazioni resta sempre.</string>
+    <string name="bar_move_left">Sposta a sinistra</string>
+    <string name="bar_move_right">Sposta a destra</string>
+    <string name="bar_split">Divisore</string>
     <string name="bar_add_item">+ %1$s</string>
     <string name="radio_mi">%1$d mi</string>
     <string name="bar_place">Posizione</string>

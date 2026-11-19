@@ -461,7 +461,10 @@
     <string name="bar_arrange">Atur bilah</string>
     <string name="bar_position_help">Otomatis: di kiri saat layar lanskap, di bawah saat potret.</string>
     <string name="bar_edit">Bilah</string>
-    <string name="bar_edit_help">Untuk menghapus tombol, ketuk x-nya di bilah; untuk memindahkannya, seret. Dua garis memisahkan kiri, tengah, dan kanan: seret juga keduanya. Setelan selalu tetap ada.</string>
+    <string name="bar_edit_help">Ketuk tombol di bilah lalu pindahkan dengan panah, atau hapus. Dua garis memisahkan kiri, tengah, dan kanan: pindahkan dengan cara yang sama. Setelan selalu tetap ada.</string>
+    <string name="bar_move_left">Pindahkan ke kiri</string>
+    <string name="bar_move_right">Pindahkan ke kanan</string>
+    <string name="bar_split">Pemisah</string>
     <string name="bar_add_item">+ %1$s</string>
     <string name="radio_mi">%1$d mi</string>
     <string name="bar_place">Posisi</string>

@@ -468,7 +468,10 @@
     <string name="bar_arrange">Organizar a barra</string>
     <string name="bar_position_help">Automática: à esquerda se a tela estiver na horizontal, embaixo se estiver na vertical.</string>
     <string name="bar_edit">Barra</string>
-    <string name="bar_edit_help">Para remover um botão, toque no x dele na barra; para mudá-lo de lugar, arraste-o. As duas linhas separam esquerda, centro e direita: arraste-as também. Configurações sempre fica.</string>
+    <string name="bar_edit_help">Toque em um botão da barra e mude-o de lugar com as setas, ou remova-o. As duas linhas separam esquerda, centro e direita: elas se movem do mesmo jeito. Configurações sempre fica.</string>
+    <string name="bar_move_left">Mover para a esquerda</string>
+    <string name="bar_move_right">Mover para a direita</string>
+    <string name="bar_split">Divisória</string>
     <string name="bar_add_item">+ %1$s</string>
     <string name="radio_mi">%1$d mi</string>
     <string name="bar_place">Posição</string>

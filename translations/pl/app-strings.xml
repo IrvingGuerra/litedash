@@ -476,7 +476,10 @@
     <string name="bar_arrange">Urządź pasek</string>
     <string name="bar_position_help">Automatycznie: po lewej, gdy ekran jest poziomy, na dole, gdy pionowy.</string>
     <string name="bar_edit">Pasek</string>
-    <string name="bar_edit_help">Aby usunąć przycisk, dotknij jego x na pasku; aby go przesunąć, przeciągnij. Dwie kreski oddzielają lewą, środkową i prawą część: je też przeciągnij. Ustawienia zostają zawsze.</string>
+    <string name="bar_edit_help">Dotknij przycisku na pasku i przesuń go strzałkami albo usuń. Dwie kreski oddzielają lewą, środkową i prawą część: przesuwa się je tak samo. Ustawienia zostają zawsze.</string>
+    <string name="bar_move_left">Przesuń w lewo</string>
+    <string name="bar_move_right">Przesuń w prawo</string>
+    <string name="bar_split">Separator</string>
     <string name="bar_add_item">+ %1$s</string>
     <string name="radio_mi">%1$d mi</string>
     <string name="bar_place">Położenie</string>

@@ -4,6 +4,13 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.5.14] - 2026-11-18
+
+### Cambiado
+- **Acomodar la barra sin dejar presionado:** en Ajustes → Inicio y apariencia → Barra, toca un botón de la barra (o
+  una de sus dos rayas, o tus favoritas) y muévelo con las flechas, o quítalo con «Quitar». En muchas pantallas de auto
+  dejar presionado y arrastrar no respondía bien. En el inicio se sigue pudiendo arrastrar como antes.
+
 ## [1.5.13] - 2026-11-18
 
 ### Cambiado

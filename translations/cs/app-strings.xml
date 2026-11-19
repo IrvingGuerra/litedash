@@ -476,7 +476,10 @@
     <string name="bar_arrange">Uspořádat lištu</string>
     <string name="bar_position_help">Automaticky: vlevo, když je displej na šířku, dole, když je na výšku.</string>
     <string name="bar_edit">Lišta</string>
-    <string name="bar_edit_help">Tlačítko odebereš klepnutím na jeho x na liště, přesuneš ho přetažením. Dvě čárky oddělují levou, prostřední a pravou část: přetáhni je taky. Nastavení zůstává vždy.</string>
+    <string name="bar_edit_help">Klepni na tlačítko na liště a přesuň ho šipkami, nebo ho odeber. Dvě čárky oddělují levou, prostřední a pravou část: přesouvají se stejně. Nastavení zůstává vždy.</string>
+    <string name="bar_move_left">Posunout doleva</string>
+    <string name="bar_move_right">Posunout doprava</string>
+    <string name="bar_split">Oddělovač</string>
     <string name="bar_add_item">+ %1$s</string>
     <string name="radio_mi">%1$d mi</string>
     <string name="bar_place">Umístění</string>
