@@ -54,11 +54,19 @@ class CardsTest {
         // sobra, y en lo más transparente que se permite todavía se lee.
         for (theme in themes) for (color in listOf<Color?>(null) + hard) {
             val c = theme.withCards(color)
-            val wallpaper = c.background.copy(alpha = 0.4f).compositeOver(if (c.dark) Color.White else Color.Black)
+            val worst = if (c.dark) Color.White else Color.Black
+            val wallpaper = c.background.copy(alpha = 0.4f).compositeOver(worst)
             fun seen(opacity: Float) = c.surface.copy(alpha = opacity).compositeOver(wallpaper)
             val where = "tema oscuro=${theme.dark} tarjeta=$color"
+            // Con relleno (sobre el mapa de fondo), como siempre.
             assertTrue(where, contrast(c.text, seen(0.6f)) >= 4.5f)
             assertTrue(where, contrast(c.text, seen(MIN_OPACITY)) >= 3.5f)
+            // Como cristal casi no hay relleno: el velo de detrás se cierra solo hasta que el texto se lee.
+            val veil = glassVeil(c, worst, 0.4f)
+            val glass = Color.White.copy(alpha = frost(c.dark)).compositeOver(c.background.copy(alpha = veil).compositeOver(worst))
+            assertTrue(where, contrast(c.text, glass) >= 4.5f)
+            // Y sobre una imagen que ya se lleva bien con el tema, el velo de siempre (no se oscurece de más).
+            assertEquals(where, 0.4f, glassVeil(c, c.background, 0.4f), 0.001f)
         }
     }
 

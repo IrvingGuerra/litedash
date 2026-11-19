@@ -3,6 +3,16 @@
 What people using LiteDash notice, in English. The full history (in Spanish) is in [CHANGELOG.md](CHANGELOG.md).
 Format [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versions [SemVer](https://semver.org/).
 
+## [1.5.13] - 2026-11-18
+
+### Changed
+- **New glass, crystal style:** glass cards now have almost no fill: your wallpaper shows through, less blurred and with
+  livelier colors, with an edge of light that starts at the corner. If your image is very bright (or very dark with the
+  light theme), the background behind each card is dimmed just enough for the text to stay readable.
+- **"How visible" now goes from crystal to solid:** in Settings → Home & look → Interface, all the way left is pure
+  crystal and moving right fills the card with its color. Crystal is the default.
+- On pages with the map as background, cards keep their previous fill (the map moves and can't be blurred).
+
 ## [1.5.12] - 2026-11-18
 
 ### Changed

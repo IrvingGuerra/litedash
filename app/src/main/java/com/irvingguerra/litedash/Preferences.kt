@@ -627,5 +627,5 @@ class Preferences(context: Context) {
         set(v) = p.edit { putString(PrefKeys.BRIGHTNESS_ORIGINAL, v?.let { "${it.first},${it.second}" }) }
 }
 
-/** De fábrica, las translúcidas y de vidrio se ven a un 60 %. */
-const val DEFAULT_CARD_OPACITY = 0.6f
+/** De fábrica, el vidrio va como cristal: sin relleno (el control «Cuánto se ven» lo llena). */
+const val DEFAULT_CARD_OPACITY = com.irvingguerra.litedash.core.ui.MIN_OPACITY

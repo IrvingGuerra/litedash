@@ -19,6 +19,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.Shape
@@ -57,14 +58,43 @@ class CardLook(
     val style: CardStyle = CardStyle.SOLID,
     val opacity: Float = 1f,
     val backdrop: CardBackdrop? = null,
+    /**
+     * De vidrio, ¿puede ir como cristal (casi sin relleno)? Sí sobre algo quieto: tu fondo, el resplandor del tema o un
+     * lienzo. No sobre el mapa de fondo, que se mueve y no se desenfoca: ahí lleva su relleno de siempre.
+     */
+    val clear: Boolean = true,
 )
 
 // Dinámico: al arrastrar la opacidad solo se redibujan las tarjetas, no toda la app.
 val LocalCardLook = compositionLocalOf { CardLook() }
 
-/** El relleno de una superficie con [look] sobre los colores [c]; de vidrio, nunca menos visible que [floor]. */
-private fun skinFill(look: CardLook, c: Colors, floor: Float): Color =
-    if (look.style == CardStyle.SOLID) c.surface else c.surface.copy(alpha = look.opacity.coerceIn(maxOf(MIN_OPACITY, floor), 1f))
+/**
+ * Cuánto del color de la tarjeta lleva una de vidrio (0–1). Como cristal ([CardLook.clear]), el control «Cuánto se
+ * ven» va de nada (puro cristal) a lisa; con tu fondo desenfocado detrás no hace falta más. Sin él, nunca menos que
+ * [floor] (lo que flota sobre cualquier cosa: la barra, un aviso). Sobre el mapa de fondo, el relleno de siempre.
+ */
+internal fun glassFill(look: CardLook, floor: Float): Float {
+    if (!look.clear) return look.opacity.coerceIn(maxOf(MIN_OPACITY, floor), 1f)
+    val t = ((look.opacity - MIN_OPACITY) / (1f - MIN_OPACITY)).coerceIn(0f, 1f)
+    return if (look.backdrop != null) t else maxOf(t, floor)
+}
+
+/** La escarcha del cristal: un blanco muy leve que lo despega del fondo (se va conforme la tarjeta se llena). */
+internal fun frost(dark: Boolean) = if (dark) 0.07f else 0.16f
+
+/**
+ * El velo que lleva tu fondo detrás de un cristal para que el texto se lea: el de siempre ([base]) y, si tu imagen es
+ * muy clara (tema oscuro) o muy oscura (tema claro) en alguna parte, lo que haga falta. [extreme] = esa parte.
+ */
+fun glassVeil(c: Colors, extreme: Color, base: Float): Float {
+    var a = base
+    while (a < VEIL_MAX) {
+        val seen = Color.White.copy(alpha = frost(c.dark)).compositeOver(c.background.copy(alpha = a).compositeOver(extreme))
+        if (contrast(c.text, seen) >= 4.5f) return a
+        a += 0.05f
+    }
+    return VEIL_MAX
+}
 
 /**
  * Lo que va dentro de una tarjeta de vidrio o sin tarjeta ([plain]): lo que en una lisa es un gris opaco (el aro de
@@ -87,15 +117,22 @@ fun contentColors(c: Colors, look: CardLook, plain: Boolean): Colors = when {
 fun Modifier.skinSurface(look: CardLook, c: Colors, shape: Shape, floor: Float = 0f): Modifier {
     var m = this
     val glass = look.style == CardStyle.GLASS
-    if (glass && look.backdrop != null) m = m.blurredBackdrop(look.backdrop)
-    m = m.background(skinFill(look, c, floor))
-    if (glass) {
-        val shine = if (c.dark) 0.07f else 0.35f
-        val edge = if (c.dark) 0.14f else 0.55f
-        m = m.background(Brush.verticalGradient(listOf(Color.White.copy(alpha = shine), Color.Transparent)))
-            .border(1.dp, Color.White.copy(alpha = edge), shape)
+    if (!glass) return m.background(c.surface)
+    if (look.backdrop != null) m = m.blurredBackdrop(look.backdrop)
+    val fill = glassFill(look, floor)
+    if (!look.clear) {
+        // Sobre el mapa de fondo: el vidrio relleno de antes, con su brillo y su borde parejos.
+        return m.background(c.surface.copy(alpha = fill))
+            .background(Brush.verticalGradient(listOf(Color.White.copy(alpha = if (c.dark) 0.07f else 0.35f), Color.Transparent)))
+            .border(1.dp, Color.White.copy(alpha = if (c.dark) 0.14f else 0.55f), shape)
     }
-    return m
+    // Cristal: la escarcha, el color de la tarjeta que se haya pedido, un brillo arriba y un filo de luz que nace en
+    // la esquina (más fuerte arriba a la izquierda, casi nada al centro).
+    val edge = if (c.dark) GLASS_EDGE_DARK else GLASS_EDGE_LIGHT
+    return m.background(Color.White.copy(alpha = frost(c.dark) * (1f - fill)))
+        .background(c.surface.copy(alpha = fill))
+        .background(Brush.verticalGradient(0f to Color.White.copy(alpha = if (c.dark) 0.14f else 0.35f), 0.55f to Color.Transparent))
+        .border(1.dp, Brush.linearGradient(edge.map { Color.White.copy(alpha = it) }), shape)
 }
 
 /** Dibuja [b] detrás, recortado como el fondo de la ventana: se ve la parte del fondo que la tarjeta tapa. */
@@ -118,12 +155,16 @@ fun Modifier.blurredBackdrop(b: CardBackdrop): Modifier = composed {
     }
 }
 
+/** Tu fondo ya desenfocado y sus extremos: el color de su cuarta parte más clara ([light]) y de la más oscura ([shade]). */
+class Blurred(val image: ImageBitmap, val light: Color, val shade: Color)
+
 /**
  * Una copia chica y desenfocada de [src] para el vidrio (unos 96 px de ancho; al dibujarse en grande con filtro queda
- * suave). Tres pasadas de caja ≈ desenfoque gaussiano. Correr fuera del hilo principal.
+ * suave). Tres pasadas de caja ≈ desenfoque gaussiano. [vivid] = para el cristal: menos desenfoque (más ancha) y los
+ * colores un poco más vivos, que es lo que se ve a través. Correr fuera del hilo principal.
  */
-fun blurredCopy(src: Bitmap): ImageBitmap {
-    val w = BLUR_WIDTH
+fun blurredCopy(src: Bitmap, vivid: Boolean = false): Blurred {
+    val w = if (vivid) CLEAR_WIDTH else BLUR_WIDTH
     val h = (src.height * w / src.width.coerceAtLeast(1)).coerceAtLeast(1)
     val small = Bitmap.createScaledBitmap(src, w, h, true)
     val px = IntArray(w * h)
@@ -133,9 +174,32 @@ fun blurredCopy(src: Bitmap): ImageBitmap {
         boxBlur(px, tmp, w, h, BLUR_RADIUS, horizontal = true)
         boxBlur(tmp, px, w, h, BLUR_RADIUS, horizontal = false)
     }
+    if (vivid) for (i in px.indices) px[i] = livelier(px[i])
     val out = Bitmap.createBitmap(px, w, h, Bitmap.Config.ARGB_8888)
     if (small !== src) small.recycle()
-    return out.asImageBitmap()
+    // Los extremos: el promedio de la cuarta parte más clara y de la más oscura.
+    val byLight = px.sortedBy { luma(it) }
+    val quarter = (byLight.size / 4).coerceAtLeast(1)
+    return Blurred(out.asImageBitmap(), average(byLight.takeLast(quarter)), average(byLight.take(quarter)))
+}
+
+private fun luma(p: Int) = 2126 * ((p shr 16) and 0xFF) + 7152 * ((p shr 8) and 0xFF) + 722 * (p and 0xFF)
+
+private fun average(px: List<Int>): Color {
+    var r = 0L; var g = 0L; var b = 0L
+    for (p in px) { r += (p shr 16) and 0xFF; g += (p shr 8) and 0xFF; b += p and 0xFF }
+    val n = px.size.coerceAtLeast(1)
+    return Color((r / n).toInt(), (g / n).toInt(), (b / n).toInt())
+}
+
+/** Un pixel con los colores más vivos ([VIVID_SATURATION]) y apenas más claro, para lo que se ve a través del cristal. */
+private fun livelier(p: Int): Int {
+    val r = (p shr 16) and 0xFF
+    val g = (p shr 8) and 0xFF
+    val b = p and 0xFF
+    val gray = (2126 * r + 7152 * g + 722 * b) / 10000f
+    fun ch(v: Int) = ((gray + (v - gray) * VIVID_SATURATION) * VIVID_BRIGHTNESS).toInt().coerceIn(0, 255)
+    return (p and 0xFF000000.toInt()) or (ch(r) shl 16) or (ch(g) shl 8) or ch(b)
 }
 
 /** Un promedio de caja de radio [r] a lo ancho o a lo alto, de [from] a [to] (orillas repetidas). */
@@ -163,4 +227,13 @@ internal fun boxBlur(from: IntArray, to: IntArray, w: Int, h: Int, r: Int, horiz
 const val MIN_OPACITY = 0.45f
 
 private const val BLUR_WIDTH = 96
+/** El cristal desenfoca menos: la copia es más ancha (mismo radio). */
+private const val CLEAR_WIDTH = 224
+private const val VIVID_SATURATION = 1.5f
+private const val VIVID_BRIGHTNESS = 1.05f
+/** Lo más cerrado que llega el velo detrás de un cristal. */
+private const val VEIL_MAX = 0.9f
+/** El filo del cristal (blanco, de la esquina de arriba a la de abajo): tema oscuro y tema claro. */
+private val GLASS_EDGE_DARK = listOf(0.7f, 0.1f, 0.3f)
+private val GLASS_EDGE_LIGHT = listOf(1f, 0.3f, 0.55f)
 private const val BLUR_RADIUS = 3

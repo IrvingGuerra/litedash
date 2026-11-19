@@ -4,6 +4,16 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.5.13] - 2026-11-18
+
+### Cambiado
+- **Vidrio nuevo, tipo cristal:** las tarjetas de vidrio ya casi no llevan relleno: se ve tu fondo a través, menos
+  desenfocado y con los colores más vivos, con un filo de luz que nace en la esquina. Si tu imagen es muy clara (o muy
+  oscura con el tema claro), el fondo detrás de cada tarjeta se atenúa solo lo necesario para que el texto se lea.
+- **«Cuánto se ven» ahora va de cristal a lisa:** en Ajustes → Inicio y apariencia → Interfaz, todo a la izquierda es
+  puro cristal y hacia la derecha la tarjeta se va llenando con su color. De fábrica viene como cristal.
+- En las páginas con el mapa de fondo las tarjetas conservan su relleno de antes (el mapa se mueve y no se desenfoca).
+
 ## [1.5.12] - 2026-11-18
 
 ### Cambiado

@@ -95,7 +95,9 @@ import com.irvingguerra.litedash.core.ui.Radius
 import com.irvingguerra.litedash.core.ui.Segmented
 import com.irvingguerra.litedash.core.ui.SwitchRow
 import com.irvingguerra.litedash.core.ui.Typography
+import com.irvingguerra.litedash.core.ui.Blurred
 import com.irvingguerra.litedash.core.ui.blurredCopy
+import com.irvingguerra.litedash.core.ui.glassVeil
 import com.irvingguerra.litedash.core.ui.scaledDecode
 import com.irvingguerra.litedash.feature.dashboard.Tile
 import com.irvingguerra.litedash.feature.dashboard.TileTypes
@@ -519,22 +521,30 @@ fun HomeWallpaper(asInWindow: Boolean = false) {
  * principal, con el mismo velo que lleva el inicio. null = sin fondo (o aún no está).
  */
 @Composable
-fun rememberWallpaperBackdrop(wanted: Boolean): CardBackdrop? {
+fun rememberWallpaperBackdrop(wanted: Boolean, clear: Boolean = false): CardBackdrop? {
     val image = if (wanted) rememberImage(WALLPAPER).image else null
-    val veil = LocalColors.current.background.copy(alpha = WALLPAPER_VEIL)
-    // El desenfoque se hace una vez por imagen y lo comparten el inicio, Ajustes y lo que se abre en grande.
-    val blurred by produceState(blurredWallpaper?.takeIf { it.first === image }?.second, image) {
+    val c = LocalColors.current
+    // El desenfoque se hace una vez por imagen y lo comparten el inicio, Ajustes y lo que se abre en grande. Para el
+    // cristal ([clear]) es otra copia: menos desenfocada y con el color más vivo.
+    val cached = if (clear) clearWallpaper else blurredWallpaper
+    val blurred by produceState(cached?.takeIf { it.first === image }?.second, image, clear) {
         value = image?.let { src ->
-            blurredWallpaper?.takeIf { it.first === src }?.second
-                ?: withContext(Dispatchers.Default) { blurredCopy(src.asAndroidBitmap()) }.also { blurredWallpaper = src to it }
+            (if (clear) clearWallpaper else blurredWallpaper)?.takeIf { it.first === src }?.second
+                ?: withContext(Dispatchers.Default) { blurredCopy(src.asAndroidBitmap(), vivid = clear) }
+                    .also { if (clear) clearWallpaper = src to it else blurredWallpaper = src to it }
         }
     }
     val b = blurred ?: return null
-    return remember(b, veil) { CardBackdrop(b, veil) }
+    // Detrás de un cristal el velo se cierra lo que haga falta para que el texto se lea sobre tu imagen.
+    return remember(b, c, clear) {
+        val veil = if (clear) glassVeil(c, if (c.dark) b.light else b.shade, WALLPAPER_VEIL) else WALLPAPER_VEIL
+        CardBackdrop(b.image, c.background.copy(alpha = veil))
+    }
 }
 
-/** El último fondo de pantalla desenfocado y de qué imagen salió (solo se toca en el hilo principal). */
-private var blurredWallpaper: Pair<ImageBitmap, ImageBitmap>? = null
+/** El último fondo de pantalla desenfocado y de qué imagen salió (solo se toca en el hilo principal); y el del cristal. */
+private var blurredWallpaper: Pair<ImageBitmap, Blurred>? = null
+private var clearWallpaper: Pair<ImageBitmap, Blurred>? = null
 
 /** Lo que oscurece (o aclara) tu fondo de pantalla para que se lean los widgets encima. */
 private const val WALLPAPER_VEIL = 0.4f
@@ -543,7 +553,7 @@ private const val WALLPAPER_VEIL = 0.4f
 private const val CANVAS_VEIL = 0.62f
 
 /** La piel sin el fondo desenfocado por tarjeta (lo que va sobre un lienzo ya desenfocado). */
-internal fun globalLook(look: CardLook) = if (look.backdrop == null) look else CardLook(look.style, look.opacity)
+internal fun globalLook(look: CardLook) = if (look.backdrop == null && look.clear) look else CardLook(look.style, look.opacity)
 
 /**
  * El lienzo de lo que tapa el inicio (Ajustes, los paneles, la música o el mapa en grande): el fondo del tema y, con

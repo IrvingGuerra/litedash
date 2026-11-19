@@ -698,8 +698,10 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
         // auto del tablero no se tiñe dos veces al cambiar el color).
         // En el inicio el vidrio lleva tu fondo desenfocado detrás de cada tarjeta y de la barra.
         val glass = d.prefs.cardStyle == CardStyle.GLASS
-        val blurred = rememberWallpaperBackdrop(glass && d.dashboard.background == PageBackground.WALLPAPER)
-        val homeLook = remember(d.prefs.cardStyle, d.prefs.cardOpacity, blurred) { CardLook(d.prefs.cardStyle, d.prefs.cardOpacity, blurred) }
+        // Como cristal sobre tu fondo o el resplandor del tema; sobre el mapa de fondo (se mueve), con su relleno.
+        val calm = d.dashboard.background == PageBackground.WALLPAPER
+        val blurred = rememberWallpaperBackdrop(glass && calm, clear = true)
+        val homeLook = remember(d.prefs.cardStyle, d.prefs.cardOpacity, blurred, calm) { CardLook(d.prefs.cardStyle, d.prefs.cardOpacity, blurred, calm) }
         if (panel == null) CompositionLocalProvider(LocalHomeCovered provides homeCovered, LocalCardLook provides homeLook) {
             Box(Modifier.fillMaxSize().hiddenWhen { homeCovered }) {
                 // Detrás de todo, el fondo de esta página: tu imagen (Inicio y apariencia → Inicio → Fondo de pantalla) o
