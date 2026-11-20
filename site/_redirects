@@ -1,0 +1,6 @@
+/connect/eliminar-cuenta /connect/delete-account/ 301
+/connect/eliminar-cuenta/* /connect/delete-account/ 301
+/connect/privacidad /connect/privacy/ 301
+/connect/privacidad.html /connect/privacy/ 301
+/connect/privacy.html /connect/privacy/ 301
+/en/connect/privacy.html /en/connect/privacy/ 301

@@ -9,7 +9,9 @@
     "ignore": [
       "firebase.json",
       "**/.*",
-      "firestore.rules"
+      "firestore.rules",
+      "_headers",
+      "_redirects"
     ],
     "headers": [
       {

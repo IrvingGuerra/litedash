@@ -1,0 +1,11 @@
+# Cloudflare Pages: la app vuelve a pedir estas listas a lo más una vez al día; una hora de caché basta.
+/wallpapers/index.json
+  Cache-Control: public, max-age=3600
+/lang/*
+  Cache-Control: public, max-age=3600
+/audio/recipes.json
+  Cache-Control: public, max-age=3600
+/img/*
+  Cache-Control: public, max-age=604800
+/wallpapers/*.webp
+  Cache-Control: public, max-age=604800
