@@ -1,0 +1,3 @@
+# litedash.dev vive en Cloudflare Pages (proyecto "litedash"). Publicar el sitio: npx wrangler pages deploy
+name = "litedash"
+pages_build_output_dir = "site"

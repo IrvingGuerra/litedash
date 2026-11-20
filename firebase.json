@@ -3,63 +3,19 @@
     "rules": "firestore.rules"
   },
   "hosting": {
-    "public": "site",
-    "cleanUrls": true,
-    "trailingSlash": true,
+    "public": "firebase-redirect",
     "ignore": [
-      "firebase.json",
-      "**/.*",
-      "firestore.rules",
-      "_headers",
-      "_redirects"
-    ],
-    "headers": [
-      {
-        "source": "/wallpapers/index.json",
-        "headers": [
-          {
-            "key": "Cache-Control",
-            "value": "public, max-age=3600"
-          }
-        ]
-      },
-      {
-        "source": "/lang/*.json",
-        "headers": [
-          {
-            "key": "Cache-Control",
-            "value": "public, max-age=3600"
-          }
-        ]
-      },
-      {
-        "source": "/audio/recipes.json",
-        "headers": [
-          {
-            "key": "Cache-Control",
-            "value": "public, max-age=3600"
-          }
-        ]
-      },
-      {
-        "source": "**/*.@(webp|png|jpg|svg|ico|css)",
-        "headers": [
-          {
-            "key": "Cache-Control",
-            "value": "max-age=604800"
-          }
-        ]
-      }
+      "**/.*"
     ],
     "redirects": [
       {
-        "source": "/connect/eliminar-cuenta{,/**}",
-        "destination": "/connect/delete-account/",
+        "source": "/",
+        "destination": "https://litedash.dev/",
         "type": 301
       },
       {
-        "source": "/connect/privacidad{,/,.html}",
-        "destination": "/connect/privacy/",
+        "source": "/:path*",
+        "destination": "https://litedash.dev/:path",
         "type": 301
       }
     ]
