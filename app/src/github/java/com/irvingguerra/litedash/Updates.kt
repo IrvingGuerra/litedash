@@ -131,8 +131,8 @@ private fun Updates(a: Updater) {
             }
         }
         // Falló la búsqueda o la última descarga (cada una con su aviso: no es lo mismo no revisar que no bajar).
-        if (a.progress == Updater.Progress.Failed) Label(stringResource(R.string.update_download_error), Typography.small, c.danger)
-        else if (state == UpdateState.Error) Label(stringResource(R.string.update_error), Typography.small, c.danger)
+        if (a.progress == Updater.Progress.Failed) Label(downloadError(R.string.update_download_error), Typography.small, c.danger)
+        else if (state == UpdateState.Error) Label(downloadError(R.string.update_error), Typography.small, c.danger)
         Updater.installFailure?.let { Label(stringResource(failureText(it)), Typography.small, c.danger) }
     }
 }

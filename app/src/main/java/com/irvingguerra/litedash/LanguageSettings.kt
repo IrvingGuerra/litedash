@@ -94,7 +94,7 @@ private fun MoreLanguages(current: String, choose: (String) -> Unit) {
     when {
         !loaded -> Label(stringResource(R.string.language_loading), Typography.small, c.textMuted)
         list == null -> {
-            Label(stringResource(R.string.language_offline), Typography.small, c.textMuted)
+            Label(downloadError(R.string.language_offline), Typography.small, c.textMuted)
             Button(stringResource(R.string.retry), { attempt++ })
         }
         list.isEmpty() -> Label(stringResource(R.string.language_none), Typography.small, c.textMuted)
@@ -144,7 +144,7 @@ private fun MoreLanguages(current: String, choose: (String) -> Unit) {
             Label(stringResource(R.string.language_report), Typography.small, c.textMuted)
         }
     }
-    if (failed) Label(stringResource(R.string.language_failed), Typography.small, c.danger)
+    if (failed) Label(downloadError(R.string.language_failed), Typography.small, c.danger)
 }
 
 /** Un idioma de la lista: su nombre en su idioma, cuánto está traducido y su tamaño; la palomita si es el elegido. */

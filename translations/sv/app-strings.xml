@@ -729,6 +729,7 @@
     <string name="tires_source_help">USB-mottagare: TPMS-kit för bilskärmar. Bluetooth: ventilhattar eller givare med Bluetooth. Demo: testdata för att se hur det ser ut. Bil: fabrikssensorerna via verkstadens OBD-adapter.</string>
     <string name="tires_grant">Ge behörighet</string>
     <string name="retry">Försök igen</string>
+    <string name="clock_wrong">Skärmens datum är fel. Rätta det i Android-inställningarna för att kunna ladda ner.</string>
     <string name="tires_usb_help">Om skärmens egen däckapp tar mottagaren, dra ur den och sätt i den igen, och välj sedan LiteDash med ”alltid”.</string>
     <string name="tires_source_obd">Bil (OBD)</string>
     <string name="tires_obd_help">Läser bilens fabriksgivare med Verkstadens OBD-adapter: inget extra kit behövs. Alla bilar ger dem inte; det provas per märke.</string>

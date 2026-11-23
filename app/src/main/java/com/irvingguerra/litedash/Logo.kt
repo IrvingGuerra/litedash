@@ -880,7 +880,7 @@ fun WallpaperSettings(prefs: Preferences) {
         }
         val credit = list.firstOrNull { it.id == chosen }?.credit
         when {
-            failed -> Label(stringResource(R.string.wallpaper_failed), Typography.small, c.danger)
+            failed -> Label(downloadError(R.string.wallpaper_failed), Typography.small, c.danger)
             !credit.isNullOrBlank() && credit != OWN_CREDIT -> Label(stringResource(R.string.wallpaper_credit, credit), Typography.small, c.textMuted)
         }
         Label(stringResource(R.string.wallpaper_own), Typography.label, c.textMuted)

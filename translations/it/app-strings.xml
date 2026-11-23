@@ -729,6 +729,7 @@
     <string name="tires_source_help">Ricevitore USB: i kit TPMS per schermi auto. Bluetooth: tappi valvola o sensori con Bluetooth. Demo: dati di prova per vedere come appare. Auto: i sensori di fabbrica, tramite l’adattatore OBD dell’Officina.</string>
     <string name="tires_grant">Dai il permesso</string>
     <string name="retry">Riprova</string>
+    <string name="clock_wrong">La data del tuo schermo è sbagliata. Correggila nelle impostazioni di Android per poter scaricare.</string>
     <string name="tires_usb_help">Se l\'app gomme del tuo schermo si prende il ricevitore, scollegalo e ricollegalo, poi scegli LiteDash con “sempre”.</string>
     <string name="tires_source_obd">Auto (OBD)</string>
     <string name="tires_obd_help">Legge i sensori di fabbrica della tua auto con l\'adattatore OBD dell\'Officina: niente kit extra. Non tutte le auto li forniscono; si prova per marca.</string>

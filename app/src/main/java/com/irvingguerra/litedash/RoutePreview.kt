@@ -37,6 +37,7 @@ import com.irvingguerra.litedash.core.ui.Typography
 import com.irvingguerra.litedash.feature.map.FIT_MAX_ZOOM
 import com.irvingguerra.litedash.feature.map.IndexState
 import com.irvingguerra.litedash.feature.map.MapPacks
+import com.irvingguerra.litedash.feature.map.PackError
 import com.irvingguerra.litedash.feature.map.Route
 import com.irvingguerra.litedash.feature.map.RouteError
 import com.irvingguerra.litedash.feature.map.RoutePlan
@@ -184,7 +185,10 @@ internal fun RouteCard(
                         Message(stringResource(R.string.route_need_routes, plan.region.name(currentLocale().language), size))
                         when {
                             job == null -> Unit
-                            job.failed -> Label(stringResource(R.string.route_download_failed), Typography.small, c.warning, modifier = Modifier.padding(top = 6.dp))
+                            job.failed -> Label(
+                                if (job.error == PackError.SPACE) stringResource(R.string.map_pack_no_room) else downloadError(R.string.route_download_failed),
+                                Typography.small, c.warning, modifier = Modifier.padding(top = 6.dp),
+                            )
                             else -> Box(Modifier.padding(top = 10.dp).fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp)).background(c.surfaceHigh)) {
                                 Box(Modifier.fillMaxWidth(job.progress).fillMaxHeight().background(c.accent))
                             }

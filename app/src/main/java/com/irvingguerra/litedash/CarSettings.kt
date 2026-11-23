@@ -124,7 +124,7 @@ internal fun CarSettings(d: Dependencies) {
                     CatalogSearch(prefs, cars, list)
                 } else if (unreachable) {
                     // Falló la lista: el error y con qué intentarlo otra vez (nada de «Buscando…»).
-                    Label(stringResource(R.string.catalog_error), Typography.small, c.danger)
+                    Label(downloadError(R.string.catalog_error), Typography.small, c.danger)
                     Button(stringResource(R.string.retry), { attempt++ })
                 } else {
                     Label(stringResource(R.string.checking), Typography.small, c.textMuted)
@@ -174,7 +174,7 @@ private fun FinishPicker(prefs: Preferences, cars: CarRepository, pkg: CarPackag
     if (progress != null) {
         Label(stringResource(R.string.preparing_finish, (progress * 100).toInt()), Typography.small, c.accent)
     } else if (finishFailed && finish != PaintFinish.SATIN && !pkg.finish) {
-        Label(stringResource(R.string.catalog_error), Typography.small, c.danger)
+        Label(downloadError(R.string.catalog_error), Typography.small, c.danger)
     }
     if (finish.shines) {
         Label(stringResource(R.string.shine), Typography.label, c.textMuted)
@@ -188,7 +188,7 @@ private fun ModelOptions(cars: CarRepository, current: CarPackage, entry: Catalo
     val c = LocalColors.current
     val context = LocalContext.current
     if (entry != null) CarUpdateNotice(cars, current, entry)
-    if (cars.failed == current.id) Label(stringResource(R.string.catalog_error), Typography.small, c.danger)
+    if (cars.failed == current.id) Label(downloadError(R.string.catalog_error), Typography.small, c.danger)
     // Calidad del giro: subir necesita el catálogo; bajar (liberar espacio) no.
     val high = entry?.high
     if (high != null || current.high) {
@@ -204,7 +204,7 @@ private fun ModelOptions(cars: CarRepository, current: CarPackage, entry: Catalo
         }
         val progress = cars.downloading?.takeIf { it.first == CarRepository.HIGH }?.second
         if (progress != null) Label(stringResource(R.string.downloading, (progress * 100).toInt()), Typography.small, c.accent)
-        else if (cars.failed == CarRepository.HIGH) Label(stringResource(R.string.catalog_error), Typography.small, c.danger)
+        else if (cars.failed == CarRepository.HIGH) Label(downloadError(R.string.catalog_error), Typography.small, c.danger)
         else Label(stringResource(R.string.spin_quality_help), Typography.small, c.textMuted)
     }
     // Eliminar lo descargado: pide confirmar.
@@ -248,7 +248,7 @@ private fun DownloadedModels(prefs: Preferences, cars: CarRepository, catalog: L
     if (progress != null) {
         Label(stringResource(R.string.downloading, (progress * 100).toInt()), Typography.small, c.accent)
     } else if (outdated.isNotEmpty()) {
-        if (cars.failed == CarRepository.ALL) Label(stringResource(R.string.catalog_error), Typography.small, c.danger)
+        if (cars.failed == CarRepository.ALL) Label(downloadError(R.string.catalog_error), Typography.small, c.danger)
         Confirmed(
             stringResource(R.string.update_all, outdated.size, outdated.sumOf { (p, e) -> cars.updateSize(p, e) } / 1e6f),
             pluralStringResource(R.plurals.update_all_confirm, outdated.size, outdated.size),
@@ -376,7 +376,7 @@ private fun CarPreview(e: CatalogEntry, cars: CarRepository, progress: Float?, f
         Label("${e.make} ${e.name} ${e.years}", Typography.subtitle, maxLines = 1)
         if (e.author.isNotBlank()) Label(stringResource(R.string.model_credit, e.author, e.license), Typography.small, c.textMuted)
         // La falla de ESTA descarga, junto a su botón; se quita al reintentar.
-        if (failed && progress == null) Label(stringResource(R.string.catalog_error), Typography.small, c.danger)
+        if (failed && progress == null) Label(downloadError(R.string.catalog_error), Typography.small, c.danger)
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             if (progress != null) {
                 Label(stringResource(R.string.downloading, (progress * 100).toInt()), Typography.small, c.accent)

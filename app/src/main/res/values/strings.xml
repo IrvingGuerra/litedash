@@ -759,6 +759,7 @@
     <string name="tires_source_help">Receptor USB: los kits TPMS para pantallas de auto. Bluetooth: tapones o sensores con Bluetooth. Demo: datos de prueba para ver cómo se ve. Auto: los sensores de fábrica, por el adaptador OBD del Taller.</string>
     <string name="tires_grant">Dar permiso</string>
     <string name="retry">Reintentar</string>
+    <string name="clock_wrong">La fecha de tu pantalla está mal. Corrígela en los ajustes de Android para poder descargar.</string>
     <string name="tires_usb_help">Si la app de llantas de tu pantalla se queda con el receptor, desconéctalo y vuelve a conectarlo, y elige LiteDash con «usar siempre».</string>
     <string name="tires_source_obd">Auto (OBD)</string>
     <string name="tires_obd_help">Lee los sensores de fábrica de tu auto con el adaptador OBD del Taller: no hace falta otro kit. No todos los autos lo dan; se prueba según la marca.</string>

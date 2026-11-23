@@ -745,6 +745,7 @@
     <string name="tires_source_help">USB přijímač: sady TPMS pro displeje do auta. Bluetooth: čepičky ventilků nebo senzory s Bluetooth. Ukázka: testovací data, abys viděl, jak to vypadá. Auto: tovární senzory přes OBD adaptér z Dílny.</string>
     <string name="tires_grant">Udělit oprávnění</string>
     <string name="retry">Zkusit znovu</string>
+    <string name="clock_wrong">Datum na obrazovce je špatně. Oprav ho v nastavení Androidu, abys mohl stahovat.</string>
     <string name="tires_usb_help">Pokud si přijímač zabere vlastní aplikace displeje pro pneumatiky, odpoj ho a znovu zapoj, pak vyber LiteDash s volbou „vždy“.</string>
     <string name="tires_source_obd">Auto (OBD)</string>
     <string name="tires_obd_help">Čte tovární senzory tvého auta přes OBD adaptér z Dílny: žádná sada navíc. Ne každé auto je poskytuje; zkouší se podle značky.</string>

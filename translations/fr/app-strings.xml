@@ -726,6 +726,7 @@
     <string name="tires_source_help">Récepteur USB : les kits TPMS pour écrans de voiture. Bluetooth : bouchons de valve ou capteurs Bluetooth. Démo : données de test pour voir le rendu. Voiture : les capteurs d’origine, via l’adaptateur OBD de l’Atelier.</string>
     <string name="tires_grant">Autoriser</string>
     <string name="retry">Réessayer</string>
+    <string name="clock_wrong">La date de votre écran est incorrecte. Corrigez-la dans les paramètres Android pour pouvoir télécharger.</string>
     <string name="tires_usb_help">Si l\'appli pneus de votre écran s\'empare du récepteur, débranchez-le et rebranchez-le, puis choisissez LiteDash avec « toujours ».</string>
     <string name="tires_source_obd">Voiture (OBD)</string>
     <string name="tires_obd_help">Lit les capteurs d\'origine de votre voiture avec l\'adaptateur OBD de l\'Atelier : aucun kit en plus. Toutes les voitures ne les fournissent pas ; l\'essai se fait par marque.</string>

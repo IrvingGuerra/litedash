@@ -745,6 +745,7 @@
     <string name="tires_source_help">USB-приймач: комплекти TPMS для автомагнітол. Bluetooth: ковпачки або датчики з Bluetooth. Демо: тестові дані, щоб подивитися, як це виглядає. Авто: заводські датчики через OBD-адаптер із Майстерні.</string>
     <string name="tires_grant">Надати дозвіл</string>
     <string name="retry">Спробувати ще раз</string>
+    <string name="clock_wrong">Дата на екрані неправильна. Виправ її в налаштуваннях Android, щоб завантажувати.</string>
     <string name="tires_usb_help">Якщо вбудований застосунок шин на екрані перехоплює приймач, від’єднай його і під’єднай знову, потім вибери LiteDash з варіантом «завжди».</string>
     <string name="tires_source_obd">Авто (OBD)</string>
     <string name="tires_obd_help">Читає заводські датчики авто через OBD-адаптер Майстерні: додатковий комплект не потрібен. Не всі авто їх віддають; пробуємо за маркою.</string>

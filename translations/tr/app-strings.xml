@@ -729,6 +729,7 @@
     <string name="tires_source_help">USB alıcı: araba ekranları için TPMS kitleri. Bluetooth: Bluetooth’lu sibop kapakları veya sensörler. Demo: nasıl göründüğünü görmek için test verisi. Araba: fabrika sensörleri, Atölye’deki OBD adaptörüyle.</string>
     <string name="tires_grant">İzin ver</string>
     <string name="retry">Tekrar dene</string>
+    <string name="clock_wrong">Ekranınızın tarihi yanlış. İndirebilmek için Android ayarlarından düzeltin.</string>
     <string name="tires_usb_help">Ünitenizin kendi lastik uygulaması alıcıyı kapıyorsa, çıkarıp tekrar takın ve \"her zaman\" ile LiteDash’i seçin.</string>
     <string name="tires_source_obd">Araba (OBD)</string>
     <string name="tires_obd_help">Arabanızın fabrika sensörlerini Atölye OBD adaptörüyle okur: ekstra kit gerekmez. Her araba vermez; markaya göre denenir.</string>

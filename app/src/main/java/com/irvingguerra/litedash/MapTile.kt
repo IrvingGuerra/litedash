@@ -63,6 +63,7 @@ import com.irvingguerra.litedash.core.ui.Button
 import com.irvingguerra.litedash.core.ui.Card
 import com.irvingguerra.litedash.core.ui.Icon
 import com.irvingguerra.litedash.core.ui.IconButton
+import com.irvingguerra.litedash.core.ui.Https
 import com.irvingguerra.litedash.core.ui.Icons
 import com.irvingguerra.litedash.core.ui.Label
 import com.irvingguerra.litedash.core.ui.LocalColors
@@ -92,6 +93,7 @@ import com.irvingguerra.litedash.feature.map.OfflineArea
 import com.irvingguerra.litedash.feature.map.OfflineError
 import com.irvingguerra.litedash.feature.map.OfflineMaps
 import com.irvingguerra.litedash.feature.map.OsmTiles
+import com.irvingguerra.litedash.feature.map.PackError
 import com.irvingguerra.litedash.feature.map.SearchHit
 import com.irvingguerra.litedash.feature.map.TileStore
 import com.irvingguerra.litedash.feature.map.VectorTiles
@@ -388,7 +390,10 @@ private fun LiveMap(
         ) {
             if (!centered) IconButton(Icons.recenter, camera::recenter, size = 44.dp, background = c.surface.copy(alpha = 0.9f), color = c.accent)
             camera.street?.let { MapPill(Icons.location, it, c.text) }
-            if (showStatus) {
+            // En línea con la fecha de la pantalla atrás no baja nada (HTTPS falla): se dice eso, aunque el mapa sea chico.
+            val clockWrong = !offline && Https.clockLooksWrong()
+            if (clockWrong) MapPill(Icons.warning, stringResource(R.string.clock_wrong), c.warning, maxLines = 3)
+            else if (showStatus) {
                 MapPill(
                     if (offline) Icons.offline else Icons.map,
                     stringResource(if (offline) R.string.map_offline_now else R.string.map_online_now),
@@ -510,9 +515,9 @@ private fun MapCompass(camera: MapCamera, size: Dp = 44.dp, setOrientation: (Map
     )
 }
 
-/** Una pastilla sobre el mapa: ícono y un texto corto. */
+/** Una pastilla sobre el mapa: ícono y un texto corto (de [maxLines] renglones). */
 @Composable
-private fun MapPill(icon: ImageVector, text: String, color: Color) {
+private fun MapPill(icon: ImageVector, text: String, color: Color, maxLines: Int = 1) {
     val c = LocalColors.current
     Row(
         Modifier.clip(RoundedCornerShape(Radius.small)).background(c.surface.copy(alpha = 0.88f)).padding(horizontal = 8.dp, vertical = 4.dp),
@@ -520,7 +525,7 @@ private fun MapPill(icon: ImageVector, text: String, color: Color) {
         horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         Icon(icon, c.accent, 14.dp)
-        Label(text, Typography.small, color, maxLines = 1)
+        Label(text, Typography.small, color, maxLines = maxLines)
     }
 }
 
@@ -792,7 +797,7 @@ private fun OfflineSection(d: Dependencies, detail: MapDetail) {
             OfflineError.TOO_BIG -> R.string.map_offline_too_big
             OfflineError.NETWORK -> R.string.map_offline_failed
         }
-        Label(stringResource(text), Typography.small, c.warning)
+        Label(downloadError(text), Typography.small, c.warning)
     }
     var km by rememberSaveable { mutableIntStateOf(OFFLINE_RADII[1]) }
     // Con una zona elegida el radio es el suyo. En millas solo cambia la etiqueta: se baja lo mismo.
@@ -828,7 +833,7 @@ private fun StatePackSection(d: Dependencies, packs: MapPacks) {
         when (packs.indexState) {
             IndexState.LOADING -> Label(stringResource(R.string.map_list_loading), Typography.small, c.textMuted)
             IndexState.FAILED -> {
-                Label(stringResource(R.string.map_list_failed), Typography.small, c.warning)
+                Label(downloadError(R.string.map_list_failed), Typography.small, c.warning)
                 Button(stringResource(R.string.retry), { packs.refresh(force = true) }, primary = true)
             }
             // Sin lista y sin error (nunca hubo internet, o la guardada no se pudo leer): también se puede reintentar.
@@ -936,8 +941,9 @@ private fun StatePackRow(packs: MapPacks, region: MapRegion, language: String, f
                 Box(Modifier.fillMaxWidth(job!!.progress).fillMaxHeight().background(c.accent))
             }
         }
-        if (noRoom) Label(stringResource(R.string.map_pack_no_room), Typography.small, c.warning)
-        else if (job?.failed == true) Label(stringResource(R.string.map_pack_failed), Typography.small, c.warning)
+        // Sin espacio (antes de empezar o a media descarga) no es culpa del internet.
+        if (noRoom || job?.error == PackError.SPACE) Label(stringResource(R.string.map_pack_no_room), Typography.small, c.warning)
+        else if (job?.failed == true) Label(downloadError(R.string.map_pack_failed), Typography.small, c.warning)
     }
 }
 

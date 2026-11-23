@@ -731,6 +731,7 @@
     <string name="tires_source_help">USB receiver: the TPMS kits for car screens. Bluetooth: valve caps or sensors with Bluetooth. Demo: test data to see how it looks. Car: the factory sensors, through the Workshop OBD adapter.</string>
     <string name="tires_grant">Grant permission</string>
     <string name="retry">Try again</string>
+    <string name="clock_wrong">Your screen\'s date is wrong. Fix it in Android settings to be able to download.</string>
     <string name="tires_usb_help">If your screen\'s own tire app grabs the receiver, unplug it and plug it back in, then choose LiteDash with “always”.</string>
     <string name="tires_source_obd">Car (OBD)</string>
     <string name="tires_obd_help">Reads your car\'s factory sensors with the Workshop OBD adapter: no extra kit needed. Not every car gives them; it\'s tried by make.</string>
