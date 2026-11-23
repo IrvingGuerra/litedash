@@ -12,6 +12,12 @@ import java.io.DataOutputStream
  * Guarda la presión SIN calibrar (el ajuste se aplica al leer: cambiarlo no inventa fugas) y la
  * temperatura, para que el calor de rodar no se confunda con una fuga al enfriarse.
  * No es seguro entre hilos: el repositorio lo usa en el hilo principal y guarda una [snapshot].
+ *
+ * Pantallas sin pila de reloj: arrancan en una fecha vieja (1970, 2015, la de su sistema) y hasta que la red la
+ * corrige la hora va DETRÁS de lo guardado. Nada se borra por eso: lo nuevo se sigue anotando justo después de la
+ * última muestra ([shift], el tiempo que corre en esta sesión) y todo lo que entra y sale se traduce con él, así la
+ * gráfica, las alertas y la fuga lenta siguen viendo una línea de tiempo continua. Cuando la hora alcanza lo
+ * guardado, se vuelve a la hora tal cual.
  */
 class TireHistory {
     private class Ring(initial: Int = FIRST_SIZE) {
@@ -56,11 +62,6 @@ class TireHistory {
             while (size > 0 && times[start] < minSec) { start = (start + 1) % times.size; size-- }
         }
 
-        /** Tira lo más nuevo que [maxSec] (el reloj regresó en el tiempo). */
-        fun dropAfter(maxSec: Int) {
-            while (size > 0 && times[at(size - 1)] > maxSec) size--
-        }
-
         /** La primera muestra en o después de [sec] (busca desde la más nueva: pedir la cola es barato). */
         fun firstFrom(sec: Long): Int {
             var first = size
@@ -70,6 +71,9 @@ class TireHistory {
     }
 
     private val rings = mutableMapOf<Wheel, Ring>()
+
+    /** Segundos que se le suman a la hora de ahora mientras va detrás de lo guardado (0 = la hora tal cual). */
+    private var shift = 0
 
     /** Sube con cada muestra nueva: [saved] sabe si entró algo mientras se escribía. */
     var changes = 0L
@@ -86,15 +90,20 @@ class TireHistory {
 
     /**
      * Guarda [kpa] (y [tempC], si se sabe) de [w] si ya pasaron 30 s desde su última muestra; true si la guardó.
-     * Si el reloj regresó más de 30 s (pantallas sin pila de reloj arrancan en una fecha vieja), lo
-     * posterior a ahora se tira: si no, no se guardaría nada hasta que el reloj alcanzara la fecha de antes.
+     * Si el reloj regresó más de 30 s (pantallas sin pila de reloj arrancan en una fecha vieja), no se borra nada:
+     * se sigue después de lo guardado ([shift]).
      */
     fun add(w: Wheel, atMillis: Long, kpa: Float, tempC: Float? = null): Boolean {
-        val sec = (atMillis / 1000).toInt()
+        val raw = (atMillis / 1000).toInt()
+        val newest = rings.values.maxOfOrNull { it.lastTime() ?: Int.MIN_VALUE }?.takeIf { it != Int.MIN_VALUE }
+        // La hora ya alcanzó lo guardado (la red la corrigió): de nuevo tal cual.
+        if (shift != 0 && (newest == null || raw >= newest)) shift = 0
+        // La hora va detrás de lo guardado: se sigue justo después de la última muestra.
+        if (newest != null && raw + shift < newest - INTERVAL_S) shift = newest - raw + INTERVAL_S
+        val sec = raw + shift
         val ring = rings.getOrPut(w) { Ring() }
         val last = ring.lastTime()
-        if (last != null && last - sec > INTERVAL_S) ring.dropAfter(sec)
-        else if (last != null && sec - last < INTERVAL_S) return false
+        if (last != null && sec - last < INTERVAL_S) return false
         ring.add(sec, (kpa * 10).toInt().coerceIn(0, Short.MAX_VALUE.toInt()).toShort(), tempByte(tempC))
         ring.prune(sec - KEEP_S)
         changes++
@@ -116,15 +125,17 @@ class TireHistory {
         if (rings.remove(w) != null) changes++
     }
 
-    /** Muestras de [w] entre [sinceMillis] y [untilMillis], la más vieja primero. */
+    /** Muestras de [w] entre [sinceMillis] y [untilMillis], la más vieja primero (en la hora de ahora, ver [shift]). */
     fun samples(w: Wheel, sinceMillis: Long = 0, untilMillis: Long = Long.MAX_VALUE): List<TireSample> {
         val ring = rings[w] ?: return emptyList()
+        val shiftMs = shift * 1000L
+        val until = if (untilMillis == Long.MAX_VALUE) untilMillis else untilMillis + shiftMs
         val out = ArrayList<TireSample>()
-        for (k in ring.firstFrom(Math.floorDiv(sinceMillis + 999, 1000L)) until ring.size) {
+        for (k in ring.firstFrom(Math.floorDiv(sinceMillis + shiftMs + 999, 1000L)) until ring.size) {
             val i = ring.at(k)
             val at = ring.times[i] * 1000L
-            if (at > untilMillis) break
-            out += TireSample(at, ring.values[i] / 10f, ring.temps[i].takeIf { it != NO_TEMP }?.toFloat())
+            if (at > until) break
+            out += TireSample(at - shiftMs, ring.values[i] / 10f, ring.temps[i].takeIf { it != NO_TEMP }?.toFloat())
         }
         return out
     }
@@ -140,8 +151,9 @@ class TireHistory {
      * esas (las de antes de guardarla no se mezclan). Recorre el anillo sin crear objetos (corre con
      * cada muestra nueva).
      */
-    fun slowLeak(w: Wheel, now: Long): Boolean {
+    fun slowLeak(w: Wheel, nowMillis: Long): Boolean {
         val ring = rings[w] ?: return false
+        val now = nowMillis + shift * 1000L
         val from = ring.firstFrom(Math.floorDiv(now - SLOW_LEAK_WINDOW_MS + 999, 1000L))
         // Primera pasada: ¿hay temperatura?, y dónde empieza y acaba la ventana.
         var withTemp = false

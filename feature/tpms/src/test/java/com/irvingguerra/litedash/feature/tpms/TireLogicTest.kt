@@ -238,20 +238,41 @@ class TireLogicTest {
     }
 
     @Test
-    fun relojQueRegresaNoDetieneElHistorial() {
-        // Se guardó con la hora buena; la pantalla (sin pila de reloj) arranca con una fecha vieja.
+    fun relojQueRegresaNoBorraElHistorial() {
+        // Se guardó con la hora buena; la pantalla (sin pila de reloj) arranca 400 días atrás.
         val good = 1_780_000_000_000L
         val h = TireHistory()
         h.add(w, good, 230f, 25f)
         h.add(w, good + 30_000L, 231f, 25f)
         val boot = good - 400 * 24 * hour
         assertTrue(h.add(w, boot, 228f, 20f))
-        assertTrue(h.add(w, boot + 30_000L, 227f, 20f))
-        // Lo "del futuro" se fue: solo queda lo de después del salto.
-        assertEquals(listOf(boot, boot + 30_000L), h.samples(w).map { it.atMillis })
-        // Un regreso chico (≤ 30 s, una corrección de hora) no borra nada: solo espera su turno.
+        // Un regreso chico (< 30 s) no es otra sesión: solo espera su turno.
         assertTrue(!h.add(w, boot + 10_000L, 226f))
-        assertEquals(2, h.samples(w).size)
+        assertTrue(h.add(w, boot + 30_000L, 227f, 20f))
+        // Nada se borró, y en la hora de ahora lo de esta sesión es "ahora" y lo de antes va justo antes.
+        assertEquals(listOf(boot - 60_000L, boot - 30_000L, boot, boot + 30_000L), h.samples(w).map { it.atMillis })
+        assertEquals(listOf(230f, 231f, 228f, 227f), h.recent(w, boot + 30_000L).map { it.kpa })
+        // La red corrige la hora: de nuevo tal cual, sin perder nada.
+        val fixed = good + 2 * hour
+        assertTrue(h.add(w, fixed, 229f))
+        assertEquals(5, h.samples(w).size)
+        assertEquals(fixed, h.samples(w).last().atMillis)
+        assertEquals(5, TireHistory.decode(h.encode()).samples(w).size)
+    }
+
+    @Test
+    fun sinRedCadaArranqueSigueDondeIba() {
+        // Pantalla que nunca recibe la hora: cada arranque empieza en la misma fecha vieja.
+        val boot = 1_420_070_400_000L
+        val first = TireHistory()
+        repeat(10) { first.add(w, boot + it * 30_000L, 230f) }
+        val again = TireHistory.decode(first.encode())
+        repeat(4) { assertTrue(again.add(w, boot + it * 30_000L, 225f)) }
+        assertEquals(14, again.samples(w).size)
+        assertEquals(boot + 90_000L, again.samples(w).last().atMillis)
+        assertEquals(List(4) { 225f }, again.recent(w, boot + 90_000L).takeLast(4).map { it.kpa })
+        // Lo del viaje anterior sigue a la vista, justo antes.
+        assertEquals(230f, again.samples(w, boot - 30_000L, boot - 30_000L).single().kpa)
     }
 
     @Test
