@@ -455,6 +455,8 @@
     <string name="wallpaper_failed">Hintergrund konnte nicht geladen werden; prüfe deine Verbindung.</string>
     <string name="wallpaper_credit">Foto: %1$s</string>
     <string name="wallpaper_own">Dein Foto</string>
+    <string name="wallpaper_dim">Hintergrund abdunkeln</string>
+    <string name="wallpaper_dim_help">Mehr: Widgets ohne Kachel sind besser lesbar; im hellen Design hellt es auf.</string>
     <string name="road_trip">Fahrt</string>
     <string name="logo_pick">Bild wählen</string>
     <string name="logo_change">Bild ändern</string>

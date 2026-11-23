@@ -36,6 +36,8 @@ internal object PrefKeys {
     const val CARD_COLOR = "card_color_argb"
     const val CARD_STYLE = "card_style"
     const val CARD_OPACITY = "card_opacity"
+    /** Cuánto se oscurece (o aclara) tu fondo de pantalla en el inicio (0–[MAX_WALLPAPER_DIM]). */
+    const val WALLPAPER_DIM = "wallpaper_dim"
     const val CAR_MODEL = "car_model"
     const val WELCOME_SEEN = "welcome_seen"
     const val WELCOME_STEP = "welcome_step"
@@ -400,6 +402,19 @@ class Preferences(context: Context) {
         _cardOpacity = v
     }
 
+    // Oscurecer el fondo (tu imagen en el inicio); se arrastra en vivo y se guarda al soltar.
+    private var _wallpaperDim by mutableFloatStateOf(p.getFloat(PrefKeys.WALLPAPER_DIM, DEFAULT_WALLPAPER_DIM).coerceIn(0f, MAX_WALLPAPER_DIM))
+    var wallpaperDim: Float
+        get() = _wallpaperDim
+        set(v) {
+            _wallpaperDim = v
+            p.edit { putFloat(PrefKeys.WALLPAPER_DIM, v) }
+        }
+
+    fun previewWallpaperDim(v: Float) {
+        _wallpaperDim = v
+    }
+
     /** Id del auto del catálogo que se muestra; null = el sedán genérico. */
     var carModel by string(PrefKeys.CAR_MODEL)
 
@@ -629,3 +644,7 @@ class Preferences(context: Context) {
 
 /** De fábrica, el vidrio va como cristal: sin relleno (el control «Cuánto se ven» lo llena). */
 const val DEFAULT_CARD_OPACITY = com.irvingguerra.litedash.core.ui.MIN_OPACITY
+
+/** El velo de fábrica sobre tu fondo de pantalla (el de siempre) y lo más que se puede cerrar. */
+const val DEFAULT_WALLPAPER_DIM = 0.4f
+const val MAX_WALLPAPER_DIM = 0.6f

@@ -465,6 +465,8 @@
     <string name="wallpaper_failed">Tapetu se nepodařilo stáhnout; zkontroluj připojení.</string>
     <string name="wallpaper_credit">Foto: %1$s</string>
     <string name="wallpaper_own">Tvoje fotka</string>
+    <string name="wallpaper_dim">Ztmavit pozadí</string>
+    <string name="wallpaper_dim_help">Víc: widgety bez karty jsou čitelnější; ve světlém motivu pozadí zesvětlí.</string>
     <string name="road_trip">jízda</string>
     <string name="logo_pick">Vybrat obrázek</string>
     <string name="logo_change">Změnit obrázek</string>

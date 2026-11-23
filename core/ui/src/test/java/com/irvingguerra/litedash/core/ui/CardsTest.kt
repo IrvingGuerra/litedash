@@ -66,6 +66,9 @@ class CardsTest {
             val veil = glassVeil(c, worst, 0.4f)
             val glass = Color.White.copy(alpha = frost(c.dark)).compositeOver(c.background.copy(alpha = veil).compositeOver(worst))
             assertTrue(where, contrast(c.text, glass) >= 4.5f)
+            // Con «Oscurecer el fondo» en nada (velo 0) la tarjeta también se cierra lo necesario.
+            val clean = glassVeil(c, worst, 0f)
+            assertTrue(where, contrast(c.text, Color.White.copy(alpha = frost(c.dark)).compositeOver(c.background.copy(alpha = clean).compositeOver(worst))) >= 4.5f)
             // Y sobre una imagen que ya se lleva bien con el tema, el velo de siempre (no se oscurece de más).
             assertEquals(where, 0.4f, glassVeil(c, c.background, 0.4f), 0.001f)
         }

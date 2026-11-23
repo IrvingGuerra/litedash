@@ -455,6 +455,8 @@
     <string name="wallpaper_failed">Nem sikerült letölteni a hátteret; nézd meg a kapcsolatot.</string>
     <string name="wallpaper_credit">Fotó: %1$s</string>
     <string name="wallpaper_own">Saját fotó</string>
+    <string name="wallpaper_dim">Háttér sötétítése</string>
+    <string name="wallpaper_dim_help">Erősebben: a kártya nélküli widgetek jobban olvashatók; világos témában világosít.</string>
     <string name="road_trip">út</string>
     <string name="logo_pick">Kép kiválasztása</string>
     <string name="logo_change">Kép cseréje</string>

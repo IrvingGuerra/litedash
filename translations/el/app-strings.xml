@@ -455,6 +455,8 @@
     <string name="wallpaper_failed">Η λήψη της ταπετσαρίας απέτυχε· ελέγξτε τη σύνδεσή σας.</string>
     <string name="wallpaper_credit">Φωτογραφία: %1$s</string>
     <string name="wallpaper_own">Η φωτογραφία σας</string>
+    <string name="wallpaper_dim">Σκούρυνση φόντου</string>
+    <string name="wallpaper_dim_help">Περισσότερο: τα widget χωρίς κάρτα διαβάζονται καλύτερα· στο ανοιχτό θέμα το φωτίζει.</string>
     <string name="road_trip">διαδρομή</string>
     <string name="logo_pick">Επιλογή εικόνας</string>
     <string name="logo_change">Αλλαγή εικόνας</string>

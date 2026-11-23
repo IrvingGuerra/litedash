@@ -452,6 +452,8 @@
     <string name="wallpaper_failed">वॉलपेपर डाउनलोड नहीं हुआ; कनेक्शन देखें।</string>
     <string name="wallpaper_credit">फ़ोटो: %1$s</string>
     <string name="wallpaper_own">आपकी फ़ोटो</string>
+    <string name="wallpaper_dim">पृष्ठभूमि मंद करें</string>
+    <string name="wallpaper_dim_help">ज़्यादा करने पर बिना कार्ड वाले विजेट बेहतर पढ़े जाते हैं; हल्की थीम में यह हल्का करता है।</string>
     <string name="road_trip">सफ़र</string>
     <string name="logo_pick">इमेज चुनें</string>
     <string name="logo_change">इमेज बदलें</string>

@@ -43,10 +43,11 @@ enum class CardStyle(val stored: String) {
 /**
  * El fondo de pantalla ya desenfocado (una sola vez, en chico) y el velo que lleva encima: el vidrio lo dibuja detrás
  * de cada tarjeta, recortado como el fondo (que llena la ventana sin deformarse), así parece que la tarjeta lo
- * desenfoca sin costarle nada a la GPU al dibujar (sirve igual en Android 6).
+ * desenfoca sin costarle nada a la GPU al dibujar (sirve igual en Android 6). El velo se lee al dibujar: moverlo
+ * («Oscurecer el fondo») solo redibuja, no recompone.
  */
 @Immutable
-class CardBackdrop(val image: ImageBitmap, val veil: Color)
+class CardBackdrop(val image: ImageBitmap, val veil: () -> Color)
 
 /**
  * La piel de las tarjetas de toda la app (Inicio y apariencia → Interfaz → Tarjetas): su [style] y, de vidrio, cuánto
@@ -161,7 +162,7 @@ fun Modifier.blurredBackdrop(b: CardBackdrop): Modifier = composed {
         translate((root.width - iw * s) / 2 - at.x, (root.height - ih * s) / 2 - at.y) {
             scale(s, Offset.Zero) { drawImage(b.image, filterQuality = FilterQuality.High) }
         }
-        drawRect(b.veil)
+        drawRect(b.veil())
     }
 }
 

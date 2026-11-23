@@ -467,6 +467,8 @@
     <string name="wallpaper_failed">No se pudo bajar el fondo; revisa tu conexión.</string>
     <string name="wallpaper_credit">Foto: %1$s</string>
     <string name="wallpaper_own">Tu foto</string>
+    <string name="wallpaper_dim">Oscurecer el fondo</string>
+    <string name="wallpaper_dim_help">Más, se lee mejor lo que va sin tarjeta; en tema claro, aclara.</string>
     <string name="road_trip">viaje</string>
     <string name="logo_pick">Elegir imagen</string>
     <string name="logo_change">Cambiar imagen</string>

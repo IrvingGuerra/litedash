@@ -455,6 +455,8 @@
     <string name="wallpaper_failed">Duvar kağıdı indirilemedi; bağlantınızı kontrol edin.</string>
     <string name="wallpaper_credit">Fotoğraf: %1$s</string>
     <string name="wallpaper_own">Fotoğrafınız</string>
+    <string name="wallpaper_dim">Arka planı karart</string>
+    <string name="wallpaper_dim_help">Yüksek: kartsız widget\'lar daha iyi okunur; açık temada aydınlatır.</string>
     <string name="road_trip">yolculuk</string>
     <string name="logo_pick">Görsel seç</string>
     <string name="logo_change">Görseli değiştir</string>

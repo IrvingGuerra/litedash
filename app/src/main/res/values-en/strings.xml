@@ -458,6 +458,8 @@
     <string name="wallpaper_failed">Couldn\'t download the wallpaper; check your connection.</string>
     <string name="wallpaper_credit">Photo: %1$s</string>
     <string name="wallpaper_own">Your photo</string>
+    <string name="wallpaper_dim">Dim the background</string>
+    <string name="wallpaper_dim_help">Higher makes widgets without a card easier to read; in light theme it lightens.</string>
     <string name="road_trip">trip</string>
     <string name="logo_pick">Pick image</string>
     <string name="logo_change">Change image</string>

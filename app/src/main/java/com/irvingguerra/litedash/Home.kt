@@ -700,14 +700,14 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
         val glass = d.prefs.cardStyle == CardStyle.GLASS
         // Como cristal sobre tu fondo o el resplandor del tema; sobre el mapa de fondo (se mueve), con su relleno.
         val calm = d.dashboard.background == PageBackground.WALLPAPER
-        val blurred = rememberWallpaperBackdrop(glass && calm, clear = true)
+        val blurred = rememberWallpaperBackdrop(glass && calm, clear = true) { d.prefs.wallpaperDim }
         val homeLook = remember(d.prefs.cardStyle, d.prefs.cardOpacity, blurred, calm) { CardLook(d.prefs.cardStyle, d.prefs.cardOpacity, blurred, calm) }
         if (panel == null) CompositionLocalProvider(LocalHomeCovered provides homeCovered, LocalCardLook provides homeLook) {
             Box(Modifier.fillMaxSize().hiddenWhen { homeCovered }) {
                 // Detrás de todo, el fondo de esta página: tu imagen (Inicio y apariencia → Inicio → Fondo de pantalla) o
                 // el mapa vivo, contigo en el hueco que dejan los widgets.
                 when (d.dashboard.background) {
-                    PageBackground.WALLPAPER -> HomeWallpaper()
+                    PageBackground.WALLPAPER -> HomeWallpaper(d.prefs)
                     // Con algo en grande encima (la música o el mapa) se queda quieto: no se ve.
                     PageBackground.MAP -> MapBackdrop(d, remember(d.dashboard.shown, d.dashboard.grid, board, rootSize) { mapFocus(d.dashboard, board, rootSize) }, car, covered = expandedCovers)
                 }
@@ -898,7 +898,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                         },
                         onTires = { panel = null; tiresLayer.open = true },
                     )
-                    Panel.Templates -> TemplatesPanel(d.dashboard, close = { panel = null })
+                    Panel.Templates -> TemplatesPanel(d.dashboard, d.prefs, close = { panel = null })
                     Panel.BarSettings -> BarSettingsPanel(d, apps, close = { panel = null })
                     Panel.Wallpaper -> PanelScaffold(
                         if (d.dashboard.pageCount > 1) stringResource(R.string.page_background_title, d.dashboard.page + 1) else stringResource(R.string.wallpaper_title),

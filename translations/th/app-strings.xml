@@ -447,6 +447,8 @@
     <string name="wallpaper_failed">ดาวน์โหลดวอลเปเปอร์ไม่ได้ ตรวจการเชื่อมต่อ</string>
     <string name="wallpaper_credit">ภาพ: %1$s</string>
     <string name="wallpaper_own">รูปของคุณ</string>
+    <string name="wallpaper_dim">หรี่พื้นหลัง</string>
+    <string name="wallpaper_dim_help">ยิ่งมาก วิดเจ็ตที่ไม่มีการ์ดยิ่งอ่านง่าย ในธีมสว่างจะทำให้สว่างขึ้น</string>
     <string name="road_trip">การเดินทาง</string>
     <string name="logo_pick">เลือกรูป</string>
     <string name="logo_change">เปลี่ยนรูป</string>

@@ -162,10 +162,10 @@ private fun CardSettings(prefs: Preferences) {
     val c = LocalColors.current
     // La muestra es tu inicio de verdad: el pedazo de tu fondo que cae ahí (o el del tema) y una tarjeta con la misma
     // piel, que de vidrio lleva tu fondo desenfocado detrás, igual que los widgets.
-    val backdrop = rememberWallpaperBackdrop(prefs.cardStyle == CardStyle.GLASS, clear = true)
+    val backdrop = rememberWallpaperBackdrop(prefs.cardStyle == CardStyle.GLASS, clear = true) { prefs.wallpaperDim }
     val look = remember(prefs.cardStyle, prefs.cardOpacity, backdrop) { CardLook(prefs.cardStyle, prefs.cardOpacity, backdrop) }
     Box(Modifier.fillMaxWidth().height(160.dp).clip(RoundedCornerShape(Radius.card)).background(c.background)) {
-        HomeWallpaper(asInWindow = true)
+        HomeWallpaper(prefs, asInWindow = true)
         CompositionLocalProvider(LocalCardLook provides look) {
             Card(Modifier.align(Alignment.Center).fillMaxWidth(0.6f).height(84.dp)) {
                 Label(SAMPLE_TIME, Typography.title, LocalColors.current.text, modifier = Modifier.align(Alignment.Center))
@@ -311,7 +311,7 @@ private fun HomeSettings(d: Dependencies, revision: Int, onEdit: () -> Unit, onT
         SwitchRow(stringResource(R.string.hide_status_bar), prefs.hideStatusBar, { prefs.hideStatusBar = it }, stringResource(R.string.hide_status_bar_help))
     }
     SettingsCard(stringResource(R.string.wallpaper_title), stringResource(R.string.wallpaper_help)) {
-        WallpaperSettings()
+        WallpaperSettings(prefs)
     }
     // Sin título: el interruptor ya dice qué es.
     SettingsCard { IntroSettings(prefs) }

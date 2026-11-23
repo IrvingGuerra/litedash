@@ -450,6 +450,8 @@
     <string name="wallpaper_failed">无法下载壁纸，请检查网络。</string>
     <string name="wallpaper_credit">照片：%1$s</string>
     <string name="wallpaper_own">你的照片</string>
+    <string name="wallpaper_dim">调暗背景</string>
+    <string name="wallpaper_dim_help">调高后，无卡片的小组件更易阅读；浅色主题下会调亮。</string>
     <string name="road_trip">行程</string>
     <string name="logo_pick">选择图片</string>
     <string name="logo_change">更换图片</string>

@@ -455,6 +455,8 @@
     <string name="wallpaper_failed">Impossibile scaricare lo sfondo; controlla la connessione.</string>
     <string name="wallpaper_credit">Foto: %1$s</string>
     <string name="wallpaper_own">La tua foto</string>
+    <string name="wallpaper_dim">Scurisci lo sfondo</string>
+    <string name="wallpaper_dim_help">Più alto: i widget senza scheda si leggono meglio; con il tema chiaro schiarisce.</string>
     <string name="road_trip">viaggio</string>
     <string name="logo_pick">Scegli immagine</string>
     <string name="logo_change">Cambia immagine</string>

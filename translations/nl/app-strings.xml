@@ -455,6 +455,8 @@
     <string name="wallpaper_failed">De achtergrond kon niet worden gedownload; check je verbinding.</string>
     <string name="wallpaper_credit">Foto: %1$s</string>
     <string name="wallpaper_own">Je foto</string>
+    <string name="wallpaper_dim">Achtergrond dimmen</string>
+    <string name="wallpaper_dim_help">Hoger: widgets zonder kaart lezen beter; in het lichte thema wordt het lichter.</string>
     <string name="road_trip">rit</string>
     <string name="logo_pick">Afbeelding kiezen</string>
     <string name="logo_change">Afbeelding wijzigen</string>

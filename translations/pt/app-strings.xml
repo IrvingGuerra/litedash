@@ -457,6 +457,8 @@
     <string name="wallpaper_failed">Não foi possível baixar o fundo; confira sua conexão.</string>
     <string name="wallpaper_credit">Foto: %1$s</string>
     <string name="wallpaper_own">Sua foto</string>
+    <string name="wallpaper_dim">Escurecer o fundo</string>
+    <string name="wallpaper_dim_help">Mais alto: widgets sem cartão ficam mais legíveis; no tema claro, clareia.</string>
     <string name="road_trip">viagem</string>
     <string name="logo_pick">Escolher imagem</string>
     <string name="logo_change">Trocar imagem</string>

@@ -192,7 +192,7 @@ internal fun PageBackgroundSettings(d: Dependencies) {
         when (pages.background) {
             PageBackground.WALLPAPER -> {
                 Label(stringResource(R.string.wallpaper_help), Typography.body, c.textMuted)
-                WallpaperSettings()
+                WallpaperSettings(d.prefs)
             }
             PageBackground.MAP -> {
                 Label(stringResource(R.string.map_backdrop_help), Typography.body, c.textMuted)

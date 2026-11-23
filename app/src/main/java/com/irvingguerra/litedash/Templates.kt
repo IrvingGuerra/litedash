@@ -91,7 +91,7 @@ private enum class TemplateTab(val title: Int, val templates: List<Template>, va
  * En el de la tuya no se repiten las que en esta pantalla quedan igual que otra.
  */
 @Composable
-fun TemplatesPanel(dashboard: DashboardState, close: () -> Unit) {
+fun TemplatesPanel(dashboard: DashboardState, prefs: Preferences, close: () -> Unit) {
     val grid = dashboard.grid ?: return
     val c = LocalColors.current
     val suggested = grid.coarse.suggestedTemplate()
@@ -109,7 +109,7 @@ fun TemplatesPanel(dashboard: DashboardState, close: () -> Unit) {
                 TemplateTab.SPEED -> Label(stringResource(R.string.templates_speed_help), Typography.small, c.textMuted)
                 TemplateTab.WALLPAPER -> {
                     Label(stringResource(R.string.templates_wallpaper_help), Typography.small, c.textMuted)
-                    WallpaperSettings()
+                    WallpaperSettings(prefs)
                 }
                 TemplateTab.CAR -> Unit
             }

@@ -497,11 +497,11 @@ fun LogoIntro(onDone: () -> Unit) {
 
 /**
  * Tu imagen de fondo detrás de todo el inicio, recortada para llenar la pantalla.
- * Lleva un velo del color del tema para que la hora y los textos se lean encima. Sin imagen y con tarjetas de
- * vidrio, el resplandor del tema.
+ * Lleva un velo del color del tema, lo que pidas en «Oscurecer el fondo» ([Preferences.wallpaperDim]; se lee al
+ * dibujar). Sin imagen y con tarjetas de vidrio, el resplandor del tema.
  */
 @Composable
-fun HomeWallpaper(asInWindow: Boolean = false) {
+fun HomeWallpaper(prefs: Preferences, asInWindow: Boolean = false) {
     val c = LocalColors.current
     val image = rememberImage(WALLPAPER).image
     if (image == null) {
@@ -509,19 +509,18 @@ fun HomeWallpaper(asInWindow: Boolean = false) {
         if (LocalCardLook.current.style == CardStyle.GLASS) Box(Modifier.fillMaxSize().glow())
         return
     }
-    val veil = c.background.copy(alpha = WALLPAPER_VEIL)
     // Una muestra ([asInWindow]): el pedazo de tu fondo que cae justo ahí, a la escala del inicio (no la imagen
     // entera en chico), para que lo de encima se vea igual que en el inicio.
-    if (asInWindow) return Box(Modifier.fillMaxSize().blurredBackdrop(remember(image, veil) { CardBackdrop(image, veil) }))
-    Image(image, null, Modifier.fillMaxSize().drawWithContent { drawContent(); drawRect(veil) }, contentScale = ContentScale.Crop)
+    if (asInWindow) return Box(Modifier.fillMaxSize().blurredBackdrop(remember(image, c) { CardBackdrop(image) { c.background.copy(alpha = prefs.wallpaperDim) } }))
+    Image(image, null, Modifier.fillMaxSize().drawWithContent { drawContent(); drawRect(c.background.copy(alpha = prefs.wallpaperDim)) }, contentScale = ContentScale.Crop)
 }
 
 /**
  * Para las tarjetas de vidrio ([wanted]): tu fondo de pantalla desenfocado una vez, en chico y fuera del hilo
- * principal, con el mismo velo que lleva el inicio. null = sin fondo (o aún no está).
+ * principal, con el velo que lleva el inicio ([dim], se lee al dibujar). null = sin fondo (o aún no está).
  */
 @Composable
-fun rememberWallpaperBackdrop(wanted: Boolean, clear: Boolean = false): CardBackdrop? {
+fun rememberWallpaperBackdrop(wanted: Boolean, clear: Boolean = false, dim: () -> Float = { DEFAULT_WALLPAPER_DIM }): CardBackdrop? {
     val image = if (wanted) rememberImage(WALLPAPER).image else null
     val c = LocalColors.current
     // El desenfoque se hace una vez por imagen y lo comparten el inicio, Ajustes y lo que se abre en grande. Para el
@@ -537,19 +536,27 @@ fun rememberWallpaperBackdrop(wanted: Boolean, clear: Boolean = false): CardBack
     // Solo la copia de ESTA imagen: [blurred] guarda la de antes hasta que su efecto corre (un cuadro después de
     // cambiar de página o de fondo) y ese cuadro las tarjetas salían con otra piel; si ya está hecha, de una vez.
     val b = (blurred?.takeIf { it.first === image } ?: cached?.takeIf { it.first === image })?.second ?: return null
-    // Detrás de un cristal el velo se cierra lo que haga falta para que el texto se lea sobre tu imagen.
+    // Detrás de un cristal el velo parte del tuyo y se cierra lo que haga falta para que el texto se lea sobre tu
+    // imagen (aunque el fondo vaya limpio). Se calcula una vez por valor, no en cada dibujo.
+    val currentDim by rememberUpdatedState(dim)
     return remember(b, c, clear) {
-        val veil = if (clear) glassVeil(c, if (c.dark) b.light else b.shade, WALLPAPER_VEIL) else WALLPAPER_VEIL
-        CardBackdrop(b.image, c.background.copy(alpha = veil))
+        val extreme = if (c.dark) b.light else b.shade
+        var lastDim = Float.NaN
+        var veil = 0f
+        CardBackdrop(b.image) {
+            val base = currentDim()
+            if (base != lastDim) {
+                lastDim = base
+                veil = if (clear) glassVeil(c, extreme, base) else base
+            }
+            c.background.copy(alpha = veil)
+        }
     }
 }
 
 /** El último fondo de pantalla desenfocado y de qué imagen salió (solo se toca en el hilo principal); y el del cristal. */
 private var blurredWallpaper: Pair<ImageBitmap, Blurred>? = null
 private var clearWallpaper: Pair<ImageBitmap, Blurred>? = null
-
-/** Lo que oscurece (o aclara) tu fondo de pantalla para que se lean los widgets encima. */
-private const val WALLPAPER_VEIL = 0.4f
 
 /** El velo del lienzo: más cerrado que el del inicio, encima van listas y textos largos. */
 private const val CANVAS_VEIL = 0.62f
@@ -748,7 +755,7 @@ private val IMAGE_TYPES = setOf("jpg", "jpeg", "png", "webp", "gif", "bmp") +
  * Mientras baja uno no se puede elegir tu foto (y al revés): el que terminara al último pisaría al otro.
  */
 @Composable
-fun WallpaperSettings() {
+fun WallpaperSettings(prefs: Preferences) {
     val c = LocalColors.current
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -807,7 +814,16 @@ fun WallpaperSettings() {
         withContext(Dispatchers.IO) { marker.delete() }
         chosen = null
     }
-    imageButtons(WALLPAPER, busy = downloading != null, onPicked = { forget() }, onRemoved = forget)
+    if (imageButtons(WALLPAPER, busy = downloading != null, onPicked = { forget() }, onRemoved = forget) == true) WallpaperDim(prefs)
+}
+
+/** Oscurecer el fondo (en tema claro, aclararlo): de nada a [MAX_WALLPAPER_DIM]; de fábrica, el velo de siempre. */
+@Composable
+private fun WallpaperDim(prefs: Preferences) {
+    val c = LocalColors.current
+    Label(stringResource(R.string.wallpaper_dim), Typography.label, c.textMuted)
+    LevelSlider(prefs.wallpaperDim / MAX_WALLPAPER_DIM, { prefs.previewWallpaperDim(it * MAX_WALLPAPER_DIM) }) { prefs.wallpaperDim = it * MAX_WALLPAPER_DIM }
+    Label(stringResource(R.string.wallpaper_dim_help), Typography.small, c.textMuted)
 }
 
 /** Anota cuál de los fondos de LiteDash quedó puesto (si no se puede, solo no se marca su miniatura). */

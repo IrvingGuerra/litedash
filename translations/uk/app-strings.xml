@@ -465,6 +465,8 @@
     <string name="wallpaper_failed">Не вдалося завантажити шпалери; перевір з’єднання.</string>
     <string name="wallpaper_credit">Фото: %1$s</string>
     <string name="wallpaper_own">Твоє фото</string>
+    <string name="wallpaper_dim">Затемнити тло</string>
+    <string name="wallpaper_dim_help">Сильніше — віджети без картки читаються краще; у світлій темі тло світлішає.</string>
     <string name="road_trip">поїздка</string>
     <string name="logo_pick">Вибрати зображення</string>
     <string name="logo_change">Змінити зображення</string>

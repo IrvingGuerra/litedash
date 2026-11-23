@@ -465,6 +465,8 @@
     <string name="wallpaper_failed">Nie udało się pobrać tapety; sprawdź połączenie.</string>
     <string name="wallpaper_credit">Zdjęcie: %1$s</string>
     <string name="wallpaper_own">Twoje zdjęcie</string>
+    <string name="wallpaper_dim">Przyciemnij tło</string>
+    <string name="wallpaper_dim_help">Więcej: widżety bez karty są czytelniejsze; w jasnym motywie rozjaśnia.</string>
     <string name="road_trip">trasa</string>
     <string name="logo_pick">Wybierz obraz</string>
     <string name="logo_change">Zmień obraz</string>

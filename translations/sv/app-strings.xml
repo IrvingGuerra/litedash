@@ -455,6 +455,8 @@
     <string name="wallpaper_failed">Kunde inte ladda ner bakgrunden; kolla anslutningen.</string>
     <string name="wallpaper_credit">Foto: %1$s</string>
     <string name="wallpaper_own">Ditt foto</string>
+    <string name="wallpaper_dim">Dämpa bakgrunden</string>
+    <string name="wallpaper_dim_help">Högre: widgetar utan kort blir lättare att läsa; i ljust tema ljusar den upp.</string>
     <string name="road_trip">resa</string>
     <string name="logo_pick">Välj bild</string>
     <string name="logo_change">Byt bild</string>

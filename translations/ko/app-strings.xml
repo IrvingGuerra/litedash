@@ -450,6 +450,8 @@
     <string name="wallpaper_failed">배경화면을 다운로드하지 못했어요. 연결을 확인하세요.</string>
     <string name="wallpaper_credit">사진: %1$s</string>
     <string name="wallpaper_own">내 사진</string>
+    <string name="wallpaper_dim">배경 어둡게</string>
+    <string name="wallpaper_dim_help">높일수록 카드 없는 위젯이 잘 보입니다. 밝은 테마에서는 밝아집니다.</string>
     <string name="road_trip">주행</string>
     <string name="logo_pick">이미지 선택</string>
     <string name="logo_change">이미지 변경</string>

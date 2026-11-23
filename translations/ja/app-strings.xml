@@ -450,6 +450,8 @@
     <string name="wallpaper_failed">壁紙をダウンロードできませんでした。接続を確認してください。</string>
     <string name="wallpaper_credit">写真：%1$s</string>
     <string name="wallpaper_own">自分の写真</string>
+    <string name="wallpaper_dim">背景を暗くする</string>
+    <string name="wallpaper_dim_help">強くするとカードなしのウィジェットが読みやすくなります。ライトテーマでは明るくなります。</string>
     <string name="road_trip">トリップ</string>
     <string name="logo_pick">画像を選択</string>
     <string name="logo_change">画像を変更</string>

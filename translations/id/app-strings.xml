@@ -450,6 +450,8 @@
     <string name="wallpaper_failed">Gagal mengunduh wallpaper; periksa koneksi Anda.</string>
     <string name="wallpaper_credit">Foto: %1$s</string>
     <string name="wallpaper_own">Foto Anda</string>
+    <string name="wallpaper_dim">Redupkan latar</string>
+    <string name="wallpaper_dim_help">Lebih tinggi: widget tanpa kartu lebih mudah dibaca; di tema terang, latar jadi lebih terang.</string>
     <string name="road_trip">perjalanan</string>
     <string name="logo_pick">Pilih gambar</string>
     <string name="logo_change">Ganti gambar</string>

@@ -465,6 +465,8 @@
     <string name="wallpaper_failed">Не удалось скачать обои; проверь подключение.</string>
     <string name="wallpaper_credit">Фото: %1$s</string>
     <string name="wallpaper_own">Твоё фото</string>
+    <string name="wallpaper_dim">Затемнить фон</string>
+    <string name="wallpaper_dim_help">Сильнее — виджеты без карточки читаются лучше; в светлой теме фон светлеет.</string>
     <string name="road_trip">поездка</string>
     <string name="logo_pick">Выбрать изображение</string>
     <string name="logo_change">Сменить изображение</string>

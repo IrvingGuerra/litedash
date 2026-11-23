@@ -460,6 +460,8 @@
     <string name="wallpaper_failed">Fundalul nu a putut fi descărcat; verifică conexiunea.</string>
     <string name="wallpaper_credit">Foto: %1$s</string>
     <string name="wallpaper_own">Fotografia ta</string>
+    <string name="wallpaper_dim">Întunecă fundalul</string>
+    <string name="wallpaper_dim_help">Mai mult: widgeturile fără card se citesc mai bine; în tema deschisă, îl luminează.</string>
     <string name="road_trip">călătorie</string>
     <string name="logo_pick">Alege imaginea</string>
     <string name="logo_change">Schimbă imaginea</string>
