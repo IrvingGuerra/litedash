@@ -288,6 +288,7 @@
     <string name="reminder_today">dnes</string>
     <string name="reminder_done">Hotovo</string>
     <string name="reminder_add">Přidat připomínku</string>
+    <string name="reminder_remove_question">Odebrat připomínku %1$s?</string>
     <string name="reminders">Připomínky</string>
     <string name="reminders_help">Upozornění dostaneš na ploše 7 dní předem. Po označení jako hotové se servis a emise posunou o 6 měsíců, registrace a pojištění o rok.</string>
     <string name="remove">Odebrat</string>

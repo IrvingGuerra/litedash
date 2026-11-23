@@ -288,6 +288,7 @@
     <string name="reminder_today">сьогодні</string>
     <string name="reminder_done">Зроблено</string>
     <string name="reminder_add">Додати нагадування</string>
+    <string name="reminder_remove_question">Видалити нагадування «%1$s»?</string>
     <string name="reminders">Нагадування</string>
     <string name="reminders_help">Нагадування з’явиться на головному екрані за 7 днів. Якщо позначити як зроблене, ТО і перевірка викидів зсуваються на 6 місяців, а реєстрація й страховка — на рік.</string>
     <string name="remove">Прибрати</string>

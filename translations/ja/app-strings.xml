@@ -285,6 +285,7 @@
     <string name="reminder_today">今日</string>
     <string name="reminder_done">完了</string>
     <string name="reminder_add">リマインダーを追加</string>
+    <string name="reminder_remove_question">%1$sのリマインダーを削除しますか？</string>
     <string name="reminders">リマインダー</string>
     <string name="reminders_help">7日前にホームでお知らせします。完了にすると、点検・整備と排ガス検査は6か月後、登録・税と保険は1年後に移ります。</string>
     <string name="remove">削除</string>

@@ -287,6 +287,7 @@
     <string name="reminder_today">today</string>
     <string name="reminder_done">Done</string>
     <string name="reminder_add">Add reminder</string>
+    <string name="reminder_remove_question">Remove the %1$s reminder?</string>
     <string name="reminders">Reminders</string>
     <string name="reminders_help">You get a heads-up on home 7 days before. Marked as done, service and emissions move 6 months ahead, and registration and insurance a year.</string>
     <string name="remove">Remove</string>

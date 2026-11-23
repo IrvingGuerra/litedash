@@ -282,6 +282,7 @@
     <string name="reminder_today">วันนี้</string>
     <string name="reminder_done">เสร็จแล้ว</string>
     <string name="reminder_add">เพิ่มการเตือน</string>
+    <string name="reminder_remove_question">ลบการเตือน %1$s ไหม</string>
     <string name="reminders">การเตือน</string>
     <string name="reminders_help">จะเตือนบนหน้าหลักล่วงหน้า 7 วัน เมื่อทำเครื่องหมายว่าเสร็จ เข้าศูนย์และตรวจไอเสียจะเลื่อนไป 6 เดือน ภาษีและประกันเลื่อนไป 1 ปี</string>
     <string name="remove">ลบออก</string>

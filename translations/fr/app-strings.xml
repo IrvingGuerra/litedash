@@ -288,6 +288,7 @@
     <string name="reminder_today">aujourd\'hui</string>
     <string name="reminder_done">Fait</string>
     <string name="reminder_add">Ajouter un rappel</string>
+    <string name="reminder_remove_question">Supprimer le rappel %1$s ?</string>
     <string name="reminders">Rappels</string>
     <string name="reminders_help">Vous êtes prévenu sur l\'accueil 7 jours avant. Une fois marqués comme faits, l\'entretien et le contrôle antipollution avancent de 6 mois, l\'immatriculation et l\'assurance d\'un an.</string>
     <string name="remove">Retirer</string>

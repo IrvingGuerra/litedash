@@ -286,6 +286,7 @@
     <string name="reminder_today">heute</string>
     <string name="reminder_done">Erledigt</string>
     <string name="reminder_add">Erinnerung hinzufügen</string>
+    <string name="reminder_remove_question">Erinnerung „%1$s“ entfernen?</string>
     <string name="reminders">Erinnerungen</string>
     <string name="reminders_help">7 Tage vorher bekommst du einen Hinweis auf dem Start. Als erledigt markiert, rücken Wartung und HU/AU 6 Monate vor, Steuer und Versicherung ein Jahr.</string>
     <string name="remove">Entfernen</string>

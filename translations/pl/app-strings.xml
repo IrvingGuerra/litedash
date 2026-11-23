@@ -288,6 +288,7 @@
     <string name="reminder_today">dziś</string>
     <string name="reminder_done">Zrobione</string>
     <string name="reminder_add">Dodaj przypomnienie</string>
+    <string name="reminder_remove_question">Usunąć przypomnienie %1$s?</string>
     <string name="reminders">Przypomnienia</string>
     <string name="reminders_help">Dostaniesz ostrzeżenie na ekranie głównym 7 dni wcześniej. Po oznaczeniu jako zrobione przegląd i badanie spalin przesuwają się o 6 miesięcy, a rejestracja i ubezpieczenie o rok.</string>
     <string name="remove">Usuń</string>

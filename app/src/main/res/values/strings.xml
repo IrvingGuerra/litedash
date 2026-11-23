@@ -292,6 +292,7 @@
     <string name="reminder_today">hoy</string>
     <string name="reminder_done">Hecho</string>
     <string name="reminder_add">Agregar recordatorio</string>
+    <string name="reminder_remove_question">¿Quitar el recordatorio de %1$s?</string>
     <string name="reminders">Recordatorios</string>
     <string name="reminders_help">Te avisa en el inicio 7 días antes. Al marcarlo como hecho, el servicio y la verificación pasan a dentro de 6 meses, y la tenencia y el seguro a dentro de un año.</string>
     <string name="remove">Quitar</string>

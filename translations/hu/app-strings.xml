@@ -286,6 +286,7 @@
     <string name="reminder_today">ma</string>
     <string name="reminder_done">Kész</string>
     <string name="reminder_add">Emlékeztető hozzáadása</string>
+    <string name="reminder_remove_question">Törlöd a(z) %1$s emlékeztetőt?</string>
     <string name="reminders">Emlékeztetők</string>
     <string name="reminders_help">7 nappal előtte figyelmeztetést kapsz a kezdőképernyőn. Késznek jelölve a szerviz és a környezetvédelmi vizsga 6 hónappal, a forgalmi és a biztosítás egy évvel későbbre kerül.</string>
     <string name="remove">Eltávolítás</string>

@@ -288,6 +288,7 @@
     <string name="reminder_today">сегодня</string>
     <string name="reminder_done">Сделано</string>
     <string name="reminder_add">Добавить напоминание</string>
+    <string name="reminder_remove_question">Удалить напоминание «%1$s»?</string>
     <string name="reminders">Напоминания</string>
     <string name="reminders_help">Напоминание появится на главном экране за 7 дней. Если отметить как сделанное, ТО и проверка выбросов сдвигаются на 6 месяцев, а регистрация и страховка — на год.</string>
     <string name="remove">Убрать</string>

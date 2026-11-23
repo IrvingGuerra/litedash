@@ -286,6 +286,7 @@
     <string name="reminder_today">σήμερα</string>
     <string name="reminder_done">Έγινε</string>
     <string name="reminder_add">Προσθήκη υπενθύμισης</string>
+    <string name="reminder_remove_question">Κατάργηση της υπενθύμισης %1$s;</string>
     <string name="reminders">Υπενθυμίσεις</string>
     <string name="reminders_help">Λαμβάνετε ειδοποίηση στην αρχική 7 μέρες πριν. Όταν σημειωθούν ως ολοκληρωμένα, το σέρβις και ο έλεγχος καυσαερίων μετακινούνται 6 μήνες μπροστά, τα τέλη και η ασφάλεια ένα χρόνο.</string>
     <string name="remove">Αφαίρεση</string>

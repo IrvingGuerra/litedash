@@ -285,6 +285,7 @@
     <string name="reminder_today">hari ini</string>
     <string name="reminder_done">Selesai</string>
     <string name="reminder_add">Tambah pengingat</string>
+    <string name="reminder_remove_question">Hapus pengingat %1$s?</string>
     <string name="reminders">Pengingat</string>
     <string name="reminders_help">Anda diberi tahu di beranda 7 hari sebelumnya. Jika ditandai selesai, servis dan uji emisi maju 6 bulan, sedangkan pajak dan asuransi satu tahun.</string>
     <string name="remove">Hapus</string>

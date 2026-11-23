@@ -286,6 +286,7 @@
     <string name="reminder_today">idag</string>
     <string name="reminder_done">Klar</string>
     <string name="reminder_add">Lägg till påminnelse</string>
+    <string name="reminder_remove_question">Ta bort påminnelsen %1$s?</string>
     <string name="reminders">Påminnelser</string>
     <string name="reminders_help">Du får en förvarning på startskärmen 7 dagar innan. Markerat som klart flyttas service och avgaskontroll 6 månader fram, fordonsskatt och försäkring ett år.</string>
     <string name="remove">Ta bort</string>

@@ -285,6 +285,7 @@
     <string name="reminder_today">오늘</string>
     <string name="reminder_done">완료</string>
     <string name="reminder_add">알림 추가</string>
+    <string name="reminder_remove_question">%1$s 알림을 삭제할까요?</string>
     <string name="reminders">알림</string>
     <string name="reminders_help">7일 전에 홈에서 알려 줘요. 완료로 표시하면 정기 점검과 배출가스 검사는 6개월, 등록과 보험은 1년 뒤로 넘어가요.</string>
     <string name="remove">삭제</string>

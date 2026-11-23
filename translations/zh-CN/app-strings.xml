@@ -285,6 +285,7 @@
     <string name="reminder_today">今天</string>
     <string name="reminder_done">完成</string>
     <string name="reminder_add">添加提醒</string>
+    <string name="reminder_remove_question">删除“%1$s”提醒？</string>
     <string name="reminders">提醒</string>
     <string name="reminders_help">提前 7 天在主屏幕提醒。标记完成后，保养和尾气检测顺延 6 个月，年检和保险顺延一年。</string>
     <string name="remove">移除</string>

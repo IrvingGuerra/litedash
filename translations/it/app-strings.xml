@@ -286,6 +286,7 @@
     <string name="reminder_today">oggi</string>
     <string name="reminder_done">Fatto</string>
     <string name="reminder_add">Aggiungi promemoria</string>
+    <string name="reminder_remove_question">Rimuovere il promemoria %1$s?</string>
     <string name="reminders">Promemoria</string>
     <string name="reminders_help">Ricevi un avviso nella Home 7 giorni prima. Segnati come fatti, tagliando e revisione si spostano di 6 mesi, bollo e assicurazione di un anno.</string>
     <string name="remove">Rimuovi</string>

@@ -288,6 +288,7 @@
     <string name="reminder_today">hoje</string>
     <string name="reminder_done">Feito</string>
     <string name="reminder_add">Adicionar lembrete</string>
+    <string name="reminder_remove_question">Remover o lembrete de %1$s?</string>
     <string name="reminders">Lembretes</string>
     <string name="reminders_help">Avisa na tela inicial 7 dias antes. Ao marcar como feito, a revisão e a inspeção passam para daqui a 6 meses, e o licenciamento e o seguro para daqui a um ano.</string>
     <string name="remove">Remover</string>

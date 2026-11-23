@@ -286,6 +286,7 @@
     <string name="reminder_today">bugün</string>
     <string name="reminder_done">Yapıldı</string>
     <string name="reminder_add">Hatırlatıcı ekle</string>
+    <string name="reminder_remove_question">%1$s hatırlatıcısı kaldırılsın mı?</string>
     <string name="reminders">Hatırlatıcılar</string>
     <string name="reminders_help">Ana ekranda 7 gün önce uyarı alırsınız. Yapıldı olarak işaretlenince servis ve emisyon 6 ay, tescil ve sigorta bir yıl ileri gider.</string>
     <string name="remove">Kaldır</string>

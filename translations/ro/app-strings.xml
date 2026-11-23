@@ -287,6 +287,7 @@
     <string name="reminder_today">azi</string>
     <string name="reminder_done">Făcut</string>
     <string name="reminder_add">Adaugă memento</string>
+    <string name="reminder_remove_question">Elimini mementoul %1$s?</string>
     <string name="reminders">Mementouri</string>
     <string name="reminders_help">Primești un aviz pe ecranul principal cu 7 zile înainte. Marcate ca făcute, revizia și emisiile se mută cu 6 luni înainte, iar înmatricularea și asigurarea cu un an.</string>
     <string name="remove">Elimină</string>

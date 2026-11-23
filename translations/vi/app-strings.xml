@@ -285,6 +285,7 @@
     <string name="reminder_today">hôm nay</string>
     <string name="reminder_done">Xong</string>
     <string name="reminder_add">Thêm lời nhắc</string>
+    <string name="reminder_remove_question">Xóa lời nhắc %1$s?</string>
     <string name="reminders">Lời nhắc</string>
     <string name="reminders_help">Bạn được báo trên màn hình chính trước 7 ngày. Khi đánh dấu xong, bảo dưỡng và khí thải dời thêm 6 tháng, đăng ký và bảo hiểm dời thêm một năm.</string>
     <string name="remove">Xóa</string>

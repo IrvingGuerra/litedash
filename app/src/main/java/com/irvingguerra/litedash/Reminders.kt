@@ -150,13 +150,18 @@ private fun whenText(date: Day, today: Day): String {
     }
 }
 
-/** Aviso en el inicio del recordatorio más próximo; "Hecho" lo pasa a la siguiente fecha. */
+/**
+ * Aviso en el inicio del recordatorio más próximo; "Hecho" lo pasa a la siguiente fecha. En los que no se repiten
+ * (Placas, Otro) "Hecho" lo quita: eso no se deshace y se confirma.
+ */
 @Composable
 fun ReminderBanner(repo: ReminderRepository) {
     val today = rememberToday()
     val r = repo.due(today).firstOrNull() ?: return
     Notice(stringResource(R.string.two_parts, stringResource(r.type.title), whenText(r.date, today)), Icons.bell) {
-        Button(stringResource(R.string.reminder_done), { repo.done(r) }, primary = true)
+        val done = stringResource(R.string.reminder_done)
+        if (r.type.months > 0) Button(done, { repo.done(r) }, primary = true)
+        else Confirmed(done, stringResource(R.string.reminder_remove_question, stringResource(r.type.title)), done, primary = true, destructive = false) { repo.done(r) }
     }
 }
 
@@ -173,7 +178,8 @@ fun ReminderSettings(repo: ReminderRepository) {
                     Label(stringResource(r.type.title), Typography.subtitle, maxLines = 1)
                     Label(stringResource(R.string.two_parts, formatDate(r.date), whenText(r.date, today)), Typography.small, c.textMuted, maxLines = 1)
                 }
-                Button(stringResource(R.string.remove), { repo.remove(r) })
+                val remove = stringResource(R.string.remove)
+                Confirmed(remove, stringResource(R.string.reminder_remove_question, stringResource(r.type.title)), remove) { repo.remove(r) }
             }
         }
         val type = picking

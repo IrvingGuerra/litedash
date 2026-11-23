@@ -283,6 +283,7 @@
     <string name="reminder_today">आज</string>
     <string name="reminder_done">हो गया</string>
     <string name="reminder_add">रिमाइंडर जोड़ें</string>
+    <string name="reminder_remove_question">%1$s का रिमाइंडर हटाएं?</string>
     <string name="reminders">रिमाइंडर</string>
     <string name="reminders_help">7 दिन पहले होम पर सूचना मिलती है। हो गया करने पर सर्विस और प्रदूषण जाँच 6 महीने आगे, और रजिस्ट्रेशन व इंश्योरेंस एक साल आगे खिसकते हैं।</string>
     <string name="remove">हटाएँ</string>

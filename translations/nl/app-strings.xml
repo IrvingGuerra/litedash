@@ -286,6 +286,7 @@
     <string name="reminder_today">vandaag</string>
     <string name="reminder_done">Klaar</string>
     <string name="reminder_add">Herinnering toevoegen</string>
+    <string name="reminder_remove_question">Herinnering %1$s verwijderen?</string>
     <string name="reminders">Herinneringen</string>
     <string name="reminders_help">Je krijgt 7 dagen van tevoren een seintje op het startscherm. Als klaar gemarkeerd schuiven onderhoud en emissietest 6 maanden op, registratie en verzekering een jaar.</string>
     <string name="remove">Verwijderen</string>
