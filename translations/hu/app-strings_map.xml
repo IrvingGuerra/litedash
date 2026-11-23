@@ -51,16 +51,18 @@
     <string name="map_tab_look">LiteDash térkép</string>
     <string name="map_look_help">Az összes Térkép widgetre és a teljes képernyős térképre vonatkozik. Minden widget továbbra is módosítható a saját fogaskerekéről.</string>
     <string name="map_pack_help">Az egész megyéd internet nélkül, egyetlen letöltéssel. Évente néhányszor frissül.</string>
+    <string name="map_pack_full">A Teljes stílusnál a térkép az internetről jön; a letöltött régió a kereséshez és az útvonalakhoz kell.</string>
     <string name="map_pack_no_index">Csatlakozz az internethez az elérhető térképek megtekintéséhez.</string>
     <string name="map_list_loading">Térképlista letöltése…</string>
     <string name="map_list_failed">Nem sikerült letölteni a térképlistát. Nézd meg az internetet.</string>
-    <string name="map_pack_others">Más megyék</string>
+    <string name="map_pack_others">Országok</string>
     <string name="map_pack_saved">%1$s · mentve · %2$s</string>
     <string name="map_pack_download">Letöltés</string>
     <string name="map_pack_update">Frissítés</string>
     <string name="map_pack_delete_question">Törlöd %1$s térképét?</string>
     <string name="map_pack_delete_message">Internet nélkül nem fogod látni az utcáit; a területeid megmaradnak.</string>
     <string name="map_pack_failed">A letöltés nem sikerült: ellenőrizd az internetet.</string>
+    <string name="map_pack_no_room">Nem fér el a tárhelyen: szabadíts fel helyet.</string>
     <string name="map_pack_search">Megye vagy régió keresése</string>
     <string name="map_offline_by_state">Megyénként</string>
     <string name="map_offline_by_zone">Zónánként</string>
@@ -138,6 +140,7 @@
     <string name="guide_follow">Kövess</string>
     <string name="guide_then">Aztán</string>
     <string name="guide_recalculating">Újratervezés…</string>
+    <string name="guide_off_route">Útvonalon kívül</string>
     <string name="guide_arrived">Megérkeztél</string>
     <string name="guide_arrived_to">Megérkeztél: %1$s</string>
     <string name="guide_depart">Kövesd az útvonalat</string>

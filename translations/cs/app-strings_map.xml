@@ -51,16 +51,18 @@
     <string name="map_tab_look">Mapa LiteDash</string>
     <string name="map_look_help">Platí pro všechny tvé widgety Mapa a mapu na celou obrazovku. Každý widget jde dál změnit přes jeho ozubené kolo.</string>
     <string name="map_pack_help">Celý tvůj kraj bez internetu, jedním stažením. Aktualizuje se několikrát ročně.</string>
+    <string name="map_pack_full">Se stylem Úplný se mapa načítá z internetu; stažený kraj slouží k hledání a trasám.</string>
     <string name="map_pack_no_index">Připoj se k internetu a uvidíš dostupné mapy.</string>
     <string name="map_list_loading">Stahování seznamu map…</string>
     <string name="map_list_failed">Seznam map se nepodařilo stáhnout. Zkontroluj internet.</string>
-    <string name="map_pack_others">Další kraje</string>
+    <string name="map_pack_others">Země</string>
     <string name="map_pack_saved">%1$s · uloženo · %2$s</string>
     <string name="map_pack_download">Stáhnout</string>
     <string name="map_pack_update">Aktualizovat</string>
     <string name="map_pack_delete_question">Smazat mapu %1$s?</string>
     <string name="map_pack_delete_message">Bez internetu už neuvidíš jeho ulice; tvé oblasti zůstanou.</string>
     <string name="map_pack_failed">Stažení selhalo: zkontroluj internet.</string>
+    <string name="map_pack_no_room">Nevejde se do úložiště: uvolni místo.</string>
     <string name="map_pack_search">Hledat kraj nebo region</string>
     <string name="map_offline_by_state">Podle kraje</string>
     <string name="map_offline_by_zone">Podle oblasti</string>
@@ -138,6 +140,7 @@
     <string name="guide_follow">Sledovat mě</string>
     <string name="guide_then">Potom</string>
     <string name="guide_recalculating">Přepočítávání…</string>
+    <string name="guide_off_route">Mimo trasu</string>
     <string name="guide_arrived">Jsi v cíli</string>
     <string name="guide_arrived_to">Jsi v cíli: %1$s</string>
     <string name="guide_depart">Pokračuj po trase</string>

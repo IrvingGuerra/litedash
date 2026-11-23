@@ -13,9 +13,11 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -43,6 +45,7 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
@@ -84,6 +87,9 @@ internal class PlaceSearch {
     var query by mutableStateOf("")
     var focused by mutableStateOf(false)
     var local by mutableStateOf<List<SearchHit>>(emptyList())
+
+    /** Buscando lo escrito en el mapa de tu estado (mientras, no se dice que no está). */
+    var searching by mutableStateOf(false)
     var online by mutableStateOf<List<SearchHit>>(emptyList())
     var onlineState by mutableStateOf(OnlineState.IDLE)
     var selected by mutableStateOf<SearchHit?>(null)
@@ -206,7 +212,8 @@ internal fun Preferences.toggleFavorite(place: SearchHit) {
     val list = placesFromJson(favoritePlaces)
     favoritePlaces = placesToJson(
         if (list.any { samePlace(it, place) }) list.filterNot { samePlace(it, place) }
-        else (list + place.copy(name = place.name.ifEmpty { coordinates(place) }, distanceKm = null, online = false)).takeLast(MAX_FAVORITES),
+        else if (list.size >= MAX_FAVORITES) list
+        else list + place.copy(name = place.name.ifEmpty { coordinates(place) }, distanceKm = null, online = false),
     )
 }
 
@@ -217,7 +224,8 @@ internal fun coordinates(place: SearchHit) = String.format(Locale.US, "%.6f,%.6f
  * El buscador del mapa en grande: el campo «¿A dónde vas?» arriba y, debajo, según el momento, tus atajos (Casa,
  * Trabajo y favoritos), tus recientes o los resultados. Busca sin internet al escribir (en el mapa de tu estado) y en
  * internet solo al tocar «Buscar en internet» (o la tecla de buscar). [onPick] = se eligió un lugar; [onPlace] =
- * Casa o Trabajo (abren tu app de mapas como siempre).
+ * Casa o Trabajo (a tu app de mapas o al mapa de LiteDash, según «Navegar con»). La lista llega hasta [listSpace]
+ * menos lo que tape el teclado.
  */
 @Composable
 internal fun PlaceSearchBox(
@@ -228,10 +236,14 @@ internal fun PlaceSearchBox(
     release: () -> Unit,
     onPick: (SearchHit) -> Unit,
     onPlace: (String) -> Unit,
-    maxListHeight: androidx.compose.ui.unit.Dp,
+    listSpace: androidx.compose.ui.unit.Dp,
     modifier: Modifier = Modifier,
 ) {
     val c = LocalColors.current
+    // El teclado tapa lo de abajo (la ventana no se encoge): la lista termina arriba de él. Se lee aquí (no en el mapa en
+    // grande) para que su animación no recomponga el mapa en cada cuadro.
+    val keyboard = with(LocalDensity.current) { WindowInsets.ime.getBottom(this).toDp() }
+    val maxListHeight = (listSpace - keyboard).coerceAtLeast(MIN_LIST)
     val context = LocalContext.current
     val packs = remember { MapPacks.get(context) }
     val scope = rememberCoroutineScope()
@@ -246,10 +258,13 @@ internal fun PlaceSearchBox(
         val q = search.query.trim()
         if (q.isEmpty()) {
             search.local = emptyList()
+            search.searching = false
             return@LaunchedEffect
         }
+        search.searching = true
         delay(TYPE_PAUSE_MS)
         search.local = withContext(Dispatchers.Default) { packs.searchLocal(q, here?.latitude, here?.longitude) }
+        search.searching = false
     }
     val askOnline: () -> Unit = {
         val q = search.query.trim()
@@ -290,6 +305,9 @@ internal fun PlaceSearchBox(
         }
     }
 }
+
+/** Lo menos que mide la lista de resultados (con el teclado arriba en pantallas bajas). */
+private val MIN_LIST = 120.dp
 
 /** La pausa al escribir antes de buscar (junta varias letras seguidas en una búsqueda). */
 private const val TYPE_PAUSE_MS = 90L
@@ -377,7 +395,7 @@ private fun Results(
     Panel(maxHeight) {
         for (hit in search.local) PlaceRow(d, hit, words, null) { onPick(hit) }
         // Sin el mapa de tu estado no hay búsqueda sin conexión: se dice una vez, con la salida (internet).
-        if (search.local.isEmpty() && search.onlineState == OnlineState.IDLE) {
+        if (search.local.isEmpty() && !search.searching && search.onlineState == OnlineState.IDLE) {
             Label(
                 stringResource(if (canSearch) R.string.search_none_offline else R.string.search_no_pack),
                 Typography.small, c.textMuted, modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
@@ -539,10 +557,12 @@ internal fun PlaceCard(
         FlowRow(Modifier.padding(top = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Button(stringResource(R.string.route_button), onRoute, primary = true)
             if (appName != null) Button(stringResource(R.string.search_open_in, appName), onOpen)
-            Button(stringResource(if (favorite) R.string.search_unfavorite else R.string.search_favorite), { d.prefs.toggleFavorite(hit) })
-            val asText = hit.name.takeIf { it.isNotEmpty() && hit.address != null }?.let { "${hit.name}, ${hit.address}" } ?: coords
-            if (d.prefs.homeAddress != asText) Button(stringResource(R.string.search_set_home), { d.prefs.homeAddress = asText })
-            if (d.prefs.workAddress != asText) Button(stringResource(R.string.search_set_work), { d.prefs.workAddress = asText })
+            // Con la lista llena no se agrega (antes se borraba el más viejo sin decir nada).
+            val full = remember(d.prefs.favoritePlaces) { placesFromJson(d.prefs.favoritePlaces).size >= MAX_FAVORITES }
+            Button(stringResource(if (favorite) R.string.search_unfavorite else R.string.search_favorite), { d.prefs.toggleFavorite(hit) }, enabled = favorite || !full)
+            // Casa y Trabajo con sus coordenadas: el punto exacto (también los de internet) y lo entiende cualquier app de mapas.
+            if (d.prefs.homeAddress != coords) Button(stringResource(R.string.search_set_home), { d.prefs.homeAddress = coords })
+            if (d.prefs.workAddress != coords) Button(stringResource(R.string.search_set_work), { d.prefs.workAddress = coords })
         }
     }
 }

@@ -51,16 +51,18 @@
     <string name="map_tab_look">Harta LiteDash</string>
     <string name="map_look_help">Se aplică tuturor widgeturilor Hartă și hărții pe tot ecranul. Fiecare widget se poate schimba în continuare din rotița lui.</string>
     <string name="map_pack_help">Tot județul tău fără internet, dintr-o singură descărcare. Se actualizează de câteva ori pe an.</string>
+    <string name="map_pack_full">Cu stilul Complet harta vine de pe internet; regiunea descărcată servește la căutare și rute.</string>
     <string name="map_pack_no_index">Conectează-te la internet ca să vezi hărțile disponibile.</string>
     <string name="map_list_loading">Se descarcă lista de hărți…</string>
     <string name="map_list_failed">Lista de hărți nu a putut fi descărcată. Verifică internetul.</string>
-    <string name="map_pack_others">Alte județe</string>
+    <string name="map_pack_others">Țări</string>
     <string name="map_pack_saved">%1$s · salvată · %2$s</string>
     <string name="map_pack_download">Descarcă</string>
     <string name="map_pack_update">Actualizează</string>
     <string name="map_pack_delete_question">Ștergi harta pentru %1$s?</string>
     <string name="map_pack_delete_message">Fără internet nu-i vei mai vedea străzile; zonele tale rămân.</string>
     <string name="map_pack_failed">Descărcarea a eșuat: verifică internetul.</string>
+    <string name="map_pack_no_room">Nu încape în memorie: eliberează spațiu.</string>
     <string name="map_pack_search">Caută un județ sau o regiune</string>
     <string name="map_offline_by_state">După județ</string>
     <string name="map_offline_by_zone">După zonă</string>
@@ -138,6 +140,7 @@
     <string name="guide_follow">Urmărește-mă</string>
     <string name="guide_then">Apoi</string>
     <string name="guide_recalculating">Se recalculează…</string>
+    <string name="guide_off_route">În afara rutei</string>
     <string name="guide_arrived">Ai ajuns</string>
     <string name="guide_arrived_to">Ai ajuns: %1$s</string>
     <string name="guide_depart">Urmează traseul</string>

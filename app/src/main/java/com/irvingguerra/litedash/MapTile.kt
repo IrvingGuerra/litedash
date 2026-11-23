@@ -101,7 +101,9 @@ import com.irvingguerra.litedash.feature.map.tilePx
 import com.irvingguerra.litedash.feature.map.zoomToFit
 import com.irvingguerra.litedash.feature.music.NotificationService
 import java.text.SimpleDateFormat
+import java.text.Collator
 import java.util.Date
+import java.util.Locale
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -170,7 +172,9 @@ fun MapExpanded(
 ) {
     val c = LocalColors.current
     val (granted, ask) = rememberGpsPermission(d)
-    val look = remember(data) { MapLook.parse(data) }
+    // Lo del widget al día (la brújula lo cambia mientras está abierto); si no está en esta página, lo que llegó.
+    val liveData = tileId?.let { id -> d.dashboard.tiles.firstOrNull { it.id == id }?.data } ?: data
+    val look = remember(liveData) { MapLook.parse(liveData) }
     // Mientras se ve, su widget (que queda debajo) se rige por lo que tape a este: no suelta las teselas que comparten.
     val covered = LocalHomeCovered.current
     if (tileId != null) DisposableEffect(tileId, covered) {
@@ -239,8 +243,6 @@ fun MapExpanded(
         BoxWithConstraints(Modifier.fillMaxSize().focusRequester(rest).focusTarget()) {
             val boxWidth = maxWidth
             val boxHeight = maxHeight
-            // El teclado tapa lo de abajo (la ventana no se encoge): la lista termina arriba de él.
-            val keyboard = with(LocalDensity.current) { WindowInsets.ime.getBottom(this).toDp() }
             // Con la tarjeta de un lugar o de la ruta, el lugar va en lo que queda libre: a su derecha en pantallas anchas o
             // arriba en las angostas (si no, la tarjeta tapa el pin).
             val carded = selected != null && !search.focused
@@ -269,13 +271,19 @@ fun MapExpanded(
             val searching = search.focused || search.query.isNotEmpty()
             // Con la guía encima el buscador sale de la pantalla: en Android 6 un campo enfocado debajo vuelve a abrir el teclado.
             if (Driving.session == null) Column(Modifier.align(Alignment.TopStart).padding(12.dp).width(minOf(boxWidth - 88.dp, 480.dp))) {
-                PlaceSearchBox(d, search, focus, release, pick, onPlace, maxListHeight = (boxHeight - 100.dp - keyboard).coerceAtLeast(MIN_LIST))
-                if (!searching) NextTurn(d, Modifier.padding(top = 8.dp))
+                PlaceSearchBox(d, search, focus, release, pick, onPlace, listSpace = boxHeight - 100.dp)
+                // Escribiendo no se ve, pero sigue compuesta: es la que pide los avisos de Waze/Maps (sin ella el mapa dejaría
+                // de ir «de viaje» mientras escribes).
+                NextTurn(d, Modifier.padding(top = 8.dp), shown = !searching)
             }
             Row(Modifier.align(Alignment.TopEnd).padding(12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 // Tu app de mapas, con su botón (como en el widget).
                 if (app != null && boxWidth >= WIDE_TOP) IconButton(Icons.navigate, onNavigate, size = 48.dp, background = c.surface.copy(alpha = 0.9f), color = c.accent)
-                if (route == null && granted) MapCompass(d, look, camera, size = 48.dp)
+                if (route == null && granted) MapCompass(camera, size = 48.dp) { orientation ->
+                    // Solo la orientación, y solo de este mapa: lo demás de su aspecto y los otros widgets no cambian.
+                    if (tileId != null) d.dashboard.setData(tileId, look.copy(orientation = orientation).encode())
+                    else applyMapLook(d, MapLook.parse(d.prefs.mapLook.orEmpty()).copy(orientation = orientation))
+                }
                 IconButton(Icons.close, close, size = 48.dp, background = c.surface.copy(alpha = 0.9f))
             }
             val cardModifier = Modifier.align(Alignment.BottomStart).padding(start = 12.dp, end = 12.dp, bottom = 12.dp).widthIn(max = CARD_MAX)
@@ -294,22 +302,22 @@ fun MapExpanded(
 /** Lo más ancho de la tarjeta del lugar o de la ruta. */
 private val CARD_MAX = 460.dp
 
-/** Lo menos que mide la lista de resultados (con el teclado arriba en pantallas bajas). */
-private val MIN_LIST = 120.dp
-
 /** Más angosto, arriba solo cabe el buscador y cerrar. */
 private val WIDE_TOP = 560.dp
 
-/** La siguiente vuelta que dice el aviso de Waze o Maps, en una tarjeta sobre el mapa (nada si no navegas). */
+/**
+ * La siguiente vuelta que dice el aviso de Waze o Maps, en una tarjeta sobre el mapa (nada si no navegas). Mientras está
+ * compuesta escucha los avisos; con [shown] = false no se dibuja pero sigue escuchando.
+ */
 @Composable
-private fun NextTurn(d: Dependencies, modifier: Modifier) {
+private fun NextTurn(d: Dependencies, modifier: Modifier, shown: Boolean = true) {
     val c = LocalColors.current
     val repo = d.navigation
     DisposableEffect(repo) {
         repo.use { NotificationService.active() }
         onDispose { repo.release() }
     }
-    val instruction = repo.instruction ?: return
+    val instruction = repo.instruction?.takeIf { shown } ?: return
     Row(modifier.clip(RoundedCornerShape(Radius.inner)).background(c.surface).padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
         TurnArrow(instruction, 44.dp, Radius.small)
         Column(Modifier.padding(start = 10.dp, end = 6.dp)) {
@@ -401,7 +409,8 @@ private fun LiveMap(
 @Composable
 internal fun MapBackdrop(d: Dependencies, focus: Rect?, car: CarPackage?, covered: Boolean) {
     val c = LocalColors.current
-    KeepTripRunning(d.trip)
+    // Con algo en grande encima el fondo no se dibuja: tampoco hace falta el GPS.
+    if (!covered) KeepTripRunning(d.trip)
     val raw = d.prefs.mapLook
     val look = remember(raw) { MapLook.parse(raw.orEmpty()) }
     val store = rememberTileStore(look, c.dark, BACKDROP_KEY)
@@ -409,11 +418,7 @@ internal fun MapBackdrop(d: Dependencies, focus: Rect?, car: CarPackage?, covere
     val position = d.trip.position ?: return
     val kmh = d.bus.watch(Signal.SPEED)
     val navigating = d.navigation.instruction != null
-    val wantsCar = d.prefs.mapBackdropCar && car != null
-    val paint = d.prefs.carPaint
-    val marker by produceState<ImageBitmap?>(null, wantsCar, car?.id, paint) {
-        value = if (wantsCar) d.cars.snapshot(car, paint, MARKER_PX, turn = REAR_TURN, floor = false)?.solidPart()?.asImageBitmap() else null
-    }
+    val marker = rememberRearMarker(d, car.takeIf { d.prefs.mapBackdropCar })
     BoxWithConstraints(Modifier.fillMaxSize()) {
         MapCanvas(
             store, position.latitude, position.longitude, d.trip.bearing, kmh, look, Modifier.fillMaxSize(), camera, navigating,
@@ -423,6 +428,17 @@ internal fun MapBackdrop(d: Dependencies, focus: Rect?, car: CarPackage?, covere
             NextTurn(d, Modifier.align(Alignment.TopStart).padding(12.dp).widthIn(max = 420.dp))
         }
     }
+}
+
+/** Tu auto de espaldas para ponerlo sobre el mapa ([car] null = sin auto: la flecha); se dibuja y recorta fuera del hilo principal. */
+@Composable
+internal fun rememberRearMarker(d: Dependencies, car: CarPackage?): ImageBitmap? {
+    val paint = d.prefs.carPaint
+    val marker by produceState<ImageBitmap?>(null, car?.id, paint) {
+        value = car?.let { d.cars.snapshot(it, paint, MARKER_PX, turn = REAR_TURN, floor = false) }
+            ?.let { withContext(Dispatchers.Default) { it.solidPart().asImageBitmap() } }
+    }
+    return marker
 }
 
 /**
@@ -480,16 +496,16 @@ private fun sharedMapCamera(key: String?): MapCamera =
     if (key == null) rememberMapCamera() else remember(key) { mapCameras.getOrPut(key) { MapCamera() } }
 
 /**
- * La brújula del mapa de LiteDash: apunta al norte como esté girado el mapa ahora (con Norte de fábrica, gira de viaje)
- * y un toque cambia todos los mapas entre «siempre al norte» y «hacia donde vas».
+ * La brújula del mapa de LiteDash: apunta al norte como esté girado el mapa ahora (con Automático, gira de viaje) y un
+ * toque pide ([setOrientation]) «siempre al norte» o «hacia donde vas».
  */
 @Composable
-private fun MapCompass(d: Dependencies, look: MapLook, camera: MapCamera, size: Dp = 44.dp) {
+private fun MapCompass(camera: MapCamera, size: Dp = 44.dp, setOrientation: (MapOrientation) -> Unit) {
     // Como esté girado el mapa ahora (con Automático gira al inclinarse en lo más cerca, aunque estés detenido).
     val heading = camera.turning
     CompassButton(
         camera.turnDegrees, northUp = !heading,
-        onClick = { applyMapLook(d, look.copy(orientation = if (heading) MapOrientation.NORTH_UP else MapOrientation.HEADING)) },
+        onClick = { setOrientation(if (heading) MapOrientation.NORTH_UP else MapOrientation.HEADING) },
         size = size,
     )
 }
@@ -627,25 +643,31 @@ internal fun MapLookSettings(d: Dependencies) {
 
 /**
  * Ajustes → Apps → Navegación → Sin conexión (con el estilo que tenga el mapa de LiteDash). Abajo, siempre (también a
- * quien viaja), pedir el mapa de otro país: [requestMap] abre el reporte ya elegido. Al abrir, la lista de mapas se pide
- * si tiene más de una hora (para ver los países recién publicados); mientras llega la primera, no se puede pedir país.
+ * quien viaja), pedir el mapa de otro país: [requestMap] abre el reporte ya elegido. Mientras llega la primera lista de
+ * mapas ([OfflineSection] la pide), no se puede pedir país.
  */
 @Composable
 internal fun MapOfflineSettings(d: Dependencies, requestMap: () -> Unit) {
     val context = LocalContext.current
     val packs = remember { MapPacks.get(context) }
-    LaunchedEffect(Unit) { packs.refresh(maxAgeMs = MapPacks.INDEX_SCREEN_MAX_AGE_MS) }
     OfflineSection(d, MapLook.parse(d.prefs.mapLook.orEmpty()).detail)
     val listLoading = packs.regions.isEmpty() && packs.indexState == IndexState.LOADING
     Button(stringResource(R.string.map_request_country), requestMap, enabled = !listLoading)
 }
 
-/** El aspecto de LiteDash: se guarda y se pone en todos los widgets Mapa del inicio (de todas las páginas). */
+/**
+ * El aspecto de LiteDash: se guarda y se pone en los widgets Mapa del inicio (de todas las páginas) que siguen el de
+ * Ajustes; el que se cambió aparte desde su engrane conserva lo suyo.
+ */
 private fun applyMapLook(d: Dependencies, look: MapLook) {
+    val before = MapLook.parse(d.prefs.mapLook.orEmpty())
     val data = look.encode()
     d.prefs.mapLook = data.ifEmpty { null }
-    d.dashboard.changeDataEverywhere { if (it.type == TileTypes.MAP) data else null }
+    d.dashboard.changeDataEverywhere { if (it.type == TileTypes.MAP && followsSettings(it.data, before)) data else null }
 }
+
+/** ¿El widget Mapa con [data] sigue el aspecto de Ajustes ([settings])? (Si es distinto, se cambió aparte.) */
+internal fun followsSettings(data: String, settings: MapLook): Boolean = MapLook.parse(data) == settings
 
 /** Ancho desde el que la vista previa de Ajustes va a un lado de las opciones. */
 private val SETTINGS_SIDE_BY_SIDE = 640.dp
@@ -686,22 +708,21 @@ private fun MapLookOptions(look: MapLook, set: (MapLook) -> Unit) {
 }
 
 /**
- * Sin conexión: las zonas guardadas (tocar una la muestra en el mapa, con Volver a bajar y Borrar); el radio y un mapa con su círculo para elegir la zona (se arrastra;
- * «Mi ubicación» regresa), su tamaño aproximado y lo libre; mientras baja, el avance y Cancelar. Solo el minimalista
- * (OSM no deja bajar en bloque).
+ * Sin conexión: por estado (con cualquier estilo: la ruta y la búsqueda lo usan siempre) o por zona: las zonas guardadas
+ * (tocar una la muestra en el mapa, con Volver a bajar y Borrar); el radio y un mapa con su círculo para elegir la zona
+ * (se arrastra; «Mi ubicación» regresa), su tamaño aproximado y lo libre; mientras baja, el avance y Cancelar. Las zonas
+ * solo con el minimalista (OSM no deja bajar en bloque). Al abrir, la lista de mapas se pide si tiene más de una hora
+ * (para ver los países recién publicados), igual en Ajustes que en el panel de un widget.
  */
 @Composable
 private fun OfflineSection(d: Dependencies, detail: MapDetail) {
     val c = LocalColors.current
     Label(stringResource(R.string.map_offline), Typography.label, c.textMuted)
-    if (detail != MapDetail.MINIMAL) {
-        Label(stringResource(R.string.map_offline_full), Typography.small, c.textMuted)
-        return
-    }
     KeepTripRunning(d.trip)
     val context = LocalContext.current
     val offline = remember { OfflineMaps.get(context) }
     val packs = remember { MapPacks.get(context) }
+    LaunchedEffect(Unit) { packs.refresh(maxAgeMs = MapPacks.INDEX_SCREEN_MAX_AGE_MS) }
     // Aquí hace falta saber dónde estás (tu estado arriba, tu zona en el mapa) aunque ningún widget use el GPS.
     LifecycleStartEffect(d.trip) {
         d.trip.acquire()
@@ -711,7 +732,9 @@ private fun OfflineSection(d: Dependencies, detail: MapDetail) {
     // Por estado (todo tu estado, de nuestro repo) o por zona (un círculo, en cualquier parte del mundo). De entrada,
     // por estado; por zona solo si ya se sabe que donde estás no hay mapa del estado (y no has bajado ninguno): sin
     // ubicación se quedaba en «Por zona» y los estados ni se veían.
-    val noState = packs.installed.isEmpty() && packs.regions.isNotEmpty() && position?.let { packs.regionAt(it.latitude, it.longitude) == null } == true
+    val spot = position?.let { Math.round(it.latitude * 100) / 100.0 to Math.round(it.longitude * 100) / 100.0 }
+    val outside = remember(packs.regions, spot) { spot != null && packs.regionAt(spot.first, spot.second) == null }
+    val noState = packs.installed.isEmpty() && packs.regions.isNotEmpty() && outside
     var picked by rememberSaveable { mutableStateOf<Boolean?>(null) }
     val byZone = picked ?: noState
     Segmented(
@@ -720,7 +743,13 @@ private fun OfflineSection(d: Dependencies, detail: MapDetail) {
         { picked = it },
     )
     if (!byZone) {
+        // Con el estilo Completo el dibujo es de internet: el estado bajado sirve para buscar y para la ruta.
+        if (detail != MapDetail.MINIMAL) Label(stringResource(R.string.map_pack_full), Typography.small, c.textMuted)
         StatePackSection(d, packs)
+        return
+    }
+    if (detail != MapDetail.MINIMAL) {
+        Label(stringResource(R.string.map_offline_full), Typography.small, c.textMuted)
         return
     }
     Label(stringResource(R.string.map_offline_help), Typography.small, c.textMuted)
@@ -781,14 +810,17 @@ private fun OfflineSection(d: Dependencies, detail: MapDetail) {
 
 /**
  * El mapa de tu estado completo (M2): el de donde estás arriba (bajarlo, su avance, actualizarlo o borrarlo), luego los
- * que ya bajaste y los demás por país (los países que hay, siempre a la vista). Sin índice (nunca hubo internet), cómo
- * conseguirlo.
+ * que ya bajaste, el buscador (siempre a la vista: busca en todos los países, por el nombre del estado en varios idiomas o
+ * por el del país) y los países en orden alfabético con sus estados al tocar uno. Sin lista, cómo conseguirla (y
+ * Reintentar).
  */
 @Composable
 private fun StatePackSection(d: Dependencies, packs: MapPacks) {
     val c = LocalColors.current
+    val context = LocalContext.current
     val position = d.trip.position
-    val language = currentLocale().language
+    val locale = currentLocale()
+    val language = locale.language
     Label(stringResource(R.string.map_pack_help), Typography.small, c.textMuted)
     // Siempre a la vista: donde aún no hay mapa del estado, las zonas sirven en cualquier parte.
     Label(stringResource(R.string.map_pack_tip), Typography.small, c.accent)
@@ -799,43 +831,77 @@ private fun StatePackSection(d: Dependencies, packs: MapPacks) {
                 Label(stringResource(R.string.map_list_failed), Typography.small, c.warning)
                 Button(stringResource(R.string.retry), { packs.refresh(force = true) }, primary = true)
             }
-            IndexState.IDLE -> Label(stringResource(R.string.map_pack_no_index), Typography.small, c.textMuted)
+            // Sin lista y sin error (nunca hubo internet, o la guardada no se pudo leer): también se puede reintentar.
+            IndexState.IDLE -> {
+                Label(stringResource(R.string.map_pack_no_index), Typography.small, c.textMuted)
+                Button(stringResource(R.string.retry), { packs.refresh(force = true) }, primary = true)
+            }
         }
         return
     }
-    val here = position?.let { packs.regionAt(it.latitude, it.longitude) }
+    // Lo libre (para no empezar una descarga que no cabe); se vuelve a leer al bajar o borrar un estado.
+    val free by produceState<Long?>(null, packs.installed) { value = withContext(Dispatchers.IO) { freeBytes(context) } }
+    // Con la posición redondeada (~1 km): no se prueban contornos con cada lectura del GPS.
+    val spot = position?.let { Math.round(it.latitude * 100) / 100.0 to Math.round(it.longitude * 100) / 100.0 }
+    val here = remember(packs.regions, spot) { spot?.let { packs.regionAt(it.first, it.second) } }
     val mine = packs.installed.mapNotNull { p -> packs.regions.firstOrNull { it.id == p.id } }
     val shown = (listOfNotNull(here) + mine).distinctBy { it.id }
-    for (r in shown) StatePackRow(packs, r, language)
-    // Los países que hay, siempre a la vista (escondidos, la gente pedía países que ya estaban). Al tocar uno, sus
-    // estados; sin nada arriba (no se sabe dónde estás ni has bajado nada) ya va abierto el tuyo, por la región del sistema.
-    val countries = remember(packs.regions) { packs.regions.map { it.country }.distinct() }
-    val locale = currentLocale()
-    var pickedCountry by rememberSaveable { mutableStateOf<String?>(null) }
-    val country = pickedCountry
-        ?: if (shown.isEmpty()) java.util.Locale.getDefault().country.takeIf { it in countries } ?: countries.first() else null
-    Label(stringResource(R.string.map_pack_others), Typography.label, c.textMuted)
-    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        for (code in countries) Button(java.util.Locale("", code).getDisplayCountry(locale).ifEmpty { code }, { pickedCountry = code }, primary = code == country)
-    }
-    if (country == null) return
-    // Sin escribir, los del país elegido; escribiendo, de cualquier país.
+    for (r in shown) StatePackRow(packs, r, language, free)
+    // Escribiendo, de cualquier país (también por el nombre en otro idioma o por el del país).
     var query by rememberSaveable { mutableStateOf("") }
     TextInput(query, { query = it }, stringResource(R.string.map_pack_search), Modifier.fillMaxWidth(), icon = true)
     val q = normalize(query.trim())
-    val names = remember(packs.regions, language) { packs.regions.associate { it.id to normalize(it.name(language)) } }
-    val others = packs.regions
-        .filter { shown.none { s -> s.id == it.id } && if (q.isEmpty()) it.country == country else q in names[it.id].orEmpty() }
-        .sortedBy { it.name(language) }
-    for (r in others) StatePackRow(packs, r, language)
+    val shownIds = shown.map { it.id }.toSet()
+    if (q.isNotEmpty()) {
+        val keys = remember(packs.regions, locale) { packs.regions.associate { it.id to regionSearchKeys(it, locale) } }
+        val found = remember(packs.regions, q, shownIds, language) {
+            packs.regions.filter { it.id !in shownIds && keys[it.id].orEmpty().any { k -> q in k } }.sortedBy { it.name(language) }
+        }
+        for (r in found) StatePackRow(packs, r, language, free)
+        return
+    }
+    // Los países que hay, siempre a la vista (escondidos, la gente pedía países que ya estaban), en orden alfabético. Al
+    // tocar uno, sus estados; sin nada arriba (no se sabe dónde estás ni has bajado nada) ya va abierto el tuyo, por la
+    // región del sistema.
+    val countries = remember(packs.regions, locale) {
+        val collator = Collator.getInstance(locale)
+        packs.regions.map { it.country }.distinct().sortedWith { a, b -> collator.compare(countryName(a, locale), countryName(b, locale)) }
+    }
+    var pickedCountry by rememberSaveable { mutableStateOf<String?>(null) }
+    val country = pickedCountry
+        ?: if (shown.isEmpty()) Locale.getDefault().country.takeIf { it in countries } ?: countries.first() else null
+    Label(stringResource(R.string.map_pack_others), Typography.label, c.textMuted)
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        for (code in countries) Button(countryName(code, locale), { pickedCountry = code }, primary = code == country)
+    }
+    if (country == null) return
+    val others = remember(packs.regions, country, shownIds, language) {
+        packs.regions.filter { it.country == country && it.id !in shownIds }.sortedBy { it.name(language) }
+    }
+    for (r in others) StatePackRow(packs, r, language, free)
 }
+
+/** El nombre del país [code] (ISO de dos letras) en [locale]; si Android no lo sabe, el código. */
+private fun countryName(code: String, locale: Locale): String = Locale("", code).getDisplayCountry(locale).ifEmpty { code }
+
+/**
+ * Con qué se encuentra un estado en el buscador (sin acentos ni mayúsculas): su nombre en tu idioma y en los de la lista
+ * (en inglés, «Mexico City»; en español, «Ciudad de México») y el de su país en tu idioma y en inglés.
+ */
+internal fun regionSearchKeys(region: MapRegion, locale: Locale): Set<String> =
+    ((REGION_NAME_LANGUAGES + locale.language).map { region.name(it) } +
+        countryName(region.country, locale) + countryName(region.country, Locale.ENGLISH))
+        .map { normalize(it) }.toSet()
+
+/** Los idiomas en que se prueba el nombre de un estado (los que trae la lista de mapas; si falta uno, sale el inglés). */
+private val REGION_NAME_LANGUAGES = listOf("en", "es", "pt", "fr", "it", "de", "tr")
 
 /**
  * Un estado en un renglón: su nombre y tamaño a la izquierda y lo que se puede hacer a la derecha (bajar, actualizar o
- * borrar); bajando, su avance y Cancelar debajo.
+ * borrar); bajando, su avance y Cancelar debajo. Si no cabe en lo [free] (con margen), no se deja bajar y se dice.
  */
 @Composable
-private fun StatePackRow(packs: MapPacks, region: MapRegion, language: String) {
+private fun StatePackRow(packs: MapPacks, region: MapRegion, language: String, free: Long?) {
     val c = LocalColors.current
     val context = LocalContext.current
     val name = region.name(language)
@@ -844,6 +910,7 @@ private fun StatePackRow(packs: MapPacks, region: MapRegion, language: String) {
     val downloading = job != null && !job.failed
     // Uno a la vez: mientras baja otro, este espera.
     val busy = packs.job?.let { !it.failed } == true
+    val noRoom = saved == null && !downloading && free != null && region.totalSize + FREE_MARGIN_BYTES > free
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             // Todo el paquete: mapa, búsqueda y calles para la ruta.
@@ -854,7 +921,7 @@ private fun StatePackRow(packs: MapPacks, region: MapRegion, language: String) {
             )
             when {
                 downloading -> Button(stringResource(R.string.cancel), { packs.cancel() })
-                saved == null -> Button(stringResource(R.string.map_pack_download), { packs.download(region) }, primary = true, enabled = !busy)
+                saved == null -> Button(stringResource(R.string.map_pack_download), { packs.download(region) }, primary = true, enabled = !busy && !noRoom)
                 else -> {
                     if (packs.outdated(region)) Button(stringResource(R.string.map_pack_update), { packs.download(region) }, primary = true, enabled = !busy)
                     Confirmed(
@@ -869,7 +936,8 @@ private fun StatePackRow(packs: MapPacks, region: MapRegion, language: String) {
                 Box(Modifier.fillMaxWidth(job!!.progress).fillMaxHeight().background(c.accent))
             }
         }
-        if (job?.failed == true) Label(stringResource(R.string.map_pack_failed), Typography.small, c.warning)
+        if (noRoom) Label(stringResource(R.string.map_pack_no_room), Typography.small, c.warning)
+        else if (job?.failed == true) Label(stringResource(R.string.map_pack_failed), Typography.small, c.warning)
     }
 }
 

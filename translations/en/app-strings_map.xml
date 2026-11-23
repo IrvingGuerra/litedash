@@ -53,16 +53,18 @@
     <string name="map_tab_look">LiteDash map</string>
     <string name="map_look_help">Applies to all your Map widgets and the full-screen map. Each widget can still be changed from its gear.</string>
     <string name="map_pack_help">Your whole state without internet, in a single download. Updated a few times a year.</string>
+    <string name="map_pack_full">With the Full style the map loads from the internet; the downloaded state is used for search and routes.</string>
     <string name="map_pack_no_index">Connect to the internet to see the available maps.</string>
     <string name="map_list_loading">Downloading the map list…</string>
     <string name="map_list_failed">Couldn\'t download the map list. Check your internet.</string>
-    <string name="map_pack_others">Other states</string>
+    <string name="map_pack_others">Countries</string>
     <string name="map_pack_saved">%1$s · saved · %2$s</string>
     <string name="map_pack_download">Download</string>
     <string name="map_pack_update">Update</string>
     <string name="map_pack_delete_question">Delete the map of %1$s?</string>
     <string name="map_pack_delete_message">Without internet you won\'t see its streets; your zones stay.</string>
     <string name="map_pack_failed">Couldn\'t download: check your internet.</string>
+    <string name="map_pack_no_room">Not enough storage: free up some space.</string>
     <string name="map_pack_search">Search a state or region</string>
     <string name="map_offline_by_state">By state</string>
     <string name="map_offline_by_zone">By zone</string>
@@ -140,6 +142,7 @@
     <string name="guide_follow">Follow me</string>
     <string name="guide_then">Then</string>
     <string name="guide_recalculating">Recalculating…</string>
+    <string name="guide_off_route">Off route</string>
     <string name="guide_arrived">You\'ve arrived</string>
     <string name="guide_arrived_to">You\'ve arrived at %1$s</string>
     <string name="guide_depart">Follow the route</string>

@@ -51,16 +51,18 @@
     <string name="map_tab_look">Χάρτης LiteDash</string>
     <string name="map_look_help">Ισχύει για όλα τα widget Χάρτη και τον χάρτη σε πλήρη οθόνη. Κάθε widget αλλάζει και από το γρανάζι του.</string>
     <string name="map_pack_help">Όλη η περιφέρειά σας χωρίς internet, με μία λήψη. Ενημερώνεται μερικές φορές τον χρόνο.</string>
+    <string name="map_pack_full">Με το στυλ Πλήρες ο χάρτης φορτώνει από το διαδίκτυο· η περιοχή που κατέβασες χρησιμεύει για αναζήτηση και διαδρομές.</string>
     <string name="map_pack_no_index">Συνδεθείτε στο internet για να δείτε τους διαθέσιμους χάρτες.</string>
     <string name="map_list_loading">Λήψη λίστας χαρτών…</string>
     <string name="map_list_failed">Η λήψη της λίστας χαρτών απέτυχε. Ελέγξτε το internet.</string>
-    <string name="map_pack_others">Άλλες περιφέρειες</string>
+    <string name="map_pack_others">Χώρες</string>
     <string name="map_pack_saved">%1$s · αποθηκεύτηκε · %2$s</string>
     <string name="map_pack_download">Λήψη</string>
     <string name="map_pack_update">Ενημέρωση</string>
     <string name="map_pack_delete_question">Διαγραφή του χάρτη %1$s;</string>
     <string name="map_pack_delete_message">Χωρίς internet δεν θα βλέπετε τους δρόμους της· οι ζώνες σας μένουν.</string>
     <string name="map_pack_failed">Η λήψη απέτυχε: ελέγξτε το internet.</string>
+    <string name="map_pack_no_room">Δεν χωράει στη μνήμη: ελευθέρωσε χώρο.</string>
     <string name="map_pack_search">Αναζήτηση περιφέρειας</string>
     <string name="map_offline_by_state">Ανά περιφέρεια</string>
     <string name="map_offline_by_zone">Ανά ζώνη</string>
@@ -138,6 +140,7 @@
     <string name="guide_follow">Ακολούθησέ με</string>
     <string name="guide_then">Μετά</string>
     <string name="guide_recalculating">Επανυπολογισμός…</string>
+    <string name="guide_off_route">Εκτός διαδρομής</string>
     <string name="guide_arrived">Φτάσατε</string>
     <string name="guide_arrived_to">Φτάσατε: %1$s</string>
     <string name="guide_depart">Ακολουθήστε τη διαδρομή</string>

@@ -51,16 +51,18 @@
     <string name="map_tab_look">Mapa LiteDash</string>
     <string name="map_look_help">Dotyczy wszystkich widżetów Mapa i mapy na pełnym ekranie. Każdy widżet możesz nadal zmienić z jego zębatki.</string>
     <string name="map_pack_help">Całe twoje województwo bez internetu, jednym pobraniem. Aktualizowana kilka razy w roku.</string>
+    <string name="map_pack_full">W stylu Pełny mapa ładuje się z internetu; pobrany region służy do wyszukiwania i tras.</string>
     <string name="map_pack_no_index">Połącz się z internetem, aby zobaczyć dostępne mapy.</string>
     <string name="map_list_loading">Pobieranie listy map…</string>
     <string name="map_list_failed">Nie udało się pobrać listy map. Sprawdź internet.</string>
-    <string name="map_pack_others">Inne województwa</string>
+    <string name="map_pack_others">Kraje</string>
     <string name="map_pack_saved">%1$s · zapisano · %2$s</string>
     <string name="map_pack_download">Pobierz</string>
     <string name="map_pack_update">Aktualizuj</string>
     <string name="map_pack_delete_question">Usunąć mapę %1$s?</string>
     <string name="map_pack_delete_message">Bez internetu nie zobaczysz już jego ulic; twoje strefy zostaną.</string>
     <string name="map_pack_failed">Nie udało się pobrać: sprawdź internet.</string>
+    <string name="map_pack_no_room">Za mało miejsca: zwolnij trochę pamięci.</string>
     <string name="map_pack_search">Szukaj województwa lub regionu</string>
     <string name="map_offline_by_state">Według województwa</string>
     <string name="map_offline_by_zone">Według strefy</string>
@@ -138,6 +140,7 @@
     <string name="guide_follow">Śledź mnie</string>
     <string name="guide_then">Potem</string>
     <string name="guide_recalculating">Ponowne wyznaczanie trasy…</string>
+    <string name="guide_off_route">Poza trasą</string>
     <string name="guide_arrived">Jesteś na miejscu</string>
     <string name="guide_arrived_to">Jesteś na miejscu: %1$s</string>
     <string name="guide_depart">Jedź zgodnie z trasą</string>

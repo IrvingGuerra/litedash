@@ -51,16 +51,18 @@
     <string name="map_tab_look">LiteDash-kaart</string>
     <string name="map_look_help">Geldt voor al je Kaart-widgets en de kaart op volledig scherm. Elke widget is nog via zijn tandwiel aan te passen.</string>
     <string name="map_pack_help">Je hele provincie zonder internet, in één download. Wordt een paar keer per jaar bijgewerkt.</string>
+    <string name="map_pack_full">Met de stijl Volledig komt de kaart van internet; de gedownloade regio dient voor zoeken en routes.</string>
     <string name="map_pack_no_index">Maak verbinding met internet om de beschikbare kaarten te zien.</string>
     <string name="map_list_loading">Kaartenlijst downloaden…</string>
     <string name="map_list_failed">De kaartenlijst kon niet worden gedownload. Check je internet.</string>
-    <string name="map_pack_others">Andere provincies</string>
+    <string name="map_pack_others">Landen</string>
     <string name="map_pack_saved">%1$s · opgeslagen · %2$s</string>
     <string name="map_pack_download">Downloaden</string>
     <string name="map_pack_update">Bijwerken</string>
     <string name="map_pack_delete_question">Kaart van %1$s verwijderen?</string>
     <string name="map_pack_delete_message">Zonder internet zie je de straten niet meer; je zones blijven.</string>
     <string name="map_pack_failed">Downloaden mislukt: controleer je internet.</string>
+    <string name="map_pack_no_room">Niet genoeg opslag: maak ruimte vrij.</string>
     <string name="map_pack_search">Provincie of regio zoeken</string>
     <string name="map_offline_by_state">Per provincie</string>
     <string name="map_offline_by_zone">Per zone</string>
@@ -138,6 +140,7 @@
     <string name="guide_follow">Volg mij</string>
     <string name="guide_then">Daarna</string>
     <string name="guide_recalculating">Route wordt herberekend…</string>
+    <string name="guide_off_route">Van de route af</string>
     <string name="guide_arrived">Je bent er</string>
     <string name="guide_arrived_to">Je bent er: %1$s</string>
     <string name="guide_depart">Volg de route</string>

@@ -51,16 +51,18 @@
     <string name="map_tab_look">LiteDash-karta</string>
     <string name="map_look_help">Gäller alla dina Karta-widgetar och kartan i helskärm. Varje widget kan fortfarande ändras via sitt kugghjul.</string>
     <string name="map_pack_help">Hela ditt län utan internet, i en enda nedladdning. Uppdateras några gånger om året.</string>
+    <string name="map_pack_full">Med stilen Full hämtas kartan från internet; den nedladdade regionen används för sökning och rutter.</string>
     <string name="map_pack_no_index">Anslut till internet för att se tillgängliga kartor.</string>
     <string name="map_list_loading">Laddar ner kartlistan…</string>
     <string name="map_list_failed">Kunde inte ladda ner kartlistan. Kolla internet.</string>
-    <string name="map_pack_others">Andra län</string>
+    <string name="map_pack_others">Länder</string>
     <string name="map_pack_saved">%1$s · sparad · %2$s</string>
     <string name="map_pack_download">Ladda ner</string>
     <string name="map_pack_update">Uppdatera</string>
     <string name="map_pack_delete_question">Radera kartan över %1$s?</string>
     <string name="map_pack_delete_message">Utan internet ser du inte längre dess gator; dina zoner finns kvar.</string>
     <string name="map_pack_failed">Kunde inte ladda ner: kontrollera ditt internet.</string>
+    <string name="map_pack_no_room">Inte tillräckligt med lagring: frigör utrymme.</string>
     <string name="map_pack_search">Sök län eller region</string>
     <string name="map_offline_by_state">Efter län</string>
     <string name="map_offline_by_zone">Efter zon</string>
@@ -138,6 +140,7 @@
     <string name="guide_follow">Följ mig</string>
     <string name="guide_then">Sedan</string>
     <string name="guide_recalculating">Beräknar om…</string>
+    <string name="guide_off_route">Utanför rutten</string>
     <string name="guide_arrived">Du är framme</string>
     <string name="guide_arrived_to">Du är framme: %1$s</string>
     <string name="guide_depart">Följ rutten</string>

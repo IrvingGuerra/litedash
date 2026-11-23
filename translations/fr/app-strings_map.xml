@@ -53,16 +53,18 @@
     <string name="map_tab_look">Carte LiteDash</string>
     <string name="map_look_help">S\'applique à tous vos widgets Carte et à la carte plein écran. Chaque widget reste modifiable depuis son engrenage.</string>
     <string name="map_pack_help">Toute votre région sans internet, en un seul téléchargement. Mise à jour quelques fois par an.</string>
+    <string name="map_pack_full">Avec le style Complet, la carte vient d\'internet ; la région téléchargée sert à la recherche et aux itinéraires.</string>
     <string name="map_pack_no_index">Connectez-vous à internet pour voir les cartes disponibles.</string>
     <string name="map_list_loading">Téléchargement de la liste des cartes…</string>
     <string name="map_list_failed">Impossible de télécharger la liste des cartes. Vérifiez votre connexion.</string>
-    <string name="map_pack_others">Autres régions</string>
+    <string name="map_pack_others">Pays</string>
     <string name="map_pack_saved">%1$s · enregistrée · %2$s</string>
     <string name="map_pack_download">Télécharger</string>
     <string name="map_pack_update">Mettre à jour</string>
     <string name="map_pack_delete_question">Supprimer la carte de %1$s ?</string>
     <string name="map_pack_delete_message">Sans internet, vous ne verrez plus ses rues ; vos zones restent.</string>
     <string name="map_pack_failed">Échec du téléchargement : vérifiez votre internet.</string>
+    <string name="map_pack_no_room">Pas assez d\'espace : libère de la place.</string>
     <string name="map_pack_search">Rechercher une région</string>
     <string name="map_offline_by_state">Par région</string>
     <string name="map_offline_by_zone">Par zone</string>
@@ -140,6 +142,7 @@
     <string name="guide_follow">Me suivre</string>
     <string name="guide_then">Puis</string>
     <string name="guide_recalculating">Recalcul en cours…</string>
+    <string name="guide_off_route">Hors itinéraire</string>
     <string name="guide_arrived">Vous êtes arrivé</string>
     <string name="guide_arrived_to">Vous êtes arrivé : %1$s</string>
     <string name="guide_depart">Suivez l\'itinéraire</string>

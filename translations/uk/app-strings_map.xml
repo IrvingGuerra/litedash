@@ -51,16 +51,18 @@
     <string name="map_tab_look">Карта LiteDash</string>
     <string name="map_look_help">Діє на всі віджети «Карта» і повноекранну карту. Кожен віджет можна змінити через його шестерню.</string>
     <string name="map_pack_help">Уся область без інтернету, одним завантаженням. Оновлюється кілька разів на рік.</string>
+    <string name="map_pack_full">У стилі «Повна» карта завантажується з інтернету; завантажений регіон потрібен для пошуку й маршрутів.</string>
     <string name="map_pack_no_index">Підключися до інтернету, щоб побачити доступні карти.</string>
     <string name="map_list_loading">Завантаження списку карт…</string>
     <string name="map_list_failed">Не вдалося завантажити список карт. Перевір інтернет.</string>
-    <string name="map_pack_others">Інші області</string>
+    <string name="map_pack_others">Країни</string>
     <string name="map_pack_saved">%1$s · збережено · %2$s</string>
     <string name="map_pack_download">Завантажити</string>
     <string name="map_pack_update">Оновити</string>
     <string name="map_pack_delete_question">Видалити карту %1$s?</string>
     <string name="map_pack_delete_message">Без інтернету ти не побачиш її вулиць; твої райони залишаться.</string>
     <string name="map_pack_failed">Не вдалося завантажити: перевір інтернет.</string>
+    <string name="map_pack_no_room">Не вистачає пам\'яті: звільніть місце.</string>
     <string name="map_pack_search">Знайти область або регіон</string>
     <string name="map_offline_by_state">За областю</string>
     <string name="map_offline_by_zone">За районом</string>
@@ -138,6 +140,7 @@
     <string name="guide_follow">Стежити за мною</string>
     <string name="guide_then">Потім</string>
     <string name="guide_recalculating">Перебудовую маршрут…</string>
+    <string name="guide_off_route">Поза маршрутом</string>
     <string name="guide_arrived">Ти на місці</string>
     <string name="guide_arrived_to">Ти на місці: %1$s</string>
     <string name="guide_depart">Рухайся за маршрутом</string>

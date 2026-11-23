@@ -51,16 +51,18 @@
     <string name="map_tab_look">LiteDash मैप</string>
     <string name="map_look_help">आपके सभी मैप विजेट और फ़ुल-स्क्रीन मैप पर लागू होता है। हर विजेट को उसके गियर से अलग भी बदल सकते हैं।</string>
     <string name="map_pack_help">पूरा राज्य बिना इंटरनेट के, एक ही डाउनलोड में। साल में कुछ बार अपडेट होता है।</string>
+    <string name="map_pack_full">पूरा शैली में मानचित्र इंटरनेट से आता है; डाउनलोड किया गया राज्य खोज और रास्तों के लिए है।</string>
     <string name="map_pack_no_index">उपलब्ध नक्शे देखने के लिए इंटरनेट से जुड़ें।</string>
     <string name="map_list_loading">नक्शों की सूची डाउनलोड हो रही है…</string>
     <string name="map_list_failed">नक्शों की सूची डाउनलोड नहीं हुई। इंटरनेट देखें।</string>
-    <string name="map_pack_others">दूसरे राज्य</string>
+    <string name="map_pack_others">देश</string>
     <string name="map_pack_saved">%1$s · सहेजा गया · %2$s</string>
     <string name="map_pack_download">डाउनलोड करें</string>
     <string name="map_pack_update">अपडेट करें</string>
     <string name="map_pack_delete_question">%1$s का नक्शा मिटाएँ?</string>
     <string name="map_pack_delete_message">बिना इंटरनेट के इसकी सड़कें नहीं दिखेंगी; आपके इलाके बने रहेंगे।</string>
     <string name="map_pack_failed">डाउनलोड नहीं हो सका: अपना इंटरनेट जाँचें।</string>
+    <string name="map_pack_no_room">मेमोरी में जगह नहीं: थोड़ी जगह खाली करें।</string>
     <string name="map_pack_search">राज्य या क्षेत्र खोजें</string>
     <string name="map_offline_by_state">राज्य के हिसाब से</string>
     <string name="map_offline_by_zone">ज़ोन के हिसाब से</string>
@@ -138,6 +140,7 @@
     <string name="guide_follow">मुझे फ़ॉलो करें</string>
     <string name="guide_then">फिर</string>
     <string name="guide_recalculating">फिर से गणना हो रही है…</string>
+    <string name="guide_off_route">रास्ते से बाहर</string>
     <string name="guide_arrived">आप पहुँच गए</string>
     <string name="guide_arrived_to">आप %1$s पहुँच गए</string>
     <string name="guide_depart">रास्ते पर चलें</string>

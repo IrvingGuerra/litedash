@@ -51,16 +51,18 @@
     <string name="map_tab_look">Bản đồ LiteDash</string>
     <string name="map_look_help">Áp dụng cho mọi tiện ích Bản đồ và bản đồ toàn màn hình. Mỗi tiện ích vẫn có thể đổi riêng từ biểu tượng bánh răng.</string>
     <string name="map_pack_help">Cả tỉnh của bạn không cần internet, chỉ một lần tải. Cập nhật vài lần mỗi năm.</string>
+    <string name="map_pack_full">Với kiểu Đầy đủ, bản đồ tải từ internet; vùng đã tải dùng để tìm kiếm và chỉ đường.</string>
     <string name="map_pack_no_index">Kết nối internet để xem các bản đồ có sẵn.</string>
     <string name="map_list_loading">Đang tải danh sách bản đồ…</string>
     <string name="map_list_failed">Không tải được danh sách bản đồ. Hãy kiểm tra internet.</string>
-    <string name="map_pack_others">Tỉnh khác</string>
+    <string name="map_pack_others">Quốc gia</string>
     <string name="map_pack_saved">%1$s · đã lưu · %2$s</string>
     <string name="map_pack_download">Tải xuống</string>
     <string name="map_pack_update">Cập nhật</string>
     <string name="map_pack_delete_question">Xóa bản đồ %1$s?</string>
     <string name="map_pack_delete_message">Khi không có internet, bạn sẽ không thấy đường phố ở đó; các khu vực của bạn vẫn giữ nguyên.</string>
     <string name="map_pack_failed">Không tải được: kiểm tra internet.</string>
+    <string name="map_pack_no_room">Không đủ bộ nhớ: hãy giải phóng dung lượng.</string>
     <string name="map_pack_search">Tìm tỉnh hoặc khu vực</string>
     <string name="map_offline_by_state">Theo tỉnh</string>
     <string name="map_offline_by_zone">Theo khu vực</string>
@@ -138,6 +140,7 @@
     <string name="guide_follow">Theo dõi tôi</string>
     <string name="guide_then">Sau đó</string>
     <string name="guide_recalculating">Đang tính lại lộ trình…</string>
+    <string name="guide_off_route">Lệch tuyến đường</string>
     <string name="guide_arrived">Bạn đã đến nơi</string>
     <string name="guide_arrived_to">Bạn đã đến %1$s</string>
     <string name="guide_depart">Đi theo lộ trình</string>

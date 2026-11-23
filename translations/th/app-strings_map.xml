@@ -51,16 +51,18 @@
     <string name="map_tab_look">แผนที่ LiteDash</string>
     <string name="map_look_help">ใช้กับวิดเจ็ตแผนที่ทั้งหมดและแผนที่เต็มจอ แต่ละวิดเจ็ตยังเปลี่ยนได้จากไอคอนเฟือง</string>
     <string name="map_pack_help">ทั้งจังหวัดแบบไม่ใช้อินเทอร์เน็ต ดาวน์โหลดครั้งเดียว อัปเดตปีละไม่กี่ครั้ง</string>
+    <string name="map_pack_full">เมื่อใช้รูปแบบเต็ม แผนที่จะโหลดจากอินเทอร์เน็ต ส่วนพื้นที่ที่ดาวน์โหลดไว้ใช้สำหรับค้นหาและเส้นทาง</string>
     <string name="map_pack_no_index">เชื่อมต่ออินเทอร์เน็ตเพื่อดูแผนที่ที่มี</string>
     <string name="map_list_loading">กำลังดาวน์โหลดรายการแผนที่…</string>
     <string name="map_list_failed">ดาวน์โหลดรายการแผนที่ไม่ได้ ตรวจอินเทอร์เน็ต</string>
-    <string name="map_pack_others">จังหวัดอื่น</string>
+    <string name="map_pack_others">ประเทศ</string>
     <string name="map_pack_saved">%1$s · บันทึกแล้ว · %2$s</string>
     <string name="map_pack_download">ดาวน์โหลด</string>
     <string name="map_pack_update">อัปเดต</string>
     <string name="map_pack_delete_question">ลบแผนที่ของ %1$s ไหม</string>
     <string name="map_pack_delete_message">เมื่อไม่มีอินเทอร์เน็ต คุณจะไม่เห็นถนนอีก แต่โซนของคุณยังอยู่</string>
     <string name="map_pack_failed">ดาวน์โหลดไม่สำเร็จ: ตรวจสอบอินเทอร์เน็ต</string>
+    <string name="map_pack_no_room">พื้นที่จัดเก็บไม่พอ: ล้างพื้นที่บางส่วน</string>
     <string name="map_pack_search">ค้นหาจังหวัดหรือภูมิภาค</string>
     <string name="map_offline_by_state">ตามจังหวัด</string>
     <string name="map_offline_by_zone">ตามพื้นที่</string>
@@ -138,6 +140,7 @@
     <string name="guide_follow">ติดตามฉัน</string>
     <string name="guide_then">จากนั้น</string>
     <string name="guide_recalculating">กำลังคำนวณเส้นทางใหม่…</string>
+    <string name="guide_off_route">ออกนอกเส้นทาง</string>
     <string name="guide_arrived">คุณมาถึงแล้ว</string>
     <string name="guide_arrived_to">คุณมาถึง %1$s แล้ว</string>
     <string name="guide_depart">ไปตามเส้นทาง</string>

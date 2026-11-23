@@ -51,16 +51,18 @@
     <string name="map_tab_look">Mapa de LiteDash</string>
     <string name="map_look_help">Se aplica a todos tus widgets Mapa y al mapa en grande. Cada widget se puede cambiar aparte desde su engrane.</string>
     <string name="map_pack_help">Todo tu estado sin internet, de una sola descarga. Se actualiza unas veces al año.</string>
+    <string name="map_pack_full">Con el estilo Completo el mapa se ve de internet; el estado bajado sirve para buscar y trazar rutas.</string>
     <string name="map_pack_no_index">Conéctate a internet para ver los mapas disponibles.</string>
     <string name="map_list_loading">Bajando la lista de mapas…</string>
     <string name="map_list_failed">No se pudo bajar la lista de mapas. Revisa tu internet.</string>
-    <string name="map_pack_others">Otros estados</string>
+    <string name="map_pack_others">Países</string>
     <string name="map_pack_saved">%1$s · guardado · %2$s</string>
     <string name="map_pack_download">Descargar</string>
     <string name="map_pack_update">Actualizar</string>
     <string name="map_pack_delete_question">¿Borrar el mapa de %1$s?</string>
     <string name="map_pack_delete_message">Sin internet ya no verás sus calles; tus zonas se quedan.</string>
     <string name="map_pack_failed">No se pudo bajar: revisa tu internet.</string>
+    <string name="map_pack_no_room">No cabe en la memoria: libera espacio.</string>
     <string name="map_pack_search">Buscar un estado o región</string>
     <string name="map_offline_by_state">Por estado</string>
     <string name="map_offline_by_zone">Por zona</string>
@@ -138,6 +140,7 @@
     <string name="guide_follow">Seguirme</string>
     <string name="guide_then">Luego</string>
     <string name="guide_recalculating">Recalculando…</string>
+    <string name="guide_off_route">Fuera de la ruta</string>
     <string name="guide_arrived">Llegaste</string>
     <string name="guide_arrived_to">Llegaste a %1$s</string>
     <string name="guide_depart">Sigue la ruta</string>

@@ -51,16 +51,18 @@
     <string name="map_tab_look">LiteDash 地图</string>
     <string name="map_look_help">适用于所有地图小组件和全屏地图。每个小组件仍可通过其齿轮图标单独更改。</string>
     <string name="map_pack_help">整个省份离线可用，一次下载即可。每年更新几次。</string>
+    <string name="map_pack_full">“完整”样式的地图来自互联网；已下载的地区用于搜索和路线。</string>
     <string name="map_pack_no_index">连接互联网以查看可用地图。</string>
     <string name="map_list_loading">正在下载地图列表…</string>
     <string name="map_list_failed">无法下载地图列表，请检查网络。</string>
-    <string name="map_pack_others">其他省份</string>
+    <string name="map_pack_others">国家/地区</string>
     <string name="map_pack_saved">%1$s · 已保存 · %2$s</string>
     <string name="map_pack_download">下载</string>
     <string name="map_pack_update">更新</string>
     <string name="map_pack_delete_question">删除 %1$s 的地图？</string>
     <string name="map_pack_delete_message">无网络时将无法查看其街道；你的区域会保留。</string>
     <string name="map_pack_failed">下载失败：请检查网络。</string>
+    <string name="map_pack_no_room">存储空间不足：请释放一些空间。</string>
     <string name="map_pack_search">搜索省份或地区</string>
     <string name="map_offline_by_state">按省份</string>
     <string name="map_offline_by_zone">按区域</string>
@@ -138,6 +140,7 @@
     <string name="guide_follow">跟随我</string>
     <string name="guide_then">然后</string>
     <string name="guide_recalculating">正在重新规划路线…</string>
+    <string name="guide_off_route">偏离路线</string>
     <string name="guide_arrived">已到达</string>
     <string name="guide_arrived_to">已到达%1$s</string>
     <string name="guide_depart">沿路线行驶</string>

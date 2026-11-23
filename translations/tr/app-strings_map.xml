@@ -51,16 +51,18 @@
     <string name="map_tab_look">LiteDash haritası</string>
     <string name="map_look_help">Tüm Harita widget’larınıza ve tam ekran haritaya uygulanır. Her widget yine dişlisinden değiştirilebilir.</string>
     <string name="map_pack_help">Tüm iliniz internetsiz, tek indirmede. Yılda birkaç kez güncellenir.</string>
+    <string name="map_pack_full">Tam stilinde harita internetten gelir; indirilen bölge arama ve rotalar için kullanılır.</string>
     <string name="map_pack_no_index">Mevcut haritaları görmek için internete bağlanın.</string>
     <string name="map_list_loading">Harita listesi indiriliyor…</string>
     <string name="map_list_failed">Harita listesi indirilemedi. İnternet bağlantınızı kontrol edin.</string>
-    <string name="map_pack_others">Diğer iller</string>
+    <string name="map_pack_others">Ülkeler</string>
     <string name="map_pack_saved">%1$s · kaydedildi · %2$s</string>
     <string name="map_pack_download">İndir</string>
     <string name="map_pack_update">Güncelle</string>
     <string name="map_pack_delete_question">%1$s haritası silinsin mi?</string>
     <string name="map_pack_delete_message">İnternet olmadan sokaklarını göremezsiniz; bölgeleriniz kalır.</string>
     <string name="map_pack_failed">İndirilemedi: internetinizi kontrol edin.</string>
+    <string name="map_pack_no_room">Depolama yetersiz: biraz yer aç.</string>
     <string name="map_pack_search">İl veya bölge ara</string>
     <string name="map_offline_by_state">İle göre</string>
     <string name="map_offline_by_zone">Bölgeye göre</string>
@@ -138,6 +140,7 @@
     <string name="guide_follow">Beni takip et</string>
     <string name="guide_then">Sonra</string>
     <string name="guide_recalculating">Yeniden hesaplanıyor…</string>
+    <string name="guide_off_route">Rota dışında</string>
     <string name="guide_arrived">Vardınız</string>
     <string name="guide_arrived_to">Vardınız: %1$s</string>
     <string name="guide_depart">Rotayı izleyin</string>

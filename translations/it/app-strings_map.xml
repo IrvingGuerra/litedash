@@ -51,16 +51,18 @@
     <string name="map_tab_look">Mappa di LiteDash</string>
     <string name="map_look_help">Vale per tutti i tuoi widget Mappa e per la mappa a schermo intero. Ogni widget si può ancora cambiare dal suo ingranaggio.</string>
     <string name="map_pack_help">Tutta la tua regione senza internet, con un solo download. Si aggiorna qualche volta all\'anno.</string>
+    <string name="map_pack_full">Con lo stile Completo la mappa arriva da internet; la regione scaricata serve per la ricerca e i percorsi.</string>
     <string name="map_pack_no_index">Connettiti a internet per vedere le mappe disponibili.</string>
     <string name="map_list_loading">Download dell\'elenco delle mappe…</string>
     <string name="map_list_failed">Impossibile scaricare l\'elenco delle mappe. Controlla la connessione.</string>
-    <string name="map_pack_others">Altre regioni</string>
+    <string name="map_pack_others">Paesi</string>
     <string name="map_pack_saved">%1$s · salvata · %2$s</string>
     <string name="map_pack_download">Scarica</string>
     <string name="map_pack_update">Aggiorna</string>
     <string name="map_pack_delete_question">Eliminare la mappa di %1$s?</string>
     <string name="map_pack_delete_message">Senza internet non vedrai più le sue strade; le tue zone restano.</string>
     <string name="map_pack_failed">Download non riuscito: controlla internet.</string>
+    <string name="map_pack_no_room">Spazio insufficiente: libera un po\' di spazio.</string>
     <string name="map_pack_search">Cerca una regione</string>
     <string name="map_offline_by_state">Per regione</string>
     <string name="map_offline_by_zone">Per zona</string>
@@ -138,6 +140,7 @@
     <string name="guide_follow">Seguimi</string>
     <string name="guide_then">Poi</string>
     <string name="guide_recalculating">Ricalcolo in corso…</string>
+    <string name="guide_off_route">Fuori percorso</string>
     <string name="guide_arrived">Sei arrivato</string>
     <string name="guide_arrived_to">Sei arrivato: %1$s</string>
     <string name="guide_depart">Segui il percorso</string>

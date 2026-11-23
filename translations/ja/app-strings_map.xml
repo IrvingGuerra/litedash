@@ -51,16 +51,18 @@
     <string name="map_tab_look">LiteDash の地図</string>
     <string name="map_look_help">すべての地図ウィジェットと全画面の地図に適用されます。各ウィジェットは歯車から個別に変更できます。</string>
     <string name="map_pack_help">都道府県全体をオフラインで。1回のダウンロードで完了。年に数回更新されます。</string>
+    <string name="map_pack_full">「フル」スタイルでは地図はインターネットから表示されます。ダウンロードした地域は検索とルートに使われます。</string>
     <string name="map_pack_no_index">利用できる地図を見るにはインターネットに接続してください。</string>
     <string name="map_list_loading">地図リストをダウンロード中…</string>
     <string name="map_list_failed">地図リストをダウンロードできませんでした。インターネット接続を確認してください。</string>
-    <string name="map_pack_others">ほかの都道府県</string>
+    <string name="map_pack_others">国</string>
     <string name="map_pack_saved">%1$s · 保存済み · %2$s</string>
     <string name="map_pack_download">ダウンロード</string>
     <string name="map_pack_update">更新</string>
     <string name="map_pack_delete_question">%1$sの地図を削除しますか？</string>
     <string name="map_pack_delete_message">インターネットなしでは道路が表示されなくなります。エリアはそのまま残ります。</string>
     <string name="map_pack_failed">ダウンロードできませんでした。インターネットを確認してください。</string>
+    <string name="map_pack_no_room">容量が足りません。空き容量を増やしてください。</string>
     <string name="map_pack_search">都道府県・地域を検索</string>
     <string name="map_offline_by_state">都道府県で</string>
     <string name="map_offline_by_zone">エリアで</string>
@@ -138,6 +140,7 @@
     <string name="guide_follow">現在地を追従</string>
     <string name="guide_then">その後</string>
     <string name="guide_recalculating">ルートを再検索しています…</string>
+    <string name="guide_off_route">ルート外</string>
     <string name="guide_arrived">到着しました</string>
     <string name="guide_arrived_to">%1$sに到着しました</string>
     <string name="guide_depart">ルートに沿って進んでください</string>

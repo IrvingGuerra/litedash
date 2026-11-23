@@ -51,16 +51,18 @@
     <string name="map_tab_look">LiteDash 지도</string>
     <string name="map_look_help">모든 지도 위젯과 전체 화면 지도에 적용돼요. 각 위젯은 톱니바퀴에서 따로 바꿀 수 있어요.</string>
     <string name="map_pack_help">지역 전체를 인터넷 없이, 한 번에 다운로드해요. 1년에 몇 번 업데이트돼요.</string>
+    <string name="map_pack_full">전체 스타일에서는 지도가 인터넷에서 표시되며, 다운로드한 지역은 검색과 경로에 쓰입니다.</string>
     <string name="map_pack_no_index">사용 가능한 지도를 보려면 인터넷에 연결하세요.</string>
     <string name="map_list_loading">지도 목록 다운로드 중…</string>
     <string name="map_list_failed">지도 목록을 다운로드하지 못했어요. 인터넷을 확인하세요.</string>
-    <string name="map_pack_others">다른 지역</string>
+    <string name="map_pack_others">국가</string>
     <string name="map_pack_saved">%1$s · 저장됨 · %2$s</string>
     <string name="map_pack_download">다운로드</string>
     <string name="map_pack_update">업데이트</string>
     <string name="map_pack_delete_question">%1$s 지도를 삭제할까요?</string>
     <string name="map_pack_delete_message">인터넷이 없으면 도로가 보이지 않아요. 내 지역은 그대로 남아요.</string>
     <string name="map_pack_failed">다운로드하지 못했어요: 인터넷을 확인하세요.</string>
+    <string name="map_pack_no_room">저장 공간이 부족합니다. 공간을 확보하세요.</string>
     <string name="map_pack_search">지역 검색</string>
     <string name="map_offline_by_state">지역별</string>
     <string name="map_offline_by_zone">구역별</string>
@@ -138,6 +140,7 @@
     <string name="guide_follow">내 위치 따라가기</string>
     <string name="guide_then">그다음</string>
     <string name="guide_recalculating">경로 재탐색 중…</string>
+    <string name="guide_off_route">경로 이탈</string>
     <string name="guide_arrived">도착했어요</string>
     <string name="guide_arrived_to">%1$s에 도착했어요</string>
     <string name="guide_depart">경로를 따라가세요</string>

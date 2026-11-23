@@ -53,16 +53,18 @@
     <string name="map_tab_look">Mapa do LiteDash</string>
     <string name="map_look_help">Vale para todos os seus widgets Mapa e para o mapa em tela cheia. Cada widget pode ser alterado à parte pela engrenagem dele.</string>
     <string name="map_pack_help">Todo o seu estado sem internet, em um único download. Atualizado algumas vezes por ano.</string>
+    <string name="map_pack_full">Com o estilo Completo o mapa vem da internet; o estado baixado serve para buscar e traçar rotas.</string>
     <string name="map_pack_no_index">Conecte-se à internet para ver os mapas disponíveis.</string>
     <string name="map_list_loading">Baixando a lista de mapas…</string>
     <string name="map_list_failed">Não foi possível baixar a lista de mapas. Confira sua internet.</string>
-    <string name="map_pack_others">Outros estados</string>
+    <string name="map_pack_others">Países</string>
     <string name="map_pack_saved">%1$s · salvo · %2$s</string>
     <string name="map_pack_download">Baixar</string>
     <string name="map_pack_update">Atualizar</string>
     <string name="map_pack_delete_question">Excluir o mapa de %1$s?</string>
     <string name="map_pack_delete_message">Sem internet, você não verá mais as ruas dele; suas regiões continuam.</string>
     <string name="map_pack_failed">Não foi possível baixar: verifique sua internet.</string>
+    <string name="map_pack_no_room">Não cabe na memória: libere espaço.</string>
     <string name="map_pack_search">Buscar estado ou região</string>
     <string name="map_offline_by_state">Por estado</string>
     <string name="map_offline_by_zone">Por zona</string>
@@ -140,6 +142,7 @@
     <string name="guide_follow">Seguir minha posição</string>
     <string name="guide_then">Depois</string>
     <string name="guide_recalculating">Recalculando…</string>
+    <string name="guide_off_route">Fora da rota</string>
     <string name="guide_arrived">Você chegou</string>
     <string name="guide_arrived_to">Você chegou a %1$s</string>
     <string name="guide_depart">Siga a rota</string>
