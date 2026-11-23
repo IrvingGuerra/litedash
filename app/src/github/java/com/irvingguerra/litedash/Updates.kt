@@ -54,7 +54,8 @@ private class GithubUpdates(private val updater: Updater) : AppUpdates {
     override fun Card() = SettingsCard { Updates(updater) }
 
     override fun describe() = "Actualizaciones: " +
-        (Updater.installFailure?.let { "el instalador falló (${it.status}: ${it.message})" } ?: "sin fallas del instalador")
+        (Updater.installFailure?.let { "el instalador falló (${it.status}: ${it.message})" } ?: "sin fallas del instalador") +
+        (updater.downloadError?.let { " · la descarga falló ($it)" } ?: "")
 }
 
 /** Cuánto se espera la confirmación de Android antes de ofrecer el instalador de siempre. */
