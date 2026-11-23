@@ -21,6 +21,7 @@ import com.irvingguerra.litedash.feature.car.CarRepository
 import com.irvingguerra.litedash.feature.link.PhoneLink
 import com.irvingguerra.litedash.feature.link.PhoneSound
 import com.irvingguerra.litedash.feature.link.ScreenInfo
+import com.irvingguerra.litedash.feature.map.TileStore
 import com.irvingguerra.litedash.feature.music.MusicRepository
 import com.irvingguerra.litedash.feature.music.NotificationListener
 import com.irvingguerra.litedash.feature.music.NotificationService
@@ -136,14 +137,17 @@ class LiteDashApp : Application() {
     /**
      * Al irse a segundo plano se recortan los cuadros del auto (lo más pesado en memoria): a un cuarto
      * si solo se ocultó la pantalla, todos si Android ya la tiene en la lista de procesos a cerrar; ahí
-     * también se sueltan los íconos de las apps (se vuelven a leer al regresar).
+     * también se sueltan los íconos de las apps y las teselas del mapa (se vuelven a leer al regresar).
      */
     override fun onTrimMemory(level: Int) {
         super.onTrimMemory(level)
         if (level < ComponentCallbacks2.TRIM_MEMORY_UI_HIDDEN || !dependenciesLazy.isInitialized()) return
         val background = level >= ComponentCallbacks2.TRIM_MEMORY_BACKGROUND
         dependencies.cars.trimMemory(all = background)
-        if (background) dependencies.apps.trimMemory()
+        if (background) {
+            dependencies.apps.trimMemory()
+            TileStore.trimAll()
+        }
     }
 
     // Los textos que se piden a la aplicación (repositorios, avisos, servicios que usan applicationContext) salen

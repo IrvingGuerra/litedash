@@ -249,8 +249,9 @@ internal fun PlaceSearchBox(
     val scope = rememberCoroutineScope()
     val language = currentLocale().language
     val here = d.trip.position
-    // Con un estado bajado, revisa el índice (una vez al día o tras actualizar): si a su búsqueda le falta o es vieja, se baja.
-    LaunchedEffect(Unit) { if (packs.installed.isNotEmpty()) packs.refresh() }
+    // Revisa el índice (a lo más una vez al día): trae el apagado remoto de «Buscar en internet» y, con un estado bajado,
+    // si a su búsqueda le falta o es vieja, se baja.
+    LaunchedEffect(Unit) { packs.refresh() }
     val canSearch = packs.canSearch()
     // Al escribir: el mapa de tu estado contesta al instante (fuera del hilo principal; una pausa chica junta letras).
     // También al llegar la búsqueda de tu estado mientras escribías.
