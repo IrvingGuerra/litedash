@@ -2,7 +2,7 @@
 """
 Simulador de un ELM327 por Wi-Fi (TCP) para probar el Taller sin el auto.
 
-    python3 tools/elm327-sim.py [puerto] [--caliente] [--sin-carga]   # 35000 por defecto
+    python3 tools/elm327-sim.py [puerto] [--caliente] [--sin-carga] [...]   # 35000 por defecto; --help
 
 En el emulador de Android: Taller → Wi-Fi → 10.0.2.2:35000. Simula un auto con luz de
 falla, dos códigos guardados (P0420, P0133), uno pendiente (P0171), el monitor EVAP
@@ -11,16 +11,38 @@ Para probar las alertas: --caliente (motor a 112 °C) y --sin-carga (alternador 
 12.2 V con el motor andando). También contesta la presión de llantas de fábrica (Llantas →
 Auto (OBD)) como el módulo de su marca: ver MODULES; con --sin-tpms no la da.
 --encabezados: como los clones que ignoran ATH0, el modo 01 llega con "7E8" y el largo.
+
+Para reproducir clones malos (solo en las consultas del modo 01, así la preparación sale siempre):
+  --drop-prompt 0.05   omite el ">" en esa fracción de respuestas (LiteDash espera 3 s y resincroniza con ATI)
+  --late-prompt 0.05   manda el ">" 3.5 s tarde en esa fracción (pasado el plazo: desfasa la siguiente)
+  --no-data 0D,0C      esos PIDs contestan "NO DATA" aunque el auto diga que los tiene
+
+    python3 tools/elm327-sim.py --drop-prompt 0.05 --no-data 0F
 """
+import argparse
 import math
+import random
 import socketserver
-import sys
 import time
 
-HOT = "--caliente" in sys.argv
-NOT_CHARGING = "--sin-carga" in sys.argv
-NO_TPMS = "--sin-tpms" in sys.argv
-HEADERS = "--encabezados" in sys.argv
+parser = argparse.ArgumentParser(description="ELM327 simulado por TCP (ver el inicio del archivo).")
+parser.add_argument("port", nargs="?", type=int, default=35000, help="puerto (35000 por defecto)")
+parser.add_argument("--caliente", action="store_true", help="motor a 112 °C")
+parser.add_argument("--sin-carga", action="store_true", help="alternador sin cargar (12.2 V)")
+parser.add_argument("--sin-tpms", action="store_true", help="sin presión de llantas de fábrica")
+parser.add_argument("--encabezados", action="store_true", help='modo 01 con "7E8" y el largo (ignora ATH0)')
+parser.add_argument("--drop-prompt", type=float, default=0.0, metavar="F", help='fracción de respuestas sin ">"')
+parser.add_argument("--late-prompt", type=float, default=0.0, metavar="F", help='fracción de respuestas con el ">" 3.5 s tarde')
+parser.add_argument("--no-data", default="", metavar="PID,…", help='PIDs (hex) que contestan "NO DATA"')
+ARGS = parser.parse_args()
+
+HOT = ARGS.caliente
+NOT_CHARGING = ARGS.sin_carga
+NO_TPMS = ARGS.sin_tpms
+HEADERS = ARGS.encabezados
+NO_DATA = {int(p, 16) for p in ARGS.no_data.split(",") if p.strip()}
+# Lo que tarda el ">" tardío: más que el plazo de LiteDash (3 s).
+LATE_PROMPT_S = 3.5
 # A qué módulo se le habla (ATSH); "7DF" = el motor.
 header = "7DF"
 
@@ -133,6 +155,8 @@ def reply(cmd):
         return text if len(text) <= 14 else multi(text)
     if cmd == "ATZ":
         return "\r\rELM327 v1.5"
+    if cmd == "ATI":
+        return "ELM327 v1.5"
     if cmd == "ATRV":
         return "12.6V"
     if cmd.startswith("AT"):
@@ -164,7 +188,7 @@ def mode01(cmd):
         a = (0x80 if mil else 0) | len(codes["03"])
         # B: los tres continuos soportados y listos. C: catalizador, EVAP, O2, calentador. D: EVAP pendiente.
         return "4101%02X07650%d" % (a, 4 if mil else 0)
-    value = live(pid) if pid in PIDS else None
+    value = live(pid) if pid in PIDS and pid not in NO_DATA else None
     return "41%02X%s" % (pid, value) if value else "NO DATA"
 
 
@@ -183,13 +207,34 @@ class Handler(socketserver.BaseRequestHandler):
                 if not cmd:
                     continue
                 out = reply(cmd)
-                print(cmd, "->", out.replace("\r", " | "))
-                self.request.sendall((out + "\r\r>").encode())
+                prompt = prompt_fate(cmd)
+                print(cmd, "->", out.replace("\r", " | "), "" if prompt == "ok" else "[" + prompt + "]")
+                if prompt == "drop":
+                    self.request.sendall((out + "\r\r").encode())
+                elif prompt == "late":
+                    self.request.sendall((out + "\r\r").encode())
+                    time.sleep(LATE_PROMPT_S)
+                    self.request.sendall(b">")
+                else:
+                    self.request.sendall((out + "\r\r>").encode())
+
+
+def prompt_fate(cmd):
+    """Qué pasa con el ">" de esta respuesta: "ok", "drop" (no se manda) o "late" (tarde). Solo en los datos del
+    modo 01 (no en las páginas 0100/0120… de la preparación)."""
+    cmd = cmd.replace(" ", "").upper()
+    if not cmd.startswith("01") or cmd in ("0100", "0120", "0140", "0160"):
+        return "ok"
+    r = random.random()
+    if r < ARGS.drop_prompt:
+        return "drop"
+    if r < ARGS.drop_prompt + ARGS.late_prompt:
+        return "late"
+    return "ok"
 
 
 if __name__ == "__main__":
-    args = [a for a in sys.argv[1:] if not a.startswith("--")]
-    port = int(args[0]) if args else 35000
+    port = ARGS.port
     socketserver.ThreadingTCPServer.allow_reuse_address = True
     with socketserver.ThreadingTCPServer(("0.0.0.0", port), Handler) as server:
         print("ELM327 simulado en el puerto", port)
