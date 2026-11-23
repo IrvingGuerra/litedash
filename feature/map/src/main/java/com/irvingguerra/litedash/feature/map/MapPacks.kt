@@ -49,6 +49,9 @@ class MapRegion(
 /** Un mapa a medias: de qué región y archivo (huella y tamaño) y desde cuándo. */
 private class Pending(val id: String, val sha256: String, val size: Long, val since: Long)
 
+/** Un mapa a medias que se puede seguir: de qué región y archivo ([sha256]) y cuántos [bytes] lleva. */
+class PausedPack(val id: String, val sha256: String, val bytes: Long)
+
 /** El índice leído: sus regiones y si se permite buscar en internet (Photon). */
 internal class PackIndex(val regions: List<MapRegion>, val photon: Boolean)
 
@@ -105,6 +108,9 @@ class MapPacks private constructor(private val app: Context) {
         private set
     var job by mutableStateOf<PackJob?>(null)
         private set
+    /** El mapa a medias que se puede seguir (de qué región, archivo y cuánto lleva); null si no hay. Sin leer disco. */
+    var paused by mutableStateOf<PausedPack?>(null)
+        private set
     /** Cómo va la lista: sin ella, la pantalla dice si se está bajando o si falló (y deja reintentar). */
     var indexState by mutableStateOf(IndexState.IDLE)
         private set
@@ -130,8 +136,10 @@ class MapPacks private constructor(private val app: Context) {
     init {
         scope.launch {
             // Lo que quedó a medias si la app se cerró bajando; el mapa que se puede seguir se queda (uno, unos días).
-            val keep = resumable()?.let { "${it.id}.pmtiles$PART" }
+            val pending = resumable()
+            val keep = pending?.let { "${it.id}.pmtiles$PART" }
             if (keep == null) File(dir, PENDING).delete()
+            synchronized(stateLock) { if (running == null) paused = pending?.let { pausedOf(it) } }
             dir.listFiles { f -> f.name.endsWith(PART) && f.name != keep }?.forEach { it.delete() }
             readInstalled()
             // El índice de la caché: los nombres para la lista y el contorno de los adoptados (si no se lee, se volverá
@@ -244,6 +252,7 @@ class MapPacks private constructor(private val app: Context) {
             // ¿Lo que quedó a medias es de este mismo archivo? Entonces se sigue donde iba; si no, de cero.
             val resume = resumable()?.let { it.id == region.id && it.sha256.equals(region.map.sha256, ignoreCase = true) } == true
             var keepPart = false
+            paused = null
             try {
                 dir.mkdirs()
                 if (!resume) {
@@ -312,7 +321,11 @@ class MapPacks private constructor(private val app: Context) {
                     temp.delete()
                     File(dir, PENDING).delete()
                 }
-                synchronized(stateLock) { if (running === me) running = null }
+                synchronized(stateLock) {
+                    if (running === me) running = null
+                    // Lo bajado se queda para seguirlo (y la pantalla lo descuenta del espacio que falta).
+                    if (keepPart) paused = resumable()?.let { pausedOf(it) }
+                }
             }
         }
     }
@@ -326,16 +339,38 @@ class MapPacks private constructor(private val app: Context) {
         return p.takeIf { part.isFile && keepPartial(part.length(), p.size, p.since, System.currentTimeMillis()) }
     }
 
+    private fun pausedOf(p: Pending) = PausedPack(p.id, p.sha256, File(dir, "${p.id}.pmtiles$PART").length())
+
+    /** Cuánto del mapa de [region] ya está bajado y se seguiría (0 si nada o si es de otro archivo). */
+    fun partialBytes(region: MapRegion): Long = partialOf(region, paused)
+
+    /** ¿Cabe bajar (o seguir) [region] en [free] bytes libres? La misma regla que usa la descarga ([spaceNeeded]). */
+    fun hasRoom(region: MapRegion, free: Long): Boolean = free >= spaceNeeded(region, partialBytes(region))
+
     private fun writePending(p: Pending) {
         val temp = File(dir, "$PENDING.tmp")
         temp.writeText(JSONObject().put("id", p.id).put("sha256", p.sha256).put("size", p.size).put("since", p.since).toString())
         temp.renameTo(File(dir, PENDING))
     }
 
-    /** Detiene la descarga: deja de escribir al siguiente bloque y no instala nada. */
+    /**
+     * Cancelar = no quiero ese archivo: detiene la descarga (deja de escribir al siguiente bloque, no instala nada y borra
+     * lo bajado) o, si estaba en pausa (se cortó la red, se cerró la app), borra lo que quedó a medias.
+     */
     fun cancel() = synchronized(stateLock) {
         running?.cancel()
         job = null
+        if (running == null && paused != null) {
+            paused = null
+            scope.launch {
+                synchronized(stateLock) {
+                    // Si mientras tanto empezó otra descarga, ella decide qué hacer con el .part.
+                    if (running != null) return@synchronized
+                    resumable()?.let { File(dir, "${it.id}.pmtiles$PART").delete() }
+                    File(dir, PENDING).delete()
+                }
+            }
+        }
     }
 
     /** Borra el mapa bajado de [id] y su búsqueda (lo pidió el usuario); si se estaba bajando, se detiene. */
@@ -615,6 +650,10 @@ class MapPacks private constructor(private val app: Context) {
         /** ¿Se sigue un `.part` de [have] bytes de un archivo de [size] empezado en [since]? (Sano, no completo de más y reciente.) */
         internal fun keepPartial(have: Long, size: Long, since: Long, now: Long): Boolean =
             have in 1..size && isRecent(since, now, PARTIAL_MAX_AGE_MS)
+
+        /** Lo que [paused] lleva del mapa de [region] (0 si es de otra región o de otro archivo). */
+        internal fun partialOf(region: MapRegion, paused: PausedPack?): Long =
+            paused?.takeIf { it.id == region.id && it.sha256.equals(region.map.sha256, ignoreCase = true) }?.bytes ?: 0L
 
         /** Cuánto espacio libre hace falta para bajar [region] con [have] bytes del mapa ya bajados. */
         internal fun spaceNeeded(region: MapRegion, have: Long): Long =

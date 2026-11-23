@@ -110,4 +110,16 @@ class MapPacksTest {
         val full = MapRegion("x", "MX", emptyMap(), ele.bbox, ele.shape, PackFile("u", 1000, "a"), PackFile("s", 10, "b"), PackFile("r", 20, "c"))
         assertEquals(1000 + 4 * 30 + margin, MapPacks.spaceNeeded(full, 0))
     }
+
+    @Test
+    fun aPausedMapCountsOnlyForItsOwnRegionAndFile() {
+        val full = MapRegion("x", "MX", emptyMap(), doubleArrayOf(0.0, 0.0, 1.0, 1.0), emptyList(), PackFile("u", 1000, "abc"), null, null)
+        // Lo que lleva el .part se descuenta al reanudar: con 600 de 1000 bajados, faltan 400 más el margen.
+        assertEquals(600, MapPacks.partialOf(full, PausedPack("x", "ABC", 600)))
+        assertEquals(MapPacks.spaceNeeded(full, 0) - 600, MapPacks.spaceNeeded(full, MapPacks.partialOf(full, PausedPack("x", "abc", 600))))
+        // De otra región o de otra versión del archivo: de cero.
+        assertEquals(0, MapPacks.partialOf(full, PausedPack("y", "abc", 600)))
+        assertEquals(0, MapPacks.partialOf(full, PausedPack("x", "def", 600)))
+        assertEquals(0, MapPacks.partialOf(full, null))
+    }
 }

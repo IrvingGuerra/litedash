@@ -905,7 +905,8 @@ private val REGION_NAME_LANGUAGES = listOf("en", "es", "pt", "fr", "it", "de", "
 
 /**
  * Un estado en un renglón: su nombre y tamaño a la izquierda y lo que se puede hacer a la derecha (bajar, actualizar o
- * borrar); bajando, su avance y Cancelar debajo. Si no cabe en lo [free] (con margen), no se deja bajar y se dice.
+ * borrar); bajando, su avance debajo y Cancelar (que también suelta un mapa a medias). Si no cabe en lo [free] (con la
+ * regla de [MapPacks.hasRoom]), no se deja bajar y se dice.
  */
 @Composable
 private fun StatePackRow(packs: MapPacks, region: MapRegion, language: String, free: Long?) {
@@ -917,7 +918,10 @@ private fun StatePackRow(packs: MapPacks, region: MapRegion, language: String, f
     val downloading = job != null && !job.failed
     // Uno a la vez: mientras baja otro, este espera.
     val busy = packs.job?.let { !it.failed } == true
-    val noRoom = saved == null && !downloading && free != null && region.totalSize + FREE_MARGIN_BYTES > free
+    // La misma regla de espacio que la descarga: descuenta lo ya bajado del mapa a medias (si no, al reanudar no cabría).
+    val noRoom = saved == null && !downloading && free != null && !packs.hasRoom(region, free)
+    // Quedó a medias (se cortó la red o se cerró la app): se puede seguir o soltarlo.
+    val paused = !downloading && packs.paused?.id == region.id
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             // Todo el paquete: mapa, búsqueda y calles para la ruta.
@@ -928,7 +932,10 @@ private fun StatePackRow(packs: MapPacks, region: MapRegion, language: String, f
             )
             when {
                 downloading -> Button(stringResource(R.string.cancel), { packs.cancel() })
-                saved == null -> Button(stringResource(R.string.map_pack_download), { packs.download(region) }, primary = true, enabled = !busy && !noRoom)
+                saved == null -> {
+                    if (paused) Button(stringResource(R.string.cancel), { packs.cancel() })
+                    Button(stringResource(R.string.map_pack_download), { packs.download(region) }, primary = true, enabled = !busy && !noRoom)
+                }
                 else -> {
                     if (packs.outdated(region)) Button(stringResource(R.string.map_pack_update), { packs.download(region) }, primary = true, enabled = !busy)
                     Confirmed(
