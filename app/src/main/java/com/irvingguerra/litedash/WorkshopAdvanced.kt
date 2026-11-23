@@ -336,13 +336,17 @@ private val tripSaveScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 @Composable
 fun TripRecorderEffect(d: Dependencies) {
     val obd = rememberObd(d, d.prefs.tripLog)
-    if (obd?.state != ObdState.ON || obd.carSilent) return
-    val context = LocalContext.current
-    DisposableEffect(Unit) {
-        val signals = tripSignals(d)
+    if (obd?.state != ObdState.ON) return
+    val silent = obd.carSilent
+    // Con el auto apagado se sigue pidiendo lo mínimo (las rpm): si nadie más pide señales, sin esto el lector se
+    // quedaba sin plan y [ObdRepository.carSilent] nunca volvía a false (el viaje de mañana no se grababa).
+    DisposableEffect(silent) {
+        val signals = if (silent) listOf(Signal.RPM) else tripSignals(d)
         for (s in signals) d.bus.want(s)
         onDispose { for (s in signals) d.bus.unwant(s) }
     }
+    if (silent) return
+    val context = LocalContext.current
     val recorder = remember { TripRecorder(System.currentTimeMillis()) }
     LaunchedEffect(recorder) {
         while (true) {
