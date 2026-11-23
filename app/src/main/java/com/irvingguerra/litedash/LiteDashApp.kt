@@ -141,7 +141,12 @@ class LiteDashApp : Application() {
      */
     override fun onTrimMemory(level: Int) {
         super.onTrimMemory(level)
-        if (level < ComponentCallbacks2.TRIM_MEMORY_UI_HIDDEN || !dependenciesLazy.isInitialized()) return
+        if (!dependenciesLazy.isInitialized()) return
+        // Al frente y con poca memoria: las teselas que ya nadie usa se sueltan (lo demás sigue en uso).
+        if (level < ComponentCallbacks2.TRIM_MEMORY_UI_HIDDEN) {
+            if (level >= ComponentCallbacks2.TRIM_MEMORY_RUNNING_LOW) TileStore.trimAll()
+            return
+        }
         val background = level >= ComponentCallbacks2.TRIM_MEMORY_BACKGROUND
         dependencies.cars.trimMemory(all = background)
         if (background) {
