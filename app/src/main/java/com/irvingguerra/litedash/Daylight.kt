@@ -1,7 +1,10 @@
 package com.irvingguerra.litedash
 
 import android.Manifest
+import android.content.BroadcastReceiver
 import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.hardware.Sensor
 import android.hardware.SensorEvent
@@ -12,14 +15,16 @@ import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.core.content.ContextCompat
+import androidx.lifecycle.compose.LifecycleStartEffect
 import java.util.Calendar
 import java.util.TimeZone
 import kotlin.math.acos
@@ -111,7 +116,8 @@ private fun rememberSensorNight(initial: Boolean): Boolean? {
     val sensor = remember { manager?.getDefaultSensor(Sensor.TYPE_LIGHT) } ?: return null
     var night by remember { mutableStateOf(initial) }
     var varies by remember { mutableStateOf(false) }
-    DisposableEffect(sensor) {
+    // Solo mientras LiteDash se ve: detenido, el brillo y el tema no se aplican y el sensor gastaba en balde.
+    LifecycleStartEffect(sensor) {
         val light = LightHysteresis(night)
         val handler = Handler(Looper.getMainLooper())
         var lux = 0f
@@ -135,7 +141,7 @@ private fun rememberSensorNight(initial: Boolean): Boolean? {
             override fun onAccuracyChanged(s: Sensor, accuracy: Int) = Unit
         }
         manager.registerListener(listener, sensor, SensorManager.SENSOR_DELAY_NORMAL)
-        onDispose {
+        onStopOrDispose {
             manager.unregisterListener(listener)
             handler.removeCallbacks(confirm)
         }
@@ -180,8 +186,9 @@ class LightHysteresis(private var night: Boolean) {
 }
 
 /**
- * Si es de noche; se vuelve a calcular justo al amanecer o al atardecer (no revisa cada rato) y
- * al volver la app al frente (con la pantalla dormida la espera no avanza).
+ * Si es de noche; se vuelve a calcular justo al amanecer o al atardecer (no revisa cada rato), al
+ * volver la app al frente (con la pantalla dormida la espera no avanza) y cuando el sistema corrige
+ * la hora o la zona horaria ([rememberClockChanges]).
  */
 @Composable
 private fun rememberSunNight(): Boolean {
@@ -190,9 +197,11 @@ private fun rememberSunNight(): Boolean {
     // esperara a otro hilo, el tema podría brincar de claro a oscuro al abrir.
     val first = remember { Daylight.state(context) }
     val starts = rememberStarts()
-    val night by produceState(first.first, starts) {
-        // La primera vez ya se calculó; al volver al frente, otra vez (fuera del hilo principal: lee la ubicación).
-        var (now, wait) = if (starts <= 1) first else withContext(Dispatchers.IO) { Daylight.state(context) }
+    val clock = rememberClockChanges()
+    val night by produceState(first.first, starts, clock) {
+        // La primera vez ya se calculó; al volver al frente o al cambiar la hora, otra vez (fuera del hilo principal:
+        // lee la ubicación).
+        var (now, wait) = if (starts <= 1 && clock == 0) first else withContext(Dispatchers.IO) { Daylight.state(context) }
         while (true) {
             value = now
             delay(wait + 30_000)
@@ -202,6 +211,29 @@ private fun rememberSunNight(): Boolean {
         }
     }
     return night
+}
+
+/**
+ * Cuántas veces el sistema ha cambiado la hora o la zona horaria mientras LiteDash se ve. Las pantallas sin pila de
+ * reloj prenden en 1970 o 2015 y la red pone la hora real un minuto después: sin esto, el tema y el brillo se quedaban
+ * con la noche de la hora falsa hasta el «amanecer» de ese día. Escucha solo mientras se ve; al volver al frente lo
+ * anterior ya se recalcula ([rememberStarts]).
+ */
+@Composable
+private fun rememberClockChanges(): Int {
+    val context = LocalContext.current
+    var changes by remember { mutableIntStateOf(0) }
+    LifecycleStartEffect(Unit) {
+        val receiver = object : BroadcastReceiver() {
+            override fun onReceive(c: Context, i: Intent) {
+                changes++
+            }
+        }
+        val filter = IntentFilter(Intent.ACTION_TIME_CHANGED).apply { addAction(Intent.ACTION_TIMEZONE_CHANGED) }
+        ContextCompat.registerReceiver(context, receiver, filter, ContextCompat.RECEIVER_NOT_EXPORTED)
+        onStopOrDispose { context.unregisterReceiver(receiver) }
+    }
+    return changes
 }
 
 /** "Buenos días/tardes/noches, [name]" según la hora; null sin nombre. */
