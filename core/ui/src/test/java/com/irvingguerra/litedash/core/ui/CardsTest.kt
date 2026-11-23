@@ -2,6 +2,7 @@ package com.irvingguerra.litedash.core.ui
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.compositeOver
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.luminance
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertSame
@@ -67,6 +68,23 @@ class CardsTest {
             assertTrue(where, contrast(c.text, glass) >= 4.5f)
             // Y sobre una imagen que ya se lleva bien con el tema, el velo de siempre (no se oscurece de más).
             assertEquals(where, 0.4f, glassVeil(c, c.background, 0.4f), 0.001f)
+        }
+    }
+
+    @Test fun sobre_el_mapa_de_fondo_el_cristal_ahumado_se_lee() {
+        // El mapa puede traer blanco (tema oscuro) o negro (claro) detrás; de lo más ahumado a lisa, el texto se lee.
+        for (theme in themes) for (color in listOf<Color?>(null) + hard) {
+            val c = theme.withCards(color)
+            val worst = if (c.dark) Color.White else Color.Black
+            val smoke = smokeAlpha(c)
+            assertTrue("tema oscuro=${theme.dark}: ahumado $smoke", smoke < 0.9f)
+            for (step in 0..10) {
+                val fill = step / 10f
+                // Como lo dibuja skinSurface: la escarcha, encima el humo que se vuelve el color de la tarjeta.
+                val under = Color.White.copy(alpha = frost(c.dark) * (1f - fill)).compositeOver(worst)
+                val seen = lerp(c.background.copy(alpha = smoke), c.surface, fill).compositeOver(under)
+                assertTrue("tema oscuro=${theme.dark} tarjeta=$color relleno=$fill", contrast(c.text, seen) >= 4.5f)
+            }
         }
     }
 

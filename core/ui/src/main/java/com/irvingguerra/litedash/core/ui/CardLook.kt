@@ -60,7 +60,7 @@ class CardLook(
     val backdrop: CardBackdrop? = null,
     /**
      * De vidrio, ¿puede ir como cristal (casi sin relleno)? Sí sobre algo quieto: tu fondo, el resplandor del tema o un
-     * lienzo. No sobre el mapa de fondo, que se mueve y no se desenfoca: ahí lleva su relleno de siempre.
+     * lienzo. No sobre el mapa de fondo, que se mueve y no se desenfoca: ahí va ahumado ([smokeAlpha]).
      */
     val clear: Boolean = true,
 )
@@ -69,14 +69,28 @@ class CardLook(
 val LocalCardLook = compositionLocalOf { CardLook() }
 
 /**
- * Cuánto del color de la tarjeta lleva una de vidrio (0–1). Como cristal ([CardLook.clear]), el control «Cuánto se
- * ven» va de nada (puro cristal) a lisa; con tu fondo desenfocado detrás no hace falta más. Sin él, nunca menos que
- * [floor] (lo que flota sobre cualquier cosa: la barra, un aviso). Sobre el mapa de fondo, el relleno de siempre.
+ * Cuánto del color de la tarjeta lleva una de vidrio (0–1): el control «Cuánto se ven» va de nada (puro cristal, o
+ * ahumado sobre el mapa de fondo) a lisa. Con tu fondo desenfocado detrás no hace falta más; sin él, nunca menos que
+ * [floor] (lo que flota sobre cualquier cosa: la barra, un aviso).
  */
 internal fun glassFill(look: CardLook, floor: Float): Float {
-    if (!look.clear) return look.opacity.coerceIn(maxOf(MIN_OPACITY, floor), 1f)
     val t = ((look.opacity - MIN_OPACITY) / (1f - MIN_OPACITY)).coerceIn(0f, 1f)
     return if (look.backdrop != null) t else maxOf(t, floor)
+}
+
+/**
+ * Sobre el mapa de fondo (se mueve y no se desenfoca) el cristal va ahumado: lo menos del color del fondo del tema
+ * que necesita para que el texto se lea sobre lo peor que puede traer el mapa (blanco con el tema oscuro, negro con
+ * el claro: el mapa puede ir claro u oscuro aparte del tema), con la escarcha debajo como se dibuja.
+ */
+internal fun smokeAlpha(c: Colors): Float {
+    val under = Color.White.copy(alpha = frost(c.dark)).compositeOver(if (c.dark) Color.White else Color.Black)
+    var a = 0f
+    while (a < 1f) {
+        if (contrast(c.text, c.background.copy(alpha = a).compositeOver(under)) >= 4.5f) return a
+        a += 0.05f
+    }
+    return 1f
 }
 
 /** La escarcha del cristal: un blanco muy leve que lo despega del fondo (se va conforme la tarjeta se llena). */
@@ -120,17 +134,13 @@ fun Modifier.skinSurface(look: CardLook, c: Colors, shape: Shape, floor: Float =
     if (!glass) return m.background(c.surface)
     if (look.backdrop != null) m = m.blurredBackdrop(look.backdrop)
     val fill = glassFill(look, floor)
-    if (!look.clear) {
-        // Sobre el mapa de fondo: el vidrio relleno de antes, con su brillo y su borde parejos.
-        return m.background(c.surface.copy(alpha = fill))
-            .background(Brush.verticalGradient(listOf(Color.White.copy(alpha = if (c.dark) 0.07f else 0.35f), Color.Transparent)))
-            .border(1.dp, Color.White.copy(alpha = if (c.dark) 0.14f else 0.55f), shape)
-    }
     // Cristal: la escarcha, el color de la tarjeta que se haya pedido, un brillo arriba y un filo de luz que nace en
-    // la esquina (más fuerte arriba a la izquierda, casi nada al centro).
+    // la esquina (más fuerte arriba a la izquierda, casi nada al centro). Sobre el mapa de fondo, el mismo cristal
+    // pero ahumado con el color del fondo, que se vuelve el de la tarjeta conforme se llena.
+    val tint = if (look.clear) c.surface.copy(alpha = fill) else lerp(c.background.copy(alpha = smokeAlpha(c)), c.surface, fill)
     val edge = if (c.dark) GLASS_EDGE_DARK else GLASS_EDGE_LIGHT
     return m.background(Color.White.copy(alpha = frost(c.dark) * (1f - fill)))
-        .background(c.surface.copy(alpha = fill))
+        .background(tint)
         .background(Brush.verticalGradient(0f to Color.White.copy(alpha = if (c.dark) 0.14f else 0.35f), 0.55f to Color.Transparent))
         .border(1.dp, Brush.linearGradient(edge.map { Color.White.copy(alpha = it) }), shape)
 }
