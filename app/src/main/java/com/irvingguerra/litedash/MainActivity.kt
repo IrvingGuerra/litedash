@@ -40,6 +40,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         liveTask = taskId
+        liveOwner = System.identityHashCode(this)
         // Abierta desde otra app con un lugar (geo:): el mapa en grande lo enseña.
         if (savedInstanceState == null && intent?.action == Intent.ACTION_VIEW) PlaceRequests.fromGeo(intent.data)
         // Es la pantalla de inicio: "atrás" no la cierra (los paneles sí se cierran con atrás).
@@ -61,7 +62,12 @@ class MainActivity : ComponentActivity() {
 
     override fun onDestroy() {
         window.decorView.removeCallbacks(refitLater)
-        if (liveTask == taskId) liveTask = -1
+        // Por instancia: tras [restart] (o cualquier recreación) el onDestroy de la vieja llega después del onCreate de la
+        // nueva, con la misma tarea; comparar la tarea dejaba -1 y [bringToFront] perdía su primer paso.
+        if (liveOwner == System.identityHashCode(this)) {
+            liveOwner = 0
+            liveTask = -1
+        }
         super.onDestroy()
     }
 
@@ -203,6 +209,8 @@ class MainActivity : ComponentActivity() {
 
         // La tarea de la actividad viva (-1 = ninguna), para [bringToFront].
         @Volatile private var liveTask = -1
+        /** Qué ventana puso [liveTask] (su identityHashCode, sin guardar la actividad; 0 = ninguna). */
+        @Volatile private var liveOwner = 0
 
         /** Trae el inicio al frente sin tocar lo abierto (no es el botón de inicio: no cierra paneles). */
         fun bringToFront(context: Context) {

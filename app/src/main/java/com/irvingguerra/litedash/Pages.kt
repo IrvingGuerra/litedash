@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
@@ -90,7 +91,8 @@ internal fun rememberPageSwipe(pages: DashboardState, shift: Animatable<Float, *
 
 /**
  * Los puntitos de las páginas (la que se ve, alargada), en el margen de abajo del tablero; tocar uno lleva a esa página.
- * Se ven chiquitos, pero cada uno se toca en una zona de [DOT_TOUCH_WIDTH]×[DOT_TOUCH_HEIGHT] (con el dedo, en el auto).
+ * Se ven chiquitos, pero cada uno se toca en una zona de [DOT_TOUCH_WIDTH]×[DOT_TOUCH_HEIGHT] (con el dedo, en el auto)
+ * que baja desde su franja, nunca sube sobre los widgets.
  */
 @Composable
 internal fun PageDots(pages: DashboardState, modifier: Modifier = Modifier) {
@@ -112,8 +114,15 @@ internal fun PageDots(pages: DashboardState, modifier: Modifier = Modifier) {
                 )
             }
         }
-        // Las zonas de toque, centradas sobre los puntitos y en el mismo orden (sin cambiar cómo se ven).
-        Row(Modifier.matchParentSize().requiredSize(DOT_TOUCH_WIDTH * pages.pageCount, DOT_TOUCH_HEIGHT)) {
+        // Las zonas de toque, sobre los puntitos y en el mismo orden (sin cambiar cómo se ven). Empiezan arriba de su franja
+        // y crecen solo hacia ABAJO, fuera del tablero (la barra, dibujada encima, gana en sus botones): nunca tapan la
+        // orilla de un widget.
+        Row(
+            Modifier
+                .matchParentSize()
+                .wrapContentSize(Alignment.TopCenter, unbounded = true)
+                .requiredSize(DOT_TOUCH_WIDTH * pages.pageCount, DOT_TOUCH_HEIGHT),
+        ) {
             for (i in 0 until pages.pageCount) {
                 val label = stringResource(R.string.page_n, i + 1)
                 Box(
