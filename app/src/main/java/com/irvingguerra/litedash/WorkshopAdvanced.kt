@@ -329,12 +329,14 @@ private val tripSaveScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
 /**
  * Graba el viaje mientras el OBD esté conectado y "Registrar viajes" prendido: una lectura
- * por segundo; al desconectarse (o apagar el auto) se guarda el resumen. Vive en el inicio,
+ * por segundo; al desconectarse o al apagar el auto (el adaptador sigue conectado pero el auto no contesta:
+ * [ObdRepository.carSilent]) se guarda el resumen, y al volver los datos empieza otro. Vive en el inicio,
  * como las alertas, así sigue grabando con Waze o la música al frente.
  */
 @Composable
 fun TripRecorderEffect(d: Dependencies) {
-    if (rememberObd(d, d.prefs.tripLog)?.state != ObdState.ON) return
+    val obd = rememberObd(d, d.prefs.tripLog)
+    if (obd?.state != ObdState.ON || obd.carSilent) return
     val context = LocalContext.current
     DisposableEffect(Unit) {
         val signals = tripSignals(d)

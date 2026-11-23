@@ -84,8 +84,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /**
- * «Desconectar» del Taller: el usuario lo cortó y así se queda (aunque se vuelva a entrar al Taller o a las llantas por
- * OBD) hasta que él mismo vuelva a conectar. Solo en memoria: al reiniciar LiteDash se conecta como siempre.
+ * «Desconectar» del Taller: el usuario lo cortó y así se queda (aunque se vuelva a entrar al Taller, a las llantas por
+ * OBD o aparezca un widget del motor) hasta que él mismo vuelva a conectar. Solo en memoria: al reiniciar LiteDash se conecta como siempre.
  */
 internal var obdStoppedByUser = false
 
