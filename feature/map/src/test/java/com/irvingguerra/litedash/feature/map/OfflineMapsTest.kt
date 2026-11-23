@@ -6,6 +6,28 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class OfflineMapsTest {
+    @Test
+    fun aMissingOrEmptyListIsTrustedButADamagedOneIsNot() {
+        val f = java.io.File.createTempFile("areas", ".json")
+        try {
+            f.delete()
+            // Nunca guardó una zona: lista cierta y vacía (se puede barrer lo de una zona cancelada).
+            assertEquals(emptyList<OfflineArea>(), readAreaList(f))
+            // Borró todas sus zonas: igual.
+            f.writeText("[]")
+            assertEquals(emptyList<OfflineArea>(), readAreaList(f))
+            f.writeText("""[{"id":"a","lat":19.4,"lon":-99.1,"km":10,"tiles":5,"bytes":9,"savedAt":1}]""")
+            assertEquals("a", readAreaList(f)!!.single().id)
+            // Un apagón al guardarla (0 bytes o cortada): no se toca nada.
+            f.writeText("")
+            assertEquals(null, readAreaList(f))
+            f.writeText("""[{"id":"a","lat"""")
+            assertEquals(null, readAreaList(f))
+        } finally {
+            f.delete()
+        }
+    }
+
     private val zocaloLat = 19.4326
     private val zocaloLon = -99.1332
 

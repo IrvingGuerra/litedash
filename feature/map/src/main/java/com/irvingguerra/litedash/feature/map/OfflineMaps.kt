@@ -76,15 +76,13 @@ class OfflineMaps private constructor(private val app: Context) {
     @Volatile private var areaKeys: Set<Long> = emptySet()
     /** La lista se lee del disco una vez, fuera del hilo principal; lo que la cambia espera a que esté. */
     /**
-     * ¿La lista en memoria es la de verdad? Con una lista vacía o que no se pudo leer (un apagón al guardarla) NO se barre
-     * nada en esta sesión: borraría las zonas del usuario. Se vuelve cierta al leer zonas o, si no había lista dañada, al
-     * guardar una nueva.
+     * ¿La lista en memoria es la de verdad? Si existe pero no se pudo leer (un apagón al guardarla) NO se barre nada en
+     * esta sesión: borraría las zonas del usuario. Sin lista (nunca guardó una zona) o con una vacía bien leída (borró
+     * todas) sí se barre: lo bajado de una zona cancelada a medias no es de nadie.
      */
     @Volatile private var trusted = false
-    @Volatile private var damaged = false
     private val ready = scope.async {
         trusted = readAreas()
-        damaged = !trusted && File(dir, AREAS).exists()
         sweep(startup = true)
     }
 
@@ -326,7 +324,6 @@ class OfflineMaps private constructor(private val app: Context) {
                 if (!allowed()) return null
                 if (areas === before) {
                     writeAreas(after)
-                    if (!damaged) trusted = true
                     areas = after
                     areaKeys = keys
                     return keys
@@ -335,21 +332,18 @@ class OfflineMaps private constructor(private val app: Context) {
         }
     }
 
-    /** Lee la lista guardada; true si trae zonas (solo entonces se puede barrer lo que no es de ninguna). */
+    /**
+     * Lee la lista guardada; true si es cierta (no existe, o se leyó bien aunque esté vacía): solo entonces se puede
+     * barrer lo que no es de ninguna zona. False si existe y no se pudo leer (0 bytes o JSON roto).
+     */
     private fun readAreas(): Boolean {
-        val list = runCatching {
-            val array = JSONArray(File(dir, AREAS).readText())
-            List(array.length()) { i ->
-                val o = array.getJSONObject(i)
-                OfflineArea(o.getString("id"), o.getDouble("lat"), o.getDouble("lon"), o.getInt("km"), o.getInt("tiles"), o.getLong("bytes"), o.getLong("savedAt"))
-            }
-        }.getOrNull() ?: return false
+        val list = readAreaList(File(dir, AREAS)) ?: return false
         val keys = tilesOf(list)
         synchronized(lock) {
             areas = list
             areaKeys = keys
         }
-        return list.isNotEmpty()
+        return true
     }
 
     private fun writeAreas(list: List<OfflineArea>) {
@@ -446,6 +440,18 @@ internal fun tilesOf(areas: List<OfflineArea>): Set<Long> {
 }
 
 /** De los archivos [names] de la carpeta, las teselas (`z_x_y`) que no están en [keep]; lo demás no se toca. */
+/** Las zonas guardadas en [file]: vacía si no existe (nunca guardó una) o trae `[]`; null si existe y no se puede leer. */
+internal fun readAreaList(file: File): List<OfflineArea>? {
+    if (!file.exists()) return emptyList()
+    return runCatching {
+        val array = JSONArray(file.readText())
+        List(array.length()) { i ->
+            val o = array.getJSONObject(i)
+            OfflineArea(o.getString("id"), o.getDouble("lat"), o.getDouble("lon"), o.getInt("km"), o.getInt("tiles"), o.getLong("bytes"), o.getLong("savedAt"))
+        }
+    }.getOrNull()
+}
+
 internal fun strayTiles(names: List<String>, keep: Set<Long>): List<Long> = names.mapNotNull { name ->
     val parts = name.split('_')
     if (parts.size != 3) return@mapNotNull null
