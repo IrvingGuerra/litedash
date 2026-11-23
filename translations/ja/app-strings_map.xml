@@ -49,6 +49,7 @@
     <string name="map_offline_my_location">現在地</string>
     <string name="map_tab_app">地図アプリ</string>
     <string name="map_tab_look">LiteDash の地図</string>
+    <string name="map_tab_style">地図の見た目</string>
     <string name="map_look_help">すべての地図ウィジェットと全画面の地図に適用されます。各ウィジェットは歯車から個別に変更できます。</string>
     <string name="map_pack_help">都道府県全体をオフラインで。1回のダウンロードで完了。年に数回更新されます。</string>
     <string name="map_pack_full">「フル」スタイルでは地図はインターネットから表示されます。ダウンロードした地域は検索とルートに使われます。</string>

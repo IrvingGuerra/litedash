@@ -73,7 +73,6 @@
     <string name="split_left">左</string>
     <string name="split_right">右</string>
     <string name="split_swap_help">也可以用底角的箭头按钮直接切换。</string>
-    <string name="split_unsupported">此车机运行 Android %1$s：并排显示两个应用需要 Android 12L 或更高版本。</string>
     <string name="gauge_style_needle">指针</string>
     <string name="gauge_style_digital">数字</string>
     <string name="gauge_style_bar">条形</string>
@@ -719,7 +718,7 @@
     <string name="tires_source_usb">USB 接收器</string>
     <string name="tires_source_ble">Bluetooth</string>
     <string name="tires_source_demo">演示</string>
-    <string name="tires_source_help">USB 接收器：车机用的 TPMS 套件。Bluetooth：带 Bluetooth 的气门帽或传感器。演示：测试数据，看看效果。</string>
+    <string name="tires_source_help">USB 接收器：车机用的 TPMS 套件。Bluetooth：带 Bluetooth 的气门帽或传感器。演示：测试数据，看看效果。车辆：原厂传感器，通过“检修”里的 OBD 适配器。</string>
     <string name="tires_grant">授予权限</string>
     <string name="retry">重试</string>
     <string name="tires_usb_help">如果屏幕自带的轮胎应用占用了接收器，请拔下后重新插入，然后选择 LiteDash 并勾选“始终”。</string>

@@ -73,7 +73,6 @@
     <string name="split_left">Trái</string>
     <string name="split_right">Phải</string>
     <string name="split_swap_help">Bạn cũng có thể đổi ngay tại đó bằng nút mũi tên ở góc dưới.</string>
-    <string name="split_unsupported">Đầu máy này chạy Android %1$s: hai ứng dụng song song cần Android 12L trở lên.</string>
     <string name="gauge_style_needle">Kim</string>
     <string name="gauge_style_digital">Số</string>
     <string name="gauge_style_bar">Thanh</string>
@@ -719,7 +718,7 @@
     <string name="tires_source_usb">Bộ thu USB</string>
     <string name="tires_source_ble">Bluetooth</string>
     <string name="tires_source_demo">Thử nghiệm</string>
-    <string name="tires_source_help">Bộ thu USB: bộ TPMS cho màn hình ô tô. Bluetooth: nắp van hoặc cảm biến có Bluetooth. Thử nghiệm: dữ liệu mẫu để xem giao diện.</string>
+    <string name="tires_source_help">Bộ thu USB: bộ TPMS cho màn hình ô tô. Bluetooth: nắp van hoặc cảm biến có Bluetooth. Thử nghiệm: dữ liệu mẫu để xem giao diện. Xe: cảm biến zin của xe, qua bộ chuyển đổi OBD trong Xưởng.</string>
     <string name="tires_grant">Cấp quyền</string>
     <string name="retry">Thử lại</string>
     <string name="tires_usb_help">Nếu ứng dụng lốp có sẵn của màn hình chiếm bộ thu, hãy rút ra cắm lại rồi chọn LiteDash với “luôn luôn”.</string>

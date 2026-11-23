@@ -49,6 +49,7 @@
     <string name="map_offline_my_location">Konumum</string>
     <string name="map_tab_app">Harita uygulaması</string>
     <string name="map_tab_look">LiteDash haritası</string>
+    <string name="map_tab_style">Harita görünümü</string>
     <string name="map_look_help">Tüm Harita widget’larınıza ve tam ekran haritaya uygulanır. Her widget yine dişlisinden değiştirilebilir.</string>
     <string name="map_pack_help">Tüm iliniz internetsiz, tek indirmede. Yılda birkaç kez güncellenir.</string>
     <string name="map_pack_full">Tam stilinde harita internetten gelir; indirilen bölge arama ve rotalar için kullanılır.</string>

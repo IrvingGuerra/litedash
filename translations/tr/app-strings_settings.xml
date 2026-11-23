@@ -5,7 +5,6 @@
     <string name="weather_switch">Hava durumu</string>
     <string name="weather_switch_help">Çubukta, saatte ve Hava durumu widget’ında; ana ekranı gördüğünüz sürece her yarım saatte bir yenilenir. Yaklaşık konumunuzu ve interneti kullanır; kapalıyken ikisini de kullanmaz.</string>
     <string name="reminder_pick_date">%1$s ne zaman?</string>
-    <string name="split_unsupported_screen">Üniteniz iki uygulamanın yan yana olmasına izin vermiyor (üretici kapatmış).</string>
     <string name="tab_home">Ana ekran</string>
     <string name="tab_interface">Arayüz</string>
     <string name="android_bar">Android çubuğu</string>

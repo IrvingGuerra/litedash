@@ -73,7 +73,6 @@
     <string name="split_left">Vlevo</string>
     <string name="split_right">Vpravo</string>
     <string name="split_swap_help">Stranu můžeš přepnout i přímo tam tlačítkem se šipkami v dolním rohu.</string>
-    <string name="split_unsupported">Tento displej má Android %1$s: dvě aplikace vedle sebe potřebují Android 12L nebo novější.</string>
     <string name="gauge_style_needle">Ručička</string>
     <string name="gauge_style_digital">Digitální</string>
     <string name="gauge_style_bar">Pruh</string>
@@ -743,7 +742,7 @@
     <string name="tires_source_usb">USB přijímač</string>
     <string name="tires_source_ble">Bluetooth</string>
     <string name="tires_source_demo">Ukázka</string>
-    <string name="tires_source_help">USB přijímač: sady TPMS pro displeje do auta. Bluetooth: čepičky ventilků nebo senzory s Bluetooth. Ukázka: testovací data, abys viděl, jak to vypadá.</string>
+    <string name="tires_source_help">USB přijímač: sady TPMS pro displeje do auta. Bluetooth: čepičky ventilků nebo senzory s Bluetooth. Ukázka: testovací data, abys viděl, jak to vypadá. Auto: tovární senzory přes OBD adaptér z Dílny.</string>
     <string name="tires_grant">Udělit oprávnění</string>
     <string name="retry">Zkusit znovu</string>
     <string name="tires_usb_help">Pokud si přijímač zabere vlastní aplikace displeje pro pneumatiky, odpoj ho a znovu zapoj, pak vyber LiteDash s volbou „vždy“.</string>

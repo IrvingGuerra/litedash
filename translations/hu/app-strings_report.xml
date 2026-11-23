@@ -6,7 +6,6 @@
     <string name="report_which">Melyikkel?</string>
     <string name="report_problem">Mi történik?</string>
     <string name="report_workshop">Műhely (OBD)</string>
-    <string name="report_projection">Android Auto / alkalmazások</string>
     <string name="report_lights">Nappal és éjszaka / fényszórók</string>
     <string name="report_music_usb">Fájlok (LiteDash lejátszó)</string>
     <string name="report_music_bt">Bluetooth (a fejegységé)</string>

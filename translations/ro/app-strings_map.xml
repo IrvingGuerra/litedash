@@ -49,6 +49,7 @@
     <string name="map_offline_my_location">Locația mea</string>
     <string name="map_tab_app">Aplicația de hărți</string>
     <string name="map_tab_look">Harta LiteDash</string>
+    <string name="map_tab_style">Aspectul hărții</string>
     <string name="map_look_help">Se aplică tuturor widgeturilor Hartă și hărții pe tot ecranul. Fiecare widget se poate schimba în continuare din rotița lui.</string>
     <string name="map_pack_help">Tot județul tău fără internet, dintr-o singură descărcare. Se actualizează de câteva ori pe an.</string>
     <string name="map_pack_full">Cu stilul Complet harta vine de pe internet; regiunea descărcată servește la căutare și rute.</string>

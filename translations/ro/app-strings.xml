@@ -73,7 +73,6 @@
     <string name="split_left">Stânga</string>
     <string name="split_right">Dreapta</string>
     <string name="split_swap_help">Poți schimba partea și de acolo, cu butonul cu săgeți din colțul de jos.</string>
-    <string name="split_unsupported">Această unitate are Android %1$s: două aplicații una lângă alta necesită Android 12L sau mai nou.</string>
     <string name="gauge_style_needle">Ac</string>
     <string name="gauge_style_digital">Digital</string>
     <string name="gauge_style_bar">Bară</string>
@@ -735,7 +734,7 @@
     <string name="tires_source_usb">Receptor USB</string>
     <string name="tires_source_ble">Bluetooth</string>
     <string name="tires_source_demo">Demo</string>
-    <string name="tires_source_help">Receptor USB: kiturile TPMS pentru ecrane auto. Bluetooth: capace de valvă sau senzori cu Bluetooth. Demo: date de test ca să vezi cum arată.</string>
+    <string name="tires_source_help">Receptor USB: kiturile TPMS pentru ecrane auto. Bluetooth: capace de valvă sau senzori cu Bluetooth. Demo: date de test ca să vezi cum arată. Mașina: senzorii din fabrică, prin adaptorul OBD din Atelier.</string>
     <string name="tires_grant">Acordă permisiunea</string>
     <string name="retry">Încearcă din nou</string>
     <string name="tires_usb_help">Dacă aplicația de anvelope a ecranului preia receptorul, scoate-l și conectează-l din nou, apoi alege LiteDash cu „întotdeauna”.</string>

@@ -5,7 +5,6 @@
     <string name="weather_switch">Meteo</string>
     <string name="weather_switch_help">Nella barra, nell\'orologio e nel widget Meteo; si aggiorna ogni mezz\'ora mentre vedi la Home. Usa la tua posizione approssimativa e internet; se è spento, non usa nessuno dei due.</string>
     <string name="reminder_pick_date">Quando scade %1$s?</string>
-    <string name="split_unsupported_screen">Il tuo schermo non permette due app affiancate (il produttore l\'ha disattivato).</string>
     <string name="tab_home">Home</string>
     <string name="tab_interface">Interfaccia</string>
     <string name="android_bar">Barra di Android</string>

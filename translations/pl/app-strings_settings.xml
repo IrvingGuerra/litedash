@@ -5,7 +5,6 @@
     <string name="weather_switch">Pogoda</string>
     <string name="weather_switch_help">Na pasku, w zegarze i w widżecie Pogoda; odświeżana co pół godziny, gdy widzisz ekran główny. Używa przybliżonej lokalizacji i internetu; wyłączona nie używa żadnego z nich.</string>
     <string name="reminder_pick_date">Termin: %1$s – kiedy?</string>
-    <string name="split_unsupported_screen">Twoje radio nie pozwala na dwie aplikacje obok siebie (producent to wyłączył).</string>
     <string name="tab_home">Ekran główny</string>
     <string name="tab_interface">Interfejs</string>
     <string name="android_bar">Pasek Androida</string>

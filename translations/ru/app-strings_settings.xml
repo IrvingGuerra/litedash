@@ -5,7 +5,6 @@
     <string name="weather_switch">Погода</string>
     <string name="weather_switch_help">На панели, в часах и в виджете «Погода»; обновляется каждые полчаса, пока открыт главный экран. Использует приблизительное местоположение и интернет; если выключено — ничего из этого.</string>
     <string name="reminder_pick_date">Когда срок «%1$s»?</string>
-    <string name="split_unsupported_screen">Твоя магнитола не позволяет два приложения рядом (производитель это отключил).</string>
     <string name="tab_home">Главный экран</string>
     <string name="tab_interface">Интерфейс</string>
     <string name="android_bar">Панель Android</string>

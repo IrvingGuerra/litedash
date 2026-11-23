@@ -49,6 +49,7 @@
     <string name="map_offline_my_location">ตำแหน่งของฉัน</string>
     <string name="map_tab_app">แอปแผนที่</string>
     <string name="map_tab_look">แผนที่ LiteDash</string>
+    <string name="map_tab_style">รูปแบบแผนที่</string>
     <string name="map_look_help">ใช้กับวิดเจ็ตแผนที่ทั้งหมดและแผนที่เต็มจอ แต่ละวิดเจ็ตยังเปลี่ยนได้จากไอคอนเฟือง</string>
     <string name="map_pack_help">ทั้งจังหวัดแบบไม่ใช้อินเทอร์เน็ต ดาวน์โหลดครั้งเดียว อัปเดตปีละไม่กี่ครั้ง</string>
     <string name="map_pack_full">เมื่อใช้รูปแบบเต็ม แผนที่จะโหลดจากอินเทอร์เน็ต ส่วนพื้นที่ที่ดาวน์โหลดไว้ใช้สำหรับค้นหาและเส้นทาง</string>

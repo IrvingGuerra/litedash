@@ -49,6 +49,7 @@
     <string name="map_offline_my_location">Mein Standort</string>
     <string name="map_tab_app">Karten-App</string>
     <string name="map_tab_look">LiteDash-Karte</string>
+    <string name="map_tab_style">Kartenstil</string>
     <string name="map_look_help">Gilt für alle Karten-Widgets und die Vollbildkarte. Jedes Widget lässt sich weiter über sein Zahnrad ändern.</string>
     <string name="map_pack_help">Dein ganzes Bundesland ohne Internet, in einem Download. Wird ein paar Mal im Jahr aktualisiert.</string>
     <string name="map_pack_full">Mit dem Stil Vollständig kommt die Karte aus dem Internet; das geladene Bundesland dient für Suche und Routen.</string>

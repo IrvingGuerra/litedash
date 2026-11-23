@@ -6,7 +6,6 @@
     <string name="report_which">Které?</string>
     <string name="report_problem">Co se děje?</string>
     <string name="report_workshop">Dílna (OBD)</string>
-    <string name="report_projection">Android Auto / aplikace</string>
     <string name="report_lights">Den a noc / světla</string>
     <string name="report_music_usb">Soubory (přehrávač LiteDash)</string>
     <string name="report_music_bt">Bluetooth (displeje)</string>

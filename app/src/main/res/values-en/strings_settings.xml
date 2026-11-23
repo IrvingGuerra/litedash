@@ -5,7 +5,6 @@
     <string name="weather_switch">Weather</string>
     <string name="weather_switch_help">In the bar, the clock and the Weather widget; refreshed every half hour while you see the home screen. Uses your approximate location and the internet; when off, it uses neither.</string>
     <string name="reminder_pick_date">When is %1$s due?</string>
-    <string name="split_unsupported_screen">Your head unit doesn\'t allow two apps side by side (the maker turned it off).</string>
     <string name="tab_home">Home</string>
     <string name="tab_interface">Interface</string>
     <string name="android_bar">Android bar</string>

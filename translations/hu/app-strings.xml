@@ -73,7 +73,6 @@
     <string name="split_left">Bal</string>
     <string name="split_right">Jobb</string>
     <string name="split_swap_help">Ott helyben is átválthatod az alsó sarokban lévő nyilas gombbal.</string>
-    <string name="split_unsupported">Ezen a fejegységen Android %1$s fut: két alkalmazás egymás mellett Android 12L-t vagy újabbat igényel.</string>
     <string name="gauge_style_needle">Mutató</string>
     <string name="gauge_style_digital">Digitális</string>
     <string name="gauge_style_bar">Sáv</string>
@@ -727,7 +726,7 @@
     <string name="tires_source_usb">USB-vevő</string>
     <string name="tires_source_ble">Bluetooth</string>
     <string name="tires_source_demo">Demó</string>
-    <string name="tires_source_help">USB-vevő: az autós kijelzőkhöz való TPMS-készletek. Bluetooth: szelepsapkák vagy Bluetooth-os érzékelők. Demó: tesztadatok, hogy lásd, hogyan néz ki.</string>
+    <string name="tires_source_help">USB-vevő: az autós kijelzőkhöz való TPMS-készletek. Bluetooth: szelepsapkák vagy Bluetooth-os érzékelők. Demó: tesztadatok, hogy lásd, hogyan néz ki. Autó: a gyári érzékelők a Műhely OBD-adapterén keresztül.</string>
     <string name="tires_grant">Engedély megadása</string>
     <string name="retry">Újra</string>
     <string name="tires_usb_help">Ha a kijelző saját gumialkalmazása lefoglalja a vevőt, húzd ki, dugd vissza, majd válaszd a LiteDash-t „mindig” opcióval.</string>

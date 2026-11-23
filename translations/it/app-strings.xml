@@ -73,7 +73,6 @@
     <string name="split_left">Sinistra</string>
     <string name="split_right">Destra</string>
     <string name="split_swap_help">Puoi anche cambiarlo lì stesso con il pulsante delle frecce nell\'angolo in basso.</string>
-    <string name="split_unsupported">Questo schermo ha Android %1$s: due app affiancate richiedono Android 12L o successivo.</string>
     <string name="gauge_style_needle">Lancetta</string>
     <string name="gauge_style_digital">Digitale</string>
     <string name="gauge_style_bar">Barra</string>
@@ -727,7 +726,7 @@
     <string name="tires_source_usb">Ricevitore USB</string>
     <string name="tires_source_ble">Bluetooth</string>
     <string name="tires_source_demo">Demo</string>
-    <string name="tires_source_help">Ricevitore USB: i kit TPMS per schermi auto. Bluetooth: tappi valvola o sensori con Bluetooth. Demo: dati di prova per vedere come appare.</string>
+    <string name="tires_source_help">Ricevitore USB: i kit TPMS per schermi auto. Bluetooth: tappi valvola o sensori con Bluetooth. Demo: dati di prova per vedere come appare. Auto: i sensori di fabbrica, tramite l’adattatore OBD dell’Officina.</string>
     <string name="tires_grant">Dai il permesso</string>
     <string name="retry">Riprova</string>
     <string name="tires_usb_help">Se l\'app gomme del tuo schermo si prende il ricevitore, scollegalo e ricollegalo, poi scegli LiteDash con “sempre”.</string>

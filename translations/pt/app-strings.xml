@@ -75,7 +75,6 @@
     <string name="split_left">Esquerda</string>
     <string name="split_right">Direita</string>
     <string name="split_swap_help">Você também pode trocar ali mesmo com o botão das setas, no canto de baixo.</string>
-    <string name="split_unsupported">Esta tela tem Android %1$s: abrir dois apps lado a lado precisa do Android 12L ou mais recente.</string>
     <string name="gauge_style_needle">Ponteiro</string>
     <string name="gauge_style_digital">Digital</string>
     <string name="gauge_style_bar">Barra</string>
@@ -729,7 +728,7 @@
     <string name="tires_source_usb">Receptor USB</string>
     <string name="tires_source_ble">Bluetooth</string>
     <string name="tires_source_demo">Demonstração</string>
-    <string name="tires_source_help">Receptor USB: os kits TPMS para telas de carro. Bluetooth: tampas de válvula ou sensores com Bluetooth. Demonstração: dados de teste para ver como fica.</string>
+    <string name="tires_source_help">Receptor USB: os kits TPMS para telas de carro. Bluetooth: tampas de válvula ou sensores com Bluetooth. Demonstração: dados de teste para ver como fica. Carro: os sensores de fábrica, pelo adaptador OBD da Oficina.</string>
     <string name="tires_grant">Permitir</string>
     <string name="retry">Tentar de novo</string>
     <string name="tires_usb_help">Se o app de pneus da sua tela ficar com o receptor, desconecte e conecte de novo, e escolha o LiteDash com “sempre”.</string>

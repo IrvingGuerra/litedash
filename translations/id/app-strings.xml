@@ -73,7 +73,6 @@
     <string name="split_left">Kiri</string>
     <string name="split_right">Kanan</string>
     <string name="split_swap_help">Anda juga bisa menukarnya di sana dengan tombol panah di sudut bawah.</string>
-    <string name="split_unsupported">Layar ini memakai Android %1$s: dua aplikasi berdampingan perlu Android 12L atau lebih baru.</string>
     <string name="gauge_style_needle">Jarum</string>
     <string name="gauge_style_digital">Digital</string>
     <string name="gauge_style_bar">Bilah</string>
@@ -719,7 +718,7 @@
     <string name="tires_source_usb">Penerima USB</string>
     <string name="tires_source_ble">Bluetooth</string>
     <string name="tires_source_demo">Demo</string>
-    <string name="tires_source_help">Penerima USB: kit TPMS untuk layar mobil. Bluetooth: tutup pentil atau sensor dengan Bluetooth. Demo: data uji untuk melihat tampilannya.</string>
+    <string name="tires_source_help">Penerima USB: kit TPMS untuk layar mobil. Bluetooth: tutup pentil atau sensor dengan Bluetooth. Demo: data uji untuk melihat tampilannya. Mobil: sensor bawaan pabrik, lewat adaptor OBD di Bengkel.</string>
     <string name="tires_grant">Beri izin</string>
     <string name="retry">Coba lagi</string>
     <string name="tires_usb_help">Jika aplikasi ban bawaan layar Anda mengambil penerima, cabut lalu colokkan lagi, kemudian pilih LiteDash dengan “selalu”.</string>

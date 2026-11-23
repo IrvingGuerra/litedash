@@ -137,7 +137,7 @@ object SplitScreen {
         val view = activity.window.decorView
         val since = SystemClock.elapsedRealtime()
         fun tryOpen() {
-            // Una ventana vieja (se recreó al girar) ya no abre nada.
+            // Una ventana que ya se cerró o se recreó (p. ej. al cambiar el idioma) ya no abre nada.
             if (activity.isFinishing || activity.isDestroyed) return
             if (!activity.onSide(left) && SystemClock.elapsedRealtime() - since < GIVE_UP_MS) {
                 view.postDelayed(::tryOpen, CHECK_MS)
@@ -261,20 +261,10 @@ private fun SplitBoard(d: Dependencies, onSwap: () -> Unit, onExit: () -> Unit) 
     }
 }
 
-/** Ajustes → Apps → Pantalla dividida. */
+/** Ajustes → Apps → Pantalla dividida (la pestaña solo sale donde [SplitScreen.supported]). */
 @Composable
 fun SplitSettings(d: Dependencies) {
     val c = LocalColors.current
-    val supported = remember { SplitScreen.supported() }
-    // Sin pantalla dividida en este Android: solo se dice por qué no está disponible.
-    if (!supported) {
-        Label(stringResource(R.string.split_title), Typography.subtitle)
-        // Dos razones distintas: Android viejo, o un Android nuevo cuya pantalla no deja dividir.
-        val reason = if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S_V2) stringResource(R.string.split_unsupported, Build.VERSION.RELEASE)
-        else stringResource(R.string.split_unsupported_screen)
-        Label(reason, Typography.small, c.textMuted)
-        return
-    }
     SwitchRow(stringResource(R.string.split_title), d.prefs.splitScreen, { d.prefs.splitScreen = it }, stringResource(R.string.split_help))
     if (d.prefs.splitScreen) {
         Label(stringResource(R.string.split_view), Typography.label, c.textMuted)

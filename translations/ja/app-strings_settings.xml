@@ -5,7 +5,6 @@
     <string name="weather_switch">天気</string>
     <string name="weather_switch_help">バー、時計、天気ウィジェットに表示。ホーム画面を表示している間、30分ごとに更新します。おおよその位置情報とインターネットを使用し、オフのときはどちらも使いません。</string>
     <string name="reminder_pick_date">%1$s の期限はいつですか？</string>
-    <string name="split_unsupported_screen">このヘッドユニットは2つのアプリの並列表示に対応していません（メーカーが無効にしています）。</string>
     <string name="tab_home">ホーム</string>
     <string name="tab_interface">インターフェース</string>
     <string name="android_bar">Android バー</string>

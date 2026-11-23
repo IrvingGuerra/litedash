@@ -73,7 +73,6 @@
     <string name="split_left">Vänster</string>
     <string name="split_right">Höger</string>
     <string name="split_swap_help">Du kan också byta direkt där med pilknappen i nedre hörnet.</string>
-    <string name="split_unsupported">Den här bilstereon kör Android %1$s: två appar sida vid sida kräver Android 12L eller senare.</string>
     <string name="gauge_style_needle">Nål</string>
     <string name="gauge_style_digital">Digital</string>
     <string name="gauge_style_bar">Stapel</string>
@@ -727,7 +726,7 @@
     <string name="tires_source_usb">USB-mottagare</string>
     <string name="tires_source_ble">Bluetooth</string>
     <string name="tires_source_demo">Demo</string>
-    <string name="tires_source_help">USB-mottagare: TPMS-kit för bilskärmar. Bluetooth: ventilhattar eller givare med Bluetooth. Demo: testdata för att se hur det ser ut.</string>
+    <string name="tires_source_help">USB-mottagare: TPMS-kit för bilskärmar. Bluetooth: ventilhattar eller givare med Bluetooth. Demo: testdata för att se hur det ser ut. Bil: fabrikssensorerna via verkstadens OBD-adapter.</string>
     <string name="tires_grant">Ge behörighet</string>
     <string name="retry">Försök igen</string>
     <string name="tires_usb_help">Om skärmens egen däckapp tar mottagaren, dra ur den och sätt i den igen, och välj sedan LiteDash med ”alltid”.</string>

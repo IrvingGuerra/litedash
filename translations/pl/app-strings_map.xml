@@ -49,6 +49,7 @@
     <string name="map_offline_my_location">Moja lokalizacja</string>
     <string name="map_tab_app">Aplikacja map</string>
     <string name="map_tab_look">Mapa LiteDash</string>
+    <string name="map_tab_style">Wygląd mapy</string>
     <string name="map_look_help">Dotyczy wszystkich widżetów Mapa i mapy na pełnym ekranie. Każdy widżet możesz nadal zmienić z jego zębatki.</string>
     <string name="map_pack_help">Całe twoje województwo bez internetu, jednym pobraniem. Aktualizowana kilka razy w roku.</string>
     <string name="map_pack_full">W stylu Pełny mapa ładuje się z internetu; pobrany region służy do wyszukiwania i tras.</string>

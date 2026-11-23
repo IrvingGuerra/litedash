@@ -6,7 +6,6 @@
     <string name="report_which">どれですか？</string>
     <string name="report_problem">どうなりますか？</string>
     <string name="report_workshop">整備（OBD）</string>
-    <string name="report_projection">Android Auto / アプリ</string>
     <string name="report_lights">昼と夜 / ヘッドライト</string>
     <string name="report_music_usb">ファイル（LiteDash プレーヤー）</string>
     <string name="report_music_bt">Bluetooth（ヘッドユニット）</string>

@@ -75,7 +75,6 @@
     <string name="split_left">Gauche</string>
     <string name="split_right">Droite</string>
     <string name="split_swap_help">Vous pouvez aussi l\'inverser sur place avec le bouton à flèches dans le coin inférieur.</string>
-    <string name="split_unsupported">Cet écran tourne sous Android %1$s : deux applis côte à côte nécessitent Android 12L ou plus récent.</string>
     <string name="gauge_style_needle">Aiguille</string>
     <string name="gauge_style_digital">Numérique</string>
     <string name="gauge_style_bar">Barre</string>
@@ -724,7 +723,7 @@
     <string name="tires_source_usb">Récepteur USB</string>
     <string name="tires_source_ble">Bluetooth</string>
     <string name="tires_source_demo">Démo</string>
-    <string name="tires_source_help">Récepteur USB : les kits TPMS pour écrans de voiture. Bluetooth : bouchons de valve ou capteurs Bluetooth. Démo : données de test pour voir le rendu.</string>
+    <string name="tires_source_help">Récepteur USB : les kits TPMS pour écrans de voiture. Bluetooth : bouchons de valve ou capteurs Bluetooth. Démo : données de test pour voir le rendu. Voiture : les capteurs d’origine, via l’adaptateur OBD de l’Atelier.</string>
     <string name="tires_grant">Autoriser</string>
     <string name="retry">Réessayer</string>
     <string name="tires_usb_help">Si l\'appli pneus de votre écran s\'empare du récepteur, débranchez-le et rebranchez-le, puis choisissez LiteDash avec « toujours ».</string>

@@ -49,6 +49,7 @@
     <string name="map_offline_my_location">Moje poloha</string>
     <string name="map_tab_app">Aplikace map</string>
     <string name="map_tab_look">Mapa LiteDash</string>
+    <string name="map_tab_style">Vzhled mapy</string>
     <string name="map_look_help">Platí pro všechny tvé widgety Mapa a mapu na celou obrazovku. Každý widget jde dál změnit přes jeho ozubené kolo.</string>
     <string name="map_pack_help">Celý tvůj kraj bez internetu, jedním stažením. Aktualizuje se několikrát ročně.</string>
     <string name="map_pack_full">Se stylem Úplný se mapa načítá z internetu; stažený kraj slouží k hledání a trasám.</string>

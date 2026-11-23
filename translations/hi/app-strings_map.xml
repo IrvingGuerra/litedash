@@ -49,6 +49,7 @@
     <string name="map_offline_my_location">मेरी लोकेशन</string>
     <string name="map_tab_app">मैप ऐप</string>
     <string name="map_tab_look">LiteDash मैप</string>
+    <string name="map_tab_style">मैप का रूप</string>
     <string name="map_look_help">आपके सभी मैप विजेट और फ़ुल-स्क्रीन मैप पर लागू होता है। हर विजेट को उसके गियर से अलग भी बदल सकते हैं।</string>
     <string name="map_pack_help">पूरा राज्य बिना इंटरनेट के, एक ही डाउनलोड में। साल में कुछ बार अपडेट होता है।</string>
     <string name="map_pack_full">पूरा शैली में मानचित्र इंटरनेट से आता है; डाउनलोड किया गया राज्य खोज और रास्तों के लिए है।</string>

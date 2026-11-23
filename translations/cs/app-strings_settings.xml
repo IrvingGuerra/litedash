@@ -5,7 +5,6 @@
     <string name="weather_switch">Počasí</string>
     <string name="weather_switch_help">Na liště, v hodinách a ve widgetu Počasí; obnovuje se každou půlhodinu, když vidíš plochu. Používá přibližnou polohu a internet; vypnuté nepoužívá ani jedno.</string>
     <string name="reminder_pick_date">Kdy je termín: %1$s?</string>
-    <string name="split_unsupported_screen">Tvůj displej nedovolí dvě aplikace vedle sebe (výrobce to vypnul).</string>
     <string name="tab_home">Plocha</string>
     <string name="tab_interface">Rozhraní</string>
     <string name="android_bar">Lišta Androidu</string>

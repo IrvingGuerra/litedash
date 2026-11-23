@@ -6,7 +6,6 @@
     <string name="report_which">कौन-सा?</string>
     <string name="report_problem">क्या होता है?</string>
     <string name="report_workshop">वर्कशॉप (OBD)</string>
-    <string name="report_projection">Android Auto / ऐप</string>
     <string name="report_lights">दिन और रात / हेडलाइट</string>
     <string name="report_music_usb">फ़ाइलें (LiteDash प्लेयर)</string>
     <string name="report_music_bt">Bluetooth (स्क्रीन का)</string>

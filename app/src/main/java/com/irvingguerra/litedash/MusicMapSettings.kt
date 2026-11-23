@@ -7,10 +7,8 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -18,7 +16,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -61,13 +58,10 @@ fun MusicSettings(d: Dependencies) {
         val musicPackages = detected + MUSIC_PACKAGES + listOfNotNull(chosen)
         apps.filter { it.pkg in musicPackages }.distinctBy { it.pkg }
     }
-    var other by remember { mutableStateOf(false) }
-    FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        for (app in musicApps) Button(app.name, { d.music.choose(app.pkg) }, primary = chosen == app.pkg)
-        Button(stringResource(R.string.music_other_app), { other = !other }, primary = other)
-        if (chosen != null) Button(stringResource(R.string.remove), { d.music.choose(null) })
-    }
-    if (other) AppSearch(apps, chosen) { d.music.choose(it); other = false }
+    AppPicker(
+        apps, musicApps.map { it.pkg to it.name }, chosen, d.music::choose, { d.music.choose(it.pkg) },
+        onClear = chosen?.let { { d.music.choose(null) } },
+    )
     Label(stringResource(R.string.music_help), Typography.small, LocalColors.current.textMuted)
 }
 
@@ -92,26 +86,28 @@ fun MusicModeSettings(d: Dependencies) {
                 PlayerBrowser(PlayerSource.USB, onPicked = {}, Modifier.fillMaxWidth().height(LIBRARY_HEIGHT))
             }
         }
-        MusicMode.BLUETOOTH -> SettingsCard(stringResource(R.string.bt_pair), stringResource(R.string.bt_pair_help)) { BluetoothSettings(d) }
+        MusicMode.BLUETOOTH -> {
+            SettingsCard(stringResource(R.string.bt_pair), stringResource(R.string.bt_pair_help)) { BluetoothSettings(d) }
+            // La calibración de la música es la del Bluetooth: solo con ese método (la de la radio, en la pestaña Radio).
+            SoundCalibrationCard(d, SoundPiece.MUSIC)
+        }
         MusicMode.APP -> SettingsCard(stringResource(R.string.music_app_title)) { MusicSettings(d) }
     }
-    SoundCalibrationCard(d)
 }
 
 /**
- * "Calibrar sonido": con qué receta suenan el Bluetooth y la radio de esta pantalla (la calibración la encuentra
- * sola la primera vez que suenan) y "Calibrar otra vez", que olvida lo guardado. Solo si hay algo que calibrar.
+ * "Calibrar sonido" de [piece] (el Bluetooth en Música, la FM en Radio): con qué receta suena en esta pantalla (la
+ * calibración la encuentra sola la primera vez que suena) y "Calibrar otra vez", que olvida lo guardado (hoy de las dos
+ * piezas: [com.irvingguerra.litedash.feature.music.MusicRepository.recalibrate]). Solo si hay algo que calibrar.
  */
 @Composable
-private fun SoundCalibrationCard(d: Dependencies) {
-    val pieces = SoundPiece.entries.filter(d.music::calibrates)
-    if (pieces.isEmpty()) return
+private fun SoundCalibrationCard(d: Dependencies, piece: SoundPiece) {
+    if (!d.music.calibrates(piece)) return
     SettingsCard(stringResource(R.string.sound_calibration), stringResource(R.string.sound_calibration_help)) {
-        for (piece in pieces) {
-            val name = stringResource(if (piece == SoundPiece.MUSIC) MusicR.string.source_bluetooth else MusicR.string.radio)
-            Label(stringResource(R.string.sound_recipe_line, name, recipeLabel(piece, d.music.soundRecipe(piece))), Typography.body)
-        }
-        if (pieces.any { d.music.soundRecipe(it) != null }) Button(stringResource(R.string.sound_calibrate_again), d.music::recalibrate)
+        val name = stringResource(if (piece == SoundPiece.MUSIC) MusicR.string.source_bluetooth else MusicR.string.radio)
+        val recipe = d.music.soundRecipe(piece)
+        Label(stringResource(R.string.sound_recipe_line, name, recipeLabel(piece, recipe)), Typography.body)
+        if (recipe != null) Button(stringResource(R.string.sound_calibrate_again), d.music::recalibrate)
     }
 }
 
@@ -126,7 +122,6 @@ private val LIBRARY_HEIGHT = 420.dp
 @Composable
 fun RadioSettings(d: Dependencies) {
     val apps = rememberApps(d.apps).orEmpty()
-    var choosing by remember { mutableStateOf(false) }
     val setInternet = rememberInternetRadioToggle(d)
     val internet = d.music.radioInternet
     SettingsCard(stringResource(R.string.radio_mode_title), stringResource(R.string.radio_mode_help)) {
@@ -142,33 +137,28 @@ fun RadioSettings(d: Dependencies) {
         SettingsCard(stringResource(R.string.radio_internet_title), stringResource(R.string.radio_internet_help)) {}
     } else {
         SettingsCard(stringResource(R.string.radio_fm_app), stringResource(R.string.radio_fm_app_help)) {
-            RadioAppRow(d, apps, choosing) { choosing = it }
+            RadioAppPicker(d, apps)
         }
+        SoundCalibrationCard(d, SoundPiece.RADIO)
     }
 }
 
 /**
- * Renglón de la FM de la pantalla: la app enlazada (o "Sin enlazar"), Elegir (abre el buscador
- * debajo) y Quitar. [choosing] dice si el buscador está abierto.
+ * La app de la FM de la pantalla, con el mismo selector que las demás: la enlazada con palomita (o «Sin enlazar»),
+ * «Elegir» (abre el buscador) y «Quitar».
  */
 @Composable
-private fun RadioAppRow(d: Dependencies, apps: List<App>, choosing: Boolean, onChoosing: (Boolean) -> Unit) {
-    val c = LocalColors.current
+private fun RadioAppPicker(d: Dependencies, apps: List<App>) {
     val pkg = d.music.sourceApps[SourceKind.RADIO]
-    Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        // El nombre toma lo que sobra (y se corta él): los botones nunca se aprietan.
-        Label(
-            pkg?.let { p -> apps.firstOrNull { it.pkg == p }?.name ?: d.music.appName(p) } ?: stringResource(R.string.source_unlinked),
-            Typography.body, c.textMuted, 1, Modifier.weight(1f),
-        )
-        Button(stringResource(R.string.source_choose), { onChoosing(!choosing) }, primary = choosing)
-        if (pkg != null) Button(stringResource(R.string.remove), { d.music.setSource(SourceKind.RADIO, null) })
-    }
-    if (choosing) {
-        Label(stringResource(R.string.source_choose_for), Typography.small, c.textMuted)
-        AppSearch(apps, pkg) { d.music.setSource(SourceKind.RADIO, it); onChoosing(false) }
-        Spacer(Modifier.height(6.dp))
-    }
+    // Una app que ya no está (o sin ícono de inicio) no tiene nombre: su paquete, para que no quede en blanco.
+    val linked = pkg?.let { p -> p to (apps.firstOrNull { it.pkg == p }?.name ?: d.music.appName(p).ifEmpty { p }) }
+    if (linked == null) Label(stringResource(R.string.source_unlinked), Typography.body, LocalColors.current.textMuted)
+    AppPicker(
+        apps, listOfNotNull(linked), pkg, {}, { d.music.setSource(SourceKind.RADIO, it.pkg) },
+        onClear = pkg?.let { { d.music.setSource(SourceKind.RADIO, null) } },
+        other = stringResource(R.string.source_choose),
+        searchHelp = stringResource(R.string.source_choose_for),
+    )
 }
 
 /**
@@ -188,7 +178,7 @@ private fun rememberInternetRadioToggle(d: Dependencies): (Boolean) -> Unit {
 /** A lo más tantas apps encontradas en el buscador. */
 private const val SEARCH_MAX = 12
 
-/** Buscador de apps instaladas: escribir y tocar una la elige ([selected] va resaltada). */
+/** Buscador de apps instaladas: escribir y tocar una la elige ([selected], su paquete, va con palomita). */
 @Composable
 internal fun AppSearch(apps: List<App>, selected: String?, onPick: (String) -> Unit) {
     var query by remember { mutableStateOf("") }
@@ -197,17 +187,48 @@ internal fun AppSearch(apps: List<App>, selected: String?, onPick: (String) -> U
     TextInput(query, { query = it }, stringResource(R.string.search_app), Modifier.fillMaxWidth(), icon = true)
     val q = normalize(query.trim())
     if (q.isNotEmpty()) {
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            for (app in names.filter { q in it.second }.take(SEARCH_MAX).map { it.first }) {
-                Button(app.name, { onPick(app.pkg) }, primary = selected == app.pkg)
-            }
+        val hits = names.filter { q in it.second }.take(SEARCH_MAX).map { (app, _) -> app.pkg to app.name }
+        if (hits.isNotEmpty()) Segmented<String?>(hits, selected, { pkg -> pkg?.let(onPick) }, check = true)
+    }
+}
+
+/**
+ * Elegir una app (Música → App, Radio, Tu app de mapas, Android Auto / CarPlay), igual en todos: las encontradas
+ * [found] (id y nombre) con la elegida [current] marcada con palomita, como los selectores de modo; [other] («Otra
+ * app…» o «Elegir») abre el buscador de [apps] para cualquiera (algunas no se anuncian) y, si hay [onClear], «Quitar».
+ * Los dos son acciones, no elecciones: nunca se pintan como la elegida.
+ */
+@Composable
+internal fun AppPicker(
+    apps: List<App>,
+    found: List<Pair<String, String>>,
+    current: String?,
+    onPick: (String) -> Unit,
+    onSearch: (App) -> Unit,
+    onClear: (() -> Unit)? = null,
+    other: String = stringResource(R.string.music_other_app),
+    searchHelp: String? = null,
+) {
+    var open by remember { mutableStateOf(false) }
+    if (found.isNotEmpty()) Segmented<String?>(found, current, { id -> id?.let(onPick) }, check = true)
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Button(other, { open = !open })
+        if (onClear != null) Button(stringResource(R.string.remove), onClear)
+    }
+    if (open) {
+        searchHelp?.let { Label(it, Typography.small, LocalColors.current.textMuted) }
+        // Las ids son el paquete o «paquete/actividad»: el buscador marca por paquete.
+        AppSearch(apps, current?.substringBefore('/')) { pkg ->
+            apps.firstOrNull { it.pkg == pkg }?.let(onSearch)
+            open = false
         }
     }
 }
 
 /**
  * Ajustes → Apps → Navegación → "Tu app de mapas" (con "App de mapas" elegido): las apps de navegación instaladas
- * (las conocidas primero y luego cualquiera que abra una dirección); la marcada es la que se abre.
+ * (las conocidas primero y luego cualquiera que abra una dirección) y «Otra app…» para la que no se anuncia; la marcada
+ * es la que se abre. Solo se compone con «App de mapas» elegido: con el mapa de LiteDash no se guarda nada al mirar.
  */
 @Composable
 fun MapAppSettings(d: Dependencies) {
@@ -215,19 +236,20 @@ fun MapAppSettings(d: Dependencies) {
     val apps = rememberApps(d.apps).orEmpty()
     // Se vuelve a buscar cuando cambian las apps instaladas.
     val detected by produceState(emptySet<String>(), apps) { value = withContext(Dispatchers.IO) { navigationPackages(context) } }
-    val mapApps = remember(apps, detected) {
-        val known = NAVIGATION_PACKAGES.mapNotNull { pkg -> apps.firstOrNull { it.pkg == pkg } }
-        known + apps.filter { it.pkg in detected && known.none { k -> k.pkg == it.pkg } }.distinctBy { it.pkg }
-    }
     val selected = mapApp(d, apps)
+    val mapApps = remember(apps, detected, selected) {
+        val known = NAVIGATION_PACKAGES.mapNotNull { pkg -> apps.firstOrNull { it.pkg == pkg } }
+        val found = known + apps.filter { it.pkg in detected && known.none { k -> k.pkg == it.pkg } }.distinctBy { it.pkg }
+        // La elegida (también con «Otra app…») se ve marcada: en su lugar si su app ya está, si no al final.
+        if (selected == null) found
+        else found.map { if (it.pkg == selected.pkg) selected else it } + listOfNotNull(selected.takeIf { s -> found.none { it.pkg == s.pkg } })
+    }
     // Sin ninguna elegida ni conocida instalada (solo Vela Maps, por ejemplo): queda la primera que se encontró, para
     // que "App de mapas" sí abra una. Fuera de la composición: escribe un ajuste.
     LaunchedEffect(selected, mapApps) {
         if (selected == null) mapApps.firstOrNull()?.let { d.prefs.mapApp = it.key }
     }
-    FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        for (app in mapApps) Button(app.name, { d.prefs.mapApp = app.key }, primary = app == selected)
-    }
+    AppPicker(apps, mapApps.map { it.key to it.name }, selected?.key, { d.prefs.mapApp = it }, { d.prefs.mapApp = it.key })
     Label(
         stringResource(if (mapApps.isEmpty()) R.string.map_no_apps else R.string.map_help),
         Typography.small,

@@ -49,6 +49,7 @@
     <string name="map_offline_my_location">Saját helyzet</string>
     <string name="map_tab_app">Térképalkalmazás</string>
     <string name="map_tab_look">LiteDash térkép</string>
+    <string name="map_tab_style">Térkép megjelenése</string>
     <string name="map_look_help">Az összes Térkép widgetre és a teljes képernyős térképre vonatkozik. Minden widget továbbra is módosítható a saját fogaskerekéről.</string>
     <string name="map_pack_help">Az egész megyéd internet nélkül, egyetlen letöltéssel. Évente néhányszor frissül.</string>
     <string name="map_pack_full">A Teljes stílusnál a térkép az internetről jön; a letöltött régió a kereséshez és az útvonalakhoz kell.</string>

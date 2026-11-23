@@ -49,6 +49,7 @@
     <string name="map_offline_my_location">我的位置</string>
     <string name="map_tab_app">地图应用</string>
     <string name="map_tab_look">LiteDash 地图</string>
+    <string name="map_tab_style">地图外观</string>
     <string name="map_look_help">适用于所有地图小组件和全屏地图。每个小组件仍可通过其齿轮图标单独更改。</string>
     <string name="map_pack_help">整个省份离线可用，一次下载即可。每年更新几次。</string>
     <string name="map_pack_full">“完整”样式的地图来自互联网；已下载的地区用于搜索和路线。</string>

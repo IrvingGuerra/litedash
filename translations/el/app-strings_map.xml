@@ -49,6 +49,7 @@
     <string name="map_offline_my_location">Η θέση μου</string>
     <string name="map_tab_app">Εφαρμογή χαρτών</string>
     <string name="map_tab_look">Χάρτης LiteDash</string>
+    <string name="map_tab_style">Εμφάνιση χάρτη</string>
     <string name="map_look_help">Ισχύει για όλα τα widget Χάρτη και τον χάρτη σε πλήρη οθόνη. Κάθε widget αλλάζει και από το γρανάζι του.</string>
     <string name="map_pack_help">Όλη η περιφέρειά σας χωρίς internet, με μία λήψη. Ενημερώνεται μερικές φορές τον χρόνο.</string>
     <string name="map_pack_full">Με το στυλ Πλήρες ο χάρτης φορτώνει από το διαδίκτυο· η περιοχή που κατέβασες χρησιμεύει για αναζήτηση και διαδρομές.</string>

@@ -49,6 +49,7 @@
     <string name="map_offline_my_location">Моє місцезнаходження</string>
     <string name="map_tab_app">Застосунок карт</string>
     <string name="map_tab_look">Карта LiteDash</string>
+    <string name="map_tab_style">Вигляд карти</string>
     <string name="map_look_help">Діє на всі віджети «Карта» і повноекранну карту. Кожен віджет можна змінити через його шестерню.</string>
     <string name="map_pack_help">Уся область без інтернету, одним завантаженням. Оновлюється кілька разів на рік.</string>
     <string name="map_pack_full">У стилі «Повна» карта завантажується з інтернету; завантажений регіон потрібен для пошуку й маршрутів.</string>

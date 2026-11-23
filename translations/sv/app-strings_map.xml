@@ -49,6 +49,7 @@
     <string name="map_offline_my_location">Min plats</string>
     <string name="map_tab_app">Kartapp</string>
     <string name="map_tab_look">LiteDash-karta</string>
+    <string name="map_tab_style">Kartans utseende</string>
     <string name="map_look_help">Gäller alla dina Karta-widgetar och kartan i helskärm. Varje widget kan fortfarande ändras via sitt kugghjul.</string>
     <string name="map_pack_help">Hela ditt län utan internet, i en enda nedladdning. Uppdateras några gånger om året.</string>
     <string name="map_pack_full">Med stilen Full hämtas kartan från internet; den nedladdade regionen används för sökning och rutter.</string>

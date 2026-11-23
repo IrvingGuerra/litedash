@@ -73,7 +73,6 @@
     <string name="split_left">Links</string>
     <string name="split_right">Rechts</string>
     <string name="split_swap_help">Du kannst es auch direkt dort mit dem Pfeil-Button in der unteren Ecke wechseln.</string>
-    <string name="split_unsupported">Dieses Display läuft mit Android %1$s: zwei Apps nebeneinander brauchen Android 12L oder neuer.</string>
     <string name="gauge_style_needle">Zeiger</string>
     <string name="gauge_style_digital">Digital</string>
     <string name="gauge_style_bar">Balken</string>
@@ -727,7 +726,7 @@
     <string name="tires_source_usb">USB-Empfänger</string>
     <string name="tires_source_ble">Bluetooth</string>
     <string name="tires_source_demo">Demo</string>
-    <string name="tires_source_help">USB-Empfänger: TPMS-Kits für Autodisplays. Bluetooth: Ventilkappen oder Sensoren mit Bluetooth. Demo: Testdaten zum Ansehen.</string>
+    <string name="tires_source_help">USB-Empfänger: TPMS-Kits für Autodisplays. Bluetooth: Ventilkappen oder Sensoren mit Bluetooth. Demo: Testdaten zum Ansehen. Auto: die Werkssensoren über den OBD-Adapter der Werkstatt.</string>
     <string name="tires_grant">Berechtigung erteilen</string>
     <string name="retry">Nochmal versuchen</string>
     <string name="tires_usb_help">Schnappt sich die Reifen-App deines Displays den Empfänger, zieh ihn ab, steck ihn wieder ein und wähle LiteDash mit „Immer“.</string>

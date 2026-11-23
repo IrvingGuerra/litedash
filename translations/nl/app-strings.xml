@@ -73,7 +73,6 @@
     <string name="split_left">Links</string>
     <string name="split_right">Rechts</string>
     <string name="split_swap_help">Je kunt het ook daar wisselen met de pijlenknop in de hoek onderaan.</string>
-    <string name="split_unsupported">Deze autoradio draait Android %1$s: twee apps naast elkaar vereist Android 12L of nieuwer.</string>
     <string name="gauge_style_needle">Naald</string>
     <string name="gauge_style_digital">Digitaal</string>
     <string name="gauge_style_bar">Balk</string>
@@ -727,7 +726,7 @@
     <string name="tires_source_usb">USB-ontvanger</string>
     <string name="tires_source_ble">Bluetooth</string>
     <string name="tires_source_demo">Demo</string>
-    <string name="tires_source_help">USB-ontvanger: de TPMS-kits voor autoschermen. Bluetooth: ventieldopjes of sensoren met Bluetooth. Demo: testgegevens om te zien hoe het eruitziet.</string>
+    <string name="tires_source_help">USB-ontvanger: de TPMS-kits voor autoschermen. Bluetooth: ventieldopjes of sensoren met Bluetooth. Demo: testgegevens om te zien hoe het eruitziet. Auto: de fabriekssensoren via de OBD-adapter van de Werkplaats.</string>
     <string name="tires_grant">Toestemming geven</string>
     <string name="retry">Opnieuw proberen</string>
     <string name="tires_usb_help">Pakt de eigen banden-app van je scherm de ontvanger, trek hem eruit en steek hem er weer in, en kies dan LiteDash met “altijd”.</string>

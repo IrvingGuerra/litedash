@@ -73,7 +73,6 @@
     <string name="split_left">ซ้าย</string>
     <string name="split_right">ขวา</string>
     <string name="split_swap_help">สลับได้ตรงนั้นเลยด้วยปุ่มลูกศรที่มุมล่าง</string>
-    <string name="split_unsupported">เครื่องเสียงนี้ใช้ Android %1$s: สองแอปข้างกันต้องใช้ Android 12L ขึ้นไป</string>
     <string name="gauge_style_needle">เข็ม</string>
     <string name="gauge_style_digital">ดิจิทัล</string>
     <string name="gauge_style_bar">แถบ</string>
@@ -716,7 +715,7 @@
     <string name="tires_source_usb">ตัวรับสัญญาณ USB</string>
     <string name="tires_source_ble">Bluetooth</string>
     <string name="tires_source_demo">สาธิต</string>
-    <string name="tires_source_help">ตัวรับสัญญาณ USB: ชุด TPMS สำหรับจอติดรถ Bluetooth: จุกวาล์วหรือเซ็นเซอร์ที่มี Bluetooth สาธิต: ข้อมูลทดสอบเพื่อดูหน้าตา</string>
+    <string name="tires_source_help">ตัวรับสัญญาณ USB: ชุด TPMS สำหรับจอติดรถ Bluetooth: จุกวาล์วหรือเซ็นเซอร์ที่มี Bluetooth สาธิต: ข้อมูลทดสอบเพื่อดูหน้าตา รถ: เซ็นเซอร์จากโรงงาน ผ่านอะแดปเตอร์ OBD ในอู่</string>
     <string name="tires_grant">ให้สิทธิ์</string>
     <string name="retry">ลองอีกครั้ง</string>
     <string name="tires_usb_help">ถ้าแอปยางของหน้าจอแย่งตัวรับสัญญาณไป ให้ถอดแล้วเสียบใหม่ แล้วเลือก LiteDash พร้อม “ทุกครั้ง”</string>

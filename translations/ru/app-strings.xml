@@ -73,7 +73,6 @@
     <string name="split_left">Слева</string>
     <string name="split_right">Справа</string>
     <string name="split_swap_help">Можно поменять и прямо там кнопкой со стрелками в нижнем углу.</string>
-    <string name="split_unsupported">На этой магнитоле Android %1$s: для двух приложений рядом нужен Android 12L или новее.</string>
     <string name="gauge_style_needle">Стрелка</string>
     <string name="gauge_style_digital">Цифры</string>
     <string name="gauge_style_bar">Шкала</string>
@@ -743,7 +742,7 @@
     <string name="tires_source_usb">USB-приёмник</string>
     <string name="tires_source_ble">Bluetooth</string>
     <string name="tires_source_demo">Демо</string>
-    <string name="tires_source_help">USB-приёмник: комплекты TPMS для автомагнитол. Bluetooth: колпачки или датчики с Bluetooth. Демо: тестовые данные, чтобы посмотреть, как это выглядит.</string>
+    <string name="tires_source_help">USB-приёмник: комплекты TPMS для автомагнитол. Bluetooth: колпачки или датчики с Bluetooth. Демо: тестовые данные, чтобы посмотреть, как это выглядит. Машина: заводские датчики через OBD-адаптер из Мастерской.</string>
     <string name="tires_grant">Дать разрешение</string>
     <string name="retry">Попробовать снова</string>
     <string name="tires_usb_help">Если встроенное приложение шин на экране перехватывает приёмник, отключи его и подключи снова, затем выбери LiteDash с вариантом «всегда».</string>

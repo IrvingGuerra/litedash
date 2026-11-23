@@ -5,7 +5,6 @@
     <string name="weather_switch">สภาพอากาศ</string>
     <string name="weather_switch_help">ในแถบ นาฬิกา และวิดเจ็ตสภาพอากาศ อัปเดตทุกครึ่งชั่วโมงขณะที่คุณดูหน้าหลัก ใช้ตำแหน่งโดยประมาณและอินเทอร์เน็ต เมื่อปิดจะไม่ใช้ทั้งสองอย่าง</string>
     <string name="reminder_pick_date">%1$s ครบกำหนดเมื่อไร</string>
-    <string name="split_unsupported_screen">เครื่องเสียงของคุณไม่รองรับสองแอปข้างกัน (ผู้ผลิตปิดไว้)</string>
     <string name="tab_home">หน้าหลัก</string>
     <string name="tab_interface">อินเทอร์เฟซ</string>
     <string name="android_bar">แถบ Android</string>

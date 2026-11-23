@@ -51,6 +51,7 @@
     <string name="map_offline_my_location">Ma position</string>
     <string name="map_tab_app">Appli de carte</string>
     <string name="map_tab_look">Carte LiteDash</string>
+    <string name="map_tab_style">Aspect de la carte</string>
     <string name="map_look_help">S\'applique à tous vos widgets Carte et à la carte plein écran. Chaque widget reste modifiable depuis son engrenage.</string>
     <string name="map_pack_help">Toute votre région sans internet, en un seul téléchargement. Mise à jour quelques fois par an.</string>
     <string name="map_pack_full">Avec le style Complet, la carte vient d\'internet ; la région téléchargée sert à la recherche et aux itinéraires.</string>

@@ -49,6 +49,7 @@
     <string name="map_offline_my_location">Lokasi saya</string>
     <string name="map_tab_app">Aplikasi peta</string>
     <string name="map_tab_look">Peta LiteDash</string>
+    <string name="map_tab_style">Tampilan peta</string>
     <string name="map_look_help">Berlaku untuk semua widget Peta dan peta layar penuh. Tiap widget tetap bisa diubah dari ikon roda giginya.</string>
     <string name="map_pack_help">Seluruh provinsi Anda tanpa internet, dalam satu unduhan. Diperbarui beberapa kali setahun.</string>
     <string name="map_pack_full">Dengan gaya Lengkap, peta dimuat dari internet; wilayah yang diunduh dipakai untuk pencarian dan rute.</string>

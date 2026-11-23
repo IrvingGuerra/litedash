@@ -7,7 +7,6 @@
     <string name="weather_switch">Clima</string>
     <string name="weather_switch_help">Na barra, no relógio e no widget Clima; atualiza a cada meia hora enquanto você vê a tela inicial. Usa sua localização aproximada e a internet; desligado, não usa nenhuma das duas.</string>
     <string name="reminder_pick_date">Quando vence %1$s?</string>
-    <string name="split_unsupported_screen">Sua tela não permite abrir dois apps lado a lado (o fabricante desativou).</string>
     <string name="tab_home">Início</string>
     <string name="tab_interface">Interface</string>
     <string name="android_bar">Barra do Android</string>

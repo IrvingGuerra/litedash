@@ -73,7 +73,6 @@
     <string name="split_left">Lewa</string>
     <string name="split_right">Prawa</string>
     <string name="split_swap_help">Możesz też zmienić to na miejscu przyciskiem ze strzałkami w dolnym rogu.</string>
-    <string name="split_unsupported">To radio ma Androida %1$s: dwie aplikacje obok siebie wymagają Androida 12L lub nowszego.</string>
     <string name="gauge_style_needle">Wskazówka</string>
     <string name="gauge_style_digital">Cyfrowy</string>
     <string name="gauge_style_bar">Pasek</string>
@@ -743,7 +742,7 @@
     <string name="tires_source_usb">Odbiornik USB</string>
     <string name="tires_source_ble">Bluetooth</string>
     <string name="tires_source_demo">Demo</string>
-    <string name="tires_source_help">Odbiornik USB: zestawy TPMS do ekranów samochodowych. Bluetooth: nakrętki zaworów lub czujniki z Bluetooth. Demo: dane testowe, by zobaczyć, jak to wygląda.</string>
+    <string name="tires_source_help">Odbiornik USB: zestawy TPMS do ekranów samochodowych. Bluetooth: nakrętki zaworów lub czujniki z Bluetooth. Demo: dane testowe, by zobaczyć, jak to wygląda. Auto: fabryczne czujniki przez adapter OBD z Warsztatu.</string>
     <string name="tires_grant">Nadaj uprawnienie</string>
     <string name="retry">Spróbuj ponownie</string>
     <string name="tires_usb_help">Jeśli aplikacja opon ekranu przejmuje odbiornik, odłącz go i podłącz ponownie, a potem wybierz LiteDash z opcją „zawsze”.</string>

@@ -7,7 +7,6 @@
     <string name="weather_switch">Météo</string>
     <string name="weather_switch_help">Dans la barre, l\'horloge et le widget Météo ; actualisée toutes les demi-heures tant que l\'accueil est affiché. Utilise votre position approximative et internet ; désactivée, elle n\'utilise ni l\'un ni l\'autre.</string>
     <string name="reminder_pick_date">Quelle est l\'échéance de %1$s ?</string>
-    <string name="split_unsupported_screen">Votre écran ne permet pas d\'afficher deux applis côte à côte (le fabricant l\'a désactivé).</string>
     <string name="tab_home">Accueil</string>
     <string name="tab_interface">Interface</string>
     <string name="android_bar">Barre Android</string>

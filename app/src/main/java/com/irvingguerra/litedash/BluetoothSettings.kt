@@ -29,6 +29,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -46,6 +47,8 @@ import com.irvingguerra.litedash.core.ui.LocalColors
 import com.irvingguerra.litedash.core.ui.Typography
 import com.irvingguerra.litedash.feature.apps.rememberApps
 import com.irvingguerra.litedash.feature.music.SourceKind
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 private const val TAG = "BluetoothSettings"
 
@@ -160,7 +163,8 @@ fun BluetoothSettings(d: Dependencies) {
     else Label(stringResource(R.string.bt_not_connected), Typography.body, c.textMuted)
 
     // Cómo se llama esta pantalla, para buscarla desde el celular.
-    val myName = remember(granted) { adapterName(adapter) }
+    // Nombres y guardados se le preguntan al servicio de Bluetooth (entre procesos): fuera del hilo principal.
+    val myName by produceState("", adapter) { value = withContext(Dispatchers.IO) { adapterName(adapter) } }
     if (myName.isNotEmpty()) Label(stringResource(R.string.bt_screen_name, myName), Typography.small, c.textMuted)
 
     DiscoverableButton()
@@ -187,30 +191,39 @@ fun BluetoothSettings(d: Dependencies) {
     }
 
     // Celulares ya guardados (solo celulares: el adaptador OBD o unos audífonos no se olvidan desde la música).
-    val bonded = remember(granted, on, bonds) { bondedPhones(adapter).map { Found(it, deviceLabel(it)) } }
-    var forgetFailed by remember { mutableStateOf(false) }
+    val bonded by produceState(emptyList<Found>(), on, bonds) {
+        value = withContext(Dispatchers.IO) { bondedPhones(adapter).map { Found(it, deviceLabel(it)) } }
+    }
     if (bonded.isNotEmpty()) {
         Label(stringResource(R.string.bt_paired), Typography.label, c.textMuted)
+        // Desde Android 13 olvidar pide un permiso de sistema: en vez de un botón que siempre falla, se dice dónde hacerlo.
+        val canForget = Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU
+        var forgetFailed by remember { mutableStateOf(false) }
         FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             for (f in bonded) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Label(f.label, Typography.body, maxLines = 1)
-                    val forgetLabel = stringResource(R.string.bt_forget)
-                    Confirmed(forgetLabel, stringResource(R.string.bt_forget_question, f.label), forgetLabel, stringResource(R.string.bt_forget_message)) {
-                        // Se quita de la lista cuando Android avisa que se olvidó (ACTION_BOND_STATE_CHANGED).
-                        if (!forget(f.device)) {
-                            forgetFailed = true
-                            openSystemScreen(context, Intent(Settings.ACTION_BLUETOOTH_SETTINGS))
+                    if (canForget) {
+                        val forgetLabel = stringResource(R.string.bt_forget)
+                        Confirmed(forgetLabel, stringResource(R.string.bt_forget_question, f.label), forgetLabel, stringResource(R.string.bt_forget_message)) {
+                            // Se quita de la lista cuando Android avisa que se olvidó (ACTION_BOND_STATE_CHANGED).
+                            if (!forget(f.device)) {
+                                forgetFailed = true
+                                openSystemScreen(context, Intent(Settings.ACTION_BLUETOOTH_SETTINGS))
+                            }
                         }
                     }
                 }
             }
         }
+        if (!canForget || forgetFailed) Label(stringResource(R.string.bt_forget_failed), Typography.small, c.textMuted)
+        if (!canForget) {
+            Button(stringResource(R.string.sys_bluetooth), { openSystemScreen(context, Intent(Settings.ACTION_BLUETOOTH_SETTINGS)) })
+        }
     }
-    if (forgetFailed) Label(stringResource(R.string.bt_forget_failed), Typography.small, c.textMuted)
 }
 
-/** Pantalla con chip de Bluetooth propio: abrir (o elegir) su app de Bluetooth. */
+/** Pantalla con chip de Bluetooth propio: abrir (o elegir) su app de Bluetooth, con el mismo selector de apps. */
 @Composable
 private fun OwnBluetoothApp(d: Dependencies) {
     val c = LocalColors.current
@@ -218,18 +231,14 @@ private fun OwnBluetoothApp(d: Dependencies) {
     val apps = rememberApps(d.apps).orEmpty()
     // La enlazada o, si no hay, la de Bluetooth de marca que trae la pantalla (TopWay, FYT…).
     val app = d.music.bluetoothApp()
-    var choosing by remember { mutableStateOf(false) }
-    if (app == null) {
-        Label(stringResource(R.string.bt_pick_help), Typography.small, c.textMuted)
-        Button(stringResource(R.string.source_choose), { choosing = !choosing }, primary = choosing)
-    } else {
-        Button(stringResource(R.string.bt_open_app), { d.music.openBluetoothApp() }, primary = true)
-        Button(stringResource(R.string.source_choose), { choosing = !choosing }, primary = choosing)
-    }
-    if (choosing) {
-        if (app != null) Label(stringResource(R.string.bt_pick_help), Typography.small, c.textMuted)
-        AppSearch(apps, app) { d.music.setSource(SourceKind.BLUETOOTH, it); choosing = false }
-    }
+    if (app == null) Label(stringResource(R.string.bt_pick_help), Typography.small, c.textMuted)
+    else Button(stringResource(R.string.bt_open_app), { d.music.openBluetoothApp() }, primary = true)
+    val linked = app?.let { p -> p to (apps.firstOrNull { it.pkg == p }?.name ?: d.music.appName(p).ifEmpty { p }) }
+    AppPicker(
+        apps, listOfNotNull(linked), app, {}, { d.music.setSource(SourceKind.BLUETOOTH, it.pkg) },
+        other = stringResource(R.string.source_choose),
+        searchHelp = stringResource(R.string.bt_pick_help).takeIf { app != null },
+    )
     Label(stringResource(R.string.bt_own_help), Typography.small, c.textMuted)
 }
 
@@ -293,8 +302,8 @@ private fun bond(dev: BluetoothDevice) {
 }
 
 /**
- * Quitar el vínculo guardado: `removeBond` no es pública y va por reflexión. Desde Android 13 pide un permiso de
- * sistema y falla: false = no se pudo (se olvida en los ajustes de Android).
+ * Quitar el vínculo guardado (hasta Android 12): `removeBond` no es pública y va por reflexión; false = no se pudo (se
+ * olvida en los ajustes de Android).
  */
 private fun forget(dev: BluetoothDevice): Boolean = try {
     dev.javaClass.getMethod("removeBond").invoke(dev) == true

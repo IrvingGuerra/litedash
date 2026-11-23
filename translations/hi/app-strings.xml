@@ -73,7 +73,6 @@
     <string name="split_left">बाएँ</string>
     <string name="split_right">दाएँ</string>
     <string name="split_swap_help">नीचे कोने के तीर वाले बटन से वहीं बदल भी सकते हैं।</string>
-    <string name="split_unsupported">यह स्क्रीन Android %1$s पर है: दो ऐप साथ-साथ के लिए Android 12L या नया चाहिए।</string>
     <string name="gauge_style_needle">सुई</string>
     <string name="gauge_style_digital">डिजिटल</string>
     <string name="gauge_style_bar">बार</string>
@@ -724,7 +723,7 @@
     <string name="tires_source_usb">USB रिसीवर</string>
     <string name="tires_source_ble">Bluetooth</string>
     <string name="tires_source_demo">डेमो</string>
-    <string name="tires_source_help">USB रिसीवर: कार स्क्रीन वाले TPMS किट। Bluetooth: Bluetooth वाले वाल्व कैप या सेंसर। डेमो: यह कैसा दिखता है देखने के लिए टेस्ट डेटा।</string>
+    <string name="tires_source_help">USB रिसीवर: कार स्क्रीन वाले TPMS किट। Bluetooth: Bluetooth वाले वाल्व कैप या सेंसर। डेमो: यह कैसा दिखता है देखने के लिए टेस्ट डेटा। कार: फ़ैक्टरी सेंसर, वर्कशॉप के OBD अडैप्टर से।</string>
     <string name="tires_grant">अनुमति दें</string>
     <string name="retry">फिर कोशिश करें</string>
     <string name="tires_usb_help">अगर स्क्रीन का अपना टायर ऐप रिसीवर पकड़ ले, तो निकालकर फिर लगाएँ और “हमेशा” के साथ LiteDash चुनें।</string>

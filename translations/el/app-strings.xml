@@ -73,7 +73,6 @@
     <string name="split_left">Αριστερά</string>
     <string name="split_right">Δεξιά</string>
     <string name="split_swap_help">Μπορείτε επίσης να το αλλάξετε εκεί με το κουμπί με τα βέλη στην κάτω γωνία.</string>
-    <string name="split_unsupported">Αυτή η οθόνη έχει Android %1$s: δύο εφαρμογές δίπλα δίπλα απαιτούν Android 12L ή νεότερο.</string>
     <string name="gauge_style_needle">Βελόνα</string>
     <string name="gauge_style_digital">Ψηφιακό</string>
     <string name="gauge_style_bar">Μπάρα</string>
@@ -727,7 +726,7 @@
     <string name="tires_source_usb">Δέκτης USB</string>
     <string name="tires_source_ble">Bluetooth</string>
     <string name="tires_source_demo">Επίδειξη</string>
-    <string name="tires_source_help">Δέκτης USB: τα κιτ TPMS για οθόνες αυτοκινήτου. Bluetooth: καπάκια βαλβίδας ή αισθητήρες με Bluetooth. Επίδειξη: δοκιμαστικά δεδομένα για να δείτε πώς φαίνεται.</string>
+    <string name="tires_source_help">Δέκτης USB: τα κιτ TPMS για οθόνες αυτοκινήτου. Bluetooth: καπάκια βαλβίδας ή αισθητήρες με Bluetooth. Επίδειξη: δοκιμαστικά δεδομένα για να δείτε πώς φαίνεται. Αυτοκίνητο: οι εργοστασιακοί αισθητήρες, μέσω του προσαρμογέα OBD του Συνεργείου.</string>
     <string name="tires_grant">Παροχή άδειας</string>
     <string name="retry">Δοκιμή ξανά</string>
     <string name="tires_usb_help">Αν η εφαρμογή ελαστικών της οθόνης σας παίρνει τον δέκτη, αποσυνδέστε τον και συνδέστε τον ξανά και μετά επιλέξτε LiteDash με «πάντα».</string>

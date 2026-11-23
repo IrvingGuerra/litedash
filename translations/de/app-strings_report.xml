@@ -6,7 +6,6 @@
     <string name="report_which">Welches?</string>
     <string name="report_problem">Was passiert?</string>
     <string name="report_workshop">Werkstatt (OBD)</string>
-    <string name="report_projection">Android Auto / Apps</string>
     <string name="report_lights">Tag und Nacht / Scheinwerfer</string>
     <string name="report_music_usb">Dateien (LiteDash-Player)</string>
     <string name="report_music_bt">Bluetooth (des Displays)</string>

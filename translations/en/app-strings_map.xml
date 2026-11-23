@@ -51,6 +51,7 @@
     <string name="map_offline_my_location">My location</string>
     <string name="map_tab_app">Map app</string>
     <string name="map_tab_look">LiteDash map</string>
+    <string name="map_tab_style">Map look</string>
     <string name="map_look_help">Applies to all your Map widgets and the full-screen map. Each widget can still be changed from its gear.</string>
     <string name="map_pack_help">Your whole state without internet, in a single download. Updated a few times a year.</string>
     <string name="map_pack_full">With the Full style the map loads from the internet; the downloaded state is used for search and routes.</string>

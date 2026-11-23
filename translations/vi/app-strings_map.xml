@@ -49,6 +49,7 @@
     <string name="map_offline_my_location">Vị trí của tôi</string>
     <string name="map_tab_app">Ứng dụng bản đồ</string>
     <string name="map_tab_look">Bản đồ LiteDash</string>
+    <string name="map_tab_style">Giao diện bản đồ</string>
     <string name="map_look_help">Áp dụng cho mọi tiện ích Bản đồ và bản đồ toàn màn hình. Mỗi tiện ích vẫn có thể đổi riêng từ biểu tượng bánh răng.</string>
     <string name="map_pack_help">Cả tỉnh của bạn không cần internet, chỉ một lần tải. Cập nhật vài lần mỗi năm.</string>
     <string name="map_pack_full">Với kiểu Đầy đủ, bản đồ tải từ internet; vùng đã tải dùng để tìm kiếm và chỉ đường.</string>

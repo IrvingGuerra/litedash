@@ -73,7 +73,6 @@
     <string name="split_left">Sol</string>
     <string name="split_right">Sağ</string>
     <string name="split_swap_help">Alt köşedeki oklar düğmesiyle de orada değiştirebilirsiniz.</string>
-    <string name="split_unsupported">Bu ünite Android %1$s çalıştırıyor: iki uygulamayı yan yana kullanmak için Android 12L veya daha yenisi gerekir.</string>
     <string name="gauge_style_needle">İbre</string>
     <string name="gauge_style_digital">Dijital</string>
     <string name="gauge_style_bar">Çubuk</string>
@@ -727,7 +726,7 @@
     <string name="tires_source_usb">USB alıcı</string>
     <string name="tires_source_ble">Bluetooth</string>
     <string name="tires_source_demo">Demo</string>
-    <string name="tires_source_help">USB alıcı: araba ekranları için TPMS kitleri. Bluetooth: Bluetooth’lu sibop kapakları veya sensörler. Demo: nasıl göründüğünü görmek için test verisi.</string>
+    <string name="tires_source_help">USB alıcı: araba ekranları için TPMS kitleri. Bluetooth: Bluetooth’lu sibop kapakları veya sensörler. Demo: nasıl göründüğünü görmek için test verisi. Araba: fabrika sensörleri, Atölye’deki OBD adaptörüyle.</string>
     <string name="tires_grant">İzin ver</string>
     <string name="retry">Tekrar dene</string>
     <string name="tires_usb_help">Ünitenizin kendi lastik uygulaması alıcıyı kapıyorsa, çıkarıp tekrar takın ve \"her zaman\" ile LiteDash’i seçin.</string>

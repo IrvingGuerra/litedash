@@ -73,7 +73,6 @@
     <string name="split_left">左</string>
     <string name="split_right">右</string>
     <string name="split_swap_help">下の隅にある矢印ボタンでも、その場で入れ替えられます。</string>
-    <string name="split_unsupported">このヘッドユニットは Android %1$s です。2つのアプリの並列表示には Android 12L 以降が必要です。</string>
     <string name="gauge_style_needle">針</string>
     <string name="gauge_style_digital">デジタル</string>
     <string name="gauge_style_bar">バー</string>
@@ -719,7 +718,7 @@
     <string name="tires_source_usb">USB 受信機</string>
     <string name="tires_source_ble">Bluetooth</string>
     <string name="tires_source_demo">デモ</string>
-    <string name="tires_source_help">USB 受信機：カーナビ画面用の TPMS キット。Bluetooth：Bluetooth 対応のバルブキャップやセンサー。デモ：見た目を確認するためのテストデータ。</string>
+    <string name="tires_source_help">USB 受信機：カーナビ画面用の TPMS キット。Bluetooth：Bluetooth 対応のバルブキャップやセンサー。デモ：見た目を確認するためのテストデータ。車両：純正センサー（整備の OBD アダプター経由）。</string>
     <string name="tires_grant">権限を許可</string>
     <string name="retry">もう一度試す</string>
     <string name="tires_usb_help">画面に付属のタイヤアプリが受信機を使ってしまう場合は、受信機を抜いて差し直し、「常に」で LiteDash を選んでください。</string>

@@ -49,6 +49,7 @@
     <string name="map_offline_my_location">Mijn locatie</string>
     <string name="map_tab_app">Kaart-app</string>
     <string name="map_tab_look">LiteDash-kaart</string>
+    <string name="map_tab_style">Kaartweergave</string>
     <string name="map_look_help">Geldt voor al je Kaart-widgets en de kaart op volledig scherm. Elke widget is nog via zijn tandwiel aan te passen.</string>
     <string name="map_pack_help">Je hele provincie zonder internet, in één download. Wordt een paar keer per jaar bijgewerkt.</string>
     <string name="map_pack_full">Met de stijl Volledig komt de kaart van internet; de gedownloade regio dient voor zoeken en routes.</string>

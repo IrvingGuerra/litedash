@@ -5,7 +5,6 @@
     <string name="weather_switch">Thời tiết</string>
     <string name="weather_switch_help">Trên thanh, đồng hồ và tiện ích Thời tiết; cập nhật mỗi nửa giờ khi bạn đang xem màn hình chính. Dùng vị trí gần đúng và internet; khi tắt thì không dùng cả hai.</string>
     <string name="reminder_pick_date">Khi nào đến hạn %1$s?</string>
-    <string name="split_unsupported_screen">Đầu máy của bạn không cho phép hai ứng dụng song song (nhà sản xuất đã tắt).</string>
     <string name="tab_home">Màn hình chính</string>
     <string name="tab_interface">Giao diện</string>
     <string name="android_bar">Thanh Android</string>

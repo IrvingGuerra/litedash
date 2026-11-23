@@ -11,11 +11,17 @@ import com.irvingguerra.litedash.core.ui.Segmented
 import com.irvingguerra.litedash.core.ui.TextInput
 import com.irvingguerra.litedash.core.ui.Typography
 
-/** Pestañas de Ajustes → Apps (por nombre: si se reordenan, los atajos que abren una siguen bien). */
+/** Pestañas de Ajustes → Apps (por nombre: si se reordenan o se esconde una, los atajos que abren una siguen bien). */
 private enum class AppsTab(val title: Int) {
     MUSIC(R.string.music), RADIO(R.string.tile_radio), NAVIGATION(R.string.tab_navigation), PROJECTION(R.string.tile_projection),
     SPLIT(R.string.tab_split),
 }
+
+/** Las que se ven: Pantalla dividida solo donde Android la deja (como un módulo que no está, desaparece). */
+private val shownAppsTabs by lazy { AppsTab.entries.filter { it != AppsTab.SPLIT || SplitScreen.supported() } }
+
+/** Ajustes → Apps abre en [tab] (por su lugar entre las que se ven). */
+private fun selectAppsTab(tab: AppsTab) = selectTab(APPS_TABS, shownAppsTabs.indexOf(tab).coerceAtLeast(0))
 
 /**
  * Sección Apps: la música (Archivos, Bluetooth o App), la radio, la de navegación (con Casa y Trabajo), la de
@@ -23,7 +29,8 @@ private enum class AppsTab(val title: Int) {
  */
 @Composable
 internal fun AppsSettings(d: Dependencies, requestMap: () -> Unit) {
-    when (AppsTab.entries[tabs(AppsTab.entries.map { it.title }, APPS_TABS).coerceAtMost(AppsTab.entries.lastIndex)]) {
+    val shown = shownAppsTabs
+    when (shown[tabs(shown.map { it.title }, APPS_TABS).coerceIn(0, shown.lastIndex)]) {
         AppsTab.MUSIC -> MusicModeSettings(d)
         AppsTab.RADIO -> RadioSettings(d)
         AppsTab.NAVIGATION -> NavigationSettings(d, requestMap)
@@ -57,7 +64,9 @@ private fun NavigationSettings(d: Dependencies, requestMap: () -> Unit) {
         Label(stringResource(R.string.place_work), Typography.label, c.textMuted)
         TextInput(d.prefs.workAddress ?: "", { d.prefs.workAddress = it.take(PLACE_MAX).ifBlank { null } }, stringResource(R.string.place_hint), Modifier.fillMaxWidth())
     }
-    when (tabs(listOf(R.string.map_tab_look, R.string.map_offline), NAVIGATION_TABS)) {
+    // «Aspecto del mapa», no «Mapa de LiteDash»: ese nombre es la opción de arriba, y estas pestañas valen en los dos
+    // modos (el widget Mapa siempre lo dibuja LiteDash).
+    when (tabs(listOf(R.string.map_tab_style, R.string.map_offline), NAVIGATION_TABS)) {
         LOOK_TAB -> SettingsCard(help = stringResource(R.string.map_look_help)) { MapLookSettings(d) }
         else -> SettingsCard { MapOfflineSettings(d, requestMap) }
     }
@@ -69,7 +78,7 @@ private const val PLACE_MAX = 160
 /** La pestaña elegida de Ajustes → Apps. */
 private const val APPS_TABS = "apps"
 
-/** Las del mapa propio en Apps → Navegación (Mapa de LiteDash, Sin conexión). */
+/** Las del mapa propio en Apps → Navegación (Aspecto del mapa, Sin conexión). */
 private const val NAVIGATION_TABS = "navigation"
 
 /** El aspecto del mapa, la primera de [NAVIGATION_TABS]; Sin conexión, la segunda. */
@@ -77,16 +86,16 @@ private const val LOOK_TAB = 0
 private const val OFFLINE_TAB = 1
 
 /** Ajustes → Apps abre en Radio (desde la radio sin nada enlazado). */
-internal fun openRadioSettings() = selectTab(APPS_TABS, AppsTab.RADIO.ordinal)
+internal fun openRadioSettings() = selectAppsTab(AppsTab.RADIO)
 
 /** Ajustes → Apps abre en Navegación → Sin conexión (desde la tarjeta de la ruta, para bajar el mapa de tu estado). */
 internal fun openOfflineMaps() {
-    selectTab(APPS_TABS, AppsTab.NAVIGATION.ordinal)
+    selectAppsTab(AppsTab.NAVIGATION)
     selectTab(NAVIGATION_TABS, OFFLINE_TAB)
 }
 
 /** Ajustes → Apps abre en Android Auto / CarPlay (desde su botón de la barra, el widget o el volante sin app). */
-internal fun openProjectionSettings() = selectTab(APPS_TABS, AppsTab.PROJECTION.ordinal)
+internal fun openProjectionSettings() = selectAppsTab(AppsTab.PROJECTION)
 
 /** Ajustes → Apps abre en Música (desde Ajustes → Celular, para emparejar el Bluetooth). */
-internal fun openMusicSettings() = selectTab(APPS_TABS, AppsTab.MUSIC.ordinal)
+internal fun openMusicSettings() = selectAppsTab(AppsTab.MUSIC)

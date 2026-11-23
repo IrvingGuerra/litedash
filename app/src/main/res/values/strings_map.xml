@@ -49,6 +49,7 @@
     <string name="map_offline_my_location">Mi ubicación</string>
     <string name="map_tab_app">App de mapas</string>
     <string name="map_tab_look">Mapa de LiteDash</string>
+    <string name="map_tab_style">Aspecto del mapa</string>
     <string name="map_look_help">Se aplica a todos tus widgets Mapa y al mapa en grande. Cada widget se puede cambiar aparte desde su engrane.</string>
     <string name="map_pack_help">Todo tu estado sin internet, de una sola descarga. Se actualiza unas veces al año.</string>
     <string name="map_pack_full">Con el estilo Completo el mapa se ve de internet; el estado bajado sirve para buscar y trazar rutas.</string>

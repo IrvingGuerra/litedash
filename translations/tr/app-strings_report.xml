@@ -6,7 +6,6 @@
     <string name="report_which">Hangisi?</string>
     <string name="report_problem">Ne oluyor?</string>
     <string name="report_workshop">Atölye (OBD)</string>
-    <string name="report_projection">Android Auto / uygulamalar</string>
     <string name="report_lights">Gündüz ve gece / farlar</string>
     <string name="report_music_usb">Dosyalar (LiteDash oynatıcı)</string>
     <string name="report_music_bt">Bluetooth (ünitenin)</string>

@@ -90,7 +90,7 @@ private enum class ReportModule(val key: String, val title: Int, val details: Li
     WORKSHOP("workshop", R.string.report_workshop, listOf(ReportDetail.BLUETOOTH, ReportDetail.WIFI, ReportDetail.USB)),
     MAP("map", R.string.templates_tab_map),
     SPLIT("split", R.string.tab_split),
-    PROJECTION("projection", R.string.report_projection),
+    PROJECTION("projection", R.string.tile_projection),
     LIGHTS("lights", R.string.report_lights),
     UPDATES("updates", R.string.tab_updates),
     OTHER("other", R.string.reminder_other),
@@ -127,6 +127,7 @@ private var pendingSound: SoundPiece? = null
 /** "Enviar un reporte" ya en "Música · Bluetooth" (o "Radio · FM") con "No suena": Ajustes → Sistema → Tu pantalla. */
 internal fun openSoundReport(piece: SoundPiece) {
     pendingSound = piece
+    forgetLastResult()
     selectTab(SYSTEM_TABS, SystemTab.YOUR_SCREEN.ordinal)
 }
 
@@ -136,6 +137,7 @@ private var pendingMapRequest = false
 /** "Enviar un reporte" ya en "Mapa" con "Quiero el mapa de mi país": Ajustes → Sistema → Tu pantalla. */
 internal fun openMapRequest() {
     pendingMapRequest = true
+    forgetLastResult()
     selectTab(SYSTEM_TABS, SystemTab.YOUR_SCREEN.ordinal)
 }
 
@@ -155,6 +157,14 @@ private var lastReport = 0L
  */
 private val reportScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 private var reportState by mutableStateOf<ReportState>(ReportState.Idle)
+
+/**
+ * Un reporte nuevo ya elegido (sonido o mapa) no espera a que se toque «Listo» del anterior: el «Gracias», el error o
+ * la espera de la vez pasada se olvidan (uno que aún se está mandando sigue y se ve en su botón).
+ */
+private fun forgetLastResult() {
+    if (reportState != ReportState.Sending) reportState = ReportState.Idle
+}
 
 /** La tarjeta con el flujo por pasos; siempre se puede regresar al anterior. */
 @OptIn(ExperimentalLayoutApi::class)
@@ -414,11 +424,12 @@ private fun locationInfo(context: Context): String {
     val on = runCatching {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) manager.isLocationEnabled else manager.isProviderEnabled(LocationManager.GPS_PROVIDER)
     }.getOrDefault(false)
-    val now = System.currentTimeMillis()
+    // Edad con el reloj desde el arranque: muchas pantallas sin pila arrancan con la fecha en 1970 o 2015.
+    val now = SystemClock.elapsedRealtimeNanos()
     val providers = runCatching { manager.allProviders }.getOrDefault(emptyList()).joinToString { p ->
         val enabled = runCatching { manager.isProviderEnabled(p) }.getOrDefault(false)
         val last = if (fine || coarse) runCatching { manager.getLastKnownLocation(p) }.getOrNull() else null
-        "$p(${if (enabled) "on" else "off"}" + (last?.let { ", hace ${(now - it.time) / 60_000} min ±${it.accuracy.toInt()} m" } ?: "") + ")"
+        "$p(${if (enabled) "on" else "off"}" + (last?.let { ", hace ${(now - it.elapsedRealtimeNanos) / 60_000_000_000L} min ±${it.accuracy.toInt()} m" } ?: "") + ")"
     }
     val permission = if (fine) "precisa" else if (coarse) "aproximada" else "sin permiso"
     return "Ubicación: ${if (on) "prendida" else "apagada"}, $permission; proveedores: ${providers.ifEmpty { "ninguno" }}"
