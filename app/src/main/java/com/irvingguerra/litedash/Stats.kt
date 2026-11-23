@@ -26,15 +26,19 @@ class Stats(private val context: Context, private val enabled: () -> Boolean) {
     /** Último intento fallido en este arranque (reloj desde el encendido); 0 = ninguno. */
     @Volatile private var failedAt = 0L
 
-    suspend fun pingDaily() {
-        if (BuildConfig.DEBUG || !enabled()) return
+    /** Todo en IO: lee su archivo y la red. */
+    suspend fun pingDaily() = withContext(Dispatchers.IO) {
+        if (BuildConfig.DEBUG || !enabled()) return@withContext
         val today = Day.today().toString()
-        if (store.getString(KEY_LAST, null) == today) return
+        if (store.getString(KEY_LAST, null) == today) return@withContext
         // Sin red no se reintenta en cada regreso al inicio (cada intento espera hasta 25 s): a lo más uno por hora.
         val now = SystemClock.elapsedRealtime()
-        if (failedAt != 0L && now - failedAt < RETRY_MS) return
+        if (failedAt != 0L && now - failedAt < RETRY_MS) return@withContext
         val id = store.getString(KEY_ID, null) ?: Firestore.newId().also { store.edit { putString(KEY_ID, it) } }
-        val since = store.getString(KEY_SINCE, null) ?: today.also { store.edit { putString(KEY_SINCE, it) } }
+        // «Desde» se guarda solo cuando la nube lo aceptó: sin pila de reloj la primera vez puede ser 2015 (y ese envío
+        // falla), y se quedaba para siempre.
+        val saved = store.getString(KEY_SINCE, null)
+        val since = saved ?: today
         val sent = try {
             send(id, since)
         } catch (_: IOException) {
@@ -42,13 +46,16 @@ class Stats(private val context: Context, private val enabled: () -> Boolean) {
         }
         if (sent) {
             failedAt = 0L
-            store.edit { putString(KEY_LAST, today) }
+            store.edit {
+                putString(KEY_LAST, today)
+                if (saved == null) putString(KEY_SINCE, since)
+            }
         } else {
             failedAt = now
         }
     }
 
-    private suspend fun send(id: String, since: String): Boolean = withContext(Dispatchers.IO) {
+    private fun send(id: String, since: String): Boolean {
         val config = context.resources.configuration
         val fields = JSONObject()
             .put("version", Firestore.int(BuildConfig.VERSION_CODE.toLong()))
@@ -66,7 +73,7 @@ class Stats(private val context: Context, private val enabled: () -> Boolean) {
         val write = JSONObject()
             .put("update", JSONObject().put("name", Firestore.document("screens/$id")).put("fields", fields))
             .put("updateTransforms", Firestore.serverTime("seen"))
-        Firestore.commit(context, write)
+        return Firestore.commit(context, write)
     }
 
     private companion object {
