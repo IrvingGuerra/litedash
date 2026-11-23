@@ -14,8 +14,9 @@ import java.io.DataOutputStream
  * No es seguro entre hilos: el repositorio lo usa en el hilo principal y guarda una [snapshot].
  *
  * Pantallas sin pila de reloj: arrancan en una fecha vieja (1970, 2015, la de su sistema) y hasta que la red la
- * corrige la hora va DETRÁS de lo guardado. Nada se borra por eso: lo nuevo se sigue anotando justo después de la
- * última muestra ([shift], el tiempo que corre en esta sesión) y todo lo que entra y sale se traduce con él, así la
+ * corrige la hora va DETRÁS de lo guardado. Nada se borra por eso: lo nuevo se sigue anotando después de la
+ * última muestra ([shift], el tiempo que corre en esta sesión), con un hueco de [SESSION_GAP_S] para que la fuga rápida
+ * nunca compare dos sesiones distintas, y todo lo que entra y sale se traduce con él, así la
  * gráfica, las alertas y la fuga lenta siguen viendo una línea de tiempo continua. Cuando la hora alcanza lo
  * guardado, se vuelve a la hora tal cual.
  */
@@ -98,8 +99,10 @@ class TireHistory {
         val newest = rings.values.maxOfOrNull { it.lastTime() ?: Int.MIN_VALUE }?.takeIf { it != Int.MIN_VALUE }
         // La hora ya alcanzó lo guardado (la red la corrigió): de nuevo tal cual.
         if (shift != 0 && (newest == null || raw >= newest)) shift = 0
-        // La hora va detrás de lo guardado: se sigue justo después de la última muestra.
-        if (newest != null && raw + shift < newest - INTERVAL_S) shift = newest - raw + INTERVAL_S
+        // La hora va detrás de lo guardado: es otra sesión y se sigue después de la última muestra, separada por más
+        // que la ventana de la fuga rápida (si no, las llantas calientes del viaje de ayer contra las frías de hoy
+        // parecerían fuga al arrancar).
+        if (newest != null && raw + shift < newest - INTERVAL_S) shift = newest - raw + SESSION_GAP_S
         val sec = raw + shift
         val ring = rings.getOrPut(w) { Ring() }
         val last = ring.lastTime()
@@ -219,6 +222,8 @@ class TireHistory {
         const val INTERVAL_S = 30
         const val KEEP_S = 7 * 24 * 3600
         const val CAPACITY = KEEP_S / INTERVAL_S
+        /** Hueco entre la última muestra y una sesión nueva con el reloj atrasado: más que la ventana de la fuga rápida. */
+        internal const val SESSION_GAP_S = (FAST_LEAK_WINDOW_MS / 1000).toInt() + INTERVAL_S
         /** Una hora de muestras al empezar; se dobla al llenarse. */
         private const val FIRST_SIZE = 120
         private const val SAMPLE_BYTES = 7

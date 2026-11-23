@@ -249,9 +249,11 @@ class TireLogicTest {
         // Un regreso chico (< 30 s) no es otra sesión: solo espera su turno.
         assertTrue(!h.add(w, boot + 10_000L, 226f))
         assertTrue(h.add(w, boot + 30_000L, 227f, 20f))
-        // Nada se borró, y en la hora de ahora lo de esta sesión es "ahora" y lo de antes va justo antes.
-        assertEquals(listOf(boot - 60_000L, boot - 30_000L, boot, boot + 30_000L), h.samples(w).map { it.atMillis })
-        assertEquals(listOf(230f, 231f, 228f, 227f), h.recent(w, boot + 30_000L).map { it.kpa })
+        // Nada se borró, y en la hora de ahora lo de esta sesión es "ahora" y lo de antes va antes, separado por más que
+        // la ventana de la fuga rápida (que solo ve esta sesión).
+        val gap = TireHistory.SESSION_GAP_S * 1000L
+        assertEquals(listOf(boot - gap - 30_000L, boot - gap, boot, boot + 30_000L), h.samples(w).map { it.atMillis })
+        assertEquals(listOf(228f, 227f), h.recent(w, boot + 30_000L).map { it.kpa })
         // La red corrige la hora: de nuevo tal cual, sin perder nada.
         val fixed = good + 2 * hour
         assertTrue(h.add(w, fixed, 229f))
@@ -271,8 +273,26 @@ class TireLogicTest {
         assertEquals(14, again.samples(w).size)
         assertEquals(boot + 90_000L, again.samples(w).last().atMillis)
         assertEquals(List(4) { 225f }, again.recent(w, boot + 90_000L).takeLast(4).map { it.kpa })
-        // Lo del viaje anterior sigue a la vista, justo antes.
-        assertEquals(230f, again.samples(w, boot - 30_000L, boot - 30_000L).single().kpa)
+        // Lo del viaje anterior sigue a la vista, antes del hueco de sesión.
+        val gap = TireHistory.SESSION_GAP_S * 1000L
+        assertEquals(230f, again.samples(w, boot - gap, boot - gap).single().kpa)
+    }
+
+    @Test
+    fun sinRelojLaFugaRapidaNoCruzaSesiones() {
+        // Ayer: viaje con las llantas calientes (240 kPa, sin temperatura, como el OBD de fábrica). Hoy la pantalla
+        // arranca otra vez en su fecha vieja con las llantas frías (222): no es fuga rápida.
+        val boot = 1_420_070_400_000L
+        val yesterday = TireHistory()
+        repeat(20) { yesterday.add(w, boot + it * 30_000L, 240f) }
+        val today = TireHistory.decode(yesterday.encode())
+        assertTrue(today.add(w, boot, 222f))
+        val recent = today.recent(w, boot)
+        assertEquals(listOf(222f), recent.map { it.kpa })
+        val drop = pressureDrop(recent, 222f, null) ?: 0f
+        assertTrue("caída $drop", drop < FAST_LEAK_KPA)
+        // La fuga lenta sigue viendo el historial de antes.
+        assertEquals(21, today.samples(w).size)
     }
 
     @Test
