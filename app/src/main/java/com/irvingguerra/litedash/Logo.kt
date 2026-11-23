@@ -569,19 +569,19 @@ private fun rememberBlurredWallpaper(wanted: Boolean, clear: Boolean): Pair<Imag
 }
 
 /**
- * Para las tarjetas de vidrio del inicio ([wanted]): tu fondo desenfocado y el velo que lleva detrás: el de tu fondo
- * ([dim], se lee al dibujar, nunca menos del que pide tu imagen) y, como cristal ([clear]), cerrado lo que haga falta
- * para que el texto de la tarjeta se lea. null = sin fondo (o aún no está).
+ * Para las tarjetas de vidrio del inicio ([wanted]): tu fondo desenfocado como cristal y el velo que lleva detrás: el de
+ * tu fondo ([dim], se lee al dibujar, nunca menos del que pide tu imagen), cerrado lo que haga falta para que el texto
+ * de la tarjeta se lea. null = sin fondo (o aún no está).
  */
 @Composable
-fun rememberWallpaperBackdrop(wanted: Boolean, clear: Boolean, dim: () -> Float): CardBackdrop? {
-    val pair = rememberBlurredWallpaper(wanted, clear)
+fun rememberWallpaperBackdrop(wanted: Boolean, dim: () -> Float): CardBackdrop? {
+    val pair = rememberBlurredWallpaper(wanted, clear = true)
     val floor = rememberLegibleFloor(pair?.first)
     val b = pair?.second ?: return null
     val c = LocalColors.current
     // Se calcula una vez por valor, no en cada dibujo.
     val currentDim by rememberUpdatedState(dim)
-    return remember(b, c, floor, clear) {
+    return remember(b, c, floor) {
         val extreme = if (c.dark) b.light else b.shade
         var lastDim = Float.NaN
         var veil = 0f
@@ -589,7 +589,7 @@ fun rememberWallpaperBackdrop(wanted: Boolean, clear: Boolean, dim: () -> Float)
             val base = maxOf(currentDim(), floor)
             if (base != lastDim) {
                 lastDim = base
-                veil = if (clear) glassVeil(c, extreme, base) else base
+                veil = glassVeil(c, extreme, base)
             }
             c.background.copy(alpha = veil)
         }

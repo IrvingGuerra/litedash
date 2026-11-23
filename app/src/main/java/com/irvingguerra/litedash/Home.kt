@@ -733,7 +733,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
         val glass = d.prefs.cardStyle == CardStyle.GLASS
         // Como cristal sobre tu fondo o el resplandor del tema; sobre el mapa de fondo (se mueve), con su relleno.
         val calm = d.dashboard.background == PageBackground.WALLPAPER
-        val blurred = rememberWallpaperBackdrop(glass && calm, clear = true) { d.prefs.wallpaperDim }
+        val blurred = rememberWallpaperBackdrop(glass && calm) { d.prefs.wallpaperDim }
         val homeLook = remember(d.prefs.cardStyle, d.prefs.cardOpacity, blurred, calm) { CardLook(d.prefs.cardStyle, d.prefs.cardOpacity, blurred, calm) }
         if (panel == null) CompositionLocalProvider(LocalHomeCovered provides homeCovered, LocalCardLook provides homeLook) {
             Box(Modifier.fillMaxSize().hiddenWhen { homeCovered }) {
@@ -1172,11 +1172,9 @@ private fun TopBar(
 /** Aviso cuando LiteDash no es la pantalla de inicio: un toque para arreglarlo, o no volver a preguntar. */
 @Composable
 private fun HomePrompt(prefs: Preferences, revision: Int) {
-    val context = LocalContext.current
     val (request, returns) = rememberRequestHome()
     // Fuera del hilo principal (pregunta al sistema); mientras llega, sin aviso.
-    val isHome = produceState<Boolean?>(null, revision, returns) { value = withContext(Dispatchers.IO) { isHomeApp(context) } }.value
-    if (isHome != false) return
+    if (rememberIsHome(revision, returns) != false) return
     Notice(stringResource(R.string.not_home_notice)) {
         Button(stringResource(R.string.make_home), request, primary = true)
         Button(stringResource(R.string.dont_ask), { prefs.dontAskHome = true })
