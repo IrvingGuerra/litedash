@@ -9,8 +9,10 @@ import java.io.IOException
 import org.json.JSONException
 import org.json.JSONObject
 
-/** Un idioma de la lista: [progress] = % de textos traducidos; [sha256] = su versión (cambia con cada arreglo). */
-/** Un idioma de la lista; [reviewed] = lo revisó un hablante nativo (si no, es traducción automática). */
+/**
+ * Un idioma de la lista: [progress] = % de textos traducidos; [sha256] = su versión (cambia con cada arreglo);
+ * [reviewed] = lo revisó un hablante nativo (si no, es traducción automática).
+ */
 class LanguageChoice(val tag: String, val name: String, val progress: Int, val bytes: Long, val sha256: String, val reviewed: Boolean = false)
 
 private val SHA256 = Regex("[0-9a-f]{64}")
@@ -75,7 +77,10 @@ fun installLanguage(context: Context, choice: LanguageChoice, progress: (Float) 
     }
 }
 
-/** Al abrir la app con un idioma bajado: si la lista trae una versión nueva, se baja (sale en el siguiente arranque). */
+/**
+ * Al abrir la app con un idioma bajado: si la lista trae una versión nueva, se baja. Los textos de la aplicación (avisos,
+ * servicios) la toman al momento; la ventana abierta, cuando se vuelve a crear.
+ */
 fun updateLanguage(context: Context, tag: String) {
     val choice = fetchLanguages(context)?.firstOrNull { it.tag == tag } ?: return
     installLanguage(context, choice) {}

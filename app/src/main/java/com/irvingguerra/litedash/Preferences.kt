@@ -154,9 +154,9 @@ enum class BarSize(val stored: String, val scale: Float) {
 }
 
 /**
- * Un botón de la barra de apps. Los de antes de [FAVORITES] van a la izquierda (arriba en la lateral) y
- * los de después a la derecha; tus apps favoritas, al centro. [SETTINGS] siempre va y al final: sin él no
- * habría cómo salir del inicio.
+ * Un botón de la barra de apps. Dónde va (principio, centro o final) lo deciden las dos divisiones
+ * [SPLIT_START] y [SPLIT_END]; tus favoritas ([FAVORITES]) son un botón más. [SETTINGS] siempre va y al final:
+ * sin él no habría cómo salir del inicio.
  */
 enum class BarItem(val stored: String) {
     HOME("home"), APPS("apps"), MUSIC("music"), VOLUME("volume"), NAVIGATE("navigate"), BLUETOOTH("bluetooth"), PROJECTION("projection"),
