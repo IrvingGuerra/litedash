@@ -1,5 +1,7 @@
 package com.irvingguerra.litedash.feature.music
 
+import android.media.MediaMetadata
+import android.media.session.PlaybackState
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -116,6 +118,61 @@ class BroadcastMetaTest {
         val a = BroadcastMeta.parse("com.android.music.metachanged", mapOf("track" to "Uno", "package" to "x.one"))!!
         val b = BroadcastMeta.parse("com.android.music.playstatechanged", mapOf("playing" to true, "package" to "x.two"))!!
         assertNull(b.over(a).title)
+    }
+
+    // Como llega de `toMap`: el MediaMetadata como mapa de textos y el PlaybackState como su estado.
+    private val track = "android.bluetooth.avrcp-controller.profile.action.TRACK_EVENT"
+    private val metadata = "android.bluetooth.avrcp-controller.profile.extra.METADATA"
+    private val playback = "android.bluetooth.avrcp-controller.profile.extra.PLAYBACK"
+
+    @Test
+    fun androidAvrcpSongAndPlaying() {
+        val m = BroadcastMeta.parse(
+            track,
+            mapOf(
+                metadata to mapOf(MediaMetadata.METADATA_KEY_TITLE to "Amor Eterno", MediaMetadata.METADATA_KEY_ARTIST to "Rocío Dúrcal"),
+                playback to PlaybackState.STATE_PLAYING,
+            ),
+        )!!
+        assertEquals("Amor Eterno", m.title)
+        assertEquals("Rocío Dúrcal", m.artist)
+        assertEquals(true, m.playing)
+        assertTrue(m.bluetooth)
+        assertNull(m.pkg)
+        // Título y artista de respaldo.
+        val alt = BroadcastMeta.parse(
+            track,
+            mapOf(metadata to mapOf(MediaMetadata.METADATA_KEY_DISPLAY_TITLE to "Uno", MediaMetadata.METADATA_KEY_ALBUM_ARTIST to "Dos")),
+        )!!
+        assertEquals("Uno", alt.title)
+        assertEquals("Dos", alt.artist)
+        assertNull(alt.playing)
+    }
+
+    @Test
+    fun androidAvrcpStateOnly() {
+        fun p(state: Int) = BroadcastMeta.parse(track, mapOf(playback to state))
+        val paused = p(PlaybackState.STATE_PAUSED)!!
+        assertNull(paused.title)
+        assertEquals(false, paused.playing)
+        assertTrue(paused.bluetooth)
+        assertEquals(false, p(PlaybackState.STATE_STOPPED)!!.playing)
+        assertNull(p(PlaybackState.STATE_BUFFERING))
+        val song = BroadcastMeta.parse(track, mapOf(metadata to mapOf(MediaMetadata.METADATA_KEY_TITLE to "Uno")))!!
+        assertEquals("Uno", p(PlaybackState.STATE_PLAYING)!!.over(song).title)
+    }
+
+    @Test
+    fun androidAvrcpPlaceholders() {
+        val m = BroadcastMeta.parse(
+            track,
+            mapOf(metadata to mapOf(MediaMetadata.METADATA_KEY_TITLE to "NOT PROVIDED", MediaMetadata.METADATA_KEY_ARTIST to " ", MediaMetadata.METADATA_KEY_ALBUM_ARTIST to "Unknown")),
+        )
+        assertNull(m)
+        // Con textos (alguna ROM): la lectura genérica de antes.
+        val text = BroadcastMeta.parse(track, mapOf("title" to "Canción", "artist" to "Alguien"))!!
+        assertEquals("Canción", text.title)
+        assertTrue(text.bluetooth)
     }
 
     @Test

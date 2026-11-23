@@ -15,11 +15,23 @@ internal fun MediaController.busy(): Boolean = when (playbackState?.state) {
     else -> false
 }
 
-/** Los extras de un aviso como mapa (un extra que no se puede leer deja el mapa vacío). */
+/**
+ * Los extras de un aviso como mapa (un extra que no se puede leer deja el mapa vacío). Los objetos del AVRCP de
+ * Android se pasan a valores simples para que [BroadcastMeta.parse] no dependa de Android: [MediaMetadata] → mapa de
+ * sus textos ([BroadcastMeta.METADATA_KEYS]) y [PlaybackState] → su estado (Int).
+ */
 @Suppress("DEPRECATION") // Bundle.get: los avisos traen tipos variados
 internal fun Bundle?.toMap(): Map<String, Any?> {
     val b = this ?: return emptyMap()
-    return runCatching { b.keySet().associateWith { b.get(it) } }.getOrDefault(emptyMap())
+    return runCatching {
+        b.keySet().associateWith {
+            when (val v = b.get(it)) {
+                is MediaMetadata -> BroadcastMeta.METADATA_KEYS.associateWith { k -> v.getString(k) }
+                is PlaybackState -> v.state
+                else -> v
+            }
+        }
+    }.getOrDefault(emptyMap())
 }
 
 /** El primer texto no vacío de [keys] (algunas apps mandan el título vacío y el bueno en otro campo). */
