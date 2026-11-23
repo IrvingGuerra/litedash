@@ -1,6 +1,7 @@
 package com.irvingguerra.litedash
 
 import android.app.Activity
+import android.app.ActivityManager
 import android.content.Context
 import android.content.Intent
 import android.content.res.Configuration
@@ -38,6 +39,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        liveTask = taskId
         // Abierta desde otra app con un lugar (geo:): el mapa en grande lo enseña.
         if (savedInstanceState == null && intent?.action == Intent.ACTION_VIEW) PlaceRequests.fromGeo(intent.data)
         // Es la pantalla de inicio: "atrás" no la cierra (los paneles sí se cierran con atrás).
@@ -59,6 +61,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onDestroy() {
         window.decorView.removeCallbacks(refitLater)
+        if (liveTask == taskId) liveTask = -1
         super.onDestroy()
     }
 
@@ -198,9 +201,15 @@ class MainActivity : ComponentActivity() {
         /** ¿Hay que volver a Ajustes → Inicio y apariencia → Interfaz? Lo dice una sola vez. */
         fun takeReopenLanguage(): Boolean = reopenLanguage.also { reopenLanguage = false }
 
+        // La tarea de la actividad viva (-1 = ninguna), para [bringToFront].
+        @Volatile private var liveTask = -1
+
         /** Trae el inicio al frente sin tocar lo abierto (no es el botón de inicio: no cierra paneles). */
         fun bringToFront(context: Context) {
             if (inFront) return
+            // Primero se mueve la tarea viva (REORDER_TASKS): en algunas pantallas el startActivity solo no la traía al frente.
+            val task = liveTask
+            if (task != -1) runCatching { context.getSystemService(ActivityManager::class.java)?.moveTaskToFront(task, 0) }
             val intent = Intent(context, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT)
             runCatching { context.startActivity(intent) }
         }

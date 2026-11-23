@@ -62,6 +62,8 @@
          Android 10, poder ponerse al frente sola ("Mostrar sobre otras apps", lo da el usuario). -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <!-- Regresar al inicio tras abrir encima una app de música o de fábrica (permiso normal, sin pregunta). -->
+    <uses-permission android:name="android.permission.REORDER_TASKS" />
     <!-- Catálogo de autos, actualizaciones (GitHub), clima, mapa, radio por internet, carátulas,
          estadísticas anónimas (apagables), "Enviar un reporte" y el escáner OBD por Wi-Fi. -->
     <uses-permission android:name="android.permission.INTERNET" />
