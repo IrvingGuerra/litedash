@@ -25,6 +25,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.irvingguerra.litedash.core.ui.Card
@@ -99,9 +100,13 @@ fun TemplatesPanel(dashboard: DashboardState, prefs: Preferences, close: () -> U
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(24.dp)) {
             Label(stringResource(R.string.templates_help), Typography.body, c.textMuted)
             val tab = TemplateTab.entries[tabs(TemplateTab.entries.map { it.title }, "templates")]
+            val alerts = LocalAlerts.current
+            val res = LocalResources.current
             fun apply(p: Template) {
-                dashboard.template(p, tab.hero)
-                close()
+                val use = { dashboard.template(p, tab.hero); close() }
+                // Reemplaza todo el acomodo de la página (y sus opciones): con algo ya puesto, se pregunta antes.
+                if (dashboard.tiles.isEmpty()) use()
+                else alerts.ask(Alert(res.getString(R.string.template_apply_title, res.getString(nameOf(p))), res.getString(R.string.template_apply_confirm), res.getString(R.string.template_apply_message), onConfirm = use))
             }
             when (tab) {
                 TemplateTab.MAP -> Label(stringResource(R.string.templates_map_help), Typography.small, c.textMuted)

@@ -5,12 +5,15 @@ import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
@@ -85,30 +88,48 @@ internal fun rememberPageSwipe(pages: DashboardState, shift: Animatable<Float, *
     }
 }
 
-/** Los puntitos de las páginas (la que se ve, alargada), en el margen de abajo del tablero; tocar uno lleva a esa página. */
+/**
+ * Los puntitos de las páginas (la que se ve, alargada), en el margen de abajo del tablero; tocar uno lleva a esa página.
+ * Se ven chiquitos, pero cada uno se toca en una zona de [DOT_TOUCH_WIDTH]×[DOT_TOUCH_HEIGHT] (con el dedo, en el auto).
+ */
 @Composable
 internal fun PageDots(pages: DashboardState, modifier: Modifier = Modifier) {
     val c = LocalColors.current
-    Row(
-        modifier.padding(horizontal = 8.dp, vertical = 2.dp),
-        horizontalArrangement = Arrangement.spacedBy(7.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        for (i in 0 until pages.pageCount) {
-            val on = i == pages.page
-            val label = stringResource(R.string.page_n, i + 1)
-            Box(
-                Modifier
-                    .height(6.dp)
-                    .width(if (on) 18.dp else 6.dp)
-                    .clip(CircleShape)
-                    .background(if (on) c.text else c.textMuted.copy(alpha = 0.6f))
-                    .clickable { pages.goTo(i) }
-                    .semantics { contentDescription = label },
-            )
+    Box(modifier, contentAlignment = Alignment.Center) {
+        Row(
+            Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+            horizontalArrangement = Arrangement.spacedBy(7.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            for (i in 0 until pages.pageCount) {
+                val on = i == pages.page
+                Box(
+                    Modifier
+                        .height(6.dp)
+                        .width(if (on) 18.dp else 6.dp)
+                        .clip(CircleShape)
+                        .background(if (on) c.text else c.textMuted.copy(alpha = 0.6f)),
+                )
+            }
+        }
+        // Las zonas de toque, centradas sobre los puntitos y en el mismo orden (sin cambiar cómo se ven).
+        Row(Modifier.matchParentSize().requiredSize(DOT_TOUCH_WIDTH * pages.pageCount, DOT_TOUCH_HEIGHT)) {
+            for (i in 0 until pages.pageCount) {
+                val label = stringResource(R.string.page_n, i + 1)
+                Box(
+                    Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                        .clickable(remember { MutableInteractionSource() }, indication = null) { pages.goTo(i) }
+                        .semantics { contentDescription = label },
+                )
+            }
         }
     }
 }
+
+private val DOT_TOUCH_WIDTH = 40.dp
+private val DOT_TOUCH_HEIGHT = 32.dp
 
 /**
  * Al acomodar, junto al título: las páginas (tocar una la edita), «+» agrega una vacía y ✕ quita la que se ve (no la
@@ -199,7 +220,9 @@ internal fun PageBackgroundSettings(d: Dependencies) {
                 // Con un widget Mapa en la página se verían dos mapas: se avisa y se ofrece quitarlo.
                 if (pages.shown.any { it.type == TileTypes.MAP }) {
                     Label(stringResource(R.string.map_backdrop_has_widget), Typography.small, c.warning)
-                    Button(stringResource(R.string.map_backdrop_remove_widget), { pages.changeShown(pages.shown.filterNot { it.type == TileTypes.MAP }) })
+                    // Se pierde su aspecto guardado y no hay deshacer: con confirmación.
+                    val removeMap = stringResource(R.string.map_backdrop_remove_widget)
+                    Confirmed(removeMap, removeMap, stringResource(R.string.remove)) { pages.changeShown(pages.shown.filterNot { it.type == TileTypes.MAP }) }
                 }
                 val (granted, ask) = rememberGpsPermission(d)
                 if (!granted) Button(stringResource(R.string.tap_to_enable), ask, primary = true)

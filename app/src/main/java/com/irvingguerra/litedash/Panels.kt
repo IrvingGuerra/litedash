@@ -120,6 +120,8 @@ fun DrawerPanel(d: Dependencies, apps: List<App>, close: () -> Unit) {
     var query by remember { mutableStateOf("") }
     var selected by remember { mutableStateOf<App?>(null) }
     var showHidden by remember { mutableStateOf(false) }
+    // «Elegir»: el toque marca la app en vez de abrirla (lo mismo que dejarla presionada, que falla en pantallas de auto).
+    var choosing by remember { mutableStateOf(false) }
     var noRoom by remember { mutableStateOf(false) }
     // Sin favoritas propias se ven las sugeridas: agregar o quitar parte de ellas (no de cero).
     val dock = rememberFavorites(d, apps).map { it.key }
@@ -131,6 +133,11 @@ fun DrawerPanel(d: Dependencies, apps: List<App>, close: () -> Unit) {
         if (app == null) {
             Row(Modifier.fillMaxWidth().padding(start = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                 Label(stringResource(R.string.drawer_help), Typography.small, c.textMuted, modifier = Modifier.weight(1f))
+                Label(
+                    stringResource(if (choosing) R.string.done else R.string.source_choose),
+                    Typography.small, c.accent,
+                    modifier = Modifier.clickable { choosing = !choosing }.padding(8.dp),
+                )
                 if (hidden.isNotEmpty()) {
                     Label(
                         stringResource(if (showHidden) R.string.hide_hidden else R.string.show_hidden, hidden.size),
@@ -140,7 +147,7 @@ fun DrawerPanel(d: Dependencies, apps: List<App>, close: () -> Unit) {
                 }
             }
         } else {
-            // Acciones de la app que se dejó presionada.
+            // Acciones de la app que se dejó presionada (o se tocó con «Elegir»).
             FlowRow(
                 Modifier.fillMaxWidth().padding(top = 12.dp),
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -172,7 +179,7 @@ fun DrawerPanel(d: Dependencies, apps: List<App>, close: () -> Unit) {
         }
         AppGrid(
             d.apps, visible, query,
-            onClick = { d.apps.open(context, it); close() },
+            onClick = { if (choosing) selected = it else { d.apps.open(context, it); close() } },
             onLongPress = { selected = it },
             marked = setOfNotNull(selected?.key),
             modifier = Modifier.weight(1f).padding(top = 8.dp),
