@@ -66,6 +66,74 @@ class GuidanceTest {
     }
 
     @Test
+    fun theMarginGrowsWithTheGpsErrorUpToALimit() {
+        assertEquals(30.0, Guidance.offRouteLimit(null), 0.01)
+        assertEquals(30.0, Guidance.offRouteLimit(5f), 0.01)
+        assertEquals(72.0, Guidance.offRouteLimit(40f), 0.01)
+        assertEquals(90.0, Guidance.offRouteLimit(100f), 0.01)
+        // Con buen GPS, 40 m fuera ya cuenta (antes el margen era 45 m).
+        val g = Guidance(route)
+        g.update(lat0 + 0.5 * step, lon0, 5f)
+        g.update(lat0 + 0.5 * step, lon0 - 0.00038, 5f)
+        assertTrue(g.update(lat0 + 0.6 * step, lon0 - 0.00038, 5f).offRoute)
+    }
+
+    @Test
+    fun aVeryImpreciseFixFarAwayDecidesNothing() {
+        val g = Guidance(route)
+        val before = g.update(lat0 + 0.5 * step, lon0, 5f)
+        // 120 m de error y a ~200 m de la ruta (bajo un paso a desnivel): no cuenta, te quedas donde ibas.
+        g.update(lat0 + 0.5 * step, lon0 - 0.002, 120f)
+        val s = g.update(lat0 + 0.5 * step, lon0 - 0.002, 120f)
+        assertFalse(s.offRoute)
+        assertEquals(before.doneM, s.doneM, 0.5)
+    }
+
+    @Test
+    fun anImpossibleJumpAheadIsIgnoredUnlessItRepeats() {
+        // 2 km derecho al norte, un punto cada ~111 m, con una vuelta a los ~555 m (punto 5).
+        val pts = IntArray(38) { k -> if (k % 2 == 0) e6(lat0 + (k / 2) * step) else e6(lon0) }
+        val m = DoubleArray(19) { i -> (0 until i).sumOf { flatMeters(pts, it, it + 1) } }
+        val r = Route(
+            pts, m.last(), m.last() / 10, "",
+            listOf(Maneuver(ManeuverType.DEPART, 0f, "", 0, 0.0), Maneuver(ManeuverType.STRAIGHT, 0f, "", 5, m[5]), Maneuver(ManeuverType.ARRIVE, 0f, "", 18, m[18])),
+            m, DoubleArray(19) { m[it] / 10 },
+        )
+        val g = Guidance(r)
+        g.update(lat0 + 1 * step, lon0, 5f, 10f, 0f, 0L)
+        // Una lectura mala ~1 km adelante, un segundo después: no se salta la vuelta de en medio ni cuenta como salirse.
+        val bad = g.update(lat0 + 10 * step, lon0, 5f, 10f, 0f, 1_000L)
+        assertFalse(bad.offRoute)
+        assertEquals(1, bad.next)
+        assertEquals(m[1], bad.doneM, 5.0)
+        // La siguiente, de vuelta donde vas: sigue sobre la ruta, sin recálculo.
+        val good = g.update(lat0 + 1.1 * step, lon0, 5f, 10f, 0f, 2_000L)
+        assertFalse(good.offRoute)
+        assertEquals(1, good.next)
+        // Si el brinco se repite (salías de un túnel), se cree.
+        g.update(lat0 + 10 * step, lon0, 5f, 10f, 0f, 3_000L)
+        val tunnel = g.update(lat0 + 10.1 * step, lon0, 5f, 10f, 0f, 4_000L)
+        assertEquals(m[10], tunnel.doneM, 20.0)
+        assertEquals(2, tunnel.next)
+    }
+
+    @Test
+    fun goingAgainstTheRouteCountsAsLeaving() {
+        val g = Guidance(route)
+        g.update(lat0 + 0.5 * step, lon0, 5f, 8f, 0f, 0L)
+        // ~20 m al oriente (dentro del margen) yendo al sur, contra la ruta: a las dos lecturas, recalcula.
+        g.update(lat0 + 0.45 * step, lon0 + 0.00019, 5f, 8f, 180f, 1_000L)
+        assertTrue(g.update(lat0 + 0.4 * step, lon0 + 0.00019, 5f, 8f, 180f, 2_000L).offRoute)
+        // En el mismo lugar pero a favor de la ruta, no.
+        val h = Guidance(route)
+        h.update(lat0 + 0.4 * step, lon0, 5f, 8f, 0f, 0L)
+        h.update(lat0 + 0.45 * step, lon0 + 0.00019, 5f, 8f, 0f, 1_000L)
+        assertFalse(h.update(lat0 + 0.5 * step, lon0 + 0.00019, 5f, 8f, 0f, 2_000L).offRoute)
+        assertEquals(180.0, Guidance.angleBetween(10.0, 190.0), 0.01)
+        assertEquals(20.0, Guidance.angleBetween(350.0, 10.0), 0.01)
+    }
+
+    @Test
     fun arrivesAtTheEnd() {
         val g = Guidance(route)
         g.update(lat0 + 0.5 * step, lon0)

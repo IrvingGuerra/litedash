@@ -1,5 +1,6 @@
 package com.irvingguerra.litedash.feature.map
 
+import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.sqrt
 
@@ -27,22 +28,42 @@ data class GuidanceState(
 
 /**
  * Sigue tu avance sobre [route] con cada lectura del GPS: te pone sobre la ruta (buscando cerca de donde ibas, nunca muy
- * atrás), dice la próxima vuelta y si te saliste (más de [OFF_ROUTE_M] lejos en dos lecturas seguidas). Sin estado
- * compartido: un objeto por ruta, desde un solo hilo.
+ * atrás), dice la próxima vuelta y si te saliste (dos lecturas seguidas fuera). Sin estado compartido: un objeto por
+ * ruta, desde un solo hilo.
+ *
+ * Cuándo cuenta como salirse (idea tomada de NavigationPolicy.kt de Horizon Maps, GPL-3.0, adaptada): una lectura con
+ * error de más de [UNRELIABLE_ACCURACY_M] no decide; el margen es max(30 m, error × 1.5 + 12 m) con tope; un brinco
+ * hacia adelante imposible para tu velocidad en ese tiempo se descarta (salvo que se repita); y si ya vas algo fuera de
+ * la ruta en sentido contrario a ella, cuenta. Lo nuestro se queda: el castigo por adelantarse (calles de ida y vuelta)
+ * y las dos lecturas seguidas.
  */
 class Guidance(val route: Route) {
     private var segment = 0
+    private var lastF = 0.0
     private var offCount = 0
     private var arrived = false
     private var lastDoneM = 0.0
+    /** Cuándo fue la última lectura buena sobre la ruta (ms; null = aún ninguna o sin hora). */
+    private var lastOnRouteAt: Long? = null
+    /** Un brinco hacia adelante visto una vez (dónde caía sobre la ruta), para creerlo si se repite. */
+    private var pendingJumpM = Double.NaN
 
-    /** Tu posición nueva ([lat], [lon]) con su precisión en metros ([accuracyM], null si no se sabe). */
-    fun update(lat: Double, lon: Double, accuracyM: Float? = null): GuidanceState {
+    /**
+     * Tu posición nueva ([lat], [lon]) con su precisión en metros ([accuracyM]), tu velocidad ([speedMps]), tu rumbo
+     * ([headingDeg], grados desde el norte) y la hora de la lectura ([timeMs], de un reloj que no brinca); lo que no se
+     * sepa va en null y esa regla no aplica.
+     */
+    fun update(
+        lat: Double, lon: Double, accuracyM: Float? = null,
+        speedMps: Float? = null, headingDeg: Float? = null, timeMs: Long? = null,
+    ): GuidanceState {
         val p = route.points
         val n = route.pointCount
         val kx = cos(Math.toRadians(lat)) * RoadGraph.M_PER_DEG
-        // Busca desde un poco antes de donde ibas hasta unos km adelante (en un alto o tras perder la señal).
-        val from = (segment - BACK_SEGMENTS).coerceAtLeast(0)
+        // Busca desde un poco antes de donde ibas (unos puntos y al menos [BACK_M] metros) hasta unos km adelante (en un
+        // alto o tras perder la señal).
+        var from = (segment - BACK_SEGMENTS).coerceAtLeast(0)
+        while (from > 0 && route.atM[from] > lastDoneM - BACK_M) from--
         var to = segment
         while (to < n - 2 && route.atM[to] < lastDoneM + AHEAD_M) to++
         var best = segment
@@ -72,16 +93,38 @@ class Guidance(val route: Route) {
                 bestF = f
             }
         }
-        // Un GPS impreciso no cuenta como salirse: el margen crece con su error.
-        val margin = OFF_ROUTE_M + (accuracyM ?: 0f).coerceAtMost(MAX_ACCURACY_SLACK)
-        if (bestD > margin) offCount++ else {
-            offCount = 0
-            segment = best
+        val margin = offRouteLimit(accuracyM)
+        val bestAlong = route.atM[best] + (route.atM[best + 1] - route.atM[best]) * bestF
+        // Un brinco hacia adelante más largo de lo que da tu velocidad en ese tiempo: una lectura mala. Se descarta una
+        // vez; si la siguiente cae igual de adelante, era de verdad (p. ej. tras un túnel).
+        val last = lastOnRouteAt
+        val jump = bestD <= margin && timeMs != null && last != null &&
+            isProgressJump(bestAlong, lastDoneM, (speedMps ?: 0f).toDouble(), (timeMs - last) / 1000.0)
+        val confirmedJump = jump && !pendingJumpM.isNaN() && abs(bestAlong - pendingJumpM) < JUMP_AGREE_M
+        pendingJumpM = if (jump && !confirmedJump) bestAlong else Double.NaN
+        val rejectedJump = jump && !confirmedJump
+        // Vas en sentido contrario a la ruta y ya algo fuera de ella (diste vuelta en U o tomaste la calle de junto).
+        val against = headingDeg != null && speedMps != null && flatMeters(p, best, best + 1) > 0.5 &&
+            headingAway(bestD, speedMps.toDouble(), angleBetween(headingDeg.toDouble(), bearing(p, best, best + 1)))
+        val unreliable = accuracyM != null && accuracyM > UNRELIABLE_ACCURACY_M
+        val onRoute = bestD <= margin && !rejectedJump && !against
+        when {
+            onRoute -> {
+                offCount = 0
+                segment = best
+                lastF = bestF
+                lastDoneM = bestAlong
+                if (timeMs != null) lastOnRouteAt = timeMs
+            }
+            // Un GPS muy impreciso o un brinco sin confirmar no deciden nada: te quedas donde ibas.
+            unreliable || rejectedJump -> Unit
+            else -> offCount++
         }
+        // Dónde se te muestra: sobre la ruta donde ibas (o vas); si te saliste, donde dice el GPS.
+        val shownOnRoute = onRoute || unreliable || rejectedJump
         val i = segment
-        val f = if (bestD > margin) 0.0 else bestF
+        val f = if (shownOnRoute) lastF else 0.0
         val doneM = route.atM[i] + (route.atM[i + 1] - route.atM[i]) * f
-        if (bestD <= margin) lastDoneM = doneM
         val doneS = route.atS[i] + (route.atS[i + 1] - route.atS[i]) * f
         val leftM = (route.distanceM - doneM).coerceAtLeast(0.0)
         if (leftM < ARRIVE_M) arrived = true
@@ -91,10 +134,9 @@ class Guidance(val route: Route) {
         if (next < 0) next = maneuvers.lastIndex
         val then = (next + 1).takeIf { it < maneuvers.size }
         // Sobre la ruta: el punto de la ruta donde vas y su rumbo (más estables que el GPS, que brinca y a veces no da rumbo).
-        val onRoute = bestD <= margin
-        val sLat = if (onRoute) (p[2 * i] + (p[2 * i + 2] - p[2 * i]) * f) / 1e6 else lat
-        val sLon = if (onRoute) (p[2 * i + 1] + (p[2 * i + 3] - p[2 * i + 1]) * f) / 1e6 else lon
-        val heading = if (onRoute && flatMeters(p, i, i + 1) > 0.5) bearing(p, i, i + 1).toFloat() else null
+        val sLat = if (shownOnRoute) (p[2 * i] + (p[2 * i + 2] - p[2 * i]) * f) / 1e6 else lat
+        val sLon = if (shownOnRoute) (p[2 * i + 1] + (p[2 * i + 3] - p[2 * i + 1]) * f) / 1e6 else lon
+        val heading = if (shownOnRoute && flatMeters(p, i, i + 1) > 0.5) bearing(p, i, i + 1).toFloat() else null
         return GuidanceState(
             doneM, i, f.toFloat(), next, then, (maneuvers[next].atM - doneM).coerceAtLeast(0.0),
             leftM, (route.seconds - doneS).coerceAtLeast(0.0), offCount >= OFF_ROUTE_READINGS, arrived, sLat, sLon, heading,
@@ -102,14 +144,20 @@ class Guidance(val route: Route) {
     }
 
     companion object {
-        /** Más lejos que esto de la ruta (metros) se cuenta como salirse. */
-        private const val OFF_ROUTE_M = 40.0
+        /** Más lejos que esto de la ruta (metros) cuenta como salirse con buen GPS; crece con su error ([offRouteLimit]). */
+        private const val OFF_ROUTE_M = 30.0
+
+        /** Lo más que crece el margen por el error del GPS (con más, la guía no notaría que te saliste). */
+        private const val MAX_OFF_ROUTE_M = 90.0
+
+        /** Sin dato de precisión, como un buen GPS. */
+        private const val GOOD_ACCURACY_M = 8.0
+
+        /** Una lectura con más error que esto (metros) no decide si te saliste. */
+        private const val UNRELIABLE_ACCURACY_M = 45f
 
         /** Lecturas seguidas fuera de la ruta para recalcular (una sola puede ser un brinco del GPS). */
         private const val OFF_ROUTE_READINGS = 2
-
-        /** Lo más que el error del GPS agranda el margen. */
-        private const val MAX_ACCURACY_SLACK = 40f
 
         /** A menos de esto del destino, llegaste. */
         private const val ARRIVE_M = 30.0
@@ -117,7 +165,9 @@ class Guidance(val route: Route) {
         /** Una vuelta a menos de esto atrás ya pasó. */
         private const val PASSED_M = 5.0
 
+        /** Hacia atrás se busca al menos esto: puntos y metros (en las curvas redondeadas hay un punto cada 2.5 m). */
         private const val BACK_SEGMENTS = 3
+        private const val BACK_M = 60.0
 
         /** Hasta dónde adelante se busca (metros sobre la ruta). */
         private const val AHEAD_M = 3_000.0
@@ -125,5 +175,30 @@ class Guidance(val route: Route) {
         /** Lo que se puede avanzar entre una lectura y otra sin castigo (metros), y el castigo por metro de más. */
         private const val EXPECTED_AHEAD_M = 150.0
         private const val AHEAD_PENALTY = 0.2
+
+        /** Dos brincos que caen a menos de esto uno del otro (metros sobre la ruta) se creen. */
+        private const val JUMP_AGREE_M = 150.0
+
+        /** El margen (metros) para contar como fuera de la ruta con un error del GPS de [accuracyM]. */
+        internal fun offRouteLimit(accuracyM: Float?): Double {
+            val acc = accuracyM?.takeIf { it > 0f }?.toDouble() ?: GOOD_ACCURACY_M
+            return maxOf(OFF_ROUTE_M, acc * 1.5 + 12.0).coerceAtMost(MAX_OFF_ROUTE_M)
+        }
+
+        /** ¿Avanzar de [trustedM] a [candidateM] metros en [elapsedS] a [speedMps] es imposible? (Holgura: al menos 400 m.) */
+        internal fun isProgressJump(candidateM: Double, trustedM: Double, speedMps: Double, elapsedS: Double): Boolean {
+            if (elapsedS < 0) return false
+            return candidateM > trustedM + maxOf(400.0, speedMps * 1.6 * elapsedS + 250.0)
+        }
+
+        /** ¿A [distanceM] de la ruta, a [speedMps] y con [angleDeg] de diferencia contra ella, vas en otro sentido? */
+        internal fun headingAway(distanceM: Double, speedMps: Double, angleDeg: Double): Boolean =
+            distanceM >= 15.0 && speedMps > 4.0 && angleDeg > 70.0
+
+        /** La diferencia entre dos rumbos (0–180°). */
+        internal fun angleBetween(a: Double, b: Double): Double {
+            val d = ((a - b) % 360 + 360) % 360
+            return if (d > 180) 360 - d else d
+        }
     }
 }
