@@ -1,12 +1,8 @@
 // Ajustes: secciones, menú, pestañas y la tarjeta compartida.
 package com.irvingguerra.litedash
 
-import androidx.compose.ui.graphics.BlendMode
-import androidx.compose.ui.graphics.CompositingStrategy
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -27,18 +23,13 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawWithCache
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
@@ -160,33 +151,16 @@ fun SettingsPanel(
 @Composable
 internal fun tabs(titles: List<Int>, key: String): Int {
     val selected = TabMemory[key] ?: 0
-    val scroll = rememberScrollState()
-    // Mismo control que las opciones (estilo iOS): una pestaña a la vez. Si no caben se desplazan y el borde
-    // derecho se desvanece, para que se note que hay más.
-    Segmented(
-        titles.mapIndexed { i, t -> i to stringResource(t) }, selected, { TabMemory[key] = it },
-        Modifier
-            // El borde se borra (no se pinta del color del fondo): debajo puede ir tu imagen desenfocada.
-            .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
-            .drawWithCache {
-                val width = TAB_FADE.toPx().coerceAtMost(size.width)
-                val brush = Brush.horizontalGradient(listOf(Color.Transparent, Color.Black), startX = size.width - width, endX = size.width)
-                onDrawWithContent {
-                    drawContent()
-                    if (scroll.canScrollForward) drawRect(brush, Offset(size.width - width, 0f), Size(width, size.height), blendMode = BlendMode.DstOut)
-                }
-            }
-            .horizontalScroll(scroll),
-    )
+    // Mismo control que las opciones (estilo iOS): una pestaña a la vez. Si no caben bajan de renglón (como cualquier
+    // Segmented): todas a la vista, también la elegida al abrir desde otro lado (antes se desplazaban y la última
+    // quedaba cortada sin que se notara que había más).
+    Segmented(titles.mapIndexed { i, t -> i to stringResource(t) }, selected, { TabMemory[key] = it })
     return selected
 }
 
 /** Lo que mide el menú de Ajustes con nombres y lo mínimo que necesitan las tarjetas a su lado (con márgenes). */
 private val WIDE_MENU = 270.dp
 private val MIN_CONTENT = 452.dp
-
-/** Lo que se desvanece el borde de las pestañas cuando hay más a la derecha. */
-private val TAB_FADE = 40.dp
 
 /** Las pestañas de Ajustes → Sistema ([SystemTab]). */
 internal const val SYSTEM_TABS = "system"
