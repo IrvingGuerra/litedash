@@ -21,6 +21,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.CacheDrawScope
@@ -406,7 +407,11 @@ fun GaugeCard(
             // Lo del frente ocupa ~62 % del ancho de la esfera, con la proporción del auto.
             val frontWidth = minOf(maxWidth, maxHeight * 1.15f) * 0.62f
             val frontSpace = if (front != null && !compact) frontWidth / CAR_ASPECT else 0.dp
-            val parts = GaugeParts(look, carColor, warning, ticks.coerceAtLeast(1), labels, redFrom.coerceIn(0f, 1f), { shown.value }, frontSpace)
+            // El mismo objeto mientras no cambie el aspecto: una lectura nueva (otro número) no rehace la caché de
+            // dibujo de la escala, solo se anima la fracción.
+            val parts = remember(look, carColor, warning, ticks, labels, redFrom, frontSpace) {
+                GaugeParts(look, carColor, warning, ticks.coerceAtLeast(1), labels, redFrom.coerceIn(0f, 1f), { shown.value }, frontSpace)
+            }
             // Digital y Barra se acomodan en lo que queda arriba de lo del frente.
             val above = maxHeight - frontSpace
             if (compact) CompactGauge(number, unit, tag, title, arc, parts, maxWidth, maxHeight)
@@ -440,7 +445,7 @@ private class PlacedText(val layout: TextLayoutResult, val topLeft: Offset)
 
 /**
  * Mide [text] para dibujarlo centrado en [at] (sin salirse por los lados del lienzo); null si está vacío.
- * Va en el caché del dibujo: se mide una vez por tamaño o lectura, no en cada cuadro de la animación.
+ * Va en el caché del dibujo: se mide una vez por tamaño, no en cada cuadro de la animación ni en cada lectura.
  */
 private fun CacheDrawScope.place(measurer: TextMeasurer, text: String, at: Offset, style: TextStyle): PlacedText? {
     if (text.isEmpty()) return null
@@ -451,6 +456,12 @@ private fun CacheDrawScope.place(measurer: TextMeasurer, text: String, at: Offse
 
 private fun DrawScope.draw(text: PlacedText?) {
     if (text != null) drawText(text.layout, topLeft = text.topLeft)
+}
+
+/** Un texto ya medido, centrado en [at] sin salirse por los lados (como [place], pero medido fuera de la caché). */
+private fun DrawScope.drawCentered(layout: TextLayoutResult, at: Offset) {
+    val x = (at.x - layout.size.width / 2f).coerceIn(0f, (size.width - layout.size.width).coerceAtLeast(0f))
+    drawText(layout, topLeft = Offset(x, at.y - layout.size.height / 2f))
 }
 
 /** Un brillo redondo del color que se pida: el degradado se vuelve a armar solo si cambia el color (con Dinámico). */
@@ -493,7 +504,16 @@ private fun NeedleGauge(number: String, unit: String, tag: String, p: GaugeParts
     val hubText = (side.value * 0.085f).coerceIn(20f, 42f)
     val hubNumber = Typography.clock.copy(fontSize = hubText.sp, color = c.text)
     val hubUnit = Typography.small.copy(color = c.textMuted)
-    // Lo que no depende del valor (círculo, trazos y textos) se arma una vez por tamaño y lectura, no en cada cuadro.
+    // El número del centro cambia con cada lectura: se mide aquí y la caché lo lee al dibujar (si entrara a la
+    // caché, cada lectura la rehacía entera: escala, trazos y números).
+    val hubTexts = rememberUpdatedState(
+        if (!hub) null else remember(number, unit, hubNumber, hubUnit) { measurer.measure(number, hubNumber) to measurer.measure(unit, hubUnit) },
+    )
+    // Dentro del vidrio el centro no es un disco opaco: toma el relleno translúcido como los demás de la tarjeta.
+    val glass = c.surfaceHigh.alpha < 1f
+    val hubFill = if (glass) c.surfaceHigh else c.surface
+    val dotFill = if (glass) c.surfaceHigh else c.background
+    // Lo que no depende del valor (círculo, trazos y textos) se arma una vez por tamaño, no en cada cuadro ni lectura.
     Spacer(Modifier.fillMaxSize().drawWithCache {
         val stroke = (size.minDimension * 0.05f).coerceIn(3.dp.toPx(), 22.dp.toPx())
         // Los números van por fuera del arco: así la aguja nunca pasa encima de ellos.
@@ -508,10 +528,8 @@ private fun NeedleGauge(number: String, unit: String, tag: String, p: GaugeParts
         }
         val hubRadius = hubText.sp.toPx() * 1.25f
         val hubRing = Stroke(stroke * 0.3f)
-        val hubTexts = if (!hub) emptyList() else listOf(
-            place(measurer, number, d.center - Offset(0f, hubRadius * 0.12f), hubNumber),
-            place(measurer, unit, d.center + Offset(0f, hubRadius * 0.52f), hubUnit),
-        )
+        val hubNumberAt = d.center - Offset(0f, hubRadius * 0.12f)
+        val hubUnitAt = d.center + Offset(0f, hubRadius * 0.52f)
         onDrawBehind {
             drawArc(c.surfaceHigh, START_ANGLE, SWEEP, false, d.topLeft, d.box, style = thin)
             if (p.look.redline) {
@@ -539,15 +557,18 @@ private fun NeedleGauge(number: String, unit: String, tag: String, p: GaugeParts
             if (hub) {
                 // La aguja sale del borde del centro, que lleva la velocidad y su unidad.
                 drawLine(color, d.at(angle, hubRadius), d.at(angle, d.radius - stroke * 1.3f), strokeWidth = stroke * 0.42f, cap = StrokeCap.Round)
-                drawCircle(c.surface, hubRadius, d.center)
+                drawCircle(hubFill, hubRadius, d.center)
                 drawCircle(color, hubRadius, d.center, style = hubRing)
-                hubTexts.forEach { draw(it) }
+                hubTexts.value?.let { (n, u) ->
+                    drawCentered(n, hubNumberAt)
+                    drawCentered(u, hubUnitAt)
+                }
                 return@onDrawBehind
             }
             // La aguja con su cola y el centro.
             drawLine(color, d.at(angle + 180f, stroke * 1.4f), d.at(angle, d.radius - stroke * 1.3f), strokeWidth = stroke * 0.42f, cap = StrokeCap.Round)
             drawCircle(color, stroke * 1.05f, d.center)
-            drawCircle(c.background, stroke * 0.45f, d.center)
+            drawCircle(dotFill, stroke * 0.45f, d.center)
         }
     })
     // La lectura abajo del centro, donde la aguja no pasa.
@@ -618,7 +639,7 @@ private fun GradientGauge(number: String, unit: String, tag: String, p: GaugePar
     val c = LocalColors.current
     val measurer = rememberTextMeasurer()
     val endStyle = tickText(side, c.text.copy(alpha = 0.85f))
-    // Lo que no cambia con el valor se arma una vez por tamaño y lectura, no en cada cuadro.
+    // Lo que no cambia con el valor se arma una vez por tamaño, no en cada cuadro ni en cada lectura.
     Spacer(Modifier.fillMaxSize().drawWithCache {
         val shades = c.shades(p)
         val band = (size.minDimension * 0.14f).coerceIn(10.dp.toPx(), 64.dp.toPx())
@@ -675,7 +696,7 @@ private fun DialGauge(number: String, unit: String, tag: String, p: GaugeParts, 
     val measurer = rememberTextMeasurer()
     val tickStyle = tickText(side, c.text.copy(alpha = 0.8f))
     // Lo que no cambia con el valor (círculo, grosores, trazos, degradados y números) se arma una vez por
-    // tamaño y lectura; en cada cuadro de la animación solo se dibuja.
+    // tamaño (no en cada lectura); en cada cuadro de la animación solo se dibuja.
     Spacer(Modifier.fillMaxSize().drawWithCache {
         val shades = c.shades(p)
         // [base] = el grosor del aro liso; las marcas usan [mark], que no engorda en grande.
