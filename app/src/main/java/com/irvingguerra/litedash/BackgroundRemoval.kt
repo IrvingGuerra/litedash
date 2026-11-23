@@ -9,6 +9,9 @@ package com.irvingguerra.litedash
 /** Niveles de intensidad (0 = suave … 3 = máxima). */
 const val CUT_LEVELS = 4
 
+/** Menos alfa que esto ya es transparente: cuenta como fondo. */
+private const val CLEAR_ALPHA = 16
+
 /** Una imagen ARGB ya recortada a lo que quedó visible. */
 class Cutout(val pixels: IntArray, val width: Int, val height: Int)
 
@@ -58,14 +61,16 @@ fun removeBackground(pixels: IntArray, width: Int, height: Int, level: Int): Cut
     val bg = BooleanArray(n)
     val queue = IntArray(n)
     var tail = 0
+    // Lo que ya es transparente (un PNG recortado) cuenta como fondo, sea del color que sea por debajo.
+    fun clear(i: Int) = pixels[i] ushr 24 < CLEAR_ALPHA
     fun push(i: Int) {
-        if (!bg[i] && dist(pixels[i], seed) < seedTol) {
+        if (!bg[i] && (clear(i) || dist(pixels[i], seed) < seedTol)) {
             bg[i] = true
             queue[tail++] = i
         }
     }
     fun grow(i: Int, from: Int) {
-        if (!bg[i] && dist(pixels[i], from) < stepTol && dist(pixels[i], seed) < seedTol) {
+        if (!bg[i] && (clear(i) || dist(pixels[i], from) < stepTol && dist(pixels[i], seed) < seedTol)) {
             bg[i] = true
             queue[tail++] = i
         }
@@ -109,12 +114,13 @@ fun removeBackground(pixels: IntArray, width: Int, height: Int, level: Int): Cut
         if (x < w - 1 && bg[i + 1]) around++
         if (y > 0 && bg[i - w]) around++
         if (y < h - 1 && bg[i + w]) around++
-        val a = when (around) {
+        // Y nunca más opaco de lo que ya era (huecos calados, orillas suaves de un logo).
+        val a = minOf(pixels[i] ushr 24, when (around) {
             0 -> 255
             1 -> 200
             2 -> 130
             else -> 60
-        }
+        })
         out[i] = (a shl 24) or (pixels[i] and 0x00FFFFFF)
         if (x < minX) minX = x
         if (x > maxX) maxX = x

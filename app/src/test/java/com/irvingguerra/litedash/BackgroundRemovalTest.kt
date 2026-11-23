@@ -60,4 +60,18 @@ class BackgroundRemovalTest {
         val random = Random(7)
         assertNull(removeBackground(IntArray(w * h) { (0xFF shl 24) or random.nextInt(0x1000000) }, w, h, level = 0))
     }
+
+    @Test
+    fun loTransparenteDeAdentroSigueTransparente() {
+        // Un logo calado: un hueco transparente (negro por debajo) en medio del "auto", y una franja a medias.
+        val p = photo { gray(0xEE) }
+        for (y in 45 until 55) for (x in 90 until 110) p[y * w + x] = 0x00000000
+        for (y in 32 until 34) for (x in 62 until 138) p[y * w + x] = (0x80 shl 24) or 0x303030
+        val cut = removeBackground(p, w, h, level = 0)!!
+        assertEquals(80, cut.width)
+        // (100, 50) en la foto = (40, 20) en el recorte: el hueco no se vuelve negro opaco.
+        assertEquals(0, cut.pixels[20 * 80 + 40] ushr 24)
+        // La franja a medias no sube a opaca.
+        assertTrue((cut.pixels[3 * 80 + 40] ushr 24) <= 0x80)
+    }
 }
