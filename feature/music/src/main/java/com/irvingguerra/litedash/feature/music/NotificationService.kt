@@ -5,10 +5,14 @@
 // [com.irvingguerra.litedash.feature.music.NotificationService].
 package com.irvingguerra.litedash.feature.musica
 
+import android.content.ComponentName
+import android.content.Context
+import android.os.Build
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import com.irvingguerra.litedash.feature.music.NotificationListener
 import java.lang.ref.WeakReference
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * Con "acceso a notificaciones" Android deja leer qué suena en otras apps. Además
@@ -27,6 +31,8 @@ class ServicioMusica : NotificationListenerService() {
 
     override fun onListenerDisconnected() {
         connected = null
+        // Android lo soltó con el acceso dado: se le pide que lo vuelva a conectar (sin acceso, Android lo ignora).
+        rebind(this)
     }
 
     override fun onNotificationPosted(sbn: StatusBarNotification?) {
@@ -46,6 +52,23 @@ class ServicioMusica : NotificationListenerService() {
         /** La música: mira los avisos de las apps de Bluetooth y radio enlazadas (mientras hay una pieza en pantalla). */
         @Volatile var media: NotificationListener? = null
         @Volatile private var connected: WeakReference<ServicioMusica>? = null
+        private val rebindAsked = AtomicBoolean(false)
+
+        /** ¿Android tiene conectado el servicio ahora? */
+        val isConnected: Boolean get() = connected?.get() != null
+
+        /**
+         * Con el acceso dado, algunas pantallas no conectan el servicio: se le pide a Android una vez por
+         * arranque, cuando la música empieza a escuchar.
+         */
+        fun rebindIfNeeded(context: Context) {
+            if (!isConnected && rebindAsked.compareAndSet(false, true)) rebind(context)
+        }
+
+        private fun rebind(context: Context) {
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) return
+            runCatching { requestRebind(ComponentName(context, ServicioMusica::class.java)) }
+        }
 
         /** Avisos que hay ahora mismo (vacío si el servicio no está conectado). */
         fun active(): List<StatusBarNotification> =

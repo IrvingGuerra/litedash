@@ -1236,7 +1236,7 @@ class MusicRepository(internal val context: Context) {
                 if (!hasPermission()) appendLine("Sesiones: sin acceso a notificaciones")
                 else {
                     val list = sessions()
-                    appendLine("Sesiones: ${if (list.isEmpty()) "ninguna" else ""}")
+                    appendLine("Sesiones (lector=${if (NotificationService.isConnected) "conectado" else "no"}): ${if (list.isEmpty()) "ninguna" else ""}")
                     for (c in list) {
                         val m = c.metadata
                         appendLine(

@@ -83,6 +83,7 @@ internal fun MusicRepository.start() {
 
 internal fun MusicRepository.listen() {
     if (!hasPermission()) return
+    NotificationService.rebindIfNeeded(context)
     runCatching {
         sessionManager.addOnActiveSessionsChangedListener(onSessionsChanged, component, mainHandler)
         listening = true
