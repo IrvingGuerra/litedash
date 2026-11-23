@@ -41,8 +41,6 @@ class TileStore(context: Context, private val userAgent: String, val source: Til
     private val offline = if (source is VectorTiles) OfflineMaps.get(app) else null
     /** Los mapas de estado bajados (mismo esquema que el minimalista): van antes que las zonas. */
     private val packs = if (source is VectorTiles) MapPacks.get(app) else null
-    /** Una descarga (y una lectura) por archivo: varias teselas del 15 en adelante salen de la misma del 14. */
-    private val fileLocks = Array(FILE_LOCKS) { Any() }
     private val lock = Any()
     private val memory = object : LruCache<Long, ImageBitmap>(MEMORY_MIN_BYTES) {
         override fun sizeOf(key: Long, value: ImageBitmap) = value.asAndroidBitmap().allocationByteCount
@@ -72,8 +70,17 @@ class TileStore(context: Context, private val userAgent: String, val source: Til
     /** Cuántos mapas lo están viendo (solo en el hilo principal). */
     private var users = 0
     private val main = Handler(Looper.getMainLooper())
-    /** Sin mapas que lo vean un momento seguido: deja de trabajar y suelta la memoria. */
-    private val idle = Runnable { synchronized(lock) { if (users == 0) stop() } }
+    /** Sin mapas que lo vean un momento seguido: deja de trabajar (la memoria se suelta después, [release]). */
+    private val idle = Runnable {
+        synchronized(lock) {
+            if (users == 0) {
+                stop()
+                main.postDelayed(release, KEEP_MEMORY_MS)
+            }
+        }
+    }
+    /** Lleva un buen rato sin que nadie lo vea: suelta la memoria. */
+    private val release = Runnable { synchronized(lock) { if (users == 0 && scope == null) releaseMemory() } }
     /** Vuelve a pedir lo que falló cuando ya toca (nadie repinta para pedirlo). */
     private val retry = Runnable { synchronized(lock) { schedule() } }
     private var workers = 0
@@ -146,6 +153,7 @@ class TileStore(context: Context, private val userAgent: String, val source: Til
     fun resume() = synchronized(lock) {
         users++
         main.removeCallbacks(idle)
+        main.removeCallbacks(release)
         if (scope != null) return@synchronized
         scope = CoroutineScope(SupervisorJob() + workerThreads).also { it.launch { trim(force = false) } }
         // Lo que ya se dibujó antes de arrancar (el primer cuadro llega antes que este efecto).
@@ -153,8 +161,9 @@ class TileStore(context: Context, private val userAgent: String, val source: Til
     }
 
     /**
-     * Un mapa menos. Sin ninguno un momento seguido ([RELEASE_MS]), deja de descargar y suelta la memoria (la app se fue
-     * o el mapa ya no se ve): al abrir el mapa en grande el widget se va antes de que llegue el otro, y así no se tira nada.
+     * Un mapa menos. Sin ninguno un momento seguido ([RELEASE_MS]), deja de descargar (la app se fue o el mapa ya no se
+     * ve): al abrir el mapa en grande el widget se va antes de que llegue el otro, y así no se tira nada. La memoria se
+     * queda [KEEP_MEMORY_MS] más (volver de la cámara de reversa no rearma el mapa) o hasta que Android pida ([trimAll]).
      */
     fun pause() = synchronized(lock) {
         users = (users - 1).coerceAtLeast(0)
@@ -163,7 +172,7 @@ class TileStore(context: Context, private val userAgent: String, val source: Til
         main.postDelayed(idle, RELEASE_MS)
     }
 
-    /** Ya nadie lo ve: sin trabajadores, fila ni memoria (también lo que se guardó leído de la fuente). */
+    /** Ya nadie lo ve: sin trabajadores ni fila (la memoria se queda un rato, ver [release]). */
     private fun stop() {
         scope?.cancel()
         scope = null
@@ -174,8 +183,17 @@ class TileStore(context: Context, private val userAgent: String, val source: Til
         main.removeCallbacks(retry)
         main.removeCallbacks(show)
         showPending = false
+    }
+
+    /** Suelta las teselas en memoria y lo leído de la fuente; el tope vuelve a empezar (un OOM pasajero no es para siempre). */
+    private fun releaseMemory() {
         memory.evictAll()
         source.trim()
+        memoryCap = Int.MAX_VALUE
+    }
+
+    init {
+        synchronized(all) { all += this }
     }
 
     /** Un trabajador de [owner]: si mientras tanto se pausó (o se pausó y se reanudó), sale sin tocar nada. */
@@ -259,7 +277,7 @@ class TileStore(context: Context, private val userAgent: String, val source: Til
      */
     private fun load(key: Long): Loaded {
         val origin = source.origin(key)
-        return synchronized(fileLocks[Math.floorMod(origin.hashCode(), FILE_LOCKS)]) {
+        return synchronized(fileLock(source.folder, origin)) {
             // Los pedazos del 15 en adelante de una tesela ya leída se dibujan sin volver al disco.
             draw(key, origin)?.let { return Loaded(it, 0L) }
             val file = File(dir, "${keyZ(origin)}_${keyX(origin)}_${keyY(origin)}")
@@ -308,8 +326,9 @@ class TileStore(context: Context, private val userAgent: String, val source: Til
             null
         }
         if (cached != null) {
-            // Para el recorte: las más usadas se quedan (a lo más una escritura por hora).
-            if (now - file.lastModified() > TOUCH_MS) file.setLastModified(now)
+            // Para el recorte: las más usadas se quedan (a lo más una escritura por hora). Con la fecha de la pantalla mal
+            // no se toca: marcaría en 2015 justo las de uso diario y el recorte las borraría primero.
+            if (!Https.clockLooksWrong() && kotlin.math.abs(now - file.lastModified()) > TOUCH_MS) file.setLastModified(now)
             if (cached.expires > now || now < backoffUntil) return cached
         }
         // Sin red (o el servidor tardó de más): lo guardado, aunque esté vencido.
@@ -385,39 +404,61 @@ class TileStore(context: Context, private val userAgent: String, val source: Til
             if (!force && now - (lastTrim[source.folder] ?: 0L) < TRIM_INTERVAL_MS) return
             lastTrim[source.folder] = now
         }
-        // Sin los temporales: alguno se puede estar escribiendo en este momento.
+        // Sin los temporales: alguno se puede estar escribiendo en este momento; los de hace rato los dejó un apagón.
+        dir.listFiles { f -> f.name.endsWith(".tmp") && now - f.lastModified() > STALE_TEMP_MS }?.forEach { it.delete() }
         val files = dir.listFiles { f -> f.isFile && f.name != "tilejson" && !f.name.endsWith(".tmp") } ?: return
         val names = tilesToTrim(files.map { CachedTile(it.name, it.length(), it.lastModified()) }, DISK_MAX, DISK_TARGET)
         for (name in names) File(dir, name).delete()
     }
 
-    private companion object {
-        const val FILE_LOCKS = 32
+    companion object {
+        private const val FILE_LOCKS = 32
+        /**
+         * Una descarga (y una lectura) por archivo, para todos los almacenes: varias teselas del 15 en adelante salen de
+         * la misma del 14, y en la guía dos mapas piden la misma: el segundo espera y la lee del disco (sin otra descarga).
+         */
+        private val fileLocks = Array(FILE_LOCKS) { Any() }
+
+        private fun fileLock(folder: String, origin: Long) = fileLocks[Math.floorMod(31 * folder.hashCode() + origin.hashCode(), FILE_LOCKS)]
+
+        /** Los almacenes vivos (para soltar su memoria si Android la pide). */
+        private val all = java.util.Collections.newSetFromMap(java.util.WeakHashMap<TileStore, Boolean>())
+
+        /** Android pide memoria (onTrimMemory): los almacenes que nadie ve la sueltan ya. */
+        fun trimAll() {
+            val stores = synchronized(all) { all.toList() }
+            for (s in stores) s.main.post { synchronized(s.lock) { if (s.users == 0 && s.scope == null) s.releaseMemory() } }
+        }
+
         /** La memoria de teselas no pasa de esta parte de la que tiene la app (salvo que no quepa lo que se ve). */
-        const val MEMORY_SHARE = 6
+        private const val MEMORY_SHARE = 6
         /** Entre dos avisos de teselas nuevas ([loaded]). */
-        const val SHOW_MS = 80L
+        private const val SHOW_MS = 80L
         /** Cada cuánto se marca como usado un archivo de la caché (para el recorte). */
-        const val TOUCH_MS = 3_600_000L
+        private const val TOUCH_MS = 3_600_000L
         /**
          * Menos que la interfaz, pero sin llegar al grupo «de fondo» de Android (prioridad 10 o más), que en Android 7 y
          * anteriores casi no recibe procesador mientras la interfaz trabaja: el mapa se quedaría con huecos al manejar.
          */
-        const val WORKER_PRIORITY = Process.THREAD_PRIORITY_BACKGROUND + Process.THREAD_PRIORITY_MORE_FAVORABLE
+        private const val WORKER_PRIORITY = Process.THREAD_PRIORITY_BACKGROUND + Process.THREAD_PRIORITY_MORE_FAVORABLE
         /** Un hilo de teselas sin trabajo se cierra tras este tiempo. */
-        const val WORKER_IDLE_S = 30L
-        const val RELEASE_MS = 1_500L
-        const val RETRY_MS = 20_000L
-        const val BACKOFF_MS = 120_000L
-        const val BLOCKED_MS = 3_600_000L
-        const val EMPTY_MS = 86_400_000L
-        const val TRIM_EVERY = 100
-        const val TRIM_INTERVAL_MS = 3_600_000L
+        private const val WORKER_IDLE_S = 30L
+        private const val RELEASE_MS = 1_500L
+        /** Tras dejar de trabajar, la memoria se queda este rato por si vuelves (de la cámara de reversa, de otra app). */
+        private const val KEEP_MEMORY_MS = 60_000L
+        /** Un temporal de la caché más viejo que esto ya no se está escribiendo. */
+        private const val STALE_TEMP_MS = 3_600_000L
+        private const val RETRY_MS = 20_000L
+        private const val BACKOFF_MS = 120_000L
+        private const val BLOCKED_MS = 3_600_000L
+        private const val EMPTY_MS = 86_400_000L
+        private const val TRIM_EVERY = 100
+        private const val TRIM_INTERVAL_MS = 3_600_000L
         // Por carpeta (map_tiles y map_vector): alternando estilos, entre las dos no pasan de ~50 MB.
-        const val DISK_MAX = 25L * 1024 * 1024
-        const val DISK_TARGET = 20L * 1024 * 1024
+        private const val DISK_MAX = 25L * 1024 * 1024
+        private const val DISK_TARGET = 20L * 1024 * 1024
         /** Último recorte por carpeta (los almacenes se recrean al cambiar de estilo). */
-        val lastTrim = HashMap<String, Long>()
+        private val lastTrim = HashMap<String, Long>()
     }
 }
 
@@ -432,15 +473,25 @@ internal inline fun <T> httpGet(
     setup: (HttpURLConnection) -> Unit = {},
     read: (HttpURLConnection, Int) -> T,
 ): T {
-    val c = Https.open(context, url)
-    c.connectTimeout = 8_000
-    c.readTimeout = 10_000
-    c.setRequestProperty("User-Agent", userAgent)
-    setup(c)
-    val code = c.responseCode
+    // A lo más [MAX_CONNECTIONS] a la vez entre todos los mapas y las zonas (las reglas de OpenFreeMap piden ≤ 4).
+    tileConnections.acquire()
     try {
-        return read(c, code)
+        val c = Https.open(context, url)
+        c.connectTimeout = 8_000
+        c.readTimeout = 10_000
+        c.setRequestProperty("User-Agent", userAgent)
+        setup(c)
+        val code = c.responseCode
+        try {
+            return read(c, code)
+        } finally {
+            runCatching { (if (code >= 400) c.errorStream else c.inputStream)?.close() }
+        }
     } finally {
-        runCatching { (if (code >= 400) c.errorStream else c.inputStream)?.close() }
+        tileConnections.release()
     }
 }
+
+/** Conexiones a los servidores de teselas a la vez, en toda la app. */
+internal const val MAX_CONNECTIONS = 4
+internal val tileConnections = java.util.concurrent.Semaphore(MAX_CONNECTIONS)

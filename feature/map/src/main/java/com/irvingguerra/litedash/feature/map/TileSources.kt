@@ -84,8 +84,8 @@ object OsmTiles : TileSource {
 }
 
 /**
- * El mapa minimalista: los datos de OpenFreeMap (vectoriales, esquema OpenMapTiles, sin cuenta ni
- * límites) dibujados por LiteDash con solo calles, agua y parques, en los colores de [palette].
+ * El mapa minimalista: los datos de OpenFreeMap (vectoriales, esquema OpenMapTiles, sin cuenta; para ver el mapa no
+ * hay tope, para bajar zonas sí: ver OfflineMaps) dibujados por LiteDash con solo calles, agua y parques, en los colores de [palette].
  * Nítido a cualquier zoom: del 15 al [MAX_ZOOM] se dibuja la parte que toca de la tesela del 14.
  */
 class VectorTiles(
