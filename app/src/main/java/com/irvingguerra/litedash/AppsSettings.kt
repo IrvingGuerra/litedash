@@ -1,4 +1,4 @@
-// Ajustes → Apps: música, radio, navegación y pantalla dividida.
+// Ajustes → Apps: música, radio, navegación, Android Auto / CarPlay y pantalla dividida.
 package com.irvingguerra.litedash
 
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -13,12 +13,13 @@ import com.irvingguerra.litedash.core.ui.Typography
 
 /** Pestañas de Ajustes → Apps (por nombre: si se reordenan, los atajos que abren una siguen bien). */
 private enum class AppsTab(val title: Int) {
-    MUSIC(R.string.music), RADIO(R.string.tile_radio), NAVIGATION(R.string.tab_navigation), SPLIT(R.string.tab_split),
+    MUSIC(R.string.music), RADIO(R.string.tile_radio), NAVIGATION(R.string.tab_navigation), PROJECTION(R.string.tile_projection),
+    SPLIT(R.string.tab_split),
 }
 
 /**
- * Sección Apps: la música (Archivos, Bluetooth o App), la radio, la de navegación (con Casa y Trabajo) y la pantalla
- * dividida. [requestMap]: pedir el mapa sin conexión de tu país (lleva al reporte).
+ * Sección Apps: la música (Archivos, Bluetooth o App), la radio, la de navegación (con Casa y Trabajo), la de
+ * Android Auto / CarPlay y la pantalla dividida. [requestMap]: pedir el mapa sin conexión de tu país (lleva al reporte).
  */
 @Composable
 internal fun AppsSettings(d: Dependencies, requestMap: () -> Unit) {
@@ -26,6 +27,7 @@ internal fun AppsSettings(d: Dependencies, requestMap: () -> Unit) {
         AppsTab.MUSIC -> MusicModeSettings(d)
         AppsTab.RADIO -> RadioSettings(d)
         AppsTab.NAVIGATION -> NavigationSettings(d, requestMap)
+        AppsTab.PROJECTION -> SettingsCard(stringResource(R.string.projection_app_title)) { ProjectionSettings(d) }
         AppsTab.SPLIT -> SettingsCard { SplitSettings(d) }
     }
 }
@@ -82,6 +84,9 @@ internal fun openOfflineMaps() {
     selectTab(APPS_TABS, AppsTab.NAVIGATION.ordinal)
     selectTab(NAVIGATION_TABS, OFFLINE_TAB)
 }
+
+/** Ajustes → Apps abre en Android Auto / CarPlay (desde su botón de la barra, el widget o el volante sin app). */
+internal fun openProjectionSettings() = selectTab(APPS_TABS, AppsTab.PROJECTION.ordinal)
 
 /** Ajustes → Apps abre en Música (desde Ajustes → Celular, para emparejar el Bluetooth). */
 internal fun openMusicSettings() = selectTab(APPS_TABS, AppsTab.MUSIC.ordinal)

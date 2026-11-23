@@ -112,7 +112,6 @@
     <string name="option_change_app">Choisir une appli</string>
     <string name="option_opens">UN APPUI OUVRE</string>
     <string name="option_opens_dialer">Le clavier téléphonique</string>
-    <string name="option_opens_auto">Celle que LiteDash trouve</string>
     <string name="tires_show_pressure">Afficher la pression des pneus</string>
     <string name="gauge_customize_help">Les changements s\'affichent tout de suite. Ce qui demande votre attention (moteur chaud, régime élevé) est toujours en rouge.</string>
     <string name="gauge_style">Style</string>
@@ -303,6 +302,8 @@
     <string name="tile_projection">Android Auto / CarPlay</string>
     <string name="tile_projection_help">Ouvre votre appli Android Auto ou CarPlay (Zlink, AutoKit…) d\'un seul appui</string>
     <string name="projection_missing">Appli introuvable</string>
+    <string name="projection_app_title">Votre appli Android Auto / CarPlay</string>
+    <string name="projection_help">S’ouvre avec son bouton dans la barre, le widget et le volant.</string>
     <string name="wheel">Commandes au volant</string>
     <string name="wheel_help">Touchez « Apprendre un bouton », puis appuyez sur le bouton du volant : LiteDash le reconnaît et vous choisissez ce qu\'il fait. Les boutons non modifiés fonctionnent comme d\'habitude (musique, volume). N\'importe quel bouton quitte le mode stationné.</string>
     <string name="wheel_learn">Apprendre un bouton</string>
@@ -319,6 +320,7 @@
     <string name="wheel_volume_down">Volume −</string>
     <string name="wheel_mute">Muet</string>
     <string name="wheel_navigate">Ouvrir la carte</string>
+    <string name="wheel_projection">Ouvrir Android Auto / CarPlay</string>
     <string name="wheel_music">Musique en grand</string>
     <string name="wheel_voice">Voix</string>
     <string name="wheel_home">Retour à l\'accueil</string>

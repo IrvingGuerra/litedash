@@ -110,7 +110,6 @@
     <string name="option_change_app">앱 선택</string>
     <string name="option_opens">탭하면 열리는 것</string>
     <string name="option_opens_dialer">전화 다이얼</string>
-    <string name="option_opens_auto">LiteDash가 찾은 앱</string>
     <string name="tires_show_pressure">타이어 공기압 표시</string>
     <string name="gauge_customize_help">변경 사항은 바로 보여요. 주의가 필요한 값(엔진 과열, 높은 rpm)은 항상 빨간색이에요.</string>
     <string name="gauge_style">스타일</string>
@@ -298,6 +297,8 @@
     <string name="tile_projection">Android Auto / CarPlay</string>
     <string name="tile_projection_help">Android Auto 또는 CarPlay 앱(Zlink, AutoKit…)을 한 번에 열어요</string>
     <string name="projection_missing">앱을 찾을 수 없어요</string>
+    <string name="projection_app_title">내 Android Auto / CarPlay 앱</string>
+    <string name="projection_help">바의 버튼, 위젯, 스티어링 휠로 열려요.</string>
     <string name="wheel">스티어링 휠</string>
     <string name="wheel_help">\"버튼 학습\"을 탭한 뒤 스티어링 휠 버튼을 누르세요. LiteDash가 인식하면 동작을 고를 수 있어요. 바꾸지 않은 버튼은 평소대로 작동해요(음악, 볼륨). 아무 버튼이나 누르면 주차 모드가 해제돼요.</string>
     <string name="wheel_learn">버튼 학습</string>
@@ -314,6 +315,7 @@
     <string name="wheel_volume_down">볼륨 작게</string>
     <string name="wheel_mute">음소거</string>
     <string name="wheel_navigate">지도 열기</string>
+    <string name="wheel_projection">Android Auto / CarPlay 열기</string>
     <string name="wheel_music">큰 음악 화면</string>
     <string name="wheel_voice">음성</string>
     <string name="wheel_home">홈으로</string>

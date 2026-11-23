@@ -355,12 +355,19 @@ private const val PHONE_REPORT_GAP_MS = 10_000L
  * Lo que va después de la línea del OBD: el celular (Ajustes → Celular; sin vínculo dice solo que no hay, sin armar el
  * enlace), el GPS (qué
  * proveedores escucha y su última falla), el clima guardado (de cuándo y por qué falló), las llantas (solo si su módulo
- * ya corre: el reporte no prende nada), las últimas teclas del volante y los autos instalados. Se arma en el hilo
+ * ya corre: el reporte no prende nada), Android Auto / CarPlay, las últimas teclas del volante y los autos instalados. Se arma en el hilo
  * principal (todo es memoria).
  */
 private fun reportExtras(d: Dependencies): String = listOfNotNull(
-    d.phoneIfCreated()?.describe() ?: "Celular: sin vincular", d.trip.describe(), MapPacks.describe(), d.weather.describe(), d.tpmsIfCreated()?.describe(), d.wheel.describe(), d.cars.describe(), d.updates?.describe(),
+    d.phoneIfCreated()?.describe() ?: "Celular: sin vincular", projectionInfo(d), d.trip.describe(), MapPacks.describe(), d.weather.describe(), d.tpmsIfCreated()?.describe(), d.wheel.describe(), d.cars.describe(), d.updates?.describe(),
 ).joinToString("\n")
+
+/** Android Auto / CarPlay: la elegida en Ajustes → Apps (o automática) y la que se abre ahora (de la lista ya cargada). */
+private fun projectionInfo(d: Dependencies): String {
+    val chosen = d.prefs.projectionApp?.substringBefore('/') ?: "automática"
+    val apps = d.apps.apps ?: return "Proyección: elegida=$chosen, apps sin cargar"
+    return "Proyección: elegida=$chosen, se abre=${projectionChoice(d, apps)?.pkg ?: "ninguna"}"
+}
 
 /** El volumen de la música en Android y si está fijo (la pantalla lo maneja con su propio chip). */
 private fun volumeInfo(context: Context): String = runCatching {

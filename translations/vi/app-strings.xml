@@ -110,7 +110,6 @@
     <string name="option_change_app">Chọn ứng dụng</string>
     <string name="option_opens">KHI NHẤN SẼ MỞ</string>
     <string name="option_opens_dialer">Trình quay số</string>
-    <string name="option_opens_auto">Ứng dụng LiteDash tìm thấy</string>
     <string name="tires_show_pressure">Hiện áp suất lốp</string>
     <string name="gauge_customize_help">Thay đổi hiện ngay. Thông số cần chú ý (động cơ nóng, vòng tua cao) luôn có màu đỏ.</string>
     <string name="gauge_style">Kiểu</string>
@@ -298,6 +297,8 @@
     <string name="tile_projection">Android Auto / CarPlay</string>
     <string name="tile_projection_help">Mở ứng dụng Android Auto hoặc CarPlay (Zlink, AutoKit…) chỉ với một lần nhấn</string>
     <string name="projection_missing">Không tìm thấy ứng dụng</string>
+    <string name="projection_app_title">Ứng dụng Android Auto / CarPlay của bạn</string>
+    <string name="projection_help">Mở bằng nút trên thanh, tiện ích và vô lăng.</string>
     <string name="wheel">Vô lăng</string>
     <string name="wheel_help">Nhấn \"Học nút\" rồi bấm nút trên vô lăng: LiteDash nhận ra và bạn chọn chức năng. Nút không đổi vẫn hoạt động như thường (nhạc, âm lượng). Bấm nút bất kỳ để thoát chế độ đỗ xe.</string>
     <string name="wheel_learn">Học nút</string>
@@ -314,6 +315,7 @@
     <string name="wheel_volume_down">Giảm âm lượng</string>
     <string name="wheel_mute">Tắt tiếng</string>
     <string name="wheel_navigate">Mở bản đồ</string>
+    <string name="wheel_projection">Mở Android Auto / CarPlay</string>
     <string name="wheel_music">Nhạc cỡ lớn</string>
     <string name="wheel_voice">Giọng nói</string>
     <string name="wheel_home">Về màn hình chính</string>

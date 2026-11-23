@@ -110,7 +110,6 @@
     <string name="option_change_app">Vybrat aplikaci</string>
     <string name="option_opens">KLEPNUTÍ OTEVŘE</string>
     <string name="option_opens_dialer">Vytáčení</string>
-    <string name="option_opens_auto">Tu, kterou najde LiteDash</string>
     <string name="tires_show_pressure">Zobrazit tlak v pneumatikách</string>
     <string name="gauge_customize_help">Změny se projeví hned. Co vyžaduje pozornost (horký motor, vysoké otáčky), je vždy červeně.</string>
     <string name="gauge_style">Styl</string>
@@ -307,6 +306,8 @@
     <string name="tile_projection">Android Auto / CarPlay</string>
     <string name="tile_projection_help">Jedním klepnutím otevře tvou aplikaci Android Auto nebo CarPlay (Zlink, AutoKit…)</string>
     <string name="projection_missing">Aplikace nenalezena</string>
+    <string name="projection_app_title">Tvoje aplikace Android Auto / CarPlay</string>
+    <string name="projection_help">Otevře se tlačítkem na liště, widgetem a volantem.</string>
     <string name="wheel">Volant</string>
     <string name="wheel_help">Klepni na „Naučit tlačítko“ a stiskni tlačítko na volantu: LiteDash ho rozpozná a ty vybereš, co dělá. Nezměněná tlačítka fungují jako dřív (hudba, hlasitost). Každé tlačítko ukončí režim parkování.</string>
     <string name="wheel_learn">Naučit tlačítko</string>
@@ -323,6 +324,7 @@
     <string name="wheel_volume_down">Zeslabit</string>
     <string name="wheel_mute">Ztlumit</string>
     <string name="wheel_navigate">Otevřít mapu</string>
+    <string name="wheel_projection">Otevřít Android Auto / CarPlay</string>
     <string name="wheel_music">Hudba naplno</string>
     <string name="wheel_voice">Hlas</string>
     <string name="wheel_home">Zpět na plochu</string>

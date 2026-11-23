@@ -75,6 +75,7 @@ class LiteDashApp : Application() {
         music.isProjection = ::isProjectionPackage
         prefs.addBluetoothToBar()
         prefs.addHomeToBar()
+        prefs.addProjectionToBar()
         // Abrir una app de fábrica encima (una receta de sonido) espera a que el auto vaya a 10 km/h o menos. Sin dato
         // de velocidad (ningún widget usa el GPS ni hay OBD) no se sabe: se toma como en movimiento.
         music.moving = { (bus.value(Signal.SPEED) ?: Float.MAX_VALUE) > MOVING_KMH }

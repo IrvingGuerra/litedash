@@ -110,7 +110,6 @@
     <string name="option_change_app">Alkalmazás kiválasztása</string>
     <string name="option_opens">KOPPINTÁSRA MEGNYÍLIK</string>
     <string name="option_opens_dialer">A tárcsázó</string>
-    <string name="option_opens_auto">Amit a LiteDash talál</string>
     <string name="tires_show_pressure">Guminyomás mutatása</string>
     <string name="gauge_customize_help">A változások azonnal látszanak. Ami figyelmet kér (forró motor, magas fordulat), mindig piros.</string>
     <string name="gauge_style">Stílus</string>
@@ -301,6 +300,8 @@
     <string name="tile_projection">Android Auto / CarPlay</string>
     <string name="tile_projection_help">Egy koppintással megnyitja az Android Auto vagy CarPlay alkalmazásodat (Zlink, AutoKit…)</string>
     <string name="projection_missing">Az alkalmazás nem található</string>
+    <string name="projection_app_title">Az Android Auto / CarPlay alkalmazásod</string>
+    <string name="projection_help">A sávon lévő gombjával, a widgettel és a kormánnyal nyílik meg.</string>
     <string name="wheel">Kormány</string>
     <string name="wheel_help">Koppints a „Gomb betanítása” gombra, majd nyomd meg a kormánygombot: a LiteDash felismeri, és te választod ki, mit csináljon. A nem módosított gombok a megszokott módon működnek (zene, hangerő). Bármelyik gomb kilép a parkoló módból.</string>
     <string name="wheel_learn">Gomb betanítása</string>
@@ -317,6 +318,7 @@
     <string name="wheel_volume_down">Halkabb</string>
     <string name="wheel_mute">Némítás</string>
     <string name="wheel_navigate">Térkép megnyitása</string>
+    <string name="wheel_projection">Android Auto / CarPlay megnyitása</string>
     <string name="wheel_music">Nagy zene</string>
     <string name="wheel_voice">Hang</string>
     <string name="wheel_home">Vissza a kezdőképernyőre</string>

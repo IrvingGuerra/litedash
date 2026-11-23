@@ -110,7 +110,6 @@
     <string name="option_change_app">Välj app</string>
     <string name="option_opens">TRYCK ÖPPNAR</string>
     <string name="option_opens_dialer">Knappsatsen</string>
-    <string name="option_opens_auto">Den LiteDash hittar</string>
     <string name="tires_show_pressure">Visa däcktryck</string>
     <string name="gauge_customize_help">Ändringar syns direkt. Det som kräver uppmärksamhet (varm motor, högt varvtal) är alltid rött.</string>
     <string name="gauge_style">Stil</string>
@@ -301,6 +300,8 @@
     <string name="tile_projection">Android Auto / CarPlay</string>
     <string name="tile_projection_help">Öppnar din Android Auto- eller CarPlay-app (Zlink, AutoKit…) med ett tryck</string>
     <string name="projection_missing">Appen hittades inte</string>
+    <string name="projection_app_title">Din app för Android Auto / CarPlay</string>
+    <string name="projection_help">Öppnas med sin knapp i fältet, widgeten och ratten.</string>
     <string name="wheel">Ratt</string>
     <string name="wheel_help">Tryck på \"Lär knapp\" och tryck sedan på rattknappen: LiteDash känner igen den och du väljer vad den gör. Oförändrade knappar fungerar som vanligt (musik, volym). Alla knappar avslutar parkeringsläget.</string>
     <string name="wheel_learn">Lär knapp</string>
@@ -317,6 +318,7 @@
     <string name="wheel_volume_down">Volym ner</string>
     <string name="wheel_mute">Ljud av</string>
     <string name="wheel_navigate">Öppna kartan</string>
+    <string name="wheel_projection">Öppna Android Auto / CarPlay</string>
     <string name="wheel_music">Stor musik</string>
     <string name="wheel_voice">Röst</string>
     <string name="wheel_home">Tillbaka till start</string>

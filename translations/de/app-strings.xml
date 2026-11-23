@@ -110,7 +110,6 @@
     <string name="option_change_app">App wählen</string>
     <string name="option_opens">ANTIPPEN ÖFFNET</string>
     <string name="option_opens_dialer">Die Telefon-App</string>
-    <string name="option_opens_auto">Die, die LiteDash findet</string>
     <string name="tires_show_pressure">Reifendruck anzeigen</string>
     <string name="gauge_customize_help">Änderungen gelten sofort. Was Aufmerksamkeit braucht (heißer Motor, hohe Drehzahl), ist immer rot.</string>
     <string name="gauge_style">Stil</string>
@@ -301,6 +300,8 @@
     <string name="tile_projection">Android Auto / CarPlay</string>
     <string name="tile_projection_help">Öffnet deine Android-Auto- oder CarPlay-App (Zlink, AutoKit…) mit einem Tipp</string>
     <string name="projection_missing">App nicht gefunden</string>
+    <string name="projection_app_title">Deine App für Android Auto / CarPlay</string>
+    <string name="projection_help">Öffnet sich mit ihrer Taste in der Leiste, dem Widget und dem Lenkrad.</string>
     <string name="wheel">Lenkrad</string>
     <string name="wheel_help">Tippe auf \"Taste lernen\" und drück dann die Lenkradtaste: LiteDash erkennt sie und du wählst, was sie tut. Unveränderte Tasten funktionieren wie gewohnt (Musik, Lautstärke). Jede Taste beendet den Parkmodus.</string>
     <string name="wheel_learn">Taste lernen</string>
@@ -317,6 +318,7 @@
     <string name="wheel_volume_down">Leiser</string>
     <string name="wheel_mute">Stumm</string>
     <string name="wheel_navigate">Karte öffnen</string>
+    <string name="wheel_projection">Android Auto / CarPlay öffnen</string>
     <string name="wheel_music">Musik groß</string>
     <string name="wheel_voice">Sprachassistent</string>
     <string name="wheel_home">Zurück zum Start</string>

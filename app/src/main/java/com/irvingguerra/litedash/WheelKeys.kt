@@ -39,6 +39,7 @@ enum class WheelAction(val stored: String, val title: Int) {
     VOLUME_DOWN("volume_down", R.string.wheel_volume_down),
     MUTE("mute", R.string.wheel_mute),
     NAVIGATE("navigate", R.string.wheel_navigate),
+    PROJECTION("projection", R.string.wheel_projection),
     MUSIC("music", R.string.wheel_music),
     VOICE("voice", R.string.wheel_voice),
     HOME("home", R.string.wheel_home),

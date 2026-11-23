@@ -47,4 +47,44 @@ class BarItemTest {
         assertEquals(listOf(BarItem.APPS, BarItem.SPLIT_START, BarItem.SPLIT_END, BarItem.PHONE, BarItem.SETTINGS), BarItem.add(bar, BarItem.PHONE))
         assertEquals(bar, BarItem.add(bar, BarItem.APPS))
     }
+
+    @Test
+    fun projectionGoesAfterBluetooth() {
+        val bar = listOf(BarItem.HOME, BarItem.SPLIT_START, BarItem.FAVORITES, BarItem.SPLIT_END, BarItem.NAVIGATE, BarItem.BLUETOOTH, BarItem.VOICE)
+        assertEquals(
+            listOf(BarItem.HOME, BarItem.SPLIT_START, BarItem.FAVORITES, BarItem.SPLIT_END, BarItem.NAVIGATE, BarItem.BLUETOOTH, BarItem.PROJECTION, BarItem.VOICE, BarItem.SETTINGS),
+            BarItem.withProjection(bar),
+        )
+        // Una sola vez: si ya está (donde sea), no se mueve ni se repite.
+        val moved = listOf(BarItem.PROJECTION, BarItem.SPLIT_START, BarItem.SPLIT_END, BarItem.BLUETOOTH, BarItem.SETTINGS)
+        assertEquals(moved, BarItem.withProjection(moved))
+    }
+
+    @Test
+    fun projectionWithoutBluetoothGoesToTheEndOfNavigatesPart() {
+        // Navegar al principio: al final de esa parte, antes de la primera raya.
+        assertEquals(
+            listOf(BarItem.NAVIGATE, BarItem.APPS, BarItem.PROJECTION, BarItem.SPLIT_START, BarItem.MUSIC, BarItem.SPLIT_END, BarItem.SETTINGS),
+            BarItem.withProjection(listOf(BarItem.NAVIGATE, BarItem.APPS, BarItem.SPLIT_START, BarItem.MUSIC, BarItem.SPLIT_END)),
+        )
+        // Navegar al final: antes de Ajustes.
+        assertEquals(
+            listOf(BarItem.SPLIT_START, BarItem.SPLIT_END, BarItem.NAVIGATE, BarItem.PHONE, BarItem.PROJECTION, BarItem.SETTINGS),
+            BarItem.withProjection(listOf(BarItem.SPLIT_START, BarItem.SPLIT_END, BarItem.NAVIGATE, BarItem.PHONE)),
+        )
+    }
+
+    @Test
+    fun projectionWithoutEitherGoesBeforeTheSecondSplit() {
+        assertEquals(
+            listOf(BarItem.APPS, BarItem.SPLIT_START, BarItem.FAVORITES, BarItem.PROJECTION, BarItem.SPLIT_END, BarItem.VOICE, BarItem.SETTINGS),
+            BarItem.withProjection(listOf(BarItem.APPS, BarItem.FAVORITES, BarItem.VOICE)),
+        )
+        // Se lee por su nombre guardado y pasa por normalize como los demás.
+        assertEquals(BarItem.PROJECTION, BarItem.fromStored("projection"))
+        assertEquals(
+            listOf(BarItem.PROJECTION, BarItem.SPLIT_START, BarItem.SPLIT_END, BarItem.SETTINGS),
+            BarItem.normalize(listOf(BarItem.PROJECTION, BarItem.SETTINGS, BarItem.PROJECTION)),
+        )
+    }
 }

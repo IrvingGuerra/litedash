@@ -110,7 +110,6 @@
     <string name="option_change_app">ऐप चुनें</string>
     <string name="option_opens">टैप करने पर खुलता है</string>
     <string name="option_opens_dialer">डायलर</string>
-    <string name="option_opens_auto">जो LiteDash ढूँढे</string>
     <string name="tires_show_pressure">टायर प्रेशर दिखाएँ</string>
     <string name="gauge_customize_help">बदलाव तुरंत दिखते हैं। जिस पर ध्यान चाहिए (गरम इंजन, ज़्यादा rpm) वह हमेशा लाल होता है।</string>
     <string name="gauge_style">स्टाइल</string>
@@ -298,6 +297,8 @@
     <string name="tile_projection">Android Auto / CarPlay</string>
     <string name="tile_projection_help">एक टैप में आपका Android Auto या CarPlay ऐप (Zlink, AutoKit…) खोलता है</string>
     <string name="projection_missing">ऐप नहीं मिला</string>
+    <string name="projection_app_title">आपका Android Auto / CarPlay ऐप</string>
+    <string name="projection_help">यह बार के अपने बटन, विजेट और स्टीयरिंग से खुलता है।</string>
     <string name="wheel">स्टीयरिंग व्हील</string>
     <string name="wheel_help">\"बटन सीखें\" पर टैप करें और फिर स्टीयरिंग का बटन दबाएँ: LiteDash उसे पहचानता है और आप चुनते हैं कि वह क्या करे। न बदले गए बटन पहले जैसे काम करते हैं (म्यूज़िक, वॉल्यूम)। कोई भी बटन पार्क मोड से बाहर लाता है।</string>
     <string name="wheel_learn">बटन सीखें</string>
@@ -314,6 +315,7 @@
     <string name="wheel_volume_down">वॉल्यूम घटाएँ</string>
     <string name="wheel_mute">म्यूट</string>
     <string name="wheel_navigate">मैप खोलें</string>
+    <string name="wheel_projection">Android Auto / CarPlay खोलें</string>
     <string name="wheel_music">बड़ा म्यूज़िक</string>
     <string name="wheel_voice">वॉइस</string>
     <string name="wheel_home">होम पर वापस</string>

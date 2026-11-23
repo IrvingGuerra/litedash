@@ -110,7 +110,6 @@
     <string name="option_change_app">Επιλογή εφαρμογής</string>
     <string name="option_opens">ΜΕ ΠΑΤΗΜΑ ΑΝΟΙΓΕΙ</string>
     <string name="option_opens_dialer">Το πληκτρολόγιο κλήσεων</string>
-    <string name="option_opens_auto">Αυτή που βρίσκει το LiteDash</string>
     <string name="tires_show_pressure">Εμφάνιση πίεσης ελαστικών</string>
     <string name="gauge_customize_help">Οι αλλαγές φαίνονται αμέσως. Ό,τι χρειάζεται προσοχή (ζεστός κινητήρας, υψηλές στροφές) είναι πάντα κόκκινο.</string>
     <string name="gauge_style">Στυλ</string>
@@ -301,6 +300,8 @@
     <string name="tile_projection">Android Auto / CarPlay</string>
     <string name="tile_projection_help">Ανοίγει την εφαρμογή Android Auto ή CarPlay (Zlink, AutoKit…) με ένα πάτημα</string>
     <string name="projection_missing">Η εφαρμογή δεν βρέθηκε</string>
+    <string name="projection_app_title">Η εφαρμογή σας για Android Auto / CarPlay</string>
+    <string name="projection_help">Ανοίγει από το κουμπί της στη γραμμή, το widget και το τιμόνι.</string>
     <string name="wheel">Τιμόνι</string>
     <string name="wheel_help">Πατήστε «Εκμάθηση κουμπιού» και μετά το κουμπί του τιμονιού: το LiteDash το αναγνωρίζει και επιλέγετε τι κάνει. Τα κουμπιά χωρίς αλλαγή λειτουργούν κανονικά (μουσική, ένταση). Οποιοδήποτε κουμπί βγάζει από τη λειτουργία στάθμευσης.</string>
     <string name="wheel_learn">Εκμάθηση κουμπιού</string>
@@ -317,6 +318,7 @@
     <string name="wheel_volume_down">Ένταση κάτω</string>
     <string name="wheel_mute">Σίγαση</string>
     <string name="wheel_navigate">Άνοιγμα χάρτη</string>
+    <string name="wheel_projection">Άνοιγμα Android Auto / CarPlay</string>
     <string name="wheel_music">Μουσική σε μεγάλη προβολή</string>
     <string name="wheel_voice">Φωνή</string>
     <string name="wheel_home">Πίσω στην αρχική</string>

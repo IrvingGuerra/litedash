@@ -340,7 +340,11 @@ fun TileContent(d: Dependencies, p: Tile, apps: List<App>, car: CarPackage?, rev
             onWorkshop = { actions.onPanel(Panel.Workshop) },
         )
         TileTypes.WORKSHOP -> HealthTile(d, showCar = p.flag(WidgetFlags.CAR)) { actions.onPanel(Panel.Workshop) }
-        TileTypes.PROJECTION -> ProjectionTile(d, apps, appKeyOf(p.data)) { actions.onPanel(Panel.Drawer) }
+        // Sin app de Android Auto / CarPlay: sus ajustes, para elegirla.
+        TileTypes.PROJECTION -> ProjectionTile(d, apps, p) {
+            openProjectionSettings()
+            actions.onPanel(Panel.MusicSettings)
+        }
         TileTypes.TIRES -> TiresTile(d, showCar = p.flag(WidgetFlags.CAR), onOpen = actions.onTires, onSettings = { actions.onPanel(Panel.TiresSettings) })
         TileTypes.MAP -> Box(Modifier.expandable(p, actions)) {
             // Con «Navegar con: App de mapas», el toque y Casa/Trabajo abren esa app; si no, todo es el mapa de LiteDash.
@@ -506,6 +510,15 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
         if (app != null) openNavigation(context, d.apps, app)
         else expand(Expanded.MAP, null)
     }
+    // Android Auto / CarPlay (barra, volante): la app de [projectionChoice] o, si no hay, sus ajustes para elegirla.
+    fun openProjection() {
+        val app = projectionChoice(d, currentApps)
+        if (app != null) d.apps.open(context, app)
+        else {
+            openProjectionSettings()
+            panel = Panel.MusicSettings
+        }
+    }
     // Con Archivos, play sin nada que sonar (volante, barra de Android, widget) abre la pantalla Música en la
     // biblioteca; mientras está abierta, la atiende ella.
     // Un lugar de otra app (geo:) o la lupa sin mapa abierto: el mapa en grande lo atiende.
@@ -617,13 +630,14 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
             onNavigate = { if (expanded == Expanded.MAP) expanded = null else openMapShortcut() },
             // Chip propio del estéreo: su app de Bluetooth (la misma que usa la música). Con el Bluetooth de
             // Android, donde se empareja el celular: sus ajustes de Bluetooth (o, si la pantalla no los trae,
-            // Ajustes → Apps → Música).
+            // Ajustes → Apps → Música). Android Auto / CarPlay tiene su propio botón.
             onBluetooth = {
                 if (!openStereoBluetooth(d, context)) {
                     openMusicSettings()
                     panel = Panel.MusicSettings
                 }
             },
+            onProjection = { openProjection() },
             onPhone = { openDialer(context) },
             onVoice = onVoice,
             onSettings = { panel = Panel.Settings },
@@ -640,6 +654,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
             d.wheel.consume()
             when (action) {
                 WheelAction.NAVIGATE -> openMapShortcut()
+                WheelAction.PROJECTION -> openProjection()
                 WheelAction.MUSIC -> openMedia(null)
                 WheelAction.VOICE -> onVoice?.invoke()
                 WheelAction.HOME -> backToDashboard()
@@ -1056,7 +1071,7 @@ fun dockFavorites(d: Dependencies, apps: List<App>): List<App> {
     d.prefs.dock?.let { keys -> return keys.mapNotNull { d.apps.find(apps, it) } }
     return listOfNotNull(
         // Android Auto / CarPlay primero: mucha gente usa la pantalla con su celular.
-        projectionApp(apps),
+        projectionChoice(d, apps),
         d.apps.firstOf(apps, *NAVIGATION_PACKAGES),
         // La app de música elegida en Ajustes, o la primera conocida que haya.
         d.music.preferred?.let { d.apps.firstOf(apps, it) } ?: d.apps.firstOf(apps, *MUSIC_PACKAGES),

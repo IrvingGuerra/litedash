@@ -110,7 +110,6 @@
     <string name="option_change_app">选择应用</string>
     <string name="option_opens">点按后打开</string>
     <string name="option_opens_dialer">拨号器</string>
-    <string name="option_opens_auto">LiteDash 找到的应用</string>
     <string name="tires_show_pressure">显示胎压</string>
     <string name="gauge_customize_help">更改会立即显示。需要注意的情况（发动机过热、转速过高）始终为红色。</string>
     <string name="gauge_style">样式</string>
@@ -298,6 +297,8 @@
     <string name="tile_projection">Android Auto / CarPlay</string>
     <string name="tile_projection_help">一键打开你的 Android Auto 或 CarPlay 应用（Zlink、AutoKit…）</string>
     <string name="projection_missing">未找到应用</string>
+    <string name="projection_app_title">你的 Android Auto / CarPlay 应用</string>
+    <string name="projection_help">可通过栏上的按钮、小组件和方向盘打开。</string>
     <string name="wheel">方向盘</string>
     <string name="wheel_help">点按“学习按键”，再按下方向盘按键：LiteDash 会识别它，你来选择它的功能。未更改的按键照常工作（音乐、音量）。任意按键都会退出驻车模式。</string>
     <string name="wheel_learn">学习按键</string>
@@ -314,6 +315,7 @@
     <string name="wheel_volume_down">音量减</string>
     <string name="wheel_mute">静音</string>
     <string name="wheel_navigate">打开地图</string>
+    <string name="wheel_projection">打开 Android Auto / CarPlay</string>
     <string name="wheel_music">大屏音乐</string>
     <string name="wheel_voice">语音</string>
     <string name="wheel_home">回到主屏幕</string>

@@ -318,14 +318,11 @@ private fun SoundRow(d: Dependencies, openMusic: () -> Unit) {
 
 /**
  * Abre donde se conecta el celular al estéreo: con chip de Bluetooth propio, la app de Bluetooth del estéreo
- * (la misma que usa la música); si no hay y la pantalla trae ZLink o parecida (ellas manejan el Bluetooth del
- * celular para Android Auto / CarPlay), esa app; si no, los ajustes de Bluetooth de Android. Falso si no se
- * pudo abrir nada.
+ * (la misma que usa la música); si no, los ajustes de Bluetooth de Android. Solo Bluetooth: Android Auto / CarPlay
+ * (ZLink y parecidas) tiene su propio botón. Falso si no se pudo abrir nada.
  */
 internal fun openStereoBluetooth(d: Dependencies, context: Context): Boolean {
     if (!d.music.bluetoothBuiltIn && d.music.openBluetoothApp()) return true
-    val projection = projectionPackage(context)?.let(context.packageManager::getLaunchIntentForPackage)
-    if (projection != null && openSystemScreen(context, projection)) return true
     return openSystemScreen(context, Intent(Settings.ACTION_BLUETOOTH_SETTINGS))
 }
 

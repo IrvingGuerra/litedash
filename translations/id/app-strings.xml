@@ -110,7 +110,6 @@
     <string name="option_change_app">Pilih aplikasi</string>
     <string name="option_opens">JIKA DIKETUK MEMBUKA</string>
     <string name="option_opens_dialer">Papan panggil</string>
-    <string name="option_opens_auto">Yang ditemukan LiteDash</string>
     <string name="tires_show_pressure">Tampilkan tekanan ban</string>
     <string name="gauge_customize_help">Perubahan langsung terlihat. Yang perlu perhatian (mesin panas, rpm tinggi) selalu merah.</string>
     <string name="gauge_style">Gaya</string>
@@ -298,6 +297,8 @@
     <string name="tile_projection">Android Auto / CarPlay</string>
     <string name="tile_projection_help">Membuka aplikasi Android Auto atau CarPlay Anda (Zlink, AutoKit…) dengan sekali ketuk</string>
     <string name="projection_missing">Aplikasi tidak ditemukan</string>
+    <string name="projection_app_title">Aplikasi Android Auto / CarPlay Anda</string>
+    <string name="projection_help">Dibuka dengan tombolnya di bilah, widget, dan setir.</string>
     <string name="wheel">Setir</string>
     <string name="wheel_help">Ketuk \"Pelajari tombol\" lalu tekan tombol di setir: LiteDash mengenalinya dan Anda pilih fungsinya. Tombol yang tidak diubah berfungsi seperti biasa (musik, volume). Tombol apa pun keluar dari mode parkir.</string>
     <string name="wheel_learn">Pelajari tombol</string>
@@ -314,6 +315,7 @@
     <string name="wheel_volume_down">Volume turun</string>
     <string name="wheel_mute">Bisukan</string>
     <string name="wheel_navigate">Buka peta</string>
+    <string name="wheel_projection">Buka Android Auto / CarPlay</string>
     <string name="wheel_music">Musik layar besar</string>
     <string name="wheel_voice">Suara</string>
     <string name="wheel_home">Kembali ke beranda</string>

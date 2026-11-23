@@ -73,6 +73,8 @@ class BarActions(
     val onNavigate: () -> Unit,
     /** La app de Bluetooth del estéreo (o el emparejado): para conectar el celular sin buscarla. */
     val onBluetooth: () -> Unit,
+    /** Tu app de Android Auto / CarPlay (o sus ajustes, si no hay ninguna). */
+    val onProjection: () -> Unit,
     val onPhone: () -> Unit,
     /** El asistente de voz de la pantalla; null si no trae (el botón no aparece ni se ofrece). */
     val onVoice: (() -> Unit)?,
@@ -189,7 +191,7 @@ fun AppBar(
 internal fun BarPreview(repo: AppRepository, favorites: List<App>, items: List<BarItem>, selected: BarItem?, onSelect: (BarItem) -> Unit) {
     val c = LocalColors.current
     val sizes = BarSizes(button = 48.dp, icon = 36.dp)
-    val actions = remember { BarActions({}, {}, {}, {}, {}, {}, {}, {}, {}, {}) }
+    val actions = remember { BarActions({}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}) }
     val shape = RoundedCornerShape(Radius.card)
     val mark = RoundedCornerShape(Radius.inner)
     Row(
@@ -249,6 +251,7 @@ private fun BarButton(item: BarItem, sizes: BarSizes, vertical: Boolean, musicOp
         BarItem.VOLUME -> Volume(if (vertical) sizes.volume else sizes.button, vertical = vertical)
         BarItem.NAVIGATE -> IconButton(Icons.navigate, actions.onNavigate, size = sizes.button, background = if (mapOpen) c.surfaceHigh else Color.Transparent)
         BarItem.BLUETOOTH -> IconButton(Icons.bluetooth, actions.onBluetooth, size = sizes.button)
+        BarItem.PROJECTION -> IconButton(Icons.phoneCar, actions.onProjection, size = sizes.button)
         BarItem.PHONE -> IconButton(Icons.phone, actions.onPhone, size = sizes.button)
         BarItem.VOICE -> actions.onVoice?.let { IconButton(Icons.mic, it, size = sizes.button) }
         // Siempre: sin Ajustes no habría cómo salir del inicio.

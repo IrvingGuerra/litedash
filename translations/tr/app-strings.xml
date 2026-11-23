@@ -110,7 +110,6 @@
     <string name="option_change_app">Uygulama seç</string>
     <string name="option_opens">DOKUNUNCA AÇILIR</string>
     <string name="option_opens_dialer">Tuş takımı</string>
-    <string name="option_opens_auto">LiteDash’in bulduğu</string>
     <string name="tires_show_pressure">Lastik basıncını göster</string>
     <string name="gauge_customize_help">Değişiklikler hemen görünür. Dikkat gerekenler (sıcak motor, yüksek devir) her zaman kırmızıdır.</string>
     <string name="gauge_style">Stil</string>
@@ -301,6 +300,8 @@
     <string name="tile_projection">Android Auto / CarPlay</string>
     <string name="tile_projection_help">Android Auto veya CarPlay uygulamanızı (Zlink, AutoKit…) tek dokunuşla açar</string>
     <string name="projection_missing">Uygulama bulunamadı</string>
+    <string name="projection_app_title">Android Auto / CarPlay uygulamanız</string>
+    <string name="projection_help">Çubuktaki düğmesiyle, widget’la ve direksiyonla açılır.</string>
     <string name="wheel">Direksiyon</string>
     <string name="wheel_help">«Düğmeyi öğren»e dokunun ve direksiyon düğmesine basın: LiteDash onu tanır ve ne yapacağını siz seçersiniz. Değiştirilmeyen düğmeler her zamanki gibi çalışır (müzik, ses). Herhangi bir düğme park modundan çıkar.</string>
     <string name="wheel_learn">Düğmeyi öğren</string>
@@ -317,6 +318,7 @@
     <string name="wheel_volume_down">Sesi kıs</string>
     <string name="wheel_mute">Sessiz</string>
     <string name="wheel_navigate">Haritayı aç</string>
+    <string name="wheel_projection">Android Auto / CarPlay’i aç</string>
     <string name="wheel_music">Büyük müzik</string>
     <string name="wheel_voice">Sesli</string>
     <string name="wheel_home">Ana ekrana dön</string>

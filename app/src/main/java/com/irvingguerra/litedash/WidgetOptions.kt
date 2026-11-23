@@ -38,8 +38,8 @@ import com.irvingguerra.litedash.feature.dashboard.TileTypes
 
 /**
  * Las opciones de un widget en su [Tile.data]: "clave=off" apaga una que de fábrica está prendida (lo de
- * fábrica no se escribe: los acomodos de antes se ven igual). Los widgets que abren una app (App, Teléfono,
- * Android Auto) llevan además la app al principio, sin "=".
+ * fábrica no se escribe: los acomodos de antes se ven igual). Los widgets que abren una app (App, Teléfono) llevan
+ * además la app al principio, sin "=" (Android Auto / CarPlay la llevaba hasta la 1.5.14: [ProjectionTile] la adopta).
  */
 object WidgetFlags {
     const val WEATHER = "weather"
@@ -75,7 +75,7 @@ fun clockWeather(d: Dependencies, data: String): WeatherRepository? =
 /** Los tipos que se personalizan aquí (los demás tienen su propio panel: medidores, mapa, imagen, auto). */
 val WIDGET_OPTIONS = setOf(
     TileTypes.CLOCK, TileTypes.WEATHER, TileTypes.TRIP, TileTypes.TIRES, TileTypes.WORKSHOP, TileTypes.MUSIC,
-    TileTypes.RADIO, TileTypes.APP, TileTypes.PHONE, TileTypes.PROJECTION,
+    TileTypes.RADIO, TileTypes.APP, TileTypes.PHONE,
 )
 
 /**
@@ -194,9 +194,9 @@ private fun WidgetOptionRows(d: Dependencies, tile: Tile, apps: List<App>, onPic
             FlagRow(d, tile, WidgetFlags.NAME, R.string.option_app_name)
             Button(stringResource(R.string.option_change_app), onPickApp)
         }
-        TileTypes.PHONE, TileTypes.PROJECTION -> {
+        TileTypes.PHONE -> {
             val chosen = appKeyOf(data)?.let { d.apps.find(apps, it) }
-            val default = stringResource(if (tile.type == TileTypes.PHONE) R.string.option_opens_dialer else R.string.option_opens_auto)
+            val default = stringResource(R.string.option_opens_dialer)
             Label(stringResource(R.string.option_opens), Typography.label, c.textMuted)
             Label(chosen?.name ?: default, Typography.subtitle)
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {

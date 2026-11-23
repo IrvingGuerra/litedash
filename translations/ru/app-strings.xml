@@ -110,7 +110,6 @@
     <string name="option_change_app">Выбрать приложение</string>
     <string name="option_opens">ПО НАЖАТИЮ ОТКРЫВАЕТСЯ</string>
     <string name="option_opens_dialer">Набор номера</string>
-    <string name="option_opens_auto">То, что найдёт LiteDash</string>
     <string name="tires_show_pressure">Показывать давление в шинах</string>
     <string name="gauge_customize_help">Изменения видны сразу. То, что требует внимания (горячий двигатель, высокие обороты), всегда красное.</string>
     <string name="gauge_style">Стиль</string>
@@ -307,6 +306,8 @@
     <string name="tile_projection">Android Auto / CarPlay</string>
     <string name="tile_projection_help">Открывает приложение Android Auto или CarPlay (Zlink, AutoKit…) одним нажатием</string>
     <string name="projection_missing">Приложение не найдено</string>
+    <string name="projection_app_title">Твоё приложение Android Auto / CarPlay</string>
+    <string name="projection_help">Открывается своей кнопкой на панели, виджетом и рулём.</string>
     <string name="wheel">Руль</string>
     <string name="wheel_help">Нажми «Запомнить кнопку», а потом кнопку на руле: LiteDash её распознает, и ты выберешь, что она делает. Неизменённые кнопки работают как обычно (музыка, громкость). Любая кнопка выводит из режима стоянки.</string>
     <string name="wheel_learn">Запомнить кнопку</string>
@@ -323,6 +324,7 @@
     <string name="wheel_volume_down">Тише</string>
     <string name="wheel_mute">Без звука</string>
     <string name="wheel_navigate">Открыть карту</string>
+    <string name="wheel_projection">Открыть Android Auto / CarPlay</string>
     <string name="wheel_music">Музыка на весь экран</string>
     <string name="wheel_voice">Голос</string>
     <string name="wheel_home">На главный экран</string>

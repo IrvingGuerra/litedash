@@ -110,7 +110,6 @@
     <string name="option_change_app">App kiezen</string>
     <string name="option_opens">TIKKEN OPENT</string>
     <string name="option_opens_dialer">De kiezer</string>
-    <string name="option_opens_auto">Die LiteDash vindt</string>
     <string name="tires_show_pressure">Bandenspanning tonen</string>
     <string name="gauge_customize_help">Wijzigingen zie je meteen. Wat aandacht nodig heeft (hete motor, hoog toerental) is altijd rood.</string>
     <string name="gauge_style">Stijl</string>
@@ -301,6 +300,8 @@
     <string name="tile_projection">Android Auto / CarPlay</string>
     <string name="tile_projection_help">Opent je Android Auto- of CarPlay-app (Zlink, AutoKit…) met één tik</string>
     <string name="projection_missing">App niet gevonden</string>
+    <string name="projection_app_title">Je Android Auto / CarPlay-app</string>
+    <string name="projection_help">Opent met zijn knop in de balk, de widget en het stuur.</string>
     <string name="wheel">Stuurwiel</string>
     <string name="wheel_help">Tik op \"Knop leren\" en druk dan op de stuurknop: LiteDash herkent hem en jij kiest wat hij doet. Ongewijzigde knoppen werken zoals altijd (muziek, volume). Elke knop beëindigt de parkeerstand.</string>
     <string name="wheel_learn">Knop leren</string>
@@ -317,6 +318,7 @@
     <string name="wheel_volume_down">Volume omlaag</string>
     <string name="wheel_mute">Dempen</string>
     <string name="wheel_navigate">Kaart openen</string>
+    <string name="wheel_projection">Android Auto / CarPlay openen</string>
     <string name="wheel_music">Muziek groot</string>
     <string name="wheel_voice">Spraak</string>
     <string name="wheel_home">Terug naar start</string>

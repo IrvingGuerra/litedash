@@ -46,6 +46,7 @@ private fun BarItem.title(): Int? = when (this) {
     BarItem.VOLUME -> R.string.bar_item_volume
     BarItem.NAVIGATE -> R.string.bar_item_navigate
     BarItem.BLUETOOTH -> R.string.bar_item_bluetooth
+    BarItem.PROJECTION -> R.string.tile_projection
     BarItem.PHONE -> R.string.bar_item_phone
     BarItem.VOICE -> R.string.bar_item_voice
     BarItem.FAVORITES -> R.string.bar_item_favorites

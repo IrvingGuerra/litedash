@@ -112,7 +112,6 @@
     <string name="option_change_app">Choose app</string>
     <string name="option_opens">TAPPING IT OPENS</string>
     <string name="option_opens_dialer">The dialer</string>
-    <string name="option_opens_auto">The one LiteDash finds</string>
     <string name="tires_show_pressure">Show tire pressure</string>
     <string name="gauge_customize_help">Changes show right away. What needs attention (hot engine, high revs) is always red.</string>
     <string name="gauge_style">Style</string>
@@ -303,6 +302,8 @@
     <string name="tile_projection">Android Auto / CarPlay</string>
     <string name="tile_projection_help">Opens your Android Auto or CarPlay app (Zlink, AutoKit…) with one tap</string>
     <string name="projection_missing">App not found</string>
+    <string name="projection_app_title">Your Android Auto / CarPlay app</string>
+    <string name="projection_help">Opens from its bar button, the widget and the steering wheel.</string>
     <string name="wheel">Steering wheel</string>
     <string name="wheel_help">Tap \"Learn button\" and then press the steering wheel button: LiteDash recognizes it and you choose what it does. Unchanged buttons work as usual (music, volume). Any button leaves parked mode.</string>
     <string name="wheel_learn">Learn button</string>
@@ -319,6 +320,7 @@
     <string name="wheel_volume_down">Volume down</string>
     <string name="wheel_mute">Mute</string>
     <string name="wheel_navigate">Open the map</string>
+    <string name="wheel_projection">Open Android Auto / CarPlay</string>
     <string name="wheel_music">Big music</string>
     <string name="wheel_voice">Voice</string>
     <string name="wheel_home">Back to home</string>

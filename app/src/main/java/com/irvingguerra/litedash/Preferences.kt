@@ -48,6 +48,7 @@ internal object PrefKeys {
     const val DOCK = "dock"
     const val MAP_APP = "map_app"
     const val MAP_EXTERNAL = "map_external"
+    const val PROJECTION_APP = "projection_app"
     /** En el mapa de fondo del inicio: tu auto en vez de la flecha. */
     const val MAP_BACKDROP_CAR = "map_backdrop_car"
     const val MAP_LOOK = "map_look"
@@ -80,6 +81,7 @@ internal object PrefKeys {
     const val BAR_ITEMS = "bar_items"
     const val BAR_BLUETOOTH_ADDED = "bar_bluetooth_added"
     const val BAR_HOME_ADDED = "bar_home_added"
+    const val BAR_PROJECTION_ADDED = "bar_projection_added"
     const val BAR_STYLE = "bar_style"
     const val BAR_HIDDEN = "bar_hidden"
     const val LOGO_INTRO = "logo_intro"
@@ -157,7 +159,8 @@ enum class BarSize(val stored: String, val scale: Float) {
  * habría cómo salir del inicio.
  */
 enum class BarItem(val stored: String) {
-    HOME("home"), APPS("apps"), MUSIC("music"), VOLUME("volume"), NAVIGATE("navigate"), BLUETOOTH("bluetooth"), PHONE("phone"),
+    HOME("home"), APPS("apps"), MUSIC("music"), VOLUME("volume"), NAVIGATE("navigate"), BLUETOOTH("bluetooth"), PROJECTION("projection"),
+    PHONE("phone"),
     VOICE("voice"), FAVORITES("favorites"), SETTINGS("settings"),
 
     /**
@@ -196,14 +199,33 @@ enum class BarItem(val stored: String) {
             val at = if (item == FAVORITES) all.indexOf(SPLIT_START) + 1 else all.size - 1
             return all.toMutableList().apply { add(at, item) }
         }
+
+        /**
+         * [items] con Android Auto / CarPlay puesto (si no lo tiene): después de Bluetooth; sin él, al final de la parte
+         * donde está Navegar; sin ninguno, al final del centro (antes de la segunda división).
+         */
+        fun withProjection(items: List<BarItem>): List<BarItem> {
+            val all = normalize(items)
+            if (PROJECTION in all) return all
+            val bluetooth = all.indexOf(BLUETOOTH)
+            val navigate = all.indexOf(NAVIGATE)
+            val at = when {
+                bluetooth >= 0 -> bluetooth + 1
+                navigate >= 0 -> (navigate + 1 until all.size).first { all[it].isSplit || all[it] == SETTINGS }
+                else -> all.indexOf(SPLIT_END)
+            }
+            return normalize(all.toMutableList().apply { add(at, PROJECTION) })
+        }
     }
 }
 
 /**
  * La barra de fábrica: Inicio, Apps, volumen y Música; tus favoritas (vacías: ninguna app de fábrica); Navegar, Bluetooth,
- * voz y Ajustes. Teléfono se agrega si se quiere.
+ * Android Auto / CarPlay, voz y Ajustes. Teléfono se agrega si se quiere.
  */
-private val DEFAULT_BAR = listOf(BarItem.HOME, BarItem.APPS, BarItem.VOLUME, BarItem.MUSIC, BarItem.FAVORITES, BarItem.NAVIGATE, BarItem.BLUETOOTH, BarItem.VOICE)
+private val DEFAULT_BAR = listOf(
+    BarItem.HOME, BarItem.APPS, BarItem.VOLUME, BarItem.MUSIC, BarItem.FAVORITES, BarItem.NAVIGATE, BarItem.BLUETOOTH, BarItem.PROJECTION, BarItem.VOICE,
+)
 
 /** Las opciones de la barra de antes de poder editarla: si alguna se guardó, se respeta lo de esa persona. */
 private val LEGACY_BAR_KEYS = listOf(PrefKeys.BAR_APPS, PrefKeys.BAR_MUSIC, PrefKeys.BAR_VOLUME, PrefKeys.BAR_FAVORITES, PrefKeys.BAR_VOICE, PrefKeys.BAR_CLOCK)
@@ -447,6 +469,9 @@ class Preferences(context: Context) {
     /** Usar tu app de mapas: el toque al widget Mapa, Casa/Trabajo, la barra y el volante la abren (apagado de fábrica: el mapa de LiteDash). */
     var mapExternal by bool(PrefKeys.MAP_EXTERNAL, false)
 
+    /** Tu app de Android Auto / CarPlay ([com.irvingguerra.litedash.feature.apps.App.key]); null = la que encuentre LiteDash ([projectionChoice]). */
+    var projectionApp by string(PrefKeys.PROJECTION_APP)
+
     /** El mapa de la guía (el de la derecha) gira hacia donde vas en vez de quedarse al norte (botón de la brújula). */
     var guideMapHeading by bool(PrefKeys.GUIDE_MAP_HEADING, false)
 
@@ -494,10 +519,6 @@ class Preferences(context: Context) {
         set(value) {
             storedBarItems = BarItem.normalize(value)
         }
-    /**
-     * El botón de Bluetooth llegó a la barra en la 1.4.140 (Irving: "por defecto, como el del mapa"): una
-     * sola vez se le pone, junto al de navegar, a quien ya tenía su barra. Si luego lo quita, no regresa.
-     */
     /** El botón de Inicio llegó en la 1.5.9: una sola vez se le pone, al principio, a quien ya tenía su barra. Si luego lo quita, no regresa. */
     fun addHomeToBar() {
         if (p.getBoolean(PrefKeys.BAR_HOME_ADDED, false)) return
@@ -506,6 +527,21 @@ class Preferences(context: Context) {
         if (BarItem.HOME !in items) barItems = listOf(BarItem.HOME) + items
     }
 
+    /**
+     * El botón de Android Auto / CarPlay llegó después de la 1.5.14 (Irving: de fábrica, como Bluetooth): una sola vez
+     * se le pone a quien ya tenía su barra ([BarItem.withProjection]). Si luego lo quita, no regresa.
+     */
+    fun addProjectionToBar() {
+        if (p.getBoolean(PrefKeys.BAR_PROJECTION_ADDED, false)) return
+        p.edit { putBoolean(PrefKeys.BAR_PROJECTION_ADDED, true) }
+        val items = barItems
+        if (BarItem.PROJECTION !in items) barItems = BarItem.withProjection(items)
+    }
+
+    /**
+     * El botón de Bluetooth llegó a la barra en la 1.4.140 (Irving: "por defecto, como el del mapa"): una
+     * sola vez se le pone, junto al de navegar, a quien ya tenía su barra. Si luego lo quita, no regresa.
+     */
     fun addBluetoothToBar() {
         if (p.getBoolean(PrefKeys.BAR_BLUETOOTH_ADDED, false)) return
         p.edit { putBoolean(PrefKeys.BAR_BLUETOOTH_ADDED, true) }

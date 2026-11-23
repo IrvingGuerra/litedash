@@ -1,12 +1,26 @@
 package com.irvingguerra.litedash
 
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
+import com.irvingguerra.litedash.core.ui.Button
 import com.irvingguerra.litedash.core.ui.Icons
+import com.irvingguerra.litedash.core.ui.Label
+import com.irvingguerra.litedash.core.ui.LocalColors
+import com.irvingguerra.litedash.core.ui.Typography
 import com.irvingguerra.litedash.feature.apps.App
 import com.irvingguerra.litedash.feature.apps.AppIcon
+import com.irvingguerra.litedash.feature.apps.rememberApps
+import com.irvingguerra.litedash.feature.dashboard.Tile
 
 // Apps conocidas para usar el celular en la pantalla (Android Auto / CarPlay con o sin cable).
 private val PROJECTION_PACKAGES = listOf(
@@ -39,28 +53,33 @@ fun isProjectionPackage(pkg: String, name: String? = null): Boolean {
     }
 }
 
-/**
- * La app de proyección conocida que esté instalada (ZLink, EasyConnection, Open Headunit…), o null; el botón de
- * Bluetooth la abre. La de Google no cuenta: es la del celular, no la de una pantalla.
- */
-fun projectionPackage(context: android.content.Context): String? =
-    PROJECTION_PACKAGES.firstOrNull { it != GOOGLE_AUTO && context.packageManager.getLaunchIntentForPackage(it) != null }
-
-private const val GOOGLE_AUTO = "com.google.android.projection.gearhead"
-
 /** La app de Android Auto / CarPlay que tenga la pantalla (primero las conocidas), o null. */
 fun projectionApp(apps: List<App>): App? =
     PROJECTION_PACKAGES.firstNotNullOfOrNull { p -> apps.firstOrNull { it.pkg == p } }
         ?: apps.firstOrNull { isProjectionPackage(it.pkg, it.name) }
 
+/** La que se abre: la elegida ([chosen], su [App.key]) si sigue instalada; si no, la que encuentre LiteDash. */
+fun projectionChoice(chosen: String?, apps: List<App>): App? =
+    chosen?.let { key -> apps.firstOrNull { it.key == key } } ?: projectionApp(apps)
+
+/** La app de Android Auto / CarPlay de toda la app: la usan su botón de la barra, el widget y el volante. */
+fun projectionChoice(d: Dependencies, apps: List<App>): App? = projectionChoice(d.prefs.projectionApp, apps)
+
 /**
- * Pieza Android Auto / CarPlay: abre la app elegida en sus opciones ([chosen]) o la de proyección que
- * encuentre; si no hay, el cajón para buscarla.
+ * Widget Android Auto / CarPlay: abre [projectionChoice]; si no hay ninguna, [onMissing] (sus ajustes, para elegirla).
  */
 @Composable
-fun ProjectionTile(d: Dependencies, apps: List<App>, chosen: String?, onMissing: () -> Unit) {
+fun ProjectionTile(d: Dependencies, apps: List<App>, tile: Tile, onMissing: () -> Unit) {
     val context = LocalContext.current
-    val app = chosen?.let { d.apps.find(apps, it) } ?: projectionApp(apps)
+    // Adopción de la 1.5.14 y antes: cada widget elegía su app en sus opciones. Ahora hay una sola para toda la app:
+    // la del widget pasa a ser esa (si no había otra elegida) y el widget se queda sin la suya. Fuera de la composición:
+    // escribe ajustes.
+    val own = appKeyOf(tile.data)
+    if (own != null) LaunchedEffect(tile.id, own) {
+        if (d.prefs.projectionApp == null) d.prefs.projectionApp = own
+        d.dashboard.setData(tile.id, withAppKey(tile.data, null))
+    }
+    val app = projectionChoice(own ?: d.prefs.projectionApp, apps)
     ShortcutTile(
         Icons.phoneCar, stringResource(R.string.tile_projection), app?.name ?: stringResource(R.string.projection_missing),
         onClick = { if (app != null) d.apps.open(context, app) else onMissing() },
@@ -68,4 +87,32 @@ fun ProjectionTile(d: Dependencies, apps: List<App>, chosen: String?, onMissing:
         image = app?.let { a -> { side: Dp -> AppIcon(d.apps, a, side) } },
         chevron = app != null,
     )
+}
+
+/**
+ * Ajustes → Apps → Android Auto / CarPlay → "Tu app de Android Auto / CarPlay": las de proyección instaladas (marcada
+ * la que se abre: la elegida o, en automático, la que encuentra LiteDash), "Otra app" para cualquiera (algunas pantallas
+ * la traen con otro nombre) y "Quitar" para volver a automático.
+ */
+@Composable
+internal fun ProjectionSettings(d: Dependencies) {
+    val apps = rememberApps(d.apps).orEmpty()
+    val chosen = d.prefs.projectionApp
+    val current = projectionChoice(chosen, apps)
+    // Las de la lista ya cargada (en memoria): no se le pregunta nada a Android aquí.
+    val found = remember(apps, current) { (apps.filter { isProjectionPackage(it.pkg, it.name) } + listOfNotNull(current)).distinctBy { it.key } }
+    var other by remember { mutableStateOf(false) }
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        for (app in found) Button(app.name, { d.prefs.projectionApp = app.key }, primary = app == current)
+        Button(stringResource(R.string.music_other_app), { other = !other }, primary = other)
+        if (chosen != null) Button(stringResource(R.string.remove), { d.prefs.projectionApp = null })
+    }
+    if (other) {
+        AppSearch(apps, current?.pkg) { pkg ->
+            apps.firstOrNull { it.pkg == pkg }?.let { d.prefs.projectionApp = it.key }
+            other = false
+        }
+    }
+    if (found.isEmpty()) Label(stringResource(R.string.projection_missing), Typography.body, LocalColors.current.textMuted)
+    Label(stringResource(R.string.projection_help), Typography.small, LocalColors.current.textMuted)
 }

@@ -110,7 +110,6 @@
     <string name="option_change_app">アプリを選択</string>
     <string name="option_opens">タップで開くもの</string>
     <string name="option_opens_dialer">電話アプリ</string>
-    <string name="option_opens_auto">LiteDash が見つけたもの</string>
     <string name="tires_show_pressure">空気圧を表示</string>
     <string name="gauge_customize_help">変更はすぐに反映されます。注意が必要な状態（エンジン高温、高回転）は常に赤で表示されます。</string>
     <string name="gauge_style">スタイル</string>
@@ -298,6 +297,8 @@
     <string name="tile_projection">Android Auto / CarPlay</string>
     <string name="tile_projection_help">Android Auto または CarPlay のアプリ（Zlink、AutoKit など）をワンタップで開きます</string>
     <string name="projection_missing">アプリが見つかりません</string>
+    <string name="projection_app_title">Android Auto / CarPlay アプリ</string>
+    <string name="projection_help">バーのボタン、ウィジェット、ステアリングから開きます。</string>
     <string name="wheel">ステアリング</string>
     <string name="wheel_help">「ボタンを学習」をタップしてから、ステアリングのボタンを押してください。LiteDash が認識し、動作を選べます。変更していないボタンは通常どおり動作します（音楽、音量）。どのボタンでも駐車モードを終了します。</string>
     <string name="wheel_learn">ボタンを学習</string>
@@ -314,6 +315,7 @@
     <string name="wheel_volume_down">音量を下げる</string>
     <string name="wheel_mute">ミュート</string>
     <string name="wheel_navigate">地図を開く</string>
+    <string name="wheel_projection">Android Auto / CarPlay を開く</string>
     <string name="wheel_music">音楽を全画面で</string>
     <string name="wheel_voice">音声</string>
     <string name="wheel_home">ホームに戻る</string>

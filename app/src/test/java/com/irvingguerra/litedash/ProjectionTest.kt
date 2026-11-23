@@ -1,6 +1,9 @@
 package com.irvingguerra.litedash
 
+import com.irvingguerra.litedash.feature.apps.App
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -45,5 +48,20 @@ class ProjectionTest {
         assertTrue(isProjectionPackage("com.vendor.app", "Android Auto"))
         assertTrue(isProjectionPackage("com.vendor.app", "Mi CarPlay"))
         assertFalse(isProjectionPackage("com.vendor.app", "Radio"))
+    }
+
+    @Test
+    fun chosenAppWinsWhileInstalled() {
+        val zlink = App("ZLink", "com.zjinnova.zlink", "Main")
+        val other = App("Mi enlace", "com.vendor.mirror", "Main")
+        val apps = listOf(other, zlink)
+        // Automática: la que encuentra LiteDash.
+        assertEquals(zlink, projectionChoice(null, apps))
+        // Elegida a mano (aunque no parezca de proyección): esa.
+        assertEquals(other, projectionChoice(other.key, apps))
+        // Elegida pero ya no está: de vuelta a la que se encuentre.
+        assertEquals(zlink, projectionChoice("com.gone/Main", apps))
+        // Sin ninguna: nada (el botón y el widget llevan a sus ajustes).
+        assertNull(projectionChoice(null, listOf(App("Radio", "com.vendor.radio", "Main"))))
     }
 }

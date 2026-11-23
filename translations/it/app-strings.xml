@@ -110,7 +110,6 @@
     <string name="option_change_app">Scegli app</string>
     <string name="option_opens">TOCCANDOLO APRE</string>
     <string name="option_opens_dialer">Il tastierino</string>
-    <string name="option_opens_auto">Quella che trova LiteDash</string>
     <string name="tires_show_pressure">Mostra la pressione delle gomme</string>
     <string name="gauge_customize_help">Le modifiche si vedono subito. Ciò che richiede attenzione (motore caldo, giri alti) è sempre rosso.</string>
     <string name="gauge_style">Stile</string>
@@ -301,6 +300,8 @@
     <string name="tile_projection">Android Auto / CarPlay</string>
     <string name="tile_projection_help">Apre la tua app di Android Auto o CarPlay (Zlink, AutoKit…) con un tocco</string>
     <string name="projection_missing">App non trovata</string>
+    <string name="projection_app_title">La tua app di Android Auto / CarPlay</string>
+    <string name="projection_help">Si apre con il suo pulsante nella barra, il widget e il volante.</string>
     <string name="wheel">Volante</string>
     <string name="wheel_help">Tocca \"Impara tasto\" e poi premi il tasto del volante: LiteDash lo riconosce e scegli tu cosa fa. I tasti non modificati funzionano come sempre (musica, volume). Qualsiasi tasto esce dalla modalità parcheggio.</string>
     <string name="wheel_learn">Impara tasto</string>
@@ -317,6 +318,7 @@
     <string name="wheel_volume_down">Volume giù</string>
     <string name="wheel_mute">Muto</string>
     <string name="wheel_navigate">Apri la mappa</string>
+    <string name="wheel_projection">Apri Android Auto / CarPlay</string>
     <string name="wheel_music">Musica in grande</string>
     <string name="wheel_voice">Voce</string>
     <string name="wheel_home">Torna alla Home</string>

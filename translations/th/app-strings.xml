@@ -110,7 +110,6 @@
     <string name="option_change_app">เลือกแอป</string>
     <string name="option_opens">แตะแล้วเปิด</string>
     <string name="option_opens_dialer">แอปโทรออก</string>
-    <string name="option_opens_auto">แอปที่ LiteDash หาเจอ</string>
     <string name="tires_show_pressure">แสดงแรงดันลมยาง</string>
     <string name="gauge_customize_help">การเปลี่ยนแปลงแสดงทันที สิ่งที่ต้องระวัง (เครื่องร้อน รอบสูง) จะเป็นสีแดงเสมอ</string>
     <string name="gauge_style">สไตล์</string>
@@ -295,6 +294,8 @@
     <string name="tile_projection">Android Auto / CarPlay</string>
     <string name="tile_projection_help">เปิดแอป Android Auto หรือ CarPlay ของคุณ (Zlink, AutoKit…) ด้วยการแตะครั้งเดียว</string>
     <string name="projection_missing">ไม่พบแอป</string>
+    <string name="projection_app_title">แอป Android Auto / CarPlay ของคุณ</string>
+    <string name="projection_help">เปิดได้จากปุ่มบนแถบ วิดเจ็ต และพวงมาลัย</string>
     <string name="wheel">พวงมาลัย</string>
     <string name="wheel_help">แตะ \"เรียนรู้ปุ่ม\" แล้วกดปุ่มบนพวงมาลัย LiteDash จะจำปุ่มนั้นและคุณเลือกได้ว่าให้ทำอะไร ปุ่มที่ไม่ได้เปลี่ยนทำงานตามปกติ (เพลง เสียง) ปุ่มใดก็ได้จะออกจากโหมดจอดรถ</string>
     <string name="wheel_learn">เรียนรู้ปุ่ม</string>
@@ -311,6 +312,7 @@
     <string name="wheel_volume_down">ลดเสียง</string>
     <string name="wheel_mute">ปิดเสียง</string>
     <string name="wheel_navigate">เปิดแผนที่</string>
+    <string name="wheel_projection">เปิด Android Auto / CarPlay</string>
     <string name="wheel_music">เพลงจอใหญ่</string>
     <string name="wheel_voice">เสียงสั่งการ</string>
     <string name="wheel_home">กลับหน้าหลัก</string>
