@@ -30,7 +30,9 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.irvingguerra.litedash.core.ui.Button
+import com.irvingguerra.litedash.core.ui.CardLook
 import com.irvingguerra.litedash.core.ui.Label
+import com.irvingguerra.litedash.core.ui.LocalCardLook
 import com.irvingguerra.litedash.core.ui.LocalColors
 import com.irvingguerra.litedash.core.ui.LocalPlainCard
 import com.irvingguerra.litedash.core.ui.Segmented
@@ -50,7 +52,7 @@ private val DEMO = listOf(0.18f, 0.52f, 0.86f, 0.34f, 0.97f, 0.62f)
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun CustomizeGaugePanel(d: Dependencies, tileId: String, close: () -> Unit, onPickSignal: () -> Unit) {
+fun CustomizeGaugePanel(d: Dependencies, tileId: String, cardLook: CardLook, close: () -> Unit, onPickSignal: () -> Unit) {
     val c = LocalColors.current
     val tile = d.dashboard.tiles.firstOrNull { it.id == tileId }
     if (tile == null) {
@@ -91,8 +93,8 @@ fun CustomizeGaugePanel(d: Dependencies, tileId: String, close: () -> Unit, onPi
         BoxWithConstraints(Modifier.fillMaxWidth().weight(1f)) {
             val preview = @Composable { m: Modifier ->
                 Box(m) {
-                    // Con o sin tarjeta, como está en tu inicio.
-                    CompositionLocalProvider(LocalPlainCard provides tile.plain) {
+                    // Con o sin tarjeta y con la piel de su página ([cardLook]), como está en tu inicio.
+                    CompositionLocalProvider(LocalPlainCard provides tile.plain, LocalCardLook provides cardLook) {
                         if (road) {
                             // La carretera misma, con la velocidad de muestra.
                             val demoKmh = demo * look.speedMax(miles = false)

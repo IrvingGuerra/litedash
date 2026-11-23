@@ -527,14 +527,16 @@ fun rememberWallpaperBackdrop(wanted: Boolean, clear: Boolean = false): CardBack
     // El desenfoque se hace una vez por imagen y lo comparten el inicio, Ajustes y lo que se abre en grande. Para el
     // cristal ([clear]) es otra copia: menos desenfocada y con el color más vivo.
     val cached = if (clear) clearWallpaper else blurredWallpaper
-    val blurred by produceState(cached?.takeIf { it.first === image }?.second, image, clear) {
+    val blurred by produceState(cached?.takeIf { it.first === image }, image, clear) {
         value = image?.let { src ->
-            (if (clear) clearWallpaper else blurredWallpaper)?.takeIf { it.first === src }?.second
-                ?: withContext(Dispatchers.Default) { blurredCopy(src.asAndroidBitmap(), vivid = clear) }
-                    .also { if (clear) clearWallpaper = src to it else blurredWallpaper = src to it }
+            (if (clear) clearWallpaper else blurredWallpaper)?.takeIf { it.first === src }
+                ?: (src to withContext(Dispatchers.Default) { blurredCopy(src.asAndroidBitmap(), vivid = clear) })
+                    .also { if (clear) clearWallpaper = it else blurredWallpaper = it }
         }
     }
-    val b = blurred ?: return null
+    // Solo la copia de ESTA imagen: [blurred] guarda la de antes hasta que su efecto corre (un cuadro después de
+    // cambiar de página o de fondo) y ese cuadro las tarjetas salían con otra piel; si ya está hecha, de una vez.
+    val b = (blurred?.takeIf { it.first === image } ?: cached?.takeIf { it.first === image })?.second ?: return null
     // Detrás de un cristal el velo se cierra lo que haga falta para que el texto se lea sobre tu imagen.
     return remember(b, c, clear) {
         val veil = if (clear) glassVeil(c, if (c.dark) b.light else b.shade, WALLPAPER_VEIL) else WALLPAPER_VEIL

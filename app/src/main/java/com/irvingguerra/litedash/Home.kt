@@ -917,7 +917,9 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                     )
                     is Panel.PickApp -> PickAppPanel(d, apps, p.tileId, close = { panel = p.back })
                     is Panel.PickGauge -> PickGaugePanel(d, p.tileId, close = { panel = null })
-                    is Panel.CustomizeGauge -> CustomizeGaugePanel(d, p.tileId, close = { panel = null }, onPickSignal = { panel = Panel.PickGauge(p.tileId) })
+                    // Las vistas previas llevan la piel de la página ([homeLook]): sobre el mapa de fondo no es la del
+                    // lienzo del panel, y el widget se veía distinto ahí que al volver al inicio (#32).
+                    is Panel.CustomizeGauge -> CustomizeGaugePanel(d, p.tileId, homeLook, close = { panel = null }, onPickSignal = { panel = Panel.PickGauge(p.tileId) })
                     is Panel.CustomizeImage -> CustomizeImagePanel(d, p.tileId, close = { panel = null })
                     is Panel.CustomizeMap -> CustomizeMapPanel(d, p.tileId, close = { panel = null })
                     is Panel.CustomizeCar -> CustomizeCarPanel(d, p.tileId, close = { panel = null })
@@ -925,7 +927,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                         d, p.tileId, apps, cell,
                         close = { panel = null },
                         onPickApp = { panel = Panel.PickApp(p.tileId, back = p) },
-                        preview = { t -> TileContent(d, t, apps, car, revision, actions) },
+                        preview = { t -> CompositionLocalProvider(LocalCardLook provides homeLook) { TileContent(d, t, apps, car, revision, actions) } },
                     )
                 }
             }
