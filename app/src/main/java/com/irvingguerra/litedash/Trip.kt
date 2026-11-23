@@ -105,8 +105,8 @@ internal fun LocationManager.newestLastKnown(providers: List<String>): Location?
 /**
  * Velocidad (al bus), rumbo y distancia del viaje con el GPS. Solo escucha mientras algo
  * lo pide ([acquire]/[release]) y la app está al frente: así no gasta batería
- * con la pantalla en otra app ni en segundo plano. Con solo la ubicación aproximada usa la
- * red (sin velocidad casi nunca, pero el viaje cuenta igual lo que pueda).
+ * con la pantalla en otra app ni en segundo plano. Con solo la ubicación aproximada (o en pantallas
+ * sin antena GPS) usa la red: mueve el punto del mapa, pero no da velocidad ni rumbo ni suma al viaje.
  */
 class TripRepository(private val context: Context, private val bus: VehicleBus) {
     /** km/h del GPS; null = sin señal todavía. Las piezas leen la velocidad del bus (el OBD gana). */
@@ -141,6 +141,8 @@ class TripRepository(private val context: Context, private val bus: VehicleBus) 
     private var registered = emptyList<String>()
     private var failure: String? = null
     private var last: Location? = null
+    /** Reloj de arranque de cuando dejó de escuchar (0 = nunca). */
+    private var releasedAt = 0L
     private val manager by lazy { context.getSystemService(LocationManager::class.java) }
     // Compat: en Android 6–10 LocationListener tiene más métodos abstractos que el lambda no
     // implementa (AbstractMethodError al perder el GPS o apagar la ubicación).
@@ -173,6 +175,9 @@ class TripRepository(private val context: Context, private val bus: VehicleBus) 
      */
     fun acquire() {
         users++
+        // Tras un buen rato sin escuchar (estacionado, en otra app) el último rumbo ya no es de ahora: no se sigue
+        // mostrando. Un cambio de pantalla (soltar y volver a pedir enseguida) lo conserva.
+        if (users == 1 && releasedAt != 0L && SystemClock.elapsedRealtime() - releasedAt > BEARING_STALE_MS) bearing = null
         refreshPermission()
         if (!listening && permitted) listen()
     }
@@ -180,6 +185,8 @@ class TripRepository(private val context: Context, private val bus: VehicleBus) 
     @SuppressLint("MissingPermission") // se revisa con permitted
     private fun listen() {
         listening = true
+        // La falla de antes no se queda en el reporte si esta vez sale bien.
+        failure = null
         val providers = providers()
         registered = providers.filter { provider ->
             try {
@@ -211,6 +218,7 @@ class TripRepository(private val context: Context, private val bus: VehicleBus) 
             registered = emptyList()
         }
         speedKmh = null
+        releasedAt = SystemClock.elapsedRealtime()
         // Al volver (quizá horas después y en otro lugar), el rumbo no se calcula desde el punto de antes.
         courseFrom = null
         bus.publish(Signal.SPEED, null, Source.GPS)
@@ -326,7 +334,8 @@ fun rememberTripStats(trip: TripRepository, miles: Boolean): TripStats {
     val minutes = (shown.movingMs / 60_000).toInt()
     val locale = currentLocale()
     val points = stringArrayResource(R.array.compass_points)
-    val heading = trip.bearing?.let { points[compassIndex(it)] }
+    // Un viaje que ya terminó no tiene rumbo (el último se quedaba aunque ya no avanzaras).
+    val heading = trip.bearing?.takeUnless { over }?.let { points[compassIndex(it)] }
     val average = shown.averageKmh()?.let { stringResource(R.string.value_with_unit, speedText(it.toFloat(), miles), speedUnit(miles)) }
     val distance = distanceText(shown.meters, miles)
     val unit = distanceUnit(miles)
@@ -418,6 +427,9 @@ private fun TripStat(name: String, value: String) {
         Label(value, Typography.subtitle, maxLines = 1)
     }
 }
+
+/** Sin escuchar más que esto, el último rumbo se olvida. */
+private const val BEARING_STALE_MS = 5 * 60_000L
 
 /** Avance mínimo para calcular el rumbo con dos lecturas (menos, el error del GPS lo voltea). */
 private const val COURSE_METERS = 8f
