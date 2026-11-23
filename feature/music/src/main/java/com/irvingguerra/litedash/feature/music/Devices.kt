@@ -90,8 +90,8 @@ internal class DeviceWatcher(
     }
 
     fun stop() {
-        // Está registrado dos veces (dos filtros): se quita dos veces.
-        repeat(2) { runCatching { context.unregisterReceiver(receiver) } }
+        // Registrado con dos filtros, pero es el mismo receptor: un solo unregister quita los dos.
+        runCatching { context.unregisterReceiver(receiver) }
     }
 
     /**

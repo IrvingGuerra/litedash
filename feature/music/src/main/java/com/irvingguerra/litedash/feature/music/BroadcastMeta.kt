@@ -38,6 +38,7 @@ data class BroadcastMeta(
         private const val CLW_STATE = "com.clw.intent.MEDIA_PLAY_STATE"
         /** Clinkway: `Media_Type` 3 = Bluetooth. */
         private const val CLW_BLUETOOTH = 3
+        private const val POWERAMP = "com.maxmpz.audioplayer"
         // AVRCP de Android (5–8): manda MediaMetadata y PlaybackState, no textos (idea de AvrcpMeta de StradaOS, GPL-3.0).
         private const val AVRCP_ANDROID = "android.bluetooth.avrcp-controller.profile."
         private const val TRACK_EVENT = AVRCP_ANDROID + "action.TRACK_EVENT"
@@ -106,11 +107,14 @@ data class BroadcastMeta(
                         bluetooth = (extras["Media_Type"] as? Number)?.toInt() == CLW_BLUETOOTH,
                     )
                 }
+                // Poweramp (PowerampAPI, build 948+): la canción en `title`/`artist` sueltos (además del Bundle `track`) y el
+                // estado como `paused`; no dice su paquete.
                 else -> BroadcastMeta(
-                    title = extras.text("track", "title", "song", "name", "com.maxmpz.audioplayer.TRACK", "id3_title", "music_title", "TITLE"),
+                    title = extras.text("track", "title", "song", "name", "id3_title", "music_title", "TITLE"),
                     artist = extras.text("artist", "singer", "id3_artist", "music_artist", "ARTIST"),
-                    playing = sequenceOf("playing", "isPlaying", "playstate").firstNotNullOfOrNull { flag(extras[it]) },
-                    pkg = extras.text("package", "packageName", "pkg"),
+                    playing = sequenceOf("playing", "isPlaying", "playstate").firstNotNullOfOrNull { flag(extras[it]) }
+                        ?: (extras["paused"] as? Boolean)?.not(),
+                    pkg = extras.text("package", "packageName", "pkg") ?: POWERAMP.takeIf { action.startsWith("$it.") },
                     bluetooth = isBluetooth(action),
                 )
             }

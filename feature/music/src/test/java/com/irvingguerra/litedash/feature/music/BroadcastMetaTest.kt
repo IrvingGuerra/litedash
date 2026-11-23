@@ -77,9 +77,15 @@ class BroadcastMetaTest {
 
     @Test
     fun poweramp() {
-        val m = BroadcastMeta.parse("com.maxmpz.audioplayer.TRACK_CHANGED", mapOf("com.maxmpz.audioplayer.TRACK" to "Cielito Lindo", "package" to "com.maxmpz.audioplayer"))!!
+        // PowerampAPI (build 948+): la canción en `title`/`artist` sueltos (y en el Bundle `track`, que no se lee) y sin paquete.
+        val m = BroadcastMeta.parse("com.maxmpz.audioplayer.TRACK_CHANGED", mapOf("track" to Any(), "title" to "Cielito Lindo", "artist" to "Mariachi", "ts" to 1L))!!
         assertEquals("Cielito Lindo", m.title)
+        assertEquals("Mariachi", m.artist)
+        assertNull(m.playing)
         assertEquals("com.maxmpz.audioplayer", m.pkg)
+        // Su estado: `paused` (y `state` con un número suyo, 700+, que no es el de PlaybackState).
+        assertEquals(false, BroadcastMeta.parse("com.maxmpz.audioplayer.STATUS_CHANGED", mapOf("state" to 701, "paused" to true))!!.playing)
+        assertEquals(true, BroadcastMeta.parse("com.maxmpz.audioplayer.STATUS_CHANGED", mapOf("state" to 701, "paused" to false))!!.playing)
     }
 
     @Test

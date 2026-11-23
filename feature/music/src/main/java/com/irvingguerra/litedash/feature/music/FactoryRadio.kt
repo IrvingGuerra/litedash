@@ -107,6 +107,8 @@ internal abstract class BinderFactoryRadio(
     private var bound = false
     /** Ya se pidió arrancar el servicio (al tocar un botón). */
     private var started = false
+    /** Veces que su servicio murió en esta apertura: uno que truena al arrancar no se rearranca sin fin. */
+    private var deaths = 0
     /** La última conexión se pidió arrancando el servicio (recién creado puede tardar en sintonizar). */
     @Volatile protected var created = false
         private set
@@ -168,6 +170,10 @@ internal abstract class BinderFactoryRadio(
         override fun onBindingDied(name: ComponentName?) {
             service = null
             notified = false
+            if (++deaths > MAX_DEATHS) {
+                trace("$tag servicio murió $deaths veces: se deja")
+                return lost()
+            }
             trace("$tag servicio murió: se vuelve a conectar")
             bind(started)
         }
@@ -300,3 +306,6 @@ internal fun stationText(am: Boolean, frequency: Int): String? = when {
     am -> "AM $frequency"
     else -> "FM " + String.format(Locale.US, "%.1f", frequency / 100f)
 }
+
+/** Reconexiones tras morir su servicio, por cada apertura del perfil ([BinderFactoryRadio]). */
+private const val MAX_DEATHS = 3
