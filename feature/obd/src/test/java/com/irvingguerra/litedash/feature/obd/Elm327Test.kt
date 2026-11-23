@@ -51,6 +51,99 @@ class Elm327Test {
         fun elm() = Elm327(this, now = { if (reply.available() == 0) clock += 1_000; clock })
     }
 
+    /**
+     * Adaptador falso con tiempo, como el ELM: atiende un comando a la vez (el siguiente espera a que acabe el
+     * anterior) y cada pedazo de su respuesta llega a los ms indicados desde que lo empezó a atender.
+     */
+    private class Timed(private val script: (String) -> List<Pair<Long, String>>) : ElmLink {
+        var clock = 0L
+        val sent = mutableListOf<String>()
+        private var busyUntil = 0L
+        private val pending = java.util.TreeMap<Long, StringBuilder>()
+        private val line = StringBuilder()
+        private fun ready() = pending.headMap(clock, true).values.sumOf { it.length }
+        private fun pop(): Int {
+            val first = pending.firstEntry()
+            val c = first.value[0]
+            first.value.deleteCharAt(0)
+            if (first.value.isEmpty()) pending.remove(first.key)
+            return c.code
+        }
+        override val input = object : java.io.InputStream() {
+            override fun read() = if (ready() > 0) pop() else -1
+            override fun available() = ready()
+        }
+        override val output = object : java.io.OutputStream() {
+            override fun write(b: Int) {
+                if (b != '\r'.code) return run { line.append(b.toChar()) }
+                val cmd = line.toString().also { line.clear() }
+                sent += cmd
+                val begin = maxOf(clock, busyUntil)
+                busyUntil = begin
+                for ((at, text) in script(cmd)) {
+                    pending.getOrPut(begin + at) { StringBuilder() }.append(text)
+                    busyUntil = maxOf(busyUntil, begin + at)
+                }
+            }
+        }
+        override fun next(waitMs: Long): Int? {
+            val first = pending.firstEntry()
+            if (first != null && first.key <= clock + waitMs) {
+                clock = maxOf(clock, first.key)
+                return pop()
+            }
+            clock += waitMs
+            return null
+        }
+        override fun close() {}
+        fun elm() = Elm327(this, now = { clock })
+    }
+
+    /** Un ELM que contesta todo bien (en 10 ms) salvo lo que diga [special]. */
+    private fun timedElm(special: (String) -> List<Pair<Long, String>>?) = Timed { cmd ->
+        special(cmd) ?: when (cmd) {
+            "ATI" -> listOf(10L to "ELM327 v1.5\r>")
+            "0100" -> listOf(50L to "41 00 BE 1F A8 13\r>")
+            else -> listOf(10L to "OK\r>")
+        }
+    }
+
+    @Test fun atz_lento_no_da_un_falso_el_auto_no_contesta() {
+        // Clon que tarda 5 s en mandar su versión: su ">" tardío ya no desfasa la preparación.
+        val link = timedElm { if (it == "ATZ") listOf(5_000L to "\r\rELM327 v1.5\r\r>") else null }
+        val e = link.elm()
+        e.init()
+        assertTrue(e.firstReply.any { it.contains("4100") })
+        assertEquals(1, link.sent.count { it == "0100" })
+    }
+
+    @Test fun clon_que_no_contesta_atz_sigue_conectando() {
+        val link = timedElm { if (it == "ATZ") emptyList() else null }
+        assertEquals("", link.elm().init())
+    }
+
+    @Test fun primer_0100_desfasado_se_pregunta_otra_vez() {
+        // Llegó un "OK" viejo en vez de la respuesta: antes era "el auto no contesta".
+        var n = 0
+        val link = timedElm { if (it == "0100" && n++ == 0) listOf(10L to "OK\r>") else null }
+        link.elm().init()
+        assertEquals(listOf("0100", "ATI", "0100"), link.sent.takeLast(3))
+    }
+
+    @Test fun buscando_protocolo_espera_mas() {
+        // Auto K-line: "SEARCHING..." y la respuesta a los 5 s; antes expiraba a los 3 y se interrumpía.
+        val link = timedElm { if (it == "010D") listOf(0L to "SEARCHING...\r", 5_000L to "41 0D 3C\r>") else null }
+        assertArrayEquals(intArrayOf(0x3C), link.elm().pid(0x0D))
+        // Sin ese aviso, el plazo de siempre.
+        val quiet = timedElm { if (it == "010D") listOf(5_000L to "41 0D 3C\r>") else null }
+        try {
+            quiet.elm().pid(0x0D)
+            fail()
+        } catch (x: ObdException) {
+            assertEquals(ObdError.ADAPTER_SILENT, x.kind)
+        }
+    }
+
     @Test fun comando_sin_respuesta_expira_con_su_tipo() {
         val e = Scripted { null }.elm()
         try {
@@ -95,6 +188,25 @@ class Elm327Test {
             assertEquals(ObdError.ADAPTER_SILENT, x.kind)
         }
         assertEquals("ATSH7DF", silent.sent.last())
+    }
+
+    @Test fun modulo_que_expira_resincroniza_y_restaura_el_encabezado() {
+        // La petición expira; el primer ATSH7DF llega cuando el ELM aún estaba ocupado ("?"): se repite.
+        var restores = 0
+        val link = Scripted { cmd ->
+            when (cmd) {
+                "22C00B" -> null
+                "ATSH7DF" -> if (restores++ == 0) "?\r>" else "OK\r>"
+                else -> "OK\r>"
+            }
+        }
+        try {
+            link.elm().module(listOf("ATSH750"), listOf("22C00B"), listOf("ATSH7DF", "ATCRA"))
+            fail()
+        } catch (x: ObdException) {
+            assertEquals(ObdError.ADAPTER_SILENT, x.kind)
+        }
+        assertEquals(listOf("ATSH750", "22C00B", "ATI", "ATSH7DF", "ATI", "ATSH7DF", "ATCRA"), link.sent)
     }
 
     @Test fun voltaje_del_adaptador_perdido_no_se_traga() {
@@ -170,6 +282,13 @@ class Elm327Test {
         val q = quiet.elm()
         repeat(6) { assertNull(q.pid(0x0D)) }
         assertEquals(0, q.resyncs)
+    }
+
+    @Test fun respuesta_de_otro_pid_con_encabezado() {
+        // Clon que deja "7E8 06": el desfase también se nota (antes solo con renglones que empezaban en "41").
+        val link = clone(listOf("7E806410C1AF80000\r>"))
+        assertNull(link.elm().pid(0x0D))
+        assertEquals(listOf("010D", "ATI"), link.sent)
     }
 
     @Test fun enlace_cerrado_no_intenta_resincronizar() {

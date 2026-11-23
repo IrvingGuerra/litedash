@@ -37,7 +37,11 @@ class Elm327(
     private val now: () -> Long = ::monotonicMs,
 ) {
 
-    /** Respuesta del adaptador ya en mayúsculas y sin espacios, renglón por renglón. */
+    /**
+     * Respuesta del adaptador ya en mayúsculas y sin espacios, renglón por renglón. Si el adaptador avisa que busca
+     * el protocolo o inicia el bus ("SEARCHING...", "BUS INIT"), el plazo crece a [BUSY_TIMEOUT_MS]: un auto K-line
+     * tarda varios segundos y cortarlo con otra orden lo interrumpe.
+     */
     fun command(cmd: String, timeoutMs: Long = 3_000): List<String> {
         // Lo que haya quedado de un comando que expiró (su ">" tardío) se tira: si no, el
         // siguiente leería esa respuesta y todas quedarían desfasadas.
@@ -45,14 +49,17 @@ class Elm327(
         link.output.write("$cmd\r".toByteArray())
         link.output.flush()
         val text = StringBuilder()
-        val deadline = now() + timeoutMs
+        val start = now()
+        var deadline = start + timeoutMs
         while (true) {
             val left = deadline - now()
             if (left <= 0) throw ObdException(ObdError.ADAPTER_SILENT, "sin respuesta a $cmd")
             val b = link.next(left) ?: continue
             if (b < 0) throw ObdException(ObdError.CONNECTION_LOST, "se cerró en $cmd")
-            if (b.toChar() == '>') break
-            text.append(b.toChar())
+            val c = b.toChar()
+            if (c == '>') break
+            text.append(c)
+            if ((c == '.' || c == '\r') && deadline < start + BUSY_TIMEOUT_MS && busy(text)) deadline = start + BUSY_TIMEOUT_MS
         }
         return text.split('\r', '\n')
             .map { it.replace(" ", "").uppercase() }
@@ -71,11 +78,22 @@ class Elm327(
         } catch (x: ObdException) {
             if (x.kind != ObdError.ADAPTER_SILENT) throw x
             log("ATZ sin respuesta")
+            // Hay clones lentos que mandan su versión (y su ">") después: se espera un poco más a que se callen y
+            // se resincroniza; si no, ese ">" tardío cerraría ATE0 y cada orden leería la respuesta de la anterior.
+            settle(ATZ_GRACE_MS, ATZ_GRACE_MS + SETTLE_MAX_MS)
+            resync()
             ""
         }
         for (c in listOf("ATE0", "ATL0", "ATS0", "ATH0", "ATAT1", "ATSP0")) command(c)
         // La primera consulta busca el protocolo del auto (puede tardar unos segundos).
-        val probe = command("0100", 10_000)
+        var probe = command("0100", 10_000)
+        // Ni respuesta ni un error del auto (vacío, un "OK" o la versión que llegó tarde): la entrada iba
+        // desfasada. Una vez más antes de decir que el auto no contesta.
+        if (probe.none { it.contains("4100") } && probe.none(::carError)) {
+            log("0100 desfasado: ${probe.joinToString("|").ifEmpty { "vacío" }}")
+            resync()
+            probe = command("0100", 10_000)
+        }
         firstReply = probe
         // El ELM contesta pero el auto no: "UNABLETOCONNECT", "NODATA", "CANERROR"… (contacto apagado).
         if (probe.none { it.contains("4100") }) throw ObdException(ObdError.CAR_SILENT, probe.firstOrNull() ?: "sin respuesta")
@@ -94,7 +112,8 @@ class Elm327(
         val head = "41%02X".format(pid)
         val lines = command("01%02X".format(pid))
         afterHead(head, lines)?.let { return hexBytes(it) }
-        if (lines.any { it.startsWith("41") }) resync()
+        // Con o sin encabezados que el clon no quitó ("7E8 06 41 0C…").
+        if (afterHead("41", lines) != null) resync()
         return null
     }
 
@@ -122,10 +141,13 @@ class Elm327(
         }
     }
 
-    /** Lee y tira hasta que pasen [QUIET_MS] sin llegar nada (a lo más [SETTLE_MAX_MS]). */
-    private fun settle() {
-        val end = now() + SETTLE_MAX_MS
-        var quietUntil = now() + QUIET_MS
+    /**
+     * Lee y tira hasta que pasen [QUIET_MS] sin llegar nada (a lo más [maxMs]); la primera vez se espera
+     * [firstQuietMs] (para algo que se sabe que viene tarde).
+     */
+    private fun settle(firstQuietMs: Long = QUIET_MS, maxMs: Long = SETTLE_MAX_MS) {
+        val end = now() + maxMs
+        var quietUntil = now() + firstQuietMs
         while (true) {
             val t = now()
             if (t >= quietUntil || t >= end) return
@@ -151,14 +173,30 @@ class Elm327(
             if (reply == null) break
         }
         out
+    } catch (x: ObdException) {
+        // El ELM puede seguir esperando al otro módulo: lo que se mande ahora lo interrumpe y la restauración
+        // llegaría como "?". Primero que se calle.
+        if (x.kind == ObdError.ADAPTER_SILENT) resync()
+        throw x
     } finally {
-        for (c in restore) {
+        for (c in restore) restoreOne(c)
+    }
+
+    /**
+     * Una orden de [module] para dejar el motor como estaba; si no la tomó ("?") o no contestó, se resincroniza y
+     * se repite una vez: un encabezado de otro módulo que se queda puesto deja todos los medidores en "NO DATA".
+     */
+    private fun restoreOne(c: String) {
+        repeat(2) { attempt ->
             try {
-                command(c)
+                if (command(c).none { it == "?" }) return
+                log("restaurar $c: ?")
             } catch (x: ObdException) {
-                // Se sigue con lo demás; si el adaptador se perdió, el siguiente comando del motor lo dirá.
+                // Si el adaptador se perdió, el siguiente comando del motor lo dirá.
                 log("restaurar $c: ${x.message}")
+                if (x.kind != ObdError.ADAPTER_SILENT) return
             }
+            if (attempt == 0) try { resync() } catch (_: ObdException) { return }
         }
     }
 
@@ -222,6 +260,19 @@ private const val RESYNC_TIMEOUT_MS = 1_000L
 
 /** Lo que se espera a otro módulo del auto: uno que no existe no contesta nada. */
 private const val MODULE_TIMEOUT_MS = 1_500L
+
+/** Lo más que se espera una orden mientras el adaptador busca el protocolo o inicia el bus (como el primer "0100"). */
+private const val BUSY_TIMEOUT_MS = 10_000L
+
+/** Lo que se espera, tras un "ATZ" sin respuesta, a que un clon lento termine de mandar su versión. */
+private const val ATZ_GRACE_MS = 3_000L
+
+/** El adaptador avisa que busca el protocolo o inicia el bus (antes de quitar espacios). */
+private fun busy(text: CharSequence) = text.contains("SEARCHING") || text.contains("BUS INIT") || text.contains("BUSINIT")
+
+/** Lo que dice el ELM cuando el auto no contesta (contacto apagado, protocolo que no sirve). */
+private fun carError(line: String) = CAR_ERRORS.any { it in line }
+private val CAR_ERRORS = listOf("NODATA", "UNABLE", "ERROR", "STOPPED", "BUSINIT", "BUSBUSY")
 
 /** El renglón con el largo de una respuesta en varias tramas ("00A") y el número de cada trama ("1:"). */
 private val MULTI_LENGTH = Regex("[0-9A-F]{3}")
