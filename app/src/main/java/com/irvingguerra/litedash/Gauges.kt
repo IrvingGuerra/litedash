@@ -119,8 +119,9 @@ class GaugeSpec(
 
     /** El número de la marca [i] de [ticks], en la unidad que se ve (las rpm en miles). */
     fun label(i: Int, units: UnitChoice, locale: Locale): String {
-        val v = shown(min + (max - min) * i / ticks, units)
-        return String.format(locale, "%.0f", if (shown(max, units) >= 1000f) v / 1000f else v)
+        val v = shown(min + (max - min) * i / ticks, units).let { if (shown(max, units) >= 1000f) it / 1000f else it }
+        // Un cero con error de redondeo (-0.000001) no sale como "-0".
+        return String.format(locale, "%.0f", if (kotlin.math.abs(v) < 0.5f) 0f else v)
     }
 }
 
@@ -153,9 +154,9 @@ val GaugeSpecs = listOf(
     ),
     GaugeSpec(
         Signal.BOOST, R.string.gauge_boost, R.string.gauge_boost_tag, Icons.turbo, ticks = 8,
-        // El turbo se habla en psi (también en México).
+        // El turbo se habla en psi (también en México): −15…25 psi para que la escala vaya de 5 en 5.
         shown = { v, _ -> v * 0.145f }, unit = { R.string.unit_psi }, decimals = 1,
-        min = -100f, max = 170f,
+        min = -15f / 0.145f, max = 25f / 0.145f,
     ),
     GaugeSpec(
         Signal.THROTTLE, R.string.gauge_throttle, R.string.gauge_throttle_tag, Icons.pedal, ticks = 5,

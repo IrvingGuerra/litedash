@@ -20,11 +20,10 @@ class GaugeSpecTest {
     @Test
     fun elTurboEmpiezaEnNegativo() {
         val boost = spec(Signal.BOOST)
-        // -100…170 kPa en psi: la mitad (35 kPa) son 5 psi y el final, 25.
-        assertEquals("5", boost.label(4, metric, Locale.US))
-        assertEquals("25", boost.label(8, metric, Locale.US))
-        assertEquals(0f, boost.fraction(-100f), 0f)
-        assertEquals(1f, boost.fraction(170f), 0f)
+        // −15…25 psi, de 5 en 5 (sin "-0").
+        assertEquals(listOf("-15", "-10", "-5", "0", "5", "10", "15", "20", "25"), (0..boost.ticks).map { boost.label(it, metric, Locale.US) })
+        assertEquals(0f, boost.fraction(-15f / 0.145f), 0.0001f)
+        assertEquals(1f, boost.fraction(25f / 0.145f), 0.0001f)
         // Sin zona roja propia: el último 20 %.
         assertEquals(0.8f, boost.redFrom, 0f)
     }
