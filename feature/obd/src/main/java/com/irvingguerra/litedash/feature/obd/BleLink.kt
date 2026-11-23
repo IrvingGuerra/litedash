@@ -78,12 +78,12 @@ class BleLink(private val context: Context, private val device: BluetoothDevice)
         override fun onServicesDiscovered(g: BluetoothGatt, status: Int) {
             gattStatus = status
             if (status != BluetoothGatt.GATT_SUCCESS) return fail(ObdError.GATT_BUSY)
-            val (notify, write) = serialPair(g) ?: return fail(ObdError.NOT_OBD)
+            val (notify, write) = serialPair(g) ?: return fail(noChannel())
             writer = write
             stage = Stage.NOTIFY
             g.setCharacteristicNotification(notify, true)
             // Sin descriptor para pedir avisos, o si no lo acepta, no se le pueden leer respuestas.
-            val cccd = notify.getDescriptor(CCCD) ?: return fail(ObdError.NOT_OBD)
+            val cccd = notify.getDescriptor(CCCD) ?: return fail(noChannel())
             val value = if (notify.properties and BluetoothGattCharacteristic.PROPERTY_NOTIFY != 0) {
                 BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
             } else {
@@ -94,7 +94,9 @@ class BleLink(private val context: Context, private val device: BluetoothDevice)
 
         override fun onDescriptorWrite(g: BluetoothGatt, descriptor: BluetoothGattDescriptor, status: Int) {
             gattStatus = status
-            if (status != BluetoothGatt.GATT_SUCCESS) return fail(ObdError.NOT_OBD)
+            // Un estado de error aquí es la pila de Bluetooth (pasa de vez en cuando en MediaTek/8227L), no el adaptador.
+            if (status != BluetoothGatt.GATT_SUCCESS) return fail(ObdError.GATT_BUSY)
+            noChannelAt = null
             stage = Stage.READY
             ready.countDown()
         }
@@ -113,6 +115,9 @@ class BleLink(private val context: Context, private val device: BluetoothDevice)
             written.release()
         }
     }
+
+    /** Sin canal serie: la primera vez puede ser la caché de GATT incompleta (se reintenta); dos seguidas, no es OBD. */
+    private fun noChannel(): ObdError = noChannelError(device.address, noChannelAt).also { noChannelAt = device.address }
 
     /** El primer fallo es el que vale; el detalle dice el paso y el estado de GATT. */
     private fun fail(kind: ObdError) {
@@ -141,7 +146,7 @@ class BleLink(private val context: Context, private val device: BluetoothDevice)
             return
         }
         close()
-        throw why ?: ObdException(ObdError.NOT_OBD, "ble sin canal de escritura")
+        throw why ?: ObdException(noChannel(), "ble sin canal de escritura")
     }
 
     /**
@@ -189,6 +194,8 @@ class BleLink(private val context: Context, private val device: BluetoothDevice)
     }
 
     private companion object {
+        /** El aparato que la última vez no tuvo canal serie (ver [noChannel]). */
+        @Volatile var noChannelAt: String? = null
         /** Cuánto cabe en un envío con el MTU de fábrica (23 − 3 de encabezado). */
         const val CHUNK = 20
     }
@@ -198,6 +205,13 @@ class BleLink(private val context: Context, private val device: BluetoothDevice)
  * La característica que avisa (lo que contesta el adaptador) y la que se escribe, del
  * mismo servicio: primero los servicios conocidos, luego cualquiera que tenga las dos.
  */
+/**
+ * El error de un aparato sin canal serie: [ObdError.NOT_OBD] solo si también le faltó la vez anterior ([previous] es su
+ * dirección); la primera vez [ObdError.GATT_BUSY] (se reintenta solo), porque una caché de GATT incompleta se ve igual.
+ */
+internal fun noChannelError(address: String, previous: String?): ObdError =
+    if (address == previous) ObdError.NOT_OBD else ObdError.GATT_BUSY
+
 private fun serialPair(g: BluetoothGatt): Pair<BluetoothGattCharacteristic, BluetoothGattCharacteristic>? {
     val services = g.services.orEmpty().filter { s -> GENERIC_SERVICES.none { s.uuid.toString().startsWith(it) } }
     val ordered = services.sortedBy { s -> KNOWN_SERVICES.indexOf(s.uuid).let { if (it < 0) Int.MAX_VALUE else it } }

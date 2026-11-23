@@ -34,6 +34,15 @@ class ObdPolicyTest {
         assertTrue(keepReconnects(ObdError.NO_USB_PERMISSION, permitted = false, cablePresent = true, cableAllowed = true))
     }
 
+    @Test fun ble_sin_canal_serie_una_vez_se_reintenta() {
+        // La caché de GATT incompleta se ve igual que un aparato que no es OBD: la primera vez se reintenta solo.
+        assertEquals(ObdError.GATT_BUSY, noChannelError("AA:BB", previous = null))
+        assertEquals(ObdError.GATT_BUSY, noChannelError("AA:BB", previous = "CC:DD"))
+        assertTrue(ObdError.GATT_BUSY.retry)
+        // Dos seguidas en el mismo aparato: no es OBD y [keepReconnects] ya no insiste.
+        assertEquals(ObdError.NOT_OBD, noChannelError("AA:BB", previous = "AA:BB"))
+    }
+
     @Test fun enchufar_el_cable_reconecta_salvo_permiso_negado() {
         assertTrue(replugReconnects(ObdError.USB_UNPLUGGED, cableAllowed = false))
         assertTrue(replugReconnects(ObdError.USB_SILENT, cableAllowed = false))
