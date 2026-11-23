@@ -162,6 +162,8 @@
                 <action android:name="com.glsx.boot.ACCON" />
                 <action android:name="com.cayboy.action.ACC_ON" />
                 <action android:name="com.carboy.action.ACC_ON" />
+                <action android:name="com.qf.action.ACC_ON" />
+                <action android:name="autochips.intent.action.QB_POWERON" />
             </intent-filter>
         </receiver>
 

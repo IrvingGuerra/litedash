@@ -5,6 +5,7 @@ import android.content.BroadcastReceiver
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Handler
@@ -12,6 +13,7 @@ import android.os.Looper
 import android.os.SystemClock
 import android.provider.Settings
 import android.util.Log
+import androidx.core.content.ContextCompat
 import androidx.core.content.edit
 
 /**
@@ -23,8 +25,10 @@ import androidx.core.content.edit
  * cada marca (FYT, GLSX, Microntek) según la guía de arranque de HeadUnit Revived
  * (gist.github.com/andrecuellar/3c39b4f1bdc03a5c4e97336217f13c38). Desde Android 10 una app solo
  * puede abrirse sola con el permiso "Mostrar sobre otras apps". El receptor está apagado (no corre)
- * mientras la opción esté apagada. Desde Android 8 los avisos de marca (ACC) solo llegan si el
- * sistema los manda a apps en segundo plano; el que siempre llega es el de arranque.
+ * mientras la opción esté apagada. Desde Android 8 los avisos de marca (ACC) solo llegan al
+ * manifiesto si el sistema los manda a apps en segundo plano; el que siempre llega es el de arranque.
+ * Por eso, con la opción prendida, el mismo receptor también se registra mientras LiteDash esté
+ * vivo ([BootLaunch.watch]); si llega por los dos caminos, [repeated] abre una sola vez.
  */
 class BootReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
@@ -76,7 +80,12 @@ object BootLaunch {
         "com.fyt.boot.ACCON",                                                                  // FYT
         "com.glsx.boot.ACCON",                                                                 // GLSX
         "com.cayboy.action.ACC_ON", "com.carboy.action.ACC_ON",                                // Microntek/HCT
+        "com.qf.action.ACC_ON",                                                                // QF / TS10
+        "autochips.intent.action.QB_POWERON",                                                  // Autochips/Jancar
     )
+
+    // El receptor en tiempo de ejecución (null = no registrado). Sin BOOT_COMPLETED: ese llega antes de que haya proceso.
+    private var live: BootReceiver? = null
 
     /** La opción "Abrir LiteDash al encender", leída del disco (el receptor y el arranque corren sin [Preferences]). */
     fun enabled(context: Context): Boolean =
@@ -96,6 +105,7 @@ object BootLaunch {
 
     /** Prende o apaga el receptor según la opción (apagado no se despierta con cada encendido). */
     fun sync(context: Context, on: Boolean) {
+        watch(context.applicationContext, on)
         val pm = context.packageManager
         val component = ComponentName(context, BootReceiver::class.java)
         val wanted = if (on) PackageManager.COMPONENT_ENABLED_STATE_ENABLED else PackageManager.COMPONENT_ENABLED_STATE_DEFAULT
@@ -104,6 +114,26 @@ object BootLaunch {
         } catch (e: RuntimeException) {
             // Corre en un hilo suelto al abrir: una pantalla que no deja cambiarlo no debe cerrar la app.
             Log.w(LOG_TAG, "No se pudo cambiar el receptor de encendido", e)
+        }
+    }
+
+    /**
+     * Con la opción prendida, el receptor también escucha mientras el proceso viva (los avisos de marca
+     * que el sistema ya no entrega al manifiesto); apagada, nada registrado. Una sola vez aunque se llame seguido.
+     */
+    @Synchronized
+    private fun watch(app: Context, on: Boolean) {
+        val current = live
+        if (on && current == null) {
+            val receiver = BootReceiver()
+            val filter = IntentFilter().apply { ACTIONS.filter { it != Intent.ACTION_BOOT_COMPLETED }.forEach(::addAction) }
+            // Exportado: los manda el sistema de la pantalla, no LiteDash.
+            runCatching { ContextCompat.registerReceiver(app, receiver, filter, ContextCompat.RECEIVER_EXPORTED) }
+                .onSuccess { live = receiver }
+                .onFailure { Log.w(LOG_TAG, "No se pudo escuchar el encendido", it) }
+        } else if (!on && current != null) {
+            runCatching { app.unregisterReceiver(current) }
+            live = null
         }
     }
 
