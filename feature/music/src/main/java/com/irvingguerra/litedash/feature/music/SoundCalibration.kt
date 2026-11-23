@@ -8,6 +8,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.irvingguerra.litedash.core.ui.Https
+import com.irvingguerra.litedash.core.ui.isRecent
 import java.io.File
 import java.io.IOException
 import java.util.concurrent.Executor
@@ -364,7 +365,8 @@ internal fun recipeCatalogCached(context: Context): Boolean = File(context.cache
  */
 internal fun loadRecipeCatalog(context: Context): CatalogRecipe? {
     val file = File(context.cacheDir, CATALOG_FILE)
-    val fresh = file.exists() && System.currentTimeMillis() - file.lastModified() < CATALOG_MAX_AGE_MS
+    // Con el reloj atrás (guardado «en el futuro») no cuenta como al día.
+    val fresh = file.exists() && isRecent(file.lastModified(), System.currentTimeMillis(), CATALOG_MAX_AGE_MS)
     val text = (if (fresh) null else runCatching { download(context, file) }.getOrNull())
         ?: runCatching { file.readText() }.getOrNull()
         ?: return null

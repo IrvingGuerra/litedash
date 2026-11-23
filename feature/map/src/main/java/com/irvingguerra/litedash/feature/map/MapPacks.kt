@@ -7,6 +7,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.irvingguerra.litedash.core.ui.Https
 import com.irvingguerra.litedash.core.ui.NoSpaceException
+import com.irvingguerra.litedash.core.ui.isRecent
 import java.io.File
 import java.io.IOException
 import java.util.concurrent.atomic.AtomicBoolean
@@ -613,7 +614,7 @@ class MapPacks private constructor(private val app: Context) {
 
         /** ¿Se sigue un `.part` de [have] bytes de un archivo de [size] empezado en [since]? (Sano, no completo de más y reciente.) */
         internal fun keepPartial(have: Long, size: Long, since: Long, now: Long): Boolean =
-            have in 1..size && now - since in 0 until PARTIAL_MAX_AGE_MS
+            have in 1..size && isRecent(since, now, PARTIAL_MAX_AGE_MS)
 
         /** Cuánto espacio libre hace falta para bajar [region] con [have] bytes del mapa ya bajados. */
         internal fun spaceNeeded(region: MapRegion, have: Long): Long =
@@ -627,7 +628,7 @@ class MapPacks private constructor(private val app: Context) {
          * actualizar la app ([appUpdatedAt]); con el reloj hacia atrás (guardada "en el futuro"), no.
          */
         internal fun indexFresh(exists: Boolean, savedAt: Long, appUpdatedAt: Long, now: Long, maxAgeMs: Long): Boolean =
-            exists && now - savedAt in 0 until maxAgeMs && savedAt > appUpdatedAt
+            exists && isRecent(savedAt, now, maxAgeMs) && savedAt > appUpdatedAt
 
         /** Las regiones del índice [text] (ver [readIndex]). */
         internal fun parseIndex(text: String): List<MapRegion> = readIndex(text).regions

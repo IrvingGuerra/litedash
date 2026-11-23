@@ -4,6 +4,7 @@ package com.irvingguerra.litedash
 import android.content.Context
 import android.util.Log
 import com.irvingguerra.litedash.core.ui.Https
+import com.irvingguerra.litedash.core.ui.isRecent
 import java.io.File
 import java.io.IOException
 import org.json.JSONException
@@ -36,8 +37,9 @@ internal fun parseLanguageIndex(text: String): List<LanguageChoice>? = try {
 fun fetchLanguages(context: Context): List<LanguageChoice>? {
     val file = File(LanguagePacks.folder(context), "index.json")
     // Al día, y de esta versión de la app: tras actualizarla se vuelve a pedir (si no, quien abrió la lista con una
-    // versión vieja seguía viendo la de entonces hasta un día después).
-    val fresh = file.exists() && System.currentTimeMillis() - file.lastModified() < LIST_MAX_AGE_MS && file.lastModified() > appUpdatedAt(context)
+    // versión vieja seguía viendo la de entonces hasta un día después). Con el reloj atrás (guardada «en el futuro»), no.
+    val fresh = file.exists() && isRecent(file.lastModified(), System.currentTimeMillis(), LIST_MAX_AGE_MS) &&
+        file.lastModified() > appUpdatedAt(context)
     // Una lista ilegible (p. ej. la página de un wifi con registro) no reemplaza a la buena.
     val downloaded = if (fresh) null else try {
         replaceFile(file) { temp ->

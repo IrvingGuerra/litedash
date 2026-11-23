@@ -29,6 +29,7 @@ import java.util.Locale
 import java.util.TimeZone
 import kotlin.coroutines.resume
 import com.irvingguerra.litedash.core.ui.Https
+import com.irvingguerra.litedash.core.ui.isRecent
 
 /**
  * Clima tal como se ve: temperaturas redondeadas en la unidad elegida (códigos WMO de Open-Meteo).
@@ -253,7 +254,7 @@ class WeatherRepository(private val context: Context, private val prefs: Prefere
         if (!active) return true
         val last = forecast
         // Una edad negativa es el reloj atrasado: se trae de nuevo en cuanto se pueda.
-        if (!force && last != null && System.currentTimeMillis() - last.fetchedAt in 0 until STALE_MS) return true
+        if (!force && last != null && isRecent(last.fetchedAt, System.currentTimeMillis(), STALE_MS)) return true
         val place = location(known)
         if (place == null) {
             failure = "sin ubicación"

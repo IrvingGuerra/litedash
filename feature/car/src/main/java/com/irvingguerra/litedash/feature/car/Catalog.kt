@@ -14,6 +14,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.toArgb
 import com.irvingguerra.litedash.core.ui.Https
 import com.irvingguerra.litedash.core.ui.HttpStatusException
+import com.irvingguerra.litedash.core.ui.isRecent
 import com.irvingguerra.litedash.core.ui.scaledDecode
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
@@ -105,12 +106,6 @@ data class CatalogEntry(
 }
 
 private val YEAR_NUMBER = Regex("\\d{4}")
-
-/**
- * Pasó menos de [every] desde [since]. Un reloj que regresó (pantalla sin pila que arrancó en 1970 o 2015) da una
- * diferencia negativa: cuenta como vieja (toca revisar), no como reciente hasta que el reloj alcance la fecha guardada.
- */
-internal fun isRecent(since: Long, now: Long, every: Long) = now - since in 0 until every
 
 /** Un archivo extra (cuadros del giro, vista desde arriba) que se baja encima del auto ya instalado. */
 @Immutable

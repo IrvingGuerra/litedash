@@ -18,6 +18,13 @@ import javax.net.ssl.SSLSocketFactory
 import javax.net.ssl.TrustManagerFactory
 
 /**
+ * Pasó menos de [every] desde [since] (con [now] de [System.currentTimeMillis]). Un reloj que regresó (pantalla sin pila
+ * que arrancó en 1970 o 2015) da una diferencia negativa: cuenta como vieja (toca revisar o volver a bajar), no como
+ * reciente hasta que el reloj alcance la fecha guardada. La usan todas las cachés de lo que se baja.
+ */
+fun isRecent(since: Long, now: Long, every: Long): Boolean = now - since in 0 until every
+
+/**
  * Conexiones HTTPS que también sirven en Android 6 y 7.0. Algunos servidores que usa la app (como
  * el clima, Open-Meteo) usan Let's Encrypt, cuya raíz (ISRG Root X1/X2) Android trae desde la 7.1.1;
  * antes, y sin network_security_config (es de Android 7), se confía en las raíces del sistema

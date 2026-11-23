@@ -1,5 +1,6 @@
 package com.irvingguerra.litedash.feature.car
 
+import com.irvingguerra.litedash.core.ui.isRecent
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test

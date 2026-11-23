@@ -8,6 +8,7 @@ import android.util.Log
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import com.irvingguerra.litedash.core.ui.Https
+import com.irvingguerra.litedash.core.ui.isRecent
 import java.io.File
 import java.io.IOException
 import kotlinx.coroutines.Dispatchers
@@ -33,7 +34,7 @@ private fun folder(context: Context) = File(context.cacheDir, "wallpapers").appl
 suspend fun loadWallpapers(context: Context): List<WallpaperChoice>? = withContext(Dispatchers.IO) {
     val file = File(folder(context), "index.json")
     // Una edad negativa (el reloj regresó, p. ej. una pantalla sin pila en 2015) no cuenta como fresca.
-    val fresh = file.exists() && System.currentTimeMillis() - file.lastModified() in 0L until LIST_MAX_AGE_MS
+    val fresh = file.exists() && isRecent(file.lastModified(), System.currentTimeMillis(), LIST_MAX_AGE_MS)
     // Una lista ilegible (p. ej. la página de un wifi con registro) no reemplaza a la buena.
     val downloaded = if (fresh) null else try {
         download(context, "index.json", file, ::readList)

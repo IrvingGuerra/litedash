@@ -23,6 +23,7 @@ import java.io.IOException
 import androidx.core.content.FileProvider
 import androidx.core.content.IntentCompat
 import com.irvingguerra.litedash.core.ui.Https
+import com.irvingguerra.litedash.core.ui.isRecent
 
 /** Una versión publicada en GitHub Releases, más nueva que la instalada. */
 @Immutable
@@ -123,7 +124,7 @@ class Updater(
         }
         dismissed = store.getString(KEY_DISMISSED, null)
         // Con el reloj atrás (pantalla sin pila: la diferencia sale negativa) también toca revisar.
-        if (System.currentTimeMillis() - store.getLong(KEY_LAST, 0L) in 0 until QUIET_EVERY_MS) {
+        if (isRecent(store.getLong(KEY_LAST, 0L), System.currentTimeMillis(), QUIET_EVERY_MS)) {
             // Sin pedir a GitHub otra vez: lo encontrado antes, si sigue siendo más nuevo.
             found = store.getString(KEY_FOUND, null)?.let { runCatching { fromJson(it) }.getOrNull() }
                 ?.takeIf { isNewer(it.name, current) }
