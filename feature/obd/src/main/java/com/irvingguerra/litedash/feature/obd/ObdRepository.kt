@@ -607,6 +607,7 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
         val log = synchronized(events) { events.joinToString(" | ") }.ifEmpty { "-" }
         return "OBD: estado=${state.name.lowercase()}, por=${target?.key ?: "-"}, adaptador=${adapter ?: "-"}, " +
             "protocolo=$protocol, datos=${supported.size} [$pids], 0100=${elm?.firstReply?.joinToString("|") ?: "-"}, " +
+            "resincronizó=${elm?.resyncs ?: 0}, " +
             "error=$error, conectó en el intento=$connectedOnAttempt, reintentos=$retries, se mantiene=${if (kept) "sí" else "no"}, " +
             "bluetooth de Android=${context.getSystemService(BluetoothManager::class.java)?.adapter?.state ?: "no hay"} (12 = encendido), " +
             "socket=${(target as? ObdTarget.Bluetooth)?.let(::rememberedSocket)?.key ?: "-"}, eventos=$log"
@@ -651,19 +652,10 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
 
     private inner class Reader(private val e: Elm327) {
         private var lastSlow: Long? = null
-        // Consultas seguidas que no contestó: una suelta pasa (adaptador lento, el auto
-        // ocupado); varias seguidas sí es que se perdió la conexión.
-        private var failures = 0
+        private val guard = ReadGuard(e)
         // Lo último que se leyó de cada señal (para calcular las que dependen de varias).
         private val last = mutableMapOf<String, Float>()
         private val smoothed = mutableMapOf<String, Float>()
-
-        private fun <T> ask(read: () -> T?): T? = try {
-            read().also { failures = 0 }
-        } catch (x: IOException) {
-            if (++failures >= ObdTiming.MAX_FAILURES) throw x
-            null
-        }
 
         /** Veces seguidas que ATRV no contestó: a la segunda se deja de pedir en esta conexión (cada una espera 3 s). */
         private var voltageSilent = 0
@@ -676,6 +668,8 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
             } catch (x: ObdException) {
                 if (x.kind != ObdError.ADAPTER_SILENT) throw x
                 if (++voltageSilent == 2) note("ATRV sin respuesta: se deja de pedir")
+                // Sin su ">" la entrada puede quedar desfasada: que el siguiente PID no lea lo de ATRV.
+                e.resync()
                 null
             }
         }
@@ -697,11 +691,11 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
                 if (slow) lastSlow = now
                 // Se leen todos y se publican juntos: un solo salto al hilo principal por vuelta.
                 val values = mutableListOf<Pair<String, Float?>>()
-                for (p in pids) if (p.fast || slow) values += p.signal to lock.withLock { ask { e.pid(p.code) } }?.let(p.decode)
+                for (p in pids) if (p.fast || slow) values += p.signal to lock.withLock { guard.ask { e.pid(p.code) } }?.let(p.decode)
                 // Si el voltaje es lo único que se lee, su falla cuenta (así se nota la caída). Con PIDs, no: hay clones que
                 // no contestan ATRV y sumaban fallas hasta tirar la conexión; si el adaptador se perdió, los PIDs lo dicen.
                 if (adapterVoltage && slow) {
-                    values += Signal.VOLTAGE to lock.withLock { if (pids.isEmpty()) ask { e.voltage() } else optionalVoltage(e) }
+                    values += Signal.VOLTAGE to lock.withLock { if (pids.isEmpty()) guard.ask { e.voltage() } else optionalVoltage(e) }
                 }
                 for ((signal, value) in values) if (value == null) last.remove(signal) else last[signal] = value
                 for (d in derived) {

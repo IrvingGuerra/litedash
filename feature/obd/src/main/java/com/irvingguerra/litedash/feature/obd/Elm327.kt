@@ -86,8 +86,54 @@ class Elm327(
     var firstReply: List<String> = emptyList()
         private set
 
-    /** Datos del modo 01 para [pid] (sin el "41 PID"); null si el auto no lo da. */
-    fun pid(pid: Int): IntArray? = afterHead("41%02X".format(pid), command("01%02X".format(pid)))?.let(::hexBytes)
+    /**
+     * Datos del modo 01 para [pid] (sin el "41 PID"); null si el auto no lo da ("NO DATA", "?", "STOPPED"…).
+     * Si llegó la respuesta de OTRO PID, la entrada quedó desfasada (un ">" tardío): se descarta y se resincroniza.
+     */
+    fun pid(pid: Int): IntArray? {
+        val head = "41%02X".format(pid)
+        val lines = command("01%02X".format(pid))
+        afterHead(head, lines)?.let { return hexBytes(it) }
+        if (lines.any { it.startsWith("41") }) resync()
+        return null
+    }
+
+    /** Resincronizaciones de esta conexión (para el reporte). */
+    @Volatile var resyncs = 0
+        private set
+
+    /**
+     * Tras un comando sin ">" a tiempo (hay clones que a veces no lo mandan o lo mandan tarde) o una respuesta
+     * desfasada: tira lo que siga llegando hasta que el adaptador se calle y le pide "ATI" (inocuo; un retorno
+     * solo repetiría el último comando), para que el siguiente no lea la respuesta del anterior. true si
+     * contestó; si el enlace se cerró, lanza.
+     */
+    fun resync(): Boolean {
+        if (++resyncs == 1) log("resincronizó")
+        settle()
+        return try {
+            command("ATI", RESYNC_TIMEOUT_MS)
+            // Si el ">" tardío del anterior cerró el ATI antes de tiempo, su respuesta llega ahora: también se tira.
+            settle()
+            true
+        } catch (x: ObdException) {
+            if (x.kind != ObdError.ADAPTER_SILENT) throw x
+            false
+        }
+    }
+
+    /** Lee y tira hasta que pasen [QUIET_MS] sin llegar nada (a lo más [SETTLE_MAX_MS]). */
+    private fun settle() {
+        val end = now() + SETTLE_MAX_MS
+        var quietUntil = now() + QUIET_MS
+        while (true) {
+            val t = now()
+            if (t >= quietUntil || t >= end) return
+            val b = link.next(minOf(quietUntil, end) - t) ?: continue
+            if (b < 0) throw ObdException(ObdError.CONNECTION_LOST, "se cerró al resincronizar")
+            quietUntil = now() + QUIET_MS
+        }
+    }
 
     /**
      * Consultas a otro módulo del auto (no al motor): antes [setup] (su dirección, p. ej.
@@ -168,6 +214,11 @@ internal fun parseModuleReply(request: String, lines: List<String>): IntArray? {
     if (at < 0) return null
     return hexBytes(joined.substring(at + positive.length))
 }
+
+/** Resincronizar: silencio que basta para dar la entrada por limpia, lo más que se espera ese silencio y el plazo del "ATI". */
+private const val QUIET_MS = 150L
+private const val SETTLE_MAX_MS = 1_500L
+private const val RESYNC_TIMEOUT_MS = 1_000L
 
 /** Lo que se espera a otro módulo del auto: uno que no existe no contesta nada. */
 private const val MODULE_TIMEOUT_MS = 1_500L

@@ -108,6 +108,99 @@ class Elm327Test {
         assertEquals(12.6f, Scripted { "12.6V\r>" }.elm().voltage())
     }
 
+    /** Responde a cada "010D" con lo que sigue de [replies] (null = calla); "ATI" según [ati]. */
+    private fun clone(replies: List<String?>, ati: String? = "ELM327 v1.5\r>"): Scripted {
+        var n = 0
+        return Scripted { cmd -> if (cmd == "ATI") ati else replies[n++] }
+    }
+
+    @Test fun un_prompt_perdido_resincroniza_y_sigue() {
+        // El clon manda los datos pero no su ">": antes eran 3 s y una falla; ahora además se limpia la entrada.
+        val link = clone(listOf("410D3C\r", "410D3C\r>"))
+        val e = link.elm()
+        val guard = ReadGuard(e)
+        assertNull(guard.ask { e.pid(0x0D) })
+        assertArrayEquals(intArrayOf(0x3C), guard.ask { e.pid(0x0D) })
+        assertEquals(listOf("010D", "ATI", "010D"), link.sent)
+        assertEquals(1, e.resyncs)
+    }
+
+    @Test fun se_corta_a_la_tercera_falla_seguida() {
+        val e = clone(listOf(null, null, null)).elm()
+        val guard = ReadGuard(e)
+        assertNull(guard.ask { e.pid(0x0D) })
+        assertNull(guard.ask { e.pid(0x0D) })
+        try {
+            guard.ask { e.pid(0x0D) }
+            fail()
+        } catch (x: ObdException) {
+            assertEquals(ObdError.ADAPTER_SILENT, x.kind)
+        }
+    }
+
+    @Test fun si_tampoco_contesta_ati_cuenta_otra_falla() {
+        // Adaptador callado de verdad: PID (1) + ATI (2) + PID (3) = perdido, sin esperar una vuelta más.
+        val e = clone(listOf(null, null), ati = null).elm()
+        val guard = ReadGuard(e)
+        assertNull(guard.ask { e.pid(0x0D) })
+        try {
+            guard.ask { e.pid(0x0D) }
+            fail()
+        } catch (x: ObdException) {
+            assertEquals(ObdError.ADAPTER_SILENT, x.kind)
+        }
+    }
+
+    @Test fun no_data_no_es_falla() {
+        // Alternando silencio y "NO DATA" la cuenta vuelve a cero: el enlace contesta, ese dato no está.
+        val replies = List(10) { if (it % 2 == 0) null else "NO DATA\r>" }
+        val e = clone(replies).elm()
+        val guard = ReadGuard(e)
+        repeat(10) { assertNull(guard.ask { e.pid(0x0D) }) }
+    }
+
+    @Test fun respuesta_de_otro_pid_se_descarta_y_resincroniza() {
+        // Un ">" tardío desfasa la entrada: llega la de 010C cuando se pidió 010D.
+        val link = clone(listOf("410C1AF8\r>"))
+        val e = link.elm()
+        assertNull(e.pid(0x0D))
+        assertEquals(listOf("010D", "ATI"), link.sent)
+        // "NO DATA", "?" o "STOPPED" no son desfase: no se resincroniza.
+        val quiet = clone(listOf("NO DATA\r>", "?\r>", "STOPPED\r>", "UNABLE TO CONNECT\r>", "CAN ERROR\r>", "BUS INIT: ...ERROR\r>"))
+        val q = quiet.elm()
+        repeat(6) { assertNull(q.pid(0x0D)) }
+        assertEquals(0, q.resyncs)
+    }
+
+    @Test fun enlace_cerrado_no_intenta_resincronizar() {
+        // Socket muerto: lo de siempre (cuenta y a la tercera se corta), sin mandar ATI a un enlace que ya no está.
+        val sent = mutableListOf<String>()
+        val dead = Elm327(object : ElmLink {
+            override val input = object : java.io.InputStream() {
+                override fun read() = -1
+                override fun available() = 0
+            }
+            override val output = object : java.io.OutputStream() {
+                private val line = StringBuilder()
+                override fun write(b: Int) {
+                    if (b == '\r'.code) sent += line.toString().also { line.clear() } else line.append(b.toChar())
+                }
+            }
+            override fun next(waitMs: Long): Int = -1
+            override fun close() {}
+        })
+        val guard = ReadGuard(dead)
+        assertNull(guard.ask { dead.pid(0x0D) })
+        assertNull(guard.ask { dead.pid(0x0D) })
+        try {
+            guard.ask { dead.pid(0x0D) }
+            fail()
+        } catch (x: ObdException) {
+            assertEquals(ObdError.CONNECTION_LOST, x.kind)
+        }
+        assertEquals(listOf("010D", "010D", "010D"), sent)
+    }
+
     @Test fun limpia_eco_y_espacios() {
         assertEquals(listOf("410D3C"), elm("010D\r41 0D 3C\r\r>").command("010D"))
     }
