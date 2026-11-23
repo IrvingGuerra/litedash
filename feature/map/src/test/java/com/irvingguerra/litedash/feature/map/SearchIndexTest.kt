@@ -65,6 +65,20 @@ class SearchIndexTest {
     }
 
     @Test
+    fun aNearbyBranchOfAChainBeatsAFarOneWithTheBareName() = withIndex { index ->
+        // «Starbucks» a ~40 km y «Starbucks Reforma 222» a ~1 km: la cercana primero.
+        val hits = index.search("starbucks", 19.4300, -99.1300)
+        assertEquals(listOf("Starbucks Reforma 222", "Starbucks"), hits.map { it.name })
+        // La ciudad sí va antes que un negocio cercano que lleva su nombre.
+        val gdl = index.search("guadalajara", 20.6768, -103.3476)
+        assertEquals("Guadalajara", gdl.first().name)
+        assertTrue(gdl.indexOfFirst { it.name == "Tortas Guadalajara" } > 0)
+        assertEquals(1, SearchIndex.rankTier(0, 2))
+        assertEquals(0, SearchIndex.rankTier(0, 0))
+        assertEquals(2, SearchIndex.rankTier(2, 2))
+    }
+
+    @Test
     fun tiersFollowTheWholeName() {
         val q = listOf("colosseo")
         assertEquals(0, SearchIndex.tier(listOf("colosseo"), q))
@@ -134,6 +148,9 @@ class SearchIndexTest {
         Entry(8, "Bar Colosseo", 41.8951, 12.4801, locality = "Monti", category = 4),
         Entry(8, "Colosseo Pizza", 41.8955, 12.4810, locality = "Monti", category = 4),
         Entry(8, "Colosseo", 41.8902, 12.4922, locality = "Celio", category = 14),
+        Entry(8, "Starbucks", 19.7900, -99.1300, locality = "Norte", category = 4),
+        Entry(8, "Starbucks Reforma 222", 19.4390, -99.1300, locality = "Juárez", category = 4),
+        Entry(8, "Tortas Guadalajara", 20.6769, -103.3477, locality = "Centro", category = 4),
     ) + (0 until 40).map { Entry(8, "Relleno x%02d".format(it), 18.0 + it * 0.01, -104.0) }
 
     private fun withIndex(test: (SearchIndex) -> Unit) {

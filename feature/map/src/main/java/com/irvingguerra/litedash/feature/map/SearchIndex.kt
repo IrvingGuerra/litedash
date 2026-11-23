@@ -52,7 +52,7 @@ class SearchIndex private constructor(
         if (keys.size > TIER_CANDIDATES) keys = keys.copyOf(TIER_CANDIDATES)
         for (i in keys.indices) {
             val r = (keys[i] and INDEX_MASK).toInt()
-            keys[i] = key(r, tier(normalizeForSearch(name(u24(record(r) + 8)).orEmpty()), words))
+            keys[i] = key(r, rankTier(tier(normalizeForSearch(name(u24(record(r) + 8)).orEmpty()), words), placeClass(r)))
         }
         keys.sort()
         val hits = ArrayList<SearchHit>(min(limit, keys.size))
@@ -257,6 +257,14 @@ class SearchIndex private constructor(
             if (head && name[k - 1].startsWith(query[k - 1])) return TIER_STARTS_PREFIX
             return TIER_OTHER
         }
+
+        /**
+         * El escalón con el que se ordena: «nombre igual» solo adelanta a los que NO empiezan con lo escrito, salvo en
+         * ciudades, colonias y lugares conocidos (clase 0). Entre negocios y calles que empiezan con lo escrito manda la
+         * distancia: «Starbucks» → la sucursal «Starbucks Reforma 222» a 1 km antes que una «Starbucks» a 40 km.
+         */
+        internal fun rankTier(tier: Int, placeClass: Int): Int =
+            if (tier == TIER_EQUAL && placeClass != 0) TIER_STARTS else tier
 
         /** Abre el índice SRCH1 de [file]; null si no lo es o está dañado. */
         fun open(file: File): SearchIndex? = runCatching {
