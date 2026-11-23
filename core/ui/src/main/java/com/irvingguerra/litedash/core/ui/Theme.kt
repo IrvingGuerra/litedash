@@ -147,8 +147,9 @@ private const val MARK_CONTRAST = 3f
 
 /** El contraste entre dos colores (1–21), como lo mide WCAG. */
 internal fun contrast(a: Color, b: Color): Float {
-    val (hi, lo) = listOf(a.luminance(), b.luminance()).sortedDescending()
-    return (hi + 0.05f) / (lo + 0.05f)
+    val la = a.luminance()
+    val lb = b.luminance()
+    return (maxOf(la, lb) + 0.05f) / (minOf(la, lb) + 0.05f)
 }
 
 // Estilo limpio (Irving, 2026-11-01: "más estilo Apple o DuduAuto"): tarjetas lisas sin

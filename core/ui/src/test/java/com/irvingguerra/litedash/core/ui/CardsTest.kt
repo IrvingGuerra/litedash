@@ -127,6 +127,63 @@ class CardsTest {
         }
     }
 
+    @Test fun sin_tarjeta_se_lee_sobre_el_color_medio_de_tu_fondo() {
+        // Imagen negra con tema claro e imagen blanca con tema oscuro: el velo se cierra hasta contraste 3.
+        for ((theme, mean) in listOf(LightColors to Color.Black, DarkColors to Color.White)) {
+            val veil = legibleVeil(theme, mean)
+            assertTrue("tema oscuro=${theme.dark}: velo $veil", veil > 0f && veil < 0.9f)
+            assertTrue(contrast(theme.text, theme.background.copy(alpha = veil).compositeOver(mean)) >= 3f)
+            // Un paso antes todavía no se leía: es lo menos que hace falta.
+            assertTrue(contrast(theme.text, theme.background.copy(alpha = veil - 0.05f).compositeOver(mean)) < 3f)
+        }
+        // Una imagen a medio tono ya se lee con los dos temas; y en tema oscuro una imagen oscura normal (la aurora):
+        // nada que cambiar.
+        for (theme in themes) assertEquals(0f, legibleVeil(theme, Color(0xFF808080)), 0f)
+        assertEquals(0f, legibleVeil(DarkColors, Color(0xFF2A2350)), 0f)
+    }
+
+    @Test fun el_lienzo_deja_leer_lo_apagado_sobre_tu_fondo() {
+        for (theme in themes) for (color in listOf<Color?>(null) + hard) {
+            val c = theme.withCards(color)
+            val where = "tema oscuro=${theme.dark} tarjeta=$color"
+            for (extreme in listOf(Color.Black, Color.White, Color(0xFF5A8C96))) {
+                val veil = canvasVeil(c, extreme, 0.62f)
+                assertTrue(where, veil >= 0.62f && veil <= 1f)
+                val seen = contrast(c.textMuted, c.background.copy(alpha = veil).compositeOver(extreme))
+                // 4.5, o lo que el tema da sobre su propio fondo liso si no llega (el claro de fábrica, ~3.1).
+                assertTrue("$where sobre $extreme: $seen", seen >= minOf(4.5f, contrast(c.textMuted, c.background) * 0.9f) - 0.01f)
+            }
+        }
+        // El tema oscuro de fábrica sí llega a 4.5 aun sobre blanco.
+        assertTrue(contrast(DarkColors.textMuted, DarkColors.background.copy(alpha = canvasVeil(DarkColors, Color.White, 0.62f)).compositeOver(Color.White)) >= 4.5f)
+        // Sobre una imagen que ya se lleva con el tema, el velo de siempre.
+        assertEquals(0.62f, canvasVeil(DarkColors, Color.Black, 0.62f), 0.001f)
+    }
+
+    @Test fun los_extremos_son_la_cuarta_parte_mas_clara_y_la_mas_oscura() {
+        val px = IntArray(8) { if (it < 2) 0xFF000000.toInt() else if (it < 6) 0xFF808080.toInt() else 0xFFFFFFFF.toInt() }
+        val (light, shade) = extremes(px)
+        assertEquals(Color.White, light)
+        assertEquals(Color.Black, shade)
+    }
+
+    @Test fun el_desenfoque_deja_igual_lo_liso_y_suaviza_un_escalon_parejo() {
+        val w = 9
+        val flat = IntArray(w) { 0xFF336699.toInt() }
+        val out = IntArray(w)
+        boxBlur(flat, out, w, 1, 2, horizontal = true)
+        assertTrue(out.all { it == 0xFF336699.toInt() })
+        // Negro a la izquierda y blanco a la derecha: sube sin saltos y queda simétrico alrededor del centro.
+        val step = IntArray(w) { if (it < 4) 0xFF000000.toInt() else if (it > 4) 0xFFFFFFFF.toInt() else 0xFF808080.toInt() }
+        boxBlur(step, out, w, 1, 2, horizontal = true)
+        val blue = out.map { it and 0xFF }
+        assertEquals(blue.sorted(), blue)
+        for (i in 0 until w) assertTrue("$blue", kotlin.math.abs(255 - blue[i] - blue[w - 1 - i]) <= 2)
+        // A lo alto, igual.
+        boxBlur(step, out, 1, w, 2, horizontal = false)
+        assertEquals(blue, out.map { it and 0xFF })
+    }
+
     @Test fun lo_guardado_que_no_es_lisa_es_vidrio() {
         assertEquals(CardStyle.GLASS, CardStyle.fromStored("glass"))
         assertEquals(CardStyle.GLASS, CardStyle.fromStored("otra cosa"))

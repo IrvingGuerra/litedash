@@ -85,14 +85,23 @@ internal fun glassFill(look: CardLook, floor: Float): Float {
  * el claro: el mapa puede ir claro u oscuro aparte del tema), con la escarcha debajo como se dibuja.
  */
 internal fun smokeAlpha(c: Colors): Float {
+    // Depende solo del tema: cada tarjeta sobre el mapa lo pide al recomponerse (se guarda el último).
+    smoke?.let { (colors, a) -> if (colors == c) return a }
     val under = Color.White.copy(alpha = frost(c.dark)).compositeOver(if (c.dark) Color.White else Color.Black)
-    var a = 0f
-    while (a < 1f) {
-        if (contrast(c.text, c.background.copy(alpha = a).compositeOver(under)) >= 4.5f) return a
-        a += 0.05f
+    var a = 1f
+    for (step in 0 until 20) {
+        val tried = step * 0.05f
+        if (contrast(c.text, c.background.copy(alpha = tried).compositeOver(under)) >= 4.5f) {
+            a = tried
+            break
+        }
     }
-    return 1f
+    smoke = c to a
+    return a
 }
+
+/** El último ahumado calculado y de qué tema (solo se toca al componer, en el hilo principal). */
+private var smoke: Pair<Colors, Float>? = null
 
 /** La escarcha del cristal: un blanco muy leve que lo despega del fondo (se va conforme la tarjeta se llena). */
 internal fun frost(dark: Boolean) = if (dark) 0.07f else 0.16f
@@ -109,6 +118,33 @@ fun glassVeil(c: Colors, extreme: Color, base: Float): Float {
         a += 0.05f
     }
     return VEIL_MAX
+}
+
+/**
+ * Lo menos que se vela tu imagen del inicio para que lo que va sin tarjeta (saludo, fecha, íconos de la barra) se lea:
+ * el texto del tema con contraste ≥ 3 sobre el color medio de la imagen ([mean]). «Oscurecer el fondo» nunca baja de
+ * aquí; con una imagen que ya se lleva con el tema (oscura en tema oscuro, clara en claro), 0.
+ */
+fun legibleVeil(c: Colors, mean: Color): Float = veilUntil(c.text, c, mean, 0f, PLAIN_CONTRAST, VEIL_MAX)
+
+/**
+ * El velo del lienzo (Ajustes, paneles) sobre tu fondo desenfocado: de [base] lo que haga falta para que lo apagado
+ * ([Colors.textMuted]: las secciones sin elegir) dé contraste ≥ 4.5 sobre la parte más clara (tema oscuro) o más
+ * oscura (claro) de tu imagen ([extreme]). Si el tema no llega a 4.5 ni sobre su propio fondo liso (el claro da ~3.1),
+ * el 90 % de lo que da ahí; si ni así, liso.
+ */
+fun canvasVeil(c: Colors, extreme: Color, base: Float): Float =
+    veilUntil(c.textMuted, c, extreme, base, minOf(4.5f, contrast(c.textMuted, c.background) * 0.9f), 1f)
+
+/** Lo menos, de [base] a [max] en pasos de 0.05, que deja a [ink] con [wanted] de contraste sobre [under] velado. */
+private fun veilUntil(ink: Color, c: Colors, under: Color, base: Float, wanted: Float, max: Float): Float {
+    var step = 0
+    while (true) {
+        val a = base + step * 0.05f
+        if (a >= max) return max
+        if (contrast(ink, c.background.copy(alpha = a).compositeOver(under)) >= wanted) return a
+        step++
+    }
 }
 
 /**
@@ -188,15 +224,40 @@ fun blurredCopy(src: Bitmap, vivid: Boolean = false): Blurred {
     if (vivid) for (i in px.indices) px[i] = livelier(px[i])
     val out = Bitmap.createBitmap(px, w, h, Bitmap.Config.ARGB_8888)
     if (small !== src) small.recycle()
-    // Los extremos: el promedio de la cuarta parte más clara y de la más oscura.
+    val (light, shade) = extremes(px)
+    return Blurred(out.asImageBitmap(), light, shade)
+}
+
+/** Los extremos de [px]: el promedio de su cuarta parte más clara y el de la más oscura. */
+internal fun extremes(px: IntArray): Pair<Color, Color> {
     val byLight = px.sortedBy { luma(it) }
     val quarter = (byLight.size / 4).coerceAtLeast(1)
-    return Blurred(out.asImageBitmap(), average(byLight.takeLast(quarter)), average(byLight.take(quarter)))
+    return average(byLight.takeLast(quarter)) to average(byLight.take(quarter))
+}
+
+/**
+ * El color medio de [src], de una muestra de unos [MEAN_SAMPLES] puntos por lado leída renglón por renglón (no copia
+ * la imagen entera: en pantallas de 1 GB un fondo completo son 8 MB). Una vez por imagen, fuera del hilo principal.
+ */
+fun meanColor(src: Bitmap): Color {
+    val w = src.width
+    val h = src.height
+    if (w <= 0 || h <= 0) return Color.Black
+    val step = (maxOf(w, h) / MEAN_SAMPLES).coerceAtLeast(1)
+    val row = IntArray(w)
+    val picked = ArrayList<Int>()
+    var y = step / 2
+    while (y < h) {
+        src.getPixels(row, 0, w, 0, y, w, 1)
+        for (x in step / 2 until w step step) picked += row[x]
+        y += step
+    }
+    return average(picked)
 }
 
 private fun luma(p: Int) = 2126 * ((p shr 16) and 0xFF) + 7152 * ((p shr 8) and 0xFF) + 722 * (p and 0xFF)
 
-private fun average(px: List<Int>): Color {
+internal fun average(px: List<Int>): Color {
     var r = 0L; var g = 0L; var b = 0L
     for (p in px) { r += (p shr 16) and 0xFF; g += (p shr 8) and 0xFF; b += p and 0xFF }
     val n = px.size.coerceAtLeast(1)
@@ -242,8 +303,12 @@ private const val BLUR_WIDTH = 96
 private const val CLEAR_WIDTH = 224
 private const val VIVID_SATURATION = 1.5f
 private const val VIVID_BRIGHTNESS = 1.05f
-/** Lo más cerrado que llega el velo detrás de un cristal. */
+/** Lo más cerrado que llega el velo detrás de un cristal (y el de tu fondo en el inicio). */
 private const val VEIL_MAX = 0.9f
+/** Contraste mínimo de lo que va sin tarjeta sobre el color medio de tu fondo (texto grande y en negritas). */
+private const val PLAIN_CONTRAST = 3f
+/** Puntos por lado con que se saca el color medio de tu fondo. */
+private const val MEAN_SAMPLES = 64
 /** El filo del cristal (blanco, de la esquina de arriba a la de abajo): tema oscuro y tema claro. */
 private val GLASS_EDGE_DARK = listOf(0.7f, 0.1f, 0.3f)
 private val GLASS_EDGE_LIGHT = listOf(1f, 0.3f, 0.55f)

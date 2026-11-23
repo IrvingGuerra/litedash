@@ -97,7 +97,10 @@ import com.irvingguerra.litedash.core.ui.SwitchRow
 import com.irvingguerra.litedash.core.ui.Typography
 import com.irvingguerra.litedash.core.ui.Blurred
 import com.irvingguerra.litedash.core.ui.blurredCopy
+import com.irvingguerra.litedash.core.ui.canvasVeil
 import com.irvingguerra.litedash.core.ui.glassVeil
+import com.irvingguerra.litedash.core.ui.legibleVeil
+import com.irvingguerra.litedash.core.ui.meanColor
 import com.irvingguerra.litedash.core.ui.scaledDecode
 import com.irvingguerra.litedash.feature.dashboard.Tile
 import com.irvingguerra.litedash.feature.dashboard.TileTypes
@@ -162,6 +165,8 @@ private class SavedImage(
     val shown: ImageFit,
     /** Nunca lleva transparencia (el fondo cubre la pantalla): siempre JPEG y RGB_565. */
     val opaque: Boolean = false,
+    /** Corre al cambiar la imagen (en el hilo principal): para soltar lo que se calculó de la de antes. */
+    private val onBump: () -> Unit = {},
 ) {
     /** Sube al elegir o quitar la imagen (solo en memoria): quien la muestra la vuelve a leer. */
     var version by mutableIntStateOf(0)
@@ -171,8 +176,15 @@ private class SavedImage(
     var revision = -1
     var image: ImageBitmap? = null
 
+    /**
+     * Uno a la vez escribe o borra el archivo (y lo que va con él): elegir tu foto mientras baja un fondo de LiteDash
+     * usaba el mismo temporal y el que terminaba primero le borraba el suyo al otro.
+     */
+    val lock = Mutex()
+
     fun bump() {
         version++
+        onBump()
     }
 
     fun file(context: Context) = File(context.filesDir, file)
@@ -322,7 +334,7 @@ fun releaseTileImages(tiles: List<Tile>) {
 private val INTRO = SavedImage("intro.png", 1024, ImageFit.HALF_SCREEN)
 
 /** El fondo del inicio: una foto que cubre toda la pantalla (sin transparencia). */
-private val WALLPAPER = SavedImage("wallpaper.jpg", 1920, ImageFit.COVER_SCREEN, opaque = true)
+private val WALLPAPER = SavedImage("wallpaper.jpg", 1920, ImageFit.COVER_SCREEN, opaque = true, onBump = ::forgetWallpaperCopies)
 
 /** La imagen del modo estacionado (en vez del reloj), completa; con transparencia si es un logo. */
 private val PARKED = SavedImage("parked.png", 1920, ImageFit.FIT_SCREEN)
@@ -498,12 +510,14 @@ fun LogoIntro(onDone: () -> Unit) {
 /**
  * Tu imagen de fondo detrás de todo el inicio, recortada para llenar la pantalla.
  * Lleva un velo del color del tema, lo que pidas en «Oscurecer el fondo» ([Preferences.wallpaperDim]; se lee al
- * dibujar). Sin imagen y con tarjetas de vidrio, el resplandor del tema.
+ * dibujar) pero nunca menos de lo que pide tu imagen para que lo que va sin tarjeta se lea ([legibleVeil]). Sin imagen
+ * y con tarjetas de vidrio, el resplandor del tema.
  */
 @Composable
 fun HomeWallpaper(prefs: Preferences, asInWindow: Boolean = false) {
     val c = LocalColors.current
     val image = rememberImage(WALLPAPER).image
+    val floor = rememberLegibleFloor(image)
     if (image == null) {
         // Sin imagen, el vidrio se luce sobre el resplandor del tema.
         if (LocalCardLook.current.style == CardStyle.GLASS) Box(Modifier.fillMaxSize().glow())
@@ -511,20 +525,36 @@ fun HomeWallpaper(prefs: Preferences, asInWindow: Boolean = false) {
     }
     // Una muestra ([asInWindow]): el pedazo de tu fondo que cae justo ahí, a la escala del inicio (no la imagen
     // entera en chico), para que lo de encima se vea igual que en el inicio.
-    if (asInWindow) return Box(Modifier.fillMaxSize().blurredBackdrop(remember(image, c) { CardBackdrop(image) { c.background.copy(alpha = prefs.wallpaperDim) } }))
-    Image(image, null, Modifier.fillMaxSize().drawWithContent { drawContent(); drawRect(c.background.copy(alpha = prefs.wallpaperDim)) }, contentScale = ContentScale.Crop)
+    if (asInWindow) {
+        return Box(Modifier.fillMaxSize().blurredBackdrop(remember(image, c, floor) { CardBackdrop(image) { c.background.copy(alpha = maxOf(prefs.wallpaperDim, floor)) } }))
+    }
+    Image(image, null, Modifier.fillMaxSize().drawWithContent { drawContent(); drawRect(c.background.copy(alpha = maxOf(prefs.wallpaperDim, floor))) }, contentScale = ContentScale.Crop)
 }
 
 /**
- * Para las tarjetas de vidrio ([wanted]): tu fondo de pantalla desenfocado una vez, en chico y fuera del hilo
- * principal, con el velo que lleva el inicio ([dim], se lee al dibujar). null = sin fondo (o aún no está).
+ * Lo menos que se vela [image] en el inicio para que el texto del tema se lea sin tarjeta ([legibleVeil] sobre su
+ * color medio, calculado una vez por imagen y fuera del hilo principal). 0 sin imagen o mientras se calcula.
  */
 @Composable
-fun rememberWallpaperBackdrop(wanted: Boolean, clear: Boolean = false, dim: () -> Float = { DEFAULT_WALLPAPER_DIM }): CardBackdrop? {
-    val image = if (wanted) rememberImage(WALLPAPER).image else null
+private fun rememberLegibleFloor(image: ImageBitmap?): Float {
     val c = LocalColors.current
-    // El desenfoque se hace una vez por imagen y lo comparten el inicio, Ajustes y lo que se abre en grande. Para el
-    // cristal ([clear]) es otra copia: menos desenfocada y con el color más vivo.
+    val mean by produceState(wallpaperMean?.takeIf { it.first === image }?.second, image) {
+        value = image?.let { src ->
+            wallpaperMean?.takeIf { it.first === src }?.second
+                ?: withContext(Dispatchers.Default) { meanColor(src.asAndroidBitmap()) }.also { wallpaperMean = src to it }
+        }
+    }
+    return remember(mean, c) { mean?.let { legibleVeil(c, it) } ?: 0f }
+}
+
+/**
+ * Tu fondo de pantalla desenfocado ([wanted]), una vez por imagen, en chico y fuera del hilo principal; para el cristal
+ * ([clear]) es otra copia: menos desenfocada y con el color más vivo. null = sin fondo (o aún no está).
+ */
+@Composable
+private fun rememberBlurredWallpaper(wanted: Boolean, clear: Boolean): Pair<ImageBitmap, Blurred>? {
+    val image = if (wanted) rememberImage(WALLPAPER).image else null
+    // Lo comparten el inicio, Ajustes y lo que se abre en grande.
     val cached = if (clear) clearWallpaper else blurredWallpaper
     val blurred by produceState(cached?.takeIf { it.first === image }, image, clear) {
         value = image?.let { src ->
@@ -535,16 +565,28 @@ fun rememberWallpaperBackdrop(wanted: Boolean, clear: Boolean = false, dim: () -
     }
     // Solo la copia de ESTA imagen: [blurred] guarda la de antes hasta que su efecto corre (un cuadro después de
     // cambiar de página o de fondo) y ese cuadro las tarjetas salían con otra piel; si ya está hecha, de una vez.
-    val b = (blurred?.takeIf { it.first === image } ?: cached?.takeIf { it.first === image })?.second ?: return null
-    // Detrás de un cristal el velo parte del tuyo y se cierra lo que haga falta para que el texto se lea sobre tu
-    // imagen (aunque el fondo vaya limpio). Se calcula una vez por valor, no en cada dibujo.
+    return blurred?.takeIf { it.first === image } ?: cached?.takeIf { it.first === image }
+}
+
+/**
+ * Para las tarjetas de vidrio del inicio ([wanted]): tu fondo desenfocado y el velo que lleva detrás: el de tu fondo
+ * ([dim], se lee al dibujar, nunca menos del que pide tu imagen) y, como cristal ([clear]), cerrado lo que haga falta
+ * para que el texto de la tarjeta se lea. null = sin fondo (o aún no está).
+ */
+@Composable
+fun rememberWallpaperBackdrop(wanted: Boolean, clear: Boolean, dim: () -> Float): CardBackdrop? {
+    val pair = rememberBlurredWallpaper(wanted, clear)
+    val floor = rememberLegibleFloor(pair?.first)
+    val b = pair?.second ?: return null
+    val c = LocalColors.current
+    // Se calcula una vez por valor, no en cada dibujo.
     val currentDim by rememberUpdatedState(dim)
-    return remember(b, c, clear) {
+    return remember(b, c, floor, clear) {
         val extreme = if (c.dark) b.light else b.shade
         var lastDim = Float.NaN
         var veil = 0f
         CardBackdrop(b.image) {
-            val base = currentDim()
+            val base = maxOf(currentDim(), floor)
             if (base != lastDim) {
                 lastDim = base
                 veil = if (clear) glassVeil(c, extreme, base) else base
@@ -554,30 +596,51 @@ fun rememberWallpaperBackdrop(wanted: Boolean, clear: Boolean = false, dim: () -
     }
 }
 
-/** El último fondo de pantalla desenfocado y de qué imagen salió (solo se toca en el hilo principal); y el del cristal. */
+/**
+ * Lo calculado de tu fondo y de qué imagen salió (solo se toca en el hilo principal): desenfocado para el lienzo, para
+ * el cristal y su color medio. Se sueltan al cambiar o quitar el fondo ([forgetWallpaperCopies]), así no retienen la
+ * imagen de antes (hasta 4.6 MB en una pantalla grande).
+ */
 private var blurredWallpaper: Pair<ImageBitmap, Blurred>? = null
 private var clearWallpaper: Pair<ImageBitmap, Blurred>? = null
+private var wallpaperMean: Pair<ImageBitmap, Color>? = null
 
-/** El velo del lienzo: más cerrado que el del inicio, encima van listas y textos largos. */
+private fun forgetWallpaperCopies() {
+    blurredWallpaper = null
+    clearWallpaper = null
+    wallpaperMean = null
+}
+
+/** El velo de partida del lienzo: más cerrado que el del inicio, encima van listas y textos largos. */
 private const val CANVAS_VEIL = 0.62f
 
-/** La piel sin el fondo desenfocado por tarjeta (lo que va sobre un lienzo ya desenfocado). */
-internal fun globalLook(look: CardLook) = if (look.backdrop == null && look.clear) look else CardLook(look.style, look.opacity)
+/**
+ * La piel sin el fondo desenfocado por tarjeta (lo que va sobre un lienzo ya desenfocado). La misma de la última vez
+ * si no cambió: una piel nueva en cada recomposición hacía recomponer todo lo que la lee.
+ */
+internal fun globalLook(look: CardLook): CardLook {
+    if (look.backdrop == null && look.clear) return look
+    lastGlobal?.let { (from, to) -> if (from === look) return to }
+    return CardLook(look.style, look.opacity).also { lastGlobal = look to it }
+}
+
+private var lastGlobal: Pair<CardLook, CardLook>? = null
 
 /**
  * El lienzo de lo que tapa el inicio (Ajustes, los paneles, la música o el mapa en grande): el fondo del tema y, con
  * tarjetas de vidrio, tu fondo de pantalla desenfocado bajo un velo (una vez por pantalla; las tarjetas de encima
- * solo llevan su relleno) o, sin imagen, el resplandor del tema.
+ * solo llevan su relleno) o, sin imagen, el resplandor del tema. El velo se cierra lo que pida tu imagen para que lo
+ * apagado (las secciones sin elegir) se lea ([canvasVeil]).
  */
 @Composable
 internal fun Modifier.canvas(): Modifier {
     val c = LocalColors.current
     val glass = LocalCardLook.current.style == CardStyle.GLASS
-    val blurred = rememberWallpaperBackdrop(glass)
+    val blurred = rememberBlurredWallpaper(glass, clear = false)?.second
+    val veil = remember(blurred, c) { blurred?.let { c.background.copy(alpha = canvasVeil(c, if (c.dark) it.light else it.shade, CANVAS_VEIL)) } }
     val base = background(c.background)
     if (!glass) return base
-    if (blurred == null) return base.glow()
-    val veil = c.background.copy(alpha = CANVAS_VEIL)
+    if (blurred == null || veil == null) return base.glow()
     return base.drawBehind {
         val iw = blurred.image.width.toFloat()
         val ih = blurred.image.height.toFloat()
@@ -678,10 +741,13 @@ private fun imageButtons(
         unusable = false
         scope.launch {
             withContext(NonCancellable) {
-                val ok = save(context, uri, target)
-                if (ok) {
-                    target.bump()
-                    onPicked(uri)
+                val ok = target.lock.withLock {
+                    save(context, uri, target).also { ok ->
+                        if (ok) {
+                            target.bump()
+                            onPicked(uri)
+                        }
+                    }
                 }
                 unusable = !ok
                 saving = false
@@ -690,11 +756,8 @@ private fun imageButtons(
     }
     var browsing by remember { mutableStateOf(false) }
     val pick = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri -> if (uri != null) use(uri) }
-    var denied by remember { mutableStateOf(false) }
-    val ask = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { ok ->
-        denied = !ok
-        if (ok) browsing = true
-    }
+    // Negado para siempre (Android 11+ a la segunda), Android ya no pregunta: junto al aviso va «Permisos».
+    val ask = rememberPermissionAsk(Manifest.permission.READ_EXTERNAL_STORAGE) { ok -> if (ok) browsing = true }
     // Un solo camino por versión. Android 13+: el selector de fotos del sistema (siempre viene, no pide permisos y el
     // explorador propio ya no puede ver fotos sin un permiso que Play no da a un launcher). Hasta 12: el explorador
     // propio, porque los selectores de las pantallas de auto fallan (sin "Archivos", o el de Google Play Services, que
@@ -706,9 +769,12 @@ private fun imageButtons(
             } catch (e: ActivityNotFoundException) {
                 Log.w(LOG_TAG, "Sin selector de fotos del sistema", e)
             }
-            context.checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED ->
-                ask.launch(Manifest.permission.READ_EXTERNAL_STORAGE)
-            else -> browsing = true
+            context.checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED -> ask.ask()
+            else -> {
+                // Pudo darse en Ajustes de Android: ya no hay nada que avisar.
+                ask.denied = false
+                browsing = true
+            }
         }
     }
     // Basta saber si el archivo existe (en IO); mientras, se queda lo último que se supo.
@@ -723,14 +789,19 @@ private fun imageButtons(
             unusable = false
             scope.launch {
                 withContext(NonCancellable) {
-                    withContext(Dispatchers.IO) { target.file(context).delete() }
-                    target.bump()
-                    onRemoved()
+                    target.lock.withLock {
+                        withContext(Dispatchers.IO) { target.file(context).delete() }
+                        target.bump()
+                        onRemoved()
+                    }
                 }
             }
         }, enabled = idle)
     }
-    if (denied) Label(stringResource(R.string.image_no_permission), Typography.small, c.danger)
+    if (ask.denied) {
+        Label(stringResource(R.string.image_no_permission), Typography.small, c.danger)
+        Button(stringResource(R.string.local_network_settings), { openAppSettings(context) })
+    }
     if (unusable) Label(stringResource(R.string.image_unusable), Typography.small, c.danger)
     if (browsing) FileBrowser(
         pickFolder = false,
@@ -752,7 +823,8 @@ private val IMAGE_TYPES = setOf("jpg", "jpeg", "png", "webp", "gif", "bmp") +
 /**
  * Inicio y apariencia → Inicio → Fondo de pantalla: los fondos de LiteDash (miniaturas; uno se baja de litedash.dev
  * al tocarlo y queda guardado como si fuera tu foto) y elegir, cambiar o quitar una foto tuya. Sin internet, solo tu foto.
- * Mientras baja uno no se puede elegir tu foto (y al revés): el que terminara al último pisaría al otro.
+ * Mientras baja uno no se puede elegir tu foto; y si tu foto se está guardando al tocar uno, el fondo espera su turno
+ * ([SavedImage.lock]): gana el último que se eligió.
  */
 @Composable
 fun WallpaperSettings(prefs: Preferences) {
@@ -787,10 +859,13 @@ fun WallpaperSettings(prefs: Preferences) {
                             scope.launch {
                                 // Termina aunque se cierre Ajustes: el archivo ya cambió y el inicio debe enterarse.
                                 withContext(NonCancellable) {
-                                    val ok = downloadWallpaper(context, w.id, WALLPAPER.file(context))
-                                    if (ok) {
-                                        withContext(Dispatchers.IO) { writeMarker(marker, w.id) }
-                                        WALLPAPER.bump()
+                                    val ok = WALLPAPER.lock.withLock {
+                                        downloadWallpaper(context, w.id, WALLPAPER.file(context)).also { ok ->
+                                            if (ok) {
+                                                withContext(Dispatchers.IO) { writeMarker(marker, w.id) }
+                                                WALLPAPER.bump()
+                                            }
+                                        }
                                     }
                                     failed = !ok
                                     downloading = null
@@ -951,11 +1026,10 @@ fun ImageEditor(
                 applyFailed = false
                 scope.launch {
                     withContext(NonCancellable) {
-                        val ok = if (cut == null) save(context, uri, target) else write(context, cut, target)
-                        if (ok) {
-                            target.bump()
-                            saved = chosen
+                        val ok = target.lock.withLock {
+                            (if (cut == null) save(context, uri, target) else write(context, cut, target)).also { ok -> if (ok) target.bump() }
                         }
+                        if (ok) saved = chosen
                         applyFailed = !ok
                     }
                 }
