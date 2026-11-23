@@ -1,6 +1,10 @@
 package com.irvingguerra.litedash.feature.obd
 
+import java.io.File
+import java.nio.file.Files
+import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -47,6 +51,23 @@ class TripLogTest {
         assertEquals(t.km, back.km, 0.01f)
         assertNull(back.maxCoolant)
         assertNull(back.kmPerLiter)
+    }
+
+    @Test
+    fun guardarEsDeUnGolpe() = runBlocking {
+        val dir = Files.createTempDirectory("trips").toFile()
+        val store = TripStore(File(dir, "trips.csv"))
+        fun trip(start: Long) = TripSummary(start, 600, 10f, 80f, 60f, 3000f, 90f, null)
+        store.add(trip(1))
+        store.add(trip(2))
+        assertEquals(listOf(2L, 1L), store.all().map { it.start })
+        assertFalse(File(dir, "trips.csv.tmp").exists())
+        // Un temporal a medias de un corte de corriente no estorba: lo de antes sigue y se agrega lo nuevo.
+        File(dir, "trips.csv.tmp").writeText("start_ms,sec")
+        store.add(trip(3))
+        assertEquals(listOf(3L, 2L, 1L), store.all().map { it.start })
+        dir.deleteRecursively()
+        Unit
     }
 
     @Test

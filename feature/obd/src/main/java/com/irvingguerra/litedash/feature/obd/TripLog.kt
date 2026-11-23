@@ -3,6 +3,8 @@ package com.irvingguerra.litedash.feature.obd
 import android.content.Context
 import java.io.File
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.util.Locale
 import kotlin.math.max
@@ -112,15 +114,26 @@ class TripRecorder(private val start: Long) {
  * Los viajes guardados, en un CSV chico dentro de la app (los últimos [KEEP]). Todo pasa
  * en [Dispatchers.IO]: leer y escribir el archivo no debe trabar la pantalla.
  */
-class TripStore(context: Context) {
-    private val file = File(context.filesDir, "trips.csv")
+class TripStore internal constructor(private val file: File) {
+    constructor(context: Context) : this(File(context.filesDir, "trips.csv"))
 
     /** Del más nuevo al más viejo. */
     suspend fun all(): List<TripSummary> = withContext(Dispatchers.IO) { readAll() }
 
+    /**
+     * Se escribe a un temporal y luego se le cambia el nombre (de un golpe): el viaje se guarda justo al apagar el
+     * auto y, si la corriente se va a media escritura, los viajes de antes siguen completos.
+     */
     suspend fun add(trip: TripSummary) = withContext(Dispatchers.IO) {
-        val kept = (readAll().reversed() + trip).takeLast(KEEP)
-        file.writeText((listOf(HEADER) + kept.map { it.toCsv() }).joinToString("\n", postfix = "\n"))
+        disk.withLock {
+            val kept = (readAll().reversed() + trip).takeLast(KEEP)
+            val tmp = File(file.path + ".tmp")
+            tmp.writeText((listOf(HEADER) + kept.map { it.toCsv() }).joinToString("\n", postfix = "\n"))
+            if (!tmp.renameTo(file)) {
+                file.writeText(tmp.readText())
+                tmp.delete()
+            }
+        }
     }
 
     /** El archivo para exportar, tal cual (con encabezados en inglés). */
@@ -130,6 +143,8 @@ class TripStore(context: Context) {
         runCatching { file.readLines() }.getOrDefault(emptyList()).drop(1).mapNotNull(TripSummary::fromCsv).reversed()
 
     private companion object {
+        /** Un viaje a la vez (dos pantallas del Taller pueden tener su propio [TripStore]). */
+        val disk = Mutex()
         const val KEEP = 200
         const val HEADER = "start_ms,seconds,km,max_kmh,avg_kmh,max_rpm,max_coolant_c,liters"
     }
