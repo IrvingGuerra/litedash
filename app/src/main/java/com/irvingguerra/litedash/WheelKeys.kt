@@ -108,10 +108,11 @@ class WheelKeys(private val context: Context, private val prefs: Preferences) {
     private fun run(action: WheelAction, music: MusicRepository) {
         fun adjust(direction: Int) = SystemVolume.adjust(context, direction, ui = true)
         when (action) {
-            // Si lo que suena es la radio (y la música no), el volante la controla a ella; si no, a la
-            // música (aunque la radio de fábrica muestre su estación en pausa: el método de música manda).
+            // Si lo que suena es la radio (y la música no), el volante la controla a ella; si no, a la música (aunque la
+            // radio de fábrica muestre su estación en pausa: el método de música manda). Se pregunta qué suena de verdad
+            // ([MusicRepository.Lens.playingNow]): sin widget Radio a la vista su canción no se conoce.
             WheelAction.PLAY_PAUSE, WheelAction.NEXT, WheelAction.PREVIOUS -> {
-                val lens = if (music.radio.song?.playing == true && music.song?.playing != true) music.radio else music.music
+                val lens = if (music.radio.playingNow() && !music.music.playingNow()) music.radio else music.music
                 when (action) {
                     WheelAction.PLAY_PAUSE -> lens.toggle()
                     WheelAction.NEXT -> lens.next()

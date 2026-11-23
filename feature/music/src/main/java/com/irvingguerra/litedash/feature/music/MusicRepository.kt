@@ -886,11 +886,11 @@ class MusicRepository(internal val context: Context) {
         fun toggle(shownPlaying: Boolean? = null) = if (pressPlays(shownPlaying, ::playingNow)) play(this) else pause(this)
 
         /**
-         * ¿Suena, para el volante? Lo que se ve, si es de verdad. Sin eso (la pieza no está en pantalla y no escucha, o su
+         * ¿Suena, para el volante (también elige entre música y radio)? Lo que se ve, si es de verdad. Sin eso (la pieza no está en pantalla y no escucha, o su
          * app aún no tiene sesión que se vea) se pregunta en el momento ([soundsNow]): si no, el volante mandaba play una y
          * otra vez a algo que ya sonaba y no había cómo pausarlo.
          */
-        private fun playingNow(): Boolean {
+        fun playingNow(): Boolean {
             val s = song
             if (s != null && !s.blind) return s.playing
             val pkg = target(this)
@@ -1166,12 +1166,11 @@ class MusicRepository(internal val context: Context) {
     /** La receta guardada de [piece] ([Recipes]); null = aún sin calibrar. */
     fun soundRecipe(piece: SoundPiece): String? = (if (piece == SoundPiece.MUSIC) btStore else fmStore).saved?.id
 
-    /** "Calibrar otra vez": se olvida lo guardado de las dos piezas; se vuelve a probar la próxima vez que suenen. */
-    fun recalibrate() {
-        btCalibration.reset()
-        fmCalibration.reset()
-        soundCheck = null
-        trace("calibración: otra vez")
+    /** "Calibrar otra vez" de [piece]: se olvida solo lo suyo; se vuelve a probar la próxima vez que suene. */
+    fun recalibrate(piece: SoundPiece) {
+        (if (piece == SoundPiece.MUSIC) btCalibration else fmCalibration).reset()
+        if (soundCheck?.piece == piece) soundCheck = null
+        trace("calibración ${piece.key}: otra vez")
     }
 
     internal val btStore by lazy { PrefsRecipeStore(store, SoundPiece.MUSIC) }

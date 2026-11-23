@@ -97,8 +97,8 @@ fun MusicModeSettings(d: Dependencies) {
 
 /**
  * "Calibrar sonido" de [piece] (el Bluetooth en Música, la FM en Radio): con qué receta suena en esta pantalla (la
- * calibración la encuentra sola la primera vez que suena) y "Calibrar otra vez", que olvida lo guardado (hoy de las dos
- * piezas: [com.irvingguerra.litedash.feature.music.MusicRepository.recalibrate]). Solo si hay algo que calibrar.
+ * calibración la encuentra sola la primera vez que suena) y "Calibrar otra vez", que olvida solo lo guardado de esa
+ * pieza. Solo si hay algo que calibrar.
  */
 @Composable
 private fun SoundCalibrationCard(d: Dependencies, piece: SoundPiece) {
@@ -107,7 +107,7 @@ private fun SoundCalibrationCard(d: Dependencies, piece: SoundPiece) {
         val name = stringResource(if (piece == SoundPiece.MUSIC) MusicR.string.source_bluetooth else MusicR.string.radio)
         val recipe = d.music.soundRecipe(piece)
         Label(stringResource(R.string.sound_recipe_line, name, recipeLabel(piece, recipe)), Typography.body)
-        if (recipe != null) Button(stringResource(R.string.sound_calibrate_again), d.music::recalibrate)
+        if (recipe != null) Button(stringResource(R.string.sound_calibrate_again), { d.music.recalibrate(piece) })
     }
 }
 
