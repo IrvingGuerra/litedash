@@ -343,7 +343,7 @@ fun TileContent(d: Dependencies, p: Tile, apps: List<App>, car: CarPackage?, rev
         TileTypes.PROJECTION -> ProjectionTile(d, apps, appKeyOf(p.data)) { actions.onPanel(Panel.Drawer) }
         TileTypes.TIRES -> TiresTile(d, showCar = p.flag(WidgetFlags.CAR), onOpen = actions.onTires, onSettings = { actions.onPanel(Panel.TiresSettings) })
         TileTypes.MAP -> Box(Modifier.expandable(p, actions)) {
-            // Con «Usar app de mapas externa», el toque y Casa/Trabajo abren esa app; apagado, todo es el mapa de LiteDash.
+            // Con «Navegar con: App de mapas», el toque y Casa/Trabajo abren esa app; si no, todo es el mapa de LiteDash.
             val app = externalMapApp(d, apps)
             MapTile(
                 d, p.id, p.data, app, editing = actions.editing(),
@@ -421,7 +421,7 @@ fun mapApp(d: Dependencies, apps: List<App>): App? =
     d.prefs.mapApp?.let { d.apps.find(apps, it) }
         ?: d.apps.firstOf(apps, *NAVIGATION_PACKAGES)
 
-/** Tu app de mapas solo si elegiste usarla («Usar app de mapas externa»); null = todo va por el mapa de LiteDash. */
+/** Tu app de mapas solo si elegiste usarla («Navegar con: App de mapas»); null = todo va por el mapa de LiteDash. */
 fun externalMapApp(d: Dependencies, apps: List<App>): App? = if (d.prefs.mapExternal) mapApp(d, apps) else null
 
 /** Inicio: la barra de arriba (hora y avisos), el tablero personalizable y la barra de apps. */
@@ -499,8 +499,8 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
         mediaBrowse = browse
         expand(Expanded.MEDIA, from)
     }
-    // Los accesos directos al mapa (barra, volante): el mapa de LiteDash en grande o, con «Abrir tu app de mapas desde
-    // la barra y el volante» prendido (y una app de mapas), esa app.
+    // Los accesos directos al mapa (barra, volante): el mapa de LiteDash en grande o, con «Navegar con: App de mapas»
+    // (y una app de mapas), esa app.
     fun openMapShortcut() {
         val app = externalMapApp(d, currentApps)
         if (app != null) openNavigation(context, d.apps, app)

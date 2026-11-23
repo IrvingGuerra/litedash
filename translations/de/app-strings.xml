@@ -221,8 +221,10 @@
     <string name="language_report">Übersetzungsfehler entdeckt? Melde ihn auf litedash.dev/en/translate</string>
     <string name="map_help">Deine externe Karten-App (Waze, Google Maps…). Während du mit ihr navigierst, zeigt das Widget die nächste Abbiegung (nutzt denselben Benachrichtigungszugriff wie Musik).</string>
     <string name="map_no_apps">Installiere Waze oder Google Maps, um aus LiteDash zu navigieren.</string>
-    <string name="map_external">Externe Karten-App verwenden</string>
-    <string name="map_external_help">An: Ein Tippen auf das Karten-Widget, Zuhause, Arbeit, die Leiste und das Lenkrad öffnet deine Karten-App. Aus: Alles nutzt die LiteDash-Karte mit ihrer Navigation.</string>
+    <string name="map_mode_title">Navigieren mit</string>
+    <string name="map_mode_own_help">Die Schaltfläche Navigieren, das Lenkrad und das Karten-Widget öffnen die LiteDash-Karte.</string>
+    <string name="map_mode_app_help">Die Schaltfläche Navigieren, das Lenkrad und das Karten-Widget öffnen deine Karten-App.</string>
+    <string name="map_app_title">Deine Karten-App</string>
     <string name="music">Musik</string>
     <string name="music_help">Die App, die das Musik-Widget abspielt; die Play-Taste weckt sie auf. Ohne gewählte App zeigt es, was gerade läuft (Radio hat ein eigenes Widget).</string>
     <string name="template_cards">Kacheln unten</string>

@@ -221,8 +221,10 @@
     <string name="language_report">Vidíš chybu v překladu? Nahlas ji na litedash.dev/en/translate</string>
     <string name="map_help">Tvoje externí aplikace map (Waze, Google Maps…). Když s ní naviguješ, widget ukazuje další odbočku (používá stejný přístup k oznámením jako hudba).</string>
     <string name="map_no_apps">Pro navigaci z LiteDash si nainstaluj Waze nebo Mapy Google.</string>
-    <string name="map_external">Používat externí aplikaci map</string>
-    <string name="map_external_help">Zapnuto: klepnutí na widget Mapa, Domov, Práce, lištu a volant otevře tvoji aplikaci map. Vypnuto: vše používá mapu LiteDash s její navigací.</string>
+    <string name="map_mode_title">Navigovat s</string>
+    <string name="map_mode_own_help">Tlačítko Navigovat, volant a widget Mapa otevírají mapu LiteDash.</string>
+    <string name="map_mode_app_help">Tlačítko Navigovat, volant a widget Mapa otevírají tvoji aplikaci map.</string>
+    <string name="map_app_title">Tvoje aplikace map</string>
     <string name="music">Hudba</string>
     <string name="music_help">Je to aplikace, kterou hraje widget Hudba, a tlačítko přehrát ji probudí. Bez vybrané aplikace ukazuje, co právě hraje (rádio má vlastní widget).</string>
     <string name="template_cards">Karty dole</string>

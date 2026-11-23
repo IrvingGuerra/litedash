@@ -221,8 +221,10 @@
     <string name="language_report">Hai trovato un errore di traduzione? Segnalalo su litedash.dev/en/translate</string>
     <string name="map_help">La tua app di mappe esterna (Waze, Google Maps…). Mentre navighi con essa, il widget mostra la prossima svolta (usa lo stesso accesso alle notifiche della musica).</string>
     <string name="map_no_apps">Installa Waze o Google Maps per navigare da LiteDash.</string>
-    <string name="map_external">Usa un\'app di mappe esterna</string>
-    <string name="map_external_help">Se è acceso, un tocco sul widget Mappa, Casa, Lavoro, la barra e il volante apre la tua app di mappe. Se è spento, tutto usa la mappa di LiteDash con la sua navigazione.</string>
+    <string name="map_mode_title">Naviga con</string>
+    <string name="map_mode_own_help">Il pulsante Naviga, il volante e il widget Mappa aprono la mappa di LiteDash.</string>
+    <string name="map_mode_app_help">Il pulsante Naviga, il volante e il widget Mappa aprono la tua app di mappe.</string>
+    <string name="map_app_title">La tua app di mappe</string>
     <string name="music">Musica</string>
     <string name="music_help">È l\'app che riproduce il widget Musica, e il tasto play la risveglia. Senza app scelta, mostra ciò che sta suonando (la radio ha il suo widget).</string>
     <string name="template_cards">Schede sotto</string>

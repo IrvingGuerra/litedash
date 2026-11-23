@@ -221,8 +221,10 @@
     <string name="language_report">Ai găsit o greșeală de traducere? Raporteaz-o pe litedash.dev/en/translate</string>
     <string name="map_help">Aplicația ta externă de hărți (Waze, Google Maps…). Cât navighezi cu ea, widgetul arată următorul viraj (folosește același acces la notificări ca muzica).</string>
     <string name="map_no_apps">Instalează Waze sau Google Maps ca să navighezi din LiteDash.</string>
-    <string name="map_external">Folosește o aplicație externă de hărți</string>
-    <string name="map_external_help">Pornit, o atingere pe widgetul Hartă, Acasă, Serviciu, bară și volan deschide aplicația ta de hărți. Oprit, totul folosește harta LiteDash cu navigația ei.</string>
+    <string name="map_mode_title">Navighează cu</string>
+    <string name="map_mode_own_help">Butonul Navigare, volanul și widgetul Hartă deschid harta LiteDash.</string>
+    <string name="map_mode_app_help">Butonul Navigare, volanul și widgetul Hartă deschid aplicația ta de hărți.</string>
+    <string name="map_app_title">Aplicația ta de hărți</string>
     <string name="music">Muzică</string>
     <string name="music_help">E aplicația pe care o redă widgetul Muzică, iar butonul play o trezește. Fără aplicație aleasă, arată ce se redă (radioul are widgetul lui).</string>
     <string name="template_cards">Carduri jos</string>

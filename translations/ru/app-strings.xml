@@ -221,8 +221,10 @@
     <string name="language_report">Нашёл ошибку в переводе? Сообщи на litedash.dev/en/translate</string>
     <string name="map_help">Твоё внешнее приложение карт (Waze, Google Maps…). Пока ты ведёшь навигацию в нём, виджет показывает следующий поворот (использует тот же доступ к уведомлениям, что и музыка).</string>
     <string name="map_no_apps">Установи Waze или Google Карты, чтобы прокладывать маршрут из LiteDash.</string>
-    <string name="map_external">Использовать внешнее приложение карт</string>
-    <string name="map_external_help">Если включено, нажатие на виджет «Карта», «Дом», «Работа», панель и руль открывает твоё приложение карт. Если выключено, везде используется карта LiteDash с её навигацией.</string>
+    <string name="map_mode_title">Навигация через</string>
+    <string name="map_mode_own_help">Кнопка «Навигация», руль и виджет «Карта» открывают карту LiteDash.</string>
+    <string name="map_mode_app_help">Кнопка «Навигация», руль и виджет «Карта» открывают твоё приложение карт.</string>
+    <string name="map_app_title">Твоё приложение карт</string>
     <string name="music">Музыка</string>
     <string name="music_help">Это приложение, которое играет в виджете «Музыка», а кнопка воспроизведения его будит. Если приложение не выбрано, показывается то, что играет (у радио свой виджет).</string>
     <string name="template_cards">Карточки снизу</string>

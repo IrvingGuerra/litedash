@@ -221,8 +221,10 @@
     <string name="language_report">Помітив помилку в перекладі? Повідом на litedash.dev/en/translate</string>
     <string name="map_help">Твій зовнішній застосунок карт (Waze, Google Maps…). Поки ти навігуєш у ньому, віджет показує наступний поворот (використовує той самий доступ до сповіщень, що й музика).</string>
     <string name="map_no_apps">Установи Waze або Google Карти, щоб прокладати маршрут із LiteDash.</string>
-    <string name="map_external">Використовувати зовнішній застосунок карт</string>
-    <string name="map_external_help">Якщо увімкнено, дотик до віджета «Карта», «Дім», «Робота», панелі й керма відкриває твій застосунок карт. Якщо вимкнено, всюди використовується карта LiteDash з її навігацією.</string>
+    <string name="map_mode_title">Навігація через</string>
+    <string name="map_mode_own_help">Кнопка «Навігація», кермо й віджет «Карта» відкривають карту LiteDash.</string>
+    <string name="map_mode_app_help">Кнопка «Навігація», кермо й віджет «Карта» відкривають твій застосунок карт.</string>
+    <string name="map_app_title">Твій застосунок карт</string>
     <string name="music">Музика</string>
     <string name="music_help">Це застосунок, який грає у віджеті «Музика», а кнопка відтворення його будить. Якщо застосунок не вибрано, показується те, що грає (у радіо свій віджет).</string>
     <string name="template_cards">Картки внизу</string>

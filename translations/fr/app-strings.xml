@@ -223,8 +223,10 @@
     <string name="language_report">Une erreur de traduction ? Signalez-la sur litedash.dev/en/translate</string>
     <string name="map_help">Votre appli de cartes externe (Waze, Google Maps…). Pendant que vous naviguez avec elle, le widget affiche la prochaine indication (via le même accès aux notifications que la musique).</string>
     <string name="map_no_apps">Installez Waze ou Google Maps pour naviguer depuis LiteDash.</string>
-    <string name="map_external">Utiliser une appli de cartes externe</string>
-    <string name="map_external_help">Activé, un appui sur le widget Carte, Domicile, Travail, la barre et le volant ouvre votre appli de cartes. Désactivé, tout utilise la carte LiteDash avec sa navigation.</string>
+    <string name="map_mode_title">Naviguer avec</string>
+    <string name="map_mode_own_help">Le bouton Naviguer, le volant et le widget Carte ouvrent la carte LiteDash.</string>
+    <string name="map_mode_app_help">Le bouton Naviguer, le volant et le widget Carte ouvrent votre appli de cartes.</string>
+    <string name="map_app_title">Votre appli de cartes</string>
     <string name="music">Musique</string>
     <string name="music_help">C\'est l\'appli que lit le widget Musique, et le bouton lecture la réveille. Sans appli choisie, il affiche ce qui joue (la radio a son propre widget).</string>
     <string name="template_cards">Cartes en bas</string>

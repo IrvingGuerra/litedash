@@ -221,8 +221,10 @@
     <string name="language_report">Menemukan kesalahan terjemahan? Laporkan di litedash.dev/en/translate</string>
     <string name="map_help">Aplikasi peta eksternal Anda (Waze, Google Maps…). Saat Anda bernavigasi dengannya, widget menampilkan belokan berikutnya (memakai akses notifikasi yang sama dengan musik).</string>
     <string name="map_no_apps">Pasang Waze atau Google Maps untuk navigasi dari LiteDash.</string>
-    <string name="map_external">Gunakan aplikasi peta eksternal</string>
-    <string name="map_external_help">Jika aktif, mengetuk widget Peta, Rumah, Kantor, bilah, dan setir akan membuka aplikasi peta Anda. Jika nonaktif, semuanya memakai peta LiteDash dengan navigasinya.</string>
+    <string name="map_mode_title">Navigasi dengan</string>
+    <string name="map_mode_own_help">Tombol Navigasi, setir, dan widget Peta membuka peta LiteDash.</string>
+    <string name="map_mode_app_help">Tombol Navigasi, setir, dan widget Peta membuka aplikasi peta Anda.</string>
+    <string name="map_app_title">Aplikasi peta Anda</string>
     <string name="music">Musik</string>
     <string name="music_help">Ini aplikasi yang diputar widget Musik, dan tombol putar membangunkannya. Tanpa aplikasi terpilih, menampilkan apa pun yang sedang diputar (radio punya widget sendiri).</string>
     <string name="template_cards">Kartu di bawah</string>

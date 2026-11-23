@@ -221,8 +221,10 @@
     <string name="language_report">Hittat ett översättningsfel? Rapportera det på litedash.dev/en/translate</string>
     <string name="map_help">Din externa kartapp (Waze, Google Maps…). Medan du navigerar med den visar widgeten nästa sväng (med samma aviseringsåtkomst som musiken).</string>
     <string name="map_no_apps">Installera Waze eller Google Maps för att navigera från LiteDash.</string>
-    <string name="map_external">Använd extern kartapp</string>
-    <string name="map_external_help">På: ett tryck på Karta-widgeten, Hem, Jobb, fältet och ratten öppnar din kartapp. Av: allt använder LiteDash-kartan med dess navigering.</string>
+    <string name="map_mode_title">Navigera med</string>
+    <string name="map_mode_own_help">Knappen Navigera, ratten och Karta-widgeten öppnar LiteDash-kartan.</string>
+    <string name="map_mode_app_help">Knappen Navigera, ratten och Karta-widgeten öppnar din kartapp.</string>
+    <string name="map_app_title">Din kartapp</string>
     <string name="music">Musik</string>
     <string name="music_help">Det är appen som Musik-widgeten spelar, och spelaknappen väcker den. Utan vald app visas det som spelas (radion har en egen widget).</string>
     <string name="template_cards">Kort nedtill</string>

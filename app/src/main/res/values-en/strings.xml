@@ -222,8 +222,10 @@
     <string name="language_report">Spot a translation mistake? Report it at litedash.dev/en/translate</string>
     <string name="map_help">Your external maps app (Waze, Google Maps…). While navigating with it, the widget shows the next turn (it uses the same notification access as music).</string>
     <string name="map_no_apps">Install Waze or Google Maps to navigate from LiteDash.</string>
-    <string name="map_external">Use an external maps app</string>
-    <string name="map_external_help">On, a tap on the Map widget, Home, Work, the bar and the steering wheel open your maps app. Off, everything uses the LiteDash map with its navigation.</string>
+    <string name="map_mode_title">Navigate with</string>
+    <string name="map_mode_own_help">The Navigate button, the steering wheel and the Map widget open the LiteDash map.</string>
+    <string name="map_mode_app_help">The Navigate button, the steering wheel and the Map widget open your maps app.</string>
+    <string name="map_app_title">Your maps app</string>
     <string name="music">Music</string>
     <string name="music_help">It\'s the app the Music widget plays, and the play button wakes it up. With no app chosen, it shows whatever is playing (radio has its own widget).</string>
     <string name="template_cards">Cards below</string>

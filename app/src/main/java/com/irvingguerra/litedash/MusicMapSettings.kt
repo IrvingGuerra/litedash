@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
@@ -27,7 +28,6 @@ import com.irvingguerra.litedash.core.ui.Button
 import com.irvingguerra.litedash.core.ui.Label
 import com.irvingguerra.litedash.core.ui.LocalColors
 import com.irvingguerra.litedash.core.ui.Segmented
-import com.irvingguerra.litedash.core.ui.SwitchRow
 import com.irvingguerra.litedash.core.ui.TextInput
 import com.irvingguerra.litedash.core.ui.Typography
 import com.irvingguerra.litedash.feature.apps.App
@@ -206,11 +206,11 @@ internal fun AppSearch(apps: List<App>, selected: String?, onPick: (String) -> U
 }
 
 /**
- * Sección "Mapa" de Ajustes: qué app de navegación abren el widget Mapa y el volante, y si los accesos
- * directos la abren a ella o al mapa de LiteDash en grande.
+ * Ajustes → Apps → Navegación → "Tu app de mapas" (con "App de mapas" elegido): las apps de navegación instaladas
+ * (las conocidas primero y luego cualquiera que abra una dirección); la marcada es la que se abre.
  */
 @Composable
-fun MapSettings(d: Dependencies) {
+fun MapAppSettings(d: Dependencies) {
     val context = LocalContext.current
     val apps = rememberApps(d.apps).orEmpty()
     // Se vuelve a buscar cuando cambian las apps instaladas.
@@ -220,6 +220,11 @@ fun MapSettings(d: Dependencies) {
         known + apps.filter { it.pkg in detected && known.none { k -> k.pkg == it.pkg } }.distinctBy { it.pkg }
     }
     val selected = mapApp(d, apps)
+    // Sin ninguna elegida ni conocida instalada (solo Vela Maps, por ejemplo): queda la primera que se encontró, para
+    // que "App de mapas" sí abra una. Fuera de la composición: escribe un ajuste.
+    LaunchedEffect(selected, mapApps) {
+        if (selected == null) mapApps.firstOrNull()?.let { d.prefs.mapApp = it.key }
+    }
     FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         for (app in mapApps) Button(app.name, { d.prefs.mapApp = app.key }, primary = app == selected)
     }
@@ -228,9 +233,6 @@ fun MapSettings(d: Dependencies) {
         Typography.small,
         LocalColors.current.textMuted,
     )
-    if (mapApps.isNotEmpty()) {
-        SwitchRow(stringResource(R.string.map_external), d.prefs.mapExternal, { d.prefs.mapExternal = it }, stringResource(R.string.map_external_help))
-    }
 }
 
 /** Las apps instaladas que abren una dirección ("geo:") o son de mapas. Consulta a Android: fuera del hilo principal. */

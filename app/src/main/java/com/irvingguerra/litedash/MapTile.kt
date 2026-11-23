@@ -109,7 +109,7 @@ import kotlinx.coroutines.withContext
  * Widget Mapa: tu posición del GPS en el mapa (minimalista de OpenFreeMap o completo de OpenStreetMap),
  * como diga su [data] ([MapLook]); navegando, la siguiente vuelta flota arriba a la izquierda y Casa y
  * Trabajo, abajo a la derecha (sobre los créditos). Un toque hace [onTap]: el mapa de LiteDash en grande o, con
- * «Usar app de mapas externa» ([app] no es null), esa app. En una fila, o sin permiso de ubicación, se ve
+ * «Navegar con: App de mapas» ([app] no es null), esa app. En una fila, o sin permiso de ubicación, se ve
  * solo la vuelta, Casa y Trabajo ([NavigationTile]) y, sin permiso, un botón para pedirlo. GPS y descargas solo
  * mientras se ve. Al quitar el widget se sueltan su cámara y su almacén de teselas.
  */
