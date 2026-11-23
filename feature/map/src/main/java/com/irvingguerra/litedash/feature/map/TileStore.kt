@@ -1,5 +1,6 @@
 package com.irvingguerra.litedash.feature.map
 
+import android.app.ActivityManager
 import android.content.Context
 import android.os.Handler
 import android.os.Looper
@@ -70,12 +71,16 @@ class TileStore(context: Context, private val userAgent: String, val source: Til
     /** Cuántos mapas lo están viendo (solo en el hilo principal). */
     private var users = 0
     private val main = Handler(Looper.getMainLooper())
-    /** Sin mapas que lo vean un momento seguido: deja de trabajar (la memoria se suelta después, [release]). */
+    /**
+     * Sin mapas que lo vean un momento seguido: deja de trabajar. Con la app al frente (se cerró ese mapa, cambió el
+     * estilo, la guía puso los suyos) suelta la memoria ya; si la app se fue (cámara de reversa, otra app), la guarda
+     * [KEEP_MEMORY_MS] por si vuelves ([release]).
+     */
     private val idle = Runnable {
         synchronized(lock) {
             if (users == 0) {
                 stop()
-                main.postDelayed(release, KEEP_MEMORY_MS)
+                if (appInFront()) releaseMemory() else main.postDelayed(release, KEEP_MEMORY_MS)
             }
         }
     }
@@ -163,7 +168,8 @@ class TileStore(context: Context, private val userAgent: String, val source: Til
     /**
      * Un mapa menos. Sin ninguno un momento seguido ([RELEASE_MS]), deja de descargar (la app se fue o el mapa ya no se
      * ve): al abrir el mapa en grande el widget se va antes de que llegue el otro, y así no se tira nada. La memoria se
-     * queda [KEEP_MEMORY_MS] más (volver de la cámara de reversa no rearma el mapa) o hasta que Android pida ([trimAll]).
+     * suelta ya si la app sigue al frente; si se fue, se queda [KEEP_MEMORY_MS] más (volver de la cámara de reversa no
+     * rearma el mapa) o hasta que Android pida ([trimAll]).
      */
     fun pause() = synchronized(lock) {
         users = (users - 1).coerceAtLeast(0)
@@ -172,7 +178,7 @@ class TileStore(context: Context, private val userAgent: String, val source: Til
         main.postDelayed(idle, RELEASE_MS)
     }
 
-    /** Ya nadie lo ve: sin trabajadores ni fila (la memoria se queda un rato, ver [release]). */
+    /** Ya nadie lo ve: sin trabajadores ni fila (la memoria la suelta [idle] o [release]). */
     private fun stop() {
         scope?.cancel()
         scope = null
@@ -421,10 +427,20 @@ class TileStore(context: Context, private val userAgent: String, val source: Til
 
         private fun fileLock(folder: String, origin: Long) = fileLocks[Math.floorMod(31 * folder.hashCode() + origin.hashCode(), FILE_LOCKS)]
 
+        /** ¿La app se ve ahora? (Al frente o visible; sin dato, como si sí: suelta como antes.) */
+        private fun appInFront(): Boolean = runCatching {
+            val info = ActivityManager.RunningAppProcessInfo()
+            ActivityManager.getMyMemoryState(info)
+            info.importance <= ActivityManager.RunningAppProcessInfo.IMPORTANCE_VISIBLE
+        }.getOrDefault(true)
+
         /** Los almacenes vivos (para soltar su memoria si Android la pide). */
         private val all = java.util.Collections.newSetFromMap(java.util.WeakHashMap<TileStore, Boolean>())
 
-        /** Android pide memoria (onTrimMemory): los almacenes que nadie ve la sueltan ya. */
+        /**
+         * Android pide memoria (onTrimMemory): los almacenes que nadie ve la sueltan ya. Sirve igual con la app al frente
+         * (TRIM_MEMORY_RUNNING_LOW/CRITICAL): no suelta lo que se está viendo.
+         */
         fun trimAll() {
             val stores = synchronized(all) { all.toList() }
             for (s in stores) s.main.post { synchronized(s.lock) { if (s.users == 0 && s.scope == null) s.releaseMemory() } }
@@ -444,7 +460,7 @@ class TileStore(context: Context, private val userAgent: String, val source: Til
         /** Un hilo de teselas sin trabajo se cierra tras este tiempo. */
         private const val WORKER_IDLE_S = 30L
         private const val RELEASE_MS = 1_500L
-        /** Tras dejar de trabajar, la memoria se queda este rato por si vuelves (de la cámara de reversa, de otra app). */
+        /** Con la app en segundo plano, la memoria se queda este rato por si vuelves (de la cámara de reversa, de otra app). */
         private const val KEEP_MEMORY_MS = 60_000L
         /** Un temporal de la caché más viejo que esto ya no se está escribiendo. */
         private const val STALE_TEMP_MS = 3_600_000L
