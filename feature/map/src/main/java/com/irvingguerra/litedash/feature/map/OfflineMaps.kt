@@ -75,8 +75,16 @@ class OfflineMaps private constructor(private val app: Context) {
     @Volatile private var runningKeys: Set<Long> = emptySet()
     @Volatile private var areaKeys: Set<Long> = emptySet()
     /** La lista se lee del disco una vez, fuera del hilo principal; lo que la cambia espera a que esté. */
+    /**
+     * ¿La lista en memoria es la de verdad? Con una lista vacía o que no se pudo leer (un apagón al guardarla) NO se barre
+     * nada en esta sesión: borraría las zonas del usuario. Se vuelve cierta al leer zonas o, si no había lista dañada, al
+     * guardar una nueva.
+     */
+    @Volatile private var trusted = false
+    @Volatile private var damaged = false
     private val ready = scope.async {
-        readAreas()
+        trusted = readAreas()
+        damaged = !trusted && File(dir, AREAS).exists()
         sweep(startup = true)
     }
 
@@ -292,10 +300,14 @@ class OfflineMaps private constructor(private val app: Context) {
         }
     }
 
-    /** Lo que no es de ninguna zona ni de la descarga en curso (y, al arrancar, los temporales que dejó un apagón). */
+    /**
+     * Lo que no es de ninguna zona ni de la descarga en curso (solo con una lista cierta: [trusted]) y, al arrancar, los
+     * temporales que dejó un apagón.
+     */
     private fun sweep(startup: Boolean) {
         val names = dir.list() ?: return
         if (startup) for (n in names) if (n.endsWith(".tmp")) File(dir, n).delete()
+        if (!trusted) return
         val keep = synchronized(lock) { areaKeys + runningKeys }
         removeTiles(strayTiles(names.asList(), keep))
     }
@@ -314,6 +326,7 @@ class OfflineMaps private constructor(private val app: Context) {
                 if (!allowed()) return null
                 if (areas === before) {
                     writeAreas(after)
+                    if (!damaged) trusted = true
                     areas = after
                     areaKeys = keys
                     return keys
@@ -322,19 +335,21 @@ class OfflineMaps private constructor(private val app: Context) {
         }
     }
 
-    private fun readAreas() {
+    /** Lee la lista guardada; true si trae zonas (solo entonces se puede barrer lo que no es de ninguna). */
+    private fun readAreas(): Boolean {
         val list = runCatching {
             val array = JSONArray(File(dir, AREAS).readText())
             List(array.length()) { i ->
                 val o = array.getJSONObject(i)
                 OfflineArea(o.getString("id"), o.getDouble("lat"), o.getDouble("lon"), o.getInt("km"), o.getInt("tiles"), o.getLong("bytes"), o.getLong("savedAt"))
             }
-        }.getOrNull() ?: return
+        }.getOrNull() ?: return false
         val keys = tilesOf(list)
         synchronized(lock) {
             areas = list
             areaKeys = keys
         }
+        return list.isNotEmpty()
     }
 
     private fun writeAreas(list: List<OfflineArea>) {
@@ -347,7 +362,11 @@ class OfflineMaps private constructor(private val app: Context) {
         }
         dir.mkdirs()
         val temp = File.createTempFile(AREAS, ".tmp", dir)
-        temp.writeText(array.toString())
+        // Al disco de verdad antes de renombrar: si se va la corriente, queda la lista vieja o la nueva, nunca vacía.
+        java.io.FileOutputStream(temp).use {
+            it.write(array.toString().toByteArray(Charsets.UTF_8))
+            it.fd.sync()
+        }
         if (!temp.renameTo(File(dir, AREAS))) {
             temp.delete()
             error("No se pudo guardar $AREAS")
