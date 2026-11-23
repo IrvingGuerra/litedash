@@ -62,7 +62,7 @@ class SearchIndex private constructor(
             val r = (keys[i] and INDEX_MASK).toInt()
             val p = prominent(r)
             val km = if (near) distance(r, nearLat!!, nearLon!!) else null
-            val t = rankTier(tiers[i], p, km, bestStartsKm.takeIf { it < Double.MAX_VALUE })
+            val t = rankTier(tiers[i], isAnchor(PlaceKind.of(kind(r)), PlaceCategory.of(buf.get(record(r) + 1).toInt() and 0xFF)), km, bestStartsKm.takeIf { it < Double.MAX_VALUE })
             keys[i] = key(r, t, rankClass(t, p))
         }
         keys.sort()

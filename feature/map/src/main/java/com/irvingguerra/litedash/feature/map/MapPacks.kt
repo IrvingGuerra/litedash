@@ -620,7 +620,11 @@ class MapPacks private constructor(private val app: Context) {
                 null
             }
         }
-        return if (lists.size <= 1) lists.firstOrNull().orEmpty() else lists.flatten().sortedBy { it.order }.take(limit)
+        if (lists.size <= 1) return lists.firstOrNull().orEmpty()
+        // Varios estados: cada índice ordenó lo suyo; juntos se vuelve a aplicar la regla (lo exacto y lejano de otro estado
+        // no va antes que lo cercano de aquí). Sin saber dónde estás, el orden de cada uno.
+        val all = lists.flatten().sortedBy { it.order }
+        return (if (lat != null && lon != null) orderHits(all, query) else all).take(limit)
     }
 
     /** La tesela z/x/y del mapa del estado donde cae su centro (tal como está guardada, con gzip); null = ninguno. */

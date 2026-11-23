@@ -75,11 +75,16 @@ class SearchIndexTest {
         assertEquals("Guadalajara", gdl.first().name)
         assertTrue(gdl.indexOfFirst { it.name == "Tortas Guadalajara" } > 0)
         // La regla: un nombre igual corriente baja solo si está a más de 10 veces la distancia del mejor que empieza igual.
-        assertEquals(TIER_STARTS, rankTier(TIER_EQUAL, prominent = false, km = 40.0, bestStartsKm = 1.0))
-        assertEquals(TIER_EQUAL, rankTier(TIER_EQUAL, prominent = false, km = 0.03, bestStartsKm = 115.0))
-        assertEquals(TIER_EQUAL, rankTier(TIER_EQUAL, prominent = true, km = 400.0, bestStartsKm = 1.0))
-        assertEquals(TIER_EQUAL, rankTier(TIER_EQUAL, prominent = false, km = 40.0, bestStartsKm = null))
-        assertEquals(TIER_CONTAINS, rankTier(TIER_CONTAINS, prominent = false, km = 40.0, bestStartsKm = 1.0))
+        assertEquals(TIER_STARTS, rankTier(TIER_EQUAL, anchor = false, km = 40.0, bestStartsKm = 1.0))
+        assertEquals(TIER_EQUAL, rankTier(TIER_EQUAL, anchor = false, km = 0.03, bestStartsKm = 115.0))
+        assertEquals(TIER_EQUAL, rankTier(TIER_EQUAL, anchor = true, km = 400.0, bestStartsKm = 1.0))
+        // Una colonia o una calle «Estadio» a cientos de km no es una población: baja y compite por distancia.
+        assertEquals(false, isAnchor(PlaceKind.NEIGHBOURHOOD, PlaceCategory.of(0)))
+        assertEquals(false, isAnchor(PlaceKind.STREET, PlaceCategory.of(0)))
+        assertEquals(true, isAnchor(PlaceKind.CITY, PlaceCategory.of(0)))
+        assertEquals(true, isAnchor(PlaceKind.PLACE, PlaceCategory.SIGHT))
+        assertEquals(TIER_EQUAL, rankTier(TIER_EQUAL, anchor = false, km = 40.0, bestStartsKm = null))
+        assertEquals(TIER_CONTAINS, rankTier(TIER_CONTAINS, anchor = false, km = 40.0, bestStartsKm = 1.0))
     }
 
     @Test
