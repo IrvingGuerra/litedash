@@ -35,6 +35,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import com.irvingguerra.litedash.feature.obd.FactoryTires
+import com.irvingguerra.litedash.feature.obd.ObdRepository
 import java.io.File
 import java.io.IOException
 import java.util.Locale
@@ -279,6 +280,7 @@ class TpmsRepository(context: Context, private val bus: VehicleBus) {
     /** Vuelve a intentar (tras dar un permiso, prender el Bluetooth o conectar el receptor). */
     fun retry() {
         val s = running ?: return
+        usbDenied = false
         stopSource()
         running = s
         startSource(s)
@@ -671,6 +673,8 @@ class TpmsRepository(context: Context, private val bus: VehicleBus) {
             while (isActive) {
                 when (val r = carTires?.read() ?: FactoryTires.NotConnected) {
                     FactoryTires.NotConnected -> { status = TpmsStatus.NO_DEVICE; error = TpmsError.OBD_OFF }
+                    // Conectando, o la receta aún se busca: sin error todavía.
+                    FactoryTires.Waiting -> { status = TpmsStatus.SEARCHING; error = null }
                     FactoryTires.Unsupported -> { status = TpmsStatus.NO_DEVICE; error = TpmsError.OBD_UNSUPPORTED }
                     is FactoryTires.Values -> {
                         // Contestó aunque los sensores aún no digan nada (parado, recién encendido).
@@ -765,8 +769,20 @@ class TpmsRepository(context: Context, private val bus: VehicleBus) {
         private set
     private var pairJob: Job? = null
 
-    private fun findUsbDevice(manager: UsbManager): UsbDevice? =
-        manager.deviceList.values.firstOrNull { d -> USB_IDS.any { it.first == d.vendorId && it.second == d.productId } }
+    /**
+     * El receptor: el primer cable conocido que no tenga abierto el escáner OBD (suelen traer el mismo chip y abrirlo
+     * se lo quitaría); si hay varios, los del mismo modelo que el cable elegido para el OBD van al final.
+     */
+    private fun findUsbDevice(manager: UsbManager): UsbDevice? {
+        val obd = ObdRepository.usbTargetIds(context)
+        return manager.deviceList.values
+            .filter { d -> USB_IDS.any { it.first == d.vendorId && it.second == d.productId } && !UsbLink.inUse(d) }
+            .sortedBy { d -> obd != null && d.vendorId == obd.first && d.productId == obd.second }
+            .firstOrNull()
+    }
+
+    /** El usuario negó el permiso del receptor: no se vuelve a pedir solo, hasta que toque «Reintentar» ([retry]). */
+    private var usbDenied = false
 
     private fun startUsb() {
         watchUsb()
@@ -778,9 +794,15 @@ class TpmsRepository(context: Context, private val bus: VehicleBus) {
             return
         }
         if (manager.hasPermission(device)) return openUsb(manager, device)
+        if (usbDenied) {
+            status = TpmsStatus.NO_PERMISSION
+            error = TpmsError.USB_DENIED
+            return
+        }
         if (cancelPermission != null) return
         cancelPermission = requestUsbPermission(context, manager, device, ACTION_USB_PERMISSION, USB_REQUEST) { granted ->
             cancelPermission = null
+            if (!granted) usbDenied = true
             if (running != TpmsSource.USB) return@requestUsbPermission
             if (granted) openUsb(manager, device)
             else {

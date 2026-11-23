@@ -17,6 +17,31 @@ class ObdPolicyTest {
         }
     }
 
+    @Test fun mantener_no_insiste_con_lo_que_pide_al_usuario() {
+        // Negó el permiso del cable: cambiar de página o entrar al Taller ya no vuelve a sacar el diálogo.
+        for (e in listOf(ObdError.NO_USB_PERMISSION, ObdError.NOT_OBD, ObdError.USB_NOT_SERIAL, ObdError.NO_USB)) {
+            assertFalse(e.name, keepReconnects(e, permitted = true, cablePresent = true, cableAllowed = false))
+        }
+        // Lo que se arregla solo sigue como antes.
+        for (e in listOf(ObdError.ADAPTER_SILENT, ObdError.CAR_SILENT, ObdError.BLUETOOTH_OFF, ObdError.CONNECTION_LOST)) {
+            assertTrue(e.name, keepReconnects(e, permitted = false, cablePresent = false, cableAllowed = false))
+        }
+        // El permiso de Bluetooth que ya se dio, el cable que ya está otra vez y el permiso del cable dado por fuera, sí.
+        assertTrue(keepReconnects(ObdError.NO_BLUETOOTH_PERMISSION, permitted = true, cablePresent = false, cableAllowed = false))
+        assertFalse(keepReconnects(ObdError.NO_BLUETOOTH_PERMISSION, permitted = false, cablePresent = false, cableAllowed = false))
+        assertTrue(keepReconnects(ObdError.USB_UNPLUGGED, permitted = false, cablePresent = true, cableAllowed = false))
+        assertFalse(keepReconnects(ObdError.USB_UNPLUGGED, permitted = true, cablePresent = false, cableAllowed = false))
+        assertTrue(keepReconnects(ObdError.NO_USB_PERMISSION, permitted = false, cablePresent = true, cableAllowed = true))
+    }
+
+    @Test fun enchufar_el_cable_reconecta_salvo_permiso_negado() {
+        assertTrue(replugReconnects(ObdError.USB_UNPLUGGED, cableAllowed = false))
+        assertTrue(replugReconnects(ObdError.USB_SILENT, cableAllowed = false))
+        assertFalse(replugReconnects(ObdError.NO_USB_PERMISSION, cableAllowed = false))
+        assertTrue(replugReconnects(ObdError.NO_USB_PERMISSION, cableAllowed = true))
+        assertFalse(replugReconnects(ObdError.USB_NOT_SERIAL, cableAllowed = true))
+    }
+
     @Test fun busqueda_ble_fallida_se_repite_una_vez() {
         // 3 = error interno (NWD T3, 8227L) y 2 = no se pudo registrar: una vez más; lo demás o la segunda, no.
         assertTrue(retryScan(3, retried = false))

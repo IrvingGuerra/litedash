@@ -46,13 +46,20 @@ fun requestUsbPermission(
 }
 
 /** Avisa cuando se desenchufa un aparato USB (en el hilo principal). Regresa cómo dejar de escuchar. */
-fun watchUsbDetached(context: Context, onDetached: (UsbDevice) -> Unit): () -> Unit {
+fun watchUsbDetached(context: Context, onDetached: (UsbDevice) -> Unit): () -> Unit =
+    watchUsb(context, UsbManager.ACTION_USB_DEVICE_DETACHED, onDetached)
+
+/** Avisa cuando se enchufa un aparato USB (o la pantalla lo vuelve a ver al despertar). Regresa cómo dejar de escuchar. */
+fun watchUsbAttached(context: Context, onAttached: (UsbDevice) -> Unit): () -> Unit =
+    watchUsb(context, UsbManager.ACTION_USB_DEVICE_ATTACHED, onAttached)
+
+private fun watchUsb(context: Context, action: String, onDevice: (UsbDevice) -> Unit): () -> Unit {
     val receiver = object : BroadcastReceiver() {
         override fun onReceive(c: Context, i: Intent) {
-            IntentCompat.getParcelableExtra(i, UsbManager.EXTRA_DEVICE, UsbDevice::class.java)?.let(onDetached)
+            IntentCompat.getParcelableExtra(i, UsbManager.EXTRA_DEVICE, UsbDevice::class.java)?.let(onDevice)
         }
     }
     // Es un aviso del sistema: tiene que poder llegar de fuera de la app.
-    ContextCompat.registerReceiver(context, receiver, IntentFilter(UsbManager.ACTION_USB_DEVICE_DETACHED), ContextCompat.RECEIVER_EXPORTED)
+    ContextCompat.registerReceiver(context, receiver, IntentFilter(action), ContextCompat.RECEIVER_EXPORTED)
     return { context.unregisterReceiver(receiver) }
 }

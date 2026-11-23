@@ -33,7 +33,10 @@ private fun tireValues(kpa: List<Float?>, tempC: List<Float?> = emptyList()) = F
 /** Lo que contestó el auto (o por qué no). */
 sealed interface FactoryTires {
     data object NotConnected : FactoryTires
+    /** El auto no da la presión (se buscó todas las veces) o su protocolo no es de los que tienen receta. */
     data object Unsupported : FactoryTires
+    /** Aún no se sabe: el escáner está conectando o la receta se vuelve a buscar al rato. */
+    data object Waiting : FactoryTires
     /** Las cuatro llantas: kPa manométrica y °C (null = el sensor aún no dijo). [profile] = la receta que contestó. */
     data class Values(val kpa: List<Float?>, val tempC: List<Float?>, val profile: String) : FactoryTires
 }

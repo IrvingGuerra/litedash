@@ -29,6 +29,7 @@ import com.irvingguerra.litedash.core.vehicle.bleLocationOff
 import com.irvingguerra.litedash.core.vehicle.canScanBle
 import com.irvingguerra.litedash.core.vehicle.localNetworkAllowed
 import com.irvingguerra.litedash.core.vehicle.requestUsbPermission
+import com.irvingguerra.litedash.core.vehicle.watchUsbAttached
 import com.irvingguerra.litedash.core.vehicle.watchUsbDetached
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -133,6 +134,13 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
     /** PIDs que contesta este auto (vacío hasta conectar). */
     var supported by mutableStateOf<Set<Int>>(emptySet())
         private set
+    /**
+     * Conectado pero el auto no da ningún dato desde hace [ObdTiming.CAR_SILENT_MS] (contacto apagado: el conector
+     * OBD tiene corriente siempre y el ELM contesta "NO DATA"). El enlace NO se corta; quien lo use (el registro de
+     * viajes) puede tomar el motor como apagado. Vuelve a false con el primer dato.
+     */
+    var carSilent by mutableStateOf(false)
+        private set
 
     private val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -155,6 +163,8 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
     private var kept = false
     /** Dejar de escuchar el encendido del Bluetooth de la pantalla ([watchBluetooth]). */
     private var unwatchBluetooth: (() -> Unit)? = null
+    /** Dejar de escuchar que se enchufe el cable elegido ([watchUsbAttach]). */
+    private var unwatchAttach: (() -> Unit)? = null
     /** Cuándo se cerró el último enlace (reloj de arranque): Bluetooth necesita un respiro antes de reabrir. */
     @Volatile private var closedAt = 0L
     /** Dejar de escuchar el permiso USB pedido / el desconectado del cable. */
@@ -294,18 +304,34 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
             .sortedByDescending { looksLikeObd(it.name) }
     }
 
-    private fun usbDevice(t: ObdTarget.Usb): UsbDevice? =
+    /**
+     * Los cables enchufados que pueden ser [t] (mismo fabricante y producto), sin el que ya tiene abierto otro módulo
+     * (el receptor de Llantas suele traer el mismo chip): abrirlo se lo quitaría.
+     */
+    private fun usbCandidates(t: ObdTarget.Usb): List<UsbDevice> =
         context.getSystemService(UsbManager::class.java)?.deviceList?.values
-            ?.firstOrNull { it.vendorId == t.vendorId && it.productId == t.productId }
+            ?.filter { it.vendorId == t.vendorId && it.productId == t.productId && !UsbLink.inUse(it) }
+            .orEmpty()
+
+    private fun usbDevice(t: ObdTarget.Usb): UsbDevice? = usbCandidates(t).firstOrNull()
 
     /**
      * Algo del OBD se usa (una pieza, el Taller, Llantas por OBD): con adaptador guardado se conecta solo si no
-     * lo está (o si se había rendido) y desde aquí se mantiene conectado. Llamarlo de más no repite nada.
+     * lo está (o si se había rendido) y desde aquí se mantiene conectado. Llamarlo de más no repite nada. Tras un
+     * error que pide algo del usuario ([keepReconnects]: el permiso del cable negado…) no vuelve a intentar solo.
      */
     fun keep() {
         kept = true
-        if (state == ObdState.OFF || state == ObdState.ERROR && retryJob?.isActive != true) connect()
+        val waiting = state == ObdState.ERROR && retryJob?.isActive != true
+        if (state == ObdState.OFF || waiting && keepReconnects(errorKind, hasPermission(), cable() != null, cableAllowed())) connect()
     }
+
+    /** El cable del adaptador guardado (o del que se intentó), si está enchufado. */
+    private fun cable(): UsbDevice? = (attempting ?: target).let { if (it is ObdTarget.Usb) usbDevice(it) else null }
+
+    /** Android ya dio permiso para ese cable (al negarlo se pide de nuevo solo con «Conectar»). */
+    private fun cableAllowed(d: UsbDevice? = cable()): Boolean =
+        d != null && context.getSystemService(UsbManager::class.java)?.hasPermission(d) == true
 
     /**
      * LiteDash volvió a la vista: si esperaba un reintento largo (el adaptador dormido), intenta ya.
@@ -340,6 +366,8 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
         errorDetail = null
         // Por Bluetooth: al prender el de la pantalla (hay pantallas que tardan tras arrancar) conecta de inmediato.
         if (t is ObdTarget.Bluetooth || t is ObdTarget.Ble) watchBluetooth() else stopWatchingBluetooth()
+        // Por cable: al volver a enchufarlo (o si la pantalla lo vuelve a ver al despertar) conecta solo.
+        if (t is ObdTarget.Usb) watchUsbAttach(t) else stopWatchingUsbAttach()
         // Android olvida el permiso del cable al desenchufarlo: si no lo hay, se pide (con su diálogo) y al darlo
         // se sigue. Sin cable, sigue y dice que no está conectado.
         if (t is ObdTarget.Usb) {
@@ -379,6 +407,7 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
                     if (l is BluetoothLink && t is ObdTarget.Bluetooth) l.used?.let { rememberSocket(t, it) }
                     // Conexión nueva: lo leído en otra ya no vale (el Taller y su pieza vuelven a leer).
                     lastReport = null
+                    carSilent = false
                     state = ObdState.ON
                     connectedOnAttempt = retries + 1
                     note("conectó ${t.key} en el intento $connectedOnAttempt" + ((l as? BluetoothLink)?.used?.let { " socket=$it" } ?: ""))
@@ -411,6 +440,7 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
         errorDetail = detailOf(x)
         note("${t.key} ${kind.name.lowercase()}: $errorDetail")
         state = ObdState.ERROR
+        carSilent = false
         pending = null
         link = null
         elm = null
@@ -441,7 +471,32 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
             errorKind = ObdError.USB_UNPLUGGED
             errorDetail = "desenchufado"
             state = ObdState.ERROR
+            carSilent = false
         }
+    }
+
+    /**
+     * Mientras se mantiene un adaptador por cable: si se vuelve a enchufar ese cable (mismo fabricante y producto) y
+     * está en error ([replugReconnects]: tras negar el permiso, solo si ya se dio), conecta tras un respiro.
+     */
+    private fun watchUsbAttach(t: ObdTarget.Usb) {
+        stopWatchingUsbAttach()
+        unwatchAttach = watchUsbAttached(context) { d ->
+            if (d.vendorId != t.vendorId || d.productId != t.productId) return@watchUsbAttached
+            if (!kept || state != ObdState.ERROR || attempting != t || !replugReconnects(errorKind, cableAllowed(d))) return@watchUsbAttached
+            note("cable enchufado")
+            retryJob?.cancel()
+            retryJob = scope.launch(Dispatchers.Main) {
+                delay(ObdTiming.USB_ATTACH_SETTLE_MS)
+                retryJob = null
+                if (kept && state == ObdState.ERROR && attempting == t) attempt(t)
+            }
+        }
+    }
+
+    private fun stopWatchingUsbAttach() {
+        unwatchAttach?.invoke()
+        unwatchAttach = null
     }
 
     private fun unwatchUsbDetach() {
@@ -453,6 +508,7 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
     fun disconnect() {
         kept = false
         stopWatchingBluetooth()
+        stopWatchingUsbAttach()
         drop()
     }
 
@@ -511,6 +567,7 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
         pending = null
         closeLink()
         state = ObdState.OFF
+        carSilent = false
     }
 
     /** Olvida el adaptador guardado (para elegir otro). */
@@ -544,18 +601,22 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
             stored = e.troubleCodes("03"),
             pending = e.troubleCodes("07"),
             // Lo que no todos los autos contestan: si no, se sigue sin eso.
-            permanent = optional("0A") { e.troubleCodes("0A") } ?: emptyList(),
-            vin = optional("VIN") { e.vin() },
-            voltage = optional("ATRV") { e.voltage() },
+            permanent = optional("0A", e) { e.troubleCodes("0A") } ?: emptyList(),
+            vin = optional("VIN", e) { e.vin() },
+            voltage = optional("ATRV", e) { e.voltage() },
         )
     }
 
-    /** [read] puede no contestar (el auto no lo da): se anota y se sigue; si se perdió el adaptador, no. */
-    private fun <T> optional(what: String, read: () -> T?): T? = try {
+    /**
+     * [read] puede no contestar (el auto no lo da): se anota y se sigue, tras resincronizar [e] para que lo siguiente
+     * no lea su respuesta tardía; si se perdió el adaptador, no.
+     */
+    private fun <T> optional(what: String, e: Elm327, read: () -> T?): T? = try {
         read()
     } catch (x: ObdException) {
         if (x.kind != ObdError.ADAPTER_SILENT) throw x
         note("$what sin respuesta")
+        e.resync()
         null
     }
 
@@ -570,6 +631,7 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
      * veces por conexión. Una receta se guarda hasta que da una presión creíble (Ford y Mazda comparten módulo).
      */
     suspend fun factoryTires(): FactoryTires {
+        if (state == ObdState.CONNECTING) return FactoryTires.Waiting
         val s = tires?.takeIf { state == ObdState.ON } ?: return FactoryTires.NotConnected
         val can = s.can ?: (withElm("ATDPN", s.elm) { it.command("ATDPN").firstOrNull()?.removePrefix("A") in CAN_11_BIT } ?: return FactoryTires.NotConnected)
             .also { s.can = it }
@@ -577,12 +639,12 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
         val known = s.candidate ?: TireProfiles.firstOrNull { it.id == tireProfile }
         if (known != null) readTires(s, known)?.let { return keep(s, known, it) }
         val now = SystemClock.elapsedRealtime()
-        if (s.searches >= ObdTiming.TIRE_SEARCHES || s.searches > 0 && now - s.lastSearch < ObdTiming.TIRE_SEARCH_GAP_MS) {
-            return FactoryTires.Unsupported
-        }
+        if (s.searches >= ObdTiming.TIRE_SEARCHES) return FactoryTires.Unsupported
+        // Entre búsquedas aún no se sabe: el módulo de llantas puede despertar al rato.
+        if (s.searches > 0 && now - s.lastSearch < ObdTiming.TIRE_SEARCH_GAP_MS) return FactoryTires.Waiting
         s.searches++
         s.lastSearch = now
-        val vin = lastReport?.vin ?: withElm("VIN", s.elm) { optional("VIN") { it.vin() } }
+        val vin = lastReport?.vin ?: withElm("VIN", s.elm) { optional("VIN", it) { it.vin() } }
         for (p in ordered(vin)) {
             if (tires !== s) return FactoryTires.NotConnected
             if (p === known) continue
@@ -590,7 +652,11 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
             return keep(s, p, found)
         }
         // Si se cayó a media búsqueda no cuenta: la conexión nueva empieza de cero.
-        return if (tires !== s) FactoryTires.NotConnected else FactoryTires.Unsupported
+        return when {
+            tires !== s -> FactoryTires.NotConnected
+            s.searches < ObdTiming.TIRE_SEARCHES -> FactoryTires.Waiting
+            else -> FactoryTires.Unsupported
+        }
     }
 
     /** [p] contestó: se usa en esta conexión y se guarda en cuanto da una presión creíble. */
@@ -625,7 +691,7 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
         val log = synchronized(events) { events.joinToString(" | ") }.ifEmpty { "-" }
         return "OBD: estado=${state.name.lowercase()}, por=${target?.key ?: "-"}, adaptador=${adapter ?: "-"}, " +
             "protocolo=$protocol, datos=${supported.size} [$pids], 0100=${elm?.firstReply?.joinToString("|") ?: "-"}, " +
-            "resincronizó=${elm?.resyncs ?: 0}, " +
+            "resincronizó=${elm?.resyncs ?: 0}, sin datos del auto=${if (carSilent) "sí" else "no"}, " +
             "error=$error, conectó en el intento=$connectedOnAttempt, reintentos=$retries, se mantiene=${if (kept) "sí" else "no"}, " +
             "bluetooth de Android=${context.getSystemService(BluetoothManager::class.java)?.adapter?.state ?: "no hay"} (12 = encendido), " +
             "socket=${(target as? ObdTarget.Bluetooth)?.let(::rememberedSocket)?.key ?: "-"}, eventos=$log"
@@ -633,13 +699,22 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
 
     /**
      * [block] con el adaptador (el de ahora o [e], si sigue siendo el de ahora) y el candado. Un fallo
-     * aquí no corta la conexión (eso lo nota la lectura del motor): se anota para el reporte y da null.
+     * aquí no corta la conexión (eso lo nota la lectura del motor): se anota para el reporte y da null. Si
+     * expiró, se resincroniza antes de soltar el candado: si no, los medidores leerían su respuesta tardía.
      */
     private suspend fun <T> withElm(what: String, e: Elm327? = elm, block: (Elm327) -> T): T? {
         e ?: return null
         return withContext(Dispatchers.IO) {
             try {
-                lock.withLock { if (elm === e) block(e) else null }
+                lock.withLock {
+                    if (elm !== e) return@withLock null
+                    try {
+                        block(e)
+                    } catch (x: ObdException) {
+                        if (x.kind == ObdError.ADAPTER_SILENT) runCatching { e.resync() }
+                        throw x
+                    }
+                }
             } catch (x: IOException) {
                 note("$what: ${detailOf(x)}")
                 null
@@ -674,6 +749,9 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
         // Lo último que se leyó de cada señal (para calcular las que dependen de varias).
         private val last = mutableMapOf<String, Float>()
         private val smoothed = mutableMapOf<String, Float>()
+        /** Cuándo dio el auto su último dato (reloj de arranque): sin ninguno en [ObdTiming.CAR_SILENT_MS], [carSilent]. */
+        private var lastData = SystemClock.elapsedRealtime()
+        private var silent = false
 
         /** Veces seguidas que ATRV no contestó: a la segunda se deja de pedir en esta conexión (cada una espera 3 s). */
         private var voltageSilent = 0
@@ -702,6 +780,8 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
             // Lo que dejó de mostrarse no suaviza con un valor viejo al volver.
             smoothed.keys.retainAll(derived.map { it.signal }.toSet())
             if (pids.isEmpty() && !adapterVoltage) return
+            // La cuenta empieza con cada plan: tras un rato sin leer nada, un primer "NO DATA" no es motor apagado.
+            lastData = SystemClock.elapsedRealtime()
             while (true) {
                 currentCoroutineContext().ensureActive()
                 val now = SystemClock.elapsedRealtime()
@@ -710,6 +790,16 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
                 // Se leen todos y se publican juntos: un solo salto al hilo principal por vuelta.
                 val values = mutableListOf<Pair<String, Float?>>()
                 for (p in pids) if (p.fast || slow) values += p.signal to lock.withLock { guard.ask { e.pid(p.code) } }?.let(p.decode)
+                // Solo cuenta lo que contesta el auto (no el voltaje del adaptador, que da aunque el contacto esté apagado).
+                if (values.isNotEmpty()) {
+                    if (values.any { it.second != null }) {
+                        lastData = now
+                        silent = false
+                    } else if (now - lastData >= ObdTiming.CAR_SILENT_MS) {
+                        if (!silent) note("sin datos del auto")
+                        silent = true
+                    }
+                }
                 // Si el voltaje es lo único que se lee, su falla cuenta (así se nota la caída). Con PIDs, no: hay clones que
                 // no contestan ATRV y sumaban fallas hasta tirar la conexión; si el adaptador se perdió, los PIDs lo dicen.
                 if (adapterVoltage && slow) {
@@ -723,7 +813,11 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
                     if (value == null) smoothed.remove(d.signal) else smoothed[d.signal] = value
                     values += d.signal to value
                 }
-                withContext(Dispatchers.Main) { for ((signal, value) in values) bus.publish(signal, value, Source.OBD) }
+                val quiet = silent
+                withContext(Dispatchers.Main) {
+                    for ((signal, value) in values) bus.publish(signal, value, Source.OBD)
+                    if (carSilent != quiet) carSilent = quiet
+                }
                 delay(ObdTiming.POLL_GAP_MS)
             }
         }
@@ -768,17 +862,22 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
      */
     private suspend fun openUsb(t: ObdTarget.Usb): Triple<ElmLink, Elm327, String> {
         val manager = context.getSystemService(UsbManager::class.java) ?: throw ObdException(ObdError.NO_USB, "sin UsbManager")
-        val device = usbDevice(t) ?: throw ObdException(ObdError.USB_UNPLUGGED, "no está en la lista")
+        val devices = usbCandidates(t).ifEmpty { throw ObdException(ObdError.USB_UNPLUGGED, "no está en la lista") }
         var last: ObdException? = null
-        for (baud in USB_BAUDS) {
-            try {
-                return prepare(UsbLink(manager, device, baud)) {}
-            } catch (x: ObdException) {
-                // Sin permiso o sin ser puerto serie, otra velocidad no lo arregla; y si el ELM ya contestó
-                // (el auto no), la velocidad era la buena.
-                if (!x.kind.retry || x.kind == ObdError.CAR_SILENT) throw x
-                last = x
-                note("usb $baud: ${x.message}")
+        // Con dos cables del mismo chip (el de Llantas suele serlo) se prueba el siguiente si el primero no es el ELM;
+        // solo los que ya tienen permiso (el diálogo se pidió para el primero).
+        for ((i, device) in devices.withIndex()) {
+            if (i > 0 && !manager.hasPermission(device)) continue
+            for (baud in USB_BAUDS) {
+                try {
+                    return prepare(UsbLink(manager, device, baud)) {}
+                } catch (x: ObdException) {
+                    // Sin permiso o sin ser puerto serie, otra velocidad no lo arregla; y si el ELM ya contestó
+                    // (el auto no), la velocidad y el cable eran los buenos.
+                    if (!x.kind.retry || x.kind == ObdError.CAR_SILENT) throw x
+                    last = x
+                    note("usb $baud: ${x.message}")
+                }
             }
         }
         throw last ?: ObdException(ObdError.USB_SILENT)
@@ -848,5 +947,12 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
         /** El adaptador guardado es un cable USB. */
         fun hasUsbTarget(context: Context) =
             context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(KEY_TYPE, null) == "usb"
+
+        /** Fabricante y producto del cable guardado para el OBD (null si no es por cable): Llantas lo deja al final. */
+        fun usbTargetIds(context: Context): Pair<Int, Int>? {
+            val p = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+            if (p.getString(KEY_TYPE, null) != "usb") return null
+            return p.getInt("vendor_id", 0) to p.getInt("product_id", 0)
+        }
     }
 }

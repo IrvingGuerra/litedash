@@ -81,6 +81,29 @@ internal fun retryDelay(error: ObdError, dropped: Boolean, retries: Int, wanted:
 }
 
 /**
+ * ¿[ObdRepository.keep] vuelve a conectar tras [error]? Lo que se arregla solo, sí. Lo que pide algo del usuario
+ * (negó el permiso del cable, no es un adaptador OBD, no es puerto serie) no: si no, el diálogo de Android salía cada
+ * vez que aparecía un medidor; eso se reintenta con «Conectar». Tres se arreglan sin tocar el adaptador: el permiso de
+ * Bluetooth que ya se dio ([permitted]), el cable que ya está otra vez ([cablePresent]) y el permiso del cable que se
+ * dio por fuera ([cableAllowed]: «Abrir siempre con LiteDash» al enchufarlo).
+ */
+internal fun keepReconnects(error: ObdError?, permitted: Boolean, cablePresent: Boolean, cableAllowed: Boolean): Boolean =
+    when (error) {
+        null -> true
+        ObdError.NO_BLUETOOTH_PERMISSION -> permitted
+        ObdError.USB_UNPLUGGED -> cablePresent
+        ObdError.NO_USB_PERMISSION -> cableAllowed
+        else -> error.retry
+    }
+
+/**
+ * ¿Volver a enchufar el cable elegido reconecta tras [error]? El que faltaba y lo que se arregla solo; tras negar el
+ * permiso, solo si ya se dio ([cableAllowed]).
+ */
+internal fun replugReconnects(error: ObdError?, cableAllowed: Boolean): Boolean =
+    error == ObdError.USB_UNPLUGGED || error?.retry == true || error == ObdError.NO_USB_PERMISSION && cableAllowed
+
+/**
  * ¿Repetir una búsqueda BLE que falló con [errorCode]? Solo una vez y solo los errores de la pila que suelen
  * pasarse solos: 2 (no se pudo registrar la búsqueda) y 3 (error interno). Los demás (ya buscando, sin
  * soporte) no se arreglan repitiendo.
@@ -100,6 +123,8 @@ internal object ObdTiming {
     const val WANTED_MAX_MS = 60_000L
     /** Lo que se espera tras prender el Bluetooth de la pantalla antes de conectar (que termine de arrancar). */
     const val BLUETOOTH_ON_SETTLE_MS = 2_000L
+    /** Lo que se espera tras enchufar el cable antes de abrirlo (que Android termine de reconocerlo). */
+    const val USB_ATTACH_SETTLE_MS = 1_000L
     /** Respiro entre cerrar un enlace Bluetooth y abrir otro. */
     const val REOPEN_GAP_MS = 1_200L
     /** Espera tras un 133 de GATT. */
@@ -121,6 +146,11 @@ internal object ObdTiming {
     const val POLL_GAP_MS = 60L
     /** Consultas seguidas sin respuesta que se toman como conexión perdida. */
     const val MAX_FAILURES = 3
+    /**
+     * Sin ningún dato del auto este tiempo (el ELM contesta "NO DATA": el conector tiene corriente con el contacto
+     * apagado) se toma el motor como apagado ([ObdRepository.carSilent]); el enlace sigue conectado.
+     */
+    const val CAR_SILENT_MS = 75_000L
     /** Llantas de fábrica: búsquedas por conexión y la espera entre ellas (el módulo puede tardar en despertar). */
     const val TIRE_SEARCHES = 3
     const val TIRE_SEARCH_GAP_MS = 5 * 60_000L

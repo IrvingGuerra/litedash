@@ -7,6 +7,7 @@ import android.hardware.usb.UsbEndpoint
 import android.hardware.usb.UsbInterface
 import android.hardware.usb.UsbManager
 import android.os.SystemClock
+import java.util.Collections
 import java.util.Locale
 
 /** El nombre de un aparato USB para mostrarlo: el de su fabricante o, sin él, sus números. Lo usan OBD y Llantas. */
@@ -23,7 +24,15 @@ internal val USB_BAUDS = listOf(38_400, 115_200, 9_600)
  * sin parar a la cola de [QueuedLink], para que [Elm327] lo vea como un flujo igual que los demás.
  */
 class UsbLink(manager: UsbManager, private val device: UsbDevice, baud: Int) : QueuedLink(ObdError.USB_UNPLUGGED) {
-    private val connection: UsbDeviceConnection = manager.openDevice(device) ?: throw ObdException(ObdError.NO_USB_PERMISSION, "openDevice null")
+    /**
+     * Un cable lo abre un solo enlace a la vez (OBD y Llantas usan el mismo chip y `claimInterface(force)` se lo
+     * quitaría al otro): se aparta antes de abrirlo y se suelta al cerrar.
+     */
+    private val owned = device.deviceName.also { if (!busy.add(it)) throw ObdException(ObdError.ADAPTER_UNREACHABLE, "cable en uso") }
+    private val connection: UsbDeviceConnection = manager.openDevice(device) ?: run {
+        busy.remove(owned)
+        throw ObdException(ObdError.NO_USB_PERMISSION, "openDevice null")
+    }
     private val claimed = mutableListOf<UsbInterface>()
     private val reader: UsbEndpoint
     private val writer: UsbEndpoint
@@ -61,7 +70,8 @@ class UsbLink(manager: UsbManager, private val device: UsbDevice, baud: Int) : Q
         statusBytes = if (chip == Chip.FTDI) 2 else 0
         try {
             chip.setup(connection, claimed, baud)
-        } catch (x: ObdException) {
+        } catch (x: Exception) {
+            // Cualquier falla suelta el cable (si no, quedaría apartado hasta reiniciar la app).
             close()
             throw x
         }
@@ -106,6 +116,7 @@ class UsbLink(manager: UsbManager, private val device: UsbDevice, baud: Int) : Q
         markClosed()
         claimed.forEach { connection.releaseInterface(it) }
         connection.close()
+        busy.remove(owned)
     }
 
     /** El chip puente del cable y cómo se le pide 8N1 a cierta velocidad. */
@@ -170,31 +181,37 @@ class UsbLink(manager: UsbManager, private val device: UsbDevice, baud: Int) : Q
         }
     }
 
-    private companion object {
-        const val TIMEOUT = 1_000
+    companion object {
+        /** Los cables abiertos ahora (por su `deviceName`), de cualquier módulo. */
+        private val busy: MutableSet<String> = Collections.synchronizedSet(HashSet())
+
+        /** [d] ya lo tiene abierto un enlace (del OBD o de Llantas): no se toca. */
+        fun inUse(d: UsbDevice): Boolean = d.deviceName in busy
+
+        private const val TIMEOUT = 1_000
         /** Peticiones de fabricante hacia el chip (bmRequestType 0x40) y de vuelta (0xC0). */
-        fun UsbDeviceConnection.vendorOut(request: Int, value: Int, index: Int, data: ByteArray? = null) {
+        internal fun UsbDeviceConnection.vendorOut(request: Int, value: Int, index: Int, data: ByteArray? = null) {
             val n = controlTransfer(0x40, request, value, index, data, data?.size ?: 0, TIMEOUT)
             if (n < 0) throw ObdException(ObdError.USB_SILENT, "control out $request")
         }
 
-        fun UsbDeviceConnection.vendorIn(request: Int, value: Int, index: Int, length: Int) {
+        internal fun UsbDeviceConnection.vendorIn(request: Int, value: Int, index: Int, length: Int) {
             val buf = ByteArray(length)
             if (controlTransfer(0xC0, request, value, index, buf, length, TIMEOUT) < 0) throw ObdException(ObdError.USB_SILENT, "control in $request")
         }
 
         /** CDC: SET_LINE_CODING (8N1 a [baud]) y SET_CONTROL_LINE_STATE (DTR y RTS). */
-        fun UsbDeviceConnection.lineCoding(iface: Int, baud: Int) {
+        internal fun UsbDeviceConnection.lineCoding(iface: Int, baud: Int) {
             val coding = le32(baud) + byteArrayOf(0, 0, 8)
             if (controlTransfer(0x21, 0x20, 0, iface, coding, coding.size, TIMEOUT) < 0) throw ObdException(ObdError.USB_SILENT, "line coding $baud")
             controlTransfer(0x21, 0x22, 0x03, iface, null, 0, TIMEOUT)
         }
 
         /** [n] en 4 bytes, el menos significativo primero (como lo piden los chips). */
-        fun le32(n: Int) = ByteArray(4) { (n shr (8 * it)).toByte() }
+        internal fun le32(n: Int) = ByteArray(4) { (n shr (8 * it)).toByte() }
 
         /** Registros del CH34x para cada velocidad (reloj de 12 MHz, prescaler y divisor). */
-        fun ch34xBaud(baud: Int): Pair<Int, Int> = when (baud) {
+        internal fun ch34xBaud(baud: Int): Pair<Int, Int> = when (baud) {
             9_600 -> 0xB202 to 0x0013
             19_200 -> 0xD902 to 0x000D
             38_400 -> 0x6403 to 0x000A
@@ -204,7 +221,7 @@ class UsbLink(manager: UsbManager, private val device: UsbDevice, baud: Int) : Q
         }
 
         /** Divisor del FTDI: reloj de 3 MHz, parte entera y fracción codificada en los bits altos. */
-        fun ftdiBaud(baud: Int): Pair<Int, Int> {
+        internal fun ftdiBaud(baud: Int): Pair<Int, Int> {
             val divisor = 3_000_000.0 / baud
             val whole = divisor.toInt()
             val frac = when (((divisor - whole) * 8).toInt()) {
