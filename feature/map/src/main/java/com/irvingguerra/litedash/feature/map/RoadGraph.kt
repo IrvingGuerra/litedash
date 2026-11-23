@@ -248,17 +248,29 @@ class RoadGraph private constructor(private val channel: FileChannel, private va
         private const val SNAP_MAX_M = 2_000.0
         private const val SNAP_RINGS = 3
 
-        /** Abre [file]; null si no es un LDM0 sano (cabecera y secciones dentro del archivo y en orden). */
+        /**
+         * Abre [file]; null si no es un LDM0 sano (cabecera y secciones dentro del archivo y en orden). Si el archivo está
+         * sano pero no cabe en la memoria de la pantalla (el `map` falla en equipos de 32 bits), [RouteException] con
+         * [RouteError.TOO_BIG]: no está dañado y no hay que volver a bajarlo.
+         */
         fun open(file: File): RoadGraph? {
             val raf = runCatching { RandomAccessFile(file, "r") }.getOrNull() ?: return null
             return try {
                 val channel = raf.channel
                 val size = channel.size()
                 if (size < 64 || size > Int.MAX_VALUE) return null.also { channel.close() }
-                val buf = channel.map(FileChannel.MapMode.READ_ONLY, 0, size).order(ByteOrder.LITTLE_ENDIAN)
+                val mapped = try {
+                    channel.map(FileChannel.MapMode.READ_ONLY, 0, size)
+                } catch (_: java.io.IOException) {
+                    channel.close()
+                    throw RouteException(RouteError.TOO_BIG)
+                }
+                val buf = mapped.order(ByteOrder.LITTLE_ENDIAN)
                 val ok = buf.get(0) == 'L'.code.toByte() && buf.get(1) == 'D'.code.toByte() && buf.get(2) == 'M'.code.toByte() &&
                     buf.get(3) == '0'.code.toByte() && valid(buf, size)
                 if (!ok) null.also { channel.close() } else RoadGraph(channel, buf)
+            } catch (e: RouteException) {
+                throw e
             } catch (_: Exception) {
                 runCatching { raf.close() }
                 null

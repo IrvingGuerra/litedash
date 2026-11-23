@@ -76,4 +76,38 @@ class MapPacksTest {
         // Reloj hacia atrás (guardada "en el futuro"): se vuelve a pedir.
         assertFalse(MapPacks.indexFresh(true, now + hour, 0, now, day))
     }
+
+    @Test
+    fun theOnlineSwitchComesFromTheSameRead() {
+        assertTrue(MapPacks.readIndex(index).photon)
+        val off = MapPacks.readIndex("""{"version":1,"base":"x","online":{"photon":false},"regions":[]}""")
+        assertFalse(off.photon)
+        // Aunque sea de otra versión (sin regiones), el apagado de Photon sí cuenta.
+        assertFalse(MapPacks.readIndex("""{"version":2,"online":{"photon":false}}""").photon)
+    }
+
+    @Test
+    fun aHalfDownloadedMapIsKeptOnlyIfItCanContinue() {
+        val day = 24 * 60 * 60 * 1000L
+        val now = 10 * day
+        assertTrue(MapPacks.keepPartial(400, 1000, now - day, now))
+        // Completo también (solo falta revisar su huella).
+        assertTrue(MapPacks.keepPartial(1000, 1000, now - day, now))
+        // Vacío, más grande que el archivo, viejo o «del futuro» (reloj hacia atrás): se borra.
+        assertFalse(MapPacks.keepPartial(0, 1000, now - day, now))
+        assertFalse(MapPacks.keepPartial(1200, 1000, now - day, now))
+        assertFalse(MapPacks.keepPartial(400, 1000, now - 4 * day, now))
+        assertFalse(MapPacks.keepPartial(400, 1000, now + day, now))
+    }
+
+    @Test
+    fun theSpaceNeededCountsWhatIsLeftAndTheExtras() {
+        val ele = MapPacks.parseIndex(index).first()
+        val margin = MapPacks.spaceNeeded(ele, ele.map.size)
+        // Con el mapa ya bajado, solo el margen (no trae búsqueda ni calles).
+        assertEquals(margin, MapPacks.spaceNeeded(ele, 500))
+        assertEquals(margin + 100, MapPacks.spaceNeeded(ele, 23))
+        val full = MapRegion("x", "MX", emptyMap(), ele.bbox, ele.shape, PackFile("u", 1000, "a"), PackFile("s", 10, "b"), PackFile("r", 20, "c"))
+        assertEquals(1000 + 4 * 30 + margin, MapPacks.spaceNeeded(full, 0))
+    }
 }
