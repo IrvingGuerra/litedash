@@ -24,8 +24,8 @@ enum class RouteError { FROM_OFF_ROAD, TO_OFF_ROAD, NO_PATH, TOO_BIG }
 
 /**
  * Busca la ruta más rápida por las calles de [graph] (A*: el tiempo de cada tramo por su clase y velocidad máxima; respeta
- * sentidos y vueltas prohibidas u obligatorias; sin vueltas en U). Una búsqueda a la vez: llamar desde un solo hilo,
- * fuera del principal.
+ * sentidos y vueltas prohibidas u obligatorias; sin vueltas en U en los cruces; al salir, la vuelta en U para ir contra tu
+ * rumbo cuesta [UTURN_S]). Una búsqueda a la vez: llamar desde un solo hilo, fuera del principal.
  *
  * Memoria ([Labels]): en estados chicos (≤ [DENSE_MAX] cruces, todo México) una lista por cruce, ~16 B cada uno (Edomex:
  * ~10 MB); en los grandes (California: ~2.9 millones) solo lo que la búsqueda toca, que crece sobre la marcha y se suelta
@@ -48,11 +48,15 @@ class Router internal constructor(
     internal var touchedBytes = 0L
         private set
 
-    /** La ruta de ([fromLat], [fromLon]) a ([toLat], [toLon]), o por qué no la hay. */
-    fun route(fromLat: Double, fromLon: Double, toLat: Double, toLon: Double): Result<Route> = try {
+    /**
+     * La ruta de ([fromLat], [fromLon]) a ([toLat], [toLon]), o por qué no la hay. Con [headingDeg] (tu rumbo al ir
+     * manejando, grados desde el norte), salir en sentido contrario cuesta una vuelta en U ([UTURN_S]): al recalcular,
+     * la ruta no arranca «para atrás» si hay cómo rodear.
+     */
+    fun route(fromLat: Double, fromLon: Double, toLat: Double, toLon: Double, headingDeg: Float? = null): Result<Route> = try {
         val a = graph.snap(fromLat, fromLon) ?: throw RouteException(RouteError.FROM_OFF_ROAD)
         val b = graph.snap(toLat, toLon) ?: throw RouteException(RouteError.TO_OFF_ROAD)
-        search(a, b)?.let { Result.success(it) } ?: Result.failure(RouteException(RouteError.NO_PATH))
+        search(a, b, headingDeg)?.let { Result.success(it) } ?: Result.failure(RouteException(RouteError.NO_PATH))
     } catch (e: RouteException) {
         Result.failure(e)
     } catch (_: OutOfMemoryError) {
@@ -63,11 +67,11 @@ class Router internal constructor(
         Result.failure(RouteException(RouteError.NO_PATH))
     }
 
-    private fun search(a: Snap, b: Snap): Route? = try {
+    private fun search(a: Snap, b: Snap, headingDeg: Float?): Route? = try {
         room.collectedAt = 0L
         labels.reset()
         heap.clear()
-        explore(a, b)
+        explore(a, b, headingDeg)
     } finally {
         touched = labels.used
         touchedBytes = labels.bytes + heap.bytes
@@ -76,16 +80,28 @@ class Router internal constructor(
         heap.release()
     }
 
-    private fun explore(a: Snap, b: Snap): Route? {
+    private fun explore(a: Snap, b: Snap, headingDeg: Float?): Route? {
         val aLen = graph.lengthM(a.edge)
         val bLen = graph.lengthM(b.edge)
         val aSpeed = speed(a.edge)
         val bSpeed = speed(b.edge)
         // Salidas: por el tramo de donde estás, hacia adelante (a su cruce de llegada) o, si se puede, hacia atrás.
         val back = twin(a)
-        // Mismo tramo, en un sentido permitido: directo, sin pasar por cruces.
+        // Con tu rumbo: el sentido del tramo que va contra él lleva el costo de una vuelta en U.
+        val turn = headingDeg?.let { startPenalties(a, it.toDouble()) }
+        // Mismo tramo, en un sentido permitido: directo, sin pasar por cruces (si no es dar la vuelta en U ahí mismo y
+        // hay cómo rodear).
         if (a.edge == b.edge && a.from == b.from) {
             val forward = b.alongM >= a.alongM
+            val uTurn = turn != null && (if (forward) turn.first else turn.second) > 0f
+            if (uTurn) {
+                // Solo la salida a favor (la otra sería volver por el mismo tramo): rodea si se puede; si no, directo.
+                val ahead = if (forward) Float.POSITIVE_INFINITY to 0f else 0f to Float.POSITIVE_INFINITY
+                seedStarts(a, b, back, aLen, aSpeed, ahead)
+                exploreFrom(a, b, bLen, bSpeed)?.let { return it }
+                labels.reset()
+                heap.clear()
+            }
             if (if (forward) graph.canLeave(a.half) else back >= 0 && graph.canLeave(back)) {
                 val pts = PointList()
                 pts.add(e6(a.lat), e6(a.lon))
@@ -100,8 +116,36 @@ class Router internal constructor(
                 )
             }
         }
-        if (graph.canLeave(a.half)) seed(a.to, ((aLen - a.alongM) / aSpeed).toFloat(), b)
-        if (back >= 0 && graph.canLeave(back)) seed(a.from, (a.alongM / aSpeed).toFloat(), b)
+        seedStarts(a, b, back, aLen, aSpeed, turn)
+        return exploreFrom(a, b, bLen, bSpeed)
+    }
+
+    /**
+     * Siembra las dos salidas por el tramo de [a] (cada una con su castigo de vuelta en U de [turn], si hay; infinito =
+     * esa salida no).
+     */
+    private fun seedStarts(a: Snap, b: Snap, back: Int, aLen: Double, aSpeed: Double, turn: Pair<Float, Float>?) {
+        val ahead = turn?.first ?: 0f
+        val behind = turn?.second ?: 0f
+        if (graph.canLeave(a.half) && ahead.isFinite()) seed(a.to, ((aLen - a.alongM) / aSpeed).toFloat() + ahead, b)
+        if (back >= 0 && graph.canLeave(back) && behind.isFinite()) seed(a.from, (a.alongM / aSpeed).toFloat() + behind, b)
+    }
+
+    /**
+     * El castigo (segundos) de salir hacia adelante (de [Snap.from] a [Snap.to]) y hacia atrás por el tramo de [a] yendo
+     * con rumbo [headingDeg]: el sentido que va contra tu rumbo (más de 90°) cuesta [UTURN_S] si el otro va a favor.
+     */
+    private fun startPenalties(a: Snap, headingDeg: Double): Pair<Float, Float>? {
+        val dy = (graph.latE6(a.to) - graph.latE6(a.from)) / 1e6 * RoadGraph.M_PER_DEG
+        val dx = (graph.lonE6(a.to) - graph.lonE6(a.from)) / 1e6 * cos(Math.toRadians(a.lat)) * RoadGraph.M_PER_DEG
+        if (dx * dx + dy * dy < 1.0) return null
+        val forward = (Math.toDegrees(kotlin.math.atan2(dx, dy)) + 360) % 360
+        val d = ((headingDeg - forward) % 360 + 360) % 360
+        val against = minOf(d, 360 - d) > 90
+        return if (against) UTURN_S to 0f else 0f to UTURN_S
+    }
+
+    private fun exploreFrom(a: Snap, b: Snap, bLen: Double, bSpeed: Double): Route? {
         // Llegadas: al cruce de antes del destino sobre su tramo, más lo que falta (en el sentido permitido).
         val bBack = twin(b)
         val goalFrom = if (graph.canLeave(b.half)) (b.alongM / bSpeed).toFloat() else Float.NaN
@@ -330,6 +374,9 @@ class Router internal constructor(
     companion object {
         /** Qué tan lejos se mira antes y después de un cruce para medir la vuelta (las calles se curvan al llegar). */
         private const val TURN_LOOK_M = 15.0
+
+        /** Lo que cuesta (segundos) salir en sentido contrario a tu rumbo: dar una vuelta en U o rodear la manzana. */
+        private const val UTURN_S = 60f
 
         /** km/h por clase (el orden de CLASSES en armar_mapa.py), para calles de México sin velocidad marcada. */
         private val CLASS_KMH = intArrayOf(95, 75, 55, 45, 38, 32, 25, 12, 55, 45, 35, 30, 28, 25, 12)

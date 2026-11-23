@@ -419,10 +419,11 @@ class MapPacks private constructor(private val app: Context) {
 
     /**
      * Qué se puede hacer para ir de ([fromLat], [fromLon]) a ([toLat], [toLon]) con lo bajado: la ruta, bajar antes las
-     * calles de tu estado, o nada (algún punto está fuera de tus estados bajados). Fuera del hilo principal.
+     * calles de tu estado, o nada (algún punto está fuera de tus estados bajados). Con [headingDeg] (al recalcular
+     * manejando) la ruta no sale en sentido contrario a tu rumbo si hay cómo rodear. Fuera del hilo principal.
      */
-    fun planRoute(fromLat: Double, fromLon: Double, toLat: Double, toLon: Double): RoutePlan = try {
-        plan(fromLat, fromLon, toLat, toLon)
+    fun planRoute(fromLat: Double, fromLon: Double, toLat: Double, toLon: Double, headingDeg: Float? = null): RoutePlan = try {
+        plan(fromLat, fromLon, toLat, toLon, headingDeg)
     } catch (e: RouteException) {
         // Las calles del estado no caben en la memoria de esta pantalla (no están dañadas: no se vuelven a bajar).
         synchronized(routeLock) { releaseRouterNow() }
@@ -437,7 +438,7 @@ class MapPacks private constructor(private val app: Context) {
         RoutePlan.Failed(RouteError.NO_PATH)
     }
 
-    private fun plan(fromLat: Double, fromLon: Double, toLat: Double, toLon: Double): RoutePlan {
+    private fun plan(fromLat: Double, fromLon: Double, toLat: Double, toLon: Double, headingDeg: Float?): RoutePlan {
         val pack = installed.firstOrNull { it.contains(fromLat, fromLon) && it.contains(toLat, toLon) }
             ?: return when {
                 installed.none { it.contains(fromLat, fromLon) } -> RoutePlan.NoState(regionAt(fromLat, fromLon))
@@ -468,7 +469,7 @@ class MapPacks private constructor(private val app: Context) {
                 router = Router(g)
                 routerId = pack.id
             }
-            router!!.route(fromLat, fromLon, toLat, toLon).fold(
+            router!!.route(fromLat, fromLon, toLat, toLon, headingDeg).fold(
                 { RoutePlan.Found(it.rounded()) },
                 { RoutePlan.Failed((it as? RouteException)?.error ?: RouteError.NO_PATH) },
             )

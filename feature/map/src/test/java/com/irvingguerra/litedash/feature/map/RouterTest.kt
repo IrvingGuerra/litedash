@@ -266,6 +266,26 @@ class RouterTest {
     }
 
     @Test
+    fun recalculatingDoesNotStartBackwards() {
+        // Vas al oriente por Avenida Media y el destino quedó atrás (Calle Poniente, abajo).
+        val net = build()
+        val from = at(h(1, 0), 0.5)
+        val to = at(vt(0, 0), 0.5)
+        // Sin rumbo (al planear): lo más corto, de regreso.
+        val plain = net.router.route(from[0], from[1], to[0], to[1]).getOrThrow()
+        assertNear(0.5 * net.len(h(1, 0)) + 0.5 * net.len(vt(0, 0)), plain.distanceM)
+        // Con tu rumbo al oriente: sigue adelante y rodea la manzana (sin vuelta en U).
+        val ahead = net.router.route(from[0], from[1], to[0], to[1], headingDeg = 90f).getOrThrow()
+        assertTrue(net.goes(ahead, net.v(1, 1), net.v(0, 1)))
+        assertNear(0.5 * net.len(h(1, 0)) + net.len(vt(0, 1)) + net.len(h(0, 0)) + 0.5 * net.len(vt(0, 0)), ahead.distanceM)
+        // Hacia el poniente, regresar es a favor: igual que sin rumbo.
+        assertNear(plain.distanceM, net.router.route(from[0], from[1], to[0], to[1], headingDeg = 270f).getOrThrow().distanceM, 0.01)
+        // En el mismo tramo, el destino atrás: rodea en vez de la vuelta en U ahí mismo.
+        val back = net.router.route(from[0], from[1], at(h(1, 0), 0.2)[0], at(h(1, 0), 0.2)[1], headingDeg = 90f).getOrThrow()
+        assertTrue(back.distanceM > 0.5 * net.len(h(1, 0)))
+    }
+
+    @Test
     fun sameEdgeBackwardOnOneWayGoesAroundTheBlock() {
         val net = build(oneway = mapOf(h(1, 0) to 1))
         val from = at(h(1, 0), 0.7)
