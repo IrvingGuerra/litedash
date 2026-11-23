@@ -10,11 +10,13 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
+import android.os.Build
 import android.util.LruCache
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import java.text.Collator
+import java.util.Locale
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Deferred
@@ -43,6 +45,11 @@ class AppRepository(context: Context) {
     private val scope: CoroutineScope = MainScope()
     private var reload: Job? = null
     private var watchers = 0
+    /** Android 8+: el número de cambios de apps de la última lista y el idioma de sus nombres (para no releer de balde). */
+    @Volatile private var listSeq = -1
+    @Volatile private var listLocale: Locale? = null
+    /** Cuántas veces se olvidaron los íconos de cada paquete: una lectura que empezó antes no guarda el ícono viejo. */
+    private val iconGenerations = HashMap<String, Int>()
 
     /** Apps abribles en orden alfabético; null mientras carga la primera vez. */
     var apps by mutableStateOf<List<App>?>(null)
@@ -67,8 +74,8 @@ class AppRepository(context: Context) {
 
     /**
      * Empieza a escuchar cambios de apps (una llamada por cada pantalla que las muestra, mientras
-     * se ve). El primero registra el receptor y recarga: lo que cambió con LiteDash en segundo
-     * plano también se ve. Siempre en el hilo principal.
+     * se ve). El primero registra el receptor y recarga si algo cambió con LiteDash en segundo
+     * plano (en Android 8+ se pregunta antes; en los demás, siempre). Siempre en el hilo principal.
      */
     fun watch() {
         if (watchers++ > 0) return
@@ -80,7 +87,7 @@ class AppRepository(context: Context) {
             addDataScheme("package")
         }
         appContext.registerReceiver(packages, filter)
-        refresh()
+        refresh(onlyIfChanged = true)
     }
 
     /** Deja de escuchar; el último en salir quita el receptor. */
@@ -89,16 +96,28 @@ class AppRepository(context: Context) {
         runCatching { appContext.unregisterReceiver(packages) }
     }
 
-    /** Recarga la lista fuera del hilo principal; solo la cambia si de verdad cambió. */
-    private fun refresh() {
+    /**
+     * Recarga la lista fuera del hilo principal; solo la cambia si de verdad cambió. Con [onlyIfChanged] (al volver a la
+     * vista) en Android 8+ no relee nada si ninguna app cambió ni el idioma (releerlas cuesta cientos de ms en pantallas
+     * lentas).
+     */
+    private fun refresh(onlyIfChanged: Boolean = false) {
         reload?.cancel()
         reload = scope.launch {
+            if (onlyIfChanged && apps != null && withContext(Dispatchers.IO) { unchanged() }) return@launch
             val list = load()
             if (list != apps) apps = list
         }
     }
 
+    /** ¿Nada cambió desde la última lista? Solo Android 8+ lo sabe sin releer; fuera del hilo principal (pregunta a Android). */
+    private fun unchanged(): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O || listSeq < 0 || Locale.getDefault() != listLocale) return false
+        return runCatching { pm.getChangedPackages(listSeq) == null }.getOrDefault(false)
+    }
+
     private fun forgetIcons(pkg: String) {
+        synchronized(iconGenerations) { iconGenerations[pkg] = (iconGenerations[pkg] ?: 0) + 1 }
         icons.snapshot().keys.filter { it.startsWith("$pkg/") }.forEach { icons.remove(it) }
     }
 
@@ -108,6 +127,11 @@ class AppRepository(context: Context) {
     }
 
     private suspend fun load(): List<App> = withContext(Dispatchers.IO) {
+        // El número de cambios ANTES de leer: si algo cambia mientras, la siguiente vez sí se relee.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            listSeq = runCatching { pm.getChangedPackages(maxOf(listSeq, 0))?.sequenceNumber ?: maxOf(listSeq, 0) }.getOrDefault(-1)
+            listLocale = Locale.getDefault()
+        }
         val intent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
         pm.queryIntentActivities(intent, 0)
             .filter { it.activityInfo.packageName != ownPackage }
@@ -128,12 +152,16 @@ class AppRepository(context: Context) {
         val read = synchronized(loading) {
             loading.getOrPut(key) {
                 scope.async(Dispatchers.IO, CoroutineStart.LAZY) {
+                    val generation = synchronized(iconGenerations) { iconGenerations[app.pkg] }
                     try {
                         // Una app que se quitó, un ícono roto o sin memoria para leerlo: se queda sin ícono (cuadro gris),
                         // nunca truena (el fallo saldría en el await de quien lo pidió). No se guarda: se reintenta al volver.
                         // Sin memoria se suelta la caché para que el resto de la app respire.
                         try {
-                            pm.getActivityIcon(app.component).toBitmap(sidePx).also { icons.put(key, it) }
+                            pm.getActivityIcon(app.component).toBitmap(sidePx).also { bmp ->
+                                // Si la app se actualizó mientras se leía, este es el viejo: se usa esta vez pero no se guarda.
+                                if (synchronized(iconGenerations) { iconGenerations[app.pkg] } == generation) icons.put(key, bmp)
+                            }
                         } catch (_: Exception) {
                             null
                         } catch (_: OutOfMemoryError) {
