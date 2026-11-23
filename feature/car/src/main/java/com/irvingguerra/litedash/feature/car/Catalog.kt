@@ -13,6 +13,7 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.toArgb
 import com.irvingguerra.litedash.core.ui.Https
+import com.irvingguerra.litedash.core.ui.HttpStatusException
 import com.irvingguerra.litedash.core.ui.scaledDecode
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
@@ -105,6 +106,12 @@ data class CatalogEntry(
 
 private val YEAR_NUMBER = Regex("\\d{4}")
 
+/**
+ * Pasó menos de [every] desde [since]. Un reloj que regresó (pantalla sin pila que arrancó en 1970 o 2015) da una
+ * diferencia negativa: cuenta como vieja (toca revisar), no como reciente hasta que el reloj alcance la fecha guardada.
+ */
+internal fun isRecent(since: Long, now: Long, every: Long) = now - since in 0 until every
+
 /** Un archivo extra (cuadros del giro, vista desde arriba) que se baja encima del auto ya instalado. */
 @Immutable
 data class PackageExtra(val url: String, val bytes: Long, val sha256: String) {
@@ -120,11 +127,11 @@ enum class InstallError {
     OFFLINE,
     /** Llegó otro archivo (SHA-256 o tamaño), o es un zip roto o que se expande de más. */
     DAMAGED,
-    /** Lo demás: sin espacio, el auto cambió mientras tanto, el servidor dijo que no existe… */
+    /** Lo demás: el servidor dijo que no existe (4xx), sin espacio, el auto cambió mientras tanto… */
     OTHER,
 }
 
-/** Sin red o el servidor falló (lo que lanza [Https] como IOException). */
+/** Sin red o el servidor falló (lo que lanza [Https] como IOException, salvo un 4xx: ese archivo no existe). */
 private class Offline(cause: Throwable) : IOException(cause)
 
 /** El archivo no es el que se anunció o no se puede descomprimir como un auto. */
@@ -198,6 +205,10 @@ class CarRepository(private val context: Context, val catalogUrl: String) {
     ) {
         override fun sizeOf(key: String, value: ImageBitmap) = value.width * value.height * 4
     }
+    // Miniaturas del catálogo, aparte y con su tope: abrir la lista no saca de [images] los cuadros del giro.
+    private val thumbnails = object : LruCache<String, ImageBitmap>(THUMBNAIL_CACHE_BYTES) {
+        override fun sizeOf(key: String, value: ImageBitmap) = value.width * value.height * 4
+    }
     // Imágenes que ya se están cargando: si la vista y la precarga piden la misma, se
     // decodifica una vez. La carga no se interrumpe aunque quien la pidió ya no la quiera.
     private val loading = ConcurrentHashMap<String, Deferred<ImageBitmap?>>()
@@ -235,9 +246,17 @@ class CarRepository(private val context: Context, val catalogUrl: String) {
     var downloading by mutableStateOf<Pair<String, Float>?>(null)
         private set
 
-    /** La última descarga falló (sin internet, archivo dañado…). */
-    var failed by mutableStateOf(false)
+    /**
+     * Qué descarga falló la última vez (como en [downloading]: [ALL], el id de un auto, [HIGH] o [FINISH]); null = ninguna.
+     * Cada pantalla enseña solo la suya; se limpia al empezar otra descarga o con [forgetFailure].
+     */
+    var failed by mutableStateOf<String?>(null)
         private set
+
+    /** Olvida la última falla (al abrir la pantalla: el error de otra vez no se queda pegado). */
+    fun forgetFailure() {
+        if (downloading == null) failed = null
+    }
 
     fun pkg(id: String?): CarPackage? {
         val folder = folderOf(id ?: return null)
@@ -373,7 +392,7 @@ class CarRepository(private val context: Context, val catalogUrl: String) {
         if (!hasCatalog) return
         val key = KEY_LAST_CHECK + p.id
         val now = System.currentTimeMillis()
-        if (now - checks.getLong(key, 0L) < CHECK_EVERY_MS) return
+        if (isRecent(checks.getLong(key, 0L), now, CHECK_EVERY_MS)) return
         val entry = recentCatalog()?.firstOrNull { it.id == p.id } ?: return
         outdated = entry.takeIf { isOutdated(p, it) }
         // Con modelo nuevo no se anota: el aviso vive en memoria y debe volver al reabrir la app.
@@ -403,7 +422,7 @@ class CarRepository(private val context: Context, val catalogUrl: String) {
     private fun fetchExtra(p: CarPackage?, kind: Extra) {
         if (p == null || kind.has(p) || !hasCatalog || extraJobs[kind]?.isActive == true) return
         val key = kind.checkKey + p.id
-        if (System.currentTimeMillis() - checks.getLong(key, 0L) < CHECK_EVERY_MS) return
+        if (isRecent(checks.getLong(key, 0L), System.currentTimeMillis(), CHECK_EVERY_MS)) return
         extraJobs[kind] = scope.launch {
             val catalog = recentCatalog() ?: return@launch
             checks.edit().putLong(key, System.currentTimeMillis()).apply()
@@ -436,7 +455,7 @@ class CarRepository(private val context: Context, val catalogUrl: String) {
      */
     private suspend fun recentCatalog(): List<CatalogEntry>? {
         val now = System.currentTimeMillis()
-        catalogCache?.takeIf { now - it.first < CHECK_EVERY_MS }?.let { return it.second }
+        catalogCache?.takeIf { isRecent(it.first, now, CHECK_EVERY_MS) }?.let { return it.second }
         return runCatching { catalog() }.onFailure { note("catálogo: $it") }.getOrNull()
     }
 
@@ -479,8 +498,8 @@ class CarRepository(private val context: Context, val catalogUrl: String) {
      */
     suspend fun thumbnail(e: CatalogEntry): ImageBitmap? {
         if (e.thumbnail.isBlank()) return null
-        val key = "mini/${e.thumbnail}"
-        images.get(key)?.let { return it }
+        val key = e.thumbnail
+        thumbnails.get(key)?.let { return it }
         return withContext(Dispatchers.IO) {
             runCatching {
                 // "@" no sale de [folderOf]: un id que empieza como otro ("x/a" y "x/a-2") no borra la miniatura del otro.
@@ -499,7 +518,7 @@ class CarRepository(private val context: Context, val catalogUrl: String) {
                 val bitmap = BitmapFactory.decodeFile(file.path)
                 // Dañada (se apagó a media escritura): se baja de nuevo la próxima vez.
                 if (bitmap == null) file.delete()
-                bitmap?.asImageBitmap()?.also { images.put(key, it) }
+                bitmap?.asImageBitmap()?.also { thumbnails.put(key, it) }
             }.onFailure { note("miniatura de ${e.id}: $it") }.getOrNull()
         }
     }
@@ -516,10 +535,10 @@ class CarRepository(private val context: Context, val catalogUrl: String) {
     private fun download(what: String, onFail: (InstallError) -> Unit = {}, work: suspend ((Float) -> Unit) -> Unit): Boolean {
         if (downloading != null) return false
         downloading = what to 0f
-        failed = false
+        failed = null
         scope.launch {
             val error = disk.withLock { runCatching { work { f -> downloading = what to f } }.exceptionOrNull() }
-            if (error != null) failed = true
+            if (error != null) failed = what
             downloading = null
             if (error != null) {
                 onFail(
@@ -595,10 +614,11 @@ class CarRepository(private val context: Context, val catalogUrl: String) {
         File(folder, CarFiles.SPIN).listFiles().orEmpty().filter { accept(it.name) }
 
     /**
-     * La app se fue a segundo plano: con [all] suelta todos los cuadros del auto; si no, deja un cuarto
-     * de la caché (lo más reciente) para que al volver el auto aparezca sin esperar.
+     * La app se fue a segundo plano: con [all] suelta todos los cuadros del auto (y las miniaturas); si no, deja un
+     * cuarto de la caché (lo más reciente) para que al volver el auto aparezca sin esperar.
      */
     fun trimMemory(all: Boolean) {
+        thumbnails.evictAll()
         if (all) images.evictAll() else images.trimToSize(images.maxSize() / 4)
     }
 
@@ -620,14 +640,11 @@ class CarRepository(private val context: Context, val catalogUrl: String) {
         val ok = runCatching { Https.download(context, url, temp, bytes, null, progress).equals(sha256, ignoreCase = true) }
         if (ok.getOrDefault(false)) return temp
         temp.delete()
-        ok.exceptionOrNull()?.let { throw if (it is IOException) Offline(it) else it }
+        // Un 4xx dice que el archivo no existe: otro (el celular) tampoco lo va a conseguir.
+        ok.exceptionOrNull()?.let { throw if (it is IOException && it !is HttpStatusException) Offline(it) else it }
         throw Damaged("El archivo llegó dañado")
     }
 
-    /**
-     * [file] tal cual llegó (el celular ya lo bajó): si no mide [bytes] o su SHA-256 no es [sha256], se borra y
-     * lanza. Solo en IO.
-     */
     /**
      * La imagen [name] lista para dibujar a [widthPx]: el auto con su [paint] y,
      * si esa imagen trae piso, su sombra y su reflejo (a la mitad: son suaves; el reflejo
@@ -878,6 +895,8 @@ class CarRepository(private val context: Context, val catalogUrl: String) {
         private const val KEY_LAST_CHECK = "last_check:"
         /** Entre el auto y la huella de la URL en el nombre de su miniatura (no sale de [folderOf]). */
         private const val THUMBNAIL_SEPARATOR = "@"
+        /** Tope de las miniaturas en memoria (~230 KB cada una: caben casi todas las del catálogo). */
+        private const val THUMBNAIL_CACHE_BYTES = 4 shl 20
         /** Cuántas notas guarda [describe]. */
         private const val MAX_NOTES = 10
         /** Lo que no va en el nombre de la carpeta de un auto. */

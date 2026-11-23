@@ -26,6 +26,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
@@ -72,12 +73,16 @@ internal fun CarSettings(d: Dependencies) {
     val installed = cars.installed
     var catalog by remember { mutableStateOf<List<CatalogEntry>?>(null) }
     var unreachable by remember { mutableStateOf(false) }
-    LaunchedEffect(cars.hasCatalog) {
+    // Cada «Reintentar» lo sube y vuelve a pedir el catálogo.
+    var attempt by remember { mutableIntStateOf(0) }
+    // La falla de una descarga de otra vez no se queda pegada al volver a entrar.
+    LaunchedEffect(Unit) { cars.forgetFailure() }
+    LaunchedEffect(cars.hasCatalog, attempt) {
         if (!cars.hasCatalog) return@LaunchedEffect
-        // Sin red, un 4xx (también IOException) o un catálogo que no es JSON: se avisa abajo.
+        unreachable = false
+        // Sin red, un 4xx (también IOException) o un catálogo que no es JSON: se avisa abajo con «Reintentar».
         try {
             catalog = cars.catalog()
-            unreachable = false
         } catch (e: IOException) {
             unreachable = true
         } catch (e: JSONException) {
@@ -114,8 +119,16 @@ internal fun CarSettings(d: Dependencies) {
     if (tab == 1) {
         if (cars.hasCatalog) {
             SettingsCard(stringResource(R.string.catalog)) {
-                CatalogSearch(prefs, cars, catalog)
-                if (unreachable || cars.failed) Label(stringResource(R.string.catalog_error), Typography.small, c.danger)
+                val list = catalog
+                if (list != null) {
+                    CatalogSearch(prefs, cars, list)
+                } else if (unreachable) {
+                    // Falló la lista: el error y con qué intentarlo otra vez (nada de «Buscando…»).
+                    Label(stringResource(R.string.catalog_error), Typography.small, c.danger)
+                    Button(stringResource(R.string.retry), { attempt++ })
+                } else {
+                    Label(stringResource(R.string.checking), Typography.small, c.textMuted)
+                }
             }
         } else if (installed.isEmpty() && cars.unreadable.isEmpty()) {
             SettingsCard { Label(stringResource(R.string.car_coming_soon), Typography.small, c.textMuted) }
@@ -138,9 +151,10 @@ private fun FinishPicker(prefs: Preferences, cars: CarRepository, pkg: CarPackag
     val finish = prefs.paintFinish
     val idle = cars.downloading == null
     // Con otro acabado y el auto sin capas (otro modelo, calidad alta nueva…): se bajan solas.
-    // Tras una falla espera a que se toque un acabado (si no, reintentaría sin parar).
+    // Tras una falla espera a que se toque un acabado o se vuelva a abrir la pantalla (si no, reintentaría sin parar).
+    val finishFailed = cars.failed == CarRepository.FINISH
     LaunchedEffect(pkg, finish, offered, idle) {
-        if (idle && !cars.failed && finish != PaintFinish.SATIN && offered != null) cars.fetchFinish(pkg, offered)
+        if (idle && cars.failed != CarRepository.FINISH && finish != PaintFinish.SATIN && offered != null) cars.fetchFinish(pkg, offered)
     }
     Label(stringResource(R.string.finish), Typography.label, c.textMuted)
     FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -159,7 +173,7 @@ private fun FinishPicker(prefs: Preferences, cars: CarRepository, pkg: CarPackag
     val progress = cars.downloading?.takeIf { it.first == CarRepository.FINISH }?.second
     if (progress != null) {
         Label(stringResource(R.string.preparing_finish, (progress * 100).toInt()), Typography.small, c.accent)
-    } else if (cars.failed && finish != PaintFinish.SATIN && !pkg.finish) {
+    } else if (finishFailed && finish != PaintFinish.SATIN && !pkg.finish) {
         Label(stringResource(R.string.catalog_error), Typography.small, c.danger)
     }
     if (finish.shines) {
@@ -174,6 +188,7 @@ private fun ModelOptions(cars: CarRepository, current: CarPackage, entry: Catalo
     val c = LocalColors.current
     val context = LocalContext.current
     if (entry != null) CarUpdateNotice(cars, current, entry)
+    if (cars.failed == current.id) Label(stringResource(R.string.catalog_error), Typography.small, c.danger)
     // Calidad del giro: subir necesita el catálogo; bajar (liberar espacio) no.
     val high = entry?.high
     if (high != null || current.high) {
@@ -189,6 +204,7 @@ private fun ModelOptions(cars: CarRepository, current: CarPackage, entry: Catalo
         }
         val progress = cars.downloading?.takeIf { it.first == CarRepository.HIGH }?.second
         if (progress != null) Label(stringResource(R.string.downloading, (progress * 100).toInt()), Typography.small, c.accent)
+        else if (cars.failed == CarRepository.HIGH) Label(stringResource(R.string.catalog_error), Typography.small, c.danger)
         else Label(stringResource(R.string.spin_quality_help), Typography.small, c.textMuted)
     }
     // Eliminar lo descargado: pide confirmar.
@@ -232,6 +248,7 @@ private fun DownloadedModels(prefs: Preferences, cars: CarRepository, catalog: L
     if (progress != null) {
         Label(stringResource(R.string.downloading, (progress * 100).toInt()), Typography.small, c.accent)
     } else if (outdated.isNotEmpty()) {
+        if (cars.failed == CarRepository.ALL) Label(stringResource(R.string.catalog_error), Typography.small, c.danger)
         Confirmed(
             stringResource(R.string.update_all, outdated.size, outdated.sumOf { (p, e) -> cars.updateSize(p, e) } / 1e6f),
             pluralStringResource(R.plurals.update_all_confirm, outdated.size, outdated.size),
@@ -251,7 +268,7 @@ private fun DownloadedModels(prefs: Preferences, cars: CarRepository, catalog: L
  * Los descargados también salen: tocarlos los elige; los demás abren su vista previa.
  */
 @Composable
-private fun CatalogSearch(prefs: Preferences, cars: CarRepository, catalog: List<CatalogEntry>?) {
+private fun CatalogSearch(prefs: Preferences, cars: CarRepository, list: List<CatalogEntry>) {
     val c = LocalColors.current
     val context = LocalContext.current
     var query by remember { mutableStateOf("") }
@@ -259,7 +276,6 @@ private fun CatalogSearch(prefs: Preferences, cars: CarRepository, catalog: List
     var previewing by remember { mutableStateOf<String?>(null) }
     // Busca por marca, modelo o año, sin importar acentos ni mayúsculas.
     TextInput(query, { query = it }, stringResource(R.string.search_car), Modifier.fillMaxWidth(), icon = true)
-    val list = catalog ?: return Label(stringResource(R.string.checking), Typography.small, c.textMuted)
     // Marcas con más modelos primero; dentro de cada una, por nombre y año.
     val makes = remember(list) {
         list.groupingBy { it.make }.eachCount().entries.sortedWith(compareByDescending<Map.Entry<String, Int>> { it.value }.thenBy { it.key })
@@ -281,7 +297,7 @@ private fun CatalogSearch(prefs: Preferences, cars: CarRepository, catalog: List
     if (open != null) {
         val progress = cars.downloading?.takeIf { it.first == open.id }?.second
         // Al terminar se elige, aunque ya se haya cerrado Ajustes.
-        CarPreview(open, cars, progress, onDownload = { cars.install(open) { prefs.carModel = open.id } }, onClose = { previewing = null })
+        CarPreview(open, cars, progress, failed = cars.failed == open.id, onDownload = { cars.install(open) { prefs.carModel = open.id } }, onClose = { previewing = null })
     }
     val shown = found.filter { it.id != open?.id }
     // Con "Todas" y sin texto, agrupados por marca; si no, una sola cuadrícula.
@@ -346,7 +362,7 @@ private fun rememberThumbnail(cars: CarRepository, e: CatalogEntry): ImageBitmap
 
 /** Un auto del catálogo abierto en la lista: su vista previa en grande, de quién es y el botón para bajarlo. */
 @Composable
-private fun CarPreview(e: CatalogEntry, cars: CarRepository, progress: Float?, onDownload: () -> Unit, onClose: () -> Unit) {
+private fun CarPreview(e: CatalogEntry, cars: CarRepository, progress: Float?, failed: Boolean, onDownload: () -> Unit, onClose: () -> Unit) {
     val c = LocalColors.current
     val shape = RoundedCornerShape(Radius.card)
     val img = rememberThumbnail(cars, e)
@@ -359,6 +375,8 @@ private fun CarPreview(e: CatalogEntry, cars: CarRepository, progress: Float?, o
         }
         Label("${e.make} ${e.name} ${e.years}", Typography.subtitle, maxLines = 1)
         if (e.author.isNotBlank()) Label(stringResource(R.string.model_credit, e.author, e.license), Typography.small, c.textMuted)
+        // La falla de ESTA descarga, junto a su botón; se quita al reintentar.
+        if (failed && progress == null) Label(stringResource(R.string.catalog_error), Typography.small, c.danger)
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             if (progress != null) {
                 Label(stringResource(R.string.downloading, (progress * 100).toInt()), Typography.small, c.accent)
