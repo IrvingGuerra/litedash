@@ -23,6 +23,7 @@ import java.io.IOException
 import java.util.Calendar
 import java.util.GregorianCalendar
 import java.util.Locale
+import java.util.TimeZone
 import kotlin.coroutines.resume
 import com.irvingguerra.litedash.core.ui.Https
 
@@ -35,14 +36,58 @@ data class Weather(val temperature: Int?, val code: Int, val day: Boolean, val t
 
 data class WeatherDay(val date: String, val code: Int, val max: Int, val min: Int)
 
-/** Como llegó de Open-Meteo: °C con decimales, para que °F salga exacto (20.4 °C = 69 °F, no 68). */
-data class Forecast(val temperature: Double, val code: Int, val day: Boolean, val days: List<ForecastDay>, val fetchedAt: Long)
+/**
+ * Como llegó de Open-Meteo: °C con decimales, para que °F salga exacto (20.4 °C = 69 °F, no 68). [hours] es el
+ * pronóstico por hora (para tener la temperatura de ahora sin red) y [lat]/[lon] dónde se pidió (null si es de
+ * una versión que no lo guardaba).
+ */
+data class Forecast(
+    val temperature: Double, val code: Int, val day: Boolean, val days: List<ForecastDay>, val fetchedAt: Long,
+    val hours: ForecastHours? = null, val lat: Double? = null, val lon: Double? = null,
+)
+
+/** Pronóstico por hora: [list] seguidas a partir de [start] (ms, inicio de la primera hora). */
+data class ForecastHours(val start: Long, val list: List<ForecastHour>)
+
+data class ForecastHour(val temperature: Double, val code: Int, val day: Boolean)
 
 /** Un día del pronóstico; [date] "aaaa-mm-dd" en la zona del lugar (como [Day.toString]). */
 data class ForecastDay(val date: String, val code: Int, val max: Double, val min: Double)
 
-/** Hasta esta edad la temperatura descargada se muestra como la de ahora; después solo vale el pronóstico del día. */
+/** Hasta esta edad la temperatura descargada se muestra como la de ahora; después, la de su hora o el pronóstico del día. */
 const val CURRENT_MAX_AGE_MS = 3 * 3_600_000L
+
+private const val HOUR_MS = 3_600_000L
+
+/** Lo guardado sirve si se pidió a menos de esto de donde estás. */
+const val NEARBY_KM = 50.0
+
+/** Índice de la hora de [now] en [Forecast.hours]; null si no hay o si [now] queda fuera de lo guardado. */
+private fun Forecast.hourIndex(now: Long): Int? {
+    val h = hours ?: return null
+    if (now < h.start) return null
+    val i = (now - h.start) / HOUR_MS
+    return if (i < h.list.size) i.toInt() else null
+}
+
+/** El pronóstico de la hora de [now], si lo guardado la cubre. */
+fun Forecast.hourAt(now: Long): ForecastHour? = hourIndex(now)?.let { hours!!.list[it] }
+
+/** Si [lat]/[lon] quedan a menos de [NEARBY_KM] de donde se pidió [this] (sin dónde guardado, sí: como antes). */
+fun Forecast.isNear(lat: Double, lon: Double): Boolean {
+    val fromLat = this.lat ?: return true
+    val fromLon = this.lon ?: return true
+    // Aproximación plana: sobra a esta distancia.
+    val dy = (lat - fromLat) * 111.2
+    val dx = (lon - fromLon) * 111.2 * Math.cos(Math.toRadians((lat + fromLat) / 2))
+    return dx * dx + dy * dy <= NEARBY_KM * NEARBY_KM
+}
+
+/** "aaaa-mm-ddThh:mm" en la hora local del lugar ([offsetSeconds] de UTC, como lo da Open-Meteo) a ms. */
+fun localTimeToMillis(text: String, offsetSeconds: Int): Long = GregorianCalendar(TimeZone.getTimeZone("UTC")).apply {
+    clear()
+    set(text.substring(0, 4).toInt(), text.substring(5, 7).toInt() - 1, text.substring(8, 10).toInt(), text.substring(11, 13).toInt(), text.substring(14, 16).toInt())
+}.timeInMillis - offsetSeconds * 1000L
 
 /**
  * [this] a la hora [now] (ms) en el día [today], en °F ([fahrenheit]) o °C, redondeado al final. Lo
@@ -55,18 +100,25 @@ fun Forecast.at(now: Long, today: Day, fahrenheit: Boolean): Weather? {
     val date = today.toString()
     // Con el reloj de la pantalla atrasado (sin pila, hasta que hay red) no se sabe su edad: se muestra lo guardado.
     val current = now - fetchedAt < CURRENT_MAX_AGE_MS
+    // Vencida la de ahora (p. ej. al arrancar sin red), la pronosticada para esta hora.
+    val hour = if (current) null else hourAt(now)
     val todays = days.firstOrNull { it.date == date }?.inUnits()
-    if (!current && todays == null) return null
+    if (!current && hour == null && todays == null) return null
     // Las fechas "aaaa-mm-dd" se ordenan igual como texto.
     val next = days.filter { it.date > date }.take(3).map { it.inUnits() }
-    return if (current) Weather(shown(temperature), code, day, todays, next)
-    else Weather(null, todays!!.code, true, todays, next)
+    return when {
+        current -> Weather(shown(temperature), code, day, todays, next)
+        hour != null -> Weather(shown(hour.temperature), hour.code, hour.day, todays, next)
+        else -> Weather(null, todays!!.code, true, todays, next)
+    }
 }
 
-/** Cuándo (ms) puede cambiar lo que se ve de [this] después de [now]: al vencer la temperatura o a medianoche. */
+/** Cuándo (ms) puede cambiar lo que se ve de [this] después de [now]: al vencer la temperatura, al cambiar de hora o a medianoche. */
 fun Forecast.nextChange(now: Long): Long {
     val expires = fetchedAt + CURRENT_MAX_AGE_MS
-    return if (expires > now) minOf(expires, nextMidnight(now)) else nextMidnight(now)
+    if (expires > now) return minOf(expires, nextMidnight(now))
+    val hour = hourIndex(now) ?: return nextMidnight(now)
+    return minOf(hours!!.start + (hour + 1) * HOUR_MS, nextMidnight(now))
 }
 
 /** La próxima medianoche (ms) después de [now], en la zona del equipo. */
@@ -155,6 +207,8 @@ class WeatherRepository(private val context: Context, private val prefs: Prefere
             failure = "sin ubicación"
             return false
         }
+        // Lo guardado es de otro lugar: no se muestra (se queda en disco hasta que llegue el de aquí).
+        if (last != null && !last.isNear(place.latitude, place.longitude)) forecast = null
         val fresh = try {
             fetch(place.latitude, place.longitude)
         } catch (e: IOException) {
@@ -199,6 +253,7 @@ class WeatherRepository(private val context: Context, private val prefs: Prefere
     private suspend fun fetch(lat: Double, lon: Double): Forecast = withContext(Dispatchers.IO) {
         val url = "https://api.open-meteo.com/v1/forecast?latitude=%.2f&longitude=%.2f".format(Locale.US, lat, lon) +
             "&current=temperature_2m,weather_code,is_day&daily=weather_code,temperature_2m_max,temperature_2m_min" +
+            "&hourly=temperature_2m,weather_code,is_day" +
             "&timezone=auto&forecast_days=4"
         // Https.get revisa el código (un 5xx se reintenta solo) y aquí se cierra la conexión al terminar.
         val connection = Https.get(context, url)
@@ -210,6 +265,8 @@ class WeatherRepository(private val context: Context, private val prefs: Prefere
         val current = json.getJSONObject("current")
         val daily = json.getJSONObject("daily")
         val dates = daily.getJSONArray("time")
+        val hourly = json.getJSONObject("hourly")
+        val times = hourly.getJSONArray("time")
         Forecast(
             temperature = current.getDouble("temperature_2m"),
             code = current.getInt("weather_code"),
@@ -223,6 +280,19 @@ class WeatherRepository(private val context: Context, private val prefs: Prefere
                 )
             },
             fetchedAt = System.currentTimeMillis(),
+            // Las horas llegan seguidas en la hora local del lugar; se guarda cuándo empieza la primera.
+            hours = if (times.length() == 0) null else ForecastHours(
+                localTimeToMillis(times.getString(0), json.optInt("utc_offset_seconds")),
+                (0 until times.length()).map { i ->
+                    ForecastHour(
+                        hourly.getJSONArray("temperature_2m").getDouble(i),
+                        hourly.getJSONArray("weather_code").getInt(i),
+                        hourly.getJSONArray("is_day").optInt(i, 1) == 1,
+                    )
+                },
+            ),
+            lat = lat,
+            lon = lon,
         )
     }
 
@@ -238,6 +308,14 @@ class WeatherRepository(private val context: Context, private val prefs: Prefere
                     ForecastDay(x.getString("date"), x.getInt("c"), x.getDouble("max"), x.getDouble("min"))
                 },
                 o.getLong("at"),
+                // De versiones anteriores no trae horas ni lugar.
+                o.optJSONArray("ht")?.let { t ->
+                    val c = o.getJSONArray("hc")
+                    val d = o.getJSONArray("hd")
+                    ForecastHours(o.getLong("hs"), (0 until t.length()).map { i -> ForecastHour(t.getDouble(i), c.getInt(i), d.getBoolean(i)) })
+                },
+                if (o.has("lat")) o.getDouble("lat") else null,
+                if (o.has("lon")) o.getDouble("lon") else null,
             )
         } catch (e: JSONException) {
             null
@@ -247,6 +325,15 @@ class WeatherRepository(private val context: Context, private val prefs: Prefere
     private fun Forecast.toJson() = JSONObject()
         .put("t", temperature).put("c", code).put("d", day).put("at", fetchedAt)
         .put("days", JSONArray(days.map { JSONObject().put("date", it.date).put("c", it.code).put("max", it.max).put("min", it.min) }))
+        .putOpt("lat", lat).putOpt("lon", lon)
+        .apply {
+            hours?.let { h ->
+                put("hs", h.start)
+                put("ht", JSONArray(h.list.map { it.temperature }))
+                put("hc", JSONArray(h.list.map { it.code }))
+                put("hd", JSONArray(h.list.map { it.day }))
+            }
+        }
 
     companion object {
         private const val STORE = "weather"

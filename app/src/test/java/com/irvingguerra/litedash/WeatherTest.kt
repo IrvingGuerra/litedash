@@ -1,10 +1,13 @@
 package com.irvingguerra.litedash
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Assert.assertNull
 import org.junit.Test
 import java.util.Calendar
 import java.util.GregorianCalendar
+import java.util.TimeZone
 
 class WeatherTest {
     private val hour = 3_600_000L
@@ -81,5 +84,66 @@ class WeatherTest {
         assertEquals(Sky.SNOW, skyOf(86))
         assertEquals(Sky.STORM, skyOf(95))
         assertEquals(Sky.CLOUDY, skyOf(999))
+    }
+}
+
+class WeatherHoursTest {
+    private val hour = 3_600_000L
+    private val start = 1_000_000_000_000L - 1_000_000_000_000L % hour
+    private val forecast = Forecast(
+        temperature = 20.4, code = 0, day = true, fetchedAt = start + 30 * 60_000L,
+        days = listOf(ForecastDay("2026-11-16", 3, 25.0, 14.6)),
+        hours = ForecastHours(start, (0 until 48).map { ForecastHour(10.0 + it, if (it % 2 == 0) 1 else 61, it < 18) }),
+        lat = 19.43, lon = -99.13,
+    )
+
+    @Test
+    fun sinRedTomaLaTemperaturaDeSuHora() {
+        // Cinco horas y media después ya no vale la de ahora: sale la de la hora 5.
+        val w = forecast.at(start + 5 * hour + 30 * 60_000L, Day(2026, 11, 16), fahrenheit = false)!!
+        assertEquals(15, w.temperature)
+        assertEquals(61, w.code)
+        assertEquals(WeatherDay("2026-11-16", 3, 25, 15), w.today)
+        // De noche y en °F, igual desde la de esa hora: 30 °C = 86 °F.
+        val night = forecast.at(start + 20 * hour, Day(2026, 11, 16), fahrenheit = true)!!
+        assertEquals(86, night.temperature)
+        assertFalse(night.day)
+    }
+
+    @Test
+    fun recienBajadoMandaLaDeAhora() {
+        assertEquals(20, forecast.at(start + hour, Day(2026, 11, 16), fahrenheit = false)!!.temperature)
+    }
+
+    @Test
+    fun fueraDeLasHorasGuardadasNoHayTemperatura() {
+        assertNull(forecast.hourAt(start - 1))
+        assertEquals(57.0, forecast.hourAt(start + 48 * hour - 1)!!.temperature, 0.0)
+        assertNull(forecast.hourAt(start + 48 * hour))
+        // Ni la hora ni el día de hoy: nada.
+        assertNull(forecast.at(start + 48 * hour, Day(2026, 11, 18), fahrenheit = false))
+    }
+
+    @Test
+    fun cambiaAlCambiarDeHora() {
+        val now = start + 5 * hour + 10 * 60_000L
+        assertEquals(minOf(start + 6 * hour, nextMidnight(now)), forecast.nextChange(now))
+    }
+
+    @Test
+    fun soloCuentaLoPedidoCerca() {
+        assertTrue(forecast.isNear(19.43, -99.13))
+        assertTrue(forecast.isNear(19.70, -99.13)) // ~30 km al norte
+        assertFalse(forecast.isNear(19.93, -99.13)) // ~56 km
+        assertFalse(forecast.isNear(20.67, -103.35)) // Guadalajara
+        // Guardado por una versión que no anotaba el lugar: se usa como antes.
+        assertTrue(forecast.copy(lat = null, lon = null).isNear(20.67, -103.35))
+    }
+
+    @Test
+    fun horaLocalDelLugarAMilisegundos() {
+        // 2026-11-22 00:00 en CDMX (UTC−6) = 06:00 UTC.
+        val utc = GregorianCalendar(TimeZone.getTimeZone("UTC")).apply { clear(); set(2026, Calendar.NOVEMBER, 22, 6, 0) }.timeInMillis
+        assertEquals(utc, localTimeToMillis("2026-11-22T00:00", -6 * 3600))
     }
 }
