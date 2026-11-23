@@ -407,6 +407,9 @@ class CarRepository(private val context: Context, val catalogUrl: String) {
     var withoutWheels by mutableStateOf<Set<String>>(emptySet())
         private set
 
+    /** Cuándo falló por última vez la descarga de cada extra (en memoria; ver [fetchExtra]). */
+    private val extraFailedAt = ConcurrentHashMap<String, Long>()
+
     /**
      * Baja un [Extra] de [p] si el catálogo lo trae y el auto aún no. Corre en el ámbito del
      * repositorio (si se sale de la pantalla a media descarga, termina igual), uno a la vez por
@@ -417,7 +420,11 @@ class CarRepository(private val context: Context, val catalogUrl: String) {
     private fun fetchExtra(p: CarPackage?, kind: Extra) {
         if (p == null || kind.has(p) || !hasCatalog || extraJobs[kind]?.isActive == true) return
         val key = kind.checkKey + p.id
-        if (isRecent(checks.getLong(key, 0L), System.currentTimeMillis(), CHECK_EVERY_MS)) return
+        val nowMs = System.currentTimeMillis()
+        if (isRecent(checks.getLong(key, 0L), nowMs, CHECK_EVERY_MS)) return
+        // Una descarga que falló no se repite en cada composición (Taller, Llantas, Salud): a lo más una por hora en
+        // esta sesión; al reiniciar la app se intenta de nuevo.
+        if (extraFailedAt[key]?.let { isRecent(it, nowMs, CHECK_EVERY_MS) } == true) return
         extraJobs[kind] = scope.launch {
             val catalog = recentCatalog() ?: return@launch
             // «Ya revisé» solo cuando no hay nada que bajar o se instaló: si la descarga falla, se intenta la siguiente vez
@@ -442,8 +449,11 @@ class CarRepository(private val context: Context, val catalogUrl: String) {
                 }
                 // Solo llegan archivos nuevos: las imágenes del giro en memoria siguen sirviendo.
                 if (done) {
+                    extraFailedAt -= key
                     checked()
                     changed(evict = false)
+                } else {
+                    extraFailedAt[key] = System.currentTimeMillis()
                 }
             }
         }
