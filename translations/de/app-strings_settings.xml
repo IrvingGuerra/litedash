@@ -17,7 +17,7 @@
     <string name="cards_solid">Deckend</string>
     <string name="cards_glass">Glas</string>
     <string name="cards_opacity">Wie sichtbar</string>
-    <string name="cards_glass_help">Dein Hintergrundbild erscheint unscharf hinter jeder Karte.</string>
+    <string name="cards_glass_help">Dein Hintergrundbild erscheint unscharf hinter jeder Karte; über dem Karten-Hintergrund erscheint die Karte abgedämpft.</string>
     <string name="cards_theme">Design</string>
     <string name="cards_themes">Kombinationen</string>
     <string name="language_search">Finde deine Sprache</string>

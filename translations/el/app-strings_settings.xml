@@ -17,7 +17,7 @@
     <string name="cards_solid">Συμπαγείς</string>
     <string name="cards_glass">Γυαλί</string>
     <string name="cards_opacity">Πόσο φαίνονται</string>
-    <string name="cards_glass_help">Η ταπετσαρία σας φαίνεται θολή πίσω από κάθε κάρτα.</string>
+    <string name="cards_glass_help">Η ταπετσαρία σας φαίνεται θολή πίσω από κάθε κάρτα· πάνω σε χάρτη φόντου, ο χάρτης φαίνεται αχνός.</string>
     <string name="cards_theme">Θέμα</string>
     <string name="cards_themes">Συνδυασμοί</string>
     <string name="language_search">Βρες τη γλώσσα σου</string>

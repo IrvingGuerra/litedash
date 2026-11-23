@@ -17,7 +17,7 @@
     <string name="cards_solid">Đặc</string>
     <string name="cards_glass">Kính</string>
     <string name="cards_opacity">Mức hiển thị</string>
-    <string name="cards_glass_help">Hình nền của bạn hiện mờ phía sau mỗi thẻ.</string>
+    <string name="cards_glass_help">Hình nền của bạn hiện mờ phía sau mỗi thẻ; trên nền bản đồ, bản đồ hiện dịu đi.</string>
     <string name="cards_theme">Giao diện</string>
     <string name="cards_themes">Phối màu</string>
     <string name="language_search">Tìm ngôn ngữ của bạn</string>

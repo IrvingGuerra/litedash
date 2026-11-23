@@ -17,7 +17,7 @@
     <string name="cards_solid">Сплошные</string>
     <string name="cards_glass">Стекло</string>
     <string name="cards_opacity">Насколько видны</string>
-    <string name="cards_glass_help">Твои обои видны размытыми за каждой карточкой.</string>
+    <string name="cards_glass_help">Твои обои видны размытыми за каждой карточкой; поверх карты на фоне карта видна приглушённой.</string>
     <string name="cards_theme">Тема</string>
     <string name="cards_themes">Сочетания</string>
     <string name="language_search">Найди свой язык</string>

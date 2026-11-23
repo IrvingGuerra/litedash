@@ -17,7 +17,7 @@
     <string name="cards_solid">Piene</string>
     <string name="cards_glass">Vetro</string>
     <string name="cards_opacity">Quanto si vedono</string>
-    <string name="cards_glass_help">Il tuo sfondo si vede sfocato dietro ogni scheda.</string>
+    <string name="cards_glass_help">Il tuo sfondo si vede sfocato dietro ogni scheda; sopra la mappa di sfondo, la mappa si vede attenuata.</string>
     <string name="cards_theme">Tema</string>
     <string name="cards_themes">Combinazioni</string>
     <string name="language_search">Cerca la tua lingua</string>

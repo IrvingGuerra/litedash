@@ -17,7 +17,7 @@
     <string name="cards_solid">Суцільні</string>
     <string name="cards_glass">Скло</string>
     <string name="cards_opacity">Наскільки видно</string>
-    <string name="cards_glass_help">Шпалери видно розмитими за кожною карткою.</string>
+    <string name="cards_glass_help">Шпалери видно розмитими за кожною карткою; поверх мапи на тлі мапу видно приглушеною.</string>
     <string name="cards_theme">Тема</string>
     <string name="cards_themes">Поєднання</string>
     <string name="language_search">Знайди свою мову</string>

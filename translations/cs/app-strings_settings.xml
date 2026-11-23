@@ -17,7 +17,7 @@
     <string name="cards_solid">Plné</string>
     <string name="cards_glass">Sklo</string>
     <string name="cards_opacity">Jak moc jsou vidět</string>
-    <string name="cards_glass_help">Tvoje tapeta je vidět rozmazaná za každou kartou.</string>
+    <string name="cards_glass_help">Tvoje tapeta je vidět rozmazaná za každou kartou; nad mapou v pozadí je mapa ztlumená.</string>
     <string name="cards_theme">Motiv</string>
     <string name="cards_themes">Kombinace</string>
     <string name="language_search">Najdi svůj jazyk</string>

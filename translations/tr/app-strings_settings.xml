@@ -17,7 +17,7 @@
     <string name="cards_solid">Düz</string>
     <string name="cards_glass">Cam</string>
     <string name="cards_opacity">Görünürlük</string>
-    <string name="cards_glass_help">Duvar kağıdınız her kartın arkasında bulanık görünür.</string>
+    <string name="cards_glass_help">Duvar kağıdınız her kartın arkasında bulanık görünür; harita arka planında harita soluk görünür.</string>
     <string name="cards_theme">Tema</string>
     <string name="cards_themes">Kombinasyonlar</string>
     <string name="language_search">Dilinizi arayın</string>

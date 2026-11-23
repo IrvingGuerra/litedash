@@ -19,7 +19,7 @@
     <string name="cards_solid">Sólidos</string>
     <string name="cards_glass">Vidro</string>
     <string name="cards_opacity">Quanto aparecem</string>
-    <string name="cards_glass_help">Seu plano de fundo aparece desfocado atrás de cada cartão.</string>
+    <string name="cards_glass_help">Seu plano de fundo aparece desfocado atrás de cada cartão; sobre o mapa de fundo, o mapa aparece atenuado.</string>
     <string name="cards_theme">Tema</string>
     <string name="cards_themes">Combinações</string>
     <string name="language_search">Procure seu idioma</string>

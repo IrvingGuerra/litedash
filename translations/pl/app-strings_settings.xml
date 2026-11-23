@@ -17,7 +17,7 @@
     <string name="cards_solid">Pełne</string>
     <string name="cards_glass">Szkło</string>
     <string name="cards_opacity">Jak bardzo widać</string>
-    <string name="cards_glass_help">Twoja tapeta jest widoczna rozmyta za każdą kartą.</string>
+    <string name="cards_glass_help">Twoja tapeta jest widoczna rozmyta za każdą kartą; nad mapą w tle mapa jest przygaszona.</string>
     <string name="cards_theme">Motyw</string>
     <string name="cards_themes">Zestawienia</string>
     <string name="language_search">Znajdź swój język</string>

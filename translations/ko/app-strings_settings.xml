@@ -17,7 +17,7 @@
     <string name="cards_solid">불투명</string>
     <string name="cards_glass">유리</string>
     <string name="cards_opacity">보이는 정도</string>
-    <string name="cards_glass_help">배경화면이 각 카드 뒤에 흐리게 보여요.</string>
+    <string name="cards_glass_help">배경화면이 각 카드 뒤에 흐리게 보여요. 지도 배경 위에서는 지도가 은은하게 보여요.</string>
     <string name="cards_theme">테마</string>
     <string name="cards_themes">조합</string>
     <string name="language_search">언어 찾기</string>

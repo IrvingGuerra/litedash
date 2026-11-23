@@ -17,7 +17,7 @@
     <string name="cards_solid">Tömör</string>
     <string name="cards_glass">Üveg</string>
     <string name="cards_opacity">Mennyire látszanak</string>
-    <string name="cards_glass_help">A háttérképed elmosódva látszik minden kártya mögött.</string>
+    <string name="cards_glass_help">A háttérképed elmosódva látszik minden kártya mögött; térképes háttér fölött a térkép tompítva látszik.</string>
     <string name="cards_theme">Téma</string>
     <string name="cards_themes">Kombinációk</string>
     <string name="language_search">Keresd meg a nyelved</string>

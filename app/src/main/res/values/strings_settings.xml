@@ -18,7 +18,7 @@
     <string name="cards_solid">Lisas</string>
     <string name="cards_glass">Vidrio</string>
     <string name="cards_opacity">Cuánto se ven</string>
-    <string name="cards_glass_help">Tu imagen de fondo se ve desenfocada detrás de cada tarjeta.</string>
+    <string name="cards_glass_help">Detrás de cada tarjeta se ve tu fondo desenfocado; sobre el mapa de fondo, el mapa atenuado.</string>
     <string name="cards_theme">Del tema</string>
     <string name="cards_themes">Combinaciones</string>
     <string name="language_search">Busca tu idioma</string>

@@ -17,7 +17,7 @@
     <string name="cards_solid">不透明</string>
     <string name="cards_glass">ガラス</string>
     <string name="cards_opacity">見え方</string>
-    <string name="cards_glass_help">壁紙が各カードの後ろにぼかして表示されます。</string>
+    <string name="cards_glass_help">壁紙が各カードの後ろにぼかして表示されます。地図の背景では、地図が控えめに表示されます。</string>
     <string name="cards_theme">テーマ</string>
     <string name="cards_themes">組み合わせ</string>
     <string name="language_search">言語を検索</string>

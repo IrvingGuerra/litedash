@@ -17,7 +17,7 @@
     <string name="cards_solid">Solid</string>
     <string name="cards_glass">Glass</string>
     <string name="cards_opacity">How visible</string>
-    <string name="cards_glass_help">Your wallpaper shows blurred behind each card.</string>
+    <string name="cards_glass_help">Your wallpaper shows blurred behind each card; over a map background, the map shows toned down.</string>
     <string name="cards_theme">Theme</string>
     <string name="cards_themes">Combinations</string>
     <string name="language_search">Find your language</string>

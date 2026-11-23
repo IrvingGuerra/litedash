@@ -19,7 +19,7 @@
     <string name="cards_solid">Opaques</string>
     <string name="cards_glass">Verre</string>
     <string name="cards_opacity">Visibilité</string>
-    <string name="cards_glass_help">Votre fond d\'écran apparaît flou derrière chaque carte.</string>
+    <string name="cards_glass_help">Votre fond d\'écran apparaît flou derrière chaque carte ; sur un fond de carte, la carte apparaît atténuée.</string>
     <string name="cards_theme">Thème</string>
     <string name="cards_themes">Combinaisons</string>
     <string name="language_search">Trouvez votre langue</string>

@@ -17,7 +17,7 @@
     <string name="cards_solid">Effen</string>
     <string name="cards_glass">Glas</string>
     <string name="cards_opacity">Hoe zichtbaar</string>
-    <string name="cards_glass_help">Je achtergrond is wazig te zien achter elke kaart.</string>
+    <string name="cards_glass_help">Je achtergrond is wazig te zien achter elke kaart; boven een kaart als achtergrond is de kaart gedempt.</string>
     <string name="cards_theme">Thema</string>
     <string name="cards_themes">Combinaties</string>
     <string name="language_search">Zoek je taal</string>
