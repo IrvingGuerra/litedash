@@ -420,15 +420,17 @@ class CarRepository(private val context: Context, val catalogUrl: String) {
         if (isRecent(checks.getLong(key, 0L), System.currentTimeMillis(), CHECK_EVERY_MS)) return
         extraJobs[kind] = scope.launch {
             val catalog = recentCatalog() ?: return@launch
-            checks.edit().putLong(key, System.currentTimeMillis()).apply()
+            // «Ya revisé» solo cuando no hay nada que bajar o se instaló: si la descarga falla, se intenta la siguiente vez
+            // (antes esperaba una hora con el dibujo genérico).
+            val checked = { checks.edit().putLong(key, System.currentTimeMillis()).apply() }
             val entry = catalog.firstOrNull { it.id == p.id }
             // El extra del catálogo es del modelo 3D nuevo: no va sobre el instalado (llega al actualizar). Un paquete
             // sin huella (bajado antes de guardarla) cuenta como desactualizado.
-            if (entry != null && isOutdated(p, entry)) return@launch
+            if (entry != null && isOutdated(p, entry)) return@launch checked()
             val extra = entry?.let(kind.pick)
             if (extra == null) {
                 if (kind == Extra.WHEELS) withoutWheels += p.id
-                return@launch
+                return@launch checked()
             }
             disk.withLock {
                 // Pudo cambiar mientras tanto (actualizado, borrado o ya con el extra).
@@ -439,7 +441,10 @@ class CarRepository(private val context: Context, val catalogUrl: String) {
                         .getOrDefault(false)
                 }
                 // Solo llegan archivos nuevos: las imágenes del giro en memoria siguen sirviendo.
-                if (done) changed(evict = false)
+                if (done) {
+                    checked()
+                    changed(evict = false)
+                }
             }
         }
     }

@@ -79,17 +79,17 @@ private val glassShine = Brush.linearGradient(
 
 /**
  * El auto desde arriba para el Taller: el render del paquete de [p] si lo trae (lo baja
- * aparte [CarRepository.fetchTopView]) o, si no, la silueta dibujada. Los dos en la misma
- * caja ([CAR_TOP_ASPECT]), así las zonas del Taller caen en el mismo lugar.
+ * aparte [CarRepository.fetchTopView]) con tu color y acabado ([paint], como el auto 3D) o, si no, la silueta dibujada
+ * de tu color. Los dos en la misma caja ([CAR_TOP_ASPECT]), así las zonas del Taller caen en el mismo lugar.
  */
 @Composable
-fun CarTop(repo: CarRepository, p: CarPackage?, color: Color, modifier: Modifier = Modifier, onReady: (() -> Unit)? = null) {
+fun CarTop(repo: CarRepository, p: CarPackage?, paint: CarPaint, modifier: Modifier = Modifier, onReady: (() -> Unit)? = null) {
     // Con la llave del paquete: si se actualiza (llega sin vista desde arriba), se vuelve a pedir.
     LaunchedEffect(p) { repo.fetchTopView(p) }
     if (p?.topView != true) {
         // El dibujo ya está listo al pintarse.
         LaunchedEffect(Unit) { onReady?.invoke() }
-        return CarTopDrawing(color, modifier)
+        return CarTopDrawing(paint.color, modifier)
     }
     // La sombra sale junto con el auto (sola, un instante, se veía rara).
     var ready by remember(p) { mutableStateOf(false) }
@@ -98,7 +98,7 @@ fun CarTop(repo: CarRepository, p: CarPackage?, color: Color, modifier: Modifier
             val s = size.width / TOP_WIDTH
             withTransform({ scale(s, s, pivot = Offset.Zero) }) { topShadow() }
         }
-        CarTopImage(repo, p, color, Modifier.fillMaxSize()) {
+        CarTopImage(repo, p, paint, Modifier.fillMaxSize()) {
             ready = true
             onReady?.invoke()
         }

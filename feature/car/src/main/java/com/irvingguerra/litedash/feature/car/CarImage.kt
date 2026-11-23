@@ -19,7 +19,6 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Canvas
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asAndroidBitmap
@@ -143,9 +142,9 @@ fun CarStill(
 
 /** El auto desde arriba ([CarViews.TOP_VIEW] del paquete) pintado del [color] (satinado); solo si [CarPackage.topView]. */
 @Composable
-internal fun CarTopImage(repo: CarRepository, p: CarPackage, color: Color, modifier: Modifier = Modifier, onReady: (() -> Unit)? = null) {
+internal fun CarTopImage(repo: CarRepository, p: CarPackage, paint: CarPaint, modifier: Modifier = Modifier, onReady: (() -> Unit)? = null) {
     var widthPx by remember { mutableIntStateOf(0) }
-    CarLayersImage(repo, p, CarViews.TOP_VIEW, CarPaint(color), widthPx, modifier.onSizeChanged { widthPx = it.width }, onReady)
+    CarLayersImage(repo, p, CarViews.TOP_VIEW, paint, widthPx, modifier.onSizeChanged { widthPx = it.width }, onReady)
 }
 
 /**

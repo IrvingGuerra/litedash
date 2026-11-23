@@ -198,10 +198,10 @@ internal fun PressureUnit.text(kpa: Float, locale: Locale = Locale.US) = "${numb
 internal fun PressureUnit.number(kpa: Float, locale: Locale): String =
     if (this == PressureUnit.BAR) String.format(locale, "%.1f", fromKpa(kpa)) else format(kpa)
 
-/** El auto elegido desde arriba, en su color (Taller y Llantas lo dibujan igual). */
+/** El auto elegido desde arriba, en su color y acabado (Taller y Llantas lo dibujan igual). */
 @Composable
 internal fun MyCarTop(d: Dependencies, modifier: Modifier, onReady: (() -> Unit)? = null) =
-    CarTop(d.cars, d.cars.pkg(d.prefs.carModel), d.prefs.carColor, modifier, onReady)
+    CarTop(d.cars, d.cars.pkg(d.prefs.carModel), d.prefs.carPaint, modifier, onReady)
 
 /** Presión y temperatura de [w] por el bus: mientras se ve, las llantas se leen. */
 @Composable
