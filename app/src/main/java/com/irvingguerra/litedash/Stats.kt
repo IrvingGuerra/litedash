@@ -14,7 +14,7 @@ import java.io.IOException
 /**
  * Cuántas pantallas usan LiteDash, sin cuentas ni SDK de Firebase: a lo más una vez al día,
  * al abrir el inicio, escribe `screens/{id}` en Firestore por REST (nombres de la nube en inglés). El id es un número al
- * azar de esta instalación; se manda solo la versión, el canal (GitHub o Play), Android, el idioma de LiteDash,
+ * azar de esta instalación; se manda solo la versión, el canal (GitHub o Play), Android, el idioma en que se ve LiteDash,
  * el tamaño de pantalla, desde qué día se usa, la radio y el Bluetooth DE FÁBRICA de la pantalla ([FactoryAudio]: solo
  * apps del sistema, para saber qué familias soportar; nada de ubicación ni del usuario) y, si ya se calibró, la receta de
  * sonido que le funcionó a cada uno (`btRecipe`, `fmRecipe`: para el catálogo compartido de recetas). Las reglas de Firestore solo dejan escribir
@@ -54,7 +54,7 @@ class Stats(private val context: Context, private val enabled: () -> Boolean) {
             .put("version", Firestore.int(BuildConfig.VERSION_CODE.toLong()))
             .put("channel", Firestore.text(BuildConfig.CHANNEL))
             .put("android", Firestore.int(Build.VERSION.SDK_INT.toLong()))
-            .put("language", Firestore.text(Language.read(context).ifBlank { primaryLocale(config).language }.take(8)))
+            .put("language", Firestore.text(shownLanguage(context).first.ifBlank { primaryLocale(config).language }.take(8)))
             .put("screen", Firestore.text(screen(config)))
             .put("since", Firestore.text(since))
             .put("radio", Firestore.text(FactoryAudio.radio(context).take(64)))

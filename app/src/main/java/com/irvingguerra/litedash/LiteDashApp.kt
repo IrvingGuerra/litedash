@@ -8,6 +8,7 @@ import android.content.res.Configuration
 import android.content.res.Resources
 import android.os.Build
 import android.service.notification.StatusBarNotification
+import java.util.Locale
 import kotlin.concurrent.thread
 import com.irvingguerra.litedash.core.vehicle.Signal
 import com.irvingguerra.litedash.core.vehicle.VehicleBus
@@ -123,9 +124,12 @@ class LiteDashApp : Application() {
             override fun onRemoved(notification: StatusBarNotification) = dependencies.navigation.removed(notification)
         }
         watchUsbOffer()
-        // Un idioma bajado se pone al día solo (la lista se revisa a lo más una vez al día); lo nuevo sale al siguiente arranque.
-        val language = Language.read(this)
-        if (language.isNotBlank() && language !in BUILT_IN_LANGUAGES) thread(name = "language") { updateLanguage(this, language) }
+        // Un idioma bajado (el elegido o, con «Como el sistema», el del sistema) se pone al día solo (la lista se revisa a
+        // lo más una vez al día). Los textos de la aplicación cambian al momento; la ventana abierta, al volver a crearse.
+        val language = Language.read(this).ifBlank {
+            systemLanguage(primaryLocale(baseContext.resources.configuration)) { LanguagePacks.file(this, it).exists() }
+        }
+        if (language.isNotEmpty() && language !in BUILT_IN_LANGUAGES) thread(name = "language") { updateLanguage(this, language) }
     }
 
     /**
@@ -142,8 +146,9 @@ class LiteDashApp : Application() {
     }
 
     // Los textos que se piden a la aplicación (repositorios, avisos, servicios que usan applicationContext) salen
-    // en el idioma elegido, no en el del sistema. Se rehace solo cuando cambia el idioma ([Language]) o su paquete bajado.
-    private class Localized(val language: String, val generation: Int, val resources: Resources)
+    // en el idioma elegido, no en el del sistema. Se rehace solo cuando cambia el idioma ([Language]), su paquete bajado
+    // o, con «Como el sistema», el idioma del sistema ([system]).
+    private class Localized(val language: String, val generation: Int, val system: Locale, val resources: Resources)
 
     @Volatile private var localized: Localized? = null
 
@@ -152,11 +157,15 @@ class LiteDashApp : Application() {
         val language = Language.read(base)
         val generation = LanguagePacks.generation
         localized?.let { if (it.language == language && it.generation == generation) return it.resources }
-        return contextWithLanguage(base).resources.also { localized = Localized(language, generation, it) }
+        val system = primaryLocale(base.resources.configuration)
+        return contextWithLanguage(base).resources.also { localized = Localized(language, generation, system, it) }
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {
-        localized?.let { syncTranslated(it.resources, newConfig) }
+        localized?.let {
+            // Otro idioma en el sistema con «Como el sistema»: se vuelve a decidir (inglés, español o un paquete bajado).
+            if (it.language.isEmpty() && it.system != primaryLocale(newConfig)) localized = null else syncTranslated(it.resources, newConfig)
+        }
         super.onConfigurationChanged(newConfig)
     }
 

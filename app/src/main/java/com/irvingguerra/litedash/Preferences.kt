@@ -289,16 +289,42 @@ internal fun localeFor(language: String, system: Locale): Locale =
     if (system.language == language) system else Locale.forLanguageTag(if (language == "es") "es-MX" else language)
 
 /**
- * [base] con el idioma elegido en Ajustes. El ÚNICO lugar donde se aplica el idioma: las actividades al
+ * Con «Como el sistema» ([Language] vacío): el idioma de la app según el del sistema ([system]). "" = el del sistema
+ * tal cual (español o inglés, que vienen en la APK). Otro idioma: el paquete ya bajado de ese idioma ([downloaded]; con
+ * región primero, "pt-BR" y luego "pt"); si no hay, inglés: `values/` es español, y un sistema en alemán caía ahí. No
+ * baja nada. JVM pura para probarla.
+ */
+internal fun systemLanguage(system: Locale, downloaded: (String) -> Boolean): String {
+    // toLanguageTag y no language: Android dice "in" al indonesio, y el paquete es "id".
+    val language = system.toLanguageTag().substringBefore('-')
+    if (language in BUILT_IN_LANGUAGES || language == "und") return ""
+    val regional = system.country.takeIf { it.isNotEmpty() }?.let { "$language-$it" }
+    return listOfNotNull(regional, language).firstOrNull { isDownloadableTag(it) && downloaded(it) } ?: "en"
+}
+
+/**
+ * El idioma que de verdad se ve en [base] y su paquete: el elegido en Ajustes o, con «Como el sistema», el de
+ * [systemLanguage]; "" = el del sistema tal cual. Un idioma bajado que ya no está o no sirve sale en inglés.
+ */
+internal fun shownLanguage(base: Context): Pair<String, LanguagePack?> {
+    val language = Language.read(base).ifBlank {
+        systemLanguage(primaryLocale(base.resources.configuration)) { LanguagePacks.file(base, it).exists() }
+    }
+    if (language.isEmpty() || language in BUILT_IN_LANGUAGES) return language to null
+    val pack = LanguagePacks.active(base, language) ?: return "en" to null
+    return language to pack
+}
+
+/**
+ * [base] con el idioma de [shownLanguage]. El ÚNICO lugar donde se aplica el idioma: las actividades al
  * crearse y los textos del contexto de la aplicación ([LiteDashApp.getResources]) pasan por aquí.
  */
 fun contextWithLanguage(base: Context): Context {
-    val language = Language.read(base)
-    if (language.isBlank()) return base
+    val (language, pack) = shownLanguage(base)
+    if (language.isEmpty()) return base
     val system = primaryLocale(Resources.getSystem().configuration)
-    // Un idioma bajado: sus textos encima del inglés de la APK ([TranslatedResources]). Si ya no está o no sirve, inglés.
-    val pack = if (language in BUILT_IN_LANGUAGES) null else LanguagePacks.active(base, language)
-    val locale = localeFor(if (pack == null && language !in BUILT_IN_LANGUAGES) "en" else language, system)
+    // Un idioma bajado: sus textos encima del inglés de la APK ([TranslatedResources]).
+    val locale = localeFor(language, system)
     val localized = base.createConfigurationContext(languageConfig(locale))
     if (pack == null) return localized
     val english = base.createConfigurationContext(languageConfig(localeFor("en", system))).resources
