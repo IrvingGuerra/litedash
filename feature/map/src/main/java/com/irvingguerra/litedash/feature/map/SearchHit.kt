@@ -17,7 +17,7 @@ data class SearchHit(
     val distanceKm: Double?,
     /** true = de internet (Photon); false = del mapa de tu estado. */
     val online: Boolean,
-    /** Para juntar los de varios estados en su orden (menor = antes): escalón, clase y la distancia pesada por tipo. */
+    /** Para juntar los de varios estados en su orden (menor = antes): escalón, clase y la distancia (SearchRank.kt). */
     val order: Double = 0.0,
 )
 

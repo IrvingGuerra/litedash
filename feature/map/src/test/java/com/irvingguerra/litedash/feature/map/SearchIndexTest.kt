@@ -39,7 +39,7 @@ class SearchIndexTest {
     }
 
     @Test
-    fun ordersByExactThenWeightedDistance() = withIndex { index ->
+    fun ordersByExactThenDistance() = withIndex { index ->
         // "colima": la ciudad (exacta e importante) antes que la calle y la farmacia; entre las calles, la más cercana.
         val hits = index.search("colima", 19.0, -103.0)
         assertEquals("Colima", hits.first().name)
@@ -57,11 +57,12 @@ class SearchIndexTest {
         // Junto al bar: el Coliseo (el nombre es lo escrito) primero, luego el que empieza así y al final el que lo contiene.
         val hits = index.search("colosseo", 41.8950, 12.4800)
         assertEquals(listOf("Colosseo", "Colosseo Pizza", "Bar Colosseo"), hits.map { it.name })
-        // Aún escribiendo: el que empieza así antes que el que lo contiene.
-        assertEquals("Colosseo", index.search("coloss", 41.8950, 12.4800).first().name)
-        // Entre dos que solo contienen la palabra, la calle (clase) antes que el negocio aunque esté más lejos.
+        // Aún escribiendo: los que empiezan así (por distancia) antes que el que lo contiene.
+        val typing = index.search("coloss", 41.8950, 12.4800).map { it.name }
+        assertEquals(listOf("Colosseo Pizza", "Colosseo", "Bar Colosseo"), typing)
+        // Entre los que solo contienen la palabra manda la distancia, no el tipo: la farmacia de junto antes que la calle.
         val colima = index.search("colima", 21.0, -102.0)
-        assertTrue(colima.indexOfFirst { it.name == "Calle Colima" } < colima.indexOfFirst { it.name == "Farmacia Colima" })
+        assertTrue(colima.indexOfFirst { it.name == "Farmacia Colima" } < colima.indexOfFirst { it.name == "Calle Colima" })
     }
 
     @Test
@@ -73,19 +74,59 @@ class SearchIndexTest {
         val gdl = index.search("guadalajara", 20.6768, -103.3476)
         assertEquals("Guadalajara", gdl.first().name)
         assertTrue(gdl.indexOfFirst { it.name == "Tortas Guadalajara" } > 0)
-        assertEquals(1, SearchIndex.rankTier(0, 2))
-        assertEquals(0, SearchIndex.rankTier(0, 0))
-        assertEquals(2, SearchIndex.rankTier(2, 2))
+        // La regla: un nombre igual corriente baja solo si está a más de 10 veces la distancia del mejor que empieza igual.
+        assertEquals(TIER_STARTS, rankTier(TIER_EQUAL, prominent = false, km = 40.0, bestStartsKm = 1.0))
+        assertEquals(TIER_EQUAL, rankTier(TIER_EQUAL, prominent = false, km = 0.03, bestStartsKm = 115.0))
+        assertEquals(TIER_EQUAL, rankTier(TIER_EQUAL, prominent = true, km = 400.0, bestStartsKm = 1.0))
+        assertEquals(TIER_EQUAL, rankTier(TIER_EQUAL, prominent = false, km = 40.0, bestStartsKm = null))
+        assertEquals(TIER_CONTAINS, rankTier(TIER_CONTAINS, prominent = false, km = 40.0, bestStartsKm = 1.0))
+    }
+
+    @Test
+    fun aNearbyExactBusinessBeatsAFarLandmarkThatStartsLikeIt() = withIndex { index ->
+        // Con el GPS en Tepic: el OXXO a 30 m antes que «Oxxo mirador» (lugar turístico a 115 km).
+        assertEquals(listOf("OXXO", "Oxxo mirador"), index.search("oxxo", 21.5000, -104.9000).map { it.name })
+    }
+
+    @Test
+    fun startingLikeTheQueryGoesByDistanceNotByKind() = withIndex { index ->
+        // «Estadio»: el estadio a 1.6 km antes que la colonia «Estadio Poniente» a 180 km.
+        assertEquals(listOf("Estadio Olímpico", "Estadio Poniente"), index.search("estadio", 21.5000, -104.9000).map { it.name })
+    }
+
+    @Test
+    fun theCityWithTheExactNameComesFirst() = withIndex { index ->
+        val hits = index.search("tepic", 21.5000, -104.9000)
+        assertEquals("Tepic", hits.first().name)
+        assertEquals(PlaceKind.CITY, hits.first().kind)
+    }
+
+    @Test
+    fun onlineResultsFollowTheSameRule() {
+        fun hit(name: String, kind: PlaceKind, km: Double?, category: PlaceCategory = PlaceCategory.OTHER) =
+            SearchHit(name, null, null, null, kind, category, 0.0, 0.0, km, online = true)
+        // Photon puso las calles cercanas con la palabra antes que la ciudad.
+        val photon = listOf(
+            hit("Avenida Mazatlán", PlaceKind.STREET, 2.0),
+            hit("Calle Mazatlán", PlaceKind.STREET, 3.0),
+            hit("Mazatlán", PlaceKind.CITY, 260.0),
+        )
+        assertEquals("Mazatlán", orderHits(photon, "mazatlan").first().name)
+        val chain = listOf(hit("Starbucks", PlaceKind.PLACE, 40.0, PlaceCategory.FOOD), hit("Starbucks Reforma 222", PlaceKind.PLACE, 1.0, PlaceCategory.FOOD))
+        assertEquals("Starbucks Reforma 222", orderHits(chain, "Starbucks").first().name)
+        // Sin saber dónde estás, en cada escalón queda el orden de Photon.
+        val noGps = listOf(hit("Calle Tepic", PlaceKind.STREET, null), hit("Tepic Centro", PlaceKind.PLACE, null), hit("Tepic", PlaceKind.CITY, null))
+        assertEquals(listOf("Tepic", "Tepic Centro", "Calle Tepic"), orderHits(noGps, "Tepic").map { it.name })
     }
 
     @Test
     fun tiersFollowTheWholeName() {
         val q = listOf("colosseo")
-        assertEquals(0, SearchIndex.tier(listOf("colosseo"), q))
-        assertEquals(1, SearchIndex.tier(listOf("colosseo", "pizza"), q))
-        assertEquals(2, SearchIndex.tier(listOf("bar", "colosseo"), q))
-        assertEquals(3, SearchIndex.tier(listOf("colosseum"), listOf("colos")))
-        assertEquals(4, SearchIndex.tier(listOf("bar", "colosseum"), listOf("colos")))
+        assertEquals(0, tier(listOf("colosseo"), q))
+        assertEquals(1, tier(listOf("colosseo", "pizza"), q))
+        assertEquals(2, tier(listOf("bar", "colosseo"), q))
+        assertEquals(3, tier(listOf("colosseum"), listOf("colos")))
+        assertEquals(4, tier(listOf("bar", "colosseum"), listOf("colos")))
     }
 
     @Test
@@ -151,6 +192,13 @@ class SearchIndexTest {
         Entry(8, "Starbucks", 19.7900, -99.1300, locality = "Norte", category = 4),
         Entry(8, "Starbucks Reforma 222", 19.4390, -99.1300, locality = "Juárez", category = 4),
         Entry(8, "Tortas Guadalajara", 20.6769, -103.3477, locality = "Centro", category = 4),
+        // Tepic: el OXXO a ~30 m, «Oxxo mirador» turístico a ~115 km, el estadio a ~1.6 km, la colonia a ~180 km.
+        Entry(8, "OXXO", 21.5002, -104.9001, locality = "Centro", category = 6),
+        Entry(8, "Oxxo mirador", 22.5300, -104.9000, locality = "Sierra", category = 14),
+        Entry(8, "Estadio Olímpico", 21.5145, -104.9000, locality = "Centro", category = 0),
+        Entry(5, "Estadio Poniente", 23.1200, -104.9000),
+        Entry(1, "Tepic", 21.5085, -104.8955),
+        Entry(8, "Tepic Tacos", 21.5001, -104.9001, locality = "Centro", category = 4),
     ) + (0 until 40).map { Entry(8, "Relleno x%02d".format(it), 18.0 + it * 0.01, -104.0) }
 
     private fun withIndex(test: (SearchIndex) -> Unit) {

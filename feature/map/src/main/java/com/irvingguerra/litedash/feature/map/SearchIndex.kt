@@ -21,7 +21,7 @@ class SearchIndex private constructor(
 
     override fun close() = channel.close()
 
-    /** Hasta [limit] resultados para [query]; si das dónde estás, los más cercanos primero (en su importancia). */
+    /** Hasta [limit] resultados para [query] en el orden de [rankTier] (ver SearchRank.kt). */
     fun search(query: String, nearLat: Double?, nearLon: Double?, limit: Int = 20): List<SearchHit> {
         val words = normalizeForSearch(query)
         val terms = words.distinct().map { it.toByteArray(Charsets.UTF_8) }
@@ -35,24 +35,35 @@ class SearchIndex private constructor(
         }
         if (found.isEmpty()) return emptyList()
         val near = nearLat != null && nearLon != null
-        // Una llave por candidato (sin objetos): el escalón (ver [tier]), la clase de lugar (pueblos, colonias y
-        // monumentos antes que calles y que negocios), lo cerca que queda según lo importante que es y el registro.
-        // Primero con el escalón barato (¿todas las palabras completas?); luego el de verdad solo en los primeros
+        // Una llave por candidato (sin objetos): el escalón (ver [rankTier]), la clase, la distancia (o, sin saber dónde
+        // estás, la importancia del tipo) y el registro. Primero con el escalón barato (¿todas las palabras completas?) y
+        // los lugares destacados delante, para que sobrevivan al recorte; luego el escalón de verdad solo en los primeros
         // [TIER_CANDIDATES] (leer y normalizar el nombre de miles sería caro).
-        fun key(r: Int, tier: Int): Long {
-            val order = if (near) distance(r, nearLat!!, nearLon!!).toFloat() * weight(kind(r)) else rank(kind(r)).toFloat()
-            return (tier.toLong() shl TIER_SHIFT) or (placeClass(r).toLong() shl CLASS_SHIFT) or
+        fun key(r: Int, tier: Int, cls: Int): Long {
+            val order = if (near) distance(r, nearLat!!, nearLon!!).toFloat() else rank(kind(r)).toFloat()
+            return (tier.toLong() shl TIER_SHIFT) or (cls.toLong() shl CLASS_SHIFT) or
                 ((java.lang.Float.floatToRawIntBits(order) ushr 1).toLong() shl 28) or r.toLong()
         }
         var keys = LongArray(found.size) { i ->
             val r = found[i]
-            key(r, if (matches.all { it.exact.binarySearch(r) >= 0 }) TIER_CONTAINS else TIER_OTHER)
+            key(r, if (matches.all { it.exact.binarySearch(r) >= 0 }) TIER_CONTAINS else TIER_OTHER, if (prominent(r)) 0 else 1)
         }
         keys.sort()
         if (keys.size > TIER_CANDIDATES) keys = keys.copyOf(TIER_CANDIDATES)
+        val tiers = IntArray(keys.size)
+        // El más cercano de los que empiezan con lo escrito: decide si un nombre exacto corriente se queda delante.
+        var bestStartsKm = Double.MAX_VALUE
         for (i in keys.indices) {
             val r = (keys[i] and INDEX_MASK).toInt()
-            keys[i] = key(r, rankTier(tier(normalizeForSearch(name(u24(record(r) + 8)).orEmpty()), words), placeClass(r)))
+            tiers[i] = tier(normalizeForSearch(name(u24(record(r) + 8)).orEmpty()), words)
+            if (near && tiers[i] == TIER_STARTS) bestStartsKm = minOf(bestStartsKm, distance(r, nearLat!!, nearLon!!))
+        }
+        for (i in keys.indices) {
+            val r = (keys[i] and INDEX_MASK).toInt()
+            val p = prominent(r)
+            val km = if (near) distance(r, nearLat!!, nearLon!!) else null
+            val t = rankTier(tiers[i], p, km, bestStartsKm.takeIf { it < Double.MAX_VALUE })
+            keys[i] = key(r, t, rankClass(t, p))
         }
         keys.sort()
         val hits = ArrayList<SearchHit>(min(limit, keys.size))
@@ -148,15 +159,9 @@ class SearchIndex private constructor(
         return len - key.size
     }
 
-    /**
-     * La clase del registro [r] (menor = antes dentro de su escalón): 0 = ciudad, pueblo, colonia o un lugar conocido
-     * (monumento, aeropuerto, estación, parque); 1 = calle o caserío; 2 = lo demás (negocios).
-     */
-    private fun placeClass(r: Int): Int = when (kind(r)) {
-        1, 2, 3, 5, 6, 7 -> 0
-        0, 4 -> 1
-        else -> if ((buf.get(record(r) + 1).toInt() and 0xFF) in LANDMARKS) 0 else 2
-    }
+    /** ¿El registro [r] es un lugar destacado ([isProminent])? */
+    private fun prominent(r: Int): Boolean =
+        isProminent(PlaceKind.of(kind(r)), PlaceCategory.of(buf.get(record(r) + 1).toInt() and 0xFF))
 
     private fun hit(r: Int, nameId: Int, localityId: Int, km: Double?, order: Double): SearchHit {
         val base = record(r)
@@ -226,45 +231,12 @@ class SearchIndex private constructor(
         private const val FUZZY_MIN_LETTERS = 5
         /** Cuántos candidatos (ya en orden aproximado) se revisan por su nombre completo para el escalón. */
         private const val TIER_CANDIDATES = 500
-        // La llave: escalón (bits 60–62), clase (58–59), la distancia pesada (float sin su último bit, 28–57) y el registro.
+        // La llave: escalón (bits 60–62), clase (58–59), la distancia (float sin su último bit, 28–57) y el registro.
         private const val TIER_SHIFT = 60
         private const val CLASS_SHIFT = 58
         /** Para juntar estados (`SearchHit.order`): el escalón y la clase pesan más que cualquier distancia. */
         private const val TIER_STEP = 1e7
         private const val CLASS_STEP = 1e6
-        /** Lugares que se buscan por su nombre (la categoría del índice): estación, aeropuerto, monumento y parque. */
-        private val LANDMARKS = setOf(12, 13, 14, 15)
-
-        /** Los escalones del orden (menor = antes). */
-        private const val TIER_EQUAL = 0
-        private const val TIER_STARTS = 1
-        private const val TIER_CONTAINS = 2
-        private const val TIER_STARTS_PREFIX = 3
-        private const val TIER_OTHER = 4
-
-        /**
-         * El escalón de un nombre ([name], ya normalizado) para lo escrito ([query], normalizado): el nombre es justo lo
-         * escrito (0) > empieza con lo escrito, palabras completas (1) > las contiene completas (2) > empieza con lo
-         * escrito y la última palabra aún a medias (3) > lo demás (4). «Colosseo» → el Coliseo antes que «Bar Colosseo».
-         */
-        internal fun tier(name: List<String>, query: List<String>): Int {
-            if (query.isEmpty()) return TIER_OTHER
-            if (name == query) return TIER_EQUAL
-            val k = query.size
-            val head = name.size >= k && (0 until k - 1).all { name[it] == query[it] }
-            if (head && name[k - 1] == query[k - 1]) return TIER_STARTS
-            if (query.all { it in name }) return TIER_CONTAINS
-            if (head && name[k - 1].startsWith(query[k - 1])) return TIER_STARTS_PREFIX
-            return TIER_OTHER
-        }
-
-        /**
-         * El escalón con el que se ordena: «nombre igual» solo adelanta a los que NO empiezan con lo escrito, salvo en
-         * ciudades, colonias y lugares conocidos (clase 0). Entre negocios y calles que empiezan con lo escrito manda la
-         * distancia: «Starbucks» → la sucursal «Starbucks Reforma 222» a 1 km antes que una «Starbucks» a 40 km.
-         */
-        internal fun rankTier(tier: Int, placeClass: Int): Int =
-            if (tier == TIER_EQUAL && placeClass != 0) TIER_STARTS else tier
 
         /** Abre el índice SRCH1 de [file]; null si no lo es o está dañado. */
         fun open(file: File): SearchIndex? = runCatching {
@@ -306,14 +278,6 @@ class SearchIndex private constructor(
                 b.getDouble(24), b.getDouble(32), b.getDouble(40), b.getDouble(48),
                 records.toInt(), nameOffsets.toInt(), nameBlob.toInt(), dictionary.toInt(), table.toInt(),
             )
-        }
-
-        /** Cuánto "pesa" la distancia según el tipo: una ciudad a 50 km cuenta como un lugar a 5 km. */
-        private fun weight(kind: Int) = when (kind) {
-            1 -> 0.1f
-            2, 3 -> 0.25f
-            5, 6, 7 -> 0.6f
-            else -> 1f
         }
 
         /** Sin saber dónde estás: ciudad, pueblo o villa > colonia o barrio > calle > lugar > caserío (menor = antes). */

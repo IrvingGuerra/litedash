@@ -546,7 +546,7 @@ class MapPacks private constructor(private val app: Context) {
 
     /**
      * Busca [query] en la búsqueda de tus estados bajados, cerca de ([lat], [lon]). Fuera del hilo principal. Con
-     * varios estados, se juntan en su orden (exactas primero, luego lo cercano según lo importante). Un índice que
+     * varios estados, se juntan en su orden (la regla de SearchRank.kt). Un índice que
      * falla (dañado) se suelta y se olvida su huella: se vuelve a bajar.
      */
     fun searchLocal(query: String, lat: Double?, lon: Double?, limit: Int = 20): List<SearchHit> {

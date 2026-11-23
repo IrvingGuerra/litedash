@@ -57,7 +57,8 @@ object OnlineSearch {
         } catch (e: IOException) {
             return null
         }
-        val hits = parsePhoton(body, nearLat, nearLon) ?: return null
+        // Photon pone delante calles que contienen la palabra; se reordena con la misma regla que sin internet.
+        val hits = parsePhoton(body, nearLat, nearLon)?.let { orderHits(it, q) } ?: return null
         synchronized(cache) { cache[key] = Entry(now, hits) }
         return hits
     }
