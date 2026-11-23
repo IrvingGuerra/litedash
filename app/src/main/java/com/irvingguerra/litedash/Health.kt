@@ -245,15 +245,15 @@ private fun SystemTile(d: Dependencies, h: SystemHealth, report: EngineReport?, 
 
 /**
  * Tu auto desde arriba (su render, o la silueta si el paquete no la trae), del mismo color que
- * en Llantas, con los puntos de atención. El punto late despacio solo si hay una falla; sin
- * fallas nada se mueve.
+ * en Llantas, con los puntos de atención. Con [pulsing] (la pantalla Salud, abierta a propósito) el punto de una falla
+ * late despacio; en el inicio va fijo: una falla guardada puede durar semanas y nada se anima en reposo.
  */
 @Composable
-private fun CarWithMarks(d: Dependencies, health: List<SystemHealth>, modifier: Modifier) {
+private fun CarWithMarks(d: Dependencies, health: List<SystemHealth>, modifier: Modifier, pulsing: Boolean = true) {
     val c = LocalColors.current
     val marks = health.filter { it.level == HealthLevel.WARN || it.level == HealthLevel.FAULT }.map {
         val fault = it.level == HealthLevel.FAULT
-        ProblemMark(it.zone.x, it.zone.y, if (fault) c.danger else c.warning, pulsing = fault)
+        ProblemMark(it.zone.x, it.zone.y, if (fault) c.danger else c.warning, pulsing = pulsing && fault)
     }
     Box(modifier.aspectRatio(CAR_TOP_ASPECT)) {
         MyCarTop(d, Modifier.fillMaxSize())
@@ -362,7 +362,7 @@ fun HealthTile(d: Dependencies, showCar: Boolean = true, onClick: () -> Unit) {
                             Label(stringResource(R.string.health_engine), Typography.subtitle, maxLines = 1)
                             Label(line, Typography.small, if (codes != null && codes > 0) scoreColor else c.textMuted, maxLines = 2)
                         }
-                        if (withCar) CarWithMarks(d, health, Modifier.fillMaxHeight())
+                        if (withCar) CarWithMarks(d, health, Modifier.fillMaxHeight(), pulsing = false)
                     }
                 }
                 if (stats) {
@@ -405,7 +405,7 @@ private fun HealthRing(score: Float?, color: Color, modifier: Modifier) {
 }
 
 /**
- * Batería (voltaje), motor (refrigerante) y códigos, cada uno con su nombre arriba; "—" sin dato.
+ * Batería (voltaje), enfriamiento (refrigerante) y códigos, cada uno con su nombre arriba; "—" sin dato.
  * Aparte del widget: solo esto se vuelve a dibujar con cada lectura.
  */
 @Composable
@@ -416,8 +416,9 @@ private fun HealthStats(d: Dependencies, report: EngineReport?, connected: Boole
     val voltage = (if (connected) d.bus.watch(Signal.VOLTAGE) else null) ?: report?.voltage
     val coolant = if (connected) d.bus.watch(Signal.COOLANT) else null
     val items = listOf(
-        Triple(stringResource(R.string.gauge_voltage), voltage?.let { sensorText(Signal.VOLTAGE, it, units, locale) } ?: "—", LocalColors.current.text),
-        Triple(stringResource(R.string.zone_engine), coolant?.let { sensorText(Signal.COOLANT, it, units, locale) } ?: "—", LocalColors.current.text),
+        // Los mismos nombres que en la pantalla Salud (Batería, Enfriamiento).
+        Triple(stringResource(R.string.zone_battery), voltage?.let { sensorText(Signal.VOLTAGE, it, units, locale) } ?: "—", LocalColors.current.text),
+        Triple(stringResource(R.string.zone_cooling), coolant?.let { sensorText(Signal.COOLANT, it, units, locale) } ?: "—", LocalColors.current.text),
         Triple(stringResource(R.string.health_codes_title), codes?.let { String.format(locale, "%d", it) } ?: "—", codesColor),
     )
     BoxWithConstraints(Modifier.fillMaxWidth()) {
