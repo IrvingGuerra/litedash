@@ -33,6 +33,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -57,15 +58,20 @@ import com.irvingguerra.litedash.feature.dashboard.size
 import com.irvingguerra.litedash.feature.dashboard.coarse
 import com.irvingguerra.litedash.feature.dashboard.suggestedTemplate
 import com.irvingguerra.litedash.feature.dashboard.tiles
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
-/** ¿LiteDash ya es la pantalla de inicio? */
+/** ¿LiteDash ya es la pantalla de inicio? Consulta al sistema: fuera del hilo principal ([rememberIsHome]). */
 fun isHomeApp(context: Context): Boolean {
     // Android 10+: el rol del sistema. Sin esto, desde Android 11 las otras apps de
     // inicio no se ven y LiteDash creería que es la única.
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-        // Capas de Android recortadas truenan al preguntar por el rol: entonces se decide como antes de Android 10.
+        // Capas de Android recortadas no traen el rol (ahí se elige el inicio en sus ajustes, como pide
+        // [requestHomeRole]) o truenan al preguntar: entonces se decide como antes de Android 10.
         try {
-            context.getSystemService(RoleManager::class.java)?.let { return it.isRoleHeld(RoleManager.ROLE_HOME) }
+            context.getSystemService(RoleManager::class.java)
+                ?.takeIf { it.isRoleAvailable(RoleManager.ROLE_HOME) }
+                ?.let { return it.isRoleHeld(RoleManager.ROLE_HOME) }
         } catch (e: RuntimeException) {
             Log.w(LOG_TAG, "Rol de inicio ilegible", e)
         }
@@ -73,6 +79,17 @@ fun isHomeApp(context: Context): Boolean {
     val intent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME)
     val resolved = context.packageManager.resolveActivity(intent, PackageManager.MATCH_DEFAULT_ONLY)
     return resolved?.activityInfo?.packageName == context.packageName
+}
+
+/**
+ * [isHomeApp] preguntado en un hilo aparte (el sistema puede tardar en pantallas lentas) cada vez que cambian [keys]
+ * (al volver a LiteDash o del diálogo); null mientras llega la primera respuesta.
+ */
+@Composable
+internal fun rememberIsHome(vararg keys: Any): Boolean? {
+    val context = LocalContext.current
+    val isHome by produceState<Boolean?>(null, *keys) { value = withContext(Dispatchers.IO) { isHomeApp(context) } }
+    return isHome
 }
 
 /**
@@ -255,9 +272,9 @@ private fun HomeStep(revision: Int) {
 @Composable
 internal fun MakeHome(revision: Int, big: Boolean, beforeRequest: () -> Unit = {}) {
     val c = LocalColors.current
-    val context = LocalContext.current
     val (request, returns) = rememberRequestHome()
-    val isHome = remember(revision, returns) { isHomeApp(context) }
+    // Mientras se pregunta al sistema, nada (sin asomar el botón un instante).
+    val isHome = rememberIsHome(revision, returns) ?: return
     when {
         isHome && big -> Row(verticalAlignment = Alignment.CenterVertically) {
             Box(Modifier.size(44.dp).clip(CircleShape).background(c.accent), contentAlignment = Alignment.Center) {

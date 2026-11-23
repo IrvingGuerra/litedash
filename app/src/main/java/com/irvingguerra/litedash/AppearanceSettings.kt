@@ -22,6 +22,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -59,6 +60,10 @@ import com.irvingguerra.litedash.feature.dashboard.TileTypes
 import com.irvingguerra.litedash.feature.tpms.PressureUnit
 import kotlin.math.round
 import kotlin.math.roundToInt
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 /** Los temas a elegir, en Inicio y apariencia y en la bienvenida: oscuro, claro, día y noche y el del sistema. */
 internal val ThemeOptions = listOf(
@@ -335,9 +340,12 @@ private fun OpenOnBootSettings(prefs: Preferences) {
         allowed = BootLaunch.allowed(context)
         onPauseOrDispose {}
     }
+    val scope = rememberCoroutineScope()
     SwitchRow(stringResource(R.string.open_on_boot), prefs.openOnBoot, { on ->
         prefs.openOnBoot = on
-        BootLaunch.sync(context, on)
+        // Cambia un componente en el PackageManager: fuera del hilo principal, uno a la vez y con lo último que se eligió
+        // (dos toques seguidos no quedan al revés).
+        scope.launch(Dispatchers.IO) { bootSync.withLock { BootLaunch.sync(context, prefs.openOnBoot) } }
         if (on && !BootLaunch.allowed(context)) openSystemScreen(context, BootLaunch.permissionIntent(context))
     }, stringResource(R.string.open_on_boot_help))
     if (prefs.openOnBoot && !allowed) {
@@ -345,6 +353,9 @@ private fun OpenOnBootSettings(prefs: Preferences) {
         Button(stringResource(R.string.open_on_boot_grant), { openSystemScreen(context, BootLaunch.permissionIntent(context)) })
     }
 }
+
+/** Uno a la vez al prender o apagar el receptor de encendido ([OpenOnBootSettings]). */
+private val bootSync = Mutex()
 
 private fun Float.roundToTenth() = round(this * 10) / 10f
 
