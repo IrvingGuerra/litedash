@@ -601,7 +601,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
     val homeAtStart = remember { homePressed }
     LaunchedEffect(homePressed) { if (homePressed != homeAtStart && d.prefs.welcomeSeen) backToDashboard() }
     // Clima al volver al inicio y cada media hora con el inicio a la vista (si está activado); nunca en segundo plano.
-    WeatherRefresh(d.weather, revision)
+    WeatherRefresh(d.weather, revision, d.trip)
     // Al volver al inicio: versión nueva de la app (a lo más cada 12 h), cuántas pantallas usan LiteDash (a lo más
     // una vez al día) y Pro (revisa el código a lo más cada 12 h; sin código guardado, nada de red). Cada uno se limita solo.
     LaunchedEffect(revision) {

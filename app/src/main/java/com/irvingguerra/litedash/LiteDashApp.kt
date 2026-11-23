@@ -73,7 +73,8 @@ class LiteDashApp : Application() {
         val oldInternetRadio = prefs.legacyInternetRadio()
         music.upgrade(prefs.musicApp, oldInternetRadio)
         if (oldInternetRadio != null) prefs.internetRadioUnified()
-        music.isProjection = ::isProjectionPackage
+        // La reconocida por su paquete o la elegida a mano en Ajustes → Android Auto / CarPlay: la música no la pausa.
+        music.isProjection = { pkg -> isProjection(pkg, prefs.projectionApp) }
         prefs.addBluetoothToBar()
         prefs.addHomeToBar()
         prefs.addProjectionToBar()
