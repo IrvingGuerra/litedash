@@ -50,12 +50,12 @@ val hasSigning = signingValue("storeFile", "LITEDASH_STORE_FILE") != null
 
 android {
     namespace = "com.irvingguerra.litedash"
-    compileSdk = 37
+    compileSdk = libs.versions.compileSdk.get().toInt()
 
     defaultConfig {
         applicationId = "com.irvingguerra.litedash"
-        minSdk = 23
-        targetSdk = 37
+        minSdk = libs.versions.minSdk.get().toInt()
+        targetSdk = libs.versions.targetSdk.get().toInt()
         versionCode = versionCodeFrom(appVersionName)
         versionName = appVersionName
         buildConfigField("String", "CATALOG_URL", "\"$CATALOG_URL\"")
@@ -119,8 +119,8 @@ android {
     }
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
+        sourceCompatibility = JavaVersion.toVersion(libs.versions.jvm.get())
+        targetCompatibility = JavaVersion.toVersion(libs.versions.jvm.get())
     }
 
     lint {
@@ -152,7 +152,7 @@ android {
 }
 
 kotlin {
-    jvmToolchain(17)
+    jvmToolchain(libs.versions.jvm.get().toInt())
 }
 
 dependencies {
@@ -171,12 +171,11 @@ dependencies {
     implementation(project(":feature:tpms"))
     implementation(project(":feature:link"))
 
-    // Compose (foundation y ui) llega de core:ui; el BOM se queda para las librerías de Compose sin versión (tooling).
+    // Compose (foundation y ui) llega de core:ui; el BOM fija la versión de lo de Compose que trae activity-compose.
     implementation(platform(libs.compose.bom))
     implementation(libs.activity.compose)
     implementation(libs.core)
     implementation(libs.profileinstaller)
-    debugImplementation(libs.compose.ui.tooling)
     testImplementation(libs.junit)
     // org.json de verdad en las pruebas (el de Android es solo un esqueleto fuera del equipo).
     testImplementation(libs.json)
