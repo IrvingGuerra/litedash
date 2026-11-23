@@ -15,6 +15,9 @@ import android.provider.Settings
 import android.util.Log
 import androidx.core.content.ContextCompat
 import androidx.core.content.edit
+import java.util.concurrent.LinkedBlockingQueue
+import java.util.concurrent.ThreadPoolExecutor
+import java.util.concurrent.TimeUnit
 
 /**
  * Varias pantallas de auto regresan su launcher de fábrica cada vez que encienden (aunque LiteDash
@@ -38,9 +41,12 @@ class BootReceiver : BroadcastReceiver() {
         if (!BootLaunch.enabled(app)) return
         val log = app.getSharedPreferences(BootLaunch.LOG, Context.MODE_PRIVATE)
         val up = SystemClock.elapsedRealtime()
-        if (repeated(log.getLong(KEY_UPTIME, -1L), up)) return
+        val boot = bootCount(app)
+        val last = Stamp(log.getLong(KEY_UPTIME, -1L), log.getInt(KEY_BOOT, NO_BOOT))
+        if (repeated(last, Stamp(up, boot), memory)) return
         // El sello va antes de esperar: los avisos que llegan juntos en esos segundos ya no pasan.
-        log.edit { putLong(KEY_UPTIME, up) }
+        memory = up
+        log.edit { putLong(KEY_UPTIME, up).putInt(KEY_BOOT, boot) }
         val pending = goAsync()
         // Se espera a que el sistema termine de abrir su launcher, para quedar encima.
         Handler(Looper.getMainLooper()).postDelayed({
@@ -52,16 +58,44 @@ class BootReceiver : BroadcastReceiver() {
     }
 
     companion object {
+        /** Cuándo se abrió ([up], tiempo desde el arranque; -1 = nunca) y en qué arranque ([boot]; [NO_BOOT] = no se sabe). */
+        internal class Stamp(val up: Long, val boot: Int)
+
+        /** NO_BOOT: Android 6 no lleva la cuenta de arranques ([bootCount]). */
+        internal const val NO_BOOT = -1
+
         /**
-         * Algunas marcas mandan varios avisos seguidos al encender: se abre una sola vez. Se mide con el
-         * tiempo desde el arranque ([up]), no con la hora: muchas pantallas no tienen pila de reloj y prenden
-         * en 1970 o 2015 hasta tener red. Sello mayor que [up] = hubo reinicio; -1 = nunca.
+         * El sello de este proceso (tiempo desde el arranque; -1 = ninguno): tras reiniciar la pantalla el proceso es
+         * otro, así que nunca es de otro arranque. Lo usa Android 6, donde el sello guardado no dice de qué arranque es.
          */
-        internal fun repeated(last: Long, up: Long) = last in 0..up && up - last < DEBOUNCE_MS
+        @Volatile private var memory = -1L
+
+        /**
+         * Algunas marcas mandan varios avisos seguidos al encender: se abre una sola vez. Se mide con el tiempo
+         * desde el arranque, no con la hora: muchas pantallas no tienen pila de reloj y prenden en 1970 o 2015 hasta
+         * tener red. Solo cuenta un sello del MISMO arranque: las pantallas tardan casi lo mismo en arrancar cada
+         * vez, y un sello de 25 s del arranque anterior callaba el aviso de los 31 s de este. Con la cuenta de
+         * arranques se compara el guardado ([last]; uno sin cuenta, de antes, es de otro arranque); sin ella
+         * (Android 6), solo el de este proceso ([memory]).
+         */
+        internal fun repeated(last: Stamp, now: Stamp, memory: Long): Boolean {
+            val stamp = when {
+                now.boot == NO_BOOT -> memory
+                last.boot == now.boot -> last.up
+                else -> -1L
+            }
+            return stamp in 0..now.up && now.up - stamp < DEBOUNCE_MS
+        }
+
+        /** Cuántas veces ha arrancado la pantalla (Android 7+); [NO_BOOT] si no se sabe. */
+        private fun bootCount(context: Context): Int =
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) NO_BOOT
+            else runCatching { Settings.Global.getInt(context.contentResolver, Settings.Global.BOOT_COUNT, NO_BOOT) }.getOrDefault(NO_BOOT)
 
         private const val DELAY_MS = 3_000L
         private const val DEBOUNCE_MS = 30_000L
         private const val KEY_UPTIME = "opened_uptime"
+        private const val KEY_BOOT = "opened_boot"
         internal const val KEY_ACTION = "last_action"
         internal const val KEY_OPENED_AT = "opened_at"
         internal const val KEY_OK = "opened_ok"
@@ -103,17 +137,26 @@ object BootLaunch {
         context.startActivity(Intent(context, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
     }.isSuccess
 
-    /** Prende o apaga el receptor según la opción (apagado no se despierta con cada encendido). */
+    /**
+     * Los cambios del receptor, uno tras otro y fuera del hilo principal (son consultas al PackageManager). Un solo
+     * hilo que se cierra a los pocos segundos sin trabajo: prender y apagar rápido queda en el orden en que se pidió.
+     */
+    private val worker = ThreadPoolExecutor(0, 1, 5, TimeUnit.SECONDS, LinkedBlockingQueue())
+
+    /** Prende o apaga el receptor según la opción (apagado no se despierta con cada encendido). En otro hilo. */
     fun sync(context: Context, on: Boolean) {
-        watch(context.applicationContext, on)
-        val pm = context.packageManager
-        val component = ComponentName(context, BootReceiver::class.java)
-        val wanted = if (on) PackageManager.COMPONENT_ENABLED_STATE_ENABLED else PackageManager.COMPONENT_ENABLED_STATE_DEFAULT
-        try {
-            if (pm.getComponentEnabledSetting(component) != wanted) pm.setComponentEnabledSetting(component, wanted, PackageManager.DONT_KILL_APP)
-        } catch (e: RuntimeException) {
-            // Corre en un hilo suelto al abrir: una pantalla que no deja cambiarlo no debe cerrar la app.
-            Log.w(LOG_TAG, "No se pudo cambiar el receptor de encendido", e)
+        val app = context.applicationContext
+        worker.execute {
+            watch(app, on)
+            val pm = app.packageManager
+            val component = ComponentName(app, BootReceiver::class.java)
+            val wanted = if (on) PackageManager.COMPONENT_ENABLED_STATE_ENABLED else PackageManager.COMPONENT_ENABLED_STATE_DEFAULT
+            try {
+                if (pm.getComponentEnabledSetting(component) != wanted) pm.setComponentEnabledSetting(component, wanted, PackageManager.DONT_KILL_APP)
+            } catch (e: RuntimeException) {
+                // Una pantalla que no deja cambiarlo no debe cerrar la app.
+                Log.w(LOG_TAG, "No se pudo cambiar el receptor de encendido", e)
+            }
         }
     }
 
