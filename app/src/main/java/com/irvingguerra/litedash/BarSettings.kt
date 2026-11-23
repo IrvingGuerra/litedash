@@ -204,7 +204,7 @@ private fun Favorites(d: Dependencies, apps: List<App>) {
         }
     }
     // Escribir y tocar una la pone al final (si ya está, no se repite).
-    AppSearch(apps.filter { app -> favorites.none { it.key == app.key } }, null) { pkg ->
-        apps.firstOrNull { it.pkg == pkg }?.let { app -> d.prefs.dock = favorites.map { it.key } + app.key }
+    AppSearch(apps.filter { app -> favorites.none { it.key == app.key } }, null) { app ->
+        d.prefs.dock = favorites.map { it.key } + app.key
     }
 }

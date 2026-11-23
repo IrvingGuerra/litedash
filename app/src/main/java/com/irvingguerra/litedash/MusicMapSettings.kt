@@ -178,17 +178,23 @@ private fun rememberInternetRadioToggle(d: Dependencies): (Boolean) -> Unit {
 /** A lo más tantas apps encontradas en el buscador. */
 private const val SEARCH_MAX = 12
 
-/** Buscador de apps instaladas: escribir y tocar una la elige ([selected], su paquete, va con palomita). */
+/**
+ * Buscador de apps instaladas: escribir y tocar una la elige (la app exacta, con su actividad). [selected] (su
+ * [App.key] o solo su paquete) va con palomita.
+ */
 @Composable
-internal fun AppSearch(apps: List<App>, selected: String?, onPick: (String) -> Unit) {
+internal fun AppSearch(apps: List<App>, selected: String?, onPick: (App) -> Unit) {
     var query by remember { mutableStateOf("") }
     // Los nombres se normalizan una vez, no en cada tecla.
     val names = remember(apps) { apps.map { it to normalize(it.name) } }
     TextInput(query, { query = it }, stringResource(R.string.search_app), Modifier.fillMaxWidth(), icon = true)
     val q = normalize(query.trim())
     if (q.isNotEmpty()) {
-        val hits = names.filter { q in it.second }.take(SEARCH_MAX).map { (app, _) -> app.pkg to app.name }
-        if (hits.isNotEmpty()) Segmented<String?>(hits, selected, { pkg -> pkg?.let(onPick) }, check = true)
+        val hits = names.filter { q in it.second }.take(SEARCH_MAX).map { (app, _) -> app }
+        val marked = selected?.let { sel -> hits.firstOrNull { it.key == sel } ?: hits.firstOrNull { it.pkg == sel } }?.key
+        if (hits.isNotEmpty()) {
+            Segmented<String?>(hits.map { it.key to it.name }, marked, { key -> hits.firstOrNull { it.key == key }?.let(onPick) }, check = true)
+        }
     }
 }
 
@@ -217,9 +223,8 @@ internal fun AppPicker(
     }
     if (open) {
         searchHelp?.let { Label(it, Typography.small, LocalColors.current.textMuted) }
-        // Las ids son el paquete o «paquete/actividad»: el buscador marca por paquete.
-        AppSearch(apps, current?.substringBefore('/')) { pkg ->
-            apps.firstOrNull { it.pkg == pkg }?.let(onSearch)
+        AppSearch(apps, current) { app ->
+            onSearch(app)
             open = false
         }
     }

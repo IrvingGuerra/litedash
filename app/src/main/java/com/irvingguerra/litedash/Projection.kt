@@ -1,18 +1,11 @@
 package com.irvingguerra.litedash
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
-import com.irvingguerra.litedash.core.ui.Button
 import com.irvingguerra.litedash.core.ui.Icons
 import com.irvingguerra.litedash.core.ui.Label
 import com.irvingguerra.litedash.core.ui.LocalColors
@@ -92,9 +85,12 @@ fun ProjectionTile(d: Dependencies, apps: List<App>, tile: Tile, onMissing: () -
         d.dashboard.setData(tile.id, withAppKey(tile.data, null))
     }
     val app = projectionChoice(own ?: d.prefs.projectionApp, apps)
+    // Mientras se lee la lista de apps no se sabe si falta: ni «No encontré…» ni mandar a sus ajustes.
+    val loading = d.apps.apps == null
     ShortcutTile(
-        Icons.phoneCar, stringResource(R.string.tile_projection), app?.name ?: stringResource(R.string.projection_missing),
-        onClick = { if (app != null) d.apps.open(context, app) else onMissing() },
+        Icons.phoneCar, stringResource(R.string.tile_projection),
+        app?.name ?: if (loading) null else stringResource(R.string.projection_missing),
+        onClick = { if (app != null) d.apps.open(context, app) else if (!loading) onMissing() },
         // Con app, su ícono real y una flecha: se ve que ahí se abre.
         image = app?.let { a -> { side: Dp -> AppIcon(d.apps, a, side) } },
         chevron = app != null,
@@ -102,9 +98,9 @@ fun ProjectionTile(d: Dependencies, apps: List<App>, tile: Tile, onMissing: () -
 }
 
 /**
- * Ajustes → Apps → Android Auto / CarPlay → "Tu app de Android Auto / CarPlay": las de proyección instaladas (marcada
- * la que se abre: la elegida o, en automático, la que encuentra LiteDash), "Otra app" para cualquiera (algunas pantallas
- * la traen con otro nombre) y "Quitar" para volver a automático.
+ * Ajustes → Apps → Android Auto / CarPlay → "Tu app de Android Auto / CarPlay", con el selector de apps de siempre: las
+ * de proyección instaladas (con palomita la que se abre: la elegida o, en automático, la que encuentra LiteDash), "Otra
+ * app…" para cualquiera (algunas pantallas la traen con otro nombre) y "Quitar" para volver a automático.
  */
 @Composable
 internal fun ProjectionSettings(d: Dependencies) {
@@ -116,18 +112,10 @@ internal fun ProjectionSettings(d: Dependencies) {
     val chosenInstalled = chosen != null && apps.any { it.key == chosen }
     // Las de la lista ya cargada (en memoria): no se le pregunta nada a Android aquí.
     val found = remember(apps, current) { (apps.filter { isProjectionPackage(it.pkg, it.name) } + listOfNotNull(current)).distinctBy { it.key } }
-    var other by remember { mutableStateOf(false) }
-    FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        for (app in found) Button(app.name, { d.prefs.projectionApp = app.key }, primary = app == current)
-        Button(stringResource(R.string.music_other_app), { other = !other }, primary = other)
-        if (chosenInstalled) Button(stringResource(R.string.remove), { d.prefs.projectionApp = null })
-    }
-    if (other) {
-        AppSearch(apps, current?.pkg) { pkg ->
-            apps.firstOrNull { it.pkg == pkg }?.let { d.prefs.projectionApp = it.key }
-            other = false
-        }
-    }
+    AppPicker(
+        apps, found.map { it.key to it.name }, current?.key, { d.prefs.projectionApp = it }, { d.prefs.projectionApp = it.key },
+        onClear = if (chosenInstalled) { { d.prefs.projectionApp = null } } else null,
+    )
     // Mientras carga la lista no se dice «No encontré…».
     if (loaded != null && found.isEmpty()) Label(stringResource(R.string.projection_missing), Typography.body, LocalColors.current.textMuted)
     Label(stringResource(R.string.projection_help), Typography.small, LocalColors.current.textMuted)
