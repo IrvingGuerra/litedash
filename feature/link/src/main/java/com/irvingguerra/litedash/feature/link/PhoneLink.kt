@@ -274,10 +274,10 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
 
     private var running = false
     private var watching = false
-    /** Ventanas de LiteDash a la vista ([visible]): puede haber dos (la del inicio y la de app). */
-    private var windows = 0
+    /** Alguna ventana de LiteDash está a la vista ([visible]; MainActivity ya cuenta las suyas). */
+    private var shown = false
     /** LiteDash está al frente: busca seguido. Con el panel abierto lo está por fuerza. */
-    private val foreground get() = windows > 0 || watching
+    private val foreground get() = shown || watching
 
     private val schedule = LinkSchedule()
     /** Cuándo corre el siguiente intento programado ([retry]); 0 = ninguno. */
@@ -338,13 +338,13 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
     }
 
     /**
-     * Una ventana de LiteDash se ve o se dejó de ver (onStart y onStop de cada una). Al pasar al frente los
+     * LiteDash se ve o se dejó de ver (MainActivity avisa al pasar de 0 a 1 ventanas y de 1 a 0). Al pasar al frente los
      * reintentos vuelven a ir seguidos; al irse al fondo se apagan Bluetooth y los reintentos por tiempo
      * (queda el oído del faro). Una conexión abierta no se toca.
      */
     fun visible(on: Boolean) {
         val was = foreground
-        windows = if (on) windows + 1 else (windows - 1).coerceAtLeast(0)
+        shown = on
         if (foreground == was) return
         if (foreground) {
             schedule.resetRetries()
