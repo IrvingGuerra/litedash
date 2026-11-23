@@ -135,10 +135,36 @@ fun isShortScreen(): Boolean = windowHeightDp() < 480
 
 /**
  * La hora en números ("3:36"), la marca de 12 h aparte ("p.m.", null en 24 h) para
- * pintarla en chico junto a un reloj grande, y la fecha.
+ * pintarla en chico junto a un reloj grande, y la fecha. [markerFirst]: el idioma pone la marca antes
+ * de la hora (japonés, coreano, chino: «午後 3:36»).
  */
-data class Clock(val time: String, val marker: String?, val date: String) {
-    val full get() = if (marker == null) time else "$time $marker"
+data class Clock(val time: String, val marker: String?, val date: String, val markerFirst: Boolean = false) {
+    val full get() = when {
+        marker == null -> time
+        markerFirst -> "$marker $time"
+        else -> "$time $marker"
+    }
+}
+
+/**
+ * Un patrón de hora sin la marca de 12 h ("a") y si esta iba antes de la hora. Lo que va entre comillas
+ * ('…', texto literal del patrón) no se toca.
+ */
+internal fun withoutMarker(pattern: String): Pair<String, Boolean> {
+    val out = StringBuilder()
+    var quoted = false
+    var markerAt = -1
+    var hourAt = -1
+    for ((i, ch) in pattern.withIndex()) {
+        if (ch == '\'') quoted = !quoted
+        if (!quoted && ch == 'a') {
+            if (markerAt < 0) markerAt = i
+            continue
+        }
+        if (!quoted && hourAt < 0 && ch in "hHkK") hourAt = i
+        out.append(ch)
+    }
+    return out.toString().trim() to (markerAt in 0 until hourAt)
 }
 
 /** Hora y fecha que respetan el formato del usuario (12/24 h); un repintado por minuto. */
@@ -150,10 +176,9 @@ fun rememberClock(): Clock {
     // también el formato de 12/24 h, que se cambia en Ajustes de Android.
     val starts = rememberStarts()
     val h24 = remember(starts) { DateFormat.is24HourFormat(context) }
-    val time = remember(language, h24) {
-        // El patrón del idioma sin la marca "a" (va aparte).
-        SimpleDateFormat(DateFormat.getBestDateTimePattern(language, if (h24) "Hm" else "hm").replace("a", "").trim(), language)
-    }
+    // El patrón del idioma sin la marca "a" (va aparte, antes o después de la hora según el idioma).
+    val (pattern, markerFirst) = remember(language, h24) { withoutMarker(DateFormat.getBestDateTimePattern(language, if (h24) "Hm" else "hm")) }
+    val time = remember(pattern, language) { SimpleDateFormat(pattern, language) }
     val marker = remember(language, h24) { if (h24) null else SimpleDateFormat("a", language) }
     val date = remember(language) {
         SimpleDateFormat(DateFormat.getBestDateTimePattern(language, "EEEEdMMMM"), language)
@@ -168,24 +193,30 @@ fun rememberClock(): Clock {
     // La zona se lee al formatear: muchas pantallas la ponen por red o GPS después de arrancar.
     val zone = TimeZone.getDefault()
     listOfNotNull(time, marker, date).forEach { it.timeZone = zone }
-    return Clock(time.format(now), marker?.format(now), date.format(now).replaceFirstChar { it.uppercase(language) })
+    return Clock(time.format(now), marker?.format(now), date.format(now).replaceFirstChar { it.uppercase(language) }, markerFirst)
 }
 
 /** La hora en grande con la marca de 12 h en chico a un lado (si la hay). */
 @Composable
 fun BigTime(clock: Clock, style: TextStyle) {
     val c = LocalColors.current
+    val marker = @Composable { text: String ->
+        Label(
+            text,
+            Typography.subtitle.copy(fontSize = (style.fontSize.value * 0.32f).coerceAtLeast(14f).sp),
+            c.textMuted,
+            maxLines = 1,
+            modifier = Modifier.padding(
+                start = if (clock.markerFirst) 0.dp else 6.dp,
+                end = if (clock.markerFirst) 6.dp else 0.dp,
+                bottom = (style.fontSize.value * 0.16f).dp,
+            ),
+        )
+    }
     Row(verticalAlignment = Alignment.Bottom) {
+        if (clock.marker != null && clock.markerFirst) marker(clock.marker)
         Label(clock.time, style, maxLines = 1)
-        if (clock.marker != null) {
-            Label(
-                clock.marker,
-                Typography.subtitle.copy(fontSize = (style.fontSize.value * 0.32f).coerceAtLeast(14f).sp),
-                c.textMuted,
-                maxLines = 1,
-                modifier = Modifier.padding(start = 6.dp, bottom = (style.fontSize.value * 0.16f).dp),
-            )
-        }
+        if (clock.marker != null && !clock.markerFirst) marker(clock.marker)
     }
 }
 
