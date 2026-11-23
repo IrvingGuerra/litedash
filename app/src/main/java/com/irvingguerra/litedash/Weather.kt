@@ -208,14 +208,16 @@ fun skyOf(code: Int) = when (code) {
 class WeatherRepository(private val context: Context, private val prefs: Preferences) {
     private val store = context.getSharedPreferences(STORE, Context.MODE_PRIVATE)
 
-    // Lo guardado (≈ 96 horas en JSON) se lee la primera vez que alguien lo pide: con el clima apagado, nunca.
-    private val saved by lazy { mutableStateOf(read()) }
+    // Lo guardado (≈ 96 horas en JSON) se lee la primera vez que alguien lo pide: con el clima apagado, nunca. El estado
+    // nace aquí (no dentro de un lazy que se abre en plena composición, cuya instantánea podría no aplicarse); lo
+    // perezoso es solo la lectura del disco.
+    private val saved = mutableStateOf<Lazy<Forecast?>>(lazy(::read))
 
     /** Lo último que llegó de Open-Meteo, en °C con decimales (puede ser viejo: se ve con [weatherAt]). */
     var forecast: Forecast?
-        get() = saved.value
+        get() = saved.value.value
         private set(value) {
-            saved.value = value
+            saved.value = lazyOf(value)
         }
 
     /** La última falla al traerlo (para el reporte técnico); null si la última vez salió bien. */

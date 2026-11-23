@@ -629,8 +629,8 @@ private var lastGlobal: Pair<CardLook, CardLook>? = null
 /**
  * El lienzo de lo que tapa el inicio (Ajustes, los paneles, la música o el mapa en grande): el fondo del tema y, con
  * tarjetas de vidrio, tu fondo de pantalla desenfocado bajo un velo (una vez por pantalla; las tarjetas de encima
- * solo llevan su relleno) o, sin imagen, el resplandor del tema. El velo se cierra lo que pida tu imagen para que lo
- * apagado (las secciones sin elegir) se lea ([canvasVeil]).
+ * solo llevan su relleno) o, sin imagen, el resplandor del tema. En tema claro el velo se cierra lo que pida tu imagen
+ * para que lo apagado (las secciones sin elegir) se lea; en oscuro es el de siempre ([canvasVeil]).
  */
 @Composable
 internal fun Modifier.canvas(): Modifier {

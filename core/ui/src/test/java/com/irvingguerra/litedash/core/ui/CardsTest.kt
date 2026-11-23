@@ -142,10 +142,10 @@ class CardsTest {
         assertEquals(0f, legibleVeil(DarkColors, Color(0xFF2A2350)), 0f)
     }
 
-    @Test fun el_lienzo_deja_leer_lo_apagado_sobre_tu_fondo() {
-        for (theme in themes) for (color in listOf<Color?>(null) + hard) {
+    @Test fun el_lienzo_deja_leer_lo_apagado_sobre_tu_fondo_en_tema_claro() {
+        for (theme in themes.filter { !it.dark }) for (color in listOf<Color?>(null) + hard) {
             val c = theme.withCards(color)
-            val where = "tema oscuro=${theme.dark} tarjeta=$color"
+            val where = "tema claro tarjeta=$color"
             for (extreme in listOf(Color.Black, Color.White, Color(0xFF5A8C96))) {
                 val veil = canvasVeil(c, extreme, 0.62f)
                 assertTrue(where, veil >= 0.62f && veil <= 1f)
@@ -154,10 +154,17 @@ class CardsTest {
                 assertTrue("$where sobre $extreme: $seen", seen >= minOf(4.5f, contrast(c.textMuted, c.background) * 0.9f) - 0.01f)
             }
         }
-        // El tema oscuro de fábrica sí llega a 4.5 aun sobre blanco.
-        assertTrue(contrast(DarkColors.textMuted, DarkColors.background.copy(alpha = canvasVeil(DarkColors, Color.White, 0.62f)).compositeOver(Color.White)) >= 4.5f)
-        // Sobre una imagen que ya se lleva con el tema, el velo de siempre.
-        assertEquals(0.62f, canvasVeil(DarkColors, Color.Black, 0.62f), 0.001f)
+        // Sobre una imagen que ya se lleva con el tema claro (blanca), el velo de siempre.
+        assertEquals(0.62f, canvasVeil(LightColors, Color.White, 0.62f), 0.001f)
+    }
+
+    @Test fun el_lienzo_en_tema_oscuro_es_el_de_la_1_5_14() {
+        // Con cualquier imagen (también una muy clara: dunas, bruma, cielo) y cualquier color de tarjeta: 0.62 fijo.
+        for (theme in themes.filter { it.dark }) for (color in listOf<Color?>(null) + hard) {
+            for (extreme in listOf(Color.Black, Color.White, Color(0xFFDCD2B4), Color(0xFF5A8C96))) {
+                assertEquals("tarjeta=$color sobre $extreme", 0.62f, canvasVeil(theme.withCards(color), extreme, 0.62f), 0f)
+            }
+        }
     }
 
     @Test fun los_extremos_son_la_cuarta_parte_mas_clara_y_la_mas_oscura() {

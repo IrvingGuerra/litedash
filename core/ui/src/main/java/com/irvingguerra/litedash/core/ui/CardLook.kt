@@ -128,13 +128,14 @@ fun glassVeil(c: Colors, extreme: Color, base: Float): Float {
 fun legibleVeil(c: Colors, mean: Color): Float = veilUntil(c.text, c, mean, 0f, PLAIN_CONTRAST, VEIL_MAX)
 
 /**
- * El velo del lienzo (Ajustes, paneles) sobre tu fondo desenfocado: de [base] lo que haga falta para que lo apagado
- * ([Colors.textMuted]: las secciones sin elegir) dé contraste ≥ 4.5 sobre la parte más clara (tema oscuro) o más
- * oscura (claro) de tu imagen ([extreme]). Si el tema no llega a 4.5 ni sobre su propio fondo liso (el claro da ~3.1),
- * el 90 % de lo que da ahí; si ni así, liso.
+ * El velo del lienzo (Ajustes, paneles) sobre tu fondo desenfocado. En tema oscuro, [base] tal cual (como en la 1.5.14:
+ * tu fondo se sigue viendo detrás de Ajustes con cualquier imagen). En tema claro, donde el menú no se leía, de [base]
+ * lo que haga falta para que lo apagado ([Colors.textMuted]: las secciones sin elegir) dé contraste ≥ 4.5 sobre la
+ * parte más oscura de tu imagen ([extreme]); si el tema no llega a 4.5 ni sobre su propio fondo liso (el claro da
+ * ~3.1), el 90 % de lo que da ahí; si ni así, liso.
  */
 fun canvasVeil(c: Colors, extreme: Color, base: Float): Float =
-    veilUntil(c.textMuted, c, extreme, base, minOf(4.5f, contrast(c.textMuted, c.background) * 0.9f), 1f)
+    if (c.dark) base else veilUntil(c.textMuted, c, extreme, base, minOf(4.5f, contrast(c.textMuted, c.background) * 0.9f), 1f)
 
 /** Lo menos, de [base] a [max] en pasos de 0.05, que deja a [ink] con [wanted] de contraste sobre [under] velado. */
 private fun veilUntil(ink: Color, c: Colors, under: Color, base: Float, wanted: Float, max: Float): Float {
