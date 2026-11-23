@@ -148,7 +148,14 @@ internal fun DrivingScreen(d: Dependencies, session: DriveSession, revision: Int
         // La misma lectura no cuenta dos veces (con dos ventanas de LiteDash las dos la reciben).
         if (p.time != 0L && p.time == session.lastFix) return@LaunchedEffect
         session.lastFix = p.time
-        val s = session.guidance.update(p.latitude, p.longitude, if (p.hasAccuracy()) p.accuracy else null)
+        // Velocidad, rumbo y hora de la lectura (reloj que no brinca): con ellos la guía descarta brincos imposibles del GPS
+        // y cuenta el sentido contrario como salirse.
+        val speed = if (p.hasSpeed()) p.speed else null
+        val heading = d.trip.bearing
+        val s = session.guidance.update(
+            p.latitude, p.longitude, if (p.hasAccuracy()) p.accuracy else null,
+            speedMps = speed, headingDeg = heading, timeMs = p.elapsedRealtimeNanos / 1_000_000,
+        )
         session.state = s
         // Las esperas con el reloj que no brinca (en pantallas sin pila la hora se corrige al sincronizar).
         val now = SystemClock.elapsedRealtime()
@@ -158,7 +165,9 @@ internal fun DrivingScreen(d: Dependencies, session: DriveSession, revision: Int
             session.lastRecalc = now
             scope.launch {
                 try {
-                    val plan = withContext(Dispatchers.IO) { packs.planRoute(p.latitude, p.longitude, session.to.lat, session.to.lon) }
+                    // Andando, la ruta nueva no arranca contra tu rumbo (detenido el rumbo no es confiable).
+                    val towards = heading?.takeIf { (speed ?: 0f) > RECALC_HEADING_MPS }
+                    val plan = withContext(Dispatchers.IO) { packs.planRoute(p.latitude, p.longitude, session.to.lat, session.to.lon, towards) }
                     // Lejos de la calle (estacionamiento, GPS malo) sale la misma ruta: no se cambia (la tarjeta no parpadea).
                     val next = (plan as? RoutePlan.Found)?.route?.takeUnless { it.sameAs(session.route) }
                     if (next != null) {
@@ -255,6 +264,7 @@ private fun MapView(d: Dependencies, session: DriveSession, end: () -> Unit, mod
     val store = rememberTileStore(look, c.dark, DRIVE_MAP_KEY)
     val camera = rememberMapCamera()
     val position = d.trip.position
+    val kmh = d.bus.watch(Signal.SPEED)
     val s = session.state
     BoxWithConstraints(modifier.clipToBounds()) {
         val density = LocalDensity.current.density
@@ -266,7 +276,7 @@ private fun MapView(d: Dependencies, session: DriveSession, end: () -> Unit, mod
             val onRoute = s != null && !s.offRoute
             MapCanvas(
                 store, if (onRoute) s!!.lat else position.latitude, if (onRoute) s!!.lon else position.longitude,
-                (if (onRoute) s!!.heading else null) ?: d.trip.bearing, null, look, Modifier.fillMaxSize(), camera,
+                (if (onRoute) s!!.heading else null) ?: d.trip.bearing, kmh, look, Modifier.fillMaxSize(), camera,
                 fixedZoom = fit?.whole ?: CLOSE_ZOOM, interactive = false,
                 route = session.route.points, routeDone = s?.let { it.point + it.fraction } ?: 0f,
             )
@@ -473,6 +483,9 @@ private const val CLOSE_ZOOM = 15
  * ninguna, el siguiente espera más. Regresa al primero al aplicar una ruta nueva o al volver a la ruta.
  */
 private val RECALC_GAPS_MS = longArrayOf(5_000L, 15_000L, 30_000L)
+
+/** Más rápido que esto (~10 km/h) el rumbo del GPS cuenta al recalcular. */
+private const val RECALC_HEADING_MPS = 2.8f
 
 /** ¿La misma ruta? (Mismos puntos, o la misma cantidad con la misma salida, llegada y distancia.) */
 private fun Route.sameAs(o: Route): Boolean {
