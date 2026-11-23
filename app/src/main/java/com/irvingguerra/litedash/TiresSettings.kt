@@ -2,8 +2,6 @@ package com.irvingguerra.litedash
 
 import android.content.ClipData
 import android.content.ClipboardManager
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
@@ -76,6 +74,7 @@ import kotlin.math.abs
 import kotlin.math.roundToInt
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.NonCancellable
+import java.util.Locale
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -138,7 +137,7 @@ private fun TiresCard(d: Dependencies, selected: Wheel?, motion: TireMotion?, on
 private fun SourceCard(d: Dependencies) {
     val c = LocalColors.current
     val repo = d.tpms
-    val permission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { repo.retry() }
+    val permission = rememberPermissionAsk(bleScanPermission()) { repo.retry() }
     SettingsCard(stringResource(R.string.tires_source)) {
         Segmented(
             listOf(
@@ -161,10 +160,15 @@ private fun SourceCard(d: Dependencies) {
             Box(Modifier.size(8.dp).clip(CircleShape).background(dot))
             Label(tiresStatusText(repo), Typography.body, maxLines = 1, modifier = Modifier.weight(1f))
             when {
-                repo.status == TpmsStatus.NO_PERMISSION && source == TpmsSource.BLE ->
-                    Button(stringResource(R.string.tires_grant), { permission.launch(bleScanPermission()) }, primary = true)
+                // Negado para siempre, «Permisos» lleva a los ajustes de LiteDash (Android ya no pregunta).
+                repo.status == TpmsStatus.NO_PERMISSION && source == TpmsSource.BLE -> PermissionButtons(permission, stringResource(R.string.tires_grant))
                 repo.status == TpmsStatus.NO_PERMISSION || repo.status == TpmsStatus.NO_DEVICE ->
-                    Button(stringResource(R.string.retry), { if (source == TpmsSource.OBD && d.obdAuto) d.obd.connect() else repo.retry() })
+                    Button(stringResource(R.string.retry), {
+                        if (source == TpmsSource.OBD && d.obdAuto) {
+                            obdStoppedByUser = false
+                            d.obd.connect()
+                        } else repo.retry()
+                    })
             }
         }
         problem?.let { Label(it, Typography.small, c.danger) }
@@ -432,18 +436,19 @@ private fun DrawScope.arrowLine(color: androidx.compose.ui.graphics.Color, a: Of
 @Composable
 private fun PressureCard(repo: TpmsRepository, fahrenheit: Boolean) {
     val unit = repo.unit
+    val locale = currentLocale()
     SettingsCard(stringResource(R.string.tires_pressure), stringResource(R.string.tires_pressure_help)) {
         Segmented(PressureUnit.entries.map { it to it.label }, unit, { repo.unit = it })
-        Stepper(stringResource(R.string.tires_front), unit.text(repo.recommendedFrontKpa),
+        Stepper(stringResource(R.string.tires_front), unit.text(repo.recommendedFrontKpa, locale),
             { repo.recommendedFrontKpa = stepKpa(repo.recommendedFrontKpa, unit, -1, RECOMMENDED_KPA) },
             { repo.recommendedFrontKpa = stepKpa(repo.recommendedFrontKpa, unit, 1, RECOMMENDED_KPA) })
-        Stepper(stringResource(R.string.tires_rear), unit.text(repo.recommendedRearKpa),
+        Stepper(stringResource(R.string.tires_rear), unit.text(repo.recommendedRearKpa, locale),
             { repo.recommendedRearKpa = stepKpa(repo.recommendedRearKpa, unit, -1, RECOMMENDED_KPA) },
             { repo.recommendedRearKpa = stepKpa(repo.recommendedRearKpa, unit, 1, RECOMMENDED_KPA) })
-        Stepper(stringResource(R.string.tires_low_percent), stringResource(R.string.value_with_unit, String.format(currentLocale(), "%d", repo.lowPercent), stringResource(R.string.unit_percent)),
+        Stepper(stringResource(R.string.tires_low_percent), stringResource(R.string.value_with_unit, String.format(locale, "%d", repo.lowPercent), stringResource(R.string.unit_percent)),
             { repo.lowPercent = (repo.lowPercent - 5).coerceIn(10, 30) },
             { repo.lowPercent = (repo.lowPercent + 5).coerceIn(10, 30) },
-            help = stringResource(R.string.tires_low_percent_help, unit.text(repo.recommendedFrontKpa * (100 - repo.lowPercent) / 100f)))
+            help = stringResource(R.string.tires_low_percent_help, unit.text(repo.recommendedFrontKpa * (100 - repo.lowPercent) / 100f, locale)))
         Stepper(stringResource(R.string.tires_high_temp), tempText(repo.highTempC, fahrenheit),
             { repo.highTempC = (repo.highTempC - 5f).coerceIn(50f, 100f) },
             { repo.highTempC = (repo.highTempC + 5f).coerceIn(50f, 100f) })
@@ -460,16 +465,17 @@ private fun PressureCard(repo: TpmsRepository, fahrenheit: Boolean) {
 @Composable
 private fun CalibrateCard(repo: TpmsRepository) {
     val unit = repo.unit
+    val locale = currentLocale()
     val wheels = if (repo.showSpare) Wheel.entries else Wheel.ROAD
     SettingsCard(stringResource(R.string.tires_offset), stringResource(R.string.tires_offset_help)) {
         for (w in wheels) {
             val kpa = repo.wheelReading(w)?.takeUnless { it.lost }?.pressureKpa
             val offset = repo.offsetKpa(w)
             val hasSensor = repo.assignment[w] != null
-            Stepper(stringResource(wheelName(w)), if (hasSensor) offsetText(offset, unit) else "—",
+            Stepper(stringResource(wheelName(w)), if (hasSensor) offsetText(offset, unit, locale) else "—",
                 { repo.setOffsetKpa(w, stepKpa(offset, unit, -1, OFFSET_KPA)) },
                 { repo.setOffsetKpa(w, stepKpa(offset, unit, 1, OFFSET_KPA)) },
-                help = kpa?.let { stringResource(R.string.tires_reads, unit.text(it)) } ?: stringResource(R.string.tire_none),
+                help = kpa?.let { stringResource(R.string.tires_reads, unit.text(it, locale)) } ?: stringResource(R.string.tire_none),
                 enabled = hasSensor)
         }
     }
@@ -493,8 +499,8 @@ internal fun stepKpa(kpa: Float, unit: PressureUnit, dir: Int, range: ClosedFloa
 }
 
 /** El ajuste con su signo ("+2 psi", "−0.1 bar"; sin signo si es cero a la vista). */
-internal fun offsetText(kpa: Float, unit: PressureUnit): String {
-    val text = unit.text(abs(kpa))
+internal fun offsetText(kpa: Float, unit: PressureUnit, locale: Locale = Locale.US): String {
+    val text = unit.text(abs(kpa), locale)
     val shown = unit.format(abs(kpa)).any { it in '1'..'9' }
     val sign = if (!shown) "" else if (kpa > 0) "+" else "−"
     return sign + text

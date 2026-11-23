@@ -38,7 +38,9 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.rememberCoroutineScope
@@ -74,11 +76,18 @@ import com.irvingguerra.litedash.feature.obd.ScanProblem
 import com.irvingguerra.litedash.feature.obd.describe
 import com.irvingguerra.litedash.feature.obd.engineAlert
 import com.irvingguerra.litedash.feature.obd.zoneOf
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
-/** El verde de "todo bien"; lo comparte la pantalla Salud. */
+/**
+ * «Desconectar» del Taller: el usuario lo cortó y así se queda (aunque se vuelva a entrar al Taller o a las llantas por
+ * OBD) hasta que él mismo vuelva a conectar. Solo en memoria: al reiniciar LiteDash se conecta como siempre.
+ */
+internal var obdStoppedByUser = false
 
 /** Las pestañas del Taller (para recordar la elegida) y cuál es la de códigos. */
 private const val WORKSHOP_TABS = "workshop"
@@ -107,7 +116,7 @@ internal fun Workshop(d: Dependencies, onTires: () -> Unit) {
     // desconectaron) y se queda conectado. Sin permiso de Bluetooth no (fallaría en rojo): se conecta al darlo.
     val needsBluetooth = obd.target is ObdTarget.Bluetooth || obd.target is ObdTarget.Ble
     val wants = permitted || !needsBluetooth
-    LaunchedEffect(wants) { if (wants) obd.keep() }
+    LaunchedEffect(wants) { if (wants && !obdStoppedByUser) obd.keep() }
     val connected = obd.state == ObdState.ON
     // El reporte se lee una vez aquí y lo comparten Salud y Códigos; el último de esta conexión se muestra de
     // inmediato para que al volver a entrar no parpadee. [failed]: la última lectura no contestó.
@@ -152,7 +161,7 @@ internal fun Workshop(d: Dependencies, onTires: () -> Unit) {
         0 -> HealthView(d, report, connected = true, reading, ::read, onCodes = { selectTab(WORKSHOP_TABS, CODES_TAB) }, onTires = onTires)
         CODES_TAB -> {
             // Borrados: lo leído antes ya no vale (si la lectura nueva falla, se dice que no se pudo, no "Sin códigos").
-            CodesCard(obd, report, reading, failed, ::read) { ok ->
+            CodesCard(obd, scope, report, reading, failed, ::read) { ok ->
                 if (ok) report = null
                 read()
             }
@@ -221,7 +230,6 @@ fun EngineAlertBanner(d: Dependencies, state: EngineAlertState) {
     }
 }
 
-/** La dirección de fábrica de los adaptadores por Wi‑Fi (casi todos los ELM327 la traen). */
 /**
  * El permiso de Bluetooth que pide «Permitir». BLUETOOTH_CONNECT solo existe desde Android 12; antes basta el de
  * siempre (se da al instalar), así que ahí el botón ni sale ([ObdRepository.hasPermission] ya es verdadero).
@@ -229,6 +237,7 @@ fun EngineAlertBanner(d: Dependencies, state: EngineAlertState) {
 private val BLUETOOTH_PERMISSION =
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) Manifest.permission.BLUETOOTH_CONNECT else Manifest.permission.BLUETOOTH
 
+/** La dirección de fábrica de los adaptadores por Wi‑Fi (casi todos los ELM327 la traen). */
 private const val OBD_WIFI_ADDRESS = "192.168.0.10:${ObdTarget.Wifi.DEFAULT_PORT}"
 
 /**
@@ -242,7 +251,7 @@ private fun Connection(d: Dependencies, permitted: Boolean, onPermitted: (Boolea
     val obd = d.obd
     val bluetoothAsk = rememberPermissionAsk(BLUETOOTH_PERMISSION, onPermitted)
     // Buscar Bluetooth LE tiene su propio permiso; al darlo, busca de una vez.
-    val askScan = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { if (it) obd.scanBle() }
+    val askScan = rememberPermissionAsk(bleScanPermission()) { if (it) obd.scanBle() }
     var wifi by remember { mutableStateOf(false) }
     var address by remember { mutableStateOf(OBD_WIFI_ADDRESS) }
     // Muchas pantallas esconden dónde prender el Bluetooth: aquí se prende y se apaga.
@@ -251,7 +260,10 @@ private fun Connection(d: Dependencies, permitted: Boolean, onPermitted: (Boolea
     var wifiTarget by remember { mutableStateOf<ObdTarget.Wifi?>(null) }
     val lanAsk = rememberPermissionAsk(LOCAL_NETWORK_PERMISSION) { ok -> if (ok) obd.connect(wifiTarget ?: obd.target) }
     // Al volver de Ajustes de Android con el permiso de la red local ya dado, conecta sin tocar nada más.
+    // Lo emparejado o conectado en Ajustes de Android se ve al volver.
+    var resumed by remember { mutableIntStateOf(0) }
     LifecycleResumeEffect(Unit) {
+        resumed++
         if ((obd.needsLocalNetwork || lanAsk.denied) && localNetworkAllowed(context)) {
             lanAsk.denied = false
             obd.connect(wifiTarget ?: obd.target)
@@ -260,7 +272,11 @@ private fun Connection(d: Dependencies, permitted: Boolean, onPermitted: (Boolea
     }
     val bluetooth = rememberBluetoothOn()
     val askEnable = rememberBluetoothAsk()
-    LaunchedEffect(obd.state) { if (obd.state == ObdState.CONNECTING || obd.state == ObdState.ON) d.prefs.obdModule = true }
+    // Con el Taller abierto el módulo queda guardado como prendido: así «Usar otro» (que olvida el adaptador) no lo
+    // esconde aunque nunca se haya tocado su interruptor (de fábrica se prende solo si hay adaptador guardado).
+    LaunchedEffect(Unit) { if (d.prefs.obdModule == null) d.prefs.obdModule = true }
+    // Volvió a conectar (aquí solo lo pide el usuario mientras está desconectado a mano): ya se mantiene otra vez.
+    LaunchedEffect(obd.state) { if (obd.state == ObdState.CONNECTING || obd.state == ObdState.ON) obdStoppedByUser = false }
     SettingsCard(stringResource(R.string.obd_adapter), stringResource(R.string.obd_adapter_help)) {
         val name = obd.target?.name ?: ""
         val status = when (obd.state) {
@@ -272,7 +288,10 @@ private fun Connection(d: Dependencies, permitted: Boolean, onPermitted: (Boolea
         Label(status, Typography.body, if (obd.state == ObdState.ERROR) c.danger else if (obd.state == ObdState.ON) c.good else c.textMuted)
         when {
             obd.state == ObdState.ON || obd.state == ObdState.CONNECTING -> Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                Button(stringResource(R.string.obd_disconnect), { obd.disconnect() })
+                Button(stringResource(R.string.obd_disconnect), {
+                    obdStoppedByUser = true
+                    obd.disconnect()
+                })
                 Button(stringResource(R.string.obd_other), { obd.forget() })
             }
             obd.needsLocalNetwork || wifi && lanAsk.denied -> {
@@ -310,21 +329,27 @@ private fun Connection(d: Dependencies, permitted: Boolean, onPermitted: (Boolea
                 Button(stringResource(R.string.obd_wifi), { wifi = true })
             }
             bluetooth == false -> {
-                Label(stringResource(R.string.bluetooth_off), Typography.body, c.danger)
+                // Si el estado ya dice que falló por el Bluetooth apagado, no se repite en rojo.
+                if (obd.errorKind != ObdError.BLUETOOTH_OFF) Label(stringResource(R.string.bluetooth_off), Typography.body, c.danger)
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     Button(stringResource(R.string.bluetooth_turn_on), { requestBluetoothOn(context, askEnable) }, primary = true)
                     Button(stringResource(R.string.obd_wifi), { wifi = true })
                 }
             }
             else -> {
-                val devices = remember(permitted, obd.state, bluetooth) { obd.pairedDevices() }
-                if (devices.isEmpty()) Label(stringResource(R.string.obd_no_paired), Typography.small, c.textMuted)
+                // Preguntarle a Android por los emparejados y los cables es entre procesos: fuera del hilo principal.
+                val devices by produceState<List<ObdTarget.Bluetooth>?>(null, permitted, obd.state, bluetooth, resumed) {
+                    value = withContext(Dispatchers.IO) { obd.pairedDevices() }
+                }
+                if (devices?.isEmpty() == true) Label(stringResource(R.string.obd_no_paired), Typography.small, c.textMuted)
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    for (dev in devices) Button(dev.name, { obd.connect(dev) }, primary = dev == obd.target)
+                    for (dev in devices.orEmpty()) Button(dev.name, { obd.connect(dev) }, primary = dev == obd.target)
                     Button(stringResource(R.string.obd_wifi), { wifi = true })
                     Button(stringResource(if (obd.scanning) R.string.obd_ble_searching else R.string.obd_ble_search), {
-                        if (canScanBle(context)) obd.scanBle() else askScan.launch(bleScanPermission())
+                        if (canScanBle(context)) obd.scanBle() else askScan.ask()
                     })
+                    // Negado para siempre, Android ya no pregunta: «Permisos» lleva a los ajustes de LiteDash.
+                    if (askScan.denied) Button(stringResource(R.string.local_network_settings), { openAppSettings(context) })
                     // Con confirmación: está junto a los adaptadores y un toque sin querer dejaba al escáner sin Bluetooth.
                     if (bluetooth == true) {
                         val off = stringResource(R.string.bluetooth_turn_off)
@@ -332,7 +357,7 @@ private fun Connection(d: Dependencies, permitted: Boolean, onPermitted: (Boolea
                     }
                 }
                 // Cables USB conectados: el permiso lo pide Android al tocar uno.
-                val usb = remember(obd.state) { obd.usbDevices() }
+                val usb by produceState(emptyList<ObdTarget.Usb>(), obd.state, resumed) { value = withContext(Dispatchers.IO) { obd.usbDevices() } }
                 if (usb.isNotEmpty()) {
                     Label(stringResource(R.string.obd_usb_found), Typography.label, c.textMuted)
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -474,9 +499,8 @@ private enum class CodeKind(val label: Int) {
  * recibe si el auto aceptó el borrado (quien llama vuelve a leer).
  */
 @Composable
-private fun CodesCard(obd: ObdRepository, report: EngineReport?, reading: Boolean, failed: Boolean, onRead: () -> Unit, onCleared: (Boolean) -> Unit) {
+private fun CodesCard(obd: ObdRepository, scope: CoroutineScope, report: EngineReport?, reading: Boolean, failed: Boolean, onRead: () -> Unit, onCleared: (Boolean) -> Unit) {
     val c = LocalColors.current
-    val scope = rememberCoroutineScope()
     var cleared by remember { mutableStateOf<Boolean?>(null) }
     val r = report
     SettingsCard(stringResource(R.string.obd_codes), stringResource(R.string.obd_codes_help)) {

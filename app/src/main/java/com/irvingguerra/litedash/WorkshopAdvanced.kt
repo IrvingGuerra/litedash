@@ -169,6 +169,26 @@ internal fun pointAt(points: List<Float>, fraction: Float, capacity: Int = SERIE
     return points.getOrNull(k)
 }
 
+/**
+ * Le pasa la velocidad a [timer] solo cuando cambia (así llega del bus: parado, el 0 no se repite). Una lectura vieja
+ * seguía valiendo hasta ahora: se renueva antes de la nueva, si no el arranque se interpolaría contra el primer 0 de
+ * hace un minuto y el tiempo saldría inflado.
+ */
+internal class AccelFeed(private val timer: AccelTimer) {
+    private var lastMs = -1L
+    private var lastKmh = 0f
+
+    fun update(nowMs: Long, kmh: Float) {
+        if (lastMs >= 0 && nowMs - lastMs > ACCEL_FRESH_MS) timer.update(nowMs, lastKmh)
+        timer.update(nowMs, kmh)
+        lastMs = nowMs
+        lastKmh = kmh
+    }
+}
+
+/** Más vieja que esto, la lectura anterior ya no sirve para interpolar el cruce (GPS/OBD mandan ~1 por segundo). */
+private const val ACCEL_FRESH_MS = 1_500L
+
 /** Cronómetro de 0 a 100 km/h (o 0 a 60 mph) con la velocidad del OBD o del GPS. */
 @Composable
 internal fun AccelTimerCard(d: Dependencies) {
@@ -176,12 +196,13 @@ internal fun AccelTimerCard(d: Dependencies) {
     val units = d.prefs.units
     val target = if (units.miles) 60f * KM_PER_MILE else 100f
     val timer = remember(target) { AccelTimer(target) }
+    val feed = remember(timer) { AccelFeed(timer) }
     var state by remember { mutableStateOf(timer.state) }
     var now by remember { mutableIntStateOf(0) }
     val speed = d.bus.watch(Signal.SPEED)
     LaunchedEffect(speed) {
         if (speed == null) return@LaunchedEffect
-        timer.update(SystemClock.elapsedRealtime(), speed)
+        feed.update(SystemClock.elapsedRealtime(), speed)
         state = timer.state
         (state as? AccelState.Done)?.let { done ->
             if (d.prefs.bestAccel <= 0f || done.seconds < d.prefs.bestAccel) d.prefs.bestAccel = done.seconds

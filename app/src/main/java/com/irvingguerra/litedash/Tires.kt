@@ -88,6 +88,7 @@ import com.irvingguerra.litedash.feature.tpms.TpmsRepository
 import com.irvingguerra.litedash.feature.tpms.TpmsSource
 import com.irvingguerra.litedash.feature.tpms.TpmsStatus
 import com.irvingguerra.litedash.feature.tpms.Wheel
+import java.util.Locale
 import kotlinx.coroutines.delay
 import java.text.DateFormat
 import java.util.Date
@@ -190,8 +191,12 @@ private fun TireMarks(statuses: Map<Wheel, TireStatus>, modifier: Modifier, radi
 internal fun tempText(c: Float, fahrenheit: Boolean) =
     stringResource(R.string.value_with_unit, c.toFahrenheit(fahrenheit).roundToInt().toString(), stringResource(if (fahrenheit) R.string.unit_f else R.string.unit_c))
 
-/** La presión con su unidad ("32 psi"). */
-internal fun PressureUnit.text(kpa: Float) = "${format(kpa)} $label"
+/** La presión con su unidad ("32 psi"; los bar con la coma de [locale]: "2,3 bar"). */
+internal fun PressureUnit.text(kpa: Float, locale: Locale = Locale.US) = "${number(kpa, locale)} $label"
+
+/** El número de la presión, con los decimales de [PressureUnit.format] y el separador de [locale]. */
+internal fun PressureUnit.number(kpa: Float, locale: Locale): String =
+    if (this == PressureUnit.BAR) String.format(locale, "%.1f", fromKpa(kpa)) else format(kpa)
 
 /** El auto elegido desde arriba, en su color (Taller y Llantas lo dibujan igual). */
 @Composable
@@ -574,7 +579,7 @@ private fun TireHistoryChart(d: Dependencies, w: Wheel, onClose: () -> Unit, mod
         val at = touch
         val picked = if (at != null) samples.nearest(now - DAY_MS + (at * DAY_MS).toLong()) else samples.lastOrNull()
         Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Label(picked?.let { unit.text(it.kpa) } ?: "—", Typography.title.copy(fontSize = 28.sp), maxLines = 1)
+            Label(picked?.let { unit.text(it.kpa, currentLocale()) } ?: "—", Typography.title.copy(fontSize = 28.sp), maxLines = 1)
             if (picked != null) Label(times.format(Date(picked.atMillis)), Typography.small, c.textMuted, maxLines = 1, modifier = Modifier.padding(bottom = 4.dp))
         }
         if (samples.size < 2) {
@@ -1027,7 +1032,7 @@ internal fun TiresHealthTile(d: Dependencies, onClick: () -> Unit, modifier: Mod
         dot = color ?: if (lowest != null) c.good else c.textMuted,
         detail = (worst?.first ?: lowest?.first)?.let { w ->
             val name = stringResource(wheelName(w))
-            d.bus.value(TireSignals.pressure(w))?.let { stringResource(R.string.tire_line, name, repo.unit.text(it)) } ?: name
+            d.bus.value(TireSignals.pressure(w))?.let { stringResource(R.string.tire_line, name, repo.unit.text(it, currentLocale())) } ?: name
         },
         detailColor = color ?: c.textMuted,
         onClick = onClick,
@@ -1037,7 +1042,7 @@ internal fun TiresHealthTile(d: Dependencies, onClick: () -> Unit, modifier: Mod
 /**
  * La fuente "Auto (OBD)" de Llantas: con el módulo OBD prendido y adaptador guardado, la primera lectura pide el
  * escáner ([ObdRepository.keep]: conecta solo, se queda conectado y no se rinde) y cada una le pide la presión de
- * fábrica. Se pide una vez por arranque de la fuente (así «Desconectar» en el Taller no se deshace solo); revisar
+ * fábrica. Se pide una vez por arranque de la fuente y nunca tras «Desconectar» del Taller ([obdStoppedByUser]); revisar
  * en cada lectura también cubre un adaptador que se guarda con la fuente ya andando.
  */
 internal suspend fun factoryTires(d: Dependencies): FactoryTires {
@@ -1048,7 +1053,7 @@ internal suspend fun factoryTires(d: Dependencies): FactoryTires {
     val obd = d.obd
     if (!tiresAskedObd) {
         tiresAskedObd = true
-        obd.keep()
+        if (!obdStoppedByUser) obd.keep()
     }
     return obd.factoryTires()
 }
