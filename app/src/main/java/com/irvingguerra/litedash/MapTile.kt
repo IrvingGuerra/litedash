@@ -288,6 +288,20 @@ fun MapExpanded(
                 }
                 IconButton(Icons.close, close, size = 48.dp, background = c.surface.copy(alpha = 0.9f))
             }
+            // Acercar y alejar con un toque (en pantallas de auto el pellizco falla). Con la ruta el zoom es el que la enseña
+            // toda (fijo): ahí no van.
+            if (route == null && granted) Column(
+                Modifier.align(Alignment.CenterEnd).padding(end = 12.dp), verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                IconButton(
+                    Icons.plus, { camera.zoomBy(1) }, size = 48.dp, background = c.surface.copy(alpha = 0.9f), color = c.text,
+                    label = stringResource(R.string.map_zoom_near),
+                )
+                IconButton(
+                    Icons.minus, { camera.zoomBy(-1) }, size = 48.dp, background = c.surface.copy(alpha = 0.9f), color = c.text,
+                    label = stringResource(R.string.map_zoom_far),
+                )
+            }
             val cardModifier = Modifier.align(Alignment.BottomStart).padding(start = 12.dp, end = 12.dp, bottom = 12.dp).widthIn(max = CARD_MAX)
             val request = routing
             if (selected != null && !search.focused) {
