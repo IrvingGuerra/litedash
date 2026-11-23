@@ -211,6 +211,12 @@ internal class BuildingLayer {
     fun draw(canvas: Canvas) {
         if (count == 0) return
         val colors = if (night) NIGHT else DAY
+        // Android ≤ 8.1 no dibuja una forma más grande que la textura de la GPU (como pasaba con la ruta): un muro pegado
+        // a la cámara se recorta a la vista (con un margen) antes de dibujarlo.
+        clip = if (android.os.Build.VERSION.SDK_INT < 28) {
+            val m = CLIP_MARGIN_PX
+            clipBox.apply { set(-m, -m, canvas.width + m, canvas.height + m) }
+        } else null
         for (o in count - 1 downTo 0) {
             val b = (order[o] and 0xFFFFFFFFL).toInt()
             val first = start[b]
@@ -236,20 +242,21 @@ internal class BuildingLayer {
                 val a = first + i
                 val c = first + (i + 1) % m
                 if (wallTurn(a, c) * ring <= 0f) continue
-                path.rewind()
-                path.moveTo(ground[2 * a], ground[2 * a + 1])
-                path.lineTo(ground[2 * c], ground[2 * c + 1])
-                path.lineTo(roof[2 * c], roof[2 * c + 1])
-                path.lineTo(roof[2 * a], roof[2 * a + 1])
-                path.close()
+                poly[0] = ground[2 * a]; poly[1] = ground[2 * a + 1]
+                poly[2] = ground[2 * c]; poly[3] = ground[2 * c + 1]
+                poly[4] = roof[2 * c]; poly[5] = roof[2 * c + 1]
+                poly[6] = roof[2 * a]; poly[7] = roof[2 * a + 1]
+                if (!shape(4)) continue
                 fill.color = mix(colors[0], colors[1], shade[a])
                 fill.alpha = alpha
                 canvas.drawPath(path, fill)
             }
-            path.rewind()
-            path.moveTo(roof[2 * first], roof[2 * first + 1])
-            for (i in 1 until m) path.lineTo(roof[2 * (first + i)], roof[2 * (first + i) + 1])
-            path.close()
+            if (poly.size < 2 * m) poly = FloatArray(4 * m)
+            for (i in 0 until m) {
+                poly[2 * i] = roof[2 * (first + i)]
+                poly[2 * i + 1] = roof[2 * (first + i) + 1]
+            }
+            if (!shape(m)) continue
             fill.color = colors[2]
             fill.alpha = alpha
             canvas.drawPath(path, fill)
@@ -257,6 +264,35 @@ internal class BuildingLayer {
             edge.alpha = (alpha * (colors[3] ushr 24) / 255)
             canvas.drawPath(path, edge)
         }
+    }
+
+    /** La vista con margen donde se recortan las formas (solo Android ≤ 8.1; null = sin recorte). */
+    private var clip: android.graphics.RectF? = null
+    private val clipBox = android.graphics.RectF()
+    /** Los puntos de la forma que se va a dibujar (x, y…) y el resultado de recortarla. */
+    private var poly = FloatArray(64)
+    private var clipped = FloatArray(64)
+    private var clipTemp = FloatArray(64)
+
+    /** Arma [path] con los [n] puntos de [poly] (recortados a [clip] si hay); false si no queda nada a la vista. */
+    private fun shape(n: Int): Boolean {
+        val box = clip
+        var pts = poly
+        var count = n
+        if (box != null) {
+            if (clipped.size < 2 * n + 16) {
+                clipped = FloatArray(4 * n + 16)
+                clipTemp = FloatArray(4 * n + 16)
+            }
+            count = clipPolygon(poly, n, box.left, box.top, box.right, box.bottom, clipped, clipTemp)
+            pts = clipped
+            if (count < 3) return false
+        }
+        path.rewind()
+        path.moveTo(pts[0], pts[1])
+        for (i in 1 until count) path.lineTo(pts[2 * i], pts[2 * i + 1])
+        path.close()
+        return true
     }
 
     /** El área con signo del muro de [a] a [c] en pantalla (suelo y azotea): su signo dice hacia dónde gira. */
@@ -286,4 +322,60 @@ internal class BuildingLayer {
             return (0xFF shl 24) or (ch(16) shl 16) or (ch(8) shl 8) or ch(0)
         }
     }
+}
+
+/** Margen (px) de la vista al recortar formas en Android ≤ 8.1: la orilla del recorte queda fuera de la pantalla. */
+private const val CLIP_MARGIN_PX = 64f
+
+/**
+ * Recorta el polígono de [n] puntos de [src] (x, y…) al rectángulo dado (Sutherland–Hodgman, sin crear arreglos: usa
+ * [out] y [temp], cada uno con lugar para n + 8 puntos) y lo deja en [out]; devuelve cuántos puntos quedaron.
+ */
+internal fun clipPolygon(
+    src: FloatArray, n: Int, left: Float, top: Float, right: Float, bottom: Float, out: FloatArray, temp: FloatArray,
+): Int {
+    // Cuatro pasadas alternando buffers: src → temp → out → temp → out.
+    var from = src
+    var count = n
+    for (edge in 0 until 4) {
+        val to = if (edge % 2 == 0) temp else out
+        var k = 0
+        for (i in 0 until count) {
+            val j = (i + count - 1) % count
+            val cx = from[2 * i]; val cy = from[2 * i + 1]
+            val px = from[2 * j]; val py = from[2 * j + 1]
+            val cIn = inside(edge, cx, cy, left, top, right, bottom)
+            if (cIn != inside(edge, px, py, left, top, right, bottom)) {
+                val t = cross(edge, px, py, cx, cy, left, top, right, bottom)
+                to[2 * k] = px + (cx - px) * t
+                to[2 * k + 1] = py + (cy - py) * t
+                k++
+            }
+            if (cIn) {
+                to[2 * k] = cx
+                to[2 * k + 1] = cy
+                k++
+            }
+        }
+        from = to
+        count = k
+        if (count == 0) break
+    }
+    if (from !== out) System.arraycopy(from, 0, out, 0, 2 * count)
+    return count
+}
+
+private fun inside(edge: Int, x: Float, y: Float, l: Float, t: Float, r: Float, b: Float) = when (edge) {
+    0 -> x >= l
+    1 -> x <= r
+    2 -> y >= t
+    else -> y <= b
+}
+
+/** Dónde (0–1) cruza el tramo de (x0, y0) a (x1, y1) la orilla [edge]. */
+private fun cross(edge: Int, x0: Float, y0: Float, x1: Float, y1: Float, l: Float, t: Float, r: Float, b: Float): Float = when (edge) {
+    0 -> (l - x0) / (x1 - x0)
+    1 -> (r - x0) / (x1 - x0)
+    2 -> (t - y0) / (y1 - y0)
+    else -> (b - y0) / (y1 - y0)
 }
