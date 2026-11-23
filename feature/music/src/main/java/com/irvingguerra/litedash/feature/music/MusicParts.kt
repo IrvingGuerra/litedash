@@ -25,6 +25,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -582,4 +583,11 @@ internal fun BigTitle(title: String, subtitle: String, error: Boolean, compact: 
 @Composable
 internal fun HeaderButton(icon: ImageVector, onClick: () -> Unit) {
     IconButton(icon, onClick, size = 48.dp, background = LocalColors.current.surfaceHigh)
+}
+
+/** Al entrar a «Controla la música desde tu celular» se pide una vez la entrada de audio ([phoneOnlyShown]). */
+@Composable
+internal fun PhoneOnlySound(repo: MusicRepository) {
+    val on = repo.phoneOnly
+    LaunchedEffect(on) { repo.phoneOnlyShown(on) }
 }

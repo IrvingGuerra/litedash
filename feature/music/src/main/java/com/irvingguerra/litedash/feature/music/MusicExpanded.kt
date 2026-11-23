@@ -65,6 +65,7 @@ fun MusicExpanded(
     var browsing by remember { mutableStateOf(startBrowsing && files) }
     // Con Archivos, play sin nada que tocar abre la biblioteca.
     OnFilesEmpty(repo, files, remember { { browsing = true } })
+    PhoneOnlySound(repo)
     ExpandedCard(repo, SoundPiece.MUSIC, modifier, tint = song) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             // Lo que sobra es del selector; los botones, siempre a la derecha.
@@ -88,7 +89,11 @@ fun MusicExpanded(
         NowPlaying(
             song, Icons.music,
             detailsHeight = if (song?.actions.isNullOrEmpty()) 262.dp else 326.dp,
-            title = { m, compact -> ExpandedTitle(repo, song, repo.starting, stringResource(R.string.nothing_playing), idle, m, compact) },
+            title = { m, compact ->
+                // Sin ▶: tocar el aviso vuelve a pedir la entrada de audio de la pantalla.
+                val tap = if (song == null && repo.phoneOnly) m.clickable { repo.askBluetoothSound() } else m
+                ExpandedTitle(repo, song, repo.starting, stringResource(R.string.nothing_playing), idle, tap, compact)
+            },
             // Deslizar solo sobre la carátula: la barra de avance ya se arrastra.
             onNext = { repo.next() }.takeIf { repo.soundCheckFor(SoundPiece.MUSIC) == null },
             onPrevious = { repo.previous() },

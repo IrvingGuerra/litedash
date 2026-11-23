@@ -106,6 +106,8 @@ internal fun pausePlan(t: Target): Plan = when {
     t.radio && t.profile -> Plan(listOf(Channel.PROFILE))
     t.obeys || t.own -> Plan(listOf(Channel.SESSION))
     !t.app -> Plan(listOf(Channel.SYSTEM).takeUnless { t.radio }.orEmpty())
+    // Como el play: la app de Bluetooth de marca sin canal no recibe nada y la tecla del sistema pausaba otra app.
+    t.silent && !t.radio -> Plan(emptyList())
     else -> Plan(listOf(Channel.RECEIVER, Channel.SESSION_KEY, Channel.SYSTEM))
 }
 
@@ -118,6 +120,7 @@ internal fun skipPlan(t: Target): Plan = when {
     t.radio && t.profile -> Plan(listOf(Channel.PROFILE))
     t.obeys || t.own -> Plan(listOf(Channel.SESSION))
     t.radio -> Plan(listOf(Channel.RECEIVER, Channel.SESSION_KEY))
+    t.silent -> Plan(emptyList())
     else -> Plan(listOf(Channel.RECEIVER, Channel.SESSION_KEY, Channel.SYSTEM))
 }
 
@@ -136,6 +139,21 @@ internal fun pressPlays(shownPlaying: Boolean?, soundsNow: () -> Boolean): Boole
  */
 internal fun soundsNow(shown: Boolean?, session: Boolean?, audio: Boolean?, sessionsReadable: Boolean): Boolean =
     session ?: shown ?: (!sessionsReadable && audio == true)
+
+/**
+ * Tras despertar una app de música por su servicio ([Channel.SERVICE]), ¿va la tecla de respaldo a su receptor? Solo si
+ * conectó pero no contestó al play: su sesión no suena ni carga ([busy]), Android no tiene audio ([audio]) y tiene
+ * receptor ([receiver]). Va UNA vez y después, nunca junto con el play del servicio (eso era el doble play); si tampoco
+ * así suena, [playCheck] la abre.
+ */
+internal fun serviceBackup(busy: Boolean, audio: Boolean, receiver: Boolean): Boolean = receiver && !busy && !audio
+
+/**
+ * La fuente del Bluetooth (TopWay, fuente 8) sigue pedida y no hace falta volver a escribirla: se pidió ([held]), nadie
+ * se la quitó ([lost]) y el enlace TWUtil abrió de verdad ([linked]). Sin enlace (al arrancar el auto TWUtil aún no
+ * contesta) el siguiente intento vuelve a abrir y pedirla.
+ */
+internal fun sourceStillHeld(held: Boolean, lost: Boolean, linked: Boolean): Boolean = held && !lost && linked
 
 /** El celular primero; si ya no hay enlace, el camino de siempre. */
 private fun phoneFirst(rest: Plan) = rest.copy(route = listOf(Channel.PHONE) + rest.route)

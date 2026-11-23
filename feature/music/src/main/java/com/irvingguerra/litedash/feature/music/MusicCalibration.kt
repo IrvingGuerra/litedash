@@ -21,10 +21,39 @@ internal fun MusicRepository.calibrateBluetooth() {
     }
 }
 
+/**
+ * La pieza empieza o deja de decir «Controla la música desde tu celular» ([MusicRepository.phoneOnly]): la app de
+ * Bluetooth de marca no tiene por dónde recibir play y no hay Connect (TopWay `com.tw.bt`, reporte E48170). Sin ▶,
+ * nada más pediría la entrada de audio al MCU: al entrar se aplica la receta UNA vez (no en cada repintado; otra vez
+ * solo al salir y volver a entrar, al sonar la radio ([pause] de la radio) o si la persona toca el aviso
+ * ([askBluetoothSound])). Si la radio de la pantalla suena, no se le quita la salida.
+ */
+internal fun MusicRepository.phoneOnlyShown(on: Boolean) {
+    if (!on) {
+        phoneOnlyAsked = false
+        return
+    }
+    if (phoneOnlyAsked) return
+    phoneOnlyAsked = true
+    if (radio.song?.playing == true || factoryFor(radio)?.on == true) return trace("bluetooth sin canal: la radio suena, no se pide la entrada")
+    trace("bluetooth sin canal: se pide la entrada de audio")
+    calibrateBluetooth()
+}
+
+/** Tocar el aviso «Controla la música desde tu celular»: vuelve a pedir la entrada de audio aunque ya se hubiera pedido. */
+fun MusicRepository.askBluetoothSound() {
+    trace("bluetooth sin canal: la persona pide la entrada de audio")
+    phoneOnlyAsked = true
+    btApplied?.renew()
+    calibrateBluetooth()
+}
+
 /** Al dejar el método Bluetooth o irse el celular: se suelta la receta (y lo pendiente se deja). */
 internal fun MusicRepository.releaseBluetoothRecipe() {
     btCalibration.abort()
     useBluetooth(null)
+    // Lo que se pidió ya no está: al volver al aviso se pide otra vez.
+    phoneOnlyAsked = false
 }
 
 internal fun MusicRepository.useBluetooth(id: String?): Long? {

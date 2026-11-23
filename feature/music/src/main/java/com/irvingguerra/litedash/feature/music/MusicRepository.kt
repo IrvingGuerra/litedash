@@ -277,6 +277,9 @@ class MusicRepository(internal val context: Context) {
      */
     private var silentBluetoothApp by mutableStateOf<String?>(null)
 
+    /** Ya se pidió la entrada de audio en esta vuelta de [phoneOnly] ([phoneOnlyShown]). */
+    internal var phoneOnlyAsked = false
+
     /**
      * Lo que preguntan al sistema [bluetoothService], [knownBluetooth] y [headUnit] (decenas de consultas al instalador en
      * pantallas de 1 GB) se hace en el hilo de los perfiles al aparecer la primera pieza, no en el primer play ni al
@@ -788,7 +791,8 @@ class MusicRepository(internal val context: Context) {
             // Bluetooth (sus avisos de canción no traen estado); el de una app (p. ej. `fm.last.android.metachanged`) no dice
             // nada de si suena: darlo por sonando 10 min ponía ▮▮ y el primer toque era pausa.
             val sent = assumedFor(pkg ?: assumedPkg)?.takeIf { assumedAt > heardAt }
-            val playing = sent ?: h.playing ?: h.bluetooth
+            // La app de Bluetooth de marca cuenta como Bluetooth aunque su acción no lo diga (reusa la de la Música de AOSP).
+            val playing = sent ?: h.playing ?: (h.bluetooth || pkg?.let(::sourceOf) == SourceKind.BLUETOOTH)
             if (h.title == null && !playing) return null
             val title = h.title ?: app.ifBlank { if (h.bluetooth) context.getString(R.string.source_bluetooth) else return null }
             return withCover(blindSong(title, h.artist.orEmpty(), app, playing, pkg.orEmpty(), pkg?.let(::sourceOf) ?: SourceKind.BLUETOOTH.takeIf { h.bluetooth }))

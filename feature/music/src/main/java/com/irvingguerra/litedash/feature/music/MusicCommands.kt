@@ -15,6 +15,12 @@ import com.irvingguerra.litedash.feature.music.MusicRepository.Lens
  */
 private const val APP_ANSWER_MS = 4_000L
 
+/**
+ * Lo que se espera, tras el play por su servicio, a que la app que conectó suene; si no, la tecla a su receptor
+ * ([serviceBackup]). Antes de [APP_ANSWER_MS], cuando se abriría encima.
+ */
+private const val SERVICE_ANSWER_MS = 1_200L
+
 /** Las acciones de play/pausa que una sesión debe anunciar para mandarle la orden por sus controles. */
 private const val PLAY_ACTIONS = PlaybackState.ACTION_PLAY_PAUSE or PlaybackState.ACTION_PLAY or PlaybackState.ACTION_PAUSE
 
@@ -57,7 +63,7 @@ internal fun MusicRepository.play(lens: Lens, onIdle: () -> Unit = {}) {
     val shown = s != null && !(s.blind && !source && !s.phone)
     val session = !radioLens && !shown && pkg != null && !source && !isOwn(pkg) &&
         (sessionOf(pkg, lens)?.playbackState?.actions ?: 0L) and PLAY_ACTIONS != 0L
-    val silent = !radioLens && pkg != null && source && silentBluetooth(pkg, lens)
+    val silent = !radioLens && source && silentFor(pkg, lens)
     val plan = playPlan(
         Target(
             radio = radioLens,
@@ -132,6 +138,7 @@ internal fun MusicRepository.pause(lens: Lens) {
             shown = s != null,
             obeys = lens.obeys(PLAY_ACTIONS),
             profile = factoryFor(lens) != null,
+            silent = silentFor(pkg, lens),
         ),
     )
     val via = deliver(pkg, lens, Command.PAUSE, plan.route)
@@ -153,6 +160,7 @@ internal fun MusicRepository.skip(lens: Lens, forward: Boolean) {
             shown = lens.song != null,
             obeys = lens.obeys(action),
             profile = factoryFor(lens) != null,
+            silent = silentFor(pkg, lens),
         ),
     )
     deliver(pkg, lens, if (forward) Command.NEXT else Command.PREVIOUS, plan.route)
@@ -251,9 +259,17 @@ internal fun MusicRepository.connectAndPlay(pkg: String, fallback: Boolean): Boo
     lateinit var browser: MediaBrowser
     browser = MediaBrowser(context, ComponentName(service.packageName, service.name), object : MediaBrowser.ConnectionCallback() {
         override fun onConnected() {
-            runCatching { MediaController(context, browser.sessionToken).transportControls.play() }
-                .onFailure { trace("servicio de $pkg: play falló (${it.javaClass.simpleName})") }
+            val controller = runCatching { MediaController(context, browser.sessionToken).also { it.transportControls.play() } }
+                .onFailure { trace("servicio de $pkg: play falló (${it.javaClass.simpleName})") }.getOrNull()
             browser.disconnect()
+            // Conectó pero hay apps que ignoran el play en frío: con [fallback], la tecla a su receptor si sigue callada.
+            if (fallback && controller != null) mainHandler.postDelayed({
+                val receiver = keyReceiver(pkg)
+                if (serviceBackup(runCatching { controller.busy() }.getOrDefault(false), musicActive(), receiver != null)) {
+                    trace("servicio de $pkg: conectó pero no suena, play a su receptor")
+                    receiver?.let { sendMediaKey(context, KeyEvent.KEYCODE_MEDIA_PLAY, it) }
+                }
+            }, SERVICE_ANSWER_MS)
         }
 
         override fun onConnectionFailed() {
@@ -277,6 +293,10 @@ internal fun MusicRepository.connectAndPlay(pkg: String, fallback: Boolean): Boo
 internal fun MusicRepository.silentBluetooth(pkg: String, lens: Lens): Boolean =
     sourceOf(pkg) == SourceKind.BLUETOOTH && pkg != avrcpPackage && !phoneState.here &&
         keyReceiver(pkg) == null && sessionOf(pkg, lens) == null && browserServices(context, pkg).isEmpty()
+
+/** [silentBluetooth] para una orden de la pieza Música ([lens]); la radio nunca. */
+private fun MusicRepository.silentFor(pkg: String?, lens: Lens): Boolean =
+    lens !== radio && pkg != null && !isOwn(pkg) && silentBluetooth(pkg, lens)
 
 /** Receptores del botón de play de [pkg] (o de todas las apps con null). */
 internal fun MusicRepository.mediaButtonReceivers(pkg: String? = null): List<ComponentName> = runCatching {

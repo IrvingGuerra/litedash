@@ -85,6 +85,37 @@ class MusicRulesTest {
     }
 
     @Test
+    fun silentBluetoothGetsNoKeyOnPauseOrSkip() {
+        // TopWay com.tw.bt sin canal con su canción a ciegas: la tecla del sistema pausaba o adelantaba otra app (Spotify).
+        val silent = Target(radio = false, shown = true, source = true, silent = true)
+        assertEquals(emptyList<Channel>(), pausePlan(silent).route)
+        assertEquals(emptyList<Channel>(), skipPlan(silent).route)
+        // El celular por Connect sigue primero aunque la app de marca no tenga canal.
+        assertEquals(listOf(PHONE), pausePlan(silent.copy(phone = true)).route)
+    }
+
+    @Test
+    fun topWaySourceIsRequestedAgainUntilTheLinkOpens() {
+        // TWUtil no abrió al arrancar el auto: el siguiente intento la vuelve a pedir (antes quedaba «pedida» sin sonar).
+        assertFalse(sourceStillHeld(held = true, lost = false, linked = false))
+        assertTrue(sourceStillHeld(held = true, lost = false, linked = true))
+        // Otra fuente la tomó (o la persona tocó el aviso): se vuelve a pedir.
+        assertFalse(sourceStillHeld(held = true, lost = true, linked = true))
+        assertFalse(sourceStillHeld(held = false, lost = false, linked = true))
+    }
+
+    @Test
+    fun serviceBackupOnlyWhenTheAppStaysQuiet() {
+        // Conectó, ignoró el play y sigue callada: la tecla a su receptor (una vez, después).
+        assertTrue(serviceBackup(busy = false, audio = false, receiver = true))
+        // Ya suena o carga, o hay audio: nada (dos órdenes a la vez eran el doble play).
+        assertFalse(serviceBackup(busy = true, audio = false, receiver = true))
+        assertFalse(serviceBackup(busy = false, audio = true, receiver = true))
+        // Sin receptor no hay respaldo: a los 4 s se abre la app.
+        assertFalse(serviceBackup(busy = false, audio = false, receiver = false))
+    }
+
+    @Test
     fun whatIsAssumedAfterPlay() {
         val wake = playPlan(Target(radio = false))
         val blind = playPlan(Target(radio = false, shown = true))

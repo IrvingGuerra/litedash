@@ -1,5 +1,7 @@
 package com.irvingguerra.litedash.feature.music
 
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -33,13 +35,14 @@ fun MusicTile(
     val c = LocalColors.current
     val song = repo.song
     val label = sourceLabel(repo, song)
+    PhoneOnlySound(repo)
     MediaTile(
         repo, revision, modifier, song, SoundPiece.MUSIC, Icons.music, stringResource(R.string.music), stringResource(R.string.music_explain),
         label = label,
         text = { tall -> SongText(repo, song, tall, label) },
         // Cargando se pinta como pausa: tocarlo cancela la carga.
         controls = { m, compact ->
-            // Sin por dónde darle play a la app de Bluetooth de marca: sin botón (lo dice el texto, [idleHint]).
+            // Sin por dónde darle play a la app de Bluetooth de marca: sin botón (lo dice el texto, [SongText]).
             if (!repo.phoneOnly) Controls(
                 repo, song?.playing == true, m, loading = song?.buffering == true, compact = compact,
                 playBackground = c.text, playColor = c.background,
@@ -74,6 +77,12 @@ private fun SongText(repo: MusicRepository, song: Song?, tall: Boolean, label: S
     if (song == null && opening != null) {
         Label(stringResource(R.string.opening_app, opening), Typography.subtitle, c.accent, maxLines = 1)
         Label(stringResource(R.string.opening_wait), Typography.small, c.textMuted, maxLines = 1)
+    } else if (song == null && repo.phoneOnly) {
+        // Sin ▶: tocar el aviso vuelve a pedir la entrada de audio de la pantalla.
+        Column(Modifier.clickable { repo.askBluetoothSound() }) {
+            Label(stringResource(R.string.nothing_playing), if (tall) Typography.title else Typography.subtitle, maxLines = 1)
+            Label(stringResource(R.string.music_from_phone), Typography.small, c.textMuted, maxLines = 1)
+        }
     } else if (song == null) {
         Label(stringResource(R.string.nothing_playing), if (tall) Typography.title else Typography.subtitle, maxLines = 1)
         Label(idleHint(repo).takeIf { it != label }.orEmpty(), Typography.small, c.textMuted, maxLines = 1)
@@ -92,8 +101,8 @@ private fun idleHint(repo: MusicRepository): String {
     // Lo que toca según el método elegido (Archivos, Bluetooth o App).
     return when (repo.mode) {
         MusicMode.FILES -> repo.usbDrive?.let { stringResource(R.string.usb_drive_in, it) } ?: MusicMode.FILES.label()
-        MusicMode.BLUETOOTH -> if (repo.phoneOnly) stringResource(R.string.music_from_phone)
-            else repo.bluetoothDevice ?: stringResource(R.string.bluetooth_connect_phone)
+        // Con [MusicRepository.phoneOnly] lo dice [SongText] (tocable).
+        MusicMode.BLUETOOTH -> repo.bluetoothDevice ?: stringResource(R.string.bluetooth_connect_phone)
         MusicMode.APP -> repo.preferredName().ifBlank { stringResource(R.string.open_an_app) }
     }
 }

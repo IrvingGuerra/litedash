@@ -234,6 +234,11 @@ internal abstract class BluetoothRecipe(val id: String) {
     open fun sourceTaken() = Unit
     /** Aplicada, pero algo le quitó lo que puso ([sourceTaken] o el firmware lo dijo): hay que volver a aplicarla. */
     open val stale: Boolean get() = false
+    /**
+     * La persona pide otra vez la entrada de audio (toca el aviso de la pieza): lo que se hace una sola vez mientras
+     * siga aplicada se vuelve a hacer en el siguiente [apply] (el firmware pudo quitar la fuente sin avisar).
+     */
+    open fun renew() = sourceTaken()
 }
 
 /** Las recetas de Bluetooth por id (el orden lo pone la familia: [HeadUnit.bluetoothRecipes]). */
@@ -249,7 +254,8 @@ internal fun bluetoothRecipes(host: SoundHost): Map<String, BluetoothRecipe> =
  * hilo [SoundHost.worker].
  */
 private class TopWaySource8(private val host: SoundHost) : BluetoothRecipe(Recipes.TW_SOURCE8) {
-    private var link: TopWayRadio? = null
+    // Volátil: el atajo de [apply] (hilo principal) solo vale si de verdad hay enlace (se abre en el worker).
+    @Volatile private var link: TopWayRadio? = null
     private var held = false
     @Volatile private var lost = false
 
@@ -262,7 +268,9 @@ private class TopWaySource8(private val host: SoundHost) : BluetoothRecipe(Recip
     }
 
     override fun apply(): Long {
-        if (held && !lost) {
+        // Pedida de verdad = con enlace abierto. Si TWUtil no abrió (al arrancar el auto aún no contesta), cada
+        // intento siguiente vuelve a abrir y pedir la fuente (antes se quedaba «pedida» todo el viaje sin sonido).
+        if (sourceStillHeld(held, lost, linked = link != null)) {
             host.log("topway bluetooth: la fuente sigue pedida")
             return VERIFY_MS
         }
@@ -273,7 +281,8 @@ private class TopWaySource8(private val host: SoundHost) : BluetoothRecipe(Recip
                 // Otra "actividad" que no es la del Bluetooth (la radio, su app): la fuente ya no es nuestra.
                 it.onActivity = { value -> lost = value != TopWayRadio.SOURCE_BT }
                 link = it
-            } ?: return@execute
+            }
+            if (tw == null) return@execute host.log("topway bluetooth: TWUtil no abrió; se pide otra vez en el siguiente intento")
             tw.takeBluetooth()
         }
         return VERIFY_MS
@@ -351,6 +360,10 @@ private class OpenFactory(private val host: SoundHost) : BluetoothRecipe(Recipes
     }
 
     override fun release() {
+        opened = false
+    }
+
+    override fun renew() {
         opened = false
     }
 }
