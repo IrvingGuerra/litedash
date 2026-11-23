@@ -87,4 +87,17 @@ class BarItemTest {
             BarItem.normalize(listOf(BarItem.PROJECTION, BarItem.SETTINGS, BarItem.PROJECTION)),
         )
     }
+
+    @Test
+    fun projectionIsNotAddedTwiceForWhoHasItAsOwnFavorite() {
+        val bar = listOf(BarItem.SPLIT_START, BarItem.FAVORITES, BarItem.SPLIT_END, BarItem.NAVIGATE, BarItem.BLUETOOTH)
+        // ZLink entre sus favoritas propias: no se agrega el botón (abrirían lo mismo).
+        assertEquals(BarItem.normalize(bar), BarItem.withProjectionOnce(bar, listOf("com.android.chrome/.Main", "com.zjinnova.zlink/.Main")))
+        // Sin ella, con las sugeridas (null) o con las favoritas fuera de la barra: sí.
+        val added = BarItem.withProjection(bar)
+        assertEquals(added, BarItem.withProjectionOnce(bar, listOf("com.android.chrome/.Main")))
+        assertEquals(added, BarItem.withProjectionOnce(bar, null))
+        val noFavorites = listOf(BarItem.NAVIGATE, BarItem.BLUETOOTH)
+        assertEquals(BarItem.withProjection(noFavorites), BarItem.withProjectionOnce(noFavorites, listOf("com.zjinnova.zlink/.Main")))
+    }
 }

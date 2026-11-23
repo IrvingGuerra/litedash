@@ -216,6 +216,17 @@ enum class BarItem(val stored: String) {
             }
             return normalize(all.toMutableList().apply { add(at, PROJECTION) })
         }
+
+        /**
+         * El agregado de una sola vez a una barra guardada: como [withProjection], salvo que ya tenga una app de Android
+         * Auto / CarPlay entre sus favoritas PROPIAS a la vista ([ownFavorites] = sus claves de app; null = las sugeridas,
+         * que ya la quitan solas si está el botón): ahí serían dos botones que abren lo mismo.
+         */
+        fun withProjectionOnce(items: List<BarItem>, ownFavorites: List<String>?): List<BarItem> {
+            val all = normalize(items)
+            val hasOwn = FAVORITES in all && ownFavorites.orEmpty().any { isProjectionPackage(it.substringBefore('/')) }
+            return if (hasOwn) all else withProjection(all)
+        }
     }
 }
 
@@ -288,6 +299,9 @@ object Language {
 internal fun localeFor(language: String, system: Locale): Locale =
     if (system.language == language) system else Locale.forLanguageTag(if (language == "es") "es-MX" else language)
 
+/** Idiomas de España sin paquete que con «Como el sistema» siguen en el español de la APK (no en inglés). */
+private val SPANISH_FALLBACK = setOf("ca", "gl", "eu")
+
 /**
  * Con «Como el sistema» ([Language] vacío): el idioma de la app según el del sistema ([system]). "" = el del sistema
  * tal cual (español o inglés, que vienen en la APK). Otro idioma: el paquete ya bajado de ese idioma ([downloaded]; con
@@ -297,7 +311,8 @@ internal fun localeFor(language: String, system: Locale): Locale =
 internal fun systemLanguage(system: Locale, downloaded: (String) -> Boolean): String {
     // toLanguageTag y no language: Android dice "in" al indonesio, y el paquete es "id".
     val language = system.toLanguageTag().substringBefore('-')
-    if (language in BUILT_IN_LANGUAGES || language == "und") return ""
+    // Catalán, gallego y vasco: el español de la APK (`values/`) les queda mejor que el inglés, como en la 1.5.14.
+    if (language in BUILT_IN_LANGUAGES || language in SPANISH_FALLBACK || language == "und") return ""
     val regional = system.country.takeIf { it.isNotEmpty() }?.let { "$language-$it" }
     return listOfNotNull(regional, language).firstOrNull { isDownloadableTag(it) && downloaded(it) } ?: "en"
 }
@@ -555,13 +570,15 @@ class Preferences(context: Context) {
 
     /**
      * El botón de Android Auto / CarPlay llegó después de la 1.5.14 (Irving: de fábrica, como Bluetooth): una sola vez
-     * se le pone a quien ya tenía su barra ([BarItem.withProjection]). Si luego lo quita, no regresa.
+     * se le pone a quien ya tenía su barra ([BarItem.withProjectionOnce]: no a quien ya tiene ZLink, CarPlay… entre sus
+     * favoritas propias). Si luego lo quita, no regresa.
      */
     fun addProjectionToBar() {
         if (p.getBoolean(PrefKeys.BAR_PROJECTION_ADDED, false)) return
         p.edit { putBoolean(PrefKeys.BAR_PROJECTION_ADDED, true) }
         val items = barItems
-        if (BarItem.PROJECTION !in items) barItems = BarItem.withProjection(items)
+        // Se marca como hecho aunque no se agregue (ya la tenía de favorita): así no aparece después.
+        if (BarItem.PROJECTION !in items) barItems = BarItem.withProjectionOnce(items, dock)
     }
 
     /**

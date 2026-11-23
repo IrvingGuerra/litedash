@@ -29,6 +29,13 @@ class LanguageTest {
     fun systemInGermanWithoutPackIsEnglish() = assertEquals("en", systemLanguage(Locale.GERMANY) { false })
 
     @Test
+    fun catalanGalicianAndBasqueStayInSpanish() {
+        // "" = el sistema tal cual: sin `values-ca` cae en `values/`, que es español (como en la 1.5.14).
+        for (tag in listOf("ca-ES", "gl-ES", "eu-ES", "ca")) assertEquals(tag, "", systemLanguage(Locale.forLanguageTag(tag)) { true })
+        for (tag in listOf("es-US", "es-419", "es-AR")) assertEquals(tag, "", systemLanguage(Locale.forLanguageTag(tag)) { false })
+    }
+
+    @Test
     fun systemInGermanWithPackUsesIt() = assertEquals("de", systemLanguage(Locale.GERMANY) { it == "de" })
 
     @Test
