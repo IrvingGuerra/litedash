@@ -69,6 +69,7 @@ import com.irvingguerra.litedash.feature.map.MapLook
 import com.irvingguerra.litedash.feature.map.MapOrientation
 import com.irvingguerra.litedash.feature.map.MapPacks
 import com.irvingguerra.litedash.feature.map.MapZoom
+import com.irvingguerra.litedash.feature.map.markerWidthDp
 import com.irvingguerra.litedash.feature.map.Route
 import com.irvingguerra.litedash.feature.map.RoutePlan
 import com.irvingguerra.litedash.feature.map.ROUTE_BLUE
@@ -226,8 +227,8 @@ private fun CarView(d: Dependencies, session: DriveSession, modifier: Modifier) 
     val kmh = d.bus.watch(Signal.SPEED)
     val s = session.state
     BoxWithConstraints(modifier.clipToBounds()) {
-        // Tu auto mide lo mismo que en el mapa de fondo (22 % del lado corto, 140–240 dp): las calles y la ruta, a su escala.
-        val carDp = (minOf(maxWidth, maxHeight).value * 0.22f).coerceIn(140f, 240f)
+        // Tu auto mide lo mismo que en el mapa de fondo ([markerWidthDp]): las calles y la ruta, a su escala.
+        val carDp = markerWidthDp(minOf(maxWidth, maxHeight).value)
         val store = rememberTileStore(look, c.dark, DRIVE_CAR_KEY, realRoadDp = carDp)
         if (position != null) {
             // Sobre la ruta, tu auto va en ella y mirando hacia donde sigue (como Waze); fuera, como diga el GPS.

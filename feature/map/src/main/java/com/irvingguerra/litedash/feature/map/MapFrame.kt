@@ -5,6 +5,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -392,7 +393,8 @@ internal class MapFrame : ScreenPoint {
         return true
     }
 
-    fun draw(scope: DrawScope, store: TileStore, filter: ColorFilter?, accent: Color, marker: ImageBitmap? = null) = with(scope) {
+    /** [focus] = el hueco libre en fracciones del mapa (de fondo del inicio): tu auto se mide contra él. */
+    fun draw(scope: DrawScope, store: TileStore, filter: ColorFilter?, accent: Color, marker: ImageBitmap? = null, focus: Rect? = null) = with(scope) {
         drawIntoCanvas { canvas ->
             canvas.save()
             canvas.nativeCanvas.concat(matrix)
@@ -422,7 +424,7 @@ internal class MapFrame : ScreenPoint {
         }
         labelPaint?.let { paint -> drawIntoCanvas { drawLabels(it.nativeCanvas, layout.placed, paint) } }
         if (pinShown) drawPin(accent)
-        if (youShown) drawArrow(accent, marker)
+        if (youShown) drawArrow(accent, marker, focus)
     }
 
     /** Los tramos de [segments] de [width] px, con las puntas redondas (así se unen sin huecos en las vueltas). */
@@ -456,11 +458,12 @@ internal class MapFrame : ScreenPoint {
      * Tu posición: la flecha con el rumbo (color de acento), un poco acostada si está inclinado; o, con [marker], tu
      * auto visto de atrás, siempre derecho (con él el mapa gira hacia donde vas: el auto no se gira).
      */
-    private fun DrawScope.drawArrow(accent: Color, marker: ImageBitmap?) {
+    private fun DrawScope.drawArrow(accent: Color, marker: ImageBitmap?, focus: Rect?) {
         translate(you[0], you[1]) {
             if (marker != null) {
-                // Proporcional a la pantalla (como el auto de Tesla o Waze): se ve igual de grande en 7" que en 12".
-                val w = (minOf(size.width, size.height) * MARKER_SHARE).coerceIn(MARKER_MIN_DP * unit, MARKER_MAX_DP * unit)
+                // Proporcional al hueco donde va (como el auto de Tesla o Waze): se ve igual de grande en 7" que en 12".
+                val side = if (focus == null) minOf(size.width, size.height) else minOf(size.width * focus.width, size.height * focus.height)
+                val w = markerWidthDp(side / unit) * unit
                 val h = w * marker.height / marker.width
                 // Su sombra en la calle (la foto va sin piso), y el auto encima.
                 drawOval(Color.Black.copy(alpha = 0.35f), Offset(-w * 0.55f, h * 0.22f), Size(w * 1.1f, h * 0.36f))
@@ -478,9 +481,16 @@ internal class MapFrame : ScreenPoint {
     }
 }
 
-/** Lo ancho de tu auto en el mapa: esta parte del lado corto del mapa, entre [MARKER_MIN_DP] y [MARKER_MAX_DP]. */
+/**
+ * Lo ancho de tu auto (dp) en un mapa cuyo lado corto libre mide [shortSideDp]: el 22 %, entre 96 y 240 dp y nunca más
+ * del 40 % de ese lado (en un hueco chico no lo tapa todo). La guía mide con esto sus calles a escala real.
+ */
+fun markerWidthDp(shortSideDp: Float): Float =
+    (shortSideDp * MARKER_SHARE).coerceIn(MARKER_MIN_DP, MARKER_MAX_DP).coerceAtMost(shortSideDp * MARKER_MAX_SHARE)
+
 private const val MARKER_SHARE = 0.22f
-private const val MARKER_MIN_DP = 140f
+private const val MARKER_MAX_SHARE = 0.4f
+private const val MARKER_MIN_DP = 96f
 private const val MARKER_MAX_DP = 240f
 
 /** Puntos seguidos fuera del alcance para dejar de revisar (la ruta ya se fue lejos). */

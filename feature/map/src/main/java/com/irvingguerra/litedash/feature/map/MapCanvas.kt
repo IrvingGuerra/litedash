@@ -616,7 +616,7 @@ fun MapCanvas(
                         store.source.takeIf { routeWidth != null },
                     )
                 }
-                onDrawBehind { frame.draw(this, store, filter, accent, marker) }
+                onDrawBehind { frame.draw(this, store, filter, accent, marker, focus) }
             },
         )
         val credits = if (short) store.source.attributionShort else store.source.attribution
