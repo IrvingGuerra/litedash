@@ -53,6 +53,28 @@ class SearchIndexTest {
     }
 
     @Test
+    fun theWholeNameBeatsANearbyBusinessThatContainsIt() = withIndex { index ->
+        // Junto al bar: el Coliseo (el nombre es lo escrito) primero, luego el que empieza así y al final el que lo contiene.
+        val hits = index.search("colosseo", 41.8950, 12.4800)
+        assertEquals(listOf("Colosseo", "Colosseo Pizza", "Bar Colosseo"), hits.map { it.name })
+        // Aún escribiendo: el que empieza así antes que el que lo contiene.
+        assertEquals("Colosseo", index.search("coloss", 41.8950, 12.4800).first().name)
+        // Entre dos que solo contienen la palabra, la calle (clase) antes que el negocio aunque esté más lejos.
+        val colima = index.search("colima", 21.0, -102.0)
+        assertTrue(colima.indexOfFirst { it.name == "Calle Colima" } < colima.indexOfFirst { it.name == "Farmacia Colima" })
+    }
+
+    @Test
+    fun tiersFollowTheWholeName() {
+        val q = listOf("colosseo")
+        assertEquals(0, SearchIndex.tier(listOf("colosseo"), q))
+        assertEquals(1, SearchIndex.tier(listOf("colosseo", "pizza"), q))
+        assertEquals(2, SearchIndex.tier(listOf("bar", "colosseo"), q))
+        assertEquals(3, SearchIndex.tier(listOf("colosseum"), listOf("colos")))
+        assertEquals(4, SearchIndex.tier(listOf("bar", "colosseum"), listOf("colos")))
+    }
+
+    @Test
     fun dropsDuplicatesOfTheSamePlace() = withIndex { index ->
         // "Calle Hidalgo" sale 3 veces en San Pedro (una por celda): queda la más cercana.
         val hits = index.search("hidalgo", 20.0, -103.0)
@@ -109,6 +131,9 @@ class SearchIndexTest {
         Entry(0, "Calle Hidalgo", 20.30, -103.00, locality = "San Pedro"),
         Entry(0, "Calle Hidalgo", 20.00, -103.00, locality = "San Pedro"),
         Entry(0, "Calle Hidalgo", 20.50, -103.00, locality = "San Pedro"),
+        Entry(8, "Bar Colosseo", 41.8951, 12.4801, locality = "Monti", category = 4),
+        Entry(8, "Colosseo Pizza", 41.8955, 12.4810, locality = "Monti", category = 4),
+        Entry(8, "Colosseo", 41.8902, 12.4922, locality = "Celio", category = 14),
     ) + (0 until 40).map { Entry(8, "Relleno x%02d".format(it), 18.0 + it * 0.01, -104.0) }
 
     private fun withIndex(test: (SearchIndex) -> Unit) {
