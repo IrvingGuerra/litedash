@@ -39,22 +39,34 @@ private val PROJECTION_WORDS = listOf(
     "speedplay", "carbit", "headunit revived", "headunit reloaded", "open headunit",
 )
 
+// Lo que separa palabras en el nombre de una app ("Mi CarPlay", "Z-Link").
+private val NAME_SEPARATORS = Regex("[^\\p{L}\\p{N}]+")
+
 /**
  * ¿Es una app de Android Auto / CarPlay de la pantalla? Por su paquete (una parte del paquete empieza con la palabra:
- * "tlink" no confunde a "…btlink…") y, si se sabe, por su nombre.
+ * "tlink" no confunde a "…btlink…") y, si se sabe, por su nombre con la misma regla (una palabra del nombre empieza con
+ * ella: "BTLink" y "SmartLink" no cuentan; "ZLink" y "Mi CarPlay", sí).
  */
 fun isProjectionPackage(pkg: String, name: String? = null): Boolean {
     if (pkg in PROJECTION_PACKAGES) return true
     val parts = pkg.lowercase().split('.', '_')
-    val label = name?.lowercase()
+    // " mi carplay": cada palabra lleva un espacio antes, así " carplay" solo se halla al principio de una palabra.
+    val label = name?.lowercase()?.split(NAME_SEPARATORS)?.filter { it.isNotEmpty() }?.joinToString(" ", prefix = " ")
     return PROJECTION_WORDS.any { w ->
         val joined = w.replace(" ", "")
-        parts.any { it.startsWith(joined) } || (label != null && w in label)
+        parts.any { it.startsWith(joined) } || (label != null && " $w" in label)
     }
 }
 
+/**
+ * Para la música (no pausar a la app de proyección al cambiar de fuente): las que reconoce LiteDash por su paquete y
+ * también la elegida a mano ([chosenKey], su [App.key]) aunque no se parezca a ninguna.
+ */
+fun isProjection(pkg: String, chosenKey: String?): Boolean =
+    isProjectionPackage(pkg) || (chosenKey != null && pkg == chosenKey.substringBefore('/'))
+
 /** La app de Android Auto / CarPlay que tenga la pantalla (primero las conocidas), o null. */
-fun projectionApp(apps: List<App>): App? =
+private fun projectionApp(apps: List<App>): App? =
     PROJECTION_PACKAGES.firstNotNullOfOrNull { p -> apps.firstOrNull { it.pkg == p } }
         ?: apps.firstOrNull { isProjectionPackage(it.pkg, it.name) }
 
@@ -96,16 +108,19 @@ fun ProjectionTile(d: Dependencies, apps: List<App>, tile: Tile, onMissing: () -
  */
 @Composable
 internal fun ProjectionSettings(d: Dependencies) {
-    val apps = rememberApps(d.apps).orEmpty()
+    val loaded = rememberApps(d.apps)
+    val apps = loaded.orEmpty()
     val chosen = d.prefs.projectionApp
     val current = projectionChoice(chosen, apps)
+    // «Quitar» solo si la elegida sigue instalada: si se desinstaló ya se abre la automática y quitarla no cambiaría nada.
+    val chosenInstalled = chosen != null && apps.any { it.key == chosen }
     // Las de la lista ya cargada (en memoria): no se le pregunta nada a Android aquí.
     val found = remember(apps, current) { (apps.filter { isProjectionPackage(it.pkg, it.name) } + listOfNotNull(current)).distinctBy { it.key } }
     var other by remember { mutableStateOf(false) }
     FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         for (app in found) Button(app.name, { d.prefs.projectionApp = app.key }, primary = app == current)
         Button(stringResource(R.string.music_other_app), { other = !other }, primary = other)
-        if (chosen != null) Button(stringResource(R.string.remove), { d.prefs.projectionApp = null })
+        if (chosenInstalled) Button(stringResource(R.string.remove), { d.prefs.projectionApp = null })
     }
     if (other) {
         AppSearch(apps, current?.pkg) { pkg ->
@@ -113,6 +128,7 @@ internal fun ProjectionSettings(d: Dependencies) {
             other = false
         }
     }
-    if (found.isEmpty()) Label(stringResource(R.string.projection_missing), Typography.body, LocalColors.current.textMuted)
+    // Mientras carga la lista no se dice «No encontré…».
+    if (loaded != null && found.isEmpty()) Label(stringResource(R.string.projection_missing), Typography.body, LocalColors.current.textMuted)
     Label(stringResource(R.string.projection_help), Typography.small, LocalColors.current.textMuted)
 }

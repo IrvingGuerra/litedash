@@ -48,6 +48,23 @@ class ProjectionTest {
         assertTrue(isProjectionPackage("com.vendor.app", "Android Auto"))
         assertTrue(isProjectionPackage("com.vendor.app", "Mi CarPlay"))
         assertFalse(isProjectionPackage("com.vendor.app", "Radio"))
+        assertTrue(isProjectionPackage("com.vendor.app", "ZLink"))
+    }
+
+    @Test
+    fun byNameTheWordMustStartAWord() {
+        // "tlink" dentro de "BTLink" (Bluetooth) o "SmartLink" no es Android Auto.
+        assertFalse(isProjectionPackage("com.vendor.app", "BTLink"))
+        assertFalse(isProjectionPackage("com.vendor.app", "SmartLink"))
+        assertFalse(isProjectionPackage("com.vendor.app", "EZLink"))
+    }
+
+    @Test
+    fun chosenAppCountsForTheMusic() {
+        assertTrue(isProjection("com.zjinnova.zlink", null))
+        assertTrue(isProjection("com.vendor.mirror", "com.vendor.mirror/Main"))
+        assertFalse(isProjection("com.vendor.mirror", null))
+        assertFalse(isProjection("com.spotify.music", "com.vendor.mirror/Main"))
     }
 
     @Test
