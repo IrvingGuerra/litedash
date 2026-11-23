@@ -31,16 +31,20 @@ data class GuidanceState(
  * atrás), dice la próxima vuelta y si te saliste (dos lecturas seguidas fuera). Sin estado compartido: un objeto por
  * ruta, desde un solo hilo.
  *
- * Cuándo cuenta como salirse (idea tomada de NavigationPolicy.kt de Horizon Maps, GPL-3.0, adaptada): una lectura con
- * error de más de [UNRELIABLE_ACCURACY_M] no decide; el margen es max(30 m, error × 1.5 + 12 m) con tope; un brinco
- * hacia adelante imposible para tu velocidad en ese tiempo se descarta (salvo que se repita); y si ya vas algo fuera de
- * la ruta en sentido contrario a ella, cuenta. Lo nuestro se queda: el castigo por adelantarse (calles de ida y vuelta)
- * y las dos lecturas seguidas.
+ * Cuándo cuenta como salirse (idea tomada de NavigationPolicy.kt de Horizon Maps, GPL-3.0, adaptada): el margen es
+ * max(30 m, error × 1.5 + 12 m) con tope; una lectura con error de más de [UNRELIABLE_ACCURACY_M] solo se ignora si la
+ * ruta cae dentro de su propio error (error × 1.5), y aun así, si se repite [VAGUE_READINGS] veces seguidas, cuenta (en
+ * pantallas que siempre dicen 50–100 m nunca debe quedarse pegada a la ruta vieja); un brinco hacia adelante imposible
+ * para tu velocidad en ese tiempo se descarta (salvo que se repita); y si ya vas algo fuera de la ruta en sentido
+ * contrario a ella, lejos de cualquier vuelta, cuenta. Lo nuestro se queda: el castigo por adelantarse (calles de ida y
+ * vuelta) y las dos lecturas seguidas.
  */
 class Guidance(val route: Route) {
     private var segment = 0
     private var lastF = 0.0
     private var offCount = 0
+    /** Lecturas imprecisas seguidas fuera del margen pero dentro de su propio error. */
+    private var vagueCount = 0
     private var arrived = false
     private var lastDoneM = 0.0
     /** Cuándo fue la última lectura buena sobre la ruta (ms; null = aún ninguna o sin hora). */
@@ -103,25 +107,34 @@ class Guidance(val route: Route) {
         val confirmedJump = jump && !pendingJumpM.isNaN() && abs(bestAlong - pendingJumpM) < JUMP_AGREE_M
         pendingJumpM = if (jump && !confirmedJump) bestAlong else Double.NaN
         val rejectedJump = jump && !confirmedJump
-        // Vas en sentido contrario a la ruta y ya algo fuera de ella (diste vuelta en U o tomaste la calle de junto).
+        // Vas en sentido contrario a la ruta y ya algo fuera de ella (diste vuelta en U o tomaste la calle de junto). No
+        // cerca de una vuelta: en avenidas anchas, al dar la vuelta, el tramo más cercano ya es el siguiente mientras tu
+        // rumbo sigue en el anterior (y en la vuelta en U de la propia ruta, ida y regreso quedan encimados).
         val against = headingDeg != null && speedMps != null && flatMeters(p, best, best + 1) > 0.5 &&
+            !nearManeuver(bestAlong) &&
             headingAway(bestD, speedMps.toDouble(), angleBetween(headingDeg.toDouble(), bearing(p, best, best + 1)))
-        val unreliable = accuracyM != null && accuracyM > UNRELIABLE_ACCURACY_M
         val onRoute = bestD <= margin && !rejectedJump && !against
+        // Una lectura muy imprecisa con la ruta dentro de su propio error no decide... salvo que se repita.
+        val vague = !onRoute && !rejectedJump && !against && isVague(bestD, accuracyM) && ++vagueCount < VAGUE_READINGS
         when {
             onRoute -> {
                 offCount = 0
+                vagueCount = 0
                 segment = best
                 lastF = bestF
                 lastDoneM = bestAlong
                 if (timeMs != null) lastOnRouteAt = timeMs
             }
-            // Un GPS muy impreciso o un brinco sin confirmar no deciden nada: te quedas donde ibas.
-            unreliable || rejectedJump -> Unit
-            else -> offCount++
+            // Un brinco sin confirmar o una lectura imprecisa suelta no deciden nada: te quedas donde ibas.
+            vague || rejectedJump -> Unit
+            else -> {
+                offCount++
+                // Ya cuenta como fuera: la siguiente imprecisa también (como en la 1.5.14, dos lecturas = recálculo).
+                if (!rejectedJump) vagueCount = VAGUE_READINGS
+            }
         }
         // Dónde se te muestra: sobre la ruta donde ibas (o vas); si te saliste, donde dice el GPS.
-        val shownOnRoute = onRoute || unreliable || rejectedJump
+        val shownOnRoute = onRoute || vague || rejectedJump
         val i = segment
         val f = if (shownOnRoute) lastF else 0.0
         val doneM = route.atM[i] + (route.atM[i + 1] - route.atM[i]) * f
@@ -143,6 +156,11 @@ class Guidance(val route: Route) {
         )
     }
 
+    /** ¿A [alongM] metros de la ruta hay una vuelta (o una vuelta en U) cerca? */
+    private fun nearManeuver(alongM: Double): Boolean = route.maneuvers.any {
+        it.type != ManeuverType.DEPART && it.type != ManeuverType.ARRIVE && abs(it.atM - alongM) < MANEUVER_GUARD_M
+    }
+
     companion object {
         /** Más lejos que esto de la ruta (metros) cuenta como salirse con buen GPS; crece con su error ([offRouteLimit]). */
         private const val OFF_ROUTE_M = 30.0
@@ -153,8 +171,14 @@ class Guidance(val route: Route) {
         /** Sin dato de precisión, como un buen GPS. */
         private const val GOOD_ACCURACY_M = 8.0
 
-        /** Una lectura con más error que esto (metros) no decide si te saliste. */
+        /** Una lectura con más error que esto (metros) no decide si te saliste mientras la ruta caiga dentro de su error. */
         private const val UNRELIABLE_ACCURACY_M = 45f
+
+        /** Lecturas imprecisas seguidas (fuera del margen, dentro de su error) que ya cuentan como fuera. */
+        private const val VAGUE_READINGS = 4
+
+        /** A menos de esto (metros sobre la ruta) de una vuelta, el rumbo contrario no cuenta como salirse. */
+        private const val MANEUVER_GUARD_M = 80.0
 
         /** Lecturas seguidas fuera de la ruta para recalcular (una sola puede ser un brinco del GPS). */
         private const val OFF_ROUTE_READINGS = 2
@@ -184,6 +208,14 @@ class Guidance(val route: Route) {
             val acc = accuracyM?.takeIf { it > 0f }?.toDouble() ?: GOOD_ACCURACY_M
             return maxOf(OFF_ROUTE_M, acc * 1.5 + 12.0).coerceAtMost(MAX_OFF_ROUTE_M)
         }
+
+        /**
+         * ¿Una lectura a [distanceM] de la ruta con error [accuracyM] es tan imprecisa que la ruta cae dentro de su propio
+         * error? (Más lejos que eso, cuenta como fuera aunque sea imprecisa.)
+         */
+        internal fun isVague(distanceM: Double, accuracyM: Float?): Boolean =
+            accuracyM != null && accuracyM > UNRELIABLE_ACCURACY_M &&
+                distanceM <= maxOf(offRouteLimit(accuracyM), accuracyM * 1.5)
 
         /** ¿Avanzar de [trustedM] a [candidateM] metros en [elapsedS] a [speedMps] es imposible? (Holgura: al menos 400 m.) */
         internal fun isProgressJump(candidateM: Double, trustedM: Double, speedMps: Double, elapsedS: Double): Boolean {

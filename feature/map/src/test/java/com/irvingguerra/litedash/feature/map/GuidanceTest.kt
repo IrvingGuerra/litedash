@@ -79,14 +79,44 @@ class GuidanceTest {
     }
 
     @Test
-    fun aVeryImpreciseFixFarAwayDecidesNothing() {
+    fun aVeryImpreciseFixFarBeyondItsErrorStillCountsAsLeaving() {
+        // Pantalla barata: 80 m de error todo el tiempo. A ~200 m de la ruta durante 10 s: fuera y recálculo, como en la 1.5.14.
         val g = Guidance(route)
-        val before = g.update(lat0 + 0.5 * step, lon0, 5f)
-        // 120 m de error y a ~200 m de la ruta (bajo un paso a desnivel): no cuenta, te quedas donde ibas.
-        g.update(lat0 + 0.5 * step, lon0 - 0.002, 120f)
-        val s = g.update(lat0 + 0.5 * step, lon0 - 0.002, 120f)
-        assertFalse(s.offRoute)
-        assertEquals(before.doneM, s.doneM, 0.5)
+        g.update(lat0 + 0.2 * step, lon0, 80f, 10f, 0f, 0L)
+        var off = false
+        for (k in 1..10) {
+            val s = g.update(lat0 + (0.2 + 0.05 * k) * step, lon0 - 0.0019, 80f, 10f, 0f, k * 1_000L)
+            if (k >= 2) assertTrue("lectura $k", s.offRoute)
+            off = off || s.offRoute
+        }
+        assertTrue(off)
+    }
+
+    @Test
+    fun anImpreciseFixWithinItsMarginDoesNotRecalculate() {
+        // 80 m de error y a ~60 m de la ruta (dentro del margen) durante 10 s: sigues en la ruta.
+        val g = Guidance(route)
+        g.update(lat0 + 0.2 * step, lon0, 80f, 10f, 0f, 0L)
+        for (k in 1..10) {
+            assertFalse(g.update(lat0 + (0.2 + 0.05 * k) * step, lon0 - 0.00057, 80f, 10f, 0f, k * 1_000L).offRoute)
+        }
+    }
+
+    @Test
+    fun anImpreciseFixWithinItsOwnErrorWaitsAFewReadingsButNeverSticks() {
+        // 80 m de error y a ~100 m (fuera del margen de 90 m, dentro de su error de 120 m): una suelta no decide y te
+        // quedas donde ibas; si se repite, a las pocas lecturas cuenta como fuera (nunca pegado a la ruta vieja).
+        val g = Guidance(route)
+        val before = g.update(lat0 + 0.5 * step, lon0, 80f)
+        val first = g.update(lat0 + 0.5 * step, lon0 - 0.00095, 80f)
+        assertFalse(first.offRoute)
+        assertEquals(before.doneM, first.doneM, 0.5)
+        var readings = 1
+        while (!g.update(lat0 + 0.5 * step, lon0 - 0.00095, 80f).offRoute) readings++
+        assertTrue("lecturas: $readings", readings <= 5)
+        assertTrue(Guidance.isVague(100.0, 80f))
+        assertFalse(Guidance.isVague(130.0, 80f))
+        assertFalse(Guidance.isVague(100.0, 40f))
     }
 
     @Test
@@ -131,6 +161,32 @@ class GuidanceTest {
         assertFalse(h.update(lat0 + 0.5 * step, lon0 + 0.00019, 5f, 8f, 0f, 2_000L).offRoute)
         assertEquals(180.0, Guidance.angleBetween(10.0, 190.0), 0.01)
         assertEquals(20.0, Guidance.angleBetween(350.0, 10.0), 0.01)
+    }
+
+    @Test
+    fun aWideTurnDoesNotCountAsGoingAgainstTheRoute() {
+        // Dando la vuelta a la derecha en una avenida ancha: a ~20 m de la línea, ya más cerca del tramo al oriente, con
+        // el rumbo todavía al norte (90° contra el tramo nuevo). Cerca de la vuelta no cuenta.
+        val g = Guidance(route)
+        g.update(lat0 + 1.8 * step, lon0, 5f, 8f, 0f, 0L)
+        g.update(lat0 + 2 * step - 0.00018, lon0 + 0.0003, 5f, 8f, 0f, 1_000L)
+        assertFalse(g.update(lat0 + 2 * step - 0.00018, lon0 + 0.00035, 5f, 8f, 0f, 2_000L).offRoute)
+    }
+
+    @Test
+    fun theRoutesOwnUTurnDoesNotCountAsGoingAgainstIt() {
+        // 300 m al norte y de regreso por el carril de junto (~15 m): al dar la vuelta en U y regresar, no recalcula.
+        val pts = intArrayOf(e6(lat0), e6(lon0), e6(lat0 + 0.0027), e6(lon0), e6(lat0 + 0.0027), e6(lon0 + 0.00014), e6(lat0), e6(lon0 + 0.00014))
+        val m = DoubleArray(4) { i -> (0 until i).sumOf { flatMeters(pts, it, it + 1) } }
+        val r = Route(
+            pts, m.last(), m.last() / 10, "",
+            listOf(Maneuver(ManeuverType.DEPART, 0f, "", 0, 0.0), Maneuver(ManeuverType.UTURN, 180f, "", 1, m[1]), Maneuver(ManeuverType.ARRIVE, 0f, "", 3, m[3])),
+            m, DoubleArray(4) { m[it] / 10 },
+        )
+        val g = Guidance(r)
+        var t = 0L
+        for (k in 0..26) assertFalse(g.update(lat0 + k * 0.0001, lon0, 5f, 8f, 0f, t++ * 1_000).offRoute)
+        for (k in 26 downTo 20) assertFalse("regreso $k", g.update(lat0 + k * 0.0001, lon0 + 0.00014, 5f, 8f, 180f, t++ * 1_000).offRoute)
     }
 
     @Test
