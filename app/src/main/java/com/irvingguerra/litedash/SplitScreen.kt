@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.runtime.Composable
@@ -272,12 +273,16 @@ fun SplitSettings(d: Dependencies) {
             listOf(false to stringResource(R.string.tile_car), true to stringResource(R.string.tile_road)),
             d.prefs.splitRoad,
             { d.prefs.splitRoad = it },
+            Modifier.fillMaxWidth(),
+            check = true,
         )
         Label(stringResource(R.string.split_side), Typography.label, c.textMuted)
         Segmented(
             listOf(true to stringResource(R.string.split_left), false to stringResource(R.string.split_right)),
             d.prefs.splitCarLeft,
             { d.prefs.splitCarLeft = it },
+            Modifier.fillMaxWidth(),
+            check = true,
         )
         Label(stringResource(R.string.split_swap_help), Typography.small, c.textMuted)
     }
