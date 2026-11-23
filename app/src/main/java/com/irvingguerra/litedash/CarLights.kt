@@ -160,7 +160,7 @@ fun LightsSettings(prefs: Preferences) {
             LearnStep.Idle -> {
                 if (key != null) {
                     Label(
-                        stringResource(if (night == true) R.string.lights_now_on else R.string.lights_now_off, key.stored),
+                        stringResource(if (night == true) R.string.lights_now_on else R.string.lights_now_off, key.stored.substringAfter('/')),
                         Typography.body, if (night == true) c.accent else c.textMuted,
                     )
                 } else {
@@ -194,7 +194,8 @@ fun LightsSettings(prefs: Preferences) {
             is LearnStep.Choose -> {
                 Label(stringResource(R.string.lights_choose), Typography.body)
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    for ((k, v) in s.candidates) Button("$k = $v", { save(k, v) })
+                    // Sin la tabla de Android ("system/"): el nombre del ajuste basta para reconocerlo.
+                    for ((k, v) in s.candidates) Button("${k.substringAfter('/')} = $v", { save(k, v) })
                     Button(stringResource(R.string.cancel), { step = LearnStep.Idle })
                 }
             }
