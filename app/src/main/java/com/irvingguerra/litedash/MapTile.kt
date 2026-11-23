@@ -607,29 +607,17 @@ fun CustomizeMapPanel(d: Dependencies, tileId: String, close: () -> Unit) {
     fun set(new: MapLook) = d.dashboard.setData(tileId, new.encode())
     val (granted, _) = rememberGpsPermission(d)
     PanelScaffold(stringResource(R.string.map_customize), close) {
-        BoxWithConstraints(Modifier.fillMaxWidth().weight(1f)) {
+        WidgetPanelLayout(
             // Las mismas teselas que el widget (no se bajan dos veces), con su propia cámara: moverla no mueve el widget.
-            val preview = @Composable { m: Modifier -> if (granted) Card(m) { LiveMap(d, look, Modifier.fillMaxSize(), tileId, ownCamera = true) } }
-            val options = @Composable { m: Modifier ->
+            preview = { m -> if (granted) Card(m) { LiveMap(d, look, Modifier.fillMaxSize(), tileId, ownCamera = true) } },
+            options = { m ->
                 Column(m.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(14.dp)) {
                     MapLookOptions(look, ::set)
                     OfflineSection(d, look.detail)
                     Box(Modifier.height(12.dp))
                 }
-            }
-            val previewHeight = maxHeight * 0.4f
-            if (maxWidth > maxHeight) {
-                Row(Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(24.dp)) {
-                    preview(Modifier.weight(1f).fillMaxHeight().padding(bottom = 16.dp))
-                    options(Modifier.weight(1f))
-                }
-            } else {
-                Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                    preview(Modifier.fillMaxWidth().height(previewHeight))
-                    options(Modifier.weight(1f))
-                }
-            }
-        }
+            },
+        )
     }
 }
 

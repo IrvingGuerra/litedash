@@ -108,9 +108,9 @@ fun CustomizeWidgetPanel(
     }
 }
 
-/** Vista previa y opciones: lado a lado en pantallas acostadas; paradas, una sobre otra. */
+/** Vista previa y opciones de un widget (también el panel del Mapa): lado a lado acostada; parada, una sobre otra. */
 @Composable
-private fun ColumnScope.WidgetPanelLayout(preview: @Composable (Modifier) -> Unit, options: @Composable (Modifier) -> Unit) {
+internal fun ColumnScope.WidgetPanelLayout(preview: @Composable (Modifier) -> Unit, options: @Composable (Modifier) -> Unit) {
     BoxWithConstraints(Modifier.fillMaxWidth().weight(1f)) {
         if (maxWidth > maxHeight) Row(Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(24.dp)) {
             preview(Modifier.weight(1f).fillMaxHeight().padding(bottom = 16.dp))
