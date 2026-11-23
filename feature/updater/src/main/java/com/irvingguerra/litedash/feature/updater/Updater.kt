@@ -114,7 +114,8 @@ class Updater(
             for (dir in listOfNotNull(context.cacheDir, context.externalCacheDir)) File(dir, APK_FILE).delete()
         }
         dismissed = store.getString(KEY_DISMISSED, null)
-        if (System.currentTimeMillis() - store.getLong(KEY_LAST, 0L) < QUIET_EVERY_MS) {
+        // Con el reloj atrás (pantalla sin pila: la diferencia sale negativa) también toca revisar.
+        if (System.currentTimeMillis() - store.getLong(KEY_LAST, 0L) in 0 until QUIET_EVERY_MS) {
             // Sin pedir a GitHub otra vez: lo encontrado antes, si sigue siendo más nuevo.
             found = store.getString(KEY_FOUND, null)?.let { runCatching { fromJson(it) }.getOrNull() }
                 ?.takeIf { isNewer(it.name, current) }

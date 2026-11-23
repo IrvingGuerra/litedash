@@ -1201,9 +1201,10 @@ internal class PackageWriter(private val folder: () -> File) {
         if (n == 0) {
             drop()
             val folder = folder().apply { mkdirs() }
-            // Lo que haya quedado de una vez que se cortó la app (lo entregado ya lo borró quien lo instaló).
-            val old = System.currentTimeMillis() - STALE_MS
-            folder.listFiles()?.filter { it.lastModified() < old }?.forEach { it.delete() }
+            // Lo que haya quedado de una vez que se cortó la app (lo entregado ya lo borró quien lo instaló); con fecha
+            // «del futuro» (el reloj regresó, pantalla sin pila) también es viejo.
+            val now = System.currentTimeMillis()
+            folder.listFiles()?.filter { now - it.lastModified() !in 0 until STALE_MS }?.forEach { it.delete() }
             file = File.createTempFile("pkg-", ".zip", folder).also { out = FileOutputStream(it) }
         }
         val o = out
