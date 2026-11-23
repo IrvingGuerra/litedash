@@ -1,5 +1,6 @@
 package com.irvingguerra.litedash
 
+import android.os.SystemClock
 import android.text.format.DateFormat
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Canvas
@@ -35,11 +36,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.platform.LocalContext
@@ -60,7 +59,6 @@ import com.irvingguerra.litedash.core.ui.Radius
 import com.irvingguerra.litedash.core.ui.Typography
 import com.irvingguerra.litedash.core.vehicle.Signal
 import com.irvingguerra.litedash.core.vehicle.watch
-import com.irvingguerra.litedash.feature.car.snapshot
 import com.irvingguerra.litedash.feature.map.Guidance
 import com.irvingguerra.litedash.feature.map.GuidanceState
 import com.irvingguerra.litedash.feature.map.Maneuver
@@ -104,6 +102,7 @@ internal class DriveSession(val to: SearchHit, route: Route) {
     var state by mutableStateOf<GuidanceState?>(null)
     var recalculating by mutableStateOf(false)
     var overview by mutableStateOf(false)
+    /** Cuándo se recalculó (`SystemClock.elapsedRealtime`). */
     var lastRecalc = 0L
 
     /** Cuánto esperar al siguiente recálculo ([RECALC_GAPS_MS]): crece si salen la misma ruta o ninguna. */
@@ -151,7 +150,8 @@ internal fun DrivingScreen(d: Dependencies, session: DriveSession, revision: Int
         session.lastFix = p.time
         val s = session.guidance.update(p.latitude, p.longitude, if (p.hasAccuracy()) p.accuracy else null)
         session.state = s
-        val now = System.currentTimeMillis()
+        // Las esperas con el reloj que no brinca (en pantallas sin pila la hora se corrige al sincronizar).
+        val now = SystemClock.elapsedRealtime()
         if (!s.offRoute) session.recalcStep = 0
         if (s.offRoute && !s.arrived && !session.recalculating && now - session.lastRecalc > RECALC_GAPS_MS[session.recalcStep]) {
             session.recalculating = true
@@ -212,11 +212,7 @@ private fun CarView(d: Dependencies, session: DriveSession, modifier: Modifier) 
         MapLook.parse(d.prefs.mapLook.orEmpty()).copy(zoom = MapZoom.AUTO, orientation = MapOrientation.HEADING, detail = MapDetail.MINIMAL)
     }
     val camera = rememberMapCamera()
-    val car = d.cars.pkg(d.prefs.carModel)
-    val paint = d.prefs.carPaint
-    val marker by produceState<ImageBitmap?>(null, car?.id, paint) {
-        value = car?.let { d.cars.snapshot(it, paint, MARKER_PX, turn = REAR_TURN, floor = false)?.solidPart()?.asImageBitmap() }
-    }
+    val marker = rememberRearMarker(d, d.cars.pkg(d.prefs.carModel))
     val position = d.trip.position
     val kmh = d.bus.watch(Signal.SPEED)
     val s = session.state
@@ -333,6 +329,8 @@ private fun TurnCard(d: Dependencies, session: DriveSession, modifier: Modifier)
         when {
             session.recalculating -> Label(stringResource(R.string.guide_recalculating), Typography.title, maxLines = 1)
             s == null -> Label(stringResource(R.string.route_waiting), Typography.title, maxLines = 1)
+            // Fuera de la ruta y sin una nueva todavía: la vuelta de la ruta vieja ya no sirve.
+            s.offRoute && !s.arrived -> Label(stringResource(R.string.guide_off_route), Typography.title, maxLines = 1)
             s.arrived -> {
                 ArrowBox(route.maneuvers.last(), 64.dp)
                 Label(

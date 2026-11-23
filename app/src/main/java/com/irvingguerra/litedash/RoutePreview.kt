@@ -55,7 +55,8 @@ import kotlin.math.roundToInt
 
 /**
  * La ruta al lugar elegido (M4): se pide al tocar «Ruta» y se calcula en la pantalla con las calles del estado bajado.
- * [to] = a dónde; [plan] = lo que salió (null = buscando). Al moverte no se recalcula (eso es la guía, M5).
+ * [to] = a dónde; [plan] = lo que salió (null = buscando). Al moverte se calcula otra vez solo si te alejas más de
+ * [RECHECK_M] de donde salió (seguirte vuelta por vuelta es la guía, M5).
  */
 @Stable
 internal class RouteRequest(val to: SearchHit) {
