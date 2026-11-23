@@ -44,8 +44,11 @@ import androidx.compose.ui.input.pointer.PointerInputChange
 import androidx.compose.ui.input.pointer.PointerInputScope
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.positionChange
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.irvingguerra.litedash.core.ui.Label
@@ -620,13 +623,54 @@ fun MapCanvas(
             },
         )
         val credits = if (short) store.source.attributionShort else store.source.attribution
+        val boxW = constraints.maxWidth.toFloat()
+        val boxH = constraints.maxHeight.toFloat()
         if (focus == null) Attribution(credits, Modifier.align(Alignment.BottomEnd))
         else Box(Modifier.offset(maxWidth * focus.left, maxHeight * focus.top).size(maxWidth * focus.width, maxHeight * focus.height)) {
-            // Abajo a la izquierda del hueco: abajo al centro van los puntitos de las páginas.
-            Attribution(credits, Modifier.align(Alignment.BottomStart))
+            // Abajo a la izquierda del hueco (abajo al centro van los puntitos de las páginas); si ahí los pisaría tu auto
+            // o la flecha, arriba a la izquierda.
+            var creditsSize by remember { mutableStateOf(IntSize.Zero) }
+            val holeW = boxW * focus.width
+            val holeH = boxH * focus.height
+            val you = youExtent(marker, holeW, holeH, LocalDensity.current.density)
+            val top = creditsCollide(
+                holeW, holeH, creditsSize.width.toFloat(), creditsSize.height.toFloat(),
+                you.halfWidth, you.below, if (tilts) ANCHOR_TILTED else ANCHOR_FLAT,
+            )
+            Attribution(credits, Modifier.align(if (top) Alignment.TopStart else Alignment.BottomStart).onSizeChanged { creditsSize = it })
         }
     }
 }
+
+/** Lo que ocupa tu auto (o la flecha) alrededor de tu posición, en px: la mitad de lo ancho y lo que baja (con su sombra). */
+internal class YouExtent(val halfWidth: Float, val below: Float)
+
+/** Las mismas medidas con que [MapFrame] dibuja tu auto ([marker]) en un hueco de [holeW] × [holeH] px, o la flecha. */
+internal fun youExtent(marker: ImageBitmap?, holeW: Float, holeH: Float, density: Float): YouExtent {
+    if (marker == null || marker.width == 0) return YouExtent(ARROW_REACH_DP * density, ARROW_REACH_DP * density)
+    val w = markerWidthDp(minOf(holeW, holeH) / density) * density
+    val h = w * marker.height / marker.width
+    return YouExtent(w * 0.55f, h * MARKER_BELOW)
+}
+
+/**
+ * ¿Los créditos ([creditsW] × [creditsH] px, abajo a la izquierda de un hueco de [holeW] × [holeH]) quedan debajo de
+ * tu auto o la flecha? Va al centro a lo ancho y a [anchor] del alto; ocupa [halfWidth] a cada lado y [below] hacia abajo.
+ */
+internal fun creditsCollide(
+    holeW: Float, holeH: Float, creditsW: Float, creditsH: Float, halfWidth: Float, below: Float, anchor: Float,
+): Boolean {
+    if (creditsW <= 0f || creditsH <= 0f) return false
+    val x = holeW / 2
+    val y = holeH * anchor
+    return x - halfWidth < creditsW && y + below > holeH - creditsH
+}
+
+/** Lo que alcanza la flecha alrededor de tu posición (su círculo, dp). */
+private const val ARROW_REACH_DP = 34f
+
+/** Lo que baja tu auto desde tu posición, en fracción de su alto (la sombra llega a 0.22 + 0.36). */
+private const val MARKER_BELOW = 0.58f
 
 /** Todo el mapa: tú al centro a lo ancho. */
 private val WHOLE = Rect(0f, 0f, 1f, 1f)
