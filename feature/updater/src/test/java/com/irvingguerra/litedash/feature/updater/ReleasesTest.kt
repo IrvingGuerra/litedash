@@ -64,4 +64,28 @@ class ReleasesTest {
         assertNull(checksumOf(listOf("1111  notas.txt")))
         assertNull(checksumOf(emptyList()))
     }
+
+    @Test
+    fun checksumOfTheNamedApkFirst() {
+        val lines = listOf(
+            "2222222222222222222222222222222222222222222222222222222222222222  litedash.apk",
+            "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789 *litedash-1.4.162.apk",
+        )
+        assertEquals("abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789", checksumOf(lines, "litedash-1.4.162.apk"))
+        // Sin su renglón: el primer .apk, como antes.
+        assertEquals("2222222222222222222222222222222222222222222222222222222222222222", checksumOf(lines, "litedash-9.9.9.apk"))
+    }
+
+    @Test
+    fun picksTheApkOfItsVersionOverTheFixedName() {
+        val json = list(
+            """{"tag_name":"v1.4.163","assets":[
+              {"name":"litedash.apk","browser_download_url":"https://example.com/fixed.apk","size":1},
+              {"name":"litedash-1.4.163.apk","browser_download_url":"https://example.com/versioned.apk","size":2}
+            ]}""",
+        )
+        val v = pickNewest(json, releaseOf("1.4.162"))!!
+        assertEquals("https://example.com/versioned.apk", v.apk)
+        assertEquals(2L, v.bytes)
+    }
 }

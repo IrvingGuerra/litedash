@@ -65,10 +65,15 @@ class Updater(
     var progress by mutableStateOf<Progress?>(null)
         private set
 
+    /** Por qué falló la última descarga (red, suma, espacio…), para el reporte técnico; null = no falló. */
+    var downloadError: String? = null
+        private set
+
     /** Baja [v], la verifica y se la pasa al instalador de Android; una a la vez. */
     fun downloadAndInstall(v: Version) {
         if (progress is Progress.Downloading) return
         progress = Progress.Downloading(v, 0)
+        downloadError = null
         scope.launch {
             runCatching {
                 var told = 0
@@ -83,7 +88,10 @@ class Updater(
                 }
                 progress = Progress.Installing(v, apk)
                 install(apk)
-            }.onFailure { progress = Progress.Failed }
+            }.onFailure {
+                downloadError = it.message ?: it.javaClass.simpleName
+                progress = Progress.Failed
+            }
         }
     }
 
@@ -147,7 +155,7 @@ class Updater(
     suspend fun download(v: Version, progress: (Float) -> Unit): File = withContext(Dispatchers.IO) {
         val target = File(context.cacheDir, APK_FILE)
         val computed = Https.download(context, v.apk, target, v.bytes, GITHUB_JSON, progress)
-        val expected = v.checksums?.let { url -> checksumOf(open(url).inputStream.bufferedReader().use { it.readLines() }) }
+        val expected = v.checksums?.let { url -> checksumOf(open(url).inputStream.bufferedReader().use { it.readLines() }, apkName(v.name)) }
         if (expected == null || !expected.equals(computed, ignoreCase = true)) {
             target.delete()
             error("El archivo llegó dañado")
@@ -277,7 +285,9 @@ internal fun pickNewest(json: String, current: Long?): Version? {
         if (!isNewer(tag, current)) return@mapNotNull null
         val assetList = r.optJSONArray("assets") ?: JSONArray()
         val assets = (0 until assetList.length()).map { assetList.getJSONObject(it) }
-        val apk = assets.firstOrNull { it.getString("name").endsWith(".apk") } ?: return@mapNotNull null
+        // Cada release trae `litedash-X.Y.Z.apk` y `litedash.apk` (el del enlace fijo de la web): el de su versión primero.
+        val apk = assets.firstOrNull { it.getString("name") == apkName(tag.removePrefix("v")) }
+            ?: assets.firstOrNull { it.getString("name").endsWith(".apk") } ?: return@mapNotNull null
         Version(
             name = tag.removePrefix("v"),
             notes = r.optString("body").trim(),
@@ -294,9 +304,18 @@ private fun isNewer(tag: String, current: Long?): Boolean {
     return current != null && release > current
 }
 
-/** La suma del APK en un SHA256SUMS.txt (`<suma>  <archivo>`): la del primer renglón que termina en `.apk`. */
-internal fun checksumOf(lines: List<String>): String? =
-    lines.map { it.trim() }.firstOrNull { it.endsWith(".apk") }?.split(WHITESPACE)?.firstOrNull()
+/** El APK de la versión [name] en su release. */
+private fun apkName(name: String) = "litedash-$name.apk"
+
+/**
+ * La suma del APK en un SHA256SUMS.txt (`<suma>  <archivo>`): la del renglón de [file] (con o sin el `*` de modo
+ * binario) y, si no está, la del primero que termina en `.apk`.
+ */
+internal fun checksumOf(lines: List<String>, file: String? = null): String? {
+    val rows = lines.map { it.trim().split(WHITESPACE) }.filter { it.size >= 2 }
+    val row = rows.firstOrNull { file != null && it.last().removePrefix("*") == file } ?: rows.firstOrNull { it.last().endsWith(".apk") }
+    return row?.first()
+}
 
 private val WHITESPACE = Regex("\\s+")
 
