@@ -52,6 +52,8 @@
     <string name="map_look_help">Se aplică tuturor widgeturilor Hartă și hărții pe tot ecranul. Fiecare widget se poate schimba în continuare din rotița lui.</string>
     <string name="map_pack_help">Tot județul tău fără internet, dintr-o singură descărcare. Se actualizează de câteva ori pe an.</string>
     <string name="map_pack_no_index">Conectează-te la internet ca să vezi hărțile disponibile.</string>
+    <string name="map_list_loading">Se descarcă lista de hărți…</string>
+    <string name="map_list_failed">Lista de hărți nu a putut fi descărcată. Verifică internetul.</string>
     <string name="map_pack_others">Alte județe</string>
     <string name="map_pack_saved">%1$s · salvată · %2$s</string>
     <string name="map_pack_download">Descarcă</string>

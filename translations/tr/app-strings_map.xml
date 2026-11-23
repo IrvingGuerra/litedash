@@ -52,6 +52,8 @@
     <string name="map_look_help">Tüm Harita widget’larınıza ve tam ekran haritaya uygulanır. Her widget yine dişlisinden değiştirilebilir.</string>
     <string name="map_pack_help">Tüm iliniz internetsiz, tek indirmede. Yılda birkaç kez güncellenir.</string>
     <string name="map_pack_no_index">Mevcut haritaları görmek için internete bağlanın.</string>
+    <string name="map_list_loading">Harita listesi indiriliyor…</string>
+    <string name="map_list_failed">Harita listesi indirilemedi. İnternet bağlantınızı kontrol edin.</string>
     <string name="map_pack_others">Diğer iller</string>
     <string name="map_pack_saved">%1$s · kaydedildi · %2$s</string>
     <string name="map_pack_download">İndir</string>

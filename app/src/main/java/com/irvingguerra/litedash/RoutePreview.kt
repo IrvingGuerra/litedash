@@ -35,6 +35,7 @@ import com.irvingguerra.litedash.core.ui.LocalColors
 import com.irvingguerra.litedash.core.ui.Radius
 import com.irvingguerra.litedash.core.ui.Typography
 import com.irvingguerra.litedash.feature.map.FIT_MAX_ZOOM
+import com.irvingguerra.litedash.feature.map.IndexState
 import com.irvingguerra.litedash.feature.map.MapPacks
 import com.irvingguerra.litedash.feature.map.Route
 import com.irvingguerra.litedash.feature.map.RouteError
@@ -164,6 +165,9 @@ internal fun RouteCard(
     val context = LocalContext.current
     val packs = remember(context) { MapPacks.get(context) }
     val openLabel = if (appName != null) stringResource(R.string.search_open_in, appName) else stringResource(R.string.search_open)
+    // Falta un estado pero aún no llega la lista de mapas (se está bajando): no se sabe cuál; al llegar se replanea.
+    val listLoading = request.plan.let { it is RoutePlan.NoState && it.region == null || it is RoutePlan.OtherState && it.region == null } &&
+        packs.regions.isEmpty() && packs.indexState == IndexState.LOADING
     Column(modifier.clip(RoundedCornerShape(Radius.card)).background(c.surface.copy(alpha = 0.97f)).padding(16.dp)) {
         Row(verticalAlignment = Alignment.Top) {
             Column(Modifier.weight(1f)) {
@@ -171,6 +175,7 @@ internal fun RouteCard(
                 when {
                     request.waitingForPosition -> Message(stringResource(R.string.route_waiting))
                     plan == null -> Message(stringResource(R.string.route_finding))
+                    listLoading -> Message(stringResource(R.string.map_list_loading))
                     plan is RoutePlan.Found -> Summary(d, plan.route)
                     plan is RoutePlan.NeedsRoutes -> {
                         val job = packs.routesJob?.takeIf { it.id == plan.region.id }
@@ -219,14 +224,15 @@ internal fun RouteCard(
             }
             if (plan is RoutePlan.Found) Button(stringResource(R.string.guide_go), { Driving.session = DriveSession(request.to, plan.route) }, primary = true)
             // Falta un estado que sí existe (o no se sabe): un atajo a donde se baja.
-            val getMap = when (plan) {
-                is RoutePlan.NoState -> plan.region != null || packs.regions.isEmpty()
-                is RoutePlan.OtherState -> plan.region != null
+            val getMap = when {
+                listLoading -> false
+                plan is RoutePlan.NoState -> plan.region != null || packs.regions.isEmpty()
+                plan is RoutePlan.OtherState -> plan.region != null
                 else -> false
             }
             if (getMap) Button(stringResource(R.string.route_get_map), onOffline, primary = true)
             // Sin mapa de ahí todavía: a la lista de los que hay (ahí mismo se pide el de tu país).
-            val noMap = plan is RoutePlan.NoState && !getMap
+            val noMap = plan is RoutePlan.NoState && !getMap && !listLoading
             if (noMap) Button(stringResource(R.string.route_see_maps), onOffline, primary = true)
             // Sin «Usar app de mapas externa» ([appName] null), otra app solo como salida cuando LiteDash no pudo trazar la ruta.
             if (appName != null || (plan != null && plan !is RoutePlan.Found)) {

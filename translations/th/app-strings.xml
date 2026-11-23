@@ -706,7 +706,7 @@
     <string name="tires_source_demo">สาธิต</string>
     <string name="tires_source_help">ตัวรับสัญญาณ USB: ชุด TPMS สำหรับจอติดรถ Bluetooth: จุกวาล์วหรือเซ็นเซอร์ที่มี Bluetooth สาธิต: ข้อมูลทดสอบเพื่อดูหน้าตา</string>
     <string name="tires_grant">ให้สิทธิ์</string>
-    <string name="tires_retry">ลองอีกครั้ง</string>
+    <string name="retry">ลองอีกครั้ง</string>
     <string name="tires_usb_help">ถ้าแอปยางของหน้าจอแย่งตัวรับสัญญาณไป ให้ถอดแล้วเสียบใหม่ แล้วเลือก LiteDash พร้อม “ทุกครั้ง”</string>
     <string name="tires_source_obd">รถ (OBD)</string>
     <string name="tires_obd_help">อ่านเซ็นเซอร์จากโรงงานของรถผ่านอะแดปเตอร์ OBD ของอู่ ไม่ต้องใช้ชุดเสริม ไม่ใช่ทุกคันที่ให้ข้อมูล จะลองตามยี่ห้อ</string>

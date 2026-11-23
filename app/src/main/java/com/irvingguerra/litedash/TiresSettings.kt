@@ -164,7 +164,7 @@ private fun SourceCard(d: Dependencies) {
                 repo.status == TpmsStatus.NO_PERMISSION && source == TpmsSource.BLE ->
                     Button(stringResource(R.string.tires_grant), { permission.launch(bleScanPermission()) }, primary = true)
                 repo.status == TpmsStatus.NO_PERMISSION || repo.status == TpmsStatus.NO_DEVICE ->
-                    Button(stringResource(R.string.tires_retry), { if (source == TpmsSource.OBD && d.obdAuto) d.obd.connect() else repo.retry() })
+                    Button(stringResource(R.string.retry), { if (source == TpmsSource.OBD && d.obdAuto) d.obd.connect() else repo.retry() })
             }
         }
         problem?.let { Label(it, Typography.small, c.danger) }

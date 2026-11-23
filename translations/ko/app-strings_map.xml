@@ -52,6 +52,8 @@
     <string name="map_look_help">모든 지도 위젯과 전체 화면 지도에 적용돼요. 각 위젯은 톱니바퀴에서 따로 바꿀 수 있어요.</string>
     <string name="map_pack_help">지역 전체를 인터넷 없이, 한 번에 다운로드해요. 1년에 몇 번 업데이트돼요.</string>
     <string name="map_pack_no_index">사용 가능한 지도를 보려면 인터넷에 연결하세요.</string>
+    <string name="map_list_loading">지도 목록 다운로드 중…</string>
+    <string name="map_list_failed">지도 목록을 다운로드하지 못했어요. 인터넷을 확인하세요.</string>
     <string name="map_pack_others">다른 지역</string>
     <string name="map_pack_saved">%1$s · 저장됨 · %2$s</string>
     <string name="map_pack_download">다운로드</string>

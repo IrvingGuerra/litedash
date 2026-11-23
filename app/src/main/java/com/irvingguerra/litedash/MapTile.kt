@@ -77,6 +77,7 @@ import com.irvingguerra.litedash.feature.apps.normalize
 import com.irvingguerra.litedash.feature.car.CarPackage
 import com.irvingguerra.litedash.feature.car.snapshot
 import com.irvingguerra.litedash.feature.dashboard.TileTypes
+import com.irvingguerra.litedash.feature.map.IndexState
 import com.irvingguerra.litedash.feature.map.MapCamera
 import com.irvingguerra.litedash.feature.map.MapCanvas
 import com.irvingguerra.litedash.feature.map.MapDetail
@@ -626,12 +627,17 @@ internal fun MapLookSettings(d: Dependencies) {
 
 /**
  * Ajustes → Apps → Navegación → Sin conexión (con el estilo que tenga el mapa de LiteDash). Abajo, siempre (también a
- * quien viaja), pedir el mapa de otro país: [requestMap] abre el reporte ya elegido.
+ * quien viaja), pedir el mapa de otro país: [requestMap] abre el reporte ya elegido. Al abrir, la lista de mapas se pide
+ * si tiene más de una hora (para ver los países recién publicados); mientras llega la primera, no se puede pedir país.
  */
 @Composable
 internal fun MapOfflineSettings(d: Dependencies, requestMap: () -> Unit) {
+    val context = LocalContext.current
+    val packs = remember { MapPacks.get(context) }
+    LaunchedEffect(Unit) { packs.refresh(maxAgeMs = MapPacks.INDEX_SCREEN_MAX_AGE_MS) }
     OfflineSection(d, MapLook.parse(d.prefs.mapLook.orEmpty()).detail)
-    Button(stringResource(R.string.map_request_country), requestMap)
+    val listLoading = packs.regions.isEmpty() && packs.indexState == IndexState.LOADING
+    Button(stringResource(R.string.map_request_country), requestMap, enabled = !listLoading)
 }
 
 /** El aspecto de LiteDash: se guarda y se pone en todos los widgets Mapa del inicio (de todas las páginas). */
@@ -696,7 +702,6 @@ private fun OfflineSection(d: Dependencies, detail: MapDetail) {
     val context = LocalContext.current
     val offline = remember { OfflineMaps.get(context) }
     val packs = remember { MapPacks.get(context) }
-    LaunchedEffect(Unit) { packs.refresh() }
     // Aquí hace falta saber dónde estás (tu estado arriba, tu zona en el mapa) aunque ningún widget use el GPS.
     LifecycleStartEffect(d.trip) {
         d.trip.acquire()
@@ -788,7 +793,14 @@ private fun StatePackSection(d: Dependencies, packs: MapPacks) {
     // Siempre a la vista: donde aún no hay mapa del estado, las zonas sirven en cualquier parte.
     Label(stringResource(R.string.map_pack_tip), Typography.small, c.accent)
     if (packs.regions.isEmpty()) {
-        Label(stringResource(R.string.map_pack_no_index), Typography.small, c.textMuted)
+        when (packs.indexState) {
+            IndexState.LOADING -> Label(stringResource(R.string.map_list_loading), Typography.small, c.textMuted)
+            IndexState.FAILED -> {
+                Label(stringResource(R.string.map_list_failed), Typography.small, c.warning)
+                Button(stringResource(R.string.retry), { packs.refresh(force = true) }, primary = true)
+            }
+            IndexState.IDLE -> Label(stringResource(R.string.map_pack_no_index), Typography.small, c.textMuted)
+        }
         return
     }
     val here = position?.let { packs.regionAt(it.latitude, it.longitude) }

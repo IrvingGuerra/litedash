@@ -52,6 +52,8 @@
     <string name="map_look_help">适用于所有地图小组件和全屏地图。每个小组件仍可通过其齿轮图标单独更改。</string>
     <string name="map_pack_help">整个省份离线可用，一次下载即可。每年更新几次。</string>
     <string name="map_pack_no_index">连接互联网以查看可用地图。</string>
+    <string name="map_list_loading">正在下载地图列表…</string>
+    <string name="map_list_failed">无法下载地图列表，请检查网络。</string>
     <string name="map_pack_others">其他省份</string>
     <string name="map_pack_saved">%1$s · 已保存 · %2$s</string>
     <string name="map_pack_download">下载</string>

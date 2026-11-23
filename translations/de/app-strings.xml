@@ -717,7 +717,7 @@
     <string name="tires_source_demo">Demo</string>
     <string name="tires_source_help">USB-Empfänger: TPMS-Kits für Autodisplays. Bluetooth: Ventilkappen oder Sensoren mit Bluetooth. Demo: Testdaten zum Ansehen.</string>
     <string name="tires_grant">Berechtigung erteilen</string>
-    <string name="tires_retry">Nochmal versuchen</string>
+    <string name="retry">Nochmal versuchen</string>
     <string name="tires_usb_help">Schnappt sich die Reifen-App deines Displays den Empfänger, zieh ihn ab, steck ihn wieder ein und wähle LiteDash mit „Immer“.</string>
     <string name="tires_source_obd">Auto (OBD)</string>
     <string name="tires_obd_help">Liest die Werkssensoren deines Autos über den OBD-Adapter der Werkstatt: kein Zusatzkit nötig. Nicht jedes Auto liefert sie; es wird je nach Marke versucht.</string>

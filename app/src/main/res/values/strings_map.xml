@@ -52,6 +52,8 @@
     <string name="map_look_help">Se aplica a todos tus widgets Mapa y al mapa en grande. Cada widget se puede cambiar aparte desde su engrane.</string>
     <string name="map_pack_help">Todo tu estado sin internet, de una sola descarga. Se actualiza unas veces al año.</string>
     <string name="map_pack_no_index">Conéctate a internet para ver los mapas disponibles.</string>
+    <string name="map_list_loading">Bajando la lista de mapas…</string>
+    <string name="map_list_failed">No se pudo bajar la lista de mapas. Revisa tu internet.</string>
     <string name="map_pack_others">Otros estados</string>
     <string name="map_pack_saved">%1$s · guardado · %2$s</string>
     <string name="map_pack_download">Descargar</string>

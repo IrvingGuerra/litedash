@@ -717,7 +717,7 @@
     <string name="tires_source_demo">Demó</string>
     <string name="tires_source_help">USB-vevő: az autós kijelzőkhöz való TPMS-készletek. Bluetooth: szelepsapkák vagy Bluetooth-os érzékelők. Demó: tesztadatok, hogy lásd, hogyan néz ki.</string>
     <string name="tires_grant">Engedély megadása</string>
-    <string name="tires_retry">Újra</string>
+    <string name="retry">Újra</string>
     <string name="tires_usb_help">Ha a kijelző saját gumialkalmazása lefoglalja a vevőt, húzd ki, dugd vissza, majd válaszd a LiteDash-t „mindig” opcióval.</string>
     <string name="tires_source_obd">Autó (OBD)</string>
     <string name="tires_obd_help">Az autó gyári érzékelőit olvassa a Műhely OBD-adapterével: nem kell külön készlet. Nem minden autó adja meg; márka szerint próbálja.</string>

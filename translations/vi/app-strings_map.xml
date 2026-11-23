@@ -52,6 +52,8 @@
     <string name="map_look_help">Áp dụng cho mọi tiện ích Bản đồ và bản đồ toàn màn hình. Mỗi tiện ích vẫn có thể đổi riêng từ biểu tượng bánh răng.</string>
     <string name="map_pack_help">Cả tỉnh của bạn không cần internet, chỉ một lần tải. Cập nhật vài lần mỗi năm.</string>
     <string name="map_pack_no_index">Kết nối internet để xem các bản đồ có sẵn.</string>
+    <string name="map_list_loading">Đang tải danh sách bản đồ…</string>
+    <string name="map_list_failed">Không tải được danh sách bản đồ. Hãy kiểm tra internet.</string>
     <string name="map_pack_others">Tỉnh khác</string>
     <string name="map_pack_saved">%1$s · đã lưu · %2$s</string>
     <string name="map_pack_download">Tải xuống</string>

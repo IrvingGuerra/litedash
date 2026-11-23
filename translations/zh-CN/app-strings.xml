@@ -709,7 +709,7 @@
     <string name="tires_source_demo">演示</string>
     <string name="tires_source_help">USB 接收器：车机用的 TPMS 套件。Bluetooth：带 Bluetooth 的气门帽或传感器。演示：测试数据，看看效果。</string>
     <string name="tires_grant">授予权限</string>
-    <string name="tires_retry">重试</string>
+    <string name="retry">重试</string>
     <string name="tires_usb_help">如果屏幕自带的轮胎应用占用了接收器，请拔下后重新插入，然后选择 LiteDash 并勾选“始终”。</string>
     <string name="tires_source_obd">车辆（OBD）</string>
     <string name="tires_obd_help">用“检修”中的 OBD 适配器读取车辆原厂传感器：无需额外套件。并非所有车都提供；按品牌尝试。</string>

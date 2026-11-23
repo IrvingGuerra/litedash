@@ -57,4 +57,23 @@ class MapPacksTest {
         // Uno adoptado sin contorno vale por su caja.
         assertTrue(InstalledPack("x", "", 1, 1, ele.bbox, emptyList()).contains(20.5, -98.5))
     }
+
+    @Test
+    fun theSavedListIsFreshOnlyWhileYoungAndNewerThanTheApp() {
+        val hour = 60 * 60 * 1000L
+        val day = 24 * hour
+        val now = 100 * day
+        // Sin lista guardada, nunca.
+        assertFalse(MapPacks.indexFresh(false, now, 0, now, day))
+        // Con menos de un día, sí; con más, no.
+        assertTrue(MapPacks.indexFresh(true, now - 23 * hour, 0, now, day))
+        assertFalse(MapPacks.indexFresh(true, now - 25 * hour, 0, now, day))
+        // La pantalla Sin conexión pide una de menos de una hora.
+        assertFalse(MapPacks.indexFresh(true, now - 2 * hour, 0, now, MapPacks.INDEX_SCREEN_MAX_AGE_MS))
+        assertTrue(MapPacks.indexFresh(true, now - 30 * 60 * 1000L, 0, now, MapPacks.INDEX_SCREEN_MAX_AGE_MS))
+        // Guardada antes de actualizar la app: se vuelve a pedir.
+        assertFalse(MapPacks.indexFresh(true, now - hour, now - 30 * 60 * 1000L, now, day))
+        // Reloj hacia atrás (guardada "en el futuro"): se vuelve a pedir.
+        assertFalse(MapPacks.indexFresh(true, now + hour, 0, now, day))
+    }
 }

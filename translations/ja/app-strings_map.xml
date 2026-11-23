@@ -52,6 +52,8 @@
     <string name="map_look_help">すべての地図ウィジェットと全画面の地図に適用されます。各ウィジェットは歯車から個別に変更できます。</string>
     <string name="map_pack_help">都道府県全体をオフラインで。1回のダウンロードで完了。年に数回更新されます。</string>
     <string name="map_pack_no_index">利用できる地図を見るにはインターネットに接続してください。</string>
+    <string name="map_list_loading">地図リストをダウンロード中…</string>
+    <string name="map_list_failed">地図リストをダウンロードできませんでした。インターネット接続を確認してください。</string>
     <string name="map_pack_others">ほかの都道府県</string>
     <string name="map_pack_saved">%1$s · 保存済み · %2$s</string>
     <string name="map_pack_download">ダウンロード</string>

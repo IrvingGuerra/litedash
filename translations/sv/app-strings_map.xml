@@ -52,6 +52,8 @@
     <string name="map_look_help">Gäller alla dina Karta-widgetar och kartan i helskärm. Varje widget kan fortfarande ändras via sitt kugghjul.</string>
     <string name="map_pack_help">Hela ditt län utan internet, i en enda nedladdning. Uppdateras några gånger om året.</string>
     <string name="map_pack_no_index">Anslut till internet för att se tillgängliga kartor.</string>
+    <string name="map_list_loading">Laddar ner kartlistan…</string>
+    <string name="map_list_failed">Kunde inte ladda ner kartlistan. Kolla internet.</string>
     <string name="map_pack_others">Andra län</string>
     <string name="map_pack_saved">%1$s · sparad · %2$s</string>
     <string name="map_pack_download">Ladda ner</string>

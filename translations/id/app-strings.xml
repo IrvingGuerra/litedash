@@ -709,7 +709,7 @@
     <string name="tires_source_demo">Demo</string>
     <string name="tires_source_help">Penerima USB: kit TPMS untuk layar mobil. Bluetooth: tutup pentil atau sensor dengan Bluetooth. Demo: data uji untuk melihat tampilannya.</string>
     <string name="tires_grant">Beri izin</string>
-    <string name="tires_retry">Coba lagi</string>
+    <string name="retry">Coba lagi</string>
     <string name="tires_usb_help">Jika aplikasi ban bawaan layar Anda mengambil penerima, cabut lalu colokkan lagi, kemudian pilih LiteDash dengan “selalu”.</string>
     <string name="tires_source_obd">Mobil (OBD)</string>
     <string name="tires_obd_help">Membaca sensor pabrik mobil Anda dengan adaptor OBD dari Bengkel: tanpa kit tambahan. Tidak semua mobil memberikannya; dicoba per merek.</string>

@@ -54,6 +54,8 @@
     <string name="map_look_help">S\'applique à tous vos widgets Carte et à la carte plein écran. Chaque widget reste modifiable depuis son engrenage.</string>
     <string name="map_pack_help">Toute votre région sans internet, en un seul téléchargement. Mise à jour quelques fois par an.</string>
     <string name="map_pack_no_index">Connectez-vous à internet pour voir les cartes disponibles.</string>
+    <string name="map_list_loading">Téléchargement de la liste des cartes…</string>
+    <string name="map_list_failed">Impossible de télécharger la liste des cartes. Vérifiez votre connexion.</string>
     <string name="map_pack_others">Autres régions</string>
     <string name="map_pack_saved">%1$s · enregistrée · %2$s</string>
     <string name="map_pack_download">Télécharger</string>

@@ -714,7 +714,7 @@
     <string name="tires_source_demo">डेमो</string>
     <string name="tires_source_help">USB रिसीवर: कार स्क्रीन वाले TPMS किट। Bluetooth: Bluetooth वाले वाल्व कैप या सेंसर। डेमो: यह कैसा दिखता है देखने के लिए टेस्ट डेटा।</string>
     <string name="tires_grant">अनुमति दें</string>
-    <string name="tires_retry">फिर कोशिश करें</string>
+    <string name="retry">फिर कोशिश करें</string>
     <string name="tires_usb_help">अगर स्क्रीन का अपना टायर ऐप रिसीवर पकड़ ले, तो निकालकर फिर लगाएँ और “हमेशा” के साथ LiteDash चुनें।</string>
     <string name="tires_source_obd">कार (OBD)</string>
     <string name="tires_obd_help">वर्कशॉप के OBD अडैप्टर से आपकी कार के फ़ैक्टरी सेंसर पढ़ता है: कोई अतिरिक्त किट नहीं चाहिए। हर कार यह नहीं देती; ब्रांड के हिसाब से आज़माया जाता है।</string>

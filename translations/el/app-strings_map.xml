@@ -52,6 +52,8 @@
     <string name="map_look_help">Ισχύει για όλα τα widget Χάρτη και τον χάρτη σε πλήρη οθόνη. Κάθε widget αλλάζει και από το γρανάζι του.</string>
     <string name="map_pack_help">Όλη η περιφέρειά σας χωρίς internet, με μία λήψη. Ενημερώνεται μερικές φορές τον χρόνο.</string>
     <string name="map_pack_no_index">Συνδεθείτε στο internet για να δείτε τους διαθέσιμους χάρτες.</string>
+    <string name="map_list_loading">Λήψη λίστας χαρτών…</string>
+    <string name="map_list_failed">Η λήψη της λίστας χαρτών απέτυχε. Ελέγξτε το internet.</string>
     <string name="map_pack_others">Άλλες περιφέρειες</string>
     <string name="map_pack_saved">%1$s · αποθηκεύτηκε · %2$s</string>
     <string name="map_pack_download">Λήψη</string>

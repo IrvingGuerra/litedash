@@ -8,6 +8,7 @@ import androidx.compose.runtime.setValue
 import com.irvingguerra.litedash.core.ui.Https
 import java.io.File
 import java.io.IOException
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
@@ -60,6 +61,9 @@ data class InstalledPack(
     fun contains(lat: Double, lon: Double) = insideShape(bbox, shape, lat, lon)
 }
 
+/** La lista de mapas (el índice): sin pedir o al día, bajando o falló la última vez. */
+enum class IndexState { IDLE, LOADING, FAILED }
+
 /** Bajando el mapa de [id]: cuánto va (0–1) o si falló. */
 class PackJob(val id: String, val progress: Float, val failed: Boolean = false)
 
@@ -88,6 +92,11 @@ class MapPacks private constructor(private val app: Context) {
         private set
     var job by mutableStateOf<PackJob?>(null)
         private set
+    /** Cómo va la lista: sin ella, la pantalla dice si se está bajando o si falló (y deja reintentar). */
+    var indexState by mutableStateOf(IndexState.IDLE)
+        private set
+    /** Una sola descarga de la lista a la vez. */
+    private val indexBusy = AtomicBoolean(false)
 
     /** Lo bajado, para las teselas (se lee sin candado desde los hilos del mapa). */
     @Volatile private var packs: List<InstalledPack> = emptyList()
@@ -119,35 +128,60 @@ class MapPacks private constructor(private val app: Context) {
     /** ¿Hay mapa bajado del estado donde está ([lat], [lon])? */
     fun covers(lat: Double, lon: Double): Boolean = packs.any { it.contains(lat, lon) }
 
-    /** Baja el índice si el de la caché tiene más de un día (o [force]); sin red se queda con el de la caché. */
-    fun refresh(force: Boolean = false) {
+    /**
+     * Baja el índice si el de la caché tiene más de [maxAgeMs] (un día) o [force]; sin red se queda con el de la caché.
+     * Si ya se está bajando, no hace nada. El avance en [indexState].
+     */
+    fun refresh(force: Boolean = false, maxAgeMs: Long = INDEX_MAX_AGE_MS) {
+        if (!indexBusy.compareAndSet(false, true)) return
         scope.launch {
-            val cached = File(dir, INDEX)
-            if (regions.isEmpty() && cached.isFile) runCatching { useIndex(cached.readText()) }
-            // Al día y de esta versión de la app (tras actualizarla se vuelve a pedir).
-            val updated = runCatching { app.packageManager.getPackageInfo(app.packageName, 0).lastUpdateTime }.getOrDefault(0L)
-            val fresh = cached.isFile && System.currentTimeMillis() - cached.lastModified() < INDEX_MAX_AGE_MS && cached.lastModified() > updated
-            if (!force && fresh) return@launch
             try {
-                val text = Https.get(app, INDEX_URL).inputStream.use { it.readBytes().decodeToString() }
-                parseIndex(text) // dañado: no se guarda
-                dir.mkdirs()
-                File(dir, "$INDEX.tmp").apply { writeText(text) }.renameTo(cached)
-                useIndex(text)
-            } catch (_: IOException) {
-                // Sin internet: el de la caché (si hay).
-            } catch (_: org.json.JSONException) {
-                // Índice dañado: se queda el de antes.
+                loadIndex(force, maxAgeMs)
+            } finally {
+                indexBusy.set(false)
             }
         }
     }
+
+    private fun loadIndex(force: Boolean, maxAgeMs: Long) {
+        val cached = File(dir, INDEX)
+        if (regions.isEmpty() && cached.isFile) runCatching { useIndex(cached.readText()) }
+        // Al día y de esta versión de la app (tras actualizarla se vuelve a pedir).
+        val updated = runCatching { app.packageManager.getPackageInfo(app.packageName, 0).lastUpdateTime }.getOrDefault(0L)
+        if (!force && indexFresh(cached.isFile, cached.lastModified(), updated, System.currentTimeMillis(), maxAgeMs)) {
+            indexState = IndexState.IDLE
+            return
+        }
+        indexState = IndexState.LOADING
+        indexState = try {
+            val text = fetchIndex()
+            val list = parseIndex(text) // dañado: no se guarda
+            dir.mkdirs()
+            File(dir, "$INDEX.tmp").apply { writeText(text) }.renameTo(cached)
+            useIndex(text, list)
+            IndexState.IDLE
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Throwable) {
+            // Sin internet, índice dañado o sin memoria para leerlo: se queda el de la caché (si hay).
+            IndexState.FAILED
+        }
+    }
+
+    /** El índice de GitHub; si esa red falla (bloqueada, limitada o un error del servidor), el de la copia. */
+    private fun fetchIndex(): String = try {
+        download(INDEX_URL)
+    } catch (_: IOException) {
+        download(INDEX_MIRROR_URL)
+    }
+
+    private fun download(url: String): String = Https.get(app, url).inputStream.use { it.readBytes().decodeToString() }
 
     /**
      * Usa el índice [text]: sus regiones, el interruptor de la búsqueda en línea, el contorno de los mapas adoptados y,
      * a los mapas bajados que aún no traen su búsqueda (o la traen vieja), se la baja sola.
      */
-    private fun useIndex(text: String) {
-        val list = parseIndex(text)
+    private fun useIndex(text: String, list: List<MapRegion> = parseIndex(text)) {
         regions = list
         onlineSearch = onlineAllowed(text)
         synchronized(stateLock) {
@@ -328,6 +362,9 @@ class MapPacks private constructor(private val app: Context) {
                 // Los dos estados bajados: lo que falta es la ruta entre estados (llega con los viajes largos).
                 installed.any { it.contains(toLat, toLon) } -> RoutePlan.TwoStates
                 else -> RoutePlan.OtherState(regionAt(toLat, toLon))
+            }.also {
+                // Sin la lista no se sabe qué estado falta: se pide (al llegar, la ruta se vuelve a planear).
+                if (regions.isEmpty() && it !is RoutePlan.TwoStates) refresh()
             }
         if (pack.routesSha.isEmpty() || !File(dir, "${pack.id}.ldm").isFile) {
             // Sin el índice aún (sin red al abrir): se pide; mientras, no se sabe de dónde bajarlas.
@@ -457,19 +494,36 @@ class MapPacks private constructor(private val app: Context) {
         // Desde la 1.5.2, todos los países (EUA trae estados con millones de cruces: el ruteador de antes no los aguanta en
         // pantallas de 1 GB, así que index.json se queda solo con México para las versiones anteriores).
         private const val INDEX_URL = "https://raw.githubusercontent.com/IrvingGuerra/litedash-maps/main/regions.json"
+        // La misma lista por otra red (jsDelivr), para donde raw.githubusercontent.com está bloqueado o limitado; puede ir
+        // hasta 12 h atrás.
+        private const val INDEX_MIRROR_URL = "https://cdn.jsdelivr.net/gh/IrvingGuerra/litedash-maps@main/regions.json"
         private const val INDEX_MAX_AGE_MS = 24 * 60 * 60 * 1000L
+        /** En Ajustes → Sin conexión la lista se pide si tiene más de una hora (ahí se buscan los países nuevos). */
+        const val INDEX_SCREEN_MAX_AGE_MS = 60 * 60 * 1000L
 
         @SuppressLint("StaticFieldLeak") // solo el contexto de la aplicación
         @Volatile private var instance: MapPacks? = null
 
         /** Para el reporte técnico, sin abrir nada: cuántas regiones trae la lista y cuáles están bajadas. */
         fun describe(): String = instance?.let { p ->
-            "Mapas: lista=${p.regions.size} regiones (${p.regions.map { it.country }.distinct().joinToString()}); bajados=" +
+            val state = when (p.indexState) {
+                IndexState.LOADING -> " (bajando)"
+                IndexState.FAILED -> " (falló)"
+                IndexState.IDLE -> ""
+            }
+            "Mapas: lista=${p.regions.size} regiones$state (${p.regions.map { it.country }.distinct().joinToString()}); bajados=" +
                 p.installed.joinToString { it.id }.ifEmpty { "ninguno" }
         } ?: "Mapas: sin abrir en esta sesión"
 
         fun get(context: Context): MapPacks =
             instance ?: synchronized(this) { instance ?: MapPacks(context.applicationContext).also { instance = it } }
+
+        /**
+         * ¿La lista guardada ([exists], guardada en [savedAt]) sirve todavía? Si tiene menos de [maxAgeMs] y es de después de
+         * actualizar la app ([appUpdatedAt]); con el reloj hacia atrás (guardada "en el futuro"), no.
+         */
+        internal fun indexFresh(exists: Boolean, savedAt: Long, appUpdatedAt: Long, now: Long, maxAgeMs: Long): Boolean =
+            exists && now - savedAt in 0 until maxAgeMs && savedAt > appUpdatedAt
 
         /** El índice de litedash-maps (versión 1); las regiones sin mapa o dañadas se saltan. */
         internal fun parseIndex(text: String): List<MapRegion> {

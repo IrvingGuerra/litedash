@@ -733,7 +733,7 @@
     <string name="tires_source_demo">Демо</string>
     <string name="tires_source_help">USB-приёмник: комплекты TPMS для автомагнитол. Bluetooth: колпачки или датчики с Bluetooth. Демо: тестовые данные, чтобы посмотреть, как это выглядит.</string>
     <string name="tires_grant">Дать разрешение</string>
-    <string name="tires_retry">Попробовать снова</string>
+    <string name="retry">Попробовать снова</string>
     <string name="tires_usb_help">Если встроенное приложение шин на экране перехватывает приёмник, отключи его и подключи снова, затем выбери LiteDash с вариантом «всегда».</string>
     <string name="tires_source_obd">Машина (OBD)</string>
     <string name="tires_obd_help">Читает заводские датчики машины через OBD-адаптер Мастерской: дополнительный комплект не нужен. Не все машины их отдают; пробуем по марке.</string>

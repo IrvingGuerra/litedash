@@ -709,7 +709,7 @@
     <string name="tires_source_demo">Thử nghiệm</string>
     <string name="tires_source_help">Bộ thu USB: bộ TPMS cho màn hình ô tô. Bluetooth: nắp van hoặc cảm biến có Bluetooth. Thử nghiệm: dữ liệu mẫu để xem giao diện.</string>
     <string name="tires_grant">Cấp quyền</string>
-    <string name="tires_retry">Thử lại</string>
+    <string name="retry">Thử lại</string>
     <string name="tires_usb_help">Nếu ứng dụng lốp có sẵn của màn hình chiếm bộ thu, hãy rút ra cắm lại rồi chọn LiteDash với “luôn luôn”.</string>
     <string name="tires_source_obd">Xe (OBD)</string>
     <string name="tires_obd_help">Đọc cảm biến zin của xe bằng bộ chuyển OBD của Xưởng: không cần bộ phụ kiện. Không phải xe nào cũng cung cấp; thử theo hãng xe.</string>

@@ -54,6 +54,8 @@
     <string name="map_look_help">Applies to all your Map widgets and the full-screen map. Each widget can still be changed from its gear.</string>
     <string name="map_pack_help">Your whole state without internet, in a single download. Updated a few times a year.</string>
     <string name="map_pack_no_index">Connect to the internet to see the available maps.</string>
+    <string name="map_list_loading">Downloading the map list…</string>
+    <string name="map_list_failed">Couldn\'t download the map list. Check your internet.</string>
     <string name="map_pack_others">Other states</string>
     <string name="map_pack_saved">%1$s · saved · %2$s</string>
     <string name="map_pack_download">Download</string>

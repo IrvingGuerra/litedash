@@ -717,7 +717,7 @@
     <string name="tires_source_demo">Επίδειξη</string>
     <string name="tires_source_help">Δέκτης USB: τα κιτ TPMS για οθόνες αυτοκινήτου. Bluetooth: καπάκια βαλβίδας ή αισθητήρες με Bluetooth. Επίδειξη: δοκιμαστικά δεδομένα για να δείτε πώς φαίνεται.</string>
     <string name="tires_grant">Παροχή άδειας</string>
-    <string name="tires_retry">Δοκιμή ξανά</string>
+    <string name="retry">Δοκιμή ξανά</string>
     <string name="tires_usb_help">Αν η εφαρμογή ελαστικών της οθόνης σας παίρνει τον δέκτη, αποσυνδέστε τον και συνδέστε τον ξανά και μετά επιλέξτε LiteDash με «πάντα».</string>
     <string name="tires_source_obd">Αυτοκίνητο (OBD)</string>
     <string name="tires_obd_help">Διαβάζει τους εργοστασιακούς αισθητήρες του αυτοκινήτου με τον αντάπτορα OBD του Συνεργείου: χωρίς επιπλέον κιτ. Δεν τους δίνει κάθε αυτοκίνητο· δοκιμάζεται ανά μάρκα.</string>

@@ -52,6 +52,8 @@
     <string name="map_look_help">Действует на все виджеты «Карта» и полноэкранную карту. Каждый виджет можно изменить через его шестерёнку.</string>
     <string name="map_pack_help">Весь регион без интернета, одной загрузкой. Обновляется несколько раз в год.</string>
     <string name="map_pack_no_index">Подключись к интернету, чтобы увидеть доступные карты.</string>
+    <string name="map_list_loading">Загрузка списка карт…</string>
+    <string name="map_list_failed">Не удалось загрузить список карт. Проверь интернет.</string>
     <string name="map_pack_others">Другие регионы</string>
     <string name="map_pack_saved">%1$s · сохранено · %2$s</string>
     <string name="map_pack_download">Скачать</string>

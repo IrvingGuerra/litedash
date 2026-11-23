@@ -725,7 +725,7 @@
     <string name="tires_source_demo">Demo</string>
     <string name="tires_source_help">Receptor USB: kiturile TPMS pentru ecrane auto. Bluetooth: capace de valvă sau senzori cu Bluetooth. Demo: date de test ca să vezi cum arată.</string>
     <string name="tires_grant">Acordă permisiunea</string>
-    <string name="tires_retry">Încearcă din nou</string>
+    <string name="retry">Încearcă din nou</string>
     <string name="tires_usb_help">Dacă aplicația de anvelope a ecranului preia receptorul, scoate-l și conectează-l din nou, apoi alege LiteDash cu „întotdeauna”.</string>
     <string name="tires_source_obd">Mașina (OBD)</string>
     <string name="tires_obd_help">Citește senzorii din fabrică ai mașinii cu adaptorul OBD din Atelier: nu e nevoie de alt kit. Nu toate mașinile îi oferă; se încearcă după marcă.</string>

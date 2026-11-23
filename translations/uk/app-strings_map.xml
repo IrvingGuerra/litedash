@@ -52,6 +52,8 @@
     <string name="map_look_help">Діє на всі віджети «Карта» і повноекранну карту. Кожен віджет можна змінити через його шестерню.</string>
     <string name="map_pack_help">Уся область без інтернету, одним завантаженням. Оновлюється кілька разів на рік.</string>
     <string name="map_pack_no_index">Підключися до інтернету, щоб побачити доступні карти.</string>
+    <string name="map_list_loading">Завантаження списку карт…</string>
+    <string name="map_list_failed">Не вдалося завантажити список карт. Перевір інтернет.</string>
     <string name="map_pack_others">Інші області</string>
     <string name="map_pack_saved">%1$s · збережено · %2$s</string>
     <string name="map_pack_download">Завантажити</string>

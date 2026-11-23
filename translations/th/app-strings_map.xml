@@ -52,6 +52,8 @@
     <string name="map_look_help">ใช้กับวิดเจ็ตแผนที่ทั้งหมดและแผนที่เต็มจอ แต่ละวิดเจ็ตยังเปลี่ยนได้จากไอคอนเฟือง</string>
     <string name="map_pack_help">ทั้งจังหวัดแบบไม่ใช้อินเทอร์เน็ต ดาวน์โหลดครั้งเดียว อัปเดตปีละไม่กี่ครั้ง</string>
     <string name="map_pack_no_index">เชื่อมต่ออินเทอร์เน็ตเพื่อดูแผนที่ที่มี</string>
+    <string name="map_list_loading">กำลังดาวน์โหลดรายการแผนที่…</string>
+    <string name="map_list_failed">ดาวน์โหลดรายการแผนที่ไม่ได้ ตรวจอินเทอร์เน็ต</string>
     <string name="map_pack_others">จังหวัดอื่น</string>
     <string name="map_pack_saved">%1$s · บันทึกแล้ว · %2$s</string>
     <string name="map_pack_download">ดาวน์โหลด</string>

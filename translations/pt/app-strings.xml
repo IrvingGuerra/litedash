@@ -719,7 +719,7 @@
     <string name="tires_source_demo">Demonstração</string>
     <string name="tires_source_help">Receptor USB: os kits TPMS para telas de carro. Bluetooth: tampas de válvula ou sensores com Bluetooth. Demonstração: dados de teste para ver como fica.</string>
     <string name="tires_grant">Permitir</string>
-    <string name="tires_retry">Tentar de novo</string>
+    <string name="retry">Tentar de novo</string>
     <string name="tires_usb_help">Se o app de pneus da sua tela ficar com o receptor, desconecte e conecte de novo, e escolha o LiteDash com “sempre”.</string>
     <string name="tires_source_obd">Carro (OBD)</string>
     <string name="tires_obd_help">Lê os sensores de fábrica do seu carro com o adaptador OBD da Oficina: não precisa de outro kit. Nem todos os carros fornecem; é testado conforme a marca.</string>

@@ -52,6 +52,8 @@
     <string name="map_look_help">Az összes Térkép widgetre és a teljes képernyős térképre vonatkozik. Minden widget továbbra is módosítható a saját fogaskerekéről.</string>
     <string name="map_pack_help">Az egész megyéd internet nélkül, egyetlen letöltéssel. Évente néhányszor frissül.</string>
     <string name="map_pack_no_index">Csatlakozz az internethez az elérhető térképek megtekintéséhez.</string>
+    <string name="map_list_loading">Térképlista letöltése…</string>
+    <string name="map_list_failed">Nem sikerült letölteni a térképlistát. Nézd meg az internetet.</string>
     <string name="map_pack_others">Más megyék</string>
     <string name="map_pack_saved">%1$s · mentve · %2$s</string>
     <string name="map_pack_download">Letöltés</string>

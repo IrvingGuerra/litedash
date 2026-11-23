@@ -709,7 +709,7 @@
     <string name="tires_source_demo">デモ</string>
     <string name="tires_source_help">USB 受信機：カーナビ画面用の TPMS キット。Bluetooth：Bluetooth 対応のバルブキャップやセンサー。デモ：見た目を確認するためのテストデータ。</string>
     <string name="tires_grant">権限を許可</string>
-    <string name="tires_retry">もう一度試す</string>
+    <string name="retry">もう一度試す</string>
     <string name="tires_usb_help">画面に付属のタイヤアプリが受信機を使ってしまう場合は、受信機を抜いて差し直し、「常に」で LiteDash を選んでください。</string>
     <string name="tires_source_obd">車両（OBD）</string>
     <string name="tires_obd_help">「整備」の OBD アダプタで、車の純正センサーを読み取ります。追加のキットは不要です。すべての車が対応しているわけではなく、メーカーごとに試します。</string>
