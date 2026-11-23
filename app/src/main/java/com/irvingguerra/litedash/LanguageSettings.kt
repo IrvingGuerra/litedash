@@ -19,6 +19,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -32,6 +33,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.irvingguerra.litedash.core.ui.Button
 import com.irvingguerra.litedash.core.ui.Icon
 import com.irvingguerra.litedash.core.ui.Icons
 import com.irvingguerra.litedash.core.ui.Label
@@ -76,7 +78,10 @@ private fun MoreLanguages(current: String, choose: (String) -> Unit) {
     val scope = rememberCoroutineScope()
     var loaded by remember { mutableStateOf(false) }
     var choices by remember { mutableStateOf<List<LanguageChoice>?>(null) }
-    LaunchedEffect(Unit) {
+    // Sube con «Reintentar»: la lista se vuelve a pedir sin salir de Ajustes.
+    var attempt by remember { mutableIntStateOf(0) }
+    LaunchedEffect(attempt) {
+        loaded = false
         choices = withContext(Dispatchers.IO) { fetchLanguages(context) }
         loaded = true
     }
@@ -88,7 +93,10 @@ private fun MoreLanguages(current: String, choose: (String) -> Unit) {
     val list = choices
     when {
         !loaded -> Label(stringResource(R.string.language_loading), Typography.small, c.textMuted)
-        list == null -> Label(stringResource(R.string.language_offline), Typography.small, c.textMuted)
+        list == null -> {
+            Label(stringResource(R.string.language_offline), Typography.small, c.textMuted)
+            Button(stringResource(R.string.retry), { attempt++ })
+        }
         list.isEmpty() -> Label(stringResource(R.string.language_none), Typography.small, c.textMuted)
         else -> {
             // Todos a la vista (escondidos, la gente creía que su idioma no estaba): el elegido, luego los del sistema y
