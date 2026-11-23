@@ -30,6 +30,9 @@
     <string name="templates">Plantillas</string>
     <string name="wallpaper_button">Fondo</string>
     <string name="templates_help">Elige un punto de partida. Después mueve y cambia el tamaño de lo que quieras.</string>
+    <string name="template_apply_title">¿Usar «%1$s» en esta página?</string>
+    <string name="template_apply_message">Se quita lo que acomodaste en ella.</string>
+    <string name="template_apply_confirm">Usar</string>
     <string name="template_center">Auto al centro</string>
     <string name="template_side">Auto a un lado</string>
     <string name="template_vertical">Vertical</string>
@@ -481,7 +484,7 @@
     <string name="logo_intro">Animación de entrada</string>
     <string name="bar_title">Barra de apps</string>
     <string name="bar_hide">Ocultar la barra</string>
-    <string name="bar_hide_help">Toca un espacio vacío del inicio para verla unos segundos; para acomodar y entrar a Ajustes, déjalo presionado.</string>
+    <string name="bar_hide_help">Toca un espacio libre del inicio (o su orilla) para verla unos segundos; ahí está Ajustes.</string>
     <string name="bar_buttons">Botones</string>
     <string name="bar_arrange">Acomodar la barra</string>
     <string name="bar_position_help">Automática: a la izquierda si la pantalla está acostada, abajo si está parada.</string>
@@ -505,6 +508,7 @@
     <string name="bar_item_phone">Teléfono</string>
     <string name="bar_item_voice">Voz</string>
     <string name="bar_item_favorites">Tus apps favoritas</string>
+    <string name="bar_item_settings">Ajustes</string>
     <string name="bar_auto">Automática</string>
     <string name="bar_side">Izquierda</string>
     <string name="bar_bottom">Abajo</string>

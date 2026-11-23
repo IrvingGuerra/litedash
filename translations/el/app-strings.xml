@@ -29,6 +29,9 @@
     <string name="templates">Διατάξεις</string>
     <string name="wallpaper_button">Ταπετσαρία</string>
     <string name="templates_help">Επιλέξτε μια αφετηρία. Μετά μετακινήστε και αλλάξτε μέγεθος σε ό,τι θέλετε.</string>
+    <string name="template_apply_title">Χρήση του «%1$s» σε αυτή τη σελίδα;</string>
+    <string name="template_apply_message">Ό,τι τακτοποιήσατε σε αυτήν θα αφαιρεθεί.</string>
+    <string name="template_apply_confirm">Χρήση</string>
     <string name="template_center">Αυτοκίνητο στη μέση</string>
     <string name="template_side">Αυτοκίνητο στο πλάι</string>
     <string name="template_vertical">Κατακόρυφη</string>
@@ -469,7 +472,7 @@
     <string name="logo_intro">Κινούμενη εισαγωγή</string>
     <string name="bar_title">Γραμμή εφαρμογών</string>
     <string name="bar_hide">Απόκρυψη γραμμής</string>
-    <string name="bar_hide_help">Πατήστε ένα κενό σημείο της αρχικής για να τη δείτε για λίγα δευτερόλεπτα· για τακτοποίηση και Ρυθμίσεις, πατήστε το παρατεταμένα.</string>
+    <string name="bar_hide_help">Πατήστε ένα ελεύθερο σημείο της αρχικής (ή την άκρη της) για να τη δείτε για λίγα δευτερόλεπτα· εκεί είναι οι Ρυθμίσεις.</string>
     <string name="bar_buttons">Κουμπιά</string>
     <string name="bar_arrange">Οργάνωση γραμμής</string>
     <string name="bar_position_help">Αυτόματα: αριστερά όταν η οθόνη είναι οριζόντια, κάτω όταν είναι κατακόρυφη.</string>
@@ -493,6 +496,7 @@
     <string name="bar_item_phone">Τηλέφωνο</string>
     <string name="bar_item_voice">Φωνή</string>
     <string name="bar_item_favorites">Οι αγαπημένες σας εφαρμογές</string>
+    <string name="bar_item_settings">Ρυθμίσεις</string>
     <string name="bar_auto">Αυτόματα</string>
     <string name="bar_side">Αριστερά</string>
     <string name="bar_bottom">Κάτω</string>

@@ -29,6 +29,9 @@
     <string name="templates">Elrendezések</string>
     <string name="wallpaper_button">Háttérkép</string>
     <string name="templates_help">Válassz egy kiindulópontot. Utána bármit áthelyezhetsz és átméretezhetsz.</string>
+    <string name="template_apply_title">Használod a(z) „%1$s” elrendezést ezen az oldalon?</string>
+    <string name="template_apply_message">Amit rajta elrendeztél, eltűnik.</string>
+    <string name="template_apply_confirm">Használat</string>
     <string name="template_center">Autó középen</string>
     <string name="template_side">Autó oldalt</string>
     <string name="template_vertical">Álló</string>
@@ -469,7 +472,7 @@
     <string name="logo_intro">Indítási animáció</string>
     <string name="bar_title">Alkalmazássáv</string>
     <string name="bar_hide">Sáv elrejtése</string>
-    <string name="bar_hide_help">Koppints egy üres helyre a kezdőképernyőn, és pár másodpercig látod; az elrendezéshez és a Beállításokhoz nyomd meg hosszan.</string>
+    <string name="bar_hide_help">Koppints egy szabad helyre a kezdőképernyőn (vagy a szélére), és pár másodpercig látod; ott vannak a Beállítások.</string>
     <string name="bar_buttons">Gombok</string>
     <string name="bar_arrange">Sáv elrendezése</string>
     <string name="bar_position_help">Automatikus: bal oldalt, ha a kijelző fekvő, alul, ha álló.</string>
@@ -493,6 +496,7 @@
     <string name="bar_item_phone">Telefon</string>
     <string name="bar_item_voice">Hangvezérlés</string>
     <string name="bar_item_favorites">Kedvenc alkalmazásaid</string>
+    <string name="bar_item_settings">Beállítások</string>
     <string name="bar_auto">Automatikus</string>
     <string name="bar_side">Bal</string>
     <string name="bar_bottom">Lent</string>

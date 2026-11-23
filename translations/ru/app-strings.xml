@@ -29,6 +29,9 @@
     <string name="templates">Макеты</string>
     <string name="wallpaper_button">Обои</string>
     <string name="templates_help">Выбери основу. Потом двигай и меняй размер чего угодно.</string>
+    <string name="template_apply_title">Использовать «%1$s» на этой странице?</string>
+    <string name="template_apply_message">То, что ты на ней расставил, будет убрано.</string>
+    <string name="template_apply_confirm">Использовать</string>
     <string name="template_center">Машина в центре</string>
     <string name="template_side">Машина сбоку</string>
     <string name="template_vertical">Вертикальный</string>
@@ -479,7 +482,7 @@
     <string name="logo_intro">Заставка</string>
     <string name="bar_title">Панель приложений</string>
     <string name="bar_hide">Скрыть панель</string>
-    <string name="bar_hide_help">Коснись пустого места на главном экране, чтобы увидеть её на несколько секунд; чтобы расставить и попасть в настройки, удерживай на нём палец.</string>
+    <string name="bar_hide_help">Коснись свободного места на главном экране (или его края), чтобы увидеть её на несколько секунд; там есть настройки.</string>
     <string name="bar_buttons">Кнопки</string>
     <string name="bar_arrange">Настроить панель</string>
     <string name="bar_position_help">Авто: слева при горизонтальном экране, снизу — при вертикальном.</string>
@@ -503,6 +506,7 @@
     <string name="bar_item_phone">Телефон</string>
     <string name="bar_item_voice">Голос</string>
     <string name="bar_item_favorites">Любимые приложения</string>
+    <string name="bar_item_settings">Настройки</string>
     <string name="bar_auto">Авто</string>
     <string name="bar_side">Слева</string>
     <string name="bar_bottom">Снизу</string>

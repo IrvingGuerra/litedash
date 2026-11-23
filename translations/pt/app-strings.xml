@@ -31,6 +31,9 @@
     <string name="templates">Modelos</string>
     <string name="wallpaper_button">Fundo</string>
     <string name="templates_help">Escolha um ponto de partida. Depois mova e redimensione o que quiser.</string>
+    <string name="template_apply_title">Usar “%1$s” nesta página?</string>
+    <string name="template_apply_message">O que você organizou nela será removido.</string>
+    <string name="template_apply_confirm">Usar</string>
     <string name="template_center">Carro no centro</string>
     <string name="template_side">Carro de lado</string>
     <string name="template_vertical">Vertical</string>
@@ -471,7 +474,7 @@
     <string name="logo_intro">Animação de abertura</string>
     <string name="bar_title">Barra de apps</string>
     <string name="bar_hide">Ocultar a barra</string>
-    <string name="bar_hide_help">Toque em um espaço vazio da tela inicial para vê-la por alguns segundos; para organizar e entrar em Configurações, toque e segure nele.</string>
+    <string name="bar_hide_help">Toque em um espaço livre da tela inicial (ou na borda) para vê-la por alguns segundos; as Configurações estão nela.</string>
     <string name="bar_buttons">Botões</string>
     <string name="bar_arrange">Organizar a barra</string>
     <string name="bar_position_help">Automática: à esquerda se a tela estiver na horizontal, embaixo se estiver na vertical.</string>
@@ -495,6 +498,7 @@
     <string name="bar_item_phone">Telefone</string>
     <string name="bar_item_voice">Voz</string>
     <string name="bar_item_favorites">Seus apps favoritos</string>
+    <string name="bar_item_settings">Configurações</string>
     <string name="bar_auto">Automática</string>
     <string name="bar_side">Esquerda</string>
     <string name="bar_bottom">Embaixo</string>

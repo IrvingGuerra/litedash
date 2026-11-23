@@ -29,6 +29,9 @@
     <string name="templates">Tata letak</string>
     <string name="wallpaper_button">Wallpaper</string>
     <string name="templates_help">Pilih titik awal. Lalu pindahkan dan ubah ukuran apa pun sesuka Anda.</string>
+    <string name="template_apply_title">Pakai “%1$s” di halaman ini?</string>
+    <string name="template_apply_message">Yang sudah kamu tata di halaman ini akan dihapus.</string>
+    <string name="template_apply_confirm">Pakai</string>
     <string name="template_center">Mobil di tengah</string>
     <string name="template_side">Mobil di samping</string>
     <string name="template_vertical">Potret</string>
@@ -464,7 +467,7 @@
     <string name="logo_intro">Animasi pembuka</string>
     <string name="bar_title">Bilah aplikasi</string>
     <string name="bar_hide">Sembunyikan bilah</string>
-    <string name="bar_hide_help">Ketuk tempat kosong di beranda untuk melihatnya beberapa detik; untuk menata dan membuka Setelan, tekan lama tempat itu.</string>
+    <string name="bar_hide_help">Ketuk tempat kosong di beranda (atau tepinya) untuk melihatnya beberapa detik; Setelan ada di sana.</string>
     <string name="bar_buttons">Tombol</string>
     <string name="bar_arrange">Atur bilah</string>
     <string name="bar_position_help">Otomatis: di kiri saat layar lanskap, di bawah saat potret.</string>
@@ -488,6 +491,7 @@
     <string name="bar_item_phone">Telepon</string>
     <string name="bar_item_voice">Suara</string>
     <string name="bar_item_favorites">Aplikasi favorit Anda</string>
+    <string name="bar_item_settings">Setelan</string>
     <string name="bar_auto">Otomatis</string>
     <string name="bar_side">Kiri</string>
     <string name="bar_bottom">Bawah</string>

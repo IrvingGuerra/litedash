@@ -31,6 +31,9 @@
     <string name="templates">Dispositions</string>
     <string name="wallpaper_button">Fond d\'écran</string>
     <string name="templates_help">Choisissez un point de départ. Ensuite, déplacez et redimensionnez ce que vous voulez.</string>
+    <string name="template_apply_title">Utiliser « %1$s » sur cette page ?</string>
+    <string name="template_apply_message">Ce que vous y avez disposé sera retiré.</string>
+    <string name="template_apply_confirm">Utiliser</string>
     <string name="template_center">Voiture au centre</string>
     <string name="template_side">Voiture sur le côté</string>
     <string name="template_vertical">Portrait</string>
@@ -491,6 +494,7 @@
     <string name="bar_item_phone">Téléphone</string>
     <string name="bar_item_voice">Voix</string>
     <string name="bar_item_favorites">Vos applis favorites</string>
+    <string name="bar_item_settings">Paramètres</string>
     <string name="bar_auto">Automatique</string>
     <string name="bar_side">Gauche</string>
     <string name="bar_bottom">En bas</string>
@@ -832,7 +836,7 @@
     <string name="bar_size_normal">Normale</string>
     <string name="bar_size_large">Grande</string>
     <string name="bar_hide">Masquer la barre</string>
-    <string name="bar_hide_help">Touchez un espace vide de l\'accueil pour la voir quelques secondes ; pour ranger et accéder aux Paramètres, faites-y un appui long.</string>
+    <string name="bar_hide_help">Touchez un espace libre de l\'accueil (ou son bord) pour la voir quelques secondes ; les Paramètres s\'y trouvent.</string>
     <string name="bar_buttons">Boutons</string>
     <string name="bar_arrange">Organiser la barre</string>
     <string name="tab_about">À propos</string>

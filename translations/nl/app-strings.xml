@@ -29,6 +29,9 @@
     <string name="templates">Indelingen</string>
     <string name="wallpaper_button">Achtergrond</string>
     <string name="templates_help">Kies een startpunt. Daarna kun je alles verplaatsen en van formaat veranderen.</string>
+    <string name="template_apply_title">„%1$s” op deze pagina gebruiken?</string>
+    <string name="template_apply_message">Wat je erop hebt geordend, wordt verwijderd.</string>
+    <string name="template_apply_confirm">Gebruiken</string>
     <string name="template_center">Auto in het midden</string>
     <string name="template_side">Auto opzij</string>
     <string name="template_vertical">Staand</string>
@@ -469,7 +472,7 @@
     <string name="logo_intro">Intro-animatie</string>
     <string name="bar_title">Appbalk</string>
     <string name="bar_hide">Balk verbergen</string>
-    <string name="bar_hide_help">Tik op een lege plek op het startscherm om hem een paar seconden te zien; om te ordenen en bij Instellingen te komen, druk je er lang op.</string>
+    <string name="bar_hide_help">Tik op een vrije plek op het startscherm (of de rand) om hem een paar seconden te zien; daar staat Instellingen.</string>
     <string name="bar_buttons">Knoppen</string>
     <string name="bar_arrange">Balk indelen</string>
     <string name="bar_position_help">Automatisch: links als het scherm liggend is, onderaan als het staand is.</string>
@@ -493,6 +496,7 @@
     <string name="bar_item_phone">Telefoon</string>
     <string name="bar_item_voice">Spraak</string>
     <string name="bar_item_favorites">Je favoriete apps</string>
+    <string name="bar_item_settings">Instellingen</string>
     <string name="bar_auto">Automatisch</string>
     <string name="bar_side">Links</string>
     <string name="bar_bottom">Onderaan</string>

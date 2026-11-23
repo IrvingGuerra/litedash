@@ -29,6 +29,9 @@
     <string name="templates">Układy</string>
     <string name="wallpaper_button">Tapeta</string>
     <string name="templates_help">Wybierz punkt wyjścia. Potem przesuwaj i zmieniaj rozmiar, czego chcesz.</string>
+    <string name="template_apply_title">Użyć „%1$s” na tej stronie?</string>
+    <string name="template_apply_message">To, co na niej ułożono, zostanie usunięte.</string>
+    <string name="template_apply_confirm">Użyj</string>
     <string name="template_center">Auto na środku</string>
     <string name="template_side">Auto z boku</string>
     <string name="template_vertical">Pionowo</string>
@@ -479,7 +482,7 @@
     <string name="logo_intro">Animacja startowa</string>
     <string name="bar_title">Pasek aplikacji</string>
     <string name="bar_hide">Ukryj pasek</string>
-    <string name="bar_hide_help">Dotknij pustego miejsca na ekranie głównym, by zobaczyć go przez kilka sekund; aby układać i wejść do Ustawień, przytrzymaj je.</string>
+    <string name="bar_hide_help">Dotknij wolnego miejsca na ekranie głównym (lub jego krawędzi), by zobaczyć go przez kilka sekund; tam są Ustawienia.</string>
     <string name="bar_buttons">Przyciski</string>
     <string name="bar_arrange">Urządź pasek</string>
     <string name="bar_position_help">Automatycznie: po lewej, gdy ekran jest poziomy, na dole, gdy pionowy.</string>
@@ -503,6 +506,7 @@
     <string name="bar_item_phone">Telefon</string>
     <string name="bar_item_voice">Głos</string>
     <string name="bar_item_favorites">Ulubione aplikacje</string>
+    <string name="bar_item_settings">Ustawienia</string>
     <string name="bar_auto">Automatycznie</string>
     <string name="bar_side">Po lewej</string>
     <string name="bar_bottom">Na dole</string>

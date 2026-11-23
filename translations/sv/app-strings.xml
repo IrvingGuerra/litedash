@@ -29,6 +29,9 @@
     <string name="templates">Layouter</string>
     <string name="wallpaper_button">Bakgrund</string>
     <string name="templates_help">Välj en utgångspunkt. Sedan kan du flytta och ändra storlek på vad du vill.</string>
+    <string name="template_apply_title">Använda ”%1$s” på den här sidan?</string>
+    <string name="template_apply_message">Det du ordnat på den tas bort.</string>
+    <string name="template_apply_confirm">Använd</string>
     <string name="template_center">Bilen i mitten</string>
     <string name="template_side">Bilen vid sidan</string>
     <string name="template_vertical">Stående</string>
@@ -469,7 +472,7 @@
     <string name="logo_intro">Introanimation</string>
     <string name="bar_title">Appfält</string>
     <string name="bar_hide">Dölj fältet</string>
-    <string name="bar_hide_help">Tryck på en tom yta på startskärmen för att se det i några sekunder; för att ordna och komma till Inställningar, håll in den.</string>
+    <string name="bar_hide_help">Tryck på en ledig yta på startskärmen (eller dess kant) för att se det i några sekunder; där finns Inställningar.</string>
     <string name="bar_buttons">Knappar</string>
     <string name="bar_arrange">Ordna fältet</string>
     <string name="bar_position_help">Automatiskt: till vänster när skärmen ligger, nedtill när den står.</string>
@@ -493,6 +496,7 @@
     <string name="bar_item_phone">Telefon</string>
     <string name="bar_item_voice">Röst</string>
     <string name="bar_item_favorites">Dina favoritappar</string>
+    <string name="bar_item_settings">Inställningar</string>
     <string name="bar_auto">Automatiskt</string>
     <string name="bar_side">Vänster</string>
     <string name="bar_bottom">Nedtill</string>

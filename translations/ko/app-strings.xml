@@ -29,6 +29,9 @@
     <string name="templates">레이아웃</string>
     <string name="wallpaper_button">배경화면</string>
     <string name="templates_help">시작점을 고르세요. 그다음 원하는 대로 옮기고 크기를 바꾸세요.</string>
+    <string name="template_apply_title">이 페이지에 “%1$s” 레이아웃을 사용할까요?</string>
+    <string name="template_apply_message">이 페이지에 배치한 항목이 제거됩니다.</string>
+    <string name="template_apply_confirm">사용</string>
     <string name="template_center">가운데에 차</string>
     <string name="template_side">옆에 차</string>
     <string name="template_vertical">세로</string>
@@ -464,7 +467,7 @@
     <string name="logo_intro">시작 애니메이션</string>
     <string name="bar_title">앱 바</string>
     <string name="bar_hide">바 숨기기</string>
-    <string name="bar_hide_help">홈 화면의 빈 곳을 탭하면 몇 초간 보입니다. 정리하거나 설정으로 가려면 그곳을 길게 누르세요.</string>
+    <string name="bar_hide_help">홈 화면의 빈 곳(또는 가장자리)을 탭하면 몇 초간 보입니다. 설정은 거기에 있습니다.</string>
     <string name="bar_buttons">버튼</string>
     <string name="bar_arrange">바 정리</string>
     <string name="bar_position_help">자동: 가로 화면에서는 왼쪽, 세로 화면에서는 아래쪽.</string>
@@ -488,6 +491,7 @@
     <string name="bar_item_phone">전화</string>
     <string name="bar_item_voice">음성</string>
     <string name="bar_item_favorites">즐겨찾는 앱</string>
+    <string name="bar_item_settings">설정</string>
     <string name="bar_auto">자동</string>
     <string name="bar_side">왼쪽</string>
     <string name="bar_bottom">아래쪽</string>

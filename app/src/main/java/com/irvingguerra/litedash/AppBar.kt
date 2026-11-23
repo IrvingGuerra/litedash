@@ -28,6 +28,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateMapOf
@@ -44,6 +45,8 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.onPlaced
+import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
@@ -194,16 +197,25 @@ internal fun BarPreview(repo: AppRepository, favorites: List<App>, items: List<B
     val actions = remember { BarActions({}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}) }
     val shape = RoundedCornerShape(Radius.card)
     val mark = RoundedCornerShape(Radius.inner)
+    // Lo elegido (también lo recién agregado o movido) se trae a la vista, al centro si se puede, sin animar.
+    val scroll = rememberScrollState()
+    val spans = remember { mutableStateMapOf<BarItem, IntRange>() }
+    val span = selected?.let { spans[it] }
+    LaunchedEffect(span, scroll.viewportSize, scroll.maxValue) {
+        if (span != null && scroll.viewportSize > 0) scroll.scrollTo(centeredScroll(span, scroll.viewportSize, scroll.maxValue))
+    }
     Row(
         Modifier.fillMaxWidth().height(76.dp).clip(shape).background(c.surfaceHigh).border(1.dp, c.line, shape)
-            .horizontalScroll(rememberScrollState()).padding(horizontal = 12.dp),
+            .horizontalScroll(scroll).padding(horizontal = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally),
     ) {
         for (i in items) key(i) {
             val chosen = i == selected
             Box(
-                Modifier.clip(mark)
+                Modifier
+                    .onPlaced { val x = it.positionInParent().x.toInt(); spans[i] = x until x + it.size.width }
+                    .clip(mark)
                     .then(if (chosen) Modifier.background(c.accent.copy(alpha = 0.18f)).border(1.5.dp, c.accent, mark) else Modifier)
                     .then(if (i != BarItem.SETTINGS) Modifier.clickable { onSelect(i) } else Modifier)
                     .padding(2.dp),
@@ -216,6 +228,8 @@ internal fun BarPreview(repo: AppRepository, favorites: List<App>, items: List<B
                             for (app in if (max != null) favorites.take(max) else favorites) AppIcon(repo, app, sizes.icon)
                         }
                     }
+                    // El volumen, solo su ícono: el de verdad escucha al sistema y busca la familia de la pantalla.
+                    i == BarItem.VOLUME -> Box(Modifier.size(sizes.button), contentAlignment = Alignment.Center) { Icon(Icons.volume, c.text, sizes.button * 0.45f) }
                     else -> BarButton(i, sizes, vertical = false, musicOpen = false, mapOpen = false, actions)
                 }
                 // Encima, para que el toque elija (y no mueva el volumen ni abra nada).
@@ -224,6 +238,10 @@ internal fun BarPreview(repo: AppRepository, favorites: List<App>, items: List<B
         }
     }
 }
+
+/** Dónde dejar el desplazamiento para que [span] (en el contenido) quede al centro de [viewport], sin pasarse de [max]. */
+internal fun centeredScroll(span: IntRange, viewport: Int, max: Int): Int =
+    ((span.first + span.last) / 2 - viewport / 2).coerceIn(0, max.coerceAtLeast(0))
 
 /** Lo que ocupa la barra: su ancho al lado ([vertical]) o su alto abajo. Oculta, el inicio lo descuenta de la cuadrícula. */
 @Composable
@@ -243,19 +261,21 @@ private data class BarSizes(val button: Dp, val icon: Dp, val box: Dp = button, 
 @Composable
 private fun BarButton(item: BarItem, sizes: BarSizes, vertical: Boolean, musicOpen: Boolean, mapOpen: Boolean, actions: BarActions) {
     val c = LocalColors.current
+    // Su nombre, para el lector de pantalla (el mismo que en Ajustes → Barra).
+    val label = item.title()?.let { stringResource(it) }
     when (item) {
-        BarItem.HOME -> IconButton(Icons.home, actions.onHome, size = sizes.button)
-        BarItem.APPS -> IconButton(Icons.apps, actions.onApps, size = sizes.button)
+        BarItem.HOME -> IconButton(Icons.home, actions.onHome, size = sizes.button, label = label)
+        BarItem.APPS -> IconButton(Icons.apps, actions.onApps, size = sizes.button, label = label)
         // La pantalla Música (como en Tesla); marcado mientras está abierta.
-        BarItem.MUSIC -> IconButton(Icons.music, actions.onMusic, size = sizes.button, background = if (musicOpen) c.surfaceHigh else Color.Transparent)
+        BarItem.MUSIC -> IconButton(Icons.music, actions.onMusic, size = sizes.button, background = if (musicOpen) c.surfaceHigh else Color.Transparent, label = label)
         BarItem.VOLUME -> Volume(if (vertical) sizes.volume else sizes.button, vertical = vertical)
-        BarItem.NAVIGATE -> IconButton(Icons.navigate, actions.onNavigate, size = sizes.button, background = if (mapOpen) c.surfaceHigh else Color.Transparent)
-        BarItem.BLUETOOTH -> IconButton(Icons.bluetooth, actions.onBluetooth, size = sizes.button)
-        BarItem.PROJECTION -> IconButton(Icons.phoneCar, actions.onProjection, size = sizes.button)
-        BarItem.PHONE -> IconButton(Icons.phone, actions.onPhone, size = sizes.button)
-        BarItem.VOICE -> actions.onVoice?.let { IconButton(Icons.mic, it, size = sizes.button) }
+        BarItem.NAVIGATE -> IconButton(Icons.navigate, actions.onNavigate, size = sizes.button, background = if (mapOpen) c.surfaceHigh else Color.Transparent, label = label)
+        BarItem.BLUETOOTH -> IconButton(Icons.bluetooth, actions.onBluetooth, size = sizes.button, label = label)
+        BarItem.PROJECTION -> IconButton(Icons.phoneCar, actions.onProjection, size = sizes.button, label = label)
+        BarItem.PHONE -> IconButton(Icons.phone, actions.onPhone, size = sizes.button, label = label)
+        BarItem.VOICE -> actions.onVoice?.let { IconButton(Icons.mic, it, size = sizes.button, label = label) }
         // Siempre: sin Ajustes no habría cómo salir del inicio.
-        BarItem.SETTINGS -> IconButton(Icons.settings, actions.onSettings, size = sizes.button)
+        BarItem.SETTINGS -> IconButton(Icons.settings, actions.onSettings, size = sizes.button, label = stringResource(R.string.bar_item_settings))
         BarItem.FAVORITES, BarItem.SPLIT_START, BarItem.SPLIT_END -> Unit
     }
 }

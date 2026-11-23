@@ -29,6 +29,9 @@
     <string name="templates">布局</string>
     <string name="wallpaper_button">壁纸</string>
     <string name="templates_help">先选一个起点，之后可随意移动和调整大小。</string>
+    <string name="template_apply_title">在此页面使用“%1$s”？</string>
+    <string name="template_apply_message">此页面上已整理的内容将被移除。</string>
+    <string name="template_apply_confirm">使用</string>
     <string name="template_center">车在中间</string>
     <string name="template_side">车在侧边</string>
     <string name="template_vertical">竖屏</string>
@@ -464,7 +467,7 @@
     <string name="logo_intro">开场动画</string>
     <string name="bar_title">应用栏</string>
     <string name="bar_hide">隐藏栏</string>
-    <string name="bar_hide_help">轻触主屏幕空白处即可显示几秒；要整理并进入设置，请长按该处。</string>
+    <string name="bar_hide_help">轻触主屏幕空白处（或屏幕边缘）即可显示几秒；设置就在其中。</string>
     <string name="bar_buttons">按钮</string>
     <string name="bar_arrange">整理栏</string>
     <string name="bar_position_help">自动：横屏时在左侧，竖屏时在底部。</string>
@@ -488,6 +491,7 @@
     <string name="bar_item_phone">电话</string>
     <string name="bar_item_voice">语音</string>
     <string name="bar_item_favorites">你的常用应用</string>
+    <string name="bar_item_settings">设置</string>
     <string name="bar_auto">自动</string>
     <string name="bar_side">左侧</string>
     <string name="bar_bottom">底部</string>

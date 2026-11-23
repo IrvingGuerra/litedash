@@ -29,6 +29,9 @@
     <string name="templates">เลย์เอาต์</string>
     <string name="wallpaper_button">วอลเปเปอร์</string>
     <string name="templates_help">เลือกจุดเริ่มต้น แล้วย้ายและปรับขนาดอะไรก็ได้ตามชอบ</string>
+    <string name="template_apply_title">ใช้ “%1$s” ในหน้านี้ไหม</string>
+    <string name="template_apply_message">สิ่งที่คุณจัดไว้ในหน้านี้จะถูกนำออก</string>
+    <string name="template_apply_confirm">ใช้</string>
     <string name="template_center">รถอยู่ตรงกลาง</string>
     <string name="template_side">รถอยู่ด้านข้าง</string>
     <string name="template_vertical">แนวตั้ง</string>
@@ -461,7 +464,7 @@
     <string name="logo_intro">แอนิเมชันเปิดตัว</string>
     <string name="bar_title">แถบแอป</string>
     <string name="bar_hide">ซ่อนแถบ</string>
-    <string name="bar_hide_help">แตะที่ว่างบนหน้าหลักเพื่อดูแถบสักครู่ หากต้องการจัดเรียงและเข้าการตั้งค่า ให้แตะค้างที่จุดนั้น</string>
+    <string name="bar_hide_help">แตะที่ว่างบนหน้าหลัก (หรือขอบจอ) เพื่อดูแถบสักครู่ การตั้งค่าอยู่ในแถบนั้น</string>
     <string name="bar_buttons">ปุ่ม</string>
     <string name="bar_arrange">จัดแถบ</string>
     <string name="bar_position_help">อัตโนมัติ: ทางซ้ายเมื่อจอเป็นแนวนอน ด้านล่างเมื่อเป็นแนวตั้ง</string>
@@ -485,6 +488,7 @@
     <string name="bar_item_phone">โทรศัพท์</string>
     <string name="bar_item_voice">เสียงสั่งการ</string>
     <string name="bar_item_favorites">แอปโปรดของคุณ</string>
+    <string name="bar_item_settings">การตั้งค่า</string>
     <string name="bar_auto">อัตโนมัติ</string>
     <string name="bar_side">ซ้าย</string>
     <string name="bar_bottom">ล่าง</string>

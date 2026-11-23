@@ -29,6 +29,9 @@
     <string name="templates">Макети</string>
     <string name="wallpaper_button">Шпалери</string>
     <string name="templates_help">Вибери основу. Потім пересувай і змінюй розмір будь-чого.</string>
+    <string name="template_apply_title">Використати «%1$s» на цій сторінці?</string>
+    <string name="template_apply_message">Те, що ти на ній розставив, буде прибрано.</string>
+    <string name="template_apply_confirm">Використати</string>
     <string name="template_center">Авто в центрі</string>
     <string name="template_side">Авто збоку</string>
     <string name="template_vertical">Вертикальний</string>
@@ -479,7 +482,7 @@
     <string name="logo_intro">Заставка</string>
     <string name="bar_title">Панель застосунків</string>
     <string name="bar_hide">Приховати панель</string>
-    <string name="bar_hide_help">Торкнися порожнього місця на головному екрані, щоб побачити її на кілька секунд; щоб упорядкувати й перейти в налаштування, утримуй на ньому палець.</string>
+    <string name="bar_hide_help">Торкнися вільного місця на головному екрані (або його краю), щоб побачити її на кілька секунд; там є налаштування.</string>
     <string name="bar_buttons">Кнопки</string>
     <string name="bar_arrange">Налаштувати панель</string>
     <string name="bar_position_help">Авто: ліворуч при горизонтальному екрані, внизу — при вертикальному.</string>
@@ -503,6 +506,7 @@
     <string name="bar_item_phone">Телефон</string>
     <string name="bar_item_voice">Голос</string>
     <string name="bar_item_favorites">Улюблені застосунки</string>
+    <string name="bar_item_settings">Налаштування</string>
     <string name="bar_auto">Авто</string>
     <string name="bar_side">Ліворуч</string>
     <string name="bar_bottom">Внизу</string>

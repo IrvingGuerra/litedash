@@ -81,7 +81,11 @@ import com.irvingguerra.litedash.core.ui.Label
 import com.irvingguerra.litedash.core.ui.LocalColors
 import com.irvingguerra.litedash.core.ui.Typography
 import com.irvingguerra.litedash.feature.music.FactoryAudio
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.res.stringResource
 import java.util.concurrent.Executors
+import java.util.concurrent.atomic.AtomicInteger
 
 /** Avisos del sistema para LiteDash: escucha solo mientras se ve (con otra app al frente, nada). */
 private fun Context.listen(receiver: BroadcastReceiver, action: String) =
@@ -127,7 +131,7 @@ fun Volume(buttonSize: Dp, vertical: Boolean = false) {
             open = false
         }
     }
-    // El nivel nuevo llega por el aviso del sistema (el cambio se hace en otro hilo).
+    // El cambio se hace en otro hilo; el nivel de verdad llega por el aviso del sistema.
     fun adjust(direction: Int) {
         touched++
         SystemVolume.adjust(context, direction)
@@ -136,12 +140,13 @@ fun Volume(buttonSize: Dp, vertical: Boolean = false) {
         touched++
         val target = (fraction * max + 0.5f).toInt().coerceIn(0, max)
         if (target == level) return
-        runCatching { audio.setStreamVolume(AudioManager.STREAM_MUSIC, target, 0) }
-        level = audio.getStreamVolume(AudioManager.STREAM_MUSIC)
+        SystemVolume.set(context, target)
+        level = target
     }
     // Por tecla (volumen fijo o pantalla NWD): solo + y −, sin barra ni número. La familia de la pantalla se busca
     // una vez y fuera del hilo principal; mientras, lo que ya se sepa.
     val fixed by produceState(SystemVolume.byKeyNow(context)) { value = withContext(Dispatchers.IO) { SystemVolume.byKey(context) } }
+    val label = stringResource(R.string.bar_item_volume)
     // Dónde está la bocina en la ventana: de ahí se acomoda la barra flotante.
     var anchor by remember { mutableStateOf(Rect.Zero) }
     Box(
@@ -150,7 +155,8 @@ fun Volume(buttonSize: Dp, vertical: Boolean = false) {
             .onGloballyPositioned { anchor = it.boundsInWindow() }
             .clip(CircleShape)
             .background(if (open) c.surfaceHigh else Color.Transparent)
-            .clickable { open = !open },
+            .clickable { open = !open }
+            .semantics { contentDescription = label },
         contentAlignment = Alignment.Center,
     ) {
         Icon(Icons.volume, c.text, buttonSize * 0.45f)
@@ -292,6 +298,17 @@ object SystemVolume {
         }
     }
 
+    /** El volumen de la música a [level] (arrastrar la barra), en su hilo: si llegan varios seguidos, solo cuenta el último. */
+    fun set(context: Context, level: Int) {
+        val app = context.applicationContext
+        if (pendingLevel.getAndSet(level) != NO_LEVEL) return
+        worker.execute {
+            val target = pendingLevel.getAndSet(NO_LEVEL)
+            runCatching { app.getSystemService(AudioManager::class.java).setStreamVolume(AudioManager.STREAM_MUSIC, target, 0) }
+        }
+    }
+    private val pendingLevel = AtomicInteger(NO_LEVEL)
+
     /**
      * Aprieta la tecla dentro de la ventana de LiteDash (se permite sin permisos porque es la propia app): el
      * sistema la intercepta antes, como la del volante o la del panel. Se marca por su hora de apretar.
@@ -316,6 +333,7 @@ object SystemVolume {
     fun describe(): String = "Volumen: modo=$mode; último=$last"
 
     private const val NWD_FAMILY = "nwd"
+    private const val NO_LEVEL = -1
     private const val INJECTED_KEPT = 8
 }
 

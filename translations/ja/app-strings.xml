@@ -29,6 +29,9 @@
     <string name="templates">レイアウト</string>
     <string name="wallpaper_button">壁紙</string>
     <string name="templates_help">ベースを選んでください。あとから自由に移動・サイズ変更できます。</string>
+    <string name="template_apply_title">このページで「%1$s」を使いますか？</string>
+    <string name="template_apply_message">このページに並べたものは消えます。</string>
+    <string name="template_apply_confirm">使う</string>
     <string name="template_center">車を中央に</string>
     <string name="template_side">車を横に</string>
     <string name="template_vertical">縦向き</string>
@@ -464,7 +467,7 @@
     <string name="logo_intro">起動アニメーション</string>
     <string name="bar_title">アプリバー</string>
     <string name="bar_hide">バーを隠す</string>
-    <string name="bar_hide_help">ホーム画面の空いている所をタップすると数秒間表示されます。並べ替えや設定を開くには、そこを長押しします。</string>
+    <string name="bar_hide_help">ホーム画面の空いている所（または画面の端）をタップすると数秒間表示されます。設定はそこにあります。</string>
     <string name="bar_buttons">ボタン</string>
     <string name="bar_arrange">バーを編集</string>
     <string name="bar_position_help">自動：画面が横向きなら左、縦向きなら下に表示します。</string>
@@ -488,6 +491,7 @@
     <string name="bar_item_phone">電話</string>
     <string name="bar_item_voice">音声</string>
     <string name="bar_item_favorites">お気に入りのアプリ</string>
+    <string name="bar_item_settings">設定</string>
     <string name="bar_auto">自動</string>
     <string name="bar_side">左</string>
     <string name="bar_bottom">下</string>

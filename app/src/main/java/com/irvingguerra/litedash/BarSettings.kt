@@ -22,7 +22,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.irvingguerra.litedash.core.ui.Button
@@ -39,7 +38,7 @@ import com.irvingguerra.litedash.feature.apps.AppIcon
 import com.irvingguerra.litedash.feature.apps.rememberApps
 
 /** El nombre de cada botón que se puede agregar a la barra (Ajustes no: siempre va). */
-private fun BarItem.title(): Int? = when (this) {
+internal fun BarItem.title(): Int? = when (this) {
     BarItem.HOME -> R.string.bar_item_home
     BarItem.APPS -> R.string.bar_item_apps
     BarItem.MUSIC -> R.string.bar_item_music
@@ -86,24 +85,29 @@ internal fun BarSettingsTab(d: Dependencies, onEdit: () -> Unit) {
 private fun BarSettings(d: Dependencies, apps: List<App>, onEdit: (() -> Unit)? = null, section: @Composable (title: String?, content: @Composable () -> Unit) -> Unit) {
     val c = LocalColors.current
     val prefs = d.prefs
-    val context = LocalContext.current
     // La voz solo se ofrece si la pantalla trae asistente.
-    val hasVoice = remember { voiceIntent(context) != null }
+    val hasVoice = rememberVoiceIntent() != null
     section(null) {
         SwitchRow(stringResource(R.string.bar_hide), prefs.barHidden, { prefs.barHidden = it }, stringResource(R.string.bar_hide_help))
     }
     // En la pestaña, oculta solo queda el interruptor; en el panel se está acomodando y la barra se ve: va todo.
     if (prefs.barHidden && onEdit != null) return
     // Ajustes ya va siempre.
+    // Lo elegido en la vista previa: también lo recién agregado, para que quede a la vista y se mueva de una vez.
+    var selected by remember { mutableStateOf<BarItem?>(null) }
     val missing = BarItem.entries.filter { it != BarItem.SETTINGS && !it.isSplit && it !in prefs.barItems && (it != BarItem.VOICE || hasVoice) }
     section(stringResource(R.string.bar_buttons)) {
-        BarArrange(d, apps, hasVoice)
+        BarArrange(d, apps, hasVoice, selected) { selected = it }
         Label(stringResource(R.string.bar_edit_help), Typography.body, c.textMuted)
         if (missing.isNotEmpty() || onEdit != null) FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             if (onEdit != null) Button(stringResource(R.string.bar_arrange), onEdit, primary = true)
-            // Se agrega antes de Ajustes; luego se arrastra a donde se quiera.
+            // Se agrega antes de Ajustes (Android Auto / CarPlay, junto a Bluetooth como al ponerlo solo) y queda elegido:
+            // luego se mueve con las flechas.
             for (item in missing) item.title()?.let { title ->
-                Button(stringResource(R.string.bar_add_item, stringResource(title)), { prefs.barItems = BarItem.add(prefs.barItems, item) })
+                Button(stringResource(R.string.bar_add_item, stringResource(title)), {
+                    prefs.barItems = if (item == BarItem.PROJECTION) BarItem.withProjection(prefs.barItems) else BarItem.add(prefs.barItems, item)
+                    selected = item
+                })
             }
         }
     }
@@ -142,12 +146,11 @@ private fun BarSettings(d: Dependencies, apps: List<App>, onEdit: (() -> Unit)? 
  * arriba salen las flechas y «Quitar». Nada de dejar presionado: en muchas pantallas de auto no responde bien.
  */
 @Composable
-private fun BarArrange(d: Dependencies, apps: List<App>, hasVoice: Boolean) {
+private fun BarArrange(d: Dependencies, apps: List<App>, hasVoice: Boolean, selected: BarItem?, onSelect: (BarItem?) -> Unit) {
     val c = LocalColors.current
     val prefs = d.prefs
     val shown = prefs.barItems.filter { it != BarItem.VOICE || hasVoice }
     val movable = shown.filter { it != BarItem.SETTINGS }
-    var selected by remember { mutableStateOf<BarItem?>(null) }
     val chosen = selected?.takeIf { it in movable }
     // Lo recorre un lugar; lo que no se ve aquí (la voz sin asistente) conserva el suyo ([reorderBar]).
     fun move(by: Int) {
@@ -156,7 +159,7 @@ private fun BarArrange(d: Dependencies, apps: List<App>, hasVoice: Boolean) {
         if (to !in movable.indices) return
         prefs.barItems = reorderBar(prefs.barItems, movable, item, if (by < 0) to - 0.5f else to + 0.5f) { movable.indexOf(it).toFloat() }
         // Una raya que cruza a la otra cambia de nombre (la primera siempre es la del principio): se sigue por su lugar.
-        selected = prefs.barItems.filter { it in movable }.getOrNull(to)
+        onSelect(prefs.barItems.filter { it in movable }.getOrNull(to))
     }
     Row(Modifier.fillMaxWidth().heightIn(min = 52.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         if (chosen == null) return@Row
@@ -168,7 +171,7 @@ private fun BarArrange(d: Dependencies, apps: List<App>, hasVoice: Boolean) {
         // Las rayas no se quitan: solo se mueven. «Quitar» va antes de las flechas: así ellas no cambian de lugar.
         if (!chosen.isSplit) Button(stringResource(R.string.remove), {
             prefs.barItems = prefs.barItems - chosen
-            selected = null
+            onSelect(null)
         })
         val idle = c.textMuted.copy(alpha = 0.35f)
         IconButton(
@@ -180,7 +183,7 @@ private fun BarArrange(d: Dependencies, apps: List<App>, hasVoice: Boolean) {
             color = if (at < movable.lastIndex) c.text else idle, label = stringResource(R.string.bar_move_right),
         )
     }
-    BarPreview(d.apps, rememberFavorites(d, apps), shown, chosen) { selected = if (selected == it) null else it }
+    BarPreview(d.apps, rememberFavorites(d, apps), shown, chosen) { onSelect(if (selected == it) null else it) }
 }
 
 /** Tus apps favoritas de la barra: quitar con la x y agregar buscándolas. */

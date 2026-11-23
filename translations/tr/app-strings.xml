@@ -29,6 +29,9 @@
     <string name="templates">Düzenler</string>
     <string name="wallpaper_button">Duvar kağıdı</string>
     <string name="templates_help">Bir başlangıç seçin. Sonra istediğinizi taşıyıp boyutlandırın.</string>
+    <string name="template_apply_title">Bu sayfada “%1$s” kullanılsın mı?</string>
+    <string name="template_apply_message">Üzerinde düzenlediğiniz her şey kaldırılır.</string>
+    <string name="template_apply_confirm">Kullan</string>
     <string name="template_center">Araba ortada</string>
     <string name="template_side">Araba yanda</string>
     <string name="template_vertical">Dikey</string>
@@ -469,7 +472,7 @@
     <string name="logo_intro">Açılış animasyonu</string>
     <string name="bar_title">Uygulama çubuğu</string>
     <string name="bar_hide">Çubuğu gizle</string>
-    <string name="bar_hide_help">Birkaç saniye görmek için ana ekranda boş bir yere dokunun; düzenlemek ve Ayarlar’a gitmek için oraya uzun basın.</string>
+    <string name="bar_hide_help">Birkaç saniye görmek için ana ekranda boş bir yere (veya kenarına) dokunun; Ayarlar orada.</string>
     <string name="bar_buttons">Düğmeler</string>
     <string name="bar_arrange">Çubuğu düzenle</string>
     <string name="bar_position_help">Otomatik: ekran yatayken solda, dikeyken altta.</string>
@@ -493,6 +496,7 @@
     <string name="bar_item_phone">Telefon</string>
     <string name="bar_item_voice">Sesli</string>
     <string name="bar_item_favorites">Favori uygulamalarınız</string>
+    <string name="bar_item_settings">Ayarlar</string>
     <string name="bar_auto">Otomatik</string>
     <string name="bar_side">Sol</string>
     <string name="bar_bottom">Altta</string>

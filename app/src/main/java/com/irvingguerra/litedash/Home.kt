@@ -11,6 +11,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -48,6 +49,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -114,11 +116,13 @@ import com.irvingguerra.litedash.feature.music.SoundPiece
 import com.irvingguerra.litedash.feature.navigation.NavigationRepository
 import com.irvingguerra.litedash.feature.obd.ObdRepository
 import com.irvingguerra.litedash.feature.tpms.TpmsRepository
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 
 /**
@@ -148,7 +152,7 @@ sealed interface Panel {
     /** Ajustes abiertos en el Taller (pieza de acceso directo). */
     data object Workshop : Panel
     /** Ajustes abiertos en Apps (para enlazar la radio desde la radio en grande, o bajar tu estado desde la ruta). */
-    data object MusicSettings : Panel
+    data object AppsSettings : Panel
     /** Elegir qué dato muestra un medidor existente ([tileId]) o uno nuevo (null). */
     data class PickGauge(val tileId: String?) : Panel
     /** Estilo, color y demás de un velocímetro o medidor ([tileId]). */
@@ -163,6 +167,19 @@ sealed interface Panel {
     data class CustomizeWidget(val tileId: String) : Panel
     /** Ajustes abiertos en Llantas (desde la vista de llantas o la pieza sin configurar). */
     data object TiresSettings : Panel
+}
+
+/**
+ * El panel de opciones de un widget ([type], [id]) al tocar su engrane; null = no tiene opciones propias y no lleva
+ * engrane (Android Auto / CarPlay se elige en Ajustes → Apps). Solo los medidores van al panel del medidor.
+ */
+internal fun optionsPanelOf(type: String, id: String): Panel? = when (type) {
+    TileTypes.IMAGE -> Panel.CustomizeImage(id)
+    TileTypes.MAP -> Panel.CustomizeMap(id)
+    TileTypes.CAR -> Panel.CustomizeCar(id)
+    in WIDGET_OPTIONS -> Panel.CustomizeWidget(id)
+    TileTypes.SPEEDOMETER, TileTypes.GAUGE, TileTypes.ROAD -> Panel.CustomizeGauge(id)
+    else -> null
 }
 
 class Dependencies(
@@ -323,7 +340,7 @@ fun TileContent(d: Dependencies, p: Tile, apps: List<App>, car: CarPackage?, rev
                 if (d.music.radioInternet) actions.onMedia(MediaTab.RADIO)
                 else {
                     openRadioSettings()
-                    actions.onPanel(Panel.MusicSettings)
+                    actions.onPanel(Panel.AppsSettings)
                 }
             },
             modifier = Modifier.expandable(p, actions),
@@ -343,7 +360,7 @@ fun TileContent(d: Dependencies, p: Tile, apps: List<App>, car: CarPackage?, rev
         // Sin app de Android Auto / CarPlay: sus ajustes, para elegirla.
         TileTypes.PROJECTION -> ProjectionTile(d, apps, p) {
             openProjectionSettings()
-            actions.onPanel(Panel.MusicSettings)
+            actions.onPanel(Panel.AppsSettings)
         }
         TileTypes.TIRES -> TiresTile(d, showCar = p.flag(WidgetFlags.CAR), onOpen = actions.onTires, onSettings = { actions.onPanel(Panel.TiresSettings) })
         TileTypes.MAP -> Box(Modifier.expandable(p, actions)) {
@@ -436,8 +453,9 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
     val apps = rememberApps(d.apps).orEmpty()
     val currentApps by rememberUpdatedState(apps)
     // Voz: el asistente que tenga la pantalla (volante y barra); null si no hay ninguno (sin botón).
-    val onVoice: (() -> Unit)? = remember {
-        voiceIntent(context)?.let { intent -> { runCatching { context.startActivity(intent) }; Unit } }
+    val voice = rememberVoiceIntent()
+    val onVoice: (() -> Unit)? = remember(voice) {
+        voice?.let { intent -> { runCatching { context.startActivity(intent) }; Unit } }
     }
     val car = d.cars.pkg(d.prefs.carModel)
     // Recién cambiado el idioma, de vuelta en Ajustes, donde se eligió.
@@ -516,7 +534,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
         if (app != null) d.apps.open(context, app)
         else {
             openProjectionSettings()
-            panel = Panel.MusicSettings
+            panel = Panel.AppsSettings
         }
     }
     // Con Archivos, play sin nada que sonar (volante, barra de Android, widget) abre la pantalla Música en la
@@ -634,7 +652,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
             onBluetooth = {
                 if (!openStereoBluetooth(d, context)) {
                     openMusicSettings()
-                    panel = Panel.MusicSettings
+                    panel = Panel.AppsSettings
                 }
             },
             onProjection = { openProjection() },
@@ -749,12 +767,17 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                         delay(BAR_PEEK_MS)
                         peeking = false
                     }
-                    val peekAlpha by animateFloatAsState(if (peeking && !barShown) 1f else 0f, tween(BAR_FADE_MS), label = "barPeek")
+                    // El desvanecido se lee al dibujar; al componer solo importa si se ve (cambia dos veces, no en cada cuadro).
+                    val peekAlpha = animateFloatAsState(if (peeking && !barShown) 1f else 0f, tween(BAR_FADE_MS), label = "barPeek")
+                    val peekVisible by remember { derivedStateOf { peekAlpha.value > 0f } }
                     // Lo que deja libre al ocultarse: el tablero lo gana, pero la cuadrícula no lo cuenta.
                     val freed = if (barShown) 0.dp else barThickness(d.prefs, rail)
                     val bar = @Composable { vertical: Boolean ->
                         AppBar(d.apps, d.prefs, favorites, vertical, editing, musicBig, barActions, mapOpen = expanded == Expanded.MAP)
                     }
+                    // Oculta: un toque en cualquier lugar libre (la orilla, la barra de arriba o un hueco del tablero) la
+                    // asoma. Va debajo de todo: lo que tiene su propio toque (widgets, puntitos, avisos) lo conserva.
+                    if (!barShown) Spacer(Modifier.fillMaxSize().pointerInput(Unit) { detectTapGestures { barPeek++ } })
                     Row(Modifier.fillMaxSize()) {
                         if (barShown && rail && !railRight) bar(true)
                         Column(Modifier.weight(1f).fillMaxHeight()) {
@@ -804,17 +827,9 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                                             .onGloballyPositioned { board = it.boundsInRoot() }
                                             .graphicsLayer { translationX = pageShift.value },
                                         swipe = rememberPageSwipe(d.dashboard, pageShift, board?.width ?: 0f),
-                                        onSettings = {
-                                            panel = when (it.type) {
-                                                TileTypes.IMAGE -> Panel.CustomizeImage(it.id)
-                                                TileTypes.MAP -> Panel.CustomizeMap(it.id)
-                                                TileTypes.CAR -> Panel.CustomizeCar(it.id)
-                                                in WIDGET_OPTIONS -> Panel.CustomizeWidget(it.id)
-                                                else -> Panel.CustomizeGauge(it.id)
-                                            }
-                                        },
-                                        // Todos tienen opciones; el auto 3D, solo con Llantas prendido (las de las llantas).
-                                        hasSettings = { it.type != TileTypes.CAR || d.hasTpmsSource },
+                                        onSettings = { optionsPanelOf(it.type, it.id)?.let { p -> panel = p } },
+                                        // Los que tienen opciones; el auto 3D, solo con Llantas prendido (las de las llantas).
+                                        hasSettings = { optionsPanelOf(it.type, it.id) != null && (it.type != TileTypes.CAR || d.hasTpmsSource) },
                                         onTapEmpty = { if (!barShown) barPeek++ },
                                     ) { p -> TileContent(d, p, apps, car, revision, actions) }
                                 }
@@ -830,7 +845,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                                     when (shownBig) {
                                         Expanded.MEDIA -> MediaScreen(
                                             d, mediaTab, onTab = { mediaTab = it; mediaBrowse = false }, close = close,
-                                            onRadioSettings = { openRadioSettings(); panel = Panel.MusicSettings },
+                                            onRadioSettings = { openRadioSettings(); panel = Panel.AppsSettings },
                                             modifier = Modifier.padding(6.dp),
                                             browse = mediaBrowse,
                                         )
@@ -843,7 +858,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                                             val look = from?.data ?: d.prefs.mapLook.orEmpty()
                                             MapExpanded(
                                                 d, from?.id, look, app, onPlace = { if (app != null) navigateTo(context, app, it) else PlaceRequests.fromAddress(it) }, onNavigate = { actions.onNavigate(app) },
-                                                onOffline = { openOfflineMaps(); panel = Panel.MusicSettings },
+                                                onOffline = { openOfflineMaps(); panel = Panel.AppsSettings },
                                                 close = close, modifier = Modifier.padding(6.dp),
                                             )
                                         }
@@ -871,7 +886,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                     }
                     // La barra oculta asomándose: encima del tablero en su lugar de siempre, sin reacomodar nada. Al
                     // costado lleva el fondo del inicio (ahí no tiene tarjeta propia).
-                    if (peekAlpha > 0f) {
+                    if (peekVisible) {
                         val place = when {
                             !rail -> Modifier.align(Alignment.BottomCenter)
                             railRight -> Modifier.align(Alignment.CenterEnd).fillMaxHeight().background(backdrop)
@@ -879,7 +894,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                         }
                         Box(
                             place
-                                .graphicsLayer { alpha = peekAlpha }
+                                .graphicsLayer { alpha = peekAlpha.value }
                                 .pointerInput(Unit) {
                                     awaitEachGesture {
                                         awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
@@ -896,7 +911,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
             FitShort {
                 when (p) {
                     Panel.Drawer -> DrawerPanel(d, apps, close = { panel = null })
-                    Panel.Settings, Panel.Updates, Panel.Report, Panel.Language, Panel.Workshop, Panel.MusicSettings, Panel.TiresSettings -> SettingsPanel(
+                    Panel.Settings, Panel.Updates, Panel.Report, Panel.Language, Panel.Workshop, Panel.AppsSettings, Panel.TiresSettings -> SettingsPanel(
                         d,
                         revision = revision,
                         close = { panel = null },
@@ -906,7 +921,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                         start = when (p) {
                             Panel.Updates, Panel.Report -> SettingsSection.SYSTEM
                             Panel.Workshop -> SettingsSection.WORKSHOP
-                            Panel.MusicSettings -> SettingsSection.APPS
+                            Panel.AppsSettings -> SettingsSection.APPS
                             Panel.TiresSettings -> SettingsSection.TIRES
                             Panel.Language -> SettingsSection.APPEARANCE
                             else -> SettingsSection.CAR
@@ -1064,14 +1079,14 @@ private const val MOVING_KMH = 8f
 /** Tus apps favoritas de la barra ([dockFavorites]), al día con lo que cambie. */
 @Composable
 fun rememberFavorites(d: Dependencies, apps: List<App>): List<App> =
-    remember(apps, d.prefs.dock, d.music.preferred) { dockFavorites(d, apps) }
+    remember(apps, d.prefs.dock, d.music.preferred, d.prefs.projectionApp, BarItem.PROJECTION in d.prefs.barItems) { dockFavorites(d, apps) }
 
 /** Las del usuario, o unas sugeridas con lo que tenga instalado (navegación, música, mensajes). */
 fun dockFavorites(d: Dependencies, apps: List<App>): List<App> {
     d.prefs.dock?.let { keys -> return keys.mapNotNull { d.apps.find(apps, it) } }
     return listOfNotNull(
-        // Android Auto / CarPlay primero: mucha gente usa la pantalla con su celular.
-        projectionChoice(d, apps),
+        // Android Auto / CarPlay primero (mucha gente usa la pantalla con su celular), salvo que ya tenga su botón.
+        projectionChoice(d, apps).takeIf { BarItem.PROJECTION !in d.prefs.barItems },
         d.apps.firstOf(apps, *NAVIGATION_PACKAGES),
         // La app de música elegida en Ajustes, o la primera conocida que haya.
         d.music.preferred?.let { d.apps.firstOf(apps, it) } ?: d.apps.firstOf(apps, *MUSIC_PACKAGES),
@@ -1117,7 +1132,7 @@ private fun TopBar(
                 // Las páginas van junto al título (y la ayuda, si aún cabe).
                 val bar = pageBarWidth(pages) + 14.dp
                 val needed = with(LocalDensity.current) {
-                    remember(title, hint) {
+                    remember(title, hint, this) {
                         measurer.measure(title, Typography.subtitle).size.width + measurer.measure(hint, Typography.small).size.width
                     }.toDp() + 14.dp
                 }
@@ -1159,8 +1174,9 @@ private fun TopBar(
 private fun HomePrompt(prefs: Preferences, revision: Int) {
     val context = LocalContext.current
     val (request, returns) = rememberRequestHome()
-    val isHome = remember(revision, returns) { isHomeApp(context) }
-    if (isHome) return
+    // Fuera del hilo principal (pregunta al sistema); mientras llega, sin aviso.
+    val isHome = produceState<Boolean?>(null, revision, returns) { value = withContext(Dispatchers.IO) { isHomeApp(context) } }.value
+    if (isHome != false) return
     Notice(stringResource(R.string.not_home_notice)) {
         Button(stringResource(R.string.make_home), request, primary = true)
         Button(stringResource(R.string.dont_ask), { prefs.dontAskHome = true })
@@ -1168,10 +1184,17 @@ private fun HomePrompt(prefs: Preferences, revision: Int) {
 }
 
 /** El asistente de voz del sistema (manos libres primero); null si la pantalla no trae ninguno. */
-internal fun voiceIntent(context: Context): Intent? =
+private fun voiceIntent(context: Context): Intent? =
     listOf(Intent.ACTION_VOICE_COMMAND, Intent.ACTION_ASSIST)
         .map { Intent(it).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) }
         .firstOrNull { it.resolveActivity(context.packageManager) != null }
+
+/** [voiceIntent] preguntado fuera del hilo principal (es una consulta al PackageManager); null mientras llega. */
+@Composable
+internal fun rememberVoiceIntent(): Intent? {
+    val context = LocalContext.current
+    return produceState<Intent?>(null) { value = withContext(Dispatchers.IO) { voiceIntent(context) } }.value
+}
 
 /** Lo que mide la barra de Android de arriba mientras está oculta (0 si se ve). */
 @OptIn(ExperimentalLayoutApi::class)

@@ -29,6 +29,9 @@
     <string name="templates">Aranjamente</string>
     <string name="wallpaper_button">Imagine de fundal</string>
     <string name="templates_help">Alege un punct de plecare. Apoi mută și redimensionează ce vrei.</string>
+    <string name="template_apply_title">Folosești „%1$s” pe această pagină?</string>
+    <string name="template_apply_message">Ce ai aranjat pe ea va fi scos.</string>
+    <string name="template_apply_confirm">Folosește</string>
     <string name="template_center">Mașina în mijloc</string>
     <string name="template_side">Mașina pe o parte</string>
     <string name="template_vertical">Vertical</string>
@@ -474,7 +477,7 @@
     <string name="logo_intro">Animație de pornire</string>
     <string name="bar_title">Bara de aplicații</string>
     <string name="bar_hide">Ascunde bara</string>
-    <string name="bar_hide_help">Atinge un loc gol de pe ecranul principal ca s-o vezi câteva secunde; ca să aranjezi și să ajungi la Setări, ține-l apăsat.</string>
+    <string name="bar_hide_help">Atinge un loc liber de pe ecranul principal (sau marginea lui) ca s-o vezi câteva secunde; acolo sunt Setările.</string>
     <string name="bar_buttons">Butoane</string>
     <string name="bar_arrange">Aranjează bara</string>
     <string name="bar_position_help">Automat: în stânga când ecranul e orizontal, jos când e vertical.</string>
@@ -498,6 +501,7 @@
     <string name="bar_item_phone">Telefon</string>
     <string name="bar_item_voice">Voce</string>
     <string name="bar_item_favorites">Aplicațiile tale preferate</string>
+    <string name="bar_item_settings">Setări</string>
     <string name="bar_auto">Automat</string>
     <string name="bar_side">Stânga</string>
     <string name="bar_bottom">Jos</string>

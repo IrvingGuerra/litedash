@@ -29,6 +29,9 @@
     <string name="templates">Bố cục</string>
     <string name="wallpaper_button">Hình nền</string>
     <string name="templates_help">Chọn một điểm bắt đầu. Sau đó di chuyển và đổi kích thước tùy ý.</string>
+    <string name="template_apply_title">Dùng “%1$s” cho trang này?</string>
+    <string name="template_apply_message">Những gì bạn đã sắp xếp trên trang sẽ bị gỡ.</string>
+    <string name="template_apply_confirm">Dùng</string>
     <string name="template_center">Xe ở giữa</string>
     <string name="template_side">Xe ở bên</string>
     <string name="template_vertical">Dọc</string>
@@ -464,7 +467,7 @@
     <string name="logo_intro">Hiệu ứng mở đầu</string>
     <string name="bar_title">Thanh ứng dụng</string>
     <string name="bar_hide">Ẩn thanh</string>
-    <string name="bar_hide_help">Chạm vào chỗ trống trên màn hình chính để xem thanh trong vài giây; để sắp xếp và vào Cài đặt, hãy nhấn giữ chỗ đó.</string>
+    <string name="bar_hide_help">Chạm vào chỗ trống trên màn hình chính (hoặc mép màn hình) để xem thanh trong vài giây; Cài đặt nằm ở đó.</string>
     <string name="bar_buttons">Nút</string>
     <string name="bar_arrange">Sắp xếp thanh</string>
     <string name="bar_position_help">Tự động: bên trái khi màn hình nằm ngang, ở dưới khi màn hình dọc.</string>
@@ -488,6 +491,7 @@
     <string name="bar_item_phone">Điện thoại</string>
     <string name="bar_item_voice">Giọng nói</string>
     <string name="bar_item_favorites">Ứng dụng yêu thích</string>
+    <string name="bar_item_settings">Cài đặt</string>
     <string name="bar_auto">Tự động</string>
     <string name="bar_side">Trái</string>
     <string name="bar_bottom">Dưới</string>

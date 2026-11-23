@@ -29,6 +29,9 @@
     <string name="templates">लेआउट</string>
     <string name="wallpaper_button">वॉलपेपर</string>
     <string name="templates_help">शुरुआत चुनें। फिर कुछ भी हिलाएँ और साइज़ बदलें।</string>
+    <string name="template_apply_title">इस पेज पर “%1$s” इस्तेमाल करें?</string>
+    <string name="template_apply_message">इस पर आपने जो व्यवस्थित किया है, वह हट जाएगा।</string>
+    <string name="template_apply_confirm">इस्तेमाल करें</string>
     <string name="template_center">बीच में कार</string>
     <string name="template_side">किनारे पर कार</string>
     <string name="template_vertical">खड़ी स्क्रीन</string>
@@ -466,7 +469,7 @@
     <string name="logo_intro">शुरुआती एनिमेशन</string>
     <string name="bar_title">ऐप्स बार</string>
     <string name="bar_hide">बार छिपाएँ</string>
-    <string name="bar_hide_help">इसे कुछ सेकंड देखने के लिए होम स्क्रीन की किसी खाली जगह पर टैप करें; व्यवस्थित करने और सेटिंग्स तक जाने के लिए वहीं देर तक दबाएँ।</string>
+    <string name="bar_hide_help">इसे कुछ सेकंड देखने के लिए होम स्क्रीन की किसी खाली जगह (या किनारे) पर टैप करें; सेटिंग्स वहीं हैं।</string>
     <string name="bar_buttons">बटन</string>
     <string name="bar_arrange">बार सजाएँ</string>
     <string name="bar_position_help">ऑटोमैटिक: स्क्रीन आड़ी हो तो बाईं ओर, खड़ी हो तो नीचे।</string>
@@ -490,6 +493,7 @@
     <string name="bar_item_phone">फ़ोन</string>
     <string name="bar_item_voice">वॉइस</string>
     <string name="bar_item_favorites">आपके पसंदीदा ऐप्स</string>
+    <string name="bar_item_settings">सेटिंग्स</string>
     <string name="bar_auto">ऑटोमैटिक</string>
     <string name="bar_side">बाएँ</string>
     <string name="bar_bottom">नीचे</string>

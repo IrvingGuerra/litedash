@@ -29,6 +29,9 @@
     <string name="templates">Layout</string>
     <string name="wallpaper_button">Sfondo</string>
     <string name="templates_help">Scegli un punto di partenza. Poi sposta e ridimensiona ciò che vuoi.</string>
+    <string name="template_apply_title">Usare «%1$s» in questa pagina?</string>
+    <string name="template_apply_message">Quello che hai sistemato qui verrà tolto.</string>
+    <string name="template_apply_confirm">Usa</string>
     <string name="template_center">Auto al centro</string>
     <string name="template_side">Auto di lato</string>
     <string name="template_vertical">Verticale</string>
@@ -469,7 +472,7 @@
     <string name="logo_intro">Animazione iniziale</string>
     <string name="bar_title">Barra delle app</string>
     <string name="bar_hide">Nascondi la barra</string>
-    <string name="bar_hide_help">Tocca un punto vuoto della Home per vederla per qualche secondo; per sistemare e andare in Impostazioni, tienilo premuto.</string>
+    <string name="bar_hide_help">Tocca un punto libero della Home (o il suo bordo) per vederla per qualche secondo; lì trovi Impostazioni.</string>
     <string name="bar_buttons">Pulsanti</string>
     <string name="bar_arrange">Sistema la barra</string>
     <string name="bar_position_help">Automatica: a sinistra con lo schermo orizzontale, in basso con lo schermo verticale.</string>
@@ -493,6 +496,7 @@
     <string name="bar_item_phone">Telefono</string>
     <string name="bar_item_voice">Voce</string>
     <string name="bar_item_favorites">Le tue app preferite</string>
+    <string name="bar_item_settings">Impostazioni</string>
     <string name="bar_auto">Automatica</string>
     <string name="bar_side">Sinistra</string>
     <string name="bar_bottom">In basso</string>

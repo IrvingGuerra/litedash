@@ -29,6 +29,9 @@
     <string name="templates">Layouts</string>
     <string name="wallpaper_button">Hintergrund</string>
     <string name="templates_help">Wähle einen Ausgangspunkt. Danach kannst du alles verschieben und skalieren.</string>
+    <string name="template_apply_title">„%1$s“ auf dieser Seite verwenden?</string>
+    <string name="template_apply_message">Was du auf ihr angeordnet hast, wird entfernt.</string>
+    <string name="template_apply_confirm">Verwenden</string>
     <string name="template_center">Auto in der Mitte</string>
     <string name="template_side">Auto seitlich</string>
     <string name="template_vertical">Hochformat</string>
@@ -469,7 +472,7 @@
     <string name="logo_intro">Startanimation</string>
     <string name="bar_title">App-Leiste</string>
     <string name="bar_hide">Leiste ausblenden</string>
-    <string name="bar_hide_help">Tippe auf eine freie Stelle des Startbildschirms, um sie ein paar Sekunden zu sehen; zum Anordnen und für die Einstellungen halte dort gedrückt.</string>
+    <string name="bar_hide_help">Tippe auf eine freie Stelle des Startbildschirms (oder seinen Rand), um sie ein paar Sekunden zu sehen; dort sind die Einstellungen.</string>
     <string name="bar_buttons">Buttons</string>
     <string name="bar_arrange">Leiste anordnen</string>
     <string name="bar_position_help">Automatisch: links im Querformat, unten im Hochformat.</string>
@@ -493,6 +496,7 @@
     <string name="bar_item_phone">Telefon</string>
     <string name="bar_item_voice">Sprachassistent</string>
     <string name="bar_item_favorites">Deine Lieblings-Apps</string>
+    <string name="bar_item_settings">Einstellungen</string>
     <string name="bar_auto">Automatisch</string>
     <string name="bar_side">Links</string>
     <string name="bar_bottom">Unten</string>

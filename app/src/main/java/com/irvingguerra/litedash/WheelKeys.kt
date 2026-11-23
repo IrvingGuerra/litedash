@@ -184,8 +184,10 @@ fun WheelSettings(keys: WheelKeys, prefs: Preferences) {
                 Label(stringResource(R.string.wheel_learned, keyName(code)), Typography.subtitle)
                 Label(stringResource(R.string.wheel_choose), Typography.small, c.textMuted)
                 val current = prefs.wheelKeys[code]?.let(WheelAction::fromStored) ?: WheelAction.NORMAL
+                // «Voz» solo si la pantalla trae asistente (como el botón de la barra); si ya la tenía, se sigue viendo.
+                val hasVoice = rememberVoiceIntent() != null
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    for (a in WheelAction.entries) {
+                    for (a in WheelAction.entries.filter { it != WheelAction.VOICE || hasVoice || it == current }) {
                         Button(stringResource(a.title), {
                             prefs.wheelKeys = if (a == WheelAction.NORMAL) prefs.wheelKeys - code else prefs.wheelKeys + (code to a.stored)
                             learned = null
