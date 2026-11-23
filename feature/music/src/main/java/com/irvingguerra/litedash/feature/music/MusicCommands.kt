@@ -51,18 +51,33 @@ internal fun MusicRepository.play(lens: Lens, onIdle: () -> Unit = {}) {
     val radioLens = lens === radio
     val s = lens.song
     val pkg = if (s != null) target(lens) else if (radioLens) radioApp else modeApp ?: lens.controller?.packageName ?: lastApp()
+    val source = pkg != null && !isOwn(pkg) && sourceOf(pkg) != null
+    // Lo supuesto de una app de música normal (un aviso o la última orden) no dice si está despierta: se trata como si no
+    // se viera y se despierta por un solo canal (si no, la tecla a ciegas y suponer que suena: "doble play").
+    val shown = s != null && !(s.blind && !source && !s.phone)
+    val session = !radioLens && !shown && pkg != null && !source && !isOwn(pkg) &&
+        (sessionOf(pkg, lens)?.playbackState?.actions ?: 0L) and PLAY_ACTIONS != 0L
+    val silent = !radioLens && pkg != null && source && silentBluetooth(pkg, lens)
     val plan = playPlan(
         Target(
             radio = radioLens,
             phone = s?.phone == true,
             own = pkg != null && isOwn(pkg),
             app = pkg != null,
-            shown = s != null,
-            obeys = s != null && lens.obeys(PLAY_ACTIONS),
-            sessionShown = s != null && lens.controller != null,
+            shown = shown,
+            obeys = shown && lens.obeys(PLAY_ACTIONS),
+            sessionShown = shown && lens.controller != null,
             profile = factoryFor(lens) != null,
+            source = source,
+            session = session,
+            silent = silent,
         ),
     )
+    if (silent) {
+        // Nada por dónde darle play: la música se pone desde el celular. Solo que la pantalla deje pasar su sonido.
+        trace("play $pkg: sin receptor, sesión ni servicio (se controla desde el celular)")
+        return calibrateBluetooth()
+    }
     if (plan.route.isEmpty()) return onIdle()
     if (plan.route.first() == Channel.OWN) {
         // Al tocar, el reproductor propio avisa que empieza ([ownMusicStarted]): ahí se calla la radio.
@@ -85,7 +100,6 @@ internal fun MusicRepository.play(lens: Lens, onIdle: () -> Unit = {}) {
         Channel.RECEIVER, Channel.SESSION -> plan.serviceToo && connectAndPlay(pkg, fallback = false)
         else -> false
     }
-    val source = sourceOf(pkg) != null
     if (!isOwn(pkg) && assumesPlay(plan, via, source, hasService)) lens.assume(pkg, true)
     if (radioLens) {
         // LiteDash prendió la radio: una de las señales para callarla después.
@@ -122,6 +136,8 @@ internal fun MusicRepository.pause(lens: Lens) {
     )
     val via = deliver(pkg, lens, Command.PAUSE, plan.route)
     if (pkg != null && !isOwn(pkg) && (via == Channel.RECEIVER || via == Channel.SESSION_KEY || via == Channel.SYSTEM)) lens.assume(pkg, false)
+    // La radio le había quitado la salida al Bluetooth de la pantalla: con el método Bluetooth, se le regresa.
+    if (radioLens && modeState == MusicMode.BLUETOOTH && btApplied?.stale == true) calibrateBluetooth()
 }
 
 /** Siguiente o anterior en [lens] ([skipPlan]). */
@@ -227,8 +243,8 @@ internal fun MusicRepository.keyReceiver(pkg: String?): ComponentName? {
 }
 
 /**
- * Se conecta al servicio de música de [pkg] y le pide play; si no lo acepta y [fallback], el botón
- * del sistema. False = no tiene servicio.
+ * Se conecta al servicio de música de [pkg] y le pide play; si no conecta y [fallback], la tecla a su receptor o, sin
+ * él, al sistema. False = no tiene servicio.
  */
 internal fun MusicRepository.connectAndPlay(pkg: String, fallback: Boolean): Boolean {
     val service = browserServices(context, pkg).firstOrNull() ?: return false
@@ -241,14 +257,26 @@ internal fun MusicRepository.connectAndPlay(pkg: String, fallback: Boolean): Boo
         }
 
         override fun onConnectionFailed() {
-            trace("servicio de $pkg: no conectó${if (fallback) ", play al sistema" else ""}")
-            if (fallback) sendMediaKey(context, KeyEvent.KEYCODE_MEDIA_PLAY)
+            if (!fallback) return trace("servicio de $pkg: no conectó")
+            // Respaldo: la tecla a su receptor (si tiene) y si no, al sistema; nunca las dos.
+            val receiver = keyReceiver(pkg)
+            trace("servicio de $pkg: no conectó, play ${if (receiver != null) "a su receptor" else "al sistema"}")
+            if (receiver != null) sendMediaKey(context, KeyEvent.KEYCODE_MEDIA_PLAY, receiver) else sendMediaKey(context, KeyEvent.KEYCODE_MEDIA_PLAY)
         }
     }, null)
     // Si el servicio nunca contesta, la conexión no se queda colgada para siempre.
     mainHandler.postDelayed({ runCatching { browser.disconnect() } }, APP_ANSWER_MS)
     return runCatching { browser.connect() }.onFailure { trace("servicio de $pkg: no se pudo conectar") }.isSuccess
 }
+
+/**
+ * La app de Bluetooth de marca [pkg] sin receptor del botón de play, sesión ni servicio de música, con el celular sin
+ * LiteDash Connect (reporte E48170, TopWay `com.tw.bt`): no hay cómo darle play desde la pantalla. El Bluetooth de
+ * Android (AVRCP) nunca cuenta: su sesión llega con el celular.
+ */
+internal fun MusicRepository.silentBluetooth(pkg: String, lens: Lens): Boolean =
+    sourceOf(pkg) == SourceKind.BLUETOOTH && pkg != avrcpPackage && !phoneState.here &&
+        keyReceiver(pkg) == null && sessionOf(pkg, lens) == null && browserServices(context, pkg).isEmpty()
 
 /** Receptores del botón de play de [pkg] (o de todas las apps con null). */
 internal fun MusicRepository.mediaButtonReceivers(pkg: String? = null): List<ComponentName> = runCatching {

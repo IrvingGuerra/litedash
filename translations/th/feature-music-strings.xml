@@ -12,6 +12,7 @@
     <string name="source_bluetooth">Bluetooth</string>
     <string name="source_radio">วิทยุ</string>
     <string name="bluetooth_connect_phone">เชื่อมโทรศัพท์ผ่าน Bluetooth</string>
+    <string name="music_from_phone">ควบคุมเพลงจากโทรศัพท์ของคุณ</string>
     <string name="usb_drive">แฟลชไดรฟ์ USB</string>
     <string name="usb_drive_in">เชื่อมแฟลชไดรฟ์ USB แล้ว: %1$s</string>
     <string name="player_connecting">กำลังเชื่อมต่อ…</string>

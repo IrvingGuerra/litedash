@@ -12,6 +12,7 @@
     <string name="source_bluetooth">Bluetooth</string>
     <string name="source_radio">Rádio</string>
     <string name="bluetooth_connect_phone">Připoj telefon přes Bluetooth</string>
+    <string name="music_from_phone">Hudbu ovládej z telefonu</string>
     <string name="usb_drive">USB disk</string>
     <string name="usb_drive_in">USB disk připojen: %1$s</string>
     <string name="player_connecting">Připojuji…</string>

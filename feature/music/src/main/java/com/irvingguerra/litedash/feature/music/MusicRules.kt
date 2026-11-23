@@ -47,6 +47,15 @@ internal data class Target(
     val sessionShown: Boolean = false,
     /** La radio tiene abierto el perfil de su marca. */
     val profile: Boolean = false,
+    /** Es una app de la pantalla (Bluetooth o FM de fábrica: suenan por fuera de Android y no avisan); si no, una app de música normal. */
+    val source: Boolean = false,
+    /** Tiene una sesión que anuncia play aunque no se vea (la pieza no está a la vista o aún no la tomó). */
+    val session: Boolean = false,
+    /**
+     * La app de Bluetooth de marca no tiene receptor, sesión ni servicio y el celular no está con LiteDash Connect: no hay
+     * por dónde darle play (reporte E48170, TopWay `com.tw.bt`). La música se controla desde el celular.
+     */
+    val silent: Boolean = false,
 )
 
 /**
@@ -66,8 +75,11 @@ internal data class Plan(val route: List<Channel>, val wake: Boolean = false, va
  * - A la vista pero "a ciegas" (Bluetooth y FM de fábrica sin sesión o con una vacía): como el volante pero explícito,
  *   la tecla de play a su receptor o a su sesión; la música, si no, al sistema. La radio nunca al sistema (llevaría a
  *   Spotify): si no hubo a quién, su servicio y al final abrirla.
- * - Nada a la vista: se despierta. Su receptor, si no su sesión, y además su servicio; sin nada, la música al sistema y
- *   la radio a abrir su app.
+ * - La app de Bluetooth de marca sin ningún canal ([Target.silent]): nada (la tecla del sistema podía prender otra app).
+ * - Nada a la vista, app de la pantalla: se despierta. Su receptor, si no su sesión, y además su servicio; sin nada, la
+ *   música al sistema y la radio a abrir su app.
+ * - Nada a la vista, app de música normal: UNA sola orden (dos a la vez se cancelaban: play y pausa, "doble play"). Con
+ *   sesión, su sesión; si no, se despierta por su servicio y, solo si no tiene, la tecla a su receptor; al final el sistema.
  */
 internal fun playPlan(t: Target): Plan = when {
     t.phone -> phoneFirst(playPlan(t.copy(phone = false)))
@@ -76,9 +88,12 @@ internal fun playPlan(t: Target): Plan = when {
     !t.app -> Plan(if (t.radio) emptyList() else listOf(Channel.SYSTEM))
     t.radio && t.profile -> if (t.sessionShown) Plan(listOf(Channel.SESSION)) else Plan(listOf(Channel.PROFILE), wake = true)
     t.shown && t.radio -> Plan(listOf(Channel.RECEIVER, Channel.SESSION_KEY, Channel.SERVICE, Channel.OPEN))
+    t.silent && !t.radio -> Plan(emptyList())
     t.shown -> Plan(listOf(Channel.RECEIVER, Channel.SESSION_KEY, Channel.SYSTEM))
     t.radio -> Plan(listOf(Channel.RECEIVER, Channel.SESSION, Channel.SERVICE, Channel.OPEN), wake = true, serviceToo = true)
-    else -> Plan(listOf(Channel.RECEIVER, Channel.SESSION, Channel.SERVICE, Channel.SYSTEM), wake = true, serviceToo = true)
+    t.source -> Plan(listOf(Channel.RECEIVER, Channel.SESSION, Channel.SERVICE, Channel.SYSTEM), wake = true, serviceToo = true)
+    t.session -> Plan(listOf(Channel.SESSION))
+    else -> Plan(listOf(Channel.SERVICE, Channel.RECEIVER, Channel.SYSTEM), wake = true)
 }
 
 /**
@@ -107,11 +122,20 @@ internal fun skipPlan(t: Target): Plan = when {
 }
 
 /**
- * ¿Suena lo que el botón de play/pausa va a controlar, cuando lo que se ve no es de fiar? Manda la sesión de la app si
- * dice algo ([session]); si no, lo que LiteDash supone por lo último que le mandó ([shown], una canción «a ciegas»); y sin
- * nada de eso, si Android tiene audio ([audio]; null = no aplica).
+ * ¿El botón de play/pausa manda play? El de la pantalla hace lo que muestra ([shownPlaying]: con ▮▮ pausa, con ▶ play);
+ * el volante y la barra no ven el ícono ([shownPlaying] = null) y preguntan en el momento si suena ([soundsNow]).
  */
-internal fun soundsNow(shown: Boolean?, session: Boolean?, audio: Boolean?): Boolean = session ?: shown ?: (audio == true)
+internal fun pressPlays(shownPlaying: Boolean?, soundsNow: () -> Boolean): Boolean = if (shownPlaying != null) !shownPlaying else !soundsNow()
+
+/**
+ * ¿Suena lo que el volante va a controlar, cuando lo que se ve no es de fiar? Manda la sesión de la app si dice algo
+ * ([session]); si no, lo que LiteDash supone por lo último que le mandó ([shown], una canción «a ciegas»); y sin nada de
+ * eso, si Android tiene audio ([audio]; null = no aplica), pero solo cuando no se pueden leer las sesiones
+ * ([sessionsReadable] = hay acceso a los avisos): si se pueden y la app no tiene ninguna, el audio es de otra (la FM, la
+ * voz del navegador) y tomarlo por ella mandaba pausa en vez de play.
+ */
+internal fun soundsNow(shown: Boolean?, session: Boolean?, audio: Boolean?, sessionsReadable: Boolean): Boolean =
+    session ?: shown ?: (!sessionsReadable && audio == true)
 
 /** El celular primero; si ya no hay enlace, el camino de siempre. */
 private fun phoneFirst(rest: Plan) = rest.copy(route = listOf(Channel.PHONE) + rest.route)

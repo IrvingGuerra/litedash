@@ -249,4 +249,40 @@ class CalibratorTest {
         assertNull(store.saved)
         assertEquals(Step.Apply(Recipes.PLAIN), c.play(topWay, null))
     }
+
+    // —— Sin forma de saber si suena (TopWay com.tw.bt sin AVRCP ni Connect, reporte E48170) ——
+
+    @Test
+    fun brandRecipeStaysWhenNothingCanTellIfItSounds() {
+        val c = calibrator(trusts = true)
+        val brandFirst = listOf(Recipes.TW_SOURCE8, Recipes.PLAIN, Recipes.OPEN_FACTORY)
+        assertEquals(Step.Apply(Recipes.TW_SOURCE8), c.play(brandFirst, null))
+        // Antes: abortar y empezar de cero en cada play (8 veces en un minuto). Ahora se queda puesta sin preguntar ni guardar.
+        assertEquals(Step.Done, c.unknown())
+        assertFalse(c.pending)
+        assertNull(store.saved)
+        // El siguiente play la vuelve a dar (quien la aplica no la reescribe si sigue puesta) y no pasa a la siguiente.
+        assertEquals(Step.Apply(Recipes.TW_SOURCE8), c.play(brandFirst, null))
+        assertEquals(Step.Done, c.unknown())
+    }
+
+    @Test
+    fun otherRecipeAsksWhenNothingCanTellIfItSounds() {
+        val c = calibrator(trusts = true)
+        assertEquals(Step.Apply(Recipes.PLAIN), c.play(topWay, null))
+        assertEquals(Step.Ask, c.unknown())
+        assertTrue(c.asking)
+        assertEquals(Step.Done, c.answer(yes = true))
+        assertEquals(SavedRecipe(Recipes.PLAIN, SavedBy.USER), store.saved)
+    }
+
+    @Test
+    fun savedRecipeIsKeptWithoutAFailWhenNothingCanTell() {
+        store.saved = SavedRecipe(Recipes.TW_SOURCE8, SavedBy.SIGNAL)
+        val c = calibrator()
+        assertEquals(Step.Apply(Recipes.TW_SOURCE8), c.play(topWay, null))
+        assertEquals(Step.Done, c.unknown())
+        assertEquals(SavedRecipe(Recipes.TW_SOURCE8, SavedBy.SIGNAL), store.saved)
+        assertFalse(c.pending)
+    }
 }

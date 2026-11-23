@@ -12,6 +12,7 @@
     <string name="source_bluetooth">Bluetooth</string>
     <string name="source_radio">라디오</string>
     <string name="bluetooth_connect_phone">Bluetooth로 휴대폰을 연결하세요</string>
+    <string name="music_from_phone">음악은 휴대폰에서 조작하세요</string>
     <string name="usb_drive">USB 드라이브</string>
     <string name="usb_drive_in">USB 드라이브 연결됨: %1$s</string>
     <string name="player_connecting">연결 중…</string>

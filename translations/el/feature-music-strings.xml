@@ -12,6 +12,7 @@
     <string name="source_bluetooth">Bluetooth</string>
     <string name="source_radio">Ραδιόφωνο</string>
     <string name="bluetooth_connect_phone">Συνδέστε το κινητό σας μέσω Bluetooth</string>
+    <string name="music_from_phone">Έλεγξε τη μουσική από το κινητό σου</string>
     <string name="usb_drive">Μονάδα USB</string>
     <string name="usb_drive_in">Συνδέθηκε μονάδα USB: %1$s</string>
     <string name="player_connecting">Σύνδεση…</string>

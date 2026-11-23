@@ -57,6 +57,8 @@ import com.irvingguerra.litedash.core.ui.Icons
 import com.irvingguerra.litedash.core.ui.Label
 import com.irvingguerra.litedash.core.ui.LocalColors
 import com.irvingguerra.litedash.core.ui.LocalPlainCard
+import com.irvingguerra.litedash.core.ui.LocalCardLook
+import com.irvingguerra.litedash.core.ui.CardStyle
 import com.irvingguerra.litedash.core.ui.TilePadding
 import com.irvingguerra.litedash.core.ui.Segmented
 import com.irvingguerra.litedash.core.ui.Typography
@@ -101,7 +103,7 @@ internal fun Controls(
     Row(modifier, verticalAlignment = Alignment.CenterVertically) {
         if (!compact) IconButton(Icons.previous, { lens.previous() }, size = size, background = skipBackground)
         if (!compact) Spacer(Modifier.width(gap))
-        IconButton(if (playing || loading) Icons.pause else Icons.play, { lens.toggle() }, size = playSize, background = playBackground, color = playColor)
+        IconButton(if (playing || loading) Icons.pause else Icons.play, { lens.toggle(shownPlaying = playing || loading) }, size = playSize, background = playBackground, color = playColor)
         if (!compact) Spacer(Modifier.width(gap))
         if (!compact) IconButton(Icons.next, { lens.next() }, size = size, background = skipBackground)
     }
@@ -229,15 +231,17 @@ internal fun MediaTile(
                 }
             }
             // Mediana y angosta: en fila el título no se leería; carátula chica junto al título y los botones abajo.
-            if (artwork && !tall && maxHeight >= STACKED_MIN_HEIGHT && maxWidth < STACKED_MAX_WIDTH) {
-                return@BoxWithConstraints Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center) {
+            // Carátula chica junto al título y los botones abajo, al centro ([top] = lo que los separa).
+            val stacked: @Composable (Dp) -> Unit = { top ->
+                Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Artwork(song, Modifier.size(ARTWORK_ROW_MIN), Radius.inner, icon)
                         Column(Modifier.weight(1f).padding(start = 12.dp)) { labeled() }
                     }
-                    controls(Modifier.align(Alignment.CenterHorizontally).padding(top = 8.dp), !skip)
+                    controls(Modifier.align(Alignment.CenterHorizontally).padding(top = top), !skip)
                 }
             }
+            if (artwork && !tall && maxHeight >= STACKED_MIN_HEIGHT && maxWidth < STACKED_MAX_WIDTH) return@BoxWithConstraints stacked(8.dp)
             // Angosta (la fila de abajo en 7"): solo play/pausa, para que el título se lea.
             val compact = !skip || !tall && maxWidth < 400.dp
             // Carátula cuadrada con esquinas, dentro de la tarjeta: se achica a lo que deje libre el título (y los
@@ -246,15 +250,7 @@ internal fun MediaTile(
             val art = minOf(maxHeight, 240.dp, maxWidth - text)
             val withArtwork = artwork && art >= if (tall) ARTWORK_MIN else ARTWORK_ROW_MIN
             // Alta pero sin ancho para la carátula a un lado: una chica junto al título y los botones abajo, al centro.
-            if (artwork && tall && !withArtwork && maxHeight >= STACKED_TALL_MIN) {
-                return@BoxWithConstraints Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Artwork(song, Modifier.size(ARTWORK_ROW_MIN), Radius.inner, icon)
-                        Column(Modifier.weight(1f).padding(start = 12.dp)) { labeled() }
-                    }
-                    controls(Modifier.align(Alignment.CenterHorizontally).padding(top = 10.dp), !skip)
-                }
-            }
+            if (artwork && tall && !withArtwork && maxHeight >= STACKED_TALL_MIN) return@BoxWithConstraints stacked(10.dp)
             Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
                 if (withArtwork) Artwork(song, Modifier.size(art), Radius.inner, icon)
                 Column(Modifier.weight(1f).padding(horizontal = 12.dp), verticalArrangement = Arrangement.Center) {
@@ -343,10 +339,12 @@ private val LABEL_MIN = 88.dp
 
 /**
  * El color promedio de la carátula de [song] en degradado suave desde la esquina superior izquierda (como Apple
- * Music); sin carátula, nada.
+ * Music); sin carátula, nada. Con la piel de vidrio tampoco (como el clima, #33): sobre el cristal se veía como una
+ * tarjeta de otro color y el contraste del texto se calcula sin él.
  */
 @Composable
 private fun ArtworkTint(song: Song) {
+    if (LocalCardLook.current.style == CardStyle.GLASS) return
     val artwork = song.artwork ?: return
     val dark = LocalColors.current.dark
     // Una vez por carátula: se reduce a 16×16 y se promedia (si no se puede leer, sin tinte). La llave es la

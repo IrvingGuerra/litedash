@@ -170,7 +170,7 @@ class MusicRepository(internal val context: Context) {
     val phoneHolds: Boolean get() = heldMode != null
 
     /** El celular con LiteDash Connect ([phoneStep]). */
-    internal var phoneState = PhoneState()
+    internal var phoneState by mutableStateOf(PhoneState())
 
     /**
      * Cómo va el celular con LiteDash Connect: [connected], su música suena ([playing]) y llega por Bluetooth
@@ -218,6 +218,7 @@ class MusicRepository(internal val context: Context) {
         // Al enlazar otra vez (quizá tras actualizar la app de la pantalla) se vuelve a preguntar su receptor y su pantalla.
         if (pkg != null) receivers.remove(pkg)
         launches.clear()
+        if (kind == SourceKind.BLUETOOTH && users > 0) warmUp()
         // Lo que se suponía de la app anterior ya no vale (la radio lo olvida en radioChanged()).
         if (kind == SourceKind.BLUETOOTH) music.forget()
         store.edit().putString(kind.key, pkg).apply()
@@ -269,6 +270,40 @@ class MusicRepository(internal val context: Context) {
 
     /** La familia de la pantalla (por sus paquetes): sus recetas de sonido. */
     internal val headUnit: HeadUnit by lazy { HeadUnit.detect(context::hasPackage) }
+
+    /**
+     * La app de Bluetooth de marca sin receptor del botón de play ni servicio de música (se pregunta en otro hilo al
+     * aparecer la música y al enlazar otra); null = tiene por dónde o no hay. Ver [phoneOnly].
+     */
+    private var silentBluetoothApp by mutableStateOf<String?>(null)
+
+    /**
+     * Lo que preguntan al sistema [bluetoothService], [knownBluetooth] y [headUnit] (decenas de consultas al instalador en
+     * pantallas de 1 GB) se hace en el hilo de los perfiles al aparecer la primera pieza, no en el primer play ni al
+     * pintarse; y de paso, si la app de Bluetooth tiene por dónde recibir play.
+     */
+    private fun warmUp() {
+        factoryThread.execute {
+            bluetoothService
+            headUnit
+            val pkg = bluetoothApp()?.takeIf { it != avrcpPackage && sourceOf(it) == SourceKind.BLUETOOTH }
+            val silent = pkg?.takeIf { isSilent(it) }
+            pkg?.let { keyReceiver(it); appLabel(it) }
+            listOfNotNull(preferred, radioApp?.takeUnless(::isOwn)).forEach { keyReceiver(it); appLabel(it) }
+            mainHandler.post {
+                silentBluetoothApp = silent
+                if (users > 0) startAvrcp()
+            }
+        }
+    }
+
+    /**
+     * Con el método Bluetooth, la app de marca no tiene por dónde recibir play (ni receptor, sesión ni servicio) y el
+     * celular no está con LiteDash Connect (reporte E48170): la pieza no pone un ▶ que no hace nada, dice que la música se
+     * controla desde el celular.
+     */
+    val phoneOnly: Boolean
+        get() = mode == MusicMode.BLUETOOTH && silentBluetoothApp != null && !phoneState.here && music.song == null && !music.hasSession
 
     /**
      * La radio escogida (Ajustes → Apps → Radio): la de internet de LiteDash (true) o la FM de la
@@ -374,6 +409,7 @@ class MusicRepository(internal val context: Context) {
     fun use(piece: SoundPiece) {
         if (piece == SoundPiece.MUSIC) musicUsers++ else radioUsers++
         if (users == 1) {
+            warmUp()
             start()
             startRadio()
         }
@@ -406,6 +442,9 @@ class MusicRepository(internal val context: Context) {
      */
     internal val broadcasts = object : BroadcastReceiver() {
         override fun onReceive(c: Context, i: Intent) {
+            // Al registrar el receptor Android entrega el último aviso pegajoso de cada acción (la Música de AOSP, Poweramp):
+            // puede ser de hace horas y se tomaba como "suena ahora".
+            if (isInitialStickyBroadcast) return
             val extras = i.extras.toMap()
             // Algunos (el AVRCP de Android) llegan cada dos segundos: repetido no se anota, o llena el registro del reporte.
             val line = "aviso ${i.action} [${extras.keys.joinToString()}]"
@@ -457,6 +496,8 @@ class MusicRepository(internal val context: Context) {
         }
 
         private fun changed(n: StatusBarNotification, removed: Boolean) {
+            // Los avisos de cualquier otra app (descargas, mensajes) ni llegan al hilo principal.
+            if (n.packageName !in sourceApps.values) return
             mainHandler.post {
                 val pkg = n.packageName
                 if (users == 0 || pkg !in sourceApps.values) return@post
@@ -552,6 +593,10 @@ class MusicRepository(internal val context: Context) {
 
         internal var controller: MediaController? = null
 
+        /** La pieza tiene una sesión (aunque esté vacía y no se muestre nada): la ve la interfaz ([phoneOnly]). */
+        internal var hasSession by mutableStateOf(false)
+            private set
+
         /**
          * La app de la pantalla (Bluetooth, FM) a la que LiteDash le mandó play o pausa sin que
          * una sesión diga qué hace: se supone que obedeció ([assumedPlaying]) hasta que otra app
@@ -646,6 +691,7 @@ class MusicRepository(internal val context: Context) {
                 controller = chosen
                 chosen?.registerCallback(callback, mainHandler)
             }
+            hasSession = chosen != null
             read()
         }
 
@@ -654,6 +700,7 @@ class MusicRepository(internal val context: Context) {
             mainHandler.removeCallbacks(stationAnswer)
             controller?.unregisterCallback(callback)
             controller = null
+            hasSession = false
             song = null
         }
 
@@ -688,6 +735,9 @@ class MusicRepository(internal val context: Context) {
                     return
                 }
             }
+            // La sesión dice si suena pero no trae canción (el Bluetooth de varias pantallas, reporte E3F104): el título y el
+            // artista del aviso de esa misma música, si llegó; el estado, el de la sesión.
+            val told = if (named.isBlank() && reported) heardFor(c.packageName) else null
             // Sin título y en pausa = apps que solo dejan la sesión abierta: "nada sonando".
             // Sin título pero sonando = la música por Bluetooth de muchas pantallas (el
             // celular no manda la canción): se muestra con el nombre de la app y sus controles,
@@ -696,7 +746,7 @@ class MusicRepository(internal val context: Context) {
                 song = null
                 return
             }
-            val title = named.ifBlank { app }
+            val title = named.ifBlank { told?.title ?: app }
             starting = null
             if (remembersLast && playing && !isOwn(c.packageName) && c.packageName != avrcpPackage && c.packageName != lastSavedApp) {
                 lastSavedApp = c.packageName
@@ -704,7 +754,7 @@ class MusicRepository(internal val context: Context) {
             }
             song = withCover(Song(
                 title = title,
-                artist = m.text(MediaMetadata.METADATA_KEY_ARTIST, MediaMetadata.METADATA_KEY_ALBUM_ARTIST).ifBlank { shown?.second.orEmpty() },
+                artist = m.text(MediaMetadata.METADATA_KEY_ARTIST, MediaMetadata.METADATA_KEY_ALBUM_ARTIST).ifBlank { shown?.second ?: told?.artist.orEmpty() },
                 app = app,
                 artwork = m?.getBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART)
                     ?: m?.getBitmap(MediaMetadata.METADATA_KEY_ART)
@@ -734,12 +784,24 @@ class MusicRepository(internal val context: Context) {
             val h = heard?.takeIf { SystemClock.elapsedRealtime() - heardAt < BROADCAST_FRESH_MS } ?: return null
             val pkg = h.pkg ?: sourceApps[SourceKind.BLUETOOTH]?.takeIf { h.bluetooth }
             val app = pkg?.let(::appLabel).orEmpty()
-            // Si LiteDash le mandó play o pausa después del último aviso, eso manda; si el aviso no dice, suena.
+            // Si LiteDash le mandó play o pausa después del último aviso, eso manda. Si el aviso no dice, suena solo el del
+            // Bluetooth (sus avisos de canción no traen estado); el de una app (p. ej. `fm.last.android.metachanged`) no dice
+            // nada de si suena: darlo por sonando 10 min ponía ▮▮ y el primer toque era pausa.
             val sent = assumedFor(pkg ?: assumedPkg)?.takeIf { assumedAt > heardAt }
-            val playing = sent ?: h.playing ?: true
+            val playing = sent ?: h.playing ?: h.bluetooth
             if (h.title == null && !playing) return null
             val title = h.title ?: app.ifBlank { if (h.bluetooth) context.getString(R.string.source_bluetooth) else return null }
             return withCover(blindSong(title, h.artist.orEmpty(), app, playing, pkg.orEmpty(), pkg?.let(::sourceOf) ?: SourceKind.BLUETOOTH.takeIf { h.bluetooth }))
+        }
+
+        /**
+         * El aviso reciente con canción de la misma música que la sesión [pkg]: de esa app, o del Bluetooth si la sesión es
+         * del grupo del Bluetooth. Null = no hay.
+         */
+        private fun heardFor(pkg: String): BroadcastMeta? {
+            val h = heard?.takeIf { it.title != null && SystemClock.elapsedRealtime() - heardAt < BROADCAST_FRESH_MS } ?: return null
+            val same = h.pkg == pkg || h.bluetooth && pkg in bluetoothGroup(avrcpPackage, knownBluetooth, sourceApps[SourceKind.BLUETOOTH])
+            return h.takeIf { same }
         }
 
         /** Lo que LiteDash supone de la app a la que le mandó play o pausa ([assume]). */
@@ -817,13 +879,16 @@ class MusicRepository(internal val context: Context) {
             song = s.copy(playing = playing, positionMs = s.currentPosition(), readAt = now)
         }
 
-        /** Play o pausa ([play]/[pause]). Sin nada a la vista, play despierta lo que toque. */
-        fun toggle() = if (playingNow()) pause(this) else play(this)
+        /**
+         * Play o pausa ([play]/[pause]); sin nada a la vista, play despierta lo que toque. [shownPlaying] = lo que muestra el
+         * botón de la pantalla (▮▮ = true): hace exactamente eso. El volante y la barra no lo ven (null): [playingNow].
+         */
+        fun toggle(shownPlaying: Boolean? = null) = if (pressPlays(shownPlaying, ::playingNow)) play(this) else pause(this)
 
         /**
-         * ¿Suena, para decidir entre play y pausa? Lo que se ve, si es de verdad. Sin eso (la pieza no está en
-         * pantalla y no escucha, o su app aún no tiene sesión que se vea) se pregunta en el momento ([soundsNow]): si no,
-         * el volante mandaba play una y otra vez a algo que ya sonaba y no había cómo pausarlo.
+         * ¿Suena, para el volante? Lo que se ve, si es de verdad. Sin eso (la pieza no está en pantalla y no escucha, o su
+         * app aún no tiene sesión que se vea) se pregunta en el momento ([soundsNow]): si no, el volante mandaba play una y
+         * otra vez a algo que ya sonaba y no había cómo pausarlo.
          */
         private fun playingNow(): Boolean {
             val s = song
@@ -836,6 +901,7 @@ class MusicRepository(internal val context: Context) {
                     ?.let { it == PlaybackState.STATE_PLAYING || it == PlaybackState.STATE_BUFFERING },
                 // El audio de Android solo dice algo de una app de música normal: el Bluetooth y la FM de fábrica suenan por fuera.
                 audio = if (this === music && pkg != null && !isOwn(pkg) && sourceOf(pkg) == null) musicActive() else null,
+                sessionsReadable = hasPermission(),
             )
         }
 
@@ -881,12 +947,11 @@ class MusicRepository(internal val context: Context) {
     /** Paquete del servicio AVRCP del Bluetooth de Android; null si la pantalla no lo trae. */
     internal val avrcpPackage: String? get() = bluetoothService?.packageName
 
-    internal fun appLabel(pkg: String) = labels.getOrPut(pkg) {
-        runCatching {
-            val pm = context.packageManager
-            pm.getApplicationLabel(pm.getApplicationInfo(pkg, 0)).toString()
-        }.getOrDefault("")
-    }
+    // Un nombre que no se encontró no se guarda: la app pudo instalarse después con LiteDash abierto.
+    internal fun appLabel(pkg: String): String = labels[pkg] ?: runCatching {
+        val pm = context.packageManager
+        pm.getApplicationLabel(pm.getApplicationInfo(pkg, 0)).toString()
+    }.getOrDefault("").also { if (it.isNotEmpty()) labels[pkg] = it }
 
     // Los íconos de las acciones viven en los recursos de la otra app; se leen una vez.
     private fun icon(pkg: String, id: Int): Bitmap? = icons.getOrPut("$pkg:$id") {
@@ -933,6 +998,8 @@ class MusicRepository(internal val context: Context) {
         val pkg = playPkg ?: return@Runnable
         // En pausa = la pausaron (solo si la pieza muestra esa misma app).
         if (users == 0 || musicActive() || music.song?.takeIf { it.pkg == pkg }?.playing == false) return@Runnable trace("play $pkg: audio=${yes(musicActive())}")
+        // Su sesión dice que suena: hay pantallas donde Android no ve el audio (va por el MCU) y se abría encima cada vez.
+        if (sessionOf(pkg, music)?.busy() == true) return@Runnable trace("play $pkg: su sesión suena")
         music.starting = null
         val over = openOver(pkg, APP_RETURN_MS) {
             if (musicActive()) return@openOver trace("regreso: $pkg ya suena")
@@ -1124,7 +1191,7 @@ class MusicRepository(internal val context: Context) {
     internal val btCalibration by lazy {
         SoundCalibration(
             SoundPiece.MUSIC, btStore, headUnit.trustsSignal, { moving() || users == 0 }, mainHandler, ::trace, { showCheck(SoundPiece.MUSIC, it) },
-            use = ::useBluetooth, check = ::bluetoothHeard,
+            use = ::useBluetooth, check = ::bluetoothHeard, knowable = ::bluetoothKnowable,
         )
     }
 
@@ -1217,8 +1284,11 @@ class MusicRepository(internal val context: Context) {
                 val browsers = musicApps().filter(::relevant)
                 appendLine("Música elegida: ${preferredNow ?: "ninguna"}")
                 appendLine("Fuentes: radio=${radioNow ?: "-"}, bluetooth=${bluetoothApp() ?: "-"}")
-                val notes = sources.values.toSet().let { apps -> NotificationService.active().filter { it.packageName in apps } }
-                for ((kind, pkg) in sources) {
+                val notes = (sources.values.toSet() + listOfNotNull(knownBluetooth)).let { apps -> NotificationService.active().filter { it.packageName in apps } }
+                // La de Bluetooth de marca también si no se enlazó (se usa igual: [bluetoothApp]).
+                val listed = sources.entries.map { it.key to it.value } +
+                    listOfNotNull(knownBluetooth?.takeIf { it !in sources.values }?.let { SourceKind.BLUETOOTH to it })
+                for ((kind, pkg) in listed) {
                     val own = notes.filter { it.packageName == pkg }
                     appendLine(
                         "  ${kind.name.lowercase()} $pkg: receptor=${yes(keyReceiver(pkg) != null)} servicio=${yes(browserServices(context, pkg).isNotEmpty())} " +
@@ -1261,6 +1331,9 @@ class MusicRepository(internal val context: Context) {
     /** Lo pone el app: permiso, canciones y estado del reproductor propio (Archivos), para el reporte. */
     var ownDescribe: (() -> String)? = null
 
-    /** Fuentes enlazadas sin receptor ni servicio: no hay cómo hablarles (el reporte las describe con [AppProbe]). */
-    fun silentSources(): List<String> = sourceApps.values.distinct().filter { !isOwn(it) && isSilent(it) }
+    /**
+     * Fuentes sin receptor ni servicio: no hay cómo hablarles (el reporte las describe con [AppProbe]). Las enlazadas y la
+     * de Bluetooth de marca aunque no se haya enlazado (reporte E48170: `com.tw.bt` adivinada no salía).
+     */
+    fun silentSources(): List<String> = (sourceApps.values + listOfNotNull(knownBluetooth)).distinct().filter { !isOwn(it) && isSilent(it) }
 }

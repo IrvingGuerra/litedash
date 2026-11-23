@@ -12,6 +12,7 @@
     <string name="source_bluetooth">Bluetooth</string>
     <string name="source_radio">Radio</string>
     <string name="bluetooth_connect_phone">Verbinde dein Handy per Bluetooth</string>
+    <string name="music_from_phone">Steuere die Musik über dein Handy</string>
     <string name="usb_drive">USB-Stick</string>
     <string name="usb_drive_in">USB-Stick verbunden: %1$s</string>
     <string name="player_connecting">Verbinde…</string>

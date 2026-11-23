@@ -47,6 +47,16 @@ internal fun MusicRepository.bluetoothHeard(): Boolean? {
     return bluetoothSounds(true, musicActive(), othersPlaying(bluetoothGroup(avrcpPackage, knownBluetooth, sourceApps[SourceKind.BLUETOOTH])))
 }
 
+/**
+ * Hay cómo saber si el celular suena: está con LiteDash Connect, la pantalla trae el Bluetooth de Android (AVRCP) o su
+ * app de marca muestra la canción de verdad. Sin nada de eso (TopWay con chip propio, reporte E48170) no se sabe nunca.
+ */
+internal fun MusicRepository.bluetoothKnowable(): Boolean =
+    phoneState.here || avrcpController != null || music.song?.let { !it.blind } == true
+
+/** La radio de la pantalla tomó la salida de audio: la receta del Bluetooth se vuelve a pedir la próxima vez. */
+internal fun MusicRepository.bluetoothSourceTaken() = btApplied?.sourceTaken()
+
 internal fun MusicRepository.loadCatalog() {
     if (catalogAsked) return
     fun needs(piece: SoundPiece, users: Int, saved: SavedRecipe?) = users > 0 && saved == null && calibrates(piece)

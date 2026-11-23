@@ -12,6 +12,7 @@
     <string name="source_bluetooth">Bluetooth</string>
     <string name="source_radio">Радио</string>
     <string name="bluetooth_connect_phone">Подключи телефон по Bluetooth</string>
+    <string name="music_from_phone">Управляйте музыкой с телефона</string>
     <string name="usb_drive">USB-накопитель</string>
     <string name="usb_drive_in">USB-накопитель подключён: %1$s</string>
     <string name="player_connecting">Подключение…</string>

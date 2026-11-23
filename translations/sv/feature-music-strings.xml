@@ -12,6 +12,7 @@
     <string name="source_bluetooth">Bluetooth</string>
     <string name="source_radio">Radio</string>
     <string name="bluetooth_connect_phone">Anslut telefonen via Bluetooth</string>
+    <string name="music_from_phone">Styr musiken från din mobil</string>
     <string name="usb_drive">USB-minne</string>
     <string name="usb_drive_in">USB-minne anslutet: %1$s</string>
     <string name="player_connecting">Ansluter…</string>

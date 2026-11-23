@@ -83,8 +83,10 @@ internal class SoundCalibration(
     private val show: (SoundCheck?) -> Unit,
     /** Aplica la receta (null = suelta la aplicada) y dice en cuántos ms revisar; null = avisa sola con [heard]. */
     private val use: (String?) -> Long?,
-    /** ¿Suena de verdad? null = ya no debería sonar (se pausó): esa vez no cuenta. */
+    /** ¿Suena de verdad? null = ya no debería sonar (se pausó) o no hay cómo saberlo ([knowable]). */
     private val check: () -> Boolean? = { null },
+    /** Hay cómo saber si suena (algo dice si la fuente toca); si no, un null de [check] no es "se pausó" ([Calibrator.unknown]). */
+    private val knowable: () -> Boolean = { true },
     /** Terminó sin pregunta pendiente tras una revisión o un "Sí" ([heard] = suena o la persona dice que sí). */
     private val settled: (heard: Boolean) -> Unit = {},
 ) {
@@ -175,6 +177,10 @@ internal class SoundCalibration(
     private val verify: Runnable = Runnable {
         val heard = check()
         when {
+            heard == null && !knowable() -> {
+                trace("calibración ${piece.key}: ${engine.current} sin forma de revisar si suena")
+                handle(engine.unknown())
+            }
             heard == null -> {
                 trace("calibración ${piece.key}: ya no suena, sin revisar")
                 main.removeCallbacks(stuck)
@@ -223,6 +229,10 @@ internal abstract class BluetoothRecipe(val id: String) {
     open fun available(): Boolean = true
     open fun apply(): Long = VERIFY_MS
     open fun release() = Unit
+    /** La radio de la pantalla tomó la salida de audio: lo que puso la receta ya no está. */
+    open fun sourceTaken() = Unit
+    /** Aplicada, pero algo le quitó lo que puso ([sourceTaken] o el firmware lo dijo): hay que volver a aplicarla. */
+    open val stale: Boolean get() = false
 }
 
 /** Las recetas de Bluetooth por id (el orden lo pone la familia: [HeadUnit.bluetoothRecipes]). */
@@ -232,19 +242,37 @@ internal fun bluetoothRecipes(host: SoundHost): Map<String, BluetoothRecipe> =
 /**
  * TopWay con Bluetooth de chip propio (`com.tw.bt`): la música del celular llega al chip, pero el MCU no la pasa a
  * las bocinas hasta que alguien pide su fuente (la app de fábrica lo hace al entrar a su Música). Se pide con un
- * enlace TWUtil propio (la radio tiene el suyo y solo vive con la pieza), cada vez que se aplica; al soltarla se
- * cierra. [link] solo en el hilo [SoundHost.worker].
+ * enlace TWUtil propio (la radio tiene el suyo y solo vive con la pieza) y UNA vez mientras siga puesta: reescribirla
+ * en cada play (reporte E48170, 8 veces en un minuto) no sirve de nada. Se vuelve a pedir si otra fuente la tomó (el
+ * MCU avisa otra "actividad", o la radio de LiteDash sonó: [sourceTaken]). Al soltarla se cierra. [link] solo en el
+ * hilo [SoundHost.worker].
  */
 private class TopWaySource8(private val host: SoundHost) : BluetoothRecipe(Recipes.TW_SOURCE8) {
     private var link: TopWayRadio? = null
     private var held = false
+    @Volatile private var lost = false
 
     override fun available() = TopWayRadio.available && host.bluetoothApp() == HeadUnit.TOPWAY_BLUETOOTH
 
+    override val stale: Boolean get() = held && lost
+
+    override fun sourceTaken() {
+        if (held) lost = true
+    }
+
     override fun apply(): Long {
+        if (held && !lost) {
+            host.log("topway bluetooth: la fuente sigue pedida")
+            return VERIFY_MS
+        }
         held = true
+        lost = false
         host.worker.execute {
-            val tw = link ?: TopWayRadio.openGuarded(host.store, onState = {}, trace = host::log)?.also { link = it } ?: return@execute
+            val tw = link ?: TopWayRadio.openGuarded(host.store, onState = {}, trace = host::log)?.also {
+                // Otra "actividad" que no es la del Bluetooth (la radio, su app): la fuente ya no es nuestra.
+                it.onActivity = { value -> lost = value != TopWayRadio.SOURCE_BT }
+                link = it
+            } ?: return@execute
             tw.takeBluetooth()
         }
         return VERIFY_MS
@@ -253,6 +281,7 @@ private class TopWaySource8(private val host: SoundHost) : BluetoothRecipe(Recip
     override fun release() {
         if (!held) return
         held = false
+        lost = false
         host.worker.execute {
             val tw = link ?: return@execute
             link = null

@@ -12,6 +12,7 @@
     <string name="source_bluetooth">Bluetooth</string>
     <string name="source_radio">Radio</string>
     <string name="bluetooth_connect_phone">Sambungkan ponsel Anda lewat Bluetooth</string>
+    <string name="music_from_phone">Kontrol musik dari ponselmu</string>
     <string name="usb_drive">Flashdisk USB</string>
     <string name="usb_drive_in">Flashdisk USB terhubung: %1$s</string>
     <string name="player_connecting">Menghubungkan…</string>

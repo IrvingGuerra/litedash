@@ -12,6 +12,7 @@
     <string name="source_bluetooth">Bluetooth</string>
     <string name="source_radio">ラジオ</string>
     <string name="bluetooth_connect_phone">スマホを Bluetooth で接続してください</string>
+    <string name="music_from_phone">音楽はスマホで操作してください</string>
     <string name="usb_drive">USB ドライブ</string>
     <string name="usb_drive_in">USB ドライブ接続済み：%1$s</string>
     <string name="player_connecting">接続中…</string>

@@ -68,7 +68,8 @@ internal fun MusicRepository.musicHears(meta: BroadcastMeta): Boolean = when (mo
 /** La primera pieza (de música o de radio) entró: lo que las dos usan (sesiones, avisos, AVRCP, aparatos). */
 internal fun MusicRepository.start() {
     syncDevices()
-    startAvrcp()
+    // La primera vez el servicio AVRCP se busca en otro hilo y se conecta al encontrarlo ([MusicRepository.use]).
+    if (avrcp != null) startAvrcp()
     // Son avisos de otras apps: el receptor debe aceptar avisos de fuera. Cualquier app podría mandar
     // un título falso; solo se muestra (sin sesión de por medio) y la sesión real siempre manda.
     val filter = IntentFilter().apply { BroadcastMeta.ACTIONS.forEach(::addAction) }

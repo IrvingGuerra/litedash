@@ -26,9 +26,16 @@ class MusicRulesTest {
             // Algo a la vista que obedece (Spotify en pausa): su sesión.
             "música, sesión que obedece" to (Target(radio = false, shown = true, obeys = true) to Plan(listOf(SESSION))),
             // Bluetooth de chip propio a ciegas (TopWay `com.tw.bt` sin sesión, Lancer de Irving): tecla explícita, al final el sistema.
-            "música a ciegas (TopWay com.tw.bt)" to (Target(radio = false, shown = true) to Plan(listOf(RECEIVER, SESSION_KEY, SYSTEM))),
-            // Nada a la vista: se despierta (receptor, sesión y además su servicio; sin nada, el sistema).
-            "música dormida" to (Target(radio = false) to Plan(listOf(RECEIVER, SESSION, SERVICE, SYSTEM), wake = true, serviceToo = true)),
+            "música a ciegas (TopWay com.tw.bt)" to (Target(radio = false, shown = true, source = true) to Plan(listOf(RECEIVER, SESSION_KEY, SYSTEM))),
+            // Bluetooth/FM de fábrica sin nada a la vista: se despierta (receptor, sesión y además su servicio; sin nada, el sistema).
+            "fuente de la pantalla dormida" to (Target(radio = false, source = true) to Plan(listOf(RECEIVER, SESSION, SERVICE, SYSTEM), wake = true, serviceToo = true)),
+            // App de música normal (Poweramp) cerrada: una sola orden, primero su servicio (doble play, auditoría 1.5.15).
+            "app de música dormida" to (Target(radio = false) to Plan(listOf(SERVICE, RECEIVER, SYSTEM), wake = true)),
+            // Con sesión que no se ve (el volante sin widget): solo su sesión.
+            "app de música con sesión sin verse" to (Target(radio = false, session = true) to Plan(listOf(SESSION))),
+            // TopWay com.tw.bt sin receptor, sesión, servicio ni Connect (E48170): nada, ni la tecla del sistema.
+            "Bluetooth de marca sin ningún canal" to (Target(radio = false, source = true, silent = true) to Plan(emptyList())),
+            "Bluetooth de marca sin canal, a ciegas" to (Target(radio = false, shown = true, source = true, silent = true) to Plan(emptyList())),
             "música sin app" to (Target(radio = false, app = false) to Plan(listOf(SYSTEM))),
             "Archivos" to (Target(radio = false, own = true) to Plan(listOf(OWN))),
             // La HCN: perfil antes que su receptor (con la app cerrada no le hace caso a la tecla).
@@ -302,13 +309,26 @@ class MusicRulesTest {
     @Test
     fun toggleAsksTheAppWhenNothingReliableIsShown() {
         // Sin pieza a la vista: la sesión de la app manda (suena → el botón pausa).
-        assertTrue(soundsNow(shown = null, session = true, audio = false))
-        assertFalse(soundsNow(shown = null, session = false, audio = true))
+        assertTrue(soundsNow(shown = null, session = true, audio = false, sessionsReadable = true))
+        assertFalse(soundsNow(shown = null, session = false, audio = true, sessionsReadable = true))
         // La sesión le gana a lo que LiteDash suponía (el volante la prendió por fuera).
-        assertTrue(soundsNow(shown = false, session = true, audio = null))
-        // Sin sesión que diga algo: lo supuesto; y sin nada, el audio de Android.
-        assertTrue(soundsNow(shown = true, session = null, audio = false))
-        assertTrue(soundsNow(shown = null, session = null, audio = true))
-        assertFalse(soundsNow(shown = null, session = null, audio = null))
+        assertTrue(soundsNow(shown = false, session = true, audio = null, sessionsReadable = true))
+        // Sin sesión que diga algo: lo supuesto.
+        assertTrue(soundsNow(shown = true, session = null, audio = false, sessionsReadable = true))
+        // El audio de Android solo sin acceso a las sesiones: con acceso y sin sesión de la app, el audio es de otra (la FM).
+        assertTrue(soundsNow(shown = null, session = null, audio = true, sessionsReadable = false))
+        assertFalse(soundsNow(shown = null, session = null, audio = true, sessionsReadable = true))
+        assertFalse(soundsNow(shown = null, session = null, audio = null, sessionsReadable = false))
+    }
+
+    @Test
+    fun theScreenButtonDoesWhatItShows() {
+        // Doble play (auditoría 1.5.15): app sin sesión y otra cosa sonando. El ▶ de la pantalla manda play aunque Android
+        // tenga audio; antes preguntaba al sistema y mandaba pausa.
+        assertTrue(pressPlays(shownPlaying = false) { true })
+        assertFalse(pressPlays(shownPlaying = true) { false })
+        // El volante no ve el ícono: pregunta en el momento.
+        assertFalse(pressPlays(shownPlaying = null) { true })
+        assertTrue(pressPlays(shownPlaying = null) { false })
     }
 }

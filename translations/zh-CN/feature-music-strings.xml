@@ -12,6 +12,7 @@
     <string name="source_bluetooth">Bluetooth</string>
     <string name="source_radio">收音机</string>
     <string name="bluetooth_connect_phone">通过 Bluetooth 连接手机</string>
+    <string name="music_from_phone">请在手机上控制音乐</string>
     <string name="usb_drive">U 盘</string>
     <string name="usb_drive_in">U 盘已连接：%1$s</string>
     <string name="player_connecting">正在连接…</string>

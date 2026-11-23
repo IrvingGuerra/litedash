@@ -49,6 +49,7 @@ internal class TopWayRadio(onState: (BroadcastMeta) -> Unit, private val trace: 
                 }
                 // Actividad: el número de la radio al entrar (1 o 0x0A) y con 0x80 al salir (0x81 o 0x8A).
                 m.what == ACTIVITY -> {
+                    onActivity?.invoke(m.arg1)
                     val radio = m.arg1 == SOURCE_RADIO || m.arg1 == SOURCE_RADIO_ALT
                     if (radio) source = m.arg1
                     on = radio
@@ -60,6 +61,9 @@ internal class TopWayRadio(onState: (BroadcastMeta) -> Unit, private val trace: 
     }
 
     override val open get() = util != null
+
+    /** Cada "actividad" que manda el MCU (quién tiene el audio), en el hilo principal; la usa la receta del Bluetooth. */
+    var onActivity: ((Int) -> Unit)? = null
 
     /** Se conecta al sintonizador y le pide la estación. False si la pantalla no lo deja. */
     override fun open(): Boolean {
@@ -175,7 +179,7 @@ internal class TopWayRadio(onState: (BroadcastMeta) -> Unit, private val trace: 
         /** El número de la radio en otras TopWay (OpenRath). */
         private const val SOURCE_RADIO_ALT = 0x0A
         /** La música del Bluetooth de fábrica (`com.tw.bt`). */
-        private const val SOURCE_BT = 8
+        const val SOURCE_BT = 8
         private const val RELEASE = 0x80
         private const val BAND_AM = 2
 

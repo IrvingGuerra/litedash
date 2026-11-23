@@ -39,7 +39,8 @@ fun MusicTile(
         text = { tall -> SongText(repo, song, tall, label) },
         // Cargando se pinta como pausa: tocarlo cancela la carga.
         controls = { m, compact ->
-            Controls(
+            // Sin por dónde darle play a la app de Bluetooth de marca: sin botón (lo dice el texto, [idleHint]).
+            if (!repo.phoneOnly) Controls(
                 repo, song?.playing == true, m, loading = song?.buffering == true, compact = compact,
                 playBackground = c.text, playColor = c.background,
             )
@@ -91,7 +92,8 @@ private fun idleHint(repo: MusicRepository): String {
     // Lo que toca según el método elegido (Archivos, Bluetooth o App).
     return when (repo.mode) {
         MusicMode.FILES -> repo.usbDrive?.let { stringResource(R.string.usb_drive_in, it) } ?: MusicMode.FILES.label()
-        MusicMode.BLUETOOTH -> repo.bluetoothDevice ?: stringResource(R.string.bluetooth_connect_phone)
+        MusicMode.BLUETOOTH -> if (repo.phoneOnly) stringResource(R.string.music_from_phone)
+            else repo.bluetoothDevice ?: stringResource(R.string.bluetooth_connect_phone)
         MusicMode.APP -> repo.preferredName().ifBlank { stringResource(R.string.open_an_app) }
     }
 }

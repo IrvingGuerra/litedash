@@ -135,6 +135,7 @@ internal fun MusicRepository.releaseWithProfile(pkg: String) {
  */
 internal fun MusicRepository.playRadio(pkg: String, f: FactoryRadio?) {
     fmPlay = FmPlay(pkg)
+    bluetoothSourceTaken()
     val available = listOfNotNull(
         Recipes.PROFILE.takeIf { f != null },
         Recipes.OPEN_FACTORY.takeIf { launchIntentFor(pkg, bluetooth = false) != null },

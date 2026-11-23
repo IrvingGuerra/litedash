@@ -12,6 +12,7 @@
     <string name="source_bluetooth">Bluetooth</string>
     <string name="source_radio">Radio</string>
     <string name="bluetooth_connect_phone">Conectează telefonul prin Bluetooth</string>
+    <string name="music_from_phone">Controlează muzica de pe telefon</string>
     <string name="usb_drive">Stick USB</string>
     <string name="usb_drive_in">Stick USB conectat: %1$s</string>
     <string name="player_connecting">Se conectează…</string>

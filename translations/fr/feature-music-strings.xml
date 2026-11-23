@@ -14,6 +14,7 @@
     <string name="source_bluetooth">Bluetooth</string>
     <string name="source_radio">Radio</string>
     <string name="bluetooth_connect_phone">Connectez votre téléphone en Bluetooth</string>
+    <string name="music_from_phone">Contrôle la musique depuis ton téléphone</string>
     <string name="usb_drive">Clé USB</string>
     <string name="usb_drive_in">Clé USB connectée : %1$s</string>
     <string name="player_connecting">Connexion…</string>

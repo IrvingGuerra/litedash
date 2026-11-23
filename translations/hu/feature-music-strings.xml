@@ -12,6 +12,7 @@
     <string name="source_bluetooth">Bluetooth</string>
     <string name="source_radio">Rádió</string>
     <string name="bluetooth_connect_phone">Csatlakoztasd a telefonod Bluetoothon</string>
+    <string name="music_from_phone">A zenét a telefonodról irányítsd</string>
     <string name="usb_drive">USB-meghajtó</string>
     <string name="usb_drive_in">USB-meghajtó csatlakoztatva: %1$s</string>
     <string name="player_connecting">Csatlakozás…</string>

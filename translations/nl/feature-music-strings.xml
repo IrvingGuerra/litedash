@@ -12,6 +12,7 @@
     <string name="source_bluetooth">Bluetooth</string>
     <string name="source_radio">Radio</string>
     <string name="bluetooth_connect_phone">Verbind je telefoon via Bluetooth</string>
+    <string name="music_from_phone">Bedien de muziek vanaf je telefoon</string>
     <string name="usb_drive">USB-stick</string>
     <string name="usb_drive_in">USB-stick verbonden: %1$s</string>
     <string name="player_connecting">Verbinden…</string>

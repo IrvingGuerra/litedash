@@ -12,6 +12,7 @@
     <string name="source_bluetooth">Bluetooth</string>
     <string name="source_radio">Radio</string>
     <string name="bluetooth_connect_phone">Kết nối điện thoại qua Bluetooth</string>
+    <string name="music_from_phone">Điều khiển nhạc từ điện thoại của bạn</string>
     <string name="usb_drive">Ổ USB</string>
     <string name="usb_drive_in">Đã cắm ổ USB: %1$s</string>
     <string name="player_connecting">Đang kết nối…</string>
