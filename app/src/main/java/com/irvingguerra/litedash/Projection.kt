@@ -14,10 +14,16 @@ private val PROJECTION_PACKAGES = listOf(
     "com.google.android.projection.gearhead",
     // Open Headunit (antes Headunit Revived): Android Auto en pantallas que no lo traen (código abierto).
     "com.andrerinas.headunitrevived",
+    // Headunit Reloaded: su paquete no dice nada.
+    "gb.xxy.hr",
 )
 
 // Si la pantalla trae la suya con otro paquete, se reconoce por el nombre (o por una parte del paquete).
-private val PROJECTION_WORDS = listOf("carplay", "android auto", "zlink", "autokit", "carlink", "easyconn", "tlink", "phonelink", "carbit", "headunit revived", "open headunit")
+// "carletter" = CarLetter de Carlinkit (com.carletter.car); "carlink" ya cubre com.carlinkit.*.
+private val PROJECTION_WORDS = listOf(
+    "carplay", "android auto", "zlink", "autokit", "carlink", "carletter", "easyconn", "tlink", "phonelink", "phonemirror",
+    "speedplay", "carbit", "headunit revived", "headunit reloaded", "open headunit",
+)
 
 /**
  * ¿Es una app de Android Auto / CarPlay de la pantalla? Por su paquete (una parte del paquete empieza con la palabra:
