@@ -248,6 +248,18 @@ class MapCamera(
     var turnDegrees by mutableFloatStateOf(0f)
         internal set
 
+    /** Pasos de zoom pedidos con botones ([zoomBy]) que el mapa aún no atiende (+ acerca, − aleja). */
+    internal var zoomSteps by mutableIntStateOf(0)
+
+    /**
+     * Acerca ([steps] > 0) o aleja un nivel por paso, deslizándose como al soltar los dos dedos (para botones + y −:
+     * en pantallas de auto el pellizco falla). Entre el nivel más lejano y el más cercano de la fuente; con un zoom fijo
+     * (elegir una zona) no hace nada.
+     */
+    fun zoomBy(steps: Int) {
+        zoomSteps += steps
+    }
+
     /** El último [driving] que se atendió: al empezar un viaje el mapa vuelve a su zoom de fábrica. */
     internal var zoomFor = false
 
@@ -473,6 +485,16 @@ fun MapCanvas(
         val step = pinchStep(camera.scale, factor, camera.zoom ?: base, MIN_ZOOM, driveZoom)
         camera.scale = step.scale
         camera.zoom = step.level.takeIf { it != base }
+    }
+    // Los botones de zoom ([MapCamera.zoomBy]): un nivel por paso desde donde va, deslizándose.
+    LaunchedEffect(camera.zoomSteps, active) {
+        val steps = camera.zoomSteps
+        if (steps == 0 || !active) return@LaunchedEffect
+        camera.zoomSteps = 0
+        if (fixedZoom != null) return@LaunchedEffect
+        camera.stopZoom()
+        val from = camera.zoom ?: base
+        camera.glideZoom(scope, from, (from + steps).coerceIn(MIN_ZOOM, driveZoom), base, driveZoom)
     }
     val onPinchEnd by rememberUpdatedState {
         // Al soltar se acomoda, deslizándose, en el nivel donde quedó.
