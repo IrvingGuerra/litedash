@@ -4,6 +4,49 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.5.15] - 2026-11-23
+
+Auditoría completa de la semana: muchos arreglos chicos en toda la app. Lo que más se nota:
+
+### Nuevo
+- **Botón de Android Auto / CarPlay en la barra** (y acción para el volante). Abre tu app de proyección (ZLink, AutoKit,
+  CarLetter, Open Headunit…) o la que elijas en **Ajustes → Apps → Android Auto / CarPlay**. Como cualquier botón, se
+  puede quitar o mover. El botón de Bluetooth vuelve a abrir solo Bluetooth.
+- **«Oscurecer el fondo»** junto a tu fondo de pantalla: deja tu imagen más limpia o más cerrada (#34).
+- **Botones + y −** en el mapa en grande, para pantallas donde el gesto de dos dedos no responde.
+- **Aleatorio** en la música de Archivos, a un toque en la música en grande.
+- **Las descargas de mapas se reanudan:** si se corta la red siguen donde iban (solas al volver internet, o al tocar
+  «Descargar»), y antes de bajar se avisa si no cabe.
+
+### Cambiado
+- **Ajustes → Apps → Navegación** ahora es como Música y Radio: arriba eliges **«Navegar con»** (Mapa de LiteDash o App
+  de mapas) y abajo sale lo de tu elección. «Tu app de mapas» acepta cualquier app con «Otra app…».
+- **Mapas sin conexión más fáciles de encontrar:** la lista dice si se está bajando o si falló (con «Reintentar»), los
+  mapas por estado se ven con cualquier estilo de mapa, y el buscador encuentra el estado o el país en cualquier idioma.
+- **Idiomas:** los 21 idiomas descargables están a la vista (antes solo salían al escribir). Con «Como el sistema» y
+  un sistema que no está en español, LiteDash sale en inglés o en el idioma que ya hayas bajado.
+- **Tarjetas de vidrio sobre el mapa de fondo:** ahora van como cristal ahumado en vez de un panel plano (#32), y el
+  widget Clima ya se ve como las demás (#33).
+- La búsqueda de lugares ordena mejor: primero lo que se llama igual que lo que escribes y lo que queda cerca.
+- Con la barra oculta, cualquier toque en un lugar libre la asoma. En el cajón de apps, «Elegir» deja ocultar una app
+  o ver su información sin dejar presionado. Aplicar una plantilla sobre una página con widgets pide confirmación.
+
+### Arreglado
+- **«Abrir LiteDash al encender»** fallaba en algunos encendidos; además ahora reconoce el encendido de más pantallas
+  (TS10 / QF, Autochips, Jancar).
+- **Música:** el botón de la pantalla hace siempre lo que muestra (ya no hay que tocar play dos veces); el volante ya
+  distingue si suena la radio o la música; el Bluetooth de Android 6–8 muestra la canción; en pantallas cuyo Bluetooth
+  no se puede controlar, el widget lo dice en vez de enseñar un play que no hace nada.
+- **Guía:** si te sales de la ruta lo dice, al recalcular la ruta ya no arranca hacia atrás, y al terminar la guía la
+  ruta se vuelve a trazar desde donde estás.
+- **Clima:** en Android 6–10 podía quedarse en «Buscando el clima…»; sin internet muestra la temperatura pronosticada.
+- **OBD:** más estable con adaptadores clon; ya no insiste con el permiso del cable USB; «Desconectar» se respeta.
+- **Llantas:** en pantallas sin pila de reloj se conserva el historial, así la fuga lenta sí puede avisar.
+- **Pantallas sin pila de reloj:** cuando la fecha está mal, LiteDash lo dice en vez de «revisa tu internet».
+- Tu auto → Modelos: el catálogo ya no dice «Buscando…» y «No se pudo bajar» a la vez, y tiene «Reintentar».
+- Con tema claro e imagen de fondo ya se leen el menú de Ajustes y lo que va sin tarjeta.
+- Más de cien arreglos menores de la auditoría (memoria, trabajo en segundo plano, textos y permisos).
+
 ## [1.5.14] - 2026-11-18
 
 ### Cambiado

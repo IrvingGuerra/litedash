@@ -3,6 +3,50 @@
 What people using LiteDash notice, in English. The full history (in Spanish) is in [CHANGELOG.md](CHANGELOG.md).
 Format [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versions [SemVer](https://semver.org/).
 
+## [1.5.15] - 2026-11-23
+
+This week's full audit: many small fixes across the app. What you'll notice most:
+
+### Added
+- **Android Auto / CarPlay button on the bar** (and a steering wheel action). It opens your projection app (ZLink,
+  AutoKit, CarLetter, Open Headunit…) or the one you pick in **Settings → Apps → Android Auto / CarPlay**. Like any
+  button, you can remove or move it. The Bluetooth button opens only Bluetooth again.
+- **"Dim the background"** next to your wallpaper: keep your image cleaner or more subdued (#34).
+- **+ and − buttons** on the full-screen map, for head units where the two-finger gesture doesn't respond.
+- **Shuffle** for Files music, one tap away in the full-screen player.
+- **Map downloads resume:** if the network drops they continue where they were (on their own when internet returns,
+  or when you tap "Download"), and you're told beforehand if a map doesn't fit.
+
+### Changed
+- **Settings → Apps → Navigation** now works like Music and Radio: pick **"Navigate with"** (LiteDash map or Maps app)
+  at the top and its options appear below. "Your maps app" accepts any app with "Other app…".
+- **Offline maps are easier to find:** the list says whether it's downloading or failed (with "Retry"), state maps show
+  with any map style, and the search finds the state or the country in any language.
+- **Languages:** all 21 downloadable languages are visible (before they only showed when typing). With "System" and a
+  system that isn't in Spanish, LiteDash shows in English or in the language you already downloaded.
+- **Glass cards over the map background** are now smoked glass instead of a flat panel (#32), and the Weather widget
+  looks like the other cards (#33).
+- Place search sorts better: first what's named exactly like what you typed and what's nearby.
+- With the bar hidden, a tap on any free spot brings it up. In the app drawer, "Choose" lets you hide an app or see
+  its info without long-pressing. Applying a template over a page with widgets asks first.
+
+### Fixed
+- **"Open LiteDash on startup"** failed on some startups; it also recognizes ignition on more head units (TS10 / QF,
+  Autochips, Jancar).
+- **Music:** the on-screen button always does what it shows (no more pressing play twice); the steering wheel now
+  tells radio from music; Bluetooth on Android 6–8 shows the song; on head units whose Bluetooth can't be controlled,
+  the widget says so instead of showing a play button that does nothing.
+- **Guidance:** it tells you when you leave the route, a recalculated route no longer starts backwards, and when you
+  end guidance the route is drawn again from where you are.
+- **Weather:** on Android 6–10 it could get stuck on "Looking for the weather…"; offline it shows the forecast
+  temperature.
+- **OBD:** steadier with clone adapters; it no longer insists on the USB cable permission; "Disconnect" is respected.
+- **Tires:** on head units without a clock battery the history is kept, so the slow leak warning can work.
+- **Head units without a clock battery:** when the date is wrong, LiteDash says so instead of "check your internet".
+- Your car → Models: the catalog no longer says "Checking…" and "Couldn't download" at once, and has "Retry".
+- With the light theme and a wallpaper, the Settings menu and what sits outside cards are readable again.
+- Over a hundred minor audit fixes (memory, background work, texts and permissions).
+
 ## [1.5.14] - 2026-11-18
 
 ### Changed
