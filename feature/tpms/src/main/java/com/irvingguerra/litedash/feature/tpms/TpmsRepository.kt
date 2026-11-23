@@ -771,12 +771,16 @@ class TpmsRepository(context: Context, private val bus: VehicleBus) {
 
     /**
      * El receptor: el primer cable conocido que no tenga abierto el escáner OBD (suelen traer el mismo chip y abrirlo
-     * se lo quitaría); si hay varios, los del mismo modelo que el cable elegido para el OBD van al final.
+     * se lo quitaría) ni sea el que ya contestó como ELM327; si hay varios, los del mismo modelo que el cable elegido
+     * para el OBD van al final.
      */
     private fun findUsbDevice(manager: UsbManager): UsbDevice? {
         val obd = ObdRepository.usbTargetIds(context)
+        val obdCable = ObdRepository.usbDeviceName(context)
         return manager.deviceList.values
-            .filter { d -> USB_IDS.any { it.first == d.vendorId && it.second == d.productId } && !UsbLink.inUse(d) }
+            .filter { d ->
+                USB_IDS.any { it.first == d.vendorId && it.second == d.productId } && !UsbLink.inUse(d) && d.deviceName != obdCable
+            }
             .sortedBy { d -> obd != null && d.vendorId == obd.first && d.productId == obd.second }
             .firstOrNull()
     }
@@ -843,8 +847,17 @@ class TpmsRepository(context: Context, private val bus: VehicleBus) {
         }
     }
 
-    /** Conectar y desconectar el receptor mientras se usa (sin reintentar en bucle). */
+    /** Deja de escuchar los cables que suelta otro módulo (ver [watchUsb]). */
+    private var unwatchRelease: (() -> Unit)? = null
+
+    /**
+     * Conectar y desconectar el receptor mientras se usa (sin reintentar en bucle). También, si el receptor estaba
+     * apartado por el OBD (lo probaba como ELM327) y por eso faltaba, se intenta otra vez cuando lo suelta.
+     */
     private fun watchUsb() {
+        if (unwatchRelease == null) unwatchRelease = UsbLink.onRelease {
+            scope.launch { if (running == TpmsSource.USB && usb == null && error == TpmsError.USB_MISSING) startUsb() }
+        }
         if (usbReceiver != null) return
         val r = object : BroadcastReceiver() {
             override fun onReceive(c: Context, i: Intent) {
@@ -888,6 +901,8 @@ class TpmsRepository(context: Context, private val bus: VehicleBus) {
         unwatchPermission()
         usbReceiver?.let { runCatching { context.unregisterReceiver(it) } }
         usbReceiver = null
+        unwatchRelease?.invoke()
+        unwatchRelease = null
     }
 
     /**
@@ -1062,6 +1077,9 @@ class TpmsRepository(context: Context, private val bus: VehicleBus) {
                     val more = link.input.available().coerceAtMost(buf.size - 1)
                     repeat(more) { val b = link.input.read(); if (b >= 0) buf[n++] = b.toByte() }
                     val frames = reader.feed(buf, n)
+                    // Ya habló como receptor (algo más que el eco de un latido, que un ELM327 también repite): el OBD
+                    // no lo probará como ELM327 (se lo quitaría).
+                    if (frames.any { it !is UsbFrame.Heartbeat } && !UsbLink.isReceiver(device)) UsbLink.markReceiver(device)
                     if (frames.isEmpty() && raws.isEmpty()) continue
                     val lines = raws.toList()
                     raws.clear()

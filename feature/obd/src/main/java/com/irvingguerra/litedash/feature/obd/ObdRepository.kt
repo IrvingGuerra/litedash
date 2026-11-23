@@ -177,9 +177,12 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
     var target: ObdTarget?
         get() = savedTarget
         private set(t) {
+            val changed = t != savedTarget
             savedTarget = t
             prefs.edit().apply {
                 if (t == null) clear() else putString(KEY_TYPE, t.key)
+                // Otro adaptador: el cable que contestó antes ya no cuenta.
+                if (changed) remove(KEY_USB_DEVICE)
                 when (t) {
                     is ObdTarget.Bluetooth -> putString("address", t.address).putString("name", t.name)
                     is ObdTarget.Ble -> putString("address", t.address).putString("name", t.name)
@@ -306,12 +309,16 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
 
     /**
      * Los cables enchufados que pueden ser [t] (mismo fabricante y producto), sin el que ya tiene abierto otro módulo
-     * (el receptor de Llantas suele traer el mismo chip): abrirlo se lo quitaría.
+     * ni el que Llantas reconoció como su receptor (suele traer el mismo chip): abrirlo se lo quitaría. El último que
+     * contestó como ELM327 va primero.
      */
-    private fun usbCandidates(t: ObdTarget.Usb): List<UsbDevice> =
-        context.getSystemService(UsbManager::class.java)?.deviceList?.values
-            ?.filter { it.vendorId == t.vendorId && it.productId == t.productId && !UsbLink.inUse(it) }
+    private fun usbCandidates(t: ObdTarget.Usb): List<UsbDevice> {
+        val last = prefs.getString(KEY_USB_DEVICE, null)
+        return context.getSystemService(UsbManager::class.java)?.deviceList?.values
+            ?.filter { it.vendorId == t.vendorId && it.productId == t.productId && !UsbLink.inUse(it) && !UsbLink.isReceiver(it) }
+            ?.sortedByDescending { it.deviceName == last }
             .orEmpty()
+    }
 
     private fun usbDevice(t: ObdTarget.Usb): UsbDevice? = usbCandidates(t).firstOrNull()
 
@@ -322,8 +329,23 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
      */
     fun keep() {
         kept = true
-        val waiting = state == ObdState.ERROR && retryJob?.isActive != true
-        if (state == ObdState.OFF || waiting && keepReconnects(errorKind, hasPermission(), cable() != null, cableAllowed())) connect()
+        if (state == ObdState.OFF) return connect()
+        if (state != ObdState.ERROR || retryJob?.isActive == true) return
+        val kind = errorKind
+        if (kind != ObdError.USB_UNPLUGGED && kind != ObdError.NO_USB_PERMISSION) {
+            // Los demás no dependen del cable: sin preguntarle nada a UsbManager.
+            if (keepReconnects(kind, hasPermission(), cablePresent = false, cableAllowed = false)) connect()
+            return
+        }
+        // Preguntar por el cable es una llamada entre procesos: fuera del hilo principal.
+        scope.launch {
+            val d = cable()
+            val allowed = cableAllowed(d)
+            withContext(Dispatchers.Main) {
+                val still = state == ObdState.ERROR && retryJob?.isActive != true && errorKind == kind
+                if (still && keepReconnects(kind, hasPermission(), d != null, allowed)) connect()
+            }
+        }
     }
 
     /** El cable del adaptador guardado (o del que se intentó), si está enchufado. */
@@ -405,6 +427,7 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
                     adapter = version
                     target = t
                     if (l is BluetoothLink && t is ObdTarget.Bluetooth) l.used?.let { rememberSocket(t, it) }
+                    if (l is UsbLink) rememberCable(l.deviceName)
                     // Conexión nueva: lo leído en otra ya no vale (el Taller y su pieza vuelven a leer).
                     lastReport = null
                     carSilent = false
@@ -872,6 +895,7 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
                 try {
                     return prepare(UsbLink(manager, device, baud)) {}
                 } catch (x: ObdException) {
+                    if (x.kind == ObdError.CAR_SILENT) rememberCable(device.deviceName)
                     // Sin permiso o sin ser puerto serie, otra velocidad no lo arregla; y si el ELM ya contestó
                     // (el auto no), la velocidad y el cable eran los buenos.
                     if (!x.kind.retry || x.kind == ObdError.CAR_SILENT) throw x
@@ -882,6 +906,9 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
         }
         throw last ?: ObdException(ObdError.USB_SILENT)
     }
+
+    /** El cable [deviceName] contestó como ELM327: va primero la próxima vez y Llantas no lo toma. */
+    private fun rememberCable(deviceName: String) = prefs.edit().putString(KEY_USB_DEVICE, deviceName).apply()
 
     private fun device(address: String): BluetoothDevice {
         if (!hasPermission()) throw ObdException(ObdError.NO_BLUETOOTH_PERMISSION, "sin BLUETOOTH_CONNECT")
@@ -929,6 +956,8 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
         const val PREFS = "obd"
         private const val KEY_TYPE = "type"
         private const val KEY_BT_SOCKET = "bt_socket"
+        /** El `deviceName` del último cable que contestó como ELM327 (Llantas no lo toma). */
+        private const val KEY_USB_DEVICE = "usb_device"
         private const val ACTION_USB_PERMISSION = "com.irvingguerra.litedash.USB_PERMISSION"
         private const val USB_REQUEST = 0
         /** Voltaje del módulo de control (el de la batería con el motor andando). */
@@ -953,6 +982,12 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
             val p = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
             if (p.getString(KEY_TYPE, null) != "usb") return null
             return p.getInt("vendor_id", 0) to p.getInt("product_id", 0)
+        }
+
+        /** El `deviceName` del cable que contestó como ELM327 (null si el OBD no es por cable): Llantas no lo toma. */
+        fun usbDeviceName(context: Context): String? {
+            val p = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+            return if (p.getString(KEY_TYPE, null) == "usb") p.getString(KEY_USB_DEVICE, null) else null
         }
     }
 }

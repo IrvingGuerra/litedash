@@ -9,6 +9,7 @@ import android.hardware.usb.UsbManager
 import android.os.SystemClock
 import java.util.Collections
 import java.util.Locale
+import java.util.concurrent.CopyOnWriteArrayList
 
 /** El nombre de un aparato USB para mostrarlo: el de su fabricante o, sin él, sus números. Lo usan OBD y Llantas. */
 fun UsbDevice.displayName(): String =
@@ -29,8 +30,10 @@ class UsbLink(manager: UsbManager, private val device: UsbDevice, baud: Int) : Q
      * quitaría al otro): se aparta antes de abrirlo y se suelta al cerrar.
      */
     private val owned = device.deviceName.also { if (!busy.add(it)) throw ObdException(ObdError.ADAPTER_UNREACHABLE, "cable en uso") }
+    /** El `deviceName` del cable (lo identifica mientras siga enchufado). */
+    val deviceName: String get() = owned
     private val connection: UsbDeviceConnection = manager.openDevice(device) ?: run {
-        busy.remove(owned)
+        release(owned)
         throw ObdException(ObdError.NO_USB_PERMISSION, "openDevice null")
     }
     private val claimed = mutableListOf<UsbInterface>()
@@ -116,7 +119,7 @@ class UsbLink(manager: UsbManager, private val device: UsbDevice, baud: Int) : Q
         markClosed()
         claimed.forEach { connection.releaseInterface(it) }
         connection.close()
-        busy.remove(owned)
+        release(owned)
     }
 
     /** El chip puente del cable y cómo se le pide 8N1 a cierta velocidad. */
@@ -187,6 +190,28 @@ class UsbLink(manager: UsbManager, private val device: UsbDevice, baud: Int) : Q
 
         /** [d] ya lo tiene abierto un enlace (del OBD o de Llantas): no se toca. */
         fun inUse(d: UsbDevice): Boolean = d.deviceName in busy
+
+        /** Cables en los que Llantas ya leyó tramas de su receptor (mientras viva la app): el OBD no los prueba. */
+        private val receivers: MutableSet<String> = Collections.synchronizedSet(HashSet())
+
+        fun markReceiver(d: UsbDevice) { receivers += d.deviceName }
+
+        fun isReceiver(d: UsbDevice): Boolean = d.deviceName in receivers
+
+        private val releaseListeners = CopyOnWriteArrayList<(String) -> Unit>()
+
+        /**
+         * Avisa (desde cualquier hilo, con su `deviceName`) cada vez que un enlace suelta un cable: quien lo quería y lo
+         * encontró apartado puede intentar otra vez. Devuelve cómo dejar de escuchar.
+         */
+        fun onRelease(listener: (String) -> Unit): () -> Unit {
+            releaseListeners += listener
+            return { releaseListeners -= listener }
+        }
+
+        private fun release(name: String) {
+            if (busy.remove(name)) releaseListeners.forEach { it(name) }
+        }
 
         private const val TIMEOUT = 1_000
         /** Peticiones de fabricante hacia el chip (bmRequestType 0x40) y de vuelta (0xC0). */
