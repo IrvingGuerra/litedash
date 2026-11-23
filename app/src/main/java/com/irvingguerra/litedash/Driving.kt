@@ -150,13 +150,13 @@ internal fun DrivingScreen(d: Dependencies, session: DriveSession, revision: Int
         if (p.time != 0L && p.time == session.lastFix) return@LaunchedEffect
         session.lastFix = p.time
         // Velocidad, rumbo y hora de la lectura (reloj que no brinca): con ellos la guía descarta brincos imposibles del GPS
-        // y cuenta el sentido contrario como salirse.
+        // y cuenta el sentido contrario como salirse. El rumbo solo si es de ahora y vas andando (ver [reliableHeading]).
         val speed = if (p.hasSpeed()) p.speed else null
-        val heading = d.trip.bearing
-        val s = session.guidance.update(
-            p.latitude, p.longitude, if (p.hasAccuracy()) p.accuracy else null,
-            speedMps = speed, headingDeg = heading, timeMs = p.elapsedRealtimeNanos / 1_000_000,
-        )
+        val fixAgeMs = (SystemClock.elapsedRealtimeNanos() - p.elapsedRealtimeNanos) / 1_000_000
+        val heading = reliableHeading(d.trip.bearing, speed, fixAgeMs)
+        val accuracy = if (p.hasAccuracy()) p.accuracy else null
+        val timeMs = p.elapsedRealtimeNanos / 1_000_000
+        val s = session.guidance.update(p.latitude, p.longitude, accuracy, speedMps = speed, headingDeg = heading, timeMs = timeMs)
         session.state = s
         // Las esperas con el reloj que no brinca (en pantallas sin pila la hora se corrige al sincronizar).
         val now = SystemClock.elapsedRealtime()
@@ -166,13 +166,15 @@ internal fun DrivingScreen(d: Dependencies, session: DriveSession, revision: Int
             session.lastRecalc = now
             scope.launch {
                 try {
-                    // Andando, la ruta nueva no arranca contra tu rumbo (detenido el rumbo no es confiable).
-                    val towards = heading?.takeIf { (speed ?: 0f) > RECALC_HEADING_MPS }
-                    val plan = withContext(Dispatchers.IO) { packs.planRoute(p.latitude, p.longitude, session.to.lat, session.to.lon, towards) }
+                    // Andando, la ruta nueva no arranca contra tu rumbo; detenido o sin rumbo fiable, sin castigo (como en la 1.5.14).
+                    val plan = withContext(Dispatchers.IO) { packs.planRoute(p.latitude, p.longitude, session.to.lat, session.to.lon, heading) }
                     // Lejos de la calle (estacionamiento, GPS malo) sale la misma ruta: no se cambia (la tarjeta no parpadea).
                     val next = (plan as? RoutePlan.Found)?.route?.takeUnless { it.sameAs(session.route) }
                     if (next != null) {
                         session.replace(next)
+                        // La ruta nueva sale de donde estabas: se te pone en ella ya, sin esperar la siguiente lectura (la
+                        // tarjeta no pasa por «Esperando tu ubicación…» un instante).
+                        session.state = session.guidance.update(p.latitude, p.longitude, accuracy, speedMps = speed, headingDeg = heading, timeMs = timeMs)
                         session.recalcStep = 0
                     } else {
                         session.recalcStep = (session.recalcStep + 1).coerceAtMost(RECALC_GAPS_MS.lastIndex)
@@ -452,17 +454,23 @@ private val TURN_TEXTS = mapOf(
     ManeuverType.SHARP_RIGHT to (R.string.guide_sharp_right to R.string.guide_sharp_right_onto),
 )
 
-/** La hora, al minuto. */
+/** La hora de ahora (ms), que cambia al empezar cada minuto. */
 @Composable
-private fun Clock(modifier: Modifier) {
-    val context = LocalContext.current
+internal fun rememberMinute(): Long {
     val now by produceState(System.currentTimeMillis()) {
         while (true) {
             value = System.currentTimeMillis()
             delay(CLOCK_TICK_MS - value % CLOCK_TICK_MS)
         }
     }
-    Label(DateFormat.getTimeFormat(context).format(Date(now)), Typography.subtitle, maxLines = 1, modifier = modifier)
+    return now
+}
+
+/** La hora, al minuto. */
+@Composable
+private fun Clock(modifier: Modifier) {
+    val context = LocalContext.current
+    Label(DateFormat.getTimeFormat(context).format(Date(rememberMinute())), Typography.subtitle, maxLines = 1, modifier = modifier)
 }
 
 /** Los botones redondos de la orilla del mapa. */
@@ -485,8 +493,16 @@ private const val CLOSE_ZOOM = 15
  */
 private val RECALC_GAPS_MS = longArrayOf(5_000L, 15_000L, 30_000L)
 
-/** Más rápido que esto (~10 km/h) el rumbo del GPS cuenta al recalcular. */
-private const val RECALC_HEADING_MPS = 2.8f
+/**
+ * El rumbo [heading] solo cuenta (para seguirte y para planear) si vas a [speedMps] ≥ [HEADING_MIN_MPS] (~11 km/h) y la
+ * lectura es de hace no más de [HEADING_MAX_AGE_MS] ([fixAgeMs]); detenido el rumbo guardado es viejo (al empezar la guía
+ * parado salía «Da vuelta en U» porque apuntaba contra la ruta). null = sin rumbo fiable.
+ */
+internal fun reliableHeading(heading: Float?, speedMps: Float?, fixAgeMs: Long): Float? =
+    heading?.takeIf { speedMps != null && speedMps >= HEADING_MIN_MPS && fixAgeMs in 0..HEADING_MAX_AGE_MS }
+
+private const val HEADING_MIN_MPS = 3f
+private const val HEADING_MAX_AGE_MS = 5_000L
 
 /** ¿La misma ruta? (Mismos puntos, o la misma cantidad con la misma salida, llegada y distancia.) */
 private fun Route.sameAs(o: Route): Boolean {

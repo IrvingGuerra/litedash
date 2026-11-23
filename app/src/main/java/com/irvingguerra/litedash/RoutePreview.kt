@@ -18,6 +18,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -69,6 +70,18 @@ internal class RouteRequest(val to: SearchHit) {
     var origin: Location? = null
     var moved by mutableStateOf(false)
     var redone = false
+
+    /** Cuántas veces se pidió planear de nuevo desde cero ([again]). */
+    var round by mutableIntStateOf(0)
+        private set
+
+    /** Otra vez desde donde estés ahora (al terminar la guía la ruta de antes ya no sirve: salía de otro lado). */
+    fun again() {
+        plan = null
+        moved = false
+        redone = false
+        round++
+    }
 }
 
 /** Calcula [request] desde donde estás (fuera del hilo principal); si faltaban las calles y ya llegaron, otra vez. */
@@ -87,7 +100,17 @@ internal fun RunRoute(d: Dependencies, request: RouteRequest) {
         val o = request.origin ?: return@LaunchedEffect
         if (here != null && !request.moved && Driving.session == null && o.distanceTo(here) > RECHECK_M) request.moved = true
     }
-    LaunchedEffect(request, here == null, routesReady, regionsReady, request.moved) {
+    // Al terminar la guía («Terminar» o atrás) la tarjeta no debe enseñar la ruta vieja: se planea desde donde estás.
+    val driving = Driving.session != null
+    var drove by remember(request) { mutableStateOf(false) }
+    LaunchedEffect(request, driving) {
+        if (driving) drove = true
+        else if (drove) {
+            drove = false
+            request.again()
+        }
+    }
+    LaunchedEffect(request, here == null, routesReady, regionsReady, request.moved, request.round) {
         val redo = request.moved && !request.redone
         // Ya encontrada, perder la señal un momento no la tapa.
         if (request.plan is RoutePlan.Found && !redo) return@LaunchedEffect
@@ -258,6 +281,8 @@ private fun Summary(d: Dependencies, route: Route) {
     val minutes = (route.seconds / 60).toInt().coerceAtLeast(1)
     val time = if (minutes < 60) stringResource(R.string.route_minutes, minutes) else stringResource(R.string.route_hours, minutes / 60, minutes % 60)
     Label("${distanceLabel(route.distanceM / 1000, d.prefs.units.miles)} · $time", Typography.title, maxLines = 1)
+    // La hora de llegada se mueve con el reloj: la tarjeta abierta un rato nunca dice una hora que ya pasó.
+    rememberMinute()
     val arrive = DateFormat.getTimeFormat(context).format(Date(System.currentTimeMillis() + (route.seconds * 1000).toLong()))
     val details = listOfNotNull(
         stringResource(R.string.route_arrive, arrive),
