@@ -195,7 +195,8 @@ object Library {
                 val duration = c.getColumnIndexOrThrow(MediaStore.Audio.Media.DURATION)
                 val data = c.getColumnIndexOrThrow(MediaStore.Audio.Media.DATA)
                 val display = c.getColumnIndexOrThrow(MediaStore.Audio.Media.DISPLAY_NAME)
-                while (c.moveToNext()) {
+                // El mismo tope que el recorrido de carpetas: una USB de 50 mil canciones no cabía en pantallas de 1 GB.
+                while (out.size < MAX_FILES && c.moveToNext()) {
                     val path = c.getString(data).orEmpty()
                     val file = c.getString(display) ?: path.substringAfterLast('/')
                     val folder = path.substringBeforeLast('/', "").let { if (root != null) it.removePrefix(root) else it }.trim('/')
@@ -252,6 +253,17 @@ object Library {
     }
 
     internal fun isAudio(name: String) = name.substringAfterLast('.', "").lowercase() in AUDIO
+
+    /**
+     * [items] por grupo ([name]: carpeta, artista o álbum), ordenados sin distinguir mayúsculas. "Maná" y "MANÁ" van
+     * juntos con el nombre del primero que apareció: un mapa ordenado así guardaba solo la lista del segundo y las
+     * canciones del primero desaparecían de la biblioteca.
+     */
+    internal fun <T> groups(items: List<T>, name: (T) -> String): Map<String, List<T>> {
+        val out = java.util.TreeMap<String, MutableList<T>>(String.CASE_INSENSITIVE_ORDER)
+        for (item in items) out.getOrPut(name(item)) { ArrayList() } += item
+        return out
+    }
 
     private val AUDIO = setOf("mp3", "m4a", "aac", "flac", "wav", "ogg", "oga", "opus", "amr", "3gp", "mka")
     private val SKIP_DIRS = setOf("Android", "LOST.DIR", "System Volume Information", "\$RECYCLE.BIN")

@@ -44,11 +44,17 @@ class PlayerStore(context: Context) {
         get() = p.getString(KEY_MUSIC_FOLDER, null)
         set(v) = p.edit { if (v == null) remove(KEY_MUSIC_FOLDER) else putString(KEY_MUSIC_FOLDER, v) }
 
+    /** El aleatorio de Archivos ([com.irvingguerra.litedash.feature.music.OwnShuffle]). */
+    var shuffle: Boolean
+        get() = p.getBoolean(KEY_SHUFFLE, false)
+        set(v) = p.edit { putBoolean(KEY_SHUFFLE, v) }
+
     private fun keyFor(source: PlayerSource) = if (source == PlayerSource.USB) KEY_LAST_USB else KEY_LAST_RADIO
 
     private companion object {
         const val KEY_LAST_RADIO_STATION = "last_radio_station"
         const val KEY_MUSIC_FOLDER = "music_folder"
+        const val KEY_SHUFFLE = "shuffle"
     }
 }
 

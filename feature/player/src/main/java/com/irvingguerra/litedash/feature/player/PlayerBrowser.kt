@@ -168,11 +168,11 @@ private fun LibraryBrowser(onPicked: () -> Unit, modifier: Modifier) {
     val group = memory.group
     val groups = remember(tracks, group) {
         when (group) {
-            Group.FOLDERS -> tracks.groupBy { it.folder }
-            Group.ARTISTS -> tracks.groupBy { it.artist }
-            Group.ALBUMS -> tracks.groupBy { it.album }
+            Group.FOLDERS -> Library.groups(tracks) { it.folder }
+            Group.ARTISTS -> Library.groups(tracks) { it.artist }
+            Group.ALBUMS -> Library.groups(tracks) { it.album }
             Group.ALL -> mapOf("" to tracks)
-        }.toSortedMap(String.CASE_INSENSITIVE_ORDER)
+        }
     }
     val playing = Player.state.current?.key
     BoxWithConstraints(modifier) {

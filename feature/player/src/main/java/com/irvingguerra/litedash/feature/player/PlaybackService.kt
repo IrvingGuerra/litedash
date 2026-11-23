@@ -171,12 +171,14 @@ class PlaybackService : Service() {
             }
             val s = Player.state
             val item = s.current
+            val shown = Player.nowShown()
             @Suppress("DEPRECATION")
             val builder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) Notification.Builder(context, CHANNEL) else Notification.Builder(context).setPriority(Notification.PRIORITY_LOW)
             builder
                 .setSmallIcon(R.drawable.ic_player_notification)
-                .setContentTitle(item?.title ?: getString(R.string.player_name))
-                .setContentText(item?.subtitle ?: "")
+                .setContentTitle(shown?.first ?: item?.title ?: getString(R.string.player_name))
+                .setContentText(shown?.second ?: item?.subtitle ?: "")
+                .setLargeIcon(shown?.third)
                 .setOngoing(s.playing)
                 .setVisibility(Notification.VISIBILITY_PUBLIC)
                 .setShowWhen(false)

@@ -26,11 +26,18 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.vector.addPathNodes
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.irvingguerra.litedash.core.ui.IconButton
 import com.irvingguerra.litedash.core.ui.Icons
 import com.irvingguerra.litedash.core.ui.Label
 import com.irvingguerra.litedash.core.ui.LocalColors
@@ -74,7 +81,10 @@ fun MusicExpanded(
         }
         // Sin nada sonando se ve igual, con los controles: play reanuda lo último.
         // Título (~120), barra (~50), botones (~92) y, si la app trae, sus botones propios (~64).
-        val idle = repo.usbDrive?.let { stringResource(R.string.usb_drive_in, it) } ?: stringResource(R.string.resume_explain)
+        val idle = when {
+            repo.phoneOnly -> stringResource(R.string.music_from_phone)
+            else -> repo.usbDrive?.let { stringResource(R.string.usb_drive_in, it) } ?: stringResource(R.string.resume_explain)
+        }
         NowPlaying(
             song, Icons.music,
             detailsHeight = if (song?.actions.isNullOrEmpty()) 262.dp else 326.dp,
@@ -103,13 +113,29 @@ private fun ColumnScope.PlayerControls(repo: MusicRepository, song: Song?, fit: 
     Spacer(Modifier.height(if (compact) 8.dp else if (wide) 20.dp else 16.dp))
     Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
         val m = fit.sizes(wide)
-        Controls(repo, song?.playing == true, loading = song?.buffering == true, size = m.size, playSize = m.play, gap = m.gap)
+        // Archivos: el aleatorio a la derecha de los controles, marcado cuando está prendido (pedido 7743FE).
+        if (repo.mode == MusicMode.FILES && OwnShuffle.available) {
+            val c = LocalColors.current
+            IconButton(
+                ShuffleIcon, { OwnShuffle.toggle() }, Modifier.align(Alignment.CenterEnd), size = m.size,
+                color = if (OwnShuffle.on) c.primary else c.textMuted,
+            )
+        }
+        // Sin por dónde darle play a la app de Bluetooth de marca: sin botones (lo dice el texto).
+        if (!repo.phoneOnly) Controls(repo, song?.playing == true, loading = song?.buffering == true, size = m.size, playSize = m.play, gap = m.gap)
     }
     if (!wide && fit != ControlsFit.MINI && song != null && song.actions.isNotEmpty()) {
         Spacer(Modifier.height(if (compact) 4.dp else 8.dp))
         AppActions(repo, song)
     }
 }
+
+/** Flechas cruzadas (aleatorio), con el mismo trazo que los íconos de la app. */
+private val ShuffleIcon: ImageVector = ImageVector.Builder(defaultWidth = 24.dp, defaultHeight = 24.dp, viewportWidth = 24f, viewportHeight = 24f).apply {
+    for (d in listOf("M18 4l3 3l-3 3", "M18 20l3 -3l-3 -3", "M3 7h3a5 5 0 0 1 5 5a5 5 0 0 0 5 5h5", "M21 7h-5a4.98 4.98 0 0 0 -3 1m-4 8a4.98 4.98 0 0 1 -3 1h-3")) {
+        addPath(addPathNodes(d), stroke = SolidColor(Color.Black), strokeLineWidth = 2f, strokeLineCap = StrokeCap.Round, strokeLineJoin = StrokeJoin.Round)
+    }
+}.build()
 
 /** Los botones propios de la app (en Spotify: me gusta, aleatorio, repetir). */
 @Composable

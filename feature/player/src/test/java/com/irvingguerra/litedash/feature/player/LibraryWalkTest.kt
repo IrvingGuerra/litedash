@@ -76,4 +76,13 @@ class LibraryWalkTest {
         assertFalse(Library.isAudio("mp3"))
         assertFalse(Library.isAudio("portada.jpg"))
     }
+
+    @Test
+    fun groupsThatDifferOnlyInCaseKeepEverySong() {
+        val songs = listOf("Maná|Rayando el sol", "MANÁ|Oye mi amor", "Café Tacvba|Eres", "maná|Clavado en un bar")
+        val groups = Library.groups(songs) { it.substringBefore('|') }
+        assertEquals(listOf("Café Tacvba", "Maná"), groups.keys.toList())
+        assertEquals(3, groups["Maná"]?.size)
+        assertEquals(songs.size, groups.values.sumOf { it.size })
+    }
 }
