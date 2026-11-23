@@ -29,7 +29,7 @@
     <string name="phone_link_ok">Telefonunuz ve ünite konuşuyor</string>
     <string name="phone_music_blocked">Müziğinizi burada görmek için LiteDash Connect’i açın ve Bağlantı altında “İzin ver”e dokunun</string>
     <string name="phone_link_no_network">Ünite telefonunuzla aynı ağda değil</string>
-    <string name="phone_link_open_app">Telefonunuzda LiteDash Connect’i açın ve aynı ağa bağlayın</string>
+    <string name="phone_link_open_app">Telefonunuz yanıt vermiyor: kilidini açın veya aynı ağda LiteDash Connect’i açın</string>
     <string name="phone_sound">Ses</string>
     <string name="phone_sound_ok">Bluetooth bağlı · %1$s</string>
     <string name="phone_sound_ok_plain">Bluetooth bağlı</string>

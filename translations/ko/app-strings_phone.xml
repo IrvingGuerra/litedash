@@ -28,7 +28,7 @@
     <string name="phone_link_ok">휴대폰과 화면이 통신 중이에요</string>
     <string name="phone_music_blocked">여기서 음악을 보려면 LiteDash Connect를 열고 링크 아래의 “허용”을 탭하세요</string>
     <string name="phone_link_no_network">화면이 휴대폰과 같은 네트워크에 있지 않아요</string>
-    <string name="phone_link_open_app">휴대폰에서 LiteDash Connect를 열고 같은 네트워크에 연결하세요</string>
+    <string name="phone_link_open_app">휴대폰이 응답하지 않아요: 잠금을 풀거나 같은 네트워크에서 LiteDash Connect를 여세요</string>
     <string name="phone_sound">소리</string>
     <string name="phone_sound_ok">Bluetooth 연결됨 · %1$s</string>
     <string name="phone_sound_ok_plain">Bluetooth 연결됨</string>

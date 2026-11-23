@@ -29,7 +29,7 @@
     <string name="phone_link_ok">Handy und Display sind verbunden</string>
     <string name="phone_music_blocked">Um deine Musik hier zu sehen, öffne LiteDash Connect und tippe unter Verbindung auf „Erlauben“</string>
     <string name="phone_link_no_network">Das Display ist in keinem Netzwerk mit deinem Handy</string>
-    <string name="phone_link_open_app">Öffne LiteDash Connect auf dem Handy und verbinde es mit demselben Netzwerk</string>
+    <string name="phone_link_open_app">Dein Handy antwortet nicht: entsperre es oder öffne LiteDash Connect im selben Netzwerk</string>
     <string name="phone_sound">Ton</string>
     <string name="phone_sound_ok">Bluetooth verbunden · %1$s</string>
     <string name="phone_sound_ok_plain">Bluetooth verbunden</string>

@@ -28,7 +28,7 @@
     <string name="phone_link_ok">โทรศัพท์กับหน้าจอเชื่อมกันแล้ว</string>
     <string name="phone_music_blocked">หากต้องการเห็นเพลงที่นี่ ให้เปิด LiteDash Connect แล้วแตะ “อนุญาต” ใต้ การเชื่อม</string>
     <string name="phone_link_no_network">หน้าจอไม่ได้อยู่ในเครือข่ายเดียวกับโทรศัพท์</string>
-    <string name="phone_link_open_app">เปิด LiteDash Connect บนโทรศัพท์แล้วเชื่อมเข้าเครือข่ายเดียวกันนี้</string>
+    <string name="phone_link_open_app">โทรศัพท์ไม่ตอบสนอง: ปลดล็อกหรือเปิด LiteDash Connect บนเครือข่ายเดียวกันนี้</string>
     <string name="phone_sound">เสียง</string>
     <string name="phone_sound_ok">เชื่อม Bluetooth แล้ว · %1$s</string>
     <string name="phone_sound_ok_plain">เชื่อม Bluetooth แล้ว</string>

@@ -28,7 +28,7 @@
     <string name="phone_link_ok">手机和屏幕正在通信</string>
     <string name="phone_music_blocked">要在这里看到你的音乐，请打开 LiteDash Connect，在“互联”下点按“允许”</string>
     <string name="phone_link_no_network">屏幕和手机不在同一网络中</string>
-    <string name="phone_link_open_app">在手机上打开 LiteDash Connect，并连接到同一网络</string>
+    <string name="phone_link_open_app">手机没有响应：请解锁，或在同一网络中打开 LiteDash Connect</string>
     <string name="phone_sound">声音</string>
     <string name="phone_sound_ok">Bluetooth 已连接 · %1$s</string>
     <string name="phone_sound_ok_plain">Bluetooth 已连接</string>

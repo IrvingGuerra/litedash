@@ -29,7 +29,7 @@
     <string name="phone_link_ok">A telefon és a kijelző kommunikál</string>
     <string name="phone_music_blocked">Hogy itt lásd a zenédet, nyisd meg a LiteDash Connectet, és koppints az „Engedélyezés” gombra a Kapcsolat alatt</string>
     <string name="phone_link_no_network">A kijelző nincs egy hálózaton a telefonnal</string>
-    <string name="phone_link_open_app">Nyisd meg a LiteDash Connectet a telefonon, és csatlakoztasd ugyanehhez a hálózathoz</string>
+    <string name="phone_link_open_app">A telefon nem válaszol: oldd fel, vagy nyisd meg a LiteDash Connectet ugyanezen a hálózaton</string>
     <string name="phone_sound">Hang</string>
     <string name="phone_sound_ok">Bluetooth csatlakoztatva · %1$s</string>
     <string name="phone_sound_ok_plain">Bluetooth csatlakoztatva</string>

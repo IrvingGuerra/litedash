@@ -4,6 +4,7 @@ import android.os.SystemClock
 import androidx.compose.runtime.snapshotFlow
 import com.irvingguerra.litedash.core.vehicle.Signal
 import com.irvingguerra.litedash.feature.link.PhoneLink
+import com.irvingguerra.litedash.feature.tpms.TpmsSource
 import com.irvingguerra.litedash.feature.tpms.Wheel
 import kotlin.math.roundToInt
 import kotlinx.coroutines.delay
@@ -41,7 +42,8 @@ internal fun wirePhoneState(link: PhoneLink, deps: () -> Dependencies) {
 /** Lo que se sabe ahora del auto (en estado de Compose: se vuelve a leer cuando cambia algo). */
 private fun readState(d: Dependencies): PhoneCarState {
     val units = d.prefs.units
-    val tpms = d.tpmsIfCreated()?.takeIf { it.source != null }
+    // La Demostración inventa presiones: al celular no se le mandan como si fueran del auto.
+    val tpms = d.tpmsIfCreated()?.takeIf { it.source != null && it.source != TpmsSource.DEMO }
     val obd = d.obdIfCreated()?.takeIf { d.obdModule }
     val report = obd?.lastReport
     val trip = d.trip

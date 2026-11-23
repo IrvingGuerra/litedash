@@ -31,7 +31,7 @@
     <string name="phone_link_ok">Telefon i ekran są połączone</string>
     <string name="phone_music_blocked">Aby widzieć tu muzykę, otwórz LiteDash Connect i dotknij „Zezwól” w sekcji Połączenie</string>
     <string name="phone_link_no_network">Ekran nie jest w tej samej sieci co telefon</string>
-    <string name="phone_link_open_app">Otwórz LiteDash Connect na telefonie i połącz go z tą samą siecią</string>
+    <string name="phone_link_open_app">Telefon nie odpowiada: odblokuj go lub otwórz LiteDash Connect w tej samej sieci</string>
     <string name="phone_sound">Dźwięk</string>
     <string name="phone_sound_ok">Bluetooth połączony · %1$s</string>
     <string name="phone_sound_ok_plain">Bluetooth połączony</string>

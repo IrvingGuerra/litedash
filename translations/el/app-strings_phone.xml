@@ -29,7 +29,7 @@
     <string name="phone_link_ok">Το κινητό και η οθόνη επικοινωνούν</string>
     <string name="phone_music_blocked">Για να δείτε τη μουσική σας εδώ, ανοίξτε το LiteDash Connect και πατήστε «Αποδοχή» στη Σύνδεση</string>
     <string name="phone_link_no_network">Η οθόνη δεν είναι στο ίδιο δίκτυο με το κινητό σας</string>
-    <string name="phone_link_open_app">Ανοίξτε το LiteDash Connect στο κινητό σας και συνδέστε το σε αυτό το δίκτυο</string>
+    <string name="phone_link_open_app">Το κινητό σας δεν απαντά: ξεκλειδώστε το ή ανοίξτε το LiteDash Connect σε αυτό το δίκτυο</string>
     <string name="phone_sound">Ήχος</string>
     <string name="phone_sound_ok">Bluetooth συνδεδεμένο · %1$s</string>
     <string name="phone_sound_ok_plain">Bluetooth συνδεδεμένο</string>

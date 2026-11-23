@@ -29,7 +29,7 @@
     <string name="phone_link_ok">Telefono e schermo si parlano</string>
     <string name="phone_music_blocked">Per vedere qui la tua musica, apri LiteDash Connect e tocca “Consenti” sotto Collegamento</string>
     <string name="phone_link_no_network">Lo schermo non è su nessuna rete con il telefono</string>
-    <string name="phone_link_open_app">Apri LiteDash Connect sul telefono e collegalo a questa stessa rete</string>
+    <string name="phone_link_open_app">Il telefono non risponde: sbloccalo o apri LiteDash Connect su questa stessa rete</string>
     <string name="phone_sound">Audio</string>
     <string name="phone_sound_ok">Bluetooth connesso · %1$s</string>
     <string name="phone_sound_ok_plain">Bluetooth connesso</string>

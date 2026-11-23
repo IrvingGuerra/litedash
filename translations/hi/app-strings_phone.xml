@@ -29,7 +29,7 @@
     <string name="phone_link_ok">आपका फ़ोन और स्क्रीन जुड़े हुए हैं</string>
     <string name="phone_music_blocked">यहाँ अपना म्यूज़िक देखने के लिए LiteDash Connect खोलें और लिंक के नीचे “अनुमति दें” पर टैप करें</string>
     <string name="phone_link_no_network">स्क्रीन आपके फ़ोन वाले किसी नेटवर्क पर नहीं है</string>
-    <string name="phone_link_open_app">फ़ोन पर LiteDash Connect खोलें और उसे इसी नेटवर्क से जोड़ें</string>
+    <string name="phone_link_open_app">फ़ोन जवाब नहीं दे रहा: उसे अनलॉक करें या इसी नेटवर्क पर LiteDash Connect खोलें</string>
     <string name="phone_sound">आवाज़</string>
     <string name="phone_sound_ok">Bluetooth कनेक्टेड · %1$s</string>
     <string name="phone_sound_ok_plain">Bluetooth कनेक्टेड</string>

@@ -31,7 +31,7 @@
     <string name="phone_link_ok">Telefon a displej spolu komunikují</string>
     <string name="phone_music_blocked">Abys tu viděl svou hudbu, otevři LiteDash Connect a klepni na „Povolit“ v části Propojení</string>
     <string name="phone_link_no_network">Displej není v žádné síti s tvým telefonem</string>
-    <string name="phone_link_open_app">Otevři v telefonu LiteDash Connect a připoj ho ke stejné síti</string>
+    <string name="phone_link_open_app">Telefon neodpovídá: odemkni ho nebo otevři LiteDash Connect ve stejné síti</string>
     <string name="phone_sound">Zvuk</string>
     <string name="phone_sound_ok">Bluetooth připojen · %1$s</string>
     <string name="phone_sound_ok_plain">Bluetooth připojen</string>

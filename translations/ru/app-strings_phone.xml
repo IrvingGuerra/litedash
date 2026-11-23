@@ -31,7 +31,7 @@
     <string name="phone_link_ok">Телефон и экран на связи</string>
     <string name="phone_music_blocked">Чтобы видеть здесь музыку, открой LiteDash Connect и нажми «Разрешить» в разделе «Связь»</string>
     <string name="phone_link_no_network">Экран не в одной сети с телефоном</string>
-    <string name="phone_link_open_app">Открой LiteDash Connect на телефоне и подключи его к той же сети</string>
+    <string name="phone_link_open_app">Телефон не отвечает: разблокируй его или открой LiteDash Connect в той же сети</string>
     <string name="phone_sound">Звук</string>
     <string name="phone_sound_ok">Bluetooth подключён · %1$s</string>
     <string name="phone_sound_ok_plain">Bluetooth подключён</string>

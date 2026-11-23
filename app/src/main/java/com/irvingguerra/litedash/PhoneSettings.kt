@@ -250,8 +250,8 @@ private fun Linked(d: Dependencies, openMusic: () -> Unit) {
         Divider()
     }
     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        // Conectado, buscar es lo de menos; sin conexión es lo principal.
-        Button(stringResource(R.string.phone_search_now), link::searchNow, primary = !link.connected)
+        // Buscar solo sirve sin conexión (conectado no hace nada que se vea).
+        if (!link.connected) Button(stringResource(R.string.phone_search_now), link::searchNow, primary = true)
         val unlink = stringResource(R.string.phone_unlink)
         Confirmed(unlink, stringResource(R.string.phone_unlink_question), unlink, stringResource(R.string.phone_unlink_message), action = link::unlink)
     }

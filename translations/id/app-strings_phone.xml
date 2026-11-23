@@ -28,7 +28,7 @@
     <string name="phone_link_ok">Ponsel dan layar sudah terhubung</string>
     <string name="phone_music_blocked">Agar musik Anda tampil di sini, buka LiteDash Connect dan ketuk “Izinkan” di bawah Tautan</string>
     <string name="phone_link_no_network">Layar tidak berada di jaringan yang sama dengan ponsel Anda</string>
-    <string name="phone_link_open_app">Buka LiteDash Connect di ponsel Anda dan sambungkan ke jaringan yang sama ini</string>
+    <string name="phone_link_open_app">Ponsel Anda tidak merespons: buka kuncinya atau buka LiteDash Connect di jaringan yang sama ini</string>
     <string name="phone_sound">Suara</string>
     <string name="phone_sound_ok">Bluetooth terhubung · %1$s</string>
     <string name="phone_sound_ok_plain">Bluetooth terhubung</string>

@@ -30,7 +30,7 @@
     <string name="phone_link_ok">Telefonul și ecranul comunică</string>
     <string name="phone_music_blocked">Ca să-ți vezi muzica aici, deschide LiteDash Connect și atinge „Permite” la Legătură</string>
     <string name="phone_link_no_network">Ecranul nu e în aceeași rețea cu telefonul</string>
-    <string name="phone_link_open_app">Deschide LiteDash Connect pe telefon și conectează-l la aceeași rețea</string>
+    <string name="phone_link_open_app">Telefonul nu răspunde: deblochează-l sau deschide LiteDash Connect în aceeași rețea</string>
     <string name="phone_sound">Sunet</string>
     <string name="phone_sound_ok">Bluetooth conectat · %1$s</string>
     <string name="phone_sound_ok_plain">Bluetooth conectat</string>
