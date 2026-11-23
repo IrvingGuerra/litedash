@@ -29,10 +29,12 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.irvingguerra.litedash.core.ui.Card
+import com.irvingguerra.litedash.core.ui.CardStyle
 import com.irvingguerra.litedash.core.ui.Colors
 import com.irvingguerra.litedash.core.ui.Icon
 import com.irvingguerra.litedash.core.ui.Icons
 import com.irvingguerra.litedash.core.ui.Label
+import com.irvingguerra.litedash.core.ui.LocalCardLook
 import com.irvingguerra.litedash.core.ui.LocalColors
 import com.irvingguerra.litedash.core.ui.LocalPlainCard
 import com.irvingguerra.litedash.core.ui.SwitchRow
@@ -181,8 +183,9 @@ fun WeatherTile(repo: WeatherRepository, days: Boolean = true, range: Boolean = 
     }
     Card(Modifier.fillMaxSize()) {
         // Un tinte suave del color del cielo desde la esquina (como el clima de iOS); nada se anima.
-        // (Sin tarjeta no: sería un rectángulo de color sobre el fondo.) Hasta la esquina contraria, en cualquier pantalla.
-        if (!LocalPlainCard.current) Box(Modifier.fillMaxSize().background(Brush.linearGradient(listOf(skyTint(sky, w.day, c), Color.Transparent), end = Offset.Infinite)))
+        // (Sin tarjeta no: sería un rectángulo de color sobre el fondo; de vidrio tampoco: se veía como una tarjeta de
+        // otro color junto a las demás, #33.) Hasta la esquina contraria, en cualquier pantalla.
+        if (!LocalPlainCard.current && LocalCardLook.current.style != CardStyle.GLASS) Box(Modifier.fillMaxSize().background(Brush.linearGradient(listOf(skyTint(sky, w.day, c), Color.Transparent), end = Offset.Infinite)))
         BoxWithConstraints(Modifier.fillMaxSize().padding(TilePadding)) {
             // El tamaño se lee aquí: dentro de las filas y columnas no se alcanza.
             val width = maxWidth
