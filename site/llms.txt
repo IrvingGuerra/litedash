@@ -20,7 +20,7 @@ Key facts:
 - Offline navigation (new in 1.5.0): download your state (Mexico today; other countries can be requested from the app) or an area of 10 to 30 km from OpenStreetMap, then search for a place, get a route and follow it turn by turn with your 3D car, all on the screen, without internet, API keys or accounts. Tesla-style guidance: blue route, lane-striped streets, 3D buildings, the next turn and your music next to the map; north/heading compass in the Map widget.
 - Map: live position, light or dark, also as a full-screen home background; up to 5 home pages; one tap to Waze or Google Maps.
 - Gauges: OBD or GPS speedometer (dial, needle, digital, bar, gradient), tachometer, coolant, fuel, battery, consumption, boost; km/h or mph, °C or °F, psi, bar or kPa.
-- Your car in 3D: catalog of 18 pre-rendered models (about 2 MB each, downloaded only if you want), any color, 360° spin.
+- Your car in 3D: catalog of 19 pre-rendered models (about 2 MB each, downloaded only if you want), any color, 360° spin.
 - Phone projection: one tap to Zlink, AutoKit, CarLink and Open Headunit (Android Auto / CarPlay apps).
 - Updates: checks GitHub, verifies SHA-256 and installs with one tap (APK version).
 - Privacy: internet only for what you ask (3D car, maps, weather, radio, updates) plus an anonymous daily count you can turn off.
