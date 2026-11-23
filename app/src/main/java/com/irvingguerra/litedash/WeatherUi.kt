@@ -83,10 +83,11 @@ fun rememberEnableWeather(repo: WeatherRepository): () -> Unit {
 
 /**
  * Mantiene el clima al día mientras el inicio se ve: al volver ([revision]) y cada
- * [WeatherRepository.STALE_MS] con LiteDash al frente. Apagado o en segundo plano, nada.
+ * [WeatherRepository.STALE_MS] con LiteDash al frente. Apagado o en segundo plano, nada. Con [trip], si un widget ya
+ * tiene el GPS prendido se usa esa posición en vez de pedir otra.
  */
 @Composable
-fun WeatherRefresh(repo: WeatherRepository, revision: Int) {
+fun WeatherRefresh(repo: WeatherRepository, revision: Int, trip: TripRepository? = null) {
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     val on = repo.enabled
     LaunchedEffect(repo, revision, on) {
@@ -94,7 +95,7 @@ fun WeatherRefresh(repo: WeatherRepository, revision: Int) {
         lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
             while (true) {
                 // Si falló (sin red o sin ubicación), se reintenta antes: si no, "Buscando el clima…" duraba media hora.
-                val ok = repo.refreshIfStale()
+                val ok = repo.refreshIfStale(known = trip?.position)
                 delay(if (ok) WeatherRepository.STALE_MS else WeatherRepository.RETRY_MS)
             }
         }

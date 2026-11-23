@@ -146,4 +146,27 @@ class WeatherHoursTest {
         val utc = GregorianCalendar(TimeZone.getTimeZone("UTC")).apply { clear(); set(2026, Calendar.NOVEMBER, 22, 6, 0) }.timeInMillis
         assertEquals(utc, localTimeToMillis("2026-11-22T00:00", -6 * 3600))
     }
+
+    private fun response(hourTemps: String, time0: String = "2026-11-16T00:00") = org.json.JSONObject(
+        """{"utc_offset_seconds":-21600,
+        "current":{"temperature_2m":20.4,"weather_code":0,"is_day":1},
+        "daily":{"time":["2026-11-16"],"weather_code":[3],"temperature_2m_max":[25.0],"temperature_2m_min":[14.6]},
+        "hourly":{"time":["$time0","2026-11-16T01:00","2026-11-16T02:00"],"temperature_2m":$hourTemps,
+        "weather_code":[0,1,2],"is_day":[0,0,0]}}""",
+    )
+
+    @Test
+    fun unaHoraSinDatoCortaLasHorasPeroNoElClima() {
+        val f = parseForecast(response("[15.0,null,14.0]"), 20.0, -100.0, 1_000L)
+        assertEquals(20.4, f.temperature, 0.0)
+        assertEquals(1, f.hours!!.list.size)
+        // Sin ninguna hora con dato: sin horas, pero el clima de ahora sí llega.
+        assertNull(parseForecast(response("[null,null,null]"), 20.0, -100.0, 1_000L).hours)
+    }
+
+    @Test(expected = org.json.JSONException::class)
+    fun unFormatoRaroEsRespuestaMalaNoCierre() {
+        // "2026-11" es más corto de lo esperado: antes salía StringIndexOutOfBoundsException y cerraba la app.
+        parseForecast(response("[15.0,16.0,14.0]", time0 = "2026-11"), 20.0, -100.0, 1_000L)
+    }
 }

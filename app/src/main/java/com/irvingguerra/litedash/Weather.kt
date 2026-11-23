@@ -8,6 +8,9 @@ import android.location.Location
 import android.location.LocationManager
 import android.os.Build
 import android.os.CancellationSignal
+import android.os.SystemClock
+import androidx.core.content.ContextCompat
+import androidx.core.location.LocationManagerCompat
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -60,7 +63,7 @@ const val CURRENT_MAX_AGE_MS = 3 * 3_600_000L
 private const val HOUR_MS = 3_600_000L
 
 /** Lo guardado sirve si se pidió a menos de esto de donde estás. */
-const val NEARBY_KM = 50.0
+private const val NEARBY_KM = 50.0
 
 /** Índice de la hora de [now] en [Forecast.hours]; null si no hay o si [now] queda fuera de lo guardado. */
 private fun Forecast.hourIndex(now: Long): Int? {
@@ -132,6 +135,49 @@ fun nextMidnight(now: Long): Long = GregorianCalendar().apply {
 }.timeInMillis
 
 /**
+ * La respuesta de Open-Meteo ya leída, bajada a [fetchedAt]. Las horas se toman seguidas mientras traigan dato (una sin
+ * dato las corta). Cualquier formato inesperado sale como [JSONException] (una respuesta mala, no un cierre de la app).
+ */
+internal fun parseForecast(json: JSONObject, lat: Double, lon: Double, fetchedAt: Long): Forecast = try {
+    readForecast(json, lat, lon, fetchedAt)
+} catch (e: RuntimeException) {
+    throw JSONException(e.toString())
+}
+
+private fun readForecast(json: JSONObject, lat: Double, lon: Double, fetchedAt: Long): Forecast {
+    val current = json.getJSONObject("current")
+    val daily = json.getJSONObject("daily")
+    val dates = daily.getJSONArray("time")
+    val hourly = json.getJSONObject("hourly")
+    val times = hourly.getJSONArray("time")
+    val hourTemps = hourly.getJSONArray("temperature_2m")
+    val hourCodes = hourly.getJSONArray("weather_code")
+    val hourDays = hourly.getJSONArray("is_day")
+    val hourList = (0 until times.length()).asSequence().map { i ->
+        if (hourTemps.isNull(i) || hourCodes.isNull(i)) null
+        else ForecastHour(hourTemps.getDouble(i), hourCodes.getInt(i), hourDays.optInt(i, 1) == 1)
+    }.takeWhile { it != null }.filterNotNull().toList()
+    return Forecast(
+        temperature = current.getDouble("temperature_2m"),
+        code = current.getInt("weather_code"),
+        day = current.optInt("is_day", 1) == 1,
+        days = (0 until dates.length()).map { i ->
+            ForecastDay(
+                date = dates.getString(i),
+                code = daily.getJSONArray("weather_code").getInt(i),
+                max = daily.getJSONArray("temperature_2m_max").getDouble(i),
+                min = daily.getJSONArray("temperature_2m_min").getDouble(i),
+            )
+        },
+        fetchedAt = fetchedAt,
+        // Las horas llegan seguidas en la hora local del lugar; se guarda cuándo empieza la primera.
+        hours = if (hourList.isEmpty()) null else ForecastHours(localTimeToMillis(times.getString(0), json.optInt("utc_offset_seconds")), hourList),
+        lat = lat,
+        lon = lon,
+    )
+}
+
+/**
  * °F, mph y millas solo donde se usan (Estados Unidos y pocos más). Con la app en
  * español siempre métrico, aunque el sistema esté en inglés de EE. UU.
  */
@@ -197,12 +243,12 @@ class WeatherRepository(private val context: Context, private val prefs: Prefere
      * Lo trae de nuevo si el último tiene más de [STALE_MS] (o con [force]). Devuelve false si lo intentó y
      * falló (sin ubicación o sin red): quien lo llama reintenta antes ([RETRY_MS]).
      */
-    suspend fun refreshIfStale(force: Boolean = false): Boolean {
+    suspend fun refreshIfStale(force: Boolean = false, known: Location? = null): Boolean {
         if (!active) return true
         val last = forecast
         // Una edad negativa es el reloj atrasado: se trae de nuevo en cuanto se pueda.
         if (!force && last != null && System.currentTimeMillis() - last.fetchedAt in 0 until STALE_MS) return true
-        val place = location()
+        val place = location(known)
         if (place == null) {
             failure = "sin ubicación"
             return false
@@ -215,7 +261,7 @@ class WeatherRepository(private val context: Context, private val prefs: Prefere
             failure = "red: ${e.message}" // también un 4xx ("HTTP 404")
             return false
         } catch (e: JSONException) {
-            failure = "respuesta: ${e.message}"
+            failure = "respuesta: ${e.message}" // también un formato inesperado (ver [parse])
             return false
         }
         failure = null
@@ -229,23 +275,50 @@ class WeatherRepository(private val context: Context, private val prefs: Prefere
         "Clima: " + (if (!enabled) "apagado" else if (!active) "sin permiso" else forecast?.let { "de hace ${(now - it.fetchedAt) / 60_000} min" } ?: "sin datos") +
             (failure?.let { " · falló $it" } ?: "")
 
+    /**
+     * Dónde pedir el clima: [known] (la del GPS de LiteDash, si un widget lo tiene prendido) o la última conocida del
+     * sistema si son recientes ([LOCATION_MAX_AGE_MS]); si no, UNA lectura al sistema por el proveedor más barato
+     * prendido (red antes que GPS), con plazo y soltando el escucha; si no llega, la última conocida aunque sea vieja.
+     * Sin esto, en Android 6–10 sin última conocida (nadie más pidió ubicación) el clima no llegaba nunca.
+     */
     @SuppressLint("MissingPermission") // [active] revisa el permiso antes
-    private suspend fun location(): Location? {
-        val manager = context.getSystemService(LocationManager::class.java)
-        // La última conocida y qué proveedor está prendido se leen del sistema (binder): fuera del hilo principal.
-        val (last, provider) = withContext(Dispatchers.IO) {
+    private suspend fun location(known: Location?): Location? {
+        if (known != null && known.isRecent()) return known
+        val manager = context.getSystemService(LocationManager::class.java) ?: return known
+        // La última conocida y qué proveedores están prendidos se leen del sistema (binder): fuera del hilo principal.
+        val (last, providers) = withContext(Dispatchers.IO) {
             val last = manager.newestLastKnown(manager.getProviders(true))
-            // "fused" existe desde Android 12.
+            // "fused" existe desde Android 12; el GPS solo con la ubicación precisa (con la aproximada no se puede).
             val fused = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) listOf(LocationManager.FUSED_PROVIDER) else emptyList()
-            last to (listOf(LocationManager.NETWORK_PROVIDER) + fused + LocationManager.GPS_PROVIDER).firstOrNull { manager.isProviderEnabled(it) }
+            val gps = if (context.checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) listOf(LocationManager.GPS_PROVIDER) else emptyList()
+            last to (listOf(LocationManager.NETWORK_PROVIDER) + fused + gps).filter {
+                try {
+                    manager.isProviderEnabled(it)
+                } catch (e: IllegalArgumentException) {
+                    false
+                }
+            }
         }
-        if (last != null || Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return last
-        if (provider == null) return null
-        return withTimeoutOrNull(15_000) {
-            suspendCancellableCoroutine { cont ->
-                val cancel = CancellationSignal()
-                cont.invokeOnCancellation { cancel.cancel() }
-                manager.getCurrentLocation(provider, cancel, context.mainExecutor) { cont.resume(it) }
+        if (last != null && last.isRecent()) return last
+        // Uno tras otro hasta que alguno conteste (normalmente la red, al primer intento).
+        for (provider in providers) currentLocation(manager, provider)?.let { return it }
+        return last ?: known
+    }
+
+    /** Una sola lectura de [provider] (o null si no llega en [LOCATION_TIMEOUT_MS]); el escucha se suelta siempre. */
+    @SuppressLint("MissingPermission")
+    private suspend fun currentLocation(manager: LocationManager, provider: String): Location? = withTimeoutOrNull(LOCATION_TIMEOUT_MS) {
+        suspendCancellableCoroutine { cont ->
+            val cancel = CancellationSignal()
+            cont.invokeOnCancellation { cancel.cancel() }
+            try {
+                // En Android 11+ es getCurrentLocation; antes, requestSingleUpdate con su propio plazo.
+                LocationManagerCompat.getCurrentLocation(manager, provider, cancel, ContextCompat.getMainExecutor(context)) { l ->
+                    if (cont.isActive) cont.resume(l?.takeUnless { it.latitude == 0.0 && it.longitude == 0.0 })
+                }
+            } catch (e: RuntimeException) {
+                // Proveedor que no existe o permiso quitado entre medio: como si no contestara.
+                if (cont.isActive) cont.resume(null)
             }
         }
     }
@@ -262,38 +335,7 @@ class WeatherRepository(private val context: Context, private val prefs: Prefere
         } finally {
             connection.disconnect()
         }
-        val current = json.getJSONObject("current")
-        val daily = json.getJSONObject("daily")
-        val dates = daily.getJSONArray("time")
-        val hourly = json.getJSONObject("hourly")
-        val times = hourly.getJSONArray("time")
-        Forecast(
-            temperature = current.getDouble("temperature_2m"),
-            code = current.getInt("weather_code"),
-            day = current.optInt("is_day", 1) == 1,
-            days = (0 until dates.length()).map { i ->
-                ForecastDay(
-                    date = dates.getString(i),
-                    code = daily.getJSONArray("weather_code").getInt(i),
-                    max = daily.getJSONArray("temperature_2m_max").getDouble(i),
-                    min = daily.getJSONArray("temperature_2m_min").getDouble(i),
-                )
-            },
-            fetchedAt = System.currentTimeMillis(),
-            // Las horas llegan seguidas en la hora local del lugar; se guarda cuándo empieza la primera.
-            hours = if (times.length() == 0) null else ForecastHours(
-                localTimeToMillis(times.getString(0), json.optInt("utc_offset_seconds")),
-                (0 until times.length()).map { i ->
-                    ForecastHour(
-                        hourly.getJSONArray("temperature_2m").getDouble(i),
-                        hourly.getJSONArray("weather_code").getInt(i),
-                        hourly.getJSONArray("is_day").optInt(i, 1) == 1,
-                    )
-                },
-            ),
-            lat = lat,
-            lon = lon,
-        )
+        parseForecast(json, lat, lon, System.currentTimeMillis())
     }
 
     /** Lo guardado (en °C); si no se puede leer, como si no hubiera nada (se vuelve a pedir). */
@@ -345,5 +387,17 @@ class WeatherRepository(private val context: Context, private val prefs: Prefere
 
         /** Tras una falla (sin red o sin ubicación), cuándo se vuelve a intentar. */
         const val RETRY_MS = 5 * 60_000L
+
+        /** Una ubicación ya conocida sirve si tiene menos de esto; si no, se pide una al sistema (pudiste viajar). */
+        private const val LOCATION_MAX_AGE_MS = 3 * 3_600_000L
+
+        /** Cuánto se espera una lectura de un proveedor antes de probar el siguiente. */
+        private const val LOCATION_TIMEOUT_MS = 15_000L
+
+        /** Edad por el reloj de arranque (no el de la pantalla, que puede estar en 1970 o desfasado). */
+        private fun Location.isRecent(): Boolean {
+            val age = SystemClock.elapsedRealtimeNanos() - elapsedRealtimeNanos
+            return age in 0..LOCATION_MAX_AGE_MS * 1_000_000
+        }
     }
 }
