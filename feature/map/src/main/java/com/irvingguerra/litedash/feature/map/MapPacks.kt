@@ -2,6 +2,10 @@ package com.irvingguerra.litedash.feature.map
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.net.ConnectivityManager
+import android.net.Network
+import android.net.NetworkCapabilities
+import android.net.NetworkRequest
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -243,8 +247,13 @@ class MapPacks private constructor(private val app: Context) {
     fun outdated(region: MapRegion): Boolean = installed.firstOrNull { it.id == region.id }?.let { it.sha256.isNotEmpty() && it.sha256 != region.map.sha256 } ?: false
 
     /** Baja (o actualiza) el mapa de [region]; uno a la vez. Se verifica su huella antes de usarlo. */
-    fun download(region: MapRegion) = synchronized(stateLock) {
+    fun download(region: MapRegion) = start(region, auto = false)
+
+    /** [auto] = el reintento solo al volver la red ([watchNetwork]): si vuelve a fallar, ya no se arma otro. */
+    private fun start(region: MapRegion, auto: Boolean) = synchronized(stateLock) {
         if (running?.isActive == true) return@synchronized
+        // Seguirla a mano (o el reintento mismo) suelta la espera de la red.
+        unwatchNetwork()
         job = PackJob(region.id, 0f)
         running = scope.launch {
             val me = coroutineContext.job
@@ -325,9 +334,58 @@ class MapPacks private constructor(private val app: Context) {
                     if (running === me) running = null
                     // Lo bajado se queda para seguirlo (y la pantalla lo descuenta del espacio que falta).
                     if (keepPart) paused = resumable()?.let { pausedOf(it) }
+                    // Se cortó la red con una parte guardada: se sigue sola UNA vez cuando vuelva.
+                    if (!auto && paused?.id == region.id && job?.error == PackError.NETWORK) watchNetwork(region)
                 }
             }
         }
+    }
+
+    /** La espera de la red para seguir una descarga cortada ([watchNetwork]); null = no se espera nada. */
+    private var networkWatch: ConnectivityManager.NetworkCallback? = null
+
+    /**
+     * Espera a que vuelva internet (sin sondear: avisos del sistema, `registerNetworkCallback`, que sirve desde Android 5)
+     * y entonces sigue la descarga de [region] donde iba, una sola vez. Solo cuenta un regreso: una red con internet
+     * comprobado que aparece después de no haberla (si al armarse ya había red, espera a que se caiga y vuelva).
+     * Se suelta al seguirla (sola o a mano), al cancelar o si ya no aplica.
+     */
+    private fun watchNetwork(region: MapRegion) {
+        unwatchNetwork()
+        val cm = app.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager ?: return
+        var down = runCatching { cm.getNetworkCapabilities(cm.activeNetwork)?.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED) != true }
+            .getOrDefault(true)
+        val callback = object : ConnectivityManager.NetworkCallback() {
+            override fun onLost(network: Network) {
+                down = true
+            }
+
+            override fun onCapabilitiesChanged(network: Network, caps: NetworkCapabilities) {
+                if (!caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)) {
+                    down = true
+                    return
+                }
+                if (!down) return
+                synchronized(stateLock) {
+                    if (networkWatch !== this) return
+                    unwatchNetwork()
+                    // Solo si sigue igual: cortada por la red, con su parte y sin otra descarga andando.
+                    if (running == null && job?.let { it.id == region.id && it.error == PackError.NETWORK } == true && paused?.id == region.id) {
+                        start(region, auto = true)
+                    }
+                }
+            }
+        }
+        val request = NetworkRequest.Builder().addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET).build()
+        if (runCatching { cm.registerNetworkCallback(request, callback) }.isSuccess) networkWatch = callback
+    }
+
+    /** Suelta la espera de la red (llamar con [stateLock]). */
+    private fun unwatchNetwork() {
+        val callback = networkWatch ?: return
+        networkWatch = null
+        val cm = app.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager ?: return
+        runCatching { cm.unregisterNetworkCallback(callback) }
     }
 
     /** El mapa que quedó a medias y se puede seguir (de qué región y archivo), o null si no hay o es muy viejo. */
@@ -358,6 +416,7 @@ class MapPacks private constructor(private val app: Context) {
      * lo bajado) o, si estaba en pausa (se cortó la red, se cerró la app), borra lo que quedó a medias.
      */
     fun cancel() = synchronized(stateLock) {
+        unwatchNetwork()
         running?.cancel()
         job = null
         if (running == null && paused != null) {
