@@ -5,6 +5,7 @@ import android.annotation.SuppressLint
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothManager
+import android.bluetooth.le.BluetoothLeScanner
 import android.bluetooth.le.ScanCallback
 import android.bluetooth.le.ScanResult
 import android.bluetooth.le.ScanSettings
@@ -229,6 +230,8 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
             ?: return run { scanProblem = ScanProblem.BLUETOOTH_OFF }
         if (bleLocationOff(context)) return run { scanProblem = ScanProblem.LOCATION_OFF }
         val seen = linkedMapOf<String, ObdTarget.Ble>()
+        val settings = ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY).build()
+        var retry: Job? = null
         val callback = object : ScanCallback() {
             override fun onScanResult(callbackType: Int, result: ScanResult) {
                 // Sin nombre no hay cómo reconocerlo en la lista.
@@ -240,6 +243,16 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
 
             override fun onScanFailed(errorCode: Int) {
                 note("búsqueda BLE falló: $errorCode")
+                // La pila de Bluetooth se atoró al registrar la búsqueda (NWD T3, 8227L): parar, esperar y otra vez, una sola.
+                if (retryScan(errorCode, retried = retry != null)) {
+                    val self = this
+                    try { scanner.stopScan(self) } catch (_: RuntimeException) { /* no había búsqueda */ }
+                    retry = scope.launch(Dispatchers.Main) {
+                        delay(ObdTiming.SCAN_RETRY_MS)
+                        start(scanner, settings, self)
+                    }
+                    return
+                }
                 scanProblem = ScanProblem.FAILED
                 stopScan?.invoke()
             }
@@ -247,25 +260,30 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
         found = emptyList()
         scanning = true
         val job = scope.launch(Dispatchers.Main) {
-            try {
-                scanner.startScan(null, ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY).build(), callback)
-            } catch (x: RuntimeException) {
-                // Bluetooth apagado a media búsqueda o sin permiso: se dice "no se pudo buscar".
-                note("búsqueda BLE: ${detailOf(x)}")
-                scanProblem = ScanProblem.FAILED
-                stopScan?.invoke()
-                return@launch
-            }
+            if (!start(scanner, settings, callback)) return@launch
             delay(ObdTiming.SCAN_MS)
             stopScan?.invoke()
         }
         stopScan = {
             try { scanner.stopScan(callback) } catch (_: RuntimeException) { /* ya no hay búsqueda que parar */ }
             job.cancel()
+            retry?.cancel()
             scanning = false
             searched = true
             stopScan = null
         }
+    }
+
+    /** Arranca la búsqueda; si truena (Bluetooth apagado a media búsqueda o sin permiso) se dice "no se pudo buscar". */
+    @SuppressLint("MissingPermission")
+    private fun start(scanner: BluetoothLeScanner, settings: ScanSettings, callback: ScanCallback): Boolean = try {
+        scanner.startScan(null, settings, callback)
+        true
+    } catch (x: RuntimeException) {
+        note("búsqueda BLE: ${detailOf(x)}")
+        scanProblem = ScanProblem.FAILED
+        stopScan?.invoke()
+        false
     }
 
     /** Cables USB conectados a la pantalla (cualquier puerto serie; el que parezca OBD primero). */

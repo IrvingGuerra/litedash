@@ -5,6 +5,7 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import kotlin.concurrent.thread
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -14,6 +15,15 @@ class ObdPolicyTest {
         for (e in listOf(ObdError.NO_BLUETOOTH_PERMISSION, ObdError.NOT_OBD, ObdError.USB_UNPLUGGED, ObdError.NO_USB_PERMISSION)) {
             assertNull(e.name, retryDelay(e, dropped = true, retries = 0, wanted = false))
         }
+    }
+
+    @Test fun busqueda_ble_fallida_se_repite_una_vez() {
+        // 3 = error interno (NWD T3, 8227L) y 2 = no se pudo registrar: una vez más; lo demás o la segunda, no.
+        assertTrue(retryScan(3, retried = false))
+        assertTrue(retryScan(2, retried = false))
+        assertFalse(retryScan(3, retried = true))
+        assertFalse(retryScan(1, retried = false))
+        assertFalse(retryScan(4, retried = false))
     }
 
     @Test fun el_133_se_reintenta_pronto_aunque_nunca_haya_conectado() =

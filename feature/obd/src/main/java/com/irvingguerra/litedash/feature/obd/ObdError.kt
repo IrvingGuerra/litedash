@@ -1,5 +1,6 @@
 package com.irvingguerra.litedash.feature.obd
 
+import android.bluetooth.le.ScanCallback
 import java.io.IOException
 
 /**
@@ -79,6 +80,14 @@ internal fun retryDelay(error: ObdError, dropped: Boolean, retries: Int, wanted:
     else -> null
 }
 
+/**
+ * ¿Repetir una búsqueda BLE que falló con [errorCode]? Solo una vez y solo los errores de la pila que suelen
+ * pasarse solos: 2 (no se pudo registrar la búsqueda) y 3 (error interno). Los demás (ya buscando, sin
+ * soporte) no se arreglan repitiendo.
+ */
+internal fun retryScan(errorCode: Int, retried: Boolean): Boolean =
+    !retried && (errorCode == ScanCallback.SCAN_FAILED_APPLICATION_REGISTRATION_FAILED || errorCode == ScanCallback.SCAN_FAILED_INTERNAL_ERROR)
+
 /** Los tiempos del OBD, juntos (ninguno probado en hardware más allá de lo anotado). */
 internal object ObdTiming {
     /** Reintentos seguidos antes de rendirse. */
@@ -104,6 +113,8 @@ internal object ObdTiming {
     const val WIFI_CONNECT_MS = 5_000
     /** Cuánto dura una búsqueda de adaptadores Bluetooth LE. */
     const val SCAN_MS = 10_000L
+    /** Espera antes de repetir una búsqueda BLE que la pila no pudo registrar. */
+    const val SCAN_RETRY_MS = 1_500L
     /** Lo lento (temperatura, gasolina, voltaje) se lee cada tanto. */
     const val SLOW_EVERY_MS = 2_000L
     /** Pausa entre vueltas de lectura (~10 por segundo con lo que tarda el adaptador). */
