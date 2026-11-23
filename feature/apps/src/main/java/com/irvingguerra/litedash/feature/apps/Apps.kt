@@ -129,8 +129,17 @@ class AppRepository(context: Context) {
             loading.getOrPut(key) {
                 scope.async(Dispatchers.IO, CoroutineStart.LAZY) {
                     try {
-                        // Una app que se quitó en ese momento ya no tiene ícono.
-                        runCatching { pm.getActivityIcon(app.component) }.getOrNull()?.toBitmap(sidePx)?.also { icons.put(key, it) }
+                        // Una app que se quitó, un ícono roto o sin memoria para leerlo: se queda sin ícono (cuadro gris),
+                        // nunca truena (el fallo saldría en el await de quien lo pidió). No se guarda: se reintenta al volver.
+                        // Sin memoria se suelta la caché para que el resto de la app respire.
+                        try {
+                            pm.getActivityIcon(app.component).toBitmap(sidePx).also { icons.put(key, it) }
+                        } catch (_: Exception) {
+                            null
+                        } catch (_: OutOfMemoryError) {
+                            icons.evictAll()
+                            null
+                        }
                     } finally {
                         synchronized(loading) { loading.remove(key) }
                     }
