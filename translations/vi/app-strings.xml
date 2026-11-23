@@ -213,6 +213,7 @@
     <string name="language_more_help">Ngôn ngữ được tải khi bạn chọn; phần còn thiếu hiển thị bằng tiếng Anh.</string>
     <string name="language_offline">Không có internet: chỉ có tiếng Tây Ban Nha và tiếng Anh.</string>
     <string name="language_none">Chưa có thêm ngôn ngữ.</string>
+    <string name="language_loading">Đang tải ngôn ngữ…</string>
     <string name="language_details">Đã dịch %1$d%% · %2$s</string>
     <string name="language_failed">Không tải được ngôn ngữ; hãy kiểm tra kết nối.</string>
     <string name="language_reviewed">đã duyệt</string>

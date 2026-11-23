@@ -215,6 +215,7 @@
     <string name="language_more_help">Elles se téléchargent quand vous les choisissez ; ce qui manque s\'affiche en anglais.</string>
     <string name="language_offline">Pas d\'internet : espagnol et anglais seulement.</string>
     <string name="language_none">Pas encore d\'autres langues.</string>
+    <string name="language_loading">Chargement des langues…</string>
     <string name="language_details">%1$d %% traduit · %2$s</string>
     <string name="language_failed">Impossible de télécharger la langue ; vérifiez votre connexion.</string>
     <string name="language_reviewed">révisée</string>

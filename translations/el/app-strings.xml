@@ -213,6 +213,7 @@
     <string name="language_more_help">Κατεβαίνουν όταν τις επιλέξετε· ό,τι λείπει εμφανίζεται στα αγγλικά.</string>
     <string name="language_offline">Χωρίς internet: μόνο ισπανικά και αγγλικά.</string>
     <string name="language_none">Δεν υπάρχουν άλλες γλώσσες ακόμα.</string>
+    <string name="language_loading">Φόρτωση γλωσσών…</string>
     <string name="language_details">%1$d%% μεταφρασμένο · %2$s</string>
     <string name="language_failed">Η λήψη της γλώσσας απέτυχε· ελέγξτε τη σύνδεσή σας.</string>
     <string name="language_reviewed">ελεγμένη</string>

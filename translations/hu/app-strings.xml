@@ -213,6 +213,7 @@
     <string name="language_more_help">Kiválasztáskor töltődnek le; ami hiányzik, angolul jelenik meg.</string>
     <string name="language_offline">Nincs internet: csak spanyol és angol.</string>
     <string name="language_none">Még nincs több nyelv.</string>
+    <string name="language_loading">Nyelvek betöltése…</string>
     <string name="language_details">%1$d%% lefordítva · %2$s</string>
     <string name="language_failed">Nem sikerült letölteni a nyelvet; nézd meg a kapcsolatot.</string>
     <string name="language_reviewed">ellenőrizve</string>

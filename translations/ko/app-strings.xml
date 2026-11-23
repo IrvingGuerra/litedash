@@ -213,6 +213,7 @@
     <string name="language_more_help">선택하면 다운로드돼요. 번역되지 않은 부분은 영어로 표시돼요.</string>
     <string name="language_offline">인터넷 없음: 스페인어와 영어만 가능해요.</string>
     <string name="language_none">아직 다른 언어가 없어요.</string>
+    <string name="language_loading">언어 불러오는 중…</string>
     <string name="language_details">%1$d%% 번역됨 · %2$s</string>
     <string name="language_failed">언어를 다운로드하지 못했어요. 연결을 확인하세요.</string>
     <string name="language_reviewed">검토됨</string>

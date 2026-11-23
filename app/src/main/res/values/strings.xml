@@ -210,6 +210,7 @@
     <string name="language_more_help">Se bajan al elegirlos; lo que falte sale en inglés.</string>
     <string name="language_offline">Sin internet: solo español e inglés.</string>
     <string name="language_none">Todavía no hay más idiomas.</string>
+    <string name="language_loading">Cargando idiomas…</string>
     <string name="language_details">%1$d %% traducido · %2$s</string>
     <string name="language_failed">No se pudo bajar el idioma; revisa tu conexión.</string>
     <string name="language_reviewed">revisado</string>

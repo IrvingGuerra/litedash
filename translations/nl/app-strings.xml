@@ -213,6 +213,7 @@
     <string name="language_more_help">Ze worden gedownload als je ze kiest; wat ontbreekt verschijnt in het Engels.</string>
     <string name="language_offline">Geen internet: alleen Spaans en Engels.</string>
     <string name="language_none">Nog geen andere talen.</string>
+    <string name="language_loading">Talen laden…</string>
     <string name="language_details">%1$d%% vertaald · %2$s</string>
     <string name="language_failed">De taal kon niet worden gedownload; check je verbinding.</string>
     <string name="language_reviewed">nagekeken</string>

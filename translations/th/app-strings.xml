@@ -213,6 +213,7 @@
     <string name="language_more_help">จะดาวน์โหลดเมื่อเลือก ส่วนที่ยังไม่แปลจะแสดงเป็นภาษาอังกฤษ</string>
     <string name="language_offline">ไม่มีอินเทอร์เน็ต: มีแค่ภาษาสเปนและอังกฤษ</string>
     <string name="language_none">ยังไม่มีภาษาอื่น</string>
+    <string name="language_loading">กำลังโหลดภาษา…</string>
     <string name="language_details">แปลแล้ว %1$d%% · %2$s</string>
     <string name="language_failed">ดาวน์โหลดภาษาไม่ได้ ตรวจการเชื่อมต่อ</string>
     <string name="map_help">แอปแผนที่ภายนอกของคุณ (Waze, Google Maps…) ขณะนำทางด้วยแอปนั้น วิดเจ็ตจะแสดงการเลี้ยวถัดไป (ใช้สิทธิ์เข้าถึงการแจ้งเตือนเดียวกับเพลง)</string>

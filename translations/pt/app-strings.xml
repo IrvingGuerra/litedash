@@ -215,6 +215,7 @@
     <string name="language_more_help">São baixados ao escolher; o que faltar aparece em inglês.</string>
     <string name="language_offline">Sem internet: só espanhol e inglês.</string>
     <string name="language_none">Ainda não há mais idiomas.</string>
+    <string name="language_loading">Carregando idiomas…</string>
     <string name="language_details">%1$d %% traduzido · %2$s</string>
     <string name="language_failed">Não foi possível baixar o idioma; confira sua conexão.</string>
     <string name="language_reviewed">revisado</string>

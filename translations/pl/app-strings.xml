@@ -213,6 +213,7 @@
     <string name="language_more_help">Pobierają się po wybraniu; czego brakuje, pojawi się po angielsku.</string>
     <string name="language_offline">Brak internetu: tylko hiszpański i angielski.</string>
     <string name="language_none">Na razie brak innych języków.</string>
+    <string name="language_loading">Wczytywanie języków…</string>
     <string name="language_details">%1$d%% przetłumaczone · %2$s</string>
     <string name="language_failed">Nie udało się pobrać języka; sprawdź połączenie.</string>
     <string name="language_reviewed">sprawdzone</string>

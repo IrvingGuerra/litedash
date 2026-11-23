@@ -213,6 +213,7 @@
     <string name="language_more_help">Se descarcă atunci când le alegi; ce lipsește apare în engleză.</string>
     <string name="language_offline">Fără internet: doar spaniolă și engleză.</string>
     <string name="language_none">Încă nu sunt alte limbi.</string>
+    <string name="language_loading">Se încarcă limbile…</string>
     <string name="language_details">%1$d%% tradus · %2$s</string>
     <string name="language_failed">Limba nu a putut fi descărcată; verifică conexiunea.</string>
     <string name="language_reviewed">verificată</string>

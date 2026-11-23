@@ -213,6 +213,7 @@
     <string name="language_more_help">Seçtiğinizde indirilir; eksik olanlar İngilizce görünür.</string>
     <string name="language_offline">İnternet yok: yalnızca İspanyolca ve İngilizce.</string>
     <string name="language_none">Henüz başka dil yok.</string>
+    <string name="language_loading">Diller yükleniyor…</string>
     <string name="language_details">%1$d%% çevrildi · %2$s</string>
     <string name="language_failed">Dil indirilemedi; bağlantınızı kontrol edin.</string>
     <string name="language_reviewed">gözden geçirildi</string>

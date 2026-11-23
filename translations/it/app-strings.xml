@@ -213,6 +213,7 @@
     <string name="language_more_help">Si scaricano quando le scegli; ciò che manca appare in inglese.</string>
     <string name="language_offline">Niente internet: solo spagnolo e inglese.</string>
     <string name="language_none">Ancora nessun\'altra lingua.</string>
+    <string name="language_loading">Caricamento delle lingue…</string>
     <string name="language_details">%1$d%% tradotto · %2$s</string>
     <string name="language_failed">Impossibile scaricare la lingua; controlla la connessione.</string>
     <string name="language_reviewed">revisionata</string>

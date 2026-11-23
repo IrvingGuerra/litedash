@@ -213,6 +213,7 @@
     <string name="language_more_help">选择后即下载；未翻译的内容显示为英文。</string>
     <string name="language_offline">无网络：仅有西班牙语和英语。</string>
     <string name="language_none">暂无更多语言。</string>
+    <string name="language_loading">正在加载语言…</string>
     <string name="language_details">已翻译 %1$d%% · %2$s</string>
     <string name="language_failed">无法下载语言，请检查网络。</string>
     <string name="language_reviewed">已审校</string>

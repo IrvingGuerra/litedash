@@ -213,6 +213,7 @@
     <string name="language_more_help">Sie werden beim Auswählen geladen; Fehlendes erscheint auf Englisch.</string>
     <string name="language_offline">Kein Internet: nur Spanisch und Englisch.</string>
     <string name="language_none">Noch keine weiteren Sprachen.</string>
+    <string name="language_loading">Sprachen werden geladen…</string>
     <string name="language_details">%1$d%% übersetzt · %2$s</string>
     <string name="language_failed">Sprache konnte nicht geladen werden; prüfe deine Verbindung.</string>
     <string name="language_reviewed">geprüft</string>

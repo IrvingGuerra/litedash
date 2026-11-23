@@ -215,6 +215,7 @@
     <string name="language_more_help">They download when you pick them; anything missing shows in English.</string>
     <string name="language_offline">No internet: only Spanish and English.</string>
     <string name="language_none">No more languages yet.</string>
+    <string name="language_loading">Loading languages…</string>
     <string name="language_details">%1$d%% translated · %2$s</string>
     <string name="language_failed">Couldn\'t download the language; check your connection.</string>
     <string name="language_reviewed">reviewed</string>

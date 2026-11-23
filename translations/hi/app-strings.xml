@@ -213,6 +213,7 @@
     <string name="language_more_help">चुनने पर डाउनलोड होती हैं; जो अनुवाद नहीं है वह अंग्रेज़ी में दिखेगा।</string>
     <string name="language_offline">इंटरनेट नहीं: सिर्फ़ स्पैनिश और अंग्रेज़ी।</string>
     <string name="language_none">अभी और भाषाएँ नहीं।</string>
+    <string name="language_loading">भाषाएं लोड हो रही हैं…</string>
     <string name="language_details">%1$d%% अनुवादित · %2$s</string>
     <string name="language_failed">भाषा डाउनलोड नहीं हुई; कनेक्शन देखें।</string>
     <string name="map_help">आपका बाहरी मैप ऐप (Waze, Google Maps…)। उससे नेविगेट करते समय विजेट अगला मोड़ दिखाता है (म्यूज़िक वाला ही नोटिफ़िकेशन एक्सेस इस्तेमाल करता है)।</string>

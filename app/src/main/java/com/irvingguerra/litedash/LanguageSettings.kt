@@ -1,13 +1,19 @@
 package com.irvingguerra.litedash
 
+import android.content.res.Resources
+import android.os.Build
 import android.text.format.Formatter
 import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -24,6 +30,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.irvingguerra.litedash.core.ui.Icon
 import com.irvingguerra.litedash.core.ui.Icons
@@ -80,11 +87,12 @@ private fun MoreLanguages(current: String, choose: (String) -> Unit) {
     Label(stringResource(R.string.language_more), Typography.label, c.textMuted)
     val list = choices
     when {
-        !loaded -> Unit
+        !loaded -> Label(stringResource(R.string.language_loading), Typography.small, c.textMuted)
         list == null -> Label(stringResource(R.string.language_offline), Typography.small, c.textMuted)
         list.isEmpty() -> Label(stringResource(R.string.language_none), Typography.small, c.textMuted)
         else -> {
-            // No la lista completa (crecerá): el idioma elegido arriba y un buscador para los demás.
+            // Todos a la vista (escondidos, la gente creía que su idioma no estaba): el elegido, luego los del sistema y
+            // luego los demás por nombre; escribiendo, solo los que coinciden.
             var query by rememberSaveable { mutableStateOf("") }
             val locale = currentLocale()
             // Su nombre en su idioma, en el de la app ("alemán", "German") y su código: "aleman" encuentra "Deutsch".
@@ -92,21 +100,35 @@ private fun MoreLanguages(current: String, choose: (String) -> Unit) {
                 list.associate { it.tag to normalize("${it.name} ${Locale.forLanguageTag(it.tag).getDisplayName(locale)} ${it.tag}") }
             }
             val q = normalize(query.trim())
-            val shown = list.filter { it.tag == current || (q.isNotEmpty() && q in keys[it.tag].orEmpty()) || busy == it.tag }
-                .sortedBy { if (it.tag == current) 0 else 1 }
+            val ordered = remember(list, current) {
+                val system = systemLanguages()
+                list.sortedWith(
+                    compareBy<LanguageChoice> { if (it.tag == current) 0 else 1 }
+                        .thenBy { choice -> system.indexOf(Locale.forLanguageTag(choice.tag).language).let { if (it < 0) system.size else it } }
+                        .thenBy { it.name.lowercase(Locale.ROOT) },
+                )
+            }
+            val shown = ordered.filter { q.isEmpty() || it.tag == current || q in keys[it.tag].orEmpty() || busy == it.tag }
             TextInput(query, { query = it }, stringResource(R.string.language_search), Modifier.fillMaxWidth(), icon = true)
             if (q.isNotEmpty() && shown.none { it.tag != current }) Label(stringResource(R.string.language_not_found), Typography.small, c.textMuted)
-            for (choice in shown) {
-                LanguageRow(choice, selected = choice.tag == current, downloading = if (busy == choice.tag) progress else null) {
-                    if (busy != null || choice.tag == current) return@LanguageRow
-                    busy = choice.tag
-                    progress = 0f
-                    failed = false
-                    scope.launch {
-                        // Termina aunque se cierre Ajustes: el archivo queda listo para la próxima vez.
-                        val ok = withContext(NonCancellable + Dispatchers.IO) { installLanguage(context, choice) { progress = it } }
-                        busy = null
-                        if (ok) choose(choice.tag) else failed = true
+            // En columnas según el ancho (cada celda de al menos LANGUAGE_CELL_MIN): 21 renglones no alargan la pantalla.
+            BoxWithConstraints(Modifier.fillMaxWidth()) {
+                val columns = ((maxWidth + LANGUAGE_GAP) / (LANGUAGE_CELL_MIN + LANGUAGE_GAP)).toInt().coerceAtLeast(1)
+                val cell: Dp = (maxWidth - LANGUAGE_GAP * (columns - 1)) / columns
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(LANGUAGE_GAP), verticalArrangement = Arrangement.spacedBy(LANGUAGE_GAP)) {
+                    for (choice in shown) {
+                        LanguageRow(choice, Modifier.width(cell), selected = choice.tag == current, downloading = if (busy == choice.tag) progress else null) {
+                            if (busy != null || choice.tag == current) return@LanguageRow
+                            busy = choice.tag
+                            progress = 0f
+                            failed = false
+                            scope.launch {
+                                // Termina aunque se cierre Ajustes: el archivo queda listo para la próxima vez.
+                                val ok = withContext(NonCancellable + Dispatchers.IO) { installLanguage(context, choice) { progress = it } }
+                                busy = null
+                                if (ok) choose(choice.tag) else failed = true
+                            }
+                        }
                     }
                 }
             }
@@ -119,11 +141,11 @@ private fun MoreLanguages(current: String, choose: (String) -> Unit) {
 
 /** Un idioma de la lista: su nombre en su idioma, cuánto está traducido y su tamaño; la palomita si es el elegido. */
 @Composable
-private fun LanguageRow(choice: LanguageChoice, selected: Boolean, downloading: Float?, onClick: () -> Unit) {
+private fun LanguageRow(choice: LanguageChoice, modifier: Modifier, selected: Boolean, downloading: Float?, onClick: () -> Unit) {
     val c = LocalColors.current
     val context = LocalContext.current
     Row(
-        Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.inner)).background(c.surfaceHigh).clickable(onClick = onClick)
+        modifier.clip(RoundedCornerShape(Radius.inner)).background(c.surfaceHigh).clickable(onClick = onClick)
             .padding(horizontal = 18.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -139,4 +161,21 @@ private fun LanguageRow(choice: LanguageChoice, selected: Boolean, downloading: 
         }
         if (selected) Icon(Icons.done, c.primary, 22.dp)
     }
+}
+
+/** Lo menos que mide de ancho cada idioma de la lista, y el espacio entre ellos. */
+private val LANGUAGE_CELL_MIN = 260.dp
+private val LANGUAGE_GAP = 8.dp
+
+/** Los idiomas del sistema (no los de la app, que puede ir en otro), en su orden: "de-AT" → "de". */
+private fun systemLanguages(): List<String> {
+    val config = Resources.getSystem().configuration
+    val locales = if (Build.VERSION.SDK_INT >= 24) {
+        val list = config.locales
+        List(list.size()) { list[it] }
+    } else {
+        @Suppress("DEPRECATION")
+        listOf(config.locale)
+    }
+    return locales.map { it.language }.distinct()
 }

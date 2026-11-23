@@ -213,6 +213,7 @@
     <string name="language_more_help">De laddas ner när du väljer dem; det som saknas visas på engelska.</string>
     <string name="language_offline">Inget internet: bara spanska och engelska.</string>
     <string name="language_none">Inga fler språk än.</string>
+    <string name="language_loading">Laddar språk…</string>
     <string name="language_details">%1$d%% översatt · %2$s</string>
     <string name="language_failed">Kunde inte ladda ner språket; kolla anslutningen.</string>
     <string name="language_reviewed">granskad</string>

@@ -213,6 +213,7 @@
     <string name="language_more_help">Stáhnou se po výběru; co chybí, zobrazí se anglicky.</string>
     <string name="language_offline">Bez internetu: jen španělština a angličtina.</string>
     <string name="language_none">Zatím žádné další jazyky.</string>
+    <string name="language_loading">Načítání jazyků…</string>
     <string name="language_details">%1$d%% přeloženo · %2$s</string>
     <string name="language_failed">Jazyk se nepodařilo stáhnout; zkontroluj připojení.</string>
     <string name="language_reviewed">zkontrolováno</string>

@@ -213,6 +213,7 @@
     <string name="language_more_help">Diunduh saat Anda memilihnya; yang belum ada tampil dalam bahasa Inggris.</string>
     <string name="language_offline">Tanpa internet: hanya Spanyol dan Inggris.</string>
     <string name="language_none">Belum ada bahasa lain.</string>
+    <string name="language_loading">Memuat bahasa…</string>
     <string name="language_details">%1$d%% diterjemahkan · %2$s</string>
     <string name="language_failed">Gagal mengunduh bahasa; periksa koneksi Anda.</string>
     <string name="language_reviewed">ditinjau</string>

@@ -213,6 +213,7 @@
     <string name="language_more_help">Завантажуються після вибору; чого бракує, показується англійською.</string>
     <string name="language_offline">Немає інтернету: лише іспанська й англійська.</string>
     <string name="language_none">Інших мов поки немає.</string>
+    <string name="language_loading">Завантаження мов…</string>
     <string name="language_details">Перекладено %1$d%% · %2$s</string>
     <string name="language_failed">Не вдалося завантажити мову; перевір з’єднання.</string>
     <string name="language_reviewed">перевірено</string>
