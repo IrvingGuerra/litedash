@@ -32,7 +32,8 @@ private fun folder(context: Context) = File(context.cacheDir, "wallpapers").appl
 /** La lista de fondos (null si nunca se ha podido bajar). */
 suspend fun loadWallpapers(context: Context): List<WallpaperChoice>? = withContext(Dispatchers.IO) {
     val file = File(folder(context), "index.json")
-    val fresh = file.exists() && System.currentTimeMillis() - file.lastModified() < LIST_MAX_AGE_MS
+    // Una edad negativa (el reloj regresó, p. ej. una pantalla sin pila en 2015) no cuenta como fresca.
+    val fresh = file.exists() && System.currentTimeMillis() - file.lastModified() in 0L until LIST_MAX_AGE_MS
     // Una lista ilegible (p. ej. la página de un wifi con registro) no reemplaza a la buena.
     val downloaded = if (fresh) null else try {
         download(context, "index.json", file, ::readList)
