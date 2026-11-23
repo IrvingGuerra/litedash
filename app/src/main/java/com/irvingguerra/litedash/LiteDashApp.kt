@@ -70,9 +70,9 @@ class LiteDashApp : Application() {
             returnHome = { MainActivity.bringToFront(this@LiteDashApp) } }
         OwnPlayer.wire(this, music)
         // Migraciones de la música (lista en MusicRepository.upgrade): se quedan mientras haya pantallas en versiones viejas.
-        val oldInternetRadio = prefs.internetRadio.takeUnless { prefs.radioUnified }
+        val oldInternetRadio = prefs.legacyInternetRadio()
         music.upgrade(prefs.musicApp, oldInternetRadio)
-        if (oldInternetRadio != null) prefs.radioUnified = true
+        if (oldInternetRadio != null) prefs.internetRadioUnified()
         music.isProjection = ::isProjectionPackage
         prefs.addBluetoothToBar()
         prefs.addHomeToBar()

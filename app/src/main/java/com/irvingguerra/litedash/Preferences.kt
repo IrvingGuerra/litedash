@@ -507,8 +507,8 @@ class Preferences(context: Context) {
     /** El aspecto del mapa de LiteDash ([com.irvingguerra.litedash.feature.map.MapLook.encode]); null = el de fábrica. */
     var mapLook by string(PrefKeys.MAP_LOOK)
 
-    /** La app de música de antes de la 1.4.116: solo se lee una vez para pasarla a `MusicRepository.preferred`, que es la que vale. */
-    var musicApp by string(PrefKeys.MUSIC_APP)
+    /** La app de música de antes de la 1.4.116: solo se lee al arrancar para pasarla a `MusicRepository.preferred`, que es la que vale. */
+    val musicApp: String? get() = p.getString(PrefKeys.MUSIC_APP, null)
 
     /** Nombre de quien maneja, para saludarlo; null = sin saludo. */
     var driverName by string(PrefKeys.DRIVER_NAME)
@@ -611,13 +611,14 @@ class Preferences(context: Context) {
     var splitRoad by bool(PrefKeys.SPLIT_ROAD, false)
 
     /**
-     * El interruptor de la radio por internet de antes de la 1.4.112: solo se lee una vez para pasar
-     * a la radio escogida (`MusicRepository.radioInternet`), que es la que vale.
+     * El interruptor de la radio por internet de antes de la 1.4.112: solo se lee al arrancar para pasar
+     * a la radio escogida (`MusicRepository.radioInternet`), que es la que vale. null = ya se pasó.
      */
-    var internetRadio by bool(PrefKeys.INTERNET_RADIO, false)
+    fun legacyInternetRadio(): Boolean? =
+        if (p.getBoolean(PrefKeys.RADIO_UNIFIED, false)) null else p.getBoolean(PrefKeys.INTERNET_RADIO, false)
 
-    /** Ya se pasó [internetRadio] a la radio escogida. */
-    var radioUnified by bool(PrefKeys.RADIO_UNIFIED, false)
+    /** Ya se pasó [legacyInternetRadio] a la radio escogida. */
+    fun internetRadioUnified() = p.edit { putBoolean(PrefKeys.RADIO_UNIFIED, true) }
 
     /** Guardar un resumen de cada viaje con el OBD conectado (apagado de fábrica). */
     var tripLog by bool(PrefKeys.TRIP_LOG, false)
