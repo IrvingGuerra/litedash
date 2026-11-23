@@ -68,26 +68,11 @@ class DashboardStore(context: Context) {
     fun removePage(page: Int) {
         val count = pages
         if (page !in 1 until count) return
-        val all = prefs.all
         val edit = prefs.edit()
-        for (p in page until count) {
-            // Lo de la página p queda con lo de la p + 1 (o vacío si es la última).
-            for (key in all.keys) if (key.startsWith(layoutPrefix(p)) || key.startsWith(savedAtPrefix(p))) edit.remove(key)
-            edit.remove(BACKGROUND_PREFIX + p)
-            if (p + 1 < count) {
-                for ((key, value) in all) {
-                    val moved = when {
-                        key.startsWith(layoutPrefix(p + 1)) -> layoutPrefix(p) + key.removePrefix(layoutPrefix(p + 1))
-                        key.startsWith(savedAtPrefix(p + 1)) -> savedAtPrefix(p) + key.removePrefix(savedAtPrefix(p + 1))
-                        else -> null
-                    } ?: continue
-                    when (value) {
-                        is String -> edit.putString(moved, value)
-                        is Long -> edit.putLong(moved, value)
-                    }
-                }
-                (all[BACKGROUND_PREFIX + (p + 1)] as? String)?.let { edit.putString(BACKGROUND_PREFIX + p, it) }
-            }
+        for ((key, value) in withoutPage(prefs.all, page, count)) when (value) {
+            null -> edit.remove(key)
+            is String -> edit.putString(key, value)
+            is Long -> edit.putLong(key, value)
         }
         edit.putInt(PAGES, count - 1).apply()
     }
@@ -118,6 +103,30 @@ private fun parseGrid(size: String): Grid? {
  * Lo que [DashboardStore.toFineGrid] escribe, con todo lo guardado ([all]): por cada acomodo de 96 dp sin copia en
  * la fina (o guardado después de ella), la llave de la fina ("20x10") → (su texto ×[FINE], hora del de 96 dp).
  */
+/**
+ * Lo que cambia en [all] (las llaves guardadas) al quitar la página [page] de [count]: cada llave con su valor nuevo, o
+ * null si se suelta. Lo de cada página de después pasa a la de antes (acomodos, horas y fondo); lo de la última se suelta.
+ */
+internal fun withoutPage(all: Map<String, *>, page: Int, count: Int): Map<String, Any?> {
+    val out = LinkedHashMap<String, Any?>()
+    for (p in page until count) {
+        for (key in all.keys) if (key.startsWith(layoutPrefix(p)) || key.startsWith(savedAtPrefix(p))) out[key] = null
+        out[BACKGROUND_PREFIX + p] = null
+    }
+    for (p in page until count - 1) {
+        for ((key, value) in all) {
+            val moved = when {
+                key.startsWith(layoutPrefix(p + 1)) -> layoutPrefix(p) + key.removePrefix(layoutPrefix(p + 1))
+                key.startsWith(savedAtPrefix(p + 1)) -> savedAtPrefix(p) + key.removePrefix(savedAtPrefix(p + 1))
+                else -> null
+            } ?: continue
+            if (value is String || value is Long) out[moved] = value
+        }
+        (all[BACKGROUND_PREFIX + (p + 1)] as? String)?.let { out[BACKGROUND_PREFIX + p] = it }
+    }
+    return out
+}
+
 internal fun fineCopies(all: Map<String, *>): Map<String, Pair<String, Long>> {
     val out = HashMap<String, Pair<String, Long>>()
     for ((key, value) in all) {

@@ -534,7 +534,7 @@ fun Template.layout(c: Grid, hero: String = TileTypes.CAR, skip: (String) -> Boo
             mapOr(TileTypes.RADIO, start, row, width, rows - row)
         }
         Template.MAP_BACKGROUND -> {
-            if (rows > cols) {
+            if (c.vertical) {
                 // Parada: abajo, la música a lo ancho y debajo velocidad y hora; arriba, el mapa.
                 val music = if (rows >= 8) 2 else 1
                 val gauges = if (rows >= 6) 2 else 1

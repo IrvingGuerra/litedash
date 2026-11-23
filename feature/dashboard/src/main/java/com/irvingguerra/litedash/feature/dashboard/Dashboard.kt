@@ -214,18 +214,24 @@ fun Dashboard(
                     val resize = stringResource(R.string.dashboard_resize)
                     // Arrastrar la pieza (mover) o su esquina (cambiar de tamaño): el mismo gesto.
                     fun Modifier.tileDrag(resizing: Boolean) = pointerInput(p.id, tiles, grid, cwPx, chPx) {
-                        detectDragGestures(
-                            onDragStart = { drag = Drag(p.id, resizing); dragOffset = Offset.Zero; selected = p.id },
-                            onDrag = { change, d ->
-                                change.consume()
-                                dragOffset += d
-                            },
-                            onDragEnd = {
-                                arranged?.takeIf { it != tiles }?.let(currentOnChange)
-                                drag = null
-                            },
-                            onDragCancel = { drag = null },
-                        )
+                        try {
+                            detectDragGestures(
+                                onDragStart = { drag = Drag(p.id, resizing); dragOffset = Offset.Zero; selected = p.id },
+                                onDrag = { change, d ->
+                                    change.consume()
+                                    dragOffset += d
+                                },
+                                onDragEnd = {
+                                    arranged?.takeIf { it != tiles }?.let(currentOnChange)
+                                    drag = null
+                                },
+                                onDragCancel = { drag = null },
+                            )
+                        } finally {
+                            // Si el acomodo cambia a medio arrastre, el gesto se corta sin onDragEnd ni onDragCancel: que no
+                            // se quede pintada la vista previa.
+                            if (drag?.id == p.id && drag?.resizing == resizing) drag = null
+                        }
                     }
                     // Capa que atrapa los gestos: editando, la pieza no se usa, se acomoda (tocarla la elige).
                     Box(
