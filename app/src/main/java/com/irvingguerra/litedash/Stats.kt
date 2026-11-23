@@ -2,6 +2,7 @@ package com.irvingguerra.litedash
 
 import android.content.Context
 import android.content.res.Configuration
+import android.content.res.Resources
 import android.os.Build
 import android.os.SystemClock
 import androidx.core.content.edit
@@ -61,7 +62,9 @@ class Stats(private val context: Context, private val enabled: () -> Boolean) {
             .put("version", Firestore.int(BuildConfig.VERSION_CODE.toLong()))
             .put("channel", Firestore.text(BuildConfig.CHANNEL))
             .put("android", Firestore.int(Build.VERSION.SDK_INT.toLong()))
-            .put("language", Firestore.text(shownLanguage(context).first.ifBlank { primaryLocale(config).language }.take(8)))
+            // El elegido a mano o, con «Como el sistema», el del SISTEMA (no el que se ve: un sistema en alemán sin paquete
+            // se ve en inglés, pero es la señal de qué idiomas faltan). Como en la 1.5.14.
+            .put("language", Firestore.text(Language.read(context).ifBlank { primaryLocale(Resources.getSystem().configuration).language }.take(8)))
             .put("screen", Firestore.text(screen(config)))
             .put("since", Firestore.text(since))
             .put("radio", Firestore.text(FactoryAudio.radio(context).take(64)))
