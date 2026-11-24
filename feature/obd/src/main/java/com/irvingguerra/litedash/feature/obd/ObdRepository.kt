@@ -772,9 +772,8 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
         // Lo último que se leyó de cada señal (para calcular las que dependen de varias).
         private val last = mutableMapOf<String, Float>()
         private val smoothed = mutableMapOf<String, Float>()
-        /** Cuándo dio el auto su último dato (reloj de arranque): sin ninguno en [ObdTiming.CAR_SILENT_MS], [carSilent]. */
-        private var lastData = SystemClock.elapsedRealtime()
-        private var silent = false
+        /** Cuánto lleva el auto sin dar datos (reloj de arranque): da [carSilent]. */
+        private val silence = CarSilence(SystemClock.elapsedRealtime())
 
         /** Veces seguidas que ATRV no contestó: a la segunda se deja de pedir en esta conexión (cada una espera 3 s). */
         private var voltageSilent = 0
@@ -802,9 +801,13 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
             val adapterVoltage = Signal.VOLTAGE in wanted && VOLTAGE_PID !in supported
             // Lo que dejó de mostrarse no suaviza con un valor viejo al volver.
             smoothed.keys.retainAll(derived.map { it.signal }.toSet())
+            // Sin PIDs no se le pregunta nada al auto: no se sabe si está apagado (el Taller no lo dice con algo viejo).
+            if (pids.isEmpty()) {
+                silence.unknown()
+                withContext(Dispatchers.Main) { carSilent = false }
+            }
             if (pids.isEmpty() && !adapterVoltage) return
-            // La cuenta empieza con cada plan: tras un rato sin leer nada, un primer "NO DATA" no es motor apagado.
-            lastData = SystemClock.elapsedRealtime()
+            silence.restart(SystemClock.elapsedRealtime())
             while (true) {
                 currentCoroutineContext().ensureActive()
                 val now = SystemClock.elapsedRealtime()
@@ -814,15 +817,7 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
                 val values = mutableListOf<Pair<String, Float?>>()
                 for (p in pids) if (p.fast || slow) values += p.signal to lock.withLock { guard.ask { e.pid(p.code) } }?.let(p.decode)
                 // Solo cuenta lo que contesta el auto (no el voltaje del adaptador, que da aunque el contacto esté apagado).
-                if (values.isNotEmpty()) {
-                    if (values.any { it.second != null }) {
-                        lastData = now
-                        silent = false
-                    } else if (now - lastData >= ObdTiming.CAR_SILENT_MS) {
-                        if (!silent) note("sin datos del auto")
-                        silent = true
-                    }
-                }
+                if (values.isNotEmpty() && silence.lap(now, values.any { it.second != null })) note("sin datos del auto")
                 // Si el voltaje es lo único que se lee, su falla cuenta (así se nota la caída). Con PIDs, no: hay clones que
                 // no contestan ATRV y sumaban fallas hasta tirar la conexión; si el adaptador se perdió, los PIDs lo dicen.
                 if (adapterVoltage && slow) {
@@ -836,7 +831,7 @@ class ObdRepository(private val context: Context, private val bus: VehicleBus) {
                     if (value == null) smoothed.remove(d.signal) else smoothed[d.signal] = value
                     values += d.signal to value
                 }
-                val quiet = silent
+                val quiet = silence.silent
                 withContext(Dispatchers.Main) {
                     for ((signal, value) in values) bus.publish(signal, value, Source.OBD)
                     if (carSilent != quiet) carSilent = quiet

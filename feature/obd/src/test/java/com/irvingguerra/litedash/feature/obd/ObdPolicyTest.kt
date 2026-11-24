@@ -94,6 +94,32 @@ class ObdPolicyTest {
         assertNull(retryDelay(ObdError.NO_USB_PERMISSION, dropped = false, retries = 0, wanted = true))
     }
 
+    @Test fun auto_callado_75_s_parece_apagado_y_vuelve_con_un_dato() {
+        val limit = ObdTiming.CAR_SILENT_MS
+        val s = CarSilence(start = 0)
+        assertFalse(s.lap(limit - 1, answered = false))
+        assertFalse(s.silent)
+        // Se anota una sola vez al quedarse callado.
+        assertTrue(s.lap(limit, answered = false))
+        assertTrue(s.silent)
+        assertFalse(s.lap(limit + 5_000, answered = false))
+        assertTrue(s.silent)
+        assertFalse(s.lap(limit + 6_000, answered = true))
+        assertFalse(s.silent)
+        // Plan nuevo: la cuenta empieza de cero.
+        s.restart(limit * 3)
+        assertFalse(s.lap(limit * 3 + 1_000, answered = false))
+        assertFalse(s.silent)
+    }
+
+    @Test fun sin_nada_que_preguntar_no_se_dice_apagado() {
+        val s = CarSilence(start = 0)
+        s.lap(ObdTiming.CAR_SILENT_MS, answered = false)
+        assertTrue(s.silent)
+        s.unknown()
+        assertFalse(s.silent)
+    }
+
     @Test fun clasifica_los_fallos() {
         assertEquals(ObdError.CAR_SILENT, classify(ObdException(ObdError.CAR_SILENT), dropped = false))
         assertEquals(ObdError.NO_BLUETOOTH_PERMISSION, classify(SecurityException("x"), dropped = false))

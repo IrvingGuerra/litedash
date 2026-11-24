@@ -155,3 +155,35 @@ internal object ObdTiming {
     const val TIRE_SEARCHES = 3
     const val TIRE_SEARCH_GAP_MS = 5 * 60_000L
 }
+
+/**
+ * Si el auto parece apagado: ningún PID dio dato en [ObdTiming.CAR_SILENT_MS] ([ObdRepository.carSilent]). Solo cuenta
+ * mientras se le preguntan PIDs; sin ninguno no se sabe y no se dice apagado (el Taller lo muestra en el adaptador).
+ */
+internal class CarSilence(start: Long) {
+    var silent = false
+        private set
+    private var lastData = start
+
+    /** Plan nuevo: la cuenta empieza de cero (un primer "NO DATA" tras un rato sin leer no es motor apagado). */
+    fun restart(now: Long) {
+        lastData = now
+    }
+
+    /** Nada que preguntarle al auto: no se sabe si está prendido. */
+    fun unknown() {
+        silent = false
+    }
+
+    /** Una vuelta de lectura; devuelve true si justo ahora se quedó callado (para anotarlo una vez). */
+    fun lap(now: Long, answered: Boolean): Boolean {
+        if (answered) {
+            lastData = now
+            silent = false
+            return false
+        }
+        if (silent || now - lastData < ObdTiming.CAR_SILENT_MS) return false
+        silent = true
+        return true
+    }
+}
