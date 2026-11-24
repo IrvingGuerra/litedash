@@ -21,7 +21,6 @@
     <plurals name="library_songs">
         <item quantity="other">%1$d 首歌曲</item>
     </plurals>
-    <string name="library_shuffle">随机播放</string>
     <string name="library_unknown">未知</string>
     <string name="library_root">U 盘根目录</string>
     <string name="radio_nearby">附近</string>
@@ -39,4 +38,6 @@
     <string name="library_pick_folder_help">如果音乐在 U 盘里却没有显示，请选择它所在的文件夹：LiteDash 会记住。</string>
     <string name="library_unreadable">能看到 U 盘 %1$s，但你的屏幕不允许应用读取其中的歌曲。请选择文件夹，LiteDash 会记住。</string>
     <string name="library_browse_memory">没打开？浏览存储空间</string>
+    <string name="library_capped">显示 %1$s 首歌曲</string>
+    <string name="player_cannot_open_track">无法打开这首歌曲。</string>
 </resources>

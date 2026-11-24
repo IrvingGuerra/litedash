@@ -22,7 +22,6 @@
         <item quantity="one">%1$d låt</item>
         <item quantity="other">%1$d låtar</item>
     </plurals>
-    <string name="library_shuffle">Blanda</string>
     <string name="library_unknown">Okänd</string>
     <string name="library_root">Minnets rotmapp</string>
     <string name="radio_nearby">Nära dig</string>
@@ -40,4 +39,6 @@
     <string name="library_pick_folder_help">Om musiken finns på minnet men inte syns, välj dess mapp: LiteDash kommer ihåg den.</string>
     <string name="library_unreadable">Jag ser minnet %1$s, men skärmen låter inte appar läsa låtarna. Välj mappen så kommer LiteDash ihåg den.</string>
     <string name="library_browse_memory">Öppnades inte? Bläddra i lagringen</string>
+    <string name="library_capped">Visar %1$s låtar</string>
+    <string name="player_cannot_open_track">Kunde inte öppna låten.</string>
 </resources>

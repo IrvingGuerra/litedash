@@ -24,7 +24,6 @@
         <item quantity="many">%1$d песен</item>
         <item quantity="other">%1$d песни</item>
     </plurals>
-    <string name="library_shuffle">Перемешать</string>
     <string name="library_unknown">Неизвестно</string>
     <string name="library_root">Корень накопителя</string>
     <string name="radio_nearby">Рядом с тобой</string>
@@ -42,4 +41,6 @@
     <string name="library_pick_folder_help">Если музыка есть на накопителе, но не появляется, выбери её папку: LiteDash запомнит.</string>
     <string name="library_unreadable">Я вижу накопитель %1$s, но экран не даёт приложениям читать песни. Выбери их папку, и LiteDash её запомнит.</string>
     <string name="library_browse_memory">Не открылось? Посмотри память</string>
+    <string name="library_capped">Показано песен: %1$s</string>
+    <string name="player_cannot_open_track">Не удалось открыть эту песню.</string>
 </resources>

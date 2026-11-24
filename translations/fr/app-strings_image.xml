@@ -5,7 +5,7 @@
     <string name="image_background">Arrière-plan</string>
     <string name="image_background_original">Original</string>
     <string name="image_background_remove">Supprimer</string>
-    <string name="image_background_help">Idéal avec un fond uni : un mur, le ciel ou un studio.</string>
+    <string name="image_background_help">Marche mieux avec un fond uni : un mur, le ciel ou un studio. Il ne peut être retiré qu\'au moment de choisir la photo : pour le retirer plus tard, choisissez-la à nouveau.</string>
     <string name="image_strength">Intensité</string>
     <string name="image_strength_low">Douce</string>
     <string name="image_strength_medium">Moyenne</string>

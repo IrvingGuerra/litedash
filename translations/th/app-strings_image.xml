@@ -3,7 +3,7 @@
     <string name="image_background">พื้นหลัง</string>
     <string name="image_background_original">ต้นฉบับ</string>
     <string name="image_background_remove">ลบออก</string>
-    <string name="image_background_help">ได้ผลดีที่สุดกับพื้นหลังเรียบ ๆ เช่น ผนัง ท้องฟ้า หรือสตูดิโอ</string>
+    <string name="image_background_help">ได้ผลดีที่สุดกับพื้นหลังเรียบ ๆ เช่น ผนัง ท้องฟ้า หรือสตูดิโอ ลบพื้นหลังได้เฉพาะตอนเลือกรูปเท่านั้น หากจะลบภายหลัง ให้เลือกรูปใหม่อีกครั้ง</string>
     <string name="image_strength">ความแรง</string>
     <string name="image_strength_low">อ่อน</string>
     <string name="image_strength_medium">กลาง</string>

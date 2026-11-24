@@ -38,4 +38,6 @@
     <string name="recipe_open_bluetooth">Membuka aplikasi Bluetooth lalu kembali</string>
     <string name="recipe_open_radio">Membuka aplikasi radio lalu kembali</string>
     <string name="recipe_failed">Tidak ada cara yang berhasil</string>
+    <string name="music_phone_link">Pakai LiteDash Connect</string>
+    <string name="music_shuffle">Acak</string>
 </resources>

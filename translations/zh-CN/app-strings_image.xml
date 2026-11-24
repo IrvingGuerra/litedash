@@ -3,7 +3,7 @@
     <string name="image_background">背景</string>
     <string name="image_background_original">原图</string>
     <string name="image_background_remove">去除</string>
-    <string name="image_background_help">纯色背景效果最好：墙面、天空或影棚。</string>
+    <string name="image_background_help">纯色背景效果最好：墙面、天空或影棚。只能在刚选择照片时去除背景：之后想去除，请重新选择照片。</string>
     <string name="image_strength">强度</string>
     <string name="image_strength_low">轻</string>
     <string name="image_strength_medium">中</string>

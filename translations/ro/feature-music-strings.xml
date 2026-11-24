@@ -38,4 +38,6 @@
     <string name="recipe_open_bluetooth">Deschide aplicația Bluetooth și revine</string>
     <string name="recipe_open_radio">Deschide aplicația radio și revine</string>
     <string name="recipe_failed">Nu s-a găsit nicio cale</string>
+    <string name="music_phone_link">Folosește LiteDash Connect</string>
+    <string name="music_shuffle">Amestecă</string>
 </resources>

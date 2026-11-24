@@ -18,13 +18,7 @@
     <string name="map_style_theme">Как в теме</string>
     <string name="map_style_light">Светлая</string>
     <string name="map_style_dark">Тёмная</string>
-    <string name="map_detail">Стиль</string>
-    <string name="map_detail_full">Полная</string>
-    <string name="map_detail_minimal">Минимальная</string>
-    <string name="map_detail_full_help">Всё из OpenStreetMap: улицы, места, названия и значки.</string>
-    <string name="map_detail_minimal_help">Только улицы, вода и парки, чисто и в цветах LiteDash (данные OpenFreeMap).</string>
     <string name="map_offline">Офлайн</string>
-    <string name="map_offline_full">Доступно с минимальной картой.</string>
     <string name="map_offline_help">Сохрани карту района, чтобы видеть её без интернета. Для поиска и маршрутов скачай свой регион.</string>
     <string name="map_offline_here">Твой район</string>
     <string name="map_offline_other">Другой район</string>
@@ -50,9 +44,8 @@
     <string name="map_tab_app">Приложение карт</string>
     <string name="map_tab_look">Карта LiteDash</string>
     <string name="map_tab_style">Вид карты</string>
-    <string name="map_look_help">Действует на все виджеты «Карта» и полноэкранную карту. Каждый виджет можно изменить через его шестерёнку.</string>
+    <string name="map_look_help">Меняет все твои виджеты «Карта» и полноэкранную карту (даже те, что ты менял отдельно).</string>
     <string name="map_pack_help">Весь регион без интернета, одной загрузкой. Обновляется несколько раз в год.</string>
-    <string name="map_pack_full">В стиле «Полная» карта загружается из интернета; скачанный регион нужен для поиска и маршрутов.</string>
     <string name="map_pack_no_index">Подключись к интернету, чтобы увидеть доступные карты.</string>
     <string name="map_list_loading">Загрузка списка карт…</string>
     <string name="map_list_failed">Не удалось загрузить список карт. Проверь интернет.</string>
@@ -67,7 +60,6 @@
     <string name="map_pack_search">Найти регион</string>
     <string name="map_offline_by_state">По региону</string>
     <string name="map_offline_by_zone">По району</string>
-    <string name="map_pack_tip">Твоего региона нет? Используй «По району»: работает везде.</string>
     <string name="map_request_country">Нет вашей страны? Запросите её</string>
     <string name="search_hint">Куда едем?</string>
     <string name="search_clear">Очистить</string>
@@ -164,4 +156,9 @@
     <string name="guide_arrive">Ты прибудешь в пункт назначения</string>
     <string name="guide_arrive_at">Пункт назначения: %1$s</string>
     <string name="search_ft">%1$d ft</string>
+    <string name="map_customize_help">Вид и офлайн-карты одинаковы для всех твоих карт: их можно изменить в «Настройки → Приложения → Навигация».</string>
+    <string name="map_mark">Отметить место</string>
+    <string name="map_mark_here">Отметить здесь</string>
+    <string name="map_orientation_help">Автоматически: наклонённая карта смотрит по ходу движения, плоская — на север.</string>
+    <string name="search_favorites_full">Достигнут максимум избранного (%1$d): убери одно место, чтобы добавить другое.</string>
 </resources>

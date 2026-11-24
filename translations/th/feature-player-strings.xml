@@ -21,7 +21,6 @@
     <plurals name="library_songs">
         <item quantity="other">%1$d เพลง</item>
     </plurals>
-    <string name="library_shuffle">สุ่ม</string>
     <string name="library_unknown">ไม่ทราบ</string>
     <string name="library_root">รากของไดรฟ์</string>
     <string name="radio_nearby">ใกล้คุณ</string>
@@ -39,4 +38,6 @@
     <string name="library_pick_folder_help">ถ้าเพลงอยู่ในไดรฟ์แต่ไม่แสดง ให้เลือกโฟลเดอร์ของเพลง LiteDash จะจำไว้</string>
     <string name="library_unreadable">เห็นไดรฟ์ %1$s แต่หน้าจอไม่ยอมให้แอปอ่านเพลงในนั้น เลือกโฟลเดอร์ของเพลงแล้ว LiteDash จะจำไว้</string>
     <string name="library_browse_memory">ไม่เปิด? เรียกดูที่เก็บข้อมูล</string>
+    <string name="library_capped">แสดง %1$s เพลง</string>
+    <string name="player_cannot_open_track">เปิดเพลงนี้ไม่ได้</string>
 </resources>

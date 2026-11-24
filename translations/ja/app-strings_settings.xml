@@ -1,24 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="tab_day_night">昼と夜</string>
-    <string name="tab_your_screen">画面</string>
     <string name="weather_switch">天気</string>
-    <string name="weather_switch_help">バー、時計、天気ウィジェットに表示。ホーム画面を表示している間、30分ごとに更新します。おおよその位置情報とインターネットを使用し、オフのときはどちらも使いません。</string>
     <string name="reminder_pick_date">%1$s の期限はいつですか？</string>
     <string name="tab_home">ホーム</string>
     <string name="tab_interface">インターフェース</string>
-    <string name="android_bar">Android バー</string>
     <string name="accent_title">インターフェースの色</string>
-    <string name="accent_help">スイッチ、ボタン、再生ボタン、進行バーの色。カードと背景は変わりません。「ナチュラル」は元の見た目です。</string>
-    <string name="accent_natural">ナチュラル</string>
+    <string name="accent_help">スイッチ、ボタン、再生ボタン、進行バーの色。カードと背景は変わりません。</string>
     <string name="cards_title">カード</string>
     <string name="cards_help">アプリ全体のカードの見た目：色と、背景が透けるかどうか。</string>
     <string name="cards_solid">不透明</string>
     <string name="cards_glass">ガラス</string>
     <string name="cards_opacity">見え方</string>
     <string name="cards_glass_help">壁紙が各カードの後ろにぼかして表示されます。地図の背景では、地図が控えめに表示されます。</string>
-    <string name="cards_theme">テーマ</string>
     <string name="cards_themes">組み合わせ</string>
     <string name="language_search">言語を検索</string>
     <string name="language_not_found">その言語はまだありません。litedash.dev/translate で翻訳にご協力ください。</string>
+    <string name="factory_look">デフォルト</string>
+    <string name="tab_language_units">言語と単位</string>
+    <string name="tab_theme_brightness">テーマと明るさ</string>
 </resources>

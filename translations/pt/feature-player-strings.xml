@@ -24,7 +24,6 @@
         <item quantity="one">%1$d música</item>
         <item quantity="other">%1$d músicas</item>
     </plurals>
-    <string name="library_shuffle">Aleatório</string>
     <string name="library_unknown">Sem nome</string>
     <string name="library_root">Raiz do pendrive</string>
     <string name="radio_nearby">Perto de você</string>
@@ -42,4 +41,6 @@
     <string name="library_pick_folder_help">Se suas músicas estão no pendrive mas não aparecem, escolha a pasta: o LiteDash vai lembrar dela.</string>
     <string name="library_unreadable">Vejo o pendrive %1$s, mas sua tela não deixa ler as músicas. Escolha a pasta e o LiteDash vai lembrar dela.</string>
     <string name="library_browse_memory">Não abriu? Procurar no armazenamento</string>
+    <string name="library_capped">Mostrando %1$s músicas</string>
+    <string name="player_cannot_open_track">Não foi possível abrir esta música.</string>
 </resources>

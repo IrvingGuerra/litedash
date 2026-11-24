@@ -18,13 +18,7 @@
     <string name="map_style_theme">跟随主题</string>
     <string name="map_style_light">浅色</string>
     <string name="map_style_dark">深色</string>
-    <string name="map_detail">样式</string>
-    <string name="map_detail_full">完整</string>
-    <string name="map_detail_minimal">极简</string>
-    <string name="map_detail_full_help">OpenStreetMap 的全部内容：街道、地点、名称和图标。</string>
-    <string name="map_detail_minimal_help">只有街道、水域和公园，简洁并使用 LiteDash 配色（数据来自 OpenFreeMap）。</string>
     <string name="map_offline">离线</string>
-    <string name="map_offline_full">仅极简地图可用。</string>
     <string name="map_offline_help">保存一个区域的地图，无网络时也能查看。要搜索和规划路线，请下载你所在的省份。</string>
     <string name="map_offline_here">你所在的区域</string>
     <string name="map_offline_other">其他区域</string>
@@ -50,9 +44,8 @@
     <string name="map_tab_app">地图应用</string>
     <string name="map_tab_look">LiteDash 地图</string>
     <string name="map_tab_style">地图外观</string>
-    <string name="map_look_help">适用于所有地图小组件和全屏地图。每个小组件仍可通过其齿轮图标单独更改。</string>
+    <string name="map_look_help">更改你所有的地图小组件和全屏地图（包括单独更改过的）。</string>
     <string name="map_pack_help">整个省份离线可用，一次下载即可。每年更新几次。</string>
-    <string name="map_pack_full">“完整”样式的地图来自互联网；已下载的地区用于搜索和路线。</string>
     <string name="map_pack_no_index">连接互联网以查看可用地图。</string>
     <string name="map_list_loading">正在下载地图列表…</string>
     <string name="map_list_failed">无法下载地图列表，请检查网络。</string>
@@ -67,7 +60,6 @@
     <string name="map_pack_search">搜索省份或地区</string>
     <string name="map_offline_by_state">按省份</string>
     <string name="map_offline_by_zone">按区域</string>
-    <string name="map_pack_tip">没有你的省份？用「按区域」：任何地方都能用。</string>
     <string name="map_request_country">没有你的国家？申请添加</string>
     <string name="search_hint">去哪儿？</string>
     <string name="search_clear">清除</string>
@@ -164,4 +156,9 @@
     <string name="guide_arrive">即将到达目的地</string>
     <string name="guide_arrive_at">即将到达%1$s</string>
     <string name="search_ft">%1$d ft</string>
+    <string name="map_customize_help">外观和离线地图对你所有的地图都相同：可在“设置 → 应用 → 导航”中更改。</string>
+    <string name="map_mark">标记一个地点</string>
+    <string name="map_mark_here">标记此处</string>
+    <string name="map_orientation_help">自动：地图倾斜时朝向你的行驶方向；平面时北朝上。</string>
+    <string name="search_favorites_full">收藏已达上限（%1$d 个）：移除一个才能再添加。</string>
 </resources>

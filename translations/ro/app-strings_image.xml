@@ -3,7 +3,7 @@
     <string name="image_background">Fundal</string>
     <string name="image_background_original">Original</string>
     <string name="image_background_remove">Elimină</string>
-    <string name="image_background_help">Merge cel mai bine cu un fundal simplu: un perete, cerul sau un studio.</string>
+    <string name="image_background_help">Merge cel mai bine cu un fundal simplu: un perete, cerul sau un studio. Se poate scoate doar imediat după ce alegi fotografia: ca să-l scoți mai târziu, alege-o din nou.</string>
     <string name="image_strength">Intensitate</string>
     <string name="image_strength_low">Ușoară</string>
     <string name="image_strength_medium">Medie</string>

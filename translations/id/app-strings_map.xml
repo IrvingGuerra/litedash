@@ -18,13 +18,7 @@
     <string name="map_style_theme">Ikuti tema</string>
     <string name="map_style_light">Terang</string>
     <string name="map_style_dark">Gelap</string>
-    <string name="map_detail">Gaya</string>
-    <string name="map_detail_full">Lengkap</string>
-    <string name="map_detail_minimal">Minimal</string>
-    <string name="map_detail_full_help">Semua dari OpenStreetMap: jalan, tempat, nama, dan ikon.</string>
-    <string name="map_detail_minimal_help">Hanya jalan, perairan, dan taman, bersih dengan warna LiteDash (data dari OpenFreeMap).</string>
     <string name="map_offline">Offline</string>
-    <string name="map_offline_full">Tersedia dengan peta minimal.</string>
     <string name="map_offline_help">Simpan peta suatu zona agar bisa dilihat tanpa internet. Untuk mencari dan membuat rute, unduh provinsi Anda.</string>
     <string name="map_offline_here">Zona Anda</string>
     <string name="map_offline_other">Zona lain</string>
@@ -50,9 +44,8 @@
     <string name="map_tab_app">Aplikasi peta</string>
     <string name="map_tab_look">Peta LiteDash</string>
     <string name="map_tab_style">Tampilan peta</string>
-    <string name="map_look_help">Berlaku untuk semua widget Peta dan peta layar penuh. Tiap widget tetap bisa diubah dari ikon roda giginya.</string>
+    <string name="map_look_help">Mengubah semua widget Peta Anda dan peta layar penuh (termasuk yang Anda ubah terpisah).</string>
     <string name="map_pack_help">Seluruh provinsi Anda tanpa internet, dalam satu unduhan. Diperbarui beberapa kali setahun.</string>
-    <string name="map_pack_full">Dengan gaya Lengkap, peta dimuat dari internet; wilayah yang diunduh dipakai untuk pencarian dan rute.</string>
     <string name="map_pack_no_index">Sambungkan ke internet untuk melihat peta yang tersedia.</string>
     <string name="map_list_loading">Mengunduh daftar peta…</string>
     <string name="map_list_failed">Gagal mengunduh daftar peta. Periksa internet Anda.</string>
@@ -67,7 +60,6 @@
     <string name="map_pack_search">Cari provinsi atau wilayah</string>
     <string name="map_offline_by_state">Per provinsi</string>
     <string name="map_offline_by_zone">Per zona</string>
-    <string name="map_pack_tip">Provinsi Anda belum ada? Gunakan «Per zona»: berfungsi di mana saja.</string>
     <string name="map_request_country">Negaramu tidak ada? Minta di sini</string>
     <string name="search_hint">Mau ke mana?</string>
     <string name="search_clear">Hapus</string>
@@ -164,4 +156,9 @@
     <string name="guide_arrive">Anda tiba di tujuan</string>
     <string name="guide_arrive_at">Anda tiba di %1$s</string>
     <string name="search_ft">%1$d ft</string>
+    <string name="map_customize_help">Tampilan dan peta offline sama untuk semua peta Anda: ubah di Setelan → Aplikasi → Navigasi.</string>
+    <string name="map_mark">Tandai titik</string>
+    <string name="map_mark_here">Tandai di sini</string>
+    <string name="map_orientation_help">Otomatis: saat miring, peta menghadap arah Anda; saat datar, utara di atas.</string>
+    <string name="search_favorites_full">Favorit Anda sudah maksimal (%1$d): hapus satu untuk menambah yang lain.</string>
 </resources>

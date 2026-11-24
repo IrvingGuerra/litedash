@@ -18,13 +18,7 @@
     <string name="map_style_theme">Wie das Design</string>
     <string name="map_style_light">Hell</string>
     <string name="map_style_dark">Dunkel</string>
-    <string name="map_detail">Stil</string>
-    <string name="map_detail_full">Vollständig</string>
-    <string name="map_detail_minimal">Minimal</string>
-    <string name="map_detail_full_help">Alles von OpenStreetMap: Straßen, Orte, Namen und Symbole.</string>
-    <string name="map_detail_minimal_help">Nur Straßen, Wasser und Parks, klar und in LiteDash-Farben (Daten von OpenFreeMap).</string>
     <string name="map_offline">Offline</string>
-    <string name="map_offline_full">Mit der minimalen Karte verfügbar.</string>
     <string name="map_offline_help">Speichere die Karte einer Zone, um sie ohne Internet zu sehen. Zum Suchen und für Routen lade dein Bundesland.</string>
     <string name="map_offline_here">Deine Zone</string>
     <string name="map_offline_other">Andere Zone</string>
@@ -50,9 +44,8 @@
     <string name="map_tab_app">Karten-App</string>
     <string name="map_tab_look">LiteDash-Karte</string>
     <string name="map_tab_style">Kartenstil</string>
-    <string name="map_look_help">Gilt für alle Karten-Widgets und die Vollbildkarte. Jedes Widget lässt sich weiter über sein Zahnrad ändern.</string>
+    <string name="map_look_help">Ändert alle deine Karten-Widgets und die Vollbildkarte (auch die, die du einzeln geändert hast).</string>
     <string name="map_pack_help">Dein ganzes Bundesland ohne Internet, in einem Download. Wird ein paar Mal im Jahr aktualisiert.</string>
-    <string name="map_pack_full">Mit dem Stil Vollständig kommt die Karte aus dem Internet; das geladene Bundesland dient für Suche und Routen.</string>
     <string name="map_pack_no_index">Verbinde dich mit dem Internet, um die verfügbaren Karten zu sehen.</string>
     <string name="map_list_loading">Kartenliste wird geladen…</string>
     <string name="map_list_failed">Die Kartenliste konnte nicht geladen werden. Prüfe deine Internetverbindung.</string>
@@ -67,7 +60,6 @@
     <string name="map_pack_search">Bundesland oder Region suchen</string>
     <string name="map_offline_by_state">Nach Bundesland</string>
     <string name="map_offline_by_zone">Nach Zone</string>
-    <string name="map_pack_tip">Dein Bundesland fehlt? Nimm «Nach Zone»: geht überall.</string>
     <string name="map_request_country">Dein Land fehlt? Fordere es an</string>
     <string name="search_hint">Wohin?</string>
     <string name="search_clear">Löschen</string>
@@ -164,4 +156,9 @@
     <string name="guide_arrive">Du erreichst dein Ziel</string>
     <string name="guide_arrive_at">Du erreichst: %1$s</string>
     <string name="search_ft">%1$d ft</string>
+    <string name="map_customize_help">Aussehen und Offline-Karten gelten für alle deine Karten: ändere sie unter Einstellungen → Apps → Navigation.</string>
+    <string name="map_mark">Punkt markieren</string>
+    <string name="map_mark_here">Hier markieren</string>
+    <string name="map_orientation_help">Automatisch: geneigt zeigt die Karte in Fahrtrichtung; flach ist Norden oben.</string>
+    <string name="search_favorites_full">Du hast die maximale Zahl an Favoriten (%1$d): entferne einen, um einen neuen hinzuzufügen.</string>
 </resources>

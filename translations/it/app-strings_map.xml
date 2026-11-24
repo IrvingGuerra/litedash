@@ -18,13 +18,7 @@
     <string name="map_style_theme">Come il tema</string>
     <string name="map_style_light">Chiari</string>
     <string name="map_style_dark">Scuri</string>
-    <string name="map_detail">Stile</string>
-    <string name="map_detail_full">Completo</string>
-    <string name="map_detail_minimal">Minimal</string>
-    <string name="map_detail_full_help">Tutto di OpenStreetMap: strade, luoghi, nomi e icone.</string>
-    <string name="map_detail_minimal_help">Solo strade, acqua e parchi, pulito e con i colori di LiteDash (dati da OpenFreeMap).</string>
     <string name="map_offline">Offline</string>
-    <string name="map_offline_full">Disponibile con la mappa minimal.</string>
     <string name="map_offline_help">Salva la mappa di una zona per vederla senza internet. Per cercare e calcolare percorsi, scarica la tua regione.</string>
     <string name="map_offline_here">La tua zona</string>
     <string name="map_offline_other">Un\'altra zona</string>
@@ -50,9 +44,8 @@
     <string name="map_tab_app">App di mappe</string>
     <string name="map_tab_look">Mappa di LiteDash</string>
     <string name="map_tab_style">Aspetto della mappa</string>
-    <string name="map_look_help">Vale per tutti i tuoi widget Mappa e per la mappa a schermo intero. Ogni widget si può ancora cambiare dal suo ingranaggio.</string>
+    <string name="map_look_help">Cambia tutti i tuoi widget Mappa e la mappa a schermo intero (anche quelli cambiati a parte).</string>
     <string name="map_pack_help">Tutta la tua regione senza internet, con un solo download. Si aggiorna qualche volta all\'anno.</string>
-    <string name="map_pack_full">Con lo stile Completo la mappa arriva da internet; la regione scaricata serve per la ricerca e i percorsi.</string>
     <string name="map_pack_no_index">Connettiti a internet per vedere le mappe disponibili.</string>
     <string name="map_list_loading">Download dell\'elenco delle mappe…</string>
     <string name="map_list_failed">Impossibile scaricare l\'elenco delle mappe. Controlla la connessione.</string>
@@ -67,7 +60,6 @@
     <string name="map_pack_search">Cerca una regione</string>
     <string name="map_offline_by_state">Per regione</string>
     <string name="map_offline_by_zone">Per zona</string>
-    <string name="map_pack_tip">La tua regione non c\'è? Usa «Per zona»: funziona ovunque.</string>
     <string name="map_request_country">Il tuo paese non c\'è? Richiedilo</string>
     <string name="search_hint">Dove vai?</string>
     <string name="search_clear">Cancella</string>
@@ -164,4 +156,9 @@
     <string name="guide_arrive">Arrivi a destinazione</string>
     <string name="guide_arrive_at">Arrivi: %1$s</string>
     <string name="search_ft">%1$d ft</string>
+    <string name="map_customize_help">L\'aspetto e le mappe offline sono gli stessi per tutte le tue mappe: si cambiano in Impostazioni → App → Navigazione.</string>
+    <string name="map_mark">Segna un punto</string>
+    <string name="map_mark_here">Segna qui</string>
+    <string name="map_orientation_help">Automatico: inclinata, la mappa guarda dove vai; piatta, il nord è in alto.</string>
+    <string name="search_favorites_full">Hai il massimo di preferiti (%1$d): togline uno per aggiungerne un altro.</string>
 </resources>

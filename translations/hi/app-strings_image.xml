@@ -3,7 +3,7 @@
     <string name="image_background">बैकग्राउंड</string>
     <string name="image_background_original">ओरिजिनल</string>
     <string name="image_background_remove">हटाएँ</string>
-    <string name="image_background_help">सादे बैकग्राउंड के साथ सबसे अच्छा काम करता है: दीवार, आसमान या स्टूडियो।</string>
+    <string name="image_background_help">सादे बैकग्राउंड के साथ सबसे अच्छा काम करता है: दीवार, आसमान या स्टूडियो। बैकग्राउंड सिर्फ़ फ़ोटो चुनते ही हटाया जा सकता है: बाद में हटाने के लिए फ़ोटो फिर से चुनें।</string>
     <string name="image_strength">तीव्रता</string>
     <string name="image_strength_low">हल्की</string>
     <string name="image_strength_medium">मध्यम</string>

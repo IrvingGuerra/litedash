@@ -1,24 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="tab_day_night">กลางวันและกลางคืน</string>
-    <string name="tab_your_screen">หน้าจอของคุณ</string>
     <string name="weather_switch">สภาพอากาศ</string>
-    <string name="weather_switch_help">ในแถบ นาฬิกา และวิดเจ็ตสภาพอากาศ อัปเดตทุกครึ่งชั่วโมงขณะที่คุณดูหน้าหลัก ใช้ตำแหน่งโดยประมาณและอินเทอร์เน็ต เมื่อปิดจะไม่ใช้ทั้งสองอย่าง</string>
     <string name="reminder_pick_date">%1$s ครบกำหนดเมื่อไร</string>
     <string name="tab_home">หน้าหลัก</string>
     <string name="tab_interface">อินเทอร์เฟซ</string>
-    <string name="android_bar">แถบ Android</string>
     <string name="accent_title">สีอินเทอร์เฟซ</string>
-    <string name="accent_help">สวิตช์ ปุ่ม ปุ่มเล่น และแถบความคืบหน้า การ์ดและพื้นหลังยังเหมือนเดิม ธรรมชาติคือหน้าตาดั้งเดิม</string>
-    <string name="accent_natural">ธรรมชาติ</string>
+    <string name="accent_help">สวิตช์ ปุ่ม ปุ่มเล่น และแถบความคืบหน้า การ์ดและพื้นหลังยังเหมือนเดิม</string>
     <string name="cards_title">การ์ด</string>
     <string name="cards_help">หน้าตาของการ์ดทั้งแอป: สีและจะให้เห็นพื้นหลังหรือไม่</string>
     <string name="cards_solid">ทึบ</string>
     <string name="cards_glass">กระจก</string>
     <string name="cards_opacity">ความชัด</string>
     <string name="cards_glass_help">วอลเปเปอร์ของคุณจะเห็นเป็นภาพเบลออยู่หลังการ์ดแต่ละใบ บนพื้นหลังแผนที่ แผนที่จะดูจางลง</string>
-    <string name="cards_theme">ธีม</string>
     <string name="cards_themes">ชุดสี</string>
     <string name="language_search">ค้นหาภาษาของคุณ</string>
     <string name="language_not_found">ยังไม่มีภาษานี้ ช่วยเราแปลได้ที่ litedash.dev/translate</string>
+    <string name="factory_look">ค่าเริ่มต้น</string>
+    <string name="tab_language_units">ภาษาและหน่วย</string>
+    <string name="tab_theme_brightness">ธีมและความสว่าง</string>
 </resources>

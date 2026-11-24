@@ -3,7 +3,7 @@
     <string name="image_background">Latar</string>
     <string name="image_background_original">Asli</string>
     <string name="image_background_remove">Hapus</string>
-    <string name="image_background_help">Paling bagus dengan latar polos: dinding, langit, atau studio.</string>
+    <string name="image_background_help">Paling bagus dengan latar polos: dinding, langit, atau studio. Latar hanya bisa dihapus tepat saat memilih foto: untuk menghapusnya nanti, pilih fotonya lagi.</string>
     <string name="image_strength">Kekuatan</string>
     <string name="image_strength_low">Lembut</string>
     <string name="image_strength_medium">Sedang</string>

@@ -1,24 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="tab_day_night">Den a noc</string>
-    <string name="tab_your_screen">Tvůj displej</string>
     <string name="weather_switch">Počasí</string>
-    <string name="weather_switch_help">Na liště, v hodinách a ve widgetu Počasí; obnovuje se každou půlhodinu, když vidíš plochu. Používá přibližnou polohu a internet; vypnuté nepoužívá ani jedno.</string>
     <string name="reminder_pick_date">Kdy je termín: %1$s?</string>
     <string name="tab_home">Plocha</string>
     <string name="tab_interface">Rozhraní</string>
-    <string name="android_bar">Lišta Androidu</string>
     <string name="accent_title">Barva rozhraní</string>
-    <string name="accent_help">Přepínače, tlačítka, přehrávání a ukazatele průběhu. Karty a pozadí zůstávají; Přirozená je původní vzhled.</string>
-    <string name="accent_natural">Přirozená</string>
+    <string name="accent_help">Přepínače, tlačítka, přehrávání a ukazatele průběhu. Karty a pozadí se nemění.</string>
     <string name="cards_title">Karty</string>
     <string name="cards_help">Jak vypadají karty v celé aplikaci: jejich barva a jestli prosvítá pozadí.</string>
     <string name="cards_solid">Plné</string>
     <string name="cards_glass">Sklo</string>
     <string name="cards_opacity">Jak moc jsou vidět</string>
     <string name="cards_glass_help">Tvoje tapeta je vidět rozmazaná za každou kartou; nad mapou v pozadí je mapa ztlumená.</string>
-    <string name="cards_theme">Motiv</string>
     <string name="cards_themes">Kombinace</string>
     <string name="language_search">Najdi svůj jazyk</string>
     <string name="language_not_found">Tento jazyk tu zatím není. Pomoz nám ho přeložit na litedash.dev/translate.</string>
+    <string name="factory_look">Výchozí</string>
+    <string name="tab_language_units">Jazyk a jednotky</string>
+    <string name="tab_theme_brightness">Motiv a jas</string>
 </resources>

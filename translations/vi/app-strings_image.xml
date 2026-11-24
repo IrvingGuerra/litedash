@@ -3,7 +3,7 @@
     <string name="image_background">Nền</string>
     <string name="image_background_original">Gốc</string>
     <string name="image_background_remove">Xóa nền</string>
-    <string name="image_background_help">Hiệu quả nhất với nền trơn: bức tường, bầu trời hoặc phông studio.</string>
+    <string name="image_background_help">Hiệu quả nhất với nền trơn: bức tường, bầu trời hoặc phông studio. Chỉ xóa nền được ngay khi chọn ảnh: muốn xóa sau đó, hãy chọn lại ảnh.</string>
     <string name="image_strength">Độ mạnh</string>
     <string name="image_strength_low">Nhẹ</string>
     <string name="image_strength_medium">Vừa</string>

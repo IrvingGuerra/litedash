@@ -24,7 +24,6 @@
         <item quantity="many">%1$d utworów</item>
         <item quantity="other">%1$d utworu</item>
     </plurals>
-    <string name="library_shuffle">Losowo</string>
     <string name="library_unknown">Nieznane</string>
     <string name="library_root">Katalog główny nośnika</string>
     <string name="radio_nearby">W pobliżu</string>
@@ -42,4 +41,6 @@
     <string name="library_pick_folder_help">Jeśli muzyka jest na nośniku, ale się nie pokazuje, wybierz jej folder: LiteDash go zapamięta.</string>
     <string name="library_unreadable">Widzę nośnik %1$s, ale ekran nie pozwala aplikacjom czytać jego utworów. Wybierz folder, a LiteDash go zapamięta.</string>
     <string name="library_browse_memory">Nie otworzyło się? Przeglądaj pamięć</string>
+    <string name="library_capped">Wyświetlane utwory: %1$s</string>
+    <string name="player_cannot_open_track">Nie udało się otworzyć tego utworu.</string>
 </resources>

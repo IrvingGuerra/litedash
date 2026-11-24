@@ -1,24 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="tab_day_night">День и ночь</string>
-    <string name="tab_your_screen">Твой экран</string>
     <string name="weather_switch">Погода</string>
-    <string name="weather_switch_help">На панели, в часах и в виджете «Погода»; обновляется каждые полчаса, пока открыт главный экран. Использует приблизительное местоположение и интернет; если выключено — ничего из этого.</string>
     <string name="reminder_pick_date">Когда срок «%1$s»?</string>
     <string name="tab_home">Главный экран</string>
     <string name="tab_interface">Интерфейс</string>
-    <string name="android_bar">Панель Android</string>
     <string name="accent_title">Цвет интерфейса</string>
-    <string name="accent_help">Переключатели, кнопки, воспроизведение и полосы прогресса. Карточки и фон не меняются; «Натуральный» — исходный вид.</string>
-    <string name="accent_natural">Натуральный</string>
+    <string name="accent_help">Переключатели, кнопки, воспроизведение и полосы прогресса. Карточки и фон не меняются.</string>
     <string name="cards_title">Карточки</string>
     <string name="cards_help">Как выглядят карточки во всём приложении: их цвет и просвечивает ли фон.</string>
     <string name="cards_solid">Сплошные</string>
     <string name="cards_glass">Стекло</string>
     <string name="cards_opacity">Насколько видны</string>
     <string name="cards_glass_help">Твои обои видны размытыми за каждой карточкой; поверх карты на фоне карта видна приглушённой.</string>
-    <string name="cards_theme">Тема</string>
     <string name="cards_themes">Сочетания</string>
     <string name="language_search">Найди свой язык</string>
     <string name="language_not_found">Этого языка пока нет. Помоги перевести на litedash.dev/translate.</string>
+    <string name="factory_look">По умолчанию</string>
+    <string name="tab_language_units">Язык и единицы</string>
+    <string name="tab_theme_brightness">Тема и яркость</string>
 </resources>

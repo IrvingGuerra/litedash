@@ -1,24 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="tab_day_night">दिन और रात</string>
-    <string name="tab_your_screen">आपकी स्क्रीन</string>
     <string name="weather_switch">मौसम</string>
-    <string name="weather_switch_help">बार, घड़ी और मौसम विजेट में; होम स्क्रीन दिखते समय हर आधे घंटे में अपडेट। आपकी अनुमानित लोकेशन और इंटरनेट इस्तेमाल करता है; बंद होने पर दोनों में से कुछ नहीं।</string>
     <string name="reminder_pick_date">%1$s कब है?</string>
     <string name="tab_home">होम</string>
     <string name="tab_interface">इंटरफ़ेस</string>
-    <string name="android_bar">Android बार</string>
     <string name="accent_title">इंटरफ़ेस का रंग</string>
-    <string name="accent_help">स्विच, बटन, प्ले और प्रोग्रेस बार। कार्ड और बैकग्राउंड वैसे ही रहते हैं; नैचुरल मूल लुक है।</string>
-    <string name="accent_natural">नैचुरल</string>
+    <string name="accent_help">स्विच, बटन, प्ले और प्रोग्रेस बार। कार्ड और बैकग्राउंड वैसे ही रहते हैं।</string>
     <string name="cards_title">कार्ड</string>
     <string name="cards_help">पूरे ऐप में कार्ड कैसे दिखें: उनका रंग और क्या पीछे का बैकग्राउंड दिखे।</string>
     <string name="cards_solid">ठोस</string>
     <string name="cards_glass">ग्लास</string>
     <string name="cards_opacity">कितने दिखें</string>
     <string name="cards_glass_help">आपका वॉलपेपर हर कार्ड के पीछे धुंधला दिखता है; मैप बैकग्राउंड पर मैप हल्का दिखता है।</string>
-    <string name="cards_theme">थीम</string>
     <string name="cards_themes">कॉम्बिनेशन</string>
     <string name="language_search">अपनी भाषा खोजें</string>
     <string name="language_not_found">यह भाषा अभी उपलब्ध नहीं है। litedash.dev/translate पर अनुवाद में मदद करें।</string>
+    <string name="factory_look">डिफ़ॉल्ट</string>
+    <string name="tab_language_units">भाषा और यूनिट</string>
+    <string name="tab_theme_brightness">थीम और ब्राइटनेस</string>
 </resources>

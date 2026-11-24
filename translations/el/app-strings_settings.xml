@@ -1,24 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="tab_day_night">Μέρα και νύχτα</string>
-    <string name="tab_your_screen">Η οθόνη σας</string>
     <string name="weather_switch">Καιρός</string>
-    <string name="weather_switch_help">Στη γραμμή, στο ρολόι και στο widget Καιρός· ανανεώνεται κάθε μισή ώρα όσο βλέπετε την αρχική οθόνη. Χρησιμοποιεί την κατά προσέγγιση θέση σας και το internet· όταν είναι ανενεργό, κανένα από τα δύο.</string>
     <string name="reminder_pick_date">Πότε λήγει: %1$s;</string>
     <string name="tab_home">Αρχική</string>
     <string name="tab_interface">Διεπαφή</string>
-    <string name="android_bar">Γραμμή Android</string>
     <string name="accent_title">Χρώμα διεπαφής</string>
-    <string name="accent_help">Διακόπτες, κουμπιά, αναπαραγωγή και γραμμές προόδου. Οι κάρτες και το φόντο μένουν ίδια· το Φυσικό είναι η αρχική εμφάνιση.</string>
-    <string name="accent_natural">Φυσικό</string>
+    <string name="accent_help">Διακόπτες, κουμπιά, αναπαραγωγή και γραμμές προόδου. Οι κάρτες και το φόντο μένουν ίδια.</string>
     <string name="cards_title">Κάρτες</string>
     <string name="cards_help">Πώς φαίνονται οι κάρτες σε όλη την εφαρμογή: το χρώμα τους και αν διακρίνεται το φόντο.</string>
     <string name="cards_solid">Συμπαγείς</string>
     <string name="cards_glass">Γυαλί</string>
     <string name="cards_opacity">Πόσο φαίνονται</string>
     <string name="cards_glass_help">Η ταπετσαρία σας φαίνεται θολή πίσω από κάθε κάρτα· πάνω σε χάρτη φόντου, ο χάρτης φαίνεται αχνός.</string>
-    <string name="cards_theme">Θέμα</string>
     <string name="cards_themes">Συνδυασμοί</string>
     <string name="language_search">Βρες τη γλώσσα σου</string>
     <string name="language_not_found">Αυτή η γλώσσα δεν υπάρχει ακόμα. Βοήθησέ μας να τη μεταφράσουμε στο litedash.dev/translate.</string>
+    <string name="factory_look">Προεπιλογή</string>
+    <string name="tab_language_units">Γλώσσα και μονάδες</string>
+    <string name="tab_theme_brightness">Θέμα και φωτεινότητα</string>
 </resources>

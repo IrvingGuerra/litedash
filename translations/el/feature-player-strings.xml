@@ -22,7 +22,6 @@
         <item quantity="one">%1$d τραγούδι</item>
         <item quantity="other">%1$d τραγούδια</item>
     </plurals>
-    <string name="library_shuffle">Τυχαία σειρά</string>
     <string name="library_unknown">Άγνωστο</string>
     <string name="library_root">Ρίζα μονάδας</string>
     <string name="radio_nearby">Κοντά σας</string>
@@ -40,4 +39,6 @@
     <string name="library_pick_folder_help">Αν η μουσική σας είναι στη μονάδα αλλά δεν εμφανίζεται, επιλέξτε τον φάκελό της: το LiteDash θα τον θυμάται.</string>
     <string name="library_unreadable">Βλέπω τη μονάδα %1$s, αλλά η οθόνη σας δεν επιτρέπει στις εφαρμογές να διαβάσουν τα τραγούδια της. Επιλέξτε τον φάκελό της και το LiteDash θα τον θυμάται.</string>
     <string name="library_browse_memory">Δεν άνοιξε; Περιηγηθείτε στον χώρο αποθήκευσης</string>
+    <string name="library_capped">Εμφανίζονται τραγούδια: %1$s</string>
+    <string name="player_cannot_open_track">Δεν ήταν δυνατό να ανοίξει αυτό το τραγούδι.</string>
 </resources>

@@ -22,7 +22,6 @@
         <item quantity="one">%1$d गाना</item>
         <item quantity="other">%1$d गाने</item>
     </plurals>
-    <string name="library_shuffle">शफ़ल</string>
     <string name="library_unknown">अज्ञात</string>
     <string name="library_root">ड्राइव का रूट</string>
     <string name="radio_nearby">आपके पास</string>
@@ -40,4 +39,6 @@
     <string name="library_pick_folder_help">अगर म्यूज़िक ड्राइव पर है पर दिखता नहीं, तो उसका फ़ोल्डर चुनें: LiteDash उसे याद रखेगा।</string>
     <string name="library_unreadable">ड्राइव %1$s दिख रही है, पर आपकी स्क्रीन ऐप्स को इसके गाने पढ़ने नहीं देती। उसका फ़ोल्डर चुनें और LiteDash उसे याद रखेगा।</string>
     <string name="library_browse_memory">नहीं खुला? स्टोरेज में ढूँढें</string>
+    <string name="library_capped">%1$s गाने दिखाए जा रहे हैं</string>
+    <string name="player_cannot_open_track">यह गाना नहीं खुल सका।</string>
 </resources>

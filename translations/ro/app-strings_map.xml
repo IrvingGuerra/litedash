@@ -18,13 +18,7 @@
     <string name="map_style_theme">Ca tema</string>
     <string name="map_style_light">Deschis</string>
     <string name="map_style_dark">Întunecat</string>
-    <string name="map_detail">Stil</string>
-    <string name="map_detail_full">Complet</string>
-    <string name="map_detail_minimal">Minimal</string>
-    <string name="map_detail_full_help">Tot din OpenStreetMap: străzi, locuri, nume și pictograme.</string>
-    <string name="map_detail_minimal_help">Doar străzi, apă și parcuri, curat și în culorile LiteDash (date de la OpenFreeMap).</string>
     <string name="map_offline">Offline</string>
-    <string name="map_offline_full">Disponibil cu harta minimală.</string>
     <string name="map_offline_help">Salvează harta unei zone ca s-o vezi fără internet. Pentru căutare și trasee, descarcă-ți județul.</string>
     <string name="map_offline_here">Zona ta</string>
     <string name="map_offline_other">Altă zonă</string>
@@ -50,9 +44,8 @@
     <string name="map_tab_app">Aplicația de hărți</string>
     <string name="map_tab_look">Harta LiteDash</string>
     <string name="map_tab_style">Aspectul hărții</string>
-    <string name="map_look_help">Se aplică tuturor widgeturilor Hartă și hărții pe tot ecranul. Fiecare widget se poate schimba în continuare din rotița lui.</string>
+    <string name="map_look_help">Schimbă toate widgeturile Hartă și harta pe tot ecranul (inclusiv pe cele schimbate separat).</string>
     <string name="map_pack_help">Tot județul tău fără internet, dintr-o singură descărcare. Se actualizează de câteva ori pe an.</string>
-    <string name="map_pack_full">Cu stilul Complet harta vine de pe internet; regiunea descărcată servește la căutare și rute.</string>
     <string name="map_pack_no_index">Conectează-te la internet ca să vezi hărțile disponibile.</string>
     <string name="map_list_loading">Se descarcă lista de hărți…</string>
     <string name="map_list_failed">Lista de hărți nu a putut fi descărcată. Verifică internetul.</string>
@@ -67,7 +60,6 @@
     <string name="map_pack_search">Caută un județ sau o regiune</string>
     <string name="map_offline_by_state">După județ</string>
     <string name="map_offline_by_zone">După zonă</string>
-    <string name="map_pack_tip">Județul tău nu e aici? Folosește «După zonă»: merge oriunde.</string>
     <string name="map_request_country">Nu e țara ta? Cere-o</string>
     <string name="search_hint">Unde mergi?</string>
     <string name="search_clear">Șterge</string>
@@ -164,4 +156,9 @@
     <string name="guide_arrive">Ajungi la destinație</string>
     <string name="guide_arrive_at">Ajungi: %1$s</string>
     <string name="search_ft">%1$d ft</string>
+    <string name="map_customize_help">Aspectul și hărțile offline sunt aceleași pentru toate hărțile tale: le schimbi în Setări → Aplicații → Navigație.</string>
+    <string name="map_mark">Marchează un punct</string>
+    <string name="map_mark_here">Marchează aici</string>
+    <string name="map_orientation_help">Automat: înclinată, harta privește în direcția în care mergi; plată, nordul e sus.</string>
+    <string name="search_favorites_full">Ai numărul maxim de favorite (%1$d): scoate unul ca să adaugi altul.</string>
 </resources>

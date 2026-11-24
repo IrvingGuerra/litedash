@@ -21,7 +21,6 @@
     <plurals name="library_songs">
         <item quantity="other">%1$d bài hát</item>
     </plurals>
-    <string name="library_shuffle">Trộn bài</string>
     <string name="library_unknown">Không rõ</string>
     <string name="library_root">Thư mục gốc của ổ</string>
     <string name="radio_nearby">Gần bạn</string>
@@ -39,4 +38,6 @@
     <string name="library_pick_folder_help">Nếu nhạc có trên ổ nhưng không hiện, hãy chọn thư mục chứa nó: LiteDash sẽ ghi nhớ.</string>
     <string name="library_unreadable">Tôi thấy ổ %1$s, nhưng màn hình không cho ứng dụng đọc bài hát. Hãy chọn thư mục và LiteDash sẽ ghi nhớ.</string>
     <string name="library_browse_memory">Không mở được? Duyệt bộ nhớ</string>
+    <string name="library_capped">Đang hiện %1$s bài hát</string>
+    <string name="player_cannot_open_track">Không mở được bài hát này.</string>
 </resources>

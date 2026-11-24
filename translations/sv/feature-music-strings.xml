@@ -38,4 +38,6 @@
     <string name="recipe_open_bluetooth">Öppnar Bluetooth-appen och kommer tillbaka</string>
     <string name="recipe_open_radio">Öppnar radioappen och kommer tillbaka</string>
     <string name="recipe_failed">Inget sätt hittades</string>
+    <string name="music_phone_link">Använd LiteDash Connect</string>
+    <string name="music_shuffle">Blanda</string>
 </resources>

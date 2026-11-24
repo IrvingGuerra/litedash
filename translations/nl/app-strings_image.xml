@@ -3,7 +3,7 @@
     <string name="image_background">Achtergrond</string>
     <string name="image_background_original">Origineel</string>
     <string name="image_background_remove">Verwijderen</string>
-    <string name="image_background_help">Werkt het best met een effen achtergrond: een muur, de lucht of een studio.</string>
+    <string name="image_background_help">Werkt het best met een effen achtergrond: een muur, de lucht of een studio. Hij kan alleen direct bij het kiezen van de foto worden verwijderd: kies de foto opnieuw om hem later te verwijderen.</string>
     <string name="image_strength">Sterkte</string>
     <string name="image_strength_low">Zacht</string>
     <string name="image_strength_medium">Gemiddeld</string>

@@ -3,7 +3,7 @@
     <string name="image_background">Bakgrund</string>
     <string name="image_background_original">Original</string>
     <string name="image_background_remove">Ta bort</string>
-    <string name="image_background_help">Fungerar bäst med enfärgad bakgrund: en vägg, himlen eller en studio.</string>
+    <string name="image_background_help">Fungerar bäst med en enfärgad bakgrund: en vägg, himlen eller en studio. Den kan bara tas bort direkt när du väljer fotot: för att ta bort den senare, välj fotot igen.</string>
     <string name="image_strength">Styrka</string>
     <string name="image_strength_low">Mjuk</string>
     <string name="image_strength_medium">Medel</string>

@@ -21,7 +21,6 @@
     <plurals name="library_songs">
         <item quantity="other">%1$d lagu</item>
     </plurals>
-    <string name="library_shuffle">Acak</string>
     <string name="library_unknown">Tidak diketahui</string>
     <string name="library_root">Akar flashdisk</string>
     <string name="radio_nearby">Di sekitar Anda</string>
@@ -39,4 +38,6 @@
     <string name="library_pick_folder_help">Jika musik Anda ada di flashdisk tapi tidak muncul, pilih foldernya: LiteDash akan mengingatnya.</string>
     <string name="library_unreadable">Saya melihat flashdisk %1$s, tapi layar Anda tidak mengizinkan aplikasi membaca lagunya. Pilih foldernya dan LiteDash akan mengingatnya.</string>
     <string name="library_browse_memory">Tidak terbuka? Telusuri penyimpanan</string>
+    <string name="library_capped">Menampilkan %1$s lagu</string>
+    <string name="player_cannot_open_track">Tidak bisa membuka lagu ini.</string>
 </resources>

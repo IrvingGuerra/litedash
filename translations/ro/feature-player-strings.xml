@@ -23,7 +23,6 @@
         <item quantity="few">%1$d melodii</item>
         <item quantity="other">%1$d de melodii</item>
     </plurals>
-    <string name="library_shuffle">Amestecă</string>
     <string name="library_unknown">Necunoscut</string>
     <string name="library_root">Rădăcina stickului</string>
     <string name="radio_nearby">Lângă tine</string>
@@ -41,4 +40,6 @@
     <string name="library_pick_folder_help">Dacă muzica e pe stick, dar nu apare, alege-i dosarul: LiteDash îl va ține minte.</string>
     <string name="library_unreadable">Văd stickul %1$s, dar ecranul tău nu lasă aplicațiile să-i citească melodiile. Alege-i dosarul și LiteDash îl va ține minte.</string>
     <string name="library_browse_memory">Nu s-a deschis? Răsfoiește memoria</string>
+    <string name="library_capped">Se afișează %1$s melodii</string>
+    <string name="player_cannot_open_track">Melodia nu a putut fi deschisă.</string>
 </resources>

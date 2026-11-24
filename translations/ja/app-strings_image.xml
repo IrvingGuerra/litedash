@@ -3,7 +3,7 @@
     <string name="image_background">背景</string>
     <string name="image_background_original">オリジナル</string>
     <string name="image_background_remove">削除</string>
-    <string name="image_background_help">壁や空、スタジオなど、無地の背景だときれいに切り抜けます。</string>
+    <string name="image_background_help">壁や空、スタジオなど、無地の背景だときれいに切り抜けます。背景を消せるのは写真を選んだ直後だけです。後から消すには、もう一度選び直してください。</string>
     <string name="image_strength">強さ</string>
     <string name="image_strength_low">弱</string>
     <string name="image_strength_medium">中</string>

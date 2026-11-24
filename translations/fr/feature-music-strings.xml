@@ -40,4 +40,6 @@
     <string name="recipe_open_bluetooth">Ouvre l\'appli Bluetooth et revient</string>
     <string name="recipe_open_radio">Ouvre l\'appli radio et revient</string>
     <string name="recipe_failed">Aucune méthode trouvée</string>
+    <string name="music_phone_link">Utiliser LiteDash Connect</string>
+    <string name="music_shuffle">Aléatoire</string>
 </resources>

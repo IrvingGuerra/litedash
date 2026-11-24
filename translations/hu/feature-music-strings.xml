@@ -38,4 +38,6 @@
     <string name="recipe_open_bluetooth">Megnyitja a Bluetooth alkalmazást, majd visszatér</string>
     <string name="recipe_open_radio">Megnyitja a rádióalkalmazást, majd visszatér</string>
     <string name="recipe_failed">Nem találtunk módot</string>
+    <string name="music_phone_link">LiteDash Connect használata</string>
+    <string name="music_shuffle">Keverés</string>
 </resources>

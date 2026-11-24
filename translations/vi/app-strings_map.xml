@@ -18,13 +18,7 @@
     <string name="map_style_theme">Theo giao diện</string>
     <string name="map_style_light">Sáng</string>
     <string name="map_style_dark">Tối</string>
-    <string name="map_detail">Kiểu</string>
-    <string name="map_detail_full">Đầy đủ</string>
-    <string name="map_detail_minimal">Tối giản</string>
-    <string name="map_detail_full_help">Mọi thứ từ OpenStreetMap: đường, địa điểm, tên và biểu tượng.</string>
-    <string name="map_detail_minimal_help">Chỉ đường, sông nước và công viên, gọn gàng theo màu LiteDash (dữ liệu từ OpenFreeMap).</string>
     <string name="map_offline">Ngoại tuyến</string>
-    <string name="map_offline_full">Có với bản đồ tối giản.</string>
     <string name="map_offline_help">Lưu bản đồ của một khu vực để xem khi không có internet. Để tìm kiếm và lập lộ trình, hãy tải tỉnh của bạn.</string>
     <string name="map_offline_here">Khu vực của bạn</string>
     <string name="map_offline_other">Khu vực khác</string>
@@ -50,9 +44,8 @@
     <string name="map_tab_app">Ứng dụng bản đồ</string>
     <string name="map_tab_look">Bản đồ LiteDash</string>
     <string name="map_tab_style">Giao diện bản đồ</string>
-    <string name="map_look_help">Áp dụng cho mọi tiện ích Bản đồ và bản đồ toàn màn hình. Mỗi tiện ích vẫn có thể đổi riêng từ biểu tượng bánh răng.</string>
+    <string name="map_look_help">Đổi mọi tiện ích Bản đồ và bản đồ toàn màn hình (kể cả những cái bạn đã đổi riêng).</string>
     <string name="map_pack_help">Cả tỉnh của bạn không cần internet, chỉ một lần tải. Cập nhật vài lần mỗi năm.</string>
-    <string name="map_pack_full">Với kiểu Đầy đủ, bản đồ tải từ internet; vùng đã tải dùng để tìm kiếm và chỉ đường.</string>
     <string name="map_pack_no_index">Kết nối internet để xem các bản đồ có sẵn.</string>
     <string name="map_list_loading">Đang tải danh sách bản đồ…</string>
     <string name="map_list_failed">Không tải được danh sách bản đồ. Hãy kiểm tra internet.</string>
@@ -67,7 +60,6 @@
     <string name="map_pack_search">Tìm tỉnh hoặc khu vực</string>
     <string name="map_offline_by_state">Theo tỉnh</string>
     <string name="map_offline_by_zone">Theo khu vực</string>
-    <string name="map_pack_tip">Chưa có tỉnh của bạn? Dùng «Theo khu vực»: dùng được ở mọi nơi.</string>
     <string name="map_request_country">Không có nước bạn? Yêu cầu ngay</string>
     <string name="search_hint">Bạn muốn đi đâu?</string>
     <string name="search_clear">Xóa</string>
@@ -164,4 +156,9 @@
     <string name="guide_arrive">Bạn sẽ đến nơi</string>
     <string name="guide_arrive_at">Bạn sẽ đến %1$s</string>
     <string name="search_ft">%1$d ft</string>
+    <string name="map_customize_help">Giao diện và bản đồ ngoại tuyến giống nhau cho mọi bản đồ của bạn: đổi trong Cài đặt → Ứng dụng → Dẫn đường.</string>
+    <string name="map_mark">Đánh dấu một điểm</string>
+    <string name="map_mark_here">Đánh dấu ở đây</string>
+    <string name="map_orientation_help">Tự động: khi nghiêng, bản đồ hướng theo chiều bạn đi; khi phẳng, hướng bắc ở trên.</string>
+    <string name="search_favorites_full">Bạn đã có số mục yêu thích tối đa (%1$d): bỏ một mục để thêm mục khác.</string>
 </resources>

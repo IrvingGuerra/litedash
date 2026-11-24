@@ -3,7 +3,7 @@
     <string name="image_background">Pozadí</string>
     <string name="image_background_original">Původní</string>
     <string name="image_background_remove">Odstranit</string>
-    <string name="image_background_help">Nejlépe funguje s jednolitým pozadím: zeď, obloha nebo studio.</string>
+    <string name="image_background_help">Nejlépe funguje s jednolitým pozadím: zeď, obloha nebo studio. Odstranit ho jde jen hned po výběru fotky: později ji vyber znovu.</string>
     <string name="image_strength">Síla</string>
     <string name="image_strength_low">Jemná</string>
     <string name="image_strength_medium">Střední</string>

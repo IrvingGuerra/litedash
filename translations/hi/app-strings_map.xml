@@ -18,13 +18,7 @@
     <string name="map_style_theme">थीम जैसा</string>
     <string name="map_style_light">लाइट</string>
     <string name="map_style_dark">डार्क</string>
-    <string name="map_detail">स्टाइल</string>
-    <string name="map_detail_full">पूरा</string>
-    <string name="map_detail_minimal">मिनिमल</string>
-    <string name="map_detail_full_help">OpenStreetMap का सब कुछ: सड़कें, जगहें, नाम और आइकन।</string>
-    <string name="map_detail_minimal_help">सिर्फ़ सड़कें, पानी और पार्क, साफ़ और LiteDash के रंगों में (डेटा OpenFreeMap से)।</string>
     <string name="map_offline">ऑफ़लाइन</string>
-    <string name="map_offline_full">मिनिमल मैप के साथ उपलब्ध।</string>
     <string name="map_offline_help">किसी इलाके का मैप सेव करें ताकि बिना इंटरनेट के दिखे। खोजने और रास्ता बनाने के लिए अपना राज्य डाउनलोड करें।</string>
     <string name="map_offline_here">आपका इलाका</string>
     <string name="map_offline_other">दूसरा इलाका</string>
@@ -50,9 +44,8 @@
     <string name="map_tab_app">मैप ऐप</string>
     <string name="map_tab_look">LiteDash मैप</string>
     <string name="map_tab_style">मैप का रूप</string>
-    <string name="map_look_help">आपके सभी मैप विजेट और फ़ुल-स्क्रीन मैप पर लागू होता है। हर विजेट को उसके गियर से अलग भी बदल सकते हैं।</string>
+    <string name="map_look_help">आपके सभी मैप विजेट और फ़ुल-स्क्रीन मैप बदलता है (अलग से बदले गए भी)।</string>
     <string name="map_pack_help">पूरा राज्य बिना इंटरनेट के, एक ही डाउनलोड में। साल में कुछ बार अपडेट होता है।</string>
-    <string name="map_pack_full">पूरा शैली में मानचित्र इंटरनेट से आता है; डाउनलोड किया गया राज्य खोज और रास्तों के लिए है।</string>
     <string name="map_pack_no_index">उपलब्ध नक्शे देखने के लिए इंटरनेट से जुड़ें।</string>
     <string name="map_list_loading">नक्शों की सूची डाउनलोड हो रही है…</string>
     <string name="map_list_failed">नक्शों की सूची डाउनलोड नहीं हुई। इंटरनेट देखें।</string>
@@ -67,7 +60,6 @@
     <string name="map_pack_search">राज्य या क्षेत्र खोजें</string>
     <string name="map_offline_by_state">राज्य के हिसाब से</string>
     <string name="map_offline_by_zone">ज़ोन के हिसाब से</string>
-    <string name="map_pack_tip">आपका राज्य नहीं है? «ज़ोन के हिसाब से» इस्तेमाल करें: यह हर जगह चलता है।</string>
     <string name="map_request_country">आपका देश नहीं है? उसे माँगें</string>
     <string name="search_hint">कहाँ जाना है?</string>
     <string name="search_clear">साफ़ करें</string>
@@ -164,4 +156,9 @@
     <string name="guide_arrive">आप अपनी मंज़िल पर पहुँचेंगे</string>
     <string name="guide_arrive_at">आप %1$s पहुँचेंगे</string>
     <string name="search_ft">%1$d ft</string>
+    <string name="map_customize_help">लुक और ऑफ़लाइन मैप आपके सभी मैप के लिए एक जैसे हैं: इन्हें सेटिंग्स → ऐप्स → नेविगेशन में बदलें।</string>
+    <string name="map_mark">कोई जगह मार्क करें</string>
+    <string name="map_mark_here">यहाँ मार्क करें</string>
+    <string name="map_orientation_help">ऑटोमैटिक: झुका हुआ मैप आपकी दिशा की ओर रहता है; सपाट मैप में उत्तर ऊपर रहता है।</string>
+    <string name="search_favorites_full">आपके पसंदीदा पूरे हो गए (%1$d): दूसरा जोड़ने के लिए एक हटाएँ।</string>
 </resources>

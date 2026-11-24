@@ -38,4 +38,6 @@
     <string name="recipe_open_bluetooth">Bluetooth ऐप खोलकर वापस आता है</string>
     <string name="recipe_open_radio">रेडियो ऐप खोलकर वापस आता है</string>
     <string name="recipe_failed">कोई तरीका नहीं मिला</string>
+    <string name="music_phone_link">LiteDash Connect इस्तेमाल करें</string>
+    <string name="music_shuffle">शफ़ल</string>
 </resources>

@@ -22,7 +22,6 @@
         <item quantity="one">%1$d dal</item>
         <item quantity="other">%1$d dal</item>
     </plurals>
-    <string name="library_shuffle">Keverés</string>
     <string name="library_unknown">Ismeretlen</string>
     <string name="library_root">Meghajtó gyökere</string>
     <string name="radio_nearby">A közeledben</string>
@@ -40,4 +39,6 @@
     <string name="library_pick_folder_help">Ha a zenéd a meghajtón van, de nem jelenik meg, válaszd ki a mappáját: a LiteDash megjegyzi.</string>
     <string name="library_unreadable">Látom a(z) %1$s meghajtót, de a kijelződ nem engedi az alkalmazásoknak olvasni a dalait. Válaszd ki a mappáját, és a LiteDash megjegyzi.</string>
     <string name="library_browse_memory">Nem nyílt meg? Tallózás a tárhelyen</string>
+    <string name="library_capped">Megjelenített dalok: %1$s</string>
+    <string name="player_cannot_open_track">Nem sikerült megnyitni ezt a dalt.</string>
 </resources>

@@ -1,24 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="tab_day_night">Dag en nacht</string>
-    <string name="tab_your_screen">Je scherm</string>
     <string name="weather_switch">Weer</string>
-    <string name="weather_switch_help">In de balk, de klok en de Weer-widget; elk half uur bijgewerkt terwijl je het startscherm ziet. Gebruikt je geschatte locatie en internet; uit gebruikt het geen van beide.</string>
     <string name="reminder_pick_date">Wanneer verloopt %1$s?</string>
     <string name="tab_home">Start</string>
     <string name="tab_interface">Interface</string>
-    <string name="android_bar">Android-balk</string>
     <string name="accent_title">Interfacekleur</string>
-    <string name="accent_help">Schakelaars, knoppen, afspelen en voortgangsbalken. Kaarten en achtergrond blijven gelijk; Natuurlijk is de originele look.</string>
-    <string name="accent_natural">Natuurlijk</string>
+    <string name="accent_help">Schakelaars, knoppen, afspelen en voortgangsbalken. Kaarten en achtergrond blijven gelijk.</string>
     <string name="cards_title">Kaarten</string>
     <string name="cards_help">Hoe de kaarten in de hele app eruitzien: hun kleur en of de achtergrond doorschijnt.</string>
     <string name="cards_solid">Effen</string>
     <string name="cards_glass">Glas</string>
     <string name="cards_opacity">Hoe zichtbaar</string>
     <string name="cards_glass_help">Je achtergrond is wazig te zien achter elke kaart; boven een kaart als achtergrond is de kaart gedempt.</string>
-    <string name="cards_theme">Thema</string>
     <string name="cards_themes">Combinaties</string>
     <string name="language_search">Zoek je taal</string>
     <string name="language_not_found">Die taal is er nog niet. Help ons met vertalen op litedash.dev/translate.</string>
+    <string name="factory_look">Standaard</string>
+    <string name="tab_language_units">Taal &amp; eenheden</string>
+    <string name="tab_theme_brightness">Thema &amp; helderheid</string>
 </resources>

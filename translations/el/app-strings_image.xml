@@ -3,7 +3,7 @@
     <string name="image_background">Φόντο</string>
     <string name="image_background_original">Αρχικό</string>
     <string name="image_background_remove">Αφαίρεση</string>
-    <string name="image_background_help">Λειτουργεί καλύτερα με απλό φόντο: τοίχο, ουρανό ή στούντιο.</string>
+    <string name="image_background_help">Λειτουργεί καλύτερα με απλό φόντο: τοίχο, ουρανό ή στούντιο. Αφαιρείται μόνο αμέσως μόλις επιλέξετε τη φωτογραφία: για να το αφαιρέσετε αργότερα, επιλέξτε την ξανά.</string>
     <string name="image_strength">Ένταση</string>
     <string name="image_strength_low">Ήπια</string>
     <string name="image_strength_medium">Μεσαία</string>

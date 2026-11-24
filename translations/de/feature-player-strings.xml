@@ -22,7 +22,6 @@
         <item quantity="one">%1$d Titel</item>
         <item quantity="other">%1$d Titel</item>
     </plurals>
-    <string name="library_shuffle">Zufällig</string>
     <string name="library_unknown">Unbekannt</string>
     <string name="library_root">Hauptordner</string>
     <string name="radio_nearby">In der Nähe</string>
@@ -40,4 +39,6 @@
     <string name="library_pick_folder_help">Ist deine Musik auf dem Stick, erscheint aber nicht, wähle ihren Ordner: LiteDash merkt ihn sich.</string>
     <string name="library_unreadable">Ich sehe den Stick %1$s, aber dein Display lässt Apps seine Titel nicht lesen. Wähle seinen Ordner und LiteDash merkt ihn sich.</string>
     <string name="library_browse_memory">Nicht geöffnet? Speicher durchsuchen</string>
+    <string name="library_capped">%1$s Songs werden angezeigt</string>
+    <string name="player_cannot_open_track">Dieser Song konnte nicht geöffnet werden.</string>
 </resources>

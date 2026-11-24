@@ -22,7 +22,6 @@
         <item quantity="one">%1$d şarkı</item>
         <item quantity="other">%1$d şarkı</item>
     </plurals>
-    <string name="library_shuffle">Karıştır</string>
     <string name="library_unknown">Bilinmeyen</string>
     <string name="library_root">Sürücü kökü</string>
     <string name="radio_nearby">Yakınınızda</string>
@@ -40,4 +39,6 @@
     <string name="library_pick_folder_help">Müziğiniz sürücüde ama görünmüyorsa klasörünü seçin: LiteDash hatırlar.</string>
     <string name="library_unreadable">%1$s sürücüsünü görebiliyorum ama üniteniz uygulamaların şarkılarını okumasına izin vermiyor. Klasörünü seçin, LiteDash hatırlar.</string>
     <string name="library_browse_memory">Açılmadı mı? Depolamaya göz at</string>
+    <string name="library_capped">Gösterilen şarkı: %1$s</string>
+    <string name="player_cannot_open_track">Bu şarkı açılamadı.</string>
 </resources>

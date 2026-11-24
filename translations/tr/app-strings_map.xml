@@ -18,13 +18,7 @@
     <string name="map_style_theme">Tema gibi</string>
     <string name="map_style_light">Açık</string>
     <string name="map_style_dark">Koyu</string>
-    <string name="map_detail">Stil</string>
-    <string name="map_detail_full">Tam</string>
-    <string name="map_detail_minimal">Minimal</string>
-    <string name="map_detail_full_help">OpenStreetMap’ten her şey: sokaklar, yerler, adlar ve simgeler.</string>
-    <string name="map_detail_minimal_help">Sadece sokaklar, su ve parklar; temiz ve LiteDash renkleriyle (veriler OpenFreeMap’ten).</string>
     <string name="map_offline">Çevrimdışı</string>
-    <string name="map_offline_full">Minimal haritayla kullanılabilir.</string>
     <string name="map_offline_help">İnternet olmadan görmek için bir bölgenin haritasını kaydedin. Arama yapmak ve rota oluşturmak için ilinizi indirin.</string>
     <string name="map_offline_here">Bölgeniz</string>
     <string name="map_offline_other">Başka bölge</string>
@@ -50,9 +44,8 @@
     <string name="map_tab_app">Harita uygulaması</string>
     <string name="map_tab_look">LiteDash haritası</string>
     <string name="map_tab_style">Harita görünümü</string>
-    <string name="map_look_help">Tüm Harita widget’larınıza ve tam ekran haritaya uygulanır. Her widget yine dişlisinden değiştirilebilir.</string>
+    <string name="map_look_help">Tüm Harita widget’larınızı ve tam ekran haritayı değiştirir (ayrı değiştirdikleriniz dahil).</string>
     <string name="map_pack_help">Tüm iliniz internetsiz, tek indirmede. Yılda birkaç kez güncellenir.</string>
-    <string name="map_pack_full">Tam stilinde harita internetten gelir; indirilen bölge arama ve rotalar için kullanılır.</string>
     <string name="map_pack_no_index">Mevcut haritaları görmek için internete bağlanın.</string>
     <string name="map_list_loading">Harita listesi indiriliyor…</string>
     <string name="map_list_failed">Harita listesi indirilemedi. İnternet bağlantınızı kontrol edin.</string>
@@ -67,7 +60,6 @@
     <string name="map_pack_search">İl veya bölge ara</string>
     <string name="map_offline_by_state">İle göre</string>
     <string name="map_offline_by_zone">Bölgeye göre</string>
-    <string name="map_pack_tip">İliniz yok mu? «Bölgeye göre» kullanın: her yerde çalışır.</string>
     <string name="map_request_country">Ülken yok mu? İste</string>
     <string name="search_hint">Nereye?</string>
     <string name="search_clear">Temizle</string>
@@ -164,4 +156,9 @@
     <string name="guide_arrive">Hedefinize varacaksınız</string>
     <string name="guide_arrive_at">Varış: %1$s</string>
     <string name="search_ft">%1$d ft</string>
+    <string name="map_customize_help">Görünüm ve çevrimdışı haritalar tüm haritalarınız için aynıdır: Ayarlar → Uygulamalar → Gezinme’den değiştirilir.</string>
+    <string name="map_mark">Bir nokta işaretle</string>
+    <string name="map_mark_here">Burayı işaretle</string>
+    <string name="map_orientation_help">Otomatik: eğik haritada gittiğiniz yöne bakar; düz haritada kuzey yukarıdadır.</string>
+    <string name="search_favorites_full">En fazla favori sayısına ulaştınız (%1$d): başka birini eklemek için birini kaldırın.</string>
 </resources>

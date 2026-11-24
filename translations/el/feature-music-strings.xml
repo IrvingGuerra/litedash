@@ -38,4 +38,6 @@
     <string name="recipe_open_bluetooth">Ανοίγει την εφαρμογή Bluetooth και επιστρέφει</string>
     <string name="recipe_open_radio">Ανοίγει την εφαρμογή ραδιοφώνου και επιστρέφει</string>
     <string name="recipe_failed">Δεν βρέθηκε τρόπος</string>
+    <string name="music_phone_link">Χρήση LiteDash Connect</string>
+    <string name="music_shuffle">Τυχαία σειρά</string>
 </resources>

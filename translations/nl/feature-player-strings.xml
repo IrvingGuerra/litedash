@@ -22,7 +22,6 @@
         <item quantity="one">%1$d nummer</item>
         <item quantity="other">%1$d nummers</item>
     </plurals>
-    <string name="library_shuffle">Shuffle</string>
     <string name="library_unknown">Onbekend</string>
     <string name="library_root">Hoofdmap van de stick</string>
     <string name="radio_nearby">In de buurt</string>
@@ -40,4 +39,6 @@
     <string name="library_pick_folder_help">Staat je muziek op de stick maar verschijnt ze niet? Kies de map: LiteDash onthoudt hem.</string>
     <string name="library_unreadable">Ik zie de stick %1$s, maar je scherm laat apps de nummers niet lezen. Kies de map en LiteDash onthoudt hem.</string>
     <string name="library_browse_memory">Niet geopend? Blader door de opslag</string>
+    <string name="library_capped">%1$s nummers getoond</string>
+    <string name="player_cannot_open_track">Dit nummer kon niet worden geopend.</string>
 </resources>

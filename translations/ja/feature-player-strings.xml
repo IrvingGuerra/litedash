@@ -21,7 +21,6 @@
     <plurals name="library_songs">
         <item quantity="other">%1$d 曲</item>
     </plurals>
-    <string name="library_shuffle">シャッフル</string>
     <string name="library_unknown">不明</string>
     <string name="library_root">ドライブのルート</string>
     <string name="radio_nearby">近くの局</string>
@@ -39,4 +38,6 @@
     <string name="library_pick_folder_help">ドライブに音楽があるのに表示されない場合は、そのフォルダを選んでください。LiteDash が記憶します。</string>
     <string name="library_unreadable">ドライブ %1$s は見えますが、この画面ではアプリが曲を読み込めません。フォルダを選ぶと LiteDash が記憶します。</string>
     <string name="library_browse_memory">開きませんでしたか？　ストレージを参照</string>
+    <string name="library_capped">%1$s 曲を表示中</string>
+    <string name="player_cannot_open_track">この曲を開けませんでした。</string>
 </resources>

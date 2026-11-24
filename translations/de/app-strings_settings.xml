@@ -1,24 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="tab_day_night">Tag und Nacht</string>
-    <string name="tab_your_screen">Dein Display</string>
     <string name="weather_switch">Wetter</string>
-    <string name="weather_switch_help">In der Leiste, der Uhr und dem Wetter-Widget; alle halbe Stunde aktualisiert, solange der Startbildschirm sichtbar ist. Nutzt deinen ungefähren Standort und das Internet; aus, nutzt es keins von beiden.</string>
     <string name="reminder_pick_date">Wann ist %1$s fällig?</string>
     <string name="tab_home">Start</string>
     <string name="tab_interface">Oberfläche</string>
-    <string name="android_bar">Android-Leiste</string>
     <string name="accent_title">Akzentfarbe</string>
-    <string name="accent_help">Schalter, Tasten, Play und Fortschrittsbalken. Kacheln und Hintergrund bleiben gleich; Natürlich ist der Originallook.</string>
-    <string name="accent_natural">Natürlich</string>
+    <string name="accent_help">Schalter, Tasten, Play und Fortschrittsbalken. Kacheln und Hintergrund bleiben gleich.</string>
     <string name="cards_title">Karten</string>
     <string name="cards_help">So sehen die Karten in der ganzen App aus: ihre Farbe und ob der Hintergrund durchscheint.</string>
     <string name="cards_solid">Deckend</string>
     <string name="cards_glass">Glas</string>
     <string name="cards_opacity">Wie sichtbar</string>
     <string name="cards_glass_help">Dein Hintergrundbild erscheint unscharf hinter jeder Karte; über dem Karten-Hintergrund erscheint die Karte abgedämpft.</string>
-    <string name="cards_theme">Design</string>
     <string name="cards_themes">Kombinationen</string>
     <string name="language_search">Finde deine Sprache</string>
     <string name="language_not_found">Diese Sprache gibt es noch nicht. Hilf uns beim Übersetzen auf litedash.dev/translate.</string>
+    <string name="factory_look">Standard</string>
+    <string name="tab_language_units">Sprache &amp; Einheiten</string>
+    <string name="tab_theme_brightness">Design &amp; Helligkeit</string>
 </resources>

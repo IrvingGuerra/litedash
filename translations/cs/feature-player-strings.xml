@@ -24,7 +24,6 @@
         <item quantity="many">%1$d skladby</item>
         <item quantity="other">%1$d skladeb</item>
     </plurals>
-    <string name="library_shuffle">Náhodně</string>
     <string name="library_unknown">Neznámé</string>
     <string name="library_root">Kořen disku</string>
     <string name="radio_nearby">Poblíž</string>
@@ -42,4 +41,6 @@
     <string name="library_pick_folder_help">Pokud je hudba na disku, ale nezobrazuje se, vyber její složku: LiteDash si ji zapamatuje.</string>
     <string name="library_unreadable">Vidím disk %1$s, ale tvůj displej nedovolí aplikacím číst jeho skladby. Vyber jeho složku a LiteDash si ji zapamatuje.</string>
     <string name="library_browse_memory">Neotevřelo se? Procházej úložiště</string>
+    <string name="library_capped">Zobrazeno skladeb: %1$s</string>
+    <string name="player_cannot_open_track">Tuto skladbu se nepodařilo otevřít.</string>
 </resources>

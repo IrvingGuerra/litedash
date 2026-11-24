@@ -38,4 +38,6 @@
     <string name="recipe_open_bluetooth">Bluetooth uygulamasını açıp geri döner</string>
     <string name="recipe_open_radio">Radyo uygulamasını açıp geri döner</string>
     <string name="recipe_failed">Yol bulunamadı</string>
+    <string name="music_phone_link">LiteDash Connect’i kullan</string>
+    <string name="music_shuffle">Karıştır</string>
 </resources>

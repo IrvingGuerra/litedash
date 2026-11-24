@@ -9,6 +9,7 @@
     <string name="player_next">Next</string>
     <string name="player_previous">Previous</string>
     <string name="player_cannot_play">Couldn\'t play it. Try another station or check the connection.</string>
+    <string name="player_cannot_open_track">Couldn\'t open this song.</string>
     <string name="player_timeout">The station isn\'t responding. Try another.</string>
     <string name="player_no_focus">Another app has the audio. Tap play again.</string>
     <string name="library_no_drive">Plug in a USB drive with music</string>
@@ -24,8 +25,8 @@
         <item quantity="one">%1$d song</item>
         <item quantity="other">%1$d songs</item>
     </plurals>
-    <string name="library_shuffle">Shuffle</string>
     <string name="library_unknown">Unknown</string>
+    <string name="library_capped">Showing %1$s songs</string>
     <string name="library_root">Drive root</string>
     <string name="radio_nearby">Near you</string>
     <string name="radio_favorites">Favorites</string>

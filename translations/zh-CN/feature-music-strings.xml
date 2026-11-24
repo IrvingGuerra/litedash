@@ -38,4 +38,6 @@
     <string name="recipe_open_bluetooth">打开 Bluetooth 应用后返回</string>
     <string name="recipe_open_radio">打开收音机应用后返回</string>
     <string name="recipe_failed">未找到可行方法</string>
+    <string name="music_phone_link">使用 LiteDash Connect</string>
+    <string name="music_shuffle">随机播放</string>
 </resources>

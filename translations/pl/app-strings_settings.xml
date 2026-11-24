@@ -1,24 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="tab_day_night">Dzień i noc</string>
-    <string name="tab_your_screen">Twój ekran</string>
     <string name="weather_switch">Pogoda</string>
-    <string name="weather_switch_help">Na pasku, w zegarze i w widżecie Pogoda; odświeżana co pół godziny, gdy widzisz ekran główny. Używa przybliżonej lokalizacji i internetu; wyłączona nie używa żadnego z nich.</string>
     <string name="reminder_pick_date">Termin: %1$s – kiedy?</string>
     <string name="tab_home">Ekran główny</string>
     <string name="tab_interface">Interfejs</string>
-    <string name="android_bar">Pasek Androida</string>
     <string name="accent_title">Kolor interfejsu</string>
-    <string name="accent_help">Przełączniki, przyciski, odtwarzanie i paski postępu. Karty i tło się nie zmieniają; Naturalny to oryginalny wygląd.</string>
-    <string name="accent_natural">Naturalny</string>
+    <string name="accent_help">Przełączniki, przyciski, odtwarzanie i paski postępu. Karty i tło się nie zmieniają.</string>
     <string name="cards_title">Karty</string>
     <string name="cards_help">Jak wyglądają karty w całej aplikacji: ich kolor i czy prześwituje tło.</string>
     <string name="cards_solid">Pełne</string>
     <string name="cards_glass">Szkło</string>
     <string name="cards_opacity">Jak bardzo widać</string>
     <string name="cards_glass_help">Twoja tapeta jest widoczna rozmyta za każdą kartą; nad mapą w tle mapa jest przygaszona.</string>
-    <string name="cards_theme">Motyw</string>
     <string name="cards_themes">Zestawienia</string>
     <string name="language_search">Znajdź swój język</string>
     <string name="language_not_found">Tego języka jeszcze nie ma. Pomóż nam go przetłumaczyć na litedash.dev/translate.</string>
+    <string name="factory_look">Domyślny</string>
+    <string name="tab_language_units">Język i jednostki</string>
+    <string name="tab_theme_brightness">Motyw i jasność</string>
 </resources>

@@ -22,7 +22,6 @@
         <item quantity="one">%1$d brano</item>
         <item quantity="other">%1$d brani</item>
     </plurals>
-    <string name="library_shuffle">Casuale</string>
     <string name="library_unknown">Sconosciuto</string>
     <string name="library_root">Radice della chiavetta</string>
     <string name="radio_nearby">Vicino a te</string>
@@ -40,4 +39,6 @@
     <string name="library_pick_folder_help">Se la tua musica è sulla chiavetta ma non appare, scegli la sua cartella: LiteDash la ricorderà.</string>
     <string name="library_unreadable">Vedo la chiavetta %1$s, ma il tuo schermo non lascia leggere i brani alle app. Scegli la sua cartella e LiteDash la ricorderà.</string>
     <string name="library_browse_memory">Non si è aperto? Sfoglia la memoria</string>
+    <string name="library_capped">Mostrate %1$s canzoni</string>
+    <string name="player_cannot_open_track">Impossibile aprire questa canzone.</string>
 </resources>

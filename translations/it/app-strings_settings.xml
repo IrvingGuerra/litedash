@@ -1,24 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="tab_day_night">Giorno e notte</string>
-    <string name="tab_your_screen">Il tuo schermo</string>
     <string name="weather_switch">Meteo</string>
-    <string name="weather_switch_help">Nella barra, nell\'orologio e nel widget Meteo; si aggiorna ogni mezz\'ora mentre vedi la Home. Usa la tua posizione approssimativa e internet; se è spento, non usa nessuno dei due.</string>
     <string name="reminder_pick_date">Quando scade %1$s?</string>
     <string name="tab_home">Home</string>
     <string name="tab_interface">Interfaccia</string>
-    <string name="android_bar">Barra di Android</string>
     <string name="accent_title">Colore interfaccia</string>
-    <string name="accent_help">Interruttori, pulsanti, play e barre di avanzamento. Schede e sfondo restano uguali; Naturale è l\'aspetto originale.</string>
-    <string name="accent_natural">Naturale</string>
+    <string name="accent_help">Interruttori, pulsanti, play e barre di avanzamento. Schede e sfondo restano uguali.</string>
     <string name="cards_title">Schede</string>
     <string name="cards_help">Come appaiono le schede in tutta l\'app: il colore e se si vede lo sfondo.</string>
     <string name="cards_solid">Piene</string>
     <string name="cards_glass">Vetro</string>
     <string name="cards_opacity">Quanto si vedono</string>
     <string name="cards_glass_help">Il tuo sfondo si vede sfocato dietro ogni scheda; sopra la mappa di sfondo, la mappa si vede attenuata.</string>
-    <string name="cards_theme">Tema</string>
     <string name="cards_themes">Combinazioni</string>
     <string name="language_search">Cerca la tua lingua</string>
     <string name="language_not_found">Questa lingua non c\'è ancora. Aiutaci a tradurla su litedash.dev/translate.</string>
+    <string name="factory_look">Predefinito</string>
+    <string name="tab_language_units">Lingua e unità</string>
+    <string name="tab_theme_brightness">Tema e luminosità</string>
 </resources>

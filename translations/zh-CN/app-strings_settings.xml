@@ -1,24 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="tab_day_night">日夜</string>
-    <string name="tab_your_screen">你的屏幕</string>
     <string name="weather_switch">天气</string>
-    <string name="weather_switch_help">显示在栏、时钟和天气小组件中；查看主屏幕时每半小时刷新一次。使用你的大致位置和网络；关闭后两者都不使用。</string>
     <string name="reminder_pick_date">%1$s何时到期？</string>
     <string name="tab_home">主屏幕</string>
     <string name="tab_interface">界面</string>
-    <string name="android_bar">Android 状态栏</string>
     <string name="accent_title">界面颜色</string>
-    <string name="accent_help">开关、按钮、播放和进度条。卡片和背景保持不变；“自然”为原始外观。</string>
-    <string name="accent_natural">自然</string>
+    <string name="accent_help">开关、按钮、播放和进度条。卡片和背景保持不变。</string>
     <string name="cards_title">卡片</string>
     <string name="cards_help">整个应用中卡片的外观：颜色，以及是否透出背景。</string>
     <string name="cards_solid">不透明</string>
     <string name="cards_glass">玻璃</string>
     <string name="cards_opacity">可见度</string>
     <string name="cards_glass_help">你的壁纸会模糊地显示在每张卡片后面；在地图背景上，地图会调暗显示。</string>
-    <string name="cards_theme">主题</string>
     <string name="cards_themes">搭配</string>
     <string name="language_search">查找你的语言</string>
     <string name="language_not_found">暂时还没有这种语言。欢迎在 litedash.dev/translate 帮我们翻译。</string>
+    <string name="factory_look">默认</string>
+    <string name="tab_language_units">语言和单位</string>
+    <string name="tab_theme_brightness">主题和亮度</string>
 </resources>

@@ -38,4 +38,6 @@
     <string name="recipe_open_bluetooth">Bluetooth アプリを開いて戻る</string>
     <string name="recipe_open_radio">ラジオアプリを開いて戻る</string>
     <string name="recipe_failed">方法が見つかりません</string>
+    <string name="music_phone_link">LiteDash Connect を使う</string>
+    <string name="music_shuffle">シャッフル</string>
 </resources>

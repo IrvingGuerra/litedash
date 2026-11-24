@@ -18,13 +18,7 @@
     <string name="map_style_theme">Mint a téma</string>
     <string name="map_style_light">Világos</string>
     <string name="map_style_dark">Sötét</string>
-    <string name="map_detail">Stílus</string>
-    <string name="map_detail_full">Teljes</string>
-    <string name="map_detail_minimal">Minimál</string>
-    <string name="map_detail_full_help">Minden az OpenStreetMapből: utcák, helyek, nevek és ikonok.</string>
-    <string name="map_detail_minimal_help">Csak utcák, víz és parkok, letisztultan, LiteDash színekben (adatok: OpenFreeMap).</string>
     <string name="map_offline">Offline</string>
-    <string name="map_offline_full">A minimál térképpel érhető el.</string>
     <string name="map_offline_help">Mentsd el egy terület térképét, hogy internet nélkül is lásd. A kereséshez és az útvonalakhoz töltsd le a megyédet.</string>
     <string name="map_offline_here">A te területed</string>
     <string name="map_offline_other">Másik terület</string>
@@ -50,9 +44,8 @@
     <string name="map_tab_app">Térképalkalmazás</string>
     <string name="map_tab_look">LiteDash térkép</string>
     <string name="map_tab_style">Térkép megjelenése</string>
-    <string name="map_look_help">Az összes Térkép widgetre és a teljes képernyős térképre vonatkozik. Minden widget továbbra is módosítható a saját fogaskerekéről.</string>
+    <string name="map_look_help">Módosítja az összes Térkép widgetedet és a teljes képernyős térképet (a külön módosítottakat is).</string>
     <string name="map_pack_help">Az egész megyéd internet nélkül, egyetlen letöltéssel. Évente néhányszor frissül.</string>
-    <string name="map_pack_full">A Teljes stílusnál a térkép az internetről jön; a letöltött régió a kereséshez és az útvonalakhoz kell.</string>
     <string name="map_pack_no_index">Csatlakozz az internethez az elérhető térképek megtekintéséhez.</string>
     <string name="map_list_loading">Térképlista letöltése…</string>
     <string name="map_list_failed">Nem sikerült letölteni a térképlistát. Nézd meg az internetet.</string>
@@ -67,7 +60,6 @@
     <string name="map_pack_search">Megye vagy régió keresése</string>
     <string name="map_offline_by_state">Megyénként</string>
     <string name="map_offline_by_zone">Zónánként</string>
-    <string name="map_pack_tip">Nincs itt a megyéd? Használd a «Zónánként» lehetőséget: bárhol működik.</string>
     <string name="map_request_country">Nincs itt az országod? Kérd</string>
     <string name="search_hint">Hová mész?</string>
     <string name="search_clear">Törlés</string>
@@ -164,4 +156,9 @@
     <string name="guide_arrive">Megérkezel az úti célhoz</string>
     <string name="guide_arrive_at">Megérkezel: %1$s</string>
     <string name="search_ft">%1$d ft</string>
+    <string name="map_customize_help">A megjelenés és az offline térképek minden térképednél ugyanazok: a Beállítások → Alkalmazások → Navigáció menüben módosíthatod őket.</string>
+    <string name="map_mark">Hely megjelölése</string>
+    <string name="map_mark_here">Megjelölés itt</string>
+    <string name="map_orientation_help">Automatikus: döntve a térkép a haladási irányba néz, laposan észak van felül.</string>
+    <string name="search_favorites_full">Elérted a kedvencek maximumát (%1$d): törölj egyet, hogy újat adhass hozzá.</string>
 </resources>

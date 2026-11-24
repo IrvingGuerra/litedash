@@ -5,7 +5,7 @@
     <string name="image_background">Fundo</string>
     <string name="image_background_original">Original</string>
     <string name="image_background_remove">Remover</string>
-    <string name="image_background_help">Funciona melhor com um fundo liso: uma parede, o céu ou um estúdio.</string>
+    <string name="image_background_help">Funciona melhor com um fundo liso: uma parede, o céu ou um estúdio. Só dá para remover logo ao escolher a foto: para remover depois, escolha-a de novo.</string>
     <string name="image_strength">Intensidade</string>
     <string name="image_strength_low">Suave</string>
     <string name="image_strength_medium">Média</string>

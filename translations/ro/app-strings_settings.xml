@@ -1,24 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="tab_day_night">Zi și noapte</string>
-    <string name="tab_your_screen">Ecranul tău</string>
     <string name="weather_switch">Vremea</string>
-    <string name="weather_switch_help">În bară, ceas și widgetul Vremea; se actualizează la fiecare jumătate de oră cât vezi ecranul principal. Folosește locația aproximativă și internetul; când e oprită, nu le folosește.</string>
     <string name="reminder_pick_date">Când expiră %1$s?</string>
     <string name="tab_home">Acasă</string>
     <string name="tab_interface">Interfață</string>
-    <string name="android_bar">Bara Android</string>
     <string name="accent_title">Culoarea interfeței</string>
-    <string name="accent_help">Comutatoare, butoane, redare și bare de progres. Cardurile și fundalul rămân la fel; Natural e aspectul original.</string>
-    <string name="accent_natural">Natural</string>
+    <string name="accent_help">Comutatoare, butoane, redare și bare de progres. Cardurile și fundalul rămân la fel.</string>
     <string name="cards_title">Carduri</string>
     <string name="cards_help">Cum arată cardurile în toată aplicația: culoarea și dacă se vede fundalul.</string>
     <string name="cards_solid">Opace</string>
     <string name="cards_glass">Sticlă</string>
     <string name="cards_opacity">Cât se văd</string>
     <string name="cards_glass_help">Imaginea ta de fundal se vede estompată în spatele fiecărui card; peste harta de fundal, harta se vede atenuată.</string>
-    <string name="cards_theme">Temă</string>
     <string name="cards_themes">Combinații</string>
     <string name="language_search">Caută limba ta</string>
     <string name="language_not_found">Limba aceasta nu există încă. Ajută-ne să o traducem pe litedash.dev/translate.</string>
+    <string name="factory_look">Implicit</string>
+    <string name="tab_language_units">Limbă și unități</string>
+    <string name="tab_theme_brightness">Temă și luminozitate</string>
 </resources>

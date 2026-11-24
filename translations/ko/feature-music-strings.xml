@@ -38,4 +38,6 @@
     <string name="recipe_open_bluetooth">Bluetooth 앱을 열었다가 돌아와요</string>
     <string name="recipe_open_radio">라디오 앱을 열었다가 돌아와요</string>
     <string name="recipe_failed">방법을 찾지 못함</string>
+    <string name="music_phone_link">LiteDash Connect 사용</string>
+    <string name="music_shuffle">셔플</string>
 </resources>

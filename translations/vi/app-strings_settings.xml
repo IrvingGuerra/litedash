@@ -1,24 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="tab_day_night">Ngày và đêm</string>
-    <string name="tab_your_screen">Màn hình của bạn</string>
     <string name="weather_switch">Thời tiết</string>
-    <string name="weather_switch_help">Trên thanh, đồng hồ và tiện ích Thời tiết; cập nhật mỗi nửa giờ khi bạn đang xem màn hình chính. Dùng vị trí gần đúng và internet; khi tắt thì không dùng cả hai.</string>
     <string name="reminder_pick_date">Khi nào đến hạn %1$s?</string>
     <string name="tab_home">Màn hình chính</string>
     <string name="tab_interface">Giao diện</string>
-    <string name="android_bar">Thanh Android</string>
     <string name="accent_title">Màu giao diện</string>
-    <string name="accent_help">Công tắc, nút, phát và thanh tiến trình. Thẻ và nền giữ nguyên; Tự nhiên là giao diện gốc.</string>
-    <string name="accent_natural">Tự nhiên</string>
+    <string name="accent_help">Công tắc, nút, phát và thanh tiến trình. Thẻ và nền giữ nguyên.</string>
     <string name="cards_title">Thẻ</string>
     <string name="cards_help">Giao diện thẻ trong toàn bộ ứng dụng: màu sắc và có thấy hình nền phía sau không.</string>
     <string name="cards_solid">Đặc</string>
     <string name="cards_glass">Kính</string>
     <string name="cards_opacity">Mức hiển thị</string>
     <string name="cards_glass_help">Hình nền của bạn hiện mờ phía sau mỗi thẻ; trên nền bản đồ, bản đồ hiện dịu đi.</string>
-    <string name="cards_theme">Giao diện</string>
     <string name="cards_themes">Phối màu</string>
     <string name="language_search">Tìm ngôn ngữ của bạn</string>
     <string name="language_not_found">Chưa có ngôn ngữ này. Hãy giúp chúng tôi dịch tại litedash.dev/translate.</string>
+    <string name="factory_look">Mặc định</string>
+    <string name="tab_language_units">Ngôn ngữ &amp; đơn vị</string>
+    <string name="tab_theme_brightness">Giao diện &amp; độ sáng</string>
 </resources>

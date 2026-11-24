@@ -18,13 +18,7 @@
     <string name="map_style_theme">テーマに合わせる</string>
     <string name="map_style_light">ライト</string>
     <string name="map_style_dark">ダーク</string>
-    <string name="map_detail">スタイル</string>
-    <string name="map_detail_full">フル</string>
-    <string name="map_detail_minimal">ミニマル</string>
-    <string name="map_detail_full_help">OpenStreetMap のすべて：道路、場所、名前、アイコン。</string>
-    <string name="map_detail_minimal_help">道路・水域・公園だけを LiteDash のカラーですっきり表示（データは OpenFreeMap）。</string>
     <string name="map_offline">オフライン</string>
-    <string name="map_offline_full">ミニマル地図で利用できます。</string>
     <string name="map_offline_help">エリアの地図を保存して、インターネットなしで表示できます。検索やルートには、都道府県をダウンロードしてください。</string>
     <string name="map_offline_here">現在のエリア</string>
     <string name="map_offline_other">別のエリア</string>
@@ -50,9 +44,8 @@
     <string name="map_tab_app">地図アプリ</string>
     <string name="map_tab_look">LiteDash の地図</string>
     <string name="map_tab_style">地図の見た目</string>
-    <string name="map_look_help">すべての地図ウィジェットと全画面の地図に適用されます。各ウィジェットは歯車から個別に変更できます。</string>
+    <string name="map_look_help">すべての地図ウィジェットと全画面の地図を変更します（個別に変更したものも含む）。</string>
     <string name="map_pack_help">都道府県全体をオフラインで。1回のダウンロードで完了。年に数回更新されます。</string>
-    <string name="map_pack_full">「フル」スタイルでは地図はインターネットから表示されます。ダウンロードした地域は検索とルートに使われます。</string>
     <string name="map_pack_no_index">利用できる地図を見るにはインターネットに接続してください。</string>
     <string name="map_list_loading">地図リストをダウンロード中…</string>
     <string name="map_list_failed">地図リストをダウンロードできませんでした。インターネット接続を確認してください。</string>
@@ -67,7 +60,6 @@
     <string name="map_pack_search">都道府県・地域を検索</string>
     <string name="map_offline_by_state">都道府県で</string>
     <string name="map_offline_by_zone">エリアで</string>
-    <string name="map_pack_tip">都道府県がない場合は「エリアで」を使ってください。どこでも使えます。</string>
     <string name="map_request_country">あなたの国がない？リクエストする</string>
     <string name="search_hint">目的地を検索</string>
     <string name="search_clear">クリア</string>
@@ -164,4 +156,9 @@
     <string name="guide_arrive">目的地に到着します</string>
     <string name="guide_arrive_at">%1$sに到着します</string>
     <string name="search_ft">%1$d ft</string>
+    <string name="map_customize_help">見た目とオフライン地図はすべての地図で共通です。設定 → アプリ → ナビ で変更できます。</string>
+    <string name="map_mark">地点をマーク</string>
+    <string name="map_mark_here">ここをマーク</string>
+    <string name="map_orientation_help">自動：地図を傾けると進行方向が上、平面では北が上になります。</string>
+    <string name="search_favorites_full">お気に入りが上限（%1$d 件）です。追加するには1つ削除してください。</string>
 </resources>

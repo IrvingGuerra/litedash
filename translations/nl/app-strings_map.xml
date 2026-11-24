@@ -18,13 +18,7 @@
     <string name="map_style_theme">Zoals het thema</string>
     <string name="map_style_light">Licht</string>
     <string name="map_style_dark">Donker</string>
-    <string name="map_detail">Stijl</string>
-    <string name="map_detail_full">Volledig</string>
-    <string name="map_detail_minimal">Minimaal</string>
-    <string name="map_detail_full_help">Alles van OpenStreetMap: straten, plaatsen, namen en iconen.</string>
-    <string name="map_detail_minimal_help">Alleen straten, water en parken, strak en in de kleuren van LiteDash (gegevens van OpenFreeMap).</string>
     <string name="map_offline">Offline</string>
-    <string name="map_offline_full">Beschikbaar met de minimale kaart.</string>
     <string name="map_offline_help">Bewaar de kaart van een zone om hem zonder internet te zien. Download je provincie om te zoeken en routes te plannen.</string>
     <string name="map_offline_here">Jouw zone</string>
     <string name="map_offline_other">Andere zone</string>
@@ -50,9 +44,8 @@
     <string name="map_tab_app">Kaart-app</string>
     <string name="map_tab_look">LiteDash-kaart</string>
     <string name="map_tab_style">Kaartweergave</string>
-    <string name="map_look_help">Geldt voor al je Kaart-widgets en de kaart op volledig scherm. Elke widget is nog via zijn tandwiel aan te passen.</string>
+    <string name="map_look_help">Wijzigt al je Kaart-widgets en de kaart op volledig scherm (ook die je apart hebt gewijzigd).</string>
     <string name="map_pack_help">Je hele provincie zonder internet, in één download. Wordt een paar keer per jaar bijgewerkt.</string>
-    <string name="map_pack_full">Met de stijl Volledig komt de kaart van internet; de gedownloade regio dient voor zoeken en routes.</string>
     <string name="map_pack_no_index">Maak verbinding met internet om de beschikbare kaarten te zien.</string>
     <string name="map_list_loading">Kaartenlijst downloaden…</string>
     <string name="map_list_failed">De kaartenlijst kon niet worden gedownload. Check je internet.</string>
@@ -67,7 +60,6 @@
     <string name="map_pack_search">Provincie of regio zoeken</string>
     <string name="map_offline_by_state">Per provincie</string>
     <string name="map_offline_by_zone">Per zone</string>
-    <string name="map_pack_tip">Staat je provincie er niet bij? Gebruik «Per zone»: werkt overal.</string>
     <string name="map_request_country">Staat je land er niet bij? Vraag het aan</string>
     <string name="search_hint">Waarheen?</string>
     <string name="search_clear">Wissen</string>
@@ -164,4 +156,9 @@
     <string name="guide_arrive">Je komt aan op je bestemming</string>
     <string name="guide_arrive_at">Je komt aan: %1$s</string>
     <string name="search_ft">%1$d ft</string>
+    <string name="map_customize_help">Het uiterlijk en de offline kaarten zijn hetzelfde voor al je kaarten: wijzig ze in Instellingen → Apps → Navigatie.</string>
+    <string name="map_mark">Punt markeren</string>
+    <string name="map_mark_here">Hier markeren</string>
+    <string name="map_orientation_help">Automatisch: gekanteld kijkt de kaart waar je heen gaat; plat staat het noorden boven.</string>
+    <string name="search_favorites_full">Je hebt het maximum aantal favorieten (%1$d): verwijder er een om een andere toe te voegen.</string>
 </resources>

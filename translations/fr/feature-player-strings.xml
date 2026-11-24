@@ -24,7 +24,6 @@
         <item quantity="one">%1$d titre</item>
         <item quantity="other">%1$d titres</item>
     </plurals>
-    <string name="library_shuffle">Aléatoire</string>
     <string name="library_unknown">Inconnu</string>
     <string name="library_root">Racine de la clé</string>
     <string name="radio_nearby">Près de vous</string>
@@ -42,4 +41,6 @@
     <string name="library_pick_folder_help">Si votre musique est sur la clé mais n\'apparaît pas, choisissez son dossier : LiteDash s\'en souviendra.</string>
     <string name="library_unreadable">Je vois la clé %1$s, mais votre écran ne laisse pas les applis lire ses titres. Choisissez son dossier et LiteDash s\'en souviendra.</string>
     <string name="library_browse_memory">Rien ne s\'ouvre ? Parcourir le stockage</string>
+    <string name="library_capped">%1$s chansons affichées</string>
+    <string name="player_cannot_open_track">Impossible d\'ouvrir cette chanson.</string>
 </resources>

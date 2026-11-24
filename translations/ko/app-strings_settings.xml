@@ -1,24 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="tab_day_night">주간/야간</string>
-    <string name="tab_your_screen">내 화면</string>
     <string name="weather_switch">날씨</string>
-    <string name="weather_switch_help">바, 시계, 날씨 위젯에 표시돼요. 홈 화면을 보는 동안 30분마다 새로 고쳐요. 대략적인 위치와 인터넷을 사용하며, 끄면 둘 다 사용하지 않아요.</string>
     <string name="reminder_pick_date">%1$s 기한은 언제인가요?</string>
     <string name="tab_home">홈</string>
     <string name="tab_interface">인터페이스</string>
-    <string name="android_bar">Android 바</string>
     <string name="accent_title">인터페이스 색상</string>
-    <string name="accent_help">스위치, 버튼, 재생, 진행 바에 적용돼요. 카드와 배경은 그대로이며, 내추럴이 기본 모습이에요.</string>
-    <string name="accent_natural">내추럴</string>
+    <string name="accent_help">스위치, 버튼, 재생, 진행 바에 적용돼요. 카드와 배경은 그대로예요.</string>
     <string name="cards_title">카드</string>
     <string name="cards_help">앱 전체 카드의 모습: 색상과 배경이 비쳐 보이는지 정해요.</string>
     <string name="cards_solid">불투명</string>
     <string name="cards_glass">유리</string>
     <string name="cards_opacity">보이는 정도</string>
     <string name="cards_glass_help">배경화면이 각 카드 뒤에 흐리게 보여요. 지도 배경 위에서는 지도가 은은하게 보여요.</string>
-    <string name="cards_theme">테마</string>
     <string name="cards_themes">조합</string>
     <string name="language_search">언어 찾기</string>
     <string name="language_not_found">그 언어는 아직 없어요. litedash.dev/translate 에서 번역을 도와주세요.</string>
+    <string name="factory_look">기본값</string>
+    <string name="tab_language_units">언어 &amp; 단위</string>
+    <string name="tab_theme_brightness">테마 &amp; 밝기</string>
 </resources>

@@ -1,24 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="tab_day_night">Gündüz ve gece</string>
-    <string name="tab_your_screen">Üniteniz</string>
     <string name="weather_switch">Hava durumu</string>
-    <string name="weather_switch_help">Çubukta, saatte ve Hava durumu widget’ında; ana ekranı gördüğünüz sürece her yarım saatte bir yenilenir. Yaklaşık konumunuzu ve interneti kullanır; kapalıyken ikisini de kullanmaz.</string>
     <string name="reminder_pick_date">%1$s ne zaman?</string>
     <string name="tab_home">Ana ekran</string>
     <string name="tab_interface">Arayüz</string>
-    <string name="android_bar">Android çubuğu</string>
     <string name="accent_title">Arayüz rengi</string>
-    <string name="accent_help">Anahtarlar, düğmeler, oynat ve ilerleme çubukları. Kartlar ve arka plan aynı kalır; Doğal orijinal görünümdür.</string>
-    <string name="accent_natural">Doğal</string>
+    <string name="accent_help">Anahtarlar, düğmeler, oynat ve ilerleme çubukları. Kartlar ve arka plan aynı kalır.</string>
     <string name="cards_title">Kartlar</string>
     <string name="cards_help">Tüm uygulamadaki kartların görünümü: renkleri ve arka planın içinden görünüp görünmediği.</string>
     <string name="cards_solid">Düz</string>
     <string name="cards_glass">Cam</string>
     <string name="cards_opacity">Görünürlük</string>
     <string name="cards_glass_help">Duvar kağıdınız her kartın arkasında bulanık görünür; harita arka planında harita soluk görünür.</string>
-    <string name="cards_theme">Tema</string>
     <string name="cards_themes">Kombinasyonlar</string>
     <string name="language_search">Dilinizi arayın</string>
     <string name="language_not_found">Bu dil henüz yok. litedash.dev/translate adresinde çevirmemize yardım edin.</string>
+    <string name="factory_look">Varsayılan</string>
+    <string name="tab_language_units">Dil ve birimler</string>
+    <string name="tab_theme_brightness">Tema ve parlaklık</string>
 </resources>

@@ -18,13 +18,7 @@
     <string name="map_style_theme">Jak motyw</string>
     <string name="map_style_light">Jasne</string>
     <string name="map_style_dark">Ciemne</string>
-    <string name="map_detail">Styl</string>
-    <string name="map_detail_full">Pełny</string>
-    <string name="map_detail_minimal">Minimalny</string>
-    <string name="map_detail_full_help">Wszystko z OpenStreetMap: ulice, miejsca, nazwy i ikony.</string>
-    <string name="map_detail_minimal_help">Tylko ulice, woda i parki, czysto i w kolorach LiteDash (dane z OpenFreeMap).</string>
     <string name="map_offline">Offline</string>
-    <string name="map_offline_full">Dostępne z mapą minimalną.</string>
     <string name="map_offline_help">Zapisz mapę strefy, by widzieć ją bez internetu. Aby szukać i wyznaczać trasy, pobierz swoje województwo.</string>
     <string name="map_offline_here">Twoja strefa</string>
     <string name="map_offline_other">Inna strefa</string>
@@ -50,9 +44,8 @@
     <string name="map_tab_app">Aplikacja map</string>
     <string name="map_tab_look">Mapa LiteDash</string>
     <string name="map_tab_style">Wygląd mapy</string>
-    <string name="map_look_help">Dotyczy wszystkich widżetów Mapa i mapy na pełnym ekranie. Każdy widżet możesz nadal zmienić z jego zębatki.</string>
+    <string name="map_look_help">Zmienia wszystkie Twoje widżety Mapa i mapę na pełnym ekranie (także te zmienione osobno).</string>
     <string name="map_pack_help">Całe twoje województwo bez internetu, jednym pobraniem. Aktualizowana kilka razy w roku.</string>
-    <string name="map_pack_full">W stylu Pełny mapa ładuje się z internetu; pobrany region służy do wyszukiwania i tras.</string>
     <string name="map_pack_no_index">Połącz się z internetem, aby zobaczyć dostępne mapy.</string>
     <string name="map_list_loading">Pobieranie listy map…</string>
     <string name="map_list_failed">Nie udało się pobrać listy map. Sprawdź internet.</string>
@@ -67,7 +60,6 @@
     <string name="map_pack_search">Szukaj województwa lub regionu</string>
     <string name="map_offline_by_state">Według województwa</string>
     <string name="map_offline_by_zone">Według strefy</string>
-    <string name="map_pack_tip">Nie ma twojego województwa? Użyj «Według strefy»: działa wszędzie.</string>
     <string name="map_request_country">Brak twojego kraju? Poproś o niego</string>
     <string name="search_hint">Dokąd?</string>
     <string name="search_clear">Wyczyść</string>
@@ -164,4 +156,9 @@
     <string name="guide_arrive">Dotrzesz do celu</string>
     <string name="guide_arrive_at">Dotrzesz do celu: %1$s</string>
     <string name="search_ft">%1$d ft</string>
+    <string name="map_customize_help">Wygląd i mapy offline są takie same dla wszystkich Twoich map: zmienisz je w Ustawienia → Aplikacje → Nawigacja.</string>
+    <string name="map_mark">Zaznacz punkt</string>
+    <string name="map_mark_here">Zaznacz tutaj</string>
+    <string name="map_orientation_help">Automatycznie: pochylona mapa obraca się w kierunku jazdy; płaska ma północ u góry.</string>
+    <string name="search_favorites_full">Masz maksymalną liczbę ulubionych (%1$d): usuń jedno, aby dodać kolejne.</string>
 </resources>

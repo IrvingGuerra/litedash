@@ -15,11 +15,13 @@
     <string name="source_radio">Radio</string>
     <string name="bluetooth_connect_phone">Connect your phone over Bluetooth</string>
     <string name="music_from_phone">Control the music from your phone</string>
+    <string name="music_phone_link">Use LiteDash Connect</string>
     <string name="usb_drive">USB drive</string>
     <string name="usb_drive_in">USB drive connected: %1$s</string>
     <string name="player_connecting">Connecting…</string>
     <string name="radio">Radio</string>
     <string name="radio_explain">Control your screen\'s radio (and internet radio if you turn it on). Needs notification access.</string>
+    <string name="music_shuffle">Shuffle</string>
     <string name="radio_internet">Internet</string>
     <string name="radio_fm">Screen FM</string>
     <string name="radio_unlinked">Link your screen\'s radio in Settings or turn on internet radio</string>

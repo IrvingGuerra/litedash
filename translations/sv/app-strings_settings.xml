@@ -1,24 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="tab_day_night">Dag och natt</string>
-    <string name="tab_your_screen">Din skärm</string>
     <string name="weather_switch">Väder</string>
-    <string name="weather_switch_help">I fältet, klockan och Väder-widgeten; uppdateras varje halvtimme medan du ser startskärmen. Använder din ungefärliga plats och internet; avstängt används inget av dem.</string>
     <string name="reminder_pick_date">När förfaller %1$s?</string>
     <string name="tab_home">Start</string>
     <string name="tab_interface">Gränssnitt</string>
-    <string name="android_bar">Android-fältet</string>
     <string name="accent_title">Gränssnittsfärg</string>
-    <string name="accent_help">Reglage, knappar, uppspelning och förloppsfält. Kort och bakgrund förblir desamma; Naturlig är originalutseendet.</string>
-    <string name="accent_natural">Naturlig</string>
+    <string name="accent_help">Reglage, knappar, uppspelning och förloppsfält. Kort och bakgrund förblir desamma.</string>
     <string name="cards_title">Kort</string>
     <string name="cards_help">Hur korten ser ut i hela appen: färgen och om bakgrunden syns igenom.</string>
     <string name="cards_solid">Täckande</string>
     <string name="cards_glass">Glas</string>
     <string name="cards_opacity">Hur synliga</string>
     <string name="cards_glass_help">Din bakgrundsbild syns suddig bakom varje kort; över en karta i bakgrunden syns kartan dämpad.</string>
-    <string name="cards_theme">Tema</string>
     <string name="cards_themes">Kombinationer</string>
     <string name="language_search">Hitta ditt språk</string>
     <string name="language_not_found">Det språket finns inte än. Hjälp oss översätta på litedash.dev/translate.</string>
+    <string name="factory_look">Standard</string>
+    <string name="tab_language_units">Språk &amp; enheter</string>
+    <string name="tab_theme_brightness">Tema &amp; ljusstyrka</string>
 </resources>
