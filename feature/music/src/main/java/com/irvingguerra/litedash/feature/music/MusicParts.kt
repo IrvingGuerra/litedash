@@ -591,3 +591,13 @@ internal fun PhoneOnlySound(repo: MusicRepository) {
     val on = repo.phoneOnly
     LaunchedEffect(on) { repo.phoneOnlyShown(on) }
 }
+
+/**
+ * Con [MusicRepository.phoneOnly] no hay ▶: la salida es LiteDash Connect, que controla la música desde el celular. Lleva a
+ * Ajustes → Celular (donde se vincula); sin quién lo abra, nada.
+ */
+@Composable
+internal fun PhoneLinkButton(repo: MusicRepository, modifier: Modifier = Modifier) {
+    val open = repo.onPhoneLink ?: return
+    Button(stringResource(R.string.music_phone_link), open, modifier)
+}

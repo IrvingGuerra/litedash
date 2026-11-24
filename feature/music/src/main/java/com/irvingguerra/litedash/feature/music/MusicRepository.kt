@@ -1126,6 +1126,12 @@ class MusicRepository(internal val context: Context) {
     var onSoundReport: ((SoundPiece) -> Unit)? = null
 
     /**
+     * El botón «LiteDash Connect» de «Controla la música desde tu celular» (lo pone la app: abre Ajustes → Celular, donde se
+     * vincula el celular); null = sin botón.
+     */
+    var onPhoneLink by mutableStateOf<(() -> Unit)?>(null)
+
+    /**
      * El volumen de la música de Android está en 0 (y se puede mover): por más receta, no se oiría. En una FYT el
      * Bluetooth del celular suena por ahí (reporte AA6C26: 0/15, "no se escucha" y se guardó que nada funcionaba).
      */
