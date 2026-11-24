@@ -59,7 +59,6 @@
     <string name="map_pack_delete_message">Sem internet, você não verá mais as ruas dele; suas regiões continuam.</string>
     <string name="map_pack_failed">Não foi possível baixar: verifique sua internet.</string>
     <string name="map_pack_no_room">Não cabe na memória: libere espaço.</string>
-    <string name="map_pack_search">Buscar estado ou região</string>
     <string name="map_offline_by_state">Por estado</string>
     <string name="map_offline_by_zone">Por zona</string>
     <string name="map_request_country">Seu país não está aqui? Peça</string>
@@ -163,4 +162,14 @@
     <string name="map_mark_here">Marcar aqui</string>
     <string name="map_orientation_help">Automático: inclinado, o mapa aponta para onde você vai; plano, para o norte.</string>
     <string name="search_favorites_full">Você já tem o máximo de favoritos (%1$d): remova um para adicionar outro.</string>
+    <string name="map_pack_search">Buscar país ou estado</string>
+    <string name="map_pack_all_countries">Ver todos os países (%1$d)</string>
+    <string name="map_pack_fewer_countries">Ver menos</string>
+    <plurals name="map_pack_country_states">
+        <item quantity="one">%1$d estado</item>
+        <item quantity="other">%1$d estados</item>
+    </plurals>
+    <string name="map_pack_download_all">Baixar tudo · %1$s</string>
+    <string name="map_pack_download_all_question">Baixar tudo de %1$s?</string>
+    <string name="map_pack_batch_progress">Baixando %1$d de %2$d · %3$s</string>
 </resources>

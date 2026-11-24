@@ -18,4 +18,9 @@
     <string name="factory_look">डिफ़ॉल्ट</string>
     <string name="tab_language_units">भाषा और यूनिट</string>
     <string name="tab_theme_brightness">थीम और ब्राइटनेस</string>
+    <plurals name="language_show_all">
+        <item quantity="one">भाषा देखें (%d)</item>
+        <item quantity="other">सभी भाषाएँ देखें (%d)</item>
+    </plurals>
+    <string name="language_show_less">कम देखें</string>
 </resources>

@@ -18,4 +18,8 @@
     <string name="factory_look">Mặc định</string>
     <string name="tab_language_units">Ngôn ngữ &amp; đơn vị</string>
     <string name="tab_theme_brightness">Giao diện &amp; độ sáng</string>
+    <plurals name="language_show_all">
+        <item quantity="other">Xem tất cả ngôn ngữ (%d)</item>
+    </plurals>
+    <string name="language_show_less">Thu gọn</string>
 </resources>

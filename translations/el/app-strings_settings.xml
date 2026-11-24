@@ -18,4 +18,9 @@
     <string name="factory_look">Προεπιλογή</string>
     <string name="tab_language_units">Γλώσσα και μονάδες</string>
     <string name="tab_theme_brightness">Θέμα και φωτεινότητα</string>
+    <plurals name="language_show_all">
+        <item quantity="one">Εμφάνιση γλώσσας (%d)</item>
+        <item quantity="other">Όλες οι γλώσσες (%d)</item>
+    </plurals>
+    <string name="language_show_less">Λιγότερες</string>
 </resources>

@@ -61,7 +61,16 @@
     <string name="map_pack_delete_message">Without internet you won\'t see its streets; your zones stay.</string>
     <string name="map_pack_failed">Couldn\'t download: check your internet.</string>
     <string name="map_pack_no_room">Not enough storage: free up some space.</string>
-    <string name="map_pack_search">Search a state or region</string>
+    <string name="map_pack_search">Search a country or state</string>
+    <string name="map_pack_all_countries">See all countries (%1$d)</string>
+    <string name="map_pack_fewer_countries">Show less</string>
+    <plurals name="map_pack_country_states">
+        <item quantity="one">%1$d state</item>
+        <item quantity="other">%1$d states</item>
+    </plurals>
+    <string name="map_pack_download_all">Download all · %1$s</string>
+    <string name="map_pack_download_all_question">Download all of %1$s?</string>
+    <string name="map_pack_batch_progress">Downloading %1$d of %2$d · %3$s</string>
     <string name="map_offline_by_state">By state</string>
     <string name="map_offline_by_zone">By zone</string>
     <string name="map_request_country">Your country isn\'t here? Request it</string>

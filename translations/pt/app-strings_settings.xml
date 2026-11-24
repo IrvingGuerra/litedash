@@ -20,4 +20,9 @@
     <string name="factory_look">De fábrica</string>
     <string name="tab_language_units">Idioma e unidades</string>
     <string name="tab_theme_brightness">Tema e brilho</string>
+    <plurals name="language_show_all">
+        <item quantity="one">Ver o idioma (%d)</item>
+        <item quantity="other">Ver todos os idiomas (%d)</item>
+    </plurals>
+    <string name="language_show_less">Ver menos</string>
 </resources>

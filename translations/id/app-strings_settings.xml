@@ -18,4 +18,8 @@
     <string name="factory_look">Bawaan</string>
     <string name="tab_language_units">Bahasa &amp; satuan</string>
     <string name="tab_theme_brightness">Tema &amp; kecerahan</string>
+    <plurals name="language_show_all">
+        <item quantity="other">Lihat semua bahasa (%d)</item>
+    </plurals>
+    <string name="language_show_less">Lihat lebih sedikit</string>
 </resources>

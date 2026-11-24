@@ -18,4 +18,11 @@
     <string name="factory_look">По умолчанию</string>
     <string name="tab_language_units">Язык и единицы</string>
     <string name="tab_theme_brightness">Тема и яркость</string>
+    <plurals name="language_show_all">
+        <item quantity="one">Показать язык (%d)</item>
+        <item quantity="few">Все языки (%d)</item>
+        <item quantity="many">Все языки (%d)</item>
+        <item quantity="other">Все языки (%d)</item>
+    </plurals>
+    <string name="language_show_less">Свернуть</string>
 </resources>

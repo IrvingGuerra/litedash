@@ -18,4 +18,8 @@
     <string name="factory_look">ค่าเริ่มต้น</string>
     <string name="tab_language_units">ภาษาและหน่วย</string>
     <string name="tab_theme_brightness">ธีมและความสว่าง</string>
+    <plurals name="language_show_all">
+        <item quantity="other">ดูทุกภาษา (%d)</item>
+    </plurals>
+    <string name="language_show_less">ดูน้อยลง</string>
 </resources>

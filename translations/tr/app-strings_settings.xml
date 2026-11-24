@@ -18,4 +18,9 @@
     <string name="factory_look">Varsayılan</string>
     <string name="tab_language_units">Dil ve birimler</string>
     <string name="tab_theme_brightness">Tema ve parlaklık</string>
+    <plurals name="language_show_all">
+        <item quantity="one">Dili göster (%d)</item>
+        <item quantity="other">Tüm dilleri göster (%d)</item>
+    </plurals>
+    <string name="language_show_less">Daha az göster</string>
 </resources>

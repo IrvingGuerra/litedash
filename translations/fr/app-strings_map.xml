@@ -59,7 +59,6 @@
     <string name="map_pack_delete_message">Sans internet, vous ne verrez plus ses rues ; vos zones restent.</string>
     <string name="map_pack_failed">Échec du téléchargement : vérifiez votre internet.</string>
     <string name="map_pack_no_room">Pas assez d\'espace : libère de la place.</string>
-    <string name="map_pack_search">Rechercher une région</string>
     <string name="map_offline_by_state">Par région</string>
     <string name="map_offline_by_zone">Par zone</string>
     <string name="map_request_country">Ton pays n\'y est pas ? Demande-le</string>
@@ -163,4 +162,14 @@
     <string name="map_mark_here">Marquer ici</string>
     <string name="map_orientation_help">Automatique : inclinée, la carte suit votre direction ; à plat, le nord est en haut.</string>
     <string name="search_favorites_full">Vous avez atteint le maximum de favoris (%1$d) : retirez-en un pour en ajouter un autre.</string>
+    <string name="map_pack_search">Rechercher un pays ou une région</string>
+    <string name="map_pack_all_countries">Voir tous les pays (%1$d)</string>
+    <string name="map_pack_fewer_countries">Voir moins</string>
+    <plurals name="map_pack_country_states">
+        <item quantity="one">%1$d région</item>
+        <item quantity="other">%1$d régions</item>
+    </plurals>
+    <string name="map_pack_download_all">Tout télécharger · %1$s</string>
+    <string name="map_pack_download_all_question">Télécharger tout le pays %1$s ?</string>
+    <string name="map_pack_batch_progress">Téléchargement %1$d sur %2$d · %3$s</string>
 </resources>

@@ -18,4 +18,11 @@
     <string name="factory_look">Výchozí</string>
     <string name="tab_language_units">Jazyk a jednotky</string>
     <string name="tab_theme_brightness">Motiv a jas</string>
+    <plurals name="language_show_all">
+        <item quantity="one">Zobrazit jazyk (%d)</item>
+        <item quantity="few">Zobrazit všechny jazyky (%d)</item>
+        <item quantity="many">Zobrazit všechny jazyky (%d)</item>
+        <item quantity="other">Zobrazit všechny jazyky (%d)</item>
+    </plurals>
+    <string name="language_show_less">Zobrazit méně</string>
 </resources>

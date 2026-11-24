@@ -18,4 +18,9 @@
     <string name="factory_look">Standard</string>
     <string name="tab_language_units">Språk &amp; enheter</string>
     <string name="tab_theme_brightness">Tema &amp; ljusstyrka</string>
+    <plurals name="language_show_all">
+        <item quantity="one">Visa språket (%d)</item>
+        <item quantity="other">Visa alla språk (%d)</item>
+    </plurals>
+    <string name="language_show_less">Visa färre</string>
 </resources>

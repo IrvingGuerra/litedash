@@ -20,4 +20,9 @@
     <string name="factory_look">Par défaut</string>
     <string name="tab_language_units">Langue et unités</string>
     <string name="tab_theme_brightness">Thème et luminosité</string>
+    <plurals name="language_show_all">
+        <item quantity="one">Voir la langue (%d)</item>
+        <item quantity="other">Voir toutes les langues (%d)</item>
+    </plurals>
+    <string name="language_show_less">Voir moins</string>
 </resources>

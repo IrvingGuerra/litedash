@@ -18,4 +18,9 @@
     <string name="factory_look">Alapértelmezett</string>
     <string name="tab_language_units">Nyelv és mértékegységek</string>
     <string name="tab_theme_brightness">Téma és fényerő</string>
+    <plurals name="language_show_all">
+        <item quantity="one">Nyelv megjelenítése (%d)</item>
+        <item quantity="other">Összes nyelv (%d)</item>
+    </plurals>
+    <string name="language_show_less">Kevesebb</string>
 </resources>

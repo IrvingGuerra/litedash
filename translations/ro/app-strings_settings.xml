@@ -18,4 +18,10 @@
     <string name="factory_look">Implicit</string>
     <string name="tab_language_units">Limbă și unități</string>
     <string name="tab_theme_brightness">Temă și luminozitate</string>
+    <plurals name="language_show_all">
+        <item quantity="one">Vezi limba (%d)</item>
+        <item quantity="few">Vezi toate limbile (%d)</item>
+        <item quantity="other">Vezi toate limbile (%d)</item>
+    </plurals>
+    <string name="language_show_less">Vezi mai puțin</string>
 </resources>

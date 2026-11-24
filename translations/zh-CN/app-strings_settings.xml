@@ -18,4 +18,8 @@
     <string name="factory_look">默认</string>
     <string name="tab_language_units">语言和单位</string>
     <string name="tab_theme_brightness">主题和亮度</string>
+    <plurals name="language_show_all">
+        <item quantity="other">查看全部语言 (%d)</item>
+    </plurals>
+    <string name="language_show_less">收起</string>
 </resources>

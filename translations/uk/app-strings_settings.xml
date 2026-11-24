@@ -18,4 +18,11 @@
     <string name="factory_look">За замовчуванням</string>
     <string name="tab_language_units">Мова й одиниці</string>
     <string name="tab_theme_brightness">Тема й яскравість</string>
+    <plurals name="language_show_all">
+        <item quantity="one">Показати мову (%d)</item>
+        <item quantity="few">Усі мови (%d)</item>
+        <item quantity="many">Усі мови (%d)</item>
+        <item quantity="other">Усі мови (%d)</item>
+    </plurals>
+    <string name="language_show_less">Згорнути</string>
 </resources>

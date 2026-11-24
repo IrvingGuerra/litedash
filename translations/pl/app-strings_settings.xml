@@ -18,4 +18,11 @@
     <string name="factory_look">Domyślny</string>
     <string name="tab_language_units">Język i jednostki</string>
     <string name="tab_theme_brightness">Motyw i jasność</string>
+    <plurals name="language_show_all">
+        <item quantity="one">Pokaż język (%d)</item>
+        <item quantity="few">Pokaż wszystkie języki (%d)</item>
+        <item quantity="many">Pokaż wszystkie języki (%d)</item>
+        <item quantity="other">Pokaż wszystkie języki (%d)</item>
+    </plurals>
+    <string name="language_show_less">Pokaż mniej</string>
 </resources>

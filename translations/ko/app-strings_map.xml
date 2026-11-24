@@ -57,7 +57,6 @@
     <string name="map_pack_delete_message">인터넷이 없으면 도로가 보이지 않아요. 내 지역은 그대로 남아요.</string>
     <string name="map_pack_failed">다운로드하지 못했어요: 인터넷을 확인하세요.</string>
     <string name="map_pack_no_room">저장 공간이 부족합니다. 공간을 확보하세요.</string>
-    <string name="map_pack_search">지역 검색</string>
     <string name="map_offline_by_state">지역별</string>
     <string name="map_offline_by_zone">구역별</string>
     <string name="map_request_country">내 나라가 없나요? 요청하기</string>
@@ -161,4 +160,13 @@
     <string name="map_mark_here">여기 표시</string>
     <string name="map_orientation_help">자동: 지도를 기울이면 진행 방향이, 평면이면 북쪽이 위로 와요.</string>
     <string name="search_favorites_full">즐겨찾기가 최대(%1$d개)예요. 하나를 지워야 추가할 수 있어요.</string>
+    <string name="map_pack_search">국가 또는 지역 검색</string>
+    <string name="map_pack_all_countries">모든 국가 보기 (%1$d)</string>
+    <string name="map_pack_fewer_countries">간단히 보기</string>
+    <plurals name="map_pack_country_states">
+        <item quantity="other">지역 %1$d개</item>
+    </plurals>
+    <string name="map_pack_download_all">전체 다운로드 · %1$s</string>
+    <string name="map_pack_download_all_question">%1$s 전체를 다운로드할까요?</string>
+    <string name="map_pack_batch_progress">다운로드 중 %1$d/%2$d · %3$s</string>
 </resources>

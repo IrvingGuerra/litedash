@@ -57,7 +57,6 @@
     <string name="map_pack_delete_message">インターネットなしでは道路が表示されなくなります。エリアはそのまま残ります。</string>
     <string name="map_pack_failed">ダウンロードできませんでした。インターネットを確認してください。</string>
     <string name="map_pack_no_room">容量が足りません。空き容量を増やしてください。</string>
-    <string name="map_pack_search">都道府県・地域を検索</string>
     <string name="map_offline_by_state">都道府県で</string>
     <string name="map_offline_by_zone">エリアで</string>
     <string name="map_request_country">あなたの国がない？リクエストする</string>
@@ -161,4 +160,13 @@
     <string name="map_mark_here">ここをマーク</string>
     <string name="map_orientation_help">自動：地図を傾けると進行方向が上、平面では北が上になります。</string>
     <string name="search_favorites_full">お気に入りが上限（%1$d 件）です。追加するには1つ削除してください。</string>
+    <string name="map_pack_search">国・都道府県を検索</string>
+    <string name="map_pack_all_countries">すべての国を表示 (%1$d)</string>
+    <string name="map_pack_fewer_countries">表示を減らす</string>
+    <plurals name="map_pack_country_states">
+        <item quantity="other">%1$d 地域</item>
+    </plurals>
+    <string name="map_pack_download_all">すべてダウンロード · %1$s</string>
+    <string name="map_pack_download_all_question">%1$sをすべてダウンロードしますか？</string>
+    <string name="map_pack_batch_progress">ダウンロード中 %1$d/%2$d · %3$s</string>
 </resources>

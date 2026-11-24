@@ -18,4 +18,8 @@
     <string name="factory_look">デフォルト</string>
     <string name="tab_language_units">言語と単位</string>
     <string name="tab_theme_brightness">テーマと明るさ</string>
+    <plurals name="language_show_all">
+        <item quantity="other">すべての言語を表示 (%d)</item>
+    </plurals>
+    <string name="language_show_less">表示を減らす</string>
 </resources>

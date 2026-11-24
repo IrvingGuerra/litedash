@@ -57,7 +57,6 @@
     <string name="map_pack_delete_message">Χωρίς internet δεν θα βλέπετε τους δρόμους της· οι ζώνες σας μένουν.</string>
     <string name="map_pack_failed">Η λήψη απέτυχε: ελέγξτε το internet.</string>
     <string name="map_pack_no_room">Δεν χωράει στη μνήμη: ελευθέρωσε χώρο.</string>
-    <string name="map_pack_search">Αναζήτηση περιφέρειας</string>
     <string name="map_offline_by_state">Ανά περιφέρεια</string>
     <string name="map_offline_by_zone">Ανά ζώνη</string>
     <string name="map_request_country">Λείπει η χώρα σου; Ζήτησέ την</string>
@@ -161,4 +160,14 @@
     <string name="map_mark_here">Σήμανση εδώ</string>
     <string name="map_orientation_help">Αυτόματα: με κλίση ο χάρτης κοιτά προς την κατεύθυνσή σας· επίπεδος, ο βορράς είναι πάνω.</string>
     <string name="search_favorites_full">Έχετε το μέγιστο των αγαπημένων (%1$d): αφαιρέστε ένα για να προσθέσετε άλλο.</string>
+    <string name="map_pack_search">Αναζήτηση χώρας ή περιφέρειας</string>
+    <string name="map_pack_all_countries">Όλες οι χώρες (%1$d)</string>
+    <string name="map_pack_fewer_countries">Λιγότερες</string>
+    <plurals name="map_pack_country_states">
+        <item quantity="one">%1$d περιφέρεια</item>
+        <item quantity="other">%1$d περιφέρειες</item>
+    </plurals>
+    <string name="map_pack_download_all">Λήψη όλων · %1$s</string>
+    <string name="map_pack_download_all_question">Λήψη ολόκληρης της χώρας %1$s;</string>
+    <string name="map_pack_batch_progress">Λήψη %1$d από %2$d · %3$s</string>
 </resources>
