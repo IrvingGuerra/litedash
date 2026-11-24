@@ -37,6 +37,12 @@ class CardsTest {
         }
     }
 
+    @Test fun lo_apagado_de_fabrica_se_lee_en_los_dos_temas() {
+        for (c in themes) for (under in listOf(c.background, c.surface, c.surfaceHigh)) {
+            assertTrue("tema oscuro=${c.dark} sobre $under", contrast(c.textMuted, under) >= 4.5f)
+        }
+    }
+
     @Test fun el_texto_siempre_se_lee() {
         for (theme in themes) for (color in hard) for (accent in listOf(null) + hard) {
             val c = theme.withAccent(accent).withCards(color)
@@ -150,7 +156,7 @@ class CardsTest {
                 val veil = canvasVeil(c, extreme, 0.62f)
                 assertTrue(where, veil >= 0.62f && veil <= 1f)
                 val seen = contrast(c.textMuted, c.background.copy(alpha = veil).compositeOver(extreme))
-                // 4.5, o lo que el tema da sobre su propio fondo liso si no llega (el claro de fábrica, ~3.1).
+                // 4.5, o el 90 % de lo que el tema da sobre su propio fondo liso si no llega.
                 assertTrue("$where sobre $extreme: $seen", seen >= minOf(4.5f, contrast(c.textMuted, c.background) * 0.9f) - 0.01f)
             }
         }

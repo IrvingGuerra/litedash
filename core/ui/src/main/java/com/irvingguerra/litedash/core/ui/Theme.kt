@@ -177,7 +177,8 @@ val LightColors = Colors(
     surfaceHigh = Color(0xFFF0F2F5),
     line = Color(0xFFE3E6EA),
     text = LightInk,
-    textMuted = Color(0xFF7D8590),
+    // ≥ 4.5 sobre el fondo, lo elevado y la tarjeta (el #7D8590 de antes daba 3.1 sobre el fondo).
+    textMuted = Color(0xFF626A75),
     accent = LightAmber,
     danger = Color(0xFFD93A2B),
     warning = LightAmber,
@@ -187,6 +188,12 @@ val LightColors = Colors(
 )
 
 val LocalColors = staticCompositionLocalOf { DarkColors }
+
+/**
+ * Un bloque que resalta dentro de una tarjeta (la opción elegida, un campo, una ficha): liso en una tarjeta lisa y,
+ * dentro del vidrio (ahí [Colors.surfaceHigh] ya es translúcido, ver [contentColors]), translúcido como lo demás.
+ */
+val Colors.raised: Color get() = if (surfaceHigh.alpha < 1f) surfaceHigh else surface
 
 /**
  * El margen de adentro de las tarjetas del inicio (los widgets): poco, para que lo de adentro
@@ -319,7 +326,7 @@ fun <T> Segmented(options: List<Pair<T, String>>, selected: T, onSelect: (T) -> 
             Box(
                 Modifier
                     .clip(RoundedCornerShape(Radius.inner - 2.dp))
-                    .background(if (on) c.surface else Color.Transparent)
+                    .background(if (on) c.raised else Color.Transparent)
                     .clickable { onSelect(value) }
                     .padding(horizontal = 18.dp, vertical = 11.dp),
                 contentAlignment = Alignment.Center,
@@ -379,7 +386,7 @@ fun TextInput(value: String, onChange: (String) -> Unit, hint: String, modifier:
     val c = LocalColors.current
     val shape = if (compact) CircleShape else RoundedCornerShape(Radius.card)
     Row(
-        modifier.height(if (compact) 44.dp else 56.dp).clip(shape).background(c.surface).border(1.dp, c.line, shape)
+        modifier.height(if (compact) 44.dp else 56.dp).clip(shape).background(c.raised).border(1.dp, c.line, shape)
             .padding(horizontal = if (compact) 16.dp else 20.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {

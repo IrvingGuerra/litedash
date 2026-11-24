@@ -4,7 +4,7 @@
     <string name="image_background">Background</string>
     <string name="image_background_original">Original</string>
     <string name="image_background_remove">Remove</string>
-    <string name="image_background_help">Works best with a plain background: a wall, the sky or a studio.</string>
+    <string name="image_background_help">Works best with a plain background: a wall, the sky or a studio. It can only be removed right after picking the photo: to remove it later, pick it again.</string>
     <string name="image_strength">Strength</string>
     <string name="image_strength_low">Soft</string>
     <string name="image_strength_medium">Medium</string>
