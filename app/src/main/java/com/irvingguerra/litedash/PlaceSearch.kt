@@ -251,6 +251,17 @@ internal fun PlaceSearchBox(
     // grande) para que su animación no recomponga el mapa en cada cuadro.
     val keyboard = with(LocalDensity.current) { WindowInsets.ime.getBottom(this).toDp() }
     val maxListHeight = (listSpace - keyboard).coerceAtLeast(MIN_LIST)
+    // Atrás con el teclado abierto lo cierra Android sin avisar a la app: al esconderse, la lista se cierra también (si no
+    // hacía falta un segundo atrás). Donde el teclado no se mide (algunas pantallas de auto), queda el segundo atrás.
+    val keyboardUp = keyboard > 0.dp
+    val sawKeyboard = remember { BooleanArray(1) }
+    LaunchedEffect(keyboardUp) {
+        if (keyboardUp) sawKeyboard[0] = true
+        else if (sawKeyboard[0]) {
+            sawKeyboard[0] = false
+            if (search.focused) closeList()
+        }
+    }
     val context = LocalContext.current
     val packs = remember { MapPacks.get(context) }
     val scope = rememberCoroutineScope()
