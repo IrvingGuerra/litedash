@@ -7,15 +7,20 @@ import android.os.SystemClock
 import com.irvingguerra.litedash.core.ui.Https
 import org.json.JSONException
 import org.json.JSONObject
+import java.io.ByteArrayOutputStream
 import java.io.IOException
+import java.io.InputStream
 import java.util.Locale
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 import kotlin.math.roundToInt
 
 /**
  * La ruta en línea cuando no hay mapa bajado: el servidor OSRM de FOSSGIS (routing.openstreetmap.de, gratis, de
  * voluntarios). Sus reglas: máximo un pedido por segundo para todo el servicio y nada de uso pesado. Por eso aquí: un
  * pedido solo cuando el usuario pide la ruta o al recalcular (quien llama espera ≥ [RECALC_GAP_MS] entre recálculos),
- * nunca dos en menos de [MIN_GAP_MS], tiempo corto ([TIMEOUT_MS]), un solo reintento y las últimas rutas en memoria.
+ * nunca dos en menos de [MIN_GAP_MS], la misma ruta pedida dos veces a la vez sale una sola vez, todo en [TOTAL_MS] (con
+ * un solo reintento si queda tiempo) y las últimas rutas en memoria.
  * El índice de litedash-maps la puede apagar ("online": {"osrm": false}, [MapPacks.onlineRouting]).
  */
 object OnlineRoute {
@@ -25,16 +30,27 @@ object OnlineRoute {
     /** Entre dos pedidos de esta pantalla, al menos esto (el servicio pide ≤ 1 por segundo en total). */
     private const val MIN_GAP_MS = 2_000L
 
-    /** Lo más que se espera al servidor (conectar y leer). */
-    private const val TIMEOUT_MS = 10_000
+    /** Lo más que tarda un pedido completo (esperar turno, conectar, leer y el reintento). */
+    private const val TOTAL_MS = 15_000L
+
+    /** Lo más que se espera al servidor en un intento (conectar o cada lectura). */
+    private const val TIMEOUT_MS = 8_000
 
     /** Antes del único reintento. */
-    private const val RETRY_WAIT_MS = 2_000L
+    private const val RETRY_WAIT_MS = 1_000L
+
+    /** Con menos tiempo que esto por delante no se reintenta. */
+    private const val RETRY_MIN_MS = 3_000L
+
+    /** Una respuesta más grande que esto (bytes) no se lee: un viaje así no cabe en la memoria de muchas pantallas. */
+    internal const val MAX_BYTES = 4 * 1024 * 1024
 
     /** Entre dos recálculos en línea, al menos esto (lo respeta la guía). */
     const val RECALC_GAP_MS = 10_000L
 
-    private const val CACHE_SIZE = 8
+    /** Las últimas rutas, pocas y con un tope de puntos entre todas (una ruta larga ocupa megas). */
+    private const val CACHE_SIZE = 2
+    private const val CACHE_POINTS = 60_000
     private const val CACHE_MS = 10 * 60_000L
 
     private class Entry(val atMs: Long, val route: Route)
@@ -42,6 +58,9 @@ object OnlineRoute {
     private val cache = object : LinkedHashMap<String, Entry>(CACHE_SIZE, 0.75f, true) {
         override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, Entry>) = size > CACHE_SIZE
     }
+
+    /** Los pedidos en curso, por llave. */
+    private val inFlight = SharedCalls<Route>()
 
     /** Cuándo salió el último pedido (`SystemClock.elapsedRealtime`); con [gapLock] se esperan en fila. */
     private var lastAt = 0L
@@ -56,45 +75,70 @@ object OnlineRoute {
         cm.getNetworkCapabilities(cm.activeNetwork)?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) == true
     }.getOrDefault(true)
 
+    /** Suelta las rutas guardadas (Android pide memoria o una respuesta no cupo). */
+    fun clearCache() = synchronized(cache) { cache.clear() }
+
     /**
      * La ruta de ([fromLat], [fromLon]) a ([toLat], [toLon]) por internet, sin curvas suavizadas aún (eso lo hace quien
-     * llama). Con [headingDeg] (al recalcular andando) no arranca contra tu rumbo. null = sin red, el servidor falló o no
-     * hay camino. Bloqueante: fuera del hilo principal.
+     * llama). Con [headingDeg] (al recalcular andando) no arranca contra tu rumbo. null = sin red, el servidor falló, no
+     * hay camino o la respuesta es demasiado grande. Bloqueante: fuera del hilo principal.
      */
     fun route(context: Context, fromLat: Double, fromLon: Double, toLat: Double, toLon: Double, headingDeg: Float?): Route? {
         if (!hasInternet(context)) return null
-        // Desde ~11 m y hasta ~1 m del destino, con el rumbo por octantes: la misma ruta pedida otra vez no sale a la red.
-        val key = String.format(Locale.ROOT, "%.4f,%.4f;%.5f,%.5f;%s", fromLat, fromLon, toLat, toLon, headingDeg?.let { (it / 45f).roundToInt() % 8 })
+        val key = routeKey(fromLat, fromLon, toLat, toLon, headingDeg)
         val now = SystemClock.elapsedRealtime()
         synchronized(cache) { cache[key]?.let { if (now - it.atMs in 0 until CACHE_MS) return it.route } }
-        val url = buildString {
-            append(ENDPOINT)
-            append(String.format(Locale.ROOT, "%.6f,%.6f;%.6f,%.6f", fromLon, fromLat, toLon, toLat))
-            append("?overview=full&geometries=polyline6&steps=true")
-            headingDeg?.let { append("&bearings=").append(((it % 360f + 360f) % 360f).roundToInt() % 360).append(",45;") }
+        // Si ya se está pidiendo lo mismo (la tarjeta se vuelve a planear al llegar la lista o tu país), se espera ese.
+        return inFlight.run(key, TOTAL_MS + RETRY_WAIT_MS) {
+            val url = buildString {
+                append(ENDPOINT)
+                append(String.format(Locale.ROOT, "%.6f,%.6f;%.6f,%.6f", fromLon, fromLat, toLon, toLat))
+                append("?overview=full&geometries=polyline6&steps=true")
+                headingDeg?.let { append("&bearings=").append(normalized(it).roundToInt() % 360).append(",45;") }
+            }
+            fetch(context, url)?.let(::parseOsrm)?.also { keep(key, it) }
         }
-        val body = fetch(context, url) ?: return null
-        val route = parseOsrm(body) ?: return null
-        synchronized(cache) { cache[key] = Entry(SystemClock.elapsedRealtime(), route) }
-        return route
     }
 
-    /** El cuerpo de la respuesta; un reintento solo si se cortó la red o el servidor falló (5xx). null = no se pudo. */
+    /** Guarda [route]; si entre todas pasan de [CACHE_POINTS] puntos se sueltan las más viejas (una enorme no se guarda). */
+    private fun keep(key: String, route: Route) = synchronized(cache) {
+        if (route.pointCount > CACHE_POINTS) return@synchronized
+        cache[key] = Entry(SystemClock.elapsedRealtime(), route)
+        var total = cache.values.sumOf { it.route.pointCount }
+        val it = cache.values.iterator()
+        while (total > CACHE_POINTS && it.hasNext()) {
+            val e = it.next()
+            if (e.route === route) continue
+            total -= e.route.pointCount
+            it.remove()
+        }
+    }
+
+    /** El cuerpo de la respuesta; un reintento solo si se cortó la red o el servidor falló (5xx) y queda tiempo. null = no se pudo. */
     private fun fetch(context: Context, url: String): String? {
-        repeat(2) { attempt ->
-            if (attempt > 0) Thread.sleep(RETRY_WAIT_MS)
-            waitTurn()
+        val deadline = SystemClock.elapsedRealtime() + TOTAL_MS
+        for (attempt in 0..1) {
+            if (attempt > 0) {
+                if (deadline - SystemClock.elapsedRealtime() < RETRY_WAIT_MS + RETRY_MIN_MS) return null
+                Thread.sleep(RETRY_WAIT_MS)
+            }
+            if (!waitTurn(deadline)) return null
+            val left = (deadline - SystemClock.elapsedRealtime()).coerceIn(1L, TIMEOUT_MS.toLong()).toInt()
             try {
                 val c = Https.open(context, url)
                 try {
-                    c.connectTimeout = TIMEOUT_MS
-                    c.readTimeout = TIMEOUT_MS
+                    c.connectTimeout = left
+                    c.readTimeout = left
                     c.setRequestProperty("User-Agent", USER_AGENT)
                     c.setRequestProperty("Accept", "application/json")
                     val code = c.responseCode
                     // 4xx (sin camino, muchos pedidos): no se reintenta.
                     if (code in 400..499) return null
-                    if (code in 200..299) return c.inputStream.bufferedReader().use { it.readText() }
+                    if (code in 200..299) {
+                        // Más grande de lo que cabe (lo dice el servidor o se ve al leer): sin reintento.
+                        if (c.contentLength > MAX_BYTES) return null
+                        return c.inputStream.use { readCapped(it, MAX_BYTES, deadline) }
+                    }
                 } finally {
                     c.disconnect()
                 }
@@ -105,12 +149,68 @@ object OnlineRoute {
         return null
     }
 
-    /** Espera lo que falte para [MIN_GAP_MS] desde el último pedido y apunta este. */
-    private fun waitTurn() = synchronized(gapLock) {
+    /** Espera lo que falte para [MIN_GAP_MS] desde el último pedido y apunta este; false si eso pasa de [deadline]. */
+    private fun waitTurn(deadline: Long): Boolean = synchronized(gapLock) {
         val wait = lastAt + MIN_GAP_MS - SystemClock.elapsedRealtime()
-        if (lastAt != 0L && wait > 0) Thread.sleep(wait)
+        if (lastAt != 0L && wait > 0) {
+            if (SystemClock.elapsedRealtime() + wait >= deadline) return false
+            Thread.sleep(wait)
+        }
         lastAt = SystemClock.elapsedRealtime()
+        true
     }
+}
+
+/**
+ * Llamadas bloqueantes compartidas por llave: si llega otra con la misma llave mientras corre una, espera (hasta
+ * `waitMs`) y se queda con lo que dio la primera, sin volver a llamar.
+ */
+internal class SharedCalls<T : Any> {
+    private class Pending<T> {
+        val done = CountDownLatch(1)
+        @Volatile var value: T? = null
+    }
+
+    private val running = HashMap<String, Pending<T>>()
+
+    fun run(key: String, waitMs: Long, block: () -> T?): T? {
+        var mine = false
+        val pending = synchronized(running) { running.getOrPut(key) { Pending<T>().also { mine = true } } }
+        if (!mine) {
+            pending.done.await(waitMs, TimeUnit.MILLISECONDS)
+            return pending.value
+        }
+        try {
+            return block().also { pending.value = it }
+        } finally {
+            synchronized(running) { running.remove(key) }
+            pending.done.countDown()
+        }
+    }
+}
+
+/**
+ * La llave de una ruta en la caché: desde ~11 m y hasta ~1 m del destino, con el rumbo por octantes (0–7, de cualquier
+ * rumbo, también negativo o de más de una vuelta).
+ */
+internal fun routeKey(fromLat: Double, fromLon: Double, toLat: Double, toLon: Double, headingDeg: Float?): String =
+    String.format(Locale.ROOT, "%.4f,%.4f;%.5f,%.5f;%s", fromLat, fromLon, toLat, toLon, headingDeg?.let { (normalized(it) / 45f).roundToInt() % 8 })
+
+/** El rumbo entre 0 y 360. */
+private fun normalized(degrees: Float): Float = (degrees % 360f + 360f) % 360f
+
+/** Lee [input] completo como texto; null si pasa de [maxBytes] o de [deadline] (`SystemClock.elapsedRealtime`). */
+internal fun readCapped(input: InputStream, maxBytes: Int, deadline: Long = Long.MAX_VALUE): String? {
+    val out = ByteArrayOutputStream(64 * 1024)
+    val buffer = ByteArray(16 * 1024)
+    while (true) {
+        val read = input.read(buffer)
+        if (read < 0) break
+        if (out.size() + read > maxBytes) return null
+        if (deadline != Long.MAX_VALUE && SystemClock.elapsedRealtime() > deadline) return null
+        out.write(buffer, 0, read)
+    }
+    return out.toString("UTF-8")
 }
 
 /** Decodifica una línea en formato polyline con 6 decimales (la de OSRM): pares lat, lon en millonésimas de grado. */
@@ -153,15 +253,11 @@ internal fun parseOsrm(json: String): Route? {
     }
     if (o.optString("code") != "Ok") return null
     val r = o.optJSONArray("routes")?.optJSONObject(0) ?: return null
-    val points = decodePolyline6(r.optString("geometry"))
-    val n = points.size / 2
+    val line = decodePolyline6(r.optString("geometry"))
     val distance = r.optDouble("distance")
     val duration = r.optDouble("duration")
     val steps = r.optJSONArray("legs")?.optJSONObject(0)?.optJSONArray("steps") ?: return null
-    if (n < 2 || distance.isNaN() || duration.isNaN() || steps.length() < 2) return null
-    val atM = DoubleArray(n)
-    for (i in 1 until n) atM[i] = atM[i - 1] + flatMeters(points, i - 1, i)
-    if (atM[n - 1] > 0) for (i in 0 until n) atM[i] *= distance / atM[n - 1]
+    if (line.size < 4 || distance.isNaN() || duration.isNaN() || steps.length() < 2) return null
     // Dónde empieza cada paso en la línea (su punto de maniobra es uno de sus puntos), siempre hacia adelante.
     val starts = IntArray(steps.length())
     var cursor = 0
@@ -169,11 +265,18 @@ internal fun parseOsrm(json: String): Route? {
         val loc = steps.optJSONObject(k)?.optJSONObject("maneuver")?.optJSONArray("location") ?: return null
         starts[k] = when (k) {
             0 -> 0
-            steps.length() - 1 -> n - 1
-            else -> nearestAhead(points, cursor, Math.round(loc.optDouble(1) * 1e6).toInt(), Math.round(loc.optDouble(0) * 1e6).toInt())
+            steps.length() - 1 -> line.size / 2 - 1
+            else -> nearestAhead(line, cursor, Math.round(loc.optDouble(1) * 1e6).toInt(), Math.round(loc.optDouble(0) * 1e6).toInt())
         }
         cursor = starts[k]
     }
+    // Sin los puntos que casi no se mueven (una carretera larga trae decenas de miles): menos memoria aquí, al suavizar y al dibujar.
+    val points = thinned(line, starts, THIN_METERS)
+    val n = points.size / 2
+    if (n < 2) return null
+    val atM = DoubleArray(n)
+    for (i in 1 until n) atM[i] = atM[i - 1] + flatMeters(points, i - 1, i)
+    if (atM[n - 1] > 0) for (i in 0 until n) atM[i] *= distance / atM[n - 1]
     // Los segundos: cada paso a su paso (calles lentas y rápidas), y el total el del servidor.
     val atS = DoubleArray(n)
     for (k in 0 until steps.length()) {
@@ -222,6 +325,31 @@ internal fun parseOsrm(json: String): Route? {
     }
     val main = byName.maxByOrNull { it.value }?.key.orEmpty()
     return Route(points, distance, duration, main, maneuvers, atM, atS, online = true)
+}
+
+/** Entre dos puntos seguidos de la ruta en línea, al menos esto (m); los de las vueltas se quedan siempre. */
+private const val THIN_METERS = 3.0
+
+/**
+ * [points] (pares lat, lon en millonésimas) sin los que quedan a menos de [minMeters] del último que se quedó, salvo los
+ * de [keep] (índices en orden, p. ej. donde empieza cada vuelta) y el último. Los índices de [keep] se cambian ahí mismo
+ * a los de la línea nueva.
+ */
+internal fun thinned(points: IntArray, keep: IntArray, minMeters: Double): IntArray {
+    val n = points.size / 2
+    if (n < 3) return points
+    val out = IntList(points.size)
+    var k = 0
+    var last = 0
+    for (i in 0 until n) {
+        val must = i == 0 || i == n - 1 || (k < keep.size && keep[k] == i)
+        if (!must && flatMeters(points, last, i) < minMeters) continue
+        while (k < keep.size && keep[k] == i) keep[k++] = out.size / 2
+        out.add(points[2 * i])
+        out.add(points[2 * i + 1])
+        last = i
+    }
+    return IntArray(out.size) { out[it] }
 }
 
 /**

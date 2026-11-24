@@ -2,9 +2,14 @@ package com.irvingguerra.litedash.feature.map
 
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.io.ByteArrayInputStream
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.atomic.AtomicInteger
+import kotlin.concurrent.thread
 
 class OnlineRouteTest {
     // Respuestas reales de routing.openstreetmap.de (2026-11-24), guardadas tal cual.
@@ -115,5 +120,136 @@ class OnlineRouteTest {
         assertNull(parseOsrm("""{"code":"NoRoute","message":"Impossible route between points"}"""))
         assertNull(parseOsrm("no es json"))
         assertNull(parseOsrm("""{"code":"Ok","routes":[]}"""))
+    }
+
+    @Test
+    fun thinsLongRoutesKeepingTurnsCoherent() {
+        // Una carretera sintética de ~120 km con un punto cada ~1 m (lo que trae OSRM en tramos curvos) y 40 vueltas.
+        val big = syntheticOsrm(points = 120_000, turns = 40)
+        assertTrue(big.length < OnlineRoute.MAX_BYTES)
+        val route = parseOsrm(big)!!
+        // Cada ~3 m: un tercio de los puntos o menos.
+        assertTrue("${route.pointCount}", route.pointCount < 120_000 / 2.5)
+        assertEquals(route.pointCount, route.atM.size)
+        assertEquals(route.pointCount, route.atS.size)
+        assertEquals(route.distanceM, route.atM.last(), 1e-6)
+        for (i in 1 until route.pointCount) assertTrue(route.atM[i] >= route.atM[i - 1] && route.atS[i] >= route.atS[i - 1])
+        // Todas las vueltas siguen, cada una en su punto exacto de la línea y en orden.
+        assertEquals(40 + 2, route.maneuvers.size)
+        for (k in 1 until route.maneuvers.size) {
+            val m = route.maneuvers[k]
+            assertTrue(m.point > route.maneuvers[k - 1].point)
+            assertEquals(route.atM[m.point], m.atM, 1e-9)
+        }
+        for (k in 1..40) {
+            val m = route.maneuvers[k]
+            assertEquals(turnLat(k), route.points[2 * m.point])
+        }
+        // Al suavizar no se dispara: los puntos siguen del mismo orden.
+        val r = route.rounded()
+        assertTrue(r.pointCount < route.pointCount * 2)
+        assertEquals(42, r.maneuvers.size)
+    }
+
+    @Test
+    fun thinnedKeepsMarkedPointsAndEnds() {
+        // Cinco puntos a ~1 m: se quedan la punta, el marcado (3) y el último.
+        val line = intArrayOf(0, 0, 9, 0, 18, 0, 27, 0, 36, 0)
+        val keep = intArrayOf(0, 3, 4)
+        val out = thinned(line, keep, 3.0)
+        assertArrayEquals(intArrayOf(0, 0, 27, 0, 36, 0), out)
+        assertArrayEquals(intArrayOf(0, 1, 2), keep)
+    }
+
+    @Test
+    fun readsOnlyUpToTheCap() {
+        val text = "x".repeat(10_000)
+        assertEquals(text, readCapped(ByteArrayInputStream(text.toByteArray()), 10_000))
+        assertNull(readCapped(ByteArrayInputStream(text.toByteArray()), 9_999))
+    }
+
+    @Test
+    fun keyNormalizesHeading() {
+        val key = { h: Float? -> routeKey(19.0, -99.0, 20.0, -100.0, h) }
+        assertEquals(key(350f), key(-10f))
+        assertEquals(key(320f), key(-400f))
+        assertEquals(key(0f), key(360f))
+        assertEquals(key(10f), key(370f))
+        assertNotEquals(key(90f), key(-90f))
+        assertNotEquals(key(null), key(0f))
+    }
+
+    @Test
+    fun sharedCallsRunOnceForTheSameKey() {
+        val calls = SharedCalls<String>()
+        val runs = AtomicInteger()
+        val started = CountDownLatch(1)
+        val release = CountDownLatch(1)
+        val results = arrayOfNulls<String>(2)
+        val first = thread {
+            results[0] = calls.run("a", 5_000) {
+                runs.incrementAndGet()
+                started.countDown()
+                release.await()
+                "ruta"
+            }
+        }
+        started.await()
+        val second = thread { results[1] = calls.run("a", 5_000) { runs.incrementAndGet(); "otra" } }
+        // El segundo ya espera al primero.
+        Thread.sleep(100)
+        release.countDown()
+        first.join()
+        second.join()
+        assertEquals(1, runs.get())
+        assertEquals(listOf("ruta", "ruta"), results.toList())
+        // Ya terminado, uno nuevo sí corre.
+        assertEquals("otra", calls.run("a", 5_000) { "otra" })
+    }
+
+    /** Latitud (millonésimas) de la vuelta [k] de [syntheticOsrm]. */
+    private fun turnLat(k: Int) = 19_000_000 + k * 2_900 * 9
+
+    /**
+     * Una respuesta de OSRM inventada: [points] puntos hacia el norte cada 9 millonésimas (~1 m), una vuelta cada
+     * `points / (turns + 1)` puntos (en el punto exacto [turnLat]).
+     */
+    private fun syntheticOsrm(points: Int, turns: Int): String {
+        val every = 2_900
+        require(every * (turns + 1) <= points)
+        val lats = IntArray(points) { 19_000_000 + it * 9 }
+        val lons = IntArray(points) { -99_000_000 + (it / every) }
+        val geometry = encodePolyline6(lats, lons)
+        val meters = points * 1.0
+        val steps = buildString {
+            append("""{"maneuver":{"type":"depart","location":[${lons[0] / 1e6},${lats[0] / 1e6}]},"name":"Salida","duration":1,"distance":1}""")
+            for (k in 1..turns) {
+                val i = k * every
+                append(""",{"maneuver":{"type":"turn","modifier":"${if (k % 2 == 0) "left" else "right"}","location":[${lons[i] / 1e6},${lats[i] / 1e6}]},"name":"Calle $k","duration":100,"distance":${every}}""")
+            }
+            append(""",{"maneuver":{"type":"arrive","location":[${lons.last() / 1e6},${lats.last() / 1e6}]},"name":"","duration":0,"distance":0}""")
+        }
+        return """{"code":"Ok","routes":[{"geometry":"$geometry","distance":$meters,"duration":${turns * 100 + 1},"legs":[{"steps":[$steps]}]}]}"""
+    }
+
+    private fun encodePolyline6(lats: IntArray, lons: IntArray): String {
+        val out = StringBuilder()
+        fun put(v: Int) {
+            var n = if (v < 0) (v shl 1).inv() else v shl 1
+            while (n >= 0x20) {
+                out.append(((0x20 or (n and 0x1f)) + 63).toChar())
+                n = n ushr 5
+            }
+            out.append((n + 63).toChar())
+        }
+        var lat = 0
+        var lon = 0
+        for (i in lats.indices) {
+            put(lats[i] - lat)
+            put(lons[i] - lon)
+            lat = lats[i]
+            lon = lons[i]
+        }
+        return out.toString()
     }
 }

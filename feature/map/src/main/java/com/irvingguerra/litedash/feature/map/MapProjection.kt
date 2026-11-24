@@ -201,6 +201,26 @@ internal class IntList(capacity: Int = 64) {
     }
 }
 
+/** Como [IntList], con decimales. */
+internal class DoubleList(capacity: Int = 64) {
+    private var data = DoubleArray(capacity.coerceAtLeast(1))
+    var size = 0
+        private set
+
+    operator fun get(i: Int) = data[i]
+
+    operator fun set(i: Int, value: Double) {
+        data[i] = value
+    }
+
+    fun last() = data[size - 1]
+
+    fun add(value: Double) {
+        if (size == data.size) data = data.copyOf(size * 2)
+        data[size++] = value
+    }
+}
+
 /** [m] aplicada a ([x], [y]): en [out] queda x, y en pantalla y w (≤ 0 = detrás de la cámara). */
 private fun project(m: FloatArray, x: Float, y: Float, out: FloatArray) {
     val w = m[6] * x + m[7] * y + m[8]

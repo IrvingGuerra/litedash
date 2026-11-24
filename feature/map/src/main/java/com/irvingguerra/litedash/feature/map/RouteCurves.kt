@@ -28,8 +28,8 @@ internal fun Route.rounded(): Route {
     for (i in 1 until n) along[i] = along[i - 1] + flatMeters(points, i - 1, i)
     val total = along[n - 1]
     // Los pedazos de camino cerca de una vuelta (juntos si se enciman).
-    val from = ArrayList<Double>()
-    val to = ArrayList<Double>()
+    val from = DoubleList()
+    val to = DoubleList()
     for (i in 1 until n - 1) {
         if (along[i] - along[i - 1] < 0.01 || along[i + 1] - along[i] < 0.01) continue
         var turn = abs(bearing(points, i, i + 1) - bearing(points, i - 1, i)) % 360.0
@@ -37,14 +37,15 @@ internal fun Route.rounded(): Route {
         if (turn < TURN_MIN_DEGREES) continue
         val a = (along[i] - CURVE_REACH_M).coerceAtLeast(0.0)
         val b = (along[i] + CURVE_REACH_M).coerceAtMost(total)
-        if (to.isNotEmpty() && a <= to.last()) to[to.size - 1] = b else {
-            from += a
-            to += b
+        if (to.size > 0 && a <= to.last()) to[to.size - 1] = b else {
+            from.add(a)
+            to.add(b)
         }
     }
-    if (from.isEmpty()) return this
+    if (from.size == 0) return this
     val out = IntList(points.size + from.size * 24)
-    val source = ArrayList<Double>(n + from.size * 12)
+    // Por cada punto nuevo, a cuántos metros del camino de antes queda (sin cajas: una ruta larga trae decenas de miles).
+    val source = DoubleList(n + from.size * 12)
     val at = DoubleArray(2)
     var cursor = 0
     /** El punto a [s] metros de camino, en [at] (lat, lon en millonésimas). */
@@ -60,7 +61,7 @@ internal fun Route.rounded(): Route {
     fun add(lat: Double, lon: Double, s: Double) {
         out.add(Math.round(lat).toInt())
         out.add(Math.round(lon).toInt())
-        source += s
+        source.add(s)
     }
     /** El promedio del camino alrededor de [s] (más peso al centro); en las puntas de la ruta, lo que haya de cada lado. */
     fun addSmooth(s: Double) {

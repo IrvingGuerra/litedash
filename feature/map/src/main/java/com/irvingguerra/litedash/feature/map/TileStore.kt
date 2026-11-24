@@ -439,9 +439,10 @@ class TileStore(context: Context, private val userAgent: String, val source: Til
 
         /**
          * Android pide memoria (onTrimMemory): los almacenes que nadie ve la sueltan ya. Sirve igual con la app al frente
-         * (TRIM_MEMORY_RUNNING_LOW/CRITICAL): no suelta lo que se está viendo.
+         * (TRIM_MEMORY_RUNNING_LOW/CRITICAL): no suelta lo que se está viendo. También las rutas en línea guardadas.
          */
         fun trimAll() {
+            OnlineRoute.clearCache()
             val stores = synchronized(all) { all.toList() }
             for (s in stores) s.main.post { synchronized(s.lock) { if (s.users == 0 && s.scope == null) s.releaseMemory() } }
         }
