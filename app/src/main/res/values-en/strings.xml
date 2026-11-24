@@ -223,6 +223,7 @@
     <string name="language_report">Spot a translation mistake? Report it at litedash.dev/en/translate</string>
     <string name="map_help">Your external maps app (Waze, Google Maps…). While navigating with it, the widget shows the next turn (it uses the same notification access as music).</string>
     <string name="map_no_apps">Install Waze or Google Maps to navigate from LiteDash.</string>
+    <string name="map_allow_notifications">Allow notifications</string>
     <string name="map_mode_title">Navigate with</string>
     <string name="map_mode_own_help">The Navigate button, the steering wheel and the Map widget open the LiteDash map.</string>
     <string name="map_mode_app_help">The Navigate button, the steering wheel and the Map widget open your maps app.</string>
@@ -510,7 +511,6 @@
     <string name="module_obd">OBD scanner</string>
     <string name="module_notifications">Other apps\' notifications</string>
     <string name="module_location">Location</string>
-    <string name="radio_internet_title">Internet radio</string>
     <string name="module_tpms">Tires (TPMS)</string>
     <string name="tab_permissions">Permissions</string>
     <string name="system">System</string>
