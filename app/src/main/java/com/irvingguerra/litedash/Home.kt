@@ -206,8 +206,12 @@ class Dependencies(
     private val obdSaved: () -> Boolean,
     private val tpmsLazy: Lazy<TpmsRepository>,
     private val tpmsSaved: () -> Boolean,
+    private val spdLazy: Lazy<SpdCar?>,
     private val phoneLazy: Lazy<PhoneLink>,
 ) {
+    /** El auto por la pila SPD de la pantalla (null si no la tiene); se averigua la primera vez que algo lo pide. */
+    val spd: SpdCar? get() = spdLazy.value
+
     /** Estado de Compose: las piezas que preguntaron antes de que existiera se vuelven a dibujar. */
     private val obdCreated = mutableStateOf(false)
 
@@ -402,12 +406,14 @@ private fun Modifier.expandable(p: Tile, actions: TileActions) =
 
 /**
  * El módulo apagado del que depende una pieza (su nombre), o null si se puede ver: el Taller y
- * los medidores son del OBD y la pieza Llantas de Llantas. Esas piezas no se ven ni apartan su
- * lugar ([DashboardState.hidden]) y no se ofrecen para agregar. La pieza Clima no: el clima viene
- * apagado, las plantillas la traen y desde ella se prende.
+ * los medidores son del OBD (los medidores no en una pantalla SPD, que ya da datos del auto) y la
+ * pieza Llantas de Llantas. Esas piezas no se ven ni apartan su lugar ([DashboardState.hidden]) y no
+ * se ofrecen para agregar. La pieza Clima no: el clima viene apagado, las plantillas la traen y desde
+ * ella se prende.
  */
 fun moduleOff(d: Dependencies, type: String): Int? = when (type) {
-    TileTypes.WORKSHOP, TileTypes.GAUGE -> R.string.module_obd.takeIf { !d.obdModule }
+    TileTypes.WORKSHOP -> R.string.module_obd.takeIf { !d.obdModule }
+    TileTypes.GAUGE -> R.string.module_obd.takeIf { !d.obdModule && d.spd == null }
     TileTypes.TIRES -> R.string.module_tpms.takeIf { !d.hasTpmsSource }
     else -> null
 }

@@ -3,6 +3,12 @@
 What people using LiteDash notice, in English. The full history (in Spanish) is in [CHANGELOG.md](CHANGELOG.md).
 Format [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versions [SemVer](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+- **Car data on SPD head units** (`com.spd.carinfo`): the speedometer and the fuel and battery gauges read the car
+  through the unit's CAN box, with no OBD or GPS. For now only with the BMW MINI profile, the only one verified.
+
 ## [1.5.16] - 2026-11-24
 
 Tidier Settings that are easier to find things in, and a whole country's maps in one tap.

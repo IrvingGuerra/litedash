@@ -111,6 +111,7 @@ class LiteDashApp : Application() {
                 }
             },
             tpmsSaved = { TpmsRepository.hasSavedSource(this) },
+            spdLazy = lazy { SpdCar.detect(this, bus) },
             phoneLazy = phoneLazy,
         )
     }

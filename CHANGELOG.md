@@ -4,6 +4,12 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [Sin publicar]
+
+### Nuevo
+- **Datos del auto en pantallas SPD** (`com.spd.carinfo`): el velocímetro y los medidores de gasolina y batería leen al
+  auto por la caja CAN de la pantalla, sin OBD ni GPS. Por ahora solo con el perfil BMW MINI, el único comprobado.
+
 ## [1.5.16] - 2026-11-24
 
 Ajustes más ordenados y fáciles de encontrar, y mapas de un país completo de un solo toque.

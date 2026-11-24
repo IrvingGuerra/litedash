@@ -56,6 +56,8 @@
         <intent>
             <action android:name="android.settings.HOME_SETTINGS" />
         </intent>
+        <!-- Pantallas SPD: su servicio da los datos del auto (SpdCar). -->
+        <package android:name="com.spd.carinfo" />
     </queries>
 
     <!-- "Abrir LiteDash al encender" (apagado de fábrica): saber que la pantalla encendió y, desde

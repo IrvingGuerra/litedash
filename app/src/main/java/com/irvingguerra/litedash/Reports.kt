@@ -405,6 +405,8 @@ private fun systemInfo(context: Context, pro: Boolean, layout: String, lights: S
         appendLine(SystemVolume.describe())
         appendLine("Código de desarrollador: ${if (pro) "sí" else "no"}")
         appendLine(lightsReport(context, lights))
+        // El perfil CAN de una pantalla SPD, aunque aún no esté comprobado: así se aprenden otros autos.
+        SpdCar.describe(context)?.let { appendLine(it) }
         appendLine(locationInfo(context))
         append(musicInfo)
         SystemSource.describe(context)?.let { append("\n").append(it) }
