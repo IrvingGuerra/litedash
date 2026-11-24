@@ -42,8 +42,8 @@ fun MusicTile(
         text = { tall -> SongText(repo, song, tall, label) },
         // Cargando se pinta como pausa: tocarlo cancela la carga.
         controls = { m, compact ->
-            // Sin por dónde darle play a la app de Bluetooth de marca: sin botón (lo dice el texto, [SongText]).
-            if (!repo.phoneOnly) Controls(
+            // Sin por dónde darle play a la app de Bluetooth de marca: sin ▶ (lo dice el texto, [SongText]), con la salida a Connect.
+            if (repo.phoneOnly) PhoneLinkButton(repo, m) else Controls(
                 repo, song?.playing == true, m, loading = song?.buffering == true, compact = compact,
                 playBackground = c.text, playColor = c.background,
             )

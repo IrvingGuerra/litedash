@@ -1,8 +1,6 @@
 package com.irvingguerra.litedash.feature.music
 
 import android.annotation.SuppressLint
-import android.content.Context
-import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Handler
 import android.os.Looper
@@ -168,7 +166,6 @@ internal class TopWayRadio(onState: (BroadcastMeta) -> Unit, private val trace: 
         /** Marca de "abriendo TopWay" en el store de música: si se queda puesta, la app se cerró al abrirlo. */
         private const val KEY_OPENING = "topway_opening"
         private const val CLASS = "android.tw.john.TWUtil"
-        private const val XT_BIND = "com.tw.service.xt.CommandService.Bind"
         private const val RADIO = 1025
         private const val STATION = 1026
         private const val RDS = 1028
@@ -189,19 +186,14 @@ internal class TopWayRadio(onState: (BroadcastMeta) -> Unit, private val trace: 
         /** Alguna vez la app de la pantalla se cerró al abrir el enlace (desde entonces ya no se abre). */
         fun crashedBefore(store: SharedPreferences) = store.getBoolean(KEY_OPENING, false)
 
-        /** El servicio de comandos de TopWay (otra vía para la radio, aún sin usar; espera decisión): solo para el reporte. */
-        private fun xtService(context: Context) = runCatching {
-            context.packageManager.queryIntentServices(Intent(XT_BIND), 0).isNotEmpty()
-        }.getOrDefault(false)
-
         /**
-         * Para los reportes (si la pantalla trae el enlace): el perfil abierto ([radio]), el servicio de comandos, si la app
-         * se cerró alguna vez al abrirlo y si se pidió la fuente del Bluetooth ([bluetoothRecipe] = la receta aplicada).
+         * Para los reportes (si la pantalla trae el enlace): el perfil abierto ([radio]), si la app se cerró alguna vez al
+         * abrirlo y si se pidió la fuente del Bluetooth ([bluetoothRecipe] = la receta aplicada).
          */
-        fun describe(context: Context, store: SharedPreferences, radio: TopWayRadio?, bluetoothRecipe: String?): String =
+        fun describe(store: SharedPreferences, radio: TopWayRadio?, bluetoothRecipe: String?): String =
             "TopWay: abierto=${yes(radio?.open == true)} estación=${radio?.station ?: "-"} " +
                 "nombre=${radio?.name?.ifEmpty { "-" } ?: "-"} audio=${radio?.on?.let(::yes) ?: "?"} " +
-                "servicioXT=${yes(xtService(context))} se cerró=${yes(crashedBefore(store))} " +
+                "se cerró=${yes(crashedBefore(store))} " +
                 "fuente bluetooth=${if (bluetoothRecipe == Recipes.TW_SOURCE8) "pedida" else "no"}"
 
         /**

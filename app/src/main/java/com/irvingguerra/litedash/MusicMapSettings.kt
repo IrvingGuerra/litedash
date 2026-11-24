@@ -21,6 +21,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import com.irvingguerra.litedash.core.ui.Button
 import com.irvingguerra.litedash.core.ui.Label
 import com.irvingguerra.litedash.core.ui.LocalColors
@@ -132,10 +133,10 @@ fun RadioSettings(d: Dependencies) {
             Modifier.fillMaxWidth(),
             check = true,
         )
+        // La radio por internet no tiene más ajustes: lo que hace, aquí mismo (sin tarjeta vacía).
+        if (internet) Label(stringResource(R.string.radio_internet_help), Typography.small, LocalColors.current.textMuted)
     }
-    if (internet) {
-        SettingsCard(stringResource(R.string.radio_internet_title), stringResource(R.string.radio_internet_help)) {}
-    } else {
+    if (!internet) {
         SettingsCard(stringResource(R.string.radio_fm_app), stringResource(R.string.radio_fm_app_help)) {
             RadioAppPicker(d, apps)
         }
@@ -260,6 +261,14 @@ fun MapAppSettings(d: Dependencies) {
         Typography.small,
         LocalColors.current.textMuted,
     )
+    // Sin el acceso a avisos no llegan las vueltas de tu app de mapas: el mismo ajuste de Android que Módulos → Permisos.
+    // Se vuelve a revisar al regresar a LiteDash (se da allá).
+    var notifications by remember { mutableStateOf(true) }
+    LifecycleResumeEffect(d.music) {
+        notifications = d.music.hasPermission()
+        onPauseOrDispose {}
+    }
+    if (mapApps.isNotEmpty() && !notifications) Button(stringResource(R.string.map_allow_notifications), { d.music.requestPermission() }, primary = true)
 }
 
 /** Las apps instaladas que abren una dirección ("geo:") o son de mapas. Consulta a Android: fuera del hilo principal. */

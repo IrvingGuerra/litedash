@@ -73,8 +73,12 @@ internal fun MusicRepository.bluetoothHeard(): Boolean? {
         avrcpController?.playbackState?.state == PlaybackState.STATE_PLAYING ||
         song?.playing == true && !song.blind
     if (!playing) return null
-    return bluetoothSounds(true, musicActive(), othersPlaying(bluetoothGroup(avrcpPackage, knownBluetooth, sourceApps[SourceKind.BLUETOOTH])))
+    return bluetoothAudible()
 }
+
+/** Android tiene audio y no es de una app fuera del grupo del Bluetooth ([bluetoothSounds]). */
+internal fun MusicRepository.bluetoothAudible(): Boolean =
+    bluetoothSounds(true, musicActive(), othersPlaying(bluetoothGroup(avrcpPackage, knownBluetooth, sourceApps[SourceKind.BLUETOOTH]))) == true
 
 /**
  * Hay cómo saber si el celular suena: está con LiteDash Connect, la pantalla trae el Bluetooth de Android (AVRCP) o su

@@ -154,13 +154,14 @@ internal class Calibrator(
     }
 
     /**
-     * No hay cómo saber si suena (ni el celular ni Android lo pueden decir: chip propio sin Connect ni AVRCP, reporte
-     * E48170). Antes se dejaba a medias y el siguiente play empezaba de cero, una y otra vez. Ahora: la guardada se queda
-     * sin contar un fallo; la de la marca se queda puesta sin guardar (se revisa cuando haya cómo); las demás se preguntan.
+     * No hay cómo saber si el celular suena (chip propio sin Connect ni AVRCP, reporte E48170) y Android no tiene su audio.
+     * Antes se dejaba a medias y el siguiente play empezaba de cero, una y otra vez. Ahora: la guardada se queda sin contar
+     * un fallo; con [trustsSignal] (TopWay, FYT: su Bluetooth pasa por Android, que ya habría dicho «suena») la aplicada
+     * se queda puesta sin guardar y sin preguntar (quizá el celular aún no suena); en las demás se pregunta «¿Se escucha?».
      */
     fun unknown(): Step = when (phase) {
         Phase.SAVED -> Step.Done.also { phase = Phase.IDLE }
-        Phase.CATALOG, Phase.TRYING -> if (current in Recipes.BRAND) {
+        Phase.CATALOG, Phase.TRYING -> if (trustsSignal) {
             phase = Phase.IDLE
             Step.Done
         } else {

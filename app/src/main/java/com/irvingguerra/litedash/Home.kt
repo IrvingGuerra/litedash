@@ -167,6 +167,8 @@ sealed interface Panel {
     data class CustomizeWidget(val tileId: String) : Panel
     /** Ajustes abiertos en Llantas (desde la vista de llantas o la pieza sin configurar). */
     data object TiresSettings : Panel
+    /** Ajustes abiertos en Celular, donde se vincula LiteDash Connect (desde «Controla la música desde tu celular»). */
+    data object PhoneSettings : Panel
 }
 
 /**
@@ -551,7 +553,13 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
         if (!inFront) return@DisposableEffect onDispose {}
         val mine: (SoundPiece) -> Unit = { openSoundReport(it); panel = Panel.Report }
         d.music.onSoundReport = mine
-        onDispose { if (d.music.onSoundReport === mine) d.music.onSoundReport = null }
+        // El Bluetooth de marca sin por dónde darle play ofrece LiteDash Connect: a Ajustes → Celular.
+        val link = { panel = Panel.PhoneSettings }
+        d.music.onPhoneLink = link
+        onDispose {
+            if (d.music.onSoundReport === mine) d.music.onSoundReport = null
+            if (d.music.onPhoneLink === link) d.music.onPhoneLink = null
+        }
     }
     fun backToDashboard() {
         panel = null
@@ -911,7 +919,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
             FitShort {
                 when (p) {
                     Panel.Drawer -> DrawerPanel(d, apps, close = { panel = null })
-                    Panel.Settings, Panel.Updates, Panel.Report, Panel.Language, Panel.Workshop, Panel.AppsSettings, Panel.TiresSettings -> SettingsPanel(
+                    Panel.Settings, Panel.Updates, Panel.Report, Panel.Language, Panel.Workshop, Panel.AppsSettings, Panel.TiresSettings, Panel.PhoneSettings -> SettingsPanel(
                         d,
                         revision = revision,
                         close = { panel = null },
@@ -924,6 +932,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                             Panel.Workshop -> SettingsSection.WORKSHOP
                             Panel.AppsSettings -> SettingsSection.APPS
                             Panel.TiresSettings -> SettingsSection.TIRES
+                            Panel.PhoneSettings -> SettingsSection.PHONE
                             Panel.Language -> SettingsSection.APPEARANCE
                             else -> SettingsSection.CAR
                         },

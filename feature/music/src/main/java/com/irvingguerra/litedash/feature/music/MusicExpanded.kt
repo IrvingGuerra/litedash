@@ -126,8 +126,8 @@ private fun ColumnScope.PlayerControls(repo: MusicRepository, song: Song?, fit: 
                 color = if (OwnShuffle.on) c.primary else c.textMuted,
             )
         }
-        // Sin por dónde darle play a la app de Bluetooth de marca: sin botones (lo dice el texto).
-        if (!repo.phoneOnly) Controls(repo, song?.playing == true, loading = song?.buffering == true, size = m.size, playSize = m.play, gap = m.gap)
+        // Sin por dónde darle play a la app de Bluetooth de marca: sin botones (lo dice el texto), con la salida a Connect.
+        if (repo.phoneOnly) PhoneLinkButton(repo) else Controls(repo, song?.playing == true, loading = song?.buffering == true, size = m.size, playSize = m.play, gap = m.gap)
     }
     if (!wide && fit != ControlsFit.MINI && song != null && song.actions.isNotEmpty()) {
         Spacer(Modifier.height(if (compact) 4.dp else 8.dp))

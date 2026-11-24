@@ -224,6 +224,7 @@
     <string name="units_auto_now">Automático ahora: %1$s y %2$s (según tu idioma y región)</string>
     <string name="map_help">Tu app de mapas externa (Waze, Google Maps…). Mientras navegas con ella, el widget muestra la siguiente vuelta (usa el mismo acceso a notificaciones que la música).</string>
     <string name="map_no_apps">Instala Waze o Google Maps para navegar desde LiteDash.</string>
+    <string name="map_allow_notifications">Permitir avisos</string>
     <string name="map_mode_title">Navegar con</string>
     <string name="map_mode_own_help">El botón Navegar, el volante y el widget Mapa abren el mapa de LiteDash.</string>
     <string name="map_mode_app_help">El botón Navegar, el volante y el widget Mapa abren tu app de mapas.</string>
@@ -517,7 +518,6 @@
     <string name="module_bluetooth">Bluetooth (dispositivos cercanos)</string>
     <string name="module_local_network">Red local</string>
     <string name="module_files">Música y archivos</string>
-    <string name="radio_internet_title">Radio por internet</string>
     <string name="module_tpms">Llantas (TPMS)</string>
     <string name="tab_permissions">Permisos</string>
     <string name="about_help">Acerca de y ayuda</string>

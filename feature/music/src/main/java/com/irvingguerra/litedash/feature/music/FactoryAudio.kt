@@ -47,8 +47,12 @@ object FactoryAudio {
             ?: system.filter(::looksBluetooth).minOrNull()
             ?: if (hasBluetooth) ANDROID else NONE
 
-    /** La receta de sonido que funcionó en el Bluetooth (ver [Recipes]); null si no se ha calibrado. */
-    fun bluetoothRecipe(context: Context): String? = savedRecipe(context, SoundPiece.MUSIC)
+    /**
+     * La receta de sonido que funcionó en el Bluetooth (ver [Recipes]); null si no se ha calibrado o si no es de la
+     * familia de esta pantalla ([HeadUnit.of]: una guardada con el criterio de antes, «instalada», no se cuenta).
+     */
+    fun bluetoothRecipe(context: Context): String? =
+        savedRecipe(context, SoundPiece.MUSIC)?.takeIf { it == Recipes.FAILED || it in HeadUnit.of(context).bluetoothRecipes }
 
     /** La receta de sonido que funcionó en la radio de fábrica; null si no se ha calibrado. */
     fun radioRecipe(context: Context): String? = savedRecipe(context, SoundPiece.RADIO)
@@ -57,7 +61,7 @@ object FactoryAudio {
         PrefsRecipeStore.savedId(context.getSharedPreferences(MUSIC_STORE, Context.MODE_PRIVATE), piece)
 
     /** La familia de la pantalla por sus paquetes del sistema ("nwd", "topway"… o "generic"). Bloquea: varias consultas al sistema. */
-    fun family(context: Context): String = HeadUnit.detect { isSystemApp(context, it) }.id
+    fun family(context: Context): String = HeadUnit.of(context).id
 
     /** La pantalla tiene Bluetooth de baja energía (lo que usaría el enlace con el celular sin hotspot). */
     fun ble(context: Context): Boolean = context.packageManager.hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)

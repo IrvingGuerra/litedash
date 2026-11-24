@@ -56,6 +56,16 @@ internal enum class HeadUnit(
                 ?: NWD.takeIf { installed(NwdRadio.KERNEL_PACKAGE) }
                 ?: GENERIC
 
+        /**
+         * La familia de ESTA pantalla: solo cuentan las apps del sistema (una app de marca que el usuario instaló a mano no
+         * la hace de esa marca). El mismo criterio para el motor, la calibración y las estadísticas (dec. 33, 09-A9).
+         * Bloquea: consultas al instalador.
+         */
+        fun of(context: Context): HeadUnit = detect { isSystemApp(context, it) }
+
+        /** La app de Bluetooth de marca que toca la música, con el criterio de [of]; null si la pantalla no trae. Bloquea. */
+        fun bluetoothMusicApp(context: Context): String? = bluetoothMusicApps.firstOrNull { isSystemApp(context, it) }
+
         /** Todas las apps de Bluetooth de marca, en orden de prioridad (para la familia en reportes y estadísticas). */
         val bluetoothApps: List<String> = BRAND_BLUETOOTH.map { it.pkg }
 
@@ -119,7 +129,7 @@ private object TopWayKind : FactoryRadioKind(TopWayRadio.PACKAGE, HeadUnit.TOPWA
     override fun create(context: Context, store: SharedPreferences, onState: (BroadcastMeta) -> Unit, log: (String) -> Unit) =
         TopWayRadio.openGuarded(store, onState, log)
     override fun describe(context: Context, store: SharedPreferences, linked: String?, profile: FactoryRadio?, bluetoothRecipe: String?) =
-        TopWayRadio.describe(context, store, profile as? TopWayRadio, bluetoothRecipe).takeIf { TopWayRadio.available }
+        TopWayRadio.describe(store, profile as? TopWayRadio, bluetoothRecipe).takeIf { TopWayRadio.available }
 }
 
 /** Una app de Bluetooth de marca (chip propio, no el de Android): [music] = la que toca la música del celular. */

@@ -263,13 +263,11 @@ class MusicRepository(internal val context: Context) {
     /** La app que toca el Bluetooth: el propio Android (AVRCP) si lo trae, si no la enlazada. */
     fun bluetoothApp(): String? = bluetoothService?.packageName ?: sourceApps[SourceKind.BLUETOOTH] ?: knownBluetooth
 
-    /** La app de Bluetooth de marca instalada (chip propio), si hay. */
-    internal val knownBluetooth: String? by lazy {
-        HeadUnit.bluetoothMusicApps.firstOrNull(context::hasPackage)
-    }
+    /** La app de Bluetooth de marca de la pantalla (chip propio, del sistema), si hay. */
+    internal val knownBluetooth: String? by lazy { HeadUnit.bluetoothMusicApp(context) }
 
-    /** La familia de la pantalla (por sus paquetes): sus recetas de sonido. */
-    internal val headUnit: HeadUnit by lazy { HeadUnit.detect(context::hasPackage) }
+    /** La familia de la pantalla (por sus apps del sistema, como en las estadísticas): sus recetas de sonido. */
+    internal val headUnit: HeadUnit by lazy { HeadUnit.of(context) }
 
     /**
      * La app de Bluetooth de marca sin receptor del botón de play ni servicio de música (se pregunta en otro hilo al
@@ -1128,6 +1126,12 @@ class MusicRepository(internal val context: Context) {
     var onSoundReport: ((SoundPiece) -> Unit)? = null
 
     /**
+     * El botón «LiteDash Connect» de «Controla la música desde tu celular» (lo pone la app: abre Ajustes → Celular, donde se
+     * vincula el celular); null = sin botón.
+     */
+    var onPhoneLink by mutableStateOf<(() -> Unit)?>(null)
+
+    /**
      * El volumen de la música de Android está en 0 (y se puede mover): por más receta, no se oiría. En una FYT el
      * Bluetooth del celular suena por ahí (reporte AA6C26: 0/15, "no se escucha" y se guardó que nada funcionaba).
      */
@@ -1194,7 +1198,7 @@ class MusicRepository(internal val context: Context) {
     internal val btCalibration by lazy {
         SoundCalibration(
             SoundPiece.MUSIC, btStore, headUnit.trustsSignal, { moving() || users == 0 }, mainHandler, ::trace, { showCheck(SoundPiece.MUSIC, it) },
-            use = ::useBluetooth, check = ::bluetoothHeard, knowable = ::bluetoothKnowable,
+            use = ::useBluetooth, check = ::bluetoothHeard, knowable = ::bluetoothKnowable, audible = ::bluetoothAudible,
         )
     }
 
