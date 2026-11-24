@@ -197,9 +197,14 @@ fun PickAppPanel(d: Dependencies, apps: List<App>, tileId: String?, close: () ->
         AppGrid(
             d.apps, apps, query,
             onClick = { app ->
-                if (tileId != null) {
+                val tile = tileId?.let { id -> dashboard.tiles.firstOrNull { it.id == id } }
+                if (tile?.type == TileTypes.PHONE) {
+                    // Teléfono: tu app de llamadas para toda la app (también la barra y el volante).
+                    d.prefs.phoneApp = app.key
+                    close()
+                } else if (tileId != null) {
                     // La app nueva, sin perder las opciones del widget.
-                    dashboard.setData(tileId, withAppKey(dashboard.tiles.firstOrNull { it.id == tileId }?.data ?: "", app.key))
+                    dashboard.setData(tileId, withAppKey(tile?.data ?: "", app.key))
                     close()
                 } else if (dashboard.addTile(TileTypes.APP, app.key)) {
                     close()

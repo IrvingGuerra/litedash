@@ -132,10 +132,7 @@ fun SettingsPanel(
                         SettingsSection.WORKSHOP -> if (d.obdModule) Workshop(d, onTires)
                         SettingsSection.TIRES -> TiresSettings(d)
                         SettingsSection.MODULES -> Modules(d, revision, open = { section = it })
-                        SettingsSection.PHONE -> PhoneSettings(d, openMusic = {
-                            openMusicSettings()
-                            section = SettingsSection.APPS
-                        })
+                        SettingsSection.PHONE -> PhoneSettings(d)
                         SettingsSection.SYSTEM -> SystemSettings(d)
                     }
                 }

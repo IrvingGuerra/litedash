@@ -65,10 +65,10 @@ private const val QUIET_ZONE = 4
  * La sección Celular. Mientras está a la vista el enlace intenta conectarse cada 2 s, revisa la red
  * y mantiene vigente el QR; al salir (o irse LiteDash al fondo) deja de intentar. Sin red no hay
  * código: primero se dice cómo tenerla. En Android 17+ sin el permiso de la red local, antes que nada se pide
- * (solo al tocar: pedirlo solo abriría el diálogo en bucle). [openMusic] lleva a Ajustes → Apps → Música.
+ * (solo al tocar: pedirlo solo abriría el diálogo en bucle).
  */
 @Composable
-internal fun PhoneSettings(d: Dependencies, openMusic: () -> Unit) {
+internal fun PhoneSettings(d: Dependencies) {
     val link = d.phone
     LifecycleResumeEffect(link) {
         // Sin celular vinculado el enlace nace aquí: se arranca (al volver a LiteDash solo se arranca si hay vínculo).
@@ -80,7 +80,7 @@ internal fun PhoneSettings(d: Dependencies, openMusic: () -> Unit) {
     SettingsCard(help = stringResource(R.string.phone_help)) {
         when {
             !link.networkAllowed -> AskLocalNetwork(link)
-            link.paired -> Linked(d, openMusic)
+            link.paired -> Linked(d)
             // Sin la primera revisión de la red no se sabe si hay: ni el QR ni "sin red" todavía.
             !link.networkChecked -> StatusTitle(Mark.INFO, stringResource(R.string.phone_waiting))
             !link.localNetwork -> NoNetwork()
@@ -230,7 +230,7 @@ private fun QrImage(text: String, side: Dp, modifier: Modifier = Modifier) {
 
 /** C y D · Con celular vinculado: conectado (verde) o buscándolo (ámbar), con los datos y el sonido. */
 @Composable
-private fun Linked(d: Dependencies, openMusic: () -> Unit) {
+private fun Linked(d: Dependencies) {
     val link = d.phone
     val c = LocalColors.current
     // El Bluetooth solo se escucha mientras esto está a la vista.
@@ -246,7 +246,7 @@ private fun Linked(d: Dependencies, openMusic: () -> Unit) {
         Divider()
         LinkRow(link)
         Divider()
-        SoundRow(d, openMusic)
+        SoundRow(d)
         Divider()
     }
     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -290,12 +290,13 @@ private fun LinkRow(link: PhoneLink) {
  * de la pantalla, y si tampoco se sabe, se dice que no se sabe.
  */
 @Composable
-private fun SoundRow(d: Dependencies, openMusic: () -> Unit) {
+private fun SoundRow(d: Dependencies) {
     val context = LocalContext.current
     val title = stringResource(R.string.phone_sound)
     val seen = d.music.bluetoothDevice
     val connect: @Composable () -> Unit = {
-        Button(stringResource(R.string.phone_connect_bt), { if (!openStereoBluetooth(d, context)) openMusic() })
+        // Sin app de Bluetooth del estéreo ni pantalla de Bluetooth de Android: los ajustes de Android (nada de Música).
+        Button(stringResource(R.string.phone_connect_bt), { if (!openStereoBluetooth(d, context)) openSystemScreen(context, Intent(Settings.ACTION_SETTINGS)) })
     }
     when (d.phone.phoneSound) {
         PhoneSound.BLUETOOTH -> {

@@ -38,8 +38,8 @@ import com.irvingguerra.litedash.feature.dashboard.TileTypes
 
 /**
  * Las opciones de un widget en su [Tile.data]: "clave=off" apaga una que de fábrica está prendida (lo de
- * fábrica no se escribe: los acomodos de antes se ven igual). Los widgets que abren una app (App, Teléfono) llevan
- * además la app al principio, sin "=" (Android Auto / CarPlay la llevaba hasta la 1.5.14: [ProjectionTile] la adopta).
+ * fábrica no se escribe: los acomodos de antes se ven igual). El widget App lleva además la app al principio, sin "="
+ * (Teléfono y Android Auto / CarPlay la llevaban hasta la 1.5.15: [Preferences.adoptWidgetApps] la adopta).
  */
 object WidgetFlags {
     const val WEATHER = "weather"
@@ -165,12 +165,14 @@ private fun FlagRow(d: Dependencies, tile: Tile, key: String, title: Int) {
 @Composable
 private fun WidgetOptionRows(d: Dependencies, tile: Tile, apps: List<App>, onPickApp: () -> Unit) {
     val c = LocalColors.current
-    val data = tile.data
     when (tile.type) {
         TileTypes.CLOCK -> {
-            FlagRow(d, tile, WidgetFlags.WEATHER, R.string.clock_show_weather)
-            // Con el widget Clima en el inicio, el reloj no lo repite aunque esté prendido.
-            if (d.dashboard.shown.any { it.type == TileTypes.WEATHER }) Label(stringResource(R.string.clock_weather_in_widget), Typography.small, c.textMuted)
+            // Sin el módulo Clima no hay nada que mostrar: el renglón no sale.
+            if (d.weather.enabled) {
+                FlagRow(d, tile, WidgetFlags.WEATHER, R.string.clock_show_weather)
+                // Con el widget Clima en el inicio, el reloj no lo repite aunque esté prendido.
+                if (d.dashboard.shown.any { it.type == TileTypes.WEATHER }) Label(stringResource(R.string.clock_weather_in_widget), Typography.small, c.textMuted)
+            }
             FlagRow(d, tile, WidgetFlags.DATE, R.string.option_date)
             if (d.prefs.driverName != null) FlagRow(d, tile, WidgetFlags.GREETING, R.string.option_greeting)
         }
@@ -184,6 +186,8 @@ private fun WidgetOptionRows(d: Dependencies, tile: Tile, apps: List<App>, onPic
             FlagRow(d, tile, WidgetFlags.TIME, R.string.trip_time)
             FlagRow(d, tile, WidgetFlags.AVERAGE, R.string.trip_average)
             FlagRow(d, tile, WidgetFlags.HEADING, R.string.trip_heading)
+            PreciseLocationNote(d.trip)
+            ResetTripButton(d.trip)
         }
         TileTypes.TIRES, TileTypes.WORKSHOP -> FlagRow(d, tile, WidgetFlags.CAR, R.string.option_car)
         TileTypes.MUSIC, TileTypes.RADIO -> {
@@ -195,14 +199,16 @@ private fun WidgetOptionRows(d: Dependencies, tile: Tile, apps: List<App>, onPic
             Button(stringResource(R.string.option_change_app), onPickApp)
         }
         TileTypes.PHONE -> {
-            val chosen = appKeyOf(data)?.let { d.apps.find(apps, it) }
+            // Una sola app de llamadas para toda la app ([Preferences.phoneApp]): el widget, la barra y el volante.
+            val chosen = phoneChoice(d, apps)
             val default = stringResource(R.string.option_opens_dialer)
             Label(stringResource(R.string.option_opens), Typography.label, c.textMuted)
             Label(chosen?.name ?: default, Typography.subtitle)
+            Label(stringResource(R.string.option_phone_everywhere), Typography.small, c.textMuted)
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 Button(stringResource(R.string.option_change_app), onPickApp)
                 // También si la elegida ya no está instalada (sigue guardada y volvería al reinstalarla).
-                if (appKeyOf(data) != null) Button(default, { d.dashboard.setData(tile.id, withAppKey(data, null)) })
+                if (d.prefs.phoneApp != null) Button(default, { d.prefs.phoneApp = null })
             }
         }
     }
