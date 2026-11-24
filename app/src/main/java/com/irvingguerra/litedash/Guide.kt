@@ -20,8 +20,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
@@ -101,62 +104,102 @@ internal enum class GuideSize {
     FULL,
 }
 
-/** El tamaño de la guía en un widget de [widthDp] × [heightDp]. */
+/**
+ * El tamaño de la guía en un widget de [widthDp] × [heightDp]. El mediano angosto lleva la tarjeta a todo lo ancho y tu
+ * flecha debajo ([guideStacked]): necesita más alto.
+ */
 internal fun guideSizeFor(widthDp: Float, heightDp: Float): GuideSize = when {
     widthDp >= LARGE_MIN_WIDTH && heightDp >= LARGE_MIN_HEIGHT -> GuideSize.LARGE
-    widthDp >= MEDIUM_MIN_WIDTH && heightDp >= MEDIUM_MIN_HEIGHT -> GuideSize.MEDIUM
+    widthDp >= MEDIUM_SIDE_WIDTH && heightDp >= MEDIUM_MIN_HEIGHT -> GuideSize.MEDIUM
+    widthDp >= MEDIUM_MIN_WIDTH && heightDp >= MEDIUM_STACKED_HEIGHT -> GuideSize.MEDIUM
     else -> GuideSize.SMALL
 }
 
-/** Desde qué tamaño (dp) el widget navegando es mediano o grande. */
+/**
+ * ¿La tarjeta de la vuelta va a todo lo ancho, arriba, con lo demás debajo? En el mediano si no cabe junto a tu flecha
+ * (menos de [MEDIUM_SIDE_WIDTH]); en el grande si a su lado (los botones miden [sideDp]) quedaría más angosta que
+ * [TURN_MIN_WIDTH] (un celular de pie).
+ */
+internal fun guideStacked(size: GuideSize, widthDp: Float, sideDp: Float, gapDp: Float): Boolean = when (size) {
+    GuideSize.SMALL -> false
+    GuideSize.MEDIUM -> widthDp < MEDIUM_SIDE_WIDTH
+    GuideSize.LARGE, GuideSize.FULL -> widthDp - sideDp - gapDp * 3 < TURN_MIN_WIDTH.value
+}
+
+/** Desde qué tamaño (dp) el widget navegando es mediano (con la tarjeta al lado o, angosto y más alto, encima) o grande. */
 private const val MEDIUM_MIN_WIDTH = 300f
+private const val MEDIUM_SIDE_WIDTH = 460f
 private const val MEDIUM_MIN_HEIGHT = 170f
+private const val MEDIUM_STACKED_HEIGHT = 240f
 private const val LARGE_MIN_WIDTH = 480f
 private const val LARGE_MIN_HEIGHT = 330f
+
+/** Más angosta que esto, la tarjeta de la vuelta no cabe junto a los botones: va encima de ellos. */
+private val TURN_MIN_WIDTH = 280.dp
 
 /**
  * Un mapa navegando (el widget Mapa [tileId] o, con [GuideSize.FULL], el mapa en grande): la vista Flecha (el mapa
  * inclinado a nivel de calle, con la cámara y las teselas del widget) o la vista Auto (tu auto de espaldas sobre las calles
  * a escala real), y encima lo que quepa en [size]. [controls] = false al acomodar el inicio (los botones estorban);
  * [onTap] = un toque al mapa (en el widget, verlo en grande); [extra] = botones de más arriba a la derecha (los del mapa en grande).
+ * Solo un mapa anima la guía: con [active] = false se queda quieto (otro la enseña) y con [cards] = false es solo el mapa
+ * con la ruta (un segundo widget Mapa en la página).
  */
 @Composable
 internal fun GuideView(
     d: Dependencies, session: DriveSession, size: GuideSize, tileId: String?, modifier: Modifier = Modifier,
-    controls: Boolean = true, onTap: (() -> Unit)? = null, extra: @Composable RowScope.() -> Unit = {},
+    controls: Boolean = true, onTap: (() -> Unit)? = null, active: Boolean = true, cards: Boolean = true,
+    extra: @Composable RowScope.() -> Unit = {},
 ) {
     val c = LocalColors.current
     val camera = sharedMapCamera(tileId)
     val big = size == GuideSize.LARGE || size == GuideSize.FULL
-    val carView = big && d.prefs.guideCarView
+    val carView = cards && big && d.prefs.guideCarView
+    // Al terminar la guía, la cámara (la comparte el widget) no se queda en «Ver ruta», suelta ni a medio zoom.
+    DisposableEffect(session, camera) {
+        onDispose { if (Driving.session !== session && (camera.showingPlace || !camera.following || camera.scaled)) camera.recenter() }
+    }
     // Atrás cierra «Ver ruta» (nunca termina la guía).
-    BackHandler(session.overview) { session.overview = false }
-    // Lo que tapan la llegada (abajo) y los botones (arriba a la derecha), en px.
+    BackHandler(cards && session.overview) { session.overview = false }
+    // Lo que tapan la vuelta (arriba, si va a todo lo ancho), la llegada (abajo) y los botones (arriba a la derecha), en px.
+    var topH by remember { mutableIntStateOf(0) }
     var bottomH by remember { mutableIntStateOf(0) }
     var sideW by remember { mutableIntStateOf(0) }
     BoxWithConstraints(modifier.clipToBounds()) {
         val density = LocalDensity.current
+        val moving = active && !LocalHomeCovered.current
         // Con poco alto (1024×600, widget mediano) las tarjetas van compactas.
         val compact = size == GuideSize.MEDIUM || maxHeight < COMPACT_CARDS_HEIGHT
         val gap = if (compact) 8.dp else 12.dp
         val round = if (compact) ROUND_SMALL else ROUND_BUTTON
-        if (carView) CarView(d, session, Modifier.fillMaxSize(), bottomPx = bottomH, onTap = onTap)
-        else ArrowView(d, session, tileId, camera, Modifier.fillMaxSize(), bottomPx = bottomH, interactive = size != GuideSize.SMALL, onTap = onTap)
+        val side = with(density) { sideW.toDp() }
+        val stacked = cards && guideStacked(size, maxWidth.value, side.value, gap.value)
+        val topPx = if (stacked) topH else 0
+        val bottomPx = if (cards && size != GuideSize.SMALL) bottomH else 0
+        if (carView) CarView(d, session, Modifier.fillMaxSize(), topPx = topH, bottomPx = bottomPx, active = moving, onTap = onTap)
+        else ArrowView(
+            d, session, tileId, camera, Modifier.fillMaxSize(), topPx = topPx, bottomPx = bottomPx, active = moving,
+            interactive = cards && size != GuideSize.SMALL, onTap = onTap,
+        )
+        if (!cards) return@BoxWithConstraints
         if (size == GuideSize.SMALL) {
             TurnChip(d, session, Modifier.align(Alignment.TopStart).padding(gap))
             return@BoxWithConstraints
         }
-        val side = with(density) { sideW.toDp() }
-        // En el mediano (poco alto) tu flecha queda a la altura de la tarjeta: la tarjeta no pasa de la mitad.
+        // En el mediano tu flecha queda a la altura de la tarjeta: la tarjeta no pasa de la mitad. Angosta (mediano chico,
+        // celular de pie), va a todo lo ancho y tu flecha y los botones debajo.
         val turnMax = if (size == GuideSize.MEDIUM) maxWidth / 2 - ARROW_CLEARANCE - gap else maxWidth - side - gap * 3
         TurnCard(
             d, session, compact, then = big,
-            modifier = Modifier.align(Alignment.TopStart).padding(gap).widthIn(max = minOf(TURN_MAX_WIDTH, turnMax)),
+            modifier = Modifier.align(Alignment.TopStart).padding(gap)
+                .then(if (stacked) Modifier.fillMaxWidth() else Modifier.widthIn(max = minOf(TURN_MAX_WIDTH, turnMax)))
+                .onSizeChanged { topH = it.height + with(density) { gap.roundToPx() } },
         )
-        // Arriba a la derecha: Flecha / Auto y los del mapa en grande; abajo de ellos, redondos: seguirte (si lo soltaste),
-        // ver toda la ruta y la brújula.
+        // Arriba a la derecha (angosto, debajo de la vuelta): Flecha / Auto y los del mapa en grande; abajo de ellos,
+        // redondos: seguirte (si lo soltaste), ver toda la ruta y la brújula.
         if (controls) Column(
-            Modifier.align(Alignment.TopEnd).padding(gap).onSizeChanged { sideW = it.width },
+            Modifier.align(Alignment.TopEnd).padding(top = if (stacked) with(density) { topH.toDp() } else 0.dp).padding(gap)
+                .onSizeChanged { sideW = it.width },
             horizontalAlignment = Alignment.End,
             verticalArrangement = Arrangement.spacedBy(gap),
         ) {
@@ -201,12 +244,13 @@ internal val endGuide: () -> Unit = { Driving.session = null }
 /**
  * La vista Flecha: el mapa con la ruta, inclinado y muy cerca, hacia donde vas, alejándose con la velocidad; con un dedo
  * se suelta (al alejarlo se aplana) y «Seguirme» lo regresa. La brújula lo pasa a «siempre al norte» (plano) y de vuelta;
- * «Ver ruta» la enseña toda, plana. Tu flecha y los créditos van arriba de la tarjeta de la llegada ([bottomPx]).
+ * «Ver ruta» la enseña toda, plana. Tu flecha y los créditos van entre la tarjeta de la vuelta, si va a todo lo ancho
+ * ([topPx]), y la de la llegada ([bottomPx]). Con [active] = false se queda quieto (otro mapa anima la guía).
  */
 @Composable
 private fun ArrowView(
-    d: Dependencies, session: DriveSession, tileId: String?, camera: MapCamera, modifier: Modifier, bottomPx: Int,
-    interactive: Boolean, onTap: (() -> Unit)?,
+    d: Dependencies, session: DriveSession, tileId: String?, camera: MapCamera, modifier: Modifier, topPx: Int, bottomPx: Int,
+    active: Boolean, interactive: Boolean, onTap: (() -> Unit)?,
 ) {
     val c = LocalColors.current
     val heading = !d.prefs.guideMapNorth && !session.overview
@@ -220,10 +264,11 @@ private fun ArrowView(
     val s = session.state
     BoxWithConstraints(modifier) {
         val density = LocalDensity.current.density
-        val free = freeAbove(bottomPx, constraints.maxHeight)
-        val fit = if (session.overview) remember(session.route, maxWidth, maxHeight, density) { routeFit(session.route, maxWidth.value, maxHeight.value, density) } else null
-        LaunchedEffect(fit?.lat, fit?.lon) {
-            if (fit != null) camera.show(fit.lat, fit.lon) else if (camera.showingPlace) camera.recenter()
+        val view = guideFocus(topPx, bottomPx, constraints.maxHeight)
+        // «Ver ruta» la pone solo el mapa que anima la guía (el quieto comparte la cámara o no se ve).
+        val fit = if (session.overview && active) remember(session.route, maxWidth, maxHeight, density) { routeFit(session.route, maxWidth.value, maxHeight.value, density) } else null
+        LaunchedEffect(fit?.lat, fit?.lon, active) {
+            if (fit != null) camera.show(fit.lat, fit.lon) else if (active && camera.showingPlace) camera.recenter()
         }
         if (position == null) {
             Label(stringResource(R.string.map_waiting), Typography.body, c.textMuted, maxLines = 2, modifier = Modifier.align(Alignment.Center).padding(16.dp))
@@ -234,17 +279,28 @@ private fun ArrowView(
             store, if (onRoute) s.lat else position.latitude, if (onRoute) s.lon else position.longitude,
             youBearing(d, session, s), kmh, look, Modifier.fillMaxSize(), camera,
             fixedZoom = fit?.whole, interactive = interactive && !session.overview, navigation = true,
-            active = !LocalHomeCovered.current, onTap = onTap,
+            active = active, onTap = onTap,
             turnAhead = onRoute && turnAhead(session.route, s),
             route = session.route.points, routeDone = s?.let { it.point + it.fraction } ?: 0f,
-            focus = if (free < 1f) Rect(0f, 0f, 1f, free) else null,
+            focus = view,
         )
     }
 }
 
-/** Lo que queda a la vista arriba de la tarjeta de la llegada ([bottomPx] de [heightPx]), en fracción del alto (½ o más). */
-private fun freeAbove(bottomPx: Int, heightPx: Int): Float =
-    if (bottomPx > 0 && heightPx > 0) ((heightPx - bottomPx).toFloat() / heightPx).coerceIn(0.5f, 1f) else 1f
+/**
+ * Dónde vas tú en un mapa de [heightPx] con [topPx] tapados arriba y [bottomPx] abajo, en fracciones (null = todo el
+ * mapa). Lo que queda a la vista nunca baja de la mitad del alto ni, con algo arriba, de un tercio.
+ */
+internal fun guideFocus(topPx: Int, bottomPx: Int, heightPx: Int): Rect? {
+    if (heightPx <= 0 || (topPx <= 0 && bottomPx <= 0)) return null
+    val top = (topPx.coerceAtLeast(0).toFloat() / heightPx).coerceAtMost(MAX_TOP_SHARE)
+    val bottom = ((heightPx - bottomPx.coerceAtLeast(0)).toFloat() / heightPx)
+        .coerceAtLeast(maxOf(0.5f, top + MIN_VIEW_SHARE)).coerceAtMost(1f)
+    return Rect(0f, top, 1f, bottom)
+}
+
+private const val MAX_TOP_SHARE = 0.6f
+private const val MIN_VIEW_SHARE = 0.35f
 
 /** Hacia dónde vas: sobre la ruta, hacia donde sigue (como Waze); fuera, el del GPS; al salir, el de la ruta. */
 internal fun youBearing(d: Dependencies, session: DriveSession, s: GuidanceState?): Float? =
@@ -253,10 +309,11 @@ internal fun youBearing(d: Dependencies, session: DriveSession, s: GuidanceState
 /**
  * La vista Auto: tu auto de espaldas sobre las calles (o la flecha sin auto), siempre hacia donde vas, con la velocidad.
  * Las calles a escala real salen del mapa bajado: donde no lo hay (ruta en línea), en su lugar [GetMapCard] (bajarlo sin
- * dejar de navegar; al terminar, el auto aparece solo).
+ * dejar de navegar; al terminar, el auto aparece solo), entre la tarjeta de la vuelta ([topPx]) y la de la llegada
+ * ([bottomPx]) y a la derecha de la velocidad. Con [active] = false se queda quieta.
  */
 @Composable
-private fun CarView(d: Dependencies, session: DriveSession, modifier: Modifier, bottomPx: Int, onTap: (() -> Unit)?) {
+private fun CarView(d: Dependencies, session: DriveSession, modifier: Modifier, topPx: Int, bottomPx: Int, active: Boolean, onTap: (() -> Unit)?) {
     val c = LocalColors.current
     val context = LocalContext.current
     val packs = remember(context) { MapPacks.get(context) }
@@ -271,8 +328,11 @@ private fun CarView(d: Dependencies, session: DriveSession, modifier: Modifier, 
     BoxWithConstraints(modifier.clipToBounds().then(if (onTap != null) Modifier.clickable(onClick = onTap) else Modifier)) {
         // Tu auto mide lo mismo que en el mapa de fondo ([markerWidthDp]): las calles y la ruta, a su escala.
         val carDp = markerWidthDp(minOf(maxWidth, maxHeight).value)
-        val free = freeAbove(bottomPx, constraints.maxHeight)
-        val store = rememberTileStore(d, look, c.dark, DRIVE_CAR_KEY, realRoadDp = carDp)
+        // Un almacén por tamaño (el ancho de las calles cambia con él); al terminar la guía se sueltan todos.
+        val store = rememberTileStore(d, look, c.dark, carViewKey(carDp), realRoadDp = carDp)
+        val density = LocalDensity.current
+        val topDp = with(density) { topPx.toDp() }
+        val bottomDp = with(density) { bottomPx.toDp() }
         // ¿Hay mapa bajado donde vas? (Por cuadras de ~100 m: no se revisa el contorno con cada lectura.)
         val installed = packs.installed
         val cellLat = position?.let { Math.round(it.latitude * 1000) }
@@ -281,19 +341,28 @@ private fun CarView(d: Dependencies, session: DriveSession, modifier: Modifier, 
             position == null || installed.any { it.contains(position.latitude, position.longitude) }
         }
         if (!covered) {
-            GetMapCard(packs, position!!.latitude, position.longitude, cellLat, cellLon, Modifier.align(Alignment.Center).padding(24.dp).widthIn(max = 420.dp))
+            val freeHeight = maxHeight - topDp - bottomDp
+            Box(
+                Modifier.fillMaxSize().padding(start = SPEED_CLEARANCE, end = 12.dp, top = topDp, bottom = bottomDp),
+                contentAlignment = Alignment.Center,
+            ) {
+                GetMapCard(
+                    packs, position!!.latitude, position.longitude, cellLat, cellLon,
+                    compact = freeHeight < GET_MAP_FULL_HEIGHT, modifier = Modifier.widthIn(max = 420.dp),
+                )
+            }
         } else if (position != null) {
             val onRoute = s != null && !s.offRoute
             MapCanvas(
                 store, if (onRoute) s.lat else position.latitude, if (onRoute) s.lon else position.longitude,
                 youBearing(d, session, s), kmh, look, Modifier.fillMaxSize(), camera,
-                navigating = true, interactive = false, marker = marker, active = !LocalHomeCovered.current,
+                navigating = true, interactive = false, marker = marker, active = active,
                 route = session.route.points, routeDone = s?.let { it.point + it.fraction } ?: 0f, routeWidth = carDp.dp,
-                focus = if (free < 1f) Rect(0f, 0f, 1f, free) else null,
+                focus = guideFocus(0, bottomPx, constraints.maxHeight),
             )
         }
-        // La velocidad, grande, a la izquierda (debajo de la vuelta); sin dato, una raya (no «0»: parecería que vas parado).
-        Column(Modifier.align(Alignment.CenterStart).padding(20.dp)) {
+        // La velocidad, grande, a la izquierda debajo de la vuelta; sin dato, una raya (no «0»: parecería que vas parado).
+        Column(Modifier.align(Alignment.TopStart).padding(start = 20.dp, top = topDp + 8.dp)) {
             val miles = d.prefs.units.miles
             val speed = kmh?.let { "${(it * if (miles) 0.621371f else 1f).toInt()}" } ?: NO_SPEED
             Label(speed, Typography.clock.copy(fontSize = 52.sp, fontWeight = FontWeight.Bold), maxLines = 1)
@@ -308,24 +377,27 @@ private fun CarView(d: Dependencies, session: DriveSession, modifier: Modifier, 
  * busca por cuadras de ~100 m ([cellLat], [cellLon]), no con cada lectura del GPS.
  */
 @Composable
-private fun GetMapCard(packs: MapPacks, lat: Double, lon: Double, cellLat: Long?, cellLon: Long?, modifier: Modifier) {
+private fun GetMapCard(packs: MapPacks, lat: Double, lon: Double, cellLat: Long?, cellLon: Long?, compact: Boolean, modifier: Modifier) {
     val c = LocalColors.current
     val context = LocalContext.current
     val regions = packs.regions
     val region = remember(regions, cellLat, cellLon) { regions.firstOrNull { it.contains(lat, lon) } }
     // Si tu país aún no se carga, se pide (fuera del dibujo); al llegar cambia [MapPacks.regions].
     LaunchedEffect(cellLat, cellLon, region == null) { if (region == null) packs.regionAt(lat, lon) }
+    // Con poco alto (entre la vuelta y la llegada) va más junta y sin ícono; si aun así no cabe, se desplaza.
     Column(
-        modifier.clip(RoundedCornerShape(Radius.card)).background(c.surface.copy(alpha = CARD_ALPHA)).padding(20.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp),
+        modifier.clip(RoundedCornerShape(Radius.card)).background(c.surface.copy(alpha = CARD_ALPHA))
+            .verticalScroll(rememberScrollState()).padding(if (compact) 12.dp else 20.dp),
+        verticalArrangement = Arrangement.spacedBy(if (compact) 8.dp else 14.dp),
     ) {
-        Icon(Icons.offline, c.textMuted, 28.dp)
+        if (!compact) Icon(Icons.offline, c.textMuted, 28.dp)
+        val lines = if (compact) 3 else 4
         if (region == null) {
-            Label(stringResource(R.string.guide_car_no_map), Typography.body, maxLines = 4)
+            Label(stringResource(R.string.guide_car_no_map), Typography.body, maxLines = lines)
             return@Column
         }
         val size = Formatter.formatShortFileSize(context, region.totalSize)
-        Label(stringResource(R.string.guide_car_need_map, region.name(currentLocale().language), size), Typography.body, maxLines = 4)
+        Label(stringResource(R.string.guide_car_need_map, region.name(currentLocale().language), size), Typography.body, maxLines = lines)
         val job = packs.job?.takeIf { it.id == region.id }
         if (job != null && !job.failed) {
             Box(Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp)).background(c.surfaceHigh)) {
@@ -491,12 +563,26 @@ private fun ArrivalCard(d: Dependencies, session: DriveSession, compact: Boolean
 }
 
 /**
- * La guía en el mapa de fondo de una página: la vuelta arriba y la llegada abajo del hueco que dejan los widgets. Avisa
+ * La guía en el mapa de fondo de una página: la vuelta arriba y la llegada abajo del hueco que dejan los widgets (va
+ * encima del tablero, colocada en ese hueco: así se tocan). En un hueco bajo, solo la vuelta compacta y Terminar. Avisa
  * lo que tapa la llegada ([onBottom], px) para que tu auto o la flecha vayan arriba de ella.
  */
 @Composable
 internal fun GuideCards(d: Dependencies, session: DriveSession, modifier: Modifier, onBottom: (Int) -> Unit) {
     BoxWithConstraints(modifier) {
+        if (maxHeight < LOW_HOLE_HEIGHT) {
+            val c = LocalColors.current
+            LaunchedEffect(Unit) { onBottom(0) }
+            Row(
+                Modifier.align(Alignment.TopStart).padding(8.dp).widthIn(max = TURN_MAX_WIDTH),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                TurnCard(d, session, compact = true, then = false, modifier = Modifier.weight(1f, fill = false))
+                IconButton(Icons.close, endGuide, size = ROUND_SMALL, background = c.danger, color = Color.White, label = stringResource(R.string.guide_end))
+            }
+            return@BoxWithConstraints
+        }
         val compact = maxHeight < COMPACT_CARDS_HEIGHT
         val gap = if (compact) 8.dp else 12.dp
         val density = LocalDensity.current
@@ -694,6 +780,9 @@ private val TURN_MAX_WIDTH = 460.dp
 /** Lo que ocupa tu flecha a cada lado del centro del mapa. */
 private val ARROW_CLEARANCE = 32.dp
 
+/** En un hueco del mapa de fondo más bajo que esto no cabe la llegada: solo la vuelta y Terminar. */
+private val LOW_HOLE_HEIGHT = 150.dp
+
 /** Más bajo que esto, las tarjetas van compactas. */
 private val COMPACT_CARDS_HEIGHT = 420.dp
 
@@ -708,5 +797,8 @@ private val PILL_ARROW = 30.dp
 /** La velocidad cuando no hay dato. */
 private const val NO_SPEED = "—"
 
-/** El almacén de teselas de la vista Auto (a escala real: no se mezcla con los widgets). */
-private const val DRIVE_CAR_KEY = "drive-car"
+/** Lo que ocupa la velocidad de la vista Auto a la izquierda (la tarjeta para bajar el mapa no se le encima). */
+private val SPEED_CLEARANCE = 132.dp
+
+/** Con menos alto libre, la tarjeta para bajar el mapa va compacta. */
+private val GET_MAP_FULL_HEIGHT = 220.dp

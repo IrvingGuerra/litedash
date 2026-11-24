@@ -506,6 +506,8 @@ fun TiresFull(d: Dependencies, progress: () -> Float, onClose: () -> Unit, onSet
                 Label(stringResource(R.string.tires), Typography.title, maxLines = 1)
                 if (repo.source != null) Label(tiresStatusText(repo), Typography.small, c.textMuted, maxLines = 1, modifier = Modifier.weight(1f))
                 else Spacer(Modifier.weight(1f))
+                // Con la guía, su pastilla (lleva al mapa).
+                LocalGuidePill.current?.let { pill -> Box(Modifier.weight(1f, fill = false)) { pill() } }
                 IconButton(Icons.settings, onSettings, background = c.surfaceHigh)
                 IconButton(Icons.close, onClose, background = c.surfaceHigh)
             }

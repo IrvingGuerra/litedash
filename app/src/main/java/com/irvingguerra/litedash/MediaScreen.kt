@@ -42,6 +42,8 @@ fun MediaScreen(
     modifier: Modifier = Modifier,
     /** Abrir Música ya en la biblioteca de Archivos (se llegó por play sin nada que sonar). */
     browse: Boolean = false,
+    /** La pastilla de la guía, entre las pestañas y cerrar (null = nada). */
+    guide: (@Composable () -> Unit)? = null,
 ) {
     Column(modifier) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -49,7 +51,7 @@ fun MediaScreen(
                 listOf(MediaTab.MUSIC to stringResource(R.string.tile_music), MediaTab.RADIO to stringResource(R.string.tile_radio)),
                 tab, onTab,
             )
-            Spacer(Modifier.weight(1f))
+            Box(Modifier.weight(1f), contentAlignment = Alignment.Center) { guide?.invoke() }
             IconButton(Icons.close, close, size = 48.dp, background = LocalColors.current.surfaceHigh)
         }
         Spacer(Modifier.height(10.dp))

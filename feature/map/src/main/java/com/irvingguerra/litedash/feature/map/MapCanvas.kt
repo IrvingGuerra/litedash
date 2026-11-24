@@ -304,6 +304,9 @@ class MapCamera(
      */
     internal var scale by mutableFloatStateOf(1f)
 
+    /** ¿Quedó entre dos niveles de zoom ([scale] ≠ 1: un pellizco o un encuadre a medias)? [recenter] lo acomoda. */
+    val scaled: Boolean get() = scale != 1f
+
     /** De viaje (andando o navegando); se guarda aquí para que el widget y el mapa en grande coincidan. */
     internal var driving by mutableStateOf(false)
 

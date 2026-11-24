@@ -2,6 +2,7 @@ package com.irvingguerra.litedash
 
 import android.os.SystemClock
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
@@ -11,6 +12,11 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.LifecycleStartEffect
+import com.irvingguerra.litedash.feature.dashboard.Grid
+import com.irvingguerra.litedash.feature.dashboard.PageBackground
+import com.irvingguerra.litedash.feature.dashboard.Tile
+import com.irvingguerra.litedash.feature.dashboard.TileTypes
+import com.irvingguerra.litedash.feature.dashboard.freeArea
 import com.irvingguerra.litedash.feature.map.Guidance
 import com.irvingguerra.litedash.feature.map.GuidanceState
 import com.irvingguerra.litedash.feature.map.MapPacks
@@ -56,6 +62,24 @@ internal class DriveSession(val to: SearchHit, route: Route) {
     /** La hora de la última lectura atendida (dos ventanas pueden recibir la misma). */
     var lastFix = 0L
 
+    /**
+     * Cuándo se llegó (`SystemClock.elapsedRealtime`; 0 = aún no o se volvió a salir de la ruta). Vive aquí y no en el
+     * inicio: al recrearse la ventana (girar, cambiar de tema) la cuenta del cierre sigue donde iba.
+     */
+    var arrivedAt = 0L
+        private set
+
+    /** Llegaste ahora ([now]): cuánto falta para que la guía termine sola (la primera vez empieza la cuenta). */
+    fun closeInMs(now: Long): Long {
+        if (arrivedAt == 0L) arrivedAt = now
+        return (ARRIVED_CLOSE_MS - (now - arrivedAt)).coerceAtLeast(0L)
+    }
+
+    /** Te volviste a salir de la ruta tras llegar: ya no termina sola. */
+    fun notArrived() {
+        arrivedAt = 0L
+    }
+
     /** Lo recorrido en rutas anteriores de este viaje (al recalcular, la barra de avance no vuelve a cero). */
     var doneBefore = 0.0
         private set
@@ -82,12 +106,21 @@ internal fun GuideEngine(d: Dependencies, session: DriveSession) {
         d.trip.acquire()
         onStopOrDispose { d.trip.release() }
     }
-    // Al llegar termina sola un rato después (si no se terminó antes); si se vuelve a salir de la ruta, ya no.
+    // Al llegar termina sola un rato después (si no se terminó antes); si se vuelve a salir de la ruta, ya no. «Ver ruta»
+    // se cierra al llegar (su botón ya no está).
     val arrived = session.state?.arrived == true
     LaunchedEffect(session, arrived) {
-        if (!arrived) return@LaunchedEffect
-        delay(ARRIVED_CLOSE_MS)
+        if (!arrived) {
+            session.notArrived()
+            return@LaunchedEffect
+        }
+        session.overview = false
+        delay(session.closeInMs(SystemClock.elapsedRealtime()))
         if (Driving.session === session) Driving.session = null
+    }
+    // Al terminar la guía, los almacenes de la vista Auto ya no sirven.
+    DisposableEffect(session) {
+        onDispose { if (Driving.session !== session) forgetCarViewStores() }
     }
     val here = d.trip.position
     // Con cada lectura del GPS: dónde vas en la ruta y, si te saliste, una ruta nueva desde donde estás (en la pantalla).
@@ -138,27 +171,44 @@ internal fun GuideEngine(d: Dependencies, session: DriveSession) {
     }
 }
 
-/** Dónde se ve la guía al tocar «Ir», la pastilla de arriba o «Navegar» (barra y volante). */
+/** Qué mapa de una página enseña la guía. */
 internal enum class GuideHome {
-    /** En el widget Mapa de la página (se cierra lo que esté en grande). */
+    /** El (primer) widget Mapa de la página. */
     WIDGET,
 
-    /** En el mapa de fondo de la página. */
+    /** El mapa de fondo de la página (con un hueco libre entre los widgets). */
     BACKDROP,
 
-    /** En el mapa en grande (la página no tiene mapa). */
+    /** Ninguno: la página no tiene mapa donde se vea. */
     EXPANDED,
 }
 
-/** A dónde va la guía según lo que tiene la página que se ve: el widget Mapa primero, luego el mapa de fondo. */
-internal fun guideHome(mapWidget: Boolean, mapBackdrop: Boolean): GuideHome = when {
+/**
+ * Qué mapa de una página enseña la guía: el widget Mapa primero, luego el mapa de fondo si los widgets le dejan un hueco
+ * ([backdropHole]; sin hueco la guía quedaría tapada: cuenta como sin mapa).
+ */
+internal fun guideHome(mapWidget: Boolean, backdropHole: Boolean): GuideHome = when {
     mapWidget -> GuideHome.WIDGET
-    mapBackdrop -> GuideHome.BACKDROP
+    backdropHole -> GuideHome.BACKDROP
     else -> GuideHome.EXPANDED
 }
 
+/**
+ * La única regla de dónde se ve la guía («Ir», la pastilla de arriba y «Navegar» de la barra y del volante): la página que
+ * se ve si tiene un mapa que la enseñe ([current]); si no, la primera que sí ([firstWithMap]); null = ninguna: el mapa en grande.
+ */
+internal fun guidePage(current: Int, currentHome: GuideHome, firstWithMap: () -> Int?): Int? =
+    if (currentHome != GuideHome.EXPANDED) current else firstWithMap()
+
+/** Qué mapa enseña la guía en una página con fondo [background] y piezas [tiles] (las que se ven) en [grid]. */
+internal fun pageGuideHome(background: PageBackground, tiles: List<Tile>, grid: Grid?): GuideHome =
+    guideHome(
+        mapWidget = tiles.any { it.type == TileTypes.MAP },
+        backdropHole = background == PageBackground.MAP && grid != null && tiles.freeArea(grid) != null,
+    )
+
 /** Cuánto sigue la guía después de «Llegaste». */
-private const val ARRIVED_CLOSE_MS = 30_000L
+internal const val ARRIVED_CLOSE_MS = 30_000L
 
 /**
  * Entre un recálculo y otro, al menos esto (un GPS que brinca no debe recalcular sin parar); si sale la misma ruta o

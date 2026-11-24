@@ -82,6 +82,7 @@ import com.irvingguerra.litedash.feature.apps.App
 import com.irvingguerra.litedash.feature.apps.normalize
 import com.irvingguerra.litedash.feature.car.CarPackage
 import com.irvingguerra.litedash.feature.car.snapshot
+import com.irvingguerra.litedash.feature.dashboard.TileTypes
 import com.irvingguerra.litedash.feature.map.IndexState
 import com.irvingguerra.litedash.feature.map.MapCamera
 import com.irvingguerra.litedash.feature.map.MapCanvas
@@ -137,10 +138,17 @@ fun MapTile(
     }
     val session = Driving.session
     if (session != null && granted) {
+        // Solo un mapa anima la guía: el primer widget Mapa de la página (los demás, solo el mapa con la ruta, quieto), y
+        // mientras su mapa en grande se ve (también al crecer o encogerse), ese.
+        val leads = d.dashboard.shown.firstOrNull { it.type == TileTypes.MAP }?.id == tileId
+        val bigShown = expandedMap?.tileId == tileId
         BoxWithConstraints(Modifier.fillMaxSize()) {
             val size = guideSizeFor(maxWidth.value, maxHeight.value)
             Card(Modifier.fillMaxSize()) {
-                GuideView(d, session, size, tileId, Modifier.fillMaxSize(), controls = !editing, onTap = onGuide)
+                GuideView(
+                    d, session, size, tileId, Modifier.fillMaxSize(), controls = !editing, onTap = onGuide,
+                    active = leads && !bigShown, cards = leads,
+                )
             }
         }
         return
@@ -250,10 +258,20 @@ fun MapExpanded(
         selected?.let { camera.show(it.lat, it.lon) }
         Unit
     }
+    // De vuelta a la guía (✕ o atrás): el lugar y la ruta del buscador se sueltan (si no, seguían calculándose y atrás
+    // movía el mapa de la guía) y el mapa vuelve a seguirte.
+    val toGuide = {
+        routing = null
+        search.clear()
+        browsing = false
+        if (camera.showingPlace) camera.recenter()
+    }
+    // Lo del buscador solo mientras se ve (con la guía en pantalla, atrás no le toca).
+    val searchShown = session == null || browsing
     // Atrás regresa a la guía (antes cierra el lugar o la ruta: esos van después y les toca primero).
-    BackHandler(session != null && browsing) { browsing = false }
-    BackHandler(routing != null && !search.focused, closeRoute)
-    BackHandler(selected != null && routing == null && !search.focused, unselect)
+    BackHandler(session != null && browsing, toGuide)
+    BackHandler(searchShown && routing != null && !search.focused, closeRoute)
+    BackHandler(searchShown && selected != null && routing == null && !search.focused, unselect)
     // «Ir»: la guía empieza aquí mismo (el lugar y la ruta se sueltan: la lupa abre el buscador limpio) y el mapa te sigue.
     val go: (Route) -> Unit = { r ->
         val to = routing?.to ?: selected
@@ -351,7 +369,7 @@ fun MapExpanded(
                 // Tu app de mapas, con su botón (como en el widget).
                 if (app != null && boxWidth >= WIDE_TOP) IconButton(Icons.navigate, onNavigate, size = 48.dp, background = c.surface.copy(alpha = 0.9f), color = c.accent)
                 // Con la guía, el ✕ cierra el buscador y regresa a ella.
-                IconButton(Icons.close, if (session != null) ({ browsing = false }) else close, size = 48.dp, background = c.surface.copy(alpha = 0.9f))
+                IconButton(Icons.close, if (session != null) toGuide else close, size = 48.dp, background = c.surface.copy(alpha = 0.9f))
             }
             // Acercar y alejar con un toque (en pantallas de auto el pellizco falla). Con la ruta el zoom es el que la enseña
             // toda (fijo): ahí no van.
@@ -487,12 +505,12 @@ private fun LiveMap(
  * página, dejar presionado para acomodar) y vas en [focus], el hueco que dejan los widgets (en fracciones de la
  * pantalla), con la flecha o tu auto visto de atrás ([car], sin él la flecha). Con Waze/Maps navegando, su siguiente
  * vuelta va arriba de ese hueco. Con la guía de LiteDash, si es el mapa que navega en la página ([guide]), lleva la
- * cámara de la navegación y la vuelta y la llegada en ese hueco; si navega un widget Mapa, solo la ruta, quieta (una sola
- * vista anima). Sin permiso de ubicación o sin lectura aún, no se dibuja (queda el fondo del tema).
- * [covered] = algo en grande lo tapa: se queda quieto.
+ * cámara de la navegación (sus tarjetas van encima del tablero, [GuideCards]; la llegada tapa [cardsH] px abajo del
+ * hueco); si navega un widget Mapa, solo la ruta, quieta (una sola vista anima). Sin permiso de ubicación o sin lectura
+ * aún, no se dibuja (queda el fondo del tema). [covered] = algo en grande lo tapa: se queda quieto.
  */
 @Composable
-internal fun MapBackdrop(d: Dependencies, focus: Rect?, car: CarPackage?, covered: Boolean, guide: Boolean) {
+internal fun MapBackdrop(d: Dependencies, focus: Rect?, car: CarPackage?, covered: Boolean, guide: Boolean, cardsH: Int) {
     val c = LocalColors.current
     // Con algo en grande encima el fondo no se dibuja: tampoco hace falta el GPS.
     if (!covered) KeepTripRunning(d.trip)
@@ -517,8 +535,6 @@ internal fun MapBackdrop(d: Dependencies, focus: Rect?, car: CarPackage?, covere
     val kmh = d.bus.watch(Signal.SPEED)
     val navigating = d.navigation.instruction != null
     val marker = rememberRearMarker(d, car.takeIf { d.prefs.mapBackdropCar })
-    // Lo que tapa la llegada abajo del hueco (px): tu flecha y los créditos van arriba de ella.
-    var cardsH by remember { mutableIntStateOf(0) }
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val hole = focus ?: WHOLE_SCREEN
         val height = constraints.maxHeight.toFloat()
@@ -535,9 +551,8 @@ internal fun MapBackdrop(d: Dependencies, focus: Rect?, car: CarPackage?, covere
             navigation = guiding, turnAhead = onRoute && turnAhead(session.route, s),
             route = session?.route?.points, routeDone = s?.let { it.point + it.fraction } ?: 0f,
         )
-        Box(Modifier.offset(maxWidth * hole.left, maxHeight * hole.top).size(maxWidth * hole.width, maxHeight * hole.height)) {
-            if (guiding) GuideCards(d, session, Modifier.fillMaxSize()) { cardsH = it }
-            else if (focus != null) NextTurn(d, Modifier.align(Alignment.TopStart).padding(12.dp).widthIn(max = 420.dp))
+        if (!guiding && focus != null) Box(Modifier.offset(maxWidth * hole.left, maxHeight * hole.top).size(maxWidth * hole.width, maxHeight * hole.height)) {
+            NextTurn(d, Modifier.align(Alignment.TopStart).padding(12.dp).widthIn(max = 420.dp))
         }
     }
 }
@@ -669,6 +684,16 @@ internal fun rememberTileStore(
 
 /** El almacén de cada widget Mapa (por su id) y de qué colores es. */
 private val tileStores = HashMap<String, Pair<String, TileStore>>()
+
+/** El almacén de la vista Auto de la guía para un auto de [carDp] de ancho (las calles van a su escala). */
+internal fun carViewKey(carDp: Float) = "$CAR_VIEW_KEY/$carDp"
+
+/** Terminó la guía: los almacenes de la vista Auto ya no sirven. */
+internal fun forgetCarViewStores() {
+    tileStores.keys.removeAll { it.startsWith(CAR_VIEW_KEY) }
+}
+
+private const val CAR_VIEW_KEY = "drive-car"
 
 private fun newTileStore(context: Context, palette: MapPalette, density: Float, realRoadDp: Float = 0f): TileStore =
     TileStore(context, MAP_USER_AGENT, minimalTiles(context, palette, density, realRoadDp))
