@@ -58,6 +58,9 @@ android {
         targetSdk = libs.versions.targetSdk.get().toInt()
         versionCode = versionCodeFrom(appVersionName)
         versionName = appVersionName
+        // Sin x86_64: ninguna pantalla de auto conocida lo usa (las Intel SoFIA de Android 6–8 son x86, que se queda, y
+        // un equipo x86_64 corre las de x86). Ahorra la copia de la .so de trazos de Compose.
+        ndk { abiFilters += listOf("armeabi-v7a", "arm64-v8a", "x86") }
         buildConfigField("String", "CATALOG_URL", "\"$CATALOG_URL\"")
         buildConfigField("String", "LANGUAGES_URL", "\"$LANGUAGES_URL\"")
         buildConfigField("String", "RELEASE_NOTES", buildConfigText(releaseNotes))
