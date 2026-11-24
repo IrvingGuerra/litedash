@@ -4,6 +4,27 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.5.18] - 2026-11-24
+
+Navegar ya no te saca de tu inicio: la guía vive en tu mapa, con tu música y tus widgets donde los dejaste.
+
+### Nuevo
+- **La navegación dentro del widget Mapa:** al tocar «Ir» no cambia la pantalla; tu widget empieza a guiarte con la
+  vuelta, la llegada y «Terminar». Según su tamaño muestra más o menos; tócalo para verlo en grande.
+- **Dos vistas, un botón:** en el mapa en grande (y en el widget grande) cambia entre **vista flecha** y **vista del
+  auto**.
+- **El mapa de fondo también navega**, con las tarjetas de la guía flotando en el hueco de tus widgets.
+- **Aviso de la próxima vuelta** arriba cuando estás en otra página, en Ajustes o con la música en grande; tocarlo te
+  regresa al mapa. El botón Navegar de la barra lleva un punto mientras hay guía.
+- **Más cerca:** la vista flecha se acerca más a la calle cuando vas despacio.
+
+### Cambiado
+- Se quitó la pantalla de navegación aparte (y su reproductor): la música es tu widget de siempre.
+- Con una guía en curso, «Navegar» (barra y volante) te lleva a ella; la lupa del mapa en grande cambia de destino.
+
+### Arreglado
+- «Ver ruta» ya no se queda abierta al llegar, y al terminar el mapa vuelve a centrarse en ti.
+
 ## [1.5.17] - 2026-11-24
 
 Mapas nuevos: más limpios, con ruta aunque no hayas bajado tu estado y una navegación que se ve como debe.

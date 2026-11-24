@@ -3,6 +3,29 @@
 What people using LiteDash notice, in English. The full history (in Spanish) is in [CHANGELOG.md](CHANGELOG.md).
 Format [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versions [SemVer](https://semver.org/).
 
+## [1.5.18] - 2026-11-24
+
+Navigating no longer takes you away from your home screen: guidance lives in your map, with your music and widgets right
+where you left them.
+
+### Added
+- **Navigation inside the Map widget:** tapping "Go" doesn't change the screen; your widget starts guiding you with the
+  turn, the arrival time and "End". It shows more or less depending on its size; tap it to see it full screen.
+- **Two views, one button:** on the full-screen map (and the large widget) switch between **arrow view** and **car
+  view**.
+- **The map background navigates too**, with the guidance cards floating in the gap between your widgets.
+- **Next-turn notice** at the top when you're on another page, in Settings or with music full screen; tap it to go back
+  to the map. The Navigate button on the bar shows a dot while guidance is on.
+- **Closer:** the arrow view gets closer to the street when you're going slowly.
+
+### Changed
+- The separate navigation screen (and its player) is gone: music is your usual widget.
+- With guidance running, "Navigate" (bar and steering wheel) takes you to it; the magnifier on the full-screen map
+  changes the destination.
+
+### Fixed
+- "See route" no longer stays open on arrival, and when guidance ends the map centers on you again.
+
 ## [1.5.17] - 2026-11-24
 
 New maps: cleaner, with a route even if you haven't downloaded your state, and navigation that looks the way it should.
