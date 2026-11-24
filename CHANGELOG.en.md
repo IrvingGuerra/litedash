@@ -39,7 +39,6 @@ Tidier Settings that are easier to find things in, and a whole country's maps in
 - What you had picked in the Phone or Android Auto / CarPlay widget, or in a Map widget's look, is kept.
 - Routes no longer wait on the network while planning; turn restrictions are followed better.
 - Old map caches nobody used anymore are cleaned up (up to ~25 MB).
-- Size: dropped the x86_64 libraries no car screen uses.
 
 ## [1.5.15] - 2026-11-23
 

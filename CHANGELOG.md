@@ -38,7 +38,6 @@ Ajustes más ordenados y fáciles de encontrar, y mapas de un país completo de 
 - Lo que habías elegido en el widget Teléfono, Android Auto / CarPlay o en el aspecto de un widget Mapa se conserva.
 - La ruta ya no se queda esperando la red al calcularse; las vueltas obligatorias se respetan mejor.
 - Se borran solas cachés viejas del mapa que ya nadie usaba (hasta ~25 MB).
-- Peso: fuera las librerías x86_64 que no usa ninguna pantalla de auto.
 
 ## [1.5.15] - 2026-11-23
 
