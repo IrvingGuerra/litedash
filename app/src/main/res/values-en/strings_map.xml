@@ -4,6 +4,7 @@
     <string name="tile_map_help">OpenStreetMap with your position · only uses GPS while on screen</string>
     <string name="map_waiting">Finding your location…</string>
     <string name="map_customize">Customize map</string>
+    <string name="map_customize_help">The look and the offline maps are the same for all your maps: change them in Settings → Apps → Navigation.</string>
     <string name="map_orientation">Orientation</string>
     <string name="map_north">Automatic</string>
     <string name="map_heading">Heading up</string>
@@ -18,13 +19,7 @@
     <string name="map_style_theme">Like the theme</string>
     <string name="map_style_light">Light</string>
     <string name="map_style_dark">Dark</string>
-    <string name="map_detail">Style</string>
-    <string name="map_detail_full">Full</string>
-    <string name="map_detail_minimal">Minimal</string>
-    <string name="map_detail_full_help">Everything from OpenStreetMap: streets, places, names and icons.</string>
-    <string name="map_detail_minimal_help">Just streets, water and parks, clean and in LiteDash colors (data from OpenFreeMap).</string>
     <string name="map_offline">Offline</string>
-    <string name="map_offline_full">Available with the minimal map.</string>
     <string name="map_offline_help">Save the map of a zone to see it without internet. To search and plan routes, download your state.</string>
     <string name="map_offline_here">Your zone</string>
     <string name="map_offline_other">Another zone</string>
@@ -50,9 +45,8 @@
     <string name="map_tab_app">Map app</string>
     <string name="map_tab_look">LiteDash map</string>
     <string name="map_tab_style">Map look</string>
-    <string name="map_look_help">Applies to all your Map widgets and the full-screen map. Each widget can still be changed from its gear.</string>
+    <string name="map_look_help">Changes all your Map widgets and the full-screen map (including the ones you changed separately).</string>
     <string name="map_pack_help">Your whole state without internet, in a single download. Updated a few times a year.</string>
-    <string name="map_pack_full">With the Full style the map loads from the internet; the downloaded state is used for search and routes.</string>
     <string name="map_pack_no_index">Connect to the internet to see the available maps.</string>
     <string name="map_list_loading">Downloading the map list…</string>
     <string name="map_list_failed">Couldn\'t download the map list. Check your internet.</string>
@@ -67,7 +61,6 @@
     <string name="map_pack_search">Search a state or region</string>
     <string name="map_offline_by_state">By state</string>
     <string name="map_offline_by_zone">By zone</string>
-    <string name="map_pack_tip">Your state or region isn\'t here? Use «By zone»: it works anywhere.</string>
     <string name="map_request_country">Your country isn\'t here? Request it</string>
     <string name="search_hint">Where to?</string>
     <string name="search_clear">Clear</string>
@@ -79,6 +72,8 @@
     <string name="search_online_failed">No internet · tap to retry</string>
     <string name="search_online_none">Not online either</string>
     <string name="search_point">Point on the map</string>
+    <string name="map_mark">Mark a spot</string>
+    <string name="map_mark_here">Mark here</string>
     <string name="search_m">%1$d m</string>
     <string name="search_km_tenths">%1$.1f km</string>
     <string name="search_mi_tenths">%1$.1f mi</string>
@@ -89,6 +84,7 @@
     <string name="search_open">Open in your maps app</string>
     <string name="search_favorite">Favorite</string>
     <string name="search_unfavorite">Remove favorite</string>
+    <string name="search_favorites_full">You have the most favorites allowed (%1$d): remove one to add another.</string>
     <string name="search_set_home">Set as Home</string>
     <string name="search_set_work">Set as Work</string>
     <string name="search_place">Search a place</string>

@@ -88,7 +88,13 @@ private const val OFFLINE_TAB = 1
 /** Ajustes → Apps abre en Radio (desde la radio sin nada enlazado). */
 internal fun openRadioSettings() = selectAppsTab(AppsTab.RADIO)
 
-/** Ajustes → Apps abre en Navegación → Sin conexión (desde la tarjeta de la ruta, para bajar el mapa de tu estado). */
+/** Ajustes → Apps abre en Navegación → Aspecto del mapa (desde el engrane del widget Mapa). */
+internal fun openMapLook() {
+    selectAppsTab(AppsTab.NAVIGATION)
+    selectTab(NAVIGATION_TABS, LOOK_TAB)
+}
+
+/** Ajustes → Apps abre en Navegación → Sin conexión (desde la tarjeta de la ruta, para bajar el mapa de tu estado, y desde el engrane del widget Mapa). */
 internal fun openOfflineMaps() {
     selectAppsTab(AppsTab.NAVIGATION)
     selectTab(NAVIGATION_TABS, OFFLINE_TAB)

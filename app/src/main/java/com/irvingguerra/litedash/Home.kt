@@ -250,8 +250,6 @@ class Dependencies(
         // Las piezas de un módulo apagado no se ven ni apartan su lugar (ni las ponen las plantillas).
         dashboard.hidden = { type -> moduleOff(this, type) != null }
         dashboard.limits = ::limitsOf
-        // Un widget Mapa nuevo arranca con el aspecto de Ajustes → Apps → Navegación.
-        dashboard.initialData = { type -> if (type == TileTypes.MAP) prefs.mapLook.orEmpty() else "" }
     }
 
     /** Las llantas: se crean la primera vez que algo las pide (sus Ajustes o una pieza con fuente elegida). */
@@ -369,7 +367,7 @@ fun TileContent(d: Dependencies, p: Tile, apps: List<App>, car: CarPackage?, rev
             // Con «Navegar con: App de mapas», el toque y Casa/Trabajo abren esa app; si no, todo es el mapa de LiteDash.
             val app = externalMapApp(d, apps)
             MapTile(
-                d, p.id, p.data, app, editing = actions.editing(),
+                d, p.id, app, editing = actions.editing(),
                 onPlace = remember(app) { { if (app != null) navigateTo(context, app, it) else PlaceRequests.fromAddress(it) } },
                 onTap = remember(p.id, app) { { if (app != null) actions.onNavigate(app) else actions.onExpand(Expanded.MAP, p) } },
                 onSearch = remember(p.id) {
@@ -859,13 +857,12 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                                         )
                                         Expanded.MAP -> {
                                             val app = externalMapApp(d, apps)
-                                            // Como el widget Mapa que se tocó (o el primero que haya; sin widget, el aspecto de Ajustes). Si
-                                            // se llegó desde la música en grande, [expandedFrom] es el de la música: no sirve aquí.
+                                            // Con la cámara del widget Mapa que se tocó (o del primero que haya). Si se llegó desde la
+                                            // música en grande, [expandedFrom] es el de la música: no sirve aquí.
                                             val from = expandedFrom?.takeIf { it.type == TileTypes.MAP }
                                                 ?: d.dashboard.shown.firstOrNull { it.type == TileTypes.MAP }
-                                            val look = from?.data ?: d.prefs.mapLook.orEmpty()
                                             MapExpanded(
-                                                d, from?.id, look, app, onPlace = { if (app != null) navigateTo(context, app, it) else PlaceRequests.fromAddress(it) }, onNavigate = { actions.onNavigate(app) },
+                                                d, from?.id, app, onPlace = { if (app != null) navigateTo(context, app, it) else PlaceRequests.fromAddress(it) }, onNavigate = { actions.onNavigate(app) },
                                                 onOffline = { openOfflineMaps(); panel = Panel.AppsSettings },
                                                 close = close, modifier = Modifier.padding(6.dp),
                                             )
@@ -961,7 +958,10 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                     // lienzo del panel, y el widget se veía distinto ahí que al volver al inicio (#32).
                     is Panel.CustomizeGauge -> CustomizeGaugePanel(d, p.tileId, homeLook, close = { panel = null }, onPickSignal = { panel = Panel.PickGauge(p.tileId) })
                     is Panel.CustomizeImage -> CustomizeImagePanel(d, p.tileId, close = { panel = null })
-                    is Panel.CustomizeMap -> CustomizeMapPanel(d, p.tileId, close = { panel = null })
+                    is Panel.CustomizeMap -> CustomizeMapPanel(
+                        d, p.tileId, close = { panel = null },
+                        openLook = { openMapLook(); panel = Panel.AppsSettings }, openOffline = { openOfflineMaps(); panel = Panel.AppsSettings },
+                    )
                     is Panel.CustomizeCar -> CustomizeCarPanel(d, p.tileId, close = { panel = null })
                     is Panel.CustomizeWidget -> CustomizeWidgetPanel(
                         d, p.tileId, apps, cell,

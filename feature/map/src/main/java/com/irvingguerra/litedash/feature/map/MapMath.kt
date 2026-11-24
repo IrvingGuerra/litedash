@@ -20,9 +20,9 @@ import kotlin.math.sqrt
 import kotlin.math.tan
 
 // Cuentas del mapa sin Android (se prueban con JUnit). Basado en LiveMapView de StradaOS
-// (GPL-3.0, https://github.com/stradaos): Web Mercator a mano; las teselas, raster de OpenStreetMap o vectoriales de OpenFreeMap.
+// (GPL-3.0, https://github.com/stradaos): Web Mercator a mano; las teselas, vectoriales de OpenFreeMap.
 
-/** Lo más cerca que llega el minimalista ([TileSource.maxZoom]; OSM se queda en el 19) y lo más lejos que se aleja con los dedos. */
+/** Lo más cerca que llega el minimalista ([TileSource.maxZoom]) y lo más lejos que se aleja con los dedos. */
 const val MAX_ZOOM = 20
 const val MIN_ZOOM = 14
 
@@ -70,7 +70,7 @@ fun distanceKm(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Double {
 fun tileSpan(center: Double, fromPx: Float, toPx: Float, tilePx: Float): IntRange =
     floor(center + fromPx / tilePx).toInt()..(ceil(center + toPx / tilePx).toInt() - 1)
 
-/** Mínimo de la memoria de teselas: unas 36 de OSM (256 px a 16 bits). */
+/** Mínimo de la memoria de teselas: unas 36 de 256 px a 16 bits. */
 const val MEMORY_MIN_BYTES = 36 * 256 * 256 * 2
 
 /**

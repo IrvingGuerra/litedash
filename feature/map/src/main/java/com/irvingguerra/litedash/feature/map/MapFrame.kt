@@ -9,7 +9,6 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.Path
@@ -394,11 +393,11 @@ internal class MapFrame : ScreenPoint {
     }
 
     /** [focus] = el hueco libre en fracciones del mapa (de fondo del inicio): tu auto se mide contra él. */
-    fun draw(scope: DrawScope, store: TileStore, filter: ColorFilter?, accent: Color, marker: ImageBitmap? = null, focus: Rect? = null) = with(scope) {
+    fun draw(scope: DrawScope, store: TileStore, accent: Color, marker: ImageBitmap? = null, focus: Rect? = null) = with(scope) {
         drawIntoCanvas { canvas ->
             canvas.save()
             canvas.nativeCanvas.concat(matrix)
-            drawTiles(store, plan, filter)
+            drawTiles(store, plan)
             canvas.restore()
             // A escala real la ruta va acostada como una calle más: una franja azul lisa, como Tesla, debajo de los edificios.
             if (routeWide > 0f && !ribbonX.isNaN()) {
@@ -437,6 +436,9 @@ internal class MapFrame : ScreenPoint {
     }
 
     /** El punto ([x], [y]) de la vista en el mapa (latitud, longitud); null si cae en el cielo o aún no hay cuadro. */
+    /** El punto del mapa al centro de la vista (la mira de «Marcar aquí»); null = aún no se dibuja. */
+    fun centerLatLon(): Pair<Double, Double>? = if (width > 0f && height > 0f) toLatLon(width / 2, height / 2) else null
+
     fun toLatLon(x: Float, y: Float): Pair<Double, Double>? {
         if (zoom < 0 || ts <= 0f || !projection.toPlane(x, y, dragFrom)) return null
         val tx = fx + (dragFrom[0] - atX) / ts
@@ -634,13 +636,13 @@ internal class TilePlan {
     }
 }
 
-private fun DrawScope.drawTiles(store: TileStore, plan: TilePlan, filter: ColorFilter?) {
+private fun DrawScope.drawTiles(store: TileStore, plan: TilePlan) {
     for (i in 0 until plan.count) {
         val offset = IntOffset(plan.left[i], plan.top[i])
         val dst = IntSize(plan.right[i] - plan.left[i], plan.bottom[i] - plan.top[i])
         val image = store.tile(plan.key(i))
         if (image != null) {
-            drawImage(image, dstOffset = offset, dstSize = dst, colorFilter = filter, filterQuality = FilterQuality.Low)
+            drawImage(image, dstOffset = offset, dstSize = dst, filterQuality = FilterQuality.Low)
             continue
         }
         val z = plan.z[i]
@@ -655,7 +657,7 @@ private fun DrawScope.drawTiles(store: TileStore, plan: TilePlan, filter: ColorF
                 val mask = (1 shl up) - 1
                 drawImage(
                     parent, IntOffset((x and mask) * part, (y and mask) * part), IntSize(part, part),
-                    offset, dst, colorFilter = filter, filterQuality = FilterQuality.Low,
+                    offset, dst, filterQuality = FilterQuality.Low,
                 )
                 continue
             }
@@ -670,7 +672,7 @@ private fun DrawScope.drawTiles(store: TileStore, plan: TilePlan, filter: ColorF
             drawImage(
                 child, dstOffset = IntOffset(offset.x + cx * halfW, offset.y + cy * halfH),
                 dstSize = IntSize(if (cx == 0) halfW else dst.width - halfW, if (cy == 0) halfH else dst.height - halfH),
-                colorFilter = filter, filterQuality = FilterQuality.Low,
+                filterQuality = FilterQuality.Low,
             )
         }
     }
