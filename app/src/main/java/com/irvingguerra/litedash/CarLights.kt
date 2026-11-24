@@ -160,7 +160,7 @@ fun LightsSettings(prefs: Preferences) {
             LearnStep.Idle -> {
                 if (key != null) {
                     Label(
-                        stringResource(if (night == true) R.string.lights_now_on else R.string.lights_now_off, key.stored.substringAfter('/')),
+                        stringResource(if (night == true) R.string.lights_now_on else R.string.lights_now_off),
                         Typography.body, if (night == true) c.accent else c.textMuted,
                     )
                 } else {
@@ -220,7 +220,7 @@ private fun UseSunButton(prefs: Preferences) {
  * Para el reporte: si hay sensor de luz y qué ajustes de la pantalla suenan a luces (con el
  * mismo criterio que al aprender). Cientos de filas por IPC: fuera del hilo principal.
  */
-internal fun lightsReport(context: Context): String {
+internal fun lightsReport(context: Context, learned: String?): String {
     val sensor = context.getSystemService(SensorManager::class.java)?.getDefaultSensor(Sensor.TYPE_LIGHT)
     val all = snapshotSettings(context)
     // Valores cortos: las luces son números.
@@ -229,5 +229,7 @@ internal fun lightsReport(context: Context): String {
     }
     // Cuántos ajustes deja leer Android por tabla (0 = negada o vacía): si son pocos, "Aprender luces" no ve los faros.
     val rows = listOf("system", "global", "secure").joinToString { t -> "$t ${all.keys.count { it.startsWith("$t/") }}" }
-    return "Sensor de luz: ${sensor?.name ?: "no"}\nLuces: ${found.joinToString().ifEmpty { "—" }}\nAjustes leídos: $rows"
+    // El ajuste aprendido va aquí y no en pantalla (es una clave interna de la pantalla).
+    return "Sensor de luz: ${sensor?.name ?: "no"}\nLuces: ${found.joinToString().ifEmpty { "—" }}\n" +
+        "Luces aprendidas: ${learned ?: "no"}\nAjustes leídos: $rows"
 }

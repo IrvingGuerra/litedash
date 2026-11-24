@@ -73,7 +73,7 @@ account. See the [comparison with other car launchers](https://litedash.dev/en/c
 
 1. Bájalo de [Google Play](https://play.google.com/store/apps/details?id=com.irvingguerra.litedash)
    o el APK de [Releases](https://github.com/IrvingGuerra/litedash/releases/latest). El APK se
-   actualiza solo desde Ajustes → Sistema → Actualizaciones.
+   actualiza solo desde Ajustes → Acerca de y ayuda → Acerca de.
 2. Ábrelo y toca **Hazlo tu inicio**. En muchas pantallas de auto esto también está en Ajustes →
    Aplicaciones → Pantalla de inicio, o en un menú del fabricante para elegir el launcher.
 

@@ -722,6 +722,7 @@ private fun MapLookOptions(look: MapLook, set: (MapLook) -> Unit) {
         ),
         look.orientation, { set(look.copy(orientation = it)) },
     )
+    if (look.orientation == MapOrientation.NORTH) Label(stringResource(R.string.map_orientation_help), Typography.small, c.textMuted)
     Label(stringResource(R.string.map_zoom), Typography.label, c.textMuted)
     Segmented(
         listOf(

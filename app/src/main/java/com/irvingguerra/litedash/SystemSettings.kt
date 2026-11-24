@@ -289,7 +289,7 @@ private fun systemShortcuts(context: Context): List<Pair<Int, String>> =
         R.string.sys_location to Settings.ACTION_LOCATION_SOURCE_SETTINGS,
         R.string.sys_display to Settings.ACTION_DISPLAY_SETTINGS,
         R.string.sys_sound to Settings.ACTION_SOUND_SETTINGS,
-        R.string.apps to Settings.ACTION_APPLICATION_SETTINGS,
+        R.string.installed_apps to Settings.ACTION_APPLICATION_SETTINGS,
         R.string.sys_date to Settings.ACTION_DATE_SETTINGS,
         R.string.sys_language to Settings.ACTION_LOCALE_SETTINGS,
         R.string.sys_home to Settings.ACTION_HOME_SETTINGS,

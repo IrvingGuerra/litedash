@@ -56,6 +56,8 @@ import com.irvingguerra.litedash.core.ui.TextInput
 import com.irvingguerra.litedash.core.ui.Typography
 import com.irvingguerra.litedash.feature.music.Drive
 import com.irvingguerra.litedash.feature.music.Drives
+import com.irvingguerra.litedash.feature.music.R as MusicR
+import java.text.NumberFormat
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -183,6 +185,10 @@ private fun LibraryBrowser(onPicked: () -> Unit, modifier: Modifier) {
                 Segmented(Group.entries.map { it to stringResource(it.title) }, group, { memory.pick(it) }, Modifier.horizontalScroll(rememberScrollState()))
             }
             if (narrow) tabs() else TabsWithFolder(tabs, { Label(drive.name, Typography.small, c.textMuted, 1) }, folderButton)
+            // Con el tope de canciones ([Library.MAX_FILES]) se dice: si no, faltan canciones sin explicación.
+            if (tracks.size >= Library.MAX_FILES) {
+                Label(stringResource(R.string.library_capped, NumberFormat.getIntegerInstance().format(Library.MAX_FILES)), Typography.small, c.textMuted, modifier = Modifier.padding(top = 6.dp))
+            }
             Spacer(Modifier.height(10.dp))
             // Si la memoria cambió y el grupo recordado ya no está, a la lista.
             val shown = memory.inside?.takeIf { it in groups }
@@ -194,7 +200,7 @@ private fun LibraryBrowser(onPicked: () -> Unit, modifier: Modifier) {
                             if (shown != null) IconButton(Icons.back, { memory.inside = null }, size = 44.dp, background = c.surfaceHigh)
                             Label(groupName(group, shown ?: ""), Typography.subtitle, maxLines = 1, modifier = Modifier.weight(1f))
                             if (!narrow) Button(stringResource(R.string.library_play_all), { Player.play(PlayerSource.USB, list, 0); onPicked() })
-                            Button(stringResource(R.string.library_shuffle), { Player.play(PlayerSource.USB, list.shuffled(), 0); onPicked() })
+                            Button(stringResource(MusicR.string.music_shuffle), { Player.play(PlayerSource.USB, list.shuffled(), 0); onPicked() })
                         }
                     }
                     items(list, key = { it.key }) { t ->

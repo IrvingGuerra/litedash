@@ -124,6 +124,7 @@ private fun ColumnScope.PlayerControls(repo: MusicRepository, song: Song?, fit: 
             IconButton(
                 ShuffleIcon, { OwnShuffle.toggle() }, Modifier.align(Alignment.CenterEnd), size = m.size,
                 color = if (OwnShuffle.on) c.primary else c.textMuted,
+                label = stringResource(R.string.music_shuffle),
             )
         }
         // Sin por dónde darle play a la app de Bluetooth de marca: sin botones (lo dice el texto), con la salida a Connect.

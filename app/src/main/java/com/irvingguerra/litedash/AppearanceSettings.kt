@@ -114,18 +114,18 @@ private val ACCENTS = listOf(
     Color(0xFF2BD4E8), Color(0xFF0A84FF), Color(0xFFBF5AF2), Color(0xFFFF4F9A),
 )
 
-/** El color de la interfaz: "Natural" (el de fábrica), los rápidos o uno libre. */
+/** El color de la interfaz: el de fábrica, los rápidos o uno libre. */
 @Composable
 private fun AccentSettings(prefs: Preferences) {
     val c = LocalColors.current
-    val natural = stringResource(R.string.accent_natural)
-    // Natural: mitad blanco (o negro) y mitad ámbar, como se ve de fábrica.
+    val factory = stringResource(R.string.factory_look)
+    // De fábrica: mitad blanco (o negro) y mitad ámbar.
     val split = if (c.dark) DarkColors else LightColors
     val leading = @Composable {
         Swatch(
             prefs.accentColor == null,
             halves(split.primary, split.accent),
-            Modifier.semantics { contentDescription = natural },
+            Modifier.semantics { contentDescription = factory },
         ) { prefs.accentColor = null }
     }
     ColorPicker(prefs.accentColor ?: Color.Unspecified, prefs::previewAccent, ACCENTS, leading, startClosed = true) { prefs.accentColor = it }
@@ -183,7 +183,7 @@ private fun CardSettings(prefs: Preferences) {
         Label(stringResource(R.string.cards_glass_help), Typography.small, c.textMuted)
     }
     Label(stringResource(R.string.cards_themes), Typography.label, c.textMuted)
-    val themeLabel = stringResource(R.string.cards_theme)
+    val themeLabel = stringResource(R.string.factory_look)
     val otherLabel = stringResource(R.string.other_color)
     val matched = prefs.cardColor == null && prefs.accentColor == null || CARD_THEMES.any { (card, accent) -> prefs.cardColor == card && prefs.accentColor == accent }
     // Los colores sueltos van abajo y cerrados: se abren al tocar la paleta (el último círculo).

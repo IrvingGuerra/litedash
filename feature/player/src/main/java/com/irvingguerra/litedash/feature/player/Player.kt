@@ -319,7 +319,7 @@ object Player {
             setOnCompletionListener { if (myLoad == load && state.current is Track) next() }
             setOnSeekCompleteListener { if (myLoad == load) publishState() }
             setOnErrorListener { _, what, extra ->
-                if (myLoad == load) { Log.w("LiteDash", "MediaPlayer: $what/$extra ${item.uri}"); fail(app.getString(R.string.player_cannot_play)) }
+                if (myLoad == load) { Log.w("LiteDash", "MediaPlayer: $what/$extra ${item.uri}"); fail(cannotPlay(item)) }
                 true
             }
             setOnInfoListener { _, what, _ ->
@@ -338,12 +338,16 @@ object Player {
                 p.setDataSource(app, item.uri)
                 p.prepareAsync()
             } catch (x: Exception) {
-                main.post { if (myLoad == load) { Log.w("LiteDash", "MediaPlayer: ${x.message}"); fail(app.getString(R.string.player_cannot_play)) } }
+                main.post { if (myLoad == load) { Log.w("LiteDash", "MediaPlayer: ${x.message}"); fail(cannotPlay(item)) } }
             }
         }
     }
 
     /** No se pudo: se suelta el audio (play lo vuelve a intentar) y se avisa. */
+    /** Lo que se dice cuando no suena: una canción de la memoria no se abrió; una estación, quizá la red. */
+    private fun cannotPlay(item: Playable) =
+        app.getString(if (item is Track) R.string.player_cannot_open_track else R.string.player_cannot_play)
+
     private fun fail(message: String) {
         load++
         releaseAudio()

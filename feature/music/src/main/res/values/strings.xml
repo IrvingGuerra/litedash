@@ -1,6 +1,6 @@
 <resources>
     <string name="music">Música</string>
-    <string name="music_explain">Ve y controla lo que suena en cualquier app. Necesita acceso a notificaciones.</string>
+    <string name="music_explain">Ve y controla lo que suena en cualquier app. Necesita acceso a avisos.</string>
     <string name="enable">Activar</string>
     <string name="nothing_playing">Nada sonando</string>
     <string name="open_an_app">Pon música en tu app favorita</string>
@@ -18,7 +18,8 @@
     <string name="usb_drive_in">Memoria USB conectada: %1$s</string>
     <string name="player_connecting">Conectando…</string>
     <string name="radio">Radio</string>
-    <string name="radio_explain">Controla la radio de tu pantalla (y por internet si la activas). Necesita acceso a notificaciones.</string>
+    <string name="radio_explain">Controla la radio de tu pantalla (y por internet si la activas). Necesita acceso a avisos.</string>
+    <string name="music_shuffle">Aleatorio</string>
     <string name="radio_internet">Por internet</string>
     <string name="radio_fm">FM de la pantalla</string>
     <string name="radio_unlinked">Enlaza la radio de tu pantalla en Ajustes o activa la radio por internet</string>

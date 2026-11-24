@@ -7,15 +7,14 @@
     <string name="tab_interface">Interface</string>
     <string name="tab_theme_brightness">Theme &amp; brightness</string>
     <string name="accent_title">Interface color</string>
-    <string name="accent_help">Switches, buttons, play and progress bars. Cards and background stay the same; Natural is the original look.</string>
-    <string name="accent_natural">Natural</string>
+    <string name="accent_help">Switches, buttons, play and progress bars. Cards and background stay the same.</string>
+    <string name="factory_look">Default</string>
     <string name="cards_title">Cards</string>
     <string name="cards_help">How cards look across the whole app: their color and whether the background shows through.</string>
     <string name="cards_solid">Solid</string>
     <string name="cards_glass">Glass</string>
     <string name="cards_opacity">How visible</string>
     <string name="cards_glass_help">Your wallpaper shows blurred behind each card; over a map background, the map shows toned down.</string>
-    <string name="cards_theme">Theme</string>
     <string name="cards_themes">Combinations</string>
     <string name="language_search">Find your language</string>
     <string name="language_not_found">That language isn\'t here yet. Help us translate it at litedash.dev/en/translate.</string>

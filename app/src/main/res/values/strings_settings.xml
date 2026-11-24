@@ -8,15 +8,14 @@
     <string name="tab_interface">Interfaz</string>
     <string name="tab_theme_brightness">Tema y brillo</string>
     <string name="accent_title">Color de la interfaz</string>
-    <string name="accent_help">Interruptores, botones, play y barras de avance. Las tarjetas y el fondo no cambian; Natural es el de fábrica.</string>
-    <string name="accent_natural">Natural</string>
+    <string name="accent_help">Interruptores, botones, play y barras de avance. Las tarjetas y el fondo no cambian.</string>
+    <string name="factory_look">De fábrica</string>
     <string name="cards_title">Tarjetas</string>
     <string name="cards_help">Cómo se ven las tarjetas de toda la app: su color y si dejan ver el fondo.</string>
     <string name="cards_solid">Lisas</string>
     <string name="cards_glass">Vidrio</string>
     <string name="cards_opacity">Cuánto se ven</string>
     <string name="cards_glass_help">Detrás de cada tarjeta se ve tu fondo desenfocado; sobre el mapa de fondo, el mapa atenuado.</string>
-    <string name="cards_theme">Del tema</string>
     <string name="cards_themes">Combinaciones</string>
     <string name="language_search">Busca tu idioma</string>
     <string name="language_not_found">Ese idioma aún no está. Ayúdanos a traducirlo en litedash.dev/translate.</string>

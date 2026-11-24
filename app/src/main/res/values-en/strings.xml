@@ -22,8 +22,9 @@
     <string name="tile_app">App</string>
     <string name="pick_app">Choose app</string>
     <string name="apps">Apps</string>
+    <string name="installed_apps">Installed apps</string>
     <string name="search_app">Search apps</string>
-    <string name="drawer_help">Long-press an app to pin it to the bar, put it on your home or hide it.</string>
+    <string name="drawer_help">Tap Choose, then an app to add it to favorites, put it on your home or hide it.</string>
     <string name="arrange_your_home">Arrange your home</string>
     <string name="arrange_hint">Tap a widget to see its options</string>
     <string name="templates">Layouts</string>
@@ -168,8 +169,8 @@
     <string name="model_credit">3D model: %1$s · %2$s</string>
     <string name="show_hidden">Show hidden (%d)</string>
     <string name="hide_hidden">Hide hidden (%d)</string>
-    <string name="pin_to_dock">Pin to the bar</string>
-    <string name="unpin_from_dock">Remove from the bar</string>
+    <string name="pin_to_dock">Add to favorites</string>
+    <string name="unpin_from_dock">Remove from favorites</string>
     <string name="add_to_home">Put on home</string>
     <string name="hide_app">Hide</string>
     <string name="show_app">Show</string>
@@ -178,7 +179,7 @@
     <string name="on_your_home">On your home</string>
     <string name="stats_title">Statistics</string>
     <string name="stats_switch">Count this screen (anonymous)</string>
-    <string name="stats_help">Once a day it sends a random number, the version and where you got it (GitHub or Play), Android, language, screen size, since when you use LiteDash and which built-in radio and Bluetooth your screen has and which sound setting worked on it, to know how many people use LiteDash. No location, accounts or personal data.</string>
+    <string name="stats_help">Once a day, a random number with the version, Android, language and what your screen is like, to know how many use LiteDash. No location or personal data.</string>
     <string name="back">Back</string>
     <string name="next">Next</string>
     <string name="skip">Skip</string>
@@ -211,7 +212,7 @@
     <string name="language_system">Follow system</string>
     <string name="language_more">More languages</string>
     <string name="language_more_help">They download when you pick them; anything missing shows in English.</string>
-    <string name="language_offline">No internet: only Spanish and English.</string>
+    <string name="language_offline">Couldn\'t load the list: only Spanish and English.</string>
     <string name="language_none">No more languages yet.</string>
     <string name="language_loading">Loading languages…</string>
     <string name="language_details">%1$d%% translated · %2$s</string>
@@ -320,10 +321,8 @@
     <string name="wheel_volume_up">Volume up</string>
     <string name="wheel_volume_down">Volume down</string>
     <string name="wheel_mute">Mute</string>
-    <string name="wheel_navigate">Open the map</string>
     <string name="wheel_projection">Open Android Auto / CarPlay</string>
     <string name="wheel_phone">Open the phone</string>
-    <string name="wheel_music">Big music</string>
     <string name="wheel_voice">Voice</string>
     <string name="wheel_home">Back to home</string>
     <string name="wheel_nothing">Nothing</string>
@@ -382,7 +381,7 @@
     <string name="workshop">Workshop</string>
     <string name="tile_workshop_help">Home shortcut to the Workshop (OBD scanner: trouble codes, inspection readiness and sensors)</string>
     <string name="obd_adapter">OBD adapter</string>
-    <string name="obd_adapter_help">Plug an ELM327 adapter into the OBD port (under the steering wheel). Classic Bluetooth: pair it in Android Settings → Bluetooth and pick it here. Bluetooth LE: tap Search. Wi-Fi: join its network and type its address.</string>
+    <string name="obd_adapter_help">Plug the adapter into the OBD port (under the steering wheel). If it\'s Bluetooth, pair it in Android Settings and pick it here; if it doesn\'t show up, tap Search for adapter. If it\'s Wi-Fi, join its network and type its address.</string>
     <string name="obd_off">Not connected</string>
     <string name="obd_connecting">Connecting to %1$s…</string>
     <string name="obd_on">Connected to %1$s</string>
@@ -455,7 +454,7 @@
     <string name="monitor_egr">Exhaust gas recirculation (EGR)</string>
     <string name="obd_connecting_short">Connecting…</string>
     <!-- Pestañas de Ajustes -->
-    <string name="tab_my_car">My car</string>
+    <string name="tab_my_car">Car</string>
     <string name="tab_models">Models</string>
     <string name="tab_sensors">Sensors</string>
     <string name="obd_no_readiness">Your car doesn\'t report the inspection monitors.</string>
@@ -467,7 +466,7 @@
     <string name="wallpaper_credit">Photo: %1$s</string>
     <string name="wallpaper_own">Your photo</string>
     <string name="wallpaper_dim">Dim the background</string>
-    <string name="wallpaper_dim_help">Higher makes widgets without a card easier to read; in light theme it lightens.</string>
+    <string name="wallpaper_dim_help">Higher makes everything on top easier to read; in light theme it lightens.</string>
     <string name="road_trip">trip</string>
     <string name="logo_pick">Pick image</string>
     <string name="logo_change">Change image</string>
@@ -481,7 +480,7 @@
     <string name="bar_buttons">Buttons</string>
     <string name="bar_position_help">Automatic: on the left when the screen is landscape, at the bottom when it\'s portrait.</string>
     <string name="bar_edit">Bar</string>
-    <string name="bar_edit_help">Tap a button on the bar and move it with the arrows, or remove it. The two lines split left, center and right: move them the same way. Settings always stays.</string>
+    <string name="bar_edit_help">Tap a button on the bar and move it with the arrows, or remove it. The dividers split left, center and right: move them the same way. Settings always stays.</string>
     <string name="bar_split">Divider</string>
     <string name="bar_move_right">Move right</string>
     <string name="bar_move_left">Move left</string>
@@ -508,13 +507,13 @@
     <string name="apps_section">Apps</string>
     <string name="tab_navigation">Navigation</string>
     <string name="favorites_help">Apps on the bar, in order. Tap the x to remove one; search below to add one.</string>
-    <string name="module_obd">OBD scanner</string>
+    <string name="module_obd">Workshop (OBD)</string>
     <string name="module_notifications">Other apps\' notifications</string>
     <string name="module_location">Location</string>
     <string name="module_bluetooth">Bluetooth (nearby devices)</string>
     <string name="module_local_network">Local network</string>
     <string name="module_files">Music and files</string>
-    <string name="module_tpms">Tires (TPMS)</string>
+    <string name="module_tpms">Tires</string>
     <string name="tab_permissions">Permissions</string>
     <string name="about_help">About &amp; help</string>
     <string name="tab_updates">Updates</string>
@@ -577,10 +576,10 @@
     <string name="alert_overcharging">Voltage too high (%1$s). Check the alternator: it can damage the battery.</string>
     <string name="alert_low_battery">Low battery (%1$s). It may be hard to start.</string>
     <string name="alert_ok">Got it</string>
-    <string name="obd_ble_search">Search Bluetooth LE</string>
+    <string name="obd_ble_search">Search for adapter</string>
     <string name="obd_ble_searching">Searching…</string>
-    <string name="obd_ble_found">BLUETOOTH LE NEARBY</string>
-    <string name="obd_ble_none">No Bluetooth LE adapter found. Make sure it\'s plugged into the car with the engine or ignition on.</string>
+    <string name="obd_ble_found">ADAPTERS NEARBY</string>
+    <string name="obd_ble_none">No adapter found. Make sure it\'s plugged into the car with the engine or ignition on.</string>
     <string name="night_source">When is it night?</string>
     <string name="night_source_help">Drives the Day and night theme and the night brightness. Sunset time works on any screen; the light sensor notices tunnels and parking garages; the car headlights are learned from your head unit.</string>
     <string name="night_source_unused">Used by the day and night theme or brightness.</string>
@@ -588,7 +587,7 @@
     <string name="night_sensor">Light sensor</string>
     <string name="night_no_sensor">This head unit has no light sensor.</string>
     <string name="obd_ble_bluetooth_off">Bluetooth is off: turn it on above.</string>
-    <string name="obd_ble_location_off">On this Android version, searching Bluetooth LE needs location turned on.</string>
+    <string name="obd_ble_location_off">On this Android version, searching for the adapter needs location turned on.</string>
     <string name="obd_ble_failed">Android didn\'t allow searching right now. Wait a few seconds and try again.</string>
     <string name="night_lights">Car headlights</string>
     <string name="lights_help">Every head unit reports headlights its own way: LiteDash learns it by comparing its settings with the lights off and on. Without a signal it falls back to sun times.</string>
@@ -601,8 +600,8 @@
     <string name="lights_nothing">No setting changed: this head unit doesn\'t report the headlights (or writes it late). Until then, sun times are used. You can try again, waiting a few seconds with the lights on.</string>
     <string name="lights_retry">Try again</string>
     <string name="lights_use_sun">Use sun times</string>
-    <string name="lights_now_on">Headlights on now · %1$s</string>
-    <string name="lights_now_off">Headlights off now · %1$s</string>
+    <string name="lights_now_on">Headlights on now</string>
+    <string name="lights_now_off">Headlights off now</string>
     <string name="obd_usb_found">USB cable</string>
     <string name="bluetooth_off">The head unit\'s Bluetooth is off.</string>
     <string name="bluetooth_turn_on">Turn on Bluetooth</string>
@@ -644,7 +643,7 @@
     <string name="sys_home">Home screen</string>
     <string name="tile_radio">Radio</string>
     <string name="tile_radio_help">Your screen\'s radio (FM) or internet radio, whichever you pick in Settings; tap to open it big</string>
-    <string name="radio_mode_title">How you listen to radio</string>
+    <string name="radio_mode_title">Listen to radio with</string>
     <string name="radio_mode_help">Pick one: it is what plays in the Radio widget. Switching stops the other one.</string>
     <string name="radio_fm_app">Your screen\'s radio</string>
     <string name="radio_fm_app_help">The FM radio app that comes with your screen: LiteDash controls it from the Radio widget (play, next, previous and opening it).</string>
@@ -735,7 +734,7 @@
     <string name="tires_source_usb">USB receiver</string>
     <string name="tires_source_ble">Bluetooth</string>
     <string name="tires_source_demo">Demo</string>
-    <string name="tires_source_help">USB receiver: the TPMS kits for car screens. Bluetooth: valve caps or sensors with Bluetooth. Demo: test data to see how it looks. Car: the factory sensors, through the Workshop OBD adapter.</string>
+    <string name="tires_source_help">USB receiver: the ones sold to show tires on car screens. Bluetooth: valve caps or sensors with Bluetooth. Demo: test data to see how it looks. Car: the factory sensors, through the Workshop OBD adapter.</string>
     <string name="tires_grant">Grant permission</string>
     <string name="retry">Try again</string>
     <string name="clock_wrong">Your screen\'s date is wrong. Fix it in Android settings to be able to download.</string>
@@ -834,7 +833,7 @@
     <string name="pro_taken">This code is already used on another screen. Ask to have it released.</string>
     <string name="pro_offline">No connection. Try again.</string>
     <string name="pro_expired">Connect to the internet to keep the developer code</string>
-    <string name="music_mode_title">How you listen to music</string>
+    <string name="music_mode_title">Listen to music with</string>
     <string name="music_mode_help">Pick one: it is what plays in the Music widget. Switching pauses the previous one.</string>
     <string name="sound_calibration">Calibrate sound</string>
     <string name="sound_calibration_help">How LiteDash gets your screen\'s Bluetooth and radio to play. It\'s tested on its own the first time they play; if something stops playing, calibrate again.</string>

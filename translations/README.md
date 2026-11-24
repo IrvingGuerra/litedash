@@ -1,9 +1,9 @@
 # Traducciones · Translations
 
 LiteDash trae español e inglés. Los demás idiomas **no van dentro de la app**: se bajan de litedash.dev cuando alguien
-los elige (Ajustes → Inicio y apariencia → Interfaz → Idioma → Más idiomas), así la app sigue ligera.
-*LiteDash ships Spanish and English. Other languages are downloaded from litedash.dev when picked (Settings → Home and
-appearance → Interface → Language → More languages), so the app stays small.*
+los elige (Ajustes → Inicio y apariencia → Idioma y unidades → Más idiomas), así la app sigue ligera.
+*LiteDash ships Spanish and English. Other languages are downloaded from litedash.dev when picked (Settings → Home &
+look → Language & units → More languages), so the app stays small.*
 
 ## Cómo traducir
 

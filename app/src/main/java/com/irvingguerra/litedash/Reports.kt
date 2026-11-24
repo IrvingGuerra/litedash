@@ -321,6 +321,7 @@ private suspend fun reportInfo(context: Context, d: Dependencies): String {
     // El escáner solo si ya existe (abrir el Taller lo crea); si no, no se conecta nada por el reporte.
     val obdInfo = (d.obdIfCreated()?.describe() ?: "OBD: sin abrir en esta sesión") + "\n" + reportExtras(d)
     val pro = d.pro.isPro
+    val lights = d.prefs.lightsKey?.let { "$it (prendidas = ${d.prefs.lightsOnValue})" }
     // Lo de la música que cambia en el hilo principal se copia aquí; lo que pregunta al sistema va en IO.
     val musicInfoLater = d.music.describeLater()
     val music = d.music
@@ -329,7 +330,7 @@ private suspend fun reportInfo(context: Context, d: Dependencies): String {
         // avisos que llegan ahí; si cambia justo mientras se lee, el reporte va sin esa parte.
         val musicInfo = runCatching { musicInfoLater() }.getOrElse { "Música: no se pudo leer (${it.javaClass.simpleName})" }
         val silent = runCatching { music.silentSources() }.getOrDefault(emptyList())
-        systemInfo(context, pro, layout, musicInfo + "\n" + obdInfo, silent)
+        systemInfo(context, pro, layout, lights, musicInfo + "\n" + obdInfo, silent)
     }
 }
 
@@ -385,8 +386,8 @@ private fun volumeInfo(context: Context): String = runCatching {
     "Volumen: música ${audio.getStreamVolume(AudioManager.STREAM_MUSIC)}/${audio.getStreamMaxVolume(AudioManager.STREAM_MUSIC)}, fijo=${if (audio.isVolumeFixed) "sí" else "no"}"
 }.getOrDefault("Volumen: ?")
 
-/** Datos técnicos de la pantalla para los reportes (equipo, Android, pantalla, acomodo [layout], luces, ubicación y si tiene Pro) más [musicInfo] y las apps [silent]. */
-private fun systemInfo(context: Context, pro: Boolean, layout: String, musicInfo: String, silent: List<String>): String {
+/** Datos técnicos de la pantalla para los reportes (equipo, Android, pantalla, acomodo [layout], luces [lights] aprendidas, ubicación y si tiene Pro) más [musicInfo] y las apps [silent]. */
+private fun systemInfo(context: Context, pro: Boolean, layout: String, lights: String?, musicInfo: String, silent: List<String>): String {
     val m = context.resources.displayMetrics
     return buildString {
         appendLine("LiteDash ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE}) · ${BuildConfig.CHANNEL}")
@@ -403,7 +404,7 @@ private fun systemInfo(context: Context, pro: Boolean, layout: String, musicInfo
         appendLine(volumeInfo(context))
         appendLine(SystemVolume.describe())
         appendLine("Código de desarrollador: ${if (pro) "sí" else "no"}")
-        appendLine(lightsReport(context))
+        appendLine(lightsReport(context, lights))
         appendLine(locationInfo(context))
         append(musicInfo)
         SystemSource.describe(context)?.let { append("\n").append(it) }
