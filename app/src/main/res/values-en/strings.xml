@@ -158,7 +158,6 @@
     <string name="scale">Interface size</string>
     <string name="scale_help">If everything looks too small or too big on your screen. Each size keeps its own layout.</string>
     <string name="scale_percent">%d%%</string>
-    <string name="home">Home</string>
     <string name="arrange">Arrange home</string>
     <string name="arrange_help">You can also long-press anywhere on the home screen.</string>
     <string name="model_generic">Sedan (drawing)</string>
@@ -387,6 +386,7 @@
     <string name="obd_connecting">Connecting to %1$s…</string>
     <string name="obd_on">Connected to %1$s</string>
     <string name="obd_on_adapter">Connected to %1$s · %2$s</string>
+    <string name="obd_on_car_off">Connected to %1$s · the car seems off</string>
     <string name="obd_error_bluetooth_off">Bluetooth is off.</string>
     <string name="obd_error_no_bluetooth_permission">Bluetooth permission is missing.</string>
     <string name="obd_error_no_usb">This screen doesn\'t support USB.</string>
@@ -645,7 +645,7 @@
     <string name="radio_fm_app_help">The FM radio app that comes with your screen: LiteDash controls it from the Radio widget (play, next, previous and opening it).</string>
     <string name="radio_internet_help">Stations near you by GPS and worldwide, with favorites. Needs internet; without it, use your screen\'s radio.</string>
     <string name="tab_health">Health</string>
-    <string name="tab_more">More</string>
+    <string name="tab_adapter_trips">Adapter and trips</string>
     <string name="health_title">Car health</string>
     <string name="health_connect">Connect your OBD adapter to see your car\'s health</string>
     <string name="health_all_good">All good</string>
@@ -770,10 +770,12 @@
     <string name="tires_front">Recommended front</string>
     <string name="tires_rear">Recommended rear</string>
     <string name="tires_low_percent">Alert if it drops more than</string>
-    <string name="tires_low_percent_help">Front, below %1$s</string>
+    <string name="tires_low_percent_help">Alerts below %1$s</string>
+    <string name="tires_low_percent_help_both">Alerts below %1$s front and %2$s rear</string>
     <string name="tires_high_temp">High temperature</string>
     <string name="tires_offset">Adjust each sensor</string>
     <string name="tires_offset_help">Check each cold tire with a gauge and adjust until LiteDash reads the same.</string>
+    <string name="tires_offset_altitude">If you live at high altitude, calibrate with your gauge: some Bluetooth sensors read low.</string>
     <string name="tires_calibrate">Calibrate</string>
     <string name="tires_reads">Reads %1$s</string>
     <string name="tires_show_spare">Show spare</string>
@@ -785,6 +787,7 @@
     <string name="tires_car_tap_big">Show it big</string>
     <string name="tires_car_tap_tires">Show its tires</string>
     <string name="tires_on_car">On the car</string>
+    <string name="tires_on_car_help">Changes all your widgets with the car, including ones you changed separately</string>
     <string name="tires_on_car_wheels">On the wheels</string>
     <string name="tires_on_car_corners">In the corners</string>
     <string name="tires_on_car_waiting">Until your car\'s wheel positions download (needs internet once), they stay in the corners. The motorcycle doesn\'t have them.</string>

@@ -159,7 +159,6 @@
     <string name="scale">Tamaño de la interfaz</string>
     <string name="scale_help">Si todo se ve muy chico o muy grande en tu pantalla. Cada tamaño guarda su propio acomodo.</string>
     <string name="scale_percent">%d %%</string>
-    <string name="home">Inicio</string>
     <string name="arrange">Acomodar inicio</string>
     <string name="arrange_help">También puedes dejar presionado cualquier lugar del inicio.</string>
     <string name="model_generic">Sedán (dibujo)</string>
@@ -396,6 +395,7 @@
     <string name="obd_connecting">Conectando con %1$s…</string>
     <string name="obd_on">Conectado a %1$s</string>
     <string name="obd_on_adapter">Conectado a %1$s · %2$s</string>
+    <string name="obd_on_car_off">Conectado a %1$s · el auto parece apagado</string>
     <string name="obd_error_bluetooth_off">El Bluetooth está apagado.</string>
     <string name="obd_error_no_bluetooth_permission">Falta el permiso de Bluetooth.</string>
     <string name="obd_error_no_usb">Esta pantalla no maneja USB.</string>
@@ -668,7 +668,7 @@
     <string name="radio_fm_app_help">La app de radio FM que trae tu pantalla: LiteDash la controla desde el widget Radio (play, siguiente, anterior y abrirla).</string>
     <string name="radio_internet_help">Estaciones de tu zona por GPS y de todo el mundo, con favoritas. Necesita internet; si no tienes, usa la radio de tu pantalla.</string>
     <string name="tab_health">Salud</string>
-    <string name="tab_more">Más</string>
+    <string name="tab_adapter_trips">Adaptador y viajes</string>
     <string name="health_title">Salud del auto</string>
     <string name="health_connect">Conecta tu adaptador OBD para ver la salud de tu auto</string>
     <string name="health_all_good">Todo bien</string>
@@ -796,10 +796,12 @@
     <string name="tires_front">Recomendada adelante</string>
     <string name="tires_rear">Recomendada atrás</string>
     <string name="tires_low_percent">Avisar si baja más de</string>
-    <string name="tires_low_percent_help">Adelante, abajo de %1$s</string>
+    <string name="tires_low_percent_help">Avisa abajo de %1$s</string>
+    <string name="tires_low_percent_help_both">Avisa abajo de %1$s adelante y %2$s atrás</string>
     <string name="tires_high_temp">Temperatura alta</string>
     <string name="tires_offset">Ajuste de cada sensor</string>
     <string name="tires_offset_help">Mide cada llanta en frío con un manómetro y ajusta hasta que LiteDash marque lo mismo.</string>
+    <string name="tires_offset_altitude">Si vives en altura, calibra con tu manómetro: algunos sensores Bluetooth marcan de menos.</string>
     <string name="tires_calibrate">Calibrar</string>
     <string name="tires_reads">Marca %1$s</string>
     <string name="tires_show_spare">Mostrar refacción</string>
@@ -811,6 +813,7 @@
     <string name="tires_car_tap_big">Verlo en grande</string>
     <string name="tires_car_tap_tires">Ver sus llantas</string>
     <string name="tires_on_car">Sobre el auto</string>
+    <string name="tires_on_car_help">Cambia todos tus widgets con el auto, también los que cambiaste aparte</string>
     <string name="tires_on_car_wheels">En las ruedas</string>
     <string name="tires_on_car_corners">En las esquinas</string>
     <string name="tires_on_car_waiting">Mientras se baja dónde van las ruedas de tu auto (necesita internet una vez), van en las esquinas. La moto no lo trae.</string>

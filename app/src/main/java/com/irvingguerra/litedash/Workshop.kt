@@ -89,14 +89,16 @@ import kotlinx.coroutines.withContext
  */
 internal var obdStoppedByUser = false
 
-/** Las pestañas del Taller (para recordar la elegida) y cuál es la de códigos. */
+/** Las pestañas del Taller (para recordar la elegida), la de códigos y la del adaptador (la última). */
 private const val WORKSHOP_TABS = "workshop"
 private const val CODES_TAB = 1
+private const val ADAPTER_TAB = 4
 
 /**
- * El Taller (sección de Ajustes, "Salud del auto"): arriba el estado del auto por sistema; luego
- * códigos de falla (leer y borrar) con la verificación, sensores en vivo, gráficas y lo demás
- * (conexión, alertas, 0–100 y viajes). Mientras se ve, quiere el escáner y el OBD solo lee lo que hay aquí.
+ * El Taller (sección de Ajustes, "Salud del auto"), siempre con pestañas: el estado del auto por sistema,
+ * códigos de falla (leer y borrar) con la verificación, sensores en vivo, gráficas y «Adaptador y viajes»
+ * (conexión, alertas, 0–100 y viajes). Sin adaptador abre en esa última. Mientras se ve, quiere el escáner y el
+ * OBD solo lee lo que hay aquí.
  */
 @Composable
 internal fun Workshop(d: Dependencies, onTires: () -> Unit) {
@@ -145,21 +147,30 @@ internal fun Workshop(d: Dependencies, onTires: () -> Unit) {
         if (connected) read() else reading = false
     }
 
-    // Sin adaptador: la misma pantalla en gris (sin lo leído antes) y cómo conectarlo.
-    if (!connected) {
-        HealthView(d, report = null, connected = false, onTires = onTires)
-        Connection(d, permitted) { permitted = it }
-        alerts()
-        // Los viajes guardados se ven aunque no haya adaptador conectado.
-        return TripsCard(d)
+    // Sin adaptador (ni conectando a uno) abre donde se conecta; lo demás se ve en gris.
+    LaunchedEffect(Unit) {
+        if (obd.state != ObdState.ON && obd.state != ObdState.CONNECTING) selectTab(WORKSHOP_TABS, ADAPTER_TAB)
     }
     val tab = tabs(
-        listOf(R.string.tab_health, R.string.obd_codes, R.string.tab_sensors, R.string.tab_charts, R.string.tab_more),
+        listOf(R.string.tab_health, R.string.obd_codes, R.string.tab_sensors, R.string.tab_charts, R.string.tab_adapter_trips),
         WORKSHOP_TABS,
     )
-    when (tab) {
-        0 -> HealthView(d, report, connected = true, reading, ::read, onCodes = { selectTab(WORKSHOP_TABS, CODES_TAB) }, onTires = onTires)
-        CODES_TAB -> {
+    when {
+        // Los viajes guardados se ven aunque no haya adaptador conectado.
+        tab == ADAPTER_TAB -> {
+            Connection(d, permitted) { permitted = it }
+            alerts()
+            AccelTimerCard(d)
+            TripsCard(d)
+        }
+        // Salud sin adaptador: la misma pantalla en gris (sin lo leído antes).
+        tab == 0 -> if (connected) {
+            HealthView(d, report, connected = true, reading, ::read, onCodes = { selectTab(WORKSHOP_TABS, CODES_TAB) }, onTires = onTires)
+        } else {
+            HealthView(d, report = null, connected = false, onTires = onTires)
+        }
+        !connected -> SettingsCard { Label(stringResource(R.string.health_connect), Typography.body, LocalColors.current.textMuted) }
+        tab == CODES_TAB -> {
             // Borrados: lo leído antes ya no vale (si la lectura nueva falla, se dice que no se pudo, no "Sin códigos").
             CodesCard(obd, scope, report, reading, failed, ::read) { ok ->
                 if (ok) report = null
@@ -167,14 +178,8 @@ internal fun Workshop(d: Dependencies, onTires: () -> Unit) {
             }
             InspectionCard(report, reading)
         }
-        2 -> LiveSensors(d)
-        3 -> LiveCharts(d)
-        else -> {
-            Connection(d, permitted) { permitted = it }
-            alerts()
-            AccelTimerCard(d)
-            TripsCard(d)
-        }
+        tab == 2 -> LiveSensors(d)
+        else -> LiveCharts(d)
     }
 }
 
@@ -282,10 +287,21 @@ private fun Connection(d: Dependencies, permitted: Boolean, onPermitted: (Boolea
         val status = when (obd.state) {
             ObdState.OFF -> stringResource(R.string.obd_off)
             ObdState.CONNECTING -> stringResource(R.string.obd_connecting, name)
-            ObdState.ON -> obd.adapter?.let { stringResource(R.string.obd_on_adapter, name, it) } ?: stringResource(R.string.obd_on, name)
+            // Conectado pero sin datos del auto en 75 s: contacto apagado (el viaje ya se cerró).
+            ObdState.ON -> if (obd.carSilent) {
+                stringResource(R.string.obd_on_car_off, name)
+            } else {
+                obd.adapter?.let { stringResource(R.string.obd_on_adapter, name, it) } ?: stringResource(R.string.obd_on, name)
+            }
             ObdState.ERROR -> stringResource(obdErrorText(obd.errorKind))
         }
-        Label(status, Typography.body, if (obd.state == ObdState.ERROR) c.danger else if (obd.state == ObdState.ON) c.good else c.textMuted)
+        val color = when {
+            obd.state == ObdState.ERROR -> c.danger
+            obd.state == ObdState.ON && obd.carSilent -> c.warning
+            obd.state == ObdState.ON -> c.good
+            else -> c.textMuted
+        }
+        Label(status, Typography.body, color)
         when {
             obd.state == ObdState.ON || obd.state == ObdState.CONNECTING -> Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 Button(stringResource(R.string.obd_disconnect), {
