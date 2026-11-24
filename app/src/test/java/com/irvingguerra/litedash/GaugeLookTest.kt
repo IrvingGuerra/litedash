@@ -103,8 +103,8 @@ class GaugeLookTest {
         assertEquals("maxkmh=160", migrateSpeedMax("max=160", miles = false))
         assertEquals("", migrateSpeedMax("max=120", miles = true))
         assertEquals(null, migrateSpeedMax("maxkmh=240", miles = true))
-        // Antes de migrar se lee lo más probable.
-        assertEquals(320, GaugeLook.parse("max=320").max)
+        // Sin migrar, "max" ya no se lee (la migración corre al cargar el acomodo, antes de verse).
+        assertEquals(null, GaugeLook.parse("max=320").max)
     }
 
     @Test

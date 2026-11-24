@@ -110,20 +110,36 @@ class GaugeSpec(
     val warning: (Float) -> Boolean = { false },
     /** Desde dónde va la zona roja (unidad del bus); null = el último 20 %. */
     val red: Float? = null,
+    /** En unidades de EE. UU., un rango propio con números redondos (convertido tal cual salían 12, 24, 35…). */
+    val imperial: ImperialScale? = null,
 ) {
+    /** Hasta dónde llega el arco (unidad del bus) con estas unidades. */
+    fun maxFor(units: UnitChoice) = imperial?.takeIf { units.miles }?.max ?: max
+
+    /** Cuántas marcas lleva con estas unidades. */
+    fun ticksFor(units: UnitChoice) = imperial?.takeIf { units.miles }?.ticks ?: ticks
+
     /** Qué tanto del arco se llena, con el valor del bus. */
-    fun fraction(v: Float) = (v - min) / (max - min)
+    fun fraction(v: Float, units: UnitChoice) = (v - min) / (maxFor(units) - min)
 
     /** Dónde empieza la zona roja (0–1). */
-    val redFrom get() = red?.let(::fraction) ?: 0.8f
+    fun redFrom(units: UnitChoice) = red?.let { fraction(it, units) } ?: 0.8f
 
-    /** El número de la marca [i] de [ticks], en la unidad que se ve (las rpm en miles). */
+    /** El número de la marca [i], en la unidad que se ve (las rpm en miles). */
     fun label(i: Int, units: UnitChoice, locale: Locale): String {
-        val v = shown(min + (max - min) * i / ticks, units).let { if (shown(max, units) >= 1000f) it / 1000f else it }
+        val max = maxFor(units)
+        val v = shown(min + (max - min) * i / ticksFor(units), units).let { if (shown(max, units) >= 1000f) it / 1000f else it }
         // Un cero con error de redondeo (-0.000001) no sale como "-0".
         return String.format(locale, "%.0f", if (kotlin.math.abs(v) < 0.5f) 0f else v)
     }
 }
+
+/** El rango en millas de un medidor: hasta [max] (unidad del bus) en [ticks] marcas. */
+class ImperialScale(val max: Float, val ticks: Int)
+
+// km/l → millas por galón y litros → galones (EE. UU.).
+private const val MPG_PER_KML = 2.352f
+private const val GAL_PER_L = 0.2642f
 
 val GaugeSpecs = listOf(
     GaugeSpec(
@@ -148,9 +164,9 @@ val GaugeSpecs = listOf(
     ),
     GaugeSpec(
         Signal.CONSUMPTION, R.string.gauge_consumption, R.string.gauge_consumption_tag, Icons.drop, ticks = 6,
-        // km/l a millas por galón (EE. UU.).
-        shown = { v, u -> if (u.miles) v * 2.352f else v }, unit = { if (it.miles) R.string.unit_mpg else R.string.unit_kml }, decimals = 1,
-        min = 0f, max = 30f,
+        shown = { v, u -> if (u.miles) v * MPG_PER_KML else v }, unit = { if (it.miles) R.string.unit_mpg else R.string.unit_kml }, decimals = 1,
+        // 0–70 mpg de 10 en 10.
+        min = 0f, max = 30f, imperial = ImperialScale(70f / MPG_PER_KML, 7),
     ),
     GaugeSpec(
         Signal.BOOST, R.string.gauge_boost, R.string.gauge_boost_tag, Icons.turbo, ticks = 8,
@@ -170,9 +186,9 @@ val GaugeSpecs = listOf(
     ),
     GaugeSpec(
         Signal.FUEL_RATE, R.string.gauge_fuel_rate, R.string.gauge_fuel_rate_tag, Icons.fuel, ticks = 6,
-        // Litros por hora a galones (EE. UU.) por hora.
-        shown = { v, u -> if (u.miles) v * 0.2642f else v }, unit = { if (it.miles) R.string.unit_galh else R.string.unit_lh }, decimals = 1,
-        min = 0f, max = 30f,
+        shown = { v, u -> if (u.miles) v * GAL_PER_L else v }, unit = { if (it.miles) R.string.unit_galh else R.string.unit_lh }, decimals = 1,
+        // 0–8 gal/h de 1 en 1.
+        min = 0f, max = 30f, imperial = ImperialScale(8f / GAL_PER_L, 8),
     ),
 )
 
@@ -206,18 +222,18 @@ fun GaugeTile(d: Dependencies, signal: String, look: GaugeLook, onPick: () -> Un
 @Composable
 fun SpecGaugeCard(spec: GaugeSpec, value: Float?, units: UnitChoice, look: GaugeLook, carColor: Color, onClick: (() -> Unit)? = null, note: String? = null) {
     val locale = currentLocale()
-    val labels = remember(spec, units, locale) { List(spec.ticks + 1) { spec.label(it, units, locale) } }
+    val labels = remember(spec, units, locale) { List(spec.ticksFor(units) + 1) { spec.label(it, units, locale) } }
     GaugeCard(
         number = value?.let { gaugeText(spec, it, units, locale) } ?: "—",
         unit = stringResource(spec.unit(units)),
         // La nota (sin OBD, conectando…) va donde va la etiqueta del dato.
         tag = note ?: spec.tag?.let { stringResource(it) } ?: "",
-        fraction = value?.let(spec::fraction) ?: 0f,
-        ticks = spec.ticks,
+        fraction = value?.let { spec.fraction(it, units) } ?: 0f,
+        ticks = spec.ticksFor(units),
         look = look,
         carColor = carColor,
         labels = labels,
-        redFrom = spec.redFrom,
+        redFrom = spec.redFrom(units),
         warning = value != null && spec.warning(value),
         onClick = onClick,
         title = stringResource(spec.name),
