@@ -171,9 +171,11 @@ internal fun assumesPlay(plan: Plan, via: Channel?, source: Boolean, hasService:
 
 /**
  * Al despertar una app que no tenía receptor, sesión ni servicio (el play se fue al sistema), se abre al acabarse el plazo
- * si sigue sin nada, solo si es de la pantalla ([source]: Bluetooth o FM; las de música normales las abre su vigilante).
+ * si sigue sin nada, solo si es la FM de la pantalla ([source]). La app de Bluetooth de fábrica nunca: solo la abre su
+ * receta [Recipes.OPEN_FACTORY] (una vez y detenido); las de música normales las abre su vigilante.
  */
-internal fun opensAfterWake(plan: Plan, via: Channel?, source: Boolean): Boolean = plan.wake && via == Channel.SYSTEM && source
+internal fun opensAfterWake(plan: Plan, via: Channel?, source: SourceKind?): Boolean =
+    plan.wake && via == Channel.SYSTEM && source == SourceKind.RADIO
 
 /**
  * Las señales de que la radio de fábrica suena, cada una con cuándo se supo (reloj de arranque). [profileOn] es lo que

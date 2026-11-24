@@ -115,7 +115,7 @@ internal fun MusicRepository.play(lens: Lens, onIdle: () -> Unit = {}) {
         if (sourceOf(pkg) == SourceKind.BLUETOOTH) calibrateBluetooth()
     }
     // La radio por su perfil o abriéndola tiene su propia confirmación.
-    if (plan.wake && via != Channel.PROFILE && via != Channel.OPEN) armWake(lens, pkg, opensAfterWake(plan, via, source))
+    if (plan.wake && via != Channel.PROFILE && via != Channel.OPEN) armWake(lens, pkg, opensAfterWake(plan, via, sourceOf(pkg)))
 }
 
 /** Pausa en [lens] ([pausePlan]). Sin a quién, nada (nunca despierta otra cosa). */

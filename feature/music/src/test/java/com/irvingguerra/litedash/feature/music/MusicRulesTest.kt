@@ -129,10 +129,12 @@ class MusicRulesTest {
         assertTrue(assumesPlay(blind, SYSTEM, source = false, hasService = false))
         assertTrue(assumesPlay(blind, SESSION_KEY, source = true, hasService = true))
         // Abrir al acabarse el plazo: solo la de la pantalla cuando el play se fue al sistema.
-        assertTrue(opensAfterWake(wake, SYSTEM, source = true))
-        assertFalse(opensAfterWake(wake, SYSTEM, source = false))
-        assertFalse(opensAfterWake(wake, RECEIVER, source = true))
-        assertFalse(opensAfterWake(blind, SYSTEM, source = true))
+        assertTrue(opensAfterWake(wake, SYSTEM, source = SourceKind.RADIO))
+        assertFalse(opensAfterWake(wake, SYSTEM, source = null))
+        assertFalse(opensAfterWake(wake, RECEIVER, source = SourceKind.RADIO))
+        assertFalse(opensAfterWake(blind, SYSTEM, source = SourceKind.RADIO))
+        // La app de Bluetooth de fábrica solo la abre su receta (open.factory), nunca el despertar.
+        assertFalse(opensAfterWake(wake, SYSTEM, source = SourceKind.BLUETOOTH))
     }
 
     // —— Callar la radio (issue #17 y el riesgo de la 1.4.162) ——
