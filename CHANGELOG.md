@@ -4,6 +4,31 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.5.17] - 2026-11-24
+
+Mapas nuevos: más limpios, con ruta aunque no hayas bajado tu estado y una navegación que se ve como debe.
+
+### Nuevo
+- **Ruta con internet sin bajar el mapa:** si no tienes el mapa de tu estado (o vas a otro), la ruta se traza en línea
+  y la navegación te guía igual. Del lado de tu auto sale «baja el mapa» con su botón; al terminar, aparece tu auto con
+  la franja azul sin dejar de navegar. Sin internet y sin mapa, te pide bajarlo como antes.
+- **Colores nuevos del mapa** (azul pizarra de noche, claro de día) y tres opciones en Ajustes → Apps → Navegación:
+  **De fábrica**, **Como mi interfaz** y **Color propio**.
+- **La ruta «fluye»:** flechitas suaves avanzan sobre la línea hacia donde vas (se apaga en «Animar la ruta»; en
+  pantallas lentas quedan quietas).
+- **Navegación más cerca:** el mapa de la derecha va inclinado y a nivel de calle, se aleja con la velocidad y se
+  aplana antes de cada vuelta. Muévelo con el dedo y «Seguirme» lo regresa.
+- Glorietas con «toma la salida N».
+
+### Cambiado
+- Widget, mapa de fondo y mapa en grande siempre planos; sin edificios, más ligeros.
+- El mapa en grande abre directo al buscador: sin brújula ni «Marcar aquí» (dejar presionado sigue marcando).
+- Flecha de tu posición redondeada.
+
+### Arreglado
+- La lista del buscador se cierra al tocar fuera o con atrás.
+- Al empezar a navegar detenido, el mapa ya mira hacia donde sale la ruta.
+
 ## [1.5.16] - 2026-11-24
 
 Ajustes más ordenados y fáciles de encontrar, y mapas de un país completo de un solo toque.

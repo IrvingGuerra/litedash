@@ -3,6 +3,32 @@
 What people using LiteDash notice, in English. The full history (in Spanish) is in [CHANGELOG.md](CHANGELOG.md).
 Format [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versions [SemVer](https://semver.org/).
 
+## [1.5.17] - 2026-11-24
+
+New maps: cleaner, with a route even if you haven't downloaded your state, and navigation that looks the way it should.
+
+### Added
+- **Online route without downloading the map:** if you don't have your state's map (or you're going to another one),
+  the route is drawn online and navigation guides you just the same. On your car's side you'll see "download the map"
+  with its button; when it finishes, your car shows up with the blue strip without stopping the guidance. With no
+  internet and no map, it asks you to download it, as before.
+- **New map colors** (slate blue at night, light by day) and three options in Settings → Apps → Navigation:
+  **Default**, **Like my interface** and **My own color**.
+- **The route "flows":** soft arrows move along the line toward where you're going (turn it off in "Animate the
+  route"; on slow screens they stay still).
+- **Closer navigation:** the right-hand map is tilted and at street level, zooms out with speed and flattens before
+  each turn. Move it with your finger and "Follow me" brings it back.
+- Roundabouts with "take exit N".
+
+### Changed
+- Widget, map background and full-screen map are always flat; no buildings, lighter.
+- The full-screen map opens straight to search: no compass or "Mark here" (long-press still marks a spot).
+- Rounded position arrow.
+
+### Fixed
+- The search list closes when you tap outside it or press back.
+- When you start navigating while stopped, the map already faces where the route leaves.
+
 ## [1.5.16] - 2026-11-24
 
 Tidier Settings that are easier to find things in, and a whole country's maps in one tap.
