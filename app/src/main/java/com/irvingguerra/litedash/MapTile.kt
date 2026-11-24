@@ -8,6 +8,7 @@ import android.os.storage.StorageManager
 import android.text.format.DateFormat
 import android.text.format.Formatter
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -27,9 +28,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -77,11 +76,10 @@ import com.irvingguerra.litedash.feature.apps.App
 import com.irvingguerra.litedash.feature.apps.normalize
 import com.irvingguerra.litedash.feature.car.CarPackage
 import com.irvingguerra.litedash.feature.car.snapshot
-import com.irvingguerra.litedash.feature.dashboard.TileTypes
 import com.irvingguerra.litedash.feature.map.IndexState
 import com.irvingguerra.litedash.feature.map.MapCamera
+import com.irvingguerra.litedash.feature.map.MapAim
 import com.irvingguerra.litedash.feature.map.MapCanvas
-import com.irvingguerra.litedash.feature.map.MapDetail
 import com.irvingguerra.litedash.feature.map.MapLook
 import com.irvingguerra.litedash.feature.map.MapOrientation
 import com.irvingguerra.litedash.feature.map.MapPacks
@@ -92,7 +90,6 @@ import com.irvingguerra.litedash.feature.map.MinimalPalette
 import com.irvingguerra.litedash.feature.map.OfflineArea
 import com.irvingguerra.litedash.feature.map.OfflineError
 import com.irvingguerra.litedash.feature.map.OfflineMaps
-import com.irvingguerra.litedash.feature.map.OsmTiles
 import com.irvingguerra.litedash.feature.map.PackError
 import com.irvingguerra.litedash.feature.map.SearchHit
 import com.irvingguerra.litedash.feature.map.TileStore
@@ -110,20 +107,20 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 /**
- * Widget Mapa: tu posición del GPS en el mapa (minimalista de OpenFreeMap o completo de OpenStreetMap),
- * como diga su [data] ([MapLook]); navegando, la siguiente vuelta flota arriba a la izquierda y Casa y
- * Trabajo, abajo a la derecha (sobre los créditos). Un toque hace [onTap]: el mapa de LiteDash en grande o, con
+ * Widget Mapa: tu posición del GPS en el mapa (de OpenFreeMap, con el aspecto de Ajustes → Apps → Navegación:
+ * [rememberMapLook]; lo que un widget guardó aparte hasta la 1.5.15 ya no se lee); navegando, la siguiente vuelta flota
+ * arriba a la izquierda y Casa y Trabajo, abajo a la derecha (sobre los créditos). Un toque hace [onTap]: el mapa de LiteDash en grande o, con
  * «Navegar con: App de mapas» ([app] no es null), esa app. En una fila, o sin permiso de ubicación, se ve
  * solo la vuelta, Casa y Trabajo ([NavigationTile]) y, sin permiso, un botón para pedirlo. GPS y descargas solo
  * mientras se ve. Al quitar el widget se sueltan su cámara y su almacén de teselas.
  */
 @Composable
 fun MapTile(
-    d: Dependencies, tileId: String, data: String, app: App?, editing: Boolean, onPlace: (String) -> Unit, onTap: () -> Unit, onSearch: () -> Unit,
+    d: Dependencies, tileId: String, app: App?, editing: Boolean, onPlace: (String) -> Unit, onTap: () -> Unit, onSearch: () -> Unit,
 ) {
     val c = LocalColors.current
     val (granted, ask) = rememberGpsPermission(d)
-    val look = remember(data) { MapLook.parse(data) }
+    val look = rememberMapLook(d)
     // Sale de la pantalla: si fue porque se quitó el widget, lo suyo ya no sirve (si no, se queda para cuando vuelva).
     DisposableEffect(tileId) {
         onDispose { if (d.dashboard.allTiles.none { it.id == tileId }) forgetMap(tileId) }
@@ -163,20 +160,19 @@ fun MapTile(
 }
 
 /**
- * El mapa de LiteDash en grande (el toque al widget Mapa, y la barra y el volante si no abren tu app), como el widget
- * [data] si hay uno: el mapa en vivo (con dos dedos se acerca o aleja), la siguiente vuelta, Casa y Trabajo, y botones
+ * El mapa de LiteDash en grande (el toque al widget Mapa, y la barra y el volante si no abren tu app), con el aspecto de
+ * Ajustes y la cámara del widget [tileId] si se abrió desde uno: el mapa en vivo (con dos dedos o + y − se acerca o
+ * aleja), la siguiente vuelta, Casa y Trabajo, «Marcar aquí» con una mira al centro (como dejar presionado), y botones
  * para cerrar y, con una app de mapas, para abrirla.
  */
 @Composable
 fun MapExpanded(
-    d: Dependencies, tileId: String?, data: String, app: App?, onPlace: (String) -> Unit, onNavigate: () -> Unit, onOffline: () -> Unit,
+    d: Dependencies, tileId: String?, app: App?, onPlace: (String) -> Unit, onNavigate: () -> Unit, onOffline: () -> Unit,
     close: () -> Unit, modifier: Modifier = Modifier,
 ) {
     val c = LocalColors.current
     val (granted, ask) = rememberGpsPermission(d)
-    // Lo del widget al día (la brújula lo cambia mientras está abierto); si no está en esta página, lo que llegó.
-    val liveData = tileId?.let { id -> d.dashboard.tiles.firstOrNull { it.id == id }?.data } ?: data
-    val look = remember(liveData) { MapLook.parse(liveData) }
+    val look = rememberMapLook(d)
     // Mientras se ve, su widget (que queda debajo) se rige por lo que tape a este: no suelta las teselas que comparten.
     val covered = LocalHomeCovered.current
     if (tileId != null) DisposableEffect(tileId, covered) {
@@ -230,6 +226,12 @@ fun MapExpanded(
     }
     BackHandler(routing != null && !search.focused, closeRoute)
     BackHandler(selected != null && routing == null && !search.focused, unselect)
+    // «Marcar aquí»: la mira al centro; se mueve el mapa y el botón pone el pin ahí (lo mismo que dejar presionado, que
+    // en pantallas de auto falla). Atrás o el mismo botón la quitan.
+    var marking by remember { mutableStateOf(false) }
+    if (selected != null || search.focused) marking = false
+    val aim = remember { MapAim() }
+    BackHandler(marking) { marking = false }
     // Se soltó el lugar (otra búsqueda, borrar lo escrito) o se cierra el mapa en grande: el mapa (y el widget, que
     // comparte la cámara) regresa a ti.
     // (Lee el de ahora, no el de esta composición: al abrir con un lugar de otra app, ya se eligió.)
@@ -267,8 +269,9 @@ fun MapExpanded(
                     camera = camera, pin = selected?.let { it.lat to it.lon },
                     overlay = selected == null,
                     onLongPress = { lat, lon -> pick(pointHit(null, lat, lon)) },
-                    route = route?.points, fixedZoom = fit?.zoom, focus = clear,
+                    route = route?.points, fixedZoom = fit?.zoom, focus = clear, aim = aim,
                 )
+                if (marking) Crosshair(Modifier.align(Alignment.Center))
             } else Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Button(stringResource(R.string.tap_to_enable), ask, primary = true) }
             val searching = search.focused || search.query.isNotEmpty()
             // Con la guía encima el buscador sale de la pantalla: en Android 6 un campo enfocado debajo vuelve a abrir el teclado.
@@ -281,11 +284,8 @@ fun MapExpanded(
             Row(Modifier.align(Alignment.TopEnd).padding(12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 // Tu app de mapas, con su botón (como en el widget).
                 if (app != null && boxWidth >= WIDE_TOP) IconButton(Icons.navigate, onNavigate, size = 48.dp, background = c.surface.copy(alpha = 0.9f), color = c.accent)
-                if (route == null && granted) MapCompass(camera, size = 48.dp) { orientation ->
-                    // Solo la orientación, y solo de este mapa: lo demás de su aspecto y los otros widgets no cambian.
-                    if (tileId != null) d.dashboard.setData(tileId, look.copy(orientation = orientation).encode())
-                    else applyMapLook(d, MapLook.parse(d.prefs.mapLook.orEmpty()).copy(orientation = orientation))
-                }
+                // La orientación es una sola para todos los mapas (la de Ajustes): la brújula la cambia ahí.
+                if (route == null && granted) MapCompass(camera, size = 48.dp) { applyMapLook(d, look.copy(orientation = it)) }
                 IconButton(Icons.close, close, size = 48.dp, background = c.surface.copy(alpha = 0.9f))
             }
             // Acercar y alejar con un toque (en pantallas de auto el pellizco falla). Con la ruta el zoom es el que la enseña
@@ -293,6 +293,12 @@ fun MapExpanded(
             if (route == null && granted) Column(
                 Modifier.align(Alignment.CenterEnd).padding(end = 12.dp), verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
+                // Sin lugar elegido: con un lugar, su tarjeta ya lleva lo que se hace con él.
+                if (selected == null) IconButton(
+                    Icons.markPlace, { marking = !marking }, size = 48.dp,
+                    background = if (marking) c.accent else c.surface.copy(alpha = 0.9f), color = if (marking) c.onPrimary else c.accent,
+                    label = stringResource(R.string.map_mark),
+                )
                 IconButton(
                     Icons.plus, { camera.zoomBy(1) }, size = 48.dp, background = c.surface.copy(alpha = 0.9f), color = c.text,
                     label = stringResource(R.string.map_zoom_near),
@@ -302,6 +308,11 @@ fun MapExpanded(
                     label = stringResource(R.string.map_zoom_far),
                 )
             }
+            if (marking) Button(
+                stringResource(R.string.map_mark_here),
+                { aim.center()?.let { (lat, lon) -> marking = false; pick(pointHit(null, lat, lon)) } },
+                Modifier.align(Alignment.BottomCenter).padding(bottom = 16.dp), primary = true,
+            )
             val cardModifier = Modifier.align(Alignment.BottomStart).padding(start = 12.dp, end = 12.dp, bottom = 12.dp).widthIn(max = CARD_MAX)
             val request = routing
             if (selected != null && !search.focused) {
@@ -314,6 +325,26 @@ fun MapExpanded(
         }
     }
 }
+
+/** La mira de «Marcar aquí»: una cruz con un hueco al centro, con orilla para verse en mapa claro u oscuro. */
+@Composable
+private fun Crosshair(modifier: Modifier) {
+    val accent = LocalColors.current.accent
+    Canvas(modifier.size(CROSSHAIR)) {
+        val mid = center
+        val gap = size.minDimension * 0.14f
+        val arm = size.minDimension / 2
+        for ((color, width) in listOf(Color.Black.copy(alpha = 0.45f) to 5.dp.toPx(), accent to 2.5.dp.toPx())) {
+            drawLine(color, mid.copy(x = mid.x - arm), mid.copy(x = mid.x - gap), width)
+            drawLine(color, mid.copy(x = mid.x + gap), mid.copy(x = mid.x + arm), width)
+            drawLine(color, mid.copy(y = mid.y - arm), mid.copy(y = mid.y - gap), width)
+            drawLine(color, mid.copy(y = mid.y + gap), mid.copy(y = mid.y + arm), width)
+            drawCircle(color, width * 0.8f, mid)
+        }
+    }
+}
+
+private val CROSSHAIR = 44.dp
 
 /** Lo más ancho de la tarjeta del lugar o de la ruta. */
 private val CARD_MAX = 460.dp
@@ -368,6 +399,7 @@ private fun LiveMap(
     route: IntArray? = null,
     fixedZoom: Int? = null,
     focus: Rect? = null,
+    aim: MapAim? = null,
 ) {
     val c = LocalColors.current
     KeepTripRunning(d.trip)
@@ -389,12 +421,12 @@ private fun LiveMap(
         MapCanvas(
             store, position.latitude, position.longitude, d.trip.bearing, kmh, look, Modifier.fillMaxSize(), camera, navigating,
             active = active, onTap = onTap, pin = pin, onLongPress = onLongPress, route = route, fixedZoom = fixedZoom, focus = focus,
+            aim = aim,
         )
         // Con la tarjeta de un lugar abajo a la izquierda, lo de aquí estorba (al cerrarla vuelve a ti).
         if (!overlay) return@BoxWithConstraints
         // Abajo a la izquierda (a la derecha van los créditos): centrar si lo moviste, la calle y si es en línea o bajado.
-        val offline = look.detail == MapDetail.MINIMAL &&
-            (MapPacks.get(context).covers(position.latitude, position.longitude) || OfflineMaps.get(context).covers(position.latitude, position.longitude))
+        val offline = MapPacks.get(context).covers(position.latitude, position.longitude) || OfflineMaps.get(context).covers(position.latitude, position.longitude)
         // Angosto, los créditos ocupan dos renglones a lo ancho: lo de la izquierda va arriba de ellos y sin el estado.
         val narrow = maxWidth < NARROW_MAP
         val showStatus = maxHeight >= STATUS_HEIGHT && !narrow
@@ -430,8 +462,7 @@ internal fun MapBackdrop(d: Dependencies, focus: Rect?, car: CarPackage?, covere
     val c = LocalColors.current
     // Con algo en grande encima el fondo no se dibuja: tampoco hace falta el GPS.
     if (!covered) KeepTripRunning(d.trip)
-    val raw = d.prefs.mapLook
-    val look = remember(raw) { MapLook.parse(raw.orEmpty()) }
+    val look = rememberMapLook(d)
     val store = rememberTileStore(look, c.dark, BACKDROP_KEY)
     val camera = sharedMapCamera(BACKDROP_KEY)
     val position = d.trip.position ?: return
@@ -553,21 +584,21 @@ private val NARROW_MAP = 320.dp
 private val MAP_USER_AGENT = "LiteDash/${BuildConfig.VERSION_NAME} (+https://litedash.dev)"
 
 /**
- * Las teselas de [look], bajando solo mientras se ve y nada lo tapa: una por fuente y, solo el minimalista (se
- * dibuja ya en sus colores), por claro u oscuro; el completo usa un filtro. Con [shareKey] (el id del widget), el
- * widget y su mapa en grande usan el mismo almacén: al abrirlo o cerrarlo las teselas ya están.
+ * Las teselas de [look], bajando solo mientras se ve y nada lo tapa: unas claras y otras oscuras (se dibujan ya en sus
+ * colores). Con [shareKey] (el id del widget), el widget y su mapa en grande usan el mismo almacén: al abrirlo o
+ * cerrarlo las teselas ya están.
  */
 @Composable
 internal fun rememberTileStore(look: MapLook, themeDark: Boolean, shareKey: String? = null, realRoadDp: Float = 0f): TileStore {
     val context = LocalContext.current
     val density = LocalDensity.current.density
-    val darkTiles = look.detail == MapDetail.MINIMAL && look.dark(themeDark)
-    val store = remember(look.detail, darkTiles, shareKey, realRoadDp) {
-        if (shareKey == null) return@remember newTileStore(context, look.detail, darkTiles, density)
-        val kind = "${look.detail}/$darkTiles/$density/$realRoadDp"
-        // Uno por widget: al cambiar de estilo o de tema, el anterior se suelta.
+    val darkTiles = look.dark(themeDark)
+    val store = remember(darkTiles, shareKey, realRoadDp) {
+        if (shareKey == null) return@remember newTileStore(context, darkTiles, density)
+        val kind = "$darkTiles/$density/$realRoadDp"
+        // Uno por widget: al cambiar de colores o de tema, el anterior se suelta.
         tileStores[shareKey]?.takeIf { it.first == kind }?.second
-            ?: newTileStore(context, look.detail, darkTiles, density, realRoadDp).also { tileStores[shareKey] = kind to it }
+            ?: newTileStore(context, darkTiles, density, realRoadDp).also { tileStores[shareKey] = kind to it }
     }
     // Tapado por su propio mapa en grande no cuenta como tapado: se rige por lo que tape a ese (comparten almacén).
     val covered = expandedMap?.takeIf { shareKey != null && it.tileId == shareKey }?.covered ?: LocalHomeCovered.current
@@ -579,42 +610,49 @@ internal fun rememberTileStore(look: MapLook, themeDark: Boolean, shareKey: Stri
     return store
 }
 
-/** El almacén de cada widget Mapa (por su id) y de qué estilo es. */
+/** El almacén de cada widget Mapa (por su id) y de qué colores es. */
 private val tileStores = HashMap<String, Pair<String, TileStore>>()
 
-private fun newTileStore(context: Context, detail: MapDetail, dark: Boolean, density: Float, realRoadDp: Float = 0f): TileStore {
-    val source = when (detail) {
-        MapDetail.FULL -> OsmTiles
-        MapDetail.MINIMAL -> minimalTiles(context, dark, density, realRoadDp)
-    }
-    return TileStore(context, MAP_USER_AGENT, source)
-}
+private fun newTileStore(context: Context, dark: Boolean, density: Float, realRoadDp: Float = 0f): TileStore =
+    TileStore(context, MAP_USER_AGENT, minimalTiles(context, dark, density, realRoadDp))
 
 /** Las teselas del minimalista (claras u oscuras), a la medida de la pantalla. */
 private fun minimalTiles(context: Context, dark: Boolean, density: Float, realRoadDp: Float = 0f) =
     VectorTiles(context, if (dark) MinimalPalette.DARK else MinimalPalette.LIGHT, tilePx(density).toInt(), density, MAP_USER_AGENT, realRoadDp)
 
-/** Personalizar mapa: estilo, orientación, zoom y colores de este widget, con el mapa en vivo como vista previa. */
+/**
+ * El aspecto del mapa de LiteDash (Ajustes → Apps → Navegación): uno solo para todos los widgets Mapa, el mapa en grande
+ * y el de fondo.
+ */
 @Composable
-fun CustomizeMapPanel(d: Dependencies, tileId: String, close: () -> Unit) {
-    val tile = d.dashboard.tiles.firstOrNull { it.id == tileId }
-    if (tile == null) {
+private fun rememberMapLook(d: Dependencies): MapLook {
+    val raw = d.prefs.mapLook
+    return remember(raw) { MapLook.parse(raw.orEmpty()) }
+}
+
+/**
+ * Personalizar mapa (el engrane del widget): el mapa en vivo y atajos a lo que vale para todos los mapas, en Ajustes →
+ * Apps → Navegación: el aspecto ([openLook]) y Sin conexión ([openOffline]).
+ */
+@Composable
+fun CustomizeMapPanel(d: Dependencies, tileId: String, close: () -> Unit, openLook: () -> Unit, openOffline: () -> Unit) {
+    if (d.dashboard.tiles.none { it.id == tileId }) {
         // Cerrar escribe estado: fuera de la composición.
         LaunchedEffect(Unit) { close() }
         return
     }
-    val look = MapLook.parse(tile.data)
-    fun set(new: MapLook) = d.dashboard.setData(tileId, new.encode())
+    val c = LocalColors.current
+    val look = rememberMapLook(d)
     val (granted, _) = rememberGpsPermission(d)
     PanelScaffold(stringResource(R.string.map_customize), close) {
         WidgetPanelLayout(
             // Las mismas teselas que el widget (no se bajan dos veces), con su propia cámara: moverla no mueve el widget.
             preview = { m -> if (granted) Card(m) { LiveMap(d, look, Modifier.fillMaxSize(), tileId, ownCamera = true) } },
             options = { m ->
-                Column(m.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                    MapLookOptions(look, ::set)
-                    OfflineSection(d, look.detail)
-                    Box(Modifier.height(12.dp))
+                Column(m, verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                    Label(stringResource(R.string.map_customize_help), Typography.small, c.textMuted)
+                    Button(stringResource(R.string.map_tab_style), openLook, Modifier.fillMaxWidth())
+                    Button(stringResource(R.string.map_offline), openOffline, Modifier.fillMaxWidth())
                 }
             },
         )
@@ -622,12 +660,12 @@ fun CustomizeMapPanel(d: Dependencies, tileId: String, close: () -> Unit) {
 }
 
 /**
- * Ajustes → Apps → Navegación → Mapa de LiteDash: las mismas opciones que el panel de un widget, para todos los
- * widgets Mapa y el mapa en grande ([applyMapLook]), con el mapa en vivo como vista previa.
+ * Ajustes → Apps → Navegación → Aspecto del mapa: el único lugar del aspecto, para todos los widgets Mapa y el mapa en
+ * grande ([applyMapLook]), con el mapa en vivo como vista previa.
  */
 @Composable
 internal fun MapLookSettings(d: Dependencies) {
-    val look = MapLook.parse(d.prefs.mapLook.orEmpty())
+    val look = rememberMapLook(d)
     val (granted, _) = rememberGpsPermission(d)
     val options = @Composable { m: Modifier ->
         Column(m, verticalArrangement = Arrangement.spacedBy(14.dp)) { MapLookOptions(look) { applyMapLook(d, it) } }
@@ -649,47 +687,32 @@ internal fun MapLookSettings(d: Dependencies) {
 }
 
 /**
- * Ajustes → Apps → Navegación → Sin conexión (con el estilo que tenga el mapa de LiteDash). Abajo, siempre (también a
- * quien viaja), pedir el mapa de otro país: [requestMap] abre el reporte ya elegido. Mientras llega la primera lista de
- * mapas ([OfflineSection] la pide), no se puede pedir país.
+ * Ajustes → Apps → Navegación → Sin conexión. Abajo, siempre (también a quien viaja), pedir el mapa de otro país:
+ * [requestMap] abre el reporte ya elegido. Mientras llega la primera lista de mapas ([OfflineSection] la pide), no se
+ * puede pedir país.
  */
 @Composable
 internal fun MapOfflineSettings(d: Dependencies, requestMap: () -> Unit) {
     val context = LocalContext.current
     val packs = remember { MapPacks.get(context) }
-    OfflineSection(d, MapLook.parse(d.prefs.mapLook.orEmpty()).detail)
+    OfflineSection(d)
     val listLoading = packs.regions.isEmpty() && packs.indexState == IndexState.LOADING
     Button(stringResource(R.string.map_request_country), requestMap, enabled = !listLoading)
 }
 
-/**
- * El aspecto de LiteDash: se guarda y se pone en los widgets Mapa del inicio (de todas las páginas) que siguen el de
- * Ajustes; el que se cambió aparte desde su engrane conserva lo suyo.
- */
+/** Guarda el aspecto del mapa: todos los mapas de LiteDash lo leen de aquí ([rememberMapLook]). */
 private fun applyMapLook(d: Dependencies, look: MapLook) {
-    val before = MapLook.parse(d.prefs.mapLook.orEmpty())
-    val data = look.encode()
-    d.prefs.mapLook = data.ifEmpty { null }
-    d.dashboard.changeDataEverywhere { if (it.type == TileTypes.MAP && followsSettings(it.data, before)) data else null }
+    d.prefs.mapLook = look.encode().ifEmpty { null }
 }
-
-/** ¿El widget Mapa con [data] sigue el aspecto de Ajustes ([settings])? (Si es distinto, se cambió aparte.) */
-internal fun followsSettings(data: String, settings: MapLook): Boolean = MapLook.parse(data) == settings
 
 /** Ancho desde el que la vista previa de Ajustes va a un lado de las opciones. */
 private val SETTINGS_SIDE_BY_SIDE = 640.dp
 private val SETTINGS_PREVIEW_HEIGHT = 340.dp
 
-/** Las opciones del aspecto (las comparten el panel de un widget y Ajustes). */
+/** Las opciones del aspecto. */
 @Composable
 private fun MapLookOptions(look: MapLook, set: (MapLook) -> Unit) {
     val c = LocalColors.current
-    Label(stringResource(R.string.map_detail), Typography.label, c.textMuted)
-    Segmented(
-        listOf(MapDetail.MINIMAL to stringResource(R.string.map_detail_minimal), MapDetail.FULL to stringResource(R.string.map_detail_full)),
-        look.detail, { set(look.copy(detail = it)) },
-    )
-    Label(stringResource(if (look.detail == MapDetail.FULL) R.string.map_detail_full_help else R.string.map_detail_minimal_help), Typography.small, c.textMuted)
     Label(stringResource(R.string.map_orientation), Typography.label, c.textMuted)
     Segmented(
         listOf(
@@ -715,14 +738,13 @@ private fun MapLookOptions(look: MapLook, set: (MapLook) -> Unit) {
 }
 
 /**
- * Sin conexión: por estado (con cualquier estilo: la ruta y la búsqueda lo usan siempre) o por zona: las zonas guardadas
+ * Sin conexión: por estado (el mapa, la ruta y la búsqueda) o por zona (solo el mapa): las zonas guardadas
  * (tocar una la muestra en el mapa, con Volver a bajar y Borrar); el radio y un mapa con su círculo para elegir la zona
- * (se arrastra; «Mi ubicación» regresa), su tamaño aproximado y lo libre; mientras baja, el avance y Cancelar. Las zonas
- * solo con el minimalista (OSM no deja bajar en bloque). Al abrir, la lista de mapas se pide si tiene más de una hora
- * (para ver los países recién publicados), igual en Ajustes que en el panel de un widget.
+ * (se arrastra; «Mi ubicación» regresa), su tamaño aproximado y lo libre; mientras baja, el avance y Cancelar. Al abrir,
+ * la lista de mapas se pide si tiene más de una hora (para ver los países recién publicados).
  */
 @Composable
-private fun OfflineSection(d: Dependencies, detail: MapDetail) {
+private fun OfflineSection(d: Dependencies) {
     val c = LocalColors.current
     Label(stringResource(R.string.map_offline), Typography.label, c.textMuted)
     KeepTripRunning(d.trip)
@@ -750,13 +772,7 @@ private fun OfflineSection(d: Dependencies, detail: MapDetail) {
         { picked = it },
     )
     if (!byZone) {
-        // Con el estilo Completo el dibujo es de internet: el estado bajado sirve para buscar y para la ruta.
-        if (detail != MapDetail.MINIMAL) Label(stringResource(R.string.map_pack_full), Typography.small, c.textMuted)
         StatePackSection(d, packs)
-        return
-    }
-    if (detail != MapDetail.MINIMAL) {
-        Label(stringResource(R.string.map_offline_full), Typography.small, c.textMuted)
         return
     }
     Label(stringResource(R.string.map_offline_help), Typography.small, c.textMuted)
@@ -829,8 +845,6 @@ private fun StatePackSection(d: Dependencies, packs: MapPacks) {
     val locale = currentLocale()
     val language = locale.language
     Label(stringResource(R.string.map_pack_help), Typography.small, c.textMuted)
-    // Siempre a la vista: donde aún no hay mapa del estado, las zonas sirven en cualquier parte.
-    Label(stringResource(R.string.map_pack_tip), Typography.small, c.accent)
     if (packs.regions.isEmpty()) {
         when (packs.indexState) {
             IndexState.LOADING -> Label(stringResource(R.string.map_list_loading), Typography.small, c.textMuted)

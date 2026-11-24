@@ -1,9 +1,6 @@
 package com.irvingguerra.litedash
 
 import com.irvingguerra.litedash.feature.apps.normalize
-import com.irvingguerra.litedash.feature.map.MapDetail
-import com.irvingguerra.litedash.feature.map.MapLook
-import com.irvingguerra.litedash.feature.map.MapOrientation
 import com.irvingguerra.litedash.feature.map.MapRegion
 import com.irvingguerra.litedash.feature.map.PackFile
 import org.junit.Assert.assertFalse
@@ -30,14 +27,5 @@ class MapSettingsTest {
         assertTrue(finds(spanish, "Canadá"))
         assertTrue(finds(spanish, "canada"))
         assertFalse(finds(spanish, "brasil"))
-    }
-
-    @Test
-    fun onlyWidgetsThatFollowSettingsChangeWithThem() {
-        val settings = MapLook(detail = MapDetail.FULL)
-        assertTrue(followsSettings(settings.encode(), settings))
-        assertFalse(followsSettings(MapLook(orientation = MapOrientation.HEADING).encode(), settings))
-        // De fábrica (sin nada guardado) sigue a lo de fábrica.
-        assertTrue(followsSettings("", MapLook()))
     }
 }

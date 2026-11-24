@@ -447,10 +447,16 @@ private fun PlaceRow(d: Dependencies, hit: SearchHit, words: List<String>, icon:
     }
 }
 
-/** "Calle · Colonia Roma" / "Gasolinera · Centro": qué es y dónde (con internet, la dirección si no hay colonia). */
+/**
+ * "Calle · Colonia Roma" / "Gasolinera · Centro": su otro nombre si lo trae (en inglés o en letras latinas: «Mexico City»),
+ * qué es y dónde (con internet, la dirección si no hay colonia).
+ */
 @Composable
 private fun placeDetail(hit: SearchHit): String =
-    listOfNotNull(placeKind(hit), hit.locality ?: hit.address).filter { it.isNotEmpty() }.joinToString(" · ")
+    listOfNotNull(otherName(hit), placeKind(hit), hit.locality ?: hit.address).filter { it.isNotEmpty() }.joinToString(" · ")
+
+/** El otro nombre del lugar ([SearchHit.alt]) si dice algo distinto del nombre. */
+private fun otherName(hit: SearchHit): String? = hit.alt?.takeIf { it.isNotBlank() && !it.equals(hit.name, ignoreCase = true) }
 
 /** Qué es un lugar en palabras, o null si no se sabe (un lugar cualquiera). */
 @Composable
@@ -544,7 +550,7 @@ internal fun PlaceCard(
         Row(verticalAlignment = Alignment.Top) {
             Column(Modifier.weight(1f)) {
                 Label(hit.name.ifEmpty { stringResource(R.string.search_point) }, Typography.title, maxLines = 2)
-                val detail = if (hit.name.isEmpty()) coords else listOfNotNull(placeKind(hit), hit.locality, hit.address).distinct().joinToString(" · ")
+                val detail = if (hit.name.isEmpty()) coords else listOfNotNull(otherName(hit), placeKind(hit), hit.locality, hit.address).distinct().joinToString(" · ")
                 if (detail.isNotEmpty()) Label(detail, Typography.small, c.textMuted, maxLines = 2, modifier = Modifier.padding(top = 2.dp))
             }
             IconButton(Icons.close, close, size = 36.dp, color = c.textMuted, label = stringResource(R.string.search_clear))
@@ -557,15 +563,18 @@ internal fun PlaceCard(
                 Typography.small, c.textMuted, maxLines = 1, modifier = Modifier.padding(top = 8.dp),
             )
         }
+        // Con la lista llena no se agrega (antes se borraba el más viejo sin decir nada): el botón se apaga y abajo se dice por qué.
+        val full = remember(d.prefs.favoritePlaces) { placesFromJson(d.prefs.favoritePlaces).size >= MAX_FAVORITES }
         FlowRow(Modifier.padding(top = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Button(stringResource(R.string.route_button), onRoute, primary = true)
             if (appName != null) Button(stringResource(R.string.search_open_in, appName), onOpen)
-            // Con la lista llena no se agrega (antes se borraba el más viejo sin decir nada).
-            val full = remember(d.prefs.favoritePlaces) { placesFromJson(d.prefs.favoritePlaces).size >= MAX_FAVORITES }
             Button(stringResource(if (favorite) R.string.search_unfavorite else R.string.search_favorite), { d.prefs.toggleFavorite(hit) }, enabled = favorite || !full)
             // Casa y Trabajo con sus coordenadas: el punto exacto (también los de internet) y lo entiende cualquier app de mapas.
             if (d.prefs.homeAddress != coords) Button(stringResource(R.string.search_set_home), { d.prefs.homeAddress = coords })
             if (d.prefs.workAddress != coords) Button(stringResource(R.string.search_set_work), { d.prefs.workAddress = coords })
+        }
+        if (full && !favorite) {
+            Label(stringResource(R.string.search_favorites_full, MAX_FAVORITES), Typography.small, c.textMuted, maxLines = 2, modifier = Modifier.padding(top = 8.dp))
         }
     }
 }

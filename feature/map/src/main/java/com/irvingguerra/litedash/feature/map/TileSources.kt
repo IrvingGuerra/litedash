@@ -2,7 +2,6 @@ package com.irvingguerra.litedash.feature.map
 
 import android.content.Context
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.Path
@@ -26,13 +25,10 @@ interface TileSource {
     /** El cielo del mapa inclinado (ARGB); null = el gris claro u oscuro de siempre. */
     val sky: Int? get() = null
 
-    /** Las imágenes vienen claras: en modo oscuro se les aplica el filtro. */
-    val recolor: Boolean
-
     /** Pedir comprimido y guardarlo así (se descomprime al usarlo). */
     val gzip: Boolean
 
-    /** Lo más cerca que se puede ver (las de OSM llegan al 19; las vectoriales se dibujan a cualquier zoom). */
+    /** Lo más cerca que se puede ver (las vectoriales se dibujan a cualquier zoom). */
     val maxZoom: Int get() = MAX_ZOOM
 
     /** La tesela que hay que bajar para mostrar [key] (las vectoriales llegan hasta el zoom 14). */
@@ -49,12 +45,9 @@ interface TileSource {
 
     /**
      * Las calles con nombre de la tesela [origin] (ya leída para dibujarla), con su lado en unidades ([VectorTile.extent]);
-     * null = no se sabe (las imágenes de OSM ya traen los nombres dibujados).
+     * null = no se sabe.
      */
     fun names(origin: Long): TileNames? = null
-
-    /** Trae nombres de calles ([names]); sin ellos, el mapa ni los busca al dibujar. */
-    val hasNames: Boolean get() = false
 
     /** La tesela [origin] ya leída (para los edificios en 3D), sin leer nada; null = no está en memoria o no es vectorial. */
     fun parsed(origin: Long): VectorTile? = null
@@ -65,23 +58,6 @@ interface TileSource {
 
 /** Las calles con nombre de una tesela y el lado de la tesela en sus unidades. */
 class TileNames(val extent: Int, val roads: List<RoadName>)
-
-/** Las teselas de OpenStreetMap ya dibujadas (con todo: calles, negocios, nombres). */
-object OsmTiles : TileSource {
-    override val folder = "map_tiles"
-    override val attribution = "© OpenStreetMap"
-    override val recolor = true
-    override val gzip = false
-    override val maxZoom = 19
-
-    override fun url(origin: Long) = "https://tile.openstreetmap.org/${keyZ(origin)}/${keyX(origin)}/${keyY(origin)}.png"
-
-    override fun decode(data: ByteArray, key: Long, origin: Long): ImageBitmap? {
-        // Las teselas no traen transparencia: a 16 bits ocupan la mitad.
-        val options = BitmapFactory.Options().apply { inPreferredConfig = Bitmap.Config.RGB_565 }
-        return BitmapFactory.decodeByteArray(data, 0, data.size, options)?.asImageBitmap()
-    }
-}
 
 /**
  * El mapa minimalista: los datos de OpenFreeMap (vectoriales, esquema OpenMapTiles, sin cuenta; para ver el mapa no
@@ -106,7 +82,6 @@ class VectorTiles(
     override val attribution = "OpenFreeMap © OpenMapTiles © OpenStreetMap"
     override val attributionShort = "© OpenMapTiles © OpenStreetMap"
     override val sky = palette.background
-    override val recolor = false
     override val gzip = true
 
     /**
@@ -120,8 +95,6 @@ class VectorTiles(
     private val names = LruCache<Long, TileNames>(NAMES_KEPT)
 
     override fun names(origin: Long): TileNames? = names.get(origin)
-
-    override val hasNames get() = true
 
     override fun parsed(origin: Long): VectorTile? = parsed.get(origin)
 

@@ -29,8 +29,8 @@ import kotlinx.coroutines.launch
 
 /**
  * Las teselas del mapa de [source]: memoria (LRU por bytes que siempre cabe lo que se ve), disco
- * (`filesDir/<carpeta>`, ~25 MB por estilo: entre los dos ~50 MB) y red, siguiendo la política de uso de OSM
- * (operations.osmfoundation.org/policies/tiles; OpenFreeMap pide lo mismo): User-Agent propio, caché
+ * (`filesDir/<carpeta>`, ~25 MB por estilo) y red, siguiendo la política de uso de OpenFreeMap
+ * (como la de operations.osmfoundation.org/policies/tiles): User-Agent propio, caché
  * según Cache-Control/Expires con revalidación (ETag/If-Modified-Since), a lo más [MAX_DOWNLOADS]
  * descargas a la vez, solo lo que se ve (lo último que se pidió va primero) y parar si nos bloquean.
  * Solo trabaja entre [resume] y [pause] (el mapa a la vista y la app al frente).
@@ -38,7 +38,7 @@ import kotlinx.coroutines.launch
 class TileStore(context: Context, private val userAgent: String, val source: TileSource) {
     private val app = context.applicationContext
     private val dir = File(app.filesDir, source.folder)
-    /** Las zonas descargadas (solo el minimalista: OSM no deja bajar en bloque). */
+    /** Las zonas descargadas. */
     private val offline = if (source is VectorTiles) OfflineMaps.get(app) else null
     /** Los mapas de estado bajados (mismo esquema que el minimalista): van antes que las zonas. */
     private val packs = if (source is VectorTiles) MapPacks.get(app) else null
@@ -298,7 +298,7 @@ class TileStore(context: Context, private val userAgent: String, val source: Til
             val image = decode(tile.body, key, origin)
             when {
                 image != null -> Loaded(image, 0L)
-                // Vacía (204/404): el minimalista la dibuja lisa; las de OSM no tienen qué mostrar hasta que caduque.
+                // Vacía (204/404): el minimalista la dibuja lisa.
                 tile.body.isEmpty() -> Loaded(null, maxOf(tile.expires, now + RETRY_MS))
                 else -> {
                     // Sin ETag para que el servidor no conteste 304 con lo mismo (una vez: si ya estaba así, se queda).

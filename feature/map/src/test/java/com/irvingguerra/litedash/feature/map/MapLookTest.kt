@@ -14,15 +14,15 @@ class MapLookTest {
 
     @Test
     fun roundTrip() {
-        val look = MapLook(MapOrientation.HEADING, MapZoom.MID, MapStyle.DARK, MapDetail.FULL)
+        val look = MapLook(MapOrientation.HEADING, MapZoom.MID, MapStyle.DARK)
         assertEquals(look, MapLook.parse(look.encode()))
         assertEquals(16, MapZoom.MID.level)
         // El inclinado ya no es opción (1.4.157): lo guardado antes se lee como plano.
         assertEquals(MapLook(), MapLook.parse("view=tilted"))
         assertEquals(true, MapLook(style = MapStyle.THEME).dark(themeDark = true))
         assertEquals(false, MapLook(style = MapStyle.LIGHT).dark(themeDark = true))
-        // De fábrica el minimalista; lo guardado como minimalista (1.4.68–1.4.70) se sigue leyendo igual.
-        assertEquals(MapDetail.MINIMAL, MapLook.parse("").detail)
-        assertEquals(MapDetail.MINIMAL, MapLook.parse("detail=minimal").detail)
+        // El mapa «Completo» ya no existe (después de la 1.5.15): lo guardado con él se lee como el minimalista, con lo demás igual.
+        assertEquals(MapLook(), MapLook.parse("detail=minimal"))
+        assertEquals(MapLook(zoom = MapZoom.FAR), MapLook.parse("detail=full;zoom=far"))
     }
 }

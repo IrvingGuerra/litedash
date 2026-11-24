@@ -37,8 +37,6 @@ import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.graphics.ColorMatrix
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.input.pointer.PointerInputChange
 import androidx.compose.ui.input.pointer.PointerInputScope
@@ -134,7 +132,7 @@ fun tilePx(density: Float) = TILE * density.coerceIn(1f, 2f)
 /** Abajo de este ancho los créditos van en su versión corta. */
 private val SHORT_ATTRIBUTION = 320.dp
 
-/** Los créditos llevan aquí (lo pide la licencia de los datos de OpenStreetMap, que usan las dos fuentes). */
+/** Los créditos llevan aquí (lo pide la licencia de los datos de OpenStreetMap). */
 private const val ATTRIBUTION_URL = "https://www.openstreetmap.org/copyright"
 
 /** El zoom con fracción mientras se pellizca: el nivel de teselas y cuánto se agranda ([MapCamera.scale]). */
@@ -164,7 +162,7 @@ internal fun tiltFor(z: Float, driveZoom: Int): Float = (z - (driveZoom - 1)).co
 /**
  * Lo que la app ve del mapa y le puede pedir: si lo moviste con el dedo ([centered] = false; de viaje vuelve solo tras
  * [RECENTER_MS] sin tocarlo; [recenter] te regresa al zoom de fábrica), mirar otro lugar ([lookAt]) y la calle donde
- * estás ([street], solo con el minimalista). El widget y su mapa en grande comparten cámara: el zoom y el regreso a ti
+ * estás ([street]). El widget y su mapa en grande comparten cámara: el zoom y el regreso a ti
  * los anima uno solo, y lo que llega (los dedos o una animación nueva) detiene a lo anterior donde iba.
  */
 @Stable
@@ -375,7 +373,7 @@ class MapCamera(
     fun center(lat: Double, lon: Double): Pair<Double, Double> =
         tileLat(tileY(lat, 0) + panY, 0) to tileLon(tileX(lon, 0) + panX, 0)
 
-    /** La calle donde estás; null = no se sabe (lejos de una calle con nombre o con el mapa completo). */
+    /** La calle donde estás; null = no se sabe (lejos de una calle con nombre). */
     var street by mutableStateOf<String?>(null)
         internal set
 }
@@ -393,8 +391,8 @@ fun rememberFreeMapCamera() = remember { MapCamera(maxPan = FREE_PAN, returns = 
  * plano (norte arriba o hacia donde vas, según [look]) un nivel más lejos, y «centrar» o empezar un viaje (andando a
  * [DRIVE_KMH] o más, o con Waze/Maps navegando: [navigating]) lo regresan. El zoom es continuo: las teselas se
  * agrandan o achican entre un nivel y otro, y mientras llegan las nuevas se ven las del nivel anterior.
- * Con un dedo se mueve ([camera]), un toque hace [onTap] y colores claros u oscuros: las de
- * OpenStreetMap se oscurecen con un filtro; el minimalista ya viene en sus colores y con los nombres de las calles.
+ * Con un dedo se mueve ([camera]), un toque hace [onTap] y colores claros u oscuros (las teselas ya vienen en sus
+ * colores y con los nombres de las calles).
  * Tu flecha se desliza entre una lectura del GPS y la siguiente. Para elegir una zona: [fixedZoom] (sin gestos de
  * zoom ni viaje) y [ringKm], un círculo de ese radio alrededor del centro.
  * Solo el mapa [active] trabaja: tapado (por el mapa en grande u otra vista) no pide teselas, no anima ni busca la
@@ -427,6 +425,8 @@ fun MapCanvas(
     pin: Pair<Double, Double>? = null,
     /** Dejar presionado un punto del mapa: su latitud y longitud (null = nada). */
     onLongPress: ((Double, Double) -> Unit)? = null,
+    /** Para marcar con la mira: dice qué punto queda al centro de la vista (null = no hace falta). */
+    aim: MapAim? = null,
     /** Una ruta que se dibuja (pares lat, lon en millonésimas de grado, [Route.points]); null = ninguna. */
     route: IntArray? = null,
     /** Lo ya recorrido de la ruta (punto + fracción hacia el siguiente): se dibuja en gris. */
@@ -474,7 +474,6 @@ fun MapCanvas(
         if (active) camera.animateRecenter(base, driveZoom, zooms = fixedZoom == null) { shown.gone || !activeNow }
     }
     val dark = look.dark(c.dark)
-    val filter = if (dark && store.source.recolor) DarkTiles else null
     val accent = c.accent
     val glide = rememberGlide(lat, lon, bearing, active, creeping = kmh != null && kmh < CREEP_KMH)
     // Con tu auto en vez de la flecha, siempre gira el mapa: el auto va de espaldas hacia arriba y no se gira.
@@ -507,6 +506,10 @@ fun MapCanvas(
     }
     // Lo que se dibuja, armado una vez y reusado; con su última proyección un arrastre se vuelve movimiento del mapa.
     val frame = remember { MapFrame() }
+    if (aim != null) DisposableEffect(aim, frame) {
+        aim.frame = frame
+        onDispose { if (aim.frame === frame) aim.frame = null }
+    }
     // Lo que se ve se pide al almacén cuando cambia, fuera del dibujo; tapado o fuera de la vista, deja de pedirse.
     LaunchedEffect(store, active) {
         if (!active) return@LaunchedEffect
@@ -554,18 +557,12 @@ fun MapCanvas(
     // La calle donde estás: al moverte o cuando llegan los nombres de tu tesela (no con cada tesela).
     LaunchedEffect(store, lat, lon, active) {
         if (!active) return@LaunchedEffect
-        // El mapa completo no trae nombres: no se sabe.
-        if (!store.source.hasNames) {
-            camera.street = null
-            return@LaunchedEffect
-        }
         val origin = tileKey(DATA_ZOOM, tileX(lon, DATA_ZOOM).toInt(), tileY(lat, DATA_ZOOM).toInt())
         snapshotFlow { store.loaded.let { store.source.names(origin) } }.distinctUntilChanged().collect { names ->
             camera.street = names?.let { nearestStreet(origin, it, lat, lon) }
         }
     }
     val labelColor = if (dark) Color(0xFFC3C6CD) else Color(0xFF4E535C)
-    val names = store.source.takeIf { it.hasNames }
     // Un toque: lo que diga [onTap] (en el widget, verlo en grande o abrir tu app de mapas).
     val tap = if (onTap != null) Modifier.clickable(onClick = onTap) else Modifier
     val longPress by rememberUpdatedState(onLongPress)
@@ -609,7 +606,7 @@ fun MapCanvas(
                         size.width, size.height, density, atX, atY, turn, tilt,
                         // El centro del mapa: tú, o a donde lo moviste.
                         tileX(pose.lon, zoom) + panX * n, tileY(pose.lat, zoom) + panY * n, zoom, ts, panX, panY,
-                        names, tilePx(density), frame.textPaint(12.sp.toPx(), labelColor, sky),
+                        store.source, tilePx(density), frame.textPaint(12.sp.toPx(), labelColor, sky),
                         // Siempre flecha: hacia arriba con el mapa girado, o con el último rumbo (sin rumbo aún, al norte).
                         sky, bearing + turn, ringKm, if (ringKm == null) 0.0 else tileLat(tileY(pose.lat, 0) + panY, 0),
                         pin?.let { tileX(it.second, zoom) } ?: Double.NaN, pin?.let { tileY(it.first, zoom) } ?: Double.NaN,
@@ -619,7 +616,7 @@ fun MapCanvas(
                         store.source.takeIf { routeWidth != null },
                     )
                 }
-                onDrawBehind { frame.draw(this, store, filter, accent, marker, focus) }
+                onDrawBehind { frame.draw(this, store, accent, marker, focus) }
             },
         )
         val credits = if (short) store.source.attributionShort else store.source.attribution
@@ -820,20 +817,13 @@ private fun Attribution(text: String, modifier: Modifier) {
     )
 }
 
-/**
- * Mapa claro → oscuro, como el `darken()` de StradaOS: invierte, gira el tono 180° (el agua
- * sigue azul y los parques verdes, el texto queda claro) y aclara un poco.
- */
-private val DarkTiles: ColorFilter by lazy {
-    val m = android.graphics.ColorMatrix(floatArrayOf(-1f, 0f, 0f, 0f, 255f, 0f, -1f, 0f, 0f, 255f, 0f, 0f, -1f, 0f, 255f, 0f, 0f, 0f, 1f, 0f))
-    m.postConcat(android.graphics.ColorMatrix(floatArrayOf(
-        -0.574f, 1.43f, 0.144f, 0f, 0f,
-        0.426f, 0.43f, 0.144f, 0f, 0f,
-        0.426f, 1.43f, -0.856f, 0f, 0f,
-        0f, 0f, 0f, 1f, 0f,
-    )))
-    m.postConcat(android.graphics.ColorMatrix(floatArrayOf(0.8f, 0f, 0f, 0f, 40f, 0f, 0.8f, 0f, 0f, 40f, 0f, 0f, 0.84f, 0f, 44f, 0f, 0f, 0f, 1f, 0f)))
-    ColorFilter.colorMatrix(ColorMatrix(m.array))
+/** La mira de «Marcar aquí»: qué punto del mapa queda al centro de la vista (lo llena el [MapCanvas] que la recibe). */
+@Stable
+class MapAim {
+    internal var frame: MapFrame? = null
+
+    /** El punto al centro (latitud, longitud); null = el mapa aún no se dibuja. */
+    fun center(): Pair<Double, Double>? = frame?.centerLatLon()
 }
 
 /** Desde esta inclinación, con Automático, el mapa ya mira hacia donde vas (para la brújula). */

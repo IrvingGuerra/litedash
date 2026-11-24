@@ -64,7 +64,6 @@ import com.irvingguerra.litedash.feature.map.GuidanceState
 import com.irvingguerra.litedash.feature.map.Maneuver
 import com.irvingguerra.litedash.feature.map.ManeuverType
 import com.irvingguerra.litedash.feature.map.MapCanvas
-import com.irvingguerra.litedash.feature.map.MapDetail
 import com.irvingguerra.litedash.feature.map.MapLook
 import com.irvingguerra.litedash.feature.map.MapOrientation
 import com.irvingguerra.litedash.feature.map.MapPacks
@@ -87,7 +86,8 @@ import kotlin.math.sin
 
 /**
  * La guía de LiteDash (M5): una pantalla aparte que tapa el inicio mientras manejas a [DriveSession.to]. Se entra con
- * «Ir» en la tarjeta de la ruta y se sale con «Terminar» (o atrás): regresas a donde estabas, sin tocar tu acomodo.
+ * «Ir» en la tarjeta de la ruta y se sale solo con «Terminar» (atrás, también el del volante, no la termina: un toque sin
+ * querer manejando la cerraba) o sola [ARRIVED_CLOSE_MS] después de llegar: regresas a donde estabas, sin tocar tu acomodo.
  */
 internal object Driving {
     var session by mutableStateOf<DriveSession?>(null)
@@ -141,7 +141,15 @@ internal fun DrivingScreen(d: Dependencies, session: DriveSession, revision: Int
     val scope = rememberCoroutineScope()
     KeepTripRunning(d.trip)
     val end = { Driving.session = null }
-    BackHandler(onBack = end)
+    // Atrás solo cierra lo de encima («Ver ruta»); nunca termina la guía (y no deja pasar el atrás al inicio de abajo).
+    BackHandler { session.overview = false }
+    // Al llegar se cierra sola un rato después (si no se terminó antes); si se vuelve a salir de la ruta, ya no.
+    val arrived = session.state?.arrived == true
+    LaunchedEffect(session, arrived) {
+        if (!arrived) return@LaunchedEffect
+        delay(ARRIVED_CLOSE_MS)
+        if (Driving.session === session) Driving.session = null
+    }
     val here = d.trip.position
     // Con cada lectura del GPS: dónde vas en la ruta y, si te saliste, una ruta nueva desde donde estás (en la pantalla).
     LaunchedEffect(session, here) {
@@ -219,9 +227,8 @@ internal fun DrivingScreen(d: Dependencies, session: DriveSession, revision: Int
 @Composable
 private fun CarView(d: Dependencies, session: DriveSession, modifier: Modifier) {
     val c = LocalColors.current
-    // Siempre el minimalista: el mapa completo (imágenes de OSM) no sabe dibujar calles a escala real.
     val look = remember(d.prefs.mapLook) {
-        MapLook.parse(d.prefs.mapLook.orEmpty()).copy(zoom = MapZoom.AUTO, orientation = MapOrientation.HEADING, detail = MapDetail.MINIMAL)
+        MapLook.parse(d.prefs.mapLook.orEmpty()).copy(zoom = MapZoom.AUTO, orientation = MapOrientation.HEADING)
     }
     val camera = rememberMapCamera()
     val marker = rememberRearMarker(d, d.cars.pkg(d.prefs.carModel))
@@ -242,11 +249,11 @@ private fun CarView(d: Dependencies, session: DriveSession, modifier: Modifier) 
                 route = session.route.points, routeDone = s?.let { it.point + it.fraction } ?: 0f, routeWidth = carDp.dp,
             )
         }
-        // La velocidad, grande, arriba a la izquierda (como la maqueta).
+        // La velocidad, grande, arriba a la izquierda (como la maqueta); sin dato, una raya (no «0»: parecería que vas parado).
         Column(Modifier.align(Alignment.TopStart).statusBarsPadding().padding(20.dp)) {
             val miles = d.prefs.units.miles
-            val speed = ((kmh ?: 0f) * if (miles) 0.621371f else 1f).toInt()
-            Label("$speed", Typography.clock.copy(fontSize = 52.sp, fontWeight = FontWeight.Bold), maxLines = 1)
+            val speed = kmh?.let { "${(it * if (miles) 0.621371f else 1f).toInt()}" } ?: NO_SPEED
+            Label(speed, Typography.clock.copy(fontSize = 52.sp, fontWeight = FontWeight.Bold), maxLines = 1)
             Label(stringResource(if (miles) R.string.unit_mph else R.string.unit_kmh), Typography.small, c.textMuted, maxLines = 1)
         }
     }
@@ -472,6 +479,12 @@ private fun Clock(modifier: Modifier) {
     val context = LocalContext.current
     Label(DateFormat.getTimeFormat(context).format(Date(rememberMinute())), Typography.subtitle, maxLines = 1, modifier = modifier)
 }
+
+/** Cuánto se queda abierta la guía después de «Llegaste». */
+private const val ARRIVED_CLOSE_MS = 30_000L
+
+/** La velocidad cuando no hay dato. */
+private const val NO_SPEED = "—"
 
 /** Los botones redondos de la orilla del mapa. */
 private val ROUND_BUTTON = 52.dp
