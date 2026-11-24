@@ -128,6 +128,8 @@ class LiteDashApp : Application() {
             override fun onRemoved(notification: StatusBarNotification) = dependencies.navigation.removed(notification)
         }
         watchUsbOffer()
+        // La caché del mapa «Completo» de OSM ya no se usa: se borra una vez, en otro hilo.
+        thread(name = "old-map-cache") { TileStore.dropRetiredCache(this) }
         // Un idioma bajado (el elegido o, con «Como el sistema», el del sistema) se pone al día solo (la lista se revisa a
         // lo más una vez al día). Los textos de la aplicación cambian al momento; la ventana abierta, al volver a crearse.
         val language = Language.read(this).ifBlank {

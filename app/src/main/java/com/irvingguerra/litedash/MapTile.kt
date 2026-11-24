@@ -34,6 +34,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
@@ -54,6 +55,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -840,8 +842,8 @@ private fun OfflineSection(d: Dependencies) {
 /**
  * El mapa de tu estado completo (M2): el de donde estás arriba (bajarlo, su avance, actualizarlo o borrarlo), luego los
  * que ya bajaste, el buscador (siempre a la vista: busca en todos los países, por el nombre del estado en varios idiomas o
- * por el del país) y los países en orden alfabético con sus estados al tocar uno. Sin lista, cómo conseguirla (y
- * Reintentar).
+ * por el del país; si es un país, primero el país con «Descargar completo» y sus estados) y unos cuantos países (con «Ver
+ * todos» para el resto) con el país completo y sus estados al tocar uno. Sin lista, cómo conseguirla (y Reintentar).
  */
 @Composable
 private fun StatePackSection(d: Dependencies, packs: MapPacks) {
@@ -879,11 +881,25 @@ private fun StatePackSection(d: Dependencies, packs: MapPacks) {
     TextInput(query, { query = it }, stringResource(R.string.map_pack_search), Modifier.fillMaxWidth(), icon = true)
     val q = normalize(query.trim())
     val shownIds = shown.map { it.id }.toSet()
+    val allCountries = remember(packs.catalog) { packs.catalog.map { it.country }.distinct() }
     if (q.isNotEmpty()) {
+        // Si es el nombre de un país: primero el país (con «Descargar completo») y todos sus estados.
+        val countryHits = remember(allCountries, q, locale) { countriesMatching(q, allCountries, locale) }
+        for (code in countryHits) key(code) {
+            LaunchedEffect(code) { packs.need(code, retry = false) }
+            CountryPackCard(packs, code, locale, free)
+            CountryLoading(packs, code)
+            val states = remember(packs.regions, code, shownIds, language) {
+                packs.regions.filter { it.country == code && it.id !in shownIds }.sortedBy { it.name(language) }
+            }
+            for (r in states) StatePackRow(packs, r, language, free)
+        }
         // Se busca en los nombres de todos los países; los datos de cada estado vienen con su país (índice por país): se
         // piden los países de lo encontrado, si no son demasiados (escribiendo más se acota).
         val keys = remember(packs.catalog, locale) { packs.catalog.associate { it.id to regionSearchKeys(it, locale) } }
-        val matches = remember(packs.catalog, q) { packs.catalog.filter { keys[it.id].orEmpty().any { k -> q in k } } }
+        val matches = remember(packs.catalog, q, countryHits) {
+            packs.catalog.filter { it.country !in countryHits && keys[it.id].orEmpty().any { k -> q in k } }
+        }
         LaunchedEffect(matches) {
             if (matches.size <= SEARCH_LOAD_MAX) matches.map { it.country }.distinct().forEach { packs.need(it, retry = false) }
         }
@@ -894,36 +910,149 @@ private fun StatePackSection(d: Dependencies, packs: MapPacks) {
         for (r in found) StatePackRow(packs, r, language, free)
         return
     }
-    // Los países que hay, siempre a la vista (escondidos, la gente pedía países que ya estaban), en orden alfabético. Al
-    // tocar uno, sus estados; sin nada arriba (no se sabe dónde estás ni has bajado nada) ya va abierto el tuyo, por la
-    // región del sistema.
-    val countries = remember(packs.catalog, locale) {
+    // Los países, siempre a la vista (escondidos, la gente pedía países que ya estaban): unos cuantos (el tuyo, los que
+    // ya tienen algo bajado y los más pedidos) y «Ver todos» despliega el resto, en orden alfabético. Al tocar uno, sus
+    // estados; sin nada arriba (no se sabe dónde estás ni has bajado nada) ya va abierto el tuyo, por la región del sistema.
+    val countries = remember(allCountries, locale) {
         val collator = Collator.getInstance(locale)
-        packs.catalog.map { it.country }.distinct().sortedWith { a, b -> collator.compare(countryName(a, locale), countryName(b, locale)) }
+        allCountries.sortedWith { a, b -> collator.compare(countryName(a, locale), countryName(b, locale)) }
     }
     var pickedCountry by rememberSaveable { mutableStateOf<String?>(null) }
+    val system = systemRegion()
     val country = pickedCountry
-        ?: if (shown.isEmpty()) Locale.getDefault().country.takeIf { it in countries } ?: countries.first() else null
+        ?: if (shown.isEmpty()) system.takeIf { it in countries } ?: countries.first() else null
+    val mineCountries = (listOfNotNull(here?.country, system) + mine.map { it.country } + listOfNotNull(country)).distinct()
+    val featured = remember(countries, mineCountries) { featuredCountries(countries, mineCountries) }
+    var allShown by rememberSaveable { mutableStateOf(false) }
     Label(stringResource(R.string.map_pack_others), Typography.label, c.textMuted)
     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        for (code in countries) Button(countryName(code, locale), { pickedCountry = code }, primary = code == country)
+        for (code in if (allShown) countries else featured) Button(countryName(code, locale), { pickedCountry = code }, primary = code == country)
+        if (featured.size < countries.size) {
+            if (allShown) Button(stringResource(R.string.map_pack_fewer_countries), { allShown = false })
+            else Button(stringResource(R.string.map_pack_all_countries, countries.size), { allShown = true })
+        }
     }
     if (country == null) return
     // Con el índice por país, los estados del país llegan al tocarlo (bajando, falló con Reintentar).
     LaunchedEffect(country) { packs.need(country, retry = false) }
-    when (packs.countryState[country]) {
-        IndexState.LOADING -> Label(stringResource(R.string.map_list_loading), Typography.small, c.textMuted)
-        IndexState.FAILED -> if (packs.regions.none { it.country == country }) {
-            Label(downloadError(R.string.map_list_failed), Typography.small, c.warning)
-            Button(stringResource(R.string.retry), { packs.need(country) }, primary = true)
-        }
-        else -> Unit
-    }
+    CountryPackCard(packs, country, locale, free)
+    CountryLoading(packs, country)
     val others = remember(packs.regions, country, shownIds, language) {
         packs.regions.filter { it.country == country && it.id !in shownIds }.sortedBy { it.name(language) }
     }
     for (r in others) StatePackRow(packs, r, language, free)
 }
+
+/** Mientras llegan los estados del país [code] (índice por país): bajando o, si falló, Reintentar. */
+@Composable
+private fun CountryLoading(packs: MapPacks, code: String) {
+    val c = LocalColors.current
+    when (packs.countryState[code]) {
+        IndexState.LOADING -> Label(stringResource(R.string.map_list_loading), Typography.small, c.textMuted)
+        IndexState.FAILED -> if (packs.regions.none { it.country == code }) {
+            Label(downloadError(R.string.map_list_failed), Typography.small, c.warning)
+            Button(stringResource(R.string.retry), { packs.need(code) }, primary = true)
+        }
+        else -> Unit
+    }
+}
+
+/**
+ * El país [code] completo: su nombre, cuántos estados y cuánto pesa todo; «Descargar completo» baja los que falten uno
+ * tras otro (con su confirmación: tamaño y lo libre). Bajando, «Bajando 3 de 32 · Jalisco», su avance y Cancelar; si se
+ * detuvo, por qué y Reintentar (sigue desde ese estado). Con todo bajado, no sale el botón.
+ */
+@Composable
+private fun CountryPackCard(packs: MapPacks, code: String, locale: Locale, free: Long?) {
+    val c = LocalColors.current
+    val context = LocalContext.current
+    val name = countryName(code, locale)
+    val count = packs.countryCount(code)
+    val batch = packs.batch?.takeIf { it.code == code }
+    Column(
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(Radius.inner)).background(c.surfaceHigh).padding(horizontal = 12.dp, vertical = 10.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Label(name, Typography.label, c.text)
+        Label(
+            pluralStringResource(R.plurals.map_pack_country_states, count, count) + " · " +
+                Formatter.formatShortFileSize(context, packs.countryTotal(code)),
+            Typography.small, c.textMuted,
+        )
+        if (batch != null && batch.error == null) {
+            val regionName = packs.regions.firstOrNull { it.id == batch.regionId }?.name(locale.language) ?: batch.regionId
+            Label(stringResource(R.string.map_pack_batch_progress, batch.at, batch.count, regionName), Typography.small, c.text)
+            val current = packs.job?.takeIf { it.id == batch.regionId && !it.failed }?.progress ?: 0f
+            Box(Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp)).background(c.surface)) {
+                Box(Modifier.fillMaxWidth(((batch.at - 1 + current) / batch.count).coerceIn(0f, 1f)).fillMaxHeight().background(c.accent))
+            }
+            Button(stringResource(R.string.cancel), { packs.cancel() })
+            return@Column
+        }
+        if (batch?.error != null) {
+            Label(
+                if (batch.error == PackError.SPACE) stringResource(R.string.map_pack_no_room) else downloadError(R.string.map_pack_failed),
+                Typography.small, c.warning,
+            )
+            Button(stringResource(R.string.retry), { packs.downloadCountry(code) }, primary = true, enabled = !packs.busy)
+            return@Column
+        }
+        // Lo que falta (necesita los estados del país ya cargados para saber cuáles).
+        if (!packs.countryReady(code)) return@Column
+        val missing = packs.missingIn(code)
+        if (missing.isEmpty()) return@Column
+        val size = Formatter.formatShortFileSize(context, missing.sumOf { it.totalSize })
+        val noRoom = free != null && !packs.hasRoomForAll(missing, free)
+        Confirmed(
+            stringResource(R.string.map_pack_download_all, size), stringResource(R.string.map_pack_download_all_question, name),
+            stringResource(R.string.map_pack_download),
+            message = free?.let { stringResource(R.string.map_offline_size_free, size, Formatter.formatShortFileSize(context, it)) },
+            primary = true, destructive = false, enabled = !packs.busy && !noRoom,
+        ) { packs.downloadCountry(code) }
+        if (noRoom) Label(stringResource(R.string.map_pack_no_room), Typography.small, c.warning)
+    }
+}
+
+/**
+ * Los países cuyo nombre empieza con lo escrito [q] (ya sin acentos ni mayúsculas), en el idioma de la app, en español
+ * o en inglés (o una palabra de su nombre: «unidos»), o su código («mx»). Desde 3 letras (o el código exacto) para no
+ * llenar la lista con cada letra. El que coincide completo va primero.
+ */
+internal fun countriesMatching(q: String, codes: Collection<String>, locale: Locale): List<String> {
+    if (q.isEmpty()) return emptyList()
+    val names = codes.associateWith { code ->
+        listOf(locale, SPANISH, Locale.ENGLISH).map { normalize(countryName(code, it)) }.distinct()
+    }
+    fun exact(code: String) = q == code.lowercase(Locale.ROOT) || names[code].orEmpty().any { it == q }
+    fun hit(code: String) = exact(code) ||
+        q.length >= COUNTRY_MATCH_MIN && names[code].orEmpty().any { n -> n.split(' ', '-').any { it.startsWith(q) } || n.startsWith(q) }
+    return codes.filter(::hit).sortedBy { if (exact(it)) 0 else 1 }
+}
+
+/**
+ * Los países que se ven sin «Ver todos»: primero [mine] (donde estás, la región del sistema, los que tienen algo bajado
+ * y el elegido), luego los más pedidos hasta [limit]; solo los que hay en [all] y sin repetir.
+ */
+internal fun featuredCountries(all: List<String>, mine: List<String>, limit: Int = FEATURED_COUNTRIES): List<String> {
+    val have = all.toSet()
+    val first = mine.filter { it in have }.distinct()
+    val rest = (POPULAR_COUNTRIES + all).filter { it in have && it !in first }.distinct()
+    return first + rest.take((limit - first.size).coerceAtLeast(0))
+}
+
+/** Cuántos países se ven sin «Ver todos». */
+private const val FEATURED_COUNTRIES = 6
+
+/** Los países por pedidos y pantallas (reportes `want_map` y estadísticas), para completar la lista corta. */
+private val POPULAR_COUNTRIES = listOf("MX", "US", "CO", "BR", "AR", "ES", "CL", "PE", "EC", "CA", "IT", "VE")
+
+/** Desde cuántas letras se busca un país por su nombre. */
+private const val COUNTRY_MATCH_MIN = 3
+
+private val SPANISH = Locale("es")
+
+/** La región del sistema (no la del idioma de la app): con ella se elige el país de entrada. */
+private fun systemRegion(): String = Locale.getDefault().country
 
 /** El nombre del país [code] (ISO de dos letras) en [locale]; si Android no lo sabe, el código. */
 private fun countryName(code: String, locale: Locale): String = Locale("", code).getDisplayCountry(locale).ifEmpty { code }
@@ -956,8 +1085,8 @@ private fun StatePackRow(packs: MapPacks, region: MapRegion, language: String, f
     val saved = packs.installed.firstOrNull { it.id == region.id }
     val job = packs.job?.takeIf { it.id == region.id }
     val downloading = job != null && !job.failed
-    // Uno a la vez: mientras baja otro, este espera.
-    val busy = packs.job?.let { !it.failed } == true
+    // Uno a la vez: mientras baja otro (o un país completo), este espera.
+    val busy = packs.busy
     // La misma regla de espacio que la descarga: descuenta lo ya bajado del mapa a medias (si no, al reanudar no cabría).
     val noRoom = saved == null && !downloading && free != null && !packs.hasRoom(region, free)
     // Quedó a medias (se cortó la red o se cerró la app): se puede seguir o soltarlo.

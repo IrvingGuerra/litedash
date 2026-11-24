@@ -446,6 +446,17 @@ class TileStore(context: Context, private val userAgent: String, val source: Til
             for (s in stores) s.main.post { synchronized(s.lock) { if (s.users == 0 && s.scope == null) s.releaseMemory() } }
         }
 
+        /**
+         * Borra la caché del mapa «Completo» de OSM (`map_tiles/`, hasta ~25 MB), que ya no existe y nadie lee. La
+         * carpeta misma es la marca: ya borrada, no hace nada. Lee y borra en disco: fuera del hilo principal.
+         */
+        fun dropRetiredCache(context: Context) {
+            File(context.filesDir, RETIRED_FOLDER).takeIf { it.exists() }?.deleteRecursively()
+        }
+
+        /** La carpeta de la caché del mapa «Completo» de OSM (quitado). */
+        private const val RETIRED_FOLDER = "map_tiles"
+
         /** La memoria de teselas no pasa de esta parte de la que tiene la app (salvo que no quepa lo que se ve). */
         private const val MEMORY_SHARE = 6
         /** Entre dos avisos de teselas nuevas ([loaded]). */
@@ -470,7 +481,7 @@ class TileStore(context: Context, private val userAgent: String, val source: Til
         private const val EMPTY_MS = 86_400_000L
         private const val TRIM_EVERY = 100
         private const val TRIM_INTERVAL_MS = 3_600_000L
-        // Por carpeta (map_tiles y map_vector): alternando estilos, entre las dos no pasan de ~50 MB.
+        // Por carpeta de caché (map_vector): no pasa de ~25 MB.
         private const val DISK_MAX = 25L * 1024 * 1024
         private const val DISK_TARGET = 20L * 1024 * 1024
         /** Último recorte por carpeta (los almacenes se recrean al cambiar de estilo). */
