@@ -594,10 +594,11 @@ fun MapCanvas(
                 camera.navTilt = t
                 return@collectLatest
             }
-            var last = System.nanoTime()
+            // Con los cuadros de la pantalla: con la app detenida no llegan y esto se queda quieto.
+            var last = withFrameNanos { it }
             while (camera.navZoom != z || camera.navTilt != t) {
                 delay(GLIDE_STEP_MS)
-                val now = System.nanoTime()
+                val now = withFrameNanos { it }
                 val dt = (now - last) / 1e9f
                 last = now
                 camera.navZoom = approach(camera.navZoom, z, NAV_ZOOM_RATE * dt)
@@ -690,7 +691,8 @@ fun MapCanvas(
         if (!active || !camera.returns) return@LaunchedEffect
         snapshotFlow {
             val moved = !camera.centered || (loose && !camera.following)
-            if (moved && camera.driving && !camera.showingPlace) Triple(camera.panX, camera.panY, camera.zoom) else null
+            // También el pellizco dentro del mismo nivel ([MapCamera.scale]): cada toque vuelve a contar el rato.
+            if (moved && camera.driving && !camera.showingPlace) Touched(camera.panX, camera.panY, camera.zoom, camera.scale) else null
         }.collectLatest { moved ->
             if (moved != null) {
                 delay(RECENTER_MS)
@@ -712,17 +714,20 @@ fun MapCanvas(
     val labelColor = store.source.label?.let(::Color) ?: if (dark) Color(0xFFC3C6CD) else Color(0xFF4E535C)
     val labelHalo = store.source.halo?.let(::Color) ?: sky
     // La ruta «río» de los mapas planos: sus flechitas avanzan solo con la ruta a la vista, este mapa activo, la opción
-    // prendida y una pantalla que da para eso (a ~30 cuadros por segundo); si no, quietas.
+    // prendida y una pantalla que da para eso (a ~30 cuadros por segundo). Con la opción apagada quedan quietas (el
+    // cuadro no se rehace por ellas); en una pantalla que no da para eso, ni se dibujan.
     val context = LocalContext.current
     val canFlow = remember { routeCanFlow(context) }
     val flowing = route != null && routeWidth == null && active && look.flow && canFlow
     val flow = remember { mutableFloatStateOf(0f) }
     LaunchedEffect(flowing) {
         if (!flowing) return@LaunchedEffect
-        val start = System.nanoTime() - (flow.floatValue * FLOW_CYCLE_MS * 1e6).toLong()
+        // Al ritmo de los cuadros (con la app detenida no llegan y se queda quieta) y no más de ~30 por segundo.
+        val start = withFrameNanos { it } - (flow.floatValue * FLOW_CYCLE_MS * 1e6).toLong()
         while (true) {
             delay(GLIDE_STEP_MS)
-            flow.floatValue = ((System.nanoTime() - start) / 1e6 % FLOW_CYCLE_MS / FLOW_CYCLE_MS).toFloat()
+            val now = withFrameNanos { it }
+            flow.floatValue = ((now - start) / 1e6 % FLOW_CYCLE_MS / FLOW_CYCLE_MS).toFloat()
         }
     }
     // Un toque: lo que diga [onTap] (en el widget, verlo en grande o abrir tu app de mapas).
@@ -780,6 +785,7 @@ fun MapCanvas(
                         pin?.let { tileX(it.second, zoom) } ?: Double.NaN, pin?.let { tileY(it.first, zoom) } ?: Double.NaN,
                         routeWorld, routeDone,
                         routeWidth?.let { it.toPx() * ts * n.toFloat() / (tilePx(density) * 2f.pow(driveZoom)) } ?: 0f,
+                        routeArrows = canFlow,
                     )
                 }
                 // Leer el avance aquí solo vuelve a pintar (no rehace el cuadro).
@@ -836,6 +842,9 @@ private const val MARKER_BELOW = 0.58f
 
 /** Todo el mapa: tú al centro a lo ancho. */
 private val WHOLE = Rect(0f, 0f, 1f, 1f)
+
+/** Cómo quedó el mapa movido a mano (para volver a contar el rato antes de regresar a ti con cada cambio). */
+private data class Touched(val panX: Double, val panY: Double, val zoom: Int?, val scale: Float)
 
 /** Si el mapa ya salió de la vista (para dejarle a otro lo que animaba). */
 private class Shown {

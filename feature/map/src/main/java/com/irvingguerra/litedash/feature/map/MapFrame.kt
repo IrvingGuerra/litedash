@@ -349,6 +349,7 @@ internal class MapFrame : ScreenPoint {
         routeWorld: DoubleArray? = null,
         routeDone: Float = 0f,
         routePlaneWidth: Float = 0f,
+        routeArrows: Boolean = false,
     ) {
         if (density != arrowFor) {
             arrowFor = density
@@ -380,7 +381,8 @@ internal class MapFrame : ScreenPoint {
         pinShown = !pinX.isNaN() && toScreen(pinX, pinY, pinAt)
         routeWide = routePlaneWidth
         traceRoute(routeWorld, n, routeDone)
-        if (routeWide <= 0f) joinFlow()
+        // Las flechitas solo donde la pantalla da para ellas; si no, la ruta va sola en sus tres capas.
+        if (routeWide <= 0f && routeArrows) joinFlow() else flowLine.rewind()
         squash = 1f - 0.3f * tilt
         // El círculo de la zona: metros por px del plano en el centro del mapa.
         ring = if (ringKm == null) 0f else (ringKm * 1000 / (EQUATOR_METERS * cos(Math.toRadians(centerLat)) / (n * ts))).toFloat()
