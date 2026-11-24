@@ -772,6 +772,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                         BarPosition.AUTO -> maxWidth > maxHeight && !isShortScreen()
                     }
                     val favorites = rememberFavorites(d, apps)
+                    val projection = remember(apps, d.prefs.projectionApp) { projectionChoice(d, apps) }
                     val railRight = rail && d.prefs.barPosition == BarPosition.RIGHT
                     // Oculta (Inicio y apariencia → Barra) se ve al acomodar (ahí está Ajustes) y, encima del tablero,
                     // unos segundos tras tocar un hueco del inicio: cada toque en ella o en un hueco reinicia la cuenta.
@@ -790,7 +791,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                     // Lo que deja libre al ocultarse: el tablero lo gana, pero la cuadrícula no lo cuenta.
                     val freed = if (barShown) 0.dp else barThickness(d.prefs, rail)
                     val bar = @Composable { vertical: Boolean ->
-                        AppBar(d.apps, d.prefs, favorites, vertical, editing, musicBig, barActions, mapOpen = expanded == Expanded.MAP)
+                        AppBar(d.apps, d.prefs, favorites, vertical, editing, musicBig, barActions, mapOpen = expanded == Expanded.MAP, projection = projection)
                     }
                     // Oculta: un toque en cualquier lugar libre (la orilla, la barra de arriba o un hueco del tablero) la
                     // asoma. Va debajo de todo: lo que tiene su propio toque (widgets, puntitos, avisos) lo conserva.

@@ -38,6 +38,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -105,6 +108,8 @@ fun AppBar(
     actions: BarActions,
     /** El mapa de LiteDash en grande: su botón va marcado (otro toque lo cierra). */
     mapOpen: Boolean = false,
+    /** La app de Android Auto / CarPlay ([projectionChoice]): su botón lleva su ícono; null = el genérico. */
+    projection: App? = null,
 ) {
     val c = LocalColors.current
     val k = prefs.barSize.scale
@@ -120,7 +125,7 @@ fun AppBar(
     // Lo de adentro, con los colores que le tocan sobre la piel (de vidrio, sin grises opacos).
     val look = LocalCardLook.current
     val inner = remember(c, look.style, vertical) { if (vertical) c else contentColors(c, look, plain = false) }
-    val item = @Composable { it: BarItem -> CompositionLocalProvider(LocalColors provides inner) { BarButton(it, sizes, vertical, musicOpen, mapOpen, actions) } }
+    val item = @Composable { it: BarItem -> CompositionLocalProvider(LocalColors provides inner) { BarButton(it, sizes, vertical, musicOpen, mapOpen, actions, repo, projection) } }
     val favoritesBlock = @Composable { maxApps: Int? ->
         val shown = if (maxApps != null) favorites.take(maxApps) else favorites
         if (vertical) Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -191,7 +196,7 @@ fun AppBar(
  * muchas pantallas de auto ese gesto falla. [items] = lo que se ve, en orden; Ajustes va al final y no se elige.
  */
 @Composable
-internal fun BarPreview(repo: AppRepository, favorites: List<App>, items: List<BarItem>, selected: BarItem?, onSelect: (BarItem) -> Unit) {
+internal fun BarPreview(repo: AppRepository, favorites: List<App>, projection: App?, items: List<BarItem>, selected: BarItem?, onSelect: (BarItem) -> Unit) {
     val c = LocalColors.current
     val sizes = BarSizes(button = 48.dp, icon = 36.dp)
     val actions = remember { BarActions({}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}) }
@@ -230,7 +235,7 @@ internal fun BarPreview(repo: AppRepository, favorites: List<App>, items: List<B
                     }
                     // El volumen, solo su ícono: el de verdad escucha al sistema y busca la familia de la pantalla.
                     i == BarItem.VOLUME -> Box(Modifier.size(sizes.button), contentAlignment = Alignment.Center) { Icon(Icons.volume, c.text, sizes.button * 0.45f) }
-                    else -> BarButton(i, sizes, vertical = false, musicOpen = false, mapOpen = false, actions)
+                    else -> BarButton(i, sizes, vertical = false, musicOpen = false, mapOpen = false, actions, repo, projection)
                 }
                 // Encima, para que el toque elija (y no mueva el volumen ni abra nada).
                 Box(Modifier.matchParentSize().pointerInput(Unit) {})
@@ -259,7 +264,10 @@ private data class BarSizes(val button: Dp, val icon: Dp, val box: Dp = button, 
 
 /** Un botón de la barra. Las favoritas no pasan por aquí: van en su propio bloque. */
 @Composable
-private fun BarButton(item: BarItem, sizes: BarSizes, vertical: Boolean, musicOpen: Boolean, mapOpen: Boolean, actions: BarActions) {
+private fun BarButton(
+    item: BarItem, sizes: BarSizes, vertical: Boolean, musicOpen: Boolean, mapOpen: Boolean, actions: BarActions,
+    repo: AppRepository, projection: App?,
+) {
     val c = LocalColors.current
     // Su nombre, para el lector de pantalla (el mismo que en Ajustes → Barra).
     val label = item.title()?.let { stringResource(it) }
@@ -271,7 +279,14 @@ private fun BarButton(item: BarItem, sizes: BarSizes, vertical: Boolean, musicOp
         BarItem.VOLUME -> Volume(if (vertical) sizes.volume else sizes.button, vertical = vertical)
         BarItem.NAVIGATE -> IconButton(Icons.navigate, actions.onNavigate, size = sizes.button, background = if (mapOpen) c.surfaceHigh else Color.Transparent, label = label)
         BarItem.BLUETOOTH -> IconButton(Icons.bluetooth, actions.onBluetooth, size = sizes.button, label = label)
-        BarItem.PROJECTION -> IconButton(Icons.phoneCar, actions.onProjection, size = sizes.button, label = label)
+        // Con app de Android Auto / CarPlay, el ícono que ella trae (como las favoritas; LiteDash no lleva logos ajenos).
+        BarItem.PROJECTION -> if (projection != null) {
+            Box(
+                Modifier.size(sizes.button).clip(RoundedCornerShape(Radius.inner)).clickable(role = Role.Button, onClick = actions.onProjection)
+                    .clearAndSetSemantics { label?.let { contentDescription = it } },
+                contentAlignment = Alignment.Center,
+            ) { AppIcon(repo, projection, sizes.icon) }
+        } else IconButton(Icons.phoneCar, actions.onProjection, size = sizes.button, label = label)
         BarItem.PHONE -> IconButton(Icons.phone, actions.onPhone, size = sizes.button, label = label)
         BarItem.VOICE -> actions.onVoice?.let { IconButton(Icons.mic, it, size = sizes.button, label = label) }
         // Siempre: sin Ajustes no habría cómo salir del inicio.
