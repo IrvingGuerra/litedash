@@ -134,7 +134,7 @@
     <string name="templates_tab_wallpaper">Fondo</string>
     <string name="templates_road_help">Tu auto en carretera con la velocidad y los km del viaje (OBD o GPS).</string>
     <string name="templates_speed_help">Sin auto en el inicio. La velocidad sale del GPS; no necesitas OBD.</string>
-    <string name="templates_wallpaper_help">Tu foto de fondo con unas cuantas tarjetas encima y la hora flotando. Elige el fondo aquí o en Inicio y apariencia.</string>
+    <string name="templates_wallpaper_help">Tu foto de fondo con unas cuantas tarjetas encima y la hora flotando. El fondo se elige al acomodar → Fondo o en Ajustes → Inicio y apariencia → Inicio.</string>
     <string name="template_map_car">Mapa y auto</string>
     <string name="template_copilot">Copiloto</string>
     <string name="template_route">Ruta</string>
@@ -145,6 +145,7 @@
     <string name="templates_map_help">El mapa en vivo con tu posición y la siguiente vuelta.</string>
     <string name="add">Agregar</string>
     <string name="add_tile">Agregar al inicio</string>
+    <string name="add_widget">Agregar widget</string>
     <string name="add_group_car">Tu auto</string>
     <string name="add_group_media">Música y radio</string>
     <string name="add_group_nav">Navegación y llamadas</string>
@@ -175,8 +176,6 @@
     <string name="app_info">Info de la app</string>
     <string name="modules">Módulos</string>
     <string name="on_your_home">En tu inicio</string>
-    <string name="hide_status_bar">Ocultarla</string>
-    <string name="hide_status_bar_help">La franja de hasta arriba con la hora y los avisos de Android (no es la de LiteDash). Para verla un momento, desliza desde arriba.</string>
     <string name="stats_title">Estadísticas</string>
     <string name="stats_switch">Contar esta pantalla (anónimo)</string>
     <string name="stats_help">Una vez al día manda un número al azar, la versión y de dónde la bajaste (GitHub o Play), Android, el idioma, el tamaño de la pantalla, desde qué día usas LiteDash y qué radio y Bluetooth trae de fábrica tu pantalla y qué ajuste de sonido le funcionó, para saber cuánta gente usa LiteDash. Nada de ubicación, cuentas ni datos tuyos.</string>
@@ -219,7 +218,6 @@
     <string name="units_title">Unidades</string>
     <string name="units_speed">Velocidad y distancia</string>
     <string name="units_temp">Temperatura</string>
-    <string name="units_pressure">Presión de llantas</string>
     <string name="units_auto">Automático</string>
     <string name="units_metric">km/h y km</string>
     <string name="units_imperial">mph y millas</string>
@@ -235,9 +233,6 @@
     <string name="template_cards">Tarjetas abajo</string>
     <string name="template_columns">Tres columnas</string>
     <string name="template_panel">Panel completo</string>
-    <string name="screens_horizontal">Pantallas horizontales</string>
-    <string name="screens_vertical">Pantallas verticales</string>
-    <string name="your_screen">· Tu pantalla</string>
     <string name="recommended">Recomendado</string>
     <string name="appearance">Inicio y apariencia</string>
     <string name="back_home">Volver al inicio</string>
@@ -347,7 +342,7 @@
     <string name="brightness_day">Día</string>
     <string name="brightness_night">Noche</string>
     <string name="brightness_level">%1$d %%</string>
-    <string name="brightness_all_apps_help">Solo en LiteDash no pide nada. En todas las apps cambia el brillo de la pantalla y Android pide permiso para modificar ajustes del sistema.</string>
+    <string name="brightness_all_apps_help">Solo en LiteDash no pide nada. En todas las apps cambia el brillo de la pantalla y Android pide permiso para modificar ajustes del sistema; el cambio de día a noche se aplica al volver a LiteDash.</string>
     <string name="brightness_only_litedash">Solo en LiteDash</string>
     <string name="brightness_all_apps">En todas las apps</string>
     <string name="brightness_permission">Falta el permiso: activa \"Modificar ajustes del sistema\" para LiteDash.</string>
@@ -468,7 +463,7 @@
     <string name="tab_sensors">Sensores</string>
     <string name="obd_no_readiness">Tu auto no reporta los monitores de la verificación.</string>
     <string name="wallpaper_title">Fondo de pantalla</string>
-    <string name="wallpaper_help">Uno de los fondos de LiteDash (se baja al tocarlo) o una foto tuya detrás de todo el inicio. Sin fondo, el del tema.</string>
+    <string name="wallpaper_help">Uno de los fondos de LiteDash (se baja al tocarlo) o una foto tuya: la misma en todas las páginas con imagen. Sin fondo, el del tema.</string>
     <string name="wallpaper_included">Fondos de LiteDash</string>
     <string name="wallpaper_downloading">Bajando…</string>
     <string name="wallpaper_failed">No se pudo bajar el fondo; revisa tu conexión.</string>
@@ -482,10 +477,11 @@
     <string name="logo_remove">Quitar imagen</string>
     <string name="logo_intro">Animación de entrada</string>
     <string name="bar_title">Barra de apps</string>
-    <string name="bar_hide">Ocultar la barra</string>
+    <string name="bar_hide">Ocultar la barra de apps</string>
     <string name="bar_hide_help">Toca un espacio libre del inicio (o su orilla) para verla unos segundos; ahí está Ajustes.</string>
+    <string name="hide_status_bar">Ocultar la barra de Android (la de arriba)</string>
+    <string name="hide_status_bar_help">La franja con la hora y los avisos de Android. Para verla un momento, desliza desde arriba.</string>
     <string name="bar_buttons">Botones</string>
-    <string name="bar_arrange">Acomodar la barra</string>
     <string name="bar_position_help">Automática: a la izquierda si la pantalla está acostada, abajo si está parada.</string>
     <string name="bar_edit">Barra</string>
     <string name="bar_edit_help">Toca un botón de la barra y muévelo con las flechas, o quítalo. Las dos rayas separan izquierda, centro y derecha: se mueven igual. Ajustes siempre va.</string>
@@ -513,18 +509,21 @@
     <string name="bar_bottom">Abajo</string>
     <string name="release_notes">NOVEDADES DE ESTA VERSIÓN</string>
     <string name="apps_section">Apps</string>
-    <string name="tab_tiles">Widgets</string>
     <string name="tab_navigation">Navegación</string>
     <string name="favorites_help">Las apps de la barra, en su orden. Toca la x para quitar una; búscala aquí abajo para agregarla.</string>
     <string name="module_obd">Escáner OBD</string>
     <string name="module_notifications">Avisos de otras apps</string>
     <string name="module_location">Ubicación</string>
+    <string name="module_bluetooth">Bluetooth (dispositivos cercanos)</string>
+    <string name="module_local_network">Red local</string>
+    <string name="module_files">Música y archivos</string>
     <string name="radio_internet_title">Radio por internet</string>
     <string name="module_tpms">Llantas (TPMS)</string>
     <string name="tab_permissions">Permisos</string>
-    <string name="system">Sistema</string>
+    <string name="about_help">Acerca de y ayuda</string>
     <string name="tab_updates">Actualizaciones</string>
     <string name="tab_about">Acerca de</string>
+    <string name="tab_report_problem">Reportar un problema</string>
     <string name="tile_car_help">Tu auto en 3D; gíralo con el dedo y un toque lo agranda</string>
     <string name="tile_road_help">Tu auto en carretera con la velocidad (OBD o GPS), los km del viaje y tus llantas</string>
     <string name="tile_image_help">Una foto tuya, como el logo de tu marca; sin foto, el logo de LiteDash</string>
@@ -599,6 +598,7 @@
     <string name="obd_ble_none">No se encontró ningún adaptador Bluetooth LE. Revisa que esté conectado al auto con el motor o la llave encendida.</string>
     <string name="night_source">¿Cuándo es de noche?</string>
     <string name="night_source_help">Decide el tema Día y noche y el brillo de noche. Por la hora del sol funciona en cualquier pantalla; el sensor de luz nota túneles y estacionamientos; las luces del auto se aprenden de tu pantalla.</string>
+    <string name="night_source_unused">Se usa con el tema o el brillo de día y noche.</string>
     <string name="night_sun">Hora del sol</string>
     <string name="night_sensor">Sensor de luz</string>
     <string name="night_no_sensor">Esta pantalla no tiene sensor de luz.</string>

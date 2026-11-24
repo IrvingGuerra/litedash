@@ -204,30 +204,31 @@ internal fun mapFocus(pages: DashboardState, board: Rect?, root: Size): Rect? {
 }
 
 /**
- * El panel Fondo del inicio, de la página que se ve: tu imagen (la de siempre, la misma para las páginas que la usan)
- * o el mapa (cómo te ves en él y el permiso de ubicación si falta).
+ * El fondo de la página [page] (de fábrica, la que se ve; Ajustes → Inicio usa la primera): tu imagen (la de siempre, la
+ * misma para las páginas que la usan) o el mapa (cómo te ves en él y el permiso de ubicación si falta).
  */
 @Composable
-internal fun PageBackgroundSettings(d: Dependencies) {
+internal fun PageBackgroundSettings(d: Dependencies, page: Int = d.dashboard.page) {
     val c = LocalColors.current
     val pages = d.dashboard
-    val page = pages.page
+    val background = pages.backgrounds.getOrElse(page) { PageBackground.WALLPAPER }
     Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
         Segmented(
             listOf(PageBackground.WALLPAPER to stringResource(R.string.page_background_image), PageBackground.MAP to stringResource(R.string.page_background_map)),
-            pages.background,
+            background,
             { pages.setBackground(page, it) },
             check = true,
         )
-        when (pages.background) {
+        when (background) {
             PageBackground.WALLPAPER -> {
                 Label(stringResource(R.string.wallpaper_help), Typography.body, c.textMuted)
                 WallpaperSettings(d.prefs)
             }
             PageBackground.MAP -> {
                 Label(stringResource(R.string.map_backdrop_help), Typography.body, c.textMuted)
-                // Con un widget Mapa en la página se verían dos mapas: se avisa y se ofrece quitarlo.
-                if (pages.shown.any { it.type == TileTypes.MAP }) {
+                // Con un widget Mapa en la página se verían dos mapas: se avisa y se ofrece quitarlo (solo se sabe de la
+                // que se ve; las otras avisan al acomodarlas → Fondo).
+                if (page == pages.page && pages.shown.any { it.type == TileTypes.MAP }) {
                     Label(stringResource(R.string.map_backdrop_has_widget), Typography.small, c.warning)
                     // Se pierde su aspecto guardado y no hay deshacer: con confirmación.
                     val removeMap = stringResource(R.string.map_backdrop_remove_widget)

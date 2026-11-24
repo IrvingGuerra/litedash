@@ -1,20 +1,16 @@
-// Ajustes → Inicio y apariencia: inicio, interfaz, día y noche, unidades y widgets.
+// Ajustes → Inicio y apariencia: inicio, idioma y unidades, barra, interfaz y tema y brillo.
 package com.irvingguerra.litedash
 
 import androidx.compose.runtime.saveable.rememberSaveable
-import com.irvingguerra.litedash.core.ui.skinSurface
 import android.hardware.Sensor
 import android.hardware.SensorManager
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
@@ -30,7 +26,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
@@ -43,7 +38,6 @@ import com.irvingguerra.litedash.core.ui.Card
 import com.irvingguerra.litedash.core.ui.CardLook
 import com.irvingguerra.litedash.core.ui.CardStyle
 import com.irvingguerra.litedash.core.ui.DarkColors
-import com.irvingguerra.litedash.core.ui.Icon
 import com.irvingguerra.litedash.core.ui.IconButton
 import com.irvingguerra.litedash.core.ui.Icons
 import com.irvingguerra.litedash.core.ui.Label
@@ -56,8 +50,6 @@ import com.irvingguerra.litedash.core.ui.Segmented
 import com.irvingguerra.litedash.core.ui.SwitchRow
 import com.irvingguerra.litedash.core.ui.Typography
 import com.irvingguerra.litedash.core.ui.cardTone
-import com.irvingguerra.litedash.feature.dashboard.TileTypes
-import com.irvingguerra.litedash.feature.tpms.PressureUnit
 import kotlin.math.round
 import kotlin.math.roundToInt
 import kotlinx.coroutines.Dispatchers
@@ -74,30 +66,37 @@ internal val ThemeOptions = listOf(
 )
 
 /**
- * Pestañas de Inicio y apariencia, en el orden en que se busca: el inicio (acomodo, barra de Android, fondo,
- * entrada y hacerlo tu inicio), la barra de LiteDash, la interfaz (color, tamaño, idioma, nombre, clima y estacionado), día y noche, unidades y,
- * al final, la lista de widgets para agregar.
+ * Pestañas de Inicio y apariencia, en el orden en que se busca: el inicio (acomodo, fondo, entrada, tu nombre, modo
+ * estacionado y hacerlo tu inicio), idioma y unidades, las barras, la interfaz (tarjetas y tamaño) y tema y brillo.
  */
 private enum class AppearanceTab(val title: Int) {
-    HOME(R.string.tab_home), BAR(R.string.bar_edit), INTERFACE(R.string.tab_interface), DAY_NIGHT(R.string.tab_day_night), UNITS(R.string.units_title), WIDGETS(R.string.tab_tiles),
+    HOME(R.string.tab_home), LANGUAGE_UNITS(R.string.tab_language_units), BAR(R.string.bar_edit), INTERFACE(R.string.tab_interface),
+    THEME_BRIGHTNESS(R.string.tab_theme_brightness),
 }
 
+/** Las pestañas de Inicio y apariencia ([AppearanceTab]). */
+private const val APPEARANCE_TABS = "appearance"
+
+/** Ajustes → Inicio y apariencia abre en Idioma y unidades (al volver tras cambiar de idioma). */
+internal fun openLanguageSettings() = selectTab(APPEARANCE_TABS, AppearanceTab.LANGUAGE_UNITS.ordinal)
+
 @Composable
-internal fun Appearance(d: Dependencies, revision: Int, onEdit: () -> Unit, onTemplates: () -> Unit, onTires: () -> Unit) {
-    when (AppearanceTab.entries[tabs(AppearanceTab.entries.map { it.title }, "appearance")]) {
-        AppearanceTab.HOME -> HomeSettings(d, revision, onEdit, onTemplates)
-        AppearanceTab.BAR -> BarSettingsTab(d, onEdit)
-        AppearanceTab.INTERFACE -> InterfaceSettings(d)
-        AppearanceTab.DAY_NIGHT -> DayNightSettings(d.prefs, revision)
-        AppearanceTab.UNITS -> SettingsCard { UnitsSettings(d) }
-        AppearanceTab.WIDGETS -> Tiles(d, onEdit, onTires)
+internal fun Appearance(d: Dependencies, revision: Int, onEdit: () -> Unit, onTemplates: () -> Unit, onAddTile: () -> Unit) {
+    when (AppearanceTab.entries[tabs(AppearanceTab.entries.map { it.title }, APPEARANCE_TABS).coerceAtMost(AppearanceTab.entries.lastIndex)]) {
+        AppearanceTab.HOME -> HomeSettings(d, revision, onEdit, onTemplates, onAddTile)
+        AppearanceTab.LANGUAGE_UNITS -> {
+            SettingsCard(stringResource(R.string.language)) { LanguageSettings(d.prefs) }
+            SettingsCard(stringResource(R.string.units_title)) { UnitsSettings(d.prefs) }
+        }
+        AppearanceTab.BAR -> BarSettingsTab(d)
+        AppearanceTab.INTERFACE -> InterfaceSettings(d.prefs)
+        AppearanceTab.THEME_BRIGHTNESS -> ThemeBrightnessSettings(d.prefs, revision)
     }
 }
 
-/** Interfaz: sus tarjetas y colores, tamaño e idioma, tu nombre, el clima y el modo estacionado. */
+/** Interfaz: sus tarjetas y colores y su tamaño. */
 @Composable
-private fun InterfaceSettings(d: Dependencies) {
-    val prefs = d.prefs
+private fun InterfaceSettings(prefs: Preferences) {
     val c = LocalColors.current
     SettingsCard(stringResource(R.string.cards_title), stringResource(R.string.cards_help)) { CardSettings(prefs) }
     SettingsCard(stringResource(R.string.scale), stringResource(R.string.scale_help)) {
@@ -107,13 +106,6 @@ private fun InterfaceSettings(d: Dependencies) {
             IconButton(Icons.plus, { prefs.scale = (prefs.scale + 0.1f).coerceAtMost(1.5f).roundToTenth() }, background = c.surfaceHigh)
         }
     }
-    SettingsCard(stringResource(R.string.language)) { LanguageSettings(prefs) }
-    SettingsCard(stringResource(R.string.your_name), stringResource(R.string.your_name_help)) {
-        DriverNameField(prefs)
-    }
-    // Sin título: el interruptor ya dice qué es.
-    SettingsCard { WeatherSwitch(d.weather) }
-    SettingsCard { ParkedSettings(prefs) }
 }
 
 /** Los colores rápidos de la interfaz (vivos, para verse sobre oscuro); el claro los oscurece un poco. */
@@ -226,9 +218,12 @@ private fun CardSettings(prefs: Preferences) {
 /** Un círculo partido en dos colores (una combinación: tarjetas e interfaz). */
 private fun halves(a: Color, b: Color) = Brush.linearGradient(0f to a, 0.5f to a, 0.5f to b, 1f to b)
 
-/** Día y noche: el tema, cuándo es de noche y el brillo. */
+/**
+ * Tema y brillo: el tema, el brillo y, solo si alguno de los dos va por día y noche, cuándo es de noche (si no, no
+ * decide nada y solo se dice para qué sirve).
+ */
 @Composable
-private fun DayNightSettings(prefs: Preferences, revision: Int) {
+private fun ThemeBrightnessSettings(prefs: Preferences, revision: Int) {
     val c = LocalColors.current
     val context = LocalContext.current
     SettingsCard(stringResource(R.string.theme)) {
@@ -237,6 +232,14 @@ private fun DayNightSettings(prefs: Preferences, revision: Int) {
             prefs.theme,
             { prefs.theme = it },
         )
+    }
+    SettingsCard(stringResource(R.string.brightness), stringResource(R.string.brightness_help)) {
+        BrightnessSettings(prefs, revision)
+    }
+    if (prefs.theme != ThemeMode.SUN && !prefs.brightnessBySun) {
+        return SettingsCard(stringResource(R.string.night_source)) {
+            Label(stringResource(R.string.night_source_unused), Typography.small, c.textMuted)
+        }
     }
     SettingsCard(stringResource(R.string.night_source), stringResource(R.string.night_source_help)) {
         val hasSensor = remember { context.getSystemService(SensorManager::class.java)?.getDefaultSensor(Sensor.TYPE_LIGHT) != null }
@@ -254,16 +257,12 @@ private fun DayNightSettings(prefs: Preferences, revision: Int) {
             LightsSettings(prefs)
         }
     }
-    SettingsCard(stringResource(R.string.brightness), stringResource(R.string.brightness_help)) {
-        BrightnessSettings(prefs, revision)
-    }
 }
 
-/** Unidades: velocidad y distancia, temperatura y (con llantas) presión. Automático = según idioma y región. */
+/** Unidades: velocidad y distancia y temperatura (la presión va en Llantas). Automático = según idioma y región. */
 @Composable
-private fun UnitsSettings(d: Dependencies) {
+private fun UnitsSettings(prefs: Preferences) {
     val c = LocalColors.current
-    val prefs = d.prefs
     val auto = imperialUnits(prefs.language)
     Label(stringResource(R.string.units_speed), Typography.label, c.textMuted)
     Segmented(
@@ -295,31 +294,33 @@ private fun UnitsSettings(d: Dependencies) {
             Typography.small, c.textMuted,
         )
     }
-    if (d.hasTpmsSource) {
-        val tpms = d.tpms
-        Label(stringResource(R.string.units_pressure), Typography.label, c.textMuted)
-        Segmented(PressureUnit.entries.map { it to it.label }, tpms.unit, { tpms.unit = it })
-    }
 }
 
-/** Inicio: acomodo y plantillas, la barra de Android (la de arriba), el fondo, la animación de entrada y hacerlo tu pantalla de inicio. */
+/**
+ * Inicio: acomodo (acomodar, plantillas y agregar widgets), el fondo de la primera página, la animación de entrada, tu
+ * nombre, el modo estacionado y hacerlo tu pantalla de inicio.
+ */
 @Composable
-private fun HomeSettings(d: Dependencies, revision: Int, onEdit: () -> Unit, onTemplates: () -> Unit) {
+private fun HomeSettings(d: Dependencies, revision: Int, onEdit: () -> Unit, onTemplates: () -> Unit, onAddTile: () -> Unit) {
     val prefs = d.prefs
     SettingsCard(stringResource(R.string.layout), stringResource(R.string.arrange_help)) {
         FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Button(stringResource(R.string.arrange), onEdit, primary = true)
             Button(stringResource(R.string.templates), onTemplates)
+            Button(stringResource(R.string.add_widget), onAddTile)
         }
     }
-    SettingsCard(stringResource(R.string.android_bar)) {
-        SwitchRow(stringResource(R.string.hide_status_bar), prefs.hideStatusBar, { prefs.hideStatusBar = it }, stringResource(R.string.hide_status_bar_help))
-    }
-    SettingsCard(stringResource(R.string.wallpaper_title), stringResource(R.string.wallpaper_help)) {
-        WallpaperSettings(prefs)
+    // El mismo panel Fondo que al acomodar, de la primera página (la de siempre); las demás se eligen al acomodar.
+    val pages = d.dashboard
+    SettingsCard(if (pages.pageCount > 1) stringResource(R.string.page_background_title, 1) else stringResource(R.string.wallpaper_title)) {
+        PageBackgroundSettings(d, page = 0)
     }
     // Sin título: el interruptor ya dice qué es.
     SettingsCard { IntroSettings(prefs) }
+    SettingsCard(stringResource(R.string.your_name), stringResource(R.string.your_name_help)) {
+        DriverNameField(prefs)
+    }
+    SettingsCard { ParkedSettings(prefs) }
     SettingsCard(stringResource(R.string.welcome_home_title)) {
         // Al pedirlo a mano se vuelve a preguntar al abrir si no queda como inicio.
         MakeHome(revision, big = false) { prefs.dontAskHome = false }
@@ -358,57 +359,3 @@ private fun OpenOnBootSettings(prefs: Preferences) {
 private val bootSync = Mutex()
 
 private fun Float.roundToTenth() = round(this * 10) / 10f
-
-/**
- * Inicio → Widgets: todo lo que puedes poner en tu inicio y si ya está (sin los del OBD ni el clima apagados).
- * Llantas siempre: agregarla prende su módulo o, si nunca tuvo sensores, lleva a elegirlos ([onTires]).
- */
-@Composable
-private fun Tiles(d: Dependencies, onEdit: () -> Unit, onTires: () -> Unit) {
-    val c = LocalColors.current
-    // Tipo que no cupo al agregarlo: se avisa y se ofrece acomodar el inicio.
-    var noRoom by remember { mutableStateOf<String?>(null) }
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        for (spec in TileSpecs.filter { it.type != TileTypes.APP && offered(d, it.type) }) {
-            // Llantas sin sensores no se ve aunque esté en el acomodo.
-            val onHome = d.dashboard.allTiles.any { it.type == spec.type } && moduleOff(d, spec.type) == null
-            val didNotFit = noRoom == spec.type && !onHome
-            val detail = if (didNotFit) stringResource(R.string.no_room) else spec.detail?.let { stringResource(it) } ?: ""
-            TileRow(iconOf(spec.type), stringResource(spec.name), detail, if (didNotFit) c.danger else c.textMuted) {
-                when {
-                    onHome -> Label(stringResource(R.string.on_your_home), Typography.small, c.accent)
-                    didNotFit -> Button(stringResource(R.string.arrange), onEdit, primary = true)
-                    else -> Button(stringResource(R.string.add), {
-                        val added = if (spec.type == TileTypes.TIRES) d.addTiresTile(onTires) else d.dashboard.addTile(spec.type)
-                        noRoom = if (added) null else spec.type
-                    })
-                }
-            }
-        }
-    }
-}
-
-/** Un renglón de Inicio → Widgets: ícono, nombre, detalle y su botón. */
-@Composable
-private fun TileRow(
-    icon: ImageVector,
-    title: String,
-    detail: String,
-    detailColor: Color = LocalColors.current.textMuted,
-    action: @Composable () -> Unit,
-) {
-    val c = LocalColors.current
-    val shape = RoundedCornerShape(Radius.card)
-    Row(
-        Modifier.fillMaxWidth().clip(shape).skinSurface(LocalCardLook.current, c, shape).padding(16.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
-    ) {
-        Icon(icon, c.accent, 26.dp)
-        Column(Modifier.weight(1f)) {
-            Label(title, Typography.subtitle, maxLines = 1)
-            Label(detail, Typography.small, detailColor, maxLines = 2)
-        }
-        action()
-    }
-}

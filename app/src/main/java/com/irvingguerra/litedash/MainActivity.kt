@@ -204,7 +204,7 @@ class MainActivity : ComponentActivity() {
         // Tras [restart] (cambiar idioma) Ajustes se vuelve a abrir donde estaba el idioma, no en el inicio.
         @Volatile private var reopenLanguage = false
 
-        /** ¿Hay que volver a Ajustes → Inicio y apariencia → Interfaz? Lo dice una sola vez. */
+        /** ¿Hay que volver a Ajustes → Inicio y apariencia → Idioma y unidades? Lo dice una sola vez. */
         fun takeReopenLanguage(): Boolean = reopenLanguage.also { reopenLanguage = false }
 
         // La tarea de la actividad viva (-1 = ninguna), para [bringToFront].

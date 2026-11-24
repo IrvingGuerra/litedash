@@ -133,7 +133,7 @@
     <string name="templates_tab_wallpaper">Background</string>
     <string name="templates_road_help">Your car on the road with your speed and trip distance (OBD or GPS).</string>
     <string name="templates_speed_help">No car on the home screen. Speed comes from GPS; no OBD needed.</string>
-    <string name="templates_wallpaper_help">Your background photo with a few cards on top and the time floating. Pick the background here or in Home &amp; look.</string>
+    <string name="templates_wallpaper_help">Your background photo with a few cards on top and the time floating. Pick the background while arranging → Wallpaper or in Settings → Home &amp; look → Home.</string>
     <string name="template_map_car">Map and car</string>
     <string name="template_copilot">Co-pilot</string>
     <string name="template_route">Route</string>
@@ -144,6 +144,7 @@
     <string name="templates_map_help">The live map with your position and next turn.</string>
     <string name="add">Add</string>
     <string name="add_tile">Add to home</string>
+    <string name="add_widget">Add widget</string>
     <string name="add_group_car">Your car</string>
     <string name="add_group_media">Music and radio</string>
     <string name="add_group_nav">Navigation and calls</string>
@@ -174,8 +175,6 @@
     <string name="app_info">App info</string>
     <string name="modules">Modules</string>
     <string name="on_your_home">On your home</string>
-    <string name="hide_status_bar">Hide it</string>
-    <string name="hide_status_bar_help">The strip at the very top with Android\'s time and notifications (not LiteDash\'s). Swipe down from the top to see it for a moment.</string>
     <string name="stats_title">Statistics</string>
     <string name="stats_switch">Count this screen (anonymous)</string>
     <string name="stats_help">Once a day it sends a random number, the version and where you got it (GitHub or Play), Android, language, screen size, since when you use LiteDash and which built-in radio and Bluetooth your screen has and which sound setting worked on it, to know how many people use LiteDash. No location, accounts or personal data.</string>
@@ -204,7 +203,6 @@
     <string name="units_title">Units</string>
     <string name="units_speed">Speed and distance</string>
     <string name="units_temp">Temperature</string>
-    <string name="units_pressure">Tire pressure</string>
     <string name="units_auto">Automatic</string>
     <string name="units_metric">km/h and km</string>
     <string name="units_imperial">mph and miles</string>
@@ -231,9 +229,6 @@
     <string name="template_cards">Cards below</string>
     <string name="template_columns">Three columns</string>
     <string name="template_panel">Full panel</string>
-    <string name="screens_horizontal">Horizontal screens</string>
-    <string name="screens_vertical">Vertical screens</string>
-    <string name="your_screen">· Your screen</string>
     <string name="recommended">Recommended</string>
     <string name="appearance">Home &amp; look</string>
     <string name="back_home">Back to home</string>
@@ -340,7 +335,7 @@
     <string name="brightness_day">Day</string>
     <string name="brightness_night">Night</string>
     <string name="brightness_level">%1$d%%</string>
-    <string name="brightness_all_apps_help">Only in LiteDash asks for nothing. In all apps changes the screen brightness and Android asks permission to modify system settings.</string>
+    <string name="brightness_all_apps_help">Only in LiteDash asks for nothing. In all apps changes the screen brightness and Android asks permission to modify system settings; the day-to-night change applies when you return to LiteDash.</string>
     <string name="brightness_only_litedash">Only in LiteDash</string>
     <string name="brightness_all_apps">In all apps</string>
     <string name="brightness_permission">Permission missing: allow \"Modify system settings\" for LiteDash.</string>
@@ -459,7 +454,7 @@
     <string name="tab_sensors">Sensors</string>
     <string name="obd_no_readiness">Your car doesn\'t report the inspection monitors.</string>
     <string name="wallpaper_title">Wallpaper</string>
-    <string name="wallpaper_help">A LiteDash wallpaper (downloaded when you tap it) or a photo of yours behind the whole home screen. Without one, the theme background.</string>
+    <string name="wallpaper_help">A LiteDash wallpaper (downloaded when you tap it) or a photo of yours: the same on every page with an image. Without one, the theme background.</string>
     <string name="wallpaper_included">LiteDash wallpapers</string>
     <string name="wallpaper_downloading">Downloading…</string>
     <string name="wallpaper_failed">Couldn\'t download the wallpaper; check your connection.</string>
@@ -473,10 +468,11 @@
     <string name="logo_remove">Remove image</string>
     <string name="logo_intro">Intro animation</string>
     <string name="bar_title">Apps bar</string>
-    <string name="bar_hide">Hide the bar</string>
+    <string name="bar_hide">Hide the apps bar</string>
     <string name="bar_hide_help">Tap any free spot on the home screen (or its edge) to see it for a few seconds; Settings is there.</string>
+    <string name="hide_status_bar">Hide the Android bar (the top one)</string>
+    <string name="hide_status_bar_help">The strip with Android\'s time and notifications. Swipe down from the top to see it for a moment.</string>
     <string name="bar_buttons">Buttons</string>
-    <string name="bar_arrange">Arrange the bar</string>
     <string name="bar_position_help">Automatic: on the left when the screen is landscape, at the bottom when it\'s portrait.</string>
     <string name="bar_edit">Bar</string>
     <string name="bar_edit_help">Tap a button on the bar and move it with the arrows, or remove it. The two lines split left, center and right: move them the same way. Settings always stays.</string>
@@ -504,18 +500,21 @@
     <string name="bar_bottom">Bottom</string>
     <string name="release_notes">WHAT\'S NEW IN THIS VERSION</string>
     <string name="apps_section">Apps</string>
-    <string name="tab_tiles">Widgets</string>
     <string name="tab_navigation">Navigation</string>
     <string name="favorites_help">Apps on the bar, in order. Tap the x to remove one; search below to add one.</string>
     <string name="module_obd">OBD scanner</string>
     <string name="module_notifications">Other apps\' notifications</string>
     <string name="module_location">Location</string>
+    <string name="module_bluetooth">Bluetooth (nearby devices)</string>
+    <string name="module_local_network">Local network</string>
+    <string name="module_files">Music and files</string>
     <string name="radio_internet_title">Internet radio</string>
     <string name="module_tpms">Tires (TPMS)</string>
     <string name="tab_permissions">Permissions</string>
-    <string name="system">System</string>
+    <string name="about_help">About &amp; help</string>
     <string name="tab_updates">Updates</string>
     <string name="tab_about">About</string>
+    <string name="tab_report_problem">Report a problem</string>
     <string name="tile_car_help">Your car in 3D; spin it with your finger and tap to make it big</string>
     <string name="tile_road_help">Your car on the road with your speed (OBD or GPS), trip distance and your tires</string>
     <string name="tile_image_help">A photo of yours, like your brand\'s logo; without one, the LiteDash logo</string>
@@ -579,6 +578,7 @@
     <string name="obd_ble_none">No Bluetooth LE adapter found. Make sure it\'s plugged into the car with the engine or ignition on.</string>
     <string name="night_source">When is it night?</string>
     <string name="night_source_help">Drives the Day and night theme and the night brightness. Sunset time works on any screen; the light sensor notices tunnels and parking garages; the car headlights are learned from your head unit.</string>
+    <string name="night_source_unused">Used by the day and night theme or brightness.</string>
     <string name="night_sun">Sun times</string>
     <string name="night_sensor">Light sensor</string>
     <string name="night_no_sensor">This head unit has no light sensor.</string>

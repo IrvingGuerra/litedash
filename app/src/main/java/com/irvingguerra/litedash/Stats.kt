@@ -19,7 +19,7 @@ import java.io.IOException
  * el tamaño de pantalla, desde qué día se usa, la radio y el Bluetooth DE FÁBRICA de la pantalla ([FactoryAudio]: solo
  * apps del sistema, para saber qué familias soportar; nada de ubicación ni del usuario) y, si ya se calibró, la receta de
  * sonido que le funcionó a cada uno (`btRecipe`, `fmRecipe`: para el catálogo compartido de recetas). Las reglas de Firestore solo dejan escribir
- * esos campos y nadie puede leerlos desde la app. Se apaga en Ajustes → Sistema → Estadísticas.
+ * esos campos y nadie puede leerlos desde la app. Se apaga en Ajustes → Acerca de y ayuda → Acerca de → Estadísticas.
  */
 class Stats(private val context: Context, private val enabled: () -> Boolean) {
     private val store by lazy { context.getSharedPreferences("stats", Context.MODE_PRIVATE) }

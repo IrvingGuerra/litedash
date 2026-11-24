@@ -45,7 +45,7 @@ import kotlinx.coroutines.withContext
 import org.json.JSONObject
 
 /*
- * "Enviar un reporte" (Ajustes → Sistema → Tu pantalla): el usuario elige con qué hay un problema,
+ * "Enviar un reporte" (Ajustes → Acerca de y ayuda → Reportar un problema): el usuario elige con qué hay un problema,
  * cuál (si aplica) y qué pasa, y se escribe `reports/{id}` en Firestore por REST con eso, su nota
  * y los datos técnicos de la pantalla ([systemInfo]). Solo al tocar Enviar; nadie los lee desde la app.
  */
@@ -124,24 +124,24 @@ private sealed interface ReportState {
 /** El reporte que pidió el aviso "No encontramos cómo hacerlo sonar aquí"; lo toma la tarjeta al abrirse. Solo en memoria. */
 private var pendingSound: SoundPiece? = null
 
-/** "Enviar un reporte" ya en "Música · Bluetooth" (o "Radio · FM") con "No suena": Ajustes → Sistema → Tu pantalla. */
+/** "Enviar un reporte" ya en "Música · Bluetooth" (o "Radio · FM") con "No suena": Ajustes → Acerca de y ayuda → Reportar un problema. */
 internal fun openSoundReport(piece: SoundPiece) {
     pendingSound = piece
     forgetLastResult()
-    selectTab(SYSTEM_TABS, SystemTab.YOUR_SCREEN.ordinal)
+    selectTab(SYSTEM_TABS, SystemTab.REPORT.ordinal)
 }
 
 /** El reporte que pidió «¿No está tu país? Pídelo» (Ajustes → Apps → Navegación → Sin conexión). Solo en memoria. */
 private var pendingMapRequest = false
 
-/** "Enviar un reporte" ya en "Mapa" con "Quiero el mapa de mi país": Ajustes → Sistema → Tu pantalla. */
+/** "Enviar un reporte" ya en "Mapa" con "Quiero el mapa de mi país": Ajustes → Acerca de y ayuda → Reportar un problema. */
 internal fun openMapRequest() {
     pendingMapRequest = true
     forgetLastResult()
-    selectTab(SYSTEM_TABS, SystemTab.YOUR_SCREEN.ordinal)
+    selectTab(SYSTEM_TABS, SystemTab.REPORT.ordinal)
 }
 
-/** Hay un reporte esperando (sonido o mapa): «Tu pantalla» pone la tarjeta arriba (si no, en pantallas bajitas queda fuera de la vista). */
+/** Hay un reporte esperando (sonido o mapa): «Reportar un problema» pone la tarjeta arriba (si no, en pantallas bajitas queda fuera de la vista). */
 internal fun reportPending() = pendingSound != null || pendingMapRequest
 
 private const val NOTE_MAX = 500

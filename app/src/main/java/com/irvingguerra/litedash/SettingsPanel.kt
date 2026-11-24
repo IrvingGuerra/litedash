@@ -48,7 +48,7 @@ import com.irvingguerra.litedash.core.ui.blockTouches
 /** Secciones de Ajustes en el orden del menú: cada cosa vive en un solo lugar. */
 enum class SettingsSection(val title: Int) {
     CAR(R.string.your_car), APPEARANCE(R.string.appearance), APPS(R.string.apps_section), WORKSHOP(R.string.workshop),
-    TIRES(R.string.tires), WHEEL(R.string.wheel), MODULES(R.string.modules), PHONE(R.string.phone_section), SYSTEM(R.string.system),
+    TIRES(R.string.tires), WHEEL(R.string.wheel), MODULES(R.string.modules), PHONE(R.string.phone_section), SYSTEM(R.string.about_help),
 }
 
 /**
@@ -84,6 +84,8 @@ fun SettingsPanel(
     close: () -> Unit,
     onEdit: () -> Unit,
     onTemplates: () -> Unit,
+    /** El panel Agregar del inicio (Inicio y apariencia → Inicio → Agregar widget). */
+    onAddTile: () -> Unit,
     start: SettingsSection = SettingsSection.CAR,
     /** Las llantas a pantalla completa (desde la tarjeta de Salud). */
     onTires: () -> Unit = {},
@@ -118,7 +120,7 @@ fun SettingsPanel(
                 ) {
                     Label(stringResource(section.title), Typography.title.copy(fontSize = 30.sp), maxLines = 1)
                     when (section) {
-                        SettingsSection.APPEARANCE -> Appearance(d, revision, onEdit, onTemplates, onTires = { section = SettingsSection.TIRES })
+                        SettingsSection.APPEARANCE -> Appearance(d, revision, onEdit, onTemplates, onAddTile)
                         SettingsSection.CAR -> CarSettings(d)
                         SettingsSection.APPS -> AppsSettings(d, requestMap = {
                             openMapRequest()
@@ -162,10 +164,10 @@ internal fun tabs(titles: List<Int>, key: String): Int {
 private val WIDE_MENU = 270.dp
 private val MIN_CONTENT = 452.dp
 
-/** Las pestañas de Ajustes → Sistema ([SystemTab]). */
+/** Las pestañas de Ajustes → Acerca de y ayuda ([SystemTab]). */
 internal const val SYSTEM_TABS = "system"
 
-/** Ajustes → Sistema abre en Acerca de (desde el aviso de versión nueva). */
+/** Ajustes → Acerca de y ayuda abre en Acerca de (desde el aviso de versión nueva). */
 internal fun openAbout() = selectTab(SYSTEM_TABS, SystemTab.ABOUT.ordinal)
 
 /**

@@ -53,15 +53,16 @@ internal fun BarItem.title(): Int? = when (this) {
 }
 
 /**
- * La barra de apps (botón "Barra" al acomodarla): ocultarla, agregar los botones que no tiene, tus apps
- * favoritas, dónde va, su tamaño y, abajo, si es flotante o a lo ancho. Quitar y ordenar se hace en la barra misma.
+ * La barra de apps (botón "Barra" al acomodarla): ocultarla (y la de Android), sus botones (una sola barra, la vista
+ * previa con flechas: se acomoda con toques), tus apps favoritas, dónde va, su tamaño y, abajo, si es flotante o a lo
+ * ancho. Mientras el panel está abierto el inicio no se dibuja: no hay otra barra encima.
  */
 @Composable
 fun BarSettingsPanel(d: Dependencies, apps: List<App>, close: () -> Unit) {
     val c = LocalColors.current
     PanelScaffold(stringResource(R.string.bar_title), close) {
         Column(Modifier.weight(1f).widthIn(max = 720.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            BarSettings(d, apps) { title, content ->
+            BarSettings(d, apps, inTab = false) { title, content ->
                 if (title != null) Label(title.uppercase(currentLocale()), Typography.label, c.textMuted)
                 content()
             }
@@ -69,29 +70,30 @@ fun BarSettingsPanel(d: Dependencies, apps: List<App>, close: () -> Unit) {
     }
 }
 
-/** La misma configuración como pestaña de Ajustes → Inicio y apariencia; [onEdit] lleva a acomodar la barra. */
+/** La misma configuración como pestaña de Ajustes → Inicio y apariencia. */
 @Composable
-internal fun BarSettingsTab(d: Dependencies, onEdit: () -> Unit) {
-    BarSettings(d, rememberApps(d.apps).orEmpty(), onEdit) { title, content -> SettingsCard(title) { content() } }
+internal fun BarSettingsTab(d: Dependencies) {
+    BarSettings(d, rememberApps(d.apps).orEmpty(), inTab = true) { title, content -> SettingsCard(title) { content() } }
 }
 
 /**
  * Lo que se configura de la barra, por partes: cada una va en [section] con su título (el panel las pone con
- * un rótulo; la pestaña, en tarjetas). [onEdit]: es la pestaña de Ajustes, con su botón para ir a acomodarla (en el
- * panel no hace falta: ya se está acomodando).
+ * un rótulo; la pestaña, en tarjetas). [inTab]: es la pestaña de Ajustes (con la barra oculta solo quedan los interruptores).
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun BarSettings(d: Dependencies, apps: List<App>, onEdit: (() -> Unit)? = null, section: @Composable (title: String?, content: @Composable () -> Unit) -> Unit) {
+private fun BarSettings(d: Dependencies, apps: List<App>, inTab: Boolean, section: @Composable (title: String?, content: @Composable () -> Unit) -> Unit) {
     val c = LocalColors.current
     val prefs = d.prefs
     // La voz solo se ofrece si la pantalla trae asistente.
     val hasVoice = rememberVoiceIntent() != null
+    // Las dos barras que se ocultan, juntas: la de apps (LiteDash) y la de Android (la de arriba).
     section(null) {
         SwitchRow(stringResource(R.string.bar_hide), prefs.barHidden, { prefs.barHidden = it }, stringResource(R.string.bar_hide_help))
+        SwitchRow(stringResource(R.string.hide_status_bar), prefs.hideStatusBar, { prefs.hideStatusBar = it }, stringResource(R.string.hide_status_bar_help))
     }
-    // En la pestaña, oculta solo queda el interruptor; en el panel se está acomodando y la barra se ve: va todo.
-    if (prefs.barHidden && onEdit != null) return
+    // En la pestaña, oculta solo quedan los interruptores; en el panel se está acomodando y la barra se ve: va todo.
+    if (prefs.barHidden && inTab) return
     // Ajustes ya va siempre.
     // Lo elegido en la vista previa: también lo recién agregado, para que quede a la vista y se mueva de una vez.
     var selected by remember { mutableStateOf<BarItem?>(null) }
@@ -99,8 +101,7 @@ private fun BarSettings(d: Dependencies, apps: List<App>, onEdit: (() -> Unit)? 
     section(stringResource(R.string.bar_buttons)) {
         BarArrange(d, apps, hasVoice, selected) { selected = it }
         Label(stringResource(R.string.bar_edit_help), Typography.body, c.textMuted)
-        if (missing.isNotEmpty() || onEdit != null) FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            if (onEdit != null) Button(stringResource(R.string.bar_arrange), onEdit, primary = true)
+        if (missing.isNotEmpty()) FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             // Se agrega antes de Ajustes (Android Auto / CarPlay, junto a Bluetooth como al ponerlo solo) y queda elegido:
             // luego se mueve con las flechas.
             for (item in missing) item.title()?.let { title ->
