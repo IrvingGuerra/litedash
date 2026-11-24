@@ -48,11 +48,17 @@ object FactoryAudio {
             ?: if (hasBluetooth) ANDROID else NONE
 
     /**
-     * La receta de sonido que funcionó en el Bluetooth (ver [Recipes]); null si no se ha calibrado o si no es de la
-     * familia de esta pantalla ([HeadUnit.of]: una guardada con el criterio de antes, «instalada», no se cuenta).
+     * La receta de sonido que funcionó en el Bluetooth (ver [Recipes]) para las estadísticas; null si no se ha calibrado o
+     * si no es de la familia que se manda ([HeadUnit.ofSystem]). Bloquea.
      */
-    fun bluetoothRecipe(context: Context): String? =
-        savedRecipe(context, SoundPiece.MUSIC)?.takeIf { it == Recipes.FAILED || it in HeadUnit.of(context).bluetoothRecipes }
+    fun bluetoothRecipe(context: Context): String? = countedRecipe(savedRecipe(context, SoundPiece.MUSIC), HeadUnit.ofSystem(context))
+
+    /**
+     * La receta guardada que cuenta para [family]: «nada funcionó» siempre; una de la marca solo si es de esa familia (el
+     * motor la pudo guardar con la app instalada a mano, y `docs/recetas.py` la contaría para la familia equivocada).
+     */
+    internal fun countedRecipe(saved: String?, family: HeadUnit): String? =
+        saved?.takeIf { it == Recipes.FAILED || it in family.bluetoothRecipes }
 
     /** La receta de sonido que funcionó en la radio de fábrica; null si no se ha calibrado. */
     fun radioRecipe(context: Context): String? = savedRecipe(context, SoundPiece.RADIO)
@@ -61,7 +67,7 @@ object FactoryAudio {
         PrefsRecipeStore.savedId(context.getSharedPreferences(MUSIC_STORE, Context.MODE_PRIVATE), piece)
 
     /** La familia de la pantalla por sus paquetes del sistema ("nwd", "topway"… o "generic"). Bloquea: varias consultas al sistema. */
-    fun family(context: Context): String = HeadUnit.of(context).id
+    fun family(context: Context): String = HeadUnit.ofSystem(context).id
 
     /** La pantalla tiene Bluetooth de baja energía (lo que usaría el enlace con el celular sin hotspot). */
     fun ble(context: Context): Boolean = context.packageManager.hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)

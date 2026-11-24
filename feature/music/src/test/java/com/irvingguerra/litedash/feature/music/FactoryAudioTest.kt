@@ -1,6 +1,7 @@
 package com.irvingguerra.litedash.feature.music
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Test
 
 class FactoryAudioTest {
@@ -38,5 +39,20 @@ class FactoryAudioTest {
         assertEquals("com.foo.bt", FactoryAudio.pickBluetooth(emptyList(), setOf("com.foo.bt", "com.android.chrome"), hasBluetooth = true))
         assertEquals(FactoryAudio.ANDROID, FactoryAudio.pickBluetooth(emptyList(), setOf("com.android.chrome"), hasBluetooth = true))
         assertEquals(FactoryAudio.NONE, FactoryAudio.pickBluetooth(emptyList(), emptySet(), hasBluetooth = false))
+    }
+
+    @Test
+    fun onlyRecipesOfTheCountedFamilyAreSent() {
+        // TopWay con com.tw.bt en /data/app: el motor la reconoce y guarda tw.source8, pero para las estadísticas es genérica.
+        val installed = setOf(HeadUnit.TOPWAY_BLUETOOTH)
+        val system = emptySet<String>()
+        assertEquals(HeadUnit.TOPWAY, HeadUnit.detect { it in installed })
+        assertEquals(HeadUnit.GENERIC, HeadUnit.detect { it in system })
+        assertNull(FactoryAudio.countedRecipe(Recipes.TW_SOURCE8, HeadUnit.GENERIC))
+        assertEquals(Recipes.TW_SOURCE8, FactoryAudio.countedRecipe(Recipes.TW_SOURCE8, HeadUnit.TOPWAY))
+        // Las comunes y «nada funcionó» cuentan en cualquier familia.
+        assertEquals(Recipes.PLAIN, FactoryAudio.countedRecipe(Recipes.PLAIN, HeadUnit.GENERIC))
+        assertEquals(Recipes.FAILED, FactoryAudio.countedRecipe(Recipes.FAILED, HeadUnit.GENERIC))
+        assertNull(FactoryAudio.countedRecipe(null, HeadUnit.TOPWAY))
     }
 }

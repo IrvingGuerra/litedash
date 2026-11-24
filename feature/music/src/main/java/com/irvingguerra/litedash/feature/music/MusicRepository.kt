@@ -263,10 +263,10 @@ class MusicRepository(internal val context: Context) {
     /** La app que toca el Bluetooth: el propio Android (AVRCP) si lo trae, si no la enlazada. */
     fun bluetoothApp(): String? = bluetoothService?.packageName ?: sourceApps[SourceKind.BLUETOOTH] ?: knownBluetooth
 
-    /** La app de Bluetooth de marca de la pantalla (chip propio, del sistema), si hay. */
+    /** La app de Bluetooth de marca instalada (chip propio), si hay. */
     internal val knownBluetooth: String? by lazy { HeadUnit.bluetoothMusicApp(context) }
 
-    /** La familia de la pantalla (por sus apps del sistema, como en las estadísticas): sus recetas de sonido. */
+    /** La familia de la pantalla (por sus paquetes instalados): sus recetas de sonido. */
     internal val headUnit: HeadUnit by lazy { HeadUnit.of(context) }
 
     /**

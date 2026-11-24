@@ -57,14 +57,20 @@ internal enum class HeadUnit(
                 ?: GENERIC
 
         /**
-         * La familia de ESTA pantalla: solo cuentan las apps del sistema (una app de marca que el usuario instaló a mano no
-         * la hace de esa marca). El mismo criterio para el motor, la calibración y las estadísticas (dec. 33, 09-A9).
-         * Bloquea: consultas al instalador.
+         * La familia de ESTA pantalla para el motor (sus recetas y su app de Bluetooth): basta con que la app esté
+         * instalada, como hasta la 1.5.15 (hay pantallas chinas que traen `com.tw.bt`/`com.syu.bt` en /data/app, sin la
+         * bandera de sistema). Bloquea: consultas al instalador.
          */
-        fun of(context: Context): HeadUnit = detect { isSystemApp(context, it) }
+        fun of(context: Context): HeadUnit = detect(context::hasPackage)
 
-        /** La app de Bluetooth de marca que toca la música, con el criterio de [of]; null si la pantalla no trae. Bloquea. */
-        fun bluetoothMusicApp(context: Context): String? = bluetoothMusicApps.firstOrNull { isSystemApp(context, it) }
+        /**
+         * La familia para las estadísticas y para contar recetas ([FactoryAudio.family]): solo apps del sistema (una de
+         * marca instalada a mano no hace a la pantalla de esa marca). Bloquea.
+         */
+        fun ofSystem(context: Context): HeadUnit = detect { isSystemApp(context, it) }
+
+        /** La app de Bluetooth de marca instalada que toca la música (criterio de [of]); null si no hay. Bloquea. */
+        fun bluetoothMusicApp(context: Context): String? = bluetoothMusicApps.firstOrNull(context::hasPackage)
 
         /** Todas las apps de Bluetooth de marca, en orden de prioridad (para la familia en reportes y estadísticas). */
         val bluetoothApps: List<String> = BRAND_BLUETOOTH.map { it.pkg }
