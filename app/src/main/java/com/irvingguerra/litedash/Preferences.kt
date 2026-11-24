@@ -121,7 +121,8 @@ enum class CarTap(val stored: String) {
     BIG("big"), TIRES("tires");
 
     companion object {
-        fun fromStored(value: String?) = entries.firstOrNull { it.stored == value } ?: TIRES
+        // De fábrica, en grande (quien eligió «Ver sus llantas» lo tiene guardado y lo conserva).
+        fun fromStored(value: String?) = entries.firstOrNull { it.stored == value } ?: BIG
     }
 }
 
