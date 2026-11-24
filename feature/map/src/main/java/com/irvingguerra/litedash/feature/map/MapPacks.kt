@@ -26,10 +26,37 @@ import kotlinx.coroutines.launch
 import org.json.JSONArray
 import org.json.JSONObject
 
+/** Un estado o región por su nombre (para la lista de países y el buscador de estados). */
+interface NamedRegion {
+    val id: String
+    /** Su país (ISO de dos letras). */
+    val country: String
+
+    /** El nombre en [language] (o en inglés, o el id). */
+    fun name(language: String): String
+}
+
+/** Un estado del índice por país del que solo se sabe el nombre (sus archivos vienen en el archivo de su país). */
+class RegionName(override val id: String, override val country: String, private val names: Map<String, String>) : NamedRegion {
+    override fun name(language: String): String = names[language] ?: names["en"] ?: id
+}
+
+/**
+ * Un país del índice por país (`countries.json`): su caja (para saber si estás en él), sus regiones por nombre y su
+ * archivo (`countries/<cc>.json`, con el mismo esquema que `regions.json`) con su huella.
+ */
+class PackCountry(val code: String, val bbox: DoubleArray, val regions: List<RegionName>, internal val file: String, internal val sha256: String) {
+    /** ¿([lat], [lon]) cae en su caja? (La caja de un país abarca pedazos de sus vecinos.) */
+    fun covers(lat: Double, lon: Double): Boolean = lon >= bbox[0] && lat >= bbox[1] && lon <= bbox[2] && lat <= bbox[3]
+}
+
+/** El índice por país leído: sus países y si se permite buscar en internet (Photon). */
+internal class CountryIndex(val countries: List<PackCountry>, val photon: Boolean)
+
 /** Un estado o región del índice de litedash-maps: su nombre, su contorno y el archivo del mapa. */
 class MapRegion(
-    val id: String,
-    val country: String,
+    override val id: String,
+    override val country: String,
     private val names: Map<String, String>,
     val bbox: DoubleArray,
     /** Anillos exteriores: lon, lat, lon, lat… */
@@ -39,12 +66,11 @@ class MapRegion(
     val search: PackFile? = null,
     /** Las calles para la ruta (LDM0, con gzip); null en índices viejos. */
     val routes: PackFile? = null,
-) {
+) : NamedRegion {
     /** Lo que baja todo el estado: mapa, búsqueda y calles para la ruta. */
     val totalSize: Long get() = map.size + (search?.size ?: 0) + (routes?.size ?: 0)
 
-    /** El nombre en [language] (o en inglés, o el id). */
-    fun name(language: String): String = names[language] ?: names["en"] ?: id
+    override fun name(language: String): String = names[language] ?: names["en"] ?: id
 
     /** ¿([lat], [lon]) cae dentro del estado? Primero su caja; luego el contorno (par-impar). */
     fun contains(lat: Double, lon: Double): Boolean = insideShape(bbox, shape, lat, lon)
@@ -94,6 +120,12 @@ class PackJob(val id: String, val progress: Float, val error: PackError? = null)
  *
  * Una tesela sale del mapa de un estado solo si su centro cae dentro del contorno del estado: la caja de un estado
  * abarca pedazos de los vecinos (la de Nayarit, Puerto Vallarta) que en su archivo vienen sin calles.
+ *
+ * El índice va **por país** (decisión 29 de la auditoría 1.5.15; `regions.json` ya pesaba 1.46 MB): `countries.json`
+ * (chico: países, sus cajas y los nombres de sus regiones) y un archivo por país con sus regiones completas, que se baja
+ * solo cuando hace falta: el de donde estás, el de los mapas que ya tienes, el de la región del sistema y el que tocas en
+ * la lista (cada uno guardado por su huella: si no cambió, no se vuelve a bajar). Si `countries.json` no existe o no se
+ * puede bajar ni leer, se usa `regions.json` como en la 1.5.2–1.5.15 (todas las regiones de una vez).
  */
 class MapPacks private constructor(private val app: Context) {
     private val dir = File(app.filesDir, FOLDER)
@@ -106,7 +138,14 @@ class MapPacks private constructor(private val app: Context) {
     private val open = HashMap<String, PmTiles>()
     private val openLock = Any()
 
+    /** Las regiones con todos sus datos que ya se tienen (con el índice por país, solo las de los países cargados). */
     var regions by mutableStateOf<List<MapRegion>>(emptyList())
+        private set
+    /** Todas las regiones por su nombre (de todos los países): la lista de países y el buscador de estados. */
+    var catalog by mutableStateOf<List<NamedRegion>>(emptyList())
+        private set
+    /** Cómo va el archivo de cada país (sin entrada = aún no se pide). Solo con el índice por país. */
+    var countryState by mutableStateOf<Map<String, IndexState>>(emptyMap())
         private set
     var installed by mutableStateOf<List<InstalledPack>>(emptyList())
         private set
@@ -122,6 +161,16 @@ class MapPacks private constructor(private val app: Context) {
     private val indexBusy = AtomicBoolean(false)
     /** Para no leer la lista guardada dos veces a la vez (al arrancar y al pedirla). */
     private val indexLock = Any()
+
+    /** El índice por país (null = aún no, o se usa `regions.json`). */
+    @Volatile private var countries: List<PackCountry>? = null
+    /** Las regiones de cada país cargado, la huella de su archivo y los pedidos en curso (con [countryLock], un momento). */
+    private val loaded = HashMap<String, List<MapRegion>>()
+    private val loadedSha = HashMap<String, String>()
+    private val asked = HashSet<String>()
+    private val countryLock = Any()
+    /** Un archivo de país a la vez (bajarlo o leerlo de la caché tarda: aparte de [countryLock]). */
+    private val countryLoadLock = Any()
 
     /** Lo bajado, para las teselas (se lee sin candado desde los hilos del mapa). */
     @Volatile private var packs: List<InstalledPack> = emptyList()
@@ -147,13 +196,122 @@ class MapPacks private constructor(private val app: Context) {
             dir.listFiles { f -> f.name.endsWith(PART) && f.name != keep }?.forEach { it.delete() }
             readInstalled()
             // El índice de la caché: los nombres para la lista y el contorno de los adoptados (si no se lee, se volverá
-            // a pedir: ver loadIndex).
-            synchronized(indexLock) { if (regions.isEmpty()) readCachedIndex() }
+            // a pedir: ver loadIndex). Primero el índice por país; si no hay, `regions.json`.
+            synchronized(indexLock) { if (catalog.isEmpty()) readCachedCountries() || readCachedIndex() }
         }
     }
 
-    /** El estado donde estás (o null si el índice no lo trae o aún no llega). */
-    fun regionAt(lat: Double, lon: Double): MapRegion? = regions.firstOrNull { it.contains(lat, lon) }
+    /**
+     * El estado donde estás (o null si el índice no lo trae o aún no llega). Con el índice por país, si tu país aún no se
+     * carga se pide (sin reintentar uno que falló: eso lo hace Reintentar o la siguiente lista) y al llegar cambia
+     * [regions]. Se puede llamar al dibujar: ahí mismo no escribe estado.
+     */
+    fun regionAt(lat: Double, lon: Double): MapRegion? = regions.firstOrNull { it.contains(lat, lon) } ?: run {
+        countries?.filter { it.covers(lat, lon) }?.forEach { need(it.code, retry = false) }
+        null
+    }
+
+    /**
+     * ¿Se sabe que en ([lat], [lon]) no hay mapa de estado? Solo con la lista y, con el índice por país, ya cargados los
+     * países cuya caja lo cubre (si falta alguno se pide y, mientras, no se sabe: false).
+     */
+    fun knownOutside(lat: Double, lon: Double): Boolean {
+        if (catalog.isEmpty() || regionAt(lat, lon) != null) return false
+        val all = countries ?: return true
+        return all.none { it.covers(lat, lon) && countryState[it.code] != IndexState.IDLE }
+    }
+
+    /**
+     * Pide el archivo del país [code] (índice por país) si aún no está o cambió; el avance en [countryState] y, al
+     * llegar, sus regiones en [regions]. Con [retry] = false no vuelve a intentar uno que falló. Con `regions.json` ya
+     * están todas: no hace nada.
+     */
+    fun need(code: String, retry: Boolean = true) {
+        val country = countries?.firstOrNull { it.code == code } ?: return
+        synchronized(countryLock) {
+            if (loadedSha[code] == country.sha256 || code in asked) return
+            if (!retry && countryState[code] == IndexState.FAILED) return
+            asked += code
+        }
+        scope.launch {
+            try {
+                fetchCountries(listOf(country))
+            } finally {
+                synchronized(countryLock) { asked -= code }
+            }
+        }
+    }
+
+    /** Cambia lo que se muestra de cómo va el país [code]. */
+    private fun setCountryState(code: String, state: IndexState) = synchronized(countryLock) {
+        countryState = countryState + (code to state)
+    }
+
+    /**
+     * Carga (de la caché o, con [network], de la red) los [list] y publica sus regiones; uno que no se pudo bajar queda
+     * FAILED. Fuera del hilo principal.
+     */
+    private fun fetchCountries(list: List<PackCountry>, network: Boolean = true) {
+        var changed = false
+        for (c in list) {
+            val ok = try {
+                synchronized(countryLoadLock) { loadCountry(c, network) }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Throwable) {
+                false
+            }
+            // Sin red (al arrancar) y sin caché: aún no se pidió, no es un error.
+            if (ok || network) setCountryState(c.code, if (ok) IndexState.IDLE else IndexState.FAILED)
+            changed = changed || ok
+        }
+        if (changed) publishCountries()
+    }
+
+    /**
+     * Deja listas las regiones del país [c] (con [countryLoadLock]): si ya están con esta huella, nada; si la copia
+     * guardada tiene esta huella, de ahí; si no y hay [network], se baja (GitHub y, si falla o llega otra cosa, la copia).
+     */
+    private fun loadCountry(c: PackCountry, network: Boolean): Boolean {
+        if (synchronized(countryLock) { loadedSha[c.code] == c.sha256 }) return true
+        val cached = File(dir, c.file)
+        val bytes = cached.takeIf { it.isFile }?.readBytes()?.takeIf { sha256Of(it).equals(c.sha256, ignoreCase = true) }
+            ?: if (!network) return false else {
+                setCountryState(c.code, IndexState.LOADING)
+                fetchCountry(c).also { b ->
+                    cached.parentFile?.mkdirs()
+                    File(dir, "${c.file}.tmp").apply { writeBytes(b) }.renameTo(cached)
+                }
+            }
+        // Solo las regiones de ese país (el archivo no debe traer otras).
+        val list = readIndex(bytes.decodeToString()).regions.filter { it.country == c.code }
+        if (list.isEmpty()) return false
+        synchronized(countryLock) {
+            loaded[c.code] = list
+            loadedSha[c.code] = c.sha256
+        }
+        return true
+    }
+
+    /** El archivo del país [c] con la huella que dice `countries.json` (GitHub y, si no, la copia de jsDelivr). */
+    private fun fetchCountry(c: PackCountry): ByteArray {
+        for (base in listOf(DATA_URL, DATA_MIRROR_URL)) {
+            val bytes = try {
+                Https.get(app, base + c.file).inputStream.use { it.readBytes() }
+            } catch (_: IOException) {
+                continue
+            }
+            if (sha256Of(bytes).equals(c.sha256, ignoreCase = true)) return bytes
+        }
+        throw IOException("country ${c.code}")
+    }
+
+    /** Pone en [regions] las de los países cargados (en el orden del índice). */
+    private fun publishCountries() {
+        val all = countries ?: return
+        val list = synchronized(countryLock) { all.flatMap { loaded[it.code].orEmpty() } }
+        useRegions(list)
+    }
 
     /** ¿Hay mapa bajado del estado donde está ([lat], [lon])? */
     fun covers(lat: Double, lon: Double): Boolean = packs.any { it.contains(lat, lon) }
@@ -174,6 +332,8 @@ class MapPacks private constructor(private val app: Context) {
     }
 
     private fun loadIndex(force: Boolean, maxAgeMs: Long) {
+        // Primero el índice por país; si no existe o no se puede (y no hay uno guardado), `regions.json` como antes.
+        if (loadCountryIndex(force, maxAgeMs)) return
         val cached = File(dir, INDEX)
         // Una caché que no se pudo leer (dañada o sin memoria) no cuenta como al día: se vuelve a pedir.
         val readable = synchronized(indexLock) { regions.isNotEmpty() || readCachedIndex() }
@@ -200,11 +360,92 @@ class MapPacks private constructor(private val app: Context) {
         }
     }
 
-    /** El índice de GitHub; si esa red falla (bloqueada, limitada o un error del servidor), el de la copia. */
-    private fun fetchIndex(): String = try {
-        download(INDEX_URL)
+    /**
+     * El índice por país: al día (y sus países pendientes de la caché o la red) o bajado. false = no hay ninguno (ni
+     * guardado ni en la red): que se use `regions.json`.
+     */
+    private fun loadCountryIndex(force: Boolean, maxAgeMs: Long): Boolean {
+        val cached = File(dir, COUNTRIES)
+        val readable = synchronized(indexLock) { countries != null || readCachedCountries() }
+        val updated = runCatching { app.packageManager.getPackageInfo(app.packageName, 0).lastUpdateTime }.getOrDefault(0L)
+        if (!force && readable && indexFresh(cached.isFile, cached.lastModified(), updated, System.currentTimeMillis(), maxAgeMs)) {
+            // Al día: solo los países que faltan (los que no estaban en la caché).
+            countries?.let { all -> fetchCountries(wantedCountries(all).filter { c -> synchronized(countryLock) { loadedSha[c.code] != c.sha256 } }) }
+            indexState = IndexState.IDLE
+            return true
+        }
+        indexState = IndexState.LOADING
+        return try {
+            val text = fetchIndex(COUNTRIES)
+            val index = readCountries(text) // dañado o de otra versión: no se guarda
+            if (index.countries.isEmpty()) throw IOException("countries")
+            dir.mkdirs()
+            File(dir, "$COUNTRIES.tmp").apply { writeText(text) }.renameTo(cached)
+            useCountries(index, network = true)
+            indexState = IndexState.IDLE
+            true
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Throwable) {
+            // Sin internet o aún no publicado: con uno guardado se queda ese (falló); sin él, a `regions.json`.
+            if (countries != null) {
+                indexState = IndexState.FAILED
+                true
+            } else {
+                false
+            }
+        }
+    }
+
+    /** Lee el índice por país guardado (y los países de la caché que hagan falta); false si no hay o no se pudo leer. */
+    private fun readCachedCountries(): Boolean {
+        val f = File(dir, COUNTRIES)
+        if (!f.isFile) return false
+        val index = try {
+            readCountries(f.readText())
+        } catch (_: Throwable) {
+            return false
+        }
+        if (index.countries.isEmpty()) return false
+        useCountries(index, network = false)
+        return true
+    }
+
+    /**
+     * Usa el índice por país: sus países, el interruptor de la búsqueda en línea y, antes de mostrar nada, las regiones de
+     * los países que hacen falta ([wantedCountries]); sin [network], solo los que estén en la caché con su huella.
+     */
+    private fun useCountries(index: CountryIndex, network: Boolean) {
+        countries = index.countries
+        onlineSearch = index.photon
+        synchronized(countryLock) {
+            // Un país que ya no está en el índice se suelta.
+            val codes = index.countries.map { it.code }.toSet()
+            loaded.keys.retainAll(codes)
+            loadedSha.keys.retainAll(codes)
+            countryState = countryState.filterKeys { it in codes }
+        }
+        catalog = index.countries.flatMap { it.regions }
+        fetchCountries(wantedCountries(index.countries), network)
+        publishCountries()
+    }
+
+    /**
+     * Los países que hacen falta sin que nadie los pida: los de los mapas bajados (para sus actualizaciones y su contorno),
+     * los ya cargados o pedidos (por si cambiaron) y el de la región del sistema.
+     */
+    private fun wantedCountries(all: List<PackCountry>): List<PackCountry> {
+        val ids = installed.map { it.id }.toSet()
+        val system = java.util.Locale.getDefault().country
+        val had = synchronized(countryLock) { loaded.keys.toSet() + countryState.keys }
+        return all.filter { c -> c.code == system || c.code in had || c.regions.any { it.id in ids } }
+    }
+
+    /** El archivo [name] del repo de GitHub; si esa red falla (bloqueada, limitada o un error del servidor), el de la copia. */
+    private fun fetchIndex(name: String = INDEX_FILE): String = try {
+        download(DATA_URL + name)
     } catch (_: IOException) {
-        download(INDEX_MIRROR_URL)
+        download(DATA_MIRROR_URL + name)
     }
 
     private fun download(url: String): String = Https.get(app, url).inputStream.use { it.readBytes().decodeToString() }
@@ -228,9 +469,14 @@ class MapPacks private constructor(private val app: Context) {
      * mapas bajados que aún no traen su búsqueda (o la traen vieja), se la baja sola.
      */
     private fun useIndex(index: PackIndex) {
-        val list = index.regions
-        regions = list
         onlineSearch = index.photon
+        catalog = index.regions
+        useRegions(index.regions)
+    }
+
+    /** Las regiones con todos sus datos en [regions], y lo que sale de ellas para los mapas bajados. */
+    private fun useRegions(list: List<MapRegion>) {
+        regions = list
         synchronized(stateLock) {
             if (installed.any { it.shape.isEmpty() }) {
                 replaceInstalled(installed.map { p ->
@@ -536,17 +782,17 @@ class MapPacks private constructor(private val app: Context) {
     private fun plan(fromLat: Double, fromLon: Double, toLat: Double, toLon: Double, headingDeg: Float?): RoutePlan {
         val pack = installed.firstOrNull { it.contains(fromLat, fromLon) && it.contains(toLat, toLon) }
             ?: return when {
-                installed.none { it.contains(fromLat, fromLon) } -> RoutePlan.NoState(regionAt(fromLat, fromLon))
+                installed.none { it.contains(fromLat, fromLon) } -> RoutePlan.NoState(regionAtNow(fromLat, fromLon))
                 // Los dos estados bajados: lo que falta es la ruta entre estados (llega con los viajes largos).
                 installed.any { it.contains(toLat, toLon) } -> RoutePlan.TwoStates
-                else -> RoutePlan.OtherState(regionAt(toLat, toLon))
+                else -> RoutePlan.OtherState(regionAtNow(toLat, toLon))
             }.also {
                 // Sin la lista no se sabe qué estado falta: se pide (al llegar, la ruta se vuelve a planear).
-                if (regions.isEmpty() && it !is RoutePlan.TwoStates) refresh()
+                if (catalog.isEmpty() && it !is RoutePlan.TwoStates) refresh()
             }
         if (pack.routesSha.isEmpty() || !File(dir, "${pack.id}.ldm").isFile) {
             // Sin el índice aún (sin red al abrir): se pide; mientras, no se sabe de dónde bajarlas.
-            val region = regions.firstOrNull { it.id == pack.id && it.routes != null } ?: return RoutePlan.Failed(RouteError.NO_PATH).also { refresh() }
+            val region = regionNow(pack.id)?.takeIf { it.routes != null } ?: return RoutePlan.Failed(RouteError.NO_PATH).also { refresh() }
             return RoutePlan.NeedsRoutes(region)
         }
         return synchronized(routeLock) {
@@ -557,7 +803,7 @@ class MapPacks private constructor(private val app: Context) {
                 val g = RoadGraph.open(File(dir, "${pack.id}.ldm")) ?: run {
                     File(dir, "${pack.id}.ldm").delete()
                     synchronized(stateLock) { replaceInstalled(installed.map { if (it.id == pack.id) it.copy(routesSha = "") else it }) }
-                    return@synchronized regions.firstOrNull { it.id == pack.id && it.routes != null }?.let { RoutePlan.NeedsRoutes(it) }
+                    return@synchronized regionNow(pack.id)?.takeIf { it.routes != null }?.let { RoutePlan.NeedsRoutes(it) }
                         ?: RoutePlan.Failed(RouteError.NO_PATH)
                 }
                 graph = g
@@ -569,6 +815,20 @@ class MapPacks private constructor(private val app: Context) {
                 { RoutePlan.Failed((it as? RouteException)?.error ?: RouteError.NO_PATH) },
             )
         }
+    }
+
+    /** [regionAt], pero si su país (índice por país) aún no está, lo carga aquí mismo (fuera del hilo principal). */
+    private fun regionAtNow(lat: Double, lon: Double): MapRegion? = regions.firstOrNull { it.contains(lat, lon) } ?: run {
+        val all = countries ?: return null
+        fetchCountries(all.filter { it.covers(lat, lon) && countryState[it.code] != IndexState.IDLE })
+        regions.firstOrNull { it.contains(lat, lon) }
+    }
+
+    /** La región [id] con todos sus datos; si su país (índice por país) aún no está, lo carga aquí mismo. */
+    private fun regionNow(id: String): MapRegion? = regions.firstOrNull { it.id == id } ?: run {
+        val all = countries ?: return null
+        fetchCountries(all.filter { c -> c.regions.any { it.id == id } })
+        regions.firstOrNull { it.id == id }
     }
 
     /** Baja las calles para la ruta de [region] (lo pidió el usuario al pedir una ruta); el avance en [routesJob]. */
@@ -672,7 +932,10 @@ class MapPacks private constructor(private val app: Context) {
 
     companion object {
         private const val FOLDER = "map_packs"
+        /** La copia guardada de `regions.json` (se llama así desde la 1.5.2). */
         private const val INDEX = "index.json"
+        /** El índice por país, guardado con el mismo nombre que en el repo (los países en `countries/<cc>.json`). */
+        private const val COUNTRIES = "countries.json"
         private const val INSTALLED = "installed.json"
         private const val PART = ".part"
         /** De qué región y archivo es el `.part` del mapa a medias (para seguirlo tras cerrar la app). */
@@ -683,12 +946,15 @@ class MapPacks private constructor(private val app: Context) {
         private const val SPACE_MARGIN = 64L * 1024 * 1024
         /** La búsqueda y las calles descomprimidas pesan ~3 veces su .gz, y el .gz convive con ellas un momento. */
         private const val EXTRA_SPACE_FACTOR = 4
-        // Desde la 1.5.2, todos los países (EUA trae estados con millones de cruces: el ruteador de antes no los aguanta en
-        // pantallas de 1 GB, así que index.json se queda solo con México para las versiones anteriores).
-        private const val INDEX_URL = "https://raw.githubusercontent.com/IrvingGuerra/litedash-maps/main/regions.json"
-        // La misma lista por otra red (jsDelivr), para donde raw.githubusercontent.com está bloqueado o limitado; puede ir
-        // hasta 12 h atrás.
-        private const val INDEX_MIRROR_URL = "https://cdn.jsdelivr.net/gh/IrvingGuerra/litedash-maps@main/regions.json"
+        /** Los datos del repo litedash-maps (`main`): los índices y los archivos de cada país. */
+        private const val DATA_URL = "https://raw.githubusercontent.com/IrvingGuerra/litedash-maps/main/"
+        // Lo mismo por otra red (jsDelivr), para donde raw.githubusercontent.com está bloqueado o limitado; puede ir hasta
+        // 12 h atrás.
+        private const val DATA_MIRROR_URL = "https://cdn.jsdelivr.net/gh/IrvingGuerra/litedash-maps@main/"
+        // Desde la 1.5.2, todos los países en un archivo (EUA trae estados con millones de cruces: el ruteador de antes no
+        // los aguanta en pantallas de 1 GB, así que index.json se queda solo con México para las versiones anteriores).
+        // Desde la 1.5.16 es el respaldo del índice por país.
+        private const val INDEX_FILE = "regions.json"
         private const val INDEX_MAX_AGE_MS = 24 * 60 * 60 * 1000L
         /** En Ajustes → Sin conexión la lista se pide si tiene más de una hora (ahí se buscan los países nuevos). */
         const val INDEX_SCREEN_MAX_AGE_MS = 60 * 60 * 1000L
@@ -698,15 +964,22 @@ class MapPacks private constructor(private val app: Context) {
 
         /** Para el reporte técnico, sin abrir nada: cuántas regiones trae la lista y cuáles están bajadas. */
         fun describe(): String = instance?.let { p ->
-            val cache = File(p.dir, INDEX)
+            val split = p.countries
+            val cache = File(p.dir, if (split != null) COUNTRIES else INDEX)
             val state = when (p.indexState) {
                 IndexState.LOADING -> " (bajando)"
                 IndexState.FAILED -> " (falló)"
                 // Sin lista y sin caché: aún no se ha pedido (no es un error).
-                IndexState.IDLE -> if (p.regions.isEmpty() && !cache.isFile) " (sin pedir)" else ""
+                IndexState.IDLE -> if (p.catalog.isEmpty() && !cache.isFile) " (sin pedir)" else ""
             }
             val age = if (cache.isFile) ", caché de hace ${(System.currentTimeMillis() - cache.lastModified()) / 3_600_000} h" else ""
-            "Mapas: lista=${p.regions.size} regiones$state$age (${p.regions.map { it.country }.distinct().joinToString()}); bajados=" +
+            // Con el índice por país: cuántos países y cuáles se cargaron (y cuáles fallaron).
+            val how = if (split == null) "" else {
+                val failed = p.countryState.filterValues { it == IndexState.FAILED }.keys
+                ", por país: ${split.size}, cargados=${p.regions.map { it.country }.distinct().joinToString().ifEmpty { "ninguno" }}" +
+                    if (failed.isEmpty()) "" else ", fallaron=${failed.joinToString()}"
+            }
+            "Mapas: lista=${p.catalog.size} regiones$state$age$how (${p.catalog.map { it.country }.distinct().joinToString()}); bajados=" +
                 p.installed.joinToString { it.id }.ifEmpty { "ninguno" }
         } ?: "Mapas: sin abrir en esta sesión"
 
@@ -759,6 +1032,40 @@ class MapPacks private constructor(private val app: Context) {
                 }.getOrNull()
             }, photon)
         }
+
+        /**
+         * El índice por país (`countries.json`, versión 1): por país su código, su caja, su archivo con su huella y los
+         * nombres de sus regiones; los dañados se saltan. De otra versión: sin países (el interruptor de Photon sí cuenta).
+         */
+        internal fun readCountries(text: String): CountryIndex {
+            val o = JSONObject(text)
+            val photon = o.optJSONObject("online")?.optBoolean("photon", true) ?: true
+            if (o.optInt("version") != 1) return CountryIndex(emptyList(), photon)
+            val list = o.getJSONArray("countries")
+            return CountryIndex((0 until list.length()).mapNotNull { i ->
+                runCatching {
+                    val c = list.getJSONObject(i)
+                    val code = c.getString("code")
+                    val file = c.getString("file")
+                    // Solo un archivo de la carpeta countries/ (nada de rutas raras).
+                    require(COUNTRY_FILE.matches(file))
+                    val r = c.getJSONObject("regions")
+                    val regions = r.keys().asSequence().map { id ->
+                        val n = r.getJSONObject(id)
+                        RegionName(id, code, n.keys().asSequence().associateWith { n.getString(it) })
+                    }.toList()
+                    require(regions.isNotEmpty())
+                    PackCountry(code, box(c.getJSONArray("bbox")), regions, file, c.getString("sha256"))
+                }.getOrNull()
+            }, photon)
+        }
+
+        /** El nombre de un archivo de país: `countries/<cc>.json`. */
+        private val COUNTRY_FILE = Regex("countries/[a-z0-9-]{2,16}\\.json")
+
+        /** La huella SHA-256 de [bytes] (en hexadecimal). */
+        internal fun sha256Of(bytes: ByteArray): String =
+            java.security.MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it) }
 
         internal fun packToJson(p: InstalledPack): JSONObject {
             val shape = JSONArray()

@@ -109,15 +109,14 @@ class RoadGraph private constructor(private val channel: FileChannel, private va
         out.add(latE6(to), lonE6(to))
     }
 
-    /**
-     * La vuelta de [inEdge] a [outEdge] en el cruce [via]: ¿se puede? (no si está prohibida o si de [inEdge] solo se
-     * puede seguir a otro tramo). Las vueltas están ordenadas por cruce.
-     */
-    fun turnAllowed(via: Int, inEdge: Int, outEdge: Int): Boolean {
-        if (turnCount == 0) return true
+    /** ¿El cruce [v] tiene vueltas guardadas (prohibidas u obligatorias)? Ahí importa por dónde se llegó. */
+    fun hasTurns(v: Int): Boolean = firstTurn(v) >= 0
+
+    /** La primera vuelta guardada del cruce [via] (están ordenadas por cruce), o -1 si no tiene. */
+    private fun firstTurn(via: Int): Int {
+        if (turnCount == 0) return -1
         var lo = 0
         var hi = turnCount - 1
-        // El primero con ese cruce.
         var first = -1
         while (lo <= hi) {
             val mid = (lo + hi) ushr 1
@@ -127,6 +126,15 @@ class RoadGraph private constructor(private val channel: FileChannel, private va
                 hi = mid - 1
             }
         }
+        return first
+    }
+
+    /**
+     * La vuelta de [inEdge] a [outEdge] en el cruce [via]: ¿se puede? (no si está prohibida o si de [inEdge] solo se
+     * puede seguir a otro tramo). Las vueltas están ordenadas por cruce.
+     */
+    fun turnAllowed(via: Int, inEdge: Int, outEdge: Int): Boolean {
+        val first = firstTurn(via)
         if (first < 0) return true
         var i = first
         var only = -1

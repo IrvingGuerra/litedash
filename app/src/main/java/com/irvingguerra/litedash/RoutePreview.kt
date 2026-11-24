@@ -94,7 +94,7 @@ internal fun RunRoute(d: Dependencies, request: RouteRequest) {
     val installed = packs.installed
     val routesReady = remember(installed) { installed.joinToString { it.routesSha } }
     // Sin la lista de estados (sin red al abrir) no se sabe de dónde bajar las calles: al llegar, otra vez.
-    val regionsReady = packs.regions.isNotEmpty()
+    val regionsReady = packs.catalog.isNotEmpty()
     // La primera ubicación puede ser la última conocida de hace horas: si una lectura nueva queda lejos y aún no tocas «Ir».
     LaunchedEffect(request, here) {
         val o = request.origin ?: return@LaunchedEffect
@@ -192,7 +192,7 @@ internal fun RouteCard(
     val openLabel = if (appName != null) stringResource(R.string.search_open_in, appName) else stringResource(R.string.search_open)
     // Falta un estado pero aún no llega la lista de mapas (se está bajando): no se sabe cuál; al llegar se replanea.
     val listLoading = request.plan.let { it is RoutePlan.NoState && it.region == null || it is RoutePlan.OtherState && it.region == null } &&
-        packs.regions.isEmpty() && packs.indexState == IndexState.LOADING
+        packs.catalog.isEmpty() && packs.indexState == IndexState.LOADING
     Column(modifier.clip(RoundedCornerShape(Radius.card)).background(c.surface.copy(alpha = 0.97f)).padding(16.dp)) {
         Row(verticalAlignment = Alignment.Top) {
             Column(Modifier.weight(1f)) {
@@ -225,7 +225,7 @@ internal fun RouteCard(
                         when {
                             plan.region != null -> stringResource(R.string.route_no_state_named, plan.region!!.name(currentLocale().language))
                             // Sin la lista de estados (sin red al abrir) no se sabe si hay mapa de ahí.
-                            packs.regions.isEmpty() -> stringResource(R.string.route_no_state)
+                            packs.catalog.isEmpty() -> stringResource(R.string.route_no_state)
                             else -> stringResource(R.string.route_no_map)
                         },
                     )
@@ -254,7 +254,7 @@ internal fun RouteCard(
             // Falta un estado que sí existe (o no se sabe): un atajo a donde se baja.
             val getMap = when {
                 listLoading -> false
-                plan is RoutePlan.NoState -> plan.region != null || packs.regions.isEmpty()
+                plan is RoutePlan.NoState -> plan.region != null || packs.catalog.isEmpty()
                 plan is RoutePlan.OtherState -> plan.region != null
                 else -> false
             }

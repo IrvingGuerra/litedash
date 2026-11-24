@@ -27,6 +27,12 @@ enum class RouteError { FROM_OFF_ROAD, TO_OFF_ROAD, NO_PATH, TOO_BIG }
  * sentidos y vueltas prohibidas u obligatorias; sin vueltas en U en los cruces; al salir, la vuelta en U para ir contra tu
  * rumbo cuesta [UTURN_S]). Una búsqueda a la vez: llamar desde un solo hilo, fuera del principal.
  *
+ * Vueltas guardadas (A6 de la auditoría 1.5.15): en un cruce con vueltas prohibidas u obligatorias, a dónde se puede
+ * seguir depende del tramo por el que se llegó. Ahí la etiqueta no es del cruce sino de la **media arista de llegada**
+ * (en [turnLabels]): llegar más barato por un tramo con «solo derecho» ya no tapa otra llegada más cara que sí deja dar
+ * la vuelta que la ruta necesita. En los demás cruces (casi todos) una etiqueta por cruce, como siempre. Un «estado» de
+ * la búsqueda es el cruce (≥ 0) o, en esos cruces, `-(media arista + 1)`.
+ *
  * Memoria ([Labels]): en estados chicos (≤ [DENSE_MAX] cruces, todo México) una lista por cruce, ~16 B cada uno (Edomex:
  * ~10 MB); en los grandes (California: ~2.9 millones) solo lo que la búsqueda toca, que crece sobre la marcha y se suelta
  * al terminar. Si no cabe en la memoria de la app, la ruta dice [RouteError.TOO_BIG] en vez de tumbarla.
@@ -40,6 +46,8 @@ class Router internal constructor(
 
     private val room = Room()
     private val labels = Labels(graph.vertexCount, dense, sparseStart, switchToDense, room)
+    /** Las llegadas a cruces con vueltas guardadas, por media arista (pocas: siempre tabla, nunca lista). */
+    private val turnLabels = Labels(graph.halfCount, false, TURN_START, false, room)
     private val heap = Heap(room)
 
     /** Cuántos cruces tocó la última búsqueda y su memoria en bytes (para medir en las pruebas). */
@@ -70,13 +78,15 @@ class Router internal constructor(
     private fun search(a: Snap, b: Snap, headingDeg: Float?): Route? = try {
         room.collectedAt = 0L
         labels.reset()
+        turnLabels.reset()
         heap.clear()
         explore(a, b, headingDeg)
     } finally {
-        touched = labels.used
-        touchedBytes = labels.bytes + heap.bytes
+        touched = labels.used + turnLabels.used
+        touchedBytes = labels.bytes + turnLabels.bytes + heap.bytes
         // Lo que creció para una búsqueda larga se suelta: la memoria vuelve a la app entre rutas.
         labels.release()
+        turnLabels.release()
         heap.release()
     }
 
@@ -100,6 +110,7 @@ class Router internal constructor(
                 seedStarts(a, b, back, aLen, aSpeed, ahead)
                 exploreFrom(a, b, bLen, bSpeed)?.let { return it }
                 labels.reset()
+                turnLabels.reset()
                 heap.clear()
             }
             if (if (forward) graph.canLeave(a.half) else back >= 0 && graph.canLeave(back)) {
@@ -151,29 +162,32 @@ class Router internal constructor(
         val goalFrom = if (graph.canLeave(b.half)) (b.alongM / bSpeed).toFloat() else Float.NaN
         val goalTo = if (bBack >= 0 && graph.canLeave(bBack)) ((bLen - b.alongM) / bSpeed).toFloat() else Float.NaN
         var best = Float.MAX_VALUE
-        var bestEnd = -1
+        // El estado del último cruce (los de media arista son negativos: «nada» es MIN_VALUE).
+        var bestEnd = Int.MIN_VALUE
         val toLat = b.lat
         val toLon = b.lon
         val kx = cos(Math.toRadians(toLat)) * RoadGraph.M_PER_DEG
         while (heap.size > 0) {
             val f = heap.topKey()
-            val v = heap.pop()
+            val state = heap.pop()
             if (f >= best) break
-            val sv = labels.find(v)
-            val g = labels.cost[sv]
+            val v = vertexOf(state)
+            val table = tableOf(state)
+            val sv = table.find(keyOf(state))
+            val g = table.cost[sv]
             // Ya se sacó con algo mejor (las entradas viejas se quedan en el montón).
             if (f > g + heuristic(v, toLat, toLon, kx) + 0.01f) continue
-            val inVia = labels.via[sv]
+            val inVia = table.via[sv]
             val inEdge = if (inVia >= 0) graph.halfEdge(inVia) else a.edge
             // Entrar al tramo del destino también es una vuelta: sin vuelta en U ni vueltas prohibidas.
             val ontoGoal = inEdge != b.edge && graph.turnAllowed(v, inEdge, b.edge)
             if (ontoGoal && v == b.from && !goalFrom.isNaN() && g + goalFrom < best) {
                 best = g + goalFrom
-                bestEnd = v
+                bestEnd = state
             }
             if (ontoGoal && v == b.to && !goalTo.isNaN() && g + goalTo < best) {
                 best = g + goalTo
-                bestEnd = v
+                bestEnd = state
             }
             for (h in graph.firstHalf(v) until graph.firstHalf(v + 1)) {
                 if (!graph.canLeave(h)) continue
@@ -182,20 +196,32 @@ class Router internal constructor(
                 if (e == inEdge || !graph.turnAllowed(v, inEdge, e)) continue
                 val t = graph.halfTarget(h)
                 val c = g + (graph.lengthM(e) / speed(e)).toFloat()
-                val st = labels.find(t)
-                if (st < 0 || c < labels.cost[st]) {
-                    val slot = if (st < 0) labels.add(t) else st
-                    labels.cost[slot] = c
-                    labels.via[slot] = h
-                    labels.prev[slot] = v
-                    heap.push(c + heuristic(t, toLat, toLon, kx), t)
+                // Al cruce [t] con vueltas guardadas se llega «por h»: cada llegada con su propia etiqueta.
+                val next = if (graph.hasTurns(t)) -(h + 1) else t
+                val to = tableOf(next)
+                val key = keyOf(next)
+                val st = to.find(key)
+                if (st < 0 || c < to.cost[st]) {
+                    val slot = if (st < 0) to.add(key) else st
+                    to.cost[slot] = c
+                    to.via[slot] = h
+                    to.prev[slot] = state
+                    heap.push(c + heuristic(t, toLat, toLon, kx), next)
                 }
             }
         }
-        if (bestEnd < 0) return null
+        if (bestEnd == Int.MIN_VALUE) return null
         return build(a, b, bestEnd, best.toDouble())
     }
 
+    /** El cruce del estado [s] de la búsqueda (un cruce, o la llegada por una media arista). */
+    private fun vertexOf(s: Int) = if (s >= 0) s else graph.halfTarget(-s - 1)
+
+    /** Dónde guarda su etiqueta el estado [s], y con qué llave. */
+    private fun tableOf(s: Int) = if (s >= 0) labels else turnLabels
+    private fun keyOf(s: Int) = if (s >= 0) s else -s - 1
+
+    /** La salida: el cruce [v] por el tramo de donde estás (su etiqueta es la del cruce, sin media arista de llegada). */
     private fun seed(v: Int, c: Float, b: Snap) {
         val found = labels.find(v)
         if (found >= 0 && labels.cost[found] <= c) return
@@ -222,17 +248,23 @@ class Router internal constructor(
         return (sqrt(dx * dx + dy * dy) / FASTEST).toFloat()
     }
 
-    /** Arma la ruta: del punto de salida al cruce de inicio, los tramos y del último cruce al destino. */
-    private fun build(a: Snap, b: Snap, end: Int, seconds: Double): Route {
+    /**
+     * Arma la ruta: del punto de salida al cruce de inicio, los tramos y del último cruce al destino. [endState] = el estado
+     * de la búsqueda del último cruce.
+     */
+    private fun build(a: Snap, b: Snap, endState: Int, seconds: Double): Route {
         val halves = ArrayList<Int>()
-        var v = end
+        val end = vertexOf(endState)
+        var state = endState
         while (true) {
-            val slot = labels.find(v)
-            val h = labels.via[slot]
+            val table = tableOf(state)
+            val slot = table.find(keyOf(state))
+            val h = table.via[slot]
             if (h < 0) break
             halves += h
-            v = labels.prev[slot]
+            state = table.prev[slot]
         }
+        val v = vertexOf(state)
         halves.reverse()
         val pts = PointList()
         // Los tramos de la ruta: dónde empieza cada uno (índice de punto), su tramo y su velocidad.
@@ -389,6 +421,9 @@ class Router internal constructor(
 
         /** Lugares iniciales de la tabla de lo recorrido (crece al doble cuando se llena a 3/4). */
         private const val SPARSE_START = 1 shl 14
+
+        /** Lugares iniciales de la tabla de llegadas a cruces con vueltas guardadas (son pocas). */
+        private const val TURN_START = 1 shl 8
 
         /** ¿Cabe la lista por cruce? Solo en estados chicos y si deja de sobra memoria libre (a lo más un cuarto). */
         private fun denseFits(n: Int) = n <= DENSE_MAX && n.toLong() * Labels.DENSE_BYTES <= freeMemory() / 4

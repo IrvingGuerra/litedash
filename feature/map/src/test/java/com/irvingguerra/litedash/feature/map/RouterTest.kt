@@ -228,6 +228,32 @@ class RouterTest {
         assertNear(0.2 * net.len(h(1, 0)) + net.len(h(1, 1)) + net.len(vt(0, 2)) + 0.5 * net.len(h(0, 1)), r.distanceM)
     }
 
+    /**
+     * Dos llegadas al mismo cruce (A6): la barata (del poniente, con «solo derecho») no deja subir al norte; la cara (del
+     * sur) sí. El destino está en vt(1, 1), de un solo sentido hacia el norte: solo se llega subiendo desde v(1, 1). Con
+     * una etiqueta por cruce la llegada cara se tiraba y no había camino; por media arista se rodea por el sur.
+     */
+    @Test
+    fun onlyTurnKeepsTheCostlierArrivalThatAllowsTheExit() {
+        val only = listOf(Turn(vid(1, 1), h(1, 0), h(1, 1), 1))
+        val oneway = mapOf(vt(1, 1) to 1)
+        val from = at(h(1, 0), 0.5)
+        val to = at(vt(1, 1), 0.2)
+
+        val net = build(oneway, only)
+        val r = net.route(from, to).getOrThrow()
+        assertTrue(net.goes(r, net.v(1, 0), net.v(0, 0)))
+        assertTrue(net.goes(r, net.v(0, 1), net.v(1, 1)))
+        assertNear(
+            0.5 * net.len(h(1, 0)) + net.len(vt(0, 0)) + net.len(h(0, 0)) + net.len(vt(0, 1)) + 0.2 * net.len(vt(1, 1)),
+            r.distanceM,
+        )
+        assertStartsAndEnds(r, from, to)
+        // Lo mismo con la tabla de lo recorrido (estados grandes).
+        val sparse = Router(net.graph, dense = false, sparseStart = 2).route(from[0], from[1], to[0], to[1]).getOrThrow()
+        assertTrue(r.points.contentEquals(sparse.points))
+    }
+
     @Test
     fun isolatedStreetHasNoPath() {
         val net = build()

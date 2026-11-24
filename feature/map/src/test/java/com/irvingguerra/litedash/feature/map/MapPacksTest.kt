@@ -122,4 +122,70 @@ class MapPacksTest {
         assertEquals(0, MapPacks.partialOf(full, PausedPack("x", "def", 600)))
         assertEquals(0, MapPacks.partialOf(full, null))
     }
+
+    // ---- Índice por país (countries.json + countries/<cc>.json) ----
+
+    private val countries = """
+        {"version":1,"release":"mx-x+us-y","source":"OSM","online":{"photon":false},"countries":[
+          {"code":"MX","file":"countries/mx.json","sha256":"aa","size":10,"total":128,"bbox":[-100,19,-98,21],
+           "regions":{"mx-ele":{"es":"Ele","en":"El"},"mx-chico":{"es":"Chico"}}},
+          {"code":"US","file":"../regions.json","sha256":"bb","size":10,"total":1,"bbox":[-125,24,-66,49],
+           "regions":{"us-x":{"en":"X"}}},
+          {"code":"CO","file":"countries/co.json","sha256":"cc","size":10,"total":1,"bbox":[-80,-5,-66,13],"regions":{}},
+          {"code":"CA","file":"countries/ca.json","sha256":"dd","size":10,"total":1,"bbox":[-141,41,-52,84],
+           "regions":{"ca-on":{"en":"Ontario","es":"Ontario"}}}
+        ]}
+    """.trimIndent()
+
+    @Test
+    fun readsTheCountryIndexAndSkipsBrokenCountries() {
+        val read = MapPacks.readCountries(countries)
+        // US apunta fuera de countries/ y CO no trae regiones: se saltan.
+        assertEquals(listOf("MX", "CA"), read.countries.map { it.code })
+        assertFalse(read.photon)
+        val mx = read.countries.first()
+        assertEquals("countries/mx.json", mx.file)
+        assertEquals("aa", mx.sha256)
+        assertEquals(setOf("mx-ele", "mx-chico"), mx.regions.map { it.id }.toSet())
+        assertTrue(mx.regions.all { it.country == "MX" })
+        val ele = mx.regions.first { it.id == "mx-ele" }
+        assertEquals("El", ele.name("en"))
+        assertEquals("Ele", ele.name("es"))
+        // Sin inglés, el id (como en MapRegion).
+        assertEquals("mx-chico", mx.regions.first { it.id == "mx-chico" }.name("de"))
+        assertTrue(mx.covers(20.0, -99.0))
+        assertFalse(mx.covers(25.0, -99.0))
+    }
+
+    @Test
+    fun otherVersionsOfTheCountryIndexAreIgnoredButKeepPhoton() {
+        val other = MapPacks.readCountries("""{"version":2,"online":{"photon":false},"countries":[]}""")
+        assertTrue(other.countries.isEmpty())
+        assertFalse(other.photon)
+    }
+
+    /** Lo que hace que la app use `regions.json`: un índice por país que no existe (404) o que no es uno. */
+    @Test
+    fun aMissingCountryIndexFallsBackToRegionsJson() {
+        assertTrue(runCatching { MapPacks.readCountries("404: Not Found") }.isFailure)
+        // regions.json no es un índice por país (no trae "countries")...
+        assertTrue(runCatching { MapPacks.readCountries(index) }.isFailure)
+        // ...pero se sigue leyendo como siempre.
+        assertEquals(2, MapPacks.parseIndex(index).size)
+    }
+
+    /** El archivo de un país tiene el esquema de regions.json (sin "online"): se lee igual y no apaga Photon. */
+    @Test
+    fun aCountryFileReadsLikeRegionsJson() {
+        val file = index.replace(""""release":"mx-x",""", """"release":"mx-x","source":"OSM",""")
+        val read = MapPacks.readIndex(file)
+        assertEquals(listOf("mx-ele", "mx-chico"), read.regions.map { it.id })
+        assertTrue(read.photon)
+    }
+
+    @Test
+    fun sha256OfBytes() {
+        assertEquals("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", MapPacks.sha256Of(ByteArray(0)))
+        assertEquals("ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad", MapPacks.sha256Of("abc".toByteArray()))
+    }
 }
