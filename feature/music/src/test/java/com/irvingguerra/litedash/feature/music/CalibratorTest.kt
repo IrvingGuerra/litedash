@@ -267,8 +267,18 @@ class CalibratorTest {
     }
 
     @Test
-    fun otherRecipeAsksWhenNothingCanTellIfItSounds() {
+    fun trustedFamilyNeverAsksWhenNothingCanTell() {
+        // TopWay/FYT (dec. 31c): sin audio en Android no se pregunta, ni con una receta que no es de la marca.
         val c = calibrator(trusts = true)
+        assertEquals(Step.Apply(Recipes.PLAIN), c.play(topWay, null))
+        assertEquals(Step.Done, c.unknown())
+        assertFalse(c.asking)
+        assertNull(store.saved)
+    }
+
+    @Test
+    fun otherFamiliesAskWhenNothingCanTellIfItSounds() {
+        val c = calibrator(trusts = false)
         assertEquals(Step.Apply(Recipes.PLAIN), c.play(topWay, null))
         assertEquals(Step.Ask, c.unknown())
         assertTrue(c.asking)

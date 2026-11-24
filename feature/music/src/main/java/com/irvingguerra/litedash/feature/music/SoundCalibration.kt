@@ -77,7 +77,7 @@ internal class PrefsRecipeStore(private val prefs: SharedPreferences, piece: Sou
 internal class SoundCalibration(
     private val piece: SoundPiece,
     val store: PrefsRecipeStore,
-    trustsSignal: Boolean,
+    private val trustsSignal: Boolean,
     moving: () -> Boolean,
     private val main: Handler,
     private val trace: (String) -> Unit,
@@ -88,6 +88,8 @@ internal class SoundCalibration(
     private val check: () -> Boolean? = { null },
     /** Hay cómo saber si suena (algo dice si la fuente toca); si no, un null de [check] no es "se pausó" ([Calibrator.unknown]). */
     private val knowable: () -> Boolean = { true },
+    /** Sin [knowable]: Android tiene el audio de la fuente (con [trustsSignal] basta para decir que suena). */
+    private val audible: () -> Boolean = { false },
     /** Terminó sin pregunta pendiente tras una revisión o un "Sí" ([heard] = suena o la persona dice que sí). */
     private val settled: (heard: Boolean) -> Unit = {},
 ) {
@@ -178,6 +180,12 @@ internal class SoundCalibration(
     private val verify: Runnable = Runnable {
         val heard = check()
         when {
+            // Sin saber si el celular suena: en TopWay/FYT se confía en el audio de Android (las [VERIFY_TRIES] revisiones).
+            heard == null && !knowable() && trustsSignal && audible() -> {
+                trace("calibración ${piece.key}: ${engine.current} suena (Android tiene el audio)")
+                heard(true)
+            }
+            heard == null && !knowable() && trustsSignal && ++checks < VERIFY_TRIES -> main.postDelayed(verify, VERIFY_MS)
             heard == null && !knowable() -> {
                 trace("calibración ${piece.key}: ${engine.current} sin forma de revisar si suena")
                 handle(engine.unknown())

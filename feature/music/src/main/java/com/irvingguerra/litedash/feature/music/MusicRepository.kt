@@ -1192,7 +1192,7 @@ class MusicRepository(internal val context: Context) {
     internal val btCalibration by lazy {
         SoundCalibration(
             SoundPiece.MUSIC, btStore, headUnit.trustsSignal, { moving() || users == 0 }, mainHandler, ::trace, { showCheck(SoundPiece.MUSIC, it) },
-            use = ::useBluetooth, check = ::bluetoothHeard, knowable = ::bluetoothKnowable,
+            use = ::useBluetooth, check = ::bluetoothHeard, knowable = ::bluetoothKnowable, audible = ::bluetoothAudible,
         )
     }
 
