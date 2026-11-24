@@ -88,6 +88,7 @@ import com.irvingguerra.litedash.feature.map.MapPacks
 import com.irvingguerra.litedash.feature.map.MapRegion
 import com.irvingguerra.litedash.feature.map.MapStyle
 import com.irvingguerra.litedash.feature.map.MapZoom
+import com.irvingguerra.litedash.feature.map.NamedRegion
 import com.irvingguerra.litedash.feature.map.MinimalPalette
 import com.irvingguerra.litedash.feature.map.OfflineArea
 import com.irvingguerra.litedash.feature.map.OfflineError
@@ -658,7 +659,7 @@ internal fun MapOfflineSettings(d: Dependencies, requestMap: () -> Unit) {
     val context = LocalContext.current
     val packs = remember { MapPacks.get(context) }
     OfflineSection(d, MapLook.parse(d.prefs.mapLook.orEmpty()).detail)
-    val listLoading = packs.regions.isEmpty() && packs.indexState == IndexState.LOADING
+    val listLoading = packs.catalog.isEmpty() && packs.indexState == IndexState.LOADING
     Button(stringResource(R.string.map_request_country), requestMap, enabled = !listLoading)
 }
 
@@ -740,8 +741,9 @@ private fun OfflineSection(d: Dependencies, detail: MapDetail) {
     // por estado; por zona solo si ya se sabe que donde estás no hay mapa del estado (y no has bajado ninguno): sin
     // ubicación se quedaba en «Por zona» y los estados ni se veían.
     val spot = position?.let { Math.round(it.latitude * 100) / 100.0 to Math.round(it.longitude * 100) / 100.0 }
-    val outside = remember(packs.regions, spot) { spot != null && packs.regionAt(spot.first, spot.second) == null }
-    val noState = packs.installed.isEmpty() && packs.regions.isNotEmpty() && outside
+    // Con el índice por país, solo cuando ya llegaron los países de ahí (si no, aún no se sabe).
+    val outside = remember(packs.catalog, packs.regions, packs.countryState, spot) { spot != null && packs.knownOutside(spot.first, spot.second) }
+    val noState = packs.installed.isEmpty() && outside
     var picked by rememberSaveable { mutableStateOf<Boolean?>(null) }
     val byZone = picked ?: noState
     Segmented(
@@ -831,7 +833,7 @@ private fun StatePackSection(d: Dependencies, packs: MapPacks) {
     Label(stringResource(R.string.map_pack_help), Typography.small, c.textMuted)
     // Siempre a la vista: donde aún no hay mapa del estado, las zonas sirven en cualquier parte.
     Label(stringResource(R.string.map_pack_tip), Typography.small, c.accent)
-    if (packs.regions.isEmpty()) {
+    if (packs.catalog.isEmpty()) {
         when (packs.indexState) {
             IndexState.LOADING -> Label(stringResource(R.string.map_list_loading), Typography.small, c.textMuted)
             IndexState.FAILED -> {
@@ -860,9 +862,16 @@ private fun StatePackSection(d: Dependencies, packs: MapPacks) {
     val q = normalize(query.trim())
     val shownIds = shown.map { it.id }.toSet()
     if (q.isNotEmpty()) {
-        val keys = remember(packs.regions, locale) { packs.regions.associate { it.id to regionSearchKeys(it, locale) } }
-        val found = remember(packs.regions, q, shownIds, language) {
-            packs.regions.filter { it.id !in shownIds && keys[it.id].orEmpty().any { k -> q in k } }.sortedBy { it.name(language) }
+        // Se busca en los nombres de todos los países; los datos de cada estado vienen con su país (índice por país): se
+        // piden los países de lo encontrado, si no son demasiados (escribiendo más se acota).
+        val keys = remember(packs.catalog, locale) { packs.catalog.associate { it.id to regionSearchKeys(it, locale) } }
+        val matches = remember(packs.catalog, q) { packs.catalog.filter { keys[it.id].orEmpty().any { k -> q in k } } }
+        LaunchedEffect(matches) {
+            if (matches.size <= SEARCH_LOAD_MAX) matches.map { it.country }.distinct().forEach { packs.need(it, retry = false) }
+        }
+        val found = remember(packs.regions, matches, shownIds, language) {
+            val ids = matches.map { it.id }.toSet()
+            packs.regions.filter { it.id in ids && it.id !in shownIds }.sortedBy { it.name(language) }
         }
         for (r in found) StatePackRow(packs, r, language, free)
         return
@@ -870,9 +879,9 @@ private fun StatePackSection(d: Dependencies, packs: MapPacks) {
     // Los países que hay, siempre a la vista (escondidos, la gente pedía países que ya estaban), en orden alfabético. Al
     // tocar uno, sus estados; sin nada arriba (no se sabe dónde estás ni has bajado nada) ya va abierto el tuyo, por la
     // región del sistema.
-    val countries = remember(packs.regions, locale) {
+    val countries = remember(packs.catalog, locale) {
         val collator = Collator.getInstance(locale)
-        packs.regions.map { it.country }.distinct().sortedWith { a, b -> collator.compare(countryName(a, locale), countryName(b, locale)) }
+        packs.catalog.map { it.country }.distinct().sortedWith { a, b -> collator.compare(countryName(a, locale), countryName(b, locale)) }
     }
     var pickedCountry by rememberSaveable { mutableStateOf<String?>(null) }
     val country = pickedCountry
@@ -882,6 +891,16 @@ private fun StatePackSection(d: Dependencies, packs: MapPacks) {
         for (code in countries) Button(countryName(code, locale), { pickedCountry = code }, primary = code == country)
     }
     if (country == null) return
+    // Con el índice por país, los estados del país llegan al tocarlo (bajando, falló con Reintentar).
+    LaunchedEffect(country) { packs.need(country, retry = false) }
+    when (packs.countryState[country]) {
+        IndexState.LOADING -> Label(stringResource(R.string.map_list_loading), Typography.small, c.textMuted)
+        IndexState.FAILED -> if (packs.regions.none { it.country == country }) {
+            Label(downloadError(R.string.map_list_failed), Typography.small, c.warning)
+            Button(stringResource(R.string.retry), { packs.need(country) }, primary = true)
+        }
+        else -> Unit
+    }
     val others = remember(packs.regions, country, shownIds, language) {
         packs.regions.filter { it.country == country && it.id !in shownIds }.sortedBy { it.name(language) }
     }
@@ -895,10 +914,13 @@ private fun countryName(code: String, locale: Locale): String = Locale("", code)
  * Con qué se encuentra un estado en el buscador (sin acentos ni mayúsculas): su nombre en tu idioma y en los de la lista
  * (en inglés, «Mexico City»; en español, «Ciudad de México») y el de su país en tu idioma y en inglés.
  */
-internal fun regionSearchKeys(region: MapRegion, locale: Locale): Set<String> =
+internal fun regionSearchKeys(region: NamedRegion, locale: Locale): Set<String> =
     ((REGION_NAME_LANGUAGES + locale.language).map { region.name(it) } +
         countryName(region.country, locale) + countryName(region.country, Locale.ENGLISH))
         .map { normalize(it) }.toSet()
+
+/** Hasta cuántos estados encontrados se piden sus países (índice por país): «a» encontraría casi todos. */
+private const val SEARCH_LOAD_MAX = 60
 
 /** Los idiomas en que se prueba el nombre de un estado (los que trae la lista de mapas; si falta uno, sale el inglés). */
 private val REGION_NAME_LANGUAGES = listOf("en", "es", "pt", "fr", "it", "de", "tr")
