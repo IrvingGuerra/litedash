@@ -17,7 +17,9 @@ import com.irvingguerra.litedash.feature.car.CarPaint
 import com.irvingguerra.litedash.feature.car.DEFAULT_GLOSS
 import com.irvingguerra.litedash.feature.car.PaintFinish
 import com.irvingguerra.litedash.feature.dashboard.DashboardStore
+import com.irvingguerra.litedash.feature.dashboard.Tile
 import com.irvingguerra.litedash.feature.dashboard.TileTypes
+import com.irvingguerra.litedash.feature.map.MapLook
 import java.util.Locale
 import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty
@@ -52,7 +54,7 @@ internal object PrefKeys {
     const val MAP_EXTERNAL = "map_external"
     const val PROJECTION_APP = "projection_app"
     const val PHONE_APP = "phone_app"
-    /** Ya se pasó la app propia de los widgets Android Auto / CarPlay y Teléfono a la de toda la app ([Preferences.adoptWidgetApps]). */
+    /** Ya se pasó la app propia de los widgets Android Auto / CarPlay y Teléfono, y el aspecto del Mapa, a lo de toda la app ([Preferences.adoptWidgetApps]). */
     const val WIDGET_APPS_ADOPTED = "widget_apps_adopted"
     /** En el mapa de fondo del inicio: tu auto en vez de la flecha. */
     const val MAP_BACKDROP_CAR = "map_backdrop_car"
@@ -523,27 +525,20 @@ class Preferences(context: Context) {
     var phoneApp by string(PrefKeys.PHONE_APP)
 
     /**
-     * Hasta la 1.5.15 los widgets Android Auto / CarPlay y Teléfono guardaban su propia app (en sus datos); ahora hay
-     * una sola para toda la app. Una vez, al arrancar y antes de cargar el inicio: la del acomodo guardado más nuevo pasa
-     * a ser la de toda la app (si no había otra elegida) y todos esos widgets se quedan sin la suya.
+     * Hasta la 1.5.15 los widgets Android Auto / CarPlay y Teléfono guardaban su propia app (en sus datos) y el Mapa su
+     * propio aspecto; ahora hay uno solo para toda la app. Una vez, al arrancar y antes de cargar el inicio: lo del acomodo
+     * guardado más nuevo pasa a ser lo de toda la app (si no había otro elegido) y esos widgets se quedan sin su app (los
+     * datos del Mapa se quedan: ya no se leen) ([WidgetAdoption]).
      * Quitar cuando < 5 % de las pantallas esté antes de la 1.5.16 según docs/usuarios.py.
      */
     fun adoptWidgetApps(store: DashboardStore) {
         if (p.getBoolean(PrefKeys.WIDGET_APPS_ADOPTED, false)) return
         p.edit { putBoolean(PrefKeys.WIDGET_APPS_ADOPTED, true) }
-        var projection: String? = null
-        var phone: String? = null
-        store.changeDataEverywhere { t ->
-            val own = appKeyOf(t.data) ?: return@changeDataEverywhere null
-            when (t.type) {
-                TileTypes.PROJECTION -> projection = projection ?: own
-                TileTypes.PHONE -> phone = phone ?: own
-                else -> return@changeDataEverywhere null
-            }
-            withAppKey(t.data, null)
-        }
-        if (projectionApp == null && projection != null) projectionApp = projection
-        if (phoneApp == null && phone != null) phoneApp = phone
+        val found = WidgetAdoption()
+        store.changeDataEverywhere(found::visit)
+        if (projectionApp == null) found.projection?.let { projectionApp = it }
+        if (phoneApp == null) found.phone?.let { phoneApp = it }
+        if (mapLook == null) found.mapLook?.let { mapLook = it }
     }
 
     /** El mapa de la guía (el de la derecha) gira hacia donde vas en vez de quedarse al norte (botón de la brújula). */
@@ -763,3 +758,33 @@ const val DEFAULT_CARD_OPACITY = com.irvingguerra.litedash.core.ui.MIN_OPACITY
 /** El velo de fábrica sobre tu fondo de pantalla (el de siempre) y lo más que se puede cerrar. */
 const val DEFAULT_WALLPAPER_DIM = 0.4f
 const val MAX_WALLPAPER_DIM = 0.6f
+
+/**
+ * Lo que [Preferences.adoptWidgetApps] toma de los widgets, recorridos del acomodo más nuevo al más viejo: la primera app
+ * de un Android Auto / CarPlay y de un Teléfono, y el aspecto del primer Mapa (sin el «detail» de antes; null si es el
+ * de fábrica). [visit] da los datos nuevos de la pieza (null = igual).
+ */
+internal class WidgetAdoption {
+    var projection: String? = null
+        private set
+    var phone: String? = null
+        private set
+    var mapLook: String? = null
+        private set
+    private var sawMap = false
+
+    fun visit(t: Tile): String? {
+        if (t.type == TileTypes.MAP) {
+            if (!sawMap) mapLook = MapLook.parse(t.data).encode().ifEmpty { null }
+            sawMap = true
+            return null
+        }
+        val own = appKeyOf(t.data) ?: return null
+        when (t.type) {
+            TileTypes.PROJECTION -> projection = projection ?: own
+            TileTypes.PHONE -> phone = phone ?: own
+            else -> return null
+        }
+        return withAppKey(t.data, null)
+    }
+}
