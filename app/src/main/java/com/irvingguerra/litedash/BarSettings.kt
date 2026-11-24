@@ -184,7 +184,7 @@ private fun BarArrange(d: Dependencies, apps: List<App>, hasVoice: Boolean, sele
             color = if (at < movable.lastIndex) c.text else idle, label = stringResource(R.string.bar_move_right),
         )
     }
-    BarPreview(d.apps, rememberFavorites(d, apps), shown, chosen) { onSelect(if (selected == it) null else it) }
+    BarPreview(d.apps, rememberFavorites(d, apps), projectionChoice(d, apps), shown, chosen) { onSelect(if (selected == it) null else it) }
 }
 
 /** Tus apps favoritas de la barra: quitar con la x y agregar buscándolas. */
