@@ -830,7 +830,7 @@
     <string name="add_widget">विजेट जोड़ें</string>
     <string name="installed_apps">इंस्टॉल किए गए ऐप्स</string>
     <string name="map_allow_notifications">नोटिफ़िकेशन की अनुमति दें</string>
-    <string name="module_bluetooth">Bluetooth (आसपास के डिवाइस)</string>
+    <string name="module_bluetooth">Bluetooth</string>
     <string name="module_files">म्यूज़िक और फ़ाइलें</string>
     <string name="module_local_network">लोकल नेटवर्क</string>
     <string name="night_source_unused">दिन और रात वाली थीम या ब्राइटनेस के लिए इस्तेमाल होता है।</string>

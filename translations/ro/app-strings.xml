@@ -839,7 +839,7 @@
     <string name="add_widget">Adaugă widget</string>
     <string name="installed_apps">Aplicații instalate</string>
     <string name="map_allow_notifications">Permite notificările</string>
-    <string name="module_bluetooth">Bluetooth (dispozitive din apropiere)</string>
+    <string name="module_bluetooth">Bluetooth</string>
     <string name="module_files">Muzică și fișiere</string>
     <string name="module_local_network">Rețea locală</string>
     <string name="night_source_unused">Se folosește cu tema sau luminozitatea de zi și noapte.</string>

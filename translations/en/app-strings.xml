@@ -509,7 +509,7 @@
     <string name="module_obd">Workshop (OBD)</string>
     <string name="module_notifications">Other apps\' notifications</string>
     <string name="module_location">Location</string>
-    <string name="module_bluetooth">Bluetooth (nearby devices)</string>
+    <string name="module_bluetooth">Bluetooth</string>
     <string name="module_local_network">Local network</string>
     <string name="module_files">Music and files</string>
     <string name="module_tpms">Tires</string>

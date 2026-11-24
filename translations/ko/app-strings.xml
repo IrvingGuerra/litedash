@@ -821,7 +821,7 @@
     <string name="add_widget">위젯 추가</string>
     <string name="installed_apps">설치된 앱</string>
     <string name="map_allow_notifications">알림 허용</string>
-    <string name="module_bluetooth">Bluetooth(근처 기기)</string>
+    <string name="module_bluetooth">Bluetooth</string>
     <string name="module_files">음악 및 파일</string>
     <string name="module_local_network">로컬 네트워크</string>
     <string name="night_source_unused">주간/야간 테마나 밝기에 사용돼요.</string>

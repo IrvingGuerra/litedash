@@ -848,7 +848,7 @@
     <string name="add_widget">Přidat widget</string>
     <string name="installed_apps">Nainstalované aplikace</string>
     <string name="map_allow_notifications">Povolit oznámení</string>
-    <string name="module_bluetooth">Bluetooth (zařízení v okolí)</string>
+    <string name="module_bluetooth">Bluetooth</string>
     <string name="module_files">Hudba a soubory</string>
     <string name="module_local_network">Místní síť</string>
     <string name="night_source_unused">Používá ho denní a noční motiv nebo jas.</string>

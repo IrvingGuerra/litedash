@@ -848,7 +848,7 @@
     <string name="add_widget">Додати віджет</string>
     <string name="installed_apps">Встановлені застосунки</string>
     <string name="map_allow_notifications">Дозволити сповіщення</string>
-    <string name="module_bluetooth">Bluetooth (пристрої поруч)</string>
+    <string name="module_bluetooth">Bluetooth</string>
     <string name="module_files">Музика й файли</string>
     <string name="module_local_network">Локальна мережа</string>
     <string name="night_source_unused">Використовується темою або яскравістю «день і ніч».</string>

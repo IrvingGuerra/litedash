@@ -830,7 +830,7 @@
     <string name="add_widget">Lägg till widget</string>
     <string name="installed_apps">Installerade appar</string>
     <string name="map_allow_notifications">Tillåt aviseringar</string>
-    <string name="module_bluetooth">Bluetooth (enheter i närheten)</string>
+    <string name="module_bluetooth">Bluetooth</string>
     <string name="module_files">Musik och filer</string>
     <string name="module_local_network">Lokalt nätverk</string>
     <string name="night_source_unused">Används av dag- och natttemat eller ljusstyrkan.</string>

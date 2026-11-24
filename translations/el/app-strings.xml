@@ -830,7 +830,7 @@
     <string name="add_widget">Προσθήκη widget</string>
     <string name="installed_apps">Εγκατεστημένες εφαρμογές</string>
     <string name="map_allow_notifications">Να επιτρέπονται οι ειδοποιήσεις</string>
-    <string name="module_bluetooth">Bluetooth (κοντινές συσκευές)</string>
+    <string name="module_bluetooth">Bluetooth</string>
     <string name="module_files">Μουσική και αρχεία</string>
     <string name="module_local_network">Τοπικό δίκτυο</string>
     <string name="night_source_unused">Χρησιμοποιείται από το θέμα ή τη φωτεινότητα ημέρας και νύχτας.</string>

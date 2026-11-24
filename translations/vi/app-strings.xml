@@ -821,7 +821,7 @@
     <string name="add_widget">Thêm tiện ích</string>
     <string name="installed_apps">Ứng dụng đã cài</string>
     <string name="map_allow_notifications">Cho phép thông báo</string>
-    <string name="module_bluetooth">Bluetooth (thiết bị lân cận)</string>
+    <string name="module_bluetooth">Bluetooth</string>
     <string name="module_files">Nhạc và tệp</string>
     <string name="module_local_network">Mạng cục bộ</string>
     <string name="night_source_unused">Dùng cho giao diện hoặc độ sáng ngày và đêm.</string>

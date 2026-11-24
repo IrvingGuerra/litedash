@@ -821,7 +821,7 @@
     <string name="add_widget">เพิ่มวิดเจ็ต</string>
     <string name="installed_apps">แอปที่ติดตั้ง</string>
     <string name="map_allow_notifications">อนุญาตการแจ้งเตือน</string>
-    <string name="module_bluetooth">Bluetooth (อุปกรณ์ใกล้เคียง)</string>
+    <string name="module_bluetooth">Bluetooth</string>
     <string name="module_files">เพลงและไฟล์</string>
     <string name="module_local_network">เครือข่ายท้องถิ่น</string>
     <string name="night_source_unused">ใช้กับธีมหรือความสว่างแบบกลางวันและกลางคืน</string>

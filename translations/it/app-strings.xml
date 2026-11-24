@@ -830,7 +830,7 @@
     <string name="add_widget">Aggiungi widget</string>
     <string name="installed_apps">App installate</string>
     <string name="map_allow_notifications">Consenti notifiche</string>
-    <string name="module_bluetooth">Bluetooth (dispositivi nelle vicinanze)</string>
+    <string name="module_bluetooth">Bluetooth</string>
     <string name="module_files">Musica e file</string>
     <string name="module_local_network">Rete locale</string>
     <string name="night_source_unused">Si usa con il tema o la luminosità giorno e notte.</string>

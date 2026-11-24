@@ -830,7 +830,7 @@
     <string name="add_widget">Widget ekle</string>
     <string name="installed_apps">Yüklü uygulamalar</string>
     <string name="map_allow_notifications">Bildirimlere izin ver</string>
-    <string name="module_bluetooth">Bluetooth (yakındaki cihazlar)</string>
+    <string name="module_bluetooth">Bluetooth</string>
     <string name="module_files">Müzik ve dosyalar</string>
     <string name="module_local_network">Yerel ağ</string>
     <string name="night_source_unused">Gündüz ve gece teması veya parlaklığı tarafından kullanılır.</string>

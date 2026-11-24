@@ -830,7 +830,7 @@
     <string name="add_widget">Widget hozzáadása</string>
     <string name="installed_apps">Telepített alkalmazások</string>
     <string name="map_allow_notifications">Értesítések engedélyezése</string>
-    <string name="module_bluetooth">Bluetooth (közeli eszközök)</string>
+    <string name="module_bluetooth">Bluetooth</string>
     <string name="module_files">Zene és fájlok</string>
     <string name="module_local_network">Helyi hálózat</string>
     <string name="night_source_unused">A nappali és éjszakai téma vagy fényerő használja.</string>

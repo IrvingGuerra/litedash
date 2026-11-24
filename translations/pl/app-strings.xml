@@ -848,7 +848,7 @@
     <string name="add_widget">Dodaj widżet</string>
     <string name="installed_apps">Zainstalowane aplikacje</string>
     <string name="map_allow_notifications">Zezwól na powiadomienia</string>
-    <string name="module_bluetooth">Bluetooth (urządzenia w pobliżu)</string>
+    <string name="module_bluetooth">Bluetooth</string>
     <string name="module_files">Muzyka i pliki</string>
     <string name="module_local_network">Sieć lokalna</string>
     <string name="night_source_unused">Używane przez motyw lub jasność dnia i nocy.</string>

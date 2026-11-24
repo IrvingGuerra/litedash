@@ -821,7 +821,7 @@
     <string name="add_widget">添加小组件</string>
     <string name="installed_apps">已安装的应用</string>
     <string name="map_allow_notifications">允许通知</string>
-    <string name="module_bluetooth">Bluetooth（附近的设备）</string>
+    <string name="module_bluetooth">Bluetooth</string>
     <string name="module_files">音乐和文件</string>
     <string name="module_local_network">本地网络</string>
     <string name="night_source_unused">用于日夜主题或亮度。</string>

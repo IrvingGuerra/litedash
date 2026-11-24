@@ -821,7 +821,7 @@
     <string name="add_widget">Tambah widget</string>
     <string name="installed_apps">Aplikasi terpasang</string>
     <string name="map_allow_notifications">Izinkan notifikasi</string>
-    <string name="module_bluetooth">Bluetooth (perangkat sekitar)</string>
+    <string name="module_bluetooth">Bluetooth</string>
     <string name="module_files">Musik dan file</string>
     <string name="module_local_network">Jaringan lokal</string>
     <string name="night_source_unused">Dipakai oleh tema atau kecerahan siang dan malam.</string>

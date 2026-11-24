@@ -519,7 +519,7 @@
     <string name="module_obd">Taller (OBD)</string>
     <string name="module_notifications">Avisos de otras apps</string>
     <string name="module_location">Ubicación</string>
-    <string name="module_bluetooth">Bluetooth (dispositivos cercanos)</string>
+    <string name="module_bluetooth">Bluetooth</string>
     <string name="module_local_network">Red local</string>
     <string name="module_files">Música y archivos</string>
     <string name="module_tpms">Llantas</string>

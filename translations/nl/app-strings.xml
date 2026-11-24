@@ -830,7 +830,7 @@
     <string name="add_widget">Widget toevoegen</string>
     <string name="installed_apps">Geïnstalleerde apps</string>
     <string name="map_allow_notifications">Meldingen toestaan</string>
-    <string name="module_bluetooth">Bluetooth (apparaten in de buurt)</string>
+    <string name="module_bluetooth">Bluetooth</string>
     <string name="module_files">Muziek en bestanden</string>
     <string name="module_local_network">Lokaal netwerk</string>
     <string name="night_source_unused">Wordt gebruikt door het dag- en nachtthema of de helderheid.</string>
