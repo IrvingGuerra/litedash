@@ -114,18 +114,18 @@
     <string name="route_need_routes">Για τη διαδρομή λείπουν οι δρόμοι της περιοχής %1$s (%2$s).</string>
     <string name="route_download">Λήψη δρόμων</string>
     <string name="route_download_failed">Δεν ήταν δυνατή η λήψη. Ελέγξτε το internet και δοκιμάστε ξανά.</string>
-    <string name="route_other_state">Αυτό το μέρος είναι στην περιφέρεια %1$s. Η διαδρομή χρησιμοποιεί τον χάρτη που έχετε κατεβάσει, ακόμη κι αν έχετε internet: κατεβάστε κι αυτή την περιφέρεια ή ανοίξτε το στην εφαρμογή χαρτών σας.</string>
-    <string name="route_outside">Αυτό το μέρος είναι εκτός της περιφέρειάς σας: ανοίξτε το στην εφαρμογή χαρτών σας.</string>
-    <string name="route_no_state">Η διαδρομή και η καθοδήγηση 3D χρησιμοποιούν τον χάρτη που έχετε κατεβάσει για την περιφέρεια ή τη χώρα σας, ακόμη κι αν έχετε internet. Κατεβάστε τον μία φορά (οι ζώνες είναι μόνο για προβολή του χάρτη).</string>
-    <string name="route_no_state_named">Η διαδρομή και η καθοδήγηση 3D χρησιμοποιούν τον χάρτη που έχετε κατεβάσει, ακόμη κι αν έχετε internet. Κατεβάστε μία φορά τον χάρτη της περιφέρειας %1$s (οι ζώνες είναι μόνο για προβολή του χάρτη).</string>
-    <string name="route_no_map">Η διαδρομή και η καθοδήγηση 3D χρησιμοποιούν έναν χάρτη που έχετε κατεβάσει, ακόμη κι αν έχετε internet, και δεν υπάρχει ακόμη για την περιοχή σας. Δείτε τους διαθέσιμους και ζητήστε τον δικό σας ή ανοίξτε το μέρος στην εφαρμογή χαρτών σας.</string>
+    <string name="route_other_state">Αυτό το μέρος είναι στην περιφέρεια %1$s. Χωρίς internet, η διαδρομή χρειάζεται και αυτόν τον χάρτη: κατεβάστε τον ή ανοίξτε το μέρος στην εφαρμογή χαρτών σας.</string>
+    <string name="route_outside">Αυτό το μέρος είναι εκτός της περιφέρειάς σας και δεν υπάρχει internet για τη διαδρομή: ανοίξτε το στην εφαρμογή χαρτών σας.</string>
+    <string name="route_no_state">Χωρίς internet, η διαδρομή χρειάζεται τον χάρτη της περιφέρειας ή της χώρας σας. Κατεβάστε τον μία φορά (οι ζώνες είναι μόνο για να βλέπετε τον χάρτη).</string>
+    <string name="route_no_state_named">Χρειάζεστε τον χάρτη %1$s για τη διαδρομή χωρίς internet. Κατεβάστε τον μία φορά (οι ζώνες είναι μόνο για να βλέπετε τον χάρτη).</string>
+    <string name="route_no_map">Χωρίς internet, η διαδρομή χρειάζεται κατεβασμένο χάρτη και δεν υπάρχει ακόμη για την περιοχή σας. Δείτε τους διαθέσιμους και ζητήστε τον δικό σας, ή ανοίξτε το μέρος στην εφαρμογή χαρτών σας.</string>
     <string name="route_get_map">Λήψη χάρτη</string>
     <string name="route_see_maps">Διαθέσιμοι χάρτες</string>
     <string name="route_from_off">Είστε μακριά από δρόμο: πλησιάστε σε έναν για να βρεθεί η διαδρομή.</string>
     <string name="route_to_off">Αυτό το μέρος είναι μακριά από δρόμο.</string>
     <string name="route_no_path">Δεν βρέθηκε οδική διαδρομή μέχρι εκεί.</string>
     <string name="route_too_big">Αυτή η διαδρομή είναι πολύ μεγάλη για τη μνήμη αυτής της οθόνης. Δοκίμασε έναν πιο κοντινό προορισμό.</string>
-    <string name="route_two_states">Αυτό το μέρος είναι σε άλλη περιφέρεια: οι διαδρομές μεταξύ περιφερειών έρχονται αργότερα. Μέχρι τότε, άνοιξέ το στην εφαρμογή χαρτών σου.</string>
+    <string name="route_two_states">Αυτό το μέρος είναι σε άλλη περιφέρεια. Χωρίς internet, οι διαδρομές μεταξύ περιφερειών έρχονται αργότερα· μέχρι τότε, ανοίξτε το στην εφαρμογή χαρτών σας.</string>
     <string name="guide_go">Έναρξη</string>
     <string name="guide_end">Τέλος</string>
     <string name="guide_overview">Προβολή διαδρομής</string>
@@ -170,4 +170,12 @@
     <string name="map_pack_download_all">Λήψη όλων · %1$s</string>
     <string name="map_pack_download_all_question">Λήψη ολόκληρης της χώρας %1$s;</string>
     <string name="map_pack_batch_progress">Λήψη %1$d από %2$d · %3$s</string>
+    <string name="route_online">Online</string>
+    <string name="route_online_credit">Διαδρομές: OSRM · FOSSGIS</string>
+    <string name="route_fix_map">Διόρθωση χάρτη</string>
+    <string name="guide_no_internet">Χωρίς internet για επανυπολογισμό</string>
+    <string name="guide_car_need_map">Για να δείτε το αυτοκίνητό σας και τις λωρίδες, κατεβάστε τον χάρτη %1$s (%2$s).</string>
+    <string name="guide_car_no_map">Δεν υπάρχει ακόμη χάρτης αυτής της περιοχής για να δείξει το αυτοκίνητό σας και τις λωρίδες.</string>
+    <string name="guide_roundabout">Στον κυκλικό κόμβο, πάρτε την έξοδο %1$d</string>
+    <string name="guide_roundabout_onto">Στον κυκλικό κόμβο, πάρτε την έξοδο %1$d προς %2$s</string>
 </resources>

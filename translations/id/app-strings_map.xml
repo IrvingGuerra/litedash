@@ -114,18 +114,18 @@
     <string name="route_need_routes">Untuk membuat rute, jalan di %1$s belum ada (%2$s).</string>
     <string name="route_download">Unduh jalan</string>
     <string name="route_download_failed">Gagal mengunduh. Periksa internet Anda dan coba lagi.</string>
-    <string name="route_other_state">Tempat itu ada di %1$s. Rute memakai peta yang sudah diunduh, meskipun ada internet: unduh juga provinsi itu atau buka di aplikasi peta Anda.</string>
-    <string name="route_outside">Tempat itu di luar provinsi Anda: buka di aplikasi peta Anda.</string>
-    <string name="route_no_state">Rute dan panduan 3D memakai peta provinsi atau negara Anda yang sudah diunduh, meskipun ada internet. Unduh sekali saja (zona hanya untuk melihat peta).</string>
-    <string name="route_no_state_named">Rute dan panduan 3D memakai peta yang sudah diunduh, meskipun ada internet. Unduh peta %1$s sekali saja (zona hanya untuk melihat peta).</string>
-    <string name="route_no_map">Rute dan panduan 3D memakai peta yang sudah diunduh, meskipun ada internet, dan belum ada peta untuk daerah Anda. Lihat yang tersedia dan minta peta Anda, atau buka tempat itu di aplikasi peta Anda.</string>
+    <string name="route_other_state">Tempat itu ada di %1$s. Tanpa internet, rute juga butuh peta itu: unduh atau buka tempatnya di aplikasi peta Anda.</string>
+    <string name="route_outside">Tempat itu di luar provinsi Anda dan tidak ada internet untuk rute: buka di aplikasi peta Anda.</string>
+    <string name="route_no_state">Tanpa internet, rute butuh peta provinsi atau negara Anda. Unduh sekali (zona hanya untuk melihat peta).</string>
+    <string name="route_no_state_named">Anda butuh peta %1$s untuk rute tanpa internet. Unduh sekali (zona hanya untuk melihat peta).</string>
+    <string name="route_no_map">Tanpa internet, rute butuh peta yang sudah diunduh, dan belum ada untuk daerah Anda. Lihat yang tersedia dan minta peta Anda, atau buka tempatnya di aplikasi peta Anda.</string>
     <string name="route_get_map">Unduh peta</string>
     <string name="route_see_maps">Peta tersedia</string>
     <string name="route_from_off">Anda jauh dari jalan: dekati jalan untuk mencari rute.</string>
     <string name="route_to_off">Tempat itu jauh dari jalan.</string>
     <string name="route_no_path">Tidak ada jalan ke sana yang ditemukan.</string>
     <string name="route_too_big">Perjalanan ini terlalu jauh untuk memori layar ini. Coba tujuan yang lebih dekat.</string>
-    <string name="route_two_states">Tempat itu ada di provinsi lain: rute antarprovinsi menyusul nanti. Sementara, buka di aplikasi peta Anda.</string>
+    <string name="route_two_states">Tempat itu ada di provinsi lain. Tanpa internet, rute antarprovinsi menyusul nanti; sementara itu, buka di aplikasi peta Anda.</string>
     <string name="guide_go">Mulai</string>
     <string name="guide_end">Akhiri</string>
     <string name="guide_overview">Lihat rute</string>
@@ -169,4 +169,12 @@
     <string name="map_pack_download_all">Unduh semua · %1$s</string>
     <string name="map_pack_download_all_question">Unduh seluruh %1$s?</string>
     <string name="map_pack_batch_progress">Mengunduh %1$d dari %2$d · %3$s</string>
+    <string name="route_online">Online</string>
+    <string name="route_online_credit">Rute: OSRM · FOSSGIS</string>
+    <string name="route_fix_map">Perbaiki peta</string>
+    <string name="guide_no_internet">Tidak ada internet untuk menghitung ulang</string>
+    <string name="guide_car_need_map">Untuk melihat mobil dan lajur Anda, unduh peta %1$s (%2$s).</string>
+    <string name="guide_car_no_map">Belum ada peta daerah ini untuk menampilkan mobil dan lajur Anda.</string>
+    <string name="guide_roundabout">Di bundaran, ambil jalan keluar ke-%1$d</string>
+    <string name="guide_roundabout_onto">Di bundaran, ambil jalan keluar ke-%1$d menuju %2$s</string>
 </resources>

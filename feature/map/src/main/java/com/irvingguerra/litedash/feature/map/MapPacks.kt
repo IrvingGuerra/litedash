@@ -865,8 +865,7 @@ class MapPacks private constructor(private val app: Context) {
      */
     fun planRoute(fromLat: Double, fromLon: Double, toLat: Double, toLon: Double, headingDeg: Float? = null): RoutePlan {
         val local = planLocal(fromLat, fromLon, toLat, toLon, headingDeg)
-        val needsMap = local is RoutePlan.NoState || local is RoutePlan.OtherState || local is RoutePlan.TwoStates || local is RoutePlan.Loading
-        if (!needsMap || !onlineRouting) return local
+        if (!local.missingMap || !onlineRouting) return local
         return OnlineRoute.route(app, fromLat, fromLon, toLat, toLon, headingDeg)?.let { RoutePlan.Found(it.rounded()) } ?: local
     }
 

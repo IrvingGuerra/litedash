@@ -114,18 +114,18 @@
     <string name="route_need_routes">ルートには %1$s の道路データが必要です（%2$s）。</string>
     <string name="route_download">道路をダウンロード</string>
     <string name="route_download_failed">ダウンロードできませんでした。インターネットを確認して、もう一度お試しください。</string>
-    <string name="route_other_state">その場所は %1$s にあります。ルートはインターネットがあってもダウンロードした地図を使います。その都道府県もダウンロードするか、地図アプリで開いてください。</string>
-    <string name="route_outside">その場所はお住まいの都道府県の外です。地図アプリで開いてください。</string>
-    <string name="route_no_state">ルートと3Dナビは、インターネットがあってもダウンロードした都道府県または国の地図を使います。一度ダウンロードしてください（エリアは地図の表示専用です）。</string>
-    <string name="route_no_state_named">ルートと3Dナビは、インターネットがあってもダウンロードした地図を使います。%1$s の地図を一度ダウンロードしてください（エリアは地図の表示専用です）。</string>
-    <string name="route_no_map">ルートと3Dナビは、インターネットがあってもダウンロードした地図を使いますが、この地域の地図はまだありません。利用できる地図を見てリクエストするか、地図アプリで場所を開いてください。</string>
+    <string name="route_other_state">その場所は %1$s にあります。インターネットがないときは、その地図もルートに必要です。ダウンロードするか、地図アプリで開いてください。</string>
+    <string name="route_outside">その場所はお住まいの都道府県の外で、ルートに使うインターネットがありません。地図アプリで開いてください。</string>
+    <string name="route_no_state">インターネットがないときは、ルートにお住まいの都道府県または国の地図が必要です。一度ダウンロードしてください（ゾーンは地図を見るためだけのものです）。</string>
+    <string name="route_no_state_named">インターネットなしのルートには %1$s の地図が必要です。一度ダウンロードしてください（ゾーンは地図を見るためだけのものです）。</string>
+    <string name="route_no_map">インターネットがないときはダウンロードした地図が必要ですが、この地域の地図はまだありません。利用できる地図を見てリクエストするか、地図アプリで開いてください。</string>
     <string name="route_get_map">地図をダウンロード</string>
     <string name="route_see_maps">利用できる地図</string>
     <string name="route_from_off">道路から離れています。ルートを探すには道路に近づいてください。</string>
     <string name="route_to_off">その場所は道路から離れています。</string>
     <string name="route_no_path">そこまで道路で行けるルートが見つかりませんでした。</string>
     <string name="route_too_big">この画面のメモリでは長すぎるルートです。もっと近い目的地でお試しください。</string>
-    <string name="route_two_states">その場所は別の都道府県にあります。都道府県をまたぐルートは今後対応します。それまでは地図アプリで開いてください。</string>
+    <string name="route_two_states">その場所は別の都道府県にあります。インターネットなしでの都道府県をまたぐルートは今後対応予定です。それまでは地図アプリで開いてください。</string>
     <string name="guide_go">開始</string>
     <string name="guide_end">終了</string>
     <string name="guide_overview">ルート全体</string>
@@ -169,4 +169,12 @@
     <string name="map_pack_download_all">すべてダウンロード · %1$s</string>
     <string name="map_pack_download_all_question">%1$sをすべてダウンロードしますか？</string>
     <string name="map_pack_batch_progress">ダウンロード中 %1$d/%2$d · %3$s</string>
+    <string name="route_online">オンライン</string>
+    <string name="route_online_credit">ルート: OSRM · FOSSGIS</string>
+    <string name="route_fix_map">地図を修正</string>
+    <string name="guide_no_internet">再計算にはインターネットが必要です</string>
+    <string name="guide_car_need_map">車と車線を表示するには、%1$s の地図をダウンロードしてください（%2$s）。</string>
+    <string name="guide_car_no_map">車と車線を表示できる、この地域の地図はまだありません。</string>
+    <string name="guide_roundabout">ロータリーで %1$d 番目の出口へ</string>
+    <string name="guide_roundabout_onto">ロータリーで %1$d 番目の出口から %2$s へ</string>
 </resources>

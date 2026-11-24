@@ -1,9 +1,11 @@
 package com.irvingguerra.litedash
 
+import android.content.ActivityNotFoundException
 import android.location.Location
 import android.text.format.DateFormat
 import android.text.format.Formatter
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -26,9 +28,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.irvingguerra.litedash.core.ui.Button
+import com.irvingguerra.litedash.core.ui.Icon
 import com.irvingguerra.litedash.core.ui.IconButton
 import com.irvingguerra.litedash.core.ui.Icons
 import com.irvingguerra.litedash.core.ui.Label
@@ -56,7 +60,8 @@ import kotlin.math.pow
 import kotlin.math.roundToInt
 
 /**
- * La ruta al lugar elegido (M4): se pide al tocar «Ruta» y se calcula en la pantalla con las calles del estado bajado.
+ * La ruta al lugar elegido (M4): se pide al tocar «Ruta» y se calcula en la pantalla con las calles del estado bajado
+ * o, si falta ese mapa y hay internet, en línea ([MapPacks.planRoute]).
  * [to] = a dónde; [plan] = lo que salió (null = buscando). Al moverte se calcula otra vez solo si te alejas más de
  * [RECHECK_M] de donde salió (seguirte vuelta por vuelta es la guía, M5).
  */
@@ -293,4 +298,32 @@ private fun Summary(d: Dependencies, route: Route) {
         stringResource(R.string.route_no_traffic),
     ).joinToString(" · ")
     Label(details, Typography.small, c.textMuted, maxLines = 2, modifier = Modifier.padding(top = 4.dp))
+    if (route.online) OnlineSource()
 }
+
+/**
+ * De dónde salió una ruta en línea, discreto: «En línea · Rutas: OSRM · FOSSGIS» y el enlace para corregir el mapa (lo
+ * piden las reglas del servidor de FOSSGIS junto con el crédito).
+ */
+@Composable
+private fun OnlineSource() {
+    val c = LocalColors.current
+    val uri = LocalUriHandler.current
+    FlowRow(Modifier.padding(top = 6.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        Icon(Icons.wifi, c.textMuted, 14.dp, Modifier.align(Alignment.CenterVertically))
+        Label("${stringResource(R.string.route_online)} · ${stringResource(R.string.route_online_credit)}", Typography.small, c.textMuted, maxLines = 2)
+        Label(
+            stringResource(R.string.route_fix_map), Typography.small, c.accent, maxLines = 1,
+            modifier = Modifier.clickable {
+                // Sin navegador en la pantalla no hay dónde abrirlo: el crédito igual se lee.
+                try {
+                    uri.openUri(FIX_MAP_URL)
+                } catch (_: ActivityNotFoundException) {
+                }
+            },
+        )
+    }
+}
+
+/** Donde se corrige el mapa de OpenStreetMap (con él se calculan las rutas en línea). */
+private const val FIX_MAP_URL = "https://www.openstreetmap.org/fixthemap"

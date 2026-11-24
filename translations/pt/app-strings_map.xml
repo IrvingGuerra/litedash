@@ -116,18 +116,18 @@
     <string name="route_need_routes">Para traçar a rota faltam as ruas de %1$s (%2$s).</string>
     <string name="route_download">Baixar ruas</string>
     <string name="route_download_failed">Não foi possível baixar. Verifique sua internet e tente de novo.</string>
-    <string name="route_other_state">Esse lugar fica em %1$s. A rota usa o mapa baixado, mesmo com internet: baixe também esse estado ou abra no seu app de mapas.</string>
-    <string name="route_outside">Esse lugar fica fora do seu estado: abra no seu app de mapas.</string>
-    <string name="route_no_state">A rota e a navegação em 3D usam o mapa baixado do seu estado ou país, mesmo com internet. Baixe uma vez (as regiões servem só para ver o mapa).</string>
-    <string name="route_no_state_named">A rota e a navegação em 3D usam o mapa baixado, mesmo com internet. Baixe uma vez o de %1$s (as regiões servem só para ver o mapa).</string>
-    <string name="route_no_map">A rota e a navegação em 3D usam um mapa baixado, mesmo com internet, e ainda não há um da sua área. Veja os disponíveis e peça o seu, ou abra o lugar no seu app de mapas.</string>
+    <string name="route_other_state">Esse lugar fica em %1$s. Sem internet, a rota também precisa desse mapa: baixe-o ou abra o lugar no seu app de mapas.</string>
+    <string name="route_outside">Esse lugar fica fora do seu estado e não há internet para a rota: abra no seu app de mapas.</string>
+    <string name="route_no_state">Sem internet, a rota precisa do mapa do seu estado ou país. Baixe uma vez (as zonas servem só para ver o mapa).</string>
+    <string name="route_no_state_named">Você precisa do mapa de %1$s para a rota sem internet. Baixe uma vez (as zonas servem só para ver o mapa).</string>
+    <string name="route_no_map">Sem internet, a rota precisa de um mapa baixado, e ainda não há um da sua região. Veja os disponíveis e peça o seu, ou abra o lugar no seu app de mapas.</string>
     <string name="route_get_map">Baixar mapa</string>
     <string name="route_see_maps">Mapas disponíveis</string>
     <string name="route_from_off">Você está longe de uma rua: chegue mais perto de uma para calcular a rota.</string>
     <string name="route_to_off">Esse lugar fica longe de uma rua.</string>
     <string name="route_no_path">Não encontramos um caminho por ruas até lá.</string>
     <string name="route_too_big">Esta viagem é longa demais para a memória desta tela. Tente um destino mais perto.</string>
-    <string name="route_two_states">Esse lugar fica em outro estado: rotas entre estados chegam depois. Enquanto isso, abra no seu app de mapas.</string>
+    <string name="route_two_states">Esse lugar fica em outro estado. Sem internet, as rotas entre estados chegam depois; enquanto isso, abra no seu app de mapas.</string>
     <string name="guide_go">Ir</string>
     <string name="guide_end">Encerrar</string>
     <string name="guide_overview">Ver rota</string>
@@ -172,4 +172,12 @@
     <string name="map_pack_download_all">Baixar tudo · %1$s</string>
     <string name="map_pack_download_all_question">Baixar tudo de %1$s?</string>
     <string name="map_pack_batch_progress">Baixando %1$d de %2$d · %3$s</string>
+    <string name="route_online">On-line</string>
+    <string name="route_online_credit">Rotas: OSRM · FOSSGIS</string>
+    <string name="route_fix_map">Corrigir o mapa</string>
+    <string name="guide_no_internet">Sem internet para recalcular</string>
+    <string name="guide_car_need_map">Para ver seu carro e as faixas, baixe o mapa de %1$s (%2$s).</string>
+    <string name="guide_car_no_map">Ainda não há mapa desta região para mostrar seu carro e as faixas.</string>
+    <string name="guide_roundabout">Na rotatória, pegue a saída %1$d</string>
+    <string name="guide_roundabout_onto">Na rotatória, pegue a saída %1$d para %2$s</string>
 </resources>

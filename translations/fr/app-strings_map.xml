@@ -116,18 +116,18 @@
     <string name="route_need_routes">Pour tracer l\'itinéraire, il manque les rues de %1$s (%2$s).</string>
     <string name="route_download">Télécharger les rues</string>
     <string name="route_download_failed">Échec du téléchargement. Vérifiez votre internet et réessayez.</string>
-    <string name="route_other_state">Ce lieu se trouve en %1$s. L\'itinéraire utilise la carte téléchargée, même avec Internet : téléchargez aussi cette région ou ouvrez-le dans votre appli de cartes.</string>
-    <string name="route_outside">Ce lieu est hors de votre région : ouvrez-le dans votre appli de cartes.</string>
-    <string name="route_no_state">L\'itinéraire et le guidage 3D utilisent la carte téléchargée de votre région ou pays, même avec Internet. Téléchargez-la une fois (les zones servent seulement à voir la carte).</string>
-    <string name="route_no_state_named">L\'itinéraire et le guidage 3D utilisent la carte téléchargée, même avec Internet. Téléchargez une fois celle de %1$s (les zones servent seulement à voir la carte).</string>
-    <string name="route_no_map">L\'itinéraire et le guidage 3D utilisent une carte téléchargée, même avec Internet, et il n\'y en a pas encore pour votre secteur. Consultez celles disponibles et demandez la vôtre, ou ouvrez le lieu dans votre appli de cartes.</string>
+    <string name="route_other_state">Ce lieu se trouve en %1$s. Sans Internet, l\'itinéraire a aussi besoin de cette carte : téléchargez-la ou ouvrez le lieu dans votre appli de cartes.</string>
+    <string name="route_outside">Ce lieu est hors de votre région et il n\'y a pas d\'Internet pour l\'itinéraire : ouvrez-le dans votre appli de cartes.</string>
+    <string name="route_no_state">Sans Internet, l\'itinéraire a besoin de la carte de votre région ou de votre pays. Téléchargez-la une fois (les zones servent seulement à voir la carte).</string>
+    <string name="route_no_state_named">Il vous faut la carte de %1$s pour l\'itinéraire sans Internet. Téléchargez-la une fois (les zones servent seulement à voir la carte).</string>
+    <string name="route_no_map">Sans Internet, l\'itinéraire a besoin d\'une carte téléchargée, et il n\'y en a pas encore pour votre zone. Voyez celles disponibles et demandez la vôtre, ou ouvrez le lieu dans votre appli de cartes.</string>
     <string name="route_get_map">Télécharger la carte</string>
     <string name="route_see_maps">Cartes disponibles</string>
     <string name="route_from_off">Vous êtes loin d\'une rue : rapprochez-vous-en pour calculer l\'itinéraire.</string>
     <string name="route_to_off">Ce lieu est loin d\'une rue.</string>
     <string name="route_no_path">Aucun chemin par la route n\'a été trouvé jusque-là.</string>
     <string name="route_too_big">Ce trajet est trop long pour la mémoire de cet écran. Essayez une destination plus proche.</string>
-    <string name="route_two_states">Ce lieu est dans une autre région : les itinéraires entre régions arrivent plus tard. En attendant, ouvrez-le dans votre app de cartes.</string>
+    <string name="route_two_states">Ce lieu se trouve dans une autre région. Sans Internet, les itinéraires entre régions arriveront plus tard ; en attendant, ouvrez-le dans votre appli de cartes.</string>
     <string name="guide_go">Go</string>
     <string name="guide_end">Arrêter</string>
     <string name="guide_overview">Voir l\'itinéraire</string>
@@ -172,4 +172,12 @@
     <string name="map_pack_download_all">Tout télécharger · %1$s</string>
     <string name="map_pack_download_all_question">Télécharger tout le pays %1$s ?</string>
     <string name="map_pack_batch_progress">Téléchargement %1$d sur %2$d · %3$s</string>
+    <string name="route_online">En ligne</string>
+    <string name="route_online_credit">Itinéraires : OSRM · FOSSGIS</string>
+    <string name="route_fix_map">Corriger la carte</string>
+    <string name="guide_no_internet">Pas d\'Internet pour recalculer</string>
+    <string name="guide_car_need_map">Pour voir votre voiture et les voies, téléchargez la carte de %1$s (%2$s).</string>
+    <string name="guide_car_no_map">Il n\'y a pas encore de carte de cette zone pour montrer votre voiture et les voies.</string>
+    <string name="guide_roundabout">Au rond-point, prenez la sortie %1$d</string>
+    <string name="guide_roundabout_onto">Au rond-point, prenez la sortie %1$d vers %2$s</string>
 </resources>

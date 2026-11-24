@@ -114,18 +114,18 @@
     <string name="route_need_routes">Pro trasu chybí ulice: %1$s (%2$s).</string>
     <string name="route_download">Stáhnout ulice</string>
     <string name="route_download_failed">Nepodařilo se je stáhnout. Zkontroluj internet a zkus to znovu.</string>
-    <string name="route_other_state">To místo je v kraji %1$s. Trasa používá staženou mapu, i když máš internet: stáhni i ten kraj, nebo ho otevři v aplikaci s mapami.</string>
-    <string name="route_outside">To místo je mimo tvůj kraj: otevři ho v aplikaci s mapami.</string>
-    <string name="route_no_state">Trasa a 3D navigace používají staženou mapu tvého kraje nebo země, i když máš internet. Stáhni ji jednou (oblasti slouží jen k prohlížení mapy).</string>
-    <string name="route_no_state_named">Trasa a 3D navigace používají staženou mapu, i když máš internet. Stáhni jednou mapu kraje %1$s (oblasti slouží jen k prohlížení mapy).</string>
-    <string name="route_no_map">Trasa a 3D navigace používají staženou mapu, i když máš internet, a pro tvé okolí zatím žádná není. Podívej se na dostupné a požádej o svou, nebo otevři místo v aplikaci s mapami.</string>
+    <string name="route_other_state">To místo je v kraji %1$s. Bez internetu potřebuje trasa i tuto mapu: stáhni ji, nebo místo otevři v aplikaci s mapami.</string>
+    <string name="route_outside">To místo je mimo tvůj kraj a pro trasu není internet: otevři ho v aplikaci s mapami.</string>
+    <string name="route_no_state">Bez internetu potřebuje trasa mapu tvého kraje nebo země. Stáhni ji jednou (zóny slouží jen k prohlížení mapy).</string>
+    <string name="route_no_state_named">Pro trasu bez internetu potřebuješ mapu %1$s. Stáhni ji jednou (zóny slouží jen k prohlížení mapy).</string>
+    <string name="route_no_map">Bez internetu potřebuje trasa staženou mapu a pro tvou oblast zatím žádná není. Podívej se na dostupné a požádej o svou, nebo místo otevři v aplikaci s mapami.</string>
     <string name="route_get_map">Stáhnout mapu</string>
     <string name="route_see_maps">Dostupné mapy</string>
     <string name="route_from_off">Jsi daleko od silnice: přibliž se k nějaké, ať můžu najít trasu.</string>
     <string name="route_to_off">To místo je daleko od silnice.</string>
     <string name="route_no_path">Nenašli jsme tam cestu po silnici.</string>
     <string name="route_too_big">Tato cesta je na paměť této obrazovky příliš dlouhá. Zkuste bližší cíl.</string>
-    <string name="route_two_states">To místo je v jiném kraji: trasy mezi kraji přijdou později. Zatím ho otevřete ve své aplikaci map.</string>
+    <string name="route_two_states">To místo je v jiném kraji. Bez internetu přijdou trasy mezi kraji později; zatím ho otevři v aplikaci s mapami.</string>
     <string name="guide_go">Jet</string>
     <string name="guide_end">Ukončit</string>
     <string name="guide_overview">Zobrazit trasu</string>
@@ -172,4 +172,12 @@
     <string name="map_pack_download_all">Stáhnout vše · %1$s</string>
     <string name="map_pack_download_all_question">Stáhnout celou zemi %1$s?</string>
     <string name="map_pack_batch_progress">Stahování %1$d z %2$d · %3$s</string>
+    <string name="route_online">Online</string>
+    <string name="route_online_credit">Trasy: OSRM · FOSSGIS</string>
+    <string name="route_fix_map">Opravit mapu</string>
+    <string name="guide_no_internet">Bez internetu nelze přepočítat</string>
+    <string name="guide_car_need_map">Chceš-li vidět své auto a jízdní pruhy, stáhni mapu %1$s (%2$s).</string>
+    <string name="guide_car_no_map">Pro tuto oblast zatím není mapa, která by ukázala tvé auto a jízdní pruhy.</string>
+    <string name="guide_roundabout">Na kruhovém objezdu vyjeď %1$d. výjezdem</string>
+    <string name="guide_roundabout_onto">Na kruhovém objezdu vyjeď %1$d. výjezdem na %2$s</string>
 </resources>

@@ -130,18 +130,18 @@
     <string name="route_need_routes">Para trazar la ruta faltan las calles de %1$s (%2$s).</string>
     <string name="route_download">Bajar calles</string>
     <string name="route_download_failed">No se pudieron bajar. Revisa tu internet e inténtalo otra vez.</string>
-    <string name="route_other_state">Ese lugar está en %1$s. La ruta usa el mapa descargado, aunque tengas internet: baja también ese o ábrelo en tu app de mapas.</string>
-    <string name="route_outside">Ese lugar está fuera de tu estado: ábrelo en tu app de mapas.</string>
-    <string name="route_no_state">La ruta y la guía en 3D usan el mapa descargado de tu estado o país, aunque tengas internet. Bájalo una vez (las zonas solo sirven para ver el mapa).</string>
-    <string name="route_no_state_named">La ruta y la guía en 3D usan el mapa descargado, aunque tengas internet. Baja una vez el de %1$s (las zonas solo sirven para ver el mapa).</string>
-    <string name="route_no_map">La ruta y la guía en 3D usan un mapa descargado, aunque tengas internet, y todavía no hay uno de tu zona. Mira los disponibles y pide el tuyo, o abre el lugar en tu app de mapas.</string>
+    <string name="route_other_state">Ese lugar está en %1$s. Sin internet, la ruta necesita también ese mapa: bájalo o ábrelo en tu app de mapas.</string>
+    <string name="route_outside">Ese lugar está fuera de tu estado y no hay internet para la ruta: ábrelo en tu app de mapas.</string>
+    <string name="route_no_state">Sin internet, la ruta necesita el mapa de tu estado o país. Bájalo una vez (las zonas solo sirven para ver el mapa).</string>
+    <string name="route_no_state_named">Necesitas el mapa de %1$s para la ruta sin internet. Bájalo una vez (las zonas solo sirven para ver el mapa).</string>
+    <string name="route_no_map">Sin internet, la ruta necesita un mapa descargado y todavía no hay uno de tu zona. Mira los disponibles y pide el tuyo, o abre el lugar en tu app de mapas.</string>
     <string name="route_get_map">Bajar mapa</string>
     <string name="route_see_maps">Mapas disponibles</string>
     <string name="route_from_off">Estás lejos de una calle: acércate a una para calcular la ruta.</string>
     <string name="route_to_off">Ese lugar está lejos de una calle.</string>
     <string name="route_no_path">No encontramos un camino por calles hasta ahí.</string>
     <string name="route_too_big">Este viaje es muy largo para la memoria de esta pantalla. Prueba con un destino más cerca.</string>
-    <string name="route_two_states">Ese lugar está en otro estado: las rutas entre estados llegan después. Mientras, ábrelo en tu app de mapas.</string>
+    <string name="route_two_states">Ese lugar está en otro estado. Sin internet, las rutas entre estados llegan después; mientras, ábrelo en tu app de mapas.</string>
     <string name="guide_go">Ir</string>
     <string name="guide_end">Terminar</string>
     <string name="guide_overview">Ver ruta</string>
@@ -171,4 +171,12 @@
     <string name="guide_arrive">Llegas a tu destino</string>
     <string name="guide_arrive_at">Llegas a %1$s</string>
     <string name="search_ft">%1$d ft</string>
+    <string name="route_online">En línea</string>
+    <string name="route_online_credit">Rutas: OSRM · FOSSGIS</string>
+    <string name="route_fix_map">Corregir el mapa</string>
+    <string name="guide_no_internet">Sin internet para recalcular</string>
+    <string name="guide_car_need_map">Para ver tu auto y los carriles, baja el mapa de %1$s (%2$s).</string>
+    <string name="guide_car_no_map">Aún no hay mapa de esta zona para ver tu auto y los carriles.</string>
+    <string name="guide_roundabout">En la glorieta, toma la salida %1$d</string>
+    <string name="guide_roundabout_onto">En la glorieta, hacia %2$s: salida %1$d</string>
 </resources>

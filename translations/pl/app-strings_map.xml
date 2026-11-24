@@ -114,18 +114,18 @@
     <string name="route_need_routes">Do wyznaczenia trasy brakuje ulic: %1$s (%2$s).</string>
     <string name="route_download">Pobierz ulice</string>
     <string name="route_download_failed">Nie udało się pobrać. Sprawdź internet i spróbuj ponownie.</string>
-    <string name="route_other_state">To miejsce jest w: %1$s. Trasa korzysta z pobranej mapy, nawet gdy masz internet: pobierz też to województwo albo otwórz je w aplikacji z mapami.</string>
-    <string name="route_outside">To miejsce jest poza Twoim województwem: otwórz je w aplikacji z mapami.</string>
-    <string name="route_no_state">Trasa i nawigacja 3D korzystają z pobranej mapy twojego województwa lub kraju, nawet gdy masz internet. Pobierz ją raz (strefy służą tylko do oglądania mapy).</string>
-    <string name="route_no_state_named">Trasa i nawigacja 3D korzystają z pobranej mapy, nawet gdy masz internet. Pobierz raz mapę: %1$s (strefy służą tylko do oglądania mapy).</string>
-    <string name="route_no_map">Trasa i nawigacja 3D korzystają z pobranej mapy, nawet gdy masz internet, a dla twojej okolicy jeszcze jej nie ma. Zobacz dostępne i poproś o swoją albo otwórz to miejsce w aplikacji z mapami.</string>
+    <string name="route_other_state">To miejsce jest w: %1$s. Bez internetu trasa potrzebuje też tej mapy: pobierz ją albo otwórz miejsce w aplikacji z mapami.</string>
+    <string name="route_outside">To miejsce jest poza Twoim województwem, a nie ma internetu do trasy: otwórz je w aplikacji z mapami.</string>
+    <string name="route_no_state">Bez internetu trasa potrzebuje mapy Twojego województwa lub kraju. Pobierz ją raz (strefy służą tylko do oglądania mapy).</string>
+    <string name="route_no_state_named">Do trasy bez internetu potrzebujesz mapy: %1$s. Pobierz ją raz (strefy służą tylko do oglądania mapy).</string>
+    <string name="route_no_map">Bez internetu trasa potrzebuje pobranej mapy, a dla Twojej okolicy jeszcze jej nie ma. Zobacz dostępne i poproś o swoją albo otwórz miejsce w aplikacji z mapami.</string>
     <string name="route_get_map">Pobierz mapę</string>
     <string name="route_see_maps">Dostępne mapy</string>
     <string name="route_from_off">Jesteś daleko od drogi: podjedź bliżej, żeby wyznaczyć trasę.</string>
     <string name="route_to_off">To miejsce jest daleko od drogi.</string>
     <string name="route_no_path">Nie znaleźliśmy tam drogi.</string>
     <string name="route_too_big">Ta trasa jest za długa dla pamięci tego ekranu. Spróbuj bliższego celu.</string>
-    <string name="route_two_states">To miejsce jest w innym województwie: trasy między województwami pojawią się później. Na razie otwórz je w swojej aplikacji z mapami.</string>
+    <string name="route_two_states">To miejsce jest w innym województwie. Bez internetu trasy między województwami pojawią się później; do tego czasu otwórz je w aplikacji z mapami.</string>
     <string name="guide_go">Start</string>
     <string name="guide_end">Zakończ</string>
     <string name="guide_overview">Pokaż trasę</string>
@@ -172,4 +172,12 @@
     <string name="map_pack_download_all">Pobierz wszystko · %1$s</string>
     <string name="map_pack_download_all_question">Pobrać cały kraj %1$s?</string>
     <string name="map_pack_batch_progress">Pobieranie %1$d z %2$d · %3$s</string>
+    <string name="route_online">Online</string>
+    <string name="route_online_credit">Trasy: OSRM · FOSSGIS</string>
+    <string name="route_fix_map">Popraw mapę</string>
+    <string name="guide_no_internet">Brak internetu, by przeliczyć trasę</string>
+    <string name="guide_car_need_map">Aby zobaczyć swoje auto i pasy ruchu, pobierz mapę: %1$s (%2$s).</string>
+    <string name="guide_car_no_map">Dla tej okolicy nie ma jeszcze mapy, która pokaże Twoje auto i pasy ruchu.</string>
+    <string name="guide_roundabout">Na rondzie zjedź %1$d. zjazdem</string>
+    <string name="guide_roundabout_onto">Na rondzie zjedź %1$d. zjazdem w %2$s</string>
 </resources>

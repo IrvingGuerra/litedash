@@ -114,18 +114,18 @@
     <string name="route_need_routes">För rutten saknas gatorna i %1$s (%2$s).</string>
     <string name="route_download">Ladda ner gator</string>
     <string name="route_download_failed">Det gick inte att ladda ner. Kontrollera internet och försök igen.</string>
-    <string name="route_other_state">Platsen ligger i %1$s. Rutten använder den nedladdade kartan, även med internet: ladda ner det länet också eller öppna den i din kartapp.</string>
-    <string name="route_outside">Platsen ligger utanför ditt län: öppna den i din kartapp.</string>
-    <string name="route_no_state">Rutten och 3D-navigeringen använder den nedladdade kartan för ditt län eller land, även med internet. Ladda ner den en gång (zoner är bara för att visa kartan).</string>
-    <string name="route_no_state_named">Rutten och 3D-navigeringen använder den nedladdade kartan, även med internet. Ladda ner kartan för %1$s en gång (zoner är bara för att visa kartan).</string>
-    <string name="route_no_map">Rutten och 3D-navigeringen använder en nedladdad karta, även med internet, och det finns ingen för ditt område än. Se de tillgängliga och be om din, eller öppna platsen i din kartapp.</string>
+    <string name="route_other_state">Platsen ligger i %1$s. Utan internet behöver rutten också den kartan: ladda ner den eller öppna platsen i din kartapp.</string>
+    <string name="route_outside">Platsen ligger utanför ditt län och det finns inget internet för rutten: öppna den i din kartapp.</string>
+    <string name="route_no_state">Utan internet behöver rutten kartan för ditt län eller land. Ladda ner den en gång (zoner är bara för att visa kartan).</string>
+    <string name="route_no_state_named">Du behöver kartan för %1$s för rutten utan internet. Ladda ner den en gång (zoner är bara för att visa kartan).</string>
+    <string name="route_no_map">Utan internet behöver rutten en nedladdad karta, och det finns ingen för ditt område än. Se de tillgängliga och önska din, eller öppna platsen i din kartapp.</string>
     <string name="route_get_map">Ladda ner karta</string>
     <string name="route_see_maps">Tillgängliga kartor</string>
     <string name="route_from_off">Du är långt från en gata: kom närmare en för att hitta rutten.</string>
     <string name="route_to_off">Platsen ligger långt från en gata.</string>
     <string name="route_no_path">Vi hittade ingen väg dit.</string>
     <string name="route_too_big">Den här resan är för lång för skärmens minne. Prova ett närmare mål.</string>
-    <string name="route_two_states">Platsen ligger i ett annat län: rutter mellan län kommer senare. Öppna den i din kartapp så länge.</string>
+    <string name="route_two_states">Platsen ligger i ett annat län. Utan internet kommer rutter mellan län senare; öppna den så länge i din kartapp.</string>
     <string name="guide_go">Kör</string>
     <string name="guide_end">Avsluta</string>
     <string name="guide_overview">Visa rutt</string>
@@ -170,4 +170,12 @@
     <string name="map_pack_download_all">Ladda ner allt · %1$s</string>
     <string name="map_pack_download_all_question">Ladda ner hela %1$s?</string>
     <string name="map_pack_batch_progress">Laddar ner %1$d av %2$d · %3$s</string>
+    <string name="route_online">Online</string>
+    <string name="route_online_credit">Rutter: OSRM · FOSSGIS</string>
+    <string name="route_fix_map">Rätta kartan</string>
+    <string name="guide_no_internet">Inget internet för att räkna om</string>
+    <string name="guide_car_need_map">Ladda ner kartan för %1$s (%2$s) för att se din bil och körfälten.</string>
+    <string name="guide_car_no_map">Det finns ingen karta för det här området än som visar din bil och körfälten.</string>
+    <string name="guide_roundabout">Ta avfart %1$d i rondellen</string>
+    <string name="guide_roundabout_onto">Ta avfart %1$d i rondellen mot %2$s</string>
 </resources>

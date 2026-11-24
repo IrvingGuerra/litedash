@@ -695,6 +695,10 @@ sealed interface RoutePlan {
     class Failed(val error: RouteError) : RoutePlan
 }
 
+/** ¿Falta un mapa (tu estado, el del destino o la ruta entre estados)? Ahí sirve la ruta en línea si hay internet. */
+val RoutePlan.missingMap: Boolean
+    get() = this is RoutePlan.NoState || this is RoutePlan.OtherState || this is RoutePlan.TwoStates || this is RoutePlan.Loading
+
 /** Qué tipo de vuelta es (la flecha y el texto salen de aquí). */
 enum class ManeuverType { DEPART, STRAIGHT, SLIGHT_LEFT, LEFT, SHARP_LEFT, SLIGHT_RIGHT, RIGHT, SHARP_RIGHT, UTURN, ROUNDABOUT, ARRIVE }
 

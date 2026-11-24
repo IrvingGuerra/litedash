@@ -2,6 +2,7 @@ package com.irvingguerra.litedash
 
 import android.os.SystemClock
 import android.text.format.DateFormat
+import android.text.format.Formatter
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -49,6 +50,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.irvingguerra.litedash.core.ui.Button
 import com.irvingguerra.litedash.core.ui.Card
 import com.irvingguerra.litedash.core.ui.IconButton
 import com.irvingguerra.litedash.core.ui.Icon
@@ -68,6 +70,9 @@ import com.irvingguerra.litedash.feature.map.MapLook
 import com.irvingguerra.litedash.feature.map.MapOrientation
 import com.irvingguerra.litedash.feature.map.MapPacks
 import com.irvingguerra.litedash.feature.map.MapZoom
+import com.irvingguerra.litedash.feature.map.OnlineRoute
+import com.irvingguerra.litedash.feature.map.PackError
+import com.irvingguerra.litedash.feature.map.missingMap
 import com.irvingguerra.litedash.feature.map.markerWidthDp
 import com.irvingguerra.litedash.feature.map.Route
 import com.irvingguerra.litedash.feature.map.RoutePlan
@@ -103,6 +108,8 @@ internal class DriveSession(val to: SearchHit, route: Route) {
     var state by mutableStateOf<GuidanceState?>(null)
     var recalculating by mutableStateOf(false)
     var overview by mutableStateOf(false)
+    /** El último recálculo no se pudo porque falta el mapa y no hay internet (la ruta en línea no se puede rehacer). */
+    var noInternet by mutableStateOf(false)
     /** Cuándo se recalculó (`SystemClock.elapsedRealtime`). */
     var lastRecalc = 0L
 
@@ -169,7 +176,9 @@ internal fun DrivingScreen(d: Dependencies, session: DriveSession, revision: Int
         // Las esperas con el reloj que no brinca (en pantallas sin pila la hora se corrige al sincronizar).
         val now = SystemClock.elapsedRealtime()
         if (!s.offRoute) session.recalcStep = 0
-        if (s.offRoute && !s.arrived && !session.recalculating && now - session.lastRecalc > RECALC_GAPS_MS[session.recalcStep]) {
+        // Una ruta en línea se rehace en el servidor de voluntarios: no más de uno cada [OnlineRoute.RECALC_GAP_MS].
+        val gap = maxOf(RECALC_GAPS_MS[session.recalcStep], if (session.route.online) OnlineRoute.RECALC_GAP_MS else 0L)
+        if (s.offRoute && !s.arrived && !session.recalculating && now - session.lastRecalc > gap) {
             session.recalculating = true
             session.lastRecalc = now
             scope.launch {
@@ -178,13 +187,15 @@ internal fun DrivingScreen(d: Dependencies, session: DriveSession, revision: Int
                     val plan = withContext(Dispatchers.IO) { packs.planRoute(p.latitude, p.longitude, session.to.lat, session.to.lon, heading) }
                     // Lejos de la calle (estacionamiento, GPS malo) sale la misma ruta: no se cambia (la tarjeta no parpadea).
                     val next = (plan as? RoutePlan.Found)?.route?.takeUnless { it.sameAs(session.route) }
+                    // Sin mapa de ahí y sin internet: se sigue la flecha y se vuelve a probar (al volver la red, recalcula).
+                    session.noInternet = plan.missingMap && !OnlineRoute.hasInternet(context)
                     if (next != null) {
                         session.replace(next)
                         // La ruta nueva sale de donde estabas: se te pone en ella ya, sin esperar la siguiente lectura (la
                         // tarjeta no pasa por «Esperando tu ubicación…» un instante).
                         session.state = session.guidance.update(p.latitude, p.longitude, accuracy, speedMps = speed, headingDeg = heading, timeMs = timeMs)
                         session.recalcStep = 0
-                    } else {
+                    } else if (!session.noInternet) {
                         session.recalcStep = (session.recalcStep + 1).coerceAtMost(RECALC_GAPS_MS.lastIndex)
                     }
                 } finally {
@@ -223,10 +234,16 @@ internal fun DrivingScreen(d: Dependencies, session: DriveSession, revision: Int
     }
 }
 
-/** Tu auto de espaldas sobre las calles (o la flecha sin auto), siempre hacia donde vas, con la velocidad arriba. */
+/**
+ * Tu auto de espaldas sobre las calles (o la flecha sin auto), siempre hacia donde vas, con la velocidad arriba. Las
+ * calles a escala real salen del mapa bajado: donde no lo hay (ruta en línea), en su lugar [GetMapCard] (bajarlo sin
+ * dejar de navegar; al terminar, el auto aparece solo).
+ */
 @Composable
 private fun CarView(d: Dependencies, session: DriveSession, modifier: Modifier) {
     val c = LocalColors.current
+    val context = LocalContext.current
+    val packs = remember(context) { MapPacks.get(context) }
     val look = remember(d.prefs.mapLook) {
         MapLook.parse(d.prefs.mapLook.orEmpty()).copy(zoom = MapZoom.AUTO, orientation = MapOrientation.HEADING)
     }
@@ -239,7 +256,16 @@ private fun CarView(d: Dependencies, session: DriveSession, modifier: Modifier) 
         // Tu auto mide lo mismo que en el mapa de fondo ([markerWidthDp]): las calles y la ruta, a su escala.
         val carDp = markerWidthDp(minOf(maxWidth, maxHeight).value)
         val store = rememberTileStore(look, c.dark, DRIVE_CAR_KEY, realRoadDp = carDp)
-        if (position != null) {
+        // ¿Hay mapa bajado donde vas? (Por cuadras de ~100 m: no se revisa el contorno con cada lectura.)
+        val installed = packs.installed
+        val cellLat = position?.let { Math.round(it.latitude * 1000) }
+        val cellLon = position?.let { Math.round(it.longitude * 1000) }
+        val covered = remember(installed, cellLat, cellLon) {
+            position == null || installed.any { it.contains(position.latitude, position.longitude) }
+        }
+        if (!covered) {
+            GetMapCard(packs, position!!.latitude, position.longitude, Modifier.align(Alignment.Center).padding(24.dp).widthIn(max = 420.dp))
+        } else if (position != null) {
             // Sobre la ruta, tu auto va en ella y mirando hacia donde sigue (como Waze); fuera, como diga el GPS.
             val onRoute = s != null && !s.offRoute
             MapCanvas(
@@ -255,6 +281,40 @@ private fun CarView(d: Dependencies, session: DriveSession, modifier: Modifier) 
             val speed = kmh?.let { "${(it * if (miles) 0.621371f else 1f).toInt()}" } ?: NO_SPEED
             Label(speed, Typography.clock.copy(fontSize = 52.sp, fontWeight = FontWeight.Bold), maxLines = 1)
             Label(stringResource(if (miles) R.string.unit_mph else R.string.unit_kmh), Typography.small, c.textMuted, maxLines = 1)
+        }
+    }
+}
+
+/**
+ * En lugar de tu auto, sin mapa bajado donde vas: «Para ver tu auto y los carriles, baja el mapa de <estado> (<tamaño>)»
+ * con Bajar y su avance (la guía sigue mientras baja). Sin mapa de esa zona en la lista, solo el texto.
+ */
+@Composable
+private fun GetMapCard(packs: MapPacks, lat: Double, lon: Double, modifier: Modifier) {
+    val c = LocalColors.current
+    val context = LocalContext.current
+    val region = packs.regionAt(lat, lon)
+    Column(
+        modifier.clip(RoundedCornerShape(Radius.card)).background(c.surface.copy(alpha = 0.97f)).padding(20.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp),
+    ) {
+        Icon(Icons.offline, c.textMuted, 28.dp)
+        if (region == null) {
+            Label(stringResource(R.string.guide_car_no_map), Typography.body, maxLines = 4)
+            return@Column
+        }
+        val size = Formatter.formatShortFileSize(context, region.totalSize)
+        Label(stringResource(R.string.guide_car_need_map, region.name(currentLocale().language), size), Typography.body, maxLines = 4)
+        val job = packs.job?.takeIf { it.id == region.id }
+        if (job != null && !job.failed) {
+            Box(Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp)).background(c.surfaceHigh)) {
+                Box(Modifier.fillMaxWidth(job.progress).fillMaxHeight().background(c.accent))
+            }
+        } else {
+            if (job?.error == PackError.SPACE) Label(stringResource(R.string.map_pack_no_room), Typography.small, c.warning)
+            else if (job?.failed == true) Label(downloadError(R.string.map_pack_failed), Typography.small, c.warning)
+            // Uno a la vez: si baja otro mapa, este espera.
+            Button(stringResource(R.string.route_get_map), { packs.download(region) }, primary = true, enabled = !packs.busy)
         }
     }
 }
@@ -350,7 +410,9 @@ private fun TurnCard(d: Dependencies, session: DriveSession, modifier: Modifier)
             session.recalculating -> Label(stringResource(R.string.guide_recalculating), Typography.title, maxLines = 1)
             s == null -> Label(stringResource(R.string.route_waiting), Typography.title, maxLines = 1)
             // Fuera de la ruta y sin una nueva todavía: la vuelta de la ruta vieja ya no sirve.
-            s.offRoute && !s.arrived -> Label(stringResource(R.string.guide_off_route), Typography.title, maxLines = 1)
+            s.offRoute && !s.arrived -> Label(
+                stringResource(if (session.noInternet) R.string.guide_no_internet else R.string.guide_off_route), Typography.title, maxLines = 2,
+            )
             s.arrived -> {
                 ArrowBox(route.maneuvers.last(), 64.dp)
                 Label(
@@ -397,7 +459,20 @@ internal fun ManeuverArrow(m: Maneuver, side: Dp, color: Color, modifier: Modifi
         val path = Path()
         val tip: Offset
         val dir: Float
-        if (m.type == ManeuverType.UTURN) {
+        if (m.type == ManeuverType.ROUNDABOUT) {
+            // La glorieta: entras por abajo, la rodeas y sales hacia donde va la salida.
+            val center = Offset(w * 0.5f, w * 0.45f)
+            val r = w * 0.17f
+            drawCircle(color, r, center, style = Stroke(w * 0.08f))
+            path.moveTo(w * 0.5f, w * 0.95f)
+            path.lineTo(w * 0.5f, center.y + r)
+            val a = Math.toRadians(m.angle.coerceIn(-150f, 150f).toDouble())
+            val out = Offset((sin(a)).toFloat(), (-cos(a)).toFloat())
+            path.moveTo(center.x + out.x * r, center.y + out.y * r)
+            tip = Offset(center.x + out.x * (r + w * 0.22f), center.y + out.y * (r + w * 0.22f))
+            path.lineTo(tip.x, tip.y)
+            dir = m.angle.coerceIn(-150f, 150f)
+        } else if (m.type == ManeuverType.UTURN) {
             // Sube, da la vuelta y baja del otro lado (a la izquierda en México; al revés si gira a la derecha).
             val side = if (m.angle >= 0) 1f else -1f
             path.moveTo(w * 0.5f + side * w * 0.15f, w * 0.92f)
@@ -439,6 +514,20 @@ internal fun maneuverText(m: Maneuver, to: SearchHit): String {
     val ontoId: Int
     when (m.type) {
         ManeuverType.UTURN -> return stringResource(R.string.guide_uturn)
+        ManeuverType.ROUNDABOUT -> if (m.exit > 0) {
+            return if (road.isEmpty()) stringResource(R.string.guide_roundabout, m.exit) else stringResource(R.string.guide_roundabout_onto, m.exit, road)
+        } else {
+            // Sin el número de salida: lo que se gira al salir.
+            val ids = TURN_TEXTS.getValue(
+                when {
+                    m.angle >= 50f -> ManeuverType.RIGHT
+                    m.angle <= -50f -> ManeuverType.LEFT
+                    else -> ManeuverType.STRAIGHT
+                },
+            )
+            plainId = ids.first
+            ontoId = ids.second
+        }
         ManeuverType.ARRIVE -> return to.name.takeIf { it.isNotEmpty() }?.let { stringResource(R.string.guide_arrive_at, it) } ?: stringResource(R.string.guide_arrive)
         else -> {
             val ids = TURN_TEXTS.getValue(m.type)

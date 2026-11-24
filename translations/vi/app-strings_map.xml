@@ -114,18 +114,18 @@
     <string name="route_need_routes">Để lập lộ trình, cần tải đường phố của %1$s (%2$s).</string>
     <string name="route_download">Tải đường phố</string>
     <string name="route_download_failed">Không tải được. Hãy kiểm tra internet và thử lại.</string>
-    <string name="route_other_state">Nơi đó thuộc %1$s. Lộ trình dùng bản đồ đã tải về, kể cả khi có internet: hãy tải thêm tỉnh đó hoặc mở trong ứng dụng bản đồ của bạn.</string>
-    <string name="route_outside">Nơi đó nằm ngoài tỉnh của bạn: hãy mở trong ứng dụng bản đồ của bạn.</string>
-    <string name="route_no_state">Lộ trình và dẫn đường 3D dùng bản đồ tỉnh hoặc quốc gia của bạn đã tải về, kể cả khi có internet. Chỉ cần tải một lần (khu vực chỉ dùng để xem bản đồ).</string>
-    <string name="route_no_state_named">Lộ trình và dẫn đường 3D dùng bản đồ đã tải về, kể cả khi có internet. Hãy tải bản đồ của %1$s một lần (khu vực chỉ dùng để xem bản đồ).</string>
-    <string name="route_no_map">Lộ trình và dẫn đường 3D dùng bản đồ đã tải về, kể cả khi có internet, và chưa có bản đồ cho nơi bạn ở. Xem các bản đồ hiện có và yêu cầu bản đồ của bạn, hoặc mở địa điểm trong ứng dụng bản đồ của bạn.</string>
+    <string name="route_other_state">Nơi đó thuộc %1$s. Khi không có internet, lộ trình cũng cần bản đồ đó: hãy tải về hoặc mở nơi đó trong ứng dụng bản đồ của bạn.</string>
+    <string name="route_outside">Nơi đó nằm ngoài tỉnh của bạn và không có internet để tìm lộ trình: hãy mở trong ứng dụng bản đồ của bạn.</string>
+    <string name="route_no_state">Khi không có internet, lộ trình cần bản đồ tỉnh hoặc quốc gia của bạn. Hãy tải về một lần (vùng chỉ để xem bản đồ).</string>
+    <string name="route_no_state_named">Bạn cần bản đồ %1$s để tìm lộ trình khi không có internet. Hãy tải về một lần (vùng chỉ để xem bản đồ).</string>
+    <string name="route_no_map">Khi không có internet, lộ trình cần bản đồ đã tải về, và khu vực của bạn chưa có. Xem các bản đồ có sẵn và yêu cầu bản đồ của bạn, hoặc mở nơi đó trong ứng dụng bản đồ của bạn.</string>
     <string name="route_get_map">Tải bản đồ</string>
     <string name="route_see_maps">Bản đồ hiện có</string>
     <string name="route_from_off">Bạn đang ở xa đường: hãy đến gần một con đường để tìm lộ trình.</string>
     <string name="route_to_off">Nơi đó ở xa đường.</string>
     <string name="route_no_path">Không tìm thấy đường đi đến đó.</string>
     <string name="route_too_big">Chuyến đi này quá dài so với bộ nhớ của màn hình này. Hãy thử điểm đến gần hơn.</string>
-    <string name="route_two_states">Địa điểm đó ở tỉnh khác: tuyến đường giữa các tỉnh sẽ có sau. Trong lúc chờ, hãy mở trong ứng dụng bản đồ của bạn.</string>
+    <string name="route_two_states">Nơi đó thuộc tỉnh khác. Khi không có internet, lộ trình giữa các tỉnh sẽ có sau; trong lúc chờ, hãy mở trong ứng dụng bản đồ của bạn.</string>
     <string name="guide_go">Đi</string>
     <string name="guide_end">Kết thúc</string>
     <string name="guide_overview">Xem lộ trình</string>
@@ -169,4 +169,12 @@
     <string name="map_pack_download_all">Tải xuống tất cả · %1$s</string>
     <string name="map_pack_download_all_question">Tải xuống toàn bộ %1$s?</string>
     <string name="map_pack_batch_progress">Đang tải %1$d/%2$d · %3$s</string>
+    <string name="route_online">Trực tuyến</string>
+    <string name="route_online_credit">Lộ trình: OSRM · FOSSGIS</string>
+    <string name="route_fix_map">Sửa bản đồ</string>
+    <string name="guide_no_internet">Không có internet để tính lại</string>
+    <string name="guide_car_need_map">Để thấy xe và các làn đường, hãy tải bản đồ %1$s (%2$s).</string>
+    <string name="guide_car_no_map">Chưa có bản đồ khu vực này để hiện xe và các làn đường của bạn.</string>
+    <string name="guide_roundabout">Tại vòng xuyến, đi lối ra thứ %1$d</string>
+    <string name="guide_roundabout_onto">Tại vòng xuyến, đi lối ra thứ %1$d vào %2$s</string>
 </resources>

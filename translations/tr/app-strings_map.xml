@@ -114,18 +114,18 @@
     <string name="route_need_routes">Rota oluşturmak için %1$s sokakları eksik (%2$s).</string>
     <string name="route_download">Sokakları indir</string>
     <string name="route_download_failed">İndirilemedi. İnternetinizi kontrol edip tekrar deneyin.</string>
-    <string name="route_other_state">Bu yer %1$s içinde. Rota, internet olsa bile indirilmiş haritayı kullanır: o ili de indirin veya harita uygulamanızda açın.</string>
-    <string name="route_outside">Bu yer ilinizin dışında: harita uygulamanızda açın.</string>
-    <string name="route_no_state">Rota ve 3D yol tarifi, internet olsa bile ilinizin veya ülkenizin indirilmiş haritasını kullanır. Bir kez indirin (bölgeler yalnızca haritayı görmek içindir).</string>
-    <string name="route_no_state_named">Rota ve 3D yol tarifi, internet olsa bile indirilmiş haritayı kullanır. %1$s haritasını bir kez indirin (bölgeler yalnızca haritayı görmek içindir).</string>
-    <string name="route_no_map">Rota ve 3D yol tarifi, internet olsa bile indirilmiş bir harita kullanır ve bulunduğunuz yer için henüz harita yok. Mevcut haritalara bakıp kendi bölgenizinkini isteyin veya yeri harita uygulamanızda açın.</string>
+    <string name="route_other_state">Bu yer %1$s içinde. İnternet yokken rota o haritaya da ihtiyaç duyar: indirin veya yeri harita uygulamanızda açın.</string>
+    <string name="route_outside">Bu yer ilinizin dışında ve rota için internet yok: harita uygulamanızda açın.</string>
+    <string name="route_no_state">İnternet yokken rota, ilinizin veya ülkenizin haritasına ihtiyaç duyar. Bir kez indirin (bölgeler yalnızca haritayı görmek içindir).</string>
+    <string name="route_no_state_named">İnternetsiz rota için %1$s haritası gerekir. Bir kez indirin (bölgeler yalnızca haritayı görmek içindir).</string>
+    <string name="route_no_map">İnternet yokken rota indirilmiş bir haritaya ihtiyaç duyar ve bölgeniz için henüz yok. Mevcut haritalara bakıp kendinizinkini isteyin veya yeri harita uygulamanızda açın.</string>
     <string name="route_get_map">Haritayı indir</string>
     <string name="route_see_maps">Mevcut haritalar</string>
     <string name="route_from_off">Bir yoldan uzaktasınız: rotayı bulmak için bir yola yaklaşın.</string>
     <string name="route_to_off">Bu yer bir yoldan uzak.</string>
     <string name="route_no_path">Oraya giden bir yol bulamadık.</string>
     <string name="route_too_big">Bu yolculuk bu ekranın belleği için çok uzun. Daha yakın bir hedef deneyin.</string>
-    <string name="route_two_states">Bu yer başka bir ilde: iller arası rotalar daha sonra gelecek. Şimdilik harita uygulamanızda açın.</string>
+    <string name="route_two_states">Bu yer başka bir ilde. İnternet yokken iller arası rotalar daha sonra gelecek; o zamana kadar harita uygulamanızda açın.</string>
     <string name="guide_go">Başla</string>
     <string name="guide_end">Bitir</string>
     <string name="guide_overview">Rotayı gör</string>
@@ -170,4 +170,12 @@
     <string name="map_pack_download_all">Tümünü indir · %1$s</string>
     <string name="map_pack_download_all_question">%1$s haritasının tamamı indirilsin mi?</string>
     <string name="map_pack_batch_progress">İndiriliyor %1$d / %2$d · %3$s</string>
+    <string name="route_online">Çevrimiçi</string>
+    <string name="route_online_credit">Rotalar: OSRM · FOSSGIS</string>
+    <string name="route_fix_map">Haritayı düzelt</string>
+    <string name="guide_no_internet">Yeniden hesaplamak için internet yok</string>
+    <string name="guide_car_need_map">Aracınızı ve şeritleri görmek için %1$s haritasını indirin (%2$s).</string>
+    <string name="guide_car_no_map">Bu bölge için aracınızı ve şeritleri gösterecek bir harita henüz yok.</string>
+    <string name="guide_roundabout">Dönel kavşakta %1$d. çıkışı kullanın</string>
+    <string name="guide_roundabout_onto">Dönel kavşakta %1$d. çıkıştan %2$s yönüne çıkın</string>
 </resources>

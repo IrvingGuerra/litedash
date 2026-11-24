@@ -114,18 +114,18 @@
     <string name="route_need_routes">Per calcolare il percorso mancano le strade di %1$s (%2$s).</string>
     <string name="route_download">Scarica strade</string>
     <string name="route_download_failed">Download non riuscito. Controlla internet e riprova.</string>
-    <string name="route_other_state">Quel luogo è in %1$s. Il percorso usa la mappa scaricata, anche con internet: scarica anche quella regione o aprilo nella tua app di mappe.</string>
-    <string name="route_outside">Quel luogo è fuori dalla tua regione: aprilo nella tua app di mappe.</string>
-    <string name="route_no_state">Il percorso e la guida 3D usano la mappa scaricata della tua regione o del tuo paese, anche con internet. Scaricala una volta (le zone servono solo a vedere la mappa).</string>
-    <string name="route_no_state_named">Il percorso e la guida 3D usano la mappa scaricata, anche con internet. Scarica una volta quella di %1$s (le zone servono solo a vedere la mappa).</string>
-    <string name="route_no_map">Il percorso e la guida 3D usano una mappa scaricata, anche con internet, e per la tua area non ce n\'è ancora una. Guarda quelle disponibili e chiedi la tua, oppure apri il luogo nella tua app di mappe.</string>
+    <string name="route_other_state">Quel luogo è in %1$s. Senza internet, il percorso ha bisogno anche di quella mappa: scaricala o apri il luogo nella tua app di mappe.</string>
+    <string name="route_outside">Quel luogo è fuori dalla tua regione e non c\'è internet per il percorso: aprilo nella tua app di mappe.</string>
+    <string name="route_no_state">Senza internet, il percorso ha bisogno della mappa della tua regione o del tuo paese. Scaricala una volta (le zone servono solo a vedere la mappa).</string>
+    <string name="route_no_state_named">Per il percorso senza internet ti serve la mappa di %1$s. Scaricala una volta (le zone servono solo a vedere la mappa).</string>
+    <string name="route_no_map">Senza internet, il percorso ha bisogno di una mappa scaricata e per la tua zona non ce n\'è ancora una. Guarda quelle disponibili e chiedi la tua, o apri il luogo nella tua app di mappe.</string>
     <string name="route_get_map">Scarica mappa</string>
     <string name="route_see_maps">Mappe disponibili</string>
     <string name="route_from_off">Sei lontano da una strada: avvicinati a una per trovare il percorso.</string>
     <string name="route_to_off">Quel luogo è lontano da una strada.</string>
     <string name="route_no_path">Non abbiamo trovato una strada per arrivarci.</string>
     <string name="route_too_big">Questo viaggio è troppo lungo per la memoria di questo schermo. Prova una destinazione più vicina.</string>
-    <string name="route_two_states">Questo luogo è in un\'altra regione: i percorsi tra regioni arriveranno più avanti. Nel frattempo, aprilo nella tua app di mappe.</string>
+    <string name="route_two_states">Quel luogo è in un\'altra regione. Senza internet, i percorsi tra regioni arriveranno più avanti; nel frattempo, aprilo nella tua app di mappe.</string>
     <string name="guide_go">Vai</string>
     <string name="guide_end">Termina</string>
     <string name="guide_overview">Vedi percorso</string>
@@ -170,4 +170,12 @@
     <string name="map_pack_download_all">Scarica tutto · %1$s</string>
     <string name="map_pack_download_all_question">Scaricare tutto il paese %1$s?</string>
     <string name="map_pack_batch_progress">Download %1$d di %2$d · %3$s</string>
+    <string name="route_online">Online</string>
+    <string name="route_online_credit">Percorsi: OSRM · FOSSGIS</string>
+    <string name="route_fix_map">Correggi la mappa</string>
+    <string name="guide_no_internet">Niente internet per ricalcolare</string>
+    <string name="guide_car_need_map">Per vedere la tua auto e le corsie, scarica la mappa di %1$s (%2$s).</string>
+    <string name="guide_car_no_map">Non c\'è ancora una mappa di questa zona per mostrare la tua auto e le corsie.</string>
+    <string name="guide_roundabout">Alla rotonda, prendi l\'uscita %1$d</string>
+    <string name="guide_roundabout_onto">Alla rotonda, prendi l\'uscita %1$d verso %2$s</string>
 </resources>

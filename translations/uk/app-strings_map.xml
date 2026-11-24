@@ -114,18 +114,18 @@
     <string name="route_need_routes">Для маршруту бракує вулиць: %1$s (%2$s).</string>
     <string name="route_download">Завантажити вулиці</string>
     <string name="route_download_failed">Не вдалося завантажити. Перевір інтернет і спробуй ще раз.</string>
-    <string name="route_other_state">Це місце в області %1$s. Маршрут використовує завантажену карту, навіть якщо є інтернет: завантаж і цю область або відкрий місце у своєму застосунку карт.</string>
-    <string name="route_outside">Це місце поза твоєю областю: відкрий його у своєму застосунку карт.</string>
-    <string name="route_no_state">Маршрут і 3D-навігація використовують завантажену карту твоєї області чи країни, навіть якщо є інтернет. Завантаж її один раз (райони — лише для перегляду карти).</string>
-    <string name="route_no_state_named">Маршрут і 3D-навігація використовують завантажену карту, навіть якщо є інтернет. Завантаж один раз карту: %1$s (райони — лише для перегляду карти).</string>
-    <string name="route_no_map">Маршрут і 3D-навігація використовують завантажену карту, навіть якщо є інтернет, а для твоєї місцевості її ще немає. Переглянь доступні й попроси свою або відкрий місце у своєму застосунку карт.</string>
+    <string name="route_other_state">Це місце в області %1$s. Без інтернету для маршруту потрібна й ця карта: завантаж її або відкрий місце у своєму застосунку карт.</string>
+    <string name="route_outside">Це місце поза твоєю областю, а інтернету для маршруту немає: відкрий його у своєму застосунку карт.</string>
+    <string name="route_no_state">Без інтернету для маршруту потрібна карта твоєї області чи країни. Завантаж її один раз (зони лише для перегляду карти).</string>
+    <string name="route_no_state_named">Для маршруту без інтернету потрібна карта: %1$s. Завантаж її один раз (зони лише для перегляду карти).</string>
+    <string name="route_no_map">Без інтернету для маршруту потрібна завантажена карта, а для твого району її поки немає. Переглянь доступні й попроси свою або відкрий місце у своєму застосунку карт.</string>
     <string name="route_get_map">Завантажити карту</string>
     <string name="route_see_maps">Доступні карти</string>
     <string name="route_from_off">Ти далеко від дороги: під\'їдь ближче до неї, щоб знайти маршрут.</string>
     <string name="route_to_off">Це місце далеко від дороги.</string>
     <string name="route_no_path">Не знайшли шляху туди дорогами.</string>
     <string name="route_too_big">Цей маршрут задовгий для пам’яті цього екрана. Спробуйте ближчий пункт призначення.</string>
-    <string name="route_two_states">Це місце в іншій області: маршрути між областями з\'являться пізніше. Поки що відкрийте його у своєму застосунку карт.</string>
+    <string name="route_two_states">Це місце в іншій області. Без інтернету маршрути між областями з’являться пізніше; поки відкрий його у своєму застосунку карт.</string>
     <string name="guide_go">Поїхали</string>
     <string name="guide_end">Завершити</string>
     <string name="guide_overview">Весь маршрут</string>
@@ -172,4 +172,12 @@
     <string name="map_pack_download_all">Завантажити все · %1$s</string>
     <string name="map_pack_download_all_question">Завантажити всю країну %1$s?</string>
     <string name="map_pack_batch_progress">Завантаження %1$d з %2$d · %3$s</string>
+    <string name="route_online">Онлайн</string>
+    <string name="route_online_credit">Маршрути: OSRM · FOSSGIS</string>
+    <string name="route_fix_map">Виправити карту</string>
+    <string name="guide_no_internet">Немає інтернету для перерахунку</string>
+    <string name="guide_car_need_map">Щоб бачити своє авто і смуги, завантаж карту: %1$s (%2$s).</string>
+    <string name="guide_car_no_map">Для цього району поки немає карти, щоб показати твоє авто і смуги.</string>
+    <string name="guide_roundabout">На колі з’їзд %1$d</string>
+    <string name="guide_roundabout_onto">На колі з’їзд %1$d на %2$s</string>
 </resources>

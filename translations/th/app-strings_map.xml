@@ -114,18 +114,18 @@
     <string name="route_need_routes">ถ้าจะวางเส้นทาง ต้องมีข้อมูลถนนของ %1$s (%2$s)</string>
     <string name="route_download">ดาวน์โหลดถนน</string>
     <string name="route_download_failed">ดาวน์โหลดไม่สำเร็จ ตรวจสอบอินเทอร์เน็ตแล้วลองอีกครั้ง</string>
-    <string name="route_other_state">สถานที่นี้อยู่ใน %1$s เส้นทางใช้แผนที่ที่ดาวน์โหลดไว้ แม้จะมีอินเทอร์เน็ต: ดาวน์โหลดจังหวัดนั้นด้วย หรือเปิดในแอปแผนที่ของคุณ</string>
-    <string name="route_outside">สถานที่นี้อยู่นอกจังหวัดของคุณ: เปิดในแอปแผนที่ของคุณ</string>
-    <string name="route_no_state">เส้นทางและการนำทาง 3D ใช้แผนที่จังหวัดหรือประเทศของคุณที่ดาวน์โหลดไว้ แม้จะมีอินเทอร์เน็ต ดาวน์โหลดครั้งเดียวก็พอ (โซนใช้ดูแผนที่ได้อย่างเดียว)</string>
-    <string name="route_no_state_named">เส้นทางและการนำทาง 3D ใช้แผนที่ที่ดาวน์โหลดไว้ แม้จะมีอินเทอร์เน็ต ดาวน์โหลดแผนที่ของ %1$s ครั้งเดียวก็พอ (โซนใช้ดูแผนที่ได้อย่างเดียว)</string>
-    <string name="route_no_map">เส้นทางและการนำทาง 3D ใช้แผนที่ที่ดาวน์โหลดไว้ แม้จะมีอินเทอร์เน็ต และยังไม่มีแผนที่ของพื้นที่คุณ ดูแผนที่ที่มีและขอแผนที่ของคุณ หรือเปิดสถานที่นี้ในแอปแผนที่ของคุณ</string>
+    <string name="route_other_state">สถานที่นี้อยู่ใน %1$s หากไม่มีอินเทอร์เน็ต เส้นทางต้องใช้แผนที่นั้นด้วย: ดาวน์โหลด หรือเปิดสถานที่ในแอปแผนที่ของคุณ</string>
+    <string name="route_outside">สถานที่นี้อยู่นอกจังหวัดของคุณและไม่มีอินเทอร์เน็ตสำหรับเส้นทาง: เปิดในแอปแผนที่ของคุณ</string>
+    <string name="route_no_state">หากไม่มีอินเทอร์เน็ต เส้นทางต้องใช้แผนที่จังหวัดหรือประเทศของคุณ ดาวน์โหลดครั้งเดียว (โซนใช้สำหรับดูแผนที่เท่านั้น)</string>
+    <string name="route_no_state_named">คุณต้องมีแผนที่ %1$s สำหรับเส้นทางแบบไม่ใช้อินเทอร์เน็ต ดาวน์โหลดครั้งเดียว (โซนใช้สำหรับดูแผนที่เท่านั้น)</string>
+    <string name="route_no_map">หากไม่มีอินเทอร์เน็ต เส้นทางต้องใช้แผนที่ที่ดาวน์โหลดไว้ และยังไม่มีแผนที่ของพื้นที่คุณ ดูแผนที่ที่มีและขอแผนที่ของคุณ หรือเปิดสถานที่ในแอปแผนที่ของคุณ</string>
     <string name="route_get_map">ดาวน์โหลดแผนที่</string>
     <string name="route_see_maps">แผนที่ที่มี</string>
     <string name="route_from_off">คุณอยู่ไกลจากถนน: เข้าใกล้ถนนเพื่อหาเส้นทาง</string>
     <string name="route_to_off">สถานที่นี้อยู่ไกลจากถนน</string>
     <string name="route_no_path">ไม่พบเส้นทางถนนไปที่นั่น</string>
     <string name="route_too_big">เส้นทางนี้ยาวเกินไปสำหรับหน่วยความจำของหน้าจอนี้ ลองจุดหมายที่ใกล้กว่านี้</string>
-    <string name="route_two_states">สถานที่นี้อยู่ในจังหวัดอื่น เส้นทางข้ามจังหวัดจะมาในภายหลัง ระหว่างนี้เปิดในแอปแผนที่ของคุณ</string>
+    <string name="route_two_states">สถานที่นี้อยู่ในจังหวัดอื่น หากไม่มีอินเทอร์เน็ต เส้นทางข้ามจังหวัดจะมาภายหลัง ระหว่างนี้เปิดในแอปแผนที่ของคุณ</string>
     <string name="guide_go">เริ่ม</string>
     <string name="guide_end">สิ้นสุด</string>
     <string name="guide_overview">ดูเส้นทาง</string>
@@ -169,4 +169,12 @@
     <string name="map_pack_download_all">ดาวน์โหลดทั้งหมด · %1$s</string>
     <string name="map_pack_download_all_question">ดาวน์โหลด %1$s ทั้งหมดไหม</string>
     <string name="map_pack_batch_progress">กำลังดาวน์โหลด %1$d จาก %2$d · %3$s</string>
+    <string name="route_online">ออนไลน์</string>
+    <string name="route_online_credit">เส้นทาง: OSRM · FOSSGIS</string>
+    <string name="route_fix_map">แก้ไขแผนที่</string>
+    <string name="guide_no_internet">ไม่มีอินเทอร์เน็ตสำหรับคำนวณใหม่</string>
+    <string name="guide_car_need_map">หากต้องการเห็นรถและช่องจราจร ให้ดาวน์โหลดแผนที่ %1$s (%2$s)</string>
+    <string name="guide_car_no_map">ยังไม่มีแผนที่ของพื้นที่นี้สำหรับแสดงรถและช่องจราจรของคุณ</string>
+    <string name="guide_roundabout">ที่วงเวียน ใช้ทางออกที่ %1$d</string>
+    <string name="guide_roundabout_onto">ที่วงเวียน ใช้ทางออกที่ %1$d ไปยัง %2$s</string>
 </resources>

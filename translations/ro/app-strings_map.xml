@@ -114,18 +114,18 @@
     <string name="route_need_routes">Pentru traseu lipsesc străzile din %1$s (%2$s).</string>
     <string name="route_download">Descarcă străzile</string>
     <string name="route_download_failed">Nu s-au putut descărca. Verifică internetul și încearcă din nou.</string>
-    <string name="route_other_state">Locul acela e în %1$s. Traseul folosește harta descărcată, chiar dacă ai internet: descarcă și acel județ sau deschide-l în aplicația ta de hărți.</string>
-    <string name="route_outside">Locul acela e în afara județului tău: deschide-l în aplicația ta de hărți.</string>
-    <string name="route_no_state">Traseul și ghidarea 3D folosesc harta descărcată a județului sau țării tale, chiar dacă ai internet. Descarc-o o dată (zonele servesc doar la vizualizarea hărții).</string>
-    <string name="route_no_state_named">Traseul și ghidarea 3D folosesc harta descărcată, chiar dacă ai internet. Descarcă o dată harta pentru %1$s (zonele servesc doar la vizualizarea hărții).</string>
-    <string name="route_no_map">Traseul și ghidarea 3D folosesc o hartă descărcată, chiar dacă ai internet, și încă nu există una pentru împrejurimile tale. Vezi hărțile disponibile și cere-o pe a ta sau deschide locul în aplicația ta de hărți.</string>
+    <string name="route_other_state">Locul acela e în %1$s. Fără internet, traseul are nevoie și de acea hartă: descarc-o sau deschide locul în aplicația ta de hărți.</string>
+    <string name="route_outside">Locul acela e în afara județului tău și nu e internet pentru traseu: deschide-l în aplicația ta de hărți.</string>
+    <string name="route_no_state">Fără internet, traseul are nevoie de harta județului sau țării tale. Descarc-o o dată (zonele servesc doar la vizualizarea hărții).</string>
+    <string name="route_no_state_named">Pentru traseul fără internet ai nevoie de harta %1$s. Descarc-o o dată (zonele servesc doar la vizualizarea hărții).</string>
+    <string name="route_no_map">Fără internet, traseul are nevoie de o hartă descărcată și încă nu există una pentru zona ta. Vezi hărțile disponibile și cere-o pe a ta, sau deschide locul în aplicația ta de hărți.</string>
     <string name="route_get_map">Descarcă harta</string>
     <string name="route_see_maps">Hărți disponibile</string>
     <string name="route_from_off">Ești departe de o stradă: apropie-te de una ca să găsim traseul.</string>
     <string name="route_to_off">Locul acela e departe de o stradă.</string>
     <string name="route_no_path">Nu am găsit un drum până acolo.</string>
     <string name="route_too_big">Această călătorie e prea lungă pentru memoria acestui ecran. Încearcă o destinație mai apropiată.</string>
-    <string name="route_two_states">Locul este în alt județ: rutele între județe vin mai târziu. Până atunci, deschide-l în aplicația ta de hărți.</string>
+    <string name="route_two_states">Locul acela e în alt județ. Fără internet, traseele între județe vin mai târziu; până atunci, deschide-l în aplicația ta de hărți.</string>
     <string name="guide_go">Pornește</string>
     <string name="guide_end">Încheie</string>
     <string name="guide_overview">Vezi traseul</string>
@@ -171,4 +171,12 @@
     <string name="map_pack_download_all">Descarcă tot · %1$s</string>
     <string name="map_pack_download_all_question">Descarci toată țara %1$s?</string>
     <string name="map_pack_batch_progress">Se descarcă %1$d din %2$d · %3$s</string>
+    <string name="route_online">Online</string>
+    <string name="route_online_credit">Trasee: OSRM · FOSSGIS</string>
+    <string name="route_fix_map">Corectează harta</string>
+    <string name="guide_no_internet">Fără internet pentru recalculare</string>
+    <string name="guide_car_need_map">Ca să vezi mașina și benzile, descarcă harta %1$s (%2$s).</string>
+    <string name="guide_car_no_map">Încă nu există o hartă a acestei zone care să arate mașina și benzile.</string>
+    <string name="guide_roundabout">La sensul giratoriu, ia ieșirea %1$d</string>
+    <string name="guide_roundabout_onto">La sensul giratoriu, ia ieșirea %1$d spre %2$s</string>
 </resources>

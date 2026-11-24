@@ -114,18 +114,18 @@
     <string name="route_need_routes">Voor de route ontbreken de straten van %1$s (%2$s).</string>
     <string name="route_download">Straten downloaden</string>
     <string name="route_download_failed">Downloaden mislukt. Controleer je internet en probeer het opnieuw.</string>
-    <string name="route_other_state">Die plek ligt in %1$s. De route gebruikt de gedownloade kaart, ook met internet: download ook die provincie of open hem in je kaarten-app.</string>
-    <string name="route_outside">Die plek ligt buiten je provincie: open hem in je kaarten-app.</string>
-    <string name="route_no_state">De route en de 3D-navigatie gebruiken de gedownloade kaart van je provincie of land, ook met internet. Download hem één keer (zones zijn alleen om de kaart te bekijken).</string>
-    <string name="route_no_state_named">De route en de 3D-navigatie gebruiken de gedownloade kaart, ook met internet. Download één keer de kaart van %1$s (zones zijn alleen om de kaart te bekijken).</string>
-    <string name="route_no_map">De route en de 3D-navigatie gebruiken een gedownloade kaart, ook met internet, en voor jouw omgeving is er nog geen. Bekijk de beschikbare kaarten en vraag de jouwe aan, of open de plek in je kaarten-app.</string>
+    <string name="route_other_state">Die plek ligt in %1$s. Zonder internet heeft de route ook die kaart nodig: download hem of open de plek in je kaarten-app.</string>
+    <string name="route_outside">Die plek ligt buiten je provincie en er is geen internet voor de route: open hem in je kaarten-app.</string>
+    <string name="route_no_state">Zonder internet heeft de route de kaart van je provincie of land nodig. Download hem één keer (zones zijn alleen om de kaart te bekijken).</string>
+    <string name="route_no_state_named">Voor de route zonder internet heb je de kaart van %1$s nodig. Download hem één keer (zones zijn alleen om de kaart te bekijken).</string>
+    <string name="route_no_map">Zonder internet heeft de route een gedownloade kaart nodig, en voor jouw gebied is er nog geen. Bekijk de beschikbare en vraag de jouwe aan, of open de plek in je kaarten-app.</string>
     <string name="route_get_map">Kaart downloaden</string>
     <string name="route_see_maps">Beschikbare kaarten</string>
     <string name="route_from_off">Je bent ver van een straat: ga dichter naar een straat om de route te vinden.</string>
     <string name="route_to_off">Die plek ligt ver van een straat.</string>
     <string name="route_no_path">We vonden geen weg daarheen over de straat.</string>
     <string name="route_too_big">Deze rit is te lang voor het geheugen van dit scherm. Probeer een dichterbij gelegen bestemming.</string>
-    <string name="route_two_states">Die plek ligt in een andere provincie: routes tussen provincies komen later. Open hem tot dan in je kaarten-app.</string>
+    <string name="route_two_states">Die plek ligt in een andere provincie. Zonder internet komen routes tussen provincies later; open hem tot dan in je kaarten-app.</string>
     <string name="guide_go">Start</string>
     <string name="guide_end">Stoppen</string>
     <string name="guide_overview">Route bekijken</string>
@@ -170,4 +170,12 @@
     <string name="map_pack_download_all">Alles downloaden · %1$s</string>
     <string name="map_pack_download_all_question">Heel %1$s downloaden?</string>
     <string name="map_pack_batch_progress">Downloaden %1$d van %2$d · %3$s</string>
+    <string name="route_online">Online</string>
+    <string name="route_online_credit">Routes: OSRM · FOSSGIS</string>
+    <string name="route_fix_map">Kaart verbeteren</string>
+    <string name="guide_no_internet">Geen internet om opnieuw te berekenen</string>
+    <string name="guide_car_need_map">Download de kaart van %1$s (%2$s) om je auto en de rijstroken te zien.</string>
+    <string name="guide_car_no_map">Er is nog geen kaart van dit gebied om je auto en de rijstroken te tonen.</string>
+    <string name="guide_roundabout">Neem op de rotonde afslag %1$d</string>
+    <string name="guide_roundabout_onto">Neem op de rotonde afslag %1$d naar %2$s</string>
 </resources>
