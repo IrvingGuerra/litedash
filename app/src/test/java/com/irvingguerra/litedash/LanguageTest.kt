@@ -46,4 +46,13 @@ class LanguageTest {
 
     @Test
     fun rightToLeftSystemIsEnglish() = assertEquals("en", systemLanguage(Locale.forLanguageTag("ar-EG")) { true })
+
+    @Test
+    fun `featured languages put the chosen and system ones first, then the popular ones up to six`() {
+        val list = listOf("ar", "de", "fr", "hi", "it", "ja", "pt-BR", "ru", "tr", "zh").map { LanguageChoice(it, it, 100, 1, "") }
+        val tags = { current: String, system: List<String> -> featuredLanguages(list, current, system).map { it.tag } }
+        assertEquals(listOf("pt-BR", "tr", "fr", "de", "ru", "it"), tags("", listOf("es")))
+        assertEquals(listOf("ja", "hi", "pt-BR", "tr", "fr", "de"), tags("ja", listOf("hi", "ja")))
+        assertEquals(listOf("fr", "pt-BR", "tr", "de", "ru", "it"), tags("fr", listOf("fr")))
+    }
 }

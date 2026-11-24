@@ -29,6 +29,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
@@ -101,24 +102,30 @@ private fun MoreLanguages(current: String, choose: (String) -> Unit) {
         }
         list.isEmpty() -> Label(stringResource(R.string.language_none), Typography.small, c.textMuted)
         else -> {
-            // Todos a la vista (escondidos, la gente creía que su idioma no estaba): el elegido, luego los del sistema y
-            // luego los demás por nombre; escribiendo, solo los que coinciden.
+            // Cerrada, solo unos cuantos ([featuredLanguages]) para que la tarjeta no crezca con cada idioma nuevo; «Ver todos»
+            // la abre aquí mismo. Escribiendo se busca en todos, abierta o no: el elegido, luego los del sistema y luego por nombre.
             var query by rememberSaveable { mutableStateOf("") }
+            var expanded by rememberSaveable { mutableStateOf(false) }
             val locale = currentLocale()
             // Su nombre en su idioma, en el de la app ("alemán", "German") y su código: "aleman" encuentra "Deutsch".
             val keys = remember(list, locale) {
                 list.associate { it.tag to normalize("${it.name} ${Locale.forLanguageTag(it.tag).getDisplayName(locale)} ${it.tag}") }
             }
             val q = normalize(query.trim())
+            val system = remember { systemLanguages() }
             val ordered = remember(list, current) {
-                val system = systemLanguages()
                 list.sortedWith(
                     compareBy<LanguageChoice> { if (it.tag == current) 0 else 1 }
                         .thenBy { choice -> system.indexOf(Locale.forLanguageTag(choice.tag).language).let { if (it < 0) system.size else it } }
                         .thenBy { it.name.lowercase(Locale.ROOT) },
                 )
             }
-            val shown = ordered.filter { q.isEmpty() || it.tag == current || q in keys[it.tag].orEmpty() || busy == it.tag }
+            val featured = remember(list, current) { featuredLanguages(list, current, system) }
+            val shown = when {
+                q.isNotEmpty() -> ordered.filter { it.tag == current || q in keys[it.tag].orEmpty() || busy == it.tag }
+                expanded -> ordered
+                else -> ordered.filter { choice -> choice in featured || busy == choice.tag }
+            }
             TextInput(query, { query = it }, stringResource(R.string.language_search), Modifier.fillMaxWidth(), icon = true)
             if (q.isNotEmpty() && shown.none { it.tag != current }) Label(stringResource(R.string.language_not_found), Typography.small, c.textMuted)
             // En columnas según el ancho (cada celda de al menos LANGUAGE_CELL_MIN): 21 renglones no alargan la pantalla.
@@ -141,6 +148,13 @@ private fun MoreLanguages(current: String, choose: (String) -> Unit) {
                         }
                     }
                 }
+            }
+            // Sin búsqueda y con más de los que se ven: abre o cierra la lista completa en la misma tarjeta.
+            if (q.isEmpty() && list.size > featured.size) {
+                Button(
+                    if (expanded) stringResource(R.string.language_show_less) else pluralStringResource(R.plurals.language_show_all, list.size, list.size),
+                    { expanded = !expanded },
+                )
             }
             Label(stringResource(R.string.language_more_help), Typography.small, c.textMuted)
             Label(stringResource(R.string.language_report), Typography.small, c.textMuted)
@@ -172,6 +186,25 @@ private fun LanguageRow(choice: LanguageChoice, modifier: Modifier, selected: Bo
         if (selected) Icon(Icons.done, c.primary, 22.dp)
     }
 }
+
+/**
+ * Los que se ven con la lista cerrada: el elegido, los del sistema que tengan paquete y luego los más usados
+ * ([POPULAR_LANGUAGES]) hasta juntar [FEATURED_LANGUAGES], sin repetir.
+ */
+internal fun featuredLanguages(list: List<LanguageChoice>, current: String, system: List<String>): List<LanguageChoice> {
+    val byLanguage = list.groupBy { Locale.forLanguageTag(it.tag).language }
+    val picked = LinkedHashSet<LanguageChoice>()
+    list.firstOrNull { it.tag == current }?.let(picked::add)
+    for (language in system + POPULAR_LANGUAGES) {
+        if (picked.size >= FEATURED_LANGUAGES) break
+        byLanguage[language]?.firstOrNull { it !in picked }?.let(picked::add)
+    }
+    return picked.toList()
+}
+
+/** Cuántos se ven con la lista cerrada, y los más usados con que se completan, en orden. */
+private const val FEATURED_LANGUAGES = 6
+private val POPULAR_LANGUAGES = listOf("pt", "tr", "fr", "de", "ru", "it")
 
 /** Lo menos que mide de ancho cada idioma de la lista, y el espacio entre ellos. */
 private val LANGUAGE_CELL_MIN = 260.dp

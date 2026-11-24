@@ -18,4 +18,9 @@
     <string name="cards_themes">Combinations</string>
     <string name="language_search">Find your language</string>
     <string name="language_not_found">That language isn\'t here yet. Help us translate it at litedash.dev/en/translate.</string>
+    <plurals name="language_show_all">
+        <item quantity="one">See the language (%d)</item>
+        <item quantity="other">See all languages (%d)</item>
+    </plurals>
+    <string name="language_show_less">Show fewer</string>
 </resources>

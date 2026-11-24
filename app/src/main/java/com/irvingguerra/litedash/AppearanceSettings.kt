@@ -85,8 +85,9 @@ internal fun Appearance(d: Dependencies, revision: Int, onEdit: () -> Unit, onTe
     when (AppearanceTab.entries[tabs(AppearanceTab.entries.map { it.title }, APPEARANCE_TABS).coerceAtMost(AppearanceTab.entries.lastIndex)]) {
         AppearanceTab.HOME -> HomeSettings(d, revision, onEdit, onTemplates, onAddTile)
         AppearanceTab.LANGUAGE_UNITS -> {
-            SettingsCard(stringResource(R.string.language)) { LanguageSettings(d.prefs) }
+            // Unidades arriba: miden siempre lo mismo y así no quedan hasta abajo de la lista de idiomas, que crece.
             SettingsCard(stringResource(R.string.units_title)) { UnitsSettings(d.prefs) }
+            SettingsCard(stringResource(R.string.language)) { LanguageSettings(d.prefs) }
         }
         AppearanceTab.BAR -> BarSettingsTab(d)
         AppearanceTab.INTERFACE -> InterfaceSettings(d.prefs)
