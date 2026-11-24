@@ -54,8 +54,8 @@ class PackCountry(
     fun covers(lat: Double, lon: Double): Boolean = lon >= bbox[0] && lat >= bbox[1] && lon <= bbox[2] && lat <= bbox[3]
 }
 
-/** El índice por país leído: sus países y si se permite buscar en internet (Photon). */
-internal class CountryIndex(val countries: List<PackCountry>, val photon: Boolean)
+/** El índice por país leído: sus países y si se permite buscar (Photon) y trazar rutas (OSRM) en internet. */
+internal class CountryIndex(val countries: List<PackCountry>, val photon: Boolean, val osrm: Boolean)
 
 /** Un estado o región del índice de litedash-maps: su nombre, su contorno y el archivo del mapa. */
 class MapRegion(
@@ -86,8 +86,8 @@ private class Pending(val id: String, val sha256: String, val size: Long, val si
 /** Un mapa a medias que se puede seguir: de qué región y archivo ([sha256]) y cuántos [bytes] lleva. */
 class PausedPack(val id: String, val sha256: String, val bytes: Long)
 
-/** El índice leído: sus regiones y si se permite buscar en internet (Photon). */
-internal class PackIndex(val regions: List<MapRegion>, val photon: Boolean)
+/** El índice leído: sus regiones y si se permite buscar (Photon) y trazar rutas (OSRM) en internet. */
+internal class PackIndex(val regions: List<MapRegion>, val photon: Boolean, val osrm: Boolean)
 
 /** Un archivo del paquete: dónde está, cuánto pesa y su huella. */
 class PackFile(val url: String, val size: Long, val sha256: String)
@@ -195,6 +195,10 @@ class MapPacks private constructor(private val app: Context) {
 
     /** ¿Se permite buscar en internet (Photon)? Lo apaga el índice de litedash-maps si nos lo piden. */
     var onlineSearch by mutableStateOf(true)
+        private set
+
+    /** ¿Se permite pedir la ruta al servidor cuando no hay mapa bajado ([OnlineRoute])? Lo apaga el índice igual que Photon. */
+    @Volatile var onlineRouting = true
         private set
 
     /** Los índices de búsqueda abiertos, uno por estado (con su candado, solo para abrir o cambiar uno: es corto). */
@@ -436,6 +440,7 @@ class MapPacks private constructor(private val app: Context) {
     private fun useCountries(index: CountryIndex, network: Boolean) {
         countries = index.countries
         onlineSearch = index.photon
+        onlineRouting = index.osrm
         synchronized(countryLock) {
             // Un país que ya no está en el índice se suelta.
             val codes = index.countries.map { it.code }.toSet()
@@ -491,6 +496,7 @@ class MapPacks private constructor(private val app: Context) {
      */
     private fun useIndex(index: PackIndex) {
         onlineSearch = index.photon
+        onlineRouting = index.osrm
         catalog = index.regions
         useRegions(index.regions)
     }
@@ -851,11 +857,21 @@ class MapPacks private constructor(private val app: Context) {
         private set
 
     /**
-     * Qué se puede hacer para ir de ([fromLat], [fromLon]) a ([toLat], [toLon]) con lo bajado: la ruta, bajar antes las
-     * calles de tu estado, o nada (algún punto está fuera de tus estados bajados). Con [headingDeg] (al recalcular
-     * manejando) la ruta no sale en sentido contrario a tu rumbo si hay cómo rodear. Fuera del hilo principal.
+     * Qué se puede hacer para ir de ([fromLat], [fromLon]) a ([toLat], [toLon]): con el mapa bajado que cubre los dos
+     * puntos, la ruta en la pantalla (siempre primero: no se gasta el servidor); si falta un mapa (tu estado, el del
+     * destino o la ruta entre estados) y hay internet, la ruta en línea ([OnlineRoute], [Route.online]); si no, qué
+     * bajar. Con [headingDeg] (al recalcular manejando) la ruta no sale en sentido contrario a tu rumbo si hay cómo
+     * rodear. Fuera del hilo principal.
      */
-    fun planRoute(fromLat: Double, fromLon: Double, toLat: Double, toLon: Double, headingDeg: Float? = null): RoutePlan = try {
+    fun planRoute(fromLat: Double, fromLon: Double, toLat: Double, toLon: Double, headingDeg: Float? = null): RoutePlan {
+        val local = planLocal(fromLat, fromLon, toLat, toLon, headingDeg)
+        val needsMap = local is RoutePlan.NoState || local is RoutePlan.OtherState || local is RoutePlan.TwoStates || local is RoutePlan.Loading
+        if (!needsMap || !onlineRouting) return local
+        return OnlineRoute.route(app, fromLat, fromLon, toLat, toLon, headingDeg)?.let { RoutePlan.Found(it.rounded()) } ?: local
+    }
+
+    /** La ruta con lo bajado (ver [planRoute]). */
+    private fun planLocal(fromLat: Double, fromLon: Double, toLat: Double, toLon: Double, headingDeg: Float?): RoutePlan = try {
         plan(fromLat, fromLon, toLat, toLon, headingDeg)
     } catch (e: RouteException) {
         // Las calles del estado no caben en la memoria de esta pantalla (no están dañadas: no se vuelven a bajar).
@@ -1117,12 +1133,14 @@ class MapPacks private constructor(private val app: Context) {
 
         /**
          * El índice de litedash-maps (versión 1), analizado una sola vez: sus regiones (las sin mapa o dañadas se saltan) y
-         * el interruptor de la búsqueda en línea ("online": {"photon": false} la apaga). De otra versión: sin regiones.
+         * los interruptores de lo que va por internet ("online": {"photon": false} apaga la búsqueda; {"osrm": false}, la
+         * ruta). De otra versión: sin regiones.
          */
         internal fun readIndex(text: String): PackIndex {
             val o = JSONObject(text)
-            val photon = o.optJSONObject("online")?.optBoolean("photon", true) ?: true
-            if (o.optInt("version") != 1) return PackIndex(emptyList(), photon)
+            val photon = online(o, "photon")
+            val osrm = online(o, "osrm")
+            if (o.optInt("version") != 1) return PackIndex(emptyList(), photon, osrm)
             val base = o.getString("base")
             val list = o.getJSONArray("regions")
             return PackIndex((0 until list.length()).mapNotNull { i ->
@@ -1137,8 +1155,11 @@ class MapPacks private constructor(private val app: Context) {
                         file(files.getJSONObject("map")), files.optJSONObject("search")?.let(::file), files.optJSONObject("routes")?.let(::file),
                     )
                 }.getOrNull()
-            }, photon)
+            }, photon, osrm)
         }
+
+        /** El interruptor [name] de "online" en el índice [o]; si falta, prendido. */
+        private fun online(o: JSONObject, name: String): Boolean = o.optJSONObject("online")?.optBoolean(name, true) ?: true
 
         /**
          * El índice por país (`countries.json`, versión 1): por país su código, su caja, su archivo con su huella y los
@@ -1146,8 +1167,9 @@ class MapPacks private constructor(private val app: Context) {
          */
         internal fun readCountries(text: String): CountryIndex {
             val o = JSONObject(text)
-            val photon = o.optJSONObject("online")?.optBoolean("photon", true) ?: true
-            if (o.optInt("version") != 1) return CountryIndex(emptyList(), photon)
+            val photon = online(o, "photon")
+            val osrm = online(o, "osrm")
+            if (o.optInt("version") != 1) return CountryIndex(emptyList(), photon, osrm)
             val list = o.getJSONArray("countries")
             return CountryIndex((0 until list.length()).mapNotNull { i ->
                 runCatching {
@@ -1164,7 +1186,7 @@ class MapPacks private constructor(private val app: Context) {
                     require(regions.isNotEmpty())
                     PackCountry(code, box(c.getJSONArray("bbox")), regions, file, c.getString("sha256"), c.optLong("total").coerceAtLeast(0))
                 }.getOrNull()
-            }, photon)
+            }, photon, osrm)
         }
 
         /** El nombre de un archivo de país: `countries/<cc>.json`. */

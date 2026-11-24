@@ -87,6 +87,17 @@ class MapPacksTest {
     }
 
     @Test
+    fun theOnlineRouteSwitchIsOnUnlessTheIndexTurnsItOff() {
+        // Sin "osrm" (índices de antes): prendida.
+        assertTrue(MapPacks.readIndex(index).osrm)
+        val off = MapPacks.readIndex("""{"version":1,"base":"x","online":{"photon":true,"osrm":false},"regions":[]}""")
+        assertTrue(off.photon)
+        assertFalse(off.osrm)
+        assertFalse(MapPacks.readCountries("""{"version":2,"online":{"osrm":false},"countries":[]}""").osrm)
+        assertTrue(MapPacks.readCountries(countries).osrm)
+    }
+
+    @Test
     fun aHalfDownloadedMapIsKeptOnlyIfItCanContinue() {
         val day = 24 * 60 * 60 * 1000L
         val now = 10 * day

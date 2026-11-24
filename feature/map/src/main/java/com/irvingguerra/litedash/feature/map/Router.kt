@@ -6,7 +6,8 @@ import kotlin.math.sqrt
 
 /**
  * Una ruta: sus puntos (pares lat, lon en millonésimas de grado, del punto de salida al de llegada), lo que mide, lo que
- * se tarda (sin tráfico) y la calle por donde va la mayor parte ([mainRoad], "" si no tiene nombre).
+ * se tarda (sin tráfico) y la calle por donde va la mayor parte ([mainRoad], "" si no tiene nombre). [online] = vino del
+ * servidor de rutas ([OnlineRoute]), no de las calles bajadas.
  */
 class Route(
     val points: IntArray, val distanceM: Double, val seconds: Double, val mainRoad: String,
@@ -15,6 +16,7 @@ class Route(
     /** Por punto: metros y segundos desde la salida (para el avance y la llegada). */
     val atM: DoubleArray = DoubleArray(0),
     val atS: DoubleArray = DoubleArray(0),
+    val online: Boolean = false,
 ) {
     val pointCount get() = points.size / 2
 }
@@ -694,13 +696,14 @@ sealed interface RoutePlan {
 }
 
 /** Qué tipo de vuelta es (la flecha y el texto salen de aquí). */
-enum class ManeuverType { DEPART, STRAIGHT, SLIGHT_LEFT, LEFT, SHARP_LEFT, SLIGHT_RIGHT, RIGHT, SHARP_RIGHT, UTURN, ARRIVE }
+enum class ManeuverType { DEPART, STRAIGHT, SLIGHT_LEFT, LEFT, SHARP_LEFT, SLIGHT_RIGHT, RIGHT, SHARP_RIGHT, UTURN, ROUNDABOUT, ARRIVE }
 
 /**
  * Una vuelta de la ruta: su tipo, cuánto se gira ([angle], grados, + a la derecha, para dibujar la flecha), la calle a la
- * que se entra ([road], "" sin nombre), en qué punto de la ruta está y a cuántos metros de la salida.
+ * que se entra ([road], "" sin nombre), en qué punto de la ruta está y a cuántos metros de la salida. En una glorieta
+ * ([ManeuverType.ROUNDABOUT]), [exit] = qué salida se toma (1 = la primera; 0 = no se sabe).
  */
-class Maneuver(val type: ManeuverType, val angle: Float, val road: String, val point: Int, val atM: Double)
+class Maneuver(val type: ManeuverType, val angle: Float, val road: String, val point: Int, val atM: Double, val exit: Int = 0)
 
 /** Metros entre los puntos [i] y [j] de [points] (pares lat, lon en millonésimas), en plano (tramos cortos). */
 internal fun flatMeters(points: IntArray, i: Int, j: Int): Double {

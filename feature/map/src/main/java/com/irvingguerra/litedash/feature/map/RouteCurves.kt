@@ -112,7 +112,7 @@ internal fun Route.rounded(): Route {
     val turns = maneuvers.map { m ->
         val s = along[m.point.coerceIn(0, n - 1)]
         while (k < count - 1 && abs(source[k + 1] - s) <= abs(source[k] - s)) k++
-        Maneuver(m.type, m.angle, m.road, k, meters[k])
+        Maneuver(m.type, m.angle, m.road, k, meters[k], m.exit)
     }
-    return Route(curved, meters[count - 1], this.seconds, mainRoad, turns, meters, seconds)
+    return Route(curved, meters[count - 1], this.seconds, mainRoad, turns, meters, seconds, online)
 }
