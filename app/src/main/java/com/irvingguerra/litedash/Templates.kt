@@ -117,7 +117,7 @@ fun TemplatesPanel(dashboard: DashboardState, close: () -> Unit) {
                 TemplateTab.CAR -> Unit
             }
             // Cada plantilla armada una vez por pestaña (para no repetir y para su miniatura).
-            val layouts = remember(tab, grid) { tab.templates.filter { it.fits(grid.vertical) }.associateWith { it.tiles(grid, tab.hero, dashboard.hidden) } }
+            val layouts = remember(tab, grid) { tab.templates.filter { it.fits(grid.vertical) }.associateWith { it.tiles(grid, tab.hero, dashboard.skip) } }
             val templates = layouts.keys.distinctBy { p -> layouts.getValue(p).map { listOf(it.type, it.col, it.row, it.width, it.height) } }
             Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 for (p in templates) {

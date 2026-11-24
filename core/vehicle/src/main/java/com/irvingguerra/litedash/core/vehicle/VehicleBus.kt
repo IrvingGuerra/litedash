@@ -57,6 +57,9 @@ class VehicleBus {
 
     fun source(signal: String): Source? = values[signal]?.source
 
+    /** Lo que sabe [source] de [signal], aunque otra fuente gane (null = no lo sabe). */
+    fun value(signal: String, source: Source): Float? = sources[signal]?.get(source)
+
     /** [value] null = esa fuente ya no lo sabe (se desconectó o perdió señal). */
     fun publish(signal: String, value: Float?, source: Source) {
         val bySource = sources.getOrPut(signal) { mutableMapOf() }

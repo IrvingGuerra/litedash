@@ -252,7 +252,8 @@ class Dependencies(
 
     init {
         // Las piezas de un módulo apagado no se ven ni apartan su lugar (ni las ponen las plantillas).
-        dashboard.hidden = { type -> moduleOff(this, type) != null }
+        dashboard.hidden = { tile -> moduleOff(this, tile.type, tile.data) != null }
+        dashboard.skip = { type -> moduleOff(this, type) != null }
         dashboard.limits = ::limitsOf
     }
 
@@ -405,18 +406,22 @@ private fun Modifier.expandable(p: Tile, actions: TileActions) =
     fillMaxSize().onGloballyPositioned { actions.onCarBounds(p.id, it.boundsInRoot()) }
 
 /**
- * El módulo apagado del que depende una pieza (su nombre), o null si se puede ver: el Taller y
- * los medidores son del OBD (los medidores no en una pantalla SPD, que ya da datos del auto) y la
- * pieza Llantas de Llantas. Esas piezas no se ven ni apartan su lugar ([DashboardState.hidden]) y no
- * se ofrecen para agregar. La pieza Clima no: el clima viene apagado, las plantillas la traen y desde
- * ella se prende.
+ * El módulo apagado del que depende una pieza de tipo [type] con su [data] (su nombre), o null si se puede ver: el
+ * Taller y los medidores son del OBD y la pieza Llantas de Llantas. Esas piezas no se ven ni apartan su lugar
+ * ([DashboardState.hidden]), las plantillas no las ponen ([DashboardState.skip]) y no se ofrecen para agregar. Un
+ * medidor de lo que da una pantalla SPD ([SpdCar.gives]), o uno aún vacío, se ve en ella sin el OBD; sin [data] (las
+ * plantillas, que ponen medidores del OBD) no. La pieza Clima no: el clima viene apagado, las plantillas la traen y
+ * desde ella se prende.
  */
-fun moduleOff(d: Dependencies, type: String): Int? = when (type) {
+fun moduleOff(d: Dependencies, type: String, data: String? = null): Int? = when (type) {
     TileTypes.WORKSHOP -> R.string.module_obd.takeIf { !d.obdModule }
-    TileTypes.GAUGE -> R.string.module_obd.takeIf { !d.obdModule && d.spd == null }
+    TileTypes.GAUGE -> R.string.module_obd.takeIf { !d.obdModule && !(data != null && spdGauge(d, signalOf(data))) }
     TileTypes.TIRES -> R.string.module_tpms.takeIf { !d.hasTpmsSource }
     else -> null
 }
+
+/** Un medidor de [signal] (vacío: aún sin elegir) que la pantalla SPD llena sin el OBD. */
+private fun spdGauge(d: Dependencies, signal: String) = (signal.isEmpty() || SpdCar.gives(signal)) && d.spd != null
 
 /**
  * Si la carretera, el auto 3D o la imagen [p] llevan la presión de las llantas: lo de su ajuste ([TileTires]);
@@ -426,11 +431,13 @@ fun showsTires(d: Dependencies, p: Tile): Boolean =
     TileTires.parse(p.data) ?: (p.type != TileTypes.IMAGE && d.prefs.tiresOnCar != TiresOnCar.OFF)
 
 /**
- * Lo que se ofrece para agregar: Llantas siempre (agregarla prende su módulo); lo del OBD, con el OBD; el Mapa no en
- * una página con mapa de fondo (se verían dos).
+ * Lo que se ofrece para agregar: Llantas siempre (agregarla prende su módulo); lo del OBD, con el OBD (un medidor
+ * también en una pantalla SPD); el Mapa no en una página con mapa de fondo (se verían dos).
  */
 fun offered(d: Dependencies, type: String) = when {
     type == TileTypes.MAP && d.dashboard.background == PageBackground.MAP -> false
+    // El medidor se elige al agregarlo: aquí, uno aún vacío.
+    type == TileTypes.GAUGE -> moduleOff(d, type, data = "") == null
     else -> type == TileTypes.TIRES || moduleOff(d, type) == null
 }
 

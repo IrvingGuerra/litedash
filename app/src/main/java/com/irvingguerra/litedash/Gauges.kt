@@ -25,13 +25,13 @@ fun SpeedometerTile(d: Dependencies, look: GaugeLook) {
     // Con un adaptador ya guardado, se reconecta solo (sin abrir el Taller).
     val obdOn = rememberObd(d)?.state == ObdState.ON
     val (gps, ask) = rememberGpsPermission(d)
-    // Una pantalla SPD da la velocidad sin OBD ni GPS.
-    if (!obdOn && !gps && d.spd == null) {
+    // Sin OBD ni GPS, solo una pantalla SPD puede dar la velocidad: se pide igual y, mientras no llegue, se ofrece el GPS.
+    val kmh = if (obdOn || gps || d.spd != null) d.bus.watch(Signal.SPEED) else null
+    if (!obdOn && !gps && kmh == null) {
         return ShortcutTile(Icons.speed, stringResource(R.string.tile_speedometer), stringResource(R.string.tap_to_enable), ask)
     }
     // Sin OBD, el GPS publica la velocidad en el bus mientras la pieza se ve (con SPD, de respaldo).
     if (!obdOn) KeepTripRunning(d.trip)
-    val kmh = d.bus.watch(Signal.SPEED)
     val miles = d.prefs.units.miles
     SpeedGaugeCard((kmh ?: 0f).toMiles(miles), miles, speedTag(d), look, d.prefs.carColor, rememberSpeedFront(d, look))
 }
@@ -197,7 +197,7 @@ fun gaugeOf(signal: String) = GaugeSpecs.firstOrNull { it.signal == signal }
 
 /**
  * Pieza "Medidor": un dato del auto por OBD o por la pantalla SPD (el que guarda [signal]). Vacía
- * invita a elegir; sin adaptador lleva al Taller; si el auto no da ese dato, lo dice.
+ * invita a elegir; sin adaptador (ni dato de la pantalla SPD) lleva al Taller; si el auto no da ese dato, lo dice.
  */
 @Composable
 fun GaugeTile(d: Dependencies, signal: String, look: GaugeLook, onPick: () -> Unit, onWorkshop: () -> Unit) {
@@ -205,16 +205,17 @@ fun GaugeTile(d: Dependencies, signal: String, look: GaugeLook, onPick: () -> Un
         ?: return ShortcutTile(Icons.plus, stringResource(R.string.tile_gauge), stringResource(R.string.gauge_pick), onPick)
     // Con un adaptador ya guardado, se reconecta solo (sin abrir el Taller).
     val obd = rememberObd(d)
-    // Lo que da una pantalla SPD no necesita el OBD.
-    if (!SpdCar.gives(spec.signal) || d.spd == null) {
+    val readable = obd?.state == ObdState.ON && obd.canRead(spec.signal)
+    // Lo que da una pantalla SPD se pide aunque no haya OBD; si no llega, se ve como sin ella.
+    val value = if (readable || (SpdCar.gives(spec.signal) && d.spd != null)) d.bus.watch(spec.signal) else null
+    if (value == null && !readable) {
         // Sin adaptador (o sin ese dato) se ve igual, vacío y con "—", y una nota corta: no un texto largo.
         if (obd?.state != ObdState.ON) {
             val note = stringResource(if (obd?.state == ObdState.CONNECTING) R.string.obd_connecting_short else R.string.gauge_no_obd)
             return SpecGaugeCard(spec, null, d.prefs.units, look, d.prefs.carColor, onClick = onWorkshop, note = note)
         }
-        if (!obd.canRead(spec.signal)) return SpecGaugeCard(spec, null, d.prefs.units, look, d.prefs.carColor, onClick = onPick, note = stringResource(R.string.gauge_no_data))
+        return SpecGaugeCard(spec, null, d.prefs.units, look, d.prefs.carColor, onClick = onPick, note = stringResource(R.string.gauge_no_data))
     }
-    val value = d.bus.watch(spec.signal)
     // Un toque cambia qué dato muestra.
     SpecGaugeCard(spec, value, d.prefs.units, look, d.prefs.carColor, onClick = onPick)
 }

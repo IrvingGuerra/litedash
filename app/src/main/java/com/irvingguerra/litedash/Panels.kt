@@ -218,18 +218,20 @@ fun PickAppPanel(d: Dependencies, apps: List<App>, tileId: String?, close: () ->
 }
 
 /**
- * Qué dato del auto muestra un medidor: los que lee el OBD, con su ícono. Los que
- * este auto no da (ya conectado) se ven apagados y avisan.
+ * Qué dato del auto muestra un medidor: los que lee el OBD, con su ícono; sin el OBD (en una pantalla SPD), solo los
+ * que da la pantalla. Los que este auto no da (ya conectado) se ven apagados y avisan, salvo si los da la pantalla.
  */
 @Composable
 fun PickGaugePanel(d: Dependencies, tileId: String?, close: () -> Unit) {
     val c = LocalColors.current
     val obd = d.obdIfCreated()?.takeIf { it.state == ObdState.ON }
+    // Sin el OBD, un medidor de otra cosa no se vería (su módulo está apagado).
+    val specs = if (d.obdModule) GaugeSpecs else GaugeSpecs.filter { SpdCar.gives(it.signal) }
     var noRoom by remember { mutableStateOf(false) }
     PanelScaffold(stringResource(R.string.pick_gauge), close) {
         Label(stringResource(R.string.pick_gauge_help), Typography.body, c.textMuted, modifier = Modifier.padding(bottom = 14.dp))
         if (noRoom) Label(stringResource(R.string.no_room), Typography.body, c.danger, modifier = Modifier.padding(bottom = 12.dp))
-        CardGrid(GaugeSpecs, minWidth = 200.dp, height = 120.dp, onClick = { spec ->
+        CardGrid(specs, minWidth = 200.dp, height = 120.dp, onClick = { spec ->
             if (tileId != null) {
                 // Cambia el dato y se queda con su estilo.
                 val old = d.dashboard.tiles.firstOrNull { it.id == tileId }?.data ?: ""
@@ -238,7 +240,7 @@ fun PickGaugePanel(d: Dependencies, tileId: String?, close: () -> Unit) {
             } else if (d.dashboard.addTile(TileTypes.GAUGE, spec.signal)) close()
             else noRoom = true
         }) { spec ->
-            val readable = obd?.canRead(spec.signal) ?: true
+            val readable = obd?.canRead(spec.signal) != false || (SpdCar.gives(spec.signal) && d.spd != null)
             Icon(spec.icon, if (readable) c.accent else c.textMuted, 28.dp)
             Label(stringResource(spec.name), Typography.subtitle, if (readable) c.text else c.textMuted, maxLines = 1)
             if (!readable) Label(stringResource(R.string.gauge_unsupported), Typography.small, c.textMuted, maxLines = 1)

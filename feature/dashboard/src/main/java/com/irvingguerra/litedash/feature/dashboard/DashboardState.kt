@@ -32,17 +32,20 @@ class DashboardState(private val store: DashboardStore) {
     private val pageTiles = HashMap<Int, List<Tile>>()
 
     /**
-     * Los tipos que no se ven (de un módulo apagado; lo pone la app). Sus piezas se guardan pero
-     * no apartan su lugar: se pueden acomodar otras encima, y entonces se van. Si nada las tapa,
-     * vuelven al prender el módulo. Las plantillas no los ponen.
+     * Las piezas que no se ven (de un módulo apagado; lo pone la app). Se guardan pero no apartan
+     * su lugar: se pueden acomodar otras encima, y entonces se van. Si nada las tapa, vuelven al
+     * prender el módulo.
      */
-    var hidden: (String) -> Boolean = { false }
+    var hidden: (Tile) -> Boolean = { false }
+
+    /** Los tipos que las plantillas no ponen (de un módulo apagado; lo pone la app). */
+    var skip: (String) -> Boolean = { false }
 
     /** El tamaño mínimo de cada tipo (lo pone la app): para llevar un acomodo a otra cuadrícula. */
     var limits: (String) -> SizeLimits = { SizeLimits(1, 1) }
 
     /** Las piezas que se ven y se acomodan. */
-    val shown: List<Tile> get() = tiles.filterNot { hidden(it.type) }
+    val shown: List<Tile> get() = tiles.filterNot(hidden)
 
     /** La pantalla (o la escala) cambió: carga el acomodo de ese tamaño o una plantilla. */
     fun use(c: Grid) {
@@ -125,7 +128,7 @@ class DashboardState(private val store: DashboardStore) {
 
     /** [adaptTo] con las que se ven primero: las de un módulo apagado no le quitan lugar a ninguna. */
     private fun List<Tile>.fittedTo(c: Grid): List<Tile> {
-        val (off, on) = partition { hidden(it.type) }
+        val (off, on) = partition(hidden)
         return (on + off).adaptTo(c, limits)
     }
 
@@ -141,7 +144,7 @@ class DashboardState(private val store: DashboardStore) {
 
     /** Cambia las que se ven ([shown]); las escondidas se quedan si nada quedó encima de ellas. */
     fun changeShown(newShown: List<Tile>) {
-        val kept = tiles.filter { h -> hidden(h.type) && newShown.none { it.overlaps(h) } }
+        val kept = tiles.filter { h -> hidden(h) && newShown.none { it.overlaps(h) } }
         change(newShown + kept)
     }
 
@@ -153,7 +156,7 @@ class DashboardState(private val store: DashboardStore) {
     fun template(p: Template, hero: String = TileTypes.CAR) {
         // La del mapa de fondo no es pieza grande: no cambia la de las otras plantillas.
         if (p != Template.MAP_BACKGROUND) store.saveHero(hero)
-        grid?.let { change(p.tiles(it, hero, hidden)) }
+        grid?.let { change(p.tiles(it, hero, skip)) }
         // La plantilla decide el fondo de la página: «Mapa de fondo» pone el mapa y cualquier otra lo quita (si no, el
         // mapa de fondo quedaba debajo de widgets que lo tapan, o junto a un widget Mapa).
         val wanted = if (p == Template.MAP_BACKGROUND) PageBackground.MAP else PageBackground.WALLPAPER
@@ -163,7 +166,7 @@ class DashboardState(private val store: DashboardStore) {
     /** La plantilla recomendada para [c], con la pieza grande que se eligió la última vez. */
     private fun suggested(c: Grid): List<Tile> {
         val (hero, data) = store.hero()
-        return c.coarse.suggestedTemplate().tiles(c, hero, hidden).map { if (it.type == hero && data.isNotEmpty()) it.copy(data = data) else it }
+        return c.coarse.suggestedTemplate().tiles(c, hero, skip).map { if (it.type == hero && data.isNotEmpty()) it.copy(data = data) else it }
     }
 
     /**

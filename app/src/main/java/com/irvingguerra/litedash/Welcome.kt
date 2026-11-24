@@ -201,7 +201,7 @@ private fun StyleStep(prefs: Preferences, dashboard: DashboardState) {
     val shown = dashboard.shown
     val current = remember(grid, shown, options) {
         val placed = shown.map { listOf(it.col, it.row, it.width, it.height) }.toSet()
-        options.firstOrNull { p -> grid != null && p.tiles(grid, skip = dashboard.hidden).map { listOf(it.col, it.row, it.width, it.height) }.toSet() == placed }
+        options.firstOrNull { p -> grid != null && p.tiles(grid, skip = dashboard.skip).map { listOf(it.col, it.row, it.width, it.height) }.toSet() == placed }
     }
     FlowRow(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         for (p in options) {

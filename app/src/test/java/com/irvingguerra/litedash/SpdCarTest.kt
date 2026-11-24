@@ -19,6 +19,18 @@ class SpdCarTest {
     }
 
     @Test
+    fun zeroWhileGpsSaysMovingIsNotBelieved() {
+        // Parado de verdad: el GPS también (o casi) está quieto, o no hay GPS.
+        assertTrue(spdSpeedTrusted(0f, 0f))
+        assertTrue(spdSpeedTrusted(0f, 8f))
+        assertTrue(spdSpeedTrusted(0f, null))
+        // Sin dato su servicio también responde 0: con el GPS a 60 km/h, gana el GPS.
+        assertFalse(spdSpeedTrusted(0f, 60f))
+        // Lo que no es 0 se cree aunque el GPS diga otra cosa.
+        assertTrue(spdSpeedTrusted(48f, 60f))
+    }
+
+    @Test
     fun fuelIsPercentOfTheTank() {
         // 14 L de un tanque de 40 L (lo visto en el MINI).
         assertEquals(35f, spdFuel(14, 40)!!, 0.001f)

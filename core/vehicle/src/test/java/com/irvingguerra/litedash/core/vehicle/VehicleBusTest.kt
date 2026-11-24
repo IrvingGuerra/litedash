@@ -26,6 +26,16 @@ class VehicleBusTest {
         assertNull(bus.value(Signal.SPEED))
     }
 
+    @Test fun lo_de_cada_fuente_aunque_otra_gane() {
+        val bus = VehicleBus()
+        bus.publish(Signal.SPEED, 50f, Source.GPS)
+        bus.publish(Signal.SPEED, 0f, Source.CAN)
+        assertEquals(0f, bus.value(Signal.SPEED))
+        assertEquals(50f, bus.value(Signal.SPEED, Source.GPS))
+        assertNull(bus.value(Signal.SPEED, Source.OBD))
+        assertNull(bus.value(Signal.RPM, Source.GPS))
+    }
+
     @Test fun cuenta_quien_quiere_cada_senal() {
         val bus = VehicleBus()
         bus.want(Signal.RPM); bus.want(Signal.RPM)
