@@ -686,6 +686,9 @@ sealed interface RoutePlan {
     /** No estás en un estado bajado: el que hay que bajar ([region]; null = aún no hay mapa de ahí, o no se sabe). */
     class NoState(val region: MapRegion?) : RoutePlan
 
+    /** Aún se carga la lista de estados del país (índice por país); al llegar se vuelve a planear. */
+    data object Loading : RoutePlan
+
     /** No se pudo (lejos de las calles o sin camino). */
     class Failed(val error: RouteError) : RoutePlan
 }

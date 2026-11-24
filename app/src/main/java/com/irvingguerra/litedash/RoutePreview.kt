@@ -95,6 +95,9 @@ internal fun RunRoute(d: Dependencies, request: RouteRequest) {
     val routesReady = remember(installed) { installed.joinToString { it.routesSha } }
     // Sin la lista de estados (sin red al abrir) no se sabe de dónde bajar las calles: al llegar, otra vez.
     val regionsReady = packs.catalog.isNotEmpty()
+    // Con el índice por país, al llegar (o fallar) el país que faltaba: otra vez.
+    val loadedRegions = packs.regions.size
+    val countries = packs.countryState
     // La primera ubicación puede ser la última conocida de hace horas: si una lectura nueva queda lejos y aún no tocas «Ir».
     LaunchedEffect(request, here) {
         val o = request.origin ?: return@LaunchedEffect
@@ -110,7 +113,7 @@ internal fun RunRoute(d: Dependencies, request: RouteRequest) {
             request.again()
         }
     }
-    LaunchedEffect(request, here == null, routesReady, regionsReady, request.moved, request.round) {
+    LaunchedEffect(request, here == null, routesReady, regionsReady, loadedRegions, countries, request.moved, request.round) {
         val redo = request.moved && !request.redone
         // Ya encontrada, perder la señal un momento no la tapa.
         if (request.plan is RoutePlan.Found && !redo) return@LaunchedEffect
@@ -190,9 +193,9 @@ internal fun RouteCard(
     val context = LocalContext.current
     val packs = remember(context) { MapPacks.get(context) }
     val openLabel = if (appName != null) stringResource(R.string.search_open_in, appName) else stringResource(R.string.search_open)
-    // Falta un estado pero aún no llega la lista de mapas (se está bajando): no se sabe cuál; al llegar se replanea.
+    // Falta un estado pero aún no llega la lista de mapas o la de su país (se está bajando): no se sabe cuál; al llegar se replanea.
     val listLoading = request.plan.let { it is RoutePlan.NoState && it.region == null || it is RoutePlan.OtherState && it.region == null } &&
-        packs.catalog.isEmpty() && packs.indexState == IndexState.LOADING
+        packs.catalog.isEmpty() && packs.indexState == IndexState.LOADING || request.plan is RoutePlan.Loading
     Column(modifier.clip(RoundedCornerShape(Radius.card)).background(c.surface.copy(alpha = 0.97f)).padding(16.dp)) {
         Row(verticalAlignment = Alignment.Top) {
             Column(Modifier.weight(1f)) {

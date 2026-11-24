@@ -780,19 +780,22 @@ class MapPacks private constructor(private val app: Context) {
     }
 
     private fun plan(fromLat: Double, fromLon: Double, toLat: Double, toLon: Double, headingDeg: Float?): RoutePlan {
+        // Nada de red aquí (ni con [routeLock]): un país que falta se pide aparte y, al llegar, la ruta se vuelve a planear.
         val pack = installed.firstOrNull { it.contains(fromLat, fromLon) && it.contains(toLat, toLon) }
             ?: return when {
-                installed.none { it.contains(fromLat, fromLon) } -> RoutePlan.NoState(regionAtNow(fromLat, fromLon))
+                installed.none { it.contains(fromLat, fromLon) } ->
+                    regionAt(fromLat, fromLon)?.let { RoutePlan.NoState(it) } ?: waitOr(fromLat, fromLon) { RoutePlan.NoState(null) }
                 // Los dos estados bajados: lo que falta es la ruta entre estados (llega con los viajes largos).
                 installed.any { it.contains(toLat, toLon) } -> RoutePlan.TwoStates
-                else -> RoutePlan.OtherState(regionAtNow(toLat, toLon))
+                else -> regionAt(toLat, toLon)?.let { RoutePlan.OtherState(it) } ?: waitOr(toLat, toLon) { RoutePlan.OtherState(null) }
             }.also {
                 // Sin la lista no se sabe qué estado falta: se pide (al llegar, la ruta se vuelve a planear).
                 if (catalog.isEmpty() && it !is RoutePlan.TwoStates) refresh()
             }
         if (pack.routesSha.isEmpty() || !File(dir, "${pack.id}.ldm").isFile) {
-            // Sin el índice aún (sin red al abrir): se pide; mientras, no se sabe de dónde bajarlas.
-            val region = regionNow(pack.id)?.takeIf { it.routes != null } ?: return RoutePlan.Failed(RouteError.NO_PATH).also { refresh() }
+            // Sin el índice (o sin su país) aún: se pide; mientras, no se sabe de dónde bajarlas.
+            val region = regionById(pack.id)?.takeIf { it.routes != null }
+                ?: return if (countryPending(pack.id)) RoutePlan.Loading else RoutePlan.Failed(RouteError.NO_PATH).also { refresh() }
             return RoutePlan.NeedsRoutes(region)
         }
         return synchronized(routeLock) {
@@ -803,7 +806,7 @@ class MapPacks private constructor(private val app: Context) {
                 val g = RoadGraph.open(File(dir, "${pack.id}.ldm")) ?: run {
                     File(dir, "${pack.id}.ldm").delete()
                     synchronized(stateLock) { replaceInstalled(installed.map { if (it.id == pack.id) it.copy(routesSha = "") else it }) }
-                    return@synchronized regionNow(pack.id)?.takeIf { it.routes != null }?.let { RoutePlan.NeedsRoutes(it) }
+                    return@synchronized regionById(pack.id)?.takeIf { it.routes != null }?.let { RoutePlan.NeedsRoutes(it) }
                         ?: RoutePlan.Failed(RouteError.NO_PATH)
                 }
                 graph = g
@@ -817,19 +820,21 @@ class MapPacks private constructor(private val app: Context) {
         }
     }
 
-    /** [regionAt], pero si su país (índice por país) aún no está, lo carga aquí mismo (fuera del hilo principal). */
-    private fun regionAtNow(lat: Double, lon: Double): MapRegion? = regions.firstOrNull { it.contains(lat, lon) } ?: run {
-        val all = countries ?: return null
-        fetchCountries(all.filter { it.covers(lat, lon) && countryState[it.code] != IndexState.IDLE })
-        regions.firstOrNull { it.contains(lat, lon) }
+    /** La región [id] con todos sus datos; si su país (índice por país) aún no está, se pide aparte ([need]) y da null. */
+    private fun regionById(id: String): MapRegion? = regions.firstOrNull { it.id == id } ?: run {
+        countries?.filter { c -> c.regions.any { it.id == id } }?.forEach { need(it.code, retry = false) }
+        null
     }
 
-    /** La región [id] con todos sus datos; si su país (índice por país) aún no está, lo carga aquí mismo. */
-    private fun regionNow(id: String): MapRegion? = regions.firstOrNull { it.id == id } ?: run {
-        val all = countries ?: return null
-        fetchCountries(all.filter { c -> c.regions.any { it.id == id } })
-        regions.firstOrNull { it.id == id }
-    }
+    /** Con el índice por país, [RoutePlan.Loading] si algún país cuya caja cubre ([lat], [lon]) aún se está cargando; si no, [otherwise]. */
+    private inline fun waitOr(lat: Double, lon: Double, otherwise: () -> RoutePlan): RoutePlan =
+        if (countries?.any { it.covers(lat, lon) && pending(it.code) } == true) RoutePlan.Loading else otherwise()
+
+    /** ¿El país de la región [id] aún se está cargando? */
+    private fun countryPending(id: String): Boolean = countries?.any { c -> c.regions.any { it.id == id } && pending(c.code) } == true
+
+    /** Un país sin cargar ni fallar: se está bajando o está por pedirse ([need]). */
+    private fun pending(code: String): Boolean = countryState[code].let { it != IndexState.IDLE && it != IndexState.FAILED }
 
     /** Baja las calles para la ruta de [region] (lo pidió el usuario al pedir una ruta); el avance en [routesJob]. */
     fun downloadRoutes(region: MapRegion) {
