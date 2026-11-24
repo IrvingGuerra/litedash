@@ -13,7 +13,7 @@
     <string name="map_zoom_near">Κοντά</string>
     <string name="map_zoom_mid">Μεσαίο</string>
     <string name="map_zoom_far">Μακριά</string>
-    <string name="map_zoom_help">Αυτόματο: όσο πιο κοντά γίνεται (λίγοι δρόμοι) και με κλίση όπως στο Waze, προς την κατεύθυνσή σας· αν απομακρύνετε, γίνεται επίπεδος, και με επανακέντρωση ή νέα διαδρομή επιστρέφει. Τσιμπήστε με δύο δάχτυλα για ζουμ· σύρετε με ένα για να κοιτάξετε γύρω.</string>
+    <string name="map_zoom_help">Αυτόματο: κοντινή εικόνα (λίγοι δρόμοι)· το κεντράρισμα ή μια νέα διαδρομή το επαναφέρουν. Με δύο δάχτυλα κάνετε ζουμ, με ένα μετακινείτε τον χάρτη.</string>
     <string name="map_style">Χρώματα</string>
     <string name="map_style_theme">Όπως το θέμα</string>
     <string name="map_style_light">Ανοιχτά</string>
@@ -156,9 +156,7 @@
     <string name="guide_arrive_at">Φτάνετε: %1$s</string>
     <string name="search_ft">%1$d ft</string>
     <string name="map_customize_help">Η εμφάνιση και οι χάρτες εκτός σύνδεσης είναι ίδιοι για όλους τους χάρτες σας: αλλάζουν στις Ρυθμίσεις → Εφαρμογές → Πλοήγηση.</string>
-    <string name="map_mark">Σήμανση σημείου</string>
-    <string name="map_mark_here">Σήμανση εδώ</string>
-    <string name="map_orientation_help">Αυτόματα: με κλίση ο χάρτης κοιτά προς την κατεύθυνσή σας· επίπεδος, ο βορράς είναι πάνω.</string>
+    <string name="map_orientation_help">Αυτόματα: σε στάση ο βορράς πάνω· εν κινήσει ο χάρτης κοιτά προς την κατεύθυνσή σας.</string>
     <string name="search_favorites_full">Έχετε το μέγιστο των αγαπημένων (%1$d): αφαιρέστε ένα για να προσθέσετε άλλο.</string>
     <string name="map_pack_search">Αναζήτηση χώρας ή περιφέρειας</string>
     <string name="map_pack_all_countries">Όλες οι χώρες (%1$d)</string>

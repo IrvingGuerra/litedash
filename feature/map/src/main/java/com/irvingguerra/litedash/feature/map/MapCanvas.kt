@@ -1,6 +1,8 @@
 package com.irvingguerra.litedash.feature.map
 
 import android.content.ActivityNotFoundException
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
@@ -100,6 +102,30 @@ private const val EDGE_UP = 1.15f
 private const val ANCHOR_FLAT = 0.6f
 private const val ANCHOR_TILTED = 0.82f
 
+/** Plano (widget, fondo, en grande), el zoom automático va tantos niveles más lejos que lo más cerca de la fuente. */
+private const val FLAT_ZOOM_DROP = 2
+
+/** Navegando: lo que se aleja el zoom de detenido a [NAV_FAST_KMH] o más (como Horizon: más camino a la vista rápido). */
+private const val NAV_ZOOM_DROP = 2f
+private const val NAV_FAST_KMH = 110f
+
+/** Navegando con «siempre al norte» (plano), tanto más lejos: plano a lo más cerca se ve muy poco. */
+private const val NAV_NORTH_DROP = 1f
+
+/** Cerca de la vuelta ([MapCanvas] `turnAhead`): un poco más cerca y menos inclinado, para ver bien la esquina. */
+private const val NAV_TURN_ZOOM = 0.4f
+private const val NAV_TURN_TILT = 0.4f
+
+/** Lo más rápido que cambian el zoom (niveles por segundo, como Horizon) y la inclinación (0–1 por segundo). */
+private const val NAV_ZOOM_RATE = 0.6f
+private const val NAV_TILT_RATE = 0.8f
+
+/** El zoom de la navegación se pide en pasos de esto (la velocidad baila y no debe reiniciar el cambio a cada rato). */
+private const val NAV_ZOOM_GRAIN = 0.05f
+
+/** Con «Automático», lo que tarda en pasar de norte arriba a hacia donde vas al empezar o acabar un viaje. */
+private const val AUTO_TURN_MS = 900
+
 /** Arranca y llega suave. */
 private fun easeInOut(t: Float): Float = if (t < 0.5f) 2 * t * t else 1 - (-2 * t + 2).let { it * it } / 2
 
@@ -157,12 +183,25 @@ internal fun zoomStep(z: Float, min: Int, max: Int): ZoomStep {
 }
 
 /** Cuánto se inclina el mapa (0–1) en el zoom con fracción [z]: del todo en [driveZoom] y nada un nivel más lejos. */
-internal fun tiltFor(z: Float, driveZoom: Int): Float = (z - (driveZoom - 1)).coerceIn(0f, 1f)
+internal fun tiltFor(z: Float, driveZoom: Float): Float = (z - (driveZoom - 1)).coerceIn(0f, 1f)
+
+/**
+ * El zoom (con fracción) de la navegación a [kmh]: lo más cerca ([driveZoom]) detenido y [NAV_ZOOM_DROP] niveles más
+ * lejos desde [NAV_FAST_KMH]; [turnAhead] acerca un poco y [northUp] (plano) aleja uno. En pasos de [NAV_ZOOM_GRAIN].
+ */
+internal fun navZoomFor(kmh: Float?, driveZoom: Int, turnAhead: Boolean, northUp: Boolean): Float {
+    val fast = ((kmh ?: 0f) / NAV_FAST_KMH).coerceIn(0f, 1f)
+    val z = driveZoom - NAV_ZOOM_DROP * fast + (if (turnAhead) NAV_TURN_ZOOM else 0f) - (if (northUp) NAV_NORTH_DROP else 0f)
+    return ((z / NAV_ZOOM_GRAIN).roundToInt() * NAV_ZOOM_GRAIN).coerceAtMost(driveZoom.toFloat())
+}
+
+/** [from] acercándose a [to] a lo más [step]. */
+internal fun approach(from: Float, to: Float, step: Float): Float = if (abs(to - from) <= step) to else from + if (to > from) step else -step
 
 /**
  * Lo que la app ve del mapa y le puede pedir: si lo moviste con el dedo ([centered] = false; de viaje vuelve solo tras
- * [RECENTER_MS] sin tocarlo; [recenter] te regresa al zoom de fábrica), mirar otro lugar ([lookAt]) y la calle donde
- * estás ([street]). El widget y su mapa en grande comparten cámara: el zoom y el regreso a ti
+ * [RECENTER_MS] sin tocarlo; [recenter] te regresa al zoom de fábrica), mirar otro lugar ([lookAt]), la calle donde
+ * estás ([street]) y, navegando, si te sigue ([following]). El widget y su mapa en grande comparten cámara: el zoom y el regreso a ti
  * los anima uno solo, y lo que llega (los dedos o una animación nueva) detiene a lo anterior donde iba.
  */
 @Stable
@@ -187,7 +226,7 @@ class MapCamera(
     /** Un centrado se quedó a medias porque su mapa dejó de verse: sube y el otro mapa lo retoma. */
     internal var handOffs by mutableIntStateOf(0)
 
-    /** Regresa a ti deslizándose (lo anima `MapCanvas`) y vuelve al zoom de fábrica (en automático, lo más cerca e inclinado). */
+    /** Regresa a ti deslizándose (lo anima `MapCanvas`) y vuelve al zoom de fábrica (navegando, a seguirte inclinada). */
     fun recenter() {
         place = null
         reach = 0.0
@@ -218,6 +257,7 @@ class MapCamera(
         reach = FREE_PAN
         zoom = PLACE_ZOOM
         this.scale = scale
+        following = false
     }
 
     /** Pone el centro en [place] estando tú en ([lat], [lon]). */
@@ -240,14 +280,28 @@ class MapCamera(
     internal var driving by mutableStateOf(false)
 
     /**
-     * Para la brújula de afuera: si el mapa está girado hacia donde vas (con Automático, también inclinado en lo más
-     * cerca aunque estés detenido) y cuánto (grados que gira el mapa; el norte queda en esa dirección). Solo cambian al
-     * cruzar de un lado o al girar 2° o más: no recomponen con cada cuadro.
+     * La cámara de navegación (`MapCanvas` con `navigation`): te sigue inclinada con el zoom de la velocidad ([navZoom] y
+     * [navTilt], que el mapa cambia despacio) hasta que la mueves o pellizcas; entonces se suelta y [recenter] la regresa.
      */
-    var turning by mutableStateOf(false)
+    var following by mutableStateOf(true)
         internal set
-    var turnDegrees by mutableFloatStateOf(0f)
-        internal set
+    internal var navZoom by mutableFloatStateOf(Float.NaN)
+    internal var navTilt by mutableFloatStateOf(1f)
+
+    /** Suelta: el zoom y la inclinación que llevaba al soltarse (al alejarse un nivel de ahí queda plano). */
+    internal var followZoom = 0f
+    internal var followTilt = 0f
+
+    /** Un dedo toma la cámara de navegación: deja de seguirte donde iba (el zoom con fracción pasa a [zoom] y [scale]). */
+    internal fun letGo(base: Int, max: Int) {
+        if (!following || navZoom.isNaN()) return
+        val step = zoomStep(navZoom, MIN_ZOOM, max)
+        zoom = step.level.takeIf { it != base }
+        scale = step.scale
+        followZoom = navZoom
+        followTilt = navTilt
+        following = false
+    }
 
     /** Pasos de zoom pedidos con botones ([zoomBy]) que el mapa aún no atiende (+ acerca, − aleja). */
     internal var zoomSteps by mutableIntStateOf(0)
@@ -325,10 +379,44 @@ class MapCamera(
     }
 
     /**
-     * Centrar: se desliza hasta ti y luego, si [zooms], vuelve al zoom de fábrica [base], de corrido. Lo anima un solo
-     * mapa a la vez. Si su mapa dejó de verse a medias ([abandoned]), lo deja para el otro ([handOffs]).
+     * Regresa a seguirte (navegando): el zoom se desliza hasta el de la velocidad ([navZoom], que puede cambiar en el
+     * camino) y la inclinación sube con él; al llegar, [following]. Los dedos la detienen donde iba ([stopZoom]).
      */
-    internal suspend fun animateRecenter(base: Int, max: Int, zooms: Boolean, abandoned: () -> Boolean) {
+    private fun glideFollow(scope: CoroutineScope, base: Int, max: Int): Job {
+        zoomAnimation?.cancel()
+        val job = scope.launch {
+            val me = currentCoroutineContext().job
+            try {
+                if (!navZoom.isNaN()) {
+                    val start = (zoom ?: base) + log2(scale)
+                    followTilt = navTilt
+                    val ms = (ZOOM_LEVEL_MS * abs(navZoom - start)).coerceIn(ZOOM_MIN_MS, ZOOM_MAX_MS)
+                    val began = withFrameNanos { it }
+                    var t = 0f
+                    while (t < 1f) {
+                        t = ((withFrameNanos { it } - began) / 1_000_000f / ms).coerceAtMost(1f)
+                        followZoom = navZoom
+                        val step = zoomStep(start + (navZoom - start) * easeInOut(t), MIN_ZOOM, max)
+                        zoom = step.level.takeIf { it != base }
+                        scale = step.scale
+                    }
+                }
+                zoom = null
+                scale = 1f
+                following = true
+            } finally {
+                if (zoomAnimation === me) zoomAnimation = null
+            }
+        }
+        zoomAnimation = job
+        return job
+    }
+
+    /**
+     * Centrar: se desliza hasta ti y luego, si [zooms], vuelve al zoom de fábrica [base] (con [follow], a seguirte), de
+     * corrido. Lo anima un solo mapa a la vez. Si su mapa dejó de verse a medias ([abandoned]), lo deja para el otro ([handOffs]).
+     */
+    internal suspend fun animateRecenter(base: Int, max: Int, zooms: Boolean, follow: Boolean, abandoned: () -> Boolean) {
         if (recenters == handled || recentering?.isActive == true) return
         val me = currentCoroutineContext().job
         val asked = recenters
@@ -350,7 +438,7 @@ class MapCamera(
                 panAnimation = null
             }
             // Los dedos en medio del zoom lo detienen: el centrado igual cuenta como hecho.
-            if (zooms) coroutineScope { glideZoom(this, zoom ?: base, base, base, max) }
+            if (zooms) coroutineScope { if (follow) glideFollow(this, base, max) else glideZoom(this, zoom ?: base, base, base, max) }
             done = true
         } finally {
             if (recentering === me) recentering = null
@@ -386,11 +474,13 @@ fun rememberMapCamera() = remember { MapCamera() }
 fun rememberFreeMapCamera() = remember { MapCamera(maxPan = FREE_PAN, returns = false) }
 
 /**
- * El mapa (teselas de [store]) con tu posición y como diga [look]. En el zoom automático se ve lo más cerca (un par
- * de calles) e inclinado como Waze, siempre hacia donde vas; al alejarlo con dos dedos se va acostando hasta quedar
- * plano (norte arriba o hacia donde vas, según [look]) un nivel más lejos, y «centrar» o empezar un viaje (andando a
- * [DRIVE_KMH] o más, o con Waze/Maps navegando: [navigating]) lo regresan. El zoom es continuo: las teselas se
- * agrandan o achican entre un nivel y otro, y mientras llegan las nuevas se ven las del nivel anterior.
+ * El mapa (teselas de [store]) con tu posición y como diga [look], siempre plano: en el zoom automático, cerca (unas
+ * calles); con «Automático» al norte detenido y hacia donde vas de viaje (andando a [DRIVE_KMH] o más, o con Waze/Maps
+ * navegando: [navigating]); «centrar» o empezar un viaje lo regresan al zoom de fábrica. Solo se inclina la guía: con
+ * [navigation] (la cámara que te sigue inclinada y muy cerca, más lejos entre más rápido vas, un poco menos inclinada
+ * con [turnAhead]; un dedo la suelta y se aplana al alejarla) y a escala real ([routeWidth], la vista de tu auto). El zoom
+ * es continuo: las teselas se agrandan o achican entre un nivel y otro, y mientras llegan las nuevas se ven las del
+ * nivel anterior.
  * Con un dedo se mueve ([camera]), un toque hace [onTap] y colores claros u oscuros (las teselas ya vienen en sus
  * colores y con los nombres de las calles).
  * Tu flecha se desliza entre una lectura del GPS y la siguiente. Para elegir una zona: [fixedZoom] (sin gestos de
@@ -413,6 +503,10 @@ fun MapCanvas(
     ringKm: Float? = null,
     active: Boolean = true,
     onTap: (() -> Unit)? = null,
+    /** La cámara de navegación (solo la guía): inclinada, rumbo arriba y con el zoom de la velocidad ([MapCamera.following]). */
+    navigation: Boolean = false,
+    /** Navegando, la siguiente vuelta está cerca: se acerca un poco y se aplana algo. */
+    turnAhead: Boolean = false,
     /**
      * Dónde vas tú y los créditos, en fracciones del mapa (null = todo el mapa): de fondo del inicio, el hueco que dejan
      * los widgets. Sin gestos ([interactive] = false) el mapa solo se ve.
@@ -425,8 +519,6 @@ fun MapCanvas(
     pin: Pair<Double, Double>? = null,
     /** Dejar presionado un punto del mapa: su latitud y longitud (null = nada). */
     onLongPress: ((Double, Double) -> Unit)? = null,
-    /** Para marcar con la mira: dice qué punto queda al centro de la vista (null = no hace falta). */
-    aim: MapAim? = null,
     /** Una ruta que se dibuja (pares lat, lon en millonésimas de grado, [Route.points]); null = ninguna. */
     route: IntArray? = null,
     /** Lo ya recorrido de la ruta (punto + fracción hacia el siguiente): se dibuja en gris. */
@@ -443,6 +535,9 @@ fun MapCanvas(
     }
     val c = LocalColors.current
     val driveZoom = store.source.maxZoom
+    // Navegando (sin «Ver ruta») te sigue la cámara inclinada; a escala real (tu auto) siempre va inclinado y cerca.
+    val navFollow = navigation && fixedZoom == null
+    val carView = routeWidth != null && fixedZoom == null
     // De viaje: andando o navegando; se acaba tras un rato detenido (un alto no lo quita).
     val moving = fixedZoom == null && ((kmh ?: 0f) >= DRIVE_KMH || navigating)
     LaunchedEffect(moving) {
@@ -456,33 +551,64 @@ fun MapCanvas(
     LaunchedEffect(driving) {
         if (camera.zoomFor != driving) {
             camera.zoomFor = driving
-            if (driving && camera.zoom != null) camera.recenter()
+            if (driving && (camera.zoom != null || (navFollow && !camera.following))) camera.recenter()
         }
     }
-    // De fábrica, lo más cerca de la fuente (en automático, inclinado) o el nivel fijo que se eligió.
-    val base = fixedZoom ?: look.zoom.level ?: driveZoom
-    val zoom = fixedZoom ?: camera.zoom ?: base
-    // Solo el automático se inclina: del todo en lo más cerca y nada un nivel más lejos (lo calcula el dibujo).
-    val tilts = fixedZoom == null && look.zoom == MapZoom.AUTO && (look.orientation != MapOrientation.NORTH_UP || marker != null)
+    // De fábrica: el nivel fijo que se eligió o, en automático, lo más cerca (inclinado) o un poco más lejos (plano).
+    val base = fixedZoom ?: look.zoom.level ?: if (navFollow || carView) driveZoom else driveZoom - FLAT_ZOOM_DROP
+    val chosen = fixedZoom ?: camera.zoom ?: base
     val scope = rememberCoroutineScope()
+    // La cámara de navegación: el zoom según la velocidad y la inclinación (plana con «siempre al norte»), cambiando
+    // despacio hacia lo que toca; quieta, no se rehace nada.
+    val northUp = look.orientation == MapOrientation.NORTH_UP && marker == null
+    val navGoal by rememberUpdatedState(
+        if (!navFollow) null
+        else navZoomFor(kmh, driveZoom, turnAhead, northUp) to if (northUp) 0f else if (turnAhead) NAV_TURN_TILT else 1f,
+    )
+    LaunchedEffect(navFollow, active) {
+        if (!navFollow || !active) return@LaunchedEffect
+        snapshotFlow { navGoal }.collectLatest { goal ->
+            val (z, t) = goal ?: return@collectLatest
+            if (camera.navZoom.isNaN()) {
+                camera.navZoom = z
+                camera.navTilt = t
+                return@collectLatest
+            }
+            var last = System.nanoTime()
+            while (camera.navZoom != z || camera.navTilt != t) {
+                delay(GLIDE_STEP_MS)
+                val now = System.nanoTime()
+                val dt = (now - last) / 1e9f
+                last = now
+                camera.navZoom = approach(camera.navZoom, z, NAV_ZOOM_RATE * dt)
+                camera.navTilt = approach(camera.navTilt, t, NAV_TILT_RATE * dt)
+            }
+        }
+    }
     // Si este mapa se va o lo tapan a media animación de centrar, el otro la retoma.
     val shown = remember { Shown() }
     val activeNow by rememberUpdatedState(active)
     DisposableEffect(Unit) { onDispose { shown.gone = true } }
     // Centrar: el mapa se desliza hasta ti y luego vuelve a su zoom de fábrica, de corrido.
     LaunchedEffect(camera.recenters, camera.handOffs, active) {
-        if (active) camera.animateRecenter(base, driveZoom, zooms = fixedZoom == null) { shown.gone || !activeNow }
+        if (active) camera.animateRecenter(base, driveZoom, zooms = fixedZoom == null, follow = navFollow) { shown.gone || !activeNow }
     }
     val dark = look.dark(c.dark)
     val accent = c.accent
     val glide = rememberGlide(lat, lon, bearing, active, creeping = kmh != null && kmh < CREEP_KMH)
     // Con tu auto en vez de la flecha, siempre gira el mapa: el auto va de espaldas hacia arriba y no se gira.
     val headingUp = look.orientation == MapOrientation.HEADING || marker != null
+    // «Automático»: al norte detenido y hacia donde vas de viaje (mirando un lugar o con zoom fijo, al norte); gira despacio.
+    val autoTurn by animateFloatAsState(
+        if (look.orientation == MapOrientation.NORTH && driving && fixedZoom == null && !camera.showingPlace) 1f else 0f,
+        tween(AUTO_TURN_MS),
+    )
     val sky = store.source.sky?.let(::Color) ?: if (dark) Color(0xFF1C1C20) else Color(0xFFE8E8EA)
     val zoomable by rememberUpdatedState(fixedZoom == null)
     // Con dos dedos el mapa se agranda o achica ([MapCamera.scale]) y, pasada la mitad, cambia al nivel de junto.
     val onPinch by rememberUpdatedState { factor: Float ->
         camera.stopZoom()
+        if (navFollow) camera.letGo(base, driveZoom)
         // El de ahora mismo (varios movimientos pueden llegar antes de recomponer).
         val step = pinchStep(camera.scale, factor, camera.zoom ?: base, MIN_ZOOM, driveZoom)
         camera.scale = step.scale
@@ -506,10 +632,6 @@ fun MapCanvas(
     }
     // Lo que se dibuja, armado una vez y reusado; con su última proyección un arrastre se vuelve movimiento del mapa.
     val frame = remember { MapFrame() }
-    if (aim != null) DisposableEffect(aim, frame) {
-        aim.frame = frame
-        onDispose { if (aim.frame === frame) aim.frame = null }
-    }
     // Lo que se ve se pide al almacén cuando cambia, fuera del dibujo; tapado o fuera de la vista, deja de pedirse.
     LaunchedEffect(store, active) {
         if (!active) return@LaunchedEffect
@@ -534,17 +656,22 @@ fun MapCanvas(
                 dy *= most / length
             }
             camera.stopPan()
+            if (navFollow) camera.letGo(base, driveZoom)
             camera.place = null
             val limit = camera.panLimit
             camera.panX = (camera.panX - dx / frame.worldPx).coerceIn(-limit, limit)
             camera.panY = (camera.panY - dy / frame.worldPx).coerceIn(-limit, limit)
         }
     }
-    // Movido con el dedo y sin tocarlo un rato: regresa a ti solo (como Waze). Solo de viaje (detenido, el mapa se
-    // queda donde lo dejaste) y solo el mapa que se ve (el widget tapado y el de en grande comparten cámara).
+    // Movido con el dedo (o, navegando, suelta) y sin tocarlo un rato: regresa a ti solo (como Waze). Solo de viaje
+    // (detenido, el mapa se queda donde lo dejaste) y solo el mapa que se ve (el widget tapado y el de en grande comparten cámara).
+    val loose by rememberUpdatedState(navFollow)
     LaunchedEffect(camera, active) {
         if (!active || !camera.returns) return@LaunchedEffect
-        snapshotFlow { if (!camera.centered && camera.driving && !camera.showingPlace) camera.panX + camera.panY else null }.collectLatest { moved ->
+        snapshotFlow {
+            val moved = !camera.centered || (loose && !camera.following)
+            if (moved && camera.driving && !camera.showingPlace) Triple(camera.panX, camera.panY, camera.zoom) else null
+        }.collectLatest { moved ->
             if (moved != null) {
                 delay(RECENTER_MS)
                 camera.recenter()
@@ -584,15 +711,21 @@ fun MapCanvas(
                 if (active || !frame.ready(size.width, size.height)) {
                     store.loaded // cada tesela que llega rehace esto (y los nombres nuevos se acomodan)
                     val pose = glide.read()
-                    val scale = camera.scale
-                    // Cuánto se inclina (0–1): del todo en lo más cerca y nada un nivel más lejos, sin brinco entre los dos.
-                    val tilt = if (tilts) tiltFor(zoom + log2(scale), driveZoom) else 0f
+                    // El nivel de teselas, cuánto se agranda y cuánto se inclina (0–1).
+                    val following = navFollow && camera.following && !camera.navZoom.isNaN()
+                    val step = if (following) zoomStep(camera.navZoom, MIN_ZOOM, driveZoom) else null
+                    val zoom = step?.level ?: chosen
+                    val scale = step?.scale ?: camera.scale
+                    val tilt = when {
+                        following -> camera.navTilt
+                        // Suelta: se acuesta al alejarla un nivel de donde iba.
+                        navFollow -> camera.followTilt * tiltFor(zoom + log2(scale), camera.followZoom)
+                        carView -> tiltFor(zoom + log2(scale), driveZoom.toFloat())
+                        else -> 0f
+                    }
                     val bearing = if (pose.bearing.isNaN()) 0f else pose.bearing
-                    // Inclinado siempre mira hacia donde vas (como Waze); al acostarse gira al norte por el lado corto.
-                    val turn = if (headingUp) -bearing else -shortTurn(0f, bearing) * tilt
-                    val turned = headingUp || tilt >= TURNED_TILT
-                    if (camera.turning != turned) camera.turning = turned
-                    if (abs(shortTurn(camera.turnDegrees, turn)) >= COMPASS_STEP_DEGREES) camera.turnDegrees = turn
+                    // Hacia donde vas, o al norte; con «Automático» gira de uno a otro por el lado corto.
+                    val turn = if (headingUp) -bearing else -shortTurn(0f, bearing) * autoTurn
                     // Inclinado, tu posición va más abajo: se ve más camino adelante (dentro de [focus], si lo hay).
                     val f = focus ?: WHOLE
                     val atX = size.width * f.center.x
@@ -612,8 +745,6 @@ fun MapCanvas(
                         pin?.let { tileX(it.second, zoom) } ?: Double.NaN, pin?.let { tileY(it.first, zoom) } ?: Double.NaN,
                         routeWorld, routeDone,
                         routeWidth?.let { it.toPx() * ts * n.toFloat() / (tilePx(density) * 2f.pow(driveZoom)) } ?: 0f,
-                        // A escala real (la vista de tu auto) también los edificios en 3D.
-                        store.source.takeIf { routeWidth != null },
                     )
                 }
                 onDrawBehind { frame.draw(this, store, accent, marker, focus) }
@@ -632,7 +763,7 @@ fun MapCanvas(
             val you = youExtent(marker, holeW, holeH, LocalDensity.current.density)
             val top = creditsCollide(
                 holeW, holeH, creditsSize.width.toFloat(), creditsSize.height.toFloat(),
-                you.halfWidth, you.below, if (tilts) ANCHOR_TILTED else ANCHOR_FLAT,
+                you.halfWidth, you.below, ANCHOR_FLAT,
             )
             Attribution(credits, Modifier.align(if (top) Alignment.TopStart else Alignment.BottomStart).onSizeChanged { creditsSize = it })
         }
@@ -816,18 +947,3 @@ private fun Attribution(text: String, modifier: Modifier) {
             .padding(horizontal = 6.dp, vertical = 2.dp),
     )
 }
-
-/** La mira de «Marcar aquí»: qué punto del mapa queda al centro de la vista (lo llena el [MapCanvas] que la recibe). */
-@Stable
-class MapAim {
-    internal var frame: MapFrame? = null
-
-    /** El punto al centro (latitud, longitud); null = el mapa aún no se dibuja. */
-    fun center(): Pair<Double, Double>? = frame?.centerLatLon()
-}
-
-/** Desde esta inclinación, con Automático, el mapa ya mira hacia donde vas (para la brújula). */
-private const val TURNED_TILT = 0.5f
-
-/** La brújula de afuera se mueve de tanto en tanto (no con cada cuadro). */
-private const val COMPASS_STEP_DEGREES = 2f

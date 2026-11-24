@@ -13,7 +13,7 @@
     <string name="map_zoom_near">Yakın</string>
     <string name="map_zoom_mid">Orta</string>
     <string name="map_zoom_far">Uzak</string>
-    <string name="map_zoom_help">Otomatik: olabildiğince yakın (birkaç sokak) ve Waze gibi eğik, gittiğiniz yöne bakar; uzaklaştırınca düzleşir, yeniden ortalayınca veya yolculuk başlayınca geri gelir. İki parmakla sıkıştırarak yakınlaştırın; bir parmakla sürükleyerek çevreye bakın.</string>
+    <string name="map_zoom_help">Otomatik: yakından (birkaç sokak); ortalamak ya da yola çıkmak bu görünüme döndürür. İki parmakla yakınlaştırın veya uzaklaştırın, tek parmakla gezinin.</string>
     <string name="map_style">Renkler</string>
     <string name="map_style_theme">Tema gibi</string>
     <string name="map_style_light">Açık</string>
@@ -156,9 +156,7 @@
     <string name="guide_arrive_at">Varış: %1$s</string>
     <string name="search_ft">%1$d ft</string>
     <string name="map_customize_help">Görünüm ve çevrimdışı haritalar tüm haritalarınız için aynıdır: Ayarlar → Uygulamalar → Gezinme’den değiştirilir.</string>
-    <string name="map_mark">Bir nokta işaretle</string>
-    <string name="map_mark_here">Burayı işaretle</string>
-    <string name="map_orientation_help">Otomatik: eğik haritada gittiğiniz yöne bakar; düz haritada kuzey yukarıdadır.</string>
+    <string name="map_orientation_help">Otomatik: dururken kuzey yukarıda; yolculukta harita gittiğiniz yöne bakar.</string>
     <string name="search_favorites_full">En fazla favori sayısına ulaştınız (%1$d): başka birini eklemek için birini kaldırın.</string>
     <string name="map_pack_search">Ülke veya il ara</string>
     <string name="map_pack_all_countries">Tüm ülkeleri gör (%1$d)</string>

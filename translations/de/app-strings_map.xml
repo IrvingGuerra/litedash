@@ -13,7 +13,7 @@
     <string name="map_zoom_near">Nah</string>
     <string name="map_zoom_mid">Mittel</string>
     <string name="map_zoom_far">Weit</string>
-    <string name="map_zoom_help">Automatisch: so nah wie möglich (ein paar Straßen) und geneigt wie bei Waze, in Fahrtrichtung; beim Rauszoomen wird sie flach, Zentrieren oder eine neue Fahrt holt es zurück. Mit zwei Fingern zoomen, mit einem umsehen.</string>
+    <string name="map_zoom_help">Automatisch: nah dran (ein paar Straßen); Zentrieren oder eine neue Fahrt holt es zurück. Mit zwei Fingern zoomen, mit einem umsehen.</string>
     <string name="map_style">Farben</string>
     <string name="map_style_theme">Wie das Design</string>
     <string name="map_style_light">Hell</string>
@@ -156,9 +156,7 @@
     <string name="guide_arrive_at">Du erreichst: %1$s</string>
     <string name="search_ft">%1$d ft</string>
     <string name="map_customize_help">Aussehen und Offline-Karten gelten für alle deine Karten: ändere sie unter Einstellungen → Apps → Navigation.</string>
-    <string name="map_mark">Punkt markieren</string>
-    <string name="map_mark_here">Hier markieren</string>
-    <string name="map_orientation_help">Automatisch: geneigt zeigt die Karte in Fahrtrichtung; flach ist Norden oben.</string>
+    <string name="map_orientation_help">Automatisch: im Stand ist Norden oben, während der Fahrt zeigt die Karte in Fahrtrichtung.</string>
     <string name="search_favorites_full">Du hast die maximale Zahl an Favoriten (%1$d): entferne einen, um einen neuen hinzuzufügen.</string>
     <string name="map_pack_search">Land oder Bundesland suchen</string>
     <string name="map_pack_all_countries">Alle Länder anzeigen (%1$d)</string>

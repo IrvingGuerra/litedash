@@ -13,7 +13,7 @@
     <string name="map_zoom_near">पास</string>
     <string name="map_zoom_mid">मध्यम</string>
     <string name="map_zoom_far">दूर</string>
-    <string name="map_zoom_help">ऑटोमैटिक: जितना हो सके पास (दो-चार गलियाँ) और Waze की तरह झुका हुआ, आपकी दिशा की ओर; ज़ूम आउट करें तो सपाट हो जाता है, और सेंटर करने या सफ़र शुरू करने पर वापस आ जाता है। ज़ूम के लिए दो उँगलियों से पिंच करें; एक उँगली से खींचकर आसपास देखें।</string>
+    <string name="map_zoom_help">ऑटोमैटिक: पास से (कुछ गलियाँ); सेंटर करने या सफ़र शुरू करने पर यही वापस आता है। दो उँगलियों से ज़ूम करें, एक से मैप खिसकाएँ।</string>
     <string name="map_style">रंग</string>
     <string name="map_style_theme">थीम जैसा</string>
     <string name="map_style_light">लाइट</string>
@@ -156,9 +156,7 @@
     <string name="guide_arrive_at">आप %1$s पहुँचेंगे</string>
     <string name="search_ft">%1$d ft</string>
     <string name="map_customize_help">लुक और ऑफ़लाइन मैप आपके सभी मैप के लिए एक जैसे हैं: इन्हें सेटिंग्स → ऐप्स → नेविगेशन में बदलें।</string>
-    <string name="map_mark">कोई जगह मार्क करें</string>
-    <string name="map_mark_here">यहाँ मार्क करें</string>
-    <string name="map_orientation_help">ऑटोमैटिक: झुका हुआ मैप आपकी दिशा की ओर रहता है; सपाट मैप में उत्तर ऊपर रहता है।</string>
+    <string name="map_orientation_help">ऑटोमैटिक: रुकने पर उत्तर ऊपर; चलते समय मैप आपकी दिशा की ओर।</string>
     <string name="search_favorites_full">आपके पसंदीदा पूरे हो गए (%1$d): दूसरा जोड़ने के लिए एक हटाएँ।</string>
     <string name="map_pack_search">देश या राज्य खोजें</string>
     <string name="map_pack_all_countries">सभी देश देखें (%1$d)</string>

@@ -260,16 +260,18 @@ private fun CarView(d: Dependencies, session: DriveSession, modifier: Modifier) 
 }
 
 /**
- * El mapa con la ruta (de cerca o, con «Ver ruta», toda), la próxima vuelta arriba si [turnOnMap] (en la vista ancha),
- * la hora y la llegada abajo con la barra de avance, y Ver ruta / Terminar.
+ * El mapa con la ruta, la próxima vuelta arriba si [turnOnMap] (en la vista ancha), la hora y la llegada abajo con la
+ * barra de avance, y Ver ruta / Centrar / brújula / Terminar. De fábrica te sigue inclinado y muy cerca, hacia donde vas,
+ * alejándose con la velocidad (como Horizon); con un dedo se suelta (al alejarlo se aplana) y «Centrar» lo regresa. La
+ * brújula pasa a «siempre al norte», que va plano (inclinado al norte no se entiende), y de vuelta. «Ver ruta»: toda, plana.
  */
 @Composable
 private fun MapView(d: Dependencies, session: DriveSession, end: () -> Unit, modifier: Modifier, turnOnMap: Boolean) {
     val c = LocalColors.current
     val context = LocalContext.current
-    val heading = d.prefs.guideMapHeading && !session.overview
+    val heading = !d.prefs.guideMapNorth && !session.overview
     val look = remember(d.prefs.mapLook, heading) {
-        MapLook.parse(d.prefs.mapLook.orEmpty()).copy(orientation = if (heading) MapOrientation.HEADING else MapOrientation.NORTH)
+        MapLook.parse(d.prefs.mapLook.orEmpty()).copy(orientation = if (heading) MapOrientation.HEADING else MapOrientation.NORTH_UP)
     }
     val store = rememberTileStore(look, c.dark, DRIVE_MAP_KEY)
     val camera = rememberMapCamera()
@@ -287,7 +289,8 @@ private fun MapView(d: Dependencies, session: DriveSession, end: () -> Unit, mod
             MapCanvas(
                 store, if (onRoute) s!!.lat else position.latitude, if (onRoute) s!!.lon else position.longitude,
                 (if (onRoute) s!!.heading else null) ?: d.trip.bearing, kmh, look, Modifier.fillMaxSize(), camera,
-                fixedZoom = fit?.whole ?: CLOSE_ZOOM, interactive = false,
+                fixedZoom = fit?.whole, interactive = !session.overview, navigation = true,
+                turnAhead = onRoute && turnAhead(session.route, s!!),
                 route = session.route.points, routeDone = s?.let { it.point + it.fraction } ?: 0f,
             )
         }
@@ -295,8 +298,14 @@ private fun MapView(d: Dependencies, session: DriveSession, end: () -> Unit, mod
         val top = if (turnOnMap) Modifier.statusBarsPadding() else Modifier
         if (turnOnMap) TurnCard(d, session, Modifier.align(Alignment.TopStart).then(top).padding(12.dp).widthIn(max = 440.dp))
         Clock(Modifier.align(Alignment.TopEnd).then(top).padding(16.dp))
-        // A la orilla derecha, redondos: ver toda la ruta (o seguirte), la brújula y terminar.
+        // A la orilla derecha, redondos: centrar (si lo moviste), ver toda la ruta (o seguirte), la brújula y terminar.
         Column(Modifier.align(Alignment.CenterEnd).padding(end = 12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            if (!camera.following && !session.overview) {
+                IconButton(
+                    Icons.recenter, camera::recenter, size = ROUND_BUTTON, background = c.background.copy(alpha = 0.9f), color = c.accent,
+                    label = stringResource(R.string.guide_follow),
+                )
+            }
             if (s?.arrived != true) {
                 IconButton(
                     if (session.overview) Icons.navigate else Icons.map, { session.overview = !session.overview },
@@ -307,7 +316,7 @@ private fun MapView(d: Dependencies, session: DriveSession, end: () -> Unit, mod
             if (!session.overview) {
                 CompassButton(
                     if (heading) -(((if (s != null && !s.offRoute) s.heading else null) ?: d.trip.bearing) ?: 0f) else 0f,
-                    northUp = !heading, onClick = { d.prefs.guideMapHeading = !d.prefs.guideMapHeading }, size = ROUND_BUTTON,
+                    northUp = !heading, onClick = { d.prefs.guideMapNorth = !d.prefs.guideMapNorth }, size = ROUND_BUTTON,
                     background = c.background.copy(alpha = 0.9f),
                 )
             }
@@ -497,8 +506,17 @@ private val SHORT_SCREEN = 420.dp
 /** Desde qué ancho se ponen el auto y el mapa lado a lado. */
 private val WIDE_MIN = 720.dp
 
-/** El zoom del mapa de la derecha mientras manejas (calles alrededor). */
-private const val CLOSE_ZOOM = 15
+/**
+ * ¿Ya viene la siguiente vuelta? (a [TURN_AHEAD_M] o menos, sin contar «sigue derecho»): el mapa de la derecha se acerca
+ * un poco y se aplana algo para que se vea la esquina.
+ */
+private fun turnAhead(route: Route, s: GuidanceState): Boolean {
+    if (s.arrived || s.toNextM > TURN_AHEAD_M) return false
+    val type = route.maneuvers.getOrNull(s.next)?.type ?: return false
+    return type != ManeuverType.STRAIGHT && type != ManeuverType.DEPART
+}
+
+private const val TURN_AHEAD_M = 100.0
 
 /**
  * Entre un recálculo y otro, al menos esto (un GPS que brinca no debe recalcular sin parar); si sale la misma ruta o

@@ -13,7 +13,7 @@
     <string name="map_zoom_near">近</string>
     <string name="map_zoom_mid">中</string>
     <string name="map_zoom_far">远</string>
-    <string name="map_zoom_help">自动：放到最近（几条街的范围），像 Waze 一样倾斜并朝向前进方向；缩小后变为平面，重新居中或开始行程时恢复。双指捏合缩放，单指拖动浏览。</string>
+    <string name="map_zoom_help">自动：近距离（几条街的范围）；重新居中或开始行程会回到这里。用两根手指缩放，一根手指移动地图。</string>
     <string name="map_style">颜色</string>
     <string name="map_style_theme">跟随主题</string>
     <string name="map_style_light">浅色</string>
@@ -156,9 +156,7 @@
     <string name="guide_arrive_at">即将到达%1$s</string>
     <string name="search_ft">%1$d ft</string>
     <string name="map_customize_help">外观和离线地图对你所有的地图都相同：可在“设置 → 应用 → 导航”中更改。</string>
-    <string name="map_mark">标记一个地点</string>
-    <string name="map_mark_here">标记此处</string>
-    <string name="map_orientation_help">自动：地图倾斜时朝向你的行驶方向；平面时北朝上。</string>
+    <string name="map_orientation_help">自动：停下时北朝上；行驶时地图朝向你的行驶方向。</string>
     <string name="search_favorites_full">收藏已达上限（%1$d 个）：移除一个才能再添加。</string>
     <string name="map_pack_search">搜索国家或省份</string>
     <string name="map_pack_all_countries">查看全部国家 (%1$d)</string>

@@ -13,7 +13,7 @@
     <string name="map_zoom_near">Близко</string>
     <string name="map_zoom_mid">Средне</string>
     <string name="map_zoom_far">Далеко</string>
-    <string name="map_zoom_help">Авто: максимально близко (пара улиц) и с наклоном, как в Waze, по направлению движения; отдали — и карта станет плоской, а кнопка центрирования или начало поездки вернут её. Масштаб — двумя пальцами, осмотреться — перетаскивай одним.</string>
+    <string name="map_zoom_help">Авто: крупно (пара улиц); центрирование или начало поездки возвращают этот вид. Двумя пальцами — масштаб, одним — перемещение.</string>
     <string name="map_style">Цвета</string>
     <string name="map_style_theme">Как в теме</string>
     <string name="map_style_light">Светлая</string>
@@ -156,9 +156,7 @@
     <string name="guide_arrive_at">Пункт назначения: %1$s</string>
     <string name="search_ft">%1$d ft</string>
     <string name="map_customize_help">Вид и офлайн-карты одинаковы для всех твоих карт: их можно изменить в «Настройки → Приложения → Навигация».</string>
-    <string name="map_mark">Отметить место</string>
-    <string name="map_mark_here">Отметить здесь</string>
-    <string name="map_orientation_help">Автоматически: наклонённая карта смотрит по ходу движения, плоская — на север.</string>
+    <string name="map_orientation_help">Автоматически: на месте север сверху; в движении карта смотрит по ходу движения.</string>
     <string name="search_favorites_full">Достигнут максимум избранного (%1$d): убери одно место, чтобы добавить другое.</string>
     <string name="map_pack_search">Найти страну или регион</string>
     <string name="map_pack_all_countries">Все страны (%1$d)</string>

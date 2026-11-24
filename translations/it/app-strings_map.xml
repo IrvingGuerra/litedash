@@ -13,7 +13,7 @@
     <string name="map_zoom_near">Vicino</string>
     <string name="map_zoom_mid">Medio</string>
     <string name="map_zoom_far">Lontano</string>
-    <string name="map_zoom_help">Automatico: il più vicino possibile (un paio di strade) e inclinato come Waze, verso dove vai; allontanando diventa piatto, e ricentrare o iniziare un viaggio lo riporta. Pizzica con due dita per lo zoom; trascina con un dito per guardarti intorno.</string>
+    <string name="map_zoom_help">Automatico: da vicino (qualche strada); ricentrare o iniziare un viaggio lo riporta qui. Con due dita ingrandisci o riduci, con un dito ti sposti.</string>
     <string name="map_style">Colori</string>
     <string name="map_style_theme">Come il tema</string>
     <string name="map_style_light">Chiari</string>
@@ -156,9 +156,7 @@
     <string name="guide_arrive_at">Arrivi: %1$s</string>
     <string name="search_ft">%1$d ft</string>
     <string name="map_customize_help">L\'aspetto e le mappe offline sono gli stessi per tutte le tue mappe: si cambiano in Impostazioni → App → Navigazione.</string>
-    <string name="map_mark">Segna un punto</string>
-    <string name="map_mark_here">Segna qui</string>
-    <string name="map_orientation_help">Automatico: inclinata, la mappa guarda dove vai; piatta, il nord è in alto.</string>
+    <string name="map_orientation_help">Automatico: da fermo il nord è in alto; in viaggio la mappa guarda dove vai.</string>
     <string name="search_favorites_full">Hai il massimo di preferiti (%1$d): togline uno per aggiungerne un altro.</string>
     <string name="map_pack_search">Cerca un paese o una regione</string>
     <string name="map_pack_all_countries">Vedi tutti i paesi (%1$d)</string>

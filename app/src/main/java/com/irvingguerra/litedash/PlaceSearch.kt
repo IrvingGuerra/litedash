@@ -86,6 +86,9 @@ import java.util.Locale
 internal class PlaceSearch {
     var query by mutableStateOf("")
     var focused by mutableStateOf(false)
+
+    /** La lista de resultados a la vista; tocar fuera o atrás la cierra (lo escrito se queda) y escribir la vuelve a abrir. */
+    var open by mutableStateOf(true)
     var local by mutableStateOf<List<SearchHit>>(emptyList())
 
     /** Buscando lo escrito en el mapa de tu estado (mientras, no se dice que no está). */
@@ -97,6 +100,7 @@ internal class PlaceSearch {
     /** Escribir de nuevo olvida lo de internet y el lugar elegido. */
     fun type(text: String) {
         query = text
+        open = true
         online = emptyList()
         onlineState = OnlineState.IDLE
         selected = null
@@ -232,8 +236,11 @@ internal fun PlaceSearchBox(
     d: Dependencies,
     search: PlaceSearch,
     focus: FocusRequester,
-    /** Suelta el teclado (ver [MapExpanded]: el foco pasa al mapa; soltarlo sin más lo regresa al campo en Android ≤ 8). */
-    release: () -> Unit,
+    /**
+     * Cierra la lista y suelta el teclado (ver [MapExpanded]: el foco pasa al mapa; soltarlo sin más lo regresa al campo en
+     * Android ≤ 8).
+     */
+    closeList: () -> Unit,
     onPick: (SearchHit) -> Unit,
     onPlace: (String) -> Unit,
     listSpace: androidx.compose.ui.unit.Dp,
@@ -285,21 +292,23 @@ internal fun PlaceSearchBox(
             }
         }
     }
-    // Atrás: primero se cierra la lista o la tarjeta y luego se borra lo escrito (el mapa en grande se cierra después).
+    // Atrás: primero se cierran la lista y el teclado, luego se borra lo escrito (el mapa en grande se cierra después).
     // Con la tarjeta de un lugar a la vista, atrás la cierra el mapa en grande (y regresa a ti).
     BackHandler((search.focused || search.query.isNotEmpty()) && (search.selected == null || search.focused)) {
-        if (search.focused) release() else search.clear()
+        if (search.focused || search.open) closeList() else search.clear()
     }
     Column(modifier) {
+        // Buscar en el teclado lo esconde y deja la lista a la vista.
         SearchField(search, focus, onSearch = {
-            release()
+            closeList()
+            search.open = true
             if (search.local.isEmpty()) askOnline()
         })
         val q = search.query.trim()
         val recents = remember(d.prefs.recentPlaces) { placesFromJson(d.prefs.recentPlaces) }
         when {
             search.selected != null -> Unit
-            q.isNotEmpty() -> Results(d, search, q, canSearch, packs.onlineSearch, maxListHeight, onPick, askOnline)
+            q.isNotEmpty() -> if (search.open) Results(d, search, q, canSearch, packs.onlineSearch, maxListHeight, onPick, askOnline)
             search.focused && recents.isNotEmpty() -> Panel(maxListHeight) {
                 Label(stringResource(R.string.search_recent).uppercase(currentLocale()), Typography.label, c.textMuted, modifier = Modifier.padding(start = 14.dp, top = 12.dp, bottom = 4.dp))
                 for (p in recents) PlaceRow(d, p, emptyList(), Icons.clock) { onPick(p) }
@@ -331,7 +340,10 @@ private fun SearchField(search: PlaceSearch, focus: FocusRequester, onSearch: ()
             BasicTextField(
                 search.query,
                 { search.type(it.take(QUERY_MAX)) },
-                Modifier.fillMaxWidth().focusRequester(focus).onFocusChanged { search.focused = it.isFocused },
+                Modifier.fillMaxWidth().focusRequester(focus).onFocusChanged {
+                    search.focused = it.isFocused
+                    if (it.isFocused) search.open = true
+                },
                 textStyle = Typography.body.copy(color = c.text),
                 singleLine = true,
                 cursorBrush = SolidColor(c.accent),

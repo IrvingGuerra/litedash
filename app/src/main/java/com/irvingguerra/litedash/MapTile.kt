@@ -8,7 +8,8 @@ import android.os.storage.StorageManager
 import android.text.format.DateFormat
 import android.text.format.Formatter
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -17,12 +18,10 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -49,6 +48,10 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.focusTarget
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.boundsInParent
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
@@ -57,7 +60,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleStartEffect
 import com.irvingguerra.litedash.core.ui.Button
@@ -80,7 +82,6 @@ import com.irvingguerra.litedash.feature.car.CarPackage
 import com.irvingguerra.litedash.feature.car.snapshot
 import com.irvingguerra.litedash.feature.map.IndexState
 import com.irvingguerra.litedash.feature.map.MapCamera
-import com.irvingguerra.litedash.feature.map.MapAim
 import com.irvingguerra.litedash.feature.map.MapCanvas
 import com.irvingguerra.litedash.feature.map.MapLook
 import com.irvingguerra.litedash.feature.map.MapOrientation
@@ -164,9 +165,9 @@ fun MapTile(
 
 /**
  * El mapa de LiteDash en grande (el toque al widget Mapa, y la barra y el volante si no abren tu app), con el aspecto de
- * Ajustes y la cámara del widget [tileId] si se abrió desde uno: el mapa en vivo (con dos dedos o + y − se acerca o
- * aleja), la siguiente vuelta, Casa y Trabajo, «Marcar aquí» con una mira al centro (como dejar presionado), y botones
- * para cerrar y, con una app de mapas, para abrirla.
+ * Ajustes y la cámara del widget [tileId] si se abrió desde uno: arriba el buscador (su lista se cierra al tocar fuera o
+ * con atrás), el mapa en vivo (con dos dedos o + y − se acerca o aleja; dejar presionado marca un punto), la siguiente
+ * vuelta, Casa y Trabajo, y botones para cerrar y, con una app de mapas, para abrirla.
  */
 @Composable
 fun MapExpanded(
@@ -229,15 +230,16 @@ fun MapExpanded(
     }
     BackHandler(routing != null && !search.focused, closeRoute)
     BackHandler(selected != null && routing == null && !search.focused, unselect)
-    // «Marcar aquí»: la mira al centro; se mueve el mapa y el botón pone el pin ahí (lo mismo que dejar presionado, que
-    // en pantallas de auto falla). Atrás o el mismo botón la quitan.
-    // Un lugar elegido o el buscador la quitan (sin escribir estado al componer: se deriva y se apaga en un efecto).
-    var marking by remember { mutableStateOf(false) }
-    val busy = selected != null || search.focused
-    val aiming = marking && !busy
-    LaunchedEffect(busy) { if (busy) marking = false }
-    val aim = remember { MapAim() }
-    BackHandler(aiming) { marking = false }
+    // La lista del buscador (recientes o resultados) se cierra con el teclado al tocar fuera de ella: el mapa o cualquier
+    // hueco (el toque sigue a lo que tocaste). Lo escrito se queda; tocar el campo la vuelve a abrir.
+    var searchBounds by remember { mutableStateOf(Rect.Zero) }
+    val listOpen by rememberUpdatedState(search.focused || (search.open && search.query.isNotEmpty() && selected == null))
+    val bounds by rememberUpdatedState(searchBounds)
+    val closeList: () -> Unit = {
+        search.open = false
+        release()
+    }
+    val outside by rememberUpdatedState(closeList)
     // Se soltó el lugar (otra búsqueda, borrar lo escrito) o se cierra el mapa en grande: el mapa (y el widget, que
     // comparte la cámara) regresa a ti.
     // (Lee el de ahora, no el de esta composición: al abrir con un lugar de otra app, ya se eligió.)
@@ -250,7 +252,14 @@ fun MapExpanded(
         }
     }
     Card(modifier.fillMaxSize()) {
-        BoxWithConstraints(Modifier.fillMaxSize().focusRequester(rest).focusTarget()) {
+        BoxWithConstraints(
+            Modifier.fillMaxSize().focusRequester(rest).focusTarget().pointerInput(Unit) {
+                awaitEachGesture {
+                    val down = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
+                    if (listOpen && !bounds.contains(down.position)) outside()
+                }
+            },
+        ) {
             val boxWidth = maxWidth
             val boxHeight = maxHeight
             // Con la tarjeta de un lugar o de la ruta, el lugar va en lo que queda libre: a su derecha en pantallas anchas o
@@ -275,14 +284,16 @@ fun MapExpanded(
                     camera = camera, pin = selected?.let { it.lat to it.lon },
                     overlay = selected == null,
                     onLongPress = { lat, lon -> pick(pointHit(null, lat, lon)) },
-                    route = route?.points, fixedZoom = fit?.zoom, focus = clear, aim = aim,
+                    route = route?.points, fixedZoom = fit?.zoom, focus = clear,
                 )
-                if (aiming) Crosshair(Modifier.align(Alignment.Center))
             } else Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Button(stringResource(R.string.tap_to_enable), ask, primary = true) }
             val searching = search.focused || search.query.isNotEmpty()
             // Con la guía encima el buscador sale de la pantalla: en Android 6 un campo enfocado debajo vuelve a abrir el teclado.
-            if (Driving.session == null) Column(Modifier.align(Alignment.TopStart).padding(12.dp).width(minOf(boxWidth - 88.dp, 480.dp))) {
-                PlaceSearchBox(d, search, focus, release, pick, onPlace, listSpace = boxHeight - 100.dp)
+            if (Driving.session == null) Column(
+                Modifier.align(Alignment.TopStart).padding(12.dp).width(minOf(boxWidth - 88.dp, 480.dp))
+                    .onGloballyPositioned { searchBounds = it.boundsInParent() },
+            ) {
+                PlaceSearchBox(d, search, focus, closeList, pick, onPlace, listSpace = boxHeight - 100.dp)
                 // Escribiendo no se ve, pero sigue compuesta: es la que pide los avisos de Waze/Maps (sin ella el mapa dejaría
                 // de ir «de viaje» mientras escribes).
                 NextTurn(d, Modifier.padding(top = 8.dp), shown = !searching)
@@ -290,8 +301,6 @@ fun MapExpanded(
             Row(Modifier.align(Alignment.TopEnd).padding(12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 // Tu app de mapas, con su botón (como en el widget).
                 if (app != null && boxWidth >= WIDE_TOP) IconButton(Icons.navigate, onNavigate, size = 48.dp, background = c.surface.copy(alpha = 0.9f), color = c.accent)
-                // La orientación es una sola para todos los mapas (la de Ajustes): la brújula la cambia ahí.
-                if (route == null && granted) MapCompass(camera, size = 48.dp) { applyMapLook(d, look.copy(orientation = it)) }
                 IconButton(Icons.close, close, size = 48.dp, background = c.surface.copy(alpha = 0.9f))
             }
             // Acercar y alejar con un toque (en pantallas de auto el pellizco falla). Con la ruta el zoom es el que la enseña
@@ -299,12 +308,6 @@ fun MapExpanded(
             if (route == null && granted) Column(
                 Modifier.align(Alignment.CenterEnd).padding(end = 12.dp), verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                // Sin lugar elegido: con un lugar, su tarjeta ya lleva lo que se hace con él.
-                if (selected == null) IconButton(
-                    Icons.markPlace, { marking = !aiming }, size = 48.dp,
-                    background = if (aiming) c.accent else c.surface.copy(alpha = 0.9f), color = if (aiming) c.onPrimary else c.accent,
-                    label = stringResource(R.string.map_mark),
-                )
                 IconButton(
                     Icons.plus, { camera.zoomBy(1) }, size = 48.dp, background = c.surface.copy(alpha = 0.9f), color = c.text,
                     label = stringResource(R.string.map_zoom_near),
@@ -314,11 +317,6 @@ fun MapExpanded(
                     label = stringResource(R.string.map_zoom_far),
                 )
             }
-            if (aiming) Button(
-                stringResource(R.string.map_mark_here),
-                { aim.center()?.let { (lat, lon) -> marking = false; pick(pointHit(null, lat, lon)) } },
-                Modifier.align(Alignment.BottomCenter).padding(bottom = 16.dp), primary = true,
-            )
             val cardModifier = Modifier.align(Alignment.BottomStart).padding(start = 12.dp, end = 12.dp, bottom = 12.dp).widthIn(max = CARD_MAX)
             val request = routing
             if (selected != null && !search.focused) {
@@ -331,26 +329,6 @@ fun MapExpanded(
         }
     }
 }
-
-/** La mira de «Marcar aquí»: una cruz con un hueco al centro, con orilla para verse en mapa claro u oscuro. */
-@Composable
-private fun Crosshair(modifier: Modifier) {
-    val accent = LocalColors.current.accent
-    Canvas(modifier.size(CROSSHAIR)) {
-        val mid = center
-        val gap = size.minDimension * 0.14f
-        val arm = size.minDimension / 2
-        for ((color, width) in listOf(Color.Black.copy(alpha = 0.45f) to 5.dp.toPx(), accent to 2.5.dp.toPx())) {
-            drawLine(color, mid.copy(x = mid.x - arm), mid.copy(x = mid.x - gap), width)
-            drawLine(color, mid.copy(x = mid.x + gap), mid.copy(x = mid.x + arm), width)
-            drawLine(color, mid.copy(y = mid.y - arm), mid.copy(y = mid.y - gap), width)
-            drawLine(color, mid.copy(y = mid.y + gap), mid.copy(y = mid.y + arm), width)
-            drawCircle(color, width * 0.8f, mid)
-        }
-    }
-}
-
-private val CROSSHAIR = 44.dp
 
 /** Lo más ancho de la tarjeta del lugar o de la ruta. */
 private val CARD_MAX = 460.dp
@@ -405,7 +383,6 @@ private fun LiveMap(
     route: IntArray? = null,
     fixedZoom: Int? = null,
     focus: Rect? = null,
-    aim: MapAim? = null,
 ) {
     val c = LocalColors.current
     KeepTripRunning(d.trip)
@@ -427,7 +404,6 @@ private fun LiveMap(
         MapCanvas(
             store, position.latitude, position.longitude, d.trip.bearing, kmh, look, Modifier.fillMaxSize(), camera, navigating,
             active = active, onTap = onTap, pin = pin, onLongPress = onLongPress, route = route, fixedZoom = fixedZoom, focus = focus,
-            aim = aim,
         )
         // Con la tarjeta de un lugar abajo a la izquierda, lo de aquí estorba (al cerrarla vuelve a ti).
         if (!overlay) return@BoxWithConstraints
@@ -550,21 +526,6 @@ private var expandedMap by mutableStateOf<ExpandedMap?>(null)
 @Composable
 private fun sharedMapCamera(key: String?): MapCamera =
     if (key == null) rememberMapCamera() else remember(key) { mapCameras.getOrPut(key) { MapCamera() } }
-
-/**
- * La brújula del mapa de LiteDash: apunta al norte como esté girado el mapa ahora (con Automático, gira de viaje) y un
- * toque pide ([setOrientation]) «siempre al norte» o «hacia donde vas».
- */
-@Composable
-private fun MapCompass(camera: MapCamera, size: Dp = 44.dp, setOrientation: (MapOrientation) -> Unit) {
-    // Como esté girado el mapa ahora (con Automático gira al inclinarse en lo más cerca, aunque estés detenido).
-    val heading = camera.turning
-    CompassButton(
-        camera.turnDegrees, northUp = !heading,
-        onClick = { setOrientation(if (heading) MapOrientation.NORTH_UP else MapOrientation.HEADING) },
-        size = size,
-    )
-}
 
 /** Una pastilla sobre el mapa: ícono y un texto corto (de [maxLines] renglones). */
 @Composable

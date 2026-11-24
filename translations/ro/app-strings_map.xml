@@ -13,7 +13,7 @@
     <string name="map_zoom_near">Aproape</string>
     <string name="map_zoom_mid">Mediu</string>
     <string name="map_zoom_far">Departe</string>
-    <string name="map_zoom_help">Automat: cât mai aproape (câteva străzi) și înclinat ca în Waze, spre unde mergi; dacă micșorezi, devine plat, iar recentrarea sau începerea unei călătorii îl readuce. Ciupește cu două degete pentru zoom; trage cu unul ca să te uiți în jur.</string>
+    <string name="map_zoom_help">Automat: de aproape (câteva străzi); recentrarea sau începutul unui drum îl readuc. Cu două degete mărești sau micșorezi, cu unul muți harta.</string>
     <string name="map_style">Culori</string>
     <string name="map_style_theme">Ca tema</string>
     <string name="map_style_light">Deschis</string>
@@ -156,9 +156,7 @@
     <string name="guide_arrive_at">Ajungi: %1$s</string>
     <string name="search_ft">%1$d ft</string>
     <string name="map_customize_help">Aspectul și hărțile offline sunt aceleași pentru toate hărțile tale: le schimbi în Setări → Aplicații → Navigație.</string>
-    <string name="map_mark">Marchează un punct</string>
-    <string name="map_mark_here">Marchează aici</string>
-    <string name="map_orientation_help">Automat: înclinată, harta privește în direcția în care mergi; plată, nordul e sus.</string>
+    <string name="map_orientation_help">Automat: oprit, nordul e sus; în mers, harta privește în direcția în care mergi.</string>
     <string name="search_favorites_full">Ai numărul maxim de favorite (%1$d): scoate unul ca să adaugi altul.</string>
     <string name="map_pack_search">Caută o țară sau un județ</string>
     <string name="map_pack_all_countries">Vezi toate țările (%1$d)</string>

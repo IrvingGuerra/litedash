@@ -12,7 +12,7 @@ class MvtTest {
     @Test
     fun readsRoadsWaterAndSkipsTheRest() {
         val tile = message {
-            // Edificios: no se leen.
+            // Edificios: ya no se leen.
             bytes(3, layer("building", keys = listOf("render_height"), values = listOf("12"), features = listOf(feature(3, listOf(0, 0), square()))))
             // Una calle primaria de (10, 20) a (110, 20) y luego a (110, 70), y una vereda (no se dibuja).
             bytes(3, layer(
@@ -95,18 +95,9 @@ class MvtTest {
     }
 
     @Test
-    fun readsBuildingHeightsAndOneWayAsNumbers() {
-        // Altura como entero sin signo (campo 5) y como double (campo 3, 8 bytes); oneway como entero (campo 4).
-        val double = message {
-            out.writeVarint((3 shl 3 or 1).toLong())
-            val bits = java.lang.Double.doubleToLongBits(31.5)
-            for (i in 0 until 8) out.write(((bits ushr (8 * i)) and 0xFF).toInt())
-        }
+    fun readsOneWayAsNumber() {
+        // oneway como entero (campo 4 del valor), no como texto.
         val tile = message {
-            bytes(3, rawLayer(
-                "building", keys = listOf("render_height"), values = listOf(message { varint(5, 25) }, double),
-                features = listOf(feature(3, listOf(0, 0), square()), feature(3, listOf(0, 1), square()), feature(3, emptyList(), square())),
-            ))
             bytes(3, rawLayer(
                 "transportation", keys = listOf("class", "oneway"), values = listOf(message { string(1, "primary") }, message { varint(4, 1) }),
                 features = listOf(
@@ -116,7 +107,6 @@ class MvtTest {
             ))
         }
         val t = parseVectorTile(tile)!!
-        assertArrayEquals(floatArrayOf(25f, 31.5f, DEFAULT_BUILDING_M), t.buildingHeights, 0.001f)
         assertArrayEquals(booleanArrayOf(true, false), t.oneway[RoadTier.PRIMARY.ordinal])
     }
 
