@@ -131,6 +131,14 @@
     <string name="route_no_path">Vi hittade ingen väg dit.</string>
     <string name="route_too_big">Den här resan är för lång för skärmens minne. Prova ett närmare mål.</string>
     <string name="route_two_states">Platsen ligger i ett annat län. Utan internet kommer rutter mellan län senare; öppna den så länge i din kartapp.</string>
+    <string name="route_online_failed">Det gick inte att beräkna rutten online. Försök igen eller öppna platsen i din kartapp.</string>
+    <string name="route_online_failed_named">Det gick inte att beräkna rutten online. Försök igen eller ladda ner kartan för %1$s.</string>
+    <string name="route_other_state_off">Platsen ligger i %1$s. Rutten behöver också den kartan: ladda ner den eller öppna platsen i din kartapp.</string>
+    <string name="route_outside_off">Platsen ligger utanför ditt län: öppna den i din kartapp.</string>
+    <string name="route_no_state_off">Rutten behöver kartan för ditt län eller land. Ladda ner den en gång (zoner är bara för att visa kartan).</string>
+    <string name="route_no_state_named_off">Du behöver kartan för %1$s för rutten. Ladda ner den en gång (zoner är bara för att visa kartan).</string>
+    <string name="route_no_map_off">Rutten behöver en nedladdad karta, och det finns ingen för ditt område än. Se de tillgängliga och önska din, eller öppna platsen i din kartapp.</string>
+    <string name="route_two_states_off">Platsen ligger i ett annat län. Rutter mellan län kommer senare; öppna den så länge i din kartapp.</string>
     <string name="guide_go">Kör</string>
     <string name="guide_end">Avsluta</string>
     <string name="guide_overview">Visa rutt</string>

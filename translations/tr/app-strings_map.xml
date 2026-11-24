@@ -131,6 +131,14 @@
     <string name="route_no_path">Oraya giden bir yol bulamadık.</string>
     <string name="route_too_big">Bu yolculuk bu ekranın belleği için çok uzun. Daha yakın bir hedef deneyin.</string>
     <string name="route_two_states">Bu yer başka bir ilde. İnternet yokken iller arası rotalar daha sonra gelecek; o zamana kadar harita uygulamanızda açın.</string>
+    <string name="route_online_failed">Çevrimiçi rota oluşturulamadı. Tekrar deneyin veya harita uygulamanızda açın.</string>
+    <string name="route_online_failed_named">Çevrimiçi rota oluşturulamadı. Tekrar deneyin veya %1$s haritasını indirin.</string>
+    <string name="route_other_state_off">Bu yer %1$s içinde. Rota o haritaya da ihtiyaç duyar: indirin veya yeri harita uygulamanızda açın.</string>
+    <string name="route_outside_off">Bu yer ilinizin dışında: harita uygulamanızda açın.</string>
+    <string name="route_no_state_off">Rota, ilinizin veya ülkenizin haritasına ihtiyaç duyar. Bir kez indirin (bölgeler yalnızca haritayı görmek içindir).</string>
+    <string name="route_no_state_named_off">Rota için %1$s haritası gerekir. Bir kez indirin (bölgeler yalnızca haritayı görmek içindir).</string>
+    <string name="route_no_map_off">Rota indirilmiş bir haritaya ihtiyaç duyar ve bölgeniz için henüz yok. Mevcut haritalara bakıp kendinizinkini isteyin veya yeri harita uygulamanızda açın.</string>
+    <string name="route_two_states_off">Bu yer başka bir ilde. İller arası rotalar daha sonra gelecek; o zamana kadar harita uygulamanızda açın.</string>
     <string name="guide_go">Başla</string>
     <string name="guide_end">Bitir</string>
     <string name="guide_overview">Rotayı gör</string>

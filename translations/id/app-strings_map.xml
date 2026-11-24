@@ -131,6 +131,14 @@
     <string name="route_no_path">Tidak ada jalan ke sana yang ditemukan.</string>
     <string name="route_too_big">Perjalanan ini terlalu jauh untuk memori layar ini. Coba tujuan yang lebih dekat.</string>
     <string name="route_two_states">Tempat itu ada di provinsi lain. Tanpa internet, rute antarprovinsi menyusul nanti; sementara itu, buka di aplikasi peta Anda.</string>
+    <string name="route_online_failed">Rute online tidak bisa dibuat. Coba lagi atau buka di aplikasi peta Anda.</string>
+    <string name="route_online_failed_named">Rute online tidak bisa dibuat. Coba lagi atau unduh peta %1$s.</string>
+    <string name="route_other_state_off">Tempat itu ada di %1$s. Rute juga butuh peta itu: unduh atau buka tempatnya di aplikasi peta Anda.</string>
+    <string name="route_outside_off">Tempat itu di luar provinsi Anda: buka di aplikasi peta Anda.</string>
+    <string name="route_no_state_off">Rute butuh peta provinsi atau negara Anda. Unduh sekali (zona hanya untuk melihat peta).</string>
+    <string name="route_no_state_named_off">Anda butuh peta %1$s untuk rute. Unduh sekali (zona hanya untuk melihat peta).</string>
+    <string name="route_no_map_off">Rute butuh peta yang sudah diunduh, dan belum ada untuk daerah Anda. Lihat yang tersedia dan minta peta Anda, atau buka tempatnya di aplikasi peta Anda.</string>
+    <string name="route_two_states_off">Tempat itu ada di provinsi lain. Rute antarprovinsi menyusul nanti; sementara itu, buka di aplikasi peta Anda.</string>
     <string name="guide_go">Mulai</string>
     <string name="guide_end">Akhiri</string>
     <string name="guide_overview">Lihat rute</string>

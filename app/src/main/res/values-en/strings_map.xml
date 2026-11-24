@@ -144,6 +144,14 @@
     <string name="route_no_path">We couldn\'t find a way there by road.</string>
     <string name="route_too_big">This trip is too long for this screen\'s memory. Try a closer destination.</string>
     <string name="route_two_states">That place is in another state. Without internet, routes between states come later; meanwhile, open it in your maps app.</string>
+    <string name="route_online_failed">Couldn\'t plan the route online. Try again or open it in your maps app.</string>
+    <string name="route_online_failed_named">Couldn\'t plan the route online. Try again or download the %1$s map.</string>
+    <string name="route_other_state_off">That place is in %1$s. The route also needs that map: download it or open the place in your maps app.</string>
+    <string name="route_outside_off">That place is outside your state: open it in your maps app.</string>
+    <string name="route_no_state_off">The route needs the map of your state or country. Download it once (zones are only for viewing the map).</string>
+    <string name="route_no_state_named_off">You need the %1$s map for the route. Download it once (zones are only for viewing the map).</string>
+    <string name="route_no_map_off">The route needs a downloaded map, and there isn\'t one for your area yet. See the available ones and request yours, or open the place in your maps app.</string>
+    <string name="route_two_states_off">That place is in another state. Routes between states come later; meanwhile, open it in your maps app.</string>
     <string name="guide_go">Go</string>
     <string name="guide_end">End</string>
     <string name="guide_overview">See route</string>

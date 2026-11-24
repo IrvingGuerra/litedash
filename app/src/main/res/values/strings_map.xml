@@ -145,6 +145,14 @@
     <string name="route_no_path">No encontramos un camino por calles hasta ahí.</string>
     <string name="route_too_big">Este viaje es muy largo para la memoria de esta pantalla. Prueba con un destino más cerca.</string>
     <string name="route_two_states">Ese lugar está en otro estado. Sin internet, las rutas entre estados llegan después; mientras, ábrelo en tu app de mapas.</string>
+    <string name="route_online_failed">No se pudo trazar la ruta en línea. Inténtalo de nuevo o ábrelo en tu app de mapas.</string>
+    <string name="route_online_failed_named">No se pudo trazar la ruta en línea. Inténtalo de nuevo o baja el mapa de %1$s.</string>
+    <string name="route_other_state_off">Ese lugar está en %1$s. La ruta necesita también ese mapa: bájalo o ábrelo en tu app de mapas.</string>
+    <string name="route_outside_off">Ese lugar está fuera de tu estado: ábrelo en tu app de mapas.</string>
+    <string name="route_no_state_off">La ruta necesita el mapa de tu estado o país. Bájalo una vez (las zonas solo sirven para ver el mapa).</string>
+    <string name="route_no_state_named_off">Necesitas el mapa de %1$s para la ruta. Bájalo una vez (las zonas solo sirven para ver el mapa).</string>
+    <string name="route_no_map_off">La ruta necesita un mapa descargado y todavía no hay uno de tu zona. Mira los disponibles y pide el tuyo, o abre el lugar en tu app de mapas.</string>
+    <string name="route_two_states_off">Ese lugar está en otro estado. Las rutas entre estados llegan después; mientras, ábrelo en tu app de mapas.</string>
     <string name="guide_go">Ir</string>
     <string name="guide_end">Terminar</string>
     <string name="guide_overview">Ver ruta</string>

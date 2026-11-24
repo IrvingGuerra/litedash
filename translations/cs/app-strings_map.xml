@@ -131,6 +131,14 @@
     <string name="route_no_path">Nenašli jsme tam cestu po silnici.</string>
     <string name="route_too_big">Tato cesta je na paměť této obrazovky příliš dlouhá. Zkuste bližší cíl.</string>
     <string name="route_two_states">To místo je v jiném kraji. Bez internetu přijdou trasy mezi kraji později; zatím ho otevři v aplikaci s mapami.</string>
+    <string name="route_online_failed">Trasu online se nepodařilo naplánovat. Zkus to znovu, nebo místo otevři v aplikaci s mapami.</string>
+    <string name="route_online_failed_named">Trasu online se nepodařilo naplánovat. Zkus to znovu, nebo stáhni mapu %1$s.</string>
+    <string name="route_other_state_off">To místo je v kraji %1$s. Trasa potřebuje i tuto mapu: stáhni ji, nebo místo otevři v aplikaci s mapami.</string>
+    <string name="route_outside_off">To místo je mimo tvůj kraj: otevři ho v aplikaci s mapami.</string>
+    <string name="route_no_state_off">Trasa potřebuje mapu tvého kraje nebo země. Stáhni ji jednou (zóny slouží jen k prohlížení mapy).</string>
+    <string name="route_no_state_named_off">Pro trasu potřebuješ mapu %1$s. Stáhni ji jednou (zóny slouží jen k prohlížení mapy).</string>
+    <string name="route_no_map_off">Trasa potřebuje staženou mapu a pro tvou oblast zatím žádná není. Podívej se na dostupné a požádej o svou, nebo místo otevři v aplikaci s mapami.</string>
+    <string name="route_two_states_off">To místo je v jiném kraji. Trasy mezi kraji přijdou později; zatím ho otevři v aplikaci s mapami.</string>
     <string name="guide_go">Jet</string>
     <string name="guide_end">Ukončit</string>
     <string name="guide_overview">Zobrazit trasu</string>

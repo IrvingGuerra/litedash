@@ -133,6 +133,14 @@
     <string name="route_no_path">Aucun chemin par la route n\'a été trouvé jusque-là.</string>
     <string name="route_too_big">Ce trajet est trop long pour la mémoire de cet écran. Essayez une destination plus proche.</string>
     <string name="route_two_states">Ce lieu se trouve dans une autre région. Sans Internet, les itinéraires entre régions arriveront plus tard ; en attendant, ouvrez-le dans votre appli de cartes.</string>
+    <string name="route_online_failed">Impossible de calculer l\'itinéraire en ligne. Réessayez ou ouvrez-le dans votre appli de cartes.</string>
+    <string name="route_online_failed_named">Impossible de calculer l\'itinéraire en ligne. Réessayez ou téléchargez la carte de %1$s.</string>
+    <string name="route_other_state_off">Ce lieu se trouve en %1$s. L\'itinéraire a aussi besoin de cette carte : téléchargez-la ou ouvrez le lieu dans votre appli de cartes.</string>
+    <string name="route_outside_off">Ce lieu est hors de votre région : ouvrez-le dans votre appli de cartes.</string>
+    <string name="route_no_state_off">L\'itinéraire a besoin de la carte de votre région ou de votre pays. Téléchargez-la une fois (les zones servent seulement à voir la carte).</string>
+    <string name="route_no_state_named_off">Il vous faut la carte de %1$s pour l\'itinéraire. Téléchargez-la une fois (les zones servent seulement à voir la carte).</string>
+    <string name="route_no_map_off">L\'itinéraire a besoin d\'une carte téléchargée, et il n\'y en a pas encore pour votre zone. Voyez celles disponibles et demandez la vôtre, ou ouvrez le lieu dans votre appli de cartes.</string>
+    <string name="route_two_states_off">Ce lieu se trouve dans une autre région. Les itinéraires entre régions arriveront plus tard ; en attendant, ouvrez-le dans votre appli de cartes.</string>
     <string name="guide_go">Go</string>
     <string name="guide_end">Arrêter</string>
     <string name="guide_overview">Voir l\'itinéraire</string>

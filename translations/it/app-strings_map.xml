@@ -131,6 +131,14 @@
     <string name="route_no_path">Non abbiamo trovato una strada per arrivarci.</string>
     <string name="route_too_big">Questo viaggio è troppo lungo per la memoria di questo schermo. Prova una destinazione più vicina.</string>
     <string name="route_two_states">Quel luogo è in un\'altra regione. Senza internet, i percorsi tra regioni arriveranno più avanti; nel frattempo, aprilo nella tua app di mappe.</string>
+    <string name="route_online_failed">Non è stato possibile calcolare il percorso online. Riprova o aprilo nella tua app di mappe.</string>
+    <string name="route_online_failed_named">Non è stato possibile calcolare il percorso online. Riprova o scarica la mappa di %1$s.</string>
+    <string name="route_other_state_off">Quel luogo è in %1$s. Il percorso ha bisogno anche di quella mappa: scaricala o apri il luogo nella tua app di mappe.</string>
+    <string name="route_outside_off">Quel luogo è fuori dalla tua regione: aprilo nella tua app di mappe.</string>
+    <string name="route_no_state_off">Il percorso ha bisogno della mappa della tua regione o del tuo paese. Scaricala una volta (le zone servono solo a vedere la mappa).</string>
+    <string name="route_no_state_named_off">Per il percorso ti serve la mappa di %1$s. Scaricala una volta (le zone servono solo a vedere la mappa).</string>
+    <string name="route_no_map_off">Il percorso ha bisogno di una mappa scaricata e per la tua zona non ce n\'è ancora una. Guarda quelle disponibili e chiedi la tua, o apri il luogo nella tua app di mappe.</string>
+    <string name="route_two_states_off">Quel luogo è in un\'altra regione. I percorsi tra regioni arriveranno più avanti; nel frattempo, aprilo nella tua app di mappe.</string>
     <string name="guide_go">Vai</string>
     <string name="guide_end">Termina</string>
     <string name="guide_overview">Vedi percorso</string>

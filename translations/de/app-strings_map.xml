@@ -131,6 +131,14 @@
     <string name="route_no_path">Wir haben keinen Weg über Straßen dorthin gefunden.</string>
     <string name="route_too_big">Diese Fahrt ist zu lang für den Speicher dieses Bildschirms. Versuch ein näheres Ziel.</string>
     <string name="route_two_states">Dieser Ort liegt in einem anderen Bundesland. Ohne Internet kommen Routen zwischen Bundesländern später; öffne ihn bis dahin in deiner Karten-App.</string>
+    <string name="route_online_failed">Die Online-Route konnte nicht berechnet werden. Versuch es noch einmal oder öffne den Ort in deiner Karten-App.</string>
+    <string name="route_online_failed_named">Die Online-Route konnte nicht berechnet werden. Versuch es noch einmal oder lade die Karte von %1$s herunter.</string>
+    <string name="route_other_state_off">Dieser Ort liegt in %1$s. Die Route braucht auch diese Karte: Lade sie herunter oder öffne den Ort in deiner Karten-App.</string>
+    <string name="route_outside_off">Dieser Ort liegt außerhalb deines Bundeslands: Öffne ihn in deiner Karten-App.</string>
+    <string name="route_no_state_off">Die Route braucht die Karte deines Bundeslands oder Landes. Lade sie einmal herunter (Zonen dienen nur zum Ansehen der Karte).</string>
+    <string name="route_no_state_named_off">Für die Route brauchst du die Karte von %1$s. Lade sie einmal herunter (Zonen dienen nur zum Ansehen der Karte).</string>
+    <string name="route_no_map_off">Die Route braucht eine heruntergeladene Karte, und für deine Gegend gibt es noch keine. Sieh dir die verfügbaren an und wünsch dir deine, oder öffne den Ort in deiner Karten-App.</string>
+    <string name="route_two_states_off">Dieser Ort liegt in einem anderen Bundesland. Routen zwischen Bundesländern kommen später; öffne ihn bis dahin in deiner Karten-App.</string>
     <string name="guide_go">Los</string>
     <string name="guide_end">Beenden</string>
     <string name="guide_overview">Route ansehen</string>

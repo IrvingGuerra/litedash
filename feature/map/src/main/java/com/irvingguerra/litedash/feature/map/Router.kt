@@ -679,20 +679,20 @@ private class Heap(private val room: Room) {
 
 /** Lo que se puede hacer para ir a un lugar con lo bajado. */
 sealed interface RoutePlan {
-    /** La ruta. */
-    class Found(val route: Route) : RoutePlan
+    /** La ruta; [routesOf] = salió en línea aunque tu estado está bajado: le faltan sus calles (se pueden bajar). */
+    class Found(val route: Route, val routesOf: MapRegion? = null) : RoutePlan
 
     /** Tu estado está bajado pero sin sus calles para la ruta: hay que bajarlas ([MapPacks.downloadRoutes]). */
     class NeedsRoutes(val region: MapRegion) : RoutePlan
 
-    /** Tu estado y el del destino están bajados, pero las rutas entre estados aún no. */
-    data object TwoStates : RoutePlan
+    /** Tu estado y el del destino están bajados, pero las rutas entre estados aún no. [online] = por qué no salió en línea. */
+    class TwoStates(val online: OnlineMiss? = null) : RoutePlan
 
     /** El destino está en otro estado ([region], si se sabe cuál) que no está bajado. */
-    class OtherState(val region: MapRegion?) : RoutePlan
+    class OtherState(val region: MapRegion?, val online: OnlineMiss? = null) : RoutePlan
 
     /** No estás en un estado bajado: el que hay que bajar ([region]; null = aún no hay mapa de ahí, o no se sabe). */
-    class NoState(val region: MapRegion?) : RoutePlan
+    class NoState(val region: MapRegion?, val online: OnlineMiss? = null) : RoutePlan
 
     /** Aún se carga la lista de estados del país (índice por país); al llegar se vuelve a planear. */
     data object Loading : RoutePlan
@@ -701,9 +701,29 @@ sealed interface RoutePlan {
     class Failed(val error: RouteError) : RoutePlan
 }
 
+/** Por qué no hubo ruta en línea donde falta el mapa: sin internet, el servidor falló (o contestó algo raro) o está apagada. */
+enum class OnlineMiss { NO_NET, FAILED, OFF }
+
 /** ¿Falta un mapa (tu estado, el del destino o la ruta entre estados)? Ahí sirve la ruta en línea si hay internet. */
 val RoutePlan.missingMap: Boolean
-    get() = this is RoutePlan.NoState || this is RoutePlan.OtherState || this is RoutePlan.TwoStates || this is RoutePlan.Loading
+    get() = this is RoutePlan.NoState || this is RoutePlan.OtherState || this is RoutePlan.TwoStates
+
+/** Por qué no salió en línea (null = no tocaba o no se sabe). */
+val RoutePlan.onlineMiss: OnlineMiss?
+    get() = when (this) {
+        is RoutePlan.NoState -> online
+        is RoutePlan.OtherState -> online
+        is RoutePlan.TwoStates -> online
+        else -> null
+    }
+
+/** El mismo plan diciendo por qué no salió en línea ([miss]); los que no son de mapa faltante quedan igual. */
+internal fun RoutePlan.missed(miss: OnlineMiss): RoutePlan = when (this) {
+    is RoutePlan.NoState -> RoutePlan.NoState(region, miss)
+    is RoutePlan.OtherState -> RoutePlan.OtherState(region, miss)
+    is RoutePlan.TwoStates -> RoutePlan.TwoStates(miss)
+    else -> this
+}
 
 /** Qué tipo de vuelta es (la flecha y el texto salen de aquí). */
 enum class ManeuverType { DEPART, STRAIGHT, SLIGHT_LEFT, LEFT, SHARP_LEFT, SLIGHT_RIGHT, RIGHT, SHARP_RIGHT, UTURN, ROUNDABOUT, ARRIVE }

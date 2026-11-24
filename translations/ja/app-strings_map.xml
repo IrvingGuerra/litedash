@@ -131,6 +131,14 @@
     <string name="route_no_path">そこまで道路で行けるルートが見つかりませんでした。</string>
     <string name="route_too_big">この画面のメモリでは長すぎるルートです。もっと近い目的地でお試しください。</string>
     <string name="route_two_states">その場所は別の都道府県にあります。インターネットなしでの都道府県をまたぐルートは今後対応予定です。それまでは地図アプリで開いてください。</string>
+    <string name="route_online_failed">オンラインでルートを作れませんでした。もう一度試すか、地図アプリで開いてください。</string>
+    <string name="route_online_failed_named">オンラインでルートを作れませんでした。もう一度試すか、%1$s の地図をダウンロードしてください。</string>
+    <string name="route_other_state_off">その場所は %1$s にあります。ルートにはその地図も必要です。ダウンロードするか、地図アプリで開いてください。</string>
+    <string name="route_outside_off">その場所はお住まいの都道府県の外です。地図アプリで開いてください。</string>
+    <string name="route_no_state_off">ルートにはお住まいの都道府県または国の地図が必要です。一度ダウンロードしてください（ゾーンは地図を見るためだけのものです）。</string>
+    <string name="route_no_state_named_off">ルートには %1$s の地図が必要です。一度ダウンロードしてください（ゾーンは地図を見るためだけのものです）。</string>
+    <string name="route_no_map_off">ルートにはダウンロードした地図が必要ですが、この地域の地図はまだありません。利用できる地図を見てリクエストするか、地図アプリで開いてください。</string>
+    <string name="route_two_states_off">その場所は別の都道府県にあります。都道府県をまたぐルートは今後対応予定です。それまでは地図アプリで開いてください。</string>
     <string name="guide_go">開始</string>
     <string name="guide_end">終了</string>
     <string name="guide_overview">ルート全体</string>

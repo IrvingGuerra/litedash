@@ -42,6 +42,8 @@ import com.irvingguerra.litedash.core.ui.Typography
 import com.irvingguerra.litedash.feature.map.FIT_MAX_ZOOM
 import com.irvingguerra.litedash.feature.map.IndexState
 import com.irvingguerra.litedash.feature.map.MapPacks
+import com.irvingguerra.litedash.feature.map.MapRegion
+import com.irvingguerra.litedash.feature.map.OnlineMiss
 import com.irvingguerra.litedash.feature.map.PackError
 import com.irvingguerra.litedash.feature.map.Route
 import com.irvingguerra.litedash.feature.map.RouteError
@@ -50,6 +52,7 @@ import com.irvingguerra.litedash.feature.map.SearchHit
 import com.irvingguerra.litedash.feature.map.FIT_MIN_ZOOM
 import com.irvingguerra.litedash.feature.map.tilePx
 import com.irvingguerra.litedash.feature.map.tileX
+import com.irvingguerra.litedash.feature.map.onlineMiss
 import com.irvingguerra.litedash.feature.map.tileY
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -226,18 +229,34 @@ internal fun RouteCard(
                         }
                     }
                     plan is RoutePlan.OtherState -> Message(
-                        plan.region?.let { stringResource(R.string.route_other_state, it.name(currentLocale().language)) }
-                            ?: stringResource(R.string.route_outside),
+                        when {
+                            plan.online == OnlineMiss.FAILED -> onlineFailed(plan.region)
+                            plan.region != null -> stringResource(
+                                if (plan.online == OnlineMiss.OFF) R.string.route_other_state_off else R.string.route_other_state,
+                                plan.region!!.name(currentLocale().language),
+                            )
+                            else -> stringResource(if (plan.online == OnlineMiss.OFF) R.string.route_outside_off else R.string.route_outside)
+                        },
                     )
                     plan is RoutePlan.NoState -> Message(
                         when {
-                            plan.region != null -> stringResource(R.string.route_no_state_named, plan.region!!.name(currentLocale().language))
+                            plan.online == OnlineMiss.FAILED -> onlineFailed(plan.region)
+                            plan.region != null -> stringResource(
+                                if (plan.online == OnlineMiss.OFF) R.string.route_no_state_named_off else R.string.route_no_state_named,
+                                plan.region!!.name(currentLocale().language),
+                            )
                             // Sin la lista de estados (sin red al abrir) no se sabe si hay mapa de ahí.
-                            packs.catalog.isEmpty() -> stringResource(R.string.route_no_state)
-                            else -> stringResource(R.string.route_no_map)
+                            packs.catalog.isEmpty() -> stringResource(if (plan.online == OnlineMiss.OFF) R.string.route_no_state_off else R.string.route_no_state)
+                            else -> stringResource(if (plan.online == OnlineMiss.OFF) R.string.route_no_map_off else R.string.route_no_map)
                         },
                     )
-                    plan is RoutePlan.TwoStates -> Message(stringResource(R.string.route_two_states))
+                    plan is RoutePlan.TwoStates -> Message(
+                        when (plan.online) {
+                            OnlineMiss.FAILED -> onlineFailed(null)
+                            OnlineMiss.OFF -> stringResource(R.string.route_two_states_off)
+                            else -> stringResource(R.string.route_two_states)
+                        },
+                    )
                     plan is RoutePlan.Failed -> Message(
                         stringResource(
                             when (plan.error) {
@@ -259,6 +278,13 @@ internal fun RouteCard(
                 if (job == null || job.failed) Button(stringResource(R.string.route_download), { packs.downloadRoutes(plan.region) }, primary = true)
             }
             if (plan is RoutePlan.Found) Button(stringResource(R.string.guide_go), { Driving.session = DriveSession(request.to, plan.route) }, primary = true)
+            // En línea aunque tu estado está bajado: sus calles, para la próxima sin internet.
+            if (plan is RoutePlan.Found && plan.routesOf != null && packs.routesJob?.takeIf { it.id == plan.routesOf!!.id && !it.failed } == null) {
+                Button(stringResource(R.string.route_download), { packs.downloadRoutes(plan.routesOf!!) })
+            }
+            // El servidor falló: otra vez (también sirve al volver la red).
+            val failed = plan?.onlineMiss == OnlineMiss.FAILED
+            if (failed) Button(stringResource(R.string.retry), { request.again() }, primary = true)
             // Falta un estado que sí existe (o no se sabe): un atajo a donde se baja.
             val getMap = when {
                 listLoading -> false
@@ -266,13 +292,13 @@ internal fun RouteCard(
                 plan is RoutePlan.OtherState -> plan.region != null
                 else -> false
             }
-            if (getMap) Button(stringResource(R.string.route_get_map), onOffline, primary = true)
+            if (getMap) Button(stringResource(R.string.route_get_map), onOffline, primary = !failed)
             // Sin mapa de ahí todavía: a la lista de los que hay (ahí mismo se pide el de tu país).
             val noMap = plan is RoutePlan.NoState && !getMap && !listLoading
-            if (noMap) Button(stringResource(R.string.route_see_maps), onOffline, primary = true)
+            if (noMap) Button(stringResource(R.string.route_see_maps), onOffline, primary = !failed)
             // Sin «Navegar con: App de mapas» ([appName] null), otra app solo como salida cuando LiteDash no pudo trazar la ruta.
             if (appName != null || (plan != null && plan !is RoutePlan.Found)) {
-                Button(openLabel, onOpen, primary = plan !is RoutePlan.NeedsRoutes && plan !is RoutePlan.Found && !getMap && !noMap)
+                Button(openLabel, onOpen, primary = plan !is RoutePlan.NeedsRoutes && plan !is RoutePlan.Found && !getMap && !noMap && !failed)
             }
         }
     }
@@ -280,6 +306,11 @@ internal fun RouteCard(
 
 @Composable
 private fun Message(text: String) = Label(text, Typography.body, LocalColors.current.text, maxLines = 4)
+
+/** La ruta en línea falló (el servidor no contestó o contestó algo raro): reintentar o, si se sabe cuál, bajar el mapa de [region]. */
+@Composable
+private fun onlineFailed(region: MapRegion?): String =
+    region?.let { stringResource(R.string.route_online_failed_named, it.name(currentLocale().language)) } ?: stringResource(R.string.route_online_failed)
 
 /** "26 km · 30 min" grande; abajo "Llegas a las 14:35 · por Paseo Tollocan · sin contar el tráfico". */
 @Composable

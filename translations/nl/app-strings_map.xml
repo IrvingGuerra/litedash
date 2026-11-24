@@ -131,6 +131,14 @@
     <string name="route_no_path">We vonden geen weg daarheen over de straat.</string>
     <string name="route_too_big">Deze rit is te lang voor het geheugen van dit scherm. Probeer een dichterbij gelegen bestemming.</string>
     <string name="route_two_states">Die plek ligt in een andere provincie. Zonder internet komen routes tussen provincies later; open hem tot dan in je kaarten-app.</string>
+    <string name="route_online_failed">De online route kon niet worden berekend. Probeer het opnieuw of open de plek in je kaarten-app.</string>
+    <string name="route_online_failed_named">De online route kon niet worden berekend. Probeer het opnieuw of download de kaart van %1$s.</string>
+    <string name="route_other_state_off">Die plek ligt in %1$s. De route heeft ook die kaart nodig: download hem of open de plek in je kaarten-app.</string>
+    <string name="route_outside_off">Die plek ligt buiten je provincie: open hem in je kaarten-app.</string>
+    <string name="route_no_state_off">De route heeft de kaart van je provincie of land nodig. Download hem één keer (zones zijn alleen om de kaart te bekijken).</string>
+    <string name="route_no_state_named_off">Voor de route heb je de kaart van %1$s nodig. Download hem één keer (zones zijn alleen om de kaart te bekijken).</string>
+    <string name="route_no_map_off">De route heeft een gedownloade kaart nodig, en voor jouw gebied is er nog geen. Bekijk de beschikbare en vraag de jouwe aan, of open de plek in je kaarten-app.</string>
+    <string name="route_two_states_off">Die plek ligt in een andere provincie. Routes tussen provincies komen later; open hem tot dan in je kaarten-app.</string>
     <string name="guide_go">Start</string>
     <string name="guide_end">Stoppen</string>
     <string name="guide_overview">Route bekijken</string>

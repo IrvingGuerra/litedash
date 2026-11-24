@@ -131,6 +131,14 @@
     <string name="route_no_path">Không tìm thấy đường đi đến đó.</string>
     <string name="route_too_big">Chuyến đi này quá dài so với bộ nhớ của màn hình này. Hãy thử điểm đến gần hơn.</string>
     <string name="route_two_states">Nơi đó thuộc tỉnh khác. Khi không có internet, lộ trình giữa các tỉnh sẽ có sau; trong lúc chờ, hãy mở trong ứng dụng bản đồ của bạn.</string>
+    <string name="route_online_failed">Không thể tìm lộ trình trực tuyến. Hãy thử lại hoặc mở trong ứng dụng bản đồ của bạn.</string>
+    <string name="route_online_failed_named">Không thể tìm lộ trình trực tuyến. Hãy thử lại hoặc tải bản đồ %1$s về.</string>
+    <string name="route_other_state_off">Nơi đó thuộc %1$s. Lộ trình cũng cần bản đồ đó: hãy tải về hoặc mở nơi đó trong ứng dụng bản đồ của bạn.</string>
+    <string name="route_outside_off">Nơi đó nằm ngoài tỉnh của bạn: hãy mở trong ứng dụng bản đồ của bạn.</string>
+    <string name="route_no_state_off">Lộ trình cần bản đồ tỉnh hoặc quốc gia của bạn. Hãy tải về một lần (vùng chỉ để xem bản đồ).</string>
+    <string name="route_no_state_named_off">Bạn cần bản đồ %1$s để tìm lộ trình. Hãy tải về một lần (vùng chỉ để xem bản đồ).</string>
+    <string name="route_no_map_off">Lộ trình cần bản đồ đã tải về, và khu vực của bạn chưa có. Xem các bản đồ có sẵn và yêu cầu bản đồ của bạn, hoặc mở nơi đó trong ứng dụng bản đồ của bạn.</string>
+    <string name="route_two_states_off">Nơi đó thuộc tỉnh khác. Lộ trình giữa các tỉnh sẽ có sau; trong lúc chờ, hãy mở trong ứng dụng bản đồ của bạn.</string>
     <string name="guide_go">Đi</string>
     <string name="guide_end">Kết thúc</string>
     <string name="guide_overview">Xem lộ trình</string>

@@ -131,6 +131,14 @@
     <string name="route_no_path">找不到通往那里的道路。</string>
     <string name="route_too_big">这段行程对这块屏幕的内存来说太长了。请换一个更近的目的地。</string>
     <string name="route_two_states">该地点在另一个省份。没有网络时，跨省路线以后会支持；在此之前，请在你的地图应用中打开。</string>
+    <string name="route_online_failed">无法在线规划路线。请重试，或在你的地图应用中打开。</string>
+    <string name="route_online_failed_named">无法在线规划路线。请重试，或下载 %1$s 的地图。</string>
+    <string name="route_other_state_off">该地点在 %1$s。路线也需要那里的地图：请下载，或在你的地图应用中打开。</string>
+    <string name="route_outside_off">该地点在你所在省份之外：请在你的地图应用中打开。</string>
+    <string name="route_no_state_off">路线需要你所在省份或国家的地图。下载一次即可（区域仅用于查看地图）。</string>
+    <string name="route_no_state_named_off">规划路线需要 %1$s 的地图。下载一次即可（区域仅用于查看地图）。</string>
+    <string name="route_no_map_off">路线需要已下载的地图，而你所在地区还没有。查看可用的地图并申请你的，或在你的地图应用中打开该地点。</string>
+    <string name="route_two_states_off">该地点在另一个省份。跨省路线以后会支持；在此之前，请在你的地图应用中打开。</string>
     <string name="guide_go">出发</string>
     <string name="guide_end">结束</string>
     <string name="guide_overview">查看路线</string>

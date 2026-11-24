@@ -70,9 +70,10 @@ import com.irvingguerra.litedash.feature.map.MapLook
 import com.irvingguerra.litedash.feature.map.MapOrientation
 import com.irvingguerra.litedash.feature.map.MapPacks
 import com.irvingguerra.litedash.feature.map.MapZoom
+import com.irvingguerra.litedash.feature.map.OnlineMiss
 import com.irvingguerra.litedash.feature.map.OnlineRoute
 import com.irvingguerra.litedash.feature.map.PackError
-import com.irvingguerra.litedash.feature.map.missingMap
+import com.irvingguerra.litedash.feature.map.onlineMiss
 import com.irvingguerra.litedash.feature.map.markerWidthDp
 import com.irvingguerra.litedash.feature.map.Route
 import com.irvingguerra.litedash.feature.map.RoutePlan
@@ -188,7 +189,7 @@ internal fun DrivingScreen(d: Dependencies, session: DriveSession, revision: Int
                     // Lejos de la calle (estacionamiento, GPS malo) sale la misma ruta: no se cambia (la tarjeta no parpadea).
                     val next = (plan as? RoutePlan.Found)?.route?.takeUnless { it.sameAs(session.route) }
                     // Sin mapa de ahí y sin internet: se sigue la flecha y se vuelve a probar (al volver la red, recalcula).
-                    session.noInternet = plan.missingMap && !OnlineRoute.hasInternet(context)
+                    session.noInternet = plan.onlineMiss == OnlineMiss.NO_NET
                     if (next != null) {
                         session.replace(next)
                         // La ruta nueva sale de donde estabas: se te pone en ella ya, sin esperar la siguiente lectura (la
@@ -264,7 +265,7 @@ private fun CarView(d: Dependencies, session: DriveSession, modifier: Modifier) 
             position == null || installed.any { it.contains(position.latitude, position.longitude) }
         }
         if (!covered) {
-            GetMapCard(packs, position!!.latitude, position.longitude, Modifier.align(Alignment.Center).padding(24.dp).widthIn(max = 420.dp))
+            GetMapCard(packs, position!!.latitude, position.longitude, cellLat, cellLon, Modifier.align(Alignment.Center).padding(24.dp).widthIn(max = 420.dp))
         } else if (position != null) {
             // Sobre la ruta, tu auto va en ella y mirando hacia donde sigue (como Waze); fuera, como diga el GPS.
             val onRoute = s != null && !s.offRoute
@@ -287,13 +288,17 @@ private fun CarView(d: Dependencies, session: DriveSession, modifier: Modifier) 
 
 /**
  * En lugar de tu auto, sin mapa bajado donde vas: «Para ver tu auto y los carriles, baja el mapa de <estado> (<tamaño>)»
- * con Bajar y su avance (la guía sigue mientras baja). Sin mapa de esa zona en la lista, solo el texto.
+ * con Bajar y su avance (la guía sigue mientras baja). Sin mapa de esa zona en la lista, solo el texto. El estado se
+ * busca por cuadras de ~100 m ([cellLat], [cellLon]), no con cada lectura del GPS.
  */
 @Composable
-private fun GetMapCard(packs: MapPacks, lat: Double, lon: Double, modifier: Modifier) {
+private fun GetMapCard(packs: MapPacks, lat: Double, lon: Double, cellLat: Long?, cellLon: Long?, modifier: Modifier) {
     val c = LocalColors.current
     val context = LocalContext.current
-    val region = packs.regionAt(lat, lon)
+    val regions = packs.regions
+    val region = remember(regions, cellLat, cellLon) { regions.firstOrNull { it.contains(lat, lon) } }
+    // Si tu país aún no se carga, se pide (fuera del dibujo); al llegar cambia [MapPacks.regions].
+    LaunchedEffect(cellLat, cellLon, region == null) { if (region == null) packs.regionAt(lat, lon) }
     Column(
         modifier.clip(RoundedCornerShape(Radius.card)).background(c.surface.copy(alpha = 0.97f)).padding(20.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp),

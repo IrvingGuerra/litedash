@@ -131,6 +131,14 @@
     <string name="route_no_path">वहाँ तक सड़क से कोई रास्ता नहीं मिला।</string>
     <string name="route_too_big">यह यात्रा इस स्क्रीन की मेमोरी के लिए बहुत लंबी है। कोई नज़दीकी मंज़िल आज़माएँ।</string>
     <string name="route_two_states">यह जगह दूसरे राज्य में है। बिना इंटरनेट के राज्यों के बीच के रास्ते बाद में आएँगे; तब तक इसे अपने मैप ऐप में खोलें।</string>
+    <string name="route_online_failed">ऑनलाइन रास्ता नहीं बन सका। फिर कोशिश करें या इसे अपने मैप ऐप में खोलें।</string>
+    <string name="route_online_failed_named">ऑनलाइन रास्ता नहीं बन सका। फिर कोशिश करें या %1$s का मैप डाउनलोड करें।</string>
+    <string name="route_other_state_off">यह जगह %1$s में है। रास्ते को वह मैप भी चाहिए: उसे डाउनलोड करें या जगह को अपने मैप ऐप में खोलें।</string>
+    <string name="route_outside_off">यह जगह आपके राज्य से बाहर है: इसे अपने मैप ऐप में खोलें।</string>
+    <string name="route_no_state_off">रास्ते को आपके राज्य या देश का मैप चाहिए। इसे एक बार डाउनलोड करें (ज़ोन सिर्फ़ मैप देखने के लिए हैं)।</string>
+    <string name="route_no_state_named_off">रास्ते के लिए आपको %1$s का मैप चाहिए। इसे एक बार डाउनलोड करें (ज़ोन सिर्फ़ मैप देखने के लिए हैं)।</string>
+    <string name="route_no_map_off">रास्ते को डाउनलोड किया हुआ मैप चाहिए, और आपके इलाके का मैप अभी नहीं है। उपलब्ध मैप देखें और अपना माँगें, या जगह को अपने मैप ऐप में खोलें।</string>
+    <string name="route_two_states_off">यह जगह दूसरे राज्य में है। राज्यों के बीच के रास्ते बाद में आएँगे; तब तक इसे अपने मैप ऐप में खोलें।</string>
     <string name="guide_go">चलें</string>
     <string name="guide_end">समाप्त करें</string>
     <string name="guide_overview">रास्ता देखें</string>

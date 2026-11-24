@@ -131,6 +131,14 @@
     <string name="route_no_path">Nem találtunk oda vezető utat.</string>
     <string name="route_too_big">Ez az út túl hosszú a kijelző memóriájához. Próbálj közelebbi célt.</string>
     <string name="route_two_states">Ez a hely másik megyében van. Internet nélkül a megyék közötti útvonalak később jönnek; addig nyisd meg a térképalkalmazásodban.</string>
+    <string name="route_online_failed">Nem sikerült online útvonalat tervezni. Próbáld újra, vagy nyisd meg a térképalkalmazásodban.</string>
+    <string name="route_online_failed_named">Nem sikerült online útvonalat tervezni. Próbáld újra, vagy töltsd le %1$s térképét.</string>
+    <string name="route_other_state_off">Ez a hely itt van: %1$s. Az útvonalhoz az a térkép is kell: töltsd le, vagy nyisd meg a helyet a térképalkalmazásodban.</string>
+    <string name="route_outside_off">Ez a hely a megyéden kívül van: nyisd meg a térképalkalmazásodban.</string>
+    <string name="route_no_state_off">Az útvonalhoz a megyéd vagy az országod térképe kell. Töltsd le egyszer (a zónák csak a térkép megtekintésére valók).</string>
+    <string name="route_no_state_named_off">Az útvonalhoz %1$s térképe kell. Töltsd le egyszer (a zónák csak a térkép megtekintésére valók).</string>
+    <string name="route_no_map_off">Az útvonalhoz letöltött térkép kell, és a környékedről még nincs. Nézd meg az elérhetőket és kérd a sajátodat, vagy nyisd meg a helyet a térképalkalmazásodban.</string>
+    <string name="route_two_states_off">Ez a hely másik megyében van. A megyék közötti útvonalak később jönnek; addig nyisd meg a térképalkalmazásodban.</string>
     <string name="guide_go">Indulás</string>
     <string name="guide_end">Befejezés</string>
     <string name="guide_overview">Útvonal megtekintése</string>

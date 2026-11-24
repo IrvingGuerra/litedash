@@ -133,6 +133,14 @@
     <string name="route_no_path">Não encontramos um caminho por ruas até lá.</string>
     <string name="route_too_big">Esta viagem é longa demais para a memória desta tela. Tente um destino mais perto.</string>
     <string name="route_two_states">Esse lugar fica em outro estado. Sem internet, as rotas entre estados chegam depois; enquanto isso, abra no seu app de mapas.</string>
+    <string name="route_online_failed">Não foi possível traçar a rota online. Tente de novo ou abra no seu app de mapas.</string>
+    <string name="route_online_failed_named">Não foi possível traçar a rota online. Tente de novo ou baixe o mapa de %1$s.</string>
+    <string name="route_other_state_off">Esse lugar fica em %1$s. A rota também precisa desse mapa: baixe-o ou abra o lugar no seu app de mapas.</string>
+    <string name="route_outside_off">Esse lugar fica fora do seu estado: abra no seu app de mapas.</string>
+    <string name="route_no_state_off">A rota precisa do mapa do seu estado ou país. Baixe uma vez (as zonas servem só para ver o mapa).</string>
+    <string name="route_no_state_named_off">Você precisa do mapa de %1$s para a rota. Baixe uma vez (as zonas servem só para ver o mapa).</string>
+    <string name="route_no_map_off">A rota precisa de um mapa baixado, e ainda não há um da sua região. Veja os disponíveis e peça o seu, ou abra o lugar no seu app de mapas.</string>
+    <string name="route_two_states_off">Esse lugar fica em outro estado. As rotas entre estados chegam depois; enquanto isso, abra no seu app de mapas.</string>
     <string name="guide_go">Ir</string>
     <string name="guide_end">Encerrar</string>
     <string name="guide_overview">Ver rota</string>

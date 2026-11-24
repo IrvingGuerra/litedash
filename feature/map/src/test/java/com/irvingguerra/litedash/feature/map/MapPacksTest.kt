@@ -214,4 +214,23 @@ class MapPacksTest {
         assertEquals("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", MapPacks.sha256Of(ByteArray(0)))
         assertEquals("ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad", MapPacks.sha256Of("abc".toByteArray()))
     }
+
+    @Test
+    fun anyIndexCanTurnOnlineOff() {
+        val s = OnlineSwitches()
+        assertTrue(s.search && s.routing)
+        // El índice por país apaga la ruta; luego llega `regions.json` con todo prendido: sigue apagada.
+        s.set(OnlineSwitches.COUNTRIES, photon = true, osrm = false)
+        s.set(OnlineSwitches.REGIONS, photon = true, osrm = true)
+        assertTrue(s.search)
+        assertFalse(s.routing)
+        // Al revés también, y con la búsqueda.
+        s.set(OnlineSwitches.COUNTRIES, photon = true, osrm = true)
+        s.set(OnlineSwitches.REGIONS, photon = false, osrm = false)
+        assertFalse(s.search)
+        assertFalse(s.routing)
+        // Los dos lo vuelven a prender.
+        s.set(OnlineSwitches.REGIONS, photon = true, osrm = true)
+        assertTrue(s.search && s.routing)
+    }
 }

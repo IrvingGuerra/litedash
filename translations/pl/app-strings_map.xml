@@ -131,6 +131,14 @@
     <string name="route_no_path">Nie znaleźliśmy tam drogi.</string>
     <string name="route_too_big">Ta trasa jest za długa dla pamięci tego ekranu. Spróbuj bliższego celu.</string>
     <string name="route_two_states">To miejsce jest w innym województwie. Bez internetu trasy między województwami pojawią się później; do tego czasu otwórz je w aplikacji z mapami.</string>
+    <string name="route_online_failed">Nie udało się wyznaczyć trasy online. Spróbuj ponownie albo otwórz miejsce w aplikacji z mapami.</string>
+    <string name="route_online_failed_named">Nie udało się wyznaczyć trasy online. Spróbuj ponownie albo pobierz mapę: %1$s.</string>
+    <string name="route_other_state_off">To miejsce jest w: %1$s. Trasa potrzebuje też tej mapy: pobierz ją albo otwórz miejsce w aplikacji z mapami.</string>
+    <string name="route_outside_off">To miejsce jest poza Twoim województwem: otwórz je w aplikacji z mapami.</string>
+    <string name="route_no_state_off">Trasa potrzebuje mapy Twojego województwa lub kraju. Pobierz ją raz (strefy służą tylko do oglądania mapy).</string>
+    <string name="route_no_state_named_off">Do trasy potrzebujesz mapy: %1$s. Pobierz ją raz (strefy służą tylko do oglądania mapy).</string>
+    <string name="route_no_map_off">Trasa potrzebuje pobranej mapy, a dla Twojej okolicy jeszcze jej nie ma. Zobacz dostępne i poproś o swoją albo otwórz miejsce w aplikacji z mapami.</string>
+    <string name="route_two_states_off">To miejsce jest w innym województwie. Trasy między województwami pojawią się później; do tego czasu otwórz je w aplikacji z mapami.</string>
     <string name="guide_go">Start</string>
     <string name="guide_end">Zakończ</string>
     <string name="guide_overview">Pokaż trasę</string>

@@ -131,6 +131,14 @@
     <string name="route_no_path">Nu am găsit un drum până acolo.</string>
     <string name="route_too_big">Această călătorie e prea lungă pentru memoria acestui ecran. Încearcă o destinație mai apropiată.</string>
     <string name="route_two_states">Locul acela e în alt județ. Fără internet, traseele între județe vin mai târziu; până atunci, deschide-l în aplicația ta de hărți.</string>
+    <string name="route_online_failed">Traseul online nu a putut fi calculat. Încearcă din nou sau deschide locul în aplicația ta de hărți.</string>
+    <string name="route_online_failed_named">Traseul online nu a putut fi calculat. Încearcă din nou sau descarcă harta %1$s.</string>
+    <string name="route_other_state_off">Locul acela e în %1$s. Traseul are nevoie și de acea hartă: descarc-o sau deschide locul în aplicația ta de hărți.</string>
+    <string name="route_outside_off">Locul acela e în afara județului tău: deschide-l în aplicația ta de hărți.</string>
+    <string name="route_no_state_off">Traseul are nevoie de harta județului sau țării tale. Descarc-o o dată (zonele servesc doar la vizualizarea hărții).</string>
+    <string name="route_no_state_named_off">Pentru traseu ai nevoie de harta %1$s. Descarc-o o dată (zonele servesc doar la vizualizarea hărții).</string>
+    <string name="route_no_map_off">Traseul are nevoie de o hartă descărcată și încă nu există una pentru zona ta. Vezi hărțile disponibile și cere-o pe a ta, sau deschide locul în aplicația ta de hărți.</string>
+    <string name="route_two_states_off">Locul acela e în alt județ. Traseele între județe vin mai târziu; până atunci, deschide-l în aplicația ta de hărți.</string>
     <string name="guide_go">Pornește</string>
     <string name="guide_end">Încheie</string>
     <string name="guide_overview">Vezi traseul</string>

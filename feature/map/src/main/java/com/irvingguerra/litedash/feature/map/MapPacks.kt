@@ -201,6 +201,9 @@ class MapPacks private constructor(private val app: Context) {
     @Volatile var onlineRouting = true
         private set
 
+    /** Lo que permite cada índice (por país y `regions.json`): basta que uno apague algo. */
+    private val switches = OnlineSwitches()
+
     /** Los índices de búsqueda abiertos, uno por estado (con su candado, solo para abrir o cambiar uno: es corto). */
     private val indexes = HashMap<String, SearchIndex>()
     private val searchLock = Any()
@@ -439,8 +442,7 @@ class MapPacks private constructor(private val app: Context) {
      */
     private fun useCountries(index: CountryIndex, network: Boolean) {
         countries = index.countries
-        onlineSearch = index.photon
-        onlineRouting = index.osrm
+        useSwitches(OnlineSwitches.COUNTRIES, index.photon, index.osrm)
         synchronized(countryLock) {
             // Un país que ya no está en el índice se suelta.
             val codes = index.countries.map { it.code }.toSet()
@@ -495,10 +497,18 @@ class MapPacks private constructor(private val app: Context) {
      * mapas bajados que aún no traen su búsqueda (o la traen vieja), se la baja sola.
      */
     private fun useIndex(index: PackIndex) {
-        onlineSearch = index.photon
-        onlineRouting = index.osrm
+        useSwitches(OnlineSwitches.REGIONS, index.photon, index.osrm)
         catalog = index.regions
         useRegions(index.regions)
+    }
+
+    /** Lo que dice el índice [source] de la búsqueda y la ruta en línea, junto con lo que dijo el otro. */
+    private fun useSwitches(source: Int, photon: Boolean, osrm: Boolean) {
+        synchronized(switches) {
+            switches.set(source, photon, osrm)
+            onlineSearch = switches.search
+            onlineRouting = switches.routing
+        }
     }
 
     /** Las regiones con todos sus datos en [regions], y lo que sale de ellas para los mapas bajados. */
@@ -865,8 +875,26 @@ class MapPacks private constructor(private val app: Context) {
      */
     fun planRoute(fromLat: Double, fromLon: Double, toLat: Double, toLon: Double, headingDeg: Float? = null): RoutePlan {
         val local = planLocal(fromLat, fromLon, toLat, toLon, headingDeg)
-        if (!local.missingMap || !onlineRouting) return local
-        return OnlineRoute.route(app, fromLat, fromLon, toLat, toLon, headingDeg)?.let { RoutePlan.Found(it.rounded()) } ?: local
+        // Mientras carga la lista de estados se espera (al llegar se vuelve a planear): quizá sí está bajado.
+        val needsRoutes = local is RoutePlan.NeedsRoutes
+        if (!local.missingMap && !needsRoutes) return local
+        if (!onlineRouting) return local.missed(OnlineMiss.OFF)
+        if (!OnlineRoute.hasInternet(app)) return local.missed(OnlineMiss.NO_NET)
+        // Con poca memoria un viaje muy largo en línea no cabe (la respuesta, sus puntos y la curva): ni se pide.
+        if (Runtime.getRuntime().maxMemory() < ONLINE_SMALL_HEAP && distanceKm(fromLat, fromLon, toLat, toLon) > ONLINE_SMALL_HEAP_KM) {
+            return if (needsRoutes) local else RoutePlan.Failed(RouteError.TOO_BIG)
+        }
+        return try {
+            OnlineRoute.route(app, fromLat, fromLon, toLat, toLon, headingDeg)
+                ?.let { RoutePlan.Found(it.rounded(), (local as? RoutePlan.NeedsRoutes)?.region) }
+                ?: local.missed(OnlineMiss.FAILED)
+        } catch (_: OutOfMemoryError) {
+            // Una respuesta enorme: sin tumbar la app, lo de la pantalla.
+            OnlineRoute.clearCache()
+            local.missed(OnlineMiss.FAILED)
+        } catch (_: Exception) {
+            local.missed(OnlineMiss.FAILED)
+        }
     }
 
     /** La ruta con lo bajado (ver [planRoute]). */
@@ -893,7 +921,7 @@ class MapPacks private constructor(private val app: Context) {
                 installed.none { it.contains(fromLat, fromLon) } ->
                     regionAt(fromLat, fromLon)?.let { RoutePlan.NoState(it) } ?: waitOr(fromLat, fromLon) { RoutePlan.NoState(null) }
                 // Los dos estados bajados: lo que falta es la ruta entre estados (llega con los viajes largos).
-                installed.any { it.contains(toLat, toLon) } -> RoutePlan.TwoStates
+                installed.any { it.contains(toLat, toLon) } -> RoutePlan.TwoStates()
                 else -> regionAt(toLat, toLon)?.let { RoutePlan.OtherState(it) } ?: waitOr(toLat, toLon) { RoutePlan.OtherState(null) }
             }.also {
                 // Sin la lista no se sabe qué estado falta: se pide (al llegar, la ruta se vuelve a planear).
@@ -1071,6 +1099,10 @@ class MapPacks private constructor(private val app: Context) {
         /** En Ajustes → Sin conexión la lista se pide si tiene más de una hora (ahí se buscan los países nuevos). */
         const val INDEX_SCREEN_MAX_AGE_MS = 60 * 60 * 1000L
 
+        /** Con menos memoria por app que esto (bytes) un viaje en línea de más de [ONLINE_SMALL_HEAP_KM] en recta no se pide. */
+        private const val ONLINE_SMALL_HEAP = 128L * 1024 * 1024
+        private const val ONLINE_SMALL_HEAP_KM = 300.0
+
         @SuppressLint("StaticFieldLeak") // solo el contexto de la aplicación
         @Volatile private var instance: MapPacks? = null
 
@@ -1236,4 +1268,26 @@ internal fun insideRing(ring: DoubleArray, x: Double, y: Double): Boolean {
         j = i
     }
     return inside
+}
+
+/**
+ * Los interruptores de lo que va por internet según los dos índices (por país, [COUNTRIES], y `regions.json`, [REGIONS]):
+ * algo se apaga si cualquiera de los dos lo apaga (no gana el último que se leyó).
+ */
+internal class OnlineSwitches {
+    private val photon = booleanArrayOf(true, true)
+    private val osrm = booleanArrayOf(true, true)
+
+    fun set(source: Int, photon: Boolean, osrm: Boolean) {
+        this.photon[source] = photon
+        this.osrm[source] = osrm
+    }
+
+    val search: Boolean get() = photon.all { it }
+    val routing: Boolean get() = osrm.all { it }
+
+    companion object {
+        const val COUNTRIES = 0
+        const val REGIONS = 1
+    }
 }
