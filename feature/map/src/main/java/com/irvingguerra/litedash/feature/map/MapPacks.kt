@@ -96,6 +96,9 @@ class PackFile(val url: String, val size: Long, val sha256: String)
  * Un mapa de estado ya bajado: de qué región y versión (su huella), y su caja y contorno (guardados al bajarlo: así sabe
  * qué teselas son suyas aunque no haya índice).
  */
+/** Una tesela de un mapa bajado: tal como está guardada y, en los del formato nuevo, de dónde salen sus calles. */
+class PackTile(val body: ByteArray, val roads: RoadGraph?)
+
 data class InstalledPack(
     val id: String, val sha256: String, val size: Long, val savedAt: Long, val bbox: DoubleArray, val shape: List<DoubleArray>,
     /** La huella del índice de búsqueda bajado ("" = aún no). */
@@ -146,6 +149,11 @@ class MapPacks private constructor(private val app: Context) {
     private var running: Job? = null
     /** Los archivos abiertos, uno por mapa bajado; cada uno con su propio candado al leer. */
     private val open = HashMap<String, PmTiles>()
+    /**
+     * Mapas del formato nuevo (sus teselas sin calles): el archivo de ruta abierto para dibujarlas; null = formato de antes
+     * (o aún sin sus calles). Con [openLock]; se olvida al cambiar el mapa o sus calles.
+     */
+    private val drawn = HashMap<String, RoadGraph?>()
     private val openLock = Any()
 
     /** Las regiones con todos sus datos que ya se tienen (con el índice por país, solo las de los países cargados). */
@@ -645,6 +653,7 @@ class MapPacks private constructor(private val app: Context) {
                 val target = File(dir, "${region.id}.pmtiles")
                 synchronized(openLock) {
                     open.remove(region.id)?.close()
+                    forgetDrawn(region.id)
                     if (!temp.renameTo(target)) throw IOException("rename")
                 }
                 // Si su búsqueda o sus calles no cambiaron, se quedan las que ya están (no se vuelven a bajar).
@@ -798,6 +807,7 @@ class MapPacks private constructor(private val app: Context) {
             synchronized(stateLock) { replaceInstalled(installed.filter { it.id != id }) }
             synchronized(openLock) {
                 open.remove(id)?.close()
+                forgetDrawn(id)
                 File(dir, "$id.pmtiles").delete()
             }
             synchronized(searchLock) {
@@ -846,7 +856,10 @@ class MapPacks private constructor(private val app: Context) {
             if (!active() || installed.none { it.id == region.id }) throw CancellationException()
             val lock = if (extra == Extra.SEARCH) searchLock else routeLock
             synchronized(lock) {
-                if (extra == Extra.SEARCH) indexes.remove(region.id)?.close() else if (routerId == region.id) releaseRouterNow()
+                if (extra == Extra.SEARCH) indexes.remove(region.id)?.close() else {
+                    if (routerId == region.id) releaseRouterNow()
+                    synchronized(openLock) { forgetDrawn(region.id) }
+                }
                 if (!raw.renameTo(final)) throw IOException("rename")
             }
             synchronized(stateLock) { replaceInstalled(installed.map { if (it.id == region.id) extra.with(it, sha) else it }) }
@@ -1027,8 +1040,11 @@ class MapPacks private constructor(private val app: Context) {
         return (if (lat != null && lon != null) orderHits(all, query) else all).take(limit)
     }
 
-    /** La tesela z/x/y del mapa del estado donde cae su centro (tal como está guardada, con gzip); null = ninguno. */
-    fun tile(z: Int, x: Int, y: Int): ByteArray? {
+    /**
+     * La tesela z/x/y del mapa del estado donde cae su centro (tal como está guardada, con gzip) y, si es del formato nuevo,
+     * de dónde salen sus calles (entonces sin tesela guardada va vacía: igual lleva calles); null = ningún mapa.
+     */
+    fun tile(z: Int, x: Int, y: Int): PackTile? {
         val packs = packs
         if (packs.isEmpty()) return null
         val lat = tileLat(y + 0.5, z)
@@ -1036,7 +1052,28 @@ class MapPacks private constructor(private val app: Context) {
         val pack = packs.firstOrNull { it.contains(lat, lon) } ?: return null
         val file = synchronized(openLock) { open.getOrPut(pack.id) { PmTiles.open(File(dir, "${pack.id}.pmtiles")) ?: return null } }
         // Cada archivo con su candado: dos estados se leen a la vez y nadie más espera.
-        return synchronized(file) { runCatching { file.tile(z, x, y) }.getOrNull() }
+        val (body, hasRoads) = synchronized(file) { runCatching { file.tile(z, x, y) }.getOrNull() to file.hasRoads }
+        val roads = if (hasRoads) null else synchronized(openLock) { drawnRoads(pack.id) }
+        return when {
+            body != null -> PackTile(body, roads)
+            roads != null -> PackTile(ByteArray(0), roads)
+            else -> null
+        }
+    }
+
+    /** Las calles para dibujar del mapa [id] (su archivo de ruta, si es del formato nuevo); con [openLock]. */
+    private fun drawnRoads(id: String): RoadGraph? {
+        if (drawn.containsKey(id)) return drawn[id]
+        val graph = runCatching { RoadGraph.open(File(dir, "$id.ldm")) }.getOrNull()
+        val usable = graph?.takeIf { it.drawable }
+        if (usable == null) graph?.close()
+        drawn[id] = usable
+        return usable
+    }
+
+    /** Olvida las calles para dibujar de [id] (cambió su mapa o su archivo de ruta); con [openLock]. */
+    private fun forgetDrawn(id: String) {
+        drawn.remove(id)?.close()
     }
 
     /** La lista guardada; los mapas que estén en la carpeta sin anotar (se cortó al guardarla) se adoptan con su caja. */

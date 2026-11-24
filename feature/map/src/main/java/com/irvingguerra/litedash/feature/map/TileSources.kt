@@ -41,8 +41,11 @@ interface TileSource {
     /** Su dirección; null = por ahora no se puede (sin red para saber la versión de los datos). */
     fun url(origin: Long): String?
 
-    /** La imagen de [key] a partir de lo bajado de [origin]; null = lo bajado no sirve (o vino vacío y no hay qué dibujar). */
-    fun decode(data: ByteArray, key: Long, origin: Long): ImageBitmap?
+    /**
+     * La imagen de [key] a partir de lo bajado de [origin]; null = lo bajado no sirve (o vino vacío y no hay qué dibujar).
+     * [roads] = de dónde salen las calles cuando el mapa bajado no las trae (formato nuevo: el archivo de ruta).
+     */
+    fun decode(data: ByteArray, key: Long, origin: Long, roads: RoadGraph? = null): ImageBitmap?
 
     /** Dibuja [key] con lo ya leído de [origin], sin bytes; null = no lo tiene en memoria. */
     fun draw(key: Long, origin: Long): ImageBitmap? = null
@@ -116,10 +119,12 @@ class VectorTiles(
     override fun url(origin: Long): String? =
         template()?.replace("{z}", "${keyZ(origin)}")?.replace("{x}", "${keyX(origin)}")?.replace("{y}", "${keyY(origin)}")
 
-    override fun decode(data: ByteArray, key: Long, origin: Long): ImageBitmap? {
+    override fun decode(data: ByteArray, key: Long, origin: Long, roads: RoadGraph?): ImageBitmap? {
         // Nombres solo de las teselas del 14 (cerca); las del 12–13 son lo lejano del mapa inclinado.
         val near = keyZ(origin) == DATA_ZOOM
-        val tile = parsed.get(origin) ?: (parseVectorTile(unzip(data)) ?: return null).also {
+        val tile = parsed.get(origin) ?: (parseVectorTile(unzip(data)) ?: return null).let {
+            if (roads == null) it else it.withRoads(GraphTiles.roads(roads, origin, it.extent))
+        }.also {
             parsed.put(origin, it)
             if (near) names.put(origin, TileNames(it.extent, it.names))
         }

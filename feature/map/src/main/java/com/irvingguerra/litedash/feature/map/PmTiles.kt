@@ -20,6 +20,18 @@ class PmTiles private constructor(private val file: RandomAccessFile, private va
     /** Su caja (grados). */
     val bounds get() = header.bounds
 
+    /**
+     * ¿Sus teselas traen calles? Los mapas del formato nuevo no (se dibujan del archivo de ruta): su `metadata` no lista la
+     * capa `transportation`. Si no se puede leer, se supone que sí (como siempre).
+     */
+    val hasRoads: Boolean by lazy {
+        runCatching {
+            if (header.metadataLength <= 0 || header.metadataLength > MAX_METADATA) return@runCatching true
+            val json = String(decompress(read(header.metadataOffset, header.metadataLength.toInt()), header.internalCompression), Charsets.UTF_8)
+            !json.contains("\"vector_layers\"") || json.contains("\"transportation\"")
+        }.getOrDefault(true)
+    }
+
     /** Los últimos directorios leídos (el raíz y unas hojas): buscar en la misma zona no vuelve a leer el disco. */
     private val directories = object : LinkedHashMap<Long, List<Entry>>(8, 0.75f, true) {
         override fun removeEldestEntry(eldest: MutableMap.MutableEntry<Long, List<Entry>>) = size > CACHED_DIRECTORIES
@@ -60,7 +72,8 @@ class PmTiles private constructor(private val file: RandomAccessFile, private va
     }
 
     internal class Header(
-        val rootOffset: Long, val rootLength: Long, val leafOffset: Long, val tileDataOffset: Long,
+        val rootOffset: Long, val rootLength: Long, val metadataOffset: Long, val metadataLength: Long, val leafOffset: Long,
+        val tileDataOffset: Long,
         val internalCompression: Int, val tileCompression: Int, val tileType: Int, val minZoom: Int, val maxZoom: Int,
         val bounds: DoubleArray,
     )
@@ -87,7 +100,8 @@ class PmTiles private constructor(private val file: RandomAccessFile, private va
             if (b.size < HEADER_SIZE || String(b, 0, 7, Charsets.US_ASCII) != "PMTiles" || b[7].toInt() != 3) return null
             val buf = ByteBuffer.wrap(b).order(ByteOrder.LITTLE_ENDIAN)
             return Header(
-                rootOffset = buf.getLong(8), rootLength = buf.getLong(16), leafOffset = buf.getLong(40),
+                rootOffset = buf.getLong(8), rootLength = buf.getLong(16), metadataOffset = buf.getLong(24),
+                metadataLength = buf.getLong(32), leafOffset = buf.getLong(40),
                 tileDataOffset = buf.getLong(56), internalCompression = b[97].toInt(), tileCompression = b[98].toInt(),
                 tileType = b[99].toInt(), minZoom = b[100].toInt(), maxZoom = b[101].toInt(),
                 bounds = doubleArrayOf(buf.getInt(102) / 1e7, buf.getInt(106) / 1e7, buf.getInt(110) / 1e7, buf.getInt(114) / 1e7),
@@ -162,6 +176,8 @@ class PmTiles private constructor(private val file: RandomAccessFile, private va
         /** Las teselas se abren sin comprimir o con gzip (brotli o zstd no: se verían vacías). */
         private val TILE_COMPRESSIONS = intArrayOf(COMPRESSION_NONE, COMPRESSION_GZIP)
         private const val MAX_DEPTH = 4
+        /** Una `metadata` más grande que esto no es de un mapa nuestro: no se lee. */
+        private const val MAX_METADATA = 1 shl 20
         private const val CACHED_DIRECTORIES = 8
     }
 }

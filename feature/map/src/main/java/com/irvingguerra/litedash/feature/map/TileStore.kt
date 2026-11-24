@@ -290,8 +290,9 @@ class TileStore(context: Context, private val userAgent: String, val source: Til
             val now = System.currentTimeMillis()
             // Primero lo descargado sin conexión (el mapa de tu estado y luego tus zonas: no caducan ni gastan datos);
             // vacía = ahí no hay nada y se dibuja lisa.
-            (packs?.tile(keyZ(origin), keyX(origin), keyY(origin)) ?: offline?.tile(keyZ(origin), keyX(origin), keyY(origin)))?.let { body ->
-                val image = decode(body, key, origin)
+            val pack = packs?.tile(keyZ(origin), keyX(origin), keyY(origin))
+            (pack?.body ?: offline?.tile(keyZ(origin), keyX(origin), keyY(origin)))?.let { body ->
+                val image = decode(body, key, origin, pack?.roads)
                 if (image != null) return Loaded(image, 0L)
             }
             val tile = data(file, origin) ?: return Loaded(null, now + RETRY_MS)
@@ -310,8 +311,8 @@ class TileStore(context: Context, private val userAgent: String, val source: Til
     }
 
     /** La imagen de lo bajado; null si está dañado (gzip roto, PNG a medias). Si no cabe en memoria, eso sí sube. */
-    private fun decode(body: ByteArray, key: Long, origin: Long): ImageBitmap? = try {
-        source.decode(body, key, origin)
+    private fun decode(body: ByteArray, key: Long, origin: Long, roads: RoadGraph? = null): ImageBitmap? = try {
+        source.decode(body, key, origin, roads)
     } catch (_: Exception) {
         null
     }

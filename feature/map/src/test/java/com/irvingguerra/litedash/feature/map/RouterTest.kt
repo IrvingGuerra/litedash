@@ -337,7 +337,7 @@ class RouterTest {
         }
 
         val bad = listOf(
-            "magia" to variant { it.apply { this[3] = '1'.code.toByte() } },
+            "magia" to variant { it.apply { this[3] = '2'.code.toByte() } },
             "vueltas fuera" to variant { putInt(it, 56, bytes.size + 100) },
             "forma fuera" to variant { putInt(it, 48, bytes.size * 4) },
             "desplazamiento < 64" to variant { putInt(it, 32, 10) },

@@ -10,10 +10,11 @@ import kotlin.math.cos
 import kotlin.math.sqrt
 
 /**
- * Las calles para manejar de un estado (formato LDM0 de `prototipos/mapas/armar_mapa.py`), leídas del disco por mmap sin
- * cargarlas a memoria: cruces (vértices), tramos (aristas) con su largo, clase, velocidad máxima, nombre y forma, las
- * dos mitades de cada tramo (con por dónde se puede ir) y las vueltas prohibidas u obligatorias. Solo lee (seguro desde
- * varios hilos: todo con posiciones absolutas).
+ * Las calles para manejar de un estado (formato LDM0 o LDM1 de `prototipos/mapas/armar_mapa.py`), leídas del disco por
+ * mmap sin cargarlas a memoria: cruces (vértices), tramos (aristas) con su largo, clase, velocidad máxima, nombre y forma,
+ * las dos mitades de cada tramo (con por dónde se puede ir) y las vueltas prohibidas u obligatorias. Un LDM1 con las
+ * secciones de dibujo ([drawable]) trae además lo necesario para dibujar las calles sin las del mapa (ver [GraphTiles]).
+ * Solo lee (seguro desde varios hilos: todo con posiciones absolutas).
  */
 class RoadGraph private constructor(private val channel: FileChannel, private val buf: ByteBuffer) : Closeable {
     val cellCount = buf.getInt(8)
@@ -29,6 +30,13 @@ class RoadGraph private constructor(private val channel: FileChannel, private va
     private val oShape = buf.getInt(48)
     private val oNames = buf.getInt(52)
     private val oTurns = buf.getInt(56)
+    /** Las secciones de dibujo (LDM1 con la bandera 1): tramos largos, vista lejana y las que solo se dibujan; 0 = no. */
+    private val oLong = drawOffset(buf, 88)
+    private val oFar = drawOffset(buf, 92)
+    private val oExtra = drawOffset(buf, 96)
+
+    /** ¿Trae con qué dibujar las calles (mapa del formato nuevo, sin calles en el `.pmtiles`)? */
+    val drawable = oLong > 0 && oFar > 0 && oExtra > 0
 
     override fun close() = channel.close()
 
@@ -61,8 +69,10 @@ class RoadGraph private constructor(private val channel: FileChannel, private va
     fun maxKmh(e: Int) = buf.get(oEdges + EDGE * e + 5).toInt() and 0xFF
 
     /** Nombre del tramo ("" = sin nombre). */
-    fun name(e: Int): String {
-        val n = buf.getInt(oEdges + EDGE * e + 6)
+    fun name(e: Int): String = text(buf.getInt(oEdges + EDGE * e + 6))
+
+    /** El texto [n] de la tabla de nombres ("" = ninguno). */
+    private fun text(n: Int): String {
         if (n < 0 || n >= nameCount) return ""
         val base = oNames + 4 + 4 * nameCount
         val a = buf.getInt(oNames + 4 + 4 * n)
@@ -226,8 +236,80 @@ class RoadGraph private constructor(private val channel: FileChannel, private va
         }
     }
 
+    /** El cruce de donde sale la mitad [h] (búsqueda binaria: las mitades van ordenadas por cruce). */
+    internal fun halfOrigin(h: Int): Int {
+        var lo = 0
+        var hi = vertexCount - 1
+        while (lo < hi) {
+            val mid = (lo + hi + 1) ushr 1
+            if (firstHalf(mid) <= h) lo = mid else hi = mid - 1
+        }
+        return lo
+    }
+
+    /** ¿El tramo de la mitad [h] es de un solo sentido (alguna de sus dos mitades no deja salir)? */
+    internal fun oneWay(h: Int): Boolean {
+        if (!canLeave(h)) return true
+        val e = halfEdge(h)
+        val from = halfOrigin(h)
+        val t = halfTarget(h)
+        for (o in firstHalf(t) until firstHalf(t + 1)) if (o != h && halfEdge(o) == e && halfTarget(o) == from) return !canLeave(o)
+        return false
+    }
+
+    /** Las listas por celda de las secciones de dibujo: [LONG] = mitades dueñas, [FAR] y [EXTRA] = líneas. */
+    internal fun forEachListed(section: Int, cell: Int, action: (Int) -> Unit) {
+        val s = when (section) { LONG -> oLong; FAR -> oFar; else -> oExtra }
+        if (s <= 0) return
+        val n = buf.getInt(s)
+        var lo = 0
+        var hi = n - 1
+        while (lo <= hi) {
+            val mid = (lo + hi) ushr 1
+            val c = buf.getInt(s + 4 + 8 * mid)
+            when {
+                c < cell -> lo = mid + 1
+                c > cell -> hi = mid - 1
+                else -> {
+                    val reader = VarintReader(buf, s + 8 + 8 * n + buf.getInt(s + 8 + 8 * mid))
+                    val count = reader.next().toInt()
+                    var v = 0
+                    repeat(count) {
+                        v += reader.next().toInt()
+                        action(v)
+                    }
+                    return
+                }
+            }
+        }
+    }
+
+    /**
+     * La línea en [offset] de la sección [section] ([FAR] o [EXTRA]): sus puntos (lat, lon en millonésimas) a [out] y su
+     * clase, sentido y nombre en [line].
+     */
+    internal fun readLine(section: Int, offset: Int, out: PointList, line: DrawLine) {
+        val s = if (section == FAR) oFar else oExtra
+        val n = buf.getInt(s)
+        val data = s + 8 + 8 * n + buf.getInt(s + 4 + 8 * n) + 4
+        val reader = VarintReader(buf, data + offset)
+        val count = reader.next().toInt()
+        line.roadClass = buf.get(reader.pos).toInt() and 0xFF
+        line.oneWay = buf.get(reader.pos + 1).toInt() and 1 != 0
+        reader.pos += 2
+        line.name = reader.next().toInt().let { if (it == 0) "" else text(it - 1) }
+        val unit = if (section == FAR) 10 else 1
+        var la = 0
+        var lo = 0
+        repeat(count) {
+            la += unzig(reader.next())
+            lo += unzig(reader.next())
+            out.add(la * unit, lo * unit)
+        }
+    }
+
     /** Los cruces de la celda [cell]: de (incluido) a (sin incluir); null si la celda no tiene. */
-    private fun cellVertices(cell: Int): Pair<Int, Int>? {
+    internal fun cellVertices(cell: Int): Pair<Int, Int>? {
         var lo = 0
         var hi = cellCount - 1
         while (lo <= hi) {
@@ -247,6 +329,14 @@ class RoadGraph private constructor(private val channel: FileChannel, private va
     }
 
     companion object {
+        /** Las secciones de dibujo ([forEachListed]). */
+        internal const val LONG = 0
+        internal const val FAR = 1
+        internal const val EXTRA = 2
+        /** Celdas de las secciones de dibujo (grados): las de la ruta y la vista lejana. */
+        internal const val CELL_DEG = 0.01
+        internal const val FAR_CELL_DEG = 0.1
+        private const val FLAG_DRAW = 1
         private const val VERTEX = 12
         private const val HALF = 9
         private const val EDGE = 14
@@ -257,7 +347,7 @@ class RoadGraph private constructor(private val channel: FileChannel, private va
         private const val SNAP_RINGS = 3
 
         /**
-         * Abre [file]; null si no es un LDM0 sano (cabecera y secciones dentro del archivo y en orden). Si el archivo está
+         * Abre [file]; null si no es un LDM0 o LDM1 sano (cabecera y secciones dentro del archivo y en orden). Si el archivo está
          * sano pero no cabe en la memoria de la pantalla (el `map` falla en equipos de 32 bits), [RouteException] con
          * [RouteError.TOO_BIG]: no está dañado y no hay que volver a bajarlo.
          */
@@ -275,7 +365,7 @@ class RoadGraph private constructor(private val channel: FileChannel, private va
                 }
                 val buf = mapped.order(ByteOrder.LITTLE_ENDIAN)
                 val ok = buf.get(0) == 'L'.code.toByte() && buf.get(1) == 'D'.code.toByte() && buf.get(2) == 'M'.code.toByte() &&
-                    buf.get(3) == '0'.code.toByte() && valid(buf, size)
+                    (buf.get(3) == '0'.code.toByte() || buf.get(3) == '1'.code.toByte()) && valid(buf, size)
                 if (!ok) null.also { channel.close() } else RoadGraph(channel, buf)
             } catch (e: RouteException) {
                 throw e
@@ -283,6 +373,13 @@ class RoadGraph private constructor(private val channel: FileChannel, private va
                 runCatching { raf.close() }
                 null
             }
+        }
+
+        /** El desplazamiento de una sección de dibujo en la cabecera (byte [at]); 0 si no la trae o no cabe. */
+        private fun drawOffset(b: ByteBuffer, at: Int): Int {
+            if (b.get(3) != '1'.code.toByte() || b.getShort(6).toInt() and FLAG_DRAW == 0) return 0
+            val o = b.getInt(at)
+            return if (o >= 128 && o + 8 <= b.capacity()) o else 0
         }
 
         private fun valid(b: ByteBuffer, size: Long): Boolean {
@@ -295,6 +392,27 @@ class RoadGraph private constructor(private val channel: FileChannel, private va
         }
 
         private fun unzig(v: Long): Int = ((v ushr 1) xor -(v and 1)).toInt()
+    }
+}
+
+/** Lo que dice una línea de las secciones de dibujo (se reusa). */
+internal class DrawLine {
+    var roadClass = 0
+    var oneWay = false
+    var name = ""
+}
+
+/** Lee varints sin signo de [buf] desde [pos]. */
+private class VarintReader(private val buf: ByteBuffer, var pos: Int) {
+    fun next(): Long {
+        var v = 0L
+        var s = 0
+        while (true) {
+            val b = buf.get(pos++).toInt() and 0xFF
+            v = v or ((b and 0x7F).toLong() shl s)
+            if (b < 0x80) return v
+            s += 7
+        }
     }
 }
 
