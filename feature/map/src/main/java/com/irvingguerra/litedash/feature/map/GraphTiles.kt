@@ -23,7 +23,7 @@ internal object GraphTiles {
         val z = keyZ(origin)
         val tx = keyX(origin)
         val ty = keyY(origin)
-        val build = Builder(z, tx, ty, extent, names = z == DATA_ZOOM)
+        val build = Builder(graph, z, tx, ty, extent, names = z == DATA_ZOOM)
         val north = tileLat(ty.toDouble() - MARGIN, z)
         val south = tileLat(ty + 1 + MARGIN, z)
         val west = tileLon(tx.toDouble() - MARGIN, z)
@@ -38,21 +38,31 @@ internal object GraphTiles {
                     pts.clear()
                     graph.readLine(RoadGraph.FAR, off, pts, line)
                     if (z <= MAJOR_ONLY_ZOOM && !major(line.roadClass)) return@forEachListed
-                    build.add(pts, line.roadClass, line.oneWay, "", -1, -1)
+                    build.add(pts, line.roadClass, line.oneWay, -1, -1, -1)
                 }
             }
             return build.done()
         }
         val service = z >= SERVICE_FROM_ZOOM
+        val kx = kotlin.math.cos(Math.toRadians((north + south) / 2)) * RoadGraph.M_PER_DEG
+        // Qué tan lejos de la tesela queda un cruce (m): un tramo más corto que eso desde sus dos puntas no la alcanza.
+        fun away(v: Int): Double {
+            val lat = graph.latE6(v) / 1e6
+            val lon = graph.lonE6(v) / 1e6
+            val dy = maxOf(south - lat, lat - north, 0.0) * RoadGraph.M_PER_DEG
+            val dx = maxOf(west - lon, lon - east, 0.0) * kx
+            return kotlin.math.sqrt(dx * dx + dy * dy)
+        }
         forEachEdge(graph, south, north, west, east) { h, from ->
             val e = graph.halfEdge(h)
             val cls = graph.roadClass(e)
             if (!service && cls == SERVICE_CLASS) return@forEachEdge
             val to = graph.halfTarget(h)
+            if (minOf(away(from), away(to)) > graph.lengthM(e) + 1) return@forEachEdge
             pts.clear()
             pts.add(graph.latE6(from), graph.lonE6(from))
             graph.addShape(e, from, to, graph.halfReversed(h), pts)
-            build.add(pts, cls, graph.oneWay(h), graph.name(e), from, to)
+            build.add(pts, cls, graph.oneWay(h), graph.nameRef(e), from, to)
         }
         val r0 = cellOf(south, RoadGraph.CELL_DEG, 90.0)
         val r1 = cellOf(north, RoadGraph.CELL_DEG, 90.0)
@@ -65,7 +75,7 @@ internal object GraphTiles {
             pts.clear()
             graph.readLine(RoadGraph.EXTRA, off, pts, line)
             if (!service && line.roadClass == SERVICE_CLASS) return@forEachListed
-            build.add(pts, line.roadClass, line.oneWay, line.name, -1, -1)
+            build.add(pts, line.roadClass, line.oneWay, line.nameRef, -1, -1)
         }
         return build.done()
     }
@@ -111,6 +121,8 @@ internal object GraphTiles {
     }
 
     private const val SERVICE_CLASS = 14
+    /** Lo que se simplifica la forma (unidades de la tesela, como la cuadrícula de una tesela vectorial). */
+    private const val TOLERANCE = 1f
 
     private fun major(roadClass: Int) = roadClass <= 2 || roadClass in 8..10
 
@@ -126,28 +138,55 @@ internal object GraphTiles {
     class Roads(val roads: List<List<Shape>>, val oneway: List<BooleanArray>, val names: List<RoadName>)
 
     /** Junta las líneas de una tesela en unidades de la tesela, agrupadas por tipo, sentido y casilla. */
-    private class Builder(private val z: Int, private val tx: Int, private val ty: Int, private val extent: Int, private val names: Boolean) {
-        /** (tipo, sentido, casilla) → puntos y dónde empieza cada pedazo. */
-        private val groups = HashMap<Int, Group>()
-        /** Nombre y tipo → sus tramos (para unirlos en calles enteras, como las de OpenMapTiles). */
-        private val named = HashMap<String, MutableList<Piece>>()
+    private class Builder(
+        private val graph: RoadGraph, private val z: Int, private val tx: Int, private val ty: Int, private val extent: Int,
+        private val names: Boolean,
+    ) {
+        /** (tipo, sentido) → sus tramos, que al final se unen en líneas largas (menos trazos que dibujar). */
+        private val lines = HashMap<Int, MutableList<Piece>>()
+        /** (tipo, nombre) → sus tramos, unidos al final en calles enteras (como las de OpenMapTiles). */
+        private val named = HashMap<Long, MutableList<Piece>>()
+        /**
+         * Del zoom 10 en adelante la latitud pasa a la tesela en línea recta entre sus orillas (dentro de una tesela
+         * Mercator es casi lineal: < 0.1 unidades de error en el 14) y se ahorra un logaritmo por punto.
+         */
+        private val linear = z >= 10
+        private val northLat = tileLat(ty.toDouble(), z)
+        private val yPerLat = 1.0 / (tileLat(ty + 1.0, z) - northLat)
 
-        fun add(pts: PointList, roadClass: Int, oneWay: Boolean, name: String, from: Int, to: Int) {
+        fun add(pts: PointList, roadClass: Int, oneWay: Boolean, nameRef: Int, from: Int, to: Int) {
             if (pts.size < 2) return
             val tier = tierOf(roadClass)
             val xy = FloatArray(pts.size * 2)
             for (i in 0 until pts.size) {
                 xy[2 * i] = ((tileX(pts.lon(i) / 1e6, z) - tx) * extent).toFloat()
-                xy[2 * i + 1] = ((tileY(pts.lat(i) / 1e6, z) - ty) * extent).toFloat()
+                val lat = pts.lat(i) / 1e6
+                val y = if (linear) (lat - northLat) * yPerLat else tileY(lat, z) - ty
+                xy[2 * i + 1] = (y * extent).toFloat()
             }
-            val bx = (xy[0] / extent * BINS).toInt().coerceIn(0, BINS - 1)
-            val by = (xy[1] / extent * BINS).toInt().coerceIn(0, BINS - 1)
-            val key = ((tier.ordinal * 2 + if (oneWay) 1 else 0) * BINS + by) * BINS + bx
-            groups.getOrPut(key) { Group() }.add(xy)
-            if (names && name.isNotEmpty()) named.getOrPut("${tier.ordinal}\u0000$name") { ArrayList() } += Piece(xy, from, to)
+            // Las celdas son más grandes que la tesela: lo que no la toca (con su orilla) ni se guarda.
+            var l = Float.MAX_VALUE; var t = Float.MAX_VALUE; var r = -Float.MAX_VALUE; var bt = -Float.MAX_VALUE
+            for (i in 0 until pts.size) {
+                l = minOf(l, xy[2 * i]); r = maxOf(r, xy[2 * i]); t = minOf(t, xy[2 * i + 1]); bt = maxOf(bt, xy[2 * i + 1])
+            }
+            val m = MARGIN.toFloat() * extent
+            if (r < -m || l > extent + m || bt < -m || t > extent + m) return
+            val piece = Piece(xy, from, to)
+            lines.getOrPut(tier.ordinal * 2 + if (oneWay) 1 else 0) { ArrayList() } += piece
+            if (names && nameRef >= 0) named.getOrPut((tier.ordinal.toLong() shl 32) or nameRef.toLong()) { ArrayList() } += piece
         }
 
         fun done(): Roads {
+            // Por tipo y sentido: líneas largas, repartidas en casillas de la tesela por su primer punto.
+            val groups = HashMap<Int, Group>()
+            for ((tierAndWay, pieces) in lines) {
+                for (whole in chains(pieces)) {
+                    val chain = simplify(whole, TOLERANCE)
+                    val bx = (chain[0] / extent * BINS).toInt().coerceIn(0, BINS - 1)
+                    val by = (chain[1] / extent * BINS).toInt().coerceIn(0, BINS - 1)
+                    groups.getOrPut((tierAndWay * BINS + by) * BINS + bx) { Group() }.add(chain)
+                }
+            }
             val roads = List(RoadTier.entries.size) { ArrayList<Shape>() }
             val oneway = List(RoadTier.entries.size) { ArrayList<Boolean>() }
             for ((key, g) in groups.entries.sortedBy { it.key }) {
@@ -157,9 +196,10 @@ internal object GraphTiles {
             }
             val out = ArrayList<RoadName>()
             for ((key, pieces) in named) {
-                val tier = RoadTier.entries[key.substringBefore('\u0000').toInt()]
-                val name = key.substringAfter('\u0000')
-                for (chain in chains(pieces)) out += RoadName(name, tier, Shape(chain, intArrayOf(0)))
+                val tier = RoadTier.entries[(key ushr 32).toInt()]
+                val name = graph.text((key and 0xFFFFFFFFL).toInt())
+                if (name.isEmpty()) continue
+                for (chain in chains(pieces)) out += RoadName(name, tier, Shape(simplify(chain, TOLERANCE), intArrayOf(0)))
             }
             return Roads(roads, oneway.map { it.toBooleanArray() }, out)
         }
@@ -222,6 +262,51 @@ internal object GraphTiles {
             backward.reverse()
             out += join(backward + forward)
         }
+        return out
+    }
+
+    /**
+     * Douglas-Peucker con tolerancia [tolerance] (unidades de la tesela): la tesela vectorial de hoy viene igual de
+     * simplificada (su cuadrícula es de una unidad), y con la forma completa del archivo de ruta había 3–4 veces más puntos.
+     */
+    private fun simplify(xy: FloatArray, tolerance: Float): FloatArray {
+        val n = xy.size / 2
+        if (n <= 2) return xy
+        val keep = BooleanArray(n)
+        keep[0] = true
+        keep[n - 1] = true
+        val stack = IntArray(2 * n)
+        var top = 0
+        stack[top++] = 0
+        stack[top++] = n - 1
+        val tol2 = tolerance * tolerance
+        while (top > 0) {
+            val j = stack[--top]
+            val i = stack[--top]
+            val ax = xy[2 * i]; val ay = xy[2 * i + 1]
+            val dx = xy[2 * j] - ax; val dy = xy[2 * j + 1] - ay
+            val len2 = dx * dx + dy * dy
+            var best = 0f
+            var at = -1
+            for (k in i + 1 until j) {
+                val px = xy[2 * k] - ax; val py = xy[2 * k + 1] - ay
+                val d2 = if (len2 == 0f) px * px + py * py else {
+                    val cross = px * dy - py * dx
+                    cross * cross / len2
+                }
+                if (d2 > best) { best = d2; at = k }
+            }
+            if (at > 0 && best > tol2) {
+                keep[at] = true
+                stack[top++] = i; stack[top++] = at
+                stack[top++] = at; stack[top++] = j
+            }
+        }
+        var m = 0
+        for (k in 0 until n) if (keep[k]) m++
+        val out = FloatArray(2 * m)
+        var o = 0
+        for (k in 0 until n) if (keep[k]) { out[o++] = xy[2 * k]; out[o++] = xy[2 * k + 1] }
         return out
     }
 

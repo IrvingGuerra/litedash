@@ -69,10 +69,13 @@ class RoadGraph private constructor(private val channel: FileChannel, private va
     fun maxKmh(e: Int) = buf.get(oEdges + EDGE * e + 5).toInt() and 0xFF
 
     /** Nombre del tramo ("" = sin nombre). */
-    fun name(e: Int): String = text(buf.getInt(oEdges + EDGE * e + 6))
+    fun name(e: Int): String = text(nameRef(e))
+
+    /** El índice del nombre del tramo [e] en la tabla de nombres (para agrupar sin leer el texto). */
+    internal fun nameRef(e: Int): Int = buf.getInt(oEdges + EDGE * e + 6)
 
     /** El texto [n] de la tabla de nombres ("" = ninguno). */
-    private fun text(n: Int): String {
+    internal fun text(n: Int): String {
         if (n < 0 || n >= nameCount) return ""
         val base = oNames + 4 + 4 * nameCount
         val a = buf.getInt(oNames + 4 + 4 * n)
@@ -297,7 +300,7 @@ class RoadGraph private constructor(private val channel: FileChannel, private va
         line.roadClass = buf.get(reader.pos).toInt() and 0xFF
         line.oneWay = buf.get(reader.pos + 1).toInt() and 1 != 0
         reader.pos += 2
-        line.name = reader.next().toInt().let { if (it == 0) "" else text(it - 1) }
+        line.nameRef = reader.next().toInt() - 1
         val unit = if (section == FAR) 10 else 1
         var la = 0
         var lo = 0
@@ -399,7 +402,8 @@ class RoadGraph private constructor(private val channel: FileChannel, private va
 internal class DrawLine {
     var roadClass = 0
     var oneWay = false
-    var name = ""
+    /** Índice en la tabla de nombres; -1 = sin nombre. */
+    var nameRef = -1
 }
 
 /** Lee varints sin signo de [buf] desde [pos]. */
