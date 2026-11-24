@@ -1,6 +1,9 @@
 package com.irvingguerra.litedash.feature.map
 
+import android.app.ActivityManager
 import android.content.ActivityNotFoundException
+import android.content.Context
+import android.os.Build
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -45,6 +48,7 @@ import androidx.compose.ui.input.pointer.PointerInputScope
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.unit.Dp
@@ -143,6 +147,22 @@ private const val GLIDE_MS = 950
 
 /** Cada cuánto avanza el deslizamiento (~30 cuadros por segundo). */
 private const val GLIDE_STEP_MS = 33L
+
+/** Lo que tarda una flechita de la ruta en llegar a donde estaba la siguiente. */
+private const val FLOW_CYCLE_MS = 1600.0
+
+/** Con esta memoria por app (MB) o menos, la ruta no se anima. */
+private const val FLOW_MIN_MEMORY_MB = 128
+
+/**
+ * ¿La pantalla da para animar la ruta? Android 9 o más nuevo (antes cada trazo se vuelve imagen) y que no sea de poca
+ * memoria; si no, la ruta va quieta.
+ */
+internal fun routeCanFlow(context: Context): Boolean {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) return false
+    val am = context.getSystemService(ActivityManager::class.java) ?: return false
+    return !am.isLowRamDevice && am.memoryClass > FLOW_MIN_MEMORY_MB
+}
 
 /** Más que esto de una lectura a otra (o casi nada, quieto) va directo, sin deslizar. */
 private const val SNAP_METERS = 150.0
@@ -689,7 +709,22 @@ fun MapCanvas(
             camera.street = names?.let { nearestStreet(origin, it, lat, lon) }
         }
     }
-    val labelColor = if (dark) Color(0xFFC3C6CD) else Color(0xFF4E535C)
+    val labelColor = store.source.label?.let(::Color) ?: if (dark) Color(0xFFC3C6CD) else Color(0xFF4E535C)
+    val labelHalo = store.source.halo?.let(::Color) ?: sky
+    // La ruta «río» de los mapas planos: sus flechitas avanzan solo con la ruta a la vista, este mapa activo, la opción
+    // prendida y una pantalla que da para eso (a ~30 cuadros por segundo); si no, quietas.
+    val context = LocalContext.current
+    val canFlow = remember { routeCanFlow(context) }
+    val flowing = route != null && routeWidth == null && active && look.flow && canFlow
+    val flow = remember { mutableFloatStateOf(0f) }
+    LaunchedEffect(flowing) {
+        if (!flowing) return@LaunchedEffect
+        val start = System.nanoTime() - (flow.floatValue * FLOW_CYCLE_MS * 1e6).toLong()
+        while (true) {
+            delay(GLIDE_STEP_MS)
+            flow.floatValue = ((System.nanoTime() - start) / 1e6 % FLOW_CYCLE_MS / FLOW_CYCLE_MS).toFloat()
+        }
+    }
     // Un toque: lo que diga [onTap] (en el widget, verlo en grande o abrir tu app de mapas).
     val tap = if (onTap != null) Modifier.clickable(onClick = onTap) else Modifier
     val longPress by rememberUpdatedState(onLongPress)
@@ -739,7 +774,7 @@ fun MapCanvas(
                         size.width, size.height, density, atX, atY, turn, tilt,
                         // El centro del mapa: tú, o a donde lo moviste.
                         tileX(pose.lon, zoom) + panX * n, tileY(pose.lat, zoom) + panY * n, zoom, ts, panX, panY,
-                        store.source, tilePx(density), frame.textPaint(12.sp.toPx(), labelColor, sky),
+                        store.source, tilePx(density), frame.textPaint(12.sp.toPx(), labelColor, labelHalo),
                         // Siempre flecha: hacia arriba con el mapa girado, o con el último rumbo (sin rumbo aún, al norte).
                         sky, bearing + turn, ringKm, if (ringKm == null) 0.0 else tileLat(tileY(pose.lat, 0) + panY, 0),
                         pin?.let { tileX(it.second, zoom) } ?: Double.NaN, pin?.let { tileY(it.first, zoom) } ?: Double.NaN,
@@ -747,7 +782,8 @@ fun MapCanvas(
                         routeWidth?.let { it.toPx() * ts * n.toFloat() / (tilePx(density) * 2f.pow(driveZoom)) } ?: 0f,
                     )
                 }
-                onDrawBehind { frame.draw(this, store, accent, marker, focus) }
+                // Leer el avance aquí solo vuelve a pintar (no rehace el cuadro).
+                onDrawBehind { frame.draw(this, store, accent, marker, focus, dark, flow.floatValue) }
             },
         )
         val credits = if (short) store.source.attributionShort else store.source.attribution
@@ -775,7 +811,7 @@ internal class YouExtent(val halfWidth: Float, val below: Float)
 
 /** Las mismas medidas con que [MapFrame] dibuja tu auto ([marker]) en un hueco de [holeW] × [holeH] px, o la flecha. */
 internal fun youExtent(marker: ImageBitmap?, holeW: Float, holeH: Float, density: Float): YouExtent {
-    if (marker == null || marker.width == 0) return YouExtent(ARROW_REACH_DP * density, ARROW_REACH_DP * density)
+    if (marker == null || marker.width == 0) return YouExtent(ARROW_GLOW * density, ARROW_GLOW * density)
     val w = markerWidthDp(minOf(holeW, holeH) / density) * density
     val h = w * marker.height / marker.width
     return YouExtent(w * 0.55f, h * MARKER_BELOW)
@@ -794,8 +830,6 @@ internal fun creditsCollide(
     return x - halfWidth < creditsW && y + below > holeH - creditsH
 }
 
-/** Lo que alcanza la flecha alrededor de tu posición (su círculo, dp). */
-private const val ARROW_REACH_DP = 34f
 
 /** Lo que baja tu auto desde tu posición, en fracción de su alto (la sombra llega a 0.22 + 0.36). */
 private const val MARKER_BELOW = 0.58f

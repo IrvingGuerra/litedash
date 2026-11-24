@@ -26,11 +26,27 @@ import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.roundToInt
 
-/** El azul de la ruta (como Tesla), su orilla más oscura en los mapas planos y el gris de lo ya recorrido (ARGB). */
+/** El azul de la ruta a escala real (la franja bajo tu auto, como Tesla) y de la barra de avance de la guía. */
 val ROUTE_BLUE = Color(0xFF3D8BFF)
 private const val ROUTE_ARGB = 0xFF3D8BFF.toInt()
-private const val ROUTE_EDGE_ARGB = 0xFF1C5FD0.toInt()
-private const val ROUTE_DONE_ARGB = 0xFF8A8F98.toInt()
+
+/**
+ * La ruta «río» de los mapas planos (valores de Horizon Maps, GPL-3.0): la línea y su orilla clara, de noche y de día;
+ * lo ya recorrido en gris. El resplandor es la misma línea, ancha y translúcida.
+ */
+private const val RIVER_NIGHT = 0xFF4CC9FF.toInt()
+private const val RIVER_NIGHT_EDGE = 0xFFEAF2FF.toInt()
+private const val RIVER_DAY = 0xFF2A7BE4.toInt()
+private const val RIVER_DAY_EDGE = 0xFF8AB6F0.toInt()
+private const val RIVER_DONE = 0xFF8C92AC.toInt()
+
+/** Las flechitas que avanzan sobre la ruta: blancas, casi opacas, una cada [FLOW_GAP_DP]. */
+private const val FLOW_ARGB = 0xE6FFFFFF.toInt()
+private const val FLOW_GAP_DP = 24f
+
+/** Tu flecha (como en Horizon Maps): gota blanca sobre un círculo azul con orilla blanca y un resplandor azul suave. */
+private val ARROW_BODY = Color(0xFFF2F2F6)
+private val ARROW_DISC = Color(0xFF4C9BE6)
 
 /** La franja a escala real mide esto del ancho de tu auto. */
 private const val RIBBON = 0.9f
@@ -109,6 +125,17 @@ internal class MapFrame : ScreenPoint {
         strokeJoin = android.graphics.Paint.Join.ROUND
     }
 
+    /** Lo que falta de la ruta como un solo trazo (para que las flechitas sigan de corrido), ya recortado a la vista. */
+    private val flowLine = android.graphics.Path()
+    private val flowPaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+        style = android.graphics.Paint.Style.FILL
+        color = FLOW_ARGB
+    }
+    private var chevron = android.graphics.Path()
+
+    /** Las flechitas de la ruta: una por cada paso de su avance (0–1), hechas una vez. */
+    private val flowEffects = arrayOfNulls<android.graphics.PathEffect>(FLOW_STEPS)
+
     /** El ancho de la ruta en el plano del mapa (a escala real, con perspectiva); 0 = línea en pantalla. */
     private var routeWide = 0f
 
@@ -166,6 +193,22 @@ internal class MapFrame : ScreenPoint {
         }
         traceRun(world, n, (i + 1).coerceIn(1, count - 1), count - 1, fromX, fromY, routeAhead)
         outlineRibbon()
+    }
+
+    /** Une los tramos de lo que falta en un trazo: los que siguen al anterior van de corrido. */
+    private fun joinFlow() {
+        flowLine.rewind()
+        val p = routeAhead.points
+        var lastX = Float.NaN
+        var lastY = Float.NaN
+        var i = 0
+        while (i < routeAhead.size) {
+            if (p[i] != lastX || p[i + 1] != lastY) flowLine.moveTo(p[i], p[i + 1])
+            flowLine.lineTo(p[i + 2], p[i + 3])
+            lastX = p[i + 2]
+            lastY = p[i + 3]
+            i += 4
+        }
     }
 
     /** A escala real: el contorno de la franja (con vueltas redondas) se arma en el plano y se pasa a la pantalla. */
@@ -282,6 +325,7 @@ internal class MapFrame : ScreenPoint {
     private var arrow = Path()
     private var pin = Path()
     private var arrowStroke = Stroke(0f)
+    private var glow: Brush? = null
     private var ringStroke = Stroke(0f)
     private var unit = 1f
 
@@ -311,7 +355,13 @@ internal class MapFrame : ScreenPoint {
             unit = density
             arrow = arrowPath(density)
             pin = pinPath(density)
-            arrowStroke = Stroke(3 * density)
+            chevron = chevronPath(density)
+            flowEffects.fill(null)
+            glow = Brush.radialGradient(
+                0f to ARROW_DISC.copy(alpha = 0.55f), 0.6f to ARROW_DISC.copy(alpha = 0.22f), 1f to ARROW_DISC.copy(alpha = 0f),
+                center = Offset.Zero, radius = ARROW_GLOW * density,
+            )
+            arrowStroke = Stroke(2 * density)
             ringStroke = Stroke(2 * density)
         }
         val turned = projection.set(width, height, atX, atY, turn, tilt, density)
@@ -330,6 +380,7 @@ internal class MapFrame : ScreenPoint {
         pinShown = !pinX.isNaN() && toScreen(pinX, pinY, pinAt)
         routeWide = routePlaneWidth
         traceRoute(routeWorld, n, routeDone)
+        if (routeWide <= 0f) joinFlow()
         squash = 1f - 0.3f * tilt
         // El círculo de la zona: metros por px del plano en el centro del mapa.
         ring = if (ringKm == null) 0f else (ringKm * 1000 / (EQUATOR_METERS * cos(Math.toRadians(centerLat)) / (n * ts))).toFloat()
@@ -380,8 +431,14 @@ internal class MapFrame : ScreenPoint {
         return true
     }
 
-    /** [focus] = el hueco libre en fracciones del mapa (de fondo del inicio): tu auto se mide contra él. */
-    fun draw(scope: DrawScope, store: TileStore, accent: Color, marker: ImageBitmap? = null, focus: Rect? = null) = with(scope) {
+    /**
+     * [focus] = el hueco libre en fracciones del mapa (de fondo del inicio): tu auto se mide contra él. [dark] = la ruta en
+     * sus colores de noche; [flow] = cuánto han avanzado sus flechitas (0–1, una flechita completa).
+     */
+    fun draw(
+        scope: DrawScope, store: TileStore, accent: Color, marker: ImageBitmap? = null, focus: Rect? = null,
+        dark: Boolean = true, flow: Float = 0f,
+    ) = with(scope) {
         drawIntoCanvas { canvas ->
             canvas.save()
             canvas.nativeCanvas.concat(matrix)
@@ -400,16 +457,28 @@ internal class MapFrame : ScreenPoint {
             drawCircle(accent.copy(alpha = 0.12f), ring, center)
             drawCircle(accent, ring, center, style = ringStroke)
         }
-        // En los mapas planos, una línea azul con su orilla (se ve sobre calles claras y oscuras), debajo de los nombres.
+        // En los mapas planos, la ruta «río» debajo de los nombres: resplandor, orilla clara, la línea y, encima, las
+        // flechitas que avanzan hacia donde vas. Lo recorrido, en gris.
         if (routeWide <= 0f && routeAhead.size + routeBehind.size > 0) drawIntoCanvas {
             val canvas = it.nativeCanvas
-            drawRoute(canvas, routeBehind, ROUTE_DONE_ARGB, 6 * unit)
-            drawRoute(canvas, routeAhead, ROUTE_EDGE_ARGB, 9 * unit)
-            drawRoute(canvas, routeAhead, ROUTE_ARGB, 6 * unit)
+            val line = if (dark) RIVER_NIGHT else RIVER_DAY
+            drawRoute(canvas, routeBehind, RIVER_DONE, 6 * unit)
+            drawRoute(canvas, routeAhead, line and 0x00FFFFFF or (0x40 shl 24), 15 * unit)
+            drawRoute(canvas, routeAhead, if (dark) RIVER_NIGHT_EDGE else RIVER_DAY_EDGE, 10 * unit)
+            drawRoute(canvas, routeAhead, line, 7 * unit)
+            if (!flowLine.isEmpty) {
+                val step = (flow.coerceIn(0f, 1f) * FLOW_STEPS).toInt() % FLOW_STEPS
+                // La fase baja para que las flechitas vayan hacia adelante (hacia el final del trazo).
+                flowPaint.pathEffect = flowEffects[step] ?: android.graphics.PathDashPathEffect(
+                    chevron, FLOW_GAP_DP * unit, FLOW_GAP_DP * unit * (1f - step.toFloat() / FLOW_STEPS),
+                    android.graphics.PathDashPathEffect.Style.ROTATE,
+                ).also { e -> flowEffects[step] = e }
+                canvas.drawPath(flowLine, flowPaint)
+            }
         }
         labelPaint?.let { paint -> drawIntoCanvas { drawLabels(it.nativeCanvas, layout.placed, paint) } }
         if (pinShown) drawPin(accent)
-        if (youShown) drawArrow(accent, marker, focus)
+        if (youShown) drawArrow(marker, focus)
     }
 
     /** Los tramos de [segments] de [width] px, con las puntas redondas (así se unen sin huecos en las vueltas). */
@@ -440,10 +509,10 @@ internal class MapFrame : ScreenPoint {
     }
 
     /**
-     * Tu posición: la flecha con el rumbo (color de acento), un poco acostada si está inclinado; o, con [marker], tu
+     * Tu posición: la flecha redondeada con el rumbo, un poco acostada si está inclinado; o, con [marker], tu
      * auto visto de atrás, siempre derecho (con él el mapa gira hacia donde vas: el auto no se gira).
      */
-    private fun DrawScope.drawArrow(accent: Color, marker: ImageBitmap?, focus: Rect?) {
+    private fun DrawScope.drawArrow(marker: ImageBitmap?, focus: Rect?) {
         translate(you[0], you[1]) {
             if (marker != null) {
                 // Proporcional al hueco donde va (como el auto de Tesla o Waze): se ve igual de grande en 7" que en 12".
@@ -456,11 +525,10 @@ internal class MapFrame : ScreenPoint {
                 return@translate
             }
             scale(1f, squash, Offset.Zero) {
-                drawCircle(accent.copy(alpha = 0.22f), 34 * unit, Offset.Zero)
-                rotate(arrowDegrees, Offset.Zero) {
-                    drawPath(arrow, accent)
-                    drawPath(arrow, Color.White, style = arrowStroke)
-                }
+                glow?.let { drawCircle(it, ARROW_GLOW * unit, Offset.Zero) }
+                drawCircle(ARROW_DISC.copy(alpha = 0.92f), ARROW_DISC_DP * unit, Offset.Zero)
+                drawCircle(Color.White.copy(alpha = 0.55f), ARROW_DISC_DP * unit, Offset.Zero, style = arrowStroke)
+                rotate(arrowDegrees, Offset.Zero) { drawPath(arrow, ARROW_BODY) }
             }
         }
     }
@@ -512,12 +580,37 @@ private fun pinPath(u: Float) = Path().apply {
     close()
 }
 
-/** La flecha apuntando al norte con su centro en (0, 0); [u] = 1 dp. */
+/** Lo que alcanza el resplandor de tu flecha y el radio de su círculo azul (dp). */
+internal const val ARROW_GLOW = 34f
+private const val ARROW_DISC_DP = 22f
+
+/**
+ * La flecha apuntando al norte con su centro en (0, 0): una gota redondeada (punta suave, esquinas de atrás redondas y
+ * una muesca), como la de Horizon Maps; [u] = 1 dp. Cabe en el círculo de [ARROW_DISC_DP].
+ */
 private fun arrowPath(u: Float) = Path().apply {
-    moveTo(0f, -22 * u)
-    lineTo(16 * u, 17 * u)
-    lineTo(0f, 8 * u)
-    lineTo(-16 * u, 17 * u)
+    val k = 0.68f * u
+    moveTo(0f, -20 * k)
+    cubicTo(4 * k, -14 * k, 15 * k, 6 * k, 16 * k, 12 * k)
+    cubicTo(17 * k, 17 * k, 12 * k, 19 * k, 8 * k, 17 * k)
+    lineTo(0f, 12 * k)
+    lineTo(-8 * k, 17 * k)
+    cubicTo(-12 * k, 19 * k, -17 * k, 17 * k, -16 * k, 12 * k)
+    cubicTo(-15 * k, 6 * k, -4 * k, -14 * k, 0f, -20 * k)
+    close()
+}
+
+/** Cuántos pasos tiene el avance de las flechitas de la ruta (cada uno con su efecto ya hecho). */
+private const val FLOW_STEPS = 48
+
+/** Una flechita «›» apuntando hacia +x (el sentido del trazo) con su centro en (0, 0); [u] = 1 dp. */
+private fun chevronPath(u: Float) = android.graphics.Path().apply {
+    moveTo(-3.5f * u, -4.5f * u)
+    lineTo(-0.5f * u, -4.5f * u)
+    lineTo(3.5f * u, 0f)
+    lineTo(-0.5f * u, 4.5f * u)
+    lineTo(-3.5f * u, 4.5f * u)
+    lineTo(0.5f * u, 0f)
     close()
 }
 
