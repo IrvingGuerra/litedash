@@ -18,6 +18,11 @@
     <string name="map_style_theme">テーマに合わせる</string>
     <string name="map_style_light">ライト</string>
     <string name="map_style_dark">ダーク</string>
+    <string name="map_palette">配色</string>
+    <string name="map_palette_interface">インターフェースと同じ</string>
+    <string name="map_palette_custom">自分の色</string>
+    <string name="map_route_flow">ルートをアニメーション</string>
+    <string name="map_route_flow_help">ルート上の矢印が進む方向へ流れます。メモリの少ない画面では止まったままです。</string>
     <string name="map_offline">オフライン</string>
     <string name="map_offline_help">エリアの地図を保存して、インターネットなしで表示できます。検索やルートには、都道府県をダウンロードしてください。</string>
     <string name="map_offline_here">現在のエリア</string>

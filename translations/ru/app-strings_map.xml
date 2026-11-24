@@ -18,6 +18,11 @@
     <string name="map_style_theme">Как в теме</string>
     <string name="map_style_light">Светлая</string>
     <string name="map_style_dark">Тёмная</string>
+    <string name="map_palette">Палитра</string>
+    <string name="map_palette_interface">Как мой интерфейс</string>
+    <string name="map_palette_custom">Свой цвет</string>
+    <string name="map_route_flow">Анимировать маршрут</string>
+    <string name="map_route_flow_help">Стрелки маршрута движутся в сторону движения. На экранах с малым объёмом памяти они неподвижны.</string>
     <string name="map_offline">Офлайн</string>
     <string name="map_offline_help">Сохрани карту района, чтобы видеть её без интернета. Для поиска и маршрутов скачай свой регион.</string>
     <string name="map_offline_here">Твой район</string>

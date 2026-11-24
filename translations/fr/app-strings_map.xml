@@ -20,6 +20,11 @@
     <string name="map_style_theme">Comme le thème</string>
     <string name="map_style_light">Clair</string>
     <string name="map_style_dark">Sombre</string>
+    <string name="map_palette">Palette</string>
+    <string name="map_palette_interface">Comme mon interface</string>
+    <string name="map_palette_custom">Ma couleur</string>
+    <string name="map_route_flow">Animer l\'itinéraire</string>
+    <string name="map_route_flow_help">Les flèches de l\'itinéraire avancent vers votre destination. Sur les écrans avec peu de mémoire, elles restent fixes.</string>
     <string name="map_offline">Hors ligne</string>
     <string name="map_offline_help">Enregistrez la carte d\'une zone pour la voir sans internet. Pour chercher et tracer des itinéraires, téléchargez votre région.</string>
     <string name="map_offline_here">Votre zone</string>

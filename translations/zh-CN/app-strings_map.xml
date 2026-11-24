@@ -18,6 +18,11 @@
     <string name="map_style_theme">跟随主题</string>
     <string name="map_style_light">浅色</string>
     <string name="map_style_dark">深色</string>
+    <string name="map_palette">配色</string>
+    <string name="map_palette_interface">跟随我的界面</string>
+    <string name="map_palette_custom">自定义颜色</string>
+    <string name="map_route_flow">路线动画</string>
+    <string name="map_route_flow_help">路线上的箭头朝你行驶的方向流动。内存较小的屏幕上箭头保持静止。</string>
     <string name="map_offline">离线</string>
     <string name="map_offline_help">保存一个区域的地图，无网络时也能查看。要搜索和规划路线，请下载你所在的省份。</string>
     <string name="map_offline_here">你所在的区域</string>

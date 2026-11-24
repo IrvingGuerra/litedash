@@ -18,6 +18,11 @@
     <string name="map_style_theme">Wie das Design</string>
     <string name="map_style_light">Hell</string>
     <string name="map_style_dark">Dunkel</string>
+    <string name="map_palette">Palette</string>
+    <string name="map_palette_interface">Wie meine Oberfläche</string>
+    <string name="map_palette_custom">Eigene Farbe</string>
+    <string name="map_route_flow">Route animieren</string>
+    <string name="map_route_flow_help">Die Pfeile auf der Route fließen in deine Fahrtrichtung. Auf Bildschirmen mit wenig Speicher bleiben sie stehen.</string>
     <string name="map_offline">Offline</string>
     <string name="map_offline_help">Speichere die Karte einer Zone, um sie ohne Internet zu sehen. Zum Suchen und für Routen lade dein Bundesland.</string>
     <string name="map_offline_here">Deine Zone</string>

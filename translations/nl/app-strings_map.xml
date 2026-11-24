@@ -18,6 +18,11 @@
     <string name="map_style_theme">Zoals het thema</string>
     <string name="map_style_light">Licht</string>
     <string name="map_style_dark">Donker</string>
+    <string name="map_palette">Palet</string>
+    <string name="map_palette_interface">Zoals mijn interface</string>
+    <string name="map_palette_custom">Eigen kleur</string>
+    <string name="map_route_flow">Route animeren</string>
+    <string name="map_route_flow_help">De pijlen op de route stromen in je rijrichting. Op schermen met weinig geheugen staan ze stil.</string>
     <string name="map_offline">Offline</string>
     <string name="map_offline_help">Bewaar de kaart van een zone om hem zonder internet te zien. Download je provincie om te zoeken en routes te plannen.</string>
     <string name="map_offline_here">Jouw zone</string>

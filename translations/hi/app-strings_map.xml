@@ -18,6 +18,11 @@
     <string name="map_style_theme">थीम जैसा</string>
     <string name="map_style_light">लाइट</string>
     <string name="map_style_dark">डार्क</string>
+    <string name="map_palette">रंग-पट्टी</string>
+    <string name="map_palette_interface">मेरे इंटरफ़ेस जैसा</string>
+    <string name="map_palette_custom">अपना रंग</string>
+    <string name="map_route_flow">रास्ता एनिमेट करें</string>
+    <string name="map_route_flow_help">रास्ते के तीर आपकी दिशा में आगे बढ़ते हैं। कम मेमोरी वाली स्क्रीन पर वे रुके रहते हैं।</string>
     <string name="map_offline">ऑफ़लाइन</string>
     <string name="map_offline_help">किसी इलाके का मैप सेव करें ताकि बिना इंटरनेट के दिखे। खोजने और रास्ता बनाने के लिए अपना राज्य डाउनलोड करें।</string>
     <string name="map_offline_here">आपका इलाका</string>

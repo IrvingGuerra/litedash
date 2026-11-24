@@ -255,7 +255,7 @@ private fun CarView(d: Dependencies, session: DriveSession, modifier: Modifier) 
     BoxWithConstraints(modifier.clipToBounds()) {
         // Tu auto mide lo mismo que en el mapa de fondo ([markerWidthDp]): las calles y la ruta, a su escala.
         val carDp = markerWidthDp(minOf(maxWidth, maxHeight).value)
-        val store = rememberTileStore(look, c.dark, DRIVE_CAR_KEY, realRoadDp = carDp)
+        val store = rememberTileStore(d, look, c.dark, DRIVE_CAR_KEY, realRoadDp = carDp)
         // ¿Hay mapa bajado donde vas? (Por cuadras de ~100 m: no se revisa el contorno con cada lectura.)
         val installed = packs.installed
         val cellLat = position?.let { Math.round(it.latitude * 1000) }
@@ -333,7 +333,7 @@ private fun MapView(d: Dependencies, session: DriveSession, end: () -> Unit, mod
     val look = remember(d.prefs.mapLook, heading) {
         MapLook.parse(d.prefs.mapLook.orEmpty()).copy(orientation = if (heading) MapOrientation.HEADING else MapOrientation.NORTH_UP)
     }
-    val store = rememberTileStore(look, c.dark, DRIVE_MAP_KEY)
+    val store = rememberTileStore(d, look, c.dark, DRIVE_MAP_KEY)
     val camera = rememberMapCamera()
     val position = d.trip.position
     val kmh = d.bus.watch(Signal.SPEED)

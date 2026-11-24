@@ -18,6 +18,11 @@
     <string name="map_style_theme">ตามธีม</string>
     <string name="map_style_light">สว่าง</string>
     <string name="map_style_dark">มืด</string>
+    <string name="map_palette">ชุดสี</string>
+    <string name="map_palette_interface">เหมือนอินเทอร์เฟซของฉัน</string>
+    <string name="map_palette_custom">สีของฉันเอง</string>
+    <string name="map_route_flow">เคลื่อนไหวเส้นทาง</string>
+    <string name="map_route_flow_help">ลูกศรบนเส้นทางจะไหลไปทางที่คุณกำลังไป บนหน้าจอที่มีหน่วยความจำน้อยจะหยุดนิ่ง</string>
     <string name="map_offline">ออฟไลน์</string>
     <string name="map_offline_help">บันทึกแผนที่ของโซนไว้ดูได้โดยไม่ใช้อินเทอร์เน็ต หากต้องการค้นหาและวางเส้นทาง ให้ดาวน์โหลดจังหวัดของคุณ</string>
     <string name="map_offline_here">โซนของคุณ</string>

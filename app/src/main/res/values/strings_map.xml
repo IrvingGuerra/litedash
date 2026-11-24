@@ -20,6 +20,11 @@
     <string name="map_style_theme">Como el tema</string>
     <string name="map_style_light">Claros</string>
     <string name="map_style_dark">Oscuros</string>
+    <string name="map_palette">Paleta</string>
+    <string name="map_palette_interface">Como mi interfaz</string>
+    <string name="map_palette_custom">Color propio</string>
+    <string name="map_route_flow">Animar la ruta</string>
+    <string name="map_route_flow_help">Las flechas de la ruta avanzan hacia donde vas. En pantallas con poca memoria se quedan quietas.</string>
     <string name="map_offline">Sin conexión</string>
     <string name="map_offline_help">Guarda el mapa de una zona para verlo sin internet. Para buscar y trazar rutas, baja tu estado.</string>
     <string name="map_offline_here">Tu zona</string>

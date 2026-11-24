@@ -18,6 +18,11 @@
     <string name="map_style_theme">Ca tema</string>
     <string name="map_style_light">Deschis</string>
     <string name="map_style_dark">Întunecat</string>
+    <string name="map_palette">Paletă</string>
+    <string name="map_palette_interface">Ca interfața mea</string>
+    <string name="map_palette_custom">Culoarea mea</string>
+    <string name="map_route_flow">Animează traseul</string>
+    <string name="map_route_flow_help">Săgețile de pe traseu înaintează spre destinație. Pe ecranele cu puțină memorie rămân pe loc.</string>
     <string name="map_offline">Offline</string>
     <string name="map_offline_help">Salvează harta unei zone ca s-o vezi fără internet. Pentru căutare și trasee, descarcă-ți județul.</string>
     <string name="map_offline_here">Zona ta</string>

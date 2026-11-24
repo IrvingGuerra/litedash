@@ -20,6 +20,11 @@
     <string name="map_style_theme">Like the theme</string>
     <string name="map_style_light">Light</string>
     <string name="map_style_dark">Dark</string>
+    <string name="map_palette">Palette</string>
+    <string name="map_palette_interface">Like my interface</string>
+    <string name="map_palette_custom">My own color</string>
+    <string name="map_route_flow">Animate the route</string>
+    <string name="map_route_flow_help">The arrows on the route flow toward where you\'re going. On screens with little memory they stay still.</string>
     <string name="map_offline">Offline</string>
     <string name="map_offline_help">Save the map of a zone to see it without internet. To search and plan routes, download your state.</string>
     <string name="map_offline_here">Your zone</string>

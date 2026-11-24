@@ -18,6 +18,11 @@
     <string name="map_style_theme">Όπως το θέμα</string>
     <string name="map_style_light">Ανοιχτά</string>
     <string name="map_style_dark">Σκούρα</string>
+    <string name="map_palette">Παλέτα</string>
+    <string name="map_palette_interface">Όπως η διεπαφή μου</string>
+    <string name="map_palette_custom">Δικό μου χρώμα</string>
+    <string name="map_route_flow">Κίνηση διαδρομής</string>
+    <string name="map_route_flow_help">Τα βέλη της διαδρομής κινούνται προς τα εκεί που πας. Σε οθόνες με λίγη μνήμη μένουν ακίνητα.</string>
     <string name="map_offline">Εκτός σύνδεσης</string>
     <string name="map_offline_help">Αποθηκεύστε τον χάρτη μιας ζώνης για να τον βλέπετε χωρίς internet. Για αναζήτηση και διαδρομές, κατεβάστε την περιφέρειά σας.</string>
     <string name="map_offline_here">Η ζώνη σας</string>

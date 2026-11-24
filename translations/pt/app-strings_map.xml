@@ -20,6 +20,11 @@
     <string name="map_style_theme">Como o tema</string>
     <string name="map_style_light">Claras</string>
     <string name="map_style_dark">Escuras</string>
+    <string name="map_palette">Paleta</string>
+    <string name="map_palette_interface">Como a minha interface</string>
+    <string name="map_palette_custom">Cor própria</string>
+    <string name="map_route_flow">Animar a rota</string>
+    <string name="map_route_flow_help">As setas da rota avançam para onde você vai. Em telas com pouca memória, ficam paradas.</string>
     <string name="map_offline">Offline</string>
     <string name="map_offline_help">Salve o mapa de uma região para vê-lo sem internet. Para buscar e traçar rotas, baixe seu estado.</string>
     <string name="map_offline_here">Sua região</string>

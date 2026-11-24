@@ -18,6 +18,11 @@
     <string name="map_style_theme">Theo giao diện</string>
     <string name="map_style_light">Sáng</string>
     <string name="map_style_dark">Tối</string>
+    <string name="map_palette">Bảng màu</string>
+    <string name="map_palette_interface">Giống giao diện của tôi</string>
+    <string name="map_palette_custom">Màu riêng</string>
+    <string name="map_route_flow">Tạo chuyển động cho tuyến đường</string>
+    <string name="map_route_flow_help">Các mũi tên trên tuyến đường chạy về hướng bạn đi. Trên màn hình ít bộ nhớ, chúng đứng yên.</string>
     <string name="map_offline">Ngoại tuyến</string>
     <string name="map_offline_help">Lưu bản đồ của một khu vực để xem khi không có internet. Để tìm kiếm và lập lộ trình, hãy tải tỉnh của bạn.</string>
     <string name="map_offline_here">Khu vực của bạn</string>

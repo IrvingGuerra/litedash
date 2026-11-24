@@ -18,6 +18,11 @@
     <string name="map_style_theme">Podle motivu</string>
     <string name="map_style_light">Světlé</string>
     <string name="map_style_dark">Tmavé</string>
+    <string name="map_palette">Paleta</string>
+    <string name="map_palette_interface">Jako moje rozhraní</string>
+    <string name="map_palette_custom">Vlastní barva</string>
+    <string name="map_route_flow">Animovat trasu</string>
+    <string name="map_route_flow_help">Šipky na trase plynou směrem jízdy. Na obrazovkách s malou pamětí zůstávají na místě.</string>
     <string name="map_offline">Offline</string>
     <string name="map_offline_help">Ulož si mapu oblasti a uvidíš ji bez internetu. Pro hledání a trasy si stáhni svůj kraj.</string>
     <string name="map_offline_here">Tvoje oblast</string>

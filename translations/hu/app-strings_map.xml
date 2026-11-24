@@ -18,6 +18,11 @@
     <string name="map_style_theme">Mint a téma</string>
     <string name="map_style_light">Világos</string>
     <string name="map_style_dark">Sötét</string>
+    <string name="map_palette">Paletta</string>
+    <string name="map_palette_interface">Mint a felületem</string>
+    <string name="map_palette_custom">Saját szín</string>
+    <string name="map_route_flow">Útvonal animálása</string>
+    <string name="map_route_flow_help">Az útvonal nyilai a haladási irányba áramlanak. Kevés memóriájú kijelzőkön állva maradnak.</string>
     <string name="map_offline">Offline</string>
     <string name="map_offline_help">Mentsd el egy terület térképét, hogy internet nélkül is lásd. A kereséshez és az útvonalakhoz töltsd le a megyédet.</string>
     <string name="map_offline_here">A te területed</string>

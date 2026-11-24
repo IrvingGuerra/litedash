@@ -18,6 +18,11 @@
     <string name="map_style_theme">Come il tema</string>
     <string name="map_style_light">Chiari</string>
     <string name="map_style_dark">Scuri</string>
+    <string name="map_palette">Tavolozza</string>
+    <string name="map_palette_interface">Come la mia interfaccia</string>
+    <string name="map_palette_custom">Colore personale</string>
+    <string name="map_route_flow">Anima il percorso</string>
+    <string name="map_route_flow_help">Le frecce del percorso scorrono verso la tua destinazione. Sugli schermi con poca memoria restano ferme.</string>
     <string name="map_offline">Offline</string>
     <string name="map_offline_help">Salva la mappa di una zona per vederla senza internet. Per cercare e calcolare percorsi, scarica la tua regione.</string>
     <string name="map_offline_here">La tua zona</string>

@@ -135,8 +135,11 @@ private fun AccentSettings(prefs: Preferences) {
 /** Lo que dice la tarjeta de muestra (una hora: se lee igual en cualquier idioma). */
 private const val SAMPLE_TIME = "12:45"
 
-/** Colores rápidos de las tarjetas: tonos vivos; cada tema los lleva a su claridad (profundos en oscuro, pastel en claro). */
-private val CARD_COLORS = listOf(
+/**
+ * Colores rápidos de las tarjetas (y del mapa con «Color propio»): tonos vivos; cada tema los lleva a su claridad
+ * (profundos en oscuro, pastel en claro).
+ */
+internal val CARD_COLORS = listOf(
     Color(0xFF2B2F36), Color(0xFF1F4FD8), Color(0xFF0E8F9A), Color(0xFF1E8E4E),
     Color(0xFFB89B6A), Color(0xFFD9601A), Color(0xFFB3243C), Color(0xFF7A3FE0),
 )

@@ -25,4 +25,17 @@ class MapLookTest {
         assertEquals(MapLook(), MapLook.parse("detail=minimal"))
         assertEquals(MapLook(zoom = MapZoom.FAR), MapLook.parse("detail=full;zoom=far"))
     }
+
+    @Test
+    fun paletteRoundTrip() {
+        val look = MapLook(palette = MapPalettes.CUSTOM, custom = 0x1F4FD8, flow = false)
+        assertEquals("palette=custom;color=1f4fd8;flow=off", look.encode())
+        assertEquals(look, MapLook.parse(look.encode()))
+        // De fábrica: la paleta nueva, sin color y con la ruta animada.
+        assertEquals(MapPalette.NIGHT, MapLook().colors(themeDark = true, interfaceColor = 0x7A3FE0))
+        assertEquals(MapPalette.DAY, MapLook(style = MapStyle.LIGHT).colors(themeDark = true, interfaceColor = null))
+        // Propio sin color guardado (no debería pasar): la de fábrica. Un color raro se ignora.
+        assertEquals(MapPalette.DAY, MapLook(palette = MapPalettes.CUSTOM).colors(themeDark = false, interfaceColor = null))
+        assertEquals(null, MapLook.parse("palette=custom;color=zz").custom)
+    }
 }

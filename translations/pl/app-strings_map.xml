@@ -18,6 +18,11 @@
     <string name="map_style_theme">Jak motyw</string>
     <string name="map_style_light">Jasne</string>
     <string name="map_style_dark">Ciemne</string>
+    <string name="map_palette">Paleta</string>
+    <string name="map_palette_interface">Jak mój interfejs</string>
+    <string name="map_palette_custom">Własny kolor</string>
+    <string name="map_route_flow">Animuj trasę</string>
+    <string name="map_route_flow_help">Strzałki na trasie płyną w kierunku jazdy. Na ekranach z małą ilością pamięci stoją w miejscu.</string>
     <string name="map_offline">Offline</string>
     <string name="map_offline_help">Zapisz mapę strefy, by widzieć ją bez internetu. Aby szukać i wyznaczać trasy, pobierz swoje województwo.</string>
     <string name="map_offline_here">Twoja strefa</string>

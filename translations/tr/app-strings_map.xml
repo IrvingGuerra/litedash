@@ -18,6 +18,11 @@
     <string name="map_style_theme">Tema gibi</string>
     <string name="map_style_light">Açık</string>
     <string name="map_style_dark">Koyu</string>
+    <string name="map_palette">Palet</string>
+    <string name="map_palette_interface">Arayüzüm gibi</string>
+    <string name="map_palette_custom">Kendi rengim</string>
+    <string name="map_route_flow">Rotayı canlandır</string>
+    <string name="map_route_flow_help">Rotadaki oklar gittiğiniz yöne doğru akar. Belleği az olan ekranlarda sabit kalır.</string>
     <string name="map_offline">Çevrimdışı</string>
     <string name="map_offline_help">İnternet olmadan görmek için bir bölgenin haritasını kaydedin. Arama yapmak ve rota oluşturmak için ilinizi indirin.</string>
     <string name="map_offline_here">Bölgeniz</string>

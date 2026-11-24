@@ -55,6 +55,7 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -72,6 +73,7 @@ import com.irvingguerra.litedash.core.ui.Label
 import com.irvingguerra.litedash.core.ui.LocalColors
 import com.irvingguerra.litedash.core.ui.Radius
 import com.irvingguerra.litedash.core.ui.Segmented
+import com.irvingguerra.litedash.core.ui.SwitchRow
 import com.irvingguerra.litedash.core.ui.TextInput
 import com.irvingguerra.litedash.core.ui.Typography
 import com.irvingguerra.litedash.core.vehicle.Signal
@@ -85,12 +87,13 @@ import com.irvingguerra.litedash.feature.map.MapCamera
 import com.irvingguerra.litedash.feature.map.MapCanvas
 import com.irvingguerra.litedash.feature.map.MapLook
 import com.irvingguerra.litedash.feature.map.MapOrientation
+import com.irvingguerra.litedash.feature.map.MapPalettes
 import com.irvingguerra.litedash.feature.map.MapPacks
 import com.irvingguerra.litedash.feature.map.MapRegion
 import com.irvingguerra.litedash.feature.map.MapStyle
 import com.irvingguerra.litedash.feature.map.MapZoom
 import com.irvingguerra.litedash.feature.map.NamedRegion
-import com.irvingguerra.litedash.feature.map.MinimalPalette
+import com.irvingguerra.litedash.feature.map.MapPalette
 import com.irvingguerra.litedash.feature.map.OfflineArea
 import com.irvingguerra.litedash.feature.map.OfflineError
 import com.irvingguerra.litedash.feature.map.OfflineMaps
@@ -387,7 +390,7 @@ private fun LiveMap(
     val c = LocalColors.current
     KeepTripRunning(d.trip)
     val context = LocalContext.current
-    val store = rememberTileStore(look, c.dark, tileId)
+    val store = rememberTileStore(d, look, c.dark, tileId)
     // Tapado (por el mapa en grande o un panel) se queda como está: no pide teselas ni anima.
     val active = !LocalHomeCovered.current
     val position = d.trip.position
@@ -445,7 +448,7 @@ internal fun MapBackdrop(d: Dependencies, focus: Rect?, car: CarPackage?, covere
     // Con algo en grande encima el fondo no se dibuja: tampoco hace falta el GPS.
     if (!covered) KeepTripRunning(d.trip)
     val look = rememberMapLook(d)
-    val store = rememberTileStore(look, c.dark, BACKDROP_KEY)
+    val store = rememberTileStore(d, look, c.dark, BACKDROP_KEY)
     val camera = sharedMapCamera(BACKDROP_KEY)
     val position = d.trip.position ?: return
     val kmh = d.bus.watch(Signal.SPEED)
@@ -551,21 +554,28 @@ private val NARROW_MAP = 320.dp
 private val MAP_USER_AGENT = "LiteDash/${BuildConfig.VERSION_NAME} (+https://litedash.dev)"
 
 /**
- * Las teselas de [look], bajando solo mientras se ve y nada lo tapa: unas claras y otras oscuras (se dibujan ya en sus
- * colores). Con [shareKey] (el id del widget), el widget y su mapa en grande usan el mismo almacén: al abrirlo o
- * cerrarlo las teselas ya están.
+ * Las teselas de [look], bajando solo mientras se ve y nada lo tapa: se dibujan ya en los colores de su paleta (día o
+ * noche, de fábrica, como tu interfaz o de tu color). Con [shareKey] (el id del widget), el widget y su mapa en grande
+ * usan el mismo almacén: al abrirlo o cerrarlo las teselas ya están. A escala real ([realRoadDp], la vista de tu auto)
+ * los colores no cambian con la paleta. [d] da el color de tu interfaz (sin él, el de fábrica).
  */
 @Composable
-internal fun rememberTileStore(look: MapLook, themeDark: Boolean, shareKey: String? = null, realRoadDp: Float = 0f): TileStore {
+internal fun rememberTileStore(
+    d: Dependencies?, look: MapLook, themeDark: Boolean, shareKey: String? = null, realRoadDp: Float = 0f,
+): TileStore {
     val context = LocalContext.current
     val density = LocalDensity.current.density
     val darkTiles = look.dark(themeDark)
-    val store = remember(darkTiles, shareKey, realRoadDp) {
-        if (shareKey == null) return@remember newTileStore(context, darkTiles, density)
-        val kind = "$darkTiles/$density/$realRoadDp"
+    // El color de la interfaz: el de las tarjetas si elegiste uno (lleva el tono), si no el realce.
+    val ui = d?.let { (it.prefs.cardColor ?: it.prefs.accentColor)?.toArgb()?.and(0xFFFFFF) }
+    val palette = if (realRoadDp > 0f) (if (darkTiles) MapPalette.CAR_NIGHT else MapPalette.CAR_DAY) else look.colors(themeDark, ui)
+    // La llave lleva los colores: teselas de otra paleta no se mezclan.
+    val kind = "$density/$realRoadDp/${palette.land}/${palette.roads.contentToString()}/${palette.casings.contentToString()}"
+    val store = remember(kind, shareKey) {
+        if (shareKey == null) return@remember newTileStore(context, palette, density)
         // Uno por widget: al cambiar de colores o de tema, el anterior se suelta.
         tileStores[shareKey]?.takeIf { it.first == kind }?.second
-            ?: newTileStore(context, darkTiles, density, realRoadDp).also { tileStores[shareKey] = kind to it }
+            ?: newTileStore(context, palette, density, realRoadDp).also { tileStores[shareKey] = kind to it }
     }
     // Tapado por su propio mapa en grande no cuenta como tapado: se rige por lo que tape a ese (comparten almacén).
     val covered = expandedMap?.takeIf { shareKey != null && it.tileId == shareKey }?.covered ?: LocalHomeCovered.current
@@ -580,12 +590,12 @@ internal fun rememberTileStore(look: MapLook, themeDark: Boolean, shareKey: Stri
 /** El almacén de cada widget Mapa (por su id) y de qué colores es. */
 private val tileStores = HashMap<String, Pair<String, TileStore>>()
 
-private fun newTileStore(context: Context, dark: Boolean, density: Float, realRoadDp: Float = 0f): TileStore =
-    TileStore(context, MAP_USER_AGENT, minimalTiles(context, dark, density, realRoadDp))
+private fun newTileStore(context: Context, palette: MapPalette, density: Float, realRoadDp: Float = 0f): TileStore =
+    TileStore(context, MAP_USER_AGENT, minimalTiles(context, palette, density, realRoadDp))
 
-/** Las teselas del minimalista (claras u oscuras), a la medida de la pantalla. */
-private fun minimalTiles(context: Context, dark: Boolean, density: Float, realRoadDp: Float = 0f) =
-    VectorTiles(context, if (dark) MinimalPalette.DARK else MinimalPalette.LIGHT, tilePx(density).toInt(), density, MAP_USER_AGENT, realRoadDp)
+/** Las teselas del minimalista en los colores de [palette], a la medida de la pantalla. */
+private fun minimalTiles(context: Context, palette: MapPalette, density: Float, realRoadDp: Float = 0f) =
+    VectorTiles(context, palette, tilePx(density).toInt(), density, MAP_USER_AGENT, realRoadDp)
 
 /**
  * El aspecto del mapa de LiteDash (Ajustes → Apps → Navegación): uno solo para todos los widgets Mapa, el mapa en grande
@@ -703,7 +713,26 @@ private fun MapLookOptions(look: MapLook, set: (MapLook) -> Unit) {
         listOf(MapStyle.THEME to stringResource(R.string.map_style_theme), MapStyle.LIGHT to stringResource(R.string.map_style_light), MapStyle.DARK to stringResource(R.string.map_style_dark)),
         look.style, { set(look.copy(style = it)) },
     )
+    // La paleta va encima de «Colores» (que decide día o noche): sus tonos en las dos versiones.
+    Label(stringResource(R.string.map_palette), Typography.label, c.textMuted)
+    Segmented(
+        listOf(
+            MapPalettes.FACTORY to stringResource(R.string.factory_look), MapPalettes.INTERFACE to stringResource(R.string.map_palette_interface),
+            MapPalettes.CUSTOM to stringResource(R.string.map_palette_custom),
+        ),
+        look.palette,
+        // Al elegir «Color propio» por primera vez, arranca con el primero de los rápidos.
+        { p -> set(look.copy(palette = p, custom = look.custom ?: if (p == MapPalettes.CUSTOM) CARD_COLORS[1].rgb() else null)) },
+    )
+    // El color se aplica al soltar (redibujar el mapa en cada movimiento del dedo pesaría).
+    if (look.palette == MapPalettes.CUSTOM) {
+        ColorPicker(look.custom?.let { Color(0xFF000000 or it.toLong()) } ?: Color.Unspecified, {}, CARD_COLORS) { set(look.copy(custom = it.rgb())) }
+    }
+    SwitchRow(stringResource(R.string.map_route_flow), look.flow, { set(look.copy(flow = it)) }, stringResource(R.string.map_route_flow_help))
 }
+
+/** El color sin alfa (RGB), como lo guarda [MapLook.custom]. */
+private fun Color.rgb() = toArgb() and 0xFFFFFF
 
 /**
  * Sin conexión: por estado (el mapa, la ruta y la búsqueda) o por zona (solo el mapa): las zonas guardadas
@@ -1097,9 +1126,9 @@ private fun OfflinePicker(offline: OfflineMaps, lat: Double, lon: Double, km: In
     val context = LocalContext.current
     val density = LocalDensity.current.density
     val look = remember { MapLook() }
-    val store = rememberTileStore(look, c.dark)
+    val store = rememberTileStore(null, look, c.dark)
     // Lo que se baja va siempre en claro (el oscuro se pinta al dibujar); una sola fuente para las dos descargas.
-    val download = remember(density) { minimalTiles(context, dark = false, density) }
+    val download = remember(density) { minimalTiles(context, MapPalette.DAY, density) }
     val camera = rememberFreeMapCamera()
     val centered by remember(camera) { derivedStateOf { camera.centered } }
     // Al elegir una zona el mapa va a ella; al soltarla, de regreso a ti.

@@ -25,6 +25,10 @@ interface TileSource {
     /** El cielo del mapa inclinado (ARGB); null = el gris claro u oscuro de siempre. */
     val sky: Int? get() = null
 
+    /** Los nombres de las calles y su halo (ARGB); null = los grises de siempre. */
+    val label: Int? get() = null
+    val halo: Int? get() = null
+
     /** Pedir comprimido y guardarlo así (se descomprime al usarlo). */
     val gzip: Boolean
 
@@ -58,12 +62,13 @@ class TileNames(val extent: Int, val roads: List<RoadName>)
 
 /**
  * El mapa minimalista: los datos de OpenFreeMap (vectoriales, esquema OpenMapTiles, sin cuenta; para ver el mapa no
- * hay tope, para bajar zonas sí: ver OfflineMaps) dibujados por LiteDash con solo calles, agua y parques, en los colores de [palette].
+ * hay tope, para bajar zonas sí: ver OfflineMaps) dibujados por LiteDash con solo calles, agua y parques, en los colores de
+ * [palette] (orillas abajo; rellenos encima, de las chicas a las grandes; puntas redondas).
  * Nítido a cualquier zoom: del 15 al [MAX_ZOOM] se dibuja la parte que toca de la tesela del 14.
  */
 class VectorTiles(
     context: Context,
-    private val palette: MinimalPalette,
+    private val palette: MapPalette,
     private val sizePx: Int,
     private val density: Float,
     private val userAgent: String,
@@ -78,7 +83,9 @@ class VectorTiles(
     override val folder = "map_vector"
     override val attribution = "OpenFreeMap © OpenMapTiles © OpenStreetMap"
     override val attributionShort = "© OpenMapTiles © OpenStreetMap"
-    override val sky = palette.background
+    override val sky = palette.land
+    override val label = palette.label
+    override val halo = palette.halo
     override val gzip = true
 
     /**
@@ -131,7 +138,7 @@ class VectorTiles(
 
     /** La parte ([sx], [sy]) de 1/[sub] de la tesela, con grosores de calle según el zoom [z]. */
     private fun drawMinimal(canvas: Canvas, t: VectorTile, sub: Int, sx: Int, sy: Int, z: Int) {
-        canvas.drawColor(palette.background)
+        canvas.drawColor(palette.land)
         val scale = sizePx.toFloat() * sub / t.extent
         canvas.translate(-sx * sizePx.toFloat(), -sy * sizePx.toFloat())
         canvas.scale(scale, scale)
@@ -175,7 +182,7 @@ class VectorTiles(
             drawRealRoads(canvas, t, tiers, real, z, scale, path, stroke, l, tp, r, b)
             return
         }
-        for (tier in tiers) lines(t.roads[tier.ordinal], ROAD_WIDTH[tier.ordinal] + CASING, palette.casing)
+        for (tier in tiers) lines(t.roads[tier.ordinal], ROAD_WIDTH[tier.ordinal] + CASING, palette.casings[tier.ordinal])
         for (tier in tiers) lines(t.roads[tier.ordinal], ROAD_WIDTH[tier.ordinal], palette.roads[tier.ordinal])
     }
 
@@ -189,7 +196,7 @@ class VectorTiles(
         canvas: Canvas, t: VectorTile, tiers: List<RoadTier>, real: Float, z: Int, scale: Float,
         path: Path, stroke: Paint, l: Float, tp: Float, r: Float, b: Float,
     ) {
-        val dark = luminance(palette.background) < 0.5f
+        val dark = luminance(palette.land) < 0.2
         val look = if (dark) REAL_DARK else REAL_LIGHT
         // Las rayas y orillas se adelgazan al alejarse, pero nunca menos de un px.
         val line = (1.6f * density * 2.0.pow((z - realZoom).coerceAtMost(0)).toFloat()).coerceAtLeast(1f)
@@ -302,23 +309,6 @@ internal fun dataOrigin(key: Long): Long {
 internal fun pieceX(key: Long, origin: Long) = keyX(key) - (keyX(origin) shl (keyZ(key) - keyZ(origin)))
 internal fun pieceY(key: Long, origin: Long) = keyY(key) - (keyY(origin) shl (keyZ(key) - keyZ(origin)))
 
-/** Los colores del mapa minimalista (ARGB). [roads] en el orden de [RoadTier]. */
-class MinimalPalette(val background: Int, val water: Int, val park: Int, val casing: Int, val roads: IntArray) {
-    companion object {
-        // Autopistas en ámbar y avenidas un poco más claras: se ve por dónde se cruza la ciudad.
-        val LIGHT = MinimalPalette(
-            background = 0xFFE9EBEF.toInt(), water = 0xFFC2D3E6.toInt(), park = 0xFFD5E4CF.toInt(),
-            casing = 0xFFCFD3DA.toInt(),
-            roads = intArrayOf(0xFFF7CF86.toInt(), 0xFFFCE9C4.toInt(), 0xFFFFFFFF.toInt(), 0xFFFFFFFF.toInt(), 0xFFF7F8FA.toInt()),
-        )
-        val DARK = MinimalPalette(
-            background = 0xFF1B1C20.toInt(), water = 0xFF1C2A3B.toInt(), park = 0xFF1D2A20.toInt(),
-            casing = 0xFF141518.toInt(),
-            roads = intArrayOf(0xFF8A6A33.toInt(), 0xFF5E5442.toInt(), 0xFF45474E.toInt(), 0xFF383A40.toInt(), 0xFF2E3035.toInt()),
-        )
-    }
-}
-
 private fun Shape.toPath(path: Path, close: Boolean): Path {
     path.rewind()
     for (p in parts.indices) {
@@ -334,7 +324,3 @@ private fun Shape.toPath(path: Path, close: Boolean): Path {
 /** Lo bajado comprimido (gzip) a los datos; si no venía comprimido, tal cual. */
 private fun unzip(data: ByteArray): ByteArray =
     if (data.size > 2 && data[0] == 0x1F.toByte() && data[1] == 0x8B.toByte()) GZIPInputStream(data.inputStream()).use { it.readBytes() } else data
-
-/** Qué tan claro es un color ARGB (0 = negro, 1 = blanco). */
-private fun luminance(argb: Int): Float =
-    (0.299f * (argb shr 16 and 0xFF) + 0.587f * (argb shr 8 and 0xFF) + 0.114f * (argb and 0xFF)) / 255f

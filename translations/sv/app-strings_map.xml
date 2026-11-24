@@ -18,6 +18,11 @@
     <string name="map_style_theme">Som temat</string>
     <string name="map_style_light">Ljus</string>
     <string name="map_style_dark">Mörk</string>
+    <string name="map_palette">Palett</string>
+    <string name="map_palette_interface">Som mitt gränssnitt</string>
+    <string name="map_palette_custom">Egen färg</string>
+    <string name="map_route_flow">Animera rutten</string>
+    <string name="map_route_flow_help">Pilarna på rutten rör sig mot dit du ska. På skärmar med lite minne står de stilla.</string>
     <string name="map_offline">Offline</string>
     <string name="map_offline_help">Spara kartan för en zon för att se den utan internet. Ladda ner ditt län för att söka och planera rutter.</string>
     <string name="map_offline_here">Din zon</string>

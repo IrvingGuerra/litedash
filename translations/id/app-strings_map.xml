@@ -18,6 +18,11 @@
     <string name="map_style_theme">Ikuti tema</string>
     <string name="map_style_light">Terang</string>
     <string name="map_style_dark">Gelap</string>
+    <string name="map_palette">Palet</string>
+    <string name="map_palette_interface">Seperti antarmuka saya</string>
+    <string name="map_palette_custom">Warna sendiri</string>
+    <string name="map_route_flow">Animasikan rute</string>
+    <string name="map_route_flow_help">Panah pada rute mengalir ke arah tujuan Anda. Di layar dengan memori kecil, panah tetap diam.</string>
     <string name="map_offline">Offline</string>
     <string name="map_offline_help">Simpan peta suatu zona agar bisa dilihat tanpa internet. Untuk mencari dan membuat rute, unduh provinsi Anda.</string>
     <string name="map_offline_here">Zona Anda</string>
