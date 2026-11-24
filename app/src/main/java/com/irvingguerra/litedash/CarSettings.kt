@@ -46,6 +46,7 @@ import com.irvingguerra.litedash.core.ui.Icon
 import com.irvingguerra.litedash.core.ui.Icons
 import com.irvingguerra.litedash.core.ui.Label
 import com.irvingguerra.litedash.core.ui.LocalColors
+import com.irvingguerra.litedash.core.ui.raised
 import com.irvingguerra.litedash.core.ui.TextInput
 import com.irvingguerra.litedash.core.ui.Typography
 import com.irvingguerra.litedash.feature.apps.normalize
@@ -340,7 +341,7 @@ private fun ModelCard(title: String, selected: Boolean, onClick: () -> Unit, det
         Modifier
             .width(176.dp)
             .clip(shape)
-            .background(c.surface)
+            .background(c.raised)
             .border(if (selected) 2.dp else 1.dp, if (selected) c.accent else c.line, shape)
             .clickable(onClick = onClick)
             .padding(12.dp),
@@ -367,7 +368,7 @@ private fun CarPreview(e: CatalogEntry, cars: CarRepository, progress: Float?, f
     val shape = RoundedCornerShape(Radius.card)
     val img = rememberThumbnail(cars, e)
     Column(
-        Modifier.fillMaxWidth().clip(shape).background(c.surface).border(2.dp, c.accent, shape).padding(16.dp),
+        Modifier.fillMaxWidth().clip(shape).background(c.raised).border(2.dp, c.accent, shape).padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Box(Modifier.fillMaxWidth().aspectRatio(2.2f), contentAlignment = Alignment.Center) {

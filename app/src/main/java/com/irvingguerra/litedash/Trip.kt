@@ -10,6 +10,8 @@ import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -24,18 +26,21 @@ import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.location.LocationListenerCompat
 import kotlin.concurrent.thread
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.LifecycleStartEffect
-import com.irvingguerra.litedash.core.ui.Divider
 import com.irvingguerra.litedash.core.ui.Button
+import com.irvingguerra.litedash.core.ui.Divider
 import com.irvingguerra.litedash.core.ui.Card
 import com.irvingguerra.litedash.core.ui.Icon
 import com.irvingguerra.litedash.core.ui.Icons
@@ -135,6 +140,10 @@ class TripRepository(private val context: Context, private val bus: VehicleBus) 
     var permitted by mutableStateOf(hasPermission())
         private set
 
+    /** Con la ubicación precisa (con solo la aproximada no hay velocidad ni viaje). Estado, como [permitted]. */
+    var precise by mutableStateOf(granted(Manifest.permission.ACCESS_FINE_LOCATION))
+        private set
+
     private var users = 0
     private var listening = false
     /** Los proveedores que sí quedaron escuchando y la última falla al registrarlos (para el reporte). */
@@ -155,6 +164,7 @@ class TripRepository(private val context: Context, private val bus: VehicleBus) 
 
     fun refreshPermission() {
         permitted = hasPermission()
+        precise = granted(Manifest.permission.ACCESS_FINE_LOCATION)
     }
 
     /**
@@ -401,13 +411,48 @@ fun TripTile(d: Dependencies, time: Boolean = true, average: Boolean = true, hea
                         Row(Modifier.fillMaxWidth().padding(top = 8.dp), verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(if (width > 340.dp) 28.dp else 16.dp)) {
                             for ((name, value) in stat) TripStat(stringResource(name), value)
                             Spacer(Modifier.weight(1f))
-                            if (width > 340.dp) Button(stringResource(R.string.trip_reset), { trip.reset() })
+                            if (width > 340.dp) ResetTripButton(trip)
                         }
                     }
                 }
             }
         }
     }
+}
+
+/**
+ * En las opciones de Velocímetro y Viaje: sin la ubicación precisa (Android 12+ deja dar solo la aproximada) la
+ * velocidad y el viaje se quedan en 0. Nota con «Permitir» y, ya negada, «Permisos» (los ajustes de LiteDash).
+ */
+@Composable
+internal fun PreciseLocationNote(trip: TripRepository) {
+    val context = LocalContext.current
+    var denied by rememberSaveable { mutableStateOf(false) }
+    // Se pide junto con la aproximada: en Android 12+ pedir solo la precisa se ignora.
+    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
+        trip.refreshPermission()
+        denied = !trip.precise
+    }
+    // Al volver de los ajustes de Android ya puede estar dada.
+    LifecycleResumeEffect(trip) {
+        trip.refreshPermission()
+        onPauseOrDispose { }
+    }
+    if (trip.precise) return
+    Label(stringResource(R.string.precise_location_missing), Typography.small, LocalColors.current.warning)
+    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        Button(stringResource(R.string.local_network_allow), { launcher.launch(LOCATION_PERMISSIONS) }, primary = true)
+        if (denied) Button(stringResource(R.string.local_network_settings), { openAppSettings(context) })
+    }
+}
+
+/** «Reiniciar» el viaje (en el widget ancho y en las opciones de Viaje y Carretera): no se deshace, se confirma. */
+@Composable
+internal fun ResetTripButton(trip: TripRepository) {
+    Confirmed(
+        stringResource(R.string.trip_reset), stringResource(R.string.trip_reset_question), stringResource(R.string.trip_reset),
+        message = stringResource(R.string.trip_reset_message), action = trip::reset,
+    )
 }
 
 /** Un número grande con su unidad en chico a un lado (como el reloj). */

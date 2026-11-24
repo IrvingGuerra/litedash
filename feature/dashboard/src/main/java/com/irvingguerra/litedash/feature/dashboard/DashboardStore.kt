@@ -18,7 +18,8 @@ class DashboardStore(context: Context) {
      * Plan Widgets: cada acomodo de la cuadrícula de 96 dp se copia a la fina con todo ×[FINE] (misma pieza,
      * mismo lugar) si no tiene copia o si se guardó después de ella (alguien regresó a una versión vieja,
      * acomodó ahí y volvió). Los de antes NO se borran (regla de no borrar datos). La pantalla de ahora toma
-     * el más nuevo de su cuadrícula o una cercana ([Grid.near]) y lo ajusta. Quitar esta copia en 2027.
+     * el más nuevo de su cuadrícula o una cercana ([Grid.near]) y lo ajusta.
+     * Quitar cuando < 5 % de las pantallas esté antes de la 1.4.140 según docs/usuarios.py.
      */
     private fun toFineGrid() {
         val copies = fineCopies(prefs.all)
@@ -31,12 +32,20 @@ class DashboardStore(context: Context) {
     fun read(c: Grid, page: Int = 0): List<Tile>? = prefs.getString(layoutKey(page, c), null)?.let(::parseLayout)
 
     fun save(c: Grid, tiles: List<Tile>, page: Int = 0) {
-        val text = tiles.joinToString("\n") {
-            // El campo nuevo va al final: las versiones de antes lo ignoran.
-            listOf(it.id, it.type, it.col, it.row, it.width, it.height, it.data.replace('\t', ' ').replace('\n', ' '), if (it.plain) "1" else "")
-                .joinToString("\t")
-        }
-        prefs.edit().putString(layoutKey(page, c), text).putLong(savedAtKey(page, c), System.currentTimeMillis()).apply()
+        prefs.edit().putString(layoutKey(page, c), formatLayout(tiles)).putLong(savedAtKey(page, c), System.currentTimeMillis()).apply()
+    }
+
+    /**
+     * Para migraciones de una vez al arrancar (antes de cargar el inicio): cambia los datos de las piezas de todos los
+     * acomodos guardados (toda cuadrícula y página), del guardado más nuevo al más viejo. [update] da los nuevos datos de
+     * una pieza (null = igual). No mueve la hora de guardado (no cambia qué acomodo se elige).
+     */
+    fun changeDataEverywhere(update: (Tile) -> String?) {
+        val changed = rewriteLayouts(prefs.all, update)
+        if (changed.isEmpty()) return
+        val edit = prefs.edit()
+        for ((key, text) in changed) edit.putString(key, text)
+        edit.apply()
     }
 
     /** Cuándo se guardó el acomodo de [c] (0 si nunca o si es de antes de la 1.4.100). */
@@ -142,6 +151,35 @@ internal fun fineCopies(all: Map<String, *>): Map<String, Pair<String, Long>> {
 }
 
 /**
+ * Lo que [DashboardStore.changeDataEverywhere] escribe, con todo lo guardado ([all]): llave del acomodo → su texto nuevo,
+ * solo los que cambian. Recorre los de la cuadrícula fina de todas las páginas, del guardado más nuevo al más viejo.
+ */
+internal fun rewriteLayouts(all: Map<String, *>, update: (Tile) -> String?): Map<String, String> {
+    val layouts = all.entries.mapNotNull { (key, value) ->
+        val savedAt = when {
+            key.startsWith(LAYOUT_KEY_PREFIX) -> SAVED_AT_PREFIX + key.removePrefix(LAYOUT_KEY_PREFIX)
+            key.startsWith(PAGE_LAYOUT_PREFIX) -> PAGE_SAVED_AT_PREFIX + key.removePrefix(PAGE_LAYOUT_PREFIX)
+            else -> return@mapNotNull null
+        }
+        (value as? String)?.let { Triple(key, it, all[savedAt] as? Long ?: 0L) }
+    }.sortedByDescending { it.third }
+    val out = LinkedHashMap<String, String>()
+    for ((key, text, _) in layouts) {
+        val before = parseLayout(text)
+        val after = before.map { t -> update(t)?.let { t.copy(data = it) } ?: t }
+        if (after != before) out[key] = formatLayout(after)
+    }
+    return out
+}
+
+/** El texto de un acomodo: una pieza por línea, campos separados por tabulador. */
+internal fun formatLayout(tiles: List<Tile>): String = tiles.joinToString("\n") {
+    // El campo nuevo va al final: las versiones de antes lo ignoran.
+    listOf(it.id, it.type, it.col, it.row, it.width, it.height, it.data.replace('\t', ' ').replace('\n', ' '), if (it.plain) "1" else "")
+        .joinToString("\t")
+}
+
+/**
  * Un acomodo guardado: una pieza por línea, campos separados por tabulador. Una línea dañada (escritura
  * cortada) se salta y un id repetido (acomodo dañado o editado a mano) se queda con la primera: no tumban el inicio.
  */
@@ -151,7 +189,7 @@ internal fun parseLayout(text: String): List<Tile> = text.lineSequence().filter 
     val (col, row, width, height) = (2..5).map { f[it].toIntOrNull() ?: return@mapNotNull null }
     val plain = f.getOrElse(7) { "" } == "1"
     // El widget Navegar (hasta la 1.4.68) es ahora el Mapa, en el mismo lugar y tamaño (sus
-    // datos eran otra cosa: el mapa queda como de fábrica).
+    // datos eran otra cosa: el mapa queda como de fábrica). Quitar cuando < 5 % de las pantallas esté antes de la 1.4.140 según docs/usuarios.py.
     if (f[1] == LEGACY_NAVIGATE) Tile(f[0], TileTypes.MAP, col, row, width, height, "", plain)
     else Tile(f[0], f[1], col, row, width, height, f.getOrElse(6) { "" }, plain)
 }.filter { p -> p.col >= 0 && p.row >= 0 }.distinctBy { it.id }.toList()

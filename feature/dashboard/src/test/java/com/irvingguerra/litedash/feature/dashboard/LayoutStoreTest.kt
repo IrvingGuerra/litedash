@@ -34,6 +34,28 @@ class LayoutStoreTest {
     }
 
     @Test
+    fun rewritesEveryLayoutNewestFirstAndOnlyWhatChanges() {
+        val all = mapOf(
+            "fine_layout_20x10" to line("p-1", "projection", 0, 0, 4, 2, "a/b;x=off", ""),
+            "fine_saved_at_20x10" to 10L,
+            "page_layout_1_20x10" to line("p-2", "projection", 0, 0, 4, 2, "c/d", ""),
+            "page_saved_at_1_20x10" to 20L,
+            "fine_layout_24x12" to line("clock-1", "clock", 0, 0, 4, 2, "", ""),
+            "layout_10x5" to line("p-3", "projection", 0, 0, 2, 1, "e/f", ""), // de 96 dp: no se toca
+        )
+        val seen = mutableListOf<String>()
+        val out = rewriteLayouts(all) { t -> if (t.type == "projection") { seen += t.data; t.data.substringAfter(';', "") } else null }
+        assertEquals(listOf("c/d", "a/b;x=off"), seen)
+        assertEquals(
+            mapOf(
+                "page_layout_1_20x10" to line("p-2", "projection", 0, 0, 4, 2, "", ""),
+                "fine_layout_20x10" to line("p-1", "projection", 0, 0, 4, 2, "x=off", ""),
+            ),
+            out,
+        )
+    }
+
+    @Test
     fun navigateIsReadAsAFactoryMap() {
         // El widget Navegar (hasta la 1.4.68): mismo lugar y tamaño, sin sus datos, conserva "sin tarjeta".
         val tiles = parseLayout(line("nav-1", "navigate", 2, 1, 6, 4, "waze", "1"))

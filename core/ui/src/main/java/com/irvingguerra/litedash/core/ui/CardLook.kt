@@ -131,8 +131,8 @@ fun legibleVeil(c: Colors, mean: Color): Float = veilUntil(c.text, c, mean, 0f, 
  * El velo del lienzo (Ajustes, paneles) sobre tu fondo desenfocado. En tema oscuro, [base] tal cual (como en la 1.5.14:
  * tu fondo se sigue viendo detrás de Ajustes con cualquier imagen). En tema claro, donde el menú no se leía, de [base]
  * lo que haga falta para que lo apagado ([Colors.textMuted]: las secciones sin elegir) dé contraste ≥ 4.5 sobre la
- * parte más oscura de tu imagen ([extreme]); si el tema no llega a 4.5 ni sobre su propio fondo liso (el claro da
- * ~3.1), el 90 % de lo que da ahí; si ni así, liso.
+ * parte más oscura de tu imagen ([extreme]); como para llegar justo a 4.5 tendría que ir casi liso (el claro de fábrica
+ * da 4.6 sobre su fondo), basta el 90 % de lo que da ahí; si ni así, liso.
  */
 fun canvasVeil(c: Colors, extreme: Color, base: Float): Float =
     if (c.dark) base else veilUntil(c.textMuted, c, extreme, base, minOf(4.5f, contrast(c.textMuted, c.background) * 0.9f), 1f)

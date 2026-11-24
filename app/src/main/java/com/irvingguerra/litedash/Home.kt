@@ -358,7 +358,7 @@ fun TileContent(d: Dependencies, p: Tile, apps: List<App>, car: CarPackage?, rev
         )
         TileTypes.WORKSHOP -> HealthTile(d, showCar = p.flag(WidgetFlags.CAR)) { actions.onPanel(Panel.Workshop) }
         // Sin app de Android Auto / CarPlay: sus ajustes, para elegirla.
-        TileTypes.PROJECTION -> ProjectionTile(d, apps, p) {
+        TileTypes.PROJECTION -> ProjectionTile(d, apps) {
             openProjectionSettings()
             actions.onPanel(Panel.AppsSettings)
         }
@@ -379,11 +379,11 @@ fun TileContent(d: Dependencies, p: Tile, apps: List<App>, car: CarPackage?, rev
             )
         }
         TileTypes.PHONE -> {
-            // La app de llamadas que se eligió (la del Bluetooth de la pantalla, por ejemplo) o el marcador.
-            val app = appKeyOf(p.data)?.let { d.apps.find(apps, it) }
+            // Tu app de llamadas (la del Bluetooth de la pantalla, por ejemplo) o el marcador: la misma de la barra y el volante.
+            val app = phoneChoice(d, apps)
             ShortcutTile(
                 Icons.phone, stringResource(R.string.tile_phone), app?.name,
-                onClick = { if (app != null) d.apps.open(context, app) else openDialer(context) },
+                onClick = { openPhone(context, d, apps) },
                 tint = LocalColors.current.good,
             )
         }
@@ -441,6 +441,15 @@ fun Dependencies.addTiresTile(pickSource: () -> Unit): Boolean {
 fun mapApp(d: Dependencies, apps: List<App>): App? =
     d.prefs.mapApp?.let { d.apps.find(apps, it) }
         ?: d.apps.firstOf(apps, *NAVIGATION_PACKAGES)
+
+/** Tu app de llamadas (se elige en el widget Teléfono; vale para el widget, la barra y el volante); null = el marcador. */
+fun phoneChoice(d: Dependencies, apps: List<App>): App? = d.prefs.phoneApp?.let { d.apps.find(apps, it) }
+
+/** Abre [phoneChoice] o, si no hay (o ya no está instalada), el marcador. */
+fun openPhone(context: Context, d: Dependencies, apps: List<App>) {
+    val app = phoneChoice(d, apps)
+    if (app != null) d.apps.open(context, app) else openDialer(context)
+}
 
 /** Tu app de mapas solo si elegiste usarla («Navegar con: App de mapas»); null = todo va por el mapa de LiteDash. */
 fun externalMapApp(d: Dependencies, apps: List<App>): App? = if (d.prefs.mapExternal) mapApp(d, apps) else null
@@ -662,7 +671,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                 }
             },
             onProjection = { openProjection() },
-            onPhone = { openDialer(context) },
+            onPhone = { openPhone(context, d, currentApps) },
             onVoice = onVoice,
             onSettings = { panel = Panel.Settings },
             onBarSettings = { panel = Panel.BarSettings },
@@ -679,6 +688,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
             when (action) {
                 WheelAction.NAVIGATE -> openMapShortcut()
                 WheelAction.PROJECTION -> openProjection()
+                WheelAction.PHONE -> openPhone(context, d, currentApps)
                 WheelAction.MUSIC -> openMedia(null)
                 WheelAction.VOICE -> onVoice?.invoke()
                 WheelAction.HOME -> backToDashboard()
@@ -699,6 +709,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
     }
     // Velocímetros guardados hasta la 1.4.61 (su máximo en la unidad que se veía): a km/h. Basta al cargar el
     // acomodo de una cuadrícula (los que se agregan o cambian después ya vienen en km/h).
+    // Quitar cuando < 5 % de las pantallas esté antes de la 1.4.140 según docs/usuarios.py.
     LaunchedEffect(d.dashboard.grid) {
         val miles = d.prefs.units.miles
         d.dashboard.changeData(

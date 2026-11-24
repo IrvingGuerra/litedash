@@ -1,7 +1,6 @@
 package com.irvingguerra.litedash
 
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -13,7 +12,6 @@ import com.irvingguerra.litedash.core.ui.Typography
 import com.irvingguerra.litedash.feature.apps.App
 import com.irvingguerra.litedash.feature.apps.AppIcon
 import com.irvingguerra.litedash.feature.apps.rememberApps
-import com.irvingguerra.litedash.feature.dashboard.Tile
 
 // Apps conocidas para usar el celular en la pantalla (Android Auto / CarPlay con o sin cable).
 private val PROJECTION_PACKAGES = listOf(
@@ -74,17 +72,10 @@ fun projectionChoice(d: Dependencies, apps: List<App>): App? = projectionChoice(
  * Widget Android Auto / CarPlay: abre [projectionChoice]; si no hay ninguna, [onMissing] (sus ajustes, para elegirla).
  */
 @Composable
-fun ProjectionTile(d: Dependencies, apps: List<App>, tile: Tile, onMissing: () -> Unit) {
+fun ProjectionTile(d: Dependencies, apps: List<App>, onMissing: () -> Unit) {
     val context = LocalContext.current
-    // Adopción de la 1.5.14 y antes: cada widget elegía su app en sus opciones. Ahora hay una sola para toda la app:
-    // la del widget pasa a ser esa (si no había otra elegida) y el widget se queda sin la suya. Fuera de la composición:
-    // escribe ajustes.
-    val own = appKeyOf(tile.data)
-    if (own != null) LaunchedEffect(tile.id, own) {
-        if (d.prefs.projectionApp == null) d.prefs.projectionApp = own
-        d.dashboard.setData(tile.id, withAppKey(tile.data, null))
-    }
-    val app = projectionChoice(own ?: d.prefs.projectionApp, apps)
+    // La app propia que guardaban los widgets hasta la 1.5.15 ya se adoptó al arrancar ([Preferences.adoptWidgetApps]).
+    val app = projectionChoice(d, apps)
     // Mientras se lee la lista de apps no se sabe si falta: ni «No encontré…» ni mandar a sus ajustes.
     val loading = d.apps.apps == null
     ShortcutTile(

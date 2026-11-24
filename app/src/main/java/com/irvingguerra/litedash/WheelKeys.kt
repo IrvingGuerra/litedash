@@ -40,6 +40,7 @@ enum class WheelAction(val stored: String, val title: Int) {
     MUTE("mute", R.string.wheel_mute),
     NAVIGATE("navigate", R.string.wheel_navigate),
     PROJECTION("projection", R.string.wheel_projection),
+    PHONE("phone", R.string.wheel_phone),
     MUSIC("music", R.string.wheel_music),
     VOICE("voice", R.string.wheel_voice),
     HOME("home", R.string.wheel_home),

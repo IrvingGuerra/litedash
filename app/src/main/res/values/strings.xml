@@ -114,6 +114,7 @@
     <string name="option_change_app">Elegir app</string>
     <string name="option_opens">AL TOCARLO ABRE</string>
     <string name="option_opens_dialer">El marcador</string>
+    <string name="option_phone_everywhere">La misma app abren el botón Teléfono de la barra y el volante.</string>
     <string name="tires_show_pressure">Ver la presión de las llantas</string>
     <string name="gauge_customize_help">Los cambios se ven al momento. Lo que preocupa (motor caliente, revoluciones altas) siempre se pinta de rojo.</string>
     <string name="gauge_style">Estilo</string>
@@ -269,6 +270,9 @@
     <string name="tile_trip">Viaje</string>
     <string name="tile_trip_help">Distancia, tiempo, promedio y rumbo por GPS · usa el GPS solo mientras se ve</string>
     <string name="trip_reset">Reiniciar</string>
+    <string name="trip_reset_question">¿Reiniciar el viaje?</string>
+    <string name="trip_reset_message">La distancia, el tiempo y el promedio vuelven a cero.</string>
+    <string name="precise_location_missing">Falta la ubicación precisa: sin ella la velocidad y el viaje se quedan en 0.</string>
     <string name="unit_kmh">km/h</string>
     <string name="unit_mph">mph</string>
     <string name="parked_mode">Modo estacionado</string>
@@ -325,6 +329,7 @@
     <string name="wheel_mute">Silencio</string>
     <string name="wheel_navigate">Abrir el mapa</string>
     <string name="wheel_projection">Abrir Android Auto / CarPlay</string>
+    <string name="wheel_phone">Abrir el teléfono</string>
     <string name="wheel_music">Música en grande</string>
     <string name="wheel_voice">Voz</string>
     <string name="wheel_home">Volver al inicio</string>

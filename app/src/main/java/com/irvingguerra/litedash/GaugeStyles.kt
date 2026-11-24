@@ -161,16 +161,17 @@ data class GaugeLook(
             val stored = f["style"]
             return GaugeLook(
                 // Hasta la 1.4.76 había Arco (el de fábrica), Anillo, Neón y Cuadros: ahora son la Esfera con su aro.
+                // Quitar cuando < 5 % de las pantallas esté antes de la 1.4.140 según docs/usuarios.py.
                 style = GaugeStyle.entries.firstOrNull { it.stored == stored } ?: GaugeStyle.DIAL,
                 rim = GaugeRim.entries.firstOrNull { it.stored == f["rim"] }
                     ?: GaugeRim.entries.firstOrNull { it != GaugeRim.SMOOTH && it.stored == stored } ?: GaugeRim.SMOOTH,
                 color = GaugeColor.entries.firstOrNull { it.stored == f["color"] } ?: GaugeColor.ACCENT,
-                // Hasta la 1.4.61 se guardaba en la unidad que se veía ("max"): ver [migrateSpeedMax].
-                max = f[MAX_KMH]?.toIntOrNull() ?: f[LEGACY_MAX]?.toIntOrNull()?.let { legacyMaxKmh(it, miles = it !in SPEED_MAX_KMH) },
+                // El "max" de hasta la 1.4.61 lo pasa [migrateSpeedMax] al cargar el acomodo (con las unidades de verdad).
+                max = f[MAX_KMH]?.toIntOrNull(),
                 ticks = f["ticks"] != "0",
                 numbers = f["numbers"] == "1",
                 redline = f["redline"] == "1",
-                // "car=1" es de la 1.4.74.
+                // "car=1" es de la 1.4.74. Quitar cuando < 5 % de las pantallas esté antes de la 1.4.140 según docs/usuarios.py.
                 front = GaugeFront.entries.firstOrNull { it.stored == f["front"] } ?: if (f["car"] == "1") GaugeFront.CAR else GaugeFront.NONE,
                 image = f["img"].orEmpty(),
             )
@@ -214,6 +215,7 @@ private fun legacyMaxKmh(value: Int, miles: Boolean): Int =
 /**
  * Los datos de un velocímetro guardado hasta la 1.4.61 (máximo en la unidad que se veía) con
  * el máximo ya en km/h, según las unidades de ahora ([miles]); null si no hay nada que cambiar.
+ * Quitar cuando < 5 % de las pantallas esté antes de la 1.4.140 según docs/usuarios.py.
  */
 fun migrateSpeedMax(data: String, miles: Boolean): String? {
     val parts = data.split(';')

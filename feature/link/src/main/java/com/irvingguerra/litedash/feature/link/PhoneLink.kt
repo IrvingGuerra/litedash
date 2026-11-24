@@ -95,8 +95,7 @@ data class PhoneSong(
  * locales (así lo encuentra también cuando el celular entra al hotspot de la pantalla).
  *
  * Cuándo busca lo decide [LinkSchedule]: con LiteDash al frente ([visible]) reintenta cada vez más espaciado
- * (5 s… hasta 1 min) y, si ve al celular por Bluetooth de baja energía, intenta de una vez; en segundo plano
- * solo oye el faro y los cambios de red. Con su panel abierto ([watch]) intenta cada 2 s. Sin celular vinculado y con el panel cerrado no deja
+ * (5 s… hasta 1 min); en segundo plano solo oye el faro y los cambios de red. Con su panel abierto ([watch]) intenta cada 2 s. Sin celular vinculado y con el panel cerrado no deja
  * hilos, receptores ni sockets. Conectado, solo el hilo que lee (con su `ping`).
  *
  * El estado se maneja en el hilo principal; la red, en sus hilos (uno por intento, el oído del faro y
@@ -376,8 +375,7 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
         "última dirección=${store.getString(LAST_ADDRESS, null) ?: "—"}, " +
         "faro=${beaconed ?: if (earFailed) "sin puerto" else "—"}, " +
         "redes=${lastNeighbors.ifEmpty { "—" }}, encontrado por=${lastFound ?: "—"}, reintentos=${schedule.retries}, error=${lastError ?: "—"}, " +
-        "sonido=${phoneSound?.route ?: "—"}, música=${when { session?.music != true -> "no" ; musicBlocked -> "sin permiso"; song == null -> "nada"; song?.playing == true -> "suena"; else -> "en pausa" }}\n" +
-        ble.describe()
+        "sonido=${phoneSound?.route ?: "—"}, música=${when { session?.music != true -> "no" ; musicBlocked -> "sin permiso"; song == null -> "nada"; song?.playing == true -> "suena"; else -> "en pausa" }}"
 
     private fun yes(value: Boolean) = if (value) "sí" else "no"
 
@@ -507,13 +505,6 @@ class PhoneLink(context: Context, private val screen: () -> ScreenInfo) {
         }
         earKey = currentKey()
         listen(active && !connected && !earFailed)
-        ble.watch(active && paired && !connected && foreground)
-    }
-
-    /** El celular vinculado se ve cerca por Bluetooth de baja energía: se le busca ya por la red. */
-    private val ble = BlePresence(app) {
-        // Solo adelanta el intento que ya tocaba (sin reiniciar su espaciado), y sin red en común no hay por dónde.
-        if (!connected && localNetwork) wake()
     }
 
     /** Prende o apaga el oído del faro. */

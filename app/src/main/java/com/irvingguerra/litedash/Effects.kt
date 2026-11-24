@@ -60,7 +60,7 @@ fun rememberGpsPermission(d: Dependencies, revision: Int = 0): Pair<Boolean, () 
     return d.trip.permitted to ask
 }
 
-private val LOCATION_PERMISSIONS = arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)
+internal val LOCATION_PERMISSIONS = arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)
 
 /**
  * Cuántas veces ha vuelto la app al frente (sube en cada ON_START): como llave, recalcula lo

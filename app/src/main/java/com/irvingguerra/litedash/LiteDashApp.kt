@@ -70,7 +70,7 @@ class LiteDashApp : Application() {
         val music = MusicRepository(this).apply { opener = SplitScreen::open
             returnHome = { MainActivity.bringToFront(this@LiteDashApp) } }
         OwnPlayer.wire(this, music)
-        // Migraciones de la música (lista en MusicRepository.upgrade): se quedan mientras haya pantallas en versiones viejas.
+        // Migraciones de la música (lista en MusicRepository.upgrade). Quitar cuando < 5 % de las pantallas esté antes de la 1.4.140 según docs/usuarios.py.
         val oldInternetRadio = prefs.legacyInternetRadio()
         music.upgrade(prefs.musicApp, oldInternetRadio)
         if (oldInternetRadio != null) prefs.internetRadioUnified()
@@ -83,12 +83,14 @@ class LiteDashApp : Application() {
         // de velocidad (ningún widget usa el GPS ni hay OBD) no se sabe: se toma como en movimiento.
         music.moving = { (bus.value(Signal.SPEED) ?: Float.MAX_VALUE) > MOVING_KMH }
         val cars = CarRepository(this, BuildConfig.CATALOG_URL)
+        val layouts = DashboardStore(this)
+        prefs.adoptWidgetApps(layouts)
         Dependencies(
             apps = AppRepository(this).apply { opener = SplitScreen::open },
             music = music,
             navigation = NavigationRepository(this, listensTo),
             prefs = prefs,
-            dashboard = DashboardState(DashboardStore(this)),
+            dashboard = DashboardState(layouts),
             cars = cars,
             updates = appUpdates(this),
             weather = WeatherRepository(this, prefs),

@@ -148,6 +148,9 @@ android {
         // extrae al instalar: sin comprimir, cada una se alinea a 16 KB y el relleno pesaba más
         // que ellas (hasta ~45 KB de hueco en la APK).
         jniLibs.useLegacyPackaging = true
+        // Sin x86_64: ninguna pantalla de auto conocida lo usa (las Intel SoFIA de Android 6–8 son x86, que se queda, y
+        // un equipo x86_64 corre las de x86). Ahorra una copia de esa .so.
+        jniLibs.excludes += "lib/x86_64/**"
     }
 }
 

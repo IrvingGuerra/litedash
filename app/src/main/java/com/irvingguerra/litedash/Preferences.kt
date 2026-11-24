@@ -16,6 +16,8 @@ import com.irvingguerra.litedash.feature.car.CarColors
 import com.irvingguerra.litedash.feature.car.CarPaint
 import com.irvingguerra.litedash.feature.car.DEFAULT_GLOSS
 import com.irvingguerra.litedash.feature.car.PaintFinish
+import com.irvingguerra.litedash.feature.dashboard.DashboardStore
+import com.irvingguerra.litedash.feature.dashboard.TileTypes
 import java.util.Locale
 import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty
@@ -49,6 +51,9 @@ internal object PrefKeys {
     const val MAP_APP = "map_app"
     const val MAP_EXTERNAL = "map_external"
     const val PROJECTION_APP = "projection_app"
+    const val PHONE_APP = "phone_app"
+    /** Ya se pasó la app propia de los widgets Android Auto / CarPlay y Teléfono a la de toda la app ([Preferences.adoptWidgetApps]). */
+    const val WIDGET_APPS_ADOPTED = "widget_apps_adopted"
     /** En el mapa de fondo del inicio: tu auto en vez de la flecha. */
     const val MAP_BACKDROP_CAR = "map_backdrop_car"
     const val MAP_LOOK = "map_look"
@@ -514,6 +519,33 @@ class Preferences(context: Context) {
     /** Tu app de Android Auto / CarPlay ([com.irvingguerra.litedash.feature.apps.App.key]); null = la que encuentre LiteDash ([projectionChoice]). */
     var projectionApp by string(PrefKeys.PROJECTION_APP)
 
+    /** Tu app de llamadas ([com.irvingguerra.litedash.feature.apps.App.key]): la abren el widget Teléfono, la barra y el volante; null = el marcador. */
+    var phoneApp by string(PrefKeys.PHONE_APP)
+
+    /**
+     * Hasta la 1.5.15 los widgets Android Auto / CarPlay y Teléfono guardaban su propia app (en sus datos); ahora hay
+     * una sola para toda la app. Una vez, al arrancar y antes de cargar el inicio: la del acomodo guardado más nuevo pasa
+     * a ser la de toda la app (si no había otra elegida) y todos esos widgets se quedan sin la suya.
+     * Quitar cuando < 5 % de las pantallas esté antes de la 1.5.16 según docs/usuarios.py.
+     */
+    fun adoptWidgetApps(store: DashboardStore) {
+        if (p.getBoolean(PrefKeys.WIDGET_APPS_ADOPTED, false)) return
+        p.edit { putBoolean(PrefKeys.WIDGET_APPS_ADOPTED, true) }
+        var projection: String? = null
+        var phone: String? = null
+        store.changeDataEverywhere { t ->
+            val own = appKeyOf(t.data) ?: return@changeDataEverywhere null
+            when (t.type) {
+                TileTypes.PROJECTION -> projection = projection ?: own
+                TileTypes.PHONE -> phone = phone ?: own
+                else -> return@changeDataEverywhere null
+            }
+            withAppKey(t.data, null)
+        }
+        if (projectionApp == null && projection != null) projectionApp = projection
+        if (phoneApp == null && phone != null) phoneApp = phone
+    }
+
     /** El mapa de la guía (el de la derecha) gira hacia donde vas en vez de quedarse al norte (botón de la brújula). */
     var guideMapHeading by bool(PrefKeys.GUIDE_MAP_HEADING, false)
 
@@ -523,7 +555,7 @@ class Preferences(context: Context) {
     /** El aspecto del mapa de LiteDash ([com.irvingguerra.litedash.feature.map.MapLook.encode]); null = el de fábrica. */
     var mapLook by string(PrefKeys.MAP_LOOK)
 
-    /** La app de música de antes de la 1.4.116: solo se lee al arrancar para pasarla a `MusicRepository.preferred`, que es la que vale. */
+    /** La app de música de antes de la 1.4.116: solo se lee al arrancar para pasarla a `MusicRepository.preferred`, que es la que vale. Quitar cuando < 5 % de las pantallas esté antes de la 1.4.140 según docs/usuarios.py. */
     val musicApp: String? get() = p.getString(PrefKeys.MUSIC_APP, null)
 
     /** Nombre de quien maneja, para saludarlo; null = sin saludo. */
@@ -604,6 +636,7 @@ class Preferences(context: Context) {
     /**
      * Los botones como se veían antes de poder editar la barra (Plan Widgets): de los interruptores y del
      * lugar del volumen de Ajustes → Barra de apps. Solo se leen mientras no se guarde una lista.
+     * Quitar cuando < 5 % de las pantallas esté antes de la 1.4.140 según docs/usuarios.py.
      */
     private fun legacyBarItems(): List<BarItem> {
         // Quien nunca tocó la barra: la de fábrica (Irving, 2026-11-09).
@@ -631,6 +664,7 @@ class Preferences(context: Context) {
     /**
      * El interruptor de la radio por internet de antes de la 1.4.112: solo se lee al arrancar para pasar
      * a la radio escogida (`MusicRepository.radioInternet`), que es la que vale. null = ya se pasó.
+     * Quitar cuando < 5 % de las pantallas esté antes de la 1.4.140 según docs/usuarios.py.
      */
     fun legacyInternetRadio(): Boolean? =
         if (p.getBoolean(PrefKeys.RADIO_UNIFIED, false)) null else p.getBoolean(PrefKeys.INTERNET_RADIO, false)

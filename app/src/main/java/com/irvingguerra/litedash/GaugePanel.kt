@@ -107,13 +107,15 @@ fun CustomizeGaugePanel(d: Dependencies, tileId: String, cardLook: CardLook, clo
                             val max = look.speedMax(units.miles).toFloat()
                             SpeedGaugeCard(demo * max, units.miles, "GPS", look, d.prefs.carColor, rememberSpeedFront(d, look))
                         } else if (spec != null) {
-                            SpecGaugeCard(spec, spec.min + (spec.max - spec.min) * demo, units, look, d.prefs.carColor)
+                            SpecGaugeCard(spec, spec.min + (spec.maxFor(units) - spec.min) * demo, units, look, d.prefs.carColor)
                         }
                     }
                 }
             }
             val options = @Composable { m: Modifier ->
                 Column(m.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                    // La velocidad del GPS necesita la ubicación precisa.
+                    if (tile.type == TileTypes.SPEEDOMETER) PreciseLocationNote(d.trip)
                     if (roadLook != null) {
                         // Lo del viaje (como la pieza Viaje), cada dato con su interruptor.
                         Label(stringResource(R.string.tile_trip), Typography.label, c.textMuted)
@@ -122,6 +124,7 @@ fun CustomizeGaugePanel(d: Dependencies, tileId: String, cardLook: CardLook, clo
                                 setRoad(roadLook.copy(trip = if (on) roadLook.trip + item else roadLook.trip - item))
                             })
                         }
+                        ResetTripButton(d.trip)
                         // La presión de cada llanta junto a su rueda (solo con Llantas prendido).
                         if (d.hasTpmsSource) {
                             Label(stringResource(R.string.tile_tires), Typography.label, c.textMuted)
