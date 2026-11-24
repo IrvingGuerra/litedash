@@ -21,10 +21,12 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -146,14 +148,23 @@ fun SettingsPanel(
 /**
  * Pestañas de una sección con muchas partes (para no hacer tanto scroll). Devuelve la
  * elegida; se recuerda por sección ([key]) mientras LiteDash siga abierto (solo en memoria).
+ * [start] = con cuál abre esta vez (se ve desde el primer cuadro y queda recordada; solo cuenta al entrar).
  */
 @Composable
-internal fun tabs(titles: List<Int>, key: String): Int {
-    val selected = TabMemory[key] ?: 0
+internal fun tabs(titles: List<Int>, key: String, start: Int? = null): Int {
+    var opening by remember { mutableStateOf(start) }
+    LaunchedEffect(Unit) {
+        opening?.let { TabMemory[key] = it }
+        opening = null
+    }
+    val selected = opening ?: TabMemory[key] ?: 0
     // Mismo control que las opciones (estilo iOS): una pestaña a la vez. Si no caben bajan de renglón (como cualquier
     // Segmented): todas a la vista, también la elegida al abrir desde otro lado (antes se desplazaban y la última
     // quedaba cortada sin que se notara que había más).
-    Segmented(titles.mapIndexed { i, t -> i to stringResource(t) }, selected, { TabMemory[key] = it })
+    Segmented(titles.mapIndexed { i, t -> i to stringResource(t) }, selected, {
+        opening = null
+        TabMemory[key] = it
+    })
     return selected
 }
 

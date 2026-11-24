@@ -148,12 +148,10 @@ internal fun Workshop(d: Dependencies, onTires: () -> Unit) {
     }
 
     // Sin adaptador (ni conectando a uno) abre donde se conecta; lo demás se ve en gris.
-    LaunchedEffect(Unit) {
-        if (obd.state != ObdState.ON && obd.state != ObdState.CONNECTING) selectTab(WORKSHOP_TABS, ADAPTER_TAB)
-    }
     val tab = tabs(
         listOf(R.string.tab_health, R.string.obd_codes, R.string.tab_sensors, R.string.tab_charts, R.string.tab_adapter_trips),
         WORKSHOP_TABS,
+        start = ADAPTER_TAB.takeIf { obd.state != ObdState.ON && obd.state != ObdState.CONNECTING },
     )
     when {
         // Los viajes guardados se ven aunque no haya adaptador conectado.

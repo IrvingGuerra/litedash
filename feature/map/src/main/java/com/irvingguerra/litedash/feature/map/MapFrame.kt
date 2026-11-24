@@ -435,10 +435,10 @@ internal class MapFrame : ScreenPoint {
         canvas.drawLines(segments.points, 0, segments.size, routePaint)
     }
 
-    /** El punto ([x], [y]) de la vista en el mapa (latitud, longitud); null si cae en el cielo o aún no hay cuadro. */
     /** El punto del mapa al centro de la vista (la mira de «Marcar aquí»); null = aún no se dibuja. */
     fun centerLatLon(): Pair<Double, Double>? = if (width > 0f && height > 0f) toLatLon(width / 2, height / 2) else null
 
+    /** El punto ([x], [y]) de la vista en el mapa (latitud, longitud); null si cae en el cielo o aún no hay cuadro. */
     fun toLatLon(x: Float, y: Float): Pair<Double, Double>? {
         if (zoom < 0 || ts <= 0f || !projection.toPlane(x, y, dragFrom)) return null
         val tx = fx + (dragFrom[0] - atX) / ts

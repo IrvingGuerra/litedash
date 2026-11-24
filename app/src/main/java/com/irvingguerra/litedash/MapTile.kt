@@ -229,10 +229,13 @@ fun MapExpanded(
     BackHandler(selected != null && routing == null && !search.focused, unselect)
     // «Marcar aquí»: la mira al centro; se mueve el mapa y el botón pone el pin ahí (lo mismo que dejar presionado, que
     // en pantallas de auto falla). Atrás o el mismo botón la quitan.
+    // Un lugar elegido o el buscador la quitan (sin escribir estado al componer: se deriva y se apaga en un efecto).
     var marking by remember { mutableStateOf(false) }
-    if (selected != null || search.focused) marking = false
+    val busy = selected != null || search.focused
+    val aiming = marking && !busy
+    LaunchedEffect(busy) { if (busy) marking = false }
     val aim = remember { MapAim() }
-    BackHandler(marking) { marking = false }
+    BackHandler(aiming) { marking = false }
     // Se soltó el lugar (otra búsqueda, borrar lo escrito) o se cierra el mapa en grande: el mapa (y el widget, que
     // comparte la cámara) regresa a ti.
     // (Lee el de ahora, no el de esta composición: al abrir con un lugar de otra app, ya se eligió.)
@@ -272,7 +275,7 @@ fun MapExpanded(
                     onLongPress = { lat, lon -> pick(pointHit(null, lat, lon)) },
                     route = route?.points, fixedZoom = fit?.zoom, focus = clear, aim = aim,
                 )
-                if (marking) Crosshair(Modifier.align(Alignment.Center))
+                if (aiming) Crosshair(Modifier.align(Alignment.Center))
             } else Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Button(stringResource(R.string.tap_to_enable), ask, primary = true) }
             val searching = search.focused || search.query.isNotEmpty()
             // Con la guía encima el buscador sale de la pantalla: en Android 6 un campo enfocado debajo vuelve a abrir el teclado.
@@ -296,8 +299,8 @@ fun MapExpanded(
             ) {
                 // Sin lugar elegido: con un lugar, su tarjeta ya lleva lo que se hace con él.
                 if (selected == null) IconButton(
-                    Icons.markPlace, { marking = !marking }, size = 48.dp,
-                    background = if (marking) c.accent else c.surface.copy(alpha = 0.9f), color = if (marking) c.onPrimary else c.accent,
+                    Icons.markPlace, { marking = !aiming }, size = 48.dp,
+                    background = if (aiming) c.accent else c.surface.copy(alpha = 0.9f), color = if (aiming) c.onPrimary else c.accent,
                     label = stringResource(R.string.map_mark),
                 )
                 IconButton(
@@ -309,7 +312,7 @@ fun MapExpanded(
                     label = stringResource(R.string.map_zoom_far),
                 )
             }
-            if (marking) Button(
+            if (aiming) Button(
                 stringResource(R.string.map_mark_here),
                 { aim.center()?.let { (lat, lon) -> marking = false; pick(pointHit(null, lat, lon)) } },
                 Modifier.align(Alignment.BottomCenter).padding(bottom = 16.dp), primary = true,
