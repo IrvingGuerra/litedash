@@ -19,7 +19,8 @@ internal fun MusicRepository.describeBluetooth(): String = buildString {
     val service = bluetoothService
     appendLine("Bluetooth de Android: AVRCP=${service?.let { "${it.packageName}/${it.name}" } ?: "no"}; adaptador=${adapter?.let { if (it.isEnabled) "encendido" else "apagado" } ?: "no"}")
     val brand = HeadUnit.bluetoothApps.filter(context::hasPackage)
-    appendLine("Apps de Bluetooth de marca: ${brand.joinToString().ifBlank { "ninguna" }}")
+    // Las instaladas a mano no cuentan para la familia ([HeadUnit.of]): se marcan para verlo en el reporte.
+    appendLine("Apps de Bluetooth de marca: ${brand.joinToString { if (isSystemApp(context, it)) it else "$it (instalada)" }.ifBlank { "ninguna" }}")
 }
 
 internal fun MusicRepository.actionNames(actions: Long): String = listOf(
