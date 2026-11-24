@@ -4,6 +4,42 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.5.16] - 2026-11-24
+
+Ajustes más ordenados y fáciles de encontrar, y mapas de un país completo de un solo toque.
+
+### Nuevo
+- **Mapa de un país completo:** en Ajustes → Apps → Navegación → Sin conexión, busca tu país (por ejemplo «México»): sale
+  primero con **«Descargar completo»** y su tamaño, y abajo todos sus estados. Se bajan uno tras otro, con avance y Cancelar.
+- **«Marcar aquí»** en el mapa en grande: toca el botón del pin, mueve el mapa hasta la mira y marca el punto sin dejar
+  presionado.
+- **Agregar widget** directo desde Ajustes → Inicio y apariencia → Inicio.
+- **Reiniciar el viaje** desde las opciones de los widgets Viaje y Carretera (con confirmación).
+- Botón «Usar LiteDash Connect» cuando la música por Bluetooth de tu pantalla solo se controla desde el celular.
+
+### Cambiado
+- **Ajustes reorganizados:**
+  - Inicio y apariencia: Inicio · **Idioma y unidades** (km/°C arriba, a la vista) · Barra · Interfaz · **Tema y brillo**.
+  - El fondo (imagen o mapa) se elige en Inicio; «Ocultar la barra de Android» pasó a Barra.
+  - **Clima** ahora es un módulo (Ajustes → Módulos), como Taller y Llantas.
+  - **Acerca de y ayuda** (antes Sistema): «Reportar un problema» tiene su propia pestaña.
+  - Módulos → Permisos muestra todos los permisos y solo los pide al tocarlos.
+  - Taller con pestañas siempre y «Adaptador y viajes»; Llantas: Sensores · Presión y avisos · Calibrar · En el inicio.
+- **Idiomas y países:** se ven unos cuantos y «Ver todos».
+- **Un solo aspecto del mapa** para todos los widgets y el mapa en grande (Ajustes → Apps → Navegación); se quitó el mapa
+  «Completo», que no servía para la ruta ni la búsqueda.
+- **Guía:** atrás ya no la termina (solo el botón rojo), se cierra sola 30 s después de llegar y sin velocidad dice «—».
+- **Teléfono:** la app que elijas la usan el widget, la barra y el volante.
+- Tocar el auto lo muestra en grande de fábrica. Nombres iguales en barra y volante, y textos sin jerga.
+- Botón de Android Auto / CarPlay con un ícono nuevo.
+- Tema claro: textos grises más legibles. Escalas redondas en mpg y gal/h.
+
+### Arreglado
+- Lo que habías elegido en el widget Teléfono, Android Auto / CarPlay o en el aspecto de un widget Mapa se conserva.
+- La ruta ya no se queda esperando la red al calcularse; las vueltas obligatorias se respetan mejor.
+- Se borran solas cachés viejas del mapa que ya nadie usaba (hasta ~25 MB).
+- Peso: fuera las librerías x86_64 que no usa ninguna pantalla de auto.
+
 ## [1.5.15] - 2026-11-23
 
 Auditoría completa de la semana: muchos arreglos chicos en toda la app. Lo que más se nota:

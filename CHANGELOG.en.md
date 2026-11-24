@@ -3,6 +3,44 @@
 What people using LiteDash notice, in English. The full history (in Spanish) is in [CHANGELOG.md](CHANGELOG.md).
 Format [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versions [SemVer](https://semver.org/).
 
+## [1.5.16] - 2026-11-24
+
+Tidier Settings that are easier to find things in, and a whole country's maps in one tap.
+
+### Added
+- **A whole country's map:** in Settings → Apps → Navigation → Offline, search your country (e.g. "Mexico"): it comes
+  first with **"Download all"** and its size, with all its states below. They download one after another, with progress
+  and Cancel.
+- **"Mark here"** on the full-screen map: tap the pin button, move the map to the crosshair and mark the spot without
+  long-pressing.
+- **Add widget** right from Settings → Home & look → Home.
+- **Reset the trip** from the Trip and Road widget options (with a confirmation).
+- A "Use LiteDash Connect" button when your screen's Bluetooth music can only be controlled from the phone.
+
+### Changed
+- **Settings reorganized:**
+  - Home & look: Home · **Language & units** (km/°C on top, in view) · Bar · Interface · **Theme & brightness**.
+  - The background (image or map) is picked in Home; "Hide the Android bar" moved to Bar.
+  - **Weather** is now a module (Settings → Modules), like Workshop and Tires.
+  - **About & help** (was System): "Report a problem" has its own tab.
+  - Modules → Permissions lists every permission and only asks when you tap it.
+  - Workshop always has tabs, with "Adapter and trips"; Tires: Sensors · Pressure and alerts · Calibrate · On the home screen.
+- **Languages and countries:** a few are shown, with "See all".
+- **One map look** for every widget and the full-screen map (Settings → Apps → Navigation); the "Full" map is gone (it
+  didn't work for routes or search).
+- **Guidance:** back no longer ends it (only the red button), it closes by itself 30 s after arriving, and shows "—"
+  without speed.
+- **Phone:** the app you pick is used by the widget, the bar and the steering wheel.
+- Tapping the car shows it big by default. Same names on the bar and the wheel, and plainer texts.
+- New icon for the Android Auto / CarPlay button.
+- Light theme: grey texts easier to read. Round scales for mpg and gal/h.
+
+### Fixed
+- What you had picked in the Phone or Android Auto / CarPlay widget, or in a Map widget's look, is kept.
+- Routes no longer wait on the network while planning; turn restrictions are followed better.
+- Old map caches nobody used anymore are cleaned up (up to ~25 MB).
+- Size: dropped the x86_64 libraries no car screen uses.
+
 ## [1.5.15] - 2026-11-23
 
 This week's full audit: many small fixes across the app. What you'll notice most:
