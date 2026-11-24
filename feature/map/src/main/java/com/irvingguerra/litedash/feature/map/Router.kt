@@ -19,6 +19,12 @@ class Route(
     val online: Boolean = false,
 ) {
     val pointCount get() = points.size / 2
+
+    /** El rumbo con que sale la ruta (grados desde el norte; null si no se mueve): orienta el mapa antes de la primera lectura del GPS. */
+    val startBearing: Float? get() {
+        for (j in 1 until pointCount) if (flatMeters(points, 0, j) > 5.0) return bearing(points, 0, j).toFloat()
+        return null
+    }
 }
 
 /** Por qué no salió una ruta. [TOO_BIG] = no cabe en la memoria de esta pantalla (un estado muy grande o un viaje muy largo). */

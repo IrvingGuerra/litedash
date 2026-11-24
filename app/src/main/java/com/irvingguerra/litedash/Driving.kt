@@ -270,7 +270,7 @@ private fun CarView(d: Dependencies, session: DriveSession, modifier: Modifier) 
             val onRoute = s != null && !s.offRoute
             MapCanvas(
                 store, if (onRoute) s!!.lat else position.latitude, if (onRoute) s!!.lon else position.longitude,
-                (if (onRoute) s!!.heading else null) ?: d.trip.bearing, kmh, look, Modifier.fillMaxSize(), camera,
+                (if (onRoute) s!!.heading else null) ?: d.trip.bearing ?: session.route.startBearing.takeIf { s == null || s.point == 0 }, kmh, look, Modifier.fillMaxSize(), camera,
                 navigating = true, interactive = false, marker = marker,
                 route = session.route.points, routeDone = s?.let { it.point + it.fraction } ?: 0f, routeWidth = carDp.dp,
             )
@@ -348,7 +348,7 @@ private fun MapView(d: Dependencies, session: DriveSession, end: () -> Unit, mod
             val onRoute = s != null && !s.offRoute
             MapCanvas(
                 store, if (onRoute) s!!.lat else position.latitude, if (onRoute) s!!.lon else position.longitude,
-                (if (onRoute) s!!.heading else null) ?: d.trip.bearing, kmh, look, Modifier.fillMaxSize(), camera,
+                (if (onRoute) s!!.heading else null) ?: d.trip.bearing ?: session.route.startBearing.takeIf { s == null || s.point == 0 }, kmh, look, Modifier.fillMaxSize(), camera,
                 fixedZoom = fit?.whole, interactive = !session.overview, navigation = true,
                 turnAhead = onRoute && turnAhead(session.route, s!!),
                 route = session.route.points, routeDone = s?.let { it.point + it.fraction } ?: 0f,
