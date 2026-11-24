@@ -187,6 +187,8 @@
     <string name="guide_no_internet">Yeniden hesaplamak için internet yok</string>
     <string name="guide_car_need_map">Aracınızı ve şeritleri görmek için %1$s haritasını indirin (%2$s).</string>
     <string name="guide_car_no_map">Bu bölge için aracınızı ve şeritleri gösterecek bir harita henüz yok.</string>
+    <string name="guide_view_arrow">Ok görünümü</string>
+    <string name="guide_view_car">Araç görünümü</string>
     <string name="guide_roundabout">Dönel kavşakta %1$d. çıkışı kullanın</string>
     <string name="guide_roundabout_onto">Dönel kavşakta %1$d. çıkıştan %2$s yönüne çıkın</string>
 </resources>

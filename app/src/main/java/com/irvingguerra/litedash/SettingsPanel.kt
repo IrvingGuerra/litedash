@@ -120,7 +120,11 @@ fun SettingsPanel(
                     Modifier.weight(1f).fillMaxHeight().verticalScroll(rememberScrollState()).padding(start = 8.dp, end = 24.dp, top = 20.dp, bottom = 24.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
-                    Label(stringResource(section.title), Typography.title.copy(fontSize = 30.sp), maxLines = 1)
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                        Label(stringResource(section.title), Typography.title.copy(fontSize = 30.sp), maxLines = 1, modifier = Modifier.weight(1f, fill = false))
+                        // Navegando: la pastilla de la guía (lleva a ella).
+                        LocalGuidePill.current?.invoke()
+                    }
                     when (section) {
                         SettingsSection.APPEARANCE -> Appearance(d, revision, onEdit, onTemplates, onAddTile)
                         SettingsSection.CAR -> CarSettings(d)

@@ -187,6 +187,8 @@
     <string name="guide_no_internet">Geen internet om opnieuw te berekenen</string>
     <string name="guide_car_need_map">Download de kaart van %1$s (%2$s) om je auto en de rijstroken te zien.</string>
     <string name="guide_car_no_map">Er is nog geen kaart van dit gebied om je auto en de rijstroken te tonen.</string>
+    <string name="guide_view_arrow">Pijlweergave</string>
+    <string name="guide_view_car">Autoweergave</string>
     <string name="guide_roundabout">Neem op de rotonde afslag %1$d</string>
     <string name="guide_roundabout_onto">Neem op de rotonde afslag %1$d naar %2$s</string>
 </resources>

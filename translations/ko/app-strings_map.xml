@@ -186,6 +186,8 @@
     <string name="guide_no_internet">다시 계산할 인터넷이 없어요</string>
     <string name="guide_car_need_map">내 차와 차선을 보려면 %1$s 지도를 받으세요(%2$s).</string>
     <string name="guide_car_no_map">내 차와 차선을 보여 줄 이 지역 지도가 아직 없어요.</string>
+    <string name="guide_view_arrow">화살표 보기</string>
+    <string name="guide_view_car">차량 보기</string>
     <string name="guide_roundabout">회전교차로에서 %1$d번째 출구로 나가세요</string>
     <string name="guide_roundabout_onto">회전교차로에서 %1$d번째 출구로 나가 %2$s 방면</string>
 </resources>

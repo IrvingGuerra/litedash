@@ -186,6 +186,8 @@
     <string name="guide_no_internet">再計算にはインターネットが必要です</string>
     <string name="guide_car_need_map">車と車線を表示するには、%1$s の地図をダウンロードしてください（%2$s）。</string>
     <string name="guide_car_no_map">車と車線を表示できる、この地域の地図はまだありません。</string>
+    <string name="guide_view_arrow">矢印ビュー</string>
+    <string name="guide_view_car">車ビュー</string>
     <string name="guide_roundabout">ロータリーで %1$d 番目の出口へ</string>
     <string name="guide_roundabout_onto">ロータリーで %1$d 番目の出口から %2$s へ</string>
 </resources>

@@ -189,6 +189,8 @@
     <string name="guide_no_internet">Sem internet para recalcular</string>
     <string name="guide_car_need_map">Para ver seu carro e as faixas, baixe o mapa de %1$s (%2$s).</string>
     <string name="guide_car_no_map">Ainda não há mapa desta região para mostrar seu carro e as faixas.</string>
+    <string name="guide_view_arrow">Vista de seta</string>
+    <string name="guide_view_car">Vista do carro</string>
     <string name="guide_roundabout">Na rotatória, pegue a saída %1$d</string>
     <string name="guide_roundabout_onto">Na rotatória, pegue a saída %1$d para %2$s</string>
 </resources>

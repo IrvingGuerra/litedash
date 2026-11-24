@@ -46,6 +46,7 @@ import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
@@ -376,6 +377,7 @@ fun TileContent(d: Dependencies, p: Tile, apps: List<App>, car: CarPackage?, rev
                         actions.onExpand(Expanded.MAP, p)
                     }
                 },
+                onGuide = remember(p.id) { { actions.onExpand(Expanded.MAP, p) } },
             )
         }
         TileTypes.PHONE -> {
@@ -530,12 +532,35 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
         mediaBrowse = browse
         expand(Expanded.MEDIA, from)
     }
-    // Los accesos directos al mapa (barra, volante): el mapa de LiteDash en grande o, con «Navegar con: App de mapas»
-    // (y una app de mapas), esa app.
+    // Dónde se ve la guía en la página de ahora: su widget Mapa, su mapa de fondo o, sin ellos, el mapa en grande.
+    fun guideHomeNow() = guideHome(d.dashboard.shown.any { it.type == TileTypes.MAP }, d.dashboard.background == PageBackground.MAP)
+    // A la guía (la pastilla de arriba, «Navegar» de la barra y del volante): el mapa que navega en esta página, si no la
+    // primera página con un mapa y, sin ninguna, el mapa en grande.
+    fun showGuide() {
+        panel = null
+        tiresLayer.open = false
+        carLayer.open = false
+        editing = false
+        if (guideHomeNow() != GuideHome.EXPANDED) {
+            expanded = null
+            return
+        }
+        val other = d.dashboard.pageWhere { background, tiles -> background == PageBackground.MAP || tiles.any { it.type == TileTypes.MAP } }
+        if (other == null) expand(Expanded.MAP, null)
+        else {
+            expanded = null
+            d.dashboard.goTo(other)
+        }
+    }
+    // Los accesos directos al mapa (barra, volante): con la guía, a ella; si no, el mapa de LiteDash en grande o, con
+    // «Navegar con: App de mapas» (y una app de mapas), esa app.
     fun openMapShortcut() {
         val app = externalMapApp(d, currentApps)
-        if (app != null) openNavigation(context, d.apps, app)
-        else expand(Expanded.MAP, null)
+        when {
+            Driving.session != null -> showGuide()
+            app != null -> openNavigation(context, d.apps, app)
+            else -> expand(Expanded.MAP, null)
+        }
     }
     // Android Auto / CarPlay (barra, volante): la app de [projectionChoice] o, si no hay, sus ajustes para elegirla.
     fun openProjection() {
@@ -548,10 +573,9 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
     }
     // Con Archivos, play sin nada que sonar (volante, barra de Android, widget) abre la pantalla Música en la
     // biblioteca; mientras está abierta, la atiende ella.
-    // Un lugar de otra app (geo:) o la lupa sin mapa abierto: el mapa en grande lo atiende.
-    // Con la guía abierta espera a que termine (debajo no se vería).
-    LaunchedEffect(PlaceRequests.pending, Driving.session == null) {
-        if (PlaceRequests.pending && Driving.session == null && expanded != Expanded.MAP) expand(Expanded.MAP, null)
+    // Un lugar de otra app (geo:) o la lupa sin mapa abierto: el mapa en grande lo atiende (con la guía, en su buscador).
+    LaunchedEffect(PlaceRequests.pending) {
+        if (PlaceRequests.pending && expanded != Expanded.MAP) expand(Expanded.MAP, null)
     }
     val currentOpenMedia by rememberUpdatedState(::openMedia)
     OnFilesEmpty(d.music, inFront && d.music.mode == MusicMode.FILES, remember { { currentOpenMedia(MediaTab.MUSIC, true, null) } })
@@ -595,7 +619,15 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
     // Algo opaco tapa todo el inicio (estacionado, que puede durar horas, o el auto o las llantas ya en grande): lo
     // de abajo sigue compuesto y medido (al destaparse se ve al instante y lo que crece sabe de dónde), pero no se
     // dibuja y lo que gasta descansa ([LocalHomeCovered]).
-    val homeCovered by remember { derivedStateOf { parked || carLayer.covers || tiresLayer.covers || Driving.session != null } }
+    val homeCovered by remember { derivedStateOf { parked || carLayer.covers || tiresLayer.covers } }
+    // Con la guía y sin ningún mapa que la enseñe a la vista (otra página, la música en grande o un panel): la pastilla
+    // de arriba con la próxima vuelta, que lleva a ella.
+    val session = Driving.session
+    val guideSeen = panel == null && !homeCovered &&
+        (expandedShown == Expanded.MAP || expandedShown == null && guideHomeNow() != GuideHome.EXPANDED)
+    val guidePill: (@Composable () -> Unit)? = if (session != null && !guideSeen) {
+        { GuidePill(d, session, ::showGuide) }
+    } else null
     // Lo que sigue aunque se abra Ajustes o se acomode el inicio: el registro del viaje y
     // los avisos del motor y de las llantas (si no, abrir Ajustes cortaría el viaje y "Entendido" se olvidaría).
     val engineAlert = remember { EngineAlertState() }
@@ -759,7 +791,10 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                 when (d.dashboard.background) {
                     PageBackground.WALLPAPER -> HomeWallpaper(d.prefs)
                     // Con algo en grande encima (la música o el mapa) se queda quieto: no se ve.
-                    PageBackground.MAP -> MapBackdrop(d, remember(d.dashboard.shown, d.dashboard.grid, board, rootSize) { mapFocus(d.dashboard, board, rootSize) }, car, covered = expandedCovers)
+                    PageBackground.MAP -> MapBackdrop(
+                        d, remember(d.dashboard.shown, d.dashboard.grid, board, rootSize) { mapFocus(d.dashboard, board, rootSize) }, car,
+                        covered = expandedCovers, guide = guideHomeNow() == GuideHome.BACKDROP,
+                    )
                 }
                 // Sin apartarse del teclado: lo tapa (como pide adjustNothing) y quien escribe acomoda lo suyo arriba de él
                 // (el buscador del mapa). Si se apartara, en un celular acostado todo el inicio quedaba en una franja.
@@ -790,7 +825,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                     // Lo que deja libre al ocultarse: el tablero lo gana, pero la cuadrícula no lo cuenta.
                     val freed = if (barShown) 0.dp else barThickness(d.prefs, rail)
                     val bar = @Composable { vertical: Boolean ->
-                        AppBar(d.apps, d.prefs, favorites, vertical, editing, musicBig, barActions, mapOpen = expanded == Expanded.MAP)
+                        AppBar(d.apps, d.prefs, favorites, vertical, editing, musicBig, barActions, mapOpen = expanded == Expanded.MAP, guiding = session != null)
                     }
                     // Oculta: un toque en cualquier lugar libre (la orilla, la barra de arriba o un hueco del tablero) la
                     // asoma. Va debajo de todo: lo que tiene su propio toque (widgets, puntitos, avisos) lo conserva.
@@ -811,6 +846,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                                 onWallpaper = { panel = Panel.Wallpaper },
                                 onFinish = { editing = false },
                                 pages = d.dashboard,
+                                guide = guidePill,
                             )
                             // Sin barra abajo (va al costado o está oculta) el tablero lleva su propio aire inferior
                             // (en pantallas sin barra de gestos las piezas quedaban pegadas al borde).
@@ -875,6 +911,8 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                                             MapExpanded(
                                                 d, from?.id, app, onPlace = { if (app != null) navigateTo(context, app, it) else PlaceRequests.fromAddress(it) }, onNavigate = { actions.onNavigate(app) },
                                                 onOffline = { openOfflineMaps(); panel = Panel.AppsSettings },
+                                                // «Ir»: con un widget Mapa o el mapa de fondo en la página, la guía se ve ahí y este se cierra.
+                                                onGo = { if (guideHomeNow() != GuideHome.EXPANDED) expanded = null },
                                                 close = close, modifier = Modifier.padding(6.dp),
                                             )
                                         }
@@ -884,7 +922,9 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                                 // (aparecen y se van; la cuadrícula tampoco los cuenta). Con la música o el mapa en
                                 // grande solo quedan los del auto (los demás taparían su buscador o sus botones).
                                 if (d.prefs.welcomeSeen && !editing) {
-                                    Column(Modifier.align(Alignment.TopCenter).widthIn(max = PROMPTS_MAX_WIDTH).fillMaxWidth()) {
+                                    Column(Modifier.align(Alignment.TopCenter).widthIn(max = PROMPTS_MAX_WIDTH).fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+                                        // Sin la barra de arriba (la hora va en un widget), la pastilla de la guía flota aquí.
+                                        if (!showTime) guidePill?.invoke()
                                         val calm = !expandedCovers
                                         if (calm && !d.prefs.dontAskHome && !isShortScreen()) HomePrompt(d.prefs, revision)
                                         EngineAlertBanner(d, engineAlert)
@@ -924,7 +964,8 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
         }
 
         panel?.let { p ->
-            FitShort {
+            // En los paneles, la pastilla de la guía va en su encabezado.
+            CompositionLocalProvider(LocalGuidePill provides guidePill) { FitShort {
                 when (p) {
                     Panel.Drawer -> DrawerPanel(d, apps, close = { panel = null })
                     Panel.Settings, Panel.Updates, Panel.Report, Panel.Language, Panel.Workshop, Panel.AppsSettings, Panel.TiresSettings, Panel.PhoneSettings -> SettingsPanel(
@@ -981,11 +1022,11 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                         preview = { t -> CompositionLocalProvider(LocalCardLook provides homeLook) { TileContent(d, t, apps, car, revision, actions) } },
                     )
                 }
-            }
+            } }
         }
 
-        // La guía tapa todo (inicio, barra y paneles) mientras manejas; al terminar, regresas a donde estabas.
-        Driving.session?.let { DrivingScreen(d, it, revision) }
+        // La guía trabaja aquí, una vez, aunque ningún mapa la enseñe.
+        session?.let { key(it) { GuideEngine(d, it) } }
 
         val big = bigTile
         if (carLayer.shown && panel == null && big != null) {
@@ -1133,6 +1174,8 @@ private fun TopBar(
     onWallpaper: () -> Unit,
     onFinish: () -> Unit,
     pages: DashboardState,
+    /** La pastilla de la guía, en lugar de la fecha (null = la fecha). */
+    guide: (@Composable () -> Unit)?,
 ) {
     val c = LocalColors.current
     // Sin nada que mostrar (la hora ya está en una pieza), la barra no aparta espacio: el tablero sube.
@@ -1181,7 +1224,8 @@ private fun TopBar(
             val hello = greeting(driverName)
             Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
                 if (hello != null) Label(hello, Typography.subtitle, maxLines = 1)
-                Label(clock.date, Typography.body, c.textMuted, maxLines = 1)
+                if (guide != null) Box(Modifier.weight(1f, fill = false)) { guide() }
+                else Label(clock.date, Typography.body, c.textMuted, maxLines = 1)
             }
             WeatherChip(weather)
             StatusIcons()

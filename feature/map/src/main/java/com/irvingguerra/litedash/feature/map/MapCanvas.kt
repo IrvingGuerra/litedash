@@ -109,8 +109,14 @@ private const val ANCHOR_TILTED = 0.82f
 /** Plano (widget, fondo, en grande), el zoom automático va tantos niveles más lejos que lo más cerca de la fuente. */
 private const val FLAT_ZOOM_DROP = 2
 
-/** Navegando: lo que se aleja el zoom de detenido a [NAV_FAST_KMH] o más (como Horizon: más camino a la vista rápido). */
-private const val NAV_ZOOM_DROP = 2f
+/**
+ * Navegando, detenido o despacio, más cerca que lo más cerca de la fuente (como Waze): las teselas del último nivel se
+ * agrandan hasta tantos niveles más (×2 por nivel).
+ */
+internal const val NAV_OVERZOOM = 1f
+
+/** Navegando: lo que se aleja el zoom de detenido a [NAV_FAST_KMH] o más (más camino a la vista rápido). */
+private const val NAV_ZOOM_DROP = 3f
 private const val NAV_FAST_KMH = 110f
 
 /** Navegando con «siempre al norte» (plano), tanto más lejos: plano a lo más cerca se ve muy poco. */
@@ -186,14 +192,15 @@ internal class ZoomStep(val level: Int, val scale: Float)
 
 /**
  * Dos dedos agrandan [scale] por [factor] en el nivel [zoom]: pasada la mitad ([SCALE_UP]/[SCALE_DOWN]) se cambia al
- * nivel de junto, entre [min] y [max]; en esos topes solo cede [EDGE_DOWN]–[EDGE_UP].
+ * nivel de junto, entre [min] y [max]; en esos topes solo cede [EDGE_DOWN]–[EDGE_UP] (o lo que ya venía agrandado al
+ * soltar la navegación, que llega a [NAV_OVERZOOM] más cerca: no brinca).
  */
 internal fun pinchStep(scale: Float, factor: Float, zoom: Int, min: Int, max: Int): ZoomStep {
     var p = scale * factor
     var z = zoom
     while (p >= SCALE_UP && z < max) { z++; p /= 2f }
     while (p < SCALE_DOWN && z > min) { z--; p *= 2f }
-    return ZoomStep(z, p.coerceIn(if (z <= min) EDGE_DOWN else SCALE_DOWN, if (z >= max) EDGE_UP else SCALE_UP))
+    return ZoomStep(z, p.coerceIn(if (z <= min) EDGE_DOWN else SCALE_DOWN, if (z >= max) maxOf(EDGE_UP, scale) else SCALE_UP))
 }
 
 /** El zoom con fracción [z] como nivel de teselas (el más cercano, entre [min] y [max]) y lo que se agranda ese nivel. */
@@ -206,13 +213,14 @@ internal fun zoomStep(z: Float, min: Int, max: Int): ZoomStep {
 internal fun tiltFor(z: Float, driveZoom: Float): Float = (z - (driveZoom - 1)).coerceIn(0f, 1f)
 
 /**
- * El zoom (con fracción) de la navegación a [kmh]: lo más cerca ([driveZoom]) detenido y [NAV_ZOOM_DROP] niveles más
- * lejos desde [NAV_FAST_KMH]; [turnAhead] acerca un poco y [northUp] (plano) aleja uno. En pasos de [NAV_ZOOM_GRAIN].
+ * El zoom (con fracción) de la navegación a [kmh]: detenido, [NAV_OVERZOOM] más cerca que lo más cerca de la fuente
+ * ([driveZoom]) y [NAV_ZOOM_DROP] niveles más lejos desde [NAV_FAST_KMH]; [northUp] (plano) aleja uno. Con [turnAhead]
+ * se acerca un poco, pero nunca más que [driveZoom]: la esquina debe quedar a la vista. En pasos de [NAV_ZOOM_GRAIN].
  */
 internal fun navZoomFor(kmh: Float?, driveZoom: Int, turnAhead: Boolean, northUp: Boolean): Float {
     val fast = ((kmh ?: 0f) / NAV_FAST_KMH).coerceIn(0f, 1f)
-    val z = driveZoom - NAV_ZOOM_DROP * fast + (if (turnAhead) NAV_TURN_ZOOM else 0f) - (if (northUp) NAV_NORTH_DROP else 0f)
-    return ((z / NAV_ZOOM_GRAIN).roundToInt() * NAV_ZOOM_GRAIN).coerceAtMost(driveZoom.toFloat())
+    val z = driveZoom + NAV_OVERZOOM - NAV_ZOOM_DROP * fast + (if (turnAhead) NAV_TURN_ZOOM else 0f) - (if (northUp) NAV_NORTH_DROP else 0f)
+    return ((z / NAV_ZOOM_GRAIN).roundToInt() * NAV_ZOOM_GRAIN).coerceAtMost(driveZoom + if (turnAhead) 0f else NAV_OVERZOOM)
 }
 
 /** [from] acercándose a [to] a lo más [step]. */

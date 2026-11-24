@@ -186,6 +186,8 @@
     <string name="guide_no_internet">ไม่มีอินเทอร์เน็ตสำหรับคำนวณใหม่</string>
     <string name="guide_car_need_map">หากต้องการเห็นรถและช่องจราจร ให้ดาวน์โหลดแผนที่ %1$s (%2$s)</string>
     <string name="guide_car_no_map">ยังไม่มีแผนที่ของพื้นที่นี้สำหรับแสดงรถและช่องจราจรของคุณ</string>
+    <string name="guide_view_arrow">มุมมองลูกศร</string>
+    <string name="guide_view_car">มุมมองรถ</string>
     <string name="guide_roundabout">ที่วงเวียน ใช้ทางออกที่ %1$d</string>
     <string name="guide_roundabout_onto">ที่วงเวียน ใช้ทางออกที่ %1$d ไปยัง %2$s</string>
 </resources>

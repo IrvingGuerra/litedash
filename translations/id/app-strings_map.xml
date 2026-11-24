@@ -186,6 +186,8 @@
     <string name="guide_no_internet">Tidak ada internet untuk menghitung ulang</string>
     <string name="guide_car_need_map">Untuk melihat mobil dan lajur Anda, unduh peta %1$s (%2$s).</string>
     <string name="guide_car_no_map">Belum ada peta daerah ini untuk menampilkan mobil dan lajur Anda.</string>
+    <string name="guide_view_arrow">Tampilan panah</string>
+    <string name="guide_view_car">Tampilan mobil</string>
     <string name="guide_roundabout">Di bundaran, ambil jalan keluar ke-%1$d</string>
     <string name="guide_roundabout_onto">Di bundaran, ambil jalan keluar ke-%1$d menuju %2$s</string>
 </resources>

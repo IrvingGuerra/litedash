@@ -187,6 +187,8 @@
     <string name="guide_no_internet">Kein Internet zum Neuberechnen</string>
     <string name="guide_car_need_map">Um dein Auto und die Fahrspuren zu sehen, lade die Karte von %1$s herunter (%2$s).</string>
     <string name="guide_car_no_map">Für diese Gegend gibt es noch keine Karte, um dein Auto und die Fahrspuren zu zeigen.</string>
+    <string name="guide_view_arrow">Pfeilansicht</string>
+    <string name="guide_view_car">Autoansicht</string>
     <string name="guide_roundabout">Im Kreisverkehr die %1$d. Ausfahrt nehmen</string>
     <string name="guide_roundabout_onto">Im Kreisverkehr die %1$d. Ausfahrt nehmen auf %2$s</string>
 </resources>

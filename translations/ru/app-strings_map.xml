@@ -189,6 +189,8 @@
     <string name="guide_no_internet">Нет интернета для пересчёта</string>
     <string name="guide_car_need_map">Чтобы видеть свою машину и полосы, скачай карту: %1$s (%2$s).</string>
     <string name="guide_car_no_map">Для этого района пока нет карты, чтобы показать твою машину и полосы.</string>
+    <string name="guide_view_arrow">Вид со стрелкой</string>
+    <string name="guide_view_car">Вид с машиной</string>
     <string name="guide_roundabout">На кольце съезд %1$d</string>
     <string name="guide_roundabout_onto">На кольце съезд %1$d на %2$s</string>
 </resources>

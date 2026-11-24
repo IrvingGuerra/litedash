@@ -189,6 +189,8 @@
     <string name="guide_no_internet">Pas d\'Internet pour recalculer</string>
     <string name="guide_car_need_map">Pour voir votre voiture et les voies, téléchargez la carte de %1$s (%2$s).</string>
     <string name="guide_car_no_map">Il n\'y a pas encore de carte de cette zone pour montrer votre voiture et les voies.</string>
+    <string name="guide_view_arrow">Vue flèche</string>
+    <string name="guide_view_car">Vue voiture</string>
     <string name="guide_roundabout">Au rond-point, prenez la sortie %1$d</string>
     <string name="guide_roundabout_onto">Au rond-point, prenez la sortie %1$d vers %2$s</string>
 </resources>

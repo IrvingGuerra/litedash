@@ -102,8 +102,13 @@ internal fun PanelScaffold(
             .padding(horizontal = 24.dp),
     ) {
         Row(Modifier.fillMaxWidth().height(72.dp), verticalAlignment = Alignment.CenterVertically) {
-            if (header == null) Label(title, Typography.title, maxLines = 1, modifier = Modifier.weight(1f))
-            else {
+            // Sin nada en medio, ahí va la pastilla de la guía (si navegas).
+            val guide = LocalGuidePill.current
+            if (header == null && guide == null) Label(title, Typography.title, maxLines = 1, modifier = Modifier.weight(1f))
+            else if (header == null) {
+                Label(title, Typography.title, maxLines = 1, modifier = Modifier.weight(1f, fill = false))
+                Box(Modifier.weight(1f).padding(horizontal = 16.dp), contentAlignment = Alignment.Center) { guide?.invoke() }
+            } else {
                 Label(title, Typography.title, maxLines = 1)
                 Box(Modifier.weight(1f).padding(horizontal = 16.dp), contentAlignment = Alignment.Center) { header() }
             }

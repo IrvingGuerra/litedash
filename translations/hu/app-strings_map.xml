@@ -187,6 +187,8 @@
     <string name="guide_no_internet">Nincs internet az újratervezéshez</string>
     <string name="guide_car_need_map">Az autód és a sávok megjelenítéséhez töltsd le %1$s térképét (%2$s).</string>
     <string name="guide_car_no_map">Erről a környékről még nincs térkép, amely az autódat és a sávokat mutatná.</string>
+    <string name="guide_view_arrow">Nyíl nézet</string>
+    <string name="guide_view_car">Autó nézet</string>
     <string name="guide_roundabout">A körforgalomban hajts ki a(z) %1$d. kijáraton</string>
     <string name="guide_roundabout_onto">A körforgalomban hajts ki a(z) %1$d. kijáraton, erre: %2$s</string>
 </resources>

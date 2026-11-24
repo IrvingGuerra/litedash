@@ -189,6 +189,8 @@
     <string name="guide_no_internet">Немає інтернету для перерахунку</string>
     <string name="guide_car_need_map">Щоб бачити своє авто і смуги, завантаж карту: %1$s (%2$s).</string>
     <string name="guide_car_no_map">Для цього району поки немає карти, щоб показати твоє авто і смуги.</string>
+    <string name="guide_view_arrow">Вигляд зі стрілкою</string>
+    <string name="guide_view_car">Вигляд з авто</string>
     <string name="guide_roundabout">На колі з’їзд %1$d</string>
     <string name="guide_roundabout_onto">На колі з’їзд %1$d на %2$s</string>
 </resources>

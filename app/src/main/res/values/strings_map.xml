@@ -188,6 +188,8 @@
     <string name="guide_no_internet">Sin internet para recalcular</string>
     <string name="guide_car_need_map">Para ver tu auto y los carriles, baja el mapa de %1$s (%2$s).</string>
     <string name="guide_car_no_map">Aún no hay mapa de esta zona para ver tu auto y los carriles.</string>
+    <string name="guide_view_arrow">Vista flecha</string>
+    <string name="guide_view_car">Vista del auto</string>
     <string name="guide_roundabout">En la glorieta, toma la salida %1$d</string>
     <string name="guide_roundabout_onto">En la glorieta, hacia %2$s: salida %1$d</string>
 </resources>

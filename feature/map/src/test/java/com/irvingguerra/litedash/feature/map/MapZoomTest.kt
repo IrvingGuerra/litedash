@@ -74,17 +74,32 @@ class MapZoomTest {
 
     @Test
     fun navigationZoomGoesOutWithSpeed() {
-        // Detenido, lo más cerca; a 110 km/h o más, dos niveles más lejos; en medio, en línea y en pasos de 0.05.
-        assertEquals(20f, navZoomFor(null, 20, turnAhead = false, northUp = false), 0f)
-        assertEquals(20f, navZoomFor(0f, 20, turnAhead = false, northUp = false), 0f)
-        assertEquals(19f, navZoomFor(55f, 20, turnAhead = false, northUp = false), 1e-4f)
+        // Detenido, un nivel más cerca que la fuente (como Waze); a 110 km/h o más, tres niveles más lejos que eso; en
+        // medio, en línea y en pasos de 0.05.
+        assertEquals(21f, navZoomFor(null, 20, turnAhead = false, northUp = false), 0f)
+        assertEquals(21f, navZoomFor(0f, 20, turnAhead = false, northUp = false), 0f)
+        assertEquals(19.5f, navZoomFor(55f, 20, turnAhead = false, northUp = false), 1e-4f)
         assertEquals(18f, navZoomFor(110f, 20, turnAhead = false, northUp = false), 1e-4f)
         assertEquals(18f, navZoomFor(180f, 20, turnAhead = false, northUp = false), 1e-4f)
-        assertEquals(19.75f, navZoomFor(14f, 20, turnAhead = false, northUp = false), 1e-4f)
-        // Cerca de la vuelta se acerca (sin pasar de lo más cerca); al norte (plano), uno más lejos.
+        assertEquals(20.6f, navZoomFor(14f, 20, turnAhead = false, northUp = false), 1e-4f)
+        // Cerca de la vuelta se acerca, sin pasar de lo más cerca de la fuente (más cerca no se vería la esquina); al norte
+        // (plano), uno más lejos.
         assertEquals(18.4f, navZoomFor(110f, 20, turnAhead = true, northUp = false), 1e-4f)
         assertEquals(20f, navZoomFor(0f, 20, turnAhead = true, northUp = false), 0f)
-        assertEquals(19f, navZoomFor(0f, 20, turnAhead = false, northUp = true), 0f)
+        assertEquals(20f, navZoomFor(0f, 20, turnAhead = false, northUp = true), 0f)
+    }
+
+    @Test
+    fun overzoomScalesTheLastLevel() {
+        // Más cerca que la fuente: el último nivel, agrandado (hasta ×2 por nivel de más).
+        val step = zoomStep(20f + NAV_OVERZOOM, MIN_ZOOM, 20)
+        assertEquals(20, step.level)
+        assertEquals(2f, step.scale, 1e-4f)
+        // Al soltarlo con los dedos no brinca: pellizcar para acercar no pasa de ahí y para alejar baja desde ahí.
+        assertEquals(2f, pinchStep(2f, 1.3f, 20, MIN_ZOOM, 20).scale, 1e-4f)
+        assertEquals(1.6f, pinchStep(2f, 0.8f, 20, MIN_ZOOM, 20).scale, 1e-4f)
+        // Sin navegación, el tope de siempre (`EDGE_UP`).
+        assertEquals(1.15f, pinchStep(1f, 2f, 20, MIN_ZOOM, 20).scale, 1e-4f)
     }
 
     @Test

@@ -329,6 +329,9 @@ internal class MapFrame : ScreenPoint {
     private var ringStroke = Stroke(0f)
     private var unit = 1f
 
+    /** Más cerca que lo más cerca de la fuente (la navegación detenida), las calles se agrandan: la ruta plana también. */
+    private var river = 1f
+
     /** El pincel de los nombres (se rehace solo si cambia el tamaño o un color). */
     fun textPaint(size: Float, color: Color, halo: Color) = labels.paint(size, color, halo)
 
@@ -380,6 +383,7 @@ internal class MapFrame : ScreenPoint {
         arrowDegrees = arrowBearing
         pinShown = !pinX.isNaN() && toScreen(pinX, pinY, pinAt)
         routeWide = routePlaneWidth
+        river = if (names != null && zoom >= names.maxZoom) (ts / labelTs).coerceIn(1f, 2f) else 1f
         traceRoute(routeWorld, n, routeDone)
         // Las flechitas solo donde la pantalla da para ellas; si no, la ruta va sola en sus tres capas.
         if (routeWide <= 0f && routeArrows) joinFlow() else flowLine.rewind()
@@ -464,10 +468,11 @@ internal class MapFrame : ScreenPoint {
         if (routeWide <= 0f && routeAhead.size + routeBehind.size > 0) drawIntoCanvas {
             val canvas = it.nativeCanvas
             val line = if (dark) RIVER_NIGHT else RIVER_DAY
-            drawRoute(canvas, routeBehind, RIVER_DONE, 6 * unit)
-            drawRoute(canvas, routeAhead, line and 0x00FFFFFF or (0x40 shl 24), 15 * unit)
-            drawRoute(canvas, routeAhead, if (dark) RIVER_NIGHT_EDGE else RIVER_DAY_EDGE, 10 * unit)
-            drawRoute(canvas, routeAhead, line, 7 * unit)
+            val u = unit * river
+            drawRoute(canvas, routeBehind, RIVER_DONE, 6 * u)
+            drawRoute(canvas, routeAhead, line and 0x00FFFFFF or (0x40 shl 24), 15 * u)
+            drawRoute(canvas, routeAhead, if (dark) RIVER_NIGHT_EDGE else RIVER_DAY_EDGE, 10 * u)
+            drawRoute(canvas, routeAhead, line, 7 * u)
             if (!flowLine.isEmpty) {
                 val step = (flow.coerceIn(0f, 1f) * FLOW_STEPS).toInt() % FLOW_STEPS
                 // La fase baja para que las flechitas vayan hacia adelante (hacia el final del trazo).

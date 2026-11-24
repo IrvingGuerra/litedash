@@ -187,6 +187,8 @@
     <string name="guide_no_internet">Inget internet för att räkna om</string>
     <string name="guide_car_need_map">Ladda ner kartan för %1$s (%2$s) för att se din bil och körfälten.</string>
     <string name="guide_car_no_map">Det finns ingen karta för det här området än som visar din bil och körfälten.</string>
+    <string name="guide_view_arrow">Pilvy</string>
+    <string name="guide_view_car">Bilvy</string>
     <string name="guide_roundabout">Ta avfart %1$d i rondellen</string>
     <string name="guide_roundabout_onto">Ta avfart %1$d i rondellen mot %2$s</string>
 </resources>

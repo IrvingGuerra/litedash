@@ -187,6 +187,8 @@
     <string name="guide_no_internet">दोबारा हिसाब लगाने के लिए इंटरनेट नहीं</string>
     <string name="guide_car_need_map">अपनी गाड़ी और लेन देखने के लिए %1$s का मैप डाउनलोड करें (%2$s)।</string>
     <string name="guide_car_no_map">आपकी गाड़ी और लेन दिखाने के लिए इस इलाके का मैप अभी नहीं है।</string>
+    <string name="guide_view_arrow">तीर दृश्य</string>
+    <string name="guide_view_car">कार दृश्य</string>
     <string name="guide_roundabout">गोलचक्कर पर निकास %1$d लें</string>
     <string name="guide_roundabout_onto">गोलचक्कर पर निकास %1$d लेकर %2$s पर जाएँ</string>
 </resources>

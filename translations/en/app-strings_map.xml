@@ -189,6 +189,8 @@
     <string name="guide_no_internet">No internet to recalculate</string>
     <string name="guide_car_need_map">To see your car and the lanes, download the %1$s map (%2$s).</string>
     <string name="guide_car_no_map">There\'s no map of this area yet to show your car and the lanes.</string>
+    <string name="guide_view_arrow">Arrow view</string>
+    <string name="guide_view_car">Car view</string>
     <string name="guide_roundabout">At the roundabout, take exit %1$d</string>
     <string name="guide_roundabout_onto">At the roundabout, toward %2$s: exit %1$d</string>
 </resources>

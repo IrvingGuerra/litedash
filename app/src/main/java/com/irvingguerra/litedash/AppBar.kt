@@ -66,6 +66,7 @@ import com.irvingguerra.litedash.feature.apps.App
 import com.irvingguerra.litedash.feature.apps.AppIcon
 import com.irvingguerra.litedash.feature.apps.AppRepository
 import com.irvingguerra.litedash.feature.dashboard.longPress
+import com.irvingguerra.litedash.feature.map.ROUTE_BLUE
 
 /** Lo que hacen los botones de la barra (los arma el inicio). */
 class BarActions(
@@ -105,6 +106,8 @@ fun AppBar(
     actions: BarActions,
     /** El mapa de LiteDash en grande: su botón va marcado (otro toque lo cierra). */
     mapOpen: Boolean = false,
+    /** Con la guía de LiteDash: el botón de navegar lleva un punto. */
+    guiding: Boolean = false,
 ) {
     val c = LocalColors.current
     val k = prefs.barSize.scale
@@ -120,7 +123,7 @@ fun AppBar(
     // Lo de adentro, con los colores que le tocan sobre la piel (de vidrio, sin grises opacos).
     val look = LocalCardLook.current
     val inner = remember(c, look.style, vertical) { if (vertical) c else contentColors(c, look, plain = false) }
-    val item = @Composable { it: BarItem -> CompositionLocalProvider(LocalColors provides inner) { BarButton(it, sizes, vertical, musicOpen, mapOpen, actions) } }
+    val item = @Composable { it: BarItem -> CompositionLocalProvider(LocalColors provides inner) { BarButton(it, sizes, vertical, musicOpen, mapOpen, actions, guiding) } }
     val favoritesBlock = @Composable { maxApps: Int? ->
         val shown = if (maxApps != null) favorites.take(maxApps) else favorites
         if (vertical) Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -254,12 +257,15 @@ fun barThickness(prefs: Preferences, vertical: Boolean): Dp {
 /** De vidrio, lo menos que se ve la barra de abajo. */
 private const val BAR_OPACITY = 0.55f
 
+/** El punto del botón de navegar mientras hay guía. */
+private val GUIDE_DOT = 8.dp
+
 /** Medidas de la barra: botón, ícono de app y caja de cada favorita (abajo) o del volumen (al lado). */
 private data class BarSizes(val button: Dp, val icon: Dp, val box: Dp = button, val volume: Dp = button)
 
 /** Un botón de la barra. Las favoritas no pasan por aquí: van en su propio bloque. */
 @Composable
-private fun BarButton(item: BarItem, sizes: BarSizes, vertical: Boolean, musicOpen: Boolean, mapOpen: Boolean, actions: BarActions) {
+private fun BarButton(item: BarItem, sizes: BarSizes, vertical: Boolean, musicOpen: Boolean, mapOpen: Boolean, actions: BarActions, guiding: Boolean = false) {
     val c = LocalColors.current
     // Su nombre, para el lector de pantalla (el mismo que en Ajustes → Barra).
     val label = item.title()?.let { stringResource(it) }
@@ -269,7 +275,11 @@ private fun BarButton(item: BarItem, sizes: BarSizes, vertical: Boolean, musicOp
         // La pantalla Música (como en Tesla); marcado mientras está abierta.
         BarItem.MUSIC -> IconButton(Icons.music, actions.onMusic, size = sizes.button, background = if (musicOpen) c.surfaceHigh else Color.Transparent, label = label)
         BarItem.VOLUME -> Volume(if (vertical) sizes.volume else sizes.button, vertical = vertical)
-        BarItem.NAVIGATE -> IconButton(Icons.navigate, actions.onNavigate, size = sizes.button, background = if (mapOpen) c.surfaceHigh else Color.Transparent, label = label)
+        BarItem.NAVIGATE -> Box {
+            IconButton(Icons.navigate, actions.onNavigate, size = sizes.button, background = if (mapOpen) c.surfaceHigh else Color.Transparent, label = label)
+            // Navegando con LiteDash: un punto (la guía sigue aunque no se vea).
+            if (guiding) Box(Modifier.align(Alignment.TopEnd).padding(sizes.button * 0.18f).size(GUIDE_DOT).clip(CircleShape).background(ROUTE_BLUE))
+        }
         BarItem.BLUETOOTH -> IconButton(Icons.bluetooth, actions.onBluetooth, size = sizes.button, label = label)
         BarItem.PROJECTION -> IconButton(Icons.phoneCar, actions.onProjection, size = sizes.button, label = label)
         BarItem.PHONE -> IconButton(Icons.phone, actions.onPhone, size = sizes.button, label = label)

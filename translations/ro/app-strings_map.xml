@@ -188,6 +188,8 @@
     <string name="guide_no_internet">Fără internet pentru recalculare</string>
     <string name="guide_car_need_map">Ca să vezi mașina și benzile, descarcă harta %1$s (%2$s).</string>
     <string name="guide_car_no_map">Încă nu există o hartă a acestei zone care să arate mașina și benzile.</string>
+    <string name="guide_view_arrow">Vedere săgeată</string>
+    <string name="guide_view_car">Vedere mașină</string>
     <string name="guide_roundabout">La sensul giratoriu, ia ieșirea %1$d</string>
     <string name="guide_roundabout_onto">La sensul giratoriu, ia ieșirea %1$d spre %2$s</string>
 </resources>

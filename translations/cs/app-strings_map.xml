@@ -189,6 +189,8 @@
     <string name="guide_no_internet">Bez internetu nelze přepočítat</string>
     <string name="guide_car_need_map">Chceš-li vidět své auto a jízdní pruhy, stáhni mapu %1$s (%2$s).</string>
     <string name="guide_car_no_map">Pro tuto oblast zatím není mapa, která by ukázala tvé auto a jízdní pruhy.</string>
+    <string name="guide_view_arrow">Zobrazení šipky</string>
+    <string name="guide_view_car">Zobrazení auta</string>
     <string name="guide_roundabout">Na kruhovém objezdu vyjeď %1$d. výjezdem</string>
     <string name="guide_roundabout_onto">Na kruhovém objezdu vyjeď %1$d. výjezdem na %2$s</string>
 </resources>

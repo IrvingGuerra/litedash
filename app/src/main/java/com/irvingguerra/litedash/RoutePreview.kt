@@ -66,7 +66,7 @@ import kotlin.math.roundToInt
  * La ruta al lugar elegido (M4): se pide al tocar «Ruta» y se calcula en la pantalla con las calles del estado bajado
  * o, si falta ese mapa y hay internet, en línea ([MapPacks.planRoute]).
  * [to] = a dónde; [plan] = lo que salió (null = buscando). Al moverte se calcula otra vez solo si te alejas más de
- * [RECHECK_M] de donde salió (seguirte vuelta por vuelta es la guía, M5).
+ * [RECHECK_M] de donde salió (seguirte vuelta por vuelta es la guía: [GuideEngine]).
  */
 @Stable
 internal class RouteRequest(val to: SearchHit) {
@@ -111,7 +111,7 @@ internal fun RunRoute(d: Dependencies, request: RouteRequest) {
         val o = request.origin ?: return@LaunchedEffect
         if (here != null && !request.moved && Driving.session == null && o.distanceTo(here) > RECHECK_M) request.moved = true
     }
-    // Al terminar la guía («Terminar» o atrás) la tarjeta no debe enseñar la ruta vieja: se planea desde donde estás.
+    // Al terminar la guía la tarjeta no debe enseñar la ruta vieja: se planea desde donde estás.
     val driving = Driving.session != null
     var drove by remember(request) { mutableStateOf(false) }
     LaunchedEffect(request, driving) {
@@ -189,12 +189,12 @@ private const val RECHECK_M = 500f
 
 /**
  * La tarjeta de la ruta: lo que mide, lo que se tarda (sin tráfico), a qué hora llegas y por dónde va; o, si no salió,
- * por qué y qué hacer (bajar el mapa o las calles de tu estado, o abrir el lugar en tu app de mapas). [onOpen] = tu app
- * de mapas; [onOffline] = Ajustes → Apps → Navegación → Sin conexión.
+ * por qué y qué hacer (bajar el mapa o las calles de tu estado, o abrir el lugar en tu app de mapas). [onGo] = «Ir» (empezar
+ * la guía con esa ruta); [onOpen] = tu app de mapas; [onOffline] = Ajustes → Apps → Navegación → Sin conexión.
  */
 @Composable
 internal fun RouteCard(
-    d: Dependencies, request: RouteRequest, appName: String?, onOpen: () -> Unit, onOffline: () -> Unit, back: () -> Unit,
+    d: Dependencies, request: RouteRequest, appName: String?, onGo: (Route) -> Unit, onOpen: () -> Unit, onOffline: () -> Unit, back: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val c = LocalColors.current
@@ -277,7 +277,7 @@ internal fun RouteCard(
                 val job = packs.routesJob?.takeIf { it.id == plan.region.id }
                 if (job == null || job.failed) Button(stringResource(R.string.route_download), { packs.downloadRoutes(plan.region) }, primary = true)
             }
-            if (plan is RoutePlan.Found) Button(stringResource(R.string.guide_go), { Driving.session = DriveSession(request.to, plan.route) }, primary = true)
+            if (plan is RoutePlan.Found) Button(stringResource(R.string.guide_go), { onGo(plan.route) }, primary = true)
             // En línea aunque tu estado está bajado: sus calles, para la próxima sin internet.
             if (plan is RoutePlan.Found && plan.routesOf != null && packs.routesJob?.takeIf { it.id == plan.routesOf!!.id && !it.failed } == null) {
                 Button(stringResource(R.string.route_download), { packs.downloadRoutes(plan.routesOf!!) })

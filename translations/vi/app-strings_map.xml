@@ -186,6 +186,8 @@
     <string name="guide_no_internet">Không có internet để tính lại</string>
     <string name="guide_car_need_map">Để thấy xe và các làn đường, hãy tải bản đồ %1$s (%2$s).</string>
     <string name="guide_car_no_map">Chưa có bản đồ khu vực này để hiện xe và các làn đường của bạn.</string>
+    <string name="guide_view_arrow">Chế độ mũi tên</string>
+    <string name="guide_view_car">Chế độ xe</string>
     <string name="guide_roundabout">Tại vòng xuyến, đi lối ra thứ %1$d</string>
     <string name="guide_roundabout_onto">Tại vòng xuyến, đi lối ra thứ %1$d vào %2$s</string>
 </resources>

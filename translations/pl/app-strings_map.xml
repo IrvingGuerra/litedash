@@ -189,6 +189,8 @@
     <string name="guide_no_internet">Brak internetu, by przeliczyć trasę</string>
     <string name="guide_car_need_map">Aby zobaczyć swoje auto i pasy ruchu, pobierz mapę: %1$s (%2$s).</string>
     <string name="guide_car_no_map">Dla tej okolicy nie ma jeszcze mapy, która pokaże Twoje auto i pasy ruchu.</string>
+    <string name="guide_view_arrow">Widok strzałki</string>
+    <string name="guide_view_car">Widok auta</string>
     <string name="guide_roundabout">Na rondzie zjedź %1$d. zjazdem</string>
     <string name="guide_roundabout_onto">Na rondzie zjedź %1$d. zjazdem w %2$s</string>
 </resources>

@@ -186,6 +186,8 @@
     <string name="guide_no_internet">没有网络，无法重新规划</string>
     <string name="guide_car_need_map">要看到你的车和车道，请下载 %1$s 的地图（%2$s）。</string>
     <string name="guide_car_no_map">这个地区还没有能显示你的车和车道的地图。</string>
+    <string name="guide_view_arrow">箭头视图</string>
+    <string name="guide_view_car">车辆视图</string>
     <string name="guide_roundabout">在环岛走第 %1$d 个出口</string>
     <string name="guide_roundabout_onto">在环岛走第 %1$d 个出口，驶入 %2$s</string>
 </resources>

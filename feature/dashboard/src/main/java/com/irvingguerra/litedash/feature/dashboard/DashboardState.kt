@@ -78,6 +78,15 @@ class DashboardState(private val store: DashboardStore) {
         }
     }
 
+    /** La página que se ve si cumple [test] (con su fondo y las piezas que se ven) o, si no, la primera que sí; null = ninguna. */
+    fun pageWhere(test: (PageBackground, List<Tile>) -> Boolean): Int? {
+        if (test(background, shown)) return page
+        val c = grid ?: return null
+        return (0 until pageCount).firstOrNull { p ->
+            p != page && test(backgrounds.getOrElse(p) { PageBackground.WALLPAPER }, pageTiles.getOrPut(p) { load(c, p) }.filterNot { hidden(it.type) })
+        }
+    }
+
     /** Pasa a la página [p] (se queda donde está si no existe). */
     fun goTo(p: Int) {
         if (p == page || p !in 0 until pageCount) return

@@ -187,6 +187,8 @@
     <string name="guide_no_internet">Χωρίς internet για επανυπολογισμό</string>
     <string name="guide_car_need_map">Για να δείτε το αυτοκίνητό σας και τις λωρίδες, κατεβάστε τον χάρτη %1$s (%2$s).</string>
     <string name="guide_car_no_map">Δεν υπάρχει ακόμη χάρτης αυτής της περιοχής για να δείξει το αυτοκίνητό σας και τις λωρίδες.</string>
+    <string name="guide_view_arrow">Προβολή βέλους</string>
+    <string name="guide_view_car">Προβολή αυτοκινήτου</string>
     <string name="guide_roundabout">Στον κυκλικό κόμβο, πάρτε την έξοδο %1$d</string>
     <string name="guide_roundabout_onto">Στον κυκλικό κόμβο, πάρτε την έξοδο %1$d προς %2$s</string>
 </resources>

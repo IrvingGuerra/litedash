@@ -98,6 +98,7 @@ import com.irvingguerra.litedash.feature.map.OfflineArea
 import com.irvingguerra.litedash.feature.map.OfflineError
 import com.irvingguerra.litedash.feature.map.OfflineMaps
 import com.irvingguerra.litedash.feature.map.PackError
+import com.irvingguerra.litedash.feature.map.Route
 import com.irvingguerra.litedash.feature.map.SearchHit
 import com.irvingguerra.litedash.feature.map.TileStore
 import com.irvingguerra.litedash.feature.map.VectorTiles
@@ -118,12 +119,14 @@ import kotlinx.coroutines.withContext
  * [rememberMapLook]; lo que un widget guardó aparte hasta la 1.5.15 ya no se lee); navegando, la siguiente vuelta flota
  * arriba a la izquierda y Casa y Trabajo, abajo a la derecha (sobre los créditos). Un toque hace [onTap]: el mapa de LiteDash en grande o, con
  * «Navegar con: App de mapas» ([app] no es null), esa app. En una fila, o sin permiso de ubicación, se ve
- * solo la vuelta, Casa y Trabajo ([NavigationTile]) y, sin permiso, un botón para pedirlo. GPS y descargas solo
+ * solo la vuelta, Casa y Trabajo ([NavigationTile]) y, sin permiso, un botón para pedirlo. Con la guía de LiteDash
+ * navega ([GuideView], lo que quepa en su tamaño) y un toque la ve en grande ([onGuide]). GPS y descargas solo
  * mientras se ve. Al quitar el widget se sueltan su cámara y su almacén de teselas.
  */
 @Composable
 fun MapTile(
     d: Dependencies, tileId: String, app: App?, editing: Boolean, onPlace: (String) -> Unit, onTap: () -> Unit, onSearch: () -> Unit,
+    onGuide: () -> Unit,
 ) {
     val c = LocalColors.current
     val (granted, ask) = rememberGpsPermission(d)
@@ -131,6 +134,16 @@ fun MapTile(
     // Sale de la pantalla: si fue porque se quitó el widget, lo suyo ya no sirve (si no, se queda para cuando vuelva).
     DisposableEffect(tileId) {
         onDispose { if (d.dashboard.allTiles.none { it.id == tileId }) forgetMap(tileId) }
+    }
+    val session = Driving.session
+    if (session != null && granted) {
+        BoxWithConstraints(Modifier.fillMaxSize()) {
+            val size = guideSizeFor(maxWidth.value, maxHeight.value)
+            Card(Modifier.fillMaxSize()) {
+                GuideView(d, session, size, tileId, Modifier.fillMaxSize(), controls = !editing, onTap = onGuide)
+            }
+        }
+        return
     }
     BoxWithConstraints(Modifier.fillMaxSize()) {
         if (!granted || maxHeight < COMPACT_HEIGHT) {
@@ -170,12 +183,14 @@ fun MapTile(
  * El mapa de LiteDash en grande (el toque al widget Mapa, y la barra y el volante si no abren tu app), con el aspecto de
  * Ajustes y la cámara del widget [tileId] si se abrió desde uno: arriba el buscador (su lista se cierra al tocar fuera o
  * con atrás), el mapa en vivo (con dos dedos o + y − se acerca o aleja; dejar presionado marca un punto), la siguiente
- * vuelta, Casa y Trabajo, y botones para cerrar y, con una app de mapas, para abrirla.
+ * vuelta, Casa y Trabajo, y botones para cerrar y, con una app de mapas, para abrirla. Con la guía es la vista completa
+ * de la navegación ([GuideView]); la lupa trae el buscador (para cambiar de destino) y su ✕ regresa a la guía. «Ir»
+ * empieza la guía y avisa a [onGo] (el inicio decide si este mapa se cierra).
  */
 @Composable
 fun MapExpanded(
     d: Dependencies, tileId: String?, app: App?, onPlace: (String) -> Unit, onNavigate: () -> Unit, onOffline: () -> Unit,
-    close: () -> Unit, modifier: Modifier = Modifier,
+    onGo: () -> Unit, close: () -> Unit, modifier: Modifier = Modifier,
 ) {
     val c = LocalColors.current
     val (granted, ask) = rememberGpsPermission(d)
@@ -203,8 +218,12 @@ fun MapExpanded(
         d.prefs.addRecent(hit)
         camera.show(hit.lat, hit.lon)
     }
+    // Con la guía: el buscador a la vista ([browsing], con la lupa o un lugar de otra app) o la navegación.
+    val session = Driving.session
+    var browsing by remember { mutableStateOf(false) }
     // Lo que llegó de otra app (geo:) o de la lupa del widget.
     LaunchedEffect(PlaceRequests.place, PlaceRequests.query, PlaceRequests.focus) {
+        if (PlaceRequests.pending) browsing = true
         PlaceRequests.place?.let { pick(it) }
         PlaceRequests.query?.let {
             search.type(it.take(QUERY_MAX))
@@ -231,8 +250,22 @@ fun MapExpanded(
         selected?.let { camera.show(it.lat, it.lon) }
         Unit
     }
+    // Atrás regresa a la guía (antes cierra el lugar o la ruta: esos van después y les toca primero).
+    BackHandler(session != null && browsing) { browsing = false }
     BackHandler(routing != null && !search.focused, closeRoute)
     BackHandler(selected != null && routing == null && !search.focused, unselect)
+    // «Ir»: la guía empieza aquí mismo (el lugar y la ruta se sueltan: la lupa abre el buscador limpio) y el mapa te sigue.
+    val go: (Route) -> Unit = { r ->
+        val to = routing?.to ?: selected
+        if (to != null) {
+            Driving.session = DriveSession(to, r)
+            routing = null
+            search.clear()
+            browsing = false
+            camera.recenter()
+            onGo()
+        }
+    }
     // La lista del buscador (recientes o resultados) se cierra con el teclado al tocar fuera de ella: el mapa o cualquier
     // hueco (el toque sigue a lo que tocaste). Lo escrito se queda; tocar el campo la vuelve a abrir.
     var searchBounds by remember { mutableStateOf(Rect.Zero) }
@@ -253,6 +286,20 @@ fun MapExpanded(
             // Los arreglos del ruteador (~10 MB en un estado grande) se sueltan al cerrar el mapa en grande.
             MapPacks.get(context).releaseRouter()
         }
+    }
+    // La lupa de la guía abre el buscador listo para escribir.
+    LaunchedEffect(browsing) { if (browsing && session != null && !search.focused && search.selected == null) focus.requestFocus() }
+    if (session != null && !browsing) {
+        Card(modifier.fillMaxSize()) {
+            GuideView(d, session, GuideSize.FULL, tileId, Modifier.fillMaxSize()) {
+                IconButton(
+                    Icons.search, { browsing = true }, size = 48.dp, background = c.surface.copy(alpha = 0.96f), color = c.accent,
+                    label = stringResource(R.string.search_place),
+                )
+                IconButton(Icons.close, close, size = 48.dp, background = c.surface.copy(alpha = 0.96f))
+            }
+        }
+        return
     }
     Card(modifier.fillMaxSize()) {
         BoxWithConstraints(
@@ -291,8 +338,7 @@ fun MapExpanded(
                 )
             } else Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Button(stringResource(R.string.tap_to_enable), ask, primary = true) }
             val searching = search.focused || search.query.isNotEmpty()
-            // Con la guía encima el buscador sale de la pantalla: en Android 6 un campo enfocado debajo vuelve a abrir el teclado.
-            if (Driving.session == null) Column(
+            Column(
                 Modifier.align(Alignment.TopStart).padding(12.dp).width(minOf(boxWidth - 88.dp, 480.dp))
                     .onGloballyPositioned { searchBounds = it.boundsInParent() },
             ) {
@@ -304,7 +350,8 @@ fun MapExpanded(
             Row(Modifier.align(Alignment.TopEnd).padding(12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 // Tu app de mapas, con su botón (como en el widget).
                 if (app != null && boxWidth >= WIDE_TOP) IconButton(Icons.navigate, onNavigate, size = 48.dp, background = c.surface.copy(alpha = 0.9f), color = c.accent)
-                IconButton(Icons.close, close, size = 48.dp, background = c.surface.copy(alpha = 0.9f))
+                // Con la guía, el ✕ cierra el buscador y regresa a ella.
+                IconButton(Icons.close, if (session != null) ({ browsing = false }) else close, size = 48.dp, background = c.surface.copy(alpha = 0.9f))
             }
             // Acercar y alejar con un toque (en pantallas de auto el pellizco falla). Con la ruta el zoom es el que la enseña
             // toda (fijo): ahí no van.
@@ -323,7 +370,7 @@ fun MapExpanded(
             val cardModifier = Modifier.align(Alignment.BottomStart).padding(start = 12.dp, end = 12.dp, bottom = 12.dp).widthIn(max = CARD_MAX)
             val request = routing
             if (selected != null && !search.focused) {
-                if (request != null) RouteCard(d, request, app?.name, onOpen = { openPlace(context, app, selected) }, onOffline = onOffline, back = closeRoute, modifier = cardModifier)
+                if (request != null) RouteCard(d, request, app?.name, onGo = go, onOpen = { openPlace(context, app, selected) }, onOffline = onOffline, back = closeRoute, modifier = cardModifier)
                 else PlaceCard(
                     d, selected, app?.name, onRoute = { routing = RouteRequest(selected) }, onOpen = { openPlace(context, app, selected) },
                     close = unselect, modifier = cardModifier,
@@ -439,31 +486,64 @@ private fun LiveMap(
  * El mapa vivo detrás de los widgets de una página (#18). Te sigue sin gestos (los de ahí son del inicio: deslizar de
  * página, dejar presionado para acomodar) y vas en [focus], el hueco que dejan los widgets (en fracciones de la
  * pantalla), con la flecha o tu auto visto de atrás ([car], sin él la flecha). Con Waze/Maps navegando, su siguiente
- * vuelta va arriba de ese hueco. Sin permiso de ubicación o sin lectura aún, no se dibuja (queda el fondo del tema).
+ * vuelta va arriba de ese hueco. Con la guía de LiteDash, si es el mapa que navega en la página ([guide]), lleva la
+ * cámara de la navegación y la vuelta y la llegada en ese hueco; si navega un widget Mapa, solo la ruta, quieta (una sola
+ * vista anima). Sin permiso de ubicación o sin lectura aún, no se dibuja (queda el fondo del tema).
  * [covered] = algo en grande lo tapa: se queda quieto.
  */
 @Composable
-internal fun MapBackdrop(d: Dependencies, focus: Rect?, car: CarPackage?, covered: Boolean) {
+internal fun MapBackdrop(d: Dependencies, focus: Rect?, car: CarPackage?, covered: Boolean, guide: Boolean) {
     val c = LocalColors.current
     // Con algo en grande encima el fondo no se dibuja: tampoco hace falta el GPS.
     if (!covered) KeepTripRunning(d.trip)
-    val look = rememberMapLook(d)
+    val session = Driving.session
+    val guiding = guide && session != null
+    val heading = guiding && !d.prefs.guideMapNorth
+    val raw = d.prefs.mapLook
+    val look = remember(raw, session != null, heading, guiding) {
+        MapLook.parse(raw.orEmpty()).let {
+            when {
+                heading -> it.copy(orientation = MapOrientation.HEADING)
+                guiding -> it.copy(orientation = MapOrientation.NORTH_UP)
+                // La ruta de la guía que lleva un widget: quieta aquí.
+                session != null -> it.copy(flow = false)
+                else -> it
+            }
+        }
+    }
     val store = rememberTileStore(d, look, c.dark, BACKDROP_KEY)
     val camera = sharedMapCamera(BACKDROP_KEY)
     val position = d.trip.position ?: return
     val kmh = d.bus.watch(Signal.SPEED)
     val navigating = d.navigation.instruction != null
     val marker = rememberRearMarker(d, car.takeIf { d.prefs.mapBackdropCar })
+    // Lo que tapa la llegada abajo del hueco (px): tu flecha y los créditos van arriba de ella.
+    var cardsH by remember { mutableIntStateOf(0) }
     BoxWithConstraints(Modifier.fillMaxSize()) {
+        val hole = focus ?: WHOLE_SCREEN
+        val height = constraints.maxHeight.toFloat()
+        val s = session?.state
+        val onRoute = guiding && s != null && !s.offRoute
+        val view = if (guiding && cardsH > 0 && height > 0f) {
+            val bottom = (hole.bottom - cardsH / height).coerceAtLeast(hole.top + hole.height * 0.5f)
+            Rect(hole.left, hole.top, hole.right, bottom)
+        } else focus
         MapCanvas(
-            store, position.latitude, position.longitude, d.trip.bearing, kmh, look, Modifier.fillMaxSize(), camera, navigating,
-            active = !LocalHomeCovered.current && !covered, focus = focus, interactive = false, marker = marker,
+            store, if (onRoute) s.lat else position.latitude, if (onRoute) s.lon else position.longitude,
+            if (guiding) youBearing(d, session, s) else d.trip.bearing, kmh, look, Modifier.fillMaxSize(), camera, navigating,
+            active = !LocalHomeCovered.current && !covered, focus = view, interactive = false, marker = marker,
+            navigation = guiding, turnAhead = onRoute && turnAhead(session.route, s),
+            route = session?.route?.points, routeDone = s?.let { it.point + it.fraction } ?: 0f,
         )
-        if (focus != null) Box(Modifier.offset(maxWidth * focus.left, maxHeight * focus.top).size(maxWidth * focus.width, maxHeight * focus.height)) {
-            NextTurn(d, Modifier.align(Alignment.TopStart).padding(12.dp).widthIn(max = 420.dp))
+        Box(Modifier.offset(maxWidth * hole.left, maxHeight * hole.top).size(maxWidth * hole.width, maxHeight * hole.height)) {
+            if (guiding) GuideCards(d, session, Modifier.fillMaxSize()) { cardsH = it }
+            else if (focus != null) NextTurn(d, Modifier.align(Alignment.TopStart).padding(12.dp).widthIn(max = 420.dp))
         }
     }
 }
+
+/** Sin hueco medido todavía: toda la pantalla. */
+private val WHOLE_SCREEN = Rect(0f, 0f, 1f, 1f)
 
 /** Tu auto de espaldas para ponerlo sobre el mapa ([car] null = sin auto: la flecha); se dibuja y recorta fuera del hilo principal. */
 @Composable
@@ -527,7 +607,7 @@ private class ExpandedMap(val tileId: String, val covered: Boolean)
 private var expandedMap by mutableStateOf<ExpandedMap?>(null)
 
 @Composable
-private fun sharedMapCamera(key: String?): MapCamera =
+internal fun sharedMapCamera(key: String?): MapCamera =
     if (key == null) rememberMapCamera() else remember(key) { mapCameras.getOrPut(key) { MapCamera() } }
 
 /** Una pastilla sobre el mapa: ícono y un texto corto (de [maxLines] renglones). */
