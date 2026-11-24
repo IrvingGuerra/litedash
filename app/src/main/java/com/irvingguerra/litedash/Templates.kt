@@ -87,19 +87,20 @@ private enum class TemplateTab(val title: Int, val templates: List<Template>, va
 }
 
 /**
- * Plantillas en pestañas por estilo y, en cada una, en dos grupos: pantallas acostadas y paradas (la
- * cuadrícula fina acomoda cada una a cualquier tamaño); primero el de la tuya, con la recomendada marcada.
- * En el de la tuya no se repiten las que en esta pantalla quedan igual que otra.
+ * Plantillas en pestañas por estilo, solo las de tu pantalla (acostada o de pie; la cuadrícula fina acomoda cada una a
+ * cualquier tamaño) y con la recomendada marcada. No se repiten las que en esta pantalla quedan igual que otra, y una
+ * pestaña sin ninguna para tu pantalla no sale.
  */
 @Composable
-fun TemplatesPanel(dashboard: DashboardState, prefs: Preferences, close: () -> Unit) {
+fun TemplatesPanel(dashboard: DashboardState, close: () -> Unit) {
     val grid = dashboard.grid ?: return
     val c = LocalColors.current
     val suggested = grid.coarse.suggestedTemplate()
     PanelScaffold(stringResource(R.string.templates), close) {
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(24.dp)) {
             Label(stringResource(R.string.templates_help), Typography.body, c.textMuted)
-            val tab = TemplateTab.entries[tabs(TemplateTab.entries.map { it.title }, "templates")]
+            val shownTabs = TemplateTab.entries.filter { t -> t.templates.any { it.fits(grid.vertical) } }
+            val tab = shownTabs[tabs(shownTabs.map { it.title }, "templates").coerceAtMost(shownTabs.lastIndex)]
             val alerts = LocalAlerts.current
             val res = LocalResources.current
             fun apply(p: Template) {
@@ -112,36 +113,21 @@ fun TemplatesPanel(dashboard: DashboardState, prefs: Preferences, close: () -> U
                 TemplateTab.MAP -> Label(stringResource(R.string.templates_map_help), Typography.small, c.textMuted)
                 TemplateTab.ROAD -> Label(stringResource(R.string.templates_road_help), Typography.small, c.textMuted)
                 TemplateTab.SPEED -> Label(stringResource(R.string.templates_speed_help), Typography.small, c.textMuted)
-                TemplateTab.WALLPAPER -> {
-                    Label(stringResource(R.string.templates_wallpaper_help), Typography.small, c.textMuted)
-                    WallpaperSettings(prefs)
-                }
+                TemplateTab.WALLPAPER -> Label(stringResource(R.string.templates_wallpaper_help), Typography.small, c.textMuted)
                 TemplateTab.CAR -> Unit
             }
             // Cada plantilla armada una vez por pestaña (para no repetir y para su miniatura).
-            val layouts = remember(tab, grid) { tab.templates.associateWith { it.tiles(grid, tab.hero, dashboard.hidden) } }
-            for (vertical in listOf(grid.vertical, !grid.vertical)) {
-                val mine = vertical == grid.vertical
-                val templates = tab.templates.filter { it.fits(vertical) }.let { list ->
-                    if (!mine) list else list.distinctBy { p -> layouts.getValue(p).map { listOf(it.type, it.col, it.row, it.width, it.height) } }
-                }
-                if (templates.isEmpty()) continue
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Label(stringResource(if (vertical) R.string.screens_vertical else R.string.screens_horizontal).uppercase(currentLocale()), Typography.label, c.textMuted)
-                        if (mine) Label(stringResource(R.string.your_screen).uppercase(currentLocale()), Typography.label, c.accent)
-                    }
-                    Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                        for (p in templates) {
-                            Card(Modifier.width(260.dp), onClick = { apply(p) }) {
-                                Column(Modifier.padding(16.dp)) {
-                                    TemplateThumbnail(layouts.getValue(p), grid, tab.hero, mapBackground = p == Template.MAP_BACKGROUND)
-                                    Spacer(Modifier.height(12.dp))
-                                    Label(stringResource(nameOf(p)), Typography.subtitle, maxLines = 1)
-                                    if (tab == TemplateTab.CAR && mine && p == suggested) {
-                                        Label(stringResource(R.string.recommended).uppercase(currentLocale()), Typography.label, c.accent, maxLines = 1)
-                                    }
-                                }
+            val layouts = remember(tab, grid) { tab.templates.filter { it.fits(grid.vertical) }.associateWith { it.tiles(grid, tab.hero, dashboard.hidden) } }
+            val templates = layouts.keys.distinctBy { p -> layouts.getValue(p).map { listOf(it.type, it.col, it.row, it.width, it.height) } }
+            Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                for (p in templates) {
+                    Card(Modifier.width(260.dp), onClick = { apply(p) }) {
+                        Column(Modifier.padding(16.dp)) {
+                            TemplateThumbnail(layouts.getValue(p), grid, tab.hero, mapBackground = p == Template.MAP_BACKGROUND)
+                            Spacer(Modifier.height(12.dp))
+                            Label(stringResource(nameOf(p)), Typography.subtitle, maxLines = 1)
+                            if (tab == TemplateTab.CAR && p == suggested) {
+                                Label(stringResource(R.string.recommended).uppercase(currentLocale()), Typography.label, c.accent, maxLines = 1)
                             }
                         }
                     }

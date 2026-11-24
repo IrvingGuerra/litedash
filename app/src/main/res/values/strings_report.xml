@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- "Enviar un reporte" (Ajustes → Sistema → Tu pantalla, Reports.kt). -->
+<!-- "Enviar un reporte" (Ajustes → Acerca de y ayuda → Reportar un problema, Reports.kt). -->
 <resources>
     <string name="report_title">Enviar un reporte</string>
     <string name="report_help">Cuéntanos qué falla. Se manda con datos técnicos de tu pantalla (sin datos personales).</string>

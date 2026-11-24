@@ -12,7 +12,7 @@ import android.os.Build
 const val LOCAL_NETWORK_PERMISSION = "android.permission.ACCESS_LOCAL_NETWORK"
 
 /** Desde esta versión de Android la red local pide permiso. */
-private const val LOCAL_NETWORK_SDK = 37
+const val LOCAL_NETWORK_SDK = 37
 
 /** Se puede usar la red local ahora. */
 fun localNetworkAllowed(context: Context): Boolean =

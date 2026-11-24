@@ -37,7 +37,6 @@ import com.irvingguerra.litedash.core.ui.Label
 import com.irvingguerra.litedash.core.ui.LocalCardLook
 import com.irvingguerra.litedash.core.ui.LocalColors
 import com.irvingguerra.litedash.core.ui.LocalPlainCard
-import com.irvingguerra.litedash.core.ui.SwitchRow
 import com.irvingguerra.litedash.core.ui.TilePadding
 import com.irvingguerra.litedash.core.ui.Typography
 import com.irvingguerra.litedash.core.ui.fitFont
@@ -100,18 +99,6 @@ fun WeatherRefresh(repo: WeatherRepository, revision: Int, trip: TripRepository)
             }
         }
     }
-}
-
-/** Ajustes → Inicio y apariencia: prender o apagar el clima (al prenderlo pide la ubicación aproximada). */
-@Composable
-fun WeatherSwitch(repo: WeatherRepository) {
-    val enable = rememberEnableWeather(repo)
-    SwitchRow(
-        stringResource(R.string.weather_switch),
-        repo.enabled,
-        { on -> if (on) enable() else repo.disable() },
-        stringResource(R.string.weather_switch_help),
-    )
 }
 
 /**

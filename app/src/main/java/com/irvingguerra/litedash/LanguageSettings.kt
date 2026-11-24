@@ -51,7 +51,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /**
- * Inicio y apariencia → Interfaz → Idioma: los incluidos (siempre, también sin internet) y debajo "Más idiomas", los de
+ * Inicio y apariencia → Idioma y unidades → Idioma: los incluidos (siempre, también sin internet) y debajo "Más idiomas", los de
  * la comunidad que se bajan de litedash.dev al elegirlos. Elegir uno reabre la pantalla, como siempre al cambiar idioma.
  */
 @Composable
@@ -60,6 +60,8 @@ internal fun LanguageSettings(prefs: Preferences) {
     val choose = { code: String ->
         if (prefs.language != code) {
             prefs.language = code
+            // Al volver se abre Ajustes justo aquí (la pestaña se recuerda en memoria).
+            openLanguageSettings()
             activity?.let(MainActivity::restart)
         }
     }

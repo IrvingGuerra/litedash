@@ -135,11 +135,11 @@ enum class Expanded { MEDIA, MAP }
 sealed interface Panel {
     data object Drawer : Panel
     data object Settings : Panel
-    /** Ajustes abiertos en Sistema → Actualizaciones (desde el aviso de versión nueva). */
+    /** Ajustes abiertos en Acerca de y ayuda → Acerca de (desde el aviso de versión nueva). */
     data object Updates : Panel
-    /** Ajustes abiertos en Sistema → Tu pantalla, en "Enviar un reporte" (desde el aviso de la calibración del sonido). */
+    /** Ajustes abiertos en Acerca de y ayuda → Reportar un problema, en "Enviar un reporte" (desde el aviso de la calibración del sonido). */
     data object Report : Panel
-    /** Ajustes abiertos en Inicio y apariencia (en su pestaña Interfaz, la del idioma), al volver de cambiar el idioma. */
+    /** Ajustes abiertos en Inicio y apariencia (en su pestaña Idioma y unidades), al volver de cambiar el idioma. */
     data object Language : Panel
     data object AddTile : Panel
     data object Templates : Panel
@@ -918,6 +918,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                         // Acomodar cierra lo que esté en grande (si no, el tablero ni se ve).
                         onEdit = { panel = null; expanded = null; editing = true },
                         onTemplates = { panel = Panel.Templates },
+                        onAddTile = { panel = Panel.AddTile },
                         start = when (p) {
                             Panel.Updates, Panel.Report -> SettingsSection.SYSTEM
                             Panel.Workshop -> SettingsSection.WORKSHOP
@@ -928,7 +929,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                         },
                         onTires = { panel = null; tiresLayer.open = true },
                     )
-                    Panel.Templates -> TemplatesPanel(d.dashboard, d.prefs, close = { panel = null })
+                    Panel.Templates -> TemplatesPanel(d.dashboard, close = { panel = null })
                     Panel.BarSettings -> BarSettingsPanel(d, apps, close = { panel = null })
                     Panel.Wallpaper -> PanelScaffold(
                         if (d.dashboard.pageCount > 1) stringResource(R.string.page_background_title, d.dashboard.page + 1) else stringResource(R.string.wallpaper_title),

@@ -14,7 +14,7 @@ interface AppUpdates {
     @Composable
     fun Banner(onOpen: () -> Unit)
 
-    /** La tarjeta de Ajustes → Sistema → Actualizaciones: buscar, bajar e instalar. */
+    /** La tarjeta de Ajustes → Acerca de y ayuda → Acerca de: buscar, bajar e instalar. */
     @Composable
     fun Card()
 
