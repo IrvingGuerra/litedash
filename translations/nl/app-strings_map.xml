@@ -13,7 +13,7 @@
     <string name="map_zoom_near">Dichtbij</string>
     <string name="map_zoom_mid">Gemiddeld</string>
     <string name="map_zoom_far">Ver</string>
-    <string name="map_zoom_help">Automatisch: zo dichtbij als het kan (een paar straten) en gekanteld zoals Waze, gericht op waar je heen rijdt; zoom je uit, dan wordt hij plat, en centreren of een rit starten zet hem terug. Knijp met twee vingers om te zoomen; sleep met één om rond te kijken.</string>
+    <string name="map_zoom_help">Automatisch: dichtbij (een paar straten); centreren of een rit beginnen brengt het terug. Zoom met twee vingers, kijk rond met één.</string>
     <string name="map_style">Kleuren</string>
     <string name="map_style_theme">Zoals het thema</string>
     <string name="map_style_light">Licht</string>
@@ -156,9 +156,7 @@
     <string name="guide_arrive_at">Je komt aan: %1$s</string>
     <string name="search_ft">%1$d ft</string>
     <string name="map_customize_help">Het uiterlijk en de offline kaarten zijn hetzelfde voor al je kaarten: wijzig ze in Instellingen → Apps → Navigatie.</string>
-    <string name="map_mark">Punt markeren</string>
-    <string name="map_mark_here">Hier markeren</string>
-    <string name="map_orientation_help">Automatisch: gekanteld kijkt de kaart waar je heen gaat; plat staat het noorden boven.</string>
+    <string name="map_orientation_help">Automatisch: stilstaand staat het noorden boven; onderweg kijkt de kaart waar je heen gaat.</string>
     <string name="search_favorites_full">Je hebt het maximum aantal favorieten (%1$d): verwijder er een om een andere toe te voegen.</string>
     <string name="map_pack_search">Land of provincie zoeken</string>
     <string name="map_pack_all_countries">Alle landen tonen (%1$d)</string>

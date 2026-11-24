@@ -13,7 +13,7 @@
     <string name="map_zoom_near">Blisko</string>
     <string name="map_zoom_mid">Średnio</string>
     <string name="map_zoom_far">Daleko</string>
-    <string name="map_zoom_help">Automatycznie: jak najbliżej (kilka ulic) i pochylona jak w Waze, w kierunku jazdy; po oddaleniu robi się płaska, a wyśrodkowanie lub start trasy ją przywraca. Zsuń lub rozsuń dwa palce, by przybliżyć; przeciągnij jednym, by się rozejrzeć.</string>
+    <string name="map_zoom_help">Automatycznie: z bliska (kilka ulic); wyśrodkowanie lub początek jazdy przywraca widok. Dwoma palcami przybliżasz i oddalasz, jednym przesuwasz.</string>
     <string name="map_style">Kolory</string>
     <string name="map_style_theme">Jak motyw</string>
     <string name="map_style_light">Jasne</string>
@@ -156,9 +156,7 @@
     <string name="guide_arrive_at">Dotrzesz do celu: %1$s</string>
     <string name="search_ft">%1$d ft</string>
     <string name="map_customize_help">Wygląd i mapy offline są takie same dla wszystkich Twoich map: zmienisz je w Ustawienia → Aplikacje → Nawigacja.</string>
-    <string name="map_mark">Zaznacz punkt</string>
-    <string name="map_mark_here">Zaznacz tutaj</string>
-    <string name="map_orientation_help">Automatycznie: pochylona mapa obraca się w kierunku jazdy; płaska ma północ u góry.</string>
+    <string name="map_orientation_help">Automatycznie: na postoju północ u góry; w trakcie jazdy mapa obraca się w kierunku jazdy.</string>
     <string name="search_favorites_full">Masz maksymalną liczbę ulubionych (%1$d): usuń jedno, aby dodać kolejne.</string>
     <string name="map_pack_search">Szukaj kraju lub województwa</string>
     <string name="map_pack_all_countries">Pokaż wszystkie kraje (%1$d)</string>

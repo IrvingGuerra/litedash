@@ -19,7 +19,6 @@ import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.nativeCanvas
-import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
@@ -41,9 +40,6 @@ private const val ROUTE_NEAR = 0.3f
 
 /** La franja de la ruta empieza este múltiplo del ancho del auto atrás de donde vas: queda debajo de todo el auto. */
 private const val UNDER_CAR = 3.6f
-
-/** Desde esta inclinación (0–1) se levantan los edificios. */
-private const val BUILDINGS_TILT = 0.5f
 
 /** A lo más tantos nombres de calles a la vez (más, es ruido). */
 private const val MAX_LABELS = 14
@@ -115,10 +111,6 @@ internal class MapFrame : ScreenPoint {
 
     /** El ancho de la ruta en el plano del mapa (a escala real, con perspectiva); 0 = línea en pantalla. */
     private var routeWide = 0f
-
-    /** Los edificios en 3D (solo la vista de tu auto) y si este cuadro los lleva. */
-    private val buildings = BuildingLayer()
-    private var buildingsOn = false
 
     /**
      * Arma la ruta ([world] = sus puntos en el mundo, zoom 0) desde donde vas ([done] = punto + fracción al siguiente).
@@ -313,7 +305,6 @@ internal class MapFrame : ScreenPoint {
         routeWorld: DoubleArray? = null,
         routeDone: Float = 0f,
         routePlaneWidth: Float = 0f,
-        buildingsFrom: TileSource? = null,
     ) {
         if (density != arrowFor) {
             arrowFor = density
@@ -339,9 +330,6 @@ internal class MapFrame : ScreenPoint {
         pinShown = !pinX.isNaN() && toScreen(pinX, pinY, pinAt)
         routeWide = routePlaneWidth
         traceRoute(routeWorld, n, routeDone)
-        // Solo bien inclinado: en la transición desde plano las azoteas quedarían casi encima de la cámara.
-        buildingsOn = buildingsFrom != null && tilt >= BUILDINGS_TILT
-        if (buildingsOn) buildings.trace(buildingsFrom!!, plan, projection, fx, fy, zoom, ts, atX, atY, density, night = sky.luminance() < 0.5f)
         squash = 1f - 0.3f * tilt
         // El círculo de la zona: metros por px del plano en el centro del mapa.
         ring = if (ringKm == null) 0f else (ringKm * 1000 / (EQUATOR_METERS * cos(Math.toRadians(centerLat)) / (n * ts))).toFloat()
@@ -399,14 +387,12 @@ internal class MapFrame : ScreenPoint {
             canvas.nativeCanvas.concat(matrix)
             drawTiles(store, plan)
             canvas.restore()
-            // A escala real la ruta va acostada como una calle más: una franja azul lisa, como Tesla, debajo de los edificios.
+            // A escala real la ruta va acostada como una calle más: una franja azul lisa, como Tesla.
             if (routeWide > 0f && !ribbonX.isNaN()) {
                 routePaint.style = android.graphics.Paint.Style.FILL
                 routePaint.color = ROUTE_ARGB
                 canvas.nativeCanvas.drawPath(ribbon, routePaint)
             }
-            // Los edificios en pantalla (con altura no caben en la matriz del plano), encima de calles y ruta.
-            if (buildingsOn) buildings.draw(canvas.nativeCanvas)
         }
         fade?.let { drawRect(it) }
         if (ring > 0f) {
@@ -434,9 +420,6 @@ internal class MapFrame : ScreenPoint {
         routePaint.strokeWidth = width
         canvas.drawLines(segments.points, 0, segments.size, routePaint)
     }
-
-    /** El punto del mapa al centro de la vista (la mira de «Marcar aquí»); null = aún no se dibuja. */
-    fun centerLatLon(): Pair<Double, Double>? = if (width > 0f && height > 0f) toLatLon(width / 2, height / 2) else null
 
     /** El punto ([x], [y]) de la vista en el mapa (latitud, longitud); null si cae en el cielo o aún no hay cuadro. */
     fun toLatLon(x: Float, y: Float): Pair<Double, Double>? {

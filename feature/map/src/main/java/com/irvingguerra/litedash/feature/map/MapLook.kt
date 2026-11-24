@@ -3,13 +3,12 @@ package com.irvingguerra.litedash.feature.map
 import androidx.compose.runtime.Immutable
 
 /**
- * Hacia dónde mira el mapa. [NORTH] (de fábrica): al norte quieto y, de viaje (inclinado), hacia donde vas; [HEADING]:
- * siempre hacia donde vas; [NORTH_UP]: siempre al norte, también de viaje (plano: inclinado al norte no se entiende).
- * El botón de la brújula cambia entre [HEADING] y [NORTH_UP].
+ * Hacia dónde mira el mapa (siempre plano; solo la guía se inclina). [NORTH] («Automático», de fábrica): al norte
+ * detenido y hacia donde vas de viaje; [HEADING]: siempre hacia donde vas; [NORTH_UP]: siempre al norte.
  */
 enum class MapOrientation(val stored: String) { NORTH("north"), HEADING("heading"), NORTH_UP("north_up") }
 
-/** Automático (lo más cerca, inclinado) o fijo y plano (cerca = calles, lejos = colonias). */
+/** Automático (cerca: unas calles) o fijo (cerca = calles, lejos = colonias). */
 enum class MapZoom(val stored: String, val level: Int?) { AUTO("auto", null), NEAR("near", 17), MID("mid", 16), FAR("far", 15) }
 
 /** Los colores: como el tema de LiteDash (día y noche), o siempre claros u oscuros. */
@@ -17,7 +16,7 @@ enum class MapStyle(val stored: String) { THEME("theme"), LIGHT("light"), DARK("
 
 /**
  * Cómo se ve el widget Mapa; se guarda en su `Tile.data` como "orientation=heading;zoom=mid…".
- * Lo de fábrica (norte arriba, zoom automático: lo más cerca e inclinado, como el tema) no se escribe. El «detail» de
+ * Lo de fábrica (orientación y zoom automáticos, como el tema) no se escribe. El «detail» de
  * hasta la 1.5.15 (el mapa «Completo» de OpenStreetMap, ya quitado) se ignora: todo es el minimalista.
  */
 @Immutable

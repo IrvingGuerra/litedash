@@ -13,7 +13,7 @@
     <string name="map_zoom_near">Közel</string>
     <string name="map_zoom_mid">Közepes</string>
     <string name="map_zoom_far">Távol</string>
-    <string name="map_zoom_help">Automatikus: a lehető legközelebb (pár utca) és döntve, mint a Waze, a haladási irányba nézve; ha kicsinyítesz, lapos lesz, a középre igazítás vagy egy út indítása visszahozza. Két ujjal csippentve nagyíthatsz, eggyel húzva körülnézhetsz.</string>
+    <string name="map_zoom_help">Automatikus: közelről (pár utca); a középre igazítás vagy egy új út visszahozza. Két ujjal nagyítasz vagy kicsinyítesz, eggyel mozgatod.</string>
     <string name="map_style">Színek</string>
     <string name="map_style_theme">Mint a téma</string>
     <string name="map_style_light">Világos</string>
@@ -156,9 +156,7 @@
     <string name="guide_arrive_at">Megérkezel: %1$s</string>
     <string name="search_ft">%1$d ft</string>
     <string name="map_customize_help">A megjelenés és az offline térképek minden térképednél ugyanazok: a Beállítások → Alkalmazások → Navigáció menüben módosíthatod őket.</string>
-    <string name="map_mark">Hely megjelölése</string>
-    <string name="map_mark_here">Megjelölés itt</string>
-    <string name="map_orientation_help">Automatikus: döntve a térkép a haladási irányba néz, laposan észak van felül.</string>
+    <string name="map_orientation_help">Automatikus: álló helyzetben észak van felül, menet közben a haladási irányba néz.</string>
     <string name="search_favorites_full">Elérted a kedvencek maximumát (%1$d): törölj egyet, hogy újat adhass hozzá.</string>
     <string name="map_pack_search">Ország vagy megye keresése</string>
     <string name="map_pack_all_countries">Összes ország (%1$d)</string>

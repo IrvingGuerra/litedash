@@ -13,7 +13,7 @@
     <string name="map_zoom_near">近く</string>
     <string name="map_zoom_mid">中間</string>
     <string name="map_zoom_far">遠く</string>
-    <string name="map_zoom_help">自動：最大まで拡大（数ブロック分）し、Waze のように傾けて進行方向を向きます。縮小すると平面になり、中央に戻すかトリップを始めると元に戻ります。2本指でピンチしてズーム、1本指でドラッグして見回せます。</string>
+    <string name="map_zoom_help">自動：近め（数ブロック分）。中央に戻すか走り出すとこの表示に戻ります。2本指で拡大・縮小、1本指で移動。</string>
     <string name="map_style">カラー</string>
     <string name="map_style_theme">テーマに合わせる</string>
     <string name="map_style_light">ライト</string>
@@ -156,9 +156,7 @@
     <string name="guide_arrive_at">%1$sに到着します</string>
     <string name="search_ft">%1$d ft</string>
     <string name="map_customize_help">見た目とオフライン地図はすべての地図で共通です。設定 → アプリ → ナビ で変更できます。</string>
-    <string name="map_mark">地点をマーク</string>
-    <string name="map_mark_here">ここをマーク</string>
-    <string name="map_orientation_help">自動：地図を傾けると進行方向が上、平面では北が上になります。</string>
+    <string name="map_orientation_help">自動：止まっているときは北が上、走行中は進行方向が上になります。</string>
     <string name="search_favorites_full">お気に入りが上限（%1$d 件）です。追加するには1つ削除してください。</string>
     <string name="map_pack_search">国・都道府県を検索</string>
     <string name="map_pack_all_countries">すべての国を表示 (%1$d)</string>

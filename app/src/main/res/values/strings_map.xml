@@ -9,13 +9,13 @@
     <string name="map_north">Automático</string>
     <string name="map_heading">Hacia donde vas</string>
     <string name="map_north_up">Siempre al norte</string>
-    <string name="map_orientation_help">Automático: con el mapa inclinado mira hacia donde vas; plano, al norte.</string>
+    <string name="map_orientation_help">Automático: detenido, al norte; de viaje, hacia donde vas.</string>
     <string name="map_zoom">Zoom</string>
     <string name="map_zoom_auto">Automático</string>
     <string name="map_zoom_near">Cerca</string>
     <string name="map_zoom_mid">Medio</string>
     <string name="map_zoom_far">Lejos</string>
-    <string name="map_zoom_help">Automático: lo más cerca (un par de calles) e inclinado como Waze, hacia donde vas; si lo alejas se vuelve plano, y «centrar» o empezar un viaje lo regresan. Con dos dedos lo acercas o alejas; con uno lo mueves.</string>
+    <string name="map_zoom_help">Automático: cerca (unas calles); «centrar» o empezar un viaje lo regresan. Con dos dedos lo acercas o alejas; con uno lo mueves.</string>
     <string name="map_style">Colores</string>
     <string name="map_style_theme">Como el tema</string>
     <string name="map_style_light">Claros</string>
@@ -83,8 +83,6 @@
     <string name="search_online_failed">Sin internet · tocar para reintentar</string>
     <string name="search_online_none">Tampoco está en internet</string>
     <string name="search_point">Punto en el mapa</string>
-    <string name="map_mark">Marcar un punto</string>
-    <string name="map_mark_here">Marcar aquí</string>
     <string name="search_m">%1$d m</string>
     <string name="search_km_tenths">%1$.1f km</string>
     <string name="search_mi_tenths">%1$.1f mi</string>

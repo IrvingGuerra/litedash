@@ -11,13 +11,13 @@
     <string name="map_north">Automatic</string>
     <string name="map_heading">Heading up</string>
     <string name="map_north_up">Always north</string>
-    <string name="map_orientation_help">Automatic: tilted, the map faces where you go; flat, north is up.</string>
+    <string name="map_orientation_help">Automatic: north up when stopped; facing where you go while driving.</string>
     <string name="map_zoom">Zoom</string>
     <string name="map_zoom_auto">Automatic</string>
     <string name="map_zoom_near">Near</string>
     <string name="map_zoom_mid">Medium</string>
     <string name="map_zoom_far">Far</string>
-    <string name="map_zoom_help">Automatic: as close as it gets (a couple of streets) and tilted like Waze, facing where you go; zoom out and it goes flat, and recenter or starting a trip brings it back. Pinch with two fingers to zoom; drag with one to look around.</string>
+    <string name="map_zoom_help">Automatic: close in (a few streets); recenter or starting a trip brings it back. Pinch with two fingers to zoom; drag with one to look around.</string>
     <string name="map_style">Colors</string>
     <string name="map_style_theme">Like the theme</string>
     <string name="map_style_light">Light</string>
@@ -84,8 +84,6 @@
     <string name="search_online_failed">No internet · tap to retry</string>
     <string name="search_online_none">Not online either</string>
     <string name="search_point">Point on the map</string>
-    <string name="map_mark">Mark a spot</string>
-    <string name="map_mark_here">Mark here</string>
     <string name="search_m">%1$d m</string>
     <string name="search_km_tenths">%1$.1f km</string>
     <string name="search_mi_tenths">%1$.1f mi</string>

@@ -49,9 +49,6 @@ interface TileSource {
      */
     fun names(origin: Long): TileNames? = null
 
-    /** La tesela [origin] ya leída (para los edificios en 3D), sin leer nada; null = no está en memoria o no es vectorial. */
-    fun parsed(origin: Long): VectorTile? = null
-
     /** Nadie ve el mapa: suelta lo que guarda en memoria para dibujar más rápido. */
     fun trim() {}
 }
@@ -96,9 +93,7 @@ class VectorTiles(
 
     override fun names(origin: Long): TileNames? = names.get(origin)
 
-    override fun parsed(origin: Long): VectorTile? = parsed.get(origin)
-
-    /** Las leídas pesan (miles de formas con edificios); los nombres, poco: esos se quedan. */
+    /** Las leídas pesan (miles de formas); los nombres, poco: esos se quedan. */
     override fun trim() = parsed.evictAll()
 
     /** La dirección de los datos (de [template]) en memoria, cuándo se supo y el último intento fallido. */
@@ -115,9 +110,9 @@ class VectorTiles(
         template()?.replace("{z}", "${keyZ(origin)}")?.replace("{x}", "${keyX(origin)}")?.replace("{y}", "${keyY(origin)}")
 
     override fun decode(data: ByteArray, key: Long, origin: Long): ImageBitmap? {
-        // Edificios y nombres solo de las teselas del 14 (cerca); las del 12–13 son lo lejano del mapa inclinado.
+        // Nombres solo de las teselas del 14 (cerca); las del 12–13 son lo lejano del mapa inclinado.
         val near = keyZ(origin) == DATA_ZOOM
-        val tile = parsed.get(origin) ?: (parseVectorTile(unzip(data), withBuildings = near) ?: return null).also {
+        val tile = parsed.get(origin) ?: (parseVectorTile(unzip(data)) ?: return null).also {
             parsed.put(origin, it)
             if (near) names.put(origin, TileNames(it.extent, it.names))
         }
@@ -161,8 +156,6 @@ class VectorTiles(
         if (realRoadDp <= 0f) {
             area(t.parks, palette.park)
             area(t.water, palette.water)
-            // Las casas solo de cerca: más lejos son puntitos que ensucian.
-            if (z >= BUILDINGS_ZOOM) area(t.buildings, palette.building)
         }
         val stroke = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             style = Paint.Style.STROKE
@@ -274,7 +267,6 @@ class VectorTiles(
     }
 
     private companion object {
-        const val BUILDINGS_ZOOM = 16
         /** Las calles de servicio (estacionamientos, privadas) desde este zoom. */
         const val SERVICE_ZOOM = 15
         /** Los tipos de calle en el orden de dibujo (de las chicas a las grandes), con y sin las de servicio. */
@@ -311,16 +303,16 @@ internal fun pieceX(key: Long, origin: Long) = keyX(key) - (keyX(origin) shl (ke
 internal fun pieceY(key: Long, origin: Long) = keyY(key) - (keyY(origin) shl (keyZ(key) - keyZ(origin)))
 
 /** Los colores del mapa minimalista (ARGB). [roads] en el orden de [RoadTier]. */
-class MinimalPalette(val background: Int, val water: Int, val park: Int, val building: Int, val casing: Int, val roads: IntArray) {
+class MinimalPalette(val background: Int, val water: Int, val park: Int, val casing: Int, val roads: IntArray) {
     companion object {
         // Autopistas en ámbar y avenidas un poco más claras: se ve por dónde se cruza la ciudad.
         val LIGHT = MinimalPalette(
-            background = 0xFFE9EBEF.toInt(), water = 0xFFC2D3E6.toInt(), park = 0xFFD5E4CF.toInt(), building = 0xFFDCDEE3.toInt(),
+            background = 0xFFE9EBEF.toInt(), water = 0xFFC2D3E6.toInt(), park = 0xFFD5E4CF.toInt(),
             casing = 0xFFCFD3DA.toInt(),
             roads = intArrayOf(0xFFF7CF86.toInt(), 0xFFFCE9C4.toInt(), 0xFFFFFFFF.toInt(), 0xFFFFFFFF.toInt(), 0xFFF7F8FA.toInt()),
         )
         val DARK = MinimalPalette(
-            background = 0xFF1B1C20.toInt(), water = 0xFF1C2A3B.toInt(), park = 0xFF1D2A20.toInt(), building = 0xFF24262B.toInt(),
+            background = 0xFF1B1C20.toInt(), water = 0xFF1C2A3B.toInt(), park = 0xFF1D2A20.toInt(),
             casing = 0xFF141518.toInt(),
             roads = intArrayOf(0xFF8A6A33.toInt(), 0xFF5E5442.toInt(), 0xFF45474E.toInt(), 0xFF383A40.toInt(), 0xFF2E3035.toInt()),
         )

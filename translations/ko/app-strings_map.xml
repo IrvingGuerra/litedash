@@ -13,7 +13,7 @@
     <string name="map_zoom_near">가깝게</string>
     <string name="map_zoom_mid">보통</string>
     <string name="map_zoom_far">멀게</string>
-    <string name="map_zoom_help">자동: 최대한 가깝게(두어 블록) Waze처럼 기울여 진행 방향을 보여 줘요. 축소하면 평면이 되고, 중앙 맞추기나 주행을 시작하면 다시 돌아와요. 두 손가락으로 확대/축소하고 한 손가락으로 끌어서 둘러보세요.</string>
+    <string name="map_zoom_help">자동: 가깝게(두어 블록). 중앙으로 이동하거나 주행을 시작하면 돌아와요. 두 손가락으로 확대·축소, 한 손가락으로 이동해요.</string>
     <string name="map_style">색상</string>
     <string name="map_style_theme">테마와 같게</string>
     <string name="map_style_light">밝게</string>
@@ -156,9 +156,7 @@
     <string name="guide_arrive_at">%1$s에 도착해요</string>
     <string name="search_ft">%1$d ft</string>
     <string name="map_customize_help">모양과 오프라인 지도는 모든 지도에 똑같이 적용돼요. 설정 → 앱 → 내비게이션에서 바꾸세요.</string>
-    <string name="map_mark">지점 표시</string>
-    <string name="map_mark_here">여기 표시</string>
-    <string name="map_orientation_help">자동: 지도를 기울이면 진행 방향이, 평면이면 북쪽이 위로 와요.</string>
+    <string name="map_orientation_help">자동: 멈춰 있을 땐 북쪽이 위, 달리는 중엔 진행 방향이 위로 와요.</string>
     <string name="search_favorites_full">즐겨찾기가 최대(%1$d개)예요. 하나를 지워야 추가할 수 있어요.</string>
     <string name="map_pack_search">국가 또는 지역 검색</string>
     <string name="map_pack_all_countries">모든 국가 보기 (%1$d)</string>

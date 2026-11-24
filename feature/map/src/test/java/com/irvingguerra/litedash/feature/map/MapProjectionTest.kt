@@ -18,22 +18,6 @@ class MapProjectionTest {
         MapProjection.of(w, h, atX, atY, turn, tilt, density)
 
     @Test
-    fun raisedPointMatchesTheGroundAndRises() {
-        val p = MapProjection.of(1024f, 600f, 512f, 468f, turn = 30f, tilt = 1f, density = 1f)
-        val flat = FloatArray(3)
-        val raised = FloatArray(3)
-        for ((x, y) in listOf(300f to 200f, 700f to 420f, 512f to 100f)) {
-            assertTrue(p.toScreen(x, y, flat))
-            assertTrue(p.toScreen3(x, y, 0f, raised))
-            assertEquals(flat[0], raised[0], 0.01f)
-            assertEquals(flat[1], raised[1], 0.01f)
-            // Con altura, la azotea queda más arriba en pantalla que su suelo.
-            assertTrue(p.toScreen3(x, y, 40f, raised))
-            assertTrue(raised[1] < flat[1])
-        }
-    }
-
-    @Test
     fun flatIsTheScreenRectangle() {
         // 1024 × 600 con tu posición al centro de una tesela de 256: 5 columnas (−2…+2) y 3 filas.
         val t = tiles(projection(1024f, 600f, 512f, 360f, turn = 0f, tilt = 0f))

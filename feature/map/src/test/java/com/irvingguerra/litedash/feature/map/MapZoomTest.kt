@@ -58,18 +58,41 @@ class MapZoomTest {
 
     @Test
     fun tiltGoesFlatOneLevelOut() {
-        assertEquals(1f, tiltFor(20f, 20), 0f)
-        assertEquals(0f, tiltFor(19f, 20), 0f)
-        assertEquals(0.5f, tiltFor(19.5f, 20), 1e-6f)
-        assertEquals(0f, tiltFor(15f, 20), 0f)
-        assertEquals(1f, tiltFor(20.2f, 20), 0f)
+        assertEquals(1f, tiltFor(20f, 20f), 0f)
+        assertEquals(0f, tiltFor(19f, 20f), 0f)
+        assertEquals(0.5f, tiltFor(19.5f, 20f), 1e-6f)
+        assertEquals(0f, tiltFor(15f, 20f), 0f)
+        assertEquals(1f, tiltFor(20.2f, 20f), 0f)
         // Monótono y continuo al alejar con los dedos.
         var last = 1f
         for (i in 0..200) {
-            val t = tiltFor(20f - i / 100f, 20)
+            val t = tiltFor(20f - i / 100f, 20f)
             assertTrue(t <= last && last - t < 0.011f)
             last = t
         }
+    }
+
+    @Test
+    fun navigationZoomGoesOutWithSpeed() {
+        // Detenido, lo más cerca; a 110 km/h o más, dos niveles más lejos; en medio, en línea y en pasos de 0.05.
+        assertEquals(20f, navZoomFor(null, 20, turnAhead = false, northUp = false), 0f)
+        assertEquals(20f, navZoomFor(0f, 20, turnAhead = false, northUp = false), 0f)
+        assertEquals(19f, navZoomFor(55f, 20, turnAhead = false, northUp = false), 1e-4f)
+        assertEquals(18f, navZoomFor(110f, 20, turnAhead = false, northUp = false), 1e-4f)
+        assertEquals(18f, navZoomFor(180f, 20, turnAhead = false, northUp = false), 1e-4f)
+        assertEquals(19.75f, navZoomFor(14f, 20, turnAhead = false, northUp = false), 1e-4f)
+        // Cerca de la vuelta se acerca (sin pasar de lo más cerca); al norte (plano), uno más lejos.
+        assertEquals(18.4f, navZoomFor(110f, 20, turnAhead = true, northUp = false), 1e-4f)
+        assertEquals(20f, navZoomFor(0f, 20, turnAhead = true, northUp = false), 0f)
+        assertEquals(19f, navZoomFor(0f, 20, turnAhead = false, northUp = true), 0f)
+    }
+
+    @Test
+    fun approachStopsAtTheGoal() {
+        assertEquals(18.6f, approach(18f, 20f, 0.6f), 1e-6f)
+        assertEquals(19.4f, approach(20f, 18f, 0.6f), 1e-6f)
+        assertEquals(20f, approach(19.8f, 20f, 0.6f), 0f)
+        assertEquals(0f, approach(0.3f, 0f, 0.5f), 0f)
     }
 
     @Test
