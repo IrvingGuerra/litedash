@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
 # Crea los emuladores de la matriz de pruebas.
-# De cajón: LD_HU11 (acostada, 11") y LD_Vertical_1080x1920 (de pie, tipo Tesla); LD_A6 cubre lo mínimo.
+# De cajón: LD_HU11 (acostada, 11") y LD_Vertical_1080x1920 (de pie, tipo Tesla); LD_A6 cubre lo mínimo y
+# LD_Phone_A17 lo más nuevo (celular con Android 17). LD_HU7 y LD_HU10 ya no son de cajón (se quedan para el giro).
 # Uso: tools/avd.sh            (crea los que falten)
 # Imagen: android-35 google_apis_playstore arm64-v8a, salvo la que diga otra en la 7.ª
 # columna (LD_A6: Android 6, el mínimo que soporta LiteDash, con 1 GB como las pantallas
 # viejas; LD_A10: Android 10, el más común en pantallas de auto, con almacenamiento por
-# alcance). Bajar la imagen antes: sdkmanager "system-images;android-23;default;arm64-v8a"
-# (y android-29).
+# alcance; LD_Phone_A17: Android 17). Bajar la imagen antes: sdkmanager "system-images;android-23;default;arm64-v8a"
+# (y android-29 y android-37.0;google_apis).
 set -euo pipefail
 SDK="${ANDROID_HOME:-$HOME/Library/Android/sdk}"
 AVDM="$SDK/cmdline-tools/latest/bin/avdmanager"
@@ -23,6 +24,7 @@ MATRIX=(
   "LD_Vertical_1080x1920 1080 1920 240 4096 4"
   "LD_A6_1024x600    1024 600  160 1024 2 system-images;android-23;default;arm64-v8a"
   "LD_A10_1024x600   1024 600  160 2048 2 system-images;android-29;default;arm64-v8a"
+  "LD_Phone_A17      1080 2400 420 2048 4 system-images;android-37.0;google_apis;arm64-v8a"
 )
 
 for row in "${MATRIX[@]}"; do
