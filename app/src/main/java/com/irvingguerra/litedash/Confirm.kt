@@ -108,10 +108,11 @@ internal fun Confirmed(
     message: String? = null,
     primary: Boolean = false,
     destructive: Boolean = true,
+    enabled: Boolean = true,
     action: () -> Unit,
 ) {
     val alerts = LocalAlerts.current
-    Button(label, { alerts.ask(Alert(question, confirm, message, destructive, action)) }, primary = primary)
+    Button(label, { alerts.ask(Alert(question, confirm, message, destructive, action)) }, primary = primary, enabled = enabled)
 }
 
 @Composable

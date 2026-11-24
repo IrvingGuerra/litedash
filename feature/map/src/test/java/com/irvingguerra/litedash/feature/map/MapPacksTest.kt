@@ -112,6 +112,20 @@ class MapPacksTest {
     }
 
     @Test
+    fun aWholeCountryNeedsAllItsStatesPlusTheBiggestExtra() {
+        val margin = MapPacks.spaceNeeded(MapRegion("m", "MX", emptyMap(), doubleArrayOf(0.0, 0.0, 1.0, 1.0), emptyList(), PackFile("u", 0, "a")), 0)
+        val a = MapRegion("a", "MX", emptyMap(), doubleArrayOf(0.0, 0.0, 1.0, 1.0), emptyList(), PackFile("u", 1000, "a"), PackFile("s", 10, "b"), PackFile("r", 20, "c"))
+        val b = MapRegion("b", "MX", emptyMap(), doubleArrayOf(0.0, 0.0, 1.0, 1.0), emptyList(), PackFile("u", 500, "d"), PackFile("s", 50, "e"), null)
+        assertEquals(0, MapPacks.spaceNeededAll(emptyList(), null))
+        // Uno solo: lo mismo que bajarlo suelto.
+        assertEquals(MapPacks.spaceNeeded(a, 0), MapPacks.spaceNeededAll(listOf(a), null))
+        // Los dos completos (1030 + 550) más lo de más del que más pide al bajarse (b: 3 × 50) y el margen.
+        assertEquals(1030 + 550 + 3 * 50 + margin, MapPacks.spaceNeededAll(listOf(a, b), null))
+        // Lo que ya lleva el mapa a medias se descuenta.
+        assertEquals(1030 + 550 + 3 * 50 + margin - 400, MapPacks.spaceNeededAll(listOf(a, b), PausedPack("a", "a", 400)))
+    }
+
+    @Test
     fun aPausedMapCountsOnlyForItsOwnRegionAndFile() {
         val full = MapRegion("x", "MX", emptyMap(), doubleArrayOf(0.0, 0.0, 1.0, 1.0), emptyList(), PackFile("u", 1000, "abc"), null, null)
         // Lo que lleva el .part se descuenta al reanudar: con 600 de 1000 bajados, faltan 400 más el margen.
@@ -146,6 +160,7 @@ class MapPacksTest {
         val mx = read.countries.first()
         assertEquals("countries/mx.json", mx.file)
         assertEquals("aa", mx.sha256)
+        assertEquals(128, mx.total)
         assertEquals(setOf("mx-ele", "mx-chico"), mx.regions.map { it.id }.toSet())
         assertTrue(mx.regions.all { it.country == "MX" })
         val ele = mx.regions.first { it.id == "mx-ele" }

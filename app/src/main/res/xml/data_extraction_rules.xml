@@ -4,7 +4,6 @@
     <cloud-backup>
         <exclude domain="sharedpref" path="estadisticas.xml" />
         <exclude domain="sharedpref" path="stats.xml" />
-        <exclude domain="file" path="map_tiles/" />
         <exclude domain="file" path="map_vector/" />
         <exclude domain="file" path="map_offline/" />
         <exclude domain="file" path="map_packs/" />
@@ -16,7 +15,6 @@
     <device-transfer>
         <exclude domain="sharedpref" path="estadisticas.xml" />
         <exclude domain="sharedpref" path="stats.xml" />
-        <exclude domain="file" path="map_tiles/" />
         <exclude domain="file" path="map_vector/" />
         <exclude domain="file" path="map_offline/" />
         <exclude domain="file" path="map_packs/" />

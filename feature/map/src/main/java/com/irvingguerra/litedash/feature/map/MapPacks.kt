@@ -45,7 +45,11 @@ class RegionName(override val id: String, override val country: String, private 
  * Un país del índice por país (`countries.json`): su caja (para saber si estás en él), sus regiones por nombre y su
  * archivo (`countries/<cc>.json`, con el mismo esquema que `regions.json`) con su huella.
  */
-class PackCountry(val code: String, val bbox: DoubleArray, val regions: List<RegionName>, internal val file: String, internal val sha256: String) {
+class PackCountry(
+    val code: String, val bbox: DoubleArray, val regions: List<RegionName>, internal val file: String, internal val sha256: String,
+    /** Lo que pesan todos sus estados juntos (mapa, búsqueda y calles); 0 si el índice no lo dice. */
+    val total: Long = 0,
+) {
     /** ¿([lat], [lon]) cae en su caja? (La caja de un país abarca pedazos de sus vecinos.) */
     fun covers(lat: Double, lon: Double): Boolean = lon >= bbox[0] && lat >= bbox[1] && lon <= bbox[2] && lat <= bbox[3]
 }
@@ -108,6 +112,12 @@ enum class IndexState { IDLE, LOADING, FAILED }
 /** Por qué falló una descarga: la red (o el archivo llegó mal) o no cabe en la pantalla. */
 enum class PackError { NETWORK, SPACE }
 
+/**
+ * Bajando un país completo ([MapPacks.downloadCountry]): de qué país, cuál va ([at], desde 1) de [count] estados que
+ * faltaban y cuál ([regionId]); con [error], se detuvo ahí (Reintentar sigue desde ese).
+ */
+class CountryBatch(val code: String, val at: Int, val count: Int, val regionId: String, val error: PackError? = null)
+
 /** Bajando el mapa de [id]: cuánto va (0–1) o por qué falló ([error]). */
 class PackJob(val id: String, val progress: Float, val error: PackError? = null) {
     val failed: Boolean get() = error != null
@@ -151,6 +161,14 @@ class MapPacks private constructor(private val app: Context) {
         private set
     var job by mutableStateOf<PackJob?>(null)
         private set
+    /** El país que se está bajando completo (o que se detuvo con un error); null si ninguno. */
+    var batch by mutableStateOf<CountryBatch?>(null)
+        private set
+    /** La cola del país completo: vive aquí (no en la pantalla), así sigue al cerrar Ajustes mientras LiteDash viva. */
+    private var batchJob: Job? = null
+
+    /** ¿Se está bajando algo (un estado o un país completo)? Mientras, no se empieza otra descarga. */
+    val busy: Boolean get() = job?.failed == false || batch?.let { it.error == null } == true
     /** El mapa a medias que se puede seguir (de qué región, archivo y cuánto lleva); null si no hay. Sin leer disco. */
     var paused by mutableStateOf<PausedPack?>(null)
         private set
@@ -426,6 +444,9 @@ class MapPacks private constructor(private val app: Context) {
             countryState = countryState.filterKeys { it in codes }
         }
         catalog = index.countries.flatMap { it.regions }
+        // Con el índice por país, la copia del índice completo (`regions.json`, ~1.5 MB) sobra; si algún día falta el
+        // índice por país, se vuelve a bajar como respaldo.
+        File(dir, INDEX).delete()
         fetchCountries(wantedCountries(index.countries), network)
         publishCountries()
     }
@@ -493,11 +514,77 @@ class MapPacks private constructor(private val app: Context) {
     fun outdated(region: MapRegion): Boolean = installed.firstOrNull { it.id == region.id }?.let { it.sha256.isNotEmpty() && it.sha256 != region.map.sha256 } ?: false
 
     /** Baja (o actualiza) el mapa de [region]; uno a la vez. Se verifica su huella antes de usarlo. */
-    fun download(region: MapRegion) = start(region, auto = false)
+    fun download(region: MapRegion) {
+        // Bajar un estado suelto deja atrás el aviso de un país que se detuvo.
+        synchronized(stateLock) { if (batch?.error != null) batch = null }
+        start(region, auto = false)
+    }
+
+    /** Cuánto pesa todo el país [code]: lo que dice el índice o, si no, la suma de sus estados ya cargados. */
+    fun countryTotal(code: String): Long =
+        countries?.firstOrNull { it.code == code }?.total?.takeIf { it > 0 }
+            ?: regions.filter { it.country == code }.sumOf { it.totalSize }
+
+    /** Cuántos estados tiene el país [code] (con los nombres: aún sin cargar sus datos). */
+    fun countryCount(code: String): Int = catalog.count { it.country == code }
+
+    /** Los estados del país [code] que aún no están bajados (solo de los ya cargados; ver [need]). */
+    fun missingIn(code: String): List<MapRegion> {
+        val have = installed.map { it.id }.toSet()
+        return regions.filter { it.country == code && it.id !in have }
+    }
+
+    /** ¿Ya están cargados todos los estados del país [code] (para saber cuáles faltan)? */
+    fun countryReady(code: String): Boolean = regions.count { it.country == code } >= countryCount(code)
+
+    /** ¿Caben en [free] bytes libres todos los estados de [list], bajados uno tras otro? */
+    fun hasRoomForAll(list: List<MapRegion>, free: Long): Boolean = free >= spaceNeededAll(list, paused)
+
+    /**
+     * Baja todos los estados que falten del país [code], uno tras otro (nunca varios a la vez), con la misma descarga
+     * reanudable de un estado. El avance en [batch]; si uno falla se detiene ahí (Reintentar = llamarla otra vez, y ese
+     * sigue donde iba); [cancel] la detiene. Vive en este objeto: sigue aunque se cierre Ajustes.
+     */
+    fun downloadCountry(code: String) = synchronized(stateLock) {
+        if (running?.isActive == true || batchJob?.isActive == true) return@synchronized
+        batch = null
+        batchJob = scope.launch {
+            val me = coroutineContext.job
+            try {
+                // Los datos de sus estados (índice por país); con `regions.json` ya están.
+                countries?.firstOrNull { it.code == code }?.let { fetchCountries(listOf(it)) }
+                val todo = missingIn(code)
+                for ((i, region) in todo.withIndex()) {
+                    if (!me.isActive) return@launch
+                    synchronized(stateLock) { if (batchJob === me) batch = CountryBatch(code, i + 1, todo.size, region.id) }
+                    val one = start(region, auto = true) ?: run {
+                        // Otra descarga empezó justo antes: se espera y se sigue con esta.
+                        synchronized(stateLock) { running }?.join()
+                        start(region, auto = true)
+                    } ?: return@launch
+                    one.join()
+                    if (installed.none { it.id == region.id }) {
+                        // Falló (se dice cuál y por qué) o la cancelaron (se suelta todo).
+                        val error = job?.takeIf { it.id == region.id }?.error
+                        synchronized(stateLock) { if (batchJob === me) batch = error?.let { CountryBatch(code, i + 1, todo.size, region.id, it) } }
+                        return@launch
+                    }
+                }
+            } finally {
+                // Al terminar solo se queda el aviso de un error (Cancelar ya soltó todo y quizá empezó otra cola).
+                synchronized(stateLock) {
+                    if (batchJob === me) {
+                        batchJob = null
+                        batch = batch?.takeIf { it.error != null }
+                    }
+                }
+            }
+        }
+    }
 
     /** [auto] = el reintento solo al volver la red ([watchNetwork]): si vuelve a fallar, ya no se arma otro. */
-    private fun start(region: MapRegion, auto: Boolean) = synchronized(stateLock) {
-        if (running?.isActive == true) return@synchronized
+    private fun start(region: MapRegion, auto: Boolean): Job? = synchronized(stateLock) {
+        if (running?.isActive == true) return@synchronized null
         // Seguirla a mano (o el reintento mismo) suelta la espera de la red.
         unwatchNetwork()
         job = PackJob(region.id, 0f)
@@ -585,6 +672,7 @@ class MapPacks private constructor(private val app: Context) {
                 }
             }
         }
+        running
     }
 
     /** La espera de la red para seguir una descarga cortada ([watchNetwork]); null = no se espera nada. */
@@ -663,6 +751,10 @@ class MapPacks private constructor(private val app: Context) {
      */
     fun cancel() = synchronized(stateLock) {
         unwatchNetwork()
+        // También el país completo: Cancelar = parar todo lo que se baja.
+        batchJob?.cancel()
+        batchJob = null
+        batch = null
         running?.cancel()
         job = null
         if (running == null && paused != null) {
@@ -996,6 +1088,16 @@ class MapPacks private constructor(private val app: Context) {
         internal fun partialOf(region: MapRegion, paused: PausedPack?): Long =
             paused?.takeIf { it.id == region.id && it.sha256.equals(region.map.sha256, ignoreCase = true) }?.bytes ?: 0L
 
+        /**
+         * Cuánto espacio libre hace falta para bajar todos los [list] uno tras otro: lo que quedan todos (menos lo que
+         * [paused] ya lleva del suyo) más lo que pide de más el que más pide al bajarse (búsqueda y calles comprimidas).
+         */
+        internal fun spaceNeededAll(list: List<MapRegion>, paused: PausedPack?): Long {
+            if (list.isEmpty()) return 0
+            val extra = list.maxOf { spaceNeeded(it, 0) - it.totalSize }
+            return list.sumOf { it.totalSize - partialOf(it, paused) } + extra
+        }
+
         /** Cuánto espacio libre hace falta para bajar [region] con [have] bytes del mapa ya bajados. */
         internal fun spaceNeeded(region: MapRegion, have: Long): Long =
             (region.map.size - have).coerceAtLeast(0) + EXTRA_SPACE_FACTOR * ((region.search?.size ?: 0) + (region.routes?.size ?: 0)) + SPACE_MARGIN
@@ -1060,7 +1162,7 @@ class MapPacks private constructor(private val app: Context) {
                         RegionName(id, code, n.keys().asSequence().associateWith { n.getString(it) })
                     }.toList()
                     require(regions.isNotEmpty())
-                    PackCountry(code, box(c.getJSONArray("bbox")), regions, file, c.getString("sha256"))
+                    PackCountry(code, box(c.getJSONArray("bbox")), regions, file, c.getString("sha256"), c.optLong("total").coerceAtLeast(0))
                 }.getOrNull()
             }, photon)
         }
