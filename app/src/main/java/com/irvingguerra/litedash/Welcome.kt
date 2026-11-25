@@ -17,6 +17,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.ui.focus.focusTarget
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -128,7 +129,9 @@ fun Welcome(d: Dependencies, revision: Int, onFinish: (catalog: Boolean) -> Unit
         shown.animateTo(1f, tween(STEP_FADE_MS))
     }
     BackHandler(enabled = step > 0) { goTo(step - 1) }
-    FitShort {
+    FitShort { BoxWithConstraints {
+        // Pantallas bajas (1280×480): títulos chicos y sin frase, para que quepa lo que se elige.
+        val short = maxHeight < SHORT_WELCOME
         Column(
             Modifier
                 .fillMaxSize()
@@ -137,7 +140,7 @@ fun Welcome(d: Dependencies, revision: Int, onFinish: (catalog: Boolean) -> Unit
                 .focusRequester(rest)
                 .focusTarget()
                 .safeDrawingPadding()
-                .padding(horizontal = 32.dp, vertical = 16.dp),
+                .padding(horizontal = 32.dp, vertical = if (short) 8.dp else 16.dp),
         ) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 // Tres puntos: dónde vas.
@@ -158,29 +161,29 @@ fun Welcome(d: Dependencies, revision: Int, onFinish: (catalog: Boolean) -> Unit
                 }
                 TextLink(stringResource(R.string.not_now)) { release(); onFinish(false) }
             }
-            Column(Modifier.weight(1f).fillMaxWidth().graphicsLayer { alpha = shown.value }.padding(top = 12.dp)) {
+            Column(Modifier.weight(1f).fillMaxWidth().graphicsLayer { alpha = shown.value }.padding(top = if (short) 4.dp else 12.dp)) {
                 when {
                     step == 0 && language -> Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                        Titles(stringResource(R.string.language), null)
+                        Titles(stringResource(R.string.language), null, short)
                         LanguageSettings(prefs)
                     }
                     step == 0 -> {
-                        Titles(stringResource(R.string.welcome_design_title), stringResource(R.string.welcome_design))
+                        Titles(stringResource(R.string.welcome_design_title), stringResource(R.string.welcome_design), short)
                         DesignStep(d, Modifier.weight(1f))
                     }
                     else -> Column(Modifier.verticalScroll(rememberScrollState())) {
                         if (step == 1) {
-                            Titles(stringResource(R.string.your_name_hint), stringResource(R.string.your_name_help))
+                            Titles(stringResource(R.string.your_name_hint), stringResource(R.string.your_name_help), short)
                             NameStep(prefs, release)
                         } else {
-                            Titles(stringResource(R.string.your_car), stringResource(R.string.welcome_car))
-                            CarStep(prefs, revision, release, onCatalog = { release(); onFinish(true) })
+                            Titles(stringResource(R.string.your_car), stringResource(R.string.welcome_car), short)
+                            CarStep(prefs, revision, short, release, onCatalog = { release(); onFinish(true) })
                         }
                     }
                 }
             }
             Row(
-                Modifier.fillMaxWidth().padding(top = 12.dp),
+                Modifier.fillMaxWidth().padding(top = if (short) 6.dp else 12.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.End),
             ) {
@@ -189,8 +192,11 @@ fun Welcome(d: Dependencies, revision: Int, onFinish: (catalog: Boolean) -> Unit
                 else Button(stringResource(R.string.done), { release(); onFinish(false) }, primary = true)
             }
         }
-    }
+    } }
 }
+
+/** Por debajo de esta altura la bienvenida va compacta. */
+private val SHORT_WELCOME = 440.dp
 
 /** Lo que tarda el paso nuevo en aparecer. */
 private const val STEP_FADE_MS = 160
@@ -205,13 +211,13 @@ private fun TextLink(text: String, onClick: () -> Unit) {
 }
 
 @Composable
-private fun Titles(title: String, text: String?) {
-    Label(title, Typography.clock.copy(fontSize = Typography.title.fontSize * 1.6f), maxLines = 2)
-    if (text != null) {
+private fun Titles(title: String, text: String?, short: Boolean) {
+    Label(title, if (short) Typography.title else Typography.clock.copy(fontSize = Typography.title.fontSize * 1.6f), maxLines = 2)
+    if (text != null && !short) {
         Spacer(Modifier.height(6.dp))
         Label(text, Typography.body, LocalColors.current.textMuted, modifier = Modifier.widthIn(max = 640.dp))
     }
-    Spacer(Modifier.height(20.dp))
+    Spacer(Modifier.height(if (short) 10.dp else 20.dp))
 }
 
 /** El hueco entre las tarjetas de los Diseños, lo que mide su nombre (con su espacio arriba) y lo más chica que se deja una. */
@@ -222,7 +228,7 @@ private val DESIGN_MIN = 120.dp
 /**
  * Paso 1: los 8 Diseños, el puesto marcado (Grafito de fábrica). Tocar uno lo aplica a la página como en el panel
  * Diseños, sin su aviso de «Deshacer» (aquí basta con tocar otro). Se elige cuántos van por fila (2, 4 u 8) para que
- * quepan todos sin desplazar y lo más grandes posible.
+ * quepan todos sin desplazar y lo más grandes posible; en pantallas muy bajas, una fila que se desliza.
  */
 @Composable
 private fun DesignStep(d: Dependencies, modifier: Modifier) {
@@ -233,7 +239,7 @@ private fun DesignStep(d: Dependencies, modifier: Modifier) {
     BoxWithConstraints(modifier.fillMaxWidth()) {
         val (columns, width) = designFit(maxWidth, maxHeight, grid.columns.toFloat() / grid.rows)
         FlowRow(
-            Modifier.verticalScroll(rememberScrollState()),
+            if (columns == DESIGNS.size) Modifier.horizontalScroll(rememberScrollState()) else Modifier.verticalScroll(rememberScrollState()),
             horizontalArrangement = Arrangement.spacedBy(DESIGN_GAP),
             verticalArrangement = Arrangement.spacedBy(DESIGN_GAP),
             maxItemsInEachRow = columns,
@@ -259,8 +265,9 @@ private fun designFit(w: Dp, h: Dp, ratio: Float): Pair<Int, Dp> {
         val byHeight = ((h - DESIGN_GAP * (rows - 1)) / rows - pad - DESIGN_NAME) * ratio + pad
         columns to minOf(byWidth, byHeight)
     }.maxBy { it.second.value }
-    // Si ni así salen de buen tamaño (pantalla muy baja), dos por fila y se desplaza.
-    return if (width < DESIGN_MIN) 2 to (w - DESIGN_GAP) / 2 else columns to width
+    // Si ni así salen de buen tamaño (pantalla muy baja), todos en una fila del alto que hay, que se desliza.
+    return if (width >= DESIGN_MIN) columns to width
+    else DESIGNS.size to ((h - pad - DESIGN_NAME) * ratio + pad).coerceAtLeast(DESIGN_MIN)
 }
 
 /** Desde este ancho los pasos 2 y 3 van en dos columnas. */
@@ -274,22 +281,22 @@ private fun NameStep(prefs: Preferences, release: () -> Unit) {
         val field = @Composable { m: Modifier -> DriverNameField(prefs, m, stringResource(R.string.your_name), onDone = release) }
         val preview = @Composable { m: Modifier ->
             Card(m) {
-                Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Column(Modifier.fillMaxWidth().padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     val name = prefs.driverName
                     Label(greeting(name ?: "…").orEmpty(), Typography.title, if (name == null) c.textMuted else c.text, maxLines = 1)
-                    CarDrawing(prefs.carColor, Modifier.fillMaxWidth())
+                    CarDrawing(prefs.carColor, Modifier.align(Alignment.CenterHorizontally).widthIn(max = 300.dp).fillMaxWidth())
                 }
             }
         }
         if (maxWidth > WIDE_STEP) {
             Row(horizontalArrangement = Arrangement.spacedBy(32.dp)) {
                 field(Modifier.weight(1f))
-                preview(Modifier.weight(1f).widthIn(max = 420.dp))
+                preview(Modifier.weight(1f))
             }
         } else {
             Column(verticalArrangement = Arrangement.spacedBy(20.dp)) {
                 field(Modifier.fillMaxWidth())
-                preview(Modifier.fillMaxWidth().widthIn(max = 420.dp))
+                preview(Modifier.fillMaxWidth())
             }
         }
     }
@@ -300,7 +307,7 @@ private fun NameStep(prefs: Preferences, release: () -> Unit) {
  * catálogo» (tu modelo exacto, al terminar) y hacer LiteDash tu pantalla de inicio.
  */
 @Composable
-private fun CarStep(prefs: Preferences, revision: Int, release: () -> Unit, onCatalog: () -> Unit) {
+private fun CarStep(prefs: Preferences, revision: Int, short: Boolean, release: () -> Unit, onCatalog: () -> Unit) {
     val c = LocalColors.current
     val design = designOf(prefs.design) ?: FACTORY_DESIGN
     val shape = RoundedCornerShape(Radius.card)
@@ -308,7 +315,7 @@ private fun CarStep(prefs: Preferences, revision: Int, release: () -> Unit, onCa
         for (color in remember(design) { design.carColors() }) {
             val chosen = prefs.carColor == color
             Card(
-                Modifier.weight(1f, fill = false).widthIn(max = 260.dp).border(if (chosen) 3.dp else 0.dp, if (chosen) c.accent else Color.Transparent, shape),
+                Modifier.weight(1f, fill = false).widthIn(max = if (short) 200.dp else 340.dp).border(if (chosen) 3.dp else 0.dp, if (chosen) c.accent else Color.Transparent, shape),
                 onClick = { prefs.carColor = color },
             ) {
                 CarDrawing(color, Modifier.fillMaxWidth().padding(16.dp))
@@ -331,7 +338,7 @@ private fun CarStep(prefs: Preferences, revision: Int, release: () -> Unit, onCa
         itemVerticalAlignment = Alignment.CenterVertically,
     ) {
         Label(stringResource(R.string.welcome_home_title), Typography.body, c.textMuted)
-        MakeHome(revision)
+        MakeHome(revision, primary = false)
     }
 }
 
@@ -379,15 +386,16 @@ private fun requestHomeRole(context: Context, launch: (Intent) -> Unit): Boolean
 
 /**
  * "Hazlo tu pantalla de inicio": si ya lo es, lo dice; si no, el botón para pedirlo ([beforeRequest] corre antes).
- * Se vuelve a revisar al regresar de Ajustes ([revision] cambia en onResume) o del diálogo.
+ * Se vuelve a revisar al regresar de Ajustes ([revision] cambia en onResume) o del diálogo. [primary]: sin otro botón
+ * principal al lado (en la bienvenida, «Listo» lo es).
  */
 @Composable
-internal fun MakeHome(revision: Int, beforeRequest: () -> Unit = {}) {
+internal fun MakeHome(revision: Int, primary: Boolean = true, beforeRequest: () -> Unit = {}) {
     val (request, returns) = rememberRequestHome()
     // Mientras se pregunta al sistema, nada (sin asomar el botón un instante).
     val isHome = rememberIsHome(revision, returns) ?: return
     if (isHome) Label(stringResource(R.string.welcome_already_home), Typography.body, LocalColors.current.accent)
-    else Button(stringResource(R.string.make_home), { beforeRequest(); request() }, primary = true)
+    else Button(stringResource(R.string.make_home), { beforeRequest(); request() }, primary = primary)
 }
 
 /** Tu nombre (para el saludo del inicio): hasta 24 letras; vacío = sin nombre. */
