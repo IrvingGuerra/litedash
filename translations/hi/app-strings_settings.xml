@@ -12,6 +12,10 @@
     <string name="cards_glass">ग्लास</string>
     <string name="cards_opacity">कितने दिखें</string>
     <string name="cards_glass_help">आपका वॉलपेपर हर कार्ड के पीछे धुंधला दिखता है; मैप बैकग्राउंड पर मैप हल्का दिखता है।</string>
+    <string name="cards_edge">रोशनी का किनारा</string>
+    <string name="cards_edge_none">कोई नहीं</string>
+    <string name="cards_edge_thin">पतला</string>
+    <string name="cards_edge_bold">मोटा</string>
     <string name="cards_themes">कॉम्बिनेशन</string>
     <string name="language_search">अपनी भाषा खोजें</string>
     <string name="language_not_found">यह भाषा अभी उपलब्ध नहीं है। litedash.dev/translate पर अनुवाद में मदद करें।</string>

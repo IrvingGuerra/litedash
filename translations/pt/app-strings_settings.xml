@@ -14,6 +14,10 @@
     <string name="cards_glass">Vidro</string>
     <string name="cards_opacity">Quanto aparecem</string>
     <string name="cards_glass_help">Seu plano de fundo aparece desfocado atrás de cada cartão; sobre o mapa de fundo, o mapa aparece atenuado.</string>
+    <string name="cards_edge">Borda de luz</string>
+    <string name="cards_edge_none">Nenhuma</string>
+    <string name="cards_edge_thin">Fina</string>
+    <string name="cards_edge_bold">Marcada</string>
     <string name="cards_themes">Combinações</string>
     <string name="language_search">Procure seu idioma</string>
     <string name="language_not_found">Esse idioma ainda não está disponível. Ajude a traduzir em litedash.dev/translate.</string>

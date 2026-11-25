@@ -12,6 +12,10 @@
     <string name="cards_glass">Sklo</string>
     <string name="cards_opacity">Jak moc jsou vidět</string>
     <string name="cards_glass_help">Tvoje tapeta je vidět rozmazaná za každou kartou; nad mapou v pozadí je mapa ztlumená.</string>
+    <string name="cards_edge">Světelný okraj</string>
+    <string name="cards_edge_none">Žádný</string>
+    <string name="cards_edge_thin">Tenký</string>
+    <string name="cards_edge_bold">Výrazný</string>
     <string name="cards_themes">Kombinace</string>
     <string name="language_search">Najdi svůj jazyk</string>
     <string name="language_not_found">Tento jazyk tu zatím není. Pomoz nám ho přeložit na litedash.dev/translate.</string>

@@ -12,6 +12,10 @@
     <string name="cards_glass">Стекло</string>
     <string name="cards_opacity">Насколько видны</string>
     <string name="cards_glass_help">Твои обои видны размытыми за каждой карточкой; поверх карты на фоне карта видна приглушённой.</string>
+    <string name="cards_edge">Световая кромка</string>
+    <string name="cards_edge_none">Нет</string>
+    <string name="cards_edge_thin">Тонкая</string>
+    <string name="cards_edge_bold">Чёткая</string>
     <string name="cards_themes">Сочетания</string>
     <string name="language_search">Найди свой язык</string>
     <string name="language_not_found">Этого языка пока нет. Помоги перевести на litedash.dev/translate.</string>

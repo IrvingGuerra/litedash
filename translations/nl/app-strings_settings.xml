@@ -12,6 +12,10 @@
     <string name="cards_glass">Glas</string>
     <string name="cards_opacity">Hoe zichtbaar</string>
     <string name="cards_glass_help">Je achtergrond is wazig te zien achter elke kaart; boven een kaart als achtergrond is de kaart gedempt.</string>
+    <string name="cards_edge">Lichtrand</string>
+    <string name="cards_edge_none">Geen</string>
+    <string name="cards_edge_thin">Dun</string>
+    <string name="cards_edge_bold">Krachtig</string>
     <string name="cards_themes">Combinaties</string>
     <string name="language_search">Zoek je taal</string>
     <string name="language_not_found">Die taal is er nog niet. Help ons met vertalen op litedash.dev/translate.</string>

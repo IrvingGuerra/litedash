@@ -35,6 +35,7 @@ import androidx.lifecycle.compose.LifecycleResumeEffect
 import com.irvingguerra.litedash.core.ui.Brand
 import com.irvingguerra.litedash.core.ui.Button
 import com.irvingguerra.litedash.core.ui.Card
+import com.irvingguerra.litedash.core.ui.CardEdge
 import com.irvingguerra.litedash.core.ui.CardLook
 import com.irvingguerra.litedash.core.ui.CardStyle
 import com.irvingguerra.litedash.core.ui.DarkColors
@@ -164,7 +165,7 @@ private fun CardSettings(prefs: Preferences) {
     // La muestra es tu inicio de verdad: el pedazo de tu fondo que cae ahí (o el del tema) y una tarjeta con la misma
     // piel, que de vidrio lleva tu fondo desenfocado detrás, igual que los widgets.
     val backdrop = rememberWallpaperBackdrop(prefs.cardStyle == CardStyle.GLASS) { prefs.wallpaperDim }
-    val look = remember(prefs.cardStyle, prefs.cardOpacity, backdrop) { CardLook(prefs.cardStyle, prefs.cardOpacity, backdrop) }
+    val look = remember(prefs.cardStyle, prefs.cardOpacity, prefs.cardEdge, backdrop) { CardLook(prefs.cardStyle, prefs.cardOpacity, backdrop, edge = prefs.cardEdge) }
     Box(Modifier.fillMaxWidth().height(160.dp).clip(RoundedCornerShape(Radius.card)).background(c.background)) {
         HomeWallpaper(prefs, asInWindow = true)
         CompositionLocalProvider(LocalCardLook provides look) {
@@ -185,6 +186,16 @@ private fun CardSettings(prefs: Preferences) {
         val fromSlider = { v: Float -> MIN_OPACITY + v * (1f - MIN_OPACITY) }
         LevelSlider(toSlider(prefs.cardOpacity), { prefs.previewCardOpacity(fromSlider(it)) }) { prefs.cardOpacity = fromSlider(it) }
         Label(stringResource(R.string.cards_glass_help), Typography.small, c.textMuted)
+        Label(stringResource(R.string.cards_edge), Typography.label, c.textMuted)
+        Segmented(
+            listOf(
+                CardEdge.NONE to stringResource(R.string.cards_edge_none),
+                CardEdge.THIN to stringResource(R.string.cards_edge_thin),
+                CardEdge.BOLD to stringResource(R.string.cards_edge_bold),
+            ),
+            prefs.cardEdge,
+            { prefs.cardEdge = it },
+        )
     }
     Label(stringResource(R.string.cards_themes), Typography.label, c.textMuted)
     val themeLabel = stringResource(R.string.factory_look)
