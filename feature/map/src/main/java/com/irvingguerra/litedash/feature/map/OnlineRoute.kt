@@ -3,6 +3,7 @@ package com.irvingguerra.litedash.feature.map
 import android.content.Context
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
+import android.os.Build
 import android.os.SystemClock
 import com.irvingguerra.litedash.core.ui.Https
 import org.json.JSONException
@@ -13,6 +14,7 @@ import java.io.InputStream
 import java.util.Locale
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+import javax.net.ssl.SSLException
 import kotlin.math.roundToInt
 
 /**
@@ -22,9 +24,16 @@ import kotlin.math.roundToInt
  * nunca dos en menos de [MIN_GAP_MS], la misma ruta pedida dos veces a la vez sale una sola vez, todo en [TOTAL_MS] (con
  * un solo reintento si queda tiempo) y las últimas rutas en memoria.
  * El índice de litedash-maps la puede apagar ("online": {"osrm": false}, [MapPacks.onlineRouting]).
+ *
+ * Ese servidor solo acepta TLS 1.3, que Android trae desde la 10: en pantallas más viejas (y en cualquiera donde la
+ * conexión segura con él falle) el pedido va por el relevo de litedash.dev ([RELAY]), que lo repite tal cual.
  */
 object OnlineRoute {
-    private const val ENDPOINT = "https://routing.openstreetmap.de/routed-car/route/v1/driving/"
+    private const val DIRECT = "https://routing.openstreetmap.de/routed-car/route/v1/driving/"
+    private const val RELAY = "https://litedash.dev/route/v1/driving/"
+
+    /** ¿Los pedidos van por [RELAY]? De entrada en Android ≤ 9; después, si la conexión segura directa falló. */
+    @Volatile private var relayed = Build.VERSION.SDK_INT < Build.VERSION_CODES.Q
     private const val USER_AGENT = "LiteDash (+https://litedash.dev)"
 
     /** Entre dos pedidos de esta pantalla, al menos esto (el servicio pide ≤ 1 por segundo en total). */
@@ -90,13 +99,12 @@ object OnlineRoute {
         synchronized(cache) { cache[key]?.let { if (now - it.atMs in 0 until CACHE_MS) return it.route } }
         // Si ya se está pidiendo lo mismo (la tarjeta se vuelve a planear al llegar la lista o tu país), se espera ese.
         return inFlight.run(key, TOTAL_MS + RETRY_WAIT_MS) {
-            val url = buildString {
-                append(ENDPOINT)
+            val query = buildString {
                 append(String.format(Locale.ROOT, "%.6f,%.6f;%.6f,%.6f", fromLon, fromLat, toLon, toLat))
                 append("?overview=full&geometries=polyline6&steps=true")
                 headingDeg?.let { append("&bearings=").append(normalized(it).roundToInt() % 360).append(",45;") }
             }
-            fetch(context, url)?.let(::parseOsrm)?.also { keep(key, it) }
+            fetch(context, query)?.let(::parseOsrm)?.also { keep(key, it) }
         }
     }
 
@@ -114,8 +122,12 @@ object OnlineRoute {
         }
     }
 
-    /** El cuerpo de la respuesta; un reintento solo si se cortó la red o el servidor falló (5xx) y queda tiempo. null = no se pudo. */
-    private fun fetch(context: Context, url: String): String? {
+    /**
+     * El cuerpo de la respuesta a [query] (los puntos y las opciones, lo que va después del servidor); un reintento solo
+     * si se cortó la red, el servidor falló (5xx) o no hubo conexión segura (ese va por el relevo) y queda tiempo.
+     * null = no se pudo.
+     */
+    private fun fetch(context: Context, query: String): String? {
         val deadline = SystemClock.elapsedRealtime() + TOTAL_MS
         for (attempt in 0..1) {
             if (attempt > 0) {
@@ -125,7 +137,7 @@ object OnlineRoute {
             if (!waitTurn(deadline)) return null
             val left = (deadline - SystemClock.elapsedRealtime()).coerceIn(1L, TIMEOUT_MS.toLong()).toInt()
             try {
-                val c = Https.open(context, url)
+                val c = Https.open(context, (if (relayed) RELAY else DIRECT) + query)
                 try {
                     c.connectTimeout = left
                     c.readTimeout = left
@@ -142,6 +154,9 @@ object OnlineRoute {
                 } finally {
                     c.disconnect()
                 }
+            } catch (_: SSLException) {
+                // Sin conexión segura con el servidor (TLS 1.3 que la pantalla no trae): el reintento, por el relevo.
+                relayed = true
             } catch (_: IOException) {
                 // Red cortada: el reintento.
             }
