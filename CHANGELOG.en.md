@@ -3,6 +3,24 @@
 What people using LiteDash notice, in English. The full history (in Spanish) is in [CHANGELOG.md](CHANGELOG.md).
 Format [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versions [SemVer](https://semver.org/).
 
+## [1.5.19] - 2026-11-25
+
+Mexico's maps at half the size, ready for what's next (lanes, exits, speed cameras).
+
+### Added
+- **Lighter maps:** streets are now stored only once. All of Mexico goes from 825 to ~400 MB (Estado de México from 56
+  to 31 MB) and looks the same. Mexico for now; other countries will switch over without you doing anything.
+- **"Update"** next to each state you had already downloaded, with its new size: it's optional and your current map
+  keeps working.
+- A state's map, streets and search come in a single download you can pause and resume.
+- Private and gated-community streets are drawn too.
+
+### Fixed
+- **Pick an image (Android 11–12):** on screens where storage can't be read, "Recent" now shows your photos instead of
+  empty folders.
+- A route to a gated community no longer says "no way": it takes you to the nearest street.
+- If power is cut in the middle of a map download, what was downloaded isn't lost; "Cancel" always responds.
+
 ## [1.5.18] - 2026-11-24
 
 Navigating no longer takes you away from your home screen: guidance lives in your map, with your music and widgets right

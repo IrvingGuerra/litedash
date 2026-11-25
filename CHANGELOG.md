@@ -4,6 +4,24 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.5.19] - 2026-11-25
+
+Mapas de México a la mitad de peso, listos para lo que viene (carriles, salidas, radares).
+
+### Nuevo
+- **Mapas más ligeros:** las calles ya se guardan una sola vez. México completo baja de 825 a ~400 MB (Estado de
+  México de 56 a 31 MB) y se ve igual. Por ahora México; los demás países irán cambiando sin que hagas nada.
+- **«Actualizar»** junto a cada estado que ya tenías bajado, con su tamaño nuevo: no es obligatorio y tu mapa de hoy
+  sigue funcionando.
+- El mapa, las calles y la búsqueda de un estado se bajan en una sola descarga, que se puede pausar y seguir.
+- Calles privadas y de fraccionamientos también se dibujan.
+
+### Arreglado
+- **Elegir imagen (Android 11–12):** en pantallas donde la memoria no se deja leer, «Recientes» ya muestra tus fotos
+  en vez de carpetas vacías.
+- Una ruta a un fraccionamiento cerrado ya no dice «sin camino»: te lleva a la calle más cercana.
+- Si se va la luz a media descarga de un mapa, no se pierde lo bajado; «Cancelar» responde siempre.
+
 ## [1.5.18] - 2026-11-24
 
 Navegar ya no te saca de tu inicio: la guía vive en tu mapa, con tu música y tus widgets donde los dejaste.
