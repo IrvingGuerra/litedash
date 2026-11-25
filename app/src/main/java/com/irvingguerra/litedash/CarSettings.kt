@@ -59,6 +59,12 @@ import com.irvingguerra.litedash.feature.car.CarTurntable
 import com.irvingguerra.litedash.feature.car.CatalogEntry
 import com.irvingguerra.litedash.feature.car.PaintFinish
 
+/** Dónde se recuerda la pestaña de Tu auto. */
+private const val CAR_TABS = "car"
+
+/** Ajustes → Tu auto abre en Modelos («Ver el catálogo» de la bienvenida). */
+internal fun openCarModels() = selectTab(CAR_TABS, 1)
+
 /**
  * Ajustes → Tu auto, en tarjetas: el auto (nombre y color), las opciones del modelo
  * elegido justo debajo (sin bajar toda la lista), los modelos descargados a la vista
@@ -90,7 +96,7 @@ internal fun CarSettings(d: Dependencies) {
             unreachable = true
         }
     }
-    val tab = tabs(listOf(R.string.tab_my_car, R.string.tab_models, R.string.reminders), "car")
+    val tab = tabs(listOf(R.string.tab_my_car, R.string.tab_models, R.string.reminders), CAR_TABS)
     val entry = pkg?.let { p -> catalog?.firstOrNull { it.id == p.id } }
 
     if (tab == 0) SettingsCard {

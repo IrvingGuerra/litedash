@@ -211,7 +211,7 @@ private val LANGUAGE_CELL_MIN = 260.dp
 private val LANGUAGE_GAP = 8.dp
 
 /** Los idiomas del sistema (no los de la app, que puede ir en otro), en su orden: "de-AT" → "de". */
-private fun systemLanguages(): List<String> {
+internal fun systemLanguages(): List<String> {
     val config = Resources.getSystem().configuration
     val locales = if (Build.VERSION.SDK_INT >= 24) {
         val list = config.locales

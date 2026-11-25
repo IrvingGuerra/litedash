@@ -342,7 +342,7 @@ private fun HomeSettings(d: Dependencies, revision: Int, onEdit: () -> Unit, onT
     SettingsCard { ParkedSettings(prefs) }
     SettingsCard(stringResource(R.string.welcome_home_title)) {
         // Al pedirlo a mano se vuelve a preguntar al abrir si no queda como inicio.
-        MakeHome(revision, big = false) { prefs.dontAskHome = false }
+        MakeHome(revision) { prefs.dontAskHome = false }
         OpenOnBootSettings(prefs)
     }
 }

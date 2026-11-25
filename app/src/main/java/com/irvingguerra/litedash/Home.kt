@@ -498,7 +498,8 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
     }
     val car = d.cars.pkg(d.prefs.carModel)
     // Recién cambiado el idioma, de vuelta en Ajustes, donde se eligió.
-    var panel by remember { mutableStateOf<Panel?>(if (MainActivity.takeReopenLanguage()) Panel.Language else null) }
+    // En la bienvenida (se cambió el idioma desde ahí) no se abre Ajustes debajo.
+    var panel by remember { mutableStateOf<Panel?>(Panel.Language.takeIf { MainActivity.takeReopenLanguage() && d.prefs.welcomeSeen }) }
     var editing by remember { mutableStateOf(false) }
     // LiteDash puede estar abierto dos veces (como inicio y como app) y el estado es uno solo por proceso. Una sola
     // regla: solo la ventana al frente decide la cuadrícula (la de atrás no se vuelve a medir y deshacía lo que se
@@ -1148,7 +1149,14 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
         if (intro) LogoIntro { intro = false }
 
         if (!d.prefs.welcomeSeen) {
-            Welcome(d.prefs, d.dashboard, revision, onFinish = { d.prefs.welcomeSeen = true })
+            Welcome(d, revision, onFinish = { catalog ->
+                d.prefs.welcomeSeen = true
+                // «Ver el catálogo»: al terminar, Ajustes → Tu auto → Modelos.
+                if (catalog) {
+                    openCarModels()
+                    panel = Panel.Settings
+                }
+            })
         }
     }
 }

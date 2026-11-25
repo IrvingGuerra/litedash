@@ -21,6 +21,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -387,10 +388,19 @@ fun Switch(checked: Boolean, modifier: Modifier = Modifier) {
 
 /**
  * Campo de texto de una línea con [hint]; [icon] pone la lupa (buscadores). [compact] = píldora baja para la cabecera
- * de un panel (#28: así la lista de abajo gana un renglón).
+ * de un panel (#28: así la lista de abajo gana un renglón). [onDone] = qué hace «Listo» del teclado (si no, lo de Android:
+ * soltar el foco, que en Android ≤ 8 regresa al primer campo y vuelve a abrir el teclado).
  */
 @Composable
-fun TextInput(value: String, onChange: (String) -> Unit, hint: String, modifier: Modifier = Modifier, icon: Boolean = false, compact: Boolean = false) {
+fun TextInput(
+    value: String,
+    onChange: (String) -> Unit,
+    hint: String,
+    modifier: Modifier = Modifier,
+    icon: Boolean = false,
+    compact: Boolean = false,
+    onDone: (() -> Unit)? = null,
+) {
     val c = LocalColors.current
     val shape = if (compact) CircleShape else RoundedCornerShape(Radius.card)
     Row(
@@ -412,6 +422,7 @@ fun TextInput(value: String, onChange: (String) -> Unit, hint: String, modifier:
                 singleLine = true,
                 cursorBrush = SolidColor(c.accent),
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                keyboardActions = onDone?.let { done -> KeyboardActions(onDone = { done() }) } ?: KeyboardActions.Default,
             )
         }
     }

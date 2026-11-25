@@ -8,9 +8,15 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.provider.Settings
 import android.util.Log
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.ui.focus.focusTarget
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -27,38 +33,38 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.irvingguerra.litedash.core.ui.Button
-import com.irvingguerra.litedash.core.ui.Icon
-import com.irvingguerra.litedash.core.ui.Icons
+import com.irvingguerra.litedash.core.ui.Card
 import com.irvingguerra.litedash.core.ui.Label
 import com.irvingguerra.litedash.core.ui.LocalColors
-import com.irvingguerra.litedash.core.ui.MorseMark
+import com.irvingguerra.litedash.core.ui.Radius
 import com.irvingguerra.litedash.core.ui.TextInput
 import com.irvingguerra.litedash.core.ui.Typography
 import com.irvingguerra.litedash.core.ui.blockTouches
+import com.irvingguerra.litedash.feature.car.CarColors
 import com.irvingguerra.litedash.feature.car.CarDrawing
-import com.irvingguerra.litedash.feature.dashboard.DashboardState
-import com.irvingguerra.litedash.feature.dashboard.Template
-import com.irvingguerra.litedash.feature.dashboard.isDesign
-import com.irvingguerra.litedash.feature.dashboard.size
-import com.irvingguerra.litedash.feature.dashboard.coarse
-import com.irvingguerra.litedash.feature.dashboard.suggestedTemplate
-import com.irvingguerra.litedash.feature.dashboard.tiles
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -93,135 +99,245 @@ internal fun rememberIsHome(vararg keys: Any): Boolean? {
     return isHome
 }
 
+/** El último de los pasos de la bienvenida (Diseño, nombre y auto). */
+private const val LAST_STEP = 2
+
 /**
- * Primer arranque: 1) tu auto (nombre y color), 2) cómo lo quieres (acomodo y
- * tema), 3) hacerlo tu pantalla de inicio. Todo se puede cambiar después.
+ * Primer arranque (solo instalaciones nuevas): 1) tu Diseño, 2) tu nombre, 3) tu auto (y hacer LiteDash tu pantalla de
+ * inicio). Nada es obligatorio: «Ahora no» deja lo de fábrica. [onFinish] con true abre el catálogo de autos.
  */
 @Composable
-fun Welcome(prefs: Preferences, dashboard: DashboardState, revision: Int, onFinish: () -> Unit) {
+fun Welcome(d: Dependencies, revision: Int, onFinish: (catalog: Boolean) -> Unit) {
     val c = LocalColors.current
-    var step by remember { mutableIntStateOf(prefs.welcomeStep.coerceIn(0, 2)) }
+    val prefs = d.prefs
+    var step by remember { mutableIntStateOf(prefs.welcomeStep.coerceIn(0, LAST_STEP)) }
+    var language by remember { mutableStateOf(false) }
+    // Los campos sueltan el foco aquí y no con clearFocus(): en Android ≤ 8 el foco regresaba al campo con todo y teclado.
+    val rest = remember { FocusRequester() }
+    val release: () -> Unit = { rest.requestFocus() }
     fun goTo(n: Int) {
+        release()
+        language = false
         step = n
         prefs.welcomeStep = n
     }
-    Column(
-        Modifier
-            .fillMaxSize()
-            .canvas()
-            .blockTouches()
-            .safeDrawingPadding()
-            .padding(horizontal = 32.dp, vertical = 20.dp),
-    ) {
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            MorseMark(Modifier.size(width = 92.dp, height = 24.dp))
-            Spacer(Modifier.weight(1f))
-            // Tres puntos: dónde vas.
-            for (i in 0..2) {
-                Box(
-                    Modifier
-                        .padding(start = 8.dp)
-                        .size(width = if (i == step) 28.dp else 10.dp, height = 10.dp)
-                        .clip(RoundedCornerShape(5.dp))
-                        .background(if (i <= step) c.accent else c.line),
-                )
+    // La única animación: el paso nuevo aparece en un instante.
+    val shown = remember { Animatable(1f) }
+    LaunchedEffect(step) {
+        shown.snapTo(0f)
+        shown.animateTo(1f, tween(STEP_FADE_MS))
+    }
+    BackHandler(enabled = step > 0) { goTo(step - 1) }
+    FitShort {
+        Column(
+            Modifier
+                .fillMaxSize()
+                .canvas()
+                .blockTouches()
+                .focusRequester(rest)
+                .focusTarget()
+                .safeDrawingPadding()
+                .padding(horizontal = 32.dp, vertical = 16.dp),
+        ) {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                // Tres puntos: dónde vas.
+                for (i in 0..LAST_STEP) {
+                    Box(
+                        Modifier
+                            .padding(end = 8.dp)
+                            .size(width = if (i == step) 28.dp else 10.dp, height = 10.dp)
+                            .clip(RoundedCornerShape(5.dp))
+                            .background(if (i <= step) c.accent else c.line),
+                    )
+                }
+                Spacer(Modifier.weight(1f))
+                // Si el sistema va en otro idioma que la app (aún sin su paquete), se elige aquí sin buscarlo en Ajustes.
+                val system = remember { systemLanguages().firstOrNull() }
+                if (step == 0 && (language || system != currentLocale().language)) {
+                    TextLink(stringResource(if (language) R.string.welcome_design_title else R.string.language)) { language = !language }
+                }
+                TextLink(stringResource(R.string.not_now)) { release(); onFinish(false) }
             }
-        }
-        Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(vertical = 24.dp)) {
-            when (step) {
-                0 -> CarStep(prefs)
-                1 -> StyleStep(prefs, dashboard)
-                else -> HomeStep(revision)
+            Column(Modifier.weight(1f).fillMaxWidth().graphicsLayer { alpha = shown.value }.padding(top = 12.dp)) {
+                when {
+                    step == 0 && language -> Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                        Titles(stringResource(R.string.language), null)
+                        LanguageSettings(prefs)
+                    }
+                    step == 0 -> {
+                        Titles(stringResource(R.string.welcome_design_title), stringResource(R.string.welcome_design))
+                        DesignStep(d, Modifier.weight(1f))
+                    }
+                    else -> Column(Modifier.verticalScroll(rememberScrollState())) {
+                        if (step == 1) {
+                            Titles(stringResource(R.string.your_name_hint), stringResource(R.string.your_name_help))
+                            NameStep(prefs, release)
+                        } else {
+                            Titles(stringResource(R.string.your_car), stringResource(R.string.welcome_car))
+                            CarStep(prefs, revision, release, onCatalog = { release(); onFinish(true) })
+                        }
+                    }
+                }
             }
-        }
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            if (step > 0) Button(stringResource(R.string.back), { goTo(step - 1) })
-            Spacer(Modifier.weight(1f))
-            if (step < 2) {
-                Button(stringResource(R.string.skip), onFinish)
-                Button(stringResource(R.string.next), { goTo(step + 1) }, primary = true)
-            } else {
-                Button(stringResource(R.string.start), onFinish, primary = true)
+            Row(
+                Modifier.fillMaxWidth().padding(top = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.End),
+            ) {
+                if (step > 0) Button(stringResource(R.string.back), { goTo(step - 1) })
+                if (step < LAST_STEP) Button(stringResource(R.string.next), { goTo(step + 1) }, primary = true)
+                else Button(stringResource(R.string.done), { release(); onFinish(false) }, primary = true)
             }
         }
     }
 }
 
+/** Lo que tarda el paso nuevo en aparecer. */
+private const val STEP_FADE_MS = 160
+
+/** Un enlace de texto discreto (arriba a la derecha). */
 @Composable
-private fun Titles(title: String, text: String) {
-    Label(title, Typography.clock.copy(fontSize = Typography.title.fontSize * 1.6f))
-    Spacer(Modifier.height(8.dp))
-    Label(text, Typography.body, LocalColors.current.textMuted, modifier = Modifier.widthIn(max = 640.dp))
-    Spacer(Modifier.height(28.dp))
+private fun TextLink(text: String, onClick: () -> Unit) {
+    Label(
+        text, Typography.body, LocalColors.current.textMuted, maxLines = 1,
+        modifier = Modifier.clip(RoundedCornerShape(Radius.inner)).clickable(onClick = onClick).padding(horizontal = 12.dp, vertical = 8.dp),
+    )
 }
 
 @Composable
-private fun CarStep(prefs: Preferences) {
-    val c = LocalColors.current
-    Titles(stringResource(R.string.welcome_title), stringResource(R.string.welcome_car))
-    BoxWithConstraints(Modifier.fillMaxWidth()) {
-        val horizontal = maxWidth > 700.dp
-        val drawing = @Composable { m: Modifier ->
-            CarDrawing(prefs.carColor, m)
-        }
-        val options = @Composable { m: Modifier ->
-            Column(m, verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                Label(stringResource(R.string.your_name), Typography.label, c.textMuted)
-                DriverNameField(prefs)
-                Label(stringResource(R.string.car_name), Typography.label, c.textMuted)
-                CarNameField(prefs, stringResource(R.string.my_car))
-                Label(stringResource(R.string.color), Typography.label, c.textMuted)
-                CarColorPicker(prefs)
+private fun Titles(title: String, text: String?) {
+    Label(title, Typography.clock.copy(fontSize = Typography.title.fontSize * 1.6f), maxLines = 2)
+    if (text != null) {
+        Spacer(Modifier.height(6.dp))
+        Label(text, Typography.body, LocalColors.current.textMuted, modifier = Modifier.widthIn(max = 640.dp))
+    }
+    Spacer(Modifier.height(20.dp))
+}
+
+/** El hueco entre las tarjetas de los Diseños, lo que mide su nombre (con su espacio arriba) y lo más chica que se deja una. */
+private val DESIGN_GAP = 12.dp
+private val DESIGN_NAME = 30.dp
+private val DESIGN_MIN = 120.dp
+
+/**
+ * Paso 1: los 8 Diseños, el puesto marcado (Grafito de fábrica). Tocar uno lo aplica a la página como en el panel
+ * Diseños, sin su aviso de «Deshacer» (aquí basta con tocar otro). Se elige cuántos van por fila (2, 4 u 8) para que
+ * quepan todos sin desplazar y lo más grandes posible.
+ */
+@Composable
+private fun DesignStep(d: Dependencies, modifier: Modifier) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val grid = d.dashboard.grid ?: return
+    val current = d.prefs.design
+    BoxWithConstraints(modifier.fillMaxWidth()) {
+        val (columns, width) = designFit(maxWidth, maxHeight, grid.columns.toFloat() / grid.rows)
+        FlowRow(
+            Modifier.verticalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(DESIGN_GAP),
+            verticalArrangement = Arrangement.spacedBy(DESIGN_GAP),
+            maxItemsInEachRow = columns,
+        ) {
+            for (design in DESIGNS) {
+                DesignCard(design, grid, d.dashboard, design.id == current, changed = false, Modifier.width(width), brief = true) {
+                    if (d.prefs.design != design.id) {
+                        applyDesign(d, context, scope, design)
+                        DesignNotice.design = null
+                    }
+                }
             }
         }
-        if (horizontal) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(40.dp)) {
-                drawing(Modifier.weight(1.2f))
-                options(Modifier.weight(1f))
+    }
+}
+
+/** Cuántos Diseños por fila y de qué ancho para que quepan los 8 en [w]×[h] lo más grandes posible ([ratio] = ancho/alto). */
+private fun designFit(w: Dp, h: Dp, ratio: Float): Pair<Int, Dp> {
+    val pad = BRIEF_PADDING * 2
+    val (columns, width) = listOf(2, 4, 8).map { columns ->
+        val rows = (DESIGNS.size + columns - 1) / columns
+        val byWidth = (w - DESIGN_GAP * (columns - 1)) / columns
+        val byHeight = ((h - DESIGN_GAP * (rows - 1)) / rows - pad - DESIGN_NAME) * ratio + pad
+        columns to minOf(byWidth, byHeight)
+    }.maxBy { it.second.value }
+    // Si ni así salen de buen tamaño (pantalla muy baja), dos por fila y se desplaza.
+    return if (width < DESIGN_MIN) 2 to (w - DESIGN_GAP) / 2 else columns to width
+}
+
+/** Desde este ancho los pasos 2 y 3 van en dos columnas. */
+private val WIDE_STEP = 640.dp
+
+/** Paso 2: tu nombre (opcional) y cómo te va a saludar el inicio. */
+@Composable
+private fun NameStep(prefs: Preferences, release: () -> Unit) {
+    val c = LocalColors.current
+    BoxWithConstraints(Modifier.fillMaxWidth()) {
+        val field = @Composable { m: Modifier -> DriverNameField(prefs, m, stringResource(R.string.your_name), onDone = release) }
+        val preview = @Composable { m: Modifier ->
+            Card(m) {
+                Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    val name = prefs.driverName
+                    Label(greeting(name ?: "…").orEmpty(), Typography.title, if (name == null) c.textMuted else c.text, maxLines = 1)
+                    CarDrawing(prefs.carColor, Modifier.fillMaxWidth())
+                }
+            }
+        }
+        if (maxWidth > WIDE_STEP) {
+            Row(horizontalArrangement = Arrangement.spacedBy(32.dp)) {
+                field(Modifier.weight(1f))
+                preview(Modifier.weight(1f).widthIn(max = 420.dp))
             }
         } else {
-            Column(verticalArrangement = Arrangement.spacedBy(24.dp)) {
-                drawing(Modifier.fillMaxWidth())
-                options(Modifier.fillMaxWidth())
+            Column(verticalArrangement = Arrangement.spacedBy(20.dp)) {
+                field(Modifier.fillMaxWidth())
+                preview(Modifier.fillMaxWidth().widthIn(max = 420.dp))
             }
         }
     }
 }
 
+/**
+ * Paso 3: tu auto. De fábrica hoy solo está el sedán: tres colores que van con tu Diseño, su nombre (opcional), «Ver el
+ * catálogo» (tu modelo exacto, al terminar) y hacer LiteDash tu pantalla de inicio.
+ */
 @Composable
-private fun StyleStep(prefs: Preferences, dashboard: DashboardState) {
+private fun CarStep(prefs: Preferences, revision: Int, release: () -> Unit, onCatalog: () -> Unit) {
     val c = LocalColors.current
-    Titles(stringResource(R.string.welcome_style_title), stringResource(R.string.welcome_style))
-    Label(stringResource(R.string.layout), Typography.label, c.textMuted)
-    Spacer(Modifier.height(12.dp))
-    val grid = dashboard.grid
-    // Los acomodos que lucen en esta pantalla, el puesto (el del Diseño de fábrica) o el recomendado primero. Los demás de
-    // los Diseños no: se eligen con su Diseño.
-    val first = dashboard.pageTemplate
-    val options = grid?.coarse?.let { c -> listOf(first ?: c.suggestedTemplate()) + Template.entries.filter { c.size in it.sizes && !it.isDesign } }
-        ?.distinct().orEmpty()
-    // Marcado el que ya está puesto (al entrar, el recomendado de fábrica): el mismo acomodo, sin importar los ids.
-    val shown = dashboard.shown
-    val current = remember(grid, shown, options) {
-        val placed = shown.map { listOf(it.col, it.row, it.width, it.height) }.toSet()
-        options.firstOrNull { p -> grid != null && p.tiles(grid, skip = dashboard.hidden).map { listOf(it.col, it.row, it.width, it.height) }.toSet() == placed }
-    }
-    FlowRow(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        for (p in options) {
-            Button(stringResource(nameOf(p)), { dashboard.template(p) }, primary = current == p)
-        }
-    }
-    Spacer(Modifier.height(28.dp))
-    Label(stringResource(R.string.theme), Typography.label, c.textMuted)
-    Spacer(Modifier.height(12.dp))
-    FlowRow(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        for ((mode, text) in ThemeOptions) {
-            Button(stringResource(text), { prefs.theme = mode }, primary = prefs.theme == mode)
+    val design = designOf(prefs.design) ?: FACTORY_DESIGN
+    val shape = RoundedCornerShape(Radius.card)
+    Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+        for (color in remember(design) { design.carColors() }) {
+            val chosen = prefs.carColor == color
+            Card(
+                Modifier.weight(1f, fill = false).widthIn(max = 260.dp).border(if (chosen) 3.dp else 0.dp, if (chosen) c.accent else Color.Transparent, shape),
+                onClick = { prefs.carColor = color },
+            ) {
+                CarDrawing(color, Modifier.fillMaxWidth().padding(16.dp))
+            }
         }
     }
     Spacer(Modifier.height(20.dp))
-    Label(stringResource(R.string.welcome_change_later), Typography.small, c.textMuted)
+    FlowRow(
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+        itemVerticalAlignment = Alignment.CenterVertically,
+    ) {
+        CarNameField(prefs, stringResource(R.string.car_name), Modifier.widthIn(min = 220.dp, max = 420.dp), onDone = release)
+        Button(stringResource(R.string.see_catalog), onCatalog)
+    }
+    Spacer(Modifier.height(20.dp))
+    FlowRow(
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        itemVerticalAlignment = Alignment.CenterVertically,
+    ) {
+        Label(stringResource(R.string.welcome_home_title), Typography.body, c.textMuted)
+        MakeHome(revision)
+    }
 }
+
+/** Tres colores para tu auto que van con el Diseño: el suyo, su realce (si tiene) y uno neutro. */
+internal fun Design.carColors(): List<Color> =
+    (listOfNotNull(carColor, accent, if (theme == ThemeMode.LIGHT) CarColors[1] else CarColors[3]) + CarColors).distinct().take(3)
 
 /**
  * Pide ser la pantalla de inicio: el diálogo del sistema (Android 10+) y, si la
@@ -261,52 +377,34 @@ private fun requestHomeRole(context: Context, launch: (Intent) -> Unit): Boolean
     }
 }
 
-@Composable
-private fun HomeStep(revision: Int) {
-    Titles(stringResource(R.string.welcome_home_title), stringResource(R.string.welcome_home))
-    MakeHome(revision, big = true)
-}
-
 /**
  * "Hazlo tu pantalla de inicio": si ya lo es, lo dice; si no, el botón para pedirlo ([beforeRequest] corre antes).
- * Se vuelve a revisar al regresar de Ajustes ([revision] cambia en onResume) o del diálogo. [big]: la bienvenida
- * (con palomita y ayuda); si no, como renglón de Ajustes.
+ * Se vuelve a revisar al regresar de Ajustes ([revision] cambia en onResume) o del diálogo.
  */
 @Composable
-internal fun MakeHome(revision: Int, big: Boolean, beforeRequest: () -> Unit = {}) {
-    val c = LocalColors.current
+internal fun MakeHome(revision: Int, beforeRequest: () -> Unit = {}) {
     val (request, returns) = rememberRequestHome()
     // Mientras se pregunta al sistema, nada (sin asomar el botón un instante).
     val isHome = rememberIsHome(revision, returns) ?: return
-    when {
-        isHome && big -> Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(Modifier.size(44.dp).clip(CircleShape).background(c.accent), contentAlignment = Alignment.Center) {
-                Icon(Icons.done, c.onPrimary, 24.dp)
-            }
-            Spacer(Modifier.width(14.dp))
-            Label(stringResource(R.string.welcome_already_home), Typography.subtitle)
-        }
-        isHome -> Label(stringResource(R.string.welcome_already_home), Typography.body, c.accent)
-        else -> {
-            Button(stringResource(R.string.make_home), { beforeRequest(); request() }, primary = true)
-            if (big) {
-                Spacer(Modifier.height(16.dp))
-                Label(stringResource(R.string.welcome_home_help), Typography.small, c.textMuted, modifier = Modifier.widthIn(max = 640.dp))
-            }
-        }
-    }
+    if (isHome) Label(stringResource(R.string.welcome_already_home), Typography.body, LocalColors.current.accent)
+    else Button(stringResource(R.string.make_home), { beforeRequest(); request() }, primary = true)
 }
 
 /** Tu nombre (para el saludo del inicio): hasta 24 letras; vacío = sin nombre. */
 @Composable
-internal fun DriverNameField(prefs: Preferences) {
-    TextInput(prefs.driverName ?: "", { prefs.driverName = nameOrNull(it) }, stringResource(R.string.your_name_hint), Modifier.fillMaxWidth())
+internal fun DriverNameField(
+    prefs: Preferences,
+    modifier: Modifier = Modifier,
+    hint: String = stringResource(R.string.your_name_hint),
+    onDone: (() -> Unit)? = null,
+) {
+    TextInput(prefs.driverName ?: "", { prefs.driverName = nameOrNull(it) }, hint, modifier.fillMaxWidth(), onDone = onDone)
 }
 
 /** El nombre de tu auto: hasta 24 letras; vacío = el del modelo ([hint]). */
 @Composable
-internal fun CarNameField(prefs: Preferences, hint: String) {
-    TextInput(prefs.carName ?: "", { prefs.carName = nameOrNull(it) }, hint, Modifier.fillMaxWidth())
+internal fun CarNameField(prefs: Preferences, hint: String, modifier: Modifier = Modifier, onDone: (() -> Unit)? = null) {
+    TextInput(prefs.carName ?: "", { prefs.carName = nameOrNull(it) }, hint, modifier.fillMaxWidth(), onDone = onDone)
 }
 
 /** Un nombre escrito, recortado a 24 letras; null si quedó en blanco. */

@@ -108,33 +108,48 @@ fun DesignsPanel(d: Dependencies, close: () -> Unit, onCustomize: () -> Unit) {
 /** Lo ancho desde el que caben 4 tarjetas por fila. */
 private val FOUR_COLUMNS = 860.dp
 
-/** Una tarjeta de la galería: miniatura, nombre (marcado si es el puesto), frase y «Aplicar». */
+/**
+ * Una tarjeta de la galería: miniatura, nombre (marcado si es el puesto), frase y «Aplicar». [brief] (la bienvenida): solo
+ * miniatura, nombre y la palomita.
+ */
 @Composable
-private fun DesignCard(design: Design, grid: Grid, dashboard: DashboardState, applied: Boolean, changed: Boolean, modifier: Modifier, apply: () -> Unit) {
+internal fun DesignCard(
+    design: Design,
+    grid: Grid,
+    dashboard: DashboardState,
+    applied: Boolean,
+    changed: Boolean,
+    modifier: Modifier,
+    brief: Boolean = false,
+    apply: () -> Unit,
+) {
     val c = LocalColors.current
     val shape = RoundedCornerShape(Radius.card)
     Card(modifier.border(if (applied) 3.dp else 0.dp, if (applied) c.accent else Color.Transparent, shape), onClick = apply) {
-        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(Modifier.padding(if (brief) BRIEF_PADDING else 12.dp), verticalArrangement = Arrangement.spacedBy(if (brief) 6.dp else 8.dp)) {
             DesignThumbnail(design, grid, dashboard)
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Label(stringResource(design.name), Typography.subtitle, maxLines = 1, modifier = Modifier.weight(1f, fill = false))
+                Label(stringResource(design.name), Typography.subtitle, maxLines = 1, modifier = Modifier.weight(1f, fill = !brief))
                 // Sus colores de un vistazo: fondo, tarjetas, realce y auto.
-                Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                if (!brief) Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                     for (color in remember(design) { DesignColors.of(design).swatches }) {
                         Box(Modifier.size(12.dp).clip(CircleShape).background(color).border(1.dp, c.text.copy(alpha = 0.2f), CircleShape))
                     }
                 }
                 // Toda la tarjeta aplica; aquí se dice (o, si ya está puesto, la palomita).
-                if (applied) Icon(Icons.done, c.accent, 22.dp)
-                else Label(stringResource(R.string.design_apply).uppercase(currentLocale()), Typography.label, c.accent, maxLines = 1)
+                if (applied) Icon(Icons.done, c.accent, if (brief) 18.dp else 22.dp)
+                else if (!brief) Label(stringResource(R.string.design_apply).uppercase(currentLocale()), Typography.label, c.accent, maxLines = 1)
             }
-            Label(
+            if (!brief) Label(
                 if (changed) stringResource(R.string.design_with_changes) else stringResource(design.tagline),
                 Typography.small, c.textMuted, maxLines = 1,
             )
         }
     }
 }
+
+/** El margen de una tarjeta [DesignCard] breve (la bienvenida mide con él cuántas caben). */
+internal val BRIEF_PADDING = 8.dp
 
 /** Ajustes → Inicio y apariencia → Inicio, primera tarjeta: el Diseño puesto (miniatura y nombre) y «Cambiar». */
 @Composable

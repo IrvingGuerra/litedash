@@ -45,6 +45,15 @@ class DesignsTest {
     }
 
     @Test
+    fun welcomeOffersThreeCarColorsStartingWithTheDesigns() {
+        for (design in DESIGNS) {
+            val colors = design.carColors()
+            assertEquals(3, colors.toSet().size)
+            assertEquals(design.carColor, colors.first())
+        }
+    }
+
+    @Test
     fun freshInstallOnlyTheFirstTime() {
         assertTrue(isFreshInstall(sawWelcome = false, hasDock = false))
         // Quien actualiza ya tiene alguno de los dos: no se le aplica nada.
