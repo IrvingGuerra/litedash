@@ -137,11 +137,15 @@ class GraphTilesTest {
     }
 
     @Test
-    fun farViewHasOnlyMainRoads() {
+    fun farViewHasMinorStreetsOnlyAtZoom12() {
         val z = 12
         val far = GraphTiles.roads(graph, tileKey(z, tileX(-103.73, z).toInt(), tileY(19.24, z).toInt()), 4096)
-        assertTrue(far.roads[RoadTier.MINOR.ordinal].isEmpty())
+        // En el 12 la trama de calles chicas (sección minor) junto a las principales.
+        assertTrue(far.roads[RoadTier.MINOR.ordinal].isNotEmpty())
         assertTrue(far.roads.take(3).sumOf { it.size } > 0)
+        val z11 = GraphTiles.roads(graph, tileKey(11, tileX(-103.73, 11).toInt(), tileY(19.24, 11).toInt()), 4096)
+        assertTrue(z11.roads[RoadTier.MINOR.ordinal].isEmpty())
+        assertTrue(z11.roads.take(3).sumOf { it.size } > 0)
         val z9 = GraphTiles.roads(graph, tileKey(9, tileX(-103.73, 9).toInt(), tileY(19.24, 9).toInt()), 4096)
         assertTrue(z9.roads[RoadTier.SECONDARY.ordinal].isEmpty())
     }

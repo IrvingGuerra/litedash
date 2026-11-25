@@ -34,6 +34,8 @@ class RoadGraph private constructor(private val channel: FileChannel, private va
     private val oLong = drawOffset(buf, 88)
     private val oFar = drawOffset(buf, 92)
     private val oExtra = drawOffset(buf, 96)
+    /** Las calles menores de la vista lejana (zoom 12); 0 en los LDM1 sin ellas (el prototipo). */
+    private val oMinor = drawOffset(buf, 100)
 
     /** ¿Trae con qué dibujar las calles (mapa del formato nuevo, sin calles en el `.pmtiles`)? */
     val drawable = oLong > 0 && oFar > 0 && oExtra > 0
@@ -260,9 +262,9 @@ class RoadGraph private constructor(private val channel: FileChannel, private va
         return false
     }
 
-    /** Las listas por celda de las secciones de dibujo: [LONG] = mitades dueñas, [FAR] y [EXTRA] = líneas. */
+    /** Las listas por celda de las secciones de dibujo: [LONG] = mitades dueñas, [FAR], [EXTRA] y [MINOR] = líneas. */
     internal fun forEachListed(section: Int, cell: Int, action: (Int) -> Unit) {
-        val s = when (section) { LONG -> oLong; FAR -> oFar; else -> oExtra }
+        val s = sectionOffset(section)
         if (s <= 0) return
         val n = buf.getInt(s)
         var lo = 0
@@ -287,12 +289,19 @@ class RoadGraph private constructor(private val channel: FileChannel, private va
         }
     }
 
+    private fun sectionOffset(section: Int) = when (section) {
+        LONG -> oLong
+        FAR -> oFar
+        EXTRA -> oExtra
+        else -> oMinor
+    }
+
     /**
-     * La línea en [offset] de la sección [section] ([FAR] o [EXTRA]): sus puntos (lat, lon en millonésimas) a [out] y su
-     * clase, sentido y nombre en [line].
+     * La línea en [offset] de la sección [section] ([FAR], [EXTRA] o [MINOR]): sus puntos (lat, lon en millonésimas) a
+     * [out] y su clase, sentido y nombre en [line].
      */
     internal fun readLine(section: Int, offset: Int, out: PointList, line: DrawLine) {
-        val s = if (section == FAR) oFar else oExtra
+        val s = sectionOffset(section)
         val n = buf.getInt(s)
         val data = s + 8 + 8 * n + buf.getInt(s + 4 + 8 * n) + 4
         val reader = VarintReader(buf, data + offset)
@@ -301,7 +310,11 @@ class RoadGraph private constructor(private val channel: FileChannel, private va
         line.oneWay = buf.get(reader.pos + 1).toInt() and 1 != 0
         reader.pos += 2
         line.nameRef = reader.next().toInt() - 1
-        val unit = if (section == FAR) 10 else 1
+        val unit = when (section) {
+            FAR -> 10
+            MINOR -> 50
+            else -> 1
+        }
         var la = 0
         var lo = 0
         repeat(count) {
@@ -336,9 +349,11 @@ class RoadGraph private constructor(private val channel: FileChannel, private va
         internal const val LONG = 0
         internal const val FAR = 1
         internal const val EXTRA = 2
-        /** Celdas de las secciones de dibujo (grados): las de la ruta y la vista lejana. */
+        internal const val MINOR = 3
+        /** Celdas de las secciones de dibujo (grados): las de la ruta, la vista lejana y sus calles menores. */
         internal const val CELL_DEG = 0.01
         internal const val FAR_CELL_DEG = 0.1
+        internal const val MINOR_CELL_DEG = 0.05
         private const val FLAG_DRAW = 1
         private const val VERTEX = 12
         private const val HALF = 9

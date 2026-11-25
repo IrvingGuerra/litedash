@@ -7,7 +7,7 @@ package com.irvingguerra.litedash.feature.map
  * para abajo, la vista lejana (principales simplificadas). Sin Android, para probarlo con JUnit.
  */
 internal object GraphTiles {
-    /** Del zoom de la vista lejana para abajo, solo esa. */
+    /** Del zoom de la vista lejana para abajo, solo esa; en ese zoom, con sus calles menores. */
     const val FAR_ZOOM = 12
     /** Desde este zoom, solo autopistas, troncales y primarias (lo demás se vuelve ruido). */
     private const val MAJOR_ONLY_ZOOM = 9
@@ -39,6 +39,18 @@ internal object GraphTiles {
                     graph.readLine(RoadGraph.FAR, off, pts, line)
                     if (z <= MAJOR_ONLY_ZOOM && !major(line.roadClass)) return@forEachListed
                     build.add(pts, line.roadClass, line.oneWay, -1, -1, -1)
+                }
+            }
+            // En el 12 también la trama de calles chicas (si no, la ciudad se ve vacía en la vista de una ruta).
+            if (z == FAR_ZOOM) {
+                val minor = HashSet<Int>()
+                forEachCell(south, north, west, east, RoadGraph.MINOR_CELL_DEG) { cell ->
+                    graph.forEachListed(RoadGraph.MINOR, cell) { off ->
+                        if (!minor.add(off)) return@forEachListed
+                        pts.clear()
+                        graph.readLine(RoadGraph.MINOR, off, pts, line)
+                        build.add(pts, line.roadClass, false, -1, -1, -1)
+                    }
                 }
             }
             return build.done()
