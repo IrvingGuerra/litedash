@@ -3,6 +3,34 @@
 What people using LiteDash notice, in English. The full history (in Spanish) is in [CHANGELOG.md](CHANGELOG.md).
 Format [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versions [SemVer](https://semver.org/).
 
+## [1.5.20] - 2026-11-25
+
+Designs: change your whole home screen with one tap. And online routes now work on screens with Android 9 or older.
+
+### Added
+- **Designs:** 8 complete styles (Graphite, Cloud, Track, Route, Column, Neon, Sand and Forest). One tap sets layout,
+  wallpaper, theme, cards, colors, map and speedometer, with **"Undo"**; afterwards you edit everything as usual. Find
+  them in Settings → Home & look → Home and while arranging. All free.
+- **Stack widget:** 2 to 5 widgets in the same spot; swipe or tap the dots to switch.
+- **New welcome** in three steps: your Design, your name and your car.
+- **Light edge** your way on glass cards: none, thin or bold (Cards).
+
+### Changed
+- **New glass:** glass cards show more of your wallpaper, with a reflection and a shadow, and no longer have the
+  white edge by default (if you liked it, pick "Thin" or "Bold").
+- Templates are now called **"Layouts"**. New installs start with the Graphite Design; if you update, your home screen
+  doesn't change.
+
+### Fixed
+- **Online routes on Android 9 and older:** it always said "Couldn't plan the route online", because those screens
+  can't connect to the routing server. The request now goes through litedash.dev, which only forwards it.
+- **Car lights:** learning them is no longer lost if your screen switches modes when you turn the headlights on, the
+  state is read again when you come back to LiteDash and, if no setting changed, it tells you what to check and lets
+  you send a report.
+- A Design keeps your "Day and night" theme if you were already using it.
+- **Factory Bluetooth:** tapping ▶ no longer opens the screen's Bluetooth app on its own; only the "Control the music
+  from your phone" notice does.
+
 ## [1.5.19] - 2026-11-25
 
 Mexico's maps at half the size, ready for what's next (lanes, exits, speed cameras).

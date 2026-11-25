@@ -4,6 +4,33 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.5.20] - 2026-11-25
+
+Diseños: cambia todo tu inicio de un toque. Y la ruta con internet ya funciona en pantallas con Android 9 o anterior.
+
+### Nuevo
+- **Diseños:** 8 estilos completos (Grafito, Nube, Pista, Ruta, Columna, Neón, Arena y Bosque). Un toque pone acomodo,
+  fondo, tema, tarjetas, colores, mapa y velocímetro, con **«Deshacer»**; después todo se edita como siempre. Están en
+  Ajustes → Inicio y apariencia → Inicio y al acomodar. Todos gratis.
+- **Widget Pila:** de 2 a 5 widgets en el mismo lugar; desliza o toca los puntitos para cambiar.
+- **Bienvenida nueva** en tres pasos: tu Diseño, tu nombre y tu auto.
+- **Filo de luz** a tu gusto en las tarjetas de vidrio: sin filo, delgado o marcado (Tarjetas).
+
+### Cambiado
+- **Vidrio nuevo:** las tarjetas de vidrio dejan ver mejor tu fondo, con reflejo y sombra, y de fábrica ya no llevan
+  el filo blanco (si te gustaba, elige «Delgado» o «Marcado»).
+- Las plantillas ahora se llaman **«Acomodos»**. Las instalaciones nuevas arrancan con el Diseño Grafito; si actualizas,
+  tu inicio no cambia.
+
+### Arreglado
+- **Ruta con internet en Android 9 y anteriores:** decía «No se pudo trazar la ruta en línea» siempre, porque esas
+  pantallas no pueden conectarse al servidor de rutas. Ahora el pedido pasa por litedash.dev, que solo lo reenvía.
+- **Luces del auto:** aprenderlas ya no se pierde si tu pantalla cambia de modo al prender los faros, el estado se
+  vuelve a leer al regresar a LiteDash y, si ningún ajuste cambió, te dice qué revisar y deja mandar un reporte.
+- Un Diseño conserva tu tema «Día y noche» si ya lo usabas.
+- **Bluetooth de fábrica:** tocar ▶ ya no abre la app de Bluetooth de la pantalla por su cuenta; solo el aviso
+  «Controla la música desde tu celular».
+
 ## [1.5.19] - 2026-11-25
 
 Mapas de México a la mitad de peso, listos para lo que viene (carriles, salidas, radares).
