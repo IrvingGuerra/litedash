@@ -70,6 +70,19 @@ class DashboardStore(context: Context) {
     }
 
     /**
+     * La plantilla (o el acomodo de un Diseño) que se puso en [page]: con ella se arma esa página en las cuadrículas que
+     * aún no tienen acomodo guardado (otra escala u orientación). null = ninguna (la página de siempre).
+     */
+    fun template(page: Int): Template? = prefs.getString(TEMPLATE_PREFIX + page, null)?.let { name -> Template.entries.firstOrNull { it.name == name } }
+
+    fun setTemplate(page: Int, t: Template?) {
+        prefs.edit().apply { if (t == null) remove(TEMPLATE_PREFIX + page) else putString(TEMPLATE_PREFIX + page, t.name) }.apply()
+    }
+
+    /** El texto del acomodo guardado de [c] en [page] (para comparar si alguien lo movió); null = ninguno. */
+    fun layoutText(c: Grid, page: Int): String? = prefs.getString(layoutKey(page, c), null)
+
+    /**
      * Quita la página [page] (lo pidió el usuario, con confirmación): las de después se recorren una hacia atrás con
      * sus acomodos y su fondo. Lo de la última, que ya quedó copiado, se suelta. La primera no se quita: es tu inicio
      * de siempre (y sus llaves son las de antes de las páginas).
@@ -103,7 +116,7 @@ private fun layoutKey(page: Int, c: Grid) = layoutPrefix(page) + c.key
 private fun savedAtKey(page: Int, c: Grid) = savedAtPrefix(page) + c.key
 
 /** "10x5" → la cuadrícula; null si no lo es. */
-private fun parseGrid(size: String): Grid? {
+internal fun parseGrid(size: String): Grid? {
     val parts = size.split('x').takeIf { it.size == 2 } ?: return null
     return Grid(parts[0].toIntOrNull() ?: return null, parts[1].toIntOrNull() ?: return null)
 }
@@ -121,6 +134,7 @@ internal fun withoutPage(all: Map<String, *>, page: Int, count: Int): Map<String
     for (p in page until count) {
         for (key in all.keys) if (key.startsWith(layoutPrefix(p)) || key.startsWith(savedAtPrefix(p))) out[key] = null
         out[BACKGROUND_PREFIX + p] = null
+        out[TEMPLATE_PREFIX + p] = null
     }
     for (p in page until count - 1) {
         for ((key, value) in all) {
@@ -132,6 +146,7 @@ internal fun withoutPage(all: Map<String, *>, page: Int, count: Int): Map<String
             if (value is String || value is Long) out[moved] = value
         }
         (all[BACKGROUND_PREFIX + (p + 1)] as? String)?.let { out[BACKGROUND_PREFIX + p] = it }
+        (all[TEMPLATE_PREFIX + (p + 1)] as? String)?.let { out[TEMPLATE_PREFIX + p] = it }
     }
     return out
 }
@@ -219,6 +234,8 @@ private const val PAGES = "pages"
 private const val PAGE_LAYOUT_PREFIX = "page_layout_"
 private const val PAGE_SAVED_AT_PREFIX = "page_saved_at_"
 private const val BACKGROUND_PREFIX = "page_background_"
+/** La plantilla puesta en cada página ([Template.name]). */
+private const val TEMPLATE_PREFIX = "page_template_"
 
 /** Hasta cuántas páginas puede tener el inicio. */
 const val MAX_PAGES = 5

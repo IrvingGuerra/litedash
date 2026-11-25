@@ -1,6 +1,8 @@
 package com.irvingguerra.litedash.feature.dashboard
 
 import androidx.compose.runtime.Immutable
+import kotlin.math.ceil
+import kotlin.math.floor
 import kotlin.math.roundToInt
 
 /**
@@ -319,10 +321,44 @@ enum class Template(val sizes: Set<ScreenSize>) {
      * el mapa contigo en medio. Al aplicarla, la página pasa a fondo de mapa ([DashboardState.template]).
      */
     MAP_BACKGROUND(ScreenSize.entries.toSet()),
+
+    // Los acomodos de los Diseños (app/Designs.kt): uno por Diseño, para cualquier pantalla (de pie, muy ancha desde 2.6:1
+    // o ancha). También salen sueltos en los Acomodos.
+    /** Grafito: el mapa grande y una columna con la Pila (música, auto, llantas), la velocidad y el clima. */
+    DESIGN_GRAPHITE(ScreenSize.entries.toSet()),
+    /** Nube: tu auto y el mapa en dos mitades; abajo la música y el clima. */
+    DESIGN_CLOUD(ScreenSize.entries.toSet()),
+    /** Pista: el velocímetro grande al centro sin tarjeta; el auto y el viaje a un lado, el mapa y la música al otro. */
+    DESIGN_TRACK(ScreenSize.entries.toSet()),
+    /** Ruta: el mapa es la página (fondo de mapa); flotan la Pila y la música. */
+    DESIGN_ROUTE(ScreenSize.entries.toSet()),
+    /** Columna: tipo tableta, una columna de tarjetas y tu auto grande. */
+    DESIGN_COLUMN(ScreenSize.entries.toSet()),
+    /** Neón: la hora flotando, el velocímetro de aro neón al centro, la música, el mapa y el clima. */
+    DESIGN_NEON(ScreenSize.entries.toSet()),
+    /** Arena: la hora y el clima a un lado, tu auto al centro con la música y el mapa alto al otro. */
+    DESIGN_SAND(ScreenSize.entries.toSet()),
+    /** Bosque: el mapa a la mitad, tu auto al otro lado y una Pila con la música y la radio. */
+    DESIGN_FOREST(ScreenSize.entries.toSet()),
 }
 
+/** Los acomodos de los Diseños, en el orden de su galería. */
+val DESIGN_TEMPLATES = listOf(
+    Template.DESIGN_GRAPHITE, Template.DESIGN_CLOUD, Template.DESIGN_TRACK, Template.DESIGN_ROUTE,
+    Template.DESIGN_COLUMN, Template.DESIGN_NEON, Template.DESIGN_SAND, Template.DESIGN_FOREST,
+)
+
+val Template.isDesign get() = this in DESIGN_TEMPLATES
+
+/** Las que, al aplicarlas, ponen el mapa de fondo en la página ([DashboardState.template]). */
+val Template.mapBackground get() = this == Template.MAP_BACKGROUND || this == Template.DESIGN_ROUTE
+
 /** Las que no llevan auto (para quien no lo quiere ver en el inicio). */
-val Template.hasCar get() = this !in setOf(Template.SPEED, Template.MINIMAL, Template.SPEED_WIDGETS, Template.WALL_CARDS, Template.WALL_SIDE, Template.ROUTE, Template.MAP_BACKGROUND)
+val Template.hasCar get() = this !in setOf(
+    Template.SPEED, Template.MINIMAL, Template.SPEED_WIDGETS, Template.WALL_CARDS, Template.WALL_SIDE, Template.ROUTE, Template.MAP_BACKGROUND,
+    // El auto de Grafito va en su Pila (o en lugar del mapa si no cabe); Ruta y Neón no lo llevan.
+    Template.DESIGN_GRAPHITE, Template.DESIGN_ROUTE, Template.DESIGN_NEON,
+)
 
 /**
  * La plantilla en la cuadrícula fina [c]: se calcula en sus celdas de plantilla ([Grid.coarse], ver
@@ -350,10 +386,30 @@ fun Template.layout(c: Grid, hero: String = TileTypes.CAR, skip: (String) -> Boo
         if (width >= 1 && height >= 1 && list.fits(p, c)) list += p
     }
     // El mapa solo luce de 3×2 para arriba; más chico va [fallback] en su lugar (o nada).
-    fun mapOr(fallback: String?, col: Int, row: Int, width: Int, height: Int) {
+    fun mapOr(fallback: String?, col: Int, row: Int, width: Int, height: Int, fallbackData: String = "") {
         if (width >= 3 && height >= 2) place(TileTypes.MAP, col, row, width, height)
-        else if (fallback != null) place(fallback, col, row, width, height)
+        else if (fallback != null) place(fallback, col, row, width, height, fallbackData)
     }
+    // Una Pila con [faces] (las de un módulo apagado no van): con una sola cara, esa cara sola; sin ninguna, nada.
+    fun stack(faces: List<String>, col: Int, row: Int, width: Int, height: Int) {
+        val types = faces.map { if (it == TileTypes.CAR) hero else it }.filterNot(skip)
+        if (types.size < STACK_MIN_FACES) {
+            types.firstOrNull()?.let { place(it, col, row, width, height) }
+            return
+        }
+        // Ids propios de cada cara ("tipo-n" + letra): no chocan con los de las piezas ("tipo-n").
+        val n = list.size
+        val data = Stack(types.mapIndexed { i, t -> Tile("$t-$n${'a' + i}", t, 0, 0, 1, 1) }).encode()
+        place(TileTypes.STACK, col, row, width, height, data)
+    }
+    // Lo de los Diseños, como su especificación (litedash-claude docs/disenos/acomodos.py): redondeo a la mitad hacia
+    // arriba y pantalla muy ancha desde 2.6:1.
+    fun rnd(x: Double) = floor(x + 0.5).toInt()
+    fun up(x: Double) = ceil(x).toInt()
+    val ultra = cols >= rows * 2.6
+    // El viaje o, con OBD, las revoluciones (como la deportiva).
+    val tripType = if (skip(TileTypes.GAUGE)) TileTypes.TRIP else TileTypes.GAUGE
+    val tripData = if (tripType == TileTypes.GAUGE) "rpm" else ""
     // No caben columnas: el auto arriba y la música abajo.
     fun carOverMusic() {
         place(TileTypes.CAR, 0, 0, cols, rows - 1)
@@ -559,6 +615,204 @@ fun Template.layout(c: Grid, hero: String = TileTypes.CAR, skip: (String) -> Boo
                 if (rows - row >= 1) place(TileTypes.WEATHER, start, row, width, minOf(2, rows - row))
             }
         }
+        Template.DESIGN_GRAPHITE -> when {
+            c.vertical -> {
+                val m = rnd(rows * 0.55)
+                mapOr(TileTypes.CAR, 0, 0, cols, m)
+                val music = if (rows >= 12) 2 else 1
+                place(TileTypes.MUSIC, 0, m, cols, music)
+                val y = m + music
+                val h = rows - m - music
+                val s = (cols + 1).floorDiv(2)
+                val top = (h + 1).floorDiv(2)
+                stack(STACK_DRIVE, 0, y, s, h)
+                place(TileTypes.SPEEDOMETER, s, y, cols - s, top)
+                place(TileTypes.WEATHER, s, y + top, cols - s, h - top)
+            }
+            ultra -> {
+                val m = rnd(cols * 0.55)
+                val s = rnd((cols - m) / 2.0)
+                val top = (rows + 1).floorDiv(2)
+                mapOr(TileTypes.CAR, 0, 0, m, rows)
+                stack(STACK_CAR, m, 0, s, rows)
+                place(TileTypes.SPEEDOMETER, m + s, 0, cols - m - s, top)
+                place(TileTypes.WEATHER, m + s, top, cols - m - s, rows - top)
+            }
+            else -> {
+                val side = maxOf(3, rnd(cols * 0.32))
+                val m = cols - side
+                val a = up(rows * 0.45)
+                val b = maxOf(1, rnd(rows * 0.27))
+                mapOr(TileTypes.CAR, 0, 0, m, rows)
+                stack(STACK_CAR, m, 0, side, a)
+                place(TileTypes.SPEEDOMETER, m, a, side, b)
+                place(TileTypes.WEATHER, m, a + b, side, rows - a - b)
+            }
+        }
+        Template.DESIGN_CLOUD -> when {
+            c.vertical -> {
+                val a = rnd(rows * 0.36)
+                place(TileTypes.CAR, 0, 0, cols, a)
+                mapOr(TileTypes.CLOCK, 0, a, cols, a)
+                val s = rnd(cols * 0.57)
+                place(TileTypes.MUSIC, 0, 2 * a, s, rows - 2 * a)
+                place(TileTypes.WEATHER, s, 2 * a, cols - s, rows - 2 * a)
+            }
+            ultra -> {
+                val a = rnd(cols * 0.33)
+                val b = rnd(cols * 0.4)
+                val music = up(rows * 0.6)
+                place(TileTypes.CAR, 0, 0, a, rows)
+                mapOr(TileTypes.CLOCK, a, 0, b, rows)
+                place(TileTypes.MUSIC, a + b, 0, cols - a - b, music)
+                place(TileTypes.WEATHER, a + b, music, cols - a - b, rows - music)
+            }
+            else -> {
+                val h = rows - strip
+                val half = cols / 2
+                val music = rnd(cols * 0.6)
+                place(TileTypes.CAR, 0, 0, half, h)
+                mapOr(TileTypes.CLOCK, half, 0, cols - half, h)
+                place(TileTypes.MUSIC, 0, h, music, strip)
+                place(TileTypes.WEATHER, music, h, cols - music, strip)
+            }
+        }
+        Template.DESIGN_TRACK -> {
+            val gauge = "style=needle;color=red;numbers=1;redline=1"
+            if (c.vertical) {
+                val s = rnd(rows * 0.45)
+                place(TileTypes.SPEEDOMETER, 0, 0, cols, s, gauge, plain = true)
+                place(TileTypes.CAR, 0, s, cols, 3)
+                val y = s + 3
+                val h = rows - y
+                val m = rnd(cols * 0.57)
+                val music = maxOf(1, h - 1)
+                mapOr(TileTypes.MUSIC, 0, y, m, h)
+                place(TileTypes.MUSIC, m, y, cols - m, music)
+                place(tripType, m, y + music, cols - m, h - music, tripData)
+            } else {
+                val side = maxOf(3, rnd(cols * 0.3))
+                val mid = cols - 2 * side
+                val low = if (rows >= 5) 2 else 1
+                place(TileTypes.CAR, 0, 0, side, rows - low)
+                place(tripType, 0, rows - low, side, low, tripData)
+                place(TileTypes.SPEEDOMETER, side, 0, mid, rows, gauge, plain = true)
+                mapOr(TileTypes.CLOCK, side + mid, 0, side, rows - low)
+                place(TileTypes.MUSIC, side + mid, rows - low, side, low)
+            }
+        }
+        Template.DESIGN_ROUTE -> {
+            // El mapa es el fondo: el hueco libre más grande ([freeArea]) es donde vas tú y la guía pone sus tarjetas.
+            if (c.vertical) {
+                val s = cols / 2
+                val y = rows - 4
+                stack(STACK_DRIVE, 0, y, s, 4)
+                place(TileTypes.WEATHER, s, y, cols - s, 2)
+                place(TileTypes.MUSIC, s, y + 2, cols - s, 1)
+                place(TileTypes.SPEEDOMETER, s, y + 3, cols - s, 1, "style=digital")
+            } else {
+                val s = maxOf(3, rnd(cols * 0.25))
+                stack(STACK_DRIVE, 0, 0, s, up(rows * 0.55))
+                place(TileTypes.MUSIC, 0, rows - 1, maxOf(3, rnd(cols * 0.42)), 1)
+            }
+        }
+        Template.DESIGN_COLUMN -> when {
+            c.vertical -> {
+                place(TileTypes.CAR, 0, 0, cols, 3)
+                mapOr(TileTypes.CLOCK, 0, 3, cols, 4)
+                place(TileTypes.MUSIC, 0, 7, cols, 2)
+                val s = if (cols >= 6) (cols + 1).floorDiv(2) - 1 else cols / 2
+                place(TileTypes.SPEEDOMETER, 0, 9, s, rows - 9)
+                place(TileTypes.WEATHER, s, 9, cols - s, rows - 9)
+            }
+            ultra -> {
+                val w = rnd(cols * 0.3)
+                val cw = rnd(cols * 0.47)
+                val top = (rows + 1).floorDiv(2)
+                place(TileTypes.MUSIC, 0, 0, w, 2)
+                mapOr(TileTypes.CLOCK, 0, 2, w, rows - 2)
+                place(TileTypes.CAR, w, 0, cw, rows)
+                place(TileTypes.SPEEDOMETER, w + cw, 0, cols - w - cw, top)
+                place(TileTypes.WEATHER, w + cw, top, cols - w - cw, rows - top)
+            }
+            else -> {
+                val w = maxOf(4, rnd(cols * 0.36))
+                val weather = if (rows >= 6) 2 else 1
+                place(TileTypes.MUSIC, 0, 0, w, 2)
+                mapOr(TileTypes.CLOCK, 0, 2, w, rows - 2 - weather)
+                place(TileTypes.WEATHER, 0, rows - weather, w, weather)
+                place(TileTypes.CAR, w, 0, cols - w, rows)
+            }
+        }
+        Template.DESIGN_NEON -> {
+            val gauge = "rim=neon;color=cyan"
+            if (c.vertical) {
+                place(TileTypes.CLOCK, 0, 0, cols, 2, plain = true)
+                place(TileTypes.SPEEDOMETER, 0, 2, cols, 4, gauge, plain = true)
+                mapOr(TileTypes.WEATHER, 0, 6, cols, rows - 8)
+                val s = rnd(cols * 0.57)
+                place(TileTypes.MUSIC, 0, rows - 2, s, 2)
+                place(TileTypes.WEATHER, s, rows - 2, cols - s, 2)
+            } else {
+                val side = maxOf(3, rnd(cols * 0.3))
+                val mid = cols - 2 * side
+                val top = if (rows >= 5) 2 else 1
+                val low = if (rows >= 6) 2 else 1
+                place(TileTypes.CLOCK, 0, 0, side, top, plain = true)
+                place(TileTypes.MUSIC, 0, top, side, rows - top)
+                place(TileTypes.SPEEDOMETER, side, 0, mid, rows, gauge, plain = true)
+                mapOr(TileTypes.RADIO, side + mid, 0, side, rows - low)
+                place(TileTypes.WEATHER, side + mid, rows - low, side, low)
+            }
+        }
+        Template.DESIGN_SAND -> {
+            if (c.vertical) {
+                place(TileTypes.CLOCK, 0, 0, cols, 2, plain = true)
+                place(TileTypes.CAR, 0, 2, cols, 4)
+                place(TileTypes.MUSIC, 0, 6, cols, 2)
+                val w = maxOf(3, cols - 4)
+                place(TileTypes.WEATHER, 0, 8, w, rows - 8)
+                mapOr(tripType, w, 8, cols - w, rows - 8, tripData)
+            } else {
+                val side = maxOf(3, rnd(cols * 0.28))
+                val mid = cols - 2 * side
+                val top = if (rows >= 5) 2 else 1
+                val low = if (rows >= 5) 2 else 1
+                place(TileTypes.CLOCK, 0, 0, side, top, plain = true)
+                place(TileTypes.WEATHER, 0, top, side, minOf(2, rows - top))
+                if (rows - top - 2 >= 1) place(tripType, 0, top + 2, side, rows - top - 2, tripData)
+                place(TileTypes.CAR, side, 0, mid, rows - low)
+                place(TileTypes.MUSIC, side, rows - low, mid, low)
+                mapOr(TileTypes.RADIO, side + mid, 0, cols - side - mid, rows)
+            }
+        }
+        Template.DESIGN_FOREST -> when {
+            c.vertical -> {
+                mapOr(TileTypes.CLOCK, 0, 0, cols, 5)
+                place(TileTypes.CAR, 0, 5, cols, 3)
+                val s = rnd(cols * 0.57)
+                stack(STACK_AUDIO, 0, 8, s, rows - 8)
+                place(TileTypes.WEATHER, s, 8, cols - s, rows - 8)
+            }
+            ultra -> {
+                val m = rnd(cols * 0.47)
+                val a = rnd(cols * 0.32)
+                val top = up(rows * 0.66)
+                mapOr(TileTypes.CLOCK, 0, 0, m, rows)
+                place(TileTypes.CAR, m, 0, a, rows)
+                stack(STACK_AUDIO, m + a, 0, cols - m - a, top)
+                place(TileTypes.WEATHER, m + a, top, cols - m - a, rows - top)
+            }
+            else -> {
+                val m = rnd(cols * 0.5)
+                val rest = cols - m
+                val s = maxOf(3, (rest + 1).floorDiv(2))
+                mapOr(TileTypes.CLOCK, 0, 0, m, rows)
+                place(TileTypes.CAR, m, 0, rest, rows - strip)
+                stack(STACK_AUDIO, m, rows - strip, s, strip)
+                place(TileTypes.WEATHER, m + s, rows - strip, rest - s, strip)
+            }
+        }
         Template.MAP_CAR -> {
             // Del lado del conductor el auto y la música; el resto (~55 %), el mapa.
             val side = maxOf(3, cols - (cols * 0.55f + 0.5f).toInt())
@@ -597,6 +851,11 @@ fun Template.layout(c: Grid, hero: String = TileTypes.CAR, skip: (String) -> Boo
     }
     return list
 }
+
+// Las caras de las Pilas de los Diseños, en orden.
+private val STACK_CAR = listOf(TileTypes.MUSIC, TileTypes.CAR, TileTypes.TIRES)
+private val STACK_DRIVE = listOf(TileTypes.CAR, TileTypes.TIRES, TileTypes.MUSIC)
+private val STACK_AUDIO = listOf(TileTypes.MUSIC, TileTypes.RADIO)
 
 /**
  * El acomodo que mejor luce en esta pantalla (en celdas de plantilla: [Grid.coarse]). El auto 3D sigue de protagonista al

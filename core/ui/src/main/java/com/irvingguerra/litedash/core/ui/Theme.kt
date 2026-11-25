@@ -189,6 +189,10 @@ val LightColors = Colors(
 
 val LocalColors = staticCompositionLocalOf { DarkColors }
 
+/** Los colores de un tema ([dark]) con el realce y las tarjetas elegidos (null = los suyos): los de [LiteDashTheme]. */
+fun themeColors(dark: Boolean, accent: Color?, cards: Color?): Colors =
+    (if (dark) DarkColors else LightColors).withAccent(accent).withCards(cards)
+
 /**
  * Un bloque que resalta dentro de una tarjeta (la opción elegida, un campo, una ficha): liso en una tarjeta lisa y,
  * dentro del vidrio (ahí [Colors.surfaceHigh] ya es translúcido, ver [contentColors]), translúcido como lo demás.
@@ -219,7 +223,7 @@ object Radius {
 @Composable
 fun LiteDashTheme(dark: Boolean = true, scale: Float = 1f, accent: Color? = null, cards: Color? = null, content: @Composable () -> Unit) {
     val d = LocalDensity.current
-    val colors = remember(dark, accent, cards) { (if (dark) DarkColors else LightColors).withAccent(accent).withCards(cards) }
+    val colors = remember(dark, accent, cards) { themeColors(dark, accent, cards) }
     CompositionLocalProvider(
         LocalColors provides colors,
         LocalDensity provides Density(d.density * scale, d.fontScale),

@@ -28,6 +28,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.irvingguerra.litedash.core.ui.Button
 import com.irvingguerra.litedash.core.ui.Card
 import com.irvingguerra.litedash.core.ui.Icon
 import com.irvingguerra.litedash.core.ui.Label
@@ -38,7 +39,10 @@ import com.irvingguerra.litedash.feature.dashboard.Grid
 import com.irvingguerra.litedash.feature.dashboard.ScreenSize
 import com.irvingguerra.litedash.feature.dashboard.Template
 import com.irvingguerra.litedash.feature.dashboard.Tile
+import com.irvingguerra.litedash.feature.dashboard.DESIGN_TEMPLATES
 import com.irvingguerra.litedash.feature.dashboard.hasCar
+import com.irvingguerra.litedash.feature.dashboard.isDesign
+import com.irvingguerra.litedash.feature.dashboard.mapBackground
 import com.irvingguerra.litedash.feature.dashboard.TileTypes
 import com.irvingguerra.litedash.feature.dashboard.coarse
 import com.irvingguerra.litedash.feature.dashboard.freeArea
@@ -65,6 +69,9 @@ fun nameOf(p: Template) = when (p) {
     Template.ROUTE -> R.string.template_route
     Template.VERTICAL_MAP -> R.string.template_vertical_map
     Template.MAP_BACKGROUND -> R.string.template_map_background
+    // Los de los Diseños se llaman como su Diseño.
+    Template.DESIGN_GRAPHITE, Template.DESIGN_CLOUD, Template.DESIGN_TRACK, Template.DESIGN_ROUTE, Template.DESIGN_COLUMN,
+    Template.DESIGN_NEON, Template.DESIGN_SAND, Template.DESIGN_FOREST -> DESIGNS.first { it.template == p }.name
 }
 
 /** Para pantallas paradas o acostadas: las de acostadas se acomodan a cualquier tamaño (de 7" a 12"). */
@@ -74,16 +81,18 @@ private fun Template.fits(vertical: Boolean) = if (vertical) ScreenSize.VERTICAL
 private val MAP_TEMPLATES = listOf(Template.MAP_BACKGROUND, Template.MAP_CAR, Template.COPILOT, Template.ROUTE, Template.VERTICAL_MAP)
 
 /**
- * Estilos de plantilla (una pestaña cada uno): con el auto 3D, con el mapa de protagonista,
- * con la carretera en lugar del auto ([hero]), solo velocímetro (sin OBD: usa el GPS) o para
- * lucir tu fondo, como BYD (ahí va la Mínima: hora y música, sin velocímetro).
+ * Estilos de acomodo (una pestaña cada uno): con el auto 3D, con el mapa de protagonista,
+ * con la carretera en lugar del auto ([hero]), solo velocímetro (sin OBD: usa el GPS), para
+ * lucir tu fondo, como BYD (ahí va la Mínima: hora y música, sin velocímetro), o los de los Diseños (solo su acomodo,
+ * sin sus colores ni su fondo).
  */
 private enum class TemplateTab(val title: Int, val templates: List<Template>, val hero: String = TileTypes.CAR) {
-    CAR(R.string.templates_tab_car, Template.entries.filter { it.hasCar && it !in MAP_TEMPLATES }),
+    CAR(R.string.templates_tab_car, Template.entries.filter { it.hasCar && it !in MAP_TEMPLATES && !it.isDesign }),
     MAP(R.string.templates_tab_map, MAP_TEMPLATES),
     ROAD(R.string.templates_tab_road, listOf(Template.MAP_CAR, Template.CARDS, Template.CENTER, Template.CAR_SPEED, Template.SPORT, Template.VERTICAL), TileTypes.ROAD),
     SPEED(R.string.templates_tab_speed, listOf(Template.SPEED, Template.SPEED_WIDGETS)),
     WALLPAPER(R.string.templates_tab_wallpaper, listOf(Template.WALL_CARDS, Template.WALL_SIDE, Template.MINIMAL)),
+    DESIGNS(R.string.templates_tab_designs, DESIGN_TEMPLATES),
 }
 
 /**
@@ -92,11 +101,12 @@ private enum class TemplateTab(val title: Int, val templates: List<Template>, va
  * pestaña sin ninguna para tu pantalla no sale.
  */
 @Composable
-fun TemplatesPanel(dashboard: DashboardState, close: () -> Unit) {
+fun TemplatesPanel(dashboard: DashboardState, close: () -> Unit, onDesigns: () -> Unit) {
     val grid = dashboard.grid ?: return
     val c = LocalColors.current
     val suggested = grid.coarse.suggestedTemplate()
-    PanelScaffold(stringResource(R.string.templates), close) {
+    // Arriba, los Diseños (el acomodo con sus colores y su fondo).
+    PanelScaffold(stringResource(R.string.templates), close, header = { Button(stringResource(R.string.designs), onDesigns) }) {
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(24.dp)) {
             Label(stringResource(R.string.templates_help), Typography.body, c.textMuted)
             val shownTabs = TemplateTab.entries.filter { t -> t.templates.any { it.fits(grid.vertical) } }
@@ -114,6 +124,7 @@ fun TemplatesPanel(dashboard: DashboardState, close: () -> Unit) {
                 TemplateTab.ROAD -> Label(stringResource(R.string.templates_road_help), Typography.small, c.textMuted)
                 TemplateTab.SPEED -> Label(stringResource(R.string.templates_speed_help), Typography.small, c.textMuted)
                 TemplateTab.WALLPAPER -> Label(stringResource(R.string.templates_wallpaper_help), Typography.small, c.textMuted)
+                TemplateTab.DESIGNS -> Label(stringResource(R.string.templates_designs_help), Typography.small, c.textMuted)
                 TemplateTab.CAR -> Unit
             }
             // Cada plantilla armada una vez por pestaña (para no repetir y para su miniatura).
@@ -123,7 +134,7 @@ fun TemplatesPanel(dashboard: DashboardState, close: () -> Unit) {
                 for (p in templates) {
                     Card(Modifier.width(260.dp), onClick = { apply(p) }) {
                         Column(Modifier.padding(16.dp)) {
-                            TemplateThumbnail(layouts.getValue(p), grid, tab.hero, mapBackground = p == Template.MAP_BACKGROUND)
+                            TemplateThumbnail(layouts.getValue(p), grid, tab.hero, mapBackground = p.mapBackground)
                             Spacer(Modifier.height(12.dp))
                             Label(stringResource(nameOf(p)), Typography.subtitle, maxLines = 1)
                             if (tab == TemplateTab.CAR && p == suggested) {

@@ -840,10 +840,8 @@ fun WallpaperSettings(prefs: Preferences) {
     val c = LocalColors.current
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    // Cuál de los de LiteDash está puesto (un archivo junto al fondo: elegir tu foto o quitarlo lo borra).
-    val marker = remember { File(context.filesDir, "wallpaper.id") }
     var chosen by remember { mutableStateOf<String?>(null) }
-    LaunchedEffect(WALLPAPER.version) { chosen = withContext(Dispatchers.IO) { marker.takeIf { it.exists() }?.readText()?.trim() } }
+    LaunchedEffect(WALLPAPER.version) { chosen = withContext(Dispatchers.IO) { liteDashWallpaper(context) } }
     val choices by produceState<List<WallpaperChoice>?>(null) { value = loadWallpapers(context) }
     var downloading by remember { mutableStateOf<String?>(null) }
     var failed by remember { mutableStateOf(false) }
@@ -865,20 +863,11 @@ fun WallpaperSettings(prefs: Preferences) {
                         .clickable(enabled = downloading == null && !selected) {
                             downloading = w.id
                             failed = false
+                            // Elegido a mano: el fondo de un Diseño que esperaba internet ya no se pone solo.
+                            prefs.designWallpaper = null
                             scope.launch {
-                                // Termina aunque se cierre Ajustes: el archivo ya cambió y el inicio debe enterarse.
-                                withContext(NonCancellable) {
-                                    val ok = WALLPAPER.lock.withLock {
-                                        downloadWallpaper(context, w.id, WALLPAPER.file(context)).also { ok ->
-                                            if (ok) {
-                                                withContext(Dispatchers.IO) { writeMarker(marker, w.id) }
-                                                WALLPAPER.bump()
-                                            }
-                                        }
-                                    }
-                                    failed = !ok
-                                    downloading = null
-                                }
+                                failed = !putLiteDashWallpaper(context, w.id)
+                                downloading = null
                             }
                         },
                 ) {
@@ -895,8 +884,9 @@ fun WallpaperSettings(prefs: Preferences) {
         Label(stringResource(R.string.wallpaper_own), Typography.label, c.textMuted)
     }
     val forget: suspend () -> Unit = {
-        withContext(Dispatchers.IO) { marker.delete() }
+        withContext(Dispatchers.IO) { wallpaperMarker(context).delete() }
         chosen = null
+        prefs.designWallpaper = null
     }
     if (imageButtons(WALLPAPER, busy = downloading != null, onPicked = { forget() }, onRemoved = forget) == true) WallpaperDim(prefs)
 }
@@ -916,6 +906,90 @@ private fun writeMarker(marker: File, id: String) {
         marker.writeText(id)
     } catch (e: IOException) {
         Log.w(LOG_TAG, "No se pudo anotar el fondo $id", e)
+    }
+}
+
+/** Cuál de los fondos de LiteDash está puesto: un archivo junto al fondo (elegir tu foto o quitarlo lo borra). */
+private fun wallpaperMarker(context: Context) = File(context.filesDir, "wallpaper.id")
+
+/** El id del fondo de LiteDash que está puesto; null = tu foto o ninguno. Solo en IO. */
+internal fun liteDashWallpaper(context: Context): String? = try {
+    wallpaperMarker(context).takeIf { it.exists() }?.readText()?.trim()?.ifEmpty { null }
+} catch (e: IOException) {
+    Log.w(LOG_TAG, "No se pudo leer cuál fondo está puesto", e)
+    null
+}
+
+/**
+ * Pone el fondo de LiteDash [id]: lo baja de litedash.dev y reemplaza el de ahora solo si llegó completo (como si fuera tu
+ * foto). Termina aunque se cierre quien lo pidió (el inicio debe enterarse). false si no se pudo (sin internet). Desde el
+ * hilo principal.
+ */
+internal suspend fun putLiteDashWallpaper(context: Context, id: String): Boolean = withContext(NonCancellable) {
+    WALLPAPER.lock.withLock {
+        downloadWallpaper(context, id, WALLPAPER.file(context)).also { ok ->
+            if (ok) {
+                withContext(Dispatchers.IO) { writeMarker(wallpaperMarker(context), id) }
+                WALLPAPER.bump()
+            }
+        }
+    }
+}
+
+/** El fondo de antes de un Diseño: si había imagen ([had], copiada en [WALLPAPER_UNDO]) y cuál de LiteDash era ([id]). */
+internal class WallpaperBackup(val had: Boolean, val id: String?)
+
+/** La copia del fondo para «Deshacer» un Diseño (en files: sobrevive a cerrar la app). */
+private const val WALLPAPER_UNDO = "wallpaper.undo.jpg"
+
+/**
+ * Copia el fondo de ahora para poder regresarlo ([restoreWallpaper]). null si no se pudo copiar: entonces no se debe
+ * cambiar el fondo (se perdería). Desde el hilo principal.
+ */
+internal suspend fun backupWallpaper(context: Context): WallpaperBackup? = withContext(NonCancellable) {
+    WALLPAPER.lock.withLock {
+        withContext(Dispatchers.IO) {
+            val file = WALLPAPER.file(context)
+            try {
+                if (file.exists()) replaceFile(File(context.filesDir, WALLPAPER_UNDO)) { file.copyTo(it, overwrite = true) }
+                WallpaperBackup(file.exists(), liteDashWallpaper(context))
+            } catch (e: IOException) {
+                Log.w(LOG_TAG, "No se pudo copiar el fondo para deshacer", e)
+                null
+            }
+        }
+    }
+}
+
+/** Regresa el fondo de [b] (su copia vuelve a ser el fondo; si no había, el fondo se quita). Desde el hilo principal. */
+internal suspend fun restoreWallpaper(context: Context, b: WallpaperBackup) = withContext(NonCancellable) {
+    WALLPAPER.lock.withLock {
+        withContext(Dispatchers.IO) {
+            val file = WALLPAPER.file(context)
+            val copy = File(context.filesDir, WALLPAPER_UNDO)
+            when {
+                !b.had -> file.delete()
+                // Sin la copia (no debería pasar) se queda el que está.
+                copy.exists() && !copy.renameTo(file) -> Log.w(LOG_TAG, "No se pudo regresar el fondo")
+            }
+            val marker = wallpaperMarker(context)
+            if (b.id != null) writeMarker(marker, b.id) else marker.delete()
+        }
+        WALLPAPER.bump()
+    }
+}
+
+/**
+ * Sin fondo de imagen (queda el resplandor del tema): lo que pone un Diseño mientras su fondo espera internet. Solo
+ * después de [backupWallpaper] (si no, se perdería tu foto). Desde el hilo principal.
+ */
+internal suspend fun clearWallpaper(context: Context) = withContext(NonCancellable) {
+    WALLPAPER.lock.withLock {
+        withContext(Dispatchers.IO) {
+            WALLPAPER.file(context).delete()
+            wallpaperMarker(context).delete()
+        }
+        WALLPAPER.bump()
     }
 }
 

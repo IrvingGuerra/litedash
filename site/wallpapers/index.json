@@ -10,6 +10,13 @@
     {"id": "luna-dunas", "credit": "NPS · Great Sand Dunes"},
     {"id": "curvas-de-nivel", "credit": "LiteDash"},
     {"id": "niebla-valle", "credit": "Ted Moravec (CC0)"},
-    {"id": "bruma-clara", "credit": "LiteDash"}
+    {"id": "bruma-clara", "credit": "LiteDash"},
+    {"id": "grafito-haz", "credit": "LiteDash"},
+    {"id": "nube-perla", "credit": "LiteDash"},
+    {"id": "pista-carbon", "credit": "LiteDash"},
+    {"id": "columna-acero", "credit": "LiteDash"},
+    {"id": "neon-noche", "credit": "LiteDash"},
+    {"id": "arena-calida", "credit": "LiteDash"},
+    {"id": "bosque-profundo", "credit": "LiteDash"}
   ]
 }

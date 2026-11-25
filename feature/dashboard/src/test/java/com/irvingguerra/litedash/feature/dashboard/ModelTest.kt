@@ -40,8 +40,9 @@ class ModelTest {
 
     @Test
     fun everyTemplateHasCar() {
-        // Menos las que son a propósito sin auto.
-        for (c in screens) for (p in Template.entries.filter { it.hasCar }) {
+        // Menos las que son a propósito sin auto. Los Diseños son para pantallas de auto: en el teléfono chico pueden
+        // no tenerlo (su especificación es la de DesignLayoutsTest).
+        for (p in Template.entries.filter { it.hasCar }) for (c in if (p.isDesign) carScreens else screens) {
             assertTrue("$p en ${c.key}", p.layout(c).any { it.type == TileTypes.CAR })
         }
     }
@@ -82,11 +83,12 @@ class ModelTest {
     @Test
     fun widgetsKeepTheirSizesOnTheirScreens() {
         // En las pantallas de auto (no el teléfono) para las que es cada plantilla:
-        // auto de 3×2 o más; música y radio de 3 de ancho y hasta 3 filas.
+        // auto de 3×2 o más; música y radio de 3 de ancho y hasta 3 filas (los Diseños llevan a propósito la música alta:
+        // Neón, Pista de pie).
         for (c in carScreens) for (p in Template.entries.filter { c.size in it.sizes }) for (tile in p.layout(c)) {
             when (tile.type) {
                 TileTypes.CAR -> assertTrue("$p en ${c.key}: $tile", tile.width >= 3 && tile.height >= 2)
-                TileTypes.MUSIC, TileTypes.RADIO -> assertTrue("$p en ${c.key}: $tile", tile.width >= 3 && tile.height <= 3)
+                TileTypes.MUSIC, TileTypes.RADIO -> assertTrue("$p en ${c.key}: $tile", tile.width >= 3 && (p.isDesign || tile.height <= 3))
             }
         }
     }

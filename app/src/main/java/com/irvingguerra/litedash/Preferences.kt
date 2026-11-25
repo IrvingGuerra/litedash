@@ -46,6 +46,9 @@ internal object PrefKeys {
     /** Cuánto se oscurece (o aclara) tu fondo de pantalla en el inicio (0–[MAX_WALLPAPER_DIM]). */
     const val WALLPAPER_DIM = "wallpaper_dim"
     const val CAR_MODEL = "car_model"
+    const val DESIGN = "design"
+    const val DESIGN_UNDO = "design_undo"
+    const val DESIGN_WALLPAPER = "design_wallpaper"
     const val WELCOME_SEEN = "welcome_seen"
     const val WELCOME_STEP = "welcome_step"
     const val DONT_ASK_HOME = "dont_ask_home"
@@ -384,10 +387,19 @@ private class Stored<T>(initial: T, private val save: (T) -> Unit) : ReadWritePr
 class Preferences(context: Context) {
     private val p = context.getSharedPreferences(PrefKeys.FILE, Context.MODE_PRIVATE)
 
+    /** Es la primera vez que se abre LiteDash aquí (no una actualización): lo de fábrica nuevo solo va para ellos. */
+    val freshInstall = isFreshInstall(p.contains(PrefKeys.WELCOME_SEEN), p.contains(PrefKeys.DOCK))
+
     init {
-        // Instalación nueva: tus favoritas de la barra empiezan vacías (antes se sugerían las instaladas, y quien
-        // ya tenía LiteDash las conserva).
-        if (!p.contains(PrefKeys.WELCOME_SEEN) && !p.contains(PrefKeys.DOCK)) p.edit { putString(PrefKeys.DOCK, "") }
+        if (freshInstall) p.edit {
+            // Tus favoritas de la barra empiezan vacías (antes se sugerían las instaladas, y quien ya tenía LiteDash las
+            // conserva).
+            putString(PrefKeys.DOCK, "")
+            // Arranca con el Diseño de fábrica (sus colores ya son los de fábrica; su fondo se baja cuando haya internet).
+            // Quien actualiza no ve nada distinto.
+            putString(PrefKeys.DESIGN, FACTORY_DESIGN.id)
+            FACTORY_DESIGN.wallpaper?.let { putString(PrefKeys.DESIGN_WALLPAPER, it) }
+        }
     }
 
     private fun bool(key: String, default: Boolean) = Stored(p.getBoolean(key, default)) { p.edit { putBoolean(key, it) } }
@@ -495,6 +507,15 @@ class Preferences(context: Context) {
 
     /** Id del auto del catálogo que se muestra; null = el sedán genérico. */
     var carModel by string(PrefKeys.CAR_MODEL)
+
+    /** El último Diseño que se aplicó ([Design.id]); null = ninguno (quien ya tenía LiteDash antes de los Diseños). */
+    var design by string(PrefKeys.DESIGN)
+
+    /** Lo de antes del último Diseño, para «Deshacer» ([DesignUndo]); null = no hay qué deshacer. */
+    var designUndo by string(PrefKeys.DESIGN_UNDO)
+
+    /** El fondo de LiteDash de un Diseño que espera internet para bajarse (solo una vez); null = ninguno. */
+    var designWallpaper by string(PrefKeys.DESIGN_WALLPAPER)
 
     var welcomeSeen by bool(PrefKeys.WELCOME_SEEN, false)
 

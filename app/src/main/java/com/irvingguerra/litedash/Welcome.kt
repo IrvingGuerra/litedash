@@ -54,6 +54,7 @@ import com.irvingguerra.litedash.core.ui.blockTouches
 import com.irvingguerra.litedash.feature.car.CarDrawing
 import com.irvingguerra.litedash.feature.dashboard.DashboardState
 import com.irvingguerra.litedash.feature.dashboard.Template
+import com.irvingguerra.litedash.feature.dashboard.isDesign
 import com.irvingguerra.litedash.feature.dashboard.size
 import com.irvingguerra.litedash.feature.dashboard.coarse
 import com.irvingguerra.litedash.feature.dashboard.suggestedTemplate
@@ -194,8 +195,10 @@ private fun StyleStep(prefs: Preferences, dashboard: DashboardState) {
     Label(stringResource(R.string.layout), Typography.label, c.textMuted)
     Spacer(Modifier.height(12.dp))
     val grid = dashboard.grid
-    // Los acomodos que lucen en esta pantalla, el recomendado primero.
-    val options = grid?.coarse?.let { c -> listOf(c.suggestedTemplate()) + Template.entries.filter { c.size in it.sizes } }
+    // Los acomodos que lucen en esta pantalla, el puesto (el del Diseño de fábrica) o el recomendado primero. Los demás de
+    // los Diseños no: se eligen con su Diseño.
+    val first = dashboard.pageTemplate
+    val options = grid?.coarse?.let { c -> listOf(first ?: c.suggestedTemplate()) + Template.entries.filter { c.size in it.sizes && !it.isDesign } }
         ?.distinct().orEmpty()
     // Marcado el que ya está puesto (al entrar, el recomendado de fábrica): el mismo acomodo, sin importar los ids.
     val shown = dashboard.shown

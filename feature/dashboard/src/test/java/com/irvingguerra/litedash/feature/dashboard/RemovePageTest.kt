@@ -15,6 +15,7 @@ class RemovePageTest {
             put("page_layout_${p}_6x8", "page$p-vertical")
             put("page_saved_at_${p}_8x6", p.toLong())
             put("page_background_$p", "bg$p")
+            put("page_template_$p", "T$p")
         }
     }
 
@@ -36,6 +37,8 @@ class RemovePageTest {
         assertEquals("page3-vertical", after["page_layout_2_6x8"])
         assertEquals(3L, after["page_saved_at_2_8x6"])
         assertEquals("bg3", after["page_background_2"])
+        // Y la plantilla que se le puso.
+        assertEquals("T3", after["page_template_2"])
         assertEquals("page4", after["page_layout_3_8x6"])
         assertEquals("bg4", after["page_background_3"])
         // De la última (ya copiada) no queda nada.

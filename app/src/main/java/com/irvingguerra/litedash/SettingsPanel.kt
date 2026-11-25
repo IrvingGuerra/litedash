@@ -86,6 +86,8 @@ fun SettingsPanel(
     close: () -> Unit,
     onEdit: () -> Unit,
     onTemplates: () -> Unit,
+    /** El panel Diseños (Inicio y apariencia → Inicio → Diseño). */
+    onDesigns: () -> Unit,
     /** El panel Agregar del inicio (Inicio y apariencia → Inicio → Agregar widget). */
     onAddTile: () -> Unit,
     start: SettingsSection = SettingsSection.CAR,
@@ -126,7 +128,7 @@ fun SettingsPanel(
                         LocalGuidePill.current?.invoke()
                     }
                     when (section) {
-                        SettingsSection.APPEARANCE -> Appearance(d, revision, onEdit, onTemplates, onAddTile)
+                        SettingsSection.APPEARANCE -> Appearance(d, revision, onEdit, onTemplates, onDesigns, onAddTile)
                         SettingsSection.CAR -> CarSettings(d)
                         SettingsSection.APPS -> AppsSettings(d, requestMap = {
                             openMapRequest()

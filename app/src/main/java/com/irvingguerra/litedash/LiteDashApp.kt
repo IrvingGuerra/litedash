@@ -85,6 +85,8 @@ class LiteDashApp : Application() {
         music.speedUnknown = { bus.value(Signal.SPEED) == null }
         val cars = CarRepository(this, BuildConfig.CATALOG_URL)
         val layouts = DashboardStore(this)
+        // Instalación nueva: la primera página con el acomodo del Diseño de fábrica (quien actualiza sigue igual).
+        if (prefs.freshInstall && layouts.template(0) == null) layouts.setTemplate(0, FACTORY_DESIGN.template)
         prefs.adoptWidgetApps(layouts)
         Dependencies(
             apps = AppRepository(this).apply { opener = SplitScreen::open },

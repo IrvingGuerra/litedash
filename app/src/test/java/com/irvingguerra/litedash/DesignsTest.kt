@@ -1,0 +1,113 @@
+package com.irvingguerra.litedash
+
+import androidx.compose.ui.graphics.toArgb
+import com.irvingguerra.litedash.core.ui.CardEdge
+import com.irvingguerra.litedash.core.ui.CardStyle
+import com.irvingguerra.litedash.core.ui.MIN_OPACITY
+import com.irvingguerra.litedash.feature.car.CarColors
+import com.irvingguerra.litedash.feature.dashboard.DESIGN_TEMPLATES
+import com.irvingguerra.litedash.feature.dashboard.Grid
+import com.irvingguerra.litedash.feature.dashboard.PageBackground
+import com.irvingguerra.litedash.feature.dashboard.PageSnapshot
+import com.irvingguerra.litedash.feature.dashboard.Template
+import com.irvingguerra.litedash.feature.map.MapLook
+import com.irvingguerra.litedash.feature.map.MapOrientation
+import com.irvingguerra.litedash.feature.map.MapPalettes
+import com.irvingguerra.litedash.feature.map.MapZoom
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
+import org.junit.Test
+
+class DesignsTest {
+    /** Lo de fábrica de toda la app (lo de una instalación nueva). */
+    private val factory = DesignLook(ThemeMode.DARK, null, null, CardStyle.GLASS, MIN_OPACITY, CardEdge.NONE, null, BarStyle.FLOATING, CarColors[0].toArgb())
+
+    /** Lo de alguien que ya personalizó todo. */
+    private val mine = DesignLook(ThemeMode.LIGHT, 0xFF30D158.toInt(), 0xFF1F4FD8.toInt(), CardStyle.GLASS, 0.8f, CardEdge.BOLD, "orientation=heading;zoom=mid;flow=off", BarStyle.FULL, 0xFF123456.toInt())
+
+    @Test
+    fun eightDesignsWithTheirOwnLayoutsAndGraphiteFirst() {
+        assertEquals(8, DESIGNS.size)
+        assertEquals(DESIGN_TEMPLATES, DESIGNS.map { it.template })
+        assertEquals(DESIGNS.size, DESIGNS.map { it.id }.toSet().size)
+        assertEquals("graphite", FACTORY_DESIGN.id)
+        // Todos con su fondo de litedash.dev menos Ruta (su fondo es el mapa).
+        assertEquals(listOf("route"), DESIGNS.filter { it.wallpaper == null }.map { it.id })
+    }
+
+    @Test
+    fun graphiteIsWhatANewInstallAlreadyHas() {
+        // Lo de fábrica ya es Grafito: arrancar con él no cambia ningún color.
+        assertTrue(FACTORY_DESIGN.matches(factory, ownCar = false))
+        assertEquals(factory, FACTORY_DESIGN.over(factory, ownCar = false))
+    }
+
+    @Test
+    fun freshInstallOnlyTheFirstTime() {
+        assertTrue(isFreshInstall(sawWelcome = false, hasDock = false))
+        // Quien actualiza ya tiene alguno de los dos: no se le aplica nada.
+        assertFalse(isFreshInstall(sawWelcome = true, hasDock = false))
+        assertFalse(isFreshInstall(sawWelcome = false, hasDock = true))
+        assertFalse(isFreshInstall(sawWelcome = true, hasDock = true))
+    }
+
+    @Test
+    fun applyingKeepsTheMapUsageAndYourCatalogCar() {
+        val track = designOf("track")!!
+        val after = track.over(mine, ownCar = true)
+        assertEquals(ThemeMode.DARK, after.theme)
+        assertEquals(0xFFFF453A.toInt(), after.accent)
+        assertNull(after.cards)
+        assertEquals(CardEdge.NONE, after.cardEdge)
+        // Del mapa solo la paleta y el estilo; la orientación, el zoom y la ruta quieta se quedan.
+        val map = MapLook.parse(after.mapLook!!)
+        // Pista: el mapa grafito de su galería.
+        assertEquals(MapPalettes.CUSTOM, map.palette)
+        assertEquals(0x1A1D22, map.custom)
+        assertEquals(MapOrientation.HEADING, map.orientation)
+        assertEquals(MapZoom.MID, map.zoom)
+        assertFalse(map.flow)
+        // Con modelo del catálogo el auto no se toca; sin él, su color.
+        assertEquals(mine.carColor, after.carColor)
+        assertEquals(track.carColor.toArgb(), track.over(mine, ownCar = false).carColor)
+        assertTrue(track.matches(after, ownCar = true))
+        assertFalse(track.matches(mine, ownCar = true))
+    }
+
+    @Test
+    fun undoBringsBackExactlyWhatThereWas() {
+        val page = PageSnapshot(2, Grid(40, 13), "music-0\tmusic\t0\t0\t8\t4\t\t\ncar-1\tcar\t8\t0\t8\t4\tid=evo\t1", PageBackground.MAP, Template.MAP_BACKGROUND)
+        for (design in DESIGNS) for (wallpaper in listOf(null, WallpaperBackup(true, "aurora"), WallpaperBackup(false, null))) {
+            val undo = DesignUndo("cloud", mine, page, "applied\tlayout", wallpaper, pending = "nube-perla")
+            val back = DesignUndo.decode(undo.encode())!!
+            assertEquals(undo.design, back.design)
+            assertEquals(mine, back.look)
+            assertEquals(page, back.page)
+            assertEquals(undo.applied, back.applied)
+            assertEquals(wallpaper?.had, back.wallpaper?.had)
+            assertEquals(wallpaper?.id, back.wallpaper?.id)
+            assertEquals("nube-perla", back.pending)
+            // Aplicar y luego deshacer: lo de toda la app queda idéntico.
+            val applied = design.over(mine, ownCar = false)
+            assertEquals(mine, DesignUndo("x", mine, page, "", null).let { DesignUndo.decode(it.encode())!!.look })
+            assertTrue(applied != mine)
+        }
+        // Lo de fábrica (sin colores ni mapa propios) también regresa igual.
+        val clean = DesignUndo.decode(DesignUndo(null, factory, page.copy(template = null, background = PageBackground.WALLPAPER), "", null).encode())!!
+        assertEquals(factory, clean.look)
+        assertNull(clean.design)
+        assertNull(clean.page.template)
+        assertNull(clean.wallpaper)
+        assertNull(clean.pending)
+    }
+
+    @Test
+    fun damagedUndoIsIgnored() {
+        assertNull(DesignUndo.decode(null))
+        assertNull(DesignUndo.decode(""))
+        assertNull(DesignUndo.decode("{"))
+        assertNull(DesignUndo.decode("{\"theme\":\"dark\"}"))
+    }
+}

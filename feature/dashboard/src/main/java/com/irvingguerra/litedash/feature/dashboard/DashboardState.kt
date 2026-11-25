@@ -136,7 +136,9 @@ class DashboardState(private val store: DashboardStore) {
      */
     private fun load(c: Grid, p: Int): List<Tile> =
         savedLayoutFor(c, store.grids(p), { store.read(it, p) }, { store.savedAt(it, p) })?.fittedTo(c)
-            // Una página nueva empieza vacía; solo la primera trae la plantilla recomendada.
+            // Sin acomodo guardado, la plantilla que se le puso; si no, una página nueva empieza vacía y solo la primera
+            // trae la recomendada.
+            ?: store.template(p)?.let { fromTemplate(c, it) }
             ?: if (p == 0) suggested(c) else emptyList()
 
     /** [adaptTo] con las que se ven primero: las de un módulo apagado no le quitan lugar a ninguna. */
@@ -167,20 +169,46 @@ class DashboardState(private val store: DashboardStore) {
      * (otra escala u otra pantalla).
      */
     fun template(p: Template, hero: String = TileTypes.CAR) {
-        // La del mapa de fondo no es pieza grande: no cambia la de las otras plantillas.
-        if (p != Template.MAP_BACKGROUND) store.saveHero(hero)
+        // Las de mapa de fondo y las de los Diseños no eligen pieza grande: no cambian la de las otras plantillas.
+        if (!p.mapBackground && !p.isDesign) store.saveHero(hero)
         grid?.let { change(p.tiles(it, hero, hidden)) }
-        // La plantilla decide el fondo de la página: «Mapa de fondo» pone el mapa y cualquier otra lo quita (si no, el
-        // mapa de fondo quedaba debajo de widgets que lo tapan, o junto a un widget Mapa).
-        val wanted = if (p == Template.MAP_BACKGROUND) PageBackground.MAP else PageBackground.WALLPAPER
+        // Las otras cuadrículas de esta página sin acomodo guardado se arman con ella.
+        store.setTemplate(page, p)
+        // La plantilla decide el fondo de la página: las de mapa de fondo ponen el mapa y cualquier otra lo quita (si no,
+        // el mapa de fondo quedaba debajo de widgets que lo tapan, o junto a un widget Mapa).
+        val wanted = if (p.mapBackground) PageBackground.MAP else PageBackground.WALLPAPER
         if (background != wanted) setBackground(page, wanted)
     }
 
-    /** La plantilla recomendada para [c], con la pieza grande que se eligió la última vez. */
-    private fun suggested(c: Grid): List<Tile> {
-        val (hero, data) = store.hero()
-        return c.coarse.suggestedTemplate().tiles(c, hero, hidden).map { if (it.type == hero && data.isNotEmpty()) it.copy(data = data) else it }
+    /** La plantilla que se puso en la página que se ve (null = ninguna: la de fábrica). */
+    val pageTemplate: Template? get() = store.template(page)
+
+    /** La página que se ve tal como está ([restore] la regresa así): su acomodo en esta cuadrícula, su fondo y su plantilla. */
+    fun snapshot(): PageSnapshot? = grid?.let { PageSnapshot(page, it, formatLayout(tiles), background, store.template(page)) }
+
+    /** Regresa la página de [s] como estaba (su acomodo en esa cuadrícula, su fondo y su plantilla). */
+    fun restore(s: PageSnapshot) {
+        if (s.page !in 0 until pageCount) return
+        val restored = parseLayout(s.layout)
+        store.save(s.grid, restored, s.page)
+        store.setTemplate(s.page, s.template)
+        setBackground(s.page, s.background)
+        pageTiles.remove(s.page)
+        val c = grid
+        if (s.page == page && c != null) tiles = if (c == s.grid) restored else load(c, page)
     }
+
+    /** ¿La página [page] sigue con [layout] en [c] (nadie la movió desde entonces)? */
+    fun unchanged(page: Int, c: Grid, layout: String): Boolean = store.layoutText(c, page) == layout
+
+    /** La plantilla [t] en [c], con la pieza grande que se eligió la última vez (los Diseños siempre con el auto). */
+    private fun fromTemplate(c: Grid, t: Template): List<Tile> {
+        val (hero, data) = if (t.isDesign) TileTypes.CAR to "" else store.hero()
+        return t.tiles(c, hero, hidden).map { if (it.type == hero && data.isNotEmpty()) it.copy(data = data) else it }
+    }
+
+    /** La plantilla recomendada para [c], con la pieza grande que se eligió la última vez. */
+    private fun suggested(c: Grid): List<Tile> = fromTemplate(c, c.coarse.suggestedTemplate())
 
     /**
      * Agrega una pieza del [size] pedido en el primer hueco; si no cabe, prueba
@@ -205,6 +233,17 @@ class DashboardState(private val store: DashboardStore) {
         if (updates.isEmpty()) return
         val after = tiles.withData(updates)
         if (after != tiles) change(after)
+    }
+}
+
+/**
+ * Una página como estaba ([DashboardState.snapshot]): su número, la cuadrícula, su acomodo ahí (el texto que guarda
+ * [DashboardStore]), su fondo y su plantilla.
+ */
+data class PageSnapshot(val page: Int, val grid: Grid, val layout: String, val background: PageBackground, val template: Template?) {
+    companion object {
+        /** La cuadrícula de su clave ("20x10"); null si no lo es. */
+        fun grid(key: String): Grid? = parseGrid(key)
     }
 }
 

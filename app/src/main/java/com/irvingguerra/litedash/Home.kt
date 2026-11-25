@@ -75,6 +75,7 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.Dp
@@ -147,8 +148,11 @@ sealed interface Panel {
     data object Report : Panel
     /** Ajustes abiertos en Inicio y apariencia (en su pestaña Idioma y unidades), al volver de cambiar el idioma. */
     data object Language : Panel
+    /** Ajustes abiertos en Inicio y apariencia → Interfaz («Personalizar» en Diseños). */
+    data object Appearance : Panel
     data object AddTile : Panel
     data object Templates : Panel
+    data object Designs : Panel
     /** El fondo de pantalla del inicio (botón "Fondo" al acomodar). */
     data object Wallpaper : Panel
     /** Lo de la barra de apps (botón "Barra" al acomodarla): agregar botones y apps, posición, tamaño, estilo. */
@@ -873,6 +877,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                                 weather = d.weather,
                                 onAdd = { panel = Panel.AddTile },
                                 onTemplates = { panel = Panel.Templates },
+                                onDesigns = { panel = Panel.Designs },
                                 onWallpaper = { panel = Panel.Wallpaper },
                                 onFinish = { editing = false },
                                 pages = d.dashboard,
@@ -980,8 +985,11 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                                         if (calm) d.updates?.Banner(onOpen = { openAbout(); panel = Panel.Updates })
                                         val newModel = d.cars.outdated?.takeIf { it.id == car?.id }
                                         if (calm && car != null && newModel != null) CarUpdateNotice(d.cars, car, newModel)
+                                        if (calm) DesignAppliedNotice(d)
                                     }
                                 }
+                                // El fondo de un Diseño que espera internet: se baja una vez cuando haya red.
+                                PendingDesignWallpaper(d.prefs)
                             }
                             if (barBelow) bar(false)
                         }
@@ -1015,13 +1023,14 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
             CompositionLocalProvider(LocalGuidePill provides guidePill) { FitShort {
                 when (p) {
                     Panel.Drawer -> DrawerPanel(d, apps, close = { panel = null })
-                    Panel.Settings, Panel.Updates, Panel.Report, Panel.Language, Panel.Workshop, Panel.AppsSettings, Panel.TiresSettings, Panel.PhoneSettings -> SettingsPanel(
+                    Panel.Settings, Panel.Updates, Panel.Report, Panel.Language, Panel.Appearance, Panel.Workshop, Panel.AppsSettings, Panel.TiresSettings, Panel.PhoneSettings -> SettingsPanel(
                         d,
                         revision = revision,
                         close = { panel = null },
                         // Acomodar cierra lo que esté en grande (si no, el tablero ni se ve).
                         onEdit = { panel = null; expanded = null; editing = true },
                         onTemplates = { panel = Panel.Templates },
+                        onDesigns = { panel = Panel.Designs },
                         onAddTile = { panel = Panel.AddTile },
                         start = when (p) {
                             Panel.Updates, Panel.Report -> SettingsSection.SYSTEM
@@ -1029,12 +1038,16 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                             Panel.AppsSettings -> SettingsSection.APPS
                             Panel.TiresSettings -> SettingsSection.TIRES
                             Panel.PhoneSettings -> SettingsSection.PHONE
-                            Panel.Language -> SettingsSection.APPEARANCE
+                            Panel.Language, Panel.Appearance -> SettingsSection.APPEARANCE
                             else -> SettingsSection.CAR
                         },
                         onTires = { panel = null; tiresLayer.open = true },
                     )
-                    Panel.Templates -> TemplatesPanel(d.dashboard, close = { panel = null })
+                    Panel.Templates -> TemplatesPanel(d.dashboard, close = { panel = null }, onDesigns = { panel = Panel.Designs })
+                    Panel.Designs -> DesignsPanel(d, close = { panel = null }, onCustomize = {
+                        openInterfaceSettings()
+                        panel = Panel.Appearance
+                    })
                     Panel.BarSettings -> BarSettingsPanel(d, apps, close = { panel = null })
                     Panel.Wallpaper -> PanelScaffold(
                         if (d.dashboard.pageCount > 1) stringResource(R.string.page_background_title, d.dashboard.page + 1) else stringResource(R.string.wallpaper_title),
@@ -1228,6 +1241,9 @@ fun dockFavorites(d: Dependencies, apps: List<App>): List<App> {
 private fun topBarHeight() = if (isShortScreen()) 44.dp else 64.dp
 private val TOP_BAR_HIDDEN = 12.dp
 
+/** Ancho de ventana desde el que «Diseños» va también en la barra de acomodar. */
+private val DESIGNS_IN_BAR = 1100.dp
+
 @Composable
 private fun TopBar(
     editing: Boolean,
@@ -1236,6 +1252,7 @@ private fun TopBar(
     weather: WeatherRepository,
     onAdd: () -> Unit,
     onTemplates: () -> Unit,
+    onDesigns: () -> Unit,
     onWallpaper: () -> Unit,
     onFinish: () -> Unit,
     pages: DashboardState,
@@ -1280,6 +1297,10 @@ private fun TopBar(
                 }
             }
             Button(stringResource(R.string.wallpaper_button), onWallpaper)
+            // Diseños junto a Acomodos solo si sobra lugar (si no, las páginas y el título no caben); siempre está en el
+            // encabezado de Acomodos.
+            val window = LocalWindowInfo.current.containerSize.width
+            if (with(LocalDensity.current) { window.toDp() } >= DESIGNS_IN_BAR) Button(stringResource(R.string.designs), onDesigns)
             Button(stringResource(R.string.templates), onTemplates)
             Button(stringResource(R.string.add), onAdd)
             Button(stringResource(R.string.done), onFinish, primary = true)
