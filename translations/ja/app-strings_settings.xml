@@ -12,6 +12,10 @@
     <string name="cards_glass">ガラス</string>
     <string name="cards_opacity">見え方</string>
     <string name="cards_glass_help">壁紙が各カードの後ろにぼかして表示されます。地図の背景では、地図が控えめに表示されます。</string>
+    <string name="cards_edge">光の縁</string>
+    <string name="cards_edge_none">なし</string>
+    <string name="cards_edge_thin">細い</string>
+    <string name="cards_edge_bold">太い</string>
     <string name="cards_themes">組み合わせ</string>
     <string name="language_search">言語を検索</string>
     <string name="language_not_found">その言語はまだありません。litedash.dev/translate で翻訳にご協力ください。</string>

@@ -12,6 +12,10 @@
     <string name="cards_glass">Kính</string>
     <string name="cards_opacity">Mức hiển thị</string>
     <string name="cards_glass_help">Hình nền của bạn hiện mờ phía sau mỗi thẻ; trên nền bản đồ, bản đồ hiện dịu đi.</string>
+    <string name="cards_edge">Viền sáng</string>
+    <string name="cards_edge_none">Không</string>
+    <string name="cards_edge_thin">Mảnh</string>
+    <string name="cards_edge_bold">Đậm</string>
     <string name="cards_themes">Phối màu</string>
     <string name="language_search">Tìm ngôn ngữ của bạn</string>
     <string name="language_not_found">Chưa có ngôn ngữ này. Hãy giúp chúng tôi dịch tại litedash.dev/translate.</string>

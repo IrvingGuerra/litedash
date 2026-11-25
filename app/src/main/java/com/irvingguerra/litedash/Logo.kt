@@ -63,6 +63,8 @@ import androidx.compose.ui.draw.clip
 import com.irvingguerra.litedash.core.ui.LocalCardLook
 import com.irvingguerra.litedash.core.ui.CardStyle
 import com.irvingguerra.litedash.core.ui.CardLook
+import com.irvingguerra.litedash.core.ui.GLASS_GUARD
+import com.irvingguerra.litedash.core.ui.GLASS_LIFT
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.FilterQuality
@@ -76,6 +78,7 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
@@ -582,11 +585,13 @@ fun rememberWallpaperBackdrop(wanted: Boolean, dim: () -> Float): CardBackdrop? 
     // Se calcula una vez por valor, no en cada dibujo.
     val currentDim by rememberUpdatedState(dim)
     return remember(b, c, floor) {
-        val extreme = if (c.dark) b.light else b.shade
+        // Con margen ([GLASS_GUARD]): detrás del cristal tu fondo va más claro que afuera y una mancha brillante pesa más.
+        val extreme = if (c.dark) lerp(b.light, Color.White, GLASS_GUARD) else lerp(b.shade, Color.Black, GLASS_GUARD)
         var lastDim = Float.NaN
         var veil = 0f
         CardBackdrop(b.image) {
-            val base = maxOf(currentDim(), floor)
+            // Detrás del cristal tu fondo va menos oscurecido que afuera ([GLASS_LIFT]): la tarjeta se ve con luz propia.
+            val base = maxOf(currentDim(), floor) * GLASS_LIFT
             if (base != lastDim) {
                 lastDim = base
                 veil = glassVeil(c, extreme, base)
@@ -621,7 +626,7 @@ private const val CANVAS_VEIL = 0.62f
 internal fun globalLook(look: CardLook): CardLook {
     if (look.backdrop == null && look.clear) return look
     lastGlobal?.let { (from, to) -> if (from === look) return to }
-    return CardLook(look.style, look.opacity).also { lastGlobal = look to it }
+    return CardLook(look.style, look.opacity, edge = look.edge).also { lastGlobal = look to it }
 }
 
 private var lastGlobal: Pair<CardLook, CardLook>? = null

@@ -266,7 +266,8 @@ fun Card(
     val look = LocalCardLook.current
     val plain = LocalPlainCard.current
     val shape = RoundedCornerShape(Radius.card)
-    var m = modifier.clip(shape).then(if (plain) Modifier else Modifier.skinSurface(look, c, shape))
+    var m = modifier.then(if (plain) Modifier else Modifier.glassShadow(look, c.dark, Radius.card))
+        .clip(shape).then(if (plain) Modifier else Modifier.skinSurface(look, c, shape))
     if (onClick != null) m = m.clickable(onClick = onClick)
     // Una vez por tema y piel, no en cada dibujo (un valor nuevo haría releer los colores a todo lo de adentro).
     val inner = remember(c, look.style, plain) { contentColors(c, look, plain) }

@@ -12,6 +12,10 @@
     <string name="cards_glass">Vetro</string>
     <string name="cards_opacity">Quanto si vedono</string>
     <string name="cards_glass_help">Il tuo sfondo si vede sfocato dietro ogni scheda; sopra la mappa di sfondo, la mappa si vede attenuata.</string>
+    <string name="cards_edge">Bordo luminoso</string>
+    <string name="cards_edge_none">Nessuno</string>
+    <string name="cards_edge_thin">Sottile</string>
+    <string name="cards_edge_bold">Marcato</string>
     <string name="cards_themes">Combinazioni</string>
     <string name="language_search">Cerca la tua lingua</string>
     <string name="language_not_found">Questa lingua non c\'è ancora. Aiutaci a tradurla su litedash.dev/translate.</string>
