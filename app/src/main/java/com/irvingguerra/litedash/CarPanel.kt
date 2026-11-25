@@ -25,7 +25,7 @@ import com.irvingguerra.litedash.core.ui.Typography
 @Composable
 fun CustomizeCarPanel(d: Dependencies, tileId: String, close: () -> Unit) {
     val c = LocalColors.current
-    val tile = d.dashboard.tiles.firstOrNull { it.id == tileId }
+    val tile = d.dashboard.tile(tileId)
     if (tile == null) {
         // Cerrar escribe estado: fuera de la composición.
         LaunchedEffect(Unit) { close() }

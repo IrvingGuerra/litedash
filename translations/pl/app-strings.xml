@@ -522,6 +522,13 @@
     <string name="tile_clock_help">Godzina, data i pogoda</string>
     <string name="tile_phone_help">Otwiera telefon lub wybraną aplikację do dzwonienia</string>
     <string name="tile_app_help">Dowolna zainstalowana aplikacja na jedno dotknięcie</string>
+    <string name="tile_stack">Stos</string>
+    <string name="tile_stack_help">Kilka widżetów w jednym miejscu: przesuń lub dotknij kropek, aby zmienić</string>
+    <string name="stack_help">Widać jeden naraz, od 2 do 5. Dotknij, aby go pokazać.</string>
+    <string name="stack_add">Dodaj do stosu</string>
+    <string name="stack_show">Pokaż: %1$s</string>
+    <string name="stack_move_up">Przenieś wyżej</string>
+    <string name="stack_move_down">Przenieś niżej</string>
     <string name="logo_intro_help">Przy otwarciu LiteDash składa się logo LiteDash albo przez kilka sekund widać Twój obraz (np. logo marki). To osobno od widżetów obrazu.</string>
     <string name="intro_no_image">Bez obrazu składa się logo LiteDash.</string>
     <string name="unit_kml">km/l</string>

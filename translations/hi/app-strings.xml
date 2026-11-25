@@ -509,6 +509,13 @@
     <string name="tile_clock_help">समय, तारीख और मौसम</string>
     <string name="tile_phone_help">डायलर या आपका चुना कॉलिंग ऐप खोलता है</string>
     <string name="tile_app_help">कोई भी इंस्टॉल किया ऐप, एक टैप दूर</string>
+    <string name="tile_stack">स्टैक</string>
+    <string name="tile_stack_help">एक ही जगह कई विजेट: बदलने के लिए स्वाइप करें या बिंदुओं पर टैप करें</string>
+    <string name="stack_help">एक बार में एक दिखता है, 2 से 5 तक। दिखाने के लिए किसी पर टैप करें।</string>
+    <string name="stack_add">स्टैक में जोड़ें</string>
+    <string name="stack_show">%1$s दिखाएँ</string>
+    <string name="stack_move_up">ऊपर ले जाएँ</string>
+    <string name="stack_move_down">नीचे ले जाएँ</string>
     <string name="logo_intro_help">LiteDash खुलने पर LiteDash लोगो खुद बनता है या आपकी इमेज (जैसे आपके ब्रांड का लोगो) कुछ सेकंड दिखती है। यह इमेज विजेट से अलग है।</string>
     <string name="intro_no_image">इमेज न हो तो LiteDash लोगो खुद बनता है।</string>
     <string name="unit_kml">km/L</string>

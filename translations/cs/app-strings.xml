@@ -522,6 +522,13 @@
     <string name="tile_clock_help">Čas, datum a počasí</string>
     <string name="tile_phone_help">Otevře vytáčení nebo aplikaci pro hovory, kterou vybereš</string>
     <string name="tile_app_help">Jakákoli nainstalovaná aplikace na jedno klepnutí</string>
+    <string name="tile_stack">Sada</string>
+    <string name="tile_stack_help">Několik widgetů na jednom místě: přepínej přejetím nebo klepnutím na tečky</string>
+    <string name="stack_help">Vždy je vidět jeden, 2 až 5. Klepnutím ho zobrazíš.</string>
+    <string name="stack_add">Přidat do sady</string>
+    <string name="stack_show">Zobrazit %1$s</string>
+    <string name="stack_move_up">Posunout nahoru</string>
+    <string name="stack_move_down">Posunout dolů</string>
     <string name="logo_intro_help">Při otevření LiteDash se na pár sekund poskládá logo LiteDash nebo se zobrazí tvůj obrázek (třeba logo tvé značky). Je to nezávislé na widgetech obrázku.</string>
     <string name="intro_no_image">Bez obrázku se poskládá logo LiteDash.</string>
     <string name="unit_kml">km/l</string>

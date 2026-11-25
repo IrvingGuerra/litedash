@@ -939,7 +939,7 @@ fun IntroSettings(prefs: Preferences) {
 @Composable
 fun CustomizeImagePanel(d: Dependencies, tileId: String, close: () -> Unit) {
     val c = LocalColors.current
-    val tile = d.dashboard.tiles.firstOrNull { it.id == tileId }
+    val tile = d.dashboard.tile(tileId)
     if (tile == null) {
         LaunchedEffect(Unit) { close() }
         return

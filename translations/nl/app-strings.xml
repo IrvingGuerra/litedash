@@ -512,6 +512,13 @@
     <string name="tile_clock_help">Tijd, datum en weer</string>
     <string name="tile_phone_help">Opent de kiezer of de bel-app die je kiest</string>
     <string name="tile_app_help">Elke geïnstalleerde app, één tik verwijderd</string>
+    <string name="tile_stack">Stapel</string>
+    <string name="tile_stack_help">Meerdere widgets op één plek: veeg of tik op de puntjes om te wisselen</string>
+    <string name="stack_help">Er is er steeds één te zien, 2 tot 5. Tik op een widget om hem te tonen.</string>
+    <string name="stack_add">Aan stapel toevoegen</string>
+    <string name="stack_show">%1$s tonen</string>
+    <string name="stack_move_up">Omhoog</string>
+    <string name="stack_move_down">Omlaag</string>
     <string name="logo_intro_help">Als LiteDash opent, bouwt het LiteDash-logo zich op of verschijnt je afbeelding (zoals het logo van je merk) een paar seconden. Het staat los van de afbeeldingswidgets.</string>
     <string name="intro_no_image">Zonder afbeelding bouwt het LiteDash-logo zich op.</string>
     <string name="unit_kml">km/L</string>

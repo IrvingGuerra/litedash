@@ -26,15 +26,7 @@ import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.foundation.gestures.awaitEachGesture
-import androidx.compose.foundation.gestures.awaitFirstDown
-import androidx.compose.foundation.gestures.awaitTouchSlopOrCancellation
-import androidx.compose.foundation.gestures.horizontalDrag
-import androidx.compose.ui.input.pointer.pointerInput
-import kotlin.math.abs
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -63,6 +55,7 @@ import com.irvingguerra.litedash.core.ui.CardStyle
 import com.irvingguerra.litedash.core.ui.TilePadding
 import com.irvingguerra.litedash.core.ui.Segmented
 import com.irvingguerra.litedash.core.ui.Typography
+import com.irvingguerra.litedash.core.ui.horizontalSwipe
 
 // Partes que comparten la pieza de música y la música en grande.
 
@@ -203,7 +196,7 @@ internal fun MediaTile(
     val check = repo.soundCheckFor(piece)
     // Sin controles (sin permiso), con la pregunta del sonido a la vista o con anterior/siguiente apagados en las
     // opciones del widget ("solo play/pausa"), no se desliza.
-    val swipe = Modifier.swipeToSkip(onNext.takeIf { skip && permission && check == null }, onPrevious)
+    val swipe = Modifier.horizontalSwipe(onNext.takeIf { skip && permission && check == null }, onPrevious)
     Card(modifier.fillMaxSize().then(swipe), onClick = onOpen.takeIf { permission }) {
         if (!permission) return@Card NoPermission(repo, icon, title, explain)
         if (check != null) {
@@ -267,39 +260,6 @@ internal fun MediaTile(
         }
     }
 }
-
-/**
- * Deslizar a lo ancho = pasar de canción como una carátula (idea #14): a la izquierda la siguiente, a la derecha la
- * anterior, desde [SWIPE_MIN]. Solo si empieza antes del "dejar presionado" (acomodar el widget) y va más a lo ancho
- * que a lo alto; un toque sigue siendo toque. Sin [onNext] o [onPrevious], nada. El gesto no se reinicia al
- * cambiar las acciones: siempre llama las últimas.
- */
-@Composable
-internal fun Modifier.swipeToSkip(onNext: (() -> Unit)?, onPrevious: (() -> Unit)?): Modifier {
-    val next by rememberUpdatedState(onNext)
-    val previous by rememberUpdatedState(onPrevious)
-    if (onNext == null || onPrevious == null) return this
-    return pointerInput(Unit) {
-        val min = SWIPE_MIN.toPx()
-        awaitEachGesture {
-            val down = awaitFirstDown(requireUnconsumed = false)
-            val start = withTimeoutOrNull(viewConfiguration.longPressTimeoutMillis) {
-                awaitTouchSlopOrCancellation(down.id) { change, over -> if (abs(over.x) > abs(over.y)) change.consume() }
-            } ?: return@awaitEachGesture
-            var last = start.position
-            val ended = horizontalDrag(start.id) {
-                it.consume()
-                last = it.position
-            }
-            val dx = last.x - down.position.x
-            if (!ended || abs(dx) < min) return@awaitEachGesture
-            if (dx < 0) next?.invoke() else previous?.invoke()
-        }
-    }
-}
-
-/** Lo que hay que deslizar para pasar de canción. */
-private val SWIPE_MIN = 64.dp
 
 /**
  * Con Archivos, play sin nada que tocar llama [open] (abre la biblioteca) mientras [enabled]. El inicio
@@ -468,12 +428,12 @@ internal fun ColumnScope.NowPlaying(
     icon: ImageVector,
     detailsHeight: Dp,
     title: @Composable (Modifier, compact: Boolean) -> Unit,
-    /** Deslizar sobre la carátula: siguiente y anterior ([swipeToSkip]; null = no se desliza). */
+    /** Deslizar sobre la carátula: siguiente y anterior ([horizontalSwipe]: siguiente a la izquierda; null = no se desliza). */
     onNext: (() -> Unit)? = null,
     onPrevious: (() -> Unit)? = null,
     controls: @Composable ColumnScope.(ControlsFit) -> Unit,
 ) {
-    val artModifier = Modifier.swipeToSkip(onNext, onPrevious)
+    val artModifier = Modifier.horizontalSwipe(onNext, onPrevious)
     BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
         val width = maxWidth
         val height = maxHeight

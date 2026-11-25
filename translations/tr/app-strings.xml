@@ -512,6 +512,13 @@
     <string name="tile_clock_help">Saat, tarih ve hava durumu</string>
     <string name="tile_phone_help">Tuş takımını veya seçtiğiniz arama uygulamasını açar</string>
     <string name="tile_app_help">Kurulu herhangi bir uygulama, tek dokunuş uzağınızda</string>
+    <string name="tile_stack">Yığın</string>
+    <string name="tile_stack_help">Aynı yerde birkaç widget: değiştirmek için kaydırın veya noktalara dokunun</string>
+    <string name="stack_help">Aynı anda biri görünür, 2 ile 5 arası. Göstermek için birine dokunun.</string>
+    <string name="stack_add">Yığına ekle</string>
+    <string name="stack_show">%1$s göster</string>
+    <string name="stack_move_up">Yukarı taşı</string>
+    <string name="stack_move_down">Aşağı taşı</string>
     <string name="logo_intro_help">LiteDash açıldığında LiteDash logosu kendiliğinden oluşur veya görseliniz (markanızın logosu gibi) birkaç saniye görünür. Görsel widget’larından ayrıdır.</string>
     <string name="intro_no_image">Görsel yoksa LiteDash logosu kendiliğinden oluşur.</string>
     <string name="unit_kml">km/L</string>

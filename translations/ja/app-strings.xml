@@ -507,6 +507,13 @@
     <string name="tile_clock_help">時刻、日付、天気</string>
     <string name="tile_phone_help">電話アプリ、または選んだ通話アプリを開きます</string>
     <string name="tile_app_help">インストール済みのアプリをワンタップで</string>
+    <string name="tile_stack">スタック</string>
+    <string name="tile_stack_help">複数のウィジェットを同じ場所に：スワイプかドットをタップで切り替え</string>
+    <string name="stack_help">一度に1つ表示、2〜5個。タップで表示します。</string>
+    <string name="stack_add">スタックに追加</string>
+    <string name="stack_show">%1$sを表示</string>
+    <string name="stack_move_up">上へ</string>
+    <string name="stack_move_down">下へ</string>
     <string name="logo_intro_help">LiteDash の起動時に、LiteDash のロゴが組み上がるか、あなたの画像（ブランドロゴなど）が数秒表示されます。画像ウィジェットとは別の設定です。</string>
     <string name="intro_no_image">画像がない場合は、LiteDash のロゴが組み上がります。</string>
     <string name="unit_kml">km/L</string>

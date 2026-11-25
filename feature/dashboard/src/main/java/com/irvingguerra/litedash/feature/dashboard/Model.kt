@@ -215,6 +215,8 @@ object TileTypes {
     /** Presión de las cuatro llantas (módulo de llantas). */
     const val TIRES = "tires"
     const val APP = "app"
+    /** La Pila: varios widgets en el mismo lugar, uno a la vista ([Stack]; [Tile.data] guarda sus caras). */
+    const val STACK = "stack"
 }
 
 /** Sin fondo de tarjeta siempre: el auto, la carretera y la imagen flotan sobre el inicio. */

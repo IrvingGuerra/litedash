@@ -512,6 +512,13 @@
     <string name="tile_clock_help">Uhrzeit, Datum und Wetter</string>
     <string name="tile_phone_help">Öffnet die Telefon-App oder die Anruf-App deiner Wahl</string>
     <string name="tile_app_help">Jede installierte App, nur einen Tipp entfernt</string>
+    <string name="tile_stack">Stapel</string>
+    <string name="tile_stack_help">Mehrere Widgets an einem Platz: wischen oder auf die Punkte tippen zum Wechseln</string>
+    <string name="stack_help">Es ist immer eines zu sehen, 2 bis 5. Tippe auf eines, um es anzuzeigen.</string>
+    <string name="stack_add">Zum Stapel hinzufügen</string>
+    <string name="stack_show">%1$s anzeigen</string>
+    <string name="stack_move_up">Nach oben</string>
+    <string name="stack_move_down">Nach unten</string>
     <string name="logo_intro_help">Beim Öffnen von LiteDash baut sich das LiteDash-Logo auf oder dein Bild (etwa das Logo deiner Marke) erscheint ein paar Sekunden. Unabhängig von den Bild-Widgets.</string>
     <string name="intro_no_image">Ohne Bild baut sich das LiteDash-Logo auf.</string>
     <string name="unit_kml">km/L</string>

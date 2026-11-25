@@ -507,6 +507,13 @@
     <string name="tile_clock_help">时间、日期和天气</string>
     <string name="tile_phone_help">打开拨号器或你选择的通话应用</string>
     <string name="tile_app_help">任意已安装的应用，一键打开</string>
+    <string name="tile_stack">堆叠</string>
+    <string name="tile_stack_help">多个小组件放在同一位置：滑动或点按圆点切换</string>
+    <string name="stack_help">一次显示一个，2 到 5 个。点按即可显示。</string>
+    <string name="stack_add">添加到堆叠</string>
+    <string name="stack_show">显示%1$s</string>
+    <string name="stack_move_up">上移</string>
+    <string name="stack_move_down">下移</string>
     <string name="logo_intro_help">LiteDash 打开时，LiteDash 标志会自行拼出，或显示你的图片（比如品牌标志）几秒钟。它与图片小组件相互独立。</string>
     <string name="intro_no_image">没有图片时，LiteDash 标志会自行拼出。</string>
     <string name="unit_kml">km/L</string>

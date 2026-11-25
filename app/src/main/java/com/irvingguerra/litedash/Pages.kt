@@ -96,23 +96,13 @@ internal fun rememberPageSwipe(pages: DashboardState, shift: Animatable<Float, *
  */
 @Composable
 internal fun PageDots(pages: DashboardState, modifier: Modifier = Modifier) {
-    val c = LocalColors.current
     Box(modifier, contentAlignment = Alignment.Center) {
         Row(
             Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
             horizontalArrangement = Arrangement.spacedBy(7.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            for (i in 0 until pages.pageCount) {
-                val on = i == pages.page
-                Box(
-                    Modifier
-                        .height(6.dp)
-                        .width(if (on) 18.dp else 6.dp)
-                        .clip(CircleShape)
-                        .background(if (on) c.text else c.textMuted.copy(alpha = 0.6f)),
-                )
-            }
+            for (i in 0 until pages.pageCount) Dot(i == pages.page)
         }
         // Las zonas de toque, sobre los puntitos y en el mismo orden (sin cambiar cómo se ven). Empiezan arriba de su franja
         // y crecen solo hacia ABAJO, fuera del tablero (la barra, dibujada encima, gana en sus botones): nunca tapan la
@@ -138,6 +128,19 @@ internal fun PageDots(pages: DashboardState, modifier: Modifier = Modifier) {
 }
 
 private val DOT_TOUCH_WIDTH = 40.dp
+
+/** Un puntito de páginas o de la Pila: el de la que se ve, alargado. */
+@Composable
+internal fun Dot(on: Boolean) {
+    val c = LocalColors.current
+    Box(
+        Modifier
+            .height(6.dp)
+            .width(if (on) 18.dp else 6.dp)
+            .clip(CircleShape)
+            .background(if (on) c.text else c.textMuted.copy(alpha = 0.6f)),
+    )
+}
 private val DOT_TOUCH_HEIGHT = 32.dp
 
 /**

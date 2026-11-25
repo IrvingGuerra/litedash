@@ -517,6 +517,13 @@
     <string name="tile_clock_help">Ora, data și vremea</string>
     <string name="tile_phone_help">Deschide tastatura telefonului sau aplicația de apeluri aleasă</string>
     <string name="tile_app_help">Orice aplicație instalată, la o atingere distanță</string>
+    <string name="tile_stack">Teanc</string>
+    <string name="tile_stack_help">Mai multe widgeturi în același loc: glisează sau atinge punctele ca să schimbi</string>
+    <string name="stack_help">Se vede unul odată, între 2 și 5. Atinge unul ca să-l afișezi.</string>
+    <string name="stack_add">Adaugă în teanc</string>
+    <string name="stack_show">Afișează %1$s</string>
+    <string name="stack_move_up">Mută în sus</string>
+    <string name="stack_move_down">Mută în jos</string>
     <string name="logo_intro_help">Când se deschide LiteDash, sigla LiteDash se construiește sau imaginea ta (cum ar fi sigla mărcii) apare câteva secunde. E separat de widgeturile de imagine.</string>
     <string name="intro_no_image">Fără imagine, sigla LiteDash se construiește singură.</string>
     <string name="unit_kml">km/L</string>

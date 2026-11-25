@@ -44,6 +44,12 @@ class DashboardState(private val store: DashboardStore) {
     /** Las piezas que se ven y se acomodan. */
     val shown: List<Tile> get() = tiles.filterNot { hidden(it.type) }
 
+    /** Lo que de verdad está a la vista: [shown] con cada Pila cambiada por su cara visible ([facesShown]). */
+    val inView: List<Tile> get() = shown.facesShown(hidden)
+
+    /** La pieza o la cara de una Pila con ese id (de esta página), o null. */
+    fun tile(id: String): Tile? = tiles.withFaces().firstOrNull { it.id == id }
+
     /** La pantalla (o la escala) cambió: carga el acomodo de ese tamaño o una plantilla. */
     fun use(c: Grid) {
         if (c != grid) {
@@ -54,13 +60,14 @@ class DashboardState(private val store: DashboardStore) {
     }
 
     /**
-     * Las piezas de todas las páginas en esta cuadrícula (las otras, como quedaron o leídas una vez): para lo que vale
-     * para todo el inicio, como no soltar la foto o la cámara de un widget que solo está en otra página.
+     * Las piezas de todas las páginas en esta cuadrícula (las otras, como quedaron o leídas una vez), con las caras de las
+     * Pilas: para lo que vale para todo el inicio, como no soltar la foto o la cámara de un widget que solo está en otra
+     * página o en otra cara.
      */
     val allTiles: List<Tile>
         get() {
-            val c = grid ?: return tiles
-            return (0 until pageCount).flatMap { p -> if (p == page) tiles else pageTiles.getOrPut(p) { load(c, p) } }
+            val c = grid ?: return tiles.withFaces()
+            return (0 until pageCount).flatMap { p -> if (p == page) tiles else pageTiles.getOrPut(p) { load(c, p) } }.withFaces()
         }
 
     /** Cambia los datos de las piezas de todas las páginas: [update] da los nuevos de una pieza (null = igual). */
@@ -190,14 +197,14 @@ class DashboardState(private val store: DashboardStore) {
         return false
     }
 
-    fun setData(id: String, data: String) {
-        tiles.firstOrNull { it.id == id }?.let { change(tiles.replace(it.copy(data = data))) }
-    }
+    /** Cambia los datos de una pieza o de una cara de una Pila. */
+    fun setData(id: String, data: String) = changeData(mapOf(id to data))
 
-    /** Cambia los datos de varias piezas ([updates]: id → datos) con una sola escritura. */
+    /** Cambia los datos de varias piezas o caras ([updates]: id → datos) con una sola escritura (ninguna si nada cambia). */
     fun changeData(updates: Map<String, String>) {
         if (updates.isEmpty()) return
-        change(tiles.map { t -> updates[t.id]?.let { t.copy(data = it) } ?: t })
+        val after = tiles.withData(updates)
+        if (after != tiles) change(after)
     }
 }
 

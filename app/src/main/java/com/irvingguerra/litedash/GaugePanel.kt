@@ -39,6 +39,7 @@ import com.irvingguerra.litedash.core.ui.Segmented
 import com.irvingguerra.litedash.core.ui.SwitchRow
 import com.irvingguerra.litedash.core.ui.Typography
 import com.irvingguerra.litedash.feature.dashboard.TileTypes
+import com.irvingguerra.litedash.feature.dashboard.withFaces
 import kotlinx.coroutines.delay
 
 /** Valores de muestra para la vista previa: sube, baja y llega a la zona roja. */
@@ -54,7 +55,7 @@ private val DEMO = listOf(0.18f, 0.52f, 0.86f, 0.34f, 0.97f, 0.62f)
 @Composable
 fun CustomizeGaugePanel(d: Dependencies, tileId: String, cardLook: CardLook, close: () -> Unit, onPickSignal: () -> Unit) {
     val c = LocalColors.current
-    val tile = d.dashboard.tiles.firstOrNull { it.id == tileId }
+    val tile = d.dashboard.tile(tileId)
     if (tile == null) {
         // Cerrar escribe estado: fuera de la composición.
         LaunchedEffect(Unit) { close() }
@@ -204,7 +205,7 @@ fun CustomizeGaugePanel(d: Dependencies, tileId: String, cardLook: CardLook, clo
                             // Mismo estilo en todos; cada uno conserva su dato y, los velocímetros, hasta dónde llegan
                             // (la carretera, además, cómo va su velocidad). Una sola escritura del acomodo para todos.
                             d.dashboard.changeData(
-                                d.dashboard.tiles
+                                d.dashboard.tiles.withFaces()
                                     .filter { it.type == TileTypes.SPEEDOMETER || it.type == TileTypes.GAUGE || it.type == TileTypes.ROAD }
                                     .associate {
                                         // Lo del frente solo va en los velocímetros y cada uno conserva su imagen (nunca dos

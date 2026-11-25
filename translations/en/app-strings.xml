@@ -528,6 +528,13 @@
     <string name="tile_clock_help">Time, date and weather</string>
     <string name="tile_phone_help">Opens the dialer or the calling app you choose</string>
     <string name="tile_app_help">Any installed app, one tap away</string>
+    <string name="tile_stack">Stack</string>
+    <string name="tile_stack_help">Several widgets in one spot: swipe or tap the dots to switch</string>
+    <string name="stack_help">One shows at a time, 2 to 5. Tap one to show it.</string>
+    <string name="stack_add">Add to the stack</string>
+    <string name="stack_show">Show %1$s</string>
+    <string name="stack_move_up">Move up</string>
+    <string name="stack_move_down">Move down</string>
     <string name="logo_intro_help">When LiteDash opens, the LiteDash logo builds itself or your image (like your brand\'s logo) shows for a few seconds. It\'s separate from the image widgets.</string>
     <string name="intro_no_image">Without an image, the LiteDash logo builds itself.</string>
     <string name="unit_kml">km/L</string>

@@ -522,6 +522,13 @@
     <string name="tile_clock_help">Время, дата и погода</string>
     <string name="tile_phone_help">Открывает набор номера или выбранное приложение для звонков</string>
     <string name="tile_app_help">Любое установленное приложение в одно нажатие</string>
+    <string name="tile_stack">Стопка</string>
+    <string name="tile_stack_help">Несколько виджетов в одном месте: листайте или нажмите на точки</string>
+    <string name="stack_help">Виден один, от 2 до 5. Нажмите, чтобы показать.</string>
+    <string name="stack_add">Добавить в стопку</string>
+    <string name="stack_show">Показать: %1$s</string>
+    <string name="stack_move_up">Выше</string>
+    <string name="stack_move_down">Ниже</string>
     <string name="logo_intro_help">При запуске LiteDash собирается логотип LiteDash или на несколько секунд показывается твоё изображение (например логотип марки). Это отдельно от виджетов-изображений.</string>
     <string name="intro_no_image">Без изображения собирается логотип LiteDash.</string>
     <string name="unit_kml">km/L</string>

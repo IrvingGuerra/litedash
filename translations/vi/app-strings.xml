@@ -507,6 +507,13 @@
     <string name="tile_clock_help">Giờ, ngày và thời tiết</string>
     <string name="tile_phone_help">Mở trình quay số hoặc ứng dụng gọi bạn chọn</string>
     <string name="tile_app_help">Bất kỳ ứng dụng đã cài, chỉ một lần nhấn</string>
+    <string name="tile_stack">Ngăn xếp</string>
+    <string name="tile_stack_help">Nhiều widget ở cùng một chỗ: vuốt hoặc chạm vào chấm để đổi</string>
+    <string name="stack_help">Mỗi lần hiện một, từ 2 đến 5. Chạm vào một cái để hiện nó.</string>
+    <string name="stack_add">Thêm vào ngăn xếp</string>
+    <string name="stack_show">Hiện %1$s</string>
+    <string name="stack_move_up">Lên trên</string>
+    <string name="stack_move_down">Xuống dưới</string>
     <string name="logo_intro_help">Khi LiteDash mở, logo LiteDash tự dựng lên hoặc ảnh của bạn (như logo hãng xe) hiện vài giây. Độc lập với các tiện ích ảnh.</string>
     <string name="intro_no_image">Không có ảnh, logo LiteDash sẽ tự dựng lên.</string>
     <string name="unit_kml">km/L</string>
