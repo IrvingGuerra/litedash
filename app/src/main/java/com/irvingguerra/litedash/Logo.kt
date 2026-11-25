@@ -812,6 +812,10 @@ private fun imageButtons(
         },
         onCancel = { browsing = false },
         images = true,
+        onPickUri = { uri ->
+            browsing = false
+            use(uri)
+        },
     )
     return known
 }
