@@ -1,6 +1,13 @@
 package com.irvingguerra.litedash.feature.music
 
 import android.media.session.PlaybackState
+import android.os.SystemClock
+
+/** Un toque a la música en la pantalla cuenta para la calibración que empieza en este rato. */
+private const val TOUCH_MS = 2_000L
+/** Pospuesta con el aviso «Controla la música desde tu celular» a la vista: cada cuánto se vuelve a pedir y cuántas veces. */
+private const val POSTPONED_RETRY_MS = 20_000L
+private const val POSTPONED_RETRIES = 9
 
 internal fun MusicRepository.showCheck(piece: SoundPiece, check: SoundCheck?) {
     if (check != null || soundCheck?.piece == piece) soundCheck = check
@@ -9,6 +16,8 @@ internal fun MusicRepository.showCheck(piece: SoundPiece, check: SoundCheck?) {
 /** La música Bluetooth empezó a sonar (un play de LiteDash, el celular por Connect o AVRCP): su receta y la revisión. */
 internal fun MusicRepository.calibrateBluetooth() {
     if (!bluetoothCalibrates) return
+    // De quién es esta calibración: la que ya va conserva lo suyo (sus pasos llegan después del toque).
+    if (!btCalibration.pending) calibrationByTouch = SystemClock.elapsedRealtime() - touchedAt < TOUCH_MS
     // El celular ya suena por el Bluetooth de Android y Android tiene el audio: no hay nada que calibrar
     // (reporte E3F104: "plain no suena" con la sesión de com.android.bluetooth sonando).
     if (avrcpController?.playbackState?.state == PlaybackState.STATE_PLAYING && musicActive()) return trace("calibración bt: ya suena por Android")
@@ -29,20 +38,34 @@ internal fun MusicRepository.calibrateBluetooth() {
  * ([askBluetoothSound])). Si la radio de la pantalla suena, no se le quita la salida.
  */
 internal fun MusicRepository.phoneOnlyShown(on: Boolean) {
+    mainHandler.removeCallbacks(phoneOnlyRetry)
     if (!on) {
         phoneOnlyAsked = false
         return
     }
     if (phoneOnlyAsked) return
     phoneOnlyAsked = true
+    phoneOnlyRetries = 0
     if (radio.song?.playing == true || factoryFor(radio)?.on == true) return trace("bluetooth sin canal: la radio suena, no se pide la entrada")
     trace("bluetooth sin canal: se pide la entrada de audio")
     calibrateBluetooth()
+    if (btCalibration.postponed) mainHandler.postDelayed(phoneOnlyRetry, POSTPONED_RETRY_MS)
+}
+
+/**
+ * La receta quedó pospuesta (el auto se movía o no había dato de velocidad) y el aviso sigue a la vista: nadie más la
+ * pediría (no hay ▶). Se vuelve a pedir cada [POSTPONED_RETRY_MS], unas cuantas veces: al detenerse el auto, pasa.
+ */
+internal fun MusicRepository.retryPostponed() {
+    if (!phoneOnly || !phoneOnlyAsked || !btCalibration.postponed || phoneOnlyRetries++ >= POSTPONED_RETRIES) return
+    calibrateBluetooth()
+    if (btCalibration.postponed) mainHandler.postDelayed(phoneOnlyRetry, POSTPONED_RETRY_MS)
 }
 
 /** Tocar el aviso «Controla la música desde tu celular»: vuelve a pedir la entrada de audio aunque ya se hubiera pedido. */
 fun MusicRepository.askBluetoothSound() {
     trace("bluetooth sin canal: la persona pide la entrada de audio")
+    touchedAt = SystemClock.elapsedRealtime()
     phoneOnlyAsked = true
     btApplied?.renew()
     calibrateBluetooth()
@@ -50,6 +73,7 @@ fun MusicRepository.askBluetoothSound() {
 
 /** Al dejar el método Bluetooth o irse el celular: se suelta la receta (y lo pendiente se deja). */
 internal fun MusicRepository.releaseBluetoothRecipe() {
+    mainHandler.removeCallbacks(phoneOnlyRetry)
     btCalibration.abort()
     useBluetooth(null)
     // Lo que se pidió ya no está: al volver al aviso se pide otra vez.

@@ -105,6 +105,17 @@ class MusicRulesTest {
     }
 
     @Test
+    fun factoryAppWaitsForTheCarUnlessThePersonAsksWithoutSpeedData() {
+        // En movimiento de verdad (hay dato): se pospone aunque la persona toque.
+        assertTrue(holdsForMotion(moving = true, speedUnknown = false, byTouch = true))
+        // Sin dato de velocidad: se pospone, salvo con un toque en la pantalla.
+        assertTrue(holdsForMotion(moving = true, speedUnknown = true, byTouch = false))
+        assertFalse(holdsForMotion(moving = true, speedUnknown = true, byTouch = true))
+        // Detenido: nunca.
+        assertFalse(holdsForMotion(moving = false, speedUnknown = false, byTouch = false))
+    }
+
+    @Test
     fun serviceBackupOnlyWhenTheAppStaysQuiet() {
         // Conectó, ignoró el play y sigue callada: la tecla a su receptor (una vez, después).
         assertTrue(serviceBackup(busy = false, audio = false, receiver = true))

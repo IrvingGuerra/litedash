@@ -95,7 +95,8 @@ internal class SoundCalibration(
 ) {
     private val engine = Calibrator(store, trustsSignal, moving)
     /** Lo último fue posponer: mientras el auto siga en movimiento, cada play lo vuelve a posponer sin llenar el registro. */
-    private var postponed = false
+    var postponed = false
+        private set
 
     val current: String? get() = engine.current
 
@@ -267,7 +268,10 @@ private class TopWaySource8(private val host: SoundHost) : BluetoothRecipe(Recip
     private var held = false
     @Volatile private var lost = false
 
-    override fun available() = TopWayRadio.available && host.bluetoothApp() == HeadUnit.TOPWAY_BLUETOOTH
+    // Si la app se cerró alguna vez al abrir el enlace ya no se abre: la receta no se puede (se probaba en cada play,
+    // sin enlace, y nunca se pasaba a la siguiente: reporte 70F2D9).
+    override fun available() =
+        TopWayRadio.available && host.bluetoothApp() == HeadUnit.TOPWAY_BLUETOOTH && !TopWayRadio.crashedBefore(host.store)
 
     override val stale: Boolean get() = held && lost
 

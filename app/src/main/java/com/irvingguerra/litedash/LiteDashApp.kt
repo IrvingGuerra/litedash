@@ -82,6 +82,7 @@ class LiteDashApp : Application() {
         // Abrir una app de fábrica encima (una receta de sonido) espera a que el auto vaya a 10 km/h o menos. Sin dato
         // de velocidad (ningún widget usa el GPS ni hay OBD) no se sabe: se toma como en movimiento.
         music.moving = { (bus.value(Signal.SPEED) ?: Float.MAX_VALUE) > MOVING_KMH }
+        music.speedUnknown = { bus.value(Signal.SPEED) == null }
         val cars = CarRepository(this, BuildConfig.CATALOG_URL)
         val layouts = DashboardStore(this)
         prefs.adoptWidgetApps(layouts)

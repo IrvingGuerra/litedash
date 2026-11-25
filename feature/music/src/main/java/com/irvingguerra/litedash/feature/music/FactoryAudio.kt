@@ -24,6 +24,10 @@ object FactoryAudio {
     /** El paquete de la radio de fábrica ("com.hcn.autoradio"…); [NONE] si no trae. */
     fun radio(context: Context): String = pickRadio(systemLaunchable(context))
 
+    /** Para el reporte: todas las apps del sistema con pantalla que parecen una radio (no solo la elegida). */
+    fun radioCandidates(context: Context): List<String> =
+        systemLaunchable(context).filter { pkg -> parts(pkg).any { "radio" in it || it.startsWith("fm") } }.sorted()
+
     /** De las apps del sistema, la radio: la conocida, si no la de la marca y al último la FM genérica de Android. */
     internal fun pickRadio(system: Set<String>): String {
         val found = system.filter { pkg -> parts(pkg).any { "radio" in it || it.startsWith("fm") } }
