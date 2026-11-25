@@ -30,6 +30,7 @@ import com.irvingguerra.litedash.core.ui.Label
 import com.irvingguerra.litedash.core.ui.LocalColors
 import com.irvingguerra.litedash.core.ui.TextInput
 import com.irvingguerra.litedash.core.ui.Typography
+import com.irvingguerra.litedash.core.ui.storageReport
 import com.irvingguerra.litedash.feature.map.MapPacks
 import com.irvingguerra.litedash.feature.link.PhoneLink
 import com.irvingguerra.litedash.feature.music.AppProbe
@@ -406,6 +407,7 @@ private fun systemInfo(context: Context, pro: Boolean, layout: String, lights: S
         appendLine("Código de desarrollador: ${if (pro) "sí" else "no"}")
         appendLine(lightsReport(context, lights))
         appendLine(locationInfo(context))
+        appendLine(storageReport(context))
         append(musicInfo)
         SystemSource.describe(context)?.let { append("\n").append(it) }
         // Apps de fábrica sin receptor ni servicio: lo que dejan ver, para aprender a hablarles.
