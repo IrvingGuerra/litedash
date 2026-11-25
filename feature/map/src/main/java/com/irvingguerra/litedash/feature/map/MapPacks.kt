@@ -69,11 +69,11 @@ class MapRegion(
     val map: PackFile,
     /** El índice de búsqueda (SRCH1, con gzip); null en índices viejos. */
     val search: PackFile? = null,
-    /** Las calles para la ruta (LDM0, con gzip); null en índices viejos. */
+    /** Las calles para la ruta (LDM0, o LDM1 con dibujo en el formato 2; con gzip); null en índices viejos. */
     val routes: PackFile? = null,
     /**
      * 1 = el mapa trae sus calles y el `.ldm` solo sirve para la ruta; 2 = el mapa sin calles: se dibujan del `.ldm`
-     * (LDM1 con dibujo) y los tres archivos bajan juntos (ver `FORMATO_V2.md` en litedash-claude).
+     * (LDM1 con dibujo) y los tres archivos bajan juntos como un solo paquete.
      */
     val format: Int = 1,
 ) : NamedRegion {
