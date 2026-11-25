@@ -44,6 +44,8 @@
     <string name="map_offline_failed">Interrompu : vérifiez votre connexion internet. Ce qui est téléchargé est conservé et reprendra de là.</string>
     <string name="map_online_now">Carte en ligne</string>
     <string name="map_offline_now">Carte hors ligne</string>
+    <string name="map_streets_missing">Les rues de cette carte manquent ; en attendant, vous voyez celles de vos zones ou d\'internet.</string>
+    <string name="map_streets_memory">Les rues de cette carte ne tiennent pas dans la mémoire de l\'écran ; vous voyez celles de vos zones ou d\'internet.</string>
     <string name="map_offline_size_free">Environ %1$s · %2$s libres</string>
     <string name="map_offline_too_big">C\'est plus que ce que le serveur de cartes permet en une fois : choisis un rayon plus petit.</string>
     <string name="map_offline_no_room">Stockage insuffisant : choisissez un rayon plus petit ou libérez de l\'espace.</string>

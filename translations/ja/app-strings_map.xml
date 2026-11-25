@@ -42,6 +42,8 @@
     <string name="map_offline_failed">停止しました。インターネット接続を確認してください。ダウンロード済みの分は残り、続きから再開します。</string>
     <string name="map_online_now">オンライン地図</string>
     <string name="map_offline_now">オフライン地図</string>
+    <string name="map_streets_missing">この地図の道路がありません。それまではエリアまたはインターネットの道路を表示します。</string>
+    <string name="map_streets_memory">この地図の道路が画面のメモリに収まりません。エリアまたはインターネットの道路を表示します。</string>
     <string name="map_offline_size_free">約 %1$s · 空き %2$s</string>
     <string name="map_offline_too_big">地図サーバーが一度に許可する量を超えています。もっと小さい半径を選んでください。</string>
     <string name="map_offline_no_room">容量が足りません。半径を小さくするか、空き容量を増やしてください。</string>

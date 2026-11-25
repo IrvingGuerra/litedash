@@ -42,6 +42,8 @@
     <string name="map_offline_failed">Gestopt: check je internet. Wat al gedownload is, blijft en gaat daar verder.</string>
     <string name="map_online_now">Live kaart</string>
     <string name="map_offline_now">Offline kaart</string>
+    <string name="map_streets_missing">De straten van deze kaart ontbreken; intussen zie je die van je gebieden of van internet.</string>
+    <string name="map_streets_memory">De straten van deze kaart passen niet in het geheugen van het scherm; je ziet die van je gebieden of van internet.</string>
     <string name="map_offline_size_free">Ongeveer %1$s · %2$s vrij</string>
     <string name="map_offline_too_big">Dat is meer dan de kaartserver in één keer toestaat: kies een kleinere straal.</string>
     <string name="map_offline_no_room">Niet genoeg opslag: kies een kleinere straal of maak ruimte vrij.</string>

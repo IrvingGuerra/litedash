@@ -42,6 +42,8 @@
     <string name="map_offline_failed">Zastaveno: zkontroluj internet. Co se stáhlo, zůstává a pokračuje se odtud.</string>
     <string name="map_online_now">Živá mapa</string>
     <string name="map_offline_now">Offline mapa</string>
+    <string name="map_streets_missing">Této mapě chybí ulice; zatím vidíte ty z vašich oblastí nebo z internetu.</string>
+    <string name="map_streets_memory">Ulice této mapy se nevejdou do paměti obrazovky; vidíte ty z vašich oblastí nebo z internetu.</string>
     <string name="map_offline_size_free">Asi %1$s · volno %2$s</string>
     <string name="map_offline_too_big">To je víc, než mapový server dovolí stáhnout najednou: zvol menší poloměr.</string>
     <string name="map_offline_no_room">Nedostatek místa: vyber menší poloměr nebo uvolni místo.</string>

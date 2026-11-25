@@ -42,6 +42,8 @@
     <string name="map_offline_failed">Stoppad: kolla internet. Det som laddats ner finns kvar och fortsätter därifrån.</string>
     <string name="map_online_now">Live-karta</string>
     <string name="map_offline_now">Offlinekarta</string>
+    <string name="map_streets_missing">Den här kartans gator saknas; tills vidare ser du dem från dina områden eller internet.</string>
+    <string name="map_streets_memory">Den här kartans gator får inte plats i skärmens minne; du ser dem från dina områden eller internet.</string>
     <string name="map_offline_size_free">Cirka %1$s · %2$s ledigt</string>
     <string name="map_offline_too_big">Det är mer än kartservern tillåter på en gång: välj en mindre radie.</string>
     <string name="map_offline_no_room">Inte tillräckligt med lagring: välj en mindre radie eller frigör utrymme.</string>

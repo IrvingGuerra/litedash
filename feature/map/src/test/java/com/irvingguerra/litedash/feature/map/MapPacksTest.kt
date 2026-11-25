@@ -304,4 +304,40 @@ class MapPacksTest {
         s.set(OnlineSwitches.REGIONS, photon = true, osrm = true)
         assertTrue(s.search && s.routing)
     }
+
+    @Test
+    fun aV2UpdateThatOnlyChangesTheStreetsIsAnUpdate() {
+        val nuevo = MapPacks.parseIndex(indexV2).first()
+        val saved = InstalledPack("mx-nuevo", "m", 1000, 1, nuevo.bbox, emptyList(), searchSha = "s", routesSha = "r", format = 2)
+        assertFalse(MapPacks.isOutdated(saved, nuevo))
+        // Solo cambió el .ldm (los carriles) o solo la búsqueda: también es actualización.
+        assertTrue(MapPacks.isOutdated(saved.copy(routesSha = "r-viejo"), nuevo))
+        assertTrue(MapPacks.isOutdated(saved.copy(searchSha = "s-viejo"), nuevo))
+        assertTrue(MapPacks.isOutdated(saved.copy(sha256 = "m-viejo"), nuevo))
+        // Unas calles que aún no se bajan no son una versión vieja (para eso está «Bajar calles»).
+        assertFalse(MapPacks.isOutdated(saved.copy(routesSha = ""), nuevo))
+        // En el formato 1 solo cuenta el mapa (la búsqueda y las calles se bajan solas).
+        val viejo = MapPacks.parseIndex(indexV2)[1]
+        assertFalse(MapPacks.isOutdated(InstalledPack("mx-viejo", "b", 5, 1, viejo.bbox, emptyList(), routesSha = "otra"), viejo))
+    }
+
+    @Test
+    fun onlyTilesInTheChangedBoxAreRedrawn() {
+        val colima = doubleArrayOf(-104.7, 18.6, -103.4, 19.6)
+        // La tesela del 14 del centro de Colima (-103.72, 19.24) sí; una de Monterrey, no.
+        assertTrue(tileTouches(tileKey(14, 3471, 7299), colima))
+        assertFalse(tileTouches(tileKey(14, 3626, 6983), colima))
+        // Una del 2 que lo abarca todo, sí.
+        assertTrue(tileTouches(tileKey(2, 0, 1), colima))
+    }
+
+    @Test
+    fun theMapMetadataSaysIfItHasStreets() {
+        assertTrue(PmTiles.listsRoads("""{"vector_layers":[{"id":"water"},{"id":"transportation"}]}"""))
+        assertFalse(PmTiles.listsRoads("""{"vector_layers":[{"id":"water"},{"id":"transportation_name"}]}"""))
+        // Sin la lista de capas (otro armador), se supone que sí.
+        assertTrue(PmTiles.listsRoads("""{"name":"transportation"}"""))
+        // "transportation" en otro lado (una descripción) no cuenta.
+        assertFalse(PmTiles.listsRoads("""{"description":"sin transportation","vector_layers":[{"id":"water"}]}"""))
+    }
 }

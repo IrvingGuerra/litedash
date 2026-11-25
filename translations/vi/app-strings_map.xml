@@ -42,6 +42,8 @@
     <string name="map_offline_failed">Đã dừng: hãy kiểm tra internet. Phần đã tải vẫn được giữ và sẽ tải tiếp từ đó.</string>
     <string name="map_online_now">Bản đồ trực tuyến</string>
     <string name="map_offline_now">Bản đồ ngoại tuyến</string>
+    <string name="map_streets_missing">Bản đồ này còn thiếu đường phố; trong lúc chờ, bạn thấy đường từ khu vực của bạn hoặc từ internet.</string>
+    <string name="map_streets_memory">Đường phố của bản đồ này không vừa bộ nhớ màn hình; bạn thấy đường từ khu vực của bạn hoặc từ internet.</string>
     <string name="map_offline_size_free">Khoảng %1$s · còn trống %2$s</string>
     <string name="map_offline_too_big">Vượt quá giới hạn mỗi lần tải của máy chủ bản đồ: hãy chọn bán kính nhỏ hơn.</string>
     <string name="map_offline_no_room">Không đủ bộ nhớ: chọn bán kính nhỏ hơn hoặc giải phóng dung lượng.</string>

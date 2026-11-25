@@ -42,6 +42,8 @@
     <string name="map_offline_failed">Leállt: nézd meg az internetet. Ami letöltődött, megmarad, és onnan folytatódik.</string>
     <string name="map_online_now">Online térkép</string>
     <string name="map_offline_now">Offline térkép</string>
+    <string name="map_streets_missing">Ennek a térképnek hiányoznak az utcái; addig a területeid vagy az internet utcáit látod.</string>
+    <string name="map_streets_memory">Ennek a térképnek az utcái nem férnek el a kijelző memóriájában; a területeid vagy az internet utcáit látod.</string>
     <string name="map_offline_size_free">Kb. %1$s · %2$s szabad</string>
     <string name="map_offline_too_big">Ez több, mint amit a térképszerver egyszerre enged: válassz kisebb sugarat.</string>
     <string name="map_offline_no_room">Nincs elég tárhely: válassz kisebb sugarat, vagy szabadíts fel helyet.</string>

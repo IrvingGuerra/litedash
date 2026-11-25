@@ -42,6 +42,8 @@
     <string name="map_offline_failed">หยุดแล้ว: ตรวจอินเทอร์เน็ต ส่วนที่ดาวน์โหลดแล้วยังอยู่และจะทำต่อจากตรงนั้น</string>
     <string name="map_online_now">แผนที่ออนไลน์</string>
     <string name="map_offline_now">แผนที่ออฟไลน์</string>
+    <string name="map_streets_missing">ยังไม่มีถนนของแผนที่นี้ ระหว่างนี้จะเห็นถนนจากพื้นที่ของคุณหรือจากอินเทอร์เน็ต</string>
+    <string name="map_streets_memory">ถนนของแผนที่นี้ใหญ่เกินหน่วยความจำของหน้าจอ จะเห็นถนนจากพื้นที่ของคุณหรือจากอินเทอร์เน็ต</string>
     <string name="map_offline_size_free">ประมาณ %1$s · ว่าง %2$s</string>
     <string name="map_offline_too_big">เกินกว่าที่เซิร์ฟเวอร์แผนที่อนุญาตให้ดาวน์โหลดในครั้งเดียว เลือกรัศมีที่เล็กลง</string>
     <string name="map_offline_no_room">พื้นที่ไม่พอ เลือกรัศมีที่เล็กลงหรือล้างพื้นที่</string>

@@ -101,6 +101,7 @@ import com.irvingguerra.litedash.feature.map.OfflineMaps
 import com.irvingguerra.litedash.feature.map.PackError
 import com.irvingguerra.litedash.feature.map.Route
 import com.irvingguerra.litedash.feature.map.SearchHit
+import com.irvingguerra.litedash.feature.map.StreetsGap
 import com.irvingguerra.litedash.feature.map.TileStore
 import com.irvingguerra.litedash.feature.map.VectorTiles
 import com.irvingguerra.litedash.feature.map.rememberFreeMapCamera
@@ -479,7 +480,8 @@ private fun LiveMap(
         val offline = MapPacks.get(context).covers(position.latitude, position.longitude) || OfflineMaps.get(context).covers(position.latitude, position.longitude)
         // Angosto, los créditos ocupan dos renglones a lo ancho: lo de la izquierda va arriba de ellos y sin el estado.
         val narrow = maxWidth < NARROW_MAP
-        val showStatus = maxHeight >= STATUS_HEIGHT && !narrow
+        val tall = maxHeight >= STATUS_HEIGHT
+        val showStatus = tall && !narrow
         Column(
             Modifier.align(Alignment.BottomStart).padding(start = 8.dp, end = 8.dp, bottom = if (narrow) 44.dp else 8.dp).widthIn(max = if (narrow) maxWidth else maxWidth * 0.55f),
             verticalArrangement = Arrangement.spacedBy(6.dp),
@@ -488,7 +490,10 @@ private fun LiveMap(
             camera.street?.let { MapPill(Icons.location, it, c.text) }
             // En línea con la fecha de la pantalla atrás no baja nada (HTTPS falla): se dice eso, aunque el mapa sea chico.
             val clockWrong = !offline && Https.clockLooksWrong()
+            // Un mapa bajado que se ve sin sus calles (se usan las de las zonas o de internet): se dice y, si se puede, se bajan.
+            val gap = MapPacks.get(context).streetsGapAt(position.latitude, position.longitude)
             if (clockWrong) MapPill(Icons.warning, stringResource(R.string.clock_wrong), c.warning, maxLines = 3)
+            else if (gap != null && tall) StreetsGapNote(MapPacks.get(context), gap.first, gap.second, pill = true)
             else if (showStatus) {
                 MapPill(
                     if (offline) Icons.offline else Icons.map,
@@ -1182,16 +1187,19 @@ private fun StatePackRow(packs: MapPacks, region: MapRegion, language: String, f
     val downloading = job != null && !job.failed
     // Uno a la vez: mientras baja otro (o un país completo), este espera.
     val busy = packs.busy
+    val update = saved != null && packs.outdated(region)
     // La misma regla de espacio que la descarga: descuenta lo ya bajado del mapa a medias (si no, al reanudar no cabría).
-    val noRoom = saved == null && !downloading && free != null && !packs.hasRoom(region, free)
+    val noRoom = (saved == null || update) && !downloading && free != null && !packs.hasRoom(region, free)
     // Quedó a medias (se cortó la red o se cerró la app): se puede seguir o soltarlo.
     val paused = !downloading && packs.paused?.id == region.id
+    // Guardado, lo que ocupa en la pantalla (no lo que pesa la versión nueva): se lee del disco aparte.
+    val savedBytes by produceState<Long?>(null, saved) { value = saved?.let { withContext(Dispatchers.IO) { packs.savedBytes(it.id) } } }
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            // Todo el paquete: mapa, búsqueda y calles para la ruta.
-            val size = Formatter.formatShortFileSize(context, region.totalSize)
             Label(
-                if (saved != null) stringResource(R.string.map_pack_saved, name, size) else "$name · $size",
+                if (saved != null) stringResource(R.string.map_pack_saved, name, savedBytes?.let { Formatter.formatShortFileSize(context, it) } ?: "…")
+                // Todo el paquete: mapa, búsqueda y calles para la ruta.
+                else "$name · ${Formatter.formatShortFileSize(context, region.totalSize)}",
                 Typography.body, if (saved != null) c.accent else c.text, maxLines = 2, modifier = Modifier.weight(1f),
             )
             when {
@@ -1201,7 +1209,9 @@ private fun StatePackRow(packs: MapPacks, region: MapRegion, language: String, f
                     Button(stringResource(R.string.map_pack_download), { packs.download(region) }, primary = true, enabled = !busy && !noRoom)
                 }
                 else -> {
-                    if (packs.outdated(region)) Button(stringResource(R.string.map_pack_update), { packs.download(region) }, primary = true, enabled = !busy)
+                    // Una actualización a medias también se suelta.
+                    if (paused) Button(stringResource(R.string.cancel), { packs.cancel() })
+                    if (update) Button(stringResource(R.string.map_pack_update), { packs.download(region) }, primary = true, enabled = !busy && !noRoom)
                     Confirmed(
                         stringResource(R.string.map_offline_delete), stringResource(R.string.map_pack_delete_question, name),
                         stringResource(R.string.confirm_delete), message = stringResource(R.string.map_pack_delete_message),
@@ -1217,6 +1227,35 @@ private fun StatePackRow(packs: MapPacks, region: MapRegion, language: String, f
         // Sin espacio (antes de empezar o a media descarga) no es culpa del internet.
         if (noRoom || job?.error == PackError.SPACE) Label(stringResource(R.string.map_pack_no_room), Typography.small, c.warning)
         else if (job?.failed == true) Label(downloadError(R.string.map_pack_failed), Typography.small, c.warning)
+        else if (saved != null && !downloading) packs.streetsGaps[region.id]?.let { StreetsGapNote(packs, region.id, it, pill = false) }
+    }
+}
+
+/**
+ * Por qué el mapa bajado [id] se ve sin sus calles ([gap]) y, si faltan, «Bajar calles» (con su avance). [pill] = sobre
+ * el mapa; si no, en el renglón del estado.
+ */
+@Composable
+private fun StreetsGapNote(packs: MapPacks, id: String, gap: StreetsGap, pill: Boolean) {
+    val c = LocalColors.current
+    val text = stringResource(
+        when (gap) {
+            StreetsGap.OFFER -> R.string.map_streets_missing
+            StreetsGap.NO_ROOM -> R.string.map_pack_no_room
+            StreetsGap.MEMORY -> R.string.map_streets_memory
+        },
+    )
+    val job = packs.routesJob?.takeIf { it.id == id }
+    val loading = job != null && !job.failed
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        if (pill) MapPill(Icons.warning, text, c.warning, maxLines = 3) else Label(text, Typography.small, c.warning)
+        when {
+            loading -> Box(Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp)).background(c.surfaceHigh)) {
+                Box(Modifier.fillMaxWidth(job.progress).fillMaxHeight().background(c.accent))
+            }
+            gap == StreetsGap.OFFER -> Button(stringResource(R.string.route_download), { packs.downloadStreets(id) }, primary = !pill)
+        }
+        if (job?.failed == true) Label(stringResource(R.string.route_download_failed), Typography.small, c.warning)
     }
 }
 

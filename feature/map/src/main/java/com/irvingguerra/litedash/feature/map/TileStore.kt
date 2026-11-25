@@ -242,7 +242,8 @@ class TileStore(context: Context, private val userAgent: String, val source: Til
                 pending -= key
                 if (gen != generation) {
                     // Se leyó con los mapas de antes: se vuelve a pedir (y lo que la fuente guardó de esa lectura, fuera).
-                    source.forget()
+                    val origin = source.origin(key)
+                    source.forget { it == origin }
                     schedule()
                 } else if (image == null) {
                     retryAt[key] = result.retryAt
@@ -318,11 +319,17 @@ class TileStore(context: Context, private val userAgent: String, val source: Til
         }
     }
 
-    /** La imagen de lo bajado; null si está dañado (gzip roto, PNG a medias). Si no cabe en memoria, eso sí sube. */
+    /**
+     * La imagen de lo bajado; null si está dañado (gzip roto, PNG a medias). Si no cabe en memoria, suelta lo leído de la
+     * fuente (miles de formas por tesela) y sube: el trabajador baja el tope de teselas en memoria.
+     */
     private fun decode(body: ByteArray, key: Long, origin: Long, roads: RoadGraph? = null): ImageBitmap? = try {
         source.decode(body, key, origin, roads)
     } catch (_: Exception) {
         null
+    } catch (e: OutOfMemoryError) {
+        source.trim()
+        throw e
     }
 
     /** Como [decode], con lo que la fuente ya tiene leído en memoria; null = hay que leer los bytes. */
@@ -447,27 +454,29 @@ class TileStore(context: Context, private val userAgent: String, val source: Til
         private val all = java.util.Collections.newSetFromMap(java.util.WeakHashMap<TileStore, Boolean>())
 
         /**
-         * Android pide memoria (onTrimMemory): los almacenes que nadie ve la sueltan ya. Sirve igual con la app al frente
-         * (TRIM_MEMORY_RUNNING_LOW/CRITICAL): no suelta lo que se está viendo. También las rutas en línea guardadas.
+         * Cambiaron los mapas bajados en la caja [bbox] (oeste, sur, este, norte; llegó un estado, sus calles o una versión
+         * nueva): las teselas en memoria de esa caja se dibujaron con lo de antes (quizá sin calles), así que se sueltan y
+         * lo que se ve se vuelve a pedir. Las de fuera se quedan.
          */
-        /**
-         * Cambiaron los mapas bajados (llegó un estado, sus calles o una versión nueva): las teselas en memoria se dibujaron
-         * con lo de antes (quizá sin calles), así que se sueltan y lo que se ve se vuelve a pedir.
-         */
-        internal fun packsChanged() {
+        internal fun packsChanged(bbox: DoubleArray) {
+            val affected = { key: Long -> tileTouches(key, bbox) }
             val stores = synchronized(all) { all.toList() }
             for (s in stores) if (s.packs != null) s.main.post {
                 synchronized(s.lock) {
                     s.generation++
-                    s.memory.evictAll()
-                    s.source.forget()
-                    s.retryAt.clear()
+                    for (key in s.memory.snapshot().keys) if (affected(key)) s.memory.remove(key)
+                    s.source.forget(affected)
+                    s.retryAt.keys.removeAll(affected)
                     s.schedule()
                     s.showLoaded()
                 }
             }
         }
 
+        /**
+         * Android pide memoria (onTrimMemory): los almacenes que nadie ve la sueltan ya. Sirve igual con la app al frente
+         * (TRIM_MEMORY_RUNNING_LOW/CRITICAL): no suelta lo que se está viendo. También las rutas en línea guardadas.
+         */
         fun trimAll() {
             OnlineRoute.clearCache()
             val stores = synchronized(all) { all.toList() }
@@ -550,3 +559,11 @@ internal inline fun <T> httpGet(
 /** Conexiones a los servidores de teselas a la vez, en toda la app. */
 internal const val MAX_CONNECTIONS = 4
 internal val tileConnections = java.util.concurrent.Semaphore(MAX_CONNECTIONS)
+
+/** ¿La tesela [key] (z/x/y) toca la caja [bbox] (oeste, sur, este, norte; grados)? */
+internal fun tileTouches(key: Long, bbox: DoubleArray): Boolean {
+    val z = keyZ(key)
+    val x = keyX(key).toDouble()
+    val y = keyY(key).toDouble()
+    return tileLon(x + 1, z) >= bbox[0] && tileLon(x, z) <= bbox[2] && tileLat(y, z) >= bbox[1] && tileLat(y + 1, z) <= bbox[3]
+}

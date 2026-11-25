@@ -59,8 +59,11 @@ interface TileSource {
     /** Nadie ve el mapa: suelta lo que guarda en memoria para dibujar más rápido. */
     fun trim() {}
 
-    /** Cambiaron los datos de donde dibuja (llegó o se cambió un mapa bajado o sus calles): olvida lo leído. */
-    fun forget() = trim()
+    /**
+     * Cambiaron los datos de donde dibuja (llegó o se cambió un mapa bajado o sus calles): olvida lo leído de las teselas
+     * origen que pasen [affected].
+     */
+    fun forget(affected: (Long) -> Boolean) = trim()
 }
 
 /** Las calles con nombre de una tesela y el lado de la tesela en sus unidades. */
@@ -109,9 +112,9 @@ class VectorTiles(
     /** Las leídas pesan (miles de formas); los nombres, poco: esos se quedan. */
     override fun trim() = parsed.evictAll()
 
-    override fun forget() {
-        parsed.evictAll()
-        names.evictAll()
+    override fun forget(affected: (Long) -> Boolean) {
+        for (origin in parsed.snapshot().keys) if (affected(origin)) parsed.remove(origin)
+        for (origin in names.snapshot().keys) if (affected(origin)) names.remove(origin)
     }
 
     /** La dirección de los datos (de [template]) en memoria, cuándo se supo y el último intento fallido. */

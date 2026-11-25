@@ -42,6 +42,8 @@
     <string name="map_offline_failed">Durdu: internetinizi kontrol edin. İndirilenler kalır ve oradan devam eder.</string>
     <string name="map_online_now">Canlı harita</string>
     <string name="map_offline_now">Çevrimdışı harita</string>
+    <string name="map_streets_missing">Bu haritanın sokakları eksik; o zamana kadar bölgelerinizdeki veya internetteki sokakları görürsünüz.</string>
+    <string name="map_streets_memory">Bu haritanın sokakları ekranın belleğine sığmıyor; bölgelerinizdeki veya internetteki sokakları görürsünüz.</string>
     <string name="map_offline_size_free">Yaklaşık %1$s · %2$s boş</string>
     <string name="map_offline_too_big">Bu, harita sunucusunun tek seferde izin verdiğinden fazla: daha küçük bir yarıçap seç.</string>
     <string name="map_offline_no_room">Yeterli depolama yok: daha küçük yarıçap seçin veya yer açın.</string>

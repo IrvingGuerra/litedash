@@ -169,8 +169,8 @@ object Https {
     internal fun appendsAt(code: Int, contentRange: String?, have: Long): Boolean =
         code == 206 && contentRange?.trim()?.startsWith("bytes $have-") == true
 
-    /** ¿Falló por disco lleno? (ENOSPC llega como IOException; si queda muy poco libre, también.) */
-    private fun noSpace(e: IOException, target: File): Boolean =
+    /** ¿Falló por disco lleno al escribir [target]? (ENOSPC llega como IOException; si queda muy poco libre, también.) */
+    fun noSpace(e: IOException, target: File): Boolean =
         generateSequence<Throwable>(e) { it.cause }.any { it.message?.contains("ENOSPC") == true || it.message?.contains("No space") == true } ||
             (target.parentFile?.usableSpace ?: Long.MAX_VALUE) < 64 * 1024
 

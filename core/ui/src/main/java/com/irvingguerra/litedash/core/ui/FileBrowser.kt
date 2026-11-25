@@ -84,7 +84,7 @@ fun FileBrowser(
     var dir by remember { mutableStateOf<File?>(null) }
     var recent by remember { mutableStateOf(false) }
     val roots by produceState(emptyList<StorageRoot>()) { value = withContext(Dispatchers.IO) { storageRoots(context) } }
-    val recentFiles by produceState<List<Uri>?>(null, recent) {
+    val recentFiles by produceState<List<Shot>?>(null, recent, roots) {
         value = null
         // Sin memorias que se dejen leer, "Recientes" es la única puerta: ahí van todas las fotos, no solo las últimas.
         if (recent) value = withContext(Dispatchers.IO) {
@@ -136,8 +136,9 @@ fun FileBrowser(
             val current = dir
             fun row(content: @Composable () -> Unit) = item(span = { GridItemSpan(maxLineSpan) }) { content() }
             fun note(text: @Composable () -> String) = row { Label(text(), Typography.body, c.textMuted, modifier = Modifier.padding(16.dp)) }
-            fun thumbItems(shots: List<Uri>) = items(shots, key = { it.toString() }) { u ->
-                Thumb(u, thumbs) { if (u.scheme == "file") onPick(File(u.path.orEmpty())) else onPickUri?.invoke(u) }
+            fun thumbItems(shots: List<Shot>) = items(shots, key = { it.uri.toString() }) { shot ->
+                val u = shot.uri
+                Thumb(shot, thumbs) { if (u.scheme == "file") onPick(File(u.path.orEmpty())) else onPickUri?.invoke(u) }
             }
             when {
                 recent -> {
@@ -165,7 +166,7 @@ fun FileBrowser(
                                 val f = folders[i].first
                                 Entry(Icons.folder, f.name) { dir = f }
                             }
-                            if (images) thumbItems(files.map { Uri.fromFile(it.first) })
+                            if (images) thumbItems(files.map { Shot(Uri.fromFile(it.first), it.first.name) })
                             else items(files.size, key = { files[it].first.path }) { i ->
                                 val f = files[i].first
                                 Entry(Icons.image, f.name) { onPick(f) }
@@ -192,20 +193,23 @@ private fun Entry(icon: ImageVector, name: String, onClick: () -> Unit) {
     }
 }
 
+/** Una foto para elegir: dónde está y su nombre (lo que dice la voz de accesibilidad). */
+private class Shot(val uri: Uri, val name: String)
+
 /**
  * Una foto de la cuadrícula: se lee reducida cuando se ve (si sale de la vista antes de empezar, no se lee) y
  * queda en [thumbs].
  */
 @Composable
-private fun Thumb(shot: Uri, thumbs: Thumbnails, onClick: () -> Unit) {
+private fun Thumb(shot: Shot, thumbs: Thumbnails, onClick: () -> Unit) {
     val c = LocalColors.current
-    val bitmap by produceState(thumbs.cached(shot), shot) { if (value == null) value = thumbs.load(shot) }
+    val bitmap by produceState(thumbs.cached(shot.uri), shot.uri) { if (value == null) value = thumbs.load(shot.uri) }
     Box(
         Modifier.padding(THUMB_GAP / 2).size(THUMB).clip(RoundedCornerShape(10.dp)).background(c.surface).clickable(onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
         val b = bitmap
-        if (b != null) Image(b, shot.lastPathSegment, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+        if (b != null) Image(b, shot.name, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
         else Icon(Icons.image, c.textMuted, 22.dp)
     }
 }
@@ -245,26 +249,29 @@ private fun thumbnail(context: Context, shot: Uri, px: Int): ImageBitmap? = runC
  * Las fotos más nuevas de la pantalla (las que Android ya tiene indexadas); en IO. Las que se dejan leer como archivo
  * van como archivo; con [byIndex], las demás van por su dirección en el índice de Android (sin él, no salen).
  */
-private fun recentImages(context: Context, byIndex: Boolean, max: Int): List<Uri> = runCatching {
+private fun recentImages(context: Context, byIndex: Boolean, max: Int): List<Shot> = runCatching {
     @Suppress("DEPRECATION") // la ruta del archivo: el explorador lee con File, como en las carpetas
     val path = MediaStore.Images.Media.DATA
-    val out = ArrayList<Uri>()
+    val out = ArrayList<Shot>()
     context.contentResolver.query(
-        MediaStore.Images.Media.EXTERNAL_CONTENT_URI, arrayOf(MediaStore.Images.Media._ID, path), null, null,
+        MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+        arrayOf(MediaStore.Images.Media._ID, path, MediaStore.Images.Media.DISPLAY_NAME), null, null,
         "${MediaStore.Images.Media.DATE_MODIFIED} DESC",
     )?.use { cursor ->
         while (out.size < max && cursor.moveToNext()) {
             val f = cursor.getString(1)?.let(::File)
-            if (f != null && f.canRead()) out.add(Uri.fromFile(f))
-            else if (byIndex) out.add(ContentUris.withAppendedId(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, cursor.getLong(0)))
+            val name = cursor.getString(2) ?: f?.name.orEmpty()
+            if (f != null && f.canRead()) out.add(Shot(Uri.fromFile(f), f.name))
+            else if (byIndex) out.add(Shot(ContentUris.withAppendedId(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, cursor.getLong(0)), name))
         }
     }
     out.toList()
 }.getOrDefault(emptyList())
 
 /**
- * Para el reporte: qué deja leer la pantalla de su memoria (permiso, memoria interna, memorias que ve el explorador
- * y cuántas fotos tiene el índice de Android). Solo nombres de memorias y cuentas, nunca archivos. En IO.
+ * Para el reporte: qué deja leer la pantalla de su memoria (permiso, memoria interna, si hay una memoria aparte (SD o
+ * USB) y si se deja leer, y cuántas fotos tiene el índice de Android). Solo sí/no y cuentas: nunca archivos ni el número
+ * de serie de una memoria (su carpeta en `/storage` lo lleva). En IO.
  */
 fun storageReport(context: Context): String = runCatching {
     val granted = context.checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED
@@ -275,10 +282,20 @@ fun storageReport(context: Context): String = runCatching {
         context.contentResolver.query(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, arrayOf(MediaStore.Images.Media._ID), null, null, null)
             ?.use { it.count }
     }.getOrNull()
-    "Almacenamiento: permiso=${if (granted) "sí" else "no"} · interna=${internal.path} estado=${Environment.getExternalStorageState()} " +
-        "se lee=${if (internal.canRead()) "sí" else "no"} lista=${listed ?: "nada"} · " +
-        "memorias=${storageRoots(context).joinToString { it.dir.path }.ifEmpty { "ninguna" }} · fotos en el índice=${photos ?: "sin dato"}"
+    // Una memoria aparte (SD o USB): montada según Android y si el explorador la puede abrir.
+    val internalKey = runCatching { internal.canonicalPath }.getOrDefault(internal.path)
+    val readable = storageRoots(context).any { runCatching { it.dir.canonicalPath }.getOrDefault(it.dir.path) != internalKey }
+    val mounted = readable || removableMounted(context)
+    fun yes(b: Boolean) = if (b) "sí" else "no"
+    "Almacenamiento: permiso=${yes(granted)} · interna=${internal.path} estado=${Environment.getExternalStorageState()} " +
+        "se lee=${yes(internal.canRead())} lista=${listed ?: "nada"} · SD: ${yes(mounted)}, se lee: ${yes(readable)} · " +
+        "fotos en el índice=${photos ?: "sin dato"}"
 }.getOrElse { "Almacenamiento: no se pudo leer (${it.javaClass.simpleName})" }
+
+/** ¿Android dice que hay una memoria aparte (SD o USB) montada? (Desde Android 7; antes, no se sabe: no.) */
+private fun removableMounted(context: Context): Boolean = Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && runCatching {
+    context.getSystemService(StorageManager::class.java).storageVolumes.any { it.isRemovable && it.state == Environment.MEDIA_MOUNTED }
+}.getOrDefault(false)
 
 /** Una memoria donde empezar a buscar. */
 private class StorageRoot(val name: String, val dir: File)

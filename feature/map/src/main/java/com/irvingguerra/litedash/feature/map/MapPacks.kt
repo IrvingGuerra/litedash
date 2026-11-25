@@ -14,6 +14,7 @@ import com.irvingguerra.litedash.core.ui.Https
 import com.irvingguerra.litedash.core.ui.NoSpaceException
 import com.irvingguerra.litedash.core.ui.isRecent
 import java.io.File
+import java.io.FileOutputStream
 import java.io.IOException
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.coroutines.CancellationException
@@ -89,6 +90,24 @@ class MapRegion(
     fun contains(lat: Double, lon: Double): Boolean = insideShape(bbox, shape, lat, lon)
 }
 
+/** Por qué un mapa del formato 2 se ve sin sus calles (se usan las de las zonas o de internet). */
+enum class StreetsGap {
+    /** Faltan y no se bajan solas (red que se cobra por dato o ya se intentó): se ofrece «Bajar calles». */
+    OFFER,
+    /** Faltan y no caben en el espacio libre. */
+    NO_ROOM,
+    /** Están, pero no caben en la memoria de la pantalla. */
+    MEMORY,
+}
+
+/** Las calles que se piden solas a un mapa ([MapPacks.askRoutes]): intentos de esta sesión, el último y la última revisión. */
+private class RoutesTry {
+    var tries = 0
+    var lastAt = 0L
+    var checkedAt = 0L
+    var busy = false
+}
+
 /** Un mapa a medias: de qué región y archivo (huella y tamaño) y desde cuándo. */
 private class Pending(val id: String, val sha256: String, val size: Long, val since: Long)
 
@@ -161,14 +180,23 @@ class MapPacks private constructor(private val app: Context) {
     /** Los archivos abiertos, uno por mapa bajado; cada uno con su propio candado al leer. */
     private val open = HashMap<String, PmTiles>()
     /**
-     * Los archivos de ruta abiertos (un solo mmap por estado, lo comparten la ruta y el dibujo de las calles del formato 2).
-     * Con [openLock]; se olvidan al cambiar el mapa o sus calles. [unreadable] = los que no abrieron (no se reintentan).
+     * Los archivos de ruta abiertos (un solo mmap por estado, lo comparten la ruta y el dibujo de las calles del formato 2),
+     * del menos al más usado: a lo más [MAX_GRAPHS] (y, en procesos de 32 bits, [GRAPH_BUDGET_32] bytes). Con [openLock];
+     * se olvidan al cambiar el mapa o sus calles. [unreadable] = cuándo no abrió cada uno (las teselas no lo reintentan
+     * hasta [GRAPH_RETRY_MS] después); [corrupt] = los que no abrieron por dañados (se vuelven a bajar).
      */
-    private val graphs = HashMap<String, RoadGraph>()
-    private val unreadable = HashSet<String>()
+    private val graphs = LinkedHashMap<String, RoadGraph>(4, 0.75f, true)
+    private val unreadable = HashMap<String, Long>()
+    private val corrupt = HashSet<String>()
     private val openLock = Any()
-    /** Cuándo se pidieron solas las calles de un mapa del formato 2 que no las tiene ([askRoutes]). */
-    private val routesAsked = HashMap<String, Long>()
+    /** Hasta cuánto pesan juntos los archivos de ruta mapeados en este proceso. */
+    private val graphBudget = if (android.os.Process.is64Bit()) Long.MAX_VALUE else GRAPH_BUDGET_32
+    /** Las calles que se piden solas a un mapa del formato 2 que no las tiene ([askRoutes]), por estado. */
+    private val routesAsked = HashMap<String, RoutesTry>()
+
+    /** Los mapas del formato 2 que se ven sin sus calles y por qué (la pantalla lo dice y ofrece bajarlas). */
+    var streetsGaps by mutableStateOf<Map<String, StreetsGap>>(emptyMap())
+        private set
 
     /** Las regiones con todos sus datos que ya se tienen (con el índice por país, solo las de los países cargados). */
     var regions by mutableStateOf<List<MapRegion>>(emptyList())
@@ -359,6 +387,9 @@ class MapPacks private constructor(private val app: Context) {
         val list = synchronized(countryLock) { all.flatMap { loaded[it.code].orEmpty() } }
         useRegions(list)
     }
+
+    /** Lo que ocupa en la pantalla el mapa bajado [id] (mapa, búsqueda y calles). Lee el disco: fuera del hilo principal. */
+    fun savedBytes(id: String): Long = listOf("pmtiles", Extra.SEARCH.suffix, Extra.ROUTES.suffix).sumOf { File(dir, "$id.$it").length() }
 
     /** ¿Hay mapa bajado del estado donde está ([lat], [lon])? */
     fun covers(lat: Double, lon: Double): Boolean = packs.any { it.contains(lat, lon) }
@@ -557,8 +588,11 @@ class MapPacks private constructor(private val app: Context) {
         if (missing.isNotEmpty()) scope.launch { for (r in missing) runCatching { fetchExtra(r, Extra.SEARCH, { true }) } }
     }
 
-    /** ¿El mapa bajado de [region] es de una versión vieja? */
-    fun outdated(region: MapRegion): Boolean = installed.firstOrNull { it.id == region.id }?.let { it.sha256.isNotEmpty() && it.sha256 != region.map.sha256 } ?: false
+    /**
+     * ¿El mapa bajado de [region] es de una versión vieja? En el formato 2 cuentan las tres huellas (un release que solo
+     * cambia las calles, por los carriles, también es actualización); unas calles o búsqueda que aún no se bajan, no.
+     */
+    fun outdated(region: MapRegion): Boolean = installed.firstOrNull { it.id == region.id }?.let { isOutdated(it, region) } ?: false
 
     /** Baja (o actualiza) el mapa de [region]; uno a la vez. Se verifica su huella antes de usarlo. */
     fun download(region: MapRegion) {
@@ -631,7 +665,8 @@ class MapPacks private constructor(private val app: Context) {
 
     /**
      * [auto] = el reintento solo al volver la red ([watchNetwork]): si vuelve a fallar, ya no se arma otro. Un paquete del
-     * formato 2 baja sus tres archivos como uno solo (reanudable, con el espacio de todo) y queda bajado solo con los tres.
+     * formato 2 baja sus tres archivos como uno solo (reanudable, con el espacio de todo) y queda bajado solo con los tres;
+     * si el mapa es el mismo y solo cambiaron su búsqueda o sus calles, se bajan esas ([updateExtras]).
      */
     private fun start(region: MapRegion, auto: Boolean): Job? = synchronized(stateLock) {
         if (running?.isActive == true) return@synchronized null
@@ -641,12 +676,21 @@ class MapPacks private constructor(private val app: Context) {
         running = scope.launch {
             val me = coroutineContext.job
             val bundle = region.format >= 2
+            val before = installed.firstOrNull { it.id == region.id }
+            if (bundle && before != null && before.format == region.format && before.sha256.equals(region.map.sha256, ignoreCase = true)) {
+                updateExtras(region, me)
+                return@launch
+            }
             val parts = partFiles(region.id).let { if (bundle) it else it.take(1) }
             val files = listOf(region.map) + if (bundle) Extra.entries.map { it.file(region)!! } else emptyList()
+            val target = File(dir, "${region.id}.pmtiles")
             // Abiertos, aparte de los de [fetchExtra] (que pueden andar a la vez con el mismo estado).
             val unpacked = if (bundle) Extra.entries.map { File(dir, "${region.id}.${it.suffix}.new$PART") } else emptyList()
+            val pack = if (!bundle) null else PackBundle(parts[0], parts.drop(1), unpacked, Extra.entries.map { File(dir, "${region.id}.${it.suffix}") }, target)
             // ¿Lo que quedó a medias es de este mismo paquete? Entonces se sigue donde iba; si no, de cero.
             val resume = resumable()?.let { it.id == region.id && it.sha256.equals(region.packKey, ignoreCase = true) } == true
+            // Lo bajado se queda para seguir después (corte de red, disco lleno, también tras cerrar la app) salvo que se
+            // cancele, que por dentro no sirva o que ya esté puesto en su lugar.
             var keepPart = false
             paused = null
             try {
@@ -655,6 +699,7 @@ class MapPacks private constructor(private val app: Context) {
                     parts.forEach { it.delete() }
                     writePending(Pending(region.id, region.packKey, region.map.size, System.currentTimeMillis()))
                 }
+                keepPart = true
                 val have = if (resume) parts.sumOf { if (it.isFile) it.length() else 0L } else 0L
                 if (dir.usableSpace < spaceNeeded(region, have)) {
                     job = PackJob(region.id, 0f, PackError.SPACE)
@@ -664,8 +709,6 @@ class MapPacks private constructor(private val app: Context) {
                 val total = region.totalSize.coerceAtLeast(1).toFloat()
                 var shown = have / total
                 job = PackJob(region.id, shown)
-                // Si se corta la red, lo bajado se queda para seguir después (también tras cerrar la app).
-                keepPart = true
                 var done = 0L
                 val shas = files.mapIndexed { i, file ->
                     val from = done
@@ -687,20 +730,17 @@ class MapPacks private constructor(private val app: Context) {
                     done += file.size
                     sha
                 }
-                keepPart = false
                 if (!me.isActive) throw CancellationException()
-                if (bundle) {
-                    // La búsqueda y las calles se abren aquí y los tres se revisan juntos: el mapa sin calles y el `.ldm`
-                    // con su dibujo (nunca un mapa nuevo con calles viejas).
-                    for (i in unpacked.indices) gunzip(parts[i + 1], unpacked[i])
-                    val ok = PmTiles.open(parts[0])?.use { !it.hasRoads } == true && RoadGraph.hasDrawing(unpacked[Extra.ROUTES.ordinal])
-                    if (!ok) throw IOException("bundle")
+                // La búsqueda y las calles se abren aquí y los tres se revisan juntos; si por dentro no sirven, se borran.
+                try {
+                    pack?.unpack { me.isActive }
+                } catch (e: BadPackException) {
+                    keepPart = false
+                    throw e
                 }
-                val target = File(dir, "${region.id}.pmtiles")
                 // Formato 1: si su búsqueda o sus calles no cambiaron, se quedan las que ya están (no se vuelven a bajar).
-                val before = installed.firstOrNull { it.id == region.id }
                 fun keep(have: String?, file: PackFile?) = have?.takeIf { it.isNotEmpty() && it.equals(file?.sha256, ignoreCase = true) }.orEmpty()
-                val pack = InstalledPack(
+                val saved = InstalledPack(
                     region.id, shas[0], parts[0].length(), System.currentTimeMillis(), region.bbox, region.shape,
                     if (bundle) shas[1] else keep(before?.searchSha, region.search),
                     if (bundle) shas[2] else keep(before?.routesSha, region.routes), region.format,
@@ -713,15 +753,20 @@ class MapPacks private constructor(private val app: Context) {
                             if (routerId == region.id) releaseRouterNow()
                             forgetGraph(region.id)
                             indexes.remove(region.id)?.close()
-                            for (i in unpacked.indices) {
-                                if (!unpacked[i].renameTo(File(dir, "${region.id}.${Extra.entries[i].suffix}"))) throw IOException("rename")
+                            if (pack != null) pack.install { me.isActive } else {
+                                if (!me.isActive) throw CancellationException()
+                                syncFile(parts[0])
+                                if (!parts[0].renameTo(target)) throw IOException("rename")
                             }
-                            if (!parts[0].renameTo(target)) throw IOException("rename")
                         }
                     }
                 }
-                synchronized(stateLock) { replaceInstalled(installed.filter { it.id != region.id } + pack) }
-                TileStore.packsChanged()
+                keepPart = false
+                // Lo de antes se desmapea (solo lo hace el GC) antes de que las teselas abran lo nuevo.
+                System.gc()
+                synchronized(stateLock) { replaceInstalled(installed.filter { it.id != region.id } + saved) }
+                setGap(region.id, null)
+                changed(region.bbox)
                 // Formato 1: con el mapa, su búsqueda y sus calles para la ruta; si algo falla, la búsqueda se reintenta
                 // sola y las calles al pedir una ruta.
                 if (!bundle) {
@@ -738,8 +783,8 @@ class MapPacks private constructor(private val app: Context) {
                 keepPart = false
                 job = null
                 throw e
-            } catch (e: NoSpaceException) {
-                keepPart = false
+            } catch (_: NoSpaceException) {
+                // Lo bajado se queda: al liberar espacio se sigue desde ahí.
                 job = PackJob(region.id, 0f, PackError.SPACE)
             } catch (_: Exception) {
                 job = PackJob(region.id, 0f, PackError.NETWORK)
@@ -759,6 +804,38 @@ class MapPacks private constructor(private val app: Context) {
             }
         }
         running
+    }
+
+    /**
+     * Actualiza solo la búsqueda y las calles de [region] (formato 2 con el mismo mapa: un release que cambió, por ejemplo,
+     * los carriles); el avance en [job] y Cancelar ([me]) como en una descarga.
+     */
+    private fun updateExtras(region: MapRegion, me: Job) {
+        try {
+            val todo = Extra.entries.filter { e ->
+                val have = installed.firstOrNull { it.id == region.id }?.let(e::sha)
+                e.file(region)?.let { f -> !f.sha256.equals(have, ignoreCase = true) } == true
+            }
+            val total = todo.sumOf { it.file(region)!!.size }.coerceAtLeast(1).toFloat()
+            var at = 0L
+            for (extra in todo) {
+                val size = extra.file(region)!!.size
+                val from = at
+                fetchExtra(region, extra, { me.isActive }) { p -> job = PackJob(region.id, (from + p * size) / total) }
+                at += size
+            }
+            if (!me.isActive) throw CancellationException()
+            job = null
+        } catch (e: CancellationException) {
+            job = null
+            throw e
+        } catch (_: NoSpaceException) {
+            job = PackJob(region.id, 0f, PackError.SPACE)
+        } catch (_: Exception) {
+            job = PackJob(region.id, 0f, PackError.NETWORK)
+        } finally {
+            synchronized(stateLock) { if (running === me) running = null }
+        }
     }
 
     /** La espera de la red para seguir una descarga cortada ([watchNetwork]); null = no se espera nada. */
@@ -872,6 +949,7 @@ class MapPacks private constructor(private val app: Context) {
             }
         }
         scope.launch {
+            val gone = installed.firstOrNull { it.id == id }
             synchronized(stateLock) { replaceInstalled(installed.filter { it.id != id }) }
             synchronized(openLock) {
                 open.remove(id)?.close()
@@ -886,7 +964,10 @@ class MapPacks private constructor(private val app: Context) {
                 synchronized(openLock) { forgetGraph(id) }
                 File(dir, "$id.ldm").delete()
             }
-            TileStore.packsChanged()
+            setGap(id, null)
+            // Su archivo de ruta se desmapea (solo lo hace el GC) antes de que otro estado abra el suyo.
+            System.gc()
+            changed(gone?.bbox)
         }
     }
 
@@ -913,6 +994,10 @@ class MapPacks private constructor(private val app: Context) {
         if (extra.sha(pack).equals(file.sha256, ignoreCase = true) && final.isFile) return@synchronized
         val gz = File(dir, "${region.id}.${extra.suffix}.gz$PART")
         val raw = File(dir, "${region.id}.${extra.suffix}$PART")
+        // El gzip y lo abierto conviven un momento (lo abierto, lo que diga el índice o ~3 veces el gzip).
+        val unpacked = if (file.unpacked > 0) file.unpacked else (EXTRA_SPACE_FACTOR - 1) * file.size
+        dir.mkdirs()
+        if (dir.usableSpace < file.size + unpacked + SPACE_MARGIN) throw NoSpaceException(IOException("ENOSPC"))
         try {
             var shown = 0f
             val sha = Https.download(app, file.url, gz, file.size, null, { p ->
@@ -923,20 +1008,28 @@ class MapPacks private constructor(private val app: Context) {
                 }
             })
             if (!sha.equals(file.sha256, ignoreCase = true)) throw IOException("SHA-256")
-            gunzip(gz, raw)
+            gunzip(gz, raw, active)
             if (!active() || installed.none { it.id == region.id }) throw CancellationException()
-            if (extra == Extra.ROUTES && pack.format >= 2 && !RoadGraph.hasDrawing(raw)) throw IOException("ldm")
+            if (extra == Extra.ROUTES && pack.format >= 2 && !RoadGraph.hasDrawing(raw)) throw BadPackException("ldm")
             val lock = if (extra == Extra.SEARCH) searchLock else routeLock
             synchronized(lock) {
+                // Mientras bajaba, el mapa pudo cambiar (otra versión u otro formato, de [start]): esto ya no es suyo.
+                if (!samePack(pack, installed.firstOrNull { it.id == region.id }) || !active()) throw CancellationException()
                 if (extra == Extra.SEARCH) indexes.remove(region.id)?.close() else {
                     if (routerId == region.id) releaseRouterNow()
                     synchronized(openLock) { forgetGraph(region.id) }
                 }
                 if (!raw.renameTo(final)) throw IOException("rename")
+                synchronized(stateLock) {
+                    replaceInstalled(installed.map { if (it.id == region.id && samePack(pack, it)) extra.with(it, sha) else it })
+                }
             }
-            synchronized(stateLock) { replaceInstalled(installed.map { if (it.id == region.id) extra.with(it, sha) else it }) }
             // Las calles de un mapa del formato 2 cambian su dibujo: lo dibujado sin ellas (o con las de antes) se suelta.
-            if (extra == Extra.ROUTES && pack.format >= 2) TileStore.packsChanged()
+            if (extra == Extra.ROUTES && pack.format >= 2) {
+                setGap(region.id, null)
+                System.gc()
+                changed(pack.bbox)
+            }
         } finally {
             gz.delete()
             raw.delete()
@@ -1065,6 +1158,9 @@ class MapPacks private constructor(private val app: Context) {
             try {
                 fetchExtra(region, Extra.ROUTES, { true }) { routesJob = PackJob(region.id, it) }
                 routesJob = null
+            } catch (_: CancellationException) {
+                // El mapa cambió o se borró mientras bajaban: ya no hacen falta.
+                routesJob = null
             } catch (_: NoSpaceException) {
                 routesJob = PackJob(region.id, 0f, PackError.SPACE)
             } catch (_: Exception) {
@@ -1127,8 +1223,9 @@ class MapPacks private constructor(private val app: Context) {
         // Cada archivo con su candado: dos estados se leen a la vez y nadie más espera.
         val (body, hasRoads) = synchronized(file) { runCatching { file.tile(z, x, y) }.getOrNull() to file.hasRoads }
         if (hasRoads) return body?.let { PackTile(it, null) }
-        // Formato 2: sus calles salen del `.ldm`. Sin él (o sin su dibujo) se piden solas y, mientras, el camino seguro: la
-        // tesela de las zonas o de internet, que sí las trae (nunca un mapa sin calles sin decir nada).
+        // Formato 2: sus calles salen del `.ldm`. Sin él (o sin su dibujo, o sin memoria para abrirlo) se piden o se avisa
+        // y, mientras, el camino seguro: la tesela de las zonas o de internet, que sí las trae (nunca un mapa sin calles
+        // sin decir nada).
         val roads = synchronized(openLock) { graphOf(pack.id, retry = false)?.takeIf { it.drawable } }
         if (roads == null) {
             askRoutes(pack.id)
@@ -1138,68 +1235,161 @@ class MapPacks private constructor(private val app: Context) {
     }
 
     /**
-     * El archivo de ruta de [id], abierto una sola vez (con [openLock]); null si no hay o no abre. Con [retry] = false no
-     * se reintenta uno que no abrió (las teselas lo piden muchas veces); la ruta sí ([RouteException] si no cabe).
+     * El archivo de ruta de [id], abierto una sola vez (con [openLock]); null si no hay o no abre. Antes de abrir uno se
+     * sueltan los menos usados ([graphsToDrop]). Con [retry] = false no se reintenta uno que no abrió hasta
+     * [GRAPH_RETRY_MS] después (las teselas lo piden muchas veces); la ruta sí ([RouteException] si no cabe).
      */
     private fun graphOf(id: String, retry: Boolean): RoadGraph? {
         graphs[id]?.let { return it }
-        if (!retry && id in unreadable) return null
+        val now = System.currentTimeMillis()
+        if (!retry && unreadable[id]?.let { now - it < GRAPH_RETRY_MS } == true) return null
+        val file = File(dir, "$id.ldm")
+        val drop = graphsToDrop(graphs.map { (k, g) -> k to g.bytes }, file.length(), MAX_GRAPHS, graphBudget, routerId)
+        for (old in drop) forgetGraph(old)
         val graph = try {
-            RoadGraph.open(File(dir, "$id.ldm"))
+            RoadGraph.open(file)
         } catch (e: RouteException) {
-            unreadable += id
+            // No cupo: se sueltan los demás (menos el de la ruta) y se pide al GC que los desmapee; las teselas lo
+            // reintentan en un rato y, mientras, se dice por qué no hay calles.
+            for (old in graphs.keys.filter { it != routerId }) forgetGraph(old)
+            System.gc()
+            unreadable[id] = now
+            setGap(id, StreetsGap.MEMORY)
             if (retry) throw e
-            null
+            return null
+        } ?: run {
+            unreadable[id] = now
+            // Está pero no abre: dañado (se vuelve a bajar, [askRoutes]).
+            if (file.isFile) corrupt += id
+            return null
         }
-        if (graph == null) unreadable += id else {
-            unreadable -= id
-            graphs[id] = graph
-        }
+        unreadable -= id
+        corrupt -= id
+        if (streetsGaps[id] == StreetsGap.MEMORY) setGap(id, null)
+        graphs[id] = graph
         return graph
     }
 
-    /** Olvida el archivo de ruta abierto de [id] (cambió o se borró); con [openLock]. */
+    /** Olvida el archivo de ruta abierto de [id] (cambió, se borró o hace falta lugar); con [openLock]. */
     private fun forgetGraph(id: String) {
         graphs.remove(id)?.close()
         unreadable -= id
+        corrupt -= id
+    }
+
+    /** Anota (o, con null, quita) por qué el mapa [id] se ve sin sus calles. */
+    private fun setGap(id: String, gap: StreetsGap?) = synchronized(routesAsked) {
+        if (streetsGaps[id] != gap) streetsGaps = if (gap == null) streetsGaps - id else streetsGaps + (id to gap)
+    }
+
+    /** Cambió lo bajado en [bbox] (null = no se sabe dónde): lo que no abrió se vuelve a intentar y se redibuja esa caja. */
+    private fun changed(bbox: DoubleArray?) {
+        synchronized(openLock) { unreadable.clear() }
+        TileStore.packsChanged(bbox ?: WORLD)
+    }
+
+    /** Lo que ve un mapa en ([lat], [lon]) de las calles de su mapa bajado: el estado y por qué faltan; null = nada falta. */
+    fun streetsGapAt(lat: Double, lon: Double): Pair<String, StreetsGap>? {
+        val gaps = streetsGaps
+        if (gaps.isEmpty()) return null
+        val id = packs.firstOrNull { it.contains(lat, lon) }?.id ?: return null
+        return gaps[id]?.let { id to it }
+    }
+
+    /** Baja ya (lo pidió el usuario: «Bajar calles») las calles del mapa [id]; sin la lista aún, se pide. */
+    fun downloadStreets(id: String) {
+        val region = regionById(id)?.takeIf { it.routes != null } ?: return refresh()
+        synchronized(routesAsked) { routesAsked.remove(id) }
+        downloadRoutes(region)
     }
 
     /**
-     * Un mapa del formato 2 sin calles que dibujar: se bajan solas (a lo más una vez por [ROUTES_ASK_MS]). Unas calles sin
-     * dibujo (de un índice viejo) se sueltan primero. Fuera del hilo de quien llama.
+     * Un mapa del formato 2 sin calles que dibujar. Unas calles sin dibujo (de un índice viejo) o dañadas se sueltan; unas
+     * que no abrieron por memoria no se vuelven a bajar ([StreetsGap.MEMORY]). Las que faltan se bajan solas, sin avance
+     * a la vista, solo con internet que no se cobre por dato y espacio ([routesAsk]); si no, se ofrece «Bajar calles».
+     * Se revisa a lo más una vez por [ROUTES_ASK_MS]. Fuera del hilo de quien llama.
      */
     private fun askRoutes(id: String) {
         val now = System.currentTimeMillis()
-        synchronized(routesAsked) {
-            if (now - (routesAsked[id] ?: 0L) < ROUTES_ASK_MS) return
-            routesAsked[id] = now
+        val ask = synchronized(routesAsked) {
+            val t = routesAsked.getOrPut(id) { RoutesTry() }
+            if (t.busy || now - t.checkedAt < ROUTES_ASK_MS) return
+            t.checkedAt = now
+            t.busy = true
+            t
         }
         scope.launch {
-            val ldm = File(dir, "$id.ldm")
-            if (ldm.isFile && !RoadGraph.hasDrawing(ldm)) {
-                synchronized(routeLock) {
-                    if (routerId == id) releaseRouterNow()
-                    synchronized(openLock) { forgetGraph(id) }
-                    ldm.delete()
+            try {
+                val ldm = File(dir, "$id.ldm")
+                if (ldm.isFile && (!RoadGraph.hasDrawing(ldm) || synchronized(openLock) { id in corrupt })) {
+                    synchronized(routeLock) {
+                        if (routerId == id) releaseRouterNow()
+                        synchronized(openLock) { forgetGraph(id) }
+                        ldm.delete()
+                    }
+                    synchronized(stateLock) { replaceInstalled(installed.map { if (it.id == id) it.copy(routesSha = "") else it }) }
                 }
-                synchronized(stateLock) { replaceInstalled(installed.map { if (it.id == id) it.copy(routesSha = "") else it }) }
+                val region = regionById(id)?.takeIf { it.format >= 2 } ?: return@launch
+                val routes = region.routes ?: return@launch
+                val pack = installed.firstOrNull { it.id == id } ?: return@launch
+                // Ya están (no abrieron por falta de memoria): no se vuelven a bajar.
+                if (ldm.isFile && pack.routesSha.equals(routes.sha256, ignoreCase = true)) return@launch
+                // Las pidió el usuario y van bajando: no se piden otra vez.
+                if (routesJob?.let { it.id == id && !it.failed } == true) return@launch
+                val unpacked = if (routes.unpacked > 0) routes.unpacked else (EXTRA_SPACE_FACTOR - 1) * routes.size
+                val decision = routesAsk(
+                    OnlineRoute.hasInternet(app), meteredNetwork(), dir.usableSpace >= routes.size + unpacked + SPACE_MARGIN,
+                    ask.tries, ask.lastAt, now,
+                )
+                when (decision) {
+                    RoutesAsk.WAIT -> Unit
+                    RoutesAsk.OFFER -> setGap(id, StreetsGap.OFFER)
+                    RoutesAsk.NO_ROOM -> setGap(id, StreetsGap.NO_ROOM)
+                    RoutesAsk.FETCH -> {
+                        synchronized(routesAsked) {
+                            ask.tries++
+                            ask.lastAt = now
+                        }
+                        setGap(id, null)
+                        try {
+                            fetchExtra(region, Extra.ROUTES, { true })
+                        } catch (_: CancellationException) {
+                            // El mapa cambió o se borró mientras bajaban: nada que decir.
+                        } catch (_: NoSpaceException) {
+                            setGap(id, StreetsGap.NO_ROOM)
+                        } catch (_: Exception) {
+                            // Se reintenta solo, cada vez más espaciado; tras el último, el botón.
+                            if (ask.tries >= ROUTES_MAX_TRIES) setGap(id, StreetsGap.OFFER)
+                        }
+                    }
+                }
+            } finally {
+                synchronized(routesAsked) { ask.busy = false }
             }
-            val region = regionById(id)?.takeIf { it.format >= 2 } ?: return@launch
-            val pack = installed.firstOrNull { it.id == id } ?: return@launch
-            // Ya están (no abrieron por falta de memoria): no se vuelven a bajar.
-            if (ldm.isFile && pack.routesSha.equals(region.routes?.sha256, ignoreCase = true)) return@launch
-            downloadRoutes(region)
         }
     }
 
+    /** ¿La red de ahora se cobra por dato (datos del celular, zona Wi‑Fi de un celular)? Sin dato, como si sí. */
+    private fun meteredNetwork(): Boolean = runCatching {
+        (app.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager).isActiveNetworkMetered
+    }.getOrDefault(true)
+
     /** La lista guardada; los mapas que estén en la carpeta sin anotar (se cortó al guardarla) se adoptan con su caja. */
     private fun readInstalled() {
+        // Un corte de corriente puede dejar un archivo de 0 bytes con su nombre: el mapa no cuenta y una búsqueda o unas
+        // calles así faltan (se vuelven a bajar).
+        fun present(name: String) = File(dir, name).length() > 0
         val listed = runCatching {
             val a = JSONArray(File(dir, INSTALLED).readText())
             List(a.length()) { i -> packFromJson(a.getJSONObject(i)) }
-        }.getOrDefault(emptyList()).filter { File(dir, "${it.id}.pmtiles").isFile }
+        }.getOrDefault(emptyList()).filter { present("${it.id}.pmtiles") }.map { p ->
+            p.copy(
+                searchSha = p.searchSha.takeIf { present("${p.id}.srch") }.orEmpty(),
+                routesSha = p.routesSha.takeIf { present("${p.id}.ldm") }.orEmpty(),
+            )
+        }
         val orphans = dir.listFiles { f -> f.name.endsWith(".pmtiles") }.orEmpty()
-            .filter { f -> listed.none { "${it.id}.pmtiles" == f.name } }
+            .filter { f -> f.length() > 0 && listed.none { "${it.id}.pmtiles" == f.name } }
             .mapNotNull { f ->
                 val (bounds, roads) = PmTiles.open(f)?.use { it.bounds to it.hasRoads } ?: return@mapNotNull null
                 // Su huella (para saber si hay versión nueva) se calcula aquí, una vez: ya estamos fuera del hilo principal.
@@ -1219,7 +1409,10 @@ class MapPacks private constructor(private val app: Context) {
         try {
             dir.mkdirs()
             val temp = File(dir, "$INSTALLED.tmp")
-            temp.writeText(a.toString())
+            FileOutputStream(temp).use {
+                it.write(a.toString().toByteArray())
+                it.fd.sync()
+            }
             temp.renameTo(File(dir, INSTALLED))
         } catch (_: IOException) {
             // Disco lleno: en memoria ya está; al abrir otra vez se adoptan los archivos que haya.
@@ -1265,8 +1458,25 @@ class MapPacks private constructor(private val app: Context) {
         /** En Ajustes → Sin conexión la lista se pide si tiene más de una hora (ahí se buscan los países nuevos). */
         const val INDEX_SCREEN_MAX_AGE_MS = 60 * 60 * 1000L
 
-        /** Cada cuánto se vuelven a pedir solas las calles de un mapa del formato 2 que no las tiene. */
-        private const val ROUTES_ASK_MS = 60_000L
+        /** Archivos de ruta abiertos a la vez (el del ruteador y el que se dibuja; uno más se suelta). */
+        private const val MAX_GRAPHS = 2
+        /** En un proceso de 32 bits (poco espacio de direcciones), hasta cuánto pesan juntos los archivos de ruta mapeados. */
+        private const val GRAPH_BUDGET_32 = 512L * 1024 * 1024
+        /** Un archivo de ruta que no abrió (sin memoria o dañado) se reintenta para las teselas tras este tiempo. */
+        private const val GRAPH_RETRY_MS = 30_000L
+        /** Toda la Tierra (oeste, sur, este, norte): cuando no se sabe qué caja cambió. */
+        private val WORLD = doubleArrayOf(-180.0, -90.0, 180.0, 90.0)
+
+        /**
+         * ¿El mapa bajado [p] es de una versión vieja de [region]? Su mapa cambió o, en el formato 2, su búsqueda o sus
+         * calles (las que aún no se bajan, "", no cuentan: eso lo resuelve «Bajar calles»).
+         */
+        internal fun isOutdated(p: InstalledPack, region: MapRegion): Boolean {
+            fun differs(have: String, file: PackFile?) = have.isNotEmpty() && file != null && !have.equals(file.sha256, ignoreCase = true)
+            if (p.sha256.isEmpty()) return false
+            if (!p.sha256.equals(region.map.sha256, ignoreCase = true)) return true
+            return region.format >= 2 && (differs(p.searchSha, region.search) || differs(p.routesSha, region.routes))
+        }
 
         /** Con menos memoria por app que esto (bytes) un viaje en línea de más de [ONLINE_SMALL_HEAP_KM] en recta no se pide. */
         private const val ONLINE_SMALL_HEAP = 128L * 1024 * 1024
@@ -1292,8 +1502,10 @@ class MapPacks private constructor(private val app: Context) {
                 ", por país: ${split.size}, cargados=${p.regions.map { it.country }.distinct().joinToString().ifEmpty { "ninguno" }}" +
                     if (failed.isEmpty()) "" else ", fallaron=${failed.joinToString()}"
             }
+            // Los que se ven sin sus calles (formato 2) y por qué.
+            val gaps = p.streetsGaps.entries.joinToString { "${it.key}=${it.value.name.lowercase()}" }
             "Mapas: lista=${p.catalog.size} regiones$state$age$how (${p.catalog.map { it.country }.distinct().joinToString()}); bajados=" +
-                p.installed.joinToString { it.id }.ifEmpty { "ninguno" }
+                p.installed.joinToString { it.id }.ifEmpty { "ninguno" } + if (gaps.isEmpty()) "" else "; sin calles: $gaps"
         } ?: "Mapas: sin abrir en esta sesión"
 
         /** ¿Se sigue un `.part` de [have] bytes de un archivo de [size] empezado en [since]? (Sano, no completo de más y reciente.) */
@@ -1435,11 +1647,6 @@ class MapPacks private constructor(private val app: Context) {
             DoubleArray(ring.length() * 2) { j -> ring.getJSONArray(j / 2).getDouble(j % 2) }
         }
     }
-}
-
-/** Abre el gzip [gz] en [out] (fuera del hilo principal). */
-internal fun gunzip(gz: File, out: File) {
-    java.util.zip.GZIPInputStream(gz.inputStream()).use { input -> out.outputStream().use { input.copyTo(it) } }
 }
 
 /** ¿([lat], [lon]) dentro de la caja [bbox] y, si hay contorno [shape], dentro de alguno de sus anillos? */

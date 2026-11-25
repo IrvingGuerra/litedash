@@ -42,6 +42,8 @@
     <string name="map_offline_failed">Terhenti: periksa internet Anda. Yang sudah diunduh tetap ada dan dilanjutkan dari situ.</string>
     <string name="map_online_now">Peta online</string>
     <string name="map_offline_now">Peta offline</string>
+    <string name="map_streets_missing">Jalan peta ini belum ada; sementara, yang tampil dari area Anda atau internet.</string>
+    <string name="map_streets_memory">Jalan peta ini tidak muat di memori layar; yang tampil dari area Anda atau internet.</string>
     <string name="map_offline_size_free">Sekitar %1$s · %2$s kosong</string>
     <string name="map_offline_too_big">Itu melebihi batas server peta untuk sekali unduh: pilih radius yang lebih kecil.</string>
     <string name="map_offline_no_room">Penyimpanan tidak cukup: pilih radius lebih kecil atau kosongkan ruang.</string>

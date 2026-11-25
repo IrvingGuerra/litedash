@@ -6,6 +6,7 @@ import java.io.RandomAccessFile
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.util.zip.GZIPInputStream
+import org.json.JSONObject
 
 /**
  * El mapa de un estado en un solo archivo PMTiles v3 (github.com/protomaps/PMTiles, el formato abierto que arma
@@ -28,7 +29,7 @@ class PmTiles private constructor(private val file: RandomAccessFile, private va
         runCatching {
             if (header.metadataLength <= 0 || header.metadataLength > MAX_METADATA) return@runCatching true
             val json = String(decompress(read(header.metadataOffset, header.metadataLength.toInt()), header.internalCompression), Charsets.UTF_8)
-            !json.contains("\"vector_layers\"") || json.contains("\"transportation\"")
+            listsRoads(json)
         }.getOrDefault(true)
     }
 
@@ -95,6 +96,15 @@ class PmTiles private constructor(private val file: RandomAccessFile, private va
                 throw e
             }
         }.getOrNull()
+
+        /**
+         * ¿La `metadata` [json] dice que las teselas traen calles? Sí si no lista sus capas (`vector_layers`) o si una de
+         * ellas es `transportation`.
+         */
+        internal fun listsRoads(json: String): Boolean {
+            val layers = JSONObject(json).optJSONArray("vector_layers") ?: return true
+            return (0 until layers.length()).any { layers.optJSONObject(it)?.optString("id") == "transportation" }
+        }
 
         internal fun parseHeader(b: ByteArray): Header? {
             if (b.size < HEADER_SIZE || String(b, 0, 7, Charsets.US_ASCII) != "PMTiles" || b[7].toInt() != 3) return null

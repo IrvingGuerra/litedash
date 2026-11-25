@@ -42,6 +42,8 @@
     <string name="map_offline_failed">Διακόπηκε: ελέγξτε το internet. Ό,τι κατέβηκε παραμένει και συνεχίζει από εκεί.</string>
     <string name="map_online_now">Ζωντανός χάρτης</string>
     <string name="map_offline_now">Χάρτης εκτός σύνδεσης</string>
+    <string name="map_streets_missing">Λείπουν οι δρόμοι αυτού του χάρτη· μέχρι τότε βλέπεις αυτούς των περιοχών σου ή του διαδικτύου.</string>
+    <string name="map_streets_memory">Οι δρόμοι αυτού του χάρτη δεν χωρούν στη μνήμη της οθόνης· βλέπεις αυτούς των περιοχών σου ή του διαδικτύου.</string>
     <string name="map_offline_size_free">Περίπου %1$s · %2$s ελεύθερα</string>
     <string name="map_offline_too_big">Είναι περισσότερα από όσα επιτρέπει ο διακομιστής χαρτών σε μία λήψη: διάλεξε μικρότερη ακτίνα.</string>
     <string name="map_offline_no_room">Δεν υπάρχει αρκετός χώρος: επιλέξτε μικρότερη ακτίνα ή ελευθερώστε χώρο.</string>

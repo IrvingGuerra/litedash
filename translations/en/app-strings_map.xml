@@ -46,6 +46,8 @@
     <string name="map_offline_failed">Stopped: check your internet. What was downloaded stays and resumes from there.</string>
     <string name="map_online_now">Live map</string>
     <string name="map_offline_now">Offline map</string>
+    <string name="map_streets_missing">This map\'s streets are missing; meanwhile, you see the ones from your areas or the internet.</string>
+    <string name="map_streets_memory">This map\'s streets don\'t fit in this screen\'s memory; you see the ones from your areas or the internet.</string>
     <string name="map_offline_size_free">About %1$s · %2$s free</string>
     <string name="map_offline_too_big">That\'s more than the map server allows in one download: pick a smaller radius.</string>
     <string name="map_offline_no_room">Not enough storage: pick a smaller radius or free up space.</string>

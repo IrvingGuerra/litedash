@@ -42,6 +42,8 @@
     <string name="map_offline_failed">Oprit: verifică internetul. Ce s-a descărcat rămâne și continuă de acolo.</string>
     <string name="map_online_now">Hartă online</string>
     <string name="map_offline_now">Hartă offline</string>
+    <string name="map_streets_missing">Lipsesc străzile acestei hărți; până atunci vezi pe cele din zonele tale sau de pe internet.</string>
+    <string name="map_streets_memory">Străzile acestei hărți nu încap în memoria ecranului; vezi pe cele din zonele tale sau de pe internet.</string>
     <string name="map_offline_size_free">Cam %1$s · %2$s liber</string>
     <string name="map_offline_too_big">E mai mult decât permite serverul de hărți dintr-o dată: alege o rază mai mică.</string>
     <string name="map_offline_no_room">Spațiu insuficient: alege o rază mai mică sau eliberează spațiu.</string>

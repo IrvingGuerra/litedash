@@ -42,6 +42,8 @@
     <string name="map_offline_failed">Остановлено: проверь интернет. Скачанное останется, загрузка продолжится с этого места.</string>
     <string name="map_online_now">Онлайн-карта</string>
     <string name="map_offline_now">Офлайн-карта</string>
+    <string name="map_streets_missing">Нет улиц этой карты; пока видны улицы из ваших зон или из интернета.</string>
+    <string name="map_streets_memory">Улицы этой карты не помещаются в память экрана; видны улицы из ваших зон или из интернета.</string>
     <string name="map_offline_size_free">Около %1$s · свободно %2$s</string>
     <string name="map_offline_too_big">Это больше, чем сервер карт разрешает скачать за раз: выбери радиус поменьше.</string>
     <string name="map_offline_no_room">Не хватает памяти: выбери радиус поменьше или освободи место.</string>

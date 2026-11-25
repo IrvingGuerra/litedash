@@ -37,6 +37,9 @@ class RoadGraph private constructor(private val channel: FileChannel, private va
     /** Las calles menores de la vista lejana (zoom 12); 0 en los LDM1 sin ellas (el prototipo). */
     private val oMinor = drawOffset(buf, 100)
 
+    /** Lo que pesa mapeado (bytes). */
+    val bytes: Long get() = buf.capacity().toLong()
+
     /** ¿Trae con qué dibujar las calles (mapa del formato nuevo, sin calles en el `.pmtiles`)? */
     val drawable = oLong > 0 && oFar > 0 && oExtra > 0
 
@@ -365,9 +368,9 @@ class RoadGraph private constructor(private val channel: FileChannel, private va
         private const val SNAP_RINGS = 3
 
         /**
-         * Abre [file]; null si no es un LDM0 o LDM1 sano (cabecera y secciones dentro del archivo y en orden). Si el archivo está
-         * sano pero no cabe en la memoria de la pantalla (el `map` falla en equipos de 32 bits), [RouteException] con
-         * [RouteError.TOO_BIG]: no está dañado y no hay que volver a bajarlo.
+         * Abre [file]; null si no es un LDM0 o LDM1 sano (cabecera y secciones, también las de dibujo, dentro del archivo y en
+         * orden). Si el archivo está sano pero no cabe en la memoria de la pantalla (el `map` falla en equipos de 32 bits),
+         * [RouteException] con [RouteError.TOO_BIG]: no está dañado y no hay que volver a bajarlo.
          */
         fun open(file: File): RoadGraph? {
             val raf = runCatching { RandomAccessFile(file, "r") }.getOrNull() ?: return null
@@ -380,10 +383,14 @@ class RoadGraph private constructor(private val channel: FileChannel, private va
                 } catch (_: java.io.IOException) {
                     channel.close()
                     throw RouteException(RouteError.TOO_BIG)
+                } catch (_: OutOfMemoryError) {
+                    channel.close()
+                    throw RouteException(RouteError.TOO_BIG)
                 }
                 val buf = mapped.order(ByteOrder.LITTLE_ENDIAN)
                 val ok = buf.get(0) == 'L'.code.toByte() && buf.get(1) == 'D'.code.toByte() && buf.get(2) == 'M'.code.toByte() &&
-                    (buf.get(3) == '0'.code.toByte() || buf.get(3) == '1'.code.toByte()) && valid(buf, size)
+                    (buf.get(3) == '0'.code.toByte() || buf.get(3) == '1'.code.toByte()) && valid(buf, size) &&
+                    (!flagged(buf) || drawingFits(size) { buf.getInt(it.toInt()) })
                 if (!ok) null.also { channel.close() } else RoadGraph(channel, buf)
             } catch (e: RouteException) {
                 throw e
@@ -394,24 +401,56 @@ class RoadGraph private constructor(private val channel: FileChannel, private va
         }
 
         /**
-         * ¿[file] es un LDM1 con las secciones de dibujo (lo que necesita un mapa del formato 2)? Solo lee la cabecera:
-         * sirve para revisar un paquete antes de usarlo, sin mapearlo.
+         * ¿[file] es un LDM1 sano con las secciones de dibujo (lo que necesita un mapa del formato 2)? Lee la cabecera y el
+         * principio de cada sección (no el archivo completo ni lo mapea): sirve para revisar un paquete antes de usarlo.
          */
         fun hasDrawing(file: File): Boolean = runCatching {
             RandomAccessFile(file, "r").use { raf ->
-                if (raf.length() < 128 || raf.length() > Int.MAX_VALUE) return false
+                val size = raf.length()
+                if (size < 128 || size > Int.MAX_VALUE) return false
                 val head = ByteArray(128)
                 raf.readFully(head)
                 val b = ByteBuffer.wrap(head).order(ByteOrder.LITTLE_ENDIAN)
                 val ok = head[0] == 'L'.code.toByte() && head[1] == 'D'.code.toByte() && head[2] == 'M'.code.toByte() &&
-                    head[3] == '1'.code.toByte() && b.getShort(6).toInt() and FLAG_DRAW != 0
-                ok && listOf(88, 92, 96).all { at -> b.getInt(at).let { it >= 128 && it + 8L <= raf.length() } }
+                    head[3] == '1'.code.toByte() && flagged(b) && valid(b, size)
+                ok && drawingFits(size) { at -> raf.seek(at); Integer.reverseBytes(raf.readInt()) }
             }
         }.getOrDefault(false)
 
+        /** ¿La cabecera dice que trae las secciones de dibujo (LDM1 con la bandera 1)? */
+        private fun flagged(b: ByteBuffer) = b.get(3) == '1'.code.toByte() && b.getShort(6).toInt() and FLAG_DRAW != 0
+
+        /**
+         * ¿Las secciones de dibujo caben en un archivo de [size] bytes? [int] lee un entero (little endian) en una posición.
+         * `long`, `far` y `extra` deben estar; `minor` puede faltar (0).
+         */
+        private fun drawingFits(size: Long, int: (Long) -> Int): Boolean {
+            val offsets = IntArray(4) { int(88L + 4 * it) }
+            return sectionFits(offsets[0].toLong(), size, lines = false, int) &&
+                (1..2).all { sectionFits(offsets[it].toLong(), size, lines = true, int) } &&
+                (offsets[3] == 0 || sectionFits(offsets[3].toLong(), size, lines = true, int))
+        }
+
+        /**
+         * ¿La sección en [s] cabe en [size]? Su `n` y sus entradas, el tamaño de su bloque y el bloque y, con [lines]
+         * (`far`, `extra`, `minor`), el tamaño de sus líneas y las líneas. Un número negativo o que se sale = dañada.
+         */
+        private fun sectionFits(s: Long, size: Long, lines: Boolean, int: (Long) -> Int): Boolean {
+            if (s < 128 || s + 8 > size) return false
+            val n = int(s).toLong()
+            val data = s + 8 + 8 * n
+            if (n < 0 || data > size) return false
+            val block = int(s + 4 + 8 * n).toLong()
+            if (block < 0 || data + block > size) return false
+            if (!lines) return true
+            if (data + block + 4 > size) return false
+            val bytes = int(data + block).toLong()
+            return bytes >= 0 && data + block + 4 + bytes <= size
+        }
+
         /** El desplazamiento de una sección de dibujo en la cabecera (byte [at]); 0 si no la trae o no cabe. */
         private fun drawOffset(b: ByteBuffer, at: Int): Int {
-            if (b.get(3) != '1'.code.toByte() || b.getShort(6).toInt() and FLAG_DRAW == 0) return 0
+            if (!flagged(b)) return 0
             val o = b.getInt(at)
             return if (o >= 128 && o + 8 <= b.capacity()) o else 0
         }
@@ -422,7 +461,8 @@ class RoadGraph private constructor(private val channel: FileChannel, private va
             if (counts.any { it < 0 } || offs.any { it < 64 || it > size }) return false
             for (i in 0 until 6) if (offs[i] > offs[i + 1]) return false
             return offs[0] + 8L * counts[0] <= offs[1] && offs[1] + 12L * counts[1] <= offs[2] &&
-                offs[2] + 9L * counts[2] <= offs[3] && offs[3] + 14L * counts[3] <= offs[4] && offs[6] + 13L * counts[5] <= size
+                offs[2] + 9L * counts[2] <= offs[3] && offs[3] + 14L * counts[3] <= offs[4] &&
+                offs[5] + 4L + 4L * counts[4] <= offs[6] && offs[6] + 13L * counts[5] <= size
         }
 
         private fun unzig(v: Long): Int = ((v ushr 1) xor -(v and 1)).toInt()

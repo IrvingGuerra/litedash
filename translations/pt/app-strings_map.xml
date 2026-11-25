@@ -44,6 +44,8 @@
     <string name="map_offline_failed">Parou: confira sua internet. O que já foi baixado fica salvo e continua de onde parou.</string>
     <string name="map_online_now">Mapa online</string>
     <string name="map_offline_now">Mapa offline</string>
+    <string name="map_streets_missing">Faltam as ruas deste mapa; enquanto isso, você vê as das suas áreas ou da internet.</string>
+    <string name="map_streets_memory">As ruas deste mapa não cabem na memória da tela; você vê as das suas áreas ou da internet.</string>
     <string name="map_offline_size_free">Aprox. %1$s · livres %2$s</string>
     <string name="map_offline_too_big">É mais do que o servidor de mapas permite de uma vez: escolha um raio menor.</string>
     <string name="map_offline_no_room">Não cabe no armazenamento: escolha um raio menor ou libere espaço.</string>

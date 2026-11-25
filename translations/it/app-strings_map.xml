@@ -42,6 +42,8 @@
     <string name="map_offline_failed">Interrotto: controlla internet. Ciò che è stato scaricato resta e riprende da lì.</string>
     <string name="map_online_now">Mappa online</string>
     <string name="map_offline_now">Mappa offline</string>
+    <string name="map_streets_missing">Mancano le strade di questa mappa; intanto vedi quelle delle tue zone o di internet.</string>
+    <string name="map_streets_memory">Le strade di questa mappa non entrano nella memoria dello schermo; vedi quelle delle tue zone o di internet.</string>
     <string name="map_offline_size_free">Circa %1$s · %2$s liberi</string>
     <string name="map_offline_too_big">È più di quanto il server delle mappe consente in una volta: scegli un raggio più piccolo.</string>
     <string name="map_offline_no_room">Memoria insufficiente: scegli un raggio più piccolo o libera spazio.</string>
