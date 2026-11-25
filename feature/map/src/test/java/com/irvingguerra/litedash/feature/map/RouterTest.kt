@@ -266,6 +266,28 @@ class RouterTest {
     }
 
     @Test
+    fun pointOnANearbyIslandSnapsToTheConnectedStreets() {
+        // Dos tramos que se conectan y, ~330 m al norte, una calle suelta (las entradas del fraccionamiento son privadas).
+        val pts = listOf(
+            intArrayOf(LAT0, LON0), intArrayOf(LAT0, LON0 + 4_000), intArrayOf(LAT0, LON0 + 8_000),
+            intArrayOf(LAT0 + 3_000, LON0 + 2_000), intArrayOf(LAT0 + 3_000, LON0 + 4_000),
+        )
+        val list = listOf(Edge(0, 1, name = "Avenida"), Edge(1, 2, name = "Avenida"), Edge(3, 4, name = "Privada"))
+        val file = tmp.newFile()
+        LdmWriter.write(file, pts, list, emptyList())
+        val graph = RoadGraph.open(file)!!.also { opened += it }
+        val inside = doubleArrayOf((LAT0 + 3_000) / 1e6, (LON0 + 3_000) / 1e6)
+        val street = doubleArrayOf(LAT0 / 1e6, (LON0 + 7_000) / 1e6)
+        val r = Router(graph).route(street[0], street[1], inside[0], inside[1]).getOrThrow()
+        // Llega a la avenida, junto a la calle suelta (no «sin camino»).
+        assertEquals(LAT0, r.points[r.points.size - 2])
+        val back = Router(graph).route(inside[0], inside[1], street[0], street[1]).getOrThrow()
+        assertEquals(LAT0, back.points[0])
+        // Dentro de la calle suelta sí se queda en ella.
+        assertNear(105.0, Router(graph).route(inside[0], (LON0 + 2_500) / 1e6, inside[0], (LON0 + 3_500) / 1e6).getOrThrow().distanceM)
+    }
+
+    @Test
     fun farFromStreetsIsOffRoad() {
         val net = build()
         val grid = at(h(1, 0), 0.5)

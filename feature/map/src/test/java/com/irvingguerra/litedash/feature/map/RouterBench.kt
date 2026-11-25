@@ -52,6 +52,61 @@ class RouterBench {
     }
 }
 
+/**
+ * El mismo estado en LDM0 y en LDM1 (con dibujo) debe dar las mismas rutas (solo en la Mac): LITEDASH_LDM_COMPARE =
+ * «ruta al LDM0:ruta al LDM1», LITEDASH_LDM_PAIRS = cuántos pares al azar dentro de la caja (y Toluca a mano).
+ */
+class LdmCompareBench {
+    @Test
+    fun sameRoutes() {
+        val files = System.getenv("LITEDASH_LDM_COMPARE")?.split(":")?.map(::File) ?: return
+        assumeTrue(files.size == 2 && files.all { it.isFile })
+        val old = RoadGraph.open(files[0])!!
+        val new = RoadGraph.open(files[1])!!
+        // Denso (la Mac) y disperso (pantallas de poca memoria, como LD_A6): los dos contra los dos archivos.
+        val dense = System.getenv("LITEDASH_LDM_SPARSE") == null
+        val a = Router(old, dense, 1 shl 14)
+        val b = Router(new, dense, 1 shl 14)
+        val n = System.getenv("LITEDASH_LDM_PAIRS")?.toInt() ?: 40
+        val rnd = java.util.Random(7)
+        // Unos puntos de Toluca (donde salió «sin camino») y pares al azar junto a cruces del estado (a ≤ 300 m).
+        val pairs = mutableListOf(
+            doubleArrayOf(19.2925, -99.6569, 19.2650, -99.6100), doubleArrayOf(19.3300, -99.5600, 19.2860, -99.6750),
+            doubleArrayOf(19.2570, -99.6370, 19.3060, -99.6500), doubleArrayOf(19.4040, -99.5950, 19.2890, -99.6530),
+        )
+        fun near(): Pair<Double, Double> {
+            val v = rnd.nextInt(old.vertexCount)
+            return old.latE6(v) / 1e6 + (rnd.nextDouble() - 0.5) * 0.005 to old.lonE6(v) / 1e6 + (rnd.nextDouble() - 0.5) * 0.005
+        }
+        repeat(n) {
+            val (la, lo) = near()
+            // La mitad cerca (≤ ~30 km, como en la ciudad) y la otra mitad a cualquier parte del estado.
+            val (lb, lob) = if (it % 2 == 0) near() else {
+                var p: Pair<Double, Double>
+                do p = near() while (kotlin.math.abs(p.first - la) + kotlin.math.abs(p.second - lo) > 0.3)
+                p
+            }
+            pairs += doubleArrayOf(la, lo, lb, lob)
+        }
+        var same = 0
+        var diff = 0
+        for (p in pairs) {
+            val heading = rnd.nextInt(360).toFloat()
+            for (h in listOf(null, heading)) {
+                val x = a.route(p[0], p[1], p[2], p[3], h)
+                val y = b.route(p[0], p[1], p[2], p[3], h)
+                val ok = x.isSuccess == y.isSuccess && (x.isFailure || (x.getOrThrow().points.contentEquals(y.getOrThrow().points) && x.getOrThrow().seconds == y.getOrThrow().seconds))
+                if (ok) same++ else diff++
+                fun d(r: Result<Route>) = r.fold({ "%.2f km %.1f min".format(it.distanceM / 1000, it.seconds / 60) }, { "ERROR ${(it as? RouteException)?.error ?: it.message}" })
+                println("${if (ok) "IGUAL" else "DISTINTA"} ${p.joinToString(",") { "%.5f".format(it) }} rumbo=$h : LDM0 ${d(x)} · LDM1 ${d(y)}")
+            }
+        }
+        println("RESUMEN iguales=$same distintas=$diff")
+        old.close()
+        new.close()
+    }
+}
+
 /** Las vueltas y la guía con un estado real (solo en la Mac). */
 class GuidanceBench {
     private val dir = File(System.getProperty("user.dir"), "../../../litedash-claude/prototipos/mapas/datos/ldm")

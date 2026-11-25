@@ -166,9 +166,9 @@ class RoadGraph private constructor(private val channel: FileChannel, private va
 
     /**
      * El tramo más cercano a ([lat], [lon]) donde se puede manejar, buscando en las celdas de alrededor (hasta
-     * [maxMeters]); null si no hay. Revisa la forma de cada tramo, no solo sus cruces.
+     * [maxMeters]); null si no hay. Revisa la forma de cada tramo, no solo sus cruces. Los tramos de [skip] no cuentan.
      */
-    fun snap(lat: Double, lon: Double, maxMeters: Double = SNAP_MAX_M): Snap? {
+    fun snap(lat: Double, lon: Double, maxMeters: Double = SNAP_MAX_M, skip: Set<Int>? = null): Snap? {
         val row = ((lat + 90) / CELL).toInt()
         val col = ((lon + 180) / CELL).toInt()
         val kx = cos(Math.toRadians(lat)) * M_PER_DEG
@@ -186,7 +186,7 @@ class RoadGraph private constructor(private val channel: FileChannel, private va
                         val t = halfTarget(h)
                         // Cada tramo una vez (aunque su otro cruce quede lejos, fuera de las celdas revisadas).
                         val e = halfEdge(h)
-                        if (!seen.add(e)) continue
+                        if (!seen.add(e) || skip?.contains(e) == true) continue
                         pts.clear()
                         pts.add(latE6(v), lonE6(v))
                         addShape(e, v, t, halfReversed(h), pts)

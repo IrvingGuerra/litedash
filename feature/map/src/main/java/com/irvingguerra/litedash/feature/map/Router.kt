@@ -70,8 +70,18 @@ class Router internal constructor(
      * la ruta no arranca «para atrás» si hay cómo rodear.
      */
     fun route(fromLat: Double, fromLon: Double, toLat: Double, toLon: Double, headingDeg: Float? = null): Result<Route> = try {
-        val a = graph.snap(fromLat, fromLon) ?: throw RouteException(RouteError.FROM_OFF_ROAD)
-        val b = graph.snap(toLat, toLon) ?: throw RouteException(RouteError.TO_OFF_ROAD)
+        var a = graph.snap(fromLat, fromLon) ?: throw RouteException(RouteError.FROM_OFF_ROAD)
+        var b = graph.snap(toLat, toLon) ?: throw RouteException(RouteError.TO_OFF_ROAD)
+        // Un punto pegado a una isla (calles sin salida para autos: un fraccionamiento cuyas entradas son privadas) no
+        // tiene camino: se pega a la calle más cercana (≤ [ISLAND_SNAP_M]) fuera de ella. Si los dos están en la misma
+        // isla se quedan; si cada uno en la suya, solo se mueve el de la más chica.
+        val islandA = island(a)
+        val islandB = island(b)
+        if (islandA == null || b.edge !in islandA) {
+            val moveA = islandA != null && (islandB == null || islandA.size <= islandB.size)
+            if (moveA) a = graph.snap(fromLat, fromLon, ISLAND_SNAP_M, islandA) ?: a
+            else if (islandB != null) b = graph.snap(toLat, toLon, ISLAND_SNAP_M, islandB) ?: b
+        }
         search(a, b, headingDeg)?.let { Result.success(it) } ?: Result.failure(RouteException(RouteError.NO_PATH))
     } catch (e: RouteException) {
         Result.failure(e)
@@ -81,6 +91,28 @@ class Router internal constructor(
     } catch (_: RuntimeException) {
         // Un archivo dañado por dentro (pasó la revisión de la cabecera): sin ruta, sin tumbar la app.
         Result.failure(RouteException(RouteError.NO_PATH))
+    }
+
+    /**
+     * Los tramos de la isla donde cayó [s]: lo que se alcanza desde sus dos cruces (sin ver el sentido) si son a lo más
+     * [ISLAND_MAX] cruces; null = se conecta con el resto.
+     */
+    private fun island(s: Snap): Set<Int>? {
+        val seen = hashSetOf(s.from, s.to)
+        val queue = ArrayDeque(seen)
+        val edges = HashSet<Int>()
+        while (queue.isNotEmpty()) {
+            val v = queue.removeFirst()
+            for (h in graph.firstHalf(v) until graph.firstHalf(v + 1)) {
+                edges += graph.halfEdge(h)
+                val t = graph.halfTarget(h)
+                if (seen.add(t)) {
+                    if (seen.size > ISLAND_MAX) return null
+                    queue += t
+                }
+            }
+        }
+        return edges
     }
 
     private fun search(a: Snap, b: Snap, headingDeg: Float?): Route? = try {
@@ -429,6 +461,10 @@ class Router internal constructor(
 
         /** Lugares iniciales de la tabla de lo recorrido (crece al doble cuando se llena a 3/4). */
         private const val SPARSE_START = 1 shl 14
+        /** Una isla de calles (ver [island]) tiene a lo más estos cruces; más, ya es parte de la ciudad. */
+        private const val ISLAND_MAX = 1_000
+        /** Hasta dónde se busca la calle que sí conecta al salir de una isla (metros). */
+        private const val ISLAND_SNAP_M = 600.0
 
         /** Lugares iniciales de la tabla de llegadas a cruces con vueltas guardadas (son pocas). */
         private const val TURN_START = 1 shl 8
