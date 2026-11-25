@@ -40,8 +40,19 @@ data class Stack(val faces: List<Tile>, val current: String? = null) {
     }
 
     companion object {
-        /** La Pila de la pieza [stack]: sus caras con el lugar y el tamaño de ella. Lo dañado se salta. */
-        fun of(stack: Tile): Stack {
+        /**
+         * La Pila de la pieza [stack]: sus caras con el lugar y el tamaño de ella. Lo dañado se salta. Se lee una vez por
+         * pieza (el inicio la pregunta en cada dibujo: lo que se ve, buscar un widget, la Pila de una cara).
+         */
+        fun of(stack: Tile): Stack = synchronized(read) { read[stack] } ?: parse(stack).also { synchronized(read) { read[stack] = it } }
+
+        /** Las últimas Pilas leídas (por pieza: su texto cambia con cada cara a la vista). */
+        private val read = object : LinkedHashMap<Tile, Stack>(READ_MAX, 0.75f, true) {
+            override fun removeEldestEntry(eldest: MutableMap.MutableEntry<Tile, Stack>) = size > READ_MAX
+        }
+        private const val READ_MAX = 16
+
+        private fun parse(stack: Tile): Stack {
             val parts = stack.data.split('|')
             val faces = parts.drop(1).mapNotNull { part ->
                 val f = part.split(',')
@@ -73,6 +84,18 @@ fun List<Tile>.facesShown(hidden: (String) -> Boolean): List<Tile> = mapNotNull 
 
 /** La Pila de [face] (por id), o null si no es cara de ninguna. */
 fun List<Tile>.stackOf(face: String): Tile? = firstOrNull { it.isStack && Stack.of(it).faces.any { f -> f.id == face } }
+
+/**
+ * Cambia los datos de las piezas y de las caras: [update] da los nuevos de cada una (null = igual). Lo usan las
+ * migraciones de datos guardados ([rewriteLayouts]): así también entran a las caras de las Pilas.
+ */
+internal fun List<Tile>.mapData(update: (Tile) -> String?): List<Tile> = map { t ->
+    val own = update(t)?.let { t.copy(data = it) } ?: t
+    if (!own.isStack) return@map own
+    val s = Stack.of(own)
+    val faces = s.faces.map { f -> update(f)?.let { f.copy(data = it) } ?: f }
+    if (faces == s.faces) own else own.copy(data = s.copy(faces = faces).encode())
+}
 
 /** Cambia los datos de las piezas y de las caras ([updates]: id → datos). */
 internal fun List<Tile>.withData(updates: Map<String, String>): List<Tile> = map { t ->

@@ -1,5 +1,7 @@
 package com.irvingguerra.litedash.core.ui
 
+import android.app.ActivityManager
+import android.content.Context
 import android.graphics.Bitmap
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -12,6 +14,7 @@ import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
@@ -224,28 +227,37 @@ private fun Modifier.glassEdge(edge: CardEdge, dark: Boolean, shape: Shape): Mod
 /**
  * La sombra de una tarjeta de cristal sobre tu fondo: unos aros que se van apagando hacia afuera, un poco caídos. Va
  * ANTES de recortar la tarjeta y solo cuando lleva tu fondo desenfocado detrás (que es opaco y tapa lo que cae adentro):
- * la sombra de Android se vería a través del cristal. Trazos fijos: no cuesta al dibujar.
+ * la sombra de Android se vería a través del cristal. Los aros se calculan una vez por tamaño ([drawWithCache]); en
+ * equipos de poca memoria ([cheap]) es un solo aro.
  */
-fun Modifier.glassShadow(look: CardLook, dark: Boolean, radius: Dp): Modifier {
+fun Modifier.glassShadow(look: CardLook, dark: Boolean, radius: Dp, cheap: Boolean = false): Modifier {
     if (look.style != CardStyle.GLASS || look.backdrop == null || !look.clear) return this
-    return drawBehind {
+    return drawWithCache {
         val r = radius.toPx()
-        val ring = SHADOW_SPREAD.toPx() / SHADOW_RINGS
+        val rings = if (cheap) 1 else SHADOW_RINGS
+        val ring = SHADOW_SPREAD.toPx() / rings
         val drop = SHADOW_DROP.toPx()
-        val strength = if (dark) 0.2f else 0.09f
-        for (i in 0 until SHADOW_RINGS) {
+        val strength = (if (dark) 0.2f else 0.09f) * (if (cheap) 0.6f else 1f)
+        val stroke = Stroke(ring + 1f)
+        val shapes = List(rings) { i ->
             val out = ring * (i + 0.5f)
-            val fade = 1f - i / SHADOW_RINGS.toFloat()
-            drawRoundRect(
-                Color.Black.copy(alpha = strength * fade * fade),
-                topLeft = Offset(-out, -out + drop),
-                size = Size(size.width + 2 * out, size.height + 2 * out),
-                cornerRadius = CornerRadius(r + out),
-                style = Stroke(ring + 1f),
-            )
+            val fade = 1f - i / rings.toFloat()
+            ShadowRing(Color.Black.copy(alpha = strength * fade * fade), Offset(-out, -out + drop), Size(size.width + 2 * out, size.height + 2 * out), CornerRadius(r + out))
         }
+        onDrawBehind { for (s in shapes) drawRoundRect(s.color, s.at, s.size, s.corner, style = stroke) }
     }
 }
+
+private class ShadowRing(val color: Color, val at: Offset, val size: Size, val corner: CornerRadius)
+
+/** ¿Equipo de poca memoria (Android lo marca así o da ≤ 128 MB por app)? Se pregunta una vez. */
+fun lowMemoryDevice(context: Context): Boolean = lowMemory ?: run {
+    val am = context.getSystemService(ActivityManager::class.java)
+    (am == null || am.isLowRamDevice || am.memoryClass <= LOW_MEMORY_MB).also { lowMemory = it }
+}
+
+private var lowMemory: Boolean? = null
+private const val LOW_MEMORY_MB = 128
 
 /** Dibuja [b] detrás, recortado como el fondo de la ventana: se ve la parte del fondo que la tarjeta tapa. */
 fun Modifier.blurredBackdrop(b: CardBackdrop): Modifier = composed {

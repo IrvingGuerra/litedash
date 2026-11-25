@@ -7,6 +7,7 @@ import android.graphics.BitmapFactory
 import android.util.Log
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
+import com.irvingguerra.litedash.core.ui.HttpStatusException
 import com.irvingguerra.litedash.core.ui.Https
 import com.irvingguerra.litedash.core.ui.isRecent
 import java.io.File
@@ -85,14 +86,20 @@ suspend fun wallpaperThumb(context: Context, id: String): ImageBitmap? = withCon
     BitmapFactory.decodeFile(file.path, BitmapFactory.Options().apply { inPreferredConfig = Bitmap.Config.RGB_565 })?.asImageBitmap()
 }
 
-/** Baja el fondo [id] a [target] (lo reemplaza solo si llegó completo y se puede leer). false si no se pudo. */
-suspend fun downloadWallpaper(context: Context, id: String, target: File): Boolean = withContext(Dispatchers.IO) {
+/** Cómo le fue a un fondo de LiteDash: puesto, sin red (se puede reintentar), ya no existe (4xx) o ni se intentó. */
+enum class WallpaperFetch { DONE, OFFLINE, GONE, SKIPPED }
+
+/** Baja el fondo [id] a [target] (lo reemplaza solo si llegó completo y se puede leer). */
+suspend fun downloadWallpaper(context: Context, id: String, target: File): WallpaperFetch = withContext(Dispatchers.IO) {
     try {
         download(context, "$id.webp", target, ::readImage)
-        true
+        WallpaperFetch.DONE
+    } catch (e: HttpStatusException) {
+        Log.w(LOG_TAG, "El fondo $id ya no está", e)
+        WallpaperFetch.GONE
     } catch (e: IOException) {
         Log.w(LOG_TAG, "No se pudo bajar el fondo $id", e)
-        false
+        WallpaperFetch.OFFLINE
     }
 }
 

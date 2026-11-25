@@ -167,7 +167,9 @@ internal fun fineCopies(all: Map<String, *>): Map<String, Pair<String, Long>> {
 
 /**
  * Lo que [DashboardStore.changeDataEverywhere] escribe, con todo lo guardado ([all]): llave del acomodo → su texto nuevo,
- * solo los que cambian. Recorre los de la cuadrícula fina de todas las páginas, del guardado más nuevo al más viejo.
+ * solo los que cambian. Recorre los de la cuadrícula fina de todas las páginas, del guardado más nuevo al más viejo, y
+ * también las caras de las Pilas ([mapData]). Toda migración futura de datos de widgets debe pasar por aquí (o por
+ * [mapData]): un widget puede vivir dentro de una Pila y si no, se queda sin migrar.
  */
 internal fun rewriteLayouts(all: Map<String, *>, update: (Tile) -> String?): Map<String, String> {
     val layouts = all.entries.mapNotNull { (key, value) ->
@@ -181,7 +183,7 @@ internal fun rewriteLayouts(all: Map<String, *>, update: (Tile) -> String?): Map
     val out = LinkedHashMap<String, String>()
     for ((key, text, _) in layouts) {
         val before = parseLayout(text)
-        val after = before.map { t -> update(t)?.let { t.copy(data = it) } ?: t }
+        val after = before.mapData(update)
         if (after != before) out[key] = formatLayout(after)
     }
     return out

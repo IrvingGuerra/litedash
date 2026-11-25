@@ -282,11 +282,14 @@ class MusicRepository(internal val context: Context) {
     internal var phoneOnlyRetries = 0
     internal val phoneOnlyRetry = Runnable { retryPostponed() }
 
-    /** Cuándo tocó la persona la música en la pantalla (su botón ▶ o el aviso), en [SystemClock.elapsedRealtime]. */
-    internal var touchedAt = 0L
+    /**
+     * Cuándo tocó la persona el aviso «Controla la música desde tu celular» ([askBluetoothSound]), en
+     * [SystemClock.elapsedRealtime]. Un ▶ no cuenta: sin dato de velocidad el auto puede ir andando.
+     */
+    internal var askedAt = 0L
 
-    /** La calibración en curso empezó con un toque en la pantalla ([calibrateBluetooth]); ver [holdsForMotion]. */
-    internal var calibrationByTouch = false
+    /** La calibración en curso empezó con ese toque al aviso ([calibrateBluetooth]); ver [holdsForMotion]. */
+    internal var calibrationAsked = false
 
     /**
      * Lo que preguntan al sistema [bluetoothService], [knownBluetooth] y [headUnit] (decenas de consultas al instalador en
@@ -895,11 +898,7 @@ class MusicRepository(internal val context: Context) {
          * Play o pausa ([play]/[pause]); sin nada a la vista, play despierta lo que toque. [shownPlaying] = lo que muestra el
          * botón de la pantalla (▮▮ = true): hace exactamente eso. El volante y la barra no lo ven (null): [playingNow].
          */
-        fun toggle(shownPlaying: Boolean? = null) {
-            // Solo el botón de la pantalla dice lo que muestra: es un toque de la persona (el volante no cuenta).
-            if (shownPlaying != null) touchedAt = SystemClock.elapsedRealtime()
-            if (pressPlays(shownPlaying, ::playingNow)) play(this) else pause(this)
-        }
+        fun toggle(shownPlaying: Boolean? = null) = if (pressPlays(shownPlaying, ::playingNow)) play(this) else pause(this)
 
         /**
          * ¿Suena, para el volante (también elige entre música y radio)? Lo que se ve, si es de verdad. Sin eso (la pieza no está en pantalla y no escucha, o su
@@ -1215,7 +1214,7 @@ class MusicRepository(internal val context: Context) {
     internal val btCalibration by lazy {
         SoundCalibration(
             SoundPiece.MUSIC, btStore, headUnit.trustsSignal,
-            { users == 0 || holdsForMotion(moving(), speedUnknown(), calibrationByTouch) }, mainHandler, ::trace, { showCheck(SoundPiece.MUSIC, it) },
+            { users == 0 || holdsForMotion(moving(), speedUnknown(), calibrationAsked) }, mainHandler, ::trace, { showCheck(SoundPiece.MUSIC, it) },
             use = ::useBluetooth, check = ::bluetoothHeard, knowable = ::bluetoothKnowable, audible = ::bluetoothAudible,
         )
     }

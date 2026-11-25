@@ -44,17 +44,17 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
@@ -337,7 +337,7 @@ fun releaseTileImages(tiles: List<Tile>) {
 private val INTRO = SavedImage("intro.png", 1024, ImageFit.HALF_SCREEN)
 
 /** El fondo del inicio: una foto que cubre toda la pantalla (sin transparencia). */
-private val WALLPAPER = SavedImage("wallpaper.jpg", 1920, ImageFit.COVER_SCREEN, opaque = true, onBump = ::forgetWallpaperCopies)
+private val WALLPAPER = SavedImage(OwnWallpaper.CURRENT, 1920, ImageFit.COVER_SCREEN, opaque = true, onBump = ::forgetWallpaperCopies)
 
 /** La imagen del modo estacionado (en vez del reloj), completa; con transparencia si es un logo. */
 private val PARKED = SavedImage("parked.png", 1920, ImageFit.FIT_SCREEN)
@@ -866,7 +866,7 @@ fun WallpaperSettings(prefs: Preferences) {
                             // Elegido a mano: el fondo de un Diseño que esperaba internet ya no se pone solo.
                             prefs.designWallpaper = null
                             scope.launch {
-                                failed = !putLiteDashWallpaper(context, w.id)
+                                failed = putLiteDashWallpaper(context, w.id) != WallpaperFetch.DONE
                                 downloading = null
                             }
                         },
@@ -910,7 +910,7 @@ private fun writeMarker(marker: File, id: String) {
 }
 
 /** Cuál de los fondos de LiteDash está puesto: un archivo junto al fondo (elegir tu foto o quitarlo lo borra). */
-private fun wallpaperMarker(context: Context) = File(context.filesDir, "wallpaper.id")
+private fun wallpaperMarker(context: Context) = File(context.filesDir, OwnWallpaper.MARKER)
 
 /** El id del fondo de LiteDash que está puesto; null = tu foto o ninguno. Solo en IO. */
 internal fun liteDashWallpaper(context: Context): String? = try {
@@ -922,74 +922,79 @@ internal fun liteDashWallpaper(context: Context): String? = try {
 
 /**
  * Pone el fondo de LiteDash [id]: lo baja de litedash.dev y reemplaza el de ahora solo si llegó completo (como si fuera tu
- * foto). Termina aunque se cierre quien lo pidió (el inicio debe enterarse). false si no se pudo (sin internet). Desde el
- * hilo principal.
+ * foto). Termina aunque se cierre quien lo pidió (el inicio debe enterarse). [still] se revisa ya con el candado: si dice
+ * que no (otro lo cambió mientras esperaba su turno), no se baja nada. [byDesign] = lo pone un Diseño (se anota su
+ * huella: [OwnWallpaper]). Desde el hilo principal.
  */
-internal suspend fun putLiteDashWallpaper(context: Context, id: String): Boolean = withContext(NonCancellable) {
-    WALLPAPER.lock.withLock {
-        downloadWallpaper(context, id, WALLPAPER.file(context)).also { ok ->
-            if (ok) {
-                withContext(Dispatchers.IO) { writeMarker(wallpaperMarker(context), id) }
+internal suspend fun putLiteDashWallpaper(context: Context, id: String, byDesign: Boolean = false, still: () -> Boolean = { true }): WallpaperFetch =
+    withContext(NonCancellable) {
+        WALLPAPER.lock.withLock {
+            if (!still()) return@withLock WallpaperFetch.SKIPPED
+            downloadWallpaper(context, id, WALLPAPER.file(context)).also { got ->
+                if (got != WallpaperFetch.DONE) return@also
+                withContext(Dispatchers.IO) {
+                    writeMarker(wallpaperMarker(context), id)
+                    if (byDesign) placeSafely(context)
+                }
                 WALLPAPER.bump()
             }
         }
     }
-}
-
-/** El fondo de antes de un Diseño: si había imagen ([had], copiada en [WALLPAPER_UNDO]) y cuál de LiteDash era ([id]). */
-internal class WallpaperBackup(val had: Boolean, val id: String?)
-
-/** La copia del fondo para «Deshacer» un Diseño (en files: sobrevive a cerrar la app). */
-private const val WALLPAPER_UNDO = "wallpaper.undo.jpg"
 
 /**
- * Copia el fondo de ahora para poder regresarlo ([restoreWallpaper]). null si no se pudo copiar: entonces no se debe
- * cambiar el fondo (se perdería). Desde el hilo principal.
+ * Antes de que un Diseño cambie el fondo: tu foto se guarda aparte ([OwnWallpaper.keep]). false si no se pudo copiar:
+ * entonces no se debe cambiar el fondo (se perdería). Desde el hilo principal.
  */
-internal suspend fun backupWallpaper(context: Context): WallpaperBackup? = withContext(NonCancellable) {
+internal suspend fun keepOwnWallpaper(context: Context): Boolean = withContext(NonCancellable) {
     WALLPAPER.lock.withLock {
         withContext(Dispatchers.IO) {
-            val file = WALLPAPER.file(context)
             try {
-                if (file.exists()) replaceFile(File(context.filesDir, WALLPAPER_UNDO)) { file.copyTo(it, overwrite = true) }
-                WallpaperBackup(file.exists(), liteDashWallpaper(context))
+                OwnWallpaper.keep(context.filesDir)
+                true
             } catch (e: IOException) {
-                Log.w(LOG_TAG, "No se pudo copiar el fondo para deshacer", e)
-                null
+                Log.w(LOG_TAG, "No se pudo guardar tu fondo para deshacer", e)
+                false
             }
         }
     }
 }
 
-/** Regresa el fondo de [b] (su copia vuelve a ser el fondo; si no había, el fondo se quita). Desde el hilo principal. */
-internal suspend fun restoreWallpaper(context: Context, b: WallpaperBackup) = withContext(NonCancellable) {
+/** Regresa tu fondo de antes de los Diseños, si el de ahora sigue siendo de un Diseño. Desde el hilo principal. */
+internal suspend fun restoreOwnWallpaper(context: Context) = withContext(NonCancellable) {
     WALLPAPER.lock.withLock {
-        withContext(Dispatchers.IO) {
-            val file = WALLPAPER.file(context)
-            val copy = File(context.filesDir, WALLPAPER_UNDO)
-            when {
-                !b.had -> file.delete()
-                // Sin la copia (no debería pasar) se queda el que está.
-                copy.exists() && !copy.renameTo(file) -> Log.w(LOG_TAG, "No se pudo regresar el fondo")
+        val changed = withContext(Dispatchers.IO) {
+            try {
+                OwnWallpaper.restore(context.filesDir)
+            } catch (e: IOException) {
+                Log.w(LOG_TAG, "No se pudo regresar tu fondo", e)
+                false
             }
-            val marker = wallpaperMarker(context)
-            if (b.id != null) writeMarker(marker, b.id) else marker.delete()
         }
-        WALLPAPER.bump()
+        if (changed) WALLPAPER.bump()
     }
 }
 
 /**
  * Sin fondo de imagen (queda el resplandor del tema): lo que pone un Diseño mientras su fondo espera internet. Solo
- * después de [backupWallpaper] (si no, se perdería tu foto). Desde el hilo principal.
+ * después de [keepOwnWallpaper] (si no, se perdería tu foto). Desde el hilo principal.
  */
 internal suspend fun clearWallpaper(context: Context) = withContext(NonCancellable) {
     WALLPAPER.lock.withLock {
         withContext(Dispatchers.IO) {
             WALLPAPER.file(context).delete()
             wallpaperMarker(context).delete()
+            placeSafely(context)
         }
         WALLPAPER.bump()
+    }
+}
+
+/** Anota que el fondo de ahora lo puso un Diseño (si no se puede, al deshacer solo no se regresa tu foto). Solo en IO. */
+private fun placeSafely(context: Context) {
+    try {
+        OwnWallpaper.placed(context.filesDir)
+    } catch (e: IOException) {
+        Log.w(LOG_TAG, "No se pudo anotar el fondo del Diseño", e)
     }
 }
 

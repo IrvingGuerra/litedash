@@ -106,13 +106,22 @@ class MusicRulesTest {
 
     @Test
     fun factoryAppWaitsForTheCarUnlessThePersonAsksWithoutSpeedData() {
-        // En movimiento de verdad (hay dato): se pospone aunque la persona toque.
-        assertTrue(holdsForMotion(moving = true, speedUnknown = false, byTouch = true))
-        // Sin dato de velocidad: se pospone, salvo con un toque en la pantalla.
-        assertTrue(holdsForMotion(moving = true, speedUnknown = true, byTouch = false))
-        assertFalse(holdsForMotion(moving = true, speedUnknown = true, byTouch = true))
+        // En movimiento de verdad (hay dato): se pospone aunque la persona toque el aviso.
+        assertTrue(holdsForMotion(moving = true, speedUnknown = false, asked = true))
+        // Sin dato de velocidad: se pospone (un ▶ no cuenta), salvo con el toque al aviso «Controla la música…».
+        assertTrue(holdsForMotion(moving = true, speedUnknown = true, asked = false))
+        assertFalse(holdsForMotion(moving = true, speedUnknown = true, asked = true))
         // Detenido: nunca.
-        assertFalse(holdsForMotion(moving = false, speedUnknown = false, byTouch = false))
+        assertFalse(holdsForMotion(moving = false, speedUnknown = false, asked = false))
+    }
+
+    @Test
+    fun postponedRecipeRetriesOnlyWithSpeedDataOrAnAsk() {
+        // Con dato de velocidad se vuelve a pedir (al detenerse, pasa).
+        assertTrue(retriesPostponed(speedUnknown = false, asked = false))
+        // Sin dato y sin el toque al aviso: no se insiste (abriría una app con el auto quizá andando).
+        assertFalse(retriesPostponed(speedUnknown = true, asked = false))
+        assertTrue(retriesPostponed(speedUnknown = true, asked = true))
     }
 
     @Test

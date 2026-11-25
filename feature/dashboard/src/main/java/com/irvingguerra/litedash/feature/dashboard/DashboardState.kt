@@ -70,14 +70,14 @@ class DashboardState(private val store: DashboardStore) {
             return (0 until pageCount).flatMap { p -> if (p == page) tiles else pageTiles.getOrPut(p) { load(c, p) } }.withFaces()
         }
 
-    /** Cambia los datos de las piezas de todas las páginas: [update] da los nuevos de una pieza (null = igual). */
+    /** Cambia los datos de las piezas de todas las páginas, también las caras de las Pilas: [update] da los nuevos de una (null = igual). */
     fun changeDataEverywhere(update: (Tile) -> String?) {
         val c = grid ?: return
-        changeData(tiles.mapNotNull { t -> update(t)?.let { t.id to it } }.toMap())
+        changeData(tiles.withFaces().mapNotNull { t -> update(t)?.let { t.id to it } }.toMap())
         for (p in 0 until pageCount) {
             if (p == page) continue
             val before = pageTiles.getOrPut(p) { load(c, p) }
-            val after = before.map { t -> update(t)?.let { t.copy(data = it) } ?: t }
+            val after = before.mapData(update)
             if (after != before) {
                 pageTiles[p] = after
                 store.save(c, after, p)
@@ -85,12 +85,15 @@ class DashboardState(private val store: DashboardStore) {
         }
     }
 
-    /** La página que se ve si cumple [test] (con su fondo y las piezas que se ven) o, si no, la primera que sí; null = ninguna. */
+    /**
+     * La página que se ve si cumple [test] (con su fondo y lo que está a la vista: de cada Pila, su cara) o, si no, la
+     * primera que sí; null = ninguna.
+     */
     fun pageWhere(test: (PageBackground, List<Tile>) -> Boolean): Int? {
-        if (test(background, shown)) return page
+        if (test(background, inView)) return page
         val c = grid ?: return null
         return (0 until pageCount).firstOrNull { p ->
-            p != page && test(backgrounds.getOrElse(p) { PageBackground.WALLPAPER }, pageTiles.getOrPut(p) { load(c, p) }.filterNot { hidden(it.type) })
+            p != page && test(backgrounds.getOrElse(p) { PageBackground.WALLPAPER }, pageTiles.getOrPut(p) { load(c, p) }.filterNot { hidden(it.type) }.facesShown(hidden))
         }
     }
 
@@ -198,8 +201,18 @@ class DashboardState(private val store: DashboardStore) {
         if (s.page == page && c != null) tiles = if (c == s.grid) restored else load(c, page)
     }
 
-    /** ¿La página [page] sigue con [layout] en [c] (nadie la movió desde entonces)? */
-    fun unchanged(page: Int, c: Grid, layout: String): Boolean = store.layoutText(c, page) == layout
+    /**
+     * ¿La página [page] sigue con [layout] en [c] (nadie la movió desde entonces)? Solo cuenta dónde está cada widget (id,
+     * tipo, lugar y tamaño): cambiar de cara una Pila o una opción de un widget no. Se calcula una vez por texto.
+     */
+    fun unchanged(page: Int, c: Grid, layout: String): Boolean {
+        val now = store.layoutText(c, page) ?: return false
+        if (now == layout) return true
+        lastCompare?.let { (a, b, same) -> if (a == now && b == layout) return same }
+        return samePlaces(parseLayout(now), parseLayout(layout)).also { lastCompare = Triple(now, layout, it) }
+    }
+
+    private var lastCompare: Triple<String, String, Boolean>? = null
 
     /** La plantilla [t] en [c], con la pieza grande que se eligió la última vez (los Diseños siempre con el auto). */
     private fun fromTemplate(c: Grid, t: Template): List<Tile> {
@@ -235,6 +248,10 @@ class DashboardState(private val store: DashboardStore) {
         if (after != tiles) change(after)
     }
 }
+
+/** ¿Los mismos widgets en los mismos lugares y tamaños (sin mirar sus datos ni si van sin tarjeta)? */
+internal fun samePlaces(a: List<Tile>, b: List<Tile>): Boolean =
+    a.size == b.size && a.zip(b).all { (x, y) -> x.id == y.id && x.type == y.type && x.col == y.col && x.row == y.row && x.width == y.width && x.height == y.height }
 
 /**
  * Una página como estaba ([DashboardState.snapshot]): su número, la cuadrícula, su acomodo ahí (el texto que guarda

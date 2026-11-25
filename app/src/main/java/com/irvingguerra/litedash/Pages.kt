@@ -19,8 +19,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
@@ -48,6 +48,10 @@ import com.irvingguerra.litedash.feature.dashboard.MAX_PAGES
 import com.irvingguerra.litedash.feature.dashboard.PageBackground
 import com.irvingguerra.litedash.feature.dashboard.PageSwipe
 import com.irvingguerra.litedash.feature.dashboard.TileTypes
+import com.irvingguerra.litedash.feature.dashboard.withFaces
+import com.irvingguerra.litedash.feature.dashboard.isStack
+import com.irvingguerra.litedash.feature.dashboard.Tile
+import com.irvingguerra.litedash.feature.dashboard.Stack
 import com.irvingguerra.litedash.feature.dashboard.freeArea
 import kotlinx.coroutines.launch
 
@@ -231,11 +235,13 @@ internal fun PageBackgroundSettings(d: Dependencies, page: Int = d.dashboard.pag
                 Label(stringResource(R.string.map_backdrop_help), Typography.body, c.textMuted)
                 // Con un widget Mapa en la página se verían dos mapas: se avisa y se ofrece quitarlo (solo se sabe de la
                 // que se ve; las otras avisan al acomodarlas → Fondo).
-                if (page == pages.page && pages.shown.any { it.type == TileTypes.MAP }) {
+                // Cuenta también la cara Mapa de una Pila: de ella se quita (o, si la Pila ya no puede perder caras, se
+                // deja a la vista otra).
+                if (page == pages.page && pages.shown.withFaces().any { it.type == TileTypes.MAP }) {
                     Label(stringResource(R.string.map_backdrop_has_widget), Typography.small, c.warning)
                     // Se pierde su aspecto guardado y no hay deshacer: con confirmación.
                     val removeMap = stringResource(R.string.map_backdrop_remove_widget)
-                    Confirmed(removeMap, removeMap, stringResource(R.string.remove)) { pages.changeShown(pages.shown.filterNot { it.type == TileTypes.MAP }) }
+                    Confirmed(removeMap, removeMap, stringResource(R.string.remove)) { pages.changeShown(pages.shown.withoutMaps()) }
                 }
                 val (granted, ask) = rememberGpsPermission(d)
                 if (!granted) Button(stringResource(R.string.tap_to_enable), ask, primary = true)
@@ -255,3 +261,17 @@ private const val PAGE_MS = 260
 
 /** Cuánto del ancho hay que deslizar para pasar de página. */
 private const val SWIPE_FRACTION = 0.18f
+
+/** Sin widgets Mapa: los sueltos se quitan y de cada Pila su cara Mapa (si ya no puede perder caras, se ve otra). */
+private fun List<Tile>.withoutMaps(): List<Tile> = mapNotNull { t ->
+    when {
+        t.type == TileTypes.MAP -> null
+        !t.isStack -> t
+        else -> {
+            var s = Stack.of(t)
+            for (f in s.faces) if (f.type == TileTypes.MAP) s = s.remove(f.id)
+            if (s.faces.any { it.type == TileTypes.MAP }) s = s.copy(current = s.faces.firstOrNull { it.type != TileTypes.MAP }?.id)
+            t.copy(data = s.encode())
+        }
+    }
+}

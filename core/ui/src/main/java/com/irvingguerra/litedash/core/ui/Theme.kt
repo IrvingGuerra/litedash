@@ -31,6 +31,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -270,7 +271,9 @@ fun Card(
     val look = LocalCardLook.current
     val plain = LocalPlainCard.current
     val shape = RoundedCornerShape(Radius.card)
-    var m = modifier.then(if (plain) Modifier else Modifier.glassShadow(look, c.dark, Radius.card))
+    val context = LocalContext.current
+    val cheap = remember { lowMemoryDevice(context) }
+    var m = modifier.then(if (plain) Modifier else Modifier.glassShadow(look, c.dark, Radius.card, cheap))
         .clip(shape).then(if (plain) Modifier else Modifier.skinSurface(look, c, shape))
     if (onClick != null) m = m.clickable(onClick = onClick)
     // Una vez por tema y piel, no en cada dibujo (un valor nuevo haría releer los colores a todo lo de adentro).

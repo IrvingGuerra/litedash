@@ -3,8 +3,8 @@ package com.irvingguerra.litedash.feature.music
 import android.media.session.PlaybackState
 import android.os.SystemClock
 
-/** Un toque a la música en la pantalla cuenta para la calibración que empieza en este rato. */
-private const val TOUCH_MS = 2_000L
+/** Un toque al aviso «Controla la música desde tu celular» cuenta para la calibración que empieza en este rato. */
+private const val ASKED_MS = 2_000L
 /** Pospuesta con el aviso «Controla la música desde tu celular» a la vista: cada cuánto se vuelve a pedir y cuántas veces. */
 private const val POSTPONED_RETRY_MS = 20_000L
 private const val POSTPONED_RETRIES = 9
@@ -17,7 +17,7 @@ internal fun MusicRepository.showCheck(piece: SoundPiece, check: SoundCheck?) {
 internal fun MusicRepository.calibrateBluetooth() {
     if (!bluetoothCalibrates) return
     // De quién es esta calibración: la que ya va conserva lo suyo (sus pasos llegan después del toque).
-    if (!btCalibration.pending) calibrationByTouch = SystemClock.elapsedRealtime() - touchedAt < TOUCH_MS
+    if (!btCalibration.pending) calibrationAsked = SystemClock.elapsedRealtime() - askedAt < ASKED_MS
     // El celular ya suena por el Bluetooth de Android y Android tiene el audio: no hay nada que calibrar
     // (reporte E3F104: "plain no suena" con la sesión de com.android.bluetooth sonando).
     if (avrcpController?.playbackState?.state == PlaybackState.STATE_PLAYING && musicActive()) return trace("calibración bt: ya suena por Android")
@@ -57,7 +57,8 @@ internal fun MusicRepository.phoneOnlyShown(on: Boolean) {
  * pediría (no hay ▶). Se vuelve a pedir cada [POSTPONED_RETRY_MS], unas cuantas veces: al detenerse el auto, pasa.
  */
 internal fun MusicRepository.retryPostponed() {
-    if (!phoneOnly || !phoneOnlyAsked || !btCalibration.postponed || phoneOnlyRetries++ >= POSTPONED_RETRIES) return
+    if (!phoneOnly || !phoneOnlyAsked || !btCalibration.postponed || !retriesPostponed(speedUnknown(), calibrationAsked)) return
+    if (phoneOnlyRetries++ >= POSTPONED_RETRIES) return
     calibrateBluetooth()
     if (btCalibration.postponed) mainHandler.postDelayed(phoneOnlyRetry, POSTPONED_RETRY_MS)
 }
@@ -65,7 +66,7 @@ internal fun MusicRepository.retryPostponed() {
 /** Tocar el aviso «Controla la música desde tu celular»: vuelve a pedir la entrada de audio aunque ya se hubiera pedido. */
 fun MusicRepository.askBluetoothSound() {
     trace("bluetooth sin canal: la persona pide la entrada de audio")
-    touchedAt = SystemClock.elapsedRealtime()
+    askedAt = SystemClock.elapsedRealtime()
     phoneOnlyAsked = true
     btApplied?.renew()
     calibrateBluetooth()

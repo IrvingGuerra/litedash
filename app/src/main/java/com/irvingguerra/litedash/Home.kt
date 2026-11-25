@@ -39,6 +39,8 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
@@ -46,7 +48,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.derivedStateOf
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateMapOf
@@ -55,7 +56,6 @@ import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -109,6 +109,7 @@ import com.irvingguerra.litedash.feature.dashboard.Grid
 import com.irvingguerra.litedash.feature.dashboard.PageBackground
 import com.irvingguerra.litedash.feature.dashboard.Tile
 import com.irvingguerra.litedash.feature.dashboard.TileTypes
+import com.irvingguerra.litedash.feature.dashboard.Stack
 import com.irvingguerra.litedash.feature.dashboard.stackOf
 import com.irvingguerra.litedash.feature.dashboard.withFaces
 import com.irvingguerra.litedash.feature.link.PhoneLink
@@ -619,8 +620,23 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
             if (d.music.onPhoneLink === link) d.music.onPhoneLink = null
         }
     }
+    // Un Diseño recién aplicado (también desde «Diseños» al acomodar): se sale de acomodar, así al cerrar el panel sale
+    // su aviso con «Deshacer» (acomodando no hay avisos).
+    LaunchedEffect(DesignNotice.shown) { if (DesignNotice.design != null) editing = false }
     // Al cerrar las opciones de una cara de una Pila, de vuelta a las de la Pila (de otro widget, al inicio).
     fun backFrom(tileId: String): Panel? = d.dashboard.tiles.stackOf(tileId)?.let { Panel.CustomizeStack(it.id) }
+    // Cerrar sin elegir la app o el dato de una cara recién agregada a una Pila: esa cara vacía no se queda.
+    fun dropUnpicked(faceId: String?) {
+        val stack = faceId?.let(d.dashboard.tiles::stackOf) ?: return
+        val s = Stack.of(stack)
+        if (s.faces.any { it.id == faceId && it.data.isEmpty() }) d.dashboard.setData(stack.id, s.remove(faceId).encode())
+    }
+    // A dónde lleva «atrás» (y cerrar) desde [p]: elegir la app o el dato, a quien lo pidió; unas opciones, a su Pila.
+    fun backOf(p: Panel?): Panel? = when (p) {
+        is Panel.PickApp -> p.back.also { if (p.back is Panel.CustomizeStack) dropUnpicked(p.tileId) }
+        is Panel.PickGauge -> p.back.also { if (p.back is Panel.CustomizeStack) dropUnpicked(p.tileId) }
+        else -> p?.optionsOf?.let(::backFrom)
+    }
 
     fun backToDashboard() {
         panel = null
@@ -666,7 +682,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
 
     BackHandler(enabled = (panel != null || editing || expanded != null || carLayer.open || tiresLayer.open) && d.prefs.welcomeSeen) {
         when {
-            panel != null -> panel = panel?.optionsOf?.let(::backFrom)
+            panel != null -> panel = backOf(panel)
             tiresLayer.open -> tiresLayer.open = false
             carLayer.open -> carLayer.open = false
             expanded != null -> expanded = null
@@ -761,7 +777,8 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
 
     // Con un auto que trae piso, el fondo baja un poco de tono hacia abajo: es el
     // piso donde se para el auto (como en Tesla), y su sombra y reflejo caen ahí.
-    val hasFloor = car?.hasFloor == true && d.dashboard.tiles.any { it.type == TileTypes.CAR }
+    // El auto de una Pila cuenta cuando es su cara a la vista.
+    val hasFloor = car?.hasFloor == true && d.dashboard.inView.any { it.type == TileTypes.CAR }
     // Las fotos de piezas de imagen que se quitaron (o cambiaron) salen de memoria, y también dónde estaba cada widget quitado.
     LaunchedEffect(d.dashboard.tiles) {
         // Las de todas las páginas: cambiar de página no las suelta (al volver no parpadean).
@@ -818,6 +835,8 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
         val homeLook = remember(d.prefs.cardStyle, d.prefs.cardOpacity, d.prefs.cardEdge, blurred, calm) {
             CardLook(d.prefs.cardStyle, d.prefs.cardOpacity, blurred, calm, d.prefs.cardEdge)
         }
+        // El fondo de un Diseño que espera internet: se baja cuando haya red (también con Ajustes o un panel abierto).
+        PendingDesignWallpaper(d.prefs)
         if (panel == null) CompositionLocalProvider(LocalHomeCovered provides homeCovered, LocalCardLook provides homeLook) {
             Box(Modifier.fillMaxSize().hiddenWhen { homeCovered }) {
                 // Detrás de todo, el fondo de esta página: tu imagen (Inicio y apariencia → Inicio → Fondo de pantalla) o
@@ -867,8 +886,9 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                     Row(Modifier.fillMaxSize()) {
                         if (barShown && rail && !railRight) bar(true)
                         Column(Modifier.weight(1f).fillMaxHeight()) {
-                            // Si ya hay un reloj en el tablero, la barra de arriba no repite la hora.
-                            val showTime = d.dashboard.tiles.none { it.type == TileTypes.CLOCK }
+                            // Si ya se ve un reloj en el tablero (también la cara a la vista de una Pila), la barra de
+                            // arriba no repite la hora.
+                            val showTime = d.dashboard.inView.none { it.type == TileTypes.CLOCK }
                             val barHidden = !editing && !showTime
                             TopBar(
                                 editing = editing,
@@ -988,8 +1008,6 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                                         if (calm) DesignAppliedNotice(d)
                                     }
                                 }
-                                // El fondo de un Diseño que espera internet: se baja una vez cuando haya red.
-                                PendingDesignWallpaper(d.prefs)
                             }
                             if (barBelow) bar(false)
                         }
@@ -1064,8 +1082,8 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                         onPickGauge = { panel = Panel.PickGauge(null) },
                         onTiresSettings = { panel = Panel.TiresSettings },
                     )
-                    is Panel.PickApp -> PickAppPanel(d, apps, p.tileId, close = { panel = p.back })
-                    is Panel.PickGauge -> PickGaugePanel(d, p.tileId, close = { panel = p.back })
+                    is Panel.PickApp -> PickAppPanel(d, apps, p.tileId, close = { panel = backOf(p) })
+                    is Panel.PickGauge -> PickGaugePanel(d, p.tileId, close = { panel = backOf(p) })
                     // Las vistas previas llevan la piel de la página ([homeLook]): sobre el mapa de fondo no es la del
                     // lienzo del panel, y el widget se veía distinto ahí que al volver al inicio (#32).
                     is Panel.CustomizeGauge -> CustomizeGaugePanel(d, p.tileId, homeLook, close = { panel = backFrom(p.tileId) }, onPickSignal = { panel = Panel.PickGauge(p.tileId) })

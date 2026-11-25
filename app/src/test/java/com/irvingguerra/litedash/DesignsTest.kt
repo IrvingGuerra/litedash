@@ -79,27 +79,26 @@ class DesignsTest {
     @Test
     fun undoBringsBackExactlyWhatThereWas() {
         val page = PageSnapshot(2, Grid(40, 13), "music-0\tmusic\t0\t0\t8\t4\t\t\ncar-1\tcar\t8\t0\t8\t4\tid=evo\t1", PageBackground.MAP, Template.MAP_BACKGROUND)
-        for (design in DESIGNS) for (wallpaper in listOf(null, WallpaperBackup(true, "aurora"), WallpaperBackup(false, null))) {
+        for (design in DESIGNS) for (wallpaper in listOf(false, true)) {
             val undo = DesignUndo("cloud", mine, page, "applied\tlayout", wallpaper, pending = "nube-perla")
             val back = DesignUndo.decode(undo.encode())!!
             assertEquals(undo.design, back.design)
             assertEquals(mine, back.look)
             assertEquals(page, back.page)
             assertEquals(undo.applied, back.applied)
-            assertEquals(wallpaper?.had, back.wallpaper?.had)
-            assertEquals(wallpaper?.id, back.wallpaper?.id)
+            assertEquals(wallpaper, back.wallpaper)
             assertEquals("nube-perla", back.pending)
             // Aplicar y luego deshacer: lo de toda la app queda idéntico.
             val applied = design.over(mine, ownCar = false)
-            assertEquals(mine, DesignUndo("x", mine, page, "", null).let { DesignUndo.decode(it.encode())!!.look })
+            assertEquals(mine, DesignUndo("x", mine, page, "").let { DesignUndo.decode(it.encode())!!.look })
             assertTrue(applied != mine)
         }
         // Lo de fábrica (sin colores ni mapa propios) también regresa igual.
-        val clean = DesignUndo.decode(DesignUndo(null, factory, page.copy(template = null, background = PageBackground.WALLPAPER), "", null).encode())!!
+        val clean = DesignUndo.decode(DesignUndo(null, factory, page.copy(template = null, background = PageBackground.WALLPAPER), "").encode())!!
         assertEquals(factory, clean.look)
         assertNull(clean.design)
         assertNull(clean.page.template)
-        assertNull(clean.wallpaper)
+        assertFalse(clean.wallpaper)
         assertNull(clean.pending)
     }
 

@@ -6,7 +6,6 @@ import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.NetworkRequest
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -16,53 +15,38 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.irvingguerra.litedash.core.ui.Button
 import com.irvingguerra.litedash.core.ui.Card
-import com.irvingguerra.litedash.core.ui.CardStyle
 import com.irvingguerra.litedash.core.ui.Icon
 import com.irvingguerra.litedash.core.ui.Icons
 import com.irvingguerra.litedash.core.ui.Label
 import com.irvingguerra.litedash.core.ui.LocalColors
-import com.irvingguerra.litedash.core.ui.MIN_OPACITY
 import com.irvingguerra.litedash.core.ui.Radius
 import com.irvingguerra.litedash.core.ui.Typography
-import com.irvingguerra.litedash.core.ui.themeColors
 import com.irvingguerra.litedash.feature.dashboard.DashboardState
 import com.irvingguerra.litedash.feature.dashboard.Grid
 import com.irvingguerra.litedash.feature.dashboard.MAX_PAGES
-import com.irvingguerra.litedash.feature.dashboard.TileTypes
-import com.irvingguerra.litedash.feature.dashboard.freeArea
-import com.irvingguerra.litedash.feature.dashboard.mapBackground
-import com.irvingguerra.litedash.feature.dashboard.tiles
-import com.irvingguerra.litedash.feature.map.MapPalette
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -133,7 +117,13 @@ private fun DesignCard(design: Design, grid: Grid, dashboard: DashboardState, ap
         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             DesignThumbnail(design, grid, dashboard)
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Label(stringResource(design.name), Typography.subtitle, maxLines = 1, modifier = Modifier.weight(1f))
+                Label(stringResource(design.name), Typography.subtitle, maxLines = 1, modifier = Modifier.weight(1f, fill = false))
+                // Sus colores de un vistazo: fondo, tarjetas, realce y auto.
+                Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    for (color in remember(design) { DesignColors.of(design).swatches }) {
+                        Box(Modifier.size(12.dp).clip(CircleShape).background(color).border(1.dp, c.text.copy(alpha = 0.2f), CircleShape))
+                    }
+                }
                 // Toda la tarjeta aplica; aquí se dice (o, si ya está puesto, la palomita).
                 if (applied) Icon(Icons.done, c.accent, 22.dp)
                 else Label(stringResource(R.string.design_apply).uppercase(currentLocale()), Typography.label, c.accent, maxLines = 1)
@@ -142,61 +132,6 @@ private fun DesignCard(design: Design, grid: Grid, dashboard: DashboardState, ap
                 if (changed) stringResource(R.string.design_with_changes) else stringResource(design.tagline),
                 Typography.small, c.textMuted, maxLines = 1,
             )
-        }
-    }
-}
-
-/**
- * La miniatura de un Diseño, ligera (sin tableros vivos): su fondo en chico (la miniatura de litedash.dev, que se baja
- * una vez; sin internet, el fondo del tema), y encima su acomodo en esta pantalla como rectángulos con sus colores y el
- * ícono de cada widget. Ruta: el color del mapa de fondo con el ícono del mapa en el hueco.
- */
-@Composable
-internal fun DesignThumbnail(design: Design, grid: Grid, dashboard: DashboardState, modifier: Modifier = Modifier) {
-    val context = LocalContext.current
-    // «Día y noche» se muestra de noche (como en su galería).
-    val dark = design.theme != ThemeMode.LIGHT
-    val colors = remember(design) { themeColors(dark, design.accent, design.cardColor) }
-    val tiles = remember(design, grid) { design.template.tiles(grid, skip = dashboard.hidden) }
-    val wallpaper = design.wallpaper
-    val thumb by produceState<ImageBitmap?>(null, wallpaper) { value = wallpaper?.let { wallpaperThumb(context, it) } }
-    val mapLand = remember(dark) { Color(MapPalette.factory(dark).land) }
-    // Lo que se ve de la tarjeta: lisa entera; de vidrio, según «Cuánto se ven».
-    val fill = if (design.cardStyle == CardStyle.SOLID) 1f else 0.55f + 0.4f * (design.cardOpacity - MIN_OPACITY) / (1f - MIN_OPACITY)
-    BoxWithConstraints(
-        modifier.fillMaxWidth().aspectRatio(grid.columns.toFloat() / grid.rows)
-            .clip(RoundedCornerShape(Radius.inner))
-            .background(if (design.template.mapBackground) mapLand else colors.background),
-    ) {
-        thumb?.let { Image(it, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop) }
-        val cw = maxWidth / grid.columns
-        val ch = maxHeight / grid.rows
-        if (design.template.mapBackground) tiles.freeArea(grid)?.let { free ->
-            Box(Modifier.offset(cw * free.col, ch * free.row).size(cw * free.width, ch * free.height), contentAlignment = Alignment.Center) {
-                Icon(Icons.map, colors.accent.copy(alpha = 0.8f), minOf(cw * free.width, ch * free.height) * 0.4f)
-            }
-        }
-        for (t in tiles) {
-            val w = cw * t.width
-            val h = ch * t.height
-            val iconSize: Dp = minOf(w, h, 22.dp) * 0.7f
-            Box(
-                Modifier
-                    .offset(cw * t.col, ch * t.row)
-                    .size(w, h)
-                    .padding(2.dp)
-                    .clip(RoundedCornerShape(Radius.small))
-                    .background(if (t.plain || t.type == TileTypes.CAR) Color.Transparent else colors.surface.copy(alpha = fill)),
-                contentAlignment = Alignment.Center,
-            ) {
-                // Lo que va sin tarjeta (el auto, la hora o el velocímetro flotando) se ve más marcado; el velocímetro, del color de la interfaz.
-                val tint = when {
-                    t.type == TileTypes.SPEEDOMETER -> colors.accent
-                    t.plain || t.type == TileTypes.CAR -> colors.text
-                    else -> colors.textMuted
-                }
-                Icon(iconOf(t.type), tint, if (t.plain || t.type == TileTypes.CAR) iconSize * 1.6f else iconSize)
-            }
         }
     }
 }
@@ -243,15 +178,28 @@ internal fun DesignAppliedNotice(d: Dependencies) {
 /** Uno a la vez baja el fondo que esperaba internet (al abrir Diseños y al volver la red no se pisan). */
 private val retryLock = Mutex()
 
-/** El fondo de un Diseño que esperaba internet: un intento (sin insistir); si llega, ya no espera. */
+/** Intentos por fondo pendiente en esta sesión (cada red que llega cuenta uno): después ya no se insiste. */
+private const val RETRY_MAX = 5
+private var retried: Pair<String, Int>? = null
+
+/**
+ * El fondo de un Diseño que esperaba internet: un intento (sin insistir). Si llega, o si ya no existe en litedash.dev
+ * (un 4xx), ya no espera. Se revisa que siga pendiente ya con el candado del fondo: si mientras tanto elegiste otro
+ * fondo u otro Diseño, no se baja.
+ */
 private suspend fun retryDesignWallpaper(context: Context, prefs: Preferences) = retryLock.withLock {
     val id = prefs.designWallpaper ?: return@withLock
-    if (putLiteDashWallpaper(context, id) && prefs.designWallpaper == id) prefs.designWallpaper = null
+    val tries = retried?.takeIf { it.first == id }?.second ?: 0
+    if (tries >= RETRY_MAX) return@withLock
+    retried = id to tries + 1
+    val got = putLiteDashWallpaper(context, id, byDesign = true) { prefs.designWallpaper == id }
+    if ((got == WallpaperFetch.DONE || got == WallpaperFetch.GONE) && prefs.designWallpaper == id) prefs.designWallpaper = null
 }
 
 /**
  * Mientras el fondo de un Diseño espera internet: cada vez que hay red (al abrir LiteDash con red, o cuando llega) se
- * intenta una vez. Sin fondo pendiente no escucha nada.
+ * intenta una vez, hasta [RETRY_MAX] por sesión. Sin fondo pendiente no escucha nada. Va fuera de lo que tapan Ajustes y
+ * los paneles (si no, con un panel abierto no se enteraba de la red).
  */
 @Composable
 internal fun PendingDesignWallpaper(prefs: Preferences) {

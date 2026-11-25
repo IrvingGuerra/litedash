@@ -22,14 +22,15 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -48,6 +49,7 @@ import com.irvingguerra.litedash.core.ui.Label
 import com.irvingguerra.litedash.core.ui.LocalColors
 import com.irvingguerra.litedash.core.ui.Radius
 import com.irvingguerra.litedash.core.ui.Typography
+import com.irvingguerra.litedash.core.ui.LocalSwipeTaken
 import com.irvingguerra.litedash.core.ui.horizontalSwipe
 import com.irvingguerra.litedash.feature.dashboard.PageBackground
 import com.irvingguerra.litedash.feature.dashboard.STACK_MAX_FACES
@@ -55,34 +57,45 @@ import com.irvingguerra.litedash.feature.dashboard.STACK_MIN_FACES
 import com.irvingguerra.litedash.feature.dashboard.Stack
 import com.irvingguerra.litedash.feature.dashboard.Tile
 import com.irvingguerra.litedash.feature.dashboard.TileTypes
+import com.irvingguerra.litedash.feature.dashboard.cardless
 import com.irvingguerra.litedash.feature.dashboard.isStack
+import com.irvingguerra.litedash.feature.dashboard.withFaces
 import kotlin.math.abs
 
-/** La franja de los puntitos, debajo de la cara (fuera de su tarjeta: no le tapa nada). */
-private val STACK_STRIP = 26.dp
+/**
+ * Lo que la Pila le quita de alto a una cara con tarjeta para los puntitos: la franja ([STACK_TOUCH] de alto, para el
+ * dedo) se enciman un poco con la orilla de abajo de la tarjeta, que va vacía. Una cara sin tarjeta (el auto) no pierde
+ * nada: los puntitos van encima de ella, abajo.
+ */
+internal val STACK_INSET = 28.dp
 
-/** Lo que se toca de cada puntito y de cada flecha. */
-private val STACK_DOT_TOUCH = 36.dp
+/** Lo que se toca de cada puntito (alto y ancho) y de cada flecha (ancho). */
+private val STACK_TOUCH = 40.dp
 private val STACK_ARROW_TOUCH = 48.dp
 
 /** Desde este ancho, flechas discretas a los lados de los puntitos. */
-private val STACK_ARROWS_MIN = 320.dp
+private val STACK_ARROWS_MIN = 200.dp
 
 /** Lo que dura el cambio de cara y cuánto se desliza (fracción del ancho). */
 private const val STACK_SLIDE_MS = 180
 private const val STACK_SLIDE = 0.25f
 
-/** Caras que usan el arrastre (el auto gira, el mapa se mueve): ahí se cambia solo con los puntitos o las flechas. */
-private val DRAG_FACES = setOf(TileTypes.CAR, TileTypes.MAP)
+/**
+ * ¿Deslizar a lo ancho sobre esta cara cambia de cara? Siempre, salvo en las que usan el arrastre (el auto gira, el mapa
+ * se mueve): ahí solo con los puntitos o las flechas. Lo de adentro no usa el deslizar ([LocalSwipeTaken]).
+ */
+internal fun swipesFaces(type: String) = type != TileTypes.CAR && type != TileTypes.MAP
 
 /**
  * La Pila: una cara a la vista, dibujada por [face] como su widget de siempre (las demás ni se componen). Se cambia
- * deslizando a lo ancho sobre ella, con los puntitos o con las flechas; la que se ve se guarda con el acomodo. Con una
- * sola cara que se vea (las de un módulo apagado no cuentan) es ese widget tal cual; sin ninguna, [onEdit] la arma.
+ * deslizando a lo ancho sobre ella (salvo en el auto y el mapa, que usan el arrastre), con los puntitos o con las
+ * flechas; la que se ve se guarda con el acomodo. Dentro, deslizar no hace otra cosa ([LocalSwipeTaken]: la música no
+ * pasa de canción así; un gesto = una cosa). Con una sola cara que se vea (las de un módulo apagado no cuentan) es ese
+ * widget tal cual; sin ninguna, [onEdit] la arma.
  */
 @Composable
 fun StackTile(d: Dependencies, p: Tile, onEdit: () -> Unit, face: @Composable (Tile) -> Unit) {
-    val stack = remember(p) { Stack.of(p) }
+    val stack = Stack.of(p)
     val visible = stack.visible(d.dashboard.hidden)
     val shown = stack.shown(d.dashboard.hidden)
     if (shown == null) return StackEmpty(onEdit)
@@ -101,35 +114,36 @@ fun StackTile(d: Dependencies, p: Tile, onEdit: () -> Unit, face: @Composable (T
     }
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val arrows = maxWidth >= STACK_ARROWS_MIN
-        Column(Modifier.fillMaxSize()) {
+        val swipe = if (!swipesFaces(shown.type)) Modifier else Modifier.horizontalSwipe({ show(index + 1) }, { show(index - 1) })
+        Box(Modifier.fillMaxSize().then(swipe)) {
             Box(
                 Modifier
-                    .fillMaxWidth()
-                    .weight(1f)
-                    .then(if (shown.type in DRAG_FACES) Modifier else Modifier.horizontalSwipe({ show(index + 1) }, { show(index - 1) }))
+                    .fillMaxSize()
+                    // Sin tarjeta (el auto o lo que flota), los puntitos van encima de ella.
+                    .padding(bottom = if (shown.plain || shown.cardless) 0.dp else STACK_INSET)
                     .graphicsLayer {
                         translationX = slide.value * size.width * STACK_SLIDE
                         alpha = 1f - abs(slide.value) * 0.6f
                         // Solo al deslizarse: quieta, la sombra del auto puede salirse como en su widget.
                         clip = slide.value != 0f
                     },
-            ) { key(shown.id) { face(shown) } }
-            StackDots(visible, index, arrows, show)
+            ) { CompositionLocalProvider(LocalSwipeTaken provides true) { key(shown.id) { face(shown) } } }
+            StackDots(visible, index, arrows, show, Modifier.align(Alignment.BottomCenter))
         }
     }
 }
 
-/** Los puntitos (uno por cara a la vista) y, si es ancha, las flechas. */
+/** Los puntitos (uno por cara a la vista) y, si es ancha, las flechas: una franja de [STACK_TOUCH] para el dedo. */
 @Composable
-private fun StackDots(faces: List<Tile>, index: Int, arrows: Boolean, show: (Int) -> Unit) {
-    Row(Modifier.fillMaxWidth().height(STACK_STRIP), verticalAlignment = Alignment.CenterVertically) {
+private fun StackDots(faces: List<Tile>, index: Int, arrows: Boolean, show: (Int) -> Unit, modifier: Modifier) {
+    Row(modifier.fillMaxWidth().height(STACK_TOUCH), verticalAlignment = Alignment.CenterVertically) {
         if (arrows) StackArrow(faces.getOrNull(index - 1), back = true) { show(index - 1) }
         Row(Modifier.weight(1f).fillMaxHeight(), horizontalArrangement = Arrangement.Center) {
             faces.forEachIndexed { i, f ->
                 val label = stringResource(R.string.stack_show, stringResource(nameOf(f.type)))
                 Box(
                     Modifier
-                        .width(STACK_DOT_TOUCH)
+                        .width(STACK_TOUCH)
                         .fillMaxHeight()
                         .clickable(remember { MutableInteractionSource() }, indication = null) { show(i) }
                         .semantics { contentDescription = label },
@@ -173,19 +187,26 @@ private fun StackEmpty(onEdit: () -> Unit) {
 
 private fun nameOf(type: String) = TileSpecs.firstOrNull { it.type == type }?.name ?: R.string.tile_stack
 
-/** La Pila de fábrica: tu auto, las llantas (si las tienes) y la música. */
+/** La Pila de fábrica: tu auto (si la página no lo tiene ya), las llantas (si las tienes) y la música. */
 fun defaultStack(d: Dependencies): Stack =
-    Stack.of(listOfNotNull(TileTypes.CAR, TileTypes.TIRES.takeIf { d.hasTpmsSource }, TileTypes.MUSIC))
+    Stack.of(defaultStackTypes(hasCar = d.dashboard.tiles.withFaces().any { it.type == TileTypes.CAR }, tires = d.hasTpmsSource))
+
+/** Las caras de la Pila de fábrica: sin un segundo auto en la página; si quedan menos de dos, la hora completa. */
+internal fun defaultStackTypes(hasCar: Boolean, tires: Boolean): List<String> =
+    listOfNotNull(TileTypes.CAR.takeUnless { hasCar }, TileTypes.TIRES.takeIf { tires }, TileTypes.MUSIC)
+        .let { if (it.size < STACK_MIN_FACES) it + TileTypes.CLOCK else it }
 
 /**
- * Lo que se puede agregar a la Pila [stack]: lo que cabe en su tamaño, de un módulo prendido y sin repetir (salvo las apps
- * y los medidores, que cambian por su dato); el Mapa no sobre el mapa de fondo.
+ * Lo que se puede agregar a la Pila [stack]: lo que cabe en su tamaño (con tarjeta, sin la franja de los puntitos:
+ * [STACK_INSET]; [cell] = lo que mide una celda), de un módulo prendido y sin repetir (salvo las apps y los medidores,
+ * que cambian por su dato); el Mapa no sobre el mapa de fondo.
  */
-private fun faceTypes(d: Dependencies, stack: Tile, faces: List<Tile>): List<String> = TileSpecs.filter { spec ->
+private fun faceTypes(d: Dependencies, stack: Tile, faces: List<Tile>, cell: DpSize): List<String> = TileSpecs.filter { spec ->
     val t = spec.type
+    val inset = if (t == TileTypes.CAR || t == TileTypes.ROAD || t == TileTypes.IMAGE) 0.dp else STACK_INSET
     t != TileTypes.STACK && moduleOff(d, t) == null &&
         !(t == TileTypes.MAP && d.dashboard.background == PageBackground.MAP) &&
-        spec.limits.minWidth <= stack.width && spec.limits.minHeight <= stack.height &&
+        spec.limits.minWidth <= stack.width && cell.height * spec.limits.minHeight <= cell.height * stack.height - inset &&
         (t == TileTypes.APP || t == TileTypes.GAUGE || faces.none { it.type == t })
 }.map { it.type }
 
@@ -236,7 +257,7 @@ fun CustomizeStackPanel(
                     if (stack.faces.size < STACK_MAX_FACES) {
                         if (!adding) Button(stringResource(R.string.stack_add), { adding = true })
                         else FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            for (type in faceTypes(d, tile, stack.faces)) Button(stringResource(nameOf(type)), {
+                            for (type in faceTypes(d, tile, stack.faces, cell)) Button(stringResource(nameOf(type)), {
                                 val face = Stack.face(type)
                                 save(stack.add(face).copy(current = face.id))
                                 adding = false

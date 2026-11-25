@@ -157,11 +157,17 @@ internal fun sourceStillHeld(held: Boolean, lost: Boolean, linked: Boolean): Boo
 
 /**
  * ¿Se pospone abrir la app de fábrica encima de LiteDash? Con el auto en movimiento, siempre. Sin dato de velocidad
- * ([speedUnknown]: ningún widget usa el GPS ni hay OBD) también, salvo que la persona acabe de tocar la música en la
- * pantalla ([byTouch]): está viendo la pantalla y pide que suene. Antes, en esas pantallas la receta se posponía para
- * siempre y el Bluetooth nunca sonaba (reportes D677C4, 48FDB1).
+ * ([speedUnknown]: ningún widget usa el GPS ni hay OBD) también, salvo que la persona acabe de tocar el aviso «Controla
+ * la música desde tu celular» ([asked]): está viendo la pantalla y pide justo eso. Un ▶ no basta (el auto puede ir
+ * andando). Antes, en esas pantallas la receta se posponía para siempre y el Bluetooth nunca sonaba (reportes D677C4, 48FDB1).
  */
-internal fun holdsForMotion(moving: Boolean, speedUnknown: Boolean, byTouch: Boolean): Boolean = moving && !(speedUnknown && byTouch)
+internal fun holdsForMotion(moving: Boolean, speedUnknown: Boolean, asked: Boolean): Boolean = moving && !(speedUnknown && asked)
+
+/**
+ * ¿Vale volver a pedir una receta pospuesta ([retryPostponed])? Con dato de velocidad sí (al detenerse, pasa). Sin dato y
+ * sin el toque al aviso, no: seguiría pospuesta igual, y abrir una app sola con el auto quizá andando no se hace.
+ */
+internal fun retriesPostponed(speedUnknown: Boolean, asked: Boolean): Boolean = !speedUnknown || asked
 
 /** El celular primero; si ya no hay enlace, el camino de siempre. */
 private fun phoneFirst(rest: Plan) = rest.copy(route = listOf(Channel.PHONE) + rest.route)

@@ -4,11 +4,11 @@ package com.irvingguerra.litedash
 
 import android.content.Context
 import androidx.annotation.StringRes
-import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import com.irvingguerra.litedash.core.ui.CardEdge
@@ -155,15 +155,16 @@ fun Design.matches(now: DesignLook, ownCar: Boolean) = over(now, ownCar) == now
 
 /**
  * Lo de antes del último Diseño, para «Deshacer» (un nivel): el Diseño de antes ([design]), lo de toda la app ([look]),
- * la página como estaba ([page]) y cómo la dejó el Diseño ([applied], para saber si alguien la movió después), el fondo
- * ([wallpaper], si el Diseño lo cambió) y el fondo que esperaba internet ([pending]).
+ * la página como estaba ([page]) y cómo la dejó el Diseño ([applied], para saber si alguien la movió después), si el
+ * Diseño cambió el fondo ([wallpaper]: al deshacer regresa tu foto, guardada aparte en [OwnWallpaper]) y el fondo que
+ * esperaba internet ([pending]).
  */
 internal data class DesignUndo(
     val design: String?,
     val look: DesignLook,
     val page: PageSnapshot,
     val applied: String,
-    val wallpaper: WallpaperBackup? = null,
+    val wallpaper: Boolean = false,
     val pending: String? = null,
 ) {
     fun encode(): String = JSONObject().apply {
@@ -183,10 +184,7 @@ internal data class DesignUndo(
         put("background", page.background.stored)
         putOpt("template", page.template?.name)
         put("applied", applied)
-        wallpaper?.let {
-            put("hadWallpaper", it.had)
-            putOpt("wallpaperId", it.id)
-        }
+        put("wallpaper", wallpaper)
         putOpt("pending", pending)
     }.toString()
 
@@ -214,8 +212,7 @@ internal data class DesignUndo(
                     background = PageBackground.fromStored(o.getString("background")),
                     template = o.optStringOrNull("template")?.let { n -> Template.entries.firstOrNull { it.name == n } },
                 )
-                val wallpaper = if (o.has("hadWallpaper")) WallpaperBackup(o.getBoolean("hadWallpaper"), o.optStringOrNull("wallpaperId")) else null
-                DesignUndo(o.optStringOrNull("design"), look, page, o.getString("applied"), wallpaper, o.optStringOrNull("pending"))
+                DesignUndo(o.optStringOrNull("design"), look, page, o.getString("applied"), o.optBoolean("wallpaper"), o.optStringOrNull("pending"))
             } catch (e: JSONException) {
                 null
             }
@@ -246,8 +243,9 @@ private var designTurn = 0
 
 /**
  * Aplica [design] a la página que se ve (no toca las demás) y a lo de toda la app, de una vez, y deja listo «Deshacer».
- * Su fondo se baja después: sin internet todo lo demás ya quedó y el fondo es el resplandor del tema hasta que haya red
- * ([prefs.designWallpaper], se baja una sola vez). Desde el hilo principal.
+ * Su fondo se baja después: tu foto se guarda aparte antes (una sola vez: el fondo de otro Diseño no la reemplaza); sin
+ * internet todo lo demás ya quedó y el fondo es el resplandor del tema hasta que haya red ([prefs.designWallpaper], se
+ * baja una sola vez). Desde el hilo principal.
  */
 internal fun applyDesign(d: Dependencies, context: Context, scope: CoroutineScope, design: Design) {
     val prefs = d.prefs
@@ -261,33 +259,49 @@ internal fun applyDesign(d: Dependencies, context: Context, scope: CoroutineScop
     prefs.design = design.id
     DesignNotice.show(design)
     val turn = ++designTurn
-    val id = design.wallpaper ?: return
-    // Su fondo manda: el de otro Diseño que esperaba internet ya no.
+    // El fondo de otro Diseño que esperaba internet ya no: manda este, traiga fondo o no.
     prefs.designWallpaper = null
+    val id = design.wallpaper ?: return
     scope.launch {
-        val backup = backupWallpaper(context) ?: return@launch
-        if (turn != designTurn) return@launch
-        prefs.designUndo = undo.copy(wallpaper = backup).encode()
-        if (putLiteDashWallpaper(context, id) || turn != designTurn) return@launch
+        if (!keepOwnWallpaper(context) || turn != designTurn) return@launch
+        prefs.designUndo = undo.copy(wallpaper = true).encode()
+        val got = putLiteDashWallpaper(context, id, byDesign = true) { turn == designTurn }
+        if (got != WallpaperFetch.OFFLINE || turn != designTurn) return@launch
         // Sin internet: sin imagen (el resplandor del tema) hasta que haya red.
         clearWallpaper(context)
         prefs.designWallpaper = id
     }
 }
 
-/** Lo de «Deshacer», si aún se puede: hay algo guardado y nadie ha movido a mano la página donde se aplicó. */
-internal fun designUndo(d: Dependencies): DesignUndo? =
-    DesignUndo.decode(d.prefs.designUndo)?.takeIf { d.dashboard.unchanged(it.page.page, it.page.grid, it.applied) }
+/** Lo guardado para «Deshacer», leído una vez por texto (se pregunta en cada dibujo del aviso y del panel). */
+private var undoRead: Pair<String, DesignUndo?>? = null
 
-/** Regresa todo a como estaba antes del último Diseño (lo de la app, la página y el fondo). Desde el hilo principal. */
+private fun undoOf(text: String?): DesignUndo? {
+    if (text.isNullOrEmpty()) return null
+    undoRead?.let { (from, undo) -> if (from == text) return undo }
+    return DesignUndo.decode(text).also { undoRead = text to it }
+}
+
+/**
+ * Lo de «Deshacer», si aún se puede: hay algo guardado y nadie ha movido a mano la página donde se aplicó (cambiar de
+ * cara una Pila o una opción de un widget no cuenta: [DashboardState.unchanged] solo mira dónde está cada uno).
+ */
+internal fun designUndo(d: Dependencies): DesignUndo? =
+    undoOf(d.prefs.designUndo)?.takeIf { d.dashboard.unchanged(it.page.page, it.page.grid, it.applied) }
+
+/**
+ * Regresa todo a como estaba antes del último Diseño (lo de la app y la página) y, si el Diseño cambió el fondo, tu foto
+ * (salvo que hayas elegido otro fondo después: ese se queda). Desde el hilo principal.
+ */
 internal fun undoDesign(d: Dependencies, context: Context, scope: CoroutineScope) {
     val undo = designUndo(d) ?: return
     designTurn++
     d.prefs.put(undo.look)
     d.dashboard.restore(undo.page)
     d.prefs.design = undo.design
-    d.prefs.designWallpaper = undo.pending
+    // Con tu foto de vuelta, el fondo que otro Diseño esperaba ya no se pone encima.
+    d.prefs.designWallpaper = if (undo.wallpaper) null else undo.pending
     d.prefs.designUndo = null
     DesignNotice.show(null)
-    undo.wallpaper?.let { scope.launch { restoreWallpaper(context, it) } }
+    if (undo.wallpaper) scope.launch { restoreOwnWallpaper(context) }
 }

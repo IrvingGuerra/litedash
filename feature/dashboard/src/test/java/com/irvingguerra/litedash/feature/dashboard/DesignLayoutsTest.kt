@@ -139,4 +139,14 @@ class DesignLayoutsTest {
         "DESIGN_FOREST 6x9" to "map@0,0,6x5 car@0,5,6x3 stack@0,8,3x1 weather@3,8,3x1",
         )
     }
+
+    @Test
+    fun neverTwoCarsOnAPage() {
+        // También en pantallas donde el mapa no cabe y su lugar lo toma el auto (Grafito): la Pila ya no lo repite.
+        val more = grids + listOf(Grid(5, 3), Grid(4, 6), Grid(8, 3), Grid(3, 5))
+        for (t in DESIGN_TEMPLATES) for (g in more) {
+            val cars = t.layout(g, skip = noObd).withFaces().count { it.type == TileTypes.CAR }
+            assertTrue("${t.name} ${g.columns}x${g.rows}: $cars autos", cars <= 1)
+        }
+    }
 }

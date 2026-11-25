@@ -390,9 +390,11 @@ fun Template.layout(c: Grid, hero: String = TileTypes.CAR, skip: (String) -> Boo
         if (width >= 3 && height >= 2) place(TileTypes.MAP, col, row, width, height)
         else if (fallback != null) place(fallback, col, row, width, height, fallbackData)
     }
-    // Una Pila con [faces] (las de un módulo apagado no van): con una sola cara, esa cara sola; sin ninguna, nada.
+    // Una Pila con [faces] (las de un módulo apagado no van): con una sola cara, esa cara sola; sin ninguna, nada. Si la
+    // página ya tiene la pieza grande (p. ej. el auto en lugar del mapa que no cupo), la Pila no la repite: dos autos no.
     fun stack(faces: List<String>, col: Int, row: Int, width: Int, height: Int) {
         val types = faces.map { if (it == TileTypes.CAR) hero else it }.filterNot(skip)
+            .filterNot { it == hero && list.any { t -> t.type == hero } }
         if (types.size < STACK_MIN_FACES) {
             types.firstOrNull()?.let { place(it, col, row, width, height) }
             return

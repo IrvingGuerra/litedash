@@ -90,4 +90,35 @@ class StackTest {
         assertEquals(layout, layout.withData(mapOf("nobody" to "x")))
         assertFalse(layout[0].isStack)
     }
+
+    @Test
+    fun migrationsReachTheFacesOfStacks() {
+        val s = Stack(listOf(face("speed-1", TileTypes.SPEEDOMETER, "max=120"), face("music-1", TileTypes.MUSIC)))
+        val layout = listOf(stackTile(s), Tile("speed-2", TileTypes.SPEEDOMETER, 0, 0, 2, 2, "max=120"))
+        val bump = { t: Tile -> if (t.type == TileTypes.SPEEDOMETER) "max=200" else null }
+        val after = layout.mapData(bump)
+        assertEquals("max=200", after[1].data)
+        assertEquals("max=200", Stack.of(after[0]).faces[0].data)
+        assertEquals("", Stack.of(after[0]).faces[1].data)
+        // Lo guardado de todas las páginas, igual.
+        val written = rewriteLayouts(mapOf("fine_layout_20x10" to formatLayout(layout)), bump)
+        val read = parseLayout(written.getValue("fine_layout_20x10"))
+        assertEquals("max=200", Stack.of(read[0]).faces[0].data)
+        // Sin nada que cambiar no se escribe nada.
+        assertTrue(rewriteLayouts(mapOf("fine_layout_20x10" to formatLayout(after)), bump).isEmpty())
+    }
+
+    @Test
+    fun undoSurvivesAFaceChangeOrAnOptionButNotAMove() {
+        val s = Stack(listOf(face("car-1", TileTypes.CAR), face("music-1", TileTypes.MUSIC)))
+        val layout = listOf(stackTile(s), Tile("clock-1", TileTypes.CLOCK, 0, 0, 2, 2, "seconds=0"))
+        // Otra cara a la vista y otra opción del reloj: siguen en su lugar.
+        val faced = listOf(stackTile(s.copy(current = "music-1")), layout[1].copy(data = "seconds=1", plain = true))
+        assertTrue(samePlaces(layout, faced))
+        // Movido o cambiado de tamaño, quitado o con otro widget: ya no.
+        assertFalse(samePlaces(layout, listOf(layout[0], layout[1].copy(col = 1))))
+        assertFalse(samePlaces(layout, listOf(layout[0], layout[1].copy(width = 3))))
+        assertFalse(samePlaces(layout, layout.take(1)))
+        assertFalse(samePlaces(layout, listOf(layout[0], layout[1].copy(id = "clock-2"))))
+    }
 }
