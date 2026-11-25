@@ -155,6 +155,14 @@ internal fun serviceBackup(busy: Boolean, audio: Boolean, receiver: Boolean): Bo
  */
 internal fun sourceStillHeld(held: Boolean, lost: Boolean, linked: Boolean): Boolean = held && !lost && linked
 
+/**
+ * ¿Se pospone abrir la app de fábrica encima de LiteDash? Con el auto en movimiento, siempre. Sin dato de velocidad
+ * ([speedUnknown]: ningún widget usa el GPS ni hay OBD) también, salvo que la persona acabe de tocar la música en la
+ * pantalla ([byTouch]): está viendo la pantalla y pide que suene. Antes, en esas pantallas la receta se posponía para
+ * siempre y el Bluetooth nunca sonaba (reportes D677C4, 48FDB1).
+ */
+internal fun holdsForMotion(moving: Boolean, speedUnknown: Boolean, byTouch: Boolean): Boolean = moving && !(speedUnknown && byTouch)
+
 /** El celular primero; si ya no hay enlace, el camino de siempre. */
 private fun phoneFirst(rest: Plan) = rest.copy(route = listOf(Channel.PHONE) + rest.route)
 

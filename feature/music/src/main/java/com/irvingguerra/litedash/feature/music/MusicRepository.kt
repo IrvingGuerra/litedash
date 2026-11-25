@@ -278,6 +278,16 @@ class MusicRepository(internal val context: Context) {
     /** Ya se pidió la entrada de audio en esta vuelta de [phoneOnly] ([phoneOnlyShown]). */
     internal var phoneOnlyAsked = false
 
+    /** Veces que se volvió a pedir porque quedó pospuesta ([retryPostponed]); se cuenta por vuelta de [phoneOnly]. */
+    internal var phoneOnlyRetries = 0
+    internal val phoneOnlyRetry = Runnable { retryPostponed() }
+
+    /** Cuándo tocó la persona la música en la pantalla (su botón ▶ o el aviso), en [SystemClock.elapsedRealtime]. */
+    internal var touchedAt = 0L
+
+    /** La calibración en curso empezó con un toque en la pantalla ([calibrateBluetooth]); ver [holdsForMotion]. */
+    internal var calibrationByTouch = false
+
     /**
      * Lo que preguntan al sistema [bluetoothService], [knownBluetooth] y [headUnit] (decenas de consultas al instalador en
      * pantallas de 1 GB) se hace en el hilo de los perfiles al aparecer la primera pieza, no en el primer play ni al
@@ -885,7 +895,11 @@ class MusicRepository(internal val context: Context) {
          * Play o pausa ([play]/[pause]); sin nada a la vista, play despierta lo que toque. [shownPlaying] = lo que muestra el
          * botón de la pantalla (▮▮ = true): hace exactamente eso. El volante y la barra no lo ven (null): [playingNow].
          */
-        fun toggle(shownPlaying: Boolean? = null) = if (pressPlays(shownPlaying, ::playingNow)) play(this) else pause(this)
+        fun toggle(shownPlaying: Boolean? = null) {
+            // Solo el botón de la pantalla dice lo que muestra: es un toque de la persona (el volante no cuenta).
+            if (shownPlaying != null) touchedAt = SystemClock.elapsedRealtime()
+            if (pressPlays(shownPlaying, ::playingNow)) play(this) else pause(this)
+        }
 
         /**
          * ¿Suena, para el volante (también elige entre música y radio)? Lo que se ve, si es de verdad. Sin eso (la pieza no está en pantalla y no escucha, o su
@@ -1118,6 +1132,9 @@ class MusicRepository(internal val context: Context) {
     /** El auto va a más de 10 km/h (lo pone la app con el GPS o el OBD): abrir una app encima espera al alto. */
     var moving: () -> Boolean = { false }
 
+    /** No hay dato de velocidad (ningún widget usa el GPS ni hay OBD): [moving] dice que sí se mueve, por si acaso. */
+    var speedUnknown: () -> Boolean = { false }
+
     /** Lo que pregunta o avisa la calibración en su widget; null = nada. */
     var soundCheck by mutableStateOf<SoundCheck?>(null)
         internal set
@@ -1197,7 +1214,8 @@ class MusicRepository(internal val context: Context) {
 
     internal val btCalibration by lazy {
         SoundCalibration(
-            SoundPiece.MUSIC, btStore, headUnit.trustsSignal, { moving() || users == 0 }, mainHandler, ::trace, { showCheck(SoundPiece.MUSIC, it) },
+            SoundPiece.MUSIC, btStore, headUnit.trustsSignal,
+            { users == 0 || holdsForMotion(moving(), speedUnknown(), calibrationByTouch) }, mainHandler, ::trace, { showCheck(SoundPiece.MUSIC, it) },
             use = ::useBluetooth, check = ::bluetoothHeard, knowable = ::bluetoothKnowable, audible = ::bluetoothAudible,
         )
     }
@@ -1291,6 +1309,8 @@ class MusicRepository(internal val context: Context) {
                 val browsers = musicApps().filter(::relevant)
                 appendLine("Música elegida: ${preferredNow ?: "ninguna"}")
                 appendLine("Fuentes: radio=${radioNow ?: "-"}, bluetooth=${bluetoothApp() ?: "-"}")
+                // Sin radio reconocida: las apps de la pantalla que parecen una, para poder agregarla (reportes 9FFE47, EE5B4C).
+                if (radioNow == null) appendLine("  Radios que trae la pantalla: ${FactoryAudio.radioCandidates(context).joinToString().ifEmpty { "ninguna" }}")
                 val notes = (sources.values.toSet() + listOfNotNull(knownBluetooth)).let { apps -> NotificationService.active().filter { it.packageName in apps } }
                 // La de Bluetooth de marca también si no se enlazó (se usa igual: [bluetoothApp]).
                 val listed = sources.entries.map { it.key to it.value } +
