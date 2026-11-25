@@ -56,6 +56,8 @@ class TileStore(context: Context, private val userAgent: String, val source: Til
     /** Las que fallaron o vinieron vacías: no se piden hasta esa hora (solo de las que se ven). */
     private val retryAt = HashMap<Long, Long>()
     private var visible: Set<Long> = emptySet()
+    /** Sube cuando cambian los mapas bajados ([packsChanged]): lo que se leyó antes ya no se guarda. */
+    private var generation = 0
     /** Lo que pidió cada mapa que lo está viendo. */
     private val views = ViewRequests()
     private var scope: CoroutineScope? = null
@@ -205,6 +207,7 @@ class TileStore(context: Context, private val userAgent: String, val source: Til
     /** Un trabajador de [owner]: si mientras tanto se pausó (o se pausó y se reanudó), sale sin tocar nada. */
     private fun work(owner: CoroutineScope) {
         while (owner.isActive) {
+            var gen = 0
             val key = synchronized(lock) {
                 if (scope !== owner) return
                 var next: Long? = null
@@ -213,6 +216,7 @@ class TileStore(context: Context, private val userAgent: String, val source: Til
                     if (k in visible) next = k else pending -= k
                 }
                 if (next == null) workers--
+                gen = generation
                 next
             } ?: return
             val result = try {
@@ -236,7 +240,11 @@ class TileStore(context: Context, private val userAgent: String, val source: Til
             synchronized(lock) {
                 if (scope !== owner) return
                 pending -= key
-                if (image == null) {
+                if (gen != generation) {
+                    // Se leyó con los mapas de antes: se vuelve a pedir (y lo que la fuente guardó de esa lectura, fuera).
+                    source.forget()
+                    schedule()
+                } else if (image == null) {
                     retryAt[key] = result.retryAt
                     schedule()
                 } else {
@@ -442,6 +450,24 @@ class TileStore(context: Context, private val userAgent: String, val source: Til
          * Android pide memoria (onTrimMemory): los almacenes que nadie ve la sueltan ya. Sirve igual con la app al frente
          * (TRIM_MEMORY_RUNNING_LOW/CRITICAL): no suelta lo que se está viendo. También las rutas en línea guardadas.
          */
+        /**
+         * Cambiaron los mapas bajados (llegó un estado, sus calles o una versión nueva): las teselas en memoria se dibujaron
+         * con lo de antes (quizá sin calles), así que se sueltan y lo que se ve se vuelve a pedir.
+         */
+        internal fun packsChanged() {
+            val stores = synchronized(all) { all.toList() }
+            for (s in stores) if (s.packs != null) s.main.post {
+                synchronized(s.lock) {
+                    s.generation++
+                    s.memory.evictAll()
+                    s.source.forget()
+                    s.retryAt.clear()
+                    s.schedule()
+                    s.showLoaded()
+                }
+            }
+        }
+
         fun trimAll() {
             OnlineRoute.clearCache()
             val stores = synchronized(all) { all.toList() }

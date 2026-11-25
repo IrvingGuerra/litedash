@@ -52,6 +52,8 @@ class GraphTilesTest {
     fun readsLdm1WithDrawingSections() {
         assertTrue(graph.drawable)
         assertTrue(graph.edgeCount > 1000)
+        // Lo mismo solo con la cabecera (lo que revisa un paquete del formato 2 antes de usarlo).
+        assertTrue(RoadGraph.hasDrawing(file))
     }
 
     @Test
@@ -60,6 +62,7 @@ class GraphTilesTest {
         try {
             LdmWriter.write(f, listOf(intArrayOf(19_240_000, -103_730_000), intArrayOf(19_241_000, -103_730_000)), listOf(LdmWriter.Edge(0, 1)), emptyList())
             RoadGraph.open(f)!!.use { assertFalse(it.drawable) }
+            assertFalse(RoadGraph.hasDrawing(f))
         } finally {
             f.delete()
         }

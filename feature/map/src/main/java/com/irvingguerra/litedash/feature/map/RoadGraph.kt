@@ -378,6 +378,22 @@ class RoadGraph private constructor(private val channel: FileChannel, private va
             }
         }
 
+        /**
+         * ¿[file] es un LDM1 con las secciones de dibujo (lo que necesita un mapa del formato 2)? Solo lee la cabecera:
+         * sirve para revisar un paquete antes de usarlo, sin mapearlo.
+         */
+        fun hasDrawing(file: File): Boolean = runCatching {
+            RandomAccessFile(file, "r").use { raf ->
+                if (raf.length() < 128 || raf.length() > Int.MAX_VALUE) return false
+                val head = ByteArray(128)
+                raf.readFully(head)
+                val b = ByteBuffer.wrap(head).order(ByteOrder.LITTLE_ENDIAN)
+                val ok = head[0] == 'L'.code.toByte() && head[1] == 'D'.code.toByte() && head[2] == 'M'.code.toByte() &&
+                    head[3] == '1'.code.toByte() && b.getShort(6).toInt() and FLAG_DRAW != 0
+                ok && listOf(88, 92, 96).all { at -> b.getInt(at).let { it >= 128 && it + 8L <= raf.length() } }
+            }
+        }.getOrDefault(false)
+
         /** El desplazamiento de una sección de dibujo en la cabecera (byte [at]); 0 si no la trae o no cabe. */
         private fun drawOffset(b: ByteBuffer, at: Int): Int {
             if (b.get(3) != '1'.code.toByte() || b.getShort(6).toInt() and FLAG_DRAW == 0) return 0

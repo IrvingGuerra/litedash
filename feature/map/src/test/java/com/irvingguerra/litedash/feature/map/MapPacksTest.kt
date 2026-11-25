@@ -43,7 +43,7 @@ class MapPacksTest {
 
     @Test
     fun otherVersionsOfTheIndexAreIgnored() {
-        assertTrue(MapPacks.parseIndex("""{"version":2,"base":"x","regions":[]}""").isEmpty())
+        assertTrue(MapPacks.parseIndex("""{"version":3,"base":"x","regions":[]}""").isEmpty())
     }
 
     @Test
@@ -83,7 +83,7 @@ class MapPacksTest {
         val off = MapPacks.readIndex("""{"version":1,"base":"x","online":{"photon":false},"regions":[]}""")
         assertFalse(off.photon)
         // Aunque sea de otra versión (sin regiones), el apagado de Photon sí cuenta.
-        assertFalse(MapPacks.readIndex("""{"version":2,"online":{"photon":false}}""").photon)
+        assertFalse(MapPacks.readIndex("""{"version":3,"online":{"photon":false}}""").photon)
     }
 
     @Test
@@ -93,7 +93,7 @@ class MapPacksTest {
         val off = MapPacks.readIndex("""{"version":1,"base":"x","online":{"photon":true,"osrm":false},"regions":[]}""")
         assertTrue(off.photon)
         assertFalse(off.osrm)
-        assertFalse(MapPacks.readCountries("""{"version":2,"online":{"osrm":false},"countries":[]}""").osrm)
+        assertFalse(MapPacks.readCountries("""{"version":3,"online":{"osrm":false},"countries":[]}""").osrm)
         assertTrue(MapPacks.readCountries(countries).osrm)
     }
 
@@ -148,6 +148,77 @@ class MapPacksTest {
         assertEquals(0, MapPacks.partialOf(full, null))
     }
 
+    // ---- Formato 2 (calles dibujadas del .ldm): countries2.json + countries2/<cc>.json ----
+
+    private val indexV2 = """
+        {"version":2,"release":"mx-z","base":"https://example.org/mx-z/","regions":[
+          {"id":"mx-nuevo","country":"MX","format":2,"name":{"es":"Nuevo"},"bbox":[-100,19,-98,21],"shape":[],
+           "files":{"map":{"name":"a.pmtiles","size":1000,"sha256":"m"},
+                    "search":{"name":"a.srch.gz","size":10,"unpacked":30,"sha256":"s"},
+                    "routes":{"name":"a.ldm.gz","size":200,"unpacked":450,"sha256":"r"}}},
+          {"id":"mx-viejo","country":"MX","name":{"es":"Viejo"},"bbox":[-100,19,-98,21],"shape":[],
+           "files":{"map":{"name":"b.pmtiles","size":5,"sha256":"b"}}},
+          {"id":"mx-sin-calles","country":"MX","format":2,"name":{"es":"Sin"},"bbox":[-100,19,-98,21],"shape":[],
+           "files":{"map":{"name":"c.pmtiles","size":5,"sha256":"c"},"search":{"name":"c.srch.gz","size":1,"sha256":"d"}}},
+          {"id":"mx-futuro","country":"MX","format":3,"name":{"es":"Futuro"},"bbox":[-100,19,-98,21],"shape":[],
+           "files":{"map":{"name":"d.pmtiles","size":5,"sha256":"e"}}}
+        ]}
+    """.trimIndent()
+
+    @Test
+    fun theV2IndexSaysTheFormatOfEachRegion() {
+        val regions = MapPacks.parseIndex(indexV2)
+        // Un formato 2 sin sus tres archivos y uno más nuevo que esta app se saltan; uno sin "format" es del 1.
+        assertEquals(listOf("mx-nuevo", "mx-viejo"), regions.map { it.id })
+        val nuevo = regions[0]
+        assertEquals(2, nuevo.format)
+        assertEquals(1, regions[1].format)
+        assertEquals(450, nuevo.routes!!.unpacked)
+        assertEquals("https://example.org/mx-z/a.ldm.gz", nuevo.routes!!.url)
+        // En el índice de la versión 1, "format" no cuenta (las apps viejas no lo leen: nada cambia para ellas).
+        assertEquals(1, MapPacks.parseIndex(indexV2.replace(""""version":2""", """"version":1""")).first().format)
+    }
+
+    @Test
+    fun aV2PackNeedsRoomForAllThreeFilesOpened() {
+        val nuevo = MapPacks.parseIndex(indexV2).first()
+        val margin = MapPacks.spaceNeeded(MapRegion("m", "MX", emptyMap(), doubleArrayOf(0.0, 0.0, 1.0, 1.0), emptyList(), PackFile("u", 0, "a")), 0)
+        // Los tres gzip (1210) más la búsqueda y las calles abiertas (lo que dice el índice: 30 + 450).
+        assertEquals(1210 + 480 + margin, MapPacks.spaceNeeded(nuevo, 0))
+        // Lo ya bajado de cualquiera de los tres se descuenta.
+        assertEquals(1210 + 480 + margin - 1100, MapPacks.spaceNeeded(nuevo, 1100))
+        // Sin "unpacked", ~3 veces el gzip.
+        val guess = MapRegion("g", "MX", emptyMap(), nuevo.bbox, emptyList(), PackFile("u", 100, "a"), PackFile("s", 10, "b"), PackFile("r", 20, "c"), 2)
+        assertEquals(130 + 3 * 30 + margin, MapPacks.spaceNeeded(guess, 0))
+    }
+
+    @Test
+    fun aHalfDownloadedV2PackIsResumedOnlyForTheSameThreeFiles() {
+        val nuevo = MapPacks.parseIndex(indexV2).first()
+        assertEquals(700, MapPacks.partialOf(nuevo, PausedPack("mx-nuevo", nuevo.packKey, 700)))
+        // Solo la huella del mapa no basta: cambió el .ldm, es otro paquete.
+        assertEquals(0, MapPacks.partialOf(nuevo, PausedPack("mx-nuevo", "m", 700)))
+        assertEquals("b", MapPacks.parseIndex(indexV2)[1].packKey)
+    }
+
+    @Test
+    fun aSavedPackKeepsItsFormat() {
+        val saved = InstalledPack("mx-nuevo", "m", 1000, 1L, doubleArrayOf(0.0, 0.0, 1.0, 1.0), emptyList(), "s", "r", format = 2)
+        assertEquals(2, MapPacks.packFromJson(MapPacks.packToJson(saved)).format)
+        // Lo guardado por una versión de antes no lo dice: formato 1.
+        val old = MapPacks.packToJson(saved).apply { remove("format") }
+        assertEquals(1, MapPacks.packFromJson(old).format)
+    }
+
+    @Test
+    fun theV2CountryIndexPointsToV2OrV1CountryFiles() {
+        val read = MapPacks.readCountries(
+            countries.replace(""""version":1""", """"version":2""").replace("countries/mx.json", "countries2/mx.json"),
+        )
+        // Un país ya rearmado apunta a countries2/; uno que aún no, a su archivo de siempre.
+        assertEquals(listOf("countries2/mx.json", "countries/ca.json"), read.countries.map { it.file })
+    }
+
     // ---- Índice por país (countries.json + countries/<cc>.json) ----
 
     private val countries = """
@@ -185,7 +256,7 @@ class MapPacksTest {
 
     @Test
     fun otherVersionsOfTheCountryIndexAreIgnoredButKeepPhoton() {
-        val other = MapPacks.readCountries("""{"version":2,"online":{"photon":false},"countries":[]}""")
+        val other = MapPacks.readCountries("""{"version":3,"online":{"photon":false},"countries":[]}""")
         assertTrue(other.countries.isEmpty())
         assertFalse(other.photon)
     }
