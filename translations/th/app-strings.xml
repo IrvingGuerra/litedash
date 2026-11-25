@@ -605,9 +605,10 @@
     <string name="lights_step_on">บันทึกตอนไฟหน้าดับแล้ว ตอนนี้เปิดไฟแล้วแตะ เสร็จ</string>
     <string name="lights_done">เสร็จ ไฟเปิดแล้ว</string>
     <string name="lights_choose">มีการตั้งค่าเปลี่ยนหลายอย่าง เลือกอันที่เป็นไฟหน้า (ลองอันหนึ่ง ถ้าไม่ได้ให้เรียนรู้ใหม่):</string>
-    <string name="lights_nothing">ไม่มีการตั้งค่าใดเปลี่ยน: เครื่องเสียงนี้ไม่รายงานไฟหน้า (หรือรายงานช้า) ระหว่างนี้ใช้เวลาพระอาทิตย์ ลองใหม่ได้โดยเปิดไฟค้างไว้สักครู่</string>
+    <string name="lights_nothing">ไม่มีการตั้งค่าใดเปลี่ยน ลองใหม่โดยติดเครื่องรถไว้: เปิดไฟหน้าแล้วรอสักครู่ก่อนแตะ เสร็จ ถ้าหน้าจอของคุณไม่แจ้งสถานะไฟหน้า ให้ใช้เวลาพระอาทิตย์</string>
     <string name="lights_retry">ลองอีกครั้ง</string>
     <string name="lights_use_sun">ใช้เวลาพระอาทิตย์</string>
+    <string name="lights_report">ส่งรายงาน</string>
     <string name="lights_now_on">ไฟหน้าติดอยู่</string>
     <string name="lights_now_off">ไฟหน้าดับอยู่</string>
     <string name="obd_usb_found">สาย USB</string>
@@ -859,6 +860,8 @@
     <string name="module_files">เพลงและไฟล์</string>
     <string name="module_local_network">เครือข่ายท้องถิ่น</string>
     <string name="night_source_unused">ใช้กับธีมหรือความสว่างแบบกลางวันและกลางคืน</string>
+    <string name="night_source_lights_unused">คุณเลือกไฟหน้ารถเพื่อบอกว่าเป็นกลางคืน แต่จะใช้เฉพาะกับธีมหรือความสว่างแบบกลางวันและกลางคืน</string>
+    <string name="night_use_day_night">ใช้กลางวันและกลางคืน</string>
     <string name="obd_on_car_off">เชื่อมต่อกับ %1$s แล้ว · ดูเหมือนรถดับเครื่องอยู่</string>
     <string name="option_phone_everywhere">ปุ่มโทรศัพท์บนแถบและพวงมาลัยเปิดแอปเดียวกัน</string>
     <string name="precise_location_missing">ไม่มีตำแหน่งที่แม่นยำ: หากไม่มี ความเร็วและการเดินทางจะอยู่ที่ 0</string>

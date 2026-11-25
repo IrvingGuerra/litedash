@@ -610,9 +610,10 @@
     <string name="lights_step_on">हेडलाइट बंद में नोट किया। अब उन्हें चालू करें और हो गया पर टैप करें।</string>
     <string name="lights_done">हो गया, लाइट चालू है</string>
     <string name="lights_choose">कई सेटिंग्स बदलीं; हेडलाइट वाली चुनें (एक आज़माएँ; काम न करे तो फिर सीखें):</string>
-    <string name="lights_nothing">कोई सेटिंग नहीं बदली: यह स्क्रीन हेडलाइट नहीं बताती (या देर से लिखती है)। तब तक सूरज का समय इस्तेमाल होता है। लाइट चालू रखकर कुछ सेकंड रुकें और फिर कोशिश करें।</string>
+    <string name="lights_nothing">कोई सेटिंग नहीं बदली। गाड़ी चालू करके फिर से कोशिश करें: हेडलाइट जलाएँ और “हो गया” दबाने से पहले कुछ सेकंड रुकें। अगर आपकी स्क्रीन हेडलाइट की जानकारी नहीं देती, तो सूरज का समय इस्तेमाल करें।</string>
     <string name="lights_retry">फिर कोशिश करें</string>
     <string name="lights_use_sun">सूरज का समय इस्तेमाल करें</string>
+    <string name="lights_report">रिपोर्ट भेजें</string>
     <string name="lights_now_on">अभी हेडलाइट चालू</string>
     <string name="lights_now_off">अभी हेडलाइट बंद</string>
     <string name="obd_usb_found">USB केबल</string>
@@ -868,6 +869,8 @@
     <string name="module_files">म्यूज़िक और फ़ाइलें</string>
     <string name="module_local_network">लोकल नेटवर्क</string>
     <string name="night_source_unused">दिन और रात वाली थीम या ब्राइटनेस के लिए इस्तेमाल होता है।</string>
+    <string name="night_source_lights_unused">आपने रात पहचानने के लिए गाड़ी की लाइटें चुनी हैं, लेकिन वे सिर्फ़ “दिन और रात” थीम या ब्राइटनेस के साथ काम करती हैं।</string>
+    <string name="night_use_day_night">“दिन और रात” इस्तेमाल करें</string>
     <string name="obd_on_car_off">%1$s से जुड़ा · कार बंद लगती है</string>
     <string name="option_phone_everywhere">बार का फ़ोन बटन और स्टीयरिंग एक ही ऐप खोलते हैं।</string>
     <string name="precise_location_missing">सटीक लोकेशन नहीं है: इसके बिना स्पीड और सफ़र 0 पर रहते हैं।</string>

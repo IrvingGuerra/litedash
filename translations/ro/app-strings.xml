@@ -618,9 +618,10 @@
     <string name="lights_step_on">Notat cu farurile stinse. Acum aprinde-le și atinge Gata.</string>
     <string name="lights_done">Gata, farurile sunt aprinse</string>
     <string name="lights_choose">S-au schimbat mai multe setări; alege-o pe cea a farurilor (încearcă una; dacă nu merge, învață din nou):</string>
-    <string name="lights_nothing">Nicio setare nu s-a schimbat: această unitate nu raportează farurile (sau o face târziu). Până atunci se folosesc răsăritul și apusul. Poți încerca din nou, așteptând câteva secunde cu farurile aprinse.</string>
+    <string name="lights_nothing">Nicio setare nu s-a schimbat. Încearcă din nou cu mașina pornită: aprinde farurile și așteaptă câteva secunde înainte să atingi Gata. Dacă ecranul tău nu anunță farurile, folosește răsăritul și apusul.</string>
     <string name="lights_retry">Încearcă din nou</string>
     <string name="lights_use_sun">Folosește răsăritul și apusul</string>
+    <string name="lights_report">Trimite raport</string>
     <string name="lights_now_on">Faruri aprinse acum</string>
     <string name="lights_now_off">Faruri stinse acum</string>
     <string name="obd_usb_found">Cablu USB</string>
@@ -877,6 +878,8 @@
     <string name="module_files">Muzică și fișiere</string>
     <string name="module_local_network">Rețea locală</string>
     <string name="night_source_unused">Se folosește cu tema sau luminozitatea de zi și noapte.</string>
+    <string name="night_source_lights_unused">Ai ales farurile mașinii ca să se știe când e noapte, dar ele se folosesc doar cu tema sau luminozitatea Zi și noapte.</string>
+    <string name="night_use_day_night">Folosește Zi și noapte</string>
     <string name="obd_on_car_off">Conectat la %1$s · mașina pare oprită</string>
     <string name="option_phone_everywhere">Butonul Telefon din bară și volanul deschid aceeași aplicație.</string>
     <string name="precise_location_missing">Lipsește locația precisă: fără ea, viteza și călătoria rămân la 0.</string>

@@ -613,9 +613,10 @@
     <string name="lights_step_on">Mit Licht aus notiert. Schalte es jetzt ein und tippe auf Fertig.</string>
     <string name="lights_done">Fertig, Licht ist an</string>
     <string name="lights_choose">Mehrere Einstellungen haben sich geändert; wähle die der Scheinwerfer (probier eine; klappt es nicht, lern neu):</string>
-    <string name="lights_nothing">Keine Einstellung hat sich geändert: dieses Display meldet die Scheinwerfer nicht (oder zu spät). Bis dahin gelten die Sonnenzeiten. Versuch es nochmal und warte ein paar Sekunden mit Licht an.</string>
+    <string name="lights_nothing">Keine Einstellung hat sich geändert. Versuch es nochmal mit laufendem Motor: Licht einschalten und ein paar Sekunden warten, bevor du auf Fertig tippst. Wenn dein Display die Scheinwerfer nicht meldet, nutze die Sonnenzeiten.</string>
     <string name="lights_retry">Nochmal versuchen</string>
     <string name="lights_use_sun">Sonnenzeiten nutzen</string>
+    <string name="lights_report">Bericht senden</string>
     <string name="lights_now_on">Scheinwerfer gerade an</string>
     <string name="lights_now_off">Scheinwerfer gerade aus</string>
     <string name="obd_usb_found">USB-Kabel</string>
@@ -868,6 +869,8 @@
     <string name="module_files">Musik und Dateien</string>
     <string name="module_local_network">Lokales Netzwerk</string>
     <string name="night_source_unused">Wird vom Tag-und-Nacht-Design oder der Helligkeit genutzt.</string>
+    <string name="night_source_lights_unused">Du hast die Scheinwerfer gewählt, um zu erkennen, wann Nacht ist, aber sie wirken nur mit dem Design oder der Helligkeit Tag und Nacht.</string>
+    <string name="night_use_day_night">Tag und Nacht nutzen</string>
     <string name="obd_on_car_off">Verbunden mit %1$s · das Auto scheint aus zu sein</string>
     <string name="option_phone_everywhere">Die Telefon-Taste der Leiste und das Lenkrad öffnen dieselbe App.</string>
     <string name="precise_location_missing">Genauer Standort fehlt: ohne ihn bleiben Tempo und Fahrt bei 0.</string>

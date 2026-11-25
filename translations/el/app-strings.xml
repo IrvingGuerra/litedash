@@ -613,9 +613,10 @@
     <string name="lights_step_on">Καταγράφηκε με τα φώτα σβηστά. Τώρα ανάψτε τα και πατήστε Τέλος.</string>
     <string name="lights_done">Τέλος, τα φώτα είναι αναμμένα</string>
     <string name="lights_choose">Άλλαξαν αρκετές ρυθμίσεις· επιλέξτε αυτή των φώτων (δοκιμάστε μία· αν δεν λειτουργεί, κάντε ξανά εκμάθηση):</string>
-    <string name="lights_nothing">Καμία ρύθμιση δεν άλλαξε: αυτή η οθόνη δεν αναφέρει τα φώτα (ή το γράφει αργά). Μέχρι τότε χρησιμοποιούνται οι ώρες ηλίου. Μπορείτε να δοκιμάσετε ξανά, περιμένοντας λίγα δευτερόλεπτα με τα φώτα αναμμένα.</string>
+    <string name="lights_nothing">Καμία ρύθμιση δεν άλλαξε. Δοκίμασε ξανά με τον κινητήρα αναμμένο: άναψε τα φώτα και περίμενε λίγα δευτερόλεπτα πριν πατήσεις Τέλος. Αν η οθόνη σου δεν ενημερώνει για τα φώτα, χρησιμοποίησε τις ώρες του ηλίου.</string>
     <string name="lights_retry">Δοκιμή ξανά</string>
     <string name="lights_use_sun">Χρήση ωρών ηλίου</string>
+    <string name="lights_report">Αποστολή αναφοράς</string>
     <string name="lights_now_on">Φώτα αναμμένα τώρα</string>
     <string name="lights_now_off">Φώτα σβηστά τώρα</string>
     <string name="obd_usb_found">Καλώδιο USB</string>
@@ -868,6 +869,8 @@
     <string name="module_files">Μουσική και αρχεία</string>
     <string name="module_local_network">Τοπικό δίκτυο</string>
     <string name="night_source_unused">Χρησιμοποιείται από το θέμα ή τη φωτεινότητα ημέρας και νύχτας.</string>
+    <string name="night_source_lights_unused">Διάλεξες τα φώτα του αυτοκινήτου για να ξέρει πότε είναι νύχτα, αλλά χρησιμοποιούνται μόνο με το θέμα ή τη φωτεινότητα Μέρα και νύχτα.</string>
+    <string name="night_use_day_night">Χρήση Μέρα και νύχτα</string>
     <string name="obd_on_car_off">Συνδέθηκε στο %1$s · το αυτοκίνητο μοιάζει σβηστό</string>
     <string name="option_phone_everywhere">Το κουμπί Τηλέφωνο της γραμμής και το τιμόνι ανοίγουν την ίδια εφαρμογή.</string>
     <string name="precise_location_missing">Λείπει η ακριβής τοποθεσία: χωρίς αυτήν η ταχύτητα και η διαδρομή μένουν στο 0.</string>

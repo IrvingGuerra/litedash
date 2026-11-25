@@ -613,9 +613,10 @@
     <string name="lights_step_on">Noterat med strålkastarna av. Slå nu på dem och tryck på Klar.</string>
     <string name="lights_done">Klar, ljuset är på</string>
     <string name="lights_choose">Flera inställningar ändrades; välj strålkastarnas (prova en; om den inte fungerar, lär in igen):</string>
-    <string name="lights_nothing">Ingen inställning ändrades: den här bilstereon rapporterar inte strålkastarna (eller skriver det sent). Tills dess används soltiderna. Du kan försöka igen och vänta några sekunder med ljuset på.</string>
+    <string name="lights_nothing">Ingen inställning ändrades. Försök igen med bilen igång: tänd lyset och vänta några sekunder innan du trycker på Klar. Om din skärm inte rapporterar strålkastarna, använd soltider.</string>
     <string name="lights_retry">Försök igen</string>
     <string name="lights_use_sun">Använd soltider</string>
+    <string name="lights_report">Skicka rapport</string>
     <string name="lights_now_on">Strålkastare på nu</string>
     <string name="lights_now_off">Strålkastare av nu</string>
     <string name="obd_usb_found">USB-kabel</string>
@@ -868,6 +869,8 @@
     <string name="module_files">Musik och filer</string>
     <string name="module_local_network">Lokalt nätverk</string>
     <string name="night_source_unused">Används av dag- och natttemat eller ljusstyrkan.</string>
+    <string name="night_source_lights_unused">Du valde bilens strålkastare för att veta när det är natt, men de används bara av temat eller ljusstyrkan Dag och natt.</string>
+    <string name="night_use_day_night">Använd Dag och natt</string>
     <string name="obd_on_car_off">Ansluten till %1$s · bilen verkar avstängd</string>
     <string name="option_phone_everywhere">Fältets Telefon-knapp och ratten öppnar samma app.</string>
     <string name="precise_location_missing">Exakt plats saknas: utan den står hastighet och resa kvar på 0.</string>

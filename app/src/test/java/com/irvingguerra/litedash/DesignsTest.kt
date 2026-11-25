@@ -118,4 +118,26 @@ class DesignsTest {
         assertNull(DesignUndo.decode("{"))
         assertNull(DesignUndo.decode("{\"theme\":\"dark\"}"))
     }
+
+    @Test
+    fun dayAndNightStaysWhenApplyingADesign() {
+        val sun = mine.copy(theme = ThemeMode.SUN)
+        for (design in DESIGNS) {
+            val after = design.over(sun, ownCar = false)
+            // Se queda «Día y noche»; lo demás del Diseño sí se pone.
+            assertEquals(ThemeMode.SUN, after.theme)
+            assertEquals(design.accent?.toArgb(), after.accent)
+            assertEquals(design.cardStyle, after.cardStyle)
+            // Conservarlo no cuenta como «con tus cambios».
+            assertTrue(design.matches(after, ownCar = false))
+            // En la bienvenida, el tema del Diseño tal cual.
+            assertEquals(design.theme, design.over(sun, ownCar = false, keepSun = false).theme)
+        }
+        // Un tema fijo sí lo cambia el Diseño (y Ruta pone «Día y noche»).
+        assertEquals(ThemeMode.DARK, designOf("graphite")!!.over(mine, ownCar = false).theme)
+        assertEquals(ThemeMode.SUN, designOf("route")!!.over(mine, ownCar = false).theme)
+        // Deshacer regresa el tema de antes aunque no haya cambiado.
+        val page = PageSnapshot(0, Grid(40, 13), "", PageBackground.WALLPAPER, null)
+        assertEquals(sun, DesignUndo.decode(DesignUndo("cloud", sun, page, "").encode())!!.look)
+    }
 }

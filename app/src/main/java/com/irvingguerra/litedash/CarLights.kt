@@ -17,10 +17,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.Saver
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.LifecycleStartEffect
 import com.irvingguerra.litedash.core.ui.Button
 import com.irvingguerra.litedash.core.ui.Label
 import com.irvingguerra.litedash.core.ui.LocalColors
@@ -122,23 +125,82 @@ fun rememberLightsNight(prefs: Preferences): Boolean? {
         night = key.read(context) == on
         onDispose { context.contentResolver.unregisterContentObserver(observer) }
     }
+    // Algunas ROM escriben el ajuste sin avisar al observador: se vuelve a leer al regresar al frente.
+    LifecycleStartEffect(key, on) {
+        night = key.read(context) == on
+        onStopOrDispose { }
+    }
     return night
 }
 
 /** Pasos de "Aprender luces": apagadas → prendidas → elegir si hubo varios cambios. */
-private sealed interface LearnStep {
+internal sealed interface LearnStep {
     data object Idle : LearnStep
     data class LightsOff(val before: Map<String, String>) : LearnStep
     data class Choose(val candidates: List<Pair<String, String>>) : LearnStep
     data object Nothing : LearnStep
 }
 
+/**
+ * El paso como lista de textos (lo que cabe en el estado guardado): el tipo y luego clave, valor, clave, valor…
+ * Así sobrevive si la pantalla recrea la actividad al prender los faros (algunas cambian de tema o de modo).
+ */
+internal fun LearnStep.toSaved(): ArrayList<String> {
+    val pairs = when (this) {
+        is LearnStep.LightsOff -> before.toList()
+        is LearnStep.Choose -> candidates
+        else -> emptyList()
+    }
+    val kind = when (this) {
+        LearnStep.Idle -> "idle"
+        is LearnStep.LightsOff -> "off"
+        is LearnStep.Choose -> "choose"
+        LearnStep.Nothing -> "nothing"
+    }
+    return ArrayList<String>(1 + pairs.size * 2).apply {
+        add(kind)
+        for ((k, v) in pairs) {
+            add(k)
+            add(v)
+        }
+    }
+}
+
+/** Lo guardado por [toSaved]; algo que no se entiende regresa al inicio. */
+internal fun learnStepFrom(saved: List<String>): LearnStep {
+    val pairs = saved.drop(1).chunked(2).filter { it.size == 2 }.map { it[0] to it[1] }
+    return when (saved.firstOrNull()) {
+        "off" -> LearnStep.LightsOff(pairs.toMap())
+        "choose" -> LearnStep.Choose(pairs)
+        "nothing" -> LearnStep.Nothing
+        else -> LearnStep.Idle
+    }
+}
+
+private val LearnStepSaver = Saver<LearnStep, ArrayList<String>>({ it.toSaved() }, { learnStepFrom(it) })
+
+/**
+ * Cómo se ve cada candidato en el paso de elegir: solo el nombre del ajuste, salvo que otro de otra tabla se llame igual
+ * (ahí "tabla/nombre" para distinguirlos).
+ */
+internal fun candidateLabels(candidates: List<Pair<String, String>>): List<String> {
+    val tables = candidates.groupBy({ it.first.substringAfter('/') }, { it.first.substringBefore('/') })
+    return candidates.map { (k, v) ->
+        val name = k.substringAfter('/')
+        "${if (tables.getValue(name).toSet().size > 1) k else name} = $v"
+    }
+}
+
+/** El último intento de aprender las luces (para el reporte, que lo lee en IO); solo en memoria del proceso. */
+@Volatile
+private var lastLearn: String? = null
+
 /** Ajustes → Inicio y apariencia → ¿Cuándo es de noche? → Luces del auto: aprender y ver el estado. */
 @Composable
 fun LightsSettings(prefs: Preferences) {
     val c = LocalColors.current
     val context = LocalContext.current
-    var step by remember { mutableStateOf<LearnStep>(LearnStep.Idle) }
+    var step by rememberSaveable(stateSaver = LearnStepSaver) { mutableStateOf<LearnStep>(LearnStep.Idle) }
     val scope = rememberCoroutineScope()
     val key = LightsKey.fromStored(prefs.lightsKey)
     // La foto de los ajustes, fuera del hilo principal; si mientras tanto se cambió de paso (Cancelar), se ignora.
@@ -182,9 +244,19 @@ fun LightsSettings(prefs: Preferences) {
                             val changed = after.filter { (k, v) -> s.before[k] != v && !isNoise(k.substringAfter('/')) }.toList()
                                 .sortedByDescending { soundsLikeLights(it.first.substringAfter('/')) }
                             when {
-                                changed.isEmpty() -> LearnStep.Nothing
-                                soundsLikeLights(changed[0].first.substringAfter('/')) -> { save(changed[0].first, changed[0].second); LearnStep.Idle }
-                                else -> LearnStep.Choose(changed.take(8))
+                                changed.isEmpty() -> {
+                                    lastLearn = "nada cambió"
+                                    LearnStep.Nothing
+                                }
+                                soundsLikeLights(changed[0].first.substringAfter('/')) -> {
+                                    lastLearn = "aprendido ${changed[0].first}"
+                                    save(changed[0].first, changed[0].second)
+                                    LearnStep.Idle
+                                }
+                                else -> {
+                                    lastLearn = "${changed.size} candidatos"
+                                    LearnStep.Choose(changed.take(8))
+                                }
                             }
                         }
                     }, primary = true)
@@ -194,8 +266,12 @@ fun LightsSettings(prefs: Preferences) {
             is LearnStep.Choose -> {
                 Label(stringResource(R.string.lights_choose), Typography.body)
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    // Sin la tabla de Android ("system/"): el nombre del ajuste basta para reconocerlo.
-                    for ((k, v) in s.candidates) Button("${k.substringAfter('/')} = $v", { save(k, v) })
+                    for ((candidate, label) in s.candidates.zip(candidateLabels(s.candidates))) {
+                        Button(label, {
+                            lastLearn = "aprendido ${candidate.first}"
+                            save(candidate.first, candidate.second)
+                        })
+                    }
                     Button(stringResource(R.string.cancel), { step = LearnStep.Idle })
                 }
             }
@@ -204,6 +280,7 @@ fun LightsSettings(prefs: Preferences) {
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Button(stringResource(R.string.lights_retry), { withSnapshot { LearnStep.LightsOff(it) } })
                     UseSunButton(prefs)
+                    Button(stringResource(R.string.lights_report), { openLightsReport() })
                 }
             }
         }
@@ -220,7 +297,7 @@ private fun UseSunButton(prefs: Preferences) {
  * Para el reporte: si hay sensor de luz y qué ajustes de la pantalla suenan a luces (con el
  * mismo criterio que al aprender). Cientos de filas por IPC: fuera del hilo principal.
  */
-internal fun lightsReport(context: Context, learned: String?): String {
+internal fun lightsReport(context: Context, learned: String?, theme: ThemeMode, night: NightSource): String {
     val sensor = context.getSystemService(SensorManager::class.java)?.getDefaultSensor(Sensor.TYPE_LIGHT)
     val all = snapshotSettings(context)
     // Valores cortos: las luces son números.
@@ -231,5 +308,6 @@ internal fun lightsReport(context: Context, learned: String?): String {
     val rows = listOf("system", "global", "secure").joinToString { t -> "$t ${all.keys.count { it.startsWith("$t/") }}" }
     // El ajuste aprendido va aquí y no en pantalla (es una clave interna de la pantalla).
     return "Sensor de luz: ${sensor?.name ?: "no"}\nLuces: ${found.joinToString().ifEmpty { "—" }}\n" +
-        "Luces aprendidas: ${learned ?: "no"}\nAjustes leídos: $rows"
+        "Luces aprendidas: ${learned ?: "no"}\nAprender: ${lastLearn ?: "sin intentar"}\n" +
+        "Tema: ${theme.stored}, noche por: ${night.stored}\nAjustes leídos: $rows"
 }

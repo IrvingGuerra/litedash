@@ -613,9 +613,10 @@
     <string name="lights_step_on">Genoteerd met de koplampen uit. Zet ze nu aan en tik op Klaar.</string>
     <string name="lights_done">Klaar, lampen zijn aan</string>
     <string name="lights_choose">Er veranderden meerdere instellingen; kies die van de koplampen (probeer er een; werkt het niet, leer dan opnieuw):</string>
-    <string name="lights_nothing">Er veranderde geen instelling: deze autoradio meldt de koplampen niet (of schrijft het laat). Tot die tijd worden de zonnetijden gebruikt. Je kunt het opnieuw proberen en een paar seconden wachten met de lampen aan.</string>
+    <string name="lights_nothing">Er is geen instelling veranderd. Probeer het opnieuw met de motor aan: zet de lampen aan en wacht een paar seconden voordat je op Klaar tikt. Als je scherm de koplampen niet doorgeeft, gebruik dan de zonnetijden.</string>
     <string name="lights_retry">Opnieuw proberen</string>
     <string name="lights_use_sun">Zonnetijden gebruiken</string>
+    <string name="lights_report">Melding versturen</string>
     <string name="lights_now_on">Koplampen nu aan</string>
     <string name="lights_now_off">Koplampen nu uit</string>
     <string name="obd_usb_found">USB-kabel</string>
@@ -868,6 +869,8 @@
     <string name="module_files">Muziek en bestanden</string>
     <string name="module_local_network">Lokaal netwerk</string>
     <string name="night_source_unused">Wordt gebruikt door het dag- en nachtthema of de helderheid.</string>
+    <string name="night_source_lights_unused">Je hebt de koplampen gekozen om te weten wanneer het nacht is, maar die worden alleen gebruikt door het thema of de helderheid Dag en nacht.</string>
+    <string name="night_use_day_night">Dag en nacht gebruiken</string>
     <string name="obd_on_car_off">Verbonden met %1$s · de auto lijkt uit</string>
     <string name="option_phone_everywhere">De knop Telefoon op de balk en het stuur openen dezelfde app.</string>
     <string name="precise_location_missing">Precieze locatie ontbreekt: zonder blijven snelheid en rit op 0.</string>

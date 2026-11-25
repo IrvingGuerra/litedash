@@ -142,8 +142,18 @@ internal fun openMapRequest() {
     selectTab(SYSTEM_TABS, SystemTab.REPORT.ordinal)
 }
 
-/** Hay un reporte esperando (sonido o mapa): «Reportar un problema» pone la tarjeta arriba (si no, en pantallas bajitas queda fuera de la vista). */
-internal fun reportPending() = pendingSound != null || pendingMapRequest
+/** El reporte que pidió «Aprender luces» cuando no cambió nada (Ajustes → Tema y brillo). Solo en memoria. */
+private var pendingLights = false
+
+/** "Enviar reporte" ya en "Día y noche / faros" con "No funciona": Ajustes → Acerca de y ayuda → Reportar un problema. */
+internal fun openLightsReport() {
+    pendingLights = true
+    forgetLastResult()
+    selectTab(SYSTEM_TABS, SystemTab.REPORT.ordinal)
+}
+
+/** Hay un reporte esperando (sonido, mapa o luces): «Reportar un problema» pone la tarjeta arriba (si no, en pantallas bajitas queda fuera de la vista). */
+internal fun reportPending() = pendingSound != null || pendingMapRequest || pendingLights
 
 private const val NOTE_MAX = 500
 private const val INFO_MAX = 20_000
@@ -160,7 +170,7 @@ private val reportScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.imme
 private var reportState by mutableStateOf<ReportState>(ReportState.Idle)
 
 /**
- * Un reporte nuevo ya elegido (sonido o mapa) no espera a que se toque «Listo» del anterior: el «Gracias», el error o
+ * Un reporte nuevo ya elegido (sonido, mapa o luces) no espera a que se toque «Listo» del anterior: el «Gracias», el error o
  * la espera de la vez pasada se olvidan (uno que aún se está mandando sigue y se ve en su botón).
  */
 private fun forgetLastResult() {
@@ -175,11 +185,26 @@ internal fun SendReport(d: Dependencies) {
     val context = LocalContext.current.applicationContext
     val sound = remember { pendingSound.also { pendingSound = null } }
     val mapRequest = remember { pendingMapRequest.also { pendingMapRequest = false } }
+    val lightsRequest = remember { pendingLights.also { pendingLights = false } }
     var module by remember {
-        mutableStateOf(if (mapRequest) ReportModule.MAP else sound?.let { if (it == SoundPiece.MUSIC) ReportModule.MUSIC else ReportModule.RADIO })
+        mutableStateOf(
+            when {
+                mapRequest -> ReportModule.MAP
+                lightsRequest -> ReportModule.LIGHTS
+                else -> sound?.let { if (it == SoundPiece.MUSIC) ReportModule.MUSIC else ReportModule.RADIO }
+            },
+        )
     }
     var detail by remember { mutableStateOf(sound?.let { if (it == SoundPiece.MUSIC) ReportDetail.HEAD_BLUETOOTH else ReportDetail.FM }) }
-    var problem by remember { mutableStateOf(if (mapRequest) ReportProblem.WANT_MAP else sound?.let { ReportProblem.SILENT }) }
+    var problem by remember {
+        mutableStateOf(
+            when {
+                mapRequest -> ReportProblem.WANT_MAP
+                lightsRequest -> ReportProblem.BROKEN
+                else -> sound?.let { ReportProblem.SILENT }
+            },
+        )
+    }
     var note by remember { mutableStateOf("") }
 
     SettingsCard(stringResource(R.string.report_title), stringResource(R.string.report_help)) {
@@ -323,6 +348,8 @@ private suspend fun reportInfo(context: Context, d: Dependencies): String {
     val obdInfo = (d.obdIfCreated()?.describe() ?: "OBD: sin abrir en esta sesión") + "\n" + reportExtras(d)
     val pro = d.pro.isPro
     val lights = d.prefs.lightsKey?.let { "$it (prendidas = ${d.prefs.lightsOnValue})" }
+    val theme = d.prefs.theme
+    val night = d.prefs.nightSource
     // Lo de la música que cambia en el hilo principal se copia aquí; lo que pregunta al sistema va en IO.
     val musicInfoLater = d.music.describeLater()
     val music = d.music
@@ -331,7 +358,7 @@ private suspend fun reportInfo(context: Context, d: Dependencies): String {
         // avisos que llegan ahí; si cambia justo mientras se lee, el reporte va sin esa parte.
         val musicInfo = runCatching { musicInfoLater() }.getOrElse { "Música: no se pudo leer (${it.javaClass.simpleName})" }
         val silent = runCatching { music.silentSources() }.getOrDefault(emptyList())
-        systemInfo(context, pro, layout, lights, musicInfo + "\n" + obdInfo, silent)
+        systemInfo(context, pro, layout, lightsReport(context, lights, theme, night), musicInfo + "\n" + obdInfo, silent)
     }
 }
 
@@ -387,8 +414,8 @@ private fun volumeInfo(context: Context): String = runCatching {
     "Volumen: música ${audio.getStreamVolume(AudioManager.STREAM_MUSIC)}/${audio.getStreamMaxVolume(AudioManager.STREAM_MUSIC)}, fijo=${if (audio.isVolumeFixed) "sí" else "no"}"
 }.getOrDefault("Volumen: ?")
 
-/** Datos técnicos de la pantalla para los reportes (equipo, Android, pantalla, acomodo [layout], luces [lights] aprendidas, ubicación y si tiene Pro) más [musicInfo] y las apps [silent]. */
-private fun systemInfo(context: Context, pro: Boolean, layout: String, lights: String?, musicInfo: String, silent: List<String>): String {
+/** Datos técnicos de la pantalla para los reportes (equipo, Android, pantalla, acomodo [layout], luces y noche [lights], ubicación y si tiene Pro) más [musicInfo] y las apps [silent]. */
+private fun systemInfo(context: Context, pro: Boolean, layout: String, lights: String, musicInfo: String, silent: List<String>): String {
     val m = context.resources.displayMetrics
     return buildString {
         appendLine("LiteDash ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE}) · ${BuildConfig.CHANNEL}")
@@ -405,7 +432,7 @@ private fun systemInfo(context: Context, pro: Boolean, layout: String, lights: S
         appendLine(volumeInfo(context))
         appendLine(SystemVolume.describe())
         appendLine("Código de desarrollador: ${if (pro) "sí" else "no"}")
-        appendLine(lightsReport(context, lights))
+        appendLine(lights)
         appendLine(locationInfo(context))
         appendLine(storageReport(context))
         append(musicInfo)

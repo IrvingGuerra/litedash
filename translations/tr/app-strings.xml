@@ -613,9 +613,10 @@
     <string name="lights_step_on">Farlar kapalıyken not edildi. Şimdi farları açın ve Tamam’a dokunun.</string>
     <string name="lights_done">Tamam, farlar açık</string>
     <string name="lights_choose">Birkaç ayar değişti; far olanı seçin (birini deneyin; işe yaramazsa tekrar öğrenin):</string>
-    <string name="lights_nothing">Hiçbir ayar değişmedi: bu ünite farları bildirmiyor (veya geç yazıyor). O zamana kadar gün doğumu/batımı saatleri kullanılır. Farlar açıkken birkaç saniye bekleyip tekrar deneyebilirsiniz.</string>
+    <string name="lights_nothing">Hiçbir ayar değişmedi. Araç çalışırken tekrar dene: farları yak ve Tamam\'a dokunmadan önce birkaç saniye bekle. Ekranın farları bildirmiyorsa gün doğumu/batımını kullan.</string>
     <string name="lights_retry">Tekrar dene</string>
     <string name="lights_use_sun">Gün doğumu/batımını kullan</string>
+    <string name="lights_report">Rapor gönder</string>
     <string name="lights_now_on">Farlar şu an açık</string>
     <string name="lights_now_off">Farlar şu an kapalı</string>
     <string name="obd_usb_found">USB kablo</string>
@@ -868,6 +869,8 @@
     <string name="module_files">Müzik ve dosyalar</string>
     <string name="module_local_network">Yerel ağ</string>
     <string name="night_source_unused">Gündüz ve gece teması veya parlaklığı tarafından kullanılır.</string>
+    <string name="night_source_lights_unused">Gecenin ne zaman olduğunu anlamak için aracın farlarını seçtin, ama bunlar yalnızca Gündüz ve gece teması veya parlaklığıyla kullanılır.</string>
+    <string name="night_use_day_night">Gündüz ve geceyi kullan</string>
     <string name="obd_on_car_off">%1$s’e bağlı · araba kapalı görünüyor</string>
     <string name="option_phone_everywhere">Çubuktaki Telefon düğmesi ve direksiyon aynı uygulamayı açar.</string>
     <string name="precise_location_missing">Hassas konum eksik: o olmadan hız ve yolculuk 0’da kalır.</string>

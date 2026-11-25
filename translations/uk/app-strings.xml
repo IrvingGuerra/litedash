@@ -623,9 +623,10 @@
     <string name="lights_step_on">Записано з вимкненими фарами. Тепер увімкни їх і натисни «Готово».</string>
     <string name="lights_done">Готово, фари ввімкнено</string>
     <string name="lights_choose">Змінилося кілька налаштувань; вибери те, що про фари (спробуй одне; якщо не спрацює, вивчи знову):</string>
-    <string name="lights_nothing">Жодне налаштування не змінилося: ця магнітола не повідомляє про фари (або робить це із запізненням). Поки використовується час сходу й заходу сонця. Можна спробувати знову, зачекавши кілька секунд з увімкненими фарами.</string>
+    <string name="lights_nothing">Жодне налаштування не змінилося. Спробуйте ще раз із заведеним авто: увімкніть фари й зачекайте кілька секунд, перш ніж натиснути «Готово». Якщо ваш екран не повідомляє про фари, використовуйте схід і захід сонця.</string>
     <string name="lights_retry">Спробувати ще раз</string>
     <string name="lights_use_sun">За сходом і заходом</string>
+    <string name="lights_report">Надіслати звіт</string>
     <string name="lights_now_on">Зараз фари ввімкнено</string>
     <string name="lights_now_off">Зараз фари вимкнено</string>
     <string name="obd_usb_found">USB-кабель</string>
@@ -886,6 +887,8 @@
     <string name="module_files">Музика й файли</string>
     <string name="module_local_network">Локальна мережа</string>
     <string name="night_source_unused">Використовується темою або яскравістю «день і ніч».</string>
+    <string name="night_source_lights_unused">Ви обрали фари авто, щоб визначати ніч, але вони працюють лише з темою або яскравістю «День і ніч».</string>
+    <string name="night_use_day_night">Увімкнути «День і ніч»</string>
     <string name="obd_on_car_off">Під’єднано до %1$s · авто, схоже, вимкнене</string>
     <string name="option_phone_everywhere">Кнопка «Телефон» на панелі й кермо відкривають той самий застосунок.</string>
     <string name="precise_location_missing">Немає точного місцезнаходження: без нього швидкість і поїздка лишаються на 0.</string>

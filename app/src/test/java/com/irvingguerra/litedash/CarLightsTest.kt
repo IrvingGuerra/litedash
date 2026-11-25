@@ -36,4 +36,31 @@ class CarLightsTest {
         assertNull(LightsKey.fromStored("sin_tabla"))
         assertNull(LightsKey.fromStored("/illum"))
     }
+
+    @Test
+    fun learnStepSurvivesBeingSaved() {
+        val steps = listOf(
+            LearnStep.Idle,
+            LearnStep.Nothing,
+            LearnStep.LightsOff(mapOf("system/illum" to "0", "global/acc_on" to "", "secure/x" to "a/b = c")),
+            LearnStep.LightsOff(emptyMap()),
+            LearnStep.Choose(listOf("system/illum" to "1", "global/illum" to "2")),
+        )
+        for (step in steps) assertEquals(step, learnStepFrom(step.toSaved()))
+        // Lo que no se entiende regresa al inicio.
+        assertEquals(LearnStep.Idle, learnStepFrom(emptyList()))
+        assertEquals(LearnStep.Idle, learnStepFrom(listOf("otro")))
+    }
+
+    @Test
+    fun candidatesShowTheTableOnlyWhenNamesRepeat() {
+        assertEquals(
+            listOf("illum = 1", "car_mode = 3"),
+            candidateLabels(listOf("system/illum" to "1", "global/car_mode" to "3")),
+        )
+        assertEquals(
+            listOf("system/illum = 1", "global/illum = 2", "car_mode = 3"),
+            candidateLabels(listOf("system/illum" to "1", "global/illum" to "2", "global/car_mode" to "3")),
+        )
+    }
 }

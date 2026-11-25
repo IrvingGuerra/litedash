@@ -637,6 +637,8 @@
     <string name="night_source">¿Cuándo es de noche?</string>
     <string name="night_source_help">Decide el tema Día y noche y el brillo de noche. Por la hora del sol funciona en cualquier pantalla; el sensor de luz nota túneles y estacionamientos; las luces del auto se aprenden de tu pantalla.</string>
     <string name="night_source_unused">Se usa con el tema o el brillo de día y noche.</string>
+    <string name="night_source_lights_unused">Elegiste las luces del auto para saber cuándo es de noche, pero solo se usan con el tema o el brillo de Día y noche.</string>
+    <string name="night_use_day_night">Usar Día y noche</string>
     <string name="night_sun">Hora del sol</string>
     <string name="night_sensor">Sensor de luz</string>
     <string name="night_no_sensor">Esta pantalla no tiene sensor de luz.</string>
@@ -652,9 +654,10 @@
     <string name="lights_step_on">Con los faros apagados ya tomé nota. Ahora préndelos y toca Listo.</string>
     <string name="lights_done">Listo, ya prendí las luces</string>
     <string name="lights_choose">Cambiaron varios ajustes; elige el de las luces (prueba uno; si no funciona, aprende otra vez):</string>
-    <string name="lights_nothing">Ningún ajuste cambió: esta pantalla no avisa de los faros (o tardó en escribirlo). Mientras, se usa la hora del sol. Puedes intentar otra vez esperando unos segundos con las luces prendidas.</string>
+    <string name="lights_nothing">Ningún ajuste cambió. Prueba otra vez con el auto encendido: prende los faros y espera unos segundos antes de tocar Listo. Si tu pantalla no avisa de los faros, usa la hora del sol.</string>
     <string name="lights_retry">Intentar otra vez</string>
     <string name="lights_use_sun">Usar hora del sol</string>
+    <string name="lights_report">Enviar reporte</string>
     <string name="lights_now_on">Luces prendidas ahora</string>
     <string name="lights_now_off">Luces apagadas ahora</string>
     <string name="obd_usb_found">Cable USB</string>

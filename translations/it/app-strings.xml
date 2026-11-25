@@ -613,9 +613,10 @@
     <string name="lights_step_on">Registrato con i fari spenti. Ora accendili e tocca Fatto.</string>
     <string name="lights_done">Fatto, luci accese</string>
     <string name="lights_choose">Sono cambiate diverse impostazioni; scegli quella dei fari (provane una; se non va, impara di nuovo):</string>
-    <string name="lights_nothing">Nessuna impostazione è cambiata: questo schermo non comunica i fari (o lo scrive in ritardo). Fino ad allora si usano gli orari del sole. Puoi riprovare, aspettando qualche secondo con le luci accese.</string>
+    <string name="lights_nothing">Nessuna impostazione è cambiata. Riprova con l\'auto accesa: accendi i fari e aspetta qualche secondo prima di toccare Fatto. Se il tuo schermo non segnala i fari, usa gli orari del sole.</string>
     <string name="lights_retry">Riprova</string>
     <string name="lights_use_sun">Usa gli orari del sole</string>
+    <string name="lights_report">Invia segnalazione</string>
     <string name="lights_now_on">Fari accesi ora</string>
     <string name="lights_now_off">Fari spenti ora</string>
     <string name="obd_usb_found">Cavo USB</string>
@@ -868,6 +869,8 @@
     <string name="module_files">Musica e file</string>
     <string name="module_local_network">Rete locale</string>
     <string name="night_source_unused">Si usa con il tema o la luminosità giorno e notte.</string>
+    <string name="night_source_lights_unused">Hai scelto i fari dell\'auto per capire quando è notte, ma si usano solo con il tema o la luminosità Giorno e notte.</string>
+    <string name="night_use_day_night">Usa Giorno e notte</string>
     <string name="obd_on_car_off">Connesso a %1$s · l\'auto sembra spenta</string>
     <string name="option_phone_everywhere">Il pulsante Telefono della barra e il volante aprono la stessa app.</string>
     <string name="precise_location_missing">Manca la posizione precisa: senza, velocità e viaggio restano a 0.</string>

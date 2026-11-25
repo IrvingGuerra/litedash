@@ -611,9 +611,10 @@
     <string name="lights_step_on">Noté phares éteints. Allumez-les maintenant et touchez OK.</string>
     <string name="lights_done">OK, phares allumés</string>
     <string name="lights_choose">Plusieurs paramètres ont changé ; choisissez celui des phares (essayez-en un ; si ça ne marche pas, recommencez l\'apprentissage) :</string>
-    <string name="lights_nothing">Aucun paramètre n\'a changé : cet écran ne signale pas les phares (ou le fait en retard). En attendant, les heures du soleil sont utilisées. Vous pouvez réessayer en attendant quelques secondes phares allumés.</string>
+    <string name="lights_nothing">Aucun réglage n\'a changé. Réessaie avec la voiture en marche : allume les phares et attends quelques secondes avant de toucher OK. Si ton écran ne signale pas les phares, utilise les heures du soleil.</string>
     <string name="lights_retry">Réessayer</string>
     <string name="lights_use_sun">Utiliser les heures du soleil</string>
+    <string name="lights_report">Envoyer un rapport</string>
     <string name="lights_now_on">Phares allumés</string>
     <string name="lights_now_off">Phares éteints</string>
     <string name="obd_usb_found">Câble USB</string>
@@ -870,6 +871,8 @@
     <string name="module_files">Musique et fichiers</string>
     <string name="module_local_network">Réseau local</string>
     <string name="night_source_unused">Utilisé par le thème ou la luminosité jour et nuit.</string>
+    <string name="night_source_lights_unused">Tu as choisi les phares de la voiture pour savoir quand il fait nuit, mais ils ne servent qu\'avec le thème ou la luminosité Jour et nuit.</string>
+    <string name="night_use_day_night">Utiliser Jour et nuit</string>
     <string name="obd_on_car_off">Connecté à %1$s · la voiture semble éteinte</string>
     <string name="option_phone_everywhere">Le bouton Téléphone de la barre et le volant ouvrent la même appli.</string>
     <string name="precise_location_missing">Position précise manquante : sans elle, la vitesse et le trajet restent à 0.</string>

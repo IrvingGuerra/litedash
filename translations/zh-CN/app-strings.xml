@@ -608,9 +608,10 @@
     <string name="lights_step_on">已记录关灯状态。现在打开车灯并点按“完成”。</string>
     <string name="lights_done">完成，车灯已开</string>
     <string name="lights_choose">有多项设置发生变化，请选出车灯那一项（试一个；不行就重新学习）：</string>
-    <string name="lights_nothing">没有设置发生变化：此车机不报告车灯（或写入较晚）。在此之前使用日出日落时间。你可以重试，开灯后等几秒。</string>
+    <string name="lights_nothing">没有设置发生变化。请在车辆启动后再试一次：打开车灯，等几秒再点“完成”。如果你的屏幕不报告车灯状态，请使用日出日落时间。</string>
     <string name="lights_retry">重试</string>
     <string name="lights_use_sun">使用日出日落时间</string>
+    <string name="lights_report">发送报告</string>
     <string name="lights_now_on">车灯现在开着</string>
     <string name="lights_now_off">车灯现在关着</string>
     <string name="obd_usb_found">USB 线</string>
@@ -859,6 +860,8 @@
     <string name="module_files">音乐和文件</string>
     <string name="module_local_network">本地网络</string>
     <string name="night_source_unused">用于日夜主题或亮度。</string>
+    <string name="night_source_lights_unused">你选择了用车灯判断夜晚，但它只在“日夜自动”主题或亮度下才会使用。</string>
+    <string name="night_use_day_night">使用日夜自动</string>
     <string name="obd_on_car_off">已连接到 %1$s · 车辆似乎已熄火</string>
     <string name="option_phone_everywhere">栏上的“电话”按钮和方向盘打开同一个应用。</string>
     <string name="precise_location_missing">缺少精确位置：没有它，速度和行程会一直是 0。</string>

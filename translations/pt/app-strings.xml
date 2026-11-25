@@ -615,9 +615,10 @@
     <string name="lights_step_on">Anotado com os faróis apagados. Agora acenda-os e toque em Pronto.</string>
     <string name="lights_done">Pronto, faróis acesos</string>
     <string name="lights_choose">Várias configurações mudaram; escolha a dos faróis (teste uma; se não funcionar, aprenda de novo):</string>
-    <string name="lights_nothing">Nenhuma configuração mudou: esta tela não informa os faróis (ou demorou para registrar). Enquanto isso, usa o horário do sol. Você pode tentar de novo esperando alguns segundos com os faróis acesos.</string>
+    <string name="lights_nothing">Nenhum ajuste mudou. Tente de novo com o carro ligado: acenda os faróis e espere alguns segundos antes de tocar em Pronto. Se a sua tela não avisa dos faróis, use o horário do sol.</string>
     <string name="lights_retry">Tentar de novo</string>
     <string name="lights_use_sun">Usar horário do sol</string>
+    <string name="lights_report">Enviar relatório</string>
     <string name="lights_now_on">Faróis acesos agora</string>
     <string name="lights_now_off">Faróis apagados agora</string>
     <string name="obd_usb_found">Cabo USB</string>
@@ -870,6 +871,8 @@
     <string name="module_files">Música e arquivos</string>
     <string name="module_local_network">Rede local</string>
     <string name="night_source_unused">Usado pelo tema ou pelo brilho de dia e noite.</string>
+    <string name="night_source_lights_unused">Você escolheu os faróis do carro para saber quando é noite, mas eles só são usados com o tema ou o brilho Dia e noite.</string>
+    <string name="night_use_day_night">Usar Dia e noite</string>
     <string name="obd_on_car_off">Conectado a %1$s · o carro parece desligado</string>
     <string name="option_phone_everywhere">O botão Telefone da barra e o volante abrem o mesmo app.</string>
     <string name="precise_location_missing">Falta a localização precisa: sem ela, a velocidade e a viagem ficam em 0.</string>

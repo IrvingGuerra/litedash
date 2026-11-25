@@ -608,9 +608,10 @@
     <string name="lights_step_on">ライトオフの状態を記録しました。ライトをオンにして「完了」をタップしてください。</string>
     <string name="lights_done">完了、ライトはオンです</string>
     <string name="lights_choose">複数の設定が変わりました。ヘッドライトのものを選んでください（1つ試し、だめならもう一度学習）：</string>
-    <string name="lights_nothing">設定が変わりませんでした。このヘッドユニットはヘッドライトを報告しない（または反映が遅い）ようです。それまでは日の出・日の入りを使います。ライトをオンにして数秒待ってから、もう一度お試しください。</string>
+    <string name="lights_nothing">設定は変わりませんでした。エンジンをかけた状態でもう一度試してください。ヘッドライトをつけて数秒待ってから「完了」をタップします。画面がヘッドライトを知らせない場合は、日の出・日の入りを使ってください。</string>
     <string name="lights_retry">もう一度試す</string>
     <string name="lights_use_sun">日の出・日の入りを使う</string>
+    <string name="lights_report">レポートを送信</string>
     <string name="lights_now_on">現在ヘッドライト オン</string>
     <string name="lights_now_off">現在ヘッドライト オフ</string>
     <string name="obd_usb_found">USB ケーブル</string>
@@ -859,6 +860,8 @@
     <string name="module_files">音楽とファイル</string>
     <string name="module_local_network">ローカルネットワーク</string>
     <string name="night_source_unused">昼と夜のテーマや明るさで使います。</string>
+    <string name="night_source_lights_unused">夜の判定に車のライトを選んでいますが、使われるのは「昼と夜」のテーマか明るさのときだけです。</string>
+    <string name="night_use_day_night">「昼と夜」を使う</string>
     <string name="obd_on_car_off">%1$s に接続済み · 車のエンジンが切れているようです</string>
     <string name="option_phone_everywhere">バーの電話ボタンとステアリングは同じアプリを開きます。</string>
     <string name="precise_location_missing">正確な位置情報がありません。これがないと、速度とトリップは 0 のままです。</string>

@@ -608,9 +608,10 @@
     <string name="lights_step_on">Tercatat dengan lampu mati. Sekarang nyalakan lalu ketuk Selesai.</string>
     <string name="lights_done">Selesai, lampu menyala</string>
     <string name="lights_choose">Beberapa setelan berubah; pilih yang untuk lampu (coba satu; jika tidak berfungsi, pelajari lagi):</string>
-    <string name="lights_nothing">Tidak ada setelan yang berubah: layar ini tidak melaporkan lampu (atau terlambat menuliskannya). Sampai saat itu, waktu matahari yang dipakai. Anda bisa mencoba lagi dengan menunggu beberapa detik saat lampu menyala.</string>
+    <string name="lights_nothing">Tidak ada pengaturan yang berubah. Coba lagi dengan mobil menyala: nyalakan lampu dan tunggu beberapa detik sebelum mengetuk Selesai. Jika layarmu tidak memberi tahu soal lampu, pakai waktu matahari.</string>
     <string name="lights_retry">Coba lagi</string>
     <string name="lights_use_sun">Pakai waktu matahari</string>
+    <string name="lights_report">Kirim laporan</string>
     <string name="lights_now_on">Lampu menyala sekarang</string>
     <string name="lights_now_off">Lampu mati sekarang</string>
     <string name="obd_usb_found">Kabel USB</string>
@@ -859,6 +860,8 @@
     <string name="module_files">Musik dan file</string>
     <string name="module_local_network">Jaringan lokal</string>
     <string name="night_source_unused">Dipakai oleh tema atau kecerahan siang dan malam.</string>
+    <string name="night_source_lights_unused">Kamu memilih lampu mobil untuk tahu kapan malam, tapi itu hanya dipakai oleh tema atau kecerahan Siang dan malam.</string>
+    <string name="night_use_day_night">Pakai Siang dan malam</string>
     <string name="obd_on_car_off">Terhubung ke %1$s · mobil sepertinya mati</string>
     <string name="option_phone_everywhere">Tombol Telepon di bilah dan setir membuka aplikasi yang sama.</string>
     <string name="precise_location_missing">Lokasi akurat tidak ada: tanpanya, kecepatan dan perjalanan tetap 0.</string>

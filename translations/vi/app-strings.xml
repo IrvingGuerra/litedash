@@ -608,9 +608,10 @@
     <string name="lights_step_on">Đã ghi nhận khi tắt đèn pha. Giờ hãy bật đèn và nhấn Xong.</string>
     <string name="lights_done">Xong, đèn đã bật</string>
     <string name="lights_choose">Nhiều cài đặt đã thay đổi; hãy chọn cài đặt của đèn pha (thử một cái; nếu không được, học lại):</string>
-    <string name="lights_nothing">Không có cài đặt nào thay đổi: đầu máy này không báo đèn pha (hoặc ghi muộn). Trước đó sẽ dùng giờ mặt trời. Bạn có thể thử lại, chờ vài giây khi đèn đang bật.</string>
+    <string name="lights_nothing">Không có cài đặt nào thay đổi. Hãy thử lại khi xe đang nổ máy: bật đèn pha và đợi vài giây trước khi chạm Xong. Nếu màn hình của bạn không báo đèn pha, hãy dùng giờ mặt trời.</string>
     <string name="lights_retry">Thử lại</string>
     <string name="lights_use_sun">Dùng giờ mặt trời</string>
+    <string name="lights_report">Gửi báo cáo</string>
     <string name="lights_now_on">Đèn pha đang bật</string>
     <string name="lights_now_off">Đèn pha đang tắt</string>
     <string name="obd_usb_found">Cáp USB</string>
@@ -859,6 +860,8 @@
     <string name="module_files">Nhạc và tệp</string>
     <string name="module_local_network">Mạng cục bộ</string>
     <string name="night_source_unused">Dùng cho giao diện hoặc độ sáng ngày và đêm.</string>
+    <string name="night_source_lights_unused">Bạn đã chọn đèn xe để biết khi nào là ban đêm, nhưng chúng chỉ được dùng với giao diện hoặc độ sáng Ngày và đêm.</string>
+    <string name="night_use_day_night">Dùng Ngày và đêm</string>
     <string name="obd_on_car_off">Đã kết nối với %1$s · xe có vẻ đang tắt máy</string>
     <string name="option_phone_everywhere">Nút Điện thoại trên thanh và vô lăng mở cùng một ứng dụng.</string>
     <string name="precise_location_missing">Thiếu vị trí chính xác: không có nó, tốc độ và chuyến đi giữ ở 0.</string>

@@ -608,9 +608,10 @@
     <string name="lights_step_on">전조등이 꺼진 상태를 기록했어요. 이제 켜고 완료를 탭하세요.</string>
     <string name="lights_done">완료, 전조등 켬</string>
     <string name="lights_choose">여러 설정이 바뀌었어요. 전조등 설정을 고르세요(하나를 시도해 보고 안 되면 다시 학습):</string>
-    <string name="lights_nothing">바뀐 설정이 없어요: 이 헤드 유닛은 전조등을 알리지 않거나 늦게 기록해요. 그전까지는 일출·일몰 시간을 사용해요. 전조등을 켠 채 몇 초 기다리며 다시 시도해 볼 수 있어요.</string>
+    <string name="lights_nothing">바뀐 설정이 없습니다. 시동을 건 상태에서 다시 해 보세요: 전조등을 켜고 몇 초 기다린 뒤 완료를 누르세요. 화면이 전조등 상태를 알려 주지 않으면 일출·일몰 시간을 사용하세요.</string>
     <string name="lights_retry">다시 시도</string>
     <string name="lights_use_sun">일출·일몰 시간 사용</string>
+    <string name="lights_report">보고서 보내기</string>
     <string name="lights_now_on">지금 전조등 켜짐</string>
     <string name="lights_now_off">지금 전조등 꺼짐</string>
     <string name="obd_usb_found">USB 케이블</string>
@@ -859,6 +860,8 @@
     <string name="module_files">음악 및 파일</string>
     <string name="module_local_network">로컬 네트워크</string>
     <string name="night_source_unused">주간/야간 테마나 밝기에 사용돼요.</string>
+    <string name="night_source_lights_unused">밤을 판단하는 데 차량 전조등을 골랐지만, 주간/야간 테마나 밝기에서만 쓰입니다.</string>
+    <string name="night_use_day_night">주간/야간 사용</string>
     <string name="obd_on_car_off">%1$s에 연결됨 · 차가 꺼진 것 같아요</string>
     <string name="option_phone_everywhere">바의 전화 버튼과 스티어링 휠이 같은 앱을 열어요.</string>
     <string name="precise_location_missing">정확한 위치가 없어요. 없으면 속도와 주행이 0으로 남아요.</string>

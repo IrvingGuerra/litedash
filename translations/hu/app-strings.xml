@@ -613,9 +613,10 @@
     <string name="lights_step_on">Rögzítve lekapcsolt lámpákkal. Most kapcsold fel őket, és koppints a Kész gombra.</string>
     <string name="lights_done">Kész, a lámpák égnek</string>
     <string name="lights_choose">Több beállítás is változott; válaszd ki a fényszórókét (próbálj ki egyet; ha nem működik, tanítsd újra):</string>
-    <string name="lights_nothing">Egy beállítás sem változott: ez a fejegység nem jelzi a fényszórókat (vagy későn írja). Addig a napkelte és napnyugta számít. Újrapróbálhatod úgy, hogy pár másodpercig vársz égő lámpákkal.</string>
+    <string name="lights_nothing">Egy beállítás sem változott. Próbáld újra járó motorral: kapcsold fel a lámpákat, és várj néhány másodpercet, mielőtt a Kész gombra koppintasz. Ha a kijelződ nem jelzi a fényszórókat, használd a napkeltét és napnyugtát.</string>
     <string name="lights_retry">Újra</string>
     <string name="lights_use_sun">Napkelte és napnyugta használata</string>
+    <string name="lights_report">Jelentés küldése</string>
     <string name="lights_now_on">A fényszórók most égnek</string>
     <string name="lights_now_off">A fényszórók most nem égnek</string>
     <string name="obd_usb_found">USB-kábel</string>
@@ -868,6 +869,8 @@
     <string name="module_files">Zene és fájlok</string>
     <string name="module_local_network">Helyi hálózat</string>
     <string name="night_source_unused">A nappali és éjszakai téma vagy fényerő használja.</string>
+    <string name="night_source_lights_unused">Az autó lámpáit választottad az éjszaka jelzésére, de ezeket csak a Nappal és éjszaka téma vagy fényerő használja.</string>
+    <string name="night_use_day_night">Nappal és éjszaka használata</string>
     <string name="obd_on_car_off">Csatlakozva: %1$s · az autó úgy tűnik, ki van kapcsolva</string>
     <string name="option_phone_everywhere">A sáv Telefon gombja és a kormány ugyanazt az alkalmazást nyitja meg.</string>
     <string name="precise_location_missing">Nincs pontos helyzet: nélküle a sebesség és az út 0-n marad.</string>

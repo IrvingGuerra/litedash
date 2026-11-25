@@ -623,9 +623,10 @@
     <string name="lights_step_on">Zaznamenáno se zhasnutými světly. Teď je rozsviť a klepni na Hotovo.</string>
     <string name="lights_done">Hotovo, světla svítí</string>
     <string name="lights_choose">Změnilo se víc nastavení; vyber to pro světla (zkus jedno; pokud nefunguje, nauč znovu):</string>
-    <string name="lights_nothing">Žádné nastavení se nezměnilo: tento displej světla nehlásí (nebo to zapisuje pozdě). Do té doby se používají časy slunce. Můžeš to zkusit znovu a se zapnutými světly počkat pár sekund.</string>
+    <string name="lights_nothing">Žádné nastavení se nezměnilo. Zkus to znovu s nastartovaným autem: rozsviť světla a pár sekund počkej, než klepneš na Hotovo. Pokud tvůj displej světla nehlásí, použij časy slunce.</string>
     <string name="lights_retry">Zkusit znovu</string>
     <string name="lights_use_sun">Použít časy slunce</string>
+    <string name="lights_report">Odeslat hlášení</string>
     <string name="lights_now_on">Světla teď svítí</string>
     <string name="lights_now_off">Světla teď nesvítí</string>
     <string name="obd_usb_found">USB kabel</string>
@@ -886,6 +887,8 @@
     <string name="module_files">Hudba a soubory</string>
     <string name="module_local_network">Místní síť</string>
     <string name="night_source_unused">Používá ho denní a noční motiv nebo jas.</string>
+    <string name="night_source_lights_unused">Vybral jsi světla auta, aby se poznalo, kdy je noc, ale používají se jen s motivem nebo jasem Den a noc.</string>
+    <string name="night_use_day_night">Použít Den a noc</string>
     <string name="obd_on_car_off">Připojeno k %1$s · auto je asi vypnuté</string>
     <string name="option_phone_everywhere">Tlačítko Telefon na liště i volant otevírají stejnou aplikaci.</string>
     <string name="precise_location_missing">Chybí přesná poloha: bez ní zůstane rychlost i jízda na 0.</string>

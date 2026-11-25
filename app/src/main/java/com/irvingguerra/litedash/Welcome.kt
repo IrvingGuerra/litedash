@@ -247,7 +247,8 @@ private fun DesignStep(d: Dependencies, modifier: Modifier) {
             for (design in DESIGNS) {
                 DesignCard(design, grid, d.dashboard, design.id == current, changed = false, Modifier.width(width), brief = true) {
                     if (d.prefs.design != design.id) {
-                        applyDesign(d, context, scope, design)
+                        // Instalación nueva: el tema del Diseño tal cual (aquí se van probando varios).
+                        applyDesign(d, context, scope, design, keepSun = false)
                         DesignNotice.design = null
                     }
                 }

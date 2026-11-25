@@ -256,7 +256,13 @@ private fun ThemeBrightnessSettings(prefs: Preferences, revision: Int) {
     }
     if (prefs.theme != ThemeMode.SUN && !prefs.brightnessBySun) {
         return SettingsCard(stringResource(R.string.night_source)) {
-            Label(stringResource(R.string.night_source_unused), Typography.small, c.textMuted)
+            // Con las luces aprendidas (o elegidas) que se note que siguen ahí y cómo volver a usarlas.
+            if (prefs.lightsKey != null || prefs.nightSource == NightSource.LIGHTS) {
+                Label(stringResource(R.string.night_source_lights_unused), Typography.small, c.textMuted)
+                Button(stringResource(R.string.night_use_day_night), { prefs.theme = ThemeMode.SUN })
+            } else {
+                Label(stringResource(R.string.night_source_unused), Typography.small, c.textMuted)
+            }
         }
     }
     SettingsCard(stringResource(R.string.night_source), stringResource(R.string.night_source_help)) {

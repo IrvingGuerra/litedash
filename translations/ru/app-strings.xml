@@ -623,9 +623,10 @@
     <string name="lights_step_on">Записано с выключенными фарами. Теперь включи их и нажми «Готово».</string>
     <string name="lights_done">Готово, фары включены</string>
     <string name="lights_choose">Изменилось несколько настроек; выбери ту, что про фары (попробуй одну; если не сработает, изучи заново):</string>
-    <string name="lights_nothing">Ни одна настройка не изменилась: эта магнитола не сообщает о фарах (или делает это с опозданием). Пока используется время восхода и заката. Можно попробовать снова, подождав несколько секунд с включёнными фарами.</string>
+    <string name="lights_nothing">Ни одна настройка не изменилась. Попробуйте ещё раз с заведённой машиной: включите фары и подождите несколько секунд, прежде чем нажать «Готово». Если ваш экран не сообщает о фарах, используйте восход и закат.</string>
     <string name="lights_retry">Попробовать снова</string>
     <string name="lights_use_sun">По восходу и закату</string>
+    <string name="lights_report">Отправить отчёт</string>
     <string name="lights_now_on">Сейчас фары включены</string>
     <string name="lights_now_off">Сейчас фары выключены</string>
     <string name="obd_usb_found">USB-кабель</string>
@@ -886,6 +887,8 @@
     <string name="module_files">Музыка и файлы</string>
     <string name="module_local_network">Локальная сеть</string>
     <string name="night_source_unused">Используется темой или яркостью «день и ночь».</string>
+    <string name="night_source_lights_unused">Вы выбрали фары машины, чтобы определять ночь, но они работают только с темой или яркостью «День и ночь».</string>
+    <string name="night_use_day_night">Включить «День и ночь»</string>
     <string name="obd_on_car_off">Подключено к %1$s · машина, похоже, выключена</string>
     <string name="option_phone_everywhere">Кнопка «Телефон» на панели и руль открывают одно и то же приложение.</string>
     <string name="precise_location_missing">Нет точного местоположения: без него скорость и поездка остаются на 0.</string>

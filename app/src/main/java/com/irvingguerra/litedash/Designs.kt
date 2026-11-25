@@ -136,10 +136,12 @@ fun Preferences.put(l: DesignLook) {
 
 /**
  * Lo de toda la app con este Diseño puesto sobre [now]. Del mapa solo cambia el estilo y la paleta (orientación, zoom y
- * la ruta que fluye son de uso, no de estilo); con [ownCar] (un modelo del catálogo) el auto no se toca.
+ * la ruta que fluye son de uso, no de estilo); con [ownCar] (un modelo del catálogo) el auto no se toca. Con [keepSun]
+ * quien usa «Día y noche» lo conserva (por luces, sensor o sol: un Diseño no debe quitárselo sin que lo note); los colores
+ * del Diseño ya salen de claro u oscuro. En la bienvenida va sin [keepSun]: ahí se pone el tema del Diseño tal cual.
  */
-fun Design.over(now: DesignLook, ownCar: Boolean) = now.copy(
-    theme = theme,
+fun Design.over(now: DesignLook, ownCar: Boolean, keepSun: Boolean = true) = now.copy(
+    theme = if (keepSun && now.theme == ThemeMode.SUN) ThemeMode.SUN else theme,
     accent = accent?.toArgb(),
     cards = cardColor?.toArgb(),
     cardStyle = cardStyle,
@@ -245,13 +247,13 @@ private var designTurn = 0
  * Aplica [design] a la página que se ve (no toca las demás) y a lo de toda la app, de una vez, y deja listo «Deshacer».
  * Su fondo se baja después: tu foto se guarda aparte antes (una sola vez: el fondo de otro Diseño no la reemplaza); sin
  * internet todo lo demás ya quedó y el fondo es el resplandor del tema hasta que haya red ([prefs.designWallpaper], se
- * baja una sola vez). Desde el hilo principal.
+ * baja una sola vez). Con [keepSun], «Día y noche» se queda ([Design.over]). Desde el hilo principal.
  */
-internal fun applyDesign(d: Dependencies, context: Context, scope: CoroutineScope, design: Design) {
+internal fun applyDesign(d: Dependencies, context: Context, scope: CoroutineScope, design: Design, keepSun: Boolean = true) {
     val prefs = d.prefs
     val before = d.dashboard.snapshot() ?: return
     val now = prefs.look
-    prefs.put(design.over(now, ownCar = !prefs.carModel.isNullOrEmpty()))
+    prefs.put(design.over(now, ownCar = !prefs.carModel.isNullOrEmpty(), keepSun))
     d.dashboard.template(design.template)
     val applied = d.dashboard.snapshot()?.layout ?: return
     val undo = DesignUndo(prefs.design, now, before, applied, pending = prefs.designWallpaper)

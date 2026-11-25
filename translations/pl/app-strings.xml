@@ -623,9 +623,10 @@
     <string name="lights_step_on">Zapisano przy zgaszonych światłach. Teraz je włącz i dotknij Gotowe.</string>
     <string name="lights_done">Gotowe, światła włączone</string>
     <string name="lights_choose">Zmieniło się kilka ustawień; wybierz to od świateł (spróbuj jednego; jeśli nie działa, naucz ponownie):</string>
-    <string name="lights_nothing">Żadne ustawienie się nie zmieniło: to radio nie zgłasza świateł (lub zapisuje to z opóźnieniem). Do tego czasu używane są godziny słońca. Możesz spróbować ponownie, czekając kilka sekund z włączonymi światłami.</string>
+    <string name="lights_nothing">Żadne ustawienie się nie zmieniło. Spróbuj ponownie z włączonym silnikiem: włącz światła i odczekaj kilka sekund, zanim dotkniesz Gotowe. Jeśli twój ekran nie zgłasza świateł, używaj godzin słońca.</string>
     <string name="lights_retry">Spróbuj ponownie</string>
     <string name="lights_use_sun">Używaj godzin słońca</string>
+    <string name="lights_report">Wyślij zgłoszenie</string>
     <string name="lights_now_on">Światła teraz włączone</string>
     <string name="lights_now_off">Światła teraz zgaszone</string>
     <string name="obd_usb_found">Kabel USB</string>
@@ -886,6 +887,8 @@
     <string name="module_files">Muzyka i pliki</string>
     <string name="module_local_network">Sieć lokalna</string>
     <string name="night_source_unused">Używane przez motyw lub jasność dnia i nocy.</string>
+    <string name="night_source_lights_unused">Wybrałeś światła auta, by wiedzieć, kiedy jest noc, ale działają tylko z motywem lub jasnością Dzień i noc.</string>
+    <string name="night_use_day_night">Używaj Dzień i noc</string>
     <string name="obd_on_car_off">Połączono z %1$s · auto chyba jest wyłączone</string>
     <string name="option_phone_everywhere">Przycisk Telefon na pasku i kierownica otwierają tę samą aplikację.</string>
     <string name="precise_location_missing">Brak dokładnej lokalizacji: bez niej prędkość i trasa zostają na 0.</string>
