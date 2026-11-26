@@ -118,6 +118,8 @@
     <string name="design_none">ยังไม่มี</string>
     <string name="design_change">เปลี่ยน</string>
     <string name="design_apply">ใช้</string>
+    <string name="design_apply_title">ใช้ดีไซน์ %1$s ไหม</string>
+    <string name="design_apply_message">เปลี่ยนการจัดวางของหน้านี้ และวอลเปเปอร์ ธีม สี และแผนที่ของทั้งแอป เลิกทำได้</string>
     <string name="design_undo">เลิกทำ</string>
     <string name="design_customize">ปรับแต่ง</string>
     <string name="design_this_page">ใช้กับหน้านี้เท่านั้น หน้าอื่นของคุณจะไม่เปลี่ยน</string>

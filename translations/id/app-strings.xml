@@ -118,6 +118,8 @@
     <string name="design_none">Belum ada</string>
     <string name="design_change">Ganti</string>
     <string name="design_apply">Terapkan</string>
+    <string name="design_apply_title">Terapkan desain %1$s?</string>
+    <string name="design_apply_message">Mengubah tata letak halaman ini dan, di seluruh aplikasi, wallpaper, tema, warna, dan peta. Anda bisa membatalkannya.</string>
     <string name="design_undo">Urungkan</string>
     <string name="design_customize">Sesuaikan</string>
     <string name="design_this_page">Berlaku untuk halaman ini; halaman Anda yang lain tidak berubah.</string>

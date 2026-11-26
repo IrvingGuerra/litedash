@@ -118,6 +118,8 @@
     <string name="design_none">Пока нет</string>
     <string name="design_change">Сменить</string>
     <string name="design_apply">Применить</string>
+    <string name="design_apply_title">Применить стиль %1$s?</string>
+    <string name="design_apply_message">Меняет раскладку этой страницы и во всём приложении — обои, тему, цвета и карту. Это можно отменить.</string>
     <string name="design_undo">Отменить</string>
     <string name="design_customize">Настроить</string>
     <string name="design_this_page">Применяется к этой странице; другие страницы не меняются.</string>

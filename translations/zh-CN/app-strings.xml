@@ -118,6 +118,8 @@
     <string name="design_none">暂无</string>
     <string name="design_change">更换</string>
     <string name="design_apply">应用</string>
+    <string name="design_apply_title">应用“%1$s”风格？</string>
+    <string name="design_apply_message">会更改此页面的布局，以及整个应用的壁纸、主题、颜色和地图。可以撤销。</string>
     <string name="design_undo">撤销</string>
     <string name="design_customize">自定义</string>
     <string name="design_this_page">仅应用于此页面，其他页面保持不变。</string>

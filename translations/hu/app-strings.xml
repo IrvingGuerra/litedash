@@ -118,6 +118,8 @@
     <string name="design_none">Még nincs</string>
     <string name="design_change">Módosítás</string>
     <string name="design_apply">Alkalmaz</string>
+    <string name="design_apply_title">Alkalmazod a(z) %1$s stílust?</string>
+    <string name="design_apply_message">Megváltoztatja ennek az oldalnak az elrendezését, az egész alkalmazásban pedig a hátteret, a témát, a színeket és a térképet. Visszavonhatod.</string>
     <string name="design_undo">Visszavonás</string>
     <string name="design_customize">Testreszabás</string>
     <string name="design_this_page">Erre az oldalra vonatkozik; a többi oldalad nem változik.</string>

@@ -118,6 +118,8 @@
     <string name="design_none">Поки немає</string>
     <string name="design_change">Змінити</string>
     <string name="design_apply">Застосувати</string>
+    <string name="design_apply_title">Застосувати стиль %1$s?</string>
+    <string name="design_apply_message">Змінює розкладку цієї сторінки і в усьому застосунку — шпалери, тему, кольори та мапу. Це можна скасувати.</string>
     <string name="design_undo">Скасувати</string>
     <string name="design_customize">Налаштувати</string>
     <string name="design_this_page">Застосовується до цієї сторінки; інші сторінки не змінюються.</string>

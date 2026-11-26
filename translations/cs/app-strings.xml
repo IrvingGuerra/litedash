@@ -118,6 +118,8 @@
     <string name="design_none">Zatím žádný</string>
     <string name="design_change">Změnit</string>
     <string name="design_apply">Použít</string>
+    <string name="design_apply_title">Použít styl %1$s?</string>
+    <string name="design_apply_message">Změní rozložení této stránky a v celé aplikaci tapetu, motiv, barvy a mapu. Můžeš to vrátit zpět.</string>
     <string name="design_undo">Zpět</string>
     <string name="design_customize">Upravit</string>
     <string name="design_this_page">Platí pro tuto stránku; ostatní stránky se nezmění.</string>

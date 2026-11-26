@@ -118,6 +118,8 @@
     <string name="design_none">अभी कोई नहीं</string>
     <string name="design_change">बदलें</string>
     <string name="design_apply">लागू करें</string>
+    <string name="design_apply_title">%1$s डिज़ाइन लागू करें?</string>
+    <string name="design_apply_message">इस पेज का लेआउट बदलता है और पूरे ऐप में वॉलपेपर, थीम, रंग और मैप। आप इसे पहले जैसा कर सकते हैं।</string>
     <string name="design_undo">पहले जैसा करें</string>
     <string name="design_customize">कस्टमाइज़ करें</string>
     <string name="design_this_page">सिर्फ़ इस पेज पर लागू होता है; आपके बाकी पेज वैसे ही रहेंगे।</string>

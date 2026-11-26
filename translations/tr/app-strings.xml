@@ -118,6 +118,8 @@
     <string name="design_none">Henüz yok</string>
     <string name="design_change">Değiştir</string>
     <string name="design_apply">Uygula</string>
+    <string name="design_apply_title">%1$s tasarımı uygulansın mı?</string>
+    <string name="design_apply_message">Bu sayfanın düzenini ve uygulamanın tamamında duvar kâğıdını, temayı, renkleri ve haritayı değiştirir. Geri alabilirsiniz.</string>
     <string name="design_undo">Geri al</string>
     <string name="design_customize">Özelleştir</string>
     <string name="design_this_page">Bu sayfaya uygulanır; diğer sayfalarınız aynı kalır.</string>

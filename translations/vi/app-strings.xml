@@ -118,6 +118,8 @@
     <string name="design_none">Chưa có</string>
     <string name="design_change">Đổi</string>
     <string name="design_apply">Áp dụng</string>
+    <string name="design_apply_title">Áp dụng phong cách %1$s?</string>
+    <string name="design_apply_message">Thay đổi bố cục của trang này và, trong toàn bộ ứng dụng, hình nền, giao diện, màu sắc và bản đồ. Bạn có thể hoàn tác.</string>
     <string name="design_undo">Hoàn tác</string>
     <string name="design_customize">Tùy chỉnh</string>
     <string name="design_this_page">Áp dụng cho trang này; các trang khác vẫn giữ nguyên.</string>

@@ -118,6 +118,8 @@
     <string name="design_none">まだありません</string>
     <string name="design_change">変更</string>
     <string name="design_apply">適用</string>
+    <string name="design_apply_title">デザイン「%1$s」を適用しますか？</string>
+    <string name="design_apply_message">このページの配置と、アプリ全体の壁紙・テーマ・色・地図が変わります。元に戻せます。</string>
     <string name="design_undo">元に戻す</string>
     <string name="design_customize">カスタマイズ</string>
     <string name="design_this_page">このページに適用されます。ほかのページは変わりません。</string>

@@ -118,6 +118,8 @@
     <string name="design_none">Jeszcze żaden</string>
     <string name="design_change">Zmień</string>
     <string name="design_apply">Zastosuj</string>
+    <string name="design_apply_title">Zastosować styl %1$s?</string>
+    <string name="design_apply_message">Zmienia układ tej strony, a w całej aplikacji tapetę, motyw, kolory i mapę. Możesz to cofnąć.</string>
     <string name="design_undo">Cofnij</string>
     <string name="design_customize">Dostosuj</string>
     <string name="design_this_page">Dotyczy tej strony; pozostałe strony się nie zmienią.</string>

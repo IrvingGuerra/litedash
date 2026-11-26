@@ -118,6 +118,8 @@
     <string name="design_none">Nog geen</string>
     <string name="design_change">Wijzigen</string>
     <string name="design_apply">Toepassen</string>
+    <string name="design_apply_title">Stijl %1$s toepassen?</string>
+    <string name="design_apply_message">Verandert de indeling van deze pagina en, in de hele app, de achtergrond, het thema, de kleuren en de kaart. Je kunt het ongedaan maken.</string>
     <string name="design_undo">Ongedaan maken</string>
     <string name="design_customize">Aanpassen</string>
     <string name="design_this_page">Geldt voor deze pagina; je andere pagina\'s blijven zoals ze zijn.</string>

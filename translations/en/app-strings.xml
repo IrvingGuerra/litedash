@@ -122,6 +122,8 @@
     <string name="design_none">None yet</string>
     <string name="design_change">Change</string>
     <string name="design_apply">Apply</string>
+    <string name="design_apply_title">Apply the %1$s design?</string>
+    <string name="design_apply_message">Changes this page\'s layout and, across the app, the wallpaper, theme, colors and map. You can undo it.</string>
     <string name="design_undo">Undo</string>
     <string name="design_customize">Customize</string>
     <string name="design_this_page">Applies to this page; your other pages stay as they are.</string>

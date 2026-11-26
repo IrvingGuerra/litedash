@@ -118,6 +118,8 @@
     <string name="design_none">Ingen än</string>
     <string name="design_change">Byt</string>
     <string name="design_apply">Använd</string>
+    <string name="design_apply_title">Använda stilen %1$s?</string>
+    <string name="design_apply_message">Ändrar layouten på den här sidan och, i hela appen, bakgrunden, temat, färgerna och kartan. Du kan ångra det.</string>
     <string name="design_undo">Ångra</string>
     <string name="design_customize">Anpassa</string>
     <string name="design_this_page">Gäller den här sidan; dina andra sidor förblir som de är.</string>

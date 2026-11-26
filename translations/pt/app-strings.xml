@@ -120,6 +120,8 @@
     <string name="design_none">Nenhum ainda</string>
     <string name="design_change">Trocar</string>
     <string name="design_apply">Aplicar</string>
+    <string name="design_apply_title">Aplicar o estilo %1$s?</string>
+    <string name="design_apply_message">Muda o layout desta página e, em todo o app, o papel de parede, o tema, as cores e o mapa. Você pode desfazer.</string>
     <string name="design_undo">Desfazer</string>
     <string name="design_customize">Personalizar</string>
     <string name="design_this_page">Vale para esta página; suas outras páginas continuam iguais.</string>

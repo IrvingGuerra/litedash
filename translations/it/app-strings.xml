@@ -118,6 +118,8 @@
     <string name="design_none">Nessuno per ora</string>
     <string name="design_change">Cambia</string>
     <string name="design_apply">Applica</string>
+    <string name="design_apply_title">Applicare lo stile %1$s?</string>
+    <string name="design_apply_message">Cambia la disposizione di questa pagina e, in tutta l\'app, lo sfondo, il tema, i colori e la mappa. Puoi annullarlo.</string>
     <string name="design_undo">Annulla</string>
     <string name="design_customize">Personalizza</string>
     <string name="design_this_page">Vale per questa pagina; le altre pagine restano come sono.</string>

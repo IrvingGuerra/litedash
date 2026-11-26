@@ -118,6 +118,8 @@
     <string name="design_none">Niciunul încă</string>
     <string name="design_change">Schimbă</string>
     <string name="design_apply">Aplică</string>
+    <string name="design_apply_title">Aplici stilul %1$s?</string>
+    <string name="design_apply_message">Schimbă aranjarea acestei pagini și, în toată aplicația, fundalul, tema, culorile și harta. Poți anula.</string>
     <string name="design_undo">Anulează</string>
     <string name="design_customize">Personalizează</string>
     <string name="design_this_page">Se aplică acestei pagini; celelalte pagini rămân la fel.</string>

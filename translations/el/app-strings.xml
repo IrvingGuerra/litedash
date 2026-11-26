@@ -118,6 +118,8 @@
     <string name="design_none">Κανένα ακόμα</string>
     <string name="design_change">Αλλαγή</string>
     <string name="design_apply">Εφαρμογή</string>
+    <string name="design_apply_title">Εφαρμογή του στυλ %1$s;</string>
+    <string name="design_apply_message">Αλλάζει τη διάταξη αυτής της σελίδας και, σε όλη την εφαρμογή, το φόντο, το θέμα, τα χρώματα και τον χάρτη. Μπορείτε να το αναιρέσετε.</string>
     <string name="design_undo">Αναίρεση</string>
     <string name="design_customize">Προσαρμογή</string>
     <string name="design_this_page">Ισχύει για αυτή τη σελίδα· οι άλλες σελίδες σας μένουν ως έχουν.</string>

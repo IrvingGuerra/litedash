@@ -34,6 +34,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.irvingguerra.litedash.core.ui.Button
@@ -54,8 +55,8 @@ import kotlinx.coroutines.sync.withLock
 
 /**
  * Diseños (Ajustes → Inicio y apariencia → Inicio → Diseño, o «Diseños» al acomodar): los 8 en tarjetas con su miniatura,
- * nombre y frase; un toque aplica uno a la página que se ve (sin preguntar: se puede deshacer). Abajo, «Deshacer» y
- * «Personalizar» (los ajustes de siempre). Acostada van 4 por fila; angosta o de pie, 2.
+ * nombre y frase; un toque pregunta si se aplica a la página que se ve y, al confirmar, lo aplica (se puede deshacer).
+ * Abajo, «Deshacer» y «Personalizar» (los ajustes de siempre). Acostada van 4 por fila; angosta o de pie, 2.
  */
 @Composable
 fun DesignsPanel(d: Dependencies, close: () -> Unit, onCustomize: () -> Unit) {
@@ -67,6 +68,8 @@ fun DesignsPanel(d: Dependencies, close: () -> Unit, onCustomize: () -> Unit) {
     val current = designOf(prefs.design)
     val ownCar = !prefs.carModel.isNullOrEmpty()
     val undo = designUndo(d)
+    val alerts = LocalAlerts.current
+    val res = LocalResources.current
     PanelScaffold(stringResource(R.string.designs), close) {
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(16.dp)) {
             Label(stringResource(R.string.designs_help), Typography.body, c.textMuted)
@@ -78,7 +81,14 @@ fun DesignsPanel(d: Dependencies, close: () -> Unit, onCustomize: () -> Unit) {
                     for (design in DESIGNS) {
                         val applied = design == current
                         DesignCard(design, grid, d.dashboard, applied, changed = applied && !design.matches(prefs.look, ownCar), Modifier.width(width)) {
-                            applyDesign(d, context, scope, design)
+                            alerts.ask(
+                                Alert(
+                                    res.getString(R.string.design_apply_title, res.getString(design.name)),
+                                    res.getString(R.string.design_apply),
+                                    res.getString(R.string.design_apply_message),
+                                    destructive = false,
+                                ) { applyDesign(d, context, scope, design) },
+                            )
                         }
                     }
                 }
@@ -109,8 +119,8 @@ fun DesignsPanel(d: Dependencies, close: () -> Unit, onCustomize: () -> Unit) {
 private val FOUR_COLUMNS = 860.dp
 
 /**
- * Una tarjeta de la galería: miniatura, nombre (marcado si es el puesto), frase y «Aplicar». [brief] (la bienvenida): solo
- * miniatura, nombre y la palomita.
+ * Una tarjeta de la galería: miniatura, nombre (con la palomita si es el puesto), sus colores y su frase. [brief] (la
+ * bienvenida): solo miniatura, nombre y la palomita.
  */
 @Composable
 internal fun DesignCard(
@@ -136,9 +146,7 @@ internal fun DesignCard(
                         Box(Modifier.size(12.dp).clip(CircleShape).background(color).border(1.dp, c.text.copy(alpha = 0.2f), CircleShape))
                     }
                 }
-                // Toda la tarjeta aplica; aquí se dice (o, si ya está puesto, la palomita).
                 if (applied) Icon(Icons.done, c.accent, if (brief) 18.dp else 22.dp)
-                else if (!brief) Label(stringResource(R.string.design_apply).uppercase(currentLocale()), Typography.label, c.accent, maxLines = 1)
             }
             if (!brief) Label(
                 if (changed) stringResource(R.string.design_with_changes) else stringResource(design.tagline),

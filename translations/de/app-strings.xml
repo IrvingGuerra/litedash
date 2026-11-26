@@ -118,6 +118,8 @@
     <string name="design_none">Noch keiner</string>
     <string name="design_change">Ändern</string>
     <string name="design_apply">Anwenden</string>
+    <string name="design_apply_title">Stil %1$s anwenden?</string>
+    <string name="design_apply_message">Ändert das Layout dieser Seite und in der ganzen App Hintergrund, Design, Farben und Karte. Du kannst es rückgängig machen.</string>
     <string name="design_undo">Rückgängig</string>
     <string name="design_customize">Anpassen</string>
     <string name="design_this_page">Gilt für diese Seite; deine anderen Seiten bleiben, wie sie sind.</string>

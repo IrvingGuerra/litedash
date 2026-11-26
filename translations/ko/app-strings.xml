@@ -118,6 +118,8 @@
     <string name="design_none">아직 없음</string>
     <string name="design_change">변경</string>
     <string name="design_apply">적용</string>
+    <string name="design_apply_title">%1$s 디자인을 적용할까요?</string>
+    <string name="design_apply_message">이 페이지의 배치와 앱 전체의 배경, 테마, 색상, 지도가 바뀌어요. 되돌릴 수 있어요.</string>
     <string name="design_undo">실행 취소</string>
     <string name="design_customize">맞춤 설정</string>
     <string name="design_this_page">이 페이지에만 적용돼요. 다른 페이지는 그대로예요.</string>
