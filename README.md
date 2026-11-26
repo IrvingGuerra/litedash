@@ -53,7 +53,7 @@ agrandar o quitar widgets.
 | **Música** | Reproductor USB propio (carpetas, artistas, álbumes), Bluetooth con carátula y tu app (Spotify, YouTube Music…). |
 | **Mapa** | Tu posición en vivo, plano o inclinado, con brújula; de fondo en tu inicio; y Waze o Google Maps a un toque. |
 | **Velocímetros y medidores** | Por OBD o GPS: esfera, aguja, digital, barra o degradado; tacómetro, temperatura, gasolina, batería, turbo. |
-| **Tu auto en 3D** | Catálogo de 19 modelos, del color que quieras, con giro de 360°. |
+| **Tu auto en 3D** | Catálogo de 20 modelos, del color que quieras, con giro de 360°. |
 | **Tu inicio** | Widgets que se mueven y crecen, hasta 5 páginas, tarjetas de vidrio con tus colores, barra de apps a tu manera, plantillas para 7", 10" y 11", mandos al volante, día y noche por hora, sensor de luz o faros, pantalla dividida. |
 | **23 idiomas** | Español e inglés incluidos y 21 más que se descargan desde la app. |
 | **Android Auto y CarPlay** | Zlink, AutoKit, CarLink u Open Headunit a un toque. |
