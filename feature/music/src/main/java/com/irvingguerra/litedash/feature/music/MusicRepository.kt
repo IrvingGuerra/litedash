@@ -283,8 +283,10 @@ class MusicRepository(internal val context: Context) {
     internal val phoneOnlyRetry = Runnable { retryPostponed() }
 
     /**
-     * Cuándo tocó la persona el aviso «Controla la música desde tu celular» ([askBluetoothSound]), en
-     * [SystemClock.elapsedRealtime]. Un ▶ no cuenta: sin dato de velocidad el auto puede ir andando.
+     * Cuándo tocó la persona el aviso «Controla la música desde tu celular» ([askBluetoothSound]) o el ▶ de la pieza
+     * Música en la pantalla ([Lens.toggle]), en [SystemClock.elapsedRealtime]. El volante y la barra no cuentan. El ▶
+     * volvió a contar en la 1.5.22: sin él, una pantalla sin dato de velocidad cuyo celular ya sonaba (sin aviso que
+     * tocar) nunca pasaba su sonido a Bluetooth (reporte D677C4, Essgoo).
      */
     internal var askedAt = 0L
 
@@ -898,7 +900,13 @@ class MusicRepository(internal val context: Context) {
          * Play o pausa ([play]/[pause]); sin nada a la vista, play despierta lo que toque. [shownPlaying] = lo que muestra el
          * botón de la pantalla (▮▮ = true): hace exactamente eso. El volante y la barra no lo ven (null): [playingNow].
          */
-        fun toggle(shownPlaying: Boolean? = null) = if (pressPlays(shownPlaying, ::playingNow)) play(this) else pause(this)
+        fun toggle(shownPlaying: Boolean? = null) {
+            if (!pressPlays(shownPlaying, ::playingNow)) return pause(this)
+            // El ▶ de la pantalla es la persona viéndola y pidiéndolo, igual que el toque al aviso ([askedAt]); el volante
+            // y la barra no cuentan.
+            if (shownPlaying != null && this === music) askedAt = SystemClock.elapsedRealtime()
+            play(this)
+        }
 
         /**
          * ¿Suena, para el volante (también elige entre música y radio)? Lo que se ve, si es de verdad. Sin eso (la pieza no está en pantalla y no escucha, o su

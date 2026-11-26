@@ -40,8 +40,10 @@ fun ApplyBrightness(prefs: Preferences, night: Boolean, revision: Int) {
     val activity = LocalActivity.current ?: return
     val level = if (night) prefs.nightBrightness else prefs.dayBrightness
     // [revision] sube al volver a LiteDash: así aplica justo después de dar el permiso.
-    LaunchedEffect(prefs.brightnessBySun, level, prefs.brightnessAllApps, revision) {
-        val system = prefs.brightnessBySun && prefs.brightnessAllApps && Settings.System.canWrite(activity)
+    // Si los faros se aprendieron por el brillo de la pantalla, el del sistema no se toca: LiteDash apagaría su propia señal.
+    val signal = brightnessIsTheSignal(prefs.lightsKey, prefs.lightsOnValue)
+    LaunchedEffect(prefs.brightnessBySun, level, prefs.brightnessAllApps, signal, revision) {
+        val system = prefs.brightnessBySun && prefs.brightnessAllApps && !signal && Settings.System.canWrite(activity)
         windowBrightness(activity, level.takeIf { prefs.brightnessBySun && !system })
         withContext(Dispatchers.IO) {
             // Con dos inicios abiertos, uno a la vez: si no, el segundo guardaba el brillo de LiteDash como "el original".

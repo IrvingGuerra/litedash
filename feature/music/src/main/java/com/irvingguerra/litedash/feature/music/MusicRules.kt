@@ -158,10 +158,17 @@ internal fun sourceStillHeld(held: Boolean, lost: Boolean, linked: Boolean): Boo
 /**
  * ¿Se pospone abrir la app de fábrica encima de LiteDash? Con el auto en movimiento, siempre. Sin dato de velocidad
  * ([speedUnknown]: ningún widget usa el GPS ni hay OBD) también, salvo que la persona acabe de tocar el aviso «Controla
- * la música desde tu celular» ([asked]): está viendo la pantalla y pide justo eso. Un ▶ no basta (el auto puede ir
- * andando). Antes, en esas pantallas la receta se posponía para siempre y el Bluetooth nunca sonaba (reportes D677C4, 48FDB1).
+ * la música desde tu celular» o el ▶ de la pieza en la pantalla ([asked]): está viendo la pantalla y pide justo eso
+ * (el volante y la barra no cuentan). Antes, en esas pantallas la receta se posponía para siempre y el Bluetooth nunca sonaba (reportes D677C4, 48FDB1).
  */
 internal fun holdsForMotion(moving: Boolean, speedUnknown: Boolean, asked: Boolean): Boolean = moving && !(speedUnknown && asked)
+
+/**
+ * ¿Un play a esta app es música por Bluetooth (y toca su receta)? La app enlazada o reconocida como Bluetooth
+ * ([source]) o, con el método Bluetooth, la sesión del Bluetooth de Android que toca por la app de marca sin sesión
+ * ([standIn]; reportes E9C1EE, 9EB0D5 y D677C4, Essgoo): sin esto, el play por esa sesión no pedía la entrada de audio.
+ */
+internal fun playsBluetooth(source: SourceKind?, standIn: Boolean): Boolean = source == SourceKind.BLUETOOTH || standIn
 
 /**
  * ¿Vale volver a pedir una receta pospuesta ([retryPostponed])? Con dato de velocidad sí (al detenerse, pasa). Sin dato y

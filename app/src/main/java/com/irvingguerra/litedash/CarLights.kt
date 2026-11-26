@@ -83,6 +83,49 @@ private val NOISE_WORDS = Regex(
 
 private fun isNoise(name: String) = NOISE_WORDS.containsMatchIn(name)
 
+/**
+ * El brillo de la pantalla. En varias pantallas de auto es la ÚNICA señal de los faros (la pantalla se atenúa sola al
+ * prenderlos), así que sí se ofrece al aprender, pero nunca se guarda solo: se elige a mano, y solo si no lo mueve el
+ * brillo automático de Android ni LiteDash mismo ([brightnessCandidate]).
+ */
+internal const val BRIGHTNESS_KEY = "system/screen_brightness"
+private const val BRIGHTNESS_MODE_KEY = "system/screen_brightness_mode"
+
+/**
+ * El brillo como candidato a ser los faros: cambió entre las dos fotos ([before], [after]), no está en automático y
+ * LiteDash no lo escribe ([ownBrightness]). Se guarda como un tope ("max:N" si con los faros baja, "min:N" si sube) a
+ * media distancia entre los dos valores: el número exacto cambia en cuanto alguien mueve el brillo un poco.
+ */
+internal fun brightnessCandidate(before: Map<String, String>, after: Map<String, String>, ownBrightness: Boolean): Pair<String, String>? {
+    if (ownBrightness || before[BRIGHTNESS_MODE_KEY] == "1" || after[BRIGHTNESS_MODE_KEY] == "1") return null
+    val off = before[BRIGHTNESS_KEY]?.toIntOrNull() ?: return null
+    val on = after[BRIGHTNESS_KEY]?.toIntOrNull() ?: return null
+    // Un cambio chico no son los faros (alguien movió el brillo): la pantalla lo baja o lo sube de golpe.
+    if (kotlin.math.abs(off - on) < BRIGHTNESS_STEP) return null
+    return BRIGHTNESS_KEY to (if (on < off) "max:" else "min:") + (on + off) / 2
+}
+
+/** Lo menos que cambia el brillo (de 0 a 255) para tomarlo por los faros. */
+private const val BRIGHTNESS_STEP = 10
+
+/**
+ * ¿Los faros se aprendieron por el brillo con tope ([key] y [on] guardados)? Entonces LiteDash no escribe el brillo del
+ * sistema ([ApplyBrightness]): apagaría su propia señal. Lo aprendido antes con valor exacto no cuenta: sigue como estaba.
+ */
+internal fun brightnessIsTheSignal(key: String?, on: String?): Boolean =
+    key == BRIGHTNESS_KEY && on != null && (on.startsWith("max:") || on.startsWith("min:"))
+
+/** ¿El valor de ahora ([current]) es el de los faros prendidos ([on], lo guardado al aprender: exacto, "max:N" o "min:N")? */
+internal fun lightsAreOn(on: String, current: String?): Boolean {
+    val limit = on.substringAfter(':', "").toIntOrNull()
+    val now = current?.toIntOrNull()
+    return when {
+        limit != null && on.startsWith("max:") -> now != null && now <= limit
+        limit != null && on.startsWith("min:") -> now != null && now >= limit
+        else -> current == on
+    }
+}
+
 /** Si el ajuste [name] (sin la tabla) suena a los faros. */
 internal fun soundsLikeLights(name: String) = LIGHT_WORDS.containsMatchIn(name) && !isNoise(name)
 
@@ -114,20 +157,20 @@ fun rememberLightsNight(prefs: Preferences): Boolean? {
     val context = LocalContext.current
     val key = remember(prefs.lightsKey) { LightsKey.fromStored(prefs.lightsKey) } ?: return null
     val on = prefs.lightsOnValue ?: return null
-    var night by remember(key, on) { mutableStateOf(key.read(context) == on) }
+    var night by remember(key, on) { mutableStateOf(lightsAreOn(on, key.read(context))) }
     DisposableEffect(key, on) {
         val observer = object : ContentObserver(Handler(Looper.getMainLooper())) {
             override fun onChange(selfChange: Boolean) {
-                night = key.read(context) == on
+                night = lightsAreOn(on, key.read(context))
             }
         }
         context.contentResolver.registerContentObserver(key.uri(), false, observer)
-        night = key.read(context) == on
+        night = lightsAreOn(on, key.read(context))
         onDispose { context.contentResolver.unregisterContentObserver(observer) }
     }
     // Algunas ROM escriben el ajuste sin avisar al observador: se vuelve a leer al regresar al frente.
     LifecycleStartEffect(key, on) {
-        night = key.read(context) == on
+        night = lightsAreOn(on, key.read(context))
         onStopOrDispose { }
     }
     return night
@@ -243,7 +286,14 @@ fun LightsSettings(prefs: Preferences) {
                             // solo se guarda sin preguntar si suena a luces.
                             val changed = after.filter { (k, v) -> s.before[k] != v && !isNoise(k.substringAfter('/')) }.toList()
                                 .sortedByDescending { soundsLikeLights(it.first.substringAfter('/')) }
+                            // El brillo, al final y solo para elegirlo a mano: en muchas pantallas es lo único que cambia.
+                            val own = prefs.brightnessBySun && prefs.brightnessAllApps && Settings.System.canWrite(context)
+                            val brightness = brightnessCandidate(s.before, after, own)
                             when {
+                                changed.isEmpty() && brightness != null -> {
+                                    lastLearn = "solo el brillo"
+                                    LearnStep.Choose(listOf(brightness))
+                                }
                                 changed.isEmpty() -> {
                                     lastLearn = "nada cambió"
                                     LearnStep.Nothing
@@ -255,7 +305,7 @@ fun LightsSettings(prefs: Preferences) {
                                 }
                                 else -> {
                                     lastLearn = "${changed.size} candidatos"
-                                    LearnStep.Choose(changed.take(8))
+                                    LearnStep.Choose(changed.take(7) + listOfNotNull(brightness))
                                 }
                             }
                         }
@@ -266,8 +316,10 @@ fun LightsSettings(prefs: Preferences) {
             is LearnStep.Choose -> {
                 Label(stringResource(R.string.lights_choose), Typography.body)
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    val brightness = stringResource(R.string.brightness)
                     for ((candidate, label) in s.candidates.zip(candidateLabels(s.candidates))) {
-                        Button(label, {
+                        // El brillo con su nombre de siempre (su valor guardado es un tope, no algo que leer).
+                        Button(if (candidate.first == BRIGHTNESS_KEY) brightness else label, {
                             lastLearn = "aprendido ${candidate.first}"
                             save(candidate.first, candidate.second)
                         })

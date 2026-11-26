@@ -108,11 +108,21 @@ class MusicRulesTest {
     fun factoryAppWaitsForTheCarUnlessThePersonAsksWithoutSpeedData() {
         // En movimiento de verdad (hay dato): se pospone aunque la persona toque el aviso.
         assertTrue(holdsForMotion(moving = true, speedUnknown = false, asked = true))
-        // Sin dato de velocidad: se pospone (un ▶ no cuenta), salvo con el toque al aviso «Controla la música…».
+        // Sin dato de velocidad: se pospone, salvo con el toque al aviso «Controla la música…» o al ▶ de la pantalla.
         assertTrue(holdsForMotion(moving = true, speedUnknown = true, asked = false))
         assertFalse(holdsForMotion(moving = true, speedUnknown = true, asked = true))
         // Detenido: nunca.
         assertFalse(holdsForMotion(moving = false, speedUnknown = false, asked = false))
+    }
+
+    @Test
+    fun aPlayThroughTheAndroidBluetoothSessionIsBluetoothToo() {
+        assertTrue(playsBluetooth(SourceKind.BLUETOOTH, standIn = false))
+        // La sesión del Bluetooth de Android que toca por la app de marca (método Bluetooth): también pide la entrada.
+        assertTrue(playsBluetooth(null, standIn = true))
+        // Una app de música normal o la radio: no.
+        assertFalse(playsBluetooth(null, standIn = false))
+        assertFalse(playsBluetooth(SourceKind.RADIO, standIn = false))
     }
 
     @Test

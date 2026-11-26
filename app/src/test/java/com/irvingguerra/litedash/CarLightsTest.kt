@@ -63,4 +63,46 @@ class CarLightsTest {
             candidateLabels(listOf("system/illum" to "1", "global/illum" to "2", "global/car_mode" to "3")),
         )
     }
+
+    @Test
+    fun brightnessIsOfferedOnlyWhenTheScreenMovesIt() {
+        val off = mapOf(BRIGHTNESS_KEY to "255", "system/screen_brightness_mode" to "0")
+        val on = mapOf(BRIGHTNESS_KEY to "30", "system/screen_brightness_mode" to "0")
+        // La pantalla se atenúa con los faros: tope a media distancia.
+        assertEquals(BRIGHTNESS_KEY to "max:142", brightnessCandidate(off, on, ownBrightness = false))
+        // Al revés (sube con los faros), sin cambio, en automático o si lo escribe LiteDash: no.
+        assertEquals(BRIGHTNESS_KEY to "min:142", brightnessCandidate(on, off, ownBrightness = false))
+        assertNull(brightnessCandidate(off, off, ownBrightness = false))
+        // Un cambio chico es alguien moviendo el brillo, no los faros.
+        assertNull(brightnessCandidate(off, off + (BRIGHTNESS_KEY to "250"), ownBrightness = false))
+        assertNull(brightnessCandidate(off, on, ownBrightness = true))
+        assertNull(brightnessCandidate(off + ("system/screen_brightness_mode" to "1"), on, ownBrightness = false))
+        assertNull(brightnessCandidate(emptyMap(), on, ownBrightness = false))
+    }
+
+    @Test
+    fun onlyTheLimitFormStopsLiteDashFromWritingBrightness() {
+        assertTrue(brightnessIsTheSignal(BRIGHTNESS_KEY, "max:142"))
+        assertTrue(brightnessIsTheSignal(BRIGHTNESS_KEY, "min:142"))
+        // Lo aprendido antes de la 1.5.22 (valor exacto) y cualquier otro ajuste: como estaba.
+        assertFalse(brightnessIsTheSignal(BRIGHTNESS_KEY, "30"))
+        assertFalse(brightnessIsTheSignal("system/illum_state", "1"))
+        assertFalse(brightnessIsTheSignal(null, null))
+    }
+
+    @Test
+    fun lightsOnByExactValueOrByLimit() {
+        // Lo aprendido antes (valor exacto) sigue igual.
+        assertTrue(lightsAreOn("1", "1"))
+        assertFalse(lightsAreOn("1", "0"))
+        assertFalse(lightsAreOn("1", null))
+        assertTrue(lightsAreOn("30", "30"))
+        // El brillo, por tope: un poco más o menos sigue siendo «prendidas».
+        assertTrue(lightsAreOn("max:142", "30"))
+        assertTrue(lightsAreOn("max:142", "60"))
+        assertFalse(lightsAreOn("max:142", "255"))
+        assertFalse(lightsAreOn("max:142", null))
+        assertTrue(lightsAreOn("min:142", "200"))
+        assertFalse(lightsAreOn("min:142", "30"))
+    }
 }

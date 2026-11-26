@@ -112,7 +112,7 @@ internal fun MusicRepository.play(lens: Lens, onIdle: () -> Unit = {}) {
         radioClaimedAt = SystemClock.elapsedRealtime()
     } else {
         if (via == Channel.SESSION || plan.wake) watchPlay(pkg)
-        if (sourceOf(pkg) == SourceKind.BLUETOOTH) calibrateBluetooth()
+        if (playsBluetooth(sourceOf(pkg), standIn = mode == MusicMode.BLUETOOTH && pkg in BluetoothAvrcp.ANDROID_PACKAGES)) calibrateBluetooth()
     }
     // La radio por su perfil o abriéndola tiene su propia confirmación.
     if (plan.wake && via != Channel.PROFILE && via != Channel.OPEN) armWake(lens, pkg, opensAfterWake(plan, via, sourceOf(pkg)))
