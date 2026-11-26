@@ -4,6 +4,31 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.5.23] - 2026-11-25
+
+Vidrio líquido de verdad, Diseños con fondo de día y de noche, y un inicio más fácil de deslizar.
+
+### Nuevo
+- **Vidrio líquido:** las tarjetas de vidrio dejan ver tu fondo nítido y lo doblan en la orilla, como un cristal
+  grueso, con un destello fino en las esquinas. Funciona desde Android 6; en pantallas de poca memoria va sin doblar.
+- **Diseños con fondo de día y de noche:** cada Diseño trae dos fondos hermanos y, con «Día y noche», LiteDash pone
+  solo el que toca. Los fondos son nuevos, con color y formas que lucen el cristal.
+- **Flecha / Auto también en el widget Mapa:** durante la guía el cambio sale en el widget (si mide al menos 240 dp) y
+  lo que elijas se conserva al abrirlo en grande y al regresar.
+
+### Cambiado
+- **Elegir un Diseño pide confirmación** («¿Aplicar el diseño…?») en vez del botón Aplicar; Deshacer sigue ahí.
+- **Deslizar cambia de página desde cualquier widget** (antes solo desde un hueco). El mapa y tu auto conservan su gesto.
+- **Pista** lleva tu auto en la carretera; **Ruta**, el auto más grande; **Nube**, un fondo mucho más claro.
+- Las miniaturas de los Diseños muestran el auto de fábrica.
+
+### Quitado
+- **Widget Pila:** quien tenía una conserva en su lugar el widget que estaba a la vista.
+- **Acomodos:** quedan los Diseños. Tu inicio no cambia al actualizar.
+- **«Filo de luz»** en Tarjetas: el cristal ya trae su propio brillo.
+- **Deslizar para cambiar de canción** en los widgets Música y Radio (chocaba con cambiar de página); en grande sigue.
+- **Tu auto sobre el mapa de fondo:** ahí siempre va la flecha.
+
 ## [1.5.22] - 2026-11-25
 
 Dos cosas que funcionaban y se habían perdido: aprender las luces por el brillo y el sonido del Bluetooth de fábrica.

@@ -3,6 +3,31 @@
 What people using LiteDash notice, in English. The full history (in Spanish) is in [CHANGELOG.md](CHANGELOG.md).
 Format [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versions [SemVer](https://semver.org/).
 
+## [1.5.23] - 2026-11-25
+
+Real liquid glass, Designs with day and night wallpapers, and a home screen that's easier to swipe.
+
+### New
+- **Liquid glass:** glass cards show your wallpaper sharply and bend it at the edge, like thick glass, with a fine
+  glint on the corners. Works from Android 6; on low-memory head units the wallpaper isn't bent.
+- **Designs with day and night wallpapers:** each Design has two sibling wallpapers and, with "Day and night",
+  LiteDash sets the right one by itself. The wallpapers are new, with color and shapes that show off the glass.
+- **Arrow / Car in the Map widget too:** during guidance the switch appears in the widget (when it's at least 240 dp)
+  and your choice is kept when you open it full screen and come back.
+
+### Changed
+- **Picking a Design asks for confirmation** ("Apply the … design?") instead of the Apply button; Undo is still there.
+- **Swiping changes page from any widget** (before, only from an empty spot). The map and your car keep their gesture.
+- **Track** shows your car on the road; **Route**, a bigger car; **Cloud**, a much lighter wallpaper.
+- Design thumbnails show the factory car.
+
+### Removed
+- **Stack widget:** if you had one, the widget that was showing stays in its place.
+- **Layouts:** Designs remain. Your home screen doesn't change when you update.
+- **"Light edge"** in Cards: the glass now has its own shine.
+- **Swipe to change song** on the Music and Radio widgets (it clashed with changing page); it still works full screen.
+- **Your car on the map background:** it's always the arrow there.
+
 ## [1.5.22] - 2026-11-25
 
 Two things that used to work and had been lost: learning the headlights from brightness, and factory Bluetooth sound.
