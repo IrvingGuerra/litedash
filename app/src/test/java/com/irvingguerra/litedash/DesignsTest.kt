@@ -127,9 +127,9 @@ class DesignsTest {
             assertEquals(Template.DESIGN_FOREST, back.page.template)
         }
         // Sus fondos siguen cambiando con el tema (de noche y de día).
-        assertEquals("columna-dia", themedWallpaper("columna-acero", dark = false))
-        assertEquals("arena-noche", themedWallpaper("arena-dunas", dark = true))
-        assertEquals("bosque-dia", themedWallpaper("bosque-luz", dark = false))
+        assertEquals("columna-dia-hd", themedWallpaper("columna-acero", dark = false))
+        assertEquals("arena-noche-hd", themedWallpaper("arena-dunas", dark = true))
+        assertEquals("bosque-dia-hd", themedWallpaper("bosque-luz-hd", dark = false))
     }
 
     @Test
