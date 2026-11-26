@@ -94,10 +94,10 @@ internal enum class GuideSize {
     /** La flecha de la vuelta y a cuánto. */
     SMALL,
 
-    /** La tarjeta de la vuelta (con la calle), la llegada y Terminar. */
+    /** La tarjeta de la vuelta (con la calle), la llegada, Terminar y, si cabe la vista Auto ([CAR_VIEW_MIN_SIDE]), Flecha / Auto. */
     MEDIUM,
 
-    /** Además «Luego», el avance del viaje, Flecha / Auto, Ver ruta y la brújula. */
+    /** Además «Luego», el avance del viaje, Ver ruta y la brújula. */
     LARGE,
 
     /** Lo de [LARGE] en el mapa en grande. */
@@ -154,7 +154,6 @@ internal fun GuideView(
     val c = LocalColors.current
     val camera = sharedMapCamera(tileId)
     val big = size == GuideSize.LARGE || size == GuideSize.FULL
-    val carView = cards && big && d.prefs.guideCarView
     // Al terminar la guía, la cámara (la comparte el widget) no se queda en «Ver ruta», suelta ni a medio zoom.
     DisposableEffect(session, camera) {
         onDispose { if (Driving.session !== session && (camera.showingPlace || !camera.following || camera.scaled)) camera.recenter() }
@@ -170,6 +169,9 @@ internal fun GuideView(
         val moving = active && !LocalHomeCovered.current
         // Con poco alto (1024×600, widget mediano) las tarjetas van compactas.
         val compact = size == GuideSize.MEDIUM || maxHeight < COMPACT_CARDS_HEIGHT
+        // Flecha / Auto es una sola elección para el widget y el mapa en grande; donde no cabe la vista Auto, la flecha.
+        val carFits = size != GuideSize.SMALL && minOf(maxWidth, maxHeight) >= CAR_VIEW_MIN_SIDE
+        val carView = cards && carFits && d.prefs.guideCarView
         val gap = if (compact) 8.dp else 12.dp
         val round = if (compact) ROUND_SMALL else ROUND_BUTTON
         val side = with(density) { sideW.toDp() }
@@ -203,8 +205,8 @@ internal fun GuideView(
             horizontalAlignment = Alignment.End,
             verticalArrangement = Arrangement.spacedBy(gap),
         ) {
-            if (big) Row(horizontalArrangement = Arrangement.spacedBy(gap), verticalAlignment = Alignment.CenterVertically) {
-                ViewSwitch(carView, { d.prefs.guideCarView = it }, round)
+            if (carFits || big) Row(horizontalArrangement = Arrangement.spacedBy(gap), verticalAlignment = Alignment.CenterVertically) {
+                if (carFits) ViewSwitch(carView, { d.prefs.guideCarView = it }, round)
                 extra()
             }
             if (!carView && !camera.following && !session.overview) {
@@ -416,9 +418,9 @@ private fun GetMapCard(packs: MapPacks, lat: Double, lon: Double, cellLat: Long?
 @Composable
 private fun ViewSwitch(car: Boolean, onChange: (Boolean) -> Unit, height: Dp) {
     val c = LocalColors.current
-    Row(Modifier.clip(RoundedCornerShape(50)).background(c.surface.copy(alpha = CARD_ALPHA)).padding(4.dp)) {
-        ViewOption(Icons.navigate, R.string.guide_view_arrow, !car, height - 8.dp) { onChange(false) }
-        ViewOption(Icons.car, R.string.guide_view_car, car, height - 8.dp) { onChange(true) }
+    Row(Modifier.clip(RoundedCornerShape(50)).background(c.surface.copy(alpha = CARD_ALPHA))) {
+        ViewOption(Icons.navigate, R.string.guide_view_arrow, !car, height) { onChange(false) }
+        ViewOption(Icons.car, R.string.guide_view_car, car, height) { onChange(true) }
     }
 }
 
@@ -426,14 +428,14 @@ private fun ViewSwitch(car: Boolean, onChange: (Boolean) -> Unit, height: Dp) {
 private fun ViewOption(icon: ImageVector, @StringRes label: Int, chosen: Boolean, height: Dp, onClick: () -> Unit) {
     val c = LocalColors.current
     val text = stringResource(label)
+    // Se toca en todo el alto de la pastilla (≥ 44 dp: se usa manejando); la elegida se marca 4 dp adentro.
     Box(
-        Modifier.size(height * 1.4f, height).clip(RoundedCornerShape(50)).background(if (chosen) c.surfaceHigh else Color.Transparent)
-            .clickable(role = Role.Tab, onClick = onClick).semantics {
-                contentDescription = text
-                selected = chosen
-            },
+        Modifier.size(height * 1.25f, height).clickable(role = Role.Tab, onClick = onClick).semantics {
+            contentDescription = text
+            selected = chosen
+        }.padding(4.dp).clip(RoundedCornerShape(50)).background(if (chosen) c.surfaceHigh else Color.Transparent),
         contentAlignment = Alignment.Center,
-    ) { Icon(icon, if (chosen) c.accent else c.textMuted, height * 0.55f) }
+    ) { Icon(icon, if (chosen) c.accent else c.textMuted, (height - 8.dp) * 0.55f) }
 }
 
 /** Lo que dice la guía cuando no hay vuelta que enseñar (recalculando, sin ubicación, fuera de la ruta); null = la vuelta. */
@@ -793,6 +795,13 @@ private val ROUND_SMALL = 44.dp
 /** La pastilla de arriba: lo más ancho y su cuadro de la flecha. */
 private val PILL_MAX_WIDTH = 520.dp
 private val PILL_ARROW = 30.dp
+
+/**
+ * Lo mínimo del lado corto de un mapa navegando para la vista Auto y su cambio Flecha / Auto. Con 240 dp caben, sin
+ * encimarse, la vuelta compacta (~80 dp), la velocidad debajo (~85 dp) y la llegada (~65 dp), y tu auto mide sus 96 dp;
+ * más chico (widget mediano bajo, 170–240 dp) solo cabe la flecha.
+ */
+private val CAR_VIEW_MIN_SIDE = 240.dp
 
 /** La velocidad cuando no hay dato. */
 private const val NO_SPEED = "—"
