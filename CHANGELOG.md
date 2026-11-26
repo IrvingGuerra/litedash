@@ -4,6 +4,18 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.5.22] - 2026-11-25
+
+Dos cosas que funcionaban y se habían perdido: aprender las luces por el brillo y el sonido del Bluetooth de fábrica.
+
+### Arreglado
+- **Luces del auto por el brillo de la pantalla:** en muchas pantallas lo único que cambia al prender los faros es el
+  brillo. «Aprender luces» lo vuelve a ofrecer (lo eliges tú, como «Brillo») y lo reconoce aunque el brillo no quede
+  en el mismo número exacto. Desde la 1.4.162 decía «Ningún ajuste cambió» en esas pantallas.
+- **Bluetooth de fábrica sin sonido** (pantallas sin GPS ni OBD en uso, como algunas Essgoo y Autochips): al tocar ▶
+  en la pieza Música, LiteDash vuelve a pedirle a la pantalla que pase su sonido a Bluetooth. Antes solo lo hacía al
+  tocar el aviso «Controla la música desde tu celular», que desaparecía en cuanto el celular empezaba a sonar.
+
 ## [1.5.21] - 2026-11-25
 
 Vincula tu celular sin cámara: con un código de 6 dígitos.

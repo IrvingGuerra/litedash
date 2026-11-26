@@ -3,6 +3,19 @@
 What people using LiteDash notice, in English. The full history (in Spanish) is in [CHANGELOG.md](CHANGELOG.md).
 Format [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versions [SemVer](https://semver.org/).
 
+## [1.5.22] - 2026-11-25
+
+Two things that used to work and had been lost: learning the headlights from brightness, and factory Bluetooth sound.
+
+### Fixed
+- **Car headlights from screen brightness:** on many head units the only thing that changes when you turn the
+  headlights on is the brightness. "Learn headlights" offers it again (you pick it, as "Brightness") and recognizes it
+  even if the brightness doesn't land on the exact same number. Since 1.4.162 it said "No setting changed" on those
+  screens.
+- **Factory Bluetooth with no sound** (head units with no GPS or OBD in use, like some Essgoo and Autochips units):
+  tapping ▶ on the Music widget asks the head unit again to switch its sound to Bluetooth. Before, only tapping the
+  "Control the music from your phone" notice did, and that notice went away as soon as the phone started playing.
+
 ## [1.5.21] - 2026-11-25
 
 Link your phone without a camera: with a 6-digit code.
