@@ -162,15 +162,9 @@ class DashboardState(private val store: DashboardStore) {
         change(newShown + kept)
     }
 
-    /**
-     * Pone la plantilla [p] con el auto 3D o la carretera ([hero]) como pieza grande, y el fondo de la página que le
-     * toca (mapa solo con la del mapa de fondo). Esa pieza también va en las plantillas de fábrica de otras cuadrículas
-     * (otra escala u otra pantalla).
-     */
-    fun template(p: Template, hero: String = TileTypes.CAR) {
-        // Las de mapa de fondo y las de los Diseños no eligen pieza grande: no cambian la de las otras plantillas.
-        if (!p.mapBackground && !p.isDesign) store.saveHero(hero)
-        grid?.let { change(p.tiles(it, hero, hidden)) }
+    /** Pone la plantilla [p] (la de un Diseño) y el fondo de la página que le toca (mapa solo con la del mapa de fondo). */
+    fun template(p: Template) {
+        grid?.let { change(fromTemplate(it, p)) }
         // Las otras cuadrículas de esta página sin acomodo guardado se arman con ella.
         store.setTemplate(page, p)
         // La plantilla decide el fondo de la página: las de mapa de fondo ponen el mapa y cualquier otra lo quita (si no,

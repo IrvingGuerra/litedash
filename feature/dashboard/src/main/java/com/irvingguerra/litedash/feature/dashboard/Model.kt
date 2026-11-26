@@ -276,7 +276,12 @@ val Grid.size: ScreenSize
         else -> ScreenSize.SMALL
     }
 
-/** Los acomodos de inicio y para qué pantallas lucen mejor ([sizes]). */
+/**
+ * Los acomodos de inicio y para qué pantallas lucen mejor ([sizes]). Desde la 1.5.23 solo se eligen los de los Diseños; los
+ * demás (los Acomodos de antes) se quedan sin pantalla para elegirlos porque cada página guarda el nombre de su plantilla
+ * ([DashboardStore.template]) y con él se arma en una cuadrícula sin acomodo guardado (otra escala u orientación), y la
+ * primera página sin plantilla usa la recomendada ([suggestedTemplate]): así a nadie le cambia el inicio.
+ */
 enum class Template(val sizes: Set<ScreenSize>) {
     /** Como el Model 3: el auto grande al centro y abajo la música con el mapa (o la hora, si no cabe). */
     CENTER(setOf(ScreenSize.SMALL, ScreenSize.MEDIUM)),
@@ -321,7 +326,7 @@ enum class Template(val sizes: Set<ScreenSize>) {
     MAP_BACKGROUND(ScreenSize.entries.toSet()),
 
     // Los acomodos de los Diseños (app/Designs.kt): uno por Diseño, para cualquier pantalla (de pie, muy ancha desde 2.6:1
-    // o ancha). También salen sueltos en los Acomodos.
+    // o ancha).
     /** Grafito: el mapa grande y una columna con la música (de pie, tu auto), la velocidad y el clima. */
     DESIGN_GRAPHITE(ScreenSize.entries.toSet()),
     /** Nube: tu auto y el mapa en dos mitades; abajo la música y el clima. */
@@ -350,13 +355,6 @@ val Template.isDesign get() = this in DESIGN_TEMPLATES
 
 /** Las que, al aplicarlas, ponen el mapa de fondo en la página ([DashboardState.template]). */
 val Template.mapBackground get() = this == Template.MAP_BACKGROUND || this == Template.DESIGN_ROUTE
-
-/** Las que no llevan auto (para quien no lo quiere ver en el inicio). */
-val Template.hasCar get() = this !in setOf(
-    Template.SPEED, Template.MINIMAL, Template.SPEED_WIDGETS, Template.WALL_CARDS, Template.WALL_SIDE, Template.ROUTE, Template.MAP_BACKGROUND,
-    // Grafito lleva el auto solo de pie o en lugar del mapa si no cabe; el de Ruta es flotante; Neón no lo lleva.
-    Template.DESIGN_GRAPHITE, Template.DESIGN_ROUTE, Template.DESIGN_NEON,
-)
 
 /**
  * La plantilla en la cuadrícula fina [c]: se calcula en sus celdas de plantilla ([Grid.coarse], ver

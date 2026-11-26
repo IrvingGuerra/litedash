@@ -84,9 +84,9 @@ internal fun openLanguageSettings() = selectTab(APPEARANCE_TABS, AppearanceTab.L
 internal fun openInterfaceSettings() = selectTab(APPEARANCE_TABS, AppearanceTab.INTERFACE.ordinal)
 
 @Composable
-internal fun Appearance(d: Dependencies, revision: Int, onEdit: () -> Unit, onTemplates: () -> Unit, onDesigns: () -> Unit, onAddTile: () -> Unit) {
+internal fun Appearance(d: Dependencies, revision: Int, onEdit: () -> Unit, onDesigns: () -> Unit, onAddTile: () -> Unit) {
     when (AppearanceTab.entries[tabs(AppearanceTab.entries.map { it.title }, APPEARANCE_TABS).coerceAtMost(AppearanceTab.entries.lastIndex)]) {
-        AppearanceTab.HOME -> HomeSettings(d, revision, onEdit, onTemplates, onDesigns, onAddTile)
+        AppearanceTab.HOME -> HomeSettings(d, revision, onEdit, onDesigns, onAddTile)
         AppearanceTab.LANGUAGE_UNITS -> {
             // Unidades arriba: miden siempre lo mismo y así no quedan hasta abajo de la lista de idiomas, que crece.
             SettingsCard(stringResource(R.string.units_title)) { UnitsSettings(d.prefs) }
@@ -314,13 +314,12 @@ private fun UnitsSettings(prefs: Preferences) {
  * entrada, tu nombre, el modo estacionado y hacerlo tu pantalla de inicio.
  */
 @Composable
-private fun HomeSettings(d: Dependencies, revision: Int, onEdit: () -> Unit, onTemplates: () -> Unit, onDesigns: () -> Unit, onAddTile: () -> Unit) {
+private fun HomeSettings(d: Dependencies, revision: Int, onEdit: () -> Unit, onDesigns: () -> Unit, onAddTile: () -> Unit) {
     val prefs = d.prefs
     DesignSettingsCard(d, onDesigns)
     SettingsCard(stringResource(R.string.layout), stringResource(R.string.arrange_help)) {
         FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Button(stringResource(R.string.arrange), onEdit, primary = true)
-            Button(stringResource(R.string.templates), onTemplates)
             Button(stringResource(R.string.add_widget), onAddTile)
         }
     }

@@ -99,14 +99,12 @@ class DashboardStore(context: Context) {
         edit.putInt(PAGES, count - 1).apply()
     }
 
-    /** La pieza grande de las plantillas (tipo y datos): el auto 3D si nunca se eligió otra. */
+    /**
+     * La pieza grande de las plantillas (tipo y datos): el auto 3D o la carretera que se eligió en los Acomodos (hasta la
+     * 1.5.22); con ella se siguen armando las páginas que tienen puesta una de esas plantillas.
+     */
     fun hero(): Pair<String, String> =
         (prefs.getString(HERO_TYPE, null) ?: TileTypes.CAR) to (prefs.getString(HERO_DATA, null) ?: "")
-
-    /** Elige la pieza grande de las plantillas; sus datos quedan vacíos (los de fábrica). */
-    fun saveHero(type: String) {
-        prefs.edit().putString(HERO_TYPE, type).putString(HERO_DATA, "").apply()
-    }
 }
 
 /** Las llaves de cada página: la 0 usa las de siempre (los acomodos de antes de las páginas son la página 1). */
