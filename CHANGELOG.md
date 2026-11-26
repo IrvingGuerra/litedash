@@ -4,6 +4,22 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.5.25] - 2026-11-26
+
+El Bluetooth de fábrica suena solo en más casos, y una forma de ayudarnos a agregar tu pantalla.
+
+### Nuevo
+- **Exportar la app de Bluetooth** (Ajustes → Apps → Música → Bluetooth): si tu pantalla no muestra la música del
+  celular, guarda un archivo con la app de Bluetooth de fábrica y datos del equipo (sin datos personales) para mandarlo
+  a support@litedash.dev y que podamos agregarla.
+
+### Arreglado
+- **Bluetooth sin sonido cuando el celular ya estaba sonando** (pantallas Autochips como algunas Essgoo, #13): si ya
+  encontraste cómo suena tu pantalla, LiteDash le pide el sonido en cuanto el celular empieza a sonar, sin tener que
+  tocar ▶. No lo hace en una llamada, con la radio sonando ni con el auto en movimiento.
+- **El aviso «Controla la música desde tu celular» no hacía nada** si LiteDash había dejado pendiente la prueba de
+  sonido al entrar: tocarlo ya abre la app de Bluetooth de la pantalla.
+
 ## [1.5.24] - 2026-11-26
 
 La música del celular por Bluetooth aparece en su pestaña en más pantallas.

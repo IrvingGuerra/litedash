@@ -3,6 +3,22 @@
 What people using LiteDash notice, in English. The full history (in Spanish) is in [CHANGELOG.md](CHANGELOG.md).
 Format [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versions [SemVer](https://semver.org/).
 
+## [1.5.25] - 2026-11-26
+
+Factory Bluetooth plays by itself in more cases, and a way to help us add your head unit.
+
+### New
+- **Export the Bluetooth app** (Settings → Apps → Music → Bluetooth): if your head unit doesn't show your phone's
+  music, save a file with its factory Bluetooth app and device details (no personal data) to send to
+  support@litedash.dev so we can add it.
+
+### Fixed
+- **No Bluetooth sound when the phone was already playing** (Autochips head units like some Essgoo, #13): once you've
+  found how your head unit plays, LiteDash asks it for the sound as soon as the phone starts playing, with no need to
+  tap ▶. Not during a call, with the radio playing or with the car moving.
+- **The "Control the music from your phone" notice did nothing** if LiteDash had left the sound check pending when it
+  opened: tapping it now opens the head unit's Bluetooth app.
+
 ## [1.5.24] - 2026-11-26
 
 Phone music over Bluetooth shows up in its tab on more head units.
