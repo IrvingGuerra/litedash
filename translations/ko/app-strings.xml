@@ -534,13 +534,6 @@
     <string name="tile_clock_help">시간, 날짜, 날씨</string>
     <string name="tile_phone_help">전화 다이얼이나 선택한 통화 앱을 열어요</string>
     <string name="tile_app_help">설치된 앱을 한 번의 탭으로</string>
-    <string name="tile_stack">스택</string>
-    <string name="tile_stack_help">여러 위젯을 한 자리에: 밀거나 점을 탭해 전환</string>
-    <string name="stack_help">한 번에 하나씩, 2~5개. 탭하면 그 위젯이 보입니다.</string>
-    <string name="stack_add">스택에 추가</string>
-    <string name="stack_show">%1$s 보기</string>
-    <string name="stack_move_up">위로</string>
-    <string name="stack_move_down">아래로</string>
     <string name="logo_intro_help">LiteDash가 열릴 때 LiteDash 로고가 만들어지거나, 내 이미지(브랜드 로고 등)가 몇 초간 표시돼요. 이미지 위젯과는 별개예요.</string>
     <string name="intro_no_image">이미지가 없으면 LiteDash 로고가 만들어져요.</string>
     <string name="unit_kml">km/L</string>

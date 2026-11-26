@@ -534,13 +534,6 @@
     <string name="tile_clock_help">Jam, tanggal, dan cuaca</string>
     <string name="tile_phone_help">Membuka papan panggil atau aplikasi panggilan pilihan Anda</string>
     <string name="tile_app_help">Aplikasi terpasang apa pun, sekali ketuk</string>
-    <string name="tile_stack">Tumpukan</string>
-    <string name="tile_stack_help">Beberapa widget di satu tempat: geser atau ketuk titik untuk berganti</string>
-    <string name="stack_help">Satu tampil setiap kali, 2 sampai 5. Ketuk salah satu untuk menampilkannya.</string>
-    <string name="stack_add">Tambah ke tumpukan</string>
-    <string name="stack_show">Tampilkan %1$s</string>
-    <string name="stack_move_up">Naikkan</string>
-    <string name="stack_move_down">Turunkan</string>
     <string name="logo_intro_help">Saat LiteDash terbuka, logo LiteDash tersusun sendiri atau gambar Anda (misalnya logo merek Anda) tampil beberapa detik. Terpisah dari widget gambar.</string>
     <string name="intro_no_image">Tanpa gambar, logo LiteDash tersusun sendiri.</string>
     <string name="unit_kml">km/L</string>

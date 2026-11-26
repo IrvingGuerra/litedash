@@ -70,7 +70,7 @@ fun withAppKey(data: String, key: String?): String =
 
 /** El clima que lleva el reloj [data]: null si se apagó o si ya hay un widget Clima a la vista. */
 fun clockWeather(d: Dependencies, data: String): WeatherRepository? =
-    d.weather.takeIf { WidgetFlags.on(data, WidgetFlags.WEATHER) && d.dashboard.inView.none { it.type == TileTypes.WEATHER } }
+    d.weather.takeIf { WidgetFlags.on(data, WidgetFlags.WEATHER) && d.dashboard.shown.none { it.type == TileTypes.WEATHER } }
 
 /** Los tipos que se personalizan aquí (los demás tienen su propio panel: medidores, mapa, imagen, auto). */
 val WIDGET_OPTIONS = setOf(
@@ -171,7 +171,7 @@ private fun WidgetOptionRows(d: Dependencies, tile: Tile, apps: List<App>, onPic
             if (d.weather.enabled) {
                 FlagRow(d, tile, WidgetFlags.WEATHER, R.string.clock_show_weather)
                 // Con el widget Clima en el inicio, el reloj no lo repite aunque esté prendido.
-                if (d.dashboard.inView.any { it.type == TileTypes.WEATHER }) Label(stringResource(R.string.clock_weather_in_widget), Typography.small, c.textMuted)
+                if (d.dashboard.shown.any { it.type == TileTypes.WEATHER }) Label(stringResource(R.string.clock_weather_in_widget), Typography.small, c.textMuted)
             }
             FlagRow(d, tile, WidgetFlags.DATE, R.string.option_date)
             if (d.prefs.driverName != null) FlagRow(d, tile, WidgetFlags.GREETING, R.string.option_greeting)

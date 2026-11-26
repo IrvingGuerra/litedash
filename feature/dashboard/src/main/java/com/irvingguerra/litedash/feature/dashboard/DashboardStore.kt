@@ -167,9 +167,7 @@ internal fun fineCopies(all: Map<String, *>): Map<String, Pair<String, Long>> {
 
 /**
  * Lo que [DashboardStore.changeDataEverywhere] escribe, con todo lo guardado ([all]): llave del acomodo → su texto nuevo,
- * solo los que cambian. Recorre los de la cuadrícula fina de todas las páginas, del guardado más nuevo al más viejo, y
- * también las caras de las Pilas ([mapData]). Toda migración futura de datos de widgets debe pasar por aquí (o por
- * [mapData]): un widget puede vivir dentro de una Pila y si no, se queda sin migrar.
+ * solo los que cambian. Recorre los de la cuadrícula fina de todas las páginas, del guardado más nuevo al más viejo.
  */
 internal fun rewriteLayouts(all: Map<String, *>, update: (Tile) -> String?): Map<String, String> {
     val layouts = all.entries.mapNotNull { (key, value) ->
@@ -188,6 +186,9 @@ internal fun rewriteLayouts(all: Map<String, *>, update: (Tile) -> String?): Map
     }
     return out
 }
+
+/** Las piezas con los datos que da [update] (null = igual). */
+internal fun List<Tile>.mapData(update: (Tile) -> String?): List<Tile> = map { t -> update(t)?.let { t.copy(data = it) } ?: t }
 
 /** El texto de un acomodo: una pieza por línea, campos separados por tabulador. */
 internal fun formatLayout(tiles: List<Tile>): String = tiles.joinToString("\n") {
@@ -208,7 +209,7 @@ internal fun parseLayout(text: String): List<Tile> = text.lineSequence().filter 
     // El widget Navegar (hasta la 1.4.68) es ahora el Mapa, en el mismo lugar y tamaño (sus
     // datos eran otra cosa: el mapa queda como de fábrica). Quitar cuando < 5 % de las pantallas esté antes de la 1.4.140 según docs/usuarios.py.
     if (f[1] == LEGACY_NAVIGATE) Tile(f[0], TileTypes.MAP, col, row, width, height, "", plain)
-    else Tile(f[0], f[1], col, row, width, height, f.getOrElse(6) { "" }, plain)
+    else migrateStack1520(Tile(f[0], f[1], col, row, width, height, f.getOrElse(6) { "" }, plain))
 }.filter { p -> p.col >= 0 && p.row >= 0 }.distinctBy { it.id }.toList()
 
 /** El texto de un acomodo con columna, fila, ancho y alto (campos 2 a 5) multiplicados por [k]. */

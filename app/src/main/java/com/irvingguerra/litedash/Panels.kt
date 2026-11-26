@@ -288,7 +288,7 @@ private fun ColumnScope.ScrollingColumns(minWidth: Dp, gap: Dp, content: @Compos
 
 /** Los grupos de "Agregar al inicio", en orden, con sus widgets. */
 private enum class AddGroup(val title: Int, val types: List<String>) {
-    CAR(R.string.add_group_car, listOf(TileTypes.CAR, TileTypes.STACK, TileTypes.ROAD, TileTypes.IMAGE, TileTypes.SPEEDOMETER, TileTypes.GAUGE, TileTypes.TIRES, TileTypes.WORKSHOP, TileTypes.TRIP)),
+    CAR(R.string.add_group_car, listOf(TileTypes.CAR, TileTypes.ROAD, TileTypes.IMAGE, TileTypes.SPEEDOMETER, TileTypes.GAUGE, TileTypes.TIRES, TileTypes.WORKSHOP, TileTypes.TRIP)),
     MEDIA(R.string.add_group_media, listOf(TileTypes.MUSIC, TileTypes.RADIO)),
     ROAD(R.string.add_group_nav, listOf(TileTypes.MAP, TileTypes.PROJECTION, TileTypes.PHONE)),
     INFO(R.string.add_group_info, listOf(TileTypes.CLOCK, TileTypes.WEATHER)),
@@ -309,8 +309,6 @@ fun AddTilePanel(d: Dependencies, close: () -> Unit, onPickApp: () -> Unit, onPi
         when (type) {
             TileTypes.APP -> onPickApp()
             TileTypes.GAUGE -> onPickGauge()
-            // La Pila de fábrica: tu auto, las llantas (si las tienes) y la música.
-            TileTypes.STACK -> if (d.dashboard.addTile(type, defaultStack(d).encode())) close() else noRoom = true
             TileTypes.TIRES -> {
                 var picking = false
                 if (d.addTiresTile { picking = true }) { if (picking) onTiresSettings() else close() } else noRoom = true
@@ -381,7 +379,6 @@ internal fun iconOf(type: String) = when (type) {
     TileTypes.WORKSHOP -> Icons.engine
     TileTypes.PROJECTION -> Icons.phoneCar
     TileTypes.TIRES -> Icons.tire
-    TileTypes.STACK -> Icons.stack
     else -> Icons.apps
 }
 

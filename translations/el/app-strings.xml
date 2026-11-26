@@ -539,13 +539,6 @@
     <string name="tile_clock_help">Ώρα, ημερομηνία και καιρός</string>
     <string name="tile_phone_help">Ανοίγει το πληκτρολόγιο κλήσεων ή την εφαρμογή κλήσεων που επιλέγετε</string>
     <string name="tile_app_help">Οποιαδήποτε εγκατεστημένη εφαρμογή, με ένα πάτημα</string>
-    <string name="tile_stack">Στοίβα</string>
-    <string name="tile_stack_help">Πολλά widget στο ίδιο σημείο: σύρε ή πάτησε τις τελείες για εναλλαγή</string>
-    <string name="stack_help">Φαίνεται ένα κάθε φορά, από 2 έως 5. Πάτησε ένα για να φανεί.</string>
-    <string name="stack_add">Προσθήκη στη στοίβα</string>
-    <string name="stack_show">Προβολή: %1$s</string>
-    <string name="stack_move_up">Μετακίνηση πάνω</string>
-    <string name="stack_move_down">Μετακίνηση κάτω</string>
     <string name="logo_intro_help">Όταν ανοίγει το LiteDash, το λογότυπο LiteDash σχηματίζεται ή η εικόνα σας (όπως το λογότυπο της μάρκας σας) εμφανίζεται για λίγα δευτερόλεπτα. Είναι ξεχωριστό από τα widget εικόνας.</string>
     <string name="intro_no_image">Χωρίς εικόνα, σχηματίζεται το λογότυπο LiteDash.</string>
     <string name="unit_kml">km/L</string>

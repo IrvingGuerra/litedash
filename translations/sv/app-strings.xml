@@ -539,13 +539,6 @@
     <string name="tile_clock_help">Tid, datum och väder</string>
     <string name="tile_phone_help">Öppnar knappsatsen eller den samtalsapp du väljer</string>
     <string name="tile_app_help">Valfri installerad app, ett tryck bort</string>
-    <string name="tile_stack">Stapel</string>
-    <string name="tile_stack_help">Flera widgetar på samma plats: svep eller tryck på prickarna för att byta</string>
-    <string name="stack_help">En syns åt gången, 2 till 5. Tryck på en för att visa den.</string>
-    <string name="stack_add">Lägg till i stapeln</string>
-    <string name="stack_show">Visa %1$s</string>
-    <string name="stack_move_up">Flytta upp</string>
-    <string name="stack_move_down">Flytta ned</string>
     <string name="logo_intro_help">När LiteDash öppnas byggs LiteDash-loggan upp eller din bild (som ditt märkes logga) visas i några sekunder. Den är fristående från bildwidgetarna.</string>
     <string name="intro_no_image">Utan bild byggs LiteDash-loggan upp.</string>
     <string name="unit_kml">km/L</string>

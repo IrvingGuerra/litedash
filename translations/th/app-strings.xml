@@ -531,13 +531,6 @@
     <string name="tile_clock_help">เวลา วันที่ และสภาพอากาศ</string>
     <string name="tile_phone_help">เปิดแอปโทรออกหรือแอปโทรที่คุณเลือก</string>
     <string name="tile_app_help">แอปที่ติดตั้งไว้ใดก็ได้ แตะครั้งเดียว</string>
-    <string name="tile_stack">สแต็ก</string>
-    <string name="tile_stack_help">หลายวิดเจ็ตในที่เดียว: ปัดหรือแตะจุดเพื่อสลับ</string>
-    <string name="stack_help">แสดงทีละหนึ่ง 2 ถึง 5 ชิ้น แตะเพื่อแสดง</string>
-    <string name="stack_add">เพิ่มลงในสแต็ก</string>
-    <string name="stack_show">แสดง %1$s</string>
-    <string name="stack_move_up">เลื่อนขึ้น</string>
-    <string name="stack_move_down">เลื่อนลง</string>
     <string name="logo_intro_help">เมื่อเปิด LiteDash โลโก้ LiteDash จะประกอบตัวเอง หรือรูปของคุณ (เช่น โลโก้ยี่ห้อรถ) จะแสดงสองสามวินาที แยกจากวิดเจ็ตรูปภาพ</string>
     <string name="intro_no_image">ถ้าไม่มีรูป โลโก้ LiteDash จะประกอบตัวเอง</string>
     <string name="unit_kml">km/L</string>

@@ -539,13 +539,6 @@
     <string name="tile_clock_help">Idő, dátum és időjárás</string>
     <string name="tile_phone_help">Megnyitja a tárcsázót vagy a választott hívásalkalmazást</string>
     <string name="tile_app_help">Bármelyik telepített alkalmazás, egy koppintásra</string>
-    <string name="tile_stack">Köteg</string>
-    <string name="tile_stack_help">Több widget egy helyen: válts húzással vagy a pöttyökre koppintva</string>
-    <string name="stack_help">Egyszerre egy látszik, 2–5 között. Koppints egyre a megjelenítéséhez.</string>
-    <string name="stack_add">Hozzáadás a köteghez</string>
-    <string name="stack_show">%1$s megjelenítése</string>
-    <string name="stack_move_up">Feljebb</string>
-    <string name="stack_move_down">Lejjebb</string>
     <string name="logo_intro_help">A LiteDash megnyitásakor felépül a LiteDash logó, vagy pár másodpercre megjelenik a képed (például a márkád logója). Független a kép widgetektől.</string>
     <string name="intro_no_image">Kép nélkül a LiteDash logó épül fel.</string>
     <string name="unit_kml">km/l</string>

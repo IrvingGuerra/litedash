@@ -98,7 +98,6 @@ val TileSpecs = listOf(
     TileSpec(TileTypes.PROJECTION, R.string.tile_projection, SizeLimits(4, 2), 6 to 2, R.string.tile_projection_help),
     TileSpec(TileTypes.TIRES, R.string.tile_tires, SizeLimits(2, 2), 4 to 4, R.string.tile_tires_help),
     TileSpec(TileTypes.APP, R.string.tile_app, SizeLimits(2, 2), 2 to 2, R.string.tile_app_help),
-    TileSpec(TileTypes.STACK, R.string.tile_stack, SizeLimits(4, 3), 8 to 8, R.string.tile_stack_help),
 )
 
 fun limitsOf(type: String) = TileSpecs.firstOrNull { it.type == type }?.limits ?: SizeLimits(FINE, FINE)

@@ -141,7 +141,7 @@ fun MapTile(
     if (session != null && granted) {
         // Solo un mapa anima la guía: el primer widget Mapa de la página (los demás, solo el mapa con la ruta, quieto), y
         // mientras su mapa en grande se ve (también al crecer o encogerse), ese.
-        val leads = d.dashboard.inView.firstOrNull { it.type == TileTypes.MAP }?.id == tileId
+        val leads = d.dashboard.shown.firstOrNull { it.type == TileTypes.MAP }?.id == tileId
         val bigShown = expandedMap?.tileId == tileId
         BoxWithConstraints(Modifier.fillMaxSize()) {
             val size = guideSizeFor(maxWidth.value, maxHeight.value)

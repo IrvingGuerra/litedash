@@ -35,11 +35,9 @@ import com.irvingguerra.litedash.core.ui.Radius
 import com.irvingguerra.litedash.core.ui.themeColors
 import com.irvingguerra.litedash.feature.dashboard.DashboardState
 import com.irvingguerra.litedash.feature.dashboard.Grid
-import com.irvingguerra.litedash.feature.dashboard.Stack
 import com.irvingguerra.litedash.feature.dashboard.Tile
 import com.irvingguerra.litedash.feature.dashboard.TileTypes
 import com.irvingguerra.litedash.feature.dashboard.cardless
-import com.irvingguerra.litedash.feature.dashboard.isStack
 import com.irvingguerra.litedash.feature.dashboard.mapBackground
 import com.irvingguerra.litedash.feature.dashboard.tiles
 import com.irvingguerra.litedash.feature.map.MapLook
@@ -109,11 +107,9 @@ internal fun DesignThumbnail(design: Design, grid: Grid, dashboard: DashboardSta
         val gap = size.width * 0.006f
         for (t in tiles) {
             val r = Rect(t.col * cw + gap, t.row * ch + gap, (t.col + t.width) * cw - gap, (t.row + t.height) * ch - gap)
-            val face = if (t.isStack) Stack.of(t).let { s -> s.shown { it in off } } ?: continue else t
-            val card = !t.plain && !face.cardless
+            val card = !t.plain && !t.cardless
             if (card) drawCard(r, k, onMap = design.template.mapBackground)
-            drawWidget(face, r, k, text)
-            if (t.isStack) drawStackDots(r, k, Stack.of(t).visible { it in off }.size)
+            drawWidget(t, r, k, text)
         }
     }
 }
@@ -367,13 +363,4 @@ private fun DrawScope.drawTires(r: Rect, k: DesignColors) {
     for ((fx, fy) in listOf(-0.35f to 0.2f, 1.35f to 0.2f, -0.35f to 0.78f, 1.35f to 0.78f)) {
         drawCircle(k.ui.good, w * 0.12f, at + Offset(w * fx, h * fy))
     }
-}
-
-/** Los puntitos de una Pila, abajo al centro. */
-private fun DrawScope.drawStackDots(r: Rect, k: DesignColors, count: Int) {
-    if (count < 2) return
-    val d = min(r.height * 0.04f, size.width * 0.005f)
-    val y = r.bottom - d * 3f
-    val start = r.center.x - (count - 1) * d * 1.6f
-    for (i in 0 until count) drawCircle(if (i == 0) k.ui.text else k.ui.textMuted.copy(alpha = 0.6f), d, Offset(start + i * d * 3.2f, y))
 }

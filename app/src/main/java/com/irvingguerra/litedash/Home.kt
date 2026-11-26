@@ -109,9 +109,6 @@ import com.irvingguerra.litedash.feature.dashboard.Grid
 import com.irvingguerra.litedash.feature.dashboard.PageBackground
 import com.irvingguerra.litedash.feature.dashboard.Tile
 import com.irvingguerra.litedash.feature.dashboard.TileTypes
-import com.irvingguerra.litedash.feature.dashboard.Stack
-import com.irvingguerra.litedash.feature.dashboard.stackOf
-import com.irvingguerra.litedash.feature.dashboard.withFaces
 import com.irvingguerra.litedash.feature.link.PhoneLink
 import com.irvingguerra.litedash.feature.music.MusicMode
 import com.irvingguerra.litedash.feature.music.MusicRepository
@@ -176,8 +173,6 @@ sealed interface Panel {
     data class CustomizeCar(val tileId: String) : Panel
     /** Las opciones de un widget sin panel propio ([WIDGET_OPTIONS]): reloj, clima, música… */
     data class CustomizeWidget(val tileId: String) : Panel
-    /** Las caras de una Pila ([tileId]): agregar, quitar, ordenar y las opciones de cada una. */
-    data class CustomizeStack(val tileId: String) : Panel
     /** Ajustes abiertos en Llantas (desde la vista de llantas o la pieza sin configurar). */
     data object TiresSettings : Panel
     /** Ajustes abiertos en Celular, donde se vincula LiteDash Connect (desde «Controla la música desde tu celular»). */
@@ -194,20 +189,8 @@ internal fun optionsPanelOf(type: String, id: String): Panel? = when (type) {
     TileTypes.CAR -> Panel.CustomizeCar(id)
     in WIDGET_OPTIONS -> Panel.CustomizeWidget(id)
     TileTypes.SPEEDOMETER, TileTypes.GAUGE, TileTypes.ROAD -> Panel.CustomizeGauge(id)
-    TileTypes.STACK -> Panel.CustomizeStack(id)
     else -> null
 }
-
-/** El widget de un panel de opciones, o null si no lo es. */
-private val Panel.optionsOf: String?
-    get() = when (this) {
-        is Panel.CustomizeGauge -> tileId
-        is Panel.CustomizeImage -> tileId
-        is Panel.CustomizeMap -> tileId
-        is Panel.CustomizeCar -> tileId
-        is Panel.CustomizeWidget -> tileId
-        else -> null
-    }
 
 class Dependencies(
     val apps: AppRepository,
@@ -413,10 +396,6 @@ fun TileContent(d: Dependencies, p: Tile, apps: List<App>, car: CarPackage?, rev
                 tint = LocalColors.current.good,
             )
         }
-        // Cada cara, con lo mismo que su widget; sin caras, sus opciones para armarla.
-        TileTypes.STACK -> StackTile(d, p, onEdit = { actions.onPanel(Panel.CustomizeStack(p.id)) }) { face ->
-            TileContent(d, face, apps, car, revision, actions)
-        }
         TileTypes.APP -> {
             val app = appKeyOf(p.data)?.let { d.apps.find(apps, it) }
             AppTile(d.apps, app, named = p.flag(WidgetFlags.NAME)) {
@@ -563,7 +542,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
     }
     // Dónde se ve la guía en la página de ahora: su widget Mapa, su mapa de fondo (con hueco entre los widgets) o, sin
     // ellos, el mapa en grande.
-    fun guideHomeNow() = pageGuideHome(d.dashboard.background, d.dashboard.inView, d.dashboard.grid)
+    fun guideHomeNow() = pageGuideHome(d.dashboard.background, d.dashboard.shown, d.dashboard.grid)
     // A la guía («Ir», la pastilla de arriba, «Navegar» de la barra y del volante), con una sola regla ([guidePage]): el
     // mapa que navega en esta página, si no la primera página con un mapa y, sin ninguna, el mapa en grande.
     fun showGuide() {
@@ -624,19 +603,11 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
     // Un Diseño recién aplicado (también desde «Diseños» al acomodar): se sale de acomodar, así al cerrar el panel sale
     // su aviso con «Deshacer» (acomodando no hay avisos).
     LaunchedEffect(DesignNotice.shown) { if (DesignNotice.design != null) editing = false }
-    // Al cerrar las opciones de una cara de una Pila, de vuelta a las de la Pila (de otro widget, al inicio).
-    fun backFrom(tileId: String): Panel? = d.dashboard.tiles.stackOf(tileId)?.let { Panel.CustomizeStack(it.id) }
-    // Cerrar sin elegir la app o el dato de una cara recién agregada a una Pila: esa cara vacía no se queda.
-    fun dropUnpicked(faceId: String?) {
-        val stack = faceId?.let(d.dashboard.tiles::stackOf) ?: return
-        val s = Stack.of(stack)
-        if (s.faces.any { it.id == faceId && it.data.isEmpty() }) d.dashboard.setData(stack.id, s.remove(faceId).encode())
-    }
-    // A dónde lleva «atrás» (y cerrar) desde [p]: elegir la app o el dato, a quien lo pidió; unas opciones, a su Pila.
+    // A dónde lleva «atrás» (y cerrar) desde [p]: elegir la app o el dato, a quien lo pidió; lo demás, al inicio.
     fun backOf(p: Panel?): Panel? = when (p) {
-        is Panel.PickApp -> p.back.also { if (p.back is Panel.CustomizeStack) dropUnpicked(p.tileId) }
-        is Panel.PickGauge -> p.back.also { if (p.back is Panel.CustomizeStack) dropUnpicked(p.tileId) }
-        else -> p?.optionsOf?.let(::backFrom)
+        is Panel.PickApp -> p.back
+        is Panel.PickGauge -> p.back
+        else -> null
     }
 
     fun backToDashboard() {
@@ -778,13 +749,12 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
 
     // Con un auto que trae piso, el fondo baja un poco de tono hacia abajo: es el
     // piso donde se para el auto (como en Tesla), y su sombra y reflejo caen ahí.
-    // El auto de una Pila cuenta cuando es su cara a la vista.
-    val hasFloor = car?.hasFloor == true && d.dashboard.inView.any { it.type == TileTypes.CAR }
+    val hasFloor = car?.hasFloor == true && d.dashboard.shown.any { it.type == TileTypes.CAR }
     // Las fotos de piezas de imagen que se quitaron (o cambiaron) salen de memoria, y también dónde estaba cada widget quitado.
     LaunchedEffect(d.dashboard.tiles) {
         // Las de todas las páginas: cambiar de página no las suelta (al volver no parpadean).
         releaseTileImages(d.dashboard.allTiles)
-        val ids = d.dashboard.tiles.withFaces().mapTo(HashSet()) { it.id }
+        val ids = d.dashboard.tiles.mapTo(HashSet()) { it.id }
         tileBounds.keys.retainAll(ids)
     }
     // Velocímetros guardados hasta la 1.4.61 (su máximo en la unidad que se veía): a km/h. Basta al cargar el
@@ -887,9 +857,8 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                     Row(Modifier.fillMaxSize()) {
                         if (barShown && rail && !railRight) bar(true)
                         Column(Modifier.weight(1f).fillMaxHeight()) {
-                            // Si ya se ve un reloj en el tablero (también la cara a la vista de una Pila), la barra de
-                            // arriba no repite la hora.
-                            val showTime = d.dashboard.inView.none { it.type == TileTypes.CLOCK }
+                            // Si ya se ve un reloj en el tablero, la barra de arriba no repite la hora.
+                            val showTime = d.dashboard.shown.none { it.type == TileTypes.CLOCK }
                             val barHidden = !editing && !showTime
                             TopBar(
                                 editing = editing,
@@ -979,7 +948,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                                             // Con la cámara del widget Mapa que se tocó (o del primero que haya). Si se llegó desde la
                                             // música en grande, [expandedFrom] es el de la música: no sirve aquí.
                                             val from = expandedFrom?.takeIf { it.type == TileTypes.MAP }
-                                                ?: d.dashboard.inView.firstOrNull { it.type == TileTypes.MAP }
+                                                ?: d.dashboard.shown.firstOrNull { it.type == TileTypes.MAP }
                                             MapExpanded(
                                                 d, from?.id, app, onPlace = { if (app != null) navigateTo(context, app, it) else PlaceRequests.fromAddress(it) }, onNavigate = { actions.onNavigate(app) },
                                                 onOffline = { openOfflineMaps(); panel = Panel.AppsSettings },
@@ -1087,29 +1056,16 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                     is Panel.PickGauge -> PickGaugePanel(d, p.tileId, close = { panel = backOf(p) })
                     // Las vistas previas llevan la piel de la página ([homeLook]): sobre el mapa de fondo no es la del
                     // lienzo del panel, y el widget se veía distinto ahí que al volver al inicio (#32).
-                    is Panel.CustomizeGauge -> CustomizeGaugePanel(d, p.tileId, homeLook, close = { panel = backFrom(p.tileId) }, onPickSignal = { panel = Panel.PickGauge(p.tileId) })
-                    is Panel.CustomizeImage -> CustomizeImagePanel(d, p.tileId, close = { panel = backFrom(p.tileId) })
+                    is Panel.CustomizeGauge -> CustomizeGaugePanel(d, p.tileId, homeLook, close = { panel = null }, onPickSignal = { panel = Panel.PickGauge(p.tileId) })
+                    is Panel.CustomizeImage -> CustomizeImagePanel(d, p.tileId, close = { panel = null })
                     is Panel.CustomizeMap -> CustomizeMapPanel(
-                        d, p.tileId, close = { panel = backFrom(p.tileId) },
+                        d, p.tileId, close = { panel = null },
                         openLook = { openMapLook(); panel = Panel.AppsSettings }, openOffline = { openOfflineMaps(); panel = Panel.AppsSettings },
                     )
-                    is Panel.CustomizeCar -> CustomizeCarPanel(d, p.tileId, close = { panel = backFrom(p.tileId) })
-                    is Panel.CustomizeStack -> CustomizeStackPanel(
-                        d, p.tileId, cell,
-                        close = { panel = null },
-                        onFaceOptions = { f -> optionsPanelOf(f.type, f.id)?.let { panel = it } },
-                        // La app o el dato de la cara nueva; al elegir, de vuelta aquí.
-                        onAdded = { f ->
-                            when (f.type) {
-                                TileTypes.APP -> panel = Panel.PickApp(f.id, back = p)
-                                TileTypes.GAUGE -> panel = Panel.PickGauge(f.id, back = p)
-                            }
-                        },
-                        preview = { t -> CompositionLocalProvider(LocalCardLook provides homeLook) { TileContent(d, t, apps, car, revision, actions) } },
-                    )
+                    is Panel.CustomizeCar -> CustomizeCarPanel(d, p.tileId, close = { panel = null })
                     is Panel.CustomizeWidget -> CustomizeWidgetPanel(
                         d, p.tileId, apps, cell,
-                        close = { panel = backFrom(p.tileId) },
+                        close = { panel = null },
                         onPickApp = { panel = Panel.PickApp(p.tileId, back = p) },
                         preview = { t -> CompositionLocalProvider(LocalCardLook provides homeLook) { TileContent(d, t, apps, car, revision, actions) } },
                     )

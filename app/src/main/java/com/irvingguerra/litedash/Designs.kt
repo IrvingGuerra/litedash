@@ -278,8 +278,8 @@ private fun undoOf(text: String?): DesignUndo? {
 }
 
 /**
- * Lo de «Deshacer», si aún se puede: hay algo guardado y nadie ha movido a mano la página donde se aplicó (cambiar de
- * cara una Pila o una opción de un widget no cuenta: [DashboardState.unchanged] solo mira dónde está cada uno).
+ * Lo de «Deshacer», si aún se puede: hay algo guardado y nadie ha movido a mano la página donde se aplicó (cambiar
+ * una opción de un widget no cuenta: [DashboardState.unchanged] solo mira dónde está cada uno).
  */
 internal fun designUndo(d: Dependencies): DesignUndo? =
     undoOf(d.prefs.designUndo)?.takeIf { d.dashboard.unchanged(it.page.page, it.page.grid, it.applied) }

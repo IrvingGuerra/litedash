@@ -91,8 +91,6 @@ object Icons {
     val star = icon("M12 3.5l2.6 5.4l5.9 .8l-4.3 4.1l1.1 5.9l-5.3 -2.8l-5.3 2.8l1.1 -5.9l-4.3 -4.1l5.9 -.8z")
     val starFilled = icon(fills = listOf("M12 3.5l2.6 5.4l5.9 .8l-4.3 4.1l1.1 5.9l-5.3 -2.8l-5.3 2.8l1.1 -5.9l-4.3 -4.1l5.9 -.8z"))
     val corner = icon("M19 11v8h-8 M19 19l-7 -7")
-    /** Dos tarjetas una detrás de otra: la Pila. */
-    val stack = icon("M8 8h11a1 1 0 0 1 1 1v10a1 1 0 0 1 -1 1h-11a1 1 0 0 1 -1 -1v-10a1 1 0 0 1 1 -1z M4 16v-11a1 1 0 0 1 1 -1h11")
     val dashboard = icon("M4 4h7v9h-7z M13 4h7v5h-7z M13 11h7v9h-7z M4 15h7v5h-7z")
     val openExternal = icon("M14 4h6v6 M20 4l-9 9 M18 14v6h-14v-14h6")
     val info = icon("M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0 M12 11v5 M12 7.5v.5")

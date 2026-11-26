@@ -537,13 +537,6 @@
     <string name="tile_clock_help">Heure, date et météo</string>
     <string name="tile_phone_help">Ouvre le clavier téléphonique ou l\'appli d\'appel de votre choix</string>
     <string name="tile_app_help">N\'importe quelle appli installée, à un appui</string>
-    <string name="tile_stack">Pile</string>
-    <string name="tile_stack_help">Plusieurs widgets au même endroit : balaie ou touche les points pour changer</string>
-    <string name="stack_help">Un seul visible à la fois, de 2 à 5. Touche-en un pour l\'afficher.</string>
-    <string name="stack_add">Ajouter à la pile</string>
-    <string name="stack_show">Afficher %1$s</string>
-    <string name="stack_move_up">Monter</string>
-    <string name="stack_move_down">Descendre</string>
     <string name="logo_intro_help">À l\'ouverture de LiteDash, le logo LiteDash se construit ou votre image (comme le logo de votre marque) s\'affiche quelques secondes. C\'est indépendant des widgets Image.</string>
     <string name="intro_no_image">Sans image, le logo LiteDash se construit.</string>
     <string name="unit_kml">km/L</string>

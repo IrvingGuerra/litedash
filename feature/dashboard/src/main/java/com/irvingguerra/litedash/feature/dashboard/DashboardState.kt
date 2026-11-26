@@ -44,11 +44,8 @@ class DashboardState(private val store: DashboardStore) {
     /** Las piezas que se ven y se acomodan. */
     val shown: List<Tile> get() = tiles.filterNot { hidden(it.type) }
 
-    /** Lo que de verdad está a la vista: [shown] con cada Pila cambiada por su cara visible ([facesShown]). */
-    val inView: List<Tile> get() = shown.facesShown(hidden)
-
-    /** La pieza o la cara de una Pila con ese id (de esta página), o null. */
-    fun tile(id: String): Tile? = tiles.withFaces().firstOrNull { it.id == id }
+    /** La pieza con ese id (de esta página), o null. */
+    fun tile(id: String): Tile? = tiles.firstOrNull { it.id == id }
 
     /** La pantalla (o la escala) cambió: carga el acomodo de ese tamaño o una plantilla. */
     fun use(c: Grid) {
@@ -60,20 +57,19 @@ class DashboardState(private val store: DashboardStore) {
     }
 
     /**
-     * Las piezas de todas las páginas en esta cuadrícula (las otras, como quedaron o leídas una vez), con las caras de las
-     * Pilas: para lo que vale para todo el inicio, como no soltar la foto o la cámara de un widget que solo está en otra
-     * página o en otra cara.
+     * Las piezas de todas las páginas en esta cuadrícula (las otras, como quedaron o leídas una vez): para lo que vale para
+     * todo el inicio, como no soltar la foto o la cámara de un widget que solo está en otra página.
      */
     val allTiles: List<Tile>
         get() {
-            val c = grid ?: return tiles.withFaces()
-            return (0 until pageCount).flatMap { p -> if (p == page) tiles else pageTiles.getOrPut(p) { load(c, p) } }.withFaces()
+            val c = grid ?: return tiles
+            return (0 until pageCount).flatMap { p -> if (p == page) tiles else pageTiles.getOrPut(p) { load(c, p) } }
         }
 
-    /** Cambia los datos de las piezas de todas las páginas, también las caras de las Pilas: [update] da los nuevos de una (null = igual). */
+    /** Cambia los datos de las piezas de todas las páginas: [update] da los nuevos de una (null = igual). */
     fun changeDataEverywhere(update: (Tile) -> String?) {
         val c = grid ?: return
-        changeData(tiles.withFaces().mapNotNull { t -> update(t)?.let { t.id to it } }.toMap())
+        changeData(tiles.mapNotNull { t -> update(t)?.let { t.id to it } }.toMap())
         for (p in 0 until pageCount) {
             if (p == page) continue
             val before = pageTiles.getOrPut(p) { load(c, p) }
@@ -86,14 +82,14 @@ class DashboardState(private val store: DashboardStore) {
     }
 
     /**
-     * La página que se ve si cumple [test] (con su fondo y lo que está a la vista: de cada Pila, su cara) o, si no, la
-     * primera que sí; null = ninguna.
+     * La página que se ve si cumple [test] (con su fondo y lo que está a la vista) o, si no, la primera que sí; null =
+     * ninguna.
      */
     fun pageWhere(test: (PageBackground, List<Tile>) -> Boolean): Int? {
-        if (test(background, inView)) return page
+        if (test(background, shown)) return page
         val c = grid ?: return null
         return (0 until pageCount).firstOrNull { p ->
-            p != page && test(backgrounds.getOrElse(p) { PageBackground.WALLPAPER }, pageTiles.getOrPut(p) { load(c, p) }.filterNot { hidden(it.type) }.facesShown(hidden))
+            p != page && test(backgrounds.getOrElse(p) { PageBackground.WALLPAPER }, pageTiles.getOrPut(p) { load(c, p) }.filterNot { hidden(it.type) })
         }
     }
 
@@ -203,7 +199,7 @@ class DashboardState(private val store: DashboardStore) {
 
     /**
      * ¿La página [page] sigue con [layout] en [c] (nadie la movió desde entonces)? Solo cuenta dónde está cada widget (id,
-     * tipo, lugar y tamaño): cambiar de cara una Pila o una opción de un widget no. Se calcula una vez por texto.
+     * tipo, lugar y tamaño): cambiar una opción de un widget no. Se calcula una vez por texto.
      */
     fun unchanged(page: Int, c: Grid, layout: String): Boolean {
         val now = store.layoutText(c, page) ?: return false
@@ -238,13 +234,13 @@ class DashboardState(private val store: DashboardStore) {
         return false
     }
 
-    /** Cambia los datos de una pieza o de una cara de una Pila. */
+    /** Cambia los datos de una pieza. */
     fun setData(id: String, data: String) = changeData(mapOf(id to data))
 
-    /** Cambia los datos de varias piezas o caras ([updates]: id → datos) con una sola escritura (ninguna si nada cambia). */
+    /** Cambia los datos de varias piezas ([updates]: id → datos) con una sola escritura (ninguna si nada cambia). */
     fun changeData(updates: Map<String, String>) {
         if (updates.isEmpty()) return
-        val after = tiles.withData(updates)
+        val after = tiles.map { t -> updates[t.id]?.let { t.copy(data = it) } ?: t }
         if (after != tiles) change(after)
     }
 }

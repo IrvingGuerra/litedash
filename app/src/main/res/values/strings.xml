@@ -565,13 +565,6 @@
     <string name="tile_clock_help">Hora, fecha y clima</string>
     <string name="tile_phone_help">Abre el marcador o la app de llamadas que elijas</string>
     <string name="tile_app_help">Cualquier app instalada, de un toque</string>
-    <string name="tile_stack">Pila</string>
-    <string name="tile_stack_help">Varios widgets en el mismo lugar: desliza o toca los puntitos para cambiar</string>
-    <string name="stack_help">Se ve uno a la vez, de 2 a 5. Toca uno para dejarlo a la vista.</string>
-    <string name="stack_add">Agregar a la pila</string>
-    <string name="stack_show">Ver %1$s</string>
-    <string name="stack_move_up">Subir</string>
-    <string name="stack_move_down">Bajar</string>
     <string name="logo_intro_help">Al abrir LiteDash se arma el logo de LiteDash o aparece tu imagen (como el logo de tu marca) unos segundos. Es aparte de los widgets de imagen.</string>
     <string name="intro_no_image">Sin imagen, se arma el logo de LiteDash.</string>
     <string name="unit_rpm" translatable="false">rpm</string>

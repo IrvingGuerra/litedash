@@ -39,7 +39,6 @@ import com.irvingguerra.litedash.core.ui.Segmented
 import com.irvingguerra.litedash.core.ui.SwitchRow
 import com.irvingguerra.litedash.core.ui.Typography
 import com.irvingguerra.litedash.feature.dashboard.TileTypes
-import com.irvingguerra.litedash.feature.dashboard.withFaces
 import kotlinx.coroutines.delay
 
 /** Valores de muestra para la vista previa: sube, baja y llega a la zona roja. */
@@ -205,7 +204,7 @@ fun CustomizeGaugePanel(d: Dependencies, tileId: String, cardLook: CardLook, clo
                             // Mismo estilo en todos; cada uno conserva su dato y, los velocímetros, hasta dónde llegan
                             // (la carretera, además, cómo va su velocidad). Una sola escritura del acomodo para todos.
                             d.dashboard.changeData(
-                                d.dashboard.tiles.withFaces()
+                                d.dashboard.tiles
                                     .filter { it.type == TileTypes.SPEEDOMETER || it.type == TileTypes.GAUGE || it.type == TileTypes.ROAD }
                                     .associate {
                                         // Lo del frente solo va en los velocímetros y cada uno conserva su imagen (nunca dos
