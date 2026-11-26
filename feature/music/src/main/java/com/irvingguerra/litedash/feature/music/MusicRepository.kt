@@ -290,6 +290,9 @@ class MusicRepository(internal val context: Context) {
      */
     internal var askedAt = 0L
 
+    /** Cuándo se pidió la entrada porque el celular empezó a sonar ([phoneStarted]); muy atrás = nunca. */
+    internal var phoneStartedAt = -PHONE_START_GAP_MS
+
     /** La calibración en curso empezó con ese toque al aviso ([calibrateBluetooth]); ver [holdsForMotion]. */
     internal var calibrationAsked = false
 
@@ -472,7 +475,10 @@ class MusicRepository(internal val context: Context) {
             if (fm && radioInternet) return
             // A la música, solo lo del método escogido: con Archivos no se cuela el Bluetooth de la pantalla.
             if (!fm && !musicHears(meta)) return
-            (if (fm) radio else music).heard(meta)
+            val lens = if (fm) radio else music
+            val was = lens.heardPlaying
+            lens.heard(meta)
+            if (!fm && meta.bluetooth) phoneStarted(was, meta.playing)
         }
     }
 
@@ -667,6 +673,8 @@ class MusicRepository(internal val context: Context) {
 
         /** Lo último que avisó una app por broadcast ([BroadcastMeta]) y cuándo; respaldo sin sesión. */
         private var heard: BroadcastMeta? = null
+        /** Lo último que dijo un aviso sobre si suena (sin importar hace cuánto); null = nada. */
+        internal val heardPlaying: Boolean? get() = heard?.playing
         private var heardAt = 0L
 
         /** Cuándo avisó [pkg] (o su perfil) que suena, si es reciente; null si no. Una de las señales para callar la radio. */

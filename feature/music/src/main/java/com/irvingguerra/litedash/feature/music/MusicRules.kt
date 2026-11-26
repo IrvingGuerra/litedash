@@ -156,6 +156,21 @@ internal fun serviceBackup(busy: Boolean, audio: Boolean, receiver: Boolean): Bo
 internal fun sourceStillHeld(held: Boolean, lost: Boolean, linked: Boolean): Boolean = held && !lost && linked
 
 /**
+ * ¿El celular que empieza a sonar (su aviso pasa de pausa a sonando) cuenta como pedir la entrada de audio, igual que
+ * el ▶ de la pantalla? Solo en la familia Autochips (Essgoo, #13: el celular ya sonaba, la pieza mostraba ⏸ y nadie
+ * pedía la entrada: reportes 3FE18D y 664682), con el método Bluetooth y una receta que ya funcionó ([saved]; sin ella
+ * habría que preguntar «¿Se escucha?» y eso no se hace solo). No en llamada, no con la radio sonando y a lo más una
+ * vez cada [PHONE_START_GAP_MS]. Con dato de velocidad y el auto andando se sigue posponiendo ([holdsForMotion]).
+ */
+internal fun phoneStartAsks(
+    family: HeadUnit, bluetoothMode: Boolean, was: Boolean?, now: Boolean?, saved: String?,
+    sinceLastMs: Long, inCall: Boolean, radioOn: Boolean,
+): Boolean = family == HeadUnit.AUTOCHIPS && bluetoothMode && now == true && was != true &&
+    saved != null && saved != Recipes.FAILED && sinceLastMs >= PHONE_START_GAP_MS && !inCall && !radioOn
+
+internal const val PHONE_START_GAP_MS = 60_000L
+
+/**
  * ¿Se pospone abrir la app de fábrica encima de LiteDash? Con el auto en movimiento, siempre. Sin dato de velocidad
  * ([speedUnknown]: ningún widget usa el GPS ni hay OBD) también, salvo que la persona acabe de tocar el aviso «Controla
  * la música desde tu celular» o el ▶ de la pieza en la pantalla ([asked]): está viendo la pantalla y pide justo eso

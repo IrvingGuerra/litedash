@@ -307,6 +307,32 @@ class MusicRulesTest {
     }
 
     @Test
+    fun issue13_thePhoneStartingToPlayAsksForTheAudioInputOnAutochips() {
+        // #13 (Essgoo, 3FE18D y 664682): el celular ya sonaba, la pieza mostraba ⏸ y nadie pedía la entrada de audio.
+        fun asks(
+            family: HeadUnit = HeadUnit.AUTOCHIPS, bluetooth: Boolean = true, was: Boolean? = false, now: Boolean? = true,
+            saved: String? = Recipes.OPEN_FACTORY, since: Long = PHONE_START_GAP_MS, inCall: Boolean = false, radioOn: Boolean = false,
+        ) = phoneStartAsks(family, bluetooth, was, now, saved, since, inCall, radioOn)
+        assertTrue(asks())
+        // El primer aviso tras abrir LiteDash también cuenta (no se sabía si sonaba).
+        assertTrue(asks(was = null))
+        // Solo al empezar: seguir sonando, pausar o no saber, no.
+        assertFalse(asks(was = true))
+        assertFalse(asks(now = false))
+        assertFalse(asks(now = null))
+        // Solo esa familia (regla 3: un arreglo por un reporte no se generaliza) y solo con el método Bluetooth.
+        for (other in HeadUnit.entries.filter { it != HeadUnit.AUTOCHIPS }) assertFalse(other.name, asks(family = other))
+        assertFalse(asks(bluetooth = false))
+        // Sin una receta que ya funcionó habría que preguntar «¿Se escucha?»: eso no se hace solo.
+        assertFalse(asks(saved = null))
+        assertFalse(asks(saved = Recipes.FAILED))
+        // Ni en llamada, ni con la radio sonando, ni seguido.
+        assertFalse(asks(inCall = true))
+        assertFalse(asks(radioOn = true))
+        assertFalse(asks(since = PHONE_START_GAP_MS - 1))
+    }
+
+    @Test
     fun ownPlayerPlayingAlwaysWins() {
         val own = v("own", busy = true)
         assertEquals(own, pick(listOf(v("com.tw.bt", titled = true, playing = true), own), fixed = "com.tw.bt"))

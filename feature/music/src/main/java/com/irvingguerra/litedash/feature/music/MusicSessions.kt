@@ -156,6 +156,10 @@ internal fun MusicRepository.notified(pkg: String): Pair<String, String>? {
 
 internal fun MusicRepository.musicActive() = context.getSystemService(AudioManager::class.java).isMusicActive
 
+/** ¿Hay una llamada (sonando o en curso)? Android lo dice por el modo del audio. */
+internal fun MusicRepository.inCall(): Boolean =
+    context.getSystemService(AudioManager::class.java)?.mode?.let { it != AudioManager.MODE_NORMAL } == true
+
 /**
  * ¿Suena una app que no está en [pkgs]? (una sesión ocupada o el reproductor propio). isMusicActive es de todo
  * Android: con esto se sabe si el audio puede ser de la radio (o del Bluetooth) o es de otra app.

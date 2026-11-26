@@ -67,7 +67,23 @@ internal fun MusicRepository.retryPostponed() {
 fun MusicRepository.askBluetoothSound() {
     trace("bluetooth sin canal: la persona pide la entrada de audio")
     askedAt = SystemClock.elapsedRealtime()
+    // También si ya había una calibración a medias (pospuesta al entrar, sin toque): la persona lo pide ahora. Sin esto
+    // el toque no contaba y la receta de abrir la app de fábrica seguía pospuesta (visto con una imitación en Android 6).
+    calibrationAsked = true
     phoneOnlyAsked = true
+    btApplied?.renew()
+    calibrateBluetooth()
+}
+
+/** Un aviso de Bluetooth dijo si el celular suena ([was] → [now]): si acaba de empezar, quizá se pide la entrada ([phoneStartAsks]). */
+internal fun MusicRepository.phoneStarted(was: Boolean?, now: Boolean?) {
+    val at = SystemClock.elapsedRealtime()
+    val radioOn = radio.song?.playing == true || factoryFor(radio)?.on == true
+    if (!phoneStartAsks(headUnit, mode == MusicMode.BLUETOOTH, was, now, btStore.saved?.id, at - phoneStartedAt, inCall(), radioOn)) return
+    phoneStartedAt = at
+    trace("bluetooth: el celular empezó a sonar, se pide la entrada de audio")
+    askedAt = at
+    calibrationAsked = true
     btApplied?.renew()
     calibrateBluetooth()
 }
