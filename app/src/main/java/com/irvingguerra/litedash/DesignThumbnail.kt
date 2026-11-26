@@ -20,6 +20,7 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.inset
 import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.toArgb
@@ -37,6 +38,8 @@ import com.irvingguerra.litedash.feature.dashboard.DashboardState
 import com.irvingguerra.litedash.feature.dashboard.Grid
 import com.irvingguerra.litedash.feature.dashboard.Tile
 import com.irvingguerra.litedash.feature.dashboard.TileTypes
+import com.irvingguerra.litedash.feature.car.SEDAN_ASPECT
+import com.irvingguerra.litedash.feature.car.drawSedan
 import com.irvingguerra.litedash.feature.dashboard.cardless
 import com.irvingguerra.litedash.feature.dashboard.mapBackground
 import com.irvingguerra.litedash.feature.dashboard.tiles
@@ -213,58 +216,14 @@ private fun DrawScope.drawMap(r: Rect, k: DesignColors, route: Boolean, round: B
     }
 }
 
-/** Tu auto de lado, en su color: un cupé bajo de techo corrido, con sus ventanas, rines, luces y sombra. */
+/** Tu auto en su color: el mismo de fábrica que sale en el inicio a quien no ha bajado un modelo ([drawSedan]). */
 private fun DrawScope.drawCar(r: Rect, color: Color) {
-    val w = min(r.width, r.height * CAR_ASPECT) * 0.92f
-    val h = w / CAR_ASPECT
+    val w = min(r.width, r.height * SEDAN_ASPECT) * 0.92f
+    val h = w / SEDAN_ASPECT
     val x = r.center.x - w / 2
     val y = r.center.y - h / 2
-    fun at(fx: Float, fy: Float) = Offset(x + w * fx, y + h * fy)
-    fun Path.move(fx: Float, fy: Float) = at(fx, fy).let { moveTo(it.x, it.y) }
-    fun Path.line(fx: Float, fy: Float) = at(fx, fy).let { lineTo(it.x, it.y) }
-    fun Path.quad(cx: Float, cy: Float, fx: Float, fy: Float) = quadraticTo(at(cx, cy).x, at(cx, cy).y, at(fx, fy).x, at(fx, fy).y)
-    fun Path.cubic(ax: Float, ay: Float, bx: Float, by: Float, fx: Float, fy: Float) =
-        cubicTo(at(ax, ay).x, at(ax, ay).y, at(bx, by).x, at(bx, by).y, at(fx, fy).x, at(fx, fy).y)
-    drawOval(Color.Black.copy(alpha = 0.3f), at(0.02f, 0.85f), Size(w * 0.96f, h * 0.1f))
-    val body = Path().apply {
-        move(0.03f, 0.76f)
-        quad(0.008f, 0.74f, 0.012f, 0.58f)
-        quad(0.02f, 0.45f, 0.1f, 0.41f)
-        cubic(0.21f, 0.15f, 0.34f, 0.09f, 0.45f, 0.09f)
-        cubic(0.55f, 0.09f, 0.62f, 0.24f, 0.7f, 0.39f)
-        quad(0.87f, 0.41f, 0.955f, 0.52f)
-        quad(0.992f, 0.57f, 0.988f, 0.66f)
-        line(0.975f, 0.76f)
-        close()
-    }
-    drawPath(body, color)
-    drawPath(body, Brush.verticalGradient(0f to Color.White.copy(alpha = 0.35f), 0.45f to Color.Transparent, 1f to Color.Black.copy(alpha = 0.38f), startY = y, endY = y + h * 0.76f))
-    val glass = Path().apply {
-        move(0.165f, 0.4f)
-        cubic(0.25f, 0.19f, 0.36f, 0.15f, 0.45f, 0.15f)
-        cubic(0.53f, 0.15f, 0.585f, 0.26f, 0.648f, 0.4f)
-        close()
-    }
-    drawPath(glass, Brush.verticalGradient(listOf(Color(0xFF4A5564), Color(0xFF12161C)), startY = y + h * 0.15f, endY = y + h * 0.4f))
-    drawLine(color, at(0.43f, 0.155f), at(0.415f, 0.4f), w * 0.012f)
-    val shoulder = Path().apply {
-        move(0.06f, 0.5f)
-        quad(0.5f, 0.44f, 0.93f, 0.53f)
-    }
-    drawPath(shoulder, Color.White.copy(alpha = 0.4f), style = Stroke(w * 0.004f))
-    for (fx in floatArrayOf(0.2f, 0.795f)) {
-        val c = at(fx, 0.74f)
-        drawCircle(Color(0xFF0B0D10), h * 0.2f, c)
-        drawCircle(Color(0xFF15181C), h * 0.17f, c)
-        drawCircle(Color(0xFFAEB4BC), h * 0.105f, c)
-        drawCircle(Color(0xFF3A3F46), h * 0.04f, c)
-    }
-    drawRoundRect(Color(0xFFFF4A4A), at(0.012f, 0.5f), Size(w * 0.03f, h * 0.045f), CornerRadius(h * 0.015f))
-    drawRoundRect(Color(0xFFF4F7FA), at(0.945f, 0.535f), Size(w * 0.035f, h * 0.04f), CornerRadius(h * 0.015f))
+    inset(x, y, size.width - x - w, size.height - y - h) { drawSedan(color) }
 }
-
-/** Proporción (ancho / alto) del auto de la miniatura. */
-private const val CAR_ASPECT = 2.6f
 
 /** El velocímetro (o un medidor): esfera con su arco del color del Diseño, aguja con números o digital. */
 private fun DrawScope.drawGauge(r: Rect, data: String, k: DesignColors, text: TextMeasurer) {

@@ -125,7 +125,7 @@ fun CarDrawing(color: Color, modifier: Modifier = Modifier) {
 }
 
 /** Proporción (ancho / alto) del sedán genérico. */
-internal const val SEDAN_ASPECT = WIDTH / HEIGHT
+const val SEDAN_ASPECT = WIDTH / HEIGHT
 
 /**
  * Lo más ancho que va el auto en su pieza, en altos de la pieza. Un render ([CAR_ASPECT]) trae aire arriba y abajo:
@@ -136,7 +136,7 @@ private const val RENDER_WIDTH_PER_HEIGHT = 2f
 private const val SEDAN_WIDTH_PER_HEIGHT = 2.4f
 
 /** El sedán genérico del [color] a lo ancho del lienzo (que mide [SEDAN_ASPECT]). */
-internal fun DrawScope.drawSedan(color: Color) {
+fun DrawScope.drawSedan(color: Color) {
     val s = size.width / WIDTH
     withTransform({
         scale(s, s, pivot = Offset.Zero)
