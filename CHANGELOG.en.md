@@ -3,6 +3,16 @@
 What people using LiteDash notice, in English. The full history (in Spanish) is in [CHANGELOG.md](CHANGELOG.md).
 Format [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versions [SemVer](https://semver.org/).
 
+## [1.5.21] - 2026-11-25
+
+Link your phone without a camera: with a 6-digit code.
+
+### Added
+- **Link with a code:** in Settings → Phone, a 6-digit code now shows below the QR code. If your phone can't read the
+  QR (broken camera or no permission), tap "Type a code" in LiteDash Connect and enter it. The rest is the same: you
+  confirm on the phone and that's it. Needs LiteDash Connect 0.7.0 or later.
+- The code changes every 5 minutes, once it's used and after three wrong tries: it can't be guessed by trying.
+
 ## [1.5.20] - 2026-11-25
 
 Designs: change your whole home screen with one tap. And online routes now work on screens with Android 9 or older.

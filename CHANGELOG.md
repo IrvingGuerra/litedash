@@ -4,6 +4,16 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.5.21] - 2026-11-25
+
+Vincula tu celular sin cámara: con un código de 6 dígitos.
+
+### Nuevo
+- **Vincular con código:** en Ajustes → Celular, debajo del código QR sale un código de 6 dígitos. Si tu celular no
+  puede leer el QR (cámara rota o sin permiso), en LiteDash Connect toca «Escribir un código» y ponlo. Lo demás es
+  igual: confirmas en el celular y listo. Necesita LiteDash Connect 0.7.0 o posterior.
+- El código cambia cada 5 minutos, al usarse y si alguien falla tres veces: no se puede adivinar probando.
+
 ## [1.5.20] - 2026-11-25
 
 Diseños: cambia todo tu inicio de un toque. Y la ruta con internet ya funciona en pantallas con Android 9 o anterior.
