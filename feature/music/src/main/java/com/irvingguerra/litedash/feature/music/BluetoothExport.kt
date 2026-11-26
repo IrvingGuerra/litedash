@@ -26,6 +26,8 @@ object BluetoothExport {
     private const val MAX_APP_BYTES = 60L * 1024 * 1024
     private const val MAX_TOTAL_BYTES = 120L * 1024 * 1024
     private const val MAX_MANIFEST_NAMES = 400
+    /** El código ya compilado junto al APK. */
+    private val OAT_FILES = setOf("odex", "vdex")
 
     /** Las de Android (y su servicio MIDI): no hacen falta. */
     private const val ANDROID_BLUETOOTH = "com.android.bluetooth"
@@ -88,7 +90,12 @@ object BluetoothExport {
         return pkgs.mapNotNull { pkg ->
             val info = runCatching { context.packageManager.getApplicationInfo(pkg, 0) }.getOrNull() ?: return@mapNotNull null
             val splits = info.splitSourceDirs.orEmpty().map { File(it) }
-            val files = listOf("apps/$pkg/base.apk" to File(info.sourceDir)) + splits.map { "apps/$pkg/${it.name}" to it }
+            // En muchas apps de sistema el código no va en el APK sino ya compilado a su lado (`oat/<arq>/*.odex|vdex`):
+            // sin eso el archivo solo traería manifiesto y recursos.
+            val oat = File(info.sourceDir).parentFile?.resolve("oat")?.walkTopDown()?.maxDepth(2)
+                ?.filter { it.isFile && it.extension in OAT_FILES }?.toList().orEmpty()
+            val files = listOf("apps/$pkg/base.apk" to File(info.sourceDir)) + splits.map { "apps/$pkg/${it.name}" to it } +
+                oat.map { "apps/$pkg/oat/${it.parentFile?.name}/${it.name}" to it }
             val bytes = files.sumOf { it.second.length() }
             val skipped = when {
                 bytes > MAX_APP_BYTES -> "pasa de 60 MB"
