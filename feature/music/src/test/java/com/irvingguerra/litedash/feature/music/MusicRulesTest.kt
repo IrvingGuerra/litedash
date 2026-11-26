@@ -271,6 +271,42 @@ class MusicRulesTest {
     }
 
     @Test
+    fun issue49_bluetoothWithoutAKnownAppTakesABluetoothSession() {
+        // #49 (SPD msm8953, `com.spd.bt` fuera de la lista y sin AVRCP): en Bluetooth sin app la pieza no tomaba nada.
+        val isBt = { pkg: String -> pkg == "com.android.bluetooth" || pkg == "com.spd.bluetooth" }
+        fun pickBt(l: List<SessionView>) = pickSession(l, { it }, own = "own", fixed = null, anyApp = false, avrcp = null, bluetoothLike = isBt)
+        val phone = v("com.spd.bluetooth", titled = true, playing = true)
+        val spotify = v("com.spotify.music", titled = true, playing = true)
+        assertEquals(phone, pickBt(listOf(spotify, phone)))
+        // Una app de música normal nunca entra a la pestaña Bluetooth; una sesión de Bluetooth vacía y callada, tampoco.
+        assertNull(pickBt(listOf(spotify)))
+        assertNull(pickBt(listOf(v("com.android.bluetooth"))))
+        // Sin decir qué es Bluetooth (las demás piezas), como antes: nada.
+        assertNull(pickSession(listOf(phone), { it }, own = "own", fixed = null, anyApp = false, avrcp = null))
+        // La pestaña App no cambia: sigue tomando lo que suene.
+        assertEquals(spotify, pickSession(listOf(spotify, phone), { it }, own = "own", fixed = null, anyApp = true, avrcp = null, bluetoothLike = isBt))
+    }
+
+    @Test
+    fun issue13_theStandInIsAwaitedUntilItBringsASong() {
+        // #13 (Essgoo, reportes 3FE18D y 664682): la sesión del Bluetooth de Android existía vacía al elegir y la canción
+        // llegaba después; sin vigilarla la pieza se quedaba sin sesión hasta cambiar de pestaña.
+        val standIns = listOf("com.android.bluetooth")
+        val none = { _: String -> false }
+        fun awaited(l: List<SessionView>, taken: Boolean, fixed: String? = "com.autochips.bluetooth", anyApp: Boolean = false, bt: (String) -> Boolean = none) =
+            awaitedSessions(l, { it }, taken, fixed, anyApp, standIns, bt)
+        val empty = v("com.android.bluetooth")
+        val spotify = v("com.spotify.music", titled = true, playing = true)
+        assertEquals(listOf(empty), awaited(listOf(spotify, empty), taken = false))
+        // Con sesión ya tomada, o si la app de marca sí tiene la suya, no se vigila nada.
+        assertEquals(emptyList<SessionView>(), awaited(listOf(empty), taken = true))
+        assertEquals(emptyList<SessionView>(), awaited(listOf(empty, v("com.autochips.bluetooth")), taken = false))
+        // Sin app fija: en App nada; en Bluetooth (#49), las de un Bluetooth.
+        assertEquals(emptyList<SessionView>(), awaited(listOf(empty), taken = false, fixed = null, anyApp = true))
+        assertEquals(listOf(empty), awaited(listOf(spotify, empty), taken = false, fixed = null, bt = { it == "com.android.bluetooth" }))
+    }
+
+    @Test
     fun ownPlayerPlayingAlwaysWins() {
         val own = v("own", busy = true)
         assertEquals(own, pick(listOf(v("com.tw.bt", titled = true, playing = true), own), fixed = "com.tw.bt"))

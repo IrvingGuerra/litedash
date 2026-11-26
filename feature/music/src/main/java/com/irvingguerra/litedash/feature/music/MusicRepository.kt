@@ -541,7 +541,13 @@ class MusicRepository(internal val context: Context) {
         accepts = { !isRadio(it) }, fixed = { modeApp }, remembersLast = true, anyApp = { mode == MusicMode.APP },
         // La app de Bluetooth de marca suele ser solo una pantalla: la música del celular la toca el Bluetooth de Android.
         standIns = { if (mode == MusicMode.BLUETOOTH) BluetoothAvrcp.ANDROID_PACKAGES else emptyList() },
+        // Sin app de Bluetooth reconocida (#49, SPD con `com.spd.bt`): la sesión de un Bluetooth del sistema.
+        bluetoothLike = { mode == MusicMode.BLUETOOTH && isBluetoothSession(it) },
     )
+
+    /** ¿[pkg] es un Bluetooth de la pantalla: el de Android, uno de marca conocido o una app del sistema que lo parece? */
+    private fun isBluetoothSession(pkg: String): Boolean =
+        pkg in BluetoothAvrcp.ANDROID_PACKAGES || pkg in HeadUnit.bluetoothApps || looksBluetooth(pkg) && isSystemApp(context, pkg)
 
     /** La pieza Radio: solo la radio de la pantalla (FM) o la de LiteDash (internet). */
     val radio = Lens(accepts = { isRadio(it) }, fixed = { null }, remembersLast = false, anyApp = { true })
@@ -596,7 +602,16 @@ class MusicRepository(internal val context: Context) {
         private val anyApp: () -> Boolean,
         /** Las apps cuya sesión vale por la de la app fija cuando esta no tiene ninguna. */
         private val standIns: () -> List<String> = { emptyList() },
+        /** Sin app fija y sin valer cualquiera, ¿la sesión de esta app es de un Bluetooth que se puede tomar? */
+        private val bluetoothLike: (String) -> Boolean = { false },
     ) {
+        /** Las sesiones que aún no se toman pero se vigilan ([awaitedSessions]): al cambiar se vuelve a elegir. */
+        private var awaited: List<MediaController> = emptyList()
+        private val awaitedWatch = object : MediaController.Callback() {
+            override fun onMetadataChanged(metadata: MediaMetadata?) = this@MusicRepository.choose(sessions())
+            override fun onPlaybackStateChanged(state: PlaybackState?) = this@MusicRepository.choose(sessions())
+        }
+
         var song by mutableStateOf<Song?>(null)
             private set
 
@@ -701,7 +716,13 @@ class MusicRepository(internal val context: Context) {
                     busy = c.busy(),
                 )
             }
-            val chosen = pickSession(views, { it.second }, ownPackage, fixed(), anyApp(), avrcpPackage, standIns())?.first
+            val chosen = pickSession(views, { it.second }, ownPackage, fixed(), anyApp(), avrcpPackage, standIns(), bluetoothLike)?.first
+            val wait = awaitedSessions(views, { it.second }, chosen != null, fixed(), anyApp(), standIns(), bluetoothLike).map { it.first }
+            if (wait.map { it.sessionToken } != awaited.map { it.sessionToken }) {
+                awaited.forEach { it.unregisterCallback(awaitedWatch) }
+                awaited = wait
+                wait.forEach { it.registerCallback(awaitedWatch, mainHandler) }
+            }
             if (chosen?.sessionToken != controller?.sessionToken) {
                 controller?.unregisterCallback(callback)
                 controller = chosen
@@ -716,6 +737,8 @@ class MusicRepository(internal val context: Context) {
             mainHandler.removeCallbacks(stationAnswer)
             controller?.unregisterCallback(callback)
             controller = null
+            awaited.forEach { it.unregisterCallback(awaitedWatch) }
+            awaited = emptyList()
             hasSession = false
             song = null
         }

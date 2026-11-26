@@ -276,6 +276,22 @@ internal fun bluetoothSounds(phonePlaying: Boolean, androidAudio: Boolean, other
  * las de marca conocidas y las del Bluetooth de Android aunque no se haya hallado su servicio). Una sesión de cualquiera
  * de ellas sonando es el Bluetooth, no "otra app" (reporte E3F104: com.android.bluetooth sonando se tomaba por otra).
  */
+/**
+ * Las sesiones que una pieza aún no toma pero podría tomar en cuanto traigan canción o suenen: se vigilan para volver a
+ * elegir entonces. Con app fija sin sesión propia, las de quien toca por ella ([standIns]; #13: en la Essgoo la canción
+ * del celular llegaba después de elegir y la pieza se quedaba sin sesión hasta cambiar de pestaña); sin app fija y sin
+ * valer cualquiera, las de un Bluetooth ([bluetoothLike], #49). Con sesión ya tomada, ninguna.
+ */
+internal fun <T> awaitedSessions(
+    list: List<T>, view: (T) -> SessionView, taken: Boolean, fixed: String?, anyApp: Boolean,
+    standIns: List<String>, bluetoothLike: (String) -> Boolean,
+): List<T> = when {
+    taken -> emptyList()
+    fixed != null -> if (list.any { view(it).pkg == fixed }) emptyList() else list.filter { view(it).pkg in standIns }
+    anyApp -> emptyList()
+    else -> list.filter { bluetoothLike(view(it).pkg) }
+}
+
 internal fun bluetoothGroup(avrcp: String?, brand: String?, linked: String?): List<String> =
     listOfNotNull(avrcp, brand, linked) + HeadUnit.bluetoothApps + BluetoothAvrcp.ANDROID_PACKAGES
 
@@ -288,11 +304,13 @@ internal data class SessionView(val pkg: String, val titled: Boolean, val playin
  * si no la que suena, si no cualquiera (las TopWay, `com.tw.bt`, acumulan sesiones vacías); si esa app no tiene
  * ninguna sesión, la de quien toca por ella ([standIns]). Sin app fija y si vale
  * cualquiera ([anyApp]): la que suena con canción, la que suena, la que tiene canción y, al final, cualquiera que no sea
- * la del Bluetooth de Android ([avrcp]: sin celular sonando es una sesión vacía).
+ * la del Bluetooth de Android ([avrcp]: sin celular sonando es una sesión vacía). Sin app fija y sin valer cualquiera
+ * (Bluetooth en una pantalla cuya app de Bluetooth no se reconoce, #49): la de un Bluetooth ([bluetoothLike]) que trae
+ * canción o suena; si no, ninguna.
  */
 internal fun <T> pickSession(
     list: List<T>, view: (T) -> SessionView, own: String, fixed: String?, anyApp: Boolean, avrcp: String?,
-    standIns: List<String> = emptyList(),
+    standIns: List<String> = emptyList(), bluetoothLike: (String) -> Boolean = { false },
 ): T? {
     list.firstOrNull { view(it).let { v -> v.pkg == own && v.busy } }?.let { return it }
     if (fixed != null) {
@@ -306,7 +324,12 @@ internal fun <T> pickSession(
             ?: mine.firstOrNull { view(it).playing }
             ?: mine.firstOrNull()
     }
-    if (!anyApp) return null
+    if (!anyApp) {
+        val bluetooth = list.filter { view(it).let { v -> bluetoothLike(v.pkg) && (v.titled || v.busy) } }
+        return bluetooth.firstOrNull { view(it).let { v -> v.titled && v.playing } }
+            ?: bluetooth.firstOrNull { view(it).titled }
+            ?: bluetooth.firstOrNull()
+    }
     return list.firstOrNull { view(it).let { v -> v.titled && v.playing } }
         ?: list.firstOrNull { view(it).playing }
         ?: list.firstOrNull { view(it).titled }
