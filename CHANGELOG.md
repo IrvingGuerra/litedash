@@ -4,6 +4,16 @@ Todos los cambios que nota quien usa LiteDash. Formato
 [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/), versiones
 [SemVer](https://semver.org/lang/es/).
 
+## [1.5.24] - 2026-11-26
+
+La música del celular por Bluetooth aparece en su pestaña en más pantallas.
+
+### Arreglado
+- **Bluetooth: la canción del celular no aparecía hasta cambiar de pestaña** (pantallas Essgoo y parecidas, #13): si la
+  canción llegaba un momento después de abrir la pieza Música, sus botones no hacían nada. Ahora la toma en cuanto llega.
+- **Pestaña Bluetooth vacía con la música en «App»** (pantallas SPD y otras cuya app de Bluetooth LiteDash no reconoce,
+  #49): la pestaña Bluetooth ya muestra y controla la música del celular.
+
 ## [1.5.23] - 2026-11-25
 
 Vidrio líquido de verdad, Diseños con fondo de día y de noche, y un inicio más fácil de deslizar.

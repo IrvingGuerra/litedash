@@ -3,6 +3,16 @@
 What people using LiteDash notice, in English. The full history (in Spanish) is in [CHANGELOG.md](CHANGELOG.md).
 Format [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versions [SemVer](https://semver.org/).
 
+## [1.5.24] - 2026-11-26
+
+Phone music over Bluetooth shows up in its tab on more head units.
+
+### Fixed
+- **Bluetooth: the phone's song didn't show until you switched tabs** (Essgoo and similar head units, #13): if the song
+  arrived a moment after the Music widget opened, its buttons did nothing. Now it picks it up as soon as it arrives.
+- **Empty Bluetooth tab with the music under "App"** (SPD and other head units whose Bluetooth app LiteDash doesn't
+  recognize, #49): the Bluetooth tab now shows and controls the phone's music.
+
 ## [1.5.23] - 2026-11-25
 
 Real liquid glass, Designs with day and night wallpapers, and a home screen that's easier to swipe.
