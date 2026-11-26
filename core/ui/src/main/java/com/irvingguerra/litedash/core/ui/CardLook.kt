@@ -191,7 +191,8 @@ fun Modifier.skinSurface(look: CardLook, c: Colors, shape: Shape, floor: Float =
 
 /**
  * La luz de un cristal líquido, dibujada una vez por tamaño: la luz que le cae de arriba, el grosor del vidrio (una
- * banda suave por dentro de la orilla, clara arriba y en sombra abajo) y el brillo fino de la orilla, que destella en
+ * banda suave por dentro de la orilla, clara arriba; en tema claro abajo no lleva nada, o con la sombra de afuera
+ * se vería una orilla doble) y el brillo fino de la orilla, que destella en
  * la esquina de arriba a la izquierda y en la de abajo a la derecha y casi se apaga entre ellas. Todo se va conforme
  * la tarjeta se llena ([through] = cuánto queda de cristal). [lit] = sobre tu fondo (el inicio): en Ajustes y
  * paneles, con muchas tarjetas en lista, va a media fuerza.
@@ -208,14 +209,14 @@ private fun Modifier.liquidGlass(dark: Boolean, shape: Shape, through: Float, li
     val part = 1f / GLASS_DEPTH_STEPS
     val depth = Brush.verticalGradient(
         0f to white((if (dark) 0.14f else 0.5f) * part), 0.5f to Color.Transparent,
-        1f to (if (dark) white(0.06f * part) else black(0.11f * part)),
+        1f to (if (dark) white(0.06f * part) else Color.Transparent),
     )
     // El destello va por ángulo desde el centro, con las dos esquinas donde de verdad están (0 = a la derecha, en
     // el sentido del reloj): así una tarjeta muy ancha no lleva media orilla encendida.
     val turn = (atan2(size.height, size.width) / (2 * PI)).toFloat().coerceIn(0.02f, 0.2f)
     val strong = white(if (dark) 0.7f else 1f)
-    val second = white(if (dark) 0.42f else 0.95f)
-    val faint = white(if (dark) 0.06f else 0.3f)
+    val second = white(if (dark) 0.42f else 0.3f)
+    val faint = white(if (dark) 0.06f else 0f)
     val soft = white(if (dark) 0.16f else 0.55f)
     val rim = Brush.sweepGradient(
         0f to faint, turn to second, (turn + 0.25f) / 2 + 0.02f to faint, 0.25f to faint, 0.5f to soft,
