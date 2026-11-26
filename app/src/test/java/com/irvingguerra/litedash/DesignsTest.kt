@@ -146,8 +146,10 @@ class DesignsTest {
             val night = themedWallpaper(id, dark = true)
             val day = themedWallpaper(id, dark = false)
             assertTrue(design.id, night != null && day != null && night != day)
-            // El del Diseño es el de su tema; la pareja lleva de regreso al mismo par.
-            assertEquals(id, if (design.theme == ThemeMode.LIGHT) day else night)
+            // El del Diseño es el de su tema (en su archivo de ahora); la pareja lleva de regreso al mismo par.
+            assertEquals(currentWallpaper(id), if (design.theme == ThemeMode.LIGHT) day else night)
+            // Quien tenía el archivo de la 1.5.23–1.5.25 pasa al de ahora.
+            assertEquals(currentWallpaper(id), themedWallpaper(id, dark = design.theme != ThemeMode.LIGHT))
             assertEquals(night, themedWallpaper(day!!, dark = true))
             assertEquals(day, themedWallpaper(night!!, dark = false))
         }

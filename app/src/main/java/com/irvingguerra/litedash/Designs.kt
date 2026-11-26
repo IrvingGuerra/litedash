@@ -103,9 +103,24 @@ private val WALLPAPER_PAIRS = listOf(
     "neon-orbes" to "neon-dia", "arena-noche" to "arena-dunas", "bosque-luz" to "bosque-dia",
 )
 
-/** El fondo que le toca al de un Diseño [id] con el tema oscuro o claro: él mismo o su pareja; null si no es de una pareja. */
-internal fun themedWallpaper(id: String, dark: Boolean): String? =
-    WALLPAPER_PAIRS.firstOrNull { id == it.first || id == it.second }?.let { if (dark) it.first else it.second }
+/**
+ * Los fondos de las parejas se rehicieron sin grano y más nítidos (1.5.26): son otros archivos, con este sufijo. Los de
+ * la 1.5.23–1.5.25 (sin sufijo) siguen en el sitio para esas versiones.
+ */
+private const val WALLPAPER_HD = "-hd"
+
+/**
+ * El fondo que le toca al de un Diseño [id] con el tema oscuro o claro: él mismo o su pareja, siempre el de ahora
+ * ([WALLPAPER_HD]; así quien tenía el de la 1.5.23–1.5.25 pasa solo al nuevo); null si no es de una pareja.
+ */
+internal fun themedWallpaper(id: String, dark: Boolean): String? {
+    val base = id.removeSuffix(WALLPAPER_HD)
+    return WALLPAPER_PAIRS.firstOrNull { base == it.first || base == it.second }?.let { (if (dark) it.first else it.second) + WALLPAPER_HD }
+}
+
+/** El archivo de ahora del fondo [id] de un Diseño (él mismo si no es de una pareja). */
+internal fun currentWallpaper(id: String): String =
+    if (WALLPAPER_PAIRS.any { id == it.first || id == it.second }) id + WALLPAPER_HD else id
 
 /** El Diseño con que arrancan las instalaciones nuevas. */
 val FACTORY_DESIGN = DESIGNS.first()
@@ -272,13 +287,13 @@ internal fun applyDesign(d: Dependencies, context: Context, scope: CoroutineScop
     prefs.designWallpaper = null
     val own = design.wallpaper ?: return
     // Con «Día y noche» puesto el tema no cambia: va la pareja del tema de ahora; si no, el fondo del Diseño tal cual.
-    val id = if (keepSun && now.theme == ThemeMode.SUN) themedWallpaper(own, dark) ?: own else own
+    val id = if (keepSun && now.theme == ThemeMode.SUN) themedWallpaper(own, dark) ?: own else currentWallpaper(own)
     scope.launch {
         if (!keepOwnWallpaper(context) || turn != designTurn) return@launch
         prefs.designUndo = undo.copy(wallpaper = true).encode()
         val got = putLiteDashWallpaper(context, id, byDesign = true) { turn == designTurn }
         // Su pareja se guarda de una vez: al anochecer (o amanecer) puede no haber red.
-        if (got == WallpaperFetch.DONE) themedWallpaper(id, dark = themedWallpaper(id, true) == id)?.let { keepWallpaper(context, it) }
+        if (got == WallpaperFetch.DONE) themedWallpaper(id, dark = themedWallpaper(id, true) != id)?.let { keepWallpaper(context, it) }
         if (got != WallpaperFetch.OFFLINE || turn != designTurn) return@launch
         // Sin internet: sin imagen (el resplandor del tema) hasta que haya red.
         clearWallpaper(context)

@@ -393,7 +393,7 @@ class Preferences(context: Context) {
             // Arranca con el Diseño de fábrica (sus colores ya son los de fábrica; su fondo se baja cuando haya internet).
             // Quien actualiza no ve nada distinto.
             putString(PrefKeys.DESIGN, FACTORY_DESIGN.id)
-            FACTORY_DESIGN.wallpaper?.let { putString(PrefKeys.DESIGN_WALLPAPER, it) }
+            FACTORY_DESIGN.wallpaper?.let { putString(PrefKeys.DESIGN_WALLPAPER, currentWallpaper(it)) }
         }
     }
 

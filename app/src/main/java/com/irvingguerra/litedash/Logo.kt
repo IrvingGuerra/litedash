@@ -103,6 +103,7 @@ import com.irvingguerra.litedash.core.ui.blurredCopy
 import com.irvingguerra.litedash.core.ui.canvasVeil
 import com.irvingguerra.litedash.core.ui.glassVeil
 import com.irvingguerra.litedash.core.ui.legibleVeil
+import com.irvingguerra.litedash.core.ui.lowMemoryDevice
 import com.irvingguerra.litedash.core.ui.meanColor
 import com.irvingguerra.litedash.core.ui.scaledDecode
 import com.irvingguerra.litedash.feature.dashboard.Tile
@@ -166,7 +167,10 @@ private class SavedImage(
     val file: String,
     val maxPx: Int,
     val shown: ImageFit,
-    /** Nunca lleva transparencia (el fondo cubre la pantalla): siempre JPEG y RGB_565. */
+    /**
+     * Nunca lleva transparencia (el fondo cubre la pantalla): tu foto se guarda en JPEG (se lee en RGB_565). Un fondo de
+     * LiteDash (WebP, degradados suaves) se lee a color completo salvo en equipos de poca memoria: en RGB_565 hacía bandas.
+     */
     val opaque: Boolean = false,
     /** Corre al cambiar la imagen (en el hilo principal): para soltar lo que se calculó de la de antes. */
     private val onBump: () -> Unit = {},
@@ -202,7 +206,7 @@ private class SavedImage(
     fun read(context: Context): ImageBitmap? {
         val file = file(context).takeIf { it.exists() } ?: return null
         val screen = context.resources.displayMetrics
-        return decodeImage("read $file", maxPx = { w, h -> shownPx(shown, w, h, screen.widthPixels, screen.heightPixels) }, lowMemory = opaque) {
+        return decodeImage("read $file", maxPx = { w, h -> shownPx(shown, w, h, screen.widthPixels, screen.heightPixels) }, lowMemory = opaque && lowMemoryDevice(context)) {
             FileInputStream(file)
         }?.asImageBitmap()
     }
