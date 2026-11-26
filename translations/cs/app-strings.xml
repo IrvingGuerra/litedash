@@ -135,14 +135,8 @@
     <string name="design_track_tagline">Sportovní, černá a červená.</string>
     <string name="design_route">Route</string>
     <string name="design_route_tagline">Mapa je celá stránka.</string>
-    <string name="design_column">Column</string>
-    <string name="design_column_tagline">Vše v jednom sloupci, jako tablet.</string>
     <string name="design_neon">Neon</string>
     <string name="design_neon_tagline">Noční, se září.</string>
-    <string name="design_sand">Sand</string>
-    <string name="design_sand_tagline">Světlý a teplý jako ráno.</string>
-    <string name="design_forest">Forest</string>
-    <string name="design_forest_tagline">Hluboká zeleň, bez spěchu.</string>
     <string name="add">Přidat</string>
     <string name="add_tile">Přidat na plochu</string>
     <string name="add_group_car">Tvoje auto</string>

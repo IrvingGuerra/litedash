@@ -135,14 +135,8 @@
     <string name="design_track_tagline">スポーティな黒と赤。</string>
     <string name="design_route">Route</string>
     <string name="design_route_tagline">地図がページ全体に。</string>
-    <string name="design_column">Column</string>
-    <string name="design_column_tagline">すべてを1列に、タブレット風。</string>
     <string name="design_neon">Neon</string>
     <string name="design_neon_tagline">夜向け、ほのかな光。</string>
-    <string name="design_sand">Sand</string>
-    <string name="design_sand_tagline">明るく温かい、朝のような雰囲気。</string>
-    <string name="design_forest">Forest</string>
-    <string name="design_forest_tagline">深い緑で、ゆったりと。</string>
     <string name="add">追加</string>
     <string name="add_tile">ホームに追加</string>
     <string name="add_group_car">あなたの車</string>

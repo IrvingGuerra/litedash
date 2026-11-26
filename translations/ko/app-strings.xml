@@ -135,14 +135,8 @@
     <string name="design_track_tagline">스포티한 블랙과 레드.</string>
     <string name="design_route">Route</string>
     <string name="design_route_tagline">지도가 곧 페이지.</string>
-    <string name="design_column">Column</string>
-    <string name="design_column_tagline">태블릿처럼 한 열에 모두.</string>
     <string name="design_neon">Neon</string>
     <string name="design_neon_tagline">밤을 위한 은은한 빛.</string>
-    <string name="design_sand">Sand</string>
-    <string name="design_sand_tagline">아침처럼 밝고 따뜻하게.</string>
-    <string name="design_forest">Forest</string>
-    <string name="design_forest_tagline">깊은 초록, 여유롭게.</string>
     <string name="add">추가</string>
     <string name="add_tile">홈에 추가</string>
     <string name="add_group_car">내 차</string>

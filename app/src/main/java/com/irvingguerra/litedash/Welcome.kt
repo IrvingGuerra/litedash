@@ -226,9 +226,10 @@ private val DESIGN_NAME = 30.dp
 private val DESIGN_MIN = 120.dp
 
 /**
- * Paso 1: los 8 Diseños, el puesto marcado (Grafito de fábrica). Tocar uno lo aplica a la página como en el panel
- * Diseños, sin su aviso de «Deshacer» (aquí basta con tocar otro). Se elige cuántos van por fila (2, 4 u 8) para que
- * quepan todos sin desplazar y lo más grandes posible; en pantallas muy bajas, una fila que se desliza.
+ * Paso 1: los 5 Diseños, el puesto marcado (Grafito de fábrica). Tocar uno lo aplica a la página como en el panel
+ * Diseños, sin su aviso de «Deshacer» (aquí basta con tocar otro). Se elige cuántos van por fila (2, 3 o los 5; los de
+ * la última fila, centrados) para que quepan todos sin desplazar y lo más grandes posible; en pantallas muy bajas, una
+ * fila que se desliza.
  */
 @Composable
 private fun DesignStep(d: Dependencies, modifier: Modifier) {
@@ -239,8 +240,8 @@ private fun DesignStep(d: Dependencies, modifier: Modifier) {
     BoxWithConstraints(modifier.fillMaxWidth()) {
         val (columns, width) = designFit(maxWidth, maxHeight, grid.columns.toFloat() / grid.rows)
         FlowRow(
-            if (columns == DESIGNS.size) Modifier.horizontalScroll(rememberScrollState()) else Modifier.verticalScroll(rememberScrollState()),
-            horizontalArrangement = Arrangement.spacedBy(DESIGN_GAP),
+            if (columns == DESIGNS.size) Modifier.horizontalScroll(rememberScrollState()) else Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(DESIGN_GAP, Alignment.CenterHorizontally),
             verticalArrangement = Arrangement.spacedBy(DESIGN_GAP),
             maxItemsInEachRow = columns,
         ) {
@@ -257,10 +258,10 @@ private fun DesignStep(d: Dependencies, modifier: Modifier) {
     }
 }
 
-/** Cuántos Diseños por fila y de qué ancho para que quepan los 8 en [w]×[h] lo más grandes posible ([ratio] = ancho/alto). */
+/** Cuántos Diseños por fila y de qué ancho para que quepan todos en [w]×[h] lo más grandes posible ([ratio] = ancho/alto). */
 private fun designFit(w: Dp, h: Dp, ratio: Float): Pair<Int, Dp> {
     val pad = BRIEF_PADDING * 2
-    val (columns, width) = listOf(2, 4, 8).map { columns ->
+    val (columns, width) = listOf(2, 3, DESIGNS.size).map { columns ->
         val rows = (DESIGNS.size + columns - 1) / columns
         val byWidth = (w - DESIGN_GAP * (columns - 1)) / columns
         val byHeight = ((h - DESIGN_GAP * (rows - 1)) / rows - pad - DESIGN_NAME) * ratio + pad

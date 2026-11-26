@@ -135,14 +135,8 @@
     <string name="design_track_tagline">Sporty, hitam dan merah.</string>
     <string name="design_route">Route</string>
     <string name="design_route_tagline">Peta adalah halamannya.</string>
-    <string name="design_column">Column</string>
-    <string name="design_column_tagline">Semua dalam satu kolom, ala tablet.</string>
     <string name="design_neon">Neon</string>
     <string name="design_neon_tagline">Mode malam dengan cahaya.</string>
-    <string name="design_sand">Sand</string>
-    <string name="design_sand_tagline">Terang dan hangat, seperti pagi.</string>
-    <string name="design_forest">Forest</string>
-    <string name="design_forest_tagline">Hijau pekat, tanpa terburu-buru.</string>
     <string name="add">Tambah</string>
     <string name="add_tile">Tambah ke beranda</string>
     <string name="add_group_car">Mobil Anda</string>

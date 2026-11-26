@@ -135,14 +135,8 @@
     <string name="design_track_tagline">Σπορ, μαύρο και κόκκινο.</string>
     <string name="design_route">Route</string>
     <string name="design_route_tagline">Ο χάρτης είναι η σελίδα.</string>
-    <string name="design_column">Column</string>
-    <string name="design_column_tagline">Όλα σε μία στήλη, σαν tablet.</string>
     <string name="design_neon">Neon</string>
     <string name="design_neon_tagline">Νυχτερινό, με λάμψη.</string>
-    <string name="design_sand">Sand</string>
-    <string name="design_sand_tagline">Φωτεινό και ζεστό, σαν πρωινό.</string>
-    <string name="design_forest">Forest</string>
-    <string name="design_forest_tagline">Βαθύ πράσινο, χωρίς βιασύνη.</string>
     <string name="add">Προσθήκη</string>
     <string name="add_tile">Προσθήκη στην αρχική</string>
     <string name="add_group_car">Το αυτοκίνητό σας</string>

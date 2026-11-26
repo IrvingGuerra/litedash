@@ -135,14 +135,8 @@
     <string name="design_track_tagline">Sportiv, negru și roșu.</string>
     <string name="design_route">Route</string>
     <string name="design_route_tagline">Harta e pagina.</string>
-    <string name="design_column">Column</string>
-    <string name="design_column_tagline">Totul pe o coloană, ca pe tabletă.</string>
     <string name="design_neon">Neon</string>
     <string name="design_neon_tagline">De noapte, cu strălucire.</string>
-    <string name="design_sand">Sand</string>
-    <string name="design_sand_tagline">Luminos și cald, ca dimineața.</string>
-    <string name="design_forest">Forest</string>
-    <string name="design_forest_tagline">Verde intens, fără grabă.</string>
     <string name="add">Adaugă</string>
     <string name="add_tile">Adaugă pe ecranul principal</string>
     <string name="add_group_car">Mașina ta</string>

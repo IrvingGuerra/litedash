@@ -74,23 +74,9 @@ val DESIGNS = listOf(
         wallpaper = null, carColor = Color(0xFF2457A6), accent = Color(0xFF4CC9FF),
     ),
     Design(
-        "column", R.string.design_column, R.string.design_column_tagline, Template.DESIGN_COLUMN, ThemeMode.DARK,
-        wallpaper = "columna-acero", carColor = Color(0xFF7A8590), cardStyle = CardStyle.SOLID, barStyle = BarStyle.FULL,
-    ),
-    Design(
         "neon", R.string.design_neon, R.string.design_neon_tagline, Template.DESIGN_NEON, ThemeMode.DARK,
         wallpaper = "neon-orbes", carColor = Color(0xFF1D2026), cardColor = Color(0xFF7A3FE0), accent = Color(0xFFFF4F9A),
         mapPalette = MapPalettes.INTERFACE,
-    ),
-    Design(
-        "sand", R.string.design_sand, R.string.design_sand_tagline, Template.DESIGN_SAND, ThemeMode.LIGHT,
-        wallpaper = "arena-dunas", carColor = Color(0xFFC2A27C), cardOpacity = glass(0.5f), cardColor = Color(0xFFB89B6A),
-        accent = Color(0xFFFF7A1A), mapPalette = MapPalettes.INTERFACE,
-    ),
-    Design(
-        "forest", R.string.design_forest, R.string.design_forest_tagline, Template.DESIGN_FOREST, ThemeMode.DARK,
-        wallpaper = "bosque-luz", carColor = Color(0xFF2F5D4A), cardOpacity = glass(0.25f), cardColor = Color(0xFF1E8E4E),
-        accent = Color(0xFFE8C15A), mapPalette = MapPalettes.INTERFACE,
     ),
 )
 

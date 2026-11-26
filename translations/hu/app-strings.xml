@@ -135,14 +135,8 @@
     <string name="design_track_tagline">Sportos, fekete és piros.</string>
     <string name="design_route">Route</string>
     <string name="design_route_tagline">A térkép maga az oldal.</string>
-    <string name="design_column">Column</string>
-    <string name="design_column_tagline">Minden egy oszlopban, tabletszerűen.</string>
     <string name="design_neon">Neon</string>
     <string name="design_neon_tagline">Éjszakai, ragyogással.</string>
-    <string name="design_sand">Sand</string>
-    <string name="design_sand_tagline">Világos és meleg, mint a reggel.</string>
-    <string name="design_forest">Forest</string>
-    <string name="design_forest_tagline">Mélyzöld, sietség nélkül.</string>
     <string name="add">Hozzáadás</string>
     <string name="add_tile">Hozzáadás a kezdőképernyőhöz</string>
     <string name="add_group_car">Az autód</string>

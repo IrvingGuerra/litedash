@@ -27,9 +27,15 @@ class DesignsTest {
     private val mine = DesignLook(ThemeMode.LIGHT, 0xFF30D158.toInt(), 0xFF1F4FD8.toInt(), CardStyle.GLASS, 0.8f, "orientation=heading;zoom=mid;flow=off", BarStyle.FULL, 0xFF123456.toInt())
 
     @Test
-    fun eightDesignsWithTheirOwnLayoutsAndGraphiteFirst() {
-        assertEquals(8, DESIGNS.size)
-        assertEquals(DESIGN_TEMPLATES, DESIGNS.map { it.template })
+    fun fiveDesignsWithTheirOwnLayoutsAndGraphiteFirst() {
+        assertEquals(listOf("graphite", "cloud", "track", "route", "neon"), DESIGNS.map { it.id })
+        // Cada uno con su acomodo, en el orden de las plantillas de Diseño (las de Columna, Arena y Bosque se quedan
+        // sin Diseño: las páginas que ya las tienen se siguen armando con ellas).
+        assertEquals(DESIGN_TEMPLATES.filter { t -> DESIGNS.any { it.template == t } }, DESIGNS.map { it.template })
+        assertEquals(
+            listOf(Template.DESIGN_COLUMN, Template.DESIGN_SAND, Template.DESIGN_FOREST),
+            DESIGN_TEMPLATES.filter { t -> DESIGNS.none { it.template == t } },
+        )
         assertEquals(DESIGNS.size, DESIGNS.map { it.id }.toSet().size)
         assertEquals("graphite", FACTORY_DESIGN.id)
         // Todos con su fondo de litedash.dev menos Ruta (su fondo es el mapa).
@@ -107,6 +113,23 @@ class DesignsTest {
         assertNull(clean.page.template)
         assertFalse(clean.wallpaper)
         assertNull(clean.pending)
+    }
+
+    @Test
+    fun aRemovedDesignStillSavedIsNoneAndItsUndoStillReads() {
+        // Quien tenía Columna, Arena o Bosque: su id se queda guardado, pero ya no hay Diseño (la galería no marca
+        // ninguno) y su «Deshacer» se sigue leyendo igual.
+        val page = PageSnapshot(0, Grid(40, 13), "", PageBackground.WALLPAPER, Template.DESIGN_FOREST)
+        for (id in listOf("column", "sand", "forest")) {
+            assertNull(designOf(id))
+            val back = DesignUndo.decode(DesignUndo(id, mine, page, "").encode())!!
+            assertEquals(id, back.design)
+            assertEquals(Template.DESIGN_FOREST, back.page.template)
+        }
+        // Sus fondos siguen cambiando con el tema (de noche y de día).
+        assertEquals("columna-dia", themedWallpaper("columna-acero", dark = false))
+        assertEquals("arena-noche", themedWallpaper("arena-dunas", dark = true))
+        assertEquals("bosque-dia", themedWallpaper("bosque-luz", dark = false))
     }
 
     @Test

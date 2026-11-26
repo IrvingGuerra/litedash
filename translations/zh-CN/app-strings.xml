@@ -135,14 +135,8 @@
     <string name="design_track_tagline">运动风，黑配红。</string>
     <string name="design_route">Route</string>
     <string name="design_route_tagline">地图即整个页面。</string>
-    <string name="design_column">Column</string>
-    <string name="design_column_tagline">全部排成一列，平板风格。</string>
     <string name="design_neon">Neon</string>
     <string name="design_neon_tagline">夜间模式，带光晕。</string>
-    <string name="design_sand">Sand</string>
-    <string name="design_sand_tagline">明亮温暖，如清晨。</string>
-    <string name="design_forest">Forest</string>
-    <string name="design_forest_tagline">深绿色，不慌不忙。</string>
     <string name="add">添加</string>
     <string name="add_tile">添加到主屏幕</string>
     <string name="add_group_car">你的车</string>

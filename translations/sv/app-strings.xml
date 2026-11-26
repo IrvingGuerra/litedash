@@ -135,14 +135,8 @@
     <string name="design_track_tagline">Sportig, svart och röd.</string>
     <string name="design_route">Route</string>
     <string name="design_route_tagline">Kartan är sidan.</string>
-    <string name="design_column">Column</string>
-    <string name="design_column_tagline">Allt i en kolumn, som en surfplatta.</string>
     <string name="design_neon">Neon</string>
     <string name="design_neon_tagline">För natten, med ett sken.</string>
-    <string name="design_sand">Sand</string>
-    <string name="design_sand_tagline">Ljus och varm, som morgonen.</string>
-    <string name="design_forest">Forest</string>
-    <string name="design_forest_tagline">Djupgrön, utan brådska.</string>
     <string name="add">Lägg till</string>
     <string name="add_tile">Lägg till på start</string>
     <string name="add_group_car">Din bil</string>

@@ -138,14 +138,8 @@
     <string name="design_track_tagline">Sporty, black and red.</string>
     <string name="design_route">Route</string>
     <string name="design_route_tagline">The map is the page.</string>
-    <string name="design_column">Column</string>
-    <string name="design_column_tagline">One clean column, tablet style.</string>
     <string name="design_neon">Neon</string>
     <string name="design_neon_tagline">Night mode with a glow.</string>
-    <string name="design_sand">Sand</string>
-    <string name="design_sand_tagline">Light and warm, like morning.</string>
-    <string name="design_forest">Forest</string>
-    <string name="design_forest_tagline">Deep green, no rush.</string>
     <string name="add">Add</string>
     <string name="add_tile">Add to home</string>
     <string name="add_widget">Add widget</string>

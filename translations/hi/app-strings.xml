@@ -135,14 +135,8 @@
     <string name="design_track_tagline">स्पोर्टी, काला और लाल।</string>
     <string name="design_route">Route</string>
     <string name="design_route_tagline">मैप ही पेज है।</string>
-    <string name="design_column">Column</string>
-    <string name="design_column_tagline">सब कुछ एक कॉलम में, टैबलेट जैसा।</string>
     <string name="design_neon">Neon</string>
     <string name="design_neon_tagline">रात के लिए, चमक के साथ।</string>
-    <string name="design_sand">Sand</string>
-    <string name="design_sand_tagline">हल्का और गर्म, सुबह जैसा।</string>
-    <string name="design_forest">Forest</string>
-    <string name="design_forest_tagline">गहरा हरा, बिना जल्दबाज़ी।</string>
     <string name="add">जोड़ें</string>
     <string name="add_tile">होम पर जोड़ें</string>
     <string name="add_group_car">आपकी कार</string>

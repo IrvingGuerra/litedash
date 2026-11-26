@@ -135,14 +135,8 @@
     <string name="design_track_tagline">Sportivo, nero e rosso.</string>
     <string name="design_route">Route</string>
     <string name="design_route_tagline">La mappa è la pagina.</string>
-    <string name="design_column">Column</string>
-    <string name="design_column_tagline">Tutto in una colonna, stile tablet.</string>
     <string name="design_neon">Neon</string>
     <string name="design_neon_tagline">Di notte, con un bagliore.</string>
-    <string name="design_sand">Sand</string>
-    <string name="design_sand_tagline">Chiaro e caldo, come al mattino.</string>
-    <string name="design_forest">Forest</string>
-    <string name="design_forest_tagline">Verde intenso, senza fretta.</string>
     <string name="add">Aggiungi</string>
     <string name="add_tile">Aggiungi alla Home</string>
     <string name="add_group_car">La tua auto</string>

@@ -77,10 +77,7 @@ internal class DesignColors(val ui: Colors, val base: Color, val glowA: Color, v
             "graphite" to Triple(Color(0xFF111418), Color(0xFF3B352A), Color(0xFF1E2733)),
             "cloud" to Triple(Color(0xFFEDF0F3), Color(0xFFFFFDF8), Color(0xFFD9E1E9)),
             "track" to Triple(Color(0xFF100C0E), Color(0xFF2B1418), Color(0xFF5A0F1A)),
-            "column" to Triple(Color(0xFF0C121A), Color(0xFF1A2534), Color(0xFF27456A)),
             "neon" to Triple(Color(0xFF110E28), Color(0xFF55186E), Color(0xFF0D3657)),
-            "sand" to Triple(Color(0xFFEEE1CF), Color(0xFFFCF4E9), Color(0xFFE0CBB0)),
-            "forest" to Triple(Color(0xFF12211A), Color(0xFF2E4D3A), Color(0xFF15281F)),
         )
     }
 }

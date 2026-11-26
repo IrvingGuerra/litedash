@@ -135,14 +135,8 @@
     <string name="design_track_tagline">Спортивный, чёрный с красным.</string>
     <string name="design_route">Route</string>
     <string name="design_route_tagline">Карта — это вся страница.</string>
-    <string name="design_column">Column</string>
-    <string name="design_column_tagline">Всё в одну колонку, как на планшете.</string>
     <string name="design_neon">Neon</string>
     <string name="design_neon_tagline">Ночной, со свечением.</string>
-    <string name="design_sand">Sand</string>
-    <string name="design_sand_tagline">Светлый и тёплый, как утро.</string>
-    <string name="design_forest">Forest</string>
-    <string name="design_forest_tagline">Глубокий зелёный, без спешки.</string>
     <string name="add">Добавить</string>
     <string name="add_tile">Добавить на главный экран</string>
     <string name="add_group_car">Твоя машина</string>

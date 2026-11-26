@@ -135,14 +135,8 @@
     <string name="design_track_tagline">Sportif, siyah ve kırmızı.</string>
     <string name="design_route">Route</string>
     <string name="design_route_tagline">Harita sayfanın kendisi.</string>
-    <string name="design_column">Column</string>
-    <string name="design_column_tagline">Her şey tek sütunda, tablet gibi.</string>
     <string name="design_neon">Neon</string>
     <string name="design_neon_tagline">Gece için, ışıltılı.</string>
-    <string name="design_sand">Sand</string>
-    <string name="design_sand_tagline">Açık ve sıcak, sabah gibi.</string>
-    <string name="design_forest">Forest</string>
-    <string name="design_forest_tagline">Derin yeşil, acele yok.</string>
     <string name="add">Ekle</string>
     <string name="add_tile">Ana ekrana ekle</string>
     <string name="add_group_car">Arabanız</string>

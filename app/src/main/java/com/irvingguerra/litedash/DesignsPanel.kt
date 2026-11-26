@@ -54,9 +54,10 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
 /**
- * Diseños (Ajustes → Inicio y apariencia → Inicio → Diseño, o «Diseños» al acomodar): los 8 en tarjetas con su miniatura,
+ * Diseños (Ajustes → Inicio y apariencia → Inicio → Diseño, o «Diseños» al acomodar): los 5 en tarjetas con su miniatura,
  * nombre y frase; un toque pregunta si se aplica a la página que se ve y, al confirmar, lo aplica (se puede deshacer).
- * Abajo, «Deshacer» y «Personalizar» (los ajustes de siempre). Acostada van 4 por fila; angosta o de pie, 2.
+ * Abajo, «Deshacer» y «Personalizar» (los ajustes de siempre). Acostada van los 5 en una fila (sin desplazar en
+ * 1024×600) o, si no caben, 3 + 2 centradas; de pie o muy angosta, 2 por fila.
  */
 @Composable
 fun DesignsPanel(d: Dependencies, close: () -> Unit, onCustomize: () -> Unit) {
@@ -74,10 +75,14 @@ fun DesignsPanel(d: Dependencies, close: () -> Unit, onCustomize: () -> Unit) {
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(16.dp)) {
             Label(stringResource(R.string.designs_help), Typography.body, c.textMuted)
             BoxWithConstraints(Modifier.fillMaxWidth()) {
-                val columns = if (maxWidth >= FOUR_COLUMNS) 4 else 2
+                val columns = when {
+                    grid.vertical || maxWidth < THREE_COLUMNS -> 2
+                    maxWidth >= ONE_ROW -> DESIGNS.size
+                    else -> 3
+                }
                 val gap = 16.dp
                 val width = (maxWidth - gap * (columns - 1)) / columns
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(gap), verticalArrangement = Arrangement.spacedBy(gap), maxItemsInEachRow = columns) {
+                FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(gap, Alignment.CenterHorizontally), verticalArrangement = Arrangement.spacedBy(gap), maxItemsInEachRow = columns) {
                     for (design in DESIGNS) {
                         val applied = design == current
                         DesignCard(design, grid, d.dashboard, applied, changed = applied && !design.matches(prefs.look, ownCar), Modifier.width(width)) {
@@ -115,8 +120,9 @@ fun DesignsPanel(d: Dependencies, close: () -> Unit, onCustomize: () -> Unit) {
     LaunchedEffect(Unit) { retryDesignWallpaper(context, prefs) }
 }
 
-/** Lo ancho desde el que caben 4 tarjetas por fila. */
-private val FOUR_COLUMNS = 860.dp
+/** Lo ancho desde el que caben todas en una fila, y desde el que van 3 por fila (acostada). */
+private val ONE_ROW = 860.dp
+private val THREE_COLUMNS = 520.dp
 
 /**
  * Una tarjeta de la galería: miniatura, nombre (con la palomita si es el puesto), sus colores y su frase. [brief] (la

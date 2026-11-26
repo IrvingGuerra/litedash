@@ -137,14 +137,8 @@
     <string name="design_track_tagline">Esportivo, preto e vermelho.</string>
     <string name="design_route">Route</string>
     <string name="design_route_tagline">O mapa é a página.</string>
-    <string name="design_column">Column</string>
-    <string name="design_column_tagline">Tudo em uma coluna, estilo tablet.</string>
     <string name="design_neon">Neon</string>
     <string name="design_neon_tagline">Noturno, com brilho.</string>
-    <string name="design_sand">Sand</string>
-    <string name="design_sand_tagline">Claro e quente, como de manhã.</string>
-    <string name="design_forest">Forest</string>
-    <string name="design_forest_tagline">Verde profundo, sem pressa.</string>
     <string name="add">Adicionar</string>
     <string name="add_tile">Adicionar à tela inicial</string>
     <string name="add_group_car">Seu carro</string>

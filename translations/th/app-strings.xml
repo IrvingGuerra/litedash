@@ -135,14 +135,8 @@
     <string name="design_track_tagline">สปอร์ต ดำและแดง</string>
     <string name="design_route">Route</string>
     <string name="design_route_tagline">แผนที่คือทั้งหน้า</string>
-    <string name="design_column">Column</string>
-    <string name="design_column_tagline">ทุกอย่างในคอลัมน์เดียว แบบแท็บเล็ต</string>
     <string name="design_neon">Neon</string>
     <string name="design_neon_tagline">สำหรับกลางคืน มีแสงเรือง</string>
-    <string name="design_sand">Sand</string>
-    <string name="design_sand_tagline">สว่างและอบอุ่น เหมือนยามเช้า</string>
-    <string name="design_forest">Forest</string>
-    <string name="design_forest_tagline">เขียวเข้ม ไม่เร่งรีบ</string>
     <string name="add">เพิ่ม</string>
     <string name="add_tile">เพิ่มลงหน้าหลัก</string>
     <string name="add_group_car">รถของคุณ</string>
