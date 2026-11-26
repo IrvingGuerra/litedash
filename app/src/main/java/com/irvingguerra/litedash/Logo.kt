@@ -942,6 +942,24 @@ internal suspend fun putLiteDashWallpaper(context: Context, id: String, byDesign
     }
 
 /**
+ * El fondo que dejó un Diseño sigue al tema: al pasar de claro a oscuro (o al revés: «Día y noche», o cambiarlo a mano)
+ * se pone su pareja ([themedWallpaper]). Solo si sigue siendo el del Diseño: tu foto o un fondo que elegiste no se
+ * tocan. Sin red y sin copia guardada se queda el que está (se reintenta en el siguiente cambio o al abrir).
+ */
+@Composable
+internal fun ThemedDesignWallpaper() {
+    val dark = LocalColors.current.dark
+    val context = LocalContext.current
+    LaunchedEffect(dark, WALLPAPER.version) {
+        val want = withContext(Dispatchers.IO) {
+            if (!OwnWallpaper.placedByDesign(context.filesDir)) return@withContext null
+            liteDashWallpaper(context)?.let { id -> themedWallpaper(id, dark)?.takeIf { it != id } }
+        } ?: return@LaunchedEffect
+        putLiteDashWallpaper(context, want, byDesign = true)
+    }
+}
+
+/**
  * Antes de que un Diseño cambie el fondo: tu foto se guarda aparte ([OwnWallpaper.keep]). false si no se pudo copiar:
  * entonces no se debe cambiar el fondo (se perdería). Desde el hilo principal.
  */

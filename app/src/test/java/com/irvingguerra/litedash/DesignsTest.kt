@@ -138,4 +138,20 @@ class DesignsTest {
         val page = PageSnapshot(0, Grid(40, 13), "", PageBackground.WALLPAPER, null)
         assertEquals(sun, DesignUndo.decode(DesignUndo("cloud", sun, page, "").encode())!!.look)
     }
+
+    @Test
+    fun everyDesignWallpaperHasItsDayAndNightTwin() {
+        for (design in DESIGNS) {
+            val id = design.wallpaper ?: continue
+            val night = themedWallpaper(id, dark = true)
+            val day = themedWallpaper(id, dark = false)
+            assertTrue(design.id, night != null && day != null && night != day)
+            // El del Diseño es el de su tema; la pareja lleva de regreso al mismo par.
+            assertEquals(id, if (design.theme == ThemeMode.LIGHT) day else night)
+            assertEquals(night, themedWallpaper(day!!, dark = true))
+            assertEquals(day, themedWallpaper(night!!, dark = false))
+        }
+        // Tu foto o un fondo suelto no tienen pareja: no se tocan.
+        assertNull(themedWallpaper("aurora-iss", dark = true))
+    }
 }

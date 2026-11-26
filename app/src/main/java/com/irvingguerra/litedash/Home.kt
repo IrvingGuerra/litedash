@@ -806,6 +806,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
         }
         // El fondo de un Diseño que espera internet: se baja cuando haya red (también con Ajustes o un panel abierto).
         PendingDesignWallpaper(d.prefs)
+        ThemedDesignWallpaper()
         if (panel == null) CompositionLocalProvider(LocalHomeCovered provides homeCovered, LocalCardLook provides homeLook) {
             Box(Modifier.fillMaxSize().hiddenWhen { homeCovered }) {
                 // Detrás de todo, el fondo de esta página: tu imagen (Inicio y apariencia → Inicio → Fondo de pantalla) o

@@ -87,7 +87,7 @@ fun DesignsPanel(d: Dependencies, close: () -> Unit, onCustomize: () -> Unit) {
                                     res.getString(R.string.design_apply),
                                     res.getString(R.string.design_apply_message),
                                     destructive = false,
-                                ) { applyDesign(d, context, scope, design) },
+                                ) { applyDesign(d, context, scope, design, dark = c.dark) },
                             )
                         }
                     }

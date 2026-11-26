@@ -89,10 +89,13 @@ suspend fun wallpaperThumb(context: Context, id: String): ImageBitmap? = withCon
 /** Cómo le fue a un fondo de LiteDash: puesto, sin red (se puede reintentar), ya no existe (4xx) o ni se intentó. */
 enum class WallpaperFetch { DONE, OFFLINE, GONE, SKIPPED }
 
-/** Baja el fondo [id] a [target] (lo reemplaza solo si llegó completo y se puede leer). */
+/** Pone el fondo [id] en [target], de su copia en la caché o bajándolo (lo reemplaza solo si llegó completo y se puede leer). */
 suspend fun downloadWallpaper(context: Context, id: String, target: File): WallpaperFetch = withContext(Dispatchers.IO) {
     try {
-        download(context, "$id.webp", target, ::readImage)
+        // Una copia en la caché: el fondo hermano de un Diseño se pone al cambiar de tema aunque no haya red.
+        val kept = File(folder(context), "$id.webp")
+        if (readImage(kept) == null) download(context, "$id.webp", kept, ::readImage)
+        replaceFile(target) { kept.copyTo(it, overwrite = true) }
         WallpaperFetch.DONE
     } catch (e: HttpStatusException) {
         Log.w(LOG_TAG, "El fondo $id ya no está", e)
@@ -100,6 +103,16 @@ suspend fun downloadWallpaper(context: Context, id: String, target: File): Wallp
     } catch (e: IOException) {
         Log.w(LOG_TAG, "No se pudo bajar el fondo $id", e)
         WallpaperFetch.OFFLINE
+    }
+}
+
+/** Deja el fondo [id] en la caché para ponerlo después sin red (si no se puede, se bajará entonces). */
+suspend fun keepWallpaper(context: Context, id: String) = withContext(Dispatchers.IO) {
+    try {
+        val kept = File(folder(context), "$id.webp")
+        if (readImage(kept) == null) download(context, "$id.webp", kept, ::readImage)
+    } catch (e: IOException) {
+        Log.w(LOG_TAG, "No se pudo guardar el fondo $id", e)
     }
 }
 

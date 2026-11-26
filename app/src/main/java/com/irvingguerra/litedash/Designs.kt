@@ -94,6 +94,19 @@ val DESIGNS = listOf(
     ),
 )
 
+/**
+ * Los fondos de los Diseños van en pareja, el de noche y el de día (mismas formas): con «Día y noche» la app pone sola
+ * el que toca ([ThemedDesignWallpaper]), así un Diseño claro no deslumbra de noche ni uno oscuro se apaga de día.
+ */
+private val WALLPAPER_PAIRS = listOf(
+    "grafito-cinta" to "grafito-plata", "nube-noche" to "nube-alba", "pista-estela" to "pista-dia", "columna-acero" to "columna-dia",
+    "neon-orbes" to "neon-dia", "arena-noche" to "arena-dunas", "bosque-luz" to "bosque-dia",
+)
+
+/** El fondo que le toca al de un Diseño [id] con el tema oscuro o claro: él mismo o su pareja; null si no es de una pareja. */
+internal fun themedWallpaper(id: String, dark: Boolean): String? =
+    WALLPAPER_PAIRS.firstOrNull { id == it.first || id == it.second }?.let { if (dark) it.first else it.second }
+
 /** El Diseño con que arrancan las instalaciones nuevas. */
 val FACTORY_DESIGN = DESIGNS.first()
 
@@ -240,9 +253,10 @@ private var designTurn = 0
  * Aplica [design] a la página que se ve (no toca las demás) y a lo de toda la app, de una vez, y deja listo «Deshacer».
  * Su fondo se baja después: tu foto se guarda aparte antes (una sola vez: el fondo de otro Diseño no la reemplaza); sin
  * internet todo lo demás ya quedó y el fondo es el resplandor del tema hasta que haya red ([prefs.designWallpaper], se
- * baja una sola vez). Con [keepSun], «Día y noche» se queda ([Design.over]). Desde el hilo principal.
+ * baja una sola vez). Con [keepSun], «Día y noche» se queda ([Design.over]) y el fondo es el de la pareja que toca ahora
+ * ([dark] = la app va en oscuro). Desde el hilo principal.
  */
-internal fun applyDesign(d: Dependencies, context: Context, scope: CoroutineScope, design: Design, keepSun: Boolean = true) {
+internal fun applyDesign(d: Dependencies, context: Context, scope: CoroutineScope, design: Design, dark: Boolean, keepSun: Boolean = true) {
     val prefs = d.prefs
     val before = d.dashboard.snapshot() ?: return
     val now = prefs.look
@@ -256,11 +270,15 @@ internal fun applyDesign(d: Dependencies, context: Context, scope: CoroutineScop
     val turn = ++designTurn
     // El fondo de otro Diseño que esperaba internet ya no: manda este, traiga fondo o no.
     prefs.designWallpaper = null
-    val id = design.wallpaper ?: return
+    val own = design.wallpaper ?: return
+    // Con «Día y noche» puesto el tema no cambia: va la pareja del tema de ahora; si no, el fondo del Diseño tal cual.
+    val id = if (keepSun && now.theme == ThemeMode.SUN) themedWallpaper(own, dark) ?: own else own
     scope.launch {
         if (!keepOwnWallpaper(context) || turn != designTurn) return@launch
         prefs.designUndo = undo.copy(wallpaper = true).encode()
         val got = putLiteDashWallpaper(context, id, byDesign = true) { turn == designTurn }
+        // Su pareja se guarda de una vez: al anochecer (o amanecer) puede no haber red.
+        if (got == WallpaperFetch.DONE) themedWallpaper(id, dark = themedWallpaper(id, true) == id)?.let { keepWallpaper(context, it) }
         if (got != WallpaperFetch.OFFLINE || turn != designTurn) return@launch
         // Sin internet: sin imagen (el resplandor del tema) hasta que haya red.
         clearWallpaper(context)
