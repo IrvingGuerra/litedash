@@ -31,9 +31,6 @@
     <string name="page_background_image">इमेज</string>
     <string name="page_background_map">मैप</string>
     <string name="map_backdrop_help">मैप आपके विजेट के पीछे आपके साथ चलता है, और आप खाली जगह में दिखते हैं। इसकी स्टाइल सेटिंग्स → ऐप्स → नेविगेशन वाली है; बिना इंटरनेट यह आपके ऑफ़लाइन इलाके इस्तेमाल करता है।</string>
-    <string name="map_backdrop_you">मैप पर आप</string>
-    <string name="map_backdrop_arrow">तीर</string>
-    <string name="map_backdrop_car">आपकी कार</string>
     <string name="map_backdrop_has_widget">इस पेज पर मैप विजेट है: पृष्ठभूमि में मैप के साथ दो मैप दिखेंगे।</string>
     <string name="map_backdrop_remove_widget">मैप विजेट हटाएँ</string>
 </resources>

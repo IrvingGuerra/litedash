@@ -31,9 +31,6 @@
     <string name="page_background_image">이미지</string>
     <string name="page_background_map">지도</string>
     <string name="map_backdrop_help">지도가 위젯 뒤에서 나를 따라가고, 빈 공간에 내 위치를 보여 줘요. 스타일은 설정 → 앱 → 내비게이션에서 정해요. 인터넷이 없으면 오프라인 지역을 써요.</string>
-    <string name="map_backdrop_you">지도 위의 나</string>
-    <string name="map_backdrop_arrow">화살표</string>
-    <string name="map_backdrop_car">내 차</string>
     <string name="map_backdrop_has_widget">이 페이지에 지도 위젯이 있어요. 배경 지도를 쓰면 지도가 두 개 보여요.</string>
     <string name="map_backdrop_remove_widget">지도 위젯 빼기</string>
 </resources>

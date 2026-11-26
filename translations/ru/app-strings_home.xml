@@ -31,9 +31,6 @@
     <string name="page_background_image">Изображение</string>
     <string name="page_background_map">Карта</string>
     <string name="map_backdrop_help">Карта следует за тобой позади виджетов, а ты — на свободном месте. Её стиль — из «Настройки → Приложения → Навигация»; без интернета она использует твои офлайн-районы.</string>
-    <string name="map_backdrop_you">Ты на карте</string>
-    <string name="map_backdrop_arrow">Стрелка</string>
-    <string name="map_backdrop_car">Твоя машина</string>
     <string name="map_backdrop_has_widget">На этой странице есть виджет «Карта»: с картой на фоне их будет две.</string>
     <string name="map_backdrop_remove_widget">Убрать виджет «Карта»</string>
 </resources>

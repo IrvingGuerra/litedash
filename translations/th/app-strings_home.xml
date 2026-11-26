@@ -31,9 +31,6 @@
     <string name="page_background_image">รูปภาพ</string>
     <string name="page_background_map">แผนที่</string>
     <string name="map_backdrop_help">แผนที่จะตามคุณอยู่หลังวิดเจ็ต โดยแสดงคุณในพื้นที่ว่าง สไตล์เป็นแบบที่ตั้งไว้ใน การตั้งค่า → แอป → การนำทาง ถ้าไม่มีอินเทอร์เน็ตจะใช้โซนออฟไลน์ของคุณ</string>
-    <string name="map_backdrop_you">คุณบนแผนที่</string>
-    <string name="map_backdrop_arrow">ลูกศร</string>
-    <string name="map_backdrop_car">รถของคุณ</string>
     <string name="map_backdrop_has_widget">หน้านี้มีวิดเจ็ตแผนที่ ถ้าใช้แผนที่เป็นพื้นหลังจะเห็นแผนที่สองอัน</string>
     <string name="map_backdrop_remove_widget">เอาวิดเจ็ตแผนที่ออก</string>
 </resources>

@@ -31,9 +31,6 @@
     <string name="page_background_image">图片</string>
     <string name="page_background_map">地图</string>
     <string name="map_backdrop_help">地图在小组件后面跟随你，你显示在空白处。样式与“设置 → 应用 → 导航”中的一致；没有网络时使用你的离线区域。</string>
-    <string name="map_backdrop_you">你在地图上</string>
-    <string name="map_backdrop_arrow">箭头</string>
-    <string name="map_backdrop_car">你的车</string>
     <string name="map_backdrop_has_widget">此页面有地图小组件：使用地图背景会看到两个地图。</string>
     <string name="map_backdrop_remove_widget">移除地图小组件</string>
 </resources>

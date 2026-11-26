@@ -31,9 +31,6 @@
     <string name="page_background_image">Hình ảnh</string>
     <string name="page_background_map">Bản đồ</string>
     <string name="map_backdrop_help">Bản đồ đi theo bạn phía sau các tiện ích, với bạn ở khoảng trống. Kiểu bản đồ theo Cài đặt → Ứng dụng → Dẫn đường; khi không có internet sẽ dùng các khu vực ngoại tuyến của bạn.</string>
-    <string name="map_backdrop_you">Bạn trên bản đồ</string>
-    <string name="map_backdrop_arrow">Mũi tên</string>
-    <string name="map_backdrop_car">Xe của bạn</string>
     <string name="map_backdrop_has_widget">Trang này có tiện ích Bản đồ: khi dùng bản đồ làm nền sẽ thấy hai bản đồ.</string>
     <string name="map_backdrop_remove_widget">Bỏ tiện ích Bản đồ</string>
 </resources>

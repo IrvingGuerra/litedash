@@ -508,14 +508,14 @@ private fun LiveMap(
 /**
  * El mapa vivo detrás de los widgets de una página (#18). Te sigue sin gestos (los de ahí son del inicio: deslizar de
  * página, dejar presionado para acomodar) y vas en [focus], el hueco que dejan los widgets (en fracciones de la
- * pantalla), con la flecha o tu auto visto de atrás ([car], sin él la flecha). Con Waze/Maps navegando, su siguiente
+ * pantalla), con la flecha. Con Waze/Maps navegando, su siguiente
  * vuelta va arriba de ese hueco. Con la guía de LiteDash, si es el mapa que navega en la página ([guide]), lleva la
  * cámara de la navegación (sus tarjetas van encima del tablero, [GuideCards]; la llegada tapa [cardsH] px abajo del
  * hueco); si navega un widget Mapa, solo la ruta, quieta (una sola vista anima). Sin permiso de ubicación o sin lectura
  * aún, no se dibuja (queda el fondo del tema). [covered] = algo en grande lo tapa: se queda quieto.
  */
 @Composable
-internal fun MapBackdrop(d: Dependencies, focus: Rect?, car: CarPackage?, covered: Boolean, guide: Boolean, cardsH: Int) {
+internal fun MapBackdrop(d: Dependencies, focus: Rect?, covered: Boolean, guide: Boolean, cardsH: Int) {
     val c = LocalColors.current
     // Con algo en grande encima el fondo no se dibuja: tampoco hace falta el GPS.
     if (!covered) KeepTripRunning(d.trip)
@@ -539,7 +539,6 @@ internal fun MapBackdrop(d: Dependencies, focus: Rect?, car: CarPackage?, covere
     val position = d.trip.position ?: return
     val kmh = d.bus.watch(Signal.SPEED)
     val navigating = d.navigation.instruction != null
-    val marker = rememberRearMarker(d, car.takeIf { d.prefs.mapBackdropCar })
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val hole = focus ?: WHOLE_SCREEN
         val height = constraints.maxHeight.toFloat()
@@ -552,7 +551,7 @@ internal fun MapBackdrop(d: Dependencies, focus: Rect?, car: CarPackage?, covere
         MapCanvas(
             store, if (onRoute) s.lat else position.latitude, if (onRoute) s.lon else position.longitude,
             if (guiding) youBearing(d, session, s) else d.trip.bearing, kmh, look, Modifier.fillMaxSize(), camera, navigating,
-            active = !LocalHomeCovered.current && !covered, focus = view, interactive = false, marker = marker,
+            active = !LocalHomeCovered.current && !covered, focus = view, interactive = false,
             navigation = guiding, turnAhead = onRoute && turnAhead(session.route, s),
             route = session?.route?.points, routeDone = s?.let { it.point + it.fraction } ?: 0f,
         )

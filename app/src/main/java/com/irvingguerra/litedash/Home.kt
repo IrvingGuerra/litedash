@@ -814,7 +814,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                     PageBackground.WALLPAPER -> HomeWallpaper(d.prefs)
                     // Con algo en grande encima (la música o el mapa) se queda quieto: no se ve.
                     PageBackground.MAP -> MapBackdrop(
-                        d, remember(d.dashboard.shown, d.dashboard.grid, board, rootSize) { mapFocus(d.dashboard, board, rootSize) }, car,
+                        d, remember(d.dashboard.shown, d.dashboard.grid, board, rootSize) { mapFocus(d.dashboard, board, rootSize) },
                         covered = expandedCovers, guide = guideHomeNow() == GuideHome.BACKDROP, cardsH = guideCardsH,
                     )
                 }

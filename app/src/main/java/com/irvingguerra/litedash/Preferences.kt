@@ -59,8 +59,6 @@ internal object PrefKeys {
     const val PHONE_APP = "phone_app"
     /** Ya se pasó la app propia de los widgets Android Auto / CarPlay y Teléfono, y el aspecto del Mapa, a lo de toda la app ([Preferences.adoptWidgetApps]). */
     const val WIDGET_APPS_ADOPTED = "widget_apps_adopted"
-    /** En el mapa de fondo del inicio: tu auto en vez de la flecha. */
-    const val MAP_BACKDROP_CAR = "map_backdrop_car"
     const val MAP_LOOK = "map_look"
     const val GUIDE_MAP_NORTH = "guide_map_north"
     const val GUIDE_CAR_VIEW = "guide_car_view"
@@ -575,7 +573,6 @@ class Preferences(context: Context) {
     var guideCarView by bool(PrefKeys.GUIDE_CAR_VIEW, false)
 
     /** En el mapa de fondo del inicio: tu auto visto de atrás en vez de la flecha (de fábrica, la flecha). */
-    var mapBackdropCar by bool(PrefKeys.MAP_BACKDROP_CAR, false)
 
     /** El aspecto del mapa de LiteDash ([com.irvingguerra.litedash.feature.map.MapLook.encode]); null = el de fábrica. */
     var mapLook by string(PrefKeys.MAP_LOOK)

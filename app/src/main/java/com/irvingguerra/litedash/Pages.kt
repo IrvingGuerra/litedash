@@ -240,12 +240,6 @@ internal fun PageBackgroundSettings(d: Dependencies, page: Int = d.dashboard.pag
                 }
                 val (granted, ask) = rememberGpsPermission(d)
                 if (!granted) Button(stringResource(R.string.tap_to_enable), ask, primary = true)
-                Label(stringResource(R.string.map_backdrop_you), Typography.label, c.textMuted)
-                Segmented(
-                    listOf(false to stringResource(R.string.map_backdrop_arrow), true to stringResource(R.string.map_backdrop_car)),
-                    d.prefs.mapBackdropCar,
-                    { d.prefs.mapBackdropCar = it },
-                )
             }
         }
     }

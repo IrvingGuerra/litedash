@@ -31,9 +31,6 @@
     <string name="page_background_image">Imagine</string>
     <string name="page_background_map">Hartă</string>
     <string name="map_backdrop_help">Harta te urmărește în spatele widgeturilor, cu tine în spațiul liber. Stilul ei este cel din Setări → Aplicații → Navigație; fără internet folosește zonele tale offline.</string>
-    <string name="map_backdrop_you">Tu pe hartă</string>
-    <string name="map_backdrop_arrow">Săgeată</string>
-    <string name="map_backdrop_car">Mașina ta</string>
     <string name="map_backdrop_has_widget">Pagina are un widget Hartă: cu harta pe fundal s-ar vedea două.</string>
     <string name="map_backdrop_remove_widget">Elimină widgetul Hartă</string>
 </resources>

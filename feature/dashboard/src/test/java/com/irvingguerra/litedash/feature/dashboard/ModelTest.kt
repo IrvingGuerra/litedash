@@ -38,10 +38,10 @@ class ModelTest {
         }
     }
 
-    /** Las que llevan auto: todas menos las que son a propósito sin él (Grafito solo de pie o sin mapa; Ruta flotante). */
+    /** Las que llevan auto: todas menos las que son a propósito sin él (Grafito solo de pie o sin mapa; Ruta flotante; Pista lo lleva siempre en la carretera). */
     private val Template.hasCar get() = this !in setOf(
         Template.SPEED, Template.MINIMAL, Template.SPEED_WIDGETS, Template.WALL_CARDS, Template.WALL_SIDE, Template.ROUTE, Template.MAP_BACKGROUND,
-        Template.DESIGN_GRAPHITE, Template.DESIGN_ROUTE, Template.DESIGN_NEON,
+        Template.DESIGN_GRAPHITE, Template.DESIGN_ROUTE, Template.DESIGN_NEON, Template.DESIGN_TRACK,
     )
 
     @Test

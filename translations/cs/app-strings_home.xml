@@ -32,9 +32,6 @@
     <string name="page_background_image">Obrázek</string>
     <string name="page_background_map">Mapa</string>
     <string name="map_backdrop_help">Mapa tě sleduje za widgety, s tebou ve volném místě. Její styl je ten z Nastavení → Aplikace → Navigace; bez internetu použije tvoje offline oblasti.</string>
-    <string name="map_backdrop_you">Ty na mapě</string>
-    <string name="map_backdrop_arrow">Šipka</string>
-    <string name="map_backdrop_car">Tvoje auto</string>
     <string name="map_backdrop_has_widget">Tato stránka má widget Mapa: s mapou na pozadí by byly vidět dvě.</string>
     <string name="map_backdrop_remove_widget">Odebrat widget Mapa</string>
 </resources>

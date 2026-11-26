@@ -31,9 +31,6 @@
     <string name="page_background_image">Bild</string>
     <string name="page_background_map">Karta</string>
     <string name="map_backdrop_help">Kartan följer dig bakom dina widgetar, med dig i det fria utrymmet. Stilen är den i Inställningar → Appar → Navigering; utan internet använder den dina offlinezoner.</string>
-    <string name="map_backdrop_you">Du på kartan</string>
-    <string name="map_backdrop_arrow">Pil</string>
-    <string name="map_backdrop_car">Din bil</string>
     <string name="map_backdrop_has_widget">Sidan har en Karta-widget: med kartan som bakgrund skulle du se två.</string>
     <string name="map_backdrop_remove_widget">Ta bort Karta-widgeten</string>
 </resources>

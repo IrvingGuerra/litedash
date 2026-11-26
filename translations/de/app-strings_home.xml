@@ -32,9 +32,6 @@
     <string name="page_background_image">Bild</string>
     <string name="page_background_map">Karte</string>
     <string name="map_backdrop_help">Die Karte folgt dir hinter deinen Widgets, mit dir im freien Bereich. Ihr Stil ist der aus Einstellungen → Apps → Navigation; ohne Internet nutzt sie deine Offline-Zonen.</string>
-    <string name="map_backdrop_you">Du auf der Karte</string>
-    <string name="map_backdrop_arrow">Pfeil</string>
-    <string name="map_backdrop_car">Dein Auto</string>
     <string name="map_backdrop_has_widget">Diese Seite hat ein Karten-Widget: mit der Karte im Hintergrund siehst du zwei.</string>
     <string name="map_backdrop_remove_widget">Karten-Widget entfernen</string>
 </resources>

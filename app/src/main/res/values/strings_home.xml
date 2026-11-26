@@ -39,9 +39,6 @@
     <string name="page_background_image">Imagen</string>
     <string name="page_background_map">Mapa</string>
     <string name="map_backdrop_help">El mapa te sigue detrás de tus widgets, contigo en el espacio libre. Su estilo es el de Ajustes → Apps → Navegación; sin internet usa tus zonas sin conexión.</string>
-    <string name="map_backdrop_you">Tú en el mapa</string>
-    <string name="map_backdrop_arrow">Flecha</string>
-    <string name="map_backdrop_car">Tu auto</string>
     <string name="map_backdrop_has_widget">Esta página tiene un widget Mapa: con el mapa de fondo se verían dos.</string>
     <string name="map_backdrop_remove_widget">Quitar el widget Mapa</string>
 </resources>

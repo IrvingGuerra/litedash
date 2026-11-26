@@ -31,9 +31,6 @@
     <string name="page_background_image">Kép</string>
     <string name="page_background_map">Térkép</string>
     <string name="map_backdrop_help">A térkép követ a widgetjeid mögött, téged a szabad helyen mutatva. A stílusa a Beállítások → Alkalmazások → Navigáció szerinti; internet nélkül az offline területeidet használja.</string>
-    <string name="map_backdrop_you">Te a térképen</string>
-    <string name="map_backdrop_arrow">Nyíl</string>
-    <string name="map_backdrop_car">Az autód</string>
     <string name="map_backdrop_has_widget">Ezen az oldalon van Térkép widget: térképes háttérrel kettőt látnál.</string>
     <string name="map_backdrop_remove_widget">Térkép widget eltávolítása</string>
 </resources>

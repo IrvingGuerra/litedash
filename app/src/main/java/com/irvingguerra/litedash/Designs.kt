@@ -61,7 +61,7 @@ val DESIGNS = listOf(
     ),
     Design(
         "cloud", R.string.design_cloud, R.string.design_cloud_tagline, Template.DESIGN_CLOUD, ThemeMode.LIGHT,
-        wallpaper = "nube-amanecer", carColor = Color(0xFFF4F6F8), cardOpacity = glass(0.2f), accent = Color(0xFFFF9F0A),
+        wallpaper = "nube-alba", carColor = Color(0xFFF4F6F8), cardOpacity = glass(0.2f), accent = Color(0xFFFF9F0A),
     ),
     Design(
         "track", R.string.design_track, R.string.design_track_tagline, Template.DESIGN_TRACK, ThemeMode.DARK,

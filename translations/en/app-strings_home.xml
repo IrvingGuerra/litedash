@@ -34,9 +34,6 @@
     <string name="page_background_image">Image</string>
     <string name="page_background_map">Map</string>
     <string name="map_backdrop_help">The map follows you behind your widgets, with you in the free space. Its style is the one in Settings → Apps → Navigation; without internet it uses your offline areas.</string>
-    <string name="map_backdrop_you">You on the map</string>
-    <string name="map_backdrop_arrow">Arrow</string>
-    <string name="map_backdrop_car">Your car</string>
     <string name="map_backdrop_has_widget">This page has a Map widget: with the map background you\'d see two maps.</string>
     <string name="map_backdrop_remove_widget">Remove the Map widget</string>
 </resources>

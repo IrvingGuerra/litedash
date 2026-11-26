@@ -32,9 +32,6 @@
     <string name="page_background_image">Obraz</string>
     <string name="page_background_map">Mapa</string>
     <string name="map_backdrop_help">Mapa podąża za tobą za widżetami, a ty jesteś w wolnym miejscu. Jej styl to ten z Ustawienia → Aplikacje → Nawigacja; bez internetu używa twoich stref offline.</string>
-    <string name="map_backdrop_you">Ty na mapie</string>
-    <string name="map_backdrop_arrow">Strzałka</string>
-    <string name="map_backdrop_car">Twoje auto</string>
     <string name="map_backdrop_has_widget">Ta strona ma widżet Mapa: z mapą w tle widać by było dwie.</string>
     <string name="map_backdrop_remove_widget">Usuń widżet Mapa</string>
 </resources>

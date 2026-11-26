@@ -331,9 +331,9 @@ enum class Template(val sizes: Set<ScreenSize>) {
     DESIGN_GRAPHITE(ScreenSize.entries.toSet()),
     /** Nube: tu auto y el mapa en dos mitades; abajo la música y el clima. */
     DESIGN_CLOUD(ScreenSize.entries.toSet()),
-    /** Pista: el velocímetro grande al centro sin tarjeta; el auto y el viaje a un lado, el mapa y la música al otro. */
+    /** Pista: el velocímetro grande al centro sin tarjeta; tu auto en la carretera (sin su velocidad) y el viaje a un lado, el mapa y la música al otro. */
     DESIGN_TRACK(ScreenSize.entries.toSet()),
-    /** Ruta: el mapa es la página (fondo de mapa); flotan tu auto y la música. */
+    /** Ruta: el mapa es la página (fondo de mapa); flotan tu auto, grande, y la música. */
     DESIGN_ROUTE(ScreenSize.entries.toSet()),
     /** Columna: tipo tableta, una columna de tarjetas y tu auto grande. */
     DESIGN_COLUMN(ScreenSize.entries.toSet()),
@@ -673,7 +673,7 @@ fun Template.layout(c: Grid, hero: String = TileTypes.CAR, skip: (String) -> Boo
             if (c.vertical) {
                 val s = rnd(rows * 0.45)
                 place(TileTypes.SPEEDOMETER, 0, 0, cols, s, gauge, plain = true)
-                place(TileTypes.CAR, 0, s, cols, 3)
+                place(TileTypes.ROAD, 0, s, cols, 3, ROAD_NO_SPEED)
                 val y = s + 3
                 val h = rows - y
                 val m = rnd(cols * 0.57)
@@ -685,7 +685,7 @@ fun Template.layout(c: Grid, hero: String = TileTypes.CAR, skip: (String) -> Boo
                 val side = maxOf(3, rnd(cols * 0.3))
                 val mid = cols - 2 * side
                 val low = if (rows >= 5) 2 else 1
-                place(TileTypes.CAR, 0, 0, side, rows - low)
+                place(TileTypes.ROAD, 0, 0, side, rows - low, ROAD_NO_SPEED)
                 place(tripType, 0, rows - low, side, low, tripData)
                 place(TileTypes.SPEEDOMETER, side, 0, mid, rows, gauge, plain = true)
                 mapOr(TileTypes.CLOCK, side + mid, 0, side, rows - low)
@@ -695,15 +695,17 @@ fun Template.layout(c: Grid, hero: String = TileTypes.CAR, skip: (String) -> Boo
         Template.DESIGN_ROUTE -> {
             // El mapa es el fondo: el hueco libre más grande ([freeArea]) es donde vas tú y la guía pone sus tarjetas.
             if (c.vertical) {
-                val s = cols / 2
+                // Tu auto, grande: más de la mitad del ancho.
+                val s = rnd(cols * 0.55)
                 val y = rows - 4
                 firstFree(STACK_DRIVE, 0, y, s, 4)
                 place(TileTypes.WEATHER, s, y, cols - s, 2)
                 place(TileTypes.MUSIC, s, y + 2, cols - s, 1)
                 place(TileTypes.SPEEDOMETER, s, y + 3, cols - s, 1, "style=digital")
             } else {
-                val s = maxOf(3, rnd(cols * 0.25))
-                firstFree(STACK_DRIVE, 0, 0, s, up(rows * 0.55))
+                // Tu auto, grande: casi la mitad del ancho y todo el alto menos la fila de la música.
+                val s = maxOf(4, rnd(cols * 0.45))
+                firstFree(STACK_DRIVE, 0, 0, s, rows - 1)
                 place(TileTypes.MUSIC, 0, rows - 1, maxOf(3, rnd(cols * 0.42)), 1)
             }
         }
@@ -847,6 +849,8 @@ fun Template.layout(c: Grid, hero: String = TileTypes.CAR, skip: (String) -> Boo
 private val STACK_CAR = listOf(TileTypes.MUSIC, TileTypes.CAR, TileTypes.TIRES)
 private val STACK_DRIVE = listOf(TileTypes.CAR, TileTypes.TIRES, TileTypes.MUSIC)
 private val STACK_AUDIO = listOf(TileTypes.MUSIC, TileTypes.RADIO)
+/** Tu auto en la carretera sin su velocidad (va junto a un velocímetro): lo que guarda la pieza. */
+private const val ROAD_NO_SPEED = "speed=hidden"
 private val FREE_FALLBACK = listOf(TileTypes.CLOCK, TileTypes.WEATHER)
 
 /**

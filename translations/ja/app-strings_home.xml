@@ -32,9 +32,6 @@
     <string name="page_background_image">画像</string>
     <string name="page_background_map">地図</string>
     <string name="map_backdrop_help">地図はウィジェットの後ろであなたを追いかけ、空いている場所にあなたを表示します。スタイルは「設定 → アプリ → ナビ」のものです。インターネットがないときはオフラインエリアを使います。</string>
-    <string name="map_backdrop_you">地図上のあなた</string>
-    <string name="map_backdrop_arrow">矢印</string>
-    <string name="map_backdrop_car">あなたの車</string>
     <string name="map_backdrop_has_widget">このページには地図ウィジェットがあります。背景に地図を使うと地図が2つ表示されます。</string>
     <string name="map_backdrop_remove_widget">地図ウィジェットを外す</string>
 </resources>
