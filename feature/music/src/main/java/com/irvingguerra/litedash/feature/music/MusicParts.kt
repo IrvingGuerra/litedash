@@ -187,17 +187,11 @@ internal fun MediaTile(
     tinted: Boolean = false,
     /** Un toque fuera de los botones: la pantalla Música en grande. */
     onOpen: (() -> Unit)? = null,
-    /** Deslizar a lo ancho: siguiente y anterior, igual que sus botones (también sin datos de la canción). */
-    onNext: (() -> Unit)? = null,
-    onPrevious: (() -> Unit)? = null,
 ) {
     UseRepo(repo, piece)
     val permission = remember(revision, needsAccess) { !needsAccess || repo.hasPermission().also { if (it) repo.recheck() } }
     val check = repo.soundCheckFor(piece)
-    // Sin controles (sin permiso), con la pregunta del sonido a la vista o con anterior/siguiente apagados en las
-    // opciones del widget ("solo play/pausa"), no se desliza.
-    val swipe = Modifier.horizontalSwipe(onNext.takeIf { skip && permission && check == null }, onPrevious)
-    Card(modifier.fillMaxSize().then(swipe), onClick = onOpen.takeIf { permission }) {
+    Card(modifier.fillMaxSize(), onClick = onOpen.takeIf { permission }) {
         if (!permission) return@Card NoPermission(repo, icon, title, explain)
         if (check != null) {
             return@Card Box(Modifier.fillMaxSize().padding(TilePadding), contentAlignment = Alignment.CenterStart) { SoundCheckPrompt(repo, check) }

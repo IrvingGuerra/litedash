@@ -57,15 +57,15 @@ private fun glass(x: Float) = MIN_OPACITY + (1f - MIN_OPACITY) * x
 val DESIGNS = listOf(
     Design(
         "graphite", R.string.design_graphite, R.string.design_graphite_tagline, Template.DESIGN_GRAPHITE, ThemeMode.DARK,
-        wallpaper = "grafito-haz", carColor = Color(0xFFC9CED4),
+        wallpaper = "grafito-cinta", carColor = Color(0xFFC9CED4),
     ),
     Design(
         "cloud", R.string.design_cloud, R.string.design_cloud_tagline, Template.DESIGN_CLOUD, ThemeMode.LIGHT,
-        wallpaper = "nube-perla", carColor = Color(0xFFF4F6F8), cardOpacity = glass(0.2f), accent = Color(0xFFFF9F0A),
+        wallpaper = "nube-amanecer", carColor = Color(0xFFF4F6F8), cardOpacity = glass(0.2f), accent = Color(0xFFFF9F0A),
     ),
     Design(
         "track", R.string.design_track, R.string.design_track_tagline, Template.DESIGN_TRACK, ThemeMode.DARK,
-        wallpaper = "pista-carbon", carColor = Color(0xFFA3141D), cardOpacity = glass(0.5f), accent = Color(0xFFFF453A),
+        wallpaper = "pista-estela", carColor = Color(0xFFA3141D), cardOpacity = glass(0.5f), accent = Color(0xFFFF453A),
         // El mapa grafito de su galería («Como mi interfaz» sin color de tarjetas tomaría el rojo de la interfaz).
         mapPalette = MapPalettes.CUSTOM, mapColor = 0x1A1D22,
     ),
@@ -79,17 +79,17 @@ val DESIGNS = listOf(
     ),
     Design(
         "neon", R.string.design_neon, R.string.design_neon_tagline, Template.DESIGN_NEON, ThemeMode.DARK,
-        wallpaper = "neon-noche", carColor = Color(0xFF1D2026), cardColor = Color(0xFF7A3FE0), accent = Color(0xFFFF4F9A),
+        wallpaper = "neon-orbes", carColor = Color(0xFF1D2026), cardColor = Color(0xFF7A3FE0), accent = Color(0xFFFF4F9A),
         mapPalette = MapPalettes.INTERFACE,
     ),
     Design(
         "sand", R.string.design_sand, R.string.design_sand_tagline, Template.DESIGN_SAND, ThemeMode.LIGHT,
-        wallpaper = "arena-calida", carColor = Color(0xFFC2A27C), cardOpacity = glass(0.5f), cardColor = Color(0xFFB89B6A),
+        wallpaper = "arena-dunas", carColor = Color(0xFFC2A27C), cardOpacity = glass(0.5f), cardColor = Color(0xFFB89B6A),
         accent = Color(0xFFFF7A1A), mapPalette = MapPalettes.INTERFACE,
     ),
     Design(
         "forest", R.string.design_forest, R.string.design_forest_tagline, Template.DESIGN_FOREST, ThemeMode.DARK,
-        wallpaper = "bosque-profundo", carColor = Color(0xFF2F5D4A), cardOpacity = glass(0.25f), cardColor = Color(0xFF1E8E4E),
+        wallpaper = "bosque-luz", carColor = Color(0xFF2F5D4A), cardOpacity = glass(0.25f), cardColor = Color(0xFF1E8E4E),
         accent = Color(0xFFE8C15A), mapPalette = MapPalettes.INTERFACE,
     ),
 )

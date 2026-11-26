@@ -92,7 +92,7 @@ fun Dashboard(
     /** Editando, las piezas que se personalizan ([hasSettings]) llevan un botón que hace esto. */
     onSettings: ((Tile) -> Unit)? = null,
     hasSettings: (Tile) -> Boolean = { false },
-    /** Con varias páginas: deslizar en un hueco (fuera del modo edición). */
+    /** Con varias páginas: deslizar a lo ancho en un hueco o sobre un widget que no use el gesto (fuera del modo edición). */
     swipe: PageSwipe? = null,
     /** Un toque en un hueco (fuera del modo edición; los widgets tienen su propia acción). */
     onTapEmpty: (() -> Unit)? = null,
@@ -104,7 +104,15 @@ fun Dashboard(
     val currentOnChange by rememberUpdatedState(onChange)
     val currentLimits by rememberUpdatedState(limits)
     val currentOnTapEmpty by rememberUpdatedState(onTapEmpty)
-    BoxWithConstraints(modifier.fillMaxSize()) {
+    // Deslizar a lo ancho cambia de página desde un hueco o desde cualquier widget que no use ese gesto (el mapa y tu
+    // auto sí lo usan y se lo quedan: les llega primero).
+    val pageSwipe = if (swipe != null && !editing) Modifier.pointerInput(swipe) {
+        detectHorizontalDragGestures(onDragEnd = swipe.onEnd, onDragCancel = swipe.onEnd) { change, dx ->
+            change.consume()
+            swipe.onDrag(dx)
+        }
+    } else Modifier
+    BoxWithConstraints(modifier.fillMaxSize().then(pageSwipe)) {
         val cellWidth = maxWidth / grid.columns
         val cellHeight = maxHeight / grid.rows
         val density = LocalDensity.current
@@ -127,14 +135,6 @@ fun Dashboard(
                     if (!editing) detectTapGestures(onLongPress = { currentOnEdit() }, onTap = { currentOnTapEmpty?.invoke() })
                     else detectTapGestures(onTap = { selected = null })
                 }
-                .then(
-                    if (swipe != null && !editing) Modifier.pointerInput(swipe) {
-                        detectHorizontalDragGestures(onDragEnd = swipe.onEnd, onDragCancel = swipe.onEnd) { change, dx ->
-                            change.consume()
-                            swipe.onDrag(dx)
-                        }
-                    } else Modifier,
-                )
                 .then(
                     if (editing) Modifier.drawBehind {
                         val r = 1.5.dp.toPx()
