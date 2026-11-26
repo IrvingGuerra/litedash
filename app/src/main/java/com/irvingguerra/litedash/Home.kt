@@ -75,6 +75,7 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.Dp
@@ -148,6 +149,7 @@ sealed interface Panel {
     /** Ajustes abiertos en Inicio y apariencia → Interfaz («Personalizar» en Diseños). */
     data object Appearance : Panel
     data object AddTile : Panel
+    data object Templates : Panel
     data object Designs : Panel
     /** El fondo de pantalla del inicio (botón "Fondo" al acomodar). */
     data object Wallpaper : Panel
@@ -865,6 +867,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                                 driverName = d.prefs.driverName,
                                 weather = d.weather,
                                 onAdd = { panel = Panel.AddTile },
+                                onTemplates = { panel = Panel.Templates },
                                 onDesigns = { panel = Panel.Designs },
                                 onWallpaper = { panel = Panel.Wallpaper },
                                 onFinish = { editing = false },
@@ -1015,6 +1018,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                         close = { panel = null },
                         // Acomodar cierra lo que esté en grande (si no, el tablero ni se ve).
                         onEdit = { panel = null; expanded = null; editing = true },
+                        onTemplates = { panel = Panel.Templates },
                         onDesigns = { panel = Panel.Designs },
                         onAddTile = { panel = Panel.AddTile },
                         start = when (p) {
@@ -1028,6 +1032,7 @@ fun Home(d: Dependencies, revision: Int, homePressed: Int) {
                         },
                         onTires = { panel = null; tiresLayer.open = true },
                     )
+                    Panel.Templates -> TemplatesPanel(d.dashboard, close = { panel = null }, onDesigns = { panel = Panel.Designs })
                     Panel.Designs -> DesignsPanel(d, close = { panel = null }, onCustomize = {
                         openInterfaceSettings()
                         panel = Panel.Appearance
@@ -1219,6 +1224,12 @@ fun dockFavorites(d: Dependencies, apps: List<App>): List<App> {
 private fun topBarHeight() = if (isShortScreen()) 44.dp else 64.dp
 private val TOP_BAR_HIDDEN = 12.dp
 
+/**
+ * Ancho de ventana desde el que «Diseños» va junto a «Plantillas» en la barra de acomodar (1024×600 ya los lleva a los
+ * dos); más angosta (de pie), las páginas y el título no caben y «Diseños» queda en el encabezado de Plantillas.
+ */
+private val DESIGNS_IN_BAR = 1000.dp
+
 @Composable
 private fun TopBar(
     editing: Boolean,
@@ -1226,6 +1237,7 @@ private fun TopBar(
     driverName: String?,
     weather: WeatherRepository,
     onAdd: () -> Unit,
+    onTemplates: () -> Unit,
     onDesigns: () -> Unit,
     onWallpaper: () -> Unit,
     onFinish: () -> Unit,
@@ -1271,7 +1283,9 @@ private fun TopBar(
                 }
             }
             Button(stringResource(R.string.wallpaper_button), onWallpaper)
-            Button(stringResource(R.string.designs), onDesigns)
+            val window = LocalWindowInfo.current.containerSize.width
+            if (with(LocalDensity.current) { window.toDp() } >= DESIGNS_IN_BAR) Button(stringResource(R.string.designs), onDesigns)
+            Button(stringResource(R.string.templates), onTemplates)
             Button(stringResource(R.string.add), onAdd)
             Button(stringResource(R.string.done), onFinish, primary = true)
         } else {
