@@ -33,6 +33,12 @@
         <package android:name="com.nwd.kernel" />
         <!-- Radio FM de las pantallas Hengchen (HCN): su servicio FMPlugService. -->
         <package android:name="com.hcn.autoradio" />
+        <!-- Apps de Bluetooth de fábrica sin perfil que se pueden exportar para soporte (Android 11+ no las deja ver). -->
+        <package android:name="com.spd.bt" />
+        <package android:name="com.imotor.btmusic" />
+        <package android:name="com.carsyso.bluetooth" />
+        <package android:name="com.qf.bluetooth" />
+        <package android:name="android.car.app.bt" />
     </queries>
     <!-- Algunas radios HCN piden este permiso para hablar con su servicio (si es de firma, no se concede y no pasa nada). -->
     <uses-permission android:name="hcn.permission.FM_PLUG_SERVICE" />

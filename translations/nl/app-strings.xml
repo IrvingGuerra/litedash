@@ -605,6 +605,12 @@
     <string name="bt_forget">Vergeten</string>
     <string name="bt_forget_question">%1$s vergeten?</string>
     <string name="bt_forget_message">Om hem weer te gebruiken, moet je hem opnieuw koppelen.</string>
+    <string name="bt_export">Bluetooth-app exporteren</string>
+    <string name="bt_export_help">Toont je scherm de muziek van je telefoon niet? Stuur ons dit bestand via support@litedash.dev, dan voegen we het toe.</string>
+    <string name="bt_export_button">Exporteren</string>
+    <string name="bt_export_saving">Opslaan…</string>
+    <string name="bt_export_saved">Opgeslagen: %1$s</string>
+    <string name="bt_export_failed">Kon niet opslaan.</string>
     <string name="bluetooth_turn_off">Bluetooth uitzetten</string>
     <string name="android_settings">Android-instellingen</string>
     <string name="android_settings_help">De systeeminstellingen van je autoradio, die soms achter de launcher van de fabrikant verstopt zitten.</string>

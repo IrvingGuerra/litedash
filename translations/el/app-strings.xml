@@ -605,6 +605,12 @@
     <string name="bt_forget">Διαγραφή</string>
     <string name="bt_forget_question">Διαγραφή του %1$s;</string>
     <string name="bt_forget_message">Για να το χρησιμοποιήσετε ξανά, θα πρέπει να κάνετε ξανά ζεύξη.</string>
+    <string name="bt_export">Εξαγωγή της εφαρμογής Bluetooth</string>
+    <string name="bt_export_help">Αν η οθόνη σου δεν δείχνει τη μουσική του κινητού, στείλε μας αυτό το αρχείο στο support@litedash.dev για να την προσθέσουμε.</string>
+    <string name="bt_export_button">Εξαγωγή</string>
+    <string name="bt_export_saving">Αποθήκευση…</string>
+    <string name="bt_export_saved">Αποθηκεύτηκε: %1$s</string>
+    <string name="bt_export_failed">Δεν ήταν δυνατή η αποθήκευση.</string>
     <string name="bluetooth_turn_off">Απενεργοποίηση Bluetooth</string>
     <string name="android_settings">Ρυθμίσεις Android</string>
     <string name="android_settings_help">Οι ρυθμίσεις συστήματος της οθόνης σας, που μερικές φορές κρύβονται πίσω από το μενού του κατασκευαστή.</string>

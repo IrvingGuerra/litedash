@@ -600,6 +600,12 @@
     <string name="bt_forget">忘记</string>
     <string name="bt_forget_question">忘记 %1$s？</string>
     <string name="bt_forget_message">再次使用时需要重新配对。</string>
+    <string name="bt_export">导出蓝牙应用</string>
+    <string name="bt_export_help">如果屏幕不显示手机的音乐，请把这个文件发到 support@litedash.dev，我们会加入支持。</string>
+    <string name="bt_export_button">导出</string>
+    <string name="bt_export_saving">正在保存…</string>
+    <string name="bt_export_saved">已保存：%1$s</string>
+    <string name="bt_export_failed">无法保存。</string>
     <string name="bluetooth_turn_off">关闭 Bluetooth</string>
     <string name="android_settings">Android 设置</string>
     <string name="android_settings_help">车机的系统设置，有时被厂商启动器藏起来了。</string>

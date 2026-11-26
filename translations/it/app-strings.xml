@@ -605,6 +605,12 @@
     <string name="bt_forget">Dimentica</string>
     <string name="bt_forget_question">Dimenticare %1$s?</string>
     <string name="bt_forget_message">Per usarlo di nuovo dovrai associarlo di nuovo.</string>
+    <string name="bt_export">Esporta l\'app Bluetooth</string>
+    <string name="bt_export_help">Se il tuo schermo non mostra la musica del telefono, mandaci questo file a support@litedash.dev per aggiungerlo.</string>
+    <string name="bt_export_button">Esporta</string>
+    <string name="bt_export_saving">Salvataggio…</string>
+    <string name="bt_export_saved">Salvato: %1$s</string>
+    <string name="bt_export_failed">Impossibile salvare.</string>
     <string name="bluetooth_turn_off">Spegni Bluetooth</string>
     <string name="android_settings">Impostazioni di Android</string>
     <string name="android_settings_help">Le impostazioni di sistema del tuo schermo, che a volte si nascondono dietro il launcher del produttore.</string>

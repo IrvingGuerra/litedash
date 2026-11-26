@@ -600,6 +600,12 @@
     <string name="bt_forget">삭제</string>
     <string name="bt_forget_question">%1$s을(를) 삭제할까요?</string>
     <string name="bt_forget_message">다시 사용하려면 다시 페어링해야 해요.</string>
+    <string name="bt_export">블루투스 앱 내보내기</string>
+    <string name="bt_export_help">화면에 휴대폰 음악이 표시되지 않으면 이 파일을 support@litedash.dev로 보내 주세요. 지원을 추가하겠습니다.</string>
+    <string name="bt_export_button">내보내기</string>
+    <string name="bt_export_saving">저장 중…</string>
+    <string name="bt_export_saved">저장됨: %1$s</string>
+    <string name="bt_export_failed">저장하지 못했습니다.</string>
     <string name="bluetooth_turn_off">Bluetooth 끄기</string>
     <string name="android_settings">Android 설정</string>
     <string name="android_settings_help">제조사 런처 뒤에 숨어 있곤 하는 헤드 유닛의 시스템 설정이에요.</string>

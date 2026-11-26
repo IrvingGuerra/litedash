@@ -605,6 +605,12 @@
     <string name="bt_forget">Unut</string>
     <string name="bt_forget_question">%1$s unutulsun mu?</string>
     <string name="bt_forget_message">Tekrar kullanmak için yeniden eşleştirmeniz gerekir.</string>
+    <string name="bt_export">Bluetooth uygulamasını dışa aktar</string>
+    <string name="bt_export_help">Ekranın telefonundaki müziği göstermiyorsa bu dosyayı support@litedash.dev adresine gönder, desteği ekleyelim.</string>
+    <string name="bt_export_button">Dışa aktar</string>
+    <string name="bt_export_saving">Kaydediliyor…</string>
+    <string name="bt_export_saved">Kaydedildi: %1$s</string>
+    <string name="bt_export_failed">Kaydedilemedi.</string>
     <string name="bluetooth_turn_off">Bluetooth’u kapat</string>
     <string name="android_settings">Android ayarları</string>
     <string name="android_settings_help">Ünitenizin sistem ayarları; bazen üreticinin başlatıcısının arkasında saklanır.</string>

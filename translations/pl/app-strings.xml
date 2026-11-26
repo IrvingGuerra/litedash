@@ -615,6 +615,12 @@
     <string name="bt_forget">Zapomnij</string>
     <string name="bt_forget_question">Zapomnieć %1$s?</string>
     <string name="bt_forget_message">Aby znów go używać, trzeba będzie sparować go ponownie.</string>
+    <string name="bt_export">Eksportuj aplikację Bluetooth</string>
+    <string name="bt_export_help">Jeśli ekran nie pokazuje muzyki z telefonu, wyślij nam ten plik na support@litedash.dev, a dodamy obsługę.</string>
+    <string name="bt_export_button">Eksportuj</string>
+    <string name="bt_export_saving">Zapisywanie…</string>
+    <string name="bt_export_saved">Zapisano: %1$s</string>
+    <string name="bt_export_failed">Nie udało się zapisać.</string>
     <string name="bluetooth_turn_off">Wyłącz Bluetooth</string>
     <string name="android_settings">Ustawienia Androida</string>
     <string name="android_settings_help">Ustawienia systemowe radia, czasem ukryte za launcherem producenta.</string>

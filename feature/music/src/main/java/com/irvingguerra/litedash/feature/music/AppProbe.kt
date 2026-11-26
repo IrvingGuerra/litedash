@@ -28,19 +28,28 @@ object AppProbe {
     }
 
     /** Receptores, servicios y proveedores exportados (sin el paquete delante: ".RadioService"). */
+    private fun exported(context: Context, pkg: String): List<String> =
+        components(context, pkg, activities = false).filter { it.second }.map { it.first }.take(MAX_NAMES)
+
+    /**
+     * Los componentes de [pkg] ("a:", "r:", "s:", "p:" + nombre sin el paquete delante) con su bandera de exportado;
+     * las actividades solo con [activities]. Puede tronar (app que no está o demasiado grande): quien llama lo atrapa.
+     */
     @Suppress("DEPRECATION") // getPackageInfo(String, Int): la de flags largos es de Android 13
-    private fun exported(context: Context, pkg: String): List<String> {
-        val flags = PackageManager.GET_RECEIVERS or PackageManager.GET_SERVICES or PackageManager.GET_PROVIDERS
+    internal fun components(context: Context, pkg: String, activities: Boolean): List<Pair<String, Boolean>> {
+        var flags = PackageManager.GET_RECEIVERS or PackageManager.GET_SERVICES or PackageManager.GET_PROVIDERS
+        if (activities) flags = flags or PackageManager.GET_ACTIVITIES
         val info = context.packageManager.getPackageInfo(pkg, flags)
-        val all = info.receivers.orEmpty().map { "r:" to it } + info.services.orEmpty().map { "s:" to it } + info.providers.orEmpty().map { "p:" to it }
-        return all.filter { it.second.exported }.map { (kind, c) -> kind + c.name.removePrefix(pkg) }.take(MAX_NAMES)
+        val all = info.activities.orEmpty().map { "a:" to it } + info.receivers.orEmpty().map { "r:" to it } +
+            info.services.orEmpty().map { "s:" to it } + info.providers.orEmpty().map { "p:" to it }
+        return all.map { (kind, c) -> kind + c.name.removePrefix(pkg) to c.exported }
     }
 
     /**
      * Los nombres con puntos del manifiesto (acciones, clases, permisos), leídos de su tabla de
      * textos: el manifiesto dentro del APK es XML binario y sus textos van todos juntos al inicio.
      */
-    private fun manifestNames(context: Context, pkg: String): List<String> {
+    internal fun manifestNames(context: Context, pkg: String, max: Int = MAX_NAMES): List<String> {
         val apk = context.packageManager.getApplicationInfo(pkg, 0).sourceDir
         val bytes = ZipFile(apk).use { zip -> zip.getEntry("AndroidManifest.xml")?.let { e -> zip.getInputStream(e).use { it.readBytes() } } }
             ?: return emptyList()
@@ -48,7 +57,7 @@ object AppProbe {
             .filter { NAME.matches(it) && !it.startsWith("android.") && !it.startsWith("androidx.") && !it.startsWith("com.google.") }
             .map { it.take(MAX_NAME_LENGTH) }
             .distinct()
-            .take(MAX_NAMES)
+            .take(max)
     }
 
     private val NAME = Regex("""[A-Za-z_][A-Za-z0-9_]*(\.[A-Za-z0-9_]+){2,}""")

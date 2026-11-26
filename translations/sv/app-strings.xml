@@ -605,6 +605,12 @@
     <string name="bt_forget">Glöm</string>
     <string name="bt_forget_question">Glöm %1$s?</string>
     <string name="bt_forget_message">För att använda den igen måste du parkoppla den på nytt.</string>
+    <string name="bt_export">Exportera Bluetooth-appen</string>
+    <string name="bt_export_help">Om skärmen inte visar musiken från telefonen, skicka den här filen till support@litedash.dev så lägger vi till den.</string>
+    <string name="bt_export_button">Exportera</string>
+    <string name="bt_export_saving">Sparar…</string>
+    <string name="bt_export_saved">Sparad: %1$s</string>
+    <string name="bt_export_failed">Kunde inte spara.</string>
     <string name="bluetooth_turn_off">Stäng av Bluetooth</string>
     <string name="android_settings">Androids inställningar</string>
     <string name="android_settings_help">Bilstereons systeminställningar, som ibland gömmer sig bakom tillverkarens launcher.</string>

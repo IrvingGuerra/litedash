@@ -615,6 +615,12 @@
     <string name="bt_forget">Zapomenout</string>
     <string name="bt_forget_question">Zapomenout %1$s?</string>
     <string name="bt_forget_message">Pro další použití ho budeš muset znovu spárovat.</string>
+    <string name="bt_export">Exportovat aplikaci Bluetooth</string>
+    <string name="bt_export_help">Pokud tvoje obrazovka nezobrazuje hudbu z telefonu, pošli nám tento soubor na support@litedash.dev a přidáme ji.</string>
+    <string name="bt_export_button">Exportovat</string>
+    <string name="bt_export_saving">Ukládání…</string>
+    <string name="bt_export_saved">Uloženo: %1$s</string>
+    <string name="bt_export_failed">Nepodařilo se uložit.</string>
     <string name="bluetooth_turn_off">Vypnout Bluetooth</string>
     <string name="android_settings">Nastavení Androidu</string>
     <string name="android_settings_help">Systémové nastavení tvého displeje, které se někdy schovává za spouštěčem výrobce.</string>

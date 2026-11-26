@@ -597,6 +597,12 @@
     <string name="bt_forget">ลืม</string>
     <string name="bt_forget_question">ลืม %1$s ไหม</string>
     <string name="bt_forget_message">หากจะใช้อีกครั้ง ต้องจับคู่ใหม่</string>
+    <string name="bt_export">ส่งออกแอป Bluetooth</string>
+    <string name="bt_export_help">ถ้าหน้าจอไม่แสดงเพลงจากมือถือ ส่งไฟล์นี้มาที่ support@litedash.dev เพื่อให้เราเพิ่มการรองรับ</string>
+    <string name="bt_export_button">ส่งออก</string>
+    <string name="bt_export_saving">กำลังบันทึก…</string>
+    <string name="bt_export_saved">บันทึกแล้ว: %1$s</string>
+    <string name="bt_export_failed">บันทึกไม่ได้</string>
     <string name="bluetooth_turn_off">ปิด Bluetooth</string>
     <string name="android_settings">การตั้งค่า Android</string>
     <string name="android_settings_help">การตั้งค่าระบบของเครื่องเสียง ซึ่งบางครั้งซ่อนอยู่หลังลอนเชอร์ของผู้ผลิต</string>

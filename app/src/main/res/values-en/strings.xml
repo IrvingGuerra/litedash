@@ -625,6 +625,12 @@
     <string name="bt_forget">Forget</string>
     <string name="bt_forget_question">Forget %1$s?</string>
     <string name="bt_forget_message">To use it again you\'ll have to pair it again.</string>
+    <string name="bt_export">Export the Bluetooth app</string>
+    <string name="bt_export_help">If your screen doesn\'t show your phone\'s music, send us this file at support@litedash.dev so we can add it.</string>
+    <string name="bt_export_button">Export</string>
+    <string name="bt_export_saving">Saving…</string>
+    <string name="bt_export_saved">Saved: %1$s</string>
+    <string name="bt_export_failed">Couldn\'t save it.</string>
     <string name="bluetooth_turn_off">Turn off Bluetooth</string>
     <string name="android_settings">Android settings</string>
     <string name="android_settings_help">Your head unit\'s system settings, which sometimes hide behind the maker\'s launcher.</string>

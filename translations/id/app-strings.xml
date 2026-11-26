@@ -600,6 +600,12 @@
     <string name="bt_forget">Lupakan</string>
     <string name="bt_forget_question">Lupakan %1$s?</string>
     <string name="bt_forget_message">Untuk memakainya lagi, Anda harus memasangkannya ulang.</string>
+    <string name="bt_export">Ekspor aplikasi Bluetooth</string>
+    <string name="bt_export_help">Jika layarmu tidak menampilkan musik dari ponsel, kirim file ini ke support@litedash.dev agar kami bisa menambahkannya.</string>
+    <string name="bt_export_button">Ekspor</string>
+    <string name="bt_export_saving">Menyimpan…</string>
+    <string name="bt_export_saved">Tersimpan: %1$s</string>
+    <string name="bt_export_failed">Tidak dapat menyimpan.</string>
     <string name="bluetooth_turn_off">Nonaktifkan Bluetooth</string>
     <string name="android_settings">Setelan Android</string>
     <string name="android_settings_help">Setelan sistem layar Anda, yang kadang tersembunyi di balik peluncur pabrikan.</string>

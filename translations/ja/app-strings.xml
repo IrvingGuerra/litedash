@@ -600,6 +600,12 @@
     <string name="bt_forget">削除</string>
     <string name="bt_forget_question">%1$s を削除しますか？</string>
     <string name="bt_forget_message">再び使うには、もう一度ペアリングする必要があります。</string>
+    <string name="bt_export">Bluetooth アプリを書き出す</string>
+    <string name="bt_export_help">画面にスマホの音楽が表示されない場合は、このファイルを support@litedash.dev に送ってください。対応を追加します。</string>
+    <string name="bt_export_button">書き出す</string>
+    <string name="bt_export_saving">保存中…</string>
+    <string name="bt_export_saved">保存しました: %1$s</string>
+    <string name="bt_export_failed">保存できませんでした。</string>
     <string name="bluetooth_turn_off">Bluetooth をオフ</string>
     <string name="android_settings">Android の設定</string>
     <string name="android_settings_help">ヘッドユニットのシステム設定です。メーカーのランチャーに隠れていることがあります。</string>

@@ -610,6 +610,12 @@
     <string name="bt_forget">Uită</string>
     <string name="bt_forget_question">Uiți %1$s?</string>
     <string name="bt_forget_message">Ca să-l folosești din nou, va trebui să-l împerechezi iar.</string>
+    <string name="bt_export">Exportă aplicația Bluetooth</string>
+    <string name="bt_export_help">Dacă ecranul nu arată muzica de pe telefon, trimite-ne acest fișier la support@litedash.dev ca să o adăugăm.</string>
+    <string name="bt_export_button">Exportă</string>
+    <string name="bt_export_saving">Se salvează…</string>
+    <string name="bt_export_saved">Salvat: %1$s</string>
+    <string name="bt_export_failed">Nu s-a putut salva.</string>
     <string name="bluetooth_turn_off">Oprește Bluetooth</string>
     <string name="android_settings">Setări Android</string>
     <string name="android_settings_help">Setările de sistem ale unității, care uneori se ascund în spatele launcherului producătorului.</string>

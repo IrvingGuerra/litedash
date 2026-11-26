@@ -605,6 +605,12 @@
     <string name="bt_forget">Elfelejtés</string>
     <string name="bt_forget_question">Elfelejted: %1$s?</string>
     <string name="bt_forget_message">Az újbóli használathoz újra párosítanod kell.</string>
+    <string name="bt_export">Bluetooth-alkalmazás exportálása</string>
+    <string name="bt_export_help">Ha a kijelződ nem mutatja a telefon zenéjét, küldd el nekünk ezt a fájlt a support@litedash.dev címre, hogy hozzáadjuk.</string>
+    <string name="bt_export_button">Exportálás</string>
+    <string name="bt_export_saving">Mentés…</string>
+    <string name="bt_export_saved">Mentve: %1$s</string>
+    <string name="bt_export_failed">Nem sikerült menteni.</string>
     <string name="bluetooth_turn_off">Bluetooth kikapcsolása</string>
     <string name="android_settings">Android beállítások</string>
     <string name="android_settings_help">A fejegység rendszerbeállításai, amelyek néha a gyártó indítója mögé bújnak.</string>

@@ -600,6 +600,12 @@
     <string name="bt_forget">Quên</string>
     <string name="bt_forget_question">Quên %1$s?</string>
     <string name="bt_forget_message">Để dùng lại, bạn phải ghép đôi lại.</string>
+    <string name="bt_export">Xuất ứng dụng Bluetooth</string>
+    <string name="bt_export_help">Nếu màn hình không hiển thị nhạc từ điện thoại, hãy gửi tệp này tới support@litedash.dev để chúng tôi thêm hỗ trợ.</string>
+    <string name="bt_export_button">Xuất</string>
+    <string name="bt_export_saving">Đang lưu…</string>
+    <string name="bt_export_saved">Đã lưu: %1$s</string>
+    <string name="bt_export_failed">Không lưu được.</string>
     <string name="bluetooth_turn_off">Tắt Bluetooth</string>
     <string name="android_settings">Cài đặt Android</string>
     <string name="android_settings_help">Cài đặt hệ thống của đầu máy, đôi khi bị ẩn sau launcher của nhà sản xuất.</string>

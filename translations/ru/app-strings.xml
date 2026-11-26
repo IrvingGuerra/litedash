@@ -615,6 +615,12 @@
     <string name="bt_forget">Забыть</string>
     <string name="bt_forget_question">Забыть %1$s?</string>
     <string name="bt_forget_message">Чтобы снова им пользоваться, придётся заново создать пару.</string>
+    <string name="bt_export">Экспорт приложения Bluetooth</string>
+    <string name="bt_export_help">Если экран не показывает музыку с телефона, отправьте нам этот файл на support@litedash.dev, и мы добавим поддержку.</string>
+    <string name="bt_export_button">Экспортировать</string>
+    <string name="bt_export_saving">Сохранение…</string>
+    <string name="bt_export_saved">Сохранено: %1$s</string>
+    <string name="bt_export_failed">Не удалось сохранить.</string>
     <string name="bluetooth_turn_off">Выключить Bluetooth</string>
     <string name="android_settings">Настройки Android</string>
     <string name="android_settings_help">Системные настройки магнитолы, которые иногда прячутся за лаунчером производителя.</string>

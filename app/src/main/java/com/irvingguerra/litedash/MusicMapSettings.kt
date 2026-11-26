@@ -1,7 +1,10 @@
 package com.irvingguerra.litedash
 
+import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
+import android.provider.OpenableColumns
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
@@ -15,6 +18,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -31,6 +35,7 @@ import com.irvingguerra.litedash.core.ui.Typography
 import com.irvingguerra.litedash.feature.apps.App
 import com.irvingguerra.litedash.feature.apps.normalize
 import com.irvingguerra.litedash.feature.apps.rememberApps
+import com.irvingguerra.litedash.feature.music.BluetoothExport
 import com.irvingguerra.litedash.feature.music.MusicMode
 import com.irvingguerra.litedash.feature.music.R as MusicR
 import com.irvingguerra.litedash.feature.music.SoundPiece
@@ -41,6 +46,7 @@ import com.irvingguerra.litedash.feature.player.Library
 import com.irvingguerra.litedash.feature.player.PlayerBrowser
 import com.irvingguerra.litedash.feature.player.PlayerSource
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /**
@@ -91,6 +97,7 @@ fun MusicModeSettings(d: Dependencies) {
             SettingsCard(stringResource(R.string.bt_pair), stringResource(R.string.bt_pair_help)) { BluetoothSettings(d) }
             // La calibración de la música es la del Bluetooth: solo con ese método (la de la radio, en la pestaña Radio).
             SoundCalibrationCard(d, SoundPiece.MUSIC)
+            BluetoothExportCard(d)
         }
         MusicMode.APP -> SettingsCard(stringResource(R.string.music_app_title)) { MusicSettings(d) }
     }
@@ -111,6 +118,68 @@ private fun SoundCalibrationCard(d: Dependencies, piece: SoundPiece) {
         if (recipe != null) Button(stringResource(R.string.sound_calibrate_again), { d.music.recalibrate(piece) })
     }
 }
+
+/** Lo que pasó con la exportación, para decirlo en la misma tarjeta. */
+private sealed interface ExportState {
+    data object Saving : ExportState
+    class Saved(val where: String) : ExportState
+    data object Failed : ExportState
+}
+
+/**
+ * "Exportar la app de Bluetooth": empaqueta la app de Bluetooth de fábrica y datos del equipo en un .zip que el usuario
+ * manda a soporte (pantallas sin ADB). Se guarda con el selector de Android (memoria o USB, sin permisos); si la pantalla
+ * no lo trae, en la carpeta de LiteDash. Solo si hay alguna candidata.
+ */
+@Composable
+private fun BluetoothExportCard(d: Dependencies) {
+    val context = LocalContext.current
+    val c = LocalColors.current
+    val candidates by produceState(emptyList<String>(), d.music) {
+        value = withContext(Dispatchers.IO) { BluetoothExport.candidates(context, d.music, BuildConfig.DEBUG) }
+    }
+    if (candidates.isEmpty()) return
+    val scope = rememberCoroutineScope()
+    var state by remember { mutableStateOf<ExportState?>(null) }
+    val fileName = remember { BluetoothExport.fileName() }
+    fun save(write: () -> String?) {
+        state = ExportState.Saving
+        scope.launch { state = withContext(Dispatchers.IO) { write() }?.let(ExportState::Saved) ?: ExportState.Failed }
+    }
+    val picker = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/zip")) { uri ->
+        uri ?: return@rememberLauncherForActivityResult
+        save {
+            val ok = runCatching { context.contentResolver.openOutputStream(uri)?.use { BluetoothExport.write(context, it, candidates) } }
+                .getOrNull() == true
+            if (ok) displayName(context, uri) ?: fileName else null
+        }
+    }
+    SettingsCard(stringResource(R.string.bt_export), stringResource(R.string.bt_export_help)) {
+        Button(stringResource(R.string.bt_export_button), {
+            try {
+                picker.launch(fileName)
+            } catch (_: ActivityNotFoundException) {
+                // Pantalla recortada sin selector de archivos: a la carpeta de LiteDash.
+                save {
+                    val file = context.getExternalFilesDir(null)?.resolve("export")?.apply { mkdirs() }?.resolve(fileName)
+                    file?.takeIf { f -> runCatching { f.outputStream().use { BluetoothExport.write(context, it, candidates) } }.getOrDefault(false) }
+                        ?.absolutePath
+                }
+            }
+        }, enabled = state != ExportState.Saving)
+        when (val s = state) {
+            ExportState.Saving -> Label(stringResource(R.string.bt_export_saving), Typography.small, c.textMuted)
+            is ExportState.Saved -> Label(stringResource(R.string.bt_export_saved, s.where), Typography.small, c.textMuted)
+            ExportState.Failed -> Label(stringResource(R.string.bt_export_failed), Typography.small, c.danger)
+            null -> Unit
+        }
+    }
+}
+
+/** El nombre con que quedó el archivo elegido (el usuario pudo cambiarlo); null si no se sabe. */
+private fun displayName(context: Context, uri: Uri): String? = runCatching {
+    context.contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use { if (it.moveToFirst()) it.getString(0) else null }
+}.getOrNull()
 
 /** Alto de la biblioteca en Ajustes (la página ya desplaza: la lista necesita uno fijo). */
 private val LIBRARY_HEIGHT = 420.dp
